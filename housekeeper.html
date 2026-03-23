@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Housekeeping — SoulArt Hotel</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --accent:#003580;
+  --green:#1a7f5a;
+  --amber:#b45309;
+  --red:#dc2626;
+  --bg:#f0eeea;
+  --surface:#ffffff;
+  --surface2:#f5f4f1;
+  --border:#e2e0d8;
+  --text:#1a1916;
+  --text-dim:#6b6860;
+  --text-muted:#9a9890;
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#141412;--surface:#1c1b18;--surface2:#242320;--border:#3a3830;--text:#e8e6df;--text-dim:#9a9890;--text-muted:#6b6860;}
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;}
+
+/* Header */
+.header{background:var(--accent);padding:16px 20px 14px;position:sticky;top:0;z-index:10;}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.header-title{font-size:18px;font-weight:700;color:#fff;}
+.header-sub{font-size:11px;color:rgba(255,255,255,.65);margin-top:1px;}
+.header-time{font-size:22px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;}
+.header-date{font-size:11px;color:rgba(255,255,255,.7);text-align:right;margin-top:1px;}
+
+/* Day navigator */
+.day-nav{display:flex;align-items:center;gap:0;background:rgba(255,255,255,.15);border-radius:10px;overflow:hidden;}
+.day-nav button{background:none;border:none;color:#fff;padding:7px 14px;font-size:20px;cursor:pointer;flex-shrink:0;opacity:.8;}
+.day-nav button:active{opacity:.5;}
+.day-label-wrap{flex:1;text-align:center;}
+.day-label-main{font-size:15px;font-weight:700;color:#fff;}
+.day-label-sub{font-size:11px;color:rgba(255,255,255,.7);}
+
+/* Content */
+.content{padding:14px;}
+
+/* Today badge */
+.today-badge{background:var(--accent);color:#fff;font-size:10px;font-weight:700;border-radius:4px;padding:2px 7px;display:inline-block;margin-bottom:10px;letter-spacing:.04em;}
+
+/* Structure section */
+.struttura-title{font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px;padding-left:2px;}
+.struttura-title:first-of-type{margin-top:0;}
+
+/* KPI cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px;}
+.kpi-card{background:var(--surface);border-radius:12px;padding:14px 12px;text-align:center;border:1px solid var(--border);}
+.kpi-card.arrivi{border-top:3px solid #003580;}
+.kpi-card.fermate{border-top:3px solid #003580;}
+.kpi-card.partenze{border-top:3px solid #003580;}
+.kpi-val{font-size:36px;font-weight:700;line-height:1;margin-bottom:4px;}
+.kpi-val.arrivi{color:#003580;}
+.kpi-val.fermate{color:#003580;}
+.kpi-val.partenze{color:#003580;}
+.kpi-lbl{font-size:11px;color:var(--text-dim);letter-spacing:.04em;}
+
+/* No data */
+.no-data{background:var(--surface);border-radius:12px;padding:24px;text-align:center;color:var(--text-dim);font-size:14px;border:1px solid var(--border);}
+.no-data-icon{font-size:32px;margin-bottom:8px;}
+
+/* Totale giorno */
+.day-total{background:var(--surface);border-radius:12px;padding:14px;margin-top:6px;border:1px solid var(--border);}
+.day-total-title{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+.day-total-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.day-total-item{background:var(--surface2);border-radius:8px;padding:10px 8px;text-align:center;}
+.day-total-val{font-size:28px;font-weight:700;line-height:1;margin-bottom:3px;}
+.day-total-lbl{font-size:10px;color:var(--text-dim);letter-spacing:.04em;}
+
+/* Loading */
+.loading{text-align:center;padding:60px 20px;color:var(--text-dim);}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Preview prossimi giorni */
+.preview-title{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px;padding-left:2px;}
+.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.preview-card{background:var(--surface);border-radius:12px;padding:12px 14px;border:1px solid var(--border);}
+.preview-day{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.preview-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:3px;}
+.preview-row:last-child{margin-bottom:0;}
+.preview-lbl{color:var(--text-dim);}
+.preview-val{font-weight:700;}
+
+/* Update time */
+.update-row{text-align:center;padding:12px 0 4px;font-size:11px;color:var(--text-dim);}
+.update-row a{color:var(--accent);text-decoration:none;font-weight:500;}
+
+/* Preview giorni successivi */
+.preview-title{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px;}
+.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;}
+.preview-card{background:var(--surface);border-radius:10px;padding:12px;border:1px solid var(--border);}
+.preview-day{font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.preview-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px;}
+.preview-row .lbl{color:var(--text-dim);}
+.preview-row .val{font-weight:700;}
+
+/* Timestamp */
+.update-ts{background:var(--surface2);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;margin-top:12px;font-size:11px;color:var(--text-dim);}
+.update-ts-dot{width:7px;height:7px;border-radius:50%;background:#003580;flex-shrink:0;}
+
+/* Preview giorni successivi */
+.preview-section{margin-top:14px;}
+.preview-title{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+.preview-card{background:var(--surface);border-radius:12px;padding:12px 14px;border:1px solid var(--border);margin-bottom:8px;}
+.preview-day-label{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.preview-struttura{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+.preview-row-3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.preview-item{background:var(--surface2);border-radius:7px;padding:7px 6px;text-align:center;}
+.preview-val{font-size:20px;font-weight:700;line-height:1;margin-bottom:2px;}
+.preview-lbl{font-size:10px;color:var(--text-dim);}
+
+/* Refresh btn */
+.refresh-row{text-align:center;padding:16px 0 24px;font-size:12px;color:var(--text-dim);}
+.refresh-row a{color:var(--accent);text-decoration:none;font-weight:500;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-title">🛏️ Housekeeping</div>
+      <div class="header-sub">SoulArt · Boutique Hotel</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="header-time" id="hTime">--:--</div>
+      <div class="header-date" id="hDate">—</div>
+    </div>
+  </div>
+  <div class="day-nav">
+    <button onclick="changeDay(-1)">‹</button>
+    <div class="day-label-wrap">
+      <div class="day-label-main" id="navDayMain">—</div>
+      <div class="day-label-sub" id="navDaySub">—</div>
+    </div>
+    <button onclick="changeDay(1)">›</button>
+  </div>
+</div>
+
+<div class="content" id="mainContent">
+  <div class="loading">
+    <div class="spinner"></div>
+    Caricamento dati...
+  </div>
+</div>
+
+<script>
+const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
+const GIORNI_FULL=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+const GIORNI_SHORT=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+const MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+
+let soulData=null;
+let boutData=null;
+let currentIdx=0;
+let allDays=[];
+
+// Clock
+function tick(){
+  const n=new Date();
+  document.getElementById('hTime').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  document.getElementById('hDate').textContent=GIORNI_FULL[n.getDay()]+' '+n.getDate()+' '+MESI[n.getMonth()];
+}
+tick();setInterval(tick,10000);
+
+async function fetchKV(key){
+  try{
+    const res=await fetch(PROXY+'/kv/get?key=qm_hk_'+encodeURIComponent(key));
+    const json=await res.json();
+    return json.value?JSON.parse(json.value):null;
+  }catch(e){return null;}
+}
+
+function parseDate(str){
+  // "23/03/2026" → Date
+  if(!str)return null;
+  const p=str.split('/');
+  if(p.length===3)return new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]),12,0,0);
+  return null;
+}
+
+function buildAllDays(){
+  // Unisci tutti i giorni unici da soul e bout
+  const map={};
+  [soulData,boutData].forEach(ds=>{
+    if(!ds||!ds.giorni)return;
+    ds.giorni.forEach(g=>{
+      if(!map[g.data])map[g.data]={data:g.data,label:g.label};
+    });
+  });
+  allDays=Object.values(map).sort((a,b)=>{
+    const da=parseDate(a.data),db=parseDate(b.data);
+    return da-db;
+  });
+}
+
+function findTodayIdx(){
+  const today=new Date();today.setHours(0,0,0,0);
+  let idx=allDays.findIndex(d=>{
+    const dd=parseDate(d.data);
+    if(!dd)return false;
+    dd.setHours(0,0,0,0);
+    return dd.getTime()===today.getTime();
+  });
+  if(idx===-1){
+    // Trova il giorno più vicino nel futuro o l'ultimo
+    const now=new Date();now.setHours(0,0,0,0);
+    idx=allDays.findIndex(d=>{const dd=parseDate(d.data);dd&&dd.setHours(0,0,0,0);return dd>=now;});
+    if(idx===-1)idx=allDays.length-1;
+  }
+  return Math.max(0,idx);
+}
+
+function changeDay(dir){
+  currentIdx=Math.max(0,Math.min(allDays.length-1,currentIdx+dir));
+  // Salva in sessionStorage
+  try{sessionStorage.setItem('hk_day_idx',currentIdx);}catch(e){}
+  renderDay();
+}
+
+function renderDay(){
+  if(!allDays.length){
+    document.getElementById('mainContent').innerHTML=`
+      <div class="no-data"><div class="no-data-icon">📋</div>Nessun dato disponibile.<br>Il responsabile non ha ancora caricato i report.</div>`;
+    return;
+  }
+  const day=allDays[currentIdx];
+  const today=new Date();today.setHours(0,0,0,0);
+  const dayDate=parseDate(day.data);dayDate&&dayDate.setHours(0,0,0,0);
+  const isToday=dayDate&&dayDate.getTime()===today.getTime();
+  const isPast=dayDate&&dayDate<today;
+
+  // Aggiorna navigatore
+  document.getElementById('navDayMain').textContent=day.label;
+  document.getElementById('navDaySub').textContent=isToday?'Oggi':isPast?'Passato':'Prossimo';
+
+  let html='';
+  if(isToday)html+=`<div class="today-badge">📅 OGGI</div>`;
+
+  let totArrivi=0,totFermate=0,totPartenze=0;
+
+  // SoulArt
+  const soulDay=soulData?.giorni?.find(g=>g.data===day.data);
+  html+=`<div class="struttura-title">🏨 SoulArt Hotel</div>`;
+  if(soulDay){
+    totArrivi+=soulDay.arrivi;totFermate+=soulDay.fermate;totPartenze+=soulDay.partenze;
+    html+=renderKpi(soulDay);
+  } else {
+    html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
+  }
+
+  // Boutique
+  const boutDay=boutData?.giorni?.find(g=>g.data===day.data);
+  html+=`<div class="struttura-title">🏨 Boutique Hotel</div>`;
+  if(boutDay){
+    totArrivi+=boutDay.arrivi;totFermate+=boutDay.fermate;totPartenze+=boutDay.partenze;
+    html+=renderKpi(boutDay);
+  } else {
+    html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
+  }
+
+  // Totale giorno se entrambe le strutture hanno dati
+  if(soulDay&&boutDay){
+    html+=`<div class="day-total">
+      <div class="day-total-title">Totale giorno — entrambe le strutture</div>
+      <div class="day-total-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="day-total-item">
+          <div class="day-total-val" style="color:#003580;">${totFermate}</div>
+          <div class="day-total-lbl">Fermate</div>
+        </div>
+        <div class="day-total-item">
+          <div class="day-total-val" style="color:#003580;">${totPartenze}</div>
+          <div class="day-total-lbl">Partenze</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Preview prossimi 2 giorni
+  const nextDays=allDays.slice(currentIdx+1,currentIdx+3);
+  if(nextDays.length){
+    html+=`<div class="preview-title">Prossimi giorni</div>`;
+    nextDays.forEach(nd=>{
+      const sd=soulData&&soulData.giorni?soulData.giorni.find(g=>g.data===nd.data):null;
+      const bd=boutData&&boutData.giorni?boutData.giorni.find(g=>g.data===nd.data):null;
+      html+=`<div class="preview-card"><div class="preview-day">${nd.label}</div>`;
+      // SoulArt
+      html+=`<div class="preview-struttura">🏨 SoulArt Hotel</div>`;
+      if(sd){
+        const t=sd.fermate+sd.partenze;
+        const sc=t>=30?'#003580':t>=20?'#003580':'#003580';
+        html+=`<div class="preview-row-3">
+          <div class="preview-item"><div class="preview-val" style="color:#003580;">${sd.fermate}</div><div class="preview-lbl">Fermate</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:#003580;">${sd.partenze}</div><div class="preview-lbl">Partenze</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:#003580;">${t}</div><div class="preview-lbl">Totale</div></div>
+        </div>`;
+      } else {
+        html+=`<div style="font-size:12px;color:var(--text-dim);padding:4px 0 6px;">Nessun dato</div>`;
+      }
+      // Boutique
+      html+=`<div class="preview-struttura" style="margin-top:8px;">🏨 Boutique Hotel</div>`;
+      if(bd){
+        const t=bd.fermate+bd.partenze;
+        const sc=t>=30?'#003580':t>=20?'#003580':'#003580';
+        html+=`<div class="preview-row-3">
+          <div class="preview-item"><div class="preview-val" style="color:#003580;">${bd.fermate}</div><div class="preview-lbl">Fermate</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:#003580;">${bd.partenze}</div><div class="preview-lbl">Partenze</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:#003580;">${t}</div><div class="preview-lbl">Totale</div></div>
+        </div>`;
+      } else {
+        html+=`<div style="font-size:12px;color:var(--text-dim);padding:4px 0;">Nessun dato</div>`;
+      }
+      html+=`</div>`;
+    });
+  }
+
+  // Ora aggiornamento
+  const now=new Date();
+  const GIORNI_IT=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  const MESI_IT=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  const updateStr=GIORNI_IT[now.getDay()]+' '+now.getDate()+' '+MESI_IT[now.getMonth()]+' ore '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  html+=`<div class="update-row">Aggiornato: ${updateStr} · <a href="javascript:loadAll()">Aggiorna ora</a></div>`;
+
+  document.getElementById('mainContent').innerHTML=html;
+}
+
+function renderKpi(d){
+  return`<div class="kpi-grid" style="grid-template-columns:1fr 1fr;">
+    <div class="kpi-card fermate">
+      <div class="kpi-val fermate">${d.fermate}</div>
+      <div class="kpi-lbl">Fermate</div>
+    </div>
+    <div class="kpi-card partenze">
+      <div class="kpi-val partenze">${d.partenze}</div>
+      <div class="kpi-lbl">Partenze</div>
+    </div>
+  </div>`;
+}
+
+async function loadAll(){
+  document.getElementById('mainContent').innerHTML=`<div class="loading"><div class="spinner"></div>Caricamento...</div>`;
+  [soulData,boutData]=await Promise.all([fetchKV('soul'),fetchKV('bout')]);
+  // Salva in localStorage per persistenza
+  try{if(soulData)localStorage.setItem('hk_soul_cache',JSON.stringify(soulData));}catch(e){}
+  try{if(boutData)localStorage.setItem('hk_bout_cache',JSON.stringify(boutData));}catch(e){}
+  buildAllDays();
+  // Ripristina giorno selezionato o vai a oggi
+  try{
+    const saved=sessionStorage.getItem('hk_day_idx');
+    currentIdx=saved!==null?Math.min(parseInt(saved),allDays.length-1):findTodayIdx();
+  }catch(e){currentIdx=findTodayIdx();}
+  renderDay();
+}
+
+// Carica prima da cache locale poi aggiorna dal cloud
+try{
+  const sc=localStorage.getItem('hk_soul_cache');
+  const bc=localStorage.getItem('hk_bout_cache');
+  if(sc)soulData=JSON.parse(sc);
+  if(bc)boutData=JSON.parse(bc);
+  if(soulData||boutData){
+    buildAllDays();
+    try{
+      const saved=sessionStorage.getItem('hk_day_idx');
+      currentIdx=saved!==null?Math.min(parseInt(saved),allDays.length-1):findTodayIdx();
+    }catch(e){currentIdx=findTodayIdx();}
+    renderDay();
+  }
+}catch(e){}
+// Poi aggiorna dal cloud in background
+loadAll();
+// Auto-refresh ogni 10 minuti
+setInterval(loadAll,10*60*1000);
+</script>
+</body>
+</html>
