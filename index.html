@@ -2874,7 +2874,7 @@ document.addEventListener('click',()=>{
         const restored={giorni:parsed.map(g=>{const d=new Date(g.date);return{...g,date:new Date(d.getFullYear(),d.getMonth(),d.getDate(),12,0,0)};})};        
         loadWeekData(restored);
         const range=restored.giorni[0].label+' – '+restored.giorni[restored.giorni.length-1].label;
-        ucSetState('turno','loaded',range);
+        ucSetState('turno','loaded',range,true);
         if(parsed._ts)restoreUploadTs('turnoTs',parsed._ts);else loadStoredTs('turnoTs');
         // Forza overview alla data odierna dopo un tick
         setTimeout(()=>{
@@ -2897,7 +2897,7 @@ document.addEventListener('click',()=>{
         arriviData=JSON.parse(saved);
         arriviData.arrivi=fixArriviStruttura(arriviData.arrivi);
         arriviUpdateKpi();
-        ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi');
+        ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi',true);
         document.getElementById('arriviLoadedDate').textContent=arriviData.data;
         if(arriviData._ts)restoreUploadTs('arriviTs',arriviData._ts);else loadStoredTs('arriviTs');
       }
