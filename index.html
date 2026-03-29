@@ -343,6 +343,15 @@ select.form-input option{background:var(--surface2);color:var(--text);}
 .rev-btn-copy.copied{border-color:var(--green);color:var(--green);background:var(--green-bg);}
 .rev-gen-spinner{width:11px;height:11px;border:1.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
 .rev-char-count{font-size:9px;color:var(--text-dim);margin-left:auto;}
+.rev-btn-translate{background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:5px;padding:5px 12px;font-size:var(--fs-xs);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;transition:all .15s;margin-top:6px;display:inline-block;}
+.rev-btn-translate:hover{border-color:var(--accent);color:var(--accent);}
+.rev-lang-badge{font-size:var(--fs-xxs);padding:2px 8px;border-radius:8px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);margin-left:4px;font-weight:500;}
+.rev-pagination{display:flex;align-items:center;justify-content:center;gap:8px;padding:16px 0 4px;}
+.rev-pg-btn{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:5px 14px;font-size:var(--fs-xs);color:var(--text);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;transition:background .12s;}
+.rev-pg-btn:hover:not(:disabled){background:var(--accent);color:#fff;border-color:var(--accent);}
+.rev-pg-btn:disabled{opacity:.35;cursor:default;}
+.rev-pg-info{font-size:var(--fs-xs);color:var(--text-dim);}
+#backToTop{position:fixed;bottom:24px;right:24px;background:var(--accent);color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:16px;cursor:pointer;display:none;z-index:500;box-shadow:0 2px 10px rgba(0,0,0,.25);transition:opacity .2s;line-height:38px;text-align:center;padding:0;}
 .pul-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:6px;}
 .pul-stat{background:var(--surface);border:1px solid var(--border-light);border-radius:5px;padding:5px 4px;text-align:center;}
 .pul-stat-val{font-size:15px;font-weight:500;line-height:1;}
@@ -977,18 +986,18 @@ select.form-input option{background:var(--surface2);color:var(--text);}
             </div>
           </div>
           <div class="rev-filter-bar">
-            <button class="rev-filter-btn active" onclick="revFilter('sa','all',this)">Tutte</button>
-            <button class="rev-filter-btn" onclick="revFilter('sa','hi',this)">≥ 9</button>
-            <button class="rev-filter-btn" onclick="revFilter('sa','mid',this)">7–9</button>
-            <button class="rev-filter-btn" onclick="revFilter('sa','lo',this)">&lt; 7</button>
-            <button class="rev-filter-btn" onclick="revFilter('sa','noreply',this)">Senza risposta</button>
+            <button class="rev-filter-btn active" id="revFlt-sa-all" onclick="revToggleFilter('sa','all')">Tutte</button>
+            <button class="rev-filter-btn" id="revFlt-sa-hi" onclick="revToggleFilter('sa','hi')">≥ 9</button>
+            <button class="rev-filter-btn" id="revFlt-sa-mid" onclick="revToggleFilter('sa','mid')">7–9</button>
+            <button class="rev-filter-btn" id="revFlt-sa-lo" onclick="revToggleFilter('sa','lo')">&lt; 7</button>
+            <button class="rev-filter-btn" id="revFlt-sa-noreply" onclick="revToggleFilter('sa','noreply')">Senza risposta</button>
             <select class="rev-sort" onchange="revSort('sa',this.value)">
               <option value="date_desc">Più recenti</option>
               <option value="date_asc">Meno recenti</option>
               <option value="score_desc">Score ↓</option>
               <option value="score_asc">Score ↑</option>
             </select>
-            <input type="search" placeholder="Cerca ospite..." oninput="revSearch('sa',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
+            <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('sa',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
           <div class="rev-list" id="revList-sa"></div>
         </div>
@@ -1035,18 +1044,18 @@ select.form-input option{background:var(--surface2);color:var(--text);}
             </div>
           </div>
           <div class="rev-filter-bar">
-            <button class="rev-filter-btn active" onclick="revFilter('bh','all',this)">Tutte</button>
-            <button class="rev-filter-btn" onclick="revFilter('bh','hi',this)">≥ 9</button>
-            <button class="rev-filter-btn" onclick="revFilter('bh','mid',this)">7–9</button>
-            <button class="rev-filter-btn" onclick="revFilter('bh','lo',this)">&lt; 7</button>
-            <button class="rev-filter-btn" onclick="revFilter('bh','noreply',this)">Senza risposta</button>
+            <button class="rev-filter-btn active" id="revFlt-bh-all" onclick="revToggleFilter('bh','all')">Tutte</button>
+            <button class="rev-filter-btn" id="revFlt-bh-hi" onclick="revToggleFilter('bh','hi')">≥ 9</button>
+            <button class="rev-filter-btn" id="revFlt-bh-mid" onclick="revToggleFilter('bh','mid')">7–9</button>
+            <button class="rev-filter-btn" id="revFlt-bh-lo" onclick="revToggleFilter('bh','lo')">&lt; 7</button>
+            <button class="rev-filter-btn" id="revFlt-bh-noreply" onclick="revToggleFilter('bh','noreply')">Senza risposta</button>
             <select class="rev-sort" onchange="revSort('bh',this.value)">
               <option value="date_desc">Più recenti</option>
               <option value="date_asc">Meno recenti</option>
               <option value="score_desc">Score ↓</option>
               <option value="score_asc">Score ↑</option>
             </select>
-            <input type="search" placeholder="Cerca ospite..." oninput="revSearch('bh',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
+            <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('bh',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
           <div class="rev-list" id="revList-bh"></div>
         </div>
@@ -1105,18 +1114,18 @@ select.form-input option{background:var(--surface2);color:var(--text);}
             </div>
           </div>
           <div class="rev-filter-bar">
-            <button class="rev-filter-btn active" onclick="revFilter('sl','all',this)">Tutte</button>
-            <button class="rev-filter-btn" onclick="revFilter('sl','hi',this)">≥ 9</button>
-            <button class="rev-filter-btn" onclick="revFilter('sl','mid',this)">7–9</button>
-            <button class="rev-filter-btn" onclick="revFilter('sl','lo',this)">&lt; 7</button>
-            <button class="rev-filter-btn" onclick="revFilter('sl','noreply',this)">Senza risposta</button>
+            <button class="rev-filter-btn active" id="revFlt-sl-all" onclick="revToggleFilter('sl','all')">Tutte</button>
+            <button class="rev-filter-btn" id="revFlt-sl-hi" onclick="revToggleFilter('sl','hi')">≥ 9</button>
+            <button class="rev-filter-btn" id="revFlt-sl-mid" onclick="revToggleFilter('sl','mid')">7–9</button>
+            <button class="rev-filter-btn" id="revFlt-sl-lo" onclick="revToggleFilter('sl','lo')">&lt; 7</button>
+            <button class="rev-filter-btn" id="revFlt-sl-noreply" onclick="revToggleFilter('sl','noreply')">Senza risposta</button>
             <select class="rev-sort" onchange="revSort('sl',this.value)">
               <option value="date_desc">Più recenti</option>
               <option value="date_asc">Meno recenti</option>
               <option value="score_desc">Score ↓</option>
               <option value="score_asc">Score ↑</option>
             </select>
-            <input type="search" placeholder="Cerca ospite..." oninput="revSearch('sl',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
+            <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('sl',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
           <div class="rev-list" id="revList-sl"></div>
         </div>
@@ -1163,18 +1172,18 @@ select.form-input option{background:var(--surface2);color:var(--text);}
             </div>
           </div>
           <div class="rev-filter-bar">
-            <button class="rev-filter-btn active" onclick="revFilter('pr','all',this)">Tutte</button>
-            <button class="rev-filter-btn" onclick="revFilter('pr','hi',this)">≥ 9</button>
-            <button class="rev-filter-btn" onclick="revFilter('pr','mid',this)">7–9</button>
-            <button class="rev-filter-btn" onclick="revFilter('pr','lo',this)">&lt; 7</button>
-            <button class="rev-filter-btn" onclick="revFilter('pr','noreply',this)">Senza risposta</button>
+            <button class="rev-filter-btn active" id="revFlt-pr-all" onclick="revToggleFilter('pr','all')">Tutte</button>
+            <button class="rev-filter-btn" id="revFlt-pr-hi" onclick="revToggleFilter('pr','hi')">≥ 9</button>
+            <button class="rev-filter-btn" id="revFlt-pr-mid" onclick="revToggleFilter('pr','mid')">7–9</button>
+            <button class="rev-filter-btn" id="revFlt-pr-lo" onclick="revToggleFilter('pr','lo')">&lt; 7</button>
+            <button class="rev-filter-btn" id="revFlt-pr-noreply" onclick="revToggleFilter('pr','noreply')">Senza risposta</button>
             <select class="rev-sort" onchange="revSort('pr',this.value)">
               <option value="date_desc">Più recenti</option>
               <option value="date_asc">Meno recenti</option>
               <option value="score_desc">Score ↓</option>
               <option value="score_asc">Score ↑</option>
             </select>
-            <input type="search" placeholder="Cerca ospite..." oninput="revSearch('pr',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
+            <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('pr',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
           <div class="rev-list" id="revList-pr"></div>
         </div>
@@ -1221,18 +1230,18 @@ select.form-input option{background:var(--surface2);color:var(--text);}
             </div>
           </div>
           <div class="rev-filter-bar">
-            <button class="rev-filter-btn active" onclick="revFilter('ms','all',this)">Tutte</button>
-            <button class="rev-filter-btn" onclick="revFilter('ms','hi',this)">≥ 9</button>
-            <button class="rev-filter-btn" onclick="revFilter('ms','mid',this)">7–9</button>
-            <button class="rev-filter-btn" onclick="revFilter('ms','lo',this)">&lt; 7</button>
-            <button class="rev-filter-btn" onclick="revFilter('ms','noreply',this)">Senza risposta</button>
+            <button class="rev-filter-btn active" id="revFlt-ms-all" onclick="revToggleFilter('ms','all')">Tutte</button>
+            <button class="rev-filter-btn" id="revFlt-ms-hi" onclick="revToggleFilter('ms','hi')">≥ 9</button>
+            <button class="rev-filter-btn" id="revFlt-ms-mid" onclick="revToggleFilter('ms','mid')">7–9</button>
+            <button class="rev-filter-btn" id="revFlt-ms-lo" onclick="revToggleFilter('ms','lo')">&lt; 7</button>
+            <button class="rev-filter-btn" id="revFlt-ms-noreply" onclick="revToggleFilter('ms','noreply')">Senza risposta</button>
             <select class="rev-sort" onchange="revSort('ms',this.value)">
               <option value="date_desc">Più recenti</option>
               <option value="date_asc">Meno recenti</option>
               <option value="score_desc">Score ↓</option>
               <option value="score_asc">Score ↑</option>
             </select>
-            <input type="search" placeholder="Cerca ospite..." oninput="revSearch('ms',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
+            <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('ms',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
           <div class="rev-list" id="revList-ms"></div>
         </div>
@@ -1279,18 +1288,18 @@ select.form-input option{background:var(--surface2);color:var(--text);}
             </div>
           </div>
           <div class="rev-filter-bar">
-            <button class="rev-filter-btn active" onclick="revFilter('ar','all',this)">Tutte</button>
-            <button class="rev-filter-btn" onclick="revFilter('ar','hi',this)">≥ 9</button>
-            <button class="rev-filter-btn" onclick="revFilter('ar','mid',this)">7–9</button>
-            <button class="rev-filter-btn" onclick="revFilter('ar','lo',this)">&lt; 7</button>
-            <button class="rev-filter-btn" onclick="revFilter('ar','noreply',this)">Senza risposta</button>
+            <button class="rev-filter-btn active" id="revFlt-ar-all" onclick="revToggleFilter('ar','all')">Tutte</button>
+            <button class="rev-filter-btn" id="revFlt-ar-hi" onclick="revToggleFilter('ar','hi')">≥ 9</button>
+            <button class="rev-filter-btn" id="revFlt-ar-mid" onclick="revToggleFilter('ar','mid')">7–9</button>
+            <button class="rev-filter-btn" id="revFlt-ar-lo" onclick="revToggleFilter('ar','lo')">&lt; 7</button>
+            <button class="rev-filter-btn" id="revFlt-ar-noreply" onclick="revToggleFilter('ar','noreply')">Senza risposta</button>
             <select class="rev-sort" onchange="revSort('ar',this.value)">
               <option value="date_desc">Più recenti</option>
               <option value="date_asc">Meno recenti</option>
               <option value="score_desc">Score ↓</option>
               <option value="score_asc">Score ↑</option>
             </select>
-            <input type="search" placeholder="Cerca ospite..." oninput="revSearch('ar',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
+            <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('ar',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
           <div class="rev-list" id="revList-ar"></div>
         </div>
@@ -1337,18 +1346,18 @@ select.form-input option{background:var(--surface2);color:var(--text);}
             </div>
           </div>
           <div class="rev-filter-bar">
-            <button class="rev-filter-btn active" onclick="revFilter('sb','all',this)">Tutte</button>
-            <button class="rev-filter-btn" onclick="revFilter('sb','hi',this)">≥ 9</button>
-            <button class="rev-filter-btn" onclick="revFilter('sb','mid',this)">7–9</button>
-            <button class="rev-filter-btn" onclick="revFilter('sb','lo',this)">&lt; 7</button>
-            <button class="rev-filter-btn" onclick="revFilter('sb','noreply',this)">Senza risposta</button>
+            <button class="rev-filter-btn active" id="revFlt-sb-all" onclick="revToggleFilter('sb','all')">Tutte</button>
+            <button class="rev-filter-btn" id="revFlt-sb-hi" onclick="revToggleFilter('sb','hi')">≥ 9</button>
+            <button class="rev-filter-btn" id="revFlt-sb-mid" onclick="revToggleFilter('sb','mid')">7–9</button>
+            <button class="rev-filter-btn" id="revFlt-sb-lo" onclick="revToggleFilter('sb','lo')">&lt; 7</button>
+            <button class="rev-filter-btn" id="revFlt-sb-noreply" onclick="revToggleFilter('sb','noreply')">Senza risposta</button>
             <select class="rev-sort" onchange="revSort('sb',this.value)">
               <option value="date_desc">Più recenti</option>
               <option value="date_asc">Meno recenti</option>
               <option value="score_desc">Score ↓</option>
               <option value="score_asc">Score ↑</option>
             </select>
-            <input type="search" placeholder="Cerca ospite..." oninput="revSearch('sb',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
+            <input type="search" placeholder="Cerca ospite o n° prenotazione..." oninput="revSearch('sb',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
           </div>
           <div class="rev-list" id="revList-sb"></div>
         </div>
@@ -1898,6 +1907,8 @@ function toggleRecGroup(){
   document.getElementById('recGroupItems').classList.toggle('open',recGroupOpen);
 }
 function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id];if(navEl){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navEl.classList.add('active');}
+  try{localStorage.setItem('qm_last_view',id);}catch(e){}
+  document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
   if(id==='miniapp')setTimeout(miniappRender,50);
@@ -2833,6 +2844,10 @@ document.addEventListener('click',()=>{
   document.getElementById('datePopup')?.classList.remove('open');
   document.getElementById('weatherForecast')?.classList.remove('open');
 });
+document.querySelector('.content').addEventListener('scroll',function(){
+  const btn=document.getElementById('backToTop');
+  if(btn)btn.style.display=this.scrollTop>300?'block':'none';
+});
 
 (function(){
   // Sempre data odierna all'avvio — ignora customDate salvata
@@ -2854,7 +2869,7 @@ document.addEventListener('click',()=>{
     }
 
     // Ripristina dati persistenti
-  setTimeout(()=>{
+  setTimeout(async()=>{
     // Rileggi REV_SENT da localStorage (può essere stato aggiornato dalla sync cloud)
     try{const s=localStorage.getItem('qm_rev_sent');if(s)REV_SENT=JSON.parse(s);}catch(e){}
     restoreChecklistState();
@@ -2971,6 +2986,7 @@ document.addEventListener('click',()=>{
           if(!rows.length)continue;
           REV_HOTELS[p].data=rows;
           REV_HOTELS[p].filtered=[...rows];
+          revAutoMarkNoComment(p,rows);
           document.getElementById('revContent-'+p).style.display='block';
           document.getElementById('revUploadZone-'+p).style.display='none';
           // Timestamp upload: prima dal localStorage, poi dal cloud KV
@@ -2989,7 +3005,15 @@ document.addEventListener('click',()=>{
         }catch(e){}
       }
     }
-    restoreReviews();
+    await restoreReviews();
+    // Ripristina ultima vista dopo che i dati sono pronti
+    try{
+      const _lv=localStorage.getItem('qm_last_view');
+      if(_lv&&_lv!=='overview'&&document.getElementById('view-'+_lv)){
+        const _ne=document.querySelector('[onclick*="\''+_lv+'\'"]');
+        setView(_lv,_ne);
+      }
+    }catch(e){}
   },150);
   })(); // fine async sync
 })();
@@ -3838,13 +3862,13 @@ const REV_CAT_LABELS={'Rapporto qualità/prezzo':'Qualità/prezzo'};
 const catLabel=cat=>REV_CAT_LABELS[cat]||cat;
 const REV_REPLY_STORE={};
 const REV_HOTELS={
-  sa:{name:'SoulArt Hotel',data:[],filtered:[],filter:'all',sort:'date_desc',search:''},
-  bh:{name:'Boutique Hotel',data:[],filtered:[],filter:'all',sort:'date_desc'},
-  sl:{name:'San Liborio',data:[],filtered:[],filter:'all',sort:'date_desc'},
-  pr:{name:'Principe',data:[],filtered:[],filter:'all',sort:'date_desc'},
-  ms:{name:'Mastrangelo',data:[],filtered:[],filter:'all',sort:'date_desc'},
-  ar:{name:'Art Resort',data:[],filtered:[],filter:'all',sort:'date_desc'},
-  sb:{name:'Santa Brigida',data:[],filtered:[],filter:'all',sort:'date_desc'},
+  sa:{name:'SoulArt Hotel',data:[],filtered:[],filters:[],sort:'date_desc',search:'',page:0},
+  bh:{name:'Boutique Hotel',data:[],filtered:[],filters:[],sort:'date_desc',page:0},
+  sl:{name:'San Liborio',data:[],filtered:[],filters:[],sort:'date_desc',page:0},
+  pr:{name:'Principe',data:[],filtered:[],filters:[],sort:'date_desc',page:0},
+  ms:{name:'Mastrangelo',data:[],filtered:[],filters:[],sort:'date_desc',page:0},
+  ar:{name:'Art Resort',data:[],filtered:[],filters:[],sort:'date_desc',page:0},
+  sb:{name:'Santa Brigida',data:[],filtered:[],filters:[],sort:'date_desc',page:0},
 };
 
 // Init upload per entrambi gli hotel
@@ -3858,6 +3882,26 @@ const REV_HOTELS={
   inp.addEventListener('change',e=>{if(e.target.files[0])revHandleFile(p,e.target.files[0]);});
 });
 
+function revAutoMarkNoComment(p,rows){
+  // Recensioni senza alcun commento → non necessaria (Booking non consente risposta)
+  let changed=false;
+  rows.forEach(r=>{
+    const hasComment=!!(
+      (r['Recensione positiva']&&r['Recensione positiva'].trim())||
+      (r['Recensione negativa']&&r['Recensione negativa'].trim())||
+      (r['Titolo della recensione']&&r['Titolo della recensione'].trim())
+    );
+    if(!hasComment&&!r._hasReply){
+      const key=revUniqueKey(p,r);
+      if(REV_SENT[key]!=='not_needed'){REV_SENT[key]='not_needed';changed=true;}
+    }
+  });
+  if(changed){
+    try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
+    try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
+  }
+}
+
 function revHandleFile(p,file){
   document.getElementById('revProcessing-'+p).style.display='flex';
   document.getElementById('revUploadZone-'+p).style.display='none';
@@ -3870,6 +3914,7 @@ function revHandleFile(p,file){
       if(!rows.length){revShowError(p,'Nessuna recensione trovata nel file.');return;}
       REV_HOTELS[p].data=rows;
       REV_HOTELS[p].filtered=[...rows];
+      revAutoMarkNoComment(p,rows);
       document.getElementById('revProcessing-'+p).style.display='none';
       document.getElementById('revContent-'+p).style.display='block';
       revRenderStats(p);
@@ -4124,7 +4169,7 @@ function revRenderExpiring(p){
     return 300;
   }
 
-  const ceilScoreAtt=scoreAttuale?Math.ceil(scoreAttuale*10)/10:null;
+  const ceilScoreAtt=scoreAttuale?Math.round(scoreAttuale*10)/10:null;
   const needed10=scoreAfterBoth&&scoreAttuale?neededToCompensate(afterBoth,ceilScoreAtt,10):null;
   const needed9=scoreAfterBoth&&scoreAttuale?neededToCompensate(afterBoth,ceilScoreAtt,9):null;
 
@@ -4166,8 +4211,8 @@ function revRenderExpiring(p){
         <span style="font-size:11px;" title="${sem.label}">${sem.icon} ${sem.label}</span>`;
 
     if(afterScore!==null&&scoreAttuale!==null){
-      const dScoreAtt=Math.ceil(scoreAttuale*10)/10;
-      const dScoreAft=Math.ceil(afterScore*10)/10;
+      const dScoreAtt=Math.round(scoreAttuale*10)/10;
+      const dScoreAft=Math.round(afterScore*10)/10;
       const delta=dScoreAft-dScoreAtt;
       const dc=delta>=0?'var(--green)':'var(--red)';
       html+=`<span style="margin-left:auto;font-size:var(--fs-xs);font-weight:700;color:${dc};">${dScoreAtt.toFixed(1)} → ${dScoreAft.toFixed(1)} <span style="font-size:10px;">(${delta>=0?'+':''}${delta.toFixed(1)})</span></span>`;
@@ -4207,7 +4252,7 @@ function revRenderExpiring(p){
 
   // ── Header score attuale vs proiezione ──
   const hasExp=allExpiring.length>0;
-  const proiezioneDelta=scoreAfterBoth!==null&&scoreAttuale!==null?(Math.ceil(scoreAfterBoth*10)/10)-(Math.ceil(scoreAttuale*10)/10):null;
+  const proiezioneDelta=scoreAfterBoth!==null&&scoreAttuale!==null?(Math.round(scoreAfterBoth*10)/10)-(Math.round(scoreAttuale*10)/10):null;
   const proiezioneColor=proiezioneDelta===null?'var(--text-dim)':proiezioneDelta>=0?'var(--green)':'var(--red)';
 
   let html=`<div class="panel">
@@ -4222,12 +4267,12 @@ function revRenderExpiring(p){
     html+=`<div style="display:flex;align-items:center;gap:16px;background:var(--surface2);border-radius:8px;padding:12px 16px;margin-bottom:14px;flex-wrap:wrap;">
       <div style="text-align:center;">
         <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Score attuale</div>
-        <div style="font-size:24px;font-weight:700;color:var(--accent);">${(Math.ceil(scoreAttuale*10)/10).toFixed(1)}</div>
+        <div style="font-size:24px;font-weight:700;color:var(--accent);">${(Math.round(scoreAttuale*10)/10).toFixed(1)}</div>
       </div>
       ${hasExp?`<div style="font-size:20px;color:var(--text-dim);">→</div>
       <div style="text-align:center;">
         <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Dopo scadenze</div>
-        <div style="font-size:24px;font-weight:700;color:${proiezioneColor};">${scoreAfterBoth!==null?(Math.ceil(scoreAfterBoth*10)/10).toFixed(1):'—'}</div>
+        <div style="font-size:24px;font-weight:700;color:${proiezioneColor};">${scoreAfterBoth!==null?(Math.round(scoreAfterBoth*10)/10).toFixed(1):'—'}</div>
       </div>
       <div style="font-size:18px;font-weight:700;color:${proiezioneColor};">${proiezioneDelta!==null?(proiezioneDelta>=0?'▲ +':'▼ ')+proiezioneDelta.toFixed(2):''}</div>`:''}
     </div>`;
@@ -4242,7 +4287,7 @@ function revRenderExpiring(p){
     // ── Simulatore compensazione ──
     if(needed10!==null||needed9!==null){
       html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:8px;padding:12px 16px;margin-top:4px;">
-        <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">🎯 Per mantenere lo score ${scoreAttuale!==null?(Math.ceil(scoreAttuale*10)/10).toFixed(1):''} dopo le scadenze</div>
+        <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">🎯 Per mantenere lo score ${scoreAttuale!==null?(Math.round(scoreAttuale*10)/10).toFixed(1):''} dopo le scadenze</div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;">
           ${needed10!==null?`<div style="font-size:var(--fs-sm);"><span style="font-size:22px;font-weight:700;color:var(--accent);">${needed10===300?'300+':needed10}</span> <span style="color:var(--text-dim);">recensioni con <strong>10</strong></span></div>`:''}
           ${needed9!==null?`<div style="font-size:var(--fs-sm);"><span style="font-size:22px;font-weight:700;color:var(--text-muted);">${needed9===300?'300+':needed9}</span> <span style="color:var(--text-dim);">recensioni con <strong>9</strong></span></div>`:''}
@@ -4288,9 +4333,9 @@ function revRenderStats(p){
     return wt?ws/wt:null;
   })():null;
 
-  const noReply=data.filter(r=>!r._hasReply).length;
+  const noReply=data.filter(r=>!r._hasReply && REV_SENT[revUniqueKey(p,r)]!=='not_needed').length;
   const g=id=>document.getElementById(id+'-'+p);
-  g('rev-avg').textContent=(Math.ceil(avgWeighted*10)/10).toFixed(1);
+  g('rev-avg').textContent=(Math.round(avgWeighted*10)/10).toFixed(1);
   g('rev-avg-sub').textContent='ponderato Booking 85/10/5 · media semplice '+avgSimple.toFixed(1);
   g('rev-count').textContent=data.length;
   g('rev-count-sub').textContent=data.length+' recensioni importate';
@@ -4324,7 +4369,7 @@ function revRenderStats(p){
   const targetTitle=document.getElementById('rev-target-title-'+p);
   const targetDetail=document.getElementById('rev-target-detail-'+p);
   if(targetEl&&targetTitle&&targetDetail){
-    const displayScore=Math.ceil(avgWeighted*10)/10; // score visualizzato (ceil)
+    const displayScore=Math.round(avgWeighted*10)/10; // score visualizzato (ceil)
     const target=Math.round((displayScore+0.1)*10)/10; // prossimo decimo sopra il display
 
     function simAvgWithN(n, scoreVal){
@@ -4371,20 +4416,37 @@ function revRenderStats(p){
   }
 }
 
+function revSetPage(p,page){
+  const h=REV_HOTELS[p];
+  const total=Math.ceil(h.filtered.length/10);
+  h.page=Math.max(0,Math.min(page,total-1));
+  revRenderList(p);
+  document.querySelector('.content').scrollTo({top:0,behavior:'smooth'});
+}
 function revRenderList(p){
   const data=REV_HOTELS[p].data;
   const filtered=REV_HOTELS[p].filtered;
+  const PAGE_SIZE=10;
+  const page=REV_HOTELS[p].page||0;
+  const totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
+  const pageData=filtered.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE);
   const list=document.getElementById('revList-'+p);
   if(!filtered.length){list.innerHTML=`<div style="text-align:center;padding:30px;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna recensione con i filtri selezionati</div>`;return;}
-  list.innerHTML=filtered.map(r=>{
+  list.innerHTML=pageData.map(r=>{
     const gi=data.indexOf(r);
     const uid=p+'-'+gi;
     const s=r._score;
     const cls=s>=9?'rev-score-hi':s>=7?'rev-score-mid':'rev-score-lo';
     const d=r._date;
     const dateStr=isNaN(d)?'—':(d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear());
+    const bookingNum=r['Numero di prenotazione']||r['Reservation number']||'';
+    const bookingBadge=bookingNum?`<span style="font-size:var(--fs-xs);color:var(--text-muted);margin-left:8px;letter-spacing:.01em;font-weight:500;"># ${bookingNum}</span>`:'';
+
     const pos=r['Recensione positiva']?`<div class="rev-pos">+ ${r['Recensione positiva']}</div>`:'';
     const neg=r['Recensione negativa']?`<div class="rev-neg">− ${r['Recensione negativa']}</div>`:'';
+    const italian=revIsItalian(r);
+    const langBadge=!italian?`<span class="rev-lang-badge">🌐 Non italiano</span>`:'';
+    const translateBtn=!italian?`<button class="rev-btn-translate" id="rtb-${uid}" onclick="revTranslate('${p}',${gi})">🌐 Traduci in italiano</button>`:'';
     const replyText=r['Risposta della struttura']||'';
     const replyShort=replyText.length>300;
     REV_REPLY_STORE[uid]=replyText;
@@ -4409,23 +4471,63 @@ function revRenderList(p){
         <div class="rev-reply-actions">
           <button class="rev-btn-generate" id="rb-${uid}" onclick="revGenerateReply('${p}',${gi})">✦ Genera risposta</button>
           <button class="rev-btn-copy" id="rc-${uid}" onclick="revCopyReply('${uid}')">Copia</button>
-          <button onclick="revMarkSent('${p}',${gi})" style="background:${isSent?'#d4edda':'var(--surface2)'};color:${isSent?'#1a7a3a':'var(--text-muted)'};border:1px solid ${isSent?'#a3d9b1':'var(--border)'};border-radius:5px;padding:4px 10px;font-size:10px;cursor:pointer;" id="rs-${uid}">${isSent?'✓ Inviata':'Segna inviata'}</button>
-          <button onclick="revMarkNotNeeded('${p}',${gi})" style="background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:10px;cursor:pointer;" title="Non è possibile rispondere a questa recensione">Non necessaria</button>
+          <button onclick="revMarkSent('${p}',${gi})" style="background:${isSent?'#d4edda':'var(--surface2)'};color:${isSent?'#1a7a3a':'var(--text-muted)'};border:1px solid ${isSent?'#a3d9b1':'var(--border)'};border-radius:5px;padding:6px 13px;font-size:var(--fs-xs);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;" id="rs-${uid}">${isSent?'✓ Inviata':'Segna inviata'}</button>
+          <button onclick="revMarkNotNeeded('${p}',${gi})" style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:5px;padding:6px 13px;font-size:var(--fs-xs);cursor:pointer;font-family:'Helvetice Neue',Arial,sans-serif;" title="Non è possibile rispondere a questa recensione">Non necessaria</button>
           <span class="rev-char-count" id="rcc-${uid}"></span>
         </div>
       </div>`:(isSent||isNotNeeded)?`<div style="margin-top:6px;">${sentBadge}</div>`:'';
     return`<div class="rev-card">
-      <div class="rev-card-header"><span class="rev-score-badge ${cls}">${s.toFixed(1)}</span><span class="rev-guest">${r["Nome dell'ospite"]||'Ospite anonimo'}</span>${noReplyBadge}${sentBadge}<span class="rev-date">${dateStr}</span></div>
-      ${r['Titolo della recensione']?`<div class="rev-title">${r['Titolo della recensione']}</div>`:''}
+      <div class="rev-card-header"><span class="rev-score-badge ${cls}">${s.toFixed(1)}</span><span class="rev-guest">${r["Nome dell'ospite"]||'Ospite anonimo'}</span>${noReplyBadge}${sentBadge}${langBadge}<span class="rev-date">${dateStr}</span>${bookingBadge}</div>
+      ${r['Titolo della recensione']?`<div class="rev-title"><span id="revTitleTxt-${uid}">${r['Titolo della recensione']}</span></div>`:''}
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">${catMini}</div>
-      <div class="rev-body">${pos}${neg}</div>${reply}${replyPanel}
+      <div class="rev-body" id="revBody-${uid}">${pos}${neg}</div>${translateBtn}${reply}${replyPanel}
     </div>`;
-  }).join('');
+  }).join('')+(totalPages>1?`<div class="rev-pagination"><button class="rev-pg-btn" onclick="revSetPage('${p}',${page-1})" ${page===0?'disabled':''}>← Prec</button><span class="rev-pg-info">Pagina ${page+1} di ${totalPages} · ${filtered.length} recensioni</span><button class="rev-pg-btn" onclick="revSetPage('${p}',${page+1})" ${page>=totalPages-1?'disabled':''}>Succ →</button></div>`:'');
 }
 
 function revUpdateCharCount(uid){
   const ta=document.getElementById('rt-'+uid),cc=document.getElementById('rcc-'+uid);
   if(ta&&cc)cc.textContent=ta.value.length+' caratteri';
+}
+
+function revIsItalian(r){
+  const txt=(r['Recensione positiva']||'')+(r['Recensione negativa']||'')+(r['Titolo della recensione']||'');
+  if(!txt.trim())return true;
+  // Caratteri impossibili in italiano → non italiano
+  if(/[čšžřěůőűñßąęłśćźďťĺľŕãõæøåœ]/i.test(txt))return false;
+  // Accenti specifici italiani (solo gravi: à è ì ò ù) + parole chiave italiane
+  return /[àèìòùÀÈÌÒÙ]|(\b(?:ottimo|buono|bello|camera|colazione|personale|posizione|pulizia|servizio|soggiorno|consiglio|esperienza|fantastico|eccellente|grazie|molto|tutto|anche|però|questo|questa|erano|abbiamo|siamo|stanza|struttura|personale|bellissimo|purtroppo|davvero)\b)/i.test(txt);
+}
+
+async function revTranslate(p,gi){
+  const r=REV_HOTELS[p].data[gi];if(!r)return;
+  const uid=p+'-'+gi;
+  const btn=document.getElementById('rtb-'+uid);
+  const body=document.getElementById('revBody-'+uid);
+  const titleEl=document.getElementById('revTitleTxt-'+uid);
+  if(!btn||!body)return;
+  btn.disabled=true;btn.innerHTML='<div class="rev-gen-spinner" style="border-top-color:var(--accent);border-color:rgba(0,0,0,.15);"></div> Traduzione…';
+  const testo=[
+    r['Titolo della recensione']?'Titolo: '+r['Titolo della recensione']:'',
+    r['Recensione positiva']?'Positivo: '+r['Recensione positiva']:'',
+    r['Recensione negativa']?'Negativo: '+r['Recensione negativa']:''
+  ].filter(Boolean).join('\n');
+  try{
+    const res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:`Traduci in italiano il testo di questa recensione di hotel. Rispondi SOLO con la traduzione, mantenendo la struttura:\n${r['Titolo della recensione']?'Titolo: [titolo tradotto]\n':''}${r['Recensione positiva']?'Positivo: [testo tradotto]\n':''}${r['Recensione negativa']?'Negativo: [testo tradotto]':''}\n\nTESTO ORIGINALE:\n${testo}`}]})});
+    const data=await res.json();
+    if(data.content&&data.content[0]){
+      const t=data.content[0].text;
+      const posM=t.match(/Positivo:\s*([\s\S]+?)(?=\nNegativo:|$)/);
+      const negM=t.match(/Negativo:\s*([\s\S]+?)$/);
+      const titM=t.match(/Titolo:\s*(.+)/);
+      let html='';
+      if(posM)html+=`<div class="rev-pos">+ ${posM[1].trim()}</div>`;
+      if(negM)html+=`<div class="rev-neg">− ${negM[1].trim()}</div>`;
+      if(html)body.innerHTML=html;
+      if(titM&&titleEl)titleEl.textContent=titM[1].trim();
+      btn.textContent='✓ Tradotto';btn.style.opacity='.5';
+    }else{btn.disabled=false;btn.textContent='🌐 Traduci';}
+  }catch(e){btn.disabled=false;btn.textContent='🌐 Traduci';}
 }
 
 async function revGenerateReply(p,gi){
@@ -4435,8 +4537,7 @@ async function revGenerateReply(p,gi){
   const btn=document.getElementById('rb-'+uid),ta=document.getElementById('rt-'+uid);
   if(!btn||!ta)return;
   btn.disabled=true;btn.innerHTML='<div class="rev-gen-spinner"></div> Generazione…';
-  const reviewText=(r['Recensione positiva']||'')+(r['Recensione negativa']||'')+(r['Titolo della recensione']||'');
-  const isItalian=/[àèéìòùÀÈÉÌÒÙ]|(\b(?:ottimo|buono|bello|hotel|camera|colazione|personale|posizione|pulizia|servizio|soggiorno|consiglio|esperienza|fantastico|eccellente|grazie)\b)/i.test(reviewText);
+  const isItalian=revIsItalian(r);
   const lang=isItalian?'italiano':'inglese';
   const firma=isItalian?'Paolo P. - Quality Manager':'Best regards. Paolo P. - Quality Manager';
   const hotelName=REV_HOTELS[p].name;
@@ -4495,10 +4596,21 @@ function revToggleReply(uid){
   }
 }
 
-function revFilter(p,f,btn){
-  REV_HOTELS[p].filter=f;
-  const bar=document.getElementById('revList-'+p).closest('.view').querySelectorAll('.rev-filter-btn');
-  bar.forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
+function revToggleFilter(p,f){
+  const h=REV_HOTELS[p];
+  if(f==='all'){
+    h.filters=[];
+  } else {
+    const idx=h.filters.indexOf(f);
+    if(idx>=0)h.filters.splice(idx,1);else h.filters.push(f);
+  }
+  // Aggiorna stato bottoni
+  const allBtn=document.getElementById('revFlt-'+p+'-all');
+  if(allBtn)allBtn.classList.toggle('active',h.filters.length===0);
+  ['hi','mid','lo','noreply'].forEach(k=>{
+    const b=document.getElementById('revFlt-'+p+'-'+k);
+    if(b)b.classList.toggle('active',h.filters.includes(k));
+  });
   revApplyFilters(p);
 }
 
@@ -4509,25 +4621,36 @@ function revSearch(p,val){REV_HOTELS[p].search=(val||'').toLowerCase().trim();re
 function revApplyFilters(p){
   const h=REV_HOTELS[p];
   let d=[...h.data];
-  if(h.filter==='hi')d=d.filter(r=>r._score>=9);
-  else if(h.filter==='mid')d=d.filter(r=>r._score>=7&&r._score<9);
-  else if(h.filter==='lo')d=d.filter(r=>r._score<7);
-  else if(h.filter==='noreply'){
+  const fs=h.filters||[];
+  // Filtri score (OR tra quelli selezionati)
+  const scoreFs=fs.filter(f=>['hi','mid','lo'].includes(f));
+  if(scoreFs.length>0){
+    d=d.filter(r=>
+      (scoreFs.includes('hi')&&r._score>=9)||
+      (scoreFs.includes('mid')&&r._score>=7&&r._score<9)||
+      (scoreFs.includes('lo')&&r._score<7)
+    );
+  }
+  // Filtro senza risposta (AND)
+  if(fs.includes('noreply')){
     d=d.filter(r=>{
       const sent=REV_SENT[revUniqueKey(p,r)];
-      return !r._hasReply&&!sent&&sent!==true&&sent!=='not_needed';
+      return !r._hasReply&&sent!==true&&sent!=='not_needed';
     });
   }
-  // Cerca per nome ospite
+  // Cerca per nome ospite o numero prenotazione
   if(h.search){
     const q=h.search;
-    d=d.filter(r=>(r["Nome dell'ospite"]||'').toLowerCase().includes(q));
+    d=d.filter(r=>
+      (r["Nome dell'ospite"]||'').toLowerCase().includes(q)||
+      (r['Numero di prenotazione']||r['Reservation number']||'').toLowerCase().includes(q)
+    );
   }
   if(h.sort==='date_asc')d.sort((a,b)=>a._dateTs-b._dateTs);
   else if(h.sort==='date_desc')d.sort((a,b)=>b._dateTs-a._dateTs);
   else if(h.sort==='score_desc')d.sort((a,b)=>b._score-a._score);
   else if(h.sort==='score_asc')d.sort((a,b)=>a._score-b._score);
-  h.filtered=d;revRenderList(p);
+  h.filtered=d;h.page=0;revRenderList(p);
 }
 
 function revUndoNotNeeded(p,gi){
@@ -4536,7 +4659,7 @@ function revUndoNotNeeded(p,gi){
   delete REV_SENT[key];
   try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
-  revApplyFilters(p);
+  revApplyFilters(p);revRenderStats(p);
 }
 
 function revMarkNotNeeded(p,gi){
@@ -4545,7 +4668,7 @@ function revMarkNotNeeded(p,gi){
   REV_SENT[key]='not_needed';
   try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
-  revApplyFilters(p);
+  revApplyFilters(p);revRenderStats(p);
 }
 
 function revShowTs(p,ts){
@@ -4558,7 +4681,7 @@ function revShowTs(p,ts){
 }
 
 function revReset(p){
-  REV_HOTELS[p].data=[];REV_HOTELS[p].filtered=[];REV_HOTELS[p].filter='all';REV_HOTELS[p].sort='date_desc';
+  REV_HOTELS[p].data=[];REV_HOTELS[p].filtered=[];REV_HOTELS[p].filters=[];REV_HOTELS[p].sort='date_desc';REV_HOTELS[p].page=0;
   document.getElementById('revUploadZone-'+p).style.display='block';
   document.getElementById('revContent-'+p).style.display='none';
   document.getElementById('revFileInput-'+p).value='';
@@ -5387,6 +5510,8 @@ function renderArriviModal(filtStruttura='all', filtTratt='all'){
     <div id="catChartModalBody"></div>
   </div>
 </div>
+
+<button id="backToTop" onclick="document.querySelector('.content').scrollTo({top:0,behavior:'smooth'})" title="Torna su">↑</button>
 
 <!-- Modal Arrivi Oggi -->
 <div id="arriviModal" onclick="closeArriviModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1001;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;">
