@@ -1685,7 +1685,7 @@ function ucToggle(key){
   }
 }
 
-function ucSetState(key,state,sub){
+function ucSetState(key,state,sub,silent){
   const slot=document.getElementById('uc-'+key);
   const subEl=document.getElementById('uc-'+key+'-sub');
   const badge=document.getElementById('uc-'+key+'-badge');
@@ -1694,14 +1694,16 @@ function ucSetState(key,state,sub){
   slot.classList.remove('loaded','loading','error');
   if(state==='loaded'){
     slot.classList.add('loaded');
-    // Fisarmonica: chiudi tutti, apri questo
-    ['turno','arrivi','pul','bkf'].forEach(k=>{
-      const p=document.getElementById('uc-'+k+'-panel');
-      const s=document.getElementById('uc-'+k);
-      if(p){p.classList.remove('open');}
-      if(s){s.classList.remove('open');}
-    });
-    if(panel){panel.classList.add('open');slot.classList.add('open');}
+    if(!silent){
+      // Fisarmonica: chiudi tutti, apri questo
+      ['turno','arrivi','pul','bkf'].forEach(k=>{
+        const p=document.getElementById('uc-'+k+'-panel');
+        const s=document.getElementById('uc-'+k);
+        if(p){p.classList.remove('open');}
+        if(s){s.classList.remove('open');}
+      });
+      if(panel){panel.classList.add('open');slot.classList.add('open');}
+    }
   } else if(state==='loading'){
     slot.classList.add('loading');
   } else if(state==='error'){
@@ -2925,7 +2927,7 @@ document.addEventListener('click',()=>{
     const savedBkf=LS.get('bkfData',null);
     if(savedBkf&&savedBkf.data){
       bkfData=savedBkf.data;bkfActiveDay=savedBkf.activeDay||0;
-      setTimeout(()=>{renderBkfData();bkfLoadOps();if(savedBkf.ts)restoreUploadTs('bkfTs',savedBkf.ts);else loadStoredTs('bkfTs');},150);
+      setTimeout(()=>{renderBkfData(true);bkfLoadOps();if(savedBkf.ts)restoreUploadTs('bkfTs',savedBkf.ts);else loadStoredTs('bkfTs');},150);
     }
     // Ripristina BKF Sheet Galleria
     const savedARData=LS.get('bkfSheetARData',null);
@@ -2944,7 +2946,7 @@ document.addEventListener('click',()=>{
           const data=JSON.parse(raw);
           if(key==='soul')hkSoulData=data;
           else hkBoutData=data;
-          hkSetLoaded(key);
+          hkSetLoaded(key,true);
           if(data._ts)restoreUploadTs(key+'Ts',data._ts);else loadStoredTs(key+'Ts');
         }
       }catch(e){}
@@ -4625,7 +4627,7 @@ function bkfParseText(text){
   return days;
 }
 
-function renderBkfData(){
+function renderBkfData(silent){
   if(!bkfData||!bkfData.length)return;
   const today=new Date();
   const todayStr=String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
@@ -4644,7 +4646,7 @@ function renderBkfData(){
     nav.appendChild(btn);
   });
 
-  ucSetState('bkf','loaded',bkfData[0].label+' – '+bkfData[bkfData.length-1].label);
+  ucSetState('bkf','loaded',bkfData[0].label+' – '+bkfData[bkfData.length-1].label,silent);
   const bkfBox=document.getElementById('bkfUploadBox');if(bkfBox)bkfBox.style.display='none';
   document.getElementById('bkfLoadedInfo').classList.add('visible');
   document.getElementById('bkfStatGrid').style.display='grid';
@@ -4713,11 +4715,11 @@ function hkParseText(text,key){
   return{struttura:key==='soul'?'SoulArt Hotel':'Boutique Hotel',giorni,caricato:new Date().toISOString()};
 }
 
-function hkSetLoaded(key){
+function hkSetLoaded(key,silent){
   const data=key==='soul'?hkSoulData:hkBoutData;
   if(!data||!data.giorni)return;
   const range=data.giorni[0]?.label+' – '+data.giorni[data.giorni.length-1]?.label;
-  ucSetState(key,'loaded',range);
+  ucSetState(key,'loaded',range,silent);
   const dateEl=document.getElementById(key+'LoadedDate');if(dateEl)dateEl.textContent=data.struttura+' · '+range;
   const btnId='btn'+key.charAt(0).toUpperCase()+key.slice(1)+'Reload';
   const btn=document.getElementById(btnId);if(btn)btn.style.display='block';
