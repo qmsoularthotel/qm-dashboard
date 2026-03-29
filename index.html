@@ -2921,7 +2921,7 @@ document.addEventListener('click',()=>{
     const savedPul=LS.get('pulData',null);
     if(savedPul&&savedPul.data){
       pulData=savedPul.data;pulActiveDay=savedPul.activeDay||0;
-      setTimeout(()=>{renderPulData();if(savedPul.ts)restoreUploadTs('pulTs',savedPul.ts);else loadStoredTs('pulTs');},100);
+      setTimeout(()=>{renderPulData(true);if(savedPul.ts)restoreUploadTs('pulTs',savedPul.ts);else loadStoredTs('pulTs');},100);
     }
     // Ripristina report pasti
     const savedBkf=LS.get('bkfData',null);
@@ -3701,7 +3701,7 @@ function pulParseText(text){
   return days;
 }
 
-function renderPulData(){
+function renderPulData(silent){
   if(!pulData||!pulData.length)return;
   // auto-seleziona il giorno corrente
   const today=new Date();
@@ -3722,7 +3722,7 @@ function renderPulData(){
     nav.appendChild(btn);
   });
 
-  ucSetState('pul','loaded',pulData[0].label+' – '+pulData[pulData.length-1].label);
+  ucSetState('pul','loaded',pulData[0].label+' – '+pulData[pulData.length-1].label,silent);
   // Mostra dati, nascondi upload box
   const pulBox=document.getElementById('pulUploadBox');if(pulBox)pulBox.style.display='none';
   document.getElementById('pulLoadedInfo').classList.add('visible');
@@ -4686,7 +4686,7 @@ let hkBoutData=null;
     inp.addEventListener('change',e=>{if(e.target.files[0])handleHkFile(key,e.target.files[0]);});
   });
   ['soul','bout'].forEach(key=>{
-    try{const saved=localStorage.getItem('qm_hk_'+key);if(saved){if(key==='soul')hkSoulData=JSON.parse(saved);else hkBoutData=JSON.parse(saved);hkSetLoaded(key);}}catch(e){}
+    try{const saved=localStorage.getItem('qm_hk_'+key);if(saved){if(key==='soul')hkSoulData=JSON.parse(saved);else hkBoutData=JSON.parse(saved);hkSetLoaded(key,true);}}catch(e){}
   });
 })();
 
