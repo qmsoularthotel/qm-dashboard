@@ -1910,7 +1910,7 @@ function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.class
   try{localStorage.setItem('qm_last_view',id);}catch(e){}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='overview'&&weekData){
-    // Riaggancia sempre alla data odierna
+    try{loadWeekData(weekData);}catch(e){}
     try{refreshOverviewForDate(new Date());}catch(e){}
   }
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
@@ -2900,17 +2900,8 @@ document.querySelector('.content').addEventListener('scroll',function(){
         const range=restored.giorni[0].label+' – '+restored.giorni[restored.giorni.length-1].label;
         ucSetState('turno','loaded',range,true);
         if(parsed._ts)restoreUploadTs('turnoTs',parsed._ts);else loadStoredTs('turnoTs');
-        // Forza overview alla data odierna dopo un tick
-        setTimeout(()=>{
-          try{
-            const today=new Date();today.setHours(0,0,0,0);
-            let idx=weekData.giorni.findIndex(g=>{const d=new Date(g.date);d.setHours(0,0,0,0);return d.getTime()===today.getTime();});
-            if(idx===-1&&today>new Date(weekData.giorni[weekData.giorni.length-1].date))idx=weekData.giorni.length-1;
-            if(idx===-1)idx=0;
-            activeDay=idx;renderDay(activeDay);updateWeekNavActive();updateSidebarInfo();
-            refreshOverviewForDate(new Date());
-          }catch(e){}
-        },200);
+        // Forza overview alla data odierna dopo un tick (usa loadWeekData per parseLocalDate robusto)
+        setTimeout(()=>{try{if(weekData)loadWeekData(weekData);}catch(e){}},50);
       }
     }catch(e){}
 
