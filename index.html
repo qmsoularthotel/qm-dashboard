@@ -1968,14 +1968,16 @@ function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')
 function fmtUploadTs(ts){const n=ts?new Date(ts):new Date();const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];return'↑ '+n.getDate()+' '+ms[n.getMonth()]+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 const TS_TO_UC={turnoTs:'uc-turno-sub',arriviTs:'uc-arrivi-sub',pulTs:'uc-pul-sub',bkfTs:'uc-bkf-sub',soulTs:'uc-soul-sub',boutTs:'uc-bout-sub'};
 function _setUcTs(elId,ts){
-  // Scrivi direttamente sul div.upload-ts con id=elId (es. #pulTs, #bkfTs)
+  const formatted=fmtUploadTs(ts);
+  // Tag collassato (es. #uc-pul-sub) — visibile sempre
+  const subId=TS_TO_UC[elId];
+  if(subId){const sub=document.getElementById(subId);if(sub)sub.textContent=formatted;}
+  // Div upload-ts nel pannello espanso (es. #pulTs) — visibile solo se aperto
   const tsEl=document.getElementById(elId);
-  if(tsEl){tsEl.textContent=fmtUploadTs(ts);tsEl.classList.toggle('visible',!!ts);}
-  // Stale sul pannello slot (usa TS_TO_UC per trovare il parent)
+  if(tsEl){tsEl.textContent=formatted;tsEl.classList.toggle('visible',!!ts);}
   if(elId==='turnoTs')return;
-  const subId=TS_TO_UC[elId];if(!subId)return;
-  const slot=document.getElementById(subId.replace('-sub',''));
-  if(slot)slot.classList.toggle('stale',!!ts&&(Date.now()-ts)>86400000);
+  if(subId){const slot=document.getElementById(subId.replace('-sub',''));
+    if(slot)slot.classList.toggle('stale',!!ts&&(Date.now()-ts)>86400000);}
 }
 function setUploadTs(elId,ts){const t=ts||Date.now();_setUcTs(elId,t);try{localStorage.setItem('qm_ts_'+elId,String(t));}catch(e){}}
 function restoreUploadTs(elId,ts){if(!ts)return;_setUcTs(elId,ts);try{localStorage.setItem('qm_ts_'+elId,String(ts));}catch(e){}}
@@ -3701,8 +3703,8 @@ async function handlePulFile(file){
     pulShowStatus('');
     const _newPts=Date.now();
     localStorage.setItem('qm_ts_pulTs',String(_newPts));
-    setUploadTs('pulTs',_newPts);
     renderPulData();
+    setUploadTs('pulTs',_newPts);
   }catch(e){pulShowError('Errore lettura: '+e.message);}
 }
 
@@ -4727,8 +4729,8 @@ async function handleBkfFile(file){
     bkfShowStatus('');
     const _newBts=Date.now();
     localStorage.setItem('qm_ts_bkfTs',String(_newBts));
-    setUploadTs('bkfTs',_newBts);
     renderBkfData();
+    setUploadTs('bkfTs',_newBts);
   }catch(e){bkfShowStatus('Errore: '+e.message);}
 }
 
