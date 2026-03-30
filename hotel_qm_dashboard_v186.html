@@ -1968,9 +1968,12 @@ function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')
 function fmtUploadTs(ts){const n=ts?new Date(ts):new Date();const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];return'↑ '+n.getDate()+' '+ms[n.getMonth()]+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 const TS_TO_UC={turnoTs:'uc-turno-sub',arriviTs:'uc-arrivi-sub',pulTs:'uc-pul-sub',bkfTs:'uc-bkf-sub',soulTs:'uc-soul-sub',boutTs:'uc-bout-sub'};
 function _setUcTs(elId,ts){
-  const subId=TS_TO_UC[elId];if(!subId)return;
-  const sub=document.getElementById(subId);if(sub)sub.textContent=fmtUploadTs(ts);
+  // Scrivi direttamente sul div.upload-ts con id=elId (es. #pulTs, #bkfTs)
+  const tsEl=document.getElementById(elId);
+  if(tsEl){tsEl.textContent=fmtUploadTs(ts);tsEl.classList.toggle('visible',!!ts);}
+  // Stale sul pannello slot (usa TS_TO_UC per trovare il parent)
   if(elId==='turnoTs')return;
+  const subId=TS_TO_UC[elId];if(!subId)return;
   const slot=document.getElementById(subId.replace('-sub',''));
   if(slot)slot.classList.toggle('stale',!!ts&&(Date.now()-ts)>86400000);
 }
