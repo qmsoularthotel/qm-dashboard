@@ -1911,10 +1911,7 @@ function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.class
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='overview'&&weekData){
     // Riaggancia sempre alla data odierna
-    const today=new Date();today.setHours(0,0,0,0);
-    let idx=weekData.giorni.findIndex(g=>{const d=new Date(g.date);d.setHours(0,0,0,0);return d.getTime()===today.getTime();});
-    if(idx===-1)idx=weekData.giorni.length-1;
-    if(idx!==activeDay){activeDay=idx;renderDay(activeDay);updateWeekNavActive();updateSidebarInfo();}
+    try{refreshOverviewForDate(new Date());}catch(e){}
   }
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
