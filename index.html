@@ -1909,6 +1909,13 @@ function toggleRecGroup(){
 function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id];if(navEl){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navEl.classList.add('active');}
   try{localStorage.setItem('qm_last_view',id);}catch(e){}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
+  if(id==='overview'&&weekData){
+    // Riaggancia sempre alla data odierna
+    const today=new Date();today.setHours(0,0,0,0);
+    let idx=weekData.giorni.findIndex(g=>{const d=new Date(g.date);d.setHours(0,0,0,0);return d.getTime()===today.getTime();});
+    if(idx===-1)idx=weekData.giorni.length-1;
+    if(idx!==activeDay){activeDay=idx;renderDay(activeDay);updateWeekNavActive();updateSidebarInfo();}
+  }
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
   if(id==='miniapp')setTimeout(miniappRender,50);
