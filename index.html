@@ -519,12 +519,29 @@ select.form-input option{background:var(--surface2);color:var(--text);}
     </div>
 
     <nav class="nav">
-      <div class="nav-section">Menu</div>
+      <div class="nav-section">Operativo Quotidiano</div>
       <div class="nav-item active" onclick="setView('overview',this)"><span class="nav-icon">🏠</span>Overview</div>
       <div class="nav-item" onclick="setView('checklist',this)"><span class="nav-icon">☑️</span>Checklist<span class="nav-badge" id="checklistNavBadge">6</span></div>
       <div class="nav-item" onclick="setView('registrazione',this)"><span class="nav-icon">🪪</span>Registration Cards</div>
-      <div class="nav-item" onclick="setView('bkfsheet',this)"><span class="nav-icon">☕</span>Breakfast Sheet SoulArt</div>
-      <div class="nav-item" onclick="setView('bkfsheetar',this)"><span class="nav-icon">☕</span>Breakfast Sheet Galleria</div>
+      <div class="nav-group-header" id="bkfGroupToggle" onclick="toggleBkfGroup()">
+        <span class="nav-icon">☕</span>
+        <span>Breakfast Sheet</span>
+        <span class="nav-group-chevron">▾</span>
+      </div>
+      <div class="nav-group-items" id="bkfGroupItems">
+        <div class="nav-item" onclick="setView('bkfsheet',this)"><span class="nav-icon">↳</span>SoulArt Hotel</div>
+        <div class="nav-item" onclick="setView('bkfsheetar',this)"><span class="nav-icon">↳</span>Art Resort Galleria</div>
+      </div>
+      <div class="nav-group-header" id="hkpGroupToggle" onclick="toggleHkpGroup()">
+        <span class="nav-icon">🛏️</span>
+        <span>Operativa HKP</span>
+        <span class="nav-group-chevron">▾</span>
+      </div>
+      <div class="nav-group-items" id="hkpGroupItems">
+        <div class="nav-item" onclick="setView('hkp-sa',this)"><span class="nav-icon">↳</span>SoulArt Hotel</div>
+        <div class="nav-item" onclick="setView('hkp-ar',this)"><span class="nav-icon">↳</span>Art Resort</div>
+      </div>
+      <div class="nav-section">Qualità</div>
       <div class="nav-group-header" id="recGroupToggle" onclick="toggleRecGroup()">
         <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="4" fill="#003580"/><text x="5" y="17" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="white">B</text></svg></span>
         <span>Gestione Recensioni</span>
@@ -539,8 +556,7 @@ select.form-input option{background:var(--surface2);color:var(--text);}
         <div class="nav-item" onclick="setView('recensioni-ar',this)"><span class="nav-icon">↳</span>Recensioni Art Resort</div>
         <div class="nav-item" onclick="setView('recensioni-sb',this)"><span class="nav-icon">↳</span>Recensioni Santa Brigida</div>
       </div>
-      <div class="nav-item" onclick="setView('hkp-sa',this)"><span class="nav-icon">🛏️</span>Operativa HKP SoulArt</div>
-      <div class="nav-item" onclick="setView('hkp-ar',this)"><span class="nav-icon">🛏️</span>Operativa HKP Art Resort</div>
+      <div class="nav-section">Strumenti</div>
       <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon">📱</span>Mini App</div>
 
       <div class="nav-section" style="display:flex;align-items:center;justify-content:space-between;">
@@ -1906,14 +1922,29 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Espandi "Carica turno" nella sidebar per caricare il planning</div></div>`;}
 
 /* ═══ NAV ═══ */
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa',reclami:'Gestione Reclami','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',audit:'Audit & Ispezioni',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria','hkp-sa':'Operativa HKP — SoulArt Hotel','hkp-ar':'Operativa HKP — Art Resort','miniapp':'Mini App — Anteprima e Link'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria','hkp-sa':'Operativa HKP — SoulArt Hotel','hkp-ar':'Operativa HKP — Art Resort','miniapp':'Mini App — Anteprima e Link'};
 let recGroupOpen=false;
 function toggleRecGroup(){
   recGroupOpen=!recGroupOpen;
   document.getElementById('recGroupToggle').classList.toggle('open',recGroupOpen);
   document.getElementById('recGroupItems').classList.toggle('open',recGroupOpen);
 }
+let bkfGroupOpen=false;
+function toggleBkfGroup(){
+  bkfGroupOpen=!bkfGroupOpen;
+  document.getElementById('bkfGroupToggle').classList.toggle('open',bkfGroupOpen);
+  document.getElementById('bkfGroupItems').classList.toggle('open',bkfGroupOpen);
+}
+let hkpGroupOpen=false;
+function toggleHkpGroup(){
+  hkpGroupOpen=!hkpGroupOpen;
+  document.getElementById('hkpGroupToggle').classList.toggle('open',hkpGroupOpen);
+  document.getElementById('hkpGroupItems').classList.toggle('open',hkpGroupOpen);
+}
 function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id];if(navEl){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navEl.classList.add('active');}
+  if(id==='bkfsheet'||id==='bkfsheetar'){if(!bkfGroupOpen){bkfGroupOpen=true;document.getElementById('bkfGroupToggle').classList.add('open');document.getElementById('bkfGroupItems').classList.add('open');}}
+  if(id==='hkp-sa'||id==='hkp-ar'){if(!hkpGroupOpen){hkpGroupOpen=true;document.getElementById('hkpGroupToggle').classList.add('open');document.getElementById('hkpGroupItems').classList.add('open');}}
+  if(id.startsWith('recensioni-')){if(!recGroupOpen){recGroupOpen=true;document.getElementById('recGroupToggle').classList.add('open');document.getElementById('recGroupItems').classList.add('open');}}
   try{localStorage.setItem('qm_last_view',id);}catch(e){}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='overview'&&weekData){
@@ -1991,7 +2022,7 @@ function _setUcTs(elId,ts){
     if(slot)slot.classList.toggle('stale',!!ts&&(Date.now()-ts)>86400000);}
 }
 function setUploadTs(elId,ts){const t=ts||Date.now();_setUcTs(elId,t);try{localStorage.setItem('qm_ts_'+elId,String(t));}catch(e){}}
-function restoreUploadTs(elId,ts){if(!ts)return;_setUcTs(elId,ts);try{localStorage.setItem('qm_ts_'+elId,String(ts));}catch(e){}}
+function restoreUploadTs(elId,ts){if(!ts)return;try{const existing=parseInt(localStorage.getItem('qm_ts_'+elId)||'0');if(existing>ts){_setUcTs(elId,existing);return;}_setUcTs(elId,ts);localStorage.setItem('qm_ts_'+elId,String(ts));}catch(e){_setUcTs(elId,ts);}}
 function loadStoredTs(elId){try{const t=localStorage.getItem('qm_ts_'+elId);if(t)_setUcTs(elId,parseInt(t));}catch(e){}}
 
 /* Definizione task:
@@ -2114,14 +2145,14 @@ const LS={
         const res=await fetch(PROXY+'/kv/get?key=qm_'+encodeURIComponent(k));
         const json=await res.json();
         if(json.value!==null&&json.value!==undefined){
-          // Per pulData e bkfData: non sovrascrivere se il locale è più recente
+          // Per pulData/bkfData: usa qm_ts_pulTs/bkfTs come fonte autorevole del timestamp locale
           if(k==='pulData'||k==='bkfData'){
             try{
-              const cloudObj=JSON.parse(json.value);
-              const localRaw=localStorage.getItem('qm_'+k);
-              if(localRaw){
-                const localObj=JSON.parse(localRaw);
-                if(localObj.ts&&cloudObj.ts&&localObj.ts>cloudObj.ts)return;
+              const tsKey=k==='pulData'?'qm_ts_pulTs':'qm_ts_bkfTs';
+              const localTs=parseInt(localStorage.getItem(tsKey)||'0');
+              if(localTs){
+                const cloudObj=JSON.parse(json.value);
+                if(!cloudObj.ts||localTs>cloudObj.ts)return;
               }
             }catch(e){}
           }

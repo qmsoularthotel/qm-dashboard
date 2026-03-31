@@ -1991,7 +1991,7 @@ function _setUcTs(elId,ts){
     if(slot)slot.classList.toggle('stale',!!ts&&(Date.now()-ts)>86400000);}
 }
 function setUploadTs(elId,ts){const t=ts||Date.now();_setUcTs(elId,t);try{localStorage.setItem('qm_ts_'+elId,String(t));}catch(e){}}
-function restoreUploadTs(elId,ts){if(!ts)return;_setUcTs(elId,ts);try{localStorage.setItem('qm_ts_'+elId,String(ts));}catch(e){}}
+function restoreUploadTs(elId,ts){if(!ts)return;try{const existing=parseInt(localStorage.getItem('qm_ts_'+elId)||'0');if(existing>ts){_setUcTs(elId,existing);return;}_setUcTs(elId,ts);localStorage.setItem('qm_ts_'+elId,String(ts));}catch(e){_setUcTs(elId,ts);}}
 function loadStoredTs(elId){try{const t=localStorage.getItem('qm_ts_'+elId);if(t)_setUcTs(elId,parseInt(t));}catch(e){}}
 
 /* Definizione task:
@@ -2114,14 +2114,14 @@ const LS={
         const res=await fetch(PROXY+'/kv/get?key=qm_'+encodeURIComponent(k));
         const json=await res.json();
         if(json.value!==null&&json.value!==undefined){
-          // Per pulData e bkfData: non sovrascrivere se il locale è più recente
+          // Per pulData/bkfData: usa qm_ts_pulTs/bkfTs come fonte autorevole del timestamp locale
           if(k==='pulData'||k==='bkfData'){
             try{
-              const cloudObj=JSON.parse(json.value);
-              const localRaw=localStorage.getItem('qm_'+k);
-              if(localRaw){
-                const localObj=JSON.parse(localRaw);
-                if(localObj.ts&&cloudObj.ts&&localObj.ts>cloudObj.ts)return;
+              const tsKey=k==='pulData'?'qm_ts_pulTs':'qm_ts_bkfTs';
+              const localTs=parseInt(localStorage.getItem(tsKey)||'0');
+              if(localTs){
+                const cloudObj=JSON.parse(json.value);
+                if(!cloudObj.ts||localTs>cloudObj.ts)return;
               }
             }catch(e){}
           }
