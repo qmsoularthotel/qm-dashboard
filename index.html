@@ -2114,6 +2114,17 @@ const LS={
         const res=await fetch(PROXY+'/kv/get?key=qm_'+encodeURIComponent(k));
         const json=await res.json();
         if(json.value!==null&&json.value!==undefined){
+          // Per pulData e bkfData: non sovrascrivere se il locale è più recente
+          if(k==='pulData'||k==='bkfData'){
+            try{
+              const cloudObj=JSON.parse(json.value);
+              const localRaw=localStorage.getItem('qm_'+k);
+              if(localRaw){
+                const localObj=JSON.parse(localRaw);
+                if(localObj.ts&&cloudObj.ts&&localObj.ts>cloudObj.ts)return;
+              }
+            }catch(e){}
+          }
           localStorage.setItem('qm_'+k,json.value);
           synced++;
         }
