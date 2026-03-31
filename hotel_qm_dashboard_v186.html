@@ -1868,16 +1868,17 @@ function loadWeekData(data){
   });
 
   if(idx===-1){
-    // Oggi non è in questa settimana — mostra messaggio, non una data sbagliata
-    activeDay=0;
-    buildWeekNav();
-    const area=document.getElementById('staffArea');
-    if(area)area.innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno per oggi</div><div class="ov-empty-sub">Il planning caricato è per la settimana ${data.giorni[0].label} – ${data.giorni[data.giorni.length-1].label}.<br>Carica il planning della settimana corrente oppure seleziona un giorno dalla barra laterale.</div></div>`;
-    updateSidebarInfo();
-    document.getElementById('weekNavWrap').style.display='block';
-    document.getElementById('loadedInfo').classList.add('visible');
-    document.getElementById('btnReload').style.display='block';
-    return;
+    // Fallback 1: cerca per abbreviazione giorno della settimana nel label (es. "Mar" per martedì)
+    const dayPfx=['dom','lun','mar','mer','gio','ven','sab'][today.getDay()];
+    const byDow=data.giorni.findIndex(g=>g.label&&g.label.toLowerCase().startsWith(dayPfx));
+    if(byDow!==-1){
+      idx=byDow;
+    } else {
+      // Fallback 2: primo o ultimo giorno
+      const lastP=parseLocalDate(data.giorni[data.giorni.length-1]);
+      const isPast=lastP&&(lastP.y<todayY||(lastP.y===todayY&&lastP.mo<todayM)||(lastP.y===todayY&&lastP.mo===todayM&&lastP.d<todayD));
+      idx=isPast?data.giorni.length-1:0;
+    }
   }
 
   activeDay=idx;buildWeekNav();renderDay(activeDay);updateSidebarInfo();
