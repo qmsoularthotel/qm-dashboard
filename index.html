@@ -271,7 +271,7 @@
             <div class="kpi-delta" id="kpi-partenze-delta" style="color:var(--text-dim)">Carica cruscotto</div>
             <div class="kpi-sub" id="kpi-partenze-sub"></div>
           </div>
-          <div class="kpi-card blue" id="kpi-fermate-card" style="border-top-color:var(--blue)">
+          <div class="kpi-card blue" id="kpi-fermate-card" style="border-top-color:var(--blue);cursor:pointer;" onclick="togglePulPreview()">
             <div class="kpi-card-icon">⊡</div>
             <div class="kpi-label">Fermate</div>
             <div class="kpi-value" id="kpi-fermate">—</div>
@@ -310,7 +310,25 @@
             <div class="kpi-sub" id="kpi-bkf-nocol-sub"></div>
           </div>
         </div>
+        <div id="kpi-pul-preview" style="display:none;margin-bottom:14px;"></div>
         <div id="kpi-bkf-preview" style="display:none;margin-bottom:14px;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+          <div class="kpi-card" style="border-top-color:#1E7A48;cursor:pointer;" onclick="toggleHkpPreview()">
+            <div class="kpi-card-icon" style="background:var(--green-bg);">🛏️</div>
+            <div class="kpi-label">HKP SoulArt</div>
+            <div class="kpi-value" id="kpi-hkp-val">—</div>
+            <div class="kpi-delta" id="kpi-hkp-delta" style="color:var(--text-dim)">Carica Soul App HKP</div>
+            <div class="kpi-sub" id="kpi-hkp-sub"></div>
+          </div>
+          <div class="kpi-card" style="border-top-color:#1E7A48;">
+            <div class="kpi-card-icon" style="background:var(--green-bg);">🛏️</div>
+            <div class="kpi-label">HKP Art Resort</div>
+            <div class="kpi-value" id="kpi-hkp-ar-val">—</div>
+            <div class="kpi-delta" id="kpi-hkp-ar-delta" style="color:var(--text-dim)">Carica Boutique App HKP</div>
+            <div class="kpi-sub" id="kpi-hkp-ar-sub"></div>
+          </div>
+        </div>
+        <div id="kpi-hkp-preview" style="display:none;margin-bottom:14px;"></div>
         <div id="staffArea">
           <div class="ov-empty">
             <div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>

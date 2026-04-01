@@ -761,6 +761,59 @@ function toggleCheckV2(item,dept){
     updateClProgress();
   })();
 })();
+function togglePulPreview(){
+  const el=document.getElementById('kpi-pul-preview');
+  if(!el)return;
+  if(el.style.display==='block'){el.style.display='none';return;}
+  if(!pulData||!pulData.length){return;}
+  const pts=pulData.map(d=>({label:d.label,arrivi:d.arrivi,fermate:d.fermatePulizia||d.fermate||0,partenze:d.partenze}));
+  const W=600,H=200,PL=32,PR=12,PT=16,PB=30;
+  const plotW=W-PL-PR,plotH=H-PT-PB;
+  const YMAX=Math.max(20,...pts.map(p=>Math.max(p.arrivi,p.fermate,p.partenze)))+5;
+  const sx=i=>PL+i/(pts.length-1||1)*plotW;
+  const sy=v=>PT+plotH-(v/YMAX)*plotH;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
+  for(let v=0;v<=YMAX;v+=5){const y=sy(v);svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="${v===0?1.5:1}"/><text x="${PL-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;}
+  pts.forEach((p,i)=>{svg+=`<text x="${sx(i)}" y="${H-6}" font-size="11" fill="var(--text-dim)" text-anchor="middle">${p.label.split(' ')[0]}</text>`;});
+  const colors={arrivi:'var(--green)',fermate:'var(--accent)',partenze:'var(--red)'};
+  ['arrivi','fermate','partenze'].forEach(k=>{
+    const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p[k])}`).join('L');
+    svg+=`<path d="${linePath}" fill="none" stroke="${colors[k]}" stroke-width="1.5"/>`;
+    pts.forEach((p,i)=>{svg+=`<circle cx="${sx(i)}" cy="${sy(p[k])}" r="3" fill="${colors[k]}" stroke="white" stroke-width="1.5"/>`;});
+  });
+  svg+=`<text x="${W-PR}" y="${PT}" font-size="10" fill="var(--green)" text-anchor="end">● Arrivi</text>`;
+  svg+=`<text x="${W-PR}" y="${PT+14}" font-size="10" fill="var(--accent)" text-anchor="end">● Fermate</text>`;
+  svg+=`<text x="${W-PR}" y="${PT+28}" font-size="10" fill="var(--red)" text-anchor="end">● Partenze</text>`;
+  svg+='</svg>';
+  el.innerHTML=svg;el.style.display='block';
+}
+function toggleHkpPreview(){
+  const el=document.getElementById('kpi-hkp-preview');
+  if(!el)return;
+  if(el.style.display==='block'){el.style.display='none';return;}
+  const data=hkSoulData||hkBoutData;
+  if(!data||!data.giorni||!data.giorni.length){return;}
+  const pts=data.giorni.map(d=>({label:d.label,arrivi:d.arrivi,fermate:d.fermate,partenze:d.partenze}));
+  const W=600,H=200,PL=32,PR=12,PT=16,PB=30;
+  const plotW=W-PL-PR,plotH=H-PT-PB;
+  const YMAX=Math.max(20,...pts.map(p=>Math.max(p.arrivi,p.fermate,p.partenze)))+5;
+  const sx=i=>PL+i/(pts.length-1||1)*plotW;
+  const sy=v=>PT+plotH-(v/YMAX)*plotH;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
+  for(let v=0;v<=YMAX;v+=5){const y=sy(v);svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="${v===0?1.5:1}"/><text x="${PL-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;}
+  pts.forEach((p,i)=>{svg+=`<text x="${sx(i)}" y="${H-6}" font-size="11" fill="var(--text-dim)" text-anchor="middle">${p.label.split(' ')[0]}</text>`;});
+  const colors={arrivi:'var(--green)',fermate:'var(--accent)',partenze:'var(--red)'};
+  ['arrivi','fermate','partenze'].forEach(k=>{
+    const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p[k])}`).join('L');
+    svg+=`<path d="${linePath}" fill="none" stroke="${colors[k]}" stroke-width="1.5"/>`;
+    pts.forEach((p,i)=>{svg+=`<circle cx="${sx(i)}" cy="${sy(p[k])}" r="3" fill="${colors[k]}" stroke="white" stroke-width="1.5"/>`;});
+  });
+  svg+=`<text x="${W-PR}" y="${PT}" font-size="10" fill="var(--green)" text-anchor="end">● Arrivi</text>`;
+  svg+=`<text x="${W-PR}" y="${PT+14}" font-size="10" fill="var(--accent)" text-anchor="end">● Fermate</text>`;
+  svg+=`<text x="${W-PR}" y="${PT+28}" font-size="10" fill="var(--red)" text-anchor="end">● Partenze</text>`;
+  svg+='</svg>';
+  el.innerHTML=svg;el.style.display='block';
+}
 function toggleBkfPreview(){
   const el=document.getElementById('kpi-bkf-preview');
   if(!el)return;
@@ -2851,6 +2904,19 @@ function hkSetLoaded(key,silent){
   const btn=document.getElementById(btnId);if(btn)btn.style.display='block';
   const box=document.getElementById(key+'UploadBox');if(box)box.style.display='none';
   const li=document.getElementById(key+'LoadedInfo');if(li)li.classList.add('visible');
+  // Aggiorna card KPI overview
+  const today=new Date();
+  const todayStr=String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
+  const g=data.giorni.find(d=>d.data===todayStr)||data.giorni[0];
+  if(g){
+    const kpiId=key==='soul'?'kpi-hkp':'kpi-hkp-ar';
+    const valEl=document.getElementById(kpiId+'-val');
+    const deltaEl=document.getElementById(kpiId+'-delta');
+    const subEl=document.getElementById(kpiId+'-sub');
+    if(valEl)valEl.textContent=g.fermate;
+    if(deltaEl){deltaEl.textContent=g.arrivi+' arrivi · '+g.partenze+' partenze';deltaEl.className='kpi-delta';}
+    if(subEl)subEl.textContent=g.label;
+  }
 }
 function resetSoulData(){hkSoulData=null;hkResetSlot('soul');}
 function resetBoutData(){hkBoutData=null;hkResetSlot('bout');}
