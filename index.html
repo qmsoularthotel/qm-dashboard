@@ -762,7 +762,7 @@ select.form-input option{background:var(--surface2);color:var(--text);}
         </div>
         <!-- Riga 3: Breakfast oggi + 2 giorni in una sola card -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-          <div class="kpi-card" style="border-top-color:#A05A00;">
+          <div class="kpi-card" style="border-top-color:#A05A00;cursor:pointer;" onclick="toggleBkfPreview()">
             <div class="kpi-card-icon" style="background:var(--amber-bg);">☕</div>
             <div class="kpi-label">Coperti colazione</div>
             <div id="kpi-bkf-multiday">
@@ -2457,6 +2457,41 @@ function toggleCheckV2(item,dept){
 })();
 
 
+
+/* ═══ BKF PREVIEW IN OVERVIEW ═══ */
+function toggleBkfPreview(){
+  const el=document.getElementById('kpi-bkf-preview');
+  if(!el)return;
+  if(el.style.display==='block'){el.style.display='none';return;}
+  if(!bkfData||!bkfData.length){return;}
+  const pts=bkfData.map(d=>({label:d.label,v:d.adulti+d.bambini}));
+  const W=600,H=200,PL=32,PR=12,PT=16,PB=30;
+  const plotW=W-PL-PR,plotH=H-PT-PB;
+  const YMAX=Math.max(70,...pts.map(p=>p.v))+10;
+  const sx=i=>PL+i/(pts.length-1||1)*plotW;
+  const sy=v=>PT+plotH-(v/YMAX)*plotH;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
+  for(let v=0;v<=YMAX;v+=10){
+    const y=sy(v);
+    svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="${v===0?1.5:1}"/>`;
+    svg+=`<text x="${PL-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;
+  }
+  pts.forEach((p,i)=>{
+    svg+=`<text x="${sx(i)}" y="${H-6}" font-size="11" fill="var(--text-dim)" text-anchor="middle">${p.label.split(' ')[0]}</text>`;
+  });
+  const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
+  const areaPath=linePath+`L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z`;
+  svg+=`<path d="${areaPath}" fill="var(--accent)" opacity="0.1"/>`;
+  svg+=`<path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="1.5"/>`;
+  pts.forEach((p,i)=>{
+    const x=sx(i),y=sy(p.v);
+    svg+=`<circle cx="${x}" cy="${y}" r="3" fill="var(--accent)" stroke="white" stroke-width="1.5"/>`;
+    svg+=`<text x="${x}" y="${y-9}" font-size="11" fill="var(--accent)" text-anchor="middle" font-weight="600">${p.v}</text>`;
+  });
+  svg+='</svg>';
+  el.innerHTML=svg;
+  el.style.display='block';
+}
 
 /* ═══ KPI BAR CHART ═══ */
 function buildBarChart(){
