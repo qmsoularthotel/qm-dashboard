@@ -1,8 +1,5 @@
-
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <link rel="stylesheet" href="style.css">
-
 <iframe id="printIframe"></iframe>
 <div class="print-dialog" id="printDialog">
   <div class="print-dialog-box">
@@ -15,7 +12,6 @@
     </div>
   </div>
 </div>
-
 <div id="rcModalOverlay" class="rc-modal-overlay" onclick="rcCloseModalOutside(event)">
   <div class="rc-modal-box">
     <div class="rc-modal-topbar">
@@ -28,7 +24,6 @@
     <div class="rc-modal-body" id="rcModalBody"></div>
   </div>
 </div>
-
 <div class="app">
   <aside class="sidebar">
     <div class="logo" style="display:flex;align-items:center;gap:10px;">
@@ -38,7 +33,6 @@
         <div class="logo-sub">Quality Manager Panel <span style="opacity:.5;">· v19.4</span></div>
       </div>
     </div>
-
     <nav class="nav">
       <div class="nav-section">Operativo Quotidiano</div>
       <div class="nav-item active" onclick="setView('overview',this)"><span class="nav-icon">🏠</span>Overview</div>
@@ -79,7 +73,6 @@
       </div>
       <div class="nav-section">Strumenti</div>
       <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon">📱</span>Mini App</div>
-
       <div class="nav-section" style="display:flex;align-items:center;justify-content:space-between;">
         <span>Upload Center</span>
         <span id="ucProgressLabel" style="font-size:9px;color:var(--text-dim);font-weight:400;">0/6</span>
@@ -88,8 +81,6 @@
         <div id="ucProgressBar" style="height:100%;background:var(--accent);border-radius:4px;width:0%;transition:width .4s ease;"></div>
       </div>
       <div style="padding:0 10px 10px;">
-
-        <!-- ── TURNO ── -->
         <div class="uc-slot" id="uc-turno" onclick="ucToggle('turno')" title="Carica o espandi turno">
           <input type="file" id="turniFileInput" accept="image/*,.xlsx,.xls,.csv,.pdf" style="display:none">
           <span class="uc-icon">📋</span>
@@ -115,8 +106,6 @@
           <button class="btn-reload" id="btnReload" style="display:none" onclick="resetTurni()">Rimuovi turno</button>
           <div class="upload-ts" id="turnoTs"></div>
         </div>
-
-        <!-- ── ARRIVI ── -->
         <div class="uc-slot" id="uc-arrivi" onclick="ucToggle('arrivi')" title="Carica o espandi arrivi">
           <input type="file" id="arriviFileInput" accept="application/pdf,image/*" style="display:none">
           <span class="uc-icon">↓</span>
@@ -135,8 +124,6 @@
           <button class="btn-reload" id="btnArriviReload" style="display:none" onclick="resetArrivi()">Rimuovi arrivi</button>
           <div class="upload-ts" id="arriviTs"></div>
         </div>
-
-        <!-- ── PULIZIE ── -->
         <div class="uc-slot" id="uc-pul" onclick="ucToggle('pul')" title="Carica o espandi pulizie">
           <input type="file" id="pulFileInput" accept="application/pdf" style="display:none">
           <span class="uc-icon">🧹</span>
@@ -163,8 +150,6 @@
           <button class="btn-reload" id="btnPulReload" style="display:none" onclick="resetPulizie()">Rimuovi pulizie</button>
           <div class="upload-ts" id="pulTs"></div>
         </div>
-
-        <!-- ── BREAKFAST ── -->
         <div class="uc-slot" id="uc-bkf" onclick="ucToggle('bkf')" title="Carica o espandi pasti">
           <input type="file" id="bkfFileInput" accept="application/pdf" style="display:none">
           <span class="uc-icon">☕</span>
@@ -187,8 +172,6 @@
           <button class="btn-reload" id="btnBkfReload" style="display:none" onclick="resetBkf()">Rimuovi report</button>
           <div class="upload-ts" id="bkfTs"></div>
         </div>
-
-        <!-- Soul oggi -->
         <div class="uc-slot" id="uc-soul" onclick="ucToggle('soul')" title="Soul App HKP">
           <input type="file" id="soulFileInput" accept="application/pdf" style="display:none">
           <span class="uc-icon">🛏️</span>
@@ -206,8 +189,6 @@
           <button class="btn-reload" id="btnSoulReload" style="display:none" onclick="resetSoulData()">Rimuovi</button>
           <div class="upload-ts" id="soulTs"></div>
         </div>
-
-        <!-- Boutique oggi -->
         <div class="uc-slot" id="uc-bout" onclick="ucToggle('bout')" title="Boutique App HKP">
           <input type="file" id="boutFileInput" accept="application/pdf" style="display:none">
           <span class="uc-icon">🛏️</span>
@@ -226,7 +207,6 @@
           <div class="upload-ts" id="boutTs"></div>
         </div>
       </div>
-
     </nav>
     <div class="sidebar-bottom">
       <div class="user-row">
@@ -242,12 +222,10 @@
       </div>
     </div>
   </aside>
-
   <main class="main">
     <div class="topbar">
       <span class="page-title" id="pageTitle">Panoramica del giorno</span>
       <div class="topbar-right">
-        <!-- meteo con previsioni -->
         <div style="position:relative;">
           <div class="weather-chip" id="weatherChip" onclick="toggleWeatherForecast(event)" title="Clicca per le previsioni">
             <svg id="weatherIcon" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="1.5">
@@ -261,7 +239,6 @@
             <div id="forecastGrid" style="display:flex;flex-direction:column;gap:6px;"></div>
           </div>
         </div>
-        <!-- data cliccabile — popup FUORI dal chip -->
         <div style="position:relative;">
           <div class="datetime-chip" id="dateChip" onclick="toggleDatePopup(event)" title="Clicca per cambiare data">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -277,12 +254,8 @@
         </div>
       </div>
     </div>
-
     <div class="content">
-
-      <!-- OVERVIEW -->
       <div class="view active" id="view-overview">
-        <!-- Riga 2: dati pulizie / occupazione -->
         <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px;">
           <div class="kpi-card green" id="kpi-arrivi-card" style="cursor:pointer;" onclick="openArriviModal()" title="Clicca per vedere gli arrivi">
             <div class="kpi-card-icon">↓</div>
@@ -305,7 +278,6 @@
             <div class="kpi-delta" id="kpi-fermate-delta" style="color:var(--text-dim)">Carica cruscotto</div>
             <div class="kpi-sub" id="kpi-fermate-sub"></div>
           </div>
-          <!-- Occupazione con barra -->
           <div class="kpi-card" style="border-top-color:#7A5FBF;">
             <div class="kpi-card-icon" style="background:#EEE8FA;">%</div>
             <div class="kpi-label">Occupazione</div>
@@ -318,7 +290,6 @@
             </div>
           </div>
         </div>
-        <!-- Riga 3: Breakfast oggi + 2 giorni in una sola card -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
           <div class="kpi-card" style="border-top-color:#A05A00;cursor:pointer;" onclick="toggleBkfPreview()">
             <div class="kpi-card-icon" style="background:var(--amber-bg);">☕</div>
@@ -376,8 +347,6 @@
           </div>
         </div>
       </div>
-
-      <!-- REGISTRATION CARDS -->
       <div class="view" id="view-registrazione">
         <div class="rc-upload-zone" id="rcUploadZone">
           <input type="file" id="rcFileInput" accept="application/pdf" style="display:none">
@@ -399,10 +368,7 @@
           <div class="rc-card-grid" id="rcCardGrid"></div>
         </div>
       </div>
-
-      <!-- CHECKLIST -->
       <div class="view" id="view-checklist">
-        <!-- Progress bar globale -->
         <div class="cl-progress-wrap">
           <div class="cl-progress-top">
             <div>
@@ -414,9 +380,7 @@
           <div class="cl-track"><div class="cl-fill" id="clFill" style="width:0%"></div></div>
           <div class="cl-dept-stats" id="clDeptStats"></div>
         </div>
-
         <div class="grid-2">
-          <!-- FO -->
           <div class="panel">
             <div class="panel-header"><span class="panel-title">Front Office</span><span class="check-dept dept-fo">FO</span><span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim)" id="cl-fo-count">—</span></div>
             <div class="panel-body">
@@ -427,7 +391,6 @@
               </div>
             </div>
           </div>
-          <!-- BKF -->
           <div class="panel">
             <div class="panel-header"><span class="panel-title">Breakfast</span><span class="check-dept dept-fb">BKF</span><span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim)" id="cl-bkf-count">—</span></div>
             <div class="panel-body">
@@ -438,7 +401,6 @@
               </div>
             </div>
           </div>
-          <!-- HK -->
           <div class="panel" id="cl-hkp-panel">
             <div class="panel-header"><span class="panel-title">Housekeeping</span><span class="check-dept dept-hk">HK</span><span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim)" id="cl-hkp-count">—</span></div>
             <div class="panel-body">
@@ -449,7 +411,6 @@
               </div>
             </div>
           </div>
-          <!-- MT -->
           <div class="panel" id="cl-mt-panel">
             <div class="panel-header">
               <span class="panel-title">Manutenzione</span><span class="check-dept dept-mt">MT</span>
@@ -464,7 +425,6 @@
               </div>
             </div>
           </div>
-          <!-- PERSONALIZZATI -->
           <div class="panel" id="cl-custom-panel">
             <div class="panel-header">
               <span class="panel-title">Personalizzati</span>
@@ -480,9 +440,6 @@
           </div>
         </div>
       </div>
-
-      <!-- RECLAMI -->
-      <!-- RECENSIONI SOULART -->
       <div class="view" id="view-recensioni-sa">
         <div class="rev-upload-zone" id="revUploadZone-sa">
           <input type="file" id="revFileInput-sa" accept=".csv" style="display:none">
@@ -539,8 +496,6 @@
           <div class="rev-list" id="revList-sa"></div>
         </div>
       </div>
-
-      <!-- RECENSIONI BOUTIQUE HOTEL -->
       <div class="view" id="view-recensioni-bh">
         <div class="rev-upload-zone" id="revUploadZone-bh">
           <input type="file" id="revFileInput-bh" accept=".csv" style="display:none">
@@ -597,8 +552,6 @@
           <div class="rev-list" id="revList-bh"></div>
         </div>
       </div>
-
-      <!-- RECENSIONI SAN LIBORIO -->
       <div class="view" id="view-recensioni-sl">
         <div class="rev-upload-zone" id="revUploadZone-sl">
           <input type="file" id="revFileInput-sl" accept=".csv" style="display:none">
@@ -655,8 +608,6 @@
           <div class="rev-list" id="revList-sl"></div>
         </div>
       </div>
-
-      <!-- RECENSIONI PRINCIPE -->
       <div class="view" id="view-recensioni-pr">
         <div class="rev-upload-zone" id="revUploadZone-pr">
           <input type="file" id="revFileInput-pr" accept=".csv" style="display:none">
@@ -713,8 +664,6 @@
           <div class="rev-list" id="revList-pr"></div>
         </div>
       </div>
-
-      <!-- RECENSIONI MASTRANGELO -->
       <div class="view" id="view-recensioni-ms">
         <div class="rev-upload-zone" id="revUploadZone-ms">
           <input type="file" id="revFileInput-ms" accept=".csv" style="display:none">
@@ -771,8 +720,6 @@
           <div class="rev-list" id="revList-ms"></div>
         </div>
       </div>
-
-      <!-- RECENSIONI ART RESORT -->
       <div class="view" id="view-recensioni-ar">
         <div class="rev-upload-zone" id="revUploadZone-ar">
           <input type="file" id="revFileInput-ar" accept=".csv" style="display:none">
@@ -829,8 +776,6 @@
           <div class="rev-list" id="revList-ar"></div>
         </div>
       </div>
-
-      <!-- RECENSIONI SANTA BRIGIDA -->
       <div class="view" id="view-recensioni-sb">
         <div class="rev-upload-zone" id="revUploadZone-sb">
           <input type="file" id="revFileInput-sb" accept=".csv" style="display:none">
@@ -887,12 +832,8 @@
           <div class="rev-list" id="revList-sb"></div>
         </div>
       </div>
-
-      <!-- BKF SHEET SOULART -->
       <div class="view" id="view-bkfsheet">
         <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:14px;align-items:stretch;margin-bottom:14px;">
-
-          <!-- COLONNA 1: Aggiornamento giornaliero -->
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">☕ Aggiornamento giornaliero</span>
@@ -935,8 +876,6 @@
               </div>
             </div>
           </div>
-
-          <!-- COLONNA 2: Grafico coperti -->
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">Andamento coperti settimanale</span>
@@ -946,13 +885,8 @@
               <div style="color:var(--text-dim);font-size:var(--fs-xs);text-align:center;padding:20px 0;">Carica il report pasti dall'Upload Center per visualizzare il grafico</div>
             </div>
           </div>
-
         </div>
-
-        <!-- RIGA 2: Gruppi e Note operative affiancati -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;">
-
-          <!-- Gruppi -->
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">👥 Gruppi colazione</span>
@@ -962,8 +896,6 @@
               <div style="padding:16px;text-align:center;color:var(--text-dim);font-size:var(--fs-xs);">Nessun gruppo aggiunto</div>
             </div>
           </div>
-
-          <!-- Note operative per giorno -->
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">📋 Note operative</span>
@@ -973,17 +905,10 @@
               <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per aggiungere note per giorno</div>
             </div>
           </div>
-
         </div>
-
-
       </div>
-
-      <!-- BKF SHEET GALLERIA -->
       <div class="view" id="view-bkfsheetar">
         <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:14px;align-items:stretch;margin-bottom:14px;">
-
-          <!-- COLONNA 1: Aggiornamento giornaliero -->
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">☕ Aggiornamento giornaliero</span>
@@ -1026,8 +951,6 @@
               </div>
             </div>
           </div>
-
-          <!-- COLONNA 2: Grafico coperti -->
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">Andamento coperti settimanale</span>
@@ -1037,13 +960,8 @@
               <div style="color:var(--text-dim);font-size:var(--fs-xs);text-align:center;padding:20px 0;">Carica il report pasti dall'Upload Center per visualizzare il grafico</div>
             </div>
           </div>
-
         </div>
-
-        <!-- RIGA 2: Gruppi e Note operative affiancati -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;">
-
-          <!-- Gruppi -->
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">👥 Gruppi colazione</span>
@@ -1053,8 +971,6 @@
               <div style="padding:16px;text-align:center;color:var(--text-dim);font-size:var(--fs-xs);">Nessun gruppo aggiunto</div>
             </div>
           </div>
-
-          <!-- Note operative per giorno -->
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">📋 Note operative</span>
@@ -1064,11 +980,8 @@
               <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per aggiungere note per giorno</div>
             </div>
           </div>
-
         </div>
       </div>
-
-      <!-- Modal aggiungi gruppo (condiviso tra SoulArt e Galleria) -->
       <div id="bkfGroupModal" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;">
         <div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:12px;padding:24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
           <div style="font-size:var(--fs-sm);font-weight:600;margin-bottom:16px;">Aggiungi gruppo</div>
@@ -1090,9 +1003,6 @@
           </div>
         </div>
       </div>
-
-      <!-- KPI -->
-      <!-- HKP SOULART STORICO -->
       <div class="view" id="view-hkp-sa">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
           <div>
@@ -1111,8 +1021,6 @@
         </div>
         <div id="hkp-sa-content"><div style="text-align:center;padding:40px;color:var(--text-dim);">Clicca <strong>Aggiorna</strong> per caricare i dati del mese</div></div>
       </div>
-
-      <!-- HKP ART RESORT STORICO -->
       <div class="view" id="view-hkp-ar">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
           <div>
@@ -1131,11 +1039,8 @@
         </div>
         <div id="hkp-ar-content"><div style="text-align:center;padding:40px;color:var(--text-dim);">Clicca <strong>Aggiorna</strong> per caricare i dati del mese</div></div>
       </div>
-
-      <!-- MINI APP -->
       <div class="view" id="view-miniapp">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;" id="miniappGrid">
-          <!-- Card Housekeeping -->
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">🛏️ Housekeeping</span>
@@ -1152,8 +1057,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Card Breakfast -->
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">☕ Breakfast</span>
@@ -1174,10 +1077,6 @@
       </div>
   </main>
 </div>
-
-
-
-<!-- Modal grafico categoria -->
 <div id="catChartModal" onclick="closeCatModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:20px;">
   <div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:28px;max-width:820px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;">
     <button onclick="closeCatModal()" style="position:absolute;top:14px;right:14px;background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;">✕</button>
@@ -1186,10 +1085,7 @@
     <div id="catChartModalBody"></div>
   </div>
 </div>
-
 <button id="backToTop" onclick="document.querySelector('.content').scrollTo({top:0,behavior:'smooth'})" title="Torna su">↑</button>
-
-<!-- Modal Arrivi Oggi -->
 <div id="arriviModal" onclick="closeArriviModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1001;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;">
   <div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:24px;max-width:900px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;margin:auto;">
     <button onclick="closeArriviModal()" style="position:absolute;top:14px;right:14px;background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;color:var(--text-muted);display:flex;align-items:center;justify-content:center;">✕</button>
@@ -1198,7 +1094,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-
 <script src="app.js"></script>
 </body>
 </html>

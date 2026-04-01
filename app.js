@@ -1,6 +1,3 @@
-
-
-/* ═══ DATI ═══ */
 const DEPTS={fo:{label:'Front Office',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Extra BKF SAU']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
 let weekData=null,activeDay=0;
@@ -14,12 +11,8 @@ const WEEK={giorni:[
   {label:'Sab 21',date:new Date(2026,2,21),shifts:{'Maddaloni M.':'R','Presta P.':'AC','De Rosa T.':'AG','Pennacchio V.':'CC','Perez L.':'R','Imparato G.':'INT GALL 10/18','Vatiero R.':'CG','Barbosa D.':'NC','D\'Andrea F.':'NG','Grieco V.':'R','Matarese A.':'SOUL','Nacci M.':'SOUL N.','De Masi C.':'FERIE','Chiantese M.':'200','Scognamillo E.':'400','Esposito M.':'300','Branno M.':'100','Sarnataro A.':'PR/MS','Amorese S.':'BKF SOUL','Albano D.':'BKF SOUL','Ferace C.':'BKF GALL','Extra BKF SAU':'BKF GALL','Basile G.':'9-14'}},
   {label:'Dom 22',date:new Date(2026,2,22),shifts:{'Maddaloni M.':'R','Presta P.':'P','De Rosa T.':'AG','Pennacchio V.':'CG','Perez L.':'R','Imparato G.':'AC','Vatiero R.':'INT GALL 9/17','Barbosa D.':'NC','D\'Andrea F.':'NG','Grieco V.':'CC','Matarese A.':'SOUL','Nacci M.':'SOUL N.','De Masi C.':'R','Chiantese M.':'200','Scognamillo E.':'400','Esposito M.':'300','Branno M.':'100','Sarnataro A.':'PR/MS','Amorese S.':'BKF SOUL','Albano D.':'BKF SOUL','Ferace C.':'BKF GALL','Extra BKF SAU':'BKF GALL','Basile G.':'R'}}
 ]};
-
-/* ═══ ACCORDION TURNO (legacy stubs) ═══ */
 let turnoOpen=false;
 function toggleTurnoAccordion(){}
-
-/* ═══ UPLOAD CENTER HELPERS ═══ */
 function ucToggle(key){
   const slot=document.getElementById('uc-'+key);
   const panel=document.getElementById('uc-'+key+'-panel');
@@ -42,7 +35,6 @@ function ucToggle(key){
     slot.classList.add('open');
   }
 }
-
 function ucSetState(key,state,sub,silent){
   const slot=document.getElementById('uc-'+key);
   const subEl=document.getElementById('uc-'+key+'-sub');
@@ -71,7 +63,6 @@ function ucSetState(key,state,sub,silent){
   if(subEl&&sub)subEl.textContent=sub;
   ucUpdateProgress();
 }
-
 function ucUpdateProgress(){
   const slots=['turno','arrivi','pul','bkf','soul','bout'];
   const loaded=slots.filter(k=>{
@@ -83,8 +74,6 @@ function ucUpdateProgress(){
   if(bar)bar.style.width=(loaded/6*100)+'%';
   if(label)label.textContent=loaded+'/6';
 }
-
-/* ═══ TURNI ═══ */
 const turniInput=document.getElementById('turniFileInput');
 const turniStatus=document.getElementById('turniStatus');
 const turniBox={classList:{add:()=>{},remove:()=>{}}};
@@ -95,7 +84,6 @@ const turniBox={classList:{add:()=>{},remove:()=>{}}};
 })();
 async function handleTurniFile(file){
   ucSetState('turno','loading','Analisi in corso...');
-
   try{
     // Converti file in base64
     const base64=await new Promise((res,rej)=>{
@@ -104,10 +92,8 @@ async function handleTurniFile(file){
       r.onerror=()=>rej(new Error('Lettura file fallita'));
       r.readAsDataURL(file);
     });
-
     const isPDF=file.type==='application/pdf';
     const mediaType=isPDF?'application/pdf':file.type||'image/jpeg';
-
     const staff=ALL_STAFF;
     const prompt=`Sei un assistente che analizza planning settimanali di turni per un hotel.
 Analizza questa immagine/PDF del planning e restituisci SOLO un oggetto JSON valido con questa struttura esatta:
@@ -124,19 +110,15 @@ Analizza questa immagine/PDF del planning e restituisci SOLO un oggetto JSON val
     ...
   ]
 }
-
 Il planning contiene questi dipendenti (usa esattamente questi nomi):
 ${staff.join(', ')}
-
 Per ogni giorno della settimana presente nel planning, estrai il turno di ogni dipendente.
 Se un dipendente è assente/riposo metti "R".
 Se non riesci a leggere un turno metti "".
 Restituisci SOLO il JSON, nessun testo prima o dopo.`;
-
     const contentBlock=isPDF
       ?{type:'document',source:{type:'base64',media_type:mediaType,data:base64}}
       :{type:'image',source:{type:'base64',media_type:mediaType,data:base64}};
-
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -152,37 +134,30 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
         }]
       })
     });
-
     const data=await response.json();
     if(!data.content||!data.content[0])throw new Error('Risposta vuota');
-
     let jsonText=data.content[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
     const parsed=JSON.parse(jsonText);
-
     if(!parsed.giorni||!Array.isArray(parsed.giorni)||!parsed.giorni.length){
       throw new Error('Struttura JSON non valida');
     }
-
     // Converti date string in oggetti Date
     parsed.giorni=parsed.giorni.map(g=>({
       ...g,
       date:g.date?new Date(g.date+'T12:00:00'):new Date()
     }));
-
     // Salva in localStorage + cloud
     try{
       const toSave=parsed.giorni.map(g=>({...g,date:g.date.toISOString()}));
       localStorage.setItem('qm_weekData',JSON.stringify(toSave));
       fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:JSON.stringify(toSave)})}).catch(()=>{});
     }catch(e){}
-
     loadWeekData(parsed);
     const range=parsed.giorni[0].label+' – '+parsed.giorni[parsed.giorni.length-1].label;
     ucSetState('turno','loaded',range);
     setUploadTs('turnoTs');
     // Forza overview alla data odierna
     setTimeout(()=>{try{refreshOverviewForDate(new Date());}catch(e){}},100);
-
   }catch(err){
     ucSetState('turno','error','Errore caricamento');
   }
@@ -193,7 +168,6 @@ function loadWeekData(data){
   const todayD=today.getDate();
   const todayM=today.getMonth()+1;
   const todayY=today.getFullYear();
-
   function parseLocalDate(g){
     // Prova prima con date field come stringa ISO "2026-03-23"
     if(g.date){
@@ -210,12 +184,10 @@ function loadWeekData(data){
     }
     return null;
   }
-
   let idx=data.giorni.findIndex(g=>{
     const p=parseLocalDate(g);
     return p&&p.d===todayD&&p.mo===todayM&&p.y===todayY;
   });
-
   if(idx===-1){
     // Fallback 1: cerca per abbreviazione giorno della settimana nel label (es. "Mar" per martedì)
     const dayPfx=['dom','lun','mar','mer','gio','ven','sab'][today.getDay()];
@@ -229,7 +201,6 @@ function loadWeekData(data){
       idx=isPast?data.giorni.length-1:0;
     }
   }
-
   activeDay=idx;buildWeekNav();renderDay(activeDay);updateSidebarInfo();
   document.getElementById('weekNavWrap').style.display='block';
   document.getElementById('loadedInfo').classList.add('visible');
@@ -253,8 +224,6 @@ function renderDay(idx){
 function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caricato');turniInput.value='';
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Espandi "Carica turno" nella sidebar per caricare il planning</div></div>`;}
-
-/* ═══ NAV ═══ */
 const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria','hkp-sa':'Operativa HKP — SoulArt Hotel','hkp-ar':'Operativa HKP — Art Resort','miniapp':'Mini App — Anteprima e Link'};
 let recGroupOpen=false;
 function toggleRecGroup(){
@@ -288,7 +257,6 @@ function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.class
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
   if(id==='miniapp')setTimeout(miniappRender,50);
 }
-
 function miniappCopy(inputId,btn){
   const inp=document.getElementById(inputId);
   navigator.clipboard.writeText(inp.value).then(()=>{
@@ -296,9 +264,7 @@ function miniappCopy(inputId,btn){
     setTimeout(()=>{btn.textContent=orig;btn.style.background='';},2000);
   }).catch(()=>{inp.select();document.execCommand('copy');});
 }
-
 function miniappRender(){miniappRenderHK();miniappRenderBkf();}
-
 function miniappRenderHK(){
   const el=document.getElementById('miniapp-hk-preview');if(!el)return;
   const today=new Date();
@@ -317,7 +283,6 @@ function miniappRenderHK(){
   if(!hkSoulData&&!hkBoutData){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica Soul App HKP e Boutique App HKP per vedere l\'anteprima</div>';return;}
   el.innerHTML=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">📅 Oggi — ${todayLabel}</div>`+renderS(hkSoulData,'SoulArt Hotel')+renderS(hkBoutData,'Boutique Hotel');
 }
-
 function miniappRenderBkf(){
   const el=document.getElementById('miniapp-bkf-preview');if(!el)return;
   const today=new Date();
@@ -338,7 +303,6 @@ function miniappRenderBkf(){
     ${gruppiOggi.length?`<div style="font-size:var(--fs-xxs);background:#fff3cd;border-radius:6px;padding:6px 10px;color:#856404;margin-bottom:6px;">⚠️ ${gruppiOggi.length} gruppo${gruppiOggi.length>1?'i':''} oggi — ${totPax} persone</div>`:''}
     ${noteOggi?`<div style="font-size:var(--fs-xxs);color:var(--text-muted);font-style:italic;background:var(--surface2);padding:6px 8px;border-radius:6px;">📋 ${noteOggi}</div>`:''}`;
 }
-/* ═══ TASK MATTUTINI — engine dinamico per giorno ═══ */
 function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 function fmtUploadTs(ts){const n=ts?new Date(ts):new Date();const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];return'↑ '+n.getDate()+' '+ms[n.getMonth()]+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 const TS_TO_UC={turnoTs:'uc-turno-sub',arriviTs:'uc-arrivi-sub',pulTs:'uc-pul-sub',bkfTs:'uc-bkf-sub',soulTs:'uc-soul-sub',boutTs:'uc-bout-sub'};
@@ -357,11 +321,6 @@ function _setUcTs(elId,ts){
 function setUploadTs(elId,ts){const t=ts||Date.now();_setUcTs(elId,t);try{localStorage.setItem('qm_ts_'+elId,String(t));}catch(e){}}
 function restoreUploadTs(elId,ts){if(!ts)return;try{const existing=parseInt(localStorage.getItem('qm_ts_'+elId)||'0');if(existing>ts){_setUcTs(elId,existing);return;}_setUcTs(elId,ts);localStorage.setItem('qm_ts_'+elId,String(ts));}catch(e){_setUcTs(elId,ts);}}
 function loadStoredTs(elId){try{const t=localStorage.getItem('qm_ts_'+elId);if(t)_setUcTs(elId,parseInt(t));}catch(e){}}
-
-/* Definizione task:
-   freq: 'daily' = ogni giorno | 3 = mercoledì (0=dom,1=lun...4=gio) | 4 = giovedì
-   dept: classe CSS reparto | pri: 'high'|'med'|'low'
-*/
 const DAILY_TASKS=[
   {text:'Generazione registration cards',dept:'fo',link:'registrazione'},
   {text:'Breakfast Sheet SoulArt',dept:'bkf',link:'bkfsheet'},
@@ -377,10 +336,8 @@ const THU_TASKS=[
   {text:'Inventario magazzino detersivi',dept:'mt',badge:'Solo gio'},
   {text:'Compilazione registri Legionella',dept:'mt',badge:'Solo gio'},
 ];
-
 const DEPT_CLS={fo:'dept-fo',hkp:'dept-hk',bkf:'dept-fb',mt:'dept-mt'};
 const DEPT_LABEL={fo:'FO',hkp:'HKP',bkf:'BKF',mt:'MT'};
-
 function buildTaskItem(t,listId){
   const li=document.createElement('li');
   li.className='check-item';
@@ -392,14 +349,12 @@ function buildTaskItem(t,listId){
   li.addEventListener('click',()=>toggleCheck(li,listId));
   return li;
 }
-
 function getTasksForDay(dow){
   let tasks=[...DAILY_TASKS];
   if(dow===3) tasks=[...tasks,...WED_TASKS];
   if(dow===4) tasks=[...tasks,...THU_TASKS];
   return tasks;
 }
-
 function renderTaskList(listId,labelId,counterId){
   const dow=new Date().getDay();
   const tasks=getTasksForDay(dow);
@@ -414,10 +369,7 @@ function renderTaskList(listId,labelId,counterId){
   if(dow===4)extras.push('+ Giovedì');
   if(labelId&&extras.length){const el=document.getElementById(labelId);if(el)el.textContent=extras.join(' ');}
 }
-
-/* ═══ PERSISTENZA LOCALE ═══ */
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
-
 function setSyncStatus(state){
   // state: 'syncing' | 'ok' | 'error' | 'offline'
   const dot=document.getElementById('syncDot');
@@ -433,16 +385,13 @@ function setSyncStatus(state){
   dot.style.animation=cfg.anim?'pulse 1s infinite':'none';
   label.textContent=cfg.text;
 }
-
 // CSS pulse animation
 const styleEl=document.createElement('style');
 styleEl.textContent='@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}';
 document.head.appendChild(styleEl);
-
 // Storage ibrido: localStorage (veloce/offline) + KV cloud (sync tra dispositivi)
 const LS={
   today:()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();},
-
   // Salva in localStorage E sul cloud
   set:(k,v)=>{
     try{localStorage.setItem('qm_'+k,JSON.stringify(v));}catch(e){}
@@ -452,18 +401,15 @@ const LS={
       .then(()=>setSyncStatus('ok'))
       .catch(()=>setSyncStatus('offline'));
   },
-
   // Legge da localStorage (sincrono, per uso immediato)
   get:(k,def)=>{
     try{const v=localStorage.getItem('qm_'+k);return v!==null?JSON.parse(v):def;}catch(e){return def;}
   },
-
   // Cancella da entrambi
   del:(k)=>{
     try{localStorage.removeItem('qm_'+k);}catch(e){}
     fetch(PROXY+'/kv/delete?key=qm_'+encodeURIComponent(k)).catch(()=>{});
   },
-
   // Carica tutti i dati dal cloud e aggiorna localStorage (chiamata all'avvio)
   syncFromCloud:async()=>{
     const keys=['checklist','custom_tasks','dept_custom_tasks','pulData','bkfData',
@@ -496,17 +442,14 @@ const LS={
     return synced;
   }
 };
-
 // Salva stato checklist (task spuntati per data)
 // ── STATO CENTRALIZZATO CHECKLIST ──
 // Chiave: testo del task. Valore: {done, time}
 // Usato per sincronizzare overview ↔ checklist in tempo reale
 let TASK_STATE={};
-
 function taskKey(item){
   return item.querySelector('.check-text')?.textContent?.trim()||'';
 }
-
 function syncTaskState(key, done, time){
   if(!key)return;
   TASK_STATE[key]={done,time};
@@ -526,7 +469,6 @@ function syncTaskState(key, done, time){
   saveChecklistState();
   updateClProgress();
 }
-
 function saveChecklistState(){
   if(Object.keys(TASK_STATE).length===0)return;
   LS.set('checklist',{date:LS.today(),state:TASK_STATE});
@@ -539,7 +481,6 @@ function saveChecklistState(){
   });
   LS.set('custom_tasks',{date:LS.today(),tasks:customs});
 }
-
 function restoreChecklistState(){
   const saved=LS.get('checklist',null);
   if(!saved||saved.date!==LS.today())return;
@@ -561,7 +502,6 @@ function restoreChecklistState(){
   });
   updateClProgress();
 }
-
 // Task personalizzati
 let customTasksLoaded=false;
 function addCustomTaskById(inputId){
@@ -569,13 +509,11 @@ function addCustomTaskById(inputId){
   if(!inp)return;
   addCustomTask(inp);
 }
-
 function addCustomTaskByDeptId(dept){
   const inp=document.getElementById('deptInput-'+dept);
   if(!inp)return;
   addCustomTaskToDept(dept,inp);
 }
-
 function addCustomTask(inp){
   // Fallback: se non riceve l'input, cerca il primo con valore non vuoto
   if(!inp||!inp.value){
@@ -631,7 +569,6 @@ function addCustomTask(inp){
   updateClProgress();
   saveChecklistState();
 }
-
 function addCustomTaskToDept(dept, inp){
   // inp può essere l'elemento input oppure il bottone (in quel caso cerchiamo previousElementSibling)
   if(inp&&inp.tagName==='BUTTON')inp=inp.previousElementSibling;
@@ -666,7 +603,6 @@ function addCustomTaskToDept(dept, inp){
   updateClProgress();
   saveDeptCustomTasks();
 }
-
 function removeCustomTask(text, btn){
   event.stopPropagation();
   ['taskList','cl-custom'].forEach(listId=>{
@@ -681,7 +617,6 @@ function removeCustomTask(text, btn){
   updateClProgress();
   saveChecklistState();
 }
-
 function removeDeptTask(dept,text,btn){
   event.stopPropagation();
   ['cl-'+dept,'taskList'].forEach(listId=>{
@@ -693,13 +628,11 @@ function removeDeptTask(dept,text,btn){
   updateClProgress();
   saveDeptCustomTasks();
 }
-
 function refreshDeptCount(dept){
   const ul=document.getElementById('cl-'+dept);
   const el=document.getElementById('cl-'+dept+'-count');
   if(ul&&el)el.textContent=ul.querySelectorAll('.check-box.done').length+'/'+ul.querySelectorAll('.check-item').length;
 }
-
 function saveDeptCustomTasks(){
   const saved={date:LS.today(),depts:{}};
   ['fo','hk','bkf','mt'].forEach(dept=>{
@@ -715,7 +648,6 @@ function saveDeptCustomTasks(){
   });
   LS.set('dept_custom_tasks',saved);
 }
-
 function restoreDeptCustomTasks(){
   const saved=LS.get('dept_custom_tasks',null);
   if(!saved||saved.date!==LS.today())return;
@@ -725,7 +657,6 @@ function restoreDeptCustomTasks(){
     });
   });
 }
-
 function restoreCustomTasks(){
   const saved=LS.get('custom_tasks',null);
   if(!saved||saved.date!==LS.today()||!saved.tasks?.length)return;
@@ -735,8 +666,6 @@ function restoreCustomTasks(){
   });
   if(inp)inp.value='';
 }
-
-
 function toggleCheck(item,listId){
   const b=item.querySelector('.check-box');
   const timeEl=item.querySelector('.check-time');
@@ -752,8 +681,6 @@ function toggleCheck(item,listId){
     document.getElementById('taskCounter').textContent=doneN+'/'+total;
   }
 }
-
-/* ═══ CHECKLIST V2 — progress bar sincronizzata ═══ */
 function updateClProgress(){
   const allLists=['cl-fo','cl-hkp','cl-bkf','cl-mt','cl-custom'];
   let total=0,done=0;
@@ -783,7 +710,6 @@ function updateClProgress(){
   });
   const statsEl=document.getElementById('clDeptStats');if(statsEl)statsEl.innerHTML=html;
 }
-
 function toggleCheckV2(item,dept){
   const b=item.querySelector('.check-box');
   const done=!b.classList.contains('done');
@@ -792,7 +718,6 @@ function toggleCheckV2(item,dept){
   const ul=document.getElementById('cl-'+dept);
   if(ul){const tot=ul.querySelectorAll('.check-item').length,dn=ul.querySelectorAll('.check-box.done').length;const el=document.getElementById('cl-'+dept+'-count');if(el)el.textContent=dn+'/'+tot;}
 }
-
 (function initCl(){
   const d=new Date();
   const ds=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
@@ -808,7 +733,6 @@ function toggleCheckV2(item,dept){
     DAILY_TASKS.forEach(t=>{if(deptTasks[t.dept])deptTasks[t.dept].push(t);});
     if(dow===3) WED_TASKS.forEach(t=>{if(deptTasks[t.dept])deptTasks[t.dept].push(t);});
     if(dow===4) THU_TASKS.forEach(t=>{if(deptTasks[t.dept])deptTasks[t.dept].push(t);});
-
     ['fo','hk','bkf','mt'].forEach(dept=>{
       const ul=document.getElementById('cl-'+dept);
       const countEl=document.getElementById('cl-'+dept+'-count');
@@ -837,10 +761,6 @@ function toggleCheckV2(item,dept){
     updateClProgress();
   })();
 })();
-
-
-
-/* ═══ BKF PREVIEW IN OVERVIEW ═══ */
 function toggleBkfPreview(){
   const el=document.getElementById('kpi-bkf-preview');
   if(!el)return;
@@ -874,8 +794,6 @@ function toggleBkfPreview(){
   el.innerHTML=svg;
   el.style.display='block';
 }
-
-/* ═══ KPI BAR CHART ═══ */
 function buildBarChart(){
   const data=[{l:'Lun 10',v:91},{l:'Mar 11',v:89},{l:'Mer 12',v:92},{l:'Gio 13',v:90},{l:'Ven 14',v:93},{l:'Sab 15',v:92},{l:'Oggi',v:94}];
   const max=100,target=90;
@@ -889,8 +807,6 @@ function buildBarChart(){
   // target line overlay – simplified as text
   wrap.title='Linea target: 90';
 }
-
-/* ═══ DATA / ORA / METEO ═══ */
 const WC_ICONS={
   clear:'<circle cx="12" cy="12" r="4" fill="none" stroke="var(--amber)" stroke-width="1.5"/><line x1="12" y1="2" x2="12" y2="5" stroke="var(--amber)" stroke-width="1.5"/><line x1="12" y1="19" x2="12" y2="22" stroke="var(--amber)" stroke-width="1.5"/><line x1="2" y1="12" x2="5" y2="12" stroke="var(--amber)" stroke-width="1.5"/><line x1="19" y1="12" x2="22" y2="12" stroke="var(--amber)" stroke-width="1.5"/>',
   cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" fill="none" stroke="var(--text-dim)" stroke-width="1.5"/>',
@@ -957,7 +873,6 @@ function toggleWeatherForecast(e){
 }
 fetchMeteo();
 setInterval(fetchMeteo,10*60*1000);
-
 // Orologio sidebar + turno automatico
 function updateSbClock(){
   const n=new Date();
@@ -975,7 +890,6 @@ function updateSbClock(){
 }
 updateSbClock();
 setInterval(updateSbClock,10000);
-
 // Data
 let customDate=null;
 function toggleDatePopup(e){
@@ -1011,11 +925,9 @@ function updateDateDisplay(){
   document.getElementById('todayDate').textContent=days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()];
   try{refreshOverviewForDate(d);}catch(e){}
 }
-
 function refreshOverviewForDate(d){
   const ref=new Date(d||customDate||new Date());
   ref.setHours(0,0,0,0);
-
   // 0. Pulizia task personalizzati se la data non è oggi
   try{
     const todayD=new Date();todayD.setHours(0,0,0,0);
@@ -1040,7 +952,6 @@ function refreshOverviewForDate(d){
       TASK_STATE={};
     }
   }catch(e){}
-
   // 1. Turno di Paolo
   try{
     const el=document.getElementById('paoloTurno');
@@ -1054,7 +965,6 @@ function refreshOverviewForDate(d){
       }
     }
   }catch(e){}
-
   // 2. Staff area
   try{
     if(weekData){
@@ -1069,7 +979,6 @@ function refreshOverviewForDate(d){
       // Se idx===-1 usa activeDay già impostato da loadWeekData (oggi)
     }
   }catch(e){}
-
   // 3. Task quotidiani
   try{
     const dow=ref.getDay();
@@ -1127,7 +1036,6 @@ function refreshOverviewForDate(d){
     if(mtBadge)mtBadge.style.display=(dow===4)?'inline-block':'none';
     updateClProgress();
   }catch(e){}
-
   // 4. Pulizie
   try{
     if(pulData){
@@ -1135,7 +1043,6 @@ function refreshOverviewForDate(d){
       if(idx!==-1){pulActiveDay=idx;renderPulDay();}
     }
   }catch(e){}
-
   // 5. BKF pasti
   try{
     if(bkfData){
@@ -1152,7 +1059,6 @@ document.querySelector('.content').addEventListener('scroll',function(){
   const btn=document.getElementById('backToTop');
   if(btn)btn.style.display=this.scrollTop>300?'block':'none';
 });
-
 (function(){
   // Sempre data odierna all'avvio — ignora customDate salvata
   customDate=null;
@@ -1171,7 +1077,6 @@ document.querySelector('.content').addEventListener('scroll',function(){
     }catch(e){
       setSyncStatus('offline');
     }
-
     // Ripristina dati persistenti
   setTimeout(async()=>{
     // Rileggi REV_SENT da localStorage (può essere stato aggiornato dalla sync cloud)
@@ -1181,14 +1086,13 @@ document.querySelector('.content').addEventListener('scroll',function(){
     restoreDeptCustomTasks();
     hkpRestore();
     ovUpdateRevNoreply();
-
     // Ripristina turno settimanale
     try{
       const saved=localStorage.getItem('qm_weekData');
       if(saved){
         const parsed=JSON.parse(saved);
         // Converti SEMPRE le date in oggetti Date prima di passare a loadWeekData
-        const restored={giorni:parsed.map(g=>{const d=new Date(g.date);return{...g,date:new Date(d.getFullYear(),d.getMonth(),d.getDate(),12,0,0)};})};        
+        const restored={giorni:parsed.map(g=>{const d=new Date(g.date);return{...g,date:new Date(d.getFullYear(),d.getMonth(),d.getDate(),12,0,0)};})};
         loadWeekData(restored);
         const range=restored.giorni[0].label+' – '+restored.giorni[restored.giorni.length-1].label;
         ucSetState('turno','loaded',range,true);
@@ -1197,7 +1101,6 @@ document.querySelector('.content').addEventListener('scroll',function(){
         setTimeout(()=>{try{if(weekData)loadWeekData(weekData);}catch(e){}},50);
       }
     }catch(e){}
-
     // Ripristina arrivi oggi
     try{
       const saved=localStorage.getItem('qm_arriviData');
@@ -1210,7 +1113,6 @@ document.querySelector('.content').addEventListener('scroll',function(){
         if(arriviData._ts)restoreUploadTs('arriviTs',arriviData._ts);else loadStoredTs('arriviTs');
       }
     }catch(e){}
-
     // Ripristina RC guests
     setTimeout(()=>{
       try{
@@ -1310,20 +1212,15 @@ document.querySelector('.content').addEventListener('scroll',function(){
   },150);
   })(); // fine async sync
 })();
-
-/* ═══ SCORE TREND MODAL ═══ */
 function openScoreTrend(p){
   const data=REV_HOTELS[p].data;
   if(!data||!data.length)return;
-
   const scored=data.filter(r=>r._score>0&&r._dateTs>0);
-
   // Costruisci lista mesi dal più vecchio al più recente
   const minTs=Math.min(...scored.map(r=>r._dateTs));
   const maxTs=Math.max(...scored.map(r=>r._dateTs));
   const startDate=new Date(minTs); startDate.setDate(1); startDate.setHours(0,0,0,0);
   const endDate=new Date(maxTs); endDate.setDate(1); endDate.setHours(0,0,0,0);
-
   const months=[];
   const labels=[];
   const mesiBrevi=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
@@ -1333,7 +1230,6 @@ function openScoreTrend(p){
     labels.push(mesiBrevi[cur.getMonth()]+'\''+String(cur.getFullYear()).slice(2));
     cur.setMonth(cur.getMonth()+1);
   }
-
   // Per ogni mese calcola lo score ponderato 85/10/5 usando tutte le rec fino a quel mese
   function calcWeightedAt(refDate){
     const refTs=refDate.getTime()+30*24*60*60*1000; // fine del mese
@@ -1350,38 +1246,29 @@ function openScoreTrend(p){
     if(a3!==null){wT+=0.05;wS+=0.05*a3;}
     return wT>0?wS/wT:null;
   }
-
   const vals=months.map(m=>calcWeightedAt(m));
   const validVals=vals.filter(v=>v!==null);
   if(validVals.length<2)return;
-
   const title=REV_HOTELS[p].name;
   document.getElementById('catChartModalTitle').textContent='📈 Andamento score — '+title;
   document.getElementById('catChartModalTitle').style.color='#003580';
   document.getElementById('catChartModalSub').textContent='Score ponderato Booking 85/10/5 · '+months.length+' mesi · tutto il periodo';
-
   const W=700,H=260,PL=40,PR=20,PT=30,PB=40;
   const plotW=W-PL-PR,plotH=H-PT-PB;
   const minY=Math.max(0,Math.min(...validVals)-0.2);
   const maxY=Math.min(10,Math.max(...validVals)+0.2);
   const rng=maxY-minY||0.5;
-
   function sx(i){return PL+i/(months.length-1)*plotW;}
   function sy(v){return PT+plotH-(v-minY)/rng*plotH;}
-
   const points=vals.map((v,i)=>v!==null?{x:sx(i),y:sy(v),v,m:labels[i]}:null).filter(Boolean);
-
   function linePath(pts){
     if(!pts.length)return'';
     return`M${pts[0].x},${pts[0].y}`+pts.slice(1).map(p=>`L${p.x},${p.y}`).join('');
   }
-
   const path=linePath(points);
   const areaClose=`L${points[points.length-1].x},${PT+plotH} L${points[0].x},${PT+plotH} Z`;
   const labelStep=Math.max(1,Math.ceil(points.length/12));
-
   let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">`;
-
   // Griglia
   const steps=5;
   for(let i=0;i<=steps;i++){
@@ -1390,7 +1277,6 @@ function openScoreTrend(p){
     svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="1"/>`;
     svg+=`<text x="${PL-5}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v.toFixed(1)}</text>`;
   }
-
   // Labels mesi
   points.forEach((pt,i)=>{
     if(i%labelStep===0||i===points.length-1){
@@ -1398,7 +1284,6 @@ function openScoreTrend(p){
       svg+=`<text x="${pt.x}" y="${H-6}" font-size="11" fill="var(--text-dim)" text-anchor="middle">${pt.m}</text>`;
     }
   });
-
   svg+=`<path d="${path} ${areaClose}" fill="#003580" opacity="0.08"/>`;
   svg+=`<path d="${path}" fill="none" stroke="#003580" stroke-width="1.5"/>`;
   points.forEach((pt,i)=>{
@@ -1409,22 +1294,17 @@ function openScoreTrend(p){
       svg+=`<text x="${pt.x}" y="${ty}" font-size="9.5" fill="#003580" text-anchor="middle" font-weight="600">${pt.v.toFixed(1)}</text>`;
     }
   });
-
   svg+='</svg>';
   document.getElementById('catChartModalBody').innerHTML=svg;
   document.getElementById('catChartModal').style.display='flex';
 }
-
-/* ═══ OVERVIEW RECENSIONI SENZA RISPOSTA ═══ */
 function ovUpdateRevNoreply(){
   const el=document.getElementById('ov-rev-noreply');
   const badge=document.getElementById('ov-rev-badge');
   if(!el)return;
-
   const now=Date.now();
   const DAYS15=15*24*60*60*1000;
   const recent=[];
-
   ['sa','bh','sl','pr','ms','ar','sb'].forEach(p=>{
     const h=REV_HOTELS[p];
     if(!h||!h.data.length)return;
@@ -1435,19 +1315,15 @@ function ovUpdateRevNoreply(){
       }
     });
   });
-
   if(!recent.length){
     el.innerHTML='<div style="color:var(--green);font-size:var(--fs-xs);">✓ Nessuna recensione recente senza risposta</div>';
     if(badge)badge.style.display='none';
     return;
   }
-
   recent.sort((a,b)=>b._dateTs-a._dateTs);
   if(badge){badge.textContent=recent.length;badge.style.display='inline';}
-
   const fmt=ts=>{const d=new Date(ts);return d.getDate()+'/'+(d.getMonth()+1);};
   const scoreColor=s=>s>=9?'var(--green)':s>=7?'var(--amber)':'var(--red)';
-
   function makeItem(r){
     const name=r["Nome dell'ospite"]||'Ospite';
     const score=r._score||0;
@@ -1464,12 +1340,9 @@ function ovUpdateRevNoreply(){
       </div>
     </div>`;
   }
-
   const first3=recent.slice(0,3);
   const rest=recent.slice(3);
-
   let html=first3.map(makeItem).join('');
-
   if(rest.length>0){
     const restHtml=rest.map(makeItem).join('');
     html+=`<div id="ov-rev-rest" style="display:none;">${restHtml}</div>
@@ -1483,18 +1356,14 @@ function ovUpdateRevNoreply(){
       })()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:var(--fs-xxs);color:var(--text-dim);cursor:pointer;">Vedi altre ${rest.length} ↓</button>
     </div>`;
   }
-
   el.innerHTML=html;
 }
-
-/* ═══ HKP ENGINE ═══ */
 const HKP_URLS={
   sa:'https://script.google.com/macros/s/AKfycbyosKJIaYIxh7D7GnCMFU7K_gABx2uNSy2VuaEjRc4ND1eEF9zrcSyUgc1Kp3X27lPa/exec',
   ar:'https://script.google.com/macros/s/AKfycbwtxy0lngIzQ07QKRX2llx3lBCp2GdE1CoXsAW7GbKre5OEEARNdpCDuahc0DFsPAp7/exec'
 };
 let HKP_DATA={sa:null,ar:null};
 let HKP_TAB={sa:'riepilogo',ar:'riepilogo'};
-
 // Salva/carica HKP dal localStorage + cloud
 function hkpSave(p){
   try{localStorage.setItem('qm_hkp_'+p, JSON.stringify(HKP_DATA[p]));}catch(e){}
@@ -1512,7 +1381,6 @@ function hkpRestore(){
     }catch(e){}
   });
 }
-
 async function hkpLoad(p){
   const btnIcon=document.getElementById('hkp-'+p+'-btn-icon');
   const content=document.getElementById('hkp-'+p+'-content');
@@ -1530,7 +1398,6 @@ async function hkpLoad(p){
   }
   if(btnIcon)btnIcon.textContent='↻';
 }
-
 function hkpTab(p,tab,btn){
   HKP_TAB[p]=tab;
   const view=document.getElementById('view-hkp-'+p);
@@ -1538,20 +1405,17 @@ function hkpTab(p,tab,btn){
   if(btn)btn.classList.add('active');
   if(HKP_DATA[p])hkpRenderContent(p);
 }
-
 function hkpRenderAll(p){
   const data=HKP_DATA[p];
   const dateEl=document.getElementById('hkp-'+p+'-date');
   const kpiEl=document.getElementById('hkp-'+p+'-kpi');
   if(dateEl)dateEl.textContent='Mese '+data.mese+' · '+data.giorni_elaborati+' giorni elaborati';
-
   const cameriere=data.cameriere||[];
   const totMese=data.tot_mese||0;
   // Conta solo giorni con camere > 0
   const giorniConDati=Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
   const mediaGiornaliera=Math.round(totMese/giorniConDati*10)/10;
   const top=cameriere.length?[...cameriere].sort((a,b)=>b.camere_tot-a.camere_tot)[0]:null;
-
   kpiEl.innerHTML=`
     <div class="kpi-card green"><div class="kpi-card-icon">🛏️</div><div class="kpi-label">Camere mese</div><div class="kpi-value">${totMese}</div><div class="kpi-delta up">${giorniConDati} giorni con dati</div></div>
     <div class="kpi-card blue"><div class="kpi-card-icon">📊</div><div class="kpi-label">Media/giorno</div><div class="kpi-value">${mediaGiornaliera}</div><div class="kpi-delta">su ${giorniConDati} giorni</div></div>
@@ -1560,7 +1424,6 @@ function hkpRenderAll(p){
   `;
   hkpRenderContent(p);
 }
-
 function hkpRenderContent(p){
   const data=HKP_DATA[p];
   const content=document.getElementById('hkp-'+p+'-content');
@@ -1569,7 +1432,6 @@ function hkpRenderContent(p){
   const totMese=data.tot_mese||0;
   const giorni=Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
   const mese=data.mese||'';
-
   if(tab==='riepilogo'){
     // Ranking mensile: nome + barra + camere tot + media + %
     const maxCam=cameriere[0]?.camere_tot||1;
@@ -1598,7 +1460,6 @@ function hkpRenderContent(p){
       </div>`;
     });
     html+='</div></div>';
-
     // Grafico andamento mensile per cameriera (mini sparkline SVG)
     const totGiorni=data.totale_per_giorno||{};
     const giorniDisp=Object.keys(totGiorni).map(Number).filter(d=>totGiorni[d]>0).sort((a,b)=>a-b);
@@ -1614,17 +1475,14 @@ function hkpRenderContent(p){
       const maxV=Math.max(...allVals,1);
       const sx=i=>PL+i/(giorniDisp.length-1)*plotW;
       const sy=v=>PT+plotH-(v/maxV)*plotH;
-
       let svg=`<div class="panel" style="margin-top:12px;"><div class="panel-header"><span class="panel-title">Andamento giornaliero per cameriera</span></div><div class="panel-body" style="padding:14px;overflow-x:auto;">`;
       svg+=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
-
       // Griglia
       [0,0.25,0.5,0.75,1].forEach(t=>{
         const y=PT+plotH*(1-t);
         svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="1"/>`;
         svg+=`<text x="${PL-4}" y="${y+4}" font-size="9" fill="var(--text-dim)" text-anchor="end">${Math.round(t*maxV)}</text>`;
       });
-
       // Labels giorni (ogni 5)
       giorniDisp.forEach((d,i)=>{
         if(d===1||d%5===0||i===giorniDisp.length-1){
@@ -1632,7 +1490,6 @@ function hkpRenderContent(p){
           svg+=`<text x="${x}" y="${H-4}" font-size="9" fill="var(--text-dim)" text-anchor="middle">${d}</text>`;
         }
       });
-
       // Linea per ogni cameriera
       cameriere.forEach((cam,ci)=>{
         const col=COLORS[ci%COLORS.length];
@@ -1644,7 +1501,6 @@ function hkpRenderContent(p){
         svg+=`<circle cx="${last.x}" cy="${last.y}" r="3" fill="${col}"/>`;
       });
       svg+='</svg>';
-
       // Legenda
       svg+='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">';
       cameriere.forEach((cam,ci)=>{
@@ -1657,32 +1513,26 @@ function hkpRenderContent(p){
       html+=svg;
     }
     content.innerHTML=html;
-
   } else if(tab==='dettaglio'){
     const totGiorni=data.totale_per_giorno||{};
     const giorniDisponibili=[];
     for(let d=1;d<=data.giorni_mese;d++){if(totGiorni[d]>0)giorniDisponibili.push(d);}
     if(!giorniDisponibili.length){content.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-dim);">Nessun dato disponibile</div>';return;}
-
     let selDay=parseInt(content.dataset.selDay||giorniDisponibili[giorniDisponibili.length-1]);
     if(!giorniDisponibili.includes(selDay))selDay=giorniDisponibili[giorniDisponibili.length-1];
-
     // Navigazione giorni
     let navHtml=`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;">`;
     giorniDisponibili.forEach(d=>{
       navHtml+=`<button class="rev-filter-btn${d===selDay?' active':''}" onclick="hkpSelectDay('${p}',${d})">${d}</button>`;
     });
     navHtml+='</div>';
-
     // Barre per cameriera per il giorno selezionato
     const camData=cameriere.map(cam=>{
       const pg={};Object.entries(cam.camere_per_giorno||{}).forEach(([k,v])=>{pg[parseInt(k)]=parseInt(v)||0;});
       return{nome:cam.nome,n:pg[selDay]||0};
     }).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
-
     const maxN=camData.length?camData[0].n:1;
     const totGiorno=totGiorni[selDay]||0;
-
     let barHtml=`<div class="panel"><div class="panel-header"><span class="panel-title">${selDay} ${mese.split('/')[0]?'mar':''} — ${totGiorno} camere totali</span></div><div class="panel-body" style="padding:0;">`;
     if(!camData.length){
       barHtml+='<div style="padding:20px;text-align:center;color:var(--text-dim);">Nessun dato per questo giorno</div>';
@@ -1707,22 +1557,17 @@ function hkpRenderContent(p){
       });
     }
     barHtml+='</div></div>';
-
     content.innerHTML=navHtml+barHtml;
     content.dataset.selDay=selDay;
   }
 }
-
 function hkpSelectDay(p,day){
   const content=document.getElementById('hkp-'+p+'-content');
   content.dataset.selDay=day;
   hkpRenderContent(p);
 }
-
-/* ═══ BKF SHEET ENGINE ═══ */
 const SHEETS_URL='https://script.google.com/macros/s/AKfycbyRBEVemGfnL6dcPMlc3OlTmhPu8ngvrqYwz9PwOI9uBT3S-UHPRvzOIQi_DHi36bWe/exec';
 let bkfSheetData=[];
-
 (function initBkfSheet(){
   const zone=document.getElementById('bkfSheetUploadZone');
   const inp=document.getElementById('bkfSheetFileInput');
@@ -1732,7 +1577,6 @@ let bkfSheetData=[];
   zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')bkfSheetAnalyze(f);else bkfSheetShowError('Carica un file PDF.');});
   inp.addEventListener('change',e=>{if(e.target.files[0])bkfSheetAnalyze(e.target.files[0]);inp.value='';});
 })();
-
 async function bkfSheetAnalyze(file){
   bkfSheetSetStatus('analyzing');
   try{
@@ -1742,9 +1586,7 @@ async function bkfSheetAnalyze(file){
       r.onerror=()=>rej(new Error('Errore lettura file'));
       r.readAsDataURL(file);
     });
-
     const prompt=`Analizza questo PDF "BKF OGGI" del SoulArt Hotel ed estrai i dati delle colazioni.
-
 REGOLE OBBLIGATORIE:
 1. DATA: Estrai la data di ogni riga (es: "Lun 02/03").
 2. RO (Room Only): Estrai il totale persone in Room Only per ogni data.
@@ -1752,7 +1594,6 @@ REGOLE OBBLIGATORIE:
 4. Rispondi SOLO con un array JSON valido, senza markdown, senza commenti, senza testo aggiuntivo.
 5. Formato esatto: [{"d": "Lun 02/03", "r": 5, "b": 37}]
 6. Massimo 8 righe.`;
-
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -1768,16 +1609,13 @@ REGOLE OBBLIGATORIE:
         }]
       })
     });
-
     const data=await response.json();
     if(data.error){throw new Error('API: '+data.error.type+' — '+data.error.message);}
     if(!data.content||!data.content[0]){throw new Error('Risposta vuota dal server.');}
-
     let jsonText=data.content[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
     // estrai solo la parte JSON se ci sono testi aggiuntivi
     const match=jsonText.match(/\[[\s\S]*\]/);
     if(match)jsonText=match[0];
-
     bkfSheetData=JSON.parse(jsonText);
     if(!Array.isArray(bkfSheetData)||!bkfSheetData.length)throw new Error('Nessun dato estratto dal PDF.');
     bkfSheetRenderTable();
@@ -1786,7 +1624,6 @@ REGOLE OBBLIGATORIE:
     bkfSheetShowError('Errore: '+err.message);
   }
 }
-
 function bkfSheetRenderTable(){
   const tbody=document.getElementById('bkfSheetTableBody');
   tbody.innerHTML=bkfSheetData.map(r=>`
@@ -1796,7 +1633,6 @@ function bkfSheetRenderTable(){
       <td><span class="bkf-badge">${r.b??'—'}</span></td>
     </tr>`).join('');
 }
-
 async function bkfSheetSync(){
   const btn=document.getElementById('bkfSheetSyncBtn');
   btn.disabled=true;btn.textContent='Sincronizzazione...';
@@ -1816,7 +1652,6 @@ async function bkfSheetSync(){
     btn.disabled=false;btn.textContent='↑ Sincronizza Google Sheets';
   }
 }
-
 function bkfSheetSetStatus(s){
   document.getElementById('bkfSheetUploadZone').style.display=s==='idle'?'block':'none';
   document.getElementById('bkfSheetProcessing').style.display=s==='analyzing'?'flex':'none';
@@ -1826,13 +1661,11 @@ function bkfSheetSetStatus(s){
   const btn=document.getElementById('bkfSheetSyncBtn');
   if(btn){btn.disabled=false;btn.textContent='↑ Sincronizza Google Sheets';}
 }
-
 function bkfSheetReset(){
   bkfSheetData=[];
   bkfSheetSetStatus('idle');
   document.getElementById('bkfSheetFileInput').value='';
 }
-
 function bkfSheetShowError(msg){
   document.getElementById('bkfSheetUploadZone').style.display='block';
   document.getElementById('bkfSheetProcessing').style.display='none';
@@ -1840,11 +1673,8 @@ function bkfSheetShowError(msg){
   document.getElementById('bkfSheetSuccess').style.display='none';
   const e=document.getElementById('bkfSheetError');e.textContent=msg;e.style.display='block';
 }
-
-/* ═══ BKF SHEET ART RESORT ENGINE ═══ */
 const SHEETS_URL_AR='https://script.google.com/macros/s/AKfycbyRmpKteGT34rpTVB4Qfxd2sK4la8_zlbqNbGWq-Y29FZ--MQlcPjuV4Lg1oHizI98/exec';
 let bkfSheetARData=[];
-
 (function initBkfSheetAR(){
   const zone=document.getElementById('bkfSheetARUploadZone');
   const inp=document.getElementById('bkfSheetARFileInput');
@@ -1854,7 +1684,6 @@ let bkfSheetARData=[];
   zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')bkfSheetARAnalyze(f);else bkfSheetARShowError('Carica un file PDF.');});
   inp.addEventListener('change',e=>{if(e.target.files[0])bkfSheetARAnalyze(e.target.files[0]);inp.value='';});
 })();
-
 async function bkfSheetARAnalyze(file){
   bkfSheetARSetStatus('analyzing');
   try{
@@ -1864,9 +1693,7 @@ async function bkfSheetARAnalyze(file){
       r.onerror=()=>rej(new Error('Errore lettura file'));
       r.readAsDataURL(file);
     });
-
     const prompt=`Analizza questo PDF "BKF OGGI" della Galleria ed estrai i dati delle colazioni.
-
 REGOLE OBBLIGATORIE:
 1. DATA: Estrai la data di ogni riga (es: "Lun 02/03").
 2. RO (Room Only): Estrai il totale persone in Room Only per ogni data.
@@ -1874,7 +1701,6 @@ REGOLE OBBLIGATORIE:
 4. Rispondi SOLO con un array JSON valido, senza markdown, senza commenti, senza testo aggiuntivo.
 5. Formato esatto: [{"d": "Lun 02/03", "r": 5, "b": 37}]
 6. Massimo 8 righe.`;
-
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -1890,7 +1716,6 @@ REGOLE OBBLIGATORIE:
         }]
       })
     });
-
     const data=await response.json();
     if(data.error){throw new Error('API: '+data.error.type+' — '+data.error.message);}
     if(!data.content||!data.content[0]){throw new Error('Risposta vuota dal server.');}
@@ -1913,7 +1738,6 @@ REGOLE OBBLIGATORIE:
     bkfSheetARShowError('Errore: '+err.message);
   }
 }
-
 async function bkfSheetARSync(){
   const btn=document.getElementById('bkfSheetARSyncBtn');
   btn.disabled=true;btn.textContent='Sincronizzazione...';
@@ -1933,7 +1757,6 @@ async function bkfSheetARSync(){
     btn.disabled=false;btn.textContent='↑ Sincronizza Google Sheets';
   }
 }
-
 function bkfSheetARSetStatus(s){
   document.getElementById('bkfSheetARUploadZone').style.display=s==='idle'?'block':'none';
   document.getElementById('bkfSheetARProcessing').style.display=s==='analyzing'?'flex':'none';
@@ -1943,7 +1766,6 @@ function bkfSheetARSetStatus(s){
   const btn=document.getElementById('bkfSheetARSyncBtn');
   if(btn){btn.disabled=false;btn.textContent='↑ Sincronizza Google Sheets';}
 }
-
 function bkfSheetARReset(){
   bkfSheetARData=[];
   LS.del('bkfSheetARData');
@@ -1951,7 +1773,6 @@ function bkfSheetARReset(){
   bkfRenderChartAR();
   document.getElementById('bkfSheetARFileInput').value='';
 }
-
 function bkfSheetARShowError(msg){
   document.getElementById('bkfSheetARUploadZone').style.display='block';
   document.getElementById('bkfSheetARProcessing').style.display='none';
@@ -1959,21 +1780,16 @@ function bkfSheetARShowError(msg){
   document.getElementById('bkfSheetARSuccess').style.display='none';
   const e=document.getElementById('bkfSheetARError');e.textContent=msg;e.style.display='block';
 }
-
-/* ═══ PULIZIE ENGINE ═══ */
 const CAP_CAMERE=33;
 let pulData=null,pulActiveDay=0;
 let pulOpen=false;
-
 function togglePulAccordion(){}
-
 (function initPulUpload(){
   const box=document.getElementById('pulUploadBox');
   const inp=document.getElementById('pulFileInput');
   if(box){box.addEventListener('click',()=>inp.click());box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});box.addEventListener('dragleave',()=>box.classList.remove('dragover'));box.addEventListener('drop',e=>{e.preventDefault();box.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')handlePulFile(f);else pulShowError('Carica un file PDF.');});}
   inp.addEventListener('change',e=>{if(e.target.files[0])handlePulFile(e.target.files[0]);});
 })();
-
 async function handlePulFile(file){
   ucSetState('pul','loading','Lettura PDF...');
   try{
@@ -1995,7 +1811,6 @@ async function handlePulFile(file){
     setUploadTs('pulTs',_newPts);
   }catch(e){pulShowError('Errore lettura: '+e.message);}
 }
-
 function pulParseText(text){
   const days=[];
   // Pattern: giorno data arrivi fermate-totali fermate-da-pulire partenze
@@ -2017,7 +1832,6 @@ function pulParseText(text){
   }
   return days;
 }
-
 function renderPulData(silent){
   if(!pulData||!pulData.length)return;
   // auto-seleziona il giorno corrente
@@ -2026,7 +1840,6 @@ function renderPulData(silent){
   let idx=pulData.findIndex(d=>d.data===todayStr);
   if(idx===-1)idx=0;
   pulActiveDay=idx;
-
   // build week nav
   const nav=document.getElementById('pulWeekNav');
   nav.innerHTML='';
@@ -2038,7 +1851,6 @@ function renderPulData(silent){
     btn.onclick=()=>{pulActiveDay=i;renderPulDay();document.querySelectorAll('.pul-day-btn').forEach((b,j)=>b.classList.toggle('active',j===i));};
     nav.appendChild(btn);
   });
-
   ucSetState('pul','loaded',pulData[0].label+' – '+pulData[pulData.length-1].label,silent);
   // Mostra dati, nascondi upload box
   const pulBox=document.getElementById('pulUploadBox');if(pulBox)pulBox.style.display='none';
@@ -2049,7 +1861,6 @@ function renderPulData(silent){
   renderPulDay();
   updateKpiFromPulizie(pulData[pulActiveDay]);
 }
-
 function renderPulDay(){
   if(!pulData)return;
   const d=pulData[pulActiveDay];
@@ -2067,7 +1878,6 @@ function renderPulDay(){
   const _pts=localStorage.getItem('qm_ts_pulTs');
   LS.set('pulData',{data:pulData,activeDay:pulActiveDay,ts:_pts?parseInt(_pts):undefined});
 }
-
 function updateKpiFromPulizie(d){
   const occ=d.arrivi - d.partenze; // camere nette in entrata oggi
   // calcolo camere occupate: usiamo arrivi come check-in del giorno
@@ -2078,7 +1888,6 @@ function updateKpiFromPulizie(d){
   const totCamere=d.arrivi+d.fermatePulizia; // camere coinvolte oggi (arrivi + fermate)
   const occEstimata=Math.min(CAP_CAMERE,d.fermatePulizia+d.arrivi);
   const occPct=Math.round((occEstimata/CAP_CAMERE)*100);
-
   // KPI riga 1 — Check-in
   const chkEl=document.getElementById('kpi-checkin');
   const chkDelta=document.getElementById('kpi-checkout-delta');
@@ -2086,7 +1895,6 @@ function updateKpiFromPulizie(d){
   if(chkEl){chkEl.textContent=d.arrivi;}
   if(chkDelta){chkDelta.textContent='↑ '+d.partenze+' partenze oggi';chkDelta.className='kpi-delta';}
   if(chkSub){chkSub.textContent=d.label;}
-
   // KPI riga 2 — Arrivi
   const arrEl=document.getElementById('kpi-arrivi');
   const arrDelta=document.getElementById('kpi-arrivi-delta');
@@ -2094,7 +1902,6 @@ function updateKpiFromPulizie(d){
   if(arrEl){arrEl.textContent=d.arrivi;}
   if(arrDelta){arrDelta.textContent='Check-in previsti';arrDelta.className='kpi-delta up';}
   if(arrSub){arrSub.textContent=d.label;}
-
   // KPI riga 2 — Partenze
   const depEl=document.getElementById('kpi-partenze');
   const depDelta=document.getElementById('kpi-partenze-delta');
@@ -2102,7 +1909,6 @@ function updateKpiFromPulizie(d){
   if(depEl){depEl.textContent=d.partenze;}
   if(depDelta){depDelta.textContent='Check-out previsti';depDelta.className='kpi-delta down';}
   if(depSub){depSub.textContent=d.label;}
-
   // KPI riga 2 — Fermate
   const ferEl=document.getElementById('kpi-fermate');
   const ferDelta=document.getElementById('kpi-fermate-delta');
@@ -2110,7 +1916,6 @@ function updateKpiFromPulizie(d){
   if(ferEl){ferEl.textContent=d.fermatePulizia;}
   if(ferDelta){ferDelta.textContent='Camere in fermata';ferDelta.className='kpi-delta';}
   if(ferSub){ferSub.textContent='Di cui '+d.fermatePulizia+' da pulire';}
-
   // KPI riga 2 — Occupazione
   const occEl=document.getElementById('kpi-occ-val');
   const occBar=document.getElementById('kpi-occ-bar');
@@ -2119,7 +1924,6 @@ function updateKpiFromPulizie(d){
   if(occBar){occBar.style.width=occPct+'%';}
   if(occSub){occSub.textContent=occEstimata+' / '+CAP_CAMERE+' camere occupate';}
 }
-
 function resetPulizie(){
   pulData=null;pulActiveDay=0;
   const pulBox=document.getElementById('pulUploadBox');if(pulBox)pulBox.style.display='';
@@ -2132,7 +1936,6 @@ function resetPulizie(){
   ucSetState('pul','','Non caricato');
   LS.del('pulData');
 }
-
 function pulShowStatus(msg){
   if(msg)ucSetState('pul','loading',msg);
   else ucSetState('pul','','Non caricato');
@@ -2141,8 +1944,6 @@ function pulShowError(msg){
   ucSetState('pul','error','Errore');
   alert(msg);
 }
-
-/* ═══ RECENSIONI ENGINE ═══ */
 const DECAY_F1_MS=270*24*60*60*1000;
 function weightedAvgF1(reviews, nowTs){
   if(!reviews.length)return null;
@@ -2163,7 +1964,6 @@ const REV_HOTELS={
   ar:{name:'Art Resort',data:[],filtered:[],filters:[],sort:'date_desc',page:0},
   sb:{name:'Santa Brigida',data:[],filtered:[],filters:[],sort:'date_desc',page:0},
 };
-
 // Init upload per entrambi gli hotel
 ['sa','bh','sl','pr','ms','ar','sb'].forEach(p=>{
   const zone=document.getElementById('revUploadZone-'+p);
@@ -2174,7 +1974,6 @@ const REV_HOTELS={
   zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)revHandleFile(p,f);});
   inp.addEventListener('change',e=>{if(e.target.files[0])revHandleFile(p,e.target.files[0]);});
 });
-
 function revAutoMarkNoComment(p,rows){
   // Recensioni senza alcun commento → non necessaria (Booking non consente risposta)
   let changed=false;
@@ -2194,7 +1993,6 @@ function revAutoMarkNoComment(p,rows){
     try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
   }
 }
-
 function revHandleFile(p,file){
   document.getElementById('revProcessing-'+p).style.display='flex';
   document.getElementById('revUploadZone-'+p).style.display='none';
@@ -2230,7 +2028,6 @@ function revHandleFile(p,file){
   };
   reader.readAsText(file,'UTF-8');
 }
-
 function revParseCsv(text){
   // Parser CSV robusto: gestisce newline reali dentro campi quotati
   function parseCSVFull(str){
@@ -2254,7 +2051,6 @@ function revParseCsv(text){
     if(row.length>1||(row.length===1&&row[0]))results.push(row);
     return results;
   }
-
   const allRows=parseCSVFull(text);
   if(!allRows.length)return[];
   const headers=allRows[0].map(h=>h.trim());
@@ -2274,15 +2070,12 @@ function revParseCsv(text){
   }
   return rows.sort((a,b)=>b._dateTs-a._dateTs);
 }
-
 const REV_TREND_CATS=['Staff','Pulizia','Servizi','Comfort','Rapporto qualità/prezzo'];
 const REV_TREND_COLORS=['#4A90D9','#27AE60','#E67E22','#9B59B6','#E74C3C'];
-
 function revRenderCatTrend(p){
   const data=REV_HOTELS[p].data;
   const el=document.getElementById('revCatTrend-'+p);
   if(!el||!data.length)return;
-
   // Raggruppa per mese
   const byMonth={};
   data.forEach(r=>{
@@ -2297,10 +2090,8 @@ function revRenderCatTrend(p){
     el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Servono almeno 2 mesi di dati</div>';
     return;
   }
-
   const mesiBrevi=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
   const labels=months.map(m=>{const[y,mo]=m.split('-');return mesiBrevi[parseInt(mo)-1]+'\''+y.slice(2);});
-
   function smoothPath(points,W,H){
     if(points.length<2)return'';
     let d=`M${points[0].x},${points[0].y}`;
@@ -2317,7 +2108,6 @@ function revRenderCatTrend(p){
     }
     return d;
   }
-
   function makeCatCard(cat, color){
     const vals=months.map(m=>{
       const v=byMonth[m].map(r=>parseFloat(r[cat])).filter(v=>!isNaN(v)&&v>0);
@@ -2325,7 +2115,6 @@ function revRenderCatTrend(p){
     });
     const validVals=vals.filter(v=>v!==null);
     if(!validVals.length)return'';
-
     // Calcolo ponderato 85/10/5 su tutte le recensioni (non per mese)
     const nowTs=Date.now();
     function catWeighted85(){
@@ -2343,28 +2132,23 @@ function revRenderCatTrend(p){
     }
     const weightedScore=catWeighted85();
     const displayScore=weightedScore!==null?weightedScore:validVals[validVals.length-1];
-
     const last=validVals[validVals.length-1]; // ultimo mese per trend
     const prev=validVals.length>1?validVals[validVals.length-2]:null;
     const trend=prev!==null?last-prev:0;
     const trendIcon=trend>0.1?'▲':trend<-0.1?'▼':'→';
     const trendColor=trend>0.1?'var(--green)':trend<-0.1?'var(--red)':'var(--text-dim)';
     const scoreColor=displayScore>=9?'var(--green)':displayScore>=7.5?'var(--amber)':'var(--red)';
-
     const W=220,H=60,PL=4,PR=4,PT=6,PB=18;
     const plotW=W-PL-PR,plotH=H-PT-PB;
     const minY=Math.max(0,Math.min(...validVals)-0.5);
     const maxY=Math.min(10,Math.max(...validVals)+0.5);
     const rng=maxY-minY||1;
-
     const points=vals.map((v,i)=>{
       if(v===null)return null;
       return{x:PL+i/(months.length-1)*plotW, y:PT+plotH-(v-minY)/rng*plotH};
     }).filter(Boolean);
-
     const path=smoothPath(points);
     const areaClose=`L${points[points.length-1].x},${PT+plotH} L${points[0].x},${PT+plotH} Z`;
-
     let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:60px;">`;
     // Area fill
     svg+=`<path d="${path} ${areaClose}" fill="${color}" opacity="0.08"/>`;
@@ -2378,7 +2162,6 @@ function revRenderCatTrend(p){
     svg+=`<text x="${PL}" y="${H-2}" font-size="8" fill="var(--text-dim)">${labels[0]}</text>`;
     svg+=`<text x="${W-PR}" y="${H-2}" font-size="8" fill="var(--text-dim)" text-anchor="end">${labels[labels.length-1]}</text>`;
     svg+='</svg>';
-
     return`<div class="panel" style="min-width:180px;cursor:pointer;transition:box-shadow .15s;" onmouseenter="this.style.boxShadow='0 4px 16px rgba(0,0,0,.12)'" onmouseleave="this.style.boxShadow=''" onclick="openCatModal('${cat}','${color}',_revMonths_${p},_revByMonth_${p},_revLabels_${p})">
       <div class="panel-header" style="border-bottom:none;padding-bottom:4px;">
         <span class="panel-title" style="font-size:var(--fs-xs);color:${color};">${catLabel(cat)}</span>
@@ -2394,7 +2177,6 @@ function revRenderCatTrend(p){
       </div>
     </div>`;
   }
-
   const cards=REV_TREND_CATS.map((cat,i)=>makeCatCard(cat,REV_TREND_COLORS[i])).filter(Boolean);
   // Salva dati globali per il modal
   window['_revMonths_'+p]=months;
@@ -2402,30 +2184,24 @@ function revRenderCatTrend(p){
   window['_revLabels_'+p]=labels;
   el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">${cards.join('')}</div>`;
 }
-
-/* ═══ RECENSIONI IN SCADENZA ═══ */
 function revRenderExpiring(p){
   const data=REV_HOTELS[p].data;
   const el=document.getElementById('rev-expiring-'+p);
   if(!el||!data.length)return;
-
   const nowTs=Date.now();
   const now=new Date(); now.setHours(0,0,0,0);
   const THREE_YEARS=3*365.25*24*60*60*1000;
-
   // Settimane
   const dayOfWeek=now.getDay()===0?6:now.getDay()-1;
   const startThisWeek=new Date(now); startThisWeek.setDate(now.getDate()-dayOfWeek);
   const endThisWeek=new Date(startThisWeek); endThisWeek.setDate(startThisWeek.getDate()+6); endThisWeek.setHours(23,59,59,999);
   const startNextWeek=new Date(endThisWeek); startNextWeek.setDate(endThisWeek.getDate()+1); startNextWeek.setHours(0,0,0,0);
   const endNextWeek=new Date(startNextWeek); endNextWeek.setDate(startNextWeek.getDate()+6); endNextWeek.setHours(23,59,59,999);
-
   const scored=data.filter(r=>r._score>0);
   const allExpiring=scored.map(r=>({...r,_expDate:new Date(r._dateTs+THREE_YEARS)}))
     .filter(r=>r._expDate>=startThisWeek&&r._expDate<=endNextWeek);
   const thisWeek=allExpiring.filter(r=>r._expDate<=endThisWeek);
   const nextWeek=allExpiring.filter(r=>r._expDate>endThisWeek);
-
   // ── Funzione calcolo score ponderato Booking 85/10/5 ──
   function calcScore(reviewSet){
     const f1=reviewSet.filter(r=>(nowTs-r._dateTs)/(86400000)<=365);
@@ -2440,17 +2216,13 @@ function revRenderExpiring(p){
     if(a3!==null){wT+=0.05;wS+=0.05*a3;}
     return wT>0?wS/wT:null;
   }
-
   const scoreAttuale=calcScore(scored);
-
   // Score dopo scadenza questa settimana
   const afterThisWeek=scored.filter(r=>!thisWeek.find(e=>e._dateTs===r._dateTs));
   const scoreAfterThis=calcScore(afterThisWeek);
-
   // Score dopo scadenza entrambe le settimane
   const afterBoth=scored.filter(r=>!allExpiring.find(e=>e._dateTs===r._dateTs));
   const scoreAfterBoth=calcScore(afterBoth);
-
   // Simulatore: quante recensioni con 10 (o 9) servono per compensare
   function neededToCompensate(baseReviews, targetScore, scoreVal){
     if(!targetScore)return null;
@@ -2461,16 +2233,13 @@ function revRenderExpiring(p){
     }
     return 300;
   }
-
   const ceilScoreAtt=scoreAttuale?Math.round(scoreAttuale*10)/10:null;
   const needed10=scoreAfterBoth&&scoreAttuale?neededToCompensate(afterBoth,ceilScoreAtt,10):null;
   const needed9=scoreAfterBoth&&scoreAttuale?neededToCompensate(afterBoth,ceilScoreAtt,9):null;
-
   // ── Helpers UI ──
   function fmt(d){return d.getDate()+'/'+(d.getMonth()+1);}
   function deltaStr(a,b){if(a===null||b===null)return'';const d=b-a;return(d>=0?'+':'')+d.toFixed(2);}
   function deltaColor(a,b){if(a===null||b===null)return'var(--text-dim)';return b>=a?'var(--green)':'var(--red)';}
-
   const scoreGroups=[
     {label:'1–5',min:1,max:5,color:'var(--red)',tag:'sfavorevole'},
     {label:'6',min:6,max:6,color:'var(--amber)',tag:'sfavorevole'},
@@ -2479,7 +2248,6 @@ function revRenderExpiring(p){
     {label:'9',min:9,max:9,color:'var(--green)',tag:'favorevole'},
     {label:'10',min:10,max:10,color:'var(--green)',tag:'favorevole'},
   ];
-
   // Semaforo settimana
   function semaforo(reviews, currentScore){
     if(!reviews.length)return{color:'var(--green)',label:'Nessuna scadenza',icon:'✓'};
@@ -2490,19 +2258,16 @@ function revRenderExpiring(p){
     if(unfavorable>favorable)return{color:'var(--green)',label:'Favorevole — score basso in scadenza',icon:'🟢'};
     return{color:'var(--amber)',label:'Neutro — impatto bilanciato',icon:'🟡'};
   }
-
   function renderWeekSection(reviews,title,weekColor,afterScore){
     const sem=semaforo(reviews, scoreAttuale);
     const favorevoli=reviews.filter(r=>r._score>=9);
     const sfavorevoli=reviews.filter(r=>r._score<=6);
     const neutri=reviews.filter(r=>r._score>=7&&r._score<=8);
-
     let html=`<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border-light);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
         <span style="font-size:var(--fs-xs);font-weight:600;color:${weekColor};">${title}</span>
         <span style="font-size:10px;background:var(--surface2);padding:2px 8px;border-radius:8px;color:var(--text-dim);">${reviews.length} recension${reviews.length===1?'e':'i'}</span>
         <span style="font-size:11px;" title="${sem.label}">${sem.icon} ${sem.label}</span>`;
-
     if(afterScore!==null&&scoreAttuale!==null){
       const dScoreAtt=Math.round(scoreAttuale*10)/10;
       const dScoreAft=Math.round(afterScore*10)/10;
@@ -2511,16 +2276,13 @@ function revRenderExpiring(p){
       html+=`<span style="margin-left:auto;font-size:var(--fs-xs);font-weight:700;color:${dc};">${dScoreAtt.toFixed(1)} → ${dScoreAft.toFixed(1)} <span style="font-size:10px;">(${delta>=0?'+':''}${delta.toFixed(1)})</span></span>`;
     }
     html+=`</div>`;
-
     if(!reviews.length){html+=`<div style="color:var(--green);font-size:var(--fs-xs);">✓ Nessuna recensione in scadenza</div></div>`;return html;}
-
     // Impatto netto
     html+=`<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">`;
     if(favorevoli.length)html+=`<div style="background:#e8f5e9;border:1px solid var(--green);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--green);font-weight:600;">📉 ${favorevoli.length} favorevoli in scadenza</div>`;
     if(sfavorevoli.length)html+=`<div style="background:#fce8e8;border:1px solid var(--red);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--red);font-weight:600;">📈 ${sfavorevoli.length} sfavorevoli in scadenza</div>`;
     if(neutri.length)html+=`<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;">➡️ ${neutri.length} neutri</div>`;
     html+=`</div>`;
-
     // Gruppi per score
     html+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;">`;
     scoreGroups.forEach(g=>{
@@ -2542,19 +2304,16 @@ function revRenderExpiring(p){
     html+=`</div></div>`;
     return html;
   }
-
   // ── Header score attuale vs proiezione ──
   const hasExp=allExpiring.length>0;
   const proiezioneDelta=scoreAfterBoth!==null&&scoreAttuale!==null?(Math.round(scoreAfterBoth*10)/10)-(Math.round(scoreAttuale*10)/10):null;
   const proiezioneColor=proiezioneDelta===null?'var(--text-dim)':proiezioneDelta>=0?'var(--green)':'var(--red)';
-
   let html=`<div class="panel">
     <div class="panel-header">
       <span class="panel-title">⏳ Recensioni in scadenza</span>
       <span style="margin-left:auto;background:var(--amber-bg);color:#A05A00;border-radius:10px;padding:2px 10px;font-size:var(--fs-xxs);font-weight:600;">${allExpiring.length} questa/prossima settimana</span>
     </div>
     <div class="panel-body" style="padding:12px 14px;">`;
-
   // Score attuale vs proiezione post-scadenza
   if(scoreAttuale!==null){
     html+=`<div style="display:flex;align-items:center;gap:16px;background:var(--surface2);border-radius:8px;padding:12px 16px;margin-bottom:14px;flex-wrap:wrap;">
@@ -2570,13 +2329,11 @@ function revRenderExpiring(p){
       <div style="font-size:18px;font-weight:700;color:${proiezioneColor};">${proiezioneDelta!==null?(proiezioneDelta>=0?'▲ +':'▼ ')+proiezioneDelta.toFixed(2):''}</div>`:''}
     </div>`;
   }
-
   if(!hasExp){
     html+=`<div style="color:var(--green);font-size:var(--fs-xs);">✓ Nessuna recensione in scadenza questa o la prossima settimana</div>`;
   } else {
     html+=renderWeekSection(thisWeek,'Settimana corrente','var(--red)',scoreAfterThis);
     html+=renderWeekSection(nextWeek,'Prossima settimana','var(--amber)',scoreAfterBoth);
-
     // ── Simulatore compensazione ──
     if(needed10!==null||needed9!==null){
       html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:8px;padding:12px 16px;margin-top:4px;">
@@ -2588,21 +2345,17 @@ function revRenderExpiring(p){
       </div>`;
     }
   }
-
   html+=`</div></div>`;
   el.style.display='block';
   el.innerHTML=html;
 }
-
 function revRenderStats(p){
   const data=REV_HOTELS[p].data;
   if(!data.length)return;
   const scored=data.filter(r=>r._score>0);
   const scores=scored.map(r=>r._score);
-
   // Media semplice
   const avgSimple=scores.reduce((a,b)=>a+b,0)/scores.length;
-
   // Media ponderata Booking.com 2025: 85% ultimi 12m, 10% 12-24m, 5% 24-36m
   const DECAY_F1=270*24*60*60*1000;
   const now=Date.now();
@@ -2625,7 +2378,6 @@ function revRenderStats(p){
     const wt=fascia1.reduce((s,r)=>s+Math.exp(-(now-r._dateTs)/DECAY_F1),0);
     return wt?ws/wt:null;
   })():null;
-
   const noReply=data.filter(r=>!r._hasReply && REV_SENT[revUniqueKey(p,r)]!=='not_needed').length;
   const g=id=>document.getElementById(id+'-'+p);
   g('rev-avg').textContent=(Math.round(avgWeighted*10)/10).toFixed(1);
@@ -2655,7 +2407,6 @@ function revRenderStats(p){
     const color=a>=9?'var(--green)':a>=7.5?'var(--amber)':'var(--red)';
     return`<div class="rev-cat-card"><div class="rev-cat-label">${catLabel(cat)}</div><div class="rev-cat-val" style="color:${color}">${a.toFixed(1)}</div><div class="rev-cat-bar"><div class="rev-cat-fill" style="width:${a/10*100}%;background:${color}"></div></div></div>`;
   }).join('');
-
   // Calcolo target: quante recensioni con score 10 (o 9) servono per salire di 0.1
   // Formula: aggiunge N nuove recensioni in fascia 1 (ultimi 12m) e ricalcola
   const targetEl=document.getElementById('rev-target-'+p);
@@ -2664,7 +2415,6 @@ function revRenderStats(p){
   if(targetEl&&targetTitle&&targetDetail){
     const displayScore=Math.round(avgWeighted*10)/10; // score visualizzato (ceil)
     const target=Math.round((displayScore+0.1)*10)/10; // prossimo decimo sopra il display
-
     function simAvgWithN(n, scoreVal){
       // Simulatore usa decadimento interno fascia1 — nuove rec pesano di più
       const newF1=[...fascia1,...Array(n).fill({_score:scoreVal,_dateTs:now})];
@@ -2676,14 +2426,12 @@ function revRenderStats(p){
       if(avg3!==null){wT+=0.05;wS+=0.05*avg3;}
       return wS/wT;
     }
-
     // Recensioni in scadenza — impatto futuro
     const THREE_YEARS=3*365.25*24*60*60*1000;
     const expiringThisMonth=scored.filter(r=>{
       const exp=r._dateTs+THREE_YEARS;
       return exp>=now&&exp<=(now+30*24*60*60*1000);
     });
-
     const MAX_SIM=300;
     let needed10=0,needed9=0;
     for(let n=1;n<=MAX_SIM;n++){
@@ -2691,11 +2439,9 @@ function revRenderStats(p){
       if(!needed9&&simAvgWithN(n,9)>=target-0.005)needed9=n;
       if(needed10&&needed9)break;
     }
-
     targetEl.style.display='flex';
     const expiringNote=expiringThisMonth.length>0
       ?` · ⚠️ ${expiringThisMonth.length} rec. in scadenza entro 30gg`:'';
-
     if(needed10>0&&needed10<MAX_SIM){
       targetTitle.textContent=needed10===1
         ?`1 recensione con 10 per raggiungere ${target.toFixed(1)}`
@@ -2708,7 +2454,6 @@ function revRenderStats(p){
     }
   }
 }
-
 function revSetPage(p,page){
   const h=REV_HOTELS[p];
   const total=Math.ceil(h.filtered.length/10);
@@ -2734,7 +2479,6 @@ function revRenderList(p){
     const dateStr=isNaN(d)?'—':(d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear());
     const bookingNum=r['Numero di prenotazione']||r['Reservation number']||'';
     const bookingBadge=bookingNum?`<span style="font-size:var(--fs-xs);color:var(--text-muted);margin-left:8px;letter-spacing:.01em;font-weight:500;"># ${bookingNum}</span>`:'';
-
     const pos=r['Recensione positiva']?`<div class="rev-pos">+ ${r['Recensione positiva']}</div>`:'';
     const neg=r['Recensione negativa']?`<div class="rev-neg">− ${r['Recensione negativa']}</div>`:'';
     const italian=revIsItalian(r);
@@ -2777,12 +2521,10 @@ function revRenderList(p){
     </div>`;
   }).join('')+(totalPages>1?`<div class="rev-pagination"><button class="rev-pg-btn" onclick="revSetPage('${p}',${page-1})" ${page===0?'disabled':''}>← Prec</button><span class="rev-pg-info">Pagina ${page+1} di ${totalPages} · ${filtered.length} recensioni</span><button class="rev-pg-btn" onclick="revSetPage('${p}',${page+1})" ${page>=totalPages-1?'disabled':''}>Succ →</button></div>`:'');
 }
-
 function revUpdateCharCount(uid){
   const ta=document.getElementById('rt-'+uid),cc=document.getElementById('rcc-'+uid);
   if(ta&&cc)cc.textContent=ta.value.length+' caratteri';
 }
-
 function revIsItalian(r){
   const txt=(r['Recensione positiva']||'')+(r['Recensione negativa']||'')+(r['Titolo della recensione']||'');
   if(!txt.trim())return true;
@@ -2791,7 +2533,6 @@ function revIsItalian(r){
   // Accenti specifici italiani (solo gravi: à è ì ò ù) + parole chiave italiane
   return /[àèìòùÀÈÌÒÙ]|(\b(?:ottimo|buono|bello|camera|colazione|personale|posizione|pulizia|servizio|soggiorno|consiglio|esperienza|fantastico|eccellente|grazie|molto|tutto|anche|però|questo|questa|erano|abbiamo|siamo|stanza|struttura|personale|bellissimo|purtroppo|davvero)\b)/i.test(txt);
 }
-
 async function revTranslate(p,gi){
   const r=REV_HOTELS[p].data[gi];if(!r)return;
   const uid=p+'-'+gi;
@@ -2822,7 +2563,6 @@ async function revTranslate(p,gi){
     }else{btn.disabled=false;btn.textContent='🌐 Traduci';}
   }catch(e){btn.disabled=false;btn.textContent='🌐 Traduci';}
 }
-
 async function revGenerateReply(p,gi){
   const r=REV_HOTELS[p].data[gi];
   if(!r)return;
@@ -2843,17 +2583,13 @@ async function revGenerateReply(p,gi){
     ta.value=data.content[0].text;revUpdateCharCount(uid);btn.disabled=false;btn.innerHTML='✦ Rigenera';
   }catch(e){ta.value='Errore di rete: '+e.message;btn.disabled=false;btn.innerHTML='✦ Genera risposta';}
 }
-
 function revCopyReply(uid){
   const ta=document.getElementById('rt-'+uid),btn=document.getElementById('rc-'+uid);
   if(!ta||!ta.value.trim())return;
   navigator.clipboard.writeText(ta.value).then(()=>{btn.textContent='✓ Copiato';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copia';btn.classList.remove('copied');},2000);}).catch(()=>{ta.select();document.execCommand('copy');btn.textContent='✓ Copiato';setTimeout(()=>{btn.textContent='Copia';},2000);});
 }
-
 // Tracciamento risposte inviate
 let REV_SENT=JSON.parse(localStorage.getItem('qm_rev_sent')||'{}')
-
-
 function revUniqueKey(p,r){
   // Chiave stabile: struttura + nome ospite + data recensione (non dipende dall'indice)
   const nome=(r["Nome dell'ospite"]||'anonimo').trim().toLowerCase().replace(/\s+/g,'_');
@@ -2871,7 +2607,6 @@ function revMarkSent(p,gi){
   revRenderCatTrend(p);
   ovUpdateRevNoreply();
 }
-
 function revToggleReply(uid){
   const el=document.getElementById('rev-reply-text-'+uid);
   const toggle=document.getElementById('rev-reply-toggle-'+uid);
@@ -2888,7 +2623,6 @@ function revToggleReply(uid){
     if(toggle)toggle.textContent='▾ Mostra tutto';
   }
 }
-
 function revToggleFilter(p,f){
   const h=REV_HOTELS[p];
   if(f==='all'){
@@ -2906,11 +2640,8 @@ function revToggleFilter(p,f){
   });
   revApplyFilters(p);
 }
-
 function revSort(p,s){REV_HOTELS[p].sort=s;revApplyFilters(p);}
-
 function revSearch(p,val){REV_HOTELS[p].search=(val||'').toLowerCase().trim();revApplyFilters(p);}
-
 function revApplyFilters(p){
   const h=REV_HOTELS[p];
   let d=[...h.data];
@@ -2945,7 +2676,6 @@ function revApplyFilters(p){
   else if(h.sort==='score_asc')d.sort((a,b)=>a._score-b._score);
   h.filtered=d;h.page=0;revRenderList(p);
 }
-
 function revUndoNotNeeded(p,gi){
   const r=REV_HOTELS[p].data[gi];
   const key=revUniqueKey(p,r);
@@ -2954,7 +2684,6 @@ function revUndoNotNeeded(p,gi){
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
   revApplyFilters(p);revRenderStats(p);
 }
-
 function revMarkNotNeeded(p,gi){
   const r=REV_HOTELS[p].data[gi];
   const key=revUniqueKey(p,r);
@@ -2963,7 +2692,6 @@ function revMarkNotNeeded(p,gi){
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
   revApplyFilters(p);revRenderStats(p);
 }
-
 function revShowTs(p,ts){
   const el=document.getElementById('revTs-'+p);
   if(!el||!ts)return;
@@ -2972,7 +2700,6 @@ function revShowTs(p,ts){
   const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
   el.textContent='↑ '+days[n.getDay()]+' '+n.getDate()+' '+ms[n.getMonth()]+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
 }
-
 function revReset(p){
   REV_HOTELS[p].data=[];REV_HOTELS[p].filtered=[];REV_HOTELS[p].filters=[];REV_HOTELS[p].sort='date_desc';REV_HOTELS[p].page=0;
   document.getElementById('revUploadZone-'+p).style.display='block';
@@ -2981,25 +2708,19 @@ function revReset(p){
   document.getElementById('revError-'+p).style.display='none';
   try{localStorage.removeItem('qm_rev_'+p);}catch(e){}
 }
-
 function revShowError(p,msg){
   document.getElementById('revProcessing-'+p).style.display='none';
   document.getElementById('revUploadZone-'+p).style.display='block';
   const e=document.getElementById('revError-'+p);e.textContent=msg;e.style.display='block';
 }
-
-/* ═══ BKF ENGINE ═══ */
 let bkfData=null,bkfActiveDay=0,bkfOpen=false;
-
 function toggleBkfAccordion(){}
-
 (function initBkfUpload(){
   const box=document.getElementById('bkfUploadBox');
   const inp=document.getElementById('bkfFileInput');
   if(box){box.addEventListener('click',()=>inp.click());box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});box.addEventListener('dragleave',()=>box.classList.remove('dragover'));box.addEventListener('drop',e=>{e.preventDefault();box.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')handleBkfFile(f);else bkfShowStatus('Carica un file PDF.');});}
   inp.addEventListener('change',e=>{if(e.target.files[0])handleBkfFile(e.target.files[0]);});
 })();
-
 async function handleBkfFile(file){
   ucSetState('bkf','loading','Lettura PDF...');
   try{
@@ -3021,7 +2742,6 @@ async function handleBkfFile(file){
     setUploadTs('bkfTs',_newBts);
   }catch(e){bkfShowStatus('Errore: '+e.message);}
 }
-
 function bkfParseText(text){
   const days=[];
   const norm=text.replace(/\s+/g,' ');
@@ -3042,7 +2762,6 @@ function bkfParseText(text){
   }
   return days;
 }
-
 function renderBkfData(silent){
   if(!bkfData||!bkfData.length)return;
   const today=new Date();
@@ -3050,7 +2769,6 @@ function renderBkfData(silent){
   let idx=bkfData.findIndex(d=>d.data===todayStr);
   if(idx===-1)idx=0;
   bkfActiveDay=idx;
-
   const nav=document.getElementById('bkfWeekNav');
   nav.innerHTML='';
   bkfData.forEach((d,i)=>{
@@ -3061,7 +2779,6 @@ function renderBkfData(silent){
     btn.onclick=()=>{bkfActiveDay=i;renderBkfDay();document.querySelectorAll('#bkfWeekNav .pul-day-btn').forEach((b,j)=>b.classList.toggle('active',j===i));};
     nav.appendChild(btn);
   });
-
   ucSetState('bkf','loaded',bkfData[0].label+' – '+bkfData[bkfData.length-1].label,silent);
   const bkfBox=document.getElementById('bkfUploadBox');if(bkfBox)bkfBox.style.display='none';
   document.getElementById('bkfLoadedInfo').classList.add('visible');
@@ -3069,7 +2786,6 @@ function renderBkfData(silent){
   document.getElementById('btnBkfReload').style.display='block';
   renderBkfDay();
 }
-
 function renderBkfDay(){
   if(!bkfData)return;
   const d=bkfData[bkfActiveDay];
@@ -3084,11 +2800,8 @@ function renderBkfDay(){
   bkfRenderChart();
   bkfRenderNotes();
 }
-
-/* ═══ HK OGGI ENGINE (Soul + Boutique) ═══ */
 let hkSoulData=null;
 let hkBoutData=null;
-
 (function initHkUploads(){
   ['soul','bout'].forEach(key=>{
     const box=document.getElementById(key+'UploadBox');
@@ -3105,7 +2818,6 @@ let hkBoutData=null;
     try{const saved=localStorage.getItem('qm_hk_'+key);if(saved){if(key==='soul')hkSoulData=JSON.parse(saved);else hkBoutData=JSON.parse(saved);hkSetLoaded(key,true);}}catch(e){}
   });
 })();
-
 async function handleHkFile(key,file){
   ucSetState(key,'loading','Analisi in corso...');
   try{
@@ -3122,7 +2834,6 @@ async function handleHkFile(key,file){
     hkSetLoaded(key);
   }catch(e){ucSetState(key,'error','Errore: '+e.message);}
 }
-
 function hkParseText(text,key){
   const giorni=[];
   const re=/([A-Za-z]{3})\s+(\d{1,2}\/\d{2}\/\d{4})\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/g;
@@ -3130,7 +2841,6 @@ function hkParseText(text,key){
   while((m=re.exec(text))!==null){giorni.push({label:m[1]+' '+m[2].substring(0,5),data:m[2],arrivi:parseInt(m[3]),fermate:parseInt(m[5]),partenze:parseInt(m[6])});}
   return{struttura:key==='soul'?'SoulArt Hotel':'Boutique Hotel',giorni,caricato:new Date().toISOString()};
 }
-
 function hkSetLoaded(key,silent){
   const data=key==='soul'?hkSoulData:hkBoutData;
   if(!data||!data.giorni)return;
@@ -3142,7 +2852,6 @@ function hkSetLoaded(key,silent){
   const box=document.getElementById(key+'UploadBox');if(box)box.style.display='none';
   const li=document.getElementById(key+'LoadedInfo');if(li)li.classList.add('visible');
 }
-
 function resetSoulData(){hkSoulData=null;hkResetSlot('soul');}
 function resetBoutData(){hkBoutData=null;hkResetSlot('bout');}
 function hkResetSlot(key){
@@ -3155,25 +2864,20 @@ function hkResetSlot(key){
   const btn=document.getElementById(btnId);if(btn)btn.style.display='none';
   document.getElementById(key+'FileInput').value='';
 }
-
-/* ═══ BKF GRUPPI & NOTE ═══ */
 let bkfGroups=[];
 let bkfNotes={};
-
 function bkfLoadOps(){
   try{const g=localStorage.getItem('qm_bkfGroups');if(g)bkfGroups=JSON.parse(g);}catch(e){}
   try{const n=localStorage.getItem('qm_bkfNotes');if(n)bkfNotes=JSON.parse(n);}catch(e){}
   bkfRenderGroups();
   bkfRenderNotes();
 }
-
 function bkfSaveOps(){
   try{localStorage.setItem('qm_bkfGroups',JSON.stringify(bkfGroups));}catch(e){}
   try{localStorage.setItem('qm_bkfNotes',JSON.stringify(bkfNotes));}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_bkfGroups',value:JSON.stringify(bkfGroups)})}).catch(()=>{});}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_bkfNotes',value:JSON.stringify(bkfNotes)})}).catch(()=>{});}catch(e){}
 }
-
 function bkfAddGroup(){
   const today=new Date();
   const dd=String(today.getDate()).padStart(2,'0');
@@ -3187,7 +2891,6 @@ function bkfAddGroup(){
   document.getElementById('bkfGrpNote').value='';
   document.getElementById('bkfGroupModal').style.display='flex';
 }
-
 function bkfSaveGroup(){
   const nome=document.getElementById('bkfGrpNome').value.trim();
   const arrivo=document.getElementById('bkfGrpArrivo').value;
@@ -3202,13 +2905,11 @@ function bkfSaveGroup(){
   bkfSaveOps();
   bkfRenderGroups();
 }
-
 function bkfDeleteGroup(id){
   bkfGroups=bkfGroups.filter(g=>g.id!==id);
   bkfSaveOps();
   bkfRenderGroups();
 }
-
 function bkfRenderGroups(){
   const el=document.getElementById('bkfGroupsList');
   if(!el)return;
@@ -3253,7 +2954,6 @@ function bkfRenderGroups(){
   el.innerHTML=html;
   const elAR=document.getElementById('bkfGroupsListAR');if(elAR)elAR.innerHTML=html;
 }
-
 function bkfRenderNotes(){
   const el=document.getElementById('bkfNotesList');
   if(!el)return;
@@ -3274,13 +2974,11 @@ function bkfRenderNotes(){
   el.innerHTML=html;
   const elAR=document.getElementById('bkfNotesListAR');if(elAR)elAR.innerHTML=html;
 }
-
 function bkfSaveNote(label,value){
   if(value.trim())bkfNotes[label]=value.trim();
   else delete bkfNotes[label];
   bkfSaveOps();
 }
-
 function bkfRenderChart(){
   const el=document.getElementById('bkfChartBody');
   if(!el)return;
@@ -3288,36 +2986,30 @@ function bkfRenderChart(){
     el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);text-align:center;padding:20px 0;">Carica il report pasti dall\'Upload Center per visualizzare il grafico</div>';
     return;
   }
-
   const pts=bkfData.map(d=>({label:d.label,v:d.adulti+d.bambini}));
   const W=680,H=260,PL=36,PR=16,PT=20,PB=36;
   const plotW=W-PL-PR,plotH=H-PT-PB;
   const YMAX=70; // asse Y fisso 0-70
   const sx=i=>PL+i/(pts.length-1||1)*plotW;
   const sy=v=>PT+plotH-(v/YMAX)*plotH;
-
   let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
-
   // Griglia 0,10,20,30,40,50,60,70
   for(let v=0;v<=70;v+=10){
     const y=sy(v);
     svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="${v===0?1.5:1}"/>`;
     svg+=`<text x="${PL-4}" y="${y+4}" font-size="12" fill="var(--text-dim)" text-anchor="end">${v}</text>`;
   }
-
   // Labels asse X
   pts.forEach((p,i)=>{
     const x=sx(i);
     const shortLabel=p.label.replace(/\s+\d{4}/,'').trim();
     svg+=`<text x="${x}" y="${H-6}" font-size="12" fill="var(--text-dim)" text-anchor="middle">${shortLabel}</text>`;
   });
-
   // Area
   const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
   const areaPath=linePath+`L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z`;
   svg+=`<path d="${areaPath}" fill="var(--accent)" opacity="0.1"/>`;
   svg+=`<path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="1.5"/>`;
-
   // Punti + valori
   pts.forEach((p,i)=>{
     const x=sx(i),y=sy(p.v);
@@ -3325,11 +3017,9 @@ function bkfRenderChart(){
     const above=i%2===0;
     svg+=`<text x="${x}" y="${above?y-11:y+18}" font-size="12" fill="var(--accent)" text-anchor="middle" font-weight="600">${p.v}</text>`;
   });
-
   svg+='</svg>';
   el.innerHTML=svg;
 }
-
 function bkfRenderChartAR(){
   const el=document.getElementById('bkfChartBodyAR');
   if(!el)return;
@@ -3366,7 +3056,6 @@ function bkfRenderChartAR(){
   svg+='</svg>';
   el.innerHTML=svg;
 }
-
 function updateKpiFromBkf(d){
   // Room Only
   const noColEl=document.getElementById('kpi-bkf-nocol');
@@ -3375,12 +3064,10 @@ function updateKpiFromBkf(d){
   if(noColEl)noColEl.textContent=d.noCol;
   if(noColDelta){noColDelta.textContent=d.noCol>0?'Ospiti Room Only':'Nessun Room Only';noColDelta.className='kpi-delta'+(d.noCol>0?' down':' up');noColDelta.style.color='';}
   if(noColSub)noColSub.textContent=d.label;
-
   // 3 giorni incolonnati nella card
   const days=bkfData?bkfData.slice(bkfActiveDay,bkfActiveDay+3):[d];
   const container=document.getElementById('kpi-bkf-multiday');
   if(!container)return;
-
   let html=`<div style="display:grid;grid-template-columns:repeat(${days.length},1fr);gap:8px;margin-top:4px;">`;
   days.forEach((nd,i)=>{
     const nc=nd.adulti+nd.bambini;
@@ -3392,7 +3079,6 @@ function updateKpiFromBkf(d){
   });
   html+='</div>';
   container.innerHTML=html;
-
   // Nasconde elementi legacy
   ['kpi-bkf-tot','kpi-bkf-delta','kpi-bkf-sub'].forEach(id=>{
     const el=document.getElementById(id);
@@ -3401,7 +3087,6 @@ function updateKpiFromBkf(d){
   const previewEl=document.getElementById('kpi-bkf-preview');
   if(previewEl)previewEl.style.display='none';
 }
-
 function resetBkf(){
   bkfData=null;bkfActiveDay=0;
   const bkfBox=document.getElementById('bkfUploadBox');if(bkfBox)bkfBox.style.display='';
@@ -3416,13 +3101,10 @@ function resetBkf(){
   ['kpi-bkf-sub','kpi-bkf-nocol-sub'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   LS.del('bkfData');
 }
-
 function bkfShowStatus(msg){
   if(msg)ucSetState('bkf','loading',msg);
   else ucSetState('bkf','','Non caricato');
 }
-
-/* ═══ RC ENGINE ═══ */
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const ROOM_CODES=['STD','SUP','DLX','DEL','JS','JR','SUITE','TRP','TPL','TRI','DBL','SGL','DUS','DEP','DP','PC','AS','BB','HB','FB','RO','AI','MP'];
 const tratMap={BB:'BB',HB:'HB – Mezza pensione',FB:'FB – Pensione completa',RO:'RO – Solo pernottamento',AI:'AI – All inclusive',MP:'MP – Mezza pensione'};
@@ -3467,14 +3149,11 @@ function rcShowProc(msg){document.getElementById('rcProcText').textContent=msg;d
 function rcHideProc(){document.getElementById('rcProcessing').style.display='none';}
 function rcShowError(msg){document.getElementById('rcError').textContent=msg;document.getElementById('rcError').style.display='block';document.getElementById('rcUploadZone').style.display='block';}
 function rcHideError(){document.getElementById('rcError').style.display='none';}
-
-/* ═══ MODAL GRAFICO CATEGORIA ═══ */
 let _catModalData=null;
 function openCatModal(cat,color,months,byMonth,labels){
   _catModalData={cat,color,months,byMonth,labels};
   document.getElementById('catChartModalTitle').textContent=catLabel(cat);
   document.getElementById('catChartModalTitle').style.color=color;
-
   // Ricostruisci lista completa recensioni con timestamp
   const allRevs=Object.values(byMonth).flat().filter(r=>{
     const v=parseFloat(r[cat]);
@@ -3485,13 +3164,11 @@ function openCatModal(cat,color,months,byMonth,labels){
     document.getElementById('catChartModal').style.display='flex';
     return;
   }
-
   // Costruisci lista mesi dal più vecchio al più recente
   const minTs=Math.min(...allRevs.map(r=>r._dateTs));
   const maxTs=Math.max(...allRevs.map(r=>r._dateTs));
   const startDate=new Date(minTs); startDate.setDate(1); startDate.setHours(0,0,0,0);
   const endDate=new Date(maxTs); endDate.setDate(1); endDate.setHours(0,0,0,0);
-
   const monthDates=[],monthLabels=[];
   const mesiBrevi=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
   const cur=new Date(startDate);
@@ -3500,7 +3177,6 @@ function openCatModal(cat,color,months,byMonth,labels){
     monthLabels.push(mesiBrevi[cur.getMonth()]+'\''+String(cur.getFullYear()).slice(2));
     cur.setMonth(cur.getMonth()+1);
   }
-
   // Calcola score ponderato cumulativo 85/10/5 per categoria ad ogni mese
   function calcCatWeightedAt(refDate){
     const refTs=refDate.getTime()+30*24*60*60*1000;
@@ -3517,7 +3193,6 @@ function openCatModal(cat,color,months,byMonth,labels){
     if(a3!==null){wT+=0.05;wS+=0.05*a3;}
     return wT>0?wS/wT:null;
   }
-
   const vals=monthDates.map(m=>calcCatWeightedAt(m));
   const validVals=vals.filter(v=>v!==null);
   if(validVals.length<2){
@@ -3525,29 +3200,22 @@ function openCatModal(cat,color,months,byMonth,labels){
     document.getElementById('catChartModal').style.display='flex';
     return;
   }
-
   document.getElementById('catChartModalSub').textContent='Score ponderato Booking 85/10/5 · '+monthDates.length+' mesi · tutto il periodo';
-
   const W=700,H=260,PL=40,PR=20,PT=30,PB=40;
   const plotW=W-PL-PR,plotH=H-PT-PB;
   const minY=Math.max(0,Math.min(...validVals)-0.2);
   const maxY=Math.min(10,Math.max(...validVals)+0.2);
   const rng=maxY-minY||0.5;
-
   function sx(i){return PL+i/(monthDates.length-1)*plotW;}
   function sy(v){return PT+plotH-(v-minY)/rng*plotH;}
-
   const points=vals.map((v,i)=>v!==null?{x:sx(i),y:sy(v),v,m:monthLabels[i]}:null).filter(Boolean);
-
   function linePath(pts){
     if(!pts.length)return'';
     return`M${pts[0].x},${pts[0].y}`+pts.slice(1).map(p=>`L${p.x},${p.y}`).join('');
   }
-
   const path=linePath(points);
   const areaClose=`L${points[points.length-1].x},${PT+plotH} L${points[0].x},${PT+plotH} Z`;
   const labelStep=Math.max(1,Math.ceil(points.length/12));
-
   let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">`;
   const steps=5;
   for(let i=0;i<=steps;i++){
@@ -3572,7 +3240,6 @@ function openCatModal(cat,color,months,byMonth,labels){
     }
   });
   svg+='</svg>';
-
   document.getElementById('catChartModalBody').innerHTML=svg;
   document.getElementById('catChartModal').style.display='flex';
 }
@@ -3580,8 +3247,6 @@ function closeCatModal(){
   document.getElementById('catChartModal').style.display='none';
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeCatModal();closeArriviModal();}});
-
-/* ═══ ARRIVI OGGI ENGINE ═══ */
 let arriviData=null;
 function toggleArriviAccordion(){}
 const arriviBox={classList:{add:()=>{},remove:()=>{}}};
@@ -3591,10 +3256,8 @@ const arriviInput=document.getElementById('arriviFileInput');
   if(box){box.addEventListener('click',()=>arriviInput.click());box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});box.addEventListener('dragleave',()=>box.classList.remove('dragover'));box.addEventListener('drop',e=>{e.preventDefault();box.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)handleArriviFile(f);});}
   arriviInput.addEventListener('change',e=>{if(e.target.files[0])handleArriviFile(e.target.files[0]);});
 })();
-
 async function handleArriviFile(file){
   ucSetState('arrivi','loading','Analisi in corso...');
-
   try{
     const base64=await new Promise((res,rej)=>{
       const r=new FileReader();
@@ -3607,7 +3270,6 @@ async function handleArriviFile(file){
     const contentBlock=isPDF
       ?{type:'document',source:{type:'base64',media_type:mediaType,data:base64}}
       :{type:'image',source:{type:'base64',media_type:mediaType,data:base64}};
-
     const prompt=`Analizza questo documento "Arrivi oggi" di un hotel e restituisci SOLO un JSON valido con questa struttura:
 {
   "data": "20/03/2026",
@@ -3628,7 +3290,6 @@ async function handleArriviFile(file){
     }
   ]
 }
-
 Per "struttura" identifica la struttura dal NUMERO/PREFISSO della camera:
 - "SA": camere con prefisso "Art" (es. Art 2, Art 5, Art 22) E camere numeriche al di fuori della serie 200 → SoulArt Hotel
 - "BH": camere numeriche 200-299 (es. 201, 202, 203, 215) → Boutique Hotel
@@ -3638,7 +3299,6 @@ Per "struttura" identifica la struttura dal NUMERO/PREFISSO della camera:
 - "NA": qualsiasi altra camera non identificata
 Per "alert" metti true se le note contengono parole come: ATTENZIONE, NON SPOSTARE, REPEATER, MASSIMA PULIZIA, IMPORTANTE, WARNING.
 Restituisci SOLO il JSON, nessun testo prima o dopo.`;
-
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,
@@ -3650,26 +3310,21 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     arriviData=JSON.parse(jsonText);
     // Correggi struttura in base al numero camera
     arriviData.arrivi=fixArriviStruttura(arriviData.arrivi);
-
     // Salva locale + cloud
     arriviData._ts=Date.now();
     try{localStorage.setItem('qm_arriviData',JSON.stringify(arriviData));}catch(e){}
     try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_arriviData',value:JSON.stringify(arriviData)})}).catch(()=>{});}catch(e){}
-
     // Aggiorna UI
     ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi');
     document.getElementById('arriviLoadedDate').textContent=arriviData.data;
     setUploadTs('arriviTs');
-
     // Aggiorna anche le registration cards automaticamente con lo stesso file
     arriviUpdateKpi();
     handleRCFile(file);
-
   }catch(err){
     ucSetState('arrivi','error','Errore caricamento');
   }
 }
-
 function resetArrivi(){
   arriviData=null;
   ucSetState('arrivi','','Non caricato');
@@ -3679,14 +3334,12 @@ function resetArrivi(){
   try{localStorage.removeItem('qm_arriviData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_arriviData',value:null})}).catch(()=>{});}catch(e){}
 }
-
 function arriviUpdateKpi(){
   if(!arriviData)return;
   const alerts=arriviData.arrivi.filter(a=>a.alert).length;
   const sub=document.getElementById('kpi-arrivi-sub');
   if(sub&&alerts>0)sub.textContent='⚠️ '+alerts+' con note critiche';
 }
-
 function detectStruttura(camera){
   if(!camera)return'NA';
   const c=camera.trim().toUpperCase();
@@ -3705,7 +3358,6 @@ function detectStruttura(camera){
   if(/^\d+$/.test(c))return'SA'; // numeriche pure → SoulArt (default)
   return'NA';
 }
-
 function fixArriviStruttura(arrivi){
   return arrivi.map(a=>{
     const camera=a.camera||'';
@@ -3721,7 +3373,6 @@ function fixArriviStruttura(arrivi){
 }
 function strutLabel(s){return({SA:'SoulArt',AR:'Art Resort',BH:'Boutique',SL:'San Liborio',PR:'Principe',MS:'Mastrangelo',SB:'S.Brigida',NA:'Napoli'})[s]||s;}
 function strutStyle(s){const styles={SA:'background:#e8eef8;color:#003580',AR:'background:#e8f5e9;color:#1b5e20',BH:'background:#fff3e0;color:#e65100',SL:'background:#f3e5f5;color:#6a1b9a',PR:'background:#fce4ec;color:#880e4f',MS:'background:#e8f5e9;color:#2e7d32',SB:'background:#e3f2fd;color:#0d47a1',NA:'background:var(--surface2);color:var(--text-dim)'};return styles[s]||'background:var(--surface2);color:var(--text-dim)';}
-
 function openArriviModal(){
   const modal=document.getElementById('arriviModal');
   if(!modal)return;
@@ -3737,23 +3388,19 @@ function closeArriviModal(){
   const modal=document.getElementById('arriviModal');
   if(modal)modal.style.display='none';
 }
-
 function renderArriviModal(filtStruttura='all', filtTratt='all'){
   if(!arriviData)return;
   let list=arriviData.arrivi;
   if(filtStruttura!=='all')list=list.filter(a=>a.struttura===filtStruttura);
   if(filtTratt!=='all')list=list.filter(a=>a.trattamento===filtTratt);
-
   const strutture=[...new Set(arriviData.arrivi.map(a=>a.struttura))].sort();
   const trattamenti=[...new Set(arriviData.arrivi.map(a=>a.trattamento))].sort();
-
   const filterBar=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
     <span style="font-size:var(--fs-xxs);color:var(--text-dim);align-self:center;">Struttura:</span>
     ${['all',...strutture].map(s=>`<button class="rev-filter-btn${filtStruttura===s?' active':''}" onclick="renderArriviModal('${s}','${filtTratt}')">${s==='all'?'Tutte':strutLabel(s)}</button>`).join('')}
     <span style="font-size:var(--fs-xxs);color:var(--text-dim);align-self:center;margin-left:8px;">Trattamento:</span>
     ${['all',...trattamenti].map(t=>`<button class="rev-filter-btn${filtTratt===t?' active':''}" onclick="renderArriviModal('${filtStruttura}','${t}')">${t==='all'?'Tutti':t}</button>`).join('')}
   </div>`;
-
   const cards=list.map(a=>{
     const alertBorder=a.alert?'border-color:var(--red);':'';
     const alertTop=a.alert?'background:#fff0f0;':'background:var(--surface2);';
@@ -3775,7 +3422,6 @@ function renderArriviModal(filtStruttura='all', filtTratt='all'){
       ${a.note?`<div style="font-size:var(--fs-xxs);color:${a.alert?'var(--red)':'var(--text-muted)'};background:${a.alert?'rgba(220,53,69,.06)':'var(--surface2)'};border-radius:0 0 7px 7px;padding:6px 12px;border-top:1px solid var(--border-light);line-height:1.5;">${a.note}</div>`:''}
     </div>`;
   }).join('');
-
   const summary=`<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
     <div style="background:var(--accent-bg);border-radius:8px;padding:8px 14px;font-size:var(--fs-xs);">
       <span style="font-weight:700;color:var(--accent);">${list.length}</span> <span style="color:var(--text-dim);">arrivi${filtStruttura!=='all'?' ('+filtStruttura+')':''}</span>
@@ -3787,8 +3433,6 @@ function renderArriviModal(filtStruttura='all', filtTratt='all'){
       <span style="font-weight:700;color:var(--red);">⚠️ ${list.filter(a=>a.alert).length}</span> <span style="color:var(--text-dim);">note critiche</span>
     </div>`:''}
   </div>`;
-
   document.getElementById('arriviModalBody').innerHTML=
     filterBar+summary+`<div class="rc-card-grid">${cards}</div>`;
 }
-
