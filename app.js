@@ -785,7 +785,8 @@ function togglePulPreview(){
   svg+=`<text x="${W-PR}" y="${PT+14}" font-size="10" fill="var(--accent)" text-anchor="end">● Fermate</text>`;
   svg+=`<text x="${W-PR}" y="${PT+28}" font-size="10" fill="var(--red)" text-anchor="end">● Partenze</text>`;
   svg+='</svg>';
-  el.innerHTML=svg;el.style.display='block';
+  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Report pulizie — andamento settimanale</div>`+svg;
+  el.style.display='block';
 }
 function toggleHkpPreview(){
   const el=document.getElementById('kpi-hkp-preview');
@@ -812,7 +813,9 @@ function toggleHkpPreview(){
   svg+=`<text x="${W-PR}" y="${PT+14}" font-size="10" fill="var(--accent)" text-anchor="end">● Fermate</text>`;
   svg+=`<text x="${W-PR}" y="${PT+28}" font-size="10" fill="var(--red)" text-anchor="end">● Partenze</text>`;
   svg+='</svg>';
-  el.innerHTML=svg;el.style.display='block';
+  const struttura=(hkSoulData?'SoulArt Hotel':'Boutique Hotel');
+  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 HKP ${struttura} — andamento settimanale</div>`+svg;
+  el.style.display='block';
 }
 function toggleBkfPreview(){
   const el=document.getElementById('kpi-bkf-preview');
@@ -844,7 +847,7 @@ function toggleBkfPreview(){
     svg+=`<text x="${x}" y="${y-9}" font-size="11" fill="var(--accent)" text-anchor="middle" font-weight="600">${p.v}</text>`;
   });
   svg+='</svg>';
-  el.innerHTML=svg;
+  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Report pasti SoulArt — coperti settimanali</div>`+svg;
   el.style.display='block';
 }
 function buildBarChart(){
