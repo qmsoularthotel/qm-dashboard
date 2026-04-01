@@ -2868,7 +2868,7 @@ let hkBoutData=null;
     inp.addEventListener('change',e=>{if(e.target.files[0])handleHkFile(key,e.target.files[0]);});
   });
   ['soul','bout'].forEach(key=>{
-    try{const saved=localStorage.getItem('qm_hk_'+key);if(saved){if(key==='soul')hkSoulData=JSON.parse(saved);else hkBoutData=JSON.parse(saved);hkSetLoaded(key,true);}}catch(e){}
+    try{const saved=localStorage.getItem('qm_hk_'+key);if(saved){if(key==='soul')hkSoulData=JSON.parse(saved);else hkBoutData=JSON.parse(saved);setTimeout(()=>hkSetLoaded(key,true),200);}}catch(e){}
   });
 })();
 async function handleHkFile(key,file){
