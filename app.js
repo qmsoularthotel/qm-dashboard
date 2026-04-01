@@ -789,7 +789,7 @@ function toggleOccupazionePreview(){
     svg+=`<text x="${x}" y="${H-6}" font-size="11" fill="var(--text-dim)" text-anchor="middle">${p.label.split(' ')[0]}</text>`;
   });
   svg+='</svg>';
-  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Occupazione SoulArt — coefficiente giornaliero</div>`+svg;
+  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Occupazione SoulArt e Boutique Hotel — coefficiente giornaliero</div>`+svg;
   el.style.display='block';
 }
 function togglePulPreview(){
