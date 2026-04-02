@@ -218,8 +218,6 @@ function renderRoomDetail(rooms){
   if(!rooms)return'';
   let h='';
   if(rooms.partenze&&rooms.partenze.length)h+=`<div class="room-section"><div class="room-section-title partenza">↑ Partenze</div><div class="room-chips">${rooms.partenze.map(r=>`<span class="chip partenza">${r}</span>`).join('')}</div></div>`;
-  if(rooms.arrivi&&rooms.arrivi.length)h+=`<div class="room-section"><div class="room-section-title arrivo">↓ Arrivi</div><div class="room-chips">${rooms.arrivi.map(r=>`<span class="chip arrivo">${r}</span>`).join('')}</div></div>`;
-  if(rooms.doppi&&rooms.doppi.length)h+=`<div class="room-section"><div class="room-section-title doppio">⇅ Doppi</div><div class="room-chips">${rooms.doppi.map(r=>`<span class="chip doppio">${r}</span>`).join('')}</div></div>`;
   if(rooms.fermate&&rooms.fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">— Fermate</div><div class="room-chips">${rooms.fermate.map(r=>`<span class="chip fermata">${r}</span>`).join('')}</div></div>`;
   return h;
 }
