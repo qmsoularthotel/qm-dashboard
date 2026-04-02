@@ -250,7 +250,16 @@ function renderDay(){
   document.getElementById('navDayMain').textContent=day.label;
   document.getElementById('navDaySub').textContent=isToday?'Oggi':isPast?'Passato':'Prossimo';
 
+  // Timestamp ultimo aggiornamento dati — mostrato in cima
+  const sTs=fmtDataTs(soulData&&soulData._ts);
+  const bTs=fmtDataTs(boutData&&boutData._ts);
   let html='';
+  if(sTs||bTs){
+    const parts=[];
+    if(sTs)parts.push(`<span style="font-weight:600;">SoulArt:</span> ${sTs}`);
+    if(bTs)parts.push(`<span style="font-weight:600;">Boutique:</span> ${bTs}`);
+    html+=`<div class="update-ts"><div class="update-ts-dot"></div><div style="line-height:1.6;">📋 <span style="font-weight:600;">Dati caricati il:</span><br>${parts.join('&emsp;')}</div></div>`;
+  }
   if(isToday)html+=`<div class="today-badge">📅 OGGI</div>`;
 
   let totArrivi=0,totFermate=0,totPartenze=0;
@@ -328,15 +337,6 @@ function renderDay(){
     });
   }
 
-  // Timestamp ultimo aggiornamento dati
-  const sTs=fmtDataTs(soulData&&soulData._ts);
-  const bTs=fmtDataTs(boutData&&boutData._ts);
-  if(sTs||bTs){
-    const parts=[];
-    if(sTs)parts.push(`<span style="font-weight:600;">SoulArt:</span> ${sTs}`);
-    if(bTs)parts.push(`<span style="font-weight:600;">Boutique:</span> ${bTs}`);
-    html+=`<div class="update-ts"><div class="update-ts-dot"></div><div style="line-height:1.6;">📋 <span style="font-weight:600;">Dati caricati il:</span><br>${parts.join('&emsp;')}</div></div>`;
-  }
   html+=`<div class="refresh-row"><a href="javascript:loadAll()">↻ Aggiorna ora</a></div>`;
 
   document.getElementById('mainContent').innerHTML=html;
