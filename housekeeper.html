@@ -214,9 +214,19 @@ function sameDate(d1,d2){
   const norm=s=>s.split('/').map((p,i)=>i<2?p.padStart(2,'0'):p).join('/');
   return norm(d1)===norm(d2);
 }
-function renderRoomDetail(rooms){
+const MATARESE=new Set(['Art 1','Art 2','Art 3','Art 4','Art 5','Art 6','Art 7','Art 10','Art 11','Art 12','Art 22']);
+function splitSoulart(rooms){
+  const m={partenze:[],fermate:[]},a={partenze:[],fermate:[]};
+  if(!rooms)return{m,a};
+  (rooms.partenze||[]).forEach(r=>(MATARESE.has(r)?m:a).partenze.push(r));
+  (rooms.fermate||[]).forEach(r=>(MATARESE.has(r)?m:a).fermate.push(r));
+  return{m,a};
+}
+function renderRoomDetail(rooms,label){
   if(!rooms)return'';
-  let h='';
+  const hasData=(rooms.partenze&&rooms.partenze.length)||(rooms.fermate&&rooms.fermate.length);
+  if(!hasData)return'';
+  let h=label?`<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px;padding-top:6px;border-top:1px solid var(--border);">👤 ${label}</div>`:'';
   if(rooms.partenze&&rooms.partenze.length)h+=`<div class="room-section"><div class="room-section-title partenza">↑ Partenze</div><div class="room-chips">${rooms.partenze.map(r=>`<span class="chip partenza">${r}</span>`).join('')}</div></div>`;
   if(rooms.fermate&&rooms.fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">— Fermate</div><div class="room-chips">${rooms.fermate.map(r=>`<span class="chip fermata">${r}</span>`).join('')}</div></div>`;
   return h;
@@ -310,7 +320,7 @@ function renderDay(){
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
-  if(pianoDay)html+=renderRoomDetail(pianoDay.soulart);
+  if(pianoDay){const{m,a}=splitSoulart(pianoDay.soulart);html+=renderRoomDetail(m,'Matarese')+renderRoomDetail(a,'Altre housekeeper');}
 
   // Boutique
   const boutDay=boutData?.giorni?.find(g=>sameDate(g.data,day.data));
@@ -321,7 +331,7 @@ function renderDay(){
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
-  if(pianoDay)html+=renderRoomDetail(pianoDay.boutique);
+  if(pianoDay)html+=renderRoomDetail(pianoDay.boutique,'');
 
   // Totale giorno se entrambe le strutture hanno dati
   if(soulDay&&boutDay){
