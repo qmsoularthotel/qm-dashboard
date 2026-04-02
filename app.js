@@ -305,7 +305,7 @@ function miniappRenderBkf(){
 }
 function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 function fmtUploadTs(ts){const n=ts?new Date(ts):new Date();const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];return'↑ '+n.getDate()+' '+ms[n.getMonth()]+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
-const TS_TO_UC={turnoTs:'uc-turno-sub',arriviTs:'uc-arrivi-sub',pulTs:'uc-pul-sub',bkfTs:'uc-bkf-sub',soulTs:'uc-soul-sub',boutTs:'uc-bout-sub'};
+const TS_TO_UC={turnoTs:'uc-turno-sub',arriviTs:'uc-arrivi-sub',pulTs:'uc-pul-sub',bkfTs:'uc-bkf-sub',soulTs:'uc-soul-sub',boutTs:'uc-bout-sub',pianoTs:'uc-piano-sub'};
 function _setUcTs(elId,ts){
   const formatted=fmtUploadTs(ts);
   // Tag collassato (es. #uc-pul-sub) — visibile sempre
@@ -415,7 +415,7 @@ const LS={
     const keys=['checklist','custom_tasks','dept_custom_tasks','pulData','bkfData',
       'rev_sa','rev_bh','rev_sl','rev_pr','rev_ms','rev_ar','rev_sb',
       'rev_sent','hkp_sa','hkp_ar',
-      'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData',
+      'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
@@ -2963,6 +2963,59 @@ function hkResetSlot(key){
   const btnId='btn'+key.charAt(0).toUpperCase()+key.slice(1)+'Reload';
   const btn=document.getElementById(btnId);if(btn)btn.style.display='none';
   document.getElementById(key+'FileInput').value='';
+}
+// ── PIANO SETTIMANA ──
+let pianoData=null;
+(()=>{try{const s=localStorage.getItem('qm_piano');if(s){pianoData=JSON.parse(s);setTimeout(()=>pianoSetLoaded(true),200);}}catch(e){}})();
+(()=>{
+  const box=document.getElementById('pianoUploadBox');
+  const inp=document.getElementById('pianoFileInput');
+  if(!inp)return;
+  if(box){box.addEventListener('click',()=>inp.click());box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});box.addEventListener('dragleave',()=>box.classList.remove('dragover'));box.addEventListener('drop',e=>{e.preventDefault();box.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')handlePianoFile(f);else ucSetState('piano','error','Carica un PDF.');});}
+  inp.addEventListener('change',e=>{if(e.target.files[0])handlePianoFile(e.target.files[0]);});
+})();
+async function handlePianoFile(file){
+  ucSetState('piano','loading','Lettura PDF...');
+  try{
+    const ab=await file.arrayBuffer();
+    const pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(ab)}).promise;
+    let text='';
+    for(let i=1;i<=pdfDoc.numPages;i++){const page=await pdfDoc.getPage(i);const tc=await page.getTextContent();text+=tc.items.map(x=>x.str).join(' ')+'\n';}
+    ucSetState('piano','loading','Analisi AI...');
+    const prompt=`Sei un parser JSON. Analizza questo "Piano della settimana" di hotel.\n\nREGOLE:\n- Includi SOLO:\n  • Boutique (chiave "boutique"): camere 201,203,204,205,206,207,208,209,210,211 (escludi 202)\n  • SoulArt (chiave "soulart"): Art 1, Art 2, Art 3, Art 4, Art 5, Art 6, Art 7, Art 8, Art 9, Art 10, Art 11, Art 12, Art 13, Art 14, Art 15, Art 16, Art 17, Art 18, Art 19, Art 20, Art 21, Art 22\n- Ignora: SB, AR_GL, AR_SC, AS_LIB, UM, MS, Capri, Ischia, Napoli, Positano, Procida, R1, R2, R3\n- Simboli per ogni giorno: "-N"=partenza; "+N"=arrivo; "=N"=fermata; cella con sia "-" che "+"=doppio; ".." o assente=ignora\n\nRestituisci SOLO JSON valido:\n{"stampato":"DD/MM/YYYY","giorni":[{"label":"Gio 2/4","data":"DD/MM/YYYY","soulart":{"partenze":[],"arrivi":[],"fermate":[],"doppi":[]},"boutique":{"partenze":[],"arrivi":[],"fermate":[],"doppi":[]}}]}\n\nTESTO:\n${text}`;
+    const res=await fetch(PROXY+'/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:3500,messages:[{role:'user',content:prompt}]})});
+    const rj=await res.json();
+    const raw=rj.content?.[0]?.text||'';
+    const m=raw.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('Risposta AI non valida');
+    const data=JSON.parse(m[0]);
+    if(!data.giorni||!data.giorni.length)throw new Error('Nessun giorno trovato');
+    data._ts=Date.now();
+    pianoData=data;
+    localStorage.setItem('qm_piano',JSON.stringify(data));
+    fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_piano',value:JSON.stringify(data)})}).catch(()=>{});
+    setUploadTs('pianoTs');
+    pianoSetLoaded();
+  }catch(e){ucSetState('piano','error','Errore: '+e.message);}
+}
+function pianoSetLoaded(silent){
+  if(!pianoData||!pianoData.giorni)return;
+  const range=(pianoData.giorni[0]?.label||'')+' – '+(pianoData.giorni[pianoData.giorni.length-1]?.label||'');
+  ucSetState('piano','loaded',range,silent);
+  const dateEl=document.getElementById('pianoLoadedDate');if(dateEl)dateEl.textContent='Settimana: '+range;
+  const btn=document.getElementById('btnPianoReload');if(btn)btn.style.display='block';
+  const box=document.getElementById('pianoUploadBox');if(box)box.style.display='none';
+  const li=document.getElementById('pianoLoadedInfo');if(li)li.classList.add('visible');
+}
+function resetPianoData(){
+  pianoData=null;
+  localStorage.removeItem('qm_piano');
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_piano',value:null})}).catch(()=>{});
+  ucSetState('piano','','Non caricato');
+  const box=document.getElementById('pianoUploadBox');if(box)box.style.display='';
+  const li=document.getElementById('pianoLoadedInfo');if(li)li.classList.remove('visible');
+  const btn=document.getElementById('btnPianoReload');if(btn)btn.style.display='none';
+  document.getElementById('pianoFileInput').value='';
 }
 let bkfGroups=[];
 let bkfNotes={};

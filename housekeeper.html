@@ -120,6 +120,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 /* Refresh btn */
 .refresh-row{text-align:center;padding:16px 0 24px;font-size:12px;color:var(--text-dim);}
 .refresh-row a{color:var(--accent);text-decoration:none;font-weight:500;}
+
+/* Room chips */
+.room-section{margin-top:8px;}
+.room-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:6px 0 4px;}
+.room-section-title.partenza{color:var(--red);}
+.room-section-title.arrivo{color:var(--green);}
+.room-section-title.doppio{color:var(--amber);}
+.room-section-title.fermata{color:var(--accent);opacity:.7;}
+.room-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.chip{padding:3px 9px;border-radius:8px;font-size:12px;font-weight:700;}
+.chip.partenza{background:rgba(220,38,38,.12);color:var(--red);}
+.chip.arrivo{background:rgba(26,127,90,.12);color:var(--green);}
+.chip.doppio{background:rgba(180,83,9,.12);color:var(--amber);}
+.chip.fermata{background:rgba(0,53,128,.07);color:var(--accent);}
 </style>
 </head>
 <body>
@@ -161,6 +175,7 @@ const MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','ag
 
 let soulData=null;
 let boutData=null;
+let pianoData=null;
 let currentIdx=0;
 let allDays=[];
 
@@ -186,6 +201,27 @@ async function fetchKV(key){
     const json=await res.json();
     return json.value?JSON.parse(json.value):null;
   }catch(e){return null;}
+}
+async function fetchKVRaw(key){
+  try{
+    const res=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key));
+    const json=await res.json();
+    return json.value?JSON.parse(json.value):null;
+  }catch(e){return null;}
+}
+function sameDate(d1,d2){
+  if(!d1||!d2)return false;
+  const norm=s=>s.split('/').map((p,i)=>i<2?p.padStart(2,'0'):p).join('/');
+  return norm(d1)===norm(d2);
+}
+function renderRoomDetail(rooms){
+  if(!rooms)return'';
+  let h='';
+  if(rooms.partenze&&rooms.partenze.length)h+=`<div class="room-section"><div class="room-section-title partenza">↑ Partenze</div><div class="room-chips">${rooms.partenze.map(r=>`<span class="chip partenza">${r}</span>`).join('')}</div></div>`;
+  if(rooms.arrivi&&rooms.arrivi.length)h+=`<div class="room-section"><div class="room-section-title arrivo">↓ Arrivi</div><div class="room-chips">${rooms.arrivi.map(r=>`<span class="chip arrivo">${r}</span>`).join('')}</div></div>`;
+  if(rooms.doppi&&rooms.doppi.length)h+=`<div class="room-section"><div class="room-section-title doppio">⇅ Doppi</div><div class="room-chips">${rooms.doppi.map(r=>`<span class="chip doppio">${r}</span>`).join('')}</div></div>`;
+  if(rooms.fermate&&rooms.fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">— Fermate</div><div class="room-chips">${rooms.fermate.map(r=>`<span class="chip fermata">${r}</span>`).join('')}</div></div>`;
+  return h;
 }
 
 function parseDate(str){
@@ -265,9 +301,10 @@ function renderDay(){
   if(isToday)html+=`<div class="today-badge">📅 OGGI</div>`;
 
   let totArrivi=0,totFermate=0,totPartenze=0;
+  const pianoDay=pianoData&&pianoData.giorni?pianoData.giorni.find(g=>sameDate(g.data,day.data)):null;
 
   // SoulArt
-  const soulDay=soulData?.giorni?.find(g=>g.data===day.data);
+  const soulDay=soulData?.giorni?.find(g=>sameDate(g.data,day.data));
   html+=`<div class="struttura-title">🏨 SoulArt Hotel</div>`;
   if(soulDay){
     totArrivi+=soulDay.arrivi;totFermate+=soulDay.fermate;totPartenze+=soulDay.partenze;
@@ -275,9 +312,10 @@ function renderDay(){
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
+  if(pianoDay)html+=renderRoomDetail(pianoDay.soulart);
 
   // Boutique
-  const boutDay=boutData?.giorni?.find(g=>g.data===day.data);
+  const boutDay=boutData?.giorni?.find(g=>sameDate(g.data,day.data));
   html+=`<div class="struttura-title">🏨 Boutique Hotel</div>`;
   if(boutDay){
     totArrivi+=boutDay.arrivi;totFermate+=boutDay.fermate;totPartenze+=boutDay.partenze;
@@ -285,6 +323,7 @@ function renderDay(){
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
+  if(pianoDay)html+=renderRoomDetail(pianoDay.boutique);
 
   // Totale giorno se entrambe le strutture hanno dati
   if(soulDay&&boutDay){
@@ -359,10 +398,11 @@ function renderKpi(d){
 
 async function loadAll(){
   document.getElementById('mainContent').innerHTML=`<div class="loading"><div class="spinner"></div>Caricamento...</div>`;
-  [soulData,boutData]=await Promise.all([fetchKV('soul'),fetchKV('bout')]);
+  [soulData,boutData,pianoData]=await Promise.all([fetchKV('soul'),fetchKV('bout'),fetchKVRaw('qm_piano')]);
   // Salva in localStorage per persistenza
   try{if(soulData)localStorage.setItem('hk_soul_cache',JSON.stringify(soulData));}catch(e){}
   try{if(boutData)localStorage.setItem('hk_bout_cache',JSON.stringify(boutData));}catch(e){}
+  try{if(pianoData)localStorage.setItem('hk_piano_cache',JSON.stringify(pianoData));}catch(e){}
   buildAllDays();
   // Ripristina giorno selezionato o vai a oggi
   try{
@@ -376,8 +416,10 @@ async function loadAll(){
 try{
   const sc=localStorage.getItem('hk_soul_cache');
   const bc=localStorage.getItem('hk_bout_cache');
+  const pc=localStorage.getItem('hk_piano_cache');
   if(sc)soulData=JSON.parse(sc);
   if(bc)boutData=JSON.parse(bc);
+  if(pc)pianoData=JSON.parse(pc);
   if(soulData||boutData){
     buildAllDays();
     try{
