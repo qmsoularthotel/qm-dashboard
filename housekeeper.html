@@ -129,6 +129,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
     <div>
       <div class="header-title">🛏️ Housekeeping</div>
       <div class="header-sub">SoulArt · Boutique Hotel</div>
+      <div id="hDataTs" style="font-size:10px;color:rgba(255,255,255,.55);margin-top:3px;"></div>
     </div>
     <div style="text-align:right;">
       <div class="header-time" id="hTime">--:--</div>
@@ -250,16 +251,17 @@ function renderDay(){
   document.getElementById('navDayMain').textContent=day.label;
   document.getElementById('navDaySub').textContent=isToday?'Oggi':isPast?'Passato':'Prossimo';
 
-  // Timestamp ultimo aggiornamento dati — mostrato in cima
+  // Timestamp nell'header
   const sTs=fmtDataTs(soulData&&soulData._ts);
   const bTs=fmtDataTs(boutData&&boutData._ts);
-  let html='';
-  if(sTs||bTs){
+  const tsEl=document.getElementById('hDataTs');
+  if(tsEl){
     const parts=[];
-    if(sTs)parts.push(`<span style="font-weight:600;">SoulArt:</span> ${sTs}`);
-    if(bTs)parts.push(`<span style="font-weight:600;">Boutique:</span> ${bTs}`);
-    html+=`<div class="update-ts"><div class="update-ts-dot"></div><div style="line-height:1.6;">📋 <span style="font-weight:600;">Dati caricati il:</span><br>${parts.join('&emsp;')}</div></div>`;
+    if(sTs)parts.push('SA: '+sTs);
+    if(bTs)parts.push('BH: '+bTs);
+    tsEl.textContent=parts.length?'↑ '+parts.join(' · '):'';
   }
+  let html='';
   if(isToday)html+=`<div class="today-badge">📅 OGGI</div>`;
 
   let totArrivi=0,totFermate=0,totPartenze=0;
