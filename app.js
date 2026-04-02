@@ -2979,17 +2979,14 @@ async function handlePianoFile(file){
   try{
     const ab=await file.arrayBuffer();
     const pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(ab)}).promise;
-    let text='';
-    for(let i=1;i<=pdfDoc.numPages;i++){const page=await pdfDoc.getPage(i);const tc=await page.getTextContent();text+=tc.items.map(x=>x.str).join(' ')+'\n';}
-    ucSetState('piano','loading','Analisi AI...');
-    const prompt=`Sei un parser JSON. Analizza questo "Piano della settimana" di hotel.\n\nREGOLE:\n- Includi SOLO:\n  • Boutique (chiave "boutique"): camere 201,203,204,205,206,207,208,209,210,211 (escludi 202)\n  • SoulArt (chiave "soulart"): Art 1, Art 2, Art 3, Art 4, Art 5, Art 6, Art 7, Art 8, Art 9, Art 10, Art 11, Art 12, Art 13, Art 14, Art 15, Art 16, Art 17, Art 18, Art 19, Art 20, Art 21, Art 22\n- Ignora: SB, AR_GL, AR_SC, AS_LIB, UM, MS, Capri, Ischia, Napoli, Positano, Procida, R1, R2, R3\n- Classificazione per ogni cella giornaliera:\n  • contiene "-" (anche se c'è anche "+" nello stesso giorno, es. "-2+2") → "partenze"\n  • contiene solo "=" → "fermate"\n  • contiene solo "+" o ".." o assente → ignora completamente\n\nRestituisci SOLO JSON valido:\n{"stampato":"DD/MM/YYYY","giorni":[{"label":"Gio 2/4","data":"DD/MM/YYYY","soulart":{"partenze":[],"fermate":[]},"boutique":{"partenze":[],"fermate":[]}}]}\n\nTESTO:\n${text}`;
-    const res=await fetch(PROXY+'/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:3500,messages:[{role:'user',content:prompt}]})});
-    const rj=await res.json();
-    const raw=rj.content?.[0]?.text||'';
-    const m=raw.match(/\{[\s\S]*\}/);
-    if(!m)throw new Error('Risposta AI non valida');
-    const data=JSON.parse(m[0]);
-    if(!data.giorni||!data.giorni.length)throw new Error('Nessun giorno trovato');
+    const allItems=[];
+    for(let p=1;p<=pdfDoc.numPages;p++){
+      const page=await pdfDoc.getPage(p);
+      const tc=await page.getTextContent();
+      tc.items.forEach(it=>{const s=it.str.trim();if(s)allItems.push({s,x:Math.round(it.transform[4]),y:Math.round(it.transform[5]),p});});
+    }
+    const data=parsePianoItems(allItems);
+    if(!data||!data.giorni||!data.giorni.length)throw new Error('Nessun dato trovato');
     data._ts=Date.now();
     pianoData=data;
     localStorage.setItem('qm_piano',JSON.stringify(data));
@@ -2997,6 +2994,74 @@ async function handlePianoFile(file){
     setUploadTs('pianoTs');
     pianoSetLoaded();
   }catch(e){ucSetState('piano','error','Errore: '+e.message);}
+}
+function parsePianoItems(items){
+  // Raggruppa in righe per (page, y) con tolleranza 4
+  const rows=[];
+  items.forEach(it=>{
+    const r=rows.find(r=>r.p===it.p&&Math.abs(r.y-it.y)<4);
+    if(r)r.items.push(it);
+    else rows.push({p:it.p,y:it.y,items:[it]});
+  });
+  rows.sort((a,b)=>a.p!==b.p?a.p-b.p:b.y-a.y);
+  rows.forEach(r=>r.items.sort((a,b)=>a.x-b.x));
+  // Anno da "stampato: DD/MM/YYYY"
+  let year='2026',stampato='';
+  for(const r of rows){const m=r.items.map(i=>i.s).join(' ').match(/(\d{2}\/\d{2}\/(\d{4}))/);if(m){stampato=m[1];year=m[2];break;}}
+  // Riga header: contiene ≥2 abbreviazioni giorno
+  const DAYS=['Gio','Ven','Sab','Dom','Lun','Mar','Mer'];
+  const hIdx=rows.findIndex(r=>r.items.filter(it=>DAYS.includes(it.s)).length>=2);
+  if(hIdx<0)return null;
+  const dayXItems=rows[hIdx].items.filter(it=>DAYS.includes(it.s)).sort((a,b)=>a.x-b.x);
+  // Date items: nella riga header e nella successiva
+  const nextRow=rows[hIdx+1];
+  const dateItems=[
+    ...rows[hIdx].items.filter(it=>/^\d{1,2}\/\d{1,2}$/.test(it.s)),
+    ...(nextRow&&nextRow.p===rows[hIdx].p?nextRow.items.filter(it=>/^\d{1,2}\/\d{1,2}$/.test(it.s)):[])
+  ];
+  // Costruisci colonne abbinando giorno ↔ data per X più vicino
+  const cols=[];
+  dayXItems.forEach(dIt=>{
+    let bestDate='',bestDist=Infinity;
+    dateItems.forEach(di=>{const d=Math.abs(di.x-dIt.x);if(d<bestDist){bestDist=d;bestDate=di.s;}});
+    let fullDate=null;
+    if(bestDate){const[dd,mm]=bestDate.split('/');fullDate=dd.padStart(2,'0')+'/'+mm.padStart(2,'0')+'/'+year;}
+    cols.push({x:dIt.x,label:dIt.s+(bestDate?' '+bestDate:''),data:fullDate});
+  });
+  if(!cols.length)return null;
+  cols.sort((a,b)=>a.x-b.x);
+  const firstColX=cols[0].x;
+  const BH=new Set(['201','203','204','205','206','207','208','209','210','211']);
+  const giorni=cols.map(c=>({label:c.label,data:c.data,soulart:{partenze:[],fermate:[]},boutique:{partenze:[],fermate:[]}}));
+  // Righe dati: tutto dopo header+daterow (anche page 2+)
+  const hPage=rows[hIdx].p;
+  const skipUntil=nextRow&&nextRow.p===hPage&&dateItems.length?hIdx+1:hIdx;
+  for(let ri=0;ri<rows.length;ri++){
+    if(rows[ri].p===hPage&&ri<=skipUntil)continue;
+    const its=rows[ri].items;
+    if(!its.length)continue;
+    const rowStr=its.map(i=>i.s).join(' ');
+    // Rilevamento camera
+    let roomCode=null,roomType=null;
+    const artM=rowStr.match(/\bArt\s+(\d{1,2})\b/);
+    if(artM){const n=parseInt(artM[1]);if(n>=1&&n<=22){roomCode='Art '+n;roomType='soulart';}}
+    if(!roomCode){const bhM=rowStr.match(/\b(20[1-9]|210|211)\b/);if(bhM&&BH.has(bhM[1])){roomCode=bhM[1];roomType='boutique';}}
+    if(!roomCode)continue;
+    // Item valore: in zona colonne, contiene -, +, = o ".."
+    const valItems=its.filter(it=>it.x>=firstColX-25&&(/^[-+=]/.test(it.s)||it.s==='..'));
+    const colVals=cols.map(()=>'');
+    valItems.forEach(vit=>{
+      let ni=0,nd=Infinity;
+      cols.forEach((c,ci)=>{const d=Math.abs(vit.x-c.x);if(d<nd){nd=d;ni=ci;}});
+      colVals[ni]+=vit.s;
+    });
+    colVals.forEach((val,ci)=>{
+      if(!val||/^\.+$/.test(val))return;
+      if(val.includes('-'))giorni[ci][roomType].partenze.push(roomCode);
+      else if(val.includes('='))giorni[ci][roomType].fermate.push(roomCode);
+    });
+  }
+  return{stampato,giorni};
 }
 function pianoSetLoaded(silent){
   if(!pianoData||!pianoData.giorni)return;
