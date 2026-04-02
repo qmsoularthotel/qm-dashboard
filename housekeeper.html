@@ -222,13 +222,14 @@ function splitSoulart(rooms){
   (rooms.fermate||[]).forEach(r=>(MATARESE.has(r)?m:a).fermate.push(r));
   return{m,a};
 }
+function roomSort(arr){return[...arr].sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''))||0,nb=parseInt(b.replace(/\D/g,''))||0;return na-nb;});}
 function renderRoomDetail(rooms,label){
   if(!rooms)return'';
   const hasData=(rooms.partenze&&rooms.partenze.length)||(rooms.fermate&&rooms.fermate.length);
   if(!hasData)return'';
   let h=label?`<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px;padding-top:6px;border-top:1px solid var(--border);">👤 ${label}</div>`:'';
-  if(rooms.partenze&&rooms.partenze.length)h+=`<div class="room-section"><div class="room-section-title partenza">↑ Partenze</div><div class="room-chips">${rooms.partenze.map(r=>`<span class="chip partenza">${r}</span>`).join('')}</div></div>`;
-  if(rooms.fermate&&rooms.fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">— Fermate</div><div class="room-chips">${rooms.fermate.map(r=>`<span class="chip fermata">${r}</span>`).join('')}</div></div>`;
+  if(rooms.partenze&&rooms.partenze.length)h+=`<div class="room-section"><div class="room-section-title partenza">↑ Partenze</div><div class="room-chips">${roomSort(rooms.partenze).map(r=>`<span class="chip partenza">${r}</span>`).join('')}</div></div>`;
+  if(rooms.fermate&&rooms.fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">— Fermate</div><div class="room-chips">${roomSort(rooms.fermate).map(r=>`<span class="chip fermata">${r}</span>`).join('')}</div></div>`;
   return h;
 }
 
