@@ -163,6 +163,14 @@ let boutData=null;
 let currentIdx=0;
 let allDays=[];
 
+const GG_SHORT=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+const MM_SHORT=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+function fmtDataTs(ts){
+  if(!ts)return null;
+  const d=new Date(ts);
+  return GG_SHORT[d.getDay()]+' '+d.getDate()+' '+MM_SHORT[d.getMonth()]+' · '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
 // Clock
 function tick(){
   const n=new Date();
@@ -320,12 +328,16 @@ function renderDay(){
     });
   }
 
-  // Ora aggiornamento
-  const now=new Date();
-  const GIORNI_IT=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
-  const MESI_IT=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
-  const updateStr=GIORNI_IT[now.getDay()]+' '+now.getDate()+' '+MESI_IT[now.getMonth()]+' ore '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  html+=`<div class="update-row">Aggiornato: ${updateStr} · <a href="javascript:loadAll()">Aggiorna ora</a></div>`;
+  // Timestamp ultimo aggiornamento dati
+  const sTs=fmtDataTs(soulData&&soulData._ts);
+  const bTs=fmtDataTs(boutData&&boutData._ts);
+  if(sTs||bTs){
+    const parts=[];
+    if(sTs)parts.push(`<span style="font-weight:600;">SoulArt:</span> ${sTs}`);
+    if(bTs)parts.push(`<span style="font-weight:600;">Boutique:</span> ${bTs}`);
+    html+=`<div class="update-ts"><div class="update-ts-dot"></div><div style="line-height:1.6;">📋 <span style="font-weight:600;">Dati caricati il:</span><br>${parts.join('&emsp;')}</div></div>`;
+  }
+  html+=`<div class="refresh-row"><a href="javascript:loadAll()">↻ Aggiorna ora</a></div>`;
 
   document.getElementById('mainContent').innerHTML=html;
 }
