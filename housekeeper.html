@@ -20,7 +20,7 @@
   --text-muted:#9a9890;
 }
 @media(prefers-color-scheme:dark){
-  :root{--bg:#141412;--surface:#1c1b18;--surface2:#242320;--border:#3a3830;--text:#e8e6df;--text-dim:#9a9890;--text-muted:#6b6860;}
+  :root{--bg:#141412;--surface:#1c1b18;--surface2:#242320;--border:#3a3830;--text:#e8e6df;--text-dim:#9a9890;--text-muted:#6b6860;--accent:#5b9cf6;--green:#34d399;--amber:#fbbf24;--red:#f87171;}
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;}
 
@@ -53,13 +53,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 /* KPI cards */
 .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px;}
 .kpi-card{background:var(--surface);border-radius:12px;padding:14px 12px;text-align:center;border:1px solid var(--border);}
-.kpi-card.arrivi{border-top:3px solid #003580;}
-.kpi-card.fermate{border-top:3px solid #003580;}
-.kpi-card.partenze{border-top:3px solid #003580;}
+.kpi-card.arrivi{border-top:3px solid var(--accent);}
+.kpi-card.fermate{border-top:3px solid var(--accent);}
+.kpi-card.partenze{border-top:3px solid var(--accent);}
 .kpi-val{font-size:36px;font-weight:700;line-height:1;margin-bottom:4px;}
-.kpi-val.arrivi{color:#003580;}
-.kpi-val.fermate{color:#003580;}
-.kpi-val.partenze{color:#003580;}
+.kpi-val.arrivi{color:var(--accent);}
+.kpi-val.fermate{color:var(--accent);}
+.kpi-val.partenze{color:var(--accent);}
 .kpi-lbl{font-size:11px;color:var(--text-dim);letter-spacing:.04em;}
 
 /* No data */
@@ -104,7 +104,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 
 /* Timestamp */
 .update-ts{background:var(--surface2);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;margin-top:12px;font-size:11px;color:var(--text-dim);}
-.update-ts-dot{width:7px;height:7px;border-radius:50%;background:#003580;flex-shrink:0;}
+.update-ts-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;}
 
 /* Preview giorni successivi */
 .preview-section{margin-top:14px;}
@@ -273,11 +273,11 @@ function renderDay(){
       <div class="day-total-title">Totale giorno — entrambe le strutture</div>
       <div class="day-total-grid" style="grid-template-columns:1fr 1fr;">
         <div class="day-total-item">
-          <div class="day-total-val" style="color:#003580;">${totFermate}</div>
+          <div class="day-total-val" style="color:var(--accent);">${totFermate}</div>
           <div class="day-total-lbl">Fermate</div>
         </div>
         <div class="day-total-item">
-          <div class="day-total-val" style="color:#003580;">${totPartenze}</div>
+          <div class="day-total-val" style="color:var(--accent);">${totPartenze}</div>
           <div class="day-total-lbl">Partenze</div>
         </div>
       </div>
@@ -296,11 +296,10 @@ function renderDay(){
       html+=`<div class="preview-struttura">🏨 SoulArt Hotel</div>`;
       if(sd){
         const t=sd.fermate+sd.partenze;
-        const sc=t>=30?'#003580':t>=20?'#003580':'#003580';
         html+=`<div class="preview-row-3">
-          <div class="preview-item"><div class="preview-val" style="color:#003580;">${sd.fermate}</div><div class="preview-lbl">Fermate</div></div>
-          <div class="preview-item"><div class="preview-val" style="color:#003580;">${sd.partenze}</div><div class="preview-lbl">Partenze</div></div>
-          <div class="preview-item"><div class="preview-val" style="color:#003580;">${t}</div><div class="preview-lbl">Totale</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${sd.fermate}</div><div class="preview-lbl">Fermate</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${sd.partenze}</div><div class="preview-lbl">Partenze</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${t}</div><div class="preview-lbl">Totale</div></div>
         </div>`;
       } else {
         html+=`<div style="font-size:12px;color:var(--text-dim);padding:4px 0 6px;">Nessun dato</div>`;
@@ -309,11 +308,10 @@ function renderDay(){
       html+=`<div class="preview-struttura" style="margin-top:8px;">🏨 Boutique Hotel</div>`;
       if(bd){
         const t=bd.fermate+bd.partenze;
-        const sc=t>=30?'#003580':t>=20?'#003580':'#003580';
         html+=`<div class="preview-row-3">
-          <div class="preview-item"><div class="preview-val" style="color:#003580;">${bd.fermate}</div><div class="preview-lbl">Fermate</div></div>
-          <div class="preview-item"><div class="preview-val" style="color:#003580;">${bd.partenze}</div><div class="preview-lbl">Partenze</div></div>
-          <div class="preview-item"><div class="preview-val" style="color:#003580;">${t}</div><div class="preview-lbl">Totale</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${bd.fermate}</div><div class="preview-lbl">Fermate</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${bd.partenze}</div><div class="preview-lbl">Partenze</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${t}</div><div class="preview-lbl">Totale</div></div>
         </div>`;
       } else {
         html+=`<div style="font-size:12px;color:var(--text-dim);padding:4px 0;">Nessun dato</div>`;
