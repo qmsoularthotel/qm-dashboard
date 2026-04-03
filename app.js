@@ -1951,10 +1951,10 @@ function renderPulData(silent){
   document.getElementById('pulStatGrid').style.display='grid';
   document.getElementById('pulOccBar').style.display='block';
   document.getElementById('btnPulReload').style.display='block';
-  renderPulDay();
+  renderPulDay(silent);
   updateKpiFromPulizie(pulData[pulActiveDay]);
 }
-function renderPulDay(){
+function renderPulDay(silent){
   if(!pulData)return;
   const d=pulData[pulActiveDay];
   document.getElementById('pulLoadedDate').textContent=d.label;
@@ -1968,8 +1968,7 @@ function renderPulDay(){
   document.getElementById('pulOccPct').textContent=occPct+'%  ('+occ+'/'+CAP_CAMERE+')';
   document.getElementById('pulOccFill').style.width=occPct+'%';
   updateKpiFromPulizie(d);
-  const _pts=localStorage.getItem('qm_ts_pulTs');
-  LS.set('pulData',{data:pulData,activeDay:pulActiveDay,ts:_pts?parseInt(_pts):undefined});
+  if(!silent){const _pts=localStorage.getItem('qm_ts_pulTs');LS.set('pulData',{data:pulData,activeDay:pulActiveDay,ts:_pts?parseInt(_pts):undefined});}
 }
 function updateKpiFromPulizie(d){
   const occ=d.arrivi - d.partenze; // camere nette in entrata oggi
@@ -2877,9 +2876,9 @@ function renderBkfData(silent){
   document.getElementById('bkfLoadedInfo').classList.add('visible');
   document.getElementById('bkfStatGrid').style.display='grid';
   document.getElementById('btnBkfReload').style.display='block';
-  renderBkfDay();
+  renderBkfDay(silent);
 }
-function renderBkfDay(){
+function renderBkfDay(silent){
   if(!bkfData)return;
   const d=bkfData[bkfActiveDay];
   const coperti=d.adulti+d.bambini;
@@ -2888,8 +2887,7 @@ function renderBkfDay(){
     <div class="pul-stat"><div class="pul-stat-val" style="color:var(--amber)">${coperti}</div><div class="pul-stat-lbl">Coperti</div></div>
     <div class="pul-stat"><div class="pul-stat-val" style="color:var(--text-muted)">${d.noCol}</div><div class="pul-stat-lbl">No col.</div></div>`;
   updateKpiFromBkf(d);
-  const _bts=localStorage.getItem('qm_ts_bkfTs');
-  LS.set('bkfData',{data:bkfData,activeDay:bkfActiveDay,ts:_bts?parseInt(_bts):undefined});
+  if(!silent){const _bts=localStorage.getItem('qm_ts_bkfTs');LS.set('bkfData',{data:bkfData,activeDay:bkfActiveDay,ts:_bts?parseInt(_bts):undefined});}
   bkfRenderChart();
   bkfRenderNotes();
 }
