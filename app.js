@@ -423,14 +423,20 @@ const LS={
         const res=await fetch(PROXY+'/kv/get?key=qm_'+encodeURIComponent(k));
         const json=await res.json();
         if(json.value!==null&&json.value!==undefined){
-          // Per pulData/bkfData: usa qm_ts_pulTs/bkfTs come fonte autorevole del timestamp locale
+          // Per pulData/bkfData: confronta timestamp; se cloud è più recente aggiorna anche il ts visivo
           if(k==='pulData'||k==='bkfData'){
             try{
               const tsKey=k==='pulData'?'qm_ts_pulTs':'qm_ts_bkfTs';
+              const elId=k==='pulData'?'pulTs':'bkfTs';
               const localTs=parseInt(localStorage.getItem(tsKey)||'0');
               if(localTs){
                 const cloudObj=JSON.parse(json.value);
-                if(!cloudObj.ts||localTs>cloudObj.ts)return;
+                if(!cloudObj.ts||localTs>cloudObj.ts)return; // locale più recente: tieni locale
+                // cloud più recente: aggiorna ts in localStorage e visual
+                if(cloudObj.ts){
+                  localStorage.setItem(tsKey,String(cloudObj.ts));
+                  try{_setUcTs(elId,cloudObj.ts);}catch(e){}
+                }
               }
             }catch(e){}
           }
