@@ -2906,7 +2906,7 @@ let hkBoutData=null;
     inp.addEventListener('change',e=>{if(e.target.files[0])handleHkFile(key,e.target.files[0]);});
   });
   ['soul','bout'].forEach(key=>{
-    try{const saved=localStorage.getItem('qm_hk_'+key);if(saved){if(key==='soul')hkSoulData=JSON.parse(saved);else hkBoutData=JSON.parse(saved);setTimeout(()=>hkSetLoaded(key,true),200);}}catch(e){}
+    try{const saved=localStorage.getItem('qm_hk_'+key);if(saved){const data=JSON.parse(saved);if(key==='soul')hkSoulData=data;else hkBoutData=data;setTimeout(()=>{hkSetLoaded(key,true);if(data._ts)restoreUploadTs(key+'Ts',data._ts);else loadStoredTs(key+'Ts');},200);}}catch(e){}
   });
 })();
 async function handleHkFile(key,file){
@@ -2922,6 +2922,7 @@ async function handleHkFile(key,file){
     data._ts=Date.now();
     localStorage.setItem('qm_hk_'+key,JSON.stringify(data));
     fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_hk_'+key,value:JSON.stringify(data)})}).catch(()=>{});
+    setUploadTs(key+'Ts',data._ts);
     hkSetLoaded(key);
   }catch(e){ucSetState(key,'error','Errore: '+e.message);}
 }
@@ -2970,7 +2971,7 @@ function hkResetSlot(key){
 }
 // ── PIANO SETTIMANA ──
 let pianoData=null;
-(()=>{try{const s=localStorage.getItem('qm_piano');if(s){pianoData=JSON.parse(s);setTimeout(()=>pianoSetLoaded(true),200);}}catch(e){}})();
+(()=>{try{const s=localStorage.getItem('qm_piano');if(s){pianoData=JSON.parse(s);setTimeout(()=>{pianoSetLoaded(true);if(pianoData._ts)restoreUploadTs('pianoTs',pianoData._ts);else loadStoredTs('pianoTs');},200);}}catch(e){}})();
 (()=>{
   const box=document.getElementById('pianoUploadBox');
   const inp=document.getElementById('pianoFileInput');
