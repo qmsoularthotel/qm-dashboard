@@ -390,16 +390,25 @@ const styleEl=document.createElement('style');
 styleEl.textContent='@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}';
 document.head.appendChild(styleEl);
 // Storage ibrido: localStorage (veloce/offline) + KV cloud (sync tra dispositivi)
+async function kvSet(key,value,retries=3){
+  for(let i=0;i<retries;i++){
+    try{
+      const res=await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value})});
+      if(res.ok)return true;
+    }catch(e){}
+    if(i<retries-1)await new Promise(r=>setTimeout(r,1500*(i+1)));
+  }
+  return false;
+}
 const LS={
   today:()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();},
   // Salva in localStorage E sul cloud
   set:(k,v)=>{
     try{localStorage.setItem('qm_'+k,JSON.stringify(v));}catch(e){}
     setSyncStatus('syncing');
-    fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({key:'qm_'+k,value:JSON.stringify(v)})})
-      .then(()=>setSyncStatus('ok'))
-      .catch(()=>setSyncStatus('offline'));
+    kvSet('qm_'+k,JSON.stringify(v))
+      .then(ok=>setSyncStatus(ok?'ok':'error'))
+      .catch(()=>setSyncStatus('error'));
   },
   // Legge da localStorage (sincrono, per uso immediato)
   get:(k,def)=>{
@@ -2921,7 +2930,8 @@ async function handleHkFile(key,file){
     if(key==='soul')hkSoulData=data;else hkBoutData=data;
     data._ts=Date.now();
     localStorage.setItem('qm_hk_'+key,JSON.stringify(data));
-    fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_hk_'+key,value:JSON.stringify(data)})}).catch(()=>{});
+    setSyncStatus('syncing');
+    kvSet('qm_hk_'+key,JSON.stringify(data)).then(ok=>{setSyncStatus(ok?'ok':'error');if(!ok)ucSetState(key,'error','Errore cloud — riprova');});
     setUploadTs(key+'Ts',data._ts);
     hkSetLoaded(key);
   }catch(e){ucSetState(key,'error','Errore: '+e.message);}
@@ -2995,7 +3005,8 @@ async function handlePianoFile(file){
     data._ts=Date.now();
     pianoData=data;
     localStorage.setItem('qm_piano',JSON.stringify(data));
-    fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_piano',value:JSON.stringify(data)})}).catch(()=>{});
+    setSyncStatus('syncing');
+    kvSet('qm_piano',JSON.stringify(data)).then(ok=>{setSyncStatus(ok?'ok':'error');if(!ok)ucSetState('piano','error','Errore cloud — riprova');});
     setUploadTs('pianoTs');
     pianoSetLoaded();
   }catch(e){ucSetState('piano','error','Errore: '+e.message);}
