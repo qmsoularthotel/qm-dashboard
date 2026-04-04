@@ -234,17 +234,35 @@ function renderDay(idx){
   const nonServizio=ALL_STAFF.filter(n=>IS_REST(getShift(shifts,n)));
   let html='';
   if(nonServizio.length)html+=`<div class="non-servizio-strip"><span class="ns-label">Non in servizio — ${g.label}</span>${nonServizio.map(n=>`<span class="ns-chip">${n}</span>`).join('')}</div>`;
+  const shiftRow=(n,sv,cls)=>`<div class="staff-row" style="cursor:pointer;" title="Clicca per correggere" onclick="editShift(${idx},'${n.replace(/'/g,"\\'")}')"><span class="sname">${n}</span><span class="sshift ${cls}">${sv||'—'}</span></div>`;
   html+='<div class="staff-grid">';
   Object.entries(DEPTS).forEach(([key,dept])=>{
     const inT=dept.members.filter(n=>!IS_REST(getShift(shifts,n)));if(!inT.length)return;
-    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${inT.map(n=>{const sv=(getShift(shifts,n)||'').trim();return`<div class="staff-row"><span class="sname">${n}</span><span class="sshift ${['P','AC','CG','AG','CC','NC','NG'].includes(sv)?'ss-active':'ss-special'}">${sv}</span></div>`;}).join('')}</div></div>`;
+    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${inT.map(n=>{const sv=(getShift(shifts,n)||'').trim();return shiftRow(n,sv,['P','AC','CG','AG','CC','NC','NG'].includes(sv)?'ss-active':'ss-special');}).join('')}</div></div>`;
   });
   // Extra / collaboratori non in DEPTS (case-insensitive)
   const extra=Object.entries(shifts).filter(([n,v])=>!IS_REST(v)&&!allStaffLow.has(n.toLowerCase()));
   if(extra.length){
-    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name" style="color:var(--amber);">Extra / Collaboratori</span><span class="sdh-count">${extra.length} in turno</span></div><div class="staff-list">${extra.map(([n,v])=>{const sv=(v||'').trim();return`<div class="staff-row"><span class="sname">${n}</span><span class="sshift ss-special">${sv}</span></div>`;}).join('')}</div></div>`;
+    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name" style="color:var(--amber);">Extra / Collaboratori</span><span class="sdh-count">${extra.length} in turno</span></div><div class="staff-list">${extra.map(([n,v])=>{const sv=(v||'').trim();return shiftRow(n,sv,'ss-special');}).join('')}</div></div>`;
   }
   html+='</div>';area.innerHTML=html;
+}
+function editShift(dayIdx,nome){
+  if(!weekData||!weekData.giorni[dayIdx])return;
+  const shifts=weekData.giorni[dayIdx].shifts;
+  // Trova la chiave reale (case-insensitive)
+  const realKey=Object.keys(shifts).find(k=>k.toLowerCase()===nome.toLowerCase())||nome;
+  const cur=shifts[realKey]||'';
+  const nuovo=window.prompt(`Turno di ${nome} — ${weekData.giorni[dayIdx].label}\nValore attuale: "${cur}"\n\nInserisci il turno corretto:`,cur);
+  if(nuovo===null)return; // annullato
+  shifts[realKey]=nuovo.trim();
+  // Salva in localStorage e cloud
+  const toSave=weekData.giorni.map(g=>({...g,date:g.date instanceof Date?g.date.toISOString():g.date}));
+  toSave._ts=Date.now();
+  localStorage.setItem('qm_weekData',JSON.stringify(toSave));
+  kvSet('qm_weekData',JSON.stringify(toSave));
+  renderDay(dayIdx);
+  updateSidebarInfo();
 }
 function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caricato');turniInput.value='';
   try{localStorage.removeItem('qm_weekData');}catch(e){}
