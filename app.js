@@ -450,6 +450,22 @@ const LS={
             }catch(e){}
           }
           localStorage.setItem('qm_'+k,json.value);
+          // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
+          if(k==='hk_soul'||k==='hk_bout'||k==='piano'){
+            try{
+              const cloudObj=JSON.parse(json.value);
+              const elId=k==='hk_soul'?'soulTs':k==='hk_bout'?'boutTs':'pianoTs';
+              const tsKey='qm_ts_'+elId;
+              const cloudTs=cloudObj._ts;
+              if(cloudTs){
+                const localTs=parseInt(localStorage.getItem(tsKey)||'0');
+                if(cloudTs>localTs){
+                  localStorage.setItem(tsKey,String(cloudTs));
+                  try{_setUcTs(elId,cloudTs);}catch(e){}
+                }
+              }
+            }catch(e){}
+          }
           synced++;
         }
       }catch(e){}
