@@ -1,5 +1,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=186">
+<script>
+// Forza reload se app.js è in cache vecchia
+(function(){
+  const V='186-20260404';
+  if(localStorage.getItem('qm_app_version')!==V){
+    localStorage.setItem('qm_app_version',V);
+    if(performance.navigation&&performance.navigation.type!==1){
+      // Non è già un reload — forza
+      const url=location.href.split('?')[0]+'?v='+V;
+      location.replace(url);
+    }
+  }
+})();
+</script>
 <iframe id="printIframe"></iframe>
 <div class="print-dialog" id="printDialog">
   <div class="print-dialog-box">
@@ -1130,6 +1144,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js"></script>
+<script src="app.js?v=186-20260404"></script>
 </body>
 </html>
