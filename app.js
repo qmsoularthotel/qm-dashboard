@@ -148,8 +148,11 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     }));
     // Salva in localStorage + cloud
     try{
+      const _wts=Date.now();
       const toSave=parsed.giorni.map(g=>({...g,date:g.date.toISOString()}));
+      toSave._ts=_wts;
       localStorage.setItem('qm_weekData',JSON.stringify(toSave));
+      localStorage.setItem('qm_ts_turnoTs',String(_wts));
       fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:JSON.stringify(toSave)})}).catch(()=>{});
     }catch(e){}
     loadWeekData(parsed);
@@ -450,6 +453,19 @@ const LS={
             }catch(e){}
           }
           localStorage.setItem('qm_'+k,json.value);
+          // Per weekData/arriviData: aggiorna timestamp visivo se cloud ha _ts
+          if(k==='weekData'||k==='arriviData'){
+            try{
+              const cloudObj=JSON.parse(json.value);
+              const elId=k==='weekData'?'turnoTs':'arriviTs';
+              const tsKey='qm_ts_'+elId;
+              const cloudTs=cloudObj._ts;
+              if(cloudTs){
+                const localTs=parseInt(localStorage.getItem(tsKey)||'0');
+                if(cloudTs>localTs){localStorage.setItem(tsKey,String(cloudTs));try{_setUcTs(elId,cloudTs);}catch(e){}}
+              }
+            }catch(e){}
+          }
           // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
           if(k==='hk_soul'||k==='hk_bout'||k==='piano'){
             try{
