@@ -114,9 +114,10 @@ Analizza questa immagine/PDF del planning e restituisci SOLO un oggetto JSON val
 REGOLE IMPORTANTI:
 1. Estrai TUTTE le righe presenti nel planning senza eccezioni, incluse righe con nomi "Extra XYZ" — ognuna è una persona diversa.
 2. Usa il nome ESATTAMENTE come scritto nel planning (rispetta maiuscole/minuscole e abbreviazioni). Non abbinare, non rinominare.
-3. Le celle con solo "-" o "." o vuote → metti "R" (persona non disponibile quel giorno).
-4. La lettera "R" da sola → metti "R" (riposo). ATTENZIONE: "P" è un turno valido (presenza), NON è riposo — non confondere P con R.
-5. Qualsiasi altro valore ("AG", "P", "P GALL", "BKF SOUL", "FERIE", "R RECUPERO", "SOUL N.", "9-17", "INT GALL 10/18", "NC", "NG", "CC", "CG", "AC", ecc.) → metti il valore ESATTO della cella così com'è, senza modifiche.
+3. REGOLA COLORE — fondamentale: nel planning i valori scritti in ROSSO indicano assenza/riposo (R, FERIE, R RECUPERO ecc.). I valori scritti in NERO o GRASSETTO NERO sono turni lavorativi (AG, P, P GALL, CC, CG, AC, NC, NG, BKF SOUL, BKF GALL, SOUL, 9-17, 100, 200, 300, 400, PR/MS ecc.).
+4. Celle con "-" o "." o vuote → metti "R".
+5. Testo ROSSO → metti il valore esatto (es. "R", "FERIE", "R RECUPERO").
+6. Testo NERO → metti il valore esatto — NON cambiarlo in R anche se la lettera assomiglia visivamente a R. "P" in nero è un turno di presenza, non riposo.
 6. Le date nel planning sono nel formato "lunedì 30 marzo" → converti in "2026-03-30" e label "Lun 30/03".
 7. Includi tutti i 7 giorni presenti nel planning.
 
