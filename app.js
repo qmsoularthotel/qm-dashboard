@@ -95,36 +95,20 @@ async function handleTurniFile(file){
     const isPDF=file.type==='application/pdf';
     const mediaType=isPDF?'application/pdf':file.type||'image/jpeg';
     const staff=ALL_STAFF;
-    const prompt=`Sei un assistente che analizza planning settimanali di turni per un hotel.
-Analizza questa immagine/PDF del planning e restituisci SOLO un oggetto JSON valido con questa struttura esatta:
-{
-  "giorni": [
-    {
-      "label": "Lun 23/03",
-      "date": "2026-03-23",
-      "shifts": {
-        "Nome Cognome": "turno",
-        ...
-      }
-    },
-    ...
-  ]
-}
+    const prompt=`Sei uno strumento OCR. Trascrivi questa tabella di turni hotel in JSON, copiando ESATTAMENTE il testo di ogni cella.
 
-REGOLE IMPORTANTI:
-1. Estrai TUTTE le righe presenti nel planning senza eccezioni, incluse righe con nomi "Extra XYZ" — ognuna è una persona diversa.
-2. Usa il nome ESATTAMENTE come scritto nel planning (rispetta maiuscole/minuscole e abbreviazioni). Non abbinare, non rinominare.
-3. REGOLA COLORE — fondamentale: nel planning i valori scritti in ROSSO indicano assenza/riposo (R, FERIE, R RECUPERO ecc.). I valori scritti in NERO o GRASSETTO NERO sono turni lavorativi (AG, P, P GALL, CC, CG, AC, NC, NG, BKF SOUL, BKF GALL, SOUL, 9-17, 100, 200, 300, 400, PR/MS ecc.).
-4. Celle con "-" o "." o vuote → metti "R".
-5. Testo ROSSO → metti il valore esatto (es. "R", "FERIE", "R RECUPERO").
-6. Testo NERO → metti il valore esatto — NON cambiarlo in R anche se la lettera assomiglia visivamente a R. "P" in nero è un turno di presenza, non riposo.
-6. Le date nel planning sono nel formato "lunedì 30 marzo" → converti in "2026-03-30" e label "Lun 30/03".
-7. Includi tutti i 7 giorni presenti nel planning.
+REGOLE:
+1. Copia ogni cella LETTERA PER LETTERA senza modifiche. "P" rimane "P", "AG" rimane "AG".
+2. I valori in ROSSO sono assenze (R, FERIE, R RECUPERO). Trascrivili esattamente.
+3. I valori in NERO sono turni lavorativi. Trascrivili esattamente — "P" in nero NON è "R".
+4. Celle con "-" o "." o vuote → scrivi "-".
+5. Ogni riga = una persona. Nome esatto dalla prima colonna.
+6. Date intestazione "lunedì 30 marzo" → date:"2026-03-30", label:"Lun 30/03".
 
-Elenco orientativo dei dipendenti (potrebbero esserci nomi aggiuntivi nell'immagine — includili tutti):
-${staff.join(', ')}
+JSON richiesto:
+{"giorni":[{"label":"Lun 30/03","date":"2026-03-30","shifts":{"Nome":"valore"}}]}
 
-Restituisci SOLO il JSON, nessun testo prima o dopo.`;
+Nessun testo fuori dal JSON.`;
     const contentBlock=isPDF
       ?{type:'document',source:{type:'base64',media_type:mediaType,data:base64}}
       :{type:'image',source:{type:'base64',media_type:mediaType,data:base64}};
