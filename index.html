@@ -102,11 +102,12 @@
           <span class="uc-badge" id="uc-turno-badge">▾</span>
         </div>
         <div class="uc-panel" id="uc-turno-panel">
+          <textarea id="turniPasteBox" placeholder="Incolla qui il testo copiato da Excel (Ctrl+V)..." style="width:100%;height:80px;border:1.5px dashed var(--border);border-radius:7px;padding:8px;font-size:11px;font-family:monospace;color:var(--text);background:var(--surface);resize:vertical;outline:none;margin-bottom:4px;" oninput="turniPasteDetect(this)"></textarea>
           <div class="upload-box" id="turniUploadBox">
             <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
             <div class="ub-title">Carica planning</div>
-            <div class="ub-sub">Immagine o Excel</div>
-            <span class="ub-formats">.jpg · .png · .xlsx</span>
+            <div class="ub-sub">In alternativa: immagine</div>
+            <span class="ub-formats">.jpg · .png</span>
           </div>
           <div class="turni-status" id="turniStatus"></div>
           <div class="loaded-info" id="loadedInfo">

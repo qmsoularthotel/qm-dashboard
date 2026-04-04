@@ -82,6 +82,84 @@ const turniBox={classList:{add:()=>{},remove:()=>{}}};
   if(box){box.addEventListener('click',()=>turniInput.click());box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});box.addEventListener('dragleave',()=>box.classList.remove('dragover'));box.addEventListener('drop',e=>{e.preventDefault();box.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)handleTurniFile(f);});}
   turniInput.addEventListener('change',e=>{if(e.target.files[0])handleTurniFile(e.target.files[0]);});
 })();
+function turniPasteDetect(el){
+  const text=el.value;
+  if(!text.trim())return;
+  // Aspetta che l'utente abbia incollato tutto (debounce 600ms)
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>handleTurniPaste(text),600);
+}
+function handleTurniPaste(text){
+  ucSetState('turno','loading','Elaborazione...');
+  try{
+    const parsed=parseTurniTSV(text);
+    if(!parsed||!parsed.giorni||!parsed.giorni.length)throw new Error('Formato non riconosciuto');
+    parsed.giorni=parsed.giorni.map(g=>({...g,date:g.date?new Date(g.date+'T12:00:00'):new Date()}));
+    const _wts=Date.now();
+    const toSave=parsed.giorni.map(g=>({...g,date:g.date.toISOString()}));
+    toSave._ts=_wts;
+    localStorage.setItem('qm_weekData',JSON.stringify(toSave));
+    localStorage.setItem('qm_ts_turnoTs',String(_wts));
+    kvSet('qm_weekData',JSON.stringify(toSave));
+    loadWeekData(parsed);
+    const range=parsed.giorni[0].label+' – '+parsed.giorni[parsed.giorni.length-1].label;
+    ucSetState('turno','loaded',range);
+    setUploadTs('turnoTs',_wts);
+    setTimeout(()=>{try{refreshOverviewForDate(new Date());}catch(e){}},100);
+    // Svuota textarea
+    const ta=document.getElementById('turniPasteBox');if(ta)ta.value='';
+  }catch(e){ucSetState('turno','error','Errore: '+e.message);}
+}
+function parseTurniTSV(text){
+  // Righe separate da \n, colonne da \t
+  const rows=text.trim().split(/\r?\n/).map(r=>r.split('\t'));
+  if(rows.length<2)return null;
+  // Prima riga = intestazioni: prima cella vuota/nome, poi i giorni
+  const header=rows[0];
+  // Rileva le colonne-giorno: cercano date nel formato "lunedì 30 marzo", "lun 30/03", "30/03" ecc.
+  const MESI={gennaio:1,febbraio:2,marzo:3,aprile:4,maggio:5,giugno:6,luglio:7,agosto:8,settembre:9,ottobre:10,novembre:11,dicembre:12};
+  const GIORNI_IT={lunedì:'Lun',martedì:'Mar',mercoledì:'Mer',giovedì:'Gio',venerdì:'Ven',sabato:'Sab',domenica:'Dom',lun:'Lun',mar:'Mar',mer:'Mer',gio:'Gio',ven:'Ven',sab:'Sab',dom:'Dom'};
+  const year=new Date().getFullYear();
+  const cols=[];
+  header.forEach((h,i)=>{
+    if(i===0)return;
+    const s=h.trim().toLowerCase();
+    // "lunedì 30 marzo" o "lunedì 30 aprile 2026"
+    let m=s.match(/(\w+)\s+(\d{1,2})\s+(\w+)(?:\s+(\d{4}))?/);
+    if(m){
+      const gg=GIORNI_IT[m[1]];
+      const d=parseInt(m[2]);
+      const mo=MESI[m[3]];
+      const y=m[4]?parseInt(m[4]):year;
+      if(gg&&d&&mo){
+        const dateStr=y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+        cols.push({i,label:gg+' '+String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0'),date:dateStr});
+        return;
+      }
+    }
+    // "30/03" o "30/03/2026"
+    m=s.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?/);
+    if(m){
+      const d=parseInt(m[1]),mo=parseInt(m[2]),y=m[3]?parseInt(m[3]):year;
+      const dow=new Date(y,mo-1,d).getDay();
+      const gg=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'][dow];
+      cols.push({i,label:gg+' '+String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0'),date:y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0')});
+    }
+  });
+  if(!cols.length)return null;
+  const giorni=cols.map(c=>({label:c.label,date:c.date,shifts:{}}));
+  // Righe dati
+  for(let ri=1;ri<rows.length;ri++){
+    const row=rows[ri];
+    const nome=(row[0]||'').trim();
+    if(!nome)continue;
+    cols.forEach((c,ci)=>{
+      const val=(row[c.i]||'').trim();
+      giorni[ci].shifts[nome]=val===''||val==='-'||val==='.'?'R':val;
+    });
+  }
+  return{giorni};
+}
 async function handleTurniFile(file){
   ucSetState('turno','loading','Analisi in corso...');
   try{
