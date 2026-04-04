@@ -1,7 +1,7 @@
 const DEPTS={fo:{label:'Front Office',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Extra BKF SAU']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
 let weekData=null,activeDay=0;
-const IS_REST=v=>{if(!v)return true;const u=v.trim().toUpperCase();return['R','RIPOSO','OFF','—','-','','FERIE'].includes(u);};
+const IS_REST=v=>{if(!v)return true;const u=v.trim().toUpperCase();if(['R','RIPOSO','OFF','—','-','–','','FERIE'].includes(u))return true;if(u.startsWith('R '))return true;return false;};
 const WEEK={giorni:[
   {label:'Lun 16',date:new Date(2026,2,16),shifts:{'Maddaloni M.':'P','Presta P.':'R','De Rosa T.':'CC','Pennacchio V.':'CG','Perez L.':'AC','Imparato G.':'AG','Vatiero R.':'R','Barbosa D.':'NG','D\'Andrea F.':'R','Grieco V.':'NC','Matarese A.':'R','Nacci M.':'SOUL N.','De Masi C.':'SOUL','Chiantese M.':'200','Scognamillo E.':'400','Esposito M.':'300/100','Branno M.':'R','Sarnataro A.':'PR/MS','Amorese S.':'BKF SOUL','Albano D.':'R','Ferace C.':'BKF GALL','Extra BKF SAU':'R','Basile G.':'9-17 porterage'}},
   {label:'Mar 17',date:new Date(2026,2,17),shifts:{'Maddaloni M.':'P','Presta P.':'AC','De Rosa T.':'CG','Pennacchio V.':'R','Perez L.':'AG','Imparato G.':'INT GALL 10/18','Vatiero R.':'CC','Barbosa D.':'NG','D\'Andrea F.':'R','Grieco V.':'NC','Matarese A.':'SOUL','Nacci M.':'SOUL N.','De Masi C.':'PR/MS O (200)','Chiantese M.':'400','Scognamillo E.':'R','Esposito M.':'300/200','Branno M.':'100','Sarnataro A.':'R','Amorese S.':'R','Albano D.':'BKF SOUL','Ferace C.':'BKF GALL','Extra BKF SAU':'BKF SOUL','Basile G.':'9-17 porterage'}},
@@ -110,11 +110,18 @@ Analizza questa immagine/PDF del planning e restituisci SOLO un oggetto JSON val
     ...
   ]
 }
-Il planning contiene questi dipendenti (usa esattamente questi nomi):
+
+REGOLE IMPORTANTI:
+1. Estrai TUTTE le righe presenti nel planning, anche quelle non nell'elenco sotto.
+2. Per ogni persona nell'elenco, abbina per cognome e iniziale anche se il formato è leggermente diverso (es. "EXTRA ANUSHKA" → "Extra Anushka", "EXTRA I." → cerca il più simile nell'elenco).
+3. Per persone NON nell'elenco (extra, nuovi colleghi), usa il nome esattamente come appare nel planning.
+4. Turno assente/riposo: se la cella contiene "R", "R RECUPERO", "FERIE", "-", "." o è vuota → metti "R".
+5. Altrimenti metti il valore esatto della cella (es. "AG", "P", "BKF SOUL", "9-17", "SOUL N.", ecc.).
+6. Le date nel planning sono nel formato "lunedì 30 marzo" → converti in "2026-03-30" e label "Lun 30/03".
+
+Elenco dipendenti fissi (abbina in modo flessibile):
 ${staff.join(', ')}
-Per ogni giorno della settimana presente nel planning, estrai il turno di ogni dipendente.
-Se un dipendente è assente/riposo metti "R".
-Se non riesci a leggere un turno metti "".
+
 Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const contentBlock=isPDF
       ?{type:'document',source:{type:'base64',media_type:mediaType,data:base64}}
