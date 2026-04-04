@@ -102,6 +102,11 @@ function handleTurniPaste(text){
     localStorage.setItem('qm_ts_turnoTs',String(_wts));
     kvSet('qm_weekData',JSON.stringify(toSave));
     loadWeekData(parsed);
+    // Imposta activeDay al giorno di oggi (o il più vicino)
+    const todayStr=new Date().toISOString().slice(0,10);
+    let bestIdx=0,bestDiff=Infinity;
+    parsed.giorni.forEach((g,i)=>{const d=new Date(g.date);const diff=Math.abs(d-new Date(todayStr));if(diff<bestDiff){bestDiff=diff;bestIdx=i;}});
+    activeDay=bestIdx;renderDay(activeDay);updateWeekNavActive();
     const range=parsed.giorni[0].label+' – '+parsed.giorni[parsed.giorni.length-1].label;
     ucSetState('turno','loaded',range);
     setUploadTs('turnoTs',_wts);
@@ -150,13 +155,13 @@ function parseTurniTSV(text){
   const todayDow=today.getDay();
   const diffToMon=todayDow===0?-6:1-todayDow;
   const monday=new Date(today);monday.setDate(today.getDate()+diffToMon);
-  const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);
+  const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);sunday.setHours(23,59,59,999);
   console.log('[Turno] settimana:',monday.toLocaleDateString('it'),'–',sunday.toLocaleDateString('it'));
 
   let pool=cols.filter(c=>{const d=new Date(c.date+'T12:00:00');return d>=monday&&d<=sunday;}).sort((a,b)=>a.i-b.i);
   console.log('[Turno] in settimana:',pool.map(c=>c.label).join(', ')||'NESSUNO');
-  // Fallback se meno di 3 giorni trovati nella settimana
-  if(pool.length<3){
+  // Fallback solo se non trovato nessun giorno nella settimana corrente
+  if(pool.length<1){
     const scored=cols.map(c=>{const d=new Date(c.date+'T12:00:00');return{...c,diff:Math.abs(d-today)};});
     scored.sort((a,b)=>a.diff-b.diff);
     pool=scored.slice(0,7).sort((a,b)=>a.i-b.i);
