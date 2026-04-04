@@ -230,6 +230,11 @@ function renderDay(idx){
     const inT=dept.members.filter(n=>!IS_REST(shifts[n]));if(!inT.length)return;
     html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${inT.map(n=>{const sv=(shifts[n]||'').trim();return`<div class="staff-row"><span class="sname">${n}</span><span class="sshift ${['P','AC','CG','AG','CC','NC','NG'].includes(sv)?'ss-active':'ss-special'}">${sv}</span></div>`;}).join('')}</div></div>`;
   });
+  // Extra / collaboratori non in DEPTS
+  const extra=Object.entries(shifts).filter(([n,v])=>!IS_REST(v)&&!ALL_STAFF.includes(n)&&v!=='-');
+  if(extra.length){
+    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name" style="color:var(--amber);">Extra / Collaboratori</span><span class="sdh-count">${extra.length} in turno</span></div><div class="staff-list">${extra.map(([n,v])=>{const sv=(v||'').trim();return`<div class="staff-row"><span class="sname">${n}</span><span class="sshift ss-special">${sv}</span></div>`;}).join('')}</div></div>`;
+  }
   html+='</div>';area.innerHTML=html;
 }
 function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caricato');turniInput.value='';
