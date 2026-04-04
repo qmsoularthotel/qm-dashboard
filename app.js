@@ -1,9 +1,5 @@
 const DEPTS={fo:{label:'Front Office',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Extra BKF SAU']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
-function levenshtein(a,b){const m=a.length,n=b.length;const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);return dp[m][n];}
-function bestStaffMatch(name){const nl=name.toLowerCase();let best=null,bestD=Infinity;ALL_STAFF.forEach(s=>{const d=levenshtein(nl,s.toLowerCase());if(d<bestD){bestD=d;best=s;}});// Accetta la corrispondenza solo se distanza ≤ 3 e ≤ 40% della lunghezza
-return(bestD<=3&&bestD/Math.max(name.length,best.length)<=0.4)?best:null;}
-function normalizeShiftNames(shifts){if(!shifts)return shifts;const out={};Object.entries(shifts).forEach(([name,val])=>{const exact=ALL_STAFF.find(s=>s.toLowerCase()===name.toLowerCase());if(exact){out[exact]=val;}else{const match=bestStaffMatch(name);out[match||name]=val;}});return out;}
 let weekData=null,activeDay=0;
 const IS_REST=v=>{if(!v)return true;const u=v.trim().toUpperCase();return['R','RIPOSO','OFF','—','-','–',''].includes(u);};
 const WEEK={giorni:[
@@ -99,20 +95,35 @@ async function handleTurniFile(file){
     const isPDF=file.type==='application/pdf';
     const mediaType=isPDF?'application/pdf':file.type||'image/jpeg';
     const staff=ALL_STAFF;
-    const prompt=`Sei uno strumento OCR. Trascrivi questa tabella di turni hotel in JSON, copiando ESATTAMENTE il testo di ogni cella.
+    const prompt=`Sei un assistente che analizza planning settimanali di turni per un hotel.
+Analizza questa immagine/PDF del planning e restituisci SOLO un oggetto JSON valido con questa struttura esatta:
+{
+  "giorni": [
+    {
+      "label": "Lun 23/03",
+      "date": "2026-03-23",
+      "shifts": {
+        "Nome Cognome": "turno",
+        ...
+      }
+    },
+    ...
+  ]
+}
 
-REGOLE:
-1. Copia ogni cella LETTERA PER LETTERA senza modifiche. "P" rimane "P", "AG" rimane "AG".
-2. I valori in ROSSO sono assenze (R, FERIE, R RECUPERO). Trascrivili esattamente.
-3. I valori in NERO sono turni lavorativi. Trascrivili esattamente — "P" in nero NON è "R".
-4. Celle con "-" o "." o vuote → scrivi "-".
-5. Ogni riga = una persona. Nome esatto dalla prima colonna.
-6. Date intestazione "lunedì 30 marzo" → date:"2026-03-30", label:"Lun 30/03".
+REGOLE IMPORTANTI:
+1. Estrai TUTTE le righe presenti nel planning senza eccezioni, incluse righe con nomi "Extra XYZ" — ognuna è una persona diversa.
+2. Usa il nome ESATTAMENTE come scritto nel planning (rispetta maiuscole/minuscole e abbreviazioni). Non abbinare, non rinominare.
+3. Le celle con solo "-" o "." o vuote → metti "R" (persona non disponibile quel giorno).
+4. La lettera "R" da sola → metti "R" (riposo). ATTENZIONE: "P" è un turno valido (presenza), NON è riposo — non confondere P con R.
+5. Qualsiasi altro valore ("AG", "P", "P GALL", "BKF SOUL", "FERIE", "R RECUPERO", "SOUL N.", "9-17", "INT GALL 10/18", "NC", "NG", "CC", "CG", "AC", ecc.) → metti il valore ESATTO della cella così com'è, senza modifiche.
+6. Le date nel planning sono nel formato "lunedì 30 marzo" → converti in "2026-03-30" e label "Lun 30/03".
+7. Includi tutti i 7 giorni presenti nel planning.
 
-JSON richiesto:
-{"giorni":[{"label":"Lun 30/03","date":"2026-03-30","shifts":{"Nome":"valore"}}]}
+Elenco orientativo dei dipendenti (potrebbero esserci nomi aggiuntivi nell'immagine — includili tutti):
+${staff.join(', ')}
 
-Nessun testo fuori dal JSON.`;
+Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const contentBlock=isPDF
       ?{type:'document',source:{type:'base64',media_type:mediaType,data:base64}}
       :{type:'image',source:{type:'base64',media_type:mediaType,data:base64}};
@@ -141,8 +152,7 @@ Nessun testo fuori dal JSON.`;
     // Converti date string in oggetti Date
     parsed.giorni=parsed.giorni.map(g=>({
       ...g,
-      date:g.date?new Date(g.date+'T12:00:00'):new Date(),
-      shifts:normalizeShiftNames(g.shifts)
+      date:g.date?new Date(g.date+'T12:00:00'):new Date()
     }));
     // Salva in localStorage + cloud
     try{
