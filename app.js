@@ -148,17 +148,31 @@ function parseTurniTSV(text){
   });
   if(!cols.length)return null;
   const giorni=cols.map(c=>({label:c.label,date:c.date,shifts:{}}));
-  // Righe dati
+  // Prendi solo i 7 giorni più vicini a oggi (settimana corrente)
+  const today=new Date();today.setHours(0,0,0,0);
+  const scored=cols.map(c=>{const d=new Date(c.date+'T12:00:00');return{...c,diff:Math.abs(d-today)};});
+  scored.sort((a,b)=>a.diff-b.diff);
+  const week=scored.slice(0,7).sort((a,b)=>a.i-b.i);
+  const giorni7=week.map(c=>({label:c.label,date:c.date,shifts:{}}));
+
+  // Righe dati — filtra: solo staff noto o nome che inizia con "Extra"/"EXTRA"
+  const allStaffLow2=new Set(ALL_STAFF.map(n=>n.toLowerCase()));
   for(let ri=1;ri<rows.length;ri++){
     const row=rows[ri];
     const nome=(row[0]||'').trim();
     if(!nome)continue;
-    cols.forEach((c,ci)=>{
+    const nomeLow=nome.toLowerCase();
+    const isKnown=allStaffLow2.has(nomeLow)||ALL_STAFF.find(s=>s.toLowerCase()===nomeLow);
+    const isExtra=/^extra/i.test(nome);
+    if(!isKnown&&!isExtra)continue;
+    // Usa nome canonico se noto
+    const canonical=ALL_STAFF.find(s=>s.toLowerCase()===nomeLow)||nome;
+    week.forEach((c,ci)=>{
       const val=(row[c.i]||'').trim();
-      giorni[ci].shifts[nome]=val===''||val==='-'||val==='.'?'R':val;
+      giorni7[ci].shifts[canonical]=val===''||val==='-'||val==='.'?'R':val;
     });
   }
-  return{giorni};
+  return{giorni:giorni7};
 }
 async function handleTurniFile(file){
   ucSetState('turno','loading','Analisi in corso...');
