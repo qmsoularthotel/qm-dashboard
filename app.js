@@ -115,8 +115,8 @@ REGOLE IMPORTANTI:
 1. Estrai TUTTE le righe presenti nel planning senza eccezioni, incluse righe con nomi "Extra XYZ" — ognuna è una persona diversa.
 2. Usa il nome ESATTAMENTE come scritto nel planning (rispetta maiuscole/minuscole e abbreviazioni). Non abbinare, non rinominare.
 3. Le celle con solo "-" o "." o vuote → metti "R" (persona non disponibile quel giorno).
-4. "R" da solo → metti "R" (riposo).
-5. Qualsiasi altro valore ("AG", "P", "BKF SOUL", "FERIE", "R RECUPERO", "SOUL N.", "9-17", "INT GALL 10/18", ecc.) → metti il valore ESATTO della cella così com'è.
+4. La lettera "R" da sola → metti "R" (riposo). ATTENZIONE: "P" è un turno valido (presenza), NON è riposo — non confondere P con R.
+5. Qualsiasi altro valore ("AG", "P", "P GALL", "BKF SOUL", "FERIE", "R RECUPERO", "SOUL N.", "9-17", "INT GALL 10/18", "NC", "NG", "CC", "CG", "AC", ecc.) → metti il valore ESATTO della cella così com'è, senza modifiche.
 6. Le date nel planning sono nel formato "lunedì 30 marzo" → converti in "2026-03-30" e label "Lun 30/03".
 7. Includi tutti i 7 giorni presenti nel planning.
 
@@ -219,19 +219,28 @@ function loadWeekData(data){
 }
 function buildWeekNav(){const nav=document.getElementById('weekNav');nav.innerHTML='';weekData.giorni.forEach((g,i)=>{const btn=document.createElement('button');btn.className='wday-btn'+(i===activeDay?' active':'');btn.textContent=g.label.split(' ')[0].substring(0,3);btn.title=g.label;btn.onclick=()=>{activeDay=i;renderDay(i);updateWeekNavActive();updateSidebarInfo();};nav.appendChild(btn);});document.getElementById('weekRangeLabel').textContent=weekData.giorni[0].label+' – '+weekData.giorni[weekData.giorni.length-1].label;}
 function updateWeekNavActive(){document.querySelectorAll('.wday-btn').forEach((b,i)=>b.classList.toggle('active',i===activeDay));}
-function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(g.shifts[n])).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_REST(g.shifts[n])).length+' non in servizio';}
+function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(getShift(g.shifts,n))).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_REST(getShift(g.shifts,n))).length+' non in servizio';}
+// Cerca lo shift di un membro DEPTS in modo case-insensitive
+function getShift(shifts,name){
+  if(shifts[name]!==undefined)return shifts[name];
+  const low=name.toLowerCase();
+  const key=Object.keys(shifts).find(k=>k.toLowerCase()===low);
+  return key!==undefined?shifts[key]:undefined;
+}
 function renderDay(idx){
   const g=weekData.giorni[idx],shifts=g.shifts,area=document.getElementById('staffArea');
-  const nonServizio=ALL_STAFF.filter(n=>IS_REST(shifts[n]));
+  // Indice case-insensitive dei nomi DEPTS per escluderli dagli extra
+  const allStaffLow=new Set(ALL_STAFF.map(n=>n.toLowerCase()));
+  const nonServizio=ALL_STAFF.filter(n=>IS_REST(getShift(shifts,n)));
   let html='';
   if(nonServizio.length)html+=`<div class="non-servizio-strip"><span class="ns-label">Non in servizio — ${g.label}</span>${nonServizio.map(n=>`<span class="ns-chip">${n}</span>`).join('')}</div>`;
   html+='<div class="staff-grid">';
   Object.entries(DEPTS).forEach(([key,dept])=>{
-    const inT=dept.members.filter(n=>!IS_REST(shifts[n]));if(!inT.length)return;
-    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${inT.map(n=>{const sv=(shifts[n]||'').trim();return`<div class="staff-row"><span class="sname">${n}</span><span class="sshift ${['P','AC','CG','AG','CC','NC','NG'].includes(sv)?'ss-active':'ss-special'}">${sv}</span></div>`;}).join('')}</div></div>`;
+    const inT=dept.members.filter(n=>!IS_REST(getShift(shifts,n)));if(!inT.length)return;
+    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${inT.map(n=>{const sv=(getShift(shifts,n)||'').trim();return`<div class="staff-row"><span class="sname">${n}</span><span class="sshift ${['P','AC','CG','AG','CC','NC','NG'].includes(sv)?'ss-active':'ss-special'}">${sv}</span></div>`;}).join('')}</div></div>`;
   });
-  // Extra / collaboratori non in DEPTS
-  const extra=Object.entries(shifts).filter(([n,v])=>!IS_REST(v)&&!ALL_STAFF.includes(n)&&v!=='-');
+  // Extra / collaboratori non in DEPTS (case-insensitive)
+  const extra=Object.entries(shifts).filter(([n,v])=>!IS_REST(v)&&!allStaffLow.has(n.toLowerCase()));
   if(extra.length){
     html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name" style="color:var(--amber);">Extra / Collaboratori</span><span class="sdh-count">${extra.length} in turno</span></div><div class="staff-list">${extra.map(([n,v])=>{const sv=(v||'').trim();return`<div class="staff-row"><span class="sname">${n}</span><span class="sshift ss-special">${sv}</span></div>`;}).join('')}</div></div>`;
   }
