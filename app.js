@@ -111,78 +111,78 @@ function handleTurniPaste(text){
   }catch(e){ucSetState('turno','error','Errore: '+e.message);}
 }
 function parseTurniTSV(text){
-  // Righe separate da \n, colonne da \t
   const rows=text.trim().split(/\r?\n/).map(r=>r.split('\t'));
   if(rows.length<2)return null;
-  // Prima riga = intestazioni: prima cella vuota/nome, poi i giorni
-  const header=rows[0];
-  // Rileva le colonne-giorno: cercano date nel formato "lunedì 30 marzo", "lun 30/03", "30/03" ecc.
   const MESI={gennaio:1,febbraio:2,marzo:3,aprile:4,maggio:5,giugno:6,luglio:7,agosto:8,settembre:9,ottobre:10,novembre:11,dicembre:12};
   const GIORNI_IT={lunedì:'Lun',martedì:'Mar',mercoledì:'Mer',giovedì:'Gio',venerdì:'Ven',sabato:'Sab',domenica:'Dom',lun:'Lun',mar:'Mar',mer:'Mer',gio:'Gio',ven:'Ven',sab:'Sab',dom:'Dom'};
   const year=new Date().getFullYear();
-  const cols=[];
-  header.forEach((h,i)=>{
-    if(i===0)return;
+  // Cerca le date nelle prime 3 righe (row 0 o row 1 o row 2 come header)
+  let cols=[],headerRow=0;
+  const tryParseDate=(h,i)=>{
     const s=h.trim().toLowerCase();
-    // "lunedì 30 marzo" o "lunedì 30 aprile 2026"
+    if(!s)return;
+    // "lunedì 30 marzo" o "sab 04 aprile 2026"
     let m=s.match(/(\w+)\s+(\d{1,2})\s+(\w+)(?:\s+(\d{4}))?/);
     if(m){
-      const gg=GIORNI_IT[m[1]];
-      const d=parseInt(m[2]);
-      const mo=MESI[m[3]];
-      const y=m[4]?parseInt(m[4]):year;
-      if(gg&&d&&mo){
-        const dateStr=y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-        cols.push({i,label:gg+' '+String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0'),date:dateStr});
-        return;
-      }
+      const gg=GIORNI_IT[m[1]];const d=parseInt(m[2]);const mo=MESI[m[3]];const y=m[4]?parseInt(m[4]):year;
+      if(gg&&d&&mo){cols.push({i,label:gg+' '+String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0'),date:y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0')});return;}
     }
-    // "30/03" o "30/03/2026"
-    m=s.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?/);
+    // "30/03", "30/03/2026", "30-03", "30.03"
+    m=s.match(/(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{4}))?/);
     if(m){
       const d=parseInt(m[1]),mo=parseInt(m[2]),y=m[3]?parseInt(m[3]):year;
-      const dow=new Date(y,mo-1,d).getDay();
-      const gg=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'][dow];
-      cols.push({i,label:gg+' '+String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0'),date:y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0')});
+      if(d>=1&&d<=31&&mo>=1&&mo<=12){
+        const wd=new Date(y,mo-1,d).getDay();
+        const gg=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'][wd];
+        cols.push({i,label:gg+' '+String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0'),date:y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0')});
+      }
     }
-  });
+  };
+  for(let hr=0;hr<Math.min(3,rows.length)&&!cols.length;hr++){
+    rows[hr].forEach((h,i)=>{if(i>0)tryParseDate(h,i);});
+    if(cols.length)headerRow=hr;
+  }
   if(!cols.length)return null;
-  // Calcola lunedì e domenica della settimana corrente
+  console.log('[Turno] headerRow='+headerRow+' cols trovate:',cols.map(c=>c.label+'(col'+c.i+')').join(', '));
+
+  // Settimana corrente: lun precedente → dom successiva
   const today=new Date();today.setHours(0,0,0,0);
-  const dow=today.getDay(); // 0=dom,1=lun,...,6=sab
-  const diffToMon=dow===0?-6:1-dow;
+  const todayDow=today.getDay();
+  const diffToMon=todayDow===0?-6:1-todayDow;
   const monday=new Date(today);monday.setDate(today.getDate()+diffToMon);
   const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);
-  // Filtra solo le colonne che cadono tra lunedì e domenica della settimana corrente
-  const week=cols.filter(c=>{
-    const d=new Date(c.date+'T12:00:00');
-    return d>=monday&&d<=sunday;
-  }).sort((a,b)=>a.i-b.i);
-  // Fallback: se non si trovano giorni nella settimana corrente, prendi i 7 più vicini
-  const pool=week.length>=1?week:(()=>{
+  console.log('[Turno] settimana:',monday.toLocaleDateString('it'),'–',sunday.toLocaleDateString('it'));
+
+  let pool=cols.filter(c=>{const d=new Date(c.date+'T12:00:00');return d>=monday&&d<=sunday;}).sort((a,b)=>a.i-b.i);
+  console.log('[Turno] in settimana:',pool.map(c=>c.label).join(', ')||'NESSUNO');
+  // Fallback se meno di 3 giorni trovati nella settimana
+  if(pool.length<3){
     const scored=cols.map(c=>{const d=new Date(c.date+'T12:00:00');return{...c,diff:Math.abs(d-today)};});
     scored.sort((a,b)=>a.diff-b.diff);
-    return scored.slice(0,7).sort((a,b)=>a.i-b.i);
-  })();
+    pool=scored.slice(0,7).sort((a,b)=>a.i-b.i);
+    console.log('[Turno] FALLBACK 7 più vicini:',pool.map(c=>c.label).join(', '));
+  }
   const giorni7=pool.map(c=>({label:c.label,date:c.date,shifts:{}}));
 
-  // Righe dati — filtra: solo staff noto o nome che inizia con "Extra"/"EXTRA"
-  const allStaffLow2=new Set(ALL_STAFF.map(n=>n.toLowerCase()));
-  for(let ri=1;ri<rows.length;ri++){
+  // Righe dati — filtra staff noto (exact o prefix) o Extra*
+  for(let ri=headerRow+1;ri<rows.length;ri++){
     const row=rows[ri];
     const nome=(row[0]||'').trim();
     if(!nome)continue;
     const nomeLow=nome.toLowerCase();
-    const isKnown=allStaffLow2.has(nomeLow)||ALL_STAFF.find(s=>s.toLowerCase()===nomeLow);
+    // 1) match esatto
+    let canonical=ALL_STAFF.find(s=>s.toLowerCase()===nomeLow);
+    // 2) match per prefisso: "Perez" → "Perez L."
+    if(!canonical)canonical=ALL_STAFF.find(s=>s.toLowerCase().startsWith(nomeLow+' ')||s.toLowerCase().startsWith(nomeLow+'.'));
     const isExtra=/^extra/i.test(nome);
-    if(!isKnown&&!isExtra)continue;
-    // Usa nome canonico se noto
-    const canonical=ALL_STAFF.find(s=>s.toLowerCase()===nomeLow)||nome;
+    if(!canonical&&!isExtra){console.log('[Turno] skip:',nome);continue;}
+    canonical=canonical||nome;
     pool.forEach((c,ci)=>{
       const val=(row[c.i]||'').trim();
       giorni7[ci].shifts[canonical]=val===''||val==='-'||val==='.'?'R':val;
     });
   }
+  console.log('[Turno] risultato:',giorni7.map(g=>g.label+':'+Object.keys(g.shifts).length+'staff').join(', '));
   return{giorni:giorni7};
 }
 async function handleTurniFile(file){
