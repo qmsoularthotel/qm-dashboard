@@ -82,39 +82,6 @@ const turniBox={classList:{add:()=>{},remove:()=>{}}};
   if(box){box.addEventListener('click',()=>turniInput.click());box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});box.addEventListener('dragleave',()=>box.classList.remove('dragover'));box.addEventListener('drop',e=>{e.preventDefault();box.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)handleTurniFile(f);});}
   turniInput.addEventListener('change',e=>{if(e.target.files[0])handleTurniFile(e.target.files[0]);});
 })();
-function turniPasteDetect(el){
-  const text=el.value;
-  if(!text.trim())return;
-  // Aspetta che l'utente abbia incollato tutto (debounce 600ms)
-  clearTimeout(el._t);
-  el._t=setTimeout(()=>handleTurniPaste(text),600);
-}
-function handleTurniPaste(text){
-  ucSetState('turno','loading','Elaborazione...');
-  try{
-    const parsed=parseTurniTSV(text);
-    if(!parsed||!parsed.giorni||!parsed.giorni.length)throw new Error('Formato non riconosciuto');
-    parsed.giorni=parsed.giorni.map(g=>({...g,date:g.date?new Date(g.date+'T12:00:00'):new Date()}));
-    const _wts=Date.now();
-    const toSave=parsed.giorni.map(g=>({...g,date:g.date.toISOString()}));
-    toSave._ts=_wts;
-    localStorage.setItem('qm_weekData',JSON.stringify(toSave));
-    localStorage.setItem('qm_ts_turnoTs',String(_wts));
-    kvSet('qm_weekData',JSON.stringify(toSave));
-    loadWeekData(parsed);
-    // Imposta activeDay al giorno di oggi (o il più vicino)
-    const todayStr=new Date().toISOString().slice(0,10);
-    let bestIdx=0,bestDiff=Infinity;
-    parsed.giorni.forEach((g,i)=>{const d=new Date(g.date);const diff=Math.abs(d-new Date(todayStr));if(diff<bestDiff){bestDiff=diff;bestIdx=i;}});
-    activeDay=bestIdx;renderDay(activeDay);updateWeekNavActive();
-    const range=parsed.giorni[0].label+' – '+parsed.giorni[parsed.giorni.length-1].label;
-    ucSetState('turno','loaded',range);
-    setUploadTs('turnoTs',_wts);
-    setTimeout(()=>{try{refreshOverviewForDate(new Date());}catch(e){}},100);
-    // Svuota textarea
-    const ta=document.getElementById('turniPasteBox');if(ta)ta.value='';
-  }catch(e){ucSetState('turno','error','Errore: '+e.message);}
-}
 function parseTurniTSV(text){
   const rows=text.trim().split(/\r?\n/).map(r=>r.split('\t'));
   if(rows.length<2)return null;
@@ -349,11 +316,6 @@ function renderDay(idx){
     const inT=dept.members.filter(n=>!IS_REST(getShift(shifts,n)));if(!inT.length)return;
     html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${inT.map(n=>{const sv=(getShift(shifts,n)||'').trim();return shiftRow(n,sv,['P','AC','CG','AG','CC','NC','NG'].includes(sv)?'ss-active':'ss-special');}).join('')}</div></div>`;
   });
-  // Extra / collaboratori non in DEPTS (case-insensitive)
-  const extra=Object.entries(shifts).filter(([n,v])=>!IS_REST(v)&&!allStaffLow.has(n.toLowerCase()));
-  if(extra.length){
-    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name" style="color:var(--amber);">Extra / Collaboratori</span><span class="sdh-count">${extra.length} in turno</span></div><div class="staff-list">${extra.map(([n,v])=>{const sv=(v||'').trim();return shiftRow(n,sv,'ss-special');}).join('')}</div></div>`;
-  }
   html+='</div>';area.innerHTML=html;
 }
 function editShift(dayIdx,nome){
@@ -375,8 +337,8 @@ function editShift(dayIdx,nome){
 }
 function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caricato');turniInput.value='';
   try{localStorage.removeItem('qm_weekData');}catch(e){}
-  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Espandi "Carica turno" nella sidebar per caricare il planning</div></div>`;}
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria','hkp-sa':'Operativa HKP — SoulArt Hotel','hkp-ar':'Operativa HKP — Art Resort','miniapp':'Mini App — Anteprima e Link'};
+  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Il turno viene aggiornato automaticamente</div></div>`;}
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria','miniapp':'Mini App — Anteprima e Link'};
 let recGroupOpen=false;
 function toggleRecGroup(){
   recGroupOpen=!recGroupOpen;
@@ -389,15 +351,8 @@ function toggleBkfGroup(){
   document.getElementById('bkfGroupToggle').classList.toggle('open',bkfGroupOpen);
   document.getElementById('bkfGroupItems').classList.toggle('open',bkfGroupOpen);
 }
-let hkpGroupOpen=false;
-function toggleHkpGroup(){
-  hkpGroupOpen=!hkpGroupOpen;
-  document.getElementById('hkpGroupToggle').classList.toggle('open',hkpGroupOpen);
-  document.getElementById('hkpGroupItems').classList.toggle('open',hkpGroupOpen);
-}
 function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id];if(navEl){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navEl.classList.add('active');}
   if(id==='bkfsheet'||id==='bkfsheetar'){if(!bkfGroupOpen){bkfGroupOpen=true;document.getElementById('bkfGroupToggle').classList.add('open');document.getElementById('bkfGroupItems').classList.add('open');}}
-  if(id==='hkp-sa'||id==='hkp-ar'){if(!hkpGroupOpen){hkpGroupOpen=true;document.getElementById('hkpGroupToggle').classList.add('open');document.getElementById('hkpGroupItems').classList.add('open');}}
   if(id.startsWith('recensioni-')){if(!recGroupOpen){recGroupOpen=true;document.getElementById('recGroupToggle').classList.add('open');document.getElementById('recGroupItems').classList.add('open');}}
   try{localStorage.setItem('qm_last_view',id);}catch(e){}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
@@ -416,25 +371,7 @@ function miniappCopy(inputId,btn){
     setTimeout(()=>{btn.textContent=orig;btn.style.background='';},2000);
   }).catch(()=>{inp.select();document.execCommand('copy');});
 }
-function miniappRender(){miniappRenderHK();miniappRenderBkf();}
-function miniappRenderHK(){
-  const el=document.getElementById('miniapp-hk-preview');if(!el)return;
-  const today=new Date();
-  const todayISO=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
-  const todayLabel=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'][today.getDay()]+' '+String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0');
-  const renderS=(data,nome)=>{
-    if(!data||!data.giorni)return`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:8px;">${nome}: nessun dato</div>`;
-    const g=data.giorni.find(d=>d.data===todayISO)||data.giorni[0];if(!g)return'';
-    return`<div style="margin-bottom:10px;">
-      <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">${nome}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div style="background:var(--surface2);border-radius:7px;padding:8px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#003580;">${g.fermate}</div><div style="font-size:10px;color:var(--text-dim);">Fermate</div></div>
-        <div style="background:var(--surface2);border-radius:7px;padding:8px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#003580;">${g.partenze}</div><div style="font-size:10px;color:var(--text-dim);">Partenze</div></div>
-      </div></div>`;
-  };
-  if(!hkSoulData&&!hkBoutData){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica Soul App HKP e Boutique App HKP per vedere l\'anteprima</div>';return;}
-  el.innerHTML=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">📅 Oggi — ${todayLabel}</div>`+renderS(hkSoulData,'SoulArt Hotel')+renderS(hkBoutData,'Boutique Hotel');
-}
+function miniappRender(){miniappRenderBkf();}
 function miniappRenderBkf(){
   const el=document.getElementById('miniapp-bkf-preview');if(!el)return;
   const today=new Date();
@@ -575,7 +512,7 @@ const LS={
   syncFromCloud:async()=>{
     const keys=['checklist','custom_tasks','dept_custom_tasks','pulData','bkfData',
       'rev_sa','rev_bh','rev_sl','rev_pr','rev_ms','rev_ar','rev_sb',
-      'rev_sent','hkp_sa','hkp_ar',
+      'rev_sent',
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb'];
     let synced=0;
@@ -1015,35 +952,6 @@ function togglePulPreview(){
   el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Report pulizie — andamento settimanale</div>`+svg;
   el.style.display='block';
 }
-function toggleHkpPreview(){
-  const el=document.getElementById('kpi-hkp-preview');
-  if(!el)return;
-  if(el.style.display==='block'){el.style.display='none';return;}
-  const data=hkSoulData||hkBoutData;
-  if(!data||!data.giorni||!data.giorni.length){return;}
-  const pts=data.giorni.map(d=>({label:d.label,arrivi:d.arrivi,fermate:d.fermate,partenze:d.partenze}));
-  const W=600,H=200,PL=32,PR=12,PT=16,PB=30;
-  const plotW=W-PL-PR,plotH=H-PT-PB;
-  const YMAX=Math.max(20,...pts.map(p=>Math.max(p.arrivi,p.fermate,p.partenze)))+5;
-  const sx=i=>PL+i/(pts.length-1||1)*plotW;
-  const sy=v=>PT+plotH-(v/YMAX)*plotH;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
-  for(let v=0;v<=YMAX;v+=5){const y=sy(v);svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="${v===0?1.5:1}"/><text x="${PL-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;}
-  pts.forEach((p,i)=>{svg+=`<text x="${sx(i)}" y="${H-6}" font-size="11" fill="var(--text-dim)" text-anchor="middle">${p.label.split(' ')[0]}</text>`;});
-  const colors={arrivi:'var(--green)',fermate:'var(--accent)',partenze:'var(--red)'};
-  ['arrivi','fermate','partenze'].forEach(k=>{
-    const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p[k])}`).join('L');
-    svg+=`<path d="${linePath}" fill="none" stroke="${colors[k]}" stroke-width="1.5"/>`;
-    pts.forEach((p,i)=>{svg+=`<circle cx="${sx(i)}" cy="${sy(p[k])}" r="3" fill="${colors[k]}" stroke="white" stroke-width="1.5"/>`;});
-  });
-  svg+=`<text x="${W-PR}" y="${PT}" font-size="10" fill="var(--green)" text-anchor="end">● Arrivi</text>`;
-  svg+=`<text x="${W-PR}" y="${PT+14}" font-size="10" fill="var(--accent)" text-anchor="end">● Fermate</text>`;
-  svg+=`<text x="${W-PR}" y="${PT+28}" font-size="10" fill="var(--red)" text-anchor="end">● Partenze</text>`;
-  svg+='</svg>';
-  const struttura=(hkSoulData?'SoulArt Hotel':'Boutique Hotel');
-  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 HKP ${struttura} — andamento settimanale</div>`+svg;
-  el.style.display='block';
-}
 function toggleBkfPreview(){
   const el=document.getElementById('kpi-bkf-preview');
   if(!el)return;
@@ -1367,7 +1275,6 @@ document.querySelector('.content').addEventListener('scroll',function(){
     restoreChecklistState();
     restoreCustomTasks();
     restoreDeptCustomTasks();
-    hkpRestore();
     ovUpdateRevNoreply();
     // Ripristina turno settimanale
     try{
@@ -1431,21 +1338,6 @@ document.querySelector('.content').addEventListener('scroll',function(){
       bkfSheetARSetStatus('ready');
       setTimeout(bkfRenderChartAR,50);
     }
-    // Ripristina Soul App HKP e Boutique App HKP dal cloud
-    ['soul','bout'].forEach(key=>{
-      try{
-        const raw=localStorage.getItem('qm_hk_'+key);
-        if(raw){
-          const data=JSON.parse(raw);
-          if(key==='soul')hkSoulData=data;
-          else hkBoutData=data;
-          hkSetLoaded(key,true);
-          if(data._ts)restoreUploadTs(key+'Ts',data._ts);else loadStoredTs(key+'Ts');
-        }
-      }catch(e){}
-    });
-    // Ri-ripristina HKP SA/AR (dopo sync cloud potrebbe avere dati più freschi)
-    hkpRestore();
     // Ripristina recensioni — prima da localStorage, poi da cloud se mancano
     async function restoreReviews(){
       for(const p of ['sa','bh','sl','pr','ms','ar','sb']){
@@ -1640,214 +1532,6 @@ function ovUpdateRevNoreply(){
     </div>`;
   }
   el.innerHTML=html;
-}
-const HKP_URLS={
-  sa:'https://script.google.com/macros/s/AKfycbyosKJIaYIxh7D7GnCMFU7K_gABx2uNSy2VuaEjRc4ND1eEF9zrcSyUgc1Kp3X27lPa/exec',
-  ar:'https://script.google.com/macros/s/AKfycbwtxy0lngIzQ07QKRX2llx3lBCp2GdE1CoXsAW7GbKre5OEEARNdpCDuahc0DFsPAp7/exec'
-};
-let HKP_DATA={sa:null,ar:null};
-let HKP_TAB={sa:'riepilogo',ar:'riepilogo'};
-// Salva/carica HKP dal localStorage + cloud
-function hkpSave(p){
-  try{localStorage.setItem('qm_hkp_'+p, JSON.stringify(HKP_DATA[p]));}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({key:'qm_hkp_'+p, value:JSON.stringify(HKP_DATA[p])})}).catch(()=>{});
-}
-function hkpRestore(){
-  ['sa','ar'].forEach(p=>{
-    try{
-      const raw=localStorage.getItem('qm_hkp_'+p);
-      if(raw){
-        HKP_DATA[p]=JSON.parse(raw);
-        hkpRenderAll(p);
-      }
-    }catch(e){}
-  });
-}
-async function hkpLoad(p){
-  const btnIcon=document.getElementById('hkp-'+p+'-btn-icon');
-  const content=document.getElementById('hkp-'+p+'-content');
-  if(btnIcon){btnIcon.textContent='⏳';}
-  content.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim);">Caricamento dati mese in corso…</div>';
-  try{
-    const res=await fetch(HKP_URLS[p]);
-    const data=await res.json();
-    if(data.error){content.innerHTML=`<div style="color:var(--red);padding:20px;">${data.error}</div>`;return;}
-    HKP_DATA[p]=data;
-    hkpSave(p);
-    hkpRenderAll(p);
-  }catch(e){
-    content.innerHTML=`<div style="color:var(--red);padding:20px;">Errore: ${e.message}</div>`;
-  }
-  if(btnIcon)btnIcon.textContent='↻';
-}
-function hkpTab(p,tab,btn){
-  HKP_TAB[p]=tab;
-  const view=document.getElementById('view-hkp-'+p);
-  view.querySelectorAll('.rev-filter-btn').forEach(b=>b.classList.remove('active'));
-  if(btn)btn.classList.add('active');
-  if(HKP_DATA[p])hkpRenderContent(p);
-}
-function hkpRenderAll(p){
-  const data=HKP_DATA[p];
-  const dateEl=document.getElementById('hkp-'+p+'-date');
-  const kpiEl=document.getElementById('hkp-'+p+'-kpi');
-  if(dateEl)dateEl.textContent='Mese '+data.mese+' · '+data.giorni_elaborati+' giorni elaborati';
-  const cameriere=data.cameriere||[];
-  const totMese=data.tot_mese||0;
-  // Conta solo giorni con camere > 0
-  const giorniConDati=Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
-  const mediaGiornaliera=Math.round(totMese/giorniConDati*10)/10;
-  const top=cameriere.length?[...cameriere].sort((a,b)=>b.camere_tot-a.camere_tot)[0]:null;
-  kpiEl.innerHTML=`
-    <div class="kpi-card green"><div class="kpi-card-icon">🛏️</div><div class="kpi-label">Camere mese</div><div class="kpi-value">${totMese}</div><div class="kpi-delta up">${giorniConDati} giorni con dati</div></div>
-    <div class="kpi-card blue"><div class="kpi-card-icon">📊</div><div class="kpi-label">Media/giorno</div><div class="kpi-value">${mediaGiornaliera}</div><div class="kpi-delta">su ${giorniConDati} giorni</div></div>
-    <div class="kpi-card amber"><div class="kpi-card-icon">👑</div><div class="kpi-label">Top cameriera</div><div class="kpi-value" style="font-size:16px;">${top?top.nome:'—'}</div><div class="kpi-delta">${top?top.camere_tot+' cam':''}</div></div>
-    <div class="kpi-card"><div class="kpi-card-icon">👥</div><div class="kpi-label">Cameriere attive</div><div class="kpi-value">${cameriere.length}</div><div class="kpi-delta">nel mese</div></div>
-  `;
-  hkpRenderContent(p);
-}
-function hkpRenderContent(p){
-  const data=HKP_DATA[p];
-  const content=document.getElementById('hkp-'+p+'-content');
-  const tab=HKP_TAB[p]||'riepilogo';
-  const cameriere=[...(data.cameriere||[])].sort((a,b)=>b.camere_tot-a.camere_tot);
-  const totMese=data.tot_mese||0;
-  const giorni=Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
-  const mese=data.mese||'';
-  if(tab==='riepilogo'){
-    // Ranking mensile: nome + barra + camere tot + media + %
-    const maxCam=cameriere[0]?.camere_tot||1;
-    let html='<div class="panel"><div class="panel-header"><span class="panel-title">Riepilogo mensile</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">'+mese+'</span></div><div class="panel-body" style="padding:0;">';
-    cameriere.forEach((cam,i)=>{
-      const bar=Math.round(cam.camere_tot/maxCam*100);
-      const media=Math.round(cam.camere_tot/giorni*10)/10;
-      const pct=Math.round(cam.camere_tot/totMese*100);
-      const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';
-      html+=`<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i>0?'border-top:1px solid var(--border-light);':''}">
-        <div style="min-width:140px;font-size:var(--fs-sm);font-weight:500;color:var(--text);">${cam.nome}</div>
-        <div style="flex:1;">
-          <div style="background:var(--border-light);border-radius:4px;height:6px;overflow:hidden;">
-            <div style="width:${bar}%;background:${color};height:100%;border-radius:4px;"></div>
-          </div>
-        </div>
-        <div style="text-align:right;min-width:64px;">
-          <span style="font-size:var(--fs-sm);font-weight:600;color:var(--text);">${cam.camere_tot}</span>
-          <span style="font-size:var(--fs-xxs);color:var(--text-dim);"> cam</span>
-        </div>
-        <div style="text-align:right;min-width:55px;">
-          <span style="font-size:var(--fs-sm);font-weight:600;color:var(--accent);">${media}</span>
-          <span style="font-size:var(--fs-xxs);color:var(--text-dim);">/gg</span>
-        </div>
-        <div style="text-align:right;min-width:36px;font-size:var(--fs-xxs);color:var(--text-dim);">${pct}%</div>
-      </div>`;
-    });
-    html+='</div></div>';
-    // Grafico andamento mensile per cameriera (mini sparkline SVG)
-    const totGiorni=data.totale_per_giorno||{};
-    const giorniDisp=Object.keys(totGiorni).map(Number).filter(d=>totGiorni[d]>0).sort((a,b)=>a-b);
-    if(giorniDisp.length>=2&&cameriere.length){
-      const COLORS=['#003580','#e65100','#1b5e20','#880e4f','#6a1b9a','#0d47a1','#2e7d32','#b71c1c','#f57f17','#37474f'];
-      const W=680,H=160,PL=36,PR=12,PT=14,PB=28;
-      const plotW=W-PL-PR,plotH=H-PT-PB;
-      const allVals=cameriere.flatMap(cam=>{
-        const pg={};Object.entries(cam.camere_per_giorno||{}).forEach(([k,v])=>{pg[parseInt(k)]=parseInt(v)||0;});
-        cam._pgn=pg;
-        return giorniDisp.map(d=>pg[d]||0);
-      });
-      const maxV=Math.max(...allVals,1);
-      const sx=i=>PL+i/(giorniDisp.length-1)*plotW;
-      const sy=v=>PT+plotH-(v/maxV)*plotH;
-      let svg=`<div class="panel" style="margin-top:12px;"><div class="panel-header"><span class="panel-title">Andamento giornaliero per cameriera</span></div><div class="panel-body" style="padding:14px;overflow-x:auto;">`;
-      svg+=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
-      // Griglia
-      [0,0.25,0.5,0.75,1].forEach(t=>{
-        const y=PT+plotH*(1-t);
-        svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="1"/>`;
-        svg+=`<text x="${PL-4}" y="${y+4}" font-size="9" fill="var(--text-dim)" text-anchor="end">${Math.round(t*maxV)}</text>`;
-      });
-      // Labels giorni (ogni 5)
-      giorniDisp.forEach((d,i)=>{
-        if(d===1||d%5===0||i===giorniDisp.length-1){
-          const x=sx(i);
-          svg+=`<text x="${x}" y="${H-4}" font-size="9" fill="var(--text-dim)" text-anchor="middle">${d}</text>`;
-        }
-      });
-      // Linea per ogni cameriera
-      cameriere.forEach((cam,ci)=>{
-        const col=COLORS[ci%COLORS.length];
-        const pts=giorniDisp.map((d,i)=>{const v=cam._pgn?cam._pgn[d]||0:(cam.camere_per_giorno||{})[d]||0;return{x:sx(i),y:sy(v),v};});
-        const path='M'+pts.map(pt=>`${pt.x},${pt.y}`).join('L');
-        svg+=`<path d="${path}" fill="none" stroke="${col}" stroke-width="1.5" opacity="0.85"/>`;
-        // Solo il punto finale
-        const last=pts[pts.length-1];
-        svg+=`<circle cx="${last.x}" cy="${last.y}" r="3" fill="${col}"/>`;
-      });
-      svg+='</svg>';
-      // Legenda
-      svg+='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">';
-      cameriere.forEach((cam,ci)=>{
-        svg+=`<div style="display:flex;align-items:center;gap:5px;font-size:var(--fs-xxs);color:var(--text-muted);">
-          <div style="width:16px;height:3px;background:${COLORS[ci%COLORS.length]};border-radius:2px;"></div>
-          ${cam.nome}
-        </div>`;
-      });
-      svg+='</div></div></div>';
-      html+=svg;
-    }
-    content.innerHTML=html;
-  } else if(tab==='dettaglio'){
-    const totGiorni=data.totale_per_giorno||{};
-    const giorniDisponibili=[];
-    for(let d=1;d<=data.giorni_mese;d++){if(totGiorni[d]>0)giorniDisponibili.push(d);}
-    if(!giorniDisponibili.length){content.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-dim);">Nessun dato disponibile</div>';return;}
-    let selDay=parseInt(content.dataset.selDay||giorniDisponibili[giorniDisponibili.length-1]);
-    if(!giorniDisponibili.includes(selDay))selDay=giorniDisponibili[giorniDisponibili.length-1];
-    // Navigazione giorni
-    let navHtml=`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;">`;
-    giorniDisponibili.forEach(d=>{
-      navHtml+=`<button class="rev-filter-btn${d===selDay?' active':''}" onclick="hkpSelectDay('${p}',${d})">${d}</button>`;
-    });
-    navHtml+='</div>';
-    // Barre per cameriera per il giorno selezionato
-    const camData=cameriere.map(cam=>{
-      const pg={};Object.entries(cam.camere_per_giorno||{}).forEach(([k,v])=>{pg[parseInt(k)]=parseInt(v)||0;});
-      return{nome:cam.nome,n:pg[selDay]||0};
-    }).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
-    const maxN=camData.length?camData[0].n:1;
-    const totGiorno=totGiorni[selDay]||0;
-    let barHtml=`<div class="panel"><div class="panel-header"><span class="panel-title">${selDay} ${mese.split('/')[0]?'mar':''} — ${totGiorno} camere totali</span></div><div class="panel-body" style="padding:0;">`;
-    if(!camData.length){
-      barHtml+='<div style="padding:20px;text-align:center;color:var(--text-dim);">Nessun dato per questo giorno</div>';
-    } else {
-      camData.forEach((cam,i)=>{
-        const bar=Math.round(cam.n/maxN*100);
-        const pct=Math.round(cam.n/totGiorno*100);
-        const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';
-        barHtml+=`<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i>0?'border-top:1px solid var(--border-light);':''}">
-          <div style="min-width:140px;font-size:var(--fs-sm);font-weight:500;color:var(--text);">${cam.nome}</div>
-          <div style="flex:1;">
-            <div style="background:var(--border-light);border-radius:4px;height:8px;overflow:hidden;">
-              <div style="width:${bar}%;background:${color};height:100%;border-radius:4px;transition:width .3s;"></div>
-            </div>
-          </div>
-          <div style="text-align:right;min-width:48px;">
-            <span style="font-size:var(--fs-sm);font-weight:600;color:var(--text);">${cam.n}</span>
-            <span style="font-size:var(--fs-xxs);color:var(--text-dim);"> cam</span>
-          </div>
-          <div style="text-align:right;min-width:36px;font-size:var(--fs-xxs);color:var(--text-dim);">${pct}%</div>
-        </div>`;
-      });
-    }
-    barHtml+='</div></div>';
-    content.innerHTML=navHtml+barHtml;
-    content.dataset.selDay=selDay;
-  }
-}
-function hkpSelectDay(p,day){
-  const content=document.getElementById('hkp-'+p+'-content');
-  content.dataset.selDay=day;
-  hkpRenderContent(p);
 }
 const SHEETS_URL='https://script.google.com/macros/s/AKfycbz-6oOgrKCZMwhTpmFO3VuaIJQ5EmGnvkriHOiaoshZ8DD1OlSbbl6dSeNgCKkrql4H/exec';
 let bkfSheetData=[];
@@ -3088,85 +2772,6 @@ function renderBkfDay(silent){
   if(!silent){const _bts=localStorage.getItem('qm_ts_bkfTs');LS.set('bkfData',{data:bkfData,activeDay:bkfActiveDay,ts:_bts?parseInt(_bts):undefined});}
   bkfRenderChart();
   bkfRenderNotes();
-}
-let hkSoulData=null;
-let hkBoutData=null;
-(function initHkUploads(){
-  ['soul','bout'].forEach(key=>{
-    const box=document.getElementById(key+'UploadBox');
-    const inp=document.getElementById(key+'FileInput');
-    if(box){
-      box.addEventListener('click',()=>inp.click());
-      box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});
-      box.addEventListener('dragleave',()=>box.classList.remove('dragover'));
-      box.addEventListener('drop',e=>{e.preventDefault();box.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)handleHkFile(key,f);});
-    }
-    inp.addEventListener('change',e=>{if(e.target.files[0])handleHkFile(key,e.target.files[0]);});
-  });
-  ['soul','bout'].forEach(key=>{
-    try{const saved=localStorage.getItem('qm_hk_'+key);if(saved){const data=JSON.parse(saved);if(key==='soul')hkSoulData=data;else hkBoutData=data;setTimeout(()=>{hkSetLoaded(key,true);if(data._ts)restoreUploadTs(key+'Ts',data._ts);else loadStoredTs(key+'Ts');},200);}}catch(e){}
-  });
-})();
-async function handleHkFile(key,file){
-  ucSetState(key,'loading','Analisi in corso...');
-  try{
-    const ab=await file.arrayBuffer();
-    const pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(ab)}).promise;
-    let text='';
-    for(let i=1;i<=pdfDoc.numPages;i++){const page=await pdfDoc.getPage(i);const tc=await page.getTextContent();text+=tc.items.map(x=>x.str).join(' ')+'\n';}
-    const data=hkParseText(text,key);
-    if(!data||!data.giorni||!data.giorni.length)throw new Error('Nessun dato trovato nel PDF');
-    if(key==='soul')hkSoulData=data;else hkBoutData=data;
-    data._ts=Date.now();
-    localStorage.setItem('qm_hk_'+key,JSON.stringify(data));
-    setSyncStatus('syncing');
-    kvSet('qm_hk_'+key,JSON.stringify(data)).then(ok=>{setSyncStatus(ok?'ok':'error');if(!ok)ucSetState(key,'error','Errore cloud — riprova');});
-    setUploadTs(key+'Ts',data._ts);
-    hkSetLoaded(key);
-  }catch(e){ucSetState(key,'error','Errore: '+e.message);}
-}
-function hkParseText(text,key){
-  const giorni=[];
-  const re=/([A-Za-z]{3})\s+(\d{1,2}\/\d{2}\/\d{4})\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/g;
-  let m;
-  while((m=re.exec(text))!==null){giorni.push({label:m[1]+' '+m[2].substring(0,5),data:m[2],arrivi:parseInt(m[3]),fermate:parseInt(m[5]),partenze:parseInt(m[6])});}
-  return{struttura:key==='soul'?'SoulArt Hotel':'Boutique Hotel',giorni,caricato:new Date().toISOString()};
-}
-function hkSetLoaded(key,silent){
-  const data=key==='soul'?hkSoulData:hkBoutData;
-  if(!data||!data.giorni)return;
-  const range=data.giorni[0]?.label+' – '+data.giorni[data.giorni.length-1]?.label;
-  ucSetState(key,'loaded',range,silent);
-  const dateEl=document.getElementById(key+'LoadedDate');if(dateEl)dateEl.textContent=data.struttura+' · '+range;
-  const btnId='btn'+key.charAt(0).toUpperCase()+key.slice(1)+'Reload';
-  const btn=document.getElementById(btnId);if(btn)btn.style.display='block';
-  const box=document.getElementById(key+'UploadBox');if(box)box.style.display='none';
-  const li=document.getElementById(key+'LoadedInfo');if(li)li.classList.add('visible');
-  // Aggiorna card KPI overview
-  const today=new Date();
-  const todayStr=String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
-  const g=data.giorni.find(d=>d.data===todayStr)||data.giorni[0];
-  if(g){
-    const kpiId=key==='soul'?'kpi-hkp':'kpi-hkp-ar';
-    const valEl=document.getElementById(kpiId+'-val');
-    const deltaEl=document.getElementById(kpiId+'-delta');
-    const subEl=document.getElementById(kpiId+'-sub');
-    if(valEl)valEl.textContent=g.fermate;
-    if(deltaEl){deltaEl.textContent=g.arrivi+' arrivi · '+g.partenze+' partenze';deltaEl.className='kpi-delta';}
-    if(subEl)subEl.textContent=g.label;
-  }
-}
-function resetSoulData(){hkSoulData=null;hkResetSlot('soul');}
-function resetBoutData(){hkBoutData=null;hkResetSlot('bout');}
-function hkResetSlot(key){
-  localStorage.removeItem('qm_hk_'+key);
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_hk_'+key,value:null})}).catch(()=>{});
-  ucSetState(key,'','Non caricato');
-  const box=document.getElementById(key+'UploadBox');if(box)box.style.display='';
-  const li=document.getElementById(key+'LoadedInfo');if(li)li.classList.remove('visible');
-  const btnId='btn'+key.charAt(0).toUpperCase()+key.slice(1)+'Reload';
-  const btn=document.getElementById(btnId);if(btn)btn.style.display='none';
-  document.getElementById(key+'FileInput').value='';
 }
 // ── PIANO SETTIMANA ──
 let pianoData=null;

@@ -61,15 +61,7 @@
         <div class="nav-item" onclick="setView('bkfsheet',this)"><span class="nav-icon">↳</span>SoulArt Hotel</div>
         <div class="nav-item" onclick="setView('bkfsheetar',this)"><span class="nav-icon">↳</span>Art Resort Galleria</div>
       </div>
-      <div class="nav-group-header" id="hkpGroupToggle" onclick="toggleHkpGroup()">
-        <span class="nav-icon">🛏️</span>
-        <span>Operativa HKP</span>
-        <span class="nav-group-chevron">▾</span>
-      </div>
-      <div class="nav-group-items" id="hkpGroupItems">
-        <div class="nav-item" onclick="setView('hkp-sa',this)"><span class="nav-icon">↳</span>SoulArt Hotel</div>
-        <div class="nav-item" onclick="setView('hkp-ar',this)"><span class="nav-icon">↳</span>Art Resort</div>
-      </div>
+
       <div class="nav-section">Qualità</div>
       <div class="nav-group-header" id="recGroupToggle" onclick="toggleRecGroup()">
         <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="4" fill="#003580"/><text x="5" y="17" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="white">B</text></svg></span>
@@ -102,13 +94,6 @@
           <span class="uc-badge" id="uc-turno-badge">▾</span>
         </div>
         <div class="uc-panel" id="uc-turno-panel">
-          <textarea id="turniPasteBox" placeholder="Incolla qui il testo copiato da Excel (Ctrl+V)..." style="width:100%;height:80px;border:1.5px dashed var(--border);border-radius:7px;padding:8px;font-size:11px;font-family:monospace;color:var(--text);background:var(--surface);resize:vertical;outline:none;margin-bottom:4px;" oninput="turniPasteDetect(this)"></textarea>
-          <div class="upload-box" id="turniUploadBox">
-            <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-            <div class="ub-title">Carica planning</div>
-            <div class="ub-sub">In alternativa: immagine</div>
-            <span class="ub-formats">.jpg · .png</span>
-          </div>
           <div class="turni-status" id="turniStatus"></div>
           <div class="loaded-info" id="loadedInfo">
             <div class="li-date" id="loadedDate"></div>
@@ -345,23 +330,6 @@
         <div id="kpi-occ-preview" style="display:none;margin-bottom:14px;"></div>
         <div id="kpi-pul-preview" style="display:none;margin-bottom:14px;"></div>
         <div id="kpi-bkf-preview" style="display:none;margin-bottom:14px;"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-          <div class="kpi-card" style="border-top-color:#1E7A48;cursor:pointer;" onclick="toggleHkpPreview()">
-            <div class="kpi-card-icon" style="background:var(--green-bg);">🛏️</div>
-            <div class="kpi-label">HKP SoulArt</div>
-            <div class="kpi-value" id="kpi-hkp-val">—</div>
-            <div class="kpi-delta" id="kpi-hkp-delta" style="color:var(--text-dim)">Carica Soul App HKP</div>
-            <div class="kpi-sub" id="kpi-hkp-sub"></div>
-          </div>
-          <div class="kpi-card" style="border-top-color:#1E7A48;">
-            <div class="kpi-card-icon" style="background:var(--green-bg);">🛏️</div>
-            <div class="kpi-label">HKP Art Resort</div>
-            <div class="kpi-value" id="kpi-hkp-ar-val">—</div>
-            <div class="kpi-delta" id="kpi-hkp-ar-delta" style="color:var(--text-dim)">Carica Boutique App HKP</div>
-            <div class="kpi-sub" id="kpi-hkp-ar-sub"></div>
-          </div>
-        </div>
-        <div id="kpi-hkp-preview" style="display:none;margin-bottom:14px;"></div>
         <div id="staffArea">
           <div class="ov-empty">
             <div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
@@ -1053,42 +1021,6 @@
             <button class="btn-primary" onclick="bkfSaveGroup()">Salva gruppo</button>
           </div>
         </div>
-      </div>
-      <div class="view" id="view-hkp-sa">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-          <div>
-            <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text);">Operativa HKP — SoulArt Hotel</div>
-            <div id="hkp-sa-date" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">—</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <a href="https://docs.google.com/spreadsheets/d/1NzJCavF4hb-rHSSERSUgHBcVpHDHrSolMcwpZAtx-Pc/edit?gid=0#gid=0" target="_blank" class="btn-ghost" style="text-decoration:none;display:flex;align-items:center;gap:5px;padding:7px 14px;">📊 Apri foglio</a>
-            <button onclick="hkpLoad('sa')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:var(--fs-xs);cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="hkp-sa-btn-icon">↻</span> Aggiorna</button>
-          </div>
-        </div>
-        <div id="hkp-sa-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;"></div>
-        <div class="rev-filter-bar" style="margin-bottom:14px;">
-          <button class="rev-filter-btn active" onclick="hkpTab('sa','riepilogo',this)">Riepilogo mensile</button>
-          <button class="rev-filter-btn" onclick="hkpTab('sa','dettaglio',this)">Per giorno</button>
-        </div>
-        <div id="hkp-sa-content"><div style="text-align:center;padding:40px;color:var(--text-dim);">Clicca <strong>Aggiorna</strong> per caricare i dati del mese</div></div>
-      </div>
-      <div class="view" id="view-hkp-ar">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-          <div>
-            <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text);">Operativa HKP — Art Resort</div>
-            <div id="hkp-ar-date" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">—</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <a href="https://docs.google.com/spreadsheets/d/1FO9YxVpojxWD1eyi_IxVwQOYbddfDk9iOLBtD-fH3qo/edit?gid=0#gid=0" target="_blank" class="btn-ghost" style="text-decoration:none;display:flex;align-items:center;gap:5px;padding:7px 14px;">📊 Apri foglio</a>
-            <button onclick="hkpLoad('ar')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:var(--fs-xs);cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="hkp-ar-btn-icon">↻</span> Aggiorna</button>
-          </div>
-        </div>
-        <div id="hkp-ar-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;"></div>
-        <div class="rev-filter-bar" style="margin-bottom:14px;">
-          <button class="rev-filter-btn active" onclick="hkpTab('ar','riepilogo',this)">Riepilogo mensile</button>
-          <button class="rev-filter-btn" onclick="hkpTab('ar','dettaglio',this)">Per giorno</button>
-        </div>
-        <div id="hkp-ar-content"><div style="text-align:center;padding:40px;color:var(--text-dim);">Clicca <strong>Aggiorna</strong> per caricare i dati del mese</div></div>
       </div>
       <div class="view" id="view-miniapp">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;" id="miniappGrid">
