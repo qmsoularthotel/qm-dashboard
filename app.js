@@ -339,7 +339,8 @@ function renderDay(idx){
   const g=weekData.giorni[idx],shifts=g.shifts,area=document.getElementById('staffArea');
   // Indice case-insensitive dei nomi DEPTS per escluderli dagli extra
   const allStaffLow=new Set(ALL_STAFF.map(n=>n.toLowerCase()));
-  const nonServizio=ALL_STAFF.filter(n=>IS_REST(getShift(shifts,n)));
+  const shiftsKeys=new Set(Object.keys(shifts).map(k=>k.toLowerCase()));
+  const nonServizio=ALL_STAFF.filter(n=>shiftsKeys.has(n.toLowerCase())&&IS_REST(getShift(shifts,n)));
   let html='';
   if(nonServizio.length)html+=`<div class="non-servizio-strip"><span class="ns-label">Non in servizio — ${g.label}</span>${nonServizio.map(n=>`<span class="ns-chip">${n}</span>`).join('')}</div>`;
   const shiftRow=(n,sv,cls)=>`<div class="staff-row" style="cursor:pointer;" title="Clicca per correggere" onclick="editShift(${idx},'${n.replace(/'/g,"\\'")}')"><span class="sname">${n}</span><span class="sshift ${cls}">${sv||'—'}</span></div>`;
