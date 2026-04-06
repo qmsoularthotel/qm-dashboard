@@ -1959,7 +1959,7 @@ function bkfSheetShowError(msg){
   document.getElementById('bkfSheetSuccess').style.display='none';
   const e=document.getElementById('bkfSheetError');e.textContent=msg;e.style.display='block';
 }
-const SHEETS_URL_AR='https://script.google.com/macros/s/AKfycby_PEG2l7Qdp_CGkuCbEnswKGEzoLFZ4rMoU0Y9J-gNukZ5MX5v1_f65XEaSMYpQdY/exec';
+const SHEETS_URL_AR='https://script.google.com/macros/s/AKfycbzmkYzbHDgxOYXe-rnkcjpOsPArlt4gimwXHNiQfCur5FeHM6qfu2BlN0NswI4aICM/exec';
 let bkfSheetARData=[];
 (function initBkfSheetAR(){
   const zone=document.getElementById('bkfSheetARUploadZone');
