@@ -554,13 +554,9 @@ const LS={
               const elId=k==='hk_soul'?'soulTs':k==='hk_bout'?'boutTs':'pianoTs';
               const tsKey='qm_ts_'+elId;
               const cloudTs=cloudObj._ts;
-              if(cloudTs){
-                const localTs=parseInt(localStorage.getItem(tsKey)||'0');
-                if(cloudTs>localTs){
-                  localStorage.setItem(tsKey,String(cloudTs));
-                  try{_setUcTs(elId,cloudTs);}catch(e){}
-                }
-              }
+              if(cloudTs){localStorage.setItem(tsKey,String(cloudTs));try{_setUcTs(elId,cloudTs);}catch(e){}}
+              if(k==='hk_soul'){hkSoulData=cloudObj;try{hkSetLoaded('soul',true);}catch(e){}}
+              else if(k==='hk_bout'){hkBoutData=cloudObj;try{hkSetLoaded('bout',true);}catch(e){}}
             }catch(e){}
           }
           synced++;
