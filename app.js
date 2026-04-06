@@ -2814,6 +2814,7 @@ function hkSetLoaded(key,silent){
   if(!data||!data.giorni)return;
   const range=data.giorni[0]?.label+' – '+data.giorni[data.giorni.length-1]?.label;
   ucSetState(key,'loaded',range,silent);
+  if(data._ts){try{_setUcTs(key+'Ts',data._ts);}catch(e){}}
   const dateEl=document.getElementById(key+'LoadedDate');if(dateEl)dateEl.textContent=data.struttura+' · '+range;
   const btnId='btn'+key.charAt(0).toUpperCase()+key.slice(1)+'Reload';
   const btn=document.getElementById(btnId);if(btn)btn.style.display='block';
