@@ -2886,6 +2886,18 @@ document.querySelector('.content').addEventListener('scroll',function(){
     try{
       const n=await LS.syncFromCloud();
       setSyncStatus('ok');
+      // Ricarica turno se il cloud ha dati più nuovi
+      try{
+        const saved=localStorage.getItem('qm_weekData');
+        if(saved&&weekData){
+          const parsed=JSON.parse(saved);
+          const arr=Array.isArray(parsed)?parsed:(parsed.giorni||[]);
+          if(arr.length){
+            const restored={giorni:arr.map(g=>{const d=new Date(g.date);return{...g,date:new Date(d.getFullYear(),d.getMonth(),d.getDate(),12,0,0)};})};
+            loadWeekData(restored);
+          }
+        }
+      }catch(e){}
     }catch(e){
       setSyncStatus('offline');
     }
