@@ -546,10 +546,7 @@ const LS={
               const elId=k==='weekData'?'turnoTs':'arriviTs';
               const tsKey='qm_ts_'+elId;
               const cloudTs=cloudObj._ts;
-              if(cloudTs){
-                const localTs=parseInt(localStorage.getItem(tsKey)||'0');
-                if(cloudTs>localTs){localStorage.setItem(tsKey,String(cloudTs));try{_setUcTs(elId,cloudTs);}catch(e){}}
-              }
+              if(cloudTs){localStorage.setItem(tsKey,String(cloudTs));try{_setUcTs(elId,cloudTs);}catch(e){}}
             }catch(e){}
           }
           // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
