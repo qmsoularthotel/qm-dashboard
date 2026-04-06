@@ -1848,7 +1848,7 @@ function hkpSelectDay(p,day){
   content.dataset.selDay=day;
   hkpRenderContent(p);
 }
-const SHEETS_URL='https://script.google.com/macros/s/AKfycbyRBEVemGfnL6dcPMlc3OlTmhPu8ngvrqYwz9PwOI9uBT3S-UHPRvzOIQi_DHi36bWe/exec';
+const SHEETS_URL='https://script.google.com/macros/s/AKfycbz-6oOgrKCZMwhTpmFO3VuaIJQ5EmGnvkriHOiaoshZ8DD1OlSbbl6dSeNgCKkrql4H/exec';
 let bkfSheetData=[];
 (function initBkfSheet(){
   const zone=document.getElementById('bkfSheetUploadZone');
