@@ -232,11 +232,10 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     // Salva in localStorage + cloud
     try{
       const _wts=Date.now();
-      const toSave=parsed.giorni.map(g=>({...g,date:g.date.toISOString()}));
-      toSave._ts=_wts;
+      const toSave={giorni:parsed.giorni.map(g=>({...g,date:g.date.toISOString()})),_ts:_wts};
       localStorage.setItem('qm_weekData',JSON.stringify(toSave));
       localStorage.setItem('qm_ts_turnoTs',String(_wts));
-      fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:JSON.stringify(toSave)})}).catch(()=>{});
+      kvSet('qm_weekData',JSON.stringify(toSave));
     }catch(e){}
     loadWeekData(parsed);
     const range=parsed.giorni[0].label+' – '+parsed.giorni[parsed.giorni.length-1].label;
@@ -328,8 +327,7 @@ function editShift(dayIdx,nome){
   if(nuovo===null)return; // annullato
   shifts[realKey]=nuovo.trim();
   // Salva in localStorage e cloud
-  const toSave=weekData.giorni.map(g=>({...g,date:g.date instanceof Date?g.date.toISOString():g.date}));
-  toSave._ts=Date.now();
+  const toSave={giorni:weekData.giorni.map(g=>({...g,date:g.date instanceof Date?g.date.toISOString():g.date})),_ts:Date.now()};
   localStorage.setItem('qm_weekData',JSON.stringify(toSave));
   kvSet('qm_weekData',JSON.stringify(toSave));
   renderDay(dayIdx);
@@ -1278,12 +1276,14 @@ document.querySelector('.content').addEventListener('scroll',function(){
       const saved=localStorage.getItem('qm_weekData');
       if(saved){
         const parsed=JSON.parse(saved);
-        // Converti SEMPRE le date in oggetti Date prima di passare a loadWeekData
-        const restored={giorni:parsed.map(g=>{const d=new Date(g.date);return{...g,date:new Date(d.getFullYear(),d.getMonth(),d.getDate(),12,0,0)};})};
+        // Supporta sia formato array (vecchio) sia oggetto {giorni,_ts} (nuovo)
+        const arr=Array.isArray(parsed)?parsed:parsed.giorni;
+        const pts=parsed._ts;
+        const restored={giorni:arr.map(g=>{const d=new Date(g.date);return{...g,date:new Date(d.getFullYear(),d.getMonth(),d.getDate(),12,0,0)};})};
         loadWeekData(restored);
         const range=restored.giorni[0].label+' – '+restored.giorni[restored.giorni.length-1].label;
         ucSetState('turno','loaded',range,true);
-        if(parsed._ts)restoreUploadTs('turnoTs',parsed._ts);else loadStoredTs('turnoTs');
+        if(pts)restoreUploadTs('turnoTs',pts);else loadStoredTs('turnoTs');
         // Forza overview alla data odierna dopo un tick (usa loadWeekData per parseLocalDate robusto)
         setTimeout(()=>{try{if(weekData)loadWeekData(weekData);}catch(e){}},50);
       }
