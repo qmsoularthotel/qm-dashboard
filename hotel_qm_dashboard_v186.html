@@ -1888,17 +1888,23 @@ function loadWeekData(data){
 }
 function buildWeekNav(){const nav=document.getElementById('weekNav');nav.innerHTML='';weekData.giorni.forEach((g,i)=>{const btn=document.createElement('button');btn.className='wday-btn'+(i===activeDay?' active':'');btn.textContent=g.label.split(' ')[0].substring(0,3);btn.title=g.label;btn.onclick=()=>{activeDay=i;renderDay(i);updateWeekNavActive();updateSidebarInfo();};nav.appendChild(btn);});document.getElementById('weekRangeLabel').textContent=weekData.giorni[0].label+' – '+weekData.giorni[weekData.giorni.length-1].label;}
 function updateWeekNavActive(){document.querySelectorAll('.wday-btn').forEach((b,i)=>b.classList.toggle('active',i===activeDay));}
-function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(g.shifts[n])).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_REST(g.shifts[n])).length+' non in servizio';}
+function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];const _n=s=>s.trim().toLowerCase().replace(/[\u2018\u2019\u02BC]/g,"'");const _sm={};Object.entries(g.shifts).forEach(([k,v])=>{_sm[_n(k)]=v;});const gs=n=>g.shifts[n]!==undefined?g.shifts[n]:_sm[_n(n)];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(gs(n))).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_REST(gs(n))).length+' non in servizio';}
 function renderDay(idx){
   const g=weekData.giorni[idx],shifts=g.shifts,area=document.getElementById('staffArea');
-  const nonServizio=ALL_STAFF.filter(n=>IS_REST(shifts[n]));
+  const _n=s=>s.trim().toLowerCase().replace(/[\u2018\u2019\u02BC]/g,"'");
+  const _sm={};Object.entries(shifts).forEach(([k,v])=>{_sm[_n(k)]=v;});
+  const gs=n=>shifts[n]!==undefined?shifts[n]:_sm[_n(n)];
+  const nonServizio=ALL_STAFF.filter(n=>IS_REST(gs(n)));
   let html='';
   if(nonServizio.length)html+=`<div class="non-servizio-strip"><span class="ns-label">Non in servizio — ${g.label}</span>${nonServizio.map(n=>`<span class="ns-chip">${n}</span>`).join('')}</div>`;
   html+='<div class="staff-grid">';
   Object.entries(DEPTS).forEach(([key,dept])=>{
-    const inT=dept.members.filter(n=>!IS_REST(shifts[n]));if(!inT.length)return;
-    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${inT.map(n=>{const sv=(shifts[n]||'').trim();return`<div class="staff-row"><span class="sname">${n}</span><span class="sshift ${['P','AC','CG','AG','CC','NC','NG'].includes(sv)?'ss-active':'ss-special'}">${sv}</span></div>`;}).join('')}</div></div>`;
+    const inT=dept.members.filter(n=>!IS_REST(gs(n)));if(!inT.length)return;
+    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${inT.map(n=>{const sv=(gs(n)||'').trim();return`<div class="staff-row"><span class="sname">${n}</span><span class="sshift ${['P','AC','CG','AG','CC','NC','NG'].includes(sv)?'ss-active':'ss-special'}">${sv}</span></div>`;}).join('')}</div></div>`;
   });
+  const knownN=new Set(ALL_STAFF.map(_n));
+  const extras=Object.entries(shifts).filter(([n,v])=>!knownN.has(_n(n))&&!IS_REST(v));
+  if(extras.length){html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name">Extra</span><span class="sdh-count">${extras.length} in turno</span></div><div class="staff-list">${extras.map(([n,v])=>{const sv=(v||'').trim();return`<div class="staff-row"><span class="sname">${n}</span><span class="sshift ss-special">${sv}</span></div>`;}).join('')}</div></div>`;}
   html+='</div>';area.innerHTML=html;
 }
 function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caricato');turniInput.value='';
