@@ -1426,7 +1426,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
     if(savedARData&&Array.isArray(savedARData)&&savedARData.length){
       bkfSheetARData=savedARData;
       const tbody=document.getElementById('bkfSheetARTableBody');
-      if(tbody)tbody.innerHTML=bkfSheetARData.map(r=>`<tr><td style="font-weight:500;">${r.d||'—'}</td><td><span class="bkf-ro">${r.r??'—'}</span></td><td><span class="bkf-badge">${r.b??'—'}</span></td></tr>`).join('');
+      if(tbody)tbody.innerHTML=bkfSheetARData.map(r=>`<tr><td style="font-weight:500;">${r.d||'—'}</td><td><span class="bkf-ro">${r.r??'—'}</span></td><td><span class="bkf-badge">${r.b??'—'}</span></td><td style="font-size:var(--fs-xs);color:var(--text-muted);">${r.pg||''}</td></tr>`).join('');
       bkfSheetARSetStatus('ready');
       setTimeout(bkfRenderChartAR,50);
     }
@@ -1870,12 +1870,13 @@ async function bkfSheetAnalyze(file){
     });
     const prompt=`Analizza questo PDF "BKF OGGI" del SoulArt Hotel ed estrai i dati delle colazioni.
 REGOLE OBBLIGATORIE:
-1. DATA: Estrai la data di ogni riga (es: "Lun 02/03").
+1. DATA: Estrai la data di ogni riga ESATTAMENTE come appare nel PDF, nel formato "Gio 09/04" (giorno abbreviato + gg/mm). NON aggiungere l'anno. NON inventare date.
 2. RO (Room Only): Estrai il totale persone in Room Only per ogni data.
 3. Pax BB: SOMMA Adulti + Bambini per ogni data.
-4. Rispondi SOLO con un array JSON valido, senza markdown, senza commenti, senza testo aggiuntivo.
-5. Formato esatto: [{"d": "Lun 02/03", "r": 5, "b": 37}]
-6. Massimo 8 righe.`;
+4. PRESENZA GRUPPI: Se presente nel PDF, estrai il testo della colonna "Presenza Gruppi", altrimenti "".
+5. Rispondi SOLO con un array JSON valido, senza markdown, senza commenti, senza testo aggiuntivo.
+6. Formato esatto: [{"d": "Lun 02/03", "r": 5, "b": 37, "pg": ""}]
+7. Massimo 8 righe.`;
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -1900,6 +1901,8 @@ REGOLE OBBLIGATORIE:
     if(match)jsonText=match[0];
     bkfSheetData=JSON.parse(jsonText);
     if(!Array.isArray(bkfSheetData)||!bkfSheetData.length)throw new Error('Nessun dato estratto dal PDF.');
+    // Rimuovi anno se l'AI lo ha aggiunto (es. "dom 14/03/2004" → "dom 14/03")
+    bkfSheetData=bkfSheetData.map(r=>({...r,d:r.d?r.d.replace(/(\d{2}\/\d{2})\/\d{4}/,'$1'):r.d}));
     bkfSheetRenderTable();
     bkfSheetSetStatus('ready');
   }catch(err){
@@ -1913,6 +1916,7 @@ function bkfSheetRenderTable(){
       <td style="font-weight:500;">${r.d||'—'}</td>
       <td><span class="bkf-ro">${r.r??'—'}</span></td>
       <td><span class="bkf-badge">${r.b??'—'}</span></td>
+      <td style="font-size:var(--fs-xs);color:var(--text-muted);">${r.pg||''}</td>
     </tr>`).join('');
 }
 async function bkfSheetSync(){
@@ -1977,12 +1981,13 @@ async function bkfSheetARAnalyze(file){
     });
     const prompt=`Analizza questo PDF "BKF OGGI" della Galleria ed estrai i dati delle colazioni.
 REGOLE OBBLIGATORIE:
-1. DATA: Estrai la data di ogni riga (es: "Lun 02/03").
+1. DATA: Estrai la data di ogni riga ESATTAMENTE come appare nel PDF, nel formato "Gio 09/04" (giorno abbreviato + gg/mm). NON aggiungere l'anno. NON inventare date.
 2. RO (Room Only): Estrai il totale persone in Room Only per ogni data.
 3. Pax BB: SOMMA Adulti + Bambini per ogni data.
-4. Rispondi SOLO con un array JSON valido, senza markdown, senza commenti, senza testo aggiuntivo.
-5. Formato esatto: [{"d": "Lun 02/03", "r": 5, "b": 37}]
-6. Massimo 8 righe.`;
+4. PRESENZA GRUPPI: Se presente nel PDF, estrai il testo della colonna "Presenza Gruppi", altrimenti "".
+5. Rispondi SOLO con un array JSON valido, senza markdown, senza commenti, senza testo aggiuntivo.
+6. Formato esatto: [{"d": "Lun 02/03", "r": 5, "b": 37, "pg": ""}]
+7. Massimo 8 righe.`;
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -2006,12 +2011,15 @@ REGOLE OBBLIGATORIE:
     if(match)jsonText=match[0];
     bkfSheetARData=JSON.parse(jsonText);
     if(!Array.isArray(bkfSheetARData)||!bkfSheetARData.length)throw new Error('Nessun dato estratto dal PDF.');
+    // Rimuovi anno se l'AI lo ha aggiunto (es. "dom 14/03/2004" → "dom 14/03")
+    bkfSheetARData=bkfSheetARData.map(r=>({...r,d:r.d?r.d.replace(/(\d{2}\/\d{2})\/\d{4}/,'$1'):r.d}));
     // Render tabella
     document.getElementById('bkfSheetARTableBody').innerHTML=bkfSheetARData.map(r=>`
       <tr>
         <td style="font-weight:500;">${r.d||'—'}</td>
         <td><span class="bkf-ro">${r.r??'—'}</span></td>
         <td><span class="bkf-badge">${r.b??'—'}</span></td>
+        <td style="font-size:var(--fs-xs);color:var(--text-muted);">${r.pg||''}</td>
       </tr>`).join('');
     LS.set('bkfSheetARData',bkfSheetARData);
     bkfSheetARSetStatus('ready');
