@@ -511,7 +511,7 @@ const LS={
     const keys=['checklist','custom_tasks','dept_custom_tasks','pulData','bkfData',
       'rev_sa','rev_bh','rev_sl','rev_pr','rev_ms','rev_ar','rev_sb',
       'rev_sent',
-      'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
+      'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano','piano_raw',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
@@ -1256,6 +1256,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
     try{
       const n=await LS.syncFromCloud();
       setSyncStatus('ok');
+      checkAndParsePianoRaw().catch(()=>{});
     }catch(e){
       setSyncStatus('offline');
     }
@@ -2944,6 +2945,39 @@ function parsePianoItems(items){
     });
   }
   return{stampato,giorni};
+}
+async function checkAndParsePianoRaw(){
+  try{
+    const rawStr=localStorage.getItem('qm_piano_raw');
+    if(!rawStr)return;
+    const raw=JSON.parse(rawStr);
+    if(!raw||!raw.pdf)return;
+    // Confronta timestamp: se piano già aggiornato, non ri-parsare
+    const pianoStr=localStorage.getItem('qm_piano');
+    const pianoTs=pianoStr?JSON.parse(pianoStr)._ts||0:0;
+    if(raw._ts&&raw._ts<=pianoTs)return;
+    // Decode base64 → Uint8Array
+    const bstr=atob(raw.pdf);
+    const bytes=new Uint8Array(bstr.length);
+    for(let i=0;i<bstr.length;i++)bytes[i]=bstr.charCodeAt(i);
+    if(!window.pdfjsLib)throw new Error('pdfjsLib non disponibile');
+    const pdfDoc=await pdfjsLib.getDocument({data:bytes}).promise;
+    const allItems=[];
+    for(let p=1;p<=pdfDoc.numPages;p++){
+      const page=await pdfDoc.getPage(p);
+      const tc=await page.getTextContent();
+      tc.items.forEach(it=>{const s=it.str.trim();if(s)allItems.push({s,x:Math.round(it.transform[4]),y:Math.round(it.transform[5]),p});});
+    }
+    const data=parsePianoItems(allItems);
+    if(!data||!data.giorni||!data.giorni.length)throw new Error('Nessun dato nel piano');
+    data._ts=raw._ts;
+    pianoData=data;
+    localStorage.setItem('qm_piano',JSON.stringify(data));
+    kvSet('qm_piano',JSON.stringify(data)).then(ok=>{setSyncStatus(ok?'ok':'error');});
+    LS.del('piano_raw');
+    restoreUploadTs('pianoTs',data._ts);
+    pianoSetLoaded(true);
+  }catch(e){console.warn('checkAndParsePianoRaw:',e);}
 }
 function pianoSetLoaded(silent){
   if(!pianoData||!pianoData.giorni)return;
