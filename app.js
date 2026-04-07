@@ -2954,7 +2954,7 @@ async function checkAndParsePianoRaw(){
     if(!raw||!raw.pdf)return;
     // Confronta timestamp: se piano già aggiornato, non ri-parsare
     const pianoStr=localStorage.getItem('qm_piano');
-    const pianoTs=pianoStr?JSON.parse(pianoStr)._ts||0:0;
+    const pianoTs=pianoStr?(JSON.parse(pianoStr)||{})._ts||0:0;
     if(raw._ts&&raw._ts<=pianoTs)return;
     // Decode base64 → Uint8Array
     const bstr=atob(raw.pdf);
