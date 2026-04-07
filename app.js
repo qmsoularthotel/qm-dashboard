@@ -511,7 +511,7 @@ const LS={
     const keys=['checklist','custom_tasks','dept_custom_tasks','pulData','bkfData',
       'rev_sa','rev_bh','rev_sl','rev_pr','rev_ms','rev_ar','rev_sb',
       'rev_sent',
-      'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano','piano_raw',
+      'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
@@ -2948,9 +2948,11 @@ function parsePianoItems(items){
 }
 async function checkAndParsePianoRaw(){
   try{
-    const rawStr=localStorage.getItem('qm_piano_raw');
-    if(!rawStr)return;
-    const raw=JSON.parse(rawStr);
+    // Fetch direttamente da KV — non passa per localStorage (PDF troppo grande)
+    const res=await fetch(PROXY+'/kv/get?key=qm_piano_raw');
+    const json=await res.json();
+    if(!json.value)return;
+    const raw=JSON.parse(json.value);
     if(!raw||!raw.pdf)return;
     // Confronta timestamp: se piano già aggiornato, non ri-parsare
     const pianoStr=localStorage.getItem('qm_piano');
@@ -2974,7 +2976,7 @@ async function checkAndParsePianoRaw(){
     pianoData=data;
     localStorage.setItem('qm_piano',JSON.stringify(data));
     kvSet('qm_piano',JSON.stringify(data)).then(ok=>{setSyncStatus(ok?'ok':'error');});
-    LS.del('piano_raw');
+    fetch(PROXY+'/kv/delete?key=qm_piano_raw').catch(()=>{});
     restoreUploadTs('pianoTs',data._ts);
     pianoSetLoaded(true);
   }catch(e){console.warn('checkAndParsePianoRaw:',e);}
