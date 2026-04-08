@@ -274,7 +274,7 @@
     <div class="content">
       <div class="view active" id="view-overview">
         <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px;">
-          <div class="kpi-card green" id="kpi-arrivi-card" style="cursor:pointer;" onclick="openArriviModal()" title="Clicca per vedere gli arrivi">
+          <div class="kpi-card green kpi-clickable" id="kpi-arrivi-card" style="cursor:pointer;" onclick="openArriviModal()" title="Clicca per vedere gli arrivi">
             <div class="kpi-card-icon">↓</div>
             <div class="kpi-label">Arrivi <span style="font-size:9px;opacity:.5;">⤢</span></div>
             <div class="kpi-value" id="kpi-arrivi">—</div>
@@ -296,7 +296,7 @@
             <div class="kpi-delta" id="kpi-fermate-delta" style="color:var(--text-dim)">Carica cruscotto</div>
             <div class="kpi-sub" id="kpi-fermate-sub"></div>
           </div>
-          <div class="kpi-card" style="border-top-color:#7A5FBF;cursor:pointer;" onclick="toggleOccupazionePreview()">
+          <div class="kpi-card kpi-clickable" style="border-top-color:#7A5FBF;cursor:pointer;" onclick="toggleOccupazionePreview()">
             <div class="kpi-card-icon" style="background:#EEE8FA;">%</div>
             <div class="kpi-label">Occupazione</div>
             <div class="kpi-value" id="kpi-occ-val">—</div>
@@ -310,7 +310,7 @@
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-          <div class="kpi-card" style="border-top-color:#A05A00;cursor:pointer;" onclick="toggleBkfPreview()">
+          <div class="kpi-card kpi-clickable" style="border-top-color:#A05A00;cursor:pointer;" onclick="toggleBkfPreview()">
             <div class="kpi-card-icon" style="background:var(--amber-bg);">☕</div>
             <div class="kpi-label">Coperti colazione</div>
             <div id="kpi-bkf-multiday">
