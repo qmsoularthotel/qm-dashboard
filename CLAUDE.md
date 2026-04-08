@@ -1,86 +1,229 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Questo file fornisce il contesto completo del progetto a Claude Code.
+
+---
 
 ## Strutture gestite
 
-Il gruppo comprende 7 strutture alberghiere a Napoli:
-**SoulArt Hotel**, **Boutique**, **San Liborio**, **Principe**, **Mastrangelo**, **Art Resort**, **Santa Brigida**.
+7 hotel a Napoli:
+**SoulArt Hotel (SA)**, **Boutique Hotel (BH)**, **San Liborio (SL)**, **Principe (PR)**, **Mastrangelo (MS)**, **Art Resort (AR)**, **Santa Brigida (SB)**.
+
+---
 
 ## Risposte alle recensioni Booking.com
 
-- **Firma in italiano:** `Paolo P. - Quality Manager`
-- **Firma in inglese:** `Best regards. Paolo P. - Quality Manager`
-- Non ripetere le parole esatte usate dal recensore.
+- **Firma italiano:** `Paolo P. - Quality Manager`
+- **Firma inglese:** `Best regards. Paolo P. - Quality Manager`
+- Non ripetere le parole esatte del recensore.
 - Includere sempre un incentivo alla prenotazione futura.
 
-## Project Overview
+---
 
-**QM Dashboard** is a single-file, self-contained hotel Quality Management dashboard for a multi-property hotel group in Naples. The entire application lives in one HTML file: `hotel_qm_dashboard_v185.html` (~5,255 lines, ~427 KB). There is no build system, no package manager, and no compilation step.
+## Architettura del progetto
 
-## Development
+### File di produzione
 
-To use the app, simply open `hotel_qm_dashboard_v185.html` in a browser. All changes are made directly to this file. No build, install, or lint commands exist.
-
-When making significant changes, increment the version number in the filename and in the `<title>` tag (e.g., `v185` → `v186`).
-
-## Architecture
-
-The app is a vanilla JS SPA with a sidebar nav and a main content area that swaps views via `setView(id, navEl)`. All state is held in global variables and persisted to `localStorage`, with optional sync to Cloudflare KV.
-
-### Key Globals
-
-```js
-DEPTS       // Staff rosters: fo (Front Office), hk (Housekeeping), bkf (Breakfast), mt (Maintenance)
-REV_HOTELS  // 7 hotels: sa, bh, sl, pr, ms, ar, sb
-TASK_STATE  // Checklist/task progress
-HKP_DATA    // Housekeeping room data
-IS_REST     // Shift "rest/off" identifier ('R')
+```
+/Users/pierpaolopresta/Desktop/qm-dashboard/
+├── app.js          ← tutta la logica JS (~3600 righe)
+├── index.html      ← shell HTML + riferimento a app.js
+├── style.css       ← stili
+├── housekeeper.html ← app separata per le cameriere
+└── CLAUDE.md       ← questo file
 ```
 
-### 16 Views
+**NON usare** `hotel_qm_dashboard_v185.html` o i file nella cartella `.claude/worktrees/` — sono obsoleti.
 
-Navigation between: `overview`, `registrazione`, `checklist`, `reclami`, `recensioni-{hotel}` (×7), `audit`, `bkfsheet-{hotel}` (×2), `hkp-{hotel}` (×2), `miniapp`.
+### Deploy
 
-### Storage & Sync
+- **Repository GitHub**: `https://github.com/qmsoularthotel/qm-dashboard`
+- **Hosting**: Cloudflare Pages (auto-deploy da `main`)
+- **Cache busting**: aggiornare il parametro `?v=186-YYYYMMDD` in `index.html` quando si modifica `app.js`:
+  ```html
+  <script src="app.js?v=186-20260407g"></script>
+  ```
+- **Push**: `cd /Users/pierpaolopresta/Desktop/qm-dashboard && git add app.js index.html && git commit -m "..." && git push origin main`
 
-- **Primary**: `localStorage` — all data read/written here on every change
-- **Secondary**: Cloudflare KV via proxy at `https://anthropic-proxy.qm-d82.workers.dev` — cloud sync between devices; status shown in topbar
-- **External**: Google Sheets API — housekeeping and breakfast data fetched on demand
+---
 
-### AI Integration
+## Storage & Sync
 
-Claude API is called via the same Cloudflare proxy:
-- Model: `claude-sonnet-4-20250514`
-- Used to parse PDFs/images of shift schedules, guest arrivals, and meal documents into structured JSON
-- Prompts are inline in the JS; look for `fetch('https://anthropic-proxy...')` calls
+| Layer | Dettaglio |
+|-------|-----------|
+| **localStorage** | Dati primari, prefisso `qm_` |
+| **Cloudflare KV** | Sync cloud via proxy `https://anthropic-proxy.qm-d82.workers.dev` |
+| **Endpoint KV** | GET `/kv/get?key=qm_XXX` · POST `/kv/set` `{key, value}` · DELETE `/kv/delete?key=qm_XXX` |
 
-### Initialization Sequence
+### Chiavi KV principali
 
-On `DOMContentLoaded` (~line 2752):
-1. Set current date display
-2. Build KPI bar chart
-3. Async pull from Cloudflare KV (cloud sync)
-4. Restore all localStorage state: checklist, complaints, audits, custom tasks, weekly shifts, arrivals, reviews, HKP data, cleaning/meals
+| Chiave KV | Contenuto |
+|-----------|-----------|
+| `qm_weekData` | `{giorni:[{label,date,shifts}], _ts}` — turno settimanale staff |
+| `qm_arriviData` | `{data,totale_stanze,totale_persone,arrivi:[...], _ts}` — arrivi oggi |
+| `qm_rcGuests` | `[{camera,nome,pax,trattamento,checkin,checkout}]` — registration cards |
+| `qm_pulData` | Report pulizie giornaliero |
+| `qm_bkfData` | Report pasti/colazioni |
+| `qm_piano` | `{stampato,giorni:[{label,data,soulart:{partenze[],fermate[]},boutique:{partenze[],fermate[]}}], _ts}` |
+| `qm_hk_soul` | Statistiche HK SoulArt per giorno |
+| `qm_hk_bout` | Statistiche HK Boutique per giorno |
+| `qm_arrivi_raw` | `{pdf: base64, _ts}` — PDF grezzo arrivi (temporaneo, usato dal browser per RC cards) |
+| `qm_piano_raw` | `{pdf: base64, _ts}` — PDF grezzo piano settimana (temporaneo, usato dal browser) |
+| `qm_rev_sa/bh/sl/pr/ms/ar/sb` | CSV recensioni per hotel |
 
-### Review Scoring Formula
+---
 
-Reviews use a weighted average: **85% current year / 10% year-2 / 5% year-3**, with a 271-day decay factor for expiration tracking.
+## Drive Script (Google Apps Script)
 
-### Hotel Room Detection Logic
+### Script 1 — Upload DSB (Upload automatico file)
 
-Room numbers determine which hotel a record belongs to:
-- `Art` prefix → Art Resort
-- `200–299` → Boutique Hotel
-- (and so on per property)
+Associato alla cartella Drive "Upload DSB". Processa PDF caricati in base al nome file:
 
-### CSS Design Tokens
+| Nome file (lowercase, inizia con) | Handler | Salva in KV |
+|-----------------------------------|---------|-------------|
+| `arrivi oggi` | `processArrivi` | `qm_arriviData` + `qm_arrivi_raw` |
+| `piano settimana` | `processPiano` | `qm_piano_raw` |
+| `hkp oggi` | `processHkpOggi` | `qm_pulData` |
+| `bkf oggi` | `processBkfOggi` | `qm_bkfData` |
+| `hkp soul` | `processHkpSoul` | `qm_hk_soul` |
+| `hkp boutique` | `processHkpBoutique` | `qm_hk_bout` |
 
-All colors/spacing use CSS variables defined at the top of the `<style>` block:
+**Costanti Drive script:**
+```javascript
+const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
+const MODEL = 'claude-sonnet-4-20250514';
+const FOLDER_NAME = 'Upload DSB';
+```
+
+**`kvSet` corretto (POST, non PUT):**
+```javascript
+function kvSet(key, value) {
+  UrlFetchApp.fetch(PROXY + '/kv/set', {
+    method: 'POST',
+    contentType: 'application/json',
+    payload: JSON.stringify({ key: key, value: JSON.stringify(value) }),
+    muteHttpExceptions: true
+  });
+}
+```
+
+**`processPiano`** — salva PDF grezzo (NON usa Claude AI, evita errori di parsing):
+```javascript
+function processPiano(file) {
+  const base64 = Utilities.base64Encode(file.getBlob().getBytes());
+  kvSet('qm_piano_raw', { pdf: base64, _ts: Date.now() });
+}
+```
+
+**`processArrivi`** — salva PDF grezzo + Claude AI per struttura:
+```javascript
+function processArrivi(file) {
+  const base64 = Utilities.base64Encode(file.getBlob().getBytes());
+  kvSet('qm_arrivi_raw', { pdf: base64, _ts: Date.now() });
+  const data = callClaude(base64, `...prompt arriviData...`);
+  data._ts = Date.now();
+  kvSet('qm_arriviData', data);
+}
+```
+
+### Script 2 — Turno Settimanale (Foglio Google)
+
+**File**: `TURNI DA 19/09` — ID `11qLWMXkC46bu2-9JvN5Tr5G_ry11-qMUPzHifcgsQso` — Tab gid `2003426322`
+
+Funzione `leggiTurnoSettimana()`:
+- Legge la settimana corrente per colonne (NAME_COL=11, START_COL=12, START_DATE=2025-09-01)
+- Salva `kvSet('qm_weekData', { giorni, _ts: Date.now() })`
+- **Trigger**: "In caso di modifica" → Da foglio di lavoro
+
+---
+
+## Parser browser (affidabili, coordinati)
+
+I PDF vengono parsati nel browser con **pdfjsLib** — molto più affidabili di Claude AI per layout fissi.
+
+### `parsePianoItems(items)` — app.js ~riga 2946
+- Input: array `{s, x, y, p}` da pdfjsLib
+- Raggruppa per riga (tolleranza y=4), trova header con ≥2 abbreviazioni giorno
+- `-` = partenza, `=` = fermata, `+` = solo arrivo (ignorato per HK)
+- Rileva camera: `Art N` → soulart, `200-299` → boutique
+
+### `checkAndParsePianoRaw()` — app.js
+- Fetcha `qm_piano_raw` da KV (non localStorage — troppo grande)
+- Se `_ts` > `qm_piano._ts`: decode base64 → pdfjsLib → `parsePianoItems` → salva `qm_piano`
+- Elimina `qm_piano_raw` da KV dopo il parsing
+
+### `rcParseGuests(text)` — app.js ~riga 3308
+- Input: testo estratto da pdfjsLib
+- Regex su pattern `camera / tipo ospite pax trattamento arrivo-partenza`
+- Output: `[{camera, nome, pax, trattamento, checkin, checkout}]`
+
+### `checkAndParseArriviRaw()` — app.js
+- Fetcha `qm_arrivi_raw` da KV
+- Se `_ts` > `qm_ts_arriviRaw`: decode base64 → pdfjsLib → testo → `rcParseGuests` → `rcRenderCards`
+- Elimina `qm_arrivi_raw` da KV dopo il parsing
+
+---
+
+## Auto-polling (ogni 30 secondi)
+
+In `app.js`, dopo `setInterval(tick, 10000)`, c'è un `setInterval` da 30s che:
+1. Controlla `qm_arriviData` in KV — se `_ts` > locale aggiorna UI arrivi
+2. Chiama `checkAndParseArriviRaw()` — processa PDF grezzo arrivi → RC cards
+3. Chiama `checkAndParsePianoRaw()` — processa PDF grezzo piano
+4. Controlla `qm_weekData` in KV — se `_ts` > locale aggiorna turno
+
+---
+
+## Sync al caricamento (syncFromCloud)
+
+`LS.syncFromCloud()` — app.js ~riga 510
+- Fetcha tutte le chiavi KV in parallelo e salva in localStorage
+- **NON include `piano_raw` e `arrivi_raw`** — troppo grandi, gestiti separatamente
+- Per `hk_soul`, `hk_bout`, `piano`: aggiorna anche timestamp visivo e chiama `hkSetLoaded`
+
+---
+
+## Struttura Staff
+
+```javascript
+const DEPTS = {
+  fo:  { members: ['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.',"D'Andrea F.",'Grieco V.','Extra Night'] },
+  hk:  { members: ['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Vincenza','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.'] },
+  bkf: { members: ['Amorese S.','Albano D.','Ferace C.','Extra BKF SAU'] },
+  mt:  { members: ['Basile G.'] }
+};
+```
+
+---
+
+## housekeeper.html
+
+App separata per le cameriere. Legge da KV:
+- `qm_piano` → partenze/fermate per giorno (SoulArt e Boutique)
+- `qm_hk_soul` / `qm_hk_bout` → statistiche HK giornaliere
+- `MATARESE` = Set camere Art 1–22 assegnate a Matarese
+
+---
+
+## Problemi noti e soluzioni applicate
+
+| Problema | Causa | Soluzione |
+|----------|-------|-----------|
+| Piano settimana sbagliato da Drive | Claude AI misconta colonne coordinate | Drive salva PDF grezzo → browser parsa con `parsePianoItems` |
+| RC cards mancano 2 ospiti su 14 | Claude AI manca camere con note lunghe | Drive salva PDF grezzo → browser parsa con `rcParseGuests` |
+| `piano_raw` riempie localStorage | PDF base64 ~2MB occupa quota | `piano_raw` non passa per localStorage, fetcha direttamente da KV |
+| RC cards non si aggiornano in tempo reale | Dashboard sync solo all'avvio | Polling ogni 30s controlla KV e aggiorna UI |
+| `kvSet` non funzionava | Drive usava PUT `/kv/{key}` non supportato | Corretto in POST `/kv/set` con `{key, value}` |
+| `qm_weekData` cancellato | `piano_raw` aveva riempito localStorage | Ora `piano_raw` non tocca localStorage |
+
+---
+
+## CSS Design Tokens
+
 ```css
---bg: #E8E8EA      /* page background */
---surface: #F4F4F6 /* card surfaces */
---accent: #1E4080  /* primary blue */
+--bg: #E8E8EA       /* sfondo pagina */
+--surface: #F4F4F6  /* card */
+--accent: #1E4080   /* blu primario */
 --green: #1E7A48
 --red: #C0352A
 --amber: #A05A00
