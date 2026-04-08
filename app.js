@@ -1248,6 +1248,57 @@ document.querySelector('.content').addEventListener('scroll',function(){
   updateDateDisplay();
   function tick(){const n=new Date();document.getElementById('liveTime').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
   tick();setInterval(tick,10000);
+  // Auto-poll KV ogni 2 minuti per aggiornamenti da Drive script
+  let _lastPollTs=Date.now();
+  setInterval(async()=>{
+    try{
+      // Controlla arrivi
+      const ar=await fetch(PROXY+'/kv/get?key=qm_arriviData').then(r=>r.json());
+      if(ar.value){
+        const obj=JSON.parse(ar.value);
+        const localTs=parseInt(localStorage.getItem('qm_ts_arriviTs')||'0');
+        if(obj._ts&&obj._ts>localTs){
+          localStorage.setItem('qm_arriviData',ar.value);
+          localStorage.setItem('qm_ts_arriviTs',String(obj._ts));
+          arriviData=obj;arriviData.arrivi=fixArriviStruttura(arriviData.arrivi);
+          arriviUpdateKpi();ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi',true);
+          try{document.getElementById('arriviLoadedDate').textContent=arriviData.data;}catch(e){}
+          restoreUploadTs('arriviTs',obj._ts);
+        }
+      }
+      // Controlla rcGuests
+      const rc=await fetch(PROXY+'/kv/get?key=qm_rcGuests').then(r=>r.json());
+      if(rc.value){
+        const guests=JSON.parse(rc.value);
+        const localRc=localStorage.getItem('qm_rcGuests');
+        const localGuests=localRc?JSON.parse(localRc):[];
+        if(guests.length!==localGuests.length||JSON.stringify(guests)!==JSON.stringify(localGuests)){
+          localStorage.setItem('qm_rcGuests',rc.value);
+          if(guests&&guests.length){
+            document.getElementById('rcUploadZone').style.display='none';
+            document.getElementById('rcProcessing').style.display='none';
+            rcRenderCards(guests);
+          }
+        }
+      }
+      // Controlla weekData
+      const wd=await fetch(PROXY+'/kv/get?key=qm_weekData').then(r=>r.json());
+      if(wd.value){
+        const obj=JSON.parse(wd.value);
+        const localTs=parseInt(localStorage.getItem('qm_ts_turnoTs')||'0');
+        if(obj._ts&&obj._ts>localTs){
+          localStorage.setItem('qm_weekData',wd.value);
+          localStorage.setItem('qm_ts_turnoTs',String(obj._ts));
+          const arr=Array.isArray(obj)?obj:obj.giorni;
+          const restored={giorni:arr.map(g=>{const d=new Date(g.date);return{...g,date:new Date(d.getFullYear(),d.getMonth(),d.getDate(),12,0,0)};})};
+          loadWeekData(restored);
+          const range=restored.giorni[0].label+' – '+restored.giorni[restored.giorni.length-1].label;
+          ucSetState('turno','loaded',range,true);
+          restoreUploadTs('turnoTs',obj._ts);
+        }
+      }
+    }catch(e){}
+  },120000);
   const alertTimeEl=document.getElementById('alertTime');if(alertTimeEl)alertTimeEl.textContent='Aggiornato '+String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');
   buildBarChart();
   // Sync dal cloud poi ripristina TUTTI i dati
