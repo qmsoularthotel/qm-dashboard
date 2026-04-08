@@ -1266,21 +1266,10 @@ document.querySelector('.content').addEventListener('scroll',function(){
           restoreUploadTs('arriviTs',obj._ts);
         }
       }
-      // Controlla rcGuests
-      const rc=await fetch(PROXY+'/kv/get?key=qm_rcGuests').then(r=>r.json());
-      if(rc.value){
-        const guests=JSON.parse(rc.value);
-        const localRc=localStorage.getItem('qm_rcGuests');
-        const localGuests=localRc?JSON.parse(localRc):[];
-        if(guests.length!==localGuests.length||JSON.stringify(guests)!==JSON.stringify(localGuests)){
-          localStorage.setItem('qm_rcGuests',rc.value);
-          if(guests&&guests.length){
-            document.getElementById('rcUploadZone').style.display='none';
-            document.getElementById('rcProcessing').style.display='none';
-            rcRenderCards(guests);
-          }
-        }
-      }
+      // Controlla arrivi raw (RC cards + arriviData)
+      await checkAndParseArriviRaw().catch(()=>{});
+      // Controlla piano raw
+      await checkAndParsePianoRaw().catch(()=>{});
       // Controlla weekData
       const wd=await fetch(PROXY+'/kv/get?key=qm_weekData').then(r=>r.json());
       if(wd.value){
@@ -1298,7 +1287,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
         }
       }
     }catch(e){}
-  },120000);
+  },30000);
   const alertTimeEl=document.getElementById('alertTime');if(alertTimeEl)alertTimeEl.textContent='Aggiornato '+String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');
   buildBarChart();
   // Sync dal cloud poi ripristina TUTTI i dati
@@ -3303,6 +3292,37 @@ rcUploadZone.addEventListener('dragleave',()=>rcUploadZone.classList.remove('dra
 rcUploadZone.addEventListener('drop',e=>{e.preventDefault();rcUploadZone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')handleRCFile(f);else rcShowError('Carica un file PDF.');});
 rcFileInput.addEventListener('change',e=>{if(e.target.files[0])handleRCFile(e.target.files[0]);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){rcCloseModal();closePrintDialog();}});
+async function checkAndParseArriviRaw(){
+  try{
+    const res=await fetch(PROXY+'/kv/get?key=qm_arrivi_raw');
+    const json=await res.json();
+    if(!json.value)return;
+    const raw=JSON.parse(json.value);
+    if(!raw||!raw.pdf)return;
+    // Salta se già processato
+    const lastTs=parseInt(localStorage.getItem('qm_ts_arriviRaw')||'0');
+    if(raw._ts&&raw._ts<=lastTs)return;
+    // Decode base64 → Uint8Array
+    const bstr=atob(raw.pdf);
+    const bytes=new Uint8Array(bstr.length);
+    for(let i=0;i<bstr.length;i++)bytes[i]=bstr.charCodeAt(i);
+    if(!window.pdfjsLib)throw new Error('pdfjsLib non disponibile');
+    const pdfDoc=await pdfjsLib.getDocument({data:bytes}).promise;
+    let fullText='';
+    for(let i=1;i<=pdfDoc.numPages;i++){
+      const page=await pdfDoc.getPage(i);
+      const tc=await page.getTextContent();
+      fullText+=tc.items.map(x=>x.str).join(' ')+'\n';
+    }
+    const guests=rcParseGuests(fullText);
+    if(!guests.length)return;
+    localStorage.setItem('qm_ts_arriviRaw',String(raw._ts));
+    fetch(PROXY+'/kv/delete?key=qm_arrivi_raw').catch(()=>{});
+    document.getElementById('rcUploadZone').style.display='none';
+    document.getElementById('rcProcessing').style.display='none';
+    rcRenderCards(guests);
+  }catch(e){console.warn('checkAndParseArriviRaw:',e);}
+}
 async function handleRCFile(file){rcShowProc('Lettura del PDF...');rcHideError();try{const ab=await file.arrayBuffer();const pdfData=new Uint8Array(ab);rcShowProc('Estrazione testo...');const pdfDoc=await pdfjsLib.getDocument({data:pdfData}).promise;let fullText='';for(let i=1;i<=pdfDoc.numPages;i++){const page=await pdfDoc.getPage(i);const tc=await page.getTextContent();fullText+=tc.items.map(x=>x.str).join(' ')+'\n';}const guests=rcParseGuests(fullText);rcHideProc();if(!guests.length)rcShowError('Nessun ospite trovato.');else rcRenderCards(guests);}catch(err){rcHideProc();rcShowError('Errore: '+err.message);}}
 function rcCleanName(raw){let name=raw.trim().replace(/\s*\([^)]+\)/g,'').trim();const cp=new RegExp('^('+ROOM_CODES.join('|')+')\\s+','i');let prev='';while(prev!==name){prev=name;name=name.replace(cp,'').trim();}return name;}
 function rcParseGuests(text){let year=new Date().getFullYear();const ym=text.match(/arrivi\s*[-–]\s*\d{1,2}\/\d{1,2}\/(\d{4})/i);if(ym)year=parseInt(ym[1]);const norm=text.replace(/\s+/g,' ').trim();const guests=[];const pat=/(\b(?:Art\s*\d+|\d{2,3}|AS_LIB|[A-Z]{2,8}_?[A-Z]*\d*)\b)\s*\/\s*(?:[A-Z_\s]{2,20}?)\s+([A-ZÀÈÉÌÒÙ][A-Za-zÀ-ÿ\s']+?(?:\s+\([^)]+\))?)\s+(\d)\s+(BB|HB|FB|RO|AI|MP)\s+(\d{1,2}\/\d{1,2})\s*[-–]\s*(\d{1,2}\/\d{1,2})/gi;let m;while((m=pat.exec(norm))!==null){const nome=rcCleanName(m[2]);if(!nome||nome.length<2)continue;guests.push({camera:m[1].trim(),nome,pax:parseInt(m[3]),trattamento:m[4].trim(),checkin:rcFmtDate(m[5],year),checkout:rcFmtDate(m[6],year)});}return guests;}
