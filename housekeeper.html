@@ -216,8 +216,9 @@ function sameDate(d1,d2){
 }
 const MATARESE=new Set(['Art 1','Art 2','Art 3','Art 4','Art 5','Art 6','Art 7','Art 10','Art 11','Art 12','Art 22']);
 function splitSoulart(rooms){
-  const m={partenze:[],fermate:[]},a={partenze:[],fermate:[]};
+  const m={partenze:[],fermate:[],cambi:[]},a={partenze:[],fermate:[],cambi:[]};
   if(!rooms)return{m,a};
+  (rooms.cambi||[]).forEach(r=>(MATARESE.has(r)?m:a).cambi.push(r));
   (rooms.partenze||[]).forEach(r=>(MATARESE.has(r)?m:a).partenze.push(r));
   (rooms.fermate||[]).forEach(r=>(MATARESE.has(r)?m:a).fermate.push(r));
   return{m,a};
@@ -225,11 +226,13 @@ function splitSoulart(rooms){
 function roomSort(arr){return[...arr].sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''))||0,nb=parseInt(b.replace(/\D/g,''))||0;return na-nb;});}
 function renderRoomDetail(rooms,label){
   if(!rooms)return'';
-  const hasData=(rooms.partenze&&rooms.partenze.length)||(rooms.fermate&&rooms.fermate.length);
+  const cambi=rooms.cambi||[],partenze=rooms.partenze||[],fermate=rooms.fermate||[];
+  const tuttePartenze=[...cambi,...partenze];
+  const hasData=tuttePartenze.length||fermate.length;
   if(!hasData)return'';
   let h=label?`<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px;padding-top:6px;border-top:1px solid var(--border);">👤 ${label}</div>`:'';
-  if(rooms.partenze&&rooms.partenze.length)h+=`<div class="room-section"><div class="room-section-title partenza">↑ Partenze</div><div class="room-chips">${roomSort(rooms.partenze).map(r=>`<span class="chip partenza">${r}</span>`).join('')}</div></div>`;
-  if(rooms.fermate&&rooms.fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">— Fermate</div><div class="room-chips">${roomSort(rooms.fermate).map(r=>`<span class="chip fermata">${r}</span>`).join('')}</div></div>`;
+  if(tuttePartenze.length)h+=`<div class="room-section"><div class="room-section-title partenza">↑ Partenze</div><div class="room-chips">${roomSort(tuttePartenze).map(r=>{const isCambio=cambi.includes(r);return`<span class="chip ${isCambio?'doppio':'partenza'}" title="${isCambio?'Cambio biancheria':''}">${r}${isCambio?' ⚡':''}</span>`;}).join('')}</div></div>`;
+  if(fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">— Fermate</div><div class="room-chips">${roomSort(fermate).map(r=>`<span class="chip fermata">${r}</span>`).join('')}</div></div>`;
   return h;
 }
 
