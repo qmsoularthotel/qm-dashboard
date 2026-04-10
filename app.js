@@ -394,48 +394,33 @@ function miniappRenderBkf(){
     ${gruppiOggi.length?`<div style="font-size:var(--fs-xxs);background:#fff3cd;border-radius:6px;padding:6px 10px;color:#856404;margin-bottom:6px;">⚠️ ${gruppiOggi.length} gruppo${gruppiOggi.length>1?'i':''} oggi — ${totPax} persone</div>`:''}
     ${noteOggi?`<div style="font-size:var(--fs-xxs);color:var(--text-muted);font-style:italic;background:var(--surface2);padding:6px 8px;border-radius:6px;">📋 ${noteOggi}</div>`:''}`;
 }
-function miniappRenderPiano(){
-  const el=document.getElementById('miniapp-piano-preview');if(!el)return;
+function renderPianoGiorno(elId,refDate){
+  const el=document.getElementById(elId);if(!el)return;
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){
     el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div>';return;
   }
-  const today=new Date();today.setHours(0,0,0,0);
+  const ref=new Date(refDate||new Date());ref.setHours(0,0,0,0);
   const giorno=pianoData.giorni.find(g=>{
     if(!g.data)return false;
     const pts=g.data.split('/');if(pts.length<3)return false;
     const gd=new Date(parseInt(pts[2]),parseInt(pts[1])-1,parseInt(pts[0]));gd.setHours(0,0,0,0);
-    return gd.getTime()===today.getTime();
+    return gd.getTime()===ref.getTime();
   });
   if(!giorno){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Oggi non è nel piano caricato</div>';return;}
   function renderHotel(label,data){
-    const cambi=data.cambi||[];
-    const partenze=data.partenze||[];
-    const fermate=data.fermate||[];
+    const cambi=data.cambi||[],partenze=data.partenze||[],fermate=data.fermate||[];
     if(!cambi.length&&!partenze.length&&!fermate.length)return'';
-    let h=`<div style="margin-bottom:10px;">
-      <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">${label}</div>`;
-    if(cambi.length){
-      h+=`<div style="margin-bottom:5px;">
-        <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--red);margin-bottom:3px;">⚡ Cambi (${cambi.length}) — partenza + arrivo</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;">${cambi.map(r=>`<span style="background:#fce8e8;border:1px solid var(--red);color:var(--red);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div>
-      </div>`;}
-    if(partenze.length){
-      h+=`<div style="margin-bottom:5px;">
-        <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--amber);margin-bottom:3px;">↑ Partenze (${partenze.length})</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;">${partenze.map(r=>`<span style="background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div>
-      </div>`;}
-    if(fermate.length){
-      h+=`<div>
-        <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:3px;">= Fermate (${fermate.length})</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;">${fermate.map(r=>`<span style="background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);font-size:10px;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div>
-      </div>`;}
+    let h=`<div style="margin-bottom:10px;"><div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">${label}</div>`;
+    if(cambi.length)h+=`<div style="margin-bottom:5px;"><div style="font-size:var(--fs-xxs);font-weight:600;color:var(--red);margin-bottom:3px;">⚡ Cambi (${cambi.length}) — partenza + arrivo</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${cambi.map(r=>`<span style="background:#fce8e8;border:1px solid var(--red);color:var(--red);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div></div>`;
+    if(partenze.length)h+=`<div style="margin-bottom:5px;"><div style="font-size:var(--fs-xxs);font-weight:600;color:var(--amber);margin-bottom:3px;">↑ Partenze (${partenze.length})</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${partenze.map(r=>`<span style="background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div></div>`;
+    if(fermate.length)h+=`<div><div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:3px;">= Fermate (${fermate.length})</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${fermate.map(r=>`<span style="background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);font-size:10px;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div></div>`;
     h+=`</div>`;return h;
   }
-  const sHtml=renderHotel('SoulArt',giorno.soulart);
-  const bHtml=renderHotel('Boutique',giorno.boutique);
+  const sHtml=renderHotel('SoulArt',giorno.soulart),bHtml=renderHotel('Boutique',giorno.boutique);
   if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per oggi</div>';return;}
   el.innerHTML=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">🛏 Piano camere — ${giorno.label}</div>${sHtml}${bHtml}`;
 }
+function miniappRenderPiano(){renderPianoGiorno('miniapp-piano-preview');}
 function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 function fmtUploadTs(ts){const n=ts?new Date(ts):new Date();const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];return'↑ '+n.getDate()+' '+ms[n.getMonth()]+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 const TS_TO_UC={turnoTs:'uc-turno-sub',arriviTs:'uc-arrivi-sub',pulTs:'uc-pul-sub',bkfTs:'uc-bkf-sub',soulTs:'uc-soul-sub',boutTs:'uc-bout-sub',pianoTs:'uc-piano-sub'};
@@ -1278,6 +1263,8 @@ function refreshOverviewForDate(d){
       if(idx!==-1){bkfActiveDay=idx;renderBkfDay();}
     }
   }catch(e){}
+  // 6. Piano camere
+  try{renderPianoGiorno('ov-piano-preview',ref);}catch(e){}
 }
 document.addEventListener('click',()=>{
   document.getElementById('datePopup')?.classList.remove('open');
