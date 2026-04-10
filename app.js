@@ -2261,7 +2261,7 @@ function revRenderExpiring(p){
     if(!reviews.length)return{color:'var(--green)',label:'Nessuna scadenza',icon:'✓'};
     const avgExp=reviews.reduce((s,r)=>s+r._score,0)/reviews.length;
     const favorable=reviews.filter(r=>r._score>=9).length;
-    const unfavorable=reviews.filter(r=>r._score<=6).length;
+    const unfavorable=reviews.filter(r=>r._score<=7).length;
     if(favorable>unfavorable)return{color:'var(--red)',label:'Attenzione — score alto in scadenza',icon:'🔴'};
     if(unfavorable>favorable)return{color:'var(--green)',label:'Favorevole — score basso in scadenza',icon:'🟢'};
     return{color:'var(--amber)',label:'Neutro — impatto bilanciato',icon:'🟡'};
@@ -2269,8 +2269,8 @@ function revRenderExpiring(p){
   function renderWeekSection(reviews,title,weekColor,afterScore){
     const sem=semaforo(reviews, scoreAttuale);
     const favorevoli=reviews.filter(r=>r._score>=9);
-    const sfavorevoli=reviews.filter(r=>r._score<=6);
-    const neutri=reviews.filter(r=>r._score>=7&&r._score<=8);
+    const sfavorevoli=reviews.filter(r=>r._score<=7);
+    const neutri=reviews.filter(r=>r._score===8);
     let html=`<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border-light);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
         <span style="font-size:var(--fs-xs);font-weight:600;color:${weekColor};">${title}</span>
@@ -2337,6 +2337,25 @@ function revRenderExpiring(p){
       <div style="font-size:18px;font-weight:700;color:${proiezioneColor};">${proiezioneDelta!==null?(proiezioneDelta>=0?'▲ +':'▼ ')+proiezioneDelta.toFixed(2):''}</div>`:''}
     </div>`;
   }
+  // ── Debug bucket f1/f2/f3 ──
+  const dbF1=scored.filter(r=>(nowTs-r._dateTs)/86400000<=365);
+  const dbF2=scored.filter(r=>{const d=(nowTs-r._dateTs)/86400000;return d>365&&d<=730;});
+  const dbF3=scored.filter(r=>{const d=(nowTs-r._dateTs)/86400000;return d>730&&d<=1096;});
+  const dbA1=dbF1.length?dbF1.reduce((s,r)=>s+r._score,0)/dbF1.length:null;
+  const dbA2=dbF2.length?dbF2.reduce((s,r)=>s+r._score,0)/dbF2.length:null;
+  const dbA3=dbF3.length?dbF3.reduce((s,r)=>s+r._score,0)/dbF3.length:null;
+  html+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+    <div style="font-size:9px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;align-self:center;">Bucket:</div>
+    <div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:6px;padding:3px 8px;font-size:10px;">
+      <span style="color:var(--accent);font-weight:700;">F1</span> <span style="color:var(--text-dim);">${dbF1.length} rec · avg </span><span style="font-weight:700;">${dbA1!==null?dbA1.toFixed(2):'—'}</span> <span style="color:var(--text-dim);">(85%)</span>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:6px;padding:3px 8px;font-size:10px;">
+      <span style="color:var(--accent);font-weight:700;">F2</span> <span style="color:var(--text-dim);">${dbF2.length} rec · avg </span><span style="font-weight:700;">${dbA2!==null?dbA2.toFixed(2):'—'}</span> <span style="color:var(--text-dim);">(10%)</span>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:6px;padding:3px 8px;font-size:10px;">
+      <span style="color:var(--accent);font-weight:700;">F3</span> <span style="color:var(--text-dim);">${dbF3.length} rec · avg </span><span style="font-weight:700;">${dbA3!==null?dbA3.toFixed(2):'—'}</span> <span style="color:var(--text-dim);">(5%)</span>
+    </div>
+  </div>`;
   if(!hasExp){
     html+=`<div style="color:var(--green);font-size:var(--fs-xs);">✓ Nessuna recensione in scadenza questa o la prossima settimana</div>`;
   } else {
