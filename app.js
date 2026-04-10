@@ -2609,6 +2609,7 @@ function revMarkSent(p,gi){
   const key=revUniqueKey(p,r);
   REV_SENT[key]=!REV_SENT[key];
   try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
+  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
   revRenderList(p);
   revRenderStats(p);
   revRenderExpiring(p);
