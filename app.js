@@ -373,7 +373,7 @@ function miniappCopy(inputId,btn){
     setTimeout(()=>{btn.textContent=orig;btn.style.background='';},2000);
   }).catch(()=>{inp.select();document.execCommand('copy');});
 }
-function miniappRender(){miniappRenderBkf();}
+function miniappRender(){miniappRenderBkf();miniappRenderPiano();}
 function miniappRenderBkf(){
   const el=document.getElementById('miniapp-bkf-preview');if(!el)return;
   const today=new Date();
@@ -393,6 +393,48 @@ function miniappRenderBkf(){
     </div>
     ${gruppiOggi.length?`<div style="font-size:var(--fs-xxs);background:#fff3cd;border-radius:6px;padding:6px 10px;color:#856404;margin-bottom:6px;">⚠️ ${gruppiOggi.length} gruppo${gruppiOggi.length>1?'i':''} oggi — ${totPax} persone</div>`:''}
     ${noteOggi?`<div style="font-size:var(--fs-xxs);color:var(--text-muted);font-style:italic;background:var(--surface2);padding:6px 8px;border-radius:6px;">📋 ${noteOggi}</div>`:''}`;
+}
+function miniappRenderPiano(){
+  const el=document.getElementById('miniapp-piano-preview');if(!el)return;
+  if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){
+    el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div>';return;
+  }
+  const today=new Date();today.setHours(0,0,0,0);
+  const giorno=pianoData.giorni.find(g=>{
+    if(!g.data)return false;
+    const pts=g.data.split('/');if(pts.length<3)return false;
+    const gd=new Date(parseInt(pts[2]),parseInt(pts[1])-1,parseInt(pts[0]));gd.setHours(0,0,0,0);
+    return gd.getTime()===today.getTime();
+  });
+  if(!giorno){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Oggi non è nel piano caricato</div>';return;}
+  function renderHotel(label,data){
+    const cambi=data.cambi||[];
+    const partenze=data.partenze||[];
+    const fermate=data.fermate||[];
+    if(!cambi.length&&!partenze.length&&!fermate.length)return'';
+    let h=`<div style="margin-bottom:10px;">
+      <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">${label}</div>`;
+    if(cambi.length){
+      h+=`<div style="margin-bottom:5px;">
+        <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--red);margin-bottom:3px;">⚡ Cambi (${cambi.length}) — partenza + arrivo</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">${cambi.map(r=>`<span style="background:#fce8e8;border:1px solid var(--red);color:var(--red);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div>
+      </div>`;}
+    if(partenze.length){
+      h+=`<div style="margin-bottom:5px;">
+        <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--amber);margin-bottom:3px;">↑ Partenze (${partenze.length})</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">${partenze.map(r=>`<span style="background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div>
+      </div>`;}
+    if(fermate.length){
+      h+=`<div>
+        <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:3px;">= Fermate (${fermate.length})</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">${fermate.map(r=>`<span style="background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);font-size:10px;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div>
+      </div>`;}
+    h+=`</div>`;return h;
+  }
+  const sHtml=renderHotel('SoulArt',giorno.soulart);
+  const bHtml=renderHotel('Boutique',giorno.boutique);
+  if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per oggi</div>';return;}
+  el.innerHTML=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">🛏 Piano camere — ${giorno.label}</div>${sHtml}${bHtml}`;
 }
 function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 function fmtUploadTs(ts){const n=ts?new Date(ts):new Date();const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];return'↑ '+n.getDate()+' '+ms[n.getMonth()]+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
@@ -2979,7 +3021,7 @@ function parsePianoItems(items){
   cols.sort((a,b)=>a.x-b.x);
   const firstColX=cols[0].x;
   const BH=new Set(['201','203','204','205','206','207','208','209','210','211']);
-  const giorni=cols.map(c=>({label:c.label,data:c.data,soulart:{partenze:[],fermate:[]},boutique:{partenze:[],fermate:[]}}));
+  const giorni=cols.map(c=>({label:c.label,data:c.data,soulart:{partenze:[],fermate:[],cambi:[]},boutique:{partenze:[],fermate:[],cambi:[]}}));
   // Righe dati: tutto dopo header+daterow (anche page 2+)
   const hPage=rows[hIdx].p;
   const skipUntil=nextRow&&nextRow.p===hPage&&dateItems.length?hIdx+1:hIdx;
@@ -3004,7 +3046,9 @@ function parsePianoItems(items){
     });
     colVals.forEach((val,ci)=>{
       if(!val||/^\.+$/.test(val))return;
-      if(val.includes('-'))giorni[ci][roomType].partenze.push(roomCode);
+      const hasMinus=val.includes('-'),hasPlus=val.includes('+');
+      if(hasMinus&&hasPlus)giorni[ci][roomType].cambi.push(roomCode);
+      else if(hasMinus)giorni[ci][roomType].partenze.push(roomCode);
       else if(val.includes('='))giorni[ci][roomType].fermate.push(roomCode);
     });
   }
