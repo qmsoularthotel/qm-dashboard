@@ -410,10 +410,11 @@ function renderPianoGiorno(elId,refDate){
   function sortRooms(arr){return[...arr].sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''))||0,nb=parseInt(b.replace(/\D/g,''))||0;return na-nb;});}
   function renderHotel(label,data){
     const cambi=sortRooms(data.cambi||[]),partenze=sortRooms(data.partenze||[]),fermate=sortRooms(data.fermate||[]);
-    if(!cambi.length&&!partenze.length&&!fermate.length)return'';
+    // Cambi + partenze in un'unica sezione; cambi con badge ⚡
+    const tuttePartenze=[...cambi,...partenze];
+    if(!tuttePartenze.length&&!fermate.length)return'';
     let h=`<div style="margin-bottom:10px;"><div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">${label}</div>`;
-    if(cambi.length)h+=`<div style="margin-bottom:5px;"><div style="font-size:var(--fs-xxs);font-weight:600;color:var(--red);margin-bottom:3px;">⚡ Cambi (${cambi.length}) — partenza + arrivo</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${cambi.map(r=>`<span style="background:#fce8e8;border:1px solid var(--red);color:var(--red);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div></div>`;
-    if(partenze.length)h+=`<div style="margin-bottom:5px;"><div style="font-size:var(--fs-xxs);font-weight:600;color:var(--amber);margin-bottom:3px;">↑ Partenze (${partenze.length})</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${partenze.map(r=>`<span style="background:var(--amber-bg);border:1px solid var(--amber);color:var(--amber);font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div></div>`;
+    if(tuttePartenze.length)h+=`<div style="margin-bottom:5px;"><div style="font-size:var(--fs-xxs);font-weight:600;color:var(--amber);margin-bottom:3px;">↑ Partenze (${tuttePartenze.length})</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${tuttePartenze.map(r=>{const isCambio=cambi.includes(r);return`<span style="background:${isCambio?'#fce8e8':'var(--amber-bg)'};border:1px solid ${isCambio?'var(--red)':'var(--amber)'};color:${isCambio?'var(--red)':'var(--amber)'};font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;" title="${isCambio?'Cambio biancheria':'Partenza'}">${r}${isCambio?' ⚡':''}</span>`;}).join('')}</div></div>`;
     if(fermate.length)h+=`<div><div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:3px;">= Fermate (${fermate.length})</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${fermate.map(r=>`<span style="background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);font-size:10px;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div></div>`;
     h+=`</div>`;return h;
   }
