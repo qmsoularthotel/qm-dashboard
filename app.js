@@ -420,7 +420,7 @@ function renderPianoGiorno(elId,refDate){
   }
   const sHtml=renderHotel('SoulArt',giorno.soulart),bHtml=renderHotel('Boutique',giorno.boutique);
   if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per oggi</div>';return;}
-  el.innerHTML=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">🛏 Piano camere — ${giorno.label}</div>${sHtml}${bHtml}`;
+  el.innerHTML=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">🛏 Piano camere — ${giorno.label}</div>${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:6px;padding-top:6px;border-top:1px solid var(--border-light);">⚡ = partenza con arrivo</div>`;
 }
 function miniappRenderPiano(){renderPianoGiorno('miniapp-piano-preview');}
 function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
