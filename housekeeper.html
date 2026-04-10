@@ -231,7 +231,7 @@ function renderRoomDetail(rooms,label){
   const hasData=tuttePartenze.length||fermate.length;
   if(!hasData)return'';
   let h=label?`<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px;padding-top:6px;border-top:1px solid var(--border);">👤 ${label}</div>`:'';
-  if(tuttePartenze.length)h+=`<div class="room-section"><div class="room-section-title partenza" style="display:flex;align-items:center;gap:6px;">↑ Partenze${cambi.length?`<span style="font-size:9px;font-weight:400;color:var(--text-dim);text-transform:none;letter-spacing:0;">⚡ = partenza con arrivo</span>`:''}</div><div class="room-chips">${roomSort(tuttePartenze).map(r=>{const isCambio=cambi.includes(r);return`<span class="chip ${isCambio?'doppio':'partenza'}">${r}${isCambio?' ⚡':''}</span>`;}).join('')}</div></div>`;
+  if(tuttePartenze.length)h+=`<div class="room-section"><div class="room-section-title partenza" style="display:flex;align-items:center;gap:6px;">↑ Partenze${cambi.length?`<span style="font-size:11px;font-weight:500;color:var(--text-muted);text-transform:none;letter-spacing:0;">⚡ = partenza con arrivo</span>`:''}</div><div class="room-chips">${roomSort(tuttePartenze).map(r=>{const isCambio=cambi.includes(r);return`<span class="chip ${isCambio?'doppio':'partenza'}">${r}${isCambio?' ⚡':''}</span>`;}).join('')}</div></div>`;
   if(fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">— Fermate</div><div class="room-chips">${roomSort(fermate).map(r=>`<span class="chip fermata">${r}</span>`).join('')}</div></div>`;
   return h;
 }
