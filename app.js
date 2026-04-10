@@ -3084,6 +3084,8 @@ function pianoSetLoaded(silent){
   const btn=document.getElementById('btnPianoReload');if(btn)btn.style.display='block';
   const box=document.getElementById('pianoUploadBox');if(box)box.style.display='none';
   const li=document.getElementById('pianoLoadedInfo');if(li)li.classList.add('visible');
+  try{renderPianoGiorno('ov-piano-preview',customDate||new Date());}catch(e){}
+  try{renderPianoGiorno('miniapp-piano-preview',new Date());}catch(e){}
 }
 function resetPianoData(){
   pianoData=null;
