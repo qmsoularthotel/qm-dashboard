@@ -403,7 +403,9 @@ function renderPianoGiorno(elId,refDate){
   const refStr=String(ref.getDate()).padStart(2,'0')+'/'+String(ref.getMonth()+1).padStart(2,'0')+'/'+ref.getFullYear();
   const normDate=s=>s.split('/').map((p,i)=>i<2?p.padStart(2,'0'):p).join('/');
   const giorno=pianoData.giorni.find(g=>g.data&&normDate(g.data)===refStr);
-  if(!giorno){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Oggi non è nel piano caricato</div>';return;}
+  const dateDisponibili=pianoData.giorni.map(g=>g.data).join(', ');
+  console.log('[Piano] cerco:',refStr,'disponibili:',dateDisponibili,'trovato:',!!giorno);
+  if(!giorno){el.innerHTML=`<div style="color:var(--text-dim);font-size:var(--fs-xs);">Data non trovata nel piano (cerco ${refStr} — disponibili: ${dateDisponibili})</div>`;return;}
   function sortRooms(arr){return[...arr].sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''))||0,nb=parseInt(b.replace(/\D/g,''))||0;return na-nb;});}
   function renderHotel(label,data){
     const cambi=sortRooms(data.cambi||[]),partenze=sortRooms(data.partenze||[]),fermate=sortRooms(data.fermate||[]);
