@@ -364,7 +364,7 @@ function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.class
   }
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
-  if(id==='miniapp')setTimeout(miniappRender,50);
+  if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);}
 }
 function miniappCopy(inputId,btn){
   const inp=document.getElementById(inputId);
@@ -374,6 +374,22 @@ function miniappCopy(inputId,btn){
   }).catch(()=>{inp.select();document.execCommand('copy');});
 }
 function miniappRender(){miniappRenderBkf();miniappRenderPiano();}
+async function loadHkAccessStats(){
+  try{
+    const res=await fetch(PROXY+'/kv/get?key=qm_hk_access');
+    const json=await res.json();
+    if(!json.value)return;
+    const d=JSON.parse(json.value);
+    const todayStr=new Date().toISOString().slice(0,10);
+    const todayCount=d.todayDate===todayStr?d.today:0;
+    const el=document.getElementById('hk-access-today');
+    const elT=document.getElementById('hk-access-total');
+    const elL=document.getElementById('hk-access-last');
+    if(el)el.textContent=todayCount;
+    if(elT)elT.textContent=d.total||0;
+    if(elL&&d.last){const dt=new Date(d.last);const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];elL.textContent=dt.getDate()+' '+ms[dt.getMonth()]+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');}
+  }catch(e){}
+}
 function miniappRenderBkf(){
   const el=document.getElementById('miniapp-bkf-preview');if(!el)return;
   const today=new Date();

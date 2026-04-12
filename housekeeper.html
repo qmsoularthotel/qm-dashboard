@@ -448,6 +448,20 @@ try{
 loadAll();
 // Auto-refresh ogni 10 minuti
 setInterval(loadAll,10*60*1000);
+// Contatore accessi
+(async function trackAccess(){
+  try{
+    const todayStr=new Date().toISOString().slice(0,10);
+    const res=await fetch(PROXY+'/kv/get?key=qm_hk_access');
+    const json=await res.json();
+    const d=json.value?JSON.parse(json.value):{total:0,today:0,todayDate:'',last:null};
+    d.total=(d.total||0)+1;
+    d.today=d.todayDate===todayStr?(d.today||0)+1:1;
+    d.todayDate=todayStr;
+    d.last=new Date().toISOString();
+    await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_hk_access',value:JSON.stringify(d)})});
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
