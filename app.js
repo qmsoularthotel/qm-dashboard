@@ -417,7 +417,9 @@ function renderPianoGiorno(elId,refDate){
     if(fermate.length)h+=`<div><div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:3px;">= Fermate (${fermate.length})</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${fermate.map(r=>`<span style="background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);font-size:10px;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div></div>`;
     h+=`</div>`;return h;
   }
-  const sHtml=renderHotel('SoulArt',giorno.soulart),bHtml=renderHotel('Boutique',giorno.boutique);
+  const lib=giorno.liborio||{partenze:[],fermate:[],cambi:[]};
+  const bMerged={partenze:[...giorno.boutique.partenze,...lib.partenze],fermate:[...giorno.boutique.fermate,...lib.fermate],cambi:[...giorno.boutique.cambi,...lib.cambi]};
+  const sHtml=renderHotel('SoulArt',giorno.soulart),bHtml=renderHotel('Boutique',bMerged);
   if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per oggi</div>';return;}
   el.innerHTML=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">🛏 Piano camere — ${giorno.label}</div>${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:6px;padding-top:6px;border-top:1px solid var(--border-light);">⚡ = partenza con arrivo</div>`;
 }
@@ -3009,7 +3011,7 @@ function parsePianoItems(items){
   cols.sort((a,b)=>a.x-b.x);
   const firstColX=cols[0].x;
   const BH=new Set(['201','203','204','205','206','207','208','209','210','211']);
-  const giorni=cols.map(c=>({label:c.label,data:c.data,soulart:{partenze:[],fermate:[],cambi:[]},boutique:{partenze:[],fermate:[],cambi:[]}}));
+  const giorni=cols.map(c=>({label:c.label,data:c.data,soulart:{partenze:[],fermate:[],cambi:[]},boutique:{partenze:[],fermate:[],cambi:[]},liborio:{partenze:[],fermate:[],cambi:[]}}));
   // Righe dati: tutto dopo header+daterow (anche page 2+)
   const hPage=rows[hIdx].p;
   const skipUntil=nextRow&&nextRow.p===hPage&&dateItems.length?hIdx+1:hIdx;
@@ -3023,6 +3025,7 @@ function parsePianoItems(items){
     const artM=rowStr.match(/\bArt\s+(\d{1,2})\b/);
     if(artM){const n=parseInt(artM[1]);if(n>=1&&n<=22){roomCode='Art '+n;roomType='soulart';}}
     if(!roomCode){const bhM=rowStr.match(/\b(20[1-9]|210|211)\b/);if(bhM&&BH.has(bhM[1])){roomCode=bhM[1];roomType='boutique';}}
+    if(!roomCode&&/\bAS_LIB\b/i.test(rowStr)){roomCode='Liborio';roomType='liborio';}
     if(!roomCode)continue;
     // Item valore: in zona colonne, contiene -, +, = o ".."
     const valItems=its.filter(it=>it.x>=firstColX-25&&(/^[-+=]/.test(it.s)||it.s==='..'));

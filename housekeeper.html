@@ -324,7 +324,12 @@ function renderDay(){
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
-  if(pianoDay){const{m,a}=splitSoulart(pianoDay.soulart);html+=renderRoomDetail(m,'Matarese')+renderRoomDetail(a,'Altre housekeeper');}
+  if(pianoDay){
+    const{m,a}=splitSoulart(pianoDay.soulart);
+    const lib=pianoDay.liborio||{partenze:[],fermate:[],cambi:[]};
+    const altreData={partenze:[...a.partenze,...lib.partenze],fermate:[...a.fermate,...lib.fermate],cambi:[...a.cambi,...lib.cambi]};
+    html+=renderRoomDetail(m,'Matarese')+renderRoomDetail(altreData,'Altre housekeeper');
+  }
 
   // Boutique
   const boutDay=boutData?.giorni?.find(g=>sameDate(g.data,day.data));
