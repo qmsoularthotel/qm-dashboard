@@ -451,6 +451,9 @@ setInterval(loadAll,10*60*1000);
 // Contatore accessi
 (async function trackAccess(){
   try{
+    // ?notrack nella URL imposta esclusione permanente su questo dispositivo
+    if(location.search.includes('notrack')){localStorage.setItem('hk_no_track','1');return;}
+    if(localStorage.getItem('hk_no_track')==='1')return;
     const todayStr=new Date().toISOString().slice(0,10);
     const res=await fetch(PROXY+'/kv/get?key=qm_hk_access');
     const json=await res.json();
