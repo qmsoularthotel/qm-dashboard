@@ -419,7 +419,7 @@ function renderPianoGiorno(elId,refDate){
   }
   const lib=giorno.liborio||{partenze:[],fermate:[],cambi:[]};
   const bMerged={partenze:[...giorno.boutique.partenze,...lib.partenze],fermate:[...giorno.boutique.fermate,...lib.fermate],cambi:[...giorno.boutique.cambi,...lib.cambi]};
-  const sHtml=renderHotel('SoulArt',giorno.soulart),bHtml=renderHotel('Boutique',bMerged);
+  const sHtml=renderHotel('SoulArt',giorno.soulart),bHtml=renderHotel('Boutique - San Liborio',bMerged);
   if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per oggi</div>';return;}
   el.innerHTML=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">🛏 Piano camere — ${giorno.label}</div>${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:6px;padding-top:6px;border-top:1px solid var(--border-light);">⇄ = partenza con arrivo</div>`;
 }
