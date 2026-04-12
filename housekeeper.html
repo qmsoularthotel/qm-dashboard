@@ -328,14 +328,17 @@ function renderDay(){
 
   // Boutique
   const boutDay=boutData?.giorni?.find(g=>sameDate(g.data,day.data));
+  const libPiano=pianoDay?(pianoDay.liborio||{partenze:[],fermate:[],cambi:[]}):{partenze:[],fermate:[],cambi:[]};
+  const libPartenze=libPiano.partenze.length+libPiano.cambi.length,libFermate=libPiano.fermate.length;
   html+=`<div class="struttura-title">🏨 Boutique Hotel</div>`;
   if(boutDay){
-    totArrivi+=boutDay.arrivi;totFermate+=boutDay.fermate;totPartenze+=boutDay.partenze;
-    html+=renderKpi(boutDay);
+    const boutAdj={fermate:boutDay.fermate+libFermate,partenze:boutDay.partenze+libPartenze,arrivi:boutDay.arrivi};
+    totArrivi+=boutDay.arrivi;totFermate+=boutAdj.fermate;totPartenze+=boutAdj.partenze;
+    html+=renderKpi(boutAdj);
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
-  if(pianoDay){const lib=pianoDay.liborio||{partenze:[],fermate:[],cambi:[]};const boutMerged={partenze:[...pianoDay.boutique.partenze,...lib.partenze],fermate:[...pianoDay.boutique.fermate,...lib.fermate],cambi:[...pianoDay.boutique.cambi,...lib.cambi]};html+=renderRoomDetail(boutMerged,'');}
+  if(pianoDay){const boutMerged={partenze:[...pianoDay.boutique.partenze,...libPiano.partenze],fermate:[...pianoDay.boutique.fermate,...libPiano.fermate],cambi:[...pianoDay.boutique.cambi,...libPiano.cambi]};html+=renderRoomDetail(boutMerged,'');}
 
   // Totale giorno se entrambe le strutture hanno dati
   if(soulDay&&boutDay){
