@@ -405,12 +405,12 @@ function renderPianoGiorno(elId,refDate){
   const giorno=pianoData.giorni.find(g=>g.data&&normDate(g.data)===refStr);
   const dateDisponibili=pianoData.giorni.map(g=>g.data).join(', ');
   console.log('[Piano] cerco:',refStr,'disponibili:',dateDisponibili,'trovato:',!!giorno);
-  if(!giorno){el.innerHTML=`<div style="color:var(--text-dim);font-size:var(--fs-xs);">Data non trovata nel piano (cerco ${refStr} — disponibili: ${dateDisponibili})</div>`;return;}
+  if(!giorno){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Oggi non è nel piano caricato</div>';return;}
   function sortRooms(arr){return[...arr].sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''))||0,nb=parseInt(b.replace(/\D/g,''))||0;return na-nb;});}
   function renderHotel(label,data){
     const cambi=sortRooms(data.cambi||[]),partenze=sortRooms(data.partenze||[]),fermate=sortRooms(data.fermate||[]);
     // Cambi + partenze in un'unica sezione; cambi con badge ⚡
-    const tuttePartenze=[...cambi,...partenze];
+    const tuttePartenze=sortRooms([...cambi,...partenze]);
     if(!tuttePartenze.length&&!fermate.length)return'';
     let h=`<div style="margin-bottom:10px;"><div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">${label}</div>`;
     if(tuttePartenze.length)h+=`<div style="margin-bottom:5px;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;"><span style="font-size:var(--fs-xxs);font-weight:600;color:var(--amber);">↑ Partenze (${tuttePartenze.length})</span>${cambi.length?`<span style="font-size:9px;color:var(--text-dim);">⚡ = partenza con arrivo</span>`:''}</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${tuttePartenze.map(r=>{const isCambio=cambi.includes(r);return`<span style="background:${isCambio?'#fce8e8':'var(--amber-bg)'};border:1px solid ${isCambio?'var(--red)':'var(--amber)'};color:${isCambio?'var(--red)':'var(--amber)'};font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${r}${isCambio?' ⚡':''}</span>`;}).join('')}</div></div>`;
@@ -419,7 +419,7 @@ function renderPianoGiorno(elId,refDate){
   }
   const sHtml=renderHotel('SoulArt',giorno.soulart),bHtml=renderHotel('Boutique',giorno.boutique);
   if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per oggi</div>';return;}
-  el.innerHTML=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">🛏 Piano camere — ${giorno.label} <span style="font-weight:400;color:var(--text-dim);">(cercato: ${refStr})</span></div>${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:6px;padding-top:6px;border-top:1px solid var(--border-light);">⚡ = partenza con arrivo</div>`;
+  el.innerHTML=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">🛏 Piano camere — ${giorno.label}</div>${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:6px;padding-top:6px;border-top:1px solid var(--border-light);">⚡ = partenza con arrivo</div>`;
 }
 function miniappRenderPiano(){renderPianoGiorno('miniapp-piano-preview');}
 function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
