@@ -2862,6 +2862,36 @@ function renderBkfDay(silent){
   if(!silent){const _bts=localStorage.getItem('qm_ts_bkfTs');LS.set('bkfData',{data:bkfData,activeDay:bkfActiveDay,ts:_bts?parseInt(_bts):undefined});}
   bkfRenderChart();
   bkfRenderNotes();
+  renderOvBkfChart();
+}
+function renderOvBkfChart(){
+  const el=document.getElementById('ov-bkf-chart');if(!el)return;
+  if(!bkfData||!bkfData.length){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere il grafico</div>';return;}
+  const pts=bkfData.map(d=>({label:d.label.split(' ')[0],v:d.adulti+d.bambini,nc:d.noCol||0}));
+  const W=600,H=160,PL=30,PR=10,PT=20,PB=28;
+  const plotW=W-PL-PR,plotH=H-PT-PB;
+  const YMAX=Math.max(30,...pts.map(p=>p.v))+10;
+  const sx=i=>PL+i/(pts.length-1||1)*plotW;
+  const sy=v=>PT+plotH-(v/YMAX)*plotH;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
+  for(let v=0;v<=YMAX;v+=Math.ceil(YMAX/4/10)*10){
+    const y=sy(v);
+    svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="1"/>`;
+    svg+=`<text x="${PL-4}" y="${y+4}" font-size="10" fill="var(--text-dim)" text-anchor="end">${v}</text>`;
+  }
+  const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
+  const areaPath=linePath+`L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z`;
+  svg+=`<path d="${areaPath}" fill="var(--amber)" opacity="0.12"/>`;
+  svg+=`<path d="${linePath}" fill="none" stroke="var(--amber)" stroke-width="2"/>`;
+  pts.forEach((p,i)=>{
+    const x=sx(i),y=sy(p.v);
+    const isActive=i===bkfActiveDay;
+    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?4:3}" fill="${isActive?'var(--amber)':'var(--amber)'}" stroke="white" stroke-width="1.5"/>`;
+    svg+=`<text x="${x}" y="${y-8}" font-size="10" fill="var(--amber)" text-anchor="middle" font-weight="600">${p.v}</text>`;
+    svg+=`<text x="${x}" y="${H-4}" font-size="10" fill="var(--text-dim)" text-anchor="middle">${p.label}</text>`;
+  });
+  svg+='</svg>';
+  el.innerHTML=svg;
 }
 // ── SOUL / BOUT HKP UPLOAD ──
 let hkSoulData=null;
