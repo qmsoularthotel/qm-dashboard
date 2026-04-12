@@ -1910,24 +1910,16 @@ function renderPulDay(silent){
   if(!pulData)return;
   const d=pulData[pulActiveDay];
   document.getElementById('pulLoadedDate').textContent=d.label;
-  // Aggiunge Liborio (piano PDF) ai conteggi
-  let libP=0,libA=0,libF=0;
-  if(pianoData&&pianoData.giorni){
-    const normDate=s=>s.split('/').map((p,i)=>i<2?p.padStart(2,'0'):p).join('/');
-    const giorno=pianoData.giorni.find(g=>g.data&&normDate(g.data)===normDate(d.data||''));
-    if(giorno&&giorno.liborio){const lib=giorno.liborio;libP=lib.partenze.length+lib.cambi.length;libA=lib.cambi.length;libF=lib.fermate.length;}
-  }
-  const dAdj={...d,arrivi:d.arrivi+libA,partenze:d.partenze+libP,fermatePulizia:d.fermatePulizia+libF};
   // stats grid
-  const occ=Math.max(0,Math.min(CAP_CAMERE,CAP_CAMERE-dAdj.partenze+dAdj.arrivi));
+  const occ=Math.max(0,Math.min(CAP_CAMERE,CAP_CAMERE-d.partenze+d.arrivi));
   const occPct=Math.round((occ/CAP_CAMERE)*100);
   document.getElementById('pulStatGrid').innerHTML=`
-    <div class="pul-stat"><div class="pul-stat-val arr">${dAdj.arrivi}</div><div class="pul-stat-lbl">Arrivi</div></div>
-    <div class="pul-stat"><div class="pul-stat-val dep">${dAdj.partenze}</div><div class="pul-stat-lbl">Partenze</div></div>
-    <div class="pul-stat"><div class="pul-stat-val fer">${dAdj.fermatePulizia}</div><div class="pul-stat-lbl">Fermate</div></div>`;
+    <div class="pul-stat"><div class="pul-stat-val arr">${d.arrivi}</div><div class="pul-stat-lbl">Arrivi</div></div>
+    <div class="pul-stat"><div class="pul-stat-val dep">${d.partenze}</div><div class="pul-stat-lbl">Partenze</div></div>
+    <div class="pul-stat"><div class="pul-stat-val fer">${d.fermatePulizia}</div><div class="pul-stat-lbl">Fermate</div></div>`;
   document.getElementById('pulOccPct').textContent=occPct+'%  ('+occ+'/'+CAP_CAMERE+')';
   document.getElementById('pulOccFill').style.width=occPct+'%';
-  updateKpiFromPulizie(dAdj);
+  updateKpiFromPulizie(d);
   if(!silent){const _pts=localStorage.getItem('qm_ts_pulTs');LS.set('pulData',{data:pulData,activeDay:pulActiveDay,ts:_pts?parseInt(_pts):undefined});}
 }
 function updateKpiFromPulizie(d){
