@@ -313,30 +313,27 @@
           <div class="panel-header"><span class="panel-title">🛏 Piano camere</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">SoulArt · Boutique - San Liborio</span></div>
           <div class="panel-body" id="ov-piano-preview"><div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-          <div class="kpi-card kpi-clickable" style="border-top-color:#A05A00;cursor:pointer;" onclick="toggleBkfPreview()">
-            <div class="kpi-card-icon" style="background:var(--amber-bg);">☕</div>
-            <div class="kpi-label">Coperti colazione</div>
-            <div id="kpi-bkf-multiday">
-              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px;">
-                <div class="kpi-value" id="kpi-bkf-tot" style="line-height:1;">—</div>
-                <div class="kpi-delta" id="kpi-bkf-delta" style="color:var(--text-dim);">Carica report pasti</div>
-              </div>
-              <div class="kpi-sub" id="kpi-bkf-sub"></div>
+        <div class="kpi-card kpi-clickable" style="border-top-color:#A05A00;cursor:pointer;margin-bottom:10px;" onclick="toggleBkfPreview()">
+          <div class="kpi-card-icon" style="background:var(--amber-bg);">☕</div>
+          <div class="kpi-label">Coperti colazione</div>
+          <div id="kpi-bkf-multiday">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px;">
+              <div class="kpi-value" id="kpi-bkf-tot" style="line-height:1;">—</div>
+              <div class="kpi-delta" id="kpi-bkf-delta" style="color:var(--text-dim);">Carica report pasti</div>
             </div>
-            <span class="kpi-card-hint">Espandi →</span>
+            <div class="kpi-sub" id="kpi-bkf-sub"></div>
           </div>
-          <div class="kpi-card" style="border-top-color:#6A6E72;">
-            <div class="kpi-card-icon" style="background:var(--surface2);">✕</div>
-            <div class="kpi-label">Room Only</div>
-            <div class="kpi-value" id="kpi-bkf-nocol">—</div>
-            <div class="kpi-delta" id="kpi-bkf-nocol-delta" style="color:var(--text-dim)">Carica report pasti</div>
-            <div class="kpi-sub" id="kpi-bkf-nocol-sub"></div>
-          </div>
+          <span class="kpi-card-hint">Espandi →</span>
         </div>
-        <div class="panel" style="margin-bottom:14px;" id="ov-bkf-chart-panel">
-          <div class="panel-header"><span class="panel-title">📊 Coperti settimanali</span></div>
-          <div class="panel-body" id="ov-bkf-chart"><div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere il grafico</div></div>
+        <div class="panel" style="margin-bottom:10px;" id="ov-bkf-chart-panel">
+          <div class="panel-body" id="ov-bkf-chart" style="padding:10px 12px;"><div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere il grafico</div></div>
+        </div>
+        <div class="kpi-card" style="border-top-color:#6A6E72;margin-bottom:14px;">
+          <div class="kpi-card-icon" style="background:var(--surface2);">✕</div>
+          <div class="kpi-label">Room Only</div>
+          <div class="kpi-value" id="kpi-bkf-nocol">—</div>
+          <div class="kpi-delta" id="kpi-bkf-nocol-delta" style="color:var(--text-dim)">Carica report pasti</div>
+          <div class="kpi-sub" id="kpi-bkf-nocol-sub"></div>
         </div>
         <div id="kpi-occ-preview" style="display:none;margin-bottom:14px;"></div>
         <div id="kpi-pul-preview" style="display:none;margin-bottom:14px;"></div>
