@@ -399,13 +399,10 @@ function renderPianoGiorno(elId,refDate){
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){
     el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div>';return;
   }
-  const ref=new Date(refDate||new Date());ref.setHours(0,0,0,0);
-  const giorno=pianoData.giorni.find(g=>{
-    if(!g.data)return false;
-    const pts=g.data.split('/');if(pts.length<3)return false;
-    const gd=new Date(parseInt(pts[2]),parseInt(pts[1])-1,parseInt(pts[0]));gd.setHours(0,0,0,0);
-    return gd.getTime()===ref.getTime();
-  });
+  const ref=new Date(refDate||new Date());
+  const refStr=String(ref.getDate()).padStart(2,'0')+'/'+String(ref.getMonth()+1).padStart(2,'0')+'/'+ref.getFullYear();
+  const normDate=s=>s.split('/').map((p,i)=>i<2?p.padStart(2,'0'):p).join('/');
+  const giorno=pianoData.giorni.find(g=>g.data&&normDate(g.data)===refStr);
   if(!giorno){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Oggi non è nel piano caricato</div>';return;}
   function sortRooms(arr){return[...arr].sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''))||0,nb=parseInt(b.replace(/\D/g,''))||0;return na-nb;});}
   function renderHotel(label,data){
