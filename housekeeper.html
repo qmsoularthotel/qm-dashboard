@@ -330,7 +330,7 @@ function renderDay(){
   const boutDay=boutData?.giorni?.find(g=>sameDate(g.data,day.data));
   const libPiano=pianoDay?(pianoDay.liborio||{partenze:[],fermate:[],cambi:[]}):{partenze:[],fermate:[],cambi:[]};
   const libPartenze=libPiano.partenze.length+libPiano.cambi.length,libFermate=libPiano.fermate.length;
-  html+=`<div class="struttura-title">🏨 Boutique Hotel</div>`;
+  html+=`<div class="struttura-title">🏨 Boutique Hotel - San Liborio</div>`;
   if(boutDay){
     const boutAdj={fermate:boutDay.fermate+libFermate,partenze:boutDay.partenze+libPartenze,arrivi:boutDay.arrivi};
     totArrivi+=boutDay.arrivi;totFermate+=boutAdj.fermate;totPartenze+=boutAdj.partenze;
@@ -378,7 +378,7 @@ function renderDay(){
         html+=`<div style="font-size:12px;color:var(--text-dim);padding:4px 0 6px;">Nessun dato</div>`;
       }
       // Boutique
-      html+=`<div class="preview-struttura" style="margin-top:8px;">🏨 Boutique Hotel</div>`;
+      html+=`<div class="preview-struttura" style="margin-top:8px;">🏨 Boutique Hotel - San Liborio</div>`;
       if(bd){
         const t=bd.fermate+bd.partenze;
         html+=`<div class="preview-row-3">
