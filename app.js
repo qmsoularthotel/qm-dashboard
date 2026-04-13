@@ -354,76 +354,138 @@ function toggleHkpGroup(){
   document.getElementById('hkpGroupToggle').classList.toggle('open',hkpGroupOpen);
   document.getElementById('hkpGroupItems').classList.toggle('open',hkpGroupOpen);
 }
-function hkpRenderSheet(key){
-  const data=key==='soul'?hkSoulData:hkBoutData;
-  const bodyId=key==='soul'?'hkpsheet-body':'hkpsheetar-body';
-  const chartId=key==='soul'?'hkpsheet-chart':'hkpsheetar-chart';
-  const bodyEl=document.getElementById(bodyId);
-  const chartEl=document.getElementById(chartId);
-  if(!bodyEl||!chartEl)return;
-  if(!data||!data.giorni||!data.giorni.length){
-    bodyEl.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica '+(key==='soul'?'Soul':'Boutique')+' App HKP dall\'Upload Center per visualizzare il consuntivo</div>';
-    chartEl.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);text-align:center;padding:20px 0;">Nessun dato disponibile</div>';
-    return;
+// §§ HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore)
+const HKP_URLS={
+  sa:'https://script.google.com/macros/s/AKfycbyosKJIaYIxh7D7GnCMFU7K_gABx2uNSy2VuaEjRc4ND1eEF9zrcSyUgc1Kp3X27lPa/exec',
+  ar:'https://script.google.com/macros/s/AKfycbwtxy0lngIzQ07QKRX2llx3lBCp2GdE1CoXsAW7GbKre5OEEARNdpCDuahc0DFsPAp7/exec'
+};
+let HKP_DATA={sa:null,ar:null};
+let HKP_TAB={sa:'riepilogo',ar:'riepilogo'};
+function hkpSave(p){
+  try{localStorage.setItem('qm_hkp_'+p,JSON.stringify(HKP_DATA[p]));}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_hkp_'+p,value:JSON.stringify(HKP_DATA[p])})}).catch(()=>{});
+}
+function hkpRestore(){
+  ['sa','ar'].forEach(p=>{
+    try{const raw=localStorage.getItem('qm_hkp_'+p);if(raw){HKP_DATA[p]=JSON.parse(raw);hkpRenderAll(p);}}catch(e){}
+  });
+}
+async function hkpLoad(p){
+  const btnIcon=document.getElementById('hkp-'+p+'-btn-icon');
+  const content=document.getElementById('hkp-'+p+'-content');
+  if(btnIcon)btnIcon.textContent='⏳';
+  content.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim);">Caricamento dati mese in corso…</div>';
+  try{
+    const res=await fetch(HKP_URLS[p]);
+    const data=await res.json();
+    if(data.error){content.innerHTML=`<div style="color:var(--red);padding:20px;">${data.error}</div>`;return;}
+    HKP_DATA[p]=data;
+    hkpSave(p);
+    hkpRenderAll(p);
+  }catch(e){
+    content.innerHTML=`<div style="color:var(--red);padding:20px;">Errore: ${e.message}</div>`;
   }
-  const today=new Date();
-  const todayStr=String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
-  // Tabella consuntivo
-  let html=`<table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
-    <thead><tr style="border-bottom:2px solid var(--border-light);">
-      <th style="text-align:left;padding:6px 8px;color:var(--text-dim);font-weight:600;font-size:10px;text-transform:uppercase;">Data</th>
-      <th style="text-align:center;padding:6px 8px;color:var(--text-dim);font-weight:600;font-size:10px;text-transform:uppercase;">Arrivi</th>
-      <th style="text-align:center;padding:6px 8px;color:var(--text-dim);font-weight:600;font-size:10px;text-transform:uppercase;">Fermate</th>
-      <th style="text-align:center;padding:6px 8px;color:var(--text-dim);font-weight:600;font-size:10px;text-transform:uppercase;">Partenze</th>
-      <th style="text-align:center;padding:6px 8px;color:var(--text-dim);font-weight:600;font-size:10px;text-transform:uppercase;">Tot.</th>
-    </tr></thead><tbody>`;
-  data.giorni.forEach(g=>{
-    const isT=g.data===todayStr;
-    const tot=g.arrivi+g.fermate+g.partenze;
-    html+=`<tr style="border-bottom:1px solid var(--border-light);${isT?'background:var(--surface2);font-weight:600;':''}">
-      <td style="padding:7px 8px;">${g.label}${isT?' <span style="font-size:9px;background:var(--accent);color:#fff;border-radius:3px;padding:1px 5px;">oggi</span>':''}</td>
-      <td style="text-align:center;padding:7px 8px;color:var(--green);">${g.arrivi}</td>
-      <td style="text-align:center;padding:7px 8px;color:var(--accent);">${g.fermate}</td>
-      <td style="text-align:center;padding:7px 8px;color:var(--amber);">${g.partenze}</td>
-      <td style="text-align:center;padding:7px 8px;font-weight:700;">${tot}</td>
-    </tr>`;
-  });
-  const totA=data.giorni.reduce((s,g)=>s+g.arrivi,0);
-  const totF=data.giorni.reduce((s,g)=>s+g.fermate,0);
-  const totP=data.giorni.reduce((s,g)=>s+g.partenze,0);
-  html+=`<tr style="border-top:2px solid var(--border-light);font-weight:700;background:var(--surface2);">
-    <td style="padding:7px 8px;">Totale</td>
-    <td style="text-align:center;padding:7px 8px;color:var(--green);">${totA}</td>
-    <td style="text-align:center;padding:7px 8px;color:var(--accent);">${totF}</td>
-    <td style="text-align:center;padding:7px 8px;color:var(--amber);">${totP}</td>
-    <td style="text-align:center;padding:7px 8px;">${totA+totF+totP}</td>
-  </tr></tbody></table>`;
-  bodyEl.innerHTML=html;
-  // Grafico fermate + partenze
-  const pts=data.giorni.map(g=>({label:g.label.split(' ')[0],f:g.fermate,p:g.partenze,a:g.arrivi}));
-  const W=600,H=140,PL=28,PR=8,PT=18,PB=30;
-  const plotW=W-PL-PR,plotH=H-PT-PB;
-  const YMAX=Math.max(10,...pts.map(p=>p.f+p.p))+4;
-  const bw=Math.floor(plotW/pts.length)-4;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;">`;
-  // Linee guida
-  [0,.5,1].forEach(t=>{const y=PT+plotH*(1-t);svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="1"/>`;if(t>0)svg+=`<text x="${PL-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text-dim)">${Math.round(YMAX*t)}</text>`;});
-  pts.forEach((p,i)=>{
-    const x=PL+i/(pts.length||1)*plotW+bw/2;
-    const hF=Math.round(p.f/YMAX*plotH);
-    const hP=Math.round(p.p/YMAX*plotH);
-    const hA=Math.round(p.a/YMAX*plotH);
-    const todayIdx=data.giorni.findIndex(g=>g.data===todayStr);
-    const isT=i===todayIdx;
-    svg+=`<rect x="${x-bw/2}" y="${PT+plotH-hF}" width="${bw}" height="${hF}" fill="${isT?'var(--accent)':'#6b8fc4'}" rx="2"/>`;
-    svg+=`<text x="${x}" y="${H-8}" text-anchor="middle" font-size="9" fill="${isT?'var(--accent)':'var(--text-dim)'}" font-weight="${isT?'700':'400'}">${p.label}</text>`;
-  });
-  svg+=`<text x="${PL}" y="${PT-4}" font-size="9" fill="var(--text-dim)">Fermate (blu) · Partenze (arancio)</text>`;
-  // Linea partenze
-  const lineP=pts.map((p,i)=>{const x=PL+i/(pts.length||1)*plotW+bw/2;const y=PT+plotH-Math.round(p.p/YMAX*plotH);return(i===0?'M':'L')+x+' '+y;}).join(' ');
-  svg+=`<path d="${lineP}" fill="none" stroke="var(--amber)" stroke-width="2" stroke-dasharray="4,2"/>`;
-  svg+='</svg>';
-  chartEl.innerHTML=svg;
+  if(btnIcon)btnIcon.textContent='↻';
+}
+function hkpTab(p,tab,btn){
+  HKP_TAB[p]=tab;
+  const view=document.getElementById('view-hkp'+( p==='sa'?'sheet':'sheetar'));
+  view.querySelectorAll('.rev-filter-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  if(HKP_DATA[p])hkpRenderContent(p);
+}
+function hkpRenderAll(p){
+  const data=HKP_DATA[p];
+  const dateEl=document.getElementById('hkp-'+p+'-date');
+  const kpiEl=document.getElementById('hkp-'+p+'-kpi');
+  if(dateEl)dateEl.textContent='Mese '+data.mese+' · '+data.giorni_elaborati+' giorni elaborati';
+  const cameriere=data.cameriere||[];
+  const totMese=data.tot_mese||0;
+  const giorniConDati=Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
+  const mediaGiornaliera=Math.round(totMese/giorniConDati*10)/10;
+  const top=cameriere.length?[...cameriere].sort((a,b)=>b.camere_tot-a.camere_tot)[0]:null;
+  if(kpiEl)kpiEl.innerHTML=`
+    <div class="kpi-card green"><div class="kpi-card-icon">🛏️</div><div class="kpi-label">Camere mese</div><div class="kpi-value">${totMese}</div><div class="kpi-delta up">${giorniConDati} giorni con dati</div></div>
+    <div class="kpi-card blue"><div class="kpi-card-icon">📊</div><div class="kpi-label">Media/giorno</div><div class="kpi-value">${mediaGiornaliera}</div><div class="kpi-delta">su ${giorniConDati} giorni</div></div>
+    <div class="kpi-card amber"><div class="kpi-card-icon">👑</div><div class="kpi-label">Top cameriera</div><div class="kpi-value" style="font-size:16px;">${top?top.nome:'—'}</div><div class="kpi-delta">${top?top.camere_tot+' cam':''}</div></div>
+    <div class="kpi-card"><div class="kpi-card-icon">👥</div><div class="kpi-label">Cameriere attive</div><div class="kpi-value">${cameriere.length}</div><div class="kpi-delta">nel mese</div></div>`;
+  hkpRenderContent(p);
+}
+function hkpRenderContent(p){
+  const data=HKP_DATA[p];
+  const content=document.getElementById('hkp-'+p+'-content');
+  const tab=HKP_TAB[p]||'riepilogo';
+  const cameriere=[...(data.cameriere||[])].sort((a,b)=>b.camere_tot-a.camere_tot);
+  const totMese=data.tot_mese||0;
+  const giorni=Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
+  const mese=data.mese||'';
+  if(tab==='riepilogo'){
+    const maxCam=cameriere[0]?.camere_tot||1;
+    let html='<div class="panel"><div class="panel-header"><span class="panel-title">Riepilogo mensile</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">'+mese+'</span></div><div class="panel-body" style="padding:0;">';
+    cameriere.forEach((cam,i)=>{
+      const bar=Math.round(cam.camere_tot/maxCam*100);
+      const media=Math.round(cam.camere_tot/giorni*10)/10;
+      const pct=Math.round(cam.camere_tot/totMese*100);
+      const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';
+      html+=`<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i>0?'border-top:1px solid var(--border-light);':''}">
+        <div style="min-width:140px;font-size:var(--fs-sm);font-weight:500;">${cam.nome}</div>
+        <div style="flex:1;"><div style="background:var(--border-light);border-radius:4px;height:6px;overflow:hidden;"><div style="width:${bar}%;background:${color};height:100%;border-radius:4px;"></div></div></div>
+        <div style="text-align:right;min-width:64px;"><span style="font-size:var(--fs-sm);font-weight:600;">${cam.camere_tot}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);"> cam</span></div>
+        <div style="text-align:right;min-width:55px;"><span style="font-size:var(--fs-sm);font-weight:600;color:var(--accent);">${media}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">/gg</span></div>
+        <div style="text-align:right;min-width:36px;font-size:var(--fs-xxs);color:var(--text-dim);">${pct}%</div>
+      </div>`;
+    });
+    html+='</div></div>';
+    // Grafico sparkline per cameriera
+    const totGiorni=data.totale_per_giorno||{};
+    const giorniDisp=Object.keys(totGiorni).map(Number).filter(d=>totGiorni[d]>0).sort((a,b)=>a-b);
+    if(giorniDisp.length>=2&&cameriere.length){
+      const COLORS=['#003580','#e65100','#1b5e20','#880e4f','#6a1b9a','#0d47a1','#2e7d32','#b71c1c','#f57f17','#37474f'];
+      const W=680,H=160,PL=36,PR=12,PT=14,PB=28;const plotW=W-PL-PR,plotH=H-PT-PB;
+      const allVals=cameriere.flatMap(cam=>{const pg={};Object.entries(cam.camere_per_giorno||{}).forEach(([k,v])=>{pg[parseInt(k)]=parseInt(v)||0;});cam._pgn=pg;return giorniDisp.map(d=>pg[d]||0);});
+      const maxV=Math.max(...allVals,1);
+      const sx=i=>PL+i/(giorniDisp.length-1)*plotW;const sy=v=>PT+plotH-(v/maxV)*plotH;
+      let svg='<div class="panel" style="margin-top:12px;"><div class="panel-header"><span class="panel-title">Andamento giornaliero per cameriera</span></div><div class="panel-body" style="padding:14px;overflow-x:auto;">';
+      svg+=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">`;
+      [0,.25,.5,.75,1].forEach(t=>{const y=PT+plotH*(1-t);svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="1"/>`;svg+=`<text x="${PL-4}" y="${y+4}" font-size="9" fill="var(--text-dim)" text-anchor="end">${Math.round(t*maxV)}</text>`;});
+      giorniDisp.forEach((d,i)=>{if(d===1||d%5===0||i===giorniDisp.length-1){svg+=`<text x="${sx(i)}" y="${H-4}" font-size="9" fill="var(--text-dim)" text-anchor="middle">${d}</text>`;}});
+      cameriere.forEach((cam,ci)=>{
+        const col=COLORS[ci%COLORS.length];
+        const path='M'+giorniDisp.map((d,i)=>{const v=cam._pgn?cam._pgn[d]||0:0;return`${sx(i)},${sy(v)}`;}).join('L');
+        svg+=`<path d="${path}" fill="none" stroke="${col}" stroke-width="1.5" opacity="0.85"/>`;
+        const last=giorniDisp[giorniDisp.length-1];const lv=cam._pgn?cam._pgn[last]||0:0;
+        svg+=`<circle cx="${sx(giorniDisp.length-1)}" cy="${sy(lv)}" r="3" fill="${col}"/>`;
+      });
+      svg+='</svg><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">';
+      cameriere.forEach((cam,ci)=>{svg+=`<div style="display:flex;align-items:center;gap:5px;font-size:var(--fs-xxs);color:var(--text-muted);"><div style="width:16px;height:3px;background:${COLORS[ci%COLORS.length]};border-radius:2px;"></div>${cam.nome}</div>`;});
+      svg+='</div></div></div>';
+      html+=svg;
+    }
+    content.innerHTML=html;
+  } else {
+    const totGiorni=data.totale_per_giorno||{};
+    const giorniDisponibili=[];
+    for(let d=1;d<=data.giorni_mese;d++){if(totGiorni[d]>0)giorniDisponibili.push(d);}
+    if(!giorniDisponibili.length){content.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-dim);">Nessun dato disponibile</div>';return;}
+    let selDay=parseInt(content.dataset.selDay||giorniDisponibili[giorniDisponibili.length-1]);
+    if(!giorniDisponibili.includes(selDay))selDay=giorniDisponibili[giorniDisponibili.length-1];
+    let navHtml='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;">';
+    giorniDisponibili.forEach(d=>{navHtml+=`<button class="rev-filter-btn${d===selDay?' active':''}" onclick="hkpSelectDay('${p}',${d})">${d}</button>`;});
+    navHtml+='</div>';
+    const camData=cameriere.map(cam=>{const pg={};Object.entries(cam.camere_per_giorno||{}).forEach(([k,v])=>{pg[parseInt(k)]=parseInt(v)||0;});return{nome:cam.nome,n:pg[selDay]||0};}).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+    const maxN=camData.length?camData[0].n:1;const totGiorno=totGiorni[selDay]||0;
+    let barHtml=`<div class="panel"><div class="panel-header"><span class="panel-title">${selDay} ${mese} — ${totGiorno} camere totali</span></div><div class="panel-body" style="padding:0;">`;
+    if(!camData.length){barHtml+='<div style="padding:20px;text-align:center;color:var(--text-dim);">Nessun dato per questo giorno</div>';}
+    else{camData.forEach((cam,i)=>{const bar=Math.round(cam.n/maxN*100);const pct=Math.round(cam.n/totGiorno*100);const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';barHtml+=`<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i>0?'border-top:1px solid var(--border-light);':''}"><div style="min-width:140px;font-size:var(--fs-sm);font-weight:500;">${cam.nome}</div><div style="flex:1;"><div style="background:var(--border-light);border-radius:4px;height:8px;overflow:hidden;"><div style="width:${bar}%;background:${color};height:100%;border-radius:4px;transition:width .3s;"></div></div></div><div style="text-align:right;min-width:48px;"><span style="font-size:var(--fs-sm);font-weight:600;">${cam.n}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);"> cam</span></div><div style="text-align:right;min-width:36px;font-size:var(--fs-xxs);color:var(--text-dim);">${pct}%</div></div>`;});}
+    barHtml+='</div></div>';
+    content.innerHTML=navHtml+barHtml;
+    content.dataset.selDay=selDay;
+  }
+}
+function hkpSelectDay(p,day){
+  const content=document.getElementById('hkp-'+p+'-content');
+  content.dataset.selDay=day;
+  hkpRenderContent(p);
 }
 let recGroupOpen=false;
 function toggleRecGroup(){
@@ -447,8 +509,8 @@ function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.class
     try{loadWeekData(weekData);}catch(e){}
     try{refreshOverviewForDate(new Date());}catch(e){}
   }
-  if(id==='hkpsheet')setTimeout(()=>hkpRenderSheet('soul'),50);
-  if(id==='hkpsheetar')setTimeout(()=>hkpRenderSheet('bout'),50);
+  if(id==='hkpsheet'&&HKP_DATA.sa)setTimeout(()=>hkpRenderAll('sa'),50);
+  if(id==='hkpsheetar'&&HKP_DATA.ar)setTimeout(()=>hkpRenderAll('ar'),50);
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
   if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);}
@@ -1490,6 +1552,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
     restoreCustomTasks();
     restoreDeptCustomTasks();
     ovUpdateRevNoreply();
+    hkpRestore();
     // Ripristina turno settimanale
     try{
       const saved=localStorage.getItem('qm_weekData');
@@ -3112,8 +3175,6 @@ function hkSetLoaded(key,silent){
     if(deltaEl){deltaEl.textContent=g.arrivi+' arrivi · '+g.partenze+' partenze';deltaEl.className='kpi-delta';}
     if(subEl)subEl.textContent=g.label;
   }
-  // Aggiorna consuntivo se la vista è aperta
-  setTimeout(()=>hkpRenderSheet(key),100);
 }
 function resetSoulData(){hkSoulData=null;hkResetSlot('soul');}
 function resetBoutData(){hkBoutData=null;hkResetSlot('bout');}

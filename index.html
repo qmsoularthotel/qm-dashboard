@@ -1041,52 +1041,40 @@
         </div>
       </div>
       <div class="view" id="view-hkpsheet">
-        <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:14px;align-items:start;margin-bottom:14px;">
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">🛏️ Consuntivo HKP — SoulArt</span>
-            </div>
-            <div class="panel-body" style="padding:14px;" id="hkpsheet-body">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica Soul App HKP dall'Upload Center per visualizzare il consuntivo</div>
-            </div>
-            <div style="border-top:1px solid var(--border-light);padding:10px 14px;display:flex;gap:10px;align-items:center;">
-              <a href="https://docs.google.com/spreadsheets/d/1NzJCavF4hb-rHSSERSUgHBcVpHDHrSolMcwpZAtx-Pc/edit" target="_blank" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:var(--fs-xxs);cursor:pointer;text-decoration:none;">📊 Apri Foglio Google</a>
-            </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text);">Operativa HKP — SoulArt Hotel</div>
+            <div id="hkp-sa-date" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">—</div>
           </div>
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Andamento settimanale</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Da Soul App HKP · Upload Center</span>
-            </div>
-            <div class="panel-body" style="padding:14px;" id="hkpsheet-chart">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);text-align:center;padding:20px 0;">Nessun dato disponibile</div>
-            </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <a href="https://docs.google.com/spreadsheets/d/1NzJCavF4hb-rHSSERSUgHBcVpHDHrSolMcwpZAtx-Pc/edit?gid=0#gid=0" target="_blank" class="btn-ghost" style="text-decoration:none;display:flex;align-items:center;gap:5px;padding:7px 14px;">📊 Apri foglio</a>
+            <button onclick="hkpLoad('sa')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:var(--fs-xs);cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="hkp-sa-btn-icon">↻</span> Aggiorna</button>
           </div>
         </div>
+        <div id="hkp-sa-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;"></div>
+        <div class="rev-filter-bar" style="margin-bottom:14px;">
+          <button class="rev-filter-btn active" onclick="hkpTab('sa','riepilogo',this)">Riepilogo mensile</button>
+          <button class="rev-filter-btn" onclick="hkpTab('sa','dettaglio',this)">Per giorno</button>
+        </div>
+        <div id="hkp-sa-content"><div style="text-align:center;padding:40px;color:var(--text-dim);">Clicca <strong>Aggiorna</strong> per caricare i dati del mese</div></div>
       </div>
       <div class="view" id="view-hkpsheetar">
-        <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:14px;align-items:start;margin-bottom:14px;">
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">🛏️ Consuntivo HKP — Boutique · San Liborio</span>
-            </div>
-            <div class="panel-body" style="padding:14px;" id="hkpsheetar-body">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica Boutique App HKP dall'Upload Center per visualizzare il consuntivo</div>
-            </div>
-            <div style="border-top:1px solid var(--border-light);padding:10px 14px;display:flex;gap:10px;align-items:center;">
-              <a href="https://docs.google.com/spreadsheets/d/1FO9YxVpojxWD1eyi_IxVwQOYbddfDk9iOLBtD-fH3qo/edit" target="_blank" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:var(--fs-xxs);cursor:pointer;text-decoration:none;">📊 Apri Foglio Google</a>
-            </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text);">Operativa HKP — Boutique · San Liborio</div>
+            <div id="hkp-ar-date" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">—</div>
           </div>
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Andamento settimanale</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Da Boutique App HKP · Upload Center</span>
-            </div>
-            <div class="panel-body" style="padding:14px;" id="hkpsheetar-chart">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);text-align:center;padding:20px 0;">Nessun dato disponibile</div>
-            </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <a href="https://docs.google.com/spreadsheets/d/1FO9YxVpojxWD1eyi_IxVwQOYbddfDk9iOLBtD-fH3qo/edit?gid=0#gid=0" target="_blank" class="btn-ghost" style="text-decoration:none;display:flex;align-items:center;gap:5px;padding:7px 14px;">📊 Apri foglio</a>
+            <button onclick="hkpLoad('ar')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:var(--fs-xs);cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="hkp-ar-btn-icon">↻</span> Aggiorna</button>
           </div>
         </div>
+        <div id="hkp-ar-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;"></div>
+        <div class="rev-filter-bar" style="margin-bottom:14px;">
+          <button class="rev-filter-btn active" onclick="hkpTab('ar','riepilogo',this)">Riepilogo mensile</button>
+          <button class="rev-filter-btn" onclick="hkpTab('ar','dettaglio',this)">Per giorno</button>
+        </div>
+        <div id="hkp-ar-content"><div style="text-align:center;padding:40px;color:var(--text-dim);">Clicca <strong>Aggiorna</strong> per caricare i dati del mese</div></div>
       </div>
       <div class="view" id="view-miniapp">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;" id="miniappGrid">
@@ -1151,6 +1139,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=187-20260413"></script>
+<script src="app.js?v=187-20260413b"></script>
 </body>
 </html>
