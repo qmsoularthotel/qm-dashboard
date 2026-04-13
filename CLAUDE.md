@@ -26,24 +26,25 @@ Questo file fornisce il contesto completo del progetto a Claude Code.
 
 ```
 /Users/pierpaolopresta/Desktop/qm-dashboard/
-├── app.js          ← tutta la logica JS (~3600 righe)
-├── index.html      ← shell HTML + riferimento a app.js
-├── style.css       ← stili
-├── housekeeper.html ← app separata per le cameriere
-└── CLAUDE.md       ← questo file
+├── app.js           ← tutta la logica JS (~3700 righe)
+├── index.html       ← shell HTML + riferimento a app.js
+├── style.css        ← stili
+├── housekeeper.html ← mini app separata per le cameriere
+├── breakfast.html   ← mini app separata per il responsabile colazione
+└── CLAUDE.md        ← questo file
 ```
 
-**NON usare** `hotel_qm_dashboard_v185.html` o i file nella cartella `.claude/worktrees/` — sono obsoleti.
+**NON usare** i file nella cartella `.claude/worktrees/` — sono obsoleti.
 
 ### Deploy
 
 - **Repository GitHub**: `https://github.com/qmsoularthotel/qm-dashboard`
 - **Hosting**: Cloudflare Pages (auto-deploy da `main`)
-- **Cache busting**: aggiornare il parametro `?v=186-YYYYMMDD` in `index.html` quando si modifica `app.js`:
+- **Cache busting**: aggiornare il parametro `?v=187-YYYYMMDD` in `index.html` quando si modifica `app.js`:
   ```html
-  <script src="app.js?v=186-20260407g"></script>
+  <script src="app.js?v=187-20260412c"></script>
   ```
-- **Push**: `cd /Users/pierpaolopresta/Desktop/qm-dashboard && git add app.js index.html && git commit -m "..." && git push origin main`
+- **Push**: `cd /Users/pierpaolopresta/Desktop/qm-dashboard && git add -A && git commit -m "..." && git push origin main`
 
 ---
 
@@ -64,9 +65,11 @@ Questo file fornisce il contesto completo del progetto a Claude Code.
 | `qm_rcGuests` | `[{camera,nome,pax,trattamento,checkin,checkout}]` — registration cards |
 | `qm_pulData` | Report pulizie giornaliero |
 | `qm_bkfData` | Report pasti/colazioni |
-| `qm_piano` | `{stampato,giorni:[{label,data,soulart:{partenze[],fermate[]},boutique:{partenze[],fermate[]}}], _ts}` |
+| `qm_piano` | `{stampato,giorni:[{label,data,soulart:{partenze[],fermate[],cambi[]},boutique:{partenze[],fermate[],cambi[]},liborio:{partenze[],fermate[],cambi[]}}], _ts}` |
 | `qm_hk_soul` | Statistiche HK SoulArt per giorno |
 | `qm_hk_bout` | Statistiche HK Boutique per giorno |
+| `qm_hk_access` | `{total, today, todayDate, last}` — contatore accessi housekeeper.html |
+| `qm_bkf_access` | `{total, today, todayDate, last}` — contatore accessi breakfast.html |
 | `qm_arrivi_raw` | `{pdf: base64, _ts}` — PDF grezzo arrivi (temporaneo, usato dal browser per RC cards) |
 | `qm_piano_raw` | `{pdf: base64, _ts}` — PDF grezzo piano settimana (temporaneo, usato dal browser) |
 | `qm_rev_sa/bh/sl/pr/ms/ar/sb` | CSV recensioni per hotel |
@@ -144,8 +147,12 @@ I PDF vengono parsati nel browser con **pdfjsLib** — molto più affidabili di 
 ### `parsePianoItems(items)` — app.js ~riga 2946
 - Input: array `{s, x, y, p}` da pdfjsLib
 - Raggruppa per riga (tolleranza y=4), trova header con ≥2 abbreviazioni giorno
-- `-` = partenza, `=` = fermata, `+` = solo arrivo (ignorato per HK)
-- Rileva camera: `Art N` → soulart, `200-299` → boutique
+- `-` = partenza, `=` = fermata, `-+` = cambio (partenza con arrivo), `+` = solo arrivo (ignorato)
+- Rileva camera: `Art N` → soulart, `200-299` → boutique, `AS_LIB` → liborio
+- Struttura per giorno: `{soulart:{partenze[],fermate[],cambi[]}, boutique:{...}, liborio:{...}}`
+- **Liborio in overview**: fuso con boutique in `renderPianoGiorno` (mostra con label "Boutique - San Liborio")
+- **Liborio in housekeeper.html**: fuso con boutique nella sezione Boutique Hotel
+- **Cambio camera (⇄)**: chip rosso con simbolo `⇄` bold bianco; didascalia inline
 
 ### `checkAndParsePianoRaw()` — app.js
 - Fetcha `qm_piano_raw` da KV (non localStorage — troppo grande)
@@ -187,21 +194,50 @@ In `app.js`, dopo `setInterval(tick, 10000)`, c'è un `setInterval` da 30s che:
 
 ```javascript
 const DEPTS = {
-  fo:  { members: ['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.',"D'Andrea F.",'Grieco V.','Extra Night'] },
+  fo:  { members: ['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.',"D'Andrea F.",'Grieco V.','Extra Night','Extra Roberto'] },
   hk:  { members: ['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Vincenza','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.'] },
-  bkf: { members: ['Amorese S.','Albano D.','Ferace C.','Extra BKF SAU'] },
+  bkf: { members: ['Amorese S.','Albano D.','Ferace C.','Panagodage S.'] },
   mt:  { members: ['Basile G.'] }
 };
+// NAME_ALIAS nel parser turno: {'extra i.':'Extra Roberto','extra bkf sau':'Panagodage S.'}
 ```
 
 ---
 
 ## housekeeper.html
 
-App separata per le cameriere. Legge da KV:
-- `qm_piano` → partenze/fermate per giorno (SoulArt e Boutique)
+Mini app separata per le cameriere. Legge da KV:
+- `qm_piano` → partenze/fermate/cambi per giorno (SoulArt, Boutique, Liborio)
 - `qm_hk_soul` / `qm_hk_bout` → statistiche HK giornaliere
 - `MATARESE` = Set camere Art 1–22 assegnate a Matarese
+- Sezioni: **Matarese** (Art 1–22 selezionate), **Altre housekeeper** (restanti SoulArt), **Boutique Hotel - San Liborio** (Boutique + Liborio)
+- Contatore accessi su KV `qm_hk_access`; esclusione dispositivo via `?notrack` (flag in localStorage)
+
+---
+
+## breakfast.html
+
+Mini app separata per il responsabile colazione. Legge da KV:
+- `qm_bkfData` → `{data:[{label,data,adulti,bambini,noCol}], activeDay, ts}`
+- Mostra: coperti totali (adulti+bambini), room only, prossimi giorni, grafico settimanale SVG
+- Contatore accessi su KV `qm_bkf_access`; esclusione dispositivo via `?notrack`
+- Navigazione giorni ‹ › con sessionStorage per persistere il giorno selezionato
+- Cache locale in localStorage (`bkf_cache`) per caricamento istantaneo
+
+---
+
+## Overview — layout v187
+
+- **Riga 1** (4 col): Arrivi · Partenze · Fermate · Occupazione (da `pulData` / report pulizie)
+- **Piano camere** (panel): SoulArt + Boutique - San Liborio; cambi con `⇄`
+- **Riga 2** (3 col): Coperti colazione · Grafico settimanale SVG · Room Only
+- Pannello occupazione, pulizie, BKF espandibili sotto
+
+## Mini App — sezione dashboard
+
+Entrambi i pannelli (HKP e Breakfast) nella vista `miniapp`:
+- **HKP**: preview dati oggi (soul+bout), piano camere, contatore accessi, link
+- **Breakfast**: oggi (coperti+room only+gruppi+note), prossimi 3 giorni, grafico settimanale, link
 
 ---
 
