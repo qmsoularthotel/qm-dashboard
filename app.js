@@ -576,7 +576,7 @@ function miniappRenderBkf(){
   }
   // Grafico settimanale
   const pts=bkfData.map(d=>({label:d.label.split(' ')[0],v:(d.adulti||0)+(d.bambini||0)}));
-  const W=600,H=130,PL=28,PR=8,PT=18,PB=24;
+  const W=600,H=190,PL=28,PR=8,PT=32,PB=32;
   const plotW=W-PL-PR,plotH=H-PT-PB;
   const YMAX=Math.max(20,...pts.map(p=>p.v))+8;
   const sx=i=>PL+i/(pts.length-1||1)*plotW;
@@ -584,12 +584,12 @@ function miniappRenderBkf(){
   let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
   const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
   svg+=`<path d="${linePath}L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z" fill="var(--accent)" opacity="0.1"/>`;
-  svg+=`<path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="1.5"/>`;
+  svg+=`<path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
   pts.forEach((p,i)=>{
     const x=sx(i),y=sy(p.v),isActive=i===tIdx;
-    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?4:2.5}" fill="var(--accent)" stroke="white" stroke-width="1.5"/>`;
-    svg+=`<text x="${x}" y="${y-8}" font-size="${isActive?13:11}" fill="var(--accent)" text-anchor="middle" font-weight="${isActive?700:600}">${p.v}</text>`;
-    svg+=`<text x="${x}" y="${H-3}" font-size="9" fill="var(--text-dim)" text-anchor="middle">${p.label}</text>`;
+    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?6:4}" fill="var(--accent)" stroke="white" stroke-width="2"/>`;
+    svg+=`<text x="${x}" y="${y-13}" font-size="${isActive?20:17}" fill="var(--accent)" text-anchor="middle" font-weight="${isActive?800:600}">${p.v}</text>`;
+    svg+=`<text x="${x}" y="${H-4}" font-size="14" fill="var(--text-dim)" text-anchor="middle">${p.label}</text>`;
   });
   svg+='</svg>';
   html+=`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light);">${svg}</div>`;
