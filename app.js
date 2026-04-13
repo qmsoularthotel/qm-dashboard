@@ -395,20 +395,55 @@ function miniappRenderBkf(){
   const today=new Date();
   const todayLabel=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'][today.getDay()]+' '+String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0');
   if(!bkfData||!bkfData.length){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere l\'anteprima</div>';return;}
-  const todayData=bkfData.find(d=>d.label&&d.label.includes(String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')))||bkfData[bkfActiveDay];
+  const todayIdx=bkfData.findIndex(d=>d.label&&d.label.includes(String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')));
+  const tIdx=todayIdx!==-1?todayIdx:bkfActiveDay;
+  const todayData=bkfData[tIdx];
   const coperti=todayData?(todayData.adulti+todayData.bambini):0;
   const t=new Date();t.setHours(0,0,0,0);
   const gruppiOggi=(bkfGroups||[]).filter(g=>{const a=new Date(g.arrivo||g.data);a.setHours(0,0,0,0);const p=new Date(g.partenza||g.arrivo||g.data);p.setHours(0,0,0,0);return t>=a&&t<=p;});
   const totPax=gruppiOggi.reduce((s,g)=>s+g.pax,0);
   const noteOggi=(bkfNotes||{})[todayData?.label]||'';
-  el.innerHTML=`
-    <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">📅 Oggi — ${todayLabel}</div>
+  // Oggi
+  let html=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:8px;">📅 Oggi — ${todayLabel}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <div style="background:var(--surface2);border-radius:7px;padding:8px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--accent);">${coperti}</div><div style="font-size:10px;color:var(--text-dim);">Coperti BB</div></div>
-      <div style="background:var(--surface2);border-radius:7px;padding:8px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--accent);">${totPax||'—'}</div><div style="font-size:10px;color:var(--text-dim);">Pax gruppi</div></div>
+      <div style="background:var(--surface2);border-radius:7px;padding:8px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--accent);">${coperti}</div><div style="font-size:10px;color:var(--text-dim);">Coperti</div></div>
+      <div style="background:var(--surface2);border-radius:7px;padding:8px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--text-muted);">${todayData?.noCol||0}</div><div style="font-size:10px;color:var(--text-dim);">Room Only</div></div>
     </div>
     ${gruppiOggi.length?`<div style="font-size:var(--fs-xxs);background:#fff3cd;border-radius:6px;padding:6px 10px;color:#856404;margin-bottom:6px;">⚠️ ${gruppiOggi.length} gruppo${gruppiOggi.length>1?'i':''} oggi — ${totPax} persone</div>`:''}
-    ${noteOggi?`<div style="font-size:var(--fs-xxs);color:var(--text-muted);font-style:italic;background:var(--surface2);padding:6px 8px;border-radius:6px;">📋 ${noteOggi}</div>`:''}`;
+    ${noteOggi?`<div style="font-size:var(--fs-xxs);color:var(--text-muted);font-style:italic;background:var(--surface2);padding:6px 8px;border-radius:6px;margin-bottom:6px;">📋 ${noteOggi}</div>`:''}`;
+  // Prossimi giorni
+  const nextDays=bkfData.slice(tIdx+1,tIdx+4);
+  if(nextDays.length){
+    html+=`<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px;">Prossimi giorni</div>`;
+    nextDays.forEach(nd=>{
+      const tot=(nd.adulti||0)+(nd.bambini||0);
+      html+=`<div style="background:var(--surface2);border-radius:7px;padding:8px 10px;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:var(--fs-xxs);font-weight:600;color:var(--text);">${nd.label}</span>
+        <span style="font-size:var(--fs-xs);font-weight:700;color:var(--accent);">${tot} <span style="font-size:10px;font-weight:400;color:var(--text-dim);">cop.</span></span>
+        <span style="font-size:var(--fs-xs);font-weight:600;color:var(--text-muted);">${nd.noCol||0} <span style="font-size:10px;font-weight:400;color:var(--text-dim);">RO</span></span>
+      </div>`;
+    });
+  }
+  // Grafico settimanale
+  const pts=bkfData.map(d=>({label:d.label.split(' ')[0],v:(d.adulti||0)+(d.bambini||0)}));
+  const W=600,H=130,PL=28,PR=8,PT=18,PB=24;
+  const plotW=W-PL-PR,plotH=H-PT-PB;
+  const YMAX=Math.max(20,...pts.map(p=>p.v))+8;
+  const sx=i=>PL+i/(pts.length-1||1)*plotW;
+  const sy=v=>PT+plotH-(v/YMAX)*plotH;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
+  const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
+  svg+=`<path d="${linePath}L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z" fill="var(--accent)" opacity="0.1"/>`;
+  svg+=`<path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="1.5"/>`;
+  pts.forEach((p,i)=>{
+    const x=sx(i),y=sy(p.v),isActive=i===tIdx;
+    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?4:2.5}" fill="var(--accent)" stroke="white" stroke-width="1.5"/>`;
+    svg+=`<text x="${x}" y="${y-7}" font-size="9" fill="var(--accent)" text-anchor="middle" font-weight="${isActive?700:600}">${p.v}</text>`;
+    svg+=`<text x="${x}" y="${H-3}" font-size="9" fill="var(--text-dim)" text-anchor="middle">${p.label}</text>`;
+  });
+  svg+='</svg>';
+  html+=`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light);">${svg}</div>`;
+  el.innerHTML=html;
 }
 function renderPianoGiorno(elId,refDate){
   const el=document.getElementById(elId);if(!el)return;
