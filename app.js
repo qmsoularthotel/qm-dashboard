@@ -323,7 +323,7 @@ function renderDay(idx){
     const inT=dept.members.filter(n=>!IS_REST(getShift(shifts,n)));
     const showMembers=key==='mt'?dept.members:inT;
     if(!showMembers.length)return;
-    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${showMembers.map(n=>{const sv=(getShift(shifts,n)||'').trim();return shiftRow(n,sv,['P','AC','CG','AG','CC','NC','NG'].includes(sv)?'ss-active':'ss-special');}).join('')}</div></div>`;
+    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${showMembers.map(n=>{const sv=(getShift(shifts,n)||'').trim();const isActive=key==='mt'?!IS_REST(sv):['P','AC','CG','AG','CC','NC','NG'].includes(sv);return shiftRow(n,sv,isActive?'ss-active':'ss-special');}).join('')}</div></div>`;
   });
   html+='</div>';area.innerHTML=html;
 }
