@@ -1,380 +1,425 @@
 # CLAUDE.md
 
-Questo file fornisce il contesto completo del progetto a Claude Code.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ---
 
 ## Strutture gestite
 
-7 hotel a Napoli:
-**SoulArt Hotel (SA)**, **Boutique Hotel (BH)**, **San Liborio (SL)**, **Principe (PR)**, **Mastrangelo (MS)**, **Art Resort (AR)**, **Santa Brigida (SB)**.
+Il gruppo comprende 7 strutture alberghiere a Napoli:
+**SoulArt Hotel**, **Boutique**, **San Liborio**, **Principe**, **Mastrangelo**, **Art Resort**, **Santa Brigida**.
+
+Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Principe), `ms` (Mastrangelo), `ar` (Art Resort), `sb` (Santa Brigida).
 
 ---
 
 ## Risposte alle recensioni Booking.com
 
-- **Firma italiano:** `Paolo P. - Quality Manager`
-- **Firma inglese:** `Best regards. Paolo P. - Quality Manager`
-- Non ripetere le parole esatte del recensore.
+- **Firma in italiano:** `Paolo P. - Quality Manager`
+- **Firma in inglese:** `Best regards. Paolo P. - Quality Manager`
+- Non ripetere le parole esatte usate dal recensore.
 - Includere sempre un incentivo alla prenotazione futura.
 
 ---
 
-## Architettura del progetto
+## Project Overview
 
-### File di produzione
+**QM Dashboard** è una SPA vanilla JS per la gestione qualità di un gruppo alberghiero multi-struttura a Napoli. Il codice è diviso in:
 
-```
-/Users/pierpaolopresta/Desktop/qm-dashboard/
-├── app.js           ← tutta la logica JS (~3700 righe)
-├── index.html       ← shell HTML + riferimento a app.js
-├── style.css        ← stili
-├── housekeeper.html ← mini app separata per le cameriere
-├── breakfast.html   ← mini app separata per il responsabile colazione
-└── CLAUDE.md        ← questo file
-```
+- **`index.html`** — Layout HTML, sidebar nav, tutte le view (div#view-*), CSS inline, tag `<script src="app.js?v=...">` in fondo
+- **`app.js`** — Tutta la logica JS (~3950 linee, ~29 sezioni §§)
+- **`housekeeper.html`** — App separata per la governante (HK checklist camere)
+- **`breakfast.html`** — App separata per il breakfast manager
 
-**NON usare** i file nella cartella `.claude/worktrees/` — sono obsoleti.
+Non esiste build system, package manager o step di compilazione.
 
-### Inventario viste obbligatorie (checklist anti-perdita)
+### Versionamento
 
-Ogni volta che si modifica `index.html`, verificare che TUTTE queste viste esistano:
+Il numero di versione va incrementato:
+1. Nel `<title>` tag di `index.html` (es. `v186` → `v187`)
+2. Nel cache buster `<script src="app.js?v=187-YYYYMMDD">` in fondo a `index.html`
 
-| ID vista | Descrizione |
-|----------|-------------|
-| `view-overview` | Panoramica del giorno |
-| `view-checklist` | Checklist operativa |
-| `view-registrazione` | Registration Cards |
-| `view-hkpsheet` | Operativa HKP — SoulArt Hotel |
-| `view-hkpsheetar` | Operativa HKP — Art Resort |
-| `view-bkfsheet` | Breakfast Sheet — SoulArt Hotel |
-| `view-bkfsheetar` | Breakfast Sheet — Art Resort Galleria |
-| `view-recensioni-sa/bh/sl/pr/ms/ar/sb` | Recensioni (7 hotel) |
-| `view-miniapp` | Mini App — anteprima e link |
+Ad ogni modifica ad `app.js`, **aggiornare il cache buster** altrimenti il browser userà la versione vecchia.
 
-Verifica rapida: `grep "id=\"view-" index.html`
+---
 
-### Recovery dal git
+## Development
 
-Se una funzione o vista viene persa accidentalmente:
+Aprire `index.html` direttamente nel browser. Nessun server necessario.
+
+Per trovare rapidamente sezioni di codice usare il grep con i marker `// §§`:
 
 ```bash
-# Trova il commit dove esisteva
-git log --oneline
-
-# Visualizza il file in un commit specifico
-git show <hash>:index.html | grep -n "funzione_cercata"
-git show <hash>:index.html | sed -n 'START,ENDp'
-
-# Commit chiave con implementazioni complete:
-# 2183997 — v185 originale con HKP Operative, bkfsheet, tutte le viste
-# f97c04d — v187 con viste HKP ripristinate (primo tentativo)
-# c973287 — v187 con HKP Operative completa recuperata da v185
+grep -n "§§" app.js          # lista tutte le sezioni con numero di riga
+grep -n "§§ TURNO" app.js    # trova sezione specifica
 ```
 
-### Mappa sezioni app.js
-
-Per trovare una sezione: `grep -n "// §§" app.js`
-
-| Riga | Sezione |
-|------|---------|
-| 1 | `§§ COSTANTI & CONFIG` — DEPTS, WEEK fallback, IS_REST |
-| 15 | `§§ TURNO — ACCORDIONI UC & UPLOAD BOX` |
-| 87 | `§§ TURNO — PARSER TSV/PDF` — parseTurniTSV, handleTurniFile |
-| 257 | `§§ TURNO — RENDER & NAVIGAZIONE` — loadWeekData, renderDay, buildWeekNav |
-| 347 | `§§ NAVIGAZIONE VISTE` — setView, pageTitles |
-| 381 | `§§ MINI APP — RENDER` — miniappRenderBkf, loadHkAccessStats, renderPianoGiorno |
-| 484 | `§§ UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP` |
-| 520 | `§§ CHECKLIST — TASK ITEMS` — buildTaskItem, renderTaskList |
-| 552 | `§§ STORAGE & SYNC KV` — setSyncStatus, kvSet, kvGet, LS, syncFromCloud |
-| 663 | `§§ CHECKLIST — STATO CENTRALIZZATO & CUSTOM TASK` — taskKey, addCustomTask |
-| 902 | `§§ CHECKLIST — RENDER & PROGRESS` — toggleCheck, updateClProgress |
-| 983 | `§§ OVERVIEW — TOGGLE PREVIEW PANELS` |
-| 1075 | `§§ OVERVIEW — GRAFICI & METEO` — buildBarChart, fetchMeteo |
-| 1155 | `§§ SIDEBAR — OROLOGIO & DATA` — updateSbClock, toggleDatePopup |
-| 1207 | `§§ OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 30s` — refreshOverviewForDate |
-| 1524 | `§§ RECENSIONI — SCORE TREND MODAL` — openScoreTrend |
-| 1611 | `§§ OVERVIEW — RECENSIONI NO-REPLY` — ovUpdateRevNoreply |
-| 1683 | `§§ BKF SHEET — ANALISI AI` — bkfSheetAnalyze, bkfSheetSync |
-| 1896 | `§§ REPORT PULIZIE — PUL` — handlePulFile, renderPulDay, updateKpiFromPulizie |
-| 2059 | `§§ RECENSIONI — SCORING & INIT UPLOAD` — weightedAvgF1 |
-| 2090 | `§§ RECENSIONI — LOGICA` — revParseCsv, revRenderCatTrend, revRenderList, revGenerateReply |
-| 2850 | `§§ REPORT PASTI — BKF` — handleBkfFile, renderBkfDay, renderOvBkfChart |
-| 2967 | `§§ HOUSEKEEPING — HKP UPLOAD & DATI` — handleHkFile, hkSetLoaded |
-| 3046 | `§§ PIANO SETTIMANA — UPLOAD & PARSER` — parsePianoItems, checkAndParsePianoRaw |
-| 3205 | `§§ BKF — GRUPPI, NOTE & GRAFICI` — bkfRenderGroups, bkfRenderChart |
-| 3458 | `§§ REGISTRATION CARDS — RC` — rcParseGuests, rcRenderCards, checkAndParseArriviRaw |
-| 3523 | `§§ MODAL — CATEGORIE TREND` — openCatModal |
-| 3622 | `§§ ARRIVI GIORNALIERI — UPLOAD & RENDER` — handleArriviFile, renderArriviModal |
-
-### Deploy
-
-- **Repository GitHub**: `https://github.com/qmsoularthotel/qm-dashboard`
-- **Hosting**: Cloudflare Pages (auto-deploy da `main`)
-- **Cache busting**: aggiornare il parametro `?v=187-YYYYMMDD` in `index.html` quando si modifica `app.js`:
-  ```html
-  <script src="app.js?v=187-20260412c"></script>
-  ```
-- **Push**: `cd /Users/pierpaolopresta/Desktop/qm-dashboard && git add -A && git commit -m "..." && git push origin main`
+Poi leggere solo il blocco rilevante con `offset` e `limit` invece di caricare l'intero file.
 
 ---
 
-## Storage & Sync
+## Architecture
 
-| Layer | Dettaglio |
-|-------|-----------|
-| **localStorage** | Dati primari, prefisso `qm_` |
-| **Cloudflare KV** | Sync cloud via proxy `https://anthropic-proxy.qm-d82.workers.dev` |
-| **Endpoint KV** | GET `/kv/get?key=qm_XXX` · POST `/kv/set` `{key, value}` · DELETE `/kv/delete?key=qm_XXX` |
+### Storage & Sync
 
-### Chiavi KV principali
+- **Primary**: `localStorage` — ogni modifica viene persistita qui
+- **Secondary**: Cloudflare KV via proxy `https://anthropic-proxy.qm-d82.workers.dev` — sync cloud tra dispositivi; stato mostrato nel topbar
+- **External**: Google Sheets (Apps Script) — dati operativi HKP e breakfast
 
-| Chiave KV | Contenuto |
-|-----------|-----------|
-| `qm_weekData` | `{giorni:[{label,date,shifts}], _ts}` — turno settimanale staff |
-| `qm_arriviData` | `{data,totale_stanze,totale_persone,arrivi:[...], _ts}` — arrivi oggi |
-| `qm_rcGuests` | `[{camera,nome,pax,trattamento,checkin,checkout}]` — registration cards |
-| `qm_pulData` | Report pulizie giornaliero |
-| `qm_bkfData` | Report pasti/colazioni |
-| `qm_piano` | `{stampato,giorni:[{label,data,soulart:{partenze[],fermate[],cambi[]},boutique:{partenze[],fermate[],cambi[]},liborio:{partenze[],fermate[],cambi[]}}], _ts}` |
-| `qm_hk_soul` | Statistiche HK SoulArt per giorno |
-| `qm_hk_bout` | Statistiche HK Boutique per giorno |
-| `qm_hk_access` | `{total, today, todayDate, last}` — contatore accessi housekeeper.html |
-| `qm_bkf_access` | `{total, today, todayDate, last}` — contatore accessi breakfast.html |
-| `qm_arrivi_raw` | `{pdf: base64, _ts}` — PDF grezzo arrivi (temporaneo, usato dal browser per RC cards) |
-| `qm_piano_raw` | `{pdf: base64, _ts}` — PDF grezzo piano settimana (temporaneo, usato dal browser) |
-| `qm_rev_sa/bh/sl/pr/ms/ar/sb` | CSV recensioni per hotel |
+### AI Integration
 
----
+Claude API chiamata via proxy Cloudflare:
+- **Model**: `claude-sonnet-4-20250514`
+- **Usi**: parsing PDF/immagini di turni, arrivi, documenti pasto → JSON strutturato
+- **Pattern**: file upload → base64 → `fetch(PROXY)` → JSON parse → state update → localStorage + KV
 
-## Drive Script (Google Apps Script)
+### Initialization Sequence (`DOMContentLoaded` in app.js)
 
-### Script 1 — Upload DSB (Upload automatico file)
+1. Imposta data corrente
+2. Costruisce KPI bar chart
+3. Pull async da Cloudflare KV (cloud sync)
+4. Ripristina stato localStorage: checklist, reclami, audit, task custom, turni settimanali, arrivi, recensioni, dati HKP, pulizie, pasti
+5. Avvia timer: clock (10s), meteo (10min), polling overview (30s)
 
-Associato alla cartella Drive "Upload DSB". Processa PDF caricati in base al nome file:
+### Review Scoring Formula
 
-| Nome file (lowercase, inizia con) | Handler | Salva in KV |
-|-----------------------------------|---------|-------------|
-| `arrivi oggi` | `processArrivi` | `qm_arriviData` + `qm_arrivi_raw` |
-| `piano settimana` | `processPiano` | `qm_piano_raw` |
-| `hkp oggi` | `processHkpOggi` | `qm_pulData` |
-| `bkf oggi` | `processBkfOggi` | `qm_bkfData` |
-| `hkp soul` | `processHkpSoul` | `qm_hk_soul` |
-| `hkp boutique` | `processHkpBoutique` | `qm_hk_bout` |
+Media pesata: **85% anno corrente / 10% anno-2 / 5% anno-3**, con fattore di decadimento a 271 giorni per il tracking delle scadenze.
 
-**Costanti Drive script:**
-```javascript
-const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
-const MODEL = 'claude-sonnet-4-20250514';
-const FOLDER_NAME = 'Upload DSB';
-```
+### Hotel Room Detection Logic
 
-**`kvSet` corretto (POST, non PUT):**
-```javascript
-function kvSet(key, value) {
-  UrlFetchApp.fetch(PROXY + '/kv/set', {
-    method: 'POST',
-    contentType: 'application/json',
-    payload: JSON.stringify({ key: key, value: JSON.stringify(value) }),
-    muteHttpExceptions: true
-  });
-}
-```
+I numeri di camera determinano la struttura di appartenenza:
+- `Art` prefix → Art Resort
+- `200–299` → Boutique Hotel
 
-**`processPiano`** — salva PDF grezzo (NON usa Claude AI, evita errori di parsing):
-```javascript
-function processPiano(file) {
-  const base64 = Utilities.base64Encode(file.getBlob().getBytes());
-  kvSet('qm_piano_raw', { pdf: base64, _ts: Date.now() });
-}
-```
-
-**`processArrivi`** — salva PDF grezzo + Claude AI per struttura:
-```javascript
-function processArrivi(file) {
-  const base64 = Utilities.base64Encode(file.getBlob().getBytes());
-  kvSet('qm_arrivi_raw', { pdf: base64, _ts: Date.now() });
-  const data = callClaude(base64, `...prompt arriviData...`);
-  data._ts = Date.now();
-  kvSet('qm_arriviData', data);
-}
-```
-
-### Script 2 — Turno Settimanale (Foglio Google)
-
-**File**: `TURNI DA 19/09` — ID `11qLWMXkC46bu2-9JvN5Tr5G_ry11-qMUPzHifcgsQso` — Tab gid `2003426322`
-
-Funzione `leggiTurnoSettimana()`:
-- Legge la settimana corrente per colonne (NAME_COL=11, START_COL=12, START_DATE=2025-09-01)
-- Salva `kvSet('qm_weekData', { giorni, _ts: Date.now() })`
-- **Trigger**: "In caso di modifica" → Da foglio di lavoro
-
----
-
-## Parser browser (affidabili, coordinati)
-
-I PDF vengono parsati nel browser con **pdfjsLib** — molto più affidabili di Claude AI per layout fissi.
-
-### `parsePianoItems(items)` — app.js riga 3058 (`§§ PIANO SETTIMANA`)
-- Input: array `{s, x, y, p}` da pdfjsLib
-- Raggruppa per riga (tolleranza y=4), trova header con ≥2 abbreviazioni giorno
-- `-` = partenza, `=` = fermata, `-+` = cambio (partenza con arrivo), `+` = solo arrivo (ignorato)
-- Rileva camera: `Art N` → soulart, `200-299` → boutique, `AS_LIB` → liborio
-- Struttura per giorno: `{soulart:{partenze[],fermate[],cambi[]}, boutique:{...}, liborio:{...}}`
-- **Liborio in overview**: fuso con boutique in `renderPianoGiorno` (mostra con label "Boutique - San Liborio")
-- **Liborio in housekeeper.html**: fuso con boutique nella sezione Boutique Hotel
-- **Cambio camera (⇄)**: chip rosso con simbolo `⇄` bold bianco; didascalia inline
-
-### `checkAndParsePianoRaw()` — app.js
-- Fetcha `qm_piano_raw` da KV (non localStorage — troppo grande)
-- Se `_ts` > `qm_piano._ts`: decode base64 → pdfjsLib → `parsePianoItems` → salva `qm_piano`
-- Elimina `qm_piano_raw` da KV dopo il parsing
-
-### `rcParseGuests(text)` — app.js riga 3470 (`§§ REGISTRATION CARDS`)
-- Input: testo estratto da pdfjsLib
-- Regex su pattern `camera / tipo ospite pax trattamento arrivo-partenza`
-- Output: `[{camera, nome, pax, trattamento, checkin, checkout}]`
-
-### `checkAndParseArriviRaw()` — app.js
-- Fetcha `qm_arrivi_raw` da KV
-- Se `_ts` > `qm_ts_arriviRaw`: decode base64 → pdfjsLib → testo → `rcParseGuests` → `rcRenderCards`
-- Elimina `qm_arrivi_raw` da KV dopo il parsing
-
----
-
-## Auto-polling (ogni 30 secondi)
-
-In `app.js`, dopo `setInterval(tick, 10000)`, c'è un `setInterval` da 30s che:
-1. Controlla `qm_arriviData` in KV — se `_ts` > locale aggiorna UI arrivi
-2. Chiama `checkAndParseArriviRaw()` — processa PDF grezzo arrivi → RC cards
-3. Chiama `checkAndParsePianoRaw()` — processa PDF grezzo piano
-4. Controlla `qm_weekData` in KV — se `_ts` > locale aggiorna turno
-
----
-
-## Sync al caricamento (syncFromCloud)
-
-`LS.syncFromCloud()` — app.js ~riga 510
-- Fetcha tutte le chiavi KV in parallelo e salva in localStorage
-- **NON include `piano_raw` e `arrivi_raw`** — troppo grandi, gestiti separatamente
-- Per `hk_soul`, `hk_bout`, `piano`: aggiorna anche timestamp visivo e chiama `hkSetLoaded`
-
----
-
-## Struttura Staff
-
-```javascript
-const DEPTS = {
-  fo:  { members: ['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.',"D'Andrea F.",'Grieco V.','Extra Night','Extra Roberto'] },
-  hk:  { members: ['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Giuditta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.'] },
-  bkf: { members: ['Amorese S.','Albano D.','Ferace C.','Panagodage S.'] },
-  mt:  { members: ['Basile G.'] }
-};
-// NAME_ALIAS nel parser turno: {'extra i.':'Extra Roberto','extra bkf sau':'Panagodage S.'}
-```
-
----
-
-## housekeeper.html
-
-Mini app separata per le cameriere. Legge da KV:
-- `qm_piano` → partenze/fermate/cambi per giorno (SoulArt, Boutique, Liborio)
-- `qm_hk_soul` / `qm_hk_bout` → statistiche HK giornaliere
-- `MATARESE` = Set camere Art 1–22 assegnate a Matarese
-- Sezioni: **Matarese** (Art 1–22 selezionate), **Altre housekeeper** (restanti SoulArt), **Boutique Hotel - San Liborio** (Boutique + Liborio)
-- Contatore accessi su KV `qm_hk_access`; esclusione dispositivo via `?notrack` (flag in localStorage)
-
----
-
-## breakfast.html
-
-Mini app separata per il responsabile colazione. Legge da KV:
-- `qm_bkfData` → `{data:[{label,data,adulti,bambini,noCol}], activeDay, ts}`
-- Mostra: coperti totali (adulti+bambini), room only, prossimi giorni, grafico settimanale SVG
-- Contatore accessi su KV `qm_bkf_access`; esclusione dispositivo via `?notrack`
-- Navigazione giorni ‹ › con sessionStorage per persistere il giorno selezionato
-- Cache locale in localStorage (`bkf_cache`) per caricamento istantaneo
-
----
-
-## Overview — layout v187
-
-- **Riga 1** (4 col): Arrivi · Partenze · Fermate · Occupazione (da `pulData` / report pulizie)
-- **Piano camere** (panel): SoulArt + Boutique - San Liborio; cambi con `⇄`
-- **Riga 2** (3 col): Coperti colazione · Grafico settimanale SVG · Room Only
-- Pannello occupazione, pulizie, BKF espandibili sotto
-
-## Mini App — sezione dashboard
-
-Entrambi i pannelli (HKP e Breakfast) nella vista `miniapp`:
-- **HKP**: preview dati oggi (soul+bout), piano camere, contatore accessi, link
-- **Breakfast**: oggi (coperti+room only+gruppi+note), prossimi 3 giorni, grafico settimanale, link
-
----
-
-## Operativa Housekeeping (HKP) — Google Sheets
-
-Due viste dedicate nel menu sidebar, sezione **Operativa Housekeeping**:
-
-| Vista | Struttura | Foglio Google |
-|-------|-----------|---------------|
-| `hkpsheet` | SoulArt Hotel | [1NzJCavF4hb...](https://docs.google.com/spreadsheets/d/1NzJCavF4hb-rHSSERSUgHBcVpHDHrSolMcwpZAtx-Pc/edit) |
-| `hkpsheetar` | Art Resort | [1FO9YxVpojx...](https://docs.google.com/spreadsheets/d/1FO9YxVpojxWD1eyi_IxVwQOYbddfDk9iOLBtD-fH3qo/edit) |
-
-**Apps Script URL (lettura dati dal foglio):**
-```javascript
-const HKP_URLS = {
-  sa: 'https://script.google.com/macros/s/AKfycbyosKJIaYIxh7D7GnCMFU7K_gABx2uNSy2VuaEjRc4ND1eEF9zrcSyUgc1Kp3X27lPa/exec',
-  ar: 'https://script.google.com/macros/s/AKfycbwtxy0lngIzQ07QKRX2llx3lBCp2GdE1CoXsAW7GbKre5OEEARNdpCDuahc0DFsPAp7/exec'
-};
-```
-
-**Struttura dati restituita dallo script:**
-```javascript
-{
-  mese: "marzo 2026",
-  giorni_elaborati: 20,
-  giorni_mese: 31,
-  tot_mese: 480,
-  totale_per_giorno: { 1: 24, 2: 22, ... },   // giorno del mese → n. camere
-  cameriere: [
-    { nome: "Matarese A.", camere_tot: 120, camere_per_giorno: { 1: 8, 2: 6, ... } }
-  ]
-}
-```
-
-**Funzioni principali (`§§ HKP OPERATIVE` in app.js):**
-- `hkpLoad(p)` — chiama Apps Script, salva in localStorage + KV
-- `hkpRenderAll(p)` — aggiorna KPI + chiama renderContent
-- `hkpRenderContent(p)` — tab "riepilogo" (ranking + sparkline) o "dettaglio" (per giorno)
-- `hkpSelectDay(p, day)` — navigazione giornaliera nel tab dettaglio
-- `hkpSave(p)` / `hkpRestore()` — persistenza localStorage + KV (`qm_hkp_sa`, `qm_hkp_ar`)
-
-**KPI mostrati:** Camere mese · Media/giorno · Top cameriera 👑 · Cameriere attive
-
----
-
-## Problemi noti e soluzioni applicate
-
-| Problema | Causa | Soluzione |
-|----------|-------|-----------|
-| Piano settimana sbagliato da Drive | Claude AI misconta colonne coordinate | Drive salva PDF grezzo → browser parsa con `parsePianoItems` |
-| RC cards mancano 2 ospiti su 14 | Claude AI manca camere con note lunghe | Drive salva PDF grezzo → browser parsa con `rcParseGuests` |
-| `piano_raw` riempie localStorage | PDF base64 ~2MB occupa quota | `piano_raw` non passa per localStorage, fetcha direttamente da KV |
-| RC cards non si aggiornano in tempo reale | Dashboard sync solo all'avvio | Polling ogni 30s controlla KV e aggiorna UI |
-| `kvSet` non funzionava | Drive usava PUT `/kv/{key}` non supportato | Corretto in POST `/kv/set` con `{key, value}` |
-| `qm_weekData` cancellato | `piano_raw` aveva riempito localStorage | Ora `piano_raw` non tocca localStorage |
-| Viste HKP Operative sparite | Refactoring da v185 (file unico) a v187 (app.js+index.html) | Recuperate da `git show 2183997:index.html`; ora documentate nell'inventario viste |
-
----
-
-## CSS Design Tokens
+### CSS Design Tokens
 
 ```css
---bg: #E8E8EA       /* sfondo pagina */
---surface: #F4F4F6  /* card */
---accent: #1E4080   /* blu primario */
+--bg: #E8E8EA      /* sfondo pagina */
+--surface: #F4F4F6 /* superfici card */
+--accent: #1E4080  /* blu primario */
 --green: #1E7A48
 --red: #C0352A
 --amber: #A05A00
 ```
+
+---
+
+## §§ Section Map (app.js)
+
+| Linea approx. | Sezione | Contenuto |
+|--------------|---------|-----------|
+| 1 | COSTANTI & CONFIG | `DEPTS`, `WEEK`, `IS_REST`, costanti globali |
+| 15 | TURNO — ACCORDIONI UC & UPLOAD BOX | Toggle accordioni turni, upload box UI |
+| 87 | TURNO — PARSER TSV/PDF | `parseTurniTSV()`, `handleTurniFile()` |
+| 257 | TURNO — RENDER & NAVIGAZIONE | `renderDay()`, `buildWeekNav()`, `loadWeekData()` |
+| 349 | NAVIGAZIONE VISTE | `setView()`, `pageTitles`, toggle gruppi nav |
+| 357 | HKP OPERATIVE — Google Sheets | `hkpLoad()`, `hkpRenderAll()`, `hkpSave()`, `hkpRestore()` |
+| 525 | MINI APP — RENDER | `miniappRenderBkf()`, `miniappRenderPiano()` |
+| 628 | UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP | `fmtNow()`, `fmtUploadTs()`, `setUploadTs()` |
+| 664 | CHECKLIST — TASK ITEMS | `buildTaskItem()`, `renderTaskList()` |
+| 696 | STORAGE & SYNC KV | `kvSet()`, `kvGet()`, `syncFromCloud()`, `setSyncStatus()` |
+| 807 | CHECKLIST — STATO CENTRALIZZATO | `TASK_STATE`, `addCustomTask()`, `syncTaskState()` |
+| 1046 | CHECKLIST — RENDER & PROGRESS | `toggleCheck()`, `toggleCheckV2()`, progress updates |
+| 1127 | OVERVIEW — TOGGLE PREVIEW PANELS | Toggle pannelli occupancy/pulizie/breakfast |
+| 1219 | OVERVIEW — GRAFICI & METEO | `buildBarChart()`, `fetchMeteo()`, `toggleWeatherForecast()` |
+| 1299 | SIDEBAR — OROLOGIO & DATA | `updateSbClock()`, `toggleDatePopup()`, `saveDate()` |
+| 1351 | OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 30s | `refreshOverviewForDate()`, polling loop, `renderArriviData()` |
+| 1669 | RECENSIONI — SCORE TREND MODAL | Modal trend punteggi con media pesata |
+| 1756 | OVERVIEW — RECENSIONI NO-REPLY | Tracking recensioni senza risposta in overview |
+| 1828 | BKF SHEET — ANALISI AI | `bkfSheetAnalyze()`, `bkfSheetARAnalyze()` via Claude API |
+| 2041 | REPORT PULIZIE — PUL | `pulParseText()`, `renderPulData()`, `updateKpiFromPulizie()` |
+| 2204 | RECENSIONI — SCORING & INIT UPLOAD | Scoring recensioni, init upload per tutti gli hotel |
+| 2235 | RECENSIONI — LOGICA | `revParseCsv()`, `revRenderList()`, `revGenerateReply()`, filtri |
+| 2995 | REPORT PASTI — BKF | `bkfParseText()`, `renderBkfData()`, `updateKpiFromBkf()` |
+| 3112 | HOUSEKEEPING — HKP UPLOAD & DATI | Upload HKP, parsing dati, reset slot |
+| 3191 | PIANO SETTIMANA — UPLOAD & PARSER | `parsePianoItems()` (~line 3220), upload e parsing piano settimanale |
+| 3350 | BKF — GRUPPI, NOTE & GRAFICI | Gruppi breakfast, note, grafici |
+| 3603 | REGISTRATION CARDS — RC | `rcParseGuests()` (~line 3650), `rcRenderCards()`, stampa |
+| 3668 | MODAL — CATEGORIE TREND | Modal trend categorie, calcolo score pesato |
+| 3767 | ARRIVI GIORNALIERI — UPLOAD & RENDER | `handleArriviFile()`, `renderArriviModal()`, `fixArriviStruttura()` |
+
+---
+
+## Global Variables & Constants
+
+| Nome | Tipo | Contenuto |
+|------|------|-----------|
+| `DEPTS` | const object | Reparti: `fo` (Front Office), `hk` (Housekeeping), `bkf` (Breakfast), `mt` (Maintenance) — con `label`, `cls`, `members[]` |
+| `REV_HOTELS` | const object | Struttura dati recensioni per hotel (sa, bh, sl, pr, ms, ar, sb) |
+| `TASK_STATE` | let object | Stato centralizzato di tutti i task checklist |
+| `HKP_DATA` | let object | Dati HKP operative: `{sa: null, ar: null}` |
+| `HKP_TAB` | let object | Tab attivo HKP: `{sa: 'riepilogo', ar: 'riepilogo'}` |
+| `HKP_URLS` | const object | Endpoint Google Apps Script per HKP (sa, ar) |
+| `IS_REST` | const fn | Ritorna `true` se il valore turno è 'R' (riposo) |
+| `WEEK` | const object | Turno settimana fallback hardcoded (7 giorni) |
+| `weekData` | let | Dati turno settimana parsati |
+| `activeDay` | let | Indice giorno attivo (0-6) |
+| `PROXY` | const string | `https://anthropic-proxy.qm-d82.workers.dev` |
+| `SHEETS_URL` | const string | Apps Script endpoint BKF SoulArt |
+| `SHEETS_URL_AR` | const string | Apps Script endpoint BKF Art Resort |
+| `DAILY_TASKS` | const array | Task giornalieri predefiniti per tutti i giorni |
+| `WED_TASKS`, `THU_TASKS` | const arrays | Task specifici mer/gio |
+| `customDate` | let | Data selezionata nel date picker sidebar |
+| `bkfSheetData`, `bkfSheetARData` | let arrays | Dati breakfast sheet parsati (SoulArt, Art Resort) |
+| `pulData`, `pulActiveDay`, `pulOpen` | let | Stato report pulizie |
+| `bkfData`, `bkfActiveDay`, `bkfOpen` | let | Stato report pasti |
+| `pianoData` | let | Dati piano settimana |
+| `bkfGroups`, `bkfNotes` | let objects | Gruppi e note breakfast |
+| `guestsData` | let array | Lista ospiti registration card |
+| `arriviData` | let object | Dati arrivi giornalieri parsati |
+| `REV_CATS`, `REV_TREND_CATS` | const arrays | Categorie recensioni |
+| `DECAY_F1_MS` | const number | Finestra decadimento 270 giorni per F1 weighting |
+| `ROOM_CODES`, `tratMap` | const objects | Codici tipo camera, mappatura trattamenti |
+
+---
+
+## Endpoints & URLs
+
+| URL | Scopo |
+|-----|-------|
+| `https://anthropic-proxy.qm-d82.workers.dev/v1/messages` | Claude API proxy (AI analysis PDF/immagini) |
+| `https://anthropic-proxy.qm-d82.workers.dev` | KV storage operations (cloud sync) |
+| `https://script.google.com/macros/s/AKfycbz-6o…/exec` | Google Sheets BKF SoulArt (`SHEETS_URL`) |
+| `https://script.google.com/macros/s/AKfycbzmkY…/exec` | Google Sheets BKF Art Resort (`SHEETS_URL_AR`) |
+| `https://script.google.com/macros/s/AKfycbyosK…/exec` | Google Sheets HKP SoulArt (`HKP_URLS.sa`) |
+| `https://script.google.com/macros/s/AKfycbwtxy…/exec` | Google Sheets HKP Art Resort (`HKP_URLS.ar`) |
+| `https://api.open-meteo.com/v1/forecast?latitude=40.8518&longitude=14.2681` | Meteo Napoli (previsioni 10 giorni) |
+| `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js` | PDF.js worker |
+
+---
+
+## Inventario Viste Obbligatorie (index.html)
+
+Tutte e 15 le view devono essere presenti. Verifica con:
+
+```bash
+grep -n 'id="view-' index.html
+```
+
+| View ID | Descrizione |
+|---------|-------------|
+| `view-overview` | Dashboard principale con KPI, turni, meteo |
+| `view-registrazione` | Registration cards ospiti |
+| `view-checklist` | Task checklist giornaliera |
+| `view-reclami` | Gestione reclami |
+| `view-recensioni-sa` | Recensioni SoulArt |
+| `view-recensioni-bh` | Recensioni Boutique |
+| `view-recensioni-sl` | Recensioni San Liborio |
+| `view-recensioni-pr` | Recensioni Principe |
+| `view-recensioni-ms` | Recensioni Mastrangelo |
+| `view-recensioni-ar` | Recensioni Art Resort |
+| `view-recensioni-sb` | Recensioni Santa Brigida |
+| `view-audit` | Audit qualità |
+| `view-bkfsheet` | Operativa Breakfast — SoulArt |
+| `view-bkfsheetar` | Operativa Breakfast — Art Resort |
+| `view-hkpsheet` | Operativa Housekeeping — SoulArt Hotel |
+| `view-hkpsheetar` | Operativa Housekeeping — Art Resort |
+| `view-miniapp` | Mini app preview |
+
+---
+
+## Operativa Housekeeping (HKP)
+
+### Scopo
+
+Mostra i consuntivi di lavoro delle cameriere (camere fatte per giorno, classifica mensile, sparkline trend). I dati vengono da Google Sheets aggiornati dalla governante.
+
+### Apps Script Endpoints
+
+```js
+HKP_URLS = {
+  sa: 'https://script.google.com/macros/s/AKfycbyosKJIaYIxh7D7GnCMFU7K_gABx2uNSy2VuaEjRc4ND1eEF9zrcSyUgc1Kp3X27lPa/exec',
+  ar: 'https://script.google.com/macros/s/AKfycbwtxy0lngIzQ07QKRX2llx3lBCp2GdE1CoXsAW7GbKre5OEARNdpCDuahc0DFsPAp7/exec'
+}
+```
+
+### Struttura Dati HKP
+
+```js
+{
+  cameriere: [
+    {
+      nome: string,
+      camere_tot: number,
+      camere_per_giorno: { "1": 4, "2": 6, ... }
+    }
+  ],
+  tot_mese: number,
+  totale_per_giorno: { "1": 12, "2": 18, ... },
+  mese: string,          // es. "Aprile 2026"
+  giorni_elaborati: number,
+  giorni_mese: number
+}
+```
+
+### Funzioni HKP
+
+| Funzione | Scopo |
+|----------|-------|
+| `hkpLoad(p)` | Fetch dati da Google Sheets (p = 'sa' o 'ar') |
+| `hkpRenderAll(p)` | Render completo view HKP (KPI + content) |
+| `hkpRenderContent(p)` | Render tab corrente (riepilogo o dettaglio) |
+| `hkpTab(p, tab, btn)` | Cambia tab attivo |
+| `hkpSave(p)` | Salva in localStorage + KV |
+| `hkpRestore()` | Ripristina da localStorage |
+| `hkpSelectDay(p, day)` | Switch vista per giorno |
+
+### Tab Disponibili
+
+- **Riepilogo mensile**: classifica cameriere (camere totali) + sparkline trend giornaliero
+- **Per giorno**: dettaglio camere per ogni giorno del mese
+
+---
+
+## Staff Attuale (DEPTS)
+
+### Front Office (`fo`)
+Aggiornare in `app.js` sezione `§§ COSTANTI & CONFIG`.
+
+### Housekeeping (`hk`)
+Membri attuali includono: Extra Giuditta (aggiunta), Extra Vincenza (rimossa).
+
+### Manutenzione (`mt`) — Comportamento Speciale
+
+Il reparto `mt` ha logica speciale in `renderDay()`:
+- **Sempre visibile** anche quando `inT.length === 0` (nessuno in turno)
+- **Sempre mostra tutti i membri**: `showMembers = key==='mt' ? dept.members : inT`
+- **Active styling per qualsiasi shift non-riposo**: `isActive = key==='mt' ? !IS_REST(sv) : ['P','AC','CG',...].includes(sv)`
+- Ragione: il personale di manutenzione può avere turni custom (es. '9-17') non nella lista standard
+
+---
+
+## Funzioni Chiave per Sezione
+
+### Turni
+
+| Funzione | Linea approx. | Scopo |
+|----------|--------------|-------|
+| `parseTurniTSV(text)` | §87 | Parse TSV/PDF → dati settimana |
+| `handleTurniFile(file)` | §87 | Upload handler → base64 → Claude API |
+| `loadWeekData(data)` | §257 | Carica turni in memoria |
+| `renderDay(idx)` | §257 | Render layout staff giorno singolo |
+| `buildWeekNav()` | §257 | Costruisce bottoni nav settimana |
+| `getShift(shifts, name)` | §257 | Lookup turno persona/giorno |
+| `editShift(dayIdx, nome)` | §257 | Modifica turno individuale |
+| `resetTurni()` | §257 | Azzera tutti i turni |
+
+### Checklist
+
+| Funzione | Linea approx. | Scopo |
+|----------|--------------|-------|
+| `buildTaskItem(t, listId)` | §664 | Crea elemento DOM task |
+| `renderTaskList(listId, ...)` | §664 | Render lista task |
+| `syncTaskState(key, done, time)` | §807 | Aggiorna stato task (localStorage + KV) |
+| `addCustomTask(inp)` | §807 | Aggiunge task custom |
+| `toggleCheck(li, listId)` | §1046 | Toggle completamento task |
+| `removeCustomTask(text, btn)` | §807 | Elimina task custom |
+| `restoreChecklistState()` | §807 | Ripristino da localStorage |
+
+### Storage & Sync
+
+| Funzione | Linea approx. | Scopo |
+|----------|--------------|-------|
+| `kvSet(key, value, retries)` | §696 | Set valore KV cloud con retry |
+| `kvGet(key)` | §696 | Get valore KV |
+| `syncFromCloud()` | §696 | Fetch tutti i keys da KV, aggiorna localStorage |
+| `setSyncStatus(state)` | §696 | Aggiorna indicatore punto sync |
+
+### Overview
+
+| Funzione | Linea approx. | Scopo |
+|----------|--------------|-------|
+| `refreshOverviewForDate(date)` | §1351 | Render principale overview |
+| `renderArriviData()` | §1351 | Render KPI cards arrivi |
+| `buildBarChart(data)` | §1219 | Generatore SVG bar chart |
+| `fetchMeteo()` | §1219 | Fetch previsioni meteo |
+| `updateSbClock()` | §1299 | Aggiorna orologio sidebar (ogni 10s) |
+
+### Recensioni
+
+| Funzione | Linea approx. | Scopo |
+|----------|--------------|-------|
+| `revParseCsv(text)` | §2235 | Parse CSV recensioni (tutti gli hotel) |
+| `revHandleFile(p, file)` | §2235 | Upload handler per hotel |
+| `revRenderList(p)` | §2235 | Render lista recensioni filtrata |
+| `revGenerateReply(r)` | §2235 | Genera risposta via Claude |
+| `revCopyReply(uid)` | §2235 | Copia risposta generata |
+| `revMarkSent(p, gi)` | §2235 | Traccia risposte inviate |
+| `revApplyFilters(p)` | §2235 | Filtra e ordina recensioni |
+
+### Arrivi & Registration Cards
+
+| Funzione | Linea approx. | Scopo |
+|----------|--------------|-------|
+| `handleArriviFile(file)` | §3767 | Upload, parse via Claude API |
+| `fixArriviStruttura(arrivi)` | §3767 | Corregge codici struttura da numero camera |
+| `renderArriviModal(...)` | §3767 | Render cards arrivi con filtri |
+| `rcParseGuests(text)` | §3603 (~3650) | Estrae dati ospiti da PDF arrivi |
+| `rcRenderCards(guests)` | §3603 | Render cards ospiti |
+| `preparePrint(idx)` | §3603 | Genera HTML per stampa |
+
+---
+
+## Periodic Timers
+
+| Intervallo | Scopo |
+|-----------|-------|
+| 10 sec | `updateSbClock()` — aggiorna orologio sidebar |
+| 10 min | `fetchMeteo()` — aggiorna previsioni meteo |
+| 30 sec | Polling overview + cloud sync + aggiornamento KPI |
+
+---
+
+## Recovery — Recupero Codice Perso
+
+Se delle viste o funzionalità spariscono, recuperare dal git history:
+
+```bash
+# Lista commit recenti
+git log --oneline -20
+
+# Commit chiave con tutte le viste originali
+git show 2183997:index.html | grep 'id="view-'
+
+# Estrarre blocco specifico da commit (es. linee 3500-3800)
+git show 2183997:index.html | sed -n '3500,3800p'
+
+# Altri commit utili
+# f97c04d — versione con HKP views
+# c973287 — versione stabile pre-modifiche
+```
+
+### Viste da non perdere
+
+Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (commit `2183997`). Se scompaiono di nuovo, il codice completo è disponibile in quel commit.
+
+---
+
+## Note & Problemi Noti
+
+| Problema | Causa | Fix |
+|----------|-------|-----|
+| HKP views scomparse | Sovrascrittura accidentale index.html | Recuperare da git `2183997` |
+| Browser usa versione vecchia app.js | Cache buster non aggiornato | Aggiornare `?v=...` in `<script src="app.js?v=...">` |
+| MT card non visibile in overview | `inT.length === 0` saltava il reparto | `showMembers = key==='mt' ? dept.members : inT` |
+| Basile '9-17' mostrato come non-attivo | '9-17' non in lista shift standard | MT usa `!IS_REST(sv)` invece di lista whitelist |
+| Extra Vincenza appare nell'UI | Era in DEPTS anche se nascosta nel foglio | Rimossa da `DEPTS.hk.members` |
+
+---
+
+## housekeeper.html & breakfast.html
+
+### housekeeper.html
+
+App standalone per la governante. Funzionalità:
+- Checklist camere per stato (pulita, sporca, da ispezionare, OOO)
+- Mappa visiva delle camere per piano
+- Persistenza locale via localStorage
+
+### breakfast.html
+
+App standalone per il breakfast manager. Funzionalità:
+- Lista ospiti con colazione inclusa
+- Filtri per struttura e trattamento
+- Stato servizio (servito / non servito)
+- Dati alimentati dagli arrivi giornalieri
