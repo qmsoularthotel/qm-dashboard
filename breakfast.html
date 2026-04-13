@@ -199,6 +199,23 @@ function renderDay(){
     </div>
   </div>`;
 
+  // Grafico settimanale
+  html+=`<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);padding:12px 14px;margin-bottom:10px;" id="bkf-chart-wrap"></div>`;
+
+  // Domani
+  const tomorrow=bkfData[currentIdx+1];
+  if(tomorrow){
+    const totTom=(tomorrow.adulti||0)+(tomorrow.bambini||0);
+    html+=`<div class="section-title">Domani</div>
+    <div class="preview-card">
+      <div class="preview-day">${tomorrow.label}</div>
+      <div class="preview-row" style="grid-template-columns:1fr 1fr;">
+        <div class="preview-item"><div class="preview-val">${totTom}</div><div class="preview-lbl">BB</div></div>
+        <div class="preview-item"><div class="preview-val muted">${tomorrow.noCol||0}</div><div class="preview-lbl">RO</div></div>
+      </div>
+    </div>`;
+  }
+
   // Gruppi colazione
   if(bkfGroups&&bkfGroups.length){
     const today2=new Date();today2.setHours(0,0,0,0);
@@ -228,25 +245,6 @@ function renderDay(){
       </div>`;
     });
     html+=`</div>`;
-  }
-
-  // Grafico settimanale
-  html+=`<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);padding:12px 14px;margin-bottom:10px;" id="bkf-chart-wrap"></div>`;
-
-  // Prossimi giorni
-  const nextDays=bkfData.slice(currentIdx+1,currentIdx+4);
-  if(nextDays.length){
-    html+=`<div class="section-title">Prossimi giorni</div>`;
-    nextDays.forEach(nd=>{
-      const tot=(nd.adulti||0)+(nd.bambini||0);
-      html+=`<div class="preview-card">
-        <div class="preview-day">${nd.label}</div>
-        <div class="preview-row" style="grid-template-columns:1fr 1fr;">
-          <div class="preview-item"><div class="preview-val">${tot}</div><div class="preview-lbl">BB</div></div>
-          <div class="preview-item"><div class="preview-val muted">${nd.noCol||0}</div><div class="preview-lbl">RO</div></div>
-        </div>
-      </div>`;
-    });
   }
 
   html+=`<div class="refresh-row"><a href="javascript:loadAll()">↻ Aggiorna ora</a></div>`;
