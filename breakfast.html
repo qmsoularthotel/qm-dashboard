@@ -212,7 +212,7 @@ function renderDay(){
 function renderChart(){
   const el=document.getElementById('bkf-chart-wrap');if(!el)return;
   const pts=bkfData.map(d=>({label:d.label.split(' ')[0],v:(d.adulti||0)+(d.bambini||0)}));
-  const W=600,H=160,PL=30,PR=10,PT=20,PB=28;
+  const W=600,H=220,PL=36,PR=10,PT=36,PB=36;
   const plotW=W-PL-PR,plotH=H-PT-PB;
   const YMAX=Math.max(30,...pts.map(p=>p.v))+10;
   const step=Math.ceil(YMAX/4/10)*10||10;
@@ -222,18 +222,18 @@ function renderChart(){
   for(let v=0;v<=YMAX;v+=step){
     const y=sy(v);
     svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#e2d8cc" stroke-width="1"/>`;
-    svg+=`<text x="${PL-4}" y="${y+4}" font-size="10" fill="#9a8878" text-anchor="end">${v}</text>`;
+    svg+=`<text x="${PL-4}" y="${y+5}" font-size="14" fill="#9a8878" text-anchor="end">${v}</text>`;
   }
   const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
   const areaPath=linePath+`L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z`;
   svg+=`<path d="${areaPath}" fill="#b45309" opacity="0.12"/>`;
-  svg+=`<path d="${linePath}" fill="none" stroke="#b45309" stroke-width="2"/>`;
+  svg+=`<path d="${linePath}" fill="none" stroke="#b45309" stroke-width="2.5"/>`;
   pts.forEach((p,i)=>{
     const x=sx(i),y=sy(p.v);
     const isActive=i===currentIdx;
-    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?5:3}" fill="#b45309" stroke="white" stroke-width="1.5"/>`;
-    svg+=`<text x="${x}" y="${y-8}" font-size="10" fill="#7c3a00" text-anchor="middle" font-weight="${isActive?'700':'600'}">${p.v}</text>`;
-    svg+=`<text x="${x}" y="${H-4}" font-size="10" fill="#9a8878" text-anchor="middle">${p.label}</text>`;
+    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?7:5}" fill="#b45309" stroke="white" stroke-width="2"/>`;
+    svg+=`<text x="${x}" y="${y-14}" font-size="${isActive?22:18}" fill="#7c3a00" text-anchor="middle" font-weight="${isActive?'800':'600'}">${p.v}</text>`;
+    svg+=`<text x="${x}" y="${H-5}" font-size="15" fill="#9a8878" text-anchor="middle">${p.label}</text>`;
   });
   svg+='</svg>';
   el.innerHTML=svg;
