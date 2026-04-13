@@ -1,5 +1,5 @@
 // §§ COSTANTI & CONFIG (DEPTS, WEEK fallback, IS_REST)
-const DEPTS={fo:{label:'Front Office',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Extra Roberto']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Vincenza','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
+const DEPTS={fo:{label:'Front Office',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Extra Roberto']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Giuditta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
 let weekData=null,activeDay=0;
 const IS_REST=v=>{if(!v)return true;const u=v.trim().toUpperCase();return['R','RIPOSO','OFF','—','-','–',''].includes(u);};
@@ -320,8 +320,10 @@ function renderDay(idx){
   const shiftRow=(n,sv,cls)=>`<div class="staff-row" style="cursor:pointer;" title="Clicca per correggere" onclick="editShift(${idx},'${n.replace(/'/g,"\\'")}')"><span class="sname">${n}</span><span class="sshift ${cls}">${sv||'—'}</span></div>`;
   html+='<div class="staff-grid">';
   Object.entries(DEPTS).forEach(([key,dept])=>{
-    const inT=dept.members.filter(n=>!IS_REST(getShift(shifts,n)));if(!inT.length)return;
-    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${inT.map(n=>{const sv=(getShift(shifts,n)||'').trim();return shiftRow(n,sv,['P','AC','CG','AG','CC','NC','NG'].includes(sv)?'ss-active':'ss-special');}).join('')}</div></div>`;
+    const inT=dept.members.filter(n=>!IS_REST(getShift(shifts,n)));
+    const showMembers=key==='mt'?dept.members:inT;
+    if(!showMembers.length)return;
+    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${showMembers.map(n=>{const sv=(getShift(shifts,n)||'').trim();return shiftRow(n,sv,['P','AC','CG','AG','CC','NC','NG'].includes(sv)?'ss-active':'ss-special');}).join('')}</div></div>`;
   });
   html+='</div>';area.innerHTML=html;
 }

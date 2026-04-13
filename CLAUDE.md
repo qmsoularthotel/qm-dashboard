@@ -230,7 +230,7 @@ In `app.js`, dopo `setInterval(tick, 10000)`, c'è un `setInterval` da 30s che:
 ```javascript
 const DEPTS = {
   fo:  { members: ['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.',"D'Andrea F.",'Grieco V.','Extra Night','Extra Roberto'] },
-  hk:  { members: ['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Vincenza','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.'] },
+  hk:  { members: ['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Giuditta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.'] },
   bkf: { members: ['Amorese S.','Albano D.','Ferace C.','Panagodage S.'] },
   mt:  { members: ['Basile G.'] }
 };
