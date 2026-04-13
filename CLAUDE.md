@@ -36,6 +36,42 @@ Questo file fornisce il contesto completo del progetto a Claude Code.
 
 **NON usare** i file nella cartella `.claude/worktrees/` — sono obsoleti.
 
+### Inventario viste obbligatorie (checklist anti-perdita)
+
+Ogni volta che si modifica `index.html`, verificare che TUTTE queste viste esistano:
+
+| ID vista | Descrizione |
+|----------|-------------|
+| `view-overview` | Panoramica del giorno |
+| `view-checklist` | Checklist operativa |
+| `view-registrazione` | Registration Cards |
+| `view-hkpsheet` | Operativa HKP — SoulArt Hotel |
+| `view-hkpsheetar` | Operativa HKP — Art Resort |
+| `view-bkfsheet` | Breakfast Sheet — SoulArt Hotel |
+| `view-bkfsheetar` | Breakfast Sheet — Art Resort Galleria |
+| `view-recensioni-sa/bh/sl/pr/ms/ar/sb` | Recensioni (7 hotel) |
+| `view-miniapp` | Mini App — anteprima e link |
+
+Verifica rapida: `grep "id=\"view-" index.html`
+
+### Recovery dal git
+
+Se una funzione o vista viene persa accidentalmente:
+
+```bash
+# Trova il commit dove esisteva
+git log --oneline
+
+# Visualizza il file in un commit specifico
+git show <hash>:index.html | grep -n "funzione_cercata"
+git show <hash>:index.html | sed -n 'START,ENDp'
+
+# Commit chiave con implementazioni complete:
+# 2183997 — v185 originale con HKP Operative, bkfsheet, tutte le viste
+# f97c04d — v187 con viste HKP ripristinate (primo tentativo)
+# c973287 — v187 con HKP Operative completa recuperata da v185
+```
+
 ### Mappa sezioni app.js
 
 Per trovare una sezione: `grep -n "// §§" app.js`
@@ -276,6 +312,48 @@ Entrambi i pannelli (HKP e Breakfast) nella vista `miniapp`:
 
 ---
 
+## Operativa Housekeeping (HKP) — Google Sheets
+
+Due viste dedicate nel menu sidebar, sezione **Operativa Housekeeping**:
+
+| Vista | Struttura | Foglio Google |
+|-------|-----------|---------------|
+| `hkpsheet` | SoulArt Hotel | [1NzJCavF4hb...](https://docs.google.com/spreadsheets/d/1NzJCavF4hb-rHSSERSUgHBcVpHDHrSolMcwpZAtx-Pc/edit) |
+| `hkpsheetar` | Art Resort | [1FO9YxVpojx...](https://docs.google.com/spreadsheets/d/1FO9YxVpojxWD1eyi_IxVwQOYbddfDk9iOLBtD-fH3qo/edit) |
+
+**Apps Script URL (lettura dati dal foglio):**
+```javascript
+const HKP_URLS = {
+  sa: 'https://script.google.com/macros/s/AKfycbyosKJIaYIxh7D7GnCMFU7K_gABx2uNSy2VuaEjRc4ND1eEF9zrcSyUgc1Kp3X27lPa/exec',
+  ar: 'https://script.google.com/macros/s/AKfycbwtxy0lngIzQ07QKRX2llx3lBCp2GdE1CoXsAW7GbKre5OEEARNdpCDuahc0DFsPAp7/exec'
+};
+```
+
+**Struttura dati restituita dallo script:**
+```javascript
+{
+  mese: "marzo 2026",
+  giorni_elaborati: 20,
+  giorni_mese: 31,
+  tot_mese: 480,
+  totale_per_giorno: { 1: 24, 2: 22, ... },   // giorno del mese → n. camere
+  cameriere: [
+    { nome: "Matarese A.", camere_tot: 120, camere_per_giorno: { 1: 8, 2: 6, ... } }
+  ]
+}
+```
+
+**Funzioni principali (`§§ HKP OPERATIVE` in app.js):**
+- `hkpLoad(p)` — chiama Apps Script, salva in localStorage + KV
+- `hkpRenderAll(p)` — aggiorna KPI + chiama renderContent
+- `hkpRenderContent(p)` — tab "riepilogo" (ranking + sparkline) o "dettaglio" (per giorno)
+- `hkpSelectDay(p, day)` — navigazione giornaliera nel tab dettaglio
+- `hkpSave(p)` / `hkpRestore()` — persistenza localStorage + KV (`qm_hkp_sa`, `qm_hkp_ar`)
+
+**KPI mostrati:** Camere mese · Media/giorno · Top cameriera 👑 · Cameriere attive
+
+---
+
 ## Problemi noti e soluzioni applicate
 
 | Problema | Causa | Soluzione |
@@ -286,6 +364,7 @@ Entrambi i pannelli (HKP e Breakfast) nella vista `miniapp`:
 | RC cards non si aggiornano in tempo reale | Dashboard sync solo all'avvio | Polling ogni 30s controlla KV e aggiorna UI |
 | `kvSet` non funzionava | Drive usava PUT `/kv/{key}` non supportato | Corretto in POST `/kv/set` con `{key, value}` |
 | `qm_weekData` cancellato | `piano_raw` aveva riempito localStorage | Ora `piano_raw` non tocca localStorage |
+| Viste HKP Operative sparite | Refactoring da v185 (file unico) a v187 (app.js+index.html) | Recuperate da `git show 2183997:index.html`; ora documentate nell'inventario viste |
 
 ---
 
