@@ -173,20 +173,19 @@ function renderDay(){
   </div>`;
 
   // KPI dettaglio
-  html+=`<div class="kpi-grid-4">
+  html+=`<div class="kpi-grid" style="grid-template-columns:1fr 1fr;margin-bottom:10px;">
     <div class="kpi-card">
       <div class="kpi-val sm">${d.adulti||0}</div>
       <div class="kpi-lbl">Adulti</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-val sm">${d.bambini||0}</div>
-      <div class="kpi-lbl">Bambini</div>
-    </div>
-    <div class="kpi-card" style="grid-column:span 2;">
       <div class="kpi-val sm" style="color:var(--text-muted);">${d.noCol||0}</div>
       <div class="kpi-lbl">Room Only</div>
     </div>
   </div>`;
+
+  // Grafico settimanale
+  html+=`<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);padding:12px 14px;margin-bottom:10px;" id="bkf-chart-wrap"></div>`;
 
   // Prossimi giorni
   const nextDays=bkfData.slice(currentIdx+1,currentIdx+4);
@@ -196,10 +195,9 @@ function renderDay(){
       const tot=(nd.adulti||0)+(nd.bambini||0);
       html+=`<div class="preview-card">
         <div class="preview-day">${nd.label}</div>
-        <div class="preview-row">
+        <div class="preview-row" style="grid-template-columns:1fr 1fr 1fr;">
           <div class="preview-item"><div class="preview-val">${tot}</div><div class="preview-lbl">Coperti</div></div>
           <div class="preview-item"><div class="preview-val">${nd.adulti||0}</div><div class="preview-lbl">Adulti</div></div>
-          <div class="preview-item"><div class="preview-val">${nd.bambini||0}</div><div class="preview-lbl">Bambini</div></div>
           <div class="preview-item"><div class="preview-val muted">${nd.noCol||0}</div><div class="preview-lbl">Room Only</div></div>
         </div>
       </div>`;
@@ -208,8 +206,38 @@ function renderDay(){
 
   html+=`<div class="refresh-row"><a href="javascript:loadAll()">↻ Aggiorna ora</a></div>`;
   document.getElementById('mainContent').innerHTML=html;
+  renderChart();
 }
 
+function renderChart(){
+  const el=document.getElementById('bkf-chart-wrap');if(!el)return;
+  const pts=bkfData.map(d=>({label:d.label.split(' ')[0],v:(d.adulti||0)+(d.bambini||0)}));
+  const W=600,H=160,PL=30,PR=10,PT=20,PB=28;
+  const plotW=W-PL-PR,plotH=H-PT-PB;
+  const YMAX=Math.max(30,...pts.map(p=>p.v))+10;
+  const step=Math.ceil(YMAX/4/10)*10||10;
+  const sx=i=>PL+i/(pts.length-1||1)*plotW;
+  const sy=v=>PT+plotH-(v/YMAX)*plotH;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
+  for(let v=0;v<=YMAX;v+=step){
+    const y=sy(v);
+    svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#e2d8cc" stroke-width="1"/>`;
+    svg+=`<text x="${PL-4}" y="${y+4}" font-size="10" fill="#9a8878" text-anchor="end">${v}</text>`;
+  }
+  const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
+  const areaPath=linePath+`L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z`;
+  svg+=`<path d="${areaPath}" fill="#b45309" opacity="0.12"/>`;
+  svg+=`<path d="${linePath}" fill="none" stroke="#b45309" stroke-width="2"/>`;
+  pts.forEach((p,i)=>{
+    const x=sx(i),y=sy(p.v);
+    const isActive=i===currentIdx;
+    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?5:3}" fill="#b45309" stroke="white" stroke-width="1.5"/>`;
+    svg+=`<text x="${x}" y="${y-8}" font-size="10" fill="#7c3a00" text-anchor="middle" font-weight="${isActive?'700':'600'}">${p.v}</text>`;
+    svg+=`<text x="${x}" y="${H-4}" font-size="10" fill="#9a8878" text-anchor="middle">${p.label}</text>`;
+  });
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
 async function loadAll(){
   document.getElementById('mainContent').innerHTML=`<div class="loading"><div class="spinner"></div>Caricamento...</div>`;
   try{
