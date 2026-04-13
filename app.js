@@ -603,35 +603,123 @@ function miniappRenderBkf(){
   html+=`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light);">${svg}</div>`;
   el.innerHTML=html;
 }
-function renderPianoGiorno(elId,refDate){
+let pianoNavIdx=null; // indice giorno selezionato nel pannello overview
+
+function pianoGetGiornoIdx(refDate){
+  if(!pianoData||!pianoData.giorni)return -1;
+  const ref=new Date(refDate||new Date());
+  const refStr=String(ref.getDate()).padStart(2,'0')+'/'+String(ref.getMonth()+1).padStart(2,'0')+'/'+ref.getFullYear();
+  const normDate=s=>s.split('/').map((p,i)=>i<2?p.padStart(2,'0'):p).join('/');
+  return pianoData.giorni.findIndex(g=>g.data&&normDate(g.data)===refStr);
+}
+
+function pianoNavRender(idx){
+  if(!pianoData||!pianoData.giorni||!pianoData.giorni.length)return;
+  pianoNavIdx=idx;
+  const giorno=pianoData.giorni[idx];
+  if(!giorno)return;
+  // Aggiorna label giorno
+  const lbl=document.getElementById('ov-piano-day-label');
+  if(lbl)lbl.textContent=giorno.label;
+  // Riepilogo settimana
+  pianoRenderWeek(idx);
+  // Alert scadenza
+  pianoCheckScadenza();
+  // Contenuto giorno
+  renderPianoGiorno('ov-piano-preview',null,idx);
+}
+
+function pianoPrevDay(){
+  if(!pianoData||pianoNavIdx===null)return;
+  if(pianoNavIdx>0)pianoNavRender(pianoNavIdx-1);
+}
+function pianoNextDay(){
+  if(!pianoData||pianoNavIdx===null)return;
+  if(pianoNavIdx<pianoData.giorni.length-1)pianoNavRender(pianoNavIdx+1);
+}
+
+function pianoRenderWeek(activeIdx){
+  const row=document.getElementById('ov-piano-week-row');
+  const wrap=document.getElementById('ov-piano-week');
+  if(!row||!wrap||!pianoData)return;
+  wrap.style.display='block';
+  const today=new Date();today.setHours(0,0,0,0);
+  row.innerHTML=pianoData.giorni.map((g,i)=>{
+    const lib=g.liborio||{partenze:[],fermate:[],cambi:[]};
+    const bMerged={partenze:[...(g.boutique?.partenze||[]),...lib.partenze],fermate:[...(g.boutique?.fermate||[]),...lib.fermate],cambi:[...(g.boutique?.cambi||[]),...lib.cambi]};
+    const totP=(g.soulart?.partenze?.length||0)+(g.soulart?.cambi?.length||0)+bMerged.partenze.length+bMerged.cambi.length;
+    const totF=(g.soulart?.fermate?.length||0)+bMerged.fermate.length;
+    const isActive=i===activeIdx;
+    const bg=isActive?'var(--accent)':'var(--surface2)';
+    const col=isActive?'#fff':'var(--text)';
+    const dimCol=isActive?'rgba(255,255,255,.7)':'var(--text-dim)';
+    const shortLabel=g.label?g.label.split(' ')[0].substring(0,3):'?';
+    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:52px;background:${bg};border-radius:7px;padding:6px 4px;text-align:center;cursor:pointer;transition:background .15s;">
+      <div style="font-size:10px;font-weight:700;color:${col};margin-bottom:3px;">${shortLabel}</div>
+      <div style="font-size:11px;font-weight:600;color:${totP>0?isActive?'#ffd580':'var(--amber)':dimCol};">↑${totP}</div>
+      <div style="font-size:11px;font-weight:600;color:${totF>0?isActive?'#a0d4ff':'var(--accent)':dimCol};">=&nbsp;${totF}</div>
+    </div>`;
+  }).join('');
+}
+
+function pianoCheckScadenza(){
+  const badge=document.getElementById('ov-piano-scadenza');
+  if(!badge||!pianoData||!pianoData.giorni)return;
+  const last=pianoData.giorni[pianoData.giorni.length-1];
+  if(!last||!last.data)return;
+  const parts=last.data.split('/');
+  if(parts.length<3)return;
+  const lastDate=new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
+  lastDate.setHours(0,0,0,0);
+  const today=new Date();today.setHours(0,0,0,0);
+  const diff=Math.ceil((lastDate-today)/(24*60*60*1000));
+  if(diff<=1){badge.textContent=diff<0?'Piano scaduto':'Scade oggi';badge.style.display='inline';}
+  else if(diff<=2){badge.textContent='Scade domani';badge.style.display='inline';}
+  else{badge.style.display='none';}
+}
+
+function renderPianoGiorno(elId,refDate,forceIdx){
   const el=document.getElementById(elId);if(!el)return;
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){
     el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div>';return;
   }
-  const ref=new Date(refDate||new Date());
-  const refStr=String(ref.getDate()).padStart(2,'0')+'/'+String(ref.getMonth()+1).padStart(2,'0')+'/'+ref.getFullYear();
-  const normDate=s=>s.split('/').map((p,i)=>i<2?p.padStart(2,'0'):p).join('/');
-  const giorno=pianoData.giorni.find(g=>g.data&&normDate(g.data)===refStr);
-  const dateDisponibili=pianoData.giorni.map(g=>g.data).join(', ');
-  console.log('[Piano] cerco:',refStr,'disponibili:',dateDisponibili,'trovato:',!!giorno);
-  if(!giorno){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Oggi non è nel piano caricato</div>';return;}
+  let idx=forceIdx!=null?forceIdx:pianoGetGiornoIdx(refDate);
+  if(idx===-1){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Oggi non è nel piano caricato</div>';return;}
+  const giorno=pianoData.giorni[idx];
+  if(!giorno){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Giorno non disponibile</div>';return;}
   function sortRooms(arr){return[...arr].sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''))||0,nb=parseInt(b.replace(/\D/g,''))||0;return na-nb;});}
   function renderHotel(label,data){
     const cambi=sortRooms(data.cambi||[]),partenze=sortRooms(data.partenze||[]),fermate=sortRooms(data.fermate||[]);
-    // Cambi + partenze in un'unica sezione; cambi con badge 🔄
     const tuttePartenze=sortRooms([...cambi,...partenze]);
     if(!tuttePartenze.length&&!fermate.length)return'';
-    let h=`<div style="margin-bottom:10px;"><div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">${label}</div>`;
-    if(tuttePartenze.length)h+=`<div style="margin-bottom:5px;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;"><span style="font-size:var(--fs-xxs);font-weight:600;color:var(--amber);">↑ Partenze (${tuttePartenze.length})</span>${cambi.length?`<span style="font-size:9px;color:var(--text-dim);"><span style="font-weight:800;color:var(--red);">⇄</span> = partenza con arrivo</span>`:''}</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${tuttePartenze.map(r=>{const isCambio=cambi.includes(r);return`<span style="background:${isCambio?'#fce8e8':'var(--amber-bg)'};border:1px solid ${isCambio?'var(--red)':'var(--amber)'};color:${isCambio?'var(--red)':'var(--amber)'};font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${r}${isCambio?` <span style="font-weight:800;font-size:1.1em;color:var(--red);">⇄</span>`:''}</span>`;}).join('')}</div></div>`;
-    if(fermate.length)h+=`<div><div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:3px;">= Fermate (${fermate.length})</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${fermate.map(r=>`<span style="background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);font-size:10px;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div></div>`;
+    // KPI numerici
+    let h=`<div style="margin-bottom:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${label}</div>
+        <div style="display:flex;gap:8px;">
+          ${tuttePartenze.length?`<span style="font-size:var(--fs-xxs);font-weight:700;color:var(--amber);">↑ ${tuttePartenze.length}</span>`:''}
+          ${cambi.length?`<span style="font-size:var(--fs-xxs);font-weight:700;color:var(--red);">⇄ ${cambi.length}</span>`:''}
+          ${fermate.length?`<span style="font-size:var(--fs-xxs);font-weight:700;color:var(--accent);">= ${fermate.length}</span>`:''}
+        </div>
+      </div>`;
+    if(tuttePartenze.length)h+=`<div style="margin-bottom:5px;"><div style="display:flex;flex-wrap:wrap;gap:4px;">${tuttePartenze.map(r=>{const isCambio=cambi.includes(r);return`<span style="background:${isCambio?'#fce8e8':'var(--amber-bg)'};border:1px solid ${isCambio?'var(--red)':'var(--amber)'};color:${isCambio?'var(--red)':'var(--amber)'};font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${r}${isCambio?` ⇄`:''}</span>`;}).join('')}</div></div>`;
+    if(fermate.length)h+=`<div><div style="display:flex;flex-wrap:wrap;gap:4px;">${fermate.map(r=>`<span style="background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);font-size:10px;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div></div>`;
     h+=`</div>`;return h;
   }
   const lib=giorno.liborio||{partenze:[],fermate:[],cambi:[]};
-  const bMerged={partenze:[...giorno.boutique.partenze,...lib.partenze],fermate:[...giorno.boutique.fermate,...lib.fermate],cambi:[...giorno.boutique.cambi,...lib.cambi]};
-  const sHtml=renderHotel('SoulArt',giorno.soulart),bHtml=renderHotel('Boutique - San Liborio',bMerged);
-  if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per oggi</div>';return;}
-  el.innerHTML=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">🛏 Piano camere — ${giorno.label}</div>${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:6px;padding-top:6px;border-top:1px solid var(--border-light);">⇄ = partenza con arrivo</div>`;
+  const bMerged={partenze:[...(giorno.boutique?.partenze||[]),...lib.partenze],fermate:[...(giorno.boutique?.fermate||[]),...lib.fermate],cambi:[...(giorno.boutique?.cambi||[]),...lib.cambi]};
+  const sHtml=renderHotel('SoulArt',giorno.soulart||{}),bHtml=renderHotel('Boutique - San Liborio',bMerged);
+  if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per questo giorno</div>';return;}
+  el.innerHTML=`${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">↑ partenze · = fermate · ⇄ cambio camera</div>`;
 }
+
+function pianoOvInit(){
+  if(!pianoData||!pianoData.giorni)return;
+  const todayIdx=pianoGetGiornoIdx();
+  const idx=todayIdx!==-1?todayIdx:0;
+  pianoNavRender(idx);
+}
+
 function miniappRenderPiano(){renderPianoGiorno('miniapp-piano-preview');}
 // §§ UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP (fmtNow, fmtUploadTs, setUploadTs)
 function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
@@ -1483,7 +1571,7 @@ function refreshOverviewForDate(d){
     }
   }catch(e){}
   // 6. Piano camere
-  try{renderPianoGiorno('ov-piano-preview',ref);}catch(e){}
+  try{if(pianoNavIdx===null)pianoOvInit();else{pianoCheckScadenza();pianoRenderWeek(pianoNavIdx);}}catch(e){}
 }
 document.addEventListener('click',()=>{
   document.getElementById('datePopup')?.classList.remove('open');
@@ -3384,7 +3472,7 @@ function pianoSetLoaded(silent){
   const btn=document.getElementById('btnPianoReload');if(btn)btn.style.display='block';
   const box=document.getElementById('pianoUploadBox');if(box)box.style.display='none';
   const li=document.getElementById('pianoLoadedInfo');if(li)li.classList.add('visible');
-  try{renderPianoGiorno('ov-piano-preview',customDate||new Date());}catch(e){}
+  try{pianoOvInit();}catch(e){}
   try{renderPianoGiorno('miniapp-piano-preview',new Date());}catch(e){}
 }
 function resetPianoData(){

@@ -319,7 +319,19 @@
           </div>
         </div>
         <div class="panel" style="margin-bottom:14px;" id="ov-piano-panel">
-          <div class="panel-header"><span class="panel-title">🛏 Piano camere</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">SoulArt · Boutique - San Liborio</span></div>
+          <div class="panel-header">
+            <span class="panel-title">🛏 Piano camere</span>
+            <span id="ov-piano-scadenza" style="display:none;margin-left:8px;background:var(--amber);color:#fff;border-radius:4px;padding:1px 7px;font-size:var(--fs-xxs);font-weight:600;"></span>
+            <div style="display:flex;align-items:center;gap:4px;margin-left:auto;">
+              <button onclick="pianoPrevDay()" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer;font-size:14px;color:var(--text-dim);">‹</button>
+              <span id="ov-piano-day-label" style="font-size:var(--fs-xxs);color:var(--text-dim);min-width:60px;text-align:center;">—</span>
+              <button onclick="pianoNextDay()" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer;font-size:14px;color:var(--text-dim);">›</button>
+            </div>
+          </div>
+          <!-- Riepilogo settimana -->
+          <div id="ov-piano-week" style="padding:8px 14px 0;display:none;">
+            <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:6px;" id="ov-piano-week-row"></div>
+          </div>
           <div class="panel-body" id="ov-piano-preview"><div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:10px;margin-bottom:14px;align-items:stretch;">
@@ -1152,6 +1164,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=187-20260413k"></script>
+<script src="app.js?v=187-20260413l"></script>
 </body>
 </html>
