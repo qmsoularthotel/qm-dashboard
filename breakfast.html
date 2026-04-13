@@ -199,6 +199,37 @@ function renderDay(){
     </div>
   </div>`;
 
+  // Gruppi colazione
+  if(bkfGroups&&bkfGroups.length){
+    const today2=new Date();today2.setHours(0,0,0,0);
+    const fmt=s=>{if(!s)return'—';const p=s.split('-');return p.length===3?p[2]+'/'+p[1]:s;};
+    html+=`<div class="section-title">Gruppi colazione</div><div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:10px;">`;
+    bkfGroups.forEach((g,i)=>{
+      const a=parseDate(g.arrivo||g.data);const p=parseDate(g.partenza||g.arrivo||g.data);
+      if(a)a.setHours(0,0,0,0);if(p)p.setHours(0,0,0,0);
+      const isActive=a&&p&&today2>=a&&today2<=p;
+      const isPast=p&&p<today2;
+      const isFuture=a&&a>today2;
+      const badge=isActive
+        ?`<span style="background:#1E4080;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">IN CASA</span>`
+        :isFuture
+        ?`<span style="background:#e8eef8;color:#1E4080;border-radius:4px;padding:2px 8px;font-size:11px;">arr. ${fmt(g.arrivo||g.data)}</span>`
+        :`<span style="background:#f0f0f0;color:#999;border-radius:4px;padding:2px 8px;font-size:11px;">partito</span>`;
+      html+=`<div style="padding:12px 14px;${i>0?'border-top:1px solid #eee;':''}${isPast?'opacity:.5;':''}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap;">
+          <span style="font-size:15px;font-weight:700;color:#222;">${g.nome}</span>${badge}
+        </div>
+        <div style="display:flex;gap:14px;font-size:13px;color:#888;flex-wrap:wrap;">
+          <span>📅 ${fmt(g.arrivo||g.data)} → ${fmt(g.partenza||g.arrivo||g.data)}</span>
+          <span style="font-weight:700;color:#444;">👥 ${g.pax} persone</span>
+          ${g.orario?`<span>🕐 ${g.orario}</span>`:''}
+        </div>
+        ${g.note?`<div style="font-size:12px;color:#999;font-style:italic;margin-top:3px;">${g.note}</div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
   // Grafico settimanale
   html+=`<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);padding:12px 14px;margin-bottom:10px;" id="bkf-chart-wrap"></div>`;
 
