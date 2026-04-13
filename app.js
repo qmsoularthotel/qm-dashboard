@@ -1559,7 +1559,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
     restoreChecklistState();
     restoreCustomTasks();
     restoreDeptCustomTasks();
-    ovUpdateRevNoreply();
+    ovUpdateRevNoreply();ovUpdateRevImport();
     hkpRestore();
     // Ripristina turno settimanale
     try{
@@ -1658,7 +1658,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
           revRenderExpiring(p);
           revRenderCatTrend(p);
           revRenderList(p);
-          ovUpdateRevNoreply();
+          ovUpdateRevNoreply();ovUpdateRevImport();
         }catch(e){}
       }
     }
@@ -1819,6 +1819,48 @@ function ovUpdateRevNoreply(){
         btn.textContent=open?'Vedi altre ${rest.length} ↓':'Nascondi ↑';
       })()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:var(--fs-xxs);color:var(--text-dim);cursor:pointer;">Vedi altre ${rest.length} ↓</button>
     </div>`;
+  }
+  el.innerHTML=html;
+}
+function ovUpdateRevImport(){
+  const el=document.getElementById('ov-rev-import');
+  const badge=document.getElementById('ov-rev-import-badge');
+  if(!el)return;
+  const HOTEL_NAMES={sa:'SoulArt',bh:'Boutique',sl:'San Liborio',pr:'Principe',ms:'Mastrangelo',ar:'Art Resort',sb:'Santa Brigida'};
+  const SOGLIA_GIORNI=7;
+  const now=Date.now();
+  const scaduti=[];
+  const ok=[];
+  ['sa','bh','sl','pr','ms','ar','sb'].forEach(p=>{
+    const ts=parseInt(localStorage.getItem('qm_ts_rev_'+p)||'0');
+    const giorni=ts?Math.floor((now-ts)/(24*60*60*1000)):null;
+    if(!ts){scaduti.push({p,nome:HOTEL_NAMES[p],giorni:null});}
+    else if(giorni>SOGLIA_GIORNI){scaduti.push({p,nome:HOTEL_NAMES[p],giorni});}
+    else{ok.push({p,nome:HOTEL_NAMES[p],giorni});}
+  });
+  if(badge){
+    if(scaduti.length){badge.textContent=scaduti.length;badge.style.display='inline';}
+    else{badge.style.display='none';}
+  }
+  if(!scaduti.length){
+    el.innerHTML='<div style="color:var(--green);font-size:var(--fs-xs);">✓ Tutte le strutture aggiornate negli ultimi '+SOGLIA_GIORNI+' giorni</div>';
+    return;
+  }
+  let html='';
+  scaduti.forEach(h=>{
+    const label=h.giorni===null?'Nessun import':''+h.giorni+' giorni fa';
+    const color=h.giorni===null?'var(--text-dim)':h.giorni>14?'var(--red)':'var(--amber)';
+    html+=`<div class="notif-item" style="cursor:pointer;" onclick="setView('recensioni-${h.p}',document.querySelector('[onclick*=&quot;recensioni-${h.p}&quot;]'))">
+      <div class="notif-dot" style="background:${color};flex-shrink:0;"></div>
+      <div style="flex:1;">
+        <div class="notif-text"><strong>${h.nome}</strong></div>
+        <div class="notif-time" style="color:${color};">⚠️ ${label}</div>
+      </div>
+      <span style="font-size:var(--fs-xxs);color:var(--accent);font-weight:600;">Aggiorna →</span>
+    </div>`;
+  });
+  if(ok.length){
+    html+=`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border-light);font-size:var(--fs-xxs);color:var(--text-dim);">✓ OK: ${ok.map(h=>h.nome).join(', ')}</div>`;
   }
   el.innerHTML=html;
 }
@@ -2279,7 +2321,7 @@ function revHandleFile(p,file){
       revRenderExpiring(p);
       revRenderCatTrend(p);
       revRenderList(p);
-      ovUpdateRevNoreply();
+      ovUpdateRevNoreply();ovUpdateRevImport();
       // Salva il testo CSV grezzo in localStorage e cloud KV
       try{localStorage.setItem('qm_rev_'+p, csvText);}catch(e){}
       // Salva timestamp upload
@@ -2892,7 +2934,7 @@ function revMarkSent(p,gi){
   revRenderStats(p);
   revRenderExpiring(p);
   revRenderCatTrend(p);
-  ovUpdateRevNoreply();
+  ovUpdateRevNoreply();ovUpdateRevImport();
 }
 function revToggleReply(uid){
   const el=document.getElementById('rev-reply-text-'+uid);
