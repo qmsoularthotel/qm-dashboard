@@ -650,17 +650,11 @@ function pianoRenderWeek(activeIdx){
     const totP=(g.soulart?.partenze?.length||0)+(g.soulart?.cambi?.length||0)+bMerged.partenze.length+bMerged.cambi.length;
     const totF=(g.soulart?.fermate?.length||0)+bMerged.fermate.length;
     const isActive=i===activeIdx;
-    const bg=isActive?'var(--accent)':'var(--surface)';
-    const border=isActive?'2px solid var(--accent)':'1px solid var(--border)';
-    const col=isActive?'#fff':'var(--text)';
-    const dimCol=isActive?'rgba(255,255,255,.6)':'var(--text-dim)';
-    const amberCol=isActive?'#ffd580':'var(--amber)';
-    const blueCol=isActive?'#a8d4ff':'var(--accent)';
     const shortLabel=g.label?g.label.split(' ')[0].substring(0,3):'?';
-    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:56px;background:${bg};border:${border};border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;transition:all .15s;">
-      <div style="font-size:11px;font-weight:700;color:${col};margin-bottom:5px;">${shortLabel}</div>
-      <div style="font-size:14px;font-weight:700;color:${totP>0?amberCol:dimCol};line-height:1.2;">↑${totP}</div>
-      <div style="font-size:14px;font-weight:700;color:${totF>0?blueCol:dimCol};line-height:1.2;">=&nbsp;${totF}</div>
+    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:56px;background:var(--surface);border:1px solid var(--border);${isActive?'border-top:3px solid var(--accent);':'border-top:3px solid transparent;'}border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;transition:all .15s;">
+      <div style="font-size:11px;font-weight:700;color:${isActive?'var(--accent)':'var(--text-dim)'};margin-bottom:5px;">${shortLabel}</div>
+      <div style="font-size:14px;font-weight:700;color:${totP>0?'var(--amber)':'var(--border)'};line-height:1.2;">↑${totP}</div>
+      <div style="font-size:14px;font-weight:700;color:${totF>0?'var(--accent)':'var(--border)'};line-height:1.2;">=&nbsp;${totF}</div>
     </div>`;
   }).join('');
 }
