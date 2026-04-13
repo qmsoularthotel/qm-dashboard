@@ -356,7 +356,7 @@ function toggleHkpGroup(){
 }
 // §§ HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore)
 const HKP_URLS={
-  sa:'https://script.google.com/macros/s/AKfycbxDyI3toHyIBNewz_zXP8qHizqyEgQgIR1IWfV5-kepVWdxXCj-TY5-IEAu9XEuDhEW/exec',
+  sa:'https://script.google.com/macros/s/AKfycbyLEnNoU6DO1dxgeSy4XvFSqMFZLNz2MPIoE8mAVUrjQ0QmjhcfMzYZPSdkhdTaDnEK/exec',
   ar:'https://script.google.com/macros/s/AKfycbx44ezIqP4CUvhtNeMhtV1ft_4DyFy2PAR8c1NsrtSaahGXqsWWYTJAd5CkuIH1eXE/exec'
 };
 let HKP_DATA={sa:null,ar:null};
