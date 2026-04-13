@@ -36,6 +36,41 @@ Questo file fornisce il contesto completo del progetto a Claude Code.
 
 **NON usare** i file nella cartella `.claude/worktrees/` — sono obsoleti.
 
+### Mappa sezioni app.js
+
+Per trovare una sezione: `grep -n "// §§" app.js`
+
+| Riga | Sezione |
+|------|---------|
+| 1 | `§§ COSTANTI & CONFIG` — DEPTS, WEEK fallback, IS_REST |
+| 15 | `§§ TURNO — ACCORDIONI UC & UPLOAD BOX` |
+| 87 | `§§ TURNO — PARSER TSV/PDF` — parseTurniTSV, handleTurniFile |
+| 257 | `§§ TURNO — RENDER & NAVIGAZIONE` — loadWeekData, renderDay, buildWeekNav |
+| 347 | `§§ NAVIGAZIONE VISTE` — setView, pageTitles |
+| 381 | `§§ MINI APP — RENDER` — miniappRenderBkf, loadHkAccessStats, renderPianoGiorno |
+| 484 | `§§ UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP` |
+| 520 | `§§ CHECKLIST — TASK ITEMS` — buildTaskItem, renderTaskList |
+| 552 | `§§ STORAGE & SYNC KV` — setSyncStatus, kvSet, kvGet, LS, syncFromCloud |
+| 663 | `§§ CHECKLIST — STATO CENTRALIZZATO & CUSTOM TASK` — taskKey, addCustomTask |
+| 902 | `§§ CHECKLIST — RENDER & PROGRESS` — toggleCheck, updateClProgress |
+| 983 | `§§ OVERVIEW — TOGGLE PREVIEW PANELS` |
+| 1075 | `§§ OVERVIEW — GRAFICI & METEO` — buildBarChart, fetchMeteo |
+| 1155 | `§§ SIDEBAR — OROLOGIO & DATA` — updateSbClock, toggleDatePopup |
+| 1207 | `§§ OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 30s` — refreshOverviewForDate |
+| 1524 | `§§ RECENSIONI — SCORE TREND MODAL` — openScoreTrend |
+| 1611 | `§§ OVERVIEW — RECENSIONI NO-REPLY` — ovUpdateRevNoreply |
+| 1683 | `§§ BKF SHEET — ANALISI AI` — bkfSheetAnalyze, bkfSheetSync |
+| 1896 | `§§ REPORT PULIZIE — PUL` — handlePulFile, renderPulDay, updateKpiFromPulizie |
+| 2059 | `§§ RECENSIONI — SCORING & INIT UPLOAD` — weightedAvgF1 |
+| 2090 | `§§ RECENSIONI — LOGICA` — revParseCsv, revRenderCatTrend, revRenderList, revGenerateReply |
+| 2850 | `§§ REPORT PASTI — BKF` — handleBkfFile, renderBkfDay, renderOvBkfChart |
+| 2967 | `§§ HOUSEKEEPING — HKP UPLOAD & DATI` — handleHkFile, hkSetLoaded |
+| 3046 | `§§ PIANO SETTIMANA — UPLOAD & PARSER` — parsePianoItems, checkAndParsePianoRaw |
+| 3205 | `§§ BKF — GRUPPI, NOTE & GRAFICI` — bkfRenderGroups, bkfRenderChart |
+| 3458 | `§§ REGISTRATION CARDS — RC` — rcParseGuests, rcRenderCards, checkAndParseArriviRaw |
+| 3523 | `§§ MODAL — CATEGORIE TREND` — openCatModal |
+| 3622 | `§§ ARRIVI GIORNALIERI — UPLOAD & RENDER` — handleArriviFile, renderArriviModal |
+
 ### Deploy
 
 - **Repository GitHub**: `https://github.com/qmsoularthotel/qm-dashboard`
@@ -144,7 +179,7 @@ Funzione `leggiTurnoSettimana()`:
 
 I PDF vengono parsati nel browser con **pdfjsLib** — molto più affidabili di Claude AI per layout fissi.
 
-### `parsePianoItems(items)` — app.js ~riga 2946
+### `parsePianoItems(items)` — app.js riga 3058 (`§§ PIANO SETTIMANA`)
 - Input: array `{s, x, y, p}` da pdfjsLib
 - Raggruppa per riga (tolleranza y=4), trova header con ≥2 abbreviazioni giorno
 - `-` = partenza, `=` = fermata, `-+` = cambio (partenza con arrivo), `+` = solo arrivo (ignorato)
@@ -159,7 +194,7 @@ I PDF vengono parsati nel browser con **pdfjsLib** — molto più affidabili di 
 - Se `_ts` > `qm_piano._ts`: decode base64 → pdfjsLib → `parsePianoItems` → salva `qm_piano`
 - Elimina `qm_piano_raw` da KV dopo il parsing
 
-### `rcParseGuests(text)` — app.js ~riga 3308
+### `rcParseGuests(text)` — app.js riga 3470 (`§§ REGISTRATION CARDS`)
 - Input: testo estratto da pdfjsLib
 - Regex su pattern `camera / tipo ospite pax trattamento arrivo-partenza`
 - Output: `[{camera, nome, pax, trattamento, checkin, checkout}]`

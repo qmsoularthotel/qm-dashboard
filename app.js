@@ -1,3 +1,4 @@
+// §§ COSTANTI & CONFIG (DEPTS, WEEK fallback, IS_REST)
 const DEPTS={fo:{label:'Front Office',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Extra Roberto']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Vincenza','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
 let weekData=null,activeDay=0;
@@ -11,6 +12,7 @@ const WEEK={giorni:[
   {label:'Sab 21',date:new Date(2026,2,21),shifts:{'Maddaloni M.':'R','Presta P.':'AC','De Rosa T.':'AG','Pennacchio V.':'CC','Perez L.':'R','Imparato G.':'INT GALL 10/18','Vatiero R.':'CG','Barbosa D.':'NC','D\'Andrea F.':'NG','Grieco V.':'R','Matarese A.':'SOUL','Nacci M.':'SOUL N.','De Masi C.':'FERIE','Chiantese M.':'200','Scognamillo E.':'400','Esposito M.':'300','Branno M.':'100','Sarnataro A.':'PR/MS','Amorese S.':'BKF SOUL','Albano D.':'BKF SOUL','Ferace C.':'BKF GALL','Extra BKF SAU':'BKF GALL','Basile G.':'9-14'}},
   {label:'Dom 22',date:new Date(2026,2,22),shifts:{'Maddaloni M.':'R','Presta P.':'P','De Rosa T.':'AG','Pennacchio V.':'CG','Perez L.':'R','Imparato G.':'AC','Vatiero R.':'INT GALL 9/17','Barbosa D.':'NC','D\'Andrea F.':'NG','Grieco V.':'CC','Matarese A.':'SOUL','Nacci M.':'SOUL N.','De Masi C.':'R','Chiantese M.':'200','Scognamillo E.':'400','Esposito M.':'300','Branno M.':'100','Sarnataro A.':'PR/MS','Amorese S.':'BKF SOUL','Albano D.':'BKF SOUL','Ferace C.':'BKF GALL','Extra BKF SAU':'BKF GALL','Basile G.':'R'}}
 ]};
+// §§ TURNO — ACCORDIONI UC & UPLOAD BOX
 let turnoOpen=false;
 function toggleTurnoAccordion(){}
 function ucToggle(key){
@@ -82,6 +84,7 @@ const turniBox={classList:{add:()=>{},remove:()=>{}}};
   if(box){box.addEventListener('click',()=>turniInput.click());box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});box.addEventListener('dragleave',()=>box.classList.remove('dragover'));box.addEventListener('drop',e=>{e.preventDefault();box.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)handleTurniFile(f);});}
   turniInput.addEventListener('change',e=>{if(e.target.files[0])handleTurniFile(e.target.files[0]);});
 })();
+// §§ TURNO — PARSER TSV/PDF (parseTurniTSV, handleTurniFile)
 function parseTurniTSV(text){
   const rows=text.trim().split(/\r?\n/).map(r=>r.split('\t'));
   if(rows.length<2)return null;
@@ -251,6 +254,7 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     ucSetState('turno','error','Errore caricamento');
   }
 }
+// §§ TURNO — RENDER & NAVIGAZIONE (loadWeekData, renderDay, buildWeekNav)
 function loadWeekData(data){
   weekData=data;
   const today=new Date();
@@ -340,6 +344,7 @@ function editShift(dayIdx,nome){
 function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caricato');turniInput.value='';
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Il turno viene aggiornato automaticamente</div></div>`;}
+// §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
 const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria','miniapp':'Mini App — Anteprima e Link'};
 let recGroupOpen=false;
 function toggleRecGroup(){
@@ -373,6 +378,7 @@ function miniappCopy(inputId,btn){
     setTimeout(()=>{btn.textContent=orig;btn.style.background='';},2000);
   }).catch(()=>{inp.select();document.execCommand('copy');});
 }
+// §§ MINI APP — RENDER (miniappRenderBkf, loadHkAccessStats, renderPianoGiorno)
 function miniappRender(){miniappRenderBkf();miniappRenderPiano();}
 async function loadHkAccessStats(){
   try{
@@ -475,6 +481,7 @@ function renderPianoGiorno(elId,refDate){
   el.innerHTML=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:10px;">🛏 Piano camere — ${giorno.label}</div>${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:6px;padding-top:6px;border-top:1px solid var(--border-light);">⇄ = partenza con arrivo</div>`;
 }
 function miniappRenderPiano(){renderPianoGiorno('miniapp-piano-preview');}
+// §§ UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP (fmtNow, fmtUploadTs, setUploadTs)
 function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 function fmtUploadTs(ts){const n=ts?new Date(ts):new Date();const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];return'↑ '+n.getDate()+' '+ms[n.getMonth()]+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 const TS_TO_UC={turnoTs:'uc-turno-sub',arriviTs:'uc-arrivi-sub',pulTs:'uc-pul-sub',bkfTs:'uc-bkf-sub',soulTs:'uc-soul-sub',boutTs:'uc-bout-sub',pianoTs:'uc-piano-sub'};
@@ -510,6 +517,7 @@ const THU_TASKS=[
 ];
 const DEPT_CLS={fo:'dept-fo',hkp:'dept-hk',bkf:'dept-fb',mt:'dept-mt'};
 const DEPT_LABEL={fo:'FO',hkp:'HKP',bkf:'BKF',mt:'MT'};
+// §§ CHECKLIST — TASK ITEMS (buildTaskItem, getTasksForDay, renderTaskList)
 function buildTaskItem(t,listId){
   const li=document.createElement('li');
   li.className='check-item';
@@ -541,6 +549,7 @@ function renderTaskList(listId,labelId,counterId){
   if(dow===4)extras.push('+ Giovedì');
   if(labelId&&extras.length){const el=document.getElementById(labelId);if(el)el.textContent=extras.join(' ');}
 }
+// §§ STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud)
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
 function setSyncStatus(state){
   // state: 'syncing' | 'ok' | 'error' | 'offline'
@@ -651,7 +660,7 @@ const LS={
     return synced;
   }
 };
-// Salva stato checklist (task spuntati per data)
+// §§ CHECKLIST — STATO CENTRALIZZATO & CUSTOM TASK (taskKey, syncTaskState, addCustomTask)
 // ── STATO CENTRALIZZATO CHECKLIST ──
 // Chiave: testo del task. Valore: {done, time}
 // Usato per sincronizzare overview ↔ checklist in tempo reale
@@ -890,6 +899,7 @@ function toggleCheck(item,listId){
     document.getElementById('taskCounter').textContent=doneN+'/'+total;
   }
 }
+// §§ CHECKLIST — RENDER & PROGRESS (toggleCheck, updateClProgress, toggleCheckV2)
 function updateClProgress(){
   const allLists=['cl-fo','cl-hkp','cl-bkf','cl-mt','cl-custom'];
   let total=0,done=0;
@@ -970,6 +980,7 @@ function toggleCheckV2(item,dept){
     updateClProgress();
   })();
 })();
+// §§ OVERVIEW — TOGGLE PREVIEW PANELS (toggleOccupazionePreview, togglePulPreview, toggleBkfPreview)
 function toggleOccupazionePreview(){
   const el=document.getElementById('kpi-occ-preview');
   if(!el)return;
@@ -1061,6 +1072,7 @@ function toggleBkfPreview(){
   el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Report pasti SoulArt — coperti settimanali</div>`+svg;
   el.style.display='block';
 }
+// §§ OVERVIEW — GRAFICI & METEO (buildBarChart, fetchMeteo, toggleWeatherForecast)
 function buildBarChart(){
   const data=[{l:'Lun 10',v:91},{l:'Mar 11',v:89},{l:'Mer 12',v:92},{l:'Gio 13',v:90},{l:'Ven 14',v:93},{l:'Sab 15',v:92},{l:'Oggi',v:94}];
   const max=100,target=90;
@@ -1140,7 +1152,7 @@ function toggleWeatherForecast(e){
 }
 fetchMeteo();
 setInterval(fetchMeteo,10*60*1000);
-// Orologio sidebar + turno automatico
+// §§ SIDEBAR — OROLOGIO & DATA (updateSbClock, toggleDatePopup, saveDate, updateDateDisplay)
 function updateSbClock(){
   const n=new Date();
   const hh=String(n.getHours()).padStart(2,'0');
@@ -1192,6 +1204,7 @@ function updateDateDisplay(){
   document.getElementById('todayDate').textContent=days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()];
   try{refreshOverviewForDate(d);}catch(e){}
 }
+// §§ OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 30s (refreshOverviewForDate, renderArriviData, syncFromCloud)
 function refreshOverviewForDate(d){
   const ref=new Date(d||customDate||new Date());
   ref.setHours(0,0,0,0);
@@ -1508,6 +1521,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
   },150);
   })(); // fine async sync
 })();
+// §§ RECENSIONI — SCORE TREND MODAL (openScoreTrend)
 function openScoreTrend(p){
   const data=REV_HOTELS[p].data;
   if(!data||!data.length)return;
@@ -1594,6 +1608,7 @@ function openScoreTrend(p){
   document.getElementById('catChartModalBody').innerHTML=svg;
   document.getElementById('catChartModal').style.display='flex';
 }
+// §§ OVERVIEW — RECENSIONI NO-REPLY (ovUpdateRevNoreply)
 function ovUpdateRevNoreply(){
   const el=document.getElementById('ov-rev-noreply');
   const badge=document.getElementById('ov-rev-badge');
@@ -1665,6 +1680,7 @@ let bkfSheetData=[];
   zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')bkfSheetAnalyze(f);else bkfSheetShowError('Carica un file PDF.');});
   inp.addEventListener('change',e=>{if(e.target.files[0])bkfSheetAnalyze(e.target.files[0]);inp.value='';});
 })();
+// §§ BKF SHEET — ANALISI AI (bkfSheetAnalyze, bkfSheetSync, bkfSheetAR*)
 async function bkfSheetAnalyze(file){
   bkfSheetSetStatus('analyzing');
   try{
@@ -1877,6 +1893,7 @@ function bkfSheetARShowError(msg){
   const e=document.getElementById('bkfSheetARError');e.textContent=msg;e.style.display='block';
 }
 const CAP_CAMERE=33;
+// §§ REPORT PULIZIE — PUL (handlePulFile, pulParseText, renderPulData, renderPulDay, updateKpiFromPulizie)
 let pulData=null,pulActiveDay=0;
 let pulOpen=false;
 function togglePulAccordion(){}
@@ -2039,6 +2056,7 @@ function pulShowError(msg){
   ucSetState('pul','error','Errore');
   alert(msg);
 }
+// §§ RECENSIONI — SCORING & INIT UPLOAD (weightedAvgF1, revHandleFile init per tutti gli hotel)
 const DECAY_F1_MS=270*24*60*60*1000;
 function weightedAvgF1(reviews, nowTs){
   if(!reviews.length)return null;
@@ -2069,6 +2087,7 @@ const REV_HOTELS={
   zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)revHandleFile(p,f);});
   inp.addEventListener('change',e=>{if(e.target.files[0])revHandleFile(p,e.target.files[0]);});
 });
+// §§ RECENSIONI — LOGICA (revParseCsv, revRenderCatTrend, revRenderExpiring, revRenderStats, revRenderList, revGenerateReply)
 function revAutoMarkNoComment(p,rows){
   // Recensioni senza alcun commento → non necessaria (Booking non consente risposta)
   let changed=false;
@@ -2828,6 +2847,7 @@ function revShowError(p,msg){
   document.getElementById('revUploadZone-'+p).style.display='block';
   const e=document.getElementById('revError-'+p);e.textContent=msg;e.style.display='block';
 }
+// §§ REPORT PASTI — BKF (handleBkfFile, bkfParseText, renderBkfData, renderBkfDay, renderOvBkfChart)
 let bkfData=null,bkfActiveDay=0,bkfOpen=false;
 function toggleBkfAccordion(){}
 (function initBkfUpload(){
@@ -2944,7 +2964,7 @@ function renderOvBkfChart(){
   svg+='</svg>';
   el.innerHTML=svg;
 }
-// ── SOUL / BOUT HKP UPLOAD ──
+// §§ HOUSEKEEPING — HKP UPLOAD & DATI (handleHkFile, hkParseText, hkSetLoaded, resetSoulData/BoutData)
 let hkSoulData=null;
 let hkBoutData=null;
 (function initHkUploads(){
@@ -3023,7 +3043,7 @@ function hkResetSlot(key){
   const btn=document.getElementById(btnId);if(btn)btn.style.display='none';
   const inp=document.getElementById(key+'FileInput');if(inp)inp.value='';
 }
-// ── PIANO SETTIMANA ──
+// §§ PIANO SETTIMANA — UPLOAD & PARSER (handlePianoFile, parsePianoItems, checkAndParsePianoRaw, pianoSetLoaded)
 let pianoData=null;
 (()=>{try{const s=localStorage.getItem('qm_piano');if(s){pianoData=JSON.parse(s);setTimeout(()=>{pianoSetLoaded(true);if(pianoData._ts)restoreUploadTs('pianoTs',pianoData._ts);else loadStoredTs('pianoTs');},200);}}catch(e){}})();
 (()=>{
@@ -3182,6 +3202,7 @@ function resetPianoData(){
   const btn=document.getElementById('btnPianoReload');if(btn)btn.style.display='none';
   document.getElementById('pianoFileInput').value='';
 }
+// §§ BKF — GRUPPI, NOTE & GRAFICI (bkfLoadOps, bkfAddGroup, bkfRenderGroups, bkfRenderChart, updateKpiFromBkf)
 let bkfGroups=[];
 let bkfNotes={};
 function bkfLoadOps(){
@@ -3434,6 +3455,7 @@ rcUploadZone.addEventListener('dragleave',()=>rcUploadZone.classList.remove('dra
 rcUploadZone.addEventListener('drop',e=>{e.preventDefault();rcUploadZone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')handleRCFile(f);else rcShowError('Carica un file PDF.');});
 rcFileInput.addEventListener('change',e=>{if(e.target.files[0])handleRCFile(e.target.files[0]);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){rcCloseModal();closePrintDialog();}});
+// §§ REGISTRATION CARDS — RC (handleRCFile, rcParseGuests, rcRenderCards, checkAndParseArriviRaw)
 async function checkAndParseArriviRaw(){
   try{
     const res=await fetch(PROXY+'/kv/get?key=qm_arrivi_raw');
@@ -3498,6 +3520,7 @@ function rcShowProc(msg){document.getElementById('rcProcText').textContent=msg;d
 function rcHideProc(){document.getElementById('rcProcessing').style.display='none';}
 function rcShowError(msg){document.getElementById('rcError').textContent=msg;document.getElementById('rcError').style.display='block';document.getElementById('rcUploadZone').style.display='block';}
 function rcHideError(){document.getElementById('rcError').style.display='none';}
+// §§ MODAL — CATEGORIE TREND (openCatModal, closeCatModal)
 let _catModalData=null;
 function openCatModal(cat,color,months,byMonth,labels){
   _catModalData={cat,color,months,byMonth,labels};
@@ -3596,6 +3619,7 @@ function closeCatModal(){
   document.getElementById('catChartModal').style.display='none';
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeCatModal();closeArriviModal();}});
+// §§ ARRIVI GIORNALIERI — UPLOAD & RENDER (handleArriviFile, resetArrivi, arriviUpdateKpi, detectStruttura, renderArriviModal)
 let arriviData=null;
 function toggleArriviAccordion(){}
 const arriviBox={classList:{add:()=>{},remove:()=>{}}};
