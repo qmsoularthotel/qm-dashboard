@@ -588,7 +588,7 @@ function miniappRenderBkf(){
   pts.forEach((p,i)=>{
     const x=sx(i),y=sy(p.v),isActive=i===tIdx;
     svg+=`<circle cx="${x}" cy="${y}" r="${isActive?4:2.5}" fill="var(--accent)" stroke="white" stroke-width="1.5"/>`;
-    svg+=`<text x="${x}" y="${y-7}" font-size="9" fill="var(--accent)" text-anchor="middle" font-weight="${isActive?700:600}">${p.v}</text>`;
+    svg+=`<text x="${x}" y="${y-8}" font-size="${isActive?13:11}" fill="var(--accent)" text-anchor="middle" font-weight="${isActive?700:600}">${p.v}</text>`;
     svg+=`<text x="${x}" y="${H-3}" font-size="9" fill="var(--text-dim)" text-anchor="middle">${p.label}</text>`;
   });
   svg+='</svg>';
