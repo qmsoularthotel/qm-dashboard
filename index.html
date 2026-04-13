@@ -355,7 +355,8 @@
             <div class="ov-empty-sub">Espandi "Carica turno" nella sidebar per caricare il planning</div>
           </div>
         </div>
-        <div class="grid-3" style="align-items:start;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;">
+          <!-- Task quotidiani -->
           <div class="panel">
             <div class="panel-header">
               <span class="panel-title">Task quotidiani</span>
@@ -370,22 +371,25 @@
               </div>
             </div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:12px;">
-            <div class="panel" id="ov-rev-import-panel">
-              <div class="panel-header">
-                <span class="panel-title">Import recensioni</span>
-                <span id="ov-rev-import-badge" style="margin-left:auto;display:none;background:var(--amber);color:#fff;border-radius:10px;padding:1px 8px;font-size:var(--fs-xxs);font-weight:600;"></span>
-              </div>
-              <div class="panel-body" style="padding:8px 14px;" id="ov-rev-import"></div>
+          <!-- Pannello recensioni unificato -->
+          <div class="panel" id="ov-rev-import-panel">
+            <div class="panel-header">
+              <span class="panel-title">⭐ Recensioni</span>
+              <span id="ov-rev-import-badge" style="margin-left:4px;display:none;background:var(--amber);color:#fff;border-radius:10px;padding:1px 8px;font-size:var(--fs-xxs);font-weight:600;"></span>
+              <span id="ov-rev-badge" style="margin-left:4px;display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 8px;font-size:var(--fs-xxs);font-weight:600;"></span>
             </div>
-            <div class="panel">
-              <div class="panel-header">
-                <span class="panel-title">Recensioni senza risposta</span>
-                <span style="font-size:var(--fs-xxs);color:var(--text-dim);">ultimi 15 giorni</span>
-                <span id="ov-rev-badge" style="margin-left:auto;display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 8px;font-size:var(--fs-xxs);font-weight:600;"></span>
+            <div class="panel-body" style="padding:0;">
+              <!-- Sezione import -->
+              <div style="padding:8px 14px 6px;">
+                <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Import CSV</div>
+                <div id="ov-rev-import"></div>
               </div>
-              <div class="panel-body" style="padding:8px 14px;" id="ov-rev-noreply">
-                <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica CSV recensioni per visualizzare</div>
+              <!-- Divisore -->
+              <div style="border-top:1px solid var(--border-light);margin:0 14px;"></div>
+              <!-- Sezione no-reply -->
+              <div style="padding:6px 14px 10px;">
+                <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Senza risposta <span style="font-weight:400;text-transform:none;">(ultimi 15 gg)</span></div>
+                <div id="ov-rev-noreply"><div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica CSV recensioni per visualizzare</div></div>
               </div>
             </div>
           </div>
@@ -1148,6 +1152,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=187-20260413j"></script>
+<script src="app.js?v=187-20260413k"></script>
 </body>
 </html>
