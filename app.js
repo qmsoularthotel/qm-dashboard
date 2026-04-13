@@ -365,6 +365,14 @@ function hkpSave(p){
   try{localStorage.setItem('qm_hkp_'+p,JSON.stringify(HKP_DATA[p]));}catch(e){}
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_hkp_'+p,value:JSON.stringify(HKP_DATA[p])})}).catch(()=>{});
 }
+function hkpClearCache(p){
+  try{localStorage.removeItem('qm_hkp_'+p);}catch(e){}
+  HKP_DATA[p]=null;
+  const content=document.getElementById('hkp-'+p+'-content');
+  if(content)content.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim);">Cache svuotata. Clicca <strong>Aggiorna</strong>.</div>';
+  const kpi=document.getElementById('hkp-'+p+'-kpi');
+  if(kpi)kpi.innerHTML='';
+}
 function hkpRestore(){
   ['sa','ar'].forEach(p=>{
     try{const raw=localStorage.getItem('qm_hkp_'+p);if(raw){HKP_DATA[p]=JSON.parse(raw);hkpRenderAll(p);}}catch(e){}
