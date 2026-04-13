@@ -52,6 +52,15 @@
       <div class="nav-item active" onclick="setView('overview',this)"><span class="nav-icon">🏠</span>Overview</div>
       <div class="nav-item" onclick="setView('checklist',this)"><span class="nav-icon">☑️</span>Checklist<span class="nav-badge" id="checklistNavBadge">6</span></div>
       <div class="nav-item" onclick="setView('registrazione',this)"><span class="nav-icon">🪪</span>Registration Cards</div>
+      <div class="nav-group-header" id="hkpGroupToggle" onclick="toggleHkpGroup()">
+        <span class="nav-icon">🛏️</span>
+        <span>Operativa Housekeeping</span>
+        <span class="nav-group-chevron">▾</span>
+      </div>
+      <div class="nav-group-items" id="hkpGroupItems">
+        <div class="nav-item" onclick="setView('hkpsheet',this)"><span class="nav-icon">↳</span>SoulArt Hotel</div>
+        <div class="nav-item" onclick="setView('hkpsheetar',this)"><span class="nav-icon">↳</span>Boutique - San Liborio</div>
+      </div>
       <div class="nav-group-header" id="bkfGroupToggle" onclick="toggleBkfGroup()">
         <span class="nav-icon">☕</span>
         <span>Breakfast Sheet</span>
@@ -1031,6 +1040,54 @@
           </div>
         </div>
       </div>
+      <div class="view" id="view-hkpsheet">
+        <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:14px;align-items:start;margin-bottom:14px;">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">🛏️ Consuntivo HKP — SoulArt</span>
+            </div>
+            <div class="panel-body" style="padding:14px;" id="hkpsheet-body">
+              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica Soul App HKP dall'Upload Center per visualizzare il consuntivo</div>
+            </div>
+            <div style="border-top:1px solid var(--border-light);padding:10px 14px;display:flex;gap:10px;align-items:center;">
+              <a href="https://docs.google.com/spreadsheets/d/1NzJCavF4hb-rHSSERSUgHBcVpHDHrSolMcwpZAtx-Pc/edit" target="_blank" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:var(--fs-xxs);cursor:pointer;text-decoration:none;">📊 Apri Foglio Google</a>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Andamento settimanale</span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Da Soul App HKP · Upload Center</span>
+            </div>
+            <div class="panel-body" style="padding:14px;" id="hkpsheet-chart">
+              <div style="color:var(--text-dim);font-size:var(--fs-xs);text-align:center;padding:20px 0;">Nessun dato disponibile</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="view" id="view-hkpsheetar">
+        <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:14px;align-items:start;margin-bottom:14px;">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">🛏️ Consuntivo HKP — Boutique · San Liborio</span>
+            </div>
+            <div class="panel-body" style="padding:14px;" id="hkpsheetar-body">
+              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica Boutique App HKP dall'Upload Center per visualizzare il consuntivo</div>
+            </div>
+            <div style="border-top:1px solid var(--border-light);padding:10px 14px;display:flex;gap:10px;align-items:center;">
+              <a href="https://docs.google.com/spreadsheets/d/1FO9YxVpojxWD1eyi_IxVwQOYbddfDk9iOLBtD-fH3qo/edit" target="_blank" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:var(--fs-xxs);cursor:pointer;text-decoration:none;">📊 Apri Foglio Google</a>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Andamento settimanale</span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Da Boutique App HKP · Upload Center</span>
+            </div>
+            <div class="panel-body" style="padding:14px;" id="hkpsheetar-chart">
+              <div style="color:var(--text-dim);font-size:var(--fs-xs);text-align:center;padding:20px 0;">Nessun dato disponibile</div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="view" id="view-miniapp">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;" id="miniappGrid">
           <div class="panel">
@@ -1094,6 +1151,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=187-20260412c"></script>
+<script src="app.js?v=187-20260413"></script>
 </body>
 </html>

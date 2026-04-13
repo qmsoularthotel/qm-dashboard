@@ -347,7 +347,84 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Il turno viene aggiornato automaticamente</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria','miniapp':'Mini App — Anteprima e Link'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',hkpsheet:'Operativa Housekeeping — SoulArt Hotel',hkpsheetar:'Operativa Housekeeping — Boutique · San Liborio',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria','miniapp':'Mini App — Anteprima e Link'};
+let hkpGroupOpen=false;
+function toggleHkpGroup(){
+  hkpGroupOpen=!hkpGroupOpen;
+  document.getElementById('hkpGroupToggle').classList.toggle('open',hkpGroupOpen);
+  document.getElementById('hkpGroupItems').classList.toggle('open',hkpGroupOpen);
+}
+function hkpRenderSheet(key){
+  const data=key==='soul'?hkSoulData:hkBoutData;
+  const bodyId=key==='soul'?'hkpsheet-body':'hkpsheetar-body';
+  const chartId=key==='soul'?'hkpsheet-chart':'hkpsheetar-chart';
+  const bodyEl=document.getElementById(bodyId);
+  const chartEl=document.getElementById(chartId);
+  if(!bodyEl||!chartEl)return;
+  if(!data||!data.giorni||!data.giorni.length){
+    bodyEl.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica '+(key==='soul'?'Soul':'Boutique')+' App HKP dall\'Upload Center per visualizzare il consuntivo</div>';
+    chartEl.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);text-align:center;padding:20px 0;">Nessun dato disponibile</div>';
+    return;
+  }
+  const today=new Date();
+  const todayStr=String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
+  // Tabella consuntivo
+  let html=`<table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+    <thead><tr style="border-bottom:2px solid var(--border-light);">
+      <th style="text-align:left;padding:6px 8px;color:var(--text-dim);font-weight:600;font-size:10px;text-transform:uppercase;">Data</th>
+      <th style="text-align:center;padding:6px 8px;color:var(--text-dim);font-weight:600;font-size:10px;text-transform:uppercase;">Arrivi</th>
+      <th style="text-align:center;padding:6px 8px;color:var(--text-dim);font-weight:600;font-size:10px;text-transform:uppercase;">Fermate</th>
+      <th style="text-align:center;padding:6px 8px;color:var(--text-dim);font-weight:600;font-size:10px;text-transform:uppercase;">Partenze</th>
+      <th style="text-align:center;padding:6px 8px;color:var(--text-dim);font-weight:600;font-size:10px;text-transform:uppercase;">Tot.</th>
+    </tr></thead><tbody>`;
+  data.giorni.forEach(g=>{
+    const isT=g.data===todayStr;
+    const tot=g.arrivi+g.fermate+g.partenze;
+    html+=`<tr style="border-bottom:1px solid var(--border-light);${isT?'background:var(--surface2);font-weight:600;':''}">
+      <td style="padding:7px 8px;">${g.label}${isT?' <span style="font-size:9px;background:var(--accent);color:#fff;border-radius:3px;padding:1px 5px;">oggi</span>':''}</td>
+      <td style="text-align:center;padding:7px 8px;color:var(--green);">${g.arrivi}</td>
+      <td style="text-align:center;padding:7px 8px;color:var(--accent);">${g.fermate}</td>
+      <td style="text-align:center;padding:7px 8px;color:var(--amber);">${g.partenze}</td>
+      <td style="text-align:center;padding:7px 8px;font-weight:700;">${tot}</td>
+    </tr>`;
+  });
+  const totA=data.giorni.reduce((s,g)=>s+g.arrivi,0);
+  const totF=data.giorni.reduce((s,g)=>s+g.fermate,0);
+  const totP=data.giorni.reduce((s,g)=>s+g.partenze,0);
+  html+=`<tr style="border-top:2px solid var(--border-light);font-weight:700;background:var(--surface2);">
+    <td style="padding:7px 8px;">Totale</td>
+    <td style="text-align:center;padding:7px 8px;color:var(--green);">${totA}</td>
+    <td style="text-align:center;padding:7px 8px;color:var(--accent);">${totF}</td>
+    <td style="text-align:center;padding:7px 8px;color:var(--amber);">${totP}</td>
+    <td style="text-align:center;padding:7px 8px;">${totA+totF+totP}</td>
+  </tr></tbody></table>`;
+  bodyEl.innerHTML=html;
+  // Grafico fermate + partenze
+  const pts=data.giorni.map(g=>({label:g.label.split(' ')[0],f:g.fermate,p:g.partenze,a:g.arrivi}));
+  const W=600,H=140,PL=28,PR=8,PT=18,PB=30;
+  const plotW=W-PL-PR,plotH=H-PT-PB;
+  const YMAX=Math.max(10,...pts.map(p=>p.f+p.p))+4;
+  const bw=Math.floor(plotW/pts.length)-4;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;">`;
+  // Linee guida
+  [0,.5,1].forEach(t=>{const y=PT+plotH*(1-t);svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="1"/>`;if(t>0)svg+=`<text x="${PL-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--text-dim)">${Math.round(YMAX*t)}</text>`;});
+  pts.forEach((p,i)=>{
+    const x=PL+i/(pts.length||1)*plotW+bw/2;
+    const hF=Math.round(p.f/YMAX*plotH);
+    const hP=Math.round(p.p/YMAX*plotH);
+    const hA=Math.round(p.a/YMAX*plotH);
+    const todayIdx=data.giorni.findIndex(g=>g.data===todayStr);
+    const isT=i===todayIdx;
+    svg+=`<rect x="${x-bw/2}" y="${PT+plotH-hF}" width="${bw}" height="${hF}" fill="${isT?'var(--accent)':'#6b8fc4'}" rx="2"/>`;
+    svg+=`<text x="${x}" y="${H-8}" text-anchor="middle" font-size="9" fill="${isT?'var(--accent)':'var(--text-dim)'}" font-weight="${isT?'700':'400'}">${p.label}</text>`;
+  });
+  svg+=`<text x="${PL}" y="${PT-4}" font-size="9" fill="var(--text-dim)">Fermate (blu) · Partenze (arancio)</text>`;
+  // Linea partenze
+  const lineP=pts.map((p,i)=>{const x=PL+i/(pts.length||1)*plotW+bw/2;const y=PT+plotH-Math.round(p.p/YMAX*plotH);return(i===0?'M':'L')+x+' '+y;}).join(' ');
+  svg+=`<path d="${lineP}" fill="none" stroke="var(--amber)" stroke-width="2" stroke-dasharray="4,2"/>`;
+  svg+='</svg>';
+  chartEl.innerHTML=svg;
+}
 let recGroupOpen=false;
 function toggleRecGroup(){
   recGroupOpen=!recGroupOpen;
@@ -361,6 +438,7 @@ function toggleBkfGroup(){
   document.getElementById('bkfGroupItems').classList.toggle('open',bkfGroupOpen);
 }
 function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id];if(navEl){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navEl.classList.add('active');}
+  if(id==='hkpsheet'||id==='hkpsheetar'){if(!hkpGroupOpen){hkpGroupOpen=true;document.getElementById('hkpGroupToggle').classList.add('open');document.getElementById('hkpGroupItems').classList.add('open');}}
   if(id==='bkfsheet'||id==='bkfsheetar'){if(!bkfGroupOpen){bkfGroupOpen=true;document.getElementById('bkfGroupToggle').classList.add('open');document.getElementById('bkfGroupItems').classList.add('open');}}
   if(id.startsWith('recensioni-')){if(!recGroupOpen){recGroupOpen=true;document.getElementById('recGroupToggle').classList.add('open');document.getElementById('recGroupItems').classList.add('open');}}
   try{localStorage.setItem('qm_last_view',id);}catch(e){}
@@ -369,6 +447,8 @@ function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.class
     try{loadWeekData(weekData);}catch(e){}
     try{refreshOverviewForDate(new Date());}catch(e){}
   }
+  if(id==='hkpsheet')setTimeout(()=>hkpRenderSheet('soul'),50);
+  if(id==='hkpsheetar')setTimeout(()=>hkpRenderSheet('bout'),50);
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
   if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);}
@@ -3032,6 +3112,8 @@ function hkSetLoaded(key,silent){
     if(deltaEl){deltaEl.textContent=g.arrivi+' arrivi · '+g.partenze+' partenze';deltaEl.className='kpi-delta';}
     if(subEl)subEl.textContent=g.label;
   }
+  // Aggiorna consuntivo se la vista è aperta
+  setTimeout(()=>hkpRenderSheet(key),100);
 }
 function resetSoulData(){hkSoulData=null;hkResetSlot('soul');}
 function resetBoutData(){hkBoutData=null;hkResetSlot('bout');}
