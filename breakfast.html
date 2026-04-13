@@ -110,6 +110,7 @@ const MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','d
 
 let bkfData=null;
 let currentIdx=0;
+let bkfGroups=[];
 
 // Orologio e data
 function tick(){
@@ -150,6 +151,13 @@ function renderDay(){
   }
   const d=bkfData[currentIdx];
   const coperti=(d.adulti||0)+(d.bambini||0);
+  const ddRef=parseDate(d.data);
+  const paxGruppi=(bkfGroups||[]).filter(g=>{
+    const a=parseDate(g.arrivo||g.data);const p=parseDate(g.partenza||g.arrivo||g.data);
+    if(!a||!ddRef)return false;
+    a.setHours(0,0,0,0);if(p)p.setHours(0,0,0,0);ddRef.setHours(0,0,0,0);
+    return ddRef>=a&&ddRef<=(p||a);
+  }).reduce((s,g)=>s+(g.pax||0),0);
   const today=new Date();today.setHours(0,0,0,0);
   const dd=parseDate(d.data);
   const isToday=dd&&(dd.setHours(0,0,0,0),dd.getTime()===today.getTime());
@@ -173,7 +181,7 @@ function renderDay(){
   </div>`;
 
   // KPI dettaglio
-  html+=`<div class="kpi-grid" style="grid-template-columns:1fr 1fr;margin-bottom:10px;">
+  html+=`<div class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:10px;">
     <div class="kpi-card">
       <div class="kpi-val sm">${coperti}</div>
       <div class="kpi-lbl">BB</div>
@@ -181,6 +189,10 @@ function renderDay(){
     <div class="kpi-card">
       <div class="kpi-val sm" style="color:var(--text-muted);">${d.noCol||0}</div>
       <div class="kpi-lbl">RO</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-val sm" style="color:var(--green);">${paxGruppi||0}</div>
+      <div class="kpi-lbl">Pax Gruppi</div>
     </div>
   </div>`;
 
@@ -249,6 +261,11 @@ async function loadAll(){
       try{localStorage.setItem('bkf_cache',json.value);}catch(e){}
     }
   }catch(e){}
+  try{
+    const rg=await fetch(PROXY+'/kv/get?key=qm_bkfGroups');
+    const jg=await rg.json();
+    if(jg.value){bkfGroups=JSON.parse(jg.value);try{localStorage.setItem('bkf_groups_cache',jg.value);}catch(e){}}
+  }catch(e){}
   if(!bkfData||!bkfData.length){
     document.getElementById('mainContent').innerHTML='<div class="no-data">Nessun dato disponibile.<br>Carica il report pasti dalla dashboard.</div>';
     return;
@@ -258,6 +275,10 @@ async function loadAll(){
 }
 
 // Carica prima da cache locale
+try{
+  const gc=localStorage.getItem('bkf_groups_cache');
+  if(gc)bkfGroups=JSON.parse(gc);
+}catch(e){}
 try{
   const c=localStorage.getItem('bkf_cache');
   if(c){const saved=JSON.parse(c);bkfData=saved.data||[];bkfData._ts=saved.ts||null;
