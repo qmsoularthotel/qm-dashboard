@@ -650,14 +650,17 @@ function pianoRenderWeek(activeIdx){
     const totP=(g.soulart?.partenze?.length||0)+(g.soulart?.cambi?.length||0)+bMerged.partenze.length+bMerged.cambi.length;
     const totF=(g.soulart?.fermate?.length||0)+bMerged.fermate.length;
     const isActive=i===activeIdx;
-    const bg=isActive?'var(--accent)':'var(--surface2)';
+    const bg=isActive?'var(--accent)':'var(--surface)';
+    const border=isActive?'2px solid var(--accent)':'1px solid var(--border)';
     const col=isActive?'#fff':'var(--text)';
-    const dimCol=isActive?'rgba(255,255,255,.7)':'var(--text-dim)';
+    const dimCol=isActive?'rgba(255,255,255,.6)':'var(--text-dim)';
+    const amberCol=isActive?'#ffd580':'var(--amber)';
+    const blueCol=isActive?'#a8d4ff':'var(--accent)';
     const shortLabel=g.label?g.label.split(' ')[0].substring(0,3):'?';
-    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:52px;background:${bg};border-radius:7px;padding:6px 4px;text-align:center;cursor:pointer;transition:background .15s;">
-      <div style="font-size:10px;font-weight:700;color:${col};margin-bottom:3px;">${shortLabel}</div>
-      <div style="font-size:11px;font-weight:600;color:${totP>0?isActive?'#ffd580':'var(--amber)':dimCol};">↑${totP}</div>
-      <div style="font-size:11px;font-weight:600;color:${totF>0?isActive?'#a0d4ff':'var(--accent)':dimCol};">=&nbsp;${totF}</div>
+    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:56px;background:${bg};border:${border};border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;transition:all .15s;">
+      <div style="font-size:11px;font-weight:700;color:${col};margin-bottom:5px;">${shortLabel}</div>
+      <div style="font-size:14px;font-weight:700;color:${totP>0?amberCol:dimCol};line-height:1.2;">↑${totP}</div>
+      <div style="font-size:14px;font-weight:700;color:${totF>0?blueCol:dimCol};line-height:1.2;">=&nbsp;${totF}</div>
     </div>`;
   }).join('');
 }
@@ -694,13 +697,11 @@ function renderPianoGiorno(elId,refDate,forceIdx){
     if(!tuttePartenze.length&&!fermate.length)return'';
     // KPI numerici
     let h=`<div style="margin-bottom:10px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${label}</div>
-        <div style="display:flex;gap:8px;">
-          ${tuttePartenze.length?`<span style="font-size:var(--fs-xxs);font-weight:700;color:var(--amber);">↑ ${tuttePartenze.length}</span>`:''}
-          ${cambi.length?`<span style="font-size:var(--fs-xxs);font-weight:700;color:var(--red);">⇄ ${cambi.length}</span>`:''}
-          ${fermate.length?`<span style="font-size:var(--fs-xxs);font-weight:700;color:var(--accent);">= ${fermate.length}</span>`:''}
-        </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${label}</div>
+        ${tuttePartenze.length?`<span style="font-size:13px;font-weight:700;color:var(--amber);">↑${tuttePartenze.length}</span>`:''}
+        ${cambi.length?`<span style="font-size:13px;font-weight:700;color:var(--red);">⇄${cambi.length}</span>`:''}
+        ${fermate.length?`<span style="font-size:13px;font-weight:700;color:var(--accent);">=&nbsp;${fermate.length}</span>`:''}
       </div>`;
     if(tuttePartenze.length)h+=`<div style="margin-bottom:5px;"><div style="display:flex;flex-wrap:wrap;gap:4px;">${tuttePartenze.map(r=>{const isCambio=cambi.includes(r);return`<span style="background:${isCambio?'#fce8e8':'var(--amber-bg)'};border:1px solid ${isCambio?'var(--red)':'var(--amber)'};color:${isCambio?'var(--red)':'var(--amber)'};font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;">${r}${isCambio?` ⇄`:''}</span>`;}).join('')}</div></div>`;
     if(fermate.length)h+=`<div><div style="display:flex;flex-wrap:wrap;gap:4px;">${fermate.map(r=>`<span style="background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);font-size:10px;padding:2px 7px;border-radius:5px;">${r}</span>`).join('')}</div></div>`;
