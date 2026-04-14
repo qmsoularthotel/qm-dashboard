@@ -357,7 +357,7 @@ function toggleHkpGroup(){
 // §§ HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore)
 const HKP_URLS={
   sa:'https://script.google.com/macros/s/AKfycbyLEnNoU6DO1dxgeSy4XvFSqMFZLNz2MPIoE8mAVUrjQ0QmjhcfMzYZPSdkhdTaDnEK/exec',
-  ar:'https://script.google.com/macros/s/AKfycbx0TwiCX8K-WnTlPkmWB0hmYeNylnHJNf1hzigV2bZUkatPmEq5qcUWM1WX3pqt3Ko/exec'
+  ar:'https://script.google.com/macros/s/AKfycbxB7GXRubxOi-4oOCrL5bC72DAs3iYikzkLAxz--aETqq4vdW-Xa-eHdUEZCgjov9M/exec'
 };
 let HKP_DATA={sa:null,ar:null};
 let HKP_TAB={sa:'riepilogo',ar:'riepilogo'};
