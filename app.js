@@ -415,9 +415,9 @@ function hkpRenderAll(p){
   const totDuplex=data.tot_duplex||0;
   if(kpiEl)kpiEl.innerHTML=`
     <div class="kpi-card green"><div class="kpi-card-icon">🛏️</div><div class="kpi-label">Camere mese</div><div class="kpi-value">${totMese}</div><div class="kpi-delta up">${giorniConDati} giorni con dati</div></div>
+    <div class="kpi-card green"><div class="kpi-card-icon">🏠</div><div class="kpi-label">Totale Duplex</div><div class="kpi-value">${totDuplex||'—'}</div><div class="kpi-delta">camere duplex</div></div>
     <div class="kpi-card blue"><div class="kpi-card-icon">📊</div><div class="kpi-label">Media/giorno</div><div class="kpi-value">${mediaGiornaliera}</div><div class="kpi-delta">su ${giorniConDati} giorni</div></div>
-    <div class="kpi-card amber"><div class="kpi-card-icon">👑</div><div class="kpi-label">Top cameriera</div><div class="kpi-value" style="font-size:16px;">${top?top.nome:'—'}</div><div class="kpi-delta">${top?top.camere_tot+' cam':''}</div></div>
-    <div class="kpi-card"><div class="kpi-card-icon">🏠</div><div class="kpi-label">Totale Duplex</div><div class="kpi-value">${totDuplex||'—'}</div><div class="kpi-delta">camere duplex</div></div>`;
+    <div class="kpi-card amber"><div class="kpi-card-icon">👑</div><div class="kpi-label">Top cameriera</div><div class="kpi-value" style="font-size:16px;">${top?top.nome:'—'}</div><div class="kpi-delta">${top?top.camere_tot+' cam':''}</div></div>`;
   hkpRenderContent(p);
 }
 function hkpRenderContent(p){
@@ -445,31 +445,6 @@ function hkpRenderContent(p){
       </div>`;
     });
     html+='</div></div>';
-    // Grafico sparkline per cameriera
-    const totGiorni=data.totale_per_giorno||{};
-    const giorniDisp=Object.keys(totGiorni).map(Number).filter(d=>totGiorni[d]>0).sort((a,b)=>a-b);
-    if(giorniDisp.length>=2&&cameriere.length){
-      const COLORS=['#003580','#e65100','#1b5e20','#880e4f','#6a1b9a','#0d47a1','#2e7d32','#b71c1c','#f57f17','#37474f'];
-      const W=680,H=160,PL=36,PR=12,PT=14,PB=28;const plotW=W-PL-PR,plotH=H-PT-PB;
-      const allVals=cameriere.flatMap(cam=>{const pg={};Object.entries(cam.camere_per_giorno||{}).forEach(([k,v])=>{pg[parseInt(k)]=parseInt(v)||0;});cam._pgn=pg;return giorniDisp.map(d=>pg[d]||0);});
-      const maxV=Math.max(...allVals,1);
-      const sx=i=>PL+i/(giorniDisp.length-1)*plotW;const sy=v=>PT+plotH-(v/maxV)*plotH;
-      let svg='<div class="panel" style="margin-top:12px;"><div class="panel-header"><span class="panel-title">Andamento giornaliero per cameriera</span></div><div class="panel-body" style="padding:14px;overflow-x:auto;">';
-      svg+=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;">`;
-      [0,.25,.5,.75,1].forEach(t=>{const y=PT+plotH*(1-t);svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="1"/>`;svg+=`<text x="${PL-4}" y="${y+4}" font-size="9" fill="var(--text-dim)" text-anchor="end">${Math.round(t*maxV)}</text>`;});
-      giorniDisp.forEach((d,i)=>{if(d===1||d%5===0||i===giorniDisp.length-1){svg+=`<text x="${sx(i)}" y="${H-4}" font-size="9" fill="var(--text-dim)" text-anchor="middle">${d}</text>`;}});
-      cameriere.forEach((cam,ci)=>{
-        const col=COLORS[ci%COLORS.length];
-        const path='M'+giorniDisp.map((d,i)=>{const v=cam._pgn?cam._pgn[d]||0:0;return`${sx(i)},${sy(v)}`;}).join('L');
-        svg+=`<path d="${path}" fill="none" stroke="${col}" stroke-width="1.5" opacity="0.85"/>`;
-        const last=giorniDisp[giorniDisp.length-1];const lv=cam._pgn?cam._pgn[last]||0:0;
-        svg+=`<circle cx="${sx(giorniDisp.length-1)}" cy="${sy(lv)}" r="3" fill="${col}"/>`;
-      });
-      svg+='</svg><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">';
-      cameriere.forEach((cam,ci)=>{svg+=`<div style="display:flex;align-items:center;gap:5px;font-size:var(--fs-xxs);color:var(--text-muted);"><div style="width:16px;height:3px;background:${COLORS[ci%COLORS.length]};border-radius:2px;"></div>${cam.nome}</div>`;});
-      svg+='</div></div></div>';
-      html+=svg;
-    }
     content.innerHTML=html;
   } else {
     const totGiorni=data.totale_per_giorno||{};
