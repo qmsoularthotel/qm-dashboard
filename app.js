@@ -412,11 +412,12 @@ function hkpRenderAll(p){
   const giorniConDati=Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
   const mediaGiornaliera=Math.round(totMese/giorniConDati*10)/10;
   const top=cameriere.length?[...cameriere].sort((a,b)=>b.camere_tot-a.camere_tot)[0]:null;
+  const totDuplex=data.tot_duplex||0;
   if(kpiEl)kpiEl.innerHTML=`
     <div class="kpi-card green"><div class="kpi-card-icon">🛏️</div><div class="kpi-label">Camere mese</div><div class="kpi-value">${totMese}</div><div class="kpi-delta up">${giorniConDati} giorni con dati</div></div>
     <div class="kpi-card blue"><div class="kpi-card-icon">📊</div><div class="kpi-label">Media/giorno</div><div class="kpi-value">${mediaGiornaliera}</div><div class="kpi-delta">su ${giorniConDati} giorni</div></div>
     <div class="kpi-card amber"><div class="kpi-card-icon">👑</div><div class="kpi-label">Top cameriera</div><div class="kpi-value" style="font-size:16px;">${top?top.nome:'—'}</div><div class="kpi-delta">${top?top.camere_tot+' cam':''}</div></div>
-    <div class="kpi-card"><div class="kpi-card-icon">👥</div><div class="kpi-label">Cameriere attive</div><div class="kpi-value">${cameriere.length}</div><div class="kpi-delta">nel mese</div></div>`;
+    <div class="kpi-card"><div class="kpi-card-icon">🏠</div><div class="kpi-label">Totale Duplex</div><div class="kpi-value">${totDuplex||'—'}</div><div class="kpi-delta">camere duplex</div></div>`;
   hkpRenderContent(p);
 }
 function hkpRenderContent(p){
