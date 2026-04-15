@@ -500,85 +500,89 @@ function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.class
   if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);}
   if(id==='dvr')setTimeout(dvrRender,50);
 }
-// §§ DVR — SCADENZE VISITE MEDICHE & ART. 37
-let DVR_DATA={sa:{visite:[],art37:[]}};
+// §§ DVR — SCADENZE SICUREZZA & COMPLIANCE
+const DVR_CATS={
+  visite:       {label:'💉 Visite Mediche',      nomeLbl:'Nome',              extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Receptionist'},      dataLbl:'Data visita'},
+  art37:        {label:'📋 Formazione Art. 37',  nomeLbl:'Nome',              extra:{key:'ruolo',     lbl:'Ruolo / figura',      ph:'es. Dirigente'},          dataLbl:'Data formazione'},
+  antincendio:  {label:'🔥 Attestati Antincendio',nomeLbl:'Nome',             extra:{key:'livello',   lbl:'Livello rischio',     ph:'Basso / Medio / Alto'},   dataLbl:'Data attestato'},
+  primosoccorso:{label:'🚑 Primo Soccorso',       nomeLbl:'Nome',             extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Receptionist'},       dataLbl:'Data attestato'},
+  estintori:    {label:'🧯 Estintori',            nomeLbl:'Posizione / ID',   extra:{key:'tipo',      lbl:'Tipo',                ph:'Polvere / CO₂ / Acqua'}, dataLbl:'Ultima verifica'},
+  legionella:   {label:'🦠 Legionella',           nomeLbl:'Punto campion.',   extra:{key:'metodo',    lbl:'Metodo analisi',      ph:'es. Colturale'},          dataLbl:'Data analisi'},
+  rspp:         {label:'🛡️ RSPP',                 nomeLbl:'Nome',             extra:{key:'tipo',      lbl:'Tipo nomina',         ph:'Interno / Esterno'},      dataLbl:'Data incarico'},
+  rls:          {label:'👷 RLS',                  nomeLbl:'Nome',             extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Receptionist'},       dataLbl:'Data elezione'},
+  dvrdoc:       {label:'📄 Documento DVR',        nomeLbl:'Versione / Rev.',  extra:{key:'motivo',    lbl:'Motivo revisione',    ph:'es. Modifica organiz.'},  dataLbl:'Data redazione'}
+};
+const DVR_KEYS=Object.keys(DVR_CATS);
+let DVR_DATA={sa:Object.fromEntries(DVR_KEYS.map(k=>[k,[]]))};
 let _dvrModalType='visite';let _dvrModalId=null;
 function dvrSave(){
   try{localStorage.setItem('qm_dvr',JSON.stringify(DVR_DATA));}catch(e){}
   try{LS.kvSet('dvr',JSON.stringify(DVR_DATA));}catch(e){}
 }
 function dvrRestore(){
-  try{const s=localStorage.getItem('qm_dvr');if(s)DVR_DATA=JSON.parse(s);}catch(e){}
+  try{
+    const s=localStorage.getItem('qm_dvr');
+    if(s){const p=JSON.parse(s);if(!DVR_DATA.sa)DVR_DATA.sa={};DVR_KEYS.forEach(k=>{DVR_DATA.sa[k]=p.sa?.[k]||[];});}
+  }catch(e){}
 }
 function dvrStatus(scadenza){
-  if(!scadenza)return{label:'—',color:'var(--text-dim)',days:null};
+  if(!scadenza)return{color:'var(--text-dim)',days:null};
   const today=new Date();today.setHours(0,0,0,0);
   const exp=new Date(scadenza);exp.setHours(0,0,0,0);
   const days=Math.round((exp-today)/(1000*60*60*24));
-  if(days<0)return{label:'Scaduta',color:'var(--red)',days};
-  if(days<=30)return{label:'In scadenza',color:'var(--amber)',days};
-  return{label:'Valida',color:'var(--green)',days};
+  if(days<0)return{color:'var(--red)',days};
+  if(days<=30)return{color:'var(--amber)',days};
+  return{color:'var(--green)',days};
 }
-function dvrRender(){
-  ['visite','art37'].forEach(type=>{
-    const list=document.getElementById('dvr-'+type+'-list');
-    if(!list)return;
-    const items=(DVR_DATA.sa||{})[type]||[];
-    if(!items.length){list.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna scadenza inserita</div>';return;}
-    const sorted=[...items].sort((a,b)=>new Date(a.scadenza||'9999')-new Date(b.scadenza||'9999'));
-    list.innerHTML=sorted.map((it,i)=>{
-      const st=dvrStatus(it.scadenza);
-      const daysLabel=st.days!==null?(st.days<0?`${Math.abs(st.days)}gg fa`:`tra ${st.days}gg`):'';
-      const scadFmt=it.scadenza?new Date(it.scadenza).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
-      const extra=type==='visite'?(it.mansione?`<span style="color:var(--text-dim);font-size:var(--fs-xxs);">${it.mansione}</span>`:'')
-        :(it.ruolo?`<span style="color:var(--text-dim);font-size:var(--fs-xxs);">${it.ruolo}</span>`:'');
-      return`<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;${i>0?'border-top:1px solid var(--border-light);':''}">
-        <div style="width:10px;height:10px;border-radius:50%;background:${st.color};flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</div>
-          ${extra}
-        </div>
-        <div style="text-align:right;flex-shrink:0;">
-          <div style="font-size:var(--fs-xs);font-weight:600;color:${st.color};">${scadFmt}</div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${daysLabel}</div>
-        </div>
-        <div style="display:flex;gap:4px;flex-shrink:0;">
-          <button onclick="dvrOpenModal('${type}','${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">✏️</button>
-          <button onclick="dvrDelete('${type}','${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">🗑</button>
-        </div>
-      </div>`;
-    }).join('');
-  });
+function dvrRenderPanel(type){
+  const cat=DVR_CATS[type];
+  const list=document.getElementById('dvr-list-'+type);
+  if(!list)return;
+  const items=(DVR_DATA.sa||{})[type]||[];
+  if(!items.length){list.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna voce inserita</div>';return;}
+  const sorted=[...items].sort((a,b)=>new Date(a.scadenza||'9999')-new Date(b.scadenza||'9999'));
+  list.innerHTML=sorted.map((it,i)=>{
+    const st=dvrStatus(it.scadenza);
+    const daysLbl=st.days!==null?(st.days<0?`${Math.abs(st.days)}gg fa`:`tra ${st.days}gg`):'';
+    const scadFmt=it.scadenza?new Date(it.scadenza).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+    const extraVal=it[cat.extra.key]?`<span style="color:var(--text-dim);font-size:var(--fs-xxs);">${it[cat.extra.key]}</span>`:'';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;${i>0?'border-top:1px solid var(--border-light);':''}">
+      <div style="width:8px;height:8px;border-radius:50%;background:${st.color};flex-shrink:0;margin-top:1px;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:var(--fs-sm);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${it.nome||'—'}</div>
+        ${extraVal}
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:var(--fs-xs);font-weight:600;color:${st.color};">${scadFmt}</div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${daysLbl}</div>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <button onclick="dvrOpenModal('${type}','${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;">✏️</button>
+        <button onclick="dvrDelete('${type}','${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
 }
+function dvrRender(){DVR_KEYS.forEach(dvrRenderPanel);}
 function dvrOpenModal(type,id){
   _dvrModalType=type;_dvrModalId=id||null;
+  const cat=DVR_CATS[type];
   const modal=document.getElementById('dvrModal');
-  const title=document.getElementById('dvrModalTitle');
-  const body=document.getElementById('dvrModalBody');
-  title.textContent=(type==='visite'?'💉 Visita Medica':'📋 Formazione Art. 37')+(id?' — Modifica':' — Aggiungi');
-  const items=(DVR_DATA.sa||{})[type]||[];
-  const it=id?items.find(x=>x.id===id):null;
-  const extraField=type==='visite'
-    ?`<label style="font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;">Mansione</label>
-       <input id="dvr-f-extra" value="${it?.mansione||''}" placeholder="es. Receptionist" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);margin-bottom:12px;">`
-    :`<label style="font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;">Ruolo / figura</label>
-       <input id="dvr-f-extra" value="${it?.ruolo||''}" placeholder="es. RSPP, Dirigente…" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);margin-bottom:12px;">`;
-  body.innerHTML=`
-    <label style="font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;">Nome</label>
-    <input id="dvr-f-nome" value="${it?.nome||''}" placeholder="Nome e cognome" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);margin-bottom:12px;">
-    ${extraField}
+  document.getElementById('dvrModalTitle').textContent=cat.label+(id?' — Modifica':' — Aggiungi');
+  const it=id?(DVR_DATA.sa?.[type]||[]).find(x=>x.id===id):null;
+  const inp='width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);';
+  const lbl='font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;';
+  document.getElementById('dvrModalBody').innerHTML=`
+    <label style="${lbl}">${cat.nomeLbl}</label>
+    <input id="dvr-f-nome" value="${it?.nome||''}" placeholder="${cat.nomeLbl}" style="${inp}margin-bottom:12px;">
+    <label style="${lbl}">${cat.extra.lbl}</label>
+    <input id="dvr-f-extra" value="${it?.[cat.extra.key]||''}" placeholder="${cat.extra.ph}" style="${inp}margin-bottom:12px;">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-      <div>
-        <label style="font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;">${type==='visite'?'Data visita':'Data formazione'}</label>
-        <input type="date" id="dvr-f-data" value="${it?.(type==='visite'?'dataVisita':'dataFormazione')||''}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);">
-      </div>
-      <div>
-        <label style="font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;">Scadenza</label>
-        <input type="date" id="dvr-f-scad" value="${it?.scadenza||''}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);">
-      </div>
+      <div><label style="${lbl}">${cat.dataLbl}</label><input type="date" id="dvr-f-data" value="${it?.dataEv||''}" style="${inp}"></div>
+      <div><label style="${lbl}">Scadenza</label><input type="date" id="dvr-f-scad" value="${it?.scadenza||''}" style="${inp}"></div>
     </div>
-    <label style="font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;">Note (opzionale)</label>
-    <textarea id="dvr-f-note" placeholder="Note aggiuntive…" rows="2" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);resize:vertical;">${it?.note||''}</textarea>`;
+    <label style="${lbl}">Note</label>
+    <textarea id="dvr-f-note" rows="2" placeholder="Note aggiuntive…" style="${inp}resize:vertical;">${it?.note||''}</textarea>`;
   modal.style.display='flex';
   setTimeout(()=>document.getElementById('dvr-f-nome').focus(),50);
 }
@@ -586,26 +590,23 @@ function dvrCloseModal(){document.getElementById('dvrModal').style.display='none
 function dvrSaveEntry(){
   const nome=(document.getElementById('dvr-f-nome').value||'').trim();
   if(!nome)return;
-  const extra=(document.getElementById('dvr-f-extra').value||'').trim();
-  const data=(document.getElementById('dvr-f-data').value||'').trim();
-  const scad=(document.getElementById('dvr-f-scad').value||'').trim();
-  const note=(document.getElementById('dvr-f-note').value||'').trim();
-  if(!DVR_DATA.sa)DVR_DATA.sa={visite:[],art37:[]};
+  const cat=DVR_CATS[_dvrModalType];
+  const entry={nome,
+    [cat.extra.key]:(document.getElementById('dvr-f-extra').value||'').trim(),
+    dataEv:(document.getElementById('dvr-f-data').value||'').trim(),
+    scadenza:(document.getElementById('dvr-f-scad').value||'').trim(),
+    note:(document.getElementById('dvr-f-note').value||'').trim()};
+  if(!DVR_DATA.sa)DVR_DATA.sa={};
+  if(!DVR_DATA.sa[_dvrModalType])DVR_DATA.sa[_dvrModalType]=[];
   const items=DVR_DATA.sa[_dvrModalType];
-  const dataKey=_dvrModalType==='visite'?'dataVisita':'dataFormazione';
-  const extraKey=_dvrModalType==='visite'?'mansione':'ruolo';
-  if(_dvrModalId){
-    const it=items.find(x=>x.id===_dvrModalId);
-    if(it){it.nome=nome;it[extraKey]=extra;it[dataKey]=data;it.scadenza=scad;it.note=note;}
-  }else{
-    items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),nome,[ extraKey]:extra,[dataKey]:data,scadenza:scad,note});
-  }
-  dvrSave();dvrCloseModal();dvrRender();
+  if(_dvrModalId){const idx=items.findIndex(x=>x.id===_dvrModalId);if(idx>=0)items[idx]={...items[idx],...entry};}
+  else items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),...entry});
+  dvrSave();dvrCloseModal();dvrRenderPanel(_dvrModalType);
 }
 function dvrDelete(type,id){
   if(!confirm('Eliminare questa voce?'))return;
   DVR_DATA.sa[type]=(DVR_DATA.sa[type]||[]).filter(x=>x.id!==id);
-  dvrSave();dvrRender();
+  dvrSave();dvrRenderPanel(type);
 }
 function miniappCopy(inputId,btn){
   const inp=document.getElementById(inputId);

@@ -1103,24 +1103,27 @@
         <div id="hkp-ar-content"><div style="text-align:center;padding:40px;color:var(--text-dim);">Clicca <strong>Aggiorna</strong> per caricare i dati del mese</div></div>
       </div>
       <div class="view" id="view-dvr">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
-          <!-- Visite Mediche -->
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">💉 Visite Mediche</span>
-              <button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('visite')">+ Aggiungi</button>
-            </div>
-            <div id="dvr-visite-list" style="padding:0;"></div>
-          </div>
-          <!-- Articolo 37 -->
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">📋 Formazione Art. 37</span>
-              <button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('art37')">+ Aggiungi</button>
-            </div>
-            <div id="dvr-art37-list" style="padding:0;"></div>
-          </div>
+        <!-- Personale -->
+        <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">👥 Personale</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-bottom:20px;">
+          <div class="panel"><div class="panel-header"><span class="panel-title">💉 Visite Mediche</span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('visite')">+ Aggiungi</button></div><div id="dvr-list-visite" style="padding:0;"></div></div>
+          <div class="panel"><div class="panel-header"><span class="panel-title">📋 Formazione Art. 37</span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('art37')">+ Aggiungi</button></div><div id="dvr-list-art37" style="padding:0;"></div></div>
+          <div class="panel"><div class="panel-header"><span class="panel-title">🔥 Attestati Antincendio</span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('antincendio')">+ Aggiungi</button></div><div id="dvr-list-antincendio" style="padding:0;"></div></div>
+          <div class="panel"><div class="panel-header"><span class="panel-title">🚑 Primo Soccorso</span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('primosoccorso')">+ Aggiungi</button></div><div id="dvr-list-primosoccorso" style="padding:0;"></div></div>
         </div>
+        <!-- Impianti -->
+        <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">🔧 Impianti &amp; Verifiche</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-bottom:20px;">
+          <div class="panel"><div class="panel-header"><span class="panel-title">🧯 Estintori</span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('estintori')">+ Aggiungi</button></div><div id="dvr-list-estintori" style="padding:0;"></div></div>
+          <div class="panel"><div class="panel-header"><span class="panel-title">🦠 Legionella</span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('legionella')">+ Aggiungi</button></div><div id="dvr-list-legionella" style="padding:0;"></div></div>
+        </div>
+        <!-- Figure e Documentazione -->
+        <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">📋 Figure e Documentazione</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-bottom:20px;">
+          <div class="panel"><div class="panel-header"><span class="panel-title">🛡️ RSPP</span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('rspp')">+ Aggiungi</button></div><div id="dvr-list-rspp" style="padding:0;"></div></div>
+          <div class="panel"><div class="panel-header"><span class="panel-title">👷 RLS</span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('rls')">+ Aggiungi</button></div><div id="dvr-list-rls" style="padding:0;"></div></div>
+        </div>
+        <div class="panel"><div class="panel-header"><span class="panel-title">📄 Documento DVR</span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('dvrdoc')">+ Aggiungi</button></div><div id="dvr-list-dvrdoc" style="padding:0;"></div></div>
         <!-- Modal DVR -->
         <div id="dvrModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1010;align-items:center;justify-content:center;" onclick="dvrCloseModal()">
           <div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:24px;max-width:480px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;">
@@ -1197,6 +1200,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=188-20260415a"></script>
+<script src="app.js?v=188-20260415b"></script>
 </body>
 </html>
