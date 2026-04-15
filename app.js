@@ -1,3 +1,17 @@
+// §§ DARK MODE
+function toggleDarkMode(){
+  const dark=document.body.classList.toggle('dark');
+  try{localStorage.setItem('qm_dark',dark?'1':'0');}catch(e){}
+  const btn=document.getElementById('darkToggle');
+  if(btn)btn.textContent=dark?'☀️':'🌙';
+}
+(function(){
+  if(localStorage.getItem('qm_dark')==='1'){
+    document.body.classList.add('dark');
+    const btn=document.getElementById('darkToggle');
+    if(btn)btn.textContent='☀️';
+  }
+})();
 // §§ COSTANTI & CONFIG (DEPTS, WEEK fallback, IS_REST)
 const DEPTS={fo:{label:'Front Office',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Extra Roberto']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Giuditta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
@@ -347,7 +361,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Il turno viene aggiornato automaticamente</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',hkpsheet:'Operativa Housekeeping — SoulArt Hotel',hkpsheetar:'Operativa Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR — Sicurezza & Compliance','miniapp':'Mini App — Anteprima e Link'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni',dvr:'Sicurezza',miniapp:'Strumenti'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -436,9 +451,14 @@ function hkpRenderContent(p){
       const media=Math.round(cam.camere_tot/giorni*10)/10;
       const pct=Math.round(cam.camere_tot/totMese*100);
       const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';
+      const colorEnd=bar>66?'#34c759aa':bar>33?'#1e4080aa':'var(--amber)';
       html+=`<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i>0?'border-top:1px solid var(--border-light);':''}">
         <div style="min-width:140px;font-size:var(--fs-sm);font-weight:500;">${cam.nome}</div>
-        <div style="flex:1;"><div style="background:var(--border-light);border-radius:4px;height:6px;overflow:hidden;"><div style="width:${bar}%;background:${color};height:100%;border-radius:4px;"></div></div></div>
+        <div style="flex:1;">
+          <div style="background:var(--border-light);border-radius:6px;height:10px;overflow:hidden;position:relative;">
+            <div style="width:${bar}%;background:linear-gradient(90deg,${color},${colorEnd});height:100%;border-radius:6px;transition:width .4s ease;"></div>
+          </div>
+        </div>
         <div style="text-align:right;min-width:64px;"><span style="font-size:var(--fs-sm);font-weight:600;">${cam.camere_tot}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);"> cam</span></div>
         <div style="text-align:right;min-width:55px;"><span style="font-size:var(--fs-sm);font-weight:600;color:var(--accent);">${media}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">/gg</span></div>
         <div style="text-align:right;min-width:36px;font-size:var(--fs-xxs);color:var(--text-dim);">${pct}%</div>
@@ -483,7 +503,7 @@ function toggleBkfGroup(){
   document.getElementById('bkfGroupToggle').classList.toggle('open',bkfGroupOpen);
   document.getElementById('bkfGroupItems').classList.toggle('open',bkfGroupOpen);
 }
-function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id];if(navEl){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navEl.classList.add('active');}
+function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id]||id;const bc=document.getElementById('breadcrumb');if(bc)bc.textContent=breadcrumbs[id]||'';if(navEl){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navEl.classList.add('active');}
   if(id==='hkpsheet'||id==='hkpsheetar'){if(!hkpGroupOpen){hkpGroupOpen=true;document.getElementById('hkpGroupToggle').classList.add('open');document.getElementById('hkpGroupItems').classList.add('open');}}
   if(id==='bkfsheet'||id==='bkfsheetar'){if(!bkfGroupOpen){bkfGroupOpen=true;document.getElementById('bkfGroupToggle').classList.add('open');document.getElementById('bkfGroupItems').classList.add('open');}}
   if(id.startsWith('recensioni-')){if(!recGroupOpen){recGroupOpen=true;document.getElementById('recGroupToggle').classList.add('open');document.getElementById('recGroupItems').classList.add('open');}}
@@ -1505,16 +1525,27 @@ function toggleBkfPreview(){
 // §§ OVERVIEW — GRAFICI & METEO (buildBarChart, fetchMeteo, toggleWeatherForecast)
 function buildBarChart(){
   const data=[{l:'Lun 10',v:91},{l:'Mar 11',v:89},{l:'Mer 12',v:92},{l:'Gio 13',v:90},{l:'Ven 14',v:93},{l:'Sab 15',v:92},{l:'Oggi',v:94}];
-  const max=100,target=90;
+  const max=100,target=90,H=96;
   const wrap=document.getElementById('qualityBarChart');
   if(!wrap)return;
-  const colors=data.map(d=>d.v>=target?'var(--green)':d.l==='Oggi'?'var(--accent)':'var(--amber)');
-  wrap.innerHTML=data.map((d,i)=>{
-    const h=Math.round((d.v/max)*72);
-    return`<div class="bar-col"><div class="bar-wrap"><div class="bar" style="height:${h}px;background:${colors[i]};width:85%;" title="${d.v}"></div></div><div class="bar-label">${d.l}</div><div class="bar-val">${d.v}</div></div>`;
+  const targetY=H-Math.round((target/max)*H);
+  wrap.style.position='relative';
+  // target dashed line
+  const tLine=`<div style="position:absolute;left:0;right:0;top:${targetY}px;border-top:1.5px dashed var(--amber);opacity:.6;pointer-events:none;z-index:1;"><span style="position:absolute;right:0;top:-9px;font-size:8px;color:var(--amber);background:var(--surface);padding:0 3px;opacity:.9;">target ${target}</span></div>`;
+  const bars=data.map((d,i)=>{
+    const isToday=d.l==='Oggi';
+    const color=isToday?'var(--accent)':d.v>=target?'var(--green)':'var(--amber)';
+    const h=Math.round((d.v/max)*H);
+    const label=isToday?`<strong>${d.l}</strong>`:d.l;
+    return`<div class="bar-col">
+      <div class="bar-val" style="font-size:10px;font-weight:700;color:${color};margin-bottom:2px;">${d.v}</div>
+      <div class="bar-wrap" style="height:${H}px;position:relative;">
+        <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:72%;height:${h}px;background:${color};border-radius:4px 4px 2px 2px;opacity:${isToday?1:.85};transition:height .3s;"></div>
+      </div>
+      <div class="bar-label" style="margin-top:4px;">${label}</div>
+    </div>`;
   }).join('');
-  // target line overlay – simplified as text
-  wrap.title='Linea target: 90';
+  wrap.innerHTML=`<div style="position:relative;display:flex;gap:0;align-items:flex-end;width:100%;">${tLine}${bars.replace(/<div class="bar-col">/g,'<div class="bar-col" style="flex:1;display:flex;flex-direction:column;align-items:center;">')}</div>`;
 }
 const WC_ICONS={
   clear:'<circle cx="12" cy="12" r="4" fill="none" stroke="var(--amber)" stroke-width="1.5"/><line x1="12" y1="2" x2="12" y2="5" stroke="var(--amber)" stroke-width="1.5"/><line x1="12" y1="19" x2="12" y2="22" stroke="var(--amber)" stroke-width="1.5"/><line x1="2" y1="12" x2="5" y2="12" stroke="var(--amber)" stroke-width="1.5"/><line x1="19" y1="12" x2="22" y2="12" stroke="var(--amber)" stroke-width="1.5"/>',
@@ -1549,6 +1580,8 @@ async function fetchMeteo(){
     const code=data.current.weathercode;
     document.getElementById('weatherTemp').textContent=temp+'\u00b0C';
     document.getElementById('weatherIcon').innerHTML=wcToIcon(code);
+    const mm=document.getElementById('weatherMinMax');
+    if(mm&&days)mm.textContent=Math.round(days.temperature_2m_max[0])+'° / '+Math.round(days.temperature_2m_min[0])+'°';
     const grid=document.getElementById('forecastGrid');
     if(!grid)return;
     const days=data.daily;
@@ -3082,6 +3115,9 @@ function revRenderList(p){
     const uid=p+'-'+gi;
     const s=r._score;
     const cls=s>=9?'rev-score-hi':s>=7?'rev-score-mid':'rev-score-lo';
+    const scoreColor=s>=9?'var(--green)':s>=7?'var(--amber)':'var(--red)';
+    const R=14,circ=2*Math.PI*R,arc=Math.min(s/10,1)*circ;
+    const scoreSvg=`<svg width="40" height="40" viewBox="0 0 40 40" style="flex-shrink:0;"><circle cx="20" cy="20" r="${R}" fill="none" stroke="var(--border-light)" stroke-width="2.5"/><circle cx="20" cy="20" r="${R}" fill="none" stroke="${scoreColor}" stroke-width="2.5" stroke-dasharray="${arc.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round" transform="rotate(-90 20 20)"/><text x="20" y="24" text-anchor="middle" font-size="11" font-weight="700" fill="${scoreColor}" font-family="Helvetica Neue,Arial,sans-serif">${s.toFixed(1)}</text></svg>`;
     const d=r._date;
     const dateStr=isNaN(d)?'—':(d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear());
     const bookingNum=r['Numero di prenotazione']||r['Reservation number']||'';
@@ -3121,7 +3157,7 @@ function revRenderList(p){
         </div>
       </div>`:(isSent||isNotNeeded)?`<div style="margin-top:6px;">${sentBadge}</div>`:'';
     return`<div class="rev-card">
-      <div class="rev-card-header"><span class="rev-score-badge ${cls}">${s.toFixed(1)}</span><span class="rev-guest">${r["Nome dell'ospite"]||'Ospite anonimo'}</span>${noReplyBadge}${sentBadge}${langBadge}<span class="rev-date">${dateStr}</span>${bookingBadge}</div>
+      <div class="rev-card-header">${scoreSvg}<span class="rev-guest">${r["Nome dell'ospite"]||'Ospite anonimo'}</span>${noReplyBadge}${sentBadge}${langBadge}<span class="rev-date">${dateStr}</span>${bookingBadge}</div>
       ${r['Titolo della recensione']?`<div class="rev-title"><span id="revTitleTxt-${uid}">${r['Titolo della recensione']}</span></div>`:''}
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">${catMini}</div>
       <div class="rev-body" id="revBody-${uid}">${pos}${neg}</div>${translateBtn}${reply}${replyPanel}
