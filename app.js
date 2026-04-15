@@ -829,11 +829,26 @@ function pianoRenderWeek(activeIdx){
     const totP=(g.soulart?.partenze?.length||0)+(g.soulart?.cambi?.length||0)+bMerged.partenze.length+bMerged.cambi.length;
     const totF=(g.soulart?.fermate?.length||0)+bMerged.fermate.length;
     const isActive=i===activeIdx;
-    const shortLabel=g.label?g.label.split(' ')[0].substring(0,3):'?';
-    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:56px;background:var(--surface);border:1px solid var(--border);${isActive?'border-top:3px solid var(--accent);':'border-top:3px solid transparent;'}border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;transition:all .15s;">
-      <div style="font-size:11px;font-weight:700;color:${isActive?'var(--accent)':'var(--text-dim)'};margin-bottom:5px;">${shortLabel}</div>
-      <div style="font-size:14px;font-weight:700;color:${totP>0?'var(--amber)':'var(--border)'};line-height:1.2;">↑${totP}</div>
-      <div style="font-size:14px;font-weight:700;color:${totF>0?'var(--accent)':'var(--border)'};line-height:1.2;">=&nbsp;${totF}</div>
+    const parts=g.label?g.label.split(' '):['?'];
+    const dayName=parts[0].substring(0,3);
+    const dayDate=parts[1]||'';
+    const pColor=totP>0?'var(--amber)':'var(--text-dim)';
+    const fColor=totF>0?'var(--accent)':'var(--text-dim)';
+    const bg=isActive?'var(--surface2)':'var(--surface)';
+    const borderTop=isActive?'border-top:3px solid var(--accent);':'border-top:3px solid transparent;';
+    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:60px;background:${bg};border:1px solid var(--border);${borderTop}border-radius:8px;padding:10px 6px 8px;text-align:center;cursor:pointer;transition:all .15s;">
+      <div style="font-size:13px;font-weight:700;color:${isActive?'var(--accent)':'var(--text)'};line-height:1;">${dayName}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-bottom:7px;margin-top:1px;">${dayDate}</div>
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+          <span style="font-size:10px;color:${pColor};font-weight:600;">↑</span>
+          <span style="font-size:15px;font-weight:700;color:${pColor};line-height:1;">${totP}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+          <span style="font-size:10px;color:${fColor};font-weight:600;">=</span>
+          <span style="font-size:15px;font-weight:700;color:${fColor};line-height:1;">${totF}</span>
+        </div>
+      </div>
     </div>`;
   }).join('');
 }
