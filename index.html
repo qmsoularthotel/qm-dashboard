@@ -262,6 +262,44 @@
         <span class="page-title" id="pageTitle">Panoramica del giorno</span>
         <span class="breadcrumb" id="breadcrumb">Operativo Quotidiano</span>
       </div>
+      <!-- KPI chips — visible only on overview -->
+      <div class="topbar-kpis" id="topbar-kpis">
+        <div class="topbar-kpi-chip clickable" onclick="openArriviModal()" title="Arrivi">
+          <span style="font-size:13px;">🛬</span>
+          <div>
+            <div class="topbar-kpi-val" id="kpi-arrivi" style="color:var(--green);">—</div>
+            <div class="topbar-kpi-lbl">Arrivi</div>
+          </div>
+        </div>
+        <div class="topbar-kpi-chip" title="Partenze">
+          <span style="font-size:13px;">🛫</span>
+          <div>
+            <div class="topbar-kpi-val" id="kpi-partenze" style="color:var(--red);">—</div>
+            <div class="topbar-kpi-lbl">Partenze</div>
+          </div>
+        </div>
+        <div class="topbar-kpi-chip" title="Fermate">
+          <span style="font-size:13px;">🛏</span>
+          <div>
+            <div class="topbar-kpi-val" id="kpi-fermate" style="color:var(--blue);">—</div>
+            <div class="topbar-kpi-lbl">Fermate</div>
+          </div>
+        </div>
+        <div class="topbar-kpi-chip clickable" onclick="toggleOccupazionePreview()" title="Occupazione">
+          <span style="font-size:13px; color:#7A5FBF; font-weight:700;">%</span>
+          <div>
+            <div class="topbar-kpi-val" id="kpi-occ-val" style="color:#7A5FBF;">—</div>
+            <div class="topbar-kpi-lbl">Occupazione</div>
+          </div>
+        </div>
+        <!-- hidden fields updated by JS -->
+        <div style="display:none;">
+          <span id="kpi-arrivi-delta"></span><span id="kpi-arrivi-sub"></span>
+          <span id="kpi-partenze-delta"></span><span id="kpi-partenze-sub"></span>
+          <span id="kpi-fermate-delta"></span><span id="kpi-fermate-sub"></span>
+          <span id="kpi-occ-bar"></span><span id="kpi-occ-sub"></span>
+        </div>
+      </div>
       <div class="topbar-right">
         <button id="darkToggle" onclick="toggleDarkMode()" title="Dark mode" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:14px;line-height:1;color:var(--text-muted);transition:all .15s;">🌙</button>
         <div style="position:relative;">
@@ -297,42 +335,6 @@
     </div>
     <div class="content">
       <div class="view active" id="view-overview">
-        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px;">
-          <div class="kpi-card green kpi-clickable" id="kpi-arrivi-card" style="cursor:pointer;" onclick="openArriviModal()" title="Clicca per vedere gli arrivi">
-            <div class="kpi-card-icon">↓</div>
-            <div class="kpi-label">Arrivi <span style="font-size:9px;opacity:.5;">⤢</span></div>
-            <div class="kpi-value" id="kpi-arrivi">—</div>
-            <div class="kpi-delta" id="kpi-arrivi-delta" style="color:var(--text-dim)">Carica cruscotto</div>
-            <div class="kpi-sub" id="kpi-arrivi-sub"></div>
-            <span class="kpi-card-hint">Apri dettaglio arrivi →</span>
-          </div>
-          <div class="kpi-card red" id="kpi-partenze-card" style="border-top-color:var(--red)">
-            <div class="kpi-card-icon">↑</div>
-            <div class="kpi-label">Partenze</div>
-            <div class="kpi-value" id="kpi-partenze">—</div>
-            <div class="kpi-delta" id="kpi-partenze-delta" style="color:var(--text-dim)">Carica cruscotto</div>
-            <div class="kpi-sub" id="kpi-partenze-sub"></div>
-          </div>
-          <div class="kpi-card blue" id="kpi-fermate-card" style="border-top-color:var(--blue);">
-            <div class="kpi-card-icon">⊡</div>
-            <div class="kpi-label">Fermate</div>
-            <div class="kpi-value" id="kpi-fermate">—</div>
-            <div class="kpi-delta" id="kpi-fermate-delta" style="color:var(--text-dim)">Carica cruscotto</div>
-            <div class="kpi-sub" id="kpi-fermate-sub"></div>
-          </div>
-          <div class="kpi-card kpi-clickable" style="border-top-color:#7A5FBF;cursor:pointer;" onclick="toggleOccupazionePreview()">
-            <div class="kpi-card-icon" style="background:#EEE8FA;">%</div>
-            <div class="kpi-label">Occupazione</div>
-            <div class="kpi-value" id="kpi-occ-val">—</div>
-            <div style="margin-top:7px;">
-              <div style="height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;">
-                <div id="kpi-occ-bar" style="height:100%;border-radius:2px;background:#7A5FBF;width:0%;transition:width .5s;"></div>
-              </div>
-              <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;" id="kpi-occ-sub">su 33 camere totali</div>
-            </div>
-            <span class="kpi-card-hint">Espandi →</span>
-          </div>
-        </div>
         <div class="panel" style="margin-bottom:14px;" id="ov-piano-panel">
           <div class="panel-header">
             <span class="panel-title">🛏 Piano camere</span>
@@ -1228,6 +1230,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=189-20260415b"></script>
+<script src="app.js?v=189-20260415c"></script>
 </body>
 </html>
