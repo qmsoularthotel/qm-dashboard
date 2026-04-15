@@ -347,7 +347,7 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Il turno viene aggiornato automaticamente</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',hkpsheet:'Operativa Housekeeping — SoulArt Hotel',hkpsheetar:'Operativa Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria','miniapp':'Mini App — Anteprima e Link'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',hkpsheet:'Operativa Housekeeping — SoulArt Hotel',hkpsheetar:'Operativa Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR — Scadenze SoulArt Hotel','miniapp':'Mini App — Anteprima e Link'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -498,6 +498,114 @@ function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.class
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
   if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);}
+  if(id==='dvr')setTimeout(dvrRender,50);
+}
+// §§ DVR — SCADENZE VISITE MEDICHE & ART. 37
+let DVR_DATA={sa:{visite:[],art37:[]}};
+let _dvrModalType='visite';let _dvrModalId=null;
+function dvrSave(){
+  try{localStorage.setItem('qm_dvr',JSON.stringify(DVR_DATA));}catch(e){}
+  try{LS.kvSet('dvr',JSON.stringify(DVR_DATA));}catch(e){}
+}
+function dvrRestore(){
+  try{const s=localStorage.getItem('qm_dvr');if(s)DVR_DATA=JSON.parse(s);}catch(e){}
+}
+function dvrStatus(scadenza){
+  if(!scadenza)return{label:'—',color:'var(--text-dim)',days:null};
+  const today=new Date();today.setHours(0,0,0,0);
+  const exp=new Date(scadenza);exp.setHours(0,0,0,0);
+  const days=Math.round((exp-today)/(1000*60*60*24));
+  if(days<0)return{label:'Scaduta',color:'var(--red)',days};
+  if(days<=30)return{label:'In scadenza',color:'var(--amber)',days};
+  return{label:'Valida',color:'var(--green)',days};
+}
+function dvrRender(){
+  ['visite','art37'].forEach(type=>{
+    const list=document.getElementById('dvr-'+type+'-list');
+    if(!list)return;
+    const items=(DVR_DATA.sa||{})[type]||[];
+    if(!items.length){list.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna scadenza inserita</div>';return;}
+    const sorted=[...items].sort((a,b)=>new Date(a.scadenza||'9999')-new Date(b.scadenza||'9999'));
+    list.innerHTML=sorted.map((it,i)=>{
+      const st=dvrStatus(it.scadenza);
+      const daysLabel=st.days!==null?(st.days<0?`${Math.abs(st.days)}gg fa`:`tra ${st.days}gg`):'';
+      const scadFmt=it.scadenza?new Date(it.scadenza).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+      const extra=type==='visite'?(it.mansione?`<span style="color:var(--text-dim);font-size:var(--fs-xxs);">${it.mansione}</span>`:'')
+        :(it.ruolo?`<span style="color:var(--text-dim);font-size:var(--fs-xxs);">${it.ruolo}</span>`:'');
+      return`<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;${i>0?'border-top:1px solid var(--border-light);':''}">
+        <div style="width:10px;height:10px;border-radius:50%;background:${st.color};flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</div>
+          ${extra}
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:var(--fs-xs);font-weight:600;color:${st.color};">${scadFmt}</div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${daysLabel}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button onclick="dvrOpenModal('${type}','${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">✏️</button>
+          <button onclick="dvrDelete('${type}','${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  });
+}
+function dvrOpenModal(type,id){
+  _dvrModalType=type;_dvrModalId=id||null;
+  const modal=document.getElementById('dvrModal');
+  const title=document.getElementById('dvrModalTitle');
+  const body=document.getElementById('dvrModalBody');
+  title.textContent=(type==='visite'?'💉 Visita Medica':'📋 Formazione Art. 37')+(id?' — Modifica':' — Aggiungi');
+  const items=(DVR_DATA.sa||{})[type]||[];
+  const it=id?items.find(x=>x.id===id):null;
+  const extraField=type==='visite'
+    ?`<label style="font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;">Mansione</label>
+       <input id="dvr-f-extra" value="${it?.mansione||''}" placeholder="es. Receptionist" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);margin-bottom:12px;">`
+    :`<label style="font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;">Ruolo / figura</label>
+       <input id="dvr-f-extra" value="${it?.ruolo||''}" placeholder="es. RSPP, Dirigente…" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);margin-bottom:12px;">`;
+  body.innerHTML=`
+    <label style="font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;">Nome</label>
+    <input id="dvr-f-nome" value="${it?.nome||''}" placeholder="Nome e cognome" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);margin-bottom:12px;">
+    ${extraField}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;">${type==='visite'?'Data visita':'Data formazione'}</label>
+        <input type="date" id="dvr-f-data" value="${it?.(type==='visite'?'dataVisita':'dataFormazione')||''}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);">
+      </div>
+      <div>
+        <label style="font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;">Scadenza</label>
+        <input type="date" id="dvr-f-scad" value="${it?.scadenza||''}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);">
+      </div>
+    </div>
+    <label style="font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;">Note (opzionale)</label>
+    <textarea id="dvr-f-note" placeholder="Note aggiuntive…" rows="2" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);resize:vertical;">${it?.note||''}</textarea>`;
+  modal.style.display='flex';
+  setTimeout(()=>document.getElementById('dvr-f-nome').focus(),50);
+}
+function dvrCloseModal(){document.getElementById('dvrModal').style.display='none';}
+function dvrSaveEntry(){
+  const nome=(document.getElementById('dvr-f-nome').value||'').trim();
+  if(!nome)return;
+  const extra=(document.getElementById('dvr-f-extra').value||'').trim();
+  const data=(document.getElementById('dvr-f-data').value||'').trim();
+  const scad=(document.getElementById('dvr-f-scad').value||'').trim();
+  const note=(document.getElementById('dvr-f-note').value||'').trim();
+  if(!DVR_DATA.sa)DVR_DATA.sa={visite:[],art37:[]};
+  const items=DVR_DATA.sa[_dvrModalType];
+  const dataKey=_dvrModalType==='visite'?'dataVisita':'dataFormazione';
+  const extraKey=_dvrModalType==='visite'?'mansione':'ruolo';
+  if(_dvrModalId){
+    const it=items.find(x=>x.id===_dvrModalId);
+    if(it){it.nome=nome;it[extraKey]=extra;it[dataKey]=data;it.scadenza=scad;it.note=note;}
+  }else{
+    items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),nome,[ extraKey]:extra,[dataKey]:data,scadenza:scad,note});
+  }
+  dvrSave();dvrCloseModal();dvrRender();
+}
+function dvrDelete(type,id){
+  if(!confirm('Eliminare questa voce?'))return;
+  DVR_DATA.sa[type]=(DVR_DATA.sa[type]||[]).filter(x=>x.id!==id);
+  dvrSave();dvrRender();
 }
 function miniappCopy(inputId,btn){
   const inp=document.getElementById(inputId);
@@ -817,7 +925,7 @@ const LS={
       'rev_sa','rev_bh','rev_sl','rev_pr','rev_ms','rev_ar','rev_sb',
       'rev_sent',
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
-      'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb'];
+      'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
       try{
@@ -1620,6 +1728,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
     restoreDeptCustomTasks();
     ovUpdateRevNoreply();ovUpdateRevImport();
     hkpRestore();
+    dvrRestore();
     // Ripristina turno settimanale
     try{
       const saved=localStorage.getItem('qm_weekData');
