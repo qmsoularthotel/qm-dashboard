@@ -10,16 +10,22 @@
   --fs-base:16px;--fs-sm:14px;--fs-xs:13px;--fs-xxs:11px;
 }
 body.dark{
-  --bg:#161618;--surface:#1E1E20;--surface2:#28282A;--border:#3A3A3C;--border-light:#2E2E30;
-  --text:#F2F2F7;--text-muted:#AEAEB2;--text-dim:#636366;
-  --accent:#4B8EF5;--accent-bg:#1A2A4A;
-  --green:#32D74B;--green-bg:#1A3024;
-  --red:#FF453A;--red-bg:#3A1C1A;
-  --amber:#FF9F0A;--amber-bg:#3A2810;
-  --blue:#409CFF;--blue-bg:#1A2A3A;
+  --bg:#111113;--surface:#1C1C1E;--surface2:#242426;--border:#3A3A3C;--border-light:#303032;
+  --text:#F5F5F7;--text-muted:#C7C7CC;--text-dim:#8E8E93;
+  --accent:#5E9EFF;--accent-bg:#1C2E52;
+  --green:#30DB5B;--green-bg:#0D2E1A;
+  --red:#FF6B61;--red-bg:#3A1A18;
+  --amber:#FFB340;--amber-bg:#3A2408;
+  --blue:#5AC8FA;--blue-bg:#0D2233;
 }
-body{background:var(--bg);color:var(--text);font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:var(--fs-base);line-height:1.5;transition:background .2s,color .2s;}
+body{background:var(--bg);color:var(--text);font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:var(--fs-base);line-height:1.5;transition:background .25s,color .25s;}
+.sidebar,.panel,.kpi-card,.topbar,.content,.rev-card,.check-item,.uc-slot,.upload-box,.topbar-popup{transition:background .25s,border-color .25s,color .25s;}
 .app{display:flex;height:100vh;min-height:640px;overflow:hidden;}
+/* dark mode — fix hardcoded border color used nell'avatar e altri */
+body.dark .avatar{background:var(--accent-bg);border-color:var(--border);}
+body.dark input,body.dark textarea,body.dark select{background:var(--surface2);color:var(--text);border-color:var(--border);}
+body.dark .topbar-popup{box-shadow:0 4px 20px rgba(0,0,0,.5);}
+body.dark .panel{box-shadow:none;}
 .sidebar{width:226px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden;}
 .logo{padding:18px 16px 14px;border-bottom:1px solid var(--border-light);}
 .logo-title{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.01em;}
