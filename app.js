@@ -840,13 +840,13 @@ function pianoRenderWeek(activeIdx){
       <div style="font-size:13px;font-weight:700;color:${isActive?'var(--accent)':'var(--text)'};line-height:1;">${dayName}</div>
       <div style="font-size:10px;color:var(--text-dim);margin-bottom:7px;margin-top:1px;">${dayDate}</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
-        <div style="display:flex;align-items:baseline;gap:2px;">
-          <span style="font-size:10px;color:${pColor};font-weight:600;">↑</span>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+          <span style="font-size:11px;line-height:1;">🔑</span>
           <span style="font-size:15px;font-weight:700;color:${pColor};line-height:1;">${totP}</span>
         </div>
-        <div style="width:1px;height:14px;background:var(--border-light);"></div>
-        <div style="display:flex;align-items:baseline;gap:2px;">
-          <span style="font-size:10px;color:${fColor};font-weight:600;">=</span>
+        <div style="width:1px;height:22px;background:var(--border-light);"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+          <span style="font-size:11px;line-height:1;">🛏</span>
           <span style="font-size:15px;font-weight:700;color:${fColor};line-height:1;">${totF}</span>
         </div>
       </div>
