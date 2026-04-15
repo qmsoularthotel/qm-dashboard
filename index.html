@@ -1103,6 +1103,11 @@
         <div id="hkp-ar-content"><div style="text-align:center;padding:40px;color:var(--text-dim);">Clicca <strong>Aggiorna</strong> per caricare i dati del mese</div></div>
       </div>
       <div class="view" id="view-dvr">
+        <!-- Selettore società -->
+        <div style="display:flex;gap:8px;margin-bottom:20px;">
+          <button class="rev-filter-btn dvr-soc-btn active" onclick="dvrSetSoc('geriart',this)">🏢 GE.RI.ART SRL</button>
+          <button class="rev-filter-btn dvr-soc-btn" onclick="dvrSetSoc('bookingelite',this)">🏢 BOOKING ELITE</button>
+        </div>
         <!-- Personale -->
         <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">👥 Personale</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-bottom:20px;">
@@ -1200,6 +1205,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=188-20260415b"></script>
+<script src="app.js?v=188-20260415c"></script>
 </body>
 </html>

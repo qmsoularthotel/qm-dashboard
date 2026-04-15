@@ -513,7 +513,10 @@ const DVR_CATS={
   dvrdoc:       {label:'📄 Documento DVR',        nomeLbl:'Versione / Rev.',  extra:{key:'motivo',    lbl:'Motivo revisione',    ph:'es. Modifica organiz.'},  dataLbl:'Data redazione'}
 };
 const DVR_KEYS=Object.keys(DVR_CATS);
-let DVR_DATA={sa:Object.fromEntries(DVR_KEYS.map(k=>[k,[]]))};
+const DVR_SOCS={geriart:'GE.RI.ART SRL',bookingelite:'BOOKING ELITE'};
+const DVR_SOC_KEYS=Object.keys(DVR_SOCS);
+let DVR_DATA=Object.fromEntries(DVR_SOC_KEYS.map(s=>[s,Object.fromEntries(DVR_KEYS.map(k=>[k,[]]))]) );
+let _dvrSoc='geriart';
 let _dvrModalType='visite';let _dvrModalId=null;
 function dvrSave(){
   try{localStorage.setItem('qm_dvr',JSON.stringify(DVR_DATA));}catch(e){}
@@ -522,8 +525,22 @@ function dvrSave(){
 function dvrRestore(){
   try{
     const s=localStorage.getItem('qm_dvr');
-    if(s){const p=JSON.parse(s);if(!DVR_DATA.sa)DVR_DATA.sa={};DVR_KEYS.forEach(k=>{DVR_DATA.sa[k]=p.sa?.[k]||[];});}
+    if(s){
+      const p=JSON.parse(s);
+      DVR_SOC_KEYS.forEach(soc=>{
+        if(!DVR_DATA[soc])DVR_DATA[soc]={};
+        // compat: vecchi dati salvati con chiave 'sa' → migra a 'geriart'
+        const src=p[soc]||(soc==='geriart'?p.sa:null)||{};
+        DVR_KEYS.forEach(k=>{DVR_DATA[soc][k]=src[k]||[];});
+      });
+    }
   }catch(e){}
+}
+function dvrSetSoc(soc,btn){
+  _dvrSoc=soc;
+  document.querySelectorAll('.dvr-soc-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  dvrRender();
 }
 function dvrStatus(scadenza){
   if(!scadenza)return{color:'var(--text-dim)',days:null};
@@ -538,7 +555,7 @@ function dvrRenderPanel(type){
   const cat=DVR_CATS[type];
   const list=document.getElementById('dvr-list-'+type);
   if(!list)return;
-  const items=(DVR_DATA.sa||{})[type]||[];
+  const items=(DVR_DATA[_dvrSoc]||{})[type]||[];
   if(!items.length){list.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna voce inserita</div>';return;}
   const sorted=[...items].sort((a,b)=>new Date(a.scadenza||'9999')-new Date(b.scadenza||'9999'));
   list.innerHTML=sorted.map((it,i)=>{
@@ -569,7 +586,7 @@ function dvrOpenModal(type,id){
   const cat=DVR_CATS[type];
   const modal=document.getElementById('dvrModal');
   document.getElementById('dvrModalTitle').textContent=cat.label+(id?' — Modifica':' — Aggiungi');
-  const it=id?(DVR_DATA.sa?.[type]||[]).find(x=>x.id===id):null;
+  const it=id?(DVR_DATA[_dvrSoc]?.[type]||[]).find(x=>x.id===id):null;
   const inp='width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);';
   const lbl='font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;';
   document.getElementById('dvrModalBody').innerHTML=`
@@ -596,16 +613,16 @@ function dvrSaveEntry(){
     dataEv:(document.getElementById('dvr-f-data').value||'').trim(),
     scadenza:(document.getElementById('dvr-f-scad').value||'').trim(),
     note:(document.getElementById('dvr-f-note').value||'').trim()};
-  if(!DVR_DATA.sa)DVR_DATA.sa={};
-  if(!DVR_DATA.sa[_dvrModalType])DVR_DATA.sa[_dvrModalType]=[];
-  const items=DVR_DATA.sa[_dvrModalType];
+  if(!DVR_DATA[_dvrSoc])DVR_DATA[_dvrSoc]={};
+  if(!DVR_DATA[_dvrSoc][_dvrModalType])DVR_DATA[_dvrSoc][_dvrModalType]=[];
+  const items=DVR_DATA[_dvrSoc][_dvrModalType];
   if(_dvrModalId){const idx=items.findIndex(x=>x.id===_dvrModalId);if(idx>=0)items[idx]={...items[idx],...entry};}
   else items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),...entry});
   dvrSave();dvrCloseModal();dvrRenderPanel(_dvrModalType);
 }
 function dvrDelete(type,id){
   if(!confirm('Eliminare questa voce?'))return;
-  DVR_DATA.sa[type]=(DVR_DATA.sa[type]||[]).filter(x=>x.id!==id);
+  DVR_DATA[_dvrSoc][type]=(DVR_DATA[_dvrSoc][type]||[]).filter(x=>x.id!==id);
   dvrSave();dvrRenderPanel(type);
 }
 function miniappCopy(inputId,btn){
