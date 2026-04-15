@@ -86,7 +86,7 @@
         <div class="nav-item" onclick="setView('recensioni-ar',this)"><span class="nav-icon">↳</span>Recensioni Art Resort</div>
         <div class="nav-item" onclick="setView('recensioni-sb',this)"><span class="nav-icon">↳</span>Recensioni Santa Brigida</div>
       </div>
-      <div class="nav-item" onclick="setView('dvr',this)"><span class="nav-icon">🏥</span>DVR — Scadenze</div>
+      <div class="nav-item" onclick="setView('dvr',this)"><span class="nav-icon">🏥</span>DVR</div>
       <div class="nav-section">Strumenti</div>
       <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon">📱</span>Mini App</div>
       <div class="nav-section" style="display:flex;align-items:center;justify-content:space-between;">
@@ -1108,8 +1108,17 @@
           <button class="rev-filter-btn dvr-soc-btn active" onclick="dvrSetSoc('geriart',this)">🏢 GE.RI.ART SRL</button>
           <button class="rev-filter-btn dvr-soc-btn" onclick="dvrSetSoc('bookingelite',this)">🏢 BOOKING ELITE</button>
         </div>
-        <!-- Personale -->
-        <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">👥 Personale</div>
+        <!-- Lista Dipendenti -->
+        <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">👥 Lista Dipendenti</div>
+        <div class="panel" style="margin-bottom:20px;">
+          <div class="panel-header">
+            <span class="panel-title">👤 Dipendenti</span>
+            <button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrEmpOpenModal()">+ Aggiungi</button>
+          </div>
+          <div id="dvr-list-dipendenti" style="padding:0;"></div>
+        </div>
+        <!-- Scadenze Personale -->
+        <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">📋 Scadenze Personale</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-bottom:20px;">
           <div class="panel"><div class="panel-header"><span class="panel-title">💉 Visite Mediche</span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('visite')">+ Aggiungi</button></div><div id="dvr-list-visite" style="padding:0;"></div></div>
           <div class="panel"><div class="panel-header"><span class="panel-title">📋 Formazione Art. 37</span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('art37')">+ Aggiungi</button></div><div id="dvr-list-art37" style="padding:0;"></div></div>
@@ -1205,6 +1214,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=188-20260415c"></script>
+<script src="app.js?v=188-20260415d"></script>
 </body>
 </html>

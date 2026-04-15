@@ -347,7 +347,7 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Il turno viene aggiornato automaticamente</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',hkpsheet:'Operativa Housekeeping — SoulArt Hotel',hkpsheetar:'Operativa Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR — Scadenze SoulArt Hotel','miniapp':'Mini App — Anteprima e Link'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards — PMS',checklist:'Checklist operativa','recensioni-sa':'Recensioni — SoulArt Hotel','recensioni-bh':'Recensioni — Boutique Hotel','recensioni-sl':'Recensioni — San Liborio','recensioni-pr':'Recensioni — Principe','recensioni-ms':'Recensioni — Mastrangelo','recensioni-ar':'Recensioni — Art Resort','recensioni-sb':'Recensioni — Santa Brigida',hkpsheet:'Operativa Housekeeping — SoulArt Hotel',hkpsheetar:'Operativa Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt Hotel',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR — Sicurezza & Compliance','miniapp':'Mini App — Anteprima e Link'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -515,9 +515,10 @@ const DVR_CATS={
 const DVR_KEYS=Object.keys(DVR_CATS);
 const DVR_SOCS={geriart:'GE.RI.ART SRL',bookingelite:'BOOKING ELITE'};
 const DVR_SOC_KEYS=Object.keys(DVR_SOCS);
-let DVR_DATA=Object.fromEntries(DVR_SOC_KEYS.map(s=>[s,Object.fromEntries(DVR_KEYS.map(k=>[k,[]]))]) );
+let DVR_DATA=Object.fromEntries(DVR_SOC_KEYS.map(s=>[s,{...Object.fromEntries(DVR_KEYS.map(k=>[k,[]])),dipendenti:[]}]));
 let _dvrSoc='geriart';
 let _dvrModalType='visite';let _dvrModalId=null;
+let _dvrEmpId=null;
 function dvrSave(){
   try{localStorage.setItem('qm_dvr',JSON.stringify(DVR_DATA));}catch(e){}
   try{LS.kvSet('dvr',JSON.stringify(DVR_DATA));}catch(e){}
@@ -532,6 +533,7 @@ function dvrRestore(){
         // compat: vecchi dati salvati con chiave 'sa' → migra a 'geriart'
         const src=p[soc]||(soc==='geriart'?p.sa:null)||{};
         DVR_KEYS.forEach(k=>{DVR_DATA[soc][k]=src[k]||[];});
+        DVR_DATA[soc].dipendenti=src.dipendenti||[];
       });
     }
   }catch(e){}
@@ -541,6 +543,68 @@ function dvrSetSoc(soc,btn){
   document.querySelectorAll('.dvr-soc-btn').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   dvrRender();
+}
+// ── Lista Dipendenti ─────────────────────────────────────────
+function dvrRenderDipendenti(){
+  const list=document.getElementById('dvr-list-dipendenti');
+  if(!list)return;
+  const items=(DVR_DATA[_dvrSoc]?.dipendenti)||[];
+  if(!items.length){list.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun dipendente inserito</div>';return;}
+  const sorted=[...items].sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  const inp='width:100%;box-sizing:border-box;';
+  list.innerHTML=sorted.map((it,i)=>{
+    const contratto=it.contratto||'';
+    const assunzFmt=it.dataAssunzione?new Date(it.dataAssunzione).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+    const badge=contratto?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;background:var(--accent-bg,#e8eef8);color:var(--accent);font-weight:500;">${contratto}</span>`:'';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;${i>0?'border-top:1px solid var(--border-light);':''}">
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}
+        </div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${[it.mansione,assunzFmt?'dal '+assunzFmt:''].filter(Boolean).join(' · ')}</div>
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <button onclick="dvrEmpOpenModal('${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;">✏️</button>
+        <button onclick="dvrEmpDelete('${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function dvrEmpOpenModal(id){
+  _dvrEmpId=id||null;
+  const it=id?(DVR_DATA[_dvrSoc]?.dipendenti||[]).find(x=>x.id===id):null;
+  const modal=document.getElementById('dvrModal');
+  document.getElementById('dvrModalTitle').textContent='👤 Dipendente'+(id?' — Modifica':' — Aggiungi');
+  const inp='width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);';
+  const lbl='font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;';
+  document.getElementById('dvrModalBody').innerHTML=`
+    <input type="hidden" id="dvr-f-empmode" value="1">
+    <label style="${lbl}">Nome e Cognome</label>
+    <input id="dvr-f-nome" value="${it?.nome||''}" placeholder="Nome e Cognome" style="${inp}margin-bottom:12px;">
+    <label style="${lbl}">Mansione / Ruolo</label>
+    <input id="dvr-f-extra" value="${it?.mansione||''}" placeholder="es. Receptionist, Cameriere…" style="${inp}margin-bottom:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div>
+        <label style="${lbl}">Tipo contratto</label>
+        <select id="dvr-f-contratto" style="${inp}">
+          <option value="">—</option>
+          ${['Full-time','Part-time','A chiamata','Stage/Tirocinio','Apprendistato','Tempo determinato'].map(c=>`<option value="${c}"${it?.contratto===c?' selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label style="${lbl}">Data assunzione</label>
+        <input type="date" id="dvr-f-data" value="${it?.dataAssunzione||''}" style="${inp}">
+      </div>
+    </div>
+    <label style="${lbl}">Note</label>
+    <textarea id="dvr-f-note" rows="2" placeholder="Note aggiuntive…" style="${inp}resize:vertical;">${it?.note||''}</textarea>`;
+  modal.style.display='flex';
+  setTimeout(()=>document.getElementById('dvr-f-nome').focus(),50);
+}
+function dvrEmpDelete(id){
+  if(!confirm('Eliminare questo dipendente?'))return;
+  DVR_DATA[_dvrSoc].dipendenti=(DVR_DATA[_dvrSoc].dipendenti||[]).filter(x=>x.id!==id);
+  dvrSave();dvrRenderDipendenti();
 }
 function dvrStatus(scadenza){
   if(!scadenza)return{color:'var(--text-dim)',days:null};
@@ -580,7 +644,7 @@ function dvrRenderPanel(type){
     </div>`;
   }).join('');
 }
-function dvrRender(){DVR_KEYS.forEach(dvrRenderPanel);}
+function dvrRender(){DVR_KEYS.forEach(dvrRenderPanel);dvrRenderDipendenti();}
 function dvrOpenModal(type,id){
   _dvrModalType=type;_dvrModalId=id||null;
   const cat=DVR_CATS[type];
@@ -607,6 +671,19 @@ function dvrCloseModal(){document.getElementById('dvrModal').style.display='none
 function dvrSaveEntry(){
   const nome=(document.getElementById('dvr-f-nome').value||'').trim();
   if(!nome)return;
+  const isEmp=!!(document.getElementById('dvr-f-empmode'));
+  if(isEmp){
+    const entry={nome,
+      mansione:(document.getElementById('dvr-f-extra').value||'').trim(),
+      contratto:(document.getElementById('dvr-f-contratto')?.value||'').trim(),
+      dataAssunzione:(document.getElementById('dvr-f-data').value||'').trim(),
+      note:(document.getElementById('dvr-f-note').value||'').trim()};
+    if(!DVR_DATA[_dvrSoc].dipendenti)DVR_DATA[_dvrSoc].dipendenti=[];
+    const items=DVR_DATA[_dvrSoc].dipendenti;
+    if(_dvrEmpId){const idx=items.findIndex(x=>x.id===_dvrEmpId);if(idx>=0)items[idx]={...items[idx],...entry};}
+    else items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),...entry});
+    dvrSave();dvrCloseModal();dvrRenderDipendenti();return;
+  }
   const cat=DVR_CATS[_dvrModalType];
   const entry={nome,
     [cat.extra.key]:(document.getElementById('dvr-f-extra').value||'').trim(),
