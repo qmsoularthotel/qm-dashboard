@@ -839,12 +839,13 @@ function pianoRenderWeek(activeIdx){
     return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:60px;background:${bg};border:1px solid var(--border);${borderTop}border-radius:8px;padding:10px 6px 8px;text-align:center;cursor:pointer;transition:all .15s;">
       <div style="font-size:13px;font-weight:700;color:${isActive?'var(--accent)':'var(--text)'};line-height:1;">${dayName}</div>
       <div style="font-size:10px;color:var(--text-dim);margin-bottom:7px;margin-top:1px;">${dayDate}</div>
-      <div style="display:flex;flex-direction:column;gap:3px;">
-        <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+        <div style="display:flex;align-items:baseline;gap:2px;">
           <span style="font-size:10px;color:${pColor};font-weight:600;">↑</span>
           <span style="font-size:15px;font-weight:700;color:${pColor};line-height:1;">${totP}</span>
         </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+        <div style="width:1px;height:14px;background:var(--border-light);"></div>
+        <div style="display:flex;align-items:baseline;gap:2px;">
           <span style="font-size:10px;color:${fColor};font-weight:600;">=</span>
           <span style="font-size:15px;font-weight:700;color:${fColor};line-height:1;">${totF}</span>
         </div>
