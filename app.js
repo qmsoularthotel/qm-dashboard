@@ -841,13 +841,13 @@ function pianoRenderWeek(activeIdx){
       <div style="font-size:10px;color:var(--text-dim);margin-bottom:7px;margin-top:1px;">${dayDate}</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
         <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-          <span style="font-size:11px;line-height:1;">🛫</span>
-          <span style="font-size:15px;font-weight:700;color:${pColor};line-height:1;">${totP}</span>
+          <span style="font-size:11px;line-height:1;">🛏</span>
+          <span style="font-size:15px;font-weight:700;color:${fColor};line-height:1;">${totF}</span>
         </div>
         <div style="width:1px;height:22px;background:var(--border-light);"></div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-          <span style="font-size:11px;line-height:1;">🛏</span>
-          <span style="font-size:15px;font-weight:700;color:${fColor};line-height:1;">${totF}</span>
+          <span style="font-size:11px;line-height:1;">🛫</span>
+          <span style="font-size:15px;font-weight:700;color:${pColor};line-height:1;">${totP}</span>
         </div>
       </div>
     </div>`;
