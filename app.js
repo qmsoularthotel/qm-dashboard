@@ -315,7 +315,8 @@ function loadWeekData(data){
 }
 function buildWeekNav(){const nav=document.getElementById('weekNav');nav.innerHTML='';weekData.giorni.forEach((g,i)=>{const btn=document.createElement('button');btn.className='wday-btn'+(i===activeDay?' active':'');btn.textContent=g.label.split(' ')[0].substring(0,3);btn.title=g.label;btn.onclick=()=>{activeDay=i;renderDay(i);updateWeekNavActive();updateSidebarInfo();};nav.appendChild(btn);});document.getElementById('weekRangeLabel').textContent=weekData.giorni[0].label+' – '+weekData.giorni[weekData.giorni.length-1].label;}
 function updateWeekNavActive(){document.querySelectorAll('.wday-btn').forEach((b,i)=>b.classList.toggle('active',i===activeDay));}
-function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(getShift(g.shifts,n))).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_REST(getShift(g.shifts,n))).length+' non in servizio';}
+const IS_ABSENT=v=>{if(!v)return false;const u=v.trim().toUpperCase();return['R','RIPOSO','OFF','FERIE'].includes(u);};
+function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(getShift(g.shifts,n))).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_ABSENT(getShift(g.shifts,n))).length+' non in servizio';}
 // Cerca lo shift di un membro DEPTS in modo case-insensitive
 function getShift(shifts,name){
   if(shifts[name]!==undefined)return shifts[name];
