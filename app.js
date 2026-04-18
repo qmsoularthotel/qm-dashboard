@@ -884,18 +884,18 @@ function pianoRenderWeek(activeIdx){
     const fColor=totF>0?'var(--accent)':'var(--text-dim)';
     const bg=isActive?'var(--surface2)':'var(--surface)';
     const borderTop=isActive?'border-top:3px solid var(--accent);':'border-top:3px solid transparent;';
-    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:60px;background:${bg};border:1px solid var(--border);${borderTop}border-radius:8px;padding:10px 6px 8px;text-align:center;cursor:pointer;transition:all .15s;">
-      <div style="font-size:13px;font-weight:700;color:${isActive?'var(--accent)':'var(--text)'};line-height:1;">${dayName}</div>
-      <div style="font-size:10px;color:var(--text-dim);margin-bottom:7px;margin-top:1px;">${dayDate}</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-          <span style="font-size:11px;line-height:1;">🛏</span>
-          <span style="font-size:15px;font-weight:700;color:${fColor};line-height:1;">${totF}</span>
+    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:70px;background:${bg};border:1px solid var(--border);${borderTop}border-radius:10px;padding:12px 8px 10px;text-align:center;cursor:pointer;transition:all .15s;">
+      <div style="font-size:15px;font-weight:700;color:${isActive?'var(--accent)':'var(--text)'};line-height:1;">${dayName}</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;margin-top:2px;">${dayDate}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+          <span style="font-size:14px;line-height:1;">🛏</span>
+          <span style="font-size:18px;font-weight:700;color:${fColor};line-height:1;">${totF}</span>
         </div>
-        <div style="width:1px;height:22px;background:var(--border-light);"></div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-          <span style="font-size:11px;line-height:1;">🛫</span>
-          <span style="font-size:15px;font-weight:700;color:${pColor};line-height:1;">${totP}</span>
+        <div style="width:1px;height:26px;background:var(--border-light);"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+          <span style="font-size:14px;line-height:1;">🛫</span>
+          <span style="font-size:18px;font-weight:700;color:${pColor};line-height:1;">${totP}</span>
         </div>
       </div>
     </div>`;
