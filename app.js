@@ -1465,38 +1465,33 @@ function toggleCheckV2(item,dept){
 // §§ OVERVIEW — TOGGLE PREVIEW PANELS (toggleOccupazionePreview, togglePulPreview, toggleBkfPreview)
 function toggleOccupazionePreview(e){
   if(e)e.stopPropagation();
-  const el=document.getElementById('kpi-occ-preview');
-  if(!el)return;
-  if(el.classList.contains('open')){el.classList.remove('open');return;}
-  if(!pulData||!pulData.length){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:4px 0;">Carica il report pulizie per vedere il grafico</div>';el.classList.add('open');return;}
+  const panel=document.getElementById('occ-panel');
+  if(!panel)return;
+  if(panel.style.display==='block'){panel.style.display='none';return;}
+  const body=document.getElementById('occ-chart-body');
+  if(!pulData||!pulData.length){
+    body.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pulizie per vedere il grafico</div>';
+    panel.style.display='block';return;
+  }
   const CAP=CAP_CAMERE||33;
   const pts=pulData.map(d=>{
     const occ=Math.min(CAP,(d.fermatePulizia||d.fermate||0)+d.arrivi);
     const pct=Math.round((occ/CAP)*100);
-    return{label:d.label.split(' ')[0],occ,pct};
+    return{label:d.label.split(' ')[0],pct};
   });
-  // Grafico a barre orizzontali
-  const n=pts.length;
-  const ROW=26,PL=38,PR=52,PT=6,BAR_H=16;
-  const W=400,H=PT+n*ROW;
-  const plotW=W-PL-PR;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
-  // linee verticali guida
-  for(let v=0;v<=100;v+=25){
-    const x=PL+(v/100)*plotW;
-    svg+=`<line x1="${x}" y1="${PT}" x2="${x}" y2="${H}" stroke="var(--border-light)" stroke-width="${v===0?1.5:.8}"/>`;
-  }
-  pts.forEach((p,i)=>{
-    const y=PT+i*ROW;
-    const col=p.pct>=80?'var(--green)':p.pct>=60?'#A05A00':'var(--red)';
-    const bw=Math.max(28,(p.pct/100)*plotW);
-    svg+=`<text x="${PL-5}" y="${y+BAR_H/2+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${p.label}</text>`;
-    svg+=`<rect x="${PL}" y="${y+1}" width="${bw}" height="${BAR_H}" fill="${col}" rx="3"/>`;
-    svg+=`<text x="${PL+bw-6}" y="${y+BAR_H/2+4}" font-size="11" font-weight="700" fill="#fff" text-anchor="end">${p.pct}%</text>`;
-  });
-  svg+='</svg>';
-  el.innerHTML=`<div style="font-size:10px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Occupazione giornaliera</div>`+svg;
-  el.classList.add('open');
+  // Barre orizzontali — una riga per giorno
+  const rows=pts.map(p=>{
+    const col=p.pct>=80?'var(--green)':p.pct>=60?'var(--amber)':'var(--red)';
+    return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <span style="font-size:12px;color:var(--text-muted);width:32px;text-align:right;flex-shrink:0;">${p.label}</span>
+      <div style="flex:1;background:var(--surface2);border-radius:6px;overflow:hidden;height:22px;position:relative;">
+        <div style="height:100%;width:${p.pct}%;background:${col};border-radius:6px;transition:width .4s;"></div>
+        <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3);">${p.pct}%</span>
+      </div>
+    </div>`;
+  }).join('');
+  body.innerHTML=`<div style="max-width:640px;">${rows}</div>`;
+  panel.style.display='block';
 }
 function togglePulPreview(){
   const el=document.getElementById('kpi-pul-preview');
@@ -1837,7 +1832,6 @@ function refreshOverviewForDate(d){
 document.addEventListener('click',()=>{
   document.getElementById('datePopup')?.classList.remove('open');
   document.getElementById('weatherForecast')?.classList.remove('open');
-  document.getElementById('kpi-occ-preview')?.classList.remove('open');
 });
 document.querySelector('.content').addEventListener('scroll',function(){
   const btn=document.getElementById('backToTop');

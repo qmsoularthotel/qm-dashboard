@@ -285,15 +285,12 @@
             <div class="topbar-kpi-lbl">Fermate</div>
           </div>
         </div>
-        <div style="position:relative;">
-          <div class="topbar-kpi-chip clickable" onclick="toggleOccupazionePreview(event)" title="Occupazione">
-            <span style="font-size:18px; color:#7A5FBF; font-weight:700;">%</span>
-            <div>
-              <div class="topbar-kpi-val" id="kpi-occ-val" style="color:#7A5FBF;">—</div>
-              <div class="topbar-kpi-lbl">Occupazione</div>
-            </div>
+        <div class="topbar-kpi-chip clickable" onclick="toggleOccupazionePreview(event)" title="Occupazione">
+          <span style="font-size:18px; color:#7A5FBF; font-weight:700;">%</span>
+          <div>
+            <div class="topbar-kpi-val" id="kpi-occ-val" style="color:#7A5FBF;">—</div>
+            <div class="topbar-kpi-lbl">Occupazione</div>
           </div>
-          <div class="topbar-popup" id="kpi-occ-preview" style="right:0;min-width:360px;max-width:480px;" onclick="event.stopPropagation()"></div>
         </div>
         <!-- hidden fields updated by JS -->
         <div style="display:none;">
@@ -334,6 +331,14 @@
           </div>
         </div>
       </div>
+    </div>
+    <!-- Pannello occupazione espandibile sotto topbar -->
+    <div id="occ-panel" style="display:none;background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">📊 Occupazione giornaliera</span>
+        <button onclick="toggleOccupazionePreview()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-dim);padding:0 4px;">✕</button>
+      </div>
+      <div id="occ-chart-body"></div>
     </div>
     <div class="content">
       <div class="view active" id="view-overview">
@@ -1232,6 +1237,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=189-20260415t"></script>
+<script src="app.js?v=189-20260415u"></script>
 </body>
 </html>
