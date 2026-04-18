@@ -584,6 +584,7 @@ function dvrRenderDipendenti(){
           <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}
         </div>
         <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${[it.mansione,assunzFmt?'dal '+assunzFmt:''].filter(Boolean).join(' · ')}</div>
+        ${it.note?`<div style="font-size:var(--fs-xxs);color:var(--text-muted);margin-top:3px;white-space:pre-line;">${it.note}</div>`:''}
       </div>
       <div style="display:flex;gap:4px;flex-shrink:0;">
         <button onclick="dvrEmpOpenModal('${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;">✏️</button>
