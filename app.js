@@ -578,10 +578,18 @@ function dvrRenderDipendenti(){
     const contratto=it.contratto||'';
     const assunzFmt=it.dataAssunzione?new Date(it.dataAssunzione).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
     const scadContrFmt=it.scadenzaContratto?new Date(it.scadenzaContratto).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
-    const scadContrExpired=it.scadenzaContratto&&new Date(it.scadenzaContratto)<new Date();
+    const _scadMs=it.scadenzaContratto?new Date(it.scadenzaContratto).setHours(0,0,0,0):null;
+    const _now=new Date().setHours(0,0,0,0);
+    const _daysLeft=_scadMs!==null?Math.ceil((_scadMs-_now)/86400000):null;
+    const scadExpired=_daysLeft!==null&&_daysLeft<0;
+    const scadSoon=_daysLeft!==null&&_daysLeft>=0&&_daysLeft<=30;
+    const scadColor=scadExpired?'var(--red)':scadSoon?'var(--amber)':'var(--text-dim)';
+    const scadBg=scadExpired?'var(--red-bg)':scadSoon?'var(--amber-bg)':'var(--surface2)';
+    const scadLabel=scadExpired?`⚠️ scad. ${scadContrFmt}`:scadSoon?`⏳ scad. ${scadContrFmt} (${_daysLeft}gg)`:`scad. ${scadContrFmt}`;
+    const rowBorder=scadExpired?'border-left:3px solid var(--red);padding-left:11px;':scadSoon?'border-left:3px solid var(--amber);padding-left:11px;':'';
     const badge=contratto?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;background:var(--accent-bg,#e8eef8);color:var(--accent);font-weight:500;">${contratto}</span>`:'';
-    const scadBadge=scadContrFmt?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;background:${scadContrExpired?'var(--red-bg)':'var(--amber-bg)'};color:${scadContrExpired?'var(--red)':'var(--amber)'};font-weight:500;">scad. ${scadContrFmt}</span>`:'';
-    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;${i>0?'border-top:1px solid var(--border-light);':''}">
+    const scadBadge=scadContrFmt?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;background:${scadBg};color:${scadColor};font-weight:${scadSoon||scadExpired?'600':'400'};">${scadLabel}</span>`:'';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;${i>0?'border-top:1px solid var(--border-light);':''}${rowBorder}">
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}${scadBadge}
