@@ -541,8 +541,9 @@ let _dvrSoc='geriart';
 let _dvrModalType='visite';let _dvrModalId=null;
 let _dvrEmpId=null;
 function dvrSave(){
-  try{localStorage.setItem('qm_dvr',JSON.stringify(DVR_DATA));}catch(e){}
-  try{LS.kvSet('dvr',JSON.stringify(DVR_DATA));}catch(e){}
+  const json=JSON.stringify(DVR_DATA);
+  try{localStorage.setItem('qm_dvr',json);}catch(e){}
+  kvSet('qm_dvr',json).catch(()=>{});
 }
 function dvrRestore(){
   try{
