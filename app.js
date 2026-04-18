@@ -1463,11 +1463,12 @@ function toggleCheckV2(item,dept){
   })();
 })();
 // §§ OVERVIEW — TOGGLE PREVIEW PANELS (toggleOccupazionePreview, togglePulPreview, toggleBkfPreview)
-function toggleOccupazionePreview(){
+function toggleOccupazionePreview(e){
+  if(e)e.stopPropagation();
   const el=document.getElementById('kpi-occ-preview');
   if(!el)return;
-  if(el.style.display==='block'){el.style.display='none';return;}
-  if(!pulData||!pulData.length){return;}
+  if(el.classList.contains('open')){el.classList.remove('open');return;}
+  if(!pulData||!pulData.length){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:4px 0;">Carica il report pulizie per vedere il grafico</div>';el.classList.add('open');return;}
   const CAP=CAP_CAMERE||33;
   const pts=pulData.map(d=>{
     const occ=Math.min(CAP,(d.fermatePulizia||d.fermate||0)+d.arrivi);
@@ -1491,8 +1492,8 @@ function toggleOccupazionePreview(){
     svg+=`<text x="${x}" y="${H-6}" font-size="11" fill="var(--text-dim)" text-anchor="middle">${p.label.split(' ')[0]}</text>`;
   });
   svg+='</svg>';
-  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Occupazione SoulArt e Boutique Hotel — coefficiente giornaliero</div>`+svg;
-  el.style.display='block';
+  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Occupazione — coefficiente giornaliero</div>`+svg;
+  el.classList.add('open');
 }
 function togglePulPreview(){
   const el=document.getElementById('kpi-pul-preview');
@@ -1833,6 +1834,7 @@ function refreshOverviewForDate(d){
 document.addEventListener('click',()=>{
   document.getElementById('datePopup')?.classList.remove('open');
   document.getElementById('weatherForecast')?.classList.remove('open');
+  document.getElementById('kpi-occ-preview')?.classList.remove('open');
 });
 document.querySelector('.content').addEventListener('scroll',function(){
   const btn=document.getElementById('backToTop');
