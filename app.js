@@ -1489,10 +1489,10 @@ function toggleOccupazionePreview(e){
   pts.forEach((p,i)=>{
     const y=PT+i*ROW;
     const col=p.pct>=80?'var(--green)':p.pct>=60?'#A05A00':'var(--red)';
-    const bw=(p.pct/100)*plotW;
+    const bw=Math.max(28,(p.pct/100)*plotW);
     svg+=`<text x="${PL-5}" y="${y+BAR_H/2+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${p.label}</text>`;
-    svg+=`<rect x="${PL}" y="${y+1}" width="${bw}" height="${BAR_H}" fill="${col}" rx="3" opacity=".85"/>`;
-    svg+=`<text x="${PL+bw+5}" y="${y+BAR_H/2+4}" font-size="11" font-weight="700" fill="${col}">${p.pct}%</text>`;
+    svg+=`<rect x="${PL}" y="${y+1}" width="${bw}" height="${BAR_H}" fill="${col}" rx="3"/>`;
+    svg+=`<text x="${PL+bw-6}" y="${y+BAR_H/2+4}" font-size="11" font-weight="700" fill="#fff" text-anchor="end">${p.pct}%</text>`;
   });
   svg+='</svg>';
   el.innerHTML=`<div style="font-size:10px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Occupazione giornaliera</div>`+svg;
