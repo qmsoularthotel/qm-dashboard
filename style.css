@@ -102,8 +102,8 @@ body.dark .panel{box-shadow:none;}
 .page-title{font-size:17px;font-weight:600;color:var(--text);letter-spacing:-.02em;line-height:1.2;}
 .breadcrumb{font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.03em;}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:14px;}
-.topbar-kpis{display:none;flex:1;justify-content:center;align-items:center;gap:8px;overflow:hidden;}
-.topbar-kpi-chip{display:flex;align-items:center;gap:8px;padding:7px 14px;background:var(--surface2);border:1px solid var(--border-light);border-radius:10px;cursor:default;min-width:0;transition:border-color .15s;}
+.topbar-kpis{display:none;flex:1;justify-content:center;align-items:center;gap:6px;overflow:visible;}
+.topbar-kpi-chip{display:flex;align-items:center;gap:7px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border-light);border-radius:10px;cursor:default;flex-shrink:0;transition:border-color .15s;}
 .topbar-kpi-chip.clickable{cursor:pointer;}
 .topbar-kpi-chip.clickable:hover{border-color:var(--accent);}
 .topbar-kpi-val{font-size:20px;font-weight:700;color:var(--text);line-height:1;font-variant-numeric:tabular-nums;}
