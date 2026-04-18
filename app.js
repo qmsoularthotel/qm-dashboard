@@ -1473,26 +1473,29 @@ function toggleOccupazionePreview(e){
   const pts=pulData.map(d=>{
     const occ=Math.min(CAP,(d.fermatePulizia||d.fermate||0)+d.arrivi);
     const pct=Math.round((occ/CAP)*100);
-    return{label:d.label,occ,pct};
+    return{label:d.label.split(' ')[0],occ,pct};
   });
-  const W=600,H=200,PL=36,PR=12,PT=30,PB=30;
-  const plotW=W-PL-PR,plotH=H-PT-PB;
+  // Grafico a barre orizzontali
   const n=pts.length;
-  const barW=Math.floor(plotW/n*0.6);
-  const gap=plotW/n;
-  const sx=i=>PL+i*gap+gap/2;
-  const sy=pct=>PT+plotH-(pct/100)*plotH;
+  const ROW=26,PL=38,PR=52,PT=6,BAR_H=16;
+  const W=400,H=PT+n*ROW;
+  const plotW=W-PL-PR;
   let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
-  for(let v=0;v<=100;v+=20){const y=sy(v);svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="${v===0?1.5:1}"/><text x="${PL-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}%</text>`;}
+  // linee verticali guida
+  for(let v=0;v<=100;v+=25){
+    const x=PL+(v/100)*plotW;
+    svg+=`<line x1="${x}" y1="${PT}" x2="${x}" y2="${H}" stroke="var(--border-light)" stroke-width="${v===0?1.5:.8}"/>`;
+  }
   pts.forEach((p,i)=>{
-    const x=sx(i);const y=sy(p.pct);const bh=plotH-(y-PT);
+    const y=PT+i*ROW;
     const col=p.pct>=80?'var(--green)':p.pct>=60?'#A05A00':'var(--red)';
-    svg+=`<rect x="${x-barW/2}" y="${y}" width="${barW}" height="${bh}" fill="${col}" rx="3" opacity=".85"/>`;
-    svg+=`<text x="${x}" y="${y-5}" font-size="11" font-weight="700" fill="${col}" text-anchor="middle">${p.pct}%</text>`;
-    svg+=`<text x="${x}" y="${H-6}" font-size="11" fill="var(--text-dim)" text-anchor="middle">${p.label.split(' ')[0]}</text>`;
+    const bw=(p.pct/100)*plotW;
+    svg+=`<text x="${PL-5}" y="${y+BAR_H/2+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${p.label}</text>`;
+    svg+=`<rect x="${PL}" y="${y+1}" width="${bw}" height="${BAR_H}" fill="${col}" rx="3" opacity=".85"/>`;
+    svg+=`<text x="${PL+bw+5}" y="${y+BAR_H/2+4}" font-size="11" font-weight="700" fill="${col}">${p.pct}%</text>`;
   });
   svg+='</svg>';
-  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Occupazione — coefficiente giornaliero</div>`+svg;
+  el.innerHTML=`<div style="font-size:10px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Occupazione giornaliera</div>`+svg;
   el.classList.add('open');
 }
 function togglePulPreview(){
