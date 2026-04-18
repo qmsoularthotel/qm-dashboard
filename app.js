@@ -603,8 +603,9 @@ function dvrEmpOpenModal(id){
   document.getElementById('dvrModalTitle').textContent='👤 Dipendente'+(id?' — Modifica':' — Aggiungi');
   const inp='width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);';
   const lbl='font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;';
-  const contrTypes=['Tempo indeterminato','Tempo determinato','Tirocinio','Apprendistato','Part-time'];
-  const hasDet=it?.contratto==='Tempo determinato';
+  const contrTypes=['Tempo indeterminato','Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'];
+  const _contrHasScad=v=>['Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'].includes(v);
+  const hasDet=_contrHasScad(it?.contratto);
   document.getElementById('dvrModalBody').innerHTML=`
     <input type="hidden" id="dvr-f-empmode" value="1">
     <label style="${lbl}">Nome e Cognome</label>
@@ -635,7 +636,8 @@ function dvrEmpOpenModal(id){
 }
 function dvrToggleScadContr(val){
   const w=document.getElementById('dvr-scad-contr-wrap');
-  if(w)w.style.display=val==='Tempo determinato'?'':'none';
+  const show=['Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'].includes(val);
+  if(w)w.style.display=show?'':'none';
 }
 function dvrEmpDelete(id){
   if(!confirm('Eliminare questo dipendente?'))return;
@@ -714,7 +716,7 @@ function dvrSaveEntry(){
       mansione:(document.getElementById('dvr-f-extra').value||'').trim(),
       contratto:contr,
       dataAssunzione:(document.getElementById('dvr-f-data').value||'').trim(),
-      scadenzaContratto:contr==='Tempo determinato'?(document.getElementById('dvr-f-scad-contr')?.value||'').trim():'',
+      scadenzaContratto:['Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'].includes(contr)?(document.getElementById('dvr-f-scad-contr')?.value||'').trim():'',
       note:(document.getElementById('dvr-f-note').value||'').trim()};
     if(!DVR_DATA[_dvrSoc].dipendenti)DVR_DATA[_dvrSoc].dipendenti=[];
     const items=DVR_DATA[_dvrSoc].dipendenti;
