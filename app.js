@@ -577,11 +577,14 @@ function dvrRenderDipendenti(){
   list.innerHTML=sorted.map((it,i)=>{
     const contratto=it.contratto||'';
     const assunzFmt=it.dataAssunzione?new Date(it.dataAssunzione).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+    const scadContrFmt=it.scadenzaContratto?new Date(it.scadenzaContratto).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+    const scadContrExpired=it.scadenzaContratto&&new Date(it.scadenzaContratto)<new Date();
     const badge=contratto?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;background:var(--accent-bg,#e8eef8);color:var(--accent);font-weight:500;">${contratto}</span>`:'';
+    const scadBadge=scadContrFmt?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;background:${scadContrExpired?'var(--red-bg)':'var(--amber-bg)'};color:${scadContrExpired?'var(--red)':'var(--amber)'};font-weight:500;">scad. ${scadContrFmt}</span>`:'';
     return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;${i>0?'border-top:1px solid var(--border-light);':''}">
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}
+          <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}${scadBadge}
         </div>
         <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${[it.mansione,assunzFmt?'dal '+assunzFmt:''].filter(Boolean).join(' · ')}</div>
         ${it.note?`<div style="font-size:var(--fs-xxs);color:var(--text-muted);margin-top:3px;white-space:pre-line;">${it.note}</div>`:''}
@@ -600,6 +603,8 @@ function dvrEmpOpenModal(id){
   document.getElementById('dvrModalTitle').textContent='👤 Dipendente'+(id?' — Modifica':' — Aggiungi');
   const inp='width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);';
   const lbl='font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;';
+  const contrTypes=['Tempo indeterminato','Tempo determinato','Tirocinio','Apprendistato','Part-time'];
+  const hasDet=it?.contratto==='Tempo determinato';
   document.getElementById('dvrModalBody').innerHTML=`
     <input type="hidden" id="dvr-f-empmode" value="1">
     <label style="${lbl}">Nome e Cognome</label>
@@ -609,9 +614,9 @@ function dvrEmpOpenModal(id){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
       <div>
         <label style="${lbl}">Tipo contratto</label>
-        <select id="dvr-f-contratto" style="${inp}">
+        <select id="dvr-f-contratto" style="${inp}" onchange="dvrToggleScadContr(this.value)">
           <option value="">—</option>
-          ${['Full-time','Part-time','A chiamata','Stage/Tirocinio','Apprendistato','Tempo determinato'].map(c=>`<option value="${c}"${it?.contratto===c?' selected':''}>${c}</option>`).join('')}
+          ${contrTypes.map(c=>`<option value="${c}"${it?.contratto===c?' selected':''}>${c}</option>`).join('')}
         </select>
       </div>
       <div>
@@ -619,10 +624,18 @@ function dvrEmpOpenModal(id){
         <input type="date" id="dvr-f-data" value="${it?.dataAssunzione||''}" style="${inp}">
       </div>
     </div>
+    <div id="dvr-scad-contr-wrap" style="margin-bottom:12px;${hasDet?'':'display:none;'}">
+      <label style="${lbl}">⚠️ Scadenza contratto</label>
+      <input type="date" id="dvr-f-scad-contr" value="${it?.scadenzaContratto||''}" style="${inp}">
+    </div>
     <label style="${lbl}">Note</label>
     <textarea id="dvr-f-note" rows="2" placeholder="Note aggiuntive…" style="${inp}resize:vertical;">${it?.note||''}</textarea>`;
   modal.style.display='flex';
   setTimeout(()=>document.getElementById('dvr-f-nome').focus(),50);
+}
+function dvrToggleScadContr(val){
+  const w=document.getElementById('dvr-scad-contr-wrap');
+  if(w)w.style.display=val==='Tempo determinato'?'':'none';
 }
 function dvrEmpDelete(id){
   if(!confirm('Eliminare questo dipendente?'))return;
@@ -696,10 +709,12 @@ function dvrSaveEntry(){
   if(!nome)return;
   const isEmp=!!(document.getElementById('dvr-f-empmode'));
   if(isEmp){
+    const contr=(document.getElementById('dvr-f-contratto')?.value||'').trim();
     const entry={nome,
       mansione:(document.getElementById('dvr-f-extra').value||'').trim(),
-      contratto:(document.getElementById('dvr-f-contratto')?.value||'').trim(),
+      contratto:contr,
       dataAssunzione:(document.getElementById('dvr-f-data').value||'').trim(),
+      scadenzaContratto:contr==='Tempo determinato'?(document.getElementById('dvr-f-scad-contr')?.value||'').trim():'',
       note:(document.getElementById('dvr-f-note').value||'').trim()};
     if(!DVR_DATA[_dvrSoc].dipendenti)DVR_DATA[_dvrSoc].dipendenti=[];
     const items=DVR_DATA[_dvrSoc].dipendenti;
