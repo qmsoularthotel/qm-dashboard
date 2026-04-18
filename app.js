@@ -1093,6 +1093,10 @@ const LS={
               if(cloudTs){localStorage.setItem(tsKey,String(cloudTs));try{_setUcTs(elId,cloudTs);}catch(e){}}
             }catch(e){}
           }
+          // Per dvr: ricarica in memoria e ri-renderizza se la view è attiva
+          if(k==='dvr'){
+            try{dvrRestore();if(document.getElementById('view-dvr')?.classList.contains('active'))dvrRender();}catch(e){}
+          }
           // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
           if(k==='hk_soul'||k==='hk_bout'||k==='piano'){
             try{
