@@ -1484,10 +1484,10 @@ function toggleOccupazionePreview(e){
     const col=p.pct>=80?'var(--green)':p.pct>=60?'var(--amber)':'var(--red)';
     return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
       <span style="font-size:12px;color:var(--text-muted);width:32px;text-align:right;flex-shrink:0;">${p.label}</span>
-      <div style="flex:1;background:var(--surface2);border-radius:6px;overflow:hidden;height:22px;position:relative;">
-        <div style="height:100%;width:${p.pct}%;background:${col};border-radius:6px;transition:width .4s;"></div>
-        <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3);">${p.pct}%</span>
+      <div style="flex:1;background:var(--surface2);border-radius:6px;overflow:hidden;height:22px;">
+        <div style="height:100%;width:${p.pct}%;background:${col};border-radius:6px;"></div>
       </div>
+      <span style="font-size:13px;font-weight:700;color:${col};width:36px;flex-shrink:0;">${p.pct}%</span>
     </div>`;
   }).join('');
   body.innerHTML=`<div style="max-width:640px;">${rows}</div>`;
