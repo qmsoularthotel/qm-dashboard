@@ -1612,11 +1612,11 @@ async function fetchMeteo(){
     const code=data.current.weathercode;
     document.getElementById('weatherTemp').textContent=temp+'\u00b0C';
     document.getElementById('weatherIcon').innerHTML=wcToIcon(code);
+    const days=data.daily;
     const mm=document.getElementById('weatherMinMax');
     if(mm&&days)mm.textContent=Math.round(days.temperature_2m_max[0])+'° / '+Math.round(days.temperature_2m_min[0])+'°';
     const grid=document.getElementById('forecastGrid');
     if(!grid)return;
-    const days=data.daily;
     let html='';
     html+=`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border-light);">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" style="flex-shrink:0;">${wcToIcon(days.weathercode[0])}</svg>
@@ -1647,6 +1647,8 @@ function toggleWeatherForecast(e){
 }
 fetchMeteo();
 setInterval(fetchMeteo,10*60*1000);
+// Mostra KPI topbar se overview è la view iniziale
+(function(){const k=document.getElementById('topbar-kpis');if(k)k.style.display='flex';})();
 // §§ SIDEBAR — OROLOGIO & DATA (updateSbClock, toggleDatePopup, saveDate, updateDateDisplay)
 function updateSbClock(){
   const n=new Date();
