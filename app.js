@@ -610,12 +610,17 @@ function dvrRenderDipendenti(){
     const rowBorder=scadExpired?'border-left:3px solid var(--red);padding-left:11px;':scadSoon?'border-left:3px solid var(--amber);padding-left:11px;':'';
     const badge=contratto?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;background:var(--accent-bg,#e8eef8);color:var(--accent);font-weight:500;">${contratto}</span>`:'';
     const scadBadge=scadContrFmt?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;background:${scadBg};color:${scadColor};font-weight:${scadSoon||scadExpired?'600':'400'};">${scadLabel}</span>`:'';
+    const needsScad=['Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'].includes(contratto);
+    const datesLine=needsScad
+      ?[assunzFmt?`dal ${assunzFmt}`:'',scadContrFmt?`<span style="color:${scadColor};font-weight:${scadSoon||scadExpired?'600':'400'};">${scadLabel}</span>`:''].filter(Boolean).join(' &nbsp;→&nbsp; ')
+      :(assunzFmt?`dal ${assunzFmt}`:'');
     return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;${i>0?'border-top:1px solid var(--border-light);':''}${rowBorder}">
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}${scadBadge}
+          <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}
         </div>
-        <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${[it.mansione,assunzFmt?'dal '+assunzFmt:''].filter(Boolean).join(' · ')}</div>
+        ${it.mansione?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:1px;">${it.mansione}</div>`:''}
+        ${datesLine?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:1px;">${datesLine}</div>`:''}
         ${it.note?`<div style="font-size:var(--fs-xxs);color:var(--text-muted);margin-top:3px;white-space:pre-line;">${it.note}</div>`:''}
       </div>
       <div style="display:flex;gap:4px;flex-shrink:0;">
