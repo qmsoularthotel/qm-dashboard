@@ -454,7 +454,7 @@ function hkpRenderContent(p){
       const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';
       const colorEnd=bar>66?'#34c759aa':bar>33?'#1e4080aa':'var(--amber)';
       html+=`<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i>0?'border-top:1px solid var(--border-light);':''}">
-        <div style="min-width:140px;font-size:var(--fs-sm);font-weight:500;">${cam.nome}</div>
+        <div style="width:160px;flex-shrink:0;font-size:var(--fs-sm);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cam.nome}</div>
         <div style="flex:1;">
           <div style="background:var(--border-light);border-radius:6px;height:10px;overflow:hidden;position:relative;">
             <div style="width:${bar}%;background:linear-gradient(90deg,${color},${colorEnd});height:100%;border-radius:6px;transition:width .4s ease;"></div>
@@ -470,7 +470,7 @@ function hkpRenderContent(p){
     if(totDuplex>0){
       const duplexBar=Math.round(totDuplex/maxCam*100);
       html+=`<div style="border-top:2px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:14px;background:var(--surface2);">
-        <div style="min-width:140px;font-size:var(--fs-sm);font-weight:600;color:var(--text-muted);">🏠 Duplex totale</div>
+        <div style="width:160px;flex-shrink:0;font-size:var(--fs-sm);font-weight:600;color:var(--text-muted);">🏠 Duplex totale</div>
         <div style="flex:1;">
           <div style="background:var(--border-light);border-radius:6px;height:10px;overflow:hidden;">
             <div style="width:${Math.min(duplexBar,100)}%;background:linear-gradient(90deg,#7A5FBF,#9B7FDF);height:100%;border-radius:6px;transition:width .4s ease;"></div>
@@ -497,7 +497,7 @@ function hkpRenderContent(p){
     const maxN=camData.length?camData[0].n:1;const totGiorno=totGiorni[selDay]||0;
     let barHtml=`<div class="panel"><div class="panel-header"><span class="panel-title">${selDay} ${mese} — ${totGiorno} camere totali</span></div><div class="panel-body" style="padding:0;">`;
     if(!camData.length){barHtml+='<div style="padding:20px;text-align:center;color:var(--text-dim);">Nessun dato per questo giorno</div>';}
-    else{camData.forEach((cam,i)=>{const bar=Math.round(cam.n/maxN*100);const pct=Math.round(cam.n/totGiorno*100);const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';barHtml+=`<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i>0?'border-top:1px solid var(--border-light);':''}"><div style="min-width:140px;font-size:var(--fs-sm);font-weight:500;">${cam.nome}</div><div style="flex:1;"><div style="background:var(--border-light);border-radius:4px;height:8px;overflow:hidden;"><div style="width:${bar}%;background:${color};height:100%;border-radius:4px;transition:width .3s;"></div></div></div><div style="text-align:right;min-width:48px;"><span style="font-size:var(--fs-sm);font-weight:600;">${cam.n}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);"> cam</span></div><div style="text-align:right;min-width:36px;font-size:var(--fs-xxs);color:var(--text-dim);">${pct}%</div></div>`;});}
+    else{camData.forEach((cam,i)=>{const bar=Math.round(cam.n/maxN*100);const pct=Math.round(cam.n/totGiorno*100);const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';barHtml+=`<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i>0?'border-top:1px solid var(--border-light);':''}"><div style="width:160px;flex-shrink:0;font-size:var(--fs-sm);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cam.nome}</div><div style="flex:1;"><div style="background:var(--border-light);border-radius:4px;height:8px;overflow:hidden;"><div style="width:${bar}%;background:${color};height:100%;border-radius:4px;transition:width .3s;"></div></div></div><div style="text-align:right;min-width:48px;"><span style="font-size:var(--fs-sm);font-weight:600;">${cam.n}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);"> cam</span></div><div style="text-align:right;min-width:36px;font-size:var(--fs-xxs);color:var(--text-dim);">${pct}%</div></div>`;});}
     barHtml+='</div></div>';
     content.innerHTML=navHtml+barHtml;
     content.dataset.selDay=selDay;
