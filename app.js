@@ -440,7 +440,7 @@ function hkpRenderContent(p){
   const data=HKP_DATA[p];
   const content=document.getElementById('hkp-'+p+'-content');
   const tab=HKP_TAB[p]||'riepilogo';
-  const cameriere=[...(data.cameriere||[])].sort((a,b)=>b.camere_tot-a.camere_tot);
+  const cameriere=[...(data.cameriere||[])].filter(c=>!/duplex/i.test(c.nome)).sort((a,b)=>b.camere_tot-a.camere_tot);
   const totMese=data.tot_mese||0;
   const giorni=Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
   const mese=data.mese||'';
