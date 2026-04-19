@@ -588,11 +588,10 @@ function dvrRenderDipendenti(){
   if(!list)return;
   const items=(DVR_DATA[_dvrSoc]?.dipendenti)||[];
   if(!items.length){list.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun dipendente inserito</div>';return;}
+  const pinRank=n=>{if(/corduas/i.test(n))return 0;if(/presta/i.test(n))return 1;return 2;};
   const sorted=[...items].sort((a,b)=>{
-    const aPin=/corduas/i.test(a.nome||'');
-    const bPin=/corduas/i.test(b.nome||'');
-    if(aPin&&!bPin)return -1;
-    if(!aPin&&bPin)return 1;
+    const ra=pinRank(a.nome||''),rb=pinRank(b.nome||'');
+    if(ra!==rb)return ra-rb;
     return(a.nome||'').localeCompare(b.nome||'');
   });
   const inp='width:100%;box-sizing:border-box;';
