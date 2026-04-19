@@ -588,7 +588,13 @@ function dvrRenderDipendenti(){
   if(!list)return;
   const items=(DVR_DATA[_dvrSoc]?.dipendenti)||[];
   if(!items.length){list.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun dipendente inserito</div>';return;}
-  const sorted=[...items].sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+  const sorted=[...items].sort((a,b)=>{
+    const aPin=/corduas/i.test(a.nome||'');
+    const bPin=/corduas/i.test(b.nome||'');
+    if(aPin&&!bPin)return -1;
+    if(!aPin&&bPin)return 1;
+    return(a.nome||'').localeCompare(b.nome||'');
+  });
   const inp='width:100%;box-sizing:border-box;';
   list.innerHTML=sorted.map((it,i)=>{
     const contratto=it.contratto||'';
