@@ -372,7 +372,7 @@ function toggleHkpGroup(){
 }
 // §§ HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore)
 const HKP_URLS={
-  sa:'https://script.google.com/macros/s/AKfycbximo1ZqMk7hvAcbsbCsmgVeAAe1zRha6wYxNwLAzihn49gfoC7hk43qxRsrKr0WSiu/exec',
+  sa:'https://script.google.com/macros/s/AKfycbz9rOLhFtxuOU_j7C759oVrAgSKsAwiXO29Evw4p-r65FjWUi3HI5sY5giN8KAAKROP/exec',
   ar:'https://script.google.com/macros/s/AKfycbw6HUebPGcuPrCC_Hmt8zk9sJ9yHD67qG4SgVXEKCQv8JwFetcwkJRinmNz9VY1Zb4/exec'
 };
 let HKP_DATA={sa:null,ar:null};
@@ -454,7 +454,7 @@ function hkpRenderContent(p){
       const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';
       const colorEnd=bar>66?'#34c759aa':bar>33?'#1e4080aa':'var(--amber)';
       html+=`<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i>0?'border-top:1px solid var(--border-light);':''}">
-        <div style="width:160px;flex-shrink:0;font-size:var(--fs-sm);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cam.nome}</div>
+        <div style="width:160px;flex-shrink:0;font-size:var(--fs-sm);font-weight:500;">${cam.nome}</div>
         <div style="flex:1;">
           <div style="background:var(--border-light);border-radius:6px;height:10px;overflow:hidden;position:relative;">
             <div style="width:${bar}%;background:linear-gradient(90deg,${color},${colorEnd});height:100%;border-radius:6px;transition:width .4s ease;"></div>
