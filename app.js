@@ -425,7 +425,8 @@ function hkpRenderAll(p){
   if(dateEl)dateEl.textContent='Mese '+data.mese+' · '+data.giorni_elaborati+' giorni elaborati';
   const cameriere=data.cameriere||[];
   const totMese=data.tot_mese||0;
-  const giorniConDati=data.giorni_elaborati||Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
+  const _daysSet=new Set();(data.cameriere||[]).forEach(c=>Object.entries(c.camere_per_giorno||{}).forEach(([d,v])=>{if(v>0)_daysSet.add(d);}));
+  const giorniConDati=_daysSet.size||data.giorni_elaborati||Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
   const mediaGiornaliera=Math.round(totMese/giorniConDati*10)/10;
   const top=cameriere.length?[...cameriere].sort((a,b)=>b.camere_tot-a.camere_tot)[0]:null;
   const totDuplex=data.tot_duplex||0;
