@@ -465,6 +465,22 @@ function hkpRenderContent(p){
         <div style="text-align:right;min-width:36px;font-size:var(--fs-xxs);color:var(--text-dim);">${pct}%</div>
       </div>`;
     });
+    // Barra duplex totale mese
+    const totDuplex=data.tot_duplex||0;
+    if(totDuplex>0){
+      const duplexBar=Math.round(totDuplex/maxCam*100);
+      html+=`<div style="border-top:2px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:14px;background:var(--surface2);">
+        <div style="min-width:140px;font-size:var(--fs-sm);font-weight:600;color:var(--text-muted);">🏠 Duplex totale</div>
+        <div style="flex:1;">
+          <div style="background:var(--border-light);border-radius:6px;height:10px;overflow:hidden;">
+            <div style="width:${Math.min(duplexBar,100)}%;background:linear-gradient(90deg,#7A5FBF,#9B7FDF);height:100%;border-radius:6px;transition:width .4s ease;"></div>
+          </div>
+        </div>
+        <div style="text-align:right;min-width:64px;"><span style="font-size:var(--fs-sm);font-weight:600;">${totDuplex}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);"> cam</span></div>
+        <div style="text-align:right;min-width:55px;"><span style="font-size:var(--fs-sm);font-weight:600;color:#7A5FBF;">${Math.round(totDuplex/giorni*10)/10}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">/gg</span></div>
+        <div style="text-align:right;min-width:36px;font-size:var(--fs-xxs);color:var(--text-dim);">${Math.round(totDuplex/totMese*100)}%</div>
+      </div>`;
+    }
     html+='</div></div>';
     content.innerHTML=html;
   } else {
