@@ -884,10 +884,11 @@ function pianoRenderWeek(activeIdx){
     const fColor=totF>0?'var(--accent)':'var(--text-dim)';
     const bg=isActive?'var(--surface2)':'var(--surface)';
     const borderTop=isActive?'border-top:3px solid var(--accent);':'border-top:3px solid transparent;';
+    const totTot=totF+totP;
     return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:70px;background:${bg};border:1px solid var(--border);${borderTop}border-radius:10px;padding:12px 8px 10px;text-align:center;cursor:pointer;transition:all .15s;">
       <div style="font-size:15px;font-weight:700;color:${isActive?'var(--accent)':'var(--text)'};line-height:1;">${dayName}</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;margin-top:2px;">${dayDate}</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;margin-top:2px;">${dayDate}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:7px;">
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
           <span style="font-size:14px;line-height:1;">🛏</span>
           <span style="font-size:18px;font-weight:700;color:${fColor};line-height:1;">${totF}</span>
@@ -897,6 +898,9 @@ function pianoRenderWeek(activeIdx){
           <span style="font-size:14px;line-height:1;">🛫</span>
           <span style="font-size:18px;font-weight:700;color:${pColor};line-height:1;">${totP}</span>
         </div>
+      </div>
+      <div style="border-top:1px solid var(--border-light);padding-top:5px;">
+        <span style="font-size:11px;color:var(--text-dim);">tot </span><span style="font-size:14px;font-weight:700;color:var(--text);">${totTot}</span>
       </div>
     </div>`;
   }).join('');
