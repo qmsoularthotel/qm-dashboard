@@ -78,8 +78,9 @@ Claude API chiamata via proxy Cloudflare:
 1. Imposta data corrente
 2. Costruisce KPI bar chart
 3. Pull async da Cloudflare KV (cloud sync)
-4. Ripristina stato localStorage: checklist, reclami, audit, task custom, turni settimanali, arrivi, recensioni, dati HKP, pulizie, pasti
+4. Ripristina stato localStorage: checklist, reclami, audit, task custom, turni settimanali, arrivi, recensioni, dati HKP, pulizie, pasti, DVR
 5. Avvia timer: clock (10s), meteo (10min), polling overview (30s)
+6. IIFE mostra `topbar-kpis` (display:flex) all'avvio
 
 ### Review Scoring Formula
 
@@ -108,13 +109,14 @@ I numeri di camera determinano la struttura di appartenenza:
 
 | Linea approx. | Sezione | Contenuto |
 |--------------|---------|-----------|
-| 1 | COSTANTI & CONFIG | `DEPTS`, `WEEK`, `IS_REST`, costanti globali |
+| 1 | COSTANTI & CONFIG | `DEPTS`, `WEEK`, `IS_REST`, `IS_ABSENT`, costanti globali |
 | 15 | TURNO — ACCORDIONI UC & UPLOAD BOX | Toggle accordioni turni, upload box UI |
 | 87 | TURNO — PARSER TSV/PDF | `parseTurniTSV()`, `handleTurniFile()` |
 | 257 | TURNO — RENDER & NAVIGAZIONE | `renderDay()`, `buildWeekNav()`, `loadWeekData()` |
 | 349 | NAVIGAZIONE VISTE | `setView()`, `pageTitles`, toggle gruppi nav |
 | 357 | HKP OPERATIVE — Google Sheets | `hkpLoad()`, `hkpRenderAll()`, `hkpSave()`, `hkpRestore()` |
 | 525 | MINI APP — RENDER | `miniappRenderBkf()`, `miniappRenderPiano()` |
+| 540 | DVR — DOCUMENTO VALUTAZIONE RISCHI | `dvrRender()`, `dvrSave()`, `dvrRestore()`, `dvrRenderDipendenti()` |
 | 628 | UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP | `fmtNow()`, `fmtUploadTs()`, `setUploadTs()` |
 | 664 | CHECKLIST — TASK ITEMS | `buildTaskItem()`, `renderTaskList()` |
 | 696 | STORAGE & SYNC KV | `kvSet()`, `kvGet()`, `syncFromCloud()`, `setSyncStatus()` |
@@ -150,7 +152,9 @@ I numeri di camera determinano la struttura di appartenenza:
 | `HKP_DATA` | let object | Dati HKP operative: `{sa: null, ar: null}` |
 | `HKP_TAB` | let object | Tab attivo HKP: `{sa: 'riepilogo', ar: 'riepilogo'}` |
 | `HKP_URLS` | const object | Endpoint Google Apps Script per HKP (sa, ar) |
-| `IS_REST` | const fn | Ritorna `true` se il valore turno è 'R' (riposo) |
+| `DVR_DATA` | let object | Dati DVR per società: `{geriart: {...}, ...}` |
+| `IS_REST` | const fn | Ritorna `true` se il valore turno è vuoto/null (non in programma) |
+| `IS_ABSENT` | const fn | Ritorna `true` SOLO per valori espliciti: `R`, `RIPOSO`, `OFF`, `FERIE` — usare per contare assenze reali |
 | `WEEK` | const object | Turno settimana fallback hardcoded (7 giorni) |
 | `weekData` | let | Dati turno settimana parsati |
 | `activeDay` | let | Indice giorno attivo (0-6) |
@@ -181,8 +185,8 @@ I numeri di camera determinano la struttura di appartenenza:
 | `https://anthropic-proxy.qm-d82.workers.dev` | KV storage operations (cloud sync) |
 | `https://script.google.com/macros/s/AKfycbz-6o…/exec` | Google Sheets BKF SoulArt (`SHEETS_URL`) |
 | `https://script.google.com/macros/s/AKfycbzmkY…/exec` | Google Sheets BKF Art Resort (`SHEETS_URL_AR`) |
-| `https://script.google.com/macros/s/AKfycbyosK…/exec` | Google Sheets HKP SoulArt (`HKP_URLS.sa`) |
-| `https://script.google.com/macros/s/AKfycbwtxy…/exec` | Google Sheets HKP Art Resort (`HKP_URLS.ar`) |
+| `https://script.google.com/macros/s/AKfycbyagJEm…/exec` | Google Sheets HKP SoulArt (`HKP_URLS.sa`) — attuale |
+| `https://script.google.com/macros/s/AKfycbw1M5j…/exec` | Google Sheets HKP Art Resort (`HKP_URLS.ar`) — attuale |
 | `https://api.open-meteo.com/v1/forecast?latitude=40.8518&longitude=14.2681` | Meteo Napoli (previsioni 10 giorni) |
 | `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js` | PDF.js worker |
 
@@ -224,16 +228,40 @@ grep -n 'id="view-' index.html
 
 Mostra i consuntivi di lavoro delle cameriere (camere fatte per giorno, classifica mensile, sparkline trend). I dati vengono da Google Sheets aggiornati dalla governante.
 
-### Apps Script Endpoints
+### Apps Script Endpoints (URL aggiornati)
 
 ```js
 HKP_URLS = {
-  sa: 'https://script.google.com/macros/s/AKfycbyosKJIaYIxh7D7GnCMFU7K_gABx2uNSy2VuaEjRc4ND1eEF9zrcSyUgc1Kp3X27lPa/exec',
-  ar: 'https://script.google.com/macros/s/AKfycbwtxy0lngIzQ07QKRX2llx3lBCp2GdE1CoXsAW7GbKre5OEARNdpCDuahc0DFsPAp7/exec'
+  sa: 'https://script.google.com/macros/s/AKfycbyagJEmayDGyuXxN_gdt_GpcF61P9SETlhBvGfMxPXZxLWa9iyZjso2ifL8LXqU3Wgz/exec',
+  ar: 'https://script.google.com/macros/s/AKfycbw1M5jjfv-Kq8MuoTaI3zkH7u9Qha6OrHO_vq4QXpQk6FHlK0AyTILLBPjR22PQ3pg/exec'
 }
 ```
 
-### Struttura Dati HKP
+### Struttura Fogli Google — SoulArt
+
+| Range | Contenuto |
+|-------|-----------|
+| `A38:AG47` | Cameriere per giorno: nome in col B (idx 1), giorni 1-31 in col C-AG (idx `d+1`) |
+| `C48:AG57` | Duplex totale (camere duplex per giorno) |
+| `B61:C70` | Totali mensili per cameriera: nome in B, totale in C (usato come fallback) |
+
+**Logica colonne nel range A38:AG47:**
+- `values[i][0]` = col A (vuota o etichetta gruppo)
+- `values[i][1]` = col B = nome cameriera
+- `values[i][d+1]` = col corrispondente al giorno `d` (d=1 → col C, d=31 → col AG)
+
+### Struttura Fogli Google — Art Resort
+
+| Range | Contenuto |
+|-------|-----------|
+| `A32:AG39` | Cameriere per giorno: nome in col B (idx 1), giorni 1-31 in col C-AG (idx `d+1`) |
+| `C36:AG39` | Duplex totale |
+| `B43:C46` | Totali mensili per cameriera: nome in B, totale in C |
+| Riga 41 | Totali giornalieri (TOT. CAMERE) |
+
+**Logica colonne nel range A32:AG39:** identica a SoulArt (nome idx 1, giorno d → idx d+1).
+
+### Struttura Dati HKP (JSON restituito dall'Apps Script)
 
 ```js
 {
@@ -241,15 +269,30 @@ HKP_URLS = {
     {
       nome: string,
       camere_tot: number,
-      camere_per_giorno: { "1": 4, "2": 6, ... }
+      camere_per_giorno: { "1": 4, "2": 6, ... }  // chiavi = numero giorno del mese
     }
   ],
   tot_mese: number,
-  totale_per_giorno: { "1": 12, "2": 18, ... },
-  mese: string,          // es. "Aprile 2026"
+  tot_duplex: number,
+  totale_per_giorno: { "1": 31, "2": 28, ... },
+  mese: string,           // es. "aprile 2026" — da C2 del foglio
   giorni_elaborati: number,
   giorni_mese: number
 }
+```
+
+### Calcolo giorni con dati (client-side)
+
+`giorni_elaborati` dall'Apps Script può essere impreciso. Il client calcola in autonomia:
+
+```js
+const _daysSet = new Set();
+(data.cameriere || []).forEach(c =>
+  Object.entries(c.camere_per_giorno || {}).forEach(([d, v]) => {
+    if (v > 0) _daysSet.add(d);
+  })
+);
+const giorniConDati = _daysSet.size || data.giorni_elaborati || 1;
 ```
 
 ### Funzioni HKP
@@ -266,8 +309,150 @@ HKP_URLS = {
 
 ### Tab Disponibili
 
-- **Riepilogo mensile**: classifica cameriere (camere totali) + sparkline trend giornaliero
-- **Per giorno**: dettaglio camere per ogni giorno del mese
+- **Riepilogo mensile**: classifica cameriere (camere totali) + barra duplex separata + sparkline trend giornaliero
+  - Nomi non troncati: `width:160px; flex-shrink:0` (senza `overflow:hidden`)
+  - Righe con nome `/duplex/i` filtrate dalla lista cameriere (mostrate solo nella barra duplex)
+- **Per giorno**: dettaglio camere per ogni giorno del mese, con totale camere per cameriera
+
+### Apps Script Template
+
+Quando l'utente ridistribuisce lo script, cambia solo `HKP_URLS[p]` in app.js e aggiorna il cache buster. **Non modificare la logica client.**
+
+Template Apps Script generico (adattare i range):
+
+```javascript
+function doGet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const hkpRows = sheet.getRange('A38:AG47').getValues(); // adattare
+  const cameriere = [], totale_per_giorno = {};
+  let tot_mese = 0;
+  for (let i = 0; i < hkpRows.length; i++) {
+    const nome = String(hkpRows[i][1] || '').trim(); // col B = idx 1
+    if (!nome) continue;
+    const camere_per_giorno = {};
+    let camere_tot = 0;
+    for (let d = 1; d <= 31; d++) {
+      const v = Number(hkpRows[i][d + 1]) || 0; // col C = idx 2 = d+1 quando d=1
+      if (v > 0) {
+        camere_per_giorno[d] = v;
+        totale_per_giorno[d] = (totale_per_giorno[d] || 0) + v;
+        camere_tot += v;
+      }
+    }
+    cameriere.push({ nome, camere_tot, camere_per_giorno });
+    tot_mese += camere_tot;
+  }
+  const giorni_elaborati = Object.keys(totale_per_giorno).length;
+  const duplexData = sheet.getRange('C48:AG57').getValues(); // adattare
+  let tot_duplex = 0;
+  duplexData.forEach(row => row.forEach(v => { tot_duplex += Number(v) || 0; }));
+  const firstDate = sheet.getRange('C2').getValue();
+  const mese = firstDate instanceof Date
+    ? firstDate.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
+    : String(firstDate);
+  return ContentService
+    .createTextOutput(JSON.stringify({ cameriere, tot_mese, tot_duplex,
+      totale_per_giorno, mese, giorni_elaborati, giorni_mese: 30 }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+```
+
+---
+
+## DVR — Documento Valutazione Rischi
+
+### Scopo
+
+Gestione dipendenti e documenti DVR per ogni società del gruppo. Dati persistiti in localStorage + KV con chiave `qm_dvr`.
+
+### Storage
+
+```js
+// Salvataggio
+function dvrSave() {
+  const json = JSON.stringify(DVR_DATA);
+  try { localStorage.setItem('qm_dvr', json); } catch(e) {}
+  kvSet('qm_dvr', json).catch(() => {});  // chiave con prefisso qm_
+}
+
+// syncFromCloud deve chiamare dvrRestore() dopo aver scritto il localStorage
+if (k === 'dvr') {
+  try { dvrRestore(); if (view?.classList.contains('active')) dvrRender(); } catch(e) {}
+}
+```
+
+### Lista Dipendenti — Ordinamento
+
+L'elenco dei dipendenti è ordinato con **pin fisso**:
+1. **Corduas Vincenzo** — sempre primo
+2. **Presta Pierpaolo** — sempre secondo
+3. Tutti gli altri in ordine alfabetico
+
+```js
+const pinRank = n => { if (/corduas/i.test(n)) return 0; if (/presta/i.test(n)) return 1; return 2; };
+```
+
+### Lista Dipendenti — Layout Riga
+
+Ogni riga mostra:
+1. **Nome** + badge tipo contratto
+2. **Mansione/qualifica** (riga separata)
+3. **Date** sotto la qualifica:
+   - Tutti i contratti: `dal gg/mm/aaaa`
+   - Tempo determinato, part-time, tirocinio, apprendistato: `dal gg/mm/aaaa → scad. gg/mm/aaaa` (con colore)
+4. **Note** (se presenti)
+
+### Scadenze Contratto — Colori
+
+| Stato | Colore | Stile riga |
+|-------|--------|-----------|
+| Scaduto (`daysLeft < 0`) | `var(--red)` + bg rosso | `border-left: 3px solid var(--red)` |
+| In scadenza (`0 ≤ daysLeft ≤ 30`) | `var(--amber)` + etichetta `⏳ scad. gg/mm (Ngg)` | `border-left: 3px solid var(--amber)` |
+| Ok (`daysLeft > 30`) | `var(--text-dim)` | nessun bordo |
+
+### Tipi Contratto con Scadenza
+
+I seguenti tipi richiedono e mostrano la data di scadenza:
+- Tempo determinato
+- Tempo determinato part-time
+- Part-time
+- Tirocinio
+- Apprendistato
+
+---
+
+## Overview — Topbar KPI & Pannello Occupazione
+
+### Topbar KPI Chips
+
+4 chip sempre visibili nel topbar quando si è nella view `overview` (nascosti nelle altre viste):
+
+```html
+<div id="topbar-kpis">
+  <div class="topbar-kpi-chip" id="kpi-arrivi">...</div>
+  <div class="topbar-kpi-chip" id="kpi-partenze">...</div>
+  <div class="topbar-kpi-chip" id="kpi-fermate">...</div>
+  <div class="topbar-kpi-chip" id="kpi-occ-val">...</div>
+</div>
+```
+
+`setView()` gestisce la visibilità:
+```js
+const kpis = document.getElementById('topbar-kpis');
+if (kpis) kpis.style.display = id === 'overview' ? 'flex' : 'none';
+```
+
+IIFE all'avvio garantisce che siano visibili al caricamento:
+```js
+(function(){ const k=document.getElementById('topbar-kpis'); if(k) k.style.display='flex'; })();
+```
+
+### Pannello Occupazione
+
+Cliccando il chip occupazione si apre `#occ-panel`, un div full-width posizionato tra il topbar e `.content`. Contiene un grafico a barre HTML (non SVG) con:
+- Barre orizzontali per struttura
+- Percentuale `%` esterna alla barra (span separato con colore)
+- Colori: verde `≥80%`, ambra `50-79%`, rosso `<50%`
 
 ---
 
@@ -277,7 +462,24 @@ HKP_URLS = {
 Aggiornare in `app.js` sezione `§§ COSTANTI & CONFIG`.
 
 ### Housekeeping (`hk`)
-Membri attuali includono: Extra Giuditta (aggiunta), Extra Vincenza (rimossa).
+Membri attuali includono:
+- Extra Giuditta (aggiunta)
+- **Extra Nunzia** (aggiunta nella sessione corrente)
+- Extra Vincenza (rimossa)
+
+### Conteggio "non in servizio" — IS_ABSENT
+
+**IMPORTANTE**: `IS_REST(v)` ritorna `true` anche per valori vuoti/null. Per contare chi è assente usare `IS_ABSENT`:
+
+```js
+const IS_ABSENT = v => {
+  if (!v) return false;
+  const u = v.trim().toUpperCase();
+  return ['R', 'RIPOSO', 'OFF', 'FERIE'].includes(u);
+};
+```
+
+`IS_ABSENT` ritorna `true` solo per valori espliciti di assenza, non per chi semplicemente non è in turno.
 
 ### Manutenzione (`mt`) — Comportamento Speciale
 
@@ -334,6 +536,18 @@ Il reparto `mt` ha logica speciale in `renderDay()`:
 | `buildBarChart(data)` | §1219 | Generatore SVG bar chart |
 | `fetchMeteo()` | §1219 | Fetch previsioni meteo |
 | `updateSbClock()` | §1299 | Aggiorna orologio sidebar (ogni 10s) |
+| `toggleOccupazionePreview()` | §1127 | Toggle pannello occupazione full-width |
+
+### DVR
+
+| Funzione | Linea approx. | Scopo |
+|----------|--------------|-------|
+| `dvrRender()` | §540 | Render completo view DVR |
+| `dvrSave()` | §540 | Salva DVR_DATA in localStorage + KV |
+| `dvrRestore()` | §540 | Ripristina DVR_DATA da localStorage |
+| `dvrRenderDipendenti()` | §540 | Render lista dipendenti con pin e badge |
+| `dvrEmpOpenModal(id)` | §540 | Apre modal modifica/aggiunta dipendente |
+| `dvrToggleScadContr(val)` | §540 | Mostra/nasconde campo scadenza contratto |
 
 ### Recensioni
 
@@ -404,6 +618,15 @@ Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (comm
 | MT card non visibile in overview | `inT.length === 0` saltava il reparto | `showMembers = key==='mt' ? dept.members : inT` |
 | Basile '9-17' mostrato come non-attivo | '9-17' non in lista shift standard | MT usa `!IS_REST(sv)` invece di lista whitelist |
 | Extra Vincenza appare nell'UI | Era in DEPTS anche se nascosta nel foglio | Rimossa da `DEPTS.hk.members` |
+| "Non in servizio" conta anche chi non è in turno | `IS_REST(v)` ritorna true per valori null/vuoti | Usare `IS_ABSENT(v)` che richiede R/FERIE espliciti |
+| DVR dati non persistenti | `dvrSave()` chiamava `LS.kvSet()` inesistente | Usare `kvSet('qm_dvr', json)` direttamente |
+| DVR vuoto su altro PC | `syncFromCloud` scriveva localStorage ma non chiamava `dvrRestore()` | Aggiunto `dvrRestore()` nel case `dvr` di `syncFromCloud` |
+| KPI chips nascosti al caricamento | `setView()` non chiamato all'avvio | IIFE che imposta `topbar-kpis` display:flex |
+| KPI chips tagliati | `overflow:hidden` su `.topbar-kpis` | Cambiato a `overflow:visible` + `flex-shrink:0` sui chip |
+| Meteo non funziona | `const days=data.daily` dichiarato dopo l'uso in `if(mm&&days)` | Spostata dichiarazione prima del blocco `if` |
+| % occupazione illeggibile | `position:absolute;right:8px` dentro la barra su sfondo grigio | Span % spostato FUORI dal container della barra |
+| Righe DUPLEX duplicate in HKP riepilogo | Range A38:AG47 include righe duplex | Filtro client-side `/duplex/i.test(c.nome)` |
+| `giorni_elaborati` sempre 1 in SoulArt | Apps Script leggeva range sbagliato, totali mensili senza breakdown giornaliero | Script riscritto con range corretti; calcolo client-side da `camere_per_giorno` |
 
 ---
 
