@@ -429,7 +429,7 @@ function hkpRenderAll(p){
   const giorniConDati=_daysSet.size||data.giorni_elaborati||Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
   const mediaGiornaliera=Math.round(totMese/giorniConDati*10)/10;
   const top=cameriere.length?[...cameriere].sort((a,b)=>b.camere_tot-a.camere_tot)[0]:null;
-  const totDuplex=data.tot_duplex||0;
+  const totDuplex=data.tot_duplex||Object.values(data.duplex_per_giorno||{}).reduce((a,b)=>a+b,0)||0;
   if(kpiEl)kpiEl.innerHTML=`
     <div class="kpi-card green"><div class="kpi-card-icon">🛏️</div><div class="kpi-label">Camere mese</div><div class="kpi-value">${totMese}</div><div class="kpi-delta up">${giorniConDati} giorni con dati</div></div>
     <div class="kpi-card green"><div class="kpi-card-icon">🏠</div><div class="kpi-label">Totale Duplex</div><div class="kpi-value">${totDuplex||'—'}</div><div class="kpi-delta">camere duplex</div></div>
@@ -472,7 +472,7 @@ function hkpRenderContent(p){
       </div>`;
     });
     // Barra duplex totale mese
-    const totDuplex=data.tot_duplex||0;
+    const totDuplex=data.tot_duplex||Object.values(data.duplex_per_giorno||{}).reduce((a,b)=>a+b,0)||0;
     if(totDuplex>0){
       const duplexBar=Math.round(totDuplex/maxCam*100);
       html+=`<div style="border-top:2px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:14px;background:var(--surface2);">
@@ -1321,7 +1321,7 @@ function addCustomTask(inp){
     const ul=document.getElementById(listId);if(!ul)return;
     const li=document.createElement('li');
     li.className='check-item';
-    li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${text}</span><div class="check-meta"><span class="check-dept" style="background:var(--surface2);color:var(--text-dim);padding:2px 7px;border-radius:4px;font-size:10px;">★</span><span class="check-time"></span><span onclick="removeCustomTask('${text.replace(/'/g,"\\'")}',this)" style="font-size:9px;color:var(--text-dim);cursor:pointer;margin-left:auto;">✕</span></div></div>`;
+    li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${text}</span><div class="check-meta"><span class="check-dept" style="background:var(--surface2);color:var(--text-dim);padding:2px 7px;border-radius:4px;font-size:10px;">★</span><span class="check-time"></span><span onclick="removeCustomTask('${text.replace(/'/g,"\\'")}',this,event)" style="font-size:9px;color:var(--text-dim);cursor:pointer;margin-left:auto;">✕</span></div></div>`;
     li.querySelector('.check-box').addEventListener('click',function(e){
       e.stopPropagation();
       const done=!this.classList.contains('done');
@@ -1368,7 +1368,7 @@ function addCustomTaskToDept(dept, inp){
     const ul=document.getElementById(listId);if(!ul)return;
     const li=document.createElement('li');li.className='check-item';
     const badge=`<span class="check-dept ${deptCls[dept]||''}">${deptLabel[dept]||dept.toUpperCase()}</span>`;
-    li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${text}</span><div class="check-meta">${badge}<span class="check-time"></span><span onclick="removeDeptTask('${dept}','${text.replace(/'/g,"\\'")}',this)" style="font-size:9px;color:var(--text-dim);cursor:pointer;margin-left:auto;">✕</span></div></div>`;
+    li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${text}</span><div class="check-meta">${badge}<span class="check-time"></span><span onclick="removeDeptTask('${dept}','${text.replace(/'/g,"\\'")}',this,event)" style="font-size:9px;color:var(--text-dim);cursor:pointer;margin-left:auto;">✕</span></div></div>`;
     li.addEventListener('click',function(){
       const done=!this.querySelector('.check-box').classList.contains('done');
       syncTaskState(text,done,done?fmtNow():'');
@@ -1389,8 +1389,8 @@ function addCustomTaskToDept(dept, inp){
   updateClProgress();
   saveDeptCustomTasks();
 }
-function removeCustomTask(text, btn){
-  event.stopPropagation();
+function removeCustomTask(text, btn, evt){
+  if(evt)evt.stopPropagation();
   ['taskList','cl-custom'].forEach(listId=>{
     const ul=document.getElementById(listId);if(!ul)return;
     ul.querySelectorAll('.check-item').forEach(item=>{if(taskKey(item)===text)item.remove();});
@@ -1403,8 +1403,8 @@ function removeCustomTask(text, btn){
   updateClProgress();
   saveChecklistState();
 }
-function removeDeptTask(dept,text,btn){
-  event.stopPropagation();
+function removeDeptTask(dept,text,btn,evt){
+  if(evt)evt.stopPropagation();
   ['cl-'+dept,'taskList'].forEach(listId=>{
     const ul=document.getElementById(listId);if(!ul)return;
     ul.querySelectorAll('.check-item').forEach(item=>{if(taskKey(item)===text)item.remove();});
@@ -1857,7 +1857,7 @@ function refreshOverviewForDate(d){
       const _ct=LS.get('custom_tasks',null);
       if(_ct&&_ct.date===LS.today()&&_ct.tasks?.length){_ct.tasks.forEach(text=>{
         const li=document.createElement('li');li.className='check-item';
-        li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${text}</span><div class="check-meta"><span class="check-dept" style="background:var(--surface2);color:var(--text-dim);padding:2px 7px;border-radius:4px;font-size:10px;">★</span><span class="check-time"></span><span onclick="removeCustomTask('${text.replace(/'/g,"\\'")}',this)" style="font-size:9px;color:var(--text-dim);cursor:pointer;margin-left:auto;">✕</span></div></div>`;
+        li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${text}</span><div class="check-meta"><span class="check-dept" style="background:var(--surface2);color:var(--text-dim);padding:2px 7px;border-radius:4px;font-size:10px;">★</span><span class="check-time"></span><span onclick="removeCustomTask('${text.replace(/'/g,"\\'")}',this,event)" style="font-size:9px;color:var(--text-dim);cursor:pointer;margin-left:auto;">✕</span></div></div>`;
         li.querySelector('.check-box').addEventListener('click',function(e){e.stopPropagation();const done=!this.classList.contains('done');syncTaskState(text,done,fmtNow());const tc2=document.getElementById('taskCounter');if(tc2)tc2.textContent=tl.querySelectorAll('.check-box.done').length+'/'+tl.querySelectorAll('.check-item').length;});
         li.addEventListener('click',function(){const done=!this.querySelector('.check-box').classList.contains('done');syncTaskState(text,done,fmtNow());const tc2=document.getElementById('taskCounter');if(tc2)tc2.textContent=tl.querySelectorAll('.check-box.done').length+'/'+tl.querySelectorAll('.check-item').length;});
         if(TASK_STATE[text]?.done){const b=li.querySelector('.check-box');const tx=li.querySelector('.check-text');const te=li.querySelector('.check-time');if(b){b.classList.add('done');b.textContent='✓';}if(tx)tx.classList.add('done');if(te)te.textContent=TASK_STATE[text].time||'';}
@@ -1868,7 +1868,7 @@ function refreshOverviewForDate(d){
       if(_dct&&_dct.date===LS.today()){const _dcls={fo:'dept-fo',hk:'dept-hk',bkf:'dept-fb',mt:'dept-mt'};const _dlbl={fo:'FO',hk:'HK',bkf:'BKF',mt:'MT'};
         Object.entries(_dct.depts||{}).forEach(([dept,dtasks])=>{dtasks.forEach(text=>{
           const li=document.createElement('li');li.className='check-item';
-          li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${text}</span><div class="check-meta"><span class="check-dept ${_dcls[dept]||''}">${_dlbl[dept]||dept.toUpperCase()}</span><span class="check-time"></span><span onclick="removeDeptTask('${dept}','${text.replace(/'/g,"\\'")}',this)" style="font-size:9px;color:var(--text-dim);cursor:pointer;margin-left:auto;">✕</span></div></div>`;
+          li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${text}</span><div class="check-meta"><span class="check-dept ${_dcls[dept]||''}">${_dlbl[dept]||dept.toUpperCase()}</span><span class="check-time"></span><span onclick="removeDeptTask('${dept}','${text.replace(/'/g,"\\'")}',this,event)" style="font-size:9px;color:var(--text-dim);cursor:pointer;margin-left:auto;">✕</span></div></div>`;
           li.addEventListener('click',function(){const done=!this.querySelector('.check-box').classList.contains('done');syncTaskState(text,done,done?fmtNow():'');refreshDeptCount(dept);const tc2=document.getElementById('taskCounter');if(tc2)tc2.textContent=tl.querySelectorAll('.check-box.done').length+'/'+tl.querySelectorAll('.check-item').length;});
           if(TASK_STATE[text]?.done){const b=li.querySelector('.check-box');const tx=li.querySelector('.check-text');const te=li.querySelector('.check-time');if(b){b.classList.add('done');b.textContent='✓';}if(tx)tx.classList.add('done');if(te)te.textContent=TASK_STATE[text].time||'';}
           tl.appendChild(li);
