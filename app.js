@@ -454,7 +454,7 @@ function hkpRenderContent(p){
     let html='<div class="panel"><div class="panel-header"><span class="panel-title">Riepilogo mensile</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">'+mese+'</span></div><div class="panel-body" style="padding:0;">';
     cameriere.forEach((cam,i)=>{
       const bar=Math.round(cam.camere_tot/maxCam*100);
-      const giorniCam=Object.values(cam.camere_per_giorno||{}).filter(v=>v>0).length||giorni;
+      const giorniCam=cam.giorni_lavorati||Object.values(cam.camere_per_giorno||{}).filter(v=>v>0).length||giorni;
       const media=Math.round(cam.camere_tot/giorniCam*10)/10;
       const pct=Math.round(cam.camere_tot/totMese*100);
       const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';
