@@ -454,14 +454,9 @@ setInterval(loadAll,10*60*1000);
     if(location.search.includes('notrack')){localStorage.setItem('hk_no_track','1');return;}
     if(localStorage.getItem('hk_no_track')==='1')return;
 
-    // UUID dispositivo — generato una volta e persistito
+    // UUID dispositivo — generato una volta e persistito in localStorage
     let devId=localStorage.getItem('hk_device_id');
     if(!devId){devId='dev_'+Math.random().toString(36).slice(2,10)+'_'+Date.now().toString(36);localStorage.setItem('hk_device_id',devId);}
-
-    // Nome dispositivo — da ?name=... all'URL, poi salvato; altrimenti usa quello già salvato
-    const urlName=new URLSearchParams(location.search).get('name');
-    if(urlName)localStorage.setItem('hk_device_name',urlName);
-    const devName=localStorage.getItem('hk_device_name')||'Dispositivo';
 
     const todayStr=new Date().toISOString().slice(0,10);
     const nowIso=new Date().toISOString();
@@ -478,8 +473,7 @@ setInterval(loadAll,10*60*1000);
     if(!d.devices)d.devices={};
 
     // Totali per dispositivo
-    const dev=d.devices[devId]||{name:devName,total:0,today:0,todayDate:'',last:null};
-    dev.name=devName; // aggiorna il nome se cambiato
+    const dev=d.devices[devId]||{firstSeen:nowIso,total:0,today:0,todayDate:'',last:null};
     dev.total=(dev.total||0)+1;
     dev.today=dev.todayDate===todayStr?(dev.today||0)+1:1;
     dev.todayDate=todayStr;

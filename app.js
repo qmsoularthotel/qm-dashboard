@@ -805,14 +805,15 @@ async function loadHkAccessStats(){
     // Tabella per dispositivo
     const elDev=document.getElementById('hk-access-devices');
     if(elDev&&d.devices&&Object.keys(d.devices).length){
-      const devs=Object.values(d.devices).sort((a,b)=>(b.last||'').localeCompare(a.last||''));
-      elDev.innerHTML=devs.map(dev=>{
+      // Ordina per firstSeen (primo accesso) per numerarli stabilmente
+      const devEntries=Object.entries(d.devices).sort((a,b)=>(a[1].firstSeen||a[1].last||'').localeCompare(b[1].firstSeen||b[1].last||''));
+      elDev.innerHTML=devEntries.map(([,dev],idx)=>{
         const devToday=dev.todayDate===todayStr?dev.today:0;
-        const isOnline=dev.last&&(Date.now()-new Date(dev.last).getTime())<3600000; // < 1h
-        return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;${devs.indexOf(dev)>0?'border-top:1px solid var(--border-light);':''}">
+        const isOnline=dev.last&&(Date.now()-new Date(dev.last).getTime())<3600000;
+        return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;${idx>0?'border-top:1px solid var(--border-light);':''}">
           <span style="width:7px;height:7px;border-radius:50%;background:${isOnline?'var(--green)':'var(--border)'};flex-shrink:0;"></span>
-          <span style="flex:1;font-size:var(--fs-sm);font-weight:500;">${dev.name||'Dispositivo'}</span>
-          <span style="font-size:var(--fs-xs);color:var(--text-dim);">${devToday>0?devToday+' oggi · ':''}<span style="color:var(--text-muted);">${dev.total||0} tot</span></span>
+          <span style="flex:1;font-size:var(--fs-sm);font-weight:500;">Dispositivo ${idx+1}</span>
+          <span style="font-size:var(--fs-xs);color:var(--text-dim);">${devToday>0?`<b>${devToday}</b> oggi · `:''}<span style="color:var(--text-muted);">${dev.total||0} tot</span></span>
           <span style="font-size:10px;color:var(--text-muted);">${fmtDt(dev.last)}</span>
         </div>`;
       }).join('');
