@@ -443,7 +443,11 @@ function hkpRenderContent(p){
   const tab=HKP_TAB[p]||'riepilogo';
   const cameriere=[...(data.cameriere||[])].filter(c=>!/duplex/i.test(c.nome)).sort((a,b)=>b.camere_tot-a.camere_tot);
   const totMese=data.tot_mese||0;
-  const giorni=Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
+  // Giorni con dati: da totale_per_giorno, poi da camere_per_giorno delle cameriere, poi giorni_elaborati
+  const _gs=new Set();
+  Object.entries(data.totale_per_giorno||{}).forEach(([d,v])=>{if(v>0)_gs.add(d);});
+  if(!_gs.size)(data.cameriere||[]).forEach(c=>Object.entries(c.camere_per_giorno||{}).forEach(([d,v])=>{if(v>0)_gs.add(d);}));
+  const giorni=_gs.size||data.giorni_elaborati||1;
   const mese=data.mese||'';
   if(tab==='riepilogo'){
     const maxCam=cameriere[0]?.camere_tot||1;
