@@ -793,13 +793,30 @@ async function loadHkAccessStats(){
     if(!json.value)return;
     const d=JSON.parse(json.value);
     const todayStr=new Date().toISOString().slice(0,10);
+    const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+    const fmtDt=iso=>{if(!iso)return'—';const dt=new Date(iso);return dt.getDate()+' '+ms[dt.getMonth()]+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');};
     const todayCount=d.todayDate===todayStr?d.today:0;
     const el=document.getElementById('hk-access-today');
     const elT=document.getElementById('hk-access-total');
     const elL=document.getElementById('hk-access-last');
     if(el)el.textContent=todayCount;
     if(elT)elT.textContent=d.total||0;
-    if(elL&&d.last){const dt=new Date(d.last);const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];elL.textContent=dt.getDate()+' '+ms[dt.getMonth()]+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');}
+    if(elL)elL.textContent=fmtDt(d.last);
+    // Tabella per dispositivo
+    const elDev=document.getElementById('hk-access-devices');
+    if(elDev&&d.devices&&Object.keys(d.devices).length){
+      const devs=Object.values(d.devices).sort((a,b)=>(b.last||'').localeCompare(a.last||''));
+      elDev.innerHTML=devs.map(dev=>{
+        const devToday=dev.todayDate===todayStr?dev.today:0;
+        const isOnline=dev.last&&(Date.now()-new Date(dev.last).getTime())<3600000; // < 1h
+        return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;${devs.indexOf(dev)>0?'border-top:1px solid var(--border-light);':''}">
+          <span style="width:7px;height:7px;border-radius:50%;background:${isOnline?'var(--green)':'var(--border)'};flex-shrink:0;"></span>
+          <span style="flex:1;font-size:var(--fs-sm);font-weight:500;">${dev.name||'Dispositivo'}</span>
+          <span style="font-size:var(--fs-xs);color:var(--text-dim);">${devToday>0?devToday+' oggi · ':''}<span style="color:var(--text-muted);">${dev.total||0} tot</span></span>
+          <span style="font-size:10px;color:var(--text-muted);">${fmtDt(dev.last)}</span>
+        </div>`;
+      }).join('');
+    }else if(elDev){elDev.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:6px 0;">Nessun dato per dispositivo</div>';}
   }catch(e){}
 }
 function miniappRenderBkf(){

@@ -451,17 +451,41 @@ setInterval(loadAll,10*60*1000);
 // Contatore accessi
 (async function trackAccess(){
   try{
-    // ?notrack nella URL imposta esclusione permanente su questo dispositivo
     if(location.search.includes('notrack')){localStorage.setItem('hk_no_track','1');return;}
     if(localStorage.getItem('hk_no_track')==='1')return;
+
+    // UUID dispositivo — generato una volta e persistito
+    let devId=localStorage.getItem('hk_device_id');
+    if(!devId){devId='dev_'+Math.random().toString(36).slice(2,10)+'_'+Date.now().toString(36);localStorage.setItem('hk_device_id',devId);}
+
+    // Nome dispositivo — da ?name=... all'URL, poi salvato; altrimenti usa quello già salvato
+    const urlName=new URLSearchParams(location.search).get('name');
+    if(urlName)localStorage.setItem('hk_device_name',urlName);
+    const devName=localStorage.getItem('hk_device_name')||'Dispositivo';
+
     const todayStr=new Date().toISOString().slice(0,10);
+    const nowIso=new Date().toISOString();
+
     const res=await fetch(PROXY+'/kv/get?key=qm_hk_access');
     const json=await res.json();
-    const d=json.value?JSON.parse(json.value):{total:0,today:0,todayDate:'',last:null};
+    const d=json.value?JSON.parse(json.value):{total:0,today:0,todayDate:'',last:null,devices:{}};
+
+    // Totali globali
     d.total=(d.total||0)+1;
     d.today=d.todayDate===todayStr?(d.today||0)+1:1;
     d.todayDate=todayStr;
-    d.last=new Date().toISOString();
+    d.last=nowIso;
+    if(!d.devices)d.devices={};
+
+    // Totali per dispositivo
+    const dev=d.devices[devId]||{name:devName,total:0,today:0,todayDate:'',last:null};
+    dev.name=devName; // aggiorna il nome se cambiato
+    dev.total=(dev.total||0)+1;
+    dev.today=dev.todayDate===todayStr?(dev.today||0)+1:1;
+    dev.todayDate=todayStr;
+    dev.last=nowIso;
+    d.devices[devId]=dev;
+
     await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_hk_access',value:JSON.stringify(d)})});
   }catch(e){}
 })();
