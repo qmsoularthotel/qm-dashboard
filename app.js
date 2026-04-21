@@ -553,6 +553,7 @@ const DVR_CATS={
   legionella:   {label:'🦠 Legionella',           nomeLbl:'Punto campion.',   extra:{key:'metodo',    lbl:'Metodo analisi',      ph:'es. Colturale'},          dataLbl:'Data analisi'},
   rspp:         {label:'🛡️ RSPP',                 nomeLbl:'Nome',             extra:{key:'tipo',      lbl:'Tipo nomina',         ph:'Interno / Esterno'},      dataLbl:'Data incarico'},
   rls:          {label:'👷 RLS',                  nomeLbl:'Nome',             extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Receptionist'},       dataLbl:'Data elezione'},
+  preposto:     {label:'🔑 Preposto',             nomeLbl:'Nome',             extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Capo Ricevimento'},   dataLbl:'Data nomina'},
   dvrdoc:       {label:'📄 Documento DVR',        nomeLbl:'Versione / Rev.',  extra:{key:'motivo',    lbl:'Motivo revisione',    ph:'es. Modifica organiz.'},  dataLbl:'Data redazione'}
 };
 const DVR_KEYS=Object.keys(DVR_CATS);

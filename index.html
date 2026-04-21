@@ -1156,8 +1156,9 @@
         </div>
         <!-- Figure e Documentazione -->
         <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">📋 Figure e Documentazione</div>
-        <div style="margin-bottom:20px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-bottom:20px;">
           <div class="panel"><div class="panel-header"><span onclick="dvrToggleSection('rls')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;min-width:0;"><span class="panel-title">👷 RLS</span><span id="dvr-chev-rls" style="font-size:11px;color:var(--text-dim);display:inline-block;transform:rotate(90deg);transition:transform .2s;">›</span></span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('rls')">+ Aggiungi</button></div><div id="dvr-list-rls" style="padding:0;"></div></div>
+          <div class="panel"><div class="panel-header"><span onclick="dvrToggleSection('preposto')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;min-width:0;"><span class="panel-title">🔑 Preposto</span><span id="dvr-chev-preposto" style="font-size:11px;color:var(--text-dim);display:inline-block;transform:rotate(90deg);transition:transform .2s;">›</span></span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('preposto')">+ Aggiungi</button></div><div id="dvr-list-preposto" style="padding:0;"></div></div>
         </div>
         <div class="panel"><div class="panel-header"><span onclick="dvrToggleSection('dvrdoc')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;min-width:0;"><span class="panel-title">📄 Documento DVR</span><span id="dvr-chev-dvrdoc" style="font-size:11px;color:var(--text-dim);display:inline-block;transform:rotate(90deg);transition:transform .2s;">›</span></span><button class="btn-primary" style="font-size:var(--fs-xxs);padding:4px 10px;" onclick="dvrOpenModal('dvrdoc')">+ Aggiungi</button></div><div id="dvr-list-dvrdoc" style="padding:0;"></div></div>
         <!-- Modal DVR -->
@@ -1243,6 +1244,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=196-20260421"></script>
+<script src="app.js?v=197-20260421"></script>
 </body>
 </html>
