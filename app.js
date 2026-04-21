@@ -526,7 +526,7 @@ function toggleBkfGroup(){
   document.getElementById('bkfGroupToggle').classList.toggle('open',bkfGroupOpen);
   document.getElementById('bkfGroupItems').classList.toggle('open',bkfGroupOpen);
 }
-function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id]||id;const bc=document.getElementById('breadcrumb');if(bc)bc.textContent=breadcrumbs[id]||'';const kpis=document.getElementById('topbar-kpis');if(kpis)kpis.style.display=id==='overview'?'flex':'none';if(navEl){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navEl.classList.add('active');}
+function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id]||id;const bc=document.getElementById('breadcrumb');if(bc)bc.textContent=breadcrumbs[id]||'';const kpis=document.getElementById('topbar-kpis');if(kpis)kpis.style.display=id==='overview'?'flex':'none';if(navEl){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navEl.classList.add('active');}
   if(id==='hkpsheet'||id==='hkpsheetar'){if(!hkpGroupOpen){hkpGroupOpen=true;document.getElementById('hkpGroupToggle').classList.add('open');document.getElementById('hkpGroupItems').classList.add('open');}}
   if(id==='bkfsheet'||id==='bkfsheetar'){if(!bkfGroupOpen){bkfGroupOpen=true;document.getElementById('bkfGroupToggle').classList.add('open');document.getElementById('bkfGroupItems').classList.add('open');}}
   if(id.startsWith('recensioni-')){if(!recGroupOpen){recGroupOpen=true;document.getElementById('recGroupToggle').classList.add('open');document.getElementById('recGroupItems').classList.add('open');}}
@@ -563,10 +563,46 @@ let DVR_DATA=Object.fromEntries(DVR_SOC_KEYS.map(s=>[s,{...Object.fromEntries(DV
 let _dvrSoc='geriart';
 let _dvrModalType='visite';let _dvrModalId=null;
 let _dvrEmpId=null;
+function dvrBadgeUpdate(){
+  const badge=document.getElementById('dvrNavBadge');
+  if(!badge)return;
+  const now=new Date();now.setHours(0,0,0,0);
+  let count=0;
+  DVR_SOC_KEYS.forEach(soc=>{
+    DVR_KEYS.forEach(k=>{
+      (DVR_DATA[soc]?.[k]||[]).forEach(it=>{
+        if(!it.scadenza)return;
+        const exp=new Date(it.scadenza);exp.setHours(0,0,0,0);
+        if(Math.round((exp-now)/86400000)<=30)count++;
+      });
+    });
+    (DVR_DATA[soc]?.dipendenti||[]).forEach(it=>{
+      if(!it.scadenzaContratto)return;
+      const exp=new Date(it.scadenzaContratto);exp.setHours(0,0,0,0);
+      if(Math.round((exp-now)/86400000)<=30)count++;
+    });
+  });
+  badge.textContent=count;
+  badge.style.display=count>0?'':'none';
+}
 function dvrSave(){
   const json=JSON.stringify(DVR_DATA);
   try{localStorage.setItem('qm_dvr',json);}catch(e){}
   kvSet('qm_dvr',json).catch(()=>{});
+  dvrBadgeUpdate();
+}
+// §§ MOBILE SIDEBAR
+function toggleMobileSidebar(){
+  const sb=document.querySelector('.sidebar');
+  const ov=document.getElementById('mobileOverlay');
+  const isOpen=sb&&sb.classList.contains('mobile-open');
+  if(isOpen){closeMobileSidebar();}else{if(sb)sb.classList.add('mobile-open');if(ov)ov.classList.add('open');}
+}
+function closeMobileSidebar(){
+  const sb=document.querySelector('.sidebar');
+  const ov=document.getElementById('mobileOverlay');
+  if(sb)sb.classList.remove('mobile-open');
+  if(ov)ov.classList.remove('open');
 }
 function dvrRestore(){
   try{
@@ -2125,7 +2161,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
     restoreDeptCustomTasks();
     ovUpdateRevNoreply();ovUpdateRevImport();
     hkpRestore();
-    dvrRestore();
+    dvrRestore();dvrBadgeUpdate();
     // Ripristina turno settimanale
     try{
       const saved=localStorage.getItem('qm_weekData');
@@ -3272,6 +3308,13 @@ function revRenderStats(p){
     return wt?ws/wt:null;
   })():null;
   const noReply=data.filter(r=>!r._hasReply && REV_SENT[revUniqueKey(p,r)]!=='not_needed').length;
+  const nrBtn=document.getElementById('revFlt-'+p+'-noreply');
+  if(nrBtn){
+    nrBtn.textContent=noReply>0?`Senza risposta (${noReply})`:'Senza risposta';
+    nrBtn.style.background=noReply>0&&!nrBtn.classList.contains('active')?'var(--amber-bg)':'';
+    nrBtn.style.borderColor=noReply>0&&!nrBtn.classList.contains('active')?'var(--amber)':'';
+    nrBtn.style.color=noReply>0&&!nrBtn.classList.contains('active')?'var(--amber)':'';
+  }
   const g=id=>document.getElementById(id+'-'+p);
   g('rev-avg').textContent=(Math.round(avgWeighted*10)/10).toFixed(1);
   g('rev-avg-sub').textContent='ponderato Booking 85/10/5 · media semplice '+avgSimple.toFixed(1);
@@ -3398,8 +3441,15 @@ function revRenderList(p){
     const catMini=REV_CATS.map(c=>{const v=parseFloat(r[c]);return isNaN(v)?'':
       `<span style="font-size:var(--fs-xs);padding:3px 8px;border-radius:5px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border-light);">${c.split(' ')[0]} <strong style="color:var(--text);">${v.toFixed(1)}</strong></span>`;
     }).filter(Boolean).join('');
+    const _tone=REV_HOTELS[p].tone||'caldo';
     const replyPanel=(!r._hasReply&&!isNotNeeded&&!isSent)?`
       <div class="rev-reply-panel" id="rp-${uid}">
+        <div class="rev-tone-bar">
+          <span style="font-size:10px;color:var(--text-dim);flex-shrink:0;">Tono:</span>
+          <button class="rev-tone-btn${_tone==='formale'?' active':''}" data-p="${p}" data-tone="formale" onclick="revSetTone('${p}','formale',event)">Formale</button>
+          <button class="rev-tone-btn${_tone==='caldo'?' active':''}" data-p="${p}" data-tone="caldo" onclick="revSetTone('${p}','caldo',event)">Caldo</button>
+          <button class="rev-tone-btn${_tone==='empatico'?' active':''}" data-p="${p}" data-tone="empatico" onclick="revSetTone('${p}','empatico',event)">Empatico</button>
+        </div>
         <textarea class="rev-reply-textarea" id="rt-${uid}" placeholder="Genera o scrivi la risposta…" oninput="revUpdateCharCount('${uid}')"></textarea>
         <div class="rev-reply-actions">
           <button class="rev-btn-generate" id="rb-${uid}" onclick="revGenerateReply('${p}',${gi})">✦ Genera risposta</button>
@@ -3416,6 +3466,13 @@ function revRenderList(p){
       <div class="rev-body" id="revBody-${uid}">${pos}${neg}</div>${translateBtn}${reply}${replyPanel}
     </div>`;
   }).join('')+(totalPages>1?`<div class="rev-pagination"><button class="rev-pg-btn" onclick="revSetPage('${p}',${page-1})" ${page===0?'disabled':''}>← Prec</button><span class="rev-pg-info">Pagina ${page+1} di ${totalPages} · ${filtered.length} recensioni</span><button class="rev-pg-btn" onclick="revSetPage('${p}',${page+1})" ${page>=totalPages-1?'disabled':''}>Succ →</button></div>`:'');
+}
+function revSetTone(p,tone,evt){
+  if(evt)evt.stopPropagation();
+  REV_HOTELS[p].tone=tone;
+  document.querySelectorAll(`.rev-tone-btn[data-p="${p}"]`).forEach(b=>{
+    b.classList.toggle('active',b.dataset.tone===tone);
+  });
 }
 function revUpdateCharCount(uid){
   const ta=document.getElementById('rt-'+uid),cc=document.getElementById('rcc-'+uid);
@@ -3470,7 +3527,9 @@ async function revGenerateReply(p,gi){
   const lang=isItalian?'italiano':'inglese';
   const firma=isItalian?'Paolo P. - Quality Manager':'Best regards. Paolo P. - Quality Manager';
   const hotelName=REV_HOTELS[p].name;
-  const prompt=`Sei Paolo P., Quality Manager del ${hotelName} a Napoli, un hotel 4 stelle.\n\nDevi rispondere a questa recensione Booking.com in ${lang}.\n\nDATI RECENSIONE:\n- Ospite: ${r["Nome dell'ospite"]||'Ospite'}\n- Punteggio: ${r._score}/10\n- Titolo: ${r['Titolo della recensione']||'—'}\n- Commento positivo: ${r['Recensione positiva']||'—'}\n- Commento negativo: ${r['Recensione negativa']||'—'}\n- Staff: ${r['Staff']||'—'} | Pulizia: ${r['Pulizia']||'—'} | Posizione: ${r['Posizione']||'—'} | Servizi: ${r['Servizi']||'—'} | Comfort: ${r['Comfort']||'—'} | Qualità/prezzo: ${r['Rapporto qualità/prezzo']||'—'}\n\nREGOLE OBBLIGATORIE:\n1. Non ripetere le stesse parole usate dall'ospite nella recensione\n2. Includi sempre informazioni per incentivare potenziali ospiti a prenotare\n3. Se ci sono critiche, rispondi in modo professionale senza essere difensivo\n4. Tono caldo, professionale, elegante\n5. Termina SEMPRE con la firma: "${firma}"\n6. Risposta diretta, senza preamboli, inizia subito rivolgendoti all'ospite`;
+  const tone=REV_HOTELS[p].tone||'caldo';
+  const toneDesc=tone==='formale'?'Tono istituzionale e professionale. Stile sobrio, distanza rispettosa, linguaggio formale senza eccedere in calore.':tone==='empatico'?'Tono molto empatico e vicino. Mostra comprensione autentica verso i disagi o le emozioni dell\'ospite. Usa frasi che trasmettono cura personale.':'Tono caldo, cordiale e accogliente. Professionale ma non freddo.';
+  const prompt=`Sei Paolo P., Quality Manager del ${hotelName} a Napoli, un hotel 4 stelle.\n\nDevi rispondere a questa recensione Booking.com in ${lang}.\n\nDATI RECENSIONE:\n- Ospite: ${r["Nome dell'ospite"]||'Ospite'}\n- Punteggio: ${r._score}/10\n- Titolo: ${r['Titolo della recensione']||'—'}\n- Commento positivo: ${r['Recensione positiva']||'—'}\n- Commento negativo: ${r['Recensione negativa']||'—'}\n- Staff: ${r['Staff']||'—'} | Pulizia: ${r['Pulizia']||'—'} | Posizione: ${r['Posizione']||'—'} | Servizi: ${r['Servizi']||'—'} | Comfort: ${r['Comfort']||'—'} | Qualità/prezzo: ${r['Rapporto qualità/prezzo']||'—'}\n\nREGOLE OBBLIGATORIE:\n1. Non ripetere le stesse parole usate dall'ospite nella recensione\n2. Includi sempre informazioni per incentivare potenziali ospiti a prenotare\n3. Se ci sono critiche, rispondi in modo professionale senza essere difensivo\n4. ${toneDesc}\n5. Termina SEMPRE con la firma: "${firma}"\n6. Risposta diretta, senza preamboli, inizia subito rivolgendoti all'ospite`;
   try{
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
     const data=await response.json();

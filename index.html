@@ -39,6 +39,7 @@
     <div class="rc-modal-body" id="rcModalBody"></div>
   </div>
 </div>
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileSidebar()"></div>
 <div class="app">
   <aside class="sidebar">
     <div class="logo" style="display:flex;align-items:center;gap:10px;">
@@ -93,7 +94,7 @@
         <div class="nav-item" onclick="setView('recensioni-sb',this)"><span class="nav-icon">↳</span>Recensioni Santa Brigida</div>
       </div>
       <div class="nav-section">Sicurezza</div>
-      <div class="nav-item" onclick="setView('dvr',this)"><span class="nav-icon">🏥</span>DVR</div>
+      <div class="nav-item" onclick="setView('dvr',this)"><span class="nav-icon">🏥</span>DVR<span class="nav-badge" id="dvrNavBadge" style="display:none;background:var(--amber);"></span></div>
       <div class="nav-section">Strumenti</div>
       <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon">📱</span>Mini App</div>
       <div class="nav-section" style="display:flex;align-items:center;justify-content:space-between;">
@@ -258,6 +259,9 @@
   </aside>
   <main class="main">
     <div class="topbar">
+      <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Menu">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <div class="topbar-title-wrap">
         <span class="page-title" id="pageTitle">Panoramica del giorno</span>
         <span class="breadcrumb" id="breadcrumb">Operativo Quotidiano</span>
@@ -1268,6 +1272,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=206-20260421"></script>
+<script src="app.js?v=207-20260421"></script>
 </body>
 </html>
