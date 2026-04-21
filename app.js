@@ -590,6 +590,15 @@ function dvrSetSoc(soc,btn){
 }
 // ── Lista Dipendenti ─────────────────────────────────────────
 let _dvrOpenIds=new Set();
+let _dvrSectCollapsed=new Set();
+function dvrToggleSection(key){
+  if(_dvrSectCollapsed.has(key))_dvrSectCollapsed.delete(key);else _dvrSectCollapsed.add(key);
+  const list=document.getElementById('dvr-list-'+key);
+  const chev=document.getElementById('dvr-chev-'+key);
+  const collapsed=_dvrSectCollapsed.has(key);
+  if(list)list.style.display=collapsed?'none':'';
+  if(chev)chev.style.transform=collapsed?'rotate(0deg)':'rotate(90deg)';
+}
 function dvrToggleEmp(id){
   if(_dvrOpenIds.has(id))_dvrOpenIds.delete(id);else _dvrOpenIds.add(id);
   dvrRenderDipendenti();
@@ -647,6 +656,7 @@ function dvrRenderDipendenti(){
       ${detailHtml}
     </div>`;
   }).join('');
+  if(_dvrSectCollapsed.has('dipendenti')){list.style.display='none';}else{list.style.display='';}
 }
 function dvrEmpOpenModal(id){
   _dvrEmpId=id||null;
@@ -733,6 +743,7 @@ function dvrRenderPanel(type){
       </div>
     </div>`;
   }).join('');
+  if(_dvrSectCollapsed.has(type)){list.style.display='none';}else{list.style.display='';}
 }
 function dvrRender(){DVR_KEYS.forEach(dvrRenderPanel);dvrRenderDipendenti();}
 function dvrOpenModal(type,id){
