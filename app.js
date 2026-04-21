@@ -589,6 +589,11 @@ function dvrSetSoc(soc,btn){
   dvrRender();
 }
 // ── Lista Dipendenti ─────────────────────────────────────────
+let _dvrOpenIds=new Set();
+function dvrToggleEmp(id){
+  if(_dvrOpenIds.has(id))_dvrOpenIds.delete(id);else _dvrOpenIds.add(id);
+  dvrRenderDipendenti();
+}
 function dvrRenderDipendenti(){
   const list=document.getElementById('dvr-list-dipendenti');
   if(!list)return;
@@ -600,8 +605,8 @@ function dvrRenderDipendenti(){
     if(ra!==rb)return ra-rb;
     return(a.nome||'').localeCompare(b.nome||'');
   });
-  const inp='width:100%;box-sizing:border-box;';
   list.innerHTML=sorted.map((it,i)=>{
+    const open=_dvrOpenIds.has(it.id);
     const contratto=it.contratto||'';
     const assunzFmt=it.dataAssunzione?new Date(it.dataAssunzione).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
     const scadContrFmt=it.scadenzaContratto?new Date(it.scadenzaContratto).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
@@ -615,24 +620,31 @@ function dvrRenderDipendenti(){
     const scadLabel=scadExpired?`⚠️ scad. ${scadContrFmt}`:scadSoon?`⏳ scad. ${scadContrFmt} (${_daysLeft}gg)`:`scad. ${scadContrFmt}`;
     const rowBorder=scadExpired?'border-left:3px solid var(--red);padding-left:11px;':scadSoon?'border-left:3px solid var(--amber);padding-left:11px;':'';
     const badge=contratto?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;background:var(--accent-bg,#e8eef8);color:var(--accent);font-weight:500;">${contratto}</span>`:'';
-    const scadBadge=scadContrFmt?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;background:${scadBg};color:${scadColor};font-weight:${scadSoon||scadExpired?'600':'400'};">${scadLabel}</span>`:'';
     const needsScad=['Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'].includes(contratto);
     const datesLine=needsScad
       ?[assunzFmt?`dal ${assunzFmt}`:'',scadContrFmt?`<span style="color:${scadColor};font-weight:${scadSoon||scadExpired?'600':'400'};">${scadLabel}</span>`:''].filter(Boolean).join(' &nbsp;→&nbsp; ')
       :(assunzFmt?`dal ${assunzFmt}`:'');
-    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;${i>0?'border-top:1px solid var(--border-light);':''}${rowBorder}">
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}
+    // riga collassata: solo nome + badge + chevron
+    const chevron=`<span style="font-size:11px;color:var(--text-dim);transition:transform .2s;display:inline-block;transform:rotate(${open?'90':'0'}deg);">›</span>`;
+    // alert scadenza visibile anche da collassato
+    const alertBadge=(scadExpired||scadSoon)?`<span style="font-size:10px;padding:1px 6px;border-radius:5px;background:${scadBg};color:${scadColor};font-weight:600;">${scadExpired?'⚠️ scaduto':(`⏳ ${_daysLeft}gg`)}</span>`:'';
+    const detailHtml=open?`<div style="padding:8px 14px 10px;border-top:1px solid var(--border-light);background:var(--surface);">
+        ${it.mansione?`<div style="font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:4px;">📋 ${it.mansione}</div>`:''}
+        ${datesLine?`<div style="font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:4px;">📅 ${datesLine}</div>`:''}
+        ${it.note?`<div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:6px;white-space:pre-line;">📝 ${it.note}</div>`:''}
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <button onclick="dvrEmpOpenModal('${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">✏️ Modifica</button>
+          <button onclick="dvrEmpDelete('${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--red);">🗑 Elimina</button>
         </div>
-        ${it.mansione?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:1px;">${it.mansione}</div>`:''}
-        ${datesLine?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:1px;">${datesLine}</div>`:''}
-        ${it.note?`<div style="font-size:var(--fs-xxs);color:var(--text-muted);margin-top:3px;white-space:pre-line;">${it.note}</div>`:''}
+      </div>`:'';
+    return`<div style="${i>0?'border-top:1px solid var(--border-light);':''}${rowBorder}">
+      <div onclick="dvrToggleEmp('${it.id}')" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;user-select:none;">
+        <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}${alertBadge}
+        </div>
+        ${chevron}
       </div>
-      <div style="display:flex;gap:4px;flex-shrink:0;">
-        <button onclick="dvrEmpOpenModal('${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;">✏️</button>
-        <button onclick="dvrEmpDelete('${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;">🗑</button>
-      </div>
+      ${detailHtml}
     </div>`;
   }).join('');
 }
