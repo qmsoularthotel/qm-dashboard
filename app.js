@@ -668,7 +668,14 @@ function dvrRenderDipendenti(){
     const scadBg=scadExpired?'var(--red-bg)':scadSoon?'var(--amber-bg)':'var(--surface2)';
     const scadLabel=scadExpired?`⚠️ scad. ${scadContrFmt}`:scadSoon?`⏳ scad. ${scadContrFmt} (${_daysLeft}gg)`:`scad. ${scadContrFmt}`;
     const rowBorder=scadExpired?'border-left:3px solid var(--red);padding-left:11px;':scadSoon?'border-left:3px solid var(--amber);padding-left:11px;':'';
-    const badge=contratto?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;background:var(--accent-bg,#e8eef8);color:var(--accent);font-weight:500;">${contratto}</span>`:'';
+    const _badgeStyle=(c=>{
+      if(/indeterminato/i.test(c))return'background:#e6f4ec;color:var(--green)';
+      if(/determinato/i.test(c))return'background:var(--amber-bg);color:var(--amber)';
+      if(/tirocinio/i.test(c))return'background:#f3eeff;color:#7c3aed';
+      if(/apprendistato/i.test(c))return'background:#fff0e6;color:#c2440c';
+      return'background:var(--accent-bg,#e8eef8);color:var(--accent)';
+    })(contratto);
+    const badge=contratto?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;font-weight:500;${_badgeStyle};">${contratto}</span>`:'';
     const needsScad=['Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'].includes(contratto);
     const datesLine=needsScad
       ?[assunzFmt?`dal ${assunzFmt}`:'',scadContrFmt?`<span style="color:${scadColor};font-weight:${scadSoon||scadExpired?'600':'400'};">${scadLabel}</span>`:''].filter(Boolean).join(' &nbsp;→&nbsp; ')
