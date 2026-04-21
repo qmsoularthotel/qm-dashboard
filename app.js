@@ -601,7 +601,7 @@ function dvrGetMissing(){
   const dips=(DVR_DATA[_dvrSoc]?.dipendenti)||[];
   const visite=(DVR_DATA[_dvrSoc]?.visite)||[];
   const art37=(DVR_DATA[_dvrSoc]?.art37)||[];
-  return dips.map(d=>{
+  return dips.filter(d=>!/corduas/i.test(d.nome||'')).map(d=>{
     const inVisite=visite.some(v=>_dvrNameMatch(d.nome||'',v.nome||''));
     const inArt37=art37.some(v=>_dvrNameMatch(d.nome||'',v.nome||''));
     const missing=[];
