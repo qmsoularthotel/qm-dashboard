@@ -347,6 +347,24 @@ setInterval(loadAll,10*60*1000);
     await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_bkf_access',value:JSON.stringify(d)})});
   }catch(e){}
 })();
+// §§ PRESENCE
+(function(){
+  const _pk='qm_presence_bkf';
+  const _sid=Math.random().toString(36).slice(2)+Date.now().toString(36);
+  async function _hb(){
+    try{
+      const r=await fetch(PROXY+'/kv/get?key='+_pk);
+      const j=await r.json();
+      let list=[];try{list=JSON.parse(j.value||'[]');}catch(e){}
+      const now=Date.now();
+      list=list.filter(x=>now-x.t<120000);
+      const idx=list.findIndex(x=>x.id===_sid);
+      if(idx>=0)list[idx].t=now;else list.push({id:_sid,t:now});
+      await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:_pk,value:JSON.stringify(list)})});
+    }catch(e){}
+  }
+  _hb();setInterval(_hb,30000);
+})();
 </script>
 </body>
 </html>

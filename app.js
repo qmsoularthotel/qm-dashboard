@@ -540,7 +540,7 @@ function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.class
   if(id==='hkpsheetar'&&HKP_DATA.ar)setTimeout(()=>hkpRenderAll('ar'),50);
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
-  if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);setTimeout(loadBkfAccessStats,150);}
+  if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);setTimeout(loadBkfAccessStats,150);setTimeout(loadPresenceStats,200);}
   if(id==='dvr')setTimeout(dvrRender,50);
 }
 // §§ DVR — SCADENZE SICUREZZA & COMPLIANCE
@@ -869,6 +869,26 @@ function dvrDelete(type,id){
   if(!confirm('Eliminare questa voce?'))return;
   DVR_DATA[_dvrSoc][type]=(DVR_DATA[_dvrSoc][type]||[]).filter(x=>x.id!==id);
   dvrSave();dvrRenderPanel(type);
+}
+async function loadPresenceStats(){
+  const apps=[
+    {key:'qm_presence_hk', el:'hk-online'},
+    {key:'qm_presence_bkf', el:'bkf-online'},
+    {key:'qm_presence_dvr', el:'dvr-online'}
+  ];
+  const now=Date.now();
+  for(const a of apps){
+    try{
+      const r=await fetch(PROXY+'/kv/get?key='+a.key);
+      const j=await r.json();
+      let list=[];try{list=JSON.parse(j.value||'[]');}catch(e){}
+      const active=list.filter(x=>now-x.t<120000).length;
+      const el=document.getElementById(a.el);
+      if(el)el.innerHTML=active>0
+        ?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;vertical-align:middle;"></span><b>${active}</b> online`
+        :`<span style="color:var(--text-muted);">nessuno online</span>`;
+    }catch(e){}
+  }
 }
 function miniappCopy(inputId,btn){
   const inp=document.getElementById(inputId);
