@@ -451,8 +451,8 @@ setInterval(loadAll,10*60*1000);
 // Contatore accessi
 (async function trackAccess(){
   try{
-    if(location.search.includes('notrack')){localStorage.setItem('hk_no_track','1');return;}
-    if(localStorage.getItem('hk_no_track')==='1')return;
+    if(location.search.includes('notrack')){localStorage.setItem('qm_no_track','1');return;}
+    if(localStorage.getItem('qm_no_track')==='1'||localStorage.getItem('hk_no_track')==='1')return;
 
     // UUID dispositivo — generato una volta e persistito in localStorage
     let devId=localStorage.getItem('hk_device_id');

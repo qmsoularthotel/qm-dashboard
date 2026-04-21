@@ -324,8 +324,8 @@ setInterval(loadAll,10*60*1000);
 // Contatore accessi per dispositivo
 (async function trackAccess(){
   try{
-    if(location.search.includes('notrack')){localStorage.setItem('bkf_no_track','1');return;}
-    if(localStorage.getItem('bkf_no_track')==='1')return;
+    if(location.search.includes('notrack')){localStorage.setItem('qm_no_track','1');return;}
+    if(localStorage.getItem('qm_no_track')==='1'||localStorage.getItem('bkf_no_track')==='1')return;
     let devId=localStorage.getItem('bkf_device_id');
     if(!devId){devId='dev_'+Math.random().toString(36).slice(2,10)+'_'+Date.now().toString(36);localStorage.setItem('bkf_device_id',devId);}
     const todayStr=new Date().toISOString().slice(0,10);

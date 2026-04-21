@@ -437,6 +437,7 @@ dvrSyncCloud();
 (function(){
   const devId=localStorage.getItem('qm_dvr_devid')||(()=>{const id=Math.random().toString(36).slice(2);localStorage.setItem('qm_dvr_devid',id);return id;})();
   (async()=>{
+    if(localStorage.getItem('qm_no_track')==='1')return;
     try{
       const todayStr=new Date().toISOString().slice(0,10);
       const nowIso=new Date().toISOString();

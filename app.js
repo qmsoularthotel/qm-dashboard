@@ -540,7 +540,7 @@ function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.class
   if(id==='hkpsheetar'&&HKP_DATA.ar)setTimeout(()=>hkpRenderAll('ar'),50);
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
-  if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);setTimeout(loadBkfAccessStats,150);setTimeout(loadDvrAccessStats,200);}
+  if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);setTimeout(loadBkfAccessStats,150);setTimeout(loadDvrAccessStats,200);setTimeout(miniappNoTrackRender,50);}
   if(id==='dvr')setTimeout(dvrRender,50);
 }
 // §§ DVR — SCADENZE SICUREZZA & COMPLIANCE
@@ -901,6 +901,20 @@ async function loadDvrAccessStats(){
       }).join('');
     }else if(elDev){elDev.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:6px 0;">Nessun dato per dispositivo</div>';}
   }catch(e){}
+}
+function miniappNoTrackToggle(){
+  const active=localStorage.getItem('qm_no_track')==='1';
+  if(active){localStorage.removeItem('qm_no_track');}else{localStorage.setItem('qm_no_track','1');}
+  miniappNoTrackRender();
+}
+function miniappNoTrackRender(){
+  const btn=document.getElementById('notrack-btn');
+  if(!btn)return;
+  const active=localStorage.getItem('qm_no_track')==='1';
+  btn.textContent=active?'✓ Questo dispositivo è escluso':'Escludi questo dispositivo';
+  btn.style.background=active?'var(--green)':'var(--surface2)';
+  btn.style.color=active?'#fff':'var(--text-dim)';
+  btn.style.border=active?'none':'1px solid var(--border)';
 }
 function miniappCopy(inputId,btn){
   const inp=document.getElementById(inputId);
