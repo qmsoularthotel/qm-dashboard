@@ -1181,7 +1181,6 @@
             <div class="panel-header">
               <span class="panel-title">🛏️ Housekeeping</span>
               <span style="font-size:var(--fs-xxs);color:var(--text-dim);">SoulArt · Boutique</span>
-              <span id="hk-online" style="font-size:var(--fs-xxs);margin-left:auto;color:var(--text-muted);">—</span>
             </div>
             <div class="panel-body" id="miniapp-hk-preview">
               <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica Soul App HKP e Boutique App HKP per vedere l'anteprima</div>
@@ -1207,7 +1206,6 @@
             <div class="panel-header">
               <span class="panel-title">☕ Breakfast</span>
               <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Responsabile colazione</span>
-              <span id="bkf-online" style="font-size:var(--fs-xxs);margin-left:auto;color:var(--text-muted);">—</span>
             </div>
             <div class="panel-body" id="miniapp-bkf-preview">
               <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere l'anteprima</div>
@@ -1230,8 +1228,13 @@
             <div class="panel-header">
               <span class="panel-title">🛡️ DVR &amp; Compliance</span>
               <span style="font-size:var(--fs-xxs);color:var(--text-dim);">General Manager</span>
-              <span id="dvr-online" style="font-size:var(--fs-xxs);margin-left:auto;color:var(--text-muted);">—</span>
             </div>
+            <div style="border-top:1px solid var(--border-light);padding:10px 16px;display:flex;gap:16px;" id="dvr-access-stats">
+              <div><div style="font-size:var(--fs-xxs);color:var(--text-dim);">Oggi</div><div style="font-size:var(--fs-sm);font-weight:700;color:var(--accent);" id="dvr-access-today">—</div></div>
+              <div><div style="font-size:var(--fs-xxs);color:var(--text-dim);">Totale</div><div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="dvr-access-total">—</div></div>
+              <div style="margin-left:auto;text-align:right;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);">Ultimo accesso</div><div style="font-size:var(--fs-xxs);color:var(--text-muted);" id="dvr-access-last">—</div></div>
+            </div>
+            <div style="border-top:1px solid var(--border-light);padding:8px 16px;" id="dvr-access-devices"></div>
             <div style="border-top:1px solid var(--border-light);padding:12px 16px;">
               <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Link da condividere</div>
               <div style="display:flex;gap:8px;align-items:center;">
@@ -1261,6 +1264,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=204-20260421"></script>
+<script src="app.js?v=205-20260421"></script>
 </body>
 </html>

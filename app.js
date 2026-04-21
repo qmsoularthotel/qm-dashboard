@@ -540,7 +540,7 @@ function setView(id,navEl){document.querySelectorAll('.view').forEach(v=>v.class
   if(id==='hkpsheetar'&&HKP_DATA.ar)setTimeout(()=>hkpRenderAll('ar'),50);
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
-  if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);setTimeout(loadBkfAccessStats,150);setTimeout(loadPresenceStats,200);}
+  if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);setTimeout(loadBkfAccessStats,150);setTimeout(loadDvrAccessStats,200);}
   if(id==='dvr')setTimeout(dvrRender,50);
 }
 // §§ DVR — SCADENZE SICUREZZA & COMPLIANCE
@@ -870,25 +870,37 @@ function dvrDelete(type,id){
   DVR_DATA[_dvrSoc][type]=(DVR_DATA[_dvrSoc][type]||[]).filter(x=>x.id!==id);
   dvrSave();dvrRenderPanel(type);
 }
-async function loadPresenceStats(){
-  const apps=[
-    {key:'qm_presence_hk', el:'hk-online'},
-    {key:'qm_presence_bkf', el:'bkf-online'},
-    {key:'qm_presence_dvr', el:'dvr-online'}
-  ];
-  const now=Date.now();
-  for(const a of apps){
-    try{
-      const r=await fetch(PROXY+'/kv/get?key='+a.key);
-      const j=await r.json();
-      let list=[];try{list=JSON.parse(j.value||'[]');}catch(e){}
-      const active=list.filter(x=>now-x.t<120000).length;
-      const el=document.getElementById(a.el);
-      if(el)el.innerHTML=active>0
-        ?`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;vertical-align:middle;"></span><b>${active}</b> online`
-        :`<span style="color:var(--text-muted);">nessuno online</span>`;
-    }catch(e){}
-  }
+async function loadDvrAccessStats(){
+  try{
+    const res=await fetch(PROXY+'/kv/get?key=qm_dvr_access');
+    const json=await res.json();
+    if(!json.value)return;
+    const d=JSON.parse(json.value);
+    const todayStr=new Date().toISOString().slice(0,10);
+    const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+    const fmtDt=iso=>{if(!iso)return'—';const dt=new Date(iso);return dt.getDate()+' '+ms[dt.getMonth()]+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');};
+    const todayCount=d.todayDate===todayStr?d.today:0;
+    const el=document.getElementById('dvr-access-today');
+    const elT=document.getElementById('dvr-access-total');
+    const elL=document.getElementById('dvr-access-last');
+    if(el)el.textContent=todayCount;
+    if(elT)elT.textContent=d.total||0;
+    if(elL)elL.textContent=fmtDt(d.last);
+    const elDev=document.getElementById('dvr-access-devices');
+    if(elDev&&d.devices&&Object.keys(d.devices).length){
+      const devEntries=Object.entries(d.devices).sort((a,b)=>(a[1].firstSeen||a[1].last||'').localeCompare(b[1].firstSeen||b[1].last||''));
+      elDev.innerHTML=devEntries.map(([,dev],idx)=>{
+        const devToday=dev.todayDate===todayStr?dev.today:0;
+        const isOnline=dev.last&&(Date.now()-new Date(dev.last).getTime())<3600000;
+        return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;${idx>0?'border-top:1px solid var(--border-light);':''}">
+          <span style="width:7px;height:7px;border-radius:50%;background:${isOnline?'var(--green)':'var(--border)'};flex-shrink:0;"></span>
+          <span style="flex:1;font-size:var(--fs-sm);font-weight:500;">Dispositivo ${idx+1}</span>
+          <span style="font-size:var(--fs-xs);color:var(--text-dim);">${devToday>0?`<b>${devToday}</b> oggi · `:''}<span style="color:var(--text-muted);">${dev.total||0} tot</span></span>
+          <span style="font-size:10px;color:var(--text-muted);">${fmtDt(dev.last)}</span>
+        </div>`;
+      }).join('');
+    }else if(elDev){elDev.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:6px 0;">Nessun dato per dispositivo</div>';}
+  }catch(e){}
 }
 function miniappCopy(inputId,btn){
   const inp=document.getElementById(inputId);

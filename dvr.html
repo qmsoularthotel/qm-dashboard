@@ -433,23 +433,28 @@ function dvrRender(){
 dvrRestore();
 dvrRender();
 dvrSyncCloud();
-// §§ PRESENCE
+// §§ ACCESS LOG (one-time write on open)
 (function(){
-  const _pk='qm_presence_dvr';
-  const _sid=Math.random().toString(36).slice(2)+Date.now().toString(36);
-  async function _hb(){
+  const devId=localStorage.getItem('qm_dvr_devid')||(()=>{const id=Math.random().toString(36).slice(2);localStorage.setItem('qm_dvr_devid',id);return id;})();
+  (async()=>{
     try{
-      const r=await fetch(PROXY+'/kv/get?key='+_pk);
-      const j=await r.json();
-      let list=[];try{list=JSON.parse(j.value||'[]');}catch(e){}
-      const now=Date.now();
-      list=list.filter(x=>now-x.t<120000);
-      const idx=list.findIndex(x=>x.id===_sid);
-      if(idx>=0)list[idx].t=now;else list.push({id:_sid,t:now});
-      await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:_pk,value:JSON.stringify(list)})});
+      const todayStr=new Date().toISOString().slice(0,10);
+      const nowIso=new Date().toISOString();
+      const res=await fetch(PROXY+'/kv/get?key=qm_dvr_access');
+      const json=await res.json();
+      const d=json.value?JSON.parse(json.value):{total:0,today:0,todayDate:'',last:null,devices:{}};
+      d.total=(d.total||0)+1;
+      d.today=d.todayDate===todayStr?(d.today||0)+1:1;
+      d.todayDate=todayStr;d.last=nowIso;
+      if(!d.devices)d.devices={};
+      const dev=d.devices[devId]||{firstSeen:nowIso,total:0,today:0,todayDate:'',last:null};
+      dev.total=(dev.total||0)+1;
+      dev.today=dev.todayDate===todayStr?(dev.today||0)+1:1;
+      dev.todayDate=todayStr;dev.last=nowIso;
+      d.devices[devId]=dev;
+      await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_dvr_access',value:JSON.stringify(d)})});
     }catch(e){}
-  }
-  _hb();setInterval(_hb,30000);
+  })();
 })();
 </script>
 </body>
