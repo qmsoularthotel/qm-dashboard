@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>DVR — Sicurezza & Compliance</title>
+<title>DVR - SoulArt Hotel & Boutique Hotel</title>
 <style>
   :root{
     --bg:#F0F0F2;--surface:#FFFFFF;--surface2:#F4F4F6;
@@ -96,7 +96,7 @@
   <div class="topbar-left">
     <div class="topbar-icon">🛡️</div>
     <div>
-      <div class="topbar-title">DVR — Compliance</div>
+      <div class="topbar-title">DVR - SoulArt Hotel & Boutique Hotel</div>
       <div class="topbar-sub">Sola consultazione</div>
     </div>
   </div>
@@ -118,7 +118,7 @@
       <span class="card-icon">👤</span>
       <span class="card-title">Dipendenti</span>
       <span class="card-count" id="cnt-dipendenti">—</span>
-      <span class="chev" id="chev-dipendenti" style="transform:rotate(90deg)">›</span>
+      <span class="chev" id="chev-dipendenti" style="transform:rotate(0deg)">›</span>
     </div>
     <div id="body-dipendenti"></div>
   </div>
@@ -129,7 +129,7 @@
       <span class="card-icon">💉</span>
       <span class="card-title">Visite Mediche</span>
       <span class="card-count" id="cnt-visite">—</span>
-      <span class="chev" id="chev-visite" style="transform:rotate(90deg)">›</span>
+      <span class="chev" id="chev-visite" style="transform:rotate(0deg)">›</span>
     </div>
     <div id="body-visite"></div>
   </div>
@@ -138,7 +138,7 @@
       <span class="card-icon">📋</span>
       <span class="card-title">Formazione Art. 37</span>
       <span class="card-count" id="cnt-art37">—</span>
-      <span class="chev" id="chev-art37" style="transform:rotate(90deg)">›</span>
+      <span class="chev" id="chev-art37" style="transform:rotate(0deg)">›</span>
     </div>
     <div id="body-art37"></div>
   </div>
@@ -147,7 +147,7 @@
       <span class="card-icon">🔥</span>
       <span class="card-title">Attestati Antincendio</span>
       <span class="card-count" id="cnt-antincendio">—</span>
-      <span class="chev" id="chev-antincendio" style="transform:rotate(90deg)">›</span>
+      <span class="chev" id="chev-antincendio" style="transform:rotate(0deg)">›</span>
     </div>
     <div id="body-antincendio"></div>
   </div>
@@ -156,7 +156,7 @@
       <span class="card-icon">🚑</span>
       <span class="card-title">Primo Soccorso &amp; RSPP</span>
       <span class="card-count" id="cnt-ps-rspp">—</span>
-      <span class="chev" id="chev-ps-rspp" style="transform:rotate(90deg)">›</span>
+      <span class="chev" id="chev-ps-rspp" style="transform:rotate(0deg)">›</span>
     </div>
     <div id="body-ps-rspp"></div>
   </div>
@@ -167,7 +167,7 @@
       <span class="card-icon">👷</span>
       <span class="card-title">RLS</span>
       <span class="card-count" id="cnt-rls">—</span>
-      <span class="chev" id="chev-rls" style="transform:rotate(90deg)">›</span>
+      <span class="chev" id="chev-rls" style="transform:rotate(0deg)">›</span>
     </div>
     <div id="body-rls"></div>
   </div>
@@ -176,7 +176,7 @@
       <span class="card-icon">🔑</span>
       <span class="card-title">Preposto</span>
       <span class="card-count" id="cnt-preposto">—</span>
-      <span class="chev" id="chev-preposto" style="transform:rotate(90deg)">›</span>
+      <span class="chev" id="chev-preposto" style="transform:rotate(0deg)">›</span>
     </div>
     <div id="body-preposto"></div>
   </div>
@@ -185,7 +185,7 @@
       <span class="card-icon">📄</span>
       <span class="card-title">Documento DVR</span>
       <span class="card-count" id="cnt-dvrdoc">—</span>
-      <span class="chev" id="chev-dvrdoc" style="transform:rotate(90deg)">›</span>
+      <span class="chev" id="chev-dvrdoc" style="transform:rotate(0deg)">›</span>
     </div>
     <div id="body-dvrdoc"></div>
   </div>
@@ -242,7 +242,7 @@ function dvrSetSoc(soc,btn){
 }
 
 // ── Accordion ─────────────────────────────────────────────────
-const _open=new Set(['dipendenti','visite','art37','antincendio','ps-rspp','rls','preposto','dvrdoc']);
+const _open=new Set();
 function toggleCard(key){
   if(_open.has(key))_open.delete(key);else _open.add(key);
   applyCard(key);
