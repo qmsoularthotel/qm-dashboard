@@ -591,6 +591,45 @@ function dvrSetSoc(soc,btn){
   if(btn)btn.classList.add('active');
   dvrRender();
 }
+// ── Compliance check dipendenti ────────────────────────────
+function _dvrNameMatch(a,b){
+  const wa=a.toLowerCase().trim().split(/\s+/);
+  const wb=b.toLowerCase().trim().split(/\s+/);
+  return wa.every(w=>wb.includes(w))||wb.every(w=>wa.includes(w));
+}
+function dvrGetMissing(){
+  const dips=(DVR_DATA[_dvrSoc]?.dipendenti)||[];
+  const visite=(DVR_DATA[_dvrSoc]?.visite)||[];
+  const art37=(DVR_DATA[_dvrSoc]?.art37)||[];
+  return dips.map(d=>{
+    const inVisite=visite.some(v=>_dvrNameMatch(d.nome||'',v.nome||''));
+    const inArt37=art37.some(v=>_dvrNameMatch(d.nome||'',v.nome||''));
+    const missing=[];
+    if(!inVisite)missing.push('visite');
+    if(!inArt37)missing.push('art37');
+    return{id:d.id,nome:d.nome,missing};
+  }).filter(x=>x.missing.length>0);
+}
+function dvrRenderWarnings(){
+  const box=document.getElementById('dvr-warnings');if(!box)return;
+  const missing=dvrGetMissing();
+  if(!missing.length){box.innerHTML='';return;}
+  const rows=missing.map(x=>{
+    const tags=x.missing.map(m=>m==='visite'
+      ?'<span style="background:var(--red-bg,#fdecea);color:var(--red);font-size:10px;padding:1px 7px;border-radius:4px;font-weight:600;">💉 Manca visita</span>'
+      :'<span style="background:var(--amber-bg);color:var(--amber);font-size:10px;padding:1px 7px;border-radius:4px;font-weight:600;">📋 Manca art.37</span>'
+    ).join(' ');
+    return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;${missing.indexOf(x)>0?'border-top:1px solid var(--border-light);':''}">
+      <span style="font-size:var(--fs-sm);font-weight:600;flex:1;">${x.nome||'—'}</span>${tags}</div>`;
+  }).join('');
+  box.innerHTML=`<div style="background:var(--red-bg,#fdecea);border:1px solid var(--red);border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-size:15px;">⚠️</span>
+      <span style="font-size:var(--fs-sm);font-weight:700;color:var(--red);">${missing.length} dipendent${missing.length===1?'e':'i'} con documentazione incompleta</span>
+    </div>
+    <div style="padding-left:4px;">${rows}</div>
+  </div>`;
+}
 // ── Lista Dipendenti ─────────────────────────────────────────
 let _dvrOpenIds=new Set();
 const _DVR_ALL_SECTS=()=>DVR_KEYS.filter(k=>k!=='primosoccorso'&&k!=='rspp').concat(['dipendenti','ps-rspp']);
@@ -618,6 +657,7 @@ function dvrRenderDipendenti(){
     if(ra!==rb)return ra-rb;
     return(a.nome||'').localeCompare(b.nome||'');
   });
+  const _missingMap=Object.fromEntries(dvrGetMissing().map(x=>[x.id,x.missing]));
   list.innerHTML=sorted.map((it,i)=>{
     const open=_dvrOpenIds.has(it.id);
     const contratto=it.contratto||'';
@@ -641,6 +681,12 @@ function dvrRenderDipendenti(){
     const chevron=`<span style="font-size:11px;color:var(--text-dim);transition:transform .2s;display:inline-block;transform:rotate(${open?'90':'0'}deg);">›</span>`;
     // alert scadenza visibile anche da collassato
     const alertBadge=(scadExpired||scadSoon)?`<span style="font-size:10px;padding:1px 6px;border-radius:5px;background:${scadBg};color:${scadColor};font-weight:600;">${scadExpired?'⚠️ scaduto':(`⏳ ${_daysLeft}gg`)}</span>`:'';
+    // badge compliance mancante
+    const _mis=_missingMap[it.id]||[];
+    const missBadges=_mis.map(m=>m==='visite'
+      ?'<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--red-bg,#fdecea);color:var(--red);font-weight:600;">💉</span>'
+      :'<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--amber-bg);color:var(--amber);font-weight:600;">📋</span>'
+    ).join('');
     const detailHtml=open?`<div style="padding:8px 14px 10px;border-top:1px solid var(--border-light);background:var(--surface);">
         ${it.mansione?`<div style="font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:4px;">📋 ${it.mansione}</div>`:''}
         ${datesLine?`<div style="font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:4px;">📅 ${datesLine}</div>`:''}
@@ -653,7 +699,7 @@ function dvrRenderDipendenti(){
     return`<div style="${i>0?'border-top:1px solid var(--border-light);':''}${rowBorder}">
       <div onclick="dvrToggleEmp('${it.id}')" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;user-select:none;">
         <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}${alertBadge}
+          <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}${alertBadge}${missBadges}
         </div>
         ${chevron}
       </div>
@@ -749,7 +795,7 @@ function dvrRenderPanel(type){
   }).join('');
   if(_dvrSectCollapsed.has(type)){list.style.display='none';}else{list.style.display='';}
 }
-function dvrRender(){DVR_KEYS.forEach(dvrRenderPanel);dvrRenderDipendenti();}
+function dvrRender(){DVR_KEYS.forEach(dvrRenderPanel);dvrRenderDipendenti();dvrRenderWarnings();}
 function dvrOpenModal(type,id){
   _dvrModalType=type;_dvrModalId=id||null;
   const cat=DVR_CATS[type];
