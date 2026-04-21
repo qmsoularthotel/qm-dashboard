@@ -636,11 +636,7 @@ const _DVR_ALL_SECTS=()=>DVR_KEYS.filter(k=>k!=='primosoccorso'&&k!=='rspp').con
 let _dvrSectCollapsed=new Set(_DVR_ALL_SECTS());
 function dvrToggleSection(key){
   if(_dvrSectCollapsed.has(key))_dvrSectCollapsed.delete(key);else _dvrSectCollapsed.add(key);
-  const collapsed=_dvrSectCollapsed.has(key);
-  const el=document.getElementById('dvr-combined-'+key)||document.getElementById('dvr-list-'+key);
-  const chev=document.getElementById('dvr-chev-'+key);
-  if(el)el.style.display=collapsed?'none':'';
-  if(chev)chev.style.transform=collapsed?'rotate(0deg)':'rotate(90deg)';
+  _dvrApplyCollapse(key);
 }
 function dvrToggleEmp(id){
   if(_dvrOpenIds.has(id))_dvrOpenIds.delete(id);else _dvrOpenIds.add(id);
@@ -795,7 +791,19 @@ function dvrRenderPanel(type){
   }).join('');
   if(_dvrSectCollapsed.has(type)){list.style.display='none';}else{list.style.display='';}
 }
-function dvrRender(){DVR_KEYS.forEach(dvrRenderPanel);dvrRenderDipendenti();dvrRenderWarnings();}
+function _dvrApplyCollapse(key){
+  const collapsed=_dvrSectCollapsed.has(key);
+  const el=document.getElementById('dvr-combined-'+key)||document.getElementById('dvr-list-'+key);
+  const chev=document.getElementById('dvr-chev-'+key);
+  if(el)el.style.display=collapsed?'none':'';
+  if(chev)chev.style.transform=collapsed?'rotate(0deg)':'rotate(90deg)';
+}
+function dvrRender(){
+  DVR_KEYS.forEach(dvrRenderPanel);
+  dvrRenderDipendenti();
+  dvrRenderWarnings();
+  _DVR_ALL_SECTS().forEach(_dvrApplyCollapse);
+}
 function dvrOpenModal(type,id){
   _dvrModalType=type;_dvrModalId=id||null;
   const cat=DVR_CATS[type];
