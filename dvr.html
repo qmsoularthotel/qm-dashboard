@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>DVR — Sicurezza & Compliance</title>
+<style>
+  :root{
+    --bg:#E8E8EA;--surface:#F4F4F6;--surface2:#EAEAEC;
+    --border:#D4D4D6;--border-light:#E2E2E4;
+    --text:#1A1916;--text-dim:#6B6B6E;--text-muted:#9A9A9D;
+    --accent:#1E4080;--accent-bg:#E8EEF8;
+    --green:#1E7A48;--green-bg:#E6F4EC;
+    --red:#C0352A;--red-bg:#FDECEA;
+    --amber:#A05A00;--amber-bg:#FDF3E3;
+    --fs-xs:11px;--fs-sm:13px;--fs-md:15px;--fs-lg:18px;
+    --fs-xxs:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+  /* TOPBAR */
+  .topbar{position:sticky;top:0;z-index:100;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+  .topbar-title{font-size:var(--fs-md);font-weight:700;letter-spacing:-.01em;}
+  .topbar-sub{font-size:var(--fs-xs);opacity:.7;margin-top:1px;}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:#34c759;flex-shrink:0;transition:background .3s;}
+  .sync-dot.syncing{background:#ffd60a;}
+  .sync-dot.error{background:var(--red);}
+
+  /* CONTENT */
+  .content{padding:16px;max-width:600px;margin:0 auto;}
+
+  /* SOC TABS */
+  .soc-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .soc-tab{flex:1;padding:10px 8px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font-size:var(--fs-sm);font-weight:600;cursor:pointer;text-align:center;color:var(--text-dim);transition:all .15s;}
+  .soc-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  /* PANEL */
+  .panel{background:var(--surface);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px;}
+  .panel-header{display:flex;align-items:center;padding:12px 14px;gap:8px;border-bottom:1px solid var(--border-light);}
+  .panel-title{font-size:var(--fs-sm);font-weight:700;}
+  .btn-add{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:5px 11px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;}
+  .btn-add.sm{padding:4px 8px;font-size:9px;}
+
+  /* SECTION LABEL */
+  .sect-label{font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;}
+
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center;padding:16px;}
+  .modal-box{background:var(--surface);border-radius:14px;padding:22px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;max-height:90vh;overflow-y:auto;}
+  .modal-title{font-size:var(--fs-md);font-weight:700;margin-bottom:16px;}
+  .modal-close{position:absolute;top:12px;right:12px;background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;color:var(--text-muted);}
+  .modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
+  .btn-cancel{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:var(--fs-sm);cursor:pointer;}
+  .btn-save{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:var(--fs-sm);font-weight:600;cursor:pointer;}
+  label.lbl{font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;}
+  .finp{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);margin-bottom:12px;}
+  .finp:focus{outline:none;border-color:var(--accent);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+
+  /* EMPTY */
+  .empty-msg{padding:14px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);}
+
+  /* ENTRY ROW */
+  .entry-row{display:flex;align-items:center;gap:10px;padding:10px 14px;}
+  .entry-row+.entry-row{border-top:1px solid var(--border-light);}
+  .entry-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .btn-icon{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;}
+
+  /* EMP ROW */
+  .emp-header{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;user-select:none;}
+  .emp-detail{padding:8px 14px 12px;border-top:1px solid var(--border-light);background:var(--surface);}
+  .emp-detail-row{font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:3px;}
+  .emp-actions{display:flex;gap:6px;margin-top:8px;}
+  .btn-edit{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;}
+  .btn-del{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--red);}
+
+  /* WARNING */
+  .warn-box{background:var(--red-bg);border:1px solid var(--red);border-radius:10px;padding:12px 14px;margin-bottom:14px;}
+  .warn-title{font-size:var(--fs-sm);font-weight:700;color:var(--red);margin-bottom:6px;}
+  .warn-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:var(--fs-sm);font-weight:600;}
+  .warn-row+.warn-row{border-top:1px solid #f5b8b4;}
+
+  /* CHEVRON */
+  .chev{font-size:11px;color:var(--text-dim);display:inline-block;transition:transform .2s;}
+
+  /* COMBINED SUB-HEADER */
+  .sub-hdr{font-size:10px;padding:5px 14px 3px;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border-light);}
+  .sub-hdr+.sub-hdr, .sub-hdr.top-sep{border-top:1px solid var(--border);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="topbar-title">🛡️ DVR — Sicurezza</div>
+    <div class="topbar-sub">Gestione compliance & scadenze</div>
+  </div>
+  <div class="sync-dot" id="syncDot" title="Sync"></div>
+</div>
+
+<div class="content">
+
+  <!-- SELETTORE SOCIETÀ -->
+  <div class="soc-tabs">
+    <button class="soc-tab active" onclick="dvrSetSoc('geriart',this)">🏢 GE.RI.ART SRL</button>
+    <button class="soc-tab" onclick="dvrSetSoc('bookingelite',this)">🏢 BOOKING ELITE</button>
+  </div>
+
+  <!-- WARNING -->
+  <div id="dvr-warnings"></div>
+
+  <!-- DIPENDENTI -->
+  <div class="sect-label">👥 Lista Dipendenti</div>
+  <div class="panel">
+    <div class="panel-header">
+      <span onclick="dvrToggleSection('dipendenti')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;">
+        <span class="panel-title">👤 Dipendenti</span>
+        <span class="chev" id="dvr-chev-dipendenti" style="transform:rotate(0deg)">›</span>
+      </span>
+      <button class="btn-add" onclick="dvrEmpOpenModal()">+ Aggiungi</button>
+    </div>
+    <div id="dvr-list-dipendenti"></div>
+  </div>
+
+  <!-- SCADENZE PERSONALE -->
+  <div class="sect-label">📋 Scadenze Personale</div>
+  <div class="panel">
+    <div class="panel-header">
+      <span onclick="dvrToggleSection('visite')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;">
+        <span class="panel-title">💉 Visite Mediche</span>
+        <span class="chev" id="dvr-chev-visite" style="transform:rotate(0deg)">›</span>
+      </span>
+      <button class="btn-add" onclick="dvrOpenModal('visite')">+ Aggiungi</button>
+    </div>
+    <div id="dvr-list-visite"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span onclick="dvrToggleSection('art37')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;">
+        <span class="panel-title">📋 Formazione Art. 37</span>
+        <span class="chev" id="dvr-chev-art37" style="transform:rotate(0deg)">›</span>
+      </span>
+      <button class="btn-add" onclick="dvrOpenModal('art37')">+ Aggiungi</button>
+    </div>
+    <div id="dvr-list-art37"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span onclick="dvrToggleSection('antincendio')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;">
+        <span class="panel-title">🔥 Attestati Antincendio</span>
+        <span class="chev" id="dvr-chev-antincendio" style="transform:rotate(0deg)">›</span>
+      </span>
+      <button class="btn-add" onclick="dvrOpenModal('antincendio')">+ Aggiungi</button>
+    </div>
+    <div id="dvr-list-antincendio"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span onclick="dvrToggleSection('ps-rspp')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;">
+        <span class="panel-title">🚑 Primo Soccorso &amp; RSPP</span>
+        <span class="chev" id="dvr-chev-ps-rspp" style="transform:rotate(0deg)">›</span>
+      </span>
+      <div style="display:flex;gap:4px;">
+        <button class="btn-add sm" onclick="dvrOpenModal('primosoccorso')">+ P.S.</button>
+        <button class="btn-add sm" onclick="dvrOpenModal('rspp')">+ RSPP</button>
+      </div>
+    </div>
+    <div id="dvr-combined-ps-rspp">
+      <div class="sub-hdr">🚑 Primo Soccorso</div>
+      <div id="dvr-list-primosoccorso"></div>
+      <div class="sub-hdr top-sep">🛡️ RSPP</div>
+      <div id="dvr-list-rspp"></div>
+    </div>
+  </div>
+
+  <!-- IMPIANTI -->
+  <div class="sect-label">🔧 Impianti &amp; Verifiche</div>
+  <div class="panel">
+    <div class="panel-header">
+      <span onclick="dvrToggleSection('estintori')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;">
+        <span class="panel-title">🧯 Estintori</span>
+        <span class="chev" id="dvr-chev-estintori" style="transform:rotate(0deg)">›</span>
+      </span>
+      <button class="btn-add" onclick="dvrOpenModal('estintori')">+ Aggiungi</button>
+    </div>
+    <div id="dvr-list-estintori"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span onclick="dvrToggleSection('legionella')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;">
+        <span class="panel-title">🦠 Legionella</span>
+        <span class="chev" id="dvr-chev-legionella" style="transform:rotate(0deg)">›</span>
+      </span>
+      <button class="btn-add" onclick="dvrOpenModal('legionella')">+ Aggiungi</button>
+    </div>
+    <div id="dvr-list-legionella"></div>
+  </div>
+
+  <!-- FIGURE E DOCUMENTAZIONE -->
+  <div class="sect-label">📋 Figure e Documentazione</div>
+  <div class="panel">
+    <div class="panel-header">
+      <span onclick="dvrToggleSection('rls')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;">
+        <span class="panel-title">👷 RLS</span>
+        <span class="chev" id="dvr-chev-rls" style="transform:rotate(0deg)">›</span>
+      </span>
+      <button class="btn-add" onclick="dvrOpenModal('rls')">+ Aggiungi</button>
+    </div>
+    <div id="dvr-list-rls"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <span onclick="dvrToggleSection('preposto')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;">
+        <span class="panel-title">🔑 Preposto</span>
+        <span class="chev" id="dvr-chev-preposto" style="transform:rotate(0deg)">›</span>
+      </span>
+      <button class="btn-add" onclick="dvrOpenModal('preposto')">+ Aggiungi</button>
+    </div>
+    <div id="dvr-list-preposto"></div>
+  </div>
+  <div class="panel" style="margin-bottom:32px;">
+    <div class="panel-header">
+      <span onclick="dvrToggleSection('dvrdoc')" style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1;">
+        <span class="panel-title">📄 Documento DVR</span>
+        <span class="chev" id="dvr-chev-dvrdoc" style="transform:rotate(0deg)">›</span>
+      </span>
+      <button class="btn-add" onclick="dvrOpenModal('dvrdoc')">+ Aggiungi</button>
+    </div>
+    <div id="dvr-list-dvrdoc"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="dvrModal" onclick="dvrCloseModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="dvrCloseModal()">✕</button>
+    <div class="modal-title" id="dvrModalTitle"></div>
+    <div id="dvrModalBody"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="dvrCloseModal()">Annulla</button>
+      <button class="btn-save" onclick="dvrSaveEntry()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
+
+// ── KV sync ──────────────────────────────────────────────────
+function setSyncStatus(s){
+  const d=document.getElementById('syncDot');if(!d)return;
+  d.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
+}
+async function kvSet(key,value){
+  try{
+    const r=await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value})});
+    return r.ok;
+  }catch(e){return false;}
+}
+async function kvGet(key){
+  try{const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key));const j=await r.json();return j.value;}catch(e){return null;}
+}
+
+// ── DVR DATA ─────────────────────────────────────────────────
+const DVR_CATS={
+  visite:       {label:'💉 Visite Mediche',      nomeLbl:'Nome',             extra:{key:'mansione', lbl:'Mansione',         ph:'es. Receptionist'},    dataLbl:'Data visita'},
+  art37:        {label:'📋 Formazione Art. 37',  nomeLbl:'Nome',             extra:{key:'ruolo',    lbl:'Ruolo / figura',   ph:'es. Dirigente'},        dataLbl:'Data formazione'},
+  antincendio:  {label:'🔥 Attestati Antincendio',nomeLbl:'Nome',            extra:{key:'livello',  lbl:'Livello rischio',  ph:'Basso / Medio / Alto'}, dataLbl:'Data attestato'},
+  primosoccorso:{label:'🚑 Primo Soccorso',      nomeLbl:'Nome',             extra:{key:'mansione', lbl:'Mansione',         ph:'es. Receptionist'},     dataLbl:'Data attestato'},
+  estintori:    {label:'🧯 Estintori',           nomeLbl:'Posizione / ID',   extra:{key:'tipo',     lbl:'Tipo',             ph:'Polvere / CO₂ / Acqua'},dataLbl:'Ultima verifica'},
+  legionella:   {label:'🦠 Legionella',          nomeLbl:'Punto campion.',   extra:{key:'metodo',   lbl:'Metodo analisi',   ph:'es. Colturale'},        dataLbl:'Data analisi'},
+  rspp:         {label:'🛡️ RSPP',               nomeLbl:'Nome',             extra:{key:'tipo',     lbl:'Tipo nomina',      ph:'Interno / Esterno'},    dataLbl:'Data incarico'},
+  rls:          {label:'👷 RLS',                 nomeLbl:'Nome',             extra:{key:'mansione', lbl:'Mansione',         ph:'es. Receptionist'},     dataLbl:'Data elezione'},
+  preposto:     {label:'🔑 Preposto',            nomeLbl:'Nome',             extra:{key:'mansione', lbl:'Mansione',         ph:'es. Capo Ricevimento'}, dataLbl:'Data nomina'},
+  dvrdoc:       {label:'📄 Documento DVR',       nomeLbl:'Versione / Rev.',  extra:{key:'motivo',   lbl:'Motivo revisione', ph:'es. Modifica organiz.'},dataLbl:'Data redazione'}
+};
+const DVR_KEYS=Object.keys(DVR_CATS);
+const DVR_SOCS={geriart:'GE.RI.ART SRL',bookingelite:'BOOKING ELITE'};
+const DVR_SOC_KEYS=Object.keys(DVR_SOCS);
+let DVR_DATA=Object.fromEntries(DVR_SOC_KEYS.map(s=>[s,{...Object.fromEntries(DVR_KEYS.map(k=>[k,[]])),dipendenti:[]}]));
+let _dvrSoc='geriart';
+let _dvrModalType='visite';let _dvrModalId=null;let _dvrEmpId=null;
+
+function dvrSave(){
+  const json=JSON.stringify(DVR_DATA);
+  try{localStorage.setItem('qm_dvr',json);}catch(e){}
+  setSyncStatus('syncing');
+  kvSet('qm_dvr',json).then(ok=>setSyncStatus(ok?'ok':'error')).catch(()=>setSyncStatus('error'));
+}
+function dvrRestore(){
+  try{
+    const s=localStorage.getItem('qm_dvr');
+    if(s){
+      const p=JSON.parse(s);
+      DVR_SOC_KEYS.forEach(soc=>{
+        if(!DVR_DATA[soc])DVR_DATA[soc]={};
+        const src=p[soc]||(soc==='geriart'?p.sa:null)||{};
+        DVR_KEYS.forEach(k=>{DVR_DATA[soc][k]=src[k]||[];});
+        DVR_DATA[soc].dipendenti=src.dipendenti||[];
+      });
+    }
+  }catch(e){}
+}
+async function dvrSyncCloud(){
+  setSyncStatus('syncing');
+  try{
+    const val=await kvGet('qm_dvr');
+    if(val){
+      localStorage.setItem('qm_dvr',val);
+      dvrRestore();
+      dvrRender();
+    }
+    setSyncStatus('ok');
+  }catch(e){setSyncStatus('error');}
+}
+
+// ── Accordion ────────────────────────────────────────────────
+let _dvrOpenIds=new Set();
+const _DVR_ALL_SECTS=()=>DVR_KEYS.filter(k=>k!=='primosoccorso'&&k!=='rspp').concat(['dipendenti','ps-rspp']);
+let _dvrSectCollapsed=new Set(_DVR_ALL_SECTS());
+
+function _dvrApplyCollapse(key){
+  const collapsed=_dvrSectCollapsed.has(key);
+  const el=document.getElementById('dvr-combined-'+key)||document.getElementById('dvr-list-'+key);
+  const chev=document.getElementById('dvr-chev-'+key);
+  if(el)el.style.display=collapsed?'none':'';
+  if(chev)chev.style.transform=collapsed?'rotate(0deg)':'rotate(90deg)';
+}
+function dvrToggleSection(key){
+  if(_dvrSectCollapsed.has(key))_dvrSectCollapsed.delete(key);else _dvrSectCollapsed.add(key);
+  _dvrApplyCollapse(key);
+}
+function dvrToggleEmp(id){
+  if(_dvrOpenIds.has(id))_dvrOpenIds.delete(id);else _dvrOpenIds.add(id);
+  dvrRenderDipendenti();
+}
+function dvrSetSoc(soc,btn){
+  _dvrSoc=soc;
+  _dvrOpenIds=new Set();
+  _dvrSectCollapsed=new Set(_DVR_ALL_SECTS());
+  document.querySelectorAll('.soc-tab').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  dvrRender();
+}
+
+// ── Compliance check ─────────────────────────────────────────
+function _nameMatch(a,b){
+  const wa=a.toLowerCase().trim().split(/\s+/);
+  const wb=b.toLowerCase().trim().split(/\s+/);
+  return wa.every(w=>wb.includes(w))||wb.every(w=>wa.includes(w));
+}
+function dvrGetMissing(){
+  const dips=(DVR_DATA[_dvrSoc]?.dipendenti)||[];
+  const visite=(DVR_DATA[_dvrSoc]?.visite)||[];
+  const art37=(DVR_DATA[_dvrSoc]?.art37)||[];
+  return dips.filter(d=>!/corduas/i.test(d.nome||'')).map(d=>{
+    const missing=[];
+    if(!visite.some(v=>_nameMatch(d.nome||'',v.nome||'')))missing.push('visite');
+    if(!art37.some(v=>_nameMatch(d.nome||'',v.nome||'')))missing.push('art37');
+    return{id:d.id,nome:d.nome,missing};
+  }).filter(x=>x.missing.length>0);
+}
+function dvrRenderWarnings(){
+  const box=document.getElementById('dvr-warnings');if(!box)return;
+  const missing=dvrGetMissing();
+  if(!missing.length){box.innerHTML='';return;}
+  const rows=missing.map((x,i)=>`<div class="warn-row">
+    <span style="flex:1;">${x.nome||'—'}</span>
+    ${x.missing.includes('visite')?'<span style="background:var(--red-bg);color:var(--red);font-size:10px;padding:1px 7px;border-radius:4px;font-weight:600;">💉 Manca visita</span>':''}
+    ${x.missing.includes('art37')?'<span style="background:var(--amber-bg);color:var(--amber);font-size:10px;padding:1px 7px;border-radius:4px;font-weight:600;">📋 Manca art.37</span>':''}
+  </div>`).join('');
+  box.innerHTML=`<div class="warn-box"><div class="warn-title">⚠️ ${missing.length} dipendent${missing.length===1?'e':'i'} con documentazione incompleta</div>${rows}</div>`;
+}
+
+// ── Render Dipendenti ─────────────────────────────────────────
+function dvrRenderDipendenti(){
+  const list=document.getElementById('dvr-list-dipendenti');if(!list)return;
+  const items=(DVR_DATA[_dvrSoc]?.dipendenti)||[];
+  if(!items.length){list.innerHTML='<div class="empty-msg">Nessun dipendente inserito</div>';
+    if(_dvrSectCollapsed.has('dipendenti'))list.style.display='none';else list.style.display='';return;}
+  const pinRank=n=>{if(/corduas/i.test(n))return 0;if(/presta/i.test(n))return 1;return 2;};
+  const sorted=[...items].sort((a,b)=>{const ra=pinRank(a.nome||''),rb=pinRank(b.nome||'');if(ra!==rb)return ra-rb;return(a.nome||'').localeCompare(b.nome||'');});
+  const _misMap=Object.fromEntries(dvrGetMissing().map(x=>[x.id,x.missing]));
+  list.innerHTML=sorted.map((it,i)=>{
+    const open=_dvrOpenIds.has(it.id);
+    const contratto=it.contratto||'';
+    const _bs=(c=>{
+      if(/indeterminato/i.test(c))return'background:#e6f4ec;color:var(--green)';
+      if(/determinato/i.test(c))return'background:var(--amber-bg);color:var(--amber)';
+      if(/tirocinio/i.test(c))return'background:#f3eeff;color:#7c3aed';
+      if(/apprendistato/i.test(c))return'background:#fff0e6;color:#c2440c';
+      return'background:var(--accent-bg);color:var(--accent)';
+    })(contratto);
+    const badge=contratto?`<span style="font-size:10px;padding:1px 7px;border-radius:5px;font-weight:500;${_bs};">${contratto}</span>`:'';
+    const _scadMs=it.scadenzaContratto?new Date(it.scadenzaContratto).setHours(0,0,0,0):null;
+    const _now=new Date().setHours(0,0,0,0);
+    const _dl=_scadMs!==null?Math.ceil((_scadMs-_now)/86400000):null;
+    const exp=_dl!==null&&_dl<0,soon=_dl!==null&&_dl>=0&&_dl<=30;
+    const scadBg=exp?'var(--red-bg)':soon?'var(--amber-bg)':'var(--surface2)';
+    const scadCol=exp?'var(--red)':soon?'var(--amber)':'var(--text-dim)';
+    const alertBadge=(exp||soon)?`<span style="font-size:10px;padding:1px 6px;border-radius:5px;background:${scadBg};color:${scadCol};font-weight:600;">${exp?'⚠️ scaduto':('⏳ '+_dl+'gg')}</span>`:'';
+    const _mis=_misMap[it.id]||[];
+    const missBadges=_mis.map(m=>m==='visite'
+      ?'<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--red-bg);color:var(--red);font-weight:600;">💉</span>'
+      :'<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--amber-bg);color:var(--amber);font-weight:600;">📋</span>'
+    ).join('');
+    const rowBorder=exp?'border-left:3px solid var(--red);padding-left:11px;':soon?'border-left:3px solid var(--amber);padding-left:11px;':'';
+    const assunzFmt=it.dataAssunzione?new Date(it.dataAssunzione).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+    const scadContrFmt=it.scadenzaContratto?new Date(it.scadenzaContratto).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+    const needsScad=['Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'].includes(contratto);
+    const scadLabel=exp?`⚠️ scad. ${scadContrFmt}`:soon?`⏳ scad. ${scadContrFmt} (${_dl}gg)`:`scad. ${scadContrFmt}`;
+    const datesLine=needsScad
+      ?[assunzFmt?`dal ${assunzFmt}`:'',scadContrFmt?`<span style="color:${scadCol};font-weight:${soon||exp?'600':'400'};">${scadLabel}</span>`:''].filter(Boolean).join(' &nbsp;→&nbsp; ')
+      :(assunzFmt?`dal ${assunzFmt}`:'');
+    const detailHtml=open?`<div class="emp-detail">
+      ${it.mansione?`<div class="emp-detail-row">📋 ${it.mansione}</div>`:''}
+      ${datesLine?`<div class="emp-detail-row">📅 ${datesLine}</div>`:''}
+      ${it.note?`<div class="emp-detail-row">📝 ${it.note}</div>`:''}
+      <div class="emp-actions">
+        <button class="btn-edit" onclick="dvrEmpOpenModal('${it.id}')">✏️ Modifica</button>
+        <button class="btn-del" onclick="dvrEmpDelete('${it.id}')">🗑 Elimina</button>
+      </div></div>`:'';
+    return`<div style="${i>0?'border-top:1px solid var(--border-light);':''}${rowBorder}">
+      <div class="emp-header" onclick="dvrToggleEmp('${it.id}')">
+        <div style="flex:1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}${alertBadge}${missBadges}
+        </div>
+        <span class="chev" style="transform:rotate(${open?'90':'0'}deg)">›</span>
+      </div>${detailHtml}</div>`;
+  }).join('');
+  if(_dvrSectCollapsed.has('dipendenti'))list.style.display='none';else list.style.display='';
+}
+
+// ── Render Panel ──────────────────────────────────────────────
+function dvrStatus(scadenza){
+  if(!scadenza)return{color:'var(--text-dim)',days:null};
+  const today=new Date();today.setHours(0,0,0,0);
+  const exp=new Date(scadenza);exp.setHours(0,0,0,0);
+  const days=Math.round((exp-today)/(1000*60*60*24));
+  if(days<0)return{color:'var(--red)',days};
+  if(days<=30)return{color:'var(--amber)',days};
+  return{color:'var(--green)',days};
+}
+function dvrRenderPanel(type){
+  const cat=DVR_CATS[type];
+  const list=document.getElementById('dvr-list-'+type);if(!list)return;
+  const items=(DVR_DATA[_dvrSoc]||{})[type]||[];
+  if(!items.length){list.innerHTML='<div class="empty-msg">Nessuna voce inserita</div>';
+    if(_dvrSectCollapsed.has(type))list.style.display='none';else list.style.display='';return;}
+  const sorted=[...items].sort((a,b)=>new Date(a.scadenza||'9999')-new Date(b.scadenza||'9999'));
+  list.innerHTML=sorted.map((it,i)=>{
+    const st=dvrStatus(it.scadenza);
+    const daysLbl=st.days!==null?(st.days<0?`${Math.abs(st.days)}gg fa`:`tra ${st.days}gg`):'';
+    const scadFmt=it.scadenza?new Date(it.scadenza).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):'—';
+    const extraVal=it[cat.extra.key]?`<span style="color:var(--text-dim);font-size:var(--fs-xxs);">${it[cat.extra.key]}</span>`:'';
+    return`<div class="entry-row">
+      <div class="entry-dot" style="background:${st.color}"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:var(--fs-sm);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.nome||'—'}</div>
+        ${extraVal}
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:var(--fs-xs);font-weight:600;color:${st.color};">${scadFmt}</div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${daysLbl}</div>
+      </div>
+      <div style="display:flex;gap:4px;">
+        <button class="btn-icon" onclick="dvrOpenModal('${type}','${it.id}')">✏️</button>
+        <button class="btn-icon" onclick="dvrDelete('${type}','${it.id}')">🗑</button>
+      </div></div>`;
+  }).join('');
+  if(_dvrSectCollapsed.has(type))list.style.display='none';else list.style.display='';
+}
+
+function dvrRender(){
+  DVR_KEYS.forEach(dvrRenderPanel);
+  dvrRenderDipendenti();
+  dvrRenderWarnings();
+  _DVR_ALL_SECTS().forEach(_dvrApplyCollapse);
+}
+
+// ── Modals ────────────────────────────────────────────────────
+function dvrOpenModal(type,id){
+  _dvrModalType=type;_dvrModalId=id||null;
+  const cat=DVR_CATS[type];
+  const it=id?(DVR_DATA[_dvrSoc]?.[type]||[]).find(x=>x.id===id):null;
+  document.getElementById('dvrModalTitle').textContent=cat.label+(id?' — Modifica':' — Aggiungi');
+  document.getElementById('dvrModalBody').innerHTML=`
+    <label class="lbl">${cat.nomeLbl}</label>
+    <input id="dvr-f-nome" class="finp" value="${it?.nome||''}" placeholder="${cat.nomeLbl}">
+    <label class="lbl">${cat.extra.lbl}</label>
+    <input id="dvr-f-extra" class="finp" value="${it?.[cat.extra.key]||''}" placeholder="${cat.extra.ph}">
+    <div class="grid2">
+      <div><label class="lbl">${cat.dataLbl}</label><input type="date" id="dvr-f-data" class="finp" style="margin:0" value="${it?.dataEv||''}"></div>
+      <div><label class="lbl">Scadenza</label><input type="date" id="dvr-f-scad" class="finp" style="margin:0" value="${it?.scadenza||''}"></div>
+    </div>
+    <label class="lbl">Note</label>
+    <textarea id="dvr-f-note" class="finp" rows="2" placeholder="Note aggiuntive…" style="resize:vertical;">${it?.note||''}</textarea>`;
+  document.getElementById('dvrModal').style.display='flex';
+  setTimeout(()=>document.getElementById('dvr-f-nome')?.focus(),50);
+}
+function dvrEmpOpenModal(id){
+  _dvrEmpId=id||null;
+  const it=id?(DVR_DATA[_dvrSoc]?.dipendenti||[]).find(x=>x.id===id):null;
+  document.getElementById('dvrModalTitle').textContent='👤 Dipendente'+(id?' — Modifica':' — Aggiungi');
+  const contrTypes=['Tempo indeterminato','Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'];
+  const hasDet=['Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'].includes(it?.contratto);
+  document.getElementById('dvrModalBody').innerHTML=`
+    <input type="hidden" id="dvr-f-empmode" value="1">
+    <label class="lbl">Nome e Cognome</label>
+    <input id="dvr-f-nome" class="finp" value="${it?.nome||''}" placeholder="Nome e Cognome">
+    <label class="lbl">Mansione / Ruolo</label>
+    <input id="dvr-f-extra" class="finp" value="${it?.mansione||''}" placeholder="es. Receptionist…">
+    <div class="grid2">
+      <div>
+        <label class="lbl">Tipo contratto</label>
+        <select id="dvr-f-contratto" class="finp" style="margin:0" onchange="dvrToggleScadContr(this.value)">
+          <option value="">—</option>
+          ${contrTypes.map(c=>`<option value="${c}"${it?.contratto===c?' selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div><label class="lbl">Data assunzione</label><input type="date" id="dvr-f-data" class="finp" style="margin:0" value="${it?.dataAssunzione||''}"></div>
+    </div>
+    <div id="dvr-scad-contr-wrap" style="${hasDet?'':'display:none;'}margin-bottom:12px;">
+      <label class="lbl">⚠️ Scadenza contratto</label>
+      <input type="date" id="dvr-f-scad-contr" class="finp" style="margin:0" value="${it?.scadenzaContratto||''}">
+    </div>
+    <label class="lbl">Note</label>
+    <textarea id="dvr-f-note" class="finp" rows="2" placeholder="Note aggiuntive…" style="resize:vertical;">${it?.note||''}</textarea>`;
+  document.getElementById('dvrModal').style.display='flex';
+  setTimeout(()=>document.getElementById('dvr-f-nome')?.focus(),50);
+}
+function dvrToggleScadContr(val){
+  const w=document.getElementById('dvr-scad-contr-wrap');
+  const show=['Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'].includes(val);
+  if(w)w.style.display=show?'':'none';
+}
+function dvrCloseModal(){document.getElementById('dvrModal').style.display='none';}
+function dvrSaveEntry(){
+  const nome=(document.getElementById('dvr-f-nome')?.value||'').trim();if(!nome)return;
+  const isEmp=!!document.getElementById('dvr-f-empmode');
+  if(isEmp){
+    const contr=(document.getElementById('dvr-f-contratto')?.value||'').trim();
+    const entry={nome,mansione:(document.getElementById('dvr-f-extra')?.value||'').trim(),contratto:contr,
+      dataAssunzione:(document.getElementById('dvr-f-data')?.value||'').trim(),
+      scadenzaContratto:['Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'].includes(contr)?(document.getElementById('dvr-f-scad-contr')?.value||'').trim():'',
+      note:(document.getElementById('dvr-f-note')?.value||'').trim()};
+    if(!DVR_DATA[_dvrSoc].dipendenti)DVR_DATA[_dvrSoc].dipendenti=[];
+    const items=DVR_DATA[_dvrSoc].dipendenti;
+    if(_dvrEmpId){const idx=items.findIndex(x=>x.id===_dvrEmpId);if(idx>=0)items[idx]={...items[idx],...entry};}
+    else items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),...entry});
+    dvrSave();dvrCloseModal();dvrRenderDipendenti();dvrRenderWarnings();return;
+  }
+  const cat=DVR_CATS[_dvrModalType];
+  const entry={nome,[cat.extra.key]:(document.getElementById('dvr-f-extra')?.value||'').trim(),
+    dataEv:(document.getElementById('dvr-f-data')?.value||'').trim(),
+    scadenza:(document.getElementById('dvr-f-scad')?.value||'').trim(),
+    note:(document.getElementById('dvr-f-note')?.value||'').trim()};
+  if(!DVR_DATA[_dvrSoc][_dvrModalType])DVR_DATA[_dvrSoc][_dvrModalType]=[];
+  const items=DVR_DATA[_dvrSoc][_dvrModalType];
+  if(_dvrModalId){const idx=items.findIndex(x=>x.id===_dvrModalId);if(idx>=0)items[idx]={...items[idx],...entry};}
+  else items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),...entry});
+  dvrSave();dvrCloseModal();dvrRenderPanel(_dvrModalType);dvrRenderWarnings();
+}
+function dvrEmpDelete(id){
+  if(!confirm('Eliminare questo dipendente?'))return;
+  DVR_DATA[_dvrSoc].dipendenti=(DVR_DATA[_dvrSoc].dipendenti||[]).filter(x=>x.id!==id);
+  dvrSave();dvrRenderDipendenti();dvrRenderWarnings();
+}
+function dvrDelete(type,id){
+  if(!confirm('Eliminare questa voce?'))return;
+  DVR_DATA[_dvrSoc][type]=(DVR_DATA[_dvrSoc][type]||[]).filter(x=>x.id!==id);
+  dvrSave();dvrRenderPanel(type);dvrRenderWarnings();
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+dvrRestore();
+dvrRender();
+dvrSyncCloud();
+</script>
+</body>
+</html>
