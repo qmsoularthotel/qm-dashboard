@@ -585,13 +585,16 @@ function dvrRestore(){
 }
 function dvrSetSoc(soc,btn){
   _dvrSoc=soc;
+  _dvrOpenIds=new Set();
+  _dvrSectCollapsed=new Set(_DVR_ALL_SECTS());
   document.querySelectorAll('.dvr-soc-btn').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   dvrRender();
 }
 // ── Lista Dipendenti ─────────────────────────────────────────
 let _dvrOpenIds=new Set();
-let _dvrSectCollapsed=new Set();
+const _DVR_ALL_SECTS=()=>DVR_KEYS.filter(k=>k!=='primosoccorso'&&k!=='rspp').concat(['dipendenti','ps-rspp']);
+let _dvrSectCollapsed=new Set(_DVR_ALL_SECTS());
 function dvrToggleSection(key){
   if(_dvrSectCollapsed.has(key))_dvrSectCollapsed.delete(key);else _dvrSectCollapsed.add(key);
   const collapsed=_dvrSectCollapsed.has(key);
