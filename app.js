@@ -13,7 +13,7 @@ function toggleDarkMode(){
   }
 })();
 // §§ COSTANTI & CONFIG (DEPTS, WEEK fallback, IS_REST)
-const DEPTS={fo:{label:'Front Office',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Extra Roberto']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Giuditta','Extra Nunzia','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
+const DEPTS={fo:{label:'Front Office',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Iannario R.']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Giuditta','Extra Nunzia','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
 let weekData=null,activeDay=0;
 const IS_REST=v=>{if(!v)return true;const u=v.trim().toUpperCase();return['R','RIPOSO','OFF','—','-','–',''].includes(u);};
@@ -154,7 +154,7 @@ function parseTurniTSV(text){
   const giorni7=pool.map(c=>({label:c.label,date:c.date,shifts:{}}));
 
   // Alias nomi foglio → nome canonico DEPTS
-  const NAME_ALIAS={'extra i.':'Extra Roberto','extra bkf sau':'Panagodage S.'};
+  const NAME_ALIAS={'extra i.':'Iannario R.','extra bkf sau':'Panagodage S.'};
   // Righe dati — filtra staff noto (exact o prefix) o Extra*
   for(let ri=headerRow+1;ri<rows.length;ri++){
     const row=rows[ri];
