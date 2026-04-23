@@ -1340,7 +1340,8 @@ const LS={
       'rev_sa','rev_bh','rev_sl','rev_pr','rev_ms','rev_ar','rev_sb',
       'rev_sent',
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
-      'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr'];
+      'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr',
+      'inv_catalog','inv_moves_sa','inv_moves_ar'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
       try{
@@ -1378,6 +1379,10 @@ const LS={
           // Per dvr: ricarica in memoria e ri-renderizza se la view è attiva
           if(k==='dvr'){
             try{dvrRestore();if(document.getElementById('view-dvr')?.classList.contains('active'))dvrRender();}catch(e){}
+          }
+          // Per inventario: ri-renderizza se la view è attiva
+          if(k==='inv_catalog'||k==='inv_moves_sa'||k==='inv_moves_ar'){
+            try{if(document.getElementById('view-inventario')?.classList.contains('active'))invRender();}catch(e){}
           }
           // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
           if(k==='hk_soul'||k==='hk_bout'||k==='piano'){
