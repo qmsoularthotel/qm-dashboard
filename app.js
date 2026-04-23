@@ -1380,9 +1380,9 @@ const LS={
           if(k==='dvr'){
             try{dvrRestore();if(document.getElementById('view-dvr')?.classList.contains('active'))dvrRender();}catch(e){}
           }
-          // Per inventario: ri-renderizza se la view è attiva
+          // Per inventario: ri-renderizza se la view è attiva + aggiorna badge nav
           if(k==='inv_catalog'||k==='inv_moves_sa'||k==='inv_moves_ar'){
-            try{if(document.getElementById('view-inventario')?.classList.contains('active'))invRender();}catch(e){}
+            try{if(document.getElementById('view-inventario')?.classList.contains('active'))invRender();else invUpdateNavBadge();}catch(e){}
           }
           // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
           if(k==='hk_soul'||k==='hk_bout'||k==='piano'){
@@ -4640,6 +4640,7 @@ function renderArriviModal(filtStruttura='all', filtTratt='all'){
 // §§ INVENTARIO DETERSIVI
 let _invWh='sa';
 let _invTab='stock';
+let _invFilter='all'; // 'all' | 'alert' | 'ok'
 
 function invSetWh(wh,btn){
   _invWh=wh;
@@ -4649,15 +4650,19 @@ function invSetWh(wh,btn){
 }
 function invSetTab(tab){
   _invTab=tab;
-  const tabs=['stock','moves'];
-  tabs.forEach(t=>{
+  ['stock','moves'].forEach(t=>{
     const el=document.getElementById('invTab-'+t);
     if(!el)return;
-    if(t===tab){el.style.borderBottomColor='var(--accent)';el.style.color='var(--accent)';}
-    else{el.style.borderBottomColor='transparent';el.style.color='var(--text-dim)';}
+    el.style.borderBottomColor=t===tab?'var(--accent)':'transparent';
+    el.style.color=t===tab?'var(--accent)':'var(--text-dim)';
     document.getElementById('inv-'+t+'-view').style.display=t===tab?'':'none';
   });
   invRender();
+}
+function invSetFilter(f){
+  _invFilter=f;
+  const{catalog,moves}=invGetData();
+  invRenderStock(catalog,moves);
 }
 function invGetData(){
   let catalog={},moves=[];
@@ -4680,14 +4685,29 @@ function invCalcStock(catalog,moves){
         if(bm[i].type==='out')qty-=bm[i].qty;
       }
     }else{
-      for(const m of bm){
-        if(m.type==='in')qty+=m.qty;
-        if(m.type==='out')qty-=m.qty;
-      }
+      for(const m of bm){if(m.type==='in')qty+=m.qty;if(m.type==='out')qty-=m.qty;}
     }
     result[bc]=Math.round(qty*1000)/1000;
   }
   return result;
+}
+function invItemStatus(qty,soglia){
+  if(qty<=0)return'out';
+  if(soglia!=null&&qty<=soglia)return'low';
+  return'ok';
+}
+function invLastMove(bc,moves){
+  for(let i=moves.length-1;i>=0;i--){if(moves[i].barcode===bc)return moves[i];}
+  return null;
+}
+function invFmtDate(ts){
+  if(!ts)return'—';
+  const d=new Date(ts),n=new Date();
+  const sameDay=(a,b)=>a.getDate()===b.getDate()&&a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear();
+  if(sameDay(d,n))return'oggi '+d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  const y=new Date(n);y.setDate(y.getDate()-1);
+  if(sameDay(d,y))return'ieri';
+  return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'});
 }
 function invRender(){
   const view=document.getElementById('view-inventario');
@@ -4695,35 +4715,86 @@ function invRender(){
   const{catalog,moves}=invGetData();
   invRenderStock(catalog,moves);
   invRenderMoves(catalog,moves);
+  invUpdateNavBadge();
 }
 function invRenderStock(catalog,moves){
   const el=document.getElementById('inv-stock-view');
   if(!el)return;
   const stock=invCalcStock(catalog,moves);
-  const items=Object.entries(catalog)
-    .map(([bc,p])=>({bc,...p,qty:stock[bc]??null}))
-    .filter(it=>it.qty!==null)
-    .sort((a,b)=>a.name.localeCompare(b.name,'it'));
-  if(!items.length){
+  // Build full item list with status
+  const allItems=Object.entries(catalog).map(([bc,p])=>{
+    const qty=stock[bc]??null;
+    if(qty===null)return null;
+    const status=invItemStatus(qty,p.soglia??null);
+    const last=invLastMove(bc,moves);
+    return{bc,name:p.name,unit:p.unit||'',soglia:p.soglia??null,qty,status,last};
+  }).filter(Boolean).sort((a,b)=>{
+    const ord={out:0,low:1,ok:2};
+    if(ord[a.status]!==ord[b.status])return ord[a.status]-ord[b.status];
+    return a.name.localeCompare(b.name,'it');
+  });
+  if(!allItems.length){
     el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun prodotto — apri lo scanner su smartphone per aggiungere prodotti</div>';
     return;
   }
-  el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
-    ${items.map(it=>{
-      const qCls=it.qty<0?'var(--red)':it.qty===0?'var(--amber)':'var(--green)';
-      const unit=it.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:3px;">${it.unit}</span>`:'';
-      return`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;padding:12px 14px;">
-        <div style="font-size:var(--fs-xs);font-weight:600;margin-bottom:6px;min-height:36px;">${_esc(it.name)}</div>
-        <div style="font-size:22px;font-weight:700;color:${qCls};line-height:1;">${it.qty}${unit}</div>
-        <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;font-family:monospace;">${it.bc}</div>
-      </div>`;
-    }).join('')}
+  const tot=allItems.length;
+  const nOut=allItems.filter(i=>i.status==='out').length;
+  const nLow=allItems.filter(i=>i.status==='low').length;
+  const nOk=allItems.filter(i=>i.status==='ok').length;
+  const nAlert=nOut+nLow;
+  // KPI chips
+  const kpiHtml=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:7px 13px;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:16px;font-weight:700;">${tot}</span>
+      <span style="font-size:var(--fs-xxs);color:var(--text-dim);">prodotti</span>
+    </div>
+    ${nOut?`<div style="background:var(--red-bg);border:1px solid #e8b0ac;border-radius:8px;padding:7px 13px;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:16px;font-weight:700;color:var(--red);">⚠️ ${nOut}</span>
+      <span style="font-size:var(--fs-xxs);color:var(--red);">esauriti</span>
+    </div>`:''}
+    ${nLow?`<div style="background:var(--amber-bg);border:1px solid #d4aa70;border-radius:8px;padding:7px 13px;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:16px;font-weight:700;color:var(--amber);">⏳ ${nLow}</span>
+      <span style="font-size:var(--fs-xxs);color:var(--amber);">in allerta</span>
+    </div>`:''}
+    ${nAlert===0?`<div style="background:var(--green-bg);border:1px solid #90cca8;border-radius:8px;padding:7px 13px;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:16px;font-weight:700;color:var(--green);">✅ ${nOk}</span>
+      <span style="font-size:var(--fs-xxs);color:var(--green);">tutto ok</span>
+    </div>`:''}
   </div>`;
+  // Filter buttons
+  const fBtn=(f,label,count)=>`<button onclick="invSetFilter('${f}')" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;font-weight:600;transition:all .12s;${_invFilter===f?'background:var(--accent);color:#fff;border-color:var(--accent);':'background:var(--surface);color:var(--text-muted);'}">${label} (${count})</button>`;
+  const filterHtml=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+    ${fBtn('all','Tutti',tot)}
+    ${nAlert?fBtn('alert','⚠️ Allerta',nAlert):''}
+    ${fBtn('ok','✅ OK',nOk)}
+  </div>`;
+  // Apply filter
+  const items=_invFilter==='alert'?allItems.filter(i=>i.status!=='ok'):_invFilter==='ok'?allItems.filter(i=>i.status==='ok'):allItems;
+  // Column headers
+  const hdrs=`<div style="display:grid;grid-template-columns:1fr 80px 60px 80px;gap:8px;padding:4px 12px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;">
+    <div>Prodotto</div><div style="text-align:center;">Ultimo mov.</div><div style="text-align:center;">Soglia</div><div style="text-align:right;">Stock</div>
+  </div>`;
+  // Rows
+  const rows=items.map(it=>{
+    const borderColor=it.status==='out'?'var(--red)':it.status==='low'?'var(--amber)':'transparent';
+    const qtyColor=it.status==='out'?'var(--red)':it.status==='low'?'var(--amber)':'var(--green)';
+    const lastStr=invFmtDate(it.last?.ts);
+    const sogliaStr=it.soglia!=null?`<span style="cursor:pointer;color:var(--text-muted);" onclick="invEditSoglia('${it.bc}')" title="Modifica soglia">${it.soglia}</span>`:`<span style="cursor:pointer;color:var(--text-dim);font-style:italic;" onclick="invEditSoglia('${it.bc}')" title="Imposta soglia">—</span>`;
+    const unit=it.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:2px;">${_esc(it.unit)}</span>`:'';
+    return`<div style="display:grid;grid-template-columns:1fr 80px 60px 80px;gap:8px;align-items:center;padding:9px 12px;background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderColor};border-radius:8px;margin-bottom:5px;">
+      <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;">${lastStr}</div>
+      <div style="font-size:var(--fs-xs);text-align:center;">${sogliaStr}</div>
+      <div style="font-size:var(--fs-sm);font-weight:700;color:${qtyColor};text-align:right;">${it.qty}${unit}</div>
+    </div>`;
+  }).join('');
+  const hint='<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;">💡 Clicca sulla soglia per impostarla — quando lo stock scende sotto viene evidenziato in arancione</div>';
+  el.innerHTML=kpiHtml+filterHtml+hdrs+rows+(allItems.every(i=>i.soglia==null)?hint:'');
 }
 function invRenderMoves(catalog,moves){
   const el=document.getElementById('inv-moves-view');
   if(!el)return;
-  const list=[...(moves||[])].reverse().slice(0,50);
+  const list=[...(moves||[])].reverse();
   if(!list.length){
     el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun movimento registrato</div>';
     return;
@@ -4731,20 +4802,59 @@ function invRenderMoves(catalog,moves){
   const icons={init:'📋',in:'⬆️',out:'⬇️'};
   const signs={init:'',in:'+',out:'−'};
   const colors={init:'var(--accent)',in:'var(--green)',out:'var(--red)'};
-  el.innerHTML=list.map(m=>{
+  let html='',lastDay='';
+  for(const m of list){
     const p=catalog[m.barcode]||{name:m.barcode,unit:''};
     const d=new Date(m.ts);
-    const ts=d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    const dayKey=d.toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long'});
+    if(dayKey!==lastDay){
+      html+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:10px 2px 4px;">${dayKey}</div>`;
+      lastDay=dayKey;
+    }
+    const ts=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
     const unit=p.unit?' '+p.unit:'';
-    const note=m.note?` · ${_esc(m.note)}`:'';
-    return`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border:1px solid var(--border-light);border-radius:9px;margin-bottom:6px;">
-      <div style="font-size:16px;flex-shrink:0;">${icons[m.type]}</div>
+    const note=m.note?` · <em>${_esc(m.note)}</em>`:'';
+    html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--border-light);border-radius:8px;margin-bottom:4px;">
+      <div style="font-size:15px;flex-shrink:0;">${icons[m.type]}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:var(--fs-xs);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_esc(p.name)}</div>
         <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${ts}${note}</div>
       </div>
       <div style="font-size:var(--fs-sm);font-weight:700;color:${colors[m.type]};flex-shrink:0;">${signs[m.type]}${m.qty}${unit}</div>
     </div>`;
-  }).join('');
+  }
+  el.innerHTML=html;
+}
+function invEditSoglia(bc){
+  let catalog={};
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog')||'{}');}catch(e){}
+  const p=catalog[bc];if(!p)return;
+  const val=prompt(`Soglia minima per "${p.name}" (lascia vuoto per rimuovere):`,p.soglia!=null?p.soglia:'');
+  if(val===null)return;
+  const n=parseFloat(val);
+  catalog[bc].soglia=(val.trim()===''||isNaN(n))?null:n;
+  try{localStorage.setItem('qm_inv_catalog',JSON.stringify(catalog));}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog',value:JSON.stringify(catalog)})}).catch(()=>{});
+  invRender();
+}
+function invUpdateNavBadge(){
+  let catalog={};
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog')||'{}');}catch(e){}
+  let total=0;
+  for(const wh of['sa','ar']){
+    let wMoves=[];
+    try{wMoves=JSON.parse(localStorage.getItem('qm_inv_moves_'+wh)||'[]');}catch(e){}
+    const stock=invCalcStock(catalog,wMoves);
+    for(const[bc,qty]of Object.entries(stock)){
+      const p=catalog[bc];if(!p)continue;
+      if(invItemStatus(qty,p.soglia??null)!=='ok')total++;
+    }
+  }
+  const navEl=document.querySelector('[onclick*="inventario"]');
+  if(!navEl)return;
+  let badge=navEl.querySelector('.nav-badge');
+  if(!badge){badge=document.createElement('span');badge.className='nav-badge';navEl.appendChild(badge);}
+  if(total>0){badge.style.background='var(--amber)';badge.textContent=total;badge.style.display='';}
+  else{badge.style.display='none';}
 }
 function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
