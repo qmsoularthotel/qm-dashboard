@@ -27,9 +27,10 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 **QM Dashboard** è una SPA vanilla JS per la gestione qualità di un gruppo alberghiero multi-struttura a Napoli. Il codice è diviso in:
 
 - **`index.html`** — Layout HTML, sidebar nav, tutte le view (div#view-*), CSS inline, tag `<script src="app.js?v=...">` in fondo
-- **`app.js`** — Tutta la logica JS (~3950 linee, ~29 sezioni §§)
+- **`app.js`** — Tutta la logica JS (~4640 linee, ~30 sezioni §§)
 - **`housekeeper.html`** — App separata per la governante (HK checklist camere)
 - **`breakfast.html`** — App separata per il breakfast manager
+- **`inventory.html`** — App separata per l'inventario detersivi (mobile, scanner barcode)
 
 Non esiste build system, package manager o step di compilazione.
 
@@ -139,6 +140,7 @@ I numeri di camera determinano la struttura di appartenenza:
 | 3603 | REGISTRATION CARDS — RC | `rcParseGuests()` (~line 3650), `rcRenderCards()`, stampa |
 | 3668 | MODAL — CATEGORIE TREND | Modal trend categorie, calcolo score pesato |
 | 3767 | ARRIVI GIORNALIERI — UPLOAD & RENDER | `handleArriviFile()`, `renderArriviModal()`, `fixArriviStruttura()` |
+| ~4634 | INVENTARIO DETERSIVI | `invCalcStock()`, `invRender()`, `invRenderStock()`, `invRenderMoves()`, `invSetWh()`, `invSetTab()` |
 
 ---
 
@@ -219,6 +221,7 @@ grep -n 'id="view-' index.html
 | `view-hkpsheet` | Operativa Housekeeping — SoulArt Hotel |
 | `view-hkpsheetar` | Operativa Housekeeping — Art Resort |
 | `view-miniapp` | Mini app preview |
+| `view-inventario` | Inventario detersivi (stock + movimenti, read-only) |
 
 ---
 
@@ -627,6 +630,74 @@ Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (comm
 | % occupazione illeggibile | `position:absolute;right:8px` dentro la barra su sfondo grigio | Span % spostato FUORI dal container della barra |
 | Righe DUPLEX duplicate in HKP riepilogo | Range A38:AG47 include righe duplex | Filtro client-side `/duplex/i.test(c.nome)` |
 | `giorni_elaborati` sempre 1 in SoulArt | Apps Script leggeva range sbagliato, totali mensili senza breakdown giornaliero | Script riscritto con range corretti; calcolo client-side da `camere_per_giorno` |
+
+---
+
+## Inventario Detersivi
+
+### Scopo
+
+Gestione stock detersivi e prodotti per i due magazzini (SoulArt Hotel e Art Resort). I movimenti vengono registrati tramite scanner barcode da smartphone; il dashboard mostra lo stock e lo storico in sola lettura.
+
+### File
+
+| File | Scopo |
+|------|-------|
+| `inventory.html` | App mobile standalone (scanner + movimenti) |
+| `app.js` §§ INVENTARIO DETERSIVI | Logica dashboard: calcolo stock, render view |
+| `index.html` `#view-inventario` | View read-only nel dashboard |
+
+### Storage (Cloudflare KV + localStorage)
+
+| Chiave KV / localStorage | Contenuto |
+|--------------------------|-----------|
+| `qm_inv_catalog` | Anagrafica prodotti condivisa: `{ [barcode]: { name, unit } }` |
+| `qm_inv_moves_sa` | Movimenti magazzino SoulArt: array |
+| `qm_inv_moves_ar` | Movimenti magazzino Art Resort: array |
+
+### Struttura movimento
+
+```js
+{
+  id:      string,   // timestamp_random
+  barcode: string,
+  type:    'init' | 'in' | 'out',  // giacenza iniziale / carico / scarico
+  qty:     number,
+  ts:      number,   // Date.now()
+  note:    string,
+}
+```
+
+### Calcolo stock
+
+Per ogni prodotto per magazzino:
+1. Trova l'ultimo movimento `type === 'init'` → valore base
+2. Somma i movimenti `in` successivi
+3. Sottrae i movimenti `out` successivi
+4. Se nessun `init`: somma pura `in - out`
+
+```js
+invCalcStock(catalog, moves) → { [barcode]: qty }
+```
+
+### inventory.html — Funzionalità
+
+- Selezione magazzino: SoulArt Hotel / Art Resort
+- Scanner barcode via ZXing (`@zxing/library@0.19.1`) + input manuale fallback
+- Prima scansione codice sconosciuto: chiede nome + unità → salva in catalogo
+- 3 tab: **Stock** (griglia qty colorata), **Movimenti** (storico), **Catalogo** (con modifica)
+- Sync KV all'avvio + push al salvataggio
+
+### Funzioni app.js (§§ INVENTARIO DETERSIVI)
+
+| Funzione | Scopo |
+|----------|-------|
+| `invSetWh(wh, btn)` | Cambia magazzino attivo nel dashboard |
+| `invSetTab(tab)` | Cambia tab stock/movimenti nel dashboard |
+| `invRender()` | Render completo view inventario (solo se attiva) |
+| `invRenderStock(catalog, moves)` | Render griglia stock |
+| `invRenderMoves(catalog, moves)` | Render lista movimenti (ultimi 50) |
+| `invCalcStock(catalog, moves)` | Calcola qty corrente per barcode |
 
 ---
 
