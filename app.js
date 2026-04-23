@@ -362,7 +362,7 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Il turno viene aggiornato automaticamente</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventario Detersivi'};
 const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni',dvr:'Sicurezza',miniapp:'Strumenti'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
@@ -4631,3 +4631,115 @@ function renderArriviModal(filtStruttura='all', filtTratt='all'){
   document.getElementById('arriviModalBody').innerHTML=
     filterBar+summary+`<div class="rc-card-grid">${cards}</div>`;
 }
+
+// §§ INVENTARIO DETERSIVI
+let _invWh='sa';
+let _invTab='stock';
+
+function invSetWh(wh,btn){
+  _invWh=wh;
+  document.querySelectorAll('.inv-wh-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  invRender();
+}
+function invSetTab(tab){
+  _invTab=tab;
+  const tabs=['stock','moves'];
+  tabs.forEach(t=>{
+    const el=document.getElementById('invTab-'+t);
+    if(!el)return;
+    if(t===tab){el.style.borderBottomColor='var(--accent)';el.style.color='var(--accent)';}
+    else{el.style.borderBottomColor='transparent';el.style.color='var(--text-dim)';}
+    document.getElementById('inv-'+t+'-view').style.display=t===tab?'':'none';
+  });
+  invRender();
+}
+function invGetData(){
+  let catalog={},moves=[];
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog')||'{}');}catch(e){}
+  try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
+  return{catalog,moves};
+}
+function invCalcStock(catalog,moves){
+  const result={};
+  for(const bc of Object.keys(catalog)){
+    const bm=moves.filter(m=>m.barcode===bc);
+    if(!bm.length)continue;
+    let lastInit=-1;
+    for(let i=bm.length-1;i>=0;i--){if(bm[i].type==='init'){lastInit=i;break;}}
+    let qty=0;
+    if(lastInit>=0){
+      qty=bm[lastInit].qty;
+      for(let i=lastInit+1;i<bm.length;i++){
+        if(bm[i].type==='in')qty+=bm[i].qty;
+        if(bm[i].type==='out')qty-=bm[i].qty;
+      }
+    }else{
+      for(const m of bm){
+        if(m.type==='in')qty+=m.qty;
+        if(m.type==='out')qty-=m.qty;
+      }
+    }
+    result[bc]=Math.round(qty*1000)/1000;
+  }
+  return result;
+}
+function invRender(){
+  const view=document.getElementById('view-inventario');
+  if(!view||!view.classList.contains('active'))return;
+  const{catalog,moves}=invGetData();
+  invRenderStock(catalog,moves);
+  invRenderMoves(catalog,moves);
+}
+function invRenderStock(catalog,moves){
+  const el=document.getElementById('inv-stock-view');
+  if(!el)return;
+  const stock=invCalcStock(catalog,moves);
+  const items=Object.entries(catalog)
+    .map(([bc,p])=>({bc,...p,qty:stock[bc]??null}))
+    .filter(it=>it.qty!==null)
+    .sort((a,b)=>a.name.localeCompare(b.name,'it'));
+  if(!items.length){
+    el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun prodotto — apri lo scanner su smartphone per aggiungere prodotti</div>';
+    return;
+  }
+  el.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
+    ${items.map(it=>{
+      const qCls=it.qty<0?'var(--red)':it.qty===0?'var(--amber)':'var(--green)';
+      const unit=it.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:3px;">${it.unit}</span>`:'';
+      return`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;padding:12px 14px;">
+        <div style="font-size:var(--fs-xs);font-weight:600;margin-bottom:6px;min-height:36px;">${_esc(it.name)}</div>
+        <div style="font-size:22px;font-weight:700;color:${qCls};line-height:1;">${it.qty}${unit}</div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;font-family:monospace;">${it.bc}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function invRenderMoves(catalog,moves){
+  const el=document.getElementById('inv-moves-view');
+  if(!el)return;
+  const list=[...(moves||[])].reverse().slice(0,50);
+  if(!list.length){
+    el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun movimento registrato</div>';
+    return;
+  }
+  const icons={init:'📋',in:'⬆️',out:'⬇️'};
+  const signs={init:'',in:'+',out:'−'};
+  const colors={init:'var(--accent)',in:'var(--green)',out:'var(--red)'};
+  el.innerHTML=list.map(m=>{
+    const p=catalog[m.barcode]||{name:m.barcode,unit:''};
+    const d=new Date(m.ts);
+    const ts=d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    const unit=p.unit?' '+p.unit:'';
+    const note=m.note?` · ${_esc(m.note)}`:'';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface);border:1px solid var(--border-light);border-radius:9px;margin-bottom:6px;">
+      <div style="font-size:16px;flex-shrink:0;">${icons[m.type]}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:var(--fs-xs);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_esc(p.name)}</div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${ts}${note}</div>
+      </div>
+      <div style="font-size:var(--fs-sm);font-weight:700;color:${colors[m.type]};flex-shrink:0;">${signs[m.type]}${m.qty}${unit}</div>
+    </div>`;
+  }).join('');
+}
+function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}

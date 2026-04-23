@@ -95,6 +95,7 @@
       </div>
       <div class="nav-section">Sicurezza</div>
       <div class="nav-item" onclick="setView('dvr',this)"><span class="nav-icon">🏥</span>DVR<span class="nav-badge" id="dvrNavBadge" style="display:none;background:var(--amber);"></span></div>
+      <div class="nav-item" onclick="setView('inventario',this);invRender()"><span class="nav-icon">📦</span>Inventario</div>
       <div class="nav-section">Strumenti</div>
       <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon">📱</span>Mini App</div>
       <div class="nav-section" style="display:flex;align-items:center;justify-content:space-between;">
@@ -1253,6 +1254,23 @@
           <button id="notrack-btn" onclick="miniappNoTrackToggle()" style="border-radius:6px;padding:5px 12px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;transition:all .2s;">Escludi questo dispositivo</button>
         </div>
       </div>
+      <!-- ── INVENTARIO ── -->
+      <div class="view" id="view-inventario">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;">
+          <div style="display:flex;gap:6px;">
+            <button class="rev-filter-btn inv-wh-btn active" id="invWh-sa" onclick="invSetWh('sa',this)">SoulArt Hotel</button>
+            <button class="rev-filter-btn inv-wh-btn" id="invWh-ar" onclick="invSetWh('ar',this)">Art Resort</button>
+          </div>
+          <a href="inventory.html" target="_blank" class="btn-primary" style="font-size:var(--fs-xxs);padding:5px 12px;text-decoration:none;border-radius:6px;white-space:nowrap;">📱 Apri scanner</a>
+        </div>
+        <!-- Tabs: stock / movimenti -->
+        <div style="display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid var(--border-light);">
+          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--accent);" id="invTab-stock" onclick="invSetTab('stock')">Stock</div>
+          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-moves" onclick="invSetTab('moves')">Movimenti</div>
+        </div>
+        <div id="inv-stock-view"></div>
+        <div id="inv-moves-view" style="display:none;"></div>
+      </div>
   </main>
 </div>
 <div id="catChartModal" onclick="closeCatModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:20px;">
@@ -1272,6 +1290,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=210-20260421"></script>
+<script src="app.js?v=211-20260423"></script>
 </body>
 </html>

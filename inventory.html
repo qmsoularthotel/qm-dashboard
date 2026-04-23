@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>QM Inventario v1</title>
+  <style>
+    :root {
+      --bg: #E8E8EA; --surface: #F4F4F6; --surface2: #EAEAEC;
+      --border: #D0D0D4; --border-light: #DADADD;
+      --text: #1C1C1E; --text-muted: #5A5A60; --text-dim: #8A8A90;
+      --accent: #1E4080; --accent-bg: #E2EAF6;
+      --green: #1E7A48; --green-bg: #D8F0E4;
+      --red: #C0352A; --red-bg: #FAE2E0;
+      --amber: #A05A00; --amber-bg: #FAE8CC;
+      --fs-base: 16px; --fs-sm: 14px; --fs-xs: 13px; --fs-xxs: 11px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: var(--fs-base); line-height: 1.5;
+      min-height: 100vh; min-height: 100dvh;
+    }
+
+    /* ── Header ── */
+    .app-header {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 14px 16px 0; position: sticky; top: 0; z-index: 100;
+    }
+    .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .header-title { font-size: 17px; font-weight: 700; color: var(--accent); letter-spacing: -.01em; }
+    .sync-row { display: flex; align-items: center; gap: 5px; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #9ca3af; flex-shrink: 0; }
+    .sync-label { font-size: 10px; color: var(--text-dim); }
+
+    /* ── Warehouse tabs ── */
+    .wh-tabs { display: flex; }
+    .wh-tab {
+      flex: 1; padding: 8px 10px; text-align: center;
+      font-size: var(--fs-sm); font-weight: 600; color: var(--text-dim);
+      cursor: pointer; border-bottom: 3px solid transparent; transition: all .15s;
+      user-select: none;
+    }
+    .wh-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Nav tabs ── */
+    .nav-tabs {
+      display: flex; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 73px; z-index: 99;
+    }
+    .nav-tab {
+      flex: 1; padding: 9px 6px; text-align: center;
+      font-size: var(--fs-xxs); font-weight: 700; color: var(--text-dim);
+      cursor: pointer; text-transform: uppercase; letter-spacing: .06em;
+      border-bottom: 2px solid transparent; transition: all .15s; user-select: none;
+    }
+    .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Content ── */
+    .content { padding-bottom: 90px; }
+
+    /* ── FAB ── */
+    .fab {
+      position: fixed; bottom: 24px; right: 20px;
+      width: 58px; height: 58px; border-radius: 50%;
+      background: var(--accent); color: #fff; border: none;
+      cursor: pointer; box-shadow: 0 4px 18px rgba(30,64,128,.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200; transition: transform .12s;
+    }
+    .fab:active { transform: scale(.92); }
+
+    /* ── Search ── */
+    .search-wrap { padding: 10px 14px 0; }
+    .search-input {
+      width: 100%; padding: 9px 12px;
+      border: 1px solid var(--border); border-radius: 9px;
+      font-size: var(--fs-sm); background: var(--surface);
+      color: var(--text); outline: none;
+    }
+    .search-input:focus { border-color: var(--accent); }
+
+    /* ── Section header ── */
+    .section-hdr {
+      padding: 14px 14px 4px;
+      font-size: var(--fs-xxs); color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: .08em; font-weight: 700;
+    }
+
+    /* ── Stock list ── */
+    .stock-list { padding: 8px 14px; }
+    .stock-item {
+      background: var(--surface); border: 1px solid var(--border-light);
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+      cursor: pointer; transition: border-color .12s;
+    }
+    .stock-item:active { border-color: var(--accent); }
+    .stock-item-row { display: flex; align-items: center; justify-content: space-between; }
+    .stock-item-name { font-size: var(--fs-sm); font-weight: 600; }
+    .stock-item-sub { font-size: var(--fs-xxs); color: var(--text-dim); margin-top: 2px; }
+    .stock-qty-wrap { text-align: right; }
+    .stock-qty { font-size: 20px; font-weight: 700; line-height: 1; }
+    .stock-qty.neg { color: var(--red); }
+    .stock-qty.low { color: var(--amber); }
+    .stock-qty.ok  { color: var(--green); }
+    .stock-unit { font-size: var(--fs-xxs); color: var(--text-dim); margin-top: 1px; }
+
+    /* ── Move list ── */
+    .move-list { padding: 8px 14px; }
+    .move-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; background: var(--surface);
+      border: 1px solid var(--border-light); border-radius: 9px; margin-bottom: 6px;
+    }
+    .move-badge {
+      width: 34px; height: 34px; border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+    }
+    .move-badge.init { background: var(--accent-bg); }
+    .move-badge.in   { background: var(--green-bg); }
+    .move-badge.out  { background: var(--red-bg); }
+    .move-info { flex: 1; min-width: 0; }
+    .move-name { font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .move-ts   { font-size: var(--fs-xxs); color: var(--text-dim); margin-top: 1px; }
+    .move-qty  { font-size: var(--fs-sm); font-weight: 700; flex-shrink: 0; }
+    .move-qty.init { color: var(--accent); }
+    .move-qty.in   { color: var(--green); }
+    .move-qty.out  { color: var(--red); }
+
+    /* ── Catalog list ── */
+    .catalog-list { padding: 8px 14px; }
+    .catalog-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; background: var(--surface);
+      border: 1px solid var(--border-light); border-radius: 9px; margin-bottom: 6px;
+    }
+    .catalog-info { flex: 1; min-width: 0; }
+    .catalog-name { font-size: var(--fs-sm); font-weight: 600; }
+    .catalog-sub { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+    .catalog-barcode {
+      font-size: 10px; font-family: monospace;
+      background: var(--surface2); padding: 1px 6px;
+      border-radius: 4px; color: var(--text-dim);
+    }
+    .catalog-unit { font-size: var(--fs-xxs); color: var(--text-dim); }
+    .catalog-edit {
+      background: none; border: none; font-size: 16px;
+      cursor: pointer; padding: 6px; color: var(--text-dim);
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      padding: 52px 24px; text-align: center; color: var(--text-dim);
+    }
+    .empty-icon { font-size: 44px; margin-bottom: 12px; }
+    .empty-text { font-size: var(--fs-sm); line-height: 1.6; }
+
+    /* ── Scanner modal ── */
+    .scanner-modal {
+      position: fixed; inset: 0; background: #000;
+      z-index: 600; display: none; flex-direction: column;
+    }
+    .scanner-modal.open { display: flex; }
+    #scannerVideo { width: 100%; flex: 1; object-fit: cover; }
+    .scanner-overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .scanner-frame {
+      width: 260px; height: 170px;
+      border: 2px solid rgba(255,255,255,.6); border-radius: 14px;
+      position: relative; overflow: hidden;
+    }
+    .scanner-line {
+      position: absolute; left: 0; right: 0; height: 2px;
+      background: var(--accent); top: 50%;
+      animation: scan 2.2s infinite ease-in-out;
+    }
+    @keyframes scan { 0%,100% { top: 8%; } 50% { top: 88%; } }
+    .scanner-hint {
+      color: rgba(255,255,255,.75); font-size: var(--fs-xs);
+      margin-top: 18px; text-align: center;
+    }
+    .scanner-close {
+      position: absolute; top: 16px; right: 16px;
+      pointer-events: all; background: rgba(0,0,0,.55);
+      border: none; color: #fff; font-size: 22px;
+      width: 44px; height: 44px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .scanner-bottom {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 14px 20px 36px; pointer-events: all;
+      background: linear-gradient(transparent, rgba(0,0,0,.7));
+    }
+    .scanner-manual-input {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid rgba(255,255,255,.35); border-radius: 10px;
+      background: rgba(0,0,0,.55); color: #fff;
+      font-size: var(--fs-sm); outline: none; text-align: center;
+    }
+    .scanner-manual-input::placeholder { color: rgba(255,255,255,.45); }
+
+    /* ── Movement bottom-sheet ── */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.5);
+      z-index: 500; display: none; align-items: flex-end;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-sheet {
+      width: 100%; background: var(--surface);
+      border-radius: 18px 18px 0 0; padding: 6px 18px 40px;
+      max-height: 92dvh; overflow-y: auto;
+    }
+    .sheet-handle {
+      width: 38px; height: 4px; border-radius: 2px;
+      background: var(--border); margin: 10px auto 14px;
+    }
+    .sheet-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+      display: block; font-size: var(--fs-xxs); color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; font-weight: 700;
+    }
+    .form-input {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid var(--border); border-radius: 9px;
+      font-size: var(--fs-sm); background: var(--bg);
+      color: var(--text); outline: none;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .known-product-box {
+      padding: 10px 13px; background: var(--accent-bg);
+      border-radius: 9px; margin-bottom: 14px; display: none;
+    }
+    .known-product-box .lbl { font-size: var(--fs-xxs); color: var(--text-dim); margin-bottom: 2px; }
+    .known-product-box .name { font-size: var(--fs-sm); font-weight: 700; }
+    .known-product-box .bc { font-size: var(--fs-xxs); color: var(--text-dim); margin-top: 2px; font-family: monospace; }
+
+    /* ── Operation selector ── */
+    .op-selector { display: flex; gap: 7px; }
+    .op-btn {
+      flex: 1; padding: 10px 6px; border: 1.5px solid var(--border);
+      border-radius: 9px; background: var(--surface2);
+      font-size: var(--fs-xs); font-weight: 600; cursor: pointer;
+      text-align: center; transition: all .12s; user-select: none;
+    }
+    .op-btn.sel-init { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+    .op-btn.sel-in   { border-color: var(--green);  background: var(--green-bg);  color: var(--green); }
+    .op-btn.sel-out  { border-color: var(--red);    background: var(--red-bg);    color: var(--red); }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      width: 100%; padding: 13px; background: var(--accent); color: #fff;
+      border: none; border-radius: 10px; font-size: var(--fs-sm);
+      font-weight: 700; cursor: pointer; margin-top: 6px;
+    }
+    .btn-ghost {
+      width: 100%; padding: 11px; background: none;
+      color: var(--text-muted); border: 1px solid var(--border);
+      border-radius: 10px; font-size: var(--fs-sm); cursor: pointer; margin-top: 8px;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
+      background: var(--text); color: var(--bg); padding: 10px 22px;
+      border-radius: 22px; font-size: var(--fs-xs); font-weight: 600;
+      z-index: 1000; opacity: 0; transition: opacity .25s;
+      white-space: nowrap; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="app-header">
+  <div class="header-top">
+    <div class="header-title">📦 Inventario Detersivi</div>
+    <div class="sync-row">
+      <div class="sync-dot" id="syncDot"></div>
+      <span class="sync-label" id="syncLabel">—</span>
+    </div>
+  </div>
+  <div class="wh-tabs">
+    <div class="wh-tab active" id="tab-sa" onclick="setWarehouse('sa')">SoulArt Hotel</div>
+    <div class="wh-tab" id="tab-ar" onclick="setWarehouse('ar')">Art Resort</div>
+  </div>
+</div>
+
+<!-- Nav tabs -->
+<div class="nav-tabs">
+  <div class="nav-tab active" id="ntab-stock"   onclick="setNavTab('stock')">Stock</div>
+  <div class="nav-tab"        id="ntab-moves"   onclick="setNavTab('moves')">Movimenti</div>
+  <div class="nav-tab"        id="ntab-catalog" onclick="setNavTab('catalog')">Catalogo</div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- STOCK -->
+  <div id="view-stock">
+    <div class="search-wrap">
+      <input class="search-input" type="search" id="stockSearch" placeholder="Cerca prodotto…" oninput="renderStock()">
+    </div>
+    <div class="stock-list" id="stockList"></div>
+  </div>
+
+  <!-- MOVES -->
+  <div id="view-moves" style="display:none;">
+    <div class="search-wrap">
+      <input class="search-input" type="search" id="movesSearch" placeholder="Cerca prodotto…" oninput="renderMoves()">
+    </div>
+    <div class="move-list" id="moveList"></div>
+  </div>
+
+  <!-- CATALOG -->
+  <div id="view-catalog" style="display:none;">
+    <div class="search-wrap">
+      <input class="search-input" type="search" id="catalogSearch" placeholder="Cerca…" oninput="renderCatalog()">
+    </div>
+    <div class="catalog-list" id="catalogList"></div>
+  </div>
+
+</div>
+
+<!-- FAB: scan -->
+<button class="fab" onclick="openScanner()" aria-label="Scansiona barcode">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+    <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+    <path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+    <line x1="7" y1="8" x2="7" y2="16"/><line x1="10" y1="8" x2="10" y2="16"/>
+    <line x1="13" y1="8" x2="13" y2="16"/><line x1="16" y1="8" x2="16" y2="16"/>
+  </svg>
+</button>
+
+<!-- Scanner modal -->
+<div class="scanner-modal" id="scannerModal">
+  <video id="scannerVideo" autoplay muted playsinline></video>
+  <div class="scanner-overlay">
+    <div class="scanner-frame"><div class="scanner-line"></div></div>
+    <div class="scanner-hint">Inquadra il codice a barre del prodotto</div>
+  </div>
+  <button class="scanner-close" onclick="closeScanner()">✕</button>
+  <div class="scanner-bottom">
+    <input
+      class="scanner-manual-input"
+      type="text" id="manualBarcodeInput"
+      placeholder="Oppure inserisci codice manualmente…"
+      inputmode="numeric" autocomplete="off"
+      onkeydown="if(event.key==='Enter')onManualBarcode(this.value.trim())"
+    >
+  </div>
+</div>
+
+<!-- Movement bottom-sheet -->
+<div class="modal-backdrop" id="moveModal" onclick="if(event.target===this)closeMoveModal()">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetTitle">Movimento</div>
+
+    <!-- New product fields -->
+    <div class="form-group" id="newNameWrap" style="display:none;">
+      <label class="form-label">Nome prodotto</label>
+      <input class="form-input" type="text" id="newName" placeholder="es. Detersivo piatti 5L…" autocomplete="off">
+    </div>
+    <div class="form-group" id="newUnitWrap" style="display:none;">
+      <label class="form-label">Unità di misura</label>
+      <input class="form-input" type="text" id="newUnit" placeholder="es. L · kg · pz · flacone…" autocomplete="off">
+    </div>
+
+    <!-- Known product info -->
+    <div class="known-product-box" id="knownBox">
+      <div class="lbl">Prodotto rilevato</div>
+      <div class="name" id="knownName"></div>
+      <div class="bc" id="knownBarcode"></div>
+    </div>
+
+    <!-- Operation type -->
+    <div class="form-group">
+      <label class="form-label">Operazione</label>
+      <div class="op-selector">
+        <div class="op-btn sel-init" id="opInit" onclick="setOp('init')">📋 Giacenza</div>
+        <div class="op-btn"          id="opIn"   onclick="setOp('in')">⬆️ Carico</div>
+        <div class="op-btn"          id="opOut"  onclick="setOp('out')">⬇️ Scarico</div>
+      </div>
+    </div>
+
+    <!-- Quantity -->
+    <div class="form-group">
+      <label class="form-label">Quantità <span id="unitHint" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);"></span></label>
+      <input class="form-input" type="number" id="moveQty" placeholder="0" min="0" step="1"
+             style="font-size:24px;font-weight:700;text-align:center;">
+    </div>
+
+    <!-- Note -->
+    <div class="form-group">
+      <label class="form-label">Note (opzionale)</label>
+      <input class="form-input" type="text" id="moveNote" placeholder="es. Fornitura settimanale…" autocomplete="off">
+    </div>
+
+    <button class="btn-primary" onclick="saveMove()">Salva movimento</button>
+    <button class="btn-ghost" onclick="closeMoveModal()">Annulla</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ZXing barcode library -->
+<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+<script>
+'use strict';
+
+// ── Config ──────────────────────────────────────────────────────────────────
+const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
+
+// ── State ───────────────────────────────────────────────────────────────────
+let currentWH  = 'sa';
+let currentTab = 'stock';
+let currentOp  = 'init';
+let pendingBC  = null;   // barcode being processed
+let isNewProd  = false;
+
+let catalog = {};           // { [barcode]: { name, unit } }
+let moves   = { sa: [], ar: [] };
+
+// ── LocalStorage helpers ─────────────────────────────────────────────────────
+function lsGet(key, def) {
+  try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : def; } catch(e) { return def; }
+}
+function lsSet(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+}
+
+// ── Sync / KV ────────────────────────────────────────────────────────────────
+function setSyncStatus(state) {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLabel');
+  const cfg = {
+    syncing: { c: '#f59e0b', t: 'Sync…' },
+    ok:      { c: '#1a7a3a', t: '✓ Sincronizzato' },
+    error:   { c: '#dc2626', t: 'Errore sync' },
+    offline: { c: '#9ca3af', t: 'Offline' },
+  }[state] || { c: '#9ca3af', t: '—' };
+  if (dot) dot.style.background = cfg.c;
+  if (lbl) lbl.textContent = cfg.t;
+}
+
+async function kvGet(key) {
+  const res = await fetch(PROXY + '/kv/get?key=' + encodeURIComponent(key));
+  const j = await res.json();
+  return (j.value !== null && j.value !== undefined) ? j.value : null;
+}
+async function kvSet(key, value) {
+  const res = await fetch(PROXY + '/kv/set', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, value })
+  });
+  return res.ok;
+}
+
+async function loadFromCloud() {
+  setSyncStatus('syncing');
+  try {
+    const [catRaw, saRaw, arRaw] = await Promise.all([
+      kvGet('qm_inv_catalog'),
+      kvGet('qm_inv_moves_sa'),
+      kvGet('qm_inv_moves_ar'),
+    ]);
+    let changed = false;
+    if (catRaw) { try { catalog  = JSON.parse(catRaw); lsSet('qm_inv_catalog',  catalog);  changed = true; } catch(e){} }
+    if (saRaw)  { try { moves.sa = JSON.parse(saRaw);  lsSet('qm_inv_moves_sa', moves.sa); changed = true; } catch(e){} }
+    if (arRaw)  { try { moves.ar = JSON.parse(arRaw);  lsSet('qm_inv_moves_ar', moves.ar); changed = true; } catch(e){} }
+    setSyncStatus('ok');
+    if (changed) renderAll();
+  } catch(e) {
+    setSyncStatus('error');
+  }
+}
+
+async function pushToCloud() {
+  lsSet('qm_inv_catalog',  catalog);
+  lsSet('qm_inv_moves_sa', moves.sa);
+  lsSet('qm_inv_moves_ar', moves.ar);
+  setSyncStatus('syncing');
+  try {
+    const results = await Promise.all([
+      kvSet('qm_inv_catalog',  JSON.stringify(catalog)),
+      kvSet('qm_inv_moves_sa', JSON.stringify(moves.sa)),
+      kvSet('qm_inv_moves_ar', JSON.stringify(moves.ar)),
+    ]);
+    setSyncStatus(results.every(Boolean) ? 'ok' : 'error');
+  } catch(e) {
+    setSyncStatus('error');
+  }
+}
+
+// ── Stock calculation ────────────────────────────────────────────────────────
+function calcStock(wh) {
+  const result = {};
+  const whMoves = moves[wh] || [];
+  for (const barcode of Object.keys(catalog)) {
+    const bm = whMoves.filter(m => m.barcode === barcode);
+    if (!bm.length) continue;
+    // Find last 'init' movement
+    let lastInit = -1;
+    for (let i = bm.length - 1; i >= 0; i--) {
+      if (bm[i].type === 'init') { lastInit = i; break; }
+    }
+    let qty = 0;
+    const from = lastInit >= 0 ? lastInit : 0;
+    if (lastInit >= 0) qty = bm[lastInit].qty;
+    for (let i = from + 1; i < bm.length; i++) {
+      if (bm[i].type === 'in')  qty += bm[i].qty;
+      if (bm[i].type === 'out') qty -= bm[i].qty;
+    }
+    // Also process moves before lastInit if no init found
+    if (lastInit < 0) {
+      for (const m of bm) {
+        if (m.type === 'in')  qty += m.qty;
+        if (m.type === 'out') qty -= m.qty;
+      }
+    }
+    result[barcode] = Math.round(qty * 1000) / 1000;
+  }
+  return result;
+}
+
+// ── UI: Warehouse & nav tab ──────────────────────────────────────────────────
+function setWarehouse(wh) {
+  currentWH = wh;
+  document.getElementById('tab-sa').classList.toggle('active', wh === 'sa');
+  document.getElementById('tab-ar').classList.toggle('active', wh === 'ar');
+  renderAll();
+}
+
+function setNavTab(tab) {
+  currentTab = tab;
+  ['stock','moves','catalog'].forEach(t => {
+    document.getElementById('ntab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('view-' + t).style.display = t === tab ? '' : 'none';
+  });
+}
+
+function renderAll() {
+  renderStock();
+  renderMoves();
+  renderCatalog();
+}
+
+// ── Render: Stock ────────────────────────────────────────────────────────────
+function renderStock() {
+  const el = document.getElementById('stockList');
+  if (!el) return;
+  const stock = calcStock(currentWH);
+  const q = (document.getElementById('stockSearch')?.value || '').toLowerCase();
+
+  const items = Object.entries(catalog)
+    .map(([bc, p]) => ({ bc, ...p, qty: stock[bc] ?? null }))
+    .filter(it => it.qty !== null)
+    .filter(it => !q || it.name.toLowerCase().includes(q) || it.bc.includes(q))
+    .sort((a, b) => a.name.localeCompare(b.name, 'it'));
+
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📦</div>
+      <div class="empty-text">Nessun prodotto in stock<br><small>Scansiona un barcode per iniziare</small></div>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = items.map(it => {
+    const qCls = it.qty < 0 ? 'neg' : it.qty === 0 ? 'low' : 'ok';
+    const unit = it.unit ? `<div class="stock-unit">${esc(it.unit)}</div>` : '';
+    return `<div class="stock-item" onclick="quickMove('${esc(it.bc)}')">
+      <div class="stock-item-row">
+        <div style="flex:1;min-width:0;">
+          <div class="stock-item-name">${esc(it.name)}</div>
+          <div class="stock-item-sub">${it.bc}</div>
+        </div>
+        <div class="stock-qty-wrap">
+          <div class="stock-qty ${qCls}">${it.qty}</div>
+          ${unit}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render: Moves ────────────────────────────────────────────────────────────
+function renderMoves() {
+  const el = document.getElementById('moveList');
+  if (!el) return;
+  const q = (document.getElementById('movesSearch')?.value || '').toLowerCase();
+  const list = [...(moves[currentWH] || [])].reverse();
+  const filtered = list.filter(m => {
+    const p = catalog[m.barcode];
+    return !q || (p && p.name.toLowerCase().includes(q)) || m.barcode.includes(q);
+  });
+
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Nessun movimento registrato</div></div>`;
+    return;
+  }
+
+  const icons  = { init: '📋', in: '⬆️', out: '⬇️' };
+  const signs  = { init: '',   in: '+',   out: '−' };
+  el.innerHTML = filtered.map(m => {
+    const p   = catalog[m.barcode] || { name: m.barcode, unit: '' };
+    const d   = new Date(m.ts);
+    const ts  = d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}) + ' ' +
+                d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    const unit = p.unit ? ' ' + p.unit : '';
+    const note = m.note ? ` · ${esc(m.note)}` : '';
+    return `<div class="move-item">
+      <div class="move-badge ${m.type}">${icons[m.type]}</div>
+      <div class="move-info">
+        <div class="move-name">${esc(p.name)}</div>
+        <div class="move-ts">${ts}${note}</div>
+      </div>
+      <div class="move-qty ${m.type}">${signs[m.type]}${m.qty}${unit}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render: Catalog ──────────────────────────────────────────────────────────
+function renderCatalog() {
+  const el = document.getElementById('catalogList');
+  if (!el) return;
+  const q = (document.getElementById('catalogSearch')?.value || '').toLowerCase();
+  const items = Object.entries(catalog)
+    .filter(([bc, p]) => !q || p.name.toLowerCase().includes(q) || bc.includes(q))
+    .sort((a, b) => a[1].name.localeCompare(b[1].name, 'it'));
+
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🗂</div><div class="empty-text">Nessun prodotto in catalogo</div></div>`;
+    return;
+  }
+
+  el.innerHTML = items.map(([bc, p]) => `
+    <div class="catalog-item">
+      <div class="catalog-info">
+        <div class="catalog-name">${esc(p.name)}</div>
+        <div class="catalog-sub">
+          <span class="catalog-barcode">${bc}</span>
+          ${p.unit ? `<span class="catalog-unit">${esc(p.unit)}</span>` : ''}
+        </div>
+      </div>
+      <button class="catalog-edit" onclick="editProduct('${bc}')" title="Modifica">✏️</button>
+    </div>`).join('');
+}
+
+// ── Scanner ──────────────────────────────────────────────────────────────────
+let zxingReader = null;
+
+async function openScanner() {
+  document.getElementById('scannerModal').classList.add('open');
+  document.getElementById('manualBarcodeInput').value = '';
+
+  if (typeof ZXing === 'undefined') {
+    showToast('Libreria scanner non caricata — usa input manuale');
+    return;
+  }
+
+  try {
+    zxingReader = new ZXing.BrowserMultiFormatReader();
+    const devices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
+    if (!devices.length) { showToast('Nessuna fotocamera rilevata'); return; }
+    // Prefer rear/environment camera
+    const device = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
+    await zxingReader.decodeFromVideoDevice(device.deviceId, 'scannerVideo', (result, err) => {
+      if (result) {
+        closeScanner();
+        onBarcodeDetected(result.getText());
+      }
+    });
+  } catch(e) {
+    console.warn('Scanner init error:', e);
+    showToast('Errore fotocamera — usa input manuale');
+  }
+}
+
+function closeScanner() {
+  document.getElementById('scannerModal').classList.remove('open');
+  try { if (zxingReader) { zxingReader.reset(); zxingReader = null; } } catch(e) {}
+}
+
+function onManualBarcode(val) {
+  if (!val) return;
+  closeScanner();
+  onBarcodeDetected(val);
+}
+
+// ── Barcode → Movement modal ─────────────────────────────────────────────────
+function onBarcodeDetected(bc) {
+  pendingBC = bc;
+  const p = catalog[bc];
+  isNewProd = !p;
+  openMoveModal(bc, p, !p);
+}
+
+function quickMove(bc) {
+  pendingBC = bc;
+  isNewProd = false;
+  openMoveModal(bc, catalog[bc], false);
+}
+
+function openMoveModal(bc, product, isNew) {
+  // Reset form
+  document.getElementById('moveQty').value  = '';
+  document.getElementById('moveNote').value = '';
+  setOp('init');
+
+  if (isNew) {
+    document.getElementById('newNameWrap').style.display = '';
+    document.getElementById('newUnitWrap').style.display = '';
+    document.getElementById('knownBox').style.display    = 'none';
+    document.getElementById('newName').value = '';
+    document.getElementById('newUnit').value = '';
+    document.getElementById('sheetTitle').textContent    = '🆕 Nuovo prodotto';
+    document.getElementById('unitHint').textContent      = '';
+  } else {
+    document.getElementById('newNameWrap').style.display = 'none';
+    document.getElementById('newUnitWrap').style.display = 'none';
+    document.getElementById('knownBox').style.display    = '';
+    document.getElementById('knownName').textContent     = product.name;
+    document.getElementById('knownBarcode').textContent  = bc;
+    document.getElementById('sheetTitle').textContent    = '📦 Movimento';
+    document.getElementById('unitHint').textContent      = product.unit ? '(' + product.unit + ')' : '';
+  }
+
+  document.getElementById('moveModal').classList.add('open');
+  setTimeout(() => {
+    const target = isNew ? document.getElementById('newName') : document.getElementById('moveQty');
+    target.focus();
+  }, 200);
+}
+
+function closeMoveModal() {
+  document.getElementById('moveModal').classList.remove('open');
+  pendingBC = null;
+}
+
+function setOp(op) {
+  currentOp = op;
+  document.getElementById('opInit').className = 'op-btn' + (op === 'init' ? ' sel-init' : '');
+  document.getElementById('opIn').className   = 'op-btn' + (op === 'in'   ? ' sel-in'   : '');
+  document.getElementById('opOut').className  = 'op-btn' + (op === 'out'  ? ' sel-out'  : '');
+}
+
+async function saveMove() {
+  const rawQty = document.getElementById('moveQty').value;
+  const qty = parseFloat(rawQty);
+  if (rawQty === '' || isNaN(qty) || qty < 0) {
+    showToast('Inserisci una quantità valida'); return;
+  }
+
+  // Register new product in catalog
+  if (isNewProd) {
+    const name = document.getElementById('newName').value.trim();
+    if (!name) { showToast('Inserisci il nome del prodotto'); return; }
+    const unit = document.getElementById('newUnit').value.trim();
+    catalog[pendingBC] = { name, unit };
+  }
+
+  const move = {
+    id:      Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    barcode: pendingBC,
+    type:    currentOp,
+    qty,
+    ts:      Date.now(),
+    note:    document.getElementById('moveNote').value.trim(),
+  };
+
+  moves[currentWH].push(move);
+  closeMoveModal();
+
+  const labels = { init: 'Giacenza salvata', in: 'Carico salvato', out: 'Scarico salvato' };
+  showToast(labels[currentOp]);
+  renderAll();
+  pushToCloud();
+}
+
+// ── Edit catalog product ──────────────────────────────────────────────────────
+function editProduct(bc) {
+  const p = catalog[bc];
+  if (!p) return;
+  const name = prompt('Nome prodotto:', p.name);
+  if (name === null) return;
+  const unit = prompt('Unità di misura:', p.unit || '');
+  if (unit === null) return;
+  catalog[bc] = { name: name.trim(), unit: unit.trim() };
+  renderAll();
+  pushToCloud();
+  showToast('Prodotto aggiornato');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let _toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(function init() {
+  catalog  = lsGet('qm_inv_catalog',  {});
+  moves.sa = lsGet('qm_inv_moves_sa', []);
+  moves.ar = lsGet('qm_inv_moves_ar', []);
+  renderAll();
+  loadFromCloud();
+})();
+</script>
+</body>
+</html>
