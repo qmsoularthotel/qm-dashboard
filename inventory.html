@@ -416,7 +416,7 @@
 <div class="toast" id="toast"></div>
 
 <!-- ZXing barcode library -->
-<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
 <script>
 'use strict';
 
@@ -673,19 +673,23 @@ async function openScanner() {
 
   try {
     zxingReader = new ZXing.BrowserMultiFormatReader();
-    const devices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
-    if (!devices.length) { showToast('Nessuna fotocamera rilevata'); return; }
-    // Prefer rear/environment camera
-    const device = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1];
-    await zxingReader.decodeFromVideoDevice(device.deviceId, 'scannerVideo', (result, err) => {
-      if (result) {
-        closeScanner();
-        onBarcodeDetected(result.getText());
+    await zxingReader.decodeFromConstraints(
+      { video: { facingMode: { ideal: 'environment' } } },
+      'scannerVideo',
+      (result, err) => {
+        if (result) {
+          closeScanner();
+          onBarcodeDetected(result.getText());
+        }
       }
-    });
+    );
   } catch(e) {
     console.warn('Scanner init error:', e);
-    showToast('Errore fotocamera — usa input manuale');
+    if (e && e.name === 'NotAllowedError') {
+      showToast('Permesso fotocamera negato — usa input manuale');
+    } else {
+      showToast('Errore fotocamera — usa input manuale');
+    }
   }
 }
 
