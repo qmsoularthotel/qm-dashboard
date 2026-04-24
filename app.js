@@ -740,10 +740,14 @@ function dvrRenderDipendenti(){
           <button onclick="dvrEmpDelete('${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--red);">🗑 Elimina</button>
         </div>
       </div>`:'';
+    const scadInline=(needsScad&&scadContrFmt)?`<div style="font-size:11px;color:${scadColor};font-weight:${scadSoon||scadExpired?'600':'400'};margin-top:1px;">${scadLabel}</div>`:'';
     return`<div style="${i>0?'border-top:1px solid var(--border-light);':''}${rowBorder}">
       <div onclick="dvrToggleEmp('${it.id}')" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;user-select:none;">
-        <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}${alertBadge}${missBadges}
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:var(--fs-sm);font-weight:600;">${it.nome||'—'}</span>${badge}${alertBadge}${missBadges}
+          </div>
+          ${scadInline}
         </div>
         ${chevron}
       </div>
