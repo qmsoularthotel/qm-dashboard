@@ -193,6 +193,14 @@
       width: 44px; height: 44px; border-radius: 50%;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
+    .scanner-torch {
+      position: absolute; top: 16px; left: 16px;
+      pointer-events: all; background: rgba(0,0,0,.55);
+      border: none; color: #fff; font-size: 20px;
+      width: 44px; height: 44px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .scanner-torch.on { background: rgba(255,200,0,.7); }
     .scanner-bottom {
       position: absolute; bottom: 0; left: 0; right: 0;
       padding: 14px 20px 36px; pointer-events: all;
@@ -350,14 +358,20 @@
     <div class="scanner-hint">Inquadra il codice a barre del prodotto</div>
   </div>
   <button class="scanner-close" onclick="closeScanner()">✕</button>
+  <button class="scanner-torch" id="torchBtn" onclick="toggleTorch()" style="display:none;" title="Torcia">💡</button>
   <div class="scanner-bottom">
-    <input
-      class="scanner-manual-input"
-      type="text" id="manualBarcodeInput"
-      placeholder="Oppure inserisci codice manualmente…"
-      inputmode="numeric" autocomplete="off"
-      onkeydown="if(event.key==='Enter')onManualBarcode(this.value.trim())"
-    >
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input
+        class="scanner-manual-input"
+        type="text" id="manualBarcodeInput"
+        placeholder="Inserisci codice manualmente…"
+        inputmode="numeric" autocomplete="off"
+        onkeydown="if(event.key==='Enter')onManualBarcode(this.value.trim())"
+        style="flex:1;"
+      >
+      <button onclick="onManualBarcode(document.getElementById('manualBarcodeInput').value.trim())"
+        style="padding:12px 16px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap;">→</button>
+    </div>
   </div>
 </div>
 
@@ -661,10 +675,15 @@ function renderCatalog() {
 
 // ── Scanner ──────────────────────────────────────────────────────────────────
 let zxingReader = null;
+let _torchOn = false;
+let _videoTrack = null;
 
 async function openScanner() {
   document.getElementById('scannerModal').classList.add('open');
   document.getElementById('manualBarcodeInput').value = '';
+  _torchOn = false;
+  _videoTrack = null;
+  document.getElementById('torchBtn').classList.remove('on');
 
   if (typeof ZXing === 'undefined') {
     showToast('Libreria scanner non caricata — usa input manuale');
@@ -672,36 +691,63 @@ async function openScanner() {
   }
 
   try {
-    zxingReader = new ZXing.BrowserMultiFormatReader();
+    // TRY_HARDER migliora il riconoscimento su codici piccoli/storti
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    zxingReader = new ZXing.BrowserMultiFormatReader(hints, 300); // scan ogni 300ms
+
     await zxingReader.decodeFromConstraints(
-      { video: { facingMode: { ideal: 'environment' } } },
+      { video: {
+          facingMode: { ideal: 'environment' },
+          width:  { ideal: 1920 },
+          height: { ideal: 1080 },
+      }},
       'scannerVideo',
       (result, err) => {
         if (result) {
+          // flash verde sul frame
+          const frame = document.querySelector('.scanner-frame');
+          if (frame) { frame.style.borderColor = '#4ade80'; setTimeout(() => { frame.style.borderColor = ''; }, 300); }
           closeScanner();
           onBarcodeDetected(result.getText());
         }
       }
     );
-  } catch(e) {
-    console.warn('Scanner init error:', e);
-    if (e && e.name === 'NotAllowedError') {
-      showToast('Permesso fotocamera negato — usa input manuale');
-    } else {
-      showToast('Errore fotocamera — usa input manuale');
+
+    // Abilita torcia se supportata
+    const video = document.getElementById('scannerVideo');
+    _videoTrack = video.srcObject?.getVideoTracks?.()[0] ?? null;
+    if (_videoTrack) {
+      const caps = _videoTrack.getCapabilities?.() ?? {};
+      document.getElementById('torchBtn').style.display = caps.torch ? 'flex' : 'none';
     }
+  } catch(e) {
+    console.warn('Scanner error:', e);
+    showToast(e?.name === 'NotAllowedError' ? 'Permesso fotocamera negato — usa input manuale' : 'Errore fotocamera — usa input manuale');
   }
+}
+
+async function toggleTorch() {
+  if (!_videoTrack) return;
+  _torchOn = !_torchOn;
+  try {
+    await _videoTrack.applyConstraints({ advanced: [{ torch: _torchOn }] });
+    document.getElementById('torchBtn').classList.toggle('on', _torchOn);
+  } catch(e) { _torchOn = !_torchOn; }
 }
 
 function closeScanner() {
   document.getElementById('scannerModal').classList.remove('open');
+  document.getElementById('torchBtn').style.display = 'none';
+  if (_torchOn && _videoTrack) { try { _videoTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch(e) {} }
+  _torchOn = false; _videoTrack = null;
   try { if (zxingReader) { zxingReader.reset(); zxingReader = null; } } catch(e) {}
 }
 
 function onManualBarcode(val) {
-  if (!val) return;
+  if (!val.trim()) return;
   closeScanner();
-  onBarcodeDetected(val);
+  onBarcodeDetected(val.trim());
 }
 
 // ── Barcode → Movement modal ─────────────────────────────────────────────────
