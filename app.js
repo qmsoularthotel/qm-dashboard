@@ -684,14 +684,19 @@ function dvrRenderDipendenti(){
   const items=(DVR_DATA[_dvrSoc]?.dipendenti)||[];
   if(!items.length){list.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun dipendente inserito</div>';return;}
   const pinRank=n=>{if(/corduas/i.test(n))return 0;if(/presta/i.test(n))return 1;return 2;};
-  const hasScad=it=>!!it.scadenzaContratto;
+  const isTermine=c=>c&&c!=='Tempo indeterminato';
   const sorted=[...items].sort((a,b)=>{
     const ra=pinRank(a.nome||''),rb=pinRank(b.nome||'');
     if(ra!==rb)return ra-rb;
     if(ra===2){
-      const as=hasScad(a),bs=hasScad(b);
-      if(as!==bs)return as?-1:1;
-      if(as&&bs)return new Date(a.scadenzaContratto)-new Date(b.scadenzaContratto);
+      const ta=isTermine(a.contratto),tb=isTermine(b.contratto);
+      if(ta!==tb)return ta?-1:1;
+      if(ta&&tb){
+        const sa=a.scadenzaContratto,sb=b.scadenzaContratto;
+        if(sa&&sb)return new Date(sa)-new Date(sb);
+        if(sa)return -1;
+        if(sb)return 1;
+      }
     }
     return(a.nome||'').localeCompare(b.nome||'');
   });
