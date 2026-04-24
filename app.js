@@ -4641,6 +4641,7 @@ function renderArriviModal(filtStruttura='all', filtTratt='all'){
 let _invWh='sa';
 let _invTab='stock';
 let _invFilter='all'; // 'all' | 'alert' | 'ok'
+let _invPeriod=30;    // giorni per analisi consumi
 
 function invSetWh(wh,btn){
   _invWh=wh;
@@ -4650,7 +4651,7 @@ function invSetWh(wh,btn){
 }
 function invSetTab(tab){
   _invTab=tab;
-  ['stock','moves'].forEach(t=>{
+  ['stock','moves','analysis'].forEach(t=>{
     const el=document.getElementById('invTab-'+t);
     if(!el)return;
     el.style.borderBottomColor=t===tab?'var(--accent)':'transparent';
@@ -4658,6 +4659,11 @@ function invSetTab(tab){
     document.getElementById('inv-'+t+'-view').style.display=t===tab?'':'none';
   });
   invRender();
+}
+function invSetPeriod(days){
+  _invPeriod=days;
+  const{catalog,moves}=invGetData();
+  invRenderAnalysis(catalog,moves);
 }
 function invSetFilter(f){
   _invFilter=f;
@@ -4715,6 +4721,7 @@ function invRender(){
   const{catalog,moves}=invGetData();
   invRenderStock(catalog,moves);
   invRenderMoves(catalog,moves);
+  invRenderAnalysis(catalog,moves);
   invUpdateNavBadge();
 }
 function invRenderStock(catalog,moves){
@@ -4771,7 +4778,7 @@ function invRenderStock(catalog,moves){
   // Apply filter
   const items=_invFilter==='alert'?allItems.filter(i=>i.status!=='ok'):_invFilter==='ok'?allItems.filter(i=>i.status==='ok'):allItems;
   // Column headers
-  const hdrs=`<div style="display:grid;grid-template-columns:1fr 80px 60px 80px 28px;gap:8px;padding:4px 12px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;">
+  const hdrs=`<div style="display:grid;grid-template-columns:1fr 80px 60px 90px 52px;gap:8px;padding:4px 12px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;">
     <div>Prodotto</div><div style="text-align:center;">Ultimo mov.</div><div style="text-align:center;">Soglia</div><div style="text-align:right;">Stock</div><div></div>
   </div>`;
   // Rows
@@ -4781,12 +4788,15 @@ function invRenderStock(catalog,moves){
     const lastStr=invFmtDate(it.last?.ts);
     const sogliaStr=it.soglia!=null?`<span style="cursor:pointer;color:var(--text-muted);" onclick="invEditSoglia('${it.bc}')" title="Modifica soglia">${it.soglia}</span>`:`<span style="cursor:pointer;color:var(--text-dim);font-style:italic;" onclick="invEditSoglia('${it.bc}')" title="Imposta soglia">—</span>`;
     const unit=it.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:2px;">${_esc(it.unit)}</span>`:'';
-    return`<div style="display:grid;grid-template-columns:1fr 80px 60px 80px 28px;gap:8px;align-items:center;padding:9px 12px;background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderColor};border-radius:8px;margin-bottom:5px;">
+    return`<div style="display:grid;grid-template-columns:1fr 80px 60px 90px 52px;gap:8px;align-items:center;padding:9px 12px;background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderColor};border-radius:8px;margin-bottom:5px;">
       <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;">${lastStr}</div>
       <div style="font-size:var(--fs-xs);text-align:center;">${sogliaStr}</div>
       <div style="font-size:var(--fs-sm);font-weight:700;color:${qtyColor};text-align:right;">${it.qty}${unit}</div>
-      <div style="text-align:center;"><button onclick="invDeleteProduct('${it.bc}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px;line-height:1;" title="Elimina prodotto">🗑</button></div>
+      <div style="display:flex;gap:4px;justify-content:center;">
+        <button onclick="invQuickRestock('${it.bc}')" style="background:var(--green-bg);border:1px solid #90cca8;border-radius:5px;cursor:pointer;font-size:12px;padding:2px 5px;color:var(--green);" title="Rifornimento rapido">⬆️</button>
+        <button onclick="invDeleteProduct('${it.bc}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px;line-height:1;" title="Elimina prodotto">🗑</button>
+      </div>
     </div>`;
   }).join('');
   const hint='<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;">💡 Clicca sulla soglia per impostarla — quando lo stock scende sotto viene evidenziato in arancione</div>';
@@ -4854,6 +4864,93 @@ function invDeleteProduct(bc){
   }
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog',value:JSON.stringify(catalog)})}).catch(()=>{});
   invRender();
+}
+function invQuickRestock(bc){
+  // Apre inventory.html in nuova tab con il barcode pre-selezionato (via hash)
+  window.open('inventory.html#restock='+encodeURIComponent(bc),'_blank');
+}
+function invRenderAnalysis(catalog,moves){
+  const el=document.getElementById('inv-analysis-view');
+  if(!el)return;
+  const now=Date.now();
+  const cutoff=_invPeriod>0?now-_invPeriod*86400000:0;
+  const stock=invCalcStock(catalog,moves);
+  // Per ogni prodotto: somma scarichi nel periodo, calcola consumo/giorno e autonomia
+  const items=Object.entries(catalog).map(([bc,p])=>{
+    const bm=moves.filter(m=>m.barcode===bc);
+    const periodOuts=bm.filter(m=>m.type==='out'&&m.ts>=cutoff);
+    const periodIns=bm.filter(m=>m.type==='in'&&m.ts>=cutoff);
+    const consumo=periodOuts.reduce((s,m)=>s+m.qty,0);
+    const rifornimento=periodIns.reduce((s,m)=>s+m.qty,0);
+    const days=_invPeriod>0?_invPeriod:(bm.length?Math.max(1,Math.ceil((now-(Math.min(...bm.map(m=>m.ts))))/86400000)):1);
+    const consumoGg=days>0?Math.round((consumo/days)*100)/100:0;
+    const autonomia=consumoGg>0?Math.round((stock[bc]??0)/consumoGg):null;
+    const lastIn=bm.filter(m=>m.type==='in').at(-1)??null;
+    return{bc,name:p.name,unit:p.unit||'',qty:stock[bc]??0,consumo,rifornimento,consumoGg,autonomia,lastIn,hasMoves:bm.length>0};
+  }).filter(it=>it.hasMoves).sort((a,b)=>b.consumo-a.consumo);
+
+  if(!items.length){
+    el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun dato — registra i movimenti con lo scanner</div>';
+    return;
+  }
+  // Totali periodo
+  const totConsumo=items.reduce((s,i)=>s+i.consumo,0);
+  const totRiforn=items.reduce((s,i)=>s+i.rifornimento,0);
+  const topProd=items[0];
+  const critici=items.filter(i=>i.autonomia!==null&&i.autonomia>=0&&i.autonomia<=7).length;
+  // Selector periodo
+  const pBtn=(d,lbl)=>`<button onclick="invSetPeriod(${d})" style="padding:5px 11px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;font-weight:600;transition:all .12s;${_invPeriod===d?'background:var(--accent);color:#fff;border-color:var(--accent);':'background:var(--surface);color:var(--text-muted);'}">${lbl}</button>`;
+  const periodHtml=`<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+    ${pBtn(7,'7 giorni')}${pBtn(30,'30 giorni')}${pBtn(90,'90 giorni')}${pBtn(0,'Tutto')}
+  </div>`;
+  // KPI summary
+  const kpi=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:16px;">
+    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:9px;padding:10px 13px;">
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">Totale scaricato</div>
+      <div style="font-size:20px;font-weight:700;">${Math.round(totConsumo*10)/10}</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:9px;padding:10px 13px;">
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">Totale caricato</div>
+      <div style="font-size:20px;font-weight:700;color:var(--green);">${Math.round(totRiforn*10)/10}</div>
+    </div>
+    ${topProd&&topProd.consumo>0?`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:9px;padding:10px 13px;">
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">Più consumato</div>
+      <div style="font-size:var(--fs-xs);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_esc(topProd.name)}</div>
+      <div style="font-size:var(--fs-xxs);color:var(--text-muted);">${topProd.consumo} ${topProd.unit}</div>
+    </div>`:''}
+    ${critici>0?`<div style="background:var(--red-bg);border:1px solid #e8b0ac;border-radius:9px;padding:10px 13px;">
+      <div style="font-size:var(--fs-xxs);color:var(--red);margin-bottom:3px;">Autonomia critica</div>
+      <div style="font-size:20px;font-weight:700;color:var(--red);">${critici}</div>
+      <div style="font-size:var(--fs-xxs);color:var(--red);">prodotti ≤7gg</div>
+    </div>`:''}
+  </div>`;
+  // Tabella dettaglio
+  const hdrs=`<div style="display:grid;grid-template-columns:1fr 70px 70px 70px 80px;gap:6px;padding:4px 10px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;">
+    <div>Prodotto</div>
+    <div style="text-align:right;">Consumato</div>
+    <div style="text-align:right;">Cons./gg</div>
+    <div style="text-align:right;">Stock</div>
+    <div style="text-align:right;">Autonomia</div>
+  </div>`;
+  const rows=items.map(it=>{
+    const autStr=it.autonomia===null?'—':it.autonomia<=0?'<span style="color:var(--red);font-weight:700;">esaurito</span>':it.autonomia<=7?`<span style="color:var(--red);font-weight:700;">${it.autonomia}gg</span>`:it.autonomia<=14?`<span style="color:var(--amber);font-weight:600;">${it.autonomia}gg</span>`:`<span style="color:var(--green);">${it.autonomia}gg</span>`;
+    const barW=Math.min(100,totConsumo>0?Math.round(it.consumo/totConsumo*100):0);
+    const borderL=it.autonomia!==null&&it.autonomia<=7?'var(--red)':it.autonomia!==null&&it.autonomia<=14?'var(--amber)':'transparent';
+    const unit=it.unit?` <span style="font-size:9px;color:var(--text-dim);">${_esc(it.unit)}</span>`:'';
+    return`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderL};border-radius:8px;padding:8px 10px;margin-bottom:5px;">
+      <div style="display:grid;grid-template-columns:1fr 70px 70px 70px 80px;gap:6px;align-items:center;">
+        <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
+        <div style="font-size:var(--fs-xs);font-weight:700;text-align:right;">${it.consumo>0?it.consumo:'—'}${it.consumo>0?unit:''}</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);text-align:right;">${it.consumoGg>0?it.consumoGg:'—'}${it.consumoGg>0?unit:''}</div>
+        <div style="font-size:var(--fs-xs);text-align:right;">${it.qty}${unit}</div>
+        <div style="font-size:var(--fs-xs);text-align:right;">${autStr}</div>
+      </div>
+      ${barW>0?`<div style="margin-top:5px;height:3px;background:var(--border-light);border-radius:2px;overflow:hidden;">
+        <div style="height:100%;width:${barW}%;background:var(--accent);border-radius:2px;transition:width .4s;"></div>
+      </div>`:''}
+    </div>`;
+  }).join('');
+  el.innerHTML=periodHtml+kpi+hdrs+rows;
 }
 function invUpdateNavBadge(){
   let catalog={};
