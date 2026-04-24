@@ -4771,8 +4771,8 @@ function invRenderStock(catalog,moves){
   // Apply filter
   const items=_invFilter==='alert'?allItems.filter(i=>i.status!=='ok'):_invFilter==='ok'?allItems.filter(i=>i.status==='ok'):allItems;
   // Column headers
-  const hdrs=`<div style="display:grid;grid-template-columns:1fr 80px 60px 80px;gap:8px;padding:4px 12px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;">
-    <div>Prodotto</div><div style="text-align:center;">Ultimo mov.</div><div style="text-align:center;">Soglia</div><div style="text-align:right;">Stock</div>
+  const hdrs=`<div style="display:grid;grid-template-columns:1fr 80px 60px 80px 28px;gap:8px;padding:4px 12px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;">
+    <div>Prodotto</div><div style="text-align:center;">Ultimo mov.</div><div style="text-align:center;">Soglia</div><div style="text-align:right;">Stock</div><div></div>
   </div>`;
   // Rows
   const rows=items.map(it=>{
@@ -4781,11 +4781,12 @@ function invRenderStock(catalog,moves){
     const lastStr=invFmtDate(it.last?.ts);
     const sogliaStr=it.soglia!=null?`<span style="cursor:pointer;color:var(--text-muted);" onclick="invEditSoglia('${it.bc}')" title="Modifica soglia">${it.soglia}</span>`:`<span style="cursor:pointer;color:var(--text-dim);font-style:italic;" onclick="invEditSoglia('${it.bc}')" title="Imposta soglia">—</span>`;
     const unit=it.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:2px;">${_esc(it.unit)}</span>`:'';
-    return`<div style="display:grid;grid-template-columns:1fr 80px 60px 80px;gap:8px;align-items:center;padding:9px 12px;background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderColor};border-radius:8px;margin-bottom:5px;">
+    return`<div style="display:grid;grid-template-columns:1fr 80px 60px 80px 28px;gap:8px;align-items:center;padding:9px 12px;background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderColor};border-radius:8px;margin-bottom:5px;">
       <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;">${lastStr}</div>
       <div style="font-size:var(--fs-xs);text-align:center;">${sogliaStr}</div>
       <div style="font-size:var(--fs-sm);font-weight:700;color:${qtyColor};text-align:right;">${it.qty}${unit}</div>
+      <div style="text-align:center;"><button onclick="invDeleteProduct('${it.bc}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px;line-height:1;" title="Elimina prodotto">🗑</button></div>
     </div>`;
   }).join('');
   const hint='<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;">💡 Clicca sulla soglia per impostarla — quando lo stock scende sotto viene evidenziato in arancione</div>';
@@ -4834,6 +4835,23 @@ function invEditSoglia(bc){
   const n=parseFloat(val);
   catalog[bc].soglia=(val.trim()===''||isNaN(n))?null:n;
   try{localStorage.setItem('qm_inv_catalog',JSON.stringify(catalog));}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog',value:JSON.stringify(catalog)})}).catch(()=>{});
+  invRender();
+}
+function invDeleteProduct(bc){
+  let catalog={};
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog')||'{}');}catch(e){}
+  const name=catalog[bc]?.name||bc;
+  if(!confirm(`Eliminare "${name}" dal catalogo?\nVerranno rimossi anche tutti i movimenti registrati per questo prodotto in entrambi i magazzini.`))return;
+  delete catalog[bc];
+  try{localStorage.setItem('qm_inv_catalog',JSON.stringify(catalog));}catch(e){}
+  for(const wh of['sa','ar']){
+    let moves=[];
+    try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+wh)||'[]');}catch(e){}
+    const filtered=moves.filter(m=>m.barcode!==bc);
+    try{localStorage.setItem('qm_inv_moves_'+wh,JSON.stringify(filtered));}catch(e){}
+    fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_moves_'+wh,value:JSON.stringify(filtered)})}).catch(()=>{});
+  }
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog',value:JSON.stringify(catalog)})}).catch(()=>{});
   invRender();
 }
