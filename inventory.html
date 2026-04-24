@@ -48,7 +48,6 @@
     .nav-tabs {
       display: flex; background: var(--surface);
       border-bottom: 1px solid var(--border);
-      position: sticky; top: 73px; z-index: 99;
     }
     .nav-tab {
       flex: 1; padding: 9px 6px; text-align: center;
@@ -302,13 +301,12 @@
     <div class="wh-tab active" id="tab-sa" onclick="setWarehouse('sa')">SoulArt Hotel</div>
     <div class="wh-tab" id="tab-ar" onclick="setWarehouse('ar')">Art Resort</div>
   </div>
-</div>
-
-<!-- Nav tabs -->
-<div class="nav-tabs">
-  <div class="nav-tab active" id="ntab-stock"   onclick="setNavTab('stock')">Stock</div>
-  <div class="nav-tab"        id="ntab-moves"   onclick="setNavTab('moves')">Movimenti</div>
-  <div class="nav-tab"        id="ntab-catalog" onclick="setNavTab('catalog')">Catalogo</div>
+  <!-- Nav tabs inside header so they stick together -->
+  <div class="nav-tabs">
+    <div class="nav-tab active" id="ntab-stock"   onclick="setNavTab('stock')">Stock</div>
+    <div class="nav-tab"        id="ntab-moves"   onclick="setNavTab('moves')">Movimenti</div>
+    <div class="nav-tab"        id="ntab-catalog" onclick="setNavTab('catalog')">Catalogo</div>
+  </div>
 </div>
 
 <!-- Content -->
