@@ -4832,9 +4832,19 @@ function invRenderMoves(catalog,moves){
         <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${ts}${note}</div>
       </div>
       <div style="font-size:var(--fs-sm);font-weight:700;color:${colors[m.type]};flex-shrink:0;">${signs[m.type]}${m.qty}${unit}</div>
+      <button onclick="invDeleteMove('${m.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px 0 2px 6px;flex-shrink:0;" title="Elimina movimento">🗑</button>
     </div>`;
   }
   el.innerHTML=html;
+}
+function invDeleteMove(id){
+  if(!confirm('Eliminare questo movimento?'))return;
+  let moves=[];
+  try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
+  const filtered=moves.filter(m=>m.id!==id);
+  try{localStorage.setItem('qm_inv_moves_'+_invWh,JSON.stringify(filtered));}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_moves_'+_invWh,value:JSON.stringify(filtered)})}).catch(()=>{});
+  invRender();
 }
 function invEditSoglia(bc){
   let catalog={};

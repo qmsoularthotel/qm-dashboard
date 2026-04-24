@@ -666,6 +666,7 @@ function renderMoves() {
         <div class="move-ts">${ts}${note}</div>
       </div>
       <div class="move-qty ${m.type}">${signs[m.type]}${m.qty}${unit}</div>
+      <button onclick="deleteMove('${m.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-dim);padding:4px 0 4px 8px;flex-shrink:0;" title="Elimina">🗑</button>
     </div>`;
   }).join('');
 }
@@ -817,6 +818,14 @@ function openMoveModal(bc, product, isNew) {
     const target = isNew ? document.getElementById('newName') : document.getElementById('moveQty');
     target.focus();
   }, 200);
+}
+
+function deleteMove(id) {
+  if (!confirm('Eliminare questo movimento?')) return;
+  moves[currentWH] = moves[currentWH].filter(m => m.id !== id);
+  renderAll();
+  pushToCloud();
+  showToast('Movimento eliminato');
 }
 
 function closeMoveModal() {
