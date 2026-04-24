@@ -684,9 +684,14 @@ function dvrRenderDipendenti(){
   const items=(DVR_DATA[_dvrSoc]?.dipendenti)||[];
   if(!items.length){list.innerHTML='<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun dipendente inserito</div>';return;}
   const pinRank=n=>{if(/corduas/i.test(n))return 0;if(/presta/i.test(n))return 1;return 2;};
+  const contrRank=c=>/determinato/i.test(c||'')?0:1;
   const sorted=[...items].sort((a,b)=>{
     const ra=pinRank(a.nome||''),rb=pinRank(b.nome||'');
     if(ra!==rb)return ra-rb;
+    if(ra===2){
+      const ca=contrRank(a.contratto),cb=contrRank(b.contratto);
+      if(ca!==cb)return ca-cb;
+    }
     return(a.nome||'').localeCompare(b.nome||'');
   });
   const _missingMap=Object.fromEntries(dvrGetMissing().map(x=>[x.id,x.missing]));
