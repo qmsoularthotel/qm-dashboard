@@ -426,6 +426,30 @@
   </div>
 </div>
 
+<!-- Edit product modal -->
+<div class="modal-backdrop" id="editProductModal" onclick="if(event.target===this)closeEditProductModal()">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">✏️ Modifica prodotto</div>
+    <input type="hidden" id="editProductOldBc">
+    <div class="form-group">
+      <label class="form-label">Nome prodotto</label>
+      <input class="form-input" type="text" id="editProductName" placeholder="es. Detersivo piatti 5L…" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Unità di misura</label>
+      <input class="form-input" type="text" id="editProductUnit" placeholder="es. L · kg · pz · flacone…" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Codice a barre</label>
+      <input class="form-input" type="text" id="editProductBc" placeholder="es. 8001234567890" inputmode="numeric" autocomplete="off">
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">Modifica solo se il codice è stato scansionato in modo errato</div>
+    </div>
+    <button class="btn-primary" onclick="saveEditProduct()">Salva modifiche</button>
+    <button class="btn-ghost" onclick="closeEditProductModal()">Annulla</button>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -844,11 +868,40 @@ async function saveMove() {
 function editProduct(bc) {
   const p = catalog[bc];
   if (!p) return;
-  const name = prompt('Nome prodotto:', p.name);
-  if (name === null) return;
-  const unit = prompt('Unità di misura:', p.unit || '');
-  if (unit === null) return;
-  catalog[bc] = { name: name.trim(), unit: unit.trim() };
+  document.getElementById('editProductOldBc').value = bc;
+  document.getElementById('editProductName').value = p.name || '';
+  document.getElementById('editProductUnit').value = p.unit || '';
+  document.getElementById('editProductBc').value = bc;
+  document.getElementById('editProductModal').classList.add('open');
+  setTimeout(() => document.getElementById('editProductName').focus(), 200);
+}
+
+function closeEditProductModal() {
+  document.getElementById('editProductModal').classList.remove('open');
+}
+
+function saveEditProduct() {
+  const oldBc = document.getElementById('editProductOldBc').value;
+  const newBc = document.getElementById('editProductBc').value.trim();
+  const name  = document.getElementById('editProductName').value.trim();
+  const unit  = document.getElementById('editProductUnit').value.trim();
+  if (!name)  { showToast('Inserisci il nome'); return; }
+  if (!newBc) { showToast('Inserisci il codice a barre'); return; }
+  if (newBc !== oldBc && catalog[newBc]) { showToast('Codice già usato da un altro prodotto'); return; }
+
+  // Copia soglia esistente
+  const soglia = catalog[oldBc]?.soglia ?? null;
+
+  if (newBc !== oldBc) {
+    // Migra tutti i movimenti al nuovo barcode in entrambi i magazzini
+    for (const wh of ['sa', 'ar']) {
+      moves[wh] = moves[wh].map(m => m.barcode === oldBc ? { ...m, barcode: newBc } : m);
+    }
+    delete catalog[oldBc];
+  }
+
+  catalog[newBc] = { name, unit, ...(soglia != null ? { soglia } : {}) };
+  closeEditProductModal();
   renderAll();
   pushToCloud();
   showToast('Prodotto aggiornato');
