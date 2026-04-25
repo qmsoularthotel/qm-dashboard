@@ -263,6 +263,26 @@
     .op-btn.sel-in   { border-color: var(--green);  background: var(--green-bg);  color: var(--green); }
     .op-btn.sel-out  { border-color: var(--red);    background: var(--red-bg);    color: var(--red); }
 
+    /* ── Unit chips ── */
+    .unit-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .unit-chip {
+      padding: 5px 12px; border: 1.5px solid var(--border);
+      border-radius: 20px; font-size: var(--fs-xs); font-weight: 600;
+      cursor: pointer; background: var(--surface2); color: var(--text-muted);
+      user-select: none; transition: all .12s;
+    }
+    .unit-chip.active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
+
+    /* ── Quantity stepper ── */
+    .qty-row { display: flex; align-items: center; gap: 10px; }
+    .qty-btn {
+      width: 44px; height: 44px; border-radius: 10px; border: 1.5px solid var(--border);
+      background: var(--surface2); font-size: 22px; font-weight: 300;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; user-select: none; color: var(--text);
+    }
+    .qty-btn:active { background: var(--border); }
+
     /* ── Buttons ── */
     .btn-primary {
       width: 100%; padding: 13px; background: var(--accent); color: #fff;
@@ -386,7 +406,16 @@
     </div>
     <div class="form-group" id="newUnitWrap" style="display:none;">
       <label class="form-label">Unità di misura</label>
-      <input class="form-input" type="text" id="newUnit" placeholder="es. L · kg · pz · flacone…" autocomplete="off">
+      <div class="unit-chips">
+        <div class="unit-chip" onclick="pickUnit('pz')">pz</div>
+        <div class="unit-chip" onclick="pickUnit('L')">L</div>
+        <div class="unit-chip" onclick="pickUnit('kg')">kg</div>
+        <div class="unit-chip" onclick="pickUnit('flacone')">flacone</div>
+        <div class="unit-chip" onclick="pickUnit('conf')">conf</div>
+        <div class="unit-chip" onclick="pickUnit('sacco')">sacco</div>
+        <div class="unit-chip" onclick="pickUnit('bot')">bot</div>
+      </div>
+      <input class="form-input" type="text" id="newUnit" placeholder="o scrivi…" autocomplete="off" style="margin-top:8px;" oninput="syncUnitChips(this.value)">
     </div>
 
     <!-- Known product info -->
@@ -409,14 +438,20 @@
     <!-- Quantity -->
     <div class="form-group">
       <label class="form-label">Quantità <span id="unitHint" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-muted);"></span></label>
-      <input class="form-input" type="number" id="moveQty" placeholder="0" min="0" step="1"
-             style="font-size:24px;font-weight:700;text-align:center;">
+      <div class="qty-row">
+        <button class="qty-btn" onclick="stepQty(-1)">−</button>
+        <input class="form-input" type="number" id="moveQty" placeholder="0" min="0" step="1"
+               style="font-size:24px;font-weight:700;text-align:center;flex:1;">
+        <button class="qty-btn" onclick="stepQty(1)">+</button>
+      </div>
     </div>
 
-    <!-- Note -->
-    <div class="form-group">
-      <label class="form-label">Note (opzionale)</label>
-      <input class="form-input" type="text" id="moveNote" placeholder="es. Fornitura settimanale…" autocomplete="off">
+    <!-- Note (nascoste) -->
+    <div style="margin-bottom:10px;">
+      <span onclick="toggleNote()" style="font-size:var(--fs-xxs);color:var(--text-dim);cursor:pointer;user-select:none;">＋ Aggiungi nota</span>
+      <div id="noteWrap" style="display:none;margin-top:6px;">
+        <input class="form-input" type="text" id="moveNote" placeholder="es. Fornitura settimanale…" autocomplete="off">
+      </div>
     </div>
 
     <button class="btn-primary" onclick="saveMove()">Salva movimento</button>
@@ -865,10 +900,10 @@ function quickMove(bc) {
 }
 
 function openMoveModal(bc, product, isNew) {
-  // Reset form
-  document.getElementById('moveQty').value  = '';
+  document.getElementById('moveQty').value = '';
   document.getElementById('moveNote').value = '';
-  setOp('init');
+  document.getElementById('noteWrap').style.display = 'none';
+  syncUnitChips('');
 
   if (isNew) {
     document.getElementById('newNameWrap').style.display = '';
@@ -876,23 +911,24 @@ function openMoveModal(bc, product, isNew) {
     document.getElementById('knownBox').style.display    = 'none';
     document.getElementById('newName').value = '';
     document.getElementById('newUnit').value = '';
-    document.getElementById('sheetTitle').textContent    = '🆕 Nuovo prodotto';
-    document.getElementById('unitHint').textContent      = '';
+    document.getElementById('sheetTitle').textContent = '🆕 Nuovo prodotto';
+    document.getElementById('unitHint').textContent   = '';
+    setOp('init');
   } else {
     document.getElementById('newNameWrap').style.display = 'none';
     document.getElementById('newUnitWrap').style.display = 'none';
     document.getElementById('knownBox').style.display    = '';
-    document.getElementById('knownName').textContent     = product.name;
-    document.getElementById('knownBarcode').textContent  = bc;
-    document.getElementById('sheetTitle').textContent    = '📦 Movimento';
-    document.getElementById('unitHint').textContent      = product.unit ? '(' + product.unit + ')' : '';
+    document.getElementById('knownName').textContent    = product.name;
+    document.getElementById('knownBarcode').textContent = bc;
+    document.getElementById('sheetTitle').textContent   = '📦 Movimento';
+    document.getElementById('unitHint').textContent     = product.unit ? '(' + product.unit + ')' : '';
+    setOp('out'); // scarico è l'operazione più frequente
   }
 
   document.getElementById('moveModal').classList.add('open');
   setTimeout(() => {
-    const target = isNew ? document.getElementById('newName') : document.getElementById('moveQty');
-    target.focus();
-  }, 200);
+    (isNew ? document.getElementById('newName') : document.getElementById('moveQty')).focus();
+  }, 150);
 }
 
 function deleteMove(id) {
@@ -906,6 +942,27 @@ function deleteMove(id) {
 function closeMoveModal() {
   document.getElementById('moveModal').classList.remove('open');
   pendingBC = null;
+}
+
+function stepQty(delta) {
+  const el = document.getElementById('moveQty');
+  el.value = Math.max(0, (parseFloat(el.value) || 0) + delta);
+}
+
+function pickUnit(u) {
+  document.getElementById('newUnit').value = u;
+  syncUnitChips(u);
+}
+
+function syncUnitChips(val) {
+  document.querySelectorAll('.unit-chip').forEach(c =>
+    c.classList.toggle('active', c.textContent === val)
+  );
+}
+
+function toggleNote() {
+  const w = document.getElementById('noteWrap');
+  w.style.display = w.style.display === 'none' ? '' : 'none';
 }
 
 function setOp(op) {
