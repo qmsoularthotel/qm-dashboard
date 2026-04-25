@@ -4807,7 +4807,7 @@ function invRenderStock(catalog,moves){
       <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;">${lastStr}</div>
       <div style="font-size:var(--fs-xs);text-align:center;">${sogliaStr}</div>
-      <div style="font-size:var(--fs-sm);font-weight:700;color:${qtyColor};text-align:right;">${it.qty}${unit}</div>
+      <div style="font-size:var(--fs-sm);font-weight:700;color:${qtyColor};text-align:right;cursor:pointer;" onclick="invEditQty('${it.bc}',${it.qty})" title="Modifica quantità">${it.qty}${unit} <span style="font-size:10px;opacity:.4;">✏️</span></div>
       <div style="display:flex;gap:4px;justify-content:center;">
         <button onclick="invQuickRestock('${it.bc}')" style="background:var(--green-bg);border:1px solid #90cca8;border-radius:5px;cursor:pointer;font-size:12px;padding:2px 5px;color:var(--green);" title="Rifornimento rapido">⬆️</button>
         <button onclick="invDeleteProduct('${it.bc}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px;line-height:1;" title="Elimina prodotto">🗑</button>
@@ -4859,6 +4859,21 @@ function invDeleteMove(id){
   const filtered=moves.filter(m=>m.id!==id);
   try{localStorage.setItem('qm_inv_moves_'+_invWh,JSON.stringify(filtered));}catch(e){}
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_moves_'+_invWh,value:JSON.stringify(filtered)})}).catch(()=>{});
+  invRender();
+}
+function invEditQty(bc,currentQty){
+  let catalog={};
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog')||'{}');}catch(e){}
+  const p=catalog[bc];if(!p)return;
+  const val=prompt(`Nuova quantità in stock per "${p.name}":`,currentQty);
+  if(val===null)return;
+  const n=parseFloat(val);
+  if(isNaN(n)||n<0){alert('Quantità non valida');return;}
+  let moves=[];
+  try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
+  moves.push({id:Date.now()+'_'+Math.random().toString(36).slice(2),barcode:bc,type:'init',qty:n,ts:Date.now(),note:'Rettifica da dashboard'});
+  try{localStorage.setItem('qm_inv_moves_'+_invWh,JSON.stringify(moves));}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_moves_'+_invWh,value:JSON.stringify(moves)})}).catch(()=>{});
   invRender();
 }
 function invEditSoglia(bc){
