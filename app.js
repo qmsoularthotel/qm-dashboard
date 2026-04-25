@@ -4986,23 +4986,6 @@ function invRenderAnalysis(catalog,moves){
     }).join('')}
   </div>`:'';
 
-  // Grafico a barre — top consumer per consumo settimanale
-  const byConsume=[...items].sort((a,b)=>b.consumoSett-a.consumoSett).slice(0,8);
-  const maxSett=byConsume[0]?.consumoSett||1;
-  const chartBlock=byConsume.length?`<div style="margin-bottom:16px;">
-    <div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:9px;">📊 Top consumatori — sett.</div>
-    ${byConsume.map(it=>{
-      const pct=Math.max(4,Math.round(it.consumoSett/maxSett*100));
-      return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <div style="width:130px;font-size:var(--fs-xxs);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;" title="${_esc(it.name)}">${_esc(it.name)}</div>
-        <div style="flex:1;height:14px;background:var(--border-light);border-radius:4px;overflow:hidden;">
-          <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:4px;transition:width .4s;"></div>
-        </div>
-        <div style="width:60px;font-size:var(--fs-xxs);color:var(--text-muted);text-align:right;flex-shrink:0;">${it.consumoSett}${it.unit?' '+_esc(it.unit):''}</div>
-      </div>`;
-    }).join('')}
-  </div>`:'';
-
   // Tabella dettaglio — ordine alfabetico
   const sorted=[...items].sort((a,b)=>a.name.localeCompare(b.name,'it'));
   const hdrs=`<div style="display:grid;grid-template-columns:1fr 80px 70px;gap:4px;padding:4px 10px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;">
@@ -5022,7 +5005,7 @@ function invRenderAnalysis(catalog,moves){
     </div>`;
   }).join('');
 
-  el.innerHTML=periodHtml+kpi+urgBlock+chartBlock+`<div style="max-width:420px;"><div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:7px;">📋 Dettaglio prodotti</div>`+hdrs+rows+`</div>`;
+  el.innerHTML=periodHtml+kpi+urgBlock+`<div style="max-width:420px;"><div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:7px;">📋 Dettaglio prodotti</div>`+hdrs+rows+`</div>`;
 }
 function invPrintStock(){
   const{catalog,moves}=invGetData();
