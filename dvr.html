@@ -318,7 +318,17 @@ function renderDipendenti(){
   const cnt=document.getElementById('cnt-dipendenti');
   const items=(DVR_DATA[_soc]?.dipendenti)||[];
   const pinRank=n=>{if(/corduas/i.test(n))return 0;if(/presta/i.test(n))return 1;return 2;};
-  const sorted=[...items].sort((a,b)=>{const ra=pinRank(a.nome||''),rb=pinRank(b.nome||'');if(ra!==rb)return ra-rb;return(a.nome||'').localeCompare(b.nome||'');});
+  const isTermine=c=>c&&c!=='Tempo indeterminato';
+  const sorted=[...items].sort((a,b)=>{
+    const ra=pinRank(a.nome||''),rb=pinRank(b.nome||'');
+    if(ra!==rb)return ra-rb;
+    if(ra===2){
+      const ta=isTermine(a.contratto),tb=isTermine(b.contratto);
+      if(ta!==tb)return ta?-1:1;
+      if(ta&&tb){const sa=a.scadenzaContratto,sb=b.scadenzaContratto;if(sa&&sb)return new Date(sa)-new Date(sb);if(sa)return -1;if(sb)return 1;}
+    }
+    return(a.nome||'').localeCompare(b.nome||'');
+  });
   if(cnt)cnt.textContent=sorted.length||'—';
   const missMap=Object.fromEntries(getMissing().map(x=>[x.id,x.missing]));
   const _bs=(c=>{
@@ -351,7 +361,7 @@ function renderDipendenti(){
         <span class="emp-name">${it.nome||'—'}</span>${badge}${alertBadge}${missBadges}
       </div>
       ${it.mansione?`<div style="font-size:12px;color:var(--text-dim);margin-bottom:3px;">📋 ${it.mansione}</div>`:''}
-      ${assunzFmt&&assunzFmt!=='—'?`<div style="font-size:12px;color:var(--text-dim);">📅 dal ${assunzFmt}${needsScad&&scadContrFmt&&scadContrFmt!=='—'?` <span style="color:${scadCol};font-weight:600;">→ scad. ${scadContrFmt}</span>`:''}</div>`:''}
+      ${(assunzFmt&&assunzFmt!=='—')||(needsScad&&scadContrFmt&&scadContrFmt!=='—')?`<div style="font-size:12px;color:var(--text-dim);">📅 ${assunzFmt&&assunzFmt!=='—'?`dal ${assunzFmt} `:''} ${needsScad&&scadContrFmt&&scadContrFmt!=='—'?`<span style="color:${scadCol};font-weight:600;">→ scad. ${scadContrFmt}</span>`:''}</div>`:''}
     </div>`;
   }).join('');
 }
