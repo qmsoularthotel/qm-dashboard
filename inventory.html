@@ -813,11 +813,32 @@ function onManualBarcode(val) {
 }
 
 // ── Barcode → Movement modal ─────────────────────────────────────────────────
-function onBarcodeDetected(bc) {
+async function onBarcodeDetected(bc) {
   pendingBC = bc;
   const p = catalog[bc];
   isNewProd = !p;
   openMoveModal(bc, p, !p);
+
+  if (!p) {
+    // Cerca nome su Open Food Facts
+    const nameEl = document.getElementById('newName');
+    const hintEl = document.getElementById('unitHint');
+    if (nameEl) { nameEl.placeholder = '🔍 Ricerca in corso…'; }
+    try {
+      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(bc)}.json`);
+      const data = await res.json();
+      if (data.status === 1 && data.product) {
+        const name = data.product.product_name_it || data.product.product_name || '';
+        const qty  = data.product.quantity || '';
+        if (nameEl && name && !nameEl.value) {
+          nameEl.value = name + (qty ? ' ' + qty : '');
+          nameEl.style.background = 'var(--green-bg)';
+          setTimeout(() => nameEl.style.background = '', 1500);
+        }
+      }
+    } catch(e) {}
+    if (nameEl) nameEl.placeholder = 'es. Detersivo piatti 5L…';
+  }
 }
 
 function quickMove(bc) {
