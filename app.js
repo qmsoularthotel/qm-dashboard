@@ -5022,7 +5022,7 @@ function invRenderAnalysis(catalog,moves){
     </div>`;
   }).join('');
 
-  el.innerHTML=periodHtml+kpi+urgBlock+chartBlock+`<div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:7px;">📋 Dettaglio prodotti</div>`+hdrs+rows;
+  el.innerHTML=periodHtml+kpi+urgBlock+chartBlock+`<div style="max-width:420px;"><div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:7px;">📋 Dettaglio prodotti</div>`+hdrs+rows+`</div>`;
 }
 function invPrintStock(){
   const{catalog,moves}=invGetData();
