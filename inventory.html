@@ -824,28 +824,35 @@ async function onBarcodeDetected(bc) {
     if (nameEl) nameEl.placeholder = '🔍 Ricerca…';
     showToast('🔍 Cerco prodotto…');
     try {
-      const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 5000);
-      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${bc}.json`, { signal: ctrl.signal });
-      clearTimeout(tid);
-      const data = await res.json();
-      if (data.status === 1 && data.product) {
-        const pr = data.product;
-        const name = pr.product_name_it || pr.product_name || pr.brands || '';
-        const qty  = pr.quantity || '';
-        if (nameEl && name) {
-          if (!nameEl.value) nameEl.value = name + (qty ? ' ' + qty : '');
-          nameEl.style.background = 'var(--green-bg)';
-          setTimeout(() => nameEl.style.background = '', 2000);
-          showToast('✅ ' + name);
-        } else {
-          showToast('Prodotto non trovato nel database');
-        }
+      const _fetchOFF = async (host) => {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 5000);
+        try {
+          const res = await fetch(`https://${host}/api/v0/product/${bc}.json`, { signal: ctrl.signal });
+          clearTimeout(tid);
+          const data = await res.json();
+          if (data.status === 1 && data.product) {
+            const pr = data.product;
+            return (pr.product_name_it || pr.product_name || pr.brands || '').trim();
+          }
+        } catch(e) { clearTimeout(tid); }
+        return '';
+      };
+
+      // Cerca in ordine: prodotti generici → alimenti → cosmetici
+      const name = (await _fetchOFF('world.openproductsfacts.org'))
+                || (await _fetchOFF('world.openfoodfacts.org'))
+                || (await _fetchOFF('world.openbeautyfacts.org'));
+
+      if (name) {
+        if (nameEl && !nameEl.value) nameEl.value = name;
+        if (nameEl) { nameEl.style.background = 'var(--green-bg)'; setTimeout(() => nameEl.style.background = '', 2000); }
+        showToast('✅ ' + name);
       } else {
-        showToast('Prodotto non trovato nel database');
+        showToast('Prodotto non trovato — inserisci manualmente');
       }
     } catch(e) {
-      showToast(e.name === 'AbortError' ? 'Ricerca timeout — inserisci manualmente' : 'Errore ricerca — inserisci manualmente');
+      showToast('Errore ricerca — inserisci manualmente');
     }
     if (nameEl) nameEl.placeholder = 'es. Detersivo piatti 5L…';
   }
