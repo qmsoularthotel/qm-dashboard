@@ -820,23 +820,33 @@ async function onBarcodeDetected(bc) {
   openMoveModal(bc, p, !p);
 
   if (!p) {
-    // Cerca nome su Open Food Facts
     const nameEl = document.getElementById('newName');
-    const hintEl = document.getElementById('unitHint');
-    if (nameEl) { nameEl.placeholder = '🔍 Ricerca in corso…'; }
+    if (nameEl) nameEl.placeholder = '🔍 Ricerca…';
+    showToast('🔍 Cerco prodotto…');
     try {
-      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(bc)}.json`);
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 5000);
+      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${bc}.json`, { signal: ctrl.signal });
+      clearTimeout(tid);
       const data = await res.json();
       if (data.status === 1 && data.product) {
-        const name = data.product.product_name_it || data.product.product_name || '';
-        const qty  = data.product.quantity || '';
-        if (nameEl && name && !nameEl.value) {
-          nameEl.value = name + (qty ? ' ' + qty : '');
+        const pr = data.product;
+        const name = pr.product_name_it || pr.product_name || pr.brands || '';
+        const qty  = pr.quantity || '';
+        if (nameEl && name) {
+          if (!nameEl.value) nameEl.value = name + (qty ? ' ' + qty : '');
           nameEl.style.background = 'var(--green-bg)';
-          setTimeout(() => nameEl.style.background = '', 1500);
+          setTimeout(() => nameEl.style.background = '', 2000);
+          showToast('✅ ' + name);
+        } else {
+          showToast('Prodotto non trovato nel database');
         }
+      } else {
+        showToast('Prodotto non trovato nel database');
       }
-    } catch(e) {}
+    } catch(e) {
+      showToast(e.name === 'AbortError' ? 'Ricerca timeout — inserisci manualmente' : 'Errore ricerca — inserisci manualmente');
+    }
     if (nameEl) nameEl.placeholder = 'es. Detersivo piatti 5L…';
   }
 }
