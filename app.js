@@ -5005,10 +5005,10 @@ function invRenderAnalysis(catalog,moves){
 
   // Tabella dettaglio — ordine alfabetico
   const sorted=[...items].sort((a,b)=>a.name.localeCompare(b.name,'it'));
-  const hdrs=`<div style="display:grid;grid-template-columns:1fr 80px 70px 90px;gap:6px;padding:4px 10px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;">
+  const hdrs=`<div style="display:grid;grid-template-columns:1fr 76px 60px 80px;gap:4px;padding:4px 10px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;">
     <div>Prodotto</div>
     <div style="text-align:right;">Cons./sett</div>
-    <div style="text-align:right;">Stock</div>
+    <div>Stock</div>
     <div style="text-align:right;">Autonomia</div>
   </div>`;
   const rows=sorted.map(it=>{
@@ -5019,10 +5019,10 @@ function invRenderAnalysis(catalog,moves){
     const autCol=autDays===null?'var(--border)':autDays<=7?'var(--red)':autDays<=14?'var(--amber)':'var(--green)';
     const autTxt=autDays===null?'—':autDays<=0?`<span style="color:var(--red);font-weight:700;">esaurito</span>`:autDays<=7?`<span style="color:var(--red);font-weight:700;">${autDays}gg</span>`:autDays<=14?`<span style="color:var(--amber);font-weight:600;">${autDays}gg</span>`:`<span style="color:var(--green);">${autDays}gg</span>`;
     return`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderL};border-radius:8px;padding:8px 10px;margin-bottom:5px;">
-      <div style="display:grid;grid-template-columns:1fr 80px 70px 90px;gap:6px;align-items:center;">
+      <div style="display:grid;grid-template-columns:1fr 76px 60px 80px;gap:4px;align-items:center;">
         <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
         <div style="font-size:var(--fs-xs);text-align:right;">${it.consumoSett>0?`${it.consumoSett}${unit}`:'—'}</div>
-        <div style="font-size:var(--fs-xs);text-align:right;">${it.qty}${unit}</div>
+        <div style="font-size:var(--fs-xs);">${it.qty}${unit}</div>
         <div style="text-align:right;">
           <div style="font-size:var(--fs-xs);margin-bottom:3px;">${autTxt}</div>
           ${autDays!==null&&autDays>0?`<div style="height:3px;background:var(--border-light);border-radius:2px;overflow:hidden;"><div style="height:100%;width:${autPct}%;background:${autCol};border-radius:2px;"></div></div>`:''}
