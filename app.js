@@ -4977,6 +4977,74 @@ function invRenderAnalysis(catalog,moves){
   }).join('');
   el.innerHTML=periodHtml+kpi+hdrs+rows;
 }
+function invPrintStock(){
+  const{catalog,moves}=invGetData();
+  const stock=invCalcStock(catalog,moves);
+  const whName=_invWh==='sa'?'SoulArt Hotel':'Art Resort';
+  const dateStr=new Date().toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+
+  const items=Object.entries(catalog).map(([bc,p])=>{
+    const qty=stock[bc]??0;
+    const status=invItemStatus(qty,p.soglia??null);
+    return{name:p.name,unit:p.unit||'',qty,status,soglia:p.soglia??null};
+  }).filter(i=>i.name).sort((a,b)=>{
+    const ord={out:0,low:1,ok:2};
+    if(ord[a.status]!==ord[b.status])return ord[a.status]-ord[b.status];
+    return a.name.localeCompare(b.name,'it');
+  });
+
+  const statusColor=s=>s==='out'?'#C0352A':s==='low'?'#A05A00':'#1E7A48';
+  const statusLabel=s=>s==='out'?'ESAURITO':s==='low'?'BASSO':'OK';
+  const rows=items.map((it,i)=>`
+    <tr style="background:${i%2===0?'#fff':'#f8f8f9'};">
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:13px;">${it.name}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:13px;text-align:center;color:#666;">${it.unit}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:15px;font-weight:700;text-align:center;">${it.qty}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;text-align:center;">
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;color:${statusColor(it.status)};background:${it.status==='out'?'#fae2e0':it.status==='low'?'#fae8cc':'#d8f0e4'};">${statusLabel(it.status)}</span>
+      </td>
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:12px;color:#999;text-align:center;">${it.soglia!==null?it.soglia:'—'}</td>
+    </tr>`).join('');
+
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
+  <title>Giacenza ${whName} — ${dateStr}</title>
+  <style>
+    @page{size:A4;margin:18mm 15mm 18mm 15mm;}
+    body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1c1c1e;margin:0;}
+    h1{font-size:18px;font-weight:700;margin:0 0 2px;}
+    .sub{font-size:13px;color:#666;margin-bottom:16px;}
+    table{width:100%;border-collapse:collapse;}
+    thead th{background:#1E4080;color:#fff;padding:8px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;text-align:left;}
+    thead th:nth-child(3),thead th:nth-child(4),thead th:nth-child(5){text-align:center;}
+    tfoot td{padding:10px 10px 0;font-size:11px;color:#999;}
+    .firma{margin-top:28px;display:flex;gap:40px;}
+    .firma-box{flex:1;border-top:1px solid #ccc;padding-top:6px;font-size:11px;color:#666;}
+  </style>
+  </head><body>
+  <h1>📦 Giacenza Magazzino — ${whName}</h1>
+  <div class="sub">${dateStr}</div>
+  <table>
+    <thead><tr>
+      <th>Prodotto</th><th style="text-align:center;">Unità</th>
+      <th style="text-align:center;">Quantità</th><th style="text-align:center;">Stato</th>
+      <th style="text-align:center;">Soglia</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><td colspan="5">${items.length} prodotti · stampato il ${new Date().toLocaleString('it-IT')}</td></tr></tfoot>
+  </table>
+  <div class="firma">
+    <div class="firma-box">Preparato da: ________________</div>
+    <div class="firma-box">Consegnato a: ________________</div>
+    <div class="firma-box">Data consegna: ________________</div>
+  </div>
+  </body></html>`;
+
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  w.onload=()=>w.print();
+}
+
 function invUpdateNavBadge(){
   let catalog={};
   try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog')||'{}');}catch(e){}

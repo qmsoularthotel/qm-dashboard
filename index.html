@@ -1261,7 +1261,10 @@
             <button class="rev-filter-btn inv-wh-btn active" id="invWh-sa" onclick="invSetWh('sa',this)">SoulArt Hotel</button>
             <button class="rev-filter-btn inv-wh-btn" id="invWh-ar" onclick="invSetWh('ar',this)">Art Resort</button>
           </div>
-          <a href="inventory.html" target="_blank" class="btn-primary" style="font-size:var(--fs-xxs);padding:5px 12px;text-decoration:none;border-radius:6px;white-space:nowrap;">📱 Apri scanner</a>
+          <div style="display:flex;gap:6px;">
+            <button onclick="invPrintStock()" style="font-size:var(--fs-xxs);padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;white-space:nowrap;">🖨️ Stampa A4</button>
+            <a href="inventory.html" target="_blank" class="btn-primary" style="font-size:var(--fs-xxs);padding:5px 12px;text-decoration:none;border-radius:6px;white-space:nowrap;">📱 Apri scanner</a>
+          </div>
         </div>
         <!-- Tabs: stock / movimenti / analisi -->
         <div style="display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid var(--border-light);">
