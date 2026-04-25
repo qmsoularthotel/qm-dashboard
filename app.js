@@ -4987,11 +4987,7 @@ function invPrintStock(){
     const qty=stock[bc]??0;
     const status=invItemStatus(qty,p.soglia??null);
     return{name:p.name,unit:p.unit||'',qty,status,soglia:p.soglia??null};
-  }).filter(i=>i.name).sort((a,b)=>{
-    const ord={out:0,low:1,ok:2};
-    if(ord[a.status]!==ord[b.status])return ord[a.status]-ord[b.status];
-    return a.name.localeCompare(b.name,'it');
-  });
+  }).filter(i=>i.name).sort((a,b)=>a.name.localeCompare(b.name,'it'));
 
   const statusColor=s=>s==='out'?'#C0352A':s==='low'?'#A05A00':'#1E7A48';
   const statusLabel=s=>s==='out'?'ESAURITO':s==='low'?'BASSO':'OK';
@@ -5032,11 +5028,6 @@ function invPrintStock(){
     <tbody>${rows}</tbody>
     <tfoot><tr><td colspan="5">${items.length} prodotti · stampato il ${new Date().toLocaleString('it-IT')}</td></tr></tfoot>
   </table>
-  <div class="firma">
-    <div class="firma-box">Preparato da: ________________</div>
-    <div class="firma-box">Consegnato a: ________________</div>
-    <div class="firma-box">Data consegna: ________________</div>
-  </div>
   </body></html>`;
 
   const w=window.open('','_blank');
