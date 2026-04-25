@@ -700,44 +700,82 @@ function renderCatalog() {
 let zxingReader = null;
 let _torchOn = false;
 let _videoTrack = null;
+let _scanRaf = null;
+let _nativeStream = null;
 
 async function openScanner() {
   document.getElementById('scannerModal').classList.add('open');
   document.getElementById('manualBarcodeInput').value = '';
-  _torchOn = false;
-  _videoTrack = null;
+  _torchOn = false; _videoTrack = null;
   document.getElementById('torchBtn').classList.remove('on');
+  document.getElementById('torchBtn').style.display = 'none';
 
-  if (typeof ZXing === 'undefined') {
-    showToast('Libreria scanner non caricata — usa input manuale');
-    return;
+  if ('BarcodeDetector' in window) {
+    await _startNativeScanner();
+  } else if (typeof ZXing !== 'undefined') {
+    await _startZXingScanner();
+  } else {
+    showToast('Scanner non disponibile — usa input manuale');
   }
+}
+
+async function _startNativeScanner() {
+  const FORMATS = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','qr_code'];
+  let supported = FORMATS;
+  try { supported = (await BarcodeDetector.getSupportedFormats()).filter(f => FORMATS.includes(f)); } catch(e) {}
+  const detector = new BarcodeDetector({ formats: supported.length ? supported : FORMATS });
 
   try {
-    // TRY_HARDER migliora il riconoscimento su codici piccoli/storti
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+    _nativeStream = stream;
+    const video = document.getElementById('scannerVideo');
+    video.srcObject = stream;
+    await video.play();
+    _videoTrack = stream.getVideoTracks()[0];
+    const caps = _videoTrack.getCapabilities?.() ?? {};
+    document.getElementById('torchBtn').style.display = caps.torch ? 'flex' : 'none';
+
+    let _last = null, _hits = 0;
+    const loop = async () => {
+      if (!document.getElementById('scannerModal').classList.contains('open')) return;
+      try {
+        const res = await detector.detect(video);
+        if (res.length) {
+          const code = res[0].rawValue;
+          if (code === _last) { _hits++; } else { _last = code; _hits = 1; }
+          if (_hits >= 2) {
+            const frame = document.querySelector('.scanner-frame');
+            if (frame) { frame.style.borderColor = '#4ade80'; setTimeout(() => frame.style.borderColor = '', 300); }
+            closeScanner(); onBarcodeDetected(code); return;
+          }
+        } else { _last = null; _hits = 0; }
+      } catch(e) {}
+      _scanRaf = requestAnimationFrame(loop);
+    };
+    _scanRaf = requestAnimationFrame(loop);
+  } catch(e) {
+    showToast(e?.name === 'NotAllowedError' ? 'Permesso fotocamera negato — usa input manuale' : 'Errore fotocamera — usa input manuale');
+  }
+}
+
+async function _startZXingScanner() {
+  try {
     const hints = new Map();
     hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    zxingReader = new ZXing.BrowserMultiFormatReader(hints, 300); // scan ogni 300ms
-
+    zxingReader = new ZXing.BrowserMultiFormatReader(hints, 150);
     await zxingReader.decodeFromConstraints(
-      { video: {
-          facingMode: { ideal: 'environment' },
-          width:  { ideal: 1920 },
-          height: { ideal: 1080 },
-      }},
+      { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }},
       'scannerVideo',
-      (result, err) => {
+      (result) => {
         if (result) {
-          // flash verde sul frame
           const frame = document.querySelector('.scanner-frame');
-          if (frame) { frame.style.borderColor = '#4ade80'; setTimeout(() => { frame.style.borderColor = ''; }, 300); }
-          closeScanner();
-          onBarcodeDetected(result.getText());
+          if (frame) { frame.style.borderColor = '#4ade80'; setTimeout(() => frame.style.borderColor = '', 300); }
+          closeScanner(); onBarcodeDetected(result.getText());
         }
       }
     );
-
-    // Abilita torcia se supportata
     const video = document.getElementById('scannerVideo');
     _videoTrack = video.srcObject?.getVideoTracks?.()[0] ?? null;
     if (_videoTrack) {
@@ -745,7 +783,6 @@ async function openScanner() {
       document.getElementById('torchBtn').style.display = caps.torch ? 'flex' : 'none';
     }
   } catch(e) {
-    console.warn('Scanner error:', e);
     showToast(e?.name === 'NotAllowedError' ? 'Permesso fotocamera negato — usa input manuale' : 'Errore fotocamera — usa input manuale');
   }
 }
@@ -764,6 +801,8 @@ function closeScanner() {
   document.getElementById('torchBtn').style.display = 'none';
   if (_torchOn && _videoTrack) { try { _videoTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch(e) {} }
   _torchOn = false; _videoTrack = null;
+  if (_scanRaf) { cancelAnimationFrame(_scanRaf); _scanRaf = null; }
+  if (_nativeStream) { _nativeStream.getTracks().forEach(t => t.stop()); _nativeStream = null; }
   try { if (zxingReader) { zxingReader.reset(); zxingReader = null; } } catch(e) {}
 }
 
