@@ -27,7 +27,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 **QM Dashboard** è una SPA vanilla JS per la gestione qualità di un gruppo alberghiero multi-struttura a Napoli. Il codice è diviso in:
 
 - **`index.html`** — Layout HTML, sidebar nav, tutte le view (div#view-*), CSS inline, tag `<script src="app.js?v=...">` in fondo
-- **`app.js`** — Tutta la logica JS (~4640 linee, ~30 sezioni §§)
+- **`app.js`** — Tutta la logica JS (~5200 linee, ~31 sezioni §§)
 - **`housekeeper.html`** — App separata per la governante (HK checklist camere)
 - **`breakfast.html`** — App separata per il breakfast manager
 - **`inventory.html`** — App separata per l'inventario detersivi (mobile, scanner barcode)
@@ -38,7 +38,7 @@ Non esiste build system, package manager o step di compilazione.
 
 Il numero di versione va incrementato:
 1. Nel `<title>` tag di `index.html` (es. `v186` → `v187`)
-2. Nel cache buster `<script src="app.js?v=187-YYYYMMDD">` in fondo a `index.html`
+2. Nel cache buster `<script src="app.js?v=235-YYYYMMDD">` in fondo a `index.html`
 
 Ad ogni modifica ad `app.js`, **aggiornare il cache buster** altrimenti il browser userà la versione vecchia.
 
@@ -65,7 +65,7 @@ Poi leggere solo il blocco rilevante con `offset` e `limit` invece di caricare l
 
 - **Primary**: `localStorage` — ogni modifica viene persistita qui
 - **Secondary**: Cloudflare KV via proxy `https://anthropic-proxy.qm-d82.workers.dev` — sync cloud tra dispositivi; stato mostrato nel topbar
-- **External**: Google Sheets (Apps Script) — dati operativi HKP e breakfast
+- **External**: Google Sheets (Apps Script) — dati operativi HKP, breakfast, preferenze turni
 
 ### AI Integration
 
@@ -79,8 +79,8 @@ Claude API chiamata via proxy Cloudflare:
 1. Imposta data corrente
 2. Costruisce KPI bar chart
 3. Pull async da Cloudflare KV (cloud sync)
-4. Ripristina stato localStorage: checklist, reclami, audit, task custom, turni settimanali, arrivi, recensioni, dati HKP, pulizie, pasti, DVR
-5. Avvia timer: clock (10s), meteo (10min), polling overview (30s)
+4. Ripristina stato localStorage: checklist, reclami, audit, task custom, turni settimanali, arrivi, recensioni, dati HKP, pulizie, pasti, DVR, preferenze turni
+5. Avvia timer: clock (10s), meteo (10min), polling overview (30s) — il polling chiama anche `turniPrefLoad()`
 6. IIFE mostra `topbar-kpis` (display:flex) all'avvio
 
 ### Review Scoring Formula
@@ -140,7 +140,8 @@ I numeri di camera determinano la struttura di appartenenza:
 | 3603 | REGISTRATION CARDS — RC | `rcParseGuests()` (~line 3650), `rcRenderCards()`, stampa |
 | 3668 | MODAL — CATEGORIE TREND | Modal trend categorie, calcolo score pesato |
 | 3767 | ARRIVI GIORNALIERI — UPLOAD & RENDER | `handleArriviFile()`, `renderArriviModal()`, `fixArriviStruttura()` |
-| ~4634 | INVENTARIO DETERSIVI | `invCalcStock()`, `invRender()`, `invRenderStock()`, `invRenderMoves()`, `invSetWh()`, `invSetTab()` |
+| ~4634 | INVENTARIO DETERSIVI | `invCalcStock()`, `invRender()`, `invRenderStock()`, `invRenderMoves()`, `invRenderAnalysis()`, `invEditQty()`, `invPrintStock()` |
+| ~5090 | PREFERENZE TURNI | `turniPrefLoad()`, `turniPrefRender()`, `turniPrefMarkAllSeen()`, `_tpFmtDate()` |
 
 ---
 
@@ -163,6 +164,7 @@ I numeri di camera determinano la struttura di appartenenza:
 | `PROXY` | const string | `https://anthropic-proxy.qm-d82.workers.dev` |
 | `SHEETS_URL` | const string | Apps Script endpoint BKF SoulArt |
 | `SHEETS_URL_AR` | const string | Apps Script endpoint BKF Art Resort |
+| `TURNI_PREF_URL` | const string | Apps Script endpoint Preferenze Turni (Google Forms responses) |
 | `DAILY_TASKS` | const array | Task giornalieri predefiniti per tutti i giorni |
 | `WED_TASKS`, `THU_TASKS` | const arrays | Task specifici mer/gio |
 | `customDate` | let | Data selezionata nel date picker sidebar |
@@ -176,6 +178,10 @@ I numeri di camera determinano la struttura di appartenenza:
 | `REV_CATS`, `REV_TREND_CATS` | const arrays | Categorie recensioni |
 | `DECAY_F1_MS` | const number | Finestra decadimento 270 giorni per F1 weighting |
 | `ROOM_CODES`, `tratMap` | const objects | Codici tipo camera, mappatura trattamenti |
+| `_tpData` | let array | Richieste preferenze turni caricate da Apps Script |
+| `_tpFilter` | let string | Filtro reparto attivo nella view turni-pref (`'tutti'` o nome reparto) |
+| `_tpCalYear`, `_tpCalMonth` | let number | Anno/mese visualizzato nel calendario preferenze turni |
+| `_tpCalDay` | let string | Giorno selezionato nel calendario (`dd/MM/yyyy`) per filtrare lista |
 
 ---
 
@@ -189,6 +195,7 @@ I numeri di camera determinano la struttura di appartenenza:
 | `https://script.google.com/macros/s/AKfycbzmkY…/exec` | Google Sheets BKF Art Resort (`SHEETS_URL_AR`) |
 | `https://script.google.com/macros/s/AKfycbyagJEm…/exec` | Google Sheets HKP SoulArt (`HKP_URLS.sa`) — attuale |
 | `https://script.google.com/macros/s/AKfycbw1M5j…/exec` | Google Sheets HKP Art Resort (`HKP_URLS.ar`) — attuale |
+| `https://script.google.com/macros/s/AKfycbzCbHxJbSfx…/exec` | Google Sheets Preferenze Turni (`TURNI_PREF_URL`) — attuale |
 | `https://api.open-meteo.com/v1/forecast?latitude=40.8518&longitude=14.2681` | Meteo Napoli (previsioni 10 giorni) |
 | `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js` | PDF.js worker |
 
@@ -196,7 +203,7 @@ I numeri di camera determinano la struttura di appartenenza:
 
 ## Inventario Viste Obbligatorie (index.html)
 
-Tutte e 15 le view devono essere presenti. Verifica con:
+Tutte le view devono essere presenti. Verifica con:
 
 ```bash
 grep -n 'id="view-' index.html
@@ -221,7 +228,8 @@ grep -n 'id="view-' index.html
 | `view-hkpsheet` | Operativa Housekeeping — SoulArt Hotel |
 | `view-hkpsheetar` | Operativa Housekeeping — Art Resort |
 | `view-miniapp` | Mini app preview |
-| `view-inventario` | Inventario detersivi (stock + movimenti, read-only) |
+| `view-inventario` | Inventario detersivi (stock + movimenti + analisi) |
+| `view-turni-pref` | Preferenze turni staff (da Google Forms) |
 
 ---
 
@@ -389,10 +397,12 @@ if (k === 'dvr') {
 L'elenco dei dipendenti è ordinato con **pin fisso**:
 1. **Corduas Vincenzo** — sempre primo
 2. **Presta Pierpaolo** — sempre secondo
-3. Tutti gli altri in ordine alfabetico
+3. Contratti a termine ordinati per data scadenza (più vicina prima)
+4. Tutti gli altri in ordine alfabetico
 
 ```js
 const pinRank = n => { if (/corduas/i.test(n)) return 0; if (/presta/i.test(n)) return 1; return 2; };
+const isTermine = c => c && c !== 'Tempo indeterminato';
 ```
 
 ### Lista Dipendenti — Layout Riga
@@ -575,6 +585,35 @@ Il reparto `mt` ha logica speciale in `renderDay()`:
 | `rcRenderCards(guests)` | §3603 | Render cards ospiti |
 | `preparePrint(idx)` | §3603 | Genera HTML per stampa |
 
+### Inventario Detersivi
+
+| Funzione | Linea approx. | Scopo |
+|----------|--------------|-------|
+| `invSetWh(wh, btn)` | ~4634 | Cambia magazzino attivo nel dashboard |
+| `invSetTab(tab)` | ~4634 | Cambia tab stock/movimenti/analisi |
+| `invRender()` | ~4634 | Render completo view inventario |
+| `invRenderStock(catalog, moves)` | ~4634 | Render griglia stock |
+| `invRenderMoves(catalog, moves)` | ~4634 | Render lista movimenti |
+| `invRenderAnalysis(catalog, moves)` | ~4634 | Render tab analisi (cons. settimanale, da riordinare) |
+| `invCalcStock(catalog, moves)` | ~4634 | Calcola qty corrente per barcode |
+| `invEditQty(bc, currentQty)` | ~4634 | Modifica qty stock da dashboard (crea movimento init) |
+| `invEditSoglia(bc)` | ~4634 | Imposta soglia minima per prodotto |
+| `invPrintStock()` | ~4634 | Stampa A4 giacenza (ordine alfabetico) |
+
+### Preferenze Turni
+
+| Funzione | Linea approx. | Scopo |
+|----------|--------------|-------|
+| `turniPrefLoad()` | ~5090 | Fetch dati da Apps Script, salva in localStorage |
+| `turniPrefRestore()` | ~5090 | Ripristina `_tpData` da localStorage |
+| `turniPrefRender()` | ~5090 | Render calendario + lista richieste |
+| `turniPrefMarkAllSeen()` | ~5090 | Segna tutte le richieste come lette |
+| `turniPrefSetFilter(f)` | ~5090 | Filtra per reparto |
+| `turniPrefNavCal(dir)` | ~5090 | Naviga mese calendario (+1/-1) |
+| `turniPrefSelectDay(d)` | ~5090 | Seleziona giorno per filtrare lista |
+| `_tpFmtDate(s)` | ~5090 | Normalizza qualsiasi formato data → `dd/MM/yyyy` |
+| `turniPrefUpdateBadge()` | ~5090 | Aggiorna badge nav con richieste non lette |
+
 ---
 
 ## Periodic Timers
@@ -583,7 +622,7 @@ Il reparto `mt` ha logica speciale in `renderDay()`:
 |-----------|-------|
 | 10 sec | `updateSbClock()` — aggiorna orologio sidebar |
 | 10 min | `fetchMeteo()` — aggiorna previsioni meteo |
-| 30 sec | Polling overview + cloud sync + aggiornamento KPI |
+| 30 sec | Polling overview + cloud sync + `turniPrefLoad()` |
 
 ---
 
@@ -629,7 +668,10 @@ Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (comm
 | Meteo non funziona | `const days=data.daily` dichiarato dopo l'uso in `if(mm&&days)` | Spostata dichiarazione prima del blocco `if` |
 | % occupazione illeggibile | `position:absolute;right:8px` dentro la barra su sfondo grigio | Span % spostato FUORI dal container della barra |
 | Righe DUPLEX duplicate in HKP riepilogo | Range A38:AG47 include righe duplex | Filtro client-side `/duplex/i.test(c.nome)` |
-| `giorni_elaborati` sempre 1 in SoulArt | Apps Script leggeva range sbagliato, totali mensili senza breakdown giornaliero | Script riscritto con range corretti; calcolo client-side da `camere_per_giorno` |
+| `giorni_elaborati` sempre 1 in SoulArt | Apps Script leggeva range sbagliato | Script riscritto con range corretti; calcolo client-side da `camere_per_giorno` |
+| Inventario vuoto al refresh pagina | `invRender()` controlla `classList.contains('active')` prima che la view sia attivata | `setView()` chiama `invRender()` quando `id === 'inventario'` |
+| Date preferenze turni mostrano "Sun" | Apps Script restituisce `String(date)` = `"Sun Apr 06 2025 22:00:00 GMT+0200"` quando `instanceof Date` fallisce | `_tpFmtDate()` usa regex su nome mese inglese; Apps Script aggiornato con `typeof v.getTime === 'function'` |
+| Calendario preferenze turni senza conteggi | `countByDay` usava stringa completa con orario come chiave | `_tpFmtDate()` normalizza prima del confronto |
 
 ---
 
@@ -637,21 +679,21 @@ Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (comm
 
 ### Scopo
 
-Gestione stock detersivi e prodotti per i due magazzini (SoulArt Hotel e Art Resort). I movimenti vengono registrati tramite scanner barcode da smartphone; il dashboard mostra lo stock e lo storico in sola lettura.
+Gestione stock detersivi e prodotti per i due magazzini (SoulArt Hotel e Art Resort). I movimenti vengono registrati tramite scanner barcode da smartphone; il dashboard mostra stock, storico e analisi.
 
 ### File
 
 | File | Scopo |
 |------|-------|
 | `inventory.html` | App mobile standalone (scanner + movimenti) |
-| `app.js` §§ INVENTARIO DETERSIVI | Logica dashboard: calcolo stock, render view |
-| `index.html` `#view-inventario` | View read-only nel dashboard |
+| `app.js` §§ INVENTARIO DETERSIVI | Logica dashboard: calcolo stock, render view, edit qty |
+| `index.html` `#view-inventario` | View nel dashboard (stock + movimenti + analisi) |
 
 ### Storage (Cloudflare KV + localStorage)
 
 | Chiave KV / localStorage | Contenuto |
 |--------------------------|-----------|
-| `qm_inv_catalog` | Anagrafica prodotti condivisa: `{ [barcode]: { name, unit } }` |
+| `qm_inv_catalog` | Anagrafica prodotti condivisa: `{ [barcode]: { name, unit, soglia? } }` |
 | `qm_inv_moves_sa` | Movimenti magazzino SoulArt: array |
 | `qm_inv_moves_ar` | Movimenti magazzino Art Resort: array |
 
@@ -680,24 +722,107 @@ Per ogni prodotto per magazzino:
 invCalcStock(catalog, moves) → { [barcode]: qty }
 ```
 
+### Modifica qty da dashboard
+
+Cliccando il valore qty in una riga stock si apre un prompt. Il nuovo valore viene salvato come movimento `init` con nota "Rettifica da dashboard" → pushato su KV → l'app mobile recepisce al prossimo caricamento.
+
+### Tab Analisi — Note
+
+- Prodotti in ordine **alfabetico**
+- Mostra **consumo settimanale medio** (`consumo / days * 7`)
+- Sezione **⚠️ Da riordinare**: prodotti con autonomia ≤14gg, ordinati per urgenza
+- Periodo selezionabile: 7 / 30 / 90 giorni / tutto
+- Tabella dettaglio a `max-width: 420px`
+
 ### inventory.html — Funzionalità
 
 - Selezione magazzino: SoulArt Hotel / Art Resort
-- Scanner barcode via ZXing (`@zxing/library@0.19.1`) + input manuale fallback
+- Scanner barcode: `BarcodeDetector` nativo (Android) con fallback ZXing
 - Prima scansione codice sconosciuto: chiede nome + unità → salva in catalogo
-- 3 tab: **Stock** (griglia qty colorata), **Movimenti** (storico), **Catalogo** (con modifica)
+- 3 tab: **Stock**, **Movimenti**, **Catalogo**
+- Modal movimenti: chip unità, stepper +/−, default Scarico per prodotti noti
 - Sync KV all'avvio + push al salvataggio
 
-### Funzioni app.js (§§ INVENTARIO DETERSIVI)
+---
 
-| Funzione | Scopo |
-|----------|-------|
-| `invSetWh(wh, btn)` | Cambia magazzino attivo nel dashboard |
-| `invSetTab(tab)` | Cambia tab stock/movimenti nel dashboard |
-| `invRender()` | Render completo view inventario (solo se attiva) |
-| `invRenderStock(catalog, moves)` | Render griglia stock |
-| `invRenderMoves(catalog, moves)` | Render lista movimenti (ultimi 50) |
-| `invCalcStock(catalog, moves)` | Calcola qty corrente per barcode |
+## Preferenze Turni
+
+### Scopo
+
+Raccoglie le richieste di preferenza turno del personale inviate via Google Forms. Il dashboard mostra un calendario mensile con conteggio richieste per giorno e una lista filtrata per reparto.
+
+### Foglio Google collegato
+
+`https://docs.google.com/spreadsheets/d/1KysJxvGY-PxCSrjdWMjYCz_7KlFOIG6bSe3fXCVfObo`
+
+Foglio: **Risposte del modulo 1**
+
+| Colonna | Campo | Note |
+|---------|-------|------|
+| A | Timestamp invio | Data/ora compilazione modulo |
+| B | Nome dipendente | |
+| C | Reparto | Ricevimento / Breakfast / Housekeeping |
+| D | Data richiesta | Giorno in cui viene fatta la richiesta |
+| E | Giorno richiesto | Giorno per cui si chiede la preferenza |
+| F | Preferenza turno | RIPOSO, FERIE, RECEPTION APERTURA/CHIUSURA, ecc. |
+| G | Motivazione | Facoltativa |
+
+### Apps Script attuale
+
+```
+TURNI_PREF_URL = 'https://script.google.com/macros/s/AKfycbzCbHxJbSfxg8X49w2JlfI9xo3HqhDiOa6E_0SDstdrvpQTQfqd2euaGp1oIK3zo0CA/exec'
+```
+
+Template Apps Script (usa `typeof v.getTime === 'function'` invece di `instanceof Date` per evitare bug Apps Script):
+
+```javascript
+function doGet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName('Risposte del modulo 1');
+  if (!sheet) return resp({error:'sheet not found'});
+  const rows = sheet.getDataRange().getValues();
+  if (rows.length < 2) return resp({richieste:[], total:0});
+
+  const isDate = v => v && typeof v.getTime === 'function';
+  const fmt = v => isDate(v) ? Utilities.formatDate(v,'Europe/Rome','dd/MM/yyyy') : String(v||'').trim();
+
+  const data = rows.slice(1).map(row => ({
+    ts:              isDate(row[0]) ? row[0].toISOString() : String(row[0]||''),
+    nome:            String(row[1]||'').trim(),
+    reparto:         String(row[2]||'').trim(),
+    dataRichiesta:   fmt(row[3]),
+    giornoRichiesto: fmt(row[4]),
+    preferenza:      String(row[5]||'').trim(),
+    motivazione:     String(row[6]||'').trim()
+  })).filter(r => r.nome);
+
+  data.sort((a,b) => new Date(b.ts) - new Date(a.ts));
+  return resp({richieste: data, total: data.length});
+}
+
+function resp(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+```
+
+### Storage
+
+| Chiave localStorage | Contenuto |
+|--------------------|-----------|
+| `qm_turni_pref` | Array richieste (cache locale) |
+| `qm_tp_seen` | Array di timestamp (`r.ts`) già letti |
+
+### Funzionamento badge
+
+Badge sul nav item mostra il numero di richieste con `r.ts` non presenti in `qm_tp_seen`. Aprire la view marca automaticamente tutte come lette.
+
+### `_tpFmtDate(s)` — normalizzazione date
+
+Apps Script può restituire date in formati diversi. La funzione gestisce:
+- `"dd/MM/yyyy"` → restituisce invariato
+- `"yyyy-MM-ddT..."` (ISO) → converte in `dd/MM/yyyy`
+- `"Sun Apr 06 2025 22:00:00 GMT+0200"` (JS Date.toString) → regex su nome mese inglese
 
 ---
 
