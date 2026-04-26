@@ -5147,6 +5147,17 @@ function turniPrefSetFilter(f){
 function turniPrefNavCal(dir){_tpCalMonth+=dir;if(_tpCalMonth>11){_tpCalMonth=0;_tpCalYear++;}else if(_tpCalMonth<0){_tpCalMonth=11;_tpCalYear--;}turniPrefRender();}
 function turniPrefSelectDay(d){_tpCalDay=_tpCalDay===d?null:d;turniPrefRender();}
 
+// Estrae solo la parte data (dd/MM/yyyy) da stringhe con eventuale orario
+function _tpDateOnly(s){return(s||'').trim().split(' ')[0].split('T')[0];}
+// Formatta data dd/MM/yyyy da ISO o stringa italiana
+function _tpFmtDate(s){
+  if(!s)return'—';
+  const only=_tpDateOnly(s);
+  // Se è ISO (yyyy-MM-dd) converti in dd/MM/yyyy
+  if(/^\d{4}-\d{2}-\d{2}$/.test(only)){const [y,m,d]=only.split('-');return`${d}/${m}/${y}`;}
+  return only||'—';
+}
+
 function turniPrefRender(){
   const el=document.getElementById('turni-pref-content');
   if(!el)return;
@@ -5159,14 +5170,13 @@ function turniPrefRender(){
     return;
   }
 
-  // Conta richieste per giorno (giornoRichiesto dd/MM/yyyy)
+  // Conta richieste per giorno — normalizza togliendo orario
   const countByDay={};
   _tpData.forEach(r=>{
     if(!r.giornoRichiesto)return;
-    // filtra per reparto se attivo
     if(_tpFilter!=='tutti'&&r.reparto!==_tpFilter)return;
-    const k=r.giornoRichiesto.trim();
-    countByDay[k]=(countByDay[k]||0)+1;
+    const k=_tpFmtDate(r.giornoRichiesto);
+    if(k!=='—')countByDay[k]=(countByDay[k]||0)+1;
   });
 
   // Calendario mensile
@@ -5225,7 +5235,7 @@ function turniPrefRender(){
   // Lista richieste
   let items=_tpData;
   if(_tpFilter!=='tutti')items=items.filter(r=>r.reparto===_tpFilter);
-  if(_tpCalDay)items=items.filter(r=>r.giornoRichiesto===_tpCalDay);
+  if(_tpCalDay)items=items.filter(r=>_tpFmtDate(r.giornoRichiesto)===_tpCalDay);
 
   const prefColor=p=>{const u=(p||'').toUpperCase();if(u.includes('FERIE'))return'var(--amber)';if(u.includes('RIPOSO'))return'var(--text-muted)';if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';return'var(--text)';};
 
@@ -5245,7 +5255,7 @@ function turniPrefRender(){
       rows.forEach(r=>{
         const isNew=!seenSet.has(r.ts);
         const d=new Date(r.ts);
-        const tsStr=isNaN(d)?r.ts:d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit'});
+        const tsStr=isNaN(d)?_tpFmtDate(r.ts):d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
         listHtml+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${isNew?'var(--accent)':'transparent'};border-radius:8px;padding:11px 14px;margin-bottom:5px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
           <div>
             <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
@@ -5255,8 +5265,8 @@ function turniPrefRender(){
             </div>
             <div style="font-size:var(--fs-xs);font-weight:700;color:${prefColor(r.preferenza)};margin-bottom:3px;">${_esc(r.preferenza)}</div>
             <div style="display:flex;gap:12px;font-size:var(--fs-xxs);color:var(--text-muted);">
-              <span>📅 Per il <b>${_esc(r.giornoRichiesto||'—')}</b></span>
-              <span>Richiesta: ${_esc(r.dataRichiesta||'—')}</span>
+              <span>📅 Per il <b>${_esc(_tpFmtDate(r.giornoRichiesto))}</b></span>
+              <span>Richiesta: ${_esc(_tpFmtDate(r.dataRichiesta))}</span>
             </div>
             ${r.motivazione?`<div style="margin-top:4px;font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;">${_esc(r.motivazione)}</div>`:''}
           </div>
