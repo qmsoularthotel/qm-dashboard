@@ -5245,7 +5245,7 @@ function turniPrefRender(){
       rows.forEach(r=>{
         const isNew=!seenSet.has(r.ts);
         const d=new Date(r.ts);
-        const tsStr=isNaN(d)?r.ts:d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+        const tsStr=isNaN(d)?r.ts:d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit'});
         listHtml+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${isNew?'var(--accent)':'transparent'};border-radius:8px;padding:11px 14px;margin-bottom:5px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
           <div>
             <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
