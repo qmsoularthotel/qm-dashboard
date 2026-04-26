@@ -5095,6 +5095,9 @@ const TURNI_PREF_URL='https://script.google.com/macros/s/AKfycbzVNkedeH1xG3yyFB-
 let _tpData=[];
 let _tpFilter='tutti';
 let _tpFilterNome='';
+let _tpCalYear=new Date().getFullYear();
+let _tpCalMonth=new Date().getMonth(); // 0-based
+let _tpCalDay=null; // giorno selezionato nel calendario (dd/MM/yyyy)
 
 function turniPrefUpdateBadge(){
   const badge=document.getElementById('turniPrefBadge');
@@ -5141,6 +5144,9 @@ function turniPrefSetFilter(f){
   turniPrefRender();
 }
 
+function turniPrefNavCal(dir){_tpCalMonth+=dir;if(_tpCalMonth>11){_tpCalMonth=0;_tpCalYear++;}else if(_tpCalMonth<0){_tpCalMonth=11;_tpCalYear--;}turniPrefRender();}
+function turniPrefSelectDay(d){_tpCalDay=_tpCalDay===d?null:d;turniPrefRender();}
+
 function turniPrefRender(){
   const el=document.getElementById('turni-pref-content');
   if(!el)return;
@@ -5148,83 +5154,118 @@ function turniPrefRender(){
   try{seen=JSON.parse(localStorage.getItem('qm_tp_seen')||'[]');}catch(e){}
   const seenSet=new Set(seen);
 
-  if(!TURNI_PREF_URL){
-    el.innerHTML=`<div style="background:var(--amber-bg);border:1px solid #d4aa70;border-radius:10px;padding:18px 20px;max-width:600px;">
-      <div style="font-weight:700;color:var(--amber);margin-bottom:8px;">⚙️ Configurazione necessaria</div>
-      <div style="font-size:var(--fs-xs);color:var(--text);line-height:1.6;">Per attivare questa sezione, crea lo script Apps Script nel foglio Google e incolla l'URL nella costante <code>TURNI_PREF_URL</code> in app.js.</div>
-    </div>`;
-    return;
-  }
-
   if(!_tpData.length){
     el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna richiesta ricevuta</div>';
     return;
   }
 
+  // Conta richieste per giorno (giornoRichiesto dd/MM/yyyy)
+  const countByDay={};
+  _tpData.forEach(r=>{
+    if(!r.giornoRichiesto)return;
+    // filtra per reparto se attivo
+    if(_tpFilter!=='tutti'&&r.reparto!==_tpFilter)return;
+    const k=r.giornoRichiesto.trim();
+    countByDay[k]=(countByDay[k]||0)+1;
+  });
+
+  // Calendario mensile
+  const mesiIt=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  const giorniIt=['L','M','M','G','V','S','D'];
+  const today=new Date();
+  const todayKey=`${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
+  const firstDay=new Date(_tpCalYear,_tpCalMonth,1);
+  const daysInMonth=new Date(_tpCalYear,_tpCalMonth+1,0).getDate();
+  // giorno settimana del 1° (0=dom→adatta a lun=0)
+  let startDow=(firstDay.getDay()+6)%7;
+
+  let calCells='';
+  // intestazione giorni
+  calCells+=giorniIt.map(g=>`<div style="text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:4px 0;">${g}</div>`).join('');
+  // celle vuote iniziali
+  for(let i=0;i<startDow;i++)calCells+=`<div></div>`;
+  // giorni
+  for(let d=1;d<=daysInMonth;d++){
+    const key=`${String(d).padStart(2,'0')}/${String(_tpCalMonth+1).padStart(2,'0')}/${_tpCalYear}`;
+    const cnt=countByDay[key]||0;
+    const isToday=key===todayKey;
+    const isSel=key===_tpCalDay;
+    const bg=isSel?'var(--accent)':cnt>=3?'#1a3a70':cnt>=2?'#1e4a90':cnt>=1?'var(--accent-bg)':'var(--surface)';
+    const col=isSel?'#fff':cnt>=2?'#fff':cnt>=1?'var(--accent)':'var(--text-dim)';
+    const border=isToday?'2px solid var(--accent)':'1px solid var(--border-light)';
+    calCells+=`<div onclick="turniPrefSelectDay('${key}')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
+      <div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${col};line-height:1;">${d}</div>
+      ${cnt>0?`<div style="font-size:10px;font-weight:700;color:${isSel?'rgba(255,255,255,.85)':cnt>=2?'rgba(255,255,255,.85)':'var(--accent)'};margin-top:1px;">${cnt}</div>`:''}
+    </div>`;
+  }
+
+  const calHtml=`<div style="max-width:360px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <button onclick="turniPrefNavCal(-1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">‹</button>
+      <div style="font-size:var(--fs-sm);font-weight:700;">${mesiIt[_tpCalMonth]} ${_tpCalYear}</div>
+      <button onclick="turniPrefNavCal(1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">${calCells}</div>
+    ${_tpCalDay?`<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--accent);font-weight:600;">📅 Filtro: ${_tpCalDay} — <span onclick="turniPrefSelectDay('${_tpCalDay}')" style="cursor:pointer;text-decoration:underline;">rimuovi</span></div>`:''}
+  </div>`;
+
   // Reparti disponibili
   const reparti=[...new Set(_tpData.map(r=>r.reparto).filter(Boolean))].sort();
   const nuovi=_tpData.filter(r=>!seenSet.has(r.ts)).length;
 
-  // Toolbar
+  // Toolbar filtri
   const fBtn=(f,lbl)=>`<button onclick="turniPrefSetFilter('${f}')" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;font-weight:600;transition:all .12s;${_tpFilter===f?'background:var(--accent);color:#fff;border-color:var(--accent);':'background:var(--surface);color:var(--text-muted);'}">${lbl}</button>`;
-  const toolbar=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-    ${fBtn('tutti','Tutti')}
-    ${reparti.map(r=>fBtn(r,r)).join('')}
+  const toolbar=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    ${fBtn('tutti','Tutti')}${reparti.map(r=>fBtn(r,r)).join('')}
     <div style="flex:1;"></div>
-    ${nuovi>0?`<button onclick="turniPrefMarkAllSeen()" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;background:var(--surface);color:var(--text-muted);">✓ Segna tutti letti</button>`:''}
+    ${nuovi>0?`<button onclick="turniPrefMarkAllSeen()" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;background:var(--surface);color:var(--text-muted);">✓ Letti</button>`:''}
     <button onclick="turniPrefLoad()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;background:var(--surface);color:var(--text-muted);" title="Aggiorna">↺</button>
   </div>`;
 
-  // Filtro
+  // Lista richieste
   let items=_tpData;
   if(_tpFilter!=='tutti')items=items.filter(r=>r.reparto===_tpFilter);
-  if(_tpFilterNome)items=items.filter(r=>r.nome.toLowerCase().includes(_tpFilterNome.toLowerCase()));
+  if(_tpCalDay)items=items.filter(r=>r.giornoRichiesto===_tpCalDay);
 
-  // Raggruppa per mese
-  const grouped={};
-  items.forEach(r=>{
-    const d=new Date(r.ts);
-    const key=isNaN(d)?'—':d.toLocaleDateString('it-IT',{month:'long',year:'numeric'});
-    if(!grouped[key])grouped[key]=[];
-    grouped[key].push(r);
-  });
+  const prefColor=p=>{const u=(p||'').toUpperCase();if(u.includes('FERIE'))return'var(--amber)';if(u.includes('RIPOSO'))return'var(--text-muted)';if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';return'var(--text)';};
 
-  const prefColor=p=>{
-    const u=(p||'').toUpperCase();
-    if(u.includes('FERIE'))return'var(--amber)';
-    if(u.includes('RIPOSO'))return'var(--text-muted)';
-    if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';
-    return'var(--text)';
-  };
-
-  let html=toolbar;
-  if(!items.length){html+='<div style="padding:30px 0;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna richiesta per il filtro selezionato</div>';el.innerHTML=html;return;}
-
-  Object.entries(grouped).forEach(([mese,rows])=>{
-    html+=`<div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:14px 0 7px;">${mese}</div>`;
-    rows.forEach(r=>{
-      const isNew=!seenSet.has(r.ts);
+  let listHtml='';
+  if(!items.length){
+    listHtml='<div style="padding:20px 0;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna richiesta</div>';
+  } else {
+    const grouped={};
+    items.forEach(r=>{
       const d=new Date(r.ts);
-      const tsStr=isNaN(d)?r.ts:d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
-      html+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${isNew?'var(--accent)':'transparent'};border-radius:8px;padding:11px 14px;margin-bottom:6px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
-        <div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            ${isNew?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--accent);color:#fff;flex-shrink:0;">NUOVO</span>':''}
-            <span style="font-size:var(--fs-xs);font-weight:700;">${_esc(r.nome)}</span>
-            <span style="font-size:var(--fs-xxs);color:var(--text-dim);background:var(--bg);padding:1px 7px;border-radius:4px;">${_esc(r.reparto)}</span>
-          </div>
-          <div style="font-size:var(--fs-xs);font-weight:700;color:${prefColor(r.preferenza)};margin-bottom:3px;">${_esc(r.preferenza)}</div>
-          <div style="display:flex;gap:14px;font-size:var(--fs-xxs);color:var(--text-muted);">
-            <span>📅 Per il <b>${_esc(r.giornoRichiesto||'—')}</b></span>
-            <span>Richiesta: ${_esc(r.dataRichiesta||'—')}</span>
-          </div>
-          ${r.motivazione?`<div style="margin-top:5px;font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;">${_esc(r.motivazione)}</div>`:''}
-        </div>
-        <div style="font-size:10px;color:var(--text-dim);white-space:nowrap;">${tsStr}</div>
-      </div>`;
+      const key=isNaN(d)?'—':d.toLocaleDateString('it-IT',{month:'long',year:'numeric'});
+      if(!grouped[key])grouped[key]=[];
+      grouped[key].push(r);
     });
-  });
+    Object.entries(grouped).forEach(([mese,rows])=>{
+      listHtml+=`<div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:12px 0 6px;">${mese}</div>`;
+      rows.forEach(r=>{
+        const isNew=!seenSet.has(r.ts);
+        const d=new Date(r.ts);
+        const tsStr=isNaN(d)?r.ts:d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+        listHtml+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${isNew?'var(--accent)':'transparent'};border-radius:8px;padding:11px 14px;margin-bottom:5px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
+          <div>
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
+              ${isNew?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--accent);color:#fff;flex-shrink:0;">NUOVO</span>':''}
+              <span style="font-size:var(--fs-xs);font-weight:700;">${_esc(r.nome)}</span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);background:var(--bg);padding:1px 7px;border-radius:4px;">${_esc(r.reparto)}</span>
+            </div>
+            <div style="font-size:var(--fs-xs);font-weight:700;color:${prefColor(r.preferenza)};margin-bottom:3px;">${_esc(r.preferenza)}</div>
+            <div style="display:flex;gap:12px;font-size:var(--fs-xxs);color:var(--text-muted);">
+              <span>📅 Per il <b>${_esc(r.giornoRichiesto||'—')}</b></span>
+              <span>Richiesta: ${_esc(r.dataRichiesta||'—')}</span>
+            </div>
+            ${r.motivazione?`<div style="margin-top:4px;font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;">${_esc(r.motivazione)}</div>`:''}
+          </div>
+          <div style="font-size:10px;color:var(--text-dim);white-space:nowrap;">${tsStr}</div>
+        </div>`;
+      });
+    });
+  }
 
-  el.innerHTML=html;
+  el.innerHTML=toolbar+calHtml+listHtml;
 }
 function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
