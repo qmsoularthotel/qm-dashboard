@@ -5091,7 +5091,7 @@ function invUpdateNavBadge(){
 }
 
 // §§ PREFERENZE TURNI
-const TURNI_PREF_URL='https://script.google.com/macros/s/AKfycbzVNkedeH1xG3yyFB-bFhkoCCklSIt0QSrfaZRdOEvuKTiNLz97Ikn0pj-ggW7KBIq9/exec';
+const TURNI_PREF_URL='https://script.google.com/macros/s/AKfycbzCbHxJbSfxg8X49w2JlfI9xo3HqhDiOa6E_0SDstdrvpQTQfqd2euaGp1oIK3zo0CA/exec';
 let _tpData=[];
 let _tpFilter='tutti';
 let _tpFilterNome='';
