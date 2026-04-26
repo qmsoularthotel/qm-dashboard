@@ -5147,15 +5147,23 @@ function turniPrefSetFilter(f){
 function turniPrefNavCal(dir){_tpCalMonth+=dir;if(_tpCalMonth>11){_tpCalMonth=0;_tpCalYear++;}else if(_tpCalMonth<0){_tpCalMonth=11;_tpCalYear--;}turniPrefRender();}
 function turniPrefSelectDay(d){_tpCalDay=_tpCalDay===d?null:d;turniPrefRender();}
 
-// Estrae solo la parte data (dd/MM/yyyy) da stringhe con eventuale orario
-function _tpDateOnly(s){return(s||'').trim().split(' ')[0].split('T')[0];}
-// Formatta data dd/MM/yyyy da ISO o stringa italiana
+// Normalizza qualsiasi formato data → dd/MM/yyyy
+// Gestisce: "dd/MM/yyyy", "yyyy-MM-dd[T...]", "Sun Apr 06 2025 22:00:00 GMT+0200 (CEST)"
 function _tpFmtDate(s){
   if(!s)return'—';
-  const only=_tpDateOnly(s);
-  // Se è ISO (yyyy-MM-dd) converti in dd/MM/yyyy
-  if(/^\d{4}-\d{2}-\d{2}$/.test(only)){const [y,m,d]=only.split('-');return`${d}/${m}/${y}`;}
-  return only||'—';
+  const str=String(s).trim();
+  if(!str||str==='—')return'—';
+  // Già dd/MM/yyyy
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(str))return str;
+  // ISO yyyy-MM-dd[T...]
+  const iso=str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(iso)return`${iso[3]}/${iso[2]}/${iso[1]}`;
+  // JS Date.toString: "... MonName DD YYYY ..." es. "Sun Apr 06 2025 22:00:00 GMT+0200"
+  const jsdt=str.match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s+(\d{4})\b/);
+  if(jsdt){const mo={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};const m=mo[jsdt[1]];if(m)return`${String(jsdt[2]).padStart(2,'0')}/${m}/${jsdt[3]}`;}
+  // Fallback: native parse con timezone Rome
+  try{const d=new Date(str);if(!isNaN(d.getTime()))return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Rome'});}catch(e){}
+  return str.split(' ')[0].split('T')[0]||'—';
 }
 
 function turniPrefRender(){
