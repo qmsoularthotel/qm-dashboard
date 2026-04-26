@@ -5091,7 +5091,7 @@ function invUpdateNavBadge(){
 }
 
 // §§ PREFERENZE TURNI
-const TURNI_PREF_URL=''; // incolla qui l'URL dello script Apps Script dopo il deploy
+const TURNI_PREF_URL='https://script.google.com/macros/s/AKfycbzVNkedeH1xG3yyFB-bFhkoCCklSIt0QSrfaZRdOEvuKTiNLz97Ikn0pj-ggW7KBIq9/exec';
 let _tpData=[];
 let _tpFilter='tutti';
 let _tpFilterNome='';
