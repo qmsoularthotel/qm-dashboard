@@ -362,8 +362,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Il turno viene aggiornato automaticamente</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventari Detersivi'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni',dvr:'Sicurezza',miniapp:'Strumenti'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventari Detersivi','turni-pref':'Preferenze Turni'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni',dvr:'Sicurezza',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -532,6 +532,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id.startsWith('recensioni-')){if(!recGroupOpen){recGroupOpen=true;document.getElementById('recGroupToggle').classList.add('open');document.getElementById('recGroupItems').classList.add('open');}}
   try{localStorage.setItem('qm_last_view',id);}catch(e){}
   if(id==='inventario'){try{invRender();}catch(e){}}
+  if(id==='turni-pref'){try{turniPrefRender();turniPrefMarkAllSeen();}catch(e){}}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='overview'&&weekData){
     try{loadWeekData(weekData);}catch(e){}
@@ -2160,6 +2161,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
         }
       }
     }catch(e){}
+    try{turniPrefLoad();}catch(e){}
   },30000);
   const alertTimeEl=document.getElementById('alertTime');if(alertTimeEl)alertTimeEl.textContent='Aggiornato '+String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');
   buildBarChart();
@@ -2183,6 +2185,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
     ovUpdateRevNoreply();ovUpdateRevImport();
     hkpRestore();
     dvrRestore();dvrBadgeUpdate();
+    turniPrefRestore();turniPrefLoad();
     // Ripristina turno settimanale
     try{
       const saved=localStorage.getItem('qm_weekData');
@@ -5085,5 +5088,143 @@ function invUpdateNavBadge(){
   if(!badge){badge=document.createElement('span');badge.className='nav-badge';navEl.appendChild(badge);}
   if(total>0){badge.style.background='var(--amber)';badge.textContent=total;badge.style.display='';}
   else{badge.style.display='none';}
+}
+
+// §§ PREFERENZE TURNI
+const TURNI_PREF_URL=''; // incolla qui l'URL dello script Apps Script dopo il deploy
+let _tpData=[];
+let _tpFilter='tutti';
+let _tpFilterNome='';
+
+function turniPrefUpdateBadge(){
+  const badge=document.getElementById('turniPrefBadge');
+  if(!badge)return;
+  let seen=[];
+  try{seen=JSON.parse(localStorage.getItem('qm_tp_seen')||'[]');}catch(e){}
+  const seenSet=new Set(seen);
+  const nuovi=_tpData.filter(r=>!seenSet.has(r.ts)).length;
+  if(nuovi>0){badge.textContent=nuovi;badge.style.display='';}
+  else{badge.style.display='none';}
+}
+
+async function turniPrefLoad(){
+  if(!TURNI_PREF_URL)return;
+  try{
+    const res=await fetch(TURNI_PREF_URL);
+    const json=await res.json();
+    const richieste=json.richieste||[];
+    _tpData=richieste;
+    try{localStorage.setItem('qm_turni_pref',JSON.stringify(richieste));}catch(e){}
+    turniPrefUpdateBadge();
+    const view=document.getElementById('view-turni-pref');
+    if(view&&view.classList.contains('active'))turniPrefRender();
+  }catch(e){console.warn('turniPrefLoad error',e);}
+}
+
+function turniPrefRestore(){
+  try{
+    const raw=localStorage.getItem('qm_turni_pref');
+    if(raw){_tpData=JSON.parse(raw)||[];}
+  }catch(e){}
+  turniPrefUpdateBadge();
+}
+
+function turniPrefMarkAllSeen(){
+  const ids=_tpData.map(r=>r.ts);
+  try{localStorage.setItem('qm_tp_seen',JSON.stringify(ids));}catch(e){}
+  turniPrefUpdateBadge();
+  turniPrefRender();
+}
+
+function turniPrefSetFilter(f){
+  _tpFilter=f;
+  turniPrefRender();
+}
+
+function turniPrefRender(){
+  const el=document.getElementById('turni-pref-content');
+  if(!el)return;
+  let seen=[];
+  try{seen=JSON.parse(localStorage.getItem('qm_tp_seen')||'[]');}catch(e){}
+  const seenSet=new Set(seen);
+
+  if(!TURNI_PREF_URL){
+    el.innerHTML=`<div style="background:var(--amber-bg);border:1px solid #d4aa70;border-radius:10px;padding:18px 20px;max-width:600px;">
+      <div style="font-weight:700;color:var(--amber);margin-bottom:8px;">⚙️ Configurazione necessaria</div>
+      <div style="font-size:var(--fs-xs);color:var(--text);line-height:1.6;">Per attivare questa sezione, crea lo script Apps Script nel foglio Google e incolla l'URL nella costante <code>TURNI_PREF_URL</code> in app.js.</div>
+    </div>`;
+    return;
+  }
+
+  if(!_tpData.length){
+    el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna richiesta ricevuta</div>';
+    return;
+  }
+
+  // Reparti disponibili
+  const reparti=[...new Set(_tpData.map(r=>r.reparto).filter(Boolean))].sort();
+  const nuovi=_tpData.filter(r=>!seenSet.has(r.ts)).length;
+
+  // Toolbar
+  const fBtn=(f,lbl)=>`<button onclick="turniPrefSetFilter('${f}')" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;font-weight:600;transition:all .12s;${_tpFilter===f?'background:var(--accent);color:#fff;border-color:var(--accent);':'background:var(--surface);color:var(--text-muted);'}">${lbl}</button>`;
+  const toolbar=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+    ${fBtn('tutti','Tutti')}
+    ${reparti.map(r=>fBtn(r,r)).join('')}
+    <div style="flex:1;"></div>
+    ${nuovi>0?`<button onclick="turniPrefMarkAllSeen()" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;background:var(--surface);color:var(--text-muted);">✓ Segna tutti letti</button>`:''}
+    <button onclick="turniPrefLoad()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;background:var(--surface);color:var(--text-muted);" title="Aggiorna">↺</button>
+  </div>`;
+
+  // Filtro
+  let items=_tpData;
+  if(_tpFilter!=='tutti')items=items.filter(r=>r.reparto===_tpFilter);
+  if(_tpFilterNome)items=items.filter(r=>r.nome.toLowerCase().includes(_tpFilterNome.toLowerCase()));
+
+  // Raggruppa per mese
+  const grouped={};
+  items.forEach(r=>{
+    const d=new Date(r.ts);
+    const key=isNaN(d)?'—':d.toLocaleDateString('it-IT',{month:'long',year:'numeric'});
+    if(!grouped[key])grouped[key]=[];
+    grouped[key].push(r);
+  });
+
+  const prefColor=p=>{
+    const u=(p||'').toUpperCase();
+    if(u.includes('FERIE'))return'var(--amber)';
+    if(u.includes('RIPOSO'))return'var(--text-muted)';
+    if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';
+    return'var(--text)';
+  };
+
+  let html=toolbar;
+  if(!items.length){html+='<div style="padding:30px 0;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna richiesta per il filtro selezionato</div>';el.innerHTML=html;return;}
+
+  Object.entries(grouped).forEach(([mese,rows])=>{
+    html+=`<div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:14px 0 7px;">${mese}</div>`;
+    rows.forEach(r=>{
+      const isNew=!seenSet.has(r.ts);
+      const d=new Date(r.ts);
+      const tsStr=isNaN(d)?r.ts:d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+      html+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${isNew?'var(--accent)':'transparent'};border-radius:8px;padding:11px 14px;margin-bottom:6px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            ${isNew?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--accent);color:#fff;flex-shrink:0;">NUOVO</span>':''}
+            <span style="font-size:var(--fs-xs);font-weight:700;">${_esc(r.nome)}</span>
+            <span style="font-size:var(--fs-xxs);color:var(--text-dim);background:var(--bg);padding:1px 7px;border-radius:4px;">${_esc(r.reparto)}</span>
+          </div>
+          <div style="font-size:var(--fs-xs);font-weight:700;color:${prefColor(r.preferenza)};margin-bottom:3px;">${_esc(r.preferenza)}</div>
+          <div style="display:flex;gap:14px;font-size:var(--fs-xxs);color:var(--text-muted);">
+            <span>📅 Per il <b>${_esc(r.giornoRichiesto||'—')}</b></span>
+            <span>Richiesta: ${_esc(r.dataRichiesta||'—')}</span>
+          </div>
+          ${r.motivazione?`<div style="margin-top:5px;font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;">${_esc(r.motivazione)}</div>`:''}
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);white-space:nowrap;">${tsStr}</div>
+      </div>`;
+    });
+  });
+
+  el.innerHTML=html;
 }
 function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}

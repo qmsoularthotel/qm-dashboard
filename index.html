@@ -60,6 +60,7 @@
       <div class="nav-item" onclick="setView('checklist',this)"><span class="nav-icon">☑️</span>Checklist<span class="nav-badge" id="checklistNavBadge">6</span></div>
       <div class="nav-item" onclick="setView('registrazione',this)"><span class="nav-icon">🪪</span>Registration Cards</div>
       <div class="nav-item" onclick="setView('inventario',this);invRender()"><span class="nav-icon">📦</span>Inventari Detersivi</div>
+      <div class="nav-item" onclick="setView('turni-pref',this)"><span class="nav-icon">📅</span>Preferenze Turni<span class="nav-badge" id="turniPrefBadge" style="display:none;"></span></div>
       <div class="nav-group-header" id="hkpGroupToggle" onclick="toggleHkpGroup()">
         <span class="nav-icon">🛏️</span>
         <span>Operativa Housekeeping</span>
@@ -1276,6 +1277,9 @@
         <div id="inv-moves-view" style="display:none;"></div>
         <div id="inv-analysis-view" style="display:none;"></div>
       </div>
+      <div class="view" id="view-turni-pref">
+        <div id="turni-pref-content"></div>
+      </div>
   </main>
 </div>
 <div id="catChartModal" onclick="closeCatModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:20px;">
@@ -1295,6 +1299,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=228-20260426"></script>
+<script src="app.js?v=229-20260426"></script>
 </body>
 </html>
