@@ -75,6 +75,15 @@
       background: var(--text-dim); flex-shrink: 0; transition: background .2s;
     }
     .hw-scan-dot.on { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
+    .hw-quick-btn {
+      flex-shrink: 0; padding: 7px 11px; border-radius: 8px; border: 1.5px solid var(--border);
+      background: var(--bg); color: var(--text-muted); font-size: var(--fs-xs);
+      font-weight: 700; cursor: pointer; white-space: nowrap; transition: all .15s;
+      font-family: inherit;
+    }
+    .hw-quick-btn.active {
+      background: var(--green-bg); border-color: var(--green); color: var(--green);
+    }
 
     /* ── Content ── */
     .content { padding-bottom: 90px; }
@@ -352,6 +361,7 @@
       placeholder="Scanner pronto — scansiona il codice…"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
       onkeydown="if(event.key==='Enter'){_hwProcess();event.preventDefault();}">
+    <button class="hw-quick-btn" id="hwQuickBtn" onclick="_hwToggleQuick()" title="Modalità rapida: +1/-1 senza conferma">⚡ Rapido</button>
   </div>
 </div>
 
@@ -1092,6 +1102,17 @@ function esc(s) {
 }
 
 // ── HW Scanner (Netum C740 / qualsiasi scanner HID a tastiera) ───────────────
+let _hwQuick = false;
+
+function _hwToggleQuick() {
+  _hwQuick = !_hwQuick;
+  document.getElementById('hwQuickBtn').classList.toggle('active', _hwQuick);
+  document.getElementById('hwScanInput').placeholder = _hwQuick
+    ? 'Modalità rapida attiva — Stock:+1  Movimenti:−1'
+    : 'Scanner pronto — scansiona il codice…';
+  document.getElementById('hwScanInput').focus();
+}
+
 function _hwProcess() {
   const inp = document.getElementById('hwScanInput');
   const bc  = inp.value.trim();
@@ -1101,6 +1122,27 @@ function _hwProcess() {
   const dot = document.getElementById('hwScanDot');
   dot.classList.add('on');
   setTimeout(() => dot.classList.remove('on'), 700);
+
+  // Modalità rapida: +1 o -1 senza modal (solo prodotti già in catalogo)
+  if (_hwQuick && catalog[bc]) {
+    const type = currentTab === 'moves' ? 'out' : 'in';
+    const move = {
+      id:      Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      barcode: bc,
+      type,
+      qty:     1,
+      ts:      Date.now(),
+      note:    'Rapido'
+    };
+    moves[currentWH].push(move);
+    lsSet('qm_inv_moves_' + currentWH, moves[currentWH]);
+    pushToCloud();
+    renderAll();
+    const icon = type === 'in' ? '➕' : '➖';
+    showToast(icon + ' 1 ' + (catalog[bc].unit || '') + ' — ' + catalog[bc].name);
+    return;
+  }
+
   onBarcodeDetected(bc);
 }
 
