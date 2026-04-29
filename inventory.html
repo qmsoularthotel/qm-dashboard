@@ -360,6 +360,7 @@
     <input id="hwScanInput" class="hw-scan-input" type="text"
       placeholder="Scanner pronto — scansiona il codice…"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      inputmode="none"
       onkeydown="if(event.key==='Enter'){_hwProcess();event.preventDefault();}">
     <button class="hw-quick-btn" id="hwQuickBtn" onclick="_hwToggleQuick()" title="Modalità rapida: +1/-1 senza conferma">⚡ Rapido</button>
   </div>
