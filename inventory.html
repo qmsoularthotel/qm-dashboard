@@ -57,6 +57,25 @@
     }
     .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
+    /* ── HW Scanner bar ── */
+    .hw-scan-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px 10px; background: var(--surface);
+    }
+    .hw-scan-input {
+      flex: 1; border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 9px 12px; font-size: var(--fs-sm); background: var(--bg);
+      color: var(--text); outline: none; font-family: inherit;
+      transition: border-color .15s;
+    }
+    .hw-scan-input:focus { border-color: var(--accent); background: #fff; }
+    .hw-scan-input::placeholder { color: var(--text-dim); }
+    .hw-scan-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--text-dim); flex-shrink: 0; transition: background .2s;
+    }
+    .hw-scan-dot.on { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
+
     /* ── Content ── */
     .content { padding-bottom: 90px; }
 
@@ -326,6 +345,13 @@
     <div class="nav-tab active" id="ntab-stock"   onclick="setNavTab('stock')">Stock</div>
     <div class="nav-tab"        id="ntab-moves"   onclick="setNavTab('moves')">Movimenti</div>
     <div class="nav-tab"        id="ntab-catalog" onclick="setNavTab('catalog')">Catalogo</div>
+  </div>
+  <div class="hw-scan-bar">
+    <div class="hw-scan-dot" id="hwScanDot"></div>
+    <input id="hwScanInput" class="hw-scan-input" type="text"
+      placeholder="Scanner pronto — scansiona il codice…"
+      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      onkeydown="if(event.key==='Enter'){_hwProcess();event.preventDefault();}">
   </div>
 </div>
 
@@ -942,6 +968,7 @@ function deleteMove(id) {
 function closeMoveModal() {
   document.getElementById('moveModal').classList.remove('open');
   pendingBC = null;
+  setTimeout(() => document.getElementById('hwScanInput')?.focus(), 100);
 }
 
 function stepQty(delta) {
@@ -1019,6 +1046,7 @@ function editProduct(bc) {
 
 function closeEditProductModal() {
   document.getElementById('editProductModal').classList.remove('open');
+  setTimeout(() => document.getElementById('hwScanInput')?.focus(), 100);
 }
 
 function saveEditProduct() {
@@ -1063,6 +1091,48 @@ function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── HW Scanner (Netum C740 / qualsiasi scanner HID a tastiera) ───────────────
+function _hwProcess() {
+  const inp = document.getElementById('hwScanInput');
+  const bc  = inp.value.trim();
+  inp.value = '';
+  if (!bc) return;
+  // Flash verde
+  const dot = document.getElementById('hwScanDot');
+  dot.classList.add('on');
+  setTimeout(() => dot.classList.remove('on'), 700);
+  onBarcodeDetected(bc);
+}
+
+function initHWScanner() {
+  const inp = document.getElementById('hwScanInput');
+  if (!inp) return;
+  // Auto-focus all'avvio
+  inp.focus();
+  // Stato punto (verde = focus, grigio = blur)
+  const dot = document.getElementById('hwScanDot');
+  inp.addEventListener('focus', () => dot.classList.add('on'));
+  inp.addEventListener('blur',  () => dot.classList.remove('on'));
+  // Click su area non-interattiva → riporta focus allo scanner
+  document.addEventListener('click', e => {
+    const tag = e.target?.tagName || '';
+    if (!['INPUT','TEXTAREA','SELECT','BUTTON','A','LABEL'].includes(tag)) {
+      inp.focus();
+    }
+  });
+  // Tasto premo fuori da qualsiasi input → redirect allo scanner
+  document.addEventListener('keydown', e => {
+    const tag = (document.activeElement?.tagName || '').toUpperCase();
+    const isOtherInput = ['INPUT','TEXTAREA','SELECT'].includes(tag) &&
+                         document.activeElement.id !== 'hwScanInput';
+    if (isOtherInput) return;
+    if (document.activeElement.id === 'hwScanInput') return;
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (e.key.length !== 1) return;
+    inp.focus();
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 (function init() {
   catalog  = lsGet('qm_inv_catalog',  {});
@@ -1070,6 +1140,7 @@ function esc(s) {
   moves.ar = lsGet('qm_inv_moves_ar', []);
   renderAll();
   loadFromCloud();
+  initHWScanner();
 })();
 </script>
 </body>
