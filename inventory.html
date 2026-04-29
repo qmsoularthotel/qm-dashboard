@@ -1150,30 +1150,25 @@ function _hwProcess() {
 function initHWScanner() {
   const inp = document.getElementById('hwScanInput');
   if (!inp) return;
-  // Auto-focus all'avvio
-  inp.focus();
   // Stato punto (verde = focus, grigio = blur)
   const dot = document.getElementById('hwScanDot');
   inp.addEventListener('focus', () => dot.classList.add('on'));
   inp.addEventListener('blur',  () => dot.classList.remove('on'));
-  // Click su area non-interattiva → riporta focus allo scanner
-  document.addEventListener('click', e => {
-    const tag = e.target?.tagName || '';
-    if (!['INPUT','TEXTAREA','SELECT','BUTTON','A','LABEL'].includes(tag)) {
-      inp.focus();
-    }
-  });
-  // Tasto premo fuori da qualsiasi input → redirect allo scanner
-  document.addEventListener('keydown', e => {
-    const tag = (document.activeElement?.tagName || '').toUpperCase();
-    const isOtherInput = ['INPUT','TEXTAREA','SELECT'].includes(tag) &&
-                         document.activeElement.id !== 'hwScanInput';
-    if (isOtherInput) return;
-    if (document.activeElement.id === 'hwScanInput') return;
-    if (e.ctrlKey || e.altKey || e.metaKey) return;
-    if (e.key.length !== 1) return;
+  // Auto-focus solo su desktop (non su touch device per non bloccare tastiera)
+  if (!('ontouchstart' in window)) {
     inp.focus();
-  });
+    // Su desktop: tasto fuori da qualsiasi input → redirect allo scanner
+    document.addEventListener('keydown', e => {
+      const tag = (document.activeElement?.tagName || '').toUpperCase();
+      const isOtherInput = ['INPUT','TEXTAREA','SELECT'].includes(tag) &&
+                           document.activeElement.id !== 'hwScanInput';
+      if (isOtherInput) return;
+      if (document.activeElement.id === 'hwScanInput') return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      if (e.key.length !== 1) return;
+      inp.focus();
+    });
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
