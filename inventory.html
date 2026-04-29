@@ -75,15 +75,6 @@
       background: var(--text-dim); flex-shrink: 0; transition: background .2s;
     }
     .hw-scan-dot.on { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
-    .hw-quick-btn {
-      flex-shrink: 0; padding: 7px 11px; border-radius: 8px; border: 1.5px solid var(--border);
-      background: var(--bg); color: var(--text-muted); font-size: var(--fs-xs);
-      font-weight: 700; cursor: pointer; white-space: nowrap; transition: all .15s;
-      font-family: inherit;
-    }
-    .hw-quick-btn.active {
-      background: var(--green-bg); border-color: var(--green); color: var(--green);
-    }
 
     /* ── Content ── */
     .content { padding-bottom: 90px; }
@@ -362,7 +353,6 @@
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
       inputmode="none"
       onkeydown="if(event.key==='Enter'){_hwProcess();event.preventDefault();}">
-    <button class="hw-quick-btn" id="hwQuickBtn" onclick="_hwToggleQuick()" title="Modalità rapida: +1/-1 senza conferma">⚡ Rapido</button>
   </div>
 </div>
 
@@ -1103,29 +1093,14 @@ function esc(s) {
 }
 
 // ── HW Scanner (Netum C740 / qualsiasi scanner HID a tastiera) ───────────────
-let _hwQuick = false;
-
-function _hwToggleQuick() {
-  _hwQuick = !_hwQuick;
-  document.getElementById('hwQuickBtn').classList.toggle('active', _hwQuick);
-  document.getElementById('hwScanInput').placeholder = _hwQuick
-    ? 'Modalità rapida attiva — Stock:+1  Movimenti:−1'
-    : 'Scanner pronto — scansiona il codice…';
-  document.getElementById('hwScanInput').focus();
-}
-
 function _hwProcess() {
   const inp = document.getElementById('hwScanInput');
   const bc  = inp.value.trim();
   inp.value = '';
   if (!bc) return;
-  // Flash verde
-  const dot = document.getElementById('hwScanDot');
-  dot.classList.add('on');
-  setTimeout(() => dot.classList.remove('on'), 700);
 
-  // Modalità rapida: +1 o -1 senza modal (solo prodotti già in catalogo)
-  if (_hwQuick && catalog[bc]) {
+  // Prodotto in catalogo → movimento rapido +1/-1 in base al tab attivo
+  if (catalog[bc]) {
     const type = currentTab === 'moves' ? 'out' : 'in';
     const move = {
       id:      Date.now() + '_' + Math.random().toString(36).slice(2, 6),
@@ -1144,6 +1119,7 @@ function _hwProcess() {
     return;
   }
 
+  // Prodotto non in catalogo → apri modal
   onBarcodeDetected(bc);
 }
 
