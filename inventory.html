@@ -1150,10 +1150,8 @@ function _hwProcess() {
 function initHWScanner() {
   const inp = document.getElementById('hwScanInput');
   if (!inp) return;
-  // Stato punto (verde = focus, grigio = blur)
-  const dot = document.getElementById('hwScanDot');
-  inp.addEventListener('focus', () => dot.classList.add('on'));
-  inp.addEventListener('blur',  () => dot.classList.remove('on'));
+  // Pallino sempre verde
+  document.getElementById('hwScanDot').classList.add('on');
   // Auto-focus solo su desktop (non su touch device per non bloccare tastiera)
   if (!('ontouchstart' in window)) {
     inp.focus();
