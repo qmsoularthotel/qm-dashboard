@@ -595,8 +595,8 @@ function renderStock() {
   const q = (document.getElementById('stockSearch')?.value || '').toLowerCase();
 
   const items = Object.entries(catalog)
-    .map(([bc, p]) => ({ bc, ...p, qty: stock[bc] ?? null }))
-    .filter(it => it.qty !== null)
+    .map(([bc, p]) => ({ bc, ...p, qty: stock[bc] ?? 0 }))
+    .filter(it => it.qty !== undefined)
     .filter(it => !q || it.name.toLowerCase().includes(q) || it.bc.includes(q))
     .sort((a, b) => a.name.localeCompare(b.name, 'it'));
 
