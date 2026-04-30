@@ -4926,11 +4926,15 @@ function invRenderAnalysis(catalog,moves){
     const consumo=periodOuts.reduce((s,m)=>s+m.qty,0);
     const rifornimento=periodIns.reduce((s,m)=>s+m.qty,0);
     const days=_invPeriod>0?_invPeriod:(bm.length?Math.max(1,Math.ceil((now-Math.min(...bm.map(m=>m.ts)))/86400000)):1);
-    // Consumo settimanale: se ci sono consegne (in), ogni consegna = 1 ciclo settimanale
-    // → media per consegna. Se solo scarichi (out), usa formula temporale.
+    // Consumo settimanale: raggruppa le consegne per giorno (più scan = 1 sessione)
+    // → media delle sessioni giornaliere = consumo per ciclo settimanale
     let consumoSett;
     if(periodIns.length>0){
-      consumoSett=Math.round((rifornimento/periodIns.length)*10)/10;
+      const byDay={};
+      for(const m of periodIns){const d=new Date(m.ts).toDateString();byDay[d]=(byDay[d]||0)+m.qty;}
+      const sessions=Object.values(byDay);
+      const avgSession=sessions.reduce((s,v)=>s+v,0)/sessions.length;
+      consumoSett=Math.round(avgSession*10)/10;
     }else{
       consumoSett=days>0?Math.round((consumo/days)*7*10)/10:0;
     }
