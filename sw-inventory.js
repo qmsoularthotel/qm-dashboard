@@ -1,8 +1,7 @@
 // Service Worker — QM Inventario (offline support)
 const CACHE = 'qm-inv-v1';
 const ASSETS = [
-  './inventory.html',
-  'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js'
+  './inventory.html'
 ];
 
 self.addEventListener('install', e => {

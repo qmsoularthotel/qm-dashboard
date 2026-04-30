@@ -88,17 +88,6 @@
     /* ── Content ── */
     .content { padding-bottom: 90px; }
 
-    /* ── FAB ── */
-    .fab {
-      position: fixed; bottom: 24px; right: 20px;
-      width: 58px; height: 58px; border-radius: 50%;
-      background: var(--accent); color: #fff; border: none;
-      cursor: pointer; box-shadow: 0 4px 18px rgba(30,64,128,.45);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 200; transition: transform .12s;
-    }
-    .fab:active { transform: scale(.92); }
-
     /* ── Search ── */
     .search-wrap { padding: 10px 14px 0; }
     .search-input {
@@ -184,62 +173,6 @@
     }
     .empty-icon { font-size: 44px; margin-bottom: 12px; }
     .empty-text { font-size: var(--fs-sm); line-height: 1.6; }
-
-    /* ── Scanner modal ── */
-    .scanner-modal {
-      position: fixed; inset: 0; background: #000;
-      z-index: 600; display: none; flex-direction: column;
-    }
-    .scanner-modal.open { display: flex; }
-    #scannerVideo { width: 100%; flex: 1; object-fit: cover; }
-    .scanner-overlay {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      pointer-events: none;
-    }
-    .scanner-frame {
-      width: 260px; height: 170px;
-      border: 2px solid rgba(255,255,255,.6); border-radius: 14px;
-      position: relative; overflow: hidden;
-    }
-    .scanner-line {
-      position: absolute; left: 0; right: 0; height: 2px;
-      background: var(--accent); top: 50%;
-      animation: scan 2.2s infinite ease-in-out;
-    }
-    @keyframes scan { 0%,100% { top: 8%; } 50% { top: 88%; } }
-    .scanner-hint {
-      color: rgba(255,255,255,.75); font-size: var(--fs-xs);
-      margin-top: 18px; text-align: center;
-    }
-    .scanner-close {
-      position: absolute; top: 16px; right: 16px;
-      pointer-events: all; background: rgba(0,0,0,.55);
-      border: none; color: #fff; font-size: 22px;
-      width: 44px; height: 44px; border-radius: 50%;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-    }
-    .scanner-torch {
-      position: absolute; top: 16px; left: 16px;
-      pointer-events: all; background: rgba(0,0,0,.55);
-      border: none; color: #fff; font-size: 20px;
-      width: 44px; height: 44px; border-radius: 50%;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-    }
-    .scanner-torch.on { background: rgba(255,200,0,.7); }
-    .scanner-bottom {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      padding: 14px 20px 36px; pointer-events: all;
-      background: linear-gradient(transparent, rgba(0,0,0,.7));
-    }
-    .scanner-manual-input {
-      width: 100%; padding: 12px 14px;
-      border: 1.5px solid rgba(255,255,255,.35); border-radius: 10px;
-      background: rgba(0,0,0,.55); color: #fff;
-      font-size: var(--fs-sm); outline: none; text-align: center;
-    }
-    .scanner-manual-input::placeholder { color: rgba(255,255,255,.45); }
 
     /* ── Movement bottom-sheet ── */
     .modal-backdrop {
@@ -407,41 +340,6 @@
 
 </div>
 
-<!-- FAB: scan -->
-<button class="fab" onclick="openScanner()" aria-label="Scansiona barcode">
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-    <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/>
-    <path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
-    <line x1="7" y1="8" x2="7" y2="16"/><line x1="10" y1="8" x2="10" y2="16"/>
-    <line x1="13" y1="8" x2="13" y2="16"/><line x1="16" y1="8" x2="16" y2="16"/>
-  </svg>
-</button>
-
-<!-- Scanner modal -->
-<div class="scanner-modal" id="scannerModal">
-  <video id="scannerVideo" autoplay muted playsinline></video>
-  <div class="scanner-overlay">
-    <div class="scanner-frame"><div class="scanner-line"></div></div>
-    <div class="scanner-hint">Inquadra il codice a barre del prodotto</div>
-  </div>
-  <button class="scanner-close" onclick="closeScanner()">✕</button>
-  <button class="scanner-torch" id="torchBtn" onclick="toggleTorch()" style="display:none;" title="Torcia">💡</button>
-  <div class="scanner-bottom">
-    <div style="display:flex;gap:8px;align-items:center;">
-      <input
-        class="scanner-manual-input"
-        type="text" id="manualBarcodeInput"
-        placeholder="Inserisci codice manualmente…"
-        inputmode="numeric" autocomplete="off"
-        onkeydown="if(event.key==='Enter')onManualBarcode(this.value.trim())"
-        style="flex:1;"
-      >
-      <button onclick="onManualBarcode(document.getElementById('manualBarcodeInput').value.trim())"
-        style="padding:12px 16px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap;">→</button>
-    </div>
-  </div>
-</div>
-
 <!-- Movement bottom-sheet -->
 <div class="modal-backdrop" id="moveModal" onclick="if(event.target===this)closeMoveModal()">
   <div class="modal-sheet">
@@ -535,8 +433,6 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- ZXing barcode library -->
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
 <script>
 'use strict';
 
@@ -786,123 +682,8 @@ function renderCatalog() {
         </div>
       </div>
       <button class="catalog-edit" onclick="editProduct('${bc}')" title="Modifica">✏️</button>
+      <button class="catalog-edit" onclick="deleteProduct('${bc}')" title="Elimina" style="color:var(--red)">🗑️</button>
     </div>`).join('');
-}
-
-// ── Scanner ──────────────────────────────────────────────────────────────────
-let zxingReader = null;
-let _torchOn = false;
-let _videoTrack = null;
-let _scanRaf = null;
-let _nativeStream = null;
-
-async function openScanner() {
-  document.getElementById('scannerModal').classList.add('open');
-  document.getElementById('manualBarcodeInput').value = '';
-  _torchOn = false; _videoTrack = null;
-  document.getElementById('torchBtn').classList.remove('on');
-  document.getElementById('torchBtn').style.display = 'none';
-
-  if ('BarcodeDetector' in window) {
-    await _startNativeScanner();
-  } else if (typeof ZXing !== 'undefined') {
-    await _startZXingScanner();
-  } else {
-    showToast('Scanner non disponibile — usa input manuale');
-  }
-}
-
-async function _startNativeScanner() {
-  const FORMATS = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','qr_code'];
-  let supported = FORMATS;
-  try { supported = (await BarcodeDetector.getSupportedFormats()).filter(f => FORMATS.includes(f)); } catch(e) {}
-  const detector = new BarcodeDetector({ formats: supported.length ? supported : FORMATS });
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-    });
-    _nativeStream = stream;
-    const video = document.getElementById('scannerVideo');
-    video.srcObject = stream;
-    await video.play();
-    _videoTrack = stream.getVideoTracks()[0];
-    const caps = _videoTrack.getCapabilities?.() ?? {};
-    document.getElementById('torchBtn').style.display = caps.torch ? 'flex' : 'none';
-
-    let _last = null, _hits = 0;
-    const loop = async () => {
-      if (!document.getElementById('scannerModal').classList.contains('open')) return;
-      try {
-        const res = await detector.detect(video);
-        if (res.length) {
-          const code = res[0].rawValue;
-          if (code === _last) { _hits++; } else { _last = code; _hits = 1; }
-          if (_hits >= 2) {
-            const frame = document.querySelector('.scanner-frame');
-            if (frame) { frame.style.borderColor = '#4ade80'; setTimeout(() => frame.style.borderColor = '', 300); }
-            closeScanner(); onBarcodeDetected(code); return;
-          }
-        } else { _last = null; _hits = 0; }
-      } catch(e) {}
-      _scanRaf = requestAnimationFrame(loop);
-    };
-    _scanRaf = requestAnimationFrame(loop);
-  } catch(e) {
-    showToast(e?.name === 'NotAllowedError' ? 'Permesso fotocamera negato — usa input manuale' : 'Errore fotocamera — usa input manuale');
-  }
-}
-
-async function _startZXingScanner() {
-  try {
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    zxingReader = new ZXing.BrowserMultiFormatReader(hints, 150);
-    await zxingReader.decodeFromConstraints(
-      { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }},
-      'scannerVideo',
-      (result) => {
-        if (result) {
-          const frame = document.querySelector('.scanner-frame');
-          if (frame) { frame.style.borderColor = '#4ade80'; setTimeout(() => frame.style.borderColor = '', 300); }
-          closeScanner(); onBarcodeDetected(result.getText());
-        }
-      }
-    );
-    const video = document.getElementById('scannerVideo');
-    _videoTrack = video.srcObject?.getVideoTracks?.()[0] ?? null;
-    if (_videoTrack) {
-      const caps = _videoTrack.getCapabilities?.() ?? {};
-      document.getElementById('torchBtn').style.display = caps.torch ? 'flex' : 'none';
-    }
-  } catch(e) {
-    showToast(e?.name === 'NotAllowedError' ? 'Permesso fotocamera negato — usa input manuale' : 'Errore fotocamera — usa input manuale');
-  }
-}
-
-async function toggleTorch() {
-  if (!_videoTrack) return;
-  _torchOn = !_torchOn;
-  try {
-    await _videoTrack.applyConstraints({ advanced: [{ torch: _torchOn }] });
-    document.getElementById('torchBtn').classList.toggle('on', _torchOn);
-  } catch(e) { _torchOn = !_torchOn; }
-}
-
-function closeScanner() {
-  document.getElementById('scannerModal').classList.remove('open');
-  document.getElementById('torchBtn').style.display = 'none';
-  if (_torchOn && _videoTrack) { try { _videoTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch(e) {} }
-  _torchOn = false; _videoTrack = null;
-  if (_scanRaf) { cancelAnimationFrame(_scanRaf); _scanRaf = null; }
-  if (_nativeStream) { _nativeStream.getTracks().forEach(t => t.stop()); _nativeStream = null; }
-  try { if (zxingReader) { zxingReader.reset(); zxingReader = null; } } catch(e) {}
-}
-
-function onManualBarcode(val) {
-  if (!val.trim()) return;
-  closeScanner();
-  onBarcodeDetected(val.trim());
 }
 
 // ── Barcode → Movement modal ─────────────────────────────────────────────────
@@ -1065,6 +846,16 @@ async function saveMove() {
 }
 
 // ── Edit catalog product ──────────────────────────────────────────────────────
+function deleteProduct(bc) {
+  const p = catalog[bc];
+  if (!p) return;
+  if (!confirm(`Eliminare "${p.name}" dal catalogo?\n\nI movimenti esistenti non verranno eliminati.`)) return;
+  delete catalog[bc];
+  pushToCloud();
+  renderAll();
+  showToast('Prodotto eliminato dal catalogo');
+}
+
 function editProduct(bc) {
   const p = catalog[bc];
   if (!p) return;
