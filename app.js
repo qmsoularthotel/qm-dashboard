@@ -4926,8 +4926,15 @@ function invRenderAnalysis(catalog,moves){
     const consumo=periodOuts.reduce((s,m)=>s+m.qty,0);
     const rifornimento=periodIns.reduce((s,m)=>s+m.qty,0);
     const days=_invPeriod>0?_invPeriod:(bm.length?Math.max(1,Math.ceil((now-Math.min(...bm.map(m=>m.ts)))/86400000)):1);
-    const consumoSett=days>0?Math.round((consumo/days)*7*10)/10:0;
-    const consumoGg=days>0?consumo/days:0;
+    // Consumo settimanale: se ci sono consegne (in), ogni consegna = 1 ciclo settimanale
+    // → media per consegna. Se solo scarichi (out), usa formula temporale.
+    let consumoSett;
+    if(periodIns.length>0){
+      consumoSett=Math.round((rifornimento/periodIns.length)*10)/10;
+    }else{
+      consumoSett=days>0?Math.round((consumo/days)*7*10)/10:0;
+    }
+    const consumoGg=consumoSett/7;
     const autonomia=consumoGg>0?Math.round((stock[bc]??0)/consumoGg):null;
     return{bc,name:p.name,unit:p.unit||'',qty:stock[bc]??0,consumo,rifornimento,consumoSett,autonomia,hasMoves:bm.length>0};
   }).filter(it=>it.hasMoves);
