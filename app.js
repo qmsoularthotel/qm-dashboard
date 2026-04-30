@@ -5040,8 +5040,12 @@ function invPrintStock(){
   <style>
     @page{size:A4;margin:18mm 15mm 18mm 15mm;}
     body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1c1c1e;margin:0;}
-    h1{font-size:18px;font-weight:700;margin:0 0 2px;}
-    .sub{font-size:13px;color:#666;margin-bottom:16px;}
+    .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:16px;}
+    h1{font-size:18px;font-weight:700;margin:0 0 3px;}
+    .sub{font-size:12px;color:#888;}
+    .date-badge{background:#1E4080;color:#fff;padding:10px 18px;border-radius:8px;text-align:center;flex-shrink:0;}
+    .date-badge-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;opacity:.75;margin-bottom:4px;}
+    .date-badge-value{font-size:15px;font-weight:700;line-height:1.2;}
     table{width:100%;border-collapse:collapse;}
     thead th{background:#1E4080;color:#fff;padding:8px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;text-align:left;}
     thead th:nth-child(3),thead th:nth-child(4),thead th:nth-child(5){text-align:center;}
@@ -5050,8 +5054,16 @@ function invPrintStock(){
     .firma-box{flex:1;border-top:1px solid #ccc;padding-top:6px;font-size:11px;color:#666;}
   </style>
   </head><body>
-  <h1>📦 Giacenza Magazzino — ${whName}</h1>
-  <div class="sub">${dateStr}</div>
+  <div class="header">
+    <div>
+      <h1>📦 Giacenza Magazzino — ${whName}</h1>
+      <div class="sub">Stampato il ${new Date().toLocaleString('it-IT')}</div>
+    </div>
+    <div class="date-badge">
+      <div class="date-badge-label">Rilevazione al</div>
+      <div class="date-badge-value">${dateStr}</div>
+    </div>
+  </div>
   <table>
     <thead><tr>
       <th>Prodotto</th><th style="text-align:center;">Unità</th>
@@ -5059,7 +5071,7 @@ function invPrintStock(){
       <th style="text-align:center;">Soglia</th>
     </tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr><td colspan="5">${items.length} prodotti · stampato il ${new Date().toLocaleString('it-IT')}</td></tr></tfoot>
+    <tfoot><tr><td colspan="5">${items.length} prodotti</td></tr></tfoot>
   </table>
   </body></html>`;
 
