@@ -332,9 +332,21 @@
       white-space: nowrap; pointer-events: none;
     }
     .toast.show { opacity: 1; }
+
+    /* ── Offline banner ── */
+    .offline-banner {
+      display: none; position: sticky; top: 0; z-index: 200;
+      background: var(--amber); color: #fff;
+      padding: 7px 16px; font-size: var(--fs-xs); font-weight: 600;
+      text-align: center; letter-spacing: .01em;
+    }
+    .offline-banner.show { display: block; }
   </style>
 </head>
 <body>
+
+<!-- Offline banner -->
+<div class="offline-banner" id="offlineBanner">📶 Nessuna connessione — i dati vengono salvati localmente e sincronizzati al ripristino</div>
 
 <!-- Header -->
 <div class="app-header">
@@ -595,10 +607,17 @@ async function loadFromCloud() {
   }
 }
 
+let _pendingSync = false;
+
 async function pushToCloud() {
   lsSet('qm_inv_catalog',  catalog);
   lsSet('qm_inv_moves_sa', moves.sa);
   lsSet('qm_inv_moves_ar', moves.ar);
+  if (!navigator.onLine) {
+    _pendingSync = true;
+    setSyncStatus('offline');
+    return;
+  }
   setSyncStatus('syncing');
   try {
     const results = await Promise.all([
@@ -606,9 +625,11 @@ async function pushToCloud() {
       kvSet('qm_inv_moves_sa', JSON.stringify(moves.sa)),
       kvSet('qm_inv_moves_ar', JSON.stringify(moves.ar)),
     ]);
+    _pendingSync = false;
     setSyncStatus(results.every(Boolean) ? 'ok' : 'error');
   } catch(e) {
-    setSyncStatus('error');
+    _pendingSync = true;
+    setSyncStatus('offline');
   }
 }
 
@@ -1177,6 +1198,26 @@ function initHWScanner() {
   renderAll();
   loadFromCloud();
   initHWScanner();
+
+  // Service Worker (offline cache)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw-inventory.js').catch(() => {});
+  }
+
+  // Banner e sync automatico online/offline
+  function updateOnlineStatus() {
+    const banner = document.getElementById('offlineBanner');
+    if (navigator.onLine) {
+      banner.classList.remove('show');
+      if (_pendingSync) pushToCloud();
+    } else {
+      banner.classList.add('show');
+      setSyncStatus('offline');
+    }
+  }
+  window.addEventListener('online',  updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  if (!navigator.onLine) updateOnlineStatus();
 })();
 </script>
 </body>
