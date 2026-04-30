@@ -4691,7 +4691,7 @@ function invSetFilter(f){
 }
 function invGetData(){
   let catalog={},moves=[];
-  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog')||'{}');}catch(e){}
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
   try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
   return{catalog,moves};
 }
@@ -4867,7 +4867,7 @@ function invDeleteMove(id){
 }
 function invEditQty(bc,currentQty){
   let catalog={};
-  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog')||'{}');}catch(e){}
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
   const p=catalog[bc];if(!p)return;
   const val=prompt(`Nuova quantità in stock per "${p.name}":`,currentQty);
   if(val===null)return;
@@ -4882,23 +4882,23 @@ function invEditQty(bc,currentQty){
 }
 function invEditSoglia(bc){
   let catalog={};
-  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog')||'{}');}catch(e){}
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
   const p=catalog[bc];if(!p)return;
   const val=prompt(`Soglia minima per "${p.name}" (lascia vuoto per rimuovere):`,p.soglia!=null?p.soglia:'');
   if(val===null)return;
   const n=parseFloat(val);
   catalog[bc].soglia=(val.trim()===''||isNaN(n))?null:n;
-  try{localStorage.setItem('qm_inv_catalog',JSON.stringify(catalog));}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog',value:JSON.stringify(catalog)})}).catch(()=>{});
+  try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog_'+_invWh,value:JSON.stringify(catalog)})}).catch(()=>{});
   invRender();
 }
 function invDeleteProduct(bc){
   let catalog={};
-  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog')||'{}');}catch(e){}
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
   const name=catalog[bc]?.name||bc;
   if(!confirm(`Eliminare "${name}" dal catalogo?\nVerranno rimossi anche tutti i movimenti registrati per questo prodotto in entrambi i magazzini.`))return;
   delete catalog[bc];
-  try{localStorage.setItem('qm_inv_catalog',JSON.stringify(catalog));}catch(e){}
+  try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
   for(const wh of['sa','ar']){
     let moves=[];
     try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+wh)||'[]');}catch(e){}
@@ -4906,7 +4906,7 @@ function invDeleteProduct(bc){
     try{localStorage.setItem('qm_inv_moves_'+wh,JSON.stringify(filtered));}catch(e){}
     fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_moves_'+wh,value:JSON.stringify(filtered)})}).catch(()=>{});
   }
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog',value:JSON.stringify(catalog)})}).catch(()=>{});
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog_'+_invWh,value:JSON.stringify(catalog)})}).catch(()=>{});
   invRender();
 }
 function invQuickRestock(bc){
@@ -5082,11 +5082,10 @@ function invPrintStock(){
 }
 
 function invUpdateNavBadge(){
-  let catalog={};
-  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog')||'{}');}catch(e){}
   let total=0;
   for(const wh of['sa','ar']){
-    let wMoves=[];
+    let catalog={},wMoves=[];
+    try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+wh)||'{}');}catch(e){}
     try{wMoves=JSON.parse(localStorage.getItem('qm_inv_moves_'+wh)||'[]');}catch(e){}
     const stock=invCalcStock(catalog,wMoves);
     for(const[bc,qty]of Object.entries(stock)){

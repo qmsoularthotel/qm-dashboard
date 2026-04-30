@@ -487,17 +487,19 @@ async function kvSet(key, value) {
 async function loadFromCloud() {
   setSyncStatus('syncing');
   try {
-    const [catRaw, saRaw, arRaw] = await Promise.all([
-      kvGet('qm_inv_catalog'),
+    const [catSaRaw, catArRaw, saRaw, arRaw] = await Promise.all([
+      kvGet('qm_inv_catalog_sa'),
+      kvGet('qm_inv_catalog_ar'),
       kvGet('qm_inv_moves_sa'),
       kvGet('qm_inv_moves_ar'),
     ]);
     let changed = false;
-    if (catRaw) { try { catalog  = JSON.parse(catRaw); lsSet('qm_inv_catalog',  catalog);  changed = true; } catch(e){} }
-    if (saRaw)  { try { moves.sa = JSON.parse(saRaw);  lsSet('qm_inv_moves_sa', moves.sa); changed = true; } catch(e){} }
-    if (arRaw)  { try { moves.ar = JSON.parse(arRaw);  lsSet('qm_inv_moves_ar', moves.ar); changed = true; } catch(e){} }
+    if (catSaRaw) { try { const c=JSON.parse(catSaRaw); lsSet('qm_inv_catalog_sa', c); changed=true; } catch(e){} }
+    if (catArRaw) { try { const c=JSON.parse(catArRaw); lsSet('qm_inv_catalog_ar', c); changed=true; } catch(e){} }
+    if (saRaw)    { try { moves.sa=JSON.parse(saRaw);   lsSet('qm_inv_moves_sa', moves.sa); changed=true; } catch(e){} }
+    if (arRaw)    { try { moves.ar=JSON.parse(arRaw);   lsSet('qm_inv_moves_ar', moves.ar); changed=true; } catch(e){} }
+    if (changed) { catalog = lsGet('qm_inv_catalog_' + currentWH, {}); renderAll(); }
     setSyncStatus('ok');
-    if (changed) renderAll();
   } catch(e) {
     setSyncStatus('error');
   }
@@ -506,7 +508,7 @@ async function loadFromCloud() {
 let _pendingSync = false;
 
 async function pushToCloud() {
-  lsSet('qm_inv_catalog',  catalog);
+  lsSet('qm_inv_catalog_' + currentWH, catalog);
   lsSet('qm_inv_moves_sa', moves.sa);
   lsSet('qm_inv_moves_ar', moves.ar);
   if (!navigator.onLine) {
@@ -517,7 +519,7 @@ async function pushToCloud() {
   setSyncStatus('syncing');
   try {
     const results = await Promise.all([
-      kvSet('qm_inv_catalog',  JSON.stringify(catalog)),
+      kvSet('qm_inv_catalog_' + currentWH, JSON.stringify(catalog)),
       kvSet('qm_inv_moves_sa', JSON.stringify(moves.sa)),
       kvSet('qm_inv_moves_ar', JSON.stringify(moves.ar)),
     ]);
@@ -562,7 +564,10 @@ function calcStock(wh) {
 
 // ── UI: Warehouse & nav tab ──────────────────────────────────────────────────
 function setWarehouse(wh) {
+  // Salva catalogo corrente prima di cambiare magazzino
+  lsSet('qm_inv_catalog_' + currentWH, catalog);
   currentWH = wh;
+  catalog = lsGet('qm_inv_catalog_' + currentWH, {});
   document.getElementById('tab-sa').classList.toggle('active', wh === 'sa');
   document.getElementById('tab-ar').classList.toggle('active', wh === 'ar');
   renderAll();
@@ -983,7 +988,13 @@ function initHWScanner() {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (function init() {
-  catalog  = lsGet('qm_inv_catalog',  {});
+  // Migrazione: se esiste il vecchio catalogo condiviso, copialo in entrambi i magazzini
+  const oldCat = lsGet('qm_inv_catalog', null);
+  if (oldCat && Object.keys(oldCat).length > 0) {
+    if (!localStorage.getItem('qm_inv_catalog_sa')) lsSet('qm_inv_catalog_sa', oldCat);
+    if (!localStorage.getItem('qm_inv_catalog_ar')) lsSet('qm_inv_catalog_ar', oldCat);
+  }
+  catalog  = lsGet('qm_inv_catalog_' + currentWH, {});
   moves.sa = lsGet('qm_inv_moves_sa', []);
   moves.ar = lsGet('qm_inv_moves_ar', []);
   renderAll();
