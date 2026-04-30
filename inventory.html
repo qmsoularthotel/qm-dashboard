@@ -537,7 +537,7 @@ function calcStock(wh) {
   const whMoves = moves[wh] || [];
   for (const barcode of Object.keys(catalog)) {
     const bm = whMoves.filter(m => m.barcode === barcode);
-    if (!bm.length) continue;
+    if (!bm.length) { result[barcode] = 0; continue; }
     // Find last 'init' movement
     let lastInit = -1;
     for (let i = bm.length - 1; i >= 0; i--) {

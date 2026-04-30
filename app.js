@@ -4699,7 +4699,7 @@ function invCalcStock(catalog,moves){
   const result={};
   for(const bc of Object.keys(catalog)){
     const bm=moves.filter(m=>m.barcode===bc);
-    if(!bm.length)continue;
+    if(!bm.length){result[bc]=0;continue;}
     let lastInit=-1;
     for(let i=bm.length-1;i>=0;i--){if(bm[i].type==='init'){lastInit=i;break;}}
     let qty=0;
