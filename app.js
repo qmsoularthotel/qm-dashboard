@@ -1400,7 +1400,7 @@ const LS={
           }
           // Per inventario: ri-renderizza se la view è attiva + aggiorna badge nav
           if(k==='inv_catalog_sa'||k==='inv_catalog_ar'||k==='inv_moves_sa'||k==='inv_moves_ar'){
-            try{if(document.getElementById('view-inventario')?.classList.contains('active'))invRender();else invUpdateNavBadge();}catch(e){}
+            try{if(document.getElementById('view-inventario')?.classList.contains('active'))invRender();}catch(e){}
           }
           // Per tp_seen_until: aggiorna badge preferenze turni
           if(k==='tp_seen_until'){
@@ -4748,7 +4748,6 @@ function invRender(){
   invRenderMoves(catalog,moves);
   invRenderAnalysis(catalog,moves);
   invRenderCatalog();
-  invUpdateNavBadge();
 }
 function invRenderStock(catalog,moves){
   const el=document.getElementById('inv-stock-view');
