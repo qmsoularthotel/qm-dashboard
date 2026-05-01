@@ -4856,7 +4856,7 @@ function invRenderMoves(catalog,moves){
       <button onclick="invDeleteMove('${m.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px 0 2px 6px;flex-shrink:0;" title="Elimina movimento">🗑</button>
     </div>`;
   }
-  el.innerHTML=html;
+  el.innerHTML=`<div style="max-width:560px;">${html}</div>`;
 }
 function invDeleteMove(id){
   if(!confirm('Eliminare questo movimento?'))return;
@@ -5107,7 +5107,7 @@ function invRenderCatalog(){
   const{catalog}=invGetData();
   const items=Object.entries(catalog).sort((a,b)=>a[1].name.localeCompare(b[1].name,'it'));
   if(!items.length){el.innerHTML='<div style="padding:32px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun prodotto in catalogo</div>';return;}
-  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:6px;padding:4px 0;">
+  el.innerHTML=`<div style="max-width:560px;"><div style="display:flex;flex-direction:column;gap:6px;padding:4px 0;">
     ${items.map(([bc,p])=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border-light);border-radius:9px;">
       <div style="flex:1;min-width:0;">
@@ -5121,7 +5121,7 @@ function invRenderCatalog(){
       <button onclick="invEditProduct('${bc}')" style="border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:13px;padding:4px 8px;border-radius:6px;color:var(--text-muted);" title="Modifica">✏️</button>
       <button onclick="invDeleteProduct('${bc}')" style="border:none;background:none;cursor:pointer;color:var(--red);font-size:16px;padding:4px 6px;" title="Elimina">🗑️</button>
     </div>`).join('')}
-  </div>`;
+  </div></div>`;
 }
 
 function invUpdateNavBadge(){
