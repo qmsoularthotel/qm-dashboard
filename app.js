@@ -1358,7 +1358,8 @@ const LS={
       'rev_sent',
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr',
-      'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar'];
+      'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar',
+      'tp_seen'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
       try{
@@ -1400,6 +1401,10 @@ const LS={
           // Per inventario: ri-renderizza se la view è attiva + aggiorna badge nav
           if(k==='inv_catalog_sa'||k==='inv_catalog_ar'||k==='inv_moves_sa'||k==='inv_moves_ar'){
             try{if(document.getElementById('view-inventario')?.classList.contains('active'))invRender();else invUpdateNavBadge();}catch(e){}
+          }
+          // Per tp_seen: aggiorna badge preferenze turni
+          if(k==='tp_seen'){
+            try{turniPrefUpdateBadge();}catch(e){}
           }
           // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
           if(k==='hk_soul'||k==='hk_bout'||k==='piano'){
@@ -5189,6 +5194,7 @@ function turniPrefRestore(){
 function turniPrefMarkAllSeen(){
   const ids=_tpData.map(r=>r.ts);
   try{localStorage.setItem('qm_tp_seen',JSON.stringify(ids));}catch(e){}
+  kvSet('qm_tp_seen',JSON.stringify(ids)).catch(()=>{});
   turniPrefUpdateBadge();
   turniPrefRender();
 }
