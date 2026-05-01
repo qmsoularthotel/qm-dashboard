@@ -4896,16 +4896,14 @@ function invDeleteProduct(bc){
   let catalog={};
   try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
   const name=catalog[bc]?.name||bc;
-  if(!confirm(`Eliminare "${name}" dal catalogo?\nVerranno rimossi anche tutti i movimenti registrati per questo prodotto in entrambi i magazzini.`))return;
+  if(!confirm(`Eliminare "${name}" dal catalogo di questo magazzino?\nI movimenti di questo magazzino verranno rimossi. L'altro magazzino non viene modificato.`))return;
   delete catalog[bc];
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
-  for(const wh of['sa','ar']){
-    let moves=[];
-    try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+wh)||'[]');}catch(e){}
-    const filtered=moves.filter(m=>m.barcode!==bc);
-    try{localStorage.setItem('qm_inv_moves_'+wh,JSON.stringify(filtered));}catch(e){}
-    fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_moves_'+wh,value:JSON.stringify(filtered)})}).catch(()=>{});
-  }
+  let moves=[];
+  try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
+  const filtered=moves.filter(m=>m.barcode!==bc);
+  try{localStorage.setItem('qm_inv_moves_'+_invWh,JSON.stringify(filtered));}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_moves_'+_invWh,value:JSON.stringify(filtered)})}).catch(()=>{});
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog_'+_invWh,value:JSON.stringify(catalog)})}).catch(()=>{});
   invRender();
 }
