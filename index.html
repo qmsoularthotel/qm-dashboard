@@ -7,7 +7,7 @@
 <script>
 // Forza reload se app.js è in cache vecchia
 (function(){
-  const V='253-20260501';
+  const V='254-20260501';
   if(localStorage.getItem('qm_app_version')!==V){
     localStorage.setItem('qm_app_version',V);
     if(performance.navigation&&performance.navigation.type!==1){
@@ -58,12 +58,11 @@
       </div>
     </div>
     <nav class="nav">
-      <div class="nav-section">Operativo Quotidiano</div>
       <div class="nav-item active" onclick="setView('overview',this)"><span class="nav-icon">🏠</span>Overview</div>
+
+      <div class="nav-section">Operativo Quotidiano</div>
       <div class="nav-item" onclick="setView('checklist',this)"><span class="nav-icon">☑️</span>Checklist<span class="nav-badge" id="checklistNavBadge">6</span></div>
       <div class="nav-item" onclick="setView('registrazione',this)"><span class="nav-icon">🪪</span>Registration Cards</div>
-      <div class="nav-item" onclick="setView('inventario',this);invRender()"><span class="nav-icon">📦</span>Inventari</div>
-      <div class="nav-item" onclick="setView('turni-pref',this)"><span class="nav-icon">📅</span>Preferenze Turni<span class="nav-badge" id="turniPrefBadge" style="display:none;"></span></div>
       <div class="nav-group-header" id="hkpGroupToggle" onclick="toggleHkpGroup()">
         <span class="nav-icon">🛏️</span>
         <span>Operativa Housekeeping</span>
@@ -98,8 +97,14 @@
         <div class="nav-item" onclick="setView('recensioni-ar',this)"><span class="nav-icon">↳</span>Recensioni Art Resort</div>
         <div class="nav-item" onclick="setView('recensioni-sb',this)"><span class="nav-icon">↳</span>Recensioni Santa Brigida</div>
       </div>
+      <div class="nav-item" onclick="setView('inventario',this);invRender()"><span class="nav-icon">📦</span>Inventari</div>
+
+      <div class="nav-section">Staff</div>
+      <div class="nav-item" onclick="setView('turni-pref',this)"><span class="nav-icon">📅</span>Preferenze Turni<span class="nav-badge" id="turniPrefBadge" style="display:none;"></span></div>
+
       <div class="nav-section">Sicurezza</div>
       <div class="nav-item" onclick="setView('dvr',this)"><span class="nav-icon">🏥</span>DVR<span class="nav-badge" id="dvrNavBadge" style="display:none;background:var(--amber);"></span></div>
+
       <div class="nav-section">Strumenti</div>
       <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon">📱</span>Mini App</div>
       <div class="nav-section" style="display:flex;align-items:center;justify-content:space-between;">
@@ -1304,6 +1309,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=253-20260501"></script>
+<script src="app.js?v=254-20260501"></script>
 </body>
 </html>
