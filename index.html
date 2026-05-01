@@ -5,16 +5,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <link rel="stylesheet" href="style.css?v=189">
 <script>
-// Forza reload se app.js è in cache vecchia
+// Forza reload se la versione nell'URL non corrisponde
 (function(){
   const V='255-20260501';
-  if(localStorage.getItem('qm_app_version')!==V){
-    localStorage.setItem('qm_app_version',V);
-    if(performance.navigation&&performance.navigation.type!==1){
-      // Non è già un reload — forza
-      const url=location.href.split('?')[0]+'?v='+V;
-      location.replace(url);
-    }
+  const urlV=new URLSearchParams(location.search).get('v');
+  if(urlV!==V){
+    location.replace(location.href.split('?')[0]+'?v='+V);
   }
 })();
 </script>
