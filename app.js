@@ -1358,7 +1358,7 @@ const LS={
       'rev_sent',
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr',
-      'inv_catalog','inv_moves_sa','inv_moves_ar'];
+      'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
       try{
@@ -1398,7 +1398,7 @@ const LS={
             try{dvrRestore();if(document.getElementById('view-dvr')?.classList.contains('active'))dvrRender();}catch(e){}
           }
           // Per inventario: ri-renderizza se la view è attiva + aggiorna badge nav
-          if(k==='inv_catalog'||k==='inv_moves_sa'||k==='inv_moves_ar'){
+          if(k==='inv_catalog_sa'||k==='inv_catalog_ar'||k==='inv_moves_sa'||k==='inv_moves_ar'){
             try{if(document.getElementById('view-inventario')?.classList.contains('active'))invRender();else invUpdateNavBadge();}catch(e){}
           }
           // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
