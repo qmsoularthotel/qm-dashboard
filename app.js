@@ -4821,7 +4821,7 @@ function invRenderStock(catalog,moves){
     </div>`;
   }).join('');
   const hint='<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;">💡 Clicca sulla soglia per impostarla — quando lo stock scende sotto viene evidenziato in arancione</div>';
-  el.innerHTML=kpiHtml+filterHtml+hdrs+rows+(allItems.every(i=>i.soglia==null)?hint:'');
+  el.innerHTML=`<div style="max-width:560px;">${kpiHtml+filterHtml+hdrs+rows+(allItems.every(i=>i.soglia==null)?hint:'')}</div>`;
 }
 function invRenderMoves(catalog,moves){
   const el=document.getElementById('inv-moves-view');
