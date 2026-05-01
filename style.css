@@ -466,74 +466,91 @@ select.form-input option{background:var(--surface2);color:var(--text);}
 /* ── ELEGANZA ──────────────────────────────────────────── */
 
 /* Token aggiuntivi */
-:root{--fs-md:15px;--shadow-xs:0 1px 3px rgba(0,0,0,.05);--shadow-sm:0 2px 8px rgba(0,0,0,.07);}
+:root{--fs-md:15px;}
 
 /* Font rendering — testo più nitido */
-body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;}
+body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
 
-/* Scrollbar — più sottile e discreta */
+/* Scrollbar — sottile e colorata */
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
-::-webkit-scrollbar-thumb:hover{background:var(--text-dim);}
+::-webkit-scrollbar-thumb{background:#C0C0C8;border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:var(--accent);}
 
-/* Sidebar — lieve ombra destra */
-.sidebar{box-shadow:1px 0 0 var(--border-light),3px 0 14px rgba(0,0,0,.04);}
+/* Sidebar — gradiente verticale + ombra visibile */
+.sidebar{background:linear-gradient(180deg,#F8F8FA 0%,#F0F0F3 100%);box-shadow:2px 0 12px rgba(0,0,0,.10);}
+body.dark .sidebar{background:linear-gradient(180deg,#1C1C1E 0%,#161618 100%);}
 
-/* Topbar — separazione con ombra, non solo border */
-.topbar{box-shadow:0 1px 0 var(--border-light),0 2px 8px rgba(0,0,0,.04);}
+/* Logo area — leggero bordo accent in fondo */
+.logo{border-bottom:2px solid var(--accent-bg);}
 
-/* Panel — profondità leggera */
-.panel{box-shadow:var(--shadow-xs);}
-body.dark .panel{box-shadow:0 1px 4px rgba(0,0,0,.18);}
+/* Nav sezione label — linea sottile */
+.nav-section{position:relative;overflow:hidden;}
+.nav-section::after{content:'';position:absolute;bottom:0;left:16px;right:16px;height:1px;background:linear-gradient(90deg,var(--border-light),transparent);}
 
-/* KPI cards — shadow base + hover più ricco */
-.kpi-card{box-shadow:var(--shadow-xs);}
-.kpi-card:hover{box-shadow:0 6px 22px rgba(0,0,0,.09);transform:translateY(-2px);}
-body.dark .kpi-card{box-shadow:0 1px 4px rgba(0,0,0,.2);}
-body.dark .kpi-card:hover{box-shadow:0 6px 22px rgba(0,0,0,.35);}
+/* Nav active — sfondo più saturo + bordo sinistro più spesso */
+.nav-item{border-left-width:3px;}
+.nav-item.active{background:var(--accent-bg);border-left-color:var(--accent);border-left-width:3px;}
 
-/* Trend cards — micro lift on hover */
-.trend-card{transition:box-shadow .18s,transform .18s,border-color .18s;}
-.trend-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);}
+/* Nav hover — sfondo visibile */
+.nav-item:hover{background:#EAEAEE;border-left-color:var(--border);}
+body.dark .nav-item:hover{background:#2A2A2E;}
 
-/* Rev cards — hover elegante */
-.rev-card{transition:box-shadow .18s,border-color .18s;}
-.rev-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07);}
+/* Topbar — ombra visibile */
+.topbar{box-shadow:0 2px 10px rgba(0,0,0,.09);border-bottom:none;}
+body.dark .topbar{box-shadow:0 2px 10px rgba(0,0,0,.25);}
+
+/* KPI cards — shadow permanente + hover più ricco */
+.kpi-card{box-shadow:0 2px 8px rgba(0,0,0,.08);border:1px solid var(--border-light);}
+.kpi-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.13);transform:translateY(-2px);}
+body.dark .kpi-card{box-shadow:0 2px 8px rgba(0,0,0,.28);}
+body.dark .kpi-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.40);}
+
+/* Panel — shadow visibile */
+.panel{box-shadow:0 2px 8px rgba(0,0,0,.07);}
+body.dark .panel{box-shadow:0 2px 8px rgba(0,0,0,.22);}
+
+/* Panel header — sfondo leggermente diverso */
+.panel-header{background:linear-gradient(135deg,var(--surface2) 0%,var(--surface) 100%);}
+
+/* Trend cards */
+.trend-card{box-shadow:0 1px 4px rgba(0,0,0,.07);transition:box-shadow .18s,transform .18s;}
+.trend-card:hover{box-shadow:0 6px 18px rgba(0,0,0,.12);transform:translateY(-2px);}
+
+/* Rev cards */
+.rev-card{box-shadow:0 1px 4px rgba(0,0,0,.06);transition:box-shadow .2s,transform .2s;}
+.rev-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.11);transform:translateY(-1px);}
 
 /* RC cards */
-.rc-card{transition:box-shadow .18s,border-color .18s;}
-.rc-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.07);}
+.rc-card{box-shadow:0 1px 4px rgba(0,0,0,.06);transition:box-shadow .18s,transform .18s;}
+.rc-card:hover{box-shadow:0 6px 18px rgba(0,0,0,.11);transform:translateY(-1px);}
 
-/* Checkbox — molla su check/uncheck */
-.check-box{transition:background .13s cubic-bezier(.34,1.56,.64,1),border-color .13s cubic-bezier(.34,1.56,.64,1),transform .13s cubic-bezier(.34,1.56,.64,1);}
-.check-box.done{transform:scale(1.08);}
+/* Checkbox — animazione spring */
+.check-box{transition:all .15s cubic-bezier(.34,1.56,.64,1);}
+.check-box.done{transform:scale(1.12);}
 
-/* Nav items — icona con micro shift su hover */
-.nav-item:hover .nav-icon,.nav-item.active .nav-icon{transform:translateX(1px);transition:transform .18s;}
-.nav-icon{transition:transform .18s;}
-
-/* Nav active — gradiente sottile */
-.nav-item.active{background:linear-gradient(90deg,var(--accent-bg) 0%,transparent 140%);}
-
-/* Badge — pulsazione discreta */
-@keyframes badge-pulse{0%,100%{transform:scale(1)}60%{transform:scale(1.1)}}
-.nav-badge{animation:badge-pulse 3s ease-in-out infinite;}
-
-/* Pulsante primario — micro lift */
+/* Pulsante primario — lift + shadow */
 .btn-primary{transition:opacity .15s,transform .15s,box-shadow .15s;}
-.btn-primary:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 4px 12px rgba(30,64,128,.18);}
+.btn-primary:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 6px 16px rgba(30,64,128,.28);}
 
-/* Form input focus — glow tenue */
-.form-input:focus{box-shadow:0 0 0 3px var(--accent-bg);}
-.rev-reply-textarea:focus{box-shadow:0 0 0 3px var(--accent-bg);}
-textarea:focus,input[type=text]:focus,input[type=email]:focus{box-shadow:0 0 0 3px var(--accent-bg);}
+/* Form input focus — anello accent */
+.form-input:focus,.rev-reply-textarea:focus{box-shadow:0 0 0 3px rgba(30,64,128,.15);border-color:var(--accent);}
 
-/* UC slots — ombra al caricamento */
-.uc-slot.loaded{box-shadow:0 1px 6px rgba(30,122,72,.1);}
+/* Badge — pulsazione */
+@keyframes badge-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+.nav-badge{animation:badge-pulse 2.5s ease-in-out infinite;}
 
-/* Print dialog — ombra più profonda */
-.print-dialog-box{box-shadow:0 16px 48px rgba(0,0,0,.18);}
+/* Print dialog */
+.print-dialog-box{box-shadow:0 20px 60px rgba(0,0,0,.22);}
+
+/* Staff dept cards */
+.staff-dept-card{box-shadow:0 1px 4px rgba(0,0,0,.07);}
+
+/* UC slots loaded */
+.uc-slot.loaded{box-shadow:0 1px 6px rgba(30,122,72,.15);}
+
+/* Sidebar bottom separator più sottile */
+.sidebar-bottom{border-top:1px solid var(--border-light);background:linear-gradient(0deg,var(--surface2) 0%,transparent 100%);}
 
 /* ── TONE BUTTONS ──────────────────────────────────────── */
 .rev-tone-bar{display:flex;align-items:center;gap:4px;margin-bottom:8px;}
