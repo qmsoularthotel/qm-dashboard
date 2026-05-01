@@ -463,6 +463,78 @@ select.form-input option{background:var(--surface2);color:var(--text);}
   .rev-reply-actions{flex-wrap:wrap;}
 }
 
+/* ── ELEGANZA ──────────────────────────────────────────── */
+
+/* Token aggiuntivi */
+:root{--fs-md:15px;--shadow-xs:0 1px 3px rgba(0,0,0,.05);--shadow-sm:0 2px 8px rgba(0,0,0,.07);}
+
+/* Font rendering — testo più nitido */
+body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;}
+
+/* Scrollbar — più sottile e discreta */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text-dim);}
+
+/* Sidebar — lieve ombra destra */
+.sidebar{box-shadow:1px 0 0 var(--border-light),3px 0 14px rgba(0,0,0,.04);}
+
+/* Topbar — separazione con ombra, non solo border */
+.topbar{box-shadow:0 1px 0 var(--border-light),0 2px 8px rgba(0,0,0,.04);}
+
+/* Panel — profondità leggera */
+.panel{box-shadow:var(--shadow-xs);}
+body.dark .panel{box-shadow:0 1px 4px rgba(0,0,0,.18);}
+
+/* KPI cards — shadow base + hover più ricco */
+.kpi-card{box-shadow:var(--shadow-xs);}
+.kpi-card:hover{box-shadow:0 6px 22px rgba(0,0,0,.09);transform:translateY(-2px);}
+body.dark .kpi-card{box-shadow:0 1px 4px rgba(0,0,0,.2);}
+body.dark .kpi-card:hover{box-shadow:0 6px 22px rgba(0,0,0,.35);}
+
+/* Trend cards — micro lift on hover */
+.trend-card{transition:box-shadow .18s,transform .18s,border-color .18s;}
+.trend-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px);}
+
+/* Rev cards — hover elegante */
+.rev-card{transition:box-shadow .18s,border-color .18s;}
+.rev-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07);}
+
+/* RC cards */
+.rc-card{transition:box-shadow .18s,border-color .18s;}
+.rc-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.07);}
+
+/* Checkbox — molla su check/uncheck */
+.check-box{transition:background .13s cubic-bezier(.34,1.56,.64,1),border-color .13s cubic-bezier(.34,1.56,.64,1),transform .13s cubic-bezier(.34,1.56,.64,1);}
+.check-box.done{transform:scale(1.08);}
+
+/* Nav items — icona con micro shift su hover */
+.nav-item:hover .nav-icon,.nav-item.active .nav-icon{transform:translateX(1px);transition:transform .18s;}
+.nav-icon{transition:transform .18s;}
+
+/* Nav active — gradiente sottile */
+.nav-item.active{background:linear-gradient(90deg,var(--accent-bg) 0%,transparent 140%);}
+
+/* Badge — pulsazione discreta */
+@keyframes badge-pulse{0%,100%{transform:scale(1)}60%{transform:scale(1.1)}}
+.nav-badge{animation:badge-pulse 3s ease-in-out infinite;}
+
+/* Pulsante primario — micro lift */
+.btn-primary{transition:opacity .15s,transform .15s,box-shadow .15s;}
+.btn-primary:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 4px 12px rgba(30,64,128,.18);}
+
+/* Form input focus — glow tenue */
+.form-input:focus{box-shadow:0 0 0 3px var(--accent-bg);}
+.rev-reply-textarea:focus{box-shadow:0 0 0 3px var(--accent-bg);}
+textarea:focus,input[type=text]:focus,input[type=email]:focus{box-shadow:0 0 0 3px var(--accent-bg);}
+
+/* UC slots — ombra al caricamento */
+.uc-slot.loaded{box-shadow:0 1px 6px rgba(30,122,72,.1);}
+
+/* Print dialog — ombra più profonda */
+.print-dialog-box{box-shadow:0 16px 48px rgba(0,0,0,.18);}
+
 /* ── TONE BUTTONS ──────────────────────────────────────── */
 .rev-tone-bar{display:flex;align-items:center;gap:4px;margin-bottom:8px;}
 .rev-tone-btn{padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:10px;color:var(--text-muted);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;transition:all .12s;}
