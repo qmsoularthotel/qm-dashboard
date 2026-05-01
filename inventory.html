@@ -921,6 +921,7 @@ function esc(s) {
 
 // ── HW Scanner (Netum C740 / qualsiasi scanner HID a tastiera) ───────────────
 let _hwQuick = false;
+let _hwLastTs = 0;
 
 function _hwToggleQuick() {
   _hwQuick = !_hwQuick;
@@ -932,6 +933,9 @@ function _hwToggleQuick() {
 }
 
 function _hwProcess() {
+  const now = Date.now();
+  if (now - _hwLastTs < 300) return; // debounce CR+LF doppio
+  _hwLastTs = now;
   const inp = document.getElementById('hwScanInput');
   const bc  = inp.value.trim();
   inp.value = '';
