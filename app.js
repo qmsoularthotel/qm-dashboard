@@ -4799,7 +4799,7 @@ function invRenderStock(catalog,moves){
   // Apply filter
   const items=_invFilter==='alert'?allItems.filter(i=>i.status!=='ok'):_invFilter==='ok'?allItems.filter(i=>i.status==='ok'):allItems;
   // Column headers
-  const hdrs=`<div style="display:grid;grid-template-columns:1fr 80px 60px 90px 52px;gap:8px;padding:4px 12px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;">
+  const hdrs=`<div style="display:grid;grid-template-columns:1fr 72px 52px 88px 44px;gap:6px;padding:4px 12px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;">
     <div>Prodotto</div><div style="text-align:center;">Ultimo mov.</div><div style="text-align:center;">Soglia</div><div style="text-align:right;">Stock</div><div></div>
   </div>`;
   // Rows
@@ -4809,13 +4809,13 @@ function invRenderStock(catalog,moves){
     const lastStr=invFmtDate(it.last?.ts);
     const sogliaStr=it.soglia!=null?`<span style="cursor:pointer;color:var(--text-muted);" onclick="invEditSoglia('${it.bc}')" title="Modifica soglia">${it.soglia}</span>`:`<span style="cursor:pointer;color:var(--text-dim);font-style:italic;" onclick="invEditSoglia('${it.bc}')" title="Imposta soglia">—</span>`;
     const unit=it.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:2px;">${_esc(it.unit)}</span>`:'';
-    return`<div style="display:grid;grid-template-columns:1fr 80px 60px 90px 52px;gap:8px;align-items:center;padding:9px 12px;background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderColor};border-radius:8px;margin-bottom:5px;">
+    return`<div style="display:grid;grid-template-columns:1fr 72px 52px 88px 44px;gap:6px;align-items:center;padding:9px 12px;background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderColor};border-radius:8px;margin-bottom:5px;">
       <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;">${lastStr}</div>
       <div style="font-size:var(--fs-xs);text-align:center;">${sogliaStr}</div>
-      <div style="font-size:var(--fs-sm);font-weight:700;color:${qtyColor};text-align:right;cursor:pointer;" onclick="invEditQty('${it.bc}',${it.qty})" title="Modifica quantità">${it.qty}${unit} <span style="font-size:10px;opacity:.4;">✏️</span></div>
-      <div style="display:flex;gap:4px;justify-content:center;">
-        <button onclick="invQuickRestock('${it.bc}')" style="background:var(--green-bg);border:1px solid #90cca8;border-radius:5px;cursor:pointer;font-size:12px;padding:2px 5px;color:var(--green);" title="Rifornimento rapido">⬆️</button>
+      <div style="font-size:var(--fs-md);font-weight:700;color:${qtyColor};text-align:right;cursor:pointer;" onclick="invEditQty('${it.bc}',${it.qty})" title="Modifica quantità">${it.qty}${unit} <span style="font-size:10px;opacity:.4;">✏️</span></div>
+      <div style="display:flex;gap:3px;justify-content:center;">
+        <button onclick="invQuickRestock('${it.bc}')" style="background:var(--green-bg);border:1px solid #90cca8;border-radius:5px;cursor:pointer;font-size:12px;padding:2px 4px;color:var(--green);" title="Rifornimento rapido">⬆️</button>
         <button onclick="invDeleteProduct('${it.bc}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px;line-height:1;" title="Elimina prodotto">🗑</button>
       </div>
     </div>`;
@@ -5084,6 +5084,23 @@ function invPrintStock(){
   w.onload=()=>w.print();
 }
 
+function invEditProduct(bc){
+  let catalog={};
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
+  const p=catalog[bc];if(!p)return;
+  const newName=prompt('Nome prodotto:',p.name);
+  if(newName===null)return;
+  if(!newName.trim()){alert('Il nome non può essere vuoto.');return;}
+  const newUnit=prompt('Unità di misura (es. fl, kg, lt):',p.unit||'');
+  if(newUnit===null)return;
+  const sogliaRaw=prompt('Soglia minima (lascia vuoto per nessuna soglia):',p.soglia!=null?p.soglia:'');
+  if(sogliaRaw===null)return;
+  const n=parseFloat(sogliaRaw);
+  catalog[bc]={...p,name:newName.trim(),unit:newUnit.trim(),soglia:(sogliaRaw.trim()===''||isNaN(n))?null:n};
+  try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog_'+_invWh,value:JSON.stringify(catalog)})}).catch(()=>{});
+  invRender();
+}
 function invRenderCatalog(){
   const el=document.getElementById('inv-catalog-view');
   if(!el)return;
@@ -5095,12 +5112,13 @@ function invRenderCatalog(){
     <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border-light);border-radius:9px;">
       <div style="flex:1;min-width:0;">
         <div style="font-size:var(--fs-sm);font-weight:600;">${_esc(p.name)}</div>
-        <div style="display:flex;gap:8px;margin-top:2px;align-items:center;">
+        <div style="display:flex;gap:8px;margin-top:2px;align-items:center;flex-wrap:wrap;">
           <span style="font-size:11px;font-family:monospace;background:var(--bg);padding:1px 6px;border-radius:4px;color:var(--text-dim);">${bc}</span>
           ${p.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);">${_esc(p.unit)}</span>`:''}
           ${p.soglia!=null?`<span style="font-size:var(--fs-xxs);color:var(--amber);">soglia: ${p.soglia}</span>`:''}
         </div>
       </div>
+      <button onclick="invEditProduct('${bc}')" style="border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:13px;padding:4px 8px;border-radius:6px;color:var(--text-muted);" title="Modifica">✏️</button>
       <button onclick="invDeleteProduct('${bc}')" style="border:none;background:none;cursor:pointer;color:var(--red);font-size:16px;padding:4px 6px;" title="Elimina">🗑️</button>
     </div>`).join('')}
   </div>`;
