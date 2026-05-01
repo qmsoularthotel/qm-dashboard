@@ -1359,7 +1359,7 @@ const LS={
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr',
       'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar',
-      'tp_seen'];
+      'tp_seen_until'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
       try{
@@ -1402,8 +1402,8 @@ const LS={
           if(k==='inv_catalog_sa'||k==='inv_catalog_ar'||k==='inv_moves_sa'||k==='inv_moves_ar'){
             try{if(document.getElementById('view-inventario')?.classList.contains('active'))invRender();else invUpdateNavBadge();}catch(e){}
           }
-          // Per tp_seen: aggiorna badge preferenze turni
-          if(k==='tp_seen'){
+          // Per tp_seen_until: aggiorna badge preferenze turni
+          if(k==='tp_seen_until'){
             try{turniPrefUpdateBadge();}catch(e){}
           }
           // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
@@ -5161,10 +5161,11 @@ let _tpCalDay=null; // giorno selezionato nel calendario (dd/MM/yyyy)
 function turniPrefUpdateBadge(){
   const badge=document.getElementById('turniPrefBadge');
   if(!badge)return;
-  let seen=[];
-  try{seen=JSON.parse(localStorage.getItem('qm_tp_seen')||'[]');}catch(e){}
-  const seenSet=new Set(seen);
-  const nuovi=_tpData.filter(r=>!seenSet.has(r.ts)).length;
+  // Usa un singolo timestamp "letto fino a" invece di un array di 307 voci
+  const until=localStorage.getItem('qm_tp_seen_until')||'';
+  const nuovi=until
+    ? _tpData.filter(r=>r.ts&&r.ts>until).length
+    : 0; // se non c'è ancora il valore, non mostrare badge (prima apertura)
   if(nuovi>0){badge.textContent=nuovi;badge.style.display='';}
   else{badge.style.display='none';}
 }
@@ -5192,9 +5193,11 @@ function turniPrefRestore(){
 }
 
 function turniPrefMarkAllSeen(){
-  const ids=_tpData.map(r=>r.ts);
-  try{localStorage.setItem('qm_tp_seen',JSON.stringify(ids));}catch(e){}
-  kvSet('qm_tp_seen',JSON.stringify(ids)).catch(()=>{});
+  // Salva il ts più recente come "letto fino a" — singolo valore, non array
+  const tsList=_tpData.map(r=>r.ts).filter(Boolean).sort();
+  const until=tsList[tsList.length-1]||new Date().toISOString();
+  try{localStorage.setItem('qm_tp_seen_until',until);}catch(e){}
+  kvSet('qm_tp_seen_until',until).catch(()=>{});
   turniPrefUpdateBadge();
   turniPrefRender();
 }
@@ -5229,9 +5232,7 @@ function _tpFmtDate(s){
 function turniPrefRender(){
   const el=document.getElementById('turni-pref-content');
   if(!el)return;
-  let seen=[];
-  try{seen=JSON.parse(localStorage.getItem('qm_tp_seen')||'[]');}catch(e){}
-  const seenSet=new Set(seen);
+  const seenUntil=localStorage.getItem('qm_tp_seen_until')||'';
 
   if(!_tpData.length){
     el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna richiesta ricevuta</div>';
@@ -5289,7 +5290,7 @@ function turniPrefRender(){
 
   // Reparti disponibili
   const reparti=[...new Set(_tpData.map(r=>r.reparto).filter(Boolean))].sort();
-  const nuovi=_tpData.filter(r=>!seenSet.has(r.ts)).length;
+  const nuovi=seenUntil ? _tpData.filter(r=>r.ts&&r.ts>seenUntil).length : 0;
 
   // Toolbar filtri
   const fBtn=(f,lbl)=>`<button onclick="turniPrefSetFilter('${f}')" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;font-weight:600;transition:all .12s;${_tpFilter===f?'background:var(--accent);color:#fff;border-color:var(--accent);':'background:var(--surface);color:var(--text-muted);'}">${lbl}</button>`;
@@ -5321,7 +5322,7 @@ function turniPrefRender(){
     Object.entries(grouped).forEach(([mese,rows])=>{
       listHtml+=`<div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:12px 0 6px;">${mese}</div>`;
       rows.forEach(r=>{
-        const isNew=!seenSet.has(r.ts);
+        const isNew=seenUntil ? (r.ts&&r.ts>seenUntil) : false;
         const d=new Date(r.ts);
         const tsStr=isNaN(d)?_tpFmtDate(r.ts):d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
         listHtml+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${isNew?'var(--accent)':'transparent'};border-radius:8px;padding:11px 14px;margin-bottom:5px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
