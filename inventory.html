@@ -973,21 +973,28 @@ function initHWScanner() {
   if (!inp) return;
   // Pallino sempre verde
   document.getElementById('hwScanDot').classList.add('on');
-  // Auto-focus solo su desktop (non su touch device per non bloccare tastiera)
-  if (!('ontouchstart' in window)) {
-    inp.focus();
-    // Su desktop: tasto fuori da qualsiasi input → redirect allo scanner
-    document.addEventListener('keydown', e => {
+  // Focus subito — inputmode="none" evita la tastiera soft su mobile
+  inp.focus();
+  // Refocus automatico quando il focus va altrove (es. dopo chiusura modal)
+  inp.addEventListener('blur', () => {
+    setTimeout(() => {
       const tag = (document.activeElement?.tagName || '').toUpperCase();
       const isOtherInput = ['INPUT','TEXTAREA','SELECT'].includes(tag) &&
-                           document.activeElement.id !== 'hwScanInput';
-      if (isOtherInput) return;
-      if (document.activeElement.id === 'hwScanInput') return;
-      if (e.ctrlKey || e.altKey || e.metaKey) return;
-      if (e.key.length !== 1) return;
-      inp.focus();
-    });
-  }
+                           document.activeElement?.id !== 'hwScanInput';
+      if (!isOtherInput) inp.focus();
+    }, 200);
+  });
+  // Su desktop: tasto fuori da qualsiasi input → redirect allo scanner
+  document.addEventListener('keydown', e => {
+    const tag = (document.activeElement?.tagName || '').toUpperCase();
+    const isOtherInput = ['INPUT','TEXTAREA','SELECT'].includes(tag) &&
+                         document.activeElement?.id !== 'hwScanInput';
+    if (isOtherInput) return;
+    if (document.activeElement?.id === 'hwScanInput') return;
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (e.key.length !== 1) return;
+    inp.focus();
+  });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

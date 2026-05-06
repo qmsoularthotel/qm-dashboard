@@ -1,5 +1,5 @@
 // Service Worker — QM Inventario (offline support)
-const CACHE = 'qm-inv-v2';
+const CACHE = 'qm-inv-v3';
 const ASSETS = [
   './inventory.html'
 ];
