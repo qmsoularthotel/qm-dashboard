@@ -1016,19 +1016,11 @@ function initHWScanner() {
   loadFromCloud();
   initHWScanner();
 
-  // Service Worker — network-first per inventory.html, auto-reload su aggiornamento
+  // Service Worker — network-first per inventory.html
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw-inventory.js').then(reg => {
-      reg.update();
-      reg.addEventListener('updatefound', () => {
-        const newSW = reg.installing;
-        newSW.addEventListener('statechange', () => {
-          if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
-            location.reload();
-          }
-        });
-      });
-    }).catch(() => {});
+    navigator.serviceWorker.register('./sw-inventory.js')
+      .then(reg => reg.update())
+      .catch(() => {});
   }
 
   // Banner e sync automatico online/offline
