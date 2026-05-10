@@ -376,9 +376,9 @@
     <div class="form-group">
       <label class="form-label">Operazione</label>
       <div class="op-selector">
-        <div class="op-btn sel-init" id="opInit" onclick="setOp('init')">📋 Giacenza</div>
-        <div class="op-btn"          id="opIn"   onclick="setOp('in')">⬆️ Carico</div>
-        <div class="op-btn"          id="opOut"  onclick="setOp('out')">⬇️ Scarico</div>
+        <div class="op-btn"         id="opInit" onclick="setOp('init')">📋 Giacenza</div>
+        <div class="op-btn"         id="opIn"   onclick="setOp('in')">⬆️ Carico</div>
+        <div class="op-btn sel-out" id="opOut"  onclick="setOp('out')">⬇️ Scarico</div>
       </div>
     </div>
 
@@ -442,7 +442,7 @@ const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
 // ── State ───────────────────────────────────────────────────────────────────
 let currentWH  = 'sa';
 let currentTab = 'stock';
-let currentOp  = 'init';
+let currentOp  = 'out';
 let pendingBC  = null;   // barcode being processed
 let isNewProd  = false;
 
