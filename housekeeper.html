@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Housekeeping — SoulArt Hotel</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -166,6 +169,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
   </div>
 </div>
 
+<script>
+(function(){
+  const V='20260510';
+  const urlV=new URLSearchParams(location.search).get('v');
+  if(urlV!==V) location.replace(location.href.split('?')[0]+'?v='+V);
+})();
+</script>
 <script>
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
 const GIORNI_FULL=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
