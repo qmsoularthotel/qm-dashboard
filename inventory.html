@@ -1023,7 +1023,9 @@ function initHWScanner() {
       reg.addEventListener('updatefound', () => {
         const newSW = reg.installing;
         newSW.addEventListener('statechange', () => {
-          if (newSW.state === 'activated') location.reload();
+          if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
+            location.reload();
+          }
         });
       });
     }).catch(() => {});

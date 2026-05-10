@@ -521,13 +521,14 @@ setInterval(loadAll,10*60*1000);
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw-housekeeper.js').then(reg => {
-    // Controlla aggiornamenti ad ogni apertura
     reg.update();
-    // Quando il nuovo SW è pronto, ricarica la pagina automaticamente
     reg.addEventListener('updatefound', () => {
       const newSW = reg.installing;
       newSW.addEventListener('statechange', () => {
-        if (newSW.state === 'activated') location.reload();
+        // Ricarica solo se c'era già un SW attivo (= vero aggiornamento, non prima installazione)
+        if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
+          location.reload();
+        }
       });
     });
   }).catch(() => {});
