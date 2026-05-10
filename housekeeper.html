@@ -50,8 +50,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .today-badge{background:linear-gradient(90deg,#003580,#1a5bb5);color:#fff;font-size:10px;font-weight:700;border-radius:6px;padding:3px 9px;display:inline-block;margin-bottom:10px;letter-spacing:.06em;box-shadow:var(--shadow-sm);}
 
 /* Structure section */
-.struttura-title{font-size:11px;font-weight:800;color:var(--accent2);text-transform:uppercase;letter-spacing:.09em;margin:18px 0 9px;padding-left:10px;border-left:3px solid var(--accent2);}
+.struttura-title{font-size:11px;font-weight:800;color:var(--accent2);text-transform:uppercase;letter-spacing:.09em;margin:18px 0 9px;padding-left:10px;border-left:3px solid var(--accent2);display:flex;align-items:center;gap:7px;}
 .struttura-title:first-of-type{margin-top:0;}
+.brand-logo{width:22px;height:22px;object-fit:contain;mix-blend-mode:multiply;flex-shrink:0;}
 
 /* KPI cards */
 .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px;}
@@ -227,7 +228,7 @@ function renderRoomDetail(rooms,label){
   const tuttePartenze=[...cambi,...partenze];
   const hasData=tuttePartenze.length||fermate.length;
   if(!hasData)return'';
-  let h=label?`<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px;padding-top:6px;border-top:1px solid var(--border);">👤 ${label}</div>`:'';
+  let h=label?`<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px;padding-top:6px;border-top:1px solid var(--border);">🧹 ${label}</div>`:'';
   if(tuttePartenze.length)h+=`<div class="room-section"><div class="room-section-title partenza" style="display:flex;align-items:center;gap:6px;">↑ Partenze${cambi.length?`<span style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:none;letter-spacing:0;"><span style="font-weight:800;color:var(--red);">⇄</span> = partenza con arrivo</span>`:''}</div><div class="room-chips">${roomSort(tuttePartenze).map(r=>{const isCambio=cambi.includes(r);return`<span class="chip ${isCambio?'doppio':'partenza'}">${r}${isCambio?` <span style="font-weight:800;font-size:1.1em;color:var(--red);">⇄</span>`:''}</span>`;}).join('')}</div></div>`;
   if(fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">— Fermate</div><div class="room-chips">${roomSort(fermate).map(r=>`<span class="chip fermata">${r}</span>`).join('')}</div></div>`;
   return h;
@@ -314,7 +315,7 @@ function renderDay(){
 
   // SoulArt
   const soulDay=soulData?.giorni?.find(g=>sameDate(g.data,day.data));
-  html+=`<div class="struttura-title">🏨 SoulArt Hotel</div>`;
+  html+=`<div class="struttura-title"><img src="img/logo-soulart.png" class="brand-logo" alt="SoulArt">SoulArt Hotel</div>`;
   if(soulDay){
     totArrivi+=soulDay.arrivi;totFermate+=soulDay.fermate;totPartenze+=soulDay.partenze;
     html+=renderKpi(soulDay);
@@ -339,7 +340,7 @@ function renderDay(){
   const boutDay=boutData?.giorni?.find(g=>sameDate(g.data,day.data));
   const libPiano=pianoDay?(pianoDay.liborio||{partenze:[],fermate:[],cambi:[]}):{partenze:[],fermate:[],cambi:[]};
   const libPartenze=libPiano.partenze.length+libPiano.cambi.length,libFermate=libPiano.fermate.length;
-  html+=`<div class="struttura-title">🏨 Boutique Hotel - San Liborio</div>`;
+  html+=`<div class="struttura-title"><img src="img/logo-boutique.png" class="brand-logo" alt="Boutique">Boutique Hotel - San Liborio</div>`;
   if(boutDay){
     const boutAdj={fermate:boutDay.fermate+libFermate,partenze:boutDay.partenze+libPartenze,arrivi:boutDay.arrivi};
     totArrivi+=boutDay.arrivi;totFermate+=boutAdj.fermate;totPartenze+=boutAdj.partenze;
