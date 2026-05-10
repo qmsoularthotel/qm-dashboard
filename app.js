@@ -4662,13 +4662,14 @@ function renderArriviModal(filtStruttura='all', filtTratt='all'){
 }
 
 // §§ INVENTARIO DETERSIVI
-let _invWh='sa';
+let _invWh=localStorage.getItem('qm_inv_wh')||'sa';
 let _invTab='stock';
 let _invFilter='all'; // 'all' | 'alert' | 'ok'
 let _invPeriod=30;    // giorni per analisi consumi
 
 function invSetWh(wh,btn){
   _invWh=wh;
+  try{localStorage.setItem('qm_inv_wh',wh);}catch(e){}
   document.querySelectorAll('.inv-wh-btn').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   invRender();
@@ -4743,6 +4744,10 @@ function invFmtDate(ts){
 function invRender(){
   const view=document.getElementById('view-inventario');
   if(!view||!view.classList.contains('active'))return;
+  // Ripristina bottone struttura attivo
+  document.querySelectorAll('.inv-wh-btn').forEach(b=>{
+    b.classList.toggle('active',b.id==='invWh-'+_invWh);
+  });
   const{catalog,moves}=invGetData();
   invRenderStock(catalog,moves);
   invRenderMoves(catalog,moves);
