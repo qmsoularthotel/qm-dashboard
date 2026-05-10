@@ -440,7 +440,7 @@
 const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
 
 // ── State ───────────────────────────────────────────────────────────────────
-let currentWH  = 'sa';
+let currentWH  = localStorage.getItem('qm_inv_wh') || 'sa';
 let currentTab = 'stock';
 let currentOp  = 'out';
 let pendingBC  = null;   // barcode being processed
@@ -567,6 +567,7 @@ function setWarehouse(wh) {
   // Salva catalogo corrente prima di cambiare magazzino
   lsSet('qm_inv_catalog_' + currentWH, catalog);
   currentWH = wh;
+  localStorage.setItem('qm_inv_wh', wh);
   catalog = lsGet('qm_inv_catalog_' + currentWH, {});
   document.getElementById('tab-sa').classList.toggle('active', wh === 'sa');
   document.getElementById('tab-ar').classList.toggle('active', wh === 'ar');
@@ -1008,6 +1009,9 @@ function initHWScanner() {
   catalog  = lsGet('qm_inv_catalog_' + currentWH, {});
   moves.sa = lsGet('qm_inv_moves_sa', []);
   moves.ar = lsGet('qm_inv_moves_ar', []);
+  // Ripristina tab magazzino attivo
+  document.getElementById('tab-sa').classList.toggle('active', currentWH === 'sa');
+  document.getElementById('tab-ar').classList.toggle('active', currentWH === 'ar');
   renderAll();
   loadFromCloud();
   initHWScanner();
