@@ -142,7 +142,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .hk-stat-row:first-child{padding-top:0;}
 .hk-stat-name{flex:1;font-size:12px;font-weight:700;color:var(--text);}
 .hk-stat-chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap;}
-.hk-stat-chip.arr{background:rgba(26,127,90,.12);color:var(--green);}
 .hk-stat-chip.part{background:rgba(220,38,38,.12);color:var(--red);}
 .hk-stat-chip.ferm{background:rgba(0,53,128,.07);color:var(--accent);}
 </style>
@@ -337,12 +336,12 @@ function renderDay(){
   }
   if(pianoDay){
     const{m,a}=splitSoulart(pianoDay.soulart);
-    const mArr=(m.cambi||[]).length,mPart=(m.cambi||[]).length+(m.partenze||[]).length,mFerm=(m.fermate||[]).length;
-    const aArr=(a.cambi||[]).length,aPart=(a.cambi||[]).length+(a.partenze||[]).length,aFerm=(a.fermate||[]).length;
-    if(mArr+mPart+mFerm+aArr+aPart+aFerm>0){
+    const mPart=(m.cambi||[]).length+(m.partenze||[]).length,mFerm=(m.fermate||[]).length;
+    const aPart=(a.cambi||[]).length+(a.partenze||[]).length,aFerm=(a.fermate||[]).length;
+    if(mPart+mFerm+aPart+aFerm>0){
       html+=`<div class="hk-stats-box">`;
-      if(mArr+mPart+mFerm>0)html+=`<div class="hk-stat-row"><span class="hk-stat-name">Matarese</span><span class="hk-stat-chip arr">↓ ${mArr} arr</span><span class="hk-stat-chip part">↑ ${mPart} part</span><span class="hk-stat-chip ferm">— ${mFerm} ferm</span></div>`;
-      if(aArr+aPart+aFerm>0)html+=`<div class="hk-stat-row"><span class="hk-stat-name">Altre housekeeper</span><span class="hk-stat-chip arr">↓ ${aArr} arr</span><span class="hk-stat-chip part">↑ ${aPart} part</span><span class="hk-stat-chip ferm">— ${aFerm} ferm</span></div>`;
+      if(mPart+mFerm>0)html+=`<div class="hk-stat-row"><span class="hk-stat-name">Matarese</span><span class="hk-stat-chip part">↑ ${mPart} partenze</span><span class="hk-stat-chip ferm">— ${mFerm} fermate</span></div>`;
+      if(aPart+aFerm>0)html+=`<div class="hk-stat-row"><span class="hk-stat-name">Altre housekeeper</span><span class="hk-stat-chip part">↑ ${aPart} partenze</span><span class="hk-stat-chip ferm">— ${aFerm} fermate</span></div>`;
       html+=`</div>`;
     }
     html+=renderRoomDetail(m,'Matarese')+renderRoomDetail(a,'Altre housekeeper');
@@ -364,9 +363,9 @@ function renderDay(){
     const boutC=[...(pianoDay.boutique?.cambi||[]),...libPiano.cambi];
     const boutP=[...(pianoDay.boutique?.partenze||[]),...libPiano.partenze];
     const boutF=[...(pianoDay.boutique?.fermate||[]),...libPiano.fermate];
-    const bArr=boutC.length,bPart=boutC.length+boutP.length,bFerm=boutF.length;
-    if(bArr+bPart+bFerm>0){
-      html+=`<div class="hk-stats-box"><div class="hk-stat-row"><span class="hk-stat-name">Boutique · San Liborio</span><span class="hk-stat-chip arr">↓ ${bArr} arr</span><span class="hk-stat-chip part">↑ ${bPart} part</span><span class="hk-stat-chip ferm">— ${bFerm} ferm</span></div></div>`;
+    const bPart=boutC.length+boutP.length,bFerm=boutF.length;
+    if(bPart+bFerm>0){
+      html+=`<div class="hk-stats-box"><div class="hk-stat-row"><span class="hk-stat-name">Boutique · San Liborio</span><span class="hk-stat-chip part">↑ ${bPart} partenze</span><span class="hk-stat-chip ferm">— ${bFerm} fermate</span></div></div>`;
     }
     const boutMerged={partenze:boutP,fermate:boutF,cambi:boutC};
     html+=renderRoomDetail(boutMerged,'');
