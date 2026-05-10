@@ -134,6 +134,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .chip.arrivo{background:rgba(26,127,90,.12);color:var(--green);}
 .chip.doppio{background:rgba(180,83,9,.12);color:var(--amber);}
 .chip.fermata{background:rgba(0,53,128,.07);color:var(--accent);}
+
+/* Per-housekeeper stats */
+.hk-stats-box{background:var(--surface);border-radius:10px;padding:10px 12px;margin:6px 0 8px;border:1px solid var(--border);}
+.hk-stat-row{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--border);}
+.hk-stat-row:last-child{border-bottom:none;padding-bottom:0;}
+.hk-stat-row:first-child{padding-top:0;}
+.hk-stat-name{flex:1;font-size:12px;font-weight:700;color:var(--text);}
+.hk-stat-chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap;}
+.hk-stat-chip.arr{background:rgba(26,127,90,.12);color:var(--green);}
+.hk-stat-chip.part{background:rgba(220,38,38,.12);color:var(--red);}
+.hk-stat-chip.ferm{background:rgba(0,53,128,.07);color:var(--accent);}
 </style>
 </head>
 <body>
@@ -324,7 +335,18 @@ function renderDay(){
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
-  if(pianoDay){const{m,a}=splitSoulart(pianoDay.soulart);html+=renderRoomDetail(m,'Matarese')+renderRoomDetail(a,'Altre housekeeper');}
+  if(pianoDay){
+    const{m,a}=splitSoulart(pianoDay.soulart);
+    const mArr=(m.cambi||[]).length,mPart=(m.cambi||[]).length+(m.partenze||[]).length,mFerm=(m.fermate||[]).length;
+    const aArr=(a.cambi||[]).length,aPart=(a.cambi||[]).length+(a.partenze||[]).length,aFerm=(a.fermate||[]).length;
+    if(mArr+mPart+mFerm+aArr+aPart+aFerm>0){
+      html+=`<div class="hk-stats-box">`;
+      if(mArr+mPart+mFerm>0)html+=`<div class="hk-stat-row"><span class="hk-stat-name">Matarese</span><span class="hk-stat-chip arr">↓ ${mArr} arr</span><span class="hk-stat-chip part">↑ ${mPart} part</span><span class="hk-stat-chip ferm">— ${mFerm} ferm</span></div>`;
+      if(aArr+aPart+aFerm>0)html+=`<div class="hk-stat-row"><span class="hk-stat-name">Altre housekeeper</span><span class="hk-stat-chip arr">↓ ${aArr} arr</span><span class="hk-stat-chip part">↑ ${aPart} part</span><span class="hk-stat-chip ferm">— ${aFerm} ferm</span></div>`;
+      html+=`</div>`;
+    }
+    html+=renderRoomDetail(m,'Matarese')+renderRoomDetail(a,'Altre housekeeper');
+  }
 
   // Boutique
   const boutDay=boutData?.giorni?.find(g=>sameDate(g.data,day.data));
@@ -338,7 +360,17 @@ function renderDay(){
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
-  if(pianoDay){const boutMerged={partenze:[...pianoDay.boutique.partenze,...libPiano.partenze],fermate:[...pianoDay.boutique.fermate,...libPiano.fermate],cambi:[...pianoDay.boutique.cambi,...libPiano.cambi]};html+=renderRoomDetail(boutMerged,'');}
+  if(pianoDay){
+    const boutC=[...(pianoDay.boutique?.cambi||[]),...libPiano.cambi];
+    const boutP=[...(pianoDay.boutique?.partenze||[]),...libPiano.partenze];
+    const boutF=[...(pianoDay.boutique?.fermate||[]),...libPiano.fermate];
+    const bArr=boutC.length,bPart=boutC.length+boutP.length,bFerm=boutF.length;
+    if(bArr+bPart+bFerm>0){
+      html+=`<div class="hk-stats-box"><div class="hk-stat-row"><span class="hk-stat-name">Boutique · San Liborio</span><span class="hk-stat-chip arr">↓ ${bArr} arr</span><span class="hk-stat-chip part">↑ ${bPart} part</span><span class="hk-stat-chip ferm">— ${bFerm} ferm</span></div></div>`;
+    }
+    const boutMerged={partenze:boutP,fermate:boutF,cambi:boutC};
+    html+=renderRoomDetail(boutMerged,'');
+  }
 
   // Totale giorno se entrambe le strutture hanno dati
   if(soulDay&&boutDay){
