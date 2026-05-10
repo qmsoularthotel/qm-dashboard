@@ -1,5 +1,5 @@
 // Service Worker — QM Inventario (offline support)
-const CACHE = 'qm-inv-v3';
+const CACHE = 'qm-inv-v4';
 const ASSETS = [
   './inventory.html'
 ];
@@ -24,6 +24,16 @@ self.addEventListener('fetch', e => {
   if (url.includes('anthropic-proxy') || url.includes('openproductsfacts') ||
       url.includes('openfoodfacts') || url.includes('openbeautyfacts')) {
     e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
+    return;
+  }
+  // HTML dinamici: sempre network, fallback cache se offline
+  if (url.includes('housekeeper.html') || url.includes('breakfast.html') ||
+      url.includes('index.html') || url.endsWith('/')) {
+    e.respondWith(fetch(e.request).then(res => {
+      const clone = res.clone();
+      caches.open(CACHE).then(c => c.put(e.request, clone));
+      return res;
+    }).catch(() => caches.match(e.request)));
     return;
   }
   // App shell e librerie: cache-first
