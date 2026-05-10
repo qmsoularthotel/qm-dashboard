@@ -60,6 +60,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .kpi-card.arrivi{border-top:3px solid var(--accent);background:linear-gradient(180deg,#f0f5ff 0%,#fff 60%);}
 .kpi-card.fermate{border-top:3px solid var(--accent);background:linear-gradient(180deg,#f0f5ff 0%,#fff 60%);}
 .kpi-card.partenze{border-top:3px solid var(--red);background:linear-gradient(180deg,#fff5f5 0%,#fff 60%);}
+.kpi-icon{font-size:22px;margin-bottom:4px;line-height:1;}
 .kpi-val{font-size:38px;font-weight:800;line-height:1;margin-bottom:5px;}
 .kpi-val.arrivi{color:var(--accent);}
 .kpi-val.fermate{color:var(--accent);}
@@ -229,8 +230,8 @@ function renderRoomDetail(rooms,label){
   const hasData=tuttePartenze.length||fermate.length;
   if(!hasData)return'';
   let h=label?`<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px;padding-top:6px;border-top:1px solid var(--border);">🧹 ${label}</div>`:'';
-  if(tuttePartenze.length)h+=`<div class="room-section"><div class="room-section-title partenza" style="display:flex;align-items:center;gap:6px;">↑ Partenze${cambi.length?`<span style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:none;letter-spacing:0;"><span style="font-weight:800;color:var(--red);">⇄</span> = partenza con arrivo</span>`:''}</div><div class="room-chips">${roomSort(tuttePartenze).map(r=>{const isCambio=cambi.includes(r);return`<span class="chip ${isCambio?'doppio':'partenza'}">${r}${isCambio?` <span style="font-weight:800;font-size:1.1em;color:var(--red);">⇄</span>`:''}</span>`;}).join('')}</div></div>`;
-  if(fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">— Fermate</div><div class="room-chips">${roomSort(fermate).map(r=>`<span class="chip fermata">${r}</span>`).join('')}</div></div>`;
+  if(tuttePartenze.length)h+=`<div class="room-section"><div class="room-section-title partenza" style="display:flex;align-items:center;gap:6px;">🛫 Partenze${cambi.length?`<span style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:none;letter-spacing:0;"><span style="font-weight:800;color:var(--red);">⇄</span> = partenza con arrivo</span>`:''}</div><div class="room-chips">${roomSort(tuttePartenze).map(r=>{const isCambio=cambi.includes(r);return`<span class="chip ${isCambio?'doppio':'partenza'}">${r}${isCambio?` <span style="font-weight:800;font-size:1.1em;color:var(--red);">⇄</span>`:''}</span>`;}).join('')}</div></div>`;
+  if(fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">🛏 Fermate</div><div class="room-chips">${roomSort(fermate).map(r=>`<span class="chip fermata">${r}</span>`).join('')}</div></div>`;
   return h;
 }
 
@@ -328,8 +329,8 @@ function renderDay(){
     const aPart=(a.cambi||[]).length+(a.partenze||[]).length,aFerm=(a.fermate||[]).length;
     if(mPart+mFerm+aPart+aFerm>0){
       html+=`<div class="hk-stats-box">`;
-      if(mPart+mFerm>0)html+=`<div class="hk-stat-row"><span class="hk-stat-name">Matarese</span><span class="hk-stat-chip part">↑ ${mPart} partenze</span><span class="hk-stat-chip ferm">— ${mFerm} fermate</span></div>`;
-      if(aPart+aFerm>0)html+=`<div class="hk-stat-row"><span class="hk-stat-name">Altre housekeeper</span><span class="hk-stat-chip part">↑ ${aPart} partenze</span><span class="hk-stat-chip ferm">— ${aFerm} fermate</span></div>`;
+      if(mPart+mFerm>0)html+=`<div class="hk-stat-row"><span class="hk-stat-name">Matarese</span><span class="hk-stat-chip part">🛫 ${mPart} partenze</span><span class="hk-stat-chip ferm">🛏 ${mFerm} fermate</span></div>`;
+      if(aPart+aFerm>0)html+=`<div class="hk-stat-row"><span class="hk-stat-name">Altre housekeeper</span><span class="hk-stat-chip part">🛫 ${aPart} partenze</span><span class="hk-stat-chip ferm">🛏 ${aFerm} fermate</span></div>`;
       html+=`</div>`;
     }
     const rd=renderRoomDetail(m,'Matarese')+renderRoomDetail(a,'Altre housekeeper');
@@ -354,7 +355,7 @@ function renderDay(){
     const boutF=[...(pianoDay.boutique?.fermate||[]),...libPiano.fermate];
     const bPart=boutC.length+boutP.length,bFerm=boutF.length;
     if(bPart+bFerm>0){
-      html+=`<div class="hk-stats-box"><div class="hk-stat-row"><span class="hk-stat-name">Boutique · San Liborio</span><span class="hk-stat-chip part">↑ ${bPart} partenze</span><span class="hk-stat-chip ferm">— ${bFerm} fermate</span></div></div>`;
+      html+=`<div class="hk-stats-box"><div class="hk-stat-row"><span class="hk-stat-name">Boutique · San Liborio</span><span class="hk-stat-chip part">🛫 ${bPart} partenze</span><span class="hk-stat-chip ferm">🛏 ${bFerm} fermate</span></div></div>`;
     }
     const boutMerged={partenze:boutP,fermate:boutF,cambi:boutC};
     const rdB=renderRoomDetail(boutMerged,'');
@@ -368,11 +369,11 @@ function renderDay(){
       <div class="day-total-grid" style="grid-template-columns:1fr 1fr;">
         <div class="day-total-item">
           <div class="day-total-val" style="color:var(--accent);">${totFermate}</div>
-          <div class="day-total-lbl">Fermate</div>
+          <div class="day-total-lbl">🛏 Fermate</div>
         </div>
         <div class="day-total-item">
           <div class="day-total-val" style="color:var(--accent);">${totPartenze}</div>
-          <div class="day-total-lbl">Partenze</div>
+          <div class="day-total-lbl">🛫 Partenze</div>
         </div>
       </div>
     </div>`;
@@ -391,8 +392,8 @@ function renderDay(){
       if(sd){
         const t=sd.fermate+sd.partenze;
         html+=`<div class="preview-row-3">
-          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${sd.fermate}</div><div class="preview-lbl">Fermate</div></div>
-          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${sd.partenze}</div><div class="preview-lbl">Partenze</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${sd.fermate}</div><div class="preview-lbl">🛏 Fermate</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${sd.partenze}</div><div class="preview-lbl">🛫 Partenze</div></div>
           <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${t}</div><div class="preview-lbl">Totale</div></div>
         </div>`;
       } else {
@@ -403,8 +404,8 @@ function renderDay(){
       if(bd){
         const t=bd.fermate+bd.partenze;
         html+=`<div class="preview-row-3">
-          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${bd.fermate}</div><div class="preview-lbl">Fermate</div></div>
-          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${bd.partenze}</div><div class="preview-lbl">Partenze</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${bd.fermate}</div><div class="preview-lbl">🛏 Fermate</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${bd.partenze}</div><div class="preview-lbl">🛫 Partenze</div></div>
           <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${t}</div><div class="preview-lbl">Totale</div></div>
         </div>`;
       } else {
@@ -422,10 +423,12 @@ function renderDay(){
 function renderKpi(d){
   return`<div class="kpi-grid" style="grid-template-columns:1fr 1fr;">
     <div class="kpi-card fermate">
+      <div class="kpi-icon">🛏</div>
       <div class="kpi-val fermate">${d.fermate}</div>
       <div class="kpi-lbl">Fermate</div>
     </div>
     <div class="kpi-card partenze">
+      <div class="kpi-icon">🛫</div>
       <div class="kpi-val partenze">${d.partenze}</div>
       <div class="kpi-lbl">Partenze</div>
     </div>
