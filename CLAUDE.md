@@ -27,10 +27,11 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 **QM Dashboard** è una SPA vanilla JS per la gestione qualità di un gruppo alberghiero multi-struttura a Napoli. Il codice è diviso in:
 
 - **`index.html`** — Layout HTML, sidebar nav, tutte le view (div#view-*), CSS inline, tag `<script src="app.js?v=...">` in fondo
-- **`app.js`** — Tutta la logica JS (~5200 linee, ~31 sezioni §§)
+- **`app.js`** — Tutta la logica JS (~5400 linee, ~32 sezioni §§)
 - **`housekeeper.html`** — App separata per la governante (HK checklist camere)
 - **`breakfast.html`** — App separata per il breakfast manager
 - **`inventory.html`** — App separata per l'inventario detersivi (mobile, scanner barcode)
+- **`controllo-mattino.html`** — App separata PWA per il giro distribuzione Culligan (mattino)
 
 Non esiste build system, package manager o step di compilazione.
 
@@ -142,6 +143,7 @@ I numeri di camera determinano la struttura di appartenenza:
 | 3767 | ARRIVI GIORNALIERI — UPLOAD & RENDER | `handleArriviFile()`, `renderArriviModal()`, `fixArriviStruttura()` |
 | ~4634 | INVENTARIO DETERSIVI | `invCalcStock()`, `invRender()`, `invRenderStock()`, `invRenderMoves()`, `invRenderAnalysis()`, `invEditQty()`, `invPrintStock()` |
 | ~5090 | PREFERENZE TURNI | `turniPrefLoad()`, `turniPrefRender()`, `turniPrefMarkAllSeen()`, `_tpFmtDate()` |
+| ~5357 | CONTROLLO MATTINO | `cmLoad()`, `cmRender()`, `cmPrintBottle()`, `CM_CHECKS`, `CM_LABELS`, `CM_ROOMS` |
 
 ---
 
@@ -182,6 +184,9 @@ I numeri di camera determinano la struttura di appartenenza:
 | `_tpFilter` | let string | Filtro reparto attivo nella view turni-pref (`'tutti'` o nome reparto) |
 | `_tpCalYear`, `_tpCalMonth` | let number | Anno/mese visualizzato nel calendario preferenze turni |
 | `_tpCalDay` | let string | Giorno selezionato nel calendario (`dd/MM/yyyy`) per filtrare lista |
+| `CM_CHECKS` | const object | Amenities checklist distribuzione Culligan: `bagno` (m1–m3 in app.js; m1–m5 in controllo-mattino.html) |
+| `CM_LABELS` | const object | Etichette leggibili per le chiavi di stato camera (`partenza`, `fermata`, `cambio`, `libera`) |
+| `CM_ROOMS` | const array | Lista camere SoulArt per il giro distribuzione Culligan |
 
 ---
 
@@ -230,6 +235,7 @@ grep -n 'id="view-' index.html
 | `view-miniapp` | Mini app preview |
 | `view-inventario` | Inventario detersivi (stock + movimenti + analisi) |
 | `view-turni-pref` | Preferenze turni staff (da Google Forms) |
+| `view-controllo-mattino` | Dashboard distribuzione Culligan (stats + pulsante Stampa A4) |
 
 ---
 
@@ -600,6 +606,14 @@ Il reparto `mt` ha logica speciale in `renderDay()`:
 | `invEditSoglia(bc)` | ~4634 | Imposta soglia minima per prodotto |
 | `invPrintStock()` | ~4634 | Stampa A4 giacenza (ordine alfabetico) |
 
+### Controllo Mattino (Distribuzione Culligan)
+
+| Funzione | Linea approx. | Scopo |
+|----------|--------------|-------|
+| `cmLoad()` | ~5357 | Legge stato giornaliero da KV (poi fallback localStorage), chiama `cmRender()` |
+| `cmRender(data, key)` | ~5357 | Render dashboard summary con stats (Da mettere / Non consumate / Da visitare) |
+| `cmPrintBottle()` | ~5357 | Genera e stampa foglio A4 bottiglie da mettere + DND |
+
 ### Preferenze Turni
 
 | Funzione | Linea approx. | Scopo |
@@ -655,6 +669,9 @@ Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (comm
 
 | Problema | Causa | Fix |
 |----------|-------|-----|
+| Banner "piano non caricato" sempre giallo | `_renderHome()` chiamata sync prima che `_loadPiano()` (async) completasse | `_loadPiano().then(() => _renderHome())` — mai chiamare render sync dopo async |
+| App controllo-mattino non si aggiornava su smartphone | Service worker condiviso (`sw-inventory.js`) faceva cache dell'HTML | Creato `sw-controllo-mattino.js` dedicato con network-first per il suo HTML |
+| Dashboard non rifletteva attività smartphone | `cmLoad()` leggeva localStorage (stale sul PC) invece di KV | `cmLoad()` legge sempre KV prima, poi fallback localStorage |
 | HKP views scomparse | Sovrascrittura accidentale index.html | Recuperare da git `2183997` |
 | Browser usa versione vecchia app.js | Cache buster non aggiornato | Aggiornare `?v=...` in `<script src="app.js?v=...">` |
 | MT card non visibile in overview | `inT.length === 0` saltava il reparto | `showMembers = key==='mt' ? dept.members : inT` |
@@ -823,6 +840,142 @@ Apps Script può restituire date in formati diversi. La funzione gestisce:
 - `"dd/MM/yyyy"` → restituisce invariato
 - `"yyyy-MM-ddT..."` (ISO) → converte in `dd/MM/yyyy`
 - `"Sun Apr 06 2025 22:00:00 GMT+0200"` (JS Date.toString) → regex su nome mese inglese
+
+---
+
+## Distribuzione Culligan (controllo-mattino.html)
+
+### Scopo
+
+PWA mobile per il giro mattutino di distribuzione acqua Culligan. Il QM scansiona/verifica ogni camera: mette le bottiglie, controlla le amenities bagno, segna il risultato. I dati sono sincronizzati tramite KV e visibili nel dashboard (`view-controllo-mattino`).
+
+### File
+
+| File | Scopo |
+|------|-------|
+| `controllo-mattino.html` | App PWA standalone (giro distribuzione mobile) |
+| `sw-controllo-mattino.js` | Service worker dedicato (network-first per HTML, cache-first per assets) |
+| `app.js` §§ CONTROLLO MATTINO | Logica dashboard: `cmLoad()`, `cmRender()`, `cmPrintBottle()` |
+| `index.html` `#view-controllo-mattino` | View dashboard con stats + pulsante Stampa A4 |
+
+### Storage (Cloudflare KV + localStorage)
+
+| Chiave | Contenuto |
+|--------|-----------|
+| `qm_cm_YYYY-MM-DD` | Stato giornaliero: oggetto con camere e loro stato amenities/bottiglia |
+| `qm_piano` | Piano settimana (`{giorni:[{data:'DD/MM/YYYY', soulart:{partenze:[], fermate:[], cambi:[]}}]}`) |
+
+### Service Worker (`sw-controllo-mattino.js`)
+
+Versione corrente: `qm-cm-v8`. Pattern:
+- **Proxy/KV requests** → sempre network, mai cache
+- **`controllo-mattino.html`** → network-first, aggiorna cache, fallback offline
+- **Asset statici** → cache-first
+
+Quando si aggiorna l'app su smartphone: **incrementare `const CACHE = 'qm-cm-vN'`** nel SW per forzare invalidazione cache su tutti i dispositivi.
+
+### Nav — Posizione nel Sidebar
+
+"💧 Distribuzione Culligan" è nella sezione **Operativo Quotidiano** (dopo le voci Breakfast Sheet). Non nella sezione Strumenti.
+
+### Icone stato camera (CSS sprite)
+
+```js
+const PS_ICO = {
+  partenza: '<img src="img/aerei.png" class="ico-partenza" alt="Partenza">',
+  fermata:  '<img src="img/fermata.png" alt="Fermata" style="height:30px;...">',
+  cambio:   '<img src="img/aerei.png" class="ico-cambio" alt="P+Arrivo">',
+  libera:   '<img src="img/open-sign.png" alt="Libera" style="height:30px;...">',
+};
+```
+
+CSS sprite per `img/aerei.png` (due aerei affiancati nella stessa immagine):
+```css
+.ico-partenza { width:32px; height:32px; object-fit:cover; object-position:0% center; }  /* solo aereo sinistro */
+.ico-cambio   { width:60px; height:30px; object-fit:cover; object-position:center; }      /* entrambi gli aerei */
+```
+
+### Immagini (`img/`)
+
+| File | Contenuto |
+|------|-----------|
+| `img/logo-culligan.png` | Logo Culligan bianco (da `Culligan_Logo_White.png` sul Desktop) |
+| `img/aerei.png` | Due icone aereo affiancate — usato come sprite CSS per partenza/cambio |
+| `img/fermata.png` | Icona letto/camera doppia — stato fermata |
+| `img/open-sign.png` | Insegna OPEN rossa — camera libera |
+
+### Banner stato piano settimana — 3 stati
+
+```js
+// In _renderHome():
+if (_pianoDay) {
+  // VERDE: piano trovato per oggi → mostra partenze/fermate/cambi
+} else if (_pianoLoaded) {
+  // AMBRA: piano caricato ma settimana diversa da oggi
+} else {
+  // AMBRA + bottone "Ricarica": piano non trovato nel KV
+}
+```
+
+`_pianoLoaded` viene impostato `true` in `_loadPiano()` quando il KV restituisce qualsiasi dato `qm_piano`. Il flag distingue "dato non trovato" da "dato trovato ma per altra settimana".
+
+### Init asincrono — pattern critico
+
+```js
+// CORRETTO: _renderHome() deve aspettare _loadPiano()
+_load();
+_loadPiano().then(() => _renderHome());
+
+// SBAGLIATO: _renderHome() gira prima che _loadPiano() risolva
+_load();
+_loadPiano();
+_renderHome();  // ← vede _pianoLoaded=false anche se i dati ci sono
+```
+
+### Dashboard (`cmLoad()`) — KV come source of truth
+
+```js
+async function cmLoad() {
+  const key = 'qm_cm_' + dateStr;
+  // 1. Legge sempre KV prima (fonte dei dati scritti da smartphone)
+  try {
+    const r = await fetch(PROXY + '/kv/get?key=' + encodeURIComponent(key));
+    if (r.ok) { const j = await r.json(); if (j?.value) { data = JSON.parse(j.value); localStorage.setItem(key, j.value); } }
+  } catch(e) {}
+  // 2. Fallback: localStorage (se KV non disponibile)
+  if (!data) { try { const r = localStorage.getItem(key); if (r) data = JSON.parse(r); } catch(e) {} }
+  cmRender(data, key);
+}
+```
+
+### Amenities checklist bagno
+
+In `controllo-mattino.html` (app mobile):
+- `m1` — Sapone
+- `m2` — Shampoo
+- `m3` — Balsamo
+- `m4` — Cuffia da bagno *(aggiunto)*
+- `m5` — Vanity set *(aggiunto)*
+
+In `app.js` (dashboard summary): solo `m1`–`m3` (le nuove amenities non impattano i KPI).
+
+### Dashboard Stats — Etichette
+
+| Card | Label |
+|------|-------|
+| Bottiglie | **Da mettere** |
+| OK (bottiglie presenti) | **Non consumate** |
+| Da fare | **Da visitare** |
+
+### Stampa A4 (`cmPrintBottle()`)
+
+Disponibile solo nel dashboard (`view-controllo-mattino`), non nell'app mobile.
+
+Layout: `width:210mm`, `@page{size:A4 portrait; margin:0}`, griglia 3 colonne, sezioni:
+- **Bottiglie da mettere** (border ambra) — camere con bottiglia consumata/mancante
+- **DND** (border rosso) — camere con Non Disturbare attivo
+
+Header: nome hotel, data, ora, QM Paolo P. — Footer: firma + ora completamento.
 
 ---
 
