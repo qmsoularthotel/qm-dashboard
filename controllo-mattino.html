@@ -342,14 +342,34 @@ function _todayDMY() {
   return String(d.getDate()).padStart(2,'0')+'/'+
          String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
 }
-function _loadPiano() {
+async function _loadPiano() {
+  // 1. localStorage (PC/dispositivo dove è stato caricato)
   try {
     const raw = localStorage.getItem('qm_piano');
-    if (!raw) return;
-    const piano = JSON.parse(raw);
-    if (!piano?.giorni?.length) return;
-    _pianoDay = piano.giorni.find(g => g.data === _todayDMY()) || null;
-    if (_pianoDay) _applyPianoLibere();
+    if (raw) {
+      const piano = JSON.parse(raw);
+      if (piano?.giorni?.length) {
+        _pianoDay = piano.giorni.find(g => g.data === _todayDMY()) || null;
+        if (_pianoDay) _applyPianoLibere();
+        return; // trovato in locale, ok
+      }
+    }
+  } catch(e) {}
+  // 2. KV cloud (smartphone che non ha mai aperto il dashboard)
+  try {
+    const r = await fetch(PROXY + '/kv/get?key=qm_piano');
+    if (r.ok) {
+      const j = await r.json();
+      if (j?.value) {
+        try { localStorage.setItem('qm_piano', j.value); } catch(e) {}
+        const piano = JSON.parse(j.value);
+        if (piano?.giorni?.length) {
+          _pianoDay = piano.giorni.find(g => g.data === _todayDMY()) || null;
+          if (_pianoDay) _applyPianoLibere();
+          _renderHome(); // aggiorna banner e griglia con i dati appena arrivati
+        }
+      }
+    }
   } catch(e) {}
 }
 function _applyPianoLibere() {
@@ -700,7 +720,7 @@ function showSummary(){
 
 function resetDay(){
   if(!confirm('Azzerare tutti i controlli di oggi?'))return;
-  _state={};_loadPiano();_persist();goHome();
+  _state={};_persist();_loadPiano().then(()=>goHome());
 }
 
 // ── STAMPA A4 ────────────────────────
