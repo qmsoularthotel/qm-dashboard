@@ -362,8 +362,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Il turno viene aggiornato automaticamente</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventari Detersivi','turni-pref':'Preferenze Turni'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni',dvr:'Sicurezza',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventari Detersivi','turni-pref':'Preferenze Turni','controllo-mattino':'Controllo Mattino'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni',dvr:'Sicurezza',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano','controllo-mattino':'Qualità · SoulArt'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -533,6 +533,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   try{localStorage.setItem('qm_last_view',id);}catch(e){}
   if(id==='inventario'){try{invRender();}catch(e){}}
   if(id==='turni-pref'){try{turniPrefRender();turniPrefMarkAllSeen();}catch(e){}}
+  if(id==='controllo-mattino'){try{cmLoad();}catch(e){}}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='overview'&&weekData){
     try{loadWeekData(weekData);}catch(e){}
@@ -5352,3 +5353,122 @@ function turniPrefRender(){
   el.innerHTML=toolbar+calHtml+listHtml;
 }
 function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// §§ CONTROLLO MATTINO (cmLoad, cmRender)
+const CM_CHECKS=[
+  {id:'acqua',items:[{id:'a1'},{id:'a2'},{id:'a3'},{id:'a4'},{id:'a5'}]},
+  {id:'scrivania',items:[{id:'s1'},{id:'s2'},{id:'s3'},{id:'s4'},{id:'s5'},{id:'s6'},{id:'s7'},{id:'s8'},{id:'s9'},{id:'s10'},{id:'s11'},{id:'s12'},{id:'s13'}]},
+  {id:'amenities',items:[{id:'m1'},{id:'m2'},{id:'m3'}]},
+];
+const CM_LABELS={
+  a1:'Vassoio in angolo pulito',a2:'Bottiglia Culligan',a3:'Eticchetta/logo/QR',a4:'Cartellino Benvenuti',a5:'2 bicchieri capovolti',
+  s1:'Cartello Non Disturbare',s2:'Bollitore elettrico',s3:'2 tazze+piattini',s4:'2× Nescafé',s5:'2× Tè V1',s6:'2× Tè V2',s7:'2× Camomilla',
+  s8:'2× Zucchero bianco',s9:'2× Zucchero canna',s10:'1× Biscotti',s11:'2× Bacchette',s12:'Cataloghi arte',s13:'Pulizia superfici',
+  m1:'Body Lotion',m2:'Shoe Sponge',m3:'2× Sapone'
+};
+const CM_ROOMS=Array.from({length:22},(_,i)=>'Art '+(i+1));
+
+async function cmLoad(){
+  const d=new Date();
+  const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let data=null;
+  // 1. localStorage
+  try{const r=localStorage.getItem(key);if(r)data=JSON.parse(r);}catch(e){}
+  // 2. KV se non trovato in locale
+  if(!data){
+    try{
+      const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key));
+      if(r.ok){const j=await r.json();if(j&&j.value){data=JSON.parse(j.value);try{localStorage.setItem(key,j.value);}catch(e){}}}
+    }catch(e){}
+  }
+  cmRender(data,key);
+}
+
+function cmRender(state,key){
+  const el=document.getElementById('cm-content');
+  if(!el)return;
+  const d=new Date();
+  const dateStr=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  // status helper
+  function cmStatus(room){
+    const rs=state&&state[room];
+    if(!rs||!rs.visited)return'pending';
+    if(rs.libera)return'empty';
+    const nc=Object.values(rs.checks||{}).some(v=>!v);
+    const bnc=rs.bottiglia==='non_consumata';
+    if(nc&&bnc)return'both';if(nc)return'warn';if(bnc)return'bottle';return'ok';
+  }
+  if(!state||!Object.keys(state).length){
+    el.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--text-dim);">
+      <div style="font-size:2.5rem;margin-bottom:12px;">🌅</div>
+      <div style="font-weight:700;font-size:var(--fs-sm);margin-bottom:6px;">Nessun controllo per oggi</div>
+      <div style="font-size:var(--fs-xs);margin-bottom:20px;">${dateStr}</div>
+      <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;padding:12px 22px;border-radius:10px;font-weight:700;font-size:var(--fs-xs);text-decoration:none;">📱 Apri app mobile</a>
+    </div>`;
+    return;
+  }
+  const visited=CM_ROOMS.filter(r=>state[r]?.visited).length;
+  const btl=CM_ROOMS.filter(r=>{const s=cmStatus(r);return s==='bottle'||s==='both';});
+  const wrn=CM_ROOMS.filter(r=>{const s=cmStatus(r);return s==='warn'||s==='both';});
+  const ok=CM_ROOMS.filter(r=>cmStatus(r)==='ok');
+  const emp=CM_ROOMS.filter(r=>cmStatus(r)==='empty');
+  const pnd=CM_ROOMS.filter(r=>cmStatus(r)==='pending');
+
+  let h=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+    <div style="font-size:var(--fs-xs);color:var(--text-dim);">${dateStr}</div>
+    <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;padding:7px 14px;border-radius:8px;font-weight:700;font-size:var(--fs-xxs);text-decoration:none;">📱 Apri app mobile</a>
+  </div>`;
+  // Progress
+  h+=`<div style="background:var(--surface);border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+      <span style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;">Camere visitate</span>
+      <span style="font-size:var(--fs-xs);font-weight:800;color:var(--accent);">${visited} / ${CM_ROOMS.length}</span>
+    </div>
+    <div style="height:8px;background:#E5E7EB;border-radius:4px;overflow:hidden;">
+      <div style="height:100%;background:linear-gradient(90deg,var(--accent),#4A7FC1);border-radius:4px;width:${Math.round(visited/CM_ROOMS.length*100)}%;transition:width .4s;"></div>
+    </div>
+  </div>`;
+  // Stats
+  h+=`<div style="display:flex;gap:8px;margin-bottom:14px;">
+    ${[['💧',btl.length,'Bottiglie','#2563EB'],['⚠️',wrn.length,'Non conf.','var(--amber)'],['✅',ok.length,'OK','var(--green)'],['⭕',pnd.length,'Da fare','var(--text-dim)']].map(([ico,n,lbl,col])=>`
+    <div style="flex:1;background:var(--surface);border-radius:10px;padding:12px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+      <div style="font-size:1.3rem;font-weight:800;color:${col};line-height:1;">${ico} ${n}</div>
+      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;">${lbl}</div>
+    </div>`).join('')}
+  </div>`;
+  // Bottiglie
+  if(btl.length>0){
+    h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#DBEAFE;color:#1D4ED8;display:flex;align-items:center;gap:6px;">💧 Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}</div>
+      <div style="padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px;">${btl.map(r=>`<span style="padding:5px 14px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:#EFF6FF;color:#2563EB;border:1.5px solid #BFDBFE;">${r}</span>`).join('')}</div>
+    </div>`;
+  }else{
+    h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#D1FAE5;color:#065F46;">💧 Tutte le bottiglie consumate ✅</div>
+    </div>`;
+  }
+  // Non conformità
+  if(wrn.length>0){
+    h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#FEF3C7;color:#92400E;">⚠️ Non conformità — ${wrn.length} ${wrn.length===1?'camera':'camere'}</div>
+      <div style="padding:0 14px 10px;">`;
+    wrn.forEach(r=>{
+      const rs=state[r];const fail=[];
+      Object.entries(rs.checks||{}).forEach(([id,v])=>{if(!v&&CM_LABELS[id])fail.push(CM_LABELS[id]);});
+      h+=`<div style="padding:9px 0;border-bottom:1px solid #F3F4F6;">
+        <div style="font-weight:700;font-size:var(--fs-xs);color:var(--amber);">${r}</div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">${fail.join(' · ')}</div>
+        ${rs.note?`<div style="font-size:var(--fs-xxs);color:var(--accent);margin-top:2px;">📝 ${_esc(rs.note)}</div>`:''}
+      </div>`;
+    });
+    h+=`</div></div>`;
+  }
+  // Pending
+  if(pnd.length>0){
+    h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#F3F4F6;color:var(--text-dim);">⭕ Non ancora visitate — ${pnd.length}</div>
+      <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:7px;">${pnd.map(r=>`<span style="padding:4px 12px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:#F3F4F6;color:var(--text-dim);">${r}</span>`).join('')}</div>
+    </div>`;
+  }
+  el.innerHTML=h;
+}

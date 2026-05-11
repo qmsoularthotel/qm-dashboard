@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="color-scheme" content="light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1E4080">
+<title>Controllo Mattino — SoulArt</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --accent:#1E4080;
+  --green:#1E7A48;
+  --green-bg:#F0FAF4;
+  --red:#C0352A;
+  --amber:#A05A00;
+  --amber-bg:#FFF8EC;
+  --blue:#2563EB;
+  --blue-bg:#EFF6FF;
+  --bg:#F0F2F5;
+  --surface:#FFFFFF;
+  --border:#E5E7EB;
+  --text:#1A1A2E;
+  --text-dim:#6B7280;
+  --radius:12px;
+  --shadow:0 2px 8px rgba(0,0,0,0.07);
+  --shadow-lg:0 4px 16px rgba(0,0,0,0.12);
+}
+html{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%;}
+body{min-height:100vh;overflow-x:hidden;}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* ── HEADER ── */
+.hdr{
+  background:linear-gradient(135deg,#1E4080,#2A5FAD);
+  color:#fff;padding:14px 16px;
+  display:flex;align-items:center;gap:10px;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 12px rgba(30,64,128,0.3);
+  flex-shrink:0;
+}
+.hdr-info{flex:1;min-width:0;}
+.hdr-info h1{font-size:1.05rem;font-weight:700;line-height:1.2;}
+.hdr-info .hdr-sub{font-size:0.7rem;opacity:0.75;margin-top:1px;}
+.btn-back{background:rgba(255,255,255,0.15);border:none;color:#fff;
+  font-size:1.3rem;cursor:pointer;padding:6px 10px;border-radius:8px;
+  line-height:1;-webkit-tap-highlight-color:transparent;}
+.date-chip{font-size:0.7rem;background:rgba(255,255,255,0.18);
+  padding:5px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+
+/* ── SCROLL BODY ── */
+.body{flex:1;overflow-y:auto;padding:14px;}
+
+/* ══════════════════════════════════
+   HOME
+══════════════════════════════════ */
+.progress-card{
+  background:var(--surface);border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow);}
+.prog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.prog-label{font-size:0.78rem;color:var(--text-dim);font-weight:600;}
+.prog-count{font-size:1rem;font-weight:800;color:var(--accent);}
+.prog-track{height:8px;background:#E5E7EB;border-radius:4px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),#4A7FC1);
+  border-radius:4px;transition:width .4s;}
+
+.stat-row{display:flex;gap:8px;margin-bottom:12px;}
+.stat-pill{flex:1;background:var(--surface);border-radius:10px;
+  padding:10px 6px;text-align:center;box-shadow:var(--shadow);}
+.stat-n{font-size:1.3rem;font-weight:800;line-height:1;}
+.stat-l{font-size:0.62rem;color:var(--text-dim);margin-top:3px;font-weight:500;}
+
+.btn-riepilogo{
+  width:100%;background:linear-gradient(135deg,var(--accent),#2A5FAD);
+  color:#fff;border:none;padding:14px;border-radius:var(--radius);
+  font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:14px;
+  box-shadow:0 4px 14px rgba(30,64,128,0.25);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  -webkit-tap-highlight-color:transparent;}
+.btn-riepilogo:active{opacity:.85;transform:scale(.98);}
+
+.rooms-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.room-card{
+  background:var(--surface);border-radius:10px;
+  padding:12px 4px 10px;text-align:center;
+  cursor:pointer;box-shadow:var(--shadow);
+  border:2px solid transparent;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .1s;}
+.room-card:active{transform:scale(.92);}
+.room-card.s-ok{border-color:var(--green);background:var(--green-bg);}
+.room-card.s-warn{border-color:var(--amber);background:var(--amber-bg);}
+.room-card.s-bottle{border-color:var(--blue);background:var(--blue-bg);}
+.room-card.s-both{border-color:var(--amber);background:var(--amber-bg);}
+.room-card.s-empty{border-color:#D1D5DB;background:#F9FAFB;opacity:.6;}
+.room-num{font-size:0.92rem;font-weight:800;color:var(--accent);}
+.room-ico{font-size:1rem;margin-top:4px;line-height:1;}
+
+/* ══════════════════════════════════
+   CHECKLIST
+══════════════════════════════════ */
+.cl-body{flex:1;overflow-y:auto;padding:14px;padding-bottom:88px;}
+
+/* Bottle card — centrepiece */
+.bottle-card{
+  background:var(--surface);border-radius:var(--radius);
+  padding:16px;margin-bottom:12px;
+  box-shadow:var(--shadow);
+  border:2px solid #DBEAFE;}
+.bottle-card-title{
+  font-size:0.7rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.6px;color:var(--text-dim);margin-bottom:10px;}
+.bottle-seg{display:flex;border-radius:10px;overflow:hidden;border:2px solid var(--border);}
+.bseg{flex:1;padding:13px 6px;border:none;font-size:0.85rem;font-weight:700;
+  cursor:pointer;background:#F3F4F6;color:var(--text-dim);
+  line-height:1.35;-webkit-tap-highlight-color:transparent;transition:all .15s;}
+.bseg:active{opacity:.8;}
+.bseg.bc-ok{background:var(--green);color:#fff;}
+.bseg.bc-nc{background:var(--blue);color:#fff;}
+
+/* Quick buttons */
+.quick-row{display:flex;gap:8px;margin-bottom:12px;}
+.btn-libera{flex:1;background:var(--surface);border:1.5px solid var(--border);
+  color:var(--text-dim);padding:10px 8px;border-radius:9px;
+  font-size:0.78rem;font-weight:600;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;}
+.btn-libera.is-active{background:#F3F4F6;border-color:#9CA3AF;color:#374151;}
+.btn-tuttoOk{flex:2;background:var(--surface);border:1.5px solid #BBDFC8;
+  color:var(--green);padding:10px 8px;border-radius:9px;
+  font-size:0.78rem;font-weight:700;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;}
+.btn-tuttoOk:active{opacity:.8;}
+
+/* Check sections */
+.chk-sec{background:var(--surface);border-radius:var(--radius);
+  margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);}
+.chk-sec-hdr{
+  padding:10px 14px;font-size:0.7rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);
+  background:#F9FAFB;display:flex;justify-content:space-between;align-items:center;
+  border-bottom:1px solid var(--border);}
+.chk-all-btn{font-size:0.68rem;color:var(--accent);font-weight:700;
+  cursor:pointer;background:none;border:none;padding:2px 6px;
+  -webkit-tap-highlight-color:transparent;}
+.chk-item{display:flex;align-items:center;padding:12px 14px;gap:12px;
+  cursor:pointer;border-bottom:1px solid #F3F4F6;
+  -webkit-tap-highlight-color:transparent;}
+.chk-item:last-child{border-bottom:none;}
+.chk-item:active{background:#F9FAFB;}
+.chk-box{width:26px;height:26px;border-radius:7px;border:2px solid #D1D5DB;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-size:0.8rem;font-weight:800;color:#fff;transition:all .12s;}
+.chk-box.on{background:var(--green);border-color:var(--green);}
+.chk-lbl{font-size:0.87rem;line-height:1.3;color:var(--text);}
+
+/* Note */
+.note-card{background:var(--surface);border-radius:var(--radius);
+  padding:14px;margin-bottom:10px;box-shadow:var(--shadow);}
+.note-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--text-dim);display:block;margin-bottom:8px;}
+textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;
+  padding:10px 12px;font-size:0.87rem;font-family:inherit;
+  resize:none;color:var(--text);background:#F9FAFB;}
+textarea:focus{outline:none;border-color:var(--accent);}
+
+/* Save bar */
+.save-bar{position:fixed;bottom:0;left:0;right:0;
+  padding:10px 14px max(10px,env(safe-area-inset-bottom));
+  background:#fff;border-top:1px solid var(--border);z-index:200;}
+.btn-save{width:100%;background:var(--accent);color:#fff;border:none;
+  padding:14px;border-radius:10px;font-size:1rem;font-weight:800;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.btn-save:active{opacity:.85;}
+
+/* ══════════════════════════════════
+   SUMMARY
+══════════════════════════════════ */
+.sum-body{flex:1;overflow-y:auto;padding:14px 14px 28px;}
+.sum-stats{display:flex;gap:8px;margin-bottom:14px;}
+.sum-stat{flex:1;background:var(--surface);border-radius:10px;
+  padding:12px 6px;text-align:center;box-shadow:var(--shadow);}
+.sum-stat-n{font-size:1.4rem;font-weight:800;line-height:1;}
+.sum-stat-l{font-size:0.6rem;color:var(--text-dim);margin-top:3px;}
+
+.sum-card{background:var(--surface);border-radius:var(--radius);
+  margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
+.sum-hdr{padding:12px 16px;font-size:0.88rem;font-weight:700;
+  display:flex;align-items:center;gap:8px;}
+.sum-hdr.h-bottle{background:#DBEAFE;color:#1D4ED8;}
+.sum-hdr.h-warn{background:#FEF3C7;color:#92400E;}
+.sum-hdr.h-ok{background:#D1FAE5;color:#065F46;}
+.sum-hdr.h-pending{background:#F3F4F6;color:var(--text-dim);}
+.sum-hdr.h-empty{background:#F3F4F6;color:#6B7280;}
+.pills{padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px;}
+.pill{padding:6px 14px;border-radius:20px;font-size:0.88rem;font-weight:700;}
+.pill-bottle{background:var(--blue-bg);color:var(--blue);border:1.5px solid #BFDBFE;}
+.pill-warn{background:var(--amber-bg);color:var(--amber);border:1.5px solid #FDE68A;}
+.pill-ok{background:var(--green-bg);color:var(--green);}
+.pill-pending{background:#F3F4F6;color:var(--text-dim);}
+.pill-empty{background:#F3F4F6;color:#9CA3AF;}
+
+.warn-list{padding:0 14px 12px;}
+.warn-item{padding:9px 0;border-bottom:1px solid #F3F4F6;}
+.warn-item:last-child{border-bottom:none;}
+.warn-room{font-weight:800;font-size:0.9rem;color:var(--amber);}
+.warn-fail{font-size:0.76rem;color:var(--text-dim);margin-top:3px;line-height:1.5;}
+.warn-note{font-size:0.76rem;color:var(--accent);margin-top:2px;}
+
+.btn-reset{width:100%;background:none;border:1.5px solid #FCA5A5;
+  color:var(--red);padding:12px;border-radius:10px;
+  font-size:0.85rem;font-weight:600;cursor:pointer;margin-top:4px;
+  -webkit-tap-highlight-color:transparent;}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     SCREEN: HOME
+══════════════════════════════════════ -->
+<div class="screen active" id="s-home">
+  <div class="hdr">
+    <div class="hdr-info">
+      <h1>Controllo Mattino</h1>
+      <div class="hdr-sub">SoulArt Hotel — Art 1–22</div>
+    </div>
+    <span class="date-chip" id="home-chip"></span>
+  </div>
+  <div class="body" id="home-body">
+    <div class="progress-card">
+      <div class="prog-top">
+        <span class="prog-label">Camere visitate</span>
+        <span class="prog-count" id="prog-txt">0 / 22</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+    <div class="stat-row" id="stat-row"></div>
+    <button class="btn-riepilogo" onclick="showSummary()">📋 Riepilogo &amp; Bottiglie da portare</button>
+    <div class="rooms-grid" id="rooms-grid"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: CHECKLIST CAMERA
+══════════════════════════════════════ -->
+<div class="screen" id="s-room">
+  <div class="hdr">
+    <button class="btn-back" onclick="goHome()">‹</button>
+    <div class="hdr-info">
+      <h1 id="room-title">Art 1</h1>
+    </div>
+    <span class="date-chip" id="room-chip"></span>
+  </div>
+  <div class="cl-body" id="cl-body"></div>
+  <div class="save-bar">
+    <button class="btn-save" onclick="saveRoom()">✓ Salva camera</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: RIEPILOGO
+══════════════════════════════════════ -->
+<div class="screen" id="s-summary">
+  <div class="hdr">
+    <button class="btn-back" onclick="goHome()">‹</button>
+    <div class="hdr-info">
+      <h1>Riepilogo Mattino</h1>
+    </div>
+    <span class="date-chip" id="sum-chip"></span>
+  </div>
+  <div class="sum-body" id="sum-body"></div>
+</div>
+
+<script>
+'use strict';
+
+const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
+const ROOMS = Array.from({length:22}, (_,i) => 'Art '+(i+1));
+
+// Checklist items da standard allestimento
+const CHECKS = [
+  {id:'acqua', label:'💧 Kit Acqua Culligan', items:[
+    {id:'a1', label:'Vassoio posizionato in angolo pulito della scrivania'},
+    {id:'a2', label:'Bottiglia Culligan presente (still / gasata)'},
+    {id:'a3', label:'Eticchetta, logo e QR code visibili'},
+    {id:'a4', label:'Cartellino "Benvenuti" inserito e centrato'},
+    {id:'a5', label:'2 bicchieri capovolti e allineati a destra'},
+  ]},
+  {id:'scrivania', label:'🗄 Scrivania', items:[
+    {id:'s1',  label:'Cartello "Non Disturbare" — posizione sinistra'},
+    {id:'s2',  label:'Bollitore elettrico presente e posizionato'},
+    {id:'s3',  label:'2 tazze con piattini — manici a destra'},
+    {id:'s4',  label:'2× Nescafé'},
+    {id:'s5',  label:'2× Tè Varietà 1'},
+    {id:'s6',  label:'2× Tè Varietà 2'},
+    {id:'s7',  label:'2× Camomilla'},
+    {id:'s8',  label:'2× Zucchero Bianco'},
+    {id:'s9',  label:'2× Zucchero di Canna'},
+    {id:'s10', label:'1× Biscotti sigillati'},
+    {id:'s11', label:'2× Bacchette allineate davanti'},
+    {id:'s12', label:'Cataloghi aziendali / arte presenti'},
+    {id:'s13', label:'Pulizia superfici ok (marmo / scrivania)'},
+  ]},
+  {id:'amenities', label:'🧴 Amenities Bagno — Lamystique', items:[
+    {id:'m1', label:'Body Lotion Lamystique'},
+    {id:'m2', label:'Shoe Sponge'},
+    {id:'m3', label:'2× Sapone Lamystique (vassoio)'},
+  ]},
+];
+
+const ALL_IDS = CHECKS.flatMap(s => s.items.map(i => i.id));
+
+// ── STATE ──────────────────────────────
+let _state = {};
+let _cur   = null; // camera corrente
+
+const _todayKey = (() => {
+  const d = new Date();
+  return 'qm_cm_' + d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+})();
+
+function _load() {
+  try { const r = localStorage.getItem(_todayKey); if (r) _state = JSON.parse(r); } catch(e){}
+}
+function _persist() {
+  try { localStorage.setItem(_todayKey, JSON.stringify(_state)); } catch(e){}
+  fetch(PROXY+'/kv/set', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:_todayKey, value:JSON.stringify(_state)})
+  }).catch(()=>{});
+}
+
+function _defaultRoom() {
+  const checks = {};
+  ALL_IDS.forEach(id => checks[id] = true);
+  return {visited:false, libera:false, bottiglia:'consumata', checks, note:''};
+}
+function _rs(room) {
+  if (!_state[room]) _state[room] = _defaultRoom();
+  return _state[room];
+}
+
+// ok · warn · bottle · both · empty · pending
+function _status(room) {
+  const rs = _state[room];
+  if (!rs || !rs.visited) return 'pending';
+  if (rs.libera) return 'empty';
+  const nc  = Object.values(rs.checks).some(v => !v);
+  const bnc = rs.bottiglia === 'non_consumata';
+  if (nc && bnc) return 'both';
+  if (nc)        return 'warn';
+  if (bnc)       return 'bottle';
+  return 'ok';
+}
+
+// ── HELPERS ───────────────────────────
+function _fmtDate() {
+  return new Date().toLocaleDateString('it-IT',
+    {weekday:'long', day:'numeric', month:'long'});
+}
+function _fmtShort() {
+  const d = new Date();
+  return String(d.getDate()).padStart(2,'0') + '/' +
+         String(d.getMonth()+1).padStart(2,'0');
+}
+function _screen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── HOME ───────────────────────────────
+function goHome() {
+  _renderHome();
+  _screen('s-home');
+}
+
+function _renderHome() {
+  document.getElementById('home-chip').textContent = _fmtShort();
+
+  const visited = ROOMS.filter(r => _state[r]?.visited).length;
+  document.getElementById('prog-txt').textContent = visited + ' / ' + ROOMS.length;
+  document.getElementById('prog-fill').style.width = (visited / ROOMS.length * 100) + '%';
+
+  // conteggi
+  let nOk=0, nBottle=0, nWarn=0, nEmpty=0;
+  ROOMS.forEach(r => {
+    const s = _status(r);
+    if (s==='ok')                  nOk++;
+    else if (s==='bottle'||s==='both') nBottle++;
+    else if (s==='warn')           nWarn++;
+    else if (s==='empty')          nEmpty++;
+  });
+
+  document.getElementById('stat-row').innerHTML = [
+    ['✅', nOk,     'OK',        'var(--green)'],
+    ['💧', nBottle, 'Bottiglie', 'var(--blue)'],
+    ['⚠️', nWarn,   'Non conf.', 'var(--amber)'],
+    ['🚪', nEmpty,  'Libere',    '#9CA3AF'],
+  ].map(([ico,n,lbl,col]) =>
+    `<div class="stat-pill">
+       <div class="stat-n" style="color:${col}">${ico}&nbsp;${n}</div>
+       <div class="stat-l">${lbl}</div>
+     </div>`
+  ).join('');
+
+  const ICO = {pending:'⬜',ok:'✅',warn:'⚠️',bottle:'💧',both:'⚠️💧',empty:'🚪'};
+  document.getElementById('rooms-grid').innerHTML = ROOMS.map(room => {
+    const s = _status(room);
+    return `<div class="room-card s-${s==='both'?'both':s}" onclick="openRoom('${room}')">
+      <div class="room-num">${room}</div>
+      <div class="room-ico">${ICO[s]||'⬜'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── ROOM CHECKLIST ─────────────────────
+function openRoom(room) {
+  _cur = room;
+  const rs = _rs(room);
+
+  document.getElementById('room-title').textContent = room;
+  document.getElementById('room-chip').textContent  = _fmtShort();
+
+  let h = '';
+
+  // ── Bottiglia ──
+  const bc = rs.bottiglia;
+  h += `<div class="bottle-card">
+    <div class="bottle-card-title">💧 Acqua Culligan — bottiglia consumata?</div>
+    <div class="bottle-seg">
+      <button class="bseg ${bc==='consumata'?'bc-ok':''}" id="bb-ok"
+        onclick="setBottle('consumata')">✅ Consumata<br><span style="font-size:.7rem;opacity:.8;">housekeeping provvede</span></button>
+      <button class="bseg ${bc==='non_consumata'?'bc-nc':''}" id="bb-nc"
+        onclick="setBottle('non_consumata')">💧 Non consumata<br><span style="font-size:.7rem;opacity:.8;">portare bottiglia</span></button>
+    </div>
+  </div>`;
+
+  // ── Quick actions ──
+  h += `<div class="quick-row">
+    <button class="btn-libera${rs.libera?' is-active':''}" id="btn-libera" onclick="toggleLibera()">🚪 Camera libera</button>
+    <button class="btn-tuttoOk" onclick="tuttoOk()">✓✓ Tutto conforme</button>
+  </div>`;
+
+  // ── Checklist (nascosta se camera libera) ──
+  if (!rs.libera) {
+    CHECKS.forEach(sec => {
+      const allOn = sec.items.every(i => rs.checks[i.id]);
+      h += `<div class="chk-sec">
+        <div class="chk-sec-hdr">
+          <span>${sec.label}</span>
+          <button class="chk-all-btn" data-sid="${sec.id}"
+            onclick="toggleSec('${sec.id}',${!allOn})">${allOn?'Deseleziona tutti':'Seleziona tutti'}</button>
+        </div>`;
+      sec.items.forEach(item => {
+        const on = rs.checks[item.id];
+        h += `<div class="chk-item" onclick="toggleChk('${item.id}')">
+          <div class="chk-box ${on?'on':''}" id="cb-${item.id}">${on?'✓':''}</div>
+          <span class="chk-lbl">${item.label}</span>
+        </div>`;
+      });
+      h += `</div>`;
+    });
+  }
+
+  // ── Note ──
+  h += `<div class="note-card">
+    <label class="note-label">📝 Note / Non conformità</label>
+    <textarea id="room-note" rows="3" placeholder="Descrivi eventuali problemi o osservazioni…">${rs.note||''}</textarea>
+  </div>`;
+
+  document.getElementById('cl-body').innerHTML = h;
+  _screen('s-room');
+}
+
+function setBottle(val) {
+  _rs(_cur).bottiglia = val;
+  document.getElementById('bb-ok').className = 'bseg' + (val==='consumata'?' bc-ok':'');
+  document.getElementById('bb-nc').className = 'bseg' + (val==='non_consumata'?' bc-nc':'');
+}
+
+function toggleLibera() {
+  const rs = _rs(_cur);
+  rs.libera = !rs.libera;
+  openRoom(_cur); // re-render (toglie/mostra checklist)
+}
+
+function tuttoOk() {
+  const rs = _rs(_cur);
+  ALL_IDS.forEach(id => {
+    rs.checks[id] = true;
+    const b = document.getElementById('cb-'+id);
+    if (b) { b.className='chk-box on'; b.textContent='✓'; }
+  });
+  document.querySelectorAll('.chk-all-btn').forEach(btn => {
+    const sid = btn.dataset.sid;
+    btn.textContent = 'Deseleziona tutti';
+    btn.setAttribute('onclick', `toggleSec('${sid}',false)`);
+  });
+}
+
+function toggleChk(itemId) {
+  const rs = _rs(_cur);
+  rs.checks[itemId] = !rs.checks[itemId];
+  const b = document.getElementById('cb-'+itemId);
+  if (b) { b.className='chk-box'+(rs.checks[itemId]?' on':''); b.textContent=rs.checks[itemId]?'✓':''; }
+  // aggiorna header sezione
+  const sec = CHECKS.find(s => s.items.some(i => i.id===itemId));
+  if (sec) {
+    const allOn = sec.items.every(i => rs.checks[i.id]);
+    const btn = document.querySelector(`.chk-all-btn[data-sid="${sec.id}"]`);
+    if (btn) { btn.textContent=allOn?'Deseleziona tutti':'Seleziona tutti'; btn.setAttribute('onclick',`toggleSec('${sec.id}',${!allOn})`); }
+  }
+}
+
+function toggleSec(sectionId, makeOn) {
+  const rs  = _rs(_cur);
+  const sec = CHECKS.find(s => s.id===sectionId);
+  if (!sec) return;
+  sec.items.forEach(item => {
+    rs.checks[item.id] = makeOn;
+    const b = document.getElementById('cb-'+item.id);
+    if (b) { b.className='chk-box'+(makeOn?' on':''); b.textContent=makeOn?'✓':''; }
+  });
+  const btn = document.querySelector(`.chk-all-btn[data-sid="${sectionId}"]`);
+  if (btn) { btn.textContent=makeOn?'Deseleziona tutti':'Seleziona tutti'; btn.setAttribute('onclick',`toggleSec('${sectionId}',${!makeOn})`); }
+}
+
+function saveRoom() {
+  const rs   = _rs(_cur);
+  rs.visited = true;
+  rs.note    = document.getElementById('room-note')?.value || '';
+  _persist();
+  goHome();
+}
+
+// ── SUMMARY ───────────────────────────
+function showSummary() {
+  const btl = ROOMS.filter(r => { const s=_status(r); return s==='bottle'||s==='both'; });
+  const wrn = ROOMS.filter(r => { const s=_status(r); return s==='warn'||s==='both'; });
+  const ok  = ROOMS.filter(r => _status(r)==='ok');
+  const emp = ROOMS.filter(r => _status(r)==='empty');
+  const pnd = ROOMS.filter(r => _status(r)==='pending');
+
+  document.getElementById('sum-chip').textContent = _fmtShort();
+
+  let h = `<div class="sum-stats">
+    <div class="sum-stat"><div class="sum-stat-n" style="color:var(--blue)">${btl.length}</div><div class="sum-stat-l">💧 Bottiglie</div></div>
+    <div class="sum-stat"><div class="sum-stat-n" style="color:var(--amber)">${wrn.length}</div><div class="sum-stat-l">⚠️ Non conf.</div></div>
+    <div class="sum-stat"><div class="sum-stat-n" style="color:var(--green)">${ok.length}</div><div class="sum-stat-l">✅ OK</div></div>
+    <div class="sum-stat"><div class="sum-stat-n" style="color:var(--text-dim)">${pnd.length}</div><div class="sum-stat-l">⭕ Da fare</div></div>
+  </div>`;
+
+  // ── BOTTIGLIE (priorità assoluta) ──
+  if (btl.length > 0) {
+    h += `<div class="sum-card">
+      <div class="sum-hdr h-bottle">💧 Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}</div>
+      <div class="pills">${btl.map(r=>`<span class="pill pill-bottle">${r}</span>`).join('')}</div>
+    </div>`;
+  } else {
+    const anyVisited = ROOMS.some(r => _state[r]?.visited);
+    if (anyVisited) {
+      h += `<div class="sum-card">
+        <div class="sum-hdr h-ok">💧 Tutte le bottiglie consumate — nessuna da portare ✅</div>
+      </div>`;
+    }
+  }
+
+  // ── NON CONFORMITÀ ──
+  if (wrn.length > 0) {
+    h += `<div class="sum-card">
+      <div class="sum-hdr h-warn">⚠️ Non conformità — ${wrn.length} ${wrn.length===1?'camera':'camere'}</div>
+      <div class="warn-list">`;
+    wrn.forEach(r => {
+      const rs = _state[r];
+      const fail = [];
+      CHECKS.forEach(s => s.items.forEach(i => { if (!rs.checks[i.id]) fail.push(i.label); }));
+      h += `<div class="warn-item">
+        <div class="warn-room">${r}</div>
+        <div class="warn-fail">${fail.join(' · ')}</div>
+        ${rs.note ? `<div class="warn-note">📝 ${rs.note}</div>` : ''}
+      </div>`;
+    });
+    h += `</div></div>`;
+  }
+
+  // ── DA VISITARE ──
+  if (pnd.length > 0) {
+    h += `<div class="sum-card">
+      <div class="sum-hdr h-pending">⭕ Non ancora visitate — ${pnd.length}</div>
+      <div class="pills">${pnd.map(r=>`<span class="pill pill-pending">${r}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  // ── CAMERE LIBERE ──
+  if (emp.length > 0) {
+    h += `<div class="sum-card">
+      <div class="sum-hdr h-empty">🚪 Camere libere — ${emp.length}</div>
+      <div class="pills">${emp.map(r=>`<span class="pill pill-empty">${r}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  // ── OK ──
+  if (ok.length > 0) {
+    h += `<div class="sum-card">
+      <div class="sum-hdr h-ok">✅ Conformi — ${ok.length}</div>
+      <div class="pills">${ok.map(r=>`<span class="pill pill-ok">${r}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  h += `<button class="btn-reset" onclick="resetDay()">🗑 Reset giornata</button>`;
+
+  document.getElementById('sum-body').innerHTML = h;
+  _screen('s-summary');
+}
+
+function resetDay() {
+  if (!confirm('Azzerare tutti i controlli di oggi?')) return;
+  _state = {};
+  _persist();
+  goHome();
+}
+
+// ── INIT ──────────────────────────────
+_load();
+_renderHome();
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw-inventory.js')
+    .then(r => r.update()).catch(()=>{});
+}
+</script>
+</body>
+</html>

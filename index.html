@@ -101,6 +101,7 @@
 
       <div class="nav-section">Strumenti</div>
       <div class="nav-item" onclick="setView('inventario',this);invRender()"><span class="nav-icon">📦</span>Inventari</div>
+      <div class="nav-item" onclick="setView('controllo-mattino',this)"><span class="nav-icon">🌅</span>Controllo Mattino</div>
       <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon">📱</span>Mini App</div>
       <div class="nav-section" style="display:flex;align-items:center;justify-content:space-between;">
         <span>Upload Center</span>
@@ -1285,6 +1286,10 @@
       <div class="view" id="view-turni-pref">
         <div id="turni-pref-content"></div>
       </div>
+      <!-- ── CONTROLLO MATTINO ── -->
+      <div class="view" id="view-controllo-mattino">
+        <div id="cm-content"></div>
+      </div>
   </main>
 </div>
 <div id="catChartModal" onclick="closeCatModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:20px;">
@@ -1304,6 +1309,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=256-20260510"></script>
+<script src="app.js?v=257-20260511"></script>
 </body>
 </html>
