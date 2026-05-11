@@ -5430,7 +5430,7 @@ function cmRender(state,key){
   </div>`;
   // Stats
   h+=`<div style="display:flex;gap:8px;margin-bottom:14px;">
-    ${[['💧',btl.length,'Bottiglie','#2563EB'],['⚠️',wrn.length,'Non conf.','var(--amber)'],['✅',ok.length,'OK','var(--green)'],['⭕',pnd.length,'Da fare','var(--text-dim)']].map(([ico,n,lbl,col])=>`
+    ${[['💧',btl.length,'Da mettere','#2563EB'],['⚠️',wrn.length,'Non conf.','var(--amber)'],['✅',ok.length,'Non consumate','var(--green)'],['⭕',pnd.length,'Da visitare','var(--text-dim)']].map(([ico,n,lbl,col])=>`
     <div style="flex:1;background:var(--surface);border-radius:10px;padding:12px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06);">
       <div style="font-size:1.3rem;font-weight:800;color:${col};line-height:1;">${ico} ${n}</div>
       <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;">${lbl}</div>
@@ -5490,35 +5490,85 @@ function cmPrintBottle(){
   const dndRooms=CM_ROOMS.filter(r=>state&&state[r]&&state[r].dnd);
   const dateStr=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const timeStr=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-  const btlRows=btl.map(r=>`<tr><td><strong>${r}</strong></td><td>${(state[r]?.note||'').replace(/</g,'&lt;')}</td></tr>`).join('');
-  const dndRows=dndRooms.map(r=>`<tr><td><strong>${r}</strong></td><td>${(state[r]?.note||'').replace(/</g,'&lt;')}</td></tr>`).join('');
-  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
+
+  // Griglia camere per sezione bottiglie: 3 colonne
+  function roomGrid(rooms){
+    if(!rooms.length) return '<p style="color:#999;font-style:italic;font-size:10pt;margin:4mm 0;">Nessuna camera.</p>';
+    const cols=3;
+    const rows=[];
+    for(let i=0;i<rooms.length;i+=cols){
+      const cells=rooms.slice(i,i+cols).map(r=>{
+        const note=(state&&state[r]&&state[r].note)||'';
+        return`<td style="width:33.3%;padding:6px 10px;border:1px solid #E0E0E0;vertical-align:top;">
+          <strong style="font-size:11pt;">${r}</strong>
+          ${note?`<div style="font-size:8.5pt;color:#555;margin-top:2px;">${note.replace(/</g,'&lt;')}</div>`:''}
+        </td>`;
+      });
+      // padding celle vuote
+      while(cells.length<cols) cells.push('<td style="border:1px solid #E0E0E0;"></td>');
+      rows.push(`<tr>${cells.join('')}</tr>`);
+    }
+    return`<table style="width:100%;border-collapse:collapse;margin:3mm 0 5mm;">${rows.join('')}</table>`;
+  }
+
+  const html=`<!DOCTYPE html>
+<html lang="it"><head><meta charset="UTF-8">
 <title>Distribuzione Culligan — ${dateStr}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:Arial,Helvetica,sans-serif;padding:18mm 20mm;color:#000;font-size:10.5pt;}
-.hdr{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6mm;border-bottom:2px solid #000;padding-bottom:4mm;}
-.hotel{font-size:14pt;font-weight:800;letter-spacing:.02em;}
-.meta{font-size:9pt;color:#555;text-align:right;line-height:1.6;}
-h2{font-size:12pt;font-weight:800;margin:6mm 0 3mm;}
-table{width:100%;border-collapse:collapse;margin-bottom:5mm;}
-th{background:#111;color:#fff;padding:6px 10px;font-size:9.5pt;text-align:left;font-weight:700;}
-td{padding:7px 10px;border-bottom:1px solid #E5E7EB;font-size:10pt;}
-tr:last-child td{border-bottom:none;}
-.empty{color:#9CA3AF;font-style:italic;font-size:9.5pt;padding:8px 0;}
-.footer{margin-top:10mm;padding-top:4mm;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:9pt;color:#555;}
-@media print{@page{size:A4;margin:15mm 18mm;}body{padding:0;}}</style>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:210mm;font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#000;}
+  body{padding:15mm 18mm;}
+  .page-hdr{display:flex;justify-content:space-between;align-items:flex-end;
+    padding-bottom:4mm;margin-bottom:7mm;border-bottom:2.5px solid #000;}
+  .page-hdr-left{}
+  .page-hdr-hotel{font-size:15pt;font-weight:800;letter-spacing:.01em;line-height:1.1;}
+  .page-hdr-sub{font-size:9pt;color:#555;margin-top:1mm;}
+  .page-hdr-right{text-align:right;font-size:9pt;color:#333;line-height:1.7;}
+  .section{margin-bottom:7mm;}
+  .section-title{font-size:11.5pt;font-weight:800;margin-bottom:3mm;
+    padding:3mm 5mm;border-left:4px solid #000;background:#F5F5F5;}
+  .section-title.sec-bottle{border-color:#D97706;background:#FFFBEB;}
+  .section-title.sec-dnd   {border-color:#DC2626;background:#FEF2F2;}
+  .footer{margin-top:10mm;padding-top:4mm;border-top:1px solid #CCC;
+    display:flex;justify-content:space-between;font-size:8.5pt;color:#666;}
+  @media print{
+    @page{size:A4 portrait;margin:0;}
+    html,body{width:100%;padding:15mm 18mm;}
+  }
+</style>
 </head><body>
-<div class="hdr"><div class="hotel">SoulArt Hotel — Distribuzione Culligan</div><div class="meta">${dateStr}<br>Ore ${timeStr}</div></div>
-<h2>💧 Bottiglie da consegnare (${btl.length})</h2>
-${btl.length>0
-  ?`<table><thead><tr><th>Camera</th><th>Note</th></tr></thead><tbody>${btlRows}</tbody></table>`
-  :`<p class="empty">Nessuna bottiglia da consegnare per oggi.</p>`}
-${dndRooms.length>0
-  ?`<h2>🚫 Non Disturbare — verificare più tardi (${dndRooms.length})</h2>
-<table><thead><tr><th>Camera</th><th>Note</th></tr></thead><tbody>${dndRows}</tbody></table>`:''}
-<div class="footer"><span>Quality Manager — Paolo P.</span><span>Firma: _________________________ &nbsp;&nbsp; Ora: _______</span></div>
+
+<div class="page-hdr">
+  <div class="page-hdr-left">
+    <div class="page-hdr-hotel">SoulArt Hotel</div>
+    <div class="page-hdr-sub">Distribuzione Acqua Culligan — Art 1–22</div>
+  </div>
+  <div class="page-hdr-right">
+    ${dateStr}<br>
+    Ore ${timeStr}<br>
+    QM: Paolo P.
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title sec-bottle">💧 Bottiglie da mettere — ${btl.length} ${btl.length===1?'camera':'camere'}</div>
+  ${roomGrid(btl)}
+</div>
+
+${dndRooms.length>0?`
+<div class="section">
+  <div class="section-title sec-dnd">🚫 Non Disturbare — da verificare più tardi — ${dndRooms.length} ${dndRooms.length===1?'camera':'camere'}</div>
+  ${roomGrid(dndRooms)}
+</div>`:''}
+
+<div class="footer">
+  <span>Firma: _________________________________</span>
+  <span>Ora completamento: ___________</span>
+</div>
+
 </body></html>`;
-  const w=window.open('','_blank','width=850,height=650');
+
+  const w=window.open('','_blank');
   if(!w){alert('Abilita i popup per stampare.');return;}
-  w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);
+  w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
 }
