@@ -47,8 +47,10 @@ body{min-height:100vh;overflow-x:hidden;}
 /* ══ HOME ══ */
 .piano-banner{border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;
   font-size:.78rem;font-weight:600;}
-.piano-banner.loaded{background:#D1FAE5;color:#065F46;}
-.piano-banner.missing{background:#FEF3C7;color:#92400E;}
+.piano-banner.loaded {background:#D1FAE5;color:#065F46;}
+.piano-banner.partial{background:#FEF3C7;color:#92400E;}
+.piano-banner.missing{background:#FEF3C7;color:#92400E;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.btn-reload-piano{background:rgba(0,0,0,.08);border:none;color:inherit;padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 
 .progress-card{background:var(--surface);border-radius:var(--radius);
   padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow);}
@@ -327,7 +329,8 @@ const PIANO_DESC = {
 // ── STATE ────────────────────────────
 let _state = {};
 let _cur   = null;
-let _pianoDay = null;
+let _pianoDay    = null;
+let _pianoLoaded = false; // true se piano trovato ovunque (anche se oggi non è nel piano)
 
 const _todayKey = (() => {
   const d = new Date();
@@ -349,6 +352,7 @@ async function _loadPiano() {
     if (raw) {
       const piano = JSON.parse(raw);
       if (piano?.giorni?.length) {
+        _pianoLoaded = true;
         _pianoDay = piano.giorni.find(g => g.data === _todayDMY()) || null;
         if (_pianoDay) _applyPianoLibere();
         return; // trovato in locale, ok
@@ -364,6 +368,7 @@ async function _loadPiano() {
         try { localStorage.setItem('qm_piano', j.value); } catch(e) {}
         const piano = JSON.parse(j.value);
         if (piano?.giorni?.length) {
+          _pianoLoaded = true;
           _pianoDay = piano.giorni.find(g => g.data === _todayDMY()) || null;
           if (_pianoDay) _applyPianoLibere();
           _renderHome(); // aggiorna banner e griglia con i dati appena arrivati
@@ -371,6 +376,27 @@ async function _loadPiano() {
       }
     }
   } catch(e) {}
+}
+async function _reloadPianoCloud() {
+  const pb=document.getElementById('piano-banner');
+  if(pb) pb.innerHTML=`<div class="piano-banner missing">⏳ Caricamento dal cloud…</div>`;
+  _pianoLoaded=false;_pianoDay=null;
+  try {
+    const r=await fetch(PROXY+'/kv/get?key=qm_piano');
+    if(r.ok){
+      const j=await r.json();
+      if(j?.value){
+        try{localStorage.setItem('qm_piano',j.value);}catch(e){}
+        const piano=JSON.parse(j.value);
+        if(piano?.giorni?.length){
+          _pianoLoaded=true;
+          _pianoDay=piano.giorni.find(g=>g.data===_todayDMY())||null;
+          if(_pianoDay)_applyPianoLibere();
+        }
+      }
+    }
+  }catch(e){}
+  _renderHome();
 }
 function _applyPianoLibere() {
   if (!_pianoDay) return;
@@ -446,8 +472,10 @@ function _renderHome(){
     const sa=_pianoDay.soulart;
     const nLib=ROOMS.filter(r=>_pianoSt(r)==='libera').length;
     pb.innerHTML=`<div class="piano-banner loaded">✅ Piano caricato — ${sa.partenze.length} partenze · ${sa.fermate.length} fermate · ${sa.cambi.length} partenze+arrivo · ${nLib} libere</div>`;
+  } else if(_pianoLoaded){
+    pb.innerHTML=`<div class="piano-banner partial">⚠️ Piano trovato ma non include la data di oggi — ricaricare il piano dal dashboard per la settimana corrente</div>`;
   } else {
-    pb.innerHTML=`<div class="piano-banner missing">⚠️ Piano settimana non caricato dal dashboard — lo stato delle camere non è disponibile</div>`;
+    pb.innerHTML=`<div class="piano-banner missing"><span>⚠️ Piano non trovato — caricarlo dal dashboard</span><button class="btn-reload-piano" onclick="_reloadPianoCloud()">🔄 Ricarica</button></div>`;
   }
 
   // Progress (esclude le libere auto-impostate)
