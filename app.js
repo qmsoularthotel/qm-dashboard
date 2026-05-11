@@ -5372,14 +5372,14 @@ async function cmLoad(){
   const d=new Date();
   const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   let data=null;
-  // 1. localStorage
-  try{const r=localStorage.getItem(key);if(r)data=JSON.parse(r);}catch(e){}
-  // 2. KV se non trovato in locale
+  // Dashboard: sempre legge da KV per avere i dati aggiornati dallo smartphone
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key));
+    if(r.ok){const j=await r.json();if(j&&j.value){data=JSON.parse(j.value);try{localStorage.setItem(key,j.value);}catch(e){}}}
+  }catch(e){}
+  // Fallback: localStorage se KV non raggiungibile
   if(!data){
-    try{
-      const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key));
-      if(r.ok){const j=await r.json();if(j&&j.value){data=JSON.parse(j.value);try{localStorage.setItem(key,j.value);}catch(e){}}}
-    }catch(e){}
+    try{const r=localStorage.getItem(key);if(r)data=JSON.parse(r);}catch(e){}
   }
   cmRender(data,key);
 }
