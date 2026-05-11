@@ -91,30 +91,32 @@ body{min-height:100vh;overflow-x:hidden;}
 /* ══ ROOM GRID ══ */
 .rooms-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
 .room-card{background:var(--surface);border-radius:var(--r);
-  padding:0;cursor:pointer;box-shadow:var(--sh);
-  border:1px solid var(--border);border-left-width:4px;overflow:hidden;
-  -webkit-tap-highlight-color:transparent;transition:transform .1s;}
-.room-card:active{transform:scale(.93);}
+  padding:12px 8px 10px;cursor:pointer;box-shadow:var(--sh);
+  border:1px solid var(--border);text-align:center;
+  -webkit-tap-highlight-color:transparent;transition:transform .1s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;}
+.room-card:active{transform:scale(.92);}
+.room-card.s-empty{opacity:.45;}
 
-/* Bordo sinistro colorato = indicatore stato, sfondo sempre bianco */
-.room-card.s-pending{border-left-color:#D4D4D8;}
-.room-card.s-ok     {border-left-color:var(--green);}
-.room-card.s-bottle {border-left-color:var(--amber);}
-.room-card.s-warn   {border-left-color:var(--red);}
-.room-card.s-both   {border-left-color:var(--red);}
-.room-card.s-empty  {border-left-color:#D4D4D8;opacity:.5;}
-.room-card.s-dnd    {border-left-color:var(--red);}
+/* numero camera */
+.rc-num{font-size:.7rem;font-weight:700;color:var(--text-muted);
+  letter-spacing:.04em;text-transform:uppercase;line-height:1;}
 
-.rc-top{padding:10px 10px 6px 10px;border-bottom:1px solid #F0F0F0;}
-.rc-num{font-size:.78rem;font-weight:700;color:var(--text-muted);letter-spacing:.02em;}
-.rc-status{font-size:1rem;font-weight:800;line-height:1.2;margin-top:2px;min-height:1.25em;}
-.rc-bot{padding:5px 8px;}
-.piano-badge{display:inline-block;font-size:.52rem;padding:2px 6px;
-  border-radius:4px;font-weight:700;line-height:1.5;white-space:nowrap;}
-.pb-partenza{background:#FEE2E2;color:#B91C1C;}
-.pb-fermata {background:#DBEAFE;color:#1D4ED8;}
-.pb-cambio  {background:#F3E8FF;color:#7C3AED;}
-.pb-libera  {background:#F4F4F5;color:#A1A1AA;}
+/* icona piano — elemento principale */
+.rc-piano-ico{font-size:1.8rem;line-height:1;margin:2px 0 0;}
+
+/* label piano */
+.rc-piano-lbl{font-size:.72rem;font-weight:700;color:var(--text);}
+
+/* indicatore bottiglia/stato visita — in basso */
+.rc-dot{font-size:.7rem;font-weight:600;margin-top:2px;min-height:1em;}
+.rc-dot.d-pending{color:var(--text-muted);}
+.rc-dot.d-ok     {color:var(--green);}
+.rc-dot.d-bottle {color:var(--amber);font-size:.78rem;}
+.rc-dot.d-warn   {color:var(--red);}
+.rc-dot.d-both   {color:var(--red);}
+.rc-dot.d-dnd    {color:var(--red);}
+.rc-dot.d-empty  {color:var(--text-muted);}
 
 /* ══ CHECKLIST ══ */
 .cl-body{flex:1;overflow-y:auto;padding:12px 12px 90px;}
@@ -524,24 +526,23 @@ function _renderHome(){
   </div>`).join('');
 
   // Grid — 3 colonne
-  const ST_LBL={pending:'Da fare',ok:'OK — piena',warn:'Non conforme',
-    bottle:'Porta bottiglia',both:'Porta bott. + KO',empty:'Libera',dnd:'Non disturbare'};
-  const ST_COL={pending:'var(--text-muted)',ok:'var(--green)',warn:'var(--red)',
-    bottle:'var(--amber)',both:'var(--red)',empty:'var(--text-muted)',dnd:'var(--red)'};
-  const LBREV={partenza:'🛫 Partenza',fermata:'🛏 Fermata',cambio:'🔄 P+A',libera:'🚪 Libera'};
+  // Piano: icona grande + label (info principale)
+  // Dot in basso: stato visita/bottiglia (info secondaria)
+  const PS_ICO ={partenza:'🛫',fermata:'🛏',cambio:'🔄',libera:'🚪',null:'—'};
+  const PS_LBL ={partenza:'Partenza',fermata:'Fermata',cambio:'P + Arrivo',libera:'Libera'};
+  const DOT_TXT={pending:'○ da visitare',ok:'✓ ok',warn:'⚠ non conforme',
+    bottle:'💧 porta bottiglia',both:'💧 ⚠ porta + KO',empty:'',dnd:'🚫 non disturbare'};
   document.getElementById('rooms-grid').innerHTML=ROOMS.map(room=>{
     const st=_status(room);
     const ps=_pianoSt(room);
-    const bcss=ps?PIANO_CSS[ps]:'pb-libera';
-    const btxt=ps?LBREV[ps]:'';
-    const lbl=ST_LBL[st]||'';
-    const col=ST_COL[st]||'#ccc';
+    const ico=ps?PS_ICO[ps]:'—';
+    const lbl=ps?PS_LBL[ps]:'';
+    const dot=DOT_TXT[st]||'';
     return`<div class="room-card s-${st}" onclick="openRoom('${room}')">
-      <div class="rc-top">
-        <div class="rc-num">${room}</div>
-        <div class="rc-status" style="color:${col}">${lbl}</div>
-      </div>
-      <div class="rc-bot">${btxt?`<span class="piano-badge ${bcss}">${btxt}</span>`:''}</div>
+      <div class="rc-num">${room}</div>
+      <div class="rc-piano-ico">${ico}</div>
+      <div class="rc-piano-lbl">${lbl}</div>
+      <div class="rc-dot d-${st}">${dot}</div>
     </div>`;
   }).join('');
 }
