@@ -104,7 +104,11 @@ body{min-height:100vh;overflow-x:hidden;}
 
 /* icona piano — elemento principale */
 .rc-piano-ico{font-size:1.8rem;line-height:1;margin:2px 0 0;}
-.rc-piano-ico img{height:32px;width:auto;object-fit:contain;display:block;margin:0 auto;}
+.rc-piano-ico img{display:block;margin:0 auto;}
+/* sprite aereo: immagine 2:1, mostra metà sinistra (partenza) o metà destra (arrivo) */
+.ico-partenza{width:32px;height:32px;object-fit:cover;object-position:0% center;}
+.ico-arrivo  {width:32px;height:32px;object-fit:cover;object-position:100% center;}
+.ico-cambio  {width:60px;height:30px;object-fit:cover;object-position:center;}
 
 /* label piano */
 .rc-piano-lbl{font-size:.72rem;font-weight:700;color:var(--text);}
@@ -529,7 +533,13 @@ function _renderHome(){
   // Grid — 3 colonne
   // Piano: icona grande + label (info principale)
   // Dot in basso: stato visita/bottiglia (info secondaria)
-  const PS_ICO ={partenza:'🛫',fermata:'🛏',cambio:'🛫🛬',libera:'<img src="img/open-sign.png" alt="Libera" style="height:30px;width:auto;display:block;margin:2px auto 0;">',null:'—'};
+  const PS_ICO ={
+    partenza:'<img src="img/aerei.png" class="ico-partenza" alt="Partenza">',
+    fermata: '🛏',
+    cambio:  '<img src="img/aerei.png" class="ico-cambio" alt="P+Arrivo">',
+    libera:  '<img src="img/open-sign.png" alt="Libera" style="height:30px;width:auto;display:block;margin:2px auto 0;">',
+    null:    '—'
+  };
   const PS_LBL ={partenza:'Partenza',fermata:'Fermata',cambio:'P + Arrivo',libera:'Libera'};
   const DOT_TXT={pending:'○ da visitare',ok:'✓ ok',warn:'⚠ non conforme',
     bottle:'💧 porta bottiglia',both:'💧 ⚠ porta + KO',empty:'',dnd:'🚫 non disturbare'};
