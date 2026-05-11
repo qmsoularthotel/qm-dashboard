@@ -831,7 +831,7 @@ _loadPiano();
 _renderHome();
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw-inventory.js')
+  navigator.serviceWorker.register('./sw-controllo-mattino.js')
     .then(r=>r.update()).catch(()=>{});
 }
 </script>
