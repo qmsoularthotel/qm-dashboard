@@ -5395,8 +5395,8 @@ function cmRender(state,key){
     if(!rs||!rs.visited)return'pending';
     if(rs.libera)return'empty';
     const nc=Object.values(rs.checks||{}).some(v=>!v);
-    const bnc=rs.bottiglia==='non_consumata';
-    if(nc&&bnc)return'both';if(nc)return'warn';if(bnc)return'bottle';return'ok';
+    const needsBottle=rs.bottiglia==='consumata'; // consumata=vuota→porta bottiglia
+    if(nc&&needsBottle)return'both';if(nc)return'warn';if(needsBottle)return'bottle';return'ok';
   }
   if(!state||!Object.keys(state).length){
     el.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--text-dim);">
@@ -5439,12 +5439,12 @@ function cmRender(state,key){
   // Bottiglie
   if(btl.length>0){
     h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#DBEAFE;color:#1D4ED8;display:flex;align-items:center;gap:6px;">💧 Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}</div>
+      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#FEF3C7;color:#92400E;display:flex;align-items:center;gap:6px;">💧 Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}</div>
       <div style="padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px;">${btl.map(r=>`<span style="padding:5px 14px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:#EFF6FF;color:#2563EB;border:1.5px solid #BFDBFE;">${r}</span>`).join('')}</div>
     </div>`;
   }else{
     h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#D1FAE5;color:#065F46;">💧 Tutte le bottiglie consumate ✅</div>
+      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#D1FAE5;color:#065F46;">💧 Nessuna bottiglia consumata — niente da portare ✅</div>
     </div>`;
   }
   // Non conformità

@@ -14,11 +14,14 @@
   --accent:#1E4080;
   --green:#1E7A48;
   --green-bg:#F0FAF4;
-  --red:#C0352A;
   --amber:#A05A00;
   --amber-bg:#FFF8EC;
+  --red:#C0352A;
+  --red-bg:#FEF2F2;
   --blue:#2563EB;
   --blue-bg:#EFF6FF;
+  --purple:#7C3AED;
+  --purple-bg:#F5F3FF;
   --bg:#F0F2F5;
   --surface:#FFFFFF;
   --border:#E5E7EB;
@@ -26,7 +29,6 @@
   --text-dim:#6B7280;
   --radius:12px;
   --shadow:0 2px 8px rgba(0,0,0,0.07);
-  --shadow-lg:0 4px 16px rgba(0,0,0,0.12);
 }
 html{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);-webkit-text-size-adjust:100%;}
 body{min-height:100vh;overflow-x:hidden;}
@@ -36,204 +38,193 @@ body{min-height:100vh;overflow-x:hidden;}
 .screen.active{display:flex;}
 
 /* ── HEADER ── */
-.hdr{
-  background:linear-gradient(135deg,#1E4080,#2A5FAD);
-  color:#fff;padding:14px 16px;
-  display:flex;align-items:center;gap:10px;
-  position:sticky;top:0;z-index:100;
-  box-shadow:0 2px 12px rgba(30,64,128,0.3);
-  flex-shrink:0;
-}
+.hdr{background:linear-gradient(135deg,#1E4080,#2A5FAD);color:#fff;
+  padding:14px 16px;display:flex;align-items:center;gap:10px;
+  position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(30,64,128,.3);flex-shrink:0;}
 .hdr-info{flex:1;min-width:0;}
 .hdr-info h1{font-size:1.05rem;font-weight:700;line-height:1.2;}
-.hdr-info .hdr-sub{font-size:0.7rem;opacity:0.75;margin-top:1px;}
-.btn-back{background:rgba(255,255,255,0.15);border:none;color:#fff;
-  font-size:1.3rem;cursor:pointer;padding:6px 10px;border-radius:8px;
-  line-height:1;-webkit-tap-highlight-color:transparent;}
-.date-chip{font-size:0.7rem;background:rgba(255,255,255,0.18);
-  padding:5px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+.hdr-sub{font-size:0.7rem;opacity:.75;margin-top:1px;}
+.btn-back{background:rgba(255,255,255,.15);border:none;color:#fff;
+  font-size:1.3rem;cursor:pointer;padding:6px 10px;border-radius:8px;line-height:1;
+  -webkit-tap-highlight-color:transparent;}
+.date-chip{font-size:.7rem;background:rgba(255,255,255,.18);padding:5px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
 
 /* ── SCROLL BODY ── */
 .body{flex:1;overflow-y:auto;padding:14px;}
 
-/* ══════════════════════════════════
-   HOME
-══════════════════════════════════ */
-.progress-card{
-  background:var(--surface);border-radius:var(--radius);
+/* ══ HOME ══════════════════════════════ */
+.piano-banner{
+  border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;font-size:.8rem;font-weight:600;}
+.piano-banner.loaded{background:#D1FAE5;color:#065F46;}
+.piano-banner.missing{background:#FEF3C7;color:#92400E;}
+
+.progress-card{background:var(--surface);border-radius:var(--radius);
   padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow);}
 .prog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-.prog-label{font-size:0.78rem;color:var(--text-dim);font-weight:600;}
+.prog-label{font-size:.78rem;color:var(--text-dim);font-weight:600;}
 .prog-count{font-size:1rem;font-weight:800;color:var(--accent);}
 .prog-track{height:8px;background:#E5E7EB;border-radius:4px;overflow:hidden;}
-.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),#4A7FC1);
-  border-radius:4px;transition:width .4s;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),#4A7FC1);border-radius:4px;transition:width .4s;}
 
 .stat-row{display:flex;gap:8px;margin-bottom:12px;}
-.stat-pill{flex:1;background:var(--surface);border-radius:10px;
-  padding:10px 6px;text-align:center;box-shadow:var(--shadow);}
+.stat-pill{flex:1;background:var(--surface);border-radius:10px;padding:10px 6px;text-align:center;box-shadow:var(--shadow);}
 .stat-n{font-size:1.3rem;font-weight:800;line-height:1;}
-.stat-l{font-size:0.62rem;color:var(--text-dim);margin-top:3px;font-weight:500;}
+.stat-l{font-size:.62rem;color:var(--text-dim);margin-top:3px;font-weight:500;}
 
-.btn-riepilogo{
-  width:100%;background:linear-gradient(135deg,var(--accent),#2A5FAD);
+.btn-riepilogo{width:100%;background:linear-gradient(135deg,var(--accent),#2A5FAD);
   color:#fff;border:none;padding:14px;border-radius:var(--radius);
-  font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:14px;
-  box-shadow:0 4px 14px rgba(30,64,128,0.25);
+  font-size:.95rem;font-weight:700;cursor:pointer;margin-bottom:14px;
+  box-shadow:0 4px 14px rgba(30,64,128,.25);
   display:flex;align-items:center;justify-content:center;gap:8px;
   -webkit-tap-highlight-color:transparent;}
 .btn-riepilogo:active{opacity:.85;transform:scale(.98);}
 
+/* Room grid */
 .rooms-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
 .room-card{
-  background:var(--surface);border-radius:10px;
-  padding:12px 4px 10px;text-align:center;
-  cursor:pointer;box-shadow:var(--shadow);
-  border:2px solid transparent;
-  -webkit-tap-highlight-color:transparent;
-  transition:transform .1s;}
+  background:var(--surface);border-radius:10px;padding:10px 4px 8px;
+  text-align:center;cursor:pointer;box-shadow:var(--shadow);
+  border:2px solid transparent;-webkit-tap-highlight-color:transparent;transition:transform .1s;}
 .room-card:active{transform:scale(.92);}
-.room-card.s-ok{border-color:var(--green);background:var(--green-bg);}
-.room-card.s-warn{border-color:var(--amber);background:var(--amber-bg);}
-.room-card.s-bottle{border-color:var(--blue);background:var(--blue-bg);}
-.room-card.s-both{border-color:var(--amber);background:var(--amber-bg);}
-.room-card.s-empty{border-color:#D1D5DB;background:#F9FAFB;opacity:.6;}
-.room-num{font-size:0.92rem;font-weight:800;color:var(--accent);}
-.room-ico{font-size:1rem;margin-top:4px;line-height:1;}
+/* Control status borders */
+.room-card.s-ok     {border-color:var(--green);background:var(--green-bg);}
+.room-card.s-bottle {border-color:var(--amber);background:var(--amber-bg);}
+.room-card.s-warn   {border-color:var(--red);background:var(--red-bg);}
+.room-card.s-both   {border-color:var(--red);background:var(--red-bg);}
+.room-card.s-empty  {border-color:#D1D5DB;background:#F9FAFB;opacity:.55;}
+.room-num{font-size:.88rem;font-weight:800;color:var(--accent);}
+/* Piano badge */
+.piano-badge{display:inline-block;font-size:.58rem;padding:1px 5px;border-radius:3px;font-weight:700;margin-top:2px;line-height:1.4;}
+.pb-partenza{background:#FEE2E2;color:#B91C1C;}
+.pb-fermata {background:#DBEAFE;color:#1D4ED8;}
+.pb-cambio  {background:#EDE9FE;color:#6D28D9;}
+.pb-libera  {background:#F3F4F6;color:#9CA3AF;}
+.pb-none    {background:#F3F4F6;color:#D1D5DB;font-style:italic;}
+.room-ico{font-size:.95rem;margin-top:3px;line-height:1;}
 
-/* ══════════════════════════════════
-   CHECKLIST
-══════════════════════════════════ */
+/* ══ CHECKLIST ══════════════════════════ */
 .cl-body{flex:1;overflow-y:auto;padding:14px;padding-bottom:88px;}
 
-/* Bottle card — centrepiece */
-.bottle-card{
-  background:var(--surface);border-radius:var(--radius);
-  padding:16px;margin-bottom:12px;
-  box-shadow:var(--shadow);
-  border:2px solid #DBEAFE;}
-.bottle-card-title{
-  font-size:0.7rem;font-weight:700;text-transform:uppercase;
+/* Piano info strip */
+.piano-strip{border-radius:10px;padding:10px 14px;margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;font-size:.82rem;font-weight:700;}
+.ps-partenza{background:#FEE2E2;color:#B91C1C;}
+.ps-fermata {background:#DBEAFE;color:#1D4ED8;}
+.ps-cambio  {background:#EDE9FE;color:#6D28D9;}
+.ps-libera  {background:#F3F4F6;color:#6B7280;}
+.ps-none    {background:#F3F4F6;color:#9CA3AF;}
+
+/* Bottle card — CORRECTED: consumata = porta bottiglia (amber), non consumata = ok (green) */
+.bottle-card{background:var(--surface);border-radius:var(--radius);
+  padding:16px;margin-bottom:12px;box-shadow:var(--shadow);border:2px solid #E5E7EB;}
+.bottle-card-title{font-size:.7rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.6px;color:var(--text-dim);margin-bottom:10px;}
 .bottle-seg{display:flex;border-radius:10px;overflow:hidden;border:2px solid var(--border);}
-.bseg{flex:1;padding:13px 6px;border:none;font-size:0.85rem;font-weight:700;
-  cursor:pointer;background:#F3F4F6;color:var(--text-dim);
-  line-height:1.35;-webkit-tap-highlight-color:transparent;transition:all .15s;}
+.bseg{flex:1;padding:13px 6px;border:none;font-size:.83rem;font-weight:700;
+  cursor:pointer;background:#F3F4F6;color:var(--text-dim);line-height:1.4;
+  -webkit-tap-highlight-color:transparent;transition:all .15s;}
 .bseg:active{opacity:.8;}
-.bseg.bc-ok{background:var(--green);color:#fff;}
-.bseg.bc-nc{background:var(--blue);color:#fff;}
+/* Consumata = amber (azione richiesta: porta bottiglia) */
+.bseg.bc-consumata{background:var(--amber);color:#fff;}
+/* Non consumata = green (nessuna azione: bottiglia ancora piena) */
+.bseg.bc-noncons{background:var(--green);color:#fff;}
 
 /* Quick buttons */
 .quick-row{display:flex;gap:8px;margin-bottom:12px;}
 .btn-libera{flex:1;background:var(--surface);border:1.5px solid var(--border);
-  color:var(--text-dim);padding:10px 8px;border-radius:9px;
-  font-size:0.78rem;font-weight:600;cursor:pointer;
-  -webkit-tap-highlight-color:transparent;}
+  color:var(--text-dim);padding:10px 8px;border-radius:9px;font-size:.78rem;font-weight:600;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .btn-libera.is-active{background:#F3F4F6;border-color:#9CA3AF;color:#374151;}
 .btn-tuttoOk{flex:2;background:var(--surface);border:1.5px solid #BBDFC8;
-  color:var(--green);padding:10px 8px;border-radius:9px;
-  font-size:0.78rem;font-weight:700;cursor:pointer;
-  -webkit-tap-highlight-color:transparent;}
+  color:var(--green);padding:10px 8px;border-radius:9px;font-size:.78rem;font-weight:700;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;}
 .btn-tuttoOk:active{opacity:.8;}
 
 /* Check sections */
-.chk-sec{background:var(--surface);border-radius:var(--radius);
-  margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);}
-.chk-sec-hdr{
-  padding:10px 14px;font-size:0.7rem;font-weight:700;
-  text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);
-  background:#F9FAFB;display:flex;justify-content:space-between;align-items:center;
-  border-bottom:1px solid var(--border);}
-.chk-all-btn{font-size:0.68rem;color:var(--accent);font-weight:700;
-  cursor:pointer;background:none;border:none;padding:2px 6px;
-  -webkit-tap-highlight-color:transparent;}
+.chk-sec{background:var(--surface);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);}
+.chk-sec-hdr{padding:10px 14px;font-size:.7rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--text-dim);background:#F9FAFB;
+  display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
+.chk-all-btn{font-size:.68rem;color:var(--accent);font-weight:700;cursor:pointer;
+  background:none;border:none;padding:2px 6px;-webkit-tap-highlight-color:transparent;}
 .chk-item{display:flex;align-items:center;padding:12px 14px;gap:12px;
-  cursor:pointer;border-bottom:1px solid #F3F4F6;
-  -webkit-tap-highlight-color:transparent;}
+  cursor:pointer;border-bottom:1px solid #F3F4F6;-webkit-tap-highlight-color:transparent;}
 .chk-item:last-child{border-bottom:none;}
 .chk-item:active{background:#F9FAFB;}
 .chk-box{width:26px;height:26px;border-radius:7px;border:2px solid #D1D5DB;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  font-size:0.8rem;font-weight:800;color:#fff;transition:all .12s;}
+  font-size:.8rem;font-weight:800;color:#fff;transition:all .12s;}
 .chk-box.on{background:var(--green);border-color:var(--green);}
-.chk-lbl{font-size:0.87rem;line-height:1.3;color:var(--text);}
+.chk-lbl{font-size:.87rem;line-height:1.3;color:var(--text);}
 
 /* Note */
-.note-card{background:var(--surface);border-radius:var(--radius);
-  padding:14px;margin-bottom:10px;box-shadow:var(--shadow);}
-.note-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;
-  letter-spacing:.5px;color:var(--text-dim);display:block;margin-bottom:8px;}
-textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;
-  padding:10px 12px;font-size:0.87rem;font-family:inherit;
-  resize:none;color:var(--text);background:#F9FAFB;}
+.note-card{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);}
+.note-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);display:block;margin-bottom:8px;}
+textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;
+  font-size:.87rem;font-family:inherit;resize:none;color:var(--text);background:#F9FAFB;}
 textarea:focus{outline:none;border-color:var(--accent);}
 
 /* Save bar */
 .save-bar{position:fixed;bottom:0;left:0;right:0;
   padding:10px 14px max(10px,env(safe-area-inset-bottom));
   background:#fff;border-top:1px solid var(--border);z-index:200;}
-.btn-save{width:100%;background:var(--accent);color:#fff;border:none;
-  padding:14px;border-radius:10px;font-size:1rem;font-weight:800;
-  cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.btn-save{width:100%;background:var(--accent);color:#fff;border:none;padding:14px;
+  border-radius:10px;font-size:1rem;font-weight:800;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;}
 .btn-save:active{opacity:.85;}
 
-/* ══════════════════════════════════
-   SUMMARY
-══════════════════════════════════ */
+/* ══ SUMMARY ════════════════════════════ */
 .sum-body{flex:1;overflow-y:auto;padding:14px 14px 28px;}
 .sum-stats{display:flex;gap:8px;margin-bottom:14px;}
-.sum-stat{flex:1;background:var(--surface);border-radius:10px;
-  padding:12px 6px;text-align:center;box-shadow:var(--shadow);}
+.sum-stat{flex:1;background:var(--surface);border-radius:10px;padding:12px 6px;text-align:center;box-shadow:var(--shadow);}
 .sum-stat-n{font-size:1.4rem;font-weight:800;line-height:1;}
-.sum-stat-l{font-size:0.6rem;color:var(--text-dim);margin-top:3px;}
+.sum-stat-l{font-size:.6rem;color:var(--text-dim);margin-top:3px;}
 
-.sum-card{background:var(--surface);border-radius:var(--radius);
-  margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
-.sum-hdr{padding:12px 16px;font-size:0.88rem;font-weight:700;
-  display:flex;align-items:center;gap:8px;}
-.sum-hdr.h-bottle{background:#DBEAFE;color:#1D4ED8;}
-.sum-hdr.h-warn{background:#FEF3C7;color:#92400E;}
-.sum-hdr.h-ok{background:#D1FAE5;color:#065F46;}
-.sum-hdr.h-pending{background:#F3F4F6;color:var(--text-dim);}
-.sum-hdr.h-empty{background:#F3F4F6;color:#6B7280;}
+.sum-card{background:var(--surface);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
+.sum-hdr{padding:12px 16px;font-size:.88rem;font-weight:700;display:flex;align-items:center;gap:8px;}
+.sum-hdr.h-bottle{background:#FEF3C7;color:#92400E;}
+.sum-hdr.h-warn  {background:#FEE2E2;color:#B91C1C;}
+.sum-hdr.h-ok    {background:#D1FAE5;color:#065F46;}
+.sum-hdr.h-pend  {background:#F3F4F6;color:var(--text-dim);}
+.sum-hdr.h-empty {background:#F3F4F6;color:#6B7280;}
 .pills{padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px;}
-.pill{padding:6px 14px;border-radius:20px;font-size:0.88rem;font-weight:700;}
-.pill-bottle{background:var(--blue-bg);color:var(--blue);border:1.5px solid #BFDBFE;}
-.pill-warn{background:var(--amber-bg);color:var(--amber);border:1.5px solid #FDE68A;}
-.pill-ok{background:var(--green-bg);color:var(--green);}
-.pill-pending{background:#F3F4F6;color:var(--text-dim);}
-.pill-empty{background:#F3F4F6;color:#9CA3AF;}
+.pill{padding:6px 14px;border-radius:20px;font-size:.88rem;font-weight:700;}
+.pill-bottle{background:var(--amber-bg);color:var(--amber);border:1.5px solid #FDE68A;}
+.pill-warn  {background:var(--red-bg);color:var(--red);border:1.5px solid #FCA5A5;}
+.pill-ok    {background:var(--green-bg);color:var(--green);}
+.pill-pend  {background:#F3F4F6;color:var(--text-dim);}
+.pill-empty {background:#F3F4F6;color:#9CA3AF;}
 
 .warn-list{padding:0 14px 12px;}
 .warn-item{padding:9px 0;border-bottom:1px solid #F3F4F6;}
 .warn-item:last-child{border-bottom:none;}
-.warn-room{font-weight:800;font-size:0.9rem;color:var(--amber);}
-.warn-fail{font-size:0.76rem;color:var(--text-dim);margin-top:3px;line-height:1.5;}
-.warn-note{font-size:0.76rem;color:var(--accent);margin-top:2px;}
+.warn-room{font-weight:800;font-size:.9rem;color:var(--red);}
+.warn-fail{font-size:.76rem;color:var(--text-dim);margin-top:3px;line-height:1.5;}
+.warn-note{font-size:.76rem;color:var(--accent);margin-top:2px;}
 
 .btn-reset{width:100%;background:none;border:1.5px solid #FCA5A5;
   color:var(--red);padding:12px;border-radius:10px;
-  font-size:0.85rem;font-weight:600;cursor:pointer;margin-top:4px;
+  font-size:.85rem;font-weight:600;cursor:pointer;margin-top:4px;
   -webkit-tap-highlight-color:transparent;}
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════════
-     SCREEN: HOME
-══════════════════════════════════════ -->
+<!-- ══ HOME ══════════════════════════════════ -->
 <div class="screen active" id="s-home">
   <div class="hdr">
     <div class="hdr-info">
       <h1>Controllo Mattino</h1>
-      <div class="hdr-sub">SoulArt Hotel — Art 1–22</div>
+      <div class="hdr-sub" id="home-sub">SoulArt Hotel — Art 1–22</div>
     </div>
     <span class="date-chip" id="home-chip"></span>
   </div>
   <div class="body" id="home-body">
+    <div id="piano-banner"></div>
     <div class="progress-card">
       <div class="prog-top">
-        <span class="prog-label">Camere visitate</span>
+        <span class="prog-label">Camere da controllare</span>
         <span class="prog-count" id="prog-txt">0 / 22</span>
       </div>
       <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
@@ -244,32 +235,22 @@ textarea:focus{outline:none;border-color:var(--accent);}
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     SCREEN: CHECKLIST CAMERA
-══════════════════════════════════════ -->
+<!-- ══ CHECKLIST CAMERA ════════════════════════ -->
 <div class="screen" id="s-room">
   <div class="hdr">
     <button class="btn-back" onclick="goHome()">‹</button>
-    <div class="hdr-info">
-      <h1 id="room-title">Art 1</h1>
-    </div>
+    <div class="hdr-info"><h1 id="room-title">Art 1</h1></div>
     <span class="date-chip" id="room-chip"></span>
   </div>
   <div class="cl-body" id="cl-body"></div>
-  <div class="save-bar">
-    <button class="btn-save" onclick="saveRoom()">✓ Salva camera</button>
-  </div>
+  <div class="save-bar"><button class="btn-save" onclick="saveRoom()">✓ Salva camera</button></div>
 </div>
 
-<!-- ══════════════════════════════════════
-     SCREEN: RIEPILOGO
-══════════════════════════════════════ -->
+<!-- ══ RIEPILOGO ════════════════════════════════ -->
 <div class="screen" id="s-summary">
   <div class="hdr">
     <button class="btn-back" onclick="goHome()">‹</button>
-    <div class="hdr-info">
-      <h1>Riepilogo Mattino</h1>
-    </div>
+    <div class="hdr-info"><h1>Riepilogo Mattino</h1></div>
     <span class="date-chip" id="sum-chip"></span>
   </div>
   <div class="sum-body" id="sum-body"></div>
@@ -281,7 +262,6 @@ textarea:focus{outline:none;border-color:var(--accent);}
 const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
 const ROOMS = Array.from({length:22}, (_,i) => 'Art '+(i+1));
 
-// Checklist items da standard allestimento
 const CHECKS = [
   {id:'acqua', label:'💧 Kit Acqua Culligan', items:[
     {id:'a1', label:'Vassoio posizionato in angolo pulito della scrivania'},
@@ -314,9 +294,16 @@ const CHECKS = [
 
 const ALL_IDS = CHECKS.flatMap(s => s.items.map(i => i.id));
 
-// ── STATE ──────────────────────────────
+// Piano icons/labels
+const PIANO_ICO = {partenza:'🛫', fermata:'🛏', cambio:'🔄', libera:'🚪'};
+const PIANO_LBL = {partenza:'Partenza', fermata:'Fermata', cambio:'Cambio', libera:'Libera'};
+const PIANO_CSS = {partenza:'pb-partenza', fermata:'pb-fermata', cambio:'pb-cambio', libera:'pb-libera'};
+const PIANO_STRIP_CSS = {partenza:'ps-partenza', fermata:'ps-fermata', cambio:'ps-cambio', libera:'ps-libera'};
+
+// ── STATE ────────────────────────────
 let _state = {};
-let _cur   = null; // camera corrente
+let _cur   = null;
+let _pianoDay = null; // dati giorno corrente dal piano settimana
 
 const _todayKey = (() => {
   const d = new Date();
@@ -325,21 +312,66 @@ const _todayKey = (() => {
     String(d.getDate()).padStart(2,'0');
 })();
 
+// ── PIANO SETTIMANA ──────────────────
+function _todayDMY() {
+  const d = new Date();
+  return String(d.getDate()).padStart(2,'0') + '/' +
+         String(d.getMonth()+1).padStart(2,'0') + '/' +
+         d.getFullYear();
+}
+
+function _loadPiano() {
+  try {
+    const raw = localStorage.getItem('qm_piano');
+    if (!raw) return;
+    const piano = JSON.parse(raw);
+    if (!piano?.giorni?.length) return;
+    const today = _todayDMY();
+    _pianoDay = piano.giorni.find(g => g.data === today) || null;
+    if (_pianoDay) _applyPianoLibere();
+  } catch(e) {}
+}
+
+// Auto-segna come libere le camere non nel piano (solo se non già visitate)
+function _applyPianoLibere() {
+  if (!_pianoDay) return;
+  const sa = _pianoDay.soulart;
+  const inPlan = new Set([...sa.partenze, ...sa.fermate, ...sa.cambi]);
+  ROOMS.forEach(room => {
+    if (!inPlan.has(room) && !_state[room]) {
+      _state[room] = _defaultRoom();
+      _state[room].visited = true;
+      _state[room].libera  = true;
+    }
+  });
+}
+
+// null se piano non caricato; 'partenza'|'fermata'|'cambio'|'libera' altrimenti
+function _pianoSt(room) {
+  if (!_pianoDay) return null;
+  const sa = _pianoDay.soulart;
+  if (sa.cambi.includes(room))    return 'cambio';
+  if (sa.partenze.includes(room)) return 'partenza';
+  if (sa.fermate.includes(room))  return 'fermata';
+  return 'libera';
+}
+
+// ── PERSISTENZA ──────────────────────
 function _load() {
   try { const r = localStorage.getItem(_todayKey); if (r) _state = JSON.parse(r); } catch(e){}
 }
 function _persist() {
   try { localStorage.setItem(_todayKey, JSON.stringify(_state)); } catch(e){}
   fetch(PROXY+'/kv/set', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({key:_todayKey, value:JSON.stringify(_state)})
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({key:_todayKey, value:JSON.stringify(_state)})
   }).catch(()=>{});
 }
 
 function _defaultRoom() {
   const checks = {};
   ALL_IDS.forEach(id => checks[id] = true);
+  // Default: consumata (porta bottiglia) — il QM marca non_consumata se è ancora piena
   return {visited:false, libera:false, bottiglia:'consumata', checks, note:''};
 }
 function _rs(room) {
@@ -347,28 +379,25 @@ function _rs(room) {
   return _state[room];
 }
 
-// ok · warn · bottle · both · empty · pending
+// ── ROOM STATUS ──────────────────────
+// bottle = bottiglia consumata → QM deve portarla  (amber)
+// ok     = tutto ok, bottiglia ancora piena (green)
 function _status(room) {
   const rs = _state[room];
   if (!rs || !rs.visited) return 'pending';
   if (rs.libera) return 'empty';
-  const nc  = Object.values(rs.checks).some(v => !v);
-  const bnc = rs.bottiglia === 'non_consumata';
-  if (nc && bnc) return 'both';
-  if (nc)        return 'warn';
-  if (bnc)       return 'bottle';
+  const nc          = Object.values(rs.checks).some(v => !v);
+  const needsBottle = rs.bottiglia === 'consumata'; // consumata = porta bottiglia
+  if (nc && needsBottle) return 'both';
+  if (nc)           return 'warn';
+  if (needsBottle)  return 'bottle';
   return 'ok';
 }
 
-// ── HELPERS ───────────────────────────
-function _fmtDate() {
-  return new Date().toLocaleDateString('it-IT',
-    {weekday:'long', day:'numeric', month:'long'});
-}
+// ── DATE HELPERS ──────────────────────
 function _fmtShort() {
   const d = new Date();
-  return String(d.getDate()).padStart(2,'0') + '/' +
-         String(d.getMonth()+1).padStart(2,'0');
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
 }
 function _screen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -376,70 +405,101 @@ function _screen(id) {
   window.scrollTo(0,0);
 }
 
-// ── HOME ───────────────────────────────
-function goHome() {
-  _renderHome();
-  _screen('s-home');
-}
+// ── HOME ──────────────────────────────
+function goHome() { _renderHome(); _screen('s-home'); }
 
 function _renderHome() {
   document.getElementById('home-chip').textContent = _fmtShort();
 
-  const visited = ROOMS.filter(r => _state[r]?.visited).length;
-  document.getElementById('prog-txt').textContent = visited + ' / ' + ROOMS.length;
-  document.getElementById('prog-fill').style.width = (visited / ROOMS.length * 100) + '%';
+  // Piano banner
+  const pb = document.getElementById('piano-banner');
+  if (_pianoDay) {
+    const sa = _pianoDay.soulart;
+    const nLibere = ROOMS.filter(r => _pianoSt(r) === 'libera').length;
+    pb.innerHTML = `<div class="piano-banner loaded">✅ Piano settimana caricato — ${sa.partenze.length} partenze · ${sa.fermate.length} fermate · ${sa.cambi.length} cambi · ${nLibere} libere (pre-impostate)</div>`;
+  } else {
+    pb.innerHTML = `<div class="piano-banner missing">⚠️ Piano settimana non caricato — caricalo dal dashboard per vedere lo stato delle camere</div>`;
+  }
 
-  // conteggi
-  let nOk=0, nBottle=0, nWarn=0, nEmpty=0;
+  // Progress (escludi le libere auto-impostate dal conteggio "da fare")
+  const toVisit = ROOMS.filter(r => _pianoSt(r) !== 'libera' || !_pianoDay);
+  const visited  = toVisit.filter(r => _state[r]?.visited).length;
+  const total    = _pianoDay ? toVisit.length : ROOMS.length;
+  const visitedAll = ROOMS.filter(r => _state[r]?.visited).length;
+  document.getElementById('prog-txt').textContent = visited + ' / ' + total;
+  document.getElementById('prog-fill').style.width = total > 0 ? (visited/total*100)+'%' : '0%';
+
+  // Stats
+  let nBottle=0, nWarn=0, nOk=0, nPend=0;
   ROOMS.forEach(r => {
     const s = _status(r);
-    if (s==='ok')                  nOk++;
-    else if (s==='bottle'||s==='both') nBottle++;
-    else if (s==='warn')           nWarn++;
-    else if (s==='empty')          nEmpty++;
+    if (s==='bottle'||s==='both') nBottle++;
+    else if (s==='warn')          nWarn++;
+    else if (s==='ok')            nOk++;
+    else if (s==='pending')       nPend++;
   });
-
   document.getElementById('stat-row').innerHTML = [
-    ['✅', nOk,     'OK',        'var(--green)'],
-    ['💧', nBottle, 'Bottiglie', 'var(--blue)'],
-    ['⚠️', nWarn,   'Non conf.', 'var(--amber)'],
-    ['🚪', nEmpty,  'Libere',    '#9CA3AF'],
+    ['💧', nBottle, 'Da portare',  'var(--amber)'],
+    ['⚠️', nWarn,   'Non conf.',   'var(--red)'],
+    ['✅', nOk,     'OK',          'var(--green)'],
+    ['⭕', nPend,   'Da visitare', 'var(--text-dim)'],
   ].map(([ico,n,lbl,col]) =>
     `<div class="stat-pill">
-       <div class="stat-n" style="color:${col}">${ico}&nbsp;${n}</div>
+       <div class="stat-n" style="color:${col}">${ico} ${n}</div>
        <div class="stat-l">${lbl}</div>
      </div>`
   ).join('');
 
-  const ICO = {pending:'⬜',ok:'✅',warn:'⚠️',bottle:'💧',both:'⚠️💧',empty:'🚪'};
+  // Grid camere
+  const ICO = {pending:'⬜', ok:'✅', warn:'⚠️', bottle:'💧', both:'💧⚠️', empty:'🚪'};
   document.getElementById('rooms-grid').innerHTML = ROOMS.map(room => {
-    const s = _status(room);
-    return `<div class="room-card s-${s==='both'?'both':s}" onclick="openRoom('${room}')">
+    const st = _status(room);
+    const ps = _pianoSt(room);
+    const badgeCss  = ps ? PIANO_CSS[ps]  : 'pb-none';
+    const badgeTxt  = ps ? (PIANO_ICO[ps]+' '+PIANO_LBL[ps]) : '—';
+    return `<div class="room-card s-${st==='both'?'both':st}" onclick="openRoom('${room}')">
       <div class="room-num">${room}</div>
-      <div class="room-ico">${ICO[s]||'⬜'}</div>
+      <div><span class="piano-badge ${badgeCss}">${badgeTxt}</span></div>
+      <div class="room-ico">${ICO[st]||'⬜'}</div>
     </div>`;
   }).join('');
 }
 
-// ── ROOM CHECKLIST ─────────────────────
+// ── CHECKLIST CAMERA ──────────────────
 function openRoom(room) {
   _cur = room;
   const rs = _rs(room);
+  const ps = _pianoSt(room);
 
   document.getElementById('room-title').textContent = room;
   document.getElementById('room-chip').textContent  = _fmtShort();
 
   let h = '';
 
-  // ── Bottiglia ──
+  // Strip piano status
+  if (ps) {
+    const stripDesc = {
+      partenza: 'Camera in partenza — ospite in check-out oggi',
+      fermata:  'Camera in fermata — ospite si ferma ancora',
+      cambio:   'Camera con cambio — check-out e check-in in giornata',
+      libera:   'Camera libera secondo il piano settimana',
+    };
+    h += `<div class="piano-strip ${PIANO_STRIP_CSS[ps]}">
+      ${PIANO_ICO[ps]} ${PIANO_LBL[ps]} — <span style="font-weight:400;">${stripDesc[ps]}</span>
+    </div>`;
+  }
+
+  // ── Bottiglia Culligan ──
+  // consumata = vuota → porta bottiglia piena (amber)
+  // non_consumata = ancora piena → nessuna azione (green)
   const bc = rs.bottiglia;
   h += `<div class="bottle-card">
-    <div class="bottle-card-title">💧 Acqua Culligan — bottiglia consumata?</div>
+    <div class="bottle-card-title">💧 Acqua Culligan — stato bottiglia</div>
     <div class="bottle-seg">
-      <button class="bseg ${bc==='consumata'?'bc-ok':''}" id="bb-ok"
-        onclick="setBottle('consumata')">✅ Consumata<br><span style="font-size:.7rem;opacity:.8;">housekeeping provvede</span></button>
-      <button class="bseg ${bc==='non_consumata'?'bc-nc':''}" id="bb-nc"
-        onclick="setBottle('non_consumata')">💧 Non consumata<br><span style="font-size:.7rem;opacity:.8;">portare bottiglia</span></button>
+      <button class="bseg ${bc==='consumata'?'bc-consumata':''}" id="bb-cons"
+        onclick="setBottle('consumata')">💧 Consumata<br><span style="font-size:.7rem;opacity:.85;">→ portare bottiglia piena</span></button>
+      <button class="bseg ${bc==='non_consumata'?'bc-noncons':''}" id="bb-nc"
+        onclick="setBottle('non_consumata')">✅ Non consumata<br><span style="font-size:.7rem;opacity:.85;">→ nessuna azione</span></button>
     </div>
   </div>`;
 
@@ -473,7 +533,7 @@ function openRoom(room) {
   // ── Note ──
   h += `<div class="note-card">
     <label class="note-label">📝 Note / Non conformità</label>
-    <textarea id="room-note" rows="3" placeholder="Descrivi eventuali problemi o osservazioni…">${rs.note||''}</textarea>
+    <textarea id="room-note" rows="3" placeholder="Descrivi eventuali problemi…">${rs.note||''}</textarea>
   </div>`;
 
   document.getElementById('cl-body').innerHTML = h;
@@ -482,14 +542,14 @@ function openRoom(room) {
 
 function setBottle(val) {
   _rs(_cur).bottiglia = val;
-  document.getElementById('bb-ok').className = 'bseg' + (val==='consumata'?' bc-ok':'');
-  document.getElementById('bb-nc').className = 'bseg' + (val==='non_consumata'?' bc-nc':'');
+  document.getElementById('bb-cons').className = 'bseg'+(val==='consumata'?' bc-consumata':'');
+  document.getElementById('bb-nc').className   = 'bseg'+(val==='non_consumata'?' bc-noncons':'');
 }
 
 function toggleLibera() {
   const rs = _rs(_cur);
   rs.libera = !rs.libera;
-  openRoom(_cur); // re-render (toglie/mostra checklist)
+  openRoom(_cur);
 }
 
 function tuttoOk() {
@@ -511,7 +571,6 @@ function toggleChk(itemId) {
   rs.checks[itemId] = !rs.checks[itemId];
   const b = document.getElementById('cb-'+itemId);
   if (b) { b.className='chk-box'+(rs.checks[itemId]?' on':''); b.textContent=rs.checks[itemId]?'✓':''; }
-  // aggiorna header sezione
   const sec = CHECKS.find(s => s.items.some(i => i.id===itemId));
   if (sec) {
     const allOn = sec.items.every(i => rs.checks[i.id]);
@@ -543,32 +602,38 @@ function saveRoom() {
 
 // ── SUMMARY ───────────────────────────
 function showSummary() {
-  const btl = ROOMS.filter(r => { const s=_status(r); return s==='bottle'||s==='both'; });
-  const wrn = ROOMS.filter(r => { const s=_status(r); return s==='warn'||s==='both'; });
-  const ok  = ROOMS.filter(r => _status(r)==='ok');
-  const emp = ROOMS.filter(r => _status(r)==='empty');
-  const pnd = ROOMS.filter(r => _status(r)==='pending');
+  // consumata = porta bottiglia
+  const btl  = ROOMS.filter(r => { const s=_status(r); return s==='bottle'||s==='both'; });
+  const wrn  = ROOMS.filter(r => { const s=_status(r); return s==='warn'||s==='both'; });
+  const ok   = ROOMS.filter(r => _status(r)==='ok');
+  const emp  = ROOMS.filter(r => _status(r)==='empty');
+  const pnd  = ROOMS.filter(r => _status(r)==='pending');
 
   document.getElementById('sum-chip').textContent = _fmtShort();
 
   let h = `<div class="sum-stats">
-    <div class="sum-stat"><div class="sum-stat-n" style="color:var(--blue)">${btl.length}</div><div class="sum-stat-l">💧 Bottiglie</div></div>
-    <div class="sum-stat"><div class="sum-stat-n" style="color:var(--amber)">${wrn.length}</div><div class="sum-stat-l">⚠️ Non conf.</div></div>
+    <div class="sum-stat"><div class="sum-stat-n" style="color:var(--amber)">${btl.length}</div><div class="sum-stat-l">💧 Da portare</div></div>
+    <div class="sum-stat"><div class="sum-stat-n" style="color:var(--red)">${wrn.length}</div><div class="sum-stat-l">⚠️ Non conf.</div></div>
     <div class="sum-stat"><div class="sum-stat-n" style="color:var(--green)">${ok.length}</div><div class="sum-stat-l">✅ OK</div></div>
     <div class="sum-stat"><div class="sum-stat-n" style="color:var(--text-dim)">${pnd.length}</div><div class="sum-stat-l">⭕ Da fare</div></div>
   </div>`;
 
-  // ── BOTTIGLIE (priorità assoluta) ──
+  // ── BOTTIGLIE DA PORTARE ──
   if (btl.length > 0) {
     h += `<div class="sum-card">
       <div class="sum-hdr h-bottle">💧 Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}</div>
-      <div class="pills">${btl.map(r=>`<span class="pill pill-bottle">${r}</span>`).join('')}</div>
-    </div>`;
+      <div class="pills">`;
+    btl.forEach(r => {
+      const ps = _pianoSt(r);
+      const badge = ps ? ` <span style="font-size:.7rem;opacity:.75;">${PIANO_ICO[ps]} ${PIANO_LBL[ps]}</span>` : '';
+      h += `<span class="pill pill-bottle">${r}${badge}</span>`;
+    });
+    h += `</div></div>`;
   } else {
-    const anyVisited = ROOMS.some(r => _state[r]?.visited);
+    const anyVisited = ROOMS.some(r => {const s=_status(r);return s!=='pending'&&s!=='empty';});
     if (anyVisited) {
       h += `<div class="sum-card">
-        <div class="sum-hdr h-ok">💧 Tutte le bottiglie consumate — nessuna da portare ✅</div>
+        <div class="sum-hdr h-ok">💧 Nessuna bottiglia consumata — niente da portare ✅</div>
       </div>`;
     }
   }
@@ -582,8 +647,9 @@ function showSummary() {
       const rs = _state[r];
       const fail = [];
       CHECKS.forEach(s => s.items.forEach(i => { if (!rs.checks[i.id]) fail.push(i.label); }));
+      const ps = _pianoSt(r);
       h += `<div class="warn-item">
-        <div class="warn-room">${r}</div>
+        <div class="warn-room">${r}${ps?` <span style="font-size:.75rem;font-weight:400;color:var(--text-dim);">${PIANO_ICO[ps]} ${PIANO_LBL[ps]}</span>`:''}</div>
         <div class="warn-fail">${fail.join(' · ')}</div>
         ${rs.note ? `<div class="warn-note">📝 ${rs.note}</div>` : ''}
       </div>`;
@@ -594,9 +660,14 @@ function showSummary() {
   // ── DA VISITARE ──
   if (pnd.length > 0) {
     h += `<div class="sum-card">
-      <div class="sum-hdr h-pending">⭕ Non ancora visitate — ${pnd.length}</div>
-      <div class="pills">${pnd.map(r=>`<span class="pill pill-pending">${r}</span>`).join('')}</div>
-    </div>`;
+      <div class="sum-hdr h-pend">⭕ Non ancora visitate — ${pnd.length}</div>
+      <div class="pills">`;
+    pnd.forEach(r => {
+      const ps = _pianoSt(r);
+      const sub = ps ? ` ${PIANO_ICO[ps]}` : '';
+      h += `<span class="pill pill-pend">${r}${sub}</span>`;
+    });
+    h += `</div></div>`;
   }
 
   // ── CAMERE LIBERE ──
@@ -610,13 +681,12 @@ function showSummary() {
   // ── OK ──
   if (ok.length > 0) {
     h += `<div class="sum-card">
-      <div class="sum-hdr h-ok">✅ Conformi — ${ok.length}</div>
+      <div class="sum-hdr h-ok">✅ Conformi, bottiglia piena — ${ok.length}</div>
       <div class="pills">${ok.map(r=>`<span class="pill pill-ok">${r}</span>`).join('')}</div>
     </div>`;
   }
 
   h += `<button class="btn-reset" onclick="resetDay()">🗑 Reset giornata</button>`;
-
   document.getElementById('sum-body').innerHTML = h;
   _screen('s-summary');
 }
@@ -624,15 +694,16 @@ function showSummary() {
 function resetDay() {
   if (!confirm('Azzerare tutti i controlli di oggi?')) return;
   _state = {};
+  _loadPiano(); // re-applica libere dal piano
   _persist();
   goHome();
 }
 
 // ── INIT ──────────────────────────────
 _load();
+_loadPiano(); // legge qm_piano da localStorage, trova oggi, auto-segna libere
 _renderHome();
 
-// Service Worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw-inventory.js')
     .then(r => r.update()).catch(()=>{});
