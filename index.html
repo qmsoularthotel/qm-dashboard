@@ -77,6 +77,7 @@
         <div class="nav-item" onclick="setView('bkfsheet',this)"><span class="nav-icon">↳</span>SoulArt Hotel</div>
         <div class="nav-item" onclick="setView('bkfsheetar',this)"><span class="nav-icon">↳</span>Art Resort Galleria</div>
       </div>
+      <div class="nav-item" onclick="setView('controllo-mattino',this)"><span class="nav-icon">💧</span>Distribuzione Culligan</div>
 
       <div class="nav-section">Qualità</div>
       <div class="nav-group-header" id="recGroupToggle" onclick="toggleRecGroup()">
@@ -101,7 +102,6 @@
 
       <div class="nav-section">Strumenti</div>
       <div class="nav-item" onclick="setView('inventario',this);invRender()"><span class="nav-icon">📦</span>Inventari</div>
-      <div class="nav-item" onclick="setView('controllo-mattino',this)"><span class="nav-icon">💧</span>Distribuzione Culligan</div>
       <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon">📱</span>Mini App</div>
       <div class="nav-section" style="display:flex;align-items:center;justify-content:space-between;">
         <span>Upload Center</span>
@@ -1288,6 +1288,9 @@
       </div>
       <!-- ── CONTROLLO MATTINO ── -->
       <div class="view" id="view-controllo-mattino">
+        <div style="margin-bottom:12px;">
+          <button onclick="cmPrintBottle()" style="background:var(--accent);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:.85rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;">🖨️ Stampa A4 bottiglie</button>
+        </div>
         <div id="cm-content"></div>
       </div>
   </main>
@@ -1309,6 +1312,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=259-20260511"></script>
+<script src="app.js?v=260-20260511"></script>
 </body>
 </html>

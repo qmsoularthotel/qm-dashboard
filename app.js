@@ -5472,3 +5472,53 @@ function cmRender(state,key){
   }
   el.innerHTML=h;
 }
+
+function cmPrintBottle(){
+  const d=new Date();
+  const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let state=null;
+  try{const r=localStorage.getItem(key);if(r)state=JSON.parse(r);}catch(e){}
+  function cmSt(room){
+    const rs=state&&state[room];
+    if(!rs||!rs.visited)return'pending';
+    if(rs.libera)return'empty';
+    const nc=Object.values(rs.checks||{}).some(v=>!v);
+    const nb=rs.bottiglia==='consumata';
+    if(nc&&nb)return'both';if(nc)return'warn';if(nb)return'bottle';return'ok';
+  }
+  const btl=CM_ROOMS.filter(r=>{const s=cmSt(r);return s==='bottle'||s==='both';});
+  const dndRooms=CM_ROOMS.filter(r=>state&&state[r]&&state[r].dnd);
+  const dateStr=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const timeStr=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  const btlRows=btl.map(r=>`<tr><td><strong>${r}</strong></td><td>${(state[r]?.note||'').replace(/</g,'&lt;')}</td></tr>`).join('');
+  const dndRows=dndRooms.map(r=>`<tr><td><strong>${r}</strong></td><td>${(state[r]?.note||'').replace(/</g,'&lt;')}</td></tr>`).join('');
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
+<title>Distribuzione Culligan — ${dateStr}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,Helvetica,sans-serif;padding:18mm 20mm;color:#000;font-size:10.5pt;}
+.hdr{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6mm;border-bottom:2px solid #000;padding-bottom:4mm;}
+.hotel{font-size:14pt;font-weight:800;letter-spacing:.02em;}
+.meta{font-size:9pt;color:#555;text-align:right;line-height:1.6;}
+h2{font-size:12pt;font-weight:800;margin:6mm 0 3mm;}
+table{width:100%;border-collapse:collapse;margin-bottom:5mm;}
+th{background:#111;color:#fff;padding:6px 10px;font-size:9.5pt;text-align:left;font-weight:700;}
+td{padding:7px 10px;border-bottom:1px solid #E5E7EB;font-size:10pt;}
+tr:last-child td{border-bottom:none;}
+.empty{color:#9CA3AF;font-style:italic;font-size:9.5pt;padding:8px 0;}
+.footer{margin-top:10mm;padding-top:4mm;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:9pt;color:#555;}
+@media print{@page{size:A4;margin:15mm 18mm;}body{padding:0;}}</style>
+</head><body>
+<div class="hdr"><div class="hotel">SoulArt Hotel — Distribuzione Culligan</div><div class="meta">${dateStr}<br>Ore ${timeStr}</div></div>
+<h2>💧 Bottiglie da consegnare (${btl.length})</h2>
+${btl.length>0
+  ?`<table><thead><tr><th>Camera</th><th>Note</th></tr></thead><tbody>${btlRows}</tbody></table>`
+  :`<p class="empty">Nessuna bottiglia da consegnare per oggi.</p>`}
+${dndRooms.length>0
+  ?`<h2>🚫 Non Disturbare — verificare più tardi (${dndRooms.length})</h2>
+<table><thead><tr><th>Camera</th><th>Note</th></tr></thead><tbody>${dndRows}</tbody></table>`:''}
+<div class="footer"><span>Quality Manager — Paolo P.</span><span>Firma: _________________________ &nbsp;&nbsp; Ora: _______</span></div>
+</body></html>`;
+  const w=window.open('','_blank','width=850,height=650');
+  if(!w){alert('Abilita i popup per stampare.');return;}
+  w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);
+}
