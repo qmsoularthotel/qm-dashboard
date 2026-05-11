@@ -1,5 +1,5 @@
 // Service Worker — QM Inventario (offline support)
-const CACHE = 'qm-inv-v7';
+const CACHE = 'qm-inv-v8';
 
 self.addEventListener('install', e => {
   e.waitUntil(self.skipWaiting());
