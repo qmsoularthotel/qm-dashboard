@@ -31,8 +31,7 @@ body{min-height:100vh;overflow-x:hidden;}
 .hdr{background:var(--black);color:#fff;padding:0 16px;
   height:56px;display:flex;align-items:center;gap:10px;
   position:sticky;top:0;z-index:100;flex-shrink:0;}
-.hdr-logo{height:20px;width:auto;object-fit:contain;
-  filter:brightness(0) invert(1);opacity:.9;flex-shrink:0;}
+.hdr-logo{height:24px;width:auto;object-fit:contain;flex-shrink:0;}
 .hdr-sep{width:1px;height:20px;background:rgba(255,255,255,.15);flex-shrink:0;}
 .hdr-center{flex:1;min-width:0;}
 .hdr-title{font-size:.82rem;font-weight:600;line-height:1.2;letter-spacing:.01em;}
@@ -93,29 +92,24 @@ body{min-height:100vh;overflow-x:hidden;}
 .rooms-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
 .room-card{background:var(--surface);border-radius:var(--r);
   padding:0;cursor:pointer;box-shadow:var(--sh);
-  border:1.5px solid var(--border);overflow:hidden;
+  border:1px solid var(--border);border-left-width:4px;overflow:hidden;
   -webkit-tap-highlight-color:transparent;transition:transform .1s;}
 .room-card:active{transform:scale(.93);}
 
-.room-card.s-pending .rc-top{background:#fff;}
-.room-card.s-ok      .rc-top{background:var(--green-bg);}
-.room-card.s-bottle  .rc-top{background:var(--amber-bg);}
-.room-card.s-warn    .rc-top{background:var(--red-bg);}
-.room-card.s-both    .rc-top{background:var(--red-bg);}
-.room-card.s-empty   .rc-top{background:#FAFAFA;opacity:.6;}
-.room-card.s-dnd     .rc-top{background:#FFF1F2;}
+/* Bordo sinistro colorato = indicatore stato, sfondo sempre bianco */
+.room-card.s-pending{border-left-color:#D4D4D8;}
+.room-card.s-ok     {border-left-color:var(--green);}
+.room-card.s-bottle {border-left-color:var(--amber);}
+.room-card.s-warn   {border-left-color:var(--red);}
+.room-card.s-both   {border-left-color:var(--red);}
+.room-card.s-empty  {border-left-color:#D4D4D8;opacity:.5;}
+.room-card.s-dnd    {border-left-color:var(--red);}
 
-.room-card.s-ok     {border-color:var(--green-border);}
-.room-card.s-bottle {border-color:var(--amber-border);}
-.room-card.s-warn   {border-color:var(--red-border);}
-.room-card.s-both   {border-color:var(--red-border);}
-.room-card.s-dnd    {border-color:var(--red-border);}
-
-.rc-top{padding:12px 8px 8px;text-align:center;border-bottom:1px solid #F0F0F0;}
-.rc-num{font-size:.92rem;font-weight:800;color:var(--black);letter-spacing:.01em;}
-.rc-ico{font-size:1.1rem;line-height:1;margin-top:5px;display:block;min-height:1.2em;}
-.rc-bot{padding:5px 6px;text-align:center;}
-.piano-badge{display:inline-block;font-size:.5rem;padding:2px 6px;
+.rc-top{padding:10px 10px 6px 10px;border-bottom:1px solid #F0F0F0;}
+.rc-num{font-size:.78rem;font-weight:700;color:var(--text-muted);letter-spacing:.02em;}
+.rc-status{font-size:1rem;font-weight:800;line-height:1.2;margin-top:2px;min-height:1.25em;}
+.rc-bot{padding:5px 8px;}
+.piano-badge{display:inline-block;font-size:.52rem;padding:2px 6px;
   border-radius:4px;font-weight:700;line-height:1.5;white-space:nowrap;}
 .pb-partenza{background:#FEE2E2;color:#B91C1C;}
 .pb-fermata {background:#DBEAFE;color:#1D4ED8;}
@@ -251,7 +245,7 @@ textarea:focus{outline:none;border-color:#A1A1AA;}
 <!-- ══ HOME ══════════════════════════════ -->
 <div class="screen active" id="s-home">
   <div class="hdr">
-    <img src="img/logo-soulart.png" class="hdr-logo" alt="SoulArt" onerror="this.style.display='none'">
+    <img src="img/logo-culligan.png" class="hdr-logo" alt="SoulArt" onerror="this.style.display='none'">
     <div class="hdr-sep"></div>
     <div class="hdr-center">
       <div class="hdr-title">Distribuzione Culligan</div>
@@ -271,7 +265,6 @@ textarea:focus{outline:none;border-color:#A1A1AA;}
     <div class="stat-grid" id="stat-row"></div>
     <div class="action-row">
       <button class="btn-main" onclick="showSummary()">Riepilogo</button>
-      <button class="btn-sec" onclick="printBottle()">🖨 Stampa A4</button>
     </div>
     <div class="rooms-grid" id="rooms-grid"></div>
   </div>
@@ -281,7 +274,7 @@ textarea:focus{outline:none;border-color:#A1A1AA;}
 <div class="screen" id="s-room">
   <div class="hdr">
     <button class="btn-back" onclick="goHome()">‹</button>
-    <img src="img/logo-soulart.png" class="hdr-logo" alt="SoulArt" onerror="this.style.display='none'">
+    <img src="img/logo-culligan.png" class="hdr-logo" alt="SoulArt" onerror="this.style.display='none'">
     <div class="hdr-sep"></div>
     <div class="hdr-center"><div class="hdr-title" id="room-title">Art 1</div></div>
     <span class="hdr-date" id="room-chip"></span>
@@ -294,7 +287,7 @@ textarea:focus{outline:none;border-color:#A1A1AA;}
 <div class="screen" id="s-summary">
   <div class="hdr">
     <button class="btn-back" onclick="goHome()">‹</button>
-    <img src="img/logo-soulart.png" class="hdr-logo" alt="SoulArt" onerror="this.style.display='none'">
+    <img src="img/logo-culligan.png" class="hdr-logo" alt="SoulArt" onerror="this.style.display='none'">
     <div class="hdr-sep"></div>
     <div class="hdr-center"><div class="hdr-title">Riepilogo</div></div>
     <span class="hdr-date" id="sum-chip"></span>
@@ -335,6 +328,8 @@ const CHECKS = [
     {id:'m1', label:'Body Lotion Lamystique'},
     {id:'m2', label:'Shoe Sponge'},
     {id:'m3', label:'2× Sapone Lamystique (vassoio)'},
+    {id:'m4', label:'Cuffia da bagno'},
+    {id:'m5', label:'Vanity set'},
   ]},
 ];
 const ALL_IDS = CHECKS.flatMap(s => s.items.map(i => i.id));
@@ -528,8 +523,9 @@ function _renderHome(){
     <div class="stat-l">${lbl}</div>
   </div>`).join('');
 
-  // Grid — 3 colonne, card strutturate con top + bottom
-  const ST_ICO={pending:'',ok:'✓',warn:'⚠',bottle:'💧',both:'💧⚠',empty:'',dnd:'🚫'};
+  // Grid — 3 colonne
+  const ST_LBL={pending:'Da fare',ok:'OK — piena',warn:'Non conforme',
+    bottle:'Porta bottiglia',both:'Porta bott. + KO',empty:'Libera',dnd:'Non disturbare'};
   const ST_COL={pending:'var(--text-muted)',ok:'var(--green)',warn:'var(--red)',
     bottle:'var(--amber)',both:'var(--red)',empty:'var(--text-muted)',dnd:'var(--red)'};
   const LBREV={partenza:'🛫 Partenza',fermata:'🛏 Fermata',cambio:'🔄 P+A',libera:'🚪 Libera'};
@@ -538,12 +534,12 @@ function _renderHome(){
     const ps=_pianoSt(room);
     const bcss=ps?PIANO_CSS[ps]:'pb-libera';
     const btxt=ps?LBREV[ps]:'';
-    const ico=ST_ICO[st]||'';
-    const icoCol=ST_COL[st]||'#ccc';
+    const lbl=ST_LBL[st]||'';
+    const col=ST_COL[st]||'#ccc';
     return`<div class="room-card s-${st}" onclick="openRoom('${room}')">
       <div class="rc-top">
         <div class="rc-num">${room}</div>
-        <span class="rc-ico" style="color:${icoCol}">${ico}</span>
+        <div class="rc-status" style="color:${col}">${lbl}</div>
       </div>
       <div class="rc-bot">${btxt?`<span class="piano-badge ${bcss}">${btxt}</span>`:''}</div>
     </div>`;
