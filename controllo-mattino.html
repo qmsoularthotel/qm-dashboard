@@ -371,7 +371,6 @@ async function _loadPiano() {
           _pianoLoaded = true;
           _pianoDay = piano.giorni.find(g => g.data === _todayDMY()) || null;
           if (_pianoDay) _applyPianoLibere();
-          _renderHome(); // aggiorna banner e griglia con i dati appena arrivati
         }
       }
     }
@@ -827,8 +826,7 @@ ${dnd.length>0
 
 // ── INIT ──────────────────────────────
 _load();
-_loadPiano();
-_renderHome();
+_loadPiano().then(() => _renderHome());
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw-controllo-mattino.js')
