@@ -96,7 +96,11 @@ body{min-height:100vh;overflow-x:hidden;}
   -webkit-tap-highlight-color:transparent;transition:transform .1s;
   display:flex;flex-direction:column;align-items:center;gap:4px;}
 .room-card:active{transform:scale(.92);}
-.room-card.s-empty{opacity:.45;}
+.room-card.s-empty  {opacity:.45;}
+.room-card.s-bottle {background:#EFF6FF;border-color:#BFDBFE;}
+.room-card.s-both   {background:#EFF6FF;border-color:#BFDBFE;}
+.room-card.s-ok     {background:var(--green-bg);border-color:var(--green-border);}
+.room-card.s-dnd    {background:var(--red-bg);border-color:var(--red-border);}
 
 /* numero camera */
 .rc-num{font-size:.7rem;font-weight:700;color:var(--text-muted);
@@ -138,14 +142,15 @@ body{min-height:100vh;overflow-x:hidden;}
   padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh);border:1.5px solid var(--border);}
 .bottle-card-title{font-size:.62rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px;}
-.bottle-seg{display:flex;gap:8px;}
+.bottle-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
 .bseg{flex:1;padding:13px 8px;border:1.5px solid var(--border);
   border-radius:10px;font-size:.82rem;font-weight:700;cursor:pointer;
   background:#F4F4F5;color:var(--text-muted);line-height:1.4;text-align:center;
   -webkit-tap-highlight-color:transparent;transition:all .15s;}
 .bseg:active{opacity:.8;}
-.bseg.bc-consumata{background:var(--amber-bg);border-color:var(--amber-border);color:var(--amber);}
+.bseg.bc-consumata{background:var(--blue-bg);border-color:#BFDBFE;color:#1D4ED8;}
 .bseg.bc-noncons  {background:var(--green-bg);border-color:var(--green-border);color:var(--green);}
+.bseg.bc-dnd      {background:var(--red-bg);border-color:var(--red-border);color:var(--red);}
 
 /* DND */
 .dnd-card{background:#FFF1F2;border:1.5px solid #FECACA;border-radius:var(--r);
@@ -583,45 +588,45 @@ function openRoom(room){
     <button class="btn-q btn-ok" onclick="tuttoOk()">✓✓<br>Tutto ok</button>
   </div>`;
 
+  // Bottiglia — sempre visibile con 3 opzioni
+  const bc=rs.bottiglia;
+  h+=`<div class="bottle-card">
+    <div class="bottle-card-title">💧 Acqua Culligan — stato bottiglia</div>
+    <div class="bottle-seg">
+      <button class="bseg ${bc==='consumata'&&!rs.dnd?'bc-consumata':''}" id="bb-cons"
+        onclick="setBottle('consumata')">💧 Consumata<br><span style="font-size:.68rem;opacity:.85;">→ porta bottiglia</span></button>
+      <button class="bseg ${bc==='non_consumata'&&!rs.dnd?'bc-noncons':''}" id="bb-nc"
+        onclick="setBottle('non_consumata')">✅ Non consumata<br><span style="font-size:.68rem;opacity:.85;">→ nessuna azione</span></button>
+      <button class="bseg ${rs.dnd?'bc-dnd':''}" id="bb-dnd"
+        onclick="setBottleDnd()">🚫 Non disturbare<br><span style="font-size:.68rem;opacity:.85;">→ non visitare</span></button>
+    </div>
+  </div>`;
+
   if(rs.dnd){
-    // DND attivo: mostra solo il card DND + note
+    // DND attivo: mostra messaggio, nascondi checklist
     h+=`<div class="dnd-card">
       <div class="dnd-card-title">🚫 Non Disturbare</div>
-      <div class="dnd-card-sub">Camera non visitabile — la bottiglia non può essere verificata.<br>Premi "Non Dist." di nuovo per rimuovere.</div>
+      <div class="dnd-card-sub">Camera non visitabile — la bottiglia non può essere verificata.</div>
     </div>`;
-  } else {
-    // Bottiglia
-    const bc=rs.bottiglia;
-    h+=`<div class="bottle-card">
-      <div class="bottle-card-title">💧 Acqua Culligan — stato bottiglia</div>
-      <div class="bottle-seg">
-        <button class="bseg ${bc==='consumata'?'bc-consumata':''}" id="bb-cons"
-          onclick="setBottle('consumata')">💧 Consumata<br><span style="font-size:.68rem;opacity:.85;">→ porta bottiglia piena</span></button>
-        <button class="bseg ${bc==='non_consumata'?'bc-noncons':''}" id="bb-nc"
-          onclick="setBottle('non_consumata')">✅ Non consumata<br><span style="font-size:.68rem;opacity:.85;">→ nessuna azione</span></button>
-      </div>
-    </div>`;
-
+  } else if(!rs.libera){
     // Checklist (nascosta se camera libera)
-    if(!rs.libera){
-      CHECKS.forEach(sec=>{
-        const allOn=sec.items.every(i=>rs.checks[i.id]);
-        h+=`<div class="chk-sec">
-          <div class="chk-sec-hdr">
-            <span>${sec.label}</span>
-            <button class="chk-all-btn" data-sid="${sec.id}"
-              onclick="toggleSec('${sec.id}',${!allOn})">${allOn?'Deseleziona tutti':'Seleziona tutti'}</button>
-          </div>`;
-        sec.items.forEach(item=>{
-          const on=rs.checks[item.id];
-          h+=`<div class="chk-item" onclick="toggleChk('${item.id}')">
-            <div class="chk-box ${on?'on':''}" id="cb-${item.id}">${on?'✓':''}</div>
-            <span class="chk-lbl">${item.label}</span>
-          </div>`;
-        });
-        h+=`</div>`;
+    CHECKS.forEach(sec=>{
+      const allOn=sec.items.every(i=>rs.checks[i.id]);
+      h+=`<div class="chk-sec">
+        <div class="chk-sec-hdr">
+          <span>${sec.label}</span>
+          <button class="chk-all-btn" data-sid="${sec.id}"
+            onclick="toggleSec('${sec.id}',${!allOn})">${allOn?'Deseleziona tutti':'Seleziona tutti'}</button>
+        </div>`;
+      sec.items.forEach(item=>{
+        const on=rs.checks[item.id];
+        h+=`<div class="chk-item" onclick="toggleChk('${item.id}')">
+          <div class="chk-box ${on?'on':''}" id="cb-${item.id}">${on?'✓':''}</div>
+          <span class="chk-lbl">${item.label}</span>
+        </div>`;
       });
-    }
+      h+=`</div>`;
+    });
   }
 
   h+=`<div class="note-card">
@@ -634,11 +639,26 @@ function openRoom(room){
 }
 
 function setBottle(val){
-  _rs(_cur).bottiglia=val;
-  const c=document.getElementById('bb-cons');
-  const n=document.getElementById('bb-nc');
-  if(c)c.className='bseg'+(val==='consumata'?' bc-consumata':'');
-  if(n)n.className='bseg'+(val==='non_consumata'?' bc-noncons':'');
+  const rs=_rs(_cur);
+  const wasDnd=rs.dnd;
+  rs.bottiglia=val;
+  rs.dnd=false;
+  if(wasDnd){
+    openRoom(_cur); // ri-render per mostrare la checklist
+  } else {
+    const c=document.getElementById('bb-cons');
+    const n=document.getElementById('bb-nc');
+    const d=document.getElementById('bb-dnd');
+    if(c)c.className='bseg'+(val==='consumata'?' bc-consumata':'');
+    if(n)n.className='bseg'+(val==='non_consumata'?' bc-noncons':'');
+    if(d)d.className='bseg';
+  }
+}
+function setBottleDnd(){
+  const rs=_rs(_cur);
+  rs.dnd=!rs.dnd;
+  if(rs.dnd)rs.libera=false;
+  openRoom(_cur);
 }
 function toggleLibera(){
   const rs=_rs(_cur);
