@@ -101,6 +101,7 @@ body{min-height:100vh;overflow-x:hidden;}
 .room-card.s-both   {background:#DBEAFE;border:2.5px solid #2563EB;}
 .room-card.s-ok     {background:#D1FAE5;border:2.5px solid #059669;}
 .room-card.s-dnd    {background:#FEE2E2;border:2.5px solid #DC2626;}
+.room-card.s-missing{background:#FEE2E2;border:2.5px solid #DC2626;}
 
 /* numero camera */
 .rc-num{font-size:.9rem;font-weight:800;color:#1C1C1E;
@@ -127,6 +128,7 @@ body{min-height:100vh;overflow-x:hidden;}
 .rc-dot.d-warn   {color:#B91C1C;}
 .rc-dot.d-both   {color:#B91C1C;}
 .rc-dot.d-dnd    {color:#B91C1C;}
+.rc-dot.d-missing{color:#B91C1C;}
 .rc-dot.d-empty  {color:#A1A1AA;}
 
 /* ══ CHECKLIST ══ */
@@ -144,7 +146,7 @@ body{min-height:100vh;overflow-x:hidden;}
   padding:14px 16px;margin-bottom:10px;box-shadow:var(--sh);border:1.5px solid var(--border);}
 .bottle-card-title{font-size:.62rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px;}
-.bottle-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.bottle-seg{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;}
 .bseg{flex:1;padding:13px 8px;border:1.5px solid var(--border);
   border-radius:10px;font-size:.82rem;font-weight:700;cursor:pointer;
   background:#F4F4F5;color:var(--text-muted);line-height:1.4;text-align:center;
@@ -152,6 +154,7 @@ body{min-height:100vh;overflow-x:hidden;}
 .bseg:active{opacity:.8;}
 .bseg.bc-consumata{background:#DBEAFE;border-color:#3B82F6;color:#1D4ED8;}
 .bseg.bc-noncons  {background:#D1FAE5;border-color:#10B981;color:#065F46;}
+.bseg.bc-nonpres  {background:#FEE2E2;border-color:#EF4444;color:#B91C1C;}
 .bseg.bc-dnd      {background:#FEE2E2;border-color:#EF4444;color:#B91C1C;}
 
 /* DND */
@@ -480,6 +483,7 @@ function _status(room) {
   if(!rs||!rs.visited) return 'pending';
   if(rs.dnd)           return 'dnd';
   if(rs.libera)        return 'empty';
+  if(rs.bottiglia==='non_presente') return 'missing';
   const nc=Object.values(rs.checks).some(v=>!v);
   const nb=rs.bottiglia==='consumata'; // consumata = vuota = porta bottiglia
   if(nc&&nb) return 'both';
@@ -522,8 +526,8 @@ function _renderHome(){
   let nBtl=0,nDnd=0,nOk=0,nPend=0;
   ROOMS.forEach(r=>{
     const s=_status(r);
-    if(s==='bottle'||s==='both') nBtl++;
-    else if(s==='dnd')           nDnd++;
+    if(s==='bottle'||s==='both'||s==='missing') nBtl++;
+    else if(s==='dnd')                          nDnd++;
     else if(s==='ok')            nOk++;
     else if(s==='pending')       nPend++;
   });
@@ -549,7 +553,7 @@ function _renderHome(){
   };
   const PS_LBL ={partenza:'Partenza',fermata:'Fermata',cambio:'Partenza + Arrivo',libera:'Libera'};
   const DOT_TXT={pending:'○ da visitare',ok:'✓ ok',warn:'⚠ non conforme',
-    bottle:'💧 porta bottiglia',both:'💧 ⚠ porta + KO',empty:'',dnd:'🚫 non disturbare'};
+    bottle:'💧 porta bottiglia',both:'💧 ⚠ porta + KO',empty:'',dnd:'🚫 non disturbare',missing:'❌ non presente'};
   document.getElementById('rooms-grid').innerHTML=ROOMS.map(room=>{
     const st=_status(room);
     const ps=_pianoSt(room);
@@ -599,6 +603,8 @@ function openRoom(room){
         onclick="setBottle('consumata')">💧 Consumata<br><span style="font-size:.68rem;opacity:.85;">→ porta bottiglia</span></button>
       <button class="bseg ${bc==='non_consumata'&&!rs.dnd?'bc-noncons':''}" id="bb-nc"
         onclick="setBottle('non_consumata')">✅ Non consumata<br><span style="font-size:.68rem;opacity:.85;">→ nessuna azione</span></button>
+      <button class="bseg ${bc==='non_presente'&&!rs.dnd?'bc-nonpres':''}" id="bb-np"
+        onclick="setBottle('non_presente')">❌ Non presente<br><span style="font-size:.68rem;opacity:.85;">→ bottiglia mancante</span></button>
       <button class="bseg ${rs.dnd?'bc-dnd':''}" id="bb-dnd"
         onclick="setBottleDnd()">🚫 Non disturbare<br><span style="font-size:.68rem;opacity:.85;">→ non visitare</span></button>
     </div>
@@ -650,9 +656,11 @@ function setBottle(val){
   } else {
     const c=document.getElementById('bb-cons');
     const n=document.getElementById('bb-nc');
+    const p=document.getElementById('bb-np');
     const d=document.getElementById('bb-dnd');
     if(c)c.className='bseg'+(val==='consumata'?' bc-consumata':'');
     if(n)n.className='bseg'+(val==='non_consumata'?' bc-noncons':'');
+    if(p)p.className='bseg'+(val==='non_presente'?' bc-nonpres':'');
     if(d)d.className='bseg';
   }
 }
