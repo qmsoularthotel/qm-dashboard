@@ -96,7 +96,7 @@ body{min-height:100vh;overflow-x:hidden;}
   -webkit-tap-highlight-color:transparent;transition:transform .1s;
   display:flex;flex-direction:column;align-items:center;gap:4px;}
 .room-card:active{transform:scale(.92);}
-.room-card.s-empty  {opacity:.45;}
+.room-card.s-empty  {opacity:.55;border:2px solid #9CA3AF;}
 .room-card.s-bottle {background:#DBEAFE;border:2.5px solid #2563EB;}
 .room-card.s-both   {background:#DBEAFE;border:2.5px solid #2563EB;}
 .room-card.s-ok     {background:#D1FAE5;border:2.5px solid #059669;}
@@ -317,11 +317,11 @@ const ROOMS = Array.from({length:22}, (_,i) => 'Art '+(i+1));
 
 const CHECKS = [
   {id:'acqua', label:'💧 Kit Acqua Culligan', items:[
-    {id:'a1', label:'Vassoio posizionato in angolo pulito della scrivania'},
-    {id:'a2', label:'Bottiglia Culligan presente (still / gasata)'},
-    {id:'a3', label:'Eticchetta, logo e QR code visibili'},
+    {id:'a1', label:'Vassoio posizionato in angolo della scrivania'},
+    {id:'a2', label:'Bottiglia Culligan presente'},
+    {id:'a3', label:'Logo visibile'},
     {id:'a4', label:'Cartellino "Benvenuti" inserito e centrato'},
-    {id:'a5', label:'2 bicchieri capovolti e allineati a destra'},
+    {id:'a5', label:'2 bicchieri capovolti a destra'},
   ]},
   {id:'scrivania', label:'🗄 Scrivania', items:[
     {id:'s1',  label:'Cartello "Non Disturbare" — posizione sinistra'},
@@ -334,14 +334,14 @@ const CHECKS = [
     {id:'s8',  label:'2× Zucchero Bianco'},
     {id:'s9',  label:'2× Zucchero di Canna'},
     {id:'s10', label:'1× Biscotti sigillati'},
-    {id:'s11', label:'2× Bacchette allineate davanti'},
+    {id:'s11', label:'2× Bacchette'},
     {id:'s12', label:'Cataloghi aziendali / arte presenti'},
-    {id:'s13', label:'Pulizia superfici ok (marmo / scrivania)'},
+    {id:'s13', label:'Pulizia scrivania ok'},
   ]},
   {id:'amenities', label:'🧴 Amenities Bagno — Lamystique', items:[
     {id:'m1', label:'Body Lotion Lamystique'},
     {id:'m2', label:'Shoe Sponge'},
-    {id:'m3', label:'2× Sapone Lamystique (vassoio)'},
+    {id:'m3', label:'2× Sapone Lamystique'},
     {id:'m4', label:'Cuffia da bagno'},
     {id:'m5', label:'Vanity set'},
   ]},
