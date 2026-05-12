@@ -97,10 +97,10 @@ body{min-height:100vh;overflow-x:hidden;}
   display:flex;flex-direction:column;align-items:center;gap:4px;}
 .room-card:active{transform:scale(.92);}
 .room-card.s-empty  {opacity:.45;}
-.room-card.s-bottle {border:2.5px solid #2563EB;}
-.room-card.s-both   {border:2.5px solid #2563EB;}
-.room-card.s-ok     {border:2.5px solid #059669;}
-.room-card.s-dnd    {border:2.5px solid #DC2626;}
+.room-card.s-bottle {background:#DBEAFE;border:2.5px solid #2563EB;}
+.room-card.s-both   {background:#DBEAFE;border:2.5px solid #2563EB;}
+.room-card.s-ok     {background:#D1FAE5;border:2.5px solid #059669;}
+.room-card.s-dnd    {background:#FEE2E2;border:2.5px solid #DC2626;}
 
 /* numero camera */
 .rc-num{font-size:.9rem;font-weight:800;color:#1C1C1E;
@@ -112,7 +112,9 @@ body{min-height:100vh;overflow-x:hidden;}
 /* sprite aereo: immagine 2:1, mostra metà sinistra (partenza) o metà destra (arrivo) */
 .ico-partenza{width:32px;height:32px;object-fit:cover;object-position:0% center;}
 .ico-arrivo  {width:32px;height:32px;object-fit:cover;object-position:100% center;}
-.ico-cambio  {width:60px;height:30px;object-fit:cover;object-position:center;}
+/* mix-blend-mode:multiply rende trasparente il bianco interno delle immagini su sfondo colorato */
+.ico-cambio  {width:60px;height:30px;object-fit:cover;object-position:center;mix-blend-mode:multiply;}
+.ico-fermata {height:30px;width:auto;display:block;margin:2px auto 0;mix-blend-mode:multiply;}
 
 /* label piano */
 .rc-piano-lbl{font-size:.74rem;font-weight:700;color:#27272A;}
@@ -348,7 +350,7 @@ const ALL_IDS = CHECKS.flatMap(s => s.items.map(i => i.id));
 
 // Piano — "cambio" diventa "Partenza con arrivo"
 const PIANO_ICO = {partenza:'🛫', fermata:'🛏', cambio:'🔄', libera:'🚪'};
-const PIANO_LBL = {partenza:'Partenza', fermata:'Fermata', cambio:'Partenza con arrivo', libera:'Libera'};
+const PIANO_LBL = {partenza:'Partenza', fermata:'Fermata', cambio:'Partenza + Arrivo', libera:'Libera'};
 const PIANO_CSS = {partenza:'pb-partenza', fermata:'pb-fermata', cambio:'pb-cambio', libera:'pb-libera'};
 const PIANO_STRIP = {partenza:'ps-partenza', fermata:'ps-fermata', cambio:'ps-cambio', libera:'ps-libera'};
 const PIANO_DESC = {
@@ -540,12 +542,12 @@ function _renderHome(){
   // Dot in basso: stato visita/bottiglia (info secondaria)
   const PS_ICO ={
     partenza:'<img src="img/aerei.png" class="ico-partenza" alt="Partenza">',
-    fermata: '<img src="img/fermata.png" alt="Fermata" style="height:30px;width:auto;display:block;margin:2px auto 0;">',
-    cambio:  '<img src="img/aerei.png" class="ico-cambio" alt="P+Arrivo">',
+    fermata: '<img src="img/fermata.png" class="ico-fermata" alt="Fermata">',
+    cambio:  '<img src="img/aerei.png" class="ico-cambio" alt="Partenza+Arrivo">',
     libera:  '<img src="img/open-sign.png" alt="Libera" style="height:30px;width:auto;display:block;margin:2px auto 0;">',
     null:    '—'
   };
-  const PS_LBL ={partenza:'Partenza',fermata:'Fermata',cambio:'P + Arrivo',libera:'Libera'};
+  const PS_LBL ={partenza:'Partenza',fermata:'Fermata',cambio:'Partenza + Arrivo',libera:'Libera'};
   const DOT_TXT={pending:'○ da visitare',ok:'✓ ok',warn:'⚠ non conforme',
     bottle:'💧 porta bottiglia',both:'💧 ⚠ porta + KO',empty:'',dnd:'🚫 non disturbare'};
   document.getElementById('rooms-grid').innerHTML=ROOMS.map(room=>{
