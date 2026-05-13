@@ -12,21 +12,21 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --black:#0A0A0A;
-  --green:#059669;  --green-bg:#ECFDF5; --green-border:#6EE7B7;
+  --green:#059669;  --green-bg:#F0FDF7; --green-border:#6EE7B7;
   --amber:#D97706;  --amber-bg:#FFFBEB; --amber-border:#FCD34D;
-  --red:#DC2626;    --red-bg:#FEF2F2;   --red-border:#FCA5A5;
-  --blue:#2563EB;   --blue-bg:#EFF6FF;
+  --red:#DC2626;    --red-bg:#FFF5F5;   --red-border:#FCA5A5;
+  --blue:#2563EB;   --blue-bg:#F0F7FF;
   --purple:#7C3AED; --purple-bg:#F5F3FF;
-  --bg:#C8C8CE;--surface:#FFFFFF;--border:#E0E0E3;
+  --bg:#BEBEC6;--surface:#FFFFFF;--border:rgba(0,0,0,.08);
   --text:#0A0A0A;--text-dim:#71717A;--text-muted:#A1A1AA;
   --r:14px;
-  --sh:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.09),0 1px 3px rgba(0,0,0,.08);
-  --sh-lift:0 2px 4px rgba(0,0,0,.07),0 10px 28px rgba(0,0,0,.10);
-  --card-border:1px solid rgba(255,255,255,.55);
-  --card-top:inset 0 1px 0 rgba(255,255,255,.75);
+  --sh:0 1px 2px rgba(0,0,0,.05),0 3px 10px rgba(0,0,0,.07);
+  --sh-lift:0 1px 3px rgba(0,0,0,.06),0 6px 18px rgba(0,0,0,.08);
+  --card-border:1px solid rgba(0,0,0,.07);
+  --card-top:inset 0 1px 0 rgba(255,255,255,.9);
 }
 html{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;
-  background:linear-gradient(160deg,#B8B8C0 0%,#D0D0D6 50%,#C4C4CA 100%) fixed;
+  background:#BEBEC6;
   color:var(--text);-webkit-text-size-adjust:100%;}
 body{min-height:100vh;overflow-x:hidden;}
 .screen{display:none;min-height:100vh;flex-direction:column;}
@@ -108,13 +108,13 @@ body{min-height:100vh;overflow-x:hidden;}
   border:var(--card-border);text-align:center;
   -webkit-tap-highlight-color:transparent;transition:transform .12s,box-shadow .12s;
   display:flex;flex-direction:column;align-items:center;gap:4px;}
-.room-card:active{transform:scale(.90);box-shadow:0 1px 4px rgba(0,0,0,.1);}
-.room-card.s-empty  {opacity:.5;border:1.5px solid #B0B0B5;box-shadow:0 1px 4px rgba(0,0,0,.06);}
-.room-card.s-bottle {background:#DBEAFE;border:2.5px solid #2563EB;box-shadow:0 4px 16px rgba(37,99,235,.18),var(--card-top);}
-.room-card.s-both   {background:#DBEAFE;border:2.5px solid #2563EB;box-shadow:0 4px 16px rgba(37,99,235,.18),var(--card-top);}
-.room-card.s-ok     {background:#D1FAE5;border:2.5px solid #059669;box-shadow:0 4px 16px rgba(5,150,105,.16),var(--card-top);}
-.room-card.s-dnd    {background:#FEE2E2;border:2.5px solid #DC2626;box-shadow:0 4px 16px rgba(220,38,38,.16),var(--card-top);}
-.room-card.s-missing{background:#FEE2E2;border:2.5px solid #DC2626;box-shadow:0 4px 16px rgba(220,38,38,.16),var(--card-top);}
+.room-card:active{transform:scale(.91);box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.room-card.s-empty  {opacity:.45;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.room-card.s-bottle {background:var(--blue-bg); border-top:3px solid #2563EB;box-shadow:0 4px 14px rgba(37,99,235,.12),var(--card-top);}
+.room-card.s-both   {background:var(--blue-bg); border-top:3px solid #2563EB;box-shadow:0 4px 14px rgba(37,99,235,.12),var(--card-top);}
+.room-card.s-ok     {background:var(--green-bg);border-top:3px solid #059669;box-shadow:0 4px 14px rgba(5,150,105,.10),var(--card-top);}
+.room-card.s-dnd    {background:var(--red-bg);  border-top:3px solid #DC2626;box-shadow:0 4px 14px rgba(220,38,38,.10),var(--card-top);}
+.room-card.s-missing{background:var(--red-bg);  border-top:3px solid #DC2626;box-shadow:0 4px 14px rgba(220,38,38,.10),var(--card-top);}
 
 /* numero camera */
 .rc-num{font-size:.9rem;font-weight:800;color:#1C1C1E;
@@ -160,19 +160,20 @@ body{min-height:100vh;overflow-x:hidden;}
 .bottle-card-title{font-size:.75rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;}
 .bottle-seg{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;}
-.bseg{flex:1;padding:15px 8px;border:1.5px solid var(--border);
+.bseg{flex:1;padding:15px 8px;border:1px solid rgba(0,0,0,.08);
   border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;
-  background:#F4F4F5;color:var(--text-muted);line-height:1.4;text-align:center;
-  -webkit-tap-highlight-color:transparent;transition:all .15s;}
+  background:#F7F7F8;color:var(--text-muted);line-height:1.4;text-align:center;
+  -webkit-tap-highlight-color:transparent;transition:all .15s;
+  box-shadow:0 1px 3px rgba(0,0,0,.05),inset 0 1px 0 rgba(255,255,255,.8);}
 .bseg:active{opacity:.8;}
-.bseg.bc-consumata{background:#DBEAFE;border-color:#3B82F6;color:#1D4ED8;}
-.bseg.bc-noncons  {background:#D1FAE5;border-color:#10B981;color:#065F46;}
-.bseg.bc-nonpres  {background:#FEE2E2;border-color:#EF4444;color:#B91C1C;}
-.bseg.bc-dnd      {background:#FEE2E2;border-color:#EF4444;color:#B91C1C;}
+.bseg.bc-consumata{background:var(--blue-bg); border-top:3px solid #2563EB;color:#1D4ED8;}
+.bseg.bc-noncons  {background:var(--green-bg);border-top:3px solid #059669;color:#065F46;}
+.bseg.bc-nonpres  {background:var(--red-bg);  border-top:3px solid #DC2626;color:#B91C1C;}
+.bseg.bc-dnd      {background:var(--red-bg);  border-top:3px solid #DC2626;color:#B91C1C;}
 
 /* DND */
-.dnd-card{background:#FFF1F2;border:1.5px solid #FECACA;border-radius:var(--r);
-  padding:20px 16px;margin-bottom:10px;text-align:center;}
+.dnd-card{background:var(--red-bg);border:1px solid rgba(220,38,38,.12);border-radius:var(--r);
+  padding:20px 16px;margin-bottom:10px;text-align:center;border-top:3px solid #DC2626;}
 .dnd-card-title{font-size:1.05rem;font-weight:800;color:var(--red);margin-bottom:4px;}
 .dnd-card-sub{font-size:.78rem;color:#EF4444;line-height:1.5;}
 
