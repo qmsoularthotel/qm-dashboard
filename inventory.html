@@ -57,6 +57,20 @@
     }
     .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
+    /* ── Mode bar (Carico / Scarico) ── */
+    .mode-bar {
+      display: flex; gap: 8px; padding: 10px 16px 0; background: var(--surface);
+    }
+    .mode-btn {
+      flex: 1; padding: 13px 8px; border-radius: 11px; border: 2px solid var(--border);
+      background: var(--surface2); font-size: 15px; font-weight: 800; cursor: pointer;
+      text-align: center; transition: all .15s; user-select: none; font-family: inherit;
+      color: var(--text-muted); letter-spacing: .01em;
+    }
+    .mode-btn.active-in  { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+    .mode-btn.active-out { background: var(--red-bg);   border-color: var(--red);   color: var(--red);   }
+    .mode-btn:active { opacity: .75; }
+
     /* ── HW Scanner bar ── */
     .hw-scan-bar {
       display: flex; align-items: center; gap: 8px;
@@ -300,12 +314,16 @@
     <div class="nav-tab"        id="ntab-moves"   onclick="setNavTab('moves')">Movimenti</div>
     <div class="nav-tab"        id="ntab-catalog" onclick="setNavTab('catalog')">Catalogo</div>
   </div>
+  <div class="mode-bar">
+    <button class="mode-btn" id="modeIn"  onclick="setMode('in')">⬆️ Carico</button>
+    <button class="mode-btn active-out" id="modeOut" onclick="setMode('out')">⬇️ Scarico</button>
+  </div>
   <div class="hw-scan-bar">
     <div class="hw-scan-dot" id="hwScanDot"></div>
     <input id="hwScanInput" class="hw-scan-input" type="text"
-      placeholder="Scanner pronto — scansiona il codice…"
+      placeholder="Scansiona o digita il codice…"
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-      inputmode="none"
+      inputmode="text"
       onkeydown="if(event.key==='Enter'){_hwProcess();event.preventDefault();}">
     <button class="hw-quick-btn" id="hwQuickBtn" onclick="_hwToggleQuick()" title="Modalità rapida: +1/-1 senza conferma">⚡ Rapido</button>
   </div>
@@ -440,11 +458,12 @@
 const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
 
 // ── State ───────────────────────────────────────────────────────────────────
-let currentWH  = localStorage.getItem('qm_inv_wh') || 'sa';
-let currentTab = 'stock';
-let currentOp  = 'out';
-let pendingBC  = null;   // barcode being processed
-let isNewProd  = false;
+let currentWH   = localStorage.getItem('qm_inv_wh') || 'sa';
+let currentTab  = 'stock';
+let currentOp   = 'out';
+let currentMode = 'out';   // modalità pre-selezionata prima della scansione
+let pendingBC   = null;    // barcode being processed
+let isNewProd   = false;
 
 let catalog = {};           // { [barcode]: { name, unit } }
 let moves   = { sa: [], ar: [] };
@@ -572,6 +591,13 @@ function setWarehouse(wh) {
   document.getElementById('tab-sa').classList.toggle('active', wh === 'sa');
   document.getElementById('tab-ar').classList.toggle('active', wh === 'ar');
   renderAll();
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('modeIn').className  = 'mode-btn' + (mode === 'in'  ? ' active-in'  : '');
+  document.getElementById('modeOut').className = 'mode-btn' + (mode === 'out' ? ' active-out' : '');
+  document.getElementById('hwScanInput').focus();
 }
 
 function setNavTab(tab) {
@@ -765,9 +791,9 @@ function openMoveModal(bc, product, isNew) {
     document.getElementById('knownBox').style.display    = '';
     document.getElementById('knownName').textContent    = product.name;
     document.getElementById('knownBarcode').textContent = bc;
-    document.getElementById('sheetTitle').textContent   = '📦 Movimento';
+    document.getElementById('sheetTitle').textContent   = currentMode === 'in' ? '⬆️ Carico' : '⬇️ Scarico';
     document.getElementById('unitHint').textContent     = product.unit ? '(' + product.unit + ')' : '';
-    setOp('out'); // scarico è l'operazione più frequente
+    setOp(currentMode); // usa la modalità pre-selezionata
   }
 
   document.getElementById('moveModal').classList.add('open');
@@ -948,7 +974,7 @@ function _hwProcess() {
 
   // Modalità rapida: +1 o -1 senza modal (solo prodotti già in catalogo)
   if (_hwQuick && catalog[bc]) {
-    const type = currentTab === 'moves' ? 'out' : 'in';
+    const type = currentMode;
     const move = {
       id:      Date.now() + '_' + Math.random().toString(36).slice(2, 6),
       barcode: bc,
