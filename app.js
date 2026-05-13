@@ -5494,81 +5494,63 @@ function cmPrintBottle(){
   const dateStr=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const timeStr=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
 
-  // Griglia camere per sezione bottiglie: 3 colonne
-  function roomGrid(rooms){
-    if(!rooms.length) return '<p style="color:#999;font-style:italic;font-size:10pt;margin:4mm 0;">Nessuna camera.</p>';
-    const cols=3;
-    const rows=[];
-    for(let i=0;i<rooms.length;i+=cols){
-      const cells=rooms.slice(i,i+cols).map(r=>{
-        const note=(state&&state[r]&&state[r].note)||'';
-        return`<td style="width:33.3%;padding:6px 10px;border:1px solid #E0E0E0;vertical-align:top;">
-          <strong style="font-size:11pt;">${r}</strong>
-          ${note?`<div style="font-size:8.5pt;color:#555;margin-top:2px;">${note.replace(/</g,'&lt;')}</div>`:''}
-        </td>`;
-      });
-      // padding celle vuote
-      while(cells.length<cols) cells.push('<td style="border:1px solid #E0E0E0;"></td>');
-      rows.push(`<tr>${cells.join('')}</tr>`);
-    }
-    return`<table style="width:100%;border-collapse:collapse;margin:3mm 0 5mm;">${rows.join('')}</table>`;
+  function roomCard(r,color){
+    const borderCol=color==='amber'?'#D97706':'#DC2626';
+    const bgCol=color==='amber'?'#FFFBEB':'#FEF2F2';
+    const note=(state&&state[r]&&state[r].note)||'';
+    return`<div style="border:2.5px solid ${borderCol};border-radius:8px;background:${bgCol};
+      padding:10px 8px 8px;text-align:center;break-inside:avoid;display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div style="width:22px;height:22px;border:2.5px solid #333;border-radius:4px;flex-shrink:0;background:#fff;"></div>
+      <div style="font-size:22pt;font-weight:900;line-height:1;color:#111;">${r}</div>
+      ${note?`<div style="font-size:8pt;color:#888;font-style:italic;line-height:1.3;">${note.replace(/</g,'&lt;')}</div>`:''}
+    </div>`;
+  }
+  function roomGrid(rooms,color){
+    if(!rooms.length)return`<p style="color:#9CA3AF;font-style:italic;font-size:11pt;padding:4mm 0;">Nessuna camera.</p>`;
+    return`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5mm;margin:4mm 0 8mm;">${rooms.map(r=>roomCard(r,color)).join('')}</div>`;
   }
 
   const html=`<!DOCTYPE html>
 <html lang="it"><head><meta charset="UTF-8">
 <title>Distribuzione Culligan — ${dateStr}</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{width:210mm;font-family:Arial,Helvetica,sans-serif;font-size:10pt;color:#000;}
-  body{padding:15mm 18mm;}
-  .page-hdr{display:flex;justify-content:space-between;align-items:flex-end;
-    padding-bottom:4mm;margin-bottom:7mm;border-bottom:2.5px solid #000;}
-  .page-hdr-left{}
-  .page-hdr-hotel{font-size:15pt;font-weight:800;letter-spacing:.01em;line-height:1.1;}
-  .page-hdr-sub{font-size:9pt;color:#555;margin-top:1mm;}
-  .page-hdr-right{text-align:right;font-size:9pt;color:#333;line-height:1.7;}
-  .section{margin-bottom:7mm;}
-  .section-title{font-size:11.5pt;font-weight:800;margin-bottom:3mm;
-    padding:3mm 5mm;border-left:4px solid #000;background:#F5F5F5;}
-  .section-title.sec-bottle{border-color:#D97706;background:#FFFBEB;}
-  .section-title.sec-dnd   {border-color:#DC2626;background:#FEF2F2;}
-  .footer{margin-top:10mm;padding-top:4mm;border-top:1px solid #CCC;
-    display:flex;justify-content:space-between;font-size:8.5pt;color:#666;}
-  @media print{
-    @page{size:A4 portrait;margin:0;}
-    html,body{width:100%;padding:15mm 18mm;}
-  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  html,body{font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;color:#000;}
+  body{padding:14mm 16mm;}
+  .hdr{display:flex;justify-content:space-between;align-items:flex-end;
+    padding-bottom:5mm;margin-bottom:8mm;border-bottom:3px solid #000;}
+  .hdr-hotel{font-size:18pt;font-weight:900;letter-spacing:.01em;}
+  .hdr-sub{font-size:10pt;color:#555;margin-top:2mm;}
+  .hdr-right{text-align:right;font-size:10pt;color:#333;line-height:1.8;}
+  .sec-title{font-size:14pt;font-weight:900;padding:4mm 6mm;border-radius:6px;
+    margin-bottom:4mm;display:flex;align-items:center;gap:6px;}
+  .sec-title.amber{background:#FEF3C7;color:#92400E;border-left:5px solid #D97706;}
+  .sec-title.red  {background:#FEE2E2;color:#B91C1C;border-left:5px solid #DC2626;}
+  .sec-count{font-size:11pt;font-weight:700;opacity:.75;}
+  .footer{margin-top:10mm;padding-top:5mm;border-top:1.5px solid #ccc;
+    display:flex;justify-content:space-between;font-size:10pt;color:#444;}
+  @media print{@page{size:A4 portrait;margin:0;}body{padding:14mm 16mm;}}
 </style>
 </head><body>
 
-<div class="page-hdr">
-  <div class="page-hdr-left">
-    <div class="page-hdr-hotel">SoulArt Hotel</div>
-    <div class="page-hdr-sub">Distribuzione Acqua Culligan — Art 1–22</div>
+<div class="hdr">
+  <div>
+    <div class="hdr-hotel">SoulArt Hotel</div>
+    <div class="hdr-sub">Distribuzione Acqua Culligan — Art 1–22</div>
   </div>
-  <div class="page-hdr-right">
-    ${dateStr}<br>
-    Ore ${timeStr}<br>
-    QM: Paolo P.
-  </div>
+  <div class="hdr-right">${dateStr}<br>Ore ${timeStr} &nbsp;·&nbsp; QM Paolo P.</div>
 </div>
 
-<div class="section">
-  <div class="section-title sec-bottle">💧 Bottiglie da mettere — ${btl.length} ${btl.length===1?'camera':'camere'}</div>
-  ${roomGrid(btl)}
-</div>
+<div class="sec-title amber">💧 Bottiglie da portare <span class="sec-count">(${btl.length} ${btl.length===1?'camera':'camere'})</span></div>
+${roomGrid(btl,'amber')}
 
-${dndRooms.length>0?`
-<div class="section">
-  <div class="section-title sec-dnd">🚫 Non Disturbare — da verificare più tardi — ${dndRooms.length} ${dndRooms.length===1?'camera':'camere'}</div>
-  ${roomGrid(dndRooms)}
-</div>`:''}
+${dndRooms.length>0?`<div class="sec-title red">🚫 Non Disturbare — verificare più tardi <span class="sec-count">(${dndRooms.length})</span></div>
+${roomGrid(dndRooms,'red')}`:''}
 
 <div class="footer">
-  <span>Firma: _________________________________</span>
-  <span>Ora completamento: ___________</span>
+  <span>Quality Manager — Paolo P.</span>
+  <span>Firma: _________________________________ &nbsp;&nbsp; Ora completamento: __________</span>
 </div>
-
 </body></html>`;
 
   const w=window.open('','_blank');
