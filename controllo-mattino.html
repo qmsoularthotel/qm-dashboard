@@ -456,8 +456,21 @@ function _pianoSt(room) {
 }
 
 // ── PERSISTENZA ──────────────────────
-function _load() {
-  try { const r=localStorage.getItem(_todayKey); if(r)_state=JSON.parse(r); } catch(e){}
+async function _load() {
+  // 1. KV cloud — source of truth condivisa tra tutti i dispositivi
+  try {
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(_todayKey));
+    if(r.ok){
+      const j=await r.json();
+      if(j?.value){
+        _state=JSON.parse(j.value);
+        try{localStorage.setItem(_todayKey,j.value);}catch(e){}
+        return;
+      }
+    }
+  }catch(e){}
+  // 2. Fallback: localStorage locale
+  try{const r=localStorage.getItem(_todayKey);if(r)_state=JSON.parse(r);}catch(e){}
 }
 function _persist() {
   try { localStorage.setItem(_todayKey,JSON.stringify(_state)); } catch(e){}
@@ -895,8 +908,8 @@ ${dnd.length>0
 }
 
 // ── INIT ──────────────────────────────
-_load();
-_loadPiano().then(() => _renderHome());
+// _load() è async: aspetta KV prima di caricare il piano e renderizzare
+_load().then(() => _loadPiano()).then(() => _renderHome());
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw-controllo-mattino.js')
