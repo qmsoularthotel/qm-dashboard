@@ -57,47 +57,30 @@
     }
     .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-    /* ── Mode bar (Carico / Scarico) ── */
-    .mode-bar {
-      display: flex; gap: 8px; padding: 10px 16px 0; background: var(--surface);
+    /* ── Action bar (3 bottoni scansione) ── */
+    .act-bar {
+      display: flex; gap: 7px; padding: 10px 16px 12px; background: var(--surface);
     }
-    .mode-btn {
-      flex: 1; padding: 13px 8px; border-radius: 11px; border: 2px solid var(--border);
-      background: var(--surface2); font-size: 15px; font-weight: 800; cursor: pointer;
+    .act-btn {
+      flex: 1; padding: 11px 4px; border-radius: 11px; border: 2px solid var(--border);
+      background: var(--surface2); font-size: 13px; font-weight: 800; cursor: pointer;
       text-align: center; transition: all .15s; user-select: none; font-family: inherit;
-      color: var(--text-muted); letter-spacing: .01em;
+      color: var(--text-muted); line-height: 1.35; -webkit-tap-highlight-color: transparent;
     }
-    .mode-btn.active-in  { background: var(--green-bg); border-color: var(--green); color: var(--green); }
-    .mode-btn.active-out { background: var(--red-bg);   border-color: var(--red);   color: var(--red);   }
-    .mode-btn:active { opacity: .75; }
+    .act-btn:active { opacity: .72; }
+    .act-btn .act-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+    .act-btn.sel-out { background: var(--red-bg);    border-color: var(--red);    color: var(--red);    }
+    .act-btn.sel-in  { background: var(--green-bg);  border-color: var(--green);  color: var(--green);  }
+    .act-btn.sel-qty { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
 
-    /* ── HW Scanner bar ── */
-    .hw-scan-bar {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 16px 10px; background: var(--surface);
-    }
-    .hw-scan-input {
-      flex: 1; border: 1.5px solid var(--border); border-radius: 8px;
-      padding: 9px 12px; font-size: var(--fs-sm); background: var(--bg);
-      color: var(--text); outline: none; font-family: inherit;
-      transition: border-color .15s;
-    }
-    .hw-scan-input:focus { border-color: var(--accent); background: #fff; }
-    .hw-scan-input::placeholder { color: var(--text-dim); }
+    /* ── HW Scanner dot (nascosto, solo feedback visivo) ── */
+    .hw-scan-bar { display: none; }
     .hw-scan-dot {
       width: 10px; height: 10px; border-radius: 50%;
       background: var(--text-dim); flex-shrink: 0; transition: background .2s;
+      position: fixed; top: 8px; right: 8px; z-index: 999;
     }
     .hw-scan-dot.on { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
-    .hw-quick-btn {
-      flex-shrink: 0; padding: 7px 11px; border-radius: 8px; border: 1.5px solid var(--border);
-      background: var(--bg); color: var(--text-muted); font-size: var(--fs-xs);
-      font-weight: 700; cursor: pointer; white-space: nowrap; transition: all .15s;
-      font-family: inherit;
-    }
-    .hw-quick-btn.active {
-      background: var(--green-bg); border-color: var(--green); color: var(--green);
-    }
 
     /* ── Content ── */
     .content { padding-bottom: 90px; }
@@ -314,19 +297,24 @@
     <div class="nav-tab"        id="ntab-moves"   onclick="setNavTab('moves')">Movimenti</div>
     <div class="nav-tab"        id="ntab-catalog" onclick="setNavTab('catalog')">Catalogo</div>
   </div>
-  <div class="mode-bar">
-    <button class="mode-btn" id="modeIn"  onclick="setMode('in')">⬆️ Carico</button>
-    <button class="mode-btn active-out" id="modeOut" onclick="setMode('out')">⬇️ Scarico</button>
+  <div class="act-bar">
+    <button class="act-btn sel-out" id="actOut" onclick="setAct('out')">
+      <span class="act-icon">⬇️</span>−1 Scarico
+    </button>
+    <button class="act-btn" id="actIn" onclick="setAct('in')">
+      <span class="act-icon">⬆️</span>+1 Carico
+    </button>
+    <button class="act-btn" id="actQty" onclick="setAct('qty')">
+      <span class="act-icon">📝</span>Quantità
+    </button>
   </div>
-  <div class="hw-scan-bar">
-    <div class="hw-scan-dot" id="hwScanDot"></div>
-    <input id="hwScanInput" class="hw-scan-input" type="text"
-      placeholder="Scansiona o digita il codice…"
-      autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-      inputmode="text"
-      onkeydown="if(event.key==='Enter'){_hwProcess();event.preventDefault();}">
-    <button class="hw-quick-btn" id="hwQuickBtn" onclick="_hwToggleQuick()" title="Modalità rapida: +1/-1 senza conferma">⚡ Rapido</button>
-  </div>
+  <!-- Input nascosto per scanner HW — sempre attivo, nessuna tastiera soft -->
+  <div class="hw-scan-dot" id="hwScanDot" style="display:none;"></div>
+  <input id="hwScanInput" type="text"
+    style="position:fixed;top:-200px;left:-200px;width:1px;height:1px;opacity:0;pointer-events:none;"
+    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+    inputmode="none"
+    onkeydown="if(event.key==='Enter'){_hwProcess();event.preventDefault();}">
 </div>
 
 <!-- Content -->
@@ -461,7 +449,7 @@ const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
 let currentWH   = localStorage.getItem('qm_inv_wh') || 'sa';
 let currentTab  = 'stock';
 let currentOp   = 'out';
-let currentMode = 'out';   // modalità pre-selezionata prima della scansione
+let currentAct = 'out';    // 'out' = −1 scarico rapido | 'in' = +1 carico rapido | 'qty' = apre modal quantità
 let pendingBC   = null;    // barcode being processed
 let isNewProd   = false;
 
@@ -593,10 +581,11 @@ function setWarehouse(wh) {
   renderAll();
 }
 
-function setMode(mode) {
-  currentMode = mode;
-  document.getElementById('modeIn').className  = 'mode-btn' + (mode === 'in'  ? ' active-in'  : '');
-  document.getElementById('modeOut').className = 'mode-btn' + (mode === 'out' ? ' active-out' : '');
+function setAct(act) {
+  currentAct = act;
+  document.getElementById('actOut').className = 'act-btn' + (act === 'out' ? ' sel-out' : '');
+  document.getElementById('actIn').className  = 'act-btn' + (act === 'in'  ? ' sel-in'  : '');
+  document.getElementById('actQty').className = 'act-btn' + (act === 'qty' ? ' sel-qty' : '');
   document.getElementById('hwScanInput').focus();
 }
 
@@ -791,9 +780,10 @@ function openMoveModal(bc, product, isNew) {
     document.getElementById('knownBox').style.display    = '';
     document.getElementById('knownName').textContent    = product.name;
     document.getElementById('knownBarcode').textContent = bc;
-    document.getElementById('sheetTitle').textContent   = currentMode === 'in' ? '⬆️ Carico' : '⬇️ Scarico';
+    const opMode = currentAct === 'in' ? 'in' : 'out';
+    document.getElementById('sheetTitle').textContent   = opMode === 'in' ? '⬆️ Carico' : '⬇️ Scarico';
     document.getElementById('unitHint').textContent     = product.unit ? '(' + product.unit + ')' : '';
-    setOp(currentMode); // usa la modalità pre-selezionata
+    setOp(opMode);
   }
 
   document.getElementById('moveModal').classList.add('open');
@@ -947,17 +937,9 @@ function esc(s) {
 }
 
 // ── HW Scanner (Netum C740 / qualsiasi scanner HID a tastiera) ───────────────
-let _hwQuick = false;
 let _hwLastTs = 0;
 
-function _hwToggleQuick() {
-  _hwQuick = !_hwQuick;
-  document.getElementById('hwQuickBtn').classList.toggle('active', _hwQuick);
-  document.getElementById('hwScanInput').placeholder = _hwQuick
-    ? 'Modalità rapida attiva — Stock:+1  Movimenti:−1'
-    : 'Scanner pronto — scansiona il codice…';
-  document.getElementById('hwScanInput').focus();
-}
+function _hwToggleQuick() { /* non più usato */ }
 
 function _hwProcess() {
   const now = Date.now();
@@ -972,16 +954,16 @@ function _hwProcess() {
   dot.classList.add('on');
   setTimeout(() => dot.classList.remove('on'), 700);
 
-  // Modalità rapida: +1 o -1 senza modal (solo prodotti già in catalogo)
-  if (_hwQuick && catalog[bc]) {
-    const type = currentMode;
+  // Scarico/Carico rapido: +1 o -1 senza modal (solo prodotti già in catalogo)
+  if ((currentAct === 'out' || currentAct === 'in') && catalog[bc]) {
+    const type = currentAct; // 'in' o 'out'
     const move = {
       id:      Date.now() + '_' + Math.random().toString(36).slice(2, 6),
       barcode: bc,
       type,
       qty:     1,
       ts:      Date.now(),
-      note:    'Rapido'
+      note:    ''
     };
     moves[currentWH].push(move);
     lsSet('qm_inv_moves_' + currentWH, moves[currentWH]);
@@ -992,6 +974,7 @@ function _hwProcess() {
     return;
   }
 
+  // Modalità "Quantità" oppure prodotto non ancora in catalogo → apre modal
   onBarcodeDetected(bc);
 }
 
