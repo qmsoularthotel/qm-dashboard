@@ -5433,7 +5433,7 @@ function cmRender(state,key){
   </div>`;
   // Stats
   h+=`<div style="display:flex;gap:8px;margin-bottom:14px;">
-    ${[['💧',btl.length,'Da mettere','#2563EB'],['⚠️',wrn.length,'Non conf.','var(--amber)'],['✅',ok.length,'Non consumate','var(--green)'],['⭕',pnd.length,'Da visitare','var(--text-dim)']].map(([ico,n,lbl,col])=>`
+    ${[['💧',btl.length,'Da mettere','#2563EB'],['✅',ok.length,'Non consumate','var(--green)'],['⭕',pnd.length,'Da visitare','var(--text-dim)']].map(([ico,n,lbl,col])=>`
     <div style="flex:1;background:var(--surface);border-radius:10px;padding:12px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06);">
       <div style="font-size:1.3rem;font-weight:800;color:${col};line-height:1;">${ico} ${n}</div>
       <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;">${lbl}</div>
@@ -5449,22 +5449,6 @@ function cmRender(state,key){
     h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
       <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#D1FAE5;color:#065F46;">💧 Nessuna bottiglia consumata — niente da portare ✅</div>
     </div>`;
-  }
-  // Non conformità
-  if(wrn.length>0){
-    h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#FEF3C7;color:#92400E;">⚠️ Non conformità — ${wrn.length} ${wrn.length===1?'camera':'camere'}</div>
-      <div style="padding:0 14px 10px;">`;
-    wrn.forEach(r=>{
-      const rs=state[r];const fail=[];
-      Object.entries(rs.checks||{}).forEach(([id,v])=>{if(!v&&CM_LABELS[id])fail.push(CM_LABELS[id]);});
-      h+=`<div style="padding:9px 0;border-bottom:1px solid #F3F4F6;">
-        <div style="font-weight:700;font-size:var(--fs-xs);color:var(--amber);">${r}</div>
-        <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">${fail.join(' · ')}</div>
-        ${rs.note?`<div style="font-size:var(--fs-xxs);color:var(--accent);margin-top:2px;">📝 ${_esc(rs.note)}</div>`:''}
-      </div>`;
-    });
-    h+=`</div></div>`;
   }
   // Pending
   if(pnd.length>0){
