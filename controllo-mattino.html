@@ -400,20 +400,7 @@ function _todayDMY() {
          String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
 }
 async function _loadPiano() {
-  // 1. localStorage (PC/dispositivo dove è stato caricato)
-  try {
-    const raw = localStorage.getItem('qm_piano');
-    if (raw) {
-      const piano = JSON.parse(raw);
-      if (piano?.giorni?.length) {
-        _pianoLoaded = true;
-        _pianoDay = piano.giorni.find(g => g.data === _todayDMY()) || null;
-        if (_pianoDay) _applyPianoLibere();
-        return; // trovato in locale, ok
-      }
-    }
-  } catch(e) {}
-  // 2. KV cloud (smartphone che non ha mai aperto il dashboard)
+  // 1. KV cloud — sempre fonte principale (aggiornato dal PC/dashboard)
   try {
     const r = await fetch(PROXY + '/kv/get?key=qm_piano');
     if (r.ok) {
@@ -425,7 +412,20 @@ async function _loadPiano() {
           _pianoLoaded = true;
           _pianoDay = piano.giorni.find(g => g.data === _todayDMY()) || null;
           if (_pianoDay) _applyPianoLibere();
+          return;
         }
+      }
+    }
+  } catch(e) {}
+  // 2. localStorage — fallback solo se KV non raggiungibile (offline)
+  try {
+    const raw = localStorage.getItem('qm_piano');
+    if (raw) {
+      const piano = JSON.parse(raw);
+      if (piano?.giorni?.length) {
+        _pianoLoaded = true;
+        _pianoDay = piano.giorni.find(g => g.data === _todayDMY()) || null;
+        if (_pianoDay) _applyPianoLibere();
       }
     }
   } catch(e) {}
@@ -528,7 +528,11 @@ function _fmtFull(){return new Date().toLocaleDateString('it-IT',{weekday:'long'
 function _screen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
 
 // ── HOME ──────────────────────────────
-function goHome(){_renderHome();_screen('s-home');}
+function goHome(){
+  _screen('s-home');
+  _renderHome(); // render immediato con dati già in memoria
+  _loadPiano().then(()=>_renderHome()); // poi aggiorna dal cloud e ri-renderizza
+}
 
 function _renderHome(){
   document.getElementById('home-chip').textContent=_fmtShort();
