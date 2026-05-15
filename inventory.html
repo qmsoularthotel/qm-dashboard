@@ -1016,6 +1016,20 @@ function initHWScanner() {
   loadFromCloud();
   initHWScanner();
 
+  // Wake Lock — schermo sempre acceso mentre l'app è aperta
+  let _wakeLock = null;
+  async function _requestWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      _wakeLock = await navigator.wakeLock.request('screen');
+      _wakeLock.addEventListener('release', () => { _wakeLock = null; });
+    } catch(e) {}
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !_wakeLock) _requestWakeLock();
+  });
+  _requestWakeLock();
+
   // Service Worker — network-first per inventory.html, auto-reload su aggiornamento
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw-inventory.js').then(reg => {
