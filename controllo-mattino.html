@@ -103,11 +103,11 @@ body{min-height:100vh;overflow-x:hidden;}
 /* ══ ROOM GRID ══ */
 .rooms-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
 .room-card{background:var(--surface);border-radius:var(--r);
-  padding:12px 8px 10px;cursor:pointer;
+  padding:14px 6px 12px;cursor:pointer;
   box-shadow:var(--sh-lift),var(--card-top);
   border:var(--card-border);text-align:center;
   -webkit-tap-highlight-color:transparent;transition:transform .12s,box-shadow .12s;
-  display:flex;flex-direction:column;align-items:center;gap:4px;}
+  display:flex;flex-direction:column;align-items:center;gap:2px;}
 .room-card:active{transform:scale(.91);box-shadow:0 1px 4px rgba(0,0,0,.08);}
 .room-card.s-empty  {opacity:.45;box-shadow:0 1px 4px rgba(0,0,0,.05);}
 .room-card.s-bottle {background:var(--blue-bg); border-top:3px solid #2563EB;box-shadow:0 4px 14px rgba(37,99,235,.12),var(--card-top);}
@@ -116,9 +116,11 @@ body{min-height:100vh;overflow-x:hidden;}
 .room-card.s-dnd    {background:var(--red-bg);  border-top:3px solid #DC2626;box-shadow:0 4px 14px rgba(220,38,38,.10),var(--card-top);}
 .room-card.s-missing{background:var(--red-bg);  border-top:3px solid #DC2626;box-shadow:0 4px 14px rgba(220,38,38,.10),var(--card-top);}
 
-/* numero camera */
-.rc-num{font-size:.9rem;font-weight:800;color:#1C1C1E;
-  letter-spacing:.03em;text-transform:uppercase;line-height:1;}
+/* numero camera — grande per lettura da carrello */
+.rc-num{display:flex;flex-direction:column;align-items:center;gap:0;line-height:1;}
+.rc-prefix{font-size:.52rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text-muted);line-height:1.4;margin-bottom:-2px;}
+.rc-roomnum{font-size:3.5rem;font-weight:900;color:#111;line-height:.95;letter-spacing:-.03em;}
 
 /* icona piano — elemento principale */
 .rc-piano-ico{font-size:1.8rem;line-height:1;margin:2px 0 0;}
@@ -131,10 +133,10 @@ body{min-height:100vh;overflow-x:hidden;}
 .ico-fermata {height:30px;width:auto;display:block;margin:2px auto 0;mix-blend-mode:multiply;}
 
 /* label piano */
-.rc-piano-lbl{font-size:.74rem;font-weight:700;color:#27272A;}
+.rc-piano-lbl{font-size:.82rem;font-weight:700;color:#27272A;}
 
 /* indicatore bottiglia/stato visita — in basso */
-.rc-dot{font-size:.72rem;font-weight:700;margin-top:2px;min-height:1em;}
+.rc-dot{font-size:.78rem;font-weight:700;margin-top:3px;min-height:1em;}
 .rc-dot.d-pending{color:#71717A;}
 .rc-dot.d-ok     {color:#059669;font-size:.78rem;}
 .rc-dot.d-bottle {color:#B45309;font-size:.78rem;}
@@ -147,8 +149,8 @@ body{min-height:100vh;overflow-x:hidden;}
 /* ══ CHECKLIST ══ */
 .cl-body{flex:1;overflow-y:auto;padding:12px 12px 90px;}
 
-.piano-strip{border-radius:10px;padding:13px 14px;margin-bottom:12px;
-  font-size:.95rem;font-weight:700;display:flex;align-items:center;gap:8px;}
+.piano-strip{border-radius:10px;padding:16px 14px;margin-bottom:12px;
+  font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px;}
 .ps-partenza{background:#FEE2E2;color:#B91C1C;}
 .ps-fermata {background:#DBEAFE;color:#1D4ED8;}
 .ps-cambio  {background:#F3E8FF;color:#7C3AED;}
@@ -160,8 +162,8 @@ body{min-height:100vh;overflow-x:hidden;}
 .bottle-card-title{font-size:.75rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.06em;color:var(--text-muted);margin-bottom:10px;}
 .bottle-seg{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;}
-.bseg{flex:1;padding:15px 8px;border:1px solid rgba(0,0,0,.08);
-  border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;
+.bseg{flex:1;padding:20px 8px;border:1px solid rgba(0,0,0,.08);
+  border-radius:10px;font-size:1.05rem;font-weight:700;cursor:pointer;
   background:#F7F7F8;color:var(--text-muted);line-height:1.4;text-align:center;
   -webkit-tap-highlight-color:transparent;transition:all .15s;
   box-shadow:0 1px 3px rgba(0,0,0,.05),inset 0 1px 0 rgba(255,255,255,.8);}
@@ -180,8 +182,8 @@ body{min-height:100vh;overflow-x:hidden;}
 /* Quick */
 .quick-row{display:flex;gap:7px;margin-bottom:10px;}
 .btn-q{flex:1;background:var(--surface);border:1.5px solid var(--border);
-  color:var(--text-muted);padding:13px 4px;border-radius:10px;
-  font-size:.92rem;font-weight:700;cursor:pointer;
+  color:var(--text-muted);padding:18px 4px;border-radius:10px;
+  font-size:1.05rem;font-weight:700;cursor:pointer;
   -webkit-tap-highlight-color:transparent;line-height:1.3;text-align:center;}
 .btn-q.active-libera{background:#F4F4F5;border-color:#A1A1AA;color:#3F3F46;}
 .btn-q.active-dnd   {background:#FEE2E2;border-color:#FCA5A5;color:var(--red);}
@@ -191,21 +193,21 @@ body{min-height:100vh;overflow-x:hidden;}
 /* Checklist sections */
 .chk-sec{background:var(--surface);border-radius:var(--r);
   margin-bottom:10px;overflow:hidden;box-shadow:var(--sh-lift),var(--card-top);border:var(--card-border);}
-.chk-sec-hdr{padding:11px 14px;font-size:.75rem;font-weight:700;text-transform:uppercase;
+.chk-sec-hdr{padding:13px 14px;font-size:.82rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.06em;color:var(--text-muted);background:#FAFAFA;
   display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
 .chk-all-btn{font-size:.78rem;color:var(--black);font-weight:700;
   cursor:pointer;background:none;border:none;padding:2px 8px;
   -webkit-tap-highlight-color:transparent;}
-.chk-item{display:flex;align-items:center;padding:15px 14px;gap:13px;
+.chk-item{display:flex;align-items:center;padding:20px 14px;gap:15px;
   cursor:pointer;border-bottom:1px solid #F4F4F5;-webkit-tap-highlight-color:transparent;}
 .chk-item:last-child{border-bottom:none;}
 .chk-item:active{background:#FAFAFA;}
-.chk-box{width:30px;height:30px;border-radius:8px;border:2px solid #D4D4D8;
+.chk-box{width:40px;height:40px;border-radius:10px;border:2px solid #D4D4D8;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  font-size:.95rem;font-weight:800;color:#fff;transition:all .12s;}
+  font-size:1.2rem;font-weight:800;color:#fff;transition:all .12s;}
 .chk-box.on{background:var(--green);border-color:var(--green);}
-.chk-lbl{font-size:1rem;line-height:1.35;color:var(--text);}
+.chk-lbl{font-size:1.1rem;line-height:1.4;color:var(--text);}
 
 /* Note */
 .note-card{background:var(--surface);border-radius:var(--r);
@@ -217,6 +219,17 @@ textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;
   color:var(--text);background:#FAFAFA;}
 textarea:focus{outline:none;border-color:#A1A1AA;}
 
+/* ══ ROOM HERO — numero grande in vista dettaglio ══ */
+.room-hero{background:linear-gradient(160deg,#1C1C1C 0%,#0A0A0A 100%);color:#fff;
+  padding:20px 16px 18px;text-align:center;border-radius:var(--r);
+  margin-bottom:12px;display:flex;flex-direction:column;align-items:center;}
+.room-hero-pfx{font-size:.6rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;opacity:.4;line-height:1;margin-bottom:0;}
+.room-hero-num{font-size:5.5rem;font-weight:900;line-height:.95;letter-spacing:-.04em;}
+.room-hero-piano{margin-top:8px;font-size:.88rem;font-weight:600;opacity:.65;line-height:1;}
+.room-hero-bk{margin-top:6px;background:#2563EB;color:#fff;border-radius:5px;
+  padding:2px 10px;font-size:.65rem;font-weight:700;letter-spacing:.06em;}
+
 /* Save bar */
 .save-bar{position:fixed;bottom:0;left:0;right:0;
   padding:10px 12px max(12px,env(safe-area-inset-bottom));
@@ -224,7 +237,7 @@ textarea:focus{outline:none;border-color:#A1A1AA;}
   box-shadow:0 -4px 24px rgba(0,0,0,.35),0 -1px 0 rgba(255,255,255,.04);}
 .btn-save{width:100%;background:linear-gradient(180deg,#fff 0%,#F0F0F0 100%);
   color:var(--black);border:none;
-  padding:15px;border-radius:10px;font-size:1rem;font-weight:800;
+  padding:18px;border-radius:10px;font-size:1.1rem;font-weight:800;
   cursor:pointer;-webkit-tap-highlight-color:transparent;
   box-shadow:0 1px 3px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.9);}
 .btn-save:active{opacity:.82;}
@@ -612,8 +625,16 @@ function _renderHome(){
     const lbl=ps?PS_LBL[ps]:'';
     const dot=DOT_TXT[st]||'';
     const isBk=_arriviBooking.has(normCam(room));
+    // Separa prefisso (Art) dal numero per renderli a dimensioni diverse
+    const rParts=room.split(' ');
+    const rNum=rParts.length>1?rParts.slice(1).join(' '):room;
+    const rPfx=rParts.length>1?rParts[0]:'';
     return`<div class="room-card s-${st}" onclick="openRoom('${room}')">
-      <div class="rc-num">${room}${isBk?'<span style="font-size:9px;background:#2563EB;color:#fff;border-radius:4px;padding:1px 4px;margin-left:3px;vertical-align:middle;font-weight:700;">B</span>':''}</div>
+      <div class="rc-num">
+        ${rPfx?`<span class="rc-prefix">${rPfx}</span>`:''}
+        <span class="rc-roomnum">${rNum}</span>
+        ${isBk?'<span style="font-size:.55rem;background:#2563EB;color:#fff;border-radius:4px;padding:1px 5px;font-weight:700;margin-top:1px;line-height:1.6;">BK</span>':''}
+      </div>
       <div class="rc-piano-ico">${ico}</div>
       <div class="rc-piano-lbl">${lbl}</div>
       <div class="rc-dot d-${st}">${dot}</div>
@@ -630,7 +651,18 @@ function openRoom(room){
   document.getElementById('room-title').textContent=room;
   document.getElementById('room-chip').textContent=_fmtShort();
 
-  let h='';
+  // Separa prefisso e numero per room-hero
+  const _rParts=room.split(' ');
+  const _rNum=_rParts.length>1?_rParts.slice(1).join(' '):room;
+  const _rPfx=_rParts.length>1?_rParts[0]:'';
+  const _isBkHero=_arriviBooking.has(((s=>String(s||'').replace(/\s+/g,'').toLowerCase()))(room));
+
+  let h=`<div class="room-hero">
+    ${_rPfx?`<span class="room-hero-pfx">${_rPfx}</span>`:''}
+    <span class="room-hero-num">${_rNum}</span>
+    ${ps?`<span class="room-hero-piano">${PIANO_ICO[ps]} ${PIANO_LBL[ps]}</span>`:''}
+    ${_isBkHero?'<span class="room-hero-bk">BOOKING.COM</span>':''}
+  </div>`;
 
   // Piano strip
   if(ps){
