@@ -4569,6 +4569,36 @@ function arriviUpdateKpi(){
   const alerts=arriviData.arrivi.filter(a=>a.alert).length;
   const sub=document.getElementById('kpi-arrivi-sub');
   if(sub&&alerts>0)sub.textContent='⚠️ '+alerts+' con note critiche';
+
+  // Breakdown canali da origine
+  const arriviConOrigine=arriviData.arrivi.filter(a=>a.origine&&a.origine.trim());
+  if(arriviConOrigine.length>0){
+    // Conta per canale
+    const counts={};
+    arriviData.arrivi.forEach(a=>{const o=(a.origine||'').trim();if(o)counts[o]=(counts[o]||0)+1;});
+    const canali=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+
+    // Topbar chip Booking.com
+    const bkCount=canali.filter(([k])=>/booking/i.test(k)).reduce((s,[,v])=>s+v,0);
+    const bkChip=document.getElementById('kpi-booking-chip');
+    const bkVal=document.getElementById('kpi-booking-val');
+    if(bkChip&&bkVal){bkVal.textContent=bkCount;bkChip.style.display=bkCount>0?'':'none';}
+
+    // Riquadro arrivi — breakdown canali
+    const canaliDiv=document.getElementById('arriviCanali');
+    if(canaliDiv){
+      canaliDiv.innerHTML=canali.map(([k,n])=>{
+        const isBk=/booking/i.test(k);
+        return`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${isBk?'rgba(37,99,235,.12)':'rgba(0,0,0,.06)'};color:${isBk?'#2563EB':'var(--text-dim)'};font-weight:${isBk?'600':'400'};">${isBk?'📘 ':''}${k} <b>${n}</b></span>`;
+      }).join('');
+    }
+  } else {
+    // Nessun dato origine — nasconde chip e svuota riquadro
+    const bkChip=document.getElementById('kpi-booking-chip');
+    if(bkChip)bkChip.style.display='none';
+    const canaliDiv=document.getElementById('arriviCanali');
+    if(canaliDiv)canaliDiv.innerHTML='';
+  }
 }
 function detectStruttura(camera){
   if(!camera)return'NA';

@@ -143,7 +143,7 @@
             <span class="ub-formats">.pdf · .jpg · .png</span>
           </div>
           <div class="turni-status" id="arriviStatus"></div>
-          <div class="loaded-info" id="arriviLoadedInfo"><div class="li-date" id="arriviLoadedDate"></div></div>
+          <div class="loaded-info" id="arriviLoadedInfo"><div class="li-date" id="arriviLoadedDate"></div><div id="arriviCanali" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;"></div></div>
           <button class="btn-reload" id="btnArriviReload" style="display:none" onclick="resetArrivi()">Rimuovi arrivi</button>
           <div class="upload-ts" id="arriviTs"></div>
         </div>
@@ -299,6 +299,14 @@
           <div>
             <div class="topbar-kpi-val" id="kpi-occ-val" style="color:#7A5FBF;">—</div>
             <div class="topbar-kpi-lbl">Occupazione</div>
+          </div>
+        </div>
+        <!-- Booking.com chip — visibile solo se ci sono arrivi Booking -->
+        <div class="topbar-kpi-chip clickable" id="kpi-booking-chip" onclick="openArriviModal()" title="Arrivi Booking.com" style="display:none;background:rgba(37,99,235,.10);border:1px solid rgba(37,99,235,.25);">
+          <span style="font-size:16px;">📘</span>
+          <div>
+            <div class="topbar-kpi-val" id="kpi-booking-val" style="color:#2563EB;">—</div>
+            <div class="topbar-kpi-lbl" style="color:#2563EB;">Booking.com</div>
           </div>
         </div>
         <!-- hidden fields updated by JS -->
@@ -1304,6 +1312,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=268-20260515"></script>
+<script src="app.js?v=269-20260515"></script>
 </body>
 </html>
