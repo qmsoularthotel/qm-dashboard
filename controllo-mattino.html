@@ -69,11 +69,11 @@ body{min-height:100vh;overflow-x:hidden;}
 .prog-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
 .prog-lbl{font-size:.68rem;font-weight:600;letter-spacing:.05em;
   text-transform:uppercase;color:var(--text-muted);}
-.prog-val{font-size:1.1rem;font-weight:800;color:var(--black);}
-.prog-bar{height:7px;background:#DCDCDE;border-radius:4px;overflow:hidden;
-  box-shadow:inset 0 1px 3px rgba(0,0,0,.12);}
-.prog-fill{height:100%;background:linear-gradient(90deg,#1A1A2E,#2563EB);
-  border-radius:4px;transition:width .5s;}
+.prog-val{font-size:1.4rem;font-weight:900;color:var(--black);}
+.prog-bar{height:12px;background:#DCDCDE;border-radius:8px;overflow:hidden;
+  box-shadow:inset 0 1px 4px rgba(0,0,0,.14);}
+.prog-fill{height:100%;background:linear-gradient(90deg,#1A1A2E 0%,#2563EB 100%);
+  border-radius:8px;transition:width .6s cubic-bezier(.4,0,.2,1);}
 
 /* ══ STAT GRID ══ */
 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:10px;}
@@ -109,12 +109,21 @@ body{min-height:100vh;overflow-x:hidden;}
   -webkit-tap-highlight-color:transparent;transition:transform .12s,box-shadow .12s;
   display:flex;flex-direction:column;align-items:center;gap:2px;}
 .room-card:active{transform:scale(.91);box-shadow:0 1px 4px rgba(0,0,0,.08);}
-.room-card.s-empty  {opacity:.45;box-shadow:0 1px 4px rgba(0,0,0,.05);}
-.room-card.s-bottle {background:var(--blue-bg); border-top:3px solid #2563EB;box-shadow:0 4px 14px rgba(37,99,235,.12),var(--card-top);}
-.room-card.s-both   {background:var(--blue-bg); border-top:3px solid #2563EB;box-shadow:0 4px 14px rgba(37,99,235,.12),var(--card-top);}
-.room-card.s-ok     {background:var(--green-bg);border-top:3px solid #059669;box-shadow:0 4px 14px rgba(5,150,105,.10),var(--card-top);}
-.room-card.s-dnd    {background:var(--red-bg);  border-top:3px solid #DC2626;box-shadow:0 4px 14px rgba(220,38,38,.10),var(--card-top);}
-.room-card.s-missing{background:var(--red-bg);  border-top:3px solid #DC2626;box-shadow:0 4px 14px rgba(220,38,38,.10),var(--card-top);}
+.room-card.s-empty  {opacity:.38;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.room-card.s-bottle {background:var(--blue-bg); border-top:5px solid #2563EB;box-shadow:0 6px 18px rgba(37,99,235,.15),var(--card-top);}
+.room-card.s-both   {background:var(--blue-bg); border-top:5px solid #2563EB;box-shadow:0 6px 18px rgba(37,99,235,.15),var(--card-top);}
+.room-card.s-ok     {background:var(--green-bg);border-top:5px solid #059669;box-shadow:0 6px 18px rgba(5,150,105,.13),var(--card-top);}
+.room-card.s-dnd    {background:var(--red-bg);  border-top:5px solid #DC2626;box-shadow:0 6px 18px rgba(220,38,38,.13),var(--card-top);}
+.room-card.s-missing{background:var(--red-bg);  border-top:5px solid #DC2626;box-shadow:0 6px 18px rgba(220,38,38,.13),var(--card-top);}
+.room-card.s-pending{border-top:5px solid #D4D4D8;}
+/* Numero camera colorato per stato */
+.room-card.s-bottle .rc-roomnum,
+.room-card.s-both .rc-roomnum   { color:#1D4ED8; }
+.room-card.s-ok .rc-roomnum     { color:#059669; }
+.room-card.s-dnd .rc-roomnum,
+.room-card.s-missing .rc-roomnum{ color:#DC2626; }
+.room-card.s-empty .rc-roomnum  { color:#A1A1AA; }
+.room-card.s-pending .rc-roomnum{ color:#3F3F46; }
 
 /* numero camera — grande per lettura da carrello */
 .rc-num{display:flex;flex-direction:column;align-items:center;gap:0;line-height:1;}
@@ -135,16 +144,18 @@ body{min-height:100vh;overflow-x:hidden;}
 /* label piano */
 .rc-piano-lbl{font-size:.82rem;font-weight:700;color:#27272A;}
 
-/* indicatore bottiglia/stato visita — in basso */
-.rc-dot{font-size:.78rem;font-weight:700;margin-top:3px;min-height:1em;}
-.rc-dot.d-pending{color:#71717A;}
-.rc-dot.d-ok     {color:#059669;font-size:.78rem;}
-.rc-dot.d-bottle {color:#B45309;font-size:.78rem;}
-.rc-dot.d-warn   {color:#B91C1C;}
-.rc-dot.d-both   {color:#B91C1C;}
-.rc-dot.d-dnd    {color:#B91C1C;}
-.rc-dot.d-missing{color:#B91C1C;}
-.rc-dot.d-empty  {color:#A1A1AA;}
+/* indicatore stato — chip colorato in basso */
+.rc-dot{font-size:.62rem;font-weight:700;margin-top:5px;
+  padding:2px 7px;border-radius:20px;line-height:1.4;
+  background:#EBEBED;color:var(--text-muted);}
+.rc-dot.d-pending{background:#EBEBED;color:#71717A;}
+.rc-dot.d-ok     {background:var(--green-bg);color:#059669;}
+.rc-dot.d-bottle {background:var(--blue-bg);color:#1D4ED8;}
+.rc-dot.d-warn   {background:var(--amber-bg);color:var(--amber);}
+.rc-dot.d-both   {background:var(--red-bg);color:#DC2626;}
+.rc-dot.d-dnd    {background:var(--red-bg);color:#DC2626;}
+.rc-dot.d-missing{background:var(--red-bg);color:#DC2626;}
+.rc-dot.d-empty  {display:none;}
 
 /* ══ CHECKLIST ══ */
 .cl-body{flex:1;overflow-y:auto;padding:12px 12px 90px;}
@@ -601,11 +612,11 @@ function _renderHome(){
     else if(s==='pending')       nPend++;
   });
   document.getElementById('stat-row').innerHTML=[
-    [nBtl,'Da portare','var(--amber)'],
-    [nDnd,'Non Dist.','var(--red)'],
-    [nOk, 'OK','var(--green)'],
-    [nPend,'Da fare','var(--text-muted)'],
-  ].map(([n,lbl,col])=>`<div class="stat-box">
+    [nBtl,'Da portare','var(--amber)','var(--amber-bg)','rgba(217,119,6,.18)'],
+    [nDnd,'Non Dist.','var(--red)','var(--red-bg)','rgba(220,38,38,.15)'],
+    [nOk, 'OK','var(--green)','var(--green-bg)','rgba(5,150,105,.15)'],
+    [nPend,'Da fare','#71717A','#F1F1F3','rgba(0,0,0,.08)'],
+  ].map(([n,lbl,col,bg,bdr])=>`<div class="stat-box" style="background:${bg};border:1.5px solid ${bdr};">
     <div class="stat-n" style="color:${col}">${n}</div>
     <div class="stat-l">${lbl}</div>
   </div>`).join('');
@@ -621,8 +632,8 @@ function _renderHome(){
     null:    '—'
   };
   const PS_LBL ={partenza:'Partenza',fermata:'Fermata',cambio:'Partenza + Arrivo',libera:'Libera'};
-  const DOT_TXT={pending:'○ da visitare',ok:'✓ ok',warn:'⚠ non conforme',
-    bottle:'💧 porta bottiglia',both:'💧 ⚠ porta + KO',empty:'',dnd:'🚫 non disturbare',missing:'❌ non presente'};
+  const DOT_TXT={pending:'da visitare',ok:'✓ ok',warn:'⚠ non conf.',
+    bottle:'💧 bottiglia',both:'💧 porta + ⚠',empty:'',dnd:'🚫 DND',missing:'❌ mancante'};
   const normCam=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
   document.getElementById('rooms-grid').innerHTML=ROOMS.map(room=>{
     const st=_status(room);
