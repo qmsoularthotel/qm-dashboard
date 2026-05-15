@@ -533,6 +533,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   try{localStorage.setItem('qm_last_view',id);}catch(e){}
   if(id==='inventario'){try{invRender();}catch(e){}}
   if(id==='turni-pref'){try{turniPrefRender();turniPrefMarkAllSeen();}catch(e){}}
+  if(id==='controllo-mattino'){try{cmLoad();}catch(e){}}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='overview'&&weekData){
     try{loadWeekData(weekData);}catch(e){}
@@ -5390,5 +5391,172 @@ function turniPrefRender(){
   }
 
   el.innerHTML=toolbar+calHtml+listHtml;
+}
+
+// §§ CONTROLLO MATTINO (cmLoad, cmRender)
+const CM_CHECKS=[
+  {id:'acqua',items:[{id:'a1'},{id:'a2'},{id:'a3'},{id:'a4'},{id:'a5'}]},
+  {id:'scrivania',items:[{id:'s1'},{id:'s2'},{id:'s3'},{id:'s4'},{id:'s5'},{id:'s6'},{id:'s7'},{id:'s8'},{id:'s9'},{id:'s10'},{id:'s11'},{id:'s12'},{id:'s13'}]},
+  {id:'amenities',items:[{id:'m1'},{id:'m2'},{id:'m3'}]},
+];
+const CM_LABELS={
+  a1:'Vassoio in angolo pulito',a2:'Bottiglia Culligan',a3:'Eticchetta/logo/QR',a4:'Cartellino Benvenuti',a5:'2 bicchieri capovolti',
+  s1:'Cartello Non Disturbare',s2:'Bollitore elettrico',s3:'2 tazze+piattini',s4:'2× Nescafé',s5:'2× Tè V1',s6:'2× Tè V2',s7:'2× Camomilla',
+  s8:'2× Zucchero bianco',s9:'2× Zucchero canna',s10:'1× Biscotti',s11:'2× Bacchette',s12:'Cataloghi arte',s13:'Pulizia superfici',
+  m1:'Body Lotion',m2:'Shoe Sponge',m3:'2× Sapone'
+};
+const CM_ROOMS=Array.from({length:22},(_,i)=>'Art '+(i+1));
+
+async function cmLoad(){
+  const d=new Date();
+  const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let data=null;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key));
+    if(r.ok){const j=await r.json();if(j&&j.value){data=JSON.parse(j.value);try{localStorage.setItem(key,j.value);}catch(e){}}}
+  }catch(e){}
+  if(!data){
+    try{const r=localStorage.getItem(key);if(r)data=JSON.parse(r);}catch(e){}
+  }
+  cmRender(data,key);
+}
+
+function cmRender(state,key){
+  const el=document.getElementById('cm-content');
+  if(!el)return;
+  const d=new Date();
+  const dateStr=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  function cmStatus(room){
+    const rs=state&&state[room];
+    if(!rs||!rs.visited)return'pending';
+    if(rs.libera)return'empty';
+    const nc=Object.values(rs.checks||{}).some(v=>!v);
+    const needsBottle=rs.bottiglia==='consumata';
+    if(nc&&needsBottle)return'both';if(nc)return'warn';if(needsBottle)return'bottle';return'ok';
+  }
+  if(!state||!Object.keys(state).length){
+    el.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--text-dim);">
+      <div style="font-size:2.5rem;margin-bottom:12px;">🌅</div>
+      <div style="font-weight:700;font-size:var(--fs-sm);margin-bottom:6px;">Nessun controllo per oggi</div>
+      <div style="font-size:var(--fs-xs);margin-bottom:20px;">${dateStr}</div>
+      <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;padding:12px 22px;border-radius:10px;font-weight:700;font-size:var(--fs-xs);text-decoration:none;">📱 Apri app mobile</a>
+    </div>`;
+    return;
+  }
+  const visited=CM_ROOMS.filter(r=>state[r]?.visited).length;
+  const btl=CM_ROOMS.filter(r=>{const s=cmStatus(r);return s==='bottle'||s==='both';});
+  const wrn=CM_ROOMS.filter(r=>{const s=cmStatus(r);return s==='warn'||s==='both';});
+  const ok=CM_ROOMS.filter(r=>cmStatus(r)==='ok');
+  const emp=CM_ROOMS.filter(r=>cmStatus(r)==='empty');
+  const pnd=CM_ROOMS.filter(r=>cmStatus(r)==='pending');
+
+  let h=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+    <div style="font-size:var(--fs-xs);color:var(--text-dim);">${dateStr}</div>
+    <div style="display:flex;gap:7px;align-items:center;">
+      <button onclick="cmPrintBottle()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);padding:7px 14px;border-radius:8px;font-weight:700;font-size:var(--fs-xxs);cursor:pointer;">🖨️ Stampa A4</button>
+      <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;padding:7px 14px;border-radius:8px;font-weight:700;font-size:var(--fs-xxs);text-decoration:none;">📱 Apri app mobile</a>
+    </div>
+  </div>`;
+  h+=`<div style="background:var(--surface);border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+      <span style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;">Camere visitate</span>
+      <span style="font-size:var(--fs-xs);font-weight:800;color:var(--accent);">${visited} / ${CM_ROOMS.length}</span>
+    </div>
+    <div style="height:8px;background:#E5E7EB;border-radius:4px;overflow:hidden;">
+      <div style="height:100%;background:linear-gradient(90deg,var(--accent),#4A7FC1);border-radius:4px;width:${Math.round(visited/CM_ROOMS.length*100)}%;transition:width .4s;"></div>
+    </div>
+  </div>`;
+  h+=`<div style="display:flex;gap:8px;margin-bottom:14px;">
+    ${[['💧',btl.length,'Da mettere','#2563EB'],['✅',ok.length,'Non consumate','var(--green)'],['⭕',pnd.length,'Da visitare','var(--text-dim)']].map(([ico,n,lbl,col])=>`
+    <div style="flex:1;background:var(--surface);border-radius:10px;padding:12px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+      <div style="font-size:1.3rem;font-weight:800;color:${col};line-height:1;">${ico} ${n}</div>
+      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;">${lbl}</div>
+    </div>`).join('')}
+  </div>`;
+  if(btl.length>0){
+    h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#FEF3C7;color:#92400E;display:flex;align-items:center;gap:6px;">💧 Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}</div>
+      <div style="padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px;">${btl.map(r=>`<span style="padding:5px 14px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:#EFF6FF;color:#2563EB;border:1.5px solid #BFDBFE;">${r}</span>`).join('')}</div>
+    </div>`;
+  }else{
+    h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#D1FAE5;color:#065F46;">💧 Nessuna bottiglia consumata — niente da portare ✅</div>
+    </div>`;
+  }
+  if(pnd.length>0){
+    h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#F3F4F6;color:var(--text-dim);">⭕ Non ancora visitate — ${pnd.length}</div>
+      <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:7px;">${pnd.map(r=>`<span style="padding:4px 12px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:#F3F4F6;color:var(--text-dim);">${r}</span>`).join('')}</div>
+    </div>`;
+  }
+  el.innerHTML=h;
+}
+
+function cmPrintBottle(){
+  const d=new Date();
+  const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let state=null;
+  try{const r=localStorage.getItem(key);if(r)state=JSON.parse(r);}catch(e){}
+  function cmSt(room){
+    const rs=state&&state[room];
+    if(!rs||!rs.visited)return'pending';
+    if(rs.libera)return'empty';
+    const nc=Object.values(rs.checks||{}).some(v=>!v);
+    const nb=rs.bottiglia==='consumata';
+    if(nc&&nb)return'both';if(nc)return'warn';if(nb)return'bottle';return'ok';
+  }
+  const btl=CM_ROOMS.filter(r=>{const s=cmSt(r);return s==='bottle'||s==='both';});
+  const dndRooms=CM_ROOMS.filter(r=>state&&state[r]&&state[r].dnd);
+  const dateStr=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const timeStr=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  function roomCard(r,color){
+    const borderCol=color==='amber'?'#D97706':'#DC2626';
+    const bgCol=color==='amber'?'#FFFBEB':'#FEF2F2';
+    const note=(state&&state[r]&&state[r].note)||'';
+    return`<div style="border:2.5px solid ${borderCol};border-radius:8px;background:${bgCol};
+      padding:10px 8px 8px;text-align:center;break-inside:avoid;display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <div style="width:22px;height:22px;border:2.5px solid #333;border-radius:4px;flex-shrink:0;background:#fff;"></div>
+      <div style="font-size:22pt;font-weight:900;line-height:1;color:#111;">${r}</div>
+      ${note?`<div style="font-size:8pt;color:#888;font-style:italic;line-height:1.3;">${note.replace(/</g,'&lt;')}</div>`:''}
+    </div>`;
+  }
+  function roomGrid(rooms,color){
+    if(!rooms.length)return`<p style="color:#9CA3AF;font-style:italic;font-size:11pt;padding:4mm 0;">Nessuna camera.</p>`;
+    return`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5mm;margin:4mm 0 8mm;">${rooms.map(r=>roomCard(r,color)).join('')}</div>`;
+  }
+  const html=`<!DOCTYPE html>
+<html lang="it"><head><meta charset="UTF-8">
+<title>Distribuzione Culligan — ${dateStr}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  html,body{font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;color:#000;}
+  body{padding:14mm 16mm;}
+  .hdr{display:flex;justify-content:space-between;align-items:flex-end;padding-bottom:5mm;margin-bottom:8mm;border-bottom:3px solid #000;}
+  .hdr-hotel{font-size:18pt;font-weight:900;letter-spacing:.01em;}
+  .hdr-sub{font-size:10pt;color:#555;margin-top:2mm;}
+  .hdr-right{text-align:right;font-size:10pt;color:#333;line-height:1.8;}
+  .sec-title{font-size:14pt;font-weight:900;padding:4mm 6mm;border-radius:6px;margin-bottom:4mm;display:flex;align-items:center;gap:6px;}
+  .sec-title.amber{background:#FEF3C7;color:#92400E;border-left:5px solid #D97706;}
+  .sec-title.red{background:#FEE2E2;color:#B91C1C;border-left:5px solid #DC2626;}
+  .sec-count{font-size:11pt;font-weight:700;opacity:.75;}
+  .footer{margin-top:10mm;padding-top:5mm;border-top:1.5px solid #ccc;display:flex;justify-content:space-between;font-size:10pt;color:#444;}
+  @media print{@page{size:A4 portrait;margin:0;}body{padding:14mm 16mm;}}
+</style>
+</head><body>
+<div class="hdr">
+  <div><div class="hdr-hotel">SoulArt Hotel</div><div class="hdr-sub">Distribuzione Acqua Culligan — Art 1–22</div></div>
+  <div class="hdr-right">${dateStr}<br>Ore ${timeStr} &nbsp;·&nbsp; QM Paolo P.</div>
+</div>
+<div class="sec-title amber">💧 Bottiglie da portare <span class="sec-count">(${btl.length} ${btl.length===1?'camera':'camere'})</span></div>
+${roomGrid(btl,'amber')}
+${dndRooms.length>0?`<div class="sec-title red">🚫 Non Disturbare — verificare più tardi <span class="sec-count">(${dndRooms.length})</span></div>${roomGrid(dndRooms,'red')}`:''}
+<div class="footer">
+  <span>Quality Manager — Paolo P.</span>
+  <span>Firma: _________________________________ &nbsp;&nbsp; Ora completamento: __________</span>
+</div>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w){alert('Abilita i popup per stampare.');return;}
+  w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
 }
 function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
