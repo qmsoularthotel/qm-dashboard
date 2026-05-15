@@ -4500,7 +4500,7 @@ async function handleArriviFile(file){
     const contentBlock=isPDF
       ?{type:'document',source:{type:'base64',media_type:mediaType,data:base64}}
       :{type:'image',source:{type:'base64',media_type:mediaType,data:base64}};
-    const prompt=`Analizza questo documento "Arrivi oggi" di un hotel e restituisci SOLO un JSON valido con questa struttura:
+    const prompt=`Analizza questo documento di un hotel (può essere "Arrivi oggi" oppure "Riepilogo Reception" di Hotel in Cloud) e restituisci SOLO un JSON valido con questa struttura:
 {
   "data": "20/03/2026",
   "totale_stanze": 22,
@@ -4516,18 +4516,22 @@ async function handleArriviFile(file){
       "arrivo": "20/3",
       "partenza": "22/3",
       "note": "PAGA ROOM 188€ + TAX",
-      "alert": false
+      "alert": false,
+      "origine": "Booking.com"
     }
   ]
 }
+IMPORTANTE: Se il documento è un "Riepilogo Reception" (contiene sezioni Partenze / Arrivi / In Casa), estrai SOLO le camere dalla sezione "Arrivi". Ignora completamente le sezioni "Partenze" e "In Casa".
 Per "struttura" identifica la struttura dal NUMERO/PREFISSO della camera:
-- "SA": camere con prefisso "Art" (es. Art 2, Art 5, Art 22) E camere numeriche al di fuori della serie 200 → SoulArt Hotel
+- "SA": camere numeriche 100-199 e generiche → SoulArt Hotel
+- "AR": camere con prefisso "Art" (es. Art 2, Art 5, Art 22) → Art Resort
 - "BH": camere numeriche 200-299 (es. 201, 202, 203, 215) → Boutique Hotel
 - "SL": camere con prefisso Lib → San Liborio
 - "PR": camere con nome geografico: Capri, Napoli, Procida, Ischia, Positano → Principe/Umberto
 - "MS": camere R1, R2, R3 → Rooms Mastrangelo
 - "NA": qualsiasi altra camera non identificata
 Per "alert" metti true se le note contengono parole come: ATTENZIONE, NON SPOSTARE, REPEATER, MASSIMA PULIZIA, IMPORTANTE, WARNING.
+Per "origine": estrai il canale dalla colonna Origine se presente (es. "Booking.com, it," → "Booking.com"; "Booking.com 2, en," → "Booking.com"; "Expedia," → "Expedia"; "Italcamel," → "Italcamel"; "CRSVErtical, it," → "CRSVErtical"; "External portal via Figaro," → "Figaro"). Se la colonna Origine non è presente nel documento lascia "".
 Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
