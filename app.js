@@ -4371,7 +4371,7 @@ function rcBuildPreview(g,idx){const nights=rcCalcNights(g.checkin,g.checkout);
   const arrivoMatch=arriviData&&arriviData.arrivi&&arriviData.arrivi.find(a=>normCam(a.camera)===normCam(g.camera));
   const origine=String(g.origine||(arrivoMatch&&arrivoMatch.origine)||'').trim();
   const isBooking=/booking/i.test(origine);
-  const origBadge=origine?`<span class="rc-pill" style="background:${isBooking?'rgba(37,99,235,.12)':'var(--surface2)'};color:${isBooking?'#2563EB':'var(--text-dim)'};font-weight:${isBooking?'700':'400'};">${isBooking?BK_ICON:''}${origine}</span>`:'';
+  const origBadge=origine?`<span class="rc-pill" style="background:${isBooking?'var(--accent-bg)':'var(--surface2)'};color:${isBooking?'var(--accent)':'var(--text-dim)'};font-weight:${isBooking?'700':'400'};">${isBooking?BK_ICON:''}${origine}</span>`:'';
   const card=document.createElement('div');card.className='rc-card';card.innerHTML=`<div class="rc-card-top"><span class="rc-card-label">Registration Card</span><span class="rc-card-room">Camera ${g.camera}</span></div><div class="rc-card-guest">${g.nome}</div><div class="rc-card-dates"><div class="rc-date-cell"><div class="rc-date-label">Arrivo</div><div class="rc-date-val">${g.checkin||'—'}</div></div><div class="rc-date-cell"><div class="rc-date-label">Partenza</div><div class="rc-date-val">${g.checkout||'—'}</div></div><div class="rc-date-cell"><div class="rc-date-label">Notti</div><div class="rc-date-val">${nights}</div></div></div><div class="rc-pills"><span class="rc-pill">${g.pax} ${g.pax===1?'ospite':'ospiti'}</span><span class="rc-pill">${tratMap[g.trattamento]||g.trattamento}</span>${origBadge}</div><div class="rc-card-footer"><span class="rc-hint">Clicca per anteprima</span><button class="btn-print-one" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
 function rcOpenModal(idx){const g=guestsData[idx];document.getElementById('rcModalTitle').textContent=g.nome+' — Camera '+g.camera;document.getElementById('rcModalBody').innerHTML=`<div class="mp" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:9pt;color:#1A1916;">${rcCardHTML(g)}</div>`;document.getElementById('rcModalPrintBtn').onclick=()=>{rcCloseModal();setTimeout(()=>preparePrint(idx),150);};document.getElementById('rcModalOverlay').classList.add('open');}
 function rcCloseModal(){document.getElementById('rcModalOverlay').classList.remove('open');}
@@ -4610,7 +4610,7 @@ function arriviUpdateKpi(){
     if(canaliDiv){
       canaliDiv.innerHTML=canali.map(([k,n])=>{
         const isBk=/booking/i.test(k);
-        return`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${isBk?'rgba(37,99,235,.12)':'rgba(0,0,0,.06)'};color:${isBk?'#2563EB':'var(--text-dim)'};font-weight:${isBk?'600':'400'};">${isBk?BK_ICON:''}${k} <b>${n}</b></span>`;
+        return`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${isBk?'var(--accent-bg)':'rgba(0,0,0,.06)'};color:${isBk?'var(--accent)':'var(--text-dim)'};font-weight:${isBk?'600':'400'};">${isBk?BK_ICON:''}${k} <b>${n}</b></span>`;
       }).join('');
     }
   } else {
@@ -4628,13 +4628,13 @@ function arriviUpdateKpi(){
     const bkPartenze=(arriviData.partenze||[]).filter(p=>/booking/i.test(p.origine||''));
     if(bkArrivi.length>0||bkPartenze.length>0){
       let html=`<div style="background:var(--surface);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-        <div style="padding:10px 14px;background:#EFF6FF;border-bottom:1px solid #BFDBFE;display:flex;align-items:center;gap:6px;">
-          ${BK_ICON}<span style="font-size:var(--fs-xs);font-weight:700;color:#1E40AF;">Booking.com — Riepilogo giornata</span>
+        <div style="padding:10px 14px;background:var(--accent-bg);border-bottom:1px solid #B8CEEE;display:flex;align-items:center;gap:6px;">
+          ${BK_ICON}<span style="font-size:var(--fs-xs);font-weight:700;color:var(--accent);">Booking.com — Riepilogo giornata</span>
         </div>
         <div style="padding:12px 14px;display:flex;gap:12px;flex-wrap:wrap;">`;
       if(bkArrivi.length>0){
-        const chips=bkArrivi.map(a=>`<span style="padding:3px 10px;border-radius:10px;background:#EFF6FF;color:#2563EB;font-size:var(--fs-xxs);font-weight:600;border:1px solid #BFDBFE;">↓ ${a.camera}${a.ospite?' · '+a.ospite.split(' ')[0]:''}</span>`).join('');
-        html+=`<div style="flex:1;min-width:200px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;margin-bottom:5px;">CHECK-IN OGGI <span style="background:#2563EB;color:#fff;border-radius:6px;padding:0 6px;">${bkArrivi.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
+        const chips=bkArrivi.map(a=>`<span style="padding:3px 10px;border-radius:10px;background:var(--accent-bg);color:var(--accent);font-size:var(--fs-xxs);font-weight:600;border:1px solid #B8CEEE;">↓ ${a.camera}${a.ospite?' · '+a.ospite.split(' ')[0]:''}</span>`).join('');
+        html+=`<div style="flex:1;min-width:200px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;margin-bottom:5px;">CHECK-IN OGGI <span style="background:var(--accent);color:#fff;border-radius:6px;padding:0 6px;">${bkArrivi.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
       }
       if(bkPartenze.length>0){
         const chips=bkPartenze.map(p=>`<span style="padding:3px 10px;border-radius:10px;background:#FFFBEB;color:#92400E;font-size:var(--fs-xxs);font-weight:600;border:1px solid #FDE68A;">↑ ${p.camera}${p.ospite?' · '+p.ospite.split(' ')[0]:''}</span>`).join('');
@@ -4735,7 +4735,7 @@ function renderArriviModal(filtStruttura='all', filtTratt='all', filtOrigine='al
       <div class="rc-pills">
         <span class="rc-pill">${a.trattamento}</span>
         ${a.tipo_camera?`<span class="rc-pill">${a.tipo_camera}</span>`:''}
-        ${a.origine?`<span class="rc-pill" style="background:${/booking/i.test(a.origine)?'rgba(37,99,235,.12)':'var(--surface2)'};color:${/booking/i.test(a.origine)?'#2563EB':'var(--text-dim)'};font-weight:${/booking/i.test(a.origine)?'700':'400'};">${/booking/i.test(a.origine)?BK_ICON:''}${a.origine}</span>`:''}
+        ${a.origine?`<span class="rc-pill" style="background:${/booking/i.test(a.origine)?'var(--accent-bg)':'var(--surface2)'};color:${/booking/i.test(a.origine)?'var(--accent)':'var(--text-dim)'};font-weight:${/booking/i.test(a.origine)?'700':'400'};">${/booking/i.test(a.origine)?BK_ICON:''}${a.origine}</span>`:''}
       </div>
       ${a.note?`<div style="font-size:var(--fs-xxs);color:${a.alert?'var(--red)':'var(--text-muted)'};background:${a.alert?'rgba(220,53,69,.06)':'var(--surface2)'};border-radius:0 0 7px 7px;padding:6px 12px;border-top:1px solid var(--border-light);line-height:1.5;">${a.note}</div>`:''}
     </div>`;
@@ -5520,7 +5520,7 @@ function cmRender(state,key){
     </div>
   </div>`;
   h+=`<div style="display:flex;gap:8px;margin-bottom:14px;">
-    ${[['💧',btl.length,'Da mettere','#2563EB'],['✅',ok.length,'Non consumate','var(--green)'],['⭕',pnd.length,'Da visitare','var(--text-dim)']].map(([ico,n,lbl,col])=>`
+    ${[['💧',btl.length,'Da mettere','var(--accent)'],['✅',ok.length,'Non consumate','var(--green)'],['⭕',pnd.length,'Da visitare','var(--text-dim)']].map(([ico,n,lbl,col])=>`
     <div style="flex:1;background:var(--surface);border-radius:10px;padding:12px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06);">
       <div style="font-size:1.3rem;font-weight:800;color:${col};line-height:1;">${ico} ${n}</div>
       <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;">${lbl}</div>
@@ -5529,7 +5529,7 @@ function cmRender(state,key){
   if(btl.length>0){
     h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
       <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#FEF3C7;color:#92400E;display:flex;align-items:center;gap:6px;">💧 Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}</div>
-      <div style="padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px;">${btl.map(r=>`<span style="padding:5px 14px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:#EFF6FF;color:#2563EB;border:1.5px solid #BFDBFE;">${r}</span>`).join('')}</div>
+      <div style="padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px;">${btl.map(r=>`<span style="padding:5px 14px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:var(--accent-bg);color:var(--accent);border:1.5px solid #B8CEEE;">${r}</span>`).join('')}</div>
     </div>`;
   }else{
     h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
