@@ -224,6 +224,22 @@ function sameDate(d1,d2){
   return norm(d1)===norm(d2);
 }
 const MATARESE=new Set(['Art 1','Art 2','Art 3','Art 4','Art 5','Art 6','Art 7','Art 10','Art 11','Art 12','Art 22']);
+let _arriviBooking = new Set(); // camere con arrivo Booking.com oggi
+
+async function _loadArriviBooking(){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key=qm_arriviData');
+    if(!r.ok)return;
+    const j=await r.json();
+    if(!j||!j.value)return;
+    const ad=JSON.parse(j.value);
+    if(!ad||!ad.arrivi)return;
+    const norm=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
+    ad.arrivi.forEach(a=>{
+      if(/booking/i.test(a.origine||'')) _arriviBooking.add(norm(a.camera));
+    });
+  }catch(e){}
+}
 function splitSoulart(rooms){
   const m={partenze:[],fermate:[],cambi:[]},a={partenze:[],fermate:[],cambi:[]};
   if(!rooms)return{m,a};
@@ -240,8 +256,9 @@ function renderRoomDetail(rooms,label){
   const hasData=tuttePartenze.length||fermate.length;
   if(!hasData)return'';
   let h=label?`<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px;padding-top:6px;border-top:1px solid var(--border);">🧹 ${label}</div>`:'';
-  if(tuttePartenze.length)h+=`<div class="room-section"><div class="room-section-title partenza" style="display:flex;align-items:center;gap:6px;">🛫 Partenze${cambi.length?`<span style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:none;letter-spacing:0;"><span style="font-weight:800;color:var(--red);">⇄</span> = partenza con arrivo</span>`:''}</div><div class="room-chips">${roomSort(tuttePartenze).map(r=>{const isCambio=cambi.includes(r);return`<span class="chip ${isCambio?'doppio':'partenza'}">${r}${isCambio?` <span style="font-weight:800;font-size:1.1em;color:var(--red);">⇄</span>`:''}</span>`;}).join('')}</div></div>`;
-  if(fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">🛏 Fermate</div><div class="room-chips">${roomSort(fermate).map(r=>`<span class="chip fermata">${r}</span>`).join('')}</div></div>`;
+  const normCam=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
+  if(tuttePartenze.length)h+=`<div class="room-section"><div class="room-section-title partenza" style="display:flex;align-items:center;gap:6px;">🛫 Partenze${cambi.length?`<span style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:none;letter-spacing:0;"><span style="font-weight:800;color:var(--red);">⇄</span> = partenza con arrivo</span>`:''}</div><div class="room-chips">${roomSort(tuttePartenze).map(r=>{const isCambio=cambi.includes(r);const isBk=_arriviBooking.has(normCam(r));return`<span class="chip ${isCambio?'doppio':'partenza'}">${r}${isCambio?` <span style="font-weight:800;font-size:1.1em;color:var(--red);">⇄</span>`:''}${isBk?' <span style="font-size:9px;background:#2563EB;color:#fff;border-radius:4px;padding:1px 4px;font-weight:700;">B</span>':''}</span>`;}).join('')}</div></div>`;
+  if(fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">🛏 Fermate</div><div class="room-chips">${roomSort(fermate).map(r=>{const isBk=_arriviBooking.has(normCam(r));return`<span class="chip fermata">${r}${isBk?' <span style="font-size:9px;background:#2563EB;color:#fff;border-radius:4px;padding:1px 4px;font-weight:700;">B</span>':''}</span>`;}).join('')}</div></div>`;
   return h;
 }
 
@@ -448,6 +465,7 @@ function renderKpi(d){
 async function loadAll(){
   document.getElementById('mainContent').innerHTML=`<div class="loading"><div class="spinner"></div>Caricamento...</div>`;
   [soulData,boutData,pianoData]=await Promise.all([fetchKV('soul'),fetchKV('bout'),fetchKVRaw('qm_piano')]);
+  await _loadArriviBooking();
   // Salva in localStorage per persistenza
   try{if(soulData)localStorage.setItem('hk_soul_cache',JSON.stringify(soulData));}catch(e){}
   try{if(boutData)localStorage.setItem('hk_bout_cache',JSON.stringify(boutData));}catch(e){}

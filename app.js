@@ -4638,14 +4638,14 @@ function fixArriviStruttura(arrivi){
 }
 function strutLabel(s){return({SA:'SoulArt',AR:'Art Resort',BH:'Boutique',SL:'San Liborio',PR:'Principe',MS:'Mastrangelo',SB:'S.Brigida',NA:'Napoli'})[s]||s;}
 function strutStyle(s){const styles={SA:'background:#e8eef8;color:#003580',AR:'background:#e8f5e9;color:#1b5e20',BH:'background:#fff3e0;color:#e65100',SL:'background:#f3e5f5;color:#6a1b9a',PR:'background:#fce4ec;color:#880e4f',MS:'background:#e8f5e9;color:#2e7d32',SB:'background:#e3f2fd;color:#0d47a1',NA:'background:var(--surface2);color:var(--text-dim)'};return styles[s]||'background:var(--surface2);color:var(--text-dim)';}
-function openArriviModal(){
+function openArriviModal(filtOrigine='all'){
   const modal=document.getElementById('arriviModal');
   if(!modal)return;
   if(!arriviData){
     modal.querySelector('#arriviModalBody').innerHTML=
       '<div style="text-align:center;padding:30px;color:var(--text-dim);">Carica prima il PDF arrivi dalla sidebar</div>';
   } else {
-    renderArriviModal();
+    renderArriviModal('all','all',filtOrigine);
   }
   modal.style.display='flex';
 }
@@ -4653,19 +4653,27 @@ function closeArriviModal(){
   const modal=document.getElementById('arriviModal');
   if(modal)modal.style.display='none';
 }
-function renderArriviModal(filtStruttura='all', filtTratt='all'){
+function renderArriviModal(filtStruttura='all', filtTratt='all', filtOrigine='all'){
   if(!arriviData)return;
   let list=arriviData.arrivi;
   if(filtStruttura!=='all')list=list.filter(a=>a.struttura===filtStruttura);
   if(filtTratt!=='all')list=list.filter(a=>a.trattamento===filtTratt);
+  if(filtOrigine==='booking')list=list.filter(a=>/booking/i.test(a.origine||''));
   const strutture=[...new Set(arriviData.arrivi.map(a=>a.struttura))].sort();
   const trattamenti=[...new Set(arriviData.arrivi.map(a=>a.trattamento))].sort();
+  const hasOrigine=arriviData.arrivi.some(a=>a.origine&&a.origine.trim());
+  const origineBar=hasOrigine?`
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+    <span style="font-size:var(--fs-xxs);color:var(--text-dim);align-self:center;">Canale:</span>
+    <button class="rev-filter-btn${filtOrigine==='all'?' active':''}" onclick="renderArriviModal('${filtStruttura}','${filtTratt}','all')">Tutti</button>
+    <button class="rev-filter-btn${filtOrigine==='booking'?' active':''}" onclick="renderArriviModal('${filtStruttura}','${filtTratt}','booking')">📘 Solo Booking.com</button>
+  </div>`:'';
   const filterBar=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
     <span style="font-size:var(--fs-xxs);color:var(--text-dim);align-self:center;">Struttura:</span>
-    ${['all',...strutture].map(s=>`<button class="rev-filter-btn${filtStruttura===s?' active':''}" onclick="renderArriviModal('${s}','${filtTratt}')">${s==='all'?'Tutte':strutLabel(s)}</button>`).join('')}
+    ${['all',...strutture].map(s=>`<button class="rev-filter-btn${filtStruttura===s?' active':''}" onclick="renderArriviModal('${s}','${filtTratt}','${filtOrigine}')">${s==='all'?'Tutte':strutLabel(s)}</button>`).join('')}
     <span style="font-size:var(--fs-xxs);color:var(--text-dim);align-self:center;margin-left:8px;">Trattamento:</span>
-    ${['all',...trattamenti].map(t=>`<button class="rev-filter-btn${filtTratt===t?' active':''}" onclick="renderArriviModal('${filtStruttura}','${t}')">${t==='all'?'Tutti':t}</button>`).join('')}
-  </div>`;
+    ${['all',...trattamenti].map(t=>`<button class="rev-filter-btn${filtTratt===t?' active':''}" onclick="renderArriviModal('${filtStruttura}','${t}','${filtOrigine}')">${t==='all'?'Tutti':t}</button>`).join('')}
+  </div>`+origineBar;
   const cards=list.map(a=>{
     const alertBorder=a.alert?'border-color:var(--red);':'';
     const alertTop=a.alert?'background:#fff0f0;':'background:var(--surface2);';
@@ -4683,6 +4691,7 @@ function renderArriviModal(filtStruttura='all', filtTratt='all'){
       <div class="rc-pills">
         <span class="rc-pill">${a.trattamento}</span>
         ${a.tipo_camera?`<span class="rc-pill">${a.tipo_camera}</span>`:''}
+        ${a.origine?`<span class="rc-pill" style="background:${/booking/i.test(a.origine)?'rgba(37,99,235,.12)':'var(--surface2)'};color:${/booking/i.test(a.origine)?'#2563EB':'var(--text-dim)'};font-weight:${/booking/i.test(a.origine)?'700':'400'};">${/booking/i.test(a.origine)?'📘 ':''}${a.origine}</span>`:''}
       </div>
       ${a.note?`<div style="font-size:var(--fs-xxs);color:${a.alert?'var(--red)':'var(--text-muted)'};background:${a.alert?'rgba(220,53,69,.06)':'var(--surface2)'};border-radius:0 0 7px 7px;padding:6px 12px;border-top:1px solid var(--border-light);line-height:1.5;">${a.note}</div>`:''}
     </div>`;

@@ -334,6 +334,22 @@ textarea:focus{outline:none;border-color:#A1A1AA;}
 
 const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
 const ROOMS = Array.from({length:22}, (_,i) => 'Art '+(i+1));
+let _arriviBooking = new Set(); // camere con arrivo Booking.com oggi
+
+async function _loadArriviBooking(){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key=qm_arriviData');
+    if(!r.ok)return;
+    const j=await r.json();
+    if(!j||!j.value)return;
+    const ad=JSON.parse(j.value);
+    if(!ad||!ad.arrivi)return;
+    const norm=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
+    ad.arrivi.forEach(a=>{
+      if(/booking/i.test(a.origine||'')) _arriviBooking.add(norm(a.camera));
+    });
+  }catch(e){}
+}
 
 const CHECKS = [
   {id:'acqua', label:'💧 Kit Acqua Culligan', items:[
@@ -588,14 +604,16 @@ function _renderHome(){
   const PS_LBL ={partenza:'Partenza',fermata:'Fermata',cambio:'Partenza + Arrivo',libera:'Libera'};
   const DOT_TXT={pending:'○ da visitare',ok:'✓ ok',warn:'⚠ non conforme',
     bottle:'💧 porta bottiglia',both:'💧 ⚠ porta + KO',empty:'',dnd:'🚫 non disturbare',missing:'❌ non presente'};
+  const normCam=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
   document.getElementById('rooms-grid').innerHTML=ROOMS.map(room=>{
     const st=_status(room);
     const ps=_pianoSt(room);
     const ico=ps?PS_ICO[ps]:'—';
     const lbl=ps?PS_LBL[ps]:'';
     const dot=DOT_TXT[st]||'';
+    const isBk=_arriviBooking.has(normCam(room));
     return`<div class="room-card s-${st}" onclick="openRoom('${room}')">
-      <div class="rc-num">${room}</div>
+      <div class="rc-num">${room}${isBk?'<span style="font-size:9px;background:#2563EB;color:#fff;border-radius:4px;padding:1px 4px;margin-left:3px;vertical-align:middle;font-weight:700;">B</span>':''}</div>
       <div class="rc-piano-ico">${ico}</div>
       <div class="rc-piano-lbl">${lbl}</div>
       <div class="rc-dot d-${st}">${dot}</div>
@@ -916,7 +934,7 @@ ${roomGrid(dnd,'red')}`:''}
 
 // ── INIT ──────────────────────────────
 // _load() è async: aspetta KV prima di caricare il piano e renderizzare
-_load().then(() => _loadPiano()).then(() => _renderHome());
+_load().then(() => Promise.all([_loadPiano(), _loadArriviBooking()])).then(() => _renderHome());
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw-controllo-mattino.js')
