@@ -4532,13 +4532,22 @@ async function handleArriviFile(file){
       "pax": 2,
       "origine": "Booking.com"
     }
+  ],
+  "fermate": [
+    {
+      "camera": "201",
+      "struttura": "BH",
+      "ospite": "Bianchi Luigi",
+      "pax": 2,
+      "origine": "Booking.com"
+    }
   ]
 }
 Se il documento è un "Riepilogo Reception" (contiene sezioni Partenze / Arrivi / In Casa):
-- In "arrivi": estrai SOLO le camere dalla sezione "Arrivi"
-- In "partenze": estrai SOLO le camere dalla sezione "Partenze" (con il campo origine)
-- Ignora la sezione "In Casa"
-Se il documento è solo "Arrivi oggi" (senza sezione Partenze), metti "partenze": [].
+- In "arrivi": estrai SOLO le camere dalla sezione "Arrivi" (check-in oggi)
+- In "partenze": estrai SOLO le camere dalla sezione "Partenze" (check-out oggi, con il campo origine)
+- In "fermate": estrai SOLO le camere dalla sezione "In Casa" (ospiti che si fermano, con il campo origine)
+Se il documento è solo "Arrivi oggi" (senza sezioni Partenze / In Casa), metti "partenze": [] e "fermate": [].
 Per "struttura" identifica la struttura dal NUMERO/PREFISSO della camera:
 - "SA": camere numeriche 100-199 e generiche → SoulArt Hotel
 - "AR": camere con prefisso "Art" (es. Art 2, Art 5, Art 22) → Art Resort
@@ -4599,8 +4608,10 @@ function arriviUpdateKpi(){
     arriviData.arrivi.forEach(a=>{const o=(a.origine||'').trim();if(o)counts[o]=(counts[o]||0)+1;});
     const canali=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
 
-    // Topbar chip Booking.com
-    const bkCount=canali.filter(([k])=>/booking/i.test(k)).reduce((s,[,v])=>s+v,0);
+    // Topbar chip Booking.com — conta arrivi + fermate (presenza totale oggi)
+    const bkArriviN=canali.filter(([k])=>/booking/i.test(k)).reduce((s,[,v])=>s+v,0);
+    const bkFermateN=(arriviData.fermate||[]).filter(f=>/booking/i.test(f.origine||'')).length;
+    const bkCount=bkArriviN+bkFermateN;
     const bkChip=document.getElementById('kpi-booking-chip');
     const bkVal=document.getElementById('kpi-booking-val');
     if(bkChip&&bkVal){bkVal.textContent=bkCount;bkChip.style.display=bkCount>0?'':'none';}
@@ -4621,24 +4632,29 @@ function arriviUpdateKpi(){
     if(canaliDiv)canaliDiv.innerHTML='';
   }
 
-  // Box overview — arrivi Booking.com + partenze (recensioni attese)
+  // Box overview — arrivi Booking.com + fermate + partenze (recensioni attese)
   const ovBox=document.getElementById('ov-booking-box');
   if(ovBox){
     const bkArrivi=(arriviData.arrivi||[]).filter(a=>/booking/i.test(a.origine||''));
+    const bkFermate=(arriviData.fermate||[]).filter(f=>/booking/i.test(f.origine||''));
     const bkPartenze=(arriviData.partenze||[]).filter(p=>/booking/i.test(p.origine||''));
-    if(bkArrivi.length>0||bkPartenze.length>0){
+    if(bkArrivi.length>0||bkFermate.length>0||bkPartenze.length>0){
       let html=`<div style="background:var(--surface);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
         <div style="padding:10px 14px;background:var(--accent-bg);border-bottom:1px solid #B8CEEE;display:flex;align-items:center;gap:6px;">
           ${BK_ICON}<span style="font-size:var(--fs-xs);font-weight:700;color:var(--accent);">Booking.com — Riepilogo giornata</span>
         </div>
-        <div style="padding:12px 14px;display:flex;gap:12px;flex-wrap:wrap;">`;
+        <div style="padding:12px 14px;display:flex;gap:14px;flex-wrap:wrap;">`;
       if(bkArrivi.length>0){
         const chips=bkArrivi.map(a=>`<span style="padding:3px 10px;border-radius:10px;background:var(--accent-bg);color:var(--accent);font-size:var(--fs-xxs);font-weight:600;border:1px solid #B8CEEE;">↓ ${a.camera}${a.ospite?' · '+a.ospite.split(' ')[0]:''}</span>`).join('');
-        html+=`<div style="flex:1;min-width:200px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;margin-bottom:5px;">CHECK-IN OGGI <span style="background:var(--accent);color:#fff;border-radius:6px;padding:0 6px;">${bkArrivi.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
+        html+=`<div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Check-in <span style="background:var(--accent);color:#fff;border-radius:6px;padding:0 6px;">${bkArrivi.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
+      }
+      if(bkFermate.length>0){
+        const chips=bkFermate.map(f=>`<span style="padding:3px 10px;border-radius:10px;background:#F0F5FF;color:#2563EB;font-size:var(--fs-xxs);font-weight:600;border:1px solid #BFDBFE;">🛏 ${f.camera}${f.ospite?' · '+f.ospite.split(' ')[0]:''}</span>`).join('');
+        html+=`<div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">In fermata <span style="background:#2563EB;color:#fff;border-radius:6px;padding:0 6px;">${bkFermate.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
       }
       if(bkPartenze.length>0){
         const chips=bkPartenze.map(p=>`<span style="padding:3px 10px;border-radius:10px;background:#FFFBEB;color:#92400E;font-size:var(--fs-xxs);font-weight:600;border:1px solid #FDE68A;">↑ ${p.camera}${p.ospite?' · '+p.ospite.split(' ')[0]:''}</span>`).join('');
-        html+=`<div style="flex:1;min-width:200px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;margin-bottom:5px;">CHECK-OUT OGGI — RECENSIONI ATTESE <span style="background:#D97706;color:#fff;border-radius:6px;padding:0 6px;">${bkPartenze.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
+        html+=`<div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Check-out — recensioni attese <span style="background:#D97706;color:#fff;border-radius:6px;padding:0 6px;">${bkPartenze.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
       }
       html+=`</div></div>`;
       ovBox.innerHTML=html;

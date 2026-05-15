@@ -224,7 +224,7 @@ function sameDate(d1,d2){
   return norm(d1)===norm(d2);
 }
 const MATARESE=new Set(['Art 1','Art 2','Art 3','Art 4','Art 5','Art 6','Art 7','Art 10','Art 11','Art 12','Art 22']);
-let _arriviBooking = new Set(); // camere con arrivo Booking.com oggi
+let _arriviBooking = new Set(); // camere Booking.com oggi (arrivi + fermate + partenze)
 
 async function _loadArriviBooking(){
   try{
@@ -233,11 +233,12 @@ async function _loadArriviBooking(){
     const j=await r.json();
     if(!j||!j.value)return;
     const ad=JSON.parse(j.value);
-    if(!ad||!ad.arrivi)return;
+    if(!ad)return;
     const norm=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
-    ad.arrivi.forEach(a=>{
-      if(/booking/i.test(a.origine||'')) _arriviBooking.add(norm(a.camera));
-    });
+    const isBooking=x=>/booking/i.test(x.origine||'');
+    (ad.arrivi||[]).forEach(a=>{ if(isBooking(a)) _arriviBooking.add(norm(a.camera)); });
+    (ad.fermate||[]).forEach(f=>{ if(isBooking(f)) _arriviBooking.add(norm(f.camera)); });
+    (ad.partenze||[]).forEach(p=>{ if(isBooking(p)) _arriviBooking.add(norm(p.camera)); });
   }catch(e){}
 }
 function splitSoulart(rooms){

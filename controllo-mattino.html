@@ -364,7 +364,7 @@ textarea:focus{outline:none;border-color:#A1A1AA;}
 
 const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
 const ROOMS = Array.from({length:22}, (_,i) => 'Art '+(i+1));
-let _arriviBooking = new Set(); // camere con arrivo Booking.com oggi
+let _arriviBooking = new Set(); // camere Booking.com oggi (arrivi + fermate + partenze)
 
 async function _loadArriviBooking(){
   try{
@@ -373,11 +373,12 @@ async function _loadArriviBooking(){
     const j=await r.json();
     if(!j||!j.value)return;
     const ad=JSON.parse(j.value);
-    if(!ad||!ad.arrivi)return;
+    if(!ad)return;
     const norm=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
-    ad.arrivi.forEach(a=>{
-      if(/booking/i.test(a.origine||'')) _arriviBooking.add(norm(a.camera));
-    });
+    const isBooking=x=>/booking/i.test(x.origine||'');
+    (ad.arrivi||[]).forEach(a=>{ if(isBooking(a)) _arriviBooking.add(norm(a.camera)); });
+    (ad.fermate||[]).forEach(f=>{ if(isBooking(f)) _arriviBooking.add(norm(f.camera)); });
+    (ad.partenze||[]).forEach(p=>{ if(isBooking(p)) _arriviBooking.add(norm(p.camera)); });
   }catch(e){}
 }
 
