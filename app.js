@@ -4523,9 +4523,22 @@ async function handleArriviFile(file){
       "alert": false,
       "origine": "Booking.com"
     }
+  ],
+  "partenze": [
+    {
+      "camera": "205",
+      "struttura": "BH",
+      "ospite": "Rossi Marco",
+      "pax": 2,
+      "origine": "Booking.com"
+    }
   ]
 }
-IMPORTANTE: Se il documento è un "Riepilogo Reception" (contiene sezioni Partenze / Arrivi / In Casa), estrai SOLO le camere dalla sezione "Arrivi". Ignora completamente le sezioni "Partenze" e "In Casa".
+Se il documento è un "Riepilogo Reception" (contiene sezioni Partenze / Arrivi / In Casa):
+- In "arrivi": estrai SOLO le camere dalla sezione "Arrivi"
+- In "partenze": estrai SOLO le camere dalla sezione "Partenze" (con il campo origine)
+- Ignora la sezione "In Casa"
+Se il documento è solo "Arrivi oggi" (senza sezione Partenze), metti "partenze": [].
 Per "struttura" identifica la struttura dal NUMERO/PREFISSO della camera:
 - "SA": camere numeriche 100-199 e generiche → SoulArt Hotel
 - "AR": camere con prefisso "Art" (es. Art 2, Art 5, Art 22) → Art Resort
@@ -4535,7 +4548,7 @@ Per "struttura" identifica la struttura dal NUMERO/PREFISSO della camera:
 - "MS": camere R1, R2, R3 → Rooms Mastrangelo
 - "NA": qualsiasi altra camera non identificata
 Per "alert" metti true se le note contengono parole come: ATTENZIONE, NON SPOSTARE, REPEATER, MASSIMA PULIZIA, IMPORTANTE, WARNING.
-Per "origine": estrai il canale dalla colonna Origine se presente (es. "Booking.com, it," → "Booking.com"; "Booking.com 2, en," → "Booking.com"; "Expedia," → "Expedia"; "Italcamel," → "Italcamel"; "CRSVErtical, it," → "CRSVErtical"; "External portal via Figaro," → "Figaro"). Se la colonna Origine non è presente nel documento lascia "".
+Per "origine": estrai il canale dalla colonna Origine (es. "Booking.com, it," → "Booking.com"; "Booking.com 2, en," → "Booking.com"; "Expedia," → "Expedia"; "Italcamel," → "Italcamel"; "CRSVErtical, it," → "CRSVErtical"; "External portal via Figaro," → "Figaro"). Se assente lascia "".
 Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -4606,6 +4619,23 @@ function arriviUpdateKpi(){
     if(bkChip)bkChip.style.display='none';
     const canaliDiv=document.getElementById('arriviCanali');
     if(canaliDiv)canaliDiv.innerHTML='';
+  }
+
+  // Partenze Booking.com oggi — potenziali recensioni in arrivo
+  const partenzeDiv=document.getElementById('arriviPartenzeBooking');
+  const partenze=(arriviData.partenze||[]).filter(p=>/booking/i.test(p.origine||''));
+  if(partenzeDiv){
+    if(partenze.length>0){
+      const camere=partenze.map(p=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;background:#FEF3C7;color:#92400E;font-size:11px;font-weight:600;">Cam. ${p.camera}${p.ospite?` · ${p.ospite.split(' ')[0]}`:''}${p.struttura&&p.struttura!=='SA'?` <span style="font-size:9px;opacity:.7;">${p.struttura}</span>`:''}</span>`).join('');
+      partenzeDiv.innerHTML=`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:#FFFBEB;border:1px solid #FDE68A;">
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#92400E;margin-bottom:6px;">${BK_ICON}<span>Check-out Booking oggi — recensioni attese</span><span style="background:#D97706;color:#fff;border-radius:8px;padding:1px 7px;font-size:10px;">${partenze.length}</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">${camere}</div>
+      </div>`;
+      partenzeDiv.style.display='block';
+    } else {
+      partenzeDiv.innerHTML='';
+      partenzeDiv.style.display='none';
+    }
   }
 }
 function detectStruttura(camera){
