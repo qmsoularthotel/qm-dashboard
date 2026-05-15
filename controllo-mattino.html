@@ -932,6 +932,24 @@ ${roomGrid(dnd,'red')}`:''}
   setTimeout(()=>w.print(),600);
 }
 
+// ── WAKE LOCK — schermo sempre acceso ────────────────────────────────────────
+// Usa Screen Wake Lock API (supportata da Chrome Android e Safari 16.4+)
+// Impedisce allo schermo di spegnersi mentre l'app è aperta.
+// Non è possibile controllare la luminosità via web API — limitazione del browser.
+let _wakeLock = null;
+async function _requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    _wakeLock = await navigator.wakeLock.request('screen');
+    _wakeLock.addEventListener('release', () => { _wakeLock = null; });
+  } catch(e) {}
+}
+// Ri-acquisisce il lock se la tab torna in primo piano (es. dopo una notifica)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !_wakeLock) _requestWakeLock();
+});
+_requestWakeLock();
+
 // ── INIT ──────────────────────────────
 // _load() è async: aspetta KV prima di caricare il piano e renderizzare
 _load().then(() => Promise.all([_loadPiano(), _loadArriviBooking()])).then(() => _renderHome());
