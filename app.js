@@ -2250,14 +2250,20 @@ document.querySelector('.content').addEventListener('scroll',function(){
       bkfData=savedBkf.data;bkfActiveDay=savedBkf.activeDay||0;
       setTimeout(()=>{renderBkfData(true);bkfLoadOps();if(savedBkf.ts)restoreUploadTs('bkfTs',savedBkf.ts);else loadStoredTs('bkfTs');},150);
     }
-    // Ripristina BKF Sheet Galleria
+    // Ripristina BKF Sheet Galleria (solo se i dati sono di oggi)
     const savedARData=LS.get('bkfSheetARData',null);
     if(savedARData&&Array.isArray(savedARData)&&savedARData.length){
-      bkfSheetARData=savedARData;
-      const tbody=document.getElementById('bkfSheetARTableBody');
-      if(tbody)tbody.innerHTML=bkfSheetARData.map(r=>`<tr><td style="font-weight:500;">${r.d||'—'}</td><td><span class="bkf-ro">${r.r??'—'}</span></td><td><span class="bkf-badge">${r.b??'—'}</span></td><td style="font-size:var(--fs-xs);color:var(--text-muted);">${r.pg||''}</td></tr>`).join('');
-      bkfSheetARSetStatus('ready');
-      setTimeout(bkfRenderChartAR,50);
+      const todayDDMM=(()=>{const n=new Date();return String(n.getDate()).padStart(2,'0')+'/'+String(n.getMonth()+1).padStart(2,'0');})();
+      const firstD=savedARData[0]&&savedARData[0].d?String(savedARData[0].d).substring(0,5):'';
+      if(firstD===todayDDMM){
+        bkfSheetARData=savedARData;
+        const tbody=document.getElementById('bkfSheetARTableBody');
+        if(tbody)tbody.innerHTML=bkfSheetARData.map(r=>`<tr><td style="font-weight:500;">${r.d||'—'}</td><td><span class="bkf-ro">${r.r??'—'}</span></td><td><span class="bkf-badge">${r.b??'—'}</span></td><td style="font-size:var(--fs-xs);color:var(--text-muted);">${r.pg||''}</td></tr>`).join('');
+        bkfSheetARSetStatus('ready');
+        setTimeout(bkfRenderChartAR,50);
+      } else {
+        LS.set('bkfSheetARData',null);
+      }
     }
     // Ripristina recensioni — prima da localStorage, poi da cloud se mancano
     async function restoreReviews(){

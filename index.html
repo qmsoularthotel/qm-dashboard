@@ -50,7 +50,7 @@
       </div>
       <div>
         <div class="logo-title"><span>SoulArt</span> Hotel</div>
-        <div class="logo-sub">Quality Manager Panel <span style="opacity:.5;">· v190</span></div>
+        <div class="logo-sub">Quality Manager Panel <span style="opacity:.5;">· v191</span></div>
       </div>
     </div>
     <nav class="nav">
@@ -98,7 +98,7 @@
       <div class="nav-item" onclick="setView('turni-pref',this)"><span class="nav-icon">📅</span>Preferenze Turni<span class="nav-badge" id="turniPrefBadge" style="display:none;"></span></div>
 
       <div class="nav-section">Sicurezza</div>
-      <div class="nav-item" onclick="setView('dvr',this)"><span class="nav-icon">🏥</span>DVR<span class="nav-badge" id="dvrNavBadge" style="display:none;background:var(--amber);"></span></div>
+      <div class="nav-item" onclick="setView('dvr',this)"><span class="nav-icon">⚠️</span>DVR<span class="nav-badge" id="dvrNavBadge" style="display:none;background:var(--amber);"></span></div>
 
       <div class="nav-section">Strumenti</div>
       <div class="nav-item" onclick="setView('inventario',this);invRender()"><span class="nav-icon">📦</span>Inventari</div>
@@ -130,16 +130,33 @@
           <button class="btn-reload" id="btnReload" style="display:none" onclick="resetTurni()">Rimuovi turno</button>
           <div class="upload-ts" id="turnoTs"></div>
         </div>
+        <div class="uc-slot" id="uc-piano" onclick="ucToggle('piano')" title="Piano settimana camere">
+          <input type="file" id="pianoFileInput" accept="application/pdf" style="display:none">
+          <span class="uc-icon">📅</span>
+          <div class="uc-info"><div class="uc-label">Piano settimana</div><div class="uc-sub" id="uc-piano-sub">Non caricato</div></div>
+          <span class="uc-badge" id="uc-piano-badge">▾</span>
+        </div>
+        <div class="uc-panel" id="uc-piano-panel">
+          <div class="upload-box" id="pianoUploadBox">
+            <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
+            <div class="ub-title">Piano settimana</div><div class="ub-sub">Piano camere settimanale</div>
+            <span class="ub-formats">.pdf</span>
+          </div>
+          <div class="turni-status" id="pianoStatus"></div>
+          <div class="loaded-info" id="pianoLoadedInfo"><div class="li-date" id="pianoLoadedDate"></div></div>
+          <button class="btn-reload" id="btnPianoReload" style="display:none" onclick="resetPianoData()">Rimuovi</button>
+          <div class="upload-ts" id="pianoTs"></div>
+        </div>
         <div class="uc-slot" id="uc-arrivi" onclick="ucToggle('arrivi')" title="Carica o espandi arrivi">
           <input type="file" id="arriviFileInput" accept="application/pdf,image/*" style="display:none">
           <span class="uc-icon">↓</span>
-          <div class="uc-info"><div class="uc-label">Arrivi oggi</div><div class="uc-sub" id="uc-arrivi-sub">Non caricato</div></div>
+          <div class="uc-info"><div class="uc-label">Riepilogo Reception</div><div class="uc-sub" id="uc-arrivi-sub">Non caricato</div></div>
           <span class="uc-badge" id="uc-arrivi-badge">▾</span>
         </div>
         <div class="uc-panel" id="uc-arrivi-panel">
           <div class="upload-box" id="arriviUploadBox">
             <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-            <div class="ub-title">Arrivi oggi</div>
+            <div class="ub-title">Riepilogo Reception</div>
             <div class="ub-sub">PDF da Hotel in Cloud</div>
             <span class="ub-formats">.pdf · .jpg · .png</span>
           </div>
@@ -147,6 +164,28 @@
           <div class="loaded-info" id="arriviLoadedInfo"><div class="li-date" id="arriviLoadedDate"></div><div id="arriviCanali" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;"></div><div id="arriviPartenzeBooking" style="display:none;"></div></div>
           <button class="btn-reload" id="btnArriviReload" style="display:none" onclick="resetArrivi()">Rimuovi arrivi</button>
           <div class="upload-ts" id="arriviTs"></div>
+        </div>
+        <div class="uc-slot" id="uc-bkf" onclick="ucToggle('bkf')" title="Carica o espandi pasti">
+          <input type="file" id="bkfFileInput" accept="application/pdf" style="display:none">
+          <span class="uc-icon">☕</span>
+          <div class="uc-info"><div class="uc-label">Report pasti</div><div class="uc-sub" id="uc-bkf-sub">Non caricato</div></div>
+          <span class="uc-badge" id="uc-bkf-badge">▾</span>
+        </div>
+        <div class="uc-panel" id="uc-bkf-panel">
+          <div class="upload-box" id="bkfUploadBox">
+            <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
+            <div class="ub-title">Report pasti</div>
+            <div class="ub-sub">PDF da Hotel in Cloud</div>
+            <span class="ub-formats">.pdf</span>
+          </div>
+          <div class="turni-status" id="bkfStatus"></div>
+          <div class="loaded-info" id="bkfLoadedInfo">
+            <div class="li-date" id="bkfLoadedDate"></div>
+            <div class="pul-stat-grid" id="bkfStatGrid" style="display:none"></div>
+            <div class="pul-week-nav" id="bkfWeekNav"></div>
+          </div>
+          <button class="btn-reload" id="btnBkfReload" style="display:none" onclick="resetBkf()">Rimuovi report</button>
+          <div class="upload-ts" id="bkfTs"></div>
         </div>
         <div class="uc-slot" id="uc-pul" onclick="ucToggle('pul')" title="Carica o espandi pulizie">
           <input type="file" id="pulFileInput" accept="application/pdf" style="display:none">
@@ -173,28 +212,6 @@
           </div>
           <button class="btn-reload" id="btnPulReload" style="display:none" onclick="resetPulizie()">Rimuovi pulizie</button>
           <div class="upload-ts" id="pulTs"></div>
-        </div>
-        <div class="uc-slot" id="uc-bkf" onclick="ucToggle('bkf')" title="Carica o espandi pasti">
-          <input type="file" id="bkfFileInput" accept="application/pdf" style="display:none">
-          <span class="uc-icon">☕</span>
-          <div class="uc-info"><div class="uc-label">Report pasti</div><div class="uc-sub" id="uc-bkf-sub">Non caricato</div></div>
-          <span class="uc-badge" id="uc-bkf-badge">▾</span>
-        </div>
-        <div class="uc-panel" id="uc-bkf-panel">
-          <div class="upload-box" id="bkfUploadBox">
-            <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-            <div class="ub-title">Report pasti</div>
-            <div class="ub-sub">PDF da Hotel in Cloud</div>
-            <span class="ub-formats">.pdf</span>
-          </div>
-          <div class="turni-status" id="bkfStatus"></div>
-          <div class="loaded-info" id="bkfLoadedInfo">
-            <div class="li-date" id="bkfLoadedDate"></div>
-            <div class="pul-stat-grid" id="bkfStatGrid" style="display:none"></div>
-            <div class="pul-week-nav" id="bkfWeekNav"></div>
-          </div>
-          <button class="btn-reload" id="btnBkfReload" style="display:none" onclick="resetBkf()">Rimuovi report</button>
-          <div class="upload-ts" id="bkfTs"></div>
         </div>
         <div class="uc-slot" id="uc-soul" onclick="ucToggle('soul')" title="Soul App HKP">
           <input type="file" id="soulFileInput" accept="application/pdf" style="display:none">
@@ -229,23 +246,6 @@
           <div class="loaded-info" id="boutLoadedInfo"><div class="li-date" id="boutLoadedDate"></div></div>
           <button class="btn-reload" id="btnBoutReload" style="display:none" onclick="resetBoutData()">Rimuovi</button>
           <div class="upload-ts" id="boutTs"></div>
-        </div>
-        <div class="uc-slot" id="uc-piano" onclick="ucToggle('piano')" title="Piano settimana camere">
-          <input type="file" id="pianoFileInput" accept="application/pdf" style="display:none">
-          <span class="uc-icon">📅</span>
-          <div class="uc-info"><div class="uc-label">Piano settimana</div><div class="uc-sub" id="uc-piano-sub">Non caricato</div></div>
-          <span class="uc-badge" id="uc-piano-badge">▾</span>
-        </div>
-        <div class="uc-panel" id="uc-piano-panel">
-          <div class="upload-box" id="pianoUploadBox">
-            <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-            <div class="ub-title">Piano settimana</div><div class="ub-sub">Piano camere settimanale</div>
-            <span class="ub-formats">.pdf</span>
-          </div>
-          <div class="turni-status" id="pianoStatus"></div>
-          <div class="loaded-info" id="pianoLoadedInfo"><div class="li-date" id="pianoLoadedDate"></div></div>
-          <button class="btn-reload" id="btnPianoReload" style="display:none" onclick="resetPianoData()">Rimuovi</button>
-          <div class="upload-ts" id="pianoTs"></div>
         </div>
       </div>
     </nav>
@@ -1319,6 +1319,6 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=278-20260515"></script>
+<script src="app.js?v=279-20260515"></script>
 </body>
 </html>
