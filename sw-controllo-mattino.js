@@ -2,7 +2,7 @@
 // Strategia: network-first per controllo-mattino.html (sempre aggiornato),
 // cache-first per asset statici (img, css, font)
 
-const CACHE = 'qm-cm-v23';
+const CACHE = 'qm-cm-v24';
 
 self.addEventListener('install', e => {
   self.skipWaiting(); // attiva immediatamente senza aspettare tab chiuse
