@@ -4621,20 +4621,31 @@ function arriviUpdateKpi(){
     if(canaliDiv)canaliDiv.innerHTML='';
   }
 
-  // Partenze Booking.com oggi — potenziali recensioni in arrivo
-  const partenzeDiv=document.getElementById('arriviPartenzeBooking');
-  const partenze=(arriviData.partenze||[]).filter(p=>/booking/i.test(p.origine||''));
-  if(partenzeDiv){
-    if(partenze.length>0){
-      const camere=partenze.map(p=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;background:#FEF3C7;color:#92400E;font-size:11px;font-weight:600;">Cam. ${p.camera}${p.ospite?` · ${p.ospite.split(' ')[0]}`:''}${p.struttura&&p.struttura!=='SA'?` <span style="font-size:9px;opacity:.7;">${p.struttura}</span>`:''}</span>`).join('');
-      partenzeDiv.innerHTML=`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:#FFFBEB;border:1px solid #FDE68A;">
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#92400E;margin-bottom:6px;">${BK_ICON}<span>Check-out Booking oggi — recensioni attese</span><span style="background:#D97706;color:#fff;border-radius:8px;padding:1px 7px;font-size:10px;">${partenze.length}</span></div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;">${camere}</div>
-      </div>`;
-      partenzeDiv.style.display='block';
+  // Box overview — arrivi Booking.com + partenze (recensioni attese)
+  const ovBox=document.getElementById('ov-booking-box');
+  if(ovBox){
+    const bkArrivi=(arriviData.arrivi||[]).filter(a=>/booking/i.test(a.origine||''));
+    const bkPartenze=(arriviData.partenze||[]).filter(p=>/booking/i.test(p.origine||''));
+    if(bkArrivi.length>0||bkPartenze.length>0){
+      let html=`<div style="background:var(--surface);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
+        <div style="padding:10px 14px;background:#EFF6FF;border-bottom:1px solid #BFDBFE;display:flex;align-items:center;gap:6px;">
+          ${BK_ICON}<span style="font-size:var(--fs-xs);font-weight:700;color:#1E40AF;">Booking.com — Riepilogo giornata</span>
+        </div>
+        <div style="padding:12px 14px;display:flex;gap:12px;flex-wrap:wrap;">`;
+      if(bkArrivi.length>0){
+        const chips=bkArrivi.map(a=>`<span style="padding:3px 10px;border-radius:10px;background:#EFF6FF;color:#2563EB;font-size:var(--fs-xxs);font-weight:600;border:1px solid #BFDBFE;">↓ ${a.camera}${a.ospite?' · '+a.ospite.split(' ')[0]:''}</span>`).join('');
+        html+=`<div style="flex:1;min-width:200px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;margin-bottom:5px;">CHECK-IN OGGI <span style="background:#2563EB;color:#fff;border-radius:6px;padding:0 6px;">${bkArrivi.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
+      }
+      if(bkPartenze.length>0){
+        const chips=bkPartenze.map(p=>`<span style="padding:3px 10px;border-radius:10px;background:#FFFBEB;color:#92400E;font-size:var(--fs-xxs);font-weight:600;border:1px solid #FDE68A;">↑ ${p.camera}${p.ospite?' · '+p.ospite.split(' ')[0]:''}</span>`).join('');
+        html+=`<div style="flex:1;min-width:200px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;margin-bottom:5px;">CHECK-OUT OGGI — RECENSIONI ATTESE <span style="background:#D97706;color:#fff;border-radius:6px;padding:0 6px;">${bkPartenze.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
+      }
+      html+=`</div></div>`;
+      ovBox.innerHTML=html;
+      ovBox.style.display='block';
     } else {
-      partenzeDiv.innerHTML='';
-      partenzeDiv.style.display='none';
+      ovBox.innerHTML='';
+      ovBox.style.display='none';
     }
   }
 }
