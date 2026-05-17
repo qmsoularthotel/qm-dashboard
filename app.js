@@ -4586,10 +4586,17 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     document.getElementById('arriviLoadedDate').textContent=arriviData.data;
     setUploadTs('arriviTs');
     arriviUpdateKpi();
-    // Aggiorna RC cards dai dati già estratti da Claude (arrivi + fermate in casa)
+    // Aggiorna RC cards: arrivi + fermate arrivate OGGI (stessa data del documento)
     (function(){
       if(!arriviData)return;
       const year=arriviData.data?parseInt(arriviData.data.split('/').pop())||new Date().getFullYear():new Date().getFullYear();
+      // Data documento nel formato "D/M" per confronto con campo arrivo
+      const docDate=arriviData.data?(d=>{const p=d.split('/');return parseInt(p[0])+'/'+parseInt(p[1]);})(arriviData.data):'';
+      const arrivoOggi=a=>{
+        if(!a.arrivo)return false;
+        const p=a.arrivo.split('/');
+        return parseInt(p[0])+'/'+parseInt(p[1])===docDate;
+      };
       const toGuest=a=>({
         camera:a.camera,
         nome:a.ospite||'',
@@ -4599,10 +4606,10 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
         checkout:a.partenza?rcFmtDate(a.partenza,year):'',
         origine:a.origine||''
       });
-      // Arrivi prima (nuovi check-in), poi fermate (già in casa)
+      // Arrivi check-in oggi + fermate arrivate oggi (stesso giorno)
       const allGuests=[
         ...(arriviData.arrivi||[]),
-        ...(arriviData.fermate||[])
+        ...(arriviData.fermate||[]).filter(arrivoOggi)
       ].map(toGuest).filter(g=>g.nome&&g.nome.trim());
       if(!allGuests.length)return;
       document.getElementById('rcUploadZone').style.display='none';
