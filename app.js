@@ -4576,10 +4576,6 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     if(!data.content||!data.content[0])throw new Error('Risposta vuota');
     let jsonText=data.content[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
     arriviData=JSON.parse(jsonText);
-    console.log('[Arrivi] estratti da Claude — arrivi:',arriviData.arrivi?.length,'fermate:',arriviData.fermate?.length,'partenze:',arriviData.partenze?.length);
-    console.log('[Partenze]',JSON.stringify(arriviData.partenze||[]));
-    console.log('[Fermate]',JSON.stringify(arriviData.fermate||[]));
-    console.log('[Arrivi list]',JSON.stringify(arriviData.arrivi||[]));
     // Correggi struttura in base al numero camera
     arriviData.arrivi=fixArriviStruttura(arriviData.arrivi);
     // Salva locale + cloud
