@@ -4664,9 +4664,17 @@ function arriviUpdateKpi(){
   // Box overview — arrivi Booking.com + fermate + partenze (recensioni attese)
   const ovBox=document.getElementById('ov-booking-box');
   if(ovBox){
-    const bkArrivi=(arriviData.arrivi||[]).filter(a=>/booking/i.test(a.origine||''));
-    const bkFermate=(arriviData.fermate||[]).filter(f=>/booking/i.test(f.origine||''));
-    const bkPartenze=(arriviData.partenze||[]).filter(p=>/booking/i.test(p.origine||''));
+    const isBk=o=>/booking/i.test(o||'');
+    // Data documento in formato D/M per confrontare con campo partenza delle fermate
+    const docDM=(()=>{const p=(arriviData.data||'').split('/');return p.length>=2?parseInt(p[0])+'/'+parseInt(p[1]):'';})();
+    const fermataEscOggi=f=>{if(!f.partenza)return false;const p=f.partenza.split('/');return parseInt(p[0])+'/'+parseInt(p[1])===docDM;};
+    const bkArrivi=(arriviData.arrivi||[]).filter(a=>isBk(a.origine));
+    const bkFermate=(arriviData.fermate||[]).filter(f=>isBk(f.origine)&&!fermataEscOggi(f));
+    // Checkout: partenze formali + fermate Booking.com con partenza=oggi (non ancora processate)
+    const bkPartenze=[
+      ...(arriviData.partenze||[]).filter(p=>isBk(p.origine)),
+      ...(arriviData.fermate||[]).filter(f=>isBk(f.origine)&&fermataEscOggi(f))
+    ];
     if(bkArrivi.length>0||bkFermate.length>0||bkPartenze.length>0){
       let html=`<div style="background:var(--surface);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
         <div style="padding:10px 14px;background:var(--accent-bg);border-bottom:1px solid #B8CEEE;display:flex;align-items:center;gap:6px;">
