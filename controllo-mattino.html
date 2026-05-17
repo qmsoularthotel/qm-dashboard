@@ -575,10 +575,17 @@ function _fmtFull(){return new Date().toLocaleDateString('it-IT',{weekday:'long'
 function _screen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
 
 // ── HOME ──────────────────────────────
+function _scrollToRoom(room){
+  if(!room)return;
+  const el=document.getElementById('rc-'+room.replace(/\s+/g,'-'));
+  if(el)el.scrollIntoView({block:'center',behavior:'instant'});
+}
 function goHome(){
+  const lastRoom=_cur;
   _screen('s-home');
-  _renderHome(); // render immediato con dati già in memoria
-  _loadPiano().then(()=>_renderHome()); // poi aggiorna dal cloud e ri-renderizza
+  _renderHome();
+  requestAnimationFrame(()=>_scrollToRoom(lastRoom));
+  _loadPiano().then(()=>{_renderHome();requestAnimationFrame(()=>_scrollToRoom(lastRoom));});
 }
 
 function _renderHome(){
@@ -647,7 +654,7 @@ function _renderHome(){
     const rParts=room.split(' ');
     const rNum=rParts.length>1?rParts.slice(1).join(' '):room;
     const rPfx=rParts.length>1?rParts[0]:'';
-    return`<div class="room-card s-${st}" onclick="openRoom('${room}')">
+    return`<div class="room-card s-${st}" id="rc-${room.replace(/\s+/g,'-')}" onclick="openRoom('${room}')">
       <div class="rc-num">
         ${rPfx?`<span class="rc-prefix">${rPfx}</span>`:''}
         <span class="rc-roomnum">${rNum}</span>
