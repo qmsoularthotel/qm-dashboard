@@ -4577,6 +4577,7 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     let jsonText=data.content[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
     arriviData=JSON.parse(jsonText);
     console.log('[Arrivi] estratti da Claude — arrivi:',arriviData.arrivi?.length,'fermate:',arriviData.fermate?.length,'partenze:',arriviData.partenze?.length);
+    console.log('[Partenze]',JSON.stringify(arriviData.partenze||[]));
     // Correggi struttura in base al numero camera
     arriviData.arrivi=fixArriviStruttura(arriviData.arrivi);
     // Salva locale + cloud
