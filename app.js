@@ -4553,7 +4553,7 @@ async function handleArriviFile(file){
 }
 Se il documento è un "Riepilogo Reception" (contiene sezioni Partenze / Arrivi / In Casa):
 - In "arrivi": includi TUTTI gli ospiti la cui data di arrivo (campo check-in nel documento) coincide con la data del documento — sia quelli nella sezione "Arrivi" sia quelli già nella sezione "In Casa" (un ospite può essere già in casa perché ha fatto check-in prima dell'upload ma è comunque arrivato oggi). REGOLA CHIAVE: confronta la data di arrivo di ogni ospite con la data del documento; se coincidono → va in "arrivi".
-- In "partenze": estrai SOLO le camere dalla sezione "Partenze" (check-out oggi, con il campo origine)
+- In "partenze": estrai TUTTE le righe della sezione "Partenze" senza eccezioni — includi camere con prefisso Art (Art 5, Art 11, Art 12…), camere con nomi geografici (Ischia, Napoli, Capri, Positano, Procida…), camere numeriche e qualsiasi altro formato. Non fermarti mai prima di aver estratto l'ultima riga della sezione. Per ogni partenza includi il campo origine.
 - In "fermate": includi SOLO gli ospiti della sezione "In Casa" la cui data di arrivo è PRECEDENTE alla data del documento (ospiti arrivati nei giorni scorsi)
 Se il documento è solo "Arrivi oggi" (senza sezioni Partenze / In Casa), metti "partenze": [] e "fermate": [].
 Per "struttura" identifica la struttura dal NUMERO/PREFISSO della camera:
@@ -4579,6 +4579,7 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     console.log('[Arrivi] estratti da Claude — arrivi:',arriviData.arrivi?.length,'fermate:',arriviData.fermate?.length,'partenze:',arriviData.partenze?.length);
     console.log('[Partenze]',JSON.stringify(arriviData.partenze||[]));
     console.log('[Fermate]',JSON.stringify(arriviData.fermate||[]));
+    console.log('[Arrivi list]',JSON.stringify(arriviData.arrivi||[]));
     // Correggi struttura in base al numero camera
     arriviData.arrivi=fixArriviStruttura(arriviData.arrivi);
     // Salva locale + cloud
