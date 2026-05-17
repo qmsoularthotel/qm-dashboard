@@ -4545,6 +4545,8 @@ async function handleArriviFile(file){
       "struttura": "BH",
       "ospite": "Bianchi Luigi",
       "pax": 2,
+      "arrivo": "17/5",
+      "partenza": "20/5",
       "origine": "Booking.com"
     }
   ]
@@ -4552,7 +4554,7 @@ async function handleArriviFile(file){
 Se il documento è un "Riepilogo Reception" (contiene sezioni Partenze / Arrivi / In Casa):
 - In "arrivi": estrai SOLO le camere dalla sezione "Arrivi" (check-in oggi)
 - In "partenze": estrai SOLO le camere dalla sezione "Partenze" (check-out oggi, con il campo origine)
-- In "fermate": estrai SOLO le camere dalla sezione "In Casa" (ospiti che si fermano, con il campo origine)
+- In "fermate": estrai TUTTE le camere dalla sezione "In Casa" con i campi arrivo e partenza (estrai le date dal documento)
 Se il documento è solo "Arrivi oggi" (senza sezioni Partenze / In Casa), metti "partenze": [] e "fermate": [].
 Per "struttura" identifica la struttura dal NUMERO/PREFISSO della camera:
 - "SA": camere numeriche 100-199 e generiche → SoulArt Hotel
