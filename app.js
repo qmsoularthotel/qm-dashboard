@@ -4567,13 +4567,14 @@ Per "origine": estrai il canale dalla colonna Origine (es. "Booking.com, it," â†
 Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8192,
         messages:[{role:'user',content:[contentBlock,{type:'text',text:prompt}]}]})
     });
     const data=await response.json();
     if(!data.content||!data.content[0])throw new Error('Risposta vuota');
     let jsonText=data.content[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
     arriviData=JSON.parse(jsonText);
+    console.log('[Arrivi] estratti da Claude â€” arrivi:',arriviData.arrivi?.length,'fermate:',arriviData.fermate?.length,'partenze:',arriviData.partenze?.length);
     // Correggi struttura in base al numero camera
     arriviData.arrivi=fixArriviStruttura(arriviData.arrivi);
     // Salva locale + cloud
