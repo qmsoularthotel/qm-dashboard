@@ -4552,9 +4552,9 @@ async function handleArriviFile(file){
   ]
 }
 Se il documento è un "Riepilogo Reception" (contiene sezioni Partenze / Arrivi / In Casa):
-- In "arrivi": estrai SOLO le camere dalla sezione "Arrivi" (check-in oggi)
+- In "arrivi": includi TUTTI gli ospiti la cui data di arrivo (campo check-in nel documento) coincide con la data del documento — sia quelli nella sezione "Arrivi" sia quelli già nella sezione "In Casa" (un ospite può essere già in casa perché ha fatto check-in prima dell'upload ma è comunque arrivato oggi). REGOLA CHIAVE: confronta la data di arrivo di ogni ospite con la data del documento; se coincidono → va in "arrivi".
 - In "partenze": estrai SOLO le camere dalla sezione "Partenze" (check-out oggi, con il campo origine)
-- In "fermate": estrai TUTTE le camere dalla sezione "In Casa" con i campi arrivo e partenza (estrai le date dal documento)
+- In "fermate": includi SOLO gli ospiti della sezione "In Casa" la cui data di arrivo è PRECEDENTE alla data del documento (ospiti arrivati nei giorni scorsi)
 Se il documento è solo "Arrivi oggi" (senza sezioni Partenze / In Casa), metti "partenze": [] e "fermate": [].
 Per "struttura" identifica la struttura dal NUMERO/PREFISSO della camera:
 - "SA": camere numeriche 100-199 e generiche → SoulArt Hotel
@@ -4590,15 +4590,10 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     arriviUpdateKpi();
     // Aggiorna RC cards: arrivi + fermate arrivate OGGI (stessa data del documento)
     (function(){
-      if(!arriviData)return;
+      // Claude ora classifica già in "arrivi" tutti gli ospiti con check-in oggi,
+      // anche se nel PDF erano già in sezione "In Casa"
+      if(!arriviData||!arriviData.arrivi||!arriviData.arrivi.length)return;
       const year=arriviData.data?parseInt(arriviData.data.split('/').pop())||new Date().getFullYear():new Date().getFullYear();
-      // Data documento nel formato "D/M" per confronto con campo arrivo
-      const docDate=arriviData.data?(d=>{const p=d.split('/');return parseInt(p[0])+'/'+parseInt(p[1]);})(arriviData.data):'';
-      const arrivoOggi=a=>{
-        if(!a.arrivo)return false;
-        const p=a.arrivo.split('/');
-        return parseInt(p[0])+'/'+parseInt(p[1])===docDate;
-      };
       const toGuest=a=>({
         camera:a.camera,
         nome:a.ospite||'',
@@ -4608,15 +4603,11 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
         checkout:a.partenza?rcFmtDate(a.partenza,year):'',
         origine:a.origine||''
       });
-      // Arrivi check-in oggi + fermate arrivate oggi (stesso giorno)
-      const allGuests=[
-        ...(arriviData.arrivi||[]),
-        ...(arriviData.fermate||[]).filter(arrivoOggi)
-      ].map(toGuest).filter(g=>g.nome&&g.nome.trim());
-      if(!allGuests.length)return;
+      const guests=(arriviData.arrivi||[]).map(toGuest).filter(g=>g.nome&&g.nome.trim());
+      if(!guests.length)return;
       document.getElementById('rcUploadZone').style.display='none';
       document.getElementById('rcProcessing').style.display='none';
-      rcRenderCards(allGuests);
+      rcRenderCards(guests);
     })();
   }catch(err){
     ucSetState('arrivi','error','Errore caricamento');
