@@ -4584,9 +4584,25 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi');
     document.getElementById('arriviLoadedDate').textContent=arriviData.data;
     setUploadTs('arriviTs');
-    // Aggiorna anche le registration cards automaticamente con lo stesso file
     arriviUpdateKpi();
-    handleRCFile(file);
+    // Aggiorna RC cards dai dati già estratti da Claude (evita ri-parse regex sul PDF)
+    (function(){
+      if(!arriviData||!arriviData.arrivi||!arriviData.arrivi.length)return;
+      const year=arriviData.data?parseInt(arriviData.data.split('/').pop())||new Date().getFullYear():new Date().getFullYear();
+      const guests=arriviData.arrivi.map(a=>({
+        camera:a.camera,
+        nome:a.ospite||'',
+        pax:parseInt(a.pax)||1,
+        trattamento:a.trattamento||'BB',
+        checkin:a.arrivo?rcFmtDate(a.arrivo,year):'',
+        checkout:a.partenza?rcFmtDate(a.partenza,year):'',
+        origine:a.origine||''
+      })).filter(g=>g.nome&&g.nome.trim());
+      if(!guests.length)return;
+      document.getElementById('rcUploadZone').style.display='none';
+      document.getElementById('rcProcessing').style.display='none';
+      rcRenderCards(guests);
+    })();
   }catch(err){
     ucSetState('arrivi','error','Errore caricamento');
   }
