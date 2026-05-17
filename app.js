@@ -4586,11 +4586,11 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     document.getElementById('arriviLoadedDate').textContent=arriviData.data;
     setUploadTs('arriviTs');
     arriviUpdateKpi();
-    // Aggiorna RC cards dai dati già estratti da Claude (evita ri-parse regex sul PDF)
+    // Aggiorna RC cards dai dati già estratti da Claude (arrivi + fermate in casa)
     (function(){
-      if(!arriviData||!arriviData.arrivi||!arriviData.arrivi.length)return;
+      if(!arriviData)return;
       const year=arriviData.data?parseInt(arriviData.data.split('/').pop())||new Date().getFullYear():new Date().getFullYear();
-      const guests=arriviData.arrivi.map(a=>({
+      const toGuest=a=>({
         camera:a.camera,
         nome:a.ospite||'',
         pax:parseInt(a.pax)||1,
@@ -4598,11 +4598,16 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
         checkin:a.arrivo?rcFmtDate(a.arrivo,year):'',
         checkout:a.partenza?rcFmtDate(a.partenza,year):'',
         origine:a.origine||''
-      })).filter(g=>g.nome&&g.nome.trim());
-      if(!guests.length)return;
+      });
+      // Arrivi prima (nuovi check-in), poi fermate (già in casa)
+      const allGuests=[
+        ...(arriviData.arrivi||[]),
+        ...(arriviData.fermate||[])
+      ].map(toGuest).filter(g=>g.nome&&g.nome.trim());
+      if(!allGuests.length)return;
       document.getElementById('rcUploadZone').style.display='none';
       document.getElementById('rcProcessing').style.display='none';
-      rcRenderCards(guests);
+      rcRenderCards(allGuests);
     })();
   }catch(err){
     ucSetState('arrivi','error','Errore caricamento');
