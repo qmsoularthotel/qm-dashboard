@@ -4821,7 +4821,7 @@ function invSetWh(wh,btn){
 }
 function invSetTab(tab){
   _invTab=tab;
-  ['stock','moves','analysis','catalog'].forEach(t=>{
+  ['stock','moves','analysis','catalog','orders'].forEach(t=>{
     const el=document.getElementById('invTab-'+t);
     if(!el)return;
     el.style.borderBottomColor=t===tab?'var(--accent)':'transparent';
@@ -4898,6 +4898,7 @@ function invRender(){
   invRenderMoves(catalog,moves);
   invRenderAnalysis(catalog,moves);
   invRenderCatalog();
+  if(_invTab==='orders')invRenderOrders();
 }
 function invRenderStock(catalog,moves){
   const el=document.getElementById('inv-stock-view');
@@ -5296,6 +5297,157 @@ function invUpdateNavBadge(){
   if(!badge){badge=document.createElement('span');badge.className='nav-badge';navEl.appendChild(badge);}
   if(total>0){badge.style.background='var(--amber)';badge.textContent=total;badge.style.display='';}
   else{badge.style.display='none';}
+}
+
+// §§ INVENTARIO — ORDINI
+let _invOrdersFilter='tutti'; // tutti | ordinato | ricevuto | annullato
+
+function invOrdersKey(){return'qm_inv_orders_'+_invWh;}
+function invOrdersGet(){try{return JSON.parse(localStorage.getItem(invOrdersKey())||'[]');}catch(e){return[];}}
+function invOrdersSave(orders){
+  const json=JSON.stringify(orders);
+  try{localStorage.setItem(invOrdersKey(),json);}catch(e){}
+  kvSet(invOrdersKey(),json).catch(()=>{});
+}
+function invOrdersRestore(){
+  // caricato da syncFromCloud, non serve logica separata
+}
+
+function invRenderOrders(){
+  const view=document.getElementById('inv-orders-view');
+  if(!view)return;
+  const orders=invOrdersGet().sort((a,b)=>b.ts-a.ts);
+  const{catalog}=invGetData();
+
+  const filtered=_invOrdersFilter==='tutti'?orders:orders.filter(o=>o.status===_invOrdersFilter);
+
+  const statusBadge=(s)=>{
+    if(s==='ordinato')return`<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;">⏳ Ordinato</span>`;
+    if(s==='ricevuto')return`<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;">✅ Ricevuto</span>`;
+    return`<span style="background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;">✗ Annullato</span>`;
+  };
+
+  const counts={ordinato:orders.filter(o=>o.status==='ordinato').length,ricevuto:orders.filter(o=>o.status==='ricevuto').length,annullato:orders.filter(o=>o.status==='annullato').length};
+
+  let h=`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      ${['tutti','ordinato','ricevuto','annullato'].map(f=>`<button onclick="invOrdersSetFilter('${f}')" style="font-size:var(--fs-xxs);padding:4px 12px;border-radius:20px;border:1px solid ${_invOrdersFilter===f?'var(--accent)':'var(--border)'};background:${_invOrdersFilter===f?'var(--accent-bg)':'var(--surface)'};color:${_invOrdersFilter===f?'var(--accent)':'var(--text-dim)'};cursor:pointer;font-weight:${_invOrdersFilter===f?'700':'400'};">${f==='tutti'?'Tutti ('+orders.length+')':f==='ordinato'?'⏳ In attesa ('+counts.ordinato+')':f==='ricevuto'?'✅ Ricevuti ('+counts.ricevuto+')':'✗ Annullati ('+counts.annullato+')'}</button>`).join('')}
+    </div>
+    <button onclick="invOrdersOpenModal()" style="font-size:var(--fs-xxs);padding:5px 14px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:600;">+ Nuovo ordine</button>
+  </div>`;
+
+  if(!filtered.length){
+    h+=`<div style="text-align:center;padding:40px;color:var(--text-dim);font-size:var(--fs-sm);">Nessun ordine${_invOrdersFilter!=='tutti'?' in questa categoria':''}.</div>`;
+  } else {
+    h+=`<div style="display:flex;flex-direction:column;gap:8px;">`;
+    filtered.forEach(o=>{
+      const prodName=catalog[o.barcode]?.name||o.name||o.barcode;
+      const unit=catalog[o.barcode]?.unit||o.unit||'pz';
+      const d=new Date(o.ts);
+      const dateStr=d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
+      const actions=o.status==='ordinato'?
+        `<button onclick="invOrdersMarkReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:3px 10px;border-radius:6px;background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;cursor:pointer;font-weight:600;">✅ Segna ricevuto</button>
+         <button onclick="invOrdersCancel('${o.id}')" style="font-size:var(--fs-xxs);padding:3px 10px;border-radius:6px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);cursor:pointer;">Annulla</button>`
+        :`<button onclick="invOrdersDelete('${o.id}')" style="font-size:var(--fs-xxs);padding:3px 8px;border-radius:6px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);cursor:pointer;">🗑</button>`;
+      h+=`<div style="background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border-light);">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:180px;">
+            <div style="font-weight:600;font-size:var(--fs-sm);color:var(--text);">${prodName}</div>
+            <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">Qtà: <b>${o.qty} ${unit}</b>${o.fornitore?' · '+o.fornitore:''}</div>
+            <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">📅 ${dateStr}${o.tsRicevuto?' → ricevuto '+((d2=new Date(o.tsRicevuto))&&d2.getDate()+'/'+(d2.getMonth()+1)+'/'+d2.getFullYear()):''}${o.note?' · '+o.note:''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            ${statusBadge(o.status)}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${actions}</div>
+          </div>
+        </div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+
+  // Modal nuovo ordine (hidden by default)
+  h+=`<div id="invOrderModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center;">
+    <div style="background:var(--bg);border-radius:16px;padding:24px;width:min(420px,94vw);box-shadow:0 8px 40px rgba(0,0,0,.2);">
+      <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:16px;">📋 Nuovo ordine</div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">PRODOTTO</label>
+        <select id="invOrdProd" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
+          <option value="">— Seleziona prodotto —</option>
+          ${Object.entries(catalog).sort((a,b)=>a[1].name.localeCompare(b[1].name)).map(([bc,p])=>`<option value="${bc}">${p.name} (${p.unit})</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <div style="flex:1;">
+          <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">QUANTITÀ</label>
+          <input id="invOrdQty" type="number" min="1" value="1" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
+        </div>
+        <div style="flex:2;">
+          <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">FORNITORE / NOTE</label>
+          <input id="invOrdFornitore" type="text" placeholder="es. Ecolab, Lidl…" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+        <button onclick="document.getElementById('invOrderModal').style.display='none'" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;">Annulla</button>
+        <button onclick="invOrdersSubmit()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;">Salva ordine</button>
+      </div>
+    </div>
+  </div>`;
+
+  view.innerHTML=h;
+}
+
+function invOrdersSetFilter(f){_invOrdersFilter=f;invRenderOrders();}
+
+function invOrdersOpenModal(){
+  const m=document.getElementById('invOrderModal');
+  if(m){m.style.display='flex';document.getElementById('invOrdProd').value='';document.getElementById('invOrdQty').value='1';document.getElementById('invOrdFornitore').value='';}
+}
+
+function invOrdersSubmit(){
+  const bc=document.getElementById('invOrdProd')?.value;
+  const qty=parseInt(document.getElementById('invOrdQty')?.value)||0;
+  const fornitore=(document.getElementById('invOrdFornitore')?.value||'').trim();
+  if(!bc||qty<1){alert('Seleziona un prodotto e inserisci una quantità valida.');return;}
+  const{catalog}=invGetData();
+  const prod=catalog[bc]||{};
+  const orders=invOrdersGet();
+  orders.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6),wh:_invWh,barcode:bc,name:prod.name||bc,unit:prod.unit||'pz',qty,fornitore,status:'ordinato',ts:Date.now()});
+  invOrdersSave(orders);
+  document.getElementById('invOrderModal').style.display='none';
+  invRenderOrders();
+}
+
+function invOrdersMarkReceived(id){
+  const orders=invOrdersGet();
+  const o=orders.find(x=>x.id===id);
+  if(!o)return;
+  o.status='ricevuto';
+  o.tsRicevuto=Date.now();
+  invOrdersSave(orders);
+  // Crea movimento 'in' automatico
+  const movKey='qm_inv_moves_'+_invWh;
+  try{
+    const moves=JSON.parse(localStorage.getItem(movKey)||'[]');
+    moves.push({id:Date.now()+'_ord',barcode:o.barcode,type:'in',qty:o.qty,ts:Date.now(),note:'Da ordine: '+(o.fornitore||'')});
+    const json=JSON.stringify(moves);
+    localStorage.setItem(movKey,json);
+    kvSet(movKey,json).catch(()=>{});
+  }catch(e){}
+  invRenderOrders();
+}
+
+function invOrdersCancel(id){
+  const orders=invOrdersGet();
+  const o=orders.find(x=>x.id===id);
+  if(o){o.status='annullato';invOrdersSave(orders);invRenderOrders();}
+}
+
+function invOrdersDelete(id){
+  if(!confirm('Eliminare questo ordine?'))return;
+  const orders=invOrdersGet().filter(o=>o.id!==id);
+  invOrdersSave(orders);
+  invRenderOrders();
 }
 
 // §§ PREFERENZE TURNI
