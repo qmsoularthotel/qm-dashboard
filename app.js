@@ -5300,121 +5300,197 @@ function invUpdateNavBadge(){
 }
 
 // §§ INVENTARIO — ORDINI
-let _invOrdersFilter='tutti'; // tutti | ordinato | ricevuto | annullato
+// Struttura ordine: { id, wh, date (DD/MM/YYYY), ts, fornitore, note, status, tsRicevuto, items:[{barcode,name,unit,qty}] }
+let _invOrdersWh='tutti';   // tutti | sa | ar
+let _invOrdersStatus='tutti'; // tutti | ordinato | ricevuto | annullato
+let _invOrdersDraft=[];      // items correnti nel modal di creazione
 
-function invOrdersKey(){return'qm_inv_orders_'+_invWh;}
-function invOrdersGet(){try{return JSON.parse(localStorage.getItem(invOrdersKey())||'[]');}catch(e){return[];}}
+const ORD_KEY='qm_inv_orders';
+function invOrdersGet(){try{return JSON.parse(localStorage.getItem(ORD_KEY)||'[]');}catch(e){return[];}}
 function invOrdersSave(orders){
   const json=JSON.stringify(orders);
-  try{localStorage.setItem(invOrdersKey(),json);}catch(e){}
-  kvSet(invOrdersKey(),json).catch(()=>{});
+  try{localStorage.setItem(ORD_KEY,json);}catch(e){}
+  kvSet(ORD_KEY,json).catch(()=>{});
 }
-function invOrdersRestore(){
-  // caricato da syncFromCloud, non serve logica separata
-}
+const _ordFmtDate=ts=>{const d=new Date(ts);return String(d.getDate()).padStart(2,'0')+'/'+(String(d.getMonth()+1).padStart(2,'0'))+'/'+d.getFullYear();};
+const _ordWhlabel=wh=>wh==='sa'?'SoulArt':'Art Resort';
 
 function invRenderOrders(){
   const view=document.getElementById('inv-orders-view');
   if(!view)return;
-  const orders=invOrdersGet().sort((a,b)=>b.ts-a.ts);
-  const{catalog}=invGetData();
+  const allOrders=invOrdersGet().sort((a,b)=>b.ts-a.ts);
+  // catalogo combinato entrambi i magazzini
+  let catSA={},catAR={};
+  try{catSA=JSON.parse(localStorage.getItem('qm_inv_catalog_sa')||'{}');}catch(e){}
+  try{catAR=JSON.parse(localStorage.getItem('qm_inv_catalog_ar')||'{}');}catch(e){}
+  const cat={...catSA,...catAR};
 
-  const filtered=_invOrdersFilter==='tutti'?orders:orders.filter(o=>o.status===_invOrdersFilter);
+  const filtered=allOrders.filter(o=>
+    (_invOrdersWh==='tutti'||o.wh===_invOrdersWh)&&
+    (_invOrdersStatus==='tutti'||o.status===_invOrdersStatus)
+  );
 
-  const statusBadge=(s)=>{
-    if(s==='ordinato')return`<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;">⏳ Ordinato</span>`;
-    if(s==='ricevuto')return`<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;">✅ Ricevuto</span>`;
-    return`<span style="background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;">✗ Annullato</span>`;
-  };
+  const sBadge=s=>s==='ordinato'
+    ?`<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;">⏳ In attesa</span>`
+    :s==='ricevuto'
+    ?`<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;">✅ Ricevuto</span>`
+    :`<span style="background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;">✗ Annullato</span>`;
+  const whBadge=wh=>`<span style="background:var(--accent-bg);color:var(--accent);padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:700;">${_ordWhlabel(wh)}</span>`;
 
-  const counts={ordinato:orders.filter(o=>o.status==='ordinato').length,ricevuto:orders.filter(o=>o.status==='ricevuto').length,annullato:orders.filter(o=>o.status==='annullato').length};
+  const filterBtn=(val,cur,label,fn)=>`<button onclick="${fn}('${val}')" style="font-size:var(--fs-xxs);padding:4px 12px;border-radius:20px;border:1px solid ${cur===val?'var(--accent)':'var(--border)'};background:${cur===val?'var(--accent-bg)':'var(--surface)'};color:${cur===val?'var(--accent)':'var(--text-dim)'};cursor:pointer;font-weight:${cur===val?'700':'400'};">${label}</button>`;
 
-  let h=`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+  let h=`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
     <div style="display:flex;gap:6px;flex-wrap:wrap;">
-      ${['tutti','ordinato','ricevuto','annullato'].map(f=>`<button onclick="invOrdersSetFilter('${f}')" style="font-size:var(--fs-xxs);padding:4px 12px;border-radius:20px;border:1px solid ${_invOrdersFilter===f?'var(--accent)':'var(--border)'};background:${_invOrdersFilter===f?'var(--accent-bg)':'var(--surface)'};color:${_invOrdersFilter===f?'var(--accent)':'var(--text-dim)'};cursor:pointer;font-weight:${_invOrdersFilter===f?'700':'400'};">${f==='tutti'?'Tutti ('+orders.length+')':f==='ordinato'?'⏳ In attesa ('+counts.ordinato+')':f==='ricevuto'?'✅ Ricevuti ('+counts.ricevuto+')':'✗ Annullati ('+counts.annullato+')'}</button>`).join('')}
+      ${filterBtn('tutti',_invOrdersWh,'Tutti gli hotel','invOrdersSetWh')}
+      ${filterBtn('sa',_invOrdersWh,'SoulArt','invOrdersSetWh')}
+      ${filterBtn('ar',_invOrdersWh,'Art Resort','invOrdersSetWh')}
     </div>
-    <button onclick="invOrdersOpenModal()" style="font-size:var(--fs-xxs);padding:5px 14px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:600;">+ Nuovo ordine</button>
+    <div style="display:flex;gap:6px;">
+      <button onclick="invOrdersPrint()" style="font-size:var(--fs-xxs);padding:5px 12px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">🖨️ Stampa lista</button>
+      <button onclick="invOrdersOpenModal()" style="font-size:var(--fs-xxs);padding:5px 14px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:600;">+ Nuovo ordine</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+    ${filterBtn('tutti',_invOrdersStatus,'Tutti','invOrdersSetStatus')}
+    ${filterBtn('ordinato',_invOrdersStatus,'⏳ In attesa','invOrdersSetStatus')}
+    ${filterBtn('ricevuto',_invOrdersStatus,'✅ Ricevuti','invOrdersSetStatus')}
+    ${filterBtn('annullato',_invOrdersStatus,'✗ Annullati','invOrdersSetStatus')}
   </div>`;
 
   if(!filtered.length){
-    h+=`<div style="text-align:center;padding:40px;color:var(--text-dim);font-size:var(--fs-sm);">Nessun ordine${_invOrdersFilter!=='tutti'?' in questa categoria':''}.</div>`;
+    h+=`<div style="text-align:center;padding:40px;color:var(--text-dim);">Nessun ordine trovato.</div>`;
   } else {
-    h+=`<div style="display:flex;flex-direction:column;gap:8px;">`;
+    h+=`<div style="display:flex;flex-direction:column;gap:10px;">`;
     filtered.forEach(o=>{
-      const prodName=catalog[o.barcode]?.name||o.name||o.barcode;
-      const unit=catalog[o.barcode]?.unit||o.unit||'pz';
-      const d=new Date(o.ts);
-      const dateStr=d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
-      const actions=o.status==='ordinato'?
-        `<button onclick="invOrdersMarkReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:3px 10px;border-radius:6px;background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;cursor:pointer;font-weight:600;">✅ Segna ricevuto</button>
-         <button onclick="invOrdersCancel('${o.id}')" style="font-size:var(--fs-xxs);padding:3px 10px;border-radius:6px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);cursor:pointer;">Annulla</button>`
-        :`<button onclick="invOrdersDelete('${o.id}')" style="font-size:var(--fs-xxs);padding:3px 8px;border-radius:6px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);cursor:pointer;">🗑</button>`;
-      h+=`<div style="background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border-light);">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-          <div style="flex:1;min-width:180px;">
-            <div style="font-weight:600;font-size:var(--fs-sm);color:var(--text);">${prodName}</div>
-            <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">Qtà: <b>${o.qty} ${unit}</b>${o.fornitore?' · '+o.fornitore:''}</div>
-            <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">📅 ${dateStr}${o.tsRicevuto?' → ricevuto '+((d2=new Date(o.tsRicevuto))&&d2.getDate()+'/'+(d2.getMonth()+1)+'/'+d2.getFullYear()):''}${o.note?' · '+o.note:''}</div>
+      const nItems=(o.items||[]).length;
+      const rcvDate=o.tsRicevuto?` → ricevuto ${_ordFmtDate(o.tsRicevuto)}`:'';
+      const itemRows=(o.items||[]).map(it=>`<tr>
+        <td style="padding:5px 8px;font-size:var(--fs-xxs);">${it.name}</td>
+        <td style="padding:5px 8px;font-size:var(--fs-xxs);text-align:right;font-weight:600;">${it.qty} ${it.unit}</td>
+      </tr>`).join('');
+      const actions=o.status==='ordinato'
+        ?`<button onclick="invOrdersMarkReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;cursor:pointer;font-weight:600;">✅ Ricevuto</button>
+           <button onclick="invOrdersCancel('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">Annulla</button>`
+        :`<button onclick="invOrdersDelete('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;" title="Elimina">🗑</button>`;
+      h+=`<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border-light);overflow:hidden;">
+        <div style="padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+              <span style="font-weight:700;font-size:var(--fs-sm);">📋 ${o.date}</span>
+              ${whBadge(o.wh)}
+              ${sBadge(o.status)}
+            </div>
+            <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${o.fornitore||'—'}${rcvDate}${o.note?' · '+o.note:''}</div>
+            <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">${nItems} ${nItems===1?'prodotto':'prodotti'}</div>
           </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-            ${statusBadge(o.status)}
-            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${actions}</div>
-          </div>
+          <div style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;">${actions}</div>
         </div>
+        <table style="width:100%;border-collapse:collapse;border-top:1px solid var(--border-light);">
+          <tbody>${itemRows}</tbody>
+        </table>
       </div>`;
     });
     h+=`</div>`;
   }
+  view.innerHTML=h;
+  view.insertAdjacentHTML('beforeend',_invOrdersModalHTML(cat));
+}
 
-  // Modal nuovo ordine (hidden by default)
-  h+=`<div id="invOrderModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center;">
-    <div style="background:var(--bg);border-radius:16px;padding:24px;width:min(420px,94vw);box-shadow:0 8px 40px rgba(0,0,0,.2);">
-      <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:16px;">📋 Nuovo ordine</div>
-      <div style="margin-bottom:12px;">
-        <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">PRODOTTO</label>
-        <select id="invOrdProd" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
-          <option value="">— Seleziona prodotto —</option>
-          ${Object.entries(catalog).sort((a,b)=>a[1].name.localeCompare(b[1].name)).map(([bc,p])=>`<option value="${bc}">${p.name} (${p.unit})</option>`).join('')}
+function _invOrdersModalHTML(cat){
+  const today=(()=>{const n=new Date();return String(n.getDate()).padStart(2,'0')+'/'+(String(n.getMonth()+1).padStart(2,'0'))+'/'+n.getFullYear();})();
+  const opts=Object.entries(cat).sort((a,b)=>a[1].name.localeCompare(b[1].name))
+    .map(([bc,p])=>`<option value="${bc}">${p.name} (${p.unit})</option>`).join('');
+  return`<div id="invOrderModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:16px;padding:24px;width:min(520px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25);">
+    <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:16px;">📋 Nuovo ordine</div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:120px;">
+        <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">DATA ORDINE</label>
+        <input id="invOrdDate" type="text" value="${today}" placeholder="DD/MM/YYYY" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
+      </div>
+      <div style="flex:1;min-width:120px;">
+        <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">HOTEL</label>
+        <select id="invOrdWh" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
+          <option value="sa">SoulArt Hotel</option>
+          <option value="ar">Art Resort</option>
         </select>
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:12px;">
-        <div style="flex:1;">
-          <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">QUANTITÀ</label>
-          <input id="invOrdQty" type="number" min="1" value="1" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
-        </div>
-        <div style="flex:2;">
-          <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">FORNITORE / NOTE</label>
-          <input id="invOrdFornitore" type="text" placeholder="es. Ecolab, Lidl…" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
-        <button onclick="document.getElementById('invOrderModal').style.display='none'" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;">Annulla</button>
-        <button onclick="invOrdersSubmit()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;">Salva ordine</button>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">FORNITORE</label>
+      <input id="invOrdFornitore" type="text" placeholder="es. Ecolab, Amazon, Lidl…" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
+    </div>
+    <div style="margin-bottom:8px;">
+      <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:6px;">PRODOTTI</label>
+      <div id="invOrdItems" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <select id="invOrdProd" style="flex:2;min-width:160px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
+          <option value="">— Seleziona prodotto —</option>${opts}
+        </select>
+        <input id="invOrdQty" type="number" min="1" value="1" style="width:70px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
+        <button onclick="invOrdersAddItem()" style="padding:7px 14px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:600;white-space:nowrap;">+ Aggiungi</button>
       </div>
     </div>
-  </div>`;
-
-  view.innerHTML=h;
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid var(--border-light);">
+      <button onclick="document.getElementById('invOrderModal').style.display='none'" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;">Annulla</button>
+      <button onclick="invOrdersSubmit()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:600;cursor:pointer;">Salva ordine</button>
+    </div>
+  </div>
+</div>`;
 }
 
-function invOrdersSetFilter(f){_invOrdersFilter=f;invRenderOrders();}
+function invOrdersSetWh(w){_invOrdersWh=w;invRenderOrders();}
+function invOrdersSetStatus(s){_invOrdersStatus=s;invRenderOrders();}
 
 function invOrdersOpenModal(){
+  _invOrdersDraft=[];
   const m=document.getElementById('invOrderModal');
-  if(m){m.style.display='flex';document.getElementById('invOrdProd').value='';document.getElementById('invOrdQty').value='1';document.getElementById('invOrdFornitore').value='';}
+  if(m){m.style.display='flex';_invOrdersDraftRender();}
 }
 
-function invOrdersSubmit(){
+function invOrdersAddItem(){
   const bc=document.getElementById('invOrdProd')?.value;
   const qty=parseInt(document.getElementById('invOrdQty')?.value)||0;
+  if(!bc||qty<1){alert('Seleziona un prodotto e inserisci quantità > 0.');return;}
+  let catSA={},catAR={};
+  try{catSA=JSON.parse(localStorage.getItem('qm_inv_catalog_sa')||'{}');}catch(e){}
+  try{catAR=JSON.parse(localStorage.getItem('qm_inv_catalog_ar')||'{}');}catch(e){}
+  const cat={...catSA,...catAR};
+  const prod=cat[bc]||{};
+  const existing=_invOrdersDraft.find(i=>i.barcode===bc);
+  if(existing){existing.qty+=qty;}
+  else{_invOrdersDraft.push({barcode:bc,name:prod.name||bc,unit:prod.unit||'pz',qty});}
+  document.getElementById('invOrdProd').value='';
+  document.getElementById('invOrdQty').value='1';
+  _invOrdersDraftRender();
+}
+
+function _invOrdersDraftRender(){
+  const el=document.getElementById('invOrdItems');
+  if(!el)return;
+  if(!_invOrdersDraft.length){el.innerHTML=`<div style="color:var(--text-dim);font-size:var(--fs-xxs);padding:6px 0;">Nessun prodotto aggiunto.</div>`;return;}
+  el.innerHTML=_invOrdersDraft.map((it,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:6px 10px;">
+    <span style="font-size:var(--fs-sm);">${it.name}</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-weight:600;font-size:var(--fs-sm);">${it.qty} ${it.unit}</span>
+      <button onclick="invOrdersRemoveItem(${i})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:2px 4px;">✕</button>
+    </div>
+  </div>`).join('');
+}
+
+function invOrdersRemoveItem(i){_invOrdersDraft.splice(i,1);_invOrdersDraftRender();}
+
+function invOrdersSubmit(){
+  const date=(document.getElementById('invOrdDate')?.value||'').trim();
+  const wh=document.getElementById('invOrdWh')?.value||'sa';
   const fornitore=(document.getElementById('invOrdFornitore')?.value||'').trim();
-  if(!bc||qty<1){alert('Seleziona un prodotto e inserisci una quantità valida.');return;}
-  const{catalog}=invGetData();
-  const prod=catalog[bc]||{};
+  if(!date){alert('Inserisci la data ordine.');return;}
+  if(!_invOrdersDraft.length){alert('Aggiungi almeno un prodotto.');return;}
   const orders=invOrdersGet();
-  orders.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6),wh:_invWh,barcode:bc,name:prod.name||bc,unit:prod.unit||'pz',qty,fornitore,status:'ordinato',ts:Date.now()});
+  orders.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6),wh,date,ts:Date.now(),fornitore,status:'ordinato',items:[..._invOrdersDraft]});
   invOrdersSave(orders);
   document.getElementById('invOrderModal').style.display='none';
+  _invOrdersDraft=[];
   invRenderOrders();
 }
 
@@ -5425,11 +5501,11 @@ function invOrdersMarkReceived(id){
   o.status='ricevuto';
   o.tsRicevuto=Date.now();
   invOrdersSave(orders);
-  // Crea movimento 'in' automatico
-  const movKey='qm_inv_moves_'+_invWh;
+  // Crea movimenti 'in' per ogni prodotto
+  const movKey='qm_inv_moves_'+o.wh;
   try{
     const moves=JSON.parse(localStorage.getItem(movKey)||'[]');
-    moves.push({id:Date.now()+'_ord',barcode:o.barcode,type:'in',qty:o.qty,ts:Date.now(),note:'Da ordine: '+(o.fornitore||'')});
+    (o.items||[]).forEach(it=>{moves.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,5),barcode:it.barcode,type:'in',qty:it.qty,ts:Date.now(),note:'Da ordine '+o.date+(o.fornitore?' - '+o.fornitore:'')});});
     const json=JSON.stringify(moves);
     localStorage.setItem(movKey,json);
     kvSet(movKey,json).catch(()=>{});
@@ -5448,6 +5524,46 @@ function invOrdersDelete(id){
   const orders=invOrdersGet().filter(o=>o.id!==id);
   invOrdersSave(orders);
   invRenderOrders();
+}
+
+function invOrdersPrint(){
+  const allOrders=invOrdersGet().sort((a,b)=>b.ts-a.ts);
+  const filtered=allOrders.filter(o=>
+    (_invOrdersWh==='tutti'||o.wh===_invOrdersWh)&&
+    (_invOrdersStatus==='tutti'||o.status===_invOrdersStatus)
+  );
+  if(!filtered.length){alert('Nessun ordine da stampare.');return;}
+  const sBadgeTxt=s=>s==='ordinato'?'In attesa':s==='ricevuto'?'Ricevuto':'Annullato';
+  const rows=filtered.map(o=>{
+    const itemList=(o.items||[]).map(it=>`<tr><td style="padding:3px 8px;font-size:11px;">${it.name}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${it.qty} ${it.unit}</td></tr>`).join('');
+    const rcv=o.tsRicevuto?` → Ricevuto ${_ordFmtDate(o.tsRicevuto)}`:'';
+    return`<div style="border:1px solid #ddd;border-radius:8px;margin-bottom:12px;overflow:hidden;break-inside:avoid;">
+      <div style="background:#f5f5f5;padding:8px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #ddd;">
+        <span style="font-weight:700;font-size:13px;">📋 ${o.date}</span>
+        <span style="background:#1E4080;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">${_ordWhlabel(o.wh)}</span>
+        <span style="font-size:11px;color:#555;">${o.fornitore||'—'}${rcv}</span>
+        <span style="margin-left:auto;font-size:11px;font-weight:600;color:${o.status==='ricevuto'?'#065F46':o.status==='ordinato'?'#92400E':'#991B1B'};">${sBadgeTxt(o.status)}</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr><th style="padding:5px 8px;font-size:11px;text-align:left;color:#555;font-weight:600;border-bottom:1px solid #eee;">Prodotto</th><th style="padding:5px 8px;font-size:11px;text-align:right;color:#555;font-weight:600;border-bottom:1px solid #eee;">Quantità</th></tr></thead>
+        <tbody>${itemList}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+  const whLabel=_invOrdersWh==='tutti'?'Tutti gli hotel':_ordWhlabel(_invOrdersWh);
+  const sLabel=_invOrdersStatus==='tutti'?'Tutti gli stati':sBadgeTxt(_invOrdersStatus);
+  const now=new Date();
+  const nowStr=now.getDate()+'/'+(now.getMonth()+1)+'/'+now.getFullYear()+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ordini Inventario</title>
+  <style>body{font-family:Arial,sans-serif;margin:20mm 15mm;color:#111;}h1{font-size:16px;margin:0 0 4px;}p{font-size:11px;color:#555;margin:0 0 16px;}@media print{body{margin:10mm 12mm;}}</style>
+  </head><body>
+  <h1>Ordini Inventario — ${whLabel}</h1>
+  <p>Filtro: ${sLabel} · ${filtered.length} ordini · Stampato il ${nowStr} · Quality Manager Paolo P.</p>
+  ${rows}
+  </body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),300);
 }
 
 // §§ PREFERENZE TURNI
