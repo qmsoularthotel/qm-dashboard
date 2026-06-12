@@ -5368,6 +5368,12 @@ function invRenderOrders(){
         <td style="padding:5px 8px;font-size:var(--fs-xxs);">${it.name}</td>
         ${it.qty?`<td style="padding:5px 8px;font-size:var(--fs-xxs);text-align:right;font-weight:600;">${it.qty}${it.unit?' '+it.unit:''}</td>`:`<td></td>`}
       </tr>`).join('');
+      // Messaggio WhatsApp
+      const waLines=(o.items||[]).map(it=>it.qty?`• ${it.name} — ${it.qty}${it.unit?' '+it.unit:''}`:`• ${it.name}`).join('\n');
+      const waText=encodeURIComponent(`📋 *Ordine del ${o.date}*\n🏨 ${_ordWhlabel(o.wh)}${o.fornitore?'\n🛒 Fornitore: '+o.fornitore:''}\n\n${waLines}\n\n_Quality Manager Paolo P._`);
+      const waBtn=`<a href="https://wa.me/393274919588?text=${waText}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#25D366;color:#fff;text-decoration:none;font-weight:600;line-height:1.4;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.122 1.528 5.857L.057 23.882a.5.5 0 0 0 .607.65l6.277-1.638A11.944 11.944 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.956 9.956 0 0 1-5.13-1.418l-.36-.214-3.733.974.998-3.647-.236-.374A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Invia</a>`;
       const actions=o.status==='ordinato'
         ?`<button onclick="invOrdersMarkReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;cursor:pointer;font-weight:600;">✅ Ricevuto</button>
            <button onclick="invOrdersCancel('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">Annulla</button>`
@@ -5383,7 +5389,7 @@ function invRenderOrders(){
             <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${o.fornitore||'—'}${rcvDate}</div>
             <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">${nItems} ${nItems===1?'prodotto':'prodotti'}</div>
           </div>
-          <div style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;">${actions}</div>
+          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">${waBtn}<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${actions}</div></div>
         </div>
         <table style="width:100%;border-collapse:collapse;border-top:1px solid var(--border-light);">
           <tbody>${itemRows}</tbody>
