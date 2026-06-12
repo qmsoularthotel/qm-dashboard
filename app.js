@@ -5360,13 +5360,13 @@ function invRenderOrders(){
   if(!filtered.length){
     h+=`<div style="text-align:center;padding:40px;color:var(--text-dim);">Nessun ordine trovato.</div>`;
   } else {
-    h+=`<div style="display:flex;flex-direction:column;gap:10px;">`;
+    h+=`<div style="display:flex;flex-direction:column;gap:10px;max-width:420px;">`;
     filtered.forEach(o=>{
       const nItems=(o.items||[]).length;
       const rcvDate=o.tsRicevuto?` → ricevuto ${_ordFmtDate(o.tsRicevuto)}`:'';
       const itemRows=(o.items||[]).map(it=>`<tr>
         <td style="padding:5px 8px;font-size:var(--fs-xxs);">${it.name}</td>
-        <td style="padding:5px 8px;font-size:var(--fs-xxs);text-align:right;font-weight:600;">${it.qty} ${it.unit}</td>
+        ${it.qty?`<td style="padding:5px 8px;font-size:var(--fs-xxs);text-align:right;font-weight:600;">${it.qty}${it.unit?' '+it.unit:''}</td>`:`<td></td>`}
       </tr>`).join('');
       const actions=o.status==='ordinato'
         ?`<button onclick="invOrdersMarkReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;cursor:pointer;font-weight:600;">✅ Ricevuto</button>
@@ -5374,13 +5374,13 @@ function invRenderOrders(){
         :`<button onclick="invOrdersDelete('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;" title="Elimina">🗑</button>`;
       h+=`<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border-light);overflow:hidden;">
         <div style="padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-          <div style="flex:1;min-width:200px;">
+          <div style="flex:1;min-width:160px;">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
               <span style="font-weight:700;font-size:var(--fs-sm);">📋 ${o.date}</span>
               ${whBadge(o.wh)}
               ${sBadge(o.status)}
             </div>
-            <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${o.fornitore||'—'}${rcvDate}${o.note?' · '+o.note:''}</div>
+            <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${o.fornitore||'—'}${rcvDate}</div>
             <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">${nItems} ${nItems===1?'prodotto':'prodotti'}</div>
           </div>
           <div style="display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;">${actions}</div>
@@ -5427,7 +5427,7 @@ function _invOrdersModalHTML(cat){
         <select id="invOrdProd" style="flex:2;min-width:160px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
           <option value="">— Seleziona prodotto —</option>${opts}
         </select>
-        <input id="invOrdQty" type="number" min="1" value="1" style="width:70px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
+        <input id="invOrdQty" type="number" min="1" placeholder="qty" style="width:60px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
         <button onclick="invOrdersAddItem()" style="padding:7px 14px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:600;white-space:nowrap;">+ Aggiungi</button>
       </div>
     </div>
@@ -5450,18 +5450,19 @@ function invOrdersOpenModal(){
 
 function invOrdersAddItem(){
   const bc=document.getElementById('invOrdProd')?.value;
-  const qty=parseInt(document.getElementById('invOrdQty')?.value)||0;
-  if(!bc||qty<1){alert('Seleziona un prodotto e inserisci quantità > 0.');return;}
+  if(!bc){alert('Seleziona un prodotto.');return;}
+  const qtyRaw=parseInt(document.getElementById('invOrdQty')?.value)||0;
+  const qty=qtyRaw>0?qtyRaw:null;
   let catSA={},catAR={};
   try{catSA=JSON.parse(localStorage.getItem('qm_inv_catalog_sa')||'{}');}catch(e){}
   try{catAR=JSON.parse(localStorage.getItem('qm_inv_catalog_ar')||'{}');}catch(e){}
   const cat={...catSA,...catAR};
   const prod=cat[bc]||{};
   const existing=_invOrdersDraft.find(i=>i.barcode===bc);
-  if(existing){existing.qty+=qty;}
+  if(existing){if(qty)existing.qty=(existing.qty||0)+qty;}
   else{_invOrdersDraft.push({barcode:bc,name:prod.name||bc,unit:prod.unit||'pz',qty});}
   document.getElementById('invOrdProd').value='';
-  document.getElementById('invOrdQty').value='1';
+  document.getElementById('invOrdQty').value='';
   _invOrdersDraftRender();
 }
 
@@ -5472,7 +5473,7 @@ function _invOrdersDraftRender(){
   el.innerHTML=_invOrdersDraft.map((it,i)=>`<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:6px 10px;">
     <span style="font-size:var(--fs-sm);">${it.name}</span>
     <div style="display:flex;align-items:center;gap:8px;">
-      <span style="font-weight:600;font-size:var(--fs-sm);">${it.qty} ${it.unit}</span>
+      ${it.qty?`<span style="font-weight:600;font-size:var(--fs-sm);">${it.qty}${it.unit?' '+it.unit:''}</span>`:''}
       <button onclick="invOrdersRemoveItem(${i})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:2px 4px;">✕</button>
     </div>
   </div>`).join('');
@@ -5535,7 +5536,7 @@ function invOrdersPrint(){
   if(!filtered.length){alert('Nessun ordine da stampare.');return;}
   const sBadgeTxt=s=>s==='ordinato'?'In attesa':s==='ricevuto'?'Ricevuto':'Annullato';
   const rows=filtered.map(o=>{
-    const itemList=(o.items||[]).map(it=>`<tr><td style="padding:3px 8px;font-size:11px;">${it.name}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${it.qty} ${it.unit}</td></tr>`).join('');
+    const itemList=(o.items||[]).map(it=>`<tr><td style="padding:3px 8px;font-size:11px;">${it.name}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${it.qty?it.qty+(it.unit?' '+it.unit:''):''}</td></tr>`).join('');
     const rcv=o.tsRicevuto?` → Ricevuto ${_ordFmtDate(o.tsRicevuto)}`:'';
     return`<div style="border:1px solid #ddd;border-radius:8px;margin-bottom:12px;overflow:hidden;break-inside:avoid;">
       <div style="background:#f5f5f5;padding:8px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #ddd;">
