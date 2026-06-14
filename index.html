@@ -1322,5 +1322,10 @@
   </div>
 </div>
 <script src="app.js?v=308-20260614"></script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+</script>
 </body>
 </html>

@@ -1020,7 +1020,7 @@ _requestWakeLock();
 _load().then(() => Promise.all([_loadPiano(), _loadArriviBooking()])).then(() => _renderHome());
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw-controllo-mattino.js')
+  navigator.serviceWorker.register('./sw.js')
     .then(r=>r.update()).catch(()=>{});
 }
 </script>
