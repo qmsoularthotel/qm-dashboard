@@ -5908,8 +5908,9 @@ function cmPrintBottle(){
     const nb=rs.bottiglia==='consumata';
     if(nc&&nb)return'both';if(nc)return'warn';if(nb)return'bottle';return'ok';
   }
-  const btl=CM_ROOMS.filter(r=>{const s=cmSt(r);return s==='bottle'||s==='both';});
-  const dndRooms=CM_ROOMS.filter(r=>state&&state[r]&&state[r].dnd);
+  const isDnd=r=>!!(state&&state[r]&&state[r].dnd);
+  const btl=CM_ROOMS.filter(r=>{const s=cmSt(r);return !isDnd(r)&&(s==='bottle'||s==='both');});
+  const dndRooms=CM_ROOMS.filter(r=>isDnd(r));
   const dateStr=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const timeStr=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
   function roomCard(r,color){
