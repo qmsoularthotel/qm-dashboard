@@ -5815,7 +5815,7 @@ async function cmLoad(){
   const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   let data=null;
   try{
-    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key));
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
     if(r.ok){const j=await r.json();if(j&&j.value){data=JSON.parse(j.value);try{localStorage.setItem(key,j.value);}catch(e){}}}
   }catch(e){}
   if(!data){
@@ -5916,7 +5916,7 @@ async function cmLoadWeeklyQC(){
   const results=await Promise.all(days.map(async dy=>{
     if(dy.isFuture)return{...dy,state:null};
     try{
-      const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(dy.key));
+      const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(dy.key),{cache:'no-store'});
       if(r.ok){const j=await r.json();if(j&&j.value)return{...dy,state:JSON.parse(j.value)};}
     }catch(e){}
     try{const s=localStorage.getItem(dy.key);if(s)return{...dy,state:JSON.parse(s)};}catch(e){}
