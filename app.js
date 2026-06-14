@@ -5898,33 +5898,30 @@ function cmRender(state,key){
 }
 
 async function cmLoadWeeklyQC(){
-  // Calcola lunedì della settimana corrente
+  // Settimana dom→sab (la domenica è il giorno 0, inizia da domenica)
   const now=new Date();
-  const dow=now.getDay();
-  const monday=new Date(now);
-  monday.setDate(now.getDate()-(dow===0?6:dow-1));
-  // Costruisce array 7 giorni lun→dom
+  const dow=now.getDay(); // 0=Dom, 6=Sab
+  const sunday=new Date(now);
+  sunday.setDate(now.getDate()-dow);
+  sunday.setHours(0,0,0,0);
   const days=Array.from({length:7},(_,i)=>{
-    const d=new Date(monday);d.setDate(monday.getDate()+i);
+    const d=new Date(sunday);d.setDate(sunday.getDate()+i);
     return{
-      label:['Lun','Mar','Mer','Gio','Ven','Sab','Dom'][i],
+      label:['Dom','Lun','Mar','Mer','Gio','Ven','Sab'][i],
       date:d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}),
       key:'qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),
       isFuture:d>now
     };
   });
-  // Fetch parallelo da KV per tutti i giorni non futuri
   const results=await Promise.all(days.map(async dy=>{
     if(dy.isFuture)return{...dy,state:null};
     try{
       const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(dy.key));
       if(r.ok){const j=await r.json();if(j&&j.value)return{...dy,state:JSON.parse(j.value)};}
     }catch(e){}
-    // Fallback localStorage
     try{const s=localStorage.getItem(dy.key);if(s)return{...dy,state:JSON.parse(s)};}catch(e){}
     return{...dy,state:null};
   }));
-  // Aggrega: per ogni camera conta giorni in cui è stata visitata e non DND
   const perRoom={};
   CM_ROOMS.forEach(r=>{perRoom[r]=0;});
   let totalChecks=0;
@@ -5941,55 +5938,51 @@ async function cmLoadWeeklyQC(){
 }
 
 function cmRenderWeeklyQC(perRoom,totalChecks,weekFrom,weekTo,days){
-  // Inserisce dopo il contenuto esistente
   const el=document.getElementById('cm-content');
   if(!el)return;
-  const roomsChecked=CM_ROOMS.filter(r=>perRoom[r]>0).sort((a,b)=>perRoom[b]-perRoom[a]);
-  // Calendario settimanale: griglia 7 col
-  const calCols=days.map(dy=>{
-    if(dy.isFuture)return`<div style="text-align:center;"><div style="font-size:9px;color:#bbb;font-weight:600;">${dy.label}</div><div style="font-size:9px;color:#bbb;">${dy.date}</div></div>`;
-    const n=dy.state?CM_ROOMS.filter(r=>dy.state[r]&&dy.state[r].visited&&!dy.state[r].dnd).length:0;
-    const col=n>0?'var(--accent)':'#D1D5DB';
-    const bg=n>0?'var(--accent-bg)':'#F9FAFB';
-    return`<div style="text-align:center;background:${bg};border-radius:6px;padding:6px 2px;">
-      <div style="font-size:9px;color:var(--text-dim);font-weight:600;">${dy.label}</div>
-      <div style="font-size:9px;color:${col};font-weight:700;">${dy.date}</div>
-      <div style="font-size:14px;font-weight:900;color:${col};line-height:1.2;">${n||'—'}</div>
-    </div>`;
-  }).join('');
-  // Righe per camera
-  const roomRows=roomsChecked.length?roomsChecked.map(r=>{
+  // Camere in ordine crescente (Art 1 → Art 22), già in ordine in CM_ROOMS
+  const roomsChecked=CM_ROOMS.filter(r=>perRoom[r]>0);
+  const roomsNot=CM_ROOMS.filter(r=>!perRoom[r]);
+  // Righe per camera: semplici e leggibili
+  const roomRows=roomsChecked.length?roomsChecked.map((r,idx)=>{
     const n=perRoom[r];
-    const bars=days.map(dy=>{
-      const done=dy.state&&dy.state[r]&&dy.state[r].visited&&!dy.state[r].dnd;
-      return`<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${done?'var(--accent)':'#E5E7EB'};"></span>`;
-    }).join('');
-    return`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;${r!==roomsChecked[0]?'border-top:1px solid var(--border-light)':''};">
-      <span style="width:46px;font-size:var(--fs-xxs);font-weight:700;color:var(--text);flex-shrink:0;">${r}</span>
-      <div style="display:flex;gap:3px;flex-shrink:0;">${bars}</div>
-      <span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);">${n}×</span>
+    const col=n>=5?'var(--green)':n>=3?'var(--accent)':'var(--text)';
+    return`<div style="display:flex;align-items:baseline;gap:10px;padding:9px 14px;${idx>0?'border-top:1px solid var(--border-light)':''};">
+      <span style="font-size:14px;font-weight:700;color:var(--text);flex:1;">${r}</span>
+      <span style="font-size:22px;font-weight:900;color:${col};line-height:1;">${n}</span>
+      <span style="font-size:11px;color:var(--text-dim);min-width:30px;">${n===1?'volta':'volte'}</span>
     </div>`;
-  }).join(''):`<div style="color:var(--text-dim);font-size:var(--fs-xxs);padding:8px 0;">Nessun controllo questa settimana.</div>`;
-  // Messaggio WhatsApp
-  const waLines=roomsChecked.map(r=>`• ${r} — ${perRoom[r]}×`).join('\n');
-  const waText=encodeURIComponent(`📊 *Report QC Settimanale*\nSettimana dal ${weekFrom} al ${weekTo}\n\n*Totale controlli: ${totalChecks} camere*\n\n${waLines||'Nessun dato'}\n\n_Quality Manager Paolo P._`);
+  }).join(''):`<div style="color:var(--text-dim);font-size:13px;padding:12px 14px;">Nessun controllo questa settimana.</div>`;
+  // Testo anteprima WhatsApp
+  const waLines=roomsChecked.map(r=>`• ${r} — ${perRoom[r]} ${perRoom[r]===1?'volta':'volte'}`).join('\n');
+  const notLine=roomsNot.length?`\n\n❌ Non visitate: ${roomsNot.join(', ')}`:'';
+  const waMsg=`📊 QC Settimanale — Art Resort\n${weekFrom} → ${weekTo}\n\n✅ ${roomsChecked.length} ${roomsChecked.length===1?'camera controllata':'camere controllate'} su ${CM_ROOMS.length}\n\n${waLines||'Nessun dato'}${notLine}\n\nQuality Manager Paolo P.`;
+  const waText=encodeURIComponent(waMsg);
   const section=document.createElement('div');
   section.style.cssText='margin-top:14px;';
   section.innerHTML=`
     <div style="background:var(--surface);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
       <div style="padding:12px 16px;background:var(--accent-bg);border-bottom:1px solid #B8CEEE;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:var(--fs-xs);font-weight:700;color:var(--accent);">📊 QC Settimanale — ${weekFrom} / ${weekTo}</span>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:var(--fs-xxs);color:var(--accent);font-weight:700;">${totalChecks} controlli totali</span>
-          <a href="https://wa.me/393274919588?text=${waText}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#25D366;color:#fff;text-decoration:none;font-weight:600;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.122 1.528 5.857L.057 23.882a.5.5 0 0 0 .607.65l6.277-1.638A11.944 11.944 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.956 9.956 0 0 1-5.13-1.418l-.36-.214-3.733.974.998-3.647-.236-.374A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-            Invia
-          </a>
+        <div>
+          <div style="font-size:var(--fs-xs);font-weight:700;color:var(--accent);">📊 QC Settimanale</div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">${weekFrom} → ${weekTo}</div>
+        </div>
+        <div style="text-align:right;">
+          <span style="font-size:22px;font-weight:900;color:var(--accent);">${roomsChecked.length}</span>
+          <span style="font-size:var(--fs-xxs);color:var(--text-dim);"> / ${CM_ROOMS.length} camere</span>
         </div>
       </div>
-      <div style="padding:10px 14px;">
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:12px;">${calCols}</div>
-        <div style="border-top:1px solid var(--border-light);padding-top:10px;">${roomRows}</div>
+      <div style="padding:4px 0;">${roomRows}</div>
+      ${roomsNot.length?`<div style="padding:8px 14px;border-top:1px solid var(--border-light);"><span style="font-size:var(--fs-xxs);color:var(--text-dim);">Non visitate: ${roomsNot.join(', ')}</span></div>`:''}
+      <div style="padding:10px 14px;border-top:1px solid var(--border-light);display:flex;flex-direction:column;gap:8px;">
+        <button onclick="const p=this.parentNode.querySelector('.qc-preview');p.style.display=p.style.display==='none'?'block':'none';this.textContent=p.style.display==='none'?'👁 Anteprima messaggio':'✕ Chiudi anteprima';" style="align-self:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:var(--fs-xxs);color:var(--text-dim);cursor:pointer;">👁 Anteprima messaggio</button>
+        <div class="qc-preview" style="display:none;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:12px;">
+          <pre style="font-family:inherit;font-size:12px;color:#166534;white-space:pre-wrap;margin:0 0 10px 0;">${waMsg.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</pre>
+          <a href="https://wa.me/393274919588?text=${waText}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-xxs);padding:8px 16px;border-radius:8px;background:#25D366;color:#fff;text-decoration:none;font-weight:700;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.122 1.528 5.857L.057 23.882a.5.5 0 0 0 .607.65l6.277-1.638A11.944 11.944 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.956 9.956 0 0 1-5.13-1.418l-.36-.214-3.733.974.998-3.647-.236-.374A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+            Invia alla Direttrice
+          </a>
+        </div>
       </div>
     </div>`;
   el.appendChild(section);
