@@ -4584,9 +4584,24 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const data=await response.json();
     if(!data.content||!data.content[0])throw new Error('Risposta vuota');
     let jsonText=data.content[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
-    arriviData=JSON.parse(jsonText);
-    // Correggi struttura in base al numero camera
-    arriviData.arrivi=fixArriviStruttura(arriviData.arrivi);
+    const newData=JSON.parse(jsonText);
+    newData.arrivi=fixArriviStruttura(newData.arrivi||[]);
+    newData.partenze=newData.partenze||[];
+    newData.fermate=newData.fermate||[];
+    // Merge se stesso giorno: arrivi e partenze si accumulano, fermate si sostituiscono
+    if(arriviData&&arriviData.data&&arriviData.data===newData.data){
+      const mergeByCamera=(existing,incoming)=>{
+        const map=new Map();
+        existing.forEach(x=>map.set(x.camera,x));
+        // Nuovi: aggiunge o aggiorna (es. cambio camera viene gestito solo se camera diversa)
+        incoming.forEach(x=>{if(!map.has(x.camera))map.set(x.camera,x);});
+        return Array.from(map.values());
+      };
+      newData.arrivi=mergeByCamera(arriviData.arrivi||[],newData.arrivi);
+      newData.partenze=mergeByCamera(arriviData.partenze||[],newData.partenze);
+      // fermate: sempre sostituite (stato corrente in casa)
+    }
+    arriviData=newData;
     // Salva locale + cloud
     arriviData._ts=Date.now();
     try{localStorage.setItem('qm_arriviData',JSON.stringify(arriviData));}catch(e){}
