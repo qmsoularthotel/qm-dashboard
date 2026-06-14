@@ -5911,16 +5911,20 @@ function cmPrintBottle(){
   const isDnd=r=>!!(state&&state[r]&&state[r].dnd);
   const btl=CM_ROOMS.filter(r=>{const s=cmSt(r);return !isDnd(r)&&(s==='bottle'||s==='both');});
   const dndRooms=CM_ROOMS.filter(r=>isDnd(r));
+  // Set camere in fermata (da arriviData globale)
+  const fermataSet=new Set((arriviData&&arriviData.fermate||[]).map(f=>(f.camera||'').trim()));
   const dateStr=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const timeStr=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
   function roomCard(r,color){
     const borderCol=color==='amber'?'#D97706':'#DC2626';
     const bgCol=color==='amber'?'#FFFBEB':'#FEF2F2';
     const note=(state&&state[r]&&state[r].note)||'';
+    const isFermata=fermataSet.has(r);
     return`<div style="border:2.5px solid ${borderCol};border-radius:8px;background:${bgCol};
       padding:10px 8px 8px;text-align:center;break-inside:avoid;display:flex;flex-direction:column;align-items:center;gap:4px;">
       <div style="width:22px;height:22px;border:2.5px solid #333;border-radius:4px;flex-shrink:0;background:#fff;"></div>
       <div style="font-size:22pt;font-weight:900;line-height:1;color:#111;">${r}</div>
+      ${isFermata?`<div style="font-size:8pt;font-weight:700;color:#1D4ED8;background:#DBEAFE;border-radius:4px;padding:2px 6px;letter-spacing:.03em;">FERMATA</div>`:''}
       ${note?`<div style="font-size:8pt;color:#888;font-style:italic;line-height:1.3;">${note.replace(/</g,'&lt;')}</div>`:''}
     </div>`;
   }
