@@ -5873,7 +5873,7 @@ function cmRender(state,key){
     ${[['💧',btl.length,'Da mettere','var(--accent)'],['✅',ok.length,'Non consumate','var(--green)'],['⭕',pnd.length,'Da visitare','var(--text-dim)']].map(([ico,n,lbl,col])=>`
     <div style="flex:1;background:var(--surface);border-radius:10px;padding:12px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06);">
       <div style="font-size:1.3rem;font-weight:800;color:${col};line-height:1;">${ico} ${n}</div>
-      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;">${lbl}</div>
+      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;">${n===1?'camera':'camere'} · ${lbl}</div>
     </div>`).join('')}
   </div>`;
   if(btl.length>0){
@@ -5888,8 +5888,8 @@ function cmRender(state,key){
   }
   if(pnd.length>0){
     h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#F3F4F6;color:var(--text-dim);">⭕ Non ancora visitate — ${pnd.length}</div>
-      <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:7px;">${pnd.map(r=>`<span style="padding:4px 12px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:#fff;color:#555;border:1.5px solid #D1D5DB;">${r}</span>`).join('')}</div>
+      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#F3F4F6;color:var(--text-dim);">⭕ Non ancora visitate — ${pnd.length} ${pnd.length===1?'camera':'camere'}</div>
+      <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:7px;">${pnd.map(r=>`<span style="padding:5px 14px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:#fff;color:#444;border:1.5px solid #C9CDD4;">${r}</span>`).join('')}</div>
     </div>`;
   }
   el.innerHTML=h;
