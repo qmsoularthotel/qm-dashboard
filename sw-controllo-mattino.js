@@ -1,50 +1,12 @@
-// Service Worker — Distribuzione Culligan app
-// Strategia: network-first per controllo-mattino.html (sempre aggiornato),
-// cache-first per asset statici (img, css, font)
-
-const CACHE = 'qm-cm-v28';
-
-self.addEventListener('install', e => {
-  self.skipWaiting(); // attiva immediatamente senza aspettare tab chiuse
-});
-
+// SW legacy — si auto-disinstalla e cancella tutte le cache.
+// Sostituito da sw.js (unificato). Questo file resta solo per la migrazione.
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim()) // prende controllo di tutti i tab aperti
-  );
-});
-
-self.addEventListener('fetch', e => {
-  const url = e.request.url;
-
-  // Richieste KV/API: sempre network, mai cache
-  if (url.includes('anthropic-proxy')) {
-    e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
-    return;
-  }
-
-  // controllo-mattino.html: sempre network, aggiorna cache, fallback se offline
-  if (url.includes('controllo-mattino.html') || url.endsWith('/controllo-mattino')) {
-    e.respondWith(
-      fetch(e.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return res;
-      }).catch(() => caches.match(e.request))
-    );
-    return;
-  }
-
-  // Asset statici (img, js, css): cache-first
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-      if (res.ok) {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-      }
-      return res;
-    }))
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.registration.unregister())
+      .then(() => self.clients.matchAll({ type: 'window' }))
+      .then(clients => clients.forEach(c => c.navigate(c.url)))
   );
 });
