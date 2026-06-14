@@ -5955,7 +5955,7 @@ function cmRenderWeeklyQC(perRoom,totalChecks,weekFrom,weekTo,days){
   }).join(''):`<div style="color:var(--text-dim);font-size:13px;padding:12px 14px;">Nessun controllo questa settimana.</div>`;
   // Testo anteprima WhatsApp
   const waLines=roomsChecked.map(r=>`• ${r} — ${perRoom[r]} ${perRoom[r]===1?'volta':'volte'}`).join('\n');
-  const waMsg=`Ciao Laura ti invio il report settimanale dei miei controlli qualità nelle camere SoulArt legati alla distribuzione delle Bottiglie Culligan.\n\n📊 ${weekFrom} → ${weekTo}\n\n✅ ${roomsChecked.length} ${roomsChecked.length===1?'camera controllata':'camere controllate'} su ${CM_ROOMS.length}\n\n${waLines||'Nessun dato'}\n\nQuality Manager Paolo P.`;
+  const waMsg=`Ciao Laura ti invio il report settimanale dei miei controlli qualità nelle camere SoulArt legati alla distribuzione delle Bottiglie Culligan.\n\n📊 Quality Check Settimanale SoulArt Hotel\n${weekFrom} → ${weekTo}\n\n✅ ${roomsChecked.length} ${roomsChecked.length===1?'camera controllata':'camere controllate'} su ${CM_ROOMS.length}\n\n${waLines||'Nessun dato'}\n\nQuality Manager Paolo P.`;
   const waText=encodeURIComponent(waMsg);
   const section=document.createElement('div');
   section.style.cssText='margin-top:14px;';
@@ -5963,7 +5963,7 @@ function cmRenderWeeklyQC(perRoom,totalChecks,weekFrom,weekTo,days){
     <div style="background:var(--surface);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
       <div style="padding:12px 16px;background:var(--accent-bg);border-bottom:1px solid #B8CEEE;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
         <div>
-          <div style="font-size:var(--fs-xs);font-weight:700;color:var(--accent);">📊 QC Settimanale</div>
+          <div style="font-size:var(--fs-xs);font-weight:700;color:var(--accent);">📊 Quality Check Settimanale SoulArt Hotel</div>
           <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">${weekFrom} → ${weekTo}</div>
         </div>
         <div style="text-align:right;">
