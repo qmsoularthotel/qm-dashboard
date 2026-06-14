@@ -5929,8 +5929,8 @@ async function cmLoadWeeklyQC(){
     if(!state)return;
     CM_ROOMS.forEach(r=>{
       const rs=state[r];
-      // QC solo quando bottiglia consumata e sostituita (non su non consumate né DND)
-      if(rs&&rs.visited&&!rs.dnd&&rs.bottiglia==='consumata'){perRoom[r]++;totalChecks++;}
+      // QC solo quando bottiglia consumata e sostituita (non su non consumate, DND né camere libere)
+      if(rs&&rs.visited&&!rs.dnd&&!rs.libera&&rs.bottiglia==='consumata'){perRoom[r]++;totalChecks++;}
     });
   });
   const weekFrom=days[0].date;
