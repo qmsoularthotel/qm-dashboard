@@ -5889,7 +5889,7 @@ function cmRender(state,key){
   if(pnd.length>0){
     h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
       <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#F3F4F6;color:var(--text-dim);">⭕ Non ancora visitate — ${pnd.length}</div>
-      <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:7px;">${pnd.map(r=>`<span style="padding:4px 12px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:#F3F4F6;color:var(--text-dim);">${r}</span>`).join('')}</div>
+      <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:7px;">${pnd.map(r=>`<span style="padding:4px 12px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:#fff;color:#555;border:1.5px solid #D1D5DB;">${r}</span>`).join('')}</div>
     </div>`;
   }
   el.innerHTML=h;
