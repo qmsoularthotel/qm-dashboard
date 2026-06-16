@@ -1371,7 +1371,7 @@ const LS={
       'rev_sent',
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr',
-      'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar',
+      'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar','inv_orders',
       'tp_seen_until'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
@@ -4930,7 +4930,15 @@ function invRender(){
   invRenderMoves(catalog,moves);
   invRenderAnalysis(catalog,moves);
   invRenderCatalog();
-  if(_invTab==='orders')invRenderOrders();
+  // Ordini: fetch fresco da KV poi render
+  (async()=>{
+    try{
+      const r=await fetch(PROXY+'/kv/get?key=qm_inv_orders',{cache:'no-store'});
+      const j=await r.json();
+      if(j&&j.value){try{localStorage.setItem('qm_inv_orders',j.value);}catch(e){}}
+    }catch(e){}
+    invRenderOrders();
+  })();
 }
 function invRenderStock(catalog,moves){
   const el=document.getElementById('inv-stock-view');
