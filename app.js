@@ -5405,8 +5405,8 @@ function invRenderOrders(){
       const nItems=(o.items||[]).length;
       const rcvDate=o.tsRicevuto?` → ricevuto ${_ordFmtDate(o.tsRicevuto)}`:'';
       const itemRows=(o.items||[]).map(it=>`<tr>
-        <td style="padding:5px 8px;font-size:var(--fs-xxs);">${it.name}</td>
-        ${it.qty?`<td style="padding:5px 8px;font-size:var(--fs-xxs);text-align:right;font-weight:600;">${it.qty}${it.unit?' '+it.unit:''}</td>`:`<td></td>`}
+        <td style="padding:7px 12px;font-size:var(--fs-xs);">${it.name}</td>
+        ${it.qty?`<td style="padding:7px 12px;font-size:var(--fs-xs);text-align:right;font-weight:700;">${it.qty}${it.unit?' '+it.unit:''}</td>`:`<td></td>`}
       </tr>`).join('');
       // Messaggio WhatsApp
       const waLines=(o.items||[]).map(it=>it.qty?`• ${it.name} — ${it.qty}${it.unit?' '+it.unit:''}`:`• ${it.name}`).join('\n');
@@ -5426,8 +5426,8 @@ function invRenderOrders(){
               ${whBadge(o.wh)}
               ${sBadge(o.status)}
             </div>
-            <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${o.fornitore||'—'}${rcvDate}</div>
-            <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">${nItems} ${nItems===1?'prodotto':'prodotti'}</div>
+            <div style="font-size:var(--fs-xs);color:var(--text-dim);">${o.fornitore||'—'}${rcvDate}</div>
+            <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:2px;">${nItems} ${nItems===1?'prodotto':'prodotti'}</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">${waBtn}<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${actions}</div></div>
         </div>
