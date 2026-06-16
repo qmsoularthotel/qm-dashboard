@@ -433,12 +433,12 @@ let _cur   = null;
 let _pianoDay    = null;
 let _pianoLoaded = false; // true se piano trovato ovunque (anche se oggi non è nel piano)
 
-const _todayKey = (() => {
+function _todayKey() {
   const d = new Date();
   return 'qm_cm_'+d.getFullYear()+'-'+
     String(d.getMonth()+1).padStart(2,'0')+'-'+
     String(d.getDate()).padStart(2,'0');
-})();
+}
 
 // ── PIANO ────────────────────────────
 function _todayDMY() {
@@ -523,23 +523,23 @@ function _pianoSt(room) {
 async function _load() {
   // 1. KV cloud — source of truth condivisa tra tutti i dispositivi
   try {
-    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(_todayKey));
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(_todayKey()));
     if(r.ok){
       const j=await r.json();
       if(j?.value){
         _state=JSON.parse(j.value);
-        try{localStorage.setItem(_todayKey,j.value);}catch(e){}
+        try{localStorage.setItem(_todayKey(),j.value);}catch(e){}
         return;
       }
     }
   }catch(e){}
   // 2. Fallback: localStorage locale
-  try{const r=localStorage.getItem(_todayKey);if(r)_state=JSON.parse(r);}catch(e){}
+  try{const r=localStorage.getItem(_todayKey());if(r)_state=JSON.parse(r);}catch(e){}
 }
 function _persist() {
-  try { localStorage.setItem(_todayKey,JSON.stringify(_state)); } catch(e){}
+  try { localStorage.setItem(_todayKey(),JSON.stringify(_state)); } catch(e){}
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({key:_todayKey,value:JSON.stringify(_state)})}).catch(()=>{});
+    body:JSON.stringify({key:_todayKey(),value:JSON.stringify(_state)})}).catch(()=>{});
 }
 function _defaultRoom() {
   const checks={};
