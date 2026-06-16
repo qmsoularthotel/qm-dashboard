@@ -230,7 +230,7 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-5-20251001',
         max_tokens:4000,
         messages:[{
           role:'user',
@@ -2547,7 +2547,7 @@ REGOLE OBBLIGATORIE:
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-5-20251001',
         max_tokens:1000,
         messages:[{
           role:'user',
@@ -2658,7 +2658,7 @@ REGOLE OBBLIGATORIE:
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
+        model:'claude-sonnet-4-5-20251001',
         max_tokens:1000,
         messages:[{
           role:'user',
@@ -3548,7 +3548,7 @@ async function revTranslate(p,gi){
     r['Recensione negativa']?'Negativo: '+r['Recensione negativa']:''
   ].filter(Boolean).join('\n');
   try{
-    const res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:`Traduci in italiano il testo di questa recensione di hotel. Rispondi SOLO con la traduzione, mantenendo la struttura:\n${r['Titolo della recensione']?'Titolo: [titolo tradotto]\n':''}${r['Recensione positiva']?'Positivo: [testo tradotto]\n':''}${r['Recensione negativa']?'Negativo: [testo tradotto]':''}\n\nTESTO ORIGINALE:\n${testo}`}]})});
+    const res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5-20251001',max_tokens:600,messages:[{role:'user',content:`Traduci in italiano il testo di questa recensione di hotel. Rispondi SOLO con la traduzione, mantenendo la struttura:\n${r['Titolo della recensione']?'Titolo: [titolo tradotto]\n':''}${r['Recensione positiva']?'Positivo: [testo tradotto]\n':''}${r['Recensione negativa']?'Negativo: [testo tradotto]':''}\n\nTESTO ORIGINALE:\n${testo}`}]})});
     const data=await res.json();
     if(data.content&&data.content[0]){
       const t=data.content[0].text;
@@ -3579,7 +3579,7 @@ async function revGenerateReply(p,gi){
   const toneDesc=tone==='formale'?'Tono istituzionale e professionale. Stile sobrio, distanza rispettosa, linguaggio formale senza eccedere in calore.':tone==='empatico'?'Tono molto empatico e vicino. Mostra comprensione autentica verso i disagi o le emozioni dell\'ospite. Usa frasi che trasmettono cura personale.':'Tono caldo, cordiale e accogliente. Professionale ma non freddo.';
   const prompt=`Sei Paolo P., Quality Manager del ${hotelName} a Napoli, un hotel 4 stelle.\n\nDevi rispondere a questa recensione Booking.com in ${lang}.\n\nDATI RECENSIONE:\n- Ospite: ${r["Nome dell'ospite"]||'Ospite'}\n- Punteggio: ${r._score}/10\n- Titolo: ${r['Titolo della recensione']||'—'}\n- Commento positivo: ${r['Recensione positiva']||'—'}\n- Commento negativo: ${r['Recensione negativa']||'—'}\n- Staff: ${r['Staff']||'—'} | Pulizia: ${r['Pulizia']||'—'} | Posizione: ${r['Posizione']||'—'} | Servizi: ${r['Servizi']||'—'} | Comfort: ${r['Comfort']||'—'} | Qualità/prezzo: ${r['Rapporto qualità/prezzo']||'—'}\n\nREGOLE OBBLIGATORIE:\n1. Non ripetere le stesse parole usate dall'ospite nella recensione\n2. Includi sempre informazioni per incentivare potenziali ospiti a prenotare\n3. Se ci sono critiche, rispondi in modo professionale senza essere difensivo\n4. ${toneDesc}\n5. Termina SEMPRE con la firma: "${firma}"\n6. Risposta diretta, senza preamboli, inizia subito rivolgendoti all'ospite`;
   try{
-    const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5-20251001',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
     const data=await response.json();
     if(data.error){ta.value='Errore API: '+data.error.type+' — '+data.error.message;btn.disabled=false;btn.innerHTML='✦ Genera risposta';return;}
     if(!data.content||!data.content[0]){ta.value='Risposta inattesa: '+JSON.stringify(data).substring(0,200);btn.disabled=false;btn.innerHTML='✦ Genera risposta';return;}
@@ -4578,11 +4578,11 @@ Per "origine": estrai il canale dalla colonna Origine (es. "Booking.com, it," �
 Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8192,
+      body:JSON.stringify({model:'claude-sonnet-4-5-20251001',max_tokens:8192,
         messages:[{role:'user',content:[contentBlock,{type:'text',text:prompt}]}]})
     });
     const data=await response.json();
-    if(!data.content||!data.content[0])throw new Error('Risposta vuota');
+    if(!data.content||!data.content[0]){console.error('[Arrivi] risposta API:',JSON.stringify(data));throw new Error(data.error?.message||'Risposta vuota');}
     let jsonText=data.content[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
     const newData=JSON.parse(jsonText);
     newData.arrivi=fixArriviStruttura(newData.arrivi||[]);
