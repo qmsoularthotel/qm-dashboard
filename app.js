@@ -1376,7 +1376,7 @@ const LS={
     let synced=0;
     await Promise.all(keys.map(async k=>{
       try{
-        const res=await fetch(PROXY+'/kv/get?key=qm_'+encodeURIComponent(k));
+        const res=await fetch(PROXY+'/kv/get?key=qm_'+encodeURIComponent(k),{cache:'no-store'});
         const json=await res.json();
         if(json.value!==null&&json.value!==undefined){
           // Per pulData/bkfData: confronta timestamp; se cloud è più recente aggiorna anche il ts visivo
@@ -2152,7 +2152,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
   setInterval(async()=>{
     try{
       // Controlla arrivi
-      const ar=await fetch(PROXY+'/kv/get?key=qm_arriviData').then(r=>r.json());
+      const ar=await fetch(PROXY+'/kv/get?key=qm_arriviData',{cache:'no-store'}).then(r=>r.json());
       if(ar.value){
         const obj=JSON.parse(ar.value);
         const localTs=parseInt(localStorage.getItem('qm_ts_arriviTs')||'0');
@@ -2170,7 +2170,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
       // Controlla piano raw
       await checkAndParsePianoRaw().catch(()=>{});
       // Controlla weekData
-      const wd=await fetch(PROXY+'/kv/get?key=qm_weekData').then(r=>r.json());
+      const wd=await fetch(PROXY+'/kv/get?key=qm_weekData',{cache:'no-store'}).then(r=>r.json());
       if(wd.value){
         const obj=JSON.parse(wd.value);
         const localTs=parseInt(localStorage.getItem('qm_ts_turnoTs')||'0');
@@ -4026,7 +4026,7 @@ function parsePianoItems(items){
 async function checkAndParsePianoRaw(){
   try{
     // Fetch direttamente da KV — non passa per localStorage (PDF troppo grande)
-    const res=await fetch(PROXY+'/kv/get?key=qm_piano_raw');
+    const res=await fetch(PROXY+'/kv/get?key=qm_piano_raw',{cache:'no-store'});
     const json=await res.json();
     if(!json.value)return;
     const raw=JSON.parse(json.value);
@@ -4335,7 +4335,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){rcCloseModal();clos
 // §§ REGISTRATION CARDS — RC (handleRCFile, rcParseGuests, rcRenderCards, checkAndParseArriviRaw)
 async function checkAndParseArriviRaw(){
   try{
-    const res=await fetch(PROXY+'/kv/get?key=qm_arrivi_raw');
+    const res=await fetch(PROXY+'/kv/get?key=qm_arrivi_raw',{cache:'no-store'});
     const json=await res.json();
     if(!json.value)return;
     const raw=JSON.parse(json.value);
