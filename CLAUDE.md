@@ -38,7 +38,7 @@ Non esiste build system, package manager o step di compilazione.
 
 Il numero di versione va incrementato:
 1. Nel `<title>` tag di `index.html` (es. `v186` → `v187`)
-2. Nel cache buster `<script src="app.js?v=235-YYYYMMDD">` in fondo a `index.html`
+2. Nel cache buster `<script src="app.js?v=317-YYYYMMDD">` in fondo a `index.html`
 
 Ad ogni modifica ad `app.js`, **aggiornare il cache buster** altrimenti il browser userà la versione vecchia.
 
@@ -672,6 +672,8 @@ Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (comm
 | Inventario vuoto al refresh pagina | `invRender()` controlla `classList.contains('active')` prima che la view sia attivata | `setView()` chiama `invRender()` quando `id === 'inventario'` |
 | Date preferenze turni mostrano "Sun" | Apps Script restituisce `String(date)` = `"Sun Apr 06 2025 22:00:00 GMT+0200"` quando `instanceof Date` fallisce | `_tpFmtDate()` usa regex su nome mese inglese; Apps Script aggiornato con `typeof v.getTime === 'function'` |
 | Calendario preferenze turni senza conteggi | `countByDay` usava stringa completa con orario come chiave | `_tpFmtDate()` normalizza prima del confronto |
+| QC settimanale mostra dati sbagliati/mancanti | `_todayKey` era `const` calcolata al caricamento — reset del mattino sovrascriveva il giorno precedente se app aperta overnight | `_todayKey` diventa funzione, calcola data corrente ad ogni chiamata (`controllo-mattino.html`) |
+| Dati giornalieri Culligan persi dopo reset | Stesso bug `_todayKey` statico | Stessa fix: `_todayKey()` come funzione |
 
 ---
 
@@ -842,3 +844,79 @@ App standalone per il breakfast manager. Funzionalità:
 - Filtri per struttura e trattamento
 - Stato servizio (servito / non servito)
 - Dati alimentati dagli arrivi giornalieri
+
+---
+
+## Distribuzione Culligan (controllo-mattino.html)
+
+### Scopo
+
+PWA mobile per il giro mattutino di distribuzione acqua Culligan. Il QM scansiona/verifica ogni camera: mette le bottiglie, controlla le amenities bagno, segna il risultato. I dati sono sincronizzati tramite KV e visibili nel dashboard (`view-controllo-mattino`).
+
+### File
+
+| File | Scopo |
+|------|-------|
+| `controllo-mattino.html` | App PWA standalone (giro distribuzione mobile) |
+| `sw.js` | Service worker unificato (network-first per HTML, cache-first per asset) |
+| `app.js` §§ CONTROLLO MATTINO | Logica dashboard: `cmLoad()`, `cmRender()`, `cmPrintBottle()`, `cmLoadWeeklyQC()`, `cmRenderWeeklyQC()` |
+| `index.html` `#view-controllo-mattino` | View dashboard con stats + QC settimanale + pulsante Stampa A4 |
+
+### Storage (Cloudflare KV + localStorage)
+
+| Chiave | Contenuto |
+|--------|-----------|
+| `qm_cm_YYYY-MM-DD` | Stato giornaliero: oggetto con camere e loro stato amenities/bottiglia |
+| `qm_piano` | Piano settimana (`{giorni:[{data:'DD/MM/YYYY', soulart:{partenze:[], fermate:[], cambi:[]}}]}`) |
+
+### `_todayKey()` — CRITICO
+
+In `controllo-mattino.html`, `_todayKey` è una **funzione** (non una costante) che calcola la chiave KV del giorno corrente al momento della chiamata:
+
+```javascript
+function _todayKey() {
+  const d = new Date();
+  return 'qm_cm_'+d.getFullYear()+'-'+
+    String(d.getMonth()+1).padStart(2,'0')+'-'+
+    String(d.getDate()).padStart(2,'0');
+}
+```
+
+**Non trasformarla mai in `const`**: se fosse calcolata al caricamento della pagina, tenere l'app aperta overnight causerebbe il reset del mattino a sovrascrivere i dati del giorno precedente invece di inizializzare il nuovo giorno.
+
+### Flusso reset giornaliero
+
+Il reset si fa **la mattina del giorno in cui si inizia il giro**, non la sera prima:
+- Reset di lunedì mattina → scrive `{}` nella chiave di **lunedì** → i dati di domenica restano intatti in KV
+- Reset di martedì mattina → scrive `{}` nella chiave di **martedì** → i dati di lunedì restano intatti in KV
+
+### QC Settimanale (`cmLoadWeeklyQC` / `cmRenderWeeklyQC`)
+
+Conta quante volte durante la settimana corrente (dom→sab) la bottiglia è stata **consumata e sostituita** per ogni camera.
+
+**Condizione di conteggio**: `rs.visited && !rs.dnd && !rs.libera && rs.bottiglia === 'consumata'`
+
+Non viene conteggiato:
+- Bottiglia non consumata (trovata ancora piena)
+- Camera DND
+- Camera libera (bottiglia non sostituita)
+
+**Logica**: legge le 7 chiavi `qm_cm_YYYY-MM-DD` della settimana da KV. Per ogni giorno con dati, incrementa il contatore per camera. Risultato finale: `perRoom[r]` = numero di sostituzioni della camera `r` nella settimana.
+
+**Pulsanti nel report**:
+- **WhatsApp albergo** — link `wa.me/393274919588` con messaggio pre-compilato (apre WhatsApp Web dell'albergo)
+- **📋 Copia testo** — copia il messaggio negli appunti per incollarlo nel WhatsApp personale
+- **👁 Anteprima** — mostra il testo del messaggio
+
+### Service Worker
+
+Versione corrente in `sw.js`: `qm-v2`. Pattern:
+- **Proxy/KV requests** → sempre network, mai cache
+- **HTML files** → network-first, aggiorna cache, fallback offline
+- **Asset statici** → cache-first
+
+`sw-controllo-mattino.js` è un file legacy che si auto-disinstalla (cancella tutte le cache e si de-registra). Non modificarlo.
+
+### Dashboard (`cmLoad()`) — KV come source of truth
+
+Legge sempre KV prima (fonte dei dati scritti da smartphone), poi fallback localStorage.
