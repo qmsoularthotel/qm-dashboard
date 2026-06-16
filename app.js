@@ -2047,8 +2047,15 @@ function refreshOverviewForDate(d){
       });
       if(idx!==-1){
         activeDay=idx;renderDay(activeDay);updateWeekNavActive();updateSidebarInfo();
+      } else {
+        // Oggi non è nella settimana caricata — mostra avviso
+        const sa=document.getElementById('staffArea');
+        if(sa)sa.innerHTML=`<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:10px;padding:14px 16px;text-align:center;">
+          <div style="font-size:1.3rem;margin-bottom:6px;">⚠️</div>
+          <div style="font-weight:700;font-size:13px;color:#92400E;margin-bottom:4px;">Turni settimana precedente</div>
+          <div style="font-size:12px;color:#92400E;">Carica il turno della settimana corrente per vedere il personale di oggi.</div>
+        </div>`;
       }
-      // Se idx===-1 usa activeDay già impostato da loadWeekData (oggi)
     }
   }catch(e){}
   // 3. Task quotidiani
