@@ -4633,7 +4633,8 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
       rcRenderCards(guests);
     })();
   }catch(err){
-    ucSetState('arrivi','error','Errore caricamento');
+    console.error('[Arrivi] errore caricamento:',err);
+    ucSetState('arrivi','error','Errore: '+(err&&err.message?err.message:'caricamento fallito'));
   }
 }
 function resetArrivi(){
