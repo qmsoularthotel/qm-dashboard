@@ -3520,13 +3520,13 @@ function revRenderList(p){
     const catMini=REV_CATS.map(c=>{const v=parseFloat(r[c]);return isNaN(v)?'':
       `<span style="font-size:var(--fs-xs);padding:3px 8px;border-radius:5px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border-light);">${c.split(' ')[0]} <strong style="color:var(--text);">${v.toFixed(1)}</strong></span>`;
     }).filter(Boolean).join('');
-    const _tone=REV_HOTELS[p].tone||'caldo';
+    const _tone=REV_HOTELS[p].tone||'bilanciato';
     const replyPanel=(!r._hasReply&&!isNotNeeded&&!isSent)?`
       <div class="rev-reply-panel" id="rp-${uid}">
         <div class="rev-tone-bar">
           <span style="font-size:10px;color:var(--text-dim);flex-shrink:0;">Tono:</span>
           <button class="rev-tone-btn${_tone==='formale'?' active':''}" data-p="${p}" data-tone="formale" onclick="revSetTone('${p}','formale',event)">Formale</button>
-          <button class="rev-tone-btn${_tone==='caldo'?' active':''}" data-p="${p}" data-tone="caldo" onclick="revSetTone('${p}','caldo',event)">Caldo</button>
+          <button class="rev-tone-btn${_tone==='bilanciato'?' active':''}" data-p="${p}" data-tone="bilanciato" onclick="revSetTone('${p}','bilanciato',event)">Bilanciato</button>
           <button class="rev-tone-btn${_tone==='empatico'?' active':''}" data-p="${p}" data-tone="empatico" onclick="revSetTone('${p}','empatico',event)">Empatico</button>
         </div>
         <textarea class="rev-reply-textarea" id="rt-${uid}" placeholder="Genera o scrivi la risposta…" oninput="revUpdateCharCount('${uid}')"></textarea>
@@ -3606,8 +3606,8 @@ async function revGenerateReply(p,gi){
   const lang=isItalian?'italiano':'inglese';
   const firma=isItalian?'Paolo P. - Quality Manager':'Best regards. Paolo P. - Quality Manager';
   const hotelName=REV_HOTELS[p].name;
-  const tone=REV_HOTELS[p].tone||'caldo';
-  const toneDesc=tone==='formale'?'Tono istituzionale e professionale. Stile sobrio, distanza rispettosa, linguaggio formale senza eccedere in calore.':tone==='empatico'?'Tono molto empatico e vicino. Mostra comprensione autentica verso i disagi o le emozioni dell\'ospite. Usa frasi che trasmettono cura personale.':'Tono caldo, cordiale e accogliente. Professionale ma non freddo.';
+  const tone=REV_HOTELS[p].tone||'bilanciato';
+  const toneDesc=tone==='formale'?'Tono istituzionale e professionale. Stile sobrio, distanza rispettosa, linguaggio formale senza eccedere in calore.':tone==='empatico'?'Tono molto empatico e vicino. Mostra comprensione autentica verso i disagi o le emozioni dell\'ospite. Usa frasi che trasmettono cura personale.':'Tono bilanciato: professionale e cordiale, né freddo né eccessivamente caloroso. Il registro naturale di un Quality Manager competente.';
   const posText=(r['Recensione positiva']||'').trim();
   const negText=(r['Recensione negativa']||'').trim();
   const hasBookingText=posText.length>3||negText.length>3;
@@ -6112,10 +6112,10 @@ function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 
 // §§ RECENSIONI EXPEDIA (revExpParseTsv, revExpHandleFile, revExpRenderStats, revExpRenderList, revExpGenerateReply)
 const REV_EXP_HOTELS={
-  sa:{name:'SoulArt Hotel',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'caldo'},
-  bh:{name:'Boutique Hotel',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'caldo'},
-  ar:{name:'Art Resort',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'caldo'},
-  sb:{name:'Santa Brigida',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'caldo'},
+  sa:{name:'SoulArt Hotel',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'bilanciato'},
+  bh:{name:'Boutique Hotel',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'bilanciato'},
+  ar:{name:'Art Resort',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'bilanciato'},
+  sb:{name:'Santa Brigida',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'bilanciato'},
 };
 const REV_EXP_REPLY_STORE={};
 
@@ -6312,13 +6312,13 @@ function revExpRenderList(p){
     const reviewHtml=reviewTxt?`<div style="font-size:var(--fs-xs);color:var(--text);line-height:1.6;margin-bottom:8px;">${reviewTxt.replace(/</g,'&lt;')}</div>`:'';
     REV_EXP_REPLY_STORE[uid]=r._hasReply?(r['review_response']||'').replace(/^"|"$/g,'').trim():'';
     const replyHtml=r._hasReply&&REV_EXP_REPLY_STORE[uid]?`<div class="rev-reply" style="margin-top:8px;"><span style="font-size:9px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;">Risposta struttura</span><div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:4px;line-height:1.6;">${REV_EXP_REPLY_STORE[uid].replace(/\n/g,'<br>').replace(/</g,'&lt;')}</div></div>`:'';
-    const _tone=h.tone||'caldo';
+    const _tone=h.tone||'bilanciato';
     const replyPanel=(!r._hasReply&&!isNotNeeded&&!isSent)?`
       <div class="rev-reply-panel" id="rep-${uid}">
         <div class="rev-tone-bar">
           <span style="font-size:10px;color:var(--text-dim);flex-shrink:0;">Tono:</span>
           <button class="rev-tone-btn${_tone==='formale'?' active':''}" onclick="revExpSetTone('${p}','formale',event)">Formale</button>
-          <button class="rev-tone-btn${_tone==='caldo'?' active':''}" onclick="revExpSetTone('${p}','caldo',event)">Caldo</button>
+          <button class="rev-tone-btn${_tone==='bilanciato'?' active':''}" onclick="revExpSetTone('${p}','bilanciato',event)">Bilanciato</button>
           <button class="rev-tone-btn${_tone==='empatico'?' active':''}" onclick="revExpSetTone('${p}','empatico',event)">Empatico</button>
         </div>
         <textarea class="rev-reply-textarea" id="ret-${uid}" placeholder="Genera o scrivi la risposta…" oninput="revExpUpdateCharCount('${uid}')"></textarea>
@@ -6354,8 +6354,8 @@ async function revExpGenerateReply(p,gi){
   const lang=italian?'italiano':'inglese';
   const firma=italian?'Paolo P. - Quality Manager':'Best regards. Paolo P. - Quality Manager';
   const hotelName=h.name;
-  const tone=h.tone||'caldo';
-  const toneDesc=tone==='formale'?'Tono istituzionale e professionale, sobrio e distaccato.':tone==='empatico'?'Tono molto empatico e vicino, mostra comprensione autentica.':'Tono caldo, cordiale e accogliente. Professionale ma non freddo.';
+  const tone=h.tone||'bilanciato';
+  const toneDesc=tone==='formale'?'Tono istituzionale e professionale, sobrio e distaccato.':tone==='empatico'?'Tono molto empatico e vicino, mostra comprensione autentica.':'Tono bilanciato: professionale e cordiale, né freddo né eccessivamente caloroso. Il registro naturale di un Quality Manager competente.';
   const platform=r._brand==='Hotels'?'Hotels.com':'Expedia';
   const hasText=(r['review_text']||'').trim().length>3;
   const prompt=`Sei Paolo P., Quality Manager del ${hotelName} a Napoli, un hotel 4 stelle con storia e carattere unico.\n\nDevi rispondere a questa recensione ${platform} in ${lang}.\n\nDATI RECENSIONE:\n- Punteggio: ${r._score}/10\n- Titolo: ${r['review_title']||'—'}\n- Testo: ${r['review_text']||'(nessun testo)'}\n\nREGOLE — rispettale tutte:\n1. APERTURA FISSA: inizia SEMPRE con "${italian?'Gentile ospite,':'Dear Guest,'}" — mai il nome (policy Expedia/Hotels.com)\n2. Ringrazia per la recensione — varia il modo ad ogni risposta\n3. LUNGHEZZA: ${hasText?'3 paragrafi. Primo: 1-2 frasi (ringraziamento + positivi). Secondo: 2-3 frasi (feedback/critiche con spiegazione e azione). Terzo: 1 frase (chiusura). Totale 5-7 frasi.':'2 frasi, varia il phrasing ad ogni risposta'}\n4. TONO: professionale e caldo come un Quality Manager di un 4 stelle\n5. CRITICHE — REGOLA FONDAMENTALE: non dire mai "hai ragione", "you are right", "you are absolutely right" — riconosci in modo neutro (es. "We take note of your observation", "We appreciate your feedback on X") poi spiega l'azione concreta\n6. PUNTEGGIO: citalo solo se è alto (9-10/10) E la recensione è entusiasta\n7. PUNTI POSITIVI: richiama aspetti specifici citati (colazione, posizione, staff, Galleria Umberto I, ascensore storico)\n8. CARATTERE STRUTTURA: valorizza Galleria Umberto I, palazzo storico napoletano, ascensore d'epoca quando pertinente\n9. CHIUSURA: invita a tornare — varia il phrasing\n10. VIETATO: non invitare mai al contatto diretto né alla prenotazione diretta (OTA)\n11. FIRMA su riga separata: "${firma}"\n12. Non ripetere le parole dell'ospite\n13. Rispondi SOLO con il testo, senza preamboli`;
