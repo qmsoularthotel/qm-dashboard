@@ -100,7 +100,10 @@
         <span class="nav-group-chevron">▾</span>
       </div>
       <div class="nav-group-items" id="expGroupItems">
+        <div class="nav-item" onclick="setView('recensioni-exp-sa',this)"><span class="nav-icon">↳</span>Expedia SoulArt</div>
+        <div class="nav-item" onclick="setView('recensioni-exp-bh',this)"><span class="nav-icon">↳</span>Expedia Boutique</div>
         <div class="nav-item" onclick="setView('recensioni-exp-ar',this)"><span class="nav-icon">↳</span>Expedia Art Resort</div>
+        <div class="nav-item" onclick="setView('recensioni-exp-sb',this)"><span class="nav-icon">↳</span>Expedia Santa Brigida</div>
       </div>
       <div class="nav-section">Staff</div>
       <div class="nav-item" onclick="setView('turni-pref',this)"><span class="nav-icon">📅</span>Preferenze Turni<span class="nav-badge" id="turniPrefBadge" style="display:none;"></span></div>
@@ -944,6 +947,126 @@
           <div class="rev-list" id="revList-sb"></div>
         </div>
       </div>
+      <div class="view" id="view-recensioni-exp-sa">
+        <div class="rev-upload-zone" id="revExpUploadZone-sa">
+          <input type="file" id="revExpFileInput-sa" accept=".csv,.tsv,.txt" style="display:none">
+          <div class="rev-upload-icon" style="color:#FFC200;">★</div>
+          <div class="rev-upload-title">Carica TSV recensioni Expedia — SoulArt Hotel</div>
+          <div class="rev-upload-sub">Expedia Partner Central → Reviews → Export</div>
+        </div>
+        <div class="rc-processing" id="revExpProcessing-sa" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
+        <div class="rc-error" id="revExpError-sa" style="display:none"></div>
+        <div id="revExpContent-sa" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div>
+              <span style="font-size:15px;font-weight:500;color:var(--text)">SoulArt Hotel — Expedia / Hotels.com</span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpPeriod-sa"></span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpTs-sa"></span>
+            </div>
+            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revExpReset('sa')">Carica altro</button>
+          </div>
+          <div class="rev-kpi-grid">
+            <div class="kpi-card" style="border-top-color:#FFC200;"><div class="kpi-card-icon" style="background:#FFF9E6;color:#997A00;">★</div><div class="kpi-label">Punteggio medio</div><div class="kpi-value" id="revExp-avg-sa" style="color:#997A00;">—</div><div class="kpi-delta" id="revExp-avg-sub-sa"></div></div>
+            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="revExp-count-sa">—</div><div class="kpi-delta up" id="revExp-count-sub-sa"></div></div>
+            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="revExp-noreply-sa">—</div><div class="kpi-delta down" id="revExp-noreply-sub-sa"></div></div>
+          </div>
+          <div class="rev-filter-bar">
+            <button class="rev-filter-btn active" id="revExpFlt-sa-all" onclick="revExpToggleFilter('sa','all')">Tutte</button>
+            <button class="rev-filter-btn" id="revExpFlt-sa-hi" onclick="revExpToggleFilter('sa','hi')">≥ 9</button>
+            <button class="rev-filter-btn" id="revExpFlt-sa-mid" onclick="revExpToggleFilter('sa','mid')">7–9</button>
+            <button class="rev-filter-btn" id="revExpFlt-sa-lo" onclick="revExpToggleFilter('sa','lo')">&lt; 7</button>
+            <button class="rev-filter-btn" id="revExpFlt-sa-noreply" onclick="revExpToggleFilter('sa','noreply')">Senza risposta</button>
+            <select class="rev-sort" onchange="revExpSort('sa',this.value)">
+              <option value="date_desc">Più recenti</option>
+              <option value="date_asc">Meno recenti</option>
+              <option value="score_desc">Score ↓</option>
+              <option value="score_asc">Score ↑</option>
+            </select>
+            <input type="search" placeholder="Cerca ospite..." oninput="revExpSearch('sa',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
+          </div>
+          <div class="rev-list" id="revExpList-sa"></div>
+        </div>
+      </div>
+      <div class="view" id="view-recensioni-exp-bh">
+        <div class="rev-upload-zone" id="revExpUploadZone-bh">
+          <input type="file" id="revExpFileInput-bh" accept=".csv,.tsv,.txt" style="display:none">
+          <div class="rev-upload-icon" style="color:#FFC200;">★</div>
+          <div class="rev-upload-title">Carica TSV recensioni Expedia — Boutique Hotel</div>
+          <div class="rev-upload-sub">Expedia Partner Central → Reviews → Export</div>
+        </div>
+        <div class="rc-processing" id="revExpProcessing-bh" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
+        <div class="rc-error" id="revExpError-bh" style="display:none"></div>
+        <div id="revExpContent-bh" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div>
+              <span style="font-size:15px;font-weight:500;color:var(--text)">Boutique Hotel — Expedia / Hotels.com</span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpPeriod-bh"></span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpTs-bh"></span>
+            </div>
+            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revExpReset('bh')">Carica altro</button>
+          </div>
+          <div class="rev-kpi-grid">
+            <div class="kpi-card" style="border-top-color:#FFC200;"><div class="kpi-card-icon" style="background:#FFF9E6;color:#997A00;">★</div><div class="kpi-label">Punteggio medio</div><div class="kpi-value" id="revExp-avg-bh" style="color:#997A00;">—</div><div class="kpi-delta" id="revExp-avg-sub-bh"></div></div>
+            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="revExp-count-bh">—</div><div class="kpi-delta up" id="revExp-count-sub-bh"></div></div>
+            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="revExp-noreply-bh">—</div><div class="kpi-delta down" id="revExp-noreply-sub-bh"></div></div>
+          </div>
+          <div class="rev-filter-bar">
+            <button class="rev-filter-btn active" id="revExpFlt-bh-all" onclick="revExpToggleFilter('bh','all')">Tutte</button>
+            <button class="rev-filter-btn" id="revExpFlt-bh-hi" onclick="revExpToggleFilter('bh','hi')">≥ 9</button>
+            <button class="rev-filter-btn" id="revExpFlt-bh-mid" onclick="revExpToggleFilter('bh','mid')">7–9</button>
+            <button class="rev-filter-btn" id="revExpFlt-bh-lo" onclick="revExpToggleFilter('bh','lo')">&lt; 7</button>
+            <button class="rev-filter-btn" id="revExpFlt-bh-noreply" onclick="revExpToggleFilter('bh','noreply')">Senza risposta</button>
+            <select class="rev-sort" onchange="revExpSort('bh',this.value)">
+              <option value="date_desc">Più recenti</option>
+              <option value="date_asc">Meno recenti</option>
+              <option value="score_desc">Score ↓</option>
+              <option value="score_asc">Score ↑</option>
+            </select>
+            <input type="search" placeholder="Cerca ospite..." oninput="revExpSearch('bh',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
+          </div>
+          <div class="rev-list" id="revExpList-bh"></div>
+        </div>
+      </div>
+      <div class="view" id="view-recensioni-exp-sb">
+        <div class="rev-upload-zone" id="revExpUploadZone-sb">
+          <input type="file" id="revExpFileInput-sb" accept=".csv,.tsv,.txt" style="display:none">
+          <div class="rev-upload-icon" style="color:#FFC200;">★</div>
+          <div class="rev-upload-title">Carica TSV recensioni Expedia — Santa Brigida</div>
+          <div class="rev-upload-sub">Expedia Partner Central → Reviews → Export</div>
+        </div>
+        <div class="rc-processing" id="revExpProcessing-sb" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
+        <div class="rc-error" id="revExpError-sb" style="display:none"></div>
+        <div id="revExpContent-sb" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div>
+              <span style="font-size:15px;font-weight:500;color:var(--text)">Santa Brigida — Expedia / Hotels.com</span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpPeriod-sb"></span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpTs-sb"></span>
+            </div>
+            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revExpReset('sb')">Carica altro</button>
+          </div>
+          <div class="rev-kpi-grid">
+            <div class="kpi-card" style="border-top-color:#FFC200;"><div class="kpi-card-icon" style="background:#FFF9E6;color:#997A00;">★</div><div class="kpi-label">Punteggio medio</div><div class="kpi-value" id="revExp-avg-sb" style="color:#997A00;">—</div><div class="kpi-delta" id="revExp-avg-sub-sb"></div></div>
+            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="revExp-count-sb">—</div><div class="kpi-delta up" id="revExp-count-sub-sb"></div></div>
+            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="revExp-noreply-sb">—</div><div class="kpi-delta down" id="revExp-noreply-sub-sb"></div></div>
+          </div>
+          <div class="rev-filter-bar">
+            <button class="rev-filter-btn active" id="revExpFlt-sb-all" onclick="revExpToggleFilter('sb','all')">Tutte</button>
+            <button class="rev-filter-btn" id="revExpFlt-sb-hi" onclick="revExpToggleFilter('sb','hi')">≥ 9</button>
+            <button class="rev-filter-btn" id="revExpFlt-sb-mid" onclick="revExpToggleFilter('sb','mid')">7–9</button>
+            <button class="rev-filter-btn" id="revExpFlt-sb-lo" onclick="revExpToggleFilter('sb','lo')">&lt; 7</button>
+            <button class="rev-filter-btn" id="revExpFlt-sb-noreply" onclick="revExpToggleFilter('sb','noreply')">Senza risposta</button>
+            <select class="rev-sort" onchange="revExpSort('sb',this.value)">
+              <option value="date_desc">Più recenti</option>
+              <option value="date_asc">Meno recenti</option>
+              <option value="score_desc">Score ↓</option>
+              <option value="score_asc">Score ↑</option>
+            </select>
+            <input type="search" placeholder="Cerca ospite..." oninput="revExpSearch('sb',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
+          </div>
+          <div class="rev-list" id="revExpList-sb"></div>
+        </div>
+      </div>
       <div class="view" id="view-recensioni-exp-ar">
         <div class="rev-upload-zone" id="revExpUploadZone-ar">
           <input type="file" id="revExpFileInput-ar" accept=".csv,.tsv,.txt" style="display:none">
@@ -1369,7 +1492,7 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=318-20260618"></script>
+<script src="app.js?v=319-20260618"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

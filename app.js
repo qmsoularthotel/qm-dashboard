@@ -365,8 +365,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Il turno viene aggiornato automaticamente</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-ar':'Expedia — Art Resort',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventari Detersivi','turni-pref':'Preferenze Turni'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-ar':'Qualità · Expedia',dvr:'Sicurezza',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventari Detersivi','turni-pref':'Preferenze Turni'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Sicurezza',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -6107,13 +6107,15 @@ function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 
 // §§ RECENSIONI EXPEDIA (revExpParseTsv, revExpHandleFile, revExpRenderStats, revExpRenderList, revExpGenerateReply)
 const REV_EXP_HOTELS={
+  sa:{name:'SoulArt Hotel',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'caldo'},
+  bh:{name:'Boutique Hotel',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'caldo'},
   ar:{name:'Art Resort',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'caldo'},
+  sb:{name:'Santa Brigida',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'caldo'},
 };
 const REV_EXP_REPLY_STORE={};
 
-// Init upload
-(function(){
-  const p='ar';
+// Init upload per tutti gli hotel Expedia
+['sa','bh','ar','sb'].forEach(p=>{
   const zone=document.getElementById('revExpUploadZone-'+p);
   const inp=document.getElementById('revExpFileInput-'+p);
   if(!zone||!inp)return;
@@ -6122,7 +6124,7 @@ const REV_EXP_REPLY_STORE={};
   zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
   zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)revExpHandleFile(p,f);});
   inp.addEventListener('change',e=>{if(e.target.files[0])revExpHandleFile(p,e.target.files[0]);inp.value='';});
-})();
+});
 
 function revExpParseTsv(text){
   const lines=text.split('\n');
