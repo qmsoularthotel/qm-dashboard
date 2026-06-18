@@ -94,6 +94,14 @@
         <div class="nav-item" onclick="setView('recensioni-ar',this)"><span class="nav-icon">↳</span>Recensioni Art Resort</div>
         <div class="nav-item" onclick="setView('recensioni-sb',this)"><span class="nav-icon">↳</span>Recensioni Santa Brigida</div>
       </div>
+      <div class="nav-group-header" id="expGroupToggle" onclick="toggleExpGroup()">
+        <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="4" fill="#FFC200"/><text x="3" y="17" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#1A1A1A">EXP</text></svg></span>
+        <span>Recensioni Expedia</span>
+        <span class="nav-group-chevron">▾</span>
+      </div>
+      <div class="nav-group-items" id="expGroupItems">
+        <div class="nav-item" onclick="setView('recensioni-exp-ar',this)"><span class="nav-icon">↳</span>Expedia Art Resort</div>
+      </div>
       <div class="nav-section">Staff</div>
       <div class="nav-item" onclick="setView('turni-pref',this)"><span class="nav-icon">📅</span>Preferenze Turni<span class="nav-badge" id="turniPrefBadge" style="display:none;"></span></div>
 
@@ -936,6 +944,46 @@
           <div class="rev-list" id="revList-sb"></div>
         </div>
       </div>
+      <div class="view" id="view-recensioni-exp-ar">
+        <div class="rev-upload-zone" id="revExpUploadZone-ar">
+          <input type="file" id="revExpFileInput-ar" accept=".csv,.tsv,.txt" style="display:none">
+          <div class="rev-upload-icon" style="color:#FFC200;">★</div>
+          <div class="rev-upload-title">Carica TSV recensioni Expedia — Art Resort</div>
+          <div class="rev-upload-sub">Expedia Partner Central → Reviews → Export</div>
+        </div>
+        <div class="rc-processing" id="revExpProcessing-ar" style="display:none"><div class="rc-spinner"></div><span style="font-size:13px;color:var(--text-muted)">Analisi recensioni...</span></div>
+        <div class="rc-error" id="revExpError-ar" style="display:none"></div>
+        <div id="revExpContent-ar" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div>
+              <span style="font-size:15px;font-weight:500;color:var(--text)">Art Resort — Expedia / Hotels.com</span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpPeriod-ar"></span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;" id="revExpTs-ar"></span>
+            </div>
+            <button class="btn-ghost" style="font-size:12px;padding:4px 10px" onclick="revExpReset('ar')">Carica altro</button>
+          </div>
+          <div class="rev-kpi-grid">
+            <div class="kpi-card" style="border-top-color:#FFC200;"><div class="kpi-card-icon" style="background:#FFF9E6;color:#997A00;">★</div><div class="kpi-label">Punteggio medio</div><div class="kpi-value" id="revExp-avg-ar" style="color:#997A00;">—</div><div class="kpi-delta" id="revExp-avg-sub-ar"></div></div>
+            <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="revExp-count-ar">—</div><div class="kpi-delta up" id="revExp-count-sub-ar"></div></div>
+            <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="revExp-noreply-ar">—</div><div class="kpi-delta down" id="revExp-noreply-sub-ar"></div></div>
+          </div>
+          <div class="rev-filter-bar">
+            <button class="rev-filter-btn active" id="revExpFlt-ar-all" onclick="revExpToggleFilter('ar','all')">Tutte</button>
+            <button class="rev-filter-btn" id="revExpFlt-ar-hi" onclick="revExpToggleFilter('ar','hi')">≥ 9</button>
+            <button class="rev-filter-btn" id="revExpFlt-ar-mid" onclick="revExpToggleFilter('ar','mid')">7–9</button>
+            <button class="rev-filter-btn" id="revExpFlt-ar-lo" onclick="revExpToggleFilter('ar','lo')">&lt; 7</button>
+            <button class="rev-filter-btn" id="revExpFlt-ar-noreply" onclick="revExpToggleFilter('ar','noreply')">Senza risposta</button>
+            <select class="rev-sort" onchange="revExpSort('ar',this.value)">
+              <option value="date_desc">Più recenti</option>
+              <option value="date_asc">Meno recenti</option>
+              <option value="score_desc">Score ↓</option>
+              <option value="score_asc">Score ↑</option>
+            </select>
+            <input type="search" placeholder="Cerca ospite..." oninput="revExpSearch('ar',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);color:var(--text);background:var(--surface);outline:none;min-width:140px;">
+          </div>
+          <div class="rev-list" id="revExpList-ar"></div>
+        </div>
+      </div>
       <div class="view" id="view-bkfsheet">
         <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:14px;align-items:stretch;margin-bottom:14px;">
           <div class="panel">
@@ -1321,7 +1369,7 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=317-20260616"></script>
+<script src="app.js?v=318-20260618"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

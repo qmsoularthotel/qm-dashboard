@@ -365,8 +365,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Il turno viene aggiornato automaticamente</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventari Detersivi','turni-pref':'Preferenze Turni'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni',dvr:'Sicurezza',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-ar':'Expedia — Art Resort',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventari Detersivi','turni-pref':'Preferenze Turni'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-ar':'Qualità · Expedia',dvr:'Sicurezza',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -523,6 +523,12 @@ function toggleRecGroup(){
   document.getElementById('recGroupToggle').classList.toggle('open',recGroupOpen);
   document.getElementById('recGroupItems').classList.toggle('open',recGroupOpen);
 }
+let expGroupOpen=false;
+function toggleExpGroup(){
+  expGroupOpen=!expGroupOpen;
+  document.getElementById('expGroupToggle').classList.toggle('open',expGroupOpen);
+  document.getElementById('expGroupItems').classList.toggle('open',expGroupOpen);
+}
 let bkfGroupOpen=false;
 function toggleBkfGroup(){
   bkfGroupOpen=!bkfGroupOpen;
@@ -532,7 +538,8 @@ function toggleBkfGroup(){
 function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id]||id;const bc=document.getElementById('breadcrumb');if(bc)bc.textContent=breadcrumbs[id]||'';const kpis=document.getElementById('topbar-kpis');if(kpis)kpis.style.display=id==='overview'?'flex':'none';if(navEl){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navEl.classList.add('active');}
   if(id==='hkpsheet'||id==='hkpsheetar'){if(!hkpGroupOpen){hkpGroupOpen=true;document.getElementById('hkpGroupToggle').classList.add('open');document.getElementById('hkpGroupItems').classList.add('open');}}
   if(id==='bkfsheet'||id==='bkfsheetar'){if(!bkfGroupOpen){bkfGroupOpen=true;document.getElementById('bkfGroupToggle').classList.add('open');document.getElementById('bkfGroupItems').classList.add('open');}}
-  if(id.startsWith('recensioni-')){if(!recGroupOpen){recGroupOpen=true;document.getElementById('recGroupToggle').classList.add('open');document.getElementById('recGroupItems').classList.add('open');}}
+  if(id.startsWith('recensioni-')&&!id.startsWith('recensioni-exp-')){if(!recGroupOpen){recGroupOpen=true;document.getElementById('recGroupToggle').classList.add('open');document.getElementById('recGroupItems').classList.add('open');}}
+  if(id.startsWith('recensioni-exp-')){if(!expGroupOpen){expGroupOpen=true;document.getElementById('expGroupToggle').classList.add('open');document.getElementById('expGroupItems').classList.add('open');}}
   try{localStorage.setItem('qm_last_view',id);}catch(e){}
   if(id==='inventario'){try{invRender();}catch(e){}}
   if(id==='turni-pref'){try{turniPrefRender();turniPrefMarkAllSeen();}catch(e){}}
@@ -2319,6 +2326,23 @@ document.querySelector('.content').addEventListener('scroll',function(){
       }
     }
     await restoreReviews();
+    // Ripristina recensioni Expedia
+    (async()=>{
+      for(const p of Object.keys(REV_EXP_HOTELS)){
+        try{
+          let tsv=localStorage.getItem('qm_rev_exp_'+p);
+          if(!tsv){try{const r=await fetch(PROXY+'/kv/get?key=qm_rev_exp_'+p,{cache:'no-store'});const j=await r.json();if(j.value){tsv=j.value;localStorage.setItem('qm_rev_exp_'+p,tsv);}}catch(e){}}
+          if(!tsv)continue;
+          const rows=revExpParseTsv(tsv);
+          if(!rows.length)continue;
+          REV_EXP_HOTELS[p].data=rows;REV_EXP_HOTELS[p].filtered=[...rows];
+          document.getElementById('revExpContent-'+p).style.display='block';
+          document.getElementById('revExpUploadZone-'+p).style.display='none';
+          revExpRenderStats(p);revExpRenderList(p);
+          try{let _t=localStorage.getItem('qm_ts_rev_exp_'+p);if(_t)setTimeout(()=>revExpShowTs(p,_t),100);}catch(e){}
+        }catch(e){}
+      }
+    })();
     // Ripristina ultima vista dopo che i dati sono pronti
     try{
       const _lv=localStorage.getItem('qm_last_view');
@@ -6080,3 +6104,282 @@ ${dndRooms.length>0?`<div class="sec-title red">🚫 Non Disturbare — verifica
   w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
 }
 function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// §§ RECENSIONI EXPEDIA (revExpParseTsv, revExpHandleFile, revExpRenderStats, revExpRenderList, revExpGenerateReply)
+const REV_EXP_HOTELS={
+  ar:{name:'Art Resort',data:[],filtered:[],filter:'all',sort:'date_desc',search:'',page:0,tone:'caldo'},
+};
+const REV_EXP_REPLY_STORE={};
+
+// Init upload
+(function(){
+  const p='ar';
+  const zone=document.getElementById('revExpUploadZone-'+p);
+  const inp=document.getElementById('revExpFileInput-'+p);
+  if(!zone||!inp)return;
+  zone.addEventListener('click',()=>inp.click());
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('dragover');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('dragover'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)revExpHandleFile(p,f);});
+  inp.addEventListener('change',e=>{if(e.target.files[0])revExpHandleFile(p,e.target.files[0]);inp.value='';});
+})();
+
+function revExpParseTsv(text){
+  const lines=text.split('\n');
+  if(!lines.length)return[];
+  const headers=lines[0].split('\t').map(h=>h.trim().replace(/^"|"$/g,''));
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const line=lines[i].trim();
+    if(!line)continue;
+    const vals=line.split('\t');
+    const obj={};
+    headers.forEach((h,j)=>obj[h]=(vals[j]||'').trim().replace(/^"(.*)"$/,'$1'));
+    if(!obj['review_rating'])continue;
+    const m=obj['review_rating'].match(/^(\d+(?:\.\d+)?)/);
+    obj._score=m?parseFloat(m[1]):0;
+    const d=new Date(obj['review_date']);
+    obj._dateTs=isNaN(d)?0:d.getTime();
+    obj._date=isNaN(d)?new Date(0):d;
+    const resp=(obj['review_response']||'').replace(/^"|"$/g,'').trim();
+    obj._hasReply=!!(resp&&resp.length>0);
+    obj._brand=obj['brand_type']||'Expedia';
+    rows.push(obj);
+  }
+  return rows.sort((a,b)=>b._dateTs-a._dateTs);
+}
+
+function revExpHandleFile(p,file){
+  document.getElementById('revExpProcessing-'+p).style.display='flex';
+  document.getElementById('revExpUploadZone-'+p).style.display='none';
+  document.getElementById('revExpError-'+p).style.display='none';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const rows=revExpParseTsv(e.target.result);
+      if(!rows.length){
+        document.getElementById('revExpProcessing-'+p).style.display='none';
+        document.getElementById('revExpUploadZone-'+p).style.display='flex';
+        document.getElementById('revExpError-'+p).style.display='block';
+        document.getElementById('revExpError-'+p).textContent='Nessuna recensione trovata nel file.';
+        return;
+      }
+      REV_EXP_HOTELS[p].data=rows;
+      REV_EXP_HOTELS[p].filtered=[...rows];
+      document.getElementById('revExpProcessing-'+p).style.display='none';
+      document.getElementById('revExpContent-'+p).style.display='block';
+      revExpRenderStats(p);
+      revExpRenderList(p);
+      try{localStorage.setItem('qm_rev_exp_'+p,e.target.result);}catch(ex){}
+      const ts=Date.now();
+      try{localStorage.setItem('qm_ts_rev_exp_'+p,String(ts));}catch(ex){}
+      try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_exp_'+p,value:e.target.result})}).catch(()=>{});}catch(ex){}
+      try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_ts_rev_exp_'+p,value:String(ts)})}).catch(()=>{});}catch(ex){}
+      revExpShowTs(p,ts);
+    }catch(err){
+      document.getElementById('revExpProcessing-'+p).style.display='none';
+      document.getElementById('revExpUploadZone-'+p).style.display='flex';
+      document.getElementById('revExpError-'+p).style.display='block';
+      document.getElementById('revExpError-'+p).textContent='Errore: '+err.message;
+    }
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function revExpShowTs(p,ts){
+  const el=document.getElementById('revExpTs-'+p);
+  if(!el||!ts)return;
+  const n=new Date(parseInt(ts));
+  const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  el.textContent='↑ '+n.getDate()+' '+ms[n.getMonth()]+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+}
+
+function revExpRenderStats(p){
+  const h=REV_EXP_HOTELS[p];
+  const data=h.data;
+  if(!data.length)return;
+  const now=Date.now();
+  const avg=weightedAvgF1(data,now);
+  document.getElementById('revExp-avg-'+p).textContent=avg?avg.toFixed(1):'—';
+  document.getElementById('revExp-count-'+p).textContent=data.length;
+  // Date range
+  const dates=data.map(r=>r._dateTs).filter(Boolean);
+  if(dates.length){
+    const fmt=ts=>{const d=new Date(ts);return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();};
+    document.getElementById('revExpPeriod-'+p).textContent=fmt(Math.min(...dates))+' – '+fmt(Math.max(...dates));
+  }
+  // No-reply count
+  const noreply=data.filter(r=>{
+    if(r._hasReply)return false;
+    const k=revExpUniqueKey(p,r);
+    return REV_SENT[k]!==true&&REV_SENT[k]!=='not_needed';
+  }).length;
+  document.getElementById('revExp-noreply-'+p).textContent=noreply;
+}
+
+function revExpApplyFilters(p){
+  const h=REV_EXP_HOTELS[p];
+  let rows=[...h.data];
+  const flt=h.filter||'all';
+  const srch=(h.search||'').toLowerCase().trim();
+  if(flt==='hi')rows=rows.filter(r=>r._score>=9);
+  else if(flt==='mid')rows=rows.filter(r=>r._score>=7&&r._score<9);
+  else if(flt==='lo')rows=rows.filter(r=>r._score<7);
+  else if(flt==='noreply')rows=rows.filter(r=>{
+    if(r._hasReply)return false;
+    return REV_SENT[revExpUniqueKey(p,r)]!==true&&REV_SENT[revExpUniqueKey(p,r)]!=='not_needed';
+  });
+  if(srch)rows=rows.filter(r=>(r['review_by']||'').toLowerCase().includes(srch)||(r['review_text']||'').toLowerCase().includes(srch));
+  const srt=h.sort||'date_desc';
+  if(srt==='date_asc')rows.sort((a,b)=>a._dateTs-b._dateTs);
+  else if(srt==='score_desc')rows.sort((a,b)=>b._score-a._score);
+  else if(srt==='score_asc')rows.sort((a,b)=>a._score-b._score);
+  else rows.sort((a,b)=>b._dateTs-a._dateTs);
+  h.filtered=rows;
+  h.page=0;
+}
+
+function revExpToggleFilter(p,type){
+  REV_EXP_HOTELS[p].filter=type;
+  ['all','hi','mid','lo','noreply'].forEach(t=>{
+    const btn=document.getElementById('revExpFlt-'+p+'-'+t);
+    if(btn)btn.classList.toggle('active',t===type);
+  });
+  revExpApplyFilters(p);revExpRenderList(p);
+}
+function revExpSort(p,val){REV_EXP_HOTELS[p].sort=val;revExpApplyFilters(p);revExpRenderList(p);}
+function revExpSearch(p,val){REV_EXP_HOTELS[p].search=val;revExpApplyFilters(p);revExpRenderList(p);}
+function revExpSetPage(p,pg){REV_EXP_HOTELS[p].page=pg;revExpRenderList(p);}
+
+function revExpUniqueKey(p,r){
+  const nome=(r['review_by']||'anonimo').trim().toLowerCase().replace(/\s+/g,'_');
+  return 'exp_'+p+'_'+nome+'_'+(r._dateTs||'0');
+}
+
+function revExpIsItalian(r){
+  const txt=(r['review_text']||'')+(r['review_title']||'');
+  if(!txt.trim())return true;
+  if(/[čšžřěůőűñßąęłśćźďťĺľŕãõæøåœ]/i.test(txt))return false;
+  return /[àèìòùÀÈÌÒÙ]|(\b(?:ottimo|buono|bello|camera|colazione|personale|posizione|pulizia|servizio|soggiorno|consiglio|esperienza|fantastico|eccellente|grazie|molto|tutto|anche|però|questo|questa|erano|abbiamo|siamo|stanza|struttura|bellissimo|purtroppo|davvero)\b)/i.test(txt);
+}
+
+function revExpUpdateCharCount(uid){
+  const ta=document.getElementById('ret-'+uid),cc=document.getElementById('recc-'+uid);
+  if(ta&&cc)cc.textContent=ta.value.length+' caratteri';
+}
+
+function revExpRenderList(p){
+  const h=REV_EXP_HOTELS[p];
+  const data=h.data;
+  const filtered=h.filtered;
+  const PAGE_SIZE=10;
+  const page=h.page||0;
+  const totalPages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
+  const pageData=filtered.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE);
+  const list=document.getElementById('revExpList-'+p);
+  if(!list)return;
+  if(!filtered.length){list.innerHTML=`<div style="text-align:center;padding:30px;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna recensione con i filtri selezionati</div>`;return;}
+  list.innerHTML=pageData.map(r=>{
+    const gi=data.indexOf(r);
+    const uid=p+'-'+gi;
+    const s=r._score;
+    const scoreColor=s>=9?'var(--green)':s>=7?'var(--amber)':'var(--red)';
+    const R=14,circ=2*Math.PI*R,arc=Math.min(s/10,1)*circ;
+    const scoreSvg=`<svg width="40" height="40" viewBox="0 0 40 40" style="flex-shrink:0;"><circle cx="20" cy="20" r="${R}" fill="none" stroke="var(--border-light)" stroke-width="2.5"/><circle cx="20" cy="20" r="${R}" fill="none" stroke="${scoreColor}" stroke-width="2.5" stroke-dasharray="${arc.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round" transform="rotate(-90 20 20)"/><text x="20" y="24" text-anchor="middle" font-size="11" font-weight="700" fill="${scoreColor}" font-family="Helvetica Neue,Arial,sans-serif">${s.toFixed(1)}</text></svg>`;
+    const d=r._date;
+    const dateStr=isNaN(d)?'—':(d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear());
+    const brandColor=r._brand==='Hotels'?'#FF5A00':'#FFC200';
+    const brandLabel=r._brand==='Hotels'?'Hotels.com':'Expedia';
+    const brandBg=r._brand==='Hotels'?'#FF5A00':'#FFC200';
+    const brandTxt=r._brand==='Hotels'?'#fff':'#1A1A1A';
+    const brandBadge=`<span style="font-size:9px;padding:2px 7px;border-radius:10px;background:${brandBg};color:${brandTxt};font-weight:700;flex-shrink:0;">${brandLabel}</span>`;
+    const italian=revExpIsItalian(r);
+    const langBadge=!italian?`<span class="rev-lang-badge">🌐 Non italiano</span>`:'';
+    const noReplyBadge=!r._hasReply?`<span class="rev-no-reply">Senza risposta</span>`:'';
+    const sentKey=revExpUniqueKey(p,r);
+    const sentVal=REV_SENT[sentKey]||false;
+    const isSent=sentVal===true;
+    const isNotNeeded=sentVal==='not_needed';
+    const sentBadge=isSent?`<span style="font-size:9px;padding:2px 8px;border-radius:10px;background:#d4edda;color:#1a7a3a;font-weight:600;">✓ Risposta inviata</span>`:isNotNeeded?`<span style="font-size:9px;padding:2px 8px;border-radius:10px;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);font-weight:600;">— Non necessaria</span>`:'';
+    const reviewTxt=r['review_text']||'';
+    const reviewHtml=reviewTxt?`<div style="font-size:var(--fs-xs);color:var(--text);line-height:1.6;margin-bottom:8px;">${reviewTxt.replace(/</g,'&lt;')}</div>`:'';
+    REV_EXP_REPLY_STORE[uid]=r._hasReply?(r['review_response']||'').replace(/^"|"$/g,'').trim():'';
+    const replyHtml=r._hasReply&&REV_EXP_REPLY_STORE[uid]?`<div class="rev-reply" style="margin-top:8px;"><span style="font-size:9px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;">Risposta struttura</span><div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:4px;line-height:1.6;">${REV_EXP_REPLY_STORE[uid].replace(/\n/g,'<br>').replace(/</g,'&lt;')}</div></div>`:'';
+    const _tone=h.tone||'caldo';
+    const replyPanel=(!r._hasReply&&!isNotNeeded&&!isSent)?`
+      <div class="rev-reply-panel" id="rep-${uid}">
+        <div class="rev-tone-bar">
+          <span style="font-size:10px;color:var(--text-dim);flex-shrink:0;">Tono:</span>
+          <button class="rev-tone-btn${_tone==='formale'?' active':''}" onclick="revExpSetTone('${p}','formale',event)">Formale</button>
+          <button class="rev-tone-btn${_tone==='caldo'?' active':''}" onclick="revExpSetTone('${p}','caldo',event)">Caldo</button>
+          <button class="rev-tone-btn${_tone==='empatico'?' active':''}" onclick="revExpSetTone('${p}','empatico',event)">Empatico</button>
+        </div>
+        <textarea class="rev-reply-textarea" id="ret-${uid}" placeholder="Genera o scrivi la risposta…" oninput="revExpUpdateCharCount('${uid}')"></textarea>
+        <div class="rev-reply-actions">
+          <button class="rev-btn-generate" id="reb-${uid}" onclick="revExpGenerateReply('${p}',${gi})">✦ Genera risposta</button>
+          <button class="rev-btn-copy" id="rec-${uid}" onclick="revExpCopyReply('${uid}')">Copia</button>
+          <button onclick="revExpMarkSent('${p}',${gi})" style="background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);border-radius:5px;padding:6px 13px;font-size:var(--fs-xs);cursor:pointer;" id="res-${uid}">Segna inviata</button>
+          <span class="rev-char-count" id="recc-${uid}"></span>
+        </div>
+      </div>`:(isSent||isNotNeeded)?`<div style="margin-top:6px;">${sentBadge}</div>`:'';
+    return`<div class="rev-card">
+      <div class="rev-card-header">${scoreSvg}<span class="rev-guest">${r['review_by']||'Ospite anonimo'}</span>${brandBadge}${noReplyBadge}${sentBadge}${langBadge}<span class="rev-date">${dateStr}</span></div>
+      ${r['review_title']?`<div class="rev-title">${r['review_title'].replace(/</g,'&lt;')}</div>`:''}
+      ${reviewHtml}${replyHtml}${replyPanel}
+    </div>`;
+  }).join('')+(totalPages>1?`<div class="rev-pagination"><button class="rev-pg-btn" onclick="revExpSetPage('${p}',${page-1})" ${page===0?'disabled':''}>← Prec</button><span class="rev-pg-info">Pagina ${page+1} di ${totalPages} · ${filtered.length} recensioni</span><button class="rev-pg-btn" onclick="revExpSetPage('${p}',${page+1})" ${page>=totalPages-1?'disabled':''}>Succ →</button></div>`:'');
+}
+
+function revExpSetTone(p,tone,evt){
+  if(evt)evt.stopPropagation();
+  REV_EXP_HOTELS[p].tone=tone;
+  revExpRenderList(p);
+}
+
+async function revExpGenerateReply(p,gi){
+  const h=REV_EXP_HOTELS[p];
+  const r=h.data[gi];if(!r)return;
+  const uid=p+'-'+gi;
+  const btn=document.getElementById('reb-'+uid),ta=document.getElementById('ret-'+uid);
+  if(!btn||!ta)return;
+  btn.disabled=true;btn.innerHTML='<div class="rev-gen-spinner"></div> Generazione…';
+  const italian=revExpIsItalian(r);
+  const lang=italian?'italiano':'inglese';
+  const firma=italian?'Paolo P. - Quality Manager':'Best regards. Paolo P. - Quality Manager';
+  const hotelName=h.name;
+  const tone=h.tone||'caldo';
+  const toneDesc=tone==='formale'?'Tono istituzionale e professionale, sobrio e distaccato.':tone==='empatico'?'Tono molto empatico e vicino, mostra comprensione autentica.':'Tono caldo, cordiale e accogliente. Professionale ma non freddo.';
+  const platform=r._brand==='Hotels'?'Hotels.com':'Expedia';
+  const prompt=`Sei Paolo P., Quality Manager del ${hotelName} a Napoli, un hotel 4 stelle.\n\nDevi rispondere a questa recensione ${platform} in ${lang}.\n\nDATI RECENSIONE:\n- Ospite: ${r['review_by']||'Ospite'}\n- Punteggio: ${r._score}/10\n- Titolo: ${r['review_title']||'—'}\n- Testo: ${r['review_text']||'—'}\n\nREGOLE OBBLIGATORIE:\n1. Non ripetere le stesse parole usate dall'ospite\n2. Includi sempre un incentivo alla prenotazione futura\n3. Se ci sono critiche, rispondi in modo professionale senza essere difensivo\n4. ${toneDesc}\n5. Termina SEMPRE con la firma: "${firma}"\n6. Inizia subito rivolgendoti all'ospite, senza preamboli`;
+  try{
+    const res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const data=await res.json();
+    if(data.error){ta.value='Errore API: '+data.error.type+' — '+data.error.message;btn.disabled=false;btn.innerHTML='✦ Genera risposta';return;}
+    if(!data.content||!data.content[0]){ta.value='Risposta inattesa.';btn.disabled=false;btn.innerHTML='✦ Genera risposta';return;}
+    ta.value=data.content[0].text;revExpUpdateCharCount(uid);btn.disabled=false;btn.innerHTML='✦ Rigenera';
+  }catch(e){ta.value='Errore di rete: '+e.message;btn.disabled=false;btn.innerHTML='✦ Genera risposta';}
+}
+
+function revExpCopyReply(uid){
+  const ta=document.getElementById('ret-'+uid),btn=document.getElementById('rec-'+uid);
+  if(!ta||!ta.value.trim())return;
+  navigator.clipboard.writeText(ta.value).then(()=>{btn.textContent='✓ Copiato';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copia';btn.classList.remove('copied');},2000);}).catch(()=>{ta.select();document.execCommand('copy');btn.textContent='✓ Copiato';setTimeout(()=>{btn.textContent='Copia';},2000);});
+}
+
+function revExpMarkSent(p,gi){
+  const r=REV_EXP_HOTELS[p].data[gi];if(!r)return;
+  const key=revExpUniqueKey(p,r);
+  REV_SENT[key]=!REV_SENT[key];
+  try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
+  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
+  revExpRenderList(p);revExpRenderStats(p);
+}
+
+function revExpReset(p){
+  REV_EXP_HOTELS[p].data=[];REV_EXP_HOTELS[p].filtered=[];REV_EXP_HOTELS[p].page=0;REV_EXP_HOTELS[p].filter='all';
+  document.getElementById('revExpContent-'+p).style.display='none';
+  document.getElementById('revExpUploadZone-'+p).style.display='flex';
+  document.getElementById('revExpError-'+p).style.display='none';
+  try{localStorage.removeItem('qm_rev_exp_'+p);}catch(e){}
+  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_exp_'+p,value:''})}).catch(()=>{});}catch(e){}
+}
