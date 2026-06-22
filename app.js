@@ -5432,7 +5432,7 @@ function invRenderOrders(){
     h+=`<div style="display:flex;flex-direction:column;gap:10px;max-width:420px;">`;
     filtered.forEach(o=>{
       const nItems=(o.items||[]).length;
-      const rcvDate=o.tsRicevuto?` → ricevuto ${_ordFmtDate(o.tsRicevuto)}`:'';
+      const rcvDate=o.tsRicevuto?` → ricevuto ${_ordFmtDate(o.tsRicevuto)}${o.ddt?' ('+o.ddt+')':''}`:'';
       const itemRows=(o.items||[]).map(it=>`<tr>
         <td style="padding:7px 12px;font-size:var(--fs-xs);">${it.name}</td>
         ${it.qty?`<td style="padding:7px 12px;font-size:var(--fs-xs);text-align:right;font-weight:700;">${it.qty}${it.unit?' '+it.unit:''}</td>`:`<td></td>`}
@@ -5574,18 +5574,71 @@ function invOrdersMarkReceived(id){
   const orders=invOrdersGet();
   const o=orders.find(x=>x.id===id);
   if(!o)return;
-  o.status='ricevuto';
-  o.tsRicevuto=Date.now();
-  invOrdersSave(orders);
-  // Crea movimenti 'in' per ogni prodotto
+  // Apre modal DDT invece di caricare automaticamente
+  let rows=(o.items||[]).map((it,i)=>`
+    <tr>
+      <td style="padding:6px 8px;font-size:var(--fs-xs);">${it.name}</td>
+      <td style="padding:6px 8px;font-size:var(--fs-xs);color:var(--text-dim);text-align:center;">${it.qty||''} ${it.unit||''}</td>
+      <td style="padding:6px 8px;text-align:center;">
+        <input type="number" min="0" step="1" value="${it.qty||0}" id="ddt_qty_${i}"
+          style="width:70px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);text-align:center;">
+      </td>
+    </tr>`).join('');
+  const modal=document.createElement('div');
+  modal.id='ddt-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  modal.innerHTML=`
+    <div style="background:var(--surface);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.25);">
+      <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:4px;">📦 Ricevimento merce</div>
+      <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:14px;">Ordine ${o.date}${o.fornitore?' · '+o.fornitore:''}</div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:var(--fs-xs);font-weight:600;display:block;margin-bottom:4px;">N° DDT / documento di trasporto</label>
+        <input id="ddt_num" type="text" placeholder="es. DDT 2026/1234" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);">
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="padding:6px 8px;font-size:var(--fs-xxs);text-align:left;color:var(--text-dim);">Prodotto</th>
+            <th style="padding:6px 8px;font-size:var(--fs-xxs);text-align:center;color:var(--text-dim);">Ordinato</th>
+            <th style="padding:6px 8px;font-size:var(--fs-xxs);text-align:center;color:var(--text-dim);">Consegnato</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="document.getElementById('ddt-modal').remove()" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:var(--fs-xs);cursor:pointer;">Annulla</button>
+        <button onclick="invOrdersConfirmDDT('${id}')" style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:var(--fs-xs);font-weight:600;cursor:pointer;">✅ Conferma ricezione</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function invOrdersConfirmDDT(id){
+  const orders=invOrdersGet();
+  const o=orders.find(x=>x.id===id);
+  if(!o)return;
+  const ddtNum=(document.getElementById('ddt_num')?.value||'').trim();
   const movKey='qm_inv_moves_'+o.wh;
   try{
     const moves=JSON.parse(localStorage.getItem(movKey)||'[]');
-    (o.items||[]).forEach(it=>{moves.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,5),barcode:it.barcode,type:'in',qty:it.qty,ts:Date.now(),note:'Da ordine '+o.date+(o.fornitore?' - '+o.fornitore:'')});});
+    (o.items||[]).forEach((it,i)=>{
+      const qtyEl=document.getElementById('ddt_qty_'+i);
+      const qty=parseFloat(qtyEl?.value||0);
+      if(qty>0) moves.push({
+        id:Date.now()+'_'+Math.random().toString(36).slice(2,5),
+        barcode:it.barcode,type:'in',qty,ts:Date.now(),
+        note:'DDT'+(ddtNum?' '+ddtNum:'')+' · '+o.date+(o.fornitore?' · '+o.fornitore:'')
+      });
+    });
     const json=JSON.stringify(moves);
     localStorage.setItem(movKey,json);
     kvSet(movKey,json).catch(()=>{});
   }catch(e){}
+  o.status='ricevuto';
+  o.tsRicevuto=Date.now();
+  if(ddtNum) o.ddt=ddtNum;
+  invOrdersSave(orders);
+  document.getElementById('ddt-modal')?.remove();
   invRenderOrders();
 }
 
