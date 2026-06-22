@@ -194,6 +194,7 @@ async function handleTurniFile(file){
     const isPDF=file.type==='application/pdf';
     const mediaType=isPDF?'application/pdf':file.type||'image/jpeg';
     const staff=ALL_STAFF;
+    const foStaff=Object.values(DEPTS).filter((_,i)=>i!==1).flatMap(d=>d.members);
     const prompt=`Sei un assistente che analizza planning settimanali di turni per un hotel.
 Analizza questa immagine/PDF del planning e restituisci SOLO un oggetto JSON valido con questa struttura esatta:
 {
@@ -210,17 +211,17 @@ Analizza questa immagine/PDF del planning e restituisci SOLO un oggetto JSON val
   ]
 }
 
-LISTA UFFICIALE DEI DIPENDENTI (usa SEMPRE questi nomi esatti come chiave nel JSON):
-${staff.join('\n')}
+DIPENDENTI FISSI (Front Office, Breakfast, Manutenzione) — mappa sempre questi nomi esatti nel JSON:
+${foStaff.join(', ')}
 
-REGOLE IMPORTANTI:
-1. Per ogni persona nel planning, trova il corrispondente nella lista ufficiale sopra e usa QUEL nome esatto come chiave. Usa la similarità fonetica e di cognome: "MADDALONI" → "Maddaloni M.", "De Rosa" → "De Rosa T.", "MATARESE" → "Matarese A.", "NACCI" → "Nacci M.", ecc.
-2. Se nel planning c'è una persona NON presente nella lista (es. Extra Giuditta, Extra Nunzia), includila con il nome scritto nel planning.
-3. Includi TUTTE le persone visibili nel planning, senza saltarne nessuna.
-4. Le celle con solo "-" o "." o vuote → metti "R".
-5. La lettera "R" da sola → metti "R" (riposo). "P" è un turno valido (presenza), NON è riposo.
-6. Qualsiasi altro valore ("AG", "P", "AC", "CG", "NC", "NG", "CC", "FERIE", "9-17", ecc.) → metti il valore ESATTO della cella.
-7. Date nel formato "lunedì 30 marzo" → "2026-03-30" e label "Lun 30/03". Includi tutti i 7 giorni.
+REGOLE:
+1. Per i dipendenti fissi: abbina il nome del planning al più simile in lista (es. "MADDALONI" → "Maddaloni M.", "De Rosa" → "De Rosa T.") e usa il nome della lista come chiave.
+2. Per l'Housekeeping: il personale cambia ogni settimana. Usa il nome ESATTAMENTE come scritto nel planning (es. "Extra Maria", "Rossi A."). Non tentare di abbinarlo a nessuna lista.
+3. Includi TUTTE le persone visibili nel planning senza saltarne nessuna.
+4. Celle con solo "-" o "." o vuote → metti "R".
+5. "R" da solo → "R" (riposo). "P" è turno valido (presenza), NON è riposo.
+6. Qualsiasi altro valore ("P", "AC", "CG", "AG", "CC", "NC", "NG", "FERIE", "9-17", ecc.) → valore ESATTO della cella.
+7. Date "lunedì 30 marzo" → date "2026-03-30", label "Lun 30/03". Includi tutti i 7 giorni.
 
 Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const contentBlock=isPDF
@@ -338,10 +339,21 @@ function renderDay(idx){
   const shiftRow=(n,sv,cls)=>`<div class="staff-row" style="cursor:pointer;" title="Clicca per correggere" onclick="editShift(${idx},'${n.replace(/'/g,"\\'")}')"><span class="sname">${n}</span><span class="sshift ${cls}">${sv||'—'}</span></div>`;
   html+='<div class="staff-grid">';
   Object.entries(DEPTS).forEach(([key,dept])=>{
+    // Membri DEPTS in turno
     const inT=dept.members.filter(n=>!IS_REST(getShift(shifts,n)));
-    const showMembers=key==='mt'?dept.members:inT;
+    // Per HK aggiungi anche nomi dal turno non presenti in nessun reparto
+    let extras=[];
+    if(key==='hk'){
+      extras=Object.keys(shifts).filter(n=>{
+        if(IS_REST(getShift(shifts,n)))return false;
+        const nl=n.toLowerCase();
+        return!allStaffLow.has(nl);
+      });
+    }
+    const showMembers=key==='mt'?dept.members:[...inT,...extras];
     if(!showMembers.length)return;
-    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inT.length} in turno</span></div><div class="staff-list">${showMembers.map(n=>{const sv=(getShift(shifts,n)||'').trim();const isActive=key==='mt'?!IS_REST(sv):['P','AC','CG','AG','CC','NC','NG'].includes(sv);return shiftRow(n,sv,isActive?'ss-active':'ss-special');}).join('')}</div></div>`;
+    const inTCount=inT.length+extras.length;
+    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inTCount} in turno</span></div><div class="staff-list">${showMembers.map(n=>{const sv=(getShift(shifts,n)||'').trim();const isActive=key==='mt'?!IS_REST(sv):['P','AC','CG','AG','CC','NC','NG'].includes(sv);return shiftRow(n,sv,isActive?'ss-active':'ss-special');}).join('')}</div></div>`;
   });
   html+='</div>';area.innerHTML=html;
 }
