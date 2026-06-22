@@ -2,7 +2,7 @@
 // Network-first per tutti gli HTML (sempre aggiornati al refresh),
 // cache-first per asset statici (img, js, css)
 
-const CACHE = 'qm-v2';
+const CACHE = 'qm-v3';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -43,7 +43,7 @@ self.addEventListener('fetch', e => {
     url.endsWith('/')
   ) {
     e.respondWith(
-      fetch(e.request).then(res => {
+      fetch(e.request, { cache: 'no-store' }).then(res => {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return res;
