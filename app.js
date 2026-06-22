@@ -5996,12 +5996,13 @@ function cmRender(state,key){
     if(nc&&needsBottle)return'both';if(nc)return'warn';if(needsBottle)return'bottle';return'ok';
   }
   if(!state||!Object.keys(state).length){
-    el.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--text-dim);">
-      <div style="font-size:2.5rem;margin-bottom:12px;">🌅</div>
-      <div style="font-weight:700;font-size:var(--fs-sm);margin-bottom:6px;">Nessun controllo per oggi</div>
-      <div style="font-size:var(--fs-xs);margin-bottom:20px;">${dateStr}</div>
-      <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;padding:12px 22px;border-radius:10px;font-weight:700;font-size:var(--fs-xs);text-decoration:none;">📱 Apri app mobile</a>
+    el.innerHTML=`<div style="text-align:center;padding:24px 20px 16px;color:var(--text-dim);">
+      <div style="font-size:2rem;margin-bottom:8px;">🌅</div>
+      <div style="font-weight:700;font-size:var(--fs-sm);margin-bottom:4px;">Nessun controllo per oggi</div>
+      <div style="font-size:var(--fs-xs);margin-bottom:14px;">${dateStr}</div>
+      <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;padding:10px 18px;border-radius:10px;font-weight:700;font-size:var(--fs-xs);text-decoration:none;">📱 Apri app mobile</a>
     </div>`;
+    cmLoadWeeklyQC();
     return;
   }
   const visited=CM_ROOMS.filter(r=>state[r]?.visited).length;
