@@ -13,12 +13,23 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 
 ---
 
-## Risposte alle recensioni Booking.com
+## Risposte alle recensioni (Booking.com + Expedia)
 
 - **Firma in italiano:** `Paolo P. - Quality Manager`
 - **Firma in inglese:** `Best regards. Paolo P. - Quality Manager`
+- **Struttura**: 3 paragrafi, 5-7 frasi totali. Non di più.
+- **Apertura**: ringrazia sempre della recensione.
+- **Booking.com**: usa sempre il nome dell'ospite nell'apertura.
+- **Expedia**: usa sempre "Dear Guest," / "Gentile ospite," (policy OTA: nomi non disponibili).
+- **Recensioni Booking senza testo**: non generare risposta ("Nessun commento scritto — risposta non necessaria").
+- **Recensioni Expedia senza testo**: genera risposta breve (2 frasi concise, sempre diversa).
 - Non ripetere le parole esatte usate dal recensore.
-- Includere sempre un incentivo alla prenotazione futura.
+- **MAI**: "hai ragione", "hai assolutamente ragione" — per critiche usare "Prendiamo nota della sua osservazione" o "Apprezziamo il suo feedback su X".
+- **MAI**: invitare al contatto diretto o alla prenotazione diretta (vietato dalle OTA).
+- Citare il punteggio SOLO se è alto e la recensione è entusiasta, altrimenti non menzionarlo.
+- Toni disponibili: **Formale** | **Bilanciato** | **Empatico** (default: Bilanciato). Il tono "Caldo" è stato rimosso.
+- Risposte varie: evitare frasi identiche tra una risposta e l'altra (l'AI si sgama).
+- Includere sempre un invito a tornare.
 
 ---
 
@@ -27,10 +38,11 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 **QM Dashboard** è una SPA vanilla JS per la gestione qualità di un gruppo alberghiero multi-struttura a Napoli. Il codice è diviso in:
 
 - **`index.html`** — Layout HTML, sidebar nav, tutte le view (div#view-*), CSS inline, tag `<script src="app.js?v=...">` in fondo
-- **`app.js`** — Tutta la logica JS (~5200 linee, ~31 sezioni §§)
+- **`app.js`** — Tutta la logica JS (~6300 linee, ~33 sezioni §§)
 - **`housekeeper.html`** — App separata per la governante (HK checklist camere)
 - **`breakfast.html`** — App separata per il breakfast manager
 - **`inventory.html`** — App separata per l'inventario detersivi (mobile, scanner barcode)
+- **`controllo-mattino.html`** — App separata PWA per il giro distribuzione Culligan (mattino)
 
 Non esiste build system, package manager o step di compilazione.
 
@@ -38,7 +50,7 @@ Non esiste build system, package manager o step di compilazione.
 
 Il numero di versione va incrementato:
 1. Nel `<title>` tag di `index.html` (es. `v186` → `v187`)
-2. Nel cache buster `<script src="app.js?v=317-YYYYMMDD">` in fondo a `index.html`
+2. Nel cache buster `<script src="app.js?v=345-YYYYMMDD">` in fondo a `index.html`
 
 Ad ogni modifica ad `app.js`, **aggiornare il cache buster** altrimenti il browser userà la versione vecchia.
 
@@ -70,8 +82,8 @@ Poi leggere solo il blocco rilevante con `offset` e `limit` invece di caricare l
 ### AI Integration
 
 Claude API chiamata via proxy Cloudflare:
-- **Model**: `claude-sonnet-4-20250514`
-- **Usi**: parsing PDF/immagini di turni, arrivi, documenti pasto → JSON strutturato
+- **Model**: `claude-sonnet-4-6`
+- **Usi**: parsing PDF/immagini di turni, arrivi, documenti pasto → JSON strutturato; generazione risposte recensioni
 - **Pattern**: file upload → base64 → `fetch(PROXY)` → JSON parse → state update → localStorage + KV
 
 ### Initialization Sequence (`DOMContentLoaded` in app.js)
@@ -110,7 +122,7 @@ I numeri di camera determinano la struttura di appartenenza:
 
 | Linea approx. | Sezione | Contenuto |
 |--------------|---------|-----------|
-| 1 | COSTANTI & CONFIG | `DEPTS`, `WEEK`, `IS_REST`, `IS_ABSENT`, costanti globali |
+| 1 | COSTANTI & CONFIG | `DEPTS`, `IS_REST`, `IS_ABSENT`, costanti globali (WEEK rimosso) |
 | 15 | TURNO — ACCORDIONI UC & UPLOAD BOX | Toggle accordioni turni, upload box UI |
 | 87 | TURNO — PARSER TSV/PDF | `parseTurniTSV()`, `handleTurniFile()` |
 | 257 | TURNO — RENDER & NAVIGAZIONE | `renderDay()`, `buildWeekNav()`, `loadWeekData()` |
@@ -132,16 +144,18 @@ I numeri di camera determinano la struttura di appartenenza:
 | 1828 | BKF SHEET — ANALISI AI | `bkfSheetAnalyze()`, `bkfSheetARAnalyze()` via Claude API |
 | 2041 | REPORT PULIZIE — PUL | `pulParseText()`, `renderPulData()`, `updateKpiFromPulizie()` |
 | 2204 | RECENSIONI — SCORING & INIT UPLOAD | Scoring recensioni, init upload per tutti gli hotel |
-| 2235 | RECENSIONI — LOGICA | `revParseCsv()`, `revRenderList()`, `revGenerateReply()`, filtri |
-| 2995 | REPORT PASTI — BKF | `bkfParseText()`, `renderBkfData()`, `updateKpiFromBkf()` |
-| 3112 | HOUSEKEEPING — HKP UPLOAD & DATI | Upload HKP, parsing dati, reset slot |
-| 3191 | PIANO SETTIMANA — UPLOAD & PARSER | `parsePianoItems()` (~line 3220), upload e parsing piano settimanale |
-| 3350 | BKF — GRUPPI, NOTE & GRAFICI | Gruppi breakfast, note, grafici |
-| 3603 | REGISTRATION CARDS — RC | `rcParseGuests()` (~line 3650), `rcRenderCards()`, stampa |
-| 3668 | MODAL — CATEGORIE TREND | Modal trend categorie, calcolo score pesato |
-| 3767 | ARRIVI GIORNALIERI — UPLOAD & RENDER | `handleArriviFile()`, `renderArriviModal()`, `fixArriviStruttura()` |
-| ~4634 | INVENTARIO DETERSIVI | `invCalcStock()`, `invRender()`, `invRenderStock()`, `invRenderMoves()`, `invRenderAnalysis()`, `invEditQty()`, `invPrintStock()` |
+| 2235 | RECENSIONI BOOKING — LOGICA | `revParseCsv()`, `revRenderList()`, `revGenerateReply()`, filtri |
+| ~2995 | REPORT PASTI — BKF | `bkfParseText()`, `renderBkfData()`, `updateKpiFromBkf()` |
+| ~3112 | HOUSEKEEPING — HKP UPLOAD & DATI | Upload HKP, parsing dati, reset slot |
+| ~3191 | PIANO SETTIMANA — UPLOAD & PARSER | `parsePianoItems()`, upload e parsing piano settimanale |
+| ~3350 | BKF — GRUPPI, NOTE & GRAFICI | Gruppi breakfast, note, grafici |
+| ~3603 | REGISTRATION CARDS — RC | `rcParseGuests()`, `rcRenderCards()`, stampa |
+| ~3668 | MODAL — CATEGORIE TREND | Modal trend categorie, calcolo score pesato |
+| ~3767 | ARRIVI GIORNALIERI — UPLOAD & RENDER | `handleArriviFile()`, `renderArriviModal()`, `fixArriviStruttura()` |
+| ~4634 | INVENTARIO DETERSIVI | `invCalcStock()`, `invRender()`, `invRenderStock()`, `invRenderMoves()`, `invRenderAnalysis()`, `invEditQty()`, `invPrintStock()`, `invOrdersMarkReceived()`, `invOrdersConfirmDDT()`, `invOrdersUndoReceived()` |
 | ~5090 | PREFERENZE TURNI | `turniPrefLoad()`, `turniPrefRender()`, `turniPrefMarkAllSeen()`, `_tpFmtDate()` |
+| ~5357 | CONTROLLO MATTINO | `cmLoad()`, `cmRender()`, `cmPrintBottle()`, `cmLoadWeeklyQC()`, `cmRenderWeeklyQC()` |
+| ~6300 | RECENSIONI EXPEDIA | `revExpGenerateReply()`, `REV_EXP_HOTELS`, upload/parse Expedia TSV |
 
 ---
 
@@ -150,7 +164,8 @@ I numeri di camera determinano la struttura di appartenenza:
 | Nome | Tipo | Contenuto |
 |------|------|-----------|
 | `DEPTS` | const object | Reparti: `fo` (Front Office), `hk` (Housekeeping), `bkf` (Breakfast), `mt` (Maintenance) — con `label`, `cls`, `members[]` |
-| `REV_HOTELS` | const object | Struttura dati recensioni per hotel (sa, bh, sl, pr, ms, ar, sb) |
+| `REV_HOTELS` | const object | Struttura dati recensioni Booking.com per hotel (sa, bh, sl, pr, ms, ar, sb) |
+| `REV_EXP_HOTELS` | const object | Struttura dati recensioni Expedia per hotel (sa, bh, ar, sb) — con `tone:'bilanciato'` default |
 | `TASK_STATE` | let object | Stato centralizzato di tutti i task checklist |
 | `HKP_DATA` | let object | Dati HKP operative: `{sa: null, ar: null}` |
 | `HKP_TAB` | let object | Tab attivo HKP: `{sa: 'riepilogo', ar: 'riepilogo'}` |
@@ -158,8 +173,7 @@ I numeri di camera determinano la struttura di appartenenza:
 | `DVR_DATA` | let object | Dati DVR per società: `{geriart: {...}, ...}` |
 | `IS_REST` | const fn | Ritorna `true` se il valore turno è vuoto/null (non in programma) |
 | `IS_ABSENT` | const fn | Ritorna `true` SOLO per valori espliciti: `R`, `RIPOSO`, `OFF`, `FERIE` — usare per contare assenze reali |
-| `WEEK` | const object | Turno settimana fallback hardcoded (7 giorni) |
-| `weekData` | let | Dati turno settimana parsati |
+| `weekData` | let | Dati turno settimana parsati (non più fallback hardcoded) |
 | `activeDay` | let | Indice giorno attivo (0-6) |
 | `PROXY` | const string | `https://anthropic-proxy.qm-d82.workers.dev` |
 | `SHEETS_URL` | const string | Apps Script endpoint BKF SoulArt |
@@ -189,7 +203,7 @@ I numeri di camera determinano la struttura di appartenenza:
 
 | URL | Scopo |
 |-----|-------|
-| `https://anthropic-proxy.qm-d82.workers.dev/v1/messages` | Claude API proxy (AI analysis PDF/immagini) |
+| `https://anthropic-proxy.qm-d82.workers.dev/v1/messages` | Claude API proxy (AI analysis PDF/immagini + risposte recensioni) |
 | `https://anthropic-proxy.qm-d82.workers.dev` | KV storage operations (cloud sync) |
 | `https://script.google.com/macros/s/AKfycbz-6o…/exec` | Google Sheets BKF SoulArt (`SHEETS_URL`) |
 | `https://script.google.com/macros/s/AKfycbzmkY…/exec` | Google Sheets BKF Art Resort (`SHEETS_URL_AR`) |
@@ -228,8 +242,187 @@ grep -n 'id="view-' index.html
 | `view-hkpsheet` | Operativa Housekeeping — SoulArt Hotel |
 | `view-hkpsheetar` | Operativa Housekeeping — Art Resort |
 | `view-miniapp` | Mini app preview |
-| `view-inventario` | Inventario detersivi (stock + movimenti + analisi) |
+| `view-inventario` | Inventario detersivi (stock + movimenti + analisi + ordini) |
 | `view-turni-pref` | Preferenze turni staff (da Google Forms) |
+| `view-controllo-mattino` | Dashboard distribuzione Culligan (stats + QC settimanale + Stampa A4) |
+
+---
+
+## Turno Settimanale
+
+### Come funziona
+
+Il turno si carica **manualmente ogni settimana** con uno screenshot o PDF del planning:
+
+1. Aprire il Google Sheet del turno (anche solo in visualizzazione)
+2. **Cmd+Shift+4** → selezionare le celle con i turni → screenshot salvato sul Desktop
+3. Cliccare l'accordione **"Turno"** nell'Upload Center sidebar → appare il box 📷
+4. Cliccare il box → selezionare lo screenshot → Claude analizza e carica il planning
+
+**Formati accettati**: immagini (PNG, JPG), PDF, Excel/TSV.
+
+### Niente più auto-sync da Google Sheets
+
+Il vecchio sistema di aggiornamento automatico dal foglio Google è stato rimosso. Rimane solo il **KV sync tra dispositivi**: quando si carica il turno su un PC, appare su tutti gli altri PC dell'hotel entro 30 secondi.
+
+### Upload box in index.html
+
+Il pannello `#uc-turno-panel` contiene un `div#turniUploadBox` che triggera `turniFileInput.click()`. Senza questo elemento il click non funziona — non rimuoverlo.
+
+### Prompt `handleTurniFile` — logica nomi
+
+Il prompt differenzia il trattamento per reparto:
+- **FO / BKF / MT**: Claude mappa i nomi dell'immagine sui nomi canonici in `DEPTS` (es. "MADDALONI" → "Maddaloni M.")
+- **HK**: Claude usa il nome **esattamente come scritto** nell'immagine — il personale HK cambia ogni settimana, non mappare su lista fissa
+
+### `renderDay()` — extra HK
+
+`renderDay` mostra non solo i `DEPTS.hk.members` ma anche chiunque compaia nei `shifts` e non sia in nessun reparto DEPTS. Questi vengono aggiunti alla card Housekeeping.
+
+```js
+// Per HK: aggiungi nomi dal turno non presenti in nessun reparto
+extras = Object.keys(shifts).filter(n => !IS_REST(...) && !allStaffLow.has(n.toLowerCase()));
+```
+
+### Confronto date in `refreshOverviewForDate`
+
+Il confronto per trovare il giorno corrente nel weekData usa **anno/mese/giorno** (non `getTime()`):
+
+```js
+gd.getFullYear()===ref.getFullYear() && gd.getMonth()===ref.getMonth() && gd.getDate()===ref.getDate()
+```
+
+Questo evita falsi mismatch da timezone.
+
+### `paoloTurno` (sidebar)
+
+L'elemento `#paoloTurno` nella sidebar mostra il turno di Presta P. leggendo da `weekData` (non più dalla costante WEEK rimossa). Se `weekData` è null, mostra "Quality Manager".
+
+---
+
+## Staff Attuale (DEPTS)
+
+### Front Office (`fo`)
+
+Membri attuali (aggiornare in `app.js` sezione `§§ COSTANTI & CONFIG`):
+
+`Maddaloni M., Presta P., De Rosa T., Pennacchio V., Perez L., Imparato G., Vatiero R., Barbosa D., D'Andrea F., Grieco V., Extra Night, Iannario R., Extra Angelica, Extra Benedetta, Raucci A., Ruggiero B.`
+
+### Housekeeping (`hk`)
+
+Il personale HK **cambia ogni settimana** (tante extra/interinali). I membri fissi in DEPTS sono quelli stabili; gli extra settimanali vengono mostrati dinamicamente da `renderDay` leggendo i nomi direttamente dai dati di turno caricati.
+
+Membri fissi: `Matarese A., Nacci M., De Masi C., Chiantese M., Extra Antonella, Extra Anushka, Extra Giuditta, Extra Nunzia, Extra Roberta, Scognamillo E., Esposito M., Branno M., Sarnataro A.`
+
+### Conteggio "non in servizio" — IS_ABSENT
+
+**IMPORTANTE**: `IS_REST(v)` ritorna `true` anche per valori vuoti/null. Per contare chi è assente usare `IS_ABSENT`:
+
+```js
+const IS_ABSENT = v => {
+  if (!v) return false;
+  const u = v.trim().toUpperCase();
+  return ['R', 'RIPOSO', 'OFF', 'FERIE'].includes(u);
+};
+```
+
+`IS_ABSENT` ritorna `true` solo per valori espliciti di assenza, non per chi semplicemente non è in turno.
+
+### Manutenzione (`mt`) — Comportamento Speciale
+
+Il reparto `mt` ha logica speciale in `renderDay()`:
+- **Sempre visibile** anche quando `inT.length === 0` (nessuno in turno)
+- **Sempre mostra tutti i membri**: `showMembers = key==='mt' ? dept.members : inT`
+- **Active styling per qualsiasi shift non-riposo**: `isActive = key==='mt' ? !IS_REST(sv) : ['P','AC','CG',...].includes(sv)`
+- Ragione: il personale di manutenzione può avere turni custom (es. '9-17') non nella lista standard
+
+---
+
+## Recensioni Booking.com
+
+### `revGenerateReply(r)` — regole prompt
+
+- 3 paragrafi distinti, 5-7 frasi totali
+- Apertura: ringrazia con nome ospite
+- Critica: MAI "hai ragione/assolutamente ragione" — usare "Prendiamo nota di..."
+- Punteggio: solo se alto E recensione entusiasta
+- Chiusura: invito a tornare, no contatto diretto, no prenotazione diretta
+- Toni: **Formale** | **Bilanciato** | **Empatico** — default `bilanciato`
+
+### Tono Bilanciato
+
+`'Tono bilanciato: professionale e cordiale, né freddo né eccessivamente caloroso. Il registro naturale di un Quality Manager competente.'`
+
+---
+
+## Recensioni Expedia
+
+### Struttura `REV_EXP_HOTELS`
+
+Hotel supportati: `sa` (SoulArt), `bh` (Boutique), `ar` (Art Resort), `sb` (Santa Brigida).
+
+```js
+REV_EXP_HOTELS = {
+  sa: { name:'SoulArt Hotel', data:[], filtered:[], filter:'all', sort:'date_desc', search:'', page:0, tone:'bilanciato' },
+  bh: { name:'Boutique Hotel', ... },
+  ar: { name:'Art Resort', ... },
+  sb: { name:'Santa Brigida', ... }
+}
+```
+
+### Formato file Expedia
+
+TSV (tab-separated). Colonne chiave: `review_text`, `rating`, `date`, `title`. Nessun nome ospite (policy Expedia).
+
+### `revExpGenerateReply(r)` — regole specifiche
+
+- Apertura sempre con "Dear Guest," (inglese) o "Gentile ospite," (italiano)
+- Recensione senza testo (`review_text` vuoto): 2 frasi concise, non template fisso
+- Stesse regole di Booking su critiche, punteggio, invito a tornare, no contatto diretto
+
+---
+
+## Inventario Detersivi — Ordini
+
+### Flusso ricezione merce (DDT modal)
+
+Quando si clicca **✅ Ricevuto** su un ordine in stato `ordinato`, si apre un modal DDT invece di caricare automaticamente le quantità:
+
+1. Campo **N° DDT** (documento di trasporto)
+2. Tabella prodotti ordinati con **quantità consegnata editabile** per ogni riga
+3. Pulsante **"+ Aggiungi prodotto non ordinato"** — aggiunge riga con select dal catalogo + qty
+4. **Conferma** → crea movimenti `in`, salva `movIds` sull'ordine, marca `status: 'ricevuto'`
+
+### `invOrdersUndoReceived(id)`
+
+Annulla una ricezione: rimuove i movimenti creati (usando `o.movIds`) e resetta l'ordine a `status: 'ordinato'`. **Nota**: ordini ricevuti prima dell'introduzione di `movIds` non hanno movimenti tracciati — l'undo resetta solo lo stato.
+
+### Struttura ordine
+
+```js
+{
+  id:          string,   // timestamp_random
+  wh:          string,   // 'sa' | 'ar'
+  date:        string,   // 'DD/MM/YYYY'
+  ts:          number,   // Date.now()
+  fornitore:   string,
+  status:      'ordinato' | 'ricevuto',
+  tsRicevuto:  number,   // Date.now() al momento ricezione
+  ddt:         string,   // numero DDT
+  movIds:      string[], // ID movimenti creati al DDT — usati per undo
+  items:       [{ barcode, name, qty }]
+}
+```
+
+### Funzioni ordini
+
+| Funzione | Scopo |
+|----------|-------|
+| `invOrdersMarkReceived(id)` | Apre modal DDT per ricezione merce |
+| `invDDTAddRow()` | Aggiunge riga extra prodotto non ordinato nel modal DDT |
+| `invOrdersConfirmDDT(id)` | Conferma DDT: crea movimenti, salva movIds, chiude modal |
+| `invOrdersUndoReceived(id)` | Annulla ricezione: rimuove movimenti da movIds, resetta status |
+| `invOrdersDelete(id)` | Elimina ordine (solo se non ricevuto) |
 
 ---
 
@@ -270,103 +463,24 @@ HKP_URLS = {
 | `B43:C46` | Totali mensili per cameriera: nome in B, totale in C |
 | Riga 41 | Totali giornalieri (TOT. CAMERE) |
 
-**Logica colonne nel range A32:AG39:** identica a SoulArt (nome idx 1, giorno d → idx d+1).
-
 ### Struttura Dati HKP (JSON restituito dall'Apps Script)
 
 ```js
 {
-  cameriere: [
-    {
-      nome: string,
-      camere_tot: number,
-      camere_per_giorno: { "1": 4, "2": 6, ... }  // chiavi = numero giorno del mese
-    }
-  ],
+  cameriere: [{ nome, camere_tot, camere_per_giorno: { "1": 4, ... } }],
   tot_mese: number,
   tot_duplex: number,
-  totale_per_giorno: { "1": 31, "2": 28, ... },
-  mese: string,           // es. "aprile 2026" — da C2 del foglio
+  totale_per_giorno: { "1": 31, ... },
+  mese: string,        // es. "aprile 2026"
   giorni_elaborati: number,
   giorni_mese: number
 }
 ```
 
-### Calcolo giorni con dati (client-side)
-
-`giorni_elaborati` dall'Apps Script può essere impreciso. Il client calcola in autonomia:
-
-```js
-const _daysSet = new Set();
-(data.cameriere || []).forEach(c =>
-  Object.entries(c.camere_per_giorno || {}).forEach(([d, v]) => {
-    if (v > 0) _daysSet.add(d);
-  })
-);
-const giorniConDati = _daysSet.size || data.giorni_elaborati || 1;
-```
-
-### Funzioni HKP
-
-| Funzione | Scopo |
-|----------|-------|
-| `hkpLoad(p)` | Fetch dati da Google Sheets (p = 'sa' o 'ar') |
-| `hkpRenderAll(p)` | Render completo view HKP (KPI + content) |
-| `hkpRenderContent(p)` | Render tab corrente (riepilogo o dettaglio) |
-| `hkpTab(p, tab, btn)` | Cambia tab attivo |
-| `hkpSave(p)` | Salva in localStorage + KV |
-| `hkpRestore()` | Ripristina da localStorage |
-| `hkpSelectDay(p, day)` | Switch vista per giorno |
-
 ### Tab Disponibili
 
-- **Riepilogo mensile**: classifica cameriere (camere totali) + barra duplex separata + sparkline trend giornaliero
-  - Nomi non troncati: `width:160px; flex-shrink:0` (senza `overflow:hidden`)
-  - Righe con nome `/duplex/i` filtrate dalla lista cameriere (mostrate solo nella barra duplex)
-- **Per giorno**: dettaglio camere per ogni giorno del mese, con totale camere per cameriera
-
-### Apps Script Template
-
-Quando l'utente ridistribuisce lo script, cambia solo `HKP_URLS[p]` in app.js e aggiorna il cache buster. **Non modificare la logica client.**
-
-Template Apps Script generico (adattare i range):
-
-```javascript
-function doGet() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const hkpRows = sheet.getRange('A38:AG47').getValues(); // adattare
-  const cameriere = [], totale_per_giorno = {};
-  let tot_mese = 0;
-  for (let i = 0; i < hkpRows.length; i++) {
-    const nome = String(hkpRows[i][1] || '').trim(); // col B = idx 1
-    if (!nome) continue;
-    const camere_per_giorno = {};
-    let camere_tot = 0;
-    for (let d = 1; d <= 31; d++) {
-      const v = Number(hkpRows[i][d + 1]) || 0; // col C = idx 2 = d+1 quando d=1
-      if (v > 0) {
-        camere_per_giorno[d] = v;
-        totale_per_giorno[d] = (totale_per_giorno[d] || 0) + v;
-        camere_tot += v;
-      }
-    }
-    cameriere.push({ nome, camere_tot, camere_per_giorno });
-    tot_mese += camere_tot;
-  }
-  const giorni_elaborati = Object.keys(totale_per_giorno).length;
-  const duplexData = sheet.getRange('C48:AG57').getValues(); // adattare
-  let tot_duplex = 0;
-  duplexData.forEach(row => row.forEach(v => { tot_duplex += Number(v) || 0; }));
-  const firstDate = sheet.getRange('C2').getValue();
-  const mese = firstDate instanceof Date
-    ? firstDate.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
-    : String(firstDate);
-  return ContentService
-    .createTextOutput(JSON.stringify({ cameriere, tot_mese, tot_duplex,
-      totale_per_giorno, mese, giorni_elaborati, giorni_mese: 30 }))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-```
+- **Riepilogo mensile**: classifica cameriere + barra duplex + sparkline trend giornaliero
+- **Per giorno**: dettaglio camere per ogni giorno del mese
 
 ---
 
@@ -376,22 +490,6 @@ function doGet() {
 
 Gestione dipendenti e documenti DVR per ogni società del gruppo. Dati persistiti in localStorage + KV con chiave `qm_dvr`.
 
-### Storage
-
-```js
-// Salvataggio
-function dvrSave() {
-  const json = JSON.stringify(DVR_DATA);
-  try { localStorage.setItem('qm_dvr', json); } catch(e) {}
-  kvSet('qm_dvr', json).catch(() => {});  // chiave con prefisso qm_
-}
-
-// syncFromCloud deve chiamare dvrRestore() dopo aver scritto il localStorage
-if (k === 'dvr') {
-  try { dvrRestore(); if (view?.classList.contains('active')) dvrRender(); } catch(e) {}
-}
-```
-
 ### Lista Dipendenti — Ordinamento
 
 L'elenco dei dipendenti è ordinato con **pin fisso**:
@@ -399,21 +497,6 @@ L'elenco dei dipendenti è ordinato con **pin fisso**:
 2. **Presta Pierpaolo** — sempre secondo
 3. Contratti a termine ordinati per data scadenza (più vicina prima)
 4. Tutti gli altri in ordine alfabetico
-
-```js
-const pinRank = n => { if (/corduas/i.test(n)) return 0; if (/presta/i.test(n)) return 1; return 2; };
-const isTermine = c => c && c !== 'Tempo indeterminato';
-```
-
-### Lista Dipendenti — Layout Riga
-
-Ogni riga mostra:
-1. **Nome** + badge tipo contratto
-2. **Mansione/qualifica** (riga separata)
-3. **Date** sotto la qualifica:
-   - Tutti i contratti: `dal gg/mm/aaaa`
-   - Tempo determinato, part-time, tirocinio, apprendistato: `dal gg/mm/aaaa → scad. gg/mm/aaaa` (con colore)
-4. **Note** (se presenti)
 
 ### Scadenze Contratto — Colori
 
@@ -423,84 +506,21 @@ Ogni riga mostra:
 | In scadenza (`0 ≤ daysLeft ≤ 30`) | `var(--amber)` + etichetta `⏳ scad. gg/mm (Ngg)` | `border-left: 3px solid var(--amber)` |
 | Ok (`daysLeft > 30`) | `var(--text-dim)` | nessun bordo |
 
-### Tipi Contratto con Scadenza
-
-I seguenti tipi richiedono e mostrano la data di scadenza:
-- Tempo determinato
-- Tempo determinato part-time
-- Part-time
-- Tirocinio
-- Apprendistato
-
 ---
 
 ## Overview — Topbar KPI & Pannello Occupazione
 
 ### Topbar KPI Chips
 
-4 chip sempre visibili nel topbar quando si è nella view `overview` (nascosti nelle altre viste):
+4 chip sempre visibili nel topbar quando si è nella view `overview` (nascosti nelle altre viste). IIFE all'avvio garantisce visibilità:
 
-```html
-<div id="topbar-kpis">
-  <div class="topbar-kpi-chip" id="kpi-arrivi">...</div>
-  <div class="topbar-kpi-chip" id="kpi-partenze">...</div>
-  <div class="topbar-kpi-chip" id="kpi-fermate">...</div>
-  <div class="topbar-kpi-chip" id="kpi-occ-val">...</div>
-</div>
-```
-
-`setView()` gestisce la visibilità:
-```js
-const kpis = document.getElementById('topbar-kpis');
-if (kpis) kpis.style.display = id === 'overview' ? 'flex' : 'none';
-```
-
-IIFE all'avvio garantisce che siano visibili al caricamento:
 ```js
 (function(){ const k=document.getElementById('topbar-kpis'); if(k) k.style.display='flex'; })();
 ```
 
 ### Pannello Occupazione
 
-Cliccando il chip occupazione si apre `#occ-panel`, un div full-width posizionato tra il topbar e `.content`. Contiene un grafico a barre HTML (non SVG) con:
-- Barre orizzontali per struttura
-- Percentuale `%` esterna alla barra (span separato con colore)
-- Colori: verde `≥80%`, ambra `50-79%`, rosso `<50%`
-
----
-
-## Staff Attuale (DEPTS)
-
-### Front Office (`fo`)
-Aggiornare in `app.js` sezione `§§ COSTANTI & CONFIG`.
-
-### Housekeeping (`hk`)
-Membri attuali includono:
-- Extra Giuditta (aggiunta)
-- **Extra Nunzia** (aggiunta nella sessione corrente)
-- Extra Vincenza (rimossa)
-
-### Conteggio "non in servizio" — IS_ABSENT
-
-**IMPORTANTE**: `IS_REST(v)` ritorna `true` anche per valori vuoti/null. Per contare chi è assente usare `IS_ABSENT`:
-
-```js
-const IS_ABSENT = v => {
-  if (!v) return false;
-  const u = v.trim().toUpperCase();
-  return ['R', 'RIPOSO', 'OFF', 'FERIE'].includes(u);
-};
-```
-
-`IS_ABSENT` ritorna `true` solo per valori espliciti di assenza, non per chi semplicemente non è in turno.
-
-### Manutenzione (`mt`) — Comportamento Speciale
-
-Il reparto `mt` ha logica speciale in `renderDay()`:
-- **Sempre visibile** anche quando `inT.length === 0` (nessuno in turno)
-- **Sempre mostra tutti i membri**: `showMembers = key==='mt' ? dept.members : inT`
-- **Active styling per qualsiasi shift non-riposo**: `isActive = key==='mt' ? !IS_REST(sv) : ['P','AC','CG',...].includes(sv)`
-- Ragione: il personale di manutenzione può avere turni custom (es. '9-17') non nella lista standard
+Cliccando il chip occupazione si apre `#occ-panel`. Barre orizzontali per struttura, percentuale `%` **fuori** dalla barra (non dentro — altrimenti illeggibile su sfondo grigio). Colori: verde `≥80%`, ambra `50-79%`, rosso `<50%`.
 
 ---
 
@@ -508,111 +528,89 @@ Il reparto `mt` ha logica speciale in `renderDay()`:
 
 ### Turni
 
-| Funzione | Linea approx. | Scopo |
-|----------|--------------|-------|
-| `parseTurniTSV(text)` | §87 | Parse TSV/PDF → dati settimana |
-| `handleTurniFile(file)` | §87 | Upload handler → base64 → Claude API |
-| `loadWeekData(data)` | §257 | Carica turni in memoria |
-| `renderDay(idx)` | §257 | Render layout staff giorno singolo |
-| `buildWeekNav()` | §257 | Costruisce bottoni nav settimana |
-| `getShift(shifts, name)` | §257 | Lookup turno persona/giorno |
-| `editShift(dayIdx, nome)` | §257 | Modifica turno individuale |
-| `resetTurni()` | §257 | Azzera tutti i turni |
-
-### Checklist
-
-| Funzione | Linea approx. | Scopo |
-|----------|--------------|-------|
-| `buildTaskItem(t, listId)` | §664 | Crea elemento DOM task |
-| `renderTaskList(listId, ...)` | §664 | Render lista task |
-| `syncTaskState(key, done, time)` | §807 | Aggiorna stato task (localStorage + KV) |
-| `addCustomTask(inp)` | §807 | Aggiunge task custom |
-| `toggleCheck(li, listId)` | §1046 | Toggle completamento task |
-| `removeCustomTask(text, btn)` | §807 | Elimina task custom |
-| `restoreChecklistState()` | §807 | Ripristino da localStorage |
+| Funzione | Scopo |
+|----------|-------|
+| `parseTurniTSV(text)` | Parse TSV → dati settimana |
+| `handleTurniFile(file)` | Upload handler → base64 → Claude API → loadWeekData |
+| `loadWeekData(data)` | Carica turni in memoria, imposta activeDay su oggi |
+| `renderDay(idx)` | Render layout staff giorno singolo (include HK extras non in DEPTS) |
+| `buildWeekNav()` | Costruisce bottoni nav settimana |
+| `getShift(shifts, name)` | Lookup turno persona/giorno (case-insensitive) |
+| `editShift(dayIdx, nome)` | Modifica turno individuale via prompt |
+| `resetTurni()` | Azzera tutti i turni (localStorage + KV) |
 
 ### Storage & Sync
 
-| Funzione | Linea approx. | Scopo |
-|----------|--------------|-------|
-| `kvSet(key, value, retries)` | §696 | Set valore KV cloud con retry |
-| `kvGet(key)` | §696 | Get valore KV |
-| `syncFromCloud()` | §696 | Fetch tutti i keys da KV, aggiorna localStorage |
-| `setSyncStatus(state)` | §696 | Aggiorna indicatore punto sync |
+| Funzione | Scopo |
+|----------|-------|
+| `kvSet(key, value, retries)` | Set valore KV cloud con retry |
+| `kvGet(key)` | Get valore KV |
+| `syncFromCloud()` | Fetch tutti i keys da KV, aggiorna localStorage |
+| `setSyncStatus(state)` | Aggiorna indicatore punto sync |
 
 ### Overview
 
-| Funzione | Linea approx. | Scopo |
-|----------|--------------|-------|
-| `refreshOverviewForDate(date)` | §1351 | Render principale overview |
-| `renderArriviData()` | §1351 | Render KPI cards arrivi |
-| `buildBarChart(data)` | §1219 | Generatore SVG bar chart |
-| `fetchMeteo()` | §1219 | Fetch previsioni meteo |
-| `updateSbClock()` | §1299 | Aggiorna orologio sidebar (ogni 10s) |
-| `toggleOccupazionePreview()` | §1127 | Toggle pannello occupazione full-width |
+| Funzione | Scopo |
+|----------|-------|
+| `refreshOverviewForDate(date)` | Render principale overview — usa confronto anno/mese/giorno per weekData |
+| `renderArriviData()` | Render KPI cards arrivi |
+| `buildBarChart(data)` | Generatore SVG bar chart |
+| `fetchMeteo()` | Fetch previsioni meteo |
+| `updateSbClock()` | Aggiorna orologio sidebar (ogni 10s) |
 
-### DVR
+### Recensioni Booking
 
-| Funzione | Linea approx. | Scopo |
-|----------|--------------|-------|
-| `dvrRender()` | §540 | Render completo view DVR |
-| `dvrSave()` | §540 | Salva DVR_DATA in localStorage + KV |
-| `dvrRestore()` | §540 | Ripristina DVR_DATA da localStorage |
-| `dvrRenderDipendenti()` | §540 | Render lista dipendenti con pin e badge |
-| `dvrEmpOpenModal(id)` | §540 | Apre modal modifica/aggiunta dipendente |
-| `dvrToggleScadContr(val)` | §540 | Mostra/nasconde campo scadenza contratto |
+| Funzione | Scopo |
+|----------|-------|
+| `revParseCsv(text)` | Parse CSV recensioni |
+| `revRenderList(p)` | Render lista recensioni filtrata |
+| `revGenerateReply(r)` | Genera risposta via Claude (3 par, 5-7 frasi, no "hai ragione") |
+| `revCopyReply(uid)` | Copia risposta — usa `data-msg` attribute (non JSON inline in onclick) |
+| `revMarkSent(p, gi)` | Traccia risposte inviate |
+| `revApplyFilters(p)` | Filtra e ordina recensioni |
 
-### Recensioni
+### Recensioni Expedia
 
-| Funzione | Linea approx. | Scopo |
-|----------|--------------|-------|
-| `revParseCsv(text)` | §2235 | Parse CSV recensioni (tutti gli hotel) |
-| `revHandleFile(p, file)` | §2235 | Upload handler per hotel |
-| `revRenderList(p)` | §2235 | Render lista recensioni filtrata |
-| `revGenerateReply(r)` | §2235 | Genera risposta via Claude |
-| `revCopyReply(uid)` | §2235 | Copia risposta generata |
-| `revMarkSent(p, gi)` | §2235 | Traccia risposte inviate |
-| `revApplyFilters(p)` | §2235 | Filtra e ordina recensioni |
+| Funzione | Scopo |
+|----------|-------|
+| `revExpGenerateReply(r)` | Genera risposta Expedia via Claude (Dear Guest, stesse regole Booking) |
+| `revExpHandleFile(p, file)` | Upload/parse TSV Expedia |
+| `revExpRenderList(p)` | Render lista recensioni Expedia |
 
 ### Arrivi & Registration Cards
 
-| Funzione | Linea approx. | Scopo |
-|----------|--------------|-------|
-| `handleArriviFile(file)` | §3767 | Upload, parse via Claude API |
-| `fixArriviStruttura(arrivi)` | §3767 | Corregge codici struttura da numero camera |
-| `renderArriviModal(...)` | §3767 | Render cards arrivi con filtri |
-| `rcParseGuests(text)` | §3603 (~3650) | Estrae dati ospiti da PDF arrivi |
-| `rcRenderCards(guests)` | §3603 | Render cards ospiti |
-| `preparePrint(idx)` | §3603 | Genera HTML per stampa |
+| Funzione | Scopo |
+|----------|-------|
+| `handleArriviFile(file)` | Upload, parse via Claude API |
+| `fixArriviStruttura(arrivi)` | Corregge codici struttura da numero camera |
+| `rcParseGuests(text)` | Estrae dati ospiti da PDF arrivi |
+| `rcRenderCards(guests)` | Render cards ospiti |
+| `preparePrint(idx)` | Genera HTML per stampa |
 
 ### Inventario Detersivi
 
-| Funzione | Linea approx. | Scopo |
-|----------|--------------|-------|
-| `invSetWh(wh, btn)` | ~4634 | Cambia magazzino attivo nel dashboard |
-| `invSetTab(tab)` | ~4634 | Cambia tab stock/movimenti/analisi |
-| `invRender()` | ~4634 | Render completo view inventario |
-| `invRenderStock(catalog, moves)` | ~4634 | Render griglia stock |
-| `invRenderMoves(catalog, moves)` | ~4634 | Render lista movimenti |
-| `invRenderAnalysis(catalog, moves)` | ~4634 | Render tab analisi (cons. settimanale, da riordinare) |
-| `invCalcStock(catalog, moves)` | ~4634 | Calcola qty corrente per barcode |
-| `invEditQty(bc, currentQty)` | ~4634 | Modifica qty stock da dashboard (crea movimento init) |
-| `invEditSoglia(bc)` | ~4634 | Imposta soglia minima per prodotto |
-| `invPrintStock()` | ~4634 | Stampa A4 giacenza (ordine alfabetico) |
+| Funzione | Scopo |
+|----------|-------|
+| `invRender()` | Render completo view inventario |
+| `invRenderStock(catalog, moves)` | Render griglia stock |
+| `invRenderMoves(catalog, moves)` | Render lista movimenti |
+| `invRenderAnalysis(catalog, moves)` | Render tab analisi |
+| `invCalcStock(catalog, moves)` | Calcola qty corrente per barcode |
+| `invEditQty(bc, currentQty)` | Modifica qty stock (crea movimento init) |
+| `invOrdersMarkReceived(id)` | Apre modal DDT |
+| `invOrdersConfirmDDT(id)` | Conferma DDT, crea movimenti, salva movIds |
+| `invOrdersUndoReceived(id)` | Annulla ricezione, rimuove movimenti da movIds |
+| `invDDTAddRow()` | Aggiunge riga extra prodotto nel modal DDT |
 
 ### Preferenze Turni
 
-| Funzione | Linea approx. | Scopo |
-|----------|--------------|-------|
-| `turniPrefLoad()` | ~5090 | Fetch dati da Apps Script, salva in localStorage |
-| `turniPrefRestore()` | ~5090 | Ripristina `_tpData` da localStorage |
-| `turniPrefRender()` | ~5090 | Render calendario + lista richieste |
-| `turniPrefMarkAllSeen()` | ~5090 | Segna tutte le richieste come lette |
-| `turniPrefSetFilter(f)` | ~5090 | Filtra per reparto |
-| `turniPrefNavCal(dir)` | ~5090 | Naviga mese calendario (+1/-1) |
-| `turniPrefSelectDay(d)` | ~5090 | Seleziona giorno per filtrare lista |
-| `_tpFmtDate(s)` | ~5090 | Normalizza qualsiasi formato data → `dd/MM/yyyy` |
-| `turniPrefUpdateBadge()` | ~5090 | Aggiorna badge nav con richieste non lette |
+| Funzione | Scopo |
+|----------|-------|
+| `turniPrefLoad()` | Fetch dati da Apps Script, salva in localStorage |
+| `turniPrefRender()` | Render calendario + lista richieste |
+| `turniPrefMarkAllSeen()` | Segna tutte le richieste come lette |
+| `_tpFmtDate(s)` | Normalizza qualsiasi formato data → `dd/MM/yyyy` |
+| `turniPrefUpdateBadge()` | Aggiorna badge nav con richieste non lette |
 
 ---
 
@@ -622,32 +620,89 @@ Il reparto `mt` ha logica speciale in `renderDay()`:
 |-----------|-------|
 | 10 sec | `updateSbClock()` — aggiorna orologio sidebar |
 | 10 min | `fetchMeteo()` — aggiorna previsioni meteo |
-| 30 sec | Polling overview + cloud sync + `turniPrefLoad()` |
+| 30 sec | Polling overview + cloud sync + `turniPrefLoad()` + sync weekData da KV |
+
+---
+
+## Service Worker (`sw.js`)
+
+Versione corrente: **`qm-v3`**. Pattern:
+- **Proxy/KV/Google Sheets requests** → sempre network, mai cache
+- **HTML files** → network-first con `cache:'no-store'` (garantisce Cmd+R sempre aggiornato)
+- **Asset statici** → cache-first (il cache buster gestisce gli aggiornamenti)
+
+`sw-controllo-mattino.js` è legacy e si auto-disinstalla. Non modificarlo.
+
+---
+
+## Distribuzione Culligan (controllo-mattino.html)
+
+### Scopo
+
+PWA mobile per il giro mattutino di distribuzione acqua Culligan. I dati sono sincronizzati tramite KV e visibili nel dashboard (`view-controllo-mattino`).
+
+### File
+
+| File | Scopo |
+|------|-------|
+| `controllo-mattino.html` | App PWA standalone (giro distribuzione mobile) |
+| `sw.js` | Service worker unificato (network-first per HTML) |
+| `app.js` §§ CONTROLLO MATTINO | `cmLoad()`, `cmRender()`, `cmPrintBottle()`, `cmLoadWeeklyQC()`, `cmRenderWeeklyQC()` |
+| `index.html` `#view-controllo-mattino` | View dashboard con stats + QC settimanale + Stampa A4 |
+
+### Storage
+
+| Chiave | Contenuto |
+|--------|-----------|
+| `qm_cm_YYYY-MM-DD` | Stato giornaliero camere |
+| `qm_piano` | Piano settimana |
+
+### `cmRender(state, key)` — IMPORTANTE
+
+Anche quando `!state` (nessun dato per oggi), il render chiama **sempre** `cmLoadWeeklyQC()` prima di tornare — così la sezione QC settimanale con i pulsanti WhatsApp è sempre visibile nel dashboard.
+
+### `_todayKey()` in `controllo-mattino.html`
+
+È una **funzione** (non costante) — calcola la chiave KV al momento della chiamata, non al caricamento della pagina. Non trasformarla in `const`.
+
+### Dashboard (`cmLoad()`) — KV come source of truth
+
+Legge sempre KV prima (fonte dei dati scritti da smartphone), poi fallback localStorage.
+
+### QC Settimanale
+
+Conta sostituzioni bottiglie (condizione: `visited && !dnd && !libera && bottiglia==='consumata'`) per le 7 chiavi della settimana corrente da KV.
+
+**Pulsanti**: WhatsApp albergo (`wa.me/393274919588`) | 📋 Copia testo (`data-msg` attribute) | 👁 Anteprima.
+
+---
+
+## Preferenze Turni
+
+### Foglio Google collegato
+
+`https://docs.google.com/spreadsheets/d/1KysJxvGY-PxCSrjdWMjYCz_7KlFOIG6bSe3fXCVfObo`
+
+Apps Script: `TURNI_PREF_URL = 'https://script.google.com/macros/s/AKfycbzCbHxJbSfxg8X49w2JlfI9xo3HqhDiOa6E_0SDstdrvpQTQfqd2euaGp1oIK3zo0CA/exec'`
+
+Usa `typeof v.getTime === 'function'` invece di `instanceof Date` per evitare bug Apps Script.
 
 ---
 
 ## Recovery — Recupero Codice Perso
 
-Se delle viste o funzionalità spariscono, recuperare dal git history:
-
 ```bash
-# Lista commit recenti
 git log --oneline -20
 
 # Commit chiave con tutte le viste originali
 git show 2183997:index.html | grep 'id="view-'
-
-# Estrarre blocco specifico da commit (es. linee 3500-3800)
-git show 2183997:index.html | sed -n '3500,3800p'
 
 # Altri commit utili
 # f97c04d — versione con HKP views
 # c973287 — versione stabile pre-modifiche
 ```
 
-### Viste da non perdere
-
-Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (commit `2183997`). Se scompaiono di nuovo, il codice completo è disponibile in quel commit.
+Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (commit `2183997`).
 
 ---
 
@@ -658,265 +713,17 @@ Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (comm
 | HKP views scomparse | Sovrascrittura accidentale index.html | Recuperare da git `2183997` |
 | Browser usa versione vecchia app.js | Cache buster non aggiornato | Aggiornare `?v=...` in `<script src="app.js?v=...">` |
 | MT card non visibile in overview | `inT.length === 0` saltava il reparto | `showMembers = key==='mt' ? dept.members : inT` |
-| Basile '9-17' mostrato come non-attivo | '9-17' non in lista shift standard | MT usa `!IS_REST(sv)` invece di lista whitelist |
-| Extra Vincenza appare nell'UI | Era in DEPTS anche se nascosta nel foglio | Rimossa da `DEPTS.hk.members` |
+| Extra HK non visibili in overview | `renderDay` iterava solo `dept.members` | Aggiunti extra dal turno non in DEPTS alla card HK |
+| Turno upload box non appare | `#turniUploadBox` mancante in `#uc-turno-panel` | Aggiunto `div#turniUploadBox` nel pannello sidebar |
+| Warning "settimana precedente" con turno corretto | Confronto `getTime()` sensibile al timezone | Confronto con `getFullYear/Month/Date` |
+| `paoloTurno` mostra dati marzo 2026 | Usava costante `WEEK` hardcoded rimossa | Ora legge da `weekData` reale |
+| Testo HTML visibile nel pulsante "Copia testo" | `JSON.stringify` produceva virgolette che rompevano `onclick` | Usa `data-msg` attribute + `this.dataset.msg` |
+| QC settimanale non visibile senza dati giornalieri | `cmRender` faceva `return` anticipato prima di `cmLoadWeeklyQC()` | Chiamata `cmLoadWeeklyQC()` prima del return nel branch vuoto |
+| Voce Expedia scompare dopo Cmd+R | SW v2 cachava HTML senza `no-store` | `sw.js` aggiornato a `qm-v3` con `cache:'no-store'` per HTML |
+| `rcFmtDate` restituiva URL Google nel caso else | URL rimasta per errore nel ternary | Else branch corretto: `return raw` |
 | "Non in servizio" conta anche chi non è in turno | `IS_REST(v)` ritorna true per valori null/vuoti | Usare `IS_ABSENT(v)` che richiede R/FERIE espliciti |
-| DVR dati non persistenti | `dvrSave()` chiamava `LS.kvSet()` inesistente | Usare `kvSet('qm_dvr', json)` direttamente |
-| DVR vuoto su altro PC | `syncFromCloud` scriveva localStorage ma non chiamava `dvrRestore()` | Aggiunto `dvrRestore()` nel case `dvr` di `syncFromCloud` |
-| KPI chips nascosti al caricamento | `setView()` non chiamato all'avvio | IIFE che imposta `topbar-kpis` display:flex |
-| KPI chips tagliati | `overflow:hidden` su `.topbar-kpis` | Cambiato a `overflow:visible` + `flex-shrink:0` sui chip |
-| Meteo non funziona | `const days=data.daily` dichiarato dopo l'uso in `if(mm&&days)` | Spostata dichiarazione prima del blocco `if` |
-| % occupazione illeggibile | `position:absolute;right:8px` dentro la barra su sfondo grigio | Span % spostato FUORI dal container della barra |
-| Righe DUPLEX duplicate in HKP riepilogo | Range A38:AG47 include righe duplex | Filtro client-side `/duplex/i.test(c.nome)` |
-| `giorni_elaborati` sempre 1 in SoulArt | Apps Script leggeva range sbagliato | Script riscritto con range corretti; calcolo client-side da `camere_per_giorno` |
-| Inventario vuoto al refresh pagina | `invRender()` controlla `classList.contains('active')` prima che la view sia attivata | `setView()` chiama `invRender()` quando `id === 'inventario'` |
-| Date preferenze turni mostrano "Sun" | Apps Script restituisce `String(date)` = `"Sun Apr 06 2025 22:00:00 GMT+0200"` quando `instanceof Date` fallisce | `_tpFmtDate()` usa regex su nome mese inglese; Apps Script aggiornato con `typeof v.getTime === 'function'` |
-| Calendario preferenze turni senza conteggi | `countByDay` usava stringa completa con orario come chiave | `_tpFmtDate()` normalizza prima del confronto |
-| QC settimanale mostra dati sbagliati/mancanti | `_todayKey` era `const` calcolata al caricamento — reset del mattino sovrascriveva il giorno precedente se app aperta overnight | `_todayKey` diventa funzione, calcola data corrente ad ogni chiamata (`controllo-mattino.html`) |
-| Dati giornalieri Culligan persi dopo reset | Stesso bug `_todayKey` statico | Stessa fix: `_todayKey()` come funzione |
-
----
-
-## Inventario Detersivi
-
-### Scopo
-
-Gestione stock detersivi e prodotti per i due magazzini (SoulArt Hotel e Art Resort). I movimenti vengono registrati tramite scanner barcode da smartphone; il dashboard mostra stock, storico e analisi.
-
-### File
-
-| File | Scopo |
-|------|-------|
-| `inventory.html` | App mobile standalone (scanner + movimenti) |
-| `app.js` §§ INVENTARIO DETERSIVI | Logica dashboard: calcolo stock, render view, edit qty |
-| `index.html` `#view-inventario` | View nel dashboard (stock + movimenti + analisi) |
-
-### Storage (Cloudflare KV + localStorage)
-
-| Chiave KV / localStorage | Contenuto |
-|--------------------------|-----------|
-| `qm_inv_catalog` | Anagrafica prodotti condivisa: `{ [barcode]: { name, unit, soglia? } }` |
-| `qm_inv_moves_sa` | Movimenti magazzino SoulArt: array |
-| `qm_inv_moves_ar` | Movimenti magazzino Art Resort: array |
-
-### Struttura movimento
-
-```js
-{
-  id:      string,   // timestamp_random
-  barcode: string,
-  type:    'init' | 'in' | 'out',  // giacenza iniziale / carico / scarico
-  qty:     number,
-  ts:      number,   // Date.now()
-  note:    string,
-}
-```
-
-### Calcolo stock
-
-Per ogni prodotto per magazzino:
-1. Trova l'ultimo movimento `type === 'init'` → valore base
-2. Somma i movimenti `in` successivi
-3. Sottrae i movimenti `out` successivi
-4. Se nessun `init`: somma pura `in - out`
-
-```js
-invCalcStock(catalog, moves) → { [barcode]: qty }
-```
-
-### Modifica qty da dashboard
-
-Cliccando il valore qty in una riga stock si apre un prompt. Il nuovo valore viene salvato come movimento `init` con nota "Rettifica da dashboard" → pushato su KV → l'app mobile recepisce al prossimo caricamento.
-
-### Tab Analisi — Note
-
-- Prodotti in ordine **alfabetico**
-- Mostra **consumo settimanale medio** (`consumo / days * 7`)
-- Sezione **⚠️ Da riordinare**: prodotti con autonomia ≤14gg, ordinati per urgenza
-- Periodo selezionabile: 7 / 30 / 90 giorni / tutto
-- Tabella dettaglio a `max-width: 420px`
-
-### inventory.html — Funzionalità
-
-- Selezione magazzino: SoulArt Hotel / Art Resort
-- Scanner barcode: `BarcodeDetector` nativo (Android) con fallback ZXing
-- Prima scansione codice sconosciuto: chiede nome + unità → salva in catalogo
-- 3 tab: **Stock**, **Movimenti**, **Catalogo**
-- Modal movimenti: chip unità, stepper +/−, default Scarico per prodotti noti
-- Sync KV all'avvio + push al salvataggio
-
----
-
-## Preferenze Turni
-
-### Scopo
-
-Raccoglie le richieste di preferenza turno del personale inviate via Google Forms. Il dashboard mostra un calendario mensile con conteggio richieste per giorno e una lista filtrata per reparto.
-
-### Foglio Google collegato
-
-`https://docs.google.com/spreadsheets/d/1KysJxvGY-PxCSrjdWMjYCz_7KlFOIG6bSe3fXCVfObo`
-
-Foglio: **Risposte del modulo 1**
-
-| Colonna | Campo | Note |
-|---------|-------|------|
-| A | Timestamp invio | Data/ora compilazione modulo |
-| B | Nome dipendente | |
-| C | Reparto | Ricevimento / Breakfast / Housekeeping |
-| D | Data richiesta | Giorno in cui viene fatta la richiesta |
-| E | Giorno richiesto | Giorno per cui si chiede la preferenza |
-| F | Preferenza turno | RIPOSO, FERIE, RECEPTION APERTURA/CHIUSURA, ecc. |
-| G | Motivazione | Facoltativa |
-
-### Apps Script attuale
-
-```
-TURNI_PREF_URL = 'https://script.google.com/macros/s/AKfycbzCbHxJbSfxg8X49w2JlfI9xo3HqhDiOa6E_0SDstdrvpQTQfqd2euaGp1oIK3zo0CA/exec'
-```
-
-Template Apps Script (usa `typeof v.getTime === 'function'` invece di `instanceof Date` per evitare bug Apps Script):
-
-```javascript
-function doGet() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet()
-    .getSheetByName('Risposte del modulo 1');
-  if (!sheet) return resp({error:'sheet not found'});
-  const rows = sheet.getDataRange().getValues();
-  if (rows.length < 2) return resp({richieste:[], total:0});
-
-  const isDate = v => v && typeof v.getTime === 'function';
-  const fmt = v => isDate(v) ? Utilities.formatDate(v,'Europe/Rome','dd/MM/yyyy') : String(v||'').trim();
-
-  const data = rows.slice(1).map(row => ({
-    ts:              isDate(row[0]) ? row[0].toISOString() : String(row[0]||''),
-    nome:            String(row[1]||'').trim(),
-    reparto:         String(row[2]||'').trim(),
-    dataRichiesta:   fmt(row[3]),
-    giornoRichiesto: fmt(row[4]),
-    preferenza:      String(row[5]||'').trim(),
-    motivazione:     String(row[6]||'').trim()
-  })).filter(r => r.nome);
-
-  data.sort((a,b) => new Date(b.ts) - new Date(a.ts));
-  return resp({richieste: data, total: data.length});
-}
-
-function resp(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-```
-
-### Storage
-
-| Chiave localStorage | Contenuto |
-|--------------------|-----------|
-| `qm_turni_pref` | Array richieste (cache locale) |
-| `qm_tp_seen` | Array di timestamp (`r.ts`) già letti |
-
-### Funzionamento badge
-
-Badge sul nav item mostra il numero di richieste con `r.ts` non presenti in `qm_tp_seen`. Aprire la view marca automaticamente tutte come lette.
-
-### `_tpFmtDate(s)` — normalizzazione date
-
-Apps Script può restituire date in formati diversi. La funzione gestisce:
-- `"dd/MM/yyyy"` → restituisce invariato
-- `"yyyy-MM-ddT..."` (ISO) → converte in `dd/MM/yyyy`
-- `"Sun Apr 06 2025 22:00:00 GMT+0200"` (JS Date.toString) → regex su nome mese inglese
-
----
-
-## housekeeper.html & breakfast.html
-
-### housekeeper.html
-
-App standalone per la governante. Funzionalità:
-- Checklist camere per stato (pulita, sporca, da ispezionare, OOO)
-- Mappa visiva delle camere per piano
-- Persistenza locale via localStorage
-
-### breakfast.html
-
-App standalone per il breakfast manager. Funzionalità:
-- Lista ospiti con colazione inclusa
-- Filtri per struttura e trattamento
-- Stato servizio (servito / non servito)
-- Dati alimentati dagli arrivi giornalieri
-
----
-
-## Distribuzione Culligan (controllo-mattino.html)
-
-### Scopo
-
-PWA mobile per il giro mattutino di distribuzione acqua Culligan. Il QM scansiona/verifica ogni camera: mette le bottiglie, controlla le amenities bagno, segna il risultato. I dati sono sincronizzati tramite KV e visibili nel dashboard (`view-controllo-mattino`).
-
-### File
-
-| File | Scopo |
-|------|-------|
-| `controllo-mattino.html` | App PWA standalone (giro distribuzione mobile) |
-| `sw.js` | Service worker unificato (network-first per HTML, cache-first per asset) |
-| `app.js` §§ CONTROLLO MATTINO | Logica dashboard: `cmLoad()`, `cmRender()`, `cmPrintBottle()`, `cmLoadWeeklyQC()`, `cmRenderWeeklyQC()` |
-| `index.html` `#view-controllo-mattino` | View dashboard con stats + QC settimanale + pulsante Stampa A4 |
-
-### Storage (Cloudflare KV + localStorage)
-
-| Chiave | Contenuto |
-|--------|-----------|
-| `qm_cm_YYYY-MM-DD` | Stato giornaliero: oggetto con camere e loro stato amenities/bottiglia |
-| `qm_piano` | Piano settimana (`{giorni:[{data:'DD/MM/YYYY', soulart:{partenze:[], fermate:[], cambi:[]}}]}`) |
-
-### `_todayKey()` — CRITICO
-
-In `controllo-mattino.html`, `_todayKey` è una **funzione** (non una costante) che calcola la chiave KV del giorno corrente al momento della chiamata:
-
-```javascript
-function _todayKey() {
-  const d = new Date();
-  return 'qm_cm_'+d.getFullYear()+'-'+
-    String(d.getMonth()+1).padStart(2,'0')+'-'+
-    String(d.getDate()).padStart(2,'0');
-}
-```
-
-**Non trasformarla mai in `const`**: se fosse calcolata al caricamento della pagina, tenere l'app aperta overnight causerebbe il reset del mattino a sovrascrivere i dati del giorno precedente invece di inizializzare il nuovo giorno.
-
-### Flusso reset giornaliero
-
-Il reset si fa **la mattina del giorno in cui si inizia il giro**, non la sera prima:
-- Reset di lunedì mattina → scrive `{}` nella chiave di **lunedì** → i dati di domenica restano intatti in KV
-- Reset di martedì mattina → scrive `{}` nella chiave di **martedì** → i dati di lunedì restano intatti in KV
-
-### QC Settimanale (`cmLoadWeeklyQC` / `cmRenderWeeklyQC`)
-
-Conta quante volte durante la settimana corrente (dom→sab) la bottiglia è stata **consumata e sostituita** per ogni camera.
-
-**Condizione di conteggio**: `rs.visited && !rs.dnd && !rs.libera && rs.bottiglia === 'consumata'`
-
-Non viene conteggiato:
-- Bottiglia non consumata (trovata ancora piena)
-- Camera DND
-- Camera libera (bottiglia non sostituita)
-
-**Logica**: legge le 7 chiavi `qm_cm_YYYY-MM-DD` della settimana da KV. Per ogni giorno con dati, incrementa il contatore per camera. Risultato finale: `perRoom[r]` = numero di sostituzioni della camera `r` nella settimana.
-
-**Pulsanti nel report**:
-- **WhatsApp albergo** — link `wa.me/393274919588` con messaggio pre-compilato (apre WhatsApp Web dell'albergo)
-- **📋 Copia testo** — copia il messaggio negli appunti per incollarlo nel WhatsApp personale
-- **👁 Anteprima** — mostra il testo del messaggio
-
-### Service Worker
-
-Versione corrente in `sw.js`: `qm-v2`. Pattern:
-- **Proxy/KV requests** → sempre network, mai cache
-- **HTML files** → network-first, aggiorna cache, fallback offline
-- **Asset statici** → cache-first
-
-`sw-controllo-mattino.js` è un file legacy che si auto-disinstalla (cancella tutte le cache e si de-registra). Non modificarlo.
-
-### Dashboard (`cmLoad()`) — KV come source of truth
-
-Legge sempre KV prima (fonte dei dati scritti da smartphone), poi fallback localStorage.
+| DVR vuoto su altro PC | `syncFromCloud` non chiamava `dvrRestore()` | Aggiunto `dvrRestore()` nel case `dvr` di `syncFromCloud` |
+| Inventario vuoto al refresh | `invRender()` controlla `active` prima che la view sia attiva | `setView()` chiama `invRender()` quando `id === 'inventario'` |
+| Date preferenze turni mostrano "Sun" | Apps Script restituisce `String(date)` formato JS | `_tpFmtDate()` usa regex su nome mese inglese |
+| Banner "piano non caricato" sempre giallo | `_renderHome()` chiamata sync prima che `_loadPiano()` completasse | `_loadPiano().then(() => _renderHome())` |
+| Dashboard Culligan non aggiornato da smartphone | `cmLoad()` leggeva localStorage invece di KV | `cmLoad()` legge sempre KV prima |
