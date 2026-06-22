@@ -464,7 +464,7 @@ function hkpRenderContent(p){
       const media=Math.round(cam.camere_tot/giorniCam*10)/10;
       const pct=Math.round(cam.camere_tot/totMese*100);
       const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';
-      const colorEnd=bar>66?'#34c759aa':bar>33?'#1a3357aa':'var(--amber)';
+      const colorEnd=bar>66?'#34c759aa':bar>33?'#1e4080aa':'var(--amber)';
       html+=`<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i>0?'border-top:1px solid var(--border-light);':''}">
         <div style="width:160px;flex-shrink:0;font-size:var(--fs-sm);font-weight:500;">${cam.nome}</div>
         <div style="flex:1;">
@@ -5270,11 +5270,11 @@ function invPrintStock(){
     .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:16px;}
     h1{font-size:18px;font-weight:700;margin:0 0 3px;}
     .sub{font-size:12px;color:#888;}
-    .date-badge{background:#1A3357;color:#fff;padding:10px 18px;border-radius:8px;text-align:center;flex-shrink:0;}
+    .date-badge{background:#1E4080;color:#fff;padding:10px 18px;border-radius:8px;text-align:center;flex-shrink:0;}
     .date-badge-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;opacity:.75;margin-bottom:4px;}
     .date-badge-value{font-size:15px;font-weight:700;line-height:1.2;}
     table{width:100%;border-collapse:collapse;}
-    thead th{background:#1A3357;color:#fff;padding:8px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;text-align:left;}
+    thead th{background:#1E4080;color:#fff;padding:8px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;text-align:left;}
     thead th:nth-child(3),thead th:nth-child(4),thead th:nth-child(5){text-align:center;}
     tfoot td{padding:10px 10px 0;font-size:11px;color:#999;}
     .firma{margin-top:28px;display:flex;gap:40px;}
@@ -5729,7 +5729,7 @@ function invOrdersPrint(){
     return`<div style="border:1px solid #ddd;border-radius:8px;margin-bottom:12px;overflow:hidden;break-inside:avoid;">
       <div style="background:#f5f5f5;padding:8px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #ddd;">
         <span style="font-weight:700;font-size:13px;">📋 ${o.date}</span>
-        <span style="background:#1A3357;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">${_ordWhlabel(o.wh)}</span>
+        <span style="background:#1E4080;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">${_ordWhlabel(o.wh)}</span>
         <span style="font-size:11px;color:#555;">${o.fornitore||'—'}${rcv}</span>
         <span style="margin-left:auto;font-size:11px;font-weight:600;color:${o.status==='ricevuto'?'#065F46':o.status==='ordinato'?'#92400E':'#991B1B'};">${sBadgeTxt(o.status)}</span>
       </div>
