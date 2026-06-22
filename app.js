@@ -5574,7 +5574,14 @@ function invOrdersMarkReceived(id){
   const orders=invOrdersGet();
   const o=orders.find(x=>x.id===id);
   if(!o)return;
-  // Apre modal DDT invece di caricare automaticamente
+  // Carica catalogo del magazzino per il selettore prodotti extra
+  let catalog={};
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+o.wh)||'{}');}catch(e){}
+  const catalogOpts=Object.entries(catalog).sort((a,b)=>a[1].name.localeCompare(b[1].name))
+    .map(([bc,p])=>`<option value="${bc}" data-unit="${p.unit||''}">${p.name}</option>`).join('');
+  window._ddtOrderId=id;
+  window._ddtCatalogOpts=catalogOpts;
+  window._ddtWh=o.wh;
   let rows=(o.items||[]).map((it,i)=>`
     <tr>
       <td style="padding:6px 8px;font-size:var(--fs-xs);">${it.name}</td>
@@ -5595,7 +5602,7 @@ function invOrdersMarkReceived(id){
         <label style="font-size:var(--fs-xs);font-weight:600;display:block;margin-bottom:4px;">N° DDT / documento di trasporto</label>
         <input id="ddt_num" type="text" placeholder="es. DDT 2026/1234" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);">
       </div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <table style="width:100%;border-collapse:collapse;margin-bottom:8px;" id="ddt-table">
         <thead>
           <tr style="border-bottom:1px solid var(--border);">
             <th style="padding:6px 8px;font-size:var(--fs-xxs);text-align:left;color:var(--text-dim);">Prodotto</th>
@@ -5603,8 +5610,9 @@ function invOrdersMarkReceived(id){
             <th style="padding:6px 8px;font-size:var(--fs-xxs);text-align:center;color:var(--text-dim);">Consegnato</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody id="ddt-tbody">${rows}</tbody>
       </table>
+      <button onclick="invDDTAddRow()" style="width:100%;padding:7px;border-radius:8px;border:1px dashed var(--border);background:transparent;font-size:var(--fs-xs);color:var(--accent);cursor:pointer;margin-bottom:16px;">+ Aggiungi prodotto non ordinato</button>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button onclick="document.getElementById('ddt-modal').remove()" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:var(--fs-xs);cursor:pointer;">Annulla</button>
         <button onclick="invOrdersConfirmDDT('${id}')" style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:var(--fs-xs);font-weight:600;cursor:pointer;">✅ Conferma ricezione</button>
@@ -5613,22 +5621,45 @@ function invOrdersMarkReceived(id){
   document.body.appendChild(modal);
 }
 
+function invDDTAddRow(){
+  const tbody=document.getElementById('ddt-tbody');
+  if(!tbody)return;
+  const i='extra_'+Date.now();
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td style="padding:6px 8px;" colspan="2">
+      <select id="ddt_sel_${i}" style="width:100%;padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
+        <option value="">— seleziona prodotto —</option>
+        ${window._ddtCatalogOpts||''}
+      </select>
+    </td>
+    <td style="padding:6px 8px;text-align:center;">
+      <input type="number" min="0" step="1" value="1" id="ddt_qty_${i}"
+        data-extra="1" data-sel="ddt_sel_${i}"
+        style="width:70px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);text-align:center;">
+    </td>`;
+  tbody.appendChild(tr);
+}
+
 function invOrdersConfirmDDT(id){
   const orders=invOrdersGet();
   const o=orders.find(x=>x.id===id);
   if(!o)return;
   const ddtNum=(document.getElementById('ddt_num')?.value||'').trim();
   const movKey='qm_inv_moves_'+o.wh;
+  const noteBase='DDT'+(ddtNum?' '+ddtNum:'')+' · '+o.date+(o.fornitore?' · '+o.fornitore:'');
   try{
     const moves=JSON.parse(localStorage.getItem(movKey)||'[]');
+    // Prodotti dell'ordine
     (o.items||[]).forEach((it,i)=>{
-      const qtyEl=document.getElementById('ddt_qty_'+i);
-      const qty=parseFloat(qtyEl?.value||0);
-      if(qty>0) moves.push({
-        id:Date.now()+'_'+Math.random().toString(36).slice(2,5),
-        barcode:it.barcode,type:'in',qty,ts:Date.now(),
-        note:'DDT'+(ddtNum?' '+ddtNum:'')+' · '+o.date+(o.fornitore?' · '+o.fornitore:'')
-      });
+      const qty=parseFloat(document.getElementById('ddt_qty_'+i)?.value||0);
+      if(qty>0) moves.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,5),barcode:it.barcode,type:'in',qty,ts:Date.now(),note:noteBase});
+    });
+    // Prodotti extra aggiunti nel modal
+    document.querySelectorAll('#ddt-tbody input[data-extra="1"]').forEach(inp=>{
+      const qty=parseFloat(inp.value||0);
+      const bc=document.getElementById(inp.dataset.sel)?.value||'';
+      if(qty>0&&bc) moves.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,5),barcode:bc,type:'in',qty,ts:Date.now(),note:noteBase+' (extra)'});
     });
     const json=JSON.stringify(moves);
     localStorage.setItem(movKey,json);
