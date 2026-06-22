@@ -5446,6 +5446,9 @@ function invRenderOrders(){
       const actions=o.status==='ordinato'
         ?`<button onclick="invOrdersMarkReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;cursor:pointer;font-weight:600;">✅ Ricevuto</button>
            <button onclick="invOrdersCancel('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">Annulla</button>`
+        :o.status==='ricevuto'
+        ?`<button onclick="invOrdersUndoReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;cursor:pointer;">↩ Annulla ricezione</button>
+           <button onclick="invOrdersDelete('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;" title="Elimina">🗑</button>`
         :`<button onclick="invOrdersDelete('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;" title="Elimina">🗑</button>`;
       h+=`<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border-light);overflow:hidden;">
         <div style="padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">
@@ -5648,18 +5651,19 @@ function invOrdersConfirmDDT(id){
   const ddtNum=(document.getElementById('ddt_num')?.value||'').trim();
   const movKey='qm_inv_moves_'+o.wh;
   const noteBase='DDT'+(ddtNum?' '+ddtNum:'')+' · '+o.date+(o.fornitore?' · '+o.fornitore:'');
+  const createdIds=[];
   try{
     const moves=JSON.parse(localStorage.getItem(movKey)||'[]');
     // Prodotti dell'ordine
     (o.items||[]).forEach((it,i)=>{
       const qty=parseFloat(document.getElementById('ddt_qty_'+i)?.value||0);
-      if(qty>0) moves.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,5),barcode:it.barcode,type:'in',qty,ts:Date.now(),note:noteBase});
+      if(qty>0){const mid=Date.now()+'_'+Math.random().toString(36).slice(2,5);createdIds.push(mid);moves.push({id:mid,barcode:it.barcode,type:'in',qty,ts:Date.now(),note:noteBase});}
     });
     // Prodotti extra aggiunti nel modal
     document.querySelectorAll('#ddt-tbody input[data-extra="1"]').forEach(inp=>{
       const qty=parseFloat(inp.value||0);
       const bc=document.getElementById(inp.dataset.sel)?.value||'';
-      if(qty>0&&bc) moves.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,5),barcode:bc,type:'in',qty,ts:Date.now(),note:noteBase+' (extra)'});
+      if(qty>0&&bc){const mid=Date.now()+'_'+Math.random().toString(36).slice(2,5);createdIds.push(mid);moves.push({id:mid,barcode:bc,type:'in',qty,ts:Date.now(),note:noteBase+' (extra)'});}
     });
     const json=JSON.stringify(moves);
     localStorage.setItem(movKey,json);
@@ -5668,6 +5672,7 @@ function invOrdersConfirmDDT(id){
   o.status='ricevuto';
   o.tsRicevuto=Date.now();
   if(ddtNum) o.ddt=ddtNum;
+  o.movIds=createdIds;
   invOrdersSave(orders);
   document.getElementById('ddt-modal')?.remove();
   invRenderOrders();
@@ -5677,6 +5682,30 @@ function invOrdersCancel(id){
   const orders=invOrdersGet();
   const o=orders.find(x=>x.id===id);
   if(o){o.status='annullato';invOrdersSave(orders);invRenderOrders();}
+}
+
+function invOrdersUndoReceived(id){
+  if(!confirm('Annullare la ricezione? I movimenti di carico creati verranno rimossi dall\'inventario.'))return;
+  const orders=invOrdersGet();
+  const o=orders.find(x=>x.id===id);
+  if(!o)return;
+  // Rimuove movimenti creati dal DDT
+  const movKey='qm_inv_moves_'+o.wh;
+  const ids=new Set(o.movIds||[]);
+  if(ids.size>0){
+    try{
+      const moves=JSON.parse(localStorage.getItem(movKey)||'[]').filter(m=>!ids.has(m.id));
+      const json=JSON.stringify(moves);
+      localStorage.setItem(movKey,json);
+      kvSet(movKey,json).catch(()=>{});
+    }catch(e){}
+  }
+  o.status='ordinato';
+  delete o.tsRicevuto;
+  delete o.ddt;
+  delete o.movIds;
+  invOrdersSave(orders);
+  invRenderOrders();
 }
 
 function invOrdersDelete(id){
