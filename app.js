@@ -20,15 +20,6 @@ const DEPTS={fo:{label:'Front Office',cls:'fo',members:['Maddaloni M.','Presta P
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
 let weekData=null,activeDay=0;
 const IS_REST=v=>{if(!v)return true;const u=v.trim().toUpperCase();return['R','RIPOSO','OFF','—','-','–',''].includes(u);};
-const WEEK={giorni:[
-  {label:'Lun 16',date:new Date(2026,2,16),shifts:{'Maddaloni M.':'P','Presta P.':'R','De Rosa T.':'CC','Pennacchio V.':'CG','Perez L.':'AC','Imparato G.':'AG','Vatiero R.':'R','Barbosa D.':'NG','D\'Andrea F.':'R','Grieco V.':'NC','Matarese A.':'R','Nacci M.':'SOUL N.','De Masi C.':'SOUL','Chiantese M.':'200','Scognamillo E.':'400','Esposito M.':'300/100','Branno M.':'R','Sarnataro A.':'PR/MS','Amorese S.':'BKF SOUL','Albano D.':'R','Ferace C.':'BKF GALL','Extra BKF SAU':'R','Basile G.':'9-17 porterage'}},
-  {label:'Mar 17',date:new Date(2026,2,17),shifts:{'Maddaloni M.':'P','Presta P.':'AC','De Rosa T.':'CG','Pennacchio V.':'R','Perez L.':'AG','Imparato G.':'INT GALL 10/18','Vatiero R.':'CC','Barbosa D.':'NG','D\'Andrea F.':'R','Grieco V.':'NC','Matarese A.':'SOUL','Nacci M.':'SOUL N.','De Masi C.':'PR/MS O (200)','Chiantese M.':'400','Scognamillo E.':'R','Esposito M.':'300/200','Branno M.':'100','Sarnataro A.':'R','Amorese S.':'R','Albano D.':'BKF SOUL','Ferace C.':'BKF GALL','Extra BKF SAU':'BKF SOUL','Basile G.':'9-17 porterage'}},
-  {label:'Mer 18',date:new Date(2026,2,18),shifts:{'Maddaloni M.':'P','Presta P.':'P','De Rosa T.':'CG','Pennacchio V.':'CC','Perez L.':'AC','Imparato G.':'R','Vatiero R.':'AG','Barbosa D.':'R','D\'Andrea F.':'NG','Grieco V.':'NC','Matarese A.':'SOUL','Nacci M.':'SOUL N.','De Masi C.':'FERIE','Chiantese M.':'200','Scognamillo E.':'400/300','Esposito M.':'R','Branno M.':'100','Sarnataro A.':'PR/MS','Amorese S.':'FERIE','Albano D.':'BKF SOUL','Ferace C.':'BKF GALL','Extra BKF SAU':'BKF SOUL','Basile G.':'9-17'}},
-  {label:'Gio 19',date:new Date(2026,2,19),shifts:{'Maddaloni M.':'P','Presta P.':'PGALL','De Rosa T.':'CG','Pennacchio V.':'R','Perez L.':'AC','Imparato G.':'CC','Vatiero R.':'AG','Barbosa D.':'R','D\'Andrea F.':'NG','Grieco V.':'NC','Matarese A.':'SOUL','Nacci M.':'SOUL N.','De Masi C.':'FERIE','Chiantese M.':'R','Scognamillo E.':'400','Esposito M.':'300/200','Branno M.':'100','Sarnataro A.':'PR/MS','Amorese S.':'FERIE','Albano D.':'BKF SOUL','Ferace C.':'BKF GALL','Extra BKF SAU':'BKF SOUL','Basile G.':'9-17'}},
-  {label:'Ven 20',date:new Date(2026,2,20),shifts:{'Maddaloni M.':'P','Presta P.':'R','De Rosa T.':'R','Pennacchio V.':'AC','Perez L.':'AG','Imparato G.':'CC','Vatiero R.':'CG','Barbosa D.':'NC','D\'Andrea F.':'NG','Grieco V.':'R','Matarese A.':'SOUL','Nacci M.':'R','De Masi C.':'FERIE','Chiantese M.':'SOUL N.','Scognamillo E.':'400/300','Esposito M.':'300/200','Branno M.':'100','Sarnataro A.':'PR/MS','Amorese S.':'BKF SOUL','Albano D.':'BKF SOUL','Ferace C.':'R','Extra BKF SAU':'BKF GALL','Basile G.':'9-17'}},
-  {label:'Sab 21',date:new Date(2026,2,21),shifts:{'Maddaloni M.':'R','Presta P.':'AC','De Rosa T.':'AG','Pennacchio V.':'CC','Perez L.':'R','Imparato G.':'INT GALL 10/18','Vatiero R.':'CG','Barbosa D.':'NC','D\'Andrea F.':'NG','Grieco V.':'R','Matarese A.':'SOUL','Nacci M.':'SOUL N.','De Masi C.':'FERIE','Chiantese M.':'200','Scognamillo E.':'400','Esposito M.':'300','Branno M.':'100','Sarnataro A.':'PR/MS','Amorese S.':'BKF SOUL','Albano D.':'BKF SOUL','Ferace C.':'BKF GALL','Extra BKF SAU':'BKF GALL','Basile G.':'9-14'}},
-  {label:'Dom 22',date:new Date(2026,2,22),shifts:{'Maddaloni M.':'R','Presta P.':'P','De Rosa T.':'AG','Pennacchio V.':'CG','Perez L.':'R','Imparato G.':'AC','Vatiero R.':'INT GALL 9/17','Barbosa D.':'NC','D\'Andrea F.':'NG','Grieco V.':'CC','Matarese A.':'SOUL','Nacci M.':'SOUL N.','De Masi C.':'R','Chiantese M.':'200','Scognamillo E.':'400','Esposito M.':'300','Branno M.':'100','Sarnataro A.':'PR/MS','Amorese S.':'BKF SOUL','Albano D.':'BKF SOUL','Ferace C.':'BKF GALL','Extra BKF SAU':'BKF GALL','Basile G.':'R'}}
-]};
 // §§ TURNO — ACCORDIONI UC & UPLOAD BOX
 let turnoOpen=false;
 function toggleTurnoAccordion(){}
@@ -2047,13 +2038,11 @@ function refreshOverviewForDate(d){
   try{
     const el=document.getElementById('paoloTurno');
     if(el){
-      const giorno=WEEK.giorni.find(g=>{const gd=new Date(g.date);gd.setHours(0,0,0,0);return gd.getTime()===ref.getTime();});
-      if(!giorno){el.textContent='Quality Manager';el.style.color='';}
-      else{
-        const turno=giorno.shifts['Presta P.'];
-        if(!turno||IS_REST(turno)){el.textContent='Riposo';el.style.color='var(--red)';}
-        else{el.textContent='Turno: '+turno;el.style.color='var(--green)';}
-      }
+      if(weekData){
+        const giorno=weekData.giorni.find(g=>{const gd=g.date instanceof Date?g.date:new Date(g.date);return gd.getFullYear()===ref.getFullYear()&&gd.getMonth()===ref.getMonth()&&gd.getDate()===ref.getDate();});
+        if(!giorno){el.textContent='Quality Manager';el.style.color='';}
+        else{const turno=giorno.shifts['Presta P.'];if(!turno||IS_REST(turno)){el.textContent='Riposo';el.style.color='var(--red)';}else{el.textContent='Turno: '+turno;el.style.color='var(--green)';}}
+      }else{el.textContent='Quality Manager';el.style.color='';}
     }
   }catch(e){}
   // 2. Staff area
@@ -4407,7 +4396,7 @@ async function checkAndParseArriviRaw(){
 async function handleRCFile(file){rcShowProc('Lettura del PDF...');rcHideError();try{const ab=await file.arrayBuffer();const pdfData=new Uint8Array(ab);rcShowProc('Estrazione testo...');const pdfDoc=await pdfjsLib.getDocument({data:pdfData}).promise;let fullText='';for(let i=1;i<=pdfDoc.numPages;i++){const page=await pdfDoc.getPage(i);const tc=await page.getTextContent();fullText+=tc.items.map(x=>x.str).join(' ')+'\n';}const guests=rcParseGuests(fullText);rcHideProc();if(!guests.length)rcShowError('Nessun ospite trovato.');else rcRenderCards(guests);}catch(err){rcHideProc();rcShowError('Errore: '+err.message);}}
 function rcCleanName(raw){let name=raw.trim().replace(/\s*\([^)]+\)/g,'').trim();const cp=new RegExp('^('+ROOM_CODES.join('|')+')\\s+','i');let prev='';while(prev!==name){prev=name;name=name.replace(cp,'').trim();}return name;}
 function rcParseGuests(text){let year=new Date().getFullYear();const ym=text.match(/arrivi\s*[-–]\s*\d{1,2}\/\d{1,2}\/(\d{4})/i);if(ym)year=parseInt(ym[1]);const norm=text.replace(/\s+/g,' ').trim();const guests=[];const pat=/(\b(?:Art\s*\d+|\d{2,3}|AS_LIB|[A-Z]{2,8}_?[A-Z]*\d*)\b)\s*\/\s*(?:[A-Z_\s]{2,20}?)\s+([A-ZÀÈÉÌÒÙ][A-Za-zÀ-ÿ\s']+?(?:\s+\([^)]+\))?)\s+(\d)\s+(BB|HB|FB|RO|AI|MP)\s+(\d{1,2}\/\d{1,2})\s*[-–]\s*(\d{1,2}\/\d{1,2})/gi;let m;while((m=pat.exec(norm))!==null){const nome=rcCleanName(m[2]);if(!nome||nome.length<2)continue;guests.push({camera:m[1].trim(),nome,pax:parseInt(m[3]),trattamento:m[4].trim(),checkin:rcFmtDate(m[5],year),checkout:rcFmtDate(m[6],year)});}return guests;}
-function rcFmtDate(raw,year){const p=raw.split('/');return p.length===2?String(p[0]).padStart(2,'0')+'/'+String(p[1]).padStart(2,'0')+'/'+year:'https://script.google.com/macros/s/AKfycbwtxy0lngIzQ07QKRX2llx3lBCp2GdE1CoXsAW7GbKre5OEEARNdpCDuahc0DFsPAp7/exec';}
+function rcFmtDate(raw,year){const p=raw.split('/');return p.length===2?String(p[0]).padStart(2,'0')+'/'+String(p[1]).padStart(2,'0')+'/'+year:raw;}
 function rcCalcNights(ci,co){try{const[di,mi,yi]=ci.split('/').map(Number),[d2,m2,y2]=co.split('/').map(Number);const n=Math.round((new Date(y2,m2-1,d2)-new Date(yi,mi-1,di))/86400000);return n>0?n:'—';}catch{return '—';}}
 function rcTodayStr(){const d=new Date();return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
 function ccNumberHTML(){const g=[0,1,2,3].map(()=>`<div class="cc-group">${[0,1,2,3].map(()=>`<span class="cc-digit"></span>`).join('')}</div>`);return`<div class="cc-num-wrap">${g[0]}<span class="cc-dash">–</span>${g[1]}<span class="cc-dash">–</span>${g[2]}<span class="cc-dash">–</span>${g[3]}</div>`;}
