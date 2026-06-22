@@ -1244,7 +1244,25 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   const bMerged={partenze:[...(giorno.boutique?.partenze||[]),...lib.partenze],fermate:[...(giorno.boutique?.fermate||[]),...lib.fermate],cambi:[...(giorno.boutique?.cambi||[]),...lib.cambi]};
   const sHtml=renderHotel('SoulArt',giorno.soulart||{}),bHtml=renderHotel('Boutique - San Liborio',bMerged);
   if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per questo giorno</div>';return;}
-  el.innerHTML=`${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">↑ partenze · = fermate · ⇄ cambio camera</div>`;
+  const brandLogo=elId==='ov-piano-preview'?`<div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 32px;gap:8px;pointer-events:none;user-select:none;border-left:1px solid var(--border-light);margin-left:8px;">
+    <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" width="38" height="38">
+      <circle cx="18" cy="18" r="16.5" fill="none" stroke="rgba(26,46,85,.18)" stroke-width="1.3"/>
+      <polygon points="18,2 20.68,11.53 18,18 15.32,11.53" fill="#B8943F"/>
+      <polygon points="34,18 24.47,15.32 18,18 24.47,20.68" fill="#B8943F"/>
+      <polygon points="18,34 15.32,24.47 18,18 20.68,24.47" fill="#B8943F"/>
+      <polygon points="2,18 11.53,20.68 18,18 11.53,15.32" fill="#B8943F"/>
+      <polygon points="29.31,6.69 20.68,11.53 18,18 24.47,15.32" fill="#1A2E55"/>
+      <polygon points="29.31,29.31 24.47,20.68 18,18 20.68,24.47" fill="#1A2E55"/>
+      <polygon points="6.69,29.31 15.32,24.47 18,18 11.53,20.68" fill="#1A2E55"/>
+      <polygon points="6.69,6.69 11.53,15.32 18,18 15.32,11.53" fill="#1A2E55"/>
+      <circle cx="18" cy="18" r="2" fill="rgba(26,46,85,.65)"/>
+    </svg>
+    <div style="text-align:center;line-height:1.25;">
+      <div style="font-size:13px;font-weight:700;color:#1A2E55;letter-spacing:.04em;">Compass <span style="color:#B8943F;">QM</span></div>
+      <div style="font-size:8px;color:var(--text-dim);letter-spacing:.07em;margin-top:1px;">Connected · Automated · Precise</div>
+    </div>
+  </div>`:'';
+  el.innerHTML=`<div style="display:flex;align-items:stretch;"><div style="flex:1;min-width:0;">${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">↑ partenze · = fermate · ⇄ cambio camera</div></div>${brandLogo}</div>`;
 }
 
 function pianoOvInit(){
