@@ -129,6 +129,11 @@
           <span class="uc-badge" id="uc-turno-badge">▾</span>
         </div>
         <div class="uc-panel" id="uc-turno-panel">
+          <div id="turniUploadBox" onclick="document.getElementById('turniFileInput').click()" style="cursor:pointer;border:2px dashed var(--border);border-radius:10px;padding:18px 12px;text-align:center;margin:8px 0;color:var(--text-dim);font-size:var(--fs-xs);">
+            <div style="font-size:1.6rem;margin-bottom:6px;">📷</div>
+            <div style="font-weight:600;color:var(--text);">Carica immagine o PDF</div>
+            <div style="margin-top:4px;">Screenshot del turno, PDF, Excel</div>
+          </div>
           <div class="turni-status" id="turniStatus"></div>
           <div class="loaded-info" id="loadedInfo">
             <div class="li-date" id="loadedDate"></div>
@@ -1492,7 +1497,7 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=337-20260622"></script>
+<script src="app.js?v=338-20260622"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
