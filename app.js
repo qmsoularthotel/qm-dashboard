@@ -210,17 +210,17 @@ Analizza questa immagine/PDF del planning e restituisci SOLO un oggetto JSON val
   ]
 }
 
-REGOLE IMPORTANTI:
-1. Estrai TUTTE le righe presenti nel planning senza eccezioni, incluse righe con nomi "Extra XYZ" — ognuna è una persona diversa.
-2. Usa il nome ESATTAMENTE come scritto nel planning (rispetta maiuscole/minuscole e abbreviazioni). Non abbinare, non rinominare.
-3. Le celle con solo "-" o "." o vuote → metti "R" (persona non disponibile quel giorno).
-4. La lettera "R" da sola → metti "R" (riposo). ATTENZIONE: "P" è un turno valido (presenza), NON è riposo — non confondere P con R.
-5. Qualsiasi altro valore ("AG", "P", "P GALL", "BKF SOUL", "FERIE", "R RECUPERO", "SOUL N.", "9-17", "INT GALL 10/18", "NC", "NG", "CC", "CG", "AC", ecc.) → metti il valore ESATTO della cella così com'è, senza modifiche.
-6. Le date nel planning sono nel formato "lunedì 30 marzo" → converti in "2026-03-30" e label "Lun 30/03".
-7. Includi tutti i 7 giorni presenti nel planning.
+LISTA UFFICIALE DEI DIPENDENTI (usa SEMPRE questi nomi esatti come chiave nel JSON):
+${staff.join('\n')}
 
-Elenco orientativo dei dipendenti (potrebbero esserci nomi aggiuntivi nell'immagine — includili tutti):
-${staff.join(', ')}
+REGOLE IMPORTANTI:
+1. Per ogni persona nel planning, trova il corrispondente nella lista ufficiale sopra e usa QUEL nome esatto come chiave. Usa la similarità fonetica e di cognome: "MADDALONI" → "Maddaloni M.", "De Rosa" → "De Rosa T.", "MATARESE" → "Matarese A.", "NACCI" → "Nacci M.", ecc.
+2. Se nel planning c'è una persona NON presente nella lista (es. Extra Giuditta, Extra Nunzia), includila con il nome scritto nel planning.
+3. Includi TUTTE le persone visibili nel planning, senza saltarne nessuna.
+4. Le celle con solo "-" o "." o vuote → metti "R".
+5. La lettera "R" da sola → metti "R" (riposo). "P" è un turno valido (presenza), NON è riposo.
+6. Qualsiasi altro valore ("AG", "P", "AC", "CG", "NC", "NG", "CC", "FERIE", "9-17", ecc.) → metti il valore ESATTO della cella.
+7. Date nel formato "lunedì 30 marzo" → "2026-03-30" e label "Lun 30/03". Includi tutti i 7 giorni.
 
 Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const contentBlock=isPDF
