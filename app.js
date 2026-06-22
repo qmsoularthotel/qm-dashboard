@@ -2048,9 +2048,8 @@ function refreshOverviewForDate(d){
   try{
     if(weekData){
       let idx=weekData.giorni.findIndex(g=>{
-        const gd=new Date(g.date instanceof Date?g.date:g.date);
-        gd.setHours(0,0,0,0);
-        return gd.getTime()===ref.getTime();
+        const gd=g.date instanceof Date?g.date:new Date(g.date);
+        return gd.getFullYear()===ref.getFullYear()&&gd.getMonth()===ref.getMonth()&&gd.getDate()===ref.getDate();
       });
       if(idx!==-1){
         activeDay=idx;renderDay(activeDay);updateWeekNavActive();updateSidebarInfo();
