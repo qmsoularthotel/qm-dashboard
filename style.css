@@ -553,6 +553,12 @@ body.dark .panel{box-shadow:0 2px 8px rgba(0,0,0,.22);}
 /* Sidebar bottom separator più sottile */
 .sidebar-bottom{border-top:1px solid var(--border-light);background:linear-gradient(0deg,var(--surface2) 0%,transparent 100%);}
 
+/* ── COMPASS QM — logo area navy ── */
+.sidebar .logo{background:#1A2E55;border-bottom-color:rgba(255,255,255,.12);}
+.sidebar .logo-title{color:#fff;}
+.sidebar .logo-title span{color:#B8943F;}
+.sidebar .logo-tagline{color:rgba(255,255,255,.42);opacity:1;}
+
 /* ── TONE BUTTONS ──────────────────────────────────────── */
 .rev-tone-bar{display:flex;align-items:center;gap:4px;margin-bottom:8px;}
 .rev-tone-btn{padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:10px;color:var(--text-muted);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;transition:all .12s;}
