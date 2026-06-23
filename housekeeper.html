@@ -6,32 +6,34 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Housekeeping — SoulArt Hotel</title>
+<meta name="theme-color" content="#1c3a5e">
+<title>Housekeeping — Compass QM</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 :root{
   color-scheme: light;
-  --accent:#003580;
-  --accent2:#1a4fa0;
-  --green:#1a7f5a;
-  --amber:#b45309;
-  --red:#dc2626;
-  --bg:#eceae5;
-  --surface:#ffffff;
-  --surface2:#f5f4f1;
-  --border:#dedad0;
-  --border-light:#eceae5;
-  --text:#1a1916;
-  --text-dim:#6b6860;
-  --text-muted:#9a9890;
-  --shadow-sm:0 1px 4px rgba(0,0,0,.08);
-  --shadow-md:0 3px 10px rgba(0,0,0,.10);
-  --shadow-lg:0 6px 20px rgba(0,0,0,.12);
+  --accent:#1c3a5e;
+  --accent2:#2d5a8e;
+  --gold:#c9952f;
+  --green:#2e7d32;
+  --amber:#e65100;
+  --red:#c62828;
+  --bg:#eef1f5;
+  --surface:#f8f9fb;
+  --surface2:#e8ecf1;
+  --border:#cdd4de;
+  --border-light:#dde2ea;
+  --text:#0c1f33;
+  --text-dim:#4a5568;
+  --text-muted:#888;
+  --shadow-sm:0 1px 4px rgba(0,0,0,.06);
+  --shadow-md:0 3px 10px rgba(0,0,0,.08);
+  --shadow-lg:0 6px 20px rgba(0,0,0,.10);
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;}
 
 /* Header */
-.header{background:linear-gradient(135deg,#003580 0%,#1a5bb5 100%);padding:16px 20px 14px;position:sticky;top:0;z-index:10;box-shadow:0 2px 12px rgba(0,53,128,.35);}
+.header{background:#1c3a5e;padding:16px 20px 14px;position:sticky;top:0;z-index:10;box-shadow:0 2px 12px rgba(0,0,0,.2);border-bottom:2px solid #c9952f;}
 .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .header-title{font-size:18px;font-weight:700;color:#fff;}
 .header-sub{font-size:11px;color:rgba(255,255,255,.65);margin-top:1px;}
@@ -50,19 +52,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .content{padding:14px;}
 
 /* Today badge */
-.today-badge{background:linear-gradient(90deg,#003580,#1a5bb5);color:#fff;font-size:10px;font-weight:700;border-radius:6px;padding:3px 9px;display:inline-block;margin-bottom:10px;letter-spacing:.06em;box-shadow:var(--shadow-sm);}
+.today-badge{background:#1c3a5e;color:#fff;font-size:10px;font-weight:700;border-radius:6px;padding:3px 9px;display:inline-block;margin-bottom:10px;letter-spacing:.06em;box-shadow:var(--shadow-sm);border-left:3px solid #c9952f;}
 
 /* Structure section */
-.struttura-title{font-size:11px;font-weight:800;color:var(--accent2);text-transform:uppercase;letter-spacing:.09em;margin:18px 0 9px;padding-left:10px;border-left:3px solid var(--accent2);display:flex;align-items:center;gap:7px;}
+.struttura-title{font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.09em;margin:18px 0 9px;padding-left:10px;border-left:3px solid var(--gold);display:flex;align-items:center;gap:7px;}
 .struttura-title:first-of-type{margin-top:0;}
 .brand-logo{width:22px;height:22px;object-fit:contain;mix-blend-mode:multiply;flex-shrink:0;}
 
 /* KPI cards */
 .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px;}
 .kpi-card{background:var(--surface);border-radius:14px;padding:16px 12px;text-align:center;border:1px solid var(--border-light);box-shadow:var(--shadow-sm);}
-.kpi-card.arrivi{border-top:3px solid var(--accent);background:linear-gradient(180deg,#f0f5ff 0%,#fff 60%);}
-.kpi-card.fermate{border-top:3px solid var(--accent);background:linear-gradient(180deg,#f0f5ff 0%,#fff 60%);}
-.kpi-card.partenze{border-top:3px solid var(--red);background:linear-gradient(180deg,#fff5f5 0%,#fff 60%);}
+.kpi-card.arrivi{border-top:3px solid var(--gold);background:var(--surface);}
+.kpi-card.fermate{border-top:3px solid var(--gold);background:var(--surface);}
+.kpi-card.partenze{border-top:3px solid var(--red);background:var(--surface);}
 .kpi-icon{font-size:22px;margin-bottom:4px;line-height:1;}
 .kpi-val{font-size:38px;font-weight:800;line-height:1;margin-bottom:5px;}
 .kpi-val.arrivi{color:var(--accent);}
@@ -75,8 +77,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .no-data-icon{font-size:32px;margin-bottom:8px;}
 
 /* Totale giorno */
-.day-total{background:linear-gradient(135deg,#f0f5ff 0%,#fff 100%);border-radius:14px;padding:16px;margin-top:8px;border:1px solid rgba(0,53,128,.14);box-shadow:var(--shadow-md);}
-.day-total-title{font-size:10px;font-weight:800;color:var(--accent2);text-transform:uppercase;letter-spacing:.09em;margin-bottom:12px;}
+.day-total{background:var(--surface);border-radius:14px;padding:16px;margin-top:8px;border:1px solid var(--border);border-top:3px solid var(--gold);box-shadow:var(--shadow-md);}
+.day-total-title{font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.09em;margin-bottom:12px;}
 .day-total-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
 .day-total-item{background:rgba(255,255,255,.8);border-radius:10px;padding:11px 8px;text-align:center;border:1px solid rgba(0,53,128,.08);}
 .day-total-val{font-size:28px;font-weight:800;line-height:1;margin-bottom:3px;color:var(--accent);}
@@ -128,8 +130,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .chip.fermata{background:rgba(0,53,128,.07);color:var(--accent);border:1px solid rgba(0,53,128,.12);}
 
 /* Per-housekeeper stats */
-.hk-stats-box{background:linear-gradient(135deg,#f8f9ff 0%,#fff 100%);border-radius:12px;padding:10px 14px;margin:6px 0 10px;border:1px solid rgba(0,53,128,.12);box-shadow:var(--shadow-sm);}
-.hk-stat-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,53,128,.07);}
+.hk-stats-box{background:var(--surface);border-radius:12px;padding:10px 14px;margin:6px 0 10px;border:1px solid var(--border);border-top:3px solid var(--gold);box-shadow:var(--shadow-sm);}
+.hk-stat-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-light);}
 .hk-stat-row:last-child{border-bottom:none;padding-bottom:0;}
 .hk-stat-row:first-child{padding-top:0;}
 .hk-stat-name{flex:1;font-size:12px;font-weight:700;color:var(--text);}
@@ -142,9 +144,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 
 <div class="header">
   <div class="header-top">
-    <div>
-      <div class="header-title">🛏️ Housekeeping</div>
-      <div class="header-sub">SoulArt · Boutique Hotel</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <svg viewBox="0 0 36 36" width="32" height="32" style="flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="18,1 21,13 27,9 23,15 35,18 23,21 27,27 21,23 18,35 15,23 9,27 13,21 1,18 13,15 9,9 15,13" fill="#c9952f"/><polygon points="18,6 20,14 18,12 16,14" fill="rgba(255,255,255,.5)"/><polygon points="18,30 16,22 18,24 20,22" fill="rgba(255,255,255,.25)"/></svg>
+      <div>
+        <div class="header-title">Housekeeping</div>
+        <div class="header-sub">Compass QM · SoulArt · Boutique</div>
+      </div>
+    </div>
       <div id="hDataTs" style="font-size:10px;color:rgba(255,255,255,.55);margin-top:3px;"></div>
     </div>
     <div style="text-align:right;">
