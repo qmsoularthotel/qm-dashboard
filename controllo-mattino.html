@@ -6,37 +6,39 @@
 <meta name="color-scheme" content="light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#0A0A0A">
-<title>Distribuzione Culligan — SoulArt</title>
+<meta name="theme-color" content="#1c3a5e">
+<title>Distribuzione Culligan — Compass QM</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --black:#0A0A0A;
-  --green:#059669;  --green-bg:#F0FDF7; --green-border:#6EE7B7;
-  --amber:#D97706;  --amber-bg:#FFFBEB; --amber-border:#FCD34D;
-  --red:#DC2626;    --red-bg:#FFF5F5;   --red-border:#FCA5A5;
-  --blue:#2563EB;   --blue-bg:#F0F7FF;
-  --purple:#7C3AED; --purple-bg:#F5F3FF;
-  --bg:#BEBEC6;--surface:#FFFFFF;--border:rgba(0,0,0,.08);
-  --text:#0A0A0A;--text-dim:#71717A;--text-muted:#A1A1AA;
+  --black:#1c3a5e;
+  --navy:#1c3a5e; --gold:#c9952f;
+  --green:#2e7d32;  --green-bg:#e8f5e9; --green-border:#a5d6a7;
+  --amber:#e65100;  --amber-bg:#fff3e0; --amber-border:#ffcc80;
+  --red:#c62828;    --red-bg:#ffebee;   --red-border:#ef9a9a;
+  --blue:#1565c0;   --blue-bg:#e3f2fd;
+  --purple:#6a1b9a; --purple-bg:#f3e5f5;
+  --bg:#eef1f5;--surface:#f8f9fb;--border:rgba(28,58,94,.1);
+  --text:#0c1f33;--text-dim:#4a5568;--text-muted:#888;
   --r:14px;
-  --sh:0 1px 2px rgba(0,0,0,.05),0 3px 10px rgba(0,0,0,.07);
-  --sh-lift:0 1px 3px rgba(0,0,0,.06),0 6px 18px rgba(0,0,0,.08);
-  --card-border:1px solid rgba(0,0,0,.07);
+  --sh:0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.06);
+  --sh-lift:0 1px 3px rgba(0,0,0,.05),0 6px 18px rgba(0,0,0,.07);
+  --card-border:1px solid rgba(28,58,94,.1);
   --card-top:inset 0 1px 0 rgba(255,255,255,.9);
 }
 html{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;
-  background:#BEBEC6;
+  background:#eef1f5;
   color:var(--text);-webkit-text-size-adjust:100%;}
 body{min-height:100vh;overflow-x:hidden;}
 .screen{display:none;min-height:100vh;flex-direction:column;}
 .screen.active{display:flex;}
 
 /* ══ HEADER ══ */
-.hdr{background:linear-gradient(180deg,#1C1C1C 0%,#0A0A0A 100%);color:#fff;padding:0 16px;
+.hdr{background:#1c3a5e;color:#fff;padding:0 16px;
   height:56px;display:flex;align-items:center;gap:10px;
   position:sticky;top:0;z-index:100;flex-shrink:0;
-  box-shadow:0 2px 0 rgba(255,255,255,.04),0 4px 20px rgba(0,0,0,.45);}
+  box-shadow:0 2px 0 rgba(201,149,47,.25),0 4px 20px rgba(0,0,0,.25);
+  border-bottom:2px solid #c9952f;}
 .hdr-logo{height:24px;width:auto;object-fit:contain;flex-shrink:0;}
 .hdr-sep{width:1px;height:20px;background:rgba(255,255,255,.15);flex-shrink:0;}
 .hdr-center{flex:1;min-width:0;}
@@ -65,14 +67,14 @@ body{min-height:100vh;overflow-x:hidden;}
 /* ══ PROGRESS ══ */
 .prog-wrap{background:var(--surface);border-radius:var(--r);
   padding:13px 16px 14px;margin-bottom:10px;
-  box-shadow:var(--sh-lift);border:var(--card-border);}
+  box-shadow:var(--sh-lift);border:var(--card-border);border-top:3px solid var(--gold);}
 .prog-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
 .prog-lbl{font-size:.68rem;font-weight:600;letter-spacing:.05em;
   text-transform:uppercase;color:var(--text-muted);}
 .prog-val{font-size:1.4rem;font-weight:900;color:var(--black);}
 .prog-bar{height:12px;background:#DCDCDE;border-radius:8px;overflow:hidden;
   box-shadow:inset 0 1px 4px rgba(0,0,0,.14);}
-.prog-fill{height:100%;background:linear-gradient(90deg,#1A1A2E 0%,#2563EB 100%);
+.prog-fill{height:100%;background:linear-gradient(90deg,#1c3a5e 0%,#2d6ab4 100%);
   border-radius:8px;transition:width .6s cubic-bezier(.4,0,.2,1);}
 
 /* ══ STAT GRID ══ */
@@ -86,7 +88,7 @@ body{min-height:100vh;overflow-x:hidden;}
 
 /* ══ BOTTONI ══ */
 .action-row{display:flex;gap:8px;margin-bottom:12px;}
-.btn-main{flex:1;background:linear-gradient(180deg,#222 0%,#0A0A0A 100%);color:#fff;border:none;
+.btn-main{flex:1;background:#1c3a5e;color:#fff;border:none;
   padding:14px 10px;border-radius:var(--r);font-size:.88rem;font-weight:700;
   cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
   -webkit-tap-highlight-color:transparent;
@@ -169,7 +171,7 @@ body{min-height:100vh;overflow-x:hidden;}
 
 /* Bottiglia */
 .bottle-card{background:var(--surface);border-radius:var(--r);
-  padding:16px;margin-bottom:10px;box-shadow:var(--sh-lift),var(--card-top);border:var(--card-border);}
+  padding:16px;margin-bottom:10px;box-shadow:var(--sh-lift),var(--card-top);border:var(--card-border);border-top:3px solid var(--gold);}
 .bottle-card-title{font-size:.82rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.07em;color:var(--text-muted);margin-bottom:12px;}
 .bottle-seg{display:flex;flex-direction:column;gap:8px;}
@@ -209,7 +211,7 @@ body{min-height:100vh;overflow-x:hidden;}
 
 /* Checklist sections */
 .chk-sec{background:var(--surface);border-radius:var(--r);
-  margin-bottom:10px;overflow:hidden;box-shadow:var(--sh-lift),var(--card-top);border:var(--card-border);}
+  margin-bottom:10px;overflow:hidden;box-shadow:var(--sh-lift),var(--card-top);border:var(--card-border);border-top:3px solid var(--gold);}
 .chk-sec-hdr{padding:13px 14px;font-size:.82rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.06em;color:var(--text-muted);background:#FAFAFA;
   display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
@@ -237,7 +239,7 @@ textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;
 textarea:focus{outline:none;border-color:#A1A1AA;}
 
 /* ══ ROOM HERO — numero grande in vista dettaglio ══ */
-.room-hero{background:linear-gradient(160deg,#1C1C1C 0%,#0A0A0A 100%);color:#fff;
+.room-hero{background:linear-gradient(160deg,#1c3a5e 0%,#0c2544 100%);color:#fff;
   padding:20px 16px 18px;text-align:center;border-radius:var(--r);
   margin-bottom:12px;display:flex;flex-direction:column;align-items:center;}
 .room-hero-pfx{font-size:.6rem;font-weight:700;letter-spacing:.14em;
@@ -250,10 +252,11 @@ textarea:focus{outline:none;border-color:#A1A1AA;}
 /* Save bar */
 .save-bar{position:fixed;bottom:0;left:0;right:0;
   padding:10px 12px max(12px,env(safe-area-inset-bottom));
-  background:linear-gradient(180deg,#1C1C1C 0%,#0A0A0A 100%);z-index:200;
-  box-shadow:0 -4px 24px rgba(0,0,0,.35),0 -1px 0 rgba(255,255,255,.04);}
-.btn-save{width:100%;background:linear-gradient(180deg,#fff 0%,#F0F0F0 100%);
-  color:var(--black);border:none;
+  background:#1c3a5e;z-index:200;
+  box-shadow:0 -4px 24px rgba(0,0,0,.2),0 -1px 0 rgba(201,149,47,.3);
+  border-top:2px solid #c9952f;}
+.btn-save{width:100%;background:#c9952f;
+  color:#fff;border:none;
   padding:18px;border-radius:10px;font-size:1.1rem;font-weight:800;
   cursor:pointer;-webkit-tap-highlight-color:transparent;
   box-shadow:0 1px 3px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.9);}
@@ -309,7 +312,7 @@ textarea:focus{outline:none;border-color:#A1A1AA;}
 <!-- ══ HOME ══════════════════════════════ -->
 <div class="screen active" id="s-home">
   <div class="hdr">
-    <img src="img/logo-culligan.png" class="hdr-logo" alt="SoulArt" onerror="this.style.display='none'">
+    <svg viewBox="0 0 36 36" width="28" height="28" style="flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="18,1 21,13 27,9 23,15 35,18 23,21 27,27 21,23 18,35 15,23 9,27 13,21 1,18 13,15 9,9 15,13" fill="#c9952f"/><polygon points="18,6 20,14 18,12 16,14" fill="rgba(255,255,255,.5)"/><polygon points="18,30 16,22 18,24 20,22" fill="rgba(255,255,255,.25)"/></svg>
     <div class="hdr-sep"></div>
     <div class="hdr-center">
       <div class="hdr-title">Distribuzione Culligan</div>
@@ -338,7 +341,7 @@ textarea:focus{outline:none;border-color:#A1A1AA;}
 <div class="screen" id="s-room">
   <div class="hdr">
     <button class="btn-back" onclick="goHome()">‹</button>
-    <img src="img/logo-culligan.png" class="hdr-logo" alt="SoulArt" onerror="this.style.display='none'">
+    <svg viewBox="0 0 36 36" width="28" height="28" style="flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="18,1 21,13 27,9 23,15 35,18 23,21 27,27 21,23 18,35 15,23 9,27 13,21 1,18 13,15 9,9 15,13" fill="#c9952f"/><polygon points="18,6 20,14 18,12 16,14" fill="rgba(255,255,255,.5)"/><polygon points="18,30 16,22 18,24 20,22" fill="rgba(255,255,255,.25)"/></svg>
     <div class="hdr-sep"></div>
     <div class="hdr-center"><div class="hdr-title" id="room-title">Art 1</div></div>
     <span class="hdr-date" id="room-chip"></span>
@@ -351,7 +354,7 @@ textarea:focus{outline:none;border-color:#A1A1AA;}
 <div class="screen" id="s-summary">
   <div class="hdr">
     <button class="btn-back" onclick="goHome()">‹</button>
-    <img src="img/logo-culligan.png" class="hdr-logo" alt="SoulArt" onerror="this.style.display='none'">
+    <svg viewBox="0 0 36 36" width="28" height="28" style="flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="18,1 21,13 27,9 23,15 35,18 23,21 27,27 21,23 18,35 15,23 9,27 13,21 1,18 13,15 9,9 15,13" fill="#c9952f"/><polygon points="18,6 20,14 18,12 16,14" fill="rgba(255,255,255,.5)"/><polygon points="18,30 16,22 18,24 20,22" fill="rgba(255,255,255,.25)"/></svg>
     <div class="hdr-sep"></div>
     <div class="hdr-center"><div class="hdr-title">Riepilogo</div></div>
     <span class="hdr-date" id="sum-chip"></span>
