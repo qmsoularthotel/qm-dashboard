@@ -15,9 +15,9 @@
   }
 })();
 </script>
-<div id="splash" style="position:fixed;inset:0;z-index:99999;background:#0c1f33;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:opacity .6s ease;" onclick="this.style.opacity='0';setTimeout(()=>this.remove(),650);">
+<div id="splash" style="position:fixed;inset:0;z-index:99999;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:opacity .6s ease;" onclick="this.style.opacity='0';setTimeout(()=>this.remove(),650);">
   <video id="splash-video" src="gemini_generated_video_dad89ccf.mp4" autoplay muted playsinline style="max-width:min(520px,90vw);max-height:70vh;border-radius:12px;"></video>
-  <div style="margin-top:20px;color:rgba(255,255,255,.45);font-size:13px;font-family:system-ui,sans-serif;letter-spacing:.06em;">tocca per saltare</div>
+  <div style="margin-top:20px;color:rgba(0,0,0,.3);font-size:13px;font-family:system-ui,sans-serif;letter-spacing:.06em;">tocca per saltare</div>
 </div>
 <script>
 (function(){
@@ -29,6 +29,7 @@
   sessionStorage.setItem('qm_splash_seen','1');
   var v=document.getElementById('splash-video');
   if(v){
+    v.playbackRate=1.8;
     v.addEventListener('ended',function(){
       var s=document.getElementById('splash');
       if(s){ s.style.opacity='0'; setTimeout(function(){s.remove();},650); }
