@@ -1,7 +1,7 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
   /* ── Compass QM Design System v1.0 ── */
-  --bg:#f4efe4;--surface:#faf7f2;--surface2:#f0ece4;--border:#d4cfc4;--border-light:#e2ddd4;
+  --bg:#eef1f5;--surface:#f8f9fb;--surface2:#e8ecf1;--border:#cdd4de;--border-light:#dde2ea;
   --text:#0c1f33;--text-muted:#4a5568;--text-dim:#888880;
   --accent:#1c3a5e;--accent-bg:#e8f0f8;
   --gold:#c9952f;--gold-bg:#fef5e7;
