@@ -3,23 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>DVR - SoulArt Hotel & Boutique Hotel</title>
+<meta name="theme-color" content="#1c3a5e">
+<title>DVR — Compass QM</title>
 <style>
   :root{
-    --bg:#F0F0F2;--surface:#FFFFFF;--surface2:#F4F4F6;
-    --border:#E2E2E4;--border-light:#EBEBED;
-    --text:#1A1916;--text-dim:#6B6B6E;--text-muted:#9A9A9D;
-    --accent:#1E4080;--accent-bg:#E8EEF8;
-    --green:#1E7A48;--green-bg:#E6F4EC;
-    --red:#C0352A;--red-bg:#FDECEA;
-    --amber:#A05A00;--amber-bg:#FDF3E3;
+    --bg:#eef1f5;--surface:#f8f9fb;--surface2:#e8ecf1;
+    --border:#cdd4de;--border-light:#dde2ea;
+    --text:#0c1f33;--text-dim:#4a5568;--text-muted:#888;
+    --accent:#1c3a5e;--accent-bg:#e3eaf4;--gold:#c9952f;
+    --green:#2e7d32;--green-bg:#e8f5e9;
+    --red:#c62828;--red-bg:#ffebee;
+    --amber:#e65100;--amber-bg:#fff3e0;
     --shadow:0 1px 4px rgba(0,0,0,.08);
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
 
   /* TOPBAR */
-  .topbar{background:var(--accent);color:#fff;padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+  .topbar{background:#1c3a5e;border-bottom:2px solid #c9952f;color:#fff;padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
   .topbar-left{display:flex;align-items:center;gap:10px;}
   .topbar-icon{font-size:22px;}
   .topbar-title{font-size:17px;font-weight:700;letter-spacing:-.01em;}
@@ -32,7 +33,7 @@
   /* SOC TABS */
   .soc-bar{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:57px;z-index:40;}
   .soc-tab{flex:1;padding:13px 8px;font-size:13px;font-weight:600;color:var(--text-dim);text-align:center;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;}
-  .soc-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .soc-tab.active{color:var(--accent);border-bottom-color:var(--gold);}
 
   /* CONTENT */
   .content{padding:14px 14px 40px;}
@@ -94,11 +95,14 @@
 
 <div class="topbar">
   <div class="topbar-left">
-    <div class="topbar-icon">🛡️</div>
+    <svg viewBox="0 0 36 36" width="28" height="28" style="flex-shrink:0;" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="18,1 21,13 27,9 23,15 35,18 23,21 27,27 21,23 18,35 15,23 9,27 13,21 1,18 13,15 9,9 15,13" fill="#c9952f"/>
+      <polygon points="18,6 20,14 18,12 16,14" fill="rgba(255,255,255,.5)"/>
+      <polygon points="18,30 16,22 18,24 20,22" fill="rgba(255,255,255,.25)"/>
+    </svg>
     <div>
-      <div class="topbar-title">DVR - SoulArt Hotel & Boutique Hotel</div>
-      <div class="topbar-sub">Sola consultazione</div>
-      <div class="topbar-sub">Ideata e realizzata da Pierpaolo Presta · Uso esclusivo Quality Management SoulArt Hotel</div>
+      <div class="topbar-title">DVR & Compliance</div>
+      <div class="topbar-sub">Compass QM · Sola consultazione</div>
     </div>
   </div>
   <div class="sync-dot" id="syncDot"></div>
