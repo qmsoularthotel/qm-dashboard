@@ -447,6 +447,10 @@ function dvrRender(){
 dvrRestore();
 dvrRender();
 dvrSyncCloud();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw-dvr.js').catch(() => {});
+}
 // §§ ACCESS LOG (one-time write on open)
 (function(){
   const devId=localStorage.getItem('qm_dvr_devid')||(()=>{const id=Math.random().toString(36).slice(2);localStorage.setItem('qm_dvr_devid',id);return id;})();
