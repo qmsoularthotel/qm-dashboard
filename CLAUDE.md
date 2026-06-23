@@ -58,6 +58,8 @@ Ad ogni modifica ad `app.js`, **aggiornare il cache buster** altrimenti il brows
 
 ## Development
 
+**URL produzione**: `https://www.compass-qm.com`
+
 Aprire `index.html` direttamente nel browser. Nessun server necessario.
 
 Per trovare rapidamente sezioni di codice usare il grep con i marker `// §§`:
