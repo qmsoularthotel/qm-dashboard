@@ -4,11 +4,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=201">
+<link rel="stylesheet" href="style.css?v=202">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='255-20260501';
+  const V='256-20260623';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -21,12 +21,13 @@
 </div>
 <script>
 (function(){
-  if(sessionStorage.getItem('qm_splash_seen')){
+  var nav = performance.getEntriesByType('navigation')[0];
+  var isReload = nav && nav.type === 'reload';
+  if(isReload){
     var s=document.getElementById('splash');
     if(s) s.remove();
     return;
   }
-  sessionStorage.setItem('qm_splash_seen','1');
   var v=document.getElementById('splash-video');
   if(v){
     v.playbackRate=1.8;
