@@ -5719,49 +5719,89 @@ function invOrdersDelete(id){
   invRenderOrders();
 }
 
+let _invEditDraft=[];
+let _invEditId=null;
+
 function invOrdersEditOrder(id){
   const orders=invOrdersGet();
   const o=orders.find(x=>x.id===id);
   if(!o)return;
+  _invEditId=id;
+  _invEditDraft=o.items.map(it=>({...it}));
+  let catSA={},catAR={};
+  try{catSA=JSON.parse(localStorage.getItem('qm_inv_catalog_sa')||'{}');}catch(e){}
+  try{catAR=JSON.parse(localStorage.getItem('qm_inv_catalog_ar')||'{}');}catch(e){}
+  const cat={...catSA,...catAR};
+  const opts=Object.entries(cat).sort((a,b)=>a[1].name.localeCompare(b[1].name))
+    .map(([bc,p])=>`<option value="${bc}">${p.name} (${p.unit||'pz'})</option>`).join('');
   const modal=document.createElement('div');
   modal.id='inv-edit-modal';
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
-  const rows=o.items.map((it,i)=>`
-    <tr style="${i>0?'border-top:1px solid var(--border-light);':''}">
-      <td style="padding:7px 8px;font-size:var(--fs-xs);">${it.name}</td>
-      <td style="padding:7px 8px;text-align:center;">
-        <input type="number" min="0" step="1" value="${it.qty||''}" id="oed_qty_${i}" placeholder="—"
-          style="width:70px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);text-align:center;">
-        ${it.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:3px;">${it.unit}</span>`:''}
-      </td>
-    </tr>`).join('');
   modal.innerHTML=`
     <div style="background:var(--surface);border-radius:16px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.25);">
       <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:4px;">✏️ Modifica ordine</div>
       <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:14px;">${o.date}${o.fornitore?' · '+o.fornitore:''}</div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
-        <thead><tr style="border-bottom:1px solid var(--border);">
-          <th style="padding:6px 8px;font-size:var(--fs-xxs);text-align:left;color:var(--text-dim);">Prodotto</th>
-          <th style="padding:6px 8px;font-size:var(--fs-xxs);text-align:center;color:var(--text-dim);">Quantità ordinata</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div id="inv-edit-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border-light);margin-bottom:16px;">
+        <select id="inv-edit-prod" style="flex:2;min-width:140px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-xs);">
+          <option value="">— Aggiungi prodotto —</option>${opts}
+        </select>
+        <input id="inv-edit-qty" type="number" min="1" placeholder="qty" style="width:60px;padding:7px 6px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-xs);">
+        <button onclick="invOrdersEditAddItem()" style="padding:7px 12px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:600;font-size:var(--fs-xs);">+</button>
+      </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button onclick="document.getElementById('inv-edit-modal').remove()" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:var(--fs-xs);cursor:pointer;">Annulla</button>
-        <button onclick="invOrdersEditSave('${id}')" style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:var(--fs-xs);font-weight:600;cursor:pointer;">💾 Salva</button>
+        <button onclick="invOrdersEditSave()" style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:var(--fs-xs);font-weight:600;cursor:pointer;">💾 Salva</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
+  _invEditDraftRender();
 }
 
-function invOrdersEditSave(id){
-  const orders=invOrdersGet();
-  const o=orders.find(x=>x.id===id);
-  if(!o)return;
-  o.items.forEach((it,i)=>{
-    const v=parseFloat(document.getElementById('oed_qty_'+i)?.value);
-    it.qty=isNaN(v)||v<=0?null:v;
+function _invEditDraftRender(){
+  const el=document.getElementById('inv-edit-list');
+  if(!el)return;
+  if(!_invEditDraft.length){el.innerHTML=`<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:4px 0;">Nessun prodotto.</div>`;return;}
+  el.innerHTML=_invEditDraft.map((it,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:7px 10px;">
+      <span style="flex:1;font-size:var(--fs-xs);">${it.name}</span>
+      <input type="number" min="0" step="1" value="${it.qty||''}" placeholder="—" id="ied_qty_${i}"
+        style="width:65px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);text-align:center;">
+      ${it.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);">${it.unit}</span>`:''}
+      <button onclick="invOrdersEditRemove(${i})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:2px 4px;flex-shrink:0;">✕</button>
+    </div>`).join('');
+}
+
+function invOrdersEditAddItem(){
+  const bc=document.getElementById('inv-edit-prod')?.value;
+  if(!bc)return;
+  const qtyRaw=parseInt(document.getElementById('inv-edit-qty')?.value)||0;
+  const qty=qtyRaw>0?qtyRaw:null;
+  let catSA={},catAR={};
+  try{catSA=JSON.parse(localStorage.getItem('qm_inv_catalog_sa')||'{}');}catch(e){}
+  try{catAR=JSON.parse(localStorage.getItem('qm_inv_catalog_ar')||'{}');}catch(e){}
+  const cat={...catSA,...catAR};
+  const prod=cat[bc]||{};
+  const existing=_invEditDraft.find(i=>i.barcode===bc);
+  if(existing){if(qty)existing.qty=(existing.qty||0)+qty;}
+  else{_invEditDraft.push({barcode:bc,name:prod.name||bc,unit:prod.unit||'pz',qty});}
+  document.getElementById('inv-edit-prod').value='';
+  document.getElementById('inv-edit-qty').value='';
+  _invEditDraftRender();
+}
+
+function invOrdersEditRemove(i){_invEditDraft.splice(i,1);_invEditDraftRender();}
+
+function invOrdersEditSave(){
+  // Legge le qty dai campi input prima di salvare
+  _invEditDraft.forEach((it,i)=>{
+    const el=document.getElementById('ied_qty_'+i);
+    if(el){const v=parseFloat(el.value);it.qty=isNaN(v)||v<=0?null:v;}
   });
+  const orders=invOrdersGet();
+  const o=orders.find(x=>x.id===_invEditId);
+  if(!o)return;
+  o.items=[..._invEditDraft];
   invOrdersSave(orders);
   document.getElementById('inv-edit-modal')?.remove();
   invRenderOrders();
