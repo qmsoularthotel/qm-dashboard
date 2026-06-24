@@ -4,7 +4,7 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=202">
+<link rel="stylesheet" href="style.css?v=203">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
@@ -87,10 +87,10 @@
       <div class="nav-item active" onclick="setView('overview',this)"><span class="nav-icon">👁️</span>Overview</div>
 
       <div class="nav-section">Operativo Quotidiano</div>
-      <div class="nav-item" onclick="setView('checklist',this)"><span class="nav-icon">☑️</span>Checklist<span class="nav-badge" id="checklistNavBadge">6</span></div>
-      <div class="nav-item" onclick="setView('registrazione',this)"><span class="nav-icon">🪪</span>Registration Cards</div>
+      <div class="nav-item" onclick="setView('checklist',this)"><span class="nav-icon"><img src="img/icons/cheklist.png" class="nav-icon-img"></span>Checklist<span class="nav-badge" id="checklistNavBadge">6</span></div>
+      <div class="nav-item" onclick="setView('registrazione',this)"><span class="nav-icon"><img src="img/icons/registration_cards.png" class="nav-icon-img"></span>Registration Cards</div>
       <div class="nav-group-header" id="hkpGroupToggle" onclick="toggleHkpGroup()">
-        <span class="nav-icon">🧹</span>
+        <span class="nav-icon"><img src="img/icons/housekeeping.png" class="nav-icon-img"></span>
         <span>Operativa Housekeeping</span>
         <span class="nav-group-chevron">▾</span>
       </div>
@@ -99,7 +99,7 @@
         <div class="nav-item" onclick="setView('hkpsheetar',this)"><span class="nav-icon">↳</span>Art Resort</div>
       </div>
       <div class="nav-group-header" id="bkfGroupToggle" onclick="toggleBkfGroup()">
-        <span class="nav-icon">☕</span>
+        <span class="nav-icon"><img src="img/icons/breakfast_sheet.png" class="nav-icon-img"></span>
         <span>Breakfast Sheet</span>
         <span class="nav-group-chevron">▾</span>
       </div>
@@ -107,11 +107,11 @@
         <div class="nav-item" onclick="setView('bkfsheet',this)"><span class="nav-icon">↳</span>SoulArt Hotel</div>
         <div class="nav-item" onclick="setView('bkfsheetar',this)"><span class="nav-icon">↳</span>Art Resort Galleria</div>
       </div>
-      <div class="nav-item" onclick="setView('controllo-mattino',this)"><span class="nav-icon">💧</span>Distribuzione Culligan</div>
+      <div class="nav-item" onclick="setView('controllo-mattino',this)"><span class="nav-icon"><img src="img/icons/acqua_culligan.png" class="nav-icon-img"></span>Distribuzione Culligan</div>
 
       <div class="nav-section">Qualità</div>
       <div class="nav-group-header" id="recGroupToggle" onclick="toggleRecGroup()">
-        <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="4" fill="#003580"/><text x="5" y="17" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="white">B</text></svg></span>
+        <span class="nav-icon"><img src="img/icons/ecensioni_booking.png" class="nav-icon-img"></span>
         <span>Recensioni Booking</span>
         <span class="nav-group-chevron">▾</span>
       </div>
@@ -125,7 +125,7 @@
         <div class="nav-item" onclick="setView('recensioni-sb',this)"><span class="nav-icon">↳</span>Recensioni Santa Brigida</div>
       </div>
       <div class="nav-group-header" id="expGroupToggle" onclick="toggleExpGroup()">
-        <span class="nav-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="4" fill="#FFC200"/><text x="3" y="17" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#1A1A1A">EXP</text></svg></span>
+        <span class="nav-icon"><img src="img/icons/recensioni_expedia.png" class="nav-icon-img"></span>
         <span>Recensioni Expedia</span>
         <span class="nav-group-chevron">▾</span>
       </div>
@@ -136,10 +136,10 @@
         <div class="nav-item" onclick="setView('recensioni-exp-sb',this)"><span class="nav-icon">↳</span>Expedia Santa Brigida</div>
       </div>
       <div class="nav-section">Staff</div>
-      <div class="nav-item" onclick="setView('turni-pref',this)"><span class="nav-icon">📅</span>Preferenze Turni<span class="nav-badge" id="turniPrefBadge" style="display:none;"></span></div>
+      <div class="nav-item" onclick="setView('turni-pref',this)"><span class="nav-icon"><img src="img/icons/turni.png" class="nav-icon-img"></span>Preferenze Turni<span class="nav-badge" id="turniPrefBadge" style="display:none;"></span></div>
 
       <div class="nav-section">Sicurezza</div>
-      <div class="nav-item" onclick="setView('dvr',this)"><span class="nav-icon">🛡️</span>DVR<span class="nav-badge" id="dvrNavBadge" style="display:none;background:var(--amber);"></span></div>
+      <div class="nav-item" onclick="setView('dvr',this)"><span class="nav-icon"><img src="img/icons/dvr.png" class="nav-icon-img"></span>DVR<span class="nav-badge" id="dvrNavBadge" style="display:none;background:var(--amber);"></span></div>
 
       <div class="nav-section">Strumenti</div>
       <div class="nav-item" onclick="setView('inventario',this);invRender()"><span class="nav-icon">📦</span>Inventari e Ordini</div>
@@ -154,7 +154,7 @@
       <div style="padding:0 10px 10px;">
         <div class="uc-slot" id="uc-turno" onclick="ucToggle('turno')" title="Carica o espandi turno">
           <input type="file" id="turniFileInput" accept="image/*,.xlsx,.xls,.csv,.pdf" style="display:none">
-          <span class="uc-icon">📋</span>
+          <span class="uc-icon"><img src="img/icons/turni.png" class="uc-icon-img"></span>
           <div class="uc-info"><div class="uc-label">Turno</div><div class="uc-sub" id="uc-turno-sub">Non caricato</div></div>
           <span class="uc-badge" id="uc-turno-badge">▾</span>
         </div>
@@ -178,7 +178,7 @@
         </div>
         <div class="uc-slot" id="uc-piano" onclick="ucToggle('piano')" title="Piano settimana camere">
           <input type="file" id="pianoFileInput" accept="application/pdf" style="display:none">
-          <span class="uc-icon">📅</span>
+          <span class="uc-icon"><img src="img/icons/piano_settimanale.png" class="uc-icon-img"></span>
           <div class="uc-info"><div class="uc-label">Piano settimana</div><div class="uc-sub" id="uc-piano-sub">Non caricato</div></div>
           <span class="uc-badge" id="uc-piano-badge">▾</span>
         </div>
@@ -195,7 +195,7 @@
         </div>
         <div class="uc-slot" id="uc-arrivi" onclick="ucToggle('arrivi')" title="Carica o espandi arrivi">
           <input type="file" id="arriviFileInput" accept="application/pdf,image/*" style="display:none">
-          <span class="uc-icon">🛎️</span>
+          <span class="uc-icon"><img src="img/icons/riepilogo_reception.png" class="uc-icon-img"></span>
           <div class="uc-info"><div class="uc-label">Riepilogo Reception</div><div class="uc-sub" id="uc-arrivi-sub">Non caricato</div></div>
           <span class="uc-badge" id="uc-arrivi-badge">▾</span>
         </div>
@@ -213,7 +213,7 @@
         </div>
         <div class="uc-slot" id="uc-bkf" onclick="ucToggle('bkf')" title="Carica o espandi pasti">
           <input type="file" id="bkfFileInput" accept="application/pdf" style="display:none">
-          <span class="uc-icon">☕</span>
+          <span class="uc-icon"><img src="img/icons/report_pasti.png" class="uc-icon-img"></span>
           <div class="uc-info"><div class="uc-label">Report pasti</div><div class="uc-sub" id="uc-bkf-sub">Non caricato</div></div>
           <span class="uc-badge" id="uc-bkf-badge">▾</span>
         </div>
@@ -235,7 +235,7 @@
         </div>
         <div class="uc-slot" id="uc-pul" onclick="ucToggle('pul')" title="Carica o espandi pulizie">
           <input type="file" id="pulFileInput" accept="application/pdf" style="display:none">
-          <span class="uc-icon">🧹</span>
+          <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
           <div class="uc-info"><div class="uc-label">Report pulizie</div><div class="uc-sub" id="uc-pul-sub">Non caricato</div></div>
           <span class="uc-badge" id="uc-pul-badge">▾</span>
         </div>
@@ -261,7 +261,7 @@
         </div>
         <div class="uc-slot" id="uc-soul" onclick="ucToggle('soul')" title="Soul App HKP">
           <input type="file" id="soulFileInput" accept="application/pdf" style="display:none">
-          <span class="uc-icon">🧹</span>
+          <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
           <div class="uc-info"><div class="uc-label">Soul App HKP</div><div class="uc-sub" id="uc-soul-sub">Non caricato</div></div>
           <span class="uc-badge" id="uc-soul-badge">▾</span>
         </div>
@@ -278,7 +278,7 @@
         </div>
         <div class="uc-slot" id="uc-bout" onclick="ucToggle('bout')" title="Boutique App HKP">
           <input type="file" id="boutFileInput" accept="application/pdf" style="display:none">
-          <span class="uc-icon">🧹</span>
+          <span class="uc-icon"><img src="img/icons/housekeeping_2.png" class="uc-icon-img"></span>
           <div class="uc-info"><div class="uc-label">Boutique App HKP</div><div class="uc-sub" id="uc-bout-sub">Non caricato</div></div>
           <span class="uc-badge" id="uc-bout-badge">▾</span>
         </div>
