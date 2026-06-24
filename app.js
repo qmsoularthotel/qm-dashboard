@@ -5385,7 +5385,32 @@ function invOrdersSave(orders){
 const _ordFmtDate=ts=>{const d=new Date(ts);return String(d.getDate()).padStart(2,'0')+'/'+(String(d.getMonth()+1).padStart(2,'0'))+'/'+d.getFullYear();};
 const _ordWhlabel=wh=>wh==='sa'?'SoulArt':'Art Resort';
 
+function invOrdersBackfillQtyRicevuta(){
+  const orders=invOrdersGet();
+  let changed=false;
+  orders.forEach(o=>{
+    if(o.status!=='ricevuto')return;
+    if(!(o.movIds&&o.movIds.length))return;
+    const needsBackfill=(o.items||[]).some(it=>it.qtyRicevuta==null);
+    if(!needsBackfill)return;
+    let moves=[];
+    try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+o.wh)||'[]');}catch(e){}
+    const movById=Object.fromEntries(moves.filter(m=>o.movIds.includes(m.id)).map(m=>[m.id,m]));
+    // mappa barcode→qty dai movimenti di questo ordine
+    const qtyByBarcode={};
+    Object.values(movById).forEach(m=>{qtyByBarcode[m.barcode]=(qtyByBarcode[m.barcode]||0)+m.qty;});
+    (o.items||[]).forEach(it=>{
+      if(it.qtyRicevuta==null&&qtyByBarcode[it.barcode]!=null){
+        it.qtyRicevuta=qtyByBarcode[it.barcode];
+        changed=true;
+      }
+    });
+  });
+  if(changed)invOrdersSave(orders);
+}
+
 function invRenderOrders(){
+  invOrdersBackfillQtyRicevuta();
   const view=document.getElementById('inv-orders-view');
   if(!view)return;
   const allOrders=invOrdersGet().sort((a,b)=>b.ts-a.ts);
