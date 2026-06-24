@@ -5434,10 +5434,11 @@ function invRenderOrders(){
     filtered.forEach(o=>{
       const nItems=(o.items||[]).length;
       const rcvDate=o.tsRicevuto?` → ricevuto ${_ordFmtDate(o.tsRicevuto)}${o.ddt?' ('+o.ddt+')':''}`:'';
-      const itemRows=(o.items||[]).map(it=>`<tr>
-        <td style="padding:7px 12px;font-size:var(--fs-xs);">${it.name}</td>
-        ${it.qty?`<td style="padding:7px 12px;font-size:var(--fs-xs);text-align:right;font-weight:700;">${it.qty}${it.unit?' '+it.unit:''}</td>`:`<td></td>`}
-      </tr>`).join('');
+      const itemRows=(o.items||[]).map(it=>{
+        const dispQty=it.qtyRicevuta!=null?it.qtyRicevuta:it.qty;
+        const qtyCell=dispQty?`<td style="padding:7px 12px;font-size:var(--fs-xs);text-align:right;font-weight:700;">${dispQty}${it.unit?' '+it.unit:''}</td>`:`<td></td>`;
+        return`<tr><td style="padding:7px 12px;font-size:var(--fs-xs);">${it.name}</td>${qtyCell}</tr>`;
+      }).join('');
       // Messaggio WhatsApp
       const waLines=(o.items||[]).map(it=>it.qty?`• ${it.name} — ${it.qty}${it.unit?' '+it.unit:''}`:`• ${it.name}`).join('\n');
       const waText=encodeURIComponent(`📋 *Ordine del ${o.date}*\n🏨 ${_ordWhlabel(o.wh)}${o.fornitore?'\n🛒 Fornitore: '+o.fornitore:''}\n\n${waLines}\n\n_Quality Manager Paolo P._`);
@@ -5446,6 +5447,7 @@ function invRenderOrders(){
         Invia</a>`;
       const actions=o.status==='ordinato'
         ?`<button onclick="invOrdersMarkReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;cursor:pointer;font-weight:600;">✅ Ricevuto</button>
+           <button onclick="invOrdersEditOrder('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">✏️ Modifica</button>
            <button onclick="invOrdersCancel('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">Annulla</button>`
         :o.status==='ricevuto'
         ?`<button onclick="invOrdersUndoReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;cursor:pointer;">↩ Annulla ricezione</button>
@@ -5659,6 +5661,7 @@ function invOrdersConfirmDDT(id){
     (o.items||[]).forEach((it,i)=>{
       const qty=parseFloat(document.getElementById('ddt_qty_'+i)?.value||0);
       if(qty>0){const mid=Date.now()+'_'+Math.random().toString(36).slice(2,5);createdIds.push(mid);moves.push({id:mid,barcode:it.barcode,type:'in',qty,ts:Date.now(),note:noteBase});}
+      it.qtyRicevuta=qty>0?qty:(it.qty||0);
     });
     // Prodotti extra aggiunti nel modal
     document.querySelectorAll('#ddt-tbody input[data-extra="1"]').forEach(inp=>{
@@ -5713,6 +5716,54 @@ function invOrdersDelete(id){
   if(!confirm('Eliminare questo ordine?'))return;
   const orders=invOrdersGet().filter(o=>o.id!==id);
   invOrdersSave(orders);
+  invRenderOrders();
+}
+
+function invOrdersEditOrder(id){
+  const orders=invOrdersGet();
+  const o=orders.find(x=>x.id===id);
+  if(!o)return;
+  const modal=document.createElement('div');
+  modal.id='inv-edit-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  const rows=o.items.map((it,i)=>`
+    <tr style="${i>0?'border-top:1px solid var(--border-light);':''}">
+      <td style="padding:7px 8px;font-size:var(--fs-xs);">${it.name}</td>
+      <td style="padding:7px 8px;text-align:center;">
+        <input type="number" min="0" step="1" value="${it.qty||''}" id="oed_qty_${i}" placeholder="—"
+          style="width:70px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);text-align:center;">
+        ${it.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:3px;">${it.unit}</span>`:''}
+      </td>
+    </tr>`).join('');
+  modal.innerHTML=`
+    <div style="background:var(--surface);border-radius:16px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.25);">
+      <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:4px;">✏️ Modifica ordine</div>
+      <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:14px;">${o.date}${o.fornitore?' · '+o.fornitore:''}</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+        <thead><tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:6px 8px;font-size:var(--fs-xxs);text-align:left;color:var(--text-dim);">Prodotto</th>
+          <th style="padding:6px 8px;font-size:var(--fs-xxs);text-align:center;color:var(--text-dim);">Quantità ordinata</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="document.getElementById('inv-edit-modal').remove()" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:var(--fs-xs);cursor:pointer;">Annulla</button>
+        <button onclick="invOrdersEditSave('${id}')" style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:var(--fs-xs);font-weight:600;cursor:pointer;">💾 Salva</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function invOrdersEditSave(id){
+  const orders=invOrdersGet();
+  const o=orders.find(x=>x.id===id);
+  if(!o)return;
+  o.items.forEach((it,i)=>{
+    const v=parseFloat(document.getElementById('oed_qty_'+i)?.value);
+    it.qty=isNaN(v)||v<=0?null:v;
+  });
+  invOrdersSave(orders);
+  document.getElementById('inv-edit-modal')?.remove();
   invRenderOrders();
 }
 
