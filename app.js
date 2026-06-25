@@ -2344,14 +2344,6 @@ document.querySelector('.content').addEventListener('scroll',function(){
         }catch(e){}
       }
     })();
-    // Ripristina ultima vista dopo che i dati sono pronti
-    try{
-      const _lv=localStorage.getItem('qm_last_view');
-      if(_lv&&_lv!=='overview'&&document.getElementById('view-'+_lv)){
-        const _ne=document.querySelector('[onclick*="\''+_lv+'\'"]');
-        setView(_lv,_ne);
-      }
-    }catch(e){}
   },150);
   })(); // fine async sync
 })();
