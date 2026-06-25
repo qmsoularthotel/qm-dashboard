@@ -328,21 +328,21 @@
       <!-- KPI chips — visible only on overview -->
       <div class="topbar-kpis" id="topbar-kpis">
         <div class="topbar-kpi-chip clickable" onclick="openArriviModal()" title="Arrivi">
-          <span style="font-size:18px;">🛬</span>
+          <img src="img/icons/arrivi.png" style="width:28px;height:28px;object-fit:contain;flex-shrink:0;">
           <div>
             <div class="topbar-kpi-val" id="kpi-arrivi" style="color:var(--green);">—</div>
             <div class="topbar-kpi-lbl">Arrivi</div>
           </div>
         </div>
         <div class="topbar-kpi-chip" title="Partenze">
-          <span style="font-size:18px;">🛫</span>
+          <img src="img/icons/partenze.png" style="width:28px;height:28px;object-fit:contain;flex-shrink:0;">
           <div>
             <div class="topbar-kpi-val" id="kpi-partenze" style="color:var(--red);">—</div>
             <div class="topbar-kpi-lbl">Partenze</div>
           </div>
         </div>
         <div class="topbar-kpi-chip" title="Fermate">
-          <span style="font-size:18px;">🛏</span>
+          <img src="img/icons/fermate.png" style="width:28px;height:28px;object-fit:contain;flex-shrink:0;">
           <div>
             <div class="topbar-kpi-val" id="kpi-fermate" style="color:var(--blue);">—</div>
             <div class="topbar-kpi-lbl">Fermate</div>
@@ -1534,7 +1534,7 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=355-20260625"></script>
+<script src="app.js?v=356-20260626"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
