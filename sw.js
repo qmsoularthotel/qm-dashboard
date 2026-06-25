@@ -2,7 +2,7 @@
 // Network-first per tutti gli HTML (sempre aggiornati al refresh),
 // cache-first per asset statici (img, js, css)
 
-const CACHE = 'qm-v3';
+const CACHE = 'qm-v4';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -20,6 +20,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = e.request.url;
+  const path = new URL(url).pathname;
 
   // KV, API, Google Sheets: sempre network, mai cache
   if (
@@ -33,14 +34,10 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // HTML: network-first — garantisce che Cmd+R carichi sempre la versione aggiornata
+  // HTML (incluso root con query param tipo /?v=...): network-first
   if (
-    url.includes('index.html') ||
-    url.includes('controllo-mattino.html') ||
-    url.includes('breakfast.html') ||
-    url.includes('housekeeper.html') ||
-    url.includes('inventory.html') ||
-    url.endsWith('/')
+    path === '/' ||
+    path.endsWith('.html')
   ) {
     e.respondWith(
       fetch(e.request, { cache: 'no-store' }).then(res => {
