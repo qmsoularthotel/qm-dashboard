@@ -1187,7 +1187,7 @@ function pianoRenderWeek(activeIdx){
         </div>
         <div style="width:1px;height:36px;background:var(--border-light);"></div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-          <img src="img/icons/partenze.png" style="width:30px;height:30px;object-fit:contain;">
+          <img src="img/icons/arrivi.png" style="width:30px;height:30px;object-fit:contain;">
           <span style="font-size:18px;font-weight:700;color:${pColor};line-height:1;">${totP}</span>
         </div>
       </div>
@@ -1232,7 +1232,7 @@ function renderPianoGiorno(elId,refDate,forceIdx){
     let h=`<div style="margin-bottom:10px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
         <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${label}</div>
-        ${tuttePartenze.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--amber);"><img src="img/icons/partenze.png" style="width:16px;height:16px;object-fit:contain;"> ${tuttePartenze.length}</span>`:''}
+        ${tuttePartenze.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--amber);"><img src="img/icons/arrivi.png" style="width:16px;height:16px;object-fit:contain;"> ${tuttePartenze.length}</span>`:''}
         ${cambi.length?`<span style="font-size:15px;font-weight:700;color:var(--red);">⇄ ${cambi.length}</span>`:''}
         ${fermate.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--accent);"><img src="img/icons/fermate.png" style="width:16px;height:16px;object-fit:contain;"> ${fermate.length}</span>`:''}
       </div>`;
