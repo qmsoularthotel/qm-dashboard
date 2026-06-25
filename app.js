@@ -1182,12 +1182,12 @@ function pianoRenderWeek(activeIdx){
       <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;margin-top:2px;">${dayDate}</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:7px;">
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-          <img src="img/icons/fermate.png" style="width:18px;height:18px;object-fit:contain;">
+          <img src="img/icons/fermate.png" style="width:30px;height:30px;object-fit:contain;">
           <span style="font-size:18px;font-weight:700;color:${fColor};line-height:1;">${totF}</span>
         </div>
-        <div style="width:1px;height:26px;background:var(--border-light);"></div>
+        <div style="width:1px;height:36px;background:var(--border-light);"></div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-          <img src="img/icons/partenze.png" style="width:18px;height:18px;object-fit:contain;">
+          <img src="img/icons/partenze.png" style="width:30px;height:30px;object-fit:contain;">
           <span style="font-size:18px;font-weight:700;color:${pColor};line-height:1;">${totP}</span>
         </div>
       </div>
