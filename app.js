@@ -681,8 +681,8 @@ function hkpNRenderGrid(p,tab){
   // Wrapper: sinistra fissa + destra scrollabile
   let h='<div style="font-size:17px;font-weight:700;color:#1a1a1a;padding:0 0 8px;letter-spacing:.01em;">'+monLabel+'</div>';
   h+='<div style="display:flex;border:1px solid #d0d3db;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
-  h+='<div style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);overflow:hidden;">'+L+'</div>';
-  h+='<div style="overflow-x:auto;flex:1;">'+R+'</div>';
+  h+='<div data-hkpnl="'+p+'" style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);overflow:hidden;">'+L+'</div>';
+  h+='<div data-hkpnr="'+p+'" style="overflow-x:auto;flex:1;">'+R+'</div>';
   h+='</div>';
   // Riepilogo cameriere
   const colors=[['#dbeafe','#1d4ed8'],['#fef3c7','#92400e'],['#dcfce7','#166534'],['#fce7f3','#9d174d'],['#ede9fe','#4c1d95'],['#ffedd5','#9a3412']];
@@ -698,6 +698,23 @@ function hkpNRenderGrid(p,tab){
     h+='</div>';
   }
   el.innerHTML=h;
+  // Sincronizza altezze righe dopo il render (rowspan nella tabella sinistra può sfasarle)
+  requestAnimationFrame(()=>hkpNSyncRowHeights(p));
+}
+function hkpNSyncRowHeights(p){
+  const el=document.getElementById('hkpN-'+p+'-body');
+  if(!el)return;
+  const lTbody=el.querySelector('[data-hkpnl] tbody');
+  const rTbody=el.querySelector('[data-hkpnr] tbody');
+  if(!lTbody||!rTbody)return;
+  const lRows=lTbody.querySelectorAll('tr');
+  const rRows=rTbody.querySelectorAll('tr');
+  const n=Math.min(lRows.length,rRows.length);
+  for(let i=0;i<n;i++){
+    // La tabella destra non ha rowspan → le sue altezze sono la fonte di verità
+    const h=rRows[i].getBoundingClientRect().height;
+    lRows[i].style.height=h+'px';
+  }
 }
 function hkpNRenderFondi(p){
   const el=document.getElementById('hkpN-'+p+'-body');
