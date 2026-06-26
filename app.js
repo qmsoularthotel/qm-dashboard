@@ -443,6 +443,7 @@ let HKP_NTAB={sa:'camere',ar:'camere'};
 let HKP_NMON={sa:'',ar:''};
 let _hkpNdata={};   // {p_yyyy-mm: {cellId: val}}
 let _hkpNdebounce={};
+let _hkpNsel={drag:false,cells:new Set()};
 const HKP_MON_NAMES=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 function hkpNStorKey(p){return 'qm_hkpN_'+p+'_'+hkpNCurMon(p);}
 function hkpNCacheKey(p){return p+'_'+hkpNCurMon(p);}
@@ -628,14 +629,28 @@ function hkpNRenderGrid(p,tab){
   L+='<td style="background:#d4edda;'+B+'padding:0 10px;font-size:15px;font-weight:700;color:#1a5c2e;height:'+RH+'px;vertical-align:middle;white-space:nowrap;">Totali</td></tr>';
   L+='</tbody></table>';
 
-  // === TABELLA DESTRA: giorni + Tot (scrolla, larghezze adattive al contenuto) ===
-  let R='<table style="border-collapse:collapse;table-layout:auto;">';
+  // === Calcolo larghezze dinamiche: misura contenuto reale per ogni colonna ===
+  const grandTot=Object.values(rowTotals).reduce((a,b)=>a+b,0);
+  const CW=10; // px per carattere stimati a font-size 15px
+  const colW={};
+  days.forEach(d=>{
+    let mx=1;
+    rows.forEach((_,ri)=>{const v=hkpNGetCell(p,tab,ri,d);if(v.length>mx)mx=v.length;});
+    colW[d]=Math.max(38,mx*CW+16);
+  });
+  const TOTW2=Math.max(44,String(grandTot||0).length*CW+20);
+
+  // === TABELLA DESTRA: giorni + Tot (table-layout:fixed con larghezze dinamiche) ===
+  let R='<table style="border-collapse:collapse;table-layout:fixed;">';
+  R+='<colgroup>';
+  days.forEach(d=>R+='<col style="width:'+colW[d]+'px">');
+  R+='<col style="width:'+TOTW2+'px"></colgroup>';
   R+='<thead><tr style="height:'+RH+'px;">';
   days.forEach(d=>{
     const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-    R+='<th style="background:#f5f6f8;'+B+'padding:5px 6px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';height:'+RH+'px;white-space:nowrap;'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
+    R+='<th style="background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
   });
-  R+='<th style="background:#1a5c2e;color:#fff;'+B+'padding:5px 8px;font-size:13px;font-weight:700;text-align:center;height:'+RH+'px;white-space:nowrap;">Tot</th>';
+  R+='<th style="background:#1a5c2e;color:#fff;'+B+'padding:5px 4px;font-size:13px;font-weight:700;text-align:center;height:'+RH+'px;">Tot</th>';
   R+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
     const rTot=rowTotals[ri]||0;
@@ -644,20 +659,21 @@ function hkpNRenderGrid(p,tab){
       const v=hkpNGetCell(p,tab,ri,d);
       const dual=v.includes('/');
       const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
+      const iw=colW[d]-2;
       R+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':(isToday?'#f4f7fd':'#fff'))+';height:'+RH+'px;">'
-        +'<input type="text" maxlength="8" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" '
+        +'<input type="text" maxlength="10" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" '
         +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
-        +'style="min-width:36px;width:100%;height:'+(RH-2)+'px;border:none;background:transparent;text-align:center;font-size:15px;'
-        +'font-family:inherit;padding:0 4px;outline:none;color:'+(dual?'var(--accent,#1E4080)':'#1a1a1a')+';font-weight:'+(v?'700':'400')+';'
+        +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
+        +'style="width:'+iw+'px;height:'+(RH-2)+'px;border:none;background:transparent;text-align:center;font-size:15px;'
+        +'font-family:inherit;padding:0 2px;outline:none;color:'+(dual?'var(--accent,#1E4080)':'#1a1a1a')+';font-weight:'+(v?'700':'400')+';'
         +'cursor:default;display:block;caret-color:transparent;box-sizing:border-box;"/></td>';
     });
-    R+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:15px;font-weight:700;height:'+RH+'px;vertical-align:middle;padding:0 6px;white-space:nowrap;">'+(rTot||'')+'</td>';
+    R+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:15px;font-weight:700;height:'+RH+'px;vertical-align:middle;padding:0 4px;white-space:nowrap;">'+(rTot||'')+'</td>';
     R+='</tr>';
   });
-  const grandTot=Object.values(rowTotals).reduce((a,b)=>a+b,0);
   R+='<tr style="height:'+RH+'px;">';
-  days.forEach(d=>R+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:14px;font-weight:700;height:'+RH+'px;vertical-align:middle;padding:0 4px;">'+(dayTotals[d]||'')+'</td>');
-  R+='<td style="'+B+'text-align:center;background:#c3e6cb;color:#155724;font-size:15px;font-weight:800;height:'+RH+'px;vertical-align:middle;padding:0 6px;white-space:nowrap;">'+(grandTot||'')+'</td>';
+  days.forEach(d=>R+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:14px;font-weight:700;height:'+RH+'px;vertical-align:middle;padding:0 2px;">'+(dayTotals[d]||'')+'</td>');
+  R+='<td style="'+B+'text-align:center;background:#c3e6cb;color:#155724;font-size:15px;font-weight:800;height:'+RH+'px;vertical-align:middle;padding:0 4px;white-space:nowrap;">'+(grandTot||'')+'</td>';
   R+='</tr></tbody></table>';
 
   // Wrapper: sinistra fissa + destra scrollabile
@@ -721,28 +737,74 @@ function hkpNRenderFondi(p){
   h+='</tbody></table></div>';
   el.innerHTML=h;
 }
+// --- Drag multi-select helpers ---
+function _hkpNSelKey(inp){return inp.dataset.p+':'+inp.dataset.tab+':'+inp.dataset.ri+':'+inp.dataset.col;}
+function _hkpNSelAdd(inp){
+  const key=_hkpNSelKey(inp);
+  if(_hkpNsel.cells.has(key))return;
+  _hkpNsel.cells.add(key);
+  inp.parentElement.style.background='#dbeafe';
+  inp.parentElement.style.boxShadow='inset 0 0 0 2px var(--accent,#1E4080)';
+}
+function _hkpNClearSel(){
+  _hkpNsel.cells.forEach(key=>{
+    const [sp,stab,sri,scol]=key.split(':');
+    const el=document.querySelector('input[data-p="'+sp+'"][data-tab="'+stab+'"][data-ri="'+sri+'"][data-col="'+scol+'"]');
+    if(el){el.parentElement.style.boxShadow='';el.parentElement.style.background=el.value?'#f0f5ff':'#fff';}
+  });
+  _hkpNsel.cells.clear();
+}
+function hkpNDragStart(inp,e){
+  if(e.button!==0)return;
+  e.preventDefault();
+  _hkpNsel.drag=true;
+  _hkpNClearSel();
+  _hkpNSelAdd(inp);
+  inp.focus();inp.select();
+}
+function hkpNDragOver(inp){
+  if(!_hkpNsel.drag)return;
+  _hkpNSelAdd(inp);
+}
+// --- Cell interaction ---
 function hkpNFocus(input){
-  // Comportamento spreadsheet: seleziona tutto il contenuto → digitare sostituisce, backspace cancella
+  if(!_hkpNsel.drag){
+    // Keyboard navigation: reset to single selection
+    _hkpNClearSel();
+    _hkpNSelAdd(input);
+  }
   input.select();
-  input.parentElement.style.boxShadow='inset 0 0 0 2px var(--accent,#1E4080)';
+}
+function _hkpNApplyCell(inp,val){
+  const v=val.trim();const dual=v.includes('/');
+  inp.value=v;
+  inp.style.color=dual?'var(--accent,#1E4080)':'#1a1a1a';
+  inp.style.fontWeight=v?'700':'400';
+  if(!_hkpNsel.cells.has(_hkpNSelKey(inp)))
+    inp.parentElement.style.background=v?'#f0f5ff':'#fff';
 }
 function hkpNInput(input){
   const {p,tab,ri,col}=input.dataset;
-  hkpNSetCell(p,tab,parseInt(ri),col,input.value);
-  if(input.type==='text'){
-    const v=input.value.trim();const dual=v.includes('/');
-    input.style.color=dual?'var(--accent,#1E4080)':'#1a1a1a';
-    input.style.fontWeight=v?'700':'400';
-    input.parentElement.style.background=v?'#f0f5ff':'#fff';
-  }else{
-    input.style.fontWeight=input.value?'700':'400';
-    input.parentElement.style.background=input.value?'#f0f5ff':'#fff';
+  const val=input.value;
+  hkpNSetCell(p,tab,parseInt(ri),col,val);
+  _hkpNApplyCell(input,val);
+  // Propaga a tutte le celle selezionate
+  if(_hkpNsel.cells.size>1){
+    _hkpNsel.cells.forEach(key=>{
+      const [sp,stab,sri,scol]=key.split(':');
+      if(sri===ri&&scol===col&&sp===p&&stab===tab)return;
+      hkpNSetCell(sp,stab,parseInt(sri),scol,val);
+      const el=document.querySelector('input[data-p="'+sp+'"][data-tab="'+stab+'"][data-ri="'+sri+'"][data-col="'+scol+'"]');
+      if(el)_hkpNApplyCell(el,val);
+    });
   }
   clearTimeout(_hkpNdebounce[p]);
   _hkpNdebounce[p]=setTimeout(()=>hkpNSave(p),3000);
 }
 function hkpNBlur(input){
-  input.parentElement.style.boxShadow='';
+  // Mantieni highlight selezione multipla; rimuovi solo focus ring
+  if(!_hkpNsel.cells.has(_hkpNSelKey(input)))
+    input.parentElement.style.boxShadow='';
   if(input.type==='text'){
     const up=input.value.trim().toUpperCase();
     if(up!==input.value)input.value=up;
@@ -750,7 +812,8 @@ function hkpNBlur(input){
     const dual=up.includes('/');
     input.style.color=dual?'var(--accent,#1E4080)':'#1a1a1a';
     input.style.fontWeight=up?'700':'400';
-    input.parentElement.style.background=up?'#f0f5ff':'#fff';
+    if(!_hkpNsel.cells.has(_hkpNSelKey(input)))
+      input.parentElement.style.background=up?'#f0f5ff':'#fff';
   }
 }
 function hkpNKey(input,e){
@@ -758,6 +821,19 @@ function hkpNKey(input,e){
   const col=input.dataset.col;
   const tab=input.dataset.tab;
   const table=input.closest('table');
+  if(e.key==='Escape'){_hkpNClearSel();return;}
+  // Delete/Backspace su selezione multipla → svuota tutte le celle
+  if((e.key==='Delete'||e.key==='Backspace')&&_hkpNsel.cells.size>1){
+    e.preventDefault();
+    _hkpNsel.cells.forEach(key=>{
+      const [sp,stab,sri,scol]=key.split(':');
+      hkpNSetCell(sp,stab,parseInt(sri),scol,'');
+      const el=document.querySelector('input[data-p="'+sp+'"][data-tab="'+stab+'"][data-ri="'+sri+'"][data-col="'+scol+'"]');
+      if(el){el.value='';el.style.fontWeight='400';el.style.color='#1a1a1a';}
+    });
+    const p=input.dataset.p;clearTimeout(_hkpNdebounce[p]);_hkpNdebounce[p]=setTimeout(()=>hkpNSave(p),800);
+    return;
+  }
   const go=(newRi,newCol)=>{
     const next=table.querySelector('input[data-ri="'+newRi+'"][data-tab="'+tab+'"][data-col="'+newCol+'"]');
     if(next){e.preventDefault();next.focus();next.select();return true;}
@@ -777,6 +853,8 @@ function hkpNKey(input,e){
     else{if(!go(ri,String(parseInt(col)+1)))go(ri+1,col);}
   }
 }
+// Termina drag-select al rilascio del mouse ovunque
+document.addEventListener('mouseup',()=>{_hkpNsel.drag=false;});
 // stub for old references still in syncFromCloud
 function hkpSave(p){}
 function hkpRestore(){}
