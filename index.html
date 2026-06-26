@@ -1328,7 +1328,8 @@
             <div id="hkp-sa-date" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">—</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;">
-            <a href="https://docs.google.com/spreadsheets/d/1lhbaUyFTzLX6NNForKkad3KQTF9HH0BB1BFdhZJZSmo/edit?gid=0#gid=0" target="_blank" class="btn-ghost" style="text-decoration:none;display:flex;align-items:center;gap:5px;padding:7px 14px;">📊 Apri foglio</a>
+            <a id="hkp-sa-link" href="https://docs.google.com/spreadsheets/d/1lhbaUyFTzLX6NNForKkad3KQTF9HH0BB1BFdhZJZSmo/edit" target="_blank" class="btn-ghost" style="text-decoration:none;display:flex;align-items:center;gap:5px;padding:7px 14px;">📊 Apri foglio</a>
+            <button onclick="hkpEditUrl('sa')" class="btn-ghost" title="Aggiorna URL foglio mensile" style="font-size:var(--fs-xs);padding:7px 10px;">✎ URL</button>
             <button onclick="hkpClearCache('sa')" class="btn-ghost" style="font-size:var(--fs-xs);padding:7px 12px;">🗑 Cache</button>
             <button onclick="hkpLoad('sa')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:var(--fs-xs);cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="hkp-sa-btn-icon">↻</span> Aggiorna</button>
           </div>
@@ -1347,7 +1348,8 @@
             <div id="hkp-ar-date" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">—</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;">
-            <a href="https://docs.google.com/spreadsheets/d/1pwqVFHiix6LSSIao-LhX4h5vN2psXLJrTRVMl2eJDGs/edit?gid=0#gid=0" target="_blank" class="btn-ghost" style="text-decoration:none;display:flex;align-items:center;gap:5px;padding:7px 14px;">📊 Apri foglio</a>
+            <a id="hkp-ar-link" href="https://docs.google.com/spreadsheets/d/1pwqVFHiix6LSSIao-LhX4h5vN2psXLJrTRVMl2eJDGs/edit" target="_blank" class="btn-ghost" style="text-decoration:none;display:flex;align-items:center;gap:5px;padding:7px 14px;">📊 Apri foglio</a>
+            <button onclick="hkpEditUrl('ar')" class="btn-ghost" title="Aggiorna URL foglio mensile" style="font-size:var(--fs-xs);padding:7px 10px;">✎ URL</button>
             <button onclick="hkpClearCache('ar')" class="btn-ghost" style="font-size:var(--fs-xs);padding:7px 12px;">🗑 Cache</button>
             <button onclick="hkpLoad('ar')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:var(--fs-xs);cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="hkp-ar-btn-icon">↻</span> Aggiorna</button>
           </div>
@@ -1535,7 +1537,7 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=365-20260626"></script>
+<script src="app.js?v=366-20260626"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

@@ -377,10 +377,33 @@ function toggleHkpGroup(){
   document.getElementById('hkpGroupItems').classList.toggle('open',hkpGroupOpen);
 }
 // §§ HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore)
-const HKP_URLS={
-  sa:'https://script.google.com/macros/s/AKfycbw1xDrmcRUm0WqM47wTmTin4eqC4wJn9w1KLZbq2XiMryEu6a2UWNsUF6hYcNRjVYgc/exec',
-  ar:'https://script.google.com/macros/s/AKfycbyiWIlDqHcaCQPmyZ5qV9LKET-eSaFpl5k4u2uKZse1D0NstbBzReidBIa4s1t7gdA/exec'
+const HKP_URL_DEFAULTS={
+  sa:{foglio:'https://docs.google.com/spreadsheets/d/1lhbaUyFTzLX6NNForKkad3KQTF9HH0BB1BFdhZJZSmo/edit',script:'https://script.google.com/macros/s/AKfycbw1xDrmcRUm0WqM47wTmTin4eqC4wJn9w1KLZbq2XiMryEu6a2UWNsUF6hYcNRjVYgc/exec'},
+  ar:{foglio:'https://docs.google.com/spreadsheets/d/1pwqVFHiix6LSSIao-LhX4h5vN2psXLJrTRVMl2eJDGs/edit',script:'https://script.google.com/macros/s/AKfycbyiWIlDqHcaCQPmyZ5qV9LKET-eSaFpl5k4u2uKZse1D0NstbBzReidBIa4s1t7gdA/exec'}
 };
+let HKP_CONFIG={sa:{...HKP_URL_DEFAULTS.sa},ar:{...HKP_URL_DEFAULTS.ar}};
+function hkpSaveConfig(){
+  const json=JSON.stringify(HKP_CONFIG);
+  try{localStorage.setItem('qm_hkp_config',json);}catch(e){}
+  kvSet('qm_hkp_config',json).catch(()=>{});
+}
+function hkpRestoreConfig(){
+  try{const s=localStorage.getItem('qm_hkp_config');if(s){const p=JSON.parse(s);['sa','ar'].forEach(k=>{if(p[k]?.foglio)HKP_CONFIG[k].foglio=p[k].foglio;if(p[k]?.script)HKP_CONFIG[k].script=p[k].script;});}}catch(e){}
+  ['sa','ar'].forEach(k=>{const link=document.getElementById('hkp-'+k+'-link');if(link)link.href=HKP_CONFIG[k].foglio;});
+}
+function hkpEditUrl(p){
+  const nome=p==='sa'?'SoulArt':'Art Resort';
+  const curFoglio=HKP_CONFIG[p].foglio;
+  const curScript=HKP_CONFIG[p].script;
+  const newFoglio=(prompt(`[${nome}] URL Google Sheets (Apri foglio):\n\nIncolla il nuovo URL del foglio mensile:`,curFoglio)||'').trim();
+  if(!newFoglio||newFoglio===curFoglio){return;}
+  HKP_CONFIG[p].foglio=newFoglio;
+  const newScript=(prompt(`[${nome}] URL Apps Script (Aggiorna dati):\n\nIncolla il nuovo URL del deploy Apps Script (.../exec):`,curScript)||'').trim();
+  if(newScript&&newScript!==curScript)HKP_CONFIG[p].script=newScript;
+  hkpSaveConfig();
+  const link=document.getElementById('hkp-'+p+'-link');if(link)link.href=HKP_CONFIG[p].foglio;
+  alert(`URL ${nome} aggiornati. Clicca Aggiorna per ricaricare i dati.`);
+}
 let HKP_DATA={sa:null,ar:null};
 let HKP_TAB={sa:'riepilogo',ar:'riepilogo'};
 function hkpSave(p){
@@ -406,7 +429,7 @@ async function hkpLoad(p){
   if(btnIcon)btnIcon.textContent='⏳';
   content.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim);">Caricamento dati mese in corso…</div>';
   try{
-    const res=await fetch(HKP_URLS[p]);
+    const res=await fetch(HKP_CONFIG[p].script);
     const data=await res.json();
     if(data.error){content.innerHTML=`<div style="color:var(--red);padding:20px;">${data.error}</div>`;return;}
     HKP_DATA[p]=data;
@@ -1403,7 +1426,7 @@ const LS={
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr',
       'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar','inv_orders',
-      'tp_seen_until'];
+      'tp_seen_until','hkp_config'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
       try{
@@ -1449,6 +1472,10 @@ const LS={
           // Per tp_seen_until: aggiorna badge preferenze turni
           if(k==='tp_seen_until'){
             try{turniPrefUpdateBadge();}catch(e){}
+          }
+          // Per hkp_config: aggiorna URL foglio/script HKP
+          if(k==='hkp_config'){
+            try{hkpRestoreConfig();}catch(e){}
           }
           // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
           if(k==='hk_soul'||k==='hk_bout'||k==='piano'){
@@ -2236,7 +2263,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
     restoreCustomTasks();
     restoreDeptCustomTasks();
     ovUpdateRevNoreply();ovUpdateRevImport();
-    hkpRestore();
+    hkpRestoreConfig();hkpRestore();
     dvrRestore();dvrBadgeUpdate();
     turniPrefRestore();turniPrefLoad();
     // Ripristina turno settimanale
