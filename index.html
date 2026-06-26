@@ -1322,44 +1322,38 @@
         </div>
       </div>
       <div class="view" id="view-hkpsheet">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-          <div>
-            <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text);">Operativa HKP — SoulArt Hotel</div>
-            <div id="hkp-sa-date" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">—</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <a id="hkp-sa-link" href="https://docs.google.com/spreadsheets/d/1lhbaUyFTzLX6NNForKkad3KQTF9HH0BB1BFdhZJZSmo/edit" target="_blank" class="btn-ghost" style="text-decoration:none;display:flex;align-items:center;gap:5px;padding:7px 14px;">📊 Apri foglio</a>
-            <button onclick="hkpEditUrl('sa')" class="btn-ghost" title="Aggiorna URL foglio mensile" style="font-size:var(--fs-xs);padding:7px 10px;">✎ URL</button>
-            <button onclick="hkpClearCache('sa')" class="btn-ghost" style="font-size:var(--fs-xs);padding:7px 12px;">🗑 Cache</button>
-            <button onclick="hkpLoad('sa')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:var(--fs-xs);cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="hkp-sa-btn-icon">↻</span> Aggiorna</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text);">Operativa HKP — SoulArt Hotel</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button onclick="hkpNNavMon('sa',-1)" class="btn-ghost" style="padding:6px 11px;font-size:16px;line-height:1;">‹</button>
+            <span id="hkpN-sa-month" style="font-size:var(--fs-xs);font-weight:600;min-width:110px;text-align:center;"></span>
+            <button onclick="hkpNNavMon('sa',1)" class="btn-ghost" style="padding:6px 11px;font-size:16px;line-height:1;">›</button>
+            <button id="hkpN-sa-savebtn" onclick="hkpNSaveAll('sa')" class="btn-primary" style="font-size:var(--fs-xs);padding:6px 14px;">Salva</button>
           </div>
         </div>
-        <div id="hkp-sa-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;"></div>
-        <div class="rev-filter-bar" style="margin-bottom:14px;">
-          <button class="rev-filter-btn active" onclick="hkpTab('sa','riepilogo',this)">Riepilogo mensile</button>
-          <button class="rev-filter-btn" onclick="hkpTab('sa','dettaglio',this)">Per giorno</button>
+        <div class="rev-filter-bar" style="margin-bottom:12px;">
+          <button class="rev-filter-btn hkpN-tab active" data-tab="camere" onclick="hkpNTab('sa','camere')">Camere</button>
+          <button class="rev-filter-btn hkpN-tab" data-tab="aree" onclick="hkpNTab('sa','aree')">Aree Comuni</button>
+          <button class="rev-filter-btn hkpN-tab" data-tab="fondi" onclick="hkpNTab('sa','fondi')">Fondi &amp; Lavaggi</button>
         </div>
-        <div id="hkp-sa-content"><div style="text-align:center;padding:40px;color:var(--text-dim);">Clicca <strong>Aggiorna</strong> per caricare i dati del mese</div></div>
+        <div id="hkpN-sa-body"></div>
       </div>
       <div class="view" id="view-hkpsheetar">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-          <div>
-            <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text);">Operativa HKP — Art Resort</div>
-            <div id="hkp-ar-date" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">—</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <a id="hkp-ar-link" href="https://docs.google.com/spreadsheets/d/1pwqVFHiix6LSSIao-LhX4h5vN2psXLJrTRVMl2eJDGs/edit" target="_blank" class="btn-ghost" style="text-decoration:none;display:flex;align-items:center;gap:5px;padding:7px 14px;">📊 Apri foglio</a>
-            <button onclick="hkpEditUrl('ar')" class="btn-ghost" title="Aggiorna URL foglio mensile" style="font-size:var(--fs-xs);padding:7px 10px;">✎ URL</button>
-            <button onclick="hkpClearCache('ar')" class="btn-ghost" style="font-size:var(--fs-xs);padding:7px 12px;">🗑 Cache</button>
-            <button onclick="hkpLoad('ar')" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:var(--fs-xs);cursor:pointer;display:flex;align-items:center;gap:6px;"><span id="hkp-ar-btn-icon">↻</span> Aggiorna</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:var(--fs-sm);font-weight:600;color:var(--text);">Operativa HKP — Art Resort</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button onclick="hkpNNavMon('ar',-1)" class="btn-ghost" style="padding:6px 11px;font-size:16px;line-height:1;">‹</button>
+            <span id="hkpN-ar-month" style="font-size:var(--fs-xs);font-weight:600;min-width:110px;text-align:center;"></span>
+            <button onclick="hkpNNavMon('ar',1)" class="btn-ghost" style="padding:6px 11px;font-size:16px;line-height:1;">›</button>
+            <button id="hkpN-ar-savebtn" onclick="hkpNSaveAll('ar')" class="btn-primary" style="font-size:var(--fs-xs);padding:6px 14px;">Salva</button>
           </div>
         </div>
-        <div id="hkp-ar-kpi" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;"></div>
-        <div class="rev-filter-bar" style="margin-bottom:14px;">
-          <button class="rev-filter-btn active" onclick="hkpTab('ar','riepilogo',this)">Riepilogo mensile</button>
-          <button class="rev-filter-btn" onclick="hkpTab('ar','dettaglio',this)">Per giorno</button>
+        <div class="rev-filter-bar" style="margin-bottom:12px;">
+          <button class="rev-filter-btn hkpN-tab active" data-tab="camere" onclick="hkpNTab('ar','camere')">Camere</button>
+          <button class="rev-filter-btn hkpN-tab" data-tab="aree" onclick="hkpNTab('ar','aree')">Aree Comuni</button>
+          <button class="rev-filter-btn hkpN-tab" data-tab="fondi" onclick="hkpNTab('ar','fondi')">Fondi &amp; Lavaggi</button>
         </div>
-        <div id="hkp-ar-content"><div style="text-align:center;padding:40px;color:var(--text-dim);">Clicca <strong>Aggiorna</strong> per caricare i dati del mese</div></div>
+        <div id="hkpN-ar-body"></div>
       </div>
       <div class="view" id="view-dvr">
         <!-- Selettore società -->
@@ -1537,7 +1531,7 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=366-20260626"></script>
+<script src="app.js?v=367-20260626"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

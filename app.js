@@ -404,145 +404,220 @@ function hkpEditUrl(p){
   const link=document.getElementById('hkp-'+p+'-link');if(link)link.href=HKP_CONFIG[p].foglio;
   alert(`URL ${nome} aggiornati. Clicca Aggiorna per ricaricare i dati.`);
 }
-let HKP_DATA={sa:null,ar:null};
-let HKP_TAB={sa:'riepilogo',ar:'riepilogo'};
-function hkpSave(p){
-  try{localStorage.setItem('qm_hkp_'+p,JSON.stringify(HKP_DATA[p]));}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_hkp_'+p,value:JSON.stringify(HKP_DATA[p])})}).catch(()=>{});
+// §§ HKP NATIVE — griglia nativa (Camere / Aree Comuni / Fondi & Lavaggi)
+const HKP_ROOMS={
+  sa:{
+    camere:[
+      {g:'ART 1–7 · 10–12 · 22',list:['ART 01','ART 02','ART 03','ART 04','ART 05','ART 06','ART 07','ART 10','ART 11','ART 12','ART 22']},
+      {g:'ART 8–9 · 13–21',list:['ART 08','ART 09','ART 13','ART 14','ART 15','ART 16','ART 17','ART 18','ART 19','ART 20','ART 21']},
+      {g:'Boutique · San Liborio',list:['201','203','204','205','206','207','208','209','210','211','LIBORIO']},
+    ],
+    aree:[
+      {g:'A — Interni',list:['Corridoio S.Art Vecchie','Corridoio S.Art Nuovo','Hall Reception','Sala Colazioni','Direzione']},
+      {g:'B — Servizi',list:['Bagni Piano (inizio)','Bagni Piano (fine)','Spogliatoi']},
+      {g:'C — Esterni',list:['Terrazzo Sinistro','Terrazzo Destro','Aree Esterne']},
+    ],
+    fondi:{
+      tasks:['Fondo','Filtri AC','Lav. Piumoni','Lav. Tende','Lav. Vetri'],
+      rooms:['ART 01','ART 02','ART 03','ART 04','ART 05','ART 06','ART 07','ART 08','ART 09','ART 10','ART 11','ART 12','ART 13','ART 14','ART 15','ART 16','ART 17','ART 18','ART 19','ART 20','ART 21','ART 22','201','203','204','205','206','207','208','209','210','211'],
+    },
+  },
+  ar:{
+    camere:[
+      {g:'Art Resort',list:['AR 01','AR 02','AR 03','AR 04','AR 05','AR 06','AR 07','AR 08','AR 09','AR 10']},
+    ],
+    aree:[
+      {g:'Interni',list:['Corridoio','Hall Reception','Sala Colazioni']},
+      {g:'Servizi',list:['Bagni Piano','Spogliatoi']},
+      {g:'Esterni',list:['Aree Esterne']},
+    ],
+    fondi:{
+      tasks:['Fondo','Filtri AC','Lav. Piumoni','Lav. Tende','Lav. Vetri'],
+      rooms:['AR 01','AR 02','AR 03','AR 04','AR 05','AR 06','AR 07','AR 08','AR 09','AR 10'],
+    },
+  },
+};
+let HKP_NTAB={sa:'camere',ar:'camere'};
+let HKP_NMON={sa:'',ar:''};
+let _hkpNdata={};
+let _hkpNdebounce={};
+function hkpNKey(p,tab,mon){return 'qm_hkpN_'+p+'_'+tab+'_'+mon;}
+function hkpNCurMon(p){
+  if(!HKP_NMON[p]){const n=new Date();HKP_NMON[p]=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
+  return HKP_NMON[p];
 }
-function hkpClearCache(p){
-  try{localStorage.removeItem('qm_hkp_'+p);}catch(e){}
-  HKP_DATA[p]=null;
-  const content=document.getElementById('hkp-'+p+'-content');
-  if(content)content.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim);">Cache svuotata. Clicca <strong>Aggiorna</strong>.</div>';
-  const kpi=document.getElementById('hkp-'+p+'-kpi');
-  if(kpi)kpi.innerHTML='';
+function hkpNNavMon(p,dir){
+  const [y,m]=hkpNCurMon(p).split('-').map(Number);
+  const d=new Date(y,m-1+dir,1);
+  HKP_NMON[p]=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  hkpNRender(p);
 }
-function hkpRestore(){
-  ['sa','ar'].forEach(p=>{
-    try{const raw=localStorage.getItem('qm_hkp_'+p);if(raw){HKP_DATA[p]=JSON.parse(raw);hkpRenderAll(p);}}catch(e){}
-  });
+function hkpNGetCells(p,tab){
+  const key=hkpNKey(p,tab,hkpNCurMon(p));
+  if(!_hkpNdata[key]){try{const s=localStorage.getItem(key);_hkpNdata[key]=s?JSON.parse(s):{};}catch(e){_hkpNdata[key]={};}}
+  return _hkpNdata[key];
 }
-async function hkpLoad(p){
-  const btnIcon=document.getElementById('hkp-'+p+'-btn-icon');
-  const content=document.getElementById('hkp-'+p+'-content');
-  if(btnIcon)btnIcon.textContent='⏳';
-  content.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim);">Caricamento dati mese in corso…</div>';
-  try{
-    const res=await fetch(HKP_CONFIG[p].script);
-    const data=await res.json();
-    if(data.error){content.innerHTML=`<div style="color:var(--red);padding:20px;">${data.error}</div>`;return;}
-    HKP_DATA[p]=data;
-    hkpSave(p);
-    hkpRenderAll(p);
-  }catch(e){
-    content.innerHTML=`<div style="color:var(--red);padding:20px;">Errore: ${e.message}</div>`;
+function hkpNSetCell(p,tab,cid,val){
+  const key=hkpNKey(p,tab,hkpNCurMon(p));
+  if(!_hkpNdata[key])_hkpNdata[key]={};
+  const t=val.trim().toUpperCase();
+  if(t)_hkpNdata[key][cid]=t;else delete _hkpNdata[key][cid];
+}
+function hkpNSave(p,tab){
+  const key=hkpNKey(p,tab,hkpNCurMon(p));
+  const json=JSON.stringify(_hkpNdata[key]||{});
+  try{localStorage.setItem(key,json);}catch(e){}
+  kvSet(key,json).catch(()=>{});
+}
+function hkpNSaveAll(p){
+  ['camere','aree','fondi'].forEach(tab=>hkpNSave(p,tab));
+  const btn=document.getElementById('hkpN-'+p+'-savebtn');
+  if(btn){btn.textContent='✓ Salvato';setTimeout(()=>{btn.textContent='Salva';},1800);}
+}
+function hkpNTab(p,tab){
+  HKP_NTAB[p]=tab;
+  hkpNRender(p);
+}
+function hkpNRender(p){
+  const viewId='view-hkp'+(p==='sa'?'sheet':'sheetar');
+  const monEl=document.getElementById('hkpN-'+p+'-month');
+  if(monEl){
+    const [y,m]=hkpNCurMon(p).split('-').map(Number);
+    const nomi=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+    monEl.textContent=nomi[m-1]+' '+y;
   }
-  if(btnIcon)btnIcon.textContent='↻';
+  const tab=HKP_NTAB[p];
+  document.querySelectorAll('#'+viewId+' .hkpN-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  if(tab==='fondi')hkpNRenderFondi(p);else hkpNRenderGrid(p,tab);
 }
-function hkpTab(p,tab,btn){
-  HKP_TAB[p]=tab;
-  const view=document.getElementById('view-hkp'+( p==='sa'?'sheet':'sheetar'));
-  view.querySelectorAll('.rev-filter-btn').forEach(b=>b.classList.remove('active'));
-  if(btn)btn.classList.add('active');
-  if(HKP_DATA[p])hkpRenderContent(p);
-}
-function hkpRenderAll(p){
-  const data=HKP_DATA[p];
-  const dateEl=document.getElementById('hkp-'+p+'-date');
-  const kpiEl=document.getElementById('hkp-'+p+'-kpi');
-  if(dateEl)dateEl.textContent='Mese '+data.mese+' · '+data.giorni_elaborati+' giorni elaborati';
-  const cameriere=data.cameriere||[];
-  const totMese=data.tot_mese||0;
-  const _daysSet=new Set();(data.cameriere||[]).forEach(c=>Object.entries(c.camere_per_giorno||{}).forEach(([d,v])=>{if(v>0)_daysSet.add(d);}));
-  const giorniConDati=_daysSet.size||data.giorni_elaborati||Object.values(data.totale_per_giorno||{}).filter(n=>n>0).length||1;
-  const mediaGiornaliera=Math.round(totMese/giorniConDati*10)/10;
-  const top=cameriere.length?[...cameriere].sort((a,b)=>b.camere_tot-a.camere_tot)[0]:null;
-  const totDuplex=data.tot_duplex||Object.values(data.duplex_per_giorno||{}).reduce((a,b)=>a+b,0)||0;
-  if(kpiEl)kpiEl.innerHTML=`
-    <div class="kpi-card green"><div class="kpi-card-icon">🛏️</div><div class="kpi-label">Camere mese</div><div class="kpi-value">${totMese}</div><div class="kpi-delta up">${giorniConDati} giorni con dati</div></div>
-    <div class="kpi-card green"><div class="kpi-card-icon">🏠</div><div class="kpi-label">Totale Duplex</div><div class="kpi-value">${totDuplex||'—'}</div><div class="kpi-delta">camere duplex</div></div>
-    <div class="kpi-card blue"><div class="kpi-card-icon">📊</div><div class="kpi-label">Media/giorno</div><div class="kpi-value">${mediaGiornaliera}</div><div class="kpi-delta">su ${giorniConDati} giorni</div></div>
-    <div class="kpi-card amber"><div class="kpi-card-icon">👑</div><div class="kpi-label">Top cameriera</div><div class="kpi-value" style="font-size:16px;">${top?top.nome:'—'}</div><div class="kpi-delta">${top?top.camere_tot+' cam':''}</div></div>`;
-  hkpRenderContent(p);
-}
-function hkpRenderContent(p){
-  const data=HKP_DATA[p];
-  const content=document.getElementById('hkp-'+p+'-content');
-  const tab=HKP_TAB[p]||'riepilogo';
-  const cameriere=[...(data.cameriere||[])].filter(c=>!/duplex/i.test(c.nome)).sort((a,b)=>b.camere_tot-a.camere_tot);
-  const totMese=data.tot_mese||0;
-  // Giorni con dati: da totale_per_giorno, poi da camere_per_giorno delle cameriere, poi giorni_elaborati
-  const _gs=new Set();
-  Object.entries(data.totale_per_giorno||{}).forEach(([d,v])=>{if(v>0)_gs.add(d);});
-  if(!_gs.size)(data.cameriere||[]).forEach(c=>Object.entries(c.camere_per_giorno||{}).forEach(([d,v])=>{if(v>0)_gs.add(d);}));
-  const giorni=_gs.size||data.giorni_elaborati||1;
-  const mese=data.mese||'';
-  if(tab==='riepilogo'){
-    const maxCam=cameriere[0]?.camere_tot||1;
-    let html='<div class="panel"><div class="panel-header"><span class="panel-title">Riepilogo mensile</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">'+mese+'</span></div><div class="panel-body" style="padding:0;">';
-    cameriere.forEach((cam,i)=>{
-      const bar=Math.round(cam.camere_tot/maxCam*100);
-      const giorniCam=cam.giorni_lavorati||Object.values(cam.camere_per_giorno||{}).filter(v=>v>0).length||giorni;
-      const media=Math.round(cam.camere_tot/giorniCam*10)/10;
-      const pct=Math.round(cam.camere_tot/totMese*100);
-      const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';
-      const colorEnd=bar>66?'#34c759aa':bar>33?'#1e4080aa':'var(--amber)';
-      html+=`<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i>0?'border-top:1px solid var(--border-light);':''}">
-        <div style="width:160px;flex-shrink:0;font-size:var(--fs-sm);font-weight:500;">${cam.nome}</div>
-        <div style="flex:1;">
-          <div style="background:var(--border-light);border-radius:6px;height:10px;overflow:hidden;position:relative;">
-            <div style="width:${bar}%;background:linear-gradient(90deg,${color},${colorEnd});height:100%;border-radius:6px;transition:width .4s ease;"></div>
-          </div>
-        </div>
-        <div style="text-align:right;min-width:64px;"><span style="font-size:var(--fs-sm);font-weight:600;">${cam.camere_tot}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);"> cam</span></div>
-        <div style="text-align:right;min-width:55px;"><span style="font-size:var(--fs-sm);font-weight:600;color:var(--accent);">${media}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">/gg</span></div>
-        <div style="text-align:right;min-width:36px;font-size:var(--fs-xxs);color:var(--text-dim);">${pct}%</div>
-      </div>`;
+function hkpNRenderGrid(p,tab){
+  const el=document.getElementById('hkpN-'+p+'-body');
+  if(!el)return;
+  const cells=hkpNGetCells(p,tab);
+  const conf=HKP_ROOMS[p][tab];
+  const [yr,mo]=hkpNCurMon(p).split('-').map(Number);
+  const daysInMonth=new Date(yr,mo,0).getDate();
+  const days=[];for(let d=1;d<=daysInMonth;d++)days.push(d);
+  const rows=[];
+  conf.forEach(grp=>grp.list.forEach(name=>rows.push({name,group:grp.g})));
+  // Calcola totali
+  const dayTotals={};const rowTotals={};const hwCounts={};
+  rows.forEach((row,ri)=>{
+    days.forEach(d=>{
+      const v=cells['r'+ri+'_d'+d]||'';
+      if(!v)return;
+      dayTotals[d]=(dayTotals[d]||0)+1;
+      rowTotals[ri]=(rowTotals[ri]||0)+1;
+      v.split('/').forEach(k=>{const t=k.trim();if(t)hwCounts[t]=(hwCounts[t]||0)+1;});
     });
-    // Barra duplex totale mese
-    const totDuplex=data.tot_duplex||Object.values(data.duplex_per_giorno||{}).reduce((a,b)=>a+b,0)||0;
-    if(totDuplex>0){
-      const duplexBar=Math.round(totDuplex/maxCam*100);
-      html+=`<div style="border-top:2px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:14px;background:var(--surface2);">
-        <div style="width:160px;flex-shrink:0;font-size:var(--fs-sm);font-weight:600;color:var(--text-muted);">🏠 Duplex totale</div>
-        <div style="flex:1;">
-          <div style="background:var(--border-light);border-radius:6px;height:10px;overflow:hidden;">
-            <div style="width:${Math.min(duplexBar,100)}%;background:linear-gradient(90deg,#7A5FBF,#9B7FDF);height:100%;border-radius:6px;transition:width .4s ease;"></div>
-          </div>
-        </div>
-        <div style="text-align:right;min-width:64px;"><span style="font-size:var(--fs-sm);font-weight:600;">${totDuplex}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);"> cam</span></div>
-        <div style="text-align:right;min-width:55px;"><span style="font-size:var(--fs-sm);font-weight:600;color:#7A5FBF;">${Math.round(totDuplex/giorni*10)/10}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">/gg</span></div>
-        <div style="text-align:right;min-width:36px;font-size:var(--fs-xxs);color:var(--text-dim);">${Math.round(totDuplex/totMese*100)}%</div>
-      </div>`;
+  });
+  const thStyle='border:0.5px solid var(--border-light);padding:4px 3px;text-align:center;min-width:34px;font-size:10px;font-weight:500;background:var(--surface2,#F4F4F6);';
+  const tdSt='border:0.5px solid var(--border-light);padding:1px;';
+  const stickyL='position:sticky;left:0;z-index:2;background:var(--bg,#E8E8EA);border:0.5px solid var(--border-light);padding:4px 8px;white-space:nowrap;font-size:11px;';
+  let h='<div style="overflow-x:auto;border:0.5px solid var(--border-light);border-radius:8px;"><table style="border-collapse:collapse;min-width:100%;">';
+  h+='<thead><tr>';
+  h+='<th style="'+stickyL+'z-index:3;background:var(--surface2,#F4F4F6);font-weight:600;min-width:100px;text-align:left;">Camera</th>';
+  const today=new Date();
+  days.forEach(d=>{
+    const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
+    h+='<th style="'+thStyle+(isToday?'color:var(--accent);background:rgba(30,64,128,.08);':'color:var(--text-dim);')+'">'+d+'</th>';
+  });
+  h+='<th style="'+thStyle+'background:#EAF3DE;color:#3B6D11;font-weight:700;min-width:38px;">Tot</th>';
+  h+='</tr></thead><tbody>';
+  let prevGrp='';
+  rows.forEach((row,ri)=>{
+    if(row.group!==prevGrp){
+      h+='<tr><td colspan="'+(daysInMonth+2)+'" style="background:var(--surface2,#F4F4F6);font-size:10px;font-weight:600;color:var(--text-dim);padding:3px 8px;border:0.5px solid var(--border-light);">'+row.group+'</td></tr>';
+      prevGrp=row.group;
     }
-    html+='</div></div>';
-    content.innerHTML=html;
-  } else {
-    const totGiorni=data.totale_per_giorno||{};
-    const giorniDisponibili=[];
-    for(let d=1;d<=data.giorni_mese;d++){if(totGiorni[d]>0)giorniDisponibili.push(d);}
-    if(!giorniDisponibili.length){content.innerHTML='<div style="padding:30px;text-align:center;color:var(--text-dim);">Nessun dato disponibile</div>';return;}
-    let selDay=parseInt(content.dataset.selDay||giorniDisponibili[giorniDisponibili.length-1]);
-    if(!giorniDisponibili.includes(selDay))selDay=giorniDisponibili[giorniDisponibili.length-1];
-    let navHtml='<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;">';
-    giorniDisponibili.forEach(d=>{navHtml+=`<button class="rev-filter-btn${d===selDay?' active':''}" onclick="hkpSelectDay('${p}',${d})">${d}</button>`;});
-    navHtml+='</div>';
-    const camData=cameriere.map(cam=>{const pg={};Object.entries(cam.camere_per_giorno||{}).forEach(([k,v])=>{pg[parseInt(k)]=parseInt(v)||0;});return{nome:cam.nome,n:pg[selDay]||0};}).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
-    const maxN=camData.length?camData[0].n:1;const totGiorno=totGiorni[selDay]||0;
-    let barHtml=`<div class="panel"><div class="panel-header"><span class="panel-title">${selDay} ${mese} — ${totGiorno} camere totali</span></div><div class="panel-body" style="padding:0;">`;
-    if(!camData.length){barHtml+='<div style="padding:20px;text-align:center;color:var(--text-dim);">Nessun dato per questo giorno</div>';}
-    else{camData.forEach((cam,i)=>{const bar=Math.round(cam.n/maxN*100);const pct=Math.round(cam.n/totGiorno*100);const color=bar>66?'var(--green)':bar>33?'var(--accent)':'var(--amber)';barHtml+=`<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;${i>0?'border-top:1px solid var(--border-light);':''}"><div style="width:160px;flex-shrink:0;font-size:var(--fs-sm);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cam.nome}</div><div style="flex:1;"><div style="background:var(--border-light);border-radius:4px;height:8px;overflow:hidden;"><div style="width:${bar}%;background:${color};height:100%;border-radius:4px;transition:width .3s;"></div></div></div><div style="text-align:right;min-width:48px;"><span style="font-size:var(--fs-sm);font-weight:600;">${cam.n}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);"> cam</span></div><div style="text-align:right;min-width:36px;font-size:var(--fs-xxs);color:var(--text-dim);">${pct}%</div></div>`;});}
-    barHtml+='</div></div>';
-    content.innerHTML=navHtml+barHtml;
-    content.dataset.selDay=selDay;
+    const rTot=rowTotals[ri]||0;
+    h+='<tr>';
+    h+='<td style="'+stickyL+'font-weight:500;">'+row.name+'</td>';
+    days.forEach(d=>{
+      const cid='r'+ri+'_d'+d;
+      const v=cells[cid]||'';
+      const dual=v.includes('/');
+      h+='<td style="'+tdSt+'"><input type="text" maxlength="7" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-cid="'+cid+'" oninput="hkpNInput(this)" onblur="hkpNBlur(this)" style="width:34px;border:none;background:'+(v?'var(--surface)':'transparent')+';text-align:center;font-size:11px;font-family:monospace;padding:3px 1px;outline:none;color:'+(dual?'var(--accent)':'var(--text)')+';font-weight:'+(v?'500':'400')+';display:block;" /></td>';
+    });
+    h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:11px;font-weight:500;padding:3px;">'+(rTot||'')+'</td>';
+    h+='</tr>';
+  });
+  const grandTot=Object.values(rowTotals).reduce((a,b)=>a+b,0);
+  h+='<tr>';
+  h+='<td style="'+stickyL+'font-weight:700;color:#3B6D11;background:#EAF3DE;z-index:2;">Totali</td>';
+  days.forEach(d=>h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:11px;font-weight:500;padding:3px;">'+(dayTotals[d]||'')+'</td>');
+  h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:12px;font-weight:700;padding:3px;">'+(grandTot||'')+'</td>';
+  h+='</tr></tbody></table></div>';
+  // Riepilogo cameriere
+  const colors=[['#E6F1FB','#185FA5'],['#FAEEDA','#854F0B'],['#E1F5EE','#0F6E56'],['#FBEAF0','#993556'],['#EEEDFE','#534AB7'],['#FAECE7','#993C1D']];
+  const sorted=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
+  if(sorted.length){
+    h+='<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">';
+    sorted.forEach(([init,cnt],i)=>{
+      const [bg,fg]=colors[i%colors.length];
+      h+='<div style="background:var(--surface2,#F4F4F6);border-radius:8px;padding:8px 12px;border:0.5px solid var(--border-light);display:flex;align-items:center;gap:8px;">';
+      h+='<span style="display:inline-flex;width:28px;height:28px;border-radius:50%;background:'+bg+';color:'+fg+';font-size:10px;font-weight:700;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
+      h+='<div><div style="font-size:18px;font-weight:600;line-height:1.1;">'+cnt+'</div><div style="font-size:10px;color:var(--text-dim);">'+init+'</div></div></div>';
+    });
+    h+='</div>';
   }
+  el.innerHTML=h;
 }
-function hkpSelectDay(p,day){
-  const content=document.getElementById('hkp-'+p+'-content');
-  content.dataset.selDay=day;
-  hkpRenderContent(p);
+function hkpNRenderFondi(p){
+  const el=document.getElementById('hkpN-'+p+'-body');
+  if(!el)return;
+  const cells=hkpNGetCells(p,'fondi');
+  const conf=HKP_ROOMS[p].fondi;
+  const tasks=conf.tasks;const rooms=conf.rooms;
+  const taskTotals=tasks.map((_,ti)=>rooms.reduce((s,_,ri)=>s+(parseInt(cells['r'+ri+'_t'+ti])||0),0));
+  const roomTotals=rooms.map((_,ri)=>tasks.reduce((s,_,ti)=>s+(parseInt(cells['r'+ri+'_t'+ti])||0),0));
+  const thStyle='border:0.5px solid var(--border-light);padding:5px 6px;text-align:center;font-size:10px;font-weight:500;background:var(--surface2,#F4F4F6);';
+  const tdSt='border:0.5px solid var(--border-light);padding:1px;';
+  const stickyL='position:sticky;left:0;z-index:2;background:var(--bg,#E8E8EA);border:0.5px solid var(--border-light);padding:4px 8px;white-space:nowrap;font-size:11px;';
+  let h='<div style="overflow-x:auto;border:0.5px solid var(--border-light);border-radius:8px;"><table style="border-collapse:collapse;min-width:100%;">';
+  h+='<thead><tr>';
+  h+='<th style="'+stickyL+'z-index:3;background:var(--surface2,#F4F4F6);font-weight:600;min-width:90px;text-align:left;">Camera</th>';
+  tasks.forEach(t=>h+='<th style="'+thStyle+'white-space:nowrap;min-width:80px;color:var(--text-dim);">'+t+'</th>');
+  h+='<th style="'+thStyle+'background:#EAF3DE;color:#3B6D11;font-weight:700;min-width:38px;">Tot</th>';
+  h+='</tr></thead><tbody>';
+  rooms.forEach((room,ri)=>{
+    const rTot=roomTotals[ri];
+    h+='<tr><td style="'+stickyL+'font-weight:500;">'+room+'</td>';
+    tasks.forEach((_,ti)=>{
+      const cid='r'+ri+'_t'+ti;const v=cells[cid]||'';
+      h+='<td style="'+tdSt+'"><input type="number" min="0" max="99" value="'+v+'" data-p="'+p+'" data-tab="fondi" data-cid="'+cid+'" oninput="hkpNInput(this)" onblur="hkpNBlur(this)" style="width:78px;border:none;background:'+(v?'var(--surface)':'transparent')+';text-align:center;font-size:12px;padding:4px 2px;outline:none;font-weight:'+(v?'500':'400')+';display:block;" /></td>';
+    });
+    h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:11px;font-weight:500;padding:3px;">'+(rTot||'')+'</td></tr>';
+  });
+  const grandTot=taskTotals.reduce((a,b)=>a+b,0);
+  h+='<tr><td style="'+stickyL+'font-weight:700;color:#3B6D11;background:#EAF3DE;z-index:2;">Totali</td>';
+  taskTotals.forEach(t=>h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:11px;font-weight:500;padding:3px;">'+(t||'')+'</td>');
+  h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:12px;font-weight:700;padding:3px;">'+(grandTot||'')+'</td></tr>';
+  h+='</tbody></table></div>';
+  el.innerHTML=h;
 }
+function hkpNInput(input){
+  const {p,tab,cid}=input.dataset;
+  hkpNSetCell(p,tab,cid,input.value);
+  if(input.type==='text'){
+    const v=input.value.trim();const dual=v.includes('/');
+    input.style.color=dual?'var(--accent)':'var(--text)';
+    input.style.fontWeight=v?'500':'400';
+    input.style.background=v?'var(--surface)':'transparent';
+  }else{
+    const v=input.value.trim();
+    input.style.fontWeight=v?'500':'400';
+    input.style.background=v?'var(--surface)':'transparent';
+  }
+  clearTimeout(_hkpNdebounce[p+'_'+tab]);
+  _hkpNdebounce[p+'_'+tab]=setTimeout(()=>hkpNSave(p,tab),4000);
+}
+function hkpNBlur(input){
+  if(input.type==='text'){input.value=input.value.trim().toUpperCase();hkpNSetCell(input.dataset.p,input.dataset.tab,input.dataset.cid,input.value);}
+}
+// stub for old references still in syncFromCloud
+function hkpSave(p){}
+function hkpRestore(){}
 let recGroupOpen=false;
 function toggleRecGroup(){
   recGroupOpen=!recGroupOpen;
@@ -575,8 +650,8 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
     try{loadWeekData(weekData);}catch(e){}
     try{refreshOverviewForDate(new Date());}catch(e){}
   }
-  if(id==='hkpsheet'&&HKP_DATA.sa)setTimeout(()=>hkpRenderAll('sa'),50);
-  if(id==='hkpsheetar'&&HKP_DATA.ar)setTimeout(()=>hkpRenderAll('ar'),50);
+  if(id==='hkpsheet')setTimeout(()=>hkpNRender('sa'),50);
+  if(id==='hkpsheetar')setTimeout(()=>hkpNRender('ar'),50);
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
   if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);setTimeout(loadBkfAccessStats,150);setTimeout(loadDvrAccessStats,200);setTimeout(miniappNoTrackRender,50);}
@@ -2263,7 +2338,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
     restoreCustomTasks();
     restoreDeptCustomTasks();
     ovUpdateRevNoreply();ovUpdateRevImport();
-    hkpRestoreConfig();hkpRestore();
+    hkpRestoreConfig();
     dvrRestore();dvrBadgeUpdate();
     turniPrefRestore();turniPrefLoad();
     // Ripristina turno settimanale
