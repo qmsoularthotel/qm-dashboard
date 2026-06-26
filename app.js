@@ -444,6 +444,7 @@ let HKP_NMON={sa:'',ar:''};
 let _hkpNdata={};   // {p_yyyy-mm: {cellId: val}}
 let _hkpNdebounce={};
 let _hkpNsel={drag:false,cells:new Set()};
+const HKP_SYM={RP:'hkp-ripasso',ND:'hkp-nd',LIB:'open-sign'};
 const HKP_MON_NAMES=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 function hkpNStorKey(p){return 'qm_hkpN_'+p+'_'+hkpNCurMon(p);}
 function hkpNCacheKey(p){return p+'_'+hkpNCurMon(p);}
@@ -673,7 +674,14 @@ function hkpNRenderGrid(p,tab){
   R+='</tr></tbody></table>';
 
   // Wrapper: sinistra fissa + destra scrollabile
+  const symBtnStyle='display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid #d0d3db;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;color:#333;font-weight:600;';
   let h='<div style="font-size:17px;font-weight:700;color:#1a1a1a;padding:0 0 8px;letter-spacing:.01em;">'+monLabel+'</div>';
+  h+='<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">';
+  h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'RP\')" style="'+symBtnStyle+'"><img src="img/hkp-ripasso.png" style="height:22px;width:auto;mix-blend-mode:multiply;"> Ripasso</button>';
+  h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'ND\')" style="'+symBtnStyle+'"><img src="img/hkp-nd.png" style="height:22px;width:auto;mix-blend-mode:multiply;"> Non disturbare</button>';
+  h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'LIB\')" style="'+symBtnStyle+'"><img src="img/open-sign.png" style="height:22px;width:auto;mix-blend-mode:multiply;"> Camera libera</button>';
+  h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'\')" style="'+symBtnStyle+'background:#fef2f2;border-color:#fca5a5;color:#b91c1c;">✕ Cancella</button>';
+  h+='</div>';
   h+='<div style="display:flex;border:1px solid #d0d3db;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
   h+='<div data-hkpnl="'+p+'" style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);overflow:hidden;">'+L+'</div>';
   h+='<div data-hkpnr="'+p+'" style="overflow-x:auto;flex:1;">'+R+'</div>';
@@ -694,6 +702,45 @@ function hkpNRenderGrid(p,tab){
   el.innerHTML=h;
   // Sincronizza altezze righe dopo il render (rowspan nella tabella sinistra può sfasarle)
   requestAnimationFrame(()=>hkpNSyncRowHeights(p));
+  setTimeout(()=>hkpNUpdateAllSymbols(p),60);
+}
+function _hkpNUpdateCellDisplay(input){
+  const td=input.parentElement;
+  if(!td)return;
+  const v=(input.value||'').trim().toUpperCase();
+  const sym=HKP_SYM[v];
+  // Rimuovi overlay precedente
+  const old=td.querySelector('.hkpSymImg');if(old)old.remove();
+  if(sym){
+    input.style.color='transparent';
+    td.style.position='relative';
+    const img=document.createElement('img');
+    img.className='hkpSymImg';
+    img.src='img/'+sym+'.png';
+    img.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:75%;height:75%;object-fit:contain;mix-blend-mode:multiply;pointer-events:none;z-index:2;';
+    td.appendChild(img);
+    td.style.background='#fff';
+  }else{
+    const dual=v.includes('/');
+    input.style.color=dual?'var(--accent,#1E4080)':'#1a1a1a';
+  }
+}
+function hkpNUpdateAllSymbols(p){
+  const el=document.getElementById('hkpN-'+p+'-body');
+  if(!el)return;
+  el.querySelectorAll('input[data-p="'+p+'"]').forEach(inp=>_hkpNUpdateCellDisplay(inp));
+}
+function hkpNInsertSymbol(p,code){
+  if(_hkpNsel.cells.size===0)return;
+  _hkpNsel.cells.forEach(key=>{
+    const [sp,stab,sri,scol]=key.split(':');
+    if(sp!==p)return;
+    hkpNSetCell(sp,stab,parseInt(sri),scol,code);
+    const el=document.querySelector('input[data-p="'+sp+'"][data-tab="'+stab+'"][data-ri="'+sri+'"][data-col="'+scol+'"]');
+    if(el){el.value=code;_hkpNUpdateCellDisplay(el);el.parentElement.style.background=code?'#fff':'#fff';}
+  });
+  clearTimeout(_hkpNdebounce[p]);
+  hkpNSave(p);
 }
 function hkpNSyncRowHeights(p){
   const el=document.getElementById('hkpN-'+p+'-body');
@@ -782,10 +829,12 @@ function hkpNDragOver(inp){
 // --- Cell interaction ---
 function hkpNFocus(input){
   if(!_hkpNsel.drag){
-    // Keyboard navigation: reset to single selection
     _hkpNClearSel();
     _hkpNSelAdd(input);
   }
+  // Rendi visibile il testo per la modifica (anche se era trasparente per mostrare immagine)
+  const v=(input.value||'').trim().toUpperCase();
+  input.style.color=v.includes('/')?'var(--accent,#1E4080)':'#1a1a1a';
   input.select();
 }
 function _hkpNApplyCell(inp,val){
@@ -828,18 +877,16 @@ function hkpNInput(input){
   },2000);
 }
 function hkpNBlur(input){
-  // Mantieni highlight selezione multipla; rimuovi solo focus ring
   if(!_hkpNsel.cells.has(_hkpNSelKey(input)))
     input.parentElement.style.boxShadow='';
   if(input.type==='text'){
     const up=input.value.trim().toUpperCase();
     if(up!==input.value)input.value=up;
     hkpNSetCell(input.dataset.p,input.dataset.tab,parseInt(input.dataset.ri),input.dataset.col,up);
-    const dual=up.includes('/');
-    input.style.color=dual?'var(--accent,#1E4080)':'#1a1a1a';
     input.style.fontWeight=up?'700':'400';
     if(!_hkpNsel.cells.has(_hkpNSelKey(input)))
-      input.parentElement.style.background=up?'#f0f5ff':'#fff';
+      input.parentElement.style.background=HKP_SYM[up]?'#fff':up?'#f0f5ff':'#fff';
+    _hkpNUpdateCellDisplay(input);
   }
 }
 function hkpNKey(input,e){
