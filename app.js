@@ -484,6 +484,87 @@ function hkpNSaveAll(p){
   const btn=document.getElementById('hkpN-'+p+'-savebtn');
   if(btn){btn.textContent='✓ Salvato';setTimeout(()=>{btn.textContent='Salva';},1800);}
 }
+function hkpNPrint(p){
+  const tab=HKP_NTAB[p]||'camere';
+  const tabLabels={camere:'Camere',aree:'Aree Comuni',fondi:'Fondi & Lavaggi'};
+  const hotel=p==='sa'?'SoulArt Hotel':'Art Resort';
+  const [y,m]=hkpNCurMon(p).split('-').map(Number);
+  const monName=(HKP_MON_NAMES||['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'])[m-1];
+  const days=new Array(new Date(y,m,0).getDate()).fill(0).map((_,i)=>i+1);
+  const rows=hkpNGetRows(p,tab);
+  const data=(_hkpNdata[hkpNCacheKey(p)]||{})[tab]||{};
+
+  // Build totals
+  const rowTotals={},dayTotals={};
+  rows.forEach((row,ri)=>{
+    let rt=0;
+    days.forEach(d=>{
+      const v=hkpNGetCell(p,tab,ri,d);
+      const n=v.split('/').reduce((s,x)=>{const num=parseFloat(x.trim());return s+(isNaN(num)?0:num);},0);
+      rt+=n;dayTotals[d]=(dayTotals[d]||0)+n;
+    });
+    rowTotals[ri]=rt;
+  });
+  const grandTot=Object.values(rowTotals).reduce((a,b)=>a+b,0);
+
+  // Build print HTML
+  let th='<tr><th style="background:#1E4080;color:#fff;padding:6px 10px;white-space:nowrap;border:1px solid #ccc;">Gruppo</th>'
+        +'<th style="background:#1E4080;color:#fff;padding:6px 10px;white-space:nowrap;border:1px solid #ccc;">Camera</th>';
+  days.forEach(d=>th+='<th style="background:#1E4080;color:#fff;padding:4px 6px;text-align:center;border:1px solid #ccc;font-size:11px;">'+d+'</th>');
+  th+='<th style="background:#1a5c2e;color:#fff;padding:4px 8px;text-align:center;border:1px solid #ccc;">Tot</th></tr>';
+
+  let groups=[];
+  if(tab==='camere'){
+    const roomDef=HKP_ROOMS[p]||[];
+    roomDef.forEach(g=>g.rooms.forEach(r=>{groups.push({group:g.label,room:r});}));
+  } else {
+    rows.forEach(r=>groups.push({group:'',room:r}));
+  }
+
+  let tbody='';
+  let lastGrp='';
+  groups.forEach((g,ri)=>{
+    const isNewGroup=g.group!==lastGrp;
+    lastGrp=g.group;
+    const rTot=rowTotals[ri]||0;
+    tbody+='<tr>';
+    tbody+='<td style="border:1px solid #ccc;padding:4px 8px;white-space:nowrap;font-size:11px;color:#555;">'+( isNewGroup?g.group:'')+'</td>';
+    tbody+='<td style="border:1px solid #ccc;padding:4px 8px;white-space:nowrap;font-weight:600;font-size:12px;">'+g.room+'</td>';
+    days.forEach(d=>{
+      const v=hkpNGetCell(p,tab,ri,d);
+      const dual=v.includes('/');
+      tbody+='<td style="border:1px solid #ccc;padding:3px 4px;text-align:center;font-size:12px;font-weight:'+(v?'700':'400')+';color:'+(dual?'#1E4080':'#1a1a1a')+';background:'+(v?'#f0f5ff':'#fff')+';">'+v+'</td>';
+    });
+    tbody+='<td style="border:1px solid #ccc;text-align:center;background:#d4edda;color:#1a5c2e;font-weight:700;font-size:12px;padding:3px 6px;">'+(rTot||'')+'</td>';
+    tbody+='</tr>';
+  });
+
+  // Footer row totals
+  tbody+='<tr style="background:#f0f0f0;">';
+  tbody+='<td colspan="2" style="border:1px solid #ccc;padding:4px 8px;font-weight:700;font-size:11px;text-align:right;">Totale</td>';
+  days.forEach(d=>tbody+='<td style="border:1px solid #ccc;text-align:center;background:#d4edda;color:#1a5c2e;font-weight:700;font-size:12px;padding:3px 4px;">'+(dayTotals[d]||'')+'</td>');
+  tbody+='<td style="border:1px solid #ccc;text-align:center;background:#c3e6cb;color:#155724;font-weight:800;font-size:13px;padding:3px 6px;">'+(grandTot||'')+'</td>';
+  tbody+='</tr>';
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${hotel} — HKP ${tabLabels[tab]} ${monName} ${y}</title>
+<style>
+@page{size:A4 landscape;margin:10mm}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;margin:0;padding:0}
+h2{margin:0 0 4px;font-size:15px;color:#1E4080}
+p{margin:0 0 10px;font-size:11px;color:#555}
+table{border-collapse:collapse;width:100%}
+@media print{button{display:none}}
+</style></head><body>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+  <div><h2>${hotel} — ${tabLabels[tab]}</h2><p>${monName} ${y}</p></div>
+  <button onclick="window.print()" style="padding:6px 14px;background:#1E4080;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">🖨 Stampa</button>
+</div>
+<table><thead>${th}</thead><tbody>${tbody}</tbody></table>
+</body></html>`;
+
+  const w=window.open('','_blank','width=1100,height=750');
+  if(w){w.document.write(html);w.document.close();}
+}
 function hkpNTab(p,tab){HKP_NTAB[p]=tab;hkpNRender(p);}
 function hkpNRender(p){
   const viewId='view-hkp'+(p==='sa'?'sheet':'sheetar');
@@ -547,17 +628,14 @@ function hkpNRenderGrid(p,tab){
   L+='<td style="background:#d4edda;'+B+'padding:0 10px;font-size:15px;font-weight:700;color:#1a5c2e;height:'+RH+'px;vertical-align:middle;white-space:nowrap;">Totali</td></tr>';
   L+='</tbody></table>';
 
-  // === TABELLA DESTRA: giorni + Tot (scrolla orizzontalmente) ===
-  let R='<table style="border-collapse:collapse;table-layout:fixed;">';
-  R+='<colgroup>';
-  days.forEach(()=>R+='<col style="width:'+DW+'px">');
-  R+='<col style="width:'+TOTW+'px"></colgroup>';
+  // === TABELLA DESTRA: giorni + Tot (scrolla, larghezze adattive al contenuto) ===
+  let R='<table style="border-collapse:collapse;table-layout:auto;">';
   R+='<thead><tr style="height:'+RH+'px;">';
   days.forEach(d=>{
     const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-    R+='<th style="background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
+    R+='<th style="background:#f5f6f8;'+B+'padding:5px 6px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';height:'+RH+'px;white-space:nowrap;'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
   });
-  R+='<th style="background:#1a5c2e;color:#fff;'+B+'padding:5px 4px;font-size:13px;font-weight:700;text-align:center;height:'+RH+'px;">Tot</th>';
+  R+='<th style="background:#1a5c2e;color:#fff;'+B+'padding:5px 8px;font-size:13px;font-weight:700;text-align:center;height:'+RH+'px;white-space:nowrap;">Tot</th>';
   R+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
     const rTot=rowTotals[ri]||0;
@@ -566,19 +644,20 @@ function hkpNRenderGrid(p,tab){
       const v=hkpNGetCell(p,tab,ri,d);
       const dual=v.includes('/');
       const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-      R+='<td style="'+B+'padding:0;background:'+(v?'#f0f5ff':(isToday?'#f4f7fd':'#fff'))+';height:'+RH+'px;">'
+      R+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':(isToday?'#f4f7fd':'#fff'))+';height:'+RH+'px;">'
         +'<input type="text" maxlength="8" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" '
         +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
-        +'style="width:'+DW+'px;height:'+RH+'px;border:none;background:transparent;text-align:center;font-size:15px;'
-        +'font-family:inherit;padding:0;outline:none;color:'+(dual?'var(--accent,#1E4080)':'#1a1a1a')+';font-weight:'+(v?'700':'400')+';cursor:default;display:block;"/></td>';
+        +'style="min-width:36px;width:100%;height:'+(RH-2)+'px;border:none;background:transparent;text-align:center;font-size:15px;'
+        +'font-family:inherit;padding:0 4px;outline:none;color:'+(dual?'var(--accent,#1E4080)':'#1a1a1a')+';font-weight:'+(v?'700':'400')+';'
+        +'cursor:default;display:block;caret-color:transparent;box-sizing:border-box;"/></td>';
     });
-    R+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:15px;font-weight:700;height:'+RH+'px;vertical-align:middle;">'+(rTot||'')+'</td>';
+    R+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:15px;font-weight:700;height:'+RH+'px;vertical-align:middle;padding:0 6px;white-space:nowrap;">'+(rTot||'')+'</td>';
     R+='</tr>';
   });
   const grandTot=Object.values(rowTotals).reduce((a,b)=>a+b,0);
   R+='<tr style="height:'+RH+'px;">';
-  days.forEach(d=>R+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:14px;font-weight:700;height:'+RH+'px;vertical-align:middle;">'+(dayTotals[d]||'')+'</td>');
-  R+='<td style="'+B+'text-align:center;background:#c3e6cb;color:#155724;font-size:15px;font-weight:800;height:'+RH+'px;vertical-align:middle;">'+(grandTot||'')+'</td>';
+  days.forEach(d=>R+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:14px;font-weight:700;height:'+RH+'px;vertical-align:middle;padding:0 4px;">'+(dayTotals[d]||'')+'</td>');
+  R+='<td style="'+B+'text-align:center;background:#c3e6cb;color:#155724;font-size:15px;font-weight:800;height:'+RH+'px;vertical-align:middle;padding:0 6px;white-space:nowrap;">'+(grandTot||'')+'</td>';
   R+='</tr></tbody></table>';
 
   // Wrapper: sinistra fissa + destra scrollabile
