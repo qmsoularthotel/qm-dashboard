@@ -1163,6 +1163,13 @@ function pianoRenderWeek(activeIdx){
   if(!row||!wrap||!pianoData)return;
   wrap.style.display='block';
   const today=new Date();today.setHours(0,0,0,0);
+  const _mob=window.innerWidth<=768;
+  const _ico=_mob?'18px':'36px';
+  const _numFs=_mob?'14px':'18px';
+  const _dayFs=_mob?'12px':'15px';
+  const _dateFs=_mob?'10px':'11px';
+  const _pad=_mob?'8px 4px 6px':'12px 8px 10px';
+  const _minW=_mob?'48px':'70px';
   row.innerHTML=pianoData.giorni.map((g,i)=>{
     const lib=g.liborio||{partenze:[],fermate:[],cambi:[]};
     const bMerged={partenze:[...(g.boutique?.partenze||[]),...lib.partenze],fermate:[...(g.boutique?.fermate||[]),...lib.fermate],cambi:[...(g.boutique?.cambi||[]),...lib.cambi]};
@@ -1177,22 +1184,22 @@ function pianoRenderWeek(activeIdx){
     const bg=isActive?'var(--surface2)':'var(--surface)';
     const borderTop=isActive?'border-top:3px solid var(--accent);':'border-top:3px solid transparent;';
     const totTot=totF+totP;
-    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:70px;background:${bg};border:1px solid var(--border);${borderTop}border-radius:10px;padding:12px 8px 10px;text-align:center;cursor:pointer;transition:all .15s;">
-      <div style="font-size:15px;font-weight:700;color:${isActive?'var(--accent)':'var(--text)'};line-height:1;">${dayName}</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;margin-top:2px;">${dayDate}</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:7px;">
+    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:${_minW};background:${bg};border:1px solid var(--border);${borderTop}border-radius:10px;padding:${_pad};text-align:center;cursor:pointer;transition:all .15s;">
+      <div style="font-size:${_dayFs};font-weight:700;color:${isActive?'var(--accent)':'var(--text)'};line-height:1;">${dayName}</div>
+      <div style="font-size:${_dateFs};color:var(--text-dim);margin-bottom:6px;margin-top:2px;">${dayDate}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:${_mob?'4px':'10px'};margin-bottom:5px;">
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-          <img src="img/icons/fermata.png" class="ov-icon" style="width:36px;height:36px;object-fit:contain;">
-          <span style="font-size:18px;font-weight:700;color:${fColor};line-height:1;">${totF}</span>
+          <img src="img/icons/fermata.png" class="ov-icon" style="width:${_ico};height:${_ico};object-fit:contain;">
+          <span style="font-size:${_numFs};font-weight:700;color:${fColor};line-height:1;">${totF}</span>
         </div>
-        <div style="width:1px;height:40px;background:var(--border-light);"></div>
+        ${!_mob?`<div style="width:1px;height:40px;background:var(--border-light);"></div>`:''}
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-          <img src="img/icons/arrivi.png" class="ov-icon" style="width:36px;height:36px;object-fit:contain;">
-          <span style="font-size:18px;font-weight:700;color:${pColor};line-height:1;">${totP}</span>
+          <img src="img/icons/arrivi.png" class="ov-icon" style="width:${_ico};height:${_ico};object-fit:contain;">
+          <span style="font-size:${_numFs};font-weight:700;color:${pColor};line-height:1;">${totP}</span>
         </div>
       </div>
-      <div style="border-top:1px solid var(--border-light);padding-top:5px;">
-        <span style="font-size:11px;color:var(--text-dim);">tot </span><span style="font-size:14px;font-weight:700;color:var(--text);">${totTot}</span>
+      <div style="border-top:1px solid var(--border-light);padding-top:4px;">
+        <span style="font-size:10px;color:var(--text-dim);">tot </span><span style="font-size:${_mob?'12px':'14px'};font-weight:700;color:var(--text);">${totTot}</span>
       </div>
     </div>`;
   }).join('');
