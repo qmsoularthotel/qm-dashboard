@@ -405,6 +405,8 @@ function hkpEditUrl(p){
   alert(`URL ${nome} aggiornati. Clicca Aggiorna per ricaricare i dati.`);
 }
 // §§ HKP NATIVE — griglia nativa (Camere / Aree Comuni / Fondi & Lavaggi)
+// Storage: una chiave per hotel/mese → qm_hkpN_{p}_{yyyy-mm}
+// Cell IDs: "{tab}:{ri}_{day|task}" — prefisso tab garantisce isolamento totale
 const HKP_ROOMS={
   sa:{
     camere:[
@@ -439,9 +441,11 @@ const HKP_ROOMS={
 };
 let HKP_NTAB={sa:'camere',ar:'camere'};
 let HKP_NMON={sa:'',ar:''};
-let _hkpNdata={};
+let _hkpNdata={};   // {p_yyyy-mm: {cellId: val}}
 let _hkpNdebounce={};
-function hkpNKey(p,tab,mon){return 'qm_hkpN_'+p+'_'+tab+'_'+mon;}
+const HKP_MON_NAMES=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+function hkpNStorKey(p){return 'qm_hkpN_'+p+'_'+hkpNCurMon(p);}
+function hkpNCacheKey(p){return p+'_'+hkpNCurMon(p);}
 function hkpNCurMon(p){
   if(!HKP_NMON[p]){const n=new Date();HKP_NMON[p]=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
   return HKP_NMON[p];
@@ -450,41 +454,44 @@ function hkpNNavMon(p,dir){
   const [y,m]=hkpNCurMon(p).split('-').map(Number);
   const d=new Date(y,m-1+dir,1);
   HKP_NMON[p]=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  // flush previous debounce before switching month
+  clearTimeout(_hkpNdebounce[p]);
   hkpNRender(p);
 }
-function hkpNGetCells(p,tab){
-  const key=hkpNKey(p,tab,hkpNCurMon(p));
-  if(!_hkpNdata[key]){try{const s=localStorage.getItem(key);_hkpNdata[key]=s?JSON.parse(s):{};}catch(e){_hkpNdata[key]={};}}
-  return _hkpNdata[key];
+function hkpNGetData(p){
+  const ck=hkpNCacheKey(p);
+  if(!_hkpNdata[ck]){
+    try{const s=localStorage.getItem(hkpNStorKey(p));_hkpNdata[ck]=s?JSON.parse(s):{};}
+    catch(e){_hkpNdata[ck]={};}
+  }
+  return _hkpNdata[ck];
 }
-function hkpNSetCell(p,tab,cid,val){
-  const key=hkpNKey(p,tab,hkpNCurMon(p));
-  if(!_hkpNdata[key])_hkpNdata[key]={};
-  const t=val.trim().toUpperCase();
-  if(t)_hkpNdata[key][cid]=t;else delete _hkpNdata[key][cid];
+function hkpNGetCell(p,tab,ri,col){return hkpNGetData(p)[tab+':'+ri+'_'+col]||'';}
+function hkpNSetCell(p,tab,ri,col,val){
+  const data=hkpNGetData(p);
+  const k=tab+':'+ri+'_'+col;
+  const t=(val||'').trim().toUpperCase();
+  if(t)data[k]=t;else delete data[k];
 }
-function hkpNSave(p,tab){
-  const key=hkpNKey(p,tab,hkpNCurMon(p));
-  const json=JSON.stringify(_hkpNdata[key]||{});
-  try{localStorage.setItem(key,json);}catch(e){}
-  kvSet(key,json).catch(()=>{});
+function hkpNSave(p){
+  const sk=hkpNStorKey(p);
+  const json=JSON.stringify(_hkpNdata[hkpNCacheKey(p)]||{});
+  try{localStorage.setItem(sk,json);}catch(e){}
+  kvSet(sk,json).catch(()=>{});
 }
 function hkpNSaveAll(p){
-  ['camere','aree','fondi'].forEach(tab=>hkpNSave(p,tab));
+  hkpNSave(p);
   const btn=document.getElementById('hkpN-'+p+'-savebtn');
   if(btn){btn.textContent='✓ Salvato';setTimeout(()=>{btn.textContent='Salva';},1800);}
 }
-function hkpNTab(p,tab){
-  HKP_NTAB[p]=tab;
-  hkpNRender(p);
-}
+function hkpNTab(p,tab){HKP_NTAB[p]=tab;hkpNRender(p);}
 function hkpNRender(p){
   const viewId='view-hkp'+(p==='sa'?'sheet':'sheetar');
+  const [y,m]=hkpNCurMon(p).split('-').map(Number);
+  const today=new Date();const isCurMon=today.getFullYear()===y&&today.getMonth()+1===m;
   const monEl=document.getElementById('hkpN-'+p+'-month');
   if(monEl){
-    const [y,m]=hkpNCurMon(p).split('-').map(Number);
-    const nomi=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
-    monEl.textContent=nomi[m-1]+' '+y;
+    monEl.innerHTML='<span style="font-weight:700;font-size:var(--fs-sm);color:var(--text);">'+HKP_MON_NAMES[m-1]+'</span> <span style="color:var(--text-dim);font-size:var(--fs-xs);">'+y+'</span>'+(isCurMon?' <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);vertical-align:middle;margin-left:4px;" title="Mese corrente"></span>':'');
   }
   const tab=HKP_NTAB[p];
   document.querySelectorAll('#'+viewId+' .hkpN-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
@@ -493,73 +500,82 @@ function hkpNRender(p){
 function hkpNRenderGrid(p,tab){
   const el=document.getElementById('hkpN-'+p+'-body');
   if(!el)return;
-  const cells=hkpNGetCells(p,tab);
+  const data=hkpNGetData(p);
   const conf=HKP_ROOMS[p][tab];
   const [yr,mo]=hkpNCurMon(p).split('-').map(Number);
   const daysInMonth=new Date(yr,mo,0).getDate();
   const days=[];for(let d=1;d<=daysInMonth;d++)days.push(d);
+  // Flat rows list with group metadata
   const rows=[];
-  conf.forEach(grp=>grp.list.forEach(name=>rows.push({name,group:grp.g})));
-  // Totali: dayTotals/rowTotals = n° camere; hwCounts = +1 per ogni persona (duplex conta per ciascuno)
+  conf.forEach(grp=>grp.list.forEach((name,idx)=>rows.push({name,grp:grp.g,isFirst:idx===0,grpSize:grp.list.length})));
+  // Calcola totali
   const dayTotals={};const rowTotals={};const hwCounts={};
   rows.forEach((row,ri)=>{
     days.forEach(d=>{
-      const v=cells['r'+ri+'_d'+d]||'';
+      const v=hkpNGetCell(p,tab,ri,d);
       if(!v)return;
       dayTotals[d]=(dayTotals[d]||0)+1;
       rowTotals[ri]=(rowTotals[ri]||0)+1;
       v.split('/').forEach(k=>{const t=k.trim();if(t)hwCounts[t]=(hwCounts[t]||0)+1;});
     });
   });
-  const CELL='border:0.5px solid var(--border-light);';
-  const thSt=CELL+'padding:5px 4px;text-align:center;font-size:12px;font-weight:600;background:var(--surface2,#F4F4F6);white-space:nowrap;';
-  const tdSt=CELL+'padding:2px;';
-  const stickyL='position:sticky;left:0;z-index:2;background:var(--bg,#E8E8EA);'+CELL+'padding:6px 10px;white-space:nowrap;font-size:13px;font-weight:500;';
-  const INP='width:100%;min-width:46px;border:none;text-align:center;font-size:13px;font-family:inherit;padding:4px 2px;outline:none;display:block;box-sizing:border-box;';
-  let h='<div style="overflow-x:auto;border:0.5px solid var(--border-light);border-radius:8px;"><table style="border-collapse:collapse;width:100%;table-layout:auto;">';
-  h+='<thead><tr>';
-  h+='<th style="'+stickyL+'z-index:3;background:var(--surface2,#F4F4F6);font-size:13px;font-weight:700;min-width:110px;text-align:left;">Camera</th>';
+  // Stili comuni
+  const B='border:1px solid #e2e4e8;';
+  const GW=30;const RW=110;const DW=52;const TW=46;
+  const thSt='background:#f5f6f8;font-size:12px;font-weight:600;text-align:center;padding:5px 2px;'+B;
+  const tdSt=B+'padding:2px;background:#fff;';
+  const stickyG='position:sticky;left:0;z-index:3;width:'+GW+'px;min-width:'+GW+'px;background:var(--accent,#1E4080);'+B;
+  const stickyR='position:sticky;left:'+GW+'px;z-index:2;width:'+RW+'px;min-width:'+RW+'px;background:#fff;'+B+'padding:5px 8px;font-size:13px;font-weight:500;white-space:nowrap;';
   const today=new Date();
+  // Colgroup per larghezze fisse
+  let h='<div style="overflow-x:auto;border:1px solid #d8dae0;border-radius:8px;background:#fff;">';
+  h+='<table style="border-collapse:collapse;table-layout:fixed;width:max-content;">';
+  h+='<colgroup><col style="width:'+GW+'px"><col style="width:'+RW+'px">';
+  days.forEach(()=>h+='<col style="width:'+DW+'px">');
+  h+='<col style="width:'+TW+'px"></colgroup>';
+  // Header
+  h+='<thead><tr>';
+  h+='<th style="'+stickyG+'z-index:4;background:var(--accent,#1E4080);color:#fff;font-size:11px;"></th>';
+  h+='<th style="position:sticky;left:'+GW+'px;z-index:4;background:#f5f6f8;'+B+'font-size:12px;font-weight:700;text-align:left;padding:5px 8px;">Camera</th>';
   days.forEach(d=>{
     const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-    h+='<th style="'+thSt+(isToday?'color:var(--accent);background:rgba(30,64,128,.08);':'color:var(--text-dim);')+'min-width:48px;">'+d+'</th>';
+    h+='<th style="'+thSt+(isToday?'color:var(--accent,#1E4080);background:#e8eef8;':'color:#666;')+'">'+d+'</th>';
   });
-  h+='<th style="'+thSt+'background:#EAF3DE;color:#3B6D11;min-width:44px;">Tot</th>';
+  h+='<th style="'+thSt+'background:#d4edda;color:#1a5c2e;font-weight:700;">Tot</th>';
   h+='</tr></thead><tbody>';
-  let prevGrp='';
   rows.forEach((row,ri)=>{
-    if(row.group!==prevGrp){
-      h+='<tr><td colspan="'+(daysInMonth+2)+'" style="background:var(--surface2,#F4F4F6);font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;'+CELL+'">'+row.group+'</td></tr>';
-      prevGrp=row.group;
-    }
     const rTot=rowTotals[ri]||0;
     h+='<tr>';
-    h+='<td style="'+stickyL+'">'+row.name+'</td>';
+    if(row.isFirst){
+      h+='<td rowspan="'+row.grpSize+'" style="'+stickyG+'writing-mode:vertical-rl;transform:rotate(180deg);color:#fff;font-size:10px;font-weight:700;text-align:center;vertical-align:middle;padding:6px 2px;letter-spacing:.05em;overflow:hidden;">'+row.grp+'</td>';
+    }
+    h+='<td style="'+stickyR+'">'+row.name+'</td>';
     days.forEach(d=>{
-      const cid='r'+ri+'_d'+d;
-      const v=cells[cid]||'';
+      const v=hkpNGetCell(p,tab,ri,d);
       const dual=v.includes('/');
-      h+='<td style="'+tdSt+'"><input type="text" maxlength="8" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-cid="'+cid+'" oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onkeydown="hkpNKey(this,event)" style="'+INP+'background:'+(v?'var(--surface)':'transparent')+';color:'+(dual?'var(--accent)':'inherit')+';font-weight:'+(v?'600':'400')+';"/></td>';
+      const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
+      h+='<td style="'+B+'padding:1px;background:'+(isToday&&!v?'#f0f4fc':v?'#f8fafb':'#fff')+';"><input type="text" maxlength="8" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onkeydown="hkpNKey(this,event)" style="width:'+DW+'px;border:none;background:transparent;text-align:center;font-size:13px;font-family:inherit;padding:4px 2px;outline:none;color:'+(dual?'var(--accent,#1E4080)':'#1a1a1a')+';font-weight:'+(v?'700':'400')+';cursor:text;"/></td>';
     });
-    h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:13px;font-weight:600;padding:4px;">'+(rTot||'')+'</td>';
+    h+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:13px;font-weight:600;padding:4px;">'+(rTot||'')+'</td>';
     h+='</tr>';
   });
   const grandTot=Object.values(rowTotals).reduce((a,b)=>a+b,0);
   h+='<tr>';
-  h+='<td style="'+stickyL+'font-weight:700;color:#3B6D11;background:#EAF3DE;z-index:2;">Totali</td>';
-  days.forEach(d=>h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:13px;font-weight:600;padding:4px;">'+(dayTotals[d]||'')+'</td>');
-  h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:14px;font-weight:700;padding:4px;">'+(grandTot||'')+'</td>';
+  h+='<td style="'+stickyG+'background:#edf0f7;"></td>';
+  h+='<td style="position:sticky;left:'+GW+'px;z-index:2;background:#d4edda;'+B+'padding:5px 8px;font-size:13px;font-weight:700;color:#1a5c2e;">Totali</td>';
+  days.forEach(d=>h+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:13px;font-weight:600;padding:4px;">'+(dayTotals[d]||'')+'</td>');
+  h+='<td style="'+B+'text-align:center;background:#c3e6cb;color:#155724;font-size:14px;font-weight:700;padding:4px;">'+(grandTot||'')+'</td>';
   h+='</tr></tbody></table></div>';
   // Riepilogo cameriere
-  const colors=[['#E6F1FB','#185FA5'],['#FAEEDA','#854F0B'],['#E1F5EE','#0F6E56'],['#FBEAF0','#993556'],['#EEEDFE','#534AB7'],['#FAECE7','#993C1D']];
+  const colors=[['#dbeafe','#1d4ed8'],['#fef3c7','#92400e'],['#dcfce7','#166534'],['#fce7f3','#9d174d'],['#ede9fe','#4c1d95'],['#ffedd5','#9a3412']];
   const sorted=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
   if(sorted.length){
-    h+='<div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;">';
+    h+='<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">';
     sorted.forEach(([init,cnt],i)=>{
       const [bg,fg]=colors[i%colors.length];
-      h+='<div style="background:var(--surface2,#F4F4F6);border-radius:8px;padding:10px 14px;border:0.5px solid var(--border-light);display:flex;align-items:center;gap:10px;">';
-      h+='<span style="display:inline-flex;width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+fg+';font-size:11px;font-weight:700;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
-      h+='<div><div style="font-size:22px;font-weight:600;line-height:1.1;">'+cnt+'</div><div style="font-size:11px;color:var(--text-dim);">'+init+'</div></div></div>';
+      h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;">';
+      h+='<span style="display:inline-flex;width:34px;height:34px;border-radius:50%;background:'+bg+';color:'+fg+';font-size:12px;font-weight:800;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
+      h+='<div><div style="font-size:22px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:11px;color:#666;">'+init+'</div></div></div>';
     });
     h+='</div>';
   }
@@ -568,82 +584,75 @@ function hkpNRenderGrid(p,tab){
 function hkpNRenderFondi(p){
   const el=document.getElementById('hkpN-'+p+'-body');
   if(!el)return;
-  const cells=hkpNGetCells(p,'fondi');
   const conf=HKP_ROOMS[p].fondi;
   const tasks=conf.tasks;const rooms=conf.rooms;
-  const taskTotals=tasks.map((_,ti)=>rooms.reduce((s,_,ri)=>s+(parseInt(cells['r'+ri+'_t'+ti])||0),0));
-  const roomTotals=rooms.map((_,ri)=>tasks.reduce((s,_,ti)=>s+(parseInt(cells['r'+ri+'_t'+ti])||0),0));
-  const CELL='border:0.5px solid var(--border-light);';
-  const thSt=CELL+'padding:6px 8px;text-align:center;font-size:12px;font-weight:600;background:var(--surface2,#F4F4F6);white-space:nowrap;';
-  const tdSt=CELL+'padding:2px;';
-  const stickyL='position:sticky;left:0;z-index:2;background:var(--bg,#E8E8EA);'+CELL+'padding:6px 10px;white-space:nowrap;font-size:13px;font-weight:500;';
-  const INP='width:100%;min-width:70px;border:none;text-align:center;font-size:14px;font-family:inherit;padding:5px 2px;outline:none;display:block;box-sizing:border-box;';
-  let h='<div style="overflow-x:auto;border:0.5px solid var(--border-light);border-radius:8px;"><table style="border-collapse:collapse;width:100%;table-layout:auto;">';
+  const GW=0;const RW=110;const TW=90;const TOT=50;
+  const taskTotals=tasks.map((_,ti)=>rooms.reduce((s,_,ri)=>s+(parseInt(hkpNGetCell(p,'fondi',ri,ti))||0),0));
+  const roomTotals=rooms.map((_,ri)=>tasks.reduce((s,_,ti)=>s+(parseInt(hkpNGetCell(p,'fondi',ri,ti))||0),0));
+  const B='border:1px solid #e2e4e8;';
+  const thSt='background:#f5f6f8;font-size:12px;font-weight:600;text-align:center;padding:6px 8px;'+B+'white-space:nowrap;';
+  const tdSt=B+'padding:2px;background:#fff;';
+  const stickyR='position:sticky;left:0;z-index:2;background:#fff;'+B+'padding:5px 8px;font-size:13px;font-weight:500;white-space:nowrap;';
+  let h='<div style="overflow-x:auto;border:1px solid #d8dae0;border-radius:8px;background:#fff;">';
+  h+='<table style="border-collapse:collapse;table-layout:fixed;width:max-content;">';
+  h+='<colgroup><col style="width:'+RW+'px">';
+  tasks.forEach(()=>h+='<col style="width:'+TW+'px">');
+  h+='<col style="width:'+TOT+'px"></colgroup>';
   h+='<thead><tr>';
-  h+='<th style="'+stickyL+'z-index:3;background:var(--surface2,#F4F4F6);font-size:13px;font-weight:700;min-width:90px;text-align:left;">Camera</th>';
-  tasks.forEach(t=>h+='<th style="'+thSt+'min-width:90px;color:var(--text-dim);">'+t+'</th>');
-  h+='<th style="'+thSt+'background:#EAF3DE;color:#3B6D11;min-width:44px;">Tot</th>';
+  h+='<th style="position:sticky;left:0;z-index:3;background:#f5f6f8;'+B+'font-size:12px;font-weight:700;text-align:left;padding:6px 8px;">Camera</th>';
+  tasks.forEach(t=>h+='<th style="'+thSt+'color:#555;">'+t+'</th>');
+  h+='<th style="'+thSt+'background:#d4edda;color:#1a5c2e;">Tot</th>';
   h+='</tr></thead><tbody>';
   rooms.forEach((room,ri)=>{
     const rTot=roomTotals[ri];
-    h+='<tr><td style="'+stickyL+'">'+room+'</td>';
+    h+='<tr><td style="'+stickyR+'">'+room+'</td>';
     tasks.forEach((_,ti)=>{
-      const cid='r'+ri+'_t'+ti;const v=cells[cid]||'';
-      h+='<td style="'+tdSt+'"><input type="number" min="0" max="99" value="'+v+'" data-p="'+p+'" data-tab="fondi" data-cid="'+cid+'" oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onkeydown="hkpNKey(this,event)" style="'+INP+'background:'+(v?'var(--surface)':'transparent')+';font-weight:'+(v?'600':'400')+';"/></td>';
+      const v=hkpNGetCell(p,'fondi',ri,ti);
+      h+='<td style="'+tdSt+'"><input type="number" min="0" max="99" value="'+v+'" data-p="'+p+'" data-tab="fondi" data-ri="'+ri+'" data-col="'+ti+'" oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onkeydown="hkpNKey(this,event)" style="width:'+TW+'px;border:none;background:transparent;text-align:center;font-size:14px;font-family:inherit;padding:5px 2px;outline:none;font-weight:'+(v?'700':'400')+';"/></td>';
     });
-    h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:13px;font-weight:600;padding:5px;">'+(rTot||'')+'</td></tr>';
+    h+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:13px;font-weight:600;padding:5px;">'+(rTot||'')+'</td></tr>';
   });
   const grandTot=taskTotals.reduce((a,b)=>a+b,0);
-  h+='<tr><td style="'+stickyL+'font-weight:700;color:#3B6D11;background:#EAF3DE;z-index:2;">Totali</td>';
-  taskTotals.forEach(t=>h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:13px;font-weight:600;padding:5px;">'+(t||'')+'</td>');
-  h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:14px;font-weight:700;padding:5px;">'+(grandTot||'')+'</td></tr>';
+  h+='<tr><td style="'+stickyR+'font-weight:700;color:#1a5c2e;background:#d4edda;">Totali</td>';
+  taskTotals.forEach(t=>h+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:13px;font-weight:600;padding:5px;">'+(t||'')+'</td>');
+  h+='<td style="'+B+'text-align:center;background:#c3e6cb;color:#155724;font-size:14px;font-weight:700;padding:5px;">'+(grandTot||'')+'</td></tr>';
   h+='</tbody></table></div>';
   el.innerHTML=h;
 }
 function hkpNInput(input){
-  const {p,tab,cid}=input.dataset;
-  hkpNSetCell(p,tab,cid,input.value);
+  const {p,tab,ri,col}=input.dataset;
+  hkpNSetCell(p,tab,parseInt(ri),col,input.value);
   if(input.type==='text'){
     const v=input.value.trim();const dual=v.includes('/');
-    input.style.color=dual?'var(--accent)':'inherit';
-    input.style.fontWeight=v?'600':'400';
-    input.style.background=v?'var(--surface)':'transparent';
+    input.style.color=dual?'var(--accent,#1E4080)':'#1a1a1a';
+    input.style.fontWeight=v?'700':'400';
   }else{
-    const v=input.value.trim();
-    input.style.fontWeight=v?'600':'400';
-    input.style.background=v?'var(--surface)':'transparent';
+    input.style.fontWeight=input.value?'700':'400';
   }
-  clearTimeout(_hkpNdebounce[p+'_'+tab]);
-  _hkpNdebounce[p+'_'+tab]=setTimeout(()=>hkpNSave(p,tab),4000);
+  clearTimeout(_hkpNdebounce[p]);
+  _hkpNdebounce[p]=setTimeout(()=>hkpNSave(p),3000);
 }
 function hkpNBlur(input){
   if(input.type==='text'){
     const up=input.value.trim().toUpperCase();
     input.value=up;
-    hkpNSetCell(input.dataset.p,input.dataset.tab,input.dataset.cid,up);
+    hkpNSetCell(input.dataset.p,input.dataset.tab,parseInt(input.dataset.ri),input.dataset.col,up);
     const dual=up.includes('/');
-    input.style.color=dual?'var(--accent)':'inherit';
-    input.style.fontWeight=up?'600':'400';
-    input.style.background=up?'var(--surface)':'transparent';
+    input.style.color=dual?'var(--accent,#1E4080)':'#1a1a1a';
+    input.style.fontWeight=up?'700':'400';
   }
 }
 function hkpNKey(input,e){
   if(e.key!=='Enter')return;
   e.preventDefault();
-  const cid=input.dataset.cid;
-  // cid = "r{ri}_d{d}" or "r{ri}_t{ti}"
-  const m=cid.match(/^r(\d+)_([dt])(\d+)$/);
-  if(!m)return;
-  const ri=parseInt(m[1]);const pfx=m[2];const idx=m[3];
+  const ri=parseInt(input.dataset.ri);const col=input.dataset.col;const tab=input.dataset.tab;
   const table=input.closest('table');
-  const next=table.querySelector('input[data-cid="r'+(ri+1)+'_'+pfx+idx+'"]');
+  const next=table.querySelector('input[data-ri="'+(ri+1)+'"][data-tab="'+tab+'"][data-col="'+col+'"]');
   if(next){next.focus();next.select();}
   else{
-    // fine colonna: vai alla prima riga della colonna successiva
-    const nextPfx=pfx==='d'?'d':'t';
-    const nextIdx=parseInt(idx)+1;
-    const nextCol=table.querySelector('input[data-cid="r0_'+nextPfx+nextIdx+'"]');
-    if(nextCol){nextCol.focus();nextCol.select();}
+    const colN=(tab==='fondi'?parseInt(col):parseInt(col))+1;
+    const first=table.querySelector('input[data-ri="0"][data-tab="'+tab+'"][data-col="'+colN+'"]');
+    if(first){first.focus();first.select();}
   }
 }
 // stub for old references still in syncFromCloud
