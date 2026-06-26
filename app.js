@@ -1217,7 +1217,8 @@ function pianoCheckScadenza(){
 function renderPianoGiorno(elId,refDate,forceIdx){
   const el=document.getElementById(elId);if(!el)return;
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){
-    el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div>';return;
+    const _mob=window.innerWidth<=768;
+    el.innerHTML=`<div style="color:var(--text-dim);font-size:var(--fs-xs);">${_mob?'Piano non caricato — caricare da PC':'Carica il piano settimana per vedere i cambi camera'}</div>`;return;
   }
   let idx=forceIdx!=null?forceIdx:pianoGetGiornoIdx(refDate);
   if(idx===-1){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Oggi non è nel piano caricato</div>';return;}
