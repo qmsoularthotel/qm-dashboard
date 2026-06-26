@@ -500,7 +500,7 @@ function hkpNRenderGrid(p,tab){
   const days=[];for(let d=1;d<=daysInMonth;d++)days.push(d);
   const rows=[];
   conf.forEach(grp=>grp.list.forEach(name=>rows.push({name,group:grp.g})));
-  // Calcola totali
+  // Totali: dayTotals/rowTotals = n° camere; hwCounts = +1 per ogni persona (duplex conta per ciascuno)
   const dayTotals={};const rowTotals={};const hwCounts={};
   rows.forEach((row,ri)=>{
     days.forEach(d=>{
@@ -511,53 +511,55 @@ function hkpNRenderGrid(p,tab){
       v.split('/').forEach(k=>{const t=k.trim();if(t)hwCounts[t]=(hwCounts[t]||0)+1;});
     });
   });
-  const thStyle='border:0.5px solid var(--border-light);padding:4px 3px;text-align:center;min-width:34px;font-size:10px;font-weight:500;background:var(--surface2,#F4F4F6);';
-  const tdSt='border:0.5px solid var(--border-light);padding:1px;';
-  const stickyL='position:sticky;left:0;z-index:2;background:var(--bg,#E8E8EA);border:0.5px solid var(--border-light);padding:4px 8px;white-space:nowrap;font-size:11px;';
-  let h='<div style="overflow-x:auto;border:0.5px solid var(--border-light);border-radius:8px;"><table style="border-collapse:collapse;min-width:100%;">';
+  const CELL='border:0.5px solid var(--border-light);';
+  const thSt=CELL+'padding:5px 4px;text-align:center;font-size:12px;font-weight:600;background:var(--surface2,#F4F4F6);white-space:nowrap;';
+  const tdSt=CELL+'padding:2px;';
+  const stickyL='position:sticky;left:0;z-index:2;background:var(--bg,#E8E8EA);'+CELL+'padding:6px 10px;white-space:nowrap;font-size:13px;font-weight:500;';
+  const INP='width:100%;min-width:46px;border:none;text-align:center;font-size:13px;font-family:inherit;padding:4px 2px;outline:none;display:block;box-sizing:border-box;';
+  let h='<div style="overflow-x:auto;border:0.5px solid var(--border-light);border-radius:8px;"><table style="border-collapse:collapse;width:100%;table-layout:auto;">';
   h+='<thead><tr>';
-  h+='<th style="'+stickyL+'z-index:3;background:var(--surface2,#F4F4F6);font-weight:600;min-width:100px;text-align:left;">Camera</th>';
+  h+='<th style="'+stickyL+'z-index:3;background:var(--surface2,#F4F4F6);font-size:13px;font-weight:700;min-width:110px;text-align:left;">Camera</th>';
   const today=new Date();
   days.forEach(d=>{
     const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-    h+='<th style="'+thStyle+(isToday?'color:var(--accent);background:rgba(30,64,128,.08);':'color:var(--text-dim);')+'">'+d+'</th>';
+    h+='<th style="'+thSt+(isToday?'color:var(--accent);background:rgba(30,64,128,.08);':'color:var(--text-dim);')+'min-width:48px;">'+d+'</th>';
   });
-  h+='<th style="'+thStyle+'background:#EAF3DE;color:#3B6D11;font-weight:700;min-width:38px;">Tot</th>';
+  h+='<th style="'+thSt+'background:#EAF3DE;color:#3B6D11;min-width:44px;">Tot</th>';
   h+='</tr></thead><tbody>';
   let prevGrp='';
   rows.forEach((row,ri)=>{
     if(row.group!==prevGrp){
-      h+='<tr><td colspan="'+(daysInMonth+2)+'" style="background:var(--surface2,#F4F4F6);font-size:10px;font-weight:600;color:var(--text-dim);padding:3px 8px;border:0.5px solid var(--border-light);">'+row.group+'</td></tr>';
+      h+='<tr><td colspan="'+(daysInMonth+2)+'" style="background:var(--surface2,#F4F4F6);font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;padding:4px 10px;'+CELL+'">'+row.group+'</td></tr>';
       prevGrp=row.group;
     }
     const rTot=rowTotals[ri]||0;
     h+='<tr>';
-    h+='<td style="'+stickyL+'font-weight:500;">'+row.name+'</td>';
+    h+='<td style="'+stickyL+'">'+row.name+'</td>';
     days.forEach(d=>{
       const cid='r'+ri+'_d'+d;
       const v=cells[cid]||'';
       const dual=v.includes('/');
-      h+='<td style="'+tdSt+'"><input type="text" maxlength="7" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-cid="'+cid+'" oninput="hkpNInput(this)" onblur="hkpNBlur(this)" style="width:34px;border:none;background:'+(v?'var(--surface)':'transparent')+';text-align:center;font-size:11px;font-family:monospace;padding:3px 1px;outline:none;color:'+(dual?'var(--accent)':'var(--text)')+';font-weight:'+(v?'500':'400')+';display:block;" /></td>';
+      h+='<td style="'+tdSt+'"><input type="text" maxlength="8" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-cid="'+cid+'" oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onkeydown="hkpNKey(this,event)" style="'+INP+'background:'+(v?'var(--surface)':'transparent')+';color:'+(dual?'var(--accent)':'inherit')+';font-weight:'+(v?'600':'400')+';"/></td>';
     });
-    h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:11px;font-weight:500;padding:3px;">'+(rTot||'')+'</td>';
+    h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:13px;font-weight:600;padding:4px;">'+(rTot||'')+'</td>';
     h+='</tr>';
   });
   const grandTot=Object.values(rowTotals).reduce((a,b)=>a+b,0);
   h+='<tr>';
   h+='<td style="'+stickyL+'font-weight:700;color:#3B6D11;background:#EAF3DE;z-index:2;">Totali</td>';
-  days.forEach(d=>h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:11px;font-weight:500;padding:3px;">'+(dayTotals[d]||'')+'</td>');
-  h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:12px;font-weight:700;padding:3px;">'+(grandTot||'')+'</td>';
+  days.forEach(d=>h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:13px;font-weight:600;padding:4px;">'+(dayTotals[d]||'')+'</td>');
+  h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:14px;font-weight:700;padding:4px;">'+(grandTot||'')+'</td>';
   h+='</tr></tbody></table></div>';
   // Riepilogo cameriere
   const colors=[['#E6F1FB','#185FA5'],['#FAEEDA','#854F0B'],['#E1F5EE','#0F6E56'],['#FBEAF0','#993556'],['#EEEDFE','#534AB7'],['#FAECE7','#993C1D']];
   const sorted=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
   if(sorted.length){
-    h+='<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">';
+    h+='<div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;">';
     sorted.forEach(([init,cnt],i)=>{
       const [bg,fg]=colors[i%colors.length];
-      h+='<div style="background:var(--surface2,#F4F4F6);border-radius:8px;padding:8px 12px;border:0.5px solid var(--border-light);display:flex;align-items:center;gap:8px;">';
-      h+='<span style="display:inline-flex;width:28px;height:28px;border-radius:50%;background:'+bg+';color:'+fg+';font-size:10px;font-weight:700;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
-      h+='<div><div style="font-size:18px;font-weight:600;line-height:1.1;">'+cnt+'</div><div style="font-size:10px;color:var(--text-dim);">'+init+'</div></div></div>';
+      h+='<div style="background:var(--surface2,#F4F4F6);border-radius:8px;padding:10px 14px;border:0.5px solid var(--border-light);display:flex;align-items:center;gap:10px;">';
+      h+='<span style="display:inline-flex;width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+fg+';font-size:11px;font-weight:700;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
+      h+='<div><div style="font-size:22px;font-weight:600;line-height:1.1;">'+cnt+'</div><div style="font-size:11px;color:var(--text-dim);">'+init+'</div></div></div>';
     });
     h+='</div>';
   }
@@ -571,28 +573,30 @@ function hkpNRenderFondi(p){
   const tasks=conf.tasks;const rooms=conf.rooms;
   const taskTotals=tasks.map((_,ti)=>rooms.reduce((s,_,ri)=>s+(parseInt(cells['r'+ri+'_t'+ti])||0),0));
   const roomTotals=rooms.map((_,ri)=>tasks.reduce((s,_,ti)=>s+(parseInt(cells['r'+ri+'_t'+ti])||0),0));
-  const thStyle='border:0.5px solid var(--border-light);padding:5px 6px;text-align:center;font-size:10px;font-weight:500;background:var(--surface2,#F4F4F6);';
-  const tdSt='border:0.5px solid var(--border-light);padding:1px;';
-  const stickyL='position:sticky;left:0;z-index:2;background:var(--bg,#E8E8EA);border:0.5px solid var(--border-light);padding:4px 8px;white-space:nowrap;font-size:11px;';
-  let h='<div style="overflow-x:auto;border:0.5px solid var(--border-light);border-radius:8px;"><table style="border-collapse:collapse;min-width:100%;">';
+  const CELL='border:0.5px solid var(--border-light);';
+  const thSt=CELL+'padding:6px 8px;text-align:center;font-size:12px;font-weight:600;background:var(--surface2,#F4F4F6);white-space:nowrap;';
+  const tdSt=CELL+'padding:2px;';
+  const stickyL='position:sticky;left:0;z-index:2;background:var(--bg,#E8E8EA);'+CELL+'padding:6px 10px;white-space:nowrap;font-size:13px;font-weight:500;';
+  const INP='width:100%;min-width:70px;border:none;text-align:center;font-size:14px;font-family:inherit;padding:5px 2px;outline:none;display:block;box-sizing:border-box;';
+  let h='<div style="overflow-x:auto;border:0.5px solid var(--border-light);border-radius:8px;"><table style="border-collapse:collapse;width:100%;table-layout:auto;">';
   h+='<thead><tr>';
-  h+='<th style="'+stickyL+'z-index:3;background:var(--surface2,#F4F4F6);font-weight:600;min-width:90px;text-align:left;">Camera</th>';
-  tasks.forEach(t=>h+='<th style="'+thStyle+'white-space:nowrap;min-width:80px;color:var(--text-dim);">'+t+'</th>');
-  h+='<th style="'+thStyle+'background:#EAF3DE;color:#3B6D11;font-weight:700;min-width:38px;">Tot</th>';
+  h+='<th style="'+stickyL+'z-index:3;background:var(--surface2,#F4F4F6);font-size:13px;font-weight:700;min-width:90px;text-align:left;">Camera</th>';
+  tasks.forEach(t=>h+='<th style="'+thSt+'min-width:90px;color:var(--text-dim);">'+t+'</th>');
+  h+='<th style="'+thSt+'background:#EAF3DE;color:#3B6D11;min-width:44px;">Tot</th>';
   h+='</tr></thead><tbody>';
   rooms.forEach((room,ri)=>{
     const rTot=roomTotals[ri];
-    h+='<tr><td style="'+stickyL+'font-weight:500;">'+room+'</td>';
+    h+='<tr><td style="'+stickyL+'">'+room+'</td>';
     tasks.forEach((_,ti)=>{
       const cid='r'+ri+'_t'+ti;const v=cells[cid]||'';
-      h+='<td style="'+tdSt+'"><input type="number" min="0" max="99" value="'+v+'" data-p="'+p+'" data-tab="fondi" data-cid="'+cid+'" oninput="hkpNInput(this)" onblur="hkpNBlur(this)" style="width:78px;border:none;background:'+(v?'var(--surface)':'transparent')+';text-align:center;font-size:12px;padding:4px 2px;outline:none;font-weight:'+(v?'500':'400')+';display:block;" /></td>';
+      h+='<td style="'+tdSt+'"><input type="number" min="0" max="99" value="'+v+'" data-p="'+p+'" data-tab="fondi" data-cid="'+cid+'" oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onkeydown="hkpNKey(this,event)" style="'+INP+'background:'+(v?'var(--surface)':'transparent')+';font-weight:'+(v?'600':'400')+';"/></td>';
     });
-    h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:11px;font-weight:500;padding:3px;">'+(rTot||'')+'</td></tr>';
+    h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:13px;font-weight:600;padding:5px;">'+(rTot||'')+'</td></tr>';
   });
   const grandTot=taskTotals.reduce((a,b)=>a+b,0);
   h+='<tr><td style="'+stickyL+'font-weight:700;color:#3B6D11;background:#EAF3DE;z-index:2;">Totali</td>';
-  taskTotals.forEach(t=>h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:11px;font-weight:500;padding:3px;">'+(t||'')+'</td>');
-  h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:12px;font-weight:700;padding:3px;">'+(grandTot||'')+'</td></tr>';
+  taskTotals.forEach(t=>h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:13px;font-weight:600;padding:5px;">'+(t||'')+'</td>');
+  h+='<td style="'+tdSt+'text-align:center;background:#EAF3DE;color:#3B6D11;font-size:14px;font-weight:700;padding:5px;">'+(grandTot||'')+'</td></tr>';
   h+='</tbody></table></div>';
   el.innerHTML=h;
 }
@@ -601,19 +605,46 @@ function hkpNInput(input){
   hkpNSetCell(p,tab,cid,input.value);
   if(input.type==='text'){
     const v=input.value.trim();const dual=v.includes('/');
-    input.style.color=dual?'var(--accent)':'var(--text)';
-    input.style.fontWeight=v?'500':'400';
+    input.style.color=dual?'var(--accent)':'inherit';
+    input.style.fontWeight=v?'600':'400';
     input.style.background=v?'var(--surface)':'transparent';
   }else{
     const v=input.value.trim();
-    input.style.fontWeight=v?'500':'400';
+    input.style.fontWeight=v?'600':'400';
     input.style.background=v?'var(--surface)':'transparent';
   }
   clearTimeout(_hkpNdebounce[p+'_'+tab]);
   _hkpNdebounce[p+'_'+tab]=setTimeout(()=>hkpNSave(p,tab),4000);
 }
 function hkpNBlur(input){
-  if(input.type==='text'){input.value=input.value.trim().toUpperCase();hkpNSetCell(input.dataset.p,input.dataset.tab,input.dataset.cid,input.value);}
+  if(input.type==='text'){
+    const up=input.value.trim().toUpperCase();
+    input.value=up;
+    hkpNSetCell(input.dataset.p,input.dataset.tab,input.dataset.cid,up);
+    const dual=up.includes('/');
+    input.style.color=dual?'var(--accent)':'inherit';
+    input.style.fontWeight=up?'600':'400';
+    input.style.background=up?'var(--surface)':'transparent';
+  }
+}
+function hkpNKey(input,e){
+  if(e.key!=='Enter')return;
+  e.preventDefault();
+  const cid=input.dataset.cid;
+  // cid = "r{ri}_d{d}" or "r{ri}_t{ti}"
+  const m=cid.match(/^r(\d+)_([dt])(\d+)$/);
+  if(!m)return;
+  const ri=parseInt(m[1]);const pfx=m[2];const idx=m[3];
+  const table=input.closest('table');
+  const next=table.querySelector('input[data-cid="r'+(ri+1)+'_'+pfx+idx+'"]');
+  if(next){next.focus();next.select();}
+  else{
+    // fine colonna: vai alla prima riga della colonna successiva
+    const nextPfx=pfx==='d'?'d':'t';
+    const nextIdx=parseInt(idx)+1;
+    const nextCol=table.querySelector('input[data-cid="r0_'+nextPfx+nextIdx+'"]');
+    if(nextCol){nextCol.focus();nextCol.select();}
+  }
 }
 // stub for old references still in syncFromCloud
 function hkpSave(p){}
