@@ -762,7 +762,7 @@ function _hkpNSelAdd(inp){
   const key=_hkpNSelKey(inp);
   if(_hkpNsel.cells.has(key))return;
   _hkpNsel.cells.add(key);
-  inp.parentElement.style.background='#dbeafe';
+  inp.parentElement.style.background='#eef4ff';
   inp.parentElement.style.boxShadow='inset 0 0 0 2px var(--accent,#1E4080)';
 }
 function _hkpNClearSel(){
@@ -818,7 +818,20 @@ function hkpNInput(input){
     });
   }
   clearTimeout(_hkpNdebounce[p]);
-  _hkpNdebounce[p]=setTimeout(()=>{hkpNSave(p);hkpNRender(p);},2000);
+  _hkpNdebounce[p]=setTimeout(()=>{
+    // Salva il focus attuale prima del re-render
+    const ae=document.activeElement;
+    const fRi=ae?.dataset?.ri, fCol=ae?.dataset?.col, fTab=ae?.dataset?.tab, fP=ae?.dataset?.p;
+    hkpNSave(p);
+    hkpNRender(p);
+    // Ripristina focus dopo sync righe (requestAnimationFrame in hkpNRender)
+    if(fRi!=null&&fCol!=null){
+      setTimeout(()=>{
+        const el=document.querySelector('input[data-p="'+fP+'"][data-tab="'+fTab+'"][data-ri="'+fRi+'"][data-col="'+fCol+'"]');
+        if(el){el.focus();el.select();}
+      },80);
+    }
+  },2000);
 }
 function hkpNBlur(input){
   // Mantieni highlight selezione multipla; rimuovi solo focus ring
@@ -2727,6 +2740,14 @@ document.querySelector('.content').addEventListener('scroll',function(){
         }catch(e){}
       }
     })();
+  // Ripristina ultima vista (non torna in overview al reload/cmd+shift+r)
+  try{
+    const lastView=localStorage.getItem('qm_last_view');
+    if(lastView&&lastView!=='overview'&&document.getElementById('view-'+lastView)){
+      const navEl=document.querySelector('[onclick*="\''+lastView+'\'"]');
+      setView(lastView,navEl||undefined);
+    }
+  }catch(e){}
   },150);
   })(); // fine async sync
 })();
