@@ -1230,12 +1230,13 @@ function renderPianoGiorno(elId,refDate,forceIdx){
     const tuttePartenze=sortRooms([...cambi,...partenze]);
     if(!tuttePartenze.length&&!fermate.length)return'';
     // KPI numerici
+    const _icoSz=window.innerWidth<=768?'20px':'30px';
     let h=`<div style="margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
         <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${label}</div>
-        ${tuttePartenze.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--amber);"><img src="img/icons/arrivi.png" class="ov-icon" style="width:30px;height:30px;object-fit:contain;"> ${tuttePartenze.length}</span>`:''}
+        ${tuttePartenze.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--amber);"><img src="img/icons/arrivi.png" class="ov-icon" style="width:${_icoSz};height:${_icoSz};object-fit:contain;"> ${tuttePartenze.length}</span>`:''}
         ${cambi.length?`<span style="font-size:15px;font-weight:700;color:var(--red);">⇄ ${cambi.length}</span>`:''}
-        ${fermate.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--accent);"><img src="img/icons/fermata.png" class="ov-icon" style="width:30px;height:30px;object-fit:contain;"> ${fermate.length}</span>`:''}
+        ${fermate.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--accent);"><img src="img/icons/fermata.png" class="ov-icon" style="width:${_icoSz};height:${_icoSz};object-fit:contain;"> ${fermate.length}</span>`:''}
       </div>`;
     if(tuttePartenze.length)h+=`<div style="margin-bottom:6px;"><div style="display:flex;flex-wrap:wrap;gap:5px;">${tuttePartenze.map(r=>{const isCambio=cambi.includes(r);return`<span style="background:${isCambio?'#fce8e8':'var(--amber-bg)'};border:1px solid ${isCambio?'var(--red)':'var(--amber)'};color:${isCambio?'var(--red)':'var(--amber)'};font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;">${r}${isCambio?` ⇄`:''}</span>`;}).join('')}</div></div>`;
     if(fermate.length)h+=`<div><div style="display:flex;flex-wrap:wrap;gap:5px;">${fermate.map(r=>`<span style="background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;">${r}</span>`).join('')}</div></div>`;
@@ -1245,8 +1246,9 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   const bMerged={partenze:[...(giorno.boutique?.partenze||[]),...lib.partenze],fermate:[...(giorno.boutique?.fermate||[]),...lib.fermate],cambi:[...(giorno.boutique?.cambi||[]),...lib.cambi]};
   const sHtml=renderHotel('SoulArt',giorno.soulart||{}),bHtml=renderHotel('Boutique - San Liborio',bMerged);
   if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per questo giorno</div>';return;}
-  const brandLogo=elId==='ov-piano-preview'?`<div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0 32px;pointer-events:none;user-select:none;border-left:1px solid var(--border-light);margin-left:8px;"><span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#1A2E55;letter-spacing:.01em;white-space:nowrap;">Compass QM <span style="font-weight:300;color:var(--text-dim);margin:0 6px;">|</span><span style="font-weight:400;color:var(--text-dim);font-size:14px;"> Dashboard</span></span></div>`:'';
-  el.innerHTML=`<div style="display:flex;align-items:stretch;"><div style="min-width:0;">${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">↑ partenze · = fermate · ⇄ cambio camera</div></div>${brandLogo}</div>`;
+  const _mob=window.innerWidth<=768;
+  const brandLogo=(!_mob&&elId==='ov-piano-preview')?`<div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0 32px;pointer-events:none;user-select:none;border-left:1px solid var(--border-light);margin-left:8px;"><span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#1A2E55;letter-spacing:.01em;white-space:nowrap;">Compass QM <span style="font-weight:300;color:var(--text-dim);margin:0 6px;">|</span><span style="font-weight:400;color:var(--text-dim);font-size:14px;"> Dashboard</span></span></div>`:'';
+  el.innerHTML=`<div style="display:flex;align-items:stretch;"><div style="min-width:0;width:100%;">${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">↑ partenze · = fermate · ⇄ cambio camera</div></div>${brandLogo}</div>`;
 }
 
 function pianoOvInit(){
