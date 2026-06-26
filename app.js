@@ -1420,7 +1420,7 @@ const LS={
           }
           // Per dvr: ricarica in memoria e ri-renderizza se la view è attiva
           if(k==='dvr'){
-            try{dvrRestore();if(document.getElementById('view-dvr')?.classList.contains('active'))dvrRender();}catch(e){}
+            try{dvrRestore();dvrBadgeUpdate();if(document.getElementById('view-dvr')?.classList.contains('active'))dvrRender();}catch(e){}
           }
           // Per inventario: ri-renderizza se la view è attiva + aggiorna badge nav
           if(k==='inv_catalog_sa'||k==='inv_catalog_ar'||k==='inv_moves_sa'||k==='inv_moves_ar'){
