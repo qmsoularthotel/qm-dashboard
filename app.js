@@ -420,8 +420,11 @@ const HKP_ROOMS={
       {g:'C — Esterni',list:['Terrazzo Sinistro','Terrazzo Destro','Aree Esterne']},
     ],
     fondi:{
-      tasks:['Fondo','Filtri AC','Lav. Piumoni','Lav. Tende','Lav. Vetri'],
-      rooms:['ART 01','ART 02','ART 03','ART 04','ART 05','ART 06','ART 07','ART 08','ART 09','ART 10','ART 11','ART 12','ART 13','ART 14','ART 15','ART 16','ART 17','ART 18','ART 19','ART 20','ART 21','ART 22','201','203','204','205','206','207','208','209','210','211'],
+      tasks:['FONDO','FILTRI AC','LAVAGGIO PIUMONI -\nCOPRIMATERASSI','LAVAGGIO TENDE','LAVAGGIO VETRI E\nFINESTRE'],
+      groups:[
+        {name:'Soulart',rooms:['ART 1','ART 2','ART 3','ART 4','ART 5','ART 6','ART 7','ART 8','ART 9','ART 10','ART 11','ART 12','ART 13','ART 14','ART 15','ART 16','ART 17','ART 18','ART 19','ART 20','ART 21','ART 22']},
+        {name:'Boutique',rooms:['201','203','204','205','206','207','208','209','210','211']},
+      ],
     },
   },
   ar:{
@@ -434,8 +437,10 @@ const HKP_ROOMS={
       {g:'Esterni',list:['Aree Esterne']},
     ],
     fondi:{
-      tasks:['Fondo','Filtri AC','Lav. Piumoni','Lav. Tende','Lav. Vetri'],
-      rooms:['AR 01','AR 02','AR 03','AR 04','AR 05','AR 06','AR 07','AR 08','AR 09','AR 10'],
+      tasks:['FONDO','FILTRI AC','LAVAGGIO PIUMONI -\nCOPRIMATERASSI','LAVAGGIO TENDE','LAVAGGIO VETRI E\nFINESTRE'],
+      groups:[
+        {name:'Art Resort',rooms:['AR 01','AR 02','AR 03','AR 04','AR 05','AR 06','AR 07','AR 08','AR 09','AR 10']},
+      ],
     },
   },
 };
@@ -748,7 +753,7 @@ function hkpNInsertSymbol(p,code){
     if(sp!==p)return;
     hkpNSetCell(sp,stab,parseInt(sri),scol,code);
     const el=document.querySelector('input[data-p="'+sp+'"][data-tab="'+stab+'"][data-ri="'+sri+'"][data-col="'+scol+'"]');
-    if(el){el.value=code;_hkpNUpdateCellDisplay(el);el.parentElement.style.background=code?'#fff':'#fff';}
+    if(el){el.value=code;_hkpNUpdateCellDisplay(el);const isFondi=el.dataset.fondi==='1';el.parentElement.style.background=isFondi?(code?'#c8e6c9':'#fce4ec'):(code?'#fff':'#fff');}
   });
   clearTimeout(_hkpNdebounce[p]);
   hkpNSave(p);
@@ -773,41 +778,58 @@ function hkpNRenderFondi(p){
   const el=document.getElementById('hkpN-'+p+'-body');
   if(!el)return;
   const conf=HKP_ROOMS[p].fondi;
-  const tasks=conf.tasks;const rooms=conf.rooms;
-  const taskTotals=tasks.map((_,ti)=>rooms.reduce((s,_,ri)=>s+(parseInt(hkpNGetCell(p,'fondi',ri,ti))||0),0));
-  const roomTotals=rooms.map((_,ri)=>tasks.reduce((s,_,ti)=>s+(parseInt(hkpNGetCell(p,'fondi',ri,ti))||0),0));
-  const maxCam=Math.max(...rooms.map(r=>r.length));
-  const RW=Math.max(70,maxCam*9+20);
-  const TW=90;const B='border:1px solid #d8dae0;';
-  const stickyR='position:sticky;left:0;z-index:2;background:#fff;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:15px;font-weight:500;white-space:nowrap;';
-  let h='<div style="overflow-x:auto;border:1px solid #d0d3db;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
-  h+='<table style="border-collapse:collapse;table-layout:fixed;">';
-  h+='<colgroup><col style="width:'+RW+'px">';
-  tasks.forEach(()=>h+='<col style="width:'+TW+'px">');
-  h+='<col style="width:46px"></colgroup>';
-  h+='<thead><tr>';
-  h+='<th style="position:sticky;left:0;z-index:3;background:var(--accent,#1E4080);color:#fff;'+B+'border-right:2px solid rgba(255,255,255,.3);padding:8px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;">Camera</th>';
-  tasks.forEach(t=>h+='<th style="background:#f5f6f8;'+B+'padding:8px 8px;font-size:13px;font-weight:600;text-align:center;white-space:nowrap;color:#444;">'+t+'</th>');
-  h+='<th style="background:#1a5c2e;color:#fff;'+B+'padding:8px;font-size:13px;font-weight:700;text-align:center;">Tot</th>';
-  h+='</tr></thead><tbody>';
-  rooms.forEach((room,ri)=>{
-    const rTot=roomTotals[ri];
-    h+='<tr><td style="'+stickyR+'">'+room+'</td>';
-    tasks.forEach((_,ti)=>{
-      const v=hkpNGetCell(p,'fondi',ri,ti);
-      h+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':'#fff')+';">'
-        +'<input type="number" min="0" max="99" value="'+v+'" data-p="'+p+'" data-tab="fondi" data-ri="'+ri+'" data-col="'+ti+'" '
-        +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
-        +'style="width:'+TW+'px;border:none;background:transparent;text-align:center;font-size:15px;font-family:inherit;padding:6px 2px;outline:none;font-weight:'+(v?'700':'400')+';display:block;"/></td>';
+  const tasks=conf.tasks;
+  const [yr,mo]=hkpNCurMon(p).split('-').map(Number);
+  const monLabel=HKP_MON_NAMES[mo-1]+' '+yr;
+  const B='border:1px solid #d8dae0;';
+  const CW=48;const LW=155;
+  const allRooms=conf.groups.flatMap(g=>g.rooms);
+  let h='<div style="display:flex;flex-direction:column;gap:20px;">';
+  conf.groups.forEach(grp=>{
+    const rooms=grp.rooms;
+    h+='<div style="overflow-x:auto;border:1px solid #c8cad0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.07);">';
+    h+='<table style="border-collapse:collapse;table-layout:fixed;">';
+    h+='<colgroup><col style="width:'+LW+'px">';
+    rooms.forEach(()=>h+='<col style="width:'+CW+'px">');
+    h+='</colgroup><thead>';
+    // Riga 1: mese + nome struttura
+    h+='<tr>';
+    h+='<th rowspan="2" style="'+B+'background:var(--accent,#1E4080);color:#fff;padding:8px 12px;font-size:13px;font-weight:700;text-align:left;vertical-align:middle;white-space:nowrap;">'+monLabel+'</th>';
+    h+='<th colspan="'+rooms.length+'" style="'+B+'background:var(--accent,#1E4080);color:#fff;padding:7px 10px;font-size:14px;font-weight:700;text-align:left;">'+grp.name+'</th>';
+    h+='</tr>';
+    // Riga 2: numeri camera (sfondo rosso)
+    h+='<tr>';
+    rooms.forEach(room=>h+='<th style="'+B+'background:#e57373;color:#fff;padding:4px 2px;font-size:11px;font-weight:700;text-align:center;">'+room+'</th>');
+    h+='</tr></thead><tbody>';
+    // Riga spaziatrice
+    h+='<tr><td colspan="'+(rooms.length+1)+'" style="'+B+'height:6px;background:#fafafa;padding:0;"></td></tr>';
+    // Righe task
+    tasks.forEach((task,ti)=>{
+      h+='<tr>';
+      h+='<td style="'+B+'position:sticky;left:0;z-index:2;background:#f5f6f8;border-right:2px solid var(--accent,#1E4080);padding:5px 10px;font-size:11.5px;font-weight:600;color:#333;line-height:1.35;vertical-align:middle;white-space:pre-line;">'+task+'</td>';
+      rooms.forEach(room=>{
+        const gri=allRooms.indexOf(room);
+        const v=hkpNGetCell(p,'fondi',ti,gri);
+        const bg=v?'#c8e6c9':'#fce4ec';
+        h+='<td style="'+B+'padding:1px;background:'+bg+';"><input type="text" value="'+v+'" '
+          +'data-p="'+p+'" data-tab="fondi" data-ri="'+ti+'" data-col="'+gri+'" data-fondi="1" '
+          +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
+          +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
+          +'style="width:'+CW+'px;border:none;background:transparent;text-align:center;font-size:14px;font-family:inherit;padding:6px 2px;outline:none;caret-color:transparent;display:block;font-weight:'+(v?'700':'400')+';"/></td>';
+      });
+      h+='</tr>';
     });
-    h+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:15px;font-weight:700;padding:6px 4px;">'+(rTot||'')+'</td></tr>';
+    h+='</tbody></table></div>';
   });
-  const grandTot=taskTotals.reduce((a,b)=>a+b,0);
-  h+='<tr><td style="position:sticky;left:0;z-index:2;background:#d4edda;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:15px;font-weight:700;color:#1a5c2e;white-space:nowrap;">Totali</td>';
-  taskTotals.forEach(t=>h+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:14px;font-weight:700;padding:6px 4px;">'+(t||'')+'</td>');
-  h+='<td style="'+B+'text-align:center;background:#c3e6cb;color:#155724;font-size:15px;font-weight:800;padding:6px 4px;">'+(grandTot||'')+'</td></tr>';
-  h+='</tbody></table></div>';
-  el.innerHTML=h;
+  h+='</div>';
+  // Toolbar asterischi
+  const astSt='padding:6px 14px;border:1px solid #d0d3db;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;letter-spacing:1px;';
+  const canSt='padding:6px 14px;border:1px solid #c0352a;background:#fff;color:#c0352a;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;';
+  let tb='<div style="display:flex;gap:8px;flex-wrap:wrap;padding:8px 0 14px;">';
+  ['*','**','***','****','*****'].forEach(a=>tb+='<button onclick="hkpNInsertSymbol(\''+p+'\',\''+a+'\')" style="'+astSt+'">'+a+'</button>');
+  tb+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'\')" style="'+canSt+'">✕ Cancella</button>';
+  tb+='</div>';
+  el.innerHTML=tb+h;
 }
 // --- Drag multi-select helpers ---
 function _hkpNSelKey(inp){return inp.dataset.p+':'+inp.dataset.tab+':'+inp.dataset.ri+':'+inp.dataset.col;}
@@ -822,7 +844,11 @@ function _hkpNClearSel(){
   _hkpNsel.cells.forEach(key=>{
     const [sp,stab,sri,scol]=key.split(':');
     const el=document.querySelector('input[data-p="'+sp+'"][data-tab="'+stab+'"][data-ri="'+sri+'"][data-col="'+scol+'"]');
-    if(el){el.parentElement.style.boxShadow='';el.parentElement.style.background=el.value?'#f0f5ff':'#fff';}
+    if(el){
+      el.parentElement.style.boxShadow='';
+      const isFondi=el.dataset.fondi==='1';
+      el.parentElement.style.background=isFondi?(el.value?'#c8e6c9':'#fce4ec'):(el.value?'#f0f5ff':'#fff');
+    }
   });
   _hkpNsel.cells.clear();
 }
@@ -854,8 +880,10 @@ function _hkpNApplyCell(inp,val){
   inp.value=v;
   inp.style.color=dual?'var(--accent,#1E4080)':'#1a1a1a';
   inp.style.fontWeight=v?'700':'400';
-  if(!_hkpNsel.cells.has(_hkpNSelKey(inp)))
-    inp.parentElement.style.background=v?'#f0f5ff':'#fff';
+  if(!_hkpNsel.cells.has(_hkpNSelKey(inp))){
+    const isFondi=inp.dataset.fondi==='1';
+    inp.parentElement.style.background=isFondi?(v?'#c8e6c9':'#fce4ec'):(v?'#f0f5ff':'#fff');
+  }
 }
 function hkpNInput(input){
   const {p,tab,ri,col}=input.dataset;
@@ -896,8 +924,10 @@ function hkpNBlur(input){
     if(up!==input.value)input.value=up;
     hkpNSetCell(input.dataset.p,input.dataset.tab,parseInt(input.dataset.ri),input.dataset.col,up);
     input.style.fontWeight=up?'700':'400';
-    if(!_hkpNsel.cells.has(_hkpNSelKey(input)))
-      input.parentElement.style.background=HKP_SYM[up]?'#fff':up?'#f0f5ff':'#fff';
+    if(!_hkpNsel.cells.has(_hkpNSelKey(input))){
+      const isFondi=input.dataset.fondi==='1';
+      input.parentElement.style.background=isFondi?(up?'#c8e6c9':'#fce4ec'):(HKP_SYM[up]?'#fff':up?'#f0f5ff':'#fff');
+    }
     _hkpNUpdateCellDisplay(input);
   }
 }
