@@ -747,6 +747,7 @@ function hkpNInsertSymbol(p,code){
   });
   clearTimeout(_hkpNdebounce[p]);
   hkpNSave(p);
+  hkpNRender(p);
 }
 function hkpNSyncRowHeights(p){
   const el=document.getElementById('hkpN-'+p+'-body');
