@@ -557,7 +557,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
   if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);setTimeout(loadBkfAccessStats,150);setTimeout(loadDvrAccessStats,200);setTimeout(miniappNoTrackRender,50);}
-  if(id==='dvr')setTimeout(dvrRender,50);
+  if(id==='dvr'){setTimeout(dvrRender,50);dvrMarkSeen();dvrBadgeUpdate();}
 }
 // §§ DVR — SCADENZE SICUREZZA & COMPLIANCE
 const DVR_CATS={
@@ -579,9 +579,7 @@ let DVR_DATA=Object.fromEntries(DVR_SOC_KEYS.map(s=>[s,{...Object.fromEntries(DV
 let _dvrSoc='geriart';
 let _dvrModalType='visite';let _dvrModalId=null;
 let _dvrEmpId=null;
-function dvrBadgeUpdate(){
-  const badge=document.getElementById('dvrNavBadge');
-  if(!badge)return;
+function dvrCountAlerts(){
   const now=new Date();now.setHours(0,0,0,0);
   let count=0;
   DVR_SOC_KEYS.forEach(soc=>{
@@ -598,8 +596,20 @@ function dvrBadgeUpdate(){
       if(Math.round((exp-now)/86400000)<=30)count++;
     });
   });
+  return count;
+}
+function dvrMarkSeen(){
+  try{localStorage.setItem('qm_dvr_seen',String(dvrCountAlerts()));}catch(e){}
+}
+function dvrBadgeUpdate(){
+  const badge=document.getElementById('dvrNavBadge');
+  if(!badge)return;
+  const count=dvrCountAlerts();
+  const seen=parseInt(localStorage.getItem('qm_dvr_seen')||'-1');
+  // mostra badge solo se ci sono nuovi alert rispetto all'ultima visita
+  const show=count>0&&count>seen;
   badge.textContent=count;
-  badge.style.display=count>0?'':'none';
+  badge.style.display=show?'inline':'none';
 }
 function dvrSave(){
   const json=JSON.stringify(DVR_DATA);
