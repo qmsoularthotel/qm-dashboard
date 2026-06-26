@@ -506,8 +506,9 @@ function hkpNRenderGrid(p,tab){
   const days=[];for(let d=1;d<=daysInMonth;d++)days.push(d);
   const MON_IT=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   const monLabel=MON_IT[mo-1]+' '+yr;
+  // Flat rows con metadata gruppo
   const rows=[];
-  conf.forEach(grp=>grp.list.forEach(name=>rows.push({name,grp:grp.g})));
+  conf.forEach(grp=>grp.list.forEach((name,idx)=>rows.push({name,grp:grp.g,isFirst:idx===0,grpSize:grp.list.length})));
   const dayTotals={};const rowTotals={};const hwCounts={};
   rows.forEach((row,ri)=>{
     days.forEach(d=>{
@@ -518,46 +519,64 @@ function hkpNRenderGrid(p,tab){
       v.split('/').forEach(k=>{const t=k.trim();if(t)hwCounts[t]=(hwCounts[t]||0)+1;});
     });
   });
+  // Larghezze colonne calcolate al contenuto
+  const maxCam=Math.max(...rows.map(r=>r.name.length));
+  const RW=Math.max(70,maxCam*9+20);
+  const maxGrp=Math.max(...conf.map(g=>g.g.length));
+  const GW=Math.max(52,Math.min(85,maxGrp*6.5+12));
+  const DW=46;const TOTW=46;
   const B='border:1px solid #d8dae0;';
-  const DW=46;
-  // Colonna camera: dimensione al contenuto con table-layout:auto
-  const stickyR='position:sticky;left:0;z-index:2;background:#eef2fa;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:15px;font-weight:500;white-space:nowrap;';
+  // Colonna gruppo: rowspan, NON sticky → risolve bug sticky+rowspan in scroll
+  // Colonna Camera: sticky left=GW → sempre visibile
+  const stickyR='position:sticky;left:'+GW+'px;z-index:2;background:#fff;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:15px;font-weight:500;white-space:nowrap;';
   const today=new Date();
   let h='<div style="overflow-x:auto;border:1px solid #d0d3db;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
-  h+='<table style="border-collapse:collapse;table-layout:auto;">';
-  // Header doppio: riga 1 = "Camera" + mese + Tot; riga 2 = numeri giorni
+  h+='<table style="border-collapse:collapse;table-layout:fixed;">';
+  h+='<colgroup><col style="width:'+GW+'px"><col style="width:'+RW+'px">';
+  days.forEach(()=>h+='<col style="width:'+DW+'px">');
+  h+='<col style="width:'+TOTW+'px"></colgroup>';
+  // Header riga 1: mese grande sopra i giorni (nessuna confusione con la colonna Camera)
   h+='<thead>';
   h+='<tr>';
-  h+='<th rowspan="2" style="position:sticky;left:0;z-index:5;background:var(--accent,#1E4080);color:#fff;'+B+'border-right:2px solid rgba(255,255,255,.3);padding:8px 12px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;vertical-align:middle;">Camera</th>';
-  h+='<th colspan="'+daysInMonth+'" style="background:var(--accent,#1E4080);color:rgba(255,255,255,.85);'+B+'padding:4px 8px;font-size:12px;font-weight:600;text-align:center;letter-spacing:.04em;">'+monLabel+'</th>';
-  h+='<th rowspan="2" style="background:#1a5c2e;color:#fff;'+B+'padding:6px 8px;font-size:13px;font-weight:700;text-align:center;vertical-align:middle;white-space:nowrap;">Tot</th>';
-  h+='</tr><tr>';
+  h+='<td colspan="2" style="background:#fff;border:none;padding:0;"></td>';
+  h+='<th colspan="'+daysInMonth+'" style="'+B+'background:#f5f6f8;padding:7px 8px;font-size:17px;font-weight:700;text-align:center;color:var(--text,#1a1a1a);letter-spacing:.01em;">'+monLabel+'</th>';
+  h+='<td style="background:#fff;border:none;padding:0;"></td>';
+  h+='</tr>';
+  // Header riga 2: etichette colonne
+  h+='<tr>';
+  h+='<th style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:6px 4px;font-size:11px;font-weight:700;text-align:center;vertical-align:middle;">Gruppo</th>';
+  h+='<th style="position:sticky;left:'+GW+'px;z-index:3;background:#f5f6f8;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;">Camera</th>';
   days.forEach(d=>{
     const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-    h+='<th style="background:'+(isToday?'#2d5fa8':'#3358a0')+';color:'+(isToday?'#fff':'rgba(255,255,255,.8)')+';'+B+'padding:5px 2px;font-size:13px;font-weight:'+(isToday?'800':'600')+';text-align:center;min-width:'+DW+'px;width:'+DW+'px;">'+d+'</th>';
+    h+='<th style="background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
   });
+  h+='<th style="background:#1a5c2e;color:#fff;'+B+'padding:6px 4px;font-size:13px;font-weight:700;text-align:center;">Tot</th>';
   h+='</tr></thead><tbody>';
-  let prevGrp='';
   rows.forEach((row,ri)=>{
-    if(row.grp!==prevGrp){
-      prevGrp=row.grp;
-      h+='<tr><td colspan="'+(daysInMonth+2)+'" style="background:#f0f3f9;'+B+'border-left:3px solid var(--accent,#1E4080);padding:5px 12px;font-size:12px;font-weight:700;color:var(--accent,#1E4080);text-transform:uppercase;letter-spacing:.06em;">'+row.grp+'</td></tr>';
-    }
     const rTot=rowTotals[ri]||0;
     h+='<tr>';
+    if(row.isFirst){
+      // rowspan SU CELLA NON-STICKY: evita il bug di allineamento scroll orizzontale
+      h+='<td rowspan="'+row.grpSize+'" style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:6px 5px;font-size:11px;font-weight:700;text-align:center;vertical-align:middle;white-space:normal;word-break:break-word;line-height:1.5;">'+row.grp+'</td>';
+    }
     h+='<td style="'+stickyR+'">'+row.name+'</td>';
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
       const dual=v.includes('/');
       const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-      h+='<td style="'+B+'padding:1px;background:'+(isToday&&!v?'#eef2fa':v?'#f5f8ff':'#fff')+';"><input type="text" maxlength="8" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onkeydown="hkpNKey(this,event)" style="width:'+DW+'px;border:none;background:transparent;text-align:center;font-size:15px;font-family:inherit;padding:5px 1px;outline:none;color:'+(dual?'var(--accent,#1E4080)':'#1a1a1a')+';font-weight:'+(v?'700':'400')+';cursor:text;display:block;"/></td>';
+      h+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':(isToday?'#f4f7fd':'#fff'))+';">'
+        +'<input type="text" maxlength="8" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" '
+        +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
+        +'style="width:'+DW+'px;border:none;background:transparent;text-align:center;font-size:15px;font-family:inherit;padding:5px 1px;outline:none;'
+        +'color:'+(dual?'var(--accent,#1E4080)':'#1a1a1a')+';font-weight:'+(v?'700':'400')+';cursor:text;display:block;"/></td>';
     });
     h+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:15px;font-weight:700;padding:5px 4px;">'+(rTot||'')+'</td>';
     h+='</tr>';
   });
   const grandTot=Object.values(rowTotals).reduce((a,b)=>a+b,0);
   h+='<tr>';
-  h+='<td style="position:sticky;left:0;z-index:2;background:#d4edda;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:15px;font-weight:700;color:#1a5c2e;white-space:nowrap;">Totali</td>';
+  h+='<td style="background:#e8ecf5;'+B+'padding:5px 4px;font-size:11px;"></td>';
+  h+='<td style="position:sticky;left:'+GW+'px;z-index:2;background:#d4edda;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:15px;font-weight:700;color:#1a5c2e;white-space:nowrap;">Totali</td>';
   days.forEach(d=>h+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:14px;font-weight:700;padding:5px 2px;">'+(dayTotals[d]||'')+'</td>');
   h+='<td style="'+B+'text-align:center;background:#c3e6cb;color:#155724;font-size:15px;font-weight:800;padding:5px 4px;">'+(grandTot||'')+'</td>';
   h+='</tr></tbody></table></div>';
@@ -583,22 +602,29 @@ function hkpNRenderFondi(p){
   const tasks=conf.tasks;const rooms=conf.rooms;
   const taskTotals=tasks.map((_,ti)=>rooms.reduce((s,_,ri)=>s+(parseInt(hkpNGetCell(p,'fondi',ri,ti))||0),0));
   const roomTotals=rooms.map((_,ri)=>tasks.reduce((s,_,ti)=>s+(parseInt(hkpNGetCell(p,'fondi',ri,ti))||0),0));
-  const B='border:1px solid #d8dae0;';
-  const TW=90;
-  const stickyR='position:sticky;left:0;z-index:2;background:#eef2fa;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:15px;font-weight:500;white-space:nowrap;';
+  const maxCam=Math.max(...rooms.map(r=>r.length));
+  const RW=Math.max(70,maxCam*9+20);
+  const TW=90;const B='border:1px solid #d8dae0;';
+  const stickyR='position:sticky;left:0;z-index:2;background:#fff;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:15px;font-weight:500;white-space:nowrap;';
   let h='<div style="overflow-x:auto;border:1px solid #d0d3db;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
-  h+='<table style="border-collapse:collapse;table-layout:auto;">';
+  h+='<table style="border-collapse:collapse;table-layout:fixed;">';
+  h+='<colgroup><col style="width:'+RW+'px">';
+  tasks.forEach(()=>h+='<col style="width:'+TW+'px">');
+  h+='<col style="width:46px"></colgroup>';
   h+='<thead><tr>';
-  h+='<th style="position:sticky;left:0;z-index:3;background:var(--accent,#1E4080);color:#fff;'+B+'border-right:2px solid rgba(255,255,255,.3);padding:8px 12px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;">Camera</th>';
-  tasks.forEach(t=>h+='<th style="background:var(--accent,#1E4080);color:rgba(255,255,255,.85);'+B+'padding:8px 10px;font-size:13px;font-weight:600;text-align:center;white-space:nowrap;min-width:'+TW+'px;">'+t+'</th>');
-  h+='<th style="background:#1a5c2e;color:#fff;'+B+'padding:8px 8px;font-size:13px;font-weight:700;text-align:center;white-space:nowrap;">Tot</th>';
+  h+='<th style="position:sticky;left:0;z-index:3;background:var(--accent,#1E4080);color:#fff;'+B+'border-right:2px solid rgba(255,255,255,.3);padding:8px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;">Camera</th>';
+  tasks.forEach(t=>h+='<th style="background:#f5f6f8;'+B+'padding:8px 8px;font-size:13px;font-weight:600;text-align:center;white-space:nowrap;color:#444;">'+t+'</th>');
+  h+='<th style="background:#1a5c2e;color:#fff;'+B+'padding:8px;font-size:13px;font-weight:700;text-align:center;">Tot</th>';
   h+='</tr></thead><tbody>';
   rooms.forEach((room,ri)=>{
     const rTot=roomTotals[ri];
     h+='<tr><td style="'+stickyR+'">'+room+'</td>';
     tasks.forEach((_,ti)=>{
       const v=hkpNGetCell(p,'fondi',ri,ti);
-      h+='<td style="'+B+'padding:1px;background:'+(v?'#f5f8ff':'#fff')+'"><input type="number" min="0" max="99" value="'+v+'" data-p="'+p+'" data-tab="fondi" data-ri="'+ri+'" data-col="'+ti+'" oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onkeydown="hkpNKey(this,event)" style="width:'+TW+'px;border:none;background:transparent;text-align:center;font-size:15px;font-family:inherit;padding:6px 2px;outline:none;font-weight:'+(v?'700':'400')+';display:block;"/></td>';
+      h+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':'#fff')+';">'
+        +'<input type="number" min="0" max="99" value="'+v+'" data-p="'+p+'" data-tab="fondi" data-ri="'+ri+'" data-col="'+ti+'" '
+        +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
+        +'style="width:'+TW+'px;border:none;background:transparent;text-align:center;font-size:15px;font-family:inherit;padding:6px 2px;outline:none;font-weight:'+(v?'700':'400')+';display:block;"/></td>';
     });
     h+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:15px;font-weight:700;padding:6px 4px;">'+(rTot||'')+'</td></tr>';
   });
@@ -609,6 +635,9 @@ function hkpNRenderFondi(p){
   h+='</tbody></table></div>';
   el.innerHTML=h;
 }
+function hkpNFocus(input){
+  input.parentElement.style.boxShadow='inset 0 0 0 2px var(--accent,#1E4080)';
+}
 function hkpNInput(input){
   const {p,tab,ri,col}=input.dataset;
   hkpNSetCell(p,tab,parseInt(ri),col,input.value);
@@ -616,15 +645,16 @@ function hkpNInput(input){
     const v=input.value.trim();const dual=v.includes('/');
     input.style.color=dual?'var(--accent,#1E4080)':'#1a1a1a';
     input.style.fontWeight=v?'700':'400';
-    input.parentElement.style.background=v?'#f5f8ff':'#fff';
+    input.parentElement.style.background=v?'#f0f5ff':'#fff';
   }else{
     input.style.fontWeight=input.value?'700':'400';
-    input.parentElement.style.background=input.value?'#f5f8ff':'#fff';
+    input.parentElement.style.background=input.value?'#f0f5ff':'#fff';
   }
   clearTimeout(_hkpNdebounce[p]);
   _hkpNdebounce[p]=setTimeout(()=>hkpNSave(p),3000);
 }
 function hkpNBlur(input){
+  input.parentElement.style.boxShadow='';
   if(input.type==='text'){
     const up=input.value.trim().toUpperCase();
     if(up!==input.value)input.value=up;
@@ -632,7 +662,7 @@ function hkpNBlur(input){
     const dual=up.includes('/');
     input.style.color=dual?'var(--accent,#1E4080)':'#1a1a1a';
     input.style.fontWeight=up?'700':'400';
-    input.parentElement.style.background=up?'#f5f8ff':'#fff';
+    input.parentElement.style.background=up?'#f0f5ff':'#fff';
   }
 }
 function hkpNKey(input,e){
@@ -646,17 +676,17 @@ function hkpNKey(input,e){
     return false;
   };
   if(e.key==='Enter'||e.key==='ArrowDown'){
-    if(!go(ri+1,col)){const colN=parseInt(col)+1;go(0,colN)||go(0,String(colN));}
+    if(!go(ri+1,col)){const colN=parseInt(col)+1;go(0,String(colN));}
   }else if(e.key==='ArrowUp'){
     go(ri-1,col);
   }else if(e.key==='ArrowRight'){
-    if(!go(ri,parseInt(col)+1)){go(ri,String(parseInt(col)+1));}
+    go(ri,String(parseInt(col)+1));
   }else if(e.key==='ArrowLeft'){
-    go(ri,parseInt(col)-1);
+    go(ri,String(parseInt(col)-1));
   }else if(e.key==='Tab'){
     e.preventDefault();
-    if(e.shiftKey){go(ri,parseInt(col)-1)||(ri>0&&go(ri-1,parseInt(col)));}
-    else{go(ri,parseInt(col)+1)||(go(ri+1,col));}
+    if(e.shiftKey){if(!go(ri,String(parseInt(col)-1)))go(ri-1,col);}
+    else{if(!go(ri,String(parseInt(col)+1)))go(ri+1,col);}
   }
 }
 // stub for old references still in syncFromCloud
