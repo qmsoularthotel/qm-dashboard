@@ -58,6 +58,8 @@ body.dark .panel{box-shadow:none;}
 .nav-icon:has(.nav-icon-img){width:38px;opacity:1;flex-shrink:0;}
 .ov-icon{filter:contrast(1.15);}
 .topbar-kpi-chip img{filter:contrast(1.15);}
+.ov-bkf-grid{display:grid;grid-template-columns:1fr 2fr 1fr;gap:10px;margin-bottom:14px;align-items:stretch;}
+.ov-bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;}
 .uc-info{flex:1;min-width:0;}
 .uc-label{font-size:var(--fs-xs);font-weight:600;color:var(--text);}
 .uc-sub{font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -472,6 +474,13 @@ select.form-input option{background:var(--surface2);color:var(--text);}
   .rc-card-grid{grid-template-columns:1fr;}
   .rev-filter-bar{gap:5px;}
   .rev-reply-actions{flex-wrap:wrap;}
+  /* Overview */
+  .ov-bkf-grid{grid-template-columns:1fr;}
+  .ov-bottom-grid{grid-template-columns:1fr;}
+  #ov-piano-week-row{gap:3px;}
+  #ov-piano-week-row > div{min-width:54px;padding:8px 4px 8px;}
+  .panel-header{flex-wrap:wrap;gap:4px;}
+  #occ-panel{padding:10px 12px;}
 }
 
 /* ── ELEGANZA ──────────────────────────────────────────── */

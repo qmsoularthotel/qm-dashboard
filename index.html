@@ -5,7 +5,7 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=210">
+<link rel="stylesheet" href="style.css?v=211">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
@@ -432,7 +432,7 @@
         </div>
         <!-- Box Booking.com: arrivi oggi + partenze attese — popolato da arriviUpdateKpi() -->
         <div id="ov-booking-box" style="display:none;margin-bottom:14px;"></div>
-        <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:10px;margin-bottom:14px;align-items:stretch;">
+        <div class="ov-bkf-grid">
           <div class="kpi-card" style="border-top-color:#A05A00;">
             <div class="kpi-card-icon" style="background:var(--amber-bg);">☕</div>
             <div class="kpi-label">Coperti colazione</div>
@@ -465,7 +465,7 @@
             <div class="ov-empty-sub">Espandi "Carica turno" nella sidebar per caricare il planning</div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;">
+        <div class="ov-bottom-grid">
           <!-- Task quotidiani -->
           <div class="panel">
             <div class="panel-header">
