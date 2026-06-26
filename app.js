@@ -1182,7 +1182,7 @@ function pianoRenderWeek(activeIdx){
       <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;margin-top:2px;">${dayDate}</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:7px;">
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-          <img src="img/icons/fermate.png" style="width:30px;height:30px;object-fit:contain;">
+          <img src="img/icons/fermata.png" style="width:30px;height:30px;object-fit:contain;">
           <span style="font-size:18px;font-weight:700;color:${fColor};line-height:1;">${totF}</span>
         </div>
         <div style="width:1px;height:36px;background:var(--border-light);"></div>
@@ -1232,9 +1232,9 @@ function renderPianoGiorno(elId,refDate,forceIdx){
     let h=`<div style="margin-bottom:10px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
         <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${label}</div>
-        ${tuttePartenze.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--amber);"><img src="img/icons/arrivi.png" style="width:16px;height:16px;object-fit:contain;"> ${tuttePartenze.length}</span>`:''}
+        ${tuttePartenze.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--amber);"><img src="img/icons/arrivi.png" style="width:24px;height:24px;object-fit:contain;"> ${tuttePartenze.length}</span>`:''}
         ${cambi.length?`<span style="font-size:15px;font-weight:700;color:var(--red);">⇄ ${cambi.length}</span>`:''}
-        ${fermate.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--accent);"><img src="img/icons/fermate.png" style="width:16px;height:16px;object-fit:contain;"> ${fermate.length}</span>`:''}
+        ${fermate.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--accent);"><img src="img/icons/fermata.png" style="width:24px;height:24px;object-fit:contain;"> ${fermate.length}</span>`:''}
       </div>`;
     if(tuttePartenze.length)h+=`<div style="margin-bottom:6px;"><div style="display:flex;flex-wrap:wrap;gap:5px;">${tuttePartenze.map(r=>{const isCambio=cambi.includes(r);return`<span style="background:${isCambio?'#fce8e8':'var(--amber-bg)'};border:1px solid ${isCambio?'var(--red)':'var(--amber)'};color:${isCambio?'var(--red)':'var(--amber)'};font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;">${r}${isCambio?` ⇄`:''}</span>`;}).join('')}</div></div>`;
     if(fermate.length)h+=`<div><div style="display:flex;flex-wrap:wrap;gap:5px;">${fermate.map(r=>`<span style="background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;">${r}</span>`).join('')}</div></div>`;
@@ -4738,7 +4738,7 @@ function arriviUpdateKpi(){
         html+=`<div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Check-in <span style="background:var(--accent);color:#fff;border-radius:6px;padding:0 6px;">${bkArrivi.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
       }
       if(bkFermate.length>0){
-        const chips=bkFermate.map(f=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;background:#F0F5FF;color:#2563EB;font-size:var(--fs-xxs);font-weight:600;border:1px solid #BFDBFE;"><img src="img/icons/fermate.png" style="width:13px;height:13px;object-fit:contain;">${f.camera}${f.ospite?' · '+f.ospite.split(' ')[0]:''}</span>`).join('');
+        const chips=bkFermate.map(f=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;background:#F0F5FF;color:#2563EB;font-size:var(--fs-xxs);font-weight:600;border:1px solid #BFDBFE;"><img src="img/icons/fermata.png" style="width:13px;height:13px;object-fit:contain;">${f.camera}${f.ospite?' · '+f.ospite.split(' ')[0]:''}</span>`).join('');
         html+=`<div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">In fermata <span style="background:#2563EB;color:#fff;border-radius:6px;padding:0 6px;">${bkFermate.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
       }
       if(bkPartenze.length>0){
