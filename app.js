@@ -410,9 +410,9 @@ function hkpEditUrl(p){
 const HKP_ROOMS={
   sa:{
     camere:[
-      {g:'ART 1–7 · 10–12 · 22',list:['ART 01','ART 02','ART 03','ART 04','ART 05','ART 06','ART 07','ART 10','ART 11','ART 12','ART 22']},
-      {g:'ART 8–9 · 13–21',list:['ART 08','ART 09','ART 13','ART 14','ART 15','ART 16','ART 17','ART 18','ART 19','ART 20','ART 21']},
-      {g:'Boutique · San Liborio',list:['201','203','204','205','206','207','208','209','210','211','LIBORIO']},
+      {g:'ART 1–7\n10–12 · 22',list:['ART 01','ART 02','ART 03','ART 04','ART 05','ART 06','ART 07','ART 10','ART 11','ART 12','ART 22']},
+      {g:'ART 8–9\n13–21',list:['ART 08','ART 09','ART 13','ART 14','ART 15','ART 16','ART 17','ART 18','ART 19','ART 20','ART 21']},
+      {g:'Boutique\nSan Liborio',list:['201','203','204','205','206','207','208','209','210','211','LIBORIO']},
     ],
     aree:[
       {g:'A — Interni',list:['Corridoio S.Art Vecchie','Corridoio S.Art Nuovo','Hall Reception','Sala Colazioni','Direzione']},
@@ -602,8 +602,8 @@ function hkpNRenderGrid(p,tab){
   });
   const maxCam=Math.max(...rows.map(r=>r.name.length));
   const RW=Math.max(70,maxCam*9+20);
-  const maxGrp=Math.max(...conf.map(g=>g.g.length));
-  const GW=Math.max(55,Math.min(90,maxGrp*6+12));
+  const maxGrp=Math.max(...conf.map(g=>Math.max(...g.g.split('\n').map(l=>l.length))));
+  const GW=Math.max(70,Math.min(110,maxGrp*7+14));
   const DW=46;const TOTW=46;
   const RH=36; // altezza riga fissa per allineamento tra le due tabelle
   const B='border:1px solid #d8dae0;';
@@ -615,24 +615,23 @@ function hkpNRenderGrid(p,tab){
   L+='<colgroup><col style="width:'+GW+'px"><col style="width:'+RW+'px"></colgroup>';
   L+='<thead><tr style="height:'+RH+'px;">';
   L+='<th style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:5px 4px;font-size:12px;font-weight:700;text-align:center;height:'+RH+'px;">Gruppo</th>';
-  L+='<th style="background:#f5f6f8;'+B+'padding:5px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;height:'+RH+'px;">Camera</th>';
+  L+='<th style="background:#f5f6f8;'+B+'padding:5px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;height:'+RH+'px;"></th>';
   L+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
     L+='<tr style="height:'+RH+'px;">';
     if(row.isFirst){
       L+='<td rowspan="'+row.grpSize+'" style="background:var(--accent,#1E4080);color:#fff;'+B
-        +'padding:4px 3px;font-size:11px;font-weight:700;text-align:center;vertical-align:middle;'
-        +'word-break:break-word;overflow:hidden;line-height:1.4;max-width:'+GW+'px;">'+row.grp+'</td>';
+        +'padding:4px 5px;font-size:13px;font-weight:700;text-align:center;vertical-align:middle;'
+        +'overflow:hidden;line-height:1.5;max-width:'+GW+'px;">'+row.grp.replace(/\n/g,'<br>')+'</td>';
     }
     L+='<td style="background:#fff;'+B+'padding:0 10px;font-size:15px;font-weight:500;white-space:nowrap;height:'+RH+'px;vertical-align:middle;overflow:hidden;">'+row.name+'</td>';
     L+='</tr>';
   });
   L+='<tr style="height:'+RH+'px;"><td style="background:#c8d0e8;'+B+'height:'+RH+'px;"></td>';
-  L+='<td style="background:#d4edda;'+B+'padding:0 10px;font-size:15px;font-weight:700;color:#1a5c2e;height:'+RH+'px;vertical-align:middle;white-space:nowrap;">Totali</td></tr>';
+  L+='<td style="background:#c8d0e8;'+B+'padding:0 10px;font-size:14px;font-weight:700;color:#3a4a6b;height:'+RH+'px;vertical-align:middle;white-space:nowrap;">Totali</td></tr>';
   L+='</tbody></table>';
 
   // === Calcolo larghezze dinamiche: misura contenuto reale per ogni colonna ===
-  const grandTot=Object.values(rowTotals).reduce((a,b)=>a+b,0);
   const CW=10; // px per carattere stimati a font-size 15px
   const colW={};
   days.forEach(d=>{
@@ -640,22 +639,19 @@ function hkpNRenderGrid(p,tab){
     rows.forEach((_,ri)=>{const v=hkpNGetCell(p,tab,ri,d);if(v.length>mx)mx=v.length;});
     colW[d]=Math.max(38,mx*CW+16);
   });
-  const TOTW2=Math.max(44,String(grandTot||0).length*CW+20);
 
-  // === TABELLA DESTRA: giorni + Tot (table-layout:fixed con larghezze dinamiche) ===
+  // === TABELLA DESTRA: solo giorni (colonna Tot rimossa) ===
   let R='<table style="border-collapse:collapse;table-layout:fixed;">';
   R+='<colgroup>';
   days.forEach(d=>R+='<col style="width:'+colW[d]+'px">');
-  R+='<col style="width:'+TOTW2+'px"></colgroup>';
+  R+='</colgroup>';
   R+='<thead><tr style="height:'+RH+'px;">';
   days.forEach(d=>{
     const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
     R+='<th style="background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
   });
-  R+='<th style="background:#1a5c2e;color:#fff;'+B+'padding:5px 4px;font-size:13px;font-weight:700;text-align:center;height:'+RH+'px;">Tot</th>';
   R+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
-    const rTot=rowTotals[ri]||0;
     R+='<tr style="height:'+RH+'px;">';
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
@@ -670,12 +666,10 @@ function hkpNRenderGrid(p,tab){
         +'font-family:inherit;padding:0 2px;outline:none;color:'+(dual?'var(--accent,#1E4080)':'#1a1a1a')+';font-weight:'+(v?'700':'400')+';'
         +'cursor:default;display:block;caret-color:transparent;box-sizing:border-box;"/></td>';
     });
-    R+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:15px;font-weight:700;height:'+RH+'px;vertical-align:middle;padding:0 4px;white-space:nowrap;">'+(rTot||'')+'</td>';
     R+='</tr>';
   });
   R+='<tr style="height:'+RH+'px;">';
-  days.forEach(d=>R+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:14px;font-weight:700;height:'+RH+'px;vertical-align:middle;padding:0 2px;">'+(dayTotals[d]||'')+'</td>');
-  R+='<td style="'+B+'text-align:center;background:#c3e6cb;color:#155724;font-size:15px;font-weight:800;height:'+RH+'px;vertical-align:middle;padding:0 4px;white-space:nowrap;">'+(grandTot||'')+'</td>';
+  days.forEach(d=>R+='<td style="'+B+'text-align:center;background:#c8d0e8;color:#3a4a6b;font-size:14px;font-weight:700;height:'+RH+'px;vertical-align:middle;padding:0 2px;">'+(dayTotals[d]||'')+'</td>');
   R+='</tr></tbody></table>';
 
   // Wrapper: sinistra fissa + destra scrollabile
