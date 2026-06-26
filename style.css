@@ -454,10 +454,10 @@ select.form-input option{background:var(--surface2);color:var(--text);}
   .sidebar.mobile-open{transform:translateX(0);}
   .app{min-height:100svh;}
   .content{padding:10px 10px 24px;}
-  .topbar{padding:8px 12px;gap:8px;}
+  .topbar{padding:8px 12px;gap:8px;flex-wrap:wrap;}
   .page-title{font-size:15px;}
   .breadcrumb{display:none;}
-  .topbar-kpis{overflow-x:auto;justify-content:flex-start;flex:initial;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .topbar-kpis{overflow-x:auto;justify-content:flex-start;flex-basis:100%;order:10;-webkit-overflow-scrolling:touch;scrollbar-width:none;border-top:1px solid var(--border-light);padding:6px 0 0;}
   .topbar-kpis::-webkit-scrollbar{display:none;}
   .topbar-kpi-chip{padding:5px 9px;}
   .topbar-kpi-val{font-size:17px;}
