@@ -695,8 +695,12 @@ function hkpNRenderGrid(p,tab){
     h+='<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">';
     sorted.forEach(([init,cnt],i)=>{
       const [bg,fg]=colors[i%colors.length];
+      const symFile=HKP_SYM[init.toUpperCase()];
+      const avatar=symFile
+        ?'<img src="img/'+symFile+'.'+HKP_SYM_EXT+'" style="width:36px;height:36px;object-fit:contain;mix-blend-mode:multiply;">'
+        :'<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:'+bg+';color:'+fg+';font-size:12px;font-weight:800;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
       h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;">';
-      h+='<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:'+bg+';color:'+fg+';font-size:12px;font-weight:800;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
+      h+=avatar;
       h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:12px;color:#666;margin-top:1px;">'+init+'</div></div></div>';
     });
     h+='</div>';
