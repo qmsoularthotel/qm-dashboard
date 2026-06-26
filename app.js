@@ -445,6 +445,7 @@ let _hkpNdata={};   // {p_yyyy-mm: {cellId: val}}
 let _hkpNdebounce={};
 let _hkpNsel={drag:false,cells:new Set()};
 const HKP_SYM={RP:'hkp-ripasso',ND:'hkp-nd',LIB:'open-sign'};
+const HKP_SYM_EXT='svg'; // usa SVG vettoriale per nitidezza
 const HKP_MON_NAMES=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 function hkpNStorKey(p){return 'qm_hkpN_'+p+'_'+hkpNCurMon(p);}
 function hkpNCacheKey(p){return p+'_'+hkpNCurMon(p);}
@@ -677,10 +678,10 @@ function hkpNRenderGrid(p,tab){
   const symBtnStyle='display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid #d0d3db;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;color:#333;font-weight:600;';
   let h='<div style="font-size:17px;font-weight:700;color:#1a1a1a;padding:0 0 8px;letter-spacing:.01em;">'+monLabel+'</div>';
   h+='<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">';
-  const imgStyle='height:28px;width:auto;mix-blend-mode:multiply;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;';
-  h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'RP\')" style="'+symBtnStyle+'"><img src="img/hkp-ripasso.png" style="'+imgStyle+'"> Ripasso</button>';
-  h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'ND\')" style="'+symBtnStyle+'"><img src="img/hkp-nd.png" style="'+imgStyle+'"> Non disturbare</button>';
-  h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'LIB\')" style="'+symBtnStyle+'"><img src="img/open-sign.png" style="'+imgStyle+'"> Camera libera</button>';
+  const imgStyle='height:28px;width:auto;mix-blend-mode:multiply;';
+  h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'RP\')" style="'+symBtnStyle+'"><img src="img/hkp-ripasso.'+HKP_SYM_EXT+'" style="'+imgStyle+'"> Ripasso</button>';
+  h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'ND\')" style="'+symBtnStyle+'"><img src="img/hkp-nd.'+HKP_SYM_EXT+'" style="'+imgStyle+'"> Non disturbare</button>';
+  h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'LIB\')" style="'+symBtnStyle+'"><img src="img/open-sign.'+HKP_SYM_EXT+'" style="'+imgStyle+'"> Camera libera</button>';
   h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'\')" style="'+symBtnStyle+'background:#fef2f2;border-color:#fca5a5;color:#b91c1c;">✕ Cancella</button>';
   h+='</div>';
   h+='<div style="display:flex;border:1px solid #d0d3db;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
@@ -717,7 +718,7 @@ function _hkpNUpdateCellDisplay(input){
     td.style.position='relative';
     const img=document.createElement('img');
     img.className='hkpSymImg';
-    img.src='img/'+sym+'.png';
+    img.src='img/'+sym+'.'+HKP_SYM_EXT;
     img.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;height:90%;object-fit:contain;mix-blend-mode:multiply;pointer-events:none;z-index:2;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;';
     td.appendChild(img);
     td.style.background='#fff';
