@@ -506,9 +506,8 @@ function hkpNRenderGrid(p,tab){
   const days=[];for(let d=1;d<=daysInMonth;d++)days.push(d);
   const MON_IT=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   const monLabel=MON_IT[mo-1]+' '+yr;
-  // Flat rows — no grpSize, no rowspan
   const rows=[];
-  conf.forEach(grp=>grp.list.forEach((name,idx)=>rows.push({name,grp:grp.g,isFirst:idx===0})));
+  conf.forEach(grp=>grp.list.forEach((name,idx)=>rows.push({name,grp:grp.g,isFirst:idx===0,grpSize:grp.list.length})));
   const dayTotals={};const rowTotals={};const hwCounts={};
   rows.forEach((row,ri)=>{
     days.forEach(d=>{
@@ -519,61 +518,75 @@ function hkpNRenderGrid(p,tab){
       v.split('/').forEach(k=>{const t=k.trim();if(t)hwCounts[t]=(hwCounts[t]||0)+1;});
     });
   });
-  // Larghezze calcolate al contenuto
   const maxCam=Math.max(...rows.map(r=>r.name.length));
   const RW=Math.max(70,maxCam*9+20);
   const maxGrp=Math.max(...conf.map(g=>g.g.length));
-  const GW=Math.max(60,Math.min(100,maxGrp*7+16));
+  const GW=Math.max(55,Math.min(90,maxGrp*6+12));
   const DW=46;const TOTW=46;
+  const RH=36; // altezza riga fissa per allineamento tra le due tabelle
   const B='border:1px solid #d8dae0;';
-  // Stili sticky — entrambe le colonne bloccate
-  const stickyG='position:sticky;left:0;z-index:2;background:var(--accent,#1E4080);color:#fff;'+B+'padding:4px 3px;font-size:11px;font-weight:700;text-align:center;vertical-align:middle;white-space:normal;word-break:break-word;line-height:1.5;';
-  const stickyR='position:sticky;left:'+GW+'px;z-index:2;background:#fff;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:15px;font-weight:500;white-space:nowrap;';
   const today=new Date();
-  // Mese come div sopra la tabella (fuori dalla struttura table)
-  let h='<div style="font-size:17px;font-weight:700;color:#1a1a1a;padding:0 2px 8px;letter-spacing:.01em;">'+monLabel+'</div>';
-  h+='<div style="overflow-x:auto;border:1px solid #d0d3db;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
-  h+='<table style="border-collapse:collapse;table-layout:fixed;">';
-  h+='<colgroup><col style="width:'+GW+'px"><col style="width:'+RW+'px">';
-  days.forEach(()=>h+='<col style="width:'+DW+'px">');
-  h+='<col style="width:'+TOTW+'px"></colgroup>';
-  // Header unica riga, entrambe le colonne fisse sticky
-  h+='<thead><tr>';
-  h+='<th style="position:sticky;left:0;z-index:3;background:var(--accent,#1E4080);color:#fff;'+B+'padding:6px 4px;font-size:12px;font-weight:700;text-align:center;">Gruppo</th>';
-  h+='<th style="position:sticky;left:'+GW+'px;z-index:3;background:#f5f6f8;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;">Camera</th>';
+
+  // === TABELLA SINISTRA: Gruppo + Camera (fissa, non scrolla) ===
+  // rowspan funziona qui perché non c'è sticky in gioco
+  let L='<table style="border-collapse:collapse;table-layout:fixed;">';
+  L+='<colgroup><col style="width:'+GW+'px"><col style="width:'+RW+'px"></colgroup>';
+  L+='<thead><tr style="height:'+RH+'px;">';
+  L+='<th style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:5px 4px;font-size:12px;font-weight:700;text-align:center;height:'+RH+'px;">Gruppo</th>';
+  L+='<th style="background:#f5f6f8;'+B+'padding:5px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;height:'+RH+'px;">Camera</th>';
+  L+='</tr></thead><tbody>';
+  rows.forEach((row,ri)=>{
+    L+='<tr>';
+    if(row.isFirst){
+      L+='<td rowspan="'+row.grpSize+'" style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:5px 4px;font-size:12px;font-weight:700;text-align:center;vertical-align:middle;white-space:normal;word-break:break-word;line-height:1.5;">'+row.grp+'</td>';
+    }
+    L+='<td style="background:#fff;'+B+'padding:0 10px;font-size:15px;font-weight:500;white-space:nowrap;height:'+RH+'px;vertical-align:middle;">'+row.name+'</td>';
+    L+='</tr>';
+  });
+  L+='<tr style="height:'+RH+'px;"><td style="background:#c8d0e8;'+B+'height:'+RH+'px;"></td>';
+  L+='<td style="background:#d4edda;'+B+'padding:0 10px;font-size:15px;font-weight:700;color:#1a5c2e;height:'+RH+'px;vertical-align:middle;white-space:nowrap;">Totali</td></tr>';
+  L+='</tbody></table>';
+
+  // === TABELLA DESTRA: giorni + Tot (scrolla orizzontalmente) ===
+  let R='<table style="border-collapse:collapse;table-layout:fixed;">';
+  R+='<colgroup>';
+  days.forEach(()=>R+='<col style="width:'+DW+'px">');
+  R+='<col style="width:'+TOTW+'px"></colgroup>';
+  R+='<thead><tr style="height:'+RH+'px;">';
   days.forEach(d=>{
     const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-    h+='<th style="background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
+    R+='<th style="background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
   });
-  h+='<th style="background:#1a5c2e;color:#fff;'+B+'padding:6px 4px;font-size:13px;font-weight:700;text-align:center;">Tot</th>';
-  h+='</tr></thead><tbody>';
+  R+='<th style="background:#1a5c2e;color:#fff;'+B+'padding:5px 4px;font-size:13px;font-weight:700;text-align:center;height:'+RH+'px;">Tot</th>';
+  R+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
     const rTot=rowTotals[ri]||0;
-    h+='<tr>';
-    // Gruppo sticky left:0 — NO rowspan, testo solo prima riga del gruppo → nessun bug scroll
-    h+='<td style="'+stickyG+'">'+(row.isFirst?row.grp:'')+'</td>';
-    // Camera sticky left:GW
-    h+='<td style="'+stickyR+'">'+row.name+'</td>';
+    R+='<tr>';
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
       const dual=v.includes('/');
       const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-      h+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':(isToday?'#f4f7fd':'#fff'))+';">'
+      R+='<td style="'+B+'padding:0;background:'+(v?'#f0f5ff':(isToday?'#f4f7fd':'#fff'))+';height:'+RH+'px;">'
         +'<input type="text" maxlength="8" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" '
         +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
-        +'style="width:'+DW+'px;border:none;background:transparent;text-align:center;font-size:15px;font-family:inherit;'
-        +'padding:5px 1px;outline:none;color:'+(dual?'var(--accent,#1E4080)':'#1a1a1a')+';font-weight:'+(v?'700':'400')+';cursor:default;display:block;"/></td>';
+        +'style="width:'+DW+'px;height:'+RH+'px;border:none;background:transparent;text-align:center;font-size:15px;'
+        +'font-family:inherit;padding:0;outline:none;color:'+(dual?'var(--accent,#1E4080)':'#1a1a1a')+';font-weight:'+(v?'700':'400')+';cursor:default;display:block;"/></td>';
     });
-    h+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:15px;font-weight:700;padding:5px 4px;">'+(rTot||'')+'</td>';
-    h+='</tr>';
+    R+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:15px;font-weight:700;height:'+RH+'px;vertical-align:middle;">'+(rTot||'')+'</td>';
+    R+='</tr>';
   });
   const grandTot=Object.values(rowTotals).reduce((a,b)=>a+b,0);
-  h+='<tr>';
-  h+='<td style="position:sticky;left:0;z-index:2;background:#c8d0e8;'+B+'padding:5px 4px;"></td>';
-  h+='<td style="position:sticky;left:'+GW+'px;z-index:2;background:#d4edda;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:15px;font-weight:700;color:#1a5c2e;white-space:nowrap;">Totali</td>';
-  days.forEach(d=>h+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:14px;font-weight:700;padding:5px 2px;">'+(dayTotals[d]||'')+'</td>');
-  h+='<td style="'+B+'text-align:center;background:#c3e6cb;color:#155724;font-size:15px;font-weight:800;padding:5px 4px;">'+(grandTot||'')+'</td>';
-  h+='</tr></tbody></table></div>';
+  R+='<tr style="height:'+RH+'px;">';
+  days.forEach(d=>R+='<td style="'+B+'text-align:center;background:#d4edda;color:#1a5c2e;font-size:14px;font-weight:700;height:'+RH+'px;vertical-align:middle;">'+(dayTotals[d]||'')+'</td>');
+  R+='<td style="'+B+'text-align:center;background:#c3e6cb;color:#155724;font-size:15px;font-weight:800;height:'+RH+'px;vertical-align:middle;">'+(grandTot||'')+'</td>';
+  R+='</tr></tbody></table>';
+
+  // Wrapper: sinistra fissa + destra scrollabile
+  let h='<div style="font-size:17px;font-weight:700;color:#1a1a1a;padding:0 0 8px;letter-spacing:.01em;">'+monLabel+'</div>';
+  h+='<div style="display:flex;border:1px solid #d0d3db;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
+  h+='<div style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);overflow:hidden;">'+L+'</div>';
+  h+='<div style="overflow-x:auto;flex:1;">'+R+'</div>';
+  h+='</div>';
   // Riepilogo cameriere
   const colors=[['#dbeafe','#1d4ed8'],['#fef3c7','#92400e'],['#dcfce7','#166534'],['#fce7f3','#9d174d'],['#ede9fe','#4c1d95'],['#ffedd5','#9a3412']];
   const sorted=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
