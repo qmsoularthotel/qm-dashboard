@@ -445,7 +445,7 @@ let _hkpNdata={};   // {p_yyyy-mm: {cellId: val}}
 let _hkpNdebounce={};
 let _hkpNsel={drag:false,cells:new Set()};
 const HKP_SYM={RP:'hkp-ripasso',ND:'hkp-nd',LIB:'open-sign'};
-const HKP_SYM_EXT='svg'; // usa SVG vettoriale per nitidezza
+const HKP_SYM_EXT='png';
 const HKP_MON_NAMES=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 function hkpNStorKey(p){return 'qm_hkpN_'+p+'_'+hkpNCurMon(p);}
 function hkpNCacheKey(p){return p+'_'+hkpNCurMon(p);}
