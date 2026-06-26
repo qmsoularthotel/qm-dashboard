@@ -609,8 +609,7 @@ function hkpNRenderGrid(p,tab){
   const B='border:1px solid #d8dae0;';
   const today=new Date();
 
-  // === TABELLA SINISTRA: Gruppo + Camera (fissa, non scrolla) ===
-  // rowspan funziona qui perché non c'è sticky in gioco
+  // === TABELLA SINISTRA: Gruppo + Camera (fissa, no rowspan → altezze identiche a tabella destra) ===
   let L='<table style="border-collapse:collapse;table-layout:fixed;">';
   L+='<colgroup><col style="width:'+GW+'px"><col style="width:'+RW+'px"></colgroup>';
   L+='<thead><tr style="height:'+RH+'px;">';
@@ -618,11 +617,15 @@ function hkpNRenderGrid(p,tab){
   L+='<th style="background:#f5f6f8;'+B+'padding:5px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;height:'+RH+'px;">Camera</th>';
   L+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
-    L+='<tr>';
-    if(row.isFirst){
-      L+='<td rowspan="'+row.grpSize+'" style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:5px 4px;font-size:12px;font-weight:700;text-align:center;vertical-align:middle;white-space:normal;word-break:break-word;line-height:1.5;">'+row.grp+'</td>';
-    }
-    L+='<td style="background:#fff;'+B+'padding:0 10px;font-size:15px;font-weight:500;white-space:nowrap;height:'+RH+'px;vertical-align:middle;">'+row.name+'</td>';
+    const isLast=ri===rows.length-1||rows[ri+1].grp!==row.grp;
+    // Gruppo: prima riga mostra etichetta, righe intermedie sfondo pieno senza testo, ultima riga con bordo inferiore
+    const grpBorderB=isLast?'border-bottom:1px solid #d8dae0;':'border-bottom:1px solid rgba(255,255,255,0.12);';
+    const grpBorderT=row.isFirst?'border-top:1px solid #d8dae0;':'border-top:none;';
+    L+='<tr style="height:'+RH+'px;">';
+    L+='<td style="background:var(--accent,#1E4080);color:#fff;border-left:1px solid #d8dae0;border-right:1px solid #d8dae0;'+grpBorderT+grpBorderB
+      +'padding:'+(row.isFirst?'4px 3px':'0')+';font-size:11px;font-weight:700;text-align:center;vertical-align:'+(row.isFirst?'top':'middle')+';'
+      +'height:'+RH+'px;overflow:hidden;white-space:nowrap;'+'>'+(row.isFirst?row.grp:'')+'</td>';
+    L+='<td style="background:#fff;'+B+'padding:0 10px;font-size:15px;font-weight:500;white-space:nowrap;height:'+RH+'px;vertical-align:middle;overflow:hidden;">'+row.name+'</td>';
     L+='</tr>';
   });
   L+='<tr style="height:'+RH+'px;"><td style="background:#c8d0e8;'+B+'height:'+RH+'px;"></td>';
