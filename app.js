@@ -799,7 +799,7 @@ function hkpNInput(input){
     });
   }
   clearTimeout(_hkpNdebounce[p]);
-  _hkpNdebounce[p]=setTimeout(()=>hkpNSave(p),3000);
+  _hkpNdebounce[p]=setTimeout(()=>{hkpNSave(p);hkpNRender(p);},2000);
 }
 function hkpNBlur(input){
   // Mantieni highlight selezione multipla; rimuovi solo focus ring
@@ -825,13 +825,15 @@ function hkpNKey(input,e){
   // Delete/Backspace su selezione multipla → svuota tutte le celle
   if((e.key==='Delete'||e.key==='Backspace')&&_hkpNsel.cells.size>1){
     e.preventDefault();
+    const p=input.dataset.p;
     _hkpNsel.cells.forEach(key=>{
       const [sp,stab,sri,scol]=key.split(':');
       hkpNSetCell(sp,stab,parseInt(sri),scol,'');
-      const el=document.querySelector('input[data-p="'+sp+'"][data-tab="'+stab+'"][data-ri="'+sri+'"][data-col="'+scol+'"]');
-      if(el){el.value='';el.style.fontWeight='400';el.style.color='#1a1a1a';}
     });
-    const p=input.dataset.p;clearTimeout(_hkpNdebounce[p]);_hkpNdebounce[p]=setTimeout(()=>hkpNSave(p),800);
+    _hkpNsel.cells.clear();
+    clearTimeout(_hkpNdebounce[p]);
+    hkpNSave(p);
+    hkpNRender(p);
     return;
   }
   const go=(newRi,newCol)=>{
