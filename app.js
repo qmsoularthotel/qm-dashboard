@@ -523,28 +523,21 @@ function hkpNRenderGrid(p,tab){
   const maxCam=Math.max(...rows.map(r=>r.name.length));
   const RW=Math.max(70,maxCam*9+20);
   const maxGrp=Math.max(...conf.map(g=>g.g.length));
-  const GW=Math.max(52,Math.min(85,maxGrp*6.5+12));
+  const GW=Math.max(60,Math.min(100,maxGrp*7+16));
   const DW=46;const TOTW=46;
   const B='border:1px solid #d8dae0;';
-  // Colonna gruppo: rowspan, NON sticky → risolve bug sticky+rowspan in scroll
-  // Colonna Camera: sticky left=GW → sempre visibile
   const stickyR='position:sticky;left:'+GW+'px;z-index:2;background:#fff;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:15px;font-weight:500;white-space:nowrap;';
   const today=new Date();
+  // caption fuori dalla struttura colonne → non interferisce con colgroup/col widths
   let h='<div style="overflow-x:auto;border:1px solid #d0d3db;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
   h+='<table style="border-collapse:collapse;table-layout:fixed;">';
+  h+='<caption style="caption-side:top;text-align:center;font-size:17px;font-weight:700;color:#1a1a1a;padding:10px 8px 8px;letter-spacing:.01em;">'+monLabel+'</caption>';
   h+='<colgroup><col style="width:'+GW+'px"><col style="width:'+RW+'px">';
   days.forEach(()=>h+='<col style="width:'+DW+'px">');
   h+='<col style="width:'+TOTW+'px"></colgroup>';
-  // Header riga 1: mese grande sopra i giorni (nessuna confusione con la colonna Camera)
-  h+='<thead>';
-  h+='<tr>';
-  h+='<td colspan="2" style="background:#fff;border:none;padding:0;"></td>';
-  h+='<th colspan="'+daysInMonth+'" style="'+B+'background:#f5f6f8;padding:7px 8px;font-size:17px;font-weight:700;text-align:center;color:var(--text,#1a1a1a);letter-spacing:.01em;">'+monLabel+'</th>';
-  h+='<td style="background:#fff;border:none;padding:0;"></td>';
-  h+='</tr>';
-  // Header riga 2: etichette colonne
-  h+='<tr>';
-  h+='<th style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:6px 4px;font-size:11px;font-weight:700;text-align:center;vertical-align:middle;">Gruppo</th>';
+  // Header unica riga — nessun colspan che disturbi il layout fisso
+  h+='<thead><tr>';
+  h+='<th style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:6px 5px;font-size:12px;font-weight:700;text-align:center;vertical-align:middle;">Gruppo</th>';
   h+='<th style="position:sticky;left:'+GW+'px;z-index:3;background:#f5f6f8;'+B+'border-right:2px solid var(--accent,#1E4080);padding:6px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;">Camera</th>';
   days.forEach(d=>{
     const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
@@ -556,8 +549,7 @@ function hkpNRenderGrid(p,tab){
     const rTot=rowTotals[ri]||0;
     h+='<tr>';
     if(row.isFirst){
-      // rowspan SU CELLA NON-STICKY: evita il bug di allineamento scroll orizzontale
-      h+='<td rowspan="'+row.grpSize+'" style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:6px 5px;font-size:11px;font-weight:700;text-align:center;vertical-align:middle;white-space:normal;word-break:break-word;line-height:1.5;">'+row.grp+'</td>';
+      h+='<td rowspan="'+row.grpSize+'" style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:6px 5px;font-size:12px;font-weight:700;text-align:center;vertical-align:middle;white-space:normal;word-break:break-word;line-height:1.6;">'+row.grp+'</td>';
     }
     h+='<td style="'+stickyR+'">'+row.name+'</td>';
     days.forEach(d=>{
