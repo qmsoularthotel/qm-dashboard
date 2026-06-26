@@ -753,7 +753,7 @@ function hkpNInsertSymbol(p,code){
     if(sp!==p)return;
     hkpNSetCell(sp,stab,parseInt(sri),scol,code);
     const el=document.querySelector('input[data-p="'+sp+'"][data-tab="'+stab+'"][data-ri="'+sri+'"][data-col="'+scol+'"]');
-    if(el){el.value=code;_hkpNUpdateCellDisplay(el);const isFondi=el.dataset.fondi==='1';el.parentElement.style.background=isFondi?(code?'#c8e6c9':'#fce4ec'):(code?'#fff':'#fff');}
+    if(el){el.value=code;_hkpNUpdateCellDisplay(el);el.parentElement.style.background=code?'#f0f5ff':'#fff';}
   });
   clearTimeout(_hkpNdebounce[p]);
   hkpNSave(p);
@@ -782,54 +782,61 @@ function hkpNRenderFondi(p){
   const [yr,mo]=hkpNCurMon(p).split('-').map(Number);
   const monLabel=HKP_MON_NAMES[mo-1]+' '+yr;
   const B='border:1px solid #d8dae0;';
-  const CW=48;const LW=155;
+  const RH=36;const CW=52;const LW=158;
   const allRooms=conf.groups.flatMap(g=>g.rooms);
-  let h='<div style="display:flex;flex-direction:column;gap:20px;">';
+  const symBtnStyle='display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid #d0d3db;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;color:#333;font-weight:600;';
+  const cancelBtnStyle=symBtnStyle+'background:#fef2f2;border-color:#fca5a5;color:#b91c1c;';
+  // Header mese
+  let h='<div style="font-size:17px;font-weight:700;color:#1a1a1a;padding:0 0 8px;letter-spacing:.01em;">'+monLabel+'</div>';
+  // Toolbar asterischi
+  h+='<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">';
+  ['*','**','***','****','*****'].forEach(a=>h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\''+a+'\')" style="'+symBtnStyle+'">'+a+'</button>');
+  h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'\')" style="'+cancelBtnStyle+'">✕ Cancella</button>';
+  h+='</div>';
+  h+='<div style="display:flex;flex-direction:column;gap:16px;">';
   conf.groups.forEach(grp=>{
     const rooms=grp.rooms;
-    h+='<div style="overflow-x:auto;border:1px solid #c8cad0;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.07);">';
-    h+='<table style="border-collapse:collapse;table-layout:fixed;">';
-    h+='<colgroup><col style="width:'+LW+'px">';
+    // Calcola totali per colonna
+    const colTots=rooms.map(room=>{const gri=allRooms.indexOf(room);return tasks.reduce((s,_,ti)=>s+(hkpNGetCell(p,'fondi',ti,gri)?1:0),0);});
+    h+='<div style="border:1px solid #d0d3db;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
+    h+='<div style="display:flex;">';
+    // Tabella sinistra: etichette task
+    h+='<div style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);overflow:hidden;">';
+    h+='<table style="border-collapse:collapse;table-layout:fixed;"><colgroup><col style="width:'+LW+'px"></colgroup>';
+    h+='<thead><tr style="height:'+RH+'px;"><th style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:5px 10px;font-size:13px;font-weight:700;text-align:left;height:'+RH+'px;">'+grp.name+'</th></tr></thead><tbody>';
+    tasks.forEach(task=>{
+      h+='<tr style="height:'+RH+'px;"><td style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:4px 10px;font-size:11.5px;font-weight:600;vertical-align:middle;white-space:pre-line;height:'+RH+'px;line-height:1.3;max-width:'+LW+'px;overflow:hidden;">'+task+'</td></tr>';
+    });
+    h+='<tr style="height:'+RH+'px;"><td style="background:#c8d0e8;'+B+'padding:0 10px;font-size:13px;font-weight:700;color:#3a4a6b;height:'+RH+'px;vertical-align:middle;">Totali</td></tr>';
+    h+='</tbody></table></div>';
+    // Tabella destra: colonne camere (scrollabile)
+    h+='<div style="overflow-x:auto;flex:1;">';
+    h+='<table style="border-collapse:collapse;table-layout:fixed;"><colgroup>';
     rooms.forEach(()=>h+='<col style="width:'+CW+'px">');
-    h+='</colgroup><thead>';
-    // Riga 1: mese + nome struttura
-    h+='<tr>';
-    h+='<th rowspan="2" style="'+B+'background:var(--accent,#1E4080);color:#fff;padding:8px 12px;font-size:13px;font-weight:700;text-align:left;vertical-align:middle;white-space:nowrap;">'+monLabel+'</th>';
-    h+='<th colspan="'+rooms.length+'" style="'+B+'background:var(--accent,#1E4080);color:#fff;padding:7px 10px;font-size:14px;font-weight:700;text-align:left;">'+grp.name+'</th>';
-    h+='</tr>';
-    // Riga 2: numeri camera (sfondo rosso)
-    h+='<tr>';
-    rooms.forEach(room=>h+='<th style="'+B+'background:#e57373;color:#fff;padding:4px 2px;font-size:11px;font-weight:700;text-align:center;">'+room+'</th>');
+    h+='</colgroup><thead><tr style="height:'+RH+'px;">';
+    rooms.forEach(room=>h+='<th style="background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:500;text-align:center;color:#555;height:'+RH+'px;">'+room+'</th>');
     h+='</tr></thead><tbody>';
-    // Riga spaziatrice
-    h+='<tr><td colspan="'+(rooms.length+1)+'" style="'+B+'height:6px;background:#fafafa;padding:0;"></td></tr>';
-    // Righe task
-    tasks.forEach((task,ti)=>{
-      h+='<tr>';
-      h+='<td style="'+B+'position:sticky;left:0;z-index:2;background:#f5f6f8;border-right:2px solid var(--accent,#1E4080);padding:5px 10px;font-size:11.5px;font-weight:600;color:#333;line-height:1.35;vertical-align:middle;white-space:pre-line;">'+task+'</td>';
+    tasks.forEach((_,ti)=>{
+      h+='<tr style="height:'+RH+'px;">';
       rooms.forEach(room=>{
         const gri=allRooms.indexOf(room);
         const v=hkpNGetCell(p,'fondi',ti,gri);
-        const bg=v?'#c8e6c9':'#fce4ec';
-        h+='<td style="'+B+'padding:1px;background:'+bg+';"><input type="text" value="'+v+'" '
-          +'data-p="'+p+'" data-tab="fondi" data-ri="'+ti+'" data-col="'+gri+'" data-fondi="1" '
+        h+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':'#fff')+';height:'+RH+'px;">'
+          +'<input type="text" value="'+v+'" data-p="'+p+'" data-tab="fondi" data-ri="'+ti+'" data-col="'+gri+'" data-fondi="1" '
           +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
           +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
-          +'style="width:'+CW+'px;border:none;background:transparent;text-align:center;font-size:14px;font-family:inherit;padding:6px 2px;outline:none;caret-color:transparent;display:block;font-weight:'+(v?'700':'400')+';"/></td>';
+          +'style="width:'+(CW-2)+'px;height:'+(RH-2)+'px;border:none;background:transparent;text-align:center;font-size:15px;'
+          +'font-family:inherit;padding:0 2px;outline:none;caret-color:transparent;display:block;font-weight:'+(v?'700':'400')+';cursor:default;box-sizing:border-box;"/></td>';
       });
       h+='</tr>';
     });
-    h+='</tbody></table></div>';
+    h+='<tr style="height:'+RH+'px;">';
+    colTots.forEach(tot=>h+='<td style="'+B+'text-align:center;background:#c8d0e8;color:#3a4a6b;font-size:14px;font-weight:700;height:'+RH+'px;vertical-align:middle;padding:0 2px;">'+(tot||'')+'</td>');
+    h+='</tr></tbody></table></div>';
+    h+='</div></div>';
   });
   h+='</div>';
-  // Toolbar asterischi
-  const astSt='padding:6px 14px;border:1px solid #d0d3db;background:#fff;color:#333;border-radius:6px;cursor:pointer;font-size:14px;font-weight:700;letter-spacing:1px;';
-  const canSt='padding:6px 14px;border:1px solid #c0352a;background:#fff;color:#c0352a;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;';
-  let tb='<div style="display:flex;gap:8px;flex-wrap:wrap;padding:8px 0 14px;">';
-  ['*','**','***','****','*****'].forEach(a=>tb+='<button onclick="hkpNInsertSymbol(\''+p+'\',\''+a+'\')" style="'+astSt+'">'+a+'</button>');
-  tb+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'\')" style="'+canSt+'">✕ Cancella</button>';
-  tb+='</div>';
-  el.innerHTML=tb+h;
+  el.innerHTML=h;
 }
 // --- Drag multi-select helpers ---
 function _hkpNSelKey(inp){return inp.dataset.p+':'+inp.dataset.tab+':'+inp.dataset.ri+':'+inp.dataset.col;}
@@ -844,11 +851,7 @@ function _hkpNClearSel(){
   _hkpNsel.cells.forEach(key=>{
     const [sp,stab,sri,scol]=key.split(':');
     const el=document.querySelector('input[data-p="'+sp+'"][data-tab="'+stab+'"][data-ri="'+sri+'"][data-col="'+scol+'"]');
-    if(el){
-      el.parentElement.style.boxShadow='';
-      const isFondi=el.dataset.fondi==='1';
-      el.parentElement.style.background=isFondi?(el.value?'#c8e6c9':'#fce4ec'):(el.value?'#f0f5ff':'#fff');
-    }
+    if(el){el.parentElement.style.boxShadow='';el.parentElement.style.background=el.value?'#f0f5ff':'#fff';}
   });
   _hkpNsel.cells.clear();
 }
@@ -880,10 +883,8 @@ function _hkpNApplyCell(inp,val){
   inp.value=v;
   inp.style.color=dual?'var(--accent,#1E4080)':'#1a1a1a';
   inp.style.fontWeight=v?'700':'400';
-  if(!_hkpNsel.cells.has(_hkpNSelKey(inp))){
-    const isFondi=inp.dataset.fondi==='1';
-    inp.parentElement.style.background=isFondi?(v?'#c8e6c9':'#fce4ec'):(v?'#f0f5ff':'#fff');
-  }
+  if(!_hkpNsel.cells.has(_hkpNSelKey(inp)))
+    inp.parentElement.style.background=v?'#f0f5ff':'#fff';
 }
 function hkpNInput(input){
   const {p,tab,ri,col}=input.dataset;
@@ -924,10 +925,8 @@ function hkpNBlur(input){
     if(up!==input.value)input.value=up;
     hkpNSetCell(input.dataset.p,input.dataset.tab,parseInt(input.dataset.ri),input.dataset.col,up);
     input.style.fontWeight=up?'700':'400';
-    if(!_hkpNsel.cells.has(_hkpNSelKey(input))){
-      const isFondi=input.dataset.fondi==='1';
-      input.parentElement.style.background=isFondi?(up?'#c8e6c9':'#fce4ec'):(HKP_SYM[up]?'#fff':up?'#f0f5ff':'#fff');
-    }
+    if(!_hkpNsel.cells.has(_hkpNSelKey(input)))
+      input.parentElement.style.background=HKP_SYM[up]?'#fff':up?'#f0f5ff':'#fff';
     _hkpNUpdateCellDisplay(input);
   }
 }
