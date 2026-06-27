@@ -278,19 +278,32 @@ function renderDay(){
 }
 
 function renderMonthlyStats(){
-  const stats=_bkfHistory||{};
-  if(!Object.keys(stats).length)return'';
+  const dayKeys=Object.keys(_bkfHistory||{});
+  if(!dayKeys.length)return'';
+
   const today=new Date();today.setHours(0,0,0,0);
   const curYM=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
-  const months=Object.keys(stats).sort((a,b)=>b.localeCompare(a));
-  if(!months.length)return'';
-
   const MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   const fmtYM=ym=>{const[y,m]=ym.split('-').map(Number);return MON[m-1]+' '+y;};
 
-  // Card mese corrente
-  const cur=stats[curYM];
+  // Aggrega per mese solo i giorni ≤ oggi
+  const byMonth={};
+  dayKeys.forEach(k=>{
+    const dt=new Date(k+'T12:00:00');dt.setHours(0,0,0,0);
+    if(dt>today)return;
+    const ym=k.slice(0,7);
+    if(!byMonth[ym])byMonth[ym]={bb:0,ro:0,days:0};
+    byMonth[ym].bb+=_bkfHistory[k].bb||0;
+    byMonth[ym].ro+=_bkfHistory[k].ro||0;
+    byMonth[ym].days++;
+  });
+
+  const months=Object.keys(byMonth).sort((a,b)=>b.localeCompare(a));
+  if(!months.length)return'';
+
+  const cur=byMonth[curYM];
   let h=`<div class="section-title">Riepilogo mese</div>`;
+
   if(cur){
     h+=`<div style="background:var(--surface);border-radius:12px;border:2px solid var(--accent);padding:14px 16px;margin-bottom:10px;">
       <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;">${fmtYM(curYM)} — ${cur.days} giorni</div>
@@ -307,7 +320,6 @@ function renderMonthlyStats(){
     </div>`;
   }
 
-  // Tabella mesi precedenti
   const prev=months.filter(m=>m!==curYM);
   if(prev.length){
     h+=`<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:10px;">
@@ -319,7 +331,7 @@ function renderMonthlyStats(){
           <th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--text-dim);text-align:right;">Tot.</th>
         </tr></thead><tbody>`;
     prev.forEach((ym,i)=>{
-      const r=stats[ym];
+      const r=byMonth[ym];
       h+=`<tr style="${i>0?'border-top:1px solid var(--border);':''}">
         <td style="padding:9px 12px;font-size:12px;font-weight:600;">${fmtYM(ym)}</td>
         <td style="padding:9px 12px;font-size:13px;font-weight:700;text-align:right;color:var(--accent);">${r.bb}</td>
@@ -363,21 +375,13 @@ function renderChart(){
 }
 function bkfMergeHistory(){
   if(!bkfData||!bkfData.length)return;
-  const today=new Date();today.setHours(0,0,0,0);
-  const patch={};
+  // Salva ogni giorno come YYYY-MM-DD → {bb, ro}; nessun filtro su future
   bkfData.forEach(d=>{
     if(!d.data)return;
     const p=d.data.split('/');if(p.length!==3)return;
-    const dt=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]),12,0,0);
-    dt.setHours(0,0,0,0);if(dt>today)return;
-    const ym=p[2]+'-'+p[1].padStart(2,'0');
-    if(!patch[ym])patch[ym]={bb:0,ro:0,days:0};
-    patch[ym].bb+=(d.adulti||0)+(d.bambini||0);
-    patch[ym].ro+=(d.noCol||0);
-    patch[ym].days++;
+    const key=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+    _bkfHistory[key]={bb:(d.adulti||0)+(d.bambini||0),ro:(d.noCol||0)};
   });
-  // Aggiorna history con i mesi del report corrente; mantieni gli altri invariati
-  Object.assign(_bkfHistory, patch);
   const json=JSON.stringify(_bkfHistory);
   try{localStorage.setItem(BKF_HIST_KEY,json);}catch(e){}
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:BKF_HIST_KEY,value:json})}).catch(()=>{});

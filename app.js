@@ -4329,17 +4329,13 @@ function bkfSaveMonthlyHistory(){
   const HIST_KEY='qm_bkf_monthly_history';
   let hist={};
   try{hist=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');}catch(e){}
-  const today=new Date();today.setHours(0,0,0,0);
+  // Salva ogni giorno come record individuale YYYY-MM-DD → {bb, ro}
+  // Nessun filtro su date future: il report settimanale copre oggi+6gg
   bkfData.forEach(d=>{
     if(!d.data)return;
     const p=d.data.split('/');if(p.length!==3)return;
-    const dt=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]),12,0,0);
-    dt.setHours(0,0,0,0);if(dt>today)return;
-    const ym=p[2]+'-'+p[1].padStart(2,'0');
-    if(!hist[ym])hist[ym]={bb:0,ro:0,days:0};
-    hist[ym].bb+=(d.adulti||0)+(d.bambini||0);
-    hist[ym].ro+=(d.noCol||0);
-    hist[ym].days++;
+    const key=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+    hist[key]={bb:(d.adulti||0)+(d.bambini||0),ro:(d.noCol||0)};
   });
   const json=JSON.stringify(hist);
   try{localStorage.setItem(HIST_KEY,json);}catch(e){}
