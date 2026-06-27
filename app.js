@@ -4319,10 +4319,31 @@ function renderBkfDay(silent){
     <div class="pul-stat"><div class="pul-stat-val" style="color:var(--amber)">${coperti}</div><div class="pul-stat-lbl">Coperti</div></div>
     <div class="pul-stat"><div class="pul-stat-val" style="color:var(--text-muted)">${d.noCol}</div><div class="pul-stat-lbl">No col.</div></div>`;
   updateKpiFromBkf(d);
-  if(!silent){const _bts=localStorage.getItem('qm_ts_bkfTs');LS.set('bkfData',{data:bkfData,activeDay:bkfActiveDay,ts:_bts?parseInt(_bts):Date.now()});}
+  if(!silent){const _bts=localStorage.getItem('qm_ts_bkfTs');LS.set('bkfData',{data:bkfData,activeDay:bkfActiveDay,ts:_bts?parseInt(_bts):Date.now()});bkfSaveMonthlyHistory();}
   bkfRenderChart();
   bkfRenderNotes();
   renderOvBkfChart();
+}
+function bkfSaveMonthlyHistory(){
+  if(!bkfData||!bkfData.length)return;
+  const HIST_KEY='qm_bkf_monthly_history';
+  let hist={};
+  try{hist=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');}catch(e){}
+  const today=new Date();today.setHours(0,0,0,0);
+  bkfData.forEach(d=>{
+    if(!d.data)return;
+    const p=d.data.split('/');if(p.length!==3)return;
+    const dt=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]),12,0,0);
+    dt.setHours(0,0,0,0);if(dt>today)return;
+    const ym=p[2]+'-'+p[1].padStart(2,'0');
+    if(!hist[ym])hist[ym]={bb:0,ro:0,days:0};
+    hist[ym].bb+=(d.adulti||0)+(d.bambini||0);
+    hist[ym].ro+=(d.noCol||0);
+    hist[ym].days++;
+  });
+  const json=JSON.stringify(hist);
+  try{localStorage.setItem(HIST_KEY,json);}catch(e){}
+  kvSet(HIST_KEY,json).catch(()=>{});
 }
 function renderOvBkfChart(){
   const el=document.getElementById('ov-bkf-chart');if(!el)return;

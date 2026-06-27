@@ -131,6 +131,8 @@ const MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','d
 let bkfData=null;
 let currentIdx=0;
 let bkfGroups=[];
+let _bkfHistory={};
+const BKF_HIST_KEY='qm_bkf_monthly_history';
 
 // Orologio e data
 function tick(){
@@ -276,22 +278,10 @@ function renderDay(){
 }
 
 function renderMonthlyStats(){
-  if(!bkfData||!bkfData.length)return'';
+  const stats=_bkfHistory||{};
+  if(!Object.keys(stats).length)return'';
   const today=new Date();today.setHours(0,0,0,0);
   const curYM=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
-
-  // Aggrega per mese
-  const stats={};
-  bkfData.forEach(d=>{
-    const dt=parseDate(d.data);if(!dt)return;
-    dt.setHours(0,0,0,0);
-    if(dt>today)return; // escludi giorni futuri
-    const ym=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
-    if(!stats[ym])stats[ym]={bb:0,ro:0,days:0};
-    stats[ym].bb+=(d.adulti||0)+(d.bambini||0);
-    stats[ym].ro+=(d.noCol||0);
-    stats[ym].days++;
-  });
   const months=Object.keys(stats).sort((a,b)=>b.localeCompare(a));
   if(!months.length)return'';
 
@@ -371,8 +361,36 @@ function renderChart(){
   svg+='</svg>';
   el.innerHTML=svg;
 }
+function bkfMergeHistory(){
+  if(!bkfData||!bkfData.length)return;
+  const today=new Date();today.setHours(0,0,0,0);
+  const patch={};
+  bkfData.forEach(d=>{
+    if(!d.data)return;
+    const p=d.data.split('/');if(p.length!==3)return;
+    const dt=new Date(parseInt(p[2]),parseInt(p[1])-1,parseInt(p[0]),12,0,0);
+    dt.setHours(0,0,0,0);if(dt>today)return;
+    const ym=p[2]+'-'+p[1].padStart(2,'0');
+    if(!patch[ym])patch[ym]={bb:0,ro:0,days:0};
+    patch[ym].bb+=(d.adulti||0)+(d.bambini||0);
+    patch[ym].ro+=(d.noCol||0);
+    patch[ym].days++;
+  });
+  // Aggiorna history con i mesi del report corrente; mantieni gli altri invariati
+  Object.assign(_bkfHistory, patch);
+  const json=JSON.stringify(_bkfHistory);
+  try{localStorage.setItem(BKF_HIST_KEY,json);}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:BKF_HIST_KEY,value:json})}).catch(()=>{});
+}
+
 async function loadAll(){
   document.getElementById('mainContent').innerHTML=`<div class="loading"><div class="spinner"></div>Caricamento...</div>`;
+  // Carica history
+  try{
+    const rh=await fetch(PROXY+'/kv/get?key='+BKF_HIST_KEY);
+    const jh=await rh.json();
+    if(jh.value){_bkfHistory=JSON.parse(jh.value);try{localStorage.setItem(BKF_HIST_KEY,jh.value);}catch(e){}}
+  }catch(e){}
   try{
     const res=await fetch(PROXY+'/kv/get?key=qm_bkfData');
     const json=await res.json();
@@ -392,11 +410,13 @@ async function loadAll(){
     document.getElementById('mainContent').innerHTML='<div class="no-data">Nessun dato disponibile.<br>Carica il report pasti dalla dashboard.</div>';
     return;
   }
+  bkfMergeHistory();
   try{const saved=sessionStorage.getItem('bkf_day_idx');currentIdx=saved!==null?Math.min(parseInt(saved),bkfData.length-1):findTodayIdx();}catch(e){currentIdx=findTodayIdx();}
   renderDay();
 }
 
 // Carica prima da cache locale
+try{const hc=localStorage.getItem(BKF_HIST_KEY);if(hc)_bkfHistory=JSON.parse(hc);}catch(e){}
 try{
   const gc=localStorage.getItem('bkf_groups_cache');
   if(gc)bkfGroups=JSON.parse(gc);
@@ -404,6 +424,7 @@ try{
 try{
   const c=localStorage.getItem('bkf_cache');
   if(c){const saved=JSON.parse(c);bkfData=saved.data||[];bkfData._ts=saved.ts||null;
+    bkfMergeHistory();
     try{const si=sessionStorage.getItem('bkf_day_idx');currentIdx=si!==null?Math.min(parseInt(si),bkfData.length-1):findTodayIdx();}catch(e){currentIdx=findTodayIdx();}
     renderDay();}
 }catch(e){}
