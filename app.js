@@ -1857,7 +1857,7 @@ const LS={
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr',
       'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar','inv_orders',
-      'tp_seen_until','hkp_config'];
+      'tp_seen_until','hkp_config','ddt'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
       try{
@@ -1907,6 +1907,9 @@ const LS={
           // Per hkp_config: aggiorna URL foglio/script HKP
           if(k==='hkp_config'){
             try{hkpRestoreConfig();}catch(e){}
+          }
+          if(k==='ddt'){
+            try{if(document.getElementById('view-inventario')?.classList.contains('active')){ddtRenderSpese();ddtRenderList();}}catch(e){}
           }
           // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
           if(k==='hk_soul'||k==='hk_bout'||k==='piano'){
@@ -5361,7 +5364,7 @@ function invSetWh(wh,btn){
 }
 function invSetTab(tab){
   _invTab=tab;
-  ['stock','moves','analysis','catalog','orders'].forEach(t=>{
+  ['stock','moves','analysis','catalog','orders','spese','ddt'].forEach(t=>{
     const el=document.getElementById('invTab-'+t);
     if(!el)return;
     el.style.borderBottomColor=t===tab?'var(--accent)':'transparent';
@@ -5447,6 +5450,8 @@ function invRender(){
     }catch(e){}
     invRenderOrders();
   })();
+  ddtRenderSpese();
+  ddtRenderList();
 }
 function invRenderStock(catalog,moves){
   const el=document.getElementById('inv-stock-view');
@@ -7099,4 +7104,337 @@ function revExpReset(p){
   document.getElementById('revExpError-'+p).style.display='none';
   try{localStorage.removeItem('qm_rev_exp_'+p);}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_exp_'+p,value:''})}).catch(()=>{});}catch(e){}
+}
+
+// §§ DDT FORNITORI — upload DDT, spese per fornitore/reparto, storico
+const DDT_KEY='qm_ddt';
+const DDT_FORNITORI={
+  DECA:      {reparto:'hk', rLabel:'Housekeeping', color:'#dbeafe', fg:'#1d4ed8'},
+  SDM:       {reparto:'bkf', rLabel:'Breakfast',   color:'#dcfce7', fg:'#166534'},
+  MARR:      {reparto:'bkf', rLabel:'Breakfast',   color:'#fef3c7', fg:'#92400e'},
+  Cozzolino: {reparto:'bkf', rLabel:'Breakfast',   color:'#fce7f3', fg:'#9d174d'},
+};
+const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+let _ddtMonth='';
+let _ddtFilter='tutti';
+let _ddtSearch='';
+let _ddtUploadModal=null;
+let _ddtParsedData=null;
+let _ddtUploadFornitore='';
+let _ddtUploadHotel='sa';
+
+function ddtGet(){try{return JSON.parse(localStorage.getItem(DDT_KEY)||'[]');}catch(e){return[];}}
+function ddtSave(arr){
+  const json=JSON.stringify(arr);
+  try{localStorage.setItem(DDT_KEY,json);}catch(e){}
+  kvSet(DDT_KEY,json).catch(()=>{});
+}
+function ddtCurMonth(){
+  if(!_ddtMonth){const n=new Date();_ddtMonth=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
+  return _ddtMonth;
+}
+function ddtNavMonth(dir){
+  const[y,m]=ddtCurMonth().split('-').map(Number);
+  const d=new Date(y,m-1+dir,1);
+  _ddtMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  ddtRenderSpese();ddtRenderList();
+}
+function ddtMonLabel(ym){const[y,m]=ym.split('-').map(Number);return DDT_MON[m-1]+' '+y;}
+function ddtFmt(n){if(!n&&n!==0)return'—';return'€ '+Number(n).toFixed(2).replace('.',',');}
+function ddtYM(data){
+  // "DD/MM/YYYY" → "YYYY-MM"
+  const p=(data||'').split('/');
+  if(p.length!==3)return'';
+  return p[2]+'-'+p[1].padStart(2,'0');
+}
+
+// ── TAB SPESE ─────────────────────────────────────────────────────────────────
+function ddtRenderSpese(){
+  const view=document.getElementById('inv-spese-view');if(!view)return;
+  const mon=ddtCurMonth();
+  const all=ddtGet();
+  const monDdt=all.filter(d=>ddtYM(d.data)===mon);
+  const totale=monDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
+  const hkTot=monDdt.filter(d=>d.reparto==='hk').reduce((s,d)=>s+(d.totale_ordine||0),0);
+  const bkfTot=monDdt.filter(d=>d.reparto==='bkf').reduce((s,d)=>s+(d.totale_ordine||0),0);
+
+  const kpi=(label,val,sub)=>`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:14px 18px;flex:1;min-width:130px;">
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">${label}</div>
+    <div style="font-size:var(--fs-lg);font-weight:800;color:var(--text);">${val}</div>
+    ${sub?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">${sub}</div>`:''}
+  </div>`;
+
+  let h=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <button onclick="ddtNavMonth(-1)" style="width:32px;height:32px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:16px;line-height:1;">‹</button>
+    <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text);flex:1;text-align:center;">${ddtMonLabel(mon)}</span>
+    <button onclick="ddtNavMonth(1)" style="width:32px;height:32px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:16px;line-height:1;">›</button>
+  </div>`;
+  h+=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+    ${kpi('Totale mese',ddtFmt(totale),monDdt.length+' DDT')}
+    ${kpi('Housekeeping',ddtFmt(hkTot),'DECA')}
+    ${kpi('Breakfast',ddtFmt(bkfTot),'SDM · MARR · Cozzolino')}
+  </div>`;
+
+  // Per-fornitore
+  h+=`<div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);margin-bottom:10px;">Per fornitore — ${ddtMonLabel(mon)}</div>`;
+  h+=`<div style="display:flex;flex-direction:column;gap:10px;max-width:520px;margin-bottom:24px;">`;
+  Object.entries(DDT_FORNITORI).forEach(([nome,conf])=>{
+    const fDdt=monDdt.filter(d=>d.fornitore===nome);
+    const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
+    const artMap={};
+    fDdt.forEach(d=>(d.articoli||[]).forEach(a=>{
+      const k=a.descrizione||'';if(!k)return;
+      if(!artMap[k])artMap[k]={tot:0,qta:0,unita:a.unita||''};
+      artMap[k].tot+=(a.totale||0);artMap[k].qta+=(a.qta||0);
+    }));
+    const top=Object.entries(artMap).sort((a,b)=>b[1].tot-a[1].tot).slice(0,4);
+    const rBadge=`<span style="background:${conf.color};color:${conf.fg};padding:2px 7px;border-radius:10px;font-size:var(--fs-xxs);font-weight:700;">${conf.rLabel}</span>`;
+    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:14px 16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${top.length?'10px':'0'};">
+        <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:var(--fs-sm);font-weight:700;">${nome}</span>${rBadge}</div>
+        <span style="font-size:var(--fs-sm);font-weight:800;color:${fTot?'var(--text)':'var(--text-dim)'};">${ddtFmt(fTot)}</span>
+      </div>`;
+    if(top.length){
+      h+=`<div style="border-top:1px solid var(--border-light);padding-top:8px;">`;
+      top.forEach(([desc,info])=>h+=`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:var(--fs-xs);">
+        <span style="color:var(--text-dim);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-right:12px;">${desc}</span>
+        <span style="font-weight:600;white-space:nowrap;">${ddtFmt(info.tot)}</span></div>`);
+      if(Object.keys(artMap).length>4)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">+ altri ${Object.keys(artMap).length-4} articoli</div>`;
+      h+=`</div>`;
+    }else{h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);">Nessun DDT in questo mese</div>`;}
+    h+=`</div>`;
+  });
+  h+=`</div>`;
+
+  // Storico 12 mesi
+  const now=new Date();
+  const months=[];
+  for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
+  const byMon={};months.forEach(m=>{byMon[m]={tot:0,hk:0,bkf:0};});
+  all.forEach(d=>{const ym=ddtYM(d.data);if(!byMon[ym])return;byMon[ym].tot+=(d.totale_ordine||0);if(d.reparto==='hk')byMon[ym].hk+=(d.totale_ordine||0);else byMon[ym].bkf+=(d.totale_ordine||0);});
+  h+=`<div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);margin-bottom:10px;">Storico 12 mesi</div>
+  <div style="overflow-x:auto;max-width:520px;"><table style="border-collapse:collapse;width:100%;">
+  <thead><tr>
+    <th style="text-align:left;padding:6px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border-light);">Mese</th>
+    <th style="text-align:right;padding:6px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border-light);">HK</th>
+    <th style="text-align:right;padding:6px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border-light);">BKF</th>
+    <th style="text-align:right;padding:6px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border-light);">Totale</th>
+  </tr></thead><tbody>`;
+  [...months].reverse().forEach(ym=>{
+    const r=byMon[ym];const isCur=ym===mon;
+    h+=`<tr style="background:${isCur?'var(--accent-bg)':''};">
+      <td style="padding:6px 10px;font-size:var(--fs-xs);font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${ddtMonLabel(ym)}</td>
+      <td style="padding:6px 10px;font-size:var(--fs-xs);text-align:right;color:var(--text-dim);">${r.hk?ddtFmt(r.hk):'—'}</td>
+      <td style="padding:6px 10px;font-size:var(--fs-xs);text-align:right;color:var(--text-dim);">${r.bkf?ddtFmt(r.bkf):'—'}</td>
+      <td style="padding:6px 10px;font-size:var(--fs-xs);text-align:right;font-weight:${r.tot?700:400};color:${r.tot?'var(--text)':'var(--text-dim)'};">${r.tot?ddtFmt(r.tot):'—'}</td>
+    </tr>`;
+  });
+  h+=`</tbody></table></div>`;
+  view.innerHTML=h;
+}
+
+// ── TAB DDT (lista + upload) ───────────────────────────────────────────────────
+function ddtRenderList(){
+  const view=document.getElementById('inv-ddt-view');if(!view)return;
+  const all=ddtGet().sort((a,b)=>b.ts-a.ts);
+  const filtered=all.filter(d=>{
+    if(_ddtFilter!=='tutti'&&d.fornitore!==_ddtFilter)return false;
+    if(_ddtSearch){
+      const q=_ddtSearch.toLowerCase();
+      const inArticoli=(d.articoli||[]).some(a=>(a.descrizione||'').toLowerCase().includes(q));
+      if(!inArticoli&&!(d.fornitore||'').toLowerCase().includes(q)&&!(d.numero_ddt||'').toLowerCase().includes(q))return false;
+    }
+    return true;
+  });
+  const fBtn=(val,label)=>{const a=_ddtFilter===val;return`<button onclick="_ddtFilter='${val}';ddtRenderList()" style="font-size:var(--fs-xxs);padding:4px 12px;border-radius:20px;border:1px solid ${a?'var(--accent)':'var(--border)'};background:${a?'var(--accent-bg)':'var(--surface)'};color:${a?'var(--accent)':'var(--text-dim)'};cursor:pointer;font-weight:${a?700:400};">${label}</button>`;};
+  let h=`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      ${fBtn('tutti','Tutti')}${fBtn('DECA','DECA')}${fBtn('SDM','SDM')}${fBtn('MARR','MARR')}${fBtn('Cozzolino','Cozzolino')}
+    </div>
+    <button onclick="ddtOpenUploadModal()" style="font-size:var(--fs-xxs);padding:5px 14px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:600;">📷 Carica DDT</button>
+  </div>
+  <div style="margin-bottom:12px;">
+    <input type="text" placeholder="Cerca articolo, fornitore, n° DDT…" oninput="_ddtSearch=this.value;ddtRenderList()" value="${_ddtSearch}" style="width:100%;max-width:340px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);background:var(--surface);">
+  </div>`;
+  if(!filtered.length){
+    h+=`<div style="text-align:center;padding:40px;color:var(--text-dim);">${all.length?'Nessun risultato.':'Nessun DDT. Usa 📷 Carica DDT per iniziare.'}</div>`;
+  }else{
+    h+=`<div style="display:flex;flex-direction:column;gap:10px;max-width:560px;">`;
+    filtered.forEach(d=>{
+      const conf=DDT_FORNITORI[d.fornitore]||{color:'#f5f5f5',fg:'#333',rLabel:d.reparto||''};
+      const rBadge=`<span style="background:${conf.color};color:${conf.fg};padding:2px 7px;border-radius:10px;font-size:var(--fs-xxs);font-weight:700;">${conf.rLabel}</span>`;
+      const hBadge=`<span style="background:var(--accent-bg);color:var(--accent);padding:2px 7px;border-radius:10px;font-size:var(--fs-xxs);font-weight:700;">${d.hotel==='ar'?'Art Resort':'SoulArt'}</span>`;
+      const artRows=(d.articoli||[]).map(a=>`<tr>
+        <td style="padding:5px 10px;font-size:var(--fs-xs);">${a.descrizione||''}</td>
+        <td style="padding:5px 10px;font-size:var(--fs-xs);text-align:right;color:var(--text-dim);white-space:nowrap;">${a.qta!=null?a.qta:''} ${a.unita||''}</td>
+        <td style="padding:5px 10px;font-size:var(--fs-xs);text-align:right;color:var(--text-dim);">${a.prezzo_unit!=null?'€ '+Number(a.prezzo_unit).toFixed(2).replace('.',','):''}</td>
+        <td style="padding:5px 10px;font-size:var(--fs-xs);text-align:right;font-weight:600;">${a.totale!=null?'€ '+Number(a.totale).toFixed(2).replace('.',','):''}</td>
+      </tr>`).join('');
+      h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:12px;overflow:hidden;">
+        <div style="padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+              <span style="font-weight:700;font-size:var(--fs-sm);">${d.fornitore||'—'}</span>${rBadge}${hBadge}
+            </div>
+            <div style="font-size:var(--fs-xs);color:var(--text-dim);">${d.data||''}${d.numero_ddt?' · DDT '+d.numero_ddt:''} · ${(d.articoli||[]).length} art.</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:var(--fs-sm);font-weight:800;">${ddtFmt(d.totale_ordine)}</div>
+            <button onclick="ddtDelete('${d.id}')" style="font-size:var(--fs-xxs);padding:3px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;margin-top:4px;">🗑</button>
+          </div>
+        </div>
+        ${artRows?`<div style="border-top:1px solid var(--border-light);">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead><tr style="background:var(--surface2);">
+              <th style="padding:5px 10px;font-size:var(--fs-xxs);text-align:left;color:var(--text-dim);">Articolo</th>
+              <th style="padding:5px 10px;font-size:var(--fs-xxs);text-align:right;color:var(--text-dim);">Qtà</th>
+              <th style="padding:5px 10px;font-size:var(--fs-xxs);text-align:right;color:var(--text-dim);">P.Unit</th>
+              <th style="padding:5px 10px;font-size:var(--fs-xxs);text-align:right;color:var(--text-dim);">Totale</th>
+            </tr></thead>
+            <tbody>${artRows}</tbody>
+          </table>
+        </div>`:''}
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  view.innerHTML=h;
+}
+
+// ── UPLOAD MODAL ───────────────────────────────────────────────────────────────
+function ddtOpenUploadModal(){
+  if(_ddtUploadModal)_ddtUploadModal.remove();
+  const m=document.createElement('div');
+  m.id='ddtModal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+  m.onclick=e=>{if(e.target===m)ddtCloseModal();};
+  m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:24px;max-width:500px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;margin:auto;">
+    <button onclick="ddtCloseModal()" style="position:absolute;top:14px;right:14px;background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;">✕</button>
+    <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:16px;">📷 Carica DDT</div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <div style="flex:1;">
+        <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">FORNITORE</label>
+        <select id="ddt-sel-forn" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);background:var(--surface);" onchange="_ddtUploadFornitore=this.value">
+          <option value="">Seleziona…</option>
+          <option value="DECA">DECA (Housekeeping)</option>
+          <option value="SDM">SDM (Breakfast)</option>
+          <option value="MARR">MARR (Breakfast)</option>
+          <option value="Cozzolino">Cozzolino (Breakfast)</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">HOTEL</label>
+        <select id="ddt-sel-hotel" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);background:var(--surface);" onchange="_ddtUploadHotel=this.value">
+          <option value="sa">SoulArt Hotel</option>
+          <option value="ar">Art Resort</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">FOTO / PDF DDT</label>
+      <input type="file" id="ddt-file-input" accept="image/*,.pdf" capture="environment" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);background:var(--surface);" onchange="ddtHandleFileSelect(this)">
+    </div>
+    <div id="ddt-parse-status" style="display:none;padding:12px;background:var(--accent-bg);border-radius:8px;font-size:var(--fs-xs);color:var(--accent);margin-bottom:12px;">⏳ Analisi AI in corso…</div>
+    <div id="ddt-parsed-result" style="display:none;"></div>
+  </div>`;
+  document.body.appendChild(m);
+  _ddtUploadModal=m;
+}
+function ddtCloseModal(){if(_ddtUploadModal){_ddtUploadModal.remove();_ddtUploadModal=null;}_ddtParsedData=null;}
+
+async function ddtHandleFileSelect(input){
+  const file=input.files[0];if(!file)return;
+  const forn=document.getElementById('ddt-sel-forn')?.value||_ddtUploadFornitore;
+  const hotel=document.getElementById('ddt-sel-hotel')?.value||_ddtUploadHotel;
+  const status=document.getElementById('ddt-parse-status');
+  const result=document.getElementById('ddt-parsed-result');
+  if(status){status.style.display='';status.textContent='⏳ Analisi AI in corso…';status.style.background='var(--accent-bg)';status.style.color='var(--accent)';}
+  if(result)result.style.display='none';
+  try{
+    const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
+    const isPdf=file.type==='application/pdf';
+    const mediaType=isPdf?'application/pdf':(file.type||'image/jpeg');
+    const prompt=`Estrai da questo documento di trasporto (DDT) italiano i dati e restituisci SOLO JSON valido, niente altro:\n{"numero_ddt":"stringa","data":"DD/MM/YYYY","fornitore":"ragione sociale","articoli":[{"descrizione":"nome prodotto","qta":numero,"unita":"kg o lt o pz o cf etc","prezzo_unit":numero,"totale":numero}],"totale_ordine":numero}\nSe un valore non è leggibile usa null. Prezzi in EUR senza simbolo.`;
+    const body={model:'claude-sonnet-4-20250514',max_tokens:2048,messages:[{role:'user',content:[
+      isPdf?{type:'document',source:{type:'base64',media_type:mediaType,data:base64}}:{type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
+      {type:'text',text:prompt}
+    ]}]};
+    const resp=await fetch(PROXY+'/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!resp.ok)throw new Error('API '+resp.status);
+    const data=await resp.json();
+    const text=data.content?.[0]?.text||'';
+    let parsed={};
+    try{const m=text.match(/\{[\s\S]*\}/);if(m)parsed=JSON.parse(m[0]);}catch(e){throw new Error('JSON non valido');}
+    if(forn)parsed.fornitore=forn;
+    const reparto=DDT_FORNITORI[forn]?.reparto||DDT_FORNITORI[parsed.fornitore]?.reparto||'bkf';
+    _ddtParsedData={...parsed,hotel,reparto};
+    if(status)status.style.display='none';
+    ddtShowParsedResult(_ddtParsedData);
+  }catch(e){
+    if(status){status.textContent='❌ Errore: '+e.message;status.style.background='#fee2e2';status.style.color='#991b1b';}
+  }
+}
+
+function ddtShowParsedResult(d){
+  const result=document.getElementById('ddt-parsed-result');if(!result)return;
+  const inp=(val,cb,w,type,step)=>`<input ${type?'type="'+type+'"':''} ${step?'step="'+step+'"':''} value="${val!=null?val:''}" onchange="${cb}" style="width:${w||'100%'};padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);background:var(--surface);${type==='number'?'text-align:right;':''}">`;
+  const artRows=(d.articoli||[]).map((a,i)=>`<tr>
+    <td style="padding:3px 4px;">${inp(a.descrizione,'_ddtParsedData.articoli['+i+'].descrizione=this.value','130px','','')}</td>
+    <td style="padding:3px 4px;">${inp(a.qta,'_ddtParsedData.articoli['+i+'].qta=parseFloat(this.value)||0','55px','number','0.001')}</td>
+    <td style="padding:3px 4px;">${inp(a.unita,'_ddtParsedData.articoli['+i+'].unita=this.value','40px','','')}</td>
+    <td style="padding:3px 4px;">${inp(a.prezzo_unit,'_ddtParsedData.articoli['+i+'].prezzo_unit=parseFloat(this.value)||0','65px','number','0.01')}</td>
+    <td style="padding:3px 4px;">${inp(a.totale,'_ddtParsedData.articoli['+i+'].totale=parseFloat(this.value)||0','65px','number','0.01')}</td>
+    <td style="padding:3px 4px;"><button onclick="ddtRemoveArticolo(${i})" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--surface);">✕</button></td>
+  </tr>`).join('');
+  result.style.display='';
+  result.innerHTML=`<div style="border-top:1px solid var(--border-light);padding-top:14px;">
+    <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--accent);margin-bottom:10px;">✅ DDT rilevato — verifica e conferma</div>
+    <div style="display:flex;gap:10px;margin-bottom:10px;">
+      <div style="flex:1;"><label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:3px;">DATA</label>
+        <input value="${d.data||''}" onchange="_ddtParsedData.data=this.value" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);background:var(--surface);">
+      </div>
+      <div style="flex:1;"><label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:3px;">N° DDT</label>
+        <input value="${d.numero_ddt||''}" onchange="_ddtParsedData.numero_ddt=this.value" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);background:var(--surface);">
+      </div>
+      <div style="flex:1;"><label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:3px;">TOTALE €</label>
+        <input type="number" step="0.01" value="${d.totale_ordine!=null?d.totale_ordine:''}" onchange="_ddtParsedData.totale_ordine=parseFloat(this.value)||0" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);background:var(--surface);text-align:right;">
+      </div>
+    </div>
+    <div style="overflow-x:auto;margin-bottom:10px;">
+      <table style="border-collapse:collapse;font-size:var(--fs-xs);">
+        <thead><tr style="background:var(--surface2);">
+          <th style="padding:5px 4px;text-align:left;font-size:var(--fs-xxs);color:var(--text-dim);min-width:130px;">Descrizione</th>
+          <th style="padding:5px 4px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);">Qtà</th>
+          <th style="padding:5px 4px;text-align:center;font-size:var(--fs-xxs);color:var(--text-dim);">UM</th>
+          <th style="padding:5px 4px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);">P.Unit</th>
+          <th style="padding:5px 4px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);">Totale</th>
+          <th></th>
+        </tr></thead>
+        <tbody>${artRows}</tbody>
+      </table>
+    </div>
+    <button onclick="ddtAddArticolo()" style="font-size:var(--fs-xxs);padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;margin-bottom:12px;">+ Aggiungi riga</button>
+    <button onclick="ddtConfirmSave()" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;">💾 Salva DDT</button>
+  </div>`;
+}
+function ddtRemoveArticolo(i){if(!_ddtParsedData)return;_ddtParsedData.articoli.splice(i,1);ddtShowParsedResult(_ddtParsedData);}
+function ddtAddArticolo(){if(!_ddtParsedData)return;(_ddtParsedData.articoli=_ddtParsedData.articoli||[]).push({descrizione:'',qta:null,unita:'',prezzo_unit:null,totale:null});ddtShowParsedResult(_ddtParsedData);}
+
+function ddtConfirmSave(){
+  if(!_ddtParsedData)return;
+  const arr=ddtGet();
+  arr.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6),ts:Date.now(),
+    data:_ddtParsedData.data||'',fornitore:_ddtParsedData.fornitore||'',
+    reparto:_ddtParsedData.reparto||'bkf',hotel:_ddtParsedData.hotel||'sa',
+    numero_ddt:_ddtParsedData.numero_ddt||'',
+    articoli:_ddtParsedData.articoli||[],
+    totale_ordine:_ddtParsedData.totale_ordine||0});
+  ddtSave(arr);
+  ddtCloseModal();
+  ddtRenderList();ddtRenderSpese();
+}
+function ddtDelete(id){
+  if(!confirm('Eliminare questo DDT?'))return;
+  ddtSave(ddtGet().filter(d=>d.id!==id));
+  ddtRenderList();ddtRenderSpese();
 }

@@ -1500,12 +1500,16 @@
           <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-analysis" onclick="invSetTab('analysis')">📊 Analisi</div>
           <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-catalog" onclick="invSetTab('catalog')">🗂 Catalogo</div>
           <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-orders" onclick="invSetTab('orders')">📋 Ordini</div>
+          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-spese" onclick="invSetTab('spese')">📊 Spese</div>
+          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-ddt" onclick="invSetTab('ddt')">🧾 DDT</div>
         </div>
         <div id="inv-stock-view"></div>
         <div id="inv-moves-view" style="display:none;"></div>
         <div id="inv-analysis-view" style="display:none;"></div>
         <div id="inv-catalog-view" style="display:none;"></div>
         <div id="inv-orders-view" style="display:none;"></div>
+        <div id="inv-spese-view" style="display:none;"></div>
+        <div id="inv-ddt-view" style="display:none;"></div>
       </div>
       <div class="view" id="view-turni-pref">
         <div id="turni-pref-content"></div>
@@ -1533,7 +1537,7 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=391-20260626"></script>
+<script src="app.js?v=392-20260627"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
