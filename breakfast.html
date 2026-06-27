@@ -70,9 +70,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .update-ts-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;}
 
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#1c3a5e;border-top:2px solid #c9952f;display:flex;z-index:20;}
-.bottom-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 10px;cursor:pointer;font-size:10px;font-weight:600;color:rgba(255,255,255,.5);gap:3px;letter-spacing:.03em;text-transform:uppercase;}
+.bottom-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 10px;cursor:pointer;font-size:10px;font-weight:600;color:rgba(255,255,255,.45);gap:3px;letter-spacing:.03em;text-transform:uppercase;}
 .bottom-nav-item.active{color:#c9952f;}
-.bottom-nav-item span{font-size:18px;}
+.bottom-nav-item span{font-size:20px;display:block;filter:brightness(0) invert(1);opacity:.5;}
+.bottom-nav-item.active span{filter:none;opacity:1;}
 body{padding-bottom:62px;}
 </style>
 </head>
