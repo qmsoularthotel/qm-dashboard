@@ -144,6 +144,7 @@
 
       <div class="nav-section">Strumenti</div>
       <div class="nav-item" onclick="setView('inventario',this);invRender()"><span class="nav-icon"><img src="img/icons/inventari_e_ordini.png" class="nav-icon-img"></span>Inventari e Ordini</div>
+      <div class="nav-item" onclick="setView('spese',this)"><span class="nav-icon">💶</span>Spese Fornitori</div>
       <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon"><img src="img/icons/mini_app.png" class="nav-icon-img"></span>Mini App</div>
       <div class="nav-section" style="display:flex;align-items:center;justify-content:space-between;">
         <span>Upload Center</span>
@@ -1500,15 +1501,19 @@
           <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-analysis" onclick="invSetTab('analysis')">📊 Analisi</div>
           <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-catalog" onclick="invSetTab('catalog')">🗂 Catalogo</div>
           <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-orders" onclick="invSetTab('orders')">📋 Ordini</div>
-          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-spese" onclick="invSetTab('spese')">📊 Spese</div>
-          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-ddt" onclick="invSetTab('ddt')">🧾 DDT</div>
         </div>
         <div id="inv-stock-view"></div>
         <div id="inv-moves-view" style="display:none;"></div>
         <div id="inv-analysis-view" style="display:none;"></div>
         <div id="inv-catalog-view" style="display:none;"></div>
         <div id="inv-orders-view" style="display:none;"></div>
-        <div id="inv-spese-view" style="display:none;"></div>
+      </div>
+      <div class="view" id="view-spese">
+        <div style="display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid var(--border-light);">
+          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--accent);" id="speseTab-spese" onclick="ddtSetTab('spese')">📊 Spese</div>
+          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="speseTab-ddt" onclick="ddtSetTab('ddt')">🧾 DDT</div>
+        </div>
+        <div id="inv-spese-view"></div>
         <div id="inv-ddt-view" style="display:none;"></div>
       </div>
       <div class="view" id="view-turni-pref">
@@ -1537,7 +1542,7 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=392-20260627"></script>
+<script src="app.js?v=393-20260627"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

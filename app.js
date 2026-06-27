@@ -368,7 +368,7 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventari Detersivi','turni-pref':'Preferenze Turni'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventari Detersivi',spese:'Spese Fornitori','turni-pref':'Preferenze Turni'};
 const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Sicurezza',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
@@ -999,6 +999,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id.startsWith('recensioni-exp-')){if(!expGroupOpen){expGroupOpen=true;document.getElementById('expGroupToggle').classList.add('open');document.getElementById('expGroupItems').classList.add('open');}}
   try{localStorage.setItem('qm_last_view',id);}catch(e){}
   if(id==='inventario'){try{invRender();}catch(e){}}
+  if(id==='spese'){try{ddtRenderSpese();ddtRenderList();}catch(e){}}
   if(id==='turni-pref'){try{turniPrefRender();turniPrefMarkAllSeen();}catch(e){}}
   if(id==='controllo-mattino'){try{cmLoad();}catch(e){}}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
@@ -1909,7 +1910,7 @@ const LS={
             try{hkpRestoreConfig();}catch(e){}
           }
           if(k==='ddt'){
-            try{if(document.getElementById('view-inventario')?.classList.contains('active')){ddtRenderSpese();ddtRenderList();}}catch(e){}
+            try{if(document.getElementById('view-spese')?.classList.contains('active')){ddtRenderSpese();ddtRenderList();}}catch(e){}
           }
           // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
           if(k==='hk_soul'||k==='hk_bout'||k==='piano'){
@@ -5364,7 +5365,7 @@ function invSetWh(wh,btn){
 }
 function invSetTab(tab){
   _invTab=tab;
-  ['stock','moves','analysis','catalog','orders','spese','ddt'].forEach(t=>{
+  ['stock','moves','analysis','catalog','orders'].forEach(t=>{
     const el=document.getElementById('invTab-'+t);
     if(!el)return;
     el.style.borderBottomColor=t===tab?'var(--accent)':'transparent';
@@ -5450,8 +5451,6 @@ function invRender(){
     }catch(e){}
     invRenderOrders();
   })();
-  ddtRenderSpese();
-  ddtRenderList();
 }
 function invRenderStock(catalog,moves){
   const el=document.getElementById('inv-stock-view');
@@ -7115,6 +7114,7 @@ const DDT_FORNITORI={
   Cozzolino: {reparto:'bkf', rLabel:'Breakfast',   color:'#fce7f3', fg:'#9d174d'},
 };
 const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+let _ddtTab='spese';
 let _ddtMonth='';
 let _ddtFilter='tutti';
 let _ddtSearch='';
@@ -7123,6 +7123,15 @@ let _ddtParsedData=null;
 let _ddtUploadFornitore='';
 let _ddtUploadHotel='sa';
 
+function ddtSetTab(tab){
+  _ddtTab=tab;
+  ['spese','ddt'].forEach(t=>{
+    const el=document.getElementById('speseTab-'+t);
+    if(el){el.style.borderBottomColor=t===tab?'var(--accent)':'transparent';el.style.color=t===tab?'var(--accent)':'var(--text-dim)';}
+    const view=document.getElementById('inv-'+t+'-view');
+    if(view)view.style.display=t===tab?'':'none';
+  });
+}
 function ddtGet(){try{return JSON.parse(localStorage.getItem(DDT_KEY)||'[]');}catch(e){return[];}}
 function ddtSave(arr){
   const json=JSON.stringify(arr);
