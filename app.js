@@ -1873,7 +1873,7 @@ const LS={
               const localTs=parseInt(localStorage.getItem(tsKey)||'0');
               if(localTs){
                 const cloudObj=JSON.parse(json.value);
-                if(!cloudObj.ts||localTs>cloudObj.ts)return; // locale più recente: tieni locale
+                if(cloudObj.ts && localTs>cloudObj.ts)return; // locale più recente: tieni locale
                 // cloud più recente: aggiorna ts in localStorage e visual
                 if(cloudObj.ts){
                   localStorage.setItem(tsKey,String(cloudObj.ts));
@@ -3346,7 +3346,7 @@ function renderPulDay(silent){
   document.getElementById('pulOccPct').textContent=occPct+'%  ('+occ+'/'+CAP_CAMERE+')';
   document.getElementById('pulOccFill').style.width=occPct+'%';
   updateKpiFromPulizie(d);
-  if(!silent){const _pts=localStorage.getItem('qm_ts_pulTs');LS.set('pulData',{data:pulData,activeDay:pulActiveDay,ts:_pts?parseInt(_pts):undefined});}
+  if(!silent){const _pts=localStorage.getItem('qm_ts_pulTs');LS.set('pulData',{data:pulData,activeDay:pulActiveDay,ts:_pts?parseInt(_pts):Date.now()});}
 }
 function updateKpiFromPulizie(d){
   const occ=d.arrivi - d.partenze; // camere nette in entrata oggi
@@ -4319,7 +4319,7 @@ function renderBkfDay(silent){
     <div class="pul-stat"><div class="pul-stat-val" style="color:var(--amber)">${coperti}</div><div class="pul-stat-lbl">Coperti</div></div>
     <div class="pul-stat"><div class="pul-stat-val" style="color:var(--text-muted)">${d.noCol}</div><div class="pul-stat-lbl">No col.</div></div>`;
   updateKpiFromBkf(d);
-  if(!silent){const _bts=localStorage.getItem('qm_ts_bkfTs');LS.set('bkfData',{data:bkfData,activeDay:bkfActiveDay,ts:_bts?parseInt(_bts):undefined});}
+  if(!silent){const _bts=localStorage.getItem('qm_ts_bkfTs');LS.set('bkfData',{data:bkfData,activeDay:bkfActiveDay,ts:_bts?parseInt(_bts):Date.now()});}
   bkfRenderChart();
   bkfRenderNotes();
   renderOvBkfChart();
