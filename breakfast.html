@@ -267,9 +267,79 @@ function renderDay(){
     html+=`</div>`;
   }
 
+  // Storico mensile
+  html+=renderMonthlyStats();
+
   html+=`<div class="refresh-row"><a href="javascript:loadAll()">↻ Aggiorna ora</a></div>`;
   document.getElementById('mainContent').innerHTML=html;
   renderChart();
+}
+
+function renderMonthlyStats(){
+  if(!bkfData||!bkfData.length)return'';
+  const today=new Date();today.setHours(0,0,0,0);
+  const curYM=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
+
+  // Aggrega per mese
+  const stats={};
+  bkfData.forEach(d=>{
+    const dt=parseDate(d.data);if(!dt)return;
+    dt.setHours(0,0,0,0);
+    if(dt>today)return; // escludi giorni futuri
+    const ym=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+    if(!stats[ym])stats[ym]={bb:0,ro:0,days:0};
+    stats[ym].bb+=(d.adulti||0)+(d.bambini||0);
+    stats[ym].ro+=(d.noCol||0);
+    stats[ym].days++;
+  });
+  const months=Object.keys(stats).sort((a,b)=>b.localeCompare(a));
+  if(!months.length)return'';
+
+  const MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  const fmtYM=ym=>{const[y,m]=ym.split('-').map(Number);return MON[m-1]+' '+y;};
+
+  // Card mese corrente
+  const cur=stats[curYM];
+  let h=`<div class="section-title">Riepilogo mese</div>`;
+  if(cur){
+    h+=`<div style="background:var(--surface);border-radius:12px;border:2px solid var(--accent);padding:14px 16px;margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;">${fmtYM(curYM)} — ${cur.days} giorni</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="text-align:center;">
+          <div style="font-size:32px;font-weight:800;color:var(--accent);line-height:1;">${cur.bb}</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:3px;">BB totali</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:32px;font-weight:800;color:var(--text-dim);line-height:1;">${cur.ro}</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:3px;">RO totali</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Tabella mesi precedenti
+  const prev=months.filter(m=>m!==curYM);
+  if(prev.length){
+    h+=`<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:10px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr style="background:var(--surface2);">
+          <th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--text-dim);text-align:left;">Mese</th>
+          <th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--text-dim);text-align:right;">BB</th>
+          <th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--text-dim);text-align:right;">RO</th>
+          <th style="padding:8px 12px;font-size:10px;font-weight:700;color:var(--text-dim);text-align:right;">Tot.</th>
+        </tr></thead><tbody>`;
+    prev.forEach((ym,i)=>{
+      const r=stats[ym];
+      h+=`<tr style="${i>0?'border-top:1px solid var(--border);':''}">
+        <td style="padding:9px 12px;font-size:12px;font-weight:600;">${fmtYM(ym)}</td>
+        <td style="padding:9px 12px;font-size:13px;font-weight:700;text-align:right;color:var(--accent);">${r.bb}</td>
+        <td style="padding:9px 12px;font-size:13px;text-align:right;color:var(--text-dim);">${r.ro}</td>
+        <td style="padding:9px 12px;font-size:13px;font-weight:700;text-align:right;">${r.bb+r.ro}</td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  }
+  return h;
 }
 
 function renderChart(){
