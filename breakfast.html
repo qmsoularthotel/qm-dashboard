@@ -289,8 +289,9 @@ function renderMonthlyStats(){
   // Aggrega per mese solo i giorni ≤ oggi
   const byMonth={};
   dayKeys.forEach(k=>{
+    if(k.length!==10)return; // ignora vecchi record formato YYYY-MM
     const dt=new Date(k+'T12:00:00');dt.setHours(0,0,0,0);
-    if(dt>today)return;
+    if(dt>=today)return; // solo giorni già passati, oggi escluso
     const ym=k.slice(0,7);
     if(!byMonth[ym])byMonth[ym]={bb:0,ro:0,days:0};
     byMonth[ym].bb+=_bkfHistory[k].bb||0;
@@ -375,7 +376,9 @@ function renderChart(){
 }
 function bkfMergeHistory(){
   if(!bkfData||!bkfData.length)return;
-  // Salva ogni giorno come YYYY-MM-DD → {bb, ro}; nessun filtro su future
+  // Rimuovi vecchi record in formato YYYY-MM (aggregati mensili, formato obsoleto)
+  Object.keys(_bkfHistory).forEach(k=>{if(k.length!==10)delete _bkfHistory[k];});
+  // Salva ogni giorno come YYYY-MM-DD → {bb, ro}
   bkfData.forEach(d=>{
     if(!d.data)return;
     const p=d.data.split('/');if(p.length!==3)return;

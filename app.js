@@ -4329,8 +4329,9 @@ function bkfSaveMonthlyHistory(){
   const HIST_KEY='qm_bkf_monthly_history';
   let hist={};
   try{hist=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');}catch(e){}
-  // Salva ogni giorno come record individuale YYYY-MM-DD → {bb, ro}
-  // Nessun filtro su date future: il report settimanale copre oggi+6gg
+  // Rimuovi vecchi record formato YYYY-MM (aggregati mensili, obsoleti)
+  Object.keys(hist).forEach(k=>{if(k.length!==10)delete hist[k];});
+  // Salva ogni giorno come YYYY-MM-DD → {bb, ro}
   bkfData.forEach(d=>{
     if(!d.data)return;
     const p=d.data.split('/');if(p.length!==3)return;
