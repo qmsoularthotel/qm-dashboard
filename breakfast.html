@@ -500,21 +500,49 @@ function ddtBkfRenderSpese(){
   const monDdt=all.filter(d=>ddtGetYM(d)===mon);
   const totale=monDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
 
+  // Calcola coperti del mese da bkfData
+  const nowD=new Date();nowD.setHours(0,0,0,0);
+  const todayMon=nowD.getFullYear()+'-'+String(nowD.getMonth()+1).padStart(2,'0');
+  const isThisMon=mon===todayMon;
+  const bkfArr=(typeof bkfData!=='undefined'&&Array.isArray(bkfData))?bkfData:[];
+  const copertiMon=bkfArr.filter(d=>{
+    if(!d.data)return false;
+    const p=d.data.split('/');if(p.length!==3)return false;
+    const ym=p[2]+'-'+p[1].padStart(2,'0');
+    if(ym!==mon)return false;
+    if(isThisMon){const dt=new Date(Number(p[2]),Number(p[1])-1,Number(p[0]));return dt<=nowD;}
+    return true;
+  }).reduce((s,d)=>s+(d.adulti||0)+(d.bambini||0),0);
+  const euroCop=copertiMon>0?(totale/copertiMon):null;
+  const copLabel=isThisMon?('al '+nowD.getDate()+'/'+String(nowD.getMonth()+1).padStart(2,'0')):'mese intero';
+
   let h=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
     <button onclick="ddtBkfNavMonth(-1)" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;">‹</button>
     <span style="font-size:16px;font-weight:700;color:var(--text);flex:1;text-align:center;">${ddtBkfMonLabel(mon)}</span>
     <button onclick="ddtBkfNavMonth(1)" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;">›</button>
   </div>`;
 
-  h+=`<div style="background:#1c3a5e;border-radius:12px;padding:16px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
-    <div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.6);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Totale ${ddtBkfMonLabel(mon)}</div>
-      <div style="font-size:26px;font-weight:800;color:#fff;white-space:nowrap;">${ddtBkfFmt(totale)}</div>
+  h+=`<div style="background:#1c3a5e;border-radius:12px;padding:16px 18px;margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${copertiMon?'12':'0'}px;">
+      <div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.6);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Totale ${ddtBkfMonLabel(mon)}</div>
+        <div style="font-size:26px;font-weight:800;color:#fff;white-space:nowrap;">${ddtBkfFmt(totale)}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:22px;font-weight:800;color:rgba(255,255,255,0.9);">${monDdt.length}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.6);">DDT</div>
+      </div>
     </div>
-    <div style="text-align:right;">
-      <div style="font-size:22px;font-weight:800;color:rgba(255,255,255,0.9);">${monDdt.length}</div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.6);">DDT</div>
-    </div>
+    ${copertiMon?`<div style="border-top:1px solid rgba(255,255,255,0.15);padding-top:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.55);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Coperti (${copLabel})</div>
+        <div style="font-size:20px;font-weight:800;color:#fff;">👥 ${copertiMon}</div>
+      </div>
+      ${euroCop!==null?`<div style="text-align:right;">
+        <div style="font-size:10px;color:rgba(255,255,255,0.55);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">€ / coperto</div>
+        <div style="font-size:20px;font-weight:800;color:#c9952f;white-space:nowrap;">€ ${euroCop.toFixed(2).replace('.',',')}</div>
+      </div>`:''}
+    </div>`:''}
   </div>`;
 
   h+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;">`;
