@@ -529,25 +529,6 @@ function ddtBkfRenderSpese(){
   });
   h+=`</div>`;
 
-  const now=new Date();
-  const months=[];
-  for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
-  const byMon={};months.forEach(m=>{byMon[m]={tot:0};});
-  all.forEach(d=>{const ym=ddtGetYM(d);if(!byMon[ym])return;byMon[ym].tot+=(d.totale_ordine||0);});
-  h+=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;">Storico 12 mesi</div>
-  <div style="overflow-x:auto;margin-bottom:22px;"><table style="border-collapse:collapse;width:100%;">
-  <thead><tr>
-    <th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border);">Mese</th>
-    <th style="text-align:right;padding:6px 10px;font-size:10px;font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border);">Totale</th>
-  </tr></thead><tbody>`;
-  [...months].reverse().forEach(ym=>{
-    const r=byMon[ym];const isCur=ym===mon;
-    h+=`<tr style="background:${isCur?'#eef4ff':''};">
-      <td style="padding:6px 10px;font-size:12px;font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${ddtBkfMonLabel(ym)}</td>
-      <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:${r.tot?600:400};color:${r.tot?'var(--text)':'var(--text-dim)'};white-space:nowrap;">${r.tot?ddtBkfFmt(r.tot):'—'}</td>
-    </tr>`;
-  });
-  h+=`</tbody></table></div>`;
 
   h+=`<div id="ddtListSection"></div>`;
   view.innerHTML=h;
@@ -599,10 +580,7 @@ function ddtBkfRenderList(){
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
             <span style="font-size:15px;font-weight:800;color:#fff;white-space:nowrap;">${ddtBkfFmt(d.totale_ordine)}</span>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <button onclick="event.stopPropagation();ddtBkfDelete('${d.id}')" style="font-size:10px;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);cursor:pointer;color:#fff;line-height:1.4;">🗑</button>
-              <span id="ddt-chev-${d.id}" style="color:rgba(255,255,255,0.8);font-size:12px;display:inline-block;transition:transform .2s;">▼</span>
-            </div>
+            <span id="ddt-chev-${d.id}" style="color:rgba(255,255,255,0.8);font-size:12px;display:inline-block;transition:transform .2s;">▼</span>
           </div>
         </div>
         <div id="ddt-body-${d.id}" style="display:none;">
@@ -615,11 +593,42 @@ function ddtBkfRenderList(){
             </tr></thead>
             <tbody>${artRows}</tbody>
           </table>
+          <div style="padding:10px 14px;border-top:1px solid var(--border);text-align:right;">
+            <button onclick="ddtBkfDelete('${d.id}')" style="font-size:12px;padding:6px 14px;border-radius:8px;background:#fff0f0;border:1px solid #fca5a5;color:#b91c1c;cursor:pointer;font-weight:600;">🗑 Elimina DDT</button>
+          </div>
         </div>
       </div>`;
     });
     h+=`</div>`;
   }
+  // Storico 12 mesi — accordion
+  const now=new Date();
+  const months=[];
+  for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
+  const byMon={};months.forEach(m=>{byMon[m]={tot:0};});
+  all.forEach(d=>{const ym=ddtGetYM(d);if(!byMon[ym])return;byMon[ym].tot+=(d.totale_ordine||0);});
+  const storId='storico-12m';
+  h+=`<div style="margin-top:16px;border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <div onclick="ddtBkfToggle('${storId}')" style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);cursor:pointer;user-select:none;">
+      <span style="font-size:13px;font-weight:700;color:var(--text);">Storico 12 mesi</span>
+      <span id="ddt-chev-${storId}" style="color:var(--text-dim);font-size:12px;display:inline-block;transition:transform .2s;">▼</span>
+    </div>
+    <div id="ddt-body-${storId}" style="display:none;">
+      <div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;">
+        <thead><tr>
+          <th style="text-align:left;padding:6px 14px;font-size:10px;font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border);">Mese</th>
+          <th style="text-align:right;padding:6px 14px;font-size:10px;font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border);">Totale</th>
+        </tr></thead><tbody>`;
+  [...months].reverse().forEach(ym=>{
+    const r=byMon[ym];
+    h+=`<tr>
+      <td style="padding:6px 14px;font-size:12px;color:var(--text);">${ddtBkfMonLabel(ym)}</td>
+      <td style="padding:6px 14px;font-size:12px;text-align:right;font-weight:${r.tot?600:400};color:${r.tot?'var(--text)':'var(--text-dim)'};white-space:nowrap;">${r.tot?ddtBkfFmt(r.tot):'—'}</td>
+    </tr>`;
+  });
+  h+=`</tbody></table></div>
+    </div>
+  </div>`;
   view.innerHTML=h;
 }
 
