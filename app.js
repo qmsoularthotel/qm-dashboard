@@ -7388,7 +7388,7 @@ async function ddtHandleFileSelect(input){
     const isPdf=file.type==='application/pdf';
     const mediaType=isPdf?'application/pdf':(file.type||'image/jpeg');
     const prompt=`Estrai da questo documento di trasporto (DDT) italiano i dati e restituisci SOLO JSON valido, niente altro:\n{"numero_ddt":"stringa","data":"DD/MM/YYYY","fornitore":"ragione sociale","articoli":[{"descrizione":"nome prodotto","qta":numero,"unita":"kg o lt o pz o cf etc","prezzo_unit":numero,"totale":numero}],"totale_ordine":numero}\nSe un valore non è leggibile usa null. Prezzi in EUR senza simbolo.`;
-    const body={model:'claude-sonnet-4-20250514',max_tokens:2048,messages:[{role:'user',content:[
+    const body={model:'claude-sonnet-4-6',max_tokens:4096,messages:[{role:'user',content:[
       isPdf?{type:'document',source:{type:'base64',media_type:mediaType,data:base64}}:{type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
       {type:'text',text:prompt}
     ]}]};
