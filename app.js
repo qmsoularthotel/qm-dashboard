@@ -7157,6 +7157,11 @@ function ddtSetTab(tab){
   });
 }
 function ddtGet(){try{return JSON.parse(localStorage.getItem(DDT_KEY)||'[]');}catch(e){return[];}}
+function ddtNormForn(s){
+  if(!s)return s;
+  const norm=s.toLowerCase().replace(/[\s.\-_]/g,'');
+  return Object.keys(DDT_FORNITORI).find(k=>norm.includes(k.toLowerCase().replace(/[\s.\-_]/g,'')))||s;
+}
 function ddtSave(arr){
   const json=JSON.stringify(arr);
   try{localStorage.setItem(DDT_KEY,json);}catch(e){}
@@ -7188,8 +7193,9 @@ function ddtRenderSpese(){
   const all=ddtGet();
   const monDdt=all.filter(d=>ddtYM(d.data)===mon);
   const totale=monDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
-  const hkTot=monDdt.filter(d=>d.reparto==='hk').reduce((s,d)=>s+(d.totale_ordine||0),0);
-  const bkfTot=monDdt.filter(d=>d.reparto==='bkf').reduce((s,d)=>s+(d.totale_ordine||0),0);
+  const _repOf=d=>DDT_FORNITORI[ddtNormForn(d.fornitore)||d.fornitore]?.reparto||d.reparto||'bkf';
+  const hkTot=monDdt.filter(d=>_repOf(d)==='hk').reduce((s,d)=>s+(d.totale_ordine||0),0);
+  const bkfTot=monDdt.filter(d=>_repOf(d)==='bkf').reduce((s,d)=>s+(d.totale_ordine||0),0);
 
   const kpi=(label,val,sub)=>`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:14px 18px;flex:1;min-width:130px;">
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">${label}</div>
@@ -7212,7 +7218,7 @@ function ddtRenderSpese(){
   h+=`<div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);margin-bottom:10px;">Per fornitore — ${ddtMonLabel(mon)}</div>`;
   h+=`<div style="display:flex;flex-direction:column;gap:10px;max-width:520px;margin-bottom:24px;">`;
   Object.entries(DDT_FORNITORI).forEach(([nome,conf])=>{
-    const fDdt=monDdt.filter(d=>d.fornitore===nome);
+    const fDdt=monDdt.filter(d=>(ddtNormForn(d.fornitore)||d.fornitore)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const artMap={};
     fDdt.forEach(d=>(d.articoli||[]).forEach(a=>{
@@ -7271,7 +7277,7 @@ function ddtRenderList(){
   const view=document.getElementById('inv-ddt-view');if(!view)return;
   const all=ddtGet().sort((a,b)=>b.ts-a.ts);
   const filtered=all.filter(d=>{
-    if(_ddtFilter!=='tutti'&&d.fornitore!==_ddtFilter)return false;
+    if(_ddtFilter!=='tutti'&&(ddtNormForn(d.fornitore)||d.fornitore)!==_ddtFilter)return false;
     if(_ddtSearch){
       const q=_ddtSearch.toLowerCase();
       const inArticoli=(d.articoli||[]).some(a=>(a.descrizione||'').toLowerCase().includes(q));
