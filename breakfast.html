@@ -312,9 +312,9 @@ function renderMonthlyStats(){
   let h=`<div id="bkf-monthly-wrap"><div class="section-title">Riepilogo mese</div>`;
   h+=`<div style="background:var(--surface);border-radius:12px;border:${isCur?'2px solid var(--accent)':'1px solid var(--border)'};padding:14px 16px;margin-bottom:10px;">`;
   h+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${days?'12px':'4px'};">`;
-  h+=`<button onclick="bkfMonthNav(-1)" style="width:32px;height:32px;border:1px solid var(--border);background:var(--surface2);border-radius:8px;cursor:pointer;font-size:18px;flex-shrink:0;">‹</button>`;
+  h+=`<button onclick="bkfMonthNav(-1)" style="border:none;background:none;cursor:pointer;font-size:16px;color:var(--text-dim);padding:4px 8px;line-height:1;flex-shrink:0;">‹</button>`;
   h+=`<span style="font-size:14px;font-weight:700;color:${isCur?'var(--accent)':'var(--text)'};">${fmtYM(viewYM)}</span>`;
-  h+=`<button onclick="bkfMonthNav(1)" style="width:32px;height:32px;border:1px solid var(--border);background:var(--surface2);border-radius:8px;cursor:pointer;font-size:18px;flex-shrink:0;${!canNext?'opacity:.25;pointer-events:none;':''}">›</button>`;
+  h+=`<button onclick="bkfMonthNav(1)" style="border:none;background:none;cursor:pointer;font-size:16px;color:var(--text-dim);padding:4px 8px;line-height:1;flex-shrink:0;${!canNext?'opacity:.2;pointer-events:none;':''}">›</button>`;
   h+=`</div>`;
   if(days){
     h+=`<div style="font-size:10px;color:var(--text-dim);text-align:center;margin-bottom:10px;">${days} giorni</div>`;
