@@ -444,12 +444,17 @@ const DDT_BKF={
   SDM:      {color:'#dcfce7',fg:'#166534'},
   MARR:     {color:'#fef3c7',fg:'#92400e'},
   Cozzolino:{color:'#fce7f3',fg:'#9d174d'},
-  Deca:     {color:'#ede9fe',fg:'#5b21b6'},
 };
 function ddtNormForn(s){
   if(!s)return s;
   const low=s.toLowerCase();
   return Object.keys(DDT_BKF).find(k=>low.includes(k.toLowerCase()))||s;
+}
+function ddtGetYM(d){
+  const ym=ddtBkfYM(d.data);
+  if(ym)return ym;
+  const dt=new Date(d.ts||Date.now());
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
 }
 const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 let _ddtMonth='';
@@ -483,7 +488,7 @@ function ddtBkfRenderSpese(){
   const view=document.getElementById('ordiniContent');if(!view)return;
   const mon=ddtBkfCurMonth();
   const all=ddtBkfGet().filter(d=>d.reparto==='bkf');
-  const monDdt=all.filter(d=>ddtBkfYM(d.data)===mon);
+  const monDdt=all.filter(d=>ddtGetYM(d)===mon);
   const totale=monDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
 
   const kpi=(label,val,sub)=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;flex:1;min-width:120px;">
@@ -507,28 +512,13 @@ function ddtBkfRenderSpese(){
   Object.entries(DDT_BKF).forEach(([nome,conf])=>{
     const fDdt=monDdt.filter(d=>(ddtNormForn(d.fornitore)||d.fornitore)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
-    const artMap={};
-    fDdt.forEach(d=>(d.articoli||[]).forEach(a=>{
-      const k=a.descrizione||'';if(!k)return;
-      if(!artMap[k])artMap[k]={tot:0,qta:0,unita:a.unita||''};
-      artMap[k].tot+=(a.totale||0);artMap[k].qta+=(a.qta||0);
-    }));
-    const top=Object.entries(artMap).sort((a,b)=>b[1].tot-a[1].tot).slice(0,4);
-    const badge=`<span style="background:${conf.color};color:${conf.fg};padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">Breakfast</span>`;
+    const badge=`<span style="background:${conf.color};color:${conf.fg};padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">${fDdt.length} DDT</span>`;
     h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${top.length?'10px':'0'};">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
         <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:15px;font-weight:700;">${nome}</span>${badge}</div>
-        <span style="font-size:15px;font-weight:800;color:${fTot?'var(--text)':'var(--text-dim)'};">${ddtBkfFmt(fTot)}</span>
-      </div>`;
-    if(top.length){
-      h+=`<div style="border-top:1px solid var(--border);padding-top:8px;">`;
-      top.forEach(([desc,info])=>h+=`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;">
-        <span style="color:var(--text-dim);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;margin-right:12px;">${desc}</span>
-        <span style="font-weight:600;">${ddtBkfFmt(info.tot)}</span></div>`);
-      if(Object.keys(artMap).length>4)h+=`<div style="font-size:10px;color:var(--text-dim);margin-top:4px;">+ altri ${Object.keys(artMap).length-4} articoli</div>`;
-      h+=`</div>`;
-    }else{h+=`<div style="font-size:11px;color:var(--text-dim);">Nessun DDT in questo mese</div>`;}
-    h+=`</div>`;
+        <span style="font-size:15px;font-weight:800;color:${fTot?'var(--text)':'var(--text-dim)'};">${fTot?ddtBkfFmt(fTot):'—'}</span>
+      </div>
+    </div>`;
   });
   h+=`</div>`;
 
@@ -575,7 +565,7 @@ function ddtBkfRenderList(){
   let h=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px;">Documenti DDT</div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
     <div style="display:flex;gap:6px;flex-wrap:wrap;">
-      ${fBtn('tutti','Tutti')}${fBtn('SDM','SDM')}${fBtn('MARR','MARR')}${fBtn('Cozzolino','Cozzolino')}${fBtn('Deca','Deca')}
+      ${fBtn('tutti','Tutti')}${fBtn('SDM','SDM')}${fBtn('MARR','MARR')}${fBtn('Cozzolino','Cozzolino')}
     </div>
     <button onclick="ddtBkfOpenUploadModal()" style="font-size:11px;padding:7px 16px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:700;">📷 Carica DDT</button>
   </div>
