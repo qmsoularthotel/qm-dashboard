@@ -7199,7 +7199,7 @@ function ddtRenderSpese(){
   const bkfTot=monDdt.filter(d=>_repOf(d)==='bkf').reduce((s,d)=>s+(d.totale_ordine||0),0);
 
   // Mese nav
-  let h=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+  let h=`<div style="max-width:520px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
     <button onclick="ddtNavMonth(-1)" style="width:32px;height:32px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">‹</button>
     <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text);flex:1;text-align:center;">${ddtMonLabel(mon)}</span>
     <button onclick="ddtNavMonth(1)" style="width:32px;height:32px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">›</button>
@@ -7242,10 +7242,12 @@ function ddtRenderSpese(){
   });
   h+=`</div>`;
 
-  // Upload button
-  h+=`<button onclick="ddtOpenUploadModal()" style="width:100%;padding:11px;border-radius:10px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:var(--fs-xs);font-weight:700;margin-bottom:16px;">📷 Carica nuovo DDT</button>`;
+  // Upload button (chip)
+  h+=`<div style="margin-bottom:14px;"><button onclick="ddtOpenUploadModal()" style="padding:7px 16px;border-radius:20px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:var(--fs-xs);font-weight:700;">📷 Carica DDT</button></div>`;
 
-  // Lista DDT (popolata da ddtRenderList)
+  h+=`</div>`; // chiude max-width wrapper
+
+  // Lista DDT (popolata da ddtRenderList, max-width gestita internamente)
   h+=`<div id="ddtListSection"></div>`;
 
   // Storico 12 mesi — accordion
@@ -7255,7 +7257,7 @@ function ddtRenderSpese(){
   const byMon={};months.forEach(m=>{byMon[m]={tot:0,hk:0,bkf:0};});
   all.forEach(d=>{const ym=ddtYM(d.data);if(!byMon[ym])return;byMon[ym].tot+=(d.totale_ordine||0);const rp=_repOf(d);if(rp==='hk')byMon[ym].hk+=(d.totale_ordine||0);else byMon[ym].bkf+=(d.totale_ordine||0);});
   const storId='storico-12m';
-  h+=`<div style="margin-top:8px;border:1px solid var(--border-light);border-radius:12px;overflow:hidden;">
+  h+=`<div style="max-width:520px;margin-top:8px;border:1px solid var(--border-light);border-radius:12px;overflow:hidden;">
     <div onclick="ddtToggle('${storId}')" style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);cursor:pointer;user-select:none;">
       <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">Storico 12 mesi</span>
       <span id="ddt-chev-${storId}" style="color:var(--text-dim);font-size:12px;display:inline-block;transition:transform .2s;">▼</span>
@@ -7309,7 +7311,7 @@ function ddtRenderList(){
   if(!filtered.length){
     h+=`<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:var(--fs-xs);">${all.length?'Nessun risultato.':'Nessun DDT ancora.'}</div>`;
   }else{
-    h+=`<div style="display:flex;flex-direction:column;gap:8px;max-width:600px;">`;
+    h+=`<div style="display:flex;flex-direction:column;gap:8px;max-width:520px;">`;
     filtered.forEach(d=>{
       const conf=DDT_FORNITORI[ddtNormForn(d.fornitore)||d.fornitore]||{color:'#f5f5f5',fg:'#333',rLabel:d.reparto||''};
       const hBadge=`<span style="background:var(--accent-bg);color:var(--accent);padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:700;">${d.hotel==='ar'?'Art Resort':'SoulArt'}</span>`;
