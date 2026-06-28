@@ -300,10 +300,10 @@ function renderMonthlyStats(){
   });
 
   const months=Object.keys(byMonth).sort((a,b)=>b.localeCompare(a));
-  if(!months.length)return'';
+  if(!months.length)return`<div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;padding-left:2px;"><span class="section-title" style="margin:0;">Riepilogo mese</span><button onclick="bkfHistUploadOpen()" style="font-size:10px;padding:4px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;color:var(--accent);font-weight:600;">📥 Storico</button></div>`;
 
   const cur=byMonth[curYM];
-  let h=`<div class="section-title">Riepilogo mese</div>`;
+  let h=`<div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;padding-left:2px;"><span class="section-title" style="margin:0;">Riepilogo mese</span><button onclick="bkfHistUploadOpen()" style="font-size:10px;padding:4px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;color:var(--accent);font-weight:600;">📥 Storico</button></div>`;
 
   if(cur){
     h+=`<div style="background:var(--surface);border-radius:12px;border:2px solid var(--accent);padding:14px 16px;margin-bottom:10px;">
@@ -388,6 +388,71 @@ function bkfMergeHistory(){
   const json=JSON.stringify(_bkfHistory);
   try{localStorage.setItem(BKF_HIST_KEY,json);}catch(e){}
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:BKF_HIST_KEY,value:json})}).catch(()=>{});
+}
+
+let _bkfHistModal=null;
+function bkfHistUploadOpen(){
+  if(_bkfHistModal)_bkfHistModal.remove();
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;';
+  m.onclick=e=>{if(e.target===m){m.remove();_bkfHistModal=null;}};
+  m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:20px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;margin:auto;">
+    <button onclick="_bkfHistModal&&(_bkfHistModal.remove(),_bkfHistModal=null)" style="position:absolute;top:12px;right:12px;background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;">✕</button>
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px;">Carica report storico</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">I giorni vengono aggiunti allo storico senza modificare i dati della settimana corrente.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#1c3a5e;color:#fff;border-radius:12px;padding:16px 10px;cursor:pointer;font-size:13px;font-weight:700;min-height:80px;">
+        <span style="font-size:28px;">📷</span>Fotocamera
+        <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="bkfHistHandleFile(this)">
+      </label>
+      <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--surface2);color:var(--text);border:2px solid var(--border);border-radius:12px;padding:16px 10px;cursor:pointer;font-size:13px;font-weight:700;min-height:80px;">
+        <span style="font-size:28px;">📄</span>Carica PDF
+        <input type="file" accept=".pdf,application/pdf" style="display:none;" onchange="bkfHistHandleFile(this)">
+      </label>
+    </div>
+    <div id="bkf-hist-status" style="display:none;padding:12px;background:#eef4ff;border-radius:8px;font-size:12px;color:var(--accent);"></div>
+  </div>`;
+  document.body.appendChild(m);
+  _bkfHistModal=m;
+}
+
+async function bkfHistHandleFile(input){
+  const file=input.files[0];if(!file)return;
+  const status=document.getElementById('bkf-hist-status');
+  if(status){status.style.display='';status.style.background='#eef4ff';status.style.color='var(--accent)';status.textContent='⏳ Analisi AI in corso…';}
+  try{
+    const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
+    const isPdf=file.type==='application/pdf';
+    const mediaType=isPdf?'application/pdf':(file.type||'image/jpeg');
+    const prompt=`Estrai i dati giornalieri di colazione da questo report e restituisci SOLO JSON valido:\n{"giorni":[{"data":"DD/MM/YYYY","adulti":numero,"bambini":numero,"noCol":numero}]}\nadulti = coperti BB adulti, bambini = coperti BB bambini (0 se non presenti), noCol = coperti senza colazione (RO). Se un valore non è leggibile usa 0.`;
+    const body={model:'claude-sonnet-4-20250514',max_tokens:4096,messages:[{role:'user',content:[
+      isPdf?{type:'document',source:{type:'base64',media_type:mediaType,data:base64}}:{type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
+      {type:'text',text:prompt}
+    ]}]};
+    const resp=await fetch(PROXY+'/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!resp.ok)throw new Error('API '+resp.status);
+    const data=await resp.json();
+    const text=data.content?.[0]?.text||'';
+    let parsed={giorni:[]};
+    try{const mm=text.match(/\{[\s\S]*\}/);if(mm)parsed=JSON.parse(mm[0]);}catch(e){throw new Error('JSON non valido');}
+    const giorni=parsed.giorni||[];
+    if(!giorni.length)throw new Error('Nessun giorno trovato nel documento');
+    // Merge in _bkfHistory (già caricato da KV in loadAll)
+    Object.keys(_bkfHistory).forEach(k=>{if(k.length!==10)delete _bkfHistory[k];});
+    giorni.forEach(d=>{
+      if(!d.data)return;
+      const p=d.data.split('/');if(p.length!==3)return;
+      const key=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+      _bkfHistory[key]={bb:(d.adulti||0)+(d.bambini||0),ro:(d.noCol||0)};
+    });
+    const json=JSON.stringify(_bkfHistory);
+    try{localStorage.setItem(BKF_HIST_KEY,json);}catch(e){}
+    fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:BKF_HIST_KEY,value:json})}).catch(()=>{});
+    if(status){status.textContent=`✅ ${giorni.length} giorni aggiunti allo storico`;}
+    setTimeout(()=>{if(_bkfHistModal){_bkfHistModal.remove();_bkfHistModal=null;}renderDay();},1500);
+  }catch(e){
+    if(status){status.style.background='#fee2e2';status.style.color='#991b1b';status.textContent='❌ '+e.message;}
+  }
 }
 
 async function loadAll(){
