@@ -484,6 +484,15 @@ function ddtBkfMonLabel(ym){const[y,m]=ym.split('-').map(Number);return DDT_MON[
 function ddtBkfFmt(n){if(!n&&n!==0)return'—';return'€ '+Number(n).toFixed(2).replace('.',',');}
 function ddtBkfYM(data){const p=(data||'').split('/');if(p.length!==3)return'';return p[2]+'-'+p[1].padStart(2,'0');}
 
+function ddtBkfToggle(id){
+  const body=document.getElementById('ddt-body-'+id);
+  const chev=document.getElementById('ddt-chev-'+id);
+  if(!body)return;
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'block';
+  if(chev)chev.style.transform=open?'':'rotate(180deg)';
+}
+
 function ddtBkfRenderSpese(){
   const view=document.getElementById('ordiniContent');if(!view)return;
   const mon=ddtBkfCurMonth();
@@ -491,59 +500,55 @@ function ddtBkfRenderSpese(){
   const monDdt=all.filter(d=>ddtGetYM(d)===mon);
   const totale=monDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
 
-  const kpi=(label,val,sub)=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;flex:1;min-width:120px;">
-    <div style="font-size:10px;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">${label}</div>
-    <div style="font-size:22px;font-weight:800;color:var(--text);">${val}</div>
-    ${sub?`<div style="font-size:10px;color:var(--text-dim);margin-top:2px;">${sub}</div>`:''}
-  </div>`;
-
   let h=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
     <button onclick="ddtBkfNavMonth(-1)" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;">‹</button>
     <span style="font-size:16px;font-weight:700;color:var(--text);flex:1;text-align:center;">${ddtBkfMonLabel(mon)}</span>
     <button onclick="ddtBkfNavMonth(1)" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;">›</button>
   </div>`;
-  h+=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
-    ${kpi('Totale mese',ddtBkfFmt(totale),monDdt.length+' DDT')}
+
+  h+=`<div style="background:#1c3a5e;border-radius:12px;padding:16px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.6);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Totale ${ddtBkfMonLabel(mon)}</div>
+      <div style="font-size:26px;font-weight:800;color:#fff;white-space:nowrap;">${ddtBkfFmt(totale)}</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:22px;font-weight:800;color:rgba(255,255,255,0.9);">${monDdt.length}</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.6);">DDT</div>
+    </div>
   </div>`;
 
-  // Per fornitore
-  h+=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;">Per fornitore — ${ddtBkfMonLabel(mon)}</div>`;
-  h+=`<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:22px;">`;
+  h+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;">`;
   Object.entries(DDT_BKF).forEach(([nome,conf])=>{
     const fDdt=monDdt.filter(d=>(ddtNormForn(d.fornitore)||d.fornitore)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
-    const badge=`<span style="background:${conf.color};color:${conf.fg};padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">${fDdt.length} DDT</span>`;
-    h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:15px;font-weight:700;">${nome}</span>${badge}</div>
-        <span style="font-size:15px;font-weight:800;color:${fTot?'var(--text)':'var(--text-dim)'};">${fTot?ddtBkfFmt(fTot):'—'}</span>
-      </div>
+    h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;">${nome}</div>
+      <div style="font-size:13px;font-weight:800;color:${fTot?'var(--accent)':'var(--text-dim)'};white-space:nowrap;">${fTot?ddtBkfFmt(fTot):'—'}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">${fDdt.length} DDT</div>
     </div>`;
   });
   h+=`</div>`;
 
-  // Storico 12 mesi
   const now=new Date();
   const months=[];
   for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
   const byMon={};months.forEach(m=>{byMon[m]={tot:0};});
-  all.forEach(d=>{const ym=ddtBkfYM(d.data);if(!byMon[ym])return;byMon[ym].tot+=(d.totale_ordine||0);});
+  all.forEach(d=>{const ym=ddtGetYM(d);if(!byMon[ym])return;byMon[ym].tot+=(d.totale_ordine||0);});
   h+=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;">Storico 12 mesi</div>
-  <div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;margin-bottom:22px;">
+  <div style="overflow-x:auto;margin-bottom:22px;"><table style="border-collapse:collapse;width:100%;">
   <thead><tr>
     <th style="text-align:left;padding:6px 10px;font-size:10px;font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border);">Mese</th>
-    <th style="text-align:right;padding:6px 10px;font-size:10px;font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border);">Totale BKF</th>
+    <th style="text-align:right;padding:6px 10px;font-size:10px;font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border);">Totale</th>
   </tr></thead><tbody>`;
   [...months].reverse().forEach(ym=>{
     const r=byMon[ym];const isCur=ym===mon;
     h+=`<tr style="background:${isCur?'#eef4ff':''};">
       <td style="padding:6px 10px;font-size:12px;font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${ddtBkfMonLabel(ym)}</td>
-      <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:${r.tot?600:400};color:${r.tot?'var(--text)':'var(--text-dim)'};">${r.tot?ddtBkfFmt(r.tot):'—'}</td>
+      <td style="padding:6px 10px;font-size:12px;text-align:right;font-weight:${r.tot?600:400};color:${r.tot?'var(--text)':'var(--text-dim)'};white-space:nowrap;">${r.tot?ddtBkfFmt(r.tot):'—'}</td>
     </tr>`;
   });
   h+=`</tbody></table></div>`;
 
-  // Lista DDT (sezione sotto)
   h+=`<div id="ddtListSection"></div>`;
   view.innerHTML=h;
   ddtBkfRenderList();
@@ -561,55 +566,56 @@ function ddtBkfRenderList(){
     }
     return true;
   });
-  const fBtn=(val,label)=>{const a=_ddtFilter===val;return`<button onclick="_ddtFilter='${val}';ddtBkfRenderList()" style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid ${a?'var(--accent)':'var(--border)'};background:${a?'#eef4ff':'var(--surface)'};color:${a?'var(--accent)':'var(--text-dim)'};cursor:pointer;font-weight:${a?700:400};">${label}</button>`;};
-  let h=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px;">Documenti DDT</div>
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-    <div style="display:flex;gap:6px;flex-wrap:wrap;">
-      ${fBtn('tutti','Tutti')}${fBtn('SDM','SDM')}${fBtn('MARR','MARR')}${fBtn('Cozzolino','Cozzolino')}
-    </div>
-    <button onclick="ddtBkfOpenUploadModal()" style="font-size:11px;padding:7px 16px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:700;">📷 Carica DDT</button>
+  const fBtn=(val,label)=>{const a=_ddtFilter===val;return`<button onclick="_ddtFilter='${val}';ddtBkfRenderList()" style="font-size:11px;padding:6px 14px;border-radius:20px;border:1px solid ${a?'var(--accent)':'var(--border)'};background:${a?'#1c3a5e':'var(--surface)'};color:${a?'#fff':'var(--text-dim)'};cursor:pointer;font-weight:${a?700:400};">${label}</button>`;};
+  let h=`<button onclick="ddtBkfOpenUploadModal()" style="width:100%;padding:15px;border-radius:12px;background:#1c3a5e;color:#fff;border:none;border-bottom:3px solid #c9952f;cursor:pointer;font-weight:700;font-size:15px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:10px;">
+    <span style="font-size:22px;">📷</span> Carica nuovo DDT
+  </button>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+    ${fBtn('tutti','Tutti')}${fBtn('SDM','SDM')}${fBtn('MARR','MARR')}${fBtn('Cozzolino','Cozzolino')}
   </div>
-  <div style="margin-bottom:12px;">
+  <div style="margin-bottom:14px;">
     <input type="text" placeholder="Cerca articolo, fornitore, n° DDT…" oninput="_ddtSearch=this.value;ddtBkfRenderList()" value="${_ddtSearch}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--surface);">
-  </div>`;
+  </div>
+  <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px;">Documenti DDT</div>`;
   if(!filtered.length){
-    h+=`<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:13px;">${all.length?'Nessun risultato.':'Nessun DDT. Usa 📷 Carica DDT per iniziare.'}</div>`;
+    h+=`<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:13px;">${all.length?'Nessun risultato.':'Nessun DDT ancora.'}</div>`;
   }else{
-    h+=`<div style="display:flex;flex-direction:column;gap:10px;">`;
+    h+=`<div style="display:flex;flex-direction:column;gap:8px;">`;
     filtered.forEach(d=>{
-      const conf=DDT_BKF[d.fornitore]||{color:'#f5f5f5',fg:'#333'};
-      const badge=`<span style="background:${conf.color};color:${conf.fg};padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">Breakfast</span>`;
       const hBadge=`<span style="background:rgba(255,255,255,0.18);color:#fff;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">${d.hotel==='ar'?'Art Resort':'SoulArt'}</span>`;
       const artRows=(d.articoli||[]).map(a=>`<tr>
-        <td style="padding:5px 10px;font-size:11px;">${a.descrizione||''}</td>
-        <td style="padding:5px 10px;font-size:11px;text-align:right;color:var(--text-dim);white-space:nowrap;">${a.qta!=null?a.qta:''} ${a.unita||''}</td>
-        <td style="padding:5px 10px;font-size:11px;text-align:right;color:var(--text-dim);">${a.prezzo_unit!=null?'€ '+Number(a.prezzo_unit).toFixed(2).replace('.',','):''}</td>
-        <td style="padding:5px 10px;font-size:11px;text-align:right;font-weight:600;">${a.totale!=null?'€ '+Number(a.totale).toFixed(2).replace('.',','):''}</td>
+        <td style="padding:5px 8px;font-size:11px;color:var(--text);">${a.descrizione||''}</td>
+        <td style="padding:5px 8px;font-size:11px;text-align:right;color:var(--text-dim);white-space:nowrap;">${a.qta!=null?a.qta:''} ${a.unita||''}</td>
+        <td style="padding:5px 8px;font-size:11px;text-align:right;color:var(--text-dim);white-space:nowrap;">${a.prezzo_unit!=null?'€ '+Number(a.prezzo_unit).toFixed(2).replace('.',','):''}</td>
+        <td style="padding:5px 8px;font-size:11px;text-align:right;font-weight:600;white-space:nowrap;">${a.totale!=null?'€ '+Number(a.totale).toFixed(2).replace('.',','):''}</td>
       </tr>`).join('');
       h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-        <div style="padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;background:#1E4080;">
-          <div style="flex:1;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <div onclick="ddtBkfToggle('${d.id}')" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#1c3a5e;cursor:pointer;user-select:none;">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
               <span style="font-weight:700;font-size:14px;color:#fff;">${d.fornitore||'—'}</span>${hBadge}
             </div>
             <div style="font-size:11px;color:rgba(255,255,255,0.65);">${d.data||''}${d.numero_ddt?' · DDT '+d.numero_ddt:''} · ${(d.articoli||[]).length} art.</div>
           </div>
-          <div style="text-align:right;flex-shrink:0;">
-            <div style="font-size:15px;font-weight:800;color:#fff;">${ddtBkfFmt(d.totale_ordine)}</div>
-            <button onclick="ddtBkfDelete('${d.id}')" style="font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);cursor:pointer;margin-top:4px;color:#fff;">🗑</button>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
+            <span style="font-size:15px;font-weight:800;color:#fff;white-space:nowrap;">${ddtBkfFmt(d.totale_ordine)}</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button onclick="event.stopPropagation();ddtBkfDelete('${d.id}')" style="font-size:10px;padding:2px 7px;border-radius:6px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);cursor:pointer;color:#fff;line-height:1.4;">🗑</button>
+              <span id="ddt-chev-${d.id}" style="color:rgba(255,255,255,0.8);font-size:12px;display:inline-block;transition:transform .2s;">▼</span>
+            </div>
           </div>
         </div>
-        ${artRows?`<div style="border-top:1px solid var(--border);">
+        <div id="ddt-body-${d.id}" style="display:none;">
           <table style="width:100%;border-collapse:collapse;">
-            <thead><tr style="background:var(--surface2);">
-              <th style="padding:5px 10px;font-size:10px;text-align:left;color:var(--text-dim);">Articolo</th>
-              <th style="padding:5px 10px;font-size:10px;text-align:right;color:var(--text-dim);">Qtà</th>
-              <th style="padding:5px 10px;font-size:10px;text-align:right;color:var(--text-dim);">P.Unit</th>
-              <th style="padding:5px 10px;font-size:10px;text-align:right;color:var(--text-dim);">Totale</th>
+            <thead><tr style="background:var(--surface2,#eee);">
+              <th style="padding:5px 8px;font-size:10px;text-align:left;color:var(--text-dim);">Articolo</th>
+              <th style="padding:5px 8px;font-size:10px;text-align:right;color:var(--text-dim);">Qtà</th>
+              <th style="padding:5px 8px;font-size:10px;text-align:right;color:var(--text-dim);">P.Unit</th>
+              <th style="padding:5px 8px;font-size:10px;text-align:right;color:var(--text-dim);">Totale</th>
             </tr></thead>
             <tbody>${artRows}</tbody>
           </table>
-        </div>`:''}
+        </div>
       </div>`;
     });
     h+=`</div>`;
