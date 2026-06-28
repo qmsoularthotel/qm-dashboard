@@ -309,22 +309,20 @@ function renderMonthlyStats(){
     bb+=(_bkfHistory[k].bb||0);ro+=(_bkfHistory[k].ro||0);days++;
   });
 
+  const btnStyle=`position:absolute;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:15px;color:var(--text-dim);padding:0 10px;`;
   let h=`<div id="bkf-monthly-wrap"><div class="section-title">Riepilogo mese</div>`;
-  h+=`<div style="background:var(--surface);border-radius:12px;border:${isCur?'2px solid var(--accent)':'1px solid var(--border)'};padding:14px 16px;margin-bottom:10px;">`;
-  h+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${days?'12px':'4px'};">`;
-  const btnStyle=`border:none;background:none;cursor:pointer;font-size:15px;color:var(--text-dim);padding:0 10px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;height:22px;`;
-  h+=`<button onclick="bkfMonthNav(-1)" style="${btnStyle}">‹</button>`;
-  h+=`<span style="font-size:14px;font-weight:700;color:${isCur?'var(--accent)':'var(--text)'};">${fmtYM(viewYM)}</span>`;
-  h+=`<button onclick="bkfMonthNav(1)" style="${btnStyle}${!canNext?'opacity:.2;pointer-events:none;':''}">›</button>`;
-  h+=`</div>`;
+  h+=`<div style="position:relative;background:var(--surface);border-radius:12px;border:${isCur?'2px solid var(--accent)':'1px solid var(--border)'};padding:14px 32px;margin-bottom:10px;text-align:center;">`;
+  h+=`<button onclick="bkfMonthNav(-1)" style="${btnStyle}left:4px;">‹</button>`;
+  h+=`<button onclick="bkfMonthNav(1)" style="${btnStyle}right:4px;${!canNext?'opacity:.2;pointer-events:none;':''}">›</button>`;
+  h+=`<div style="font-size:14px;font-weight:700;color:${isCur?'var(--accent)':'var(--text)'};margin-bottom:${days?'4px':'0'};">${fmtYM(viewYM)}</div>`;
   if(days){
-    h+=`<div style="font-size:10px;color:var(--text-dim);text-align:center;margin-bottom:10px;">${days} giorni</div>`;
+    h+=`<div style="font-size:10px;color:var(--text-dim);margin-bottom:10px;">${days} giorni</div>`;
     h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">`;
-    h+=`<div style="text-align:center;"><div style="font-size:32px;font-weight:800;color:var(--accent);line-height:1;">${bb}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">BB totali</div></div>`;
-    h+=`<div style="text-align:center;"><div style="font-size:32px;font-weight:800;color:var(--text-dim);line-height:1;">${ro}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">RO totali</div></div>`;
+    h+=`<div><div style="font-size:32px;font-weight:800;color:var(--accent);line-height:1;">${bb}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">BB totali</div></div>`;
+    h+=`<div><div style="font-size:32px;font-weight:800;color:var(--text-dim);line-height:1;">${ro}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">RO totali</div></div>`;
     h+=`</div>`;
   }else{
-    h+=`<div style="text-align:center;color:var(--text-dim);font-size:12px;padding:6px 0;">Nessun dato</div>`;
+    h+=`<div style="color:var(--text-dim);font-size:12px;padding:6px 0;">Nessun dato</div>`;
   }
   h+=`</div></div>`;
   return h;
