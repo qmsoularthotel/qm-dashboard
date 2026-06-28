@@ -444,7 +444,13 @@ const DDT_BKF={
   SDM:      {color:'#dcfce7',fg:'#166534'},
   MARR:     {color:'#fef3c7',fg:'#92400e'},
   Cozzolino:{color:'#fce7f3',fg:'#9d174d'},
+  Deca:     {color:'#ede9fe',fg:'#5b21b6'},
 };
+function ddtNormForn(s){
+  if(!s)return s;
+  const low=s.toLowerCase();
+  return Object.keys(DDT_BKF).find(k=>low.includes(k.toLowerCase()))||s;
+}
 const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 let _ddtMonth='';
 let _ddtFilter='tutti';
@@ -499,7 +505,7 @@ function ddtBkfRenderSpese(){
   h+=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;">Per fornitore — ${ddtBkfMonLabel(mon)}</div>`;
   h+=`<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:22px;">`;
   Object.entries(DDT_BKF).forEach(([nome,conf])=>{
-    const fDdt=monDdt.filter(d=>d.fornitore===nome);
+    const fDdt=monDdt.filter(d=>(ddtNormForn(d.fornitore)||d.fornitore)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const artMap={};
     fDdt.forEach(d=>(d.articoli||[]).forEach(a=>{
@@ -557,7 +563,7 @@ function ddtBkfRenderList(){
   const view=document.getElementById('ddtListSection');if(!view)return;
   const all=ddtBkfGet().filter(d=>d.reparto==='bkf').sort((a,b)=>b.ts-a.ts);
   const filtered=all.filter(d=>{
-    if(_ddtFilter!=='tutti'&&d.fornitore!==_ddtFilter)return false;
+    if(_ddtFilter!=='tutti'&&(ddtNormForn(d.fornitore)||d.fornitore)!==_ddtFilter)return false;
     if(_ddtSearch){
       const q=_ddtSearch.toLowerCase();
       const inArt=(d.articoli||[]).some(a=>(a.descrizione||'').toLowerCase().includes(q));
@@ -569,7 +575,7 @@ function ddtBkfRenderList(){
   let h=`<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px;">Documenti DDT</div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
     <div style="display:flex;gap:6px;flex-wrap:wrap;">
-      ${fBtn('tutti','Tutti')}${fBtn('SDM','SDM')}${fBtn('MARR','MARR')}${fBtn('Cozzolino','Cozzolino')}
+      ${fBtn('tutti','Tutti')}${fBtn('SDM','SDM')}${fBtn('MARR','MARR')}${fBtn('Cozzolino','Cozzolino')}${fBtn('Deca','Deca')}
     </div>
     <button onclick="ddtBkfOpenUploadModal()" style="font-size:11px;padding:7px 16px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:700;">📷 Carica DDT</button>
   </div>
@@ -677,6 +683,7 @@ async function ddtBkfHandleFile(input){
     const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
     const isPdf=file.type==='application/pdf'||file.name?.toLowerCase().endsWith('.pdf');
     const mediaType=isPdf?'application/pdf':(file.type||'image/jpeg');
+    const fornNorm=ddtNormForn(forn)||forn;
     const prompt=`Estrai da questo documento di trasporto (DDT) italiano i dati e restituisci SOLO JSON valido:\n{"numero_ddt":"stringa","data":"DD/MM/YYYY","fornitore":"ragione sociale","articoli":[{"descrizione":"nome prodotto","qta":numero,"unita":"kg o lt o pz o cf etc","prezzo_unit":numero,"totale":numero}],"totale_ordine":numero}\nSe un valore non è leggibile usa null. Prezzi in EUR senza simbolo.`;
     const body={model:'claude-sonnet-4-6',max_tokens:4096,messages:[{role:'user',content:[
       isPdf?{type:'document',source:{type:'base64',media_type:mediaType,data:base64}}:{type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
@@ -695,7 +702,7 @@ async function ddtBkfHandleFile(input){
       if(!jsonStr)throw new Error();
       parsed=JSON.parse(jsonStr);
     }catch(e){throw new Error('JSON non riconosciuto — AI ha risposto: '+text.slice(0,120));}
-    if(forn)parsed.fornitore=forn;
+    parsed.fornitore=fornNorm||ddtNormForn(parsed.fornitore)||parsed.fornitore||'';
     _ddtParsedData={...parsed,hotel,reparto:'bkf'};
     if(status)status.style.display='none';
     ddtBkfShowParsed(_ddtParsedData);
@@ -751,7 +758,7 @@ function ddtBkfConfirmSave(){
   if(!_ddtParsedData)return;
   const arr=ddtBkfGet();
   arr.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6),ts:Date.now(),
-    data:_ddtParsedData.data||'',fornitore:_ddtParsedData.fornitore||'',
+    data:_ddtParsedData.data||'',fornitore:ddtNormForn(_ddtParsedData.fornitore)||_ddtParsedData.fornitore||'',
     reparto:'bkf',hotel:_ddtParsedData.hotel||'sa',
     numero_ddt:_ddtParsedData.numero_ddt||'',
     articoli:_ddtParsedData.articoli||[],
