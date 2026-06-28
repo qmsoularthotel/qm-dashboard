@@ -4324,11 +4324,17 @@ function renderBkfDay(silent){
   bkfRenderNotes();
   renderOvBkfChart();
 }
-function bkfSaveMonthlyHistory(){
+async function bkfSaveMonthlyHistory(){
   if(!bkfData||!bkfData.length)return;
   const HIST_KEY='qm_bkf_monthly_history';
   let hist={};
-  try{hist=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');}catch(e){}
+  // Sempre KV-first: evita di sovrascrivere history da altri dispositivi
+  try{
+    const kvVal=await kvGet(HIST_KEY);
+    if(kvVal)hist=JSON.parse(kvVal);
+  }catch(e){
+    try{hist=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');}catch(e2){}
+  }
   // Rimuovi vecchi record formato YYYY-MM (aggregati mensili, obsoleti)
   Object.keys(hist).forEach(k=>{if(k.length!==10)delete hist[k];});
   // Salva ogni giorno come YYYY-MM-DD → {bb, ro}
