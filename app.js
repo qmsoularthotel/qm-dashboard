@@ -7205,26 +7205,26 @@ function ddtRenderSpese(){
     <button onclick="ddtNavMonth(1)" style="width:32px;height:32px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">›</button>
   </div>`;
 
-  // Card riepilogo blu
-  h+=`<div style="background:var(--accent);border-radius:14px;padding:16px 20px;margin-bottom:12px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+  // Card riepilogo
+  h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:14px;padding:16px 20px;margin-bottom:12px;border-top:3px solid var(--accent);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <div>
-        <div style="font-size:var(--fs-xxs);color:rgba(255,255,255,0.6);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Totale ${ddtMonLabel(mon)}</div>
-        <div style="font-size:28px;font-weight:800;color:#fff;white-space:nowrap;">${ddtFmt(totale)}</div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Totale ${ddtMonLabel(mon)}</div>
+        <div style="font-size:var(--fs-xl,28px);font-weight:800;color:var(--accent);white-space:nowrap;">${ddtFmt(totale)}</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:22px;font-weight:800;color:rgba(255,255,255,0.9);">${monDdt.length}</div>
-        <div style="font-size:var(--fs-xxs);color:rgba(255,255,255,0.6);">DDT</div>
+        <div style="font-size:22px;font-weight:800;color:var(--text);">${monDdt.length}</div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);">DDT</div>
       </div>
     </div>
-    <div style="border-top:1px solid rgba(255,255,255,0.2);padding-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div style="background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 12px;">
-        <div style="font-size:var(--fs-xxs);color:rgba(255,255,255,0.6);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Housekeeping</div>
-        <div style="font-size:var(--fs-sm);font-weight:800;color:#fff;white-space:nowrap;">${hkTot?ddtFmt(hkTot):'—'}</div>
+    <div style="border-top:1px solid var(--border-light);padding-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="background:var(--bg,#f0f0f2);border-radius:8px;padding:8px 12px;">
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Housekeeping</div>
+        <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);white-space:nowrap;">${hkTot?ddtFmt(hkTot):'—'}</div>
       </div>
-      <div style="background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 12px;">
-        <div style="font-size:var(--fs-xxs);color:rgba(255,255,255,0.6);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Breakfast</div>
-        <div style="font-size:var(--fs-sm);font-weight:800;color:#fff;white-space:nowrap;">${bkfTot?ddtFmt(bkfTot):'—'}</div>
+      <div style="background:var(--bg,#f0f0f2);border-radius:8px;padding:8px 12px;">
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Breakfast</div>
+        <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);white-space:nowrap;">${bkfTot?ddtFmt(bkfTot):'—'}</div>
       </div>
     </div>
   </div>`;
@@ -7243,7 +7243,7 @@ function ddtRenderSpese(){
   h+=`</div>`;
 
   // Upload button
-  h+=`<button onclick="ddtOpenUploadModal()" style="width:100%;padding:13px;border-radius:12px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:var(--fs-sm);font-weight:700;margin-bottom:16px;border-bottom:3px solid rgba(0,0,0,0.2);">📷 Carica nuovo DDT</button>`;
+  h+=`<button onclick="ddtOpenUploadModal()" style="width:100%;padding:11px;border-radius:10px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:var(--fs-xs);font-weight:700;margin-bottom:16px;">📷 Carica nuovo DDT</button>`;
 
   // Lista DDT (popolata da ddtRenderList)
   h+=`<div id="ddtListSection"></div>`;
@@ -7312,7 +7312,7 @@ function ddtRenderList(){
     h+=`<div style="display:flex;flex-direction:column;gap:8px;max-width:600px;">`;
     filtered.forEach(d=>{
       const conf=DDT_FORNITORI[ddtNormForn(d.fornitore)||d.fornitore]||{color:'#f5f5f5',fg:'#333',rLabel:d.reparto||''};
-      const hBadge=`<span style="background:rgba(255,255,255,0.18);color:#fff;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:700;">${d.hotel==='ar'?'Art Resort':'SoulArt'}</span>`;
+      const hBadge=`<span style="background:var(--accent-bg);color:var(--accent);padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:700;">${d.hotel==='ar'?'Art Resort':'SoulArt'}</span>`;
       const artRows=(d.articoli||[]).map(a=>`<tr>
         <td style="padding:5px 10px;font-size:var(--fs-xs);color:var(--text);">${a.descrizione||''}</td>
         <td style="padding:5px 10px;font-size:var(--fs-xs);text-align:right;color:var(--text-dim);white-space:nowrap;">${a.qta!=null?a.qta:''} ${a.unita||''}</td>
@@ -7320,16 +7320,16 @@ function ddtRenderList(){
         <td style="padding:5px 10px;font-size:var(--fs-xs);text-align:right;font-weight:600;">${a.totale!=null?'€ '+Number(a.totale).toFixed(2).replace('.',','):''}</td>
       </tr>`).join('');
       h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:12px;overflow:hidden;">
-        <div onclick="ddtToggle('${d.id}')" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--accent);cursor:pointer;user-select:none;">
+        <div onclick="ddtToggle('${d.id}')" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);cursor:pointer;user-select:none;border-left:3px solid var(--accent);">
           <div style="flex:1;min-width:0;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap;">
-              <span style="font-weight:700;font-size:var(--fs-sm);color:#fff;">${d.fornitore||'—'}</span>${hBadge}
+              <span style="font-weight:700;font-size:var(--fs-sm);color:var(--text);">${d.fornitore||'—'}</span>${hBadge}
             </div>
-            <div style="font-size:var(--fs-xxs);color:rgba(255,255,255,0.65);">${d.data||''}${d.numero_ddt?' · DDT '+d.numero_ddt:''} · ${(d.articoli||[]).length} art.</div>
+            <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${d.data||''}${d.numero_ddt?' · DDT '+d.numero_ddt:''} · ${(d.articoli||[]).length} art.</div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
-            <span style="font-size:var(--fs-sm);font-weight:800;color:#fff;white-space:nowrap;">${ddtFmt(d.totale_ordine)}</span>
-            <span id="ddt-chev-${d.id}" style="color:rgba(255,255,255,0.8);font-size:12px;display:inline-block;transition:transform .2s;">▼</span>
+            <span style="font-size:var(--fs-sm);font-weight:800;color:var(--accent);white-space:nowrap;">${ddtFmt(d.totale_ordine)}</span>
+            <span id="ddt-chev-${d.id}" style="color:var(--text-dim);font-size:12px;display:inline-block;transition:transform .2s;">▼</span>
           </div>
         </div>
         <div id="ddt-body-${d.id}" style="display:none;">
