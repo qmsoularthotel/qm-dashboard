@@ -500,20 +500,17 @@ function ddtBkfRenderSpese(){
   const monDdt=all.filter(d=>ddtGetYM(d)===mon);
   const totale=monDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
 
-  // Calcola coperti del mese da bkfData
+  // Calcola coperti del mese da _bkfHistory (YYYY-MM-DD → {bb,ro})
   const nowD=new Date();nowD.setHours(0,0,0,0);
   const todayMon=nowD.getFullYear()+'-'+String(nowD.getMonth()+1).padStart(2,'0');
   const isThisMon=mon===todayMon;
-  const bkfArr=(typeof bkfData!=='undefined'&&Array.isArray(bkfData))?bkfData:[];
-  const copertiMon=bkfArr.filter(d=>{
-    if(!d.data)return false;
-    const p=d.data.split('/');if(p.length!==3)return false;
-    const ym=p[2]+'-'+p[1].padStart(2,'0');
-    if(ym!==mon)return false;
-    if(isThisMon){const dt=new Date(Number(p[2]),Number(p[1])-1,Number(p[0]));return dt<=nowD;}
-    return true;
-  }).reduce((s,d)=>s+(d.adulti||0)+(d.bambini||0),0);
-  const euroCop=copertiMon>0?(totale/copertiMon):null;
+  let copertiMon=0;
+  Object.keys(_bkfHistory||{}).forEach(k=>{
+    if(k.length!==10||k.slice(0,7)!==mon)return;
+    const dt=new Date(k+'T12:00:00');dt.setHours(0,0,0,0);
+    if(isThisMon&&dt>nowD)return;
+    copertiMon+=(_bkfHistory[k].bb||0);
+  });
   const copLabel=isThisMon?('al '+nowD.getDate()+'/'+String(nowD.getMonth()+1).padStart(2,'0')):'mese intero';
 
   let h=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
