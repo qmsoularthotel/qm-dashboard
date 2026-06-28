@@ -316,7 +316,7 @@ function renderMonthlyStats(){
   h+=`<button onclick="bkfMonthNav(1)" style="${btnStyle}right:4px;${!canNext?'opacity:.2;pointer-events:none;':''}">›</button>`;
   h+=`<div style="margin-bottom:${days?'10px':'0'};">`;
   h+=`<span style="font-size:18px;font-weight:700;color:${isCur?'var(--accent)':'var(--text)'};">${fmtYM(viewYM)}</span>`;
-  if(days)h+=`<span style="font-size:11px;color:var(--text-dim);margin-left:6px;">${days} giorni</span>`;
+  if(days)h+=`<span style="font-size:11px;color:var(--text-dim);margin-left:6px;vertical-align:middle;">${days} giorni</span>`;
   h+=`</div>`;
   if(days){
     h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">`;
