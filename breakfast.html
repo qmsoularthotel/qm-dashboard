@@ -685,8 +685,9 @@ async function ddtBkfHandleFile(input){
     const resp=await fetch(PROXY+'/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!resp.ok){const t=await resp.text().catch(()=>'');throw new Error('API '+resp.status+(t?' — '+t.slice(0,120):''));}
     const data=await resp.json();
+    if(data.type==='error'||data.error)throw new Error('API: '+(data.error?.message||JSON.stringify(data).slice(0,200)));
     const text=data.content?.[0]?.text||'';
-    if(!text)throw new Error('Risposta AI vuota');
+    if(!text)throw new Error('Risposta vuota — raw: '+JSON.stringify(data).slice(0,250));
     let parsed={};
     try{
       const codeMatch=text.match(/```(?:json)?\s*([\s\S]*?)```/);
