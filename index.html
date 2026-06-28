@@ -1511,12 +1511,7 @@
         <div id="inv-orders-view" style="display:none;"></div>
       </div>
       <div class="view" id="view-spese">
-        <div style="display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid var(--border-light);">
-          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--accent);" id="speseTab-spese" onclick="ddtSetTab('spese')">📊 Spese</div>
-          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="speseTab-ddt" onclick="ddtSetTab('ddt')">🧾 DDT</div>
-        </div>
         <div id="inv-spese-view"></div>
-        <div id="inv-ddt-view" style="display:none;"></div>
       </div>
       <div class="view" id="view-turni-pref">
         <div id="turni-pref-content"></div>
@@ -1544,7 +1539,7 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=398-20260628"></script>
+<script src="app.js?v=399-20260628"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
