@@ -291,7 +291,7 @@ function renderMonthlyStats(){
   dayKeys.forEach(k=>{
     if(k.length!==10)return; // ignora vecchi record formato YYYY-MM
     const dt=new Date(k+'T12:00:00');dt.setHours(0,0,0,0);
-    if(dt>=today)return; // solo giorni già passati, oggi escluso
+    if(dt>today)return; // escludi solo giorni futuri (domani+); oggi incluso
     const ym=k.slice(0,7);
     if(!byMonth[ym])byMonth[ym]={bb:0,ro:0,days:0};
     byMonth[ym].bb+=_bkfHistory[k].bb||0;
