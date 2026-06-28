@@ -447,8 +447,8 @@ const DDT_BKF={
 };
 function ddtNormForn(s){
   if(!s)return s;
-  const low=s.toLowerCase();
-  return Object.keys(DDT_BKF).find(k=>low.includes(k.toLowerCase()))||s;
+  const norm=s.toLowerCase().replace(/[\s.\-_]/g,'');
+  return Object.keys(DDT_BKF).find(k=>norm.includes(k.toLowerCase().replace(/[\s.\-_]/g,'')))||s;
 }
 function ddtGetYM(d){
   const ym=ddtBkfYM(d.data);
