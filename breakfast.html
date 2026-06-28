@@ -278,6 +278,9 @@ function renderDay(){
 }
 
 let _bkfViewMonth='';
+let _bkfSwipeX=0;
+function _bkfTS(e){_bkfSwipeX=e.touches[0].clientX;}
+function _bkfTE(e){const dx=e.changedTouches[0].clientX-_bkfSwipeX;if(Math.abs(dx)>40)bkfMonthNav(dx<0?1:-1);}
 function bkfMonthNav(dir){
   const today=new Date();
   const curYM=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
@@ -311,7 +314,7 @@ function renderMonthlyStats(){
 
   const btnStyle=`position:absolute;top:50%;transform:translateY(-50%);border:none;background:var(--surface2);border-radius:6px;cursor:pointer;font-size:16px;color:var(--text);padding:4px 9px;font-weight:500;`;
   let h=`<div id="bkf-monthly-wrap"><div class="section-title">Riepilogo mese</div>`;
-  h+=`<div style="position:relative;background:var(--surface);border-radius:12px;border:${isCur?'2px solid var(--accent)':'1px solid var(--border)'};padding:14px 32px;margin-bottom:10px;text-align:center;">`;
+  h+=`<div ontouchstart="_bkfTS(event)" ontouchend="_bkfTE(event)" style="position:relative;background:var(--surface);border-radius:12px;border:${isCur?'2px solid var(--accent)':'1px solid var(--border)'};padding:14px 32px;margin-bottom:10px;text-align:center;">`;
   h+=`<button onclick="bkfMonthNav(-1)" style="${btnStyle}left:4px;">‹</button>`;
   h+=`<button onclick="bkfMonthNav(1)" style="${btnStyle}right:4px;${!canNext?'opacity:.2;pointer-events:none;':''}">›</button>`;
   h+=`<div style="margin-bottom:${days?'10px':'0'};">`;
