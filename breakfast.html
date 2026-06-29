@@ -384,7 +384,7 @@ async function loadAll(){
   try{
     const rh=await fetch(PROXY+'/kv/get?key='+BKF_HIST_KEY);
     const jh=await rh.json();
-    if(jh.value){_bkfHistory=JSON.parse(jh.value);try{localStorage.setItem(BKF_HIST_KEY,jh.value);}catch(e){}}
+    if(jh.value){const kvH=JSON.parse(jh.value);Object.assign(_bkfHistory,kvH);try{localStorage.setItem(BKF_HIST_KEY,JSON.stringify(_bkfHistory));}catch(e){}}
   }catch(e){}
   try{
     const res=await fetch(PROXY+'/kv/get?key=qm_bkfData');
