@@ -464,7 +464,7 @@ function ddtGetYM(d){
 }
 const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 let _ddtMonth='';
-let _ddtFilter='tutti';
+let _ddtFilter='';
 let _ddtSearch='';
 let _ddtUploadModal=null;
 let _ddtParsedData=null;
@@ -544,49 +544,96 @@ function ddtBkfRenderSpese(){
     </div>`:''}
   </div>`;
 
-  h+=`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px;">`;
+  h+=`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;">`;
   Object.entries(DDT_BKF).forEach(([nome,conf])=>{
     const fDdt=monDdt.filter(d=>(ddtNormForn(d.fornitore)||d.fornitore)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
-    h+=`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${conf.accent};border-radius:10px;padding:10px 12px;">
-      <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">${nome}</div>
+    const active=_ddtFilter===nome;
+    h+=`<div id="ddt-chip-${nome}" onclick="ddtBkfSelectForn('${nome}')" style="background:${active?conf.color:'var(--surface)'};border:1px solid ${active?conf.accent:'var(--border)'};border-left:3px solid ${conf.accent};border-radius:10px;padding:10px 12px;cursor:pointer;transition:background .15s,border-color .15s;">
+      <div style="font-size:11px;font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">${nome}</div>
       <div style="font-size:15px;font-weight:800;color:${fTot?conf.fg:'var(--text-dim)'};white-space:nowrap;">${fTot?ddtBkfFmt(fTot):'—'}</div>
-      <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">${fDdt.length} DDT</div>
+      <div style="font-size:10px;color:${active?conf.fg:'var(--text-dim)'};margin-top:2px;opacity:.75;">${fDdt.length} DDT${active?' ▲':' ▼'}</div>
     </div>`;
   });
   h+=`</div>`;
 
+  // Storico 12 mesi — sempre visibile, accordion
+  const _all=ddtBkfGet().filter(d=>d.reparto==='bkf');
+  const _now=new Date();
+  const _months=[];
+  for(let i=11;i>=0;i--){const _d=new Date(_now.getFullYear(),_now.getMonth()-i,1);_months.push(_d.getFullYear()+'-'+String(_d.getMonth()+1).padStart(2,'0'));}
+  const _byMon={};_months.forEach(m=>{_byMon[m]={tot:0};});
+  _all.forEach(d=>{const ym=ddtGetYM(d);if(!_byMon[ym])return;_byMon[ym].tot+=(d.totale_ordine||0);});
+  const _storId='storico-12m';
+  h+=`<div style="margin-bottom:14px;border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+    <div onclick="ddtBkfToggle('${_storId}')" style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);cursor:pointer;user-select:none;">
+      <span style="font-size:12px;font-weight:700;color:var(--text);">Storico 12 mesi</span>
+      <span id="ddt-chev-${_storId}" style="color:var(--text-dim);font-size:11px;display:inline-block;transition:transform .2s;">▼</span>
+    </div>
+    <div id="ddt-body-${_storId}" style="display:none;"><table style="border-collapse:collapse;width:100%;">
+      <thead><tr>
+        <th style="text-align:left;padding:6px 14px;font-size:10px;font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border);">Mese</th>
+        <th style="text-align:right;padding:6px 14px;font-size:10px;font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border);">Totale</th>
+      </tr></thead><tbody>`;
+  [..._months].reverse().forEach(ym=>{
+    const r=_byMon[ym];const isCur=ym===mon;
+    h+=`<tr style="background:${isCur?'var(--accent-bg)':''}">
+      <td style="padding:6px 14px;font-size:12px;color:${isCur?'var(--accent)':'var(--text)'};">${ddtBkfMonLabel(ym)}</td>
+      <td style="padding:6px 14px;font-size:12px;text-align:right;font-weight:${r.tot?600:400};color:${r.tot?'var(--text)':'var(--text-dim)'};white-space:nowrap;">${r.tot?ddtBkfFmt(r.tot):'—'}</td>
+    </tr>`;
+  });
+  h+=`</tbody></table></div></div>`;
+
+  h+=`<button onclick="ddtBkfOpenUploadModal()" style="width:100%;padding:13px;border-radius:12px;background:#1c3a5e;color:#fff;border:none;border-bottom:3px solid #c9952f;cursor:pointer;font-weight:700;font-size:15px;margin-bottom:4px;display:flex;align-items:center;justify-content:center;gap:10px;">
+    <span style="font-size:20px;">📷</span> Carica nuovo DDT
+  </button>`;
 
   h+=`<div id="ddtListSection"></div>`;
   view.innerHTML=h;
   ddtBkfRenderList();
 }
 
+function ddtBkfSelectForn(nome){
+  _ddtFilter=(_ddtFilter===nome)?'':nome;
+  _ddtSearch='';
+  // Aggiorna visivamente i chip senza re-render
+  Object.entries(DDT_BKF).forEach(([k,conf])=>{
+    const chip=document.getElementById('ddt-chip-'+k);
+    if(!chip)return;
+    const active=_ddtFilter===k;
+    chip.style.background=active?conf.color:'var(--surface)';
+    chip.style.borderColor=active?conf.accent:'var(--border)';
+    const rows=chip.querySelectorAll('div');
+    if(rows[0])rows[0].style.color=active?conf.fg:'var(--text-dim)';
+    if(rows[2]){
+      const fDdt=ddtBkfGet().filter(d=>d.reparto==='bkf'&&(ddtNormForn(d.fornitore)||d.fornitore)===k);
+      rows[2].textContent=fDdt.length+' DDT'+(active?' ▲':' ▼');
+      rows[2].style.color=active?conf.fg:'var(--text-dim)';
+    }
+  });
+  ddtBkfRenderList();
+}
+
 function ddtBkfRenderList(){
   const view=document.getElementById('ddtListSection');if(!view)return;
-  const all=ddtBkfGet().filter(d=>d.reparto==='bkf').sort((a,b)=>b.ts-a.ts);
-  const filtered=all.filter(d=>{
-    if(_ddtFilter!=='tutti'&&(ddtNormForn(d.fornitore)||d.fornitore)!==_ddtFilter)return false;
-    if(_ddtSearch){
-      const q=_ddtSearch.toLowerCase();
-      const inArt=(d.articoli||[]).some(a=>(a.descrizione||'').toLowerCase().includes(q));
-      if(!inArt&&!(d.fornitore||'').toLowerCase().includes(q)&&!(d.numero_ddt||'').toLowerCase().includes(q))return false;
-    }
-    return true;
-  });
-  const fBtn=(val,label)=>{const a=_ddtFilter===val;return`<button onclick="_ddtFilter='${val}';ddtBkfRenderList()" style="font-size:11px;padding:6px 14px;border-radius:20px;border:1px solid ${a?'var(--accent)':'var(--border)'};background:${a?'#1c3a5e':'var(--surface)'};color:${a?'#fff':'var(--text-dim)'};cursor:pointer;font-weight:${a?700:400};">${label}</button>`;};
-  let h=`<button onclick="ddtBkfOpenUploadModal()" style="width:100%;padding:15px;border-radius:12px;background:#1c3a5e;color:#fff;border:none;border-bottom:3px solid #c9952f;cursor:pointer;font-weight:700;font-size:15px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:10px;">
-    <span style="font-size:22px;">📷</span> Carica nuovo DDT
-  </button>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-    ${fBtn('tutti','Tutti')}${fBtn('SDM','SDM')}${fBtn('MARR','MARR')}${fBtn('Cozzolino','Cozzolino')}${fBtn('Valgarda','Valgarda')}
-  </div>
-  <div style="margin-bottom:14px;">
-    <input type="text" placeholder="Cerca articolo, fornitore, n° DDT…" oninput="_ddtSearch=this.value;ddtBkfRenderList()" value="${_ddtSearch}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--surface);">
-  </div>
-  <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px;">Documenti DDT</div>`;
+  if(!_ddtFilter){view.innerHTML='';return;}
+  const conf=DDT_BKF[_ddtFilter]||{accent:'var(--accent)',fg:'var(--accent)'};
+  const all=ddtBkfGet().filter(d=>d.reparto==='bkf'&&(ddtNormForn(d.fornitore)||d.fornitore)===_ddtFilter).sort((a,b)=>b.ts-a.ts);
+  const filtered=_ddtSearch?all.filter(d=>{
+    const q=_ddtSearch.toLowerCase();
+    const inArt=(d.articoli||[]).some(a=>(a.descrizione||'').toLowerCase().includes(q));
+    return inArt||(d.numero_ddt||'').toLowerCase().includes(q);
+  }):all;
+
+  let h=`<div style="border-top:2px solid ${conf.accent};margin-top:4px;padding-top:12px;">`;
+  h+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+    <span style="font-size:12px;font-weight:700;color:${conf.fg};text-transform:uppercase;letter-spacing:.04em;">DDT ${_ddtFilter}</span>
+    <span style="font-size:11px;color:var(--text-dim);margin-left:auto;">${all.length} documenti</span>
+  </div>`;
+  h+=`<input type="text" placeholder="Cerca n° DDT, articolo…" oninput="_ddtSearch=this.value;ddtBkfRenderList()" value="${_ddtSearch}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--surface);margin-bottom:10px;box-sizing:border-box;">`;
+
   if(!filtered.length){
-    h+=`<div style="text-align:center;padding:32px;color:var(--text-dim);font-size:13px;">${all.length?'Nessun risultato.':'Nessun DDT ancora.'}</div>`;
+    h+=`<div style="text-align:center;padding:24px;color:var(--text-dim);font-size:13px;">${all.length?'Nessun risultato.':'Nessun DDT caricato per '+_ddtFilter+'.'}</div>`;
   }else{
     h+=`<div style="display:flex;flex-direction:column;gap:8px;">`;
     filtered.forEach(d=>{
@@ -597,23 +644,22 @@ function ddtBkfRenderList(){
         <td style="padding:5px 8px;font-size:11px;text-align:right;color:var(--text-dim);white-space:nowrap;">${a.prezzo_unit!=null?'€ '+Number(a.prezzo_unit).toFixed(2).replace('.',','):''}</td>
         <td style="padding:5px 8px;font-size:11px;text-align:right;font-weight:600;white-space:nowrap;">${a.totale!=null?'€ '+Number(a.totale).toFixed(2).replace('.',','):''}</td>
       </tr>`).join('');
-      const conf=DDT_BKF[ddtNormForn(d.fornitore)||d.fornitore]||{accent:'var(--accent)',fg:'var(--accent)'};
       h+=`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${conf.accent};border-radius:12px;overflow:hidden;">
         <div onclick="ddtBkfToggle('${d.id}')" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;user-select:none;">
           <div style="flex:1;min-width:0;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap;">
-              <span style="font-weight:700;font-size:14px;color:var(--text);">${d.fornitore||'—'}</span>${hBadge}
+              <span style="font-weight:700;font-size:13px;color:var(--text);">${d.data||'—'}${d.numero_ddt?' · DDT '+d.numero_ddt:''}</span>${hBadge}
             </div>
-            <div style="font-size:11px;color:var(--text-dim);">${d.data||''}${d.numero_ddt?' · DDT '+d.numero_ddt:''} · ${(d.articoli||[]).length} art.</div>
+            <div style="font-size:11px;color:var(--text-dim);">${(d.articoli||[]).length} articoli</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
             <span style="font-size:15px;font-weight:800;color:${conf.fg};white-space:nowrap;">${ddtBkfFmt(d.totale_ordine)}</span>
-            <span id="ddt-chev-${d.id}" style="color:var(--text-dim);font-size:12px;display:inline-block;transition:transform .2s;">▼</span>
+            <span id="ddt-chev-${d.id}" style="color:var(--text-dim);font-size:11px;display:inline-block;transition:transform .2s;">▼</span>
           </div>
         </div>
         <div id="ddt-body-${d.id}" style="display:none;">
           <table style="width:100%;border-collapse:collapse;">
-            <thead><tr style="background:var(--surface2,#eee);">
+            <thead><tr style="background:var(--bg,#e8e8ea);">
               <th style="padding:5px 8px;font-size:10px;text-align:left;color:var(--text-dim);">Articolo</th>
               <th style="padding:5px 8px;font-size:10px;text-align:right;color:var(--text-dim);">Qtà</th>
               <th style="padding:5px 8px;font-size:10px;text-align:right;color:var(--text-dim);">P.Unit</th>
@@ -629,34 +675,7 @@ function ddtBkfRenderList(){
     });
     h+=`</div>`;
   }
-  // Storico 12 mesi — accordion
-  const now=new Date();
-  const months=[];
-  for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
-  const byMon={};months.forEach(m=>{byMon[m]={tot:0};});
-  all.forEach(d=>{const ym=ddtGetYM(d);if(!byMon[ym])return;byMon[ym].tot+=(d.totale_ordine||0);});
-  const storId='storico-12m';
-  h+=`<div style="margin-top:16px;border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-    <div onclick="ddtBkfToggle('${storId}')" style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);cursor:pointer;user-select:none;">
-      <span style="font-size:13px;font-weight:700;color:var(--text);">Storico 12 mesi</span>
-      <span id="ddt-chev-${storId}" style="color:var(--text-dim);font-size:12px;display:inline-block;transition:transform .2s;">▼</span>
-    </div>
-    <div id="ddt-body-${storId}" style="display:none;">
-      <div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;">
-        <thead><tr>
-          <th style="text-align:left;padding:6px 14px;font-size:10px;font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border);">Mese</th>
-          <th style="text-align:right;padding:6px 14px;font-size:10px;font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border);">Totale</th>
-        </tr></thead><tbody>`;
-  [...months].reverse().forEach(ym=>{
-    const r=byMon[ym];
-    h+=`<tr>
-      <td style="padding:6px 14px;font-size:12px;color:var(--text);">${ddtBkfMonLabel(ym)}</td>
-      <td style="padding:6px 14px;font-size:12px;text-align:right;font-weight:${r.tot?600:400};color:${r.tot?'var(--text)':'var(--text-dim)'};white-space:nowrap;">${r.tot?ddtBkfFmt(r.tot):'—'}</td>
-    </tr>`;
-  });
-  h+=`</tbody></table></div>
-    </div>
-  </div>`;
+  h+=`</div>`;
   view.innerHTML=h;
 }
 
