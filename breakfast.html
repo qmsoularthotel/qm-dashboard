@@ -618,7 +618,8 @@ function ddtBkfRenderList(){
   const view=document.getElementById('ddtListSection');if(!view)return;
   if(!_ddtFilter){view.innerHTML='';return;}
   const conf=DDT_BKF[_ddtFilter]||{accent:'var(--accent)',fg:'var(--accent)'};
-  const all=ddtBkfGet().filter(d=>d.reparto==='bkf'&&(ddtNormForn(d.fornitore)||d.fornitore)===_ddtFilter).sort((a,b)=>b.ts-a.ts);
+  const _mon=ddtBkfCurMonth();
+  const all=ddtBkfGet().filter(d=>d.reparto==='bkf'&&ddtGetYM(d)===_mon&&(ddtNormForn(d.fornitore)||d.fornitore)===_ddtFilter).sort((a,b)=>b.ts-a.ts);
   const filtered=_ddtSearch?all.filter(d=>{
     const q=_ddtSearch.toLowerCase();
     const inArt=(d.articoli||[]).some(a=>(a.descrizione||'').toLowerCase().includes(q));
