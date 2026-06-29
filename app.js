@@ -7141,7 +7141,7 @@ const DDT_FORNITORI={
 const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 let _ddtTab='spese';
 let _ddtMonth='';
-let _ddtFilter='tutti';
+let _ddtFilter='';
 let _ddtSearch='';
 let _ddtUploadModal=null;
 let _ddtParsedData=null;
@@ -7201,13 +7201,12 @@ function ddtRenderSpese(){
   const hkDdt=monDdt.filter(d=>_repOf(d)==='hk').length;
   const bkfDdt=monDdt.filter(d=>_repOf(d)==='bkf').length;
 
-  // ── Topbar: mese nav + cerca + upload ──
+  // ── Topbar: mese nav + upload ──
   let h=`<div style="display:flex;align-items:center;gap:10px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--border-light);">
     <button onclick="ddtNavMonth(-1)" style="width:28px;height:28px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;">‹</button>
     <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${ddtMonLabel(mon)}</span>
     <button onclick="ddtNavMonth(1)" style="width:28px;height:28px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;">›</button>
-    <input type="text" placeholder="Cerca fornitore, n° DDT, articolo…" oninput="_ddtSearch=this.value;ddtRenderList()" value="${_ddtSearch}" style="flex:1;max-width:260px;padding:6px 12px;border:1px solid var(--border);border-radius:7px;font-size:var(--fs-xs);background:var(--surface);margin-left:auto;">
-    <button onclick="ddtOpenUploadModal()" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;flex-shrink:0;">📷 Carica DDT</button>
+    <button onclick="ddtOpenUploadModal()" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;flex-shrink:0;margin-left:auto;">📷 Carica DDT</button>
   </div>`;
 
   // ── 2 KPI separati ──
@@ -7221,20 +7220,21 @@ function ddtRenderSpese(){
     ${kpi('Breakfast',bkfTot?ddtFmt(bkfTot):'',bkfDdt+' DDT · SDM · MARR · Cozzolino · Valgarda')}
   </div>`;
 
-  // ── 4 chip fornitori ──
-  h+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:18px;">`;
+  // ── Chip fornitori (cliccabili) ──
+  h+=`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px;">`;
   Object.entries(DDT_FORNITORI).forEach(([nome,conf])=>{
     const fDdt=monDdt.filter(d=>_nf(d)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
-    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:9px;padding:9px 12px;">
-      <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">${nome}</div>
-      <div style="font-size:var(--fs-sm);font-weight:800;color:${fTot?'var(--accent)':'var(--text-dim)'};">${fTot?ddtFmt(fTot):'—'}</div>
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">${fDdt.length} DDT</div>
+    const active=_ddtFilter===nome;
+    h+=`<div id="ddt-chip-${nome}" onclick="ddtSelectForn('${nome}')" style="background:${active?conf.color:'var(--surface)'};border:1px solid ${active?conf.accent:'var(--border-light)'};border-left:3px solid ${conf.accent};border-radius:9px;padding:9px 12px;cursor:pointer;transition:background .15s,border-color .15s;">
+      <div style="font-size:var(--fs-xxs);font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">${nome}</div>
+      <div style="font-size:var(--fs-sm);font-weight:800;color:${fTot?conf.fg:'var(--text-dim)'};">${fTot?ddtFmt(fTot):'—'}</div>
+      <div style="font-size:var(--fs-xxs);color:${active?conf.fg:'var(--text-dim)'};margin-top:2px;opacity:.8;">${fDdt.length} DDT${active?' ▲':' ▼'}</div>
     </div>`;
   });
   h+=`</div>`;
 
-  // ── Lista DDT (tabella espandibile) ──
+  // ── Lista DDT (visibile solo quando chip selezionato) ──
   h+=`<div id="ddtListSection"></div>`;
 
   // ── Storico 12 mesi — accordion ──
@@ -7267,26 +7267,46 @@ function ddtRenderSpese(){
   ddtRenderList();
 }
 
-// ── TAB DDT (lista + upload) ───────────────────────────────────────────────────
+function ddtSelectForn(nome){
+  _ddtFilter=(_ddtFilter===nome)?'':nome;
+  _ddtSearch='';
+  Object.entries(DDT_FORNITORI).forEach(([k,conf])=>{
+    const chip=document.getElementById('ddt-chip-'+k);
+    if(!chip)return;
+    const active=_ddtFilter===k;
+    chip.style.background=active?conf.color:'var(--surface)';
+    chip.style.borderColor=active?conf.accent:'var(--border-light)';
+    const rows=chip.querySelectorAll('div');
+    if(rows[0])rows[0].style.color=active?conf.fg:'var(--text-dim)';
+    if(rows[2]){
+      const mon=ddtCurMonth();
+      const cnt=ddtGet().filter(d=>ddtYM(d.data)===mon&&(ddtNormForn(d.fornitore)||d.fornitore)===k).length;
+      rows[2].textContent=cnt+' DDT'+(active?' ▲':' ▼');
+      rows[2].style.color=active?conf.fg:'var(--text-dim)';
+    }
+  });
+  ddtRenderList();
+}
+
 function ddtRenderList(){
   const view=document.getElementById('ddtListSection');if(!view)return;
   const mon=ddtCurMonth();
-  const all=ddtGet().filter(d=>ddtYM(d.data)===mon).sort((a,b)=>b.ts-a.ts);
-  const filtered=all.filter(d=>{
-    if(_ddtFilter!=='tutti'&&(ddtNormForn(d.fornitore)||d.fornitore)!==_ddtFilter)return false;
-    if(_ddtSearch){
-      const q=_ddtSearch.toLowerCase();
-      const inArt=(d.articoli||[]).some(a=>(a.descrizione||'').toLowerCase().includes(q));
-      if(!inArt&&!(d.fornitore||'').toLowerCase().includes(q)&&!(d.numero_ddt||'').toLowerCase().includes(q))return false;
-    }
-    return true;
-  });
-  const fBtn=(val,lbl)=>{const a=_ddtFilter===val;return`<button onclick="_ddtFilter='${val}';ddtRenderList()" style="font-size:var(--fs-xxs);padding:4px 12px;border-radius:20px;border:1px solid ${a?'var(--accent)':'var(--border)'};background:${a?'var(--accent)':'var(--surface)'};color:${a?'#fff':'var(--text-dim)'};cursor:pointer;font-weight:${a?700:400};">${lbl}</button>`;};
-  let h=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-    ${fBtn('tutti','Tutti')}${fBtn('DECA','DECA')}${fBtn('SDM','SDM')}${fBtn('MARR','MARR')}${fBtn('Cozzolino','Cozzolino')}${fBtn('Valgarda','Valgarda')}
-  </div>`;
+  const all=ddtGet().filter(d=>ddtYM(d.data)===mon&&(ddtNormForn(d.fornitore)||d.fornitore)===_ddtFilter).sort((a,b)=>b.ts-a.ts);
+  const filtered=_ddtSearch?all.filter(d=>{
+    const q=_ddtSearch.toLowerCase();
+    const inArt=(d.articoli||[]).some(a=>(a.descrizione||'').toLowerCase().includes(q));
+    return inArt||(d.numero_ddt||'').toLowerCase().includes(q);
+  }):all;
+  if(!_ddtFilter){view.innerHTML='';return;}
+  const conf=DDT_FORNITORI[_ddtFilter]||{accent:'var(--accent)',fg:'var(--accent)'};
+  let h=`<div style="border-top:2px solid ${conf.accent};margin-bottom:14px;padding-top:14px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <span style="font-size:var(--fs-xs);font-weight:700;color:${conf.fg};text-transform:uppercase;letter-spacing:.04em;">DDT ${_ddtFilter}</span>
+      <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:auto;">${all.length} documenti</span>
+      <input type="text" placeholder="Cerca n° DDT, articolo…" oninput="_ddtSearch=this.value;ddtRenderList()" value="${_ddtSearch}" style="padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:var(--fs-xxs);background:var(--surface);width:200px;">
+    </div>`;
   if(!filtered.length){
-    h+=`<div style="text-align:center;padding:40px 20px;color:var(--text-dim);font-size:var(--fs-xs);">${all.length?'Nessun risultato per i filtri applicati.':'Nessun DDT per questo mese.'}</div>`;
+    h+=`<div style="text-align:center;padding:32px 20px;color:var(--text-dim);font-size:var(--fs-xs);">${all.length?'Nessun risultato.':'Nessun DDT per '+_ddtFilter+' in questo mese.'}</div></div>`;
     view.innerHTML=h;return;
   }
   const thStyle='padding:8px 12px;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid var(--border-light);white-space:nowrap;';
@@ -7346,7 +7366,7 @@ function ddtRenderList(){
       </td>
     </tr>`;
   });
-  h+=`</tbody></table></div>`;
+  h+=`</tbody></table></div></div>`;
   view.innerHTML=h;
 }
 
