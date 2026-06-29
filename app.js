@@ -7132,10 +7132,11 @@ function revExpReset(p){
 // §§ DDT FORNITORI — upload DDT, spese per fornitore/reparto, storico
 const DDT_KEY='qm_ddt';
 const DDT_FORNITORI={
-  DECA:      {reparto:'hk', rLabel:'Housekeeping', color:'#dbeafe', fg:'#1d4ed8'},
-  SDM:       {reparto:'bkf', rLabel:'Breakfast',   color:'#dcfce7', fg:'#166534'},
-  MARR:      {reparto:'bkf', rLabel:'Breakfast',   color:'#fef3c7', fg:'#92400e'},
-  Cozzolino: {reparto:'bkf', rLabel:'Breakfast',   color:'#fce7f3', fg:'#9d174d'},
+  DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#dbeafe', fg:'#1d4ed8', accent:'#2563eb'},
+  SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#dcfce7', fg:'#166534', accent:'#16a34a'},
+  MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fef3c7', fg:'#92400e', accent:'#d97706'},
+  Cozzolino: {reparto:'bkf', rLabel:'Breakfast',    color:'#fce7f3', fg:'#9d174d', accent:'#db2777'},
+  Valgarda:  {reparto:'bkf', rLabel:'Breakfast',    color:'#ede9fe', fg:'#5b21b6', accent:'#7c3aed'},
 };
 const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 let _ddtTab='spese';
@@ -7217,7 +7218,7 @@ function ddtRenderSpese(){
   </div>`;
   h+=`<div style="display:flex;gap:10px;margin-bottom:16px;">
     ${kpi('Housekeeping',hkTot?ddtFmt(hkTot):'',hkDdt+' DDT · DECA')}
-    ${kpi('Breakfast',bkfTot?ddtFmt(bkfTot):'',bkfDdt+' DDT · SDM · MARR · Cozzolino')}
+    ${kpi('Breakfast',bkfTot?ddtFmt(bkfTot):'',bkfDdt+' DDT · SDM · MARR · Cozzolino · Valgarda')}
   </div>`;
 
   // ── 4 chip fornitori ──
@@ -7282,7 +7283,7 @@ function ddtRenderList(){
   });
   const fBtn=(val,lbl)=>{const a=_ddtFilter===val;return`<button onclick="_ddtFilter='${val}';ddtRenderList()" style="font-size:var(--fs-xxs);padding:4px 12px;border-radius:20px;border:1px solid ${a?'var(--accent)':'var(--border)'};background:${a?'var(--accent)':'var(--surface)'};color:${a?'#fff':'var(--text-dim)'};cursor:pointer;font-weight:${a?700:400};">${lbl}</button>`;};
   let h=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-    ${fBtn('tutti','Tutti')}${fBtn('DECA','DECA')}${fBtn('SDM','SDM')}${fBtn('MARR','MARR')}${fBtn('Cozzolino','Cozzolino')}
+    ${fBtn('tutti','Tutti')}${fBtn('DECA','DECA')}${fBtn('SDM','SDM')}${fBtn('MARR','MARR')}${fBtn('Cozzolino','Cozzolino')}${fBtn('Valgarda','Valgarda')}
   </div>`;
   if(!filtered.length){
     h+=`<div style="text-align:center;padding:40px 20px;color:var(--text-dim);font-size:var(--fs-xs);">${all.length?'Nessun risultato per i filtri applicati.':'Nessun DDT per questo mese.'}</div>`;
@@ -7368,6 +7369,7 @@ function ddtOpenUploadModal(){
           <option value="SDM">SDM (Breakfast)</option>
           <option value="MARR">MARR (Breakfast)</option>
           <option value="Cozzolino">Cozzolino (Breakfast)</option>
+          <option value="Valgarda">Valgarda (Breakfast)</option>
         </select>
       </div>
       <div style="flex:1;">
