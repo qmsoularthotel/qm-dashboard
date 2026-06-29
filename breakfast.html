@@ -419,7 +419,12 @@ try{
 try{
   const c=localStorage.getItem('bkf_cache');
   if(c){const saved=JSON.parse(c);bkfData=saved.data||[];bkfData._ts=saved.ts||null;
-    bkfMergeHistory();
+    // Non salvare su KV qui: _bkfHistory dal localStorage locale potrebbe essere incompleto.
+    // Il merge completo (con KV) avviene in loadAll(). Aggiorniamo solo la memoria.
+    if(bkfData.length){
+      Object.keys(_bkfHistory).forEach(k=>{if(k.length!==10)delete _bkfHistory[k];});
+      bkfData.forEach(d=>{if(!d.data)return;const p=d.data.split('/');if(p.length!==3)return;const key=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');_bkfHistory[key]={bb:(d.adulti||0)+(d.bambini||0),ro:(d.noCol||0)};});
+    }
     try{const si=sessionStorage.getItem('bkf_day_idx');currentIdx=si!==null?Math.min(parseInt(si),bkfData.length-1):findTodayIdx();}catch(e){currentIdx=findTodayIdx();}
     renderDay();}
 }catch(e){}
