@@ -7180,8 +7180,34 @@ function ddtBuildAnalisi(){
   const all=ddtGet();
   const _nf=d=>ddtNormForn(d.fornitore)||d.fornitore;
   const _conf=f=>DDT_FORNITORI[f]||{color:'#f1f5f9',fg:'#64748b',accent:'#94a3b8'};
-  const _fmt=n=>n?'€'+Number(n).toFixed(2).replace('.',','):'—';
+  const _fmt=n=>n!=null&&n!==''?'€'+Number(n).toFixed(2).replace('.',','):'—';
   const _parseD=s=>{if(!s)return 0;const p=s.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0;};
+
+  // ── Carica storico coperti ──
+  let bkfHist={};
+  try{bkfHist=JSON.parse(localStorage.getItem('qm_bkf_monthly_history')||'{}');}catch(e){}
+  // Aggrega per mese YYYY-MM → {bb, ro}
+  const copertiPerMese={};
+  Object.entries(bkfHist).forEach(([k,v])=>{
+    if(k.length!==10)return;
+    const ym=k.substring(0,7);
+    if(!copertiPerMese[ym])copertiPerMese[ym]={bb:0,ro:0};
+    copertiPerMese[ym].bb+=(v.bb||0);
+    copertiPerMese[ym].ro+=(v.ro||0);
+  });
+
+  // Spesa BKF per mese (solo fornitori breakfast + altro — tutto tranne DECA)
+  const spesaBkfPerMese={};
+  all.forEach(d=>{
+    const ym=ddtYM(d.data);if(!ym)return;
+    if(!spesaBkfPerMese[ym])spesaBkfPerMese[ym]=0;
+    spesaBkfPerMese[ym]+=(d.totale_ordine||0);
+  });
+
+  // Mesi in comune tra spesa e coperti
+  const mesiComuni=[...new Set([...Object.keys(spesaBkfPerMese),...Object.keys(copertiPerMese)])].sort().reverse();
+  const MON_IT=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  const _monLabel=ym=>{const[y,m]=ym.split('-');return MON_IT[parseInt(m)-1]+' '+y;};
 
   // ── A: price history per (forn, prodotto) ──
   const priceMap={};
@@ -7238,6 +7264,38 @@ function ddtBuildAnalisi(){
   }).sort((a,b)=>b.diff-a.diff);
 
   let h='';
+
+  // ── SEZIONE 0: €/coperto mensile ──
+  h+=`<div style="margin-bottom:22px;">
+  <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);margin-bottom:4px;">☕ Costo per coperto mensile</div>
+  <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:10px;">Spesa totale DDT ÷ coperti con colazione. Risposta alla domanda: "perché hai speso tanto?"</div>`;
+  if(!mesiComuni.length){
+    h+=`<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessun dato disponibile — carica DDT e report pasti.</div>`;
+  }else{
+    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:var(--bg);">
+      <th style="padding:7px 12px;text-align:left;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">MESE</th>
+      <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">SPESA</th>
+      <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">COPERTI BB</th>
+      <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">€/COPERTO</th>
+    </tr></thead><tbody>`;
+    mesiComuni.slice(0,12).forEach((ym,i)=>{
+      const spesa=spesaBkfPerMese[ym]||0;
+      const cop=copertiPerMese[ym]?.bb||0;
+      const ratio=cop>0?(spesa/cop):null;
+      const isCur=ym===ddtCurMonth();
+      const ratioColor=ratio==null?'var(--text-dim)':ratio>8?'var(--red)':ratio>5?'var(--amber)':'var(--green)';
+      h+=`<tr style="${i>0?'border-top:1px solid var(--border-light)':''}${isCur?';background:var(--accent-bg)':''}">
+        <td style="padding:8px 12px;font-size:var(--fs-xs);font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${_monLabel(ym)}</td>
+        <td style="padding:8px 10px;text-align:right;font-size:var(--fs-xs);font-weight:600;color:var(--text);">${spesa?_fmt(spesa):'—'}</td>
+        <td style="padding:8px 10px;text-align:right;font-size:var(--fs-xs);color:var(--text-dim);">${cop||'—'}</td>
+        <td style="padding:8px 10px;text-align:right;font-size:var(--fs-xs);font-weight:800;color:${ratioColor};">${ratio!=null?_fmt(ratio):'—'}</td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  }
+  h+=`</div>`;
 
   // ── SEZIONE A ──
   h+=`<div style="margin-bottom:22px;">
