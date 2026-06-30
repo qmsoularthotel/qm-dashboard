@@ -7179,6 +7179,8 @@ function ddtSetTab(tab){_ddtTab=tab;ddtRenderSpese();if(tab==='spese')ddtRenderL
 function ddtBuildAnalisi(){
   const all=ddtGet();
   const _nf=d=>ddtNormForn(d.fornitore)||d.fornitore;
+  // solo fornitori breakfast (esclude DECA/hk, Amonn/altro)
+  const bkfAll=all.filter(d=>{const forn=_nf(d);return(DDT_FORNITORI[forn]?.reparto||d.reparto||'bkf')==='bkf';});
   const _conf=f=>DDT_FORNITORI[f]||{color:'#f1f5f9',fg:'#64748b',accent:'#94a3b8'};
   const _fmt=n=>n!=null&&n!==''?'€'+Number(n).toFixed(2).replace('.',','):'—';
   const _parseD=s=>{if(!s)return 0;const p=s.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0;};
@@ -7196,9 +7198,9 @@ function ddtBuildAnalisi(){
     copertiPerMese[ym].ro+=(v.ro||0);
   });
 
-  // Spesa BKF per mese (solo fornitori breakfast + altro — tutto tranne DECA)
+  // Spesa BKF per mese (solo fornitori breakfast)
   const spesaBkfPerMese={};
-  all.forEach(d=>{
+  bkfAll.forEach(d=>{
     const ym=ddtYM(d.data);if(!ym)return;
     if(!spesaBkfPerMese[ym])spesaBkfPerMese[ym]=0;
     spesaBkfPerMese[ym]+=(d.totale_ordine||0);
@@ -7211,7 +7213,7 @@ function ddtBuildAnalisi(){
 
   // ── A: price history per (forn, prodotto) ──
   const priceMap={};
-  all.forEach(ddt=>{
+  bkfAll.forEach(ddt=>{
     const forn=_nf(ddt);
     (ddt.articoli||[]).forEach(a=>{
       if(!a.descrizione||a.prezzo_unit==null)return;
@@ -7231,7 +7233,7 @@ function ddtBuildAnalisi(){
 
   // ── B: ranking ──
   const prodSpend={};
-  all.forEach(ddt=>{
+  bkfAll.forEach(ddt=>{
     const forn=_nf(ddt);
     (ddt.articoli||[]).forEach(a=>{
       if(!a.descrizione)return;
@@ -7247,7 +7249,7 @@ function ddtBuildAnalisi(){
 
   // ── D: multi-supplier ──
   const multiMap={};
-  all.forEach(ddt=>{
+  bkfAll.forEach(ddt=>{
     const forn=_nf(ddt);
     (ddt.articoli||[]).forEach(a=>{
       if(!a.descrizione||a.prezzo_unit==null)return;
@@ -7275,7 +7277,7 @@ function ddtBuildAnalisi(){
   const catTotals={};
   CAT_RULES.forEach(c=>{catTotals[c.id]=0;});
   catTotals.altro=0;
-  all.forEach(ddt=>{
+  bkfAll.forEach(ddt=>{
     (ddt.articoli||[]).forEach(a=>{
       if(!a.descrizione)return;
       const desc=a.descrizione.toLowerCase();
@@ -7306,7 +7308,7 @@ function ddtBuildAnalisi(){
   const nowYM=todayD.getFullYear()+'-'+String(todayD.getMonth()+1).padStart(2,'0');
   const dayOfMon=todayD.getDate();
   const daysInMon=new Date(todayD.getFullYear(),todayD.getMonth()+1,0).getDate();
-  const curMonDdts=all.filter(d=>ddtYM(d.data)===nowYM);
+  const curMonDdts=bkfAll.filter(d=>ddtYM(d.data)===nowYM);
   const spesaCurr=curMonDdts.reduce((s,d)=>s+(d.totale_ordine||0),0);
   const projected=dayOfMon>0?spesaCurr/dayOfMon*daysInMon:0;
   const [pY,pM]=nowYM.split('-').map(Number);

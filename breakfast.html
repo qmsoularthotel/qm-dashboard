@@ -466,9 +466,11 @@ const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio',
 let _ddtMonth='';
 let _ddtFilter='';
 let _ddtSearch='';
+let _ddtBkfTab='spese';
 let _ddtUploadModal=null;
 let _ddtParsedData=null;
 let _ddtUploadFornitore='';
+function ddtBkfSetTab(tab){_ddtBkfTab=tab;ddtBkfRenderSpese();if(tab==='spese')ddtBkfRenderList();}
 
 function ddtBkfGet(){try{return JSON.parse(localStorage.getItem(DDT_KEY)||'[]');}catch(e){return[];}}
 function ddtBkfSave(arr){
@@ -501,6 +503,12 @@ function ddtBkfToggle(id){
 
 function ddtBkfRenderSpese(){
   const view=document.getElementById('ordiniContent');if(!view)return;
+  const tabBar=`<div style="display:flex;gap:0;margin-bottom:14px;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
+    <button onclick="ddtBkfSetTab('spese')" style="flex:1;padding:10px;border:none;background:${_ddtBkfTab==='spese'?'var(--accent)':'var(--surface)'};color:${_ddtBkfTab==='spese'?'#fff':'var(--text-dim)'};font-weight:700;font-size:13px;cursor:pointer;">📋 Spese</button>
+    <button onclick="ddtBkfSetTab('analisi')" style="flex:1;padding:10px;border:none;border-left:1px solid var(--border);background:${_ddtBkfTab==='analisi'?'var(--accent)':'var(--surface)'};color:${_ddtBkfTab==='analisi'?'#fff':'var(--text-dim)'};font-weight:700;font-size:13px;cursor:pointer;">📊 Analisi</button>
+  </div>`;
+  if(_ddtBkfTab==='analisi'){view.innerHTML=tabBar+ddtBkfBuildAnalisi();return;}
+
   const mon=ddtBkfCurMonth();
   const all=ddtBkfGet().filter(d=>d.reparto==='bkf');
   const monDdt=all.filter(d=>ddtGetYM(d)===mon);
@@ -519,7 +527,7 @@ function ddtBkfRenderSpese(){
   });
   const copLabel=isThisMon?('al '+nowD.getDate()+'/'+String(nowD.getMonth()+1).padStart(2,'0')):'mese intero';
 
-  let h=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+  let h=tabBar+`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
     <button onclick="ddtBkfNavMonth(-1)" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;">‹</button>
     <span style="font-size:16px;font-weight:700;color:var(--text);flex:1;text-align:center;">${ddtBkfMonLabel(mon)}</span>
     <button onclick="ddtBkfNavMonth(1)" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;">›</button>
@@ -592,6 +600,315 @@ function ddtBkfRenderSpese(){
 
   view.innerHTML=h;
   ddtBkfRenderList();
+}
+
+function ddtBkfBuildAnalisi(){
+  const all=ddtBkfGet().filter(d=>d.reparto==='bkf');
+  const _nf=d=>ddtNormForn(d.fornitore)||d.fornitore;
+  const _conf=f=>DDT_BKF[f]||{color:'#f1f5f9',fg:'#64748b',accent:'#94a3b8'};
+  const _fmt=n=>n!=null&&n!==''?'€ '+Number(n).toFixed(2).replace('.',','):'—';
+  const _parseD=s=>{if(!s)return 0;const p=s.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0;};
+  const MON_IT=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  const _monLabel=ym=>{const[y,m]=ym.split('-');return MON_IT[parseInt(m)-1]+' '+y;};
+
+  // coperti per mese da _bkfHistory
+  const copertiPerMese={};
+  Object.entries(_bkfHistory||{}).forEach(([k,v])=>{
+    if(k.length!==10)return;
+    const ym=k.substring(0,7);
+    if(!copertiPerMese[ym])copertiPerMese[ym]={bb:0};
+    copertiPerMese[ym].bb+=(v.bb||0);
+  });
+
+  // spesa per mese
+  const spesaPerMese={};
+  all.forEach(d=>{const ym=ddtBkfYM(d.data);if(!ym)return;spesaPerMese[ym]=(spesaPerMese[ym]||0)+(d.totale_ordine||0);});
+
+  const mesiTutti=[...new Set([...Object.keys(spesaPerMese),...Object.keys(copertiPerMese)])].sort().reverse();
+
+  // A: trend prezzi
+  const priceMap={};
+  all.forEach(ddt=>{
+    const forn=_nf(ddt);
+    (ddt.articoli||[]).forEach(a=>{
+      if(!a.descrizione||a.prezzo_unit==null)return;
+      const k=forn+'||'+a.descrizione.toLowerCase().trim().replace(/\s+/g,' ');
+      if(!priceMap[k])priceMap[k]={desc:a.descrizione,forn,entries:[]};
+      priceMap[k].entries.push({data:ddt.data,ts:_parseD(ddt.data),prezzo:Number(a.prezzo_unit),unita:a.unita||''});
+    });
+  });
+  const trendItems=Object.values(priceMap).filter(p=>p.entries.length>=2).map(p=>{
+    const sorted=[...p.entries].sort((a,b)=>a.ts-b.ts);
+    const latest=sorted[sorted.length-1],prev=sorted[sorted.length-2];
+    const varPct=prev.prezzo?((latest.prezzo-prev.prezzo)/prev.prezzo*100):0;
+    return{...p,sorted,latest,prev,varPct,min:Math.min(...sorted.map(e=>e.prezzo)),max:Math.max(...sorted.map(e=>e.prezzo))};
+  }).sort((a,b)=>b.varPct-a.varPct);
+  const alerts=trendItems.filter(p=>p.varPct>5);
+
+  // B: ranking
+  const prodSpend={};
+  all.forEach(ddt=>{
+    const forn=_nf(ddt);
+    (ddt.articoli||[]).forEach(a=>{
+      if(!a.descrizione)return;
+      const k=a.descrizione.toLowerCase().trim().replace(/\s+/g,' ');
+      if(!prodSpend[k])prodSpend[k]={desc:a.descrizione,total:0,count:0,forn:new Set()};
+      prodSpend[k].total+=(a.totale||(a.qta&&a.prezzo_unit?a.qta*a.prezzo_unit:0));
+      prodSpend[k].count++;prodSpend[k].forn.add(forn);
+    });
+  });
+  const topSpend=Object.values(prodSpend).filter(p=>p.total>0).sort((a,b)=>b.total-a.total).slice(0,10);
+  const topFreq=Object.values(prodSpend).sort((a,b)=>b.count-a.count).slice(0,8);
+
+  // D: confronto fornitori
+  const multiMap={};
+  all.forEach(ddt=>{
+    const forn=_nf(ddt);
+    (ddt.articoli||[]).forEach(a=>{
+      if(!a.descrizione||a.prezzo_unit==null)return;
+      const k=a.descrizione.toLowerCase().trim().replace(/\s+/g,' ');
+      if(!multiMap[k])multiMap[k]={desc:a.descrizione,forn:{}};
+      if(!multiMap[k].forn[forn])multiMap[k].forn[forn]=[];
+      multiMap[k].forn[forn].push(Number(a.prezzo_unit));
+    });
+  });
+  const multiItems=Object.values(multiMap).filter(p=>Object.keys(p.forn).length>=2).map(p=>{
+    const list=Object.entries(p.forn).map(([f,pp])=>({f,avg:pp.reduce((s,v)=>s+v,0)/pp.length,min:Math.min(...pp),max:Math.max(...pp),conf:_conf(f)})).sort((a,b)=>a.avg-b.avg);
+    const diff=list.length>=2?((list[list.length-1].avg-list[0].avg)/list[0].avg*100):0;
+    return{...p,list,diff};
+  }).sort((a,b)=>b.diff-a.diff);
+
+  // C: categorie
+  const CAT_RULES=[
+    {id:'salumi',   label:'🥩 Salumi',      color:'#fef2f2',fg:'#991b1b', kw:['prosciutto','salame','bresaola','mortadella','speck','coppa','pancetta','wurstel','affettato','salsiccia']},
+    {id:'latticini',label:'🧀 Latticini',    color:'#f0fdf4',fg:'#166534', kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone','scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino']},
+    {id:'pane',     label:'🥐 Pane & Dolci', color:'#fefce8',fg:'#854d0e', kw:['pane','brioche','cornetto','croissant','biscotto','torta','brioches','focaccia','marmellata','nutella','confettura','ciambella','krapfen','plumcake','sfoglia','fetta biscottata','fette biscottate','merendina']},
+    {id:'bevande',  label:'🥤 Bevande',       color:'#eff6ff',fg:'#1d4ed8', kw:['succo','acqua','caffè','tè','the ','cappuccino','centrifugato','smoothie','bevanda','nettare','succhi']},
+    {id:'frutta',   label:'🍓 Frutta',        color:'#dcfce7',fg:'#15803d', kw:['frutta','verdura','fragola','melone','anguria','ananas','banana','mela','pesca','arancia','kiwi','uva','albicocca','lampone','mirtillo','pera','ciliegia','limone']},
+    {id:'uova',     label:'🥚 Uova & Cereali',color:'#fffbeb',fg:'#92400e', kw:['uovo','uova','cereali','fiocchi','avena','granola','corn flakes','muesli']},
+  ];
+  const catTotals={altro:0};CAT_RULES.forEach(c=>{catTotals[c.id]=0;});
+  all.forEach(ddt=>{(ddt.articoli||[]).forEach(a=>{
+    if(!a.descrizione)return;
+    const desc=a.descrizione.toLowerCase();
+    const val=a.totale||(a.qta&&a.prezzo_unit?a.qta*a.prezzo_unit:0);
+    if(!val)return;
+    const cat=CAT_RULES.find(c=>c.kw.some(kw=>desc.includes(kw)));
+    catTotals[cat?cat.id:'altro']+=val;
+  });});
+  const catGrandTotal=Object.values(catTotals).reduce((s,v)=>s+v,0);
+
+  // Variazioni M vs M-1
+  const variazioni=[];
+  for(let i=0;i<Math.min(mesiTutti.length-1,6);i++){
+    const mNow=mesiTutti[i],mPrev=mesiTutti[i+1];
+    const spNow=spesaPerMese[mNow]||0,spPrev=spesaPerMese[mPrev]||0;
+    if(!spPrev)continue;
+    const copNow=copertiPerMese[mNow]?.bb||0,copPrev=copertiPerMese[mPrev]?.bb||0;
+    const deltaSpesa=spNow-spPrev,deltaCop=copNow-copPrev;
+    const spxCop=copPrev>0?spPrev/copPrev:0;
+    variazioni.push({mNow,mPrev,spNow,spPrev,deltaSpesa,deltaCop,copNow,copPrev,impattoCop:spxCop*deltaCop,impattoAltro:deltaSpesa-(spxCop*deltaCop)});
+  }
+
+  // Alert preventivo
+  const todayD=new Date();
+  const nowYM=todayD.getFullYear()+'-'+String(todayD.getMonth()+1).padStart(2,'0');
+  const dayOfMon=todayD.getDate(),daysInMon=new Date(todayD.getFullYear(),todayD.getMonth()+1,0).getDate();
+  const curMonDdts=all.filter(d=>ddtBkfYM(d.data)===nowYM);
+  const spesaCurr=curMonDdts.reduce((s,d)=>s+(d.totale_ordine||0),0);
+  const projected=dayOfMon>0?spesaCurr/dayOfMon*daysInMon:0;
+  const[pY,pM]=nowYM.split('-').map(Number);
+  const prevYM=pM===1?`${pY-1}-12`:`${pY}-${String(pM-1).padStart(2,'0')}`;
+  const spesaPrevMon=spesaPerMese[prevYM]||0;
+
+  let h='';
+
+  // ── Spesa & coperti mensili ──
+  h+=`<div style="margin-bottom:20px;">
+  <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:4px;">☕ Spesa e coperti mensili</div>
+  <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Spesa fornitori e coperti BB per mese.</div>`;
+  if(!mesiTutti.length){h+=`<div style="color:var(--text-dim);font-size:12px;">Nessun dato — carica DDT e report pasti.</div>`;}
+  else{
+    h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;"><table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:var(--bg);">
+      <th style="padding:7px 12px;text-align:left;font-size:10px;color:var(--text-dim);font-weight:700;">MESE</th>
+      <th style="padding:7px 10px;text-align:right;font-size:10px;color:var(--text-dim);font-weight:700;">SPESA</th>
+      <th style="padding:7px 10px;text-align:right;font-size:10px;color:var(--text-dim);font-weight:700;">COPERTI BB</th>
+    </tr></thead><tbody>`;
+    mesiTutti.slice(0,12).forEach((ym,i)=>{
+      const spesa=spesaPerMese[ym]||0,cop=copertiPerMese[ym]?.bb||0,isCur=ym===nowYM;
+      h+=`<tr style="${i>0?'border-top:1px solid var(--border)':''}${isCur?';background:#e8f0fe':''}">
+        <td style="padding:7px 12px;font-size:12px;font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${_monLabel(ym)}</td>
+        <td style="padding:7px 10px;text-align:right;font-size:12px;font-weight:600;">${spesa?_fmt(spesa):'—'}</td>
+        <td style="padding:7px 10px;text-align:right;font-size:12px;color:var(--text-dim);">${cop||'—'}</td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  }
+  h+=`</div>`;
+
+  // ── Alert preventivo ──
+  if(spesaCurr>0&&dayOfMon<daysInMon){
+    const projDelta=projected-spesaPrevMon,isOver=projDelta>0;
+    const projDeltaPct=spesaPrevMon?projDelta/spesaPrevMon*100:0;
+    const big=Math.abs(projDeltaPct)>10;
+    const alertColor=big?(isOver?'#fef2f2':'#f0fdf4'):'#fffbeb';
+    const alertBorder=big?(isOver?'#dc2626':'#16a34a'):'#d97706';
+    const alertFg=big?(isOver?'#dc2626':'#16a34a'):'#92400e';
+    h+=`<div style="margin-bottom:20px;">
+    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:8px;">🔔 Proiezione mese corrente</div>
+    <div style="background:${alertColor};border:1px solid ${alertBorder};border-radius:10px;padding:14px 16px;">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div><div style="font-size:10px;color:var(--text-dim);margin-bottom:2px;">Spesa al ${dayOfMon}/${String(todayD.getMonth()+1).padStart(2,'0')}</div>
+        <div style="font-size:20px;font-weight:800;">${_fmt(spesaCurr)}</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:3px;">${curMonDdts.length} DDT · ${daysInMon-dayOfMon} giorni rimanenti</div></div>
+        <div style="text-align:right;"><div style="font-size:10px;color:var(--text-dim);margin-bottom:2px;">Proiezione fine mese</div>
+        <div style="font-size:20px;font-weight:800;">${_fmt(projected)}</div>
+        ${spesaPrevMon?`<div style="font-size:12px;font-weight:700;color:${alertFg};margin-top:3px;">${isOver?'↑':'↓'} ${Math.abs(projDeltaPct).toFixed(1)}% vs ${_monLabel(prevYM)}</div>`:''}
+        </div>
+      </div>
+    </div></div>`;
+  }
+
+  // ── Variazione mensile ──
+  if(variazioni.length){
+    h+=`<div style="margin-bottom:20px;">
+    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:4px;">📊 Variazione mese su mese</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Coperti vs prezzi/volumi.</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">`;
+    variazioni.forEach((v,i)=>{
+      const isPos=v.deltaSpesa>=0,dPct=v.spPrev?v.deltaSpesa/v.spPrev*100:0;
+      const dc=isPos?'#dc2626':'#16a34a';
+      const copSign=v.deltaCop>=0?'+':'',impCopSign=v.impattoCop>=0?'+':'',impAltSign=v.impattoAltro>=0?'+':'';
+      const altColor=v.impattoAltro>50?'#dc2626':v.impattoAltro<-50?'#16a34a':'var(--text-dim)';
+      h+=`<div style="padding:10px 14px;${i>0?'border-top:1px solid var(--border)':''}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:13px;font-weight:700;">${_monLabel(v.mNow)}</span>
+          <span style="font-size:13px;font-weight:800;color:${dc};">${isPos?'+':''}${_fmt(v.deltaSpesa)} (${isPos?'+':''}${dPct.toFixed(1)}%)</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          ${v.copPrev>0?`<div style="background:var(--bg);border-radius:6px;padding:6px 10px;">
+            <div style="font-size:9px;color:var(--text-dim);font-weight:700;margin-bottom:2px;">COPERTI</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text-dim);">${impCopSign}${_fmt(v.impattoCop)}</div>
+            <div style="font-size:9px;color:var(--text-dim);">${copSign}${v.deltaCop} coperti BB</div>
+          </div>`:`<div style="background:var(--bg);border-radius:6px;padding:6px 10px;"><div style="font-size:9px;color:var(--text-dim);">Dati coperti n/d</div></div>`}
+          <div style="background:var(--bg);border-radius:6px;padding:6px 10px;">
+            <div style="font-size:9px;color:var(--text-dim);font-weight:700;margin-bottom:2px;">PREZZI & VOLUMI</div>
+            <div style="font-size:13px;font-weight:700;color:${altColor};">${impAltSign}${_fmt(v.impattoAltro)}</div>
+            <div style="font-size:9px;color:var(--text-dim);">${_monLabel(v.mPrev)} → ${_monLabel(v.mNow)}</div>
+          </div>
+        </div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  }
+
+  // ── Categorie ──
+  if(catGrandTotal>0){
+    const catList=[...CAT_RULES.map(c=>({...c,total:catTotals[c.id]})),{id:'altro',label:'📦 Altro',color:'#f1f5f9',fg:'#64748b',total:catTotals.altro}].filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+    const catMax=catList[0]?.total||1;
+    h+=`<div style="margin-bottom:20px;">
+    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px;">🏷️ Spesa per categoria</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">`;
+    catList.forEach((c,i)=>{
+      const pct=catMax?c.total/catMax*100:0,sharePct=catGrandTotal?c.total/catGrandTotal*100:0;
+      h+=`<div style="padding:9px 12px;${i>0?'border-top:1px solid var(--border)':''}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="background:${c.color};color:${c.fg};padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;">${c.label}</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span style="font-size:10px;color:var(--text-dim);">${sharePct.toFixed(0)}%</span>
+            <span style="font-size:13px;font-weight:800;">${_fmt(c.total)}</span>
+          </div>
+        </div>
+        <div style="height:3px;background:var(--border);border-radius:2px;"><div style="height:3px;width:${pct.toFixed(1)}%;background:${c.fg};border-radius:2px;opacity:0.7;"></div></div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  }
+
+  // ── Trend prezzi ──
+  h+=`<div style="margin-bottom:20px;">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+    <span style="font-size:14px;font-weight:800;color:var(--text);">📈 Trend prezzi</span>
+    ${alerts.length?`<span style="background:#fef2f2;color:#dc2626;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;">${alerts.length} rialz${alerts.length===1?'o':'i'} &gt;5%</span>`:''}
+  </div>`;
+  if(!trendItems.length){h+=`<div style="color:var(--text-dim);font-size:12px;padding:8px 0;">Carica DDT dello stesso fornitore in date diverse.</div>`;}
+  else{
+    if(alerts.length){alerts.forEach(p=>{
+      const c=_conf(p.forn);
+      h+=`<div style="background:#fef2f2;border-left:3px solid #dc2626;border-radius:8px;padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;">
+        <div><div style="font-size:12px;font-weight:700;">${p.desc}</div>
+        <div style="font-size:10px;color:var(--text-dim);">${p.forn} · ${p.prev.data} → ${p.latest.data}</div></div>
+        <div style="text-align:right;flex-shrink:0;margin-left:12px;">
+          <div style="font-size:15px;font-weight:800;color:#dc2626;">↑ ${p.varPct.toFixed(1)}%</div>
+          <div style="font-size:10px;color:var(--text-dim);">${_fmt(p.prev.prezzo)} → <b>${_fmt(p.latest.prezzo)}</b></div>
+        </div></div>`;
+    });}
+    h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:${alerts.length?8:0}px;">
+    <table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:var(--bg);">
+      <th style="padding:6px 10px;text-align:left;font-size:10px;color:var(--text-dim);font-weight:700;">PRODOTTO</th>
+      <th style="padding:6px 8px;text-align:right;font-size:10px;color:var(--text-dim);font-weight:700;">ATTUALE</th>
+      <th style="padding:6px 8px;text-align:right;font-size:10px;color:var(--text-dim);font-weight:700;">VAR%</th>
+    </tr></thead><tbody>`;
+    trendItems.slice(0,20).forEach((p,i)=>{
+      const vc=p.varPct>5?'#dc2626':p.varPct<-5?'#16a34a':'var(--text-dim)';
+      const arr=p.varPct>0.5?'↑':p.varPct<-0.5?'↓':'→';
+      h+=`<tr style="${i>0?'border-top:1px solid var(--border)':''}">
+        <td style="padding:6px 10px;font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.desc}">${p.desc}<br><span style="font-size:9px;color:var(--text-dim);">${p.forn}</span></td>
+        <td style="padding:6px 8px;text-align:right;font-size:12px;font-weight:700;">${_fmt(p.latest.prezzo)}</td>
+        <td style="padding:6px 8px;text-align:right;font-size:12px;font-weight:700;color:${vc};">${arr} ${Math.abs(p.varPct).toFixed(1)}%</td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  }
+  h+=`</div>`;
+
+  // ── Top prodotti per spesa ──
+  h+=`<div style="margin-bottom:20px;">
+  <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px;">🏆 Top prodotti per spesa</div>`;
+  if(!topSpend.length){h+=`<div style="color:var(--text-dim);font-size:12px;">Nessun dato</div>`;}
+  else{
+    const mx=topSpend[0].total;
+    h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">`;
+    topSpend.forEach((p,i)=>{
+      const pct=mx?p.total/mx*100:0;
+      const tags=[...p.forn].map(f=>{const c=_conf(f);return`<span style="background:${c.color};color:${c.fg};padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;">${f}</span>`;}).join(' ');
+      h+=`<div style="padding:8px 12px;${i>0?'border-top:1px solid var(--border)':''}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <div style="font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px;">${p.desc} ${tags}</div>
+          <div style="font-size:13px;font-weight:800;color:var(--accent);white-space:nowrap;">${_fmt(p.total)}</div>
+        </div>
+        <div style="height:3px;background:var(--border);border-radius:2px;"><div style="height:3px;width:${pct.toFixed(1)}%;background:var(--accent);border-radius:2px;"></div></div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  h+=`</div>`;
+
+  // ── Confronto fornitori ──
+  h+=`<div style="margin-bottom:20px;">
+  <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px;">⚖️ Stesso prodotto, fornitori diversi</div>`;
+  if(!multiItems.length){h+=`<div style="color:var(--text-dim);font-size:12px;">Nessun prodotto su più fornitori.</div>`;}
+  else{multiItems.slice(0,12).forEach(p=>{
+    h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:8px;">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;">${p.desc}
+        ${p.diff>10?`<span style="font-size:9px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;margin-left:6px;font-weight:700;">Δ ${p.diff.toFixed(0)}%</span>`:''}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">`;
+    p.list.forEach((f,i)=>{
+      const best=i===0;
+      h+=`<div style="background:${best?f.conf.color:'var(--bg)'};border:1px solid ${best?f.conf.accent:'var(--border)'};border-radius:8px;padding:6px 10px;flex:1;min-width:70px;">
+        <div style="font-size:9px;font-weight:700;color:${f.conf.fg};margin-bottom:2px;">${f.f}${best?' ✓':''}</div>
+        <div style="font-size:14px;font-weight:800;color:${best?f.conf.fg:'var(--text)'};">${_fmt(f.avg)}</div>
+        ${f.min!==f.max?`<div style="font-size:9px;color:var(--text-dim);">${_fmt(f.min)}–${_fmt(f.max)}</div>`:''}
+      </div>`;
+    });
+    h+=`</div></div>`;
+  });}
+  h+=`</div>`;
+
+  return h;
 }
 
 function ddtBkfSelectForn(nome){
