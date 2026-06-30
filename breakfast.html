@@ -557,6 +557,8 @@ function ddtBkfRenderSpese(){
   });
   h+=`</div>`;
 
+  h+=`<div id="ddtListSection"></div>`;
+
   // Storico 12 mesi — sempre visibile, accordion
   const _all=ddtBkfGet().filter(d=>d.reparto==='bkf');
   const _now=new Date();
@@ -588,7 +590,6 @@ function ddtBkfRenderSpese(){
     <span style="font-size:20px;">📷</span> Carica nuovo DDT
   </button>`;
 
-  h+=`<div id="ddtListSection"></div>`;
   view.innerHTML=h;
   ddtBkfRenderList();
 }
