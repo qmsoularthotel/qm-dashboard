@@ -999,7 +999,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id.startsWith('recensioni-exp-')){if(!expGroupOpen){expGroupOpen=true;document.getElementById('expGroupToggle').classList.add('open');document.getElementById('expGroupItems').classList.add('open');}}
   try{localStorage.setItem('qm_last_view',id);}catch(e){}
   if(id==='inventario'){try{invRender();}catch(e){}}
-  if(id==='spese'){try{ddtRenderSpese();ddtRenderList();}catch(e){}}
+  if(id==='spese'){try{ddtRenderSpese();if(_ddtTab==='spese')ddtRenderList();}catch(e){}}
   if(id==='turni-pref'){try{turniPrefRender();turniPrefMarkAllSeen();}catch(e){}}
   if(id==='controllo-mattino'){try{cmLoad();}catch(e){}}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
@@ -7174,7 +7174,186 @@ let _ddtParsedData=null;
 let _ddtUploadFornitore='';
 let _ddtUploadHotel='sa';
 
-function ddtSetTab(){}
+function ddtSetTab(tab){_ddtTab=tab;ddtRenderSpese();if(tab==='spese')ddtRenderList();}
+
+function ddtBuildAnalisi(){
+  const all=ddtGet();
+  const _nf=d=>ddtNormForn(d.fornitore)||d.fornitore;
+  const _conf=f=>DDT_FORNITORI[f]||{color:'#f1f5f9',fg:'#64748b',accent:'#94a3b8'};
+  const _fmt=n=>n?'€'+Number(n).toFixed(2).replace('.',','):'—';
+  const _parseD=s=>{if(!s)return 0;const p=s.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0;};
+
+  // ── A: price history per (forn, prodotto) ──
+  const priceMap={};
+  all.forEach(ddt=>{
+    const forn=_nf(ddt);
+    (ddt.articoli||[]).forEach(a=>{
+      if(!a.descrizione||a.prezzo_unit==null)return;
+      const k=forn+'||'+a.descrizione.toLowerCase().trim().replace(/\s+/g,' ');
+      if(!priceMap[k])priceMap[k]={desc:a.descrizione,forn,entries:[]};
+      priceMap[k].entries.push({data:ddt.data,ts:_parseD(ddt.data),prezzo:Number(a.prezzo_unit),unita:a.unita||''});
+    });
+  });
+  const trendItems=Object.values(priceMap).filter(p=>p.entries.length>=2).map(p=>{
+    const sorted=[...p.entries].sort((a,b)=>a.ts-b.ts);
+    const latest=sorted[sorted.length-1],prev=sorted[sorted.length-2];
+    const varPct=prev.prezzo?((latest.prezzo-prev.prezzo)/prev.prezzo*100):0;
+    const min=Math.min(...sorted.map(e=>e.prezzo)),max=Math.max(...sorted.map(e=>e.prezzo));
+    return{...p,sorted,latest,prev,varPct,min,max};
+  }).sort((a,b)=>b.varPct-a.varPct);
+  const alerts=trendItems.filter(p=>p.varPct>5);
+
+  // ── B: ranking ──
+  const prodSpend={};
+  all.forEach(ddt=>{
+    const forn=_nf(ddt);
+    (ddt.articoli||[]).forEach(a=>{
+      if(!a.descrizione)return;
+      const k=a.descrizione.toLowerCase().trim().replace(/\s+/g,' ');
+      if(!prodSpend[k])prodSpend[k]={desc:a.descrizione,total:0,count:0,forn:new Set()};
+      prodSpend[k].total+=(a.totale||(a.qta&&a.prezzo_unit?a.qta*a.prezzo_unit:0));
+      prodSpend[k].count++;
+      prodSpend[k].forn.add(forn);
+    });
+  });
+  const topSpend=Object.values(prodSpend).filter(p=>p.total>0).sort((a,b)=>b.total-a.total).slice(0,10);
+  const topFreq=Object.values(prodSpend).sort((a,b)=>b.count-a.count).slice(0,8);
+
+  // ── D: multi-supplier ──
+  const multiMap={};
+  all.forEach(ddt=>{
+    const forn=_nf(ddt);
+    (ddt.articoli||[]).forEach(a=>{
+      if(!a.descrizione||a.prezzo_unit==null)return;
+      const k=a.descrizione.toLowerCase().trim().replace(/\s+/g,' ');
+      if(!multiMap[k])multiMap[k]={desc:a.descrizione,forn:{}};
+      if(!multiMap[k].forn[forn])multiMap[k].forn[forn]=[];
+      multiMap[k].forn[forn].push(Number(a.prezzo_unit));
+    });
+  });
+  const multiItems=Object.values(multiMap).filter(p=>Object.keys(p.forn).length>=2).map(p=>{
+    const list=Object.entries(p.forn).map(([f,pp])=>({f,avg:pp.reduce((s,v)=>s+v,0)/pp.length,min:Math.min(...pp),max:Math.max(...pp),conf:_conf(f)})).sort((a,b)=>a.avg-b.avg);
+    const diff=list.length>=2?((list[list.length-1].avg-list[0].avg)/list[0].avg*100):0;
+    return{...p,list,diff};
+  }).sort((a,b)=>b.diff-a.diff);
+
+  let h='';
+
+  // ── SEZIONE A ──
+  h+=`<div style="margin-bottom:22px;">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+    <span style="font-size:var(--fs-sm);font-weight:800;color:var(--text);">📈 Trend prezzi</span>
+    ${alerts.length?`<span style="background:#fef2f2;color:var(--red);font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;">${alerts.length} rialz${alerts.length===1?'o':'i'} &gt;5%</span>`:''}
+  </div>`;
+  if(!trendItems.length){
+    h+=`<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:12px 0;">Carica DDT dello stesso fornitore in date diverse per vedere i trend prezzi.</div>`;
+  }else{
+    if(alerts.length){
+      alerts.forEach(p=>{
+        h+=`<div style="background:#fef2f2;border-left:3px solid var(--red);border-radius:8px;padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;">
+          <div><div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${p.desc}</div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${p.forn} · ${p.prev.data} → ${p.latest.data}</div></div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px;">
+            <div style="font-size:var(--fs-sm);font-weight:800;color:var(--red);">↑ ${p.varPct.toFixed(1)}%</div>
+            <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${_fmt(p.prev.prezzo)} → <b>${_fmt(p.latest.prezzo)}</b></div>
+          </div></div>`;
+      });
+    }
+    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;overflow:hidden;margin-top:${alerts.length?8:0}px;">
+    <table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:var(--bg);">
+      <th style="padding:7px 12px;text-align:left;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">PRODOTTO</th>
+      <th style="padding:7px 12px;text-align:left;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">FORN.</th>
+      <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">ATTUALE</th>
+      <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">VAR%</th>
+      <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">MIN–MAX</th>
+    </tr></thead><tbody>`;
+    trendItems.slice(0,25).forEach((p,i)=>{
+      const vc=p.varPct>5?'var(--red)':p.varPct<-5?'var(--green)':'var(--text-dim)';
+      const arr=p.varPct>0.5?'↑':p.varPct<-0.5?'↓':'→';
+      const c=_conf(p.forn);
+      h+=`<tr style="${i>0?'border-top:1px solid var(--border-light)':''}">
+        <td style="padding:7px 12px;font-size:var(--fs-xs);color:var(--text);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.desc}">${p.desc}</td>
+        <td style="padding:7px 12px;"><span style="background:${c.color};color:${c.fg};padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;">${p.forn}</span></td>
+        <td style="padding:7px 10px;text-align:right;font-size:var(--fs-xs);font-weight:700;">${_fmt(p.latest.prezzo)}</td>
+        <td style="padding:7px 10px;text-align:right;font-size:var(--fs-xs);font-weight:700;color:${vc};">${arr} ${Math.abs(p.varPct).toFixed(1)}%</td>
+        <td style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;">${_fmt(p.min)}–${_fmt(p.max)}</td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  }
+  h+=`</div>`;
+
+  // ── SEZIONE B: top spesa ──
+  h+=`<div style="margin-bottom:22px;">
+  <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);margin-bottom:10px;">🏆 Top prodotti per spesa</div>`;
+  if(!topSpend.length){h+=`<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessun dato</div>`;}
+  else{
+    const mx=topSpend[0].total;
+    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">`;
+    topSpend.forEach((p,i)=>{
+      const pct=mx?p.total/mx*100:0;
+      const tags=[...p.forn].map(f=>{const c=_conf(f);return`<span style="background:${c.color};color:${c.fg};padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;">${f}</span>`;}).join(' ');
+      h+=`<div style="padding:8px 12px;${i>0?'border-top:1px solid var(--border-light)':''}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <div style="font-size:var(--fs-xs);font-weight:600;color:var(--text);flex:1;padding-right:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.desc} ${tags}</div>
+          <div style="font-size:var(--fs-xs);font-weight:800;color:var(--accent);white-space:nowrap;">${_fmt(p.total)}</div>
+        </div>
+        <div style="height:3px;background:var(--border-light);border-radius:2px;"><div style="height:3px;width:${pct.toFixed(1)}%;background:var(--accent);border-radius:2px;"></div></div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  h+=`</div>`;
+
+  // ── SEZIONE B2: top frequenza ──
+  h+=`<div style="margin-bottom:22px;">
+  <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);margin-bottom:10px;">🔄 Top prodotti per frequenza</div>`;
+  if(!topFreq.length){h+=`<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessun dato</div>`;}
+  else{
+    const mx=topFreq[0].count;
+    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">`;
+    topFreq.forEach((p,i)=>{
+      const pct=mx?p.count/mx*100:0;
+      h+=`<div style="padding:8px 12px;${i>0?'border-top:1px solid var(--border-light)':''}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <div style="font-size:var(--fs-xs);font-weight:600;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.desc}</div>
+          <div style="font-size:var(--fs-xs);font-weight:800;color:var(--text-dim);white-space:nowrap;margin-left:8px;">${p.count}×</div>
+        </div>
+        <div style="height:3px;background:var(--border-light);border-radius:2px;"><div style="height:3px;width:${pct.toFixed(1)}%;background:#60a5fa;border-radius:2px;"></div></div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  h+=`</div>`;
+
+  // ── SEZIONE D: confronto fornitori ──
+  h+=`<div style="margin-bottom:22px;">
+  <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);margin-bottom:10px;">⚖️ Stesso prodotto, fornitori diversi</div>`;
+  if(!multiItems.length){
+    h+=`<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessun prodotto trovato su più fornitori.</div>`;
+  }else{
+    multiItems.slice(0,15).forEach(p=>{
+      h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;padding:10px 14px;margin-bottom:8px;">
+        <div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);margin-bottom:8px;">${p.desc}
+          ${p.diff>10?`<span style="font-size:9px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;margin-left:6px;font-weight:700;">Δ ${p.diff.toFixed(0)}% differenza</span>`:''}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">`;
+      p.list.forEach((f,i)=>{
+        const best=i===0;
+        h+=`<div style="background:${best?f.conf.color:'var(--bg)'};border:1px solid ${best?f.conf.accent:'var(--border-light)'};border-radius:8px;padding:6px 10px;flex:1;min-width:80px;">
+          <div style="font-size:9px;font-weight:700;color:${f.conf.fg};margin-bottom:2px;">${f.f}${best?' ✓':''}</div>
+          <div style="font-size:var(--fs-sm);font-weight:800;color:${best?f.conf.fg:'var(--text)'};">${_fmt(f.avg)}</div>
+          ${f.min!==f.max?`<div style="font-size:9px;color:var(--text-dim);">${_fmt(f.min)}–${_fmt(f.max)}</div>`:''}
+        </div>`;
+      });
+      h+=`</div></div>`;
+    });
+  }
+  h+=`</div>`;
+
+  return h;
+}
 function ddtToggle(id){
   const body=document.getElementById('ddt-body-'+id);
   const chev=document.getElementById('ddt-chev-'+id);
@@ -7217,6 +7396,11 @@ function ddtYM(data){
 // ── TAB SPESE ─────────────────────────────────────────────────────────────────
 function ddtRenderSpese(){
   const view=document.getElementById('inv-spese-view');if(!view)return;
+  const tabBar=`<div style="display:flex;gap:0;margin-bottom:16px;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
+    <button onclick="ddtSetTab('spese')" style="flex:1;padding:9px;border:none;background:${_ddtTab==='spese'?'var(--accent)':'var(--surface)'};color:${_ddtTab==='spese'?'#fff':'var(--text-dim)'};font-weight:700;font-size:var(--fs-xs);cursor:pointer;">📋 Spese</button>
+    <button onclick="ddtSetTab('analisi')" style="flex:1;padding:9px;border:none;border-left:1px solid var(--border);background:${_ddtTab==='analisi'?'var(--accent)':'var(--surface)'};color:${_ddtTab==='analisi'?'#fff':'var(--text-dim)'};font-weight:700;font-size:var(--fs-xs);cursor:pointer;">📊 Analisi</button>
+  </div>`;
+  if(_ddtTab==='analisi'){view.innerHTML=tabBar+ddtBuildAnalisi();return;}
   const mon=ddtCurMonth();
   const all=ddtGet();
   const monDdt=all.filter(d=>ddtYM(d.data)===mon);
