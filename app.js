@@ -7196,7 +7196,13 @@ function ddtSave(arr){
   kvSet(DDT_KEY,json).catch(()=>{});
 }
 function ddtCurMonth(){
-  if(!_ddtMonth){const n=new Date();_ddtMonth=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
+  if(!_ddtMonth){
+    const all=ddtGet();
+    if(all.length){
+      const last=all.reduce((a,b)=>(b.ts||0)>(a.ts||0)?b:a);
+      _ddtMonth=ddtYM(last.data)||((n=>{return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');})(new Date()));
+    }else{const n=new Date();_ddtMonth=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
+  }
   return _ddtMonth;
 }
 function ddtNavMonth(dir){
