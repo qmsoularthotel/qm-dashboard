@@ -7267,8 +7267,8 @@ function ddtBuildAnalisi(){
 
   // ── SEZIONE 0: €/coperto mensile ──
   h+=`<div style="margin-bottom:22px;">
-  <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);margin-bottom:4px;">☕ Costo per coperto mensile</div>
-  <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:10px;">Spesa totale DDT ÷ coperti con colazione. Risposta alla domanda: "perché hai speso tanto?"</div>`;
+  <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);margin-bottom:4px;">☕ Spesa e coperti mensili</div>
+  <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:10px;">Contestualizza la spesa: "Ho speso X perché ho avuto Y coperti."</div>`;
   if(!mesiComuni.length){
     h+=`<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessun dato disponibile — carica DDT e report pasti.</div>`;
   }else{
@@ -7276,21 +7276,17 @@ function ddtBuildAnalisi(){
     <table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:var(--bg);">
       <th style="padding:7px 12px;text-align:left;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">MESE</th>
-      <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">SPESA</th>
+      <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">SPESA TOTALE</th>
       <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">COPERTI BB</th>
-      <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">€/COPERTO</th>
     </tr></thead><tbody>`;
     mesiComuni.slice(0,12).forEach((ym,i)=>{
       const spesa=spesaBkfPerMese[ym]||0;
       const cop=copertiPerMese[ym]?.bb||0;
-      const ratio=cop>0?(spesa/cop):null;
       const isCur=ym===ddtCurMonth();
-      const ratioColor=ratio==null?'var(--text-dim)':ratio>8?'var(--red)':ratio>5?'var(--amber)':'var(--green)';
       h+=`<tr style="${i>0?'border-top:1px solid var(--border-light)':''}${isCur?';background:var(--accent-bg)':''}">
         <td style="padding:8px 12px;font-size:var(--fs-xs);font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${_monLabel(ym)}</td>
         <td style="padding:8px 10px;text-align:right;font-size:var(--fs-xs);font-weight:600;color:var(--text);">${spesa?_fmt(spesa):'—'}</td>
         <td style="padding:8px 10px;text-align:right;font-size:var(--fs-xs);color:var(--text-dim);">${cop||'—'}</td>
-        <td style="padding:8px 10px;text-align:right;font-size:var(--fs-xs);font-weight:800;color:${ratioColor};">${ratio!=null?_fmt(ratio):'—'}</td>
       </tr>`;
     });
     h+=`</tbody></table></div>`;
