@@ -1871,14 +1871,12 @@ const LS={
               const tsKey=k==='pulData'?'qm_ts_pulTs':'qm_ts_bkfTs';
               const elId=k==='pulData'?'pulTs':'bkfTs';
               const localTs=parseInt(localStorage.getItem(tsKey)||'0');
-              if(localTs){
-                const cloudObj=JSON.parse(json.value);
-                if(cloudObj.ts && localTs>cloudObj.ts)return; // locale più recente: tieni locale
-                // cloud più recente: aggiorna ts in localStorage e visual
-                if(cloudObj.ts){
-                  localStorage.setItem(tsKey,String(cloudObj.ts));
-                  try{_setUcTs(elId,cloudObj.ts);}catch(e){}
-                }
+              const cloudObj=JSON.parse(json.value);
+              if(cloudObj.ts && localTs>cloudObj.ts)return; // locale più recente: tieni locale
+              // cloud più recente (o locale non ancora impostato): aggiorna ts e visual
+              if(cloudObj.ts){
+                localStorage.setItem(tsKey,String(cloudObj.ts));
+                try{_setUcTs(elId,cloudObj.ts);}catch(e){}
               }
             }catch(e){}
           }
@@ -5137,7 +5135,7 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
         const map=new Map();
         existing.forEach(x=>map.set(x.camera,x));
         // Nuovi: aggiunge o aggiorna (es. cambio camera viene gestito solo se camera diversa)
-        incoming.forEach(x=>{if(!map.has(x.camera))map.set(x.camera,x);});
+        incoming.forEach(x=>map.set(x.camera,x)); // upload più recente sovrascrive
         return Array.from(map.values());
       };
       newData.arrivi=mergeByCamera(arriviData.arrivi||[],newData.arrivi);
