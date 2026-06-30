@@ -603,7 +603,11 @@ function ddtBkfRenderSpese(){
 }
 
 function ddtBkfBuildAnalisi(){
-  const all=ddtBkfGet().filter(d=>d.reparto==='bkf');
+  const all=ddtBkfGet().filter(d=>{
+    if(d.reparto!=='bkf')return false;
+    const forn=ddtNormForn(d.fornitore)||d.fornitore;
+    return DDT_BKF[forn]!==undefined;
+  });
   const _nf=d=>ddtNormForn(d.fornitore)||d.fornitore;
   const _conf=f=>DDT_BKF[f]||{color:'#f1f5f9',fg:'#64748b',accent:'#94a3b8'};
   const _fmt=n=>n!=null&&n!==''?'€ '+Number(n).toFixed(2).replace('.',','):'—';
