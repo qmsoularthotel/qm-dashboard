@@ -112,6 +112,7 @@ body{padding-bottom:62px;}
 </div>
 
 <div id="ordiniContent" style="display:none;padding:14px;"></div>
+<div id="reportContent" style="display:none;padding:14px;"></div>
 
 <nav class="bottom-nav">
   <div class="bottom-nav-item active" id="bnv-day" onclick="switchTab('day')">
@@ -119,6 +120,9 @@ body{padding-bottom:62px;}
   </div>
   <div class="bottom-nav-item" id="bnv-orders" onclick="switchTab('orders')">
     <span>🛒</span>Acquisti
+  </div>
+  <div class="bottom-nav-item" id="bnv-report" onclick="switchTab('report')">
+    <span>📊</span>Andamento
   </div>
 </nav>
 
@@ -438,9 +442,16 @@ function switchTab(tab){
   _activeTab=tab;
   document.getElementById('mainContent').style.display=tab==='day'?'':'none';
   document.getElementById('ordiniContent').style.display=tab==='orders'?'':'none';
+  document.getElementById('reportContent').style.display=tab==='report'?'':'none';
   document.getElementById('bnv-day').classList.toggle('active',tab==='day');
   document.getElementById('bnv-orders').classList.toggle('active',tab==='orders');
+  document.getElementById('bnv-report').classList.toggle('active',tab==='report');
   if(tab==='orders'){ddtBkfRenderSpese();ddtBkfRenderList();}
+  if(tab==='report'){ddtBkfRenderReport();}
+}
+function ddtBkfRenderReport(){
+  const view=document.getElementById('reportContent');if(!view)return;
+  view.innerHTML=ddtBkfBuildAnalisi();
 }
 
 // ── DDT ORDINI BKF ────────────────────────────────────────────────────────────
@@ -503,12 +514,6 @@ function ddtBkfToggle(id){
 
 function ddtBkfRenderSpese(){
   const view=document.getElementById('ordiniContent');if(!view)return;
-  const tabBar=`<div style="display:flex;gap:0;margin-bottom:14px;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
-    <button onclick="ddtBkfSetTab('spese')" style="flex:1;padding:10px;border:none;background:${_ddtBkfTab==='spese'?'var(--accent)':'var(--surface)'};color:${_ddtBkfTab==='spese'?'#fff':'var(--text-dim)'};font-weight:700;font-size:13px;cursor:pointer;">📋 Spese</button>
-    <button onclick="ddtBkfSetTab('analisi')" style="flex:1;padding:10px;border:none;border-left:1px solid var(--border);background:${_ddtBkfTab==='analisi'?'var(--accent)':'var(--surface)'};color:${_ddtBkfTab==='analisi'?'#fff':'var(--text-dim)'};font-weight:700;font-size:13px;cursor:pointer;">📊 Analisi</button>
-  </div>`;
-  if(_ddtBkfTab==='analisi'){view.innerHTML=tabBar+ddtBkfBuildAnalisi();return;}
-
   const mon=ddtBkfCurMonth();
   const all=ddtBkfGet().filter(d=>d.reparto==='bkf');
   const monDdt=all.filter(d=>ddtGetYM(d)===mon);
@@ -527,7 +532,7 @@ function ddtBkfRenderSpese(){
   });
   const copLabel=isThisMon?('al '+nowD.getDate()+'/'+String(nowD.getMonth()+1).padStart(2,'0')):'mese intero';
 
-  let h=tabBar+`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+  let h=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
     <button onclick="ddtBkfNavMonth(-1)" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;">‹</button>
     <span style="font-size:16px;font-weight:700;color:var(--text);flex:1;text-align:center;">${ddtBkfMonLabel(mon)}</span>
     <button onclick="ddtBkfNavMonth(1)" style="width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:8px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0;">›</button>
