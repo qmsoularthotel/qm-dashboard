@@ -619,7 +619,8 @@ function ddtBkfRenderList(){
   if(!_ddtFilter){view.innerHTML='';return;}
   const conf=DDT_BKF[_ddtFilter]||{accent:'var(--accent)',fg:'var(--accent)'};
   const _mon=ddtBkfCurMonth();
-  const all=ddtBkfGet().filter(d=>d.reparto==='bkf'&&ddtGetYM(d)===_mon&&(ddtNormForn(d.fornitore)||d.fornitore)===_ddtFilter).sort((a,b)=>b.ts-a.ts);
+  const _pd=s=>{if(!s)return 0;const p=s.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0;};
+  const all=ddtBkfGet().filter(d=>d.reparto==='bkf'&&ddtGetYM(d)===_mon&&(ddtNormForn(d.fornitore)||d.fornitore)===_ddtFilter).sort((a,b)=>_pd(b.data)-_pd(a.data));
   const filtered=_ddtSearch?all.filter(d=>{
     const q=_ddtSearch.toLowerCase();
     const inArt=(d.articoli||[]).some(a=>(a.descrizione||'').toLowerCase().includes(q));
