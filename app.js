@@ -7626,7 +7626,7 @@ function ddtRenderSpese(){
   };
 
   // ── Topbar: mese nav + upload ──
-  let h=`<div style="display:flex;align-items:center;gap:10px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--border-light);">
+  let h=tabBar+`<div style="display:flex;align-items:center;gap:10px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--border-light);">
     <button onclick="ddtNavMonth(-1)" style="width:28px;height:28px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;">‹</button>
     <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${ddtMonLabel(mon)}</span>
     <button onclick="ddtNavMonth(1)" style="width:28px;height:28px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;">›</button>
