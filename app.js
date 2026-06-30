@@ -7224,8 +7224,22 @@ function ddtRenderSpese(){
   const _repOf=d=>DDT_FORNITORI[_nf(d)]?.reparto||d.reparto||'bkf';
   const hkTot=monDdt.filter(d=>_repOf(d)==='hk').reduce((s,d)=>s+(d.totale_ordine||0),0);
   const bkfTot=monDdt.filter(d=>_repOf(d)==='bkf').reduce((s,d)=>s+(d.totale_ordine||0),0);
+  const amonnTot=monDdt.filter(d=>_nf(d)==='Amonn').reduce((s,d)=>s+(d.totale_ordine||0),0);
   const hkDdt=monDdt.filter(d=>_repOf(d)==='hk').length;
   const bkfDdt=monDdt.filter(d=>_repOf(d)==='bkf').length;
+  const amonnDdt=monDdt.filter(d=>_nf(d)==='Amonn').length;
+
+  // mesi con ordini per fornitore (anno corrente)
+  const curYear=new Date().getFullYear();
+  const _fornMesi={};
+  Object.keys(DDT_FORNITORI).forEach(k=>{_fornMesi[k]=new Set();});
+  all.forEach(d=>{const nf=_nf(d);if(_fornMesi[nf]){const ym=ddtYM(d.data);if(ym&&ym.startsWith(String(curYear))){_fornMesi[nf].add(parseInt(ym.split('-')[1]));}}});
+  const MON_ABB=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  const _mesiPills=(nome,conf,active)=>{
+    const mesi=[..._fornMesi[nome]].sort((a,b)=>a-b);
+    if(!mesi.length)return `<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">nessun ordine</div>`;
+    return `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:4px;">${mesi.map(m=>`<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:${active?conf.fg+'22':conf.color};color:${active?conf.fg:'var(--text-dim)'};font-weight:600;">${MON_ABB[m-1]}</span>`).join('')}</div>`;
+  };
 
   // ── Topbar: mese nav + upload ──
   let h=`<div style="display:flex;align-items:center;gap:10px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--border-light);">
@@ -7235,18 +7249,19 @@ function ddtRenderSpese(){
     <button onclick="ddtOpenUploadModal()" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;flex-shrink:0;margin-left:auto;">📷 Carica DDT</button>
   </div>`;
 
-  // ── 2 KPI separati ──
-  const kpi=(lbl,val,sub)=>`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;padding:12px 16px;flex:1;border-top:2px solid var(--accent);">
+  // ── 3 KPI separati ──
+  const kpi=(lbl,val,sub,accent)=>`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;padding:12px 16px;flex:1;border-top:2px solid ${accent||'var(--accent)'};">
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">${lbl}</div>
-    <div style="font-size:var(--fs-lg,20px);font-weight:800;color:${val?'var(--accent)':'var(--text-dim)'};">${val||'—'}</div>
+    <div style="font-size:var(--fs-lg,20px);font-weight:800;color:${val?accent||'var(--accent)':'var(--text-dim)'};">${val||'—'}</div>
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">${sub}</div>
   </div>`;
   h+=`<div style="display:flex;gap:10px;margin-bottom:16px;">
-    ${kpi('Housekeeping',hkTot?ddtFmt(hkTot):'',hkDdt+' DDT · DECA')}
-    ${kpi('Breakfast',bkfTot?ddtFmt(bkfTot):'',bkfDdt+' DDT · SDM · MARR · Cozzolino · Valgarda')}
+    ${kpi('DECA',hkTot?ddtFmt(hkTot):'',hkDdt+' DDT · Housekeeping','#2563eb')}
+    ${kpi('Fornitori Breakfast',bkfTot?ddtFmt(bkfTot):'',bkfDdt+' DDT · SDM · MARR · Cozzolino · Valgarda','#16a34a')}
+    ${kpi('Amonn',amonnTot?ddtFmt(amonnTot):'',amonnDdt+' DDT','#0d9488')}
   </div>`;
 
-  // ── Chip fornitori (cliccabili) ──
+  // ── Chip fornitori (cliccabili) con mesi pills ──
   h+=`<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:18px;">`;
   Object.entries(DDT_FORNITORI).forEach(([nome,conf])=>{
     const fDdt=monDdt.filter(d=>_nf(d)===nome);
@@ -7256,6 +7271,7 @@ function ddtRenderSpese(){
       <div style="font-size:var(--fs-xxs);font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">${nome}</div>
       <div style="font-size:var(--fs-sm);font-weight:800;color:${fTot?conf.fg:'var(--text-dim)'};">${fTot?ddtFmt(fTot):'—'}</div>
       <div style="font-size:var(--fs-xxs);color:${active?conf.fg:'var(--text-dim)'};margin-top:2px;opacity:.8;">${fDdt.length} DDT${active?' ▲':' ▼'}</div>
+      ${_mesiPills(nome,conf,active)}
     </div>`;
   });
   h+=`</div>`;
