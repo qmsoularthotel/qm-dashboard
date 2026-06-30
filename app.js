@@ -7196,13 +7196,7 @@ function ddtSave(arr){
   kvSet(DDT_KEY,json).catch(()=>{});
 }
 function ddtCurMonth(){
-  if(!_ddtMonth){
-    const all=ddtGet();
-    if(all.length){
-      const last=all.reduce((a,b)=>(b.ts||0)>(a.ts||0)?b:a);
-      _ddtMonth=ddtYM(last.data)||((n=>{return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');})(new Date()));
-    }else{const n=new Date();_ddtMonth=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
-  }
+  if(!_ddtMonth){const n=new Date();_ddtMonth=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
   return _ddtMonth;
 }
 function ddtNavMonth(dir){
@@ -7323,7 +7317,8 @@ function ddtSelectForn(nome){
 function ddtRenderList(){
   const view=document.getElementById('ddtListSection');if(!view)return;
   const mon=ddtCurMonth();
-  const all=ddtGet().filter(d=>ddtYM(d.data)===mon&&(ddtNormForn(d.fornitore)||d.fornitore)===_ddtFilter).sort((a,b)=>b.ts-a.ts);
+  const _parseDate=s=>{if(!s)return 0;const p=s.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0;};
+  const all=ddtGet().filter(d=>ddtYM(d.data)===mon&&(ddtNormForn(d.fornitore)||d.fornitore)===_ddtFilter).sort((a,b)=>_parseDate(b.data)-_parseDate(a.data));
   const filtered=_ddtSearch?all.filter(d=>{
     const q=_ddtSearch.toLowerCase();
     const inArt=(d.articoli||[]).some(a=>(a.descrizione||'').toLowerCase().includes(q));
