@@ -7158,6 +7158,7 @@ function revExpReset(p){
 const DDT_KEY='qm_ddt';
 const DDT_FORNITORI={
   DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#dbeafe', fg:'#1d4ed8', accent:'#2563eb'},
+  Amonn:     {reparto:'hk',  rLabel:'Housekeeping', color:'#ccfbf1', fg:'#0f766e', accent:'#0d9488'},
   SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#dcfce7', fg:'#166534', accent:'#16a34a'},
   MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fef3c7', fg:'#92400e', accent:'#d97706'},
   Cozzolino: {reparto:'bkf', rLabel:'Breakfast',    color:'#fce7f3', fg:'#9d174d', accent:'#db2777'},
@@ -7241,12 +7242,12 @@ function ddtRenderSpese(){
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">${sub}</div>
   </div>`;
   h+=`<div style="display:flex;gap:10px;margin-bottom:16px;">
-    ${kpi('Housekeeping',hkTot?ddtFmt(hkTot):'',hkDdt+' DDT · DECA')}
+    ${kpi('Housekeeping',hkTot?ddtFmt(hkTot):'',hkDdt+' DDT · DECA · Amonn')}
     ${kpi('Breakfast',bkfTot?ddtFmt(bkfTot):'',bkfDdt+' DDT · SDM · MARR · Cozzolino · Valgarda')}
   </div>`;
 
   // ── Chip fornitori (cliccabili) ──
-  h+=`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px;">`;
+  h+=`<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:18px;">`;
   Object.entries(DDT_FORNITORI).forEach(([nome,conf])=>{
     const fDdt=monDdt.filter(d=>_nf(d)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
@@ -7411,6 +7412,7 @@ function ddtOpenUploadModal(){
         <select id="ddt-sel-forn" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);background:var(--surface);" onchange="_ddtUploadFornitore=this.value">
           <option value="">Seleziona…</option>
           <option value="DECA">DECA (Housekeeping)</option>
+          <option value="Amonn">Amonn (Housekeeping)</option>
           <option value="SDM">SDM (Breakfast)</option>
           <option value="MARR">MARR (Breakfast)</option>
           <option value="Cozzolino">Cozzolino (Breakfast)</option>
