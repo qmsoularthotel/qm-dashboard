@@ -987,16 +987,24 @@ function ddtBkfBuildAnalisi(){
     if(!topSpend.length){h+=`<div style="color:var(--text-dim);font-size:12px;">Nessun dato per ${ddtBkfMonLabel(selMese)}.</div>`;}
     else{
       const mx=topSpend[0].total;
+      const totTop=topSpend.reduce((s,p)=>s+p.total,0);
       h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">`;
       topSpend.forEach((p,i)=>{
         const pct=mx?p.total/mx*100:0;
+        const sharePct=totTop?p.total/totTop*100:0;
         const tags=[...p.forn].map(f=>{const c=_conf(f);return`<span style="background:${c.color};color:${c.fg};padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;">${f}</span>`;}).join(' ');
-        h+=`<div style="padding:8px 12px;${i>0?'border-top:1px solid var(--border)':''}">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-            <div style="font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px;">${p.desc} ${tags}</div>
-            <div style="font-size:13px;font-weight:800;color:var(--accent);white-space:nowrap;">${_fmt(p.total)}</div>
+        h+=`<div style="${i>0?'border-top:1px solid var(--border)':''}">
+          <div style="display:flex;align-items:center;gap:0;">
+            <div style="flex:1;min-width:0;padding:10px 10px 8px 12px;">
+              <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.desc}</div>
+              <div style="margin-bottom:6px;">${tags}</div>
+              <div style="height:3px;background:var(--border);border-radius:2px;"><div style="height:3px;width:${pct.toFixed(1)}%;background:var(--accent);border-radius:2px;"></div></div>
+            </div>
+            <div style="padding:10px 12px;text-align:right;flex-shrink:0;">
+              <div style="font-size:14px;font-weight:800;color:var(--text);">${_fmt(p.total)}</div>
+              <div style="font-size:10px;color:var(--text-dim);margin-top:1px;">${sharePct.toFixed(0)}%</div>
+            </div>
           </div>
-          <div style="height:3px;background:var(--border);border-radius:2px;"><div style="height:3px;width:${pct.toFixed(1)}%;background:var(--accent);border-radius:2px;"></div></div>
         </div>`;
       });
       h+=`</div>`;
