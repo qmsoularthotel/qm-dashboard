@@ -543,6 +543,19 @@ setInterval(loadAll,10*60*1000);
 })();
 </script>
 <script>
+// Wake Lock — schermo sempre attivo
+(async function(){
+  let wakeLock=null;
+  async function requestWakeLock(){
+    if(!('wakeLock' in navigator))return;
+    try{ wakeLock=await navigator.wakeLock.request('screen'); }catch(e){}
+  }
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible') requestWakeLock();
+  });
+  requestWakeLock();
+})();
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw-housekeeper.js').then(reg => {
     // Controlla aggiornamenti ad ogni apertura
