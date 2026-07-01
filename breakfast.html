@@ -694,35 +694,51 @@ function ddtBkfBuildAnalisi(){
 
   // C: categorie
   const CAT_RULES=[
-    // ORDINE CRITICO: lievitati prima di latticini (pancake/waffle con latte → lievitati)
-    //                 latticini prima di miele (bevande avena/soia → latticini, non cereali)
-    {id:'lievitati', label:'🥐 Lievitati, Torte & Dolci',        color:'#fefce8',fg:'#854d0e',
-     kw:['pane','brioche','cornetto','croissant','brioches','krapfen','ciambella','sfoglia','plumcake','focaccia','torta','crostata','pasticceria','frolla','biscotto','biscotti','merendina','wafer','fetta biscottata','fette biscottate','grissino','cracker','crackers','tarallo','taralli','panettone','pandoro','colomba','veneziana','babà','veneziane','pancake','waffle','waffel','wafle','cialda','crepe','crêpe']},
-    {id:'latticini', label:'🧀 Latte, Formaggi & Latticini',      color:'#f0fdf4',fg:'#166534',
-     kw:[
-       // latte animale e derivati
-       'latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone',
-       'scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino',
-       'kefir','fontina','emmental','cheddar','fior di latte','primo sale','asiago','brie',
-       'camembert','gruyere','gruviera','taleggio','caciotta','caciocavallo','robiola',
-       // abbreviazioni frequenti sui DDT
-       'form.','formagg','cacioc','canestr',
-       // bevande vegetali (prima di miele che ha "avena" generico)
-       'bevan. avena','bevanda avena','avena valsoia','avena bio','avena s.g.','latte avena',
-       'drink avena','bevan. soia','bevanda soia','latte soia','drink soia','avena 1 l',
-       'latte mandorla','latte riso','drink riso','bevanda riso','bevanda mandorla',
-     ]},
-    {id:'uova',      label:'🥚 Uova',                              color:'#fffbeb',fg:'#78350f',
+    // ORDINE CRITICO:
+    // teecaffe prima di lievitati (bisc.gocce → camere, non lievitati)
+    // lievitati prima di latticini (pancake/waffle con latte → lievitati)
+    // latticini prima di miele (bevande avena/soia → latticini, non cereali)
+    {id:'teecaffe',  label:'☕ Tè & Caffè camere',                 color:'#f0f9ff',fg:'#0369a1',
+     kw:["te'",'è','twinings','earl grey','nescafe','bisc.gocce','gocce ciocc',
+         'orzo solub','orzo bimbo','capsule caffe','cialde caffe','caffe solub',
+         'the bag','tea bag','bustina te','infuso','tisana','camomilla']},
+    {id:'lievitati', label:'🥐 Lievitati, Torte & Dolci',          color:'#fefce8',fg:'#854d0e',
+     kw:['pane','brioche','cornetto','croissant','brioches','krapfen','ciambella','sfoglia',
+         'plumcake','focaccia','torta','crostata','pasticceria','frolla','biscotto','biscotti',
+         'merendina','wafer','fetta biscottata','fette biscottate','grissino','cracker','crackers',
+         'tarallo','taralli','panettone','pandoro','colomba','veneziana','babà','baba','veneziane',
+         'pancake','waffle','waffel','wafle','cialda','crepe','crêpe',
+         'pastier','carezza','vien.','vienn','tulip','pasticciotto','rustic']},
+    {id:'latticini', label:'🧀 Latte, Formaggi & Latticini',        color:'#f0fdf4',fg:'#166534',
+     kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone',
+         'scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino',
+         'kefir','fontina','emmental','cheddar','fior di latte','primo sale','asiago','brie',
+         'camembert','gruyere','gruviera','taleggio','caciotta','caciocavallo','robiola',
+         'edamer','edam',
+         'form.','formagg','cacioc','canestr',
+         'bevan. avena','bevanda avena','avena valsoia','avena bio','avena s.g.','latte avena',
+         'drink avena','bevan. soia','bevanda soia','latte soia','drink soia','avena 1 l',
+         'latte mandorla','latte riso','drink riso','bevanda riso','bevanda mandorla']},
+    {id:'uova',      label:'🥚 Uova',                               color:'#fffbeb',fg:'#78350f',
      kw:['uovo','uova']},
-    {id:'bacon',     label:'🥓 Bacon',                             color:'#fef2f2',fg:'#991b1b',
+    {id:'bacon',     label:'🥓 Bacon',                              color:'#fef2f2',fg:'#991b1b',
      kw:['bacon','pancetta affum','pancetta tesa','pancetta coppata']},
-    {id:'salumi',    label:'🍖 Salumi buffet',                     color:'#fce7f3',fg:'#9d174d',
-     kw:['prosciutto','salame','bresaola','mortadella','speck','coppa','pancetta','wurstel','affettato','salsiccia','lardo','guanciale','culatello','lonza','cotto','crudo']},
+    {id:'salumi',    label:'🍖 Salumi buffet',                      color:'#fce7f3',fg:'#9d174d',
+     kw:['prosciutto','salame','bresaola','mortadella','speck','coppa','pancetta','wurstel',
+         'affettato','salsiccia','lardo','guanciale','culatello','lonza','cotto','crudo',
+         'tacchino','fesa tacchino','arrosto tacchino','pollo arrosto','pollo cotto']},
     {id:'miele',     label:'🍯 Miele, Sciroppi, Frutta secca & Cereali', color:'#fef3c7',fg:'#b45309',
      kw:['miele','sciroppo','nutella','crema nocciola','crema di nocciole',
-         'cereali','fiocchi','avena','granola','corn flakes','muesli',
+         'cereali','fiocchi','avena','granola','corn flakes','muesli','kellogg',
          'frutta secca','noci','mandorle','nocciole','pistacchio','uvetta','anacardi','pinoli','datteri',
          'marmellata','confettura','zucchero','dolcificante']},
+    {id:'frutta',    label:'🍓 Frutta fresca',                      color:'#dcfce7',fg:'#15803d',
+     kw:['kiwi','melone','anguria','ananas','banana','mela','pesca','arancia','fragola',
+         'lampone','mirtillo','pera','ciliegia','limone','pompelmo','mango','papaya',
+         'cantalupo','macedonia','clementine','mandarino','uva','frutta fresca','frutti di bosco']},
+    {id:'sottoli',   label:'🫒 Sottoli & Conserve buffet',          color:'#f7fee7',fg:'#3f6212',
+     kw:["pomodori secchi","sott'olio","sottoli","capperi","giardiniera",
+         "sacla","acciughe","tonno","antipasto","peperoni grig","verdure grig"]},
   ];
   const catTotals={};const catItems={};const uncatItems=[];
   CAT_RULES.forEach(c=>{catTotals[c.id]=0;catItems[c.id]=[];});
