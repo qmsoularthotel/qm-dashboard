@@ -435,7 +435,6 @@ try{
 
 loadAll();
 setInterval(loadAll,10*60*1000);
-(function(){const t=localStorage.getItem('qm_bkf_tab');if(t&&t!=='day')switchTab(t);})();
 
 // ── TAB SWITCHING ─────────────────────────────────────────────────────────────
 let _activeTab='day';
@@ -691,12 +690,14 @@ function ddtBkfBuildAnalisi(){
 
   // C: categorie
   const CAT_RULES=[
-    {id:'salumi',   label:'🥩 Salumi',      color:'#fef2f2',fg:'#991b1b', kw:['prosciutto','salame','bresaola','mortadella','speck','coppa','pancetta','wurstel','affettato','salsiccia']},
-    {id:'latticini',label:'🧀 Latticini',    color:'#f0fdf4',fg:'#166534', kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone','scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino']},
-    {id:'pane',     label:'🥐 Pane & Dolci', color:'#fefce8',fg:'#854d0e', kw:['pane','brioche','cornetto','croissant','biscotto','torta','brioches','focaccia','marmellata','nutella','confettura','ciambella','krapfen','plumcake','sfoglia','fetta biscottata','fette biscottate','merendina']},
-    {id:'bevande',  label:'🥤 Bevande',       color:'#eff6ff',fg:'#1d4ed8', kw:['succo','acqua','caffè','tè','the ','cappuccino','centrifugato','smoothie','bevanda','nettare','succhi']},
-    {id:'frutta',   label:'🍓 Frutta',        color:'#dcfce7',fg:'#15803d', kw:['frutta','verdura','fragola','melone','anguria','ananas','banana','mela','pesca','arancia','kiwi','uva','albicocca','lampone','mirtillo','pera','ciliegia','limone']},
-    {id:'uova',     label:'🥚 Uova & Cereali',color:'#fffbeb',fg:'#92400e', kw:['uovo','uova','cereali','fiocchi','avena','granola','corn flakes','muesli']},
+    {id:'salumi',      label:'🥩 Salumi',           color:'#fef2f2',fg:'#991b1b', kw:['prosciutto','salame','bresaola','mortadella','speck','coppa','pancetta','wurstel','affettato','salsiccia','lardo','guanciale','culatello']},
+    {id:'latticini',   label:'🧀 Latticini',         color:'#f0fdf4',fg:'#166534', kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone','scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino','kefir']},
+    {id:'pane',        label:'🥐 Pane & Dolci',      color:'#fefce8',fg:'#854d0e', kw:['pane','brioche','cornetto','croissant','biscotto','torta','brioches','focaccia','marmellata','nutella','confettura','ciambella','krapfen','plumcake','sfoglia','fetta biscottata','fette biscottate','merendina','grissino','cracker','crackers','tarallo','taralli','wafer','crostata','pasticceria','dolce','frolla','biscotti']},
+    {id:'bevande',     label:'🥤 Bevande',            color:'#eff6ff',fg:'#1d4ed8', kw:['succo','acqua','caffè','caffe','tè','the ','cappuccino','centrifugato','smoothie','bevanda','nettare','succhi','sciroppo','bibita','aranciata','limonata','orzo','camomilla','tisana']},
+    {id:'frutta',      label:'🍓 Frutta',             color:'#dcfce7',fg:'#15803d', kw:['frutta','verdura','fragola','melone','anguria','ananas','banana','mela','pesca','arancia','kiwi','uva','albicocca','lampone','mirtillo','pera','ciliegia','limone','pompelmo','mango','papaya','macedonia']},
+    {id:'uova',        label:'🥚 Uova & Cereali',     color:'#fffbeb',fg:'#92400e', kw:['uovo','uova','cereali','fiocchi','avena','granola','corn flakes','muesli','farro','orzo perlato']},
+    {id:'dolcificanti',label:'🍯 Miele & Dolcificanti',color:'#fef3c7',fg:'#b45309', kw:['miele','zucchero','dolcificante','stevia','fruttosio','sciroppo d\'acero','sacchetto zucch','zucchero di canna','zucchero grezzo']},
+    {id:'condimenti',  label:'🫒 Oli & Condimenti',   color:'#f7fee7',fg:'#3f6212', kw:['olio','aceto','sale ','sale fino','sale grosso','pepe ','pepe nero','mostarda','maionese','ketchup','senape','condimento']},
   ];
   const catTotals={altro:0};CAT_RULES.forEach(c=>{catTotals[c.id]=0;});
   all.forEach(ddt=>{(ddt.articoli||[]).forEach(a=>{
@@ -796,7 +797,7 @@ function ddtBkfBuildAnalisi(){
 
   // ── Categorie ──
   if(catGrandTotal>0){
-    const catList=[...CAT_RULES.map(c=>({...c,total:catTotals[c.id]})),{id:'altro',label:'🧂 Condimenti & Varie',color:'#f1f5f9',fg:'#64748b',total:catTotals.altro}].filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+    const catList=CAT_RULES.map(c=>({...c,total:catTotals[c.id]})).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
     const catMax=catList[0]?.total||1;
     h+=`<div style="margin-bottom:20px;">
     <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px;">🏷️ Spesa per categoria</div>
@@ -1172,6 +1173,8 @@ function ddtBkfDelete(id){
     await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_bkf_access',value:JSON.stringify(d)})});
   }catch(e){}
 })();
+// ripristina tab attivo dopo che tutte le dichiarazioni sono inizializzate
+(function(){try{const t=localStorage.getItem('qm_bkf_tab');if(t&&t!=='day')switchTab(t);}catch(e){}})();
 </script>
 </body>
 </html>
