@@ -707,14 +707,14 @@ function ddtBkfBuildAnalisi(){
     {id:'miele',     label:'🍯 Miele, Sciroppi, Frutta secca & Cereali', color:'#fef3c7',fg:'#b45309',
      kw:['miele','sciroppo','nutella','crema nocciola','crema di nocciole','cereali','fiocchi','avena','granola','corn flakes','muesli','frutta secca','noci','mandorle','nocciole','pistacchio','uvetta','anacardi','pinoli','datteri','marmellata','confettura','zucchero','dolcificante']},
   ];
-  const catTotals={};CAT_RULES.forEach(c=>{catTotals[c.id]=0;});
+  const catTotals={};const catItems={};CAT_RULES.forEach(c=>{catTotals[c.id]=0;catItems[c.id]=[];});
   all.forEach(ddt=>{(ddt.articoli||[]).forEach(a=>{
     if(!a.descrizione)return;
     const desc=a.descrizione.toLowerCase();
     const val=a.totale||(a.qta&&a.prezzo_unit?a.qta*a.prezzo_unit:0);
     if(!val)return;
     const cat=CAT_RULES.find(c=>c.kw.some(kw=>desc.includes(kw)));
-    if(cat)catTotals[cat.id]+=val;
+    if(cat){catTotals[cat.id]+=val;catItems[cat.id].push({desc:a.descrizione,forn:_nf(ddt),val,data:ddt.data||''});}
   });});
   const catGrandTotal=Object.values(catTotals).reduce((s,v)=>s+v,0);
 
@@ -812,15 +812,34 @@ function ddtBkfBuildAnalisi(){
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">`;
     catList.forEach((c,i)=>{
       const pct=catMax?c.total/catMax*100:0,sharePct=catGrandTotal?c.total/catGrandTotal*100:0;
+      // aggrega prodotti per descrizione+fornitore
+      const agg={};
+      catItems[c.id].forEach(it=>{
+        const k=it.forn+'§'+it.desc;
+        if(!agg[k])agg[k]={desc:it.desc,forn:it.forn,val:0,n:0};
+        agg[k].val+=it.val;agg[k].n++;
+      });
+      const prodotti=Object.values(agg).sort((a,b)=>b.val-a.val);
+      const detId='catdet-'+c.id;
       h+=`<div style="padding:9px 12px;${i>0?'border-top:1px solid var(--border)':''}">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;cursor:pointer;" onclick="(function(){var d=document.getElementById('${detId}');d.style.display=d.style.display==='none'?'block':'none';})()">
           <span style="background:${c.color};color:${c.fg};padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;">${c.label}</span>
           <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
             <span style="font-size:10px;color:var(--text-dim);">${sharePct.toFixed(0)}%</span>
             <span style="font-size:13px;font-weight:800;">${_fmt(c.total)}</span>
+            <span style="font-size:11px;color:var(--text-dim);">▾</span>
           </div>
         </div>
-        <div style="height:3px;background:var(--border);border-radius:2px;"><div style="height:3px;width:${pct.toFixed(1)}%;background:${c.fg};border-radius:2px;opacity:0.7;"></div></div>
+        <div style="height:3px;background:var(--border);border-radius:2px;margin-bottom:0;"><div style="height:3px;width:${pct.toFixed(1)}%;background:${c.fg};border-radius:2px;opacity:0.7;"></div></div>
+        <div id="${detId}" style="display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">
+          ${prodotti.map(p=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;gap:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.desc}</div>
+              <div style="font-size:9px;color:var(--text-dim);">${p.forn}${p.n>1?' · '+p.n+' DDT':''}</div>
+            </div>
+            <span style="font-size:12px;font-weight:700;flex-shrink:0;">${_fmt(p.val)}</span>
+          </div>`).join('')}
+        </div>
       </div>`;
     });
     h+=`</div></div>`;
