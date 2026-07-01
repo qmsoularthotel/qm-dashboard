@@ -621,11 +621,15 @@ function ddtBkfBuildAnalisi(){
   const MON_IT=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
   const _monLabel=ym=>{const[y,m]=ym.split('-');return MON_IT[parseInt(m)-1]+' '+y;};
 
-  // coperti per mese da _bkfHistory
+  // coperti per mese da _bkfHistory — mese corrente: solo date ≤ oggi
+  const _todayAn=new Date();_todayAn.setHours(23,59,59,999);
+  const _nowYMAn=_todayAn.getFullYear()+'-'+String(_todayAn.getMonth()+1).padStart(2,'0');
+  const _todayLabelAn='al '+_todayAn.getDate()+'/'+(_todayAn.getMonth()+1);
   const copertiPerMese={};
   Object.entries(_bkfHistory||{}).forEach(([k,v])=>{
     if(k.length!==10)return;
     const ym=k.substring(0,7);
+    if(ym===_nowYMAn){const dt=new Date(k+'T00:00:00');if(dt>_todayAn)return;}
     if(!copertiPerMese[ym])copertiPerMese[ym]={bb:0};
     copertiPerMese[ym].bb+=(v.bb||0);
   });
@@ -692,7 +696,7 @@ function ddtBkfBuildAnalisi(){
   const CAT_RULES=[
     {id:'salumi',      label:'🥩 Salumi',           color:'#fef2f2',fg:'#991b1b', kw:['prosciutto','salame','bresaola','mortadella','speck','coppa','pancetta','wurstel','affettato','salsiccia','lardo','guanciale','culatello']},
     {id:'latticini',   label:'🧀 Latticini',         color:'#f0fdf4',fg:'#166534', kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone','scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino','kefir']},
-    {id:'pane',        label:'🥐 Pane & Dolci',      color:'#fefce8',fg:'#854d0e', kw:['pane','brioche','cornetto','croissant','biscotto','torta','brioches','focaccia','marmellata','nutella','confettura','ciambella','krapfen','plumcake','sfoglia','fetta biscottata','fette biscottate','merendina','grissino','cracker','crackers','tarallo','taralli','wafer','crostata','pasticceria','dolce','frolla','biscotti']},
+    {id:'pane',        label:'🥐 Lievitati, Torte & Dolci', color:'#fefce8',fg:'#854d0e', kw:['pane','brioche','cornetto','croissant','biscotto','torta','brioches','focaccia','marmellata','nutella','confettura','ciambella','krapfen','plumcake','sfoglia','fetta biscottata','fette biscottate','merendina','grissino','cracker','crackers','tarallo','taralli','wafer','crostata','pasticceria','dolce','frolla','biscotti']},
     {id:'bevande',     label:'🥤 Bevande',            color:'#eff6ff',fg:'#1d4ed8', kw:['succo','acqua','caffè','caffe','tè','the ','cappuccino','centrifugato','smoothie','bevanda','nettare','succhi','sciroppo','bibita','aranciata','limonata','orzo','camomilla','tisana']},
     {id:'frutta',      label:'🍓 Frutta',             color:'#dcfce7',fg:'#15803d', kw:['frutta','verdura','fragola','melone','anguria','ananas','banana','mela','pesca','arancia','kiwi','uva','albicocca','lampone','mirtillo','pera','ciliegia','limone','pompelmo','mango','papaya','macedonia']},
     {id:'uova',        label:'🥚 Uova & Cereali',     color:'#fffbeb',fg:'#92400e', kw:['uovo','uova','cereali','fiocchi','avena','granola','corn flakes','muesli','farro','orzo perlato']},
@@ -764,7 +768,7 @@ function ddtBkfBuildAnalisi(){
         <td style="padding:8px 12px;font-size:12px;font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${_monLabel(ym)}</td>
         <td style="padding:8px 4px;text-align:center;font-size:12px;font-weight:600;">${spesa?_fmt(spesa):'—'}</td>
         <td style="padding:8px 4px;text-align:center;">${spesa?vSpesa:'<span style="color:var(--text-dim);font-size:10px;">—</span>'}</td>
-        <td style="padding:8px 4px;text-align:center;font-size:12px;color:var(--text-dim);">${cop||'—'}</td>
+        <td style="padding:8px 4px;text-align:center;font-size:12px;color:var(--text-dim);">${cop||'—'}${isCur&&cop?`<br><span style="font-size:9px;color:var(--text-dim);opacity:.7;">${_todayLabelAn}</span>`:''}  </td>
         <td style="padding:8px 4px;text-align:center;">${cop?vCop:'<span style="color:var(--text-dim);font-size:10px;">—</span>'}</td>
       </tr>`;
     });
