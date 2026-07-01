@@ -435,11 +435,13 @@ try{
 
 loadAll();
 setInterval(loadAll,10*60*1000);
+(function(){const t=localStorage.getItem('qm_bkf_tab');if(t&&t!=='day')switchTab(t);})();
 
 // ── TAB SWITCHING ─────────────────────────────────────────────────────────────
 let _activeTab='day';
 function switchTab(tab){
   _activeTab=tab;
+  try{localStorage.setItem('qm_bkf_tab',tab);}catch(e){}
   document.getElementById('mainContent').style.display=tab==='day'?'':'none';
   document.getElementById('ordiniContent').style.display=tab==='orders'?'':'none';
   document.getElementById('reportContent').style.display=tab==='report'?'':'none';
@@ -792,42 +794,9 @@ function ddtBkfBuildAnalisi(){
     </div></div>`;
   }
 
-  // ── Variazione mensile ──
-  if(variazioni.length){
-    h+=`<div style="margin-bottom:20px;">
-    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:4px;">📊 Variazione mese su mese</div>
-    <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Coperti vs prezzi/volumi.</div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">`;
-    variazioni.forEach((v,i)=>{
-      const isPos=v.deltaSpesa>=0,dPct=v.spPrev?v.deltaSpesa/v.spPrev*100:0;
-      const dc=isPos?'#dc2626':'#16a34a';
-      const copSign=v.deltaCop>=0?'+':'',impCopSign=v.impattoCop>=0?'+':'',impAltSign=v.impattoAltro>=0?'+':'';
-      const altColor=v.impattoAltro>50?'#dc2626':v.impattoAltro<-50?'#16a34a':'var(--text-dim)';
-      h+=`<div style="padding:10px 14px;${i>0?'border-top:1px solid var(--border)':''}">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <span style="font-size:13px;font-weight:700;">${_monLabel(v.mNow)}</span>
-          <span style="font-size:13px;font-weight:800;color:${dc};">${isPos?'+':''}${_fmt(v.deltaSpesa)} (${isPos?'+':''}${dPct.toFixed(1)}%)</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-          ${v.copPrev>0?`<div style="background:var(--bg);border-radius:6px;padding:6px 10px;">
-            <div style="font-size:9px;color:var(--text-dim);font-weight:700;margin-bottom:2px;">COPERTI</div>
-            <div style="font-size:13px;font-weight:700;color:var(--text-dim);">${impCopSign}${_fmt(v.impattoCop)}</div>
-            <div style="font-size:9px;color:var(--text-dim);">${copSign}${v.deltaCop} coperti BB</div>
-          </div>`:`<div style="background:var(--bg);border-radius:6px;padding:6px 10px;"><div style="font-size:9px;color:var(--text-dim);">Dati coperti n/d</div></div>`}
-          <div style="background:var(--bg);border-radius:6px;padding:6px 10px;">
-            <div style="font-size:9px;color:var(--text-dim);font-weight:700;margin-bottom:2px;">PREZZI & VOLUMI</div>
-            <div style="font-size:13px;font-weight:700;color:${altColor};">${impAltSign}${_fmt(v.impattoAltro)}</div>
-            <div style="font-size:9px;color:var(--text-dim);">${_monLabel(v.mPrev)} → ${_monLabel(v.mNow)}</div>
-          </div>
-        </div>
-      </div>`;
-    });
-    h+=`</div></div>`;
-  }
-
   // ── Categorie ──
   if(catGrandTotal>0){
-    const catList=[...CAT_RULES.map(c=>({...c,total:catTotals[c.id]})),{id:'altro',label:'📦 Altro',color:'#f1f5f9',fg:'#64748b',total:catTotals.altro}].filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+    const catList=[...CAT_RULES.map(c=>({...c,total:catTotals[c.id]})),{id:'altro',label:'🧂 Condimenti & Varie',color:'#f1f5f9',fg:'#64748b',total:catTotals.altro}].filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
     const catMax=catList[0]?.total||1;
     h+=`<div style="margin-bottom:20px;">
     <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px;">🏷️ Spesa per categoria</div>
