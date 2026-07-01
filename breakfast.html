@@ -694,23 +694,27 @@ function ddtBkfBuildAnalisi(){
 
   // C: categorie
   const CAT_RULES=[
-    {id:'salumi',      label:'🥩 Salumi',           color:'#fef2f2',fg:'#991b1b', kw:['prosciutto','salame','bresaola','mortadella','speck','coppa','pancetta','wurstel','affettato','salsiccia','lardo','guanciale','culatello']},
-    {id:'latticini',   label:'🧀 Latticini',         color:'#f0fdf4',fg:'#166534', kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone','scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino','kefir']},
-    {id:'pane',        label:'🥐 Lievitati, Torte & Dolci', color:'#fefce8',fg:'#854d0e', kw:['pane','brioche','cornetto','croissant','biscotto','torta','brioches','focaccia','marmellata','nutella','confettura','ciambella','krapfen','plumcake','sfoglia','fetta biscottata','fette biscottate','merendina','grissino','cracker','crackers','tarallo','taralli','wafer','crostata','pasticceria','dolce','frolla','biscotti']},
-    {id:'bevande',     label:'🥤 Bevande',            color:'#eff6ff',fg:'#1d4ed8', kw:['succo','acqua','caffè','caffe','tè','the ','cappuccino','centrifugato','smoothie','bevanda','nettare','succhi','sciroppo','bibita','aranciata','limonata','orzo','camomilla','tisana']},
-    {id:'frutta',      label:'🍓 Frutta',             color:'#dcfce7',fg:'#15803d', kw:['frutta','verdura','fragola','melone','anguria','ananas','banana','mela','pesca','arancia','kiwi','uva','albicocca','lampone','mirtillo','pera','ciliegia','limone','pompelmo','mango','papaya','macedonia']},
-    {id:'uova',        label:'🥚 Uova & Cereali',     color:'#fffbeb',fg:'#92400e', kw:['uovo','uova','cereali','fiocchi','avena','granola','corn flakes','muesli','farro','orzo perlato']},
-    {id:'dolcificanti',label:'🍯 Miele & Dolcificanti',color:'#fef3c7',fg:'#b45309', kw:['miele','zucchero','dolcificante','stevia','fruttosio','sciroppo d\'acero','sacchetto zucch','zucchero di canna','zucchero grezzo']},
-    {id:'condimenti',  label:'🫒 Oli & Condimenti',   color:'#f7fee7',fg:'#3f6212', kw:['olio','aceto','sale ','sale fino','sale grosso','pepe ','pepe nero','mostarda','maionese','ketchup','senape','condimento']},
+    {id:'lievitati', label:'🥐 Lievitati, Torte & Dolci',        color:'#fefce8',fg:'#854d0e',
+     kw:['pane','brioche','cornetto','croissant','brioches','krapfen','ciambella','sfoglia','plumcake','focaccia','torta','crostata','pasticceria','frolla','biscotto','biscotti','merendina','wafer','fetta biscottata','fette biscottate','grissino','cracker','crackers','tarallo','taralli','panettone','pandoro','colomba','veneziana','babà','veneziane']},
+    {id:'latticini', label:'🧀 Latte, Formaggi & Latticini',      color:'#f0fdf4',fg:'#166534',
+     kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone','scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino','kefir','fontina','emmental','cheddar','fior di latte','primo sale']},
+    {id:'uova',      label:'🥚 Uova',                              color:'#fffbeb',fg:'#78350f',
+     kw:['uovo','uova']},
+    {id:'bacon',     label:'🥓 Bacon',                             color:'#fef2f2',fg:'#991b1b',
+     kw:['bacon','pancetta affum','pancetta tesa','pancetta coppata']},
+    {id:'salumi',    label:'🍖 Salumi buffet',                     color:'#fce7f3',fg:'#9d174d',
+     kw:['prosciutto','salame','bresaola','mortadella','speck','coppa','pancetta','wurstel','affettato','salsiccia','lardo','guanciale','culatello','lonza','cotto','crudo']},
+    {id:'miele',     label:'🍯 Miele, Sciroppi, Frutta secca & Cereali', color:'#fef3c7',fg:'#b45309',
+     kw:['miele','sciroppo','nutella','crema nocciola','crema di nocciole','cereali','fiocchi','avena','granola','corn flakes','muesli','frutta secca','noci','mandorle','nocciole','pistacchio','uvetta','anacardi','pinoli','datteri','marmellata','confettura','zucchero','dolcificante']},
   ];
-  const catTotals={altro:0};CAT_RULES.forEach(c=>{catTotals[c.id]=0;});
+  const catTotals={};CAT_RULES.forEach(c=>{catTotals[c.id]=0;});
   all.forEach(ddt=>{(ddt.articoli||[]).forEach(a=>{
     if(!a.descrizione)return;
     const desc=a.descrizione.toLowerCase();
     const val=a.totale||(a.qta&&a.prezzo_unit?a.qta*a.prezzo_unit:0);
     if(!val)return;
     const cat=CAT_RULES.find(c=>c.kw.some(kw=>desc.includes(kw)));
-    catTotals[cat?cat.id:'altro']+=val;
+    if(cat)catTotals[cat.id]+=val;
   });});
   const catGrandTotal=Object.values(catTotals).reduce((s,v)=>s+v,0);
 
