@@ -747,11 +747,11 @@ function ddtBkfBuildAnalisi(){
     const _mesi12=mesiTutti.slice(0,13);
     h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;"><table style="width:100%;border-collapse:collapse;table-layout:fixed;">
     <thead><tr style="background:var(--bg);">
-      <th style="padding:7px 10px;text-align:left;font-size:10px;color:var(--text-dim);font-weight:700;width:22%;">MESE</th>
-      <th style="padding:7px 8px;text-align:right;font-size:10px;color:var(--text-dim);font-weight:700;width:22%;">SPESA</th>
-      <th style="padding:7px 6px;text-align:right;font-size:10px;color:var(--text-dim);font-weight:700;width:14%;">VAR%</th>
-      <th style="padding:7px 8px;text-align:right;font-size:10px;color:var(--text-dim);font-weight:700;width:22%;">COPERTI</th>
-      <th style="padding:7px 6px;text-align:right;font-size:10px;color:var(--text-dim);font-weight:700;width:14%;">VAR%</th>
+      <th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--text-dim);font-weight:700;width:28%;">MESE</th>
+      <th style="padding:8px 4px;text-align:center;font-size:10px;color:var(--text-dim);font-weight:700;width:18%;">SPESA</th>
+      <th style="padding:8px 4px;text-align:center;font-size:10px;color:var(--text-dim);font-weight:700;width:14%;">VAR%</th>
+      <th style="padding:8px 4px;text-align:center;font-size:10px;color:var(--text-dim);font-weight:700;width:22%;">COPERTI</th>
+      <th style="padding:8px 4px;text-align:center;font-size:10px;color:var(--text-dim);font-weight:700;width:18%;">VAR%</th>
     </tr></thead><tbody>`;
     _mesi12.slice(0,12).forEach((ym,i)=>{
       const spesa=spesaPerMese[ym]||0,cop=copertiPerMese[ym]?.bb||0,isCur=ym===nowYM;
@@ -761,11 +761,11 @@ function ddtBkfBuildAnalisi(){
       const vSpesa=_varBadge(spesaPrev!==null?_varPct(spesa,spesaPrev):null,true);
       const vCop=_varBadge(copPrev!==null?_varPct(cop,copPrev):null,false);
       h+=`<tr style="${i>0?'border-top:1px solid var(--border)':''}${isCur?';background:#e8f0fe':''}">
-        <td style="padding:7px 10px;font-size:12px;font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${_monLabel(ym)}</td>
-        <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:600;">${spesa?_fmt(spesa):'—'}</td>
-        <td style="padding:7px 6px;text-align:right;">${spesa?vSpesa:'<span style="color:var(--text-dim);font-size:10px;">—</span>'}</td>
-        <td style="padding:7px 8px;text-align:right;font-size:12px;color:var(--text-dim);">${cop||'—'}</td>
-        <td style="padding:7px 6px;text-align:right;">${cop?vCop:'<span style="color:var(--text-dim);font-size:10px;">—</span>'}</td>
+        <td style="padding:8px 12px;font-size:12px;font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${_monLabel(ym)}</td>
+        <td style="padding:8px 4px;text-align:center;font-size:12px;font-weight:600;">${spesa?_fmt(spesa):'—'}</td>
+        <td style="padding:8px 4px;text-align:center;">${spesa?vSpesa:'<span style="color:var(--text-dim);font-size:10px;">—</span>'}</td>
+        <td style="padding:8px 4px;text-align:center;font-size:12px;color:var(--text-dim);">${cop||'—'}</td>
+        <td style="padding:8px 4px;text-align:center;">${cop?vCop:'<span style="color:var(--text-dim);font-size:10px;">—</span>'}</td>
       </tr>`;
     });
     h+=`</tbody></table></div>`;
