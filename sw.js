@@ -2,7 +2,7 @@
 // Network-first per tutti gli HTML (sempre aggiornati al refresh),
 // cache-first per asset statici (img, js, css)
 
-const CACHE = 'qm-v22';
+const CACHE = 'qm-v23';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
