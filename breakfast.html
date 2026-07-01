@@ -789,7 +789,9 @@ function ddtBkfBuildAnalisi(){
      kw:['pellicola','carta forno','rotolo pvc','alluminio','film pvc','film alim',
          'sacchetto','busta frigo','guanti mono','tovagliolo','tovaglietta','stuzzicadenti',
          'detersivo','detergente','sapone mani','candeggina','alcool etil',
-         'carta assorbente','veline','bicchiere monouso','piatto monouso']},
+         'carta assorbente','veline','bicchiere monouso','piatto monouso',
+         'bicch.','palette','sacchi','rotolo carta','fazzoletti','tovagliett',
+         'shopper','bag kraft','contenitore alim','vaschetta alim']},
   ];
   const selMese=ddtBkfAnalCurMese();
   const catDdts=all.filter(d=>ddtBkfYM(d.data)===selMese);
@@ -919,17 +921,19 @@ function ddtBkfBuildAnalisi(){
       });
       const prodotti=Object.values(agg).sort((a,b)=>b.val-a.val);
       const detId='catdet-'+c.id;
-      h+=`<div style="padding:9px 12px;${i>0?'border-top:1px solid var(--border)':''}">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;cursor:pointer;" onclick="(function(){var d=document.getElementById('${detId}');d.style.display=d.style.display==='none'?'block':'none';})()">
-          <span style="background:${c.color};color:${c.fg};padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;">${c.label}</span>
-          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-            <span style="font-size:10px;color:var(--text-dim);">${sharePct.toFixed(0)}%</span>
-            <span style="font-size:13px;font-weight:800;">${_fmt(c.total)}</span>
-            <span style="font-size:11px;color:var(--text-dim);">▾</span>
+      h+=`<div style="${i>0?'border-top:1px solid var(--border)':''}">
+        <div style="display:flex;align-items:center;gap:0;cursor:pointer;user-select:none;" onclick="(function(){var d=document.getElementById('${detId}');d.style.display=d.style.display==='none'?'block':'none';})()">
+          <div style="width:4px;align-self:stretch;background:${c.fg};flex-shrink:0;border-radius:0;"></div>
+          <div style="flex:1;min-width:0;padding:10px 10px 8px 12px;">
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;">${c.label}</div>
+            <div style="height:3px;background:var(--border);border-radius:2px;"><div style="height:3px;width:${pct.toFixed(1)}%;background:${c.fg};border-radius:2px;"></div></div>
+          </div>
+          <div style="padding:10px 12px;text-align:right;flex-shrink:0;">
+            <div style="font-size:14px;font-weight:800;color:var(--text);">${_fmt(c.total)}</div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:1px;">${sharePct.toFixed(0)}%</div>
           </div>
         </div>
-        <div style="height:3px;background:var(--border);border-radius:2px;margin-bottom:0;"><div style="height:3px;width:${pct.toFixed(1)}%;background:${c.fg};border-radius:2px;opacity:0.7;"></div></div>
-        <div id="${detId}" style="display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">
+        <div id="${detId}" style="display:none;border-top:1px solid var(--border);padding:8px 12px 10px 16px;background:var(--bg);">
           ${prodotti.map(p=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;gap:8px;">
             <div style="flex:1;min-width:0;">
               <div style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.desc}</div>
