@@ -698,17 +698,24 @@ function ddtBkfBuildAnalisi(){
     // teecaffe prima di lievitati (bisc.gocce → camere, non lievitati)
     // lievitati prima di latticini (pancake/waffle con latte → lievitati)
     // latticini prima di miele (bevande avena/soia → latticini, non cereali)
+    // TE' & CAFFE' CAMERE — prima di lievitati (bisc.gocce → camere, non lievitati)
     {id:'teecaffe',  label:'☕ Tè & Caffè camere',                 color:'#f0f9ff',fg:'#0369a1',
-     kw:["te'",'è','twinings','earl grey','nescafe','bisc.gocce','gocce ciocc',
+     kw:["te'",'twinings','earl grey','nescafe','bisc.gocce','gocce ciocc',
          'orzo solub','orzo bimbo','capsule caffe','cialde caffe','caffe solub',
-         'the bag','tea bag','bustina te','infuso','tisana','camomilla']},
+         'the bag','tea bag','bustina te','infuso','tisana','camomilla',
+         'tostato','caffe tostato','grani caffe',
+         'prosecco','prosecchino','spumante','vino ','minibar',
+         'cocacola','coca cola','coca-cola','aranciata','cedrata','chinotto','limonata']},
+    // LIEVITATI — prima di latticini
     {id:'lievitati', label:'🥐 Lievitati, Torte & Dolci',          color:'#fefce8',fg:'#854d0e',
      kw:['pane','brioche','cornetto','croissant','brioches','krapfen','ciambella','sfoglia',
          'plumcake','focaccia','torta','crostata','pasticceria','frolla','biscotto','biscotti',
          'merendina','wafer','fetta biscottata','fette biscottate','grissino','cracker','crackers',
          'tarallo','taralli','panettone','pandoro','colomba','veneziana','babà','baba','veneziane',
          'pancake','waffle','waffel','wafle','cialda','crepe','crêpe',
-         'pastier','carezza','vien.','vienn','tulip','pasticciotto','rustic']},
+         'pastier','carezza','vien.','vienn','tulip','pasticciotto','rustic',
+         'bisc.','panfette','mini tris','tris fantasia','nonna rotonda']},
+    // LATTICINI — prima di miele (bevande vegetali → latticini)
     {id:'latticini', label:'🧀 Latte, Formaggi & Latticini',        color:'#f0fdf4',fg:'#166534',
      kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone',
          'scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino',
@@ -731,14 +738,28 @@ function ddtBkfBuildAnalisi(){
      kw:['miele','sciroppo','nutella','crema nocciola','crema di nocciole',
          'cereali','fiocchi','avena','granola','corn flakes','muesli','kellogg',
          'frutta secca','noci','mandorle','nocciole','pistacchio','uvetta','anacardi','pinoli','datteri',
-         'marmellata','confettura','zucchero','dolcificante']},
+         'marmellata','confettura','zucchero','dolcificante','bifette']},
+    // DISTRIBUTORI — dopo miele (kellogg/ciocco cereali già catturati)
+    {id:'distributori',label:'🤖 Distributori bevande',             color:'#fdf4ff',fg:'#7e22ce',
+     kw:['tube ','tube multi','tube silver','tube gold','tube purple','tube red',
+         'multivitamin','multivitam','vitamina c','vitamina d',
+         'cioccolato','cacao','orzo instant','cappuccino instant']},
     {id:'frutta',    label:'🍓 Frutta fresca',                      color:'#dcfce7',fg:'#15803d',
-     kw:['kiwi','melone','anguria','ananas','banana','mela','pesca','arancia','fragola',
-         'lampone','mirtillo','pera','ciliegia','limone','pompelmo','mango','papaya',
-         'cantalupo','macedonia','clementine','mandarino','uva','frutta fresca','frutti di bosco']},
+     kw:['kiwi','melone','anguria','ananas','banana','banan','mela','mele',
+         'pesca','pesche','arancia','arance','fragola','fragole',
+         'lampone','lamponi','mirtillo','mirtilli','pera','pere',
+         'ciliegia','ciliegie','limone','pompelmo','mango','papaya',
+         'cantalupo','macedonia','clementine','mandarino','uva','frutta fresca','frutti di bosco',
+         'stark','golden del','fuji','granny']},
     {id:'sottoli',   label:'🫒 Sottoli & Conserve buffet',          color:'#f7fee7',fg:'#3f6212',
      kw:["pomodori secchi","sott'olio","sottoli","capperi","giardiniera",
          "sacla","acciughe","tonno","antipasto","peperoni grig","verdure grig"]},
+    // VERDURE — dopo sottoli (pomodori secchi catturati prima)
+    {id:'verdure',   label:'🥗 Verdure buffet',                     color:'#f0fdf4',fg:'#14532d',
+     kw:['pomodori','insalata','verdura','zucchine','peperoni','rucola','lattuga',
+         'radicchio','spinaci','funghi','carote','sedano','finocchio','broccoli',
+         'cetriolo','asparagi','carciofi','cipolla','melanzane','cavolfiore',
+         'misticanza','songino','indivia','bieta','cavolo']},
   ];
   const catTotals={};const catItems={};const uncatItems=[];
   CAT_RULES.forEach(c=>{catTotals[c.id]=0;catItems[c.id]=[];});
