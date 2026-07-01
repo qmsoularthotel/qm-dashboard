@@ -739,7 +739,8 @@ function ddtBkfBuildAnalisi(){
   if(!mesiTutti.length){h+=`<div style="color:var(--text-dim);font-size:12px;">Nessun dato — carica DDT e report pasti.</div>`;}
   else{
     const _varPct=(cur,prev)=>{if(!prev||!cur)return null;return(cur-prev)/prev*100;};
-    const _varBadge=pct=>{if(pct===null)return'<span style="color:var(--text-dim);font-size:10px;">—</span>';const c=pct>0?'#dc2626':'#16a34a';const arr=pct>0?'↑':'↓';return`<span style="color:${c};font-size:11px;font-weight:700;">${arr}${Math.abs(pct).toFixed(1)}%</span>`;};
+    // invertGood=true → calo è verde (spesa); invertGood=false → aumento è verde (coperti)
+    const _varBadge=(pct,invertGood)=>{if(pct===null)return'<span style="color:var(--text-dim);font-size:10px;">—</span>';const good=invertGood?pct<0:pct>0;const c=good?'#16a34a':'#dc2626';const arr=pct>0?'↑':'↓';return`<span style="color:${c};font-size:11px;font-weight:700;">${arr}${Math.abs(pct).toFixed(1)}%</span>`;};
     const _mesi12=mesiTutti.slice(0,13);
     h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;"><table style="width:100%;border-collapse:collapse;table-layout:fixed;">
     <thead><tr style="background:var(--bg);">
@@ -754,8 +755,8 @@ function ddtBkfBuildAnalisi(){
       const ymPrev=_mesi12[i+1];
       const spesaPrev=ymPrev?(spesaPerMese[ymPrev]||0):null;
       const copPrev=ymPrev?(copertiPerMese[ymPrev]?.bb||0):null;
-      const vSpesa=_varBadge(spesaPrev!==null?_varPct(spesa,spesaPrev):null);
-      const vCop=_varBadge(copPrev!==null?_varPct(cop,copPrev):null);
+      const vSpesa=_varBadge(spesaPrev!==null?_varPct(spesa,spesaPrev):null,true);
+      const vCop=_varBadge(copPrev!==null?_varPct(cop,copPrev):null,false);
       h+=`<tr style="${i>0?'border-top:1px solid var(--border)':''}${isCur?';background:#e8f0fe':''}">
         <td style="padding:7px 10px;font-size:12px;font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${_monLabel(ym)}</td>
         <td style="padding:7px 8px;text-align:right;font-size:12px;font-weight:600;">${spesa?_fmt(spesa):'—'}</td>
