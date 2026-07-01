@@ -476,6 +476,7 @@ function ddtGetYM(d){
 }
 const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 let _ddtMonth='';
+let _analMese='';
 let _ddtFilter='';
 let _ddtSearch='';
 let _ddtBkfTab='spese';
@@ -499,6 +500,16 @@ function ddtBkfNavMonth(dir){
   const d=new Date(y,m-1+dir,1);
   _ddtMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
   ddtBkfRenderSpese();ddtBkfRenderList();
+}
+function ddtBkfAnalCurMese(){
+  if(!_analMese){const n=new Date();_analMese=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
+  return _analMese;
+}
+function ddtBkfNavAnalMese(dir){
+  const[y,m]=ddtBkfAnalCurMese().split('-').map(Number);
+  const d=new Date(y,m-1+dir,1);
+  _analMese=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  ddtBkfRenderReport();
 }
 function ddtBkfMonLabel(ym){const[y,m]=ym.split('-').map(Number);return DDT_MON[m-1]+' '+y;}
 function ddtBkfFmt(n){if(!n&&n!==0)return'—';return'€ '+Number(n).toFixed(2).replace('.',',');}
@@ -752,7 +763,7 @@ function ddtBkfBuildAnalisi(){
     {id:'distributori',label:'🤖 Distributori bevande',             color:'#fdf4ff',fg:'#7e22ce',
      kw:['tube ','tube multi','tube silver','tube gold','tube purple','tube red',
          'multivitamin','multivitam','vitamina c','vitamina d',
-         'caffe spray','caffe lio','spray caffe','liofilizzato',
+         'caffe spray',"caffe' spray",'caffe lio','spray caffe','liofilizzato','lio.puro',
          'tostato','caffe tostato','grani caffe',
          'cioccolato','cacao','orzo instant','cappuccino instant']},
     {id:'frutta',    label:'🍓 Frutta fresca',                      color:'#dcfce7',fg:'#15803d',
@@ -780,9 +791,11 @@ function ddtBkfBuildAnalisi(){
          'detersivo','detergente','sapone mani','candeggina','alcool etil',
          'carta assorbente','veline','bicchiere monouso','piatto monouso']},
   ];
+  const selMese=ddtBkfAnalCurMese();
+  const catDdts=all.filter(d=>ddtBkfYM(d.data)===selMese);
   const catTotals={};const catItems={};const uncatItems=[];
   CAT_RULES.forEach(c=>{catTotals[c.id]=0;catItems[c.id]=[];});
-  all.forEach(ddt=>{(ddt.articoli||[]).forEach(a=>{
+  catDdts.forEach(ddt=>{(ddt.articoli||[]).forEach(a=>{
     if(!a.descrizione)return;
     const desc=a.descrizione.toLowerCase();
     const val=a.totale||(a.qta&&a.prezzo_unit?a.qta*a.prezzo_unit:0);
@@ -879,12 +892,22 @@ function ddtBkfBuildAnalisi(){
   }
 
   // ── Categorie ──
-  if(catGrandTotal>0){
+  {
     const catList=CAT_RULES.map(c=>({...c,total:catTotals[c.id]})).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
     const catMax=catList[0]?.total||1;
+    const nowYMCat=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
+    const isCurCat=selMese===nowYMCat;
     h+=`<div style="margin-bottom:20px;">
-    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px;">🏷️ Spesa per categoria</div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">`;
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+      <div style="font-size:14px;font-weight:800;color:var(--text);flex:1;">🏷️ Spesa per categoria</div>
+      <button onclick="ddtBkfNavAnalMese(-1)" style="width:28px;height:28px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">‹</button>
+      <span style="font-size:12px;font-weight:700;color:${isCurCat?'var(--accent)':'var(--text)'};min-width:90px;text-align:center;">${ddtBkfMonLabel(selMese)}</span>
+      <button onclick="ddtBkfNavAnalMese(1)" style="width:28px;height:28px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">›</button>
+    </div>`;
+    if(!catGrandTotal){
+      h+=`<div style="color:var(--text-dim);font-size:12px;padding:8px 0;">Nessuna spesa registrata per ${ddtBkfMonLabel(selMese)}.</div></div>`;
+    } else {
+    h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;">`;
     catList.forEach((c,i)=>{
       const pct=catMax?c.total/catMax*100:0,sharePct=catGrandTotal?c.total/catGrandTotal*100:0;
       // aggrega prodotti per descrizione+fornitore
@@ -949,7 +972,8 @@ function ddtBkfBuildAnalisi(){
         </div>
       </div></div>`;
     }
-  }
+    } // end else catGrandTotal
+  } // end categoria block
 
   // ── Trend prezzi ──
   h+=`<div style="margin-bottom:20px;">
