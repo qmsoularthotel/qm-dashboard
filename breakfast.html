@@ -938,9 +938,8 @@ function ddtBkfBuildAnalisi(){
       const detId='catdet-'+c.id;
       h+=`<div style="${i>0?'border-top:1px solid var(--border)':''}">
         <div style="display:flex;align-items:center;gap:0;cursor:pointer;user-select:none;" onclick="(function(){var d=document.getElementById('${detId}');d.style.display=d.style.display==='none'?'block':'none';})()">
-          <div style="width:4px;align-self:stretch;background:${c.fg};flex-shrink:0;border-radius:0;"></div>
           <div style="flex:1;min-width:0;padding:10px 10px 8px 12px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">${CAT_ICONS[c.id]?`<div style="flex-shrink:0;"><img src="${CAT_ICONS[c.id]}" width="30" height="30" style="object-fit:contain;display:block;"></div>`:''}<div style="font-size:13px;font-weight:600;color:var(--text);">${c.label.replace(/^\S+\s/,'')}</div></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">${CAT_ICONS[c.id]?`<div style="flex-shrink:0;"><img src="${CAT_ICONS[c.id]}" width="38" height="38" style="object-fit:contain;display:block;image-rendering:crisp-edges;"></div>`:''}<div style="font-size:13px;font-weight:600;color:var(--text);">${c.label.replace(/^\S+\s/,'')}</div></div>
             <div style="height:3px;background:var(--border);border-radius:2px;"><div style="height:3px;width:${pct.toFixed(1)}%;background:${c.fg};border-radius:2px;"></div></div>
           </div>
           <div style="padding:10px 12px;text-align:right;flex-shrink:0;">
