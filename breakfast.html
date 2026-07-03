@@ -1221,9 +1221,19 @@ function ddtBkfShowParsed(d){
     <td style="padding:3px 4px;">${inp(a.totale,'_ddtParsedData.articoli['+i+'].totale=parseFloat(this.value)||0','58px','number','0.01')}</td>
     <td style="padding:3px 4px;"><button onclick="ddtBkfRemoveArt(${i})" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">✕</button></td>
   </tr>`).join('');
+  const fornKnown=Object.keys(DDT_BKF).includes(d.fornitore)?d.fornitore:'';
   result.style.display='';
   result.innerHTML=`<div style="border-top:1px solid var(--border);padding-top:12px;">
     <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:10px;">✅ DDT rilevato — verifica e conferma</div>
+    <div style="margin-bottom:10px;"><label style="font-size:10px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:3px;">FORNITORE</label>
+      <select onchange="_ddtParsedData.fornitore=this.value" style="width:100%;padding:7px 10px;border:1px solid ${fornKnown?'var(--border)':'#f59e0b'};border-radius:8px;font-size:12px;background:var(--surface);">
+        <option value="" ${fornKnown?'':'selected'}>Seleziona…</option>
+        <option value="SDM" ${fornKnown==='SDM'?'selected':''}>SDM</option>
+        <option value="MARR" ${fornKnown==='MARR'?'selected':''}>MARR</option>
+        <option value="Cozzolino" ${fornKnown==='Cozzolino'?'selected':''}>Cozzolino</option>
+        <option value="Valgarda" ${fornKnown==='Valgarda'?'selected':''}>Valgarda</option>
+      </select>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <div style="flex:1;"><label style="font-size:10px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:3px;">DATA</label>
         <input value="${d.data||''}" onchange="_ddtParsedData.data=this.value" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;background:var(--surface);">
@@ -1257,9 +1267,11 @@ function ddtBkfAddArt(){if(!_ddtParsedData)return;(_ddtParsedData.articoli=_ddtP
 
 function ddtBkfConfirmSave(){
   if(!_ddtParsedData)return;
+  const fornFinal=ddtNormForn(_ddtParsedData.fornitore)||_ddtParsedData.fornitore||'';
+  if(!Object.keys(DDT_BKF).includes(fornFinal)){alert('Seleziona il fornitore (SDM, MARR, Cozzolino o Valgarda) prima di salvare.');return;}
   const arr=ddtBkfGet();
   arr.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6),ts:Date.now(),
-    data:_ddtParsedData.data||'',fornitore:ddtNormForn(_ddtParsedData.fornitore)||_ddtParsedData.fornitore||'',
+    data:_ddtParsedData.data||'',fornitore:fornFinal,
     reparto:'bkf',hotel:_ddtParsedData.hotel||'sa',
     numero_ddt:_ddtParsedData.numero_ddt||'',
     articoli:_ddtParsedData.articoli||[],
