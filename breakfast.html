@@ -575,11 +575,12 @@ function ddtBkfRenderSpese(){
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const active=_ddtFilter===nome;
     h+=`<div id="ddt-chip-${nome}" onclick="ddtBkfSelectForn('${nome}')" style="background:var(--surface);border:${active?'1.5px':'1px'} solid ${active?conf.accent:'var(--border)'};border-left:3px solid ${conf.accent};border-radius:10px;padding:10px 12px;cursor:pointer;transition:border-color .15s;display:flex;align-items:center;gap:10px;">
-      ${conf.logo?`<div style="flex-shrink:0;display:flex;align-items:center;"><img src="${conf.logo}" style="height:34px;max-width:70px;object-fit:contain;"></div>`:`<div style="flex-shrink:0;font-size:11px;font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;">${nome}</div>`}
       <div style="flex:1;min-width:0;">
+        ${conf.logo?'':`<div style="font-size:11px;font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">${nome}</div>`}
         <div style="font-size:15px;font-weight:800;color:${fTot?conf.fg:'var(--text-dim)'};white-space:nowrap;">${fTot?ddtBkfFmt(fTot):'—'}</div>
         <div style="font-size:10px;color:${active?conf.fg:'var(--text-dim)'};margin-top:2px;opacity:.75;">${fDdt.length} DDT${active?' ▲':' ▼'}</div>
       </div>
+      ${conf.logo?`<div style="flex-shrink:0;display:flex;align-items:center;"><img src="${conf.logo}" style="height:34px;max-width:70px;object-fit:contain;"></div>`:''}
     </div>`;
   });
   h+=`</div>`;
