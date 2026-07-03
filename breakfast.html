@@ -584,8 +584,8 @@ function ddtBkfRenderSpese(){
 
   h+=`<div id="ddtListSection"></div>`;
 
-  // Storico 12 mesi — sempre visibile, accordion
-  const _all=ddtBkfGet().filter(d=>d.reparto==='bkf');
+  // Storico 12 mesi — sempre visibile, accordion (solo fornitori SDM/Marr/Cozzolino/Valgarda)
+  const _all=ddtBkfGet().filter(d=>d.reparto==='bkf'&&DDT_BKF[ddtNormForn(d.fornitore)||d.fornitore]!==undefined);
   const _now=new Date();
   const _months=[];
   for(let i=11;i>=0;i--){const _d=new Date(_now.getFullYear(),_now.getMonth()-i,1);_months.push(_d.getFullYear()+'-'+String(_d.getMonth()+1).padStart(2,'0'));}
