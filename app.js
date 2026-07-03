@@ -5170,11 +5170,6 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     let jsonText=data.content[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
     const newData=JSON.parse(jsonText);
     newData.arrivi=fixArriviStruttura(newData.arrivi||[]);
-    // Guardia deterministica: scarta dagli arrivi chi ha data di arrivo diversa dalla data del documento
-    // (l'AI a volte include per errore ospiti già in casa da ieri classificandoli come "arrivi")
-    const _normDM=s=>{const m=String(s||'').match(/(\d{1,2})\/(\d{1,2})/);return m?m[1].padStart(2,'0')+'/'+m[2].padStart(2,'0'):'';};
-    const _docDM=_normDM(newData.data);
-    if(_docDM)newData.arrivi=newData.arrivi.filter(a=>!a.arrivo||_normDM(a.arrivo)===_docDM);
     newData.partenze=newData.partenze||[];
     newData.fermate=newData.fermate||[];
     // Merge se stesso giorno: arrivi e partenze si accumulano, fermate si sostituiscono
@@ -5190,6 +5185,12 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
       newData.partenze=mergeByCamera(arriviData.partenze||[],newData.partenze);
       // fermate: sempre sostituite (stato corrente in casa)
     }
+    // Guardia deterministica: scarta dagli arrivi chi ha data di arrivo diversa dalla data del documento
+    // (l'AI a volte include per errore ospiti già in casa da giorni precedenti classificandoli come "arrivi";
+    // applicata DOPO il merge così pulisce anche eventuali residui di upload precedenti nello stesso giorno)
+    const _normDM=s=>{const m=String(s||'').match(/(\d{1,2})\/(\d{1,2})/);return m?m[1].padStart(2,'0')+'/'+m[2].padStart(2,'0'):'';};
+    const _docDM=_normDM(newData.data);
+    if(_docDM)newData.arrivi=newData.arrivi.filter(a=>!a.arrivo||_normDM(a.arrivo)===_docDM);
     arriviData=newData;
     // Salva locale + cloud
     arriviData._ts=Date.now();
