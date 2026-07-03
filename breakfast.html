@@ -580,7 +580,7 @@ function ddtBkfRenderSpese(){
         <div style="font-size:15px;font-weight:800;color:${fTot?conf.fg:'var(--text-dim)'};white-space:nowrap;">${fTot?ddtBkfFmt(fTot):'—'}</div>
         <div style="font-size:10px;color:${active?conf.fg:'var(--text-dim)'};margin-top:2px;opacity:.75;">${fDdt.length} DDT${active?' ▲':' ▼'}</div>
       </div>
-      ${conf.logo?`<div style="flex-shrink:0;display:flex;align-items:center;gap:6px;background:transparent;">${conf.iconOnly?`<span style="font-size:11px;font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;">${nome}</span>`:''}<div style="width:90px;height:52px;display:flex;align-items:center;justify-content:center;background:transparent;"><img src="${conf.logo}" style="max-width:100%;max-height:100%;object-fit:contain;background:transparent;"></div></div>`:''}
+      ${conf.logo?`<div style="flex-shrink:0;display:flex;align-items:center;gap:6px;background:transparent;">${conf.iconOnly?`<span style="font-size:11px;font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;">${nome}</span>`:''}<img src="${conf.logo}" style="height:52px;max-width:100px;object-fit:contain;background:transparent;"></div>`:''}
     </div>`;
   });
   h+=`</div>`;
