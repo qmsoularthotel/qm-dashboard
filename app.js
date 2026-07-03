@@ -1910,6 +1910,22 @@ const LS={
           if(k==='ddt'){
             try{if(document.getElementById('view-spese')?.classList.contains('active')){ddtRenderSpese();ddtRenderList();}}catch(e){}
           }
+          // Per rcGuests: aggiorna guestsData in memoria e ri-renderizza le card se diverse da quelle mostrate
+          if(k==='rcGuests'){
+            try{
+              const cloudGuests=JSON.parse(json.value);
+              if(cloudGuests&&JSON.stringify(cloudGuests)!==JSON.stringify(guestsData)){
+                if(cloudGuests.length){
+                  document.getElementById('rcUploadZone').style.display='none';
+                  document.getElementById('rcProcessing').style.display='none';
+                  rcRenderCards(cloudGuests);
+                }else{
+                  guestsData=[];
+                  document.getElementById('rcResults').style.display='none';
+                }
+              }
+            }catch(e){}
+          }
           // Per hk_soul, hk_bout, piano: aggiorna timestamp visivo se cloud ha _ts
           if(k==='hk_soul'||k==='hk_bout'||k==='piano'){
             try{
