@@ -1291,7 +1291,11 @@ function ddtBkfDelete(id){
   try{
     const res=await fetch(PROXY+'/kv/get?key='+DDT_KEY);
     const json=await res.json();
-    if(json.value){try{localStorage.setItem(DDT_KEY,json.value);}catch(e){}}
+    if(json.value&&json.value!==localStorage.getItem(DDT_KEY)){
+      try{localStorage.setItem(DDT_KEY,json.value);}catch(e){}
+      // Se la tab Ordini è già aperta, ri-renderizza con i dati freschi dal cloud
+      if(_activeTab==='orders'){try{ddtBkfRenderSpese();ddtBkfRenderList();}catch(e){}}
+    }
   }catch(e){}
 })();
 
