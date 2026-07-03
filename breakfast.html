@@ -458,7 +458,7 @@ function ddtBkfRenderReport(){
 // ── DDT ORDINI BKF ────────────────────────────────────────────────────────────
 const DDT_KEY='qm_ddt';
 const DDT_BKF={
-  SDM:      {color:'#dcfce7',fg:'#166534', accent:'#16a34a', logo:'sdm.png'},
+  SDM:      {color:'#dcfce7',fg:'#166534', accent:'#16a34a', logo:'sdm2.png'},
   MARR:     {color:'#fef3c7',fg:'#92400e', accent:'#d97706', logo:'marr.png'},
   Cozzolino:{color:'#fce7f3',fg:'#9d174d', accent:'#db2777'},
   Valgarda: {color:'#ede9fe',fg:'#5b21b6', accent:'#7c3aed', logo:'valgarda.png'},
@@ -1045,23 +1045,7 @@ function ddtBkfBuildAnalisi(){
 function ddtBkfSelectForn(nome){
   _ddtFilter=(_ddtFilter===nome)?'':nome;
   _ddtSearch='';
-  // Aggiorna visivamente i chip senza re-render
-  Object.entries(DDT_BKF).forEach(([k,conf])=>{
-    const chip=document.getElementById('ddt-chip-'+k);
-    if(!chip)return;
-    const active=_ddtFilter===k;
-    chip.style.background=active?conf.color:'var(--surface)';
-    chip.style.borderColor=active?conf.accent:'var(--border)';
-    const rows=chip.querySelectorAll('div');
-    if(rows[0])rows[0].style.color=active?conf.fg:'var(--text-dim)';
-    if(rows[2]){
-      const mon=ddtBkfCurMonth();
-      const fDdt=ddtBkfGet().filter(d=>d.reparto==='bkf'&&ddtGetYM(d)===mon&&(ddtNormForn(d.fornitore)||d.fornitore)===k);
-      rows[2].textContent=fDdt.length+' DDT'+(active?' ▲':' ▼');
-      rows[2].style.color=active?conf.fg:'var(--text-dim)';
-    }
-  });
-  ddtBkfRenderList();
+  ddtBkfRenderSpese();
 }
 
 function ddtBkfRenderList(){
