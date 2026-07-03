@@ -1052,7 +1052,8 @@ function ddtBkfSelectForn(nome){
     const rows=chip.querySelectorAll('div');
     if(rows[0])rows[0].style.color=active?conf.fg:'var(--text-dim)';
     if(rows[2]){
-      const fDdt=ddtBkfGet().filter(d=>d.reparto==='bkf'&&(ddtNormForn(d.fornitore)||d.fornitore)===k);
+      const mon=ddtBkfCurMonth();
+      const fDdt=ddtBkfGet().filter(d=>d.reparto==='bkf'&&ddtGetYM(d)===mon&&(ddtNormForn(d.fornitore)||d.fornitore)===k);
       rows[2].textContent=fDdt.length+' DDT'+(active?' ▲':' ▼');
       rows[2].style.color=active?conf.fg:'var(--text-dim)';
     }
