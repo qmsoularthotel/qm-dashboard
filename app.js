@@ -450,6 +450,8 @@ let _hkpNdata={};   // {p_yyyy-mm: {cellId: val}}
 let _hkpNdebounce={};
 let _hkpNsel={drag:false,cells:new Set()};
 const HKP_SYM={RP:'hkp-ripasso',ND:'hkp-nd',LIB:'open-sign',NE:'non-eseguito'};
+// Mappatura sigla in griglia → nome esteso cameriera (da completare con l'elenco fornito dall'utente)
+const HKP_HW_NAMES={};
 const HKP_SYM_EXT='png';
 const HKP_MON_NAMES=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 function hkpNStorKey(p){return 'qm_hkpN_'+p+'_'+hkpNCurMon(p);}
@@ -625,14 +627,19 @@ function hkpNRenderGrid(p,tab){
   const monLabel=MON_IT[mo-1]+' '+yr;
   const rows=[];
   conf.forEach(grp=>grp.list.forEach((name,idx)=>rows.push({name,grp:grp.g,isFirst:idx===0,grpSize:grp.list.length})));
-  const dayTotals={};const rowTotals={};const hwCounts={};
+  const dayTotals={};const rowTotals={};const hwCounts={};const symCounts={};
   rows.forEach((row,ri)=>{
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
       if(!v)return;
-      dayTotals[d]=(dayTotals[d]||0)+1;
-      rowTotals[ri]=(rowTotals[ri]||0)+1;
-      v.split('/').forEach(k=>{const t=k.trim();if(t)hwCounts[t]=(hwCounts[t]||0)+1;});
+      let hasStaff=false;
+      v.split('/').forEach(k=>{
+        const t=k.trim();if(!t)return;
+        if(HKP_SYM[t]){symCounts[t]=(symCounts[t]||0)+1;}
+        else{hwCounts[t]=(hwCounts[t]||0)+1;hasStaff=true;}
+      });
+      // Il totale camere conta solo le assegnazioni a una cameriera, non ripasso/non disturbare/camera libera
+      if(hasStaff){dayTotals[d]=(dayTotals[d]||0)+1;rowTotals[ri]=(rowTotals[ri]||0)+1;}
     });
   });
   const maxCam=Math.max(...rows.map(r=>r.name.length));
@@ -729,20 +736,27 @@ function hkpNRenderGrid(p,tab){
   h+='<div data-hkpnl="'+p+'" style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);overflow:hidden;">'+L+'</div>';
   h+='<div data-hkpnr="'+p+'" style="overflow-x:auto;flex:1;">'+R+'</div>';
   h+='</div>';
-  // Riepilogo cameriere
-  const colors=[['#dbeafe','#1d4ed8'],['#fef3c7','#92400e'],['#dcfce7','#166534'],['#fce7f3','#9d174d'],['#ede9fe','#4c1d95'],['#ffedd5','#9a3412']];
-  const sorted=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
-  if(sorted.length){
+  // Riepilogo cameriere: card camere assegnate (senza colori, nome esteso) separate da card simboli (RP/ND/LIB)
+  const sortedHw=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
+  if(sortedHw.length){
     h+='<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">';
-    sorted.forEach(([init,cnt],i)=>{
-      const [bg,fg]=colors[i%colors.length];
-      const symFile=HKP_SYM[init.toUpperCase()];
-      const avatar=symFile
-        ?'<img src="img/'+symFile+'.'+HKP_SYM_EXT+'" style="width:36px;height:36px;object-fit:contain;mix-blend-mode:multiply;">'
-        :'<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:'+bg+';color:'+fg+';font-size:12px;font-weight:800;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
+    sortedHw.forEach(([init,cnt])=>{
+      const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
       h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;">';
-      h+=avatar;
-      h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:12px;color:#666;margin-top:1px;">'+init+'</div></div></div>';
+      h+='<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:#f1f2f4;color:#333;font-size:12px;font-weight:800;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
+      h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:12px;color:#666;margin-top:1px;">'+fullName+'</div></div></div>';
+    });
+    h+='</div>';
+  }
+  const sortedSym=Object.entries(symCounts).sort((a,b)=>b[1]-a[1]);
+  if(sortedSym.length){
+    h+='<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;">';
+    sortedSym.forEach(([code,cnt])=>{
+      const symFile=HKP_SYM[code];
+      const labels={RP:'Ripasso',ND:'Non disturbare',LIB:'Camera libera',NE:'Non eseguito'};
+      h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;">';
+      h+='<img src="img/'+symFile+'.'+HKP_SYM_EXT+'" style="width:36px;height:36px;object-fit:contain;mix-blend-mode:multiply;">';
+      h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:12px;color:#666;margin-top:1px;">'+(labels[code]||code)+'</div></div></div>';
     });
     h+='</div>';
   }
