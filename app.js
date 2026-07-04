@@ -665,7 +665,7 @@ function hkpNRenderGrid(p,tab){
       const dual=v.includes('/');
       const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
       const iw=colW[d]-2;
-      R+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':(isToday?'#f4f7fd':'#fff'))+';height:'+RH+'px;">'
+      R+='<td style="'+B+'padding:1px;background:'+(isToday&&!v?'#f4f7fd':'#fff')+';height:'+RH+'px;">'
         +'<input type="text" maxlength="10" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" '
         +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
         +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
@@ -821,7 +821,7 @@ function hkpNRenderFondi(p){
       rooms.forEach(room=>{
         const gri=allRooms.indexOf(room);
         const v=hkpNGetCell(p,'fondi',ti,gri);
-        h+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':'#fff')+';height:'+RH+'px;">'
+        h+='<td style="'+B+'padding:1px;background:#fff;height:'+RH+'px;">'
           +'<input type="text" value="'+v+'" data-p="'+p+'" data-tab="fondi" data-ri="'+ti+'" data-col="'+gri+'" data-fondi="1" '
           +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
           +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
