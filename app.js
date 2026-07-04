@@ -585,21 +585,6 @@ function hkpNRender(p){
   const tab=HKP_NTAB[p];
   document.querySelectorAll('#'+viewId+' .hkpN-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   if(tab==='fondi')hkpNRenderFondi(p);else hkpNRenderGrid(p,tab);
-  hkpNSyncFromCloud(p);
-}
-// hkpNGetData legge solo dalla cache locale/localStorage: su un dispositivo diverso da quello
-// che ha salvato i dati (kvSet in hkpNSave) non arrivano mai senza questo fetch esplicito da KV.
-async function hkpNSyncFromCloud(p){
-  try{
-    const sk=hkpNStorKey(p);
-    const res=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(sk),{cache:'no-store'});
-    const json=await res.json();
-    if(!json.value)return;
-    if(json.value===localStorage.getItem(sk))return;
-    localStorage.setItem(sk,json.value);
-    _hkpNdata[hkpNCacheKey(p)]=JSON.parse(json.value);
-    if(HKP_NTAB[p]!=='fondi')hkpNRenderGrid(p,HKP_NTAB[p]);
-  }catch(e){}
 }
 function hkpNRenderGrid(p,tab){
   const el=document.getElementById('hkpN-'+p+'-body');
@@ -640,15 +625,13 @@ function hkpNRenderGrid(p,tab){
   L+='<th style="background:#f5f6f8;'+B+'padding:5px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;height:'+RH+'px;"></th>';
   L+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
-    const grpBorder=(row.isFirst&&ri>0)?'border-top:3px solid #1a1a1a;':'';
-    L+='<tr style="height:'+RH+'px;'+grpBorder+'">';
+    L+='<tr style="height:'+RH+'px;">';
     if(row.isFirst){
-      const grpBorderBlue=(ri>0)?'border-top:3px solid #fff;':'';
       L+='<td rowspan="'+row.grpSize+'" style="background:var(--accent,#1E4080);color:#fff;'+B
         +'padding:4px 5px;font-size:13px;font-weight:700;text-align:center;vertical-align:middle;'
-        +'overflow:hidden;line-height:1.5;max-width:'+GW+'px;'+grpBorderBlue+'">'+row.grp.replace(/\n/g,'<br>')+'</td>';
+        +'overflow:hidden;line-height:1.5;max-width:'+GW+'px;">'+row.grp.replace(/\n/g,'<br>')+'</td>';
     }
-    L+='<td style="background:#fff;'+B+'padding:0 10px;font-size:15px;font-weight:500;white-space:nowrap;height:'+RH+'px;vertical-align:middle;overflow:hidden;'+grpBorder+'">'+row.name+'</td>';
+    L+='<td style="background:#fff;'+B+'padding:0 10px;font-size:15px;font-weight:500;white-space:nowrap;height:'+RH+'px;vertical-align:middle;overflow:hidden;">'+row.name+'</td>';
     L+='</tr>';
   });
   L+='<tr style="height:'+RH+'px;"><td style="background:#c8d0e8;'+B+'height:'+RH+'px;"></td>';
@@ -676,14 +659,13 @@ function hkpNRenderGrid(p,tab){
   });
   R+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
-    const grpBorder=(row.isFirst&&ri>0)?'border-top:3px solid #1a1a1a;':'';
     R+='<tr style="height:'+RH+'px;">';
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
       const dual=v.includes('/');
       const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
       const iw=colW[d]-2;
-      R+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':(isToday?'#f4f7fd':'#fff'))+';height:'+RH+'px;'+grpBorder+'">'
+      R+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':(isToday?'#f4f7fd':'#fff'))+';height:'+RH+'px;">'
         +'<input type="text" maxlength="10" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" '
         +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
         +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
