@@ -1002,6 +1002,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='spese'){try{ddtRenderSpese();if(_ddtTab==='spese')ddtRenderList();}catch(e){}}
   if(id==='turni-pref'){try{turniPrefRender();turniPrefMarkAllSeen();}catch(e){}}
   if(id==='controllo-mattino'){try{cmLoad();}catch(e){}}
+  if(id==='registrazione'){try{rcRefreshFromCloud();}catch(e){}}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='overview'&&weekData){
     try{loadWeekData(weekData);}catch(e){}
@@ -4976,6 +4977,23 @@ function rcOpenModal(idx){const g=guestsData[idx];document.getElementById('rcMod
 function rcCloseModal(){document.getElementById('rcModalOverlay').classList.remove('open');}
 function rcCloseModalOutside(e){if(e.target===document.getElementById('rcModalOverlay'))rcCloseModal();}
 function rcResetApp(){document.getElementById('rcResults').style.display='none';document.getElementById('rcUploadZone').style.display='block';document.getElementById('rcFileInput').value='';guestsData=[];try{localStorage.removeItem('qm_rcGuests');}catch(e){}}
+// Forza allineamento con la fonte dati (KV) ogni volta che si apre la view Registrazione,
+// indipendentemente dal polling in background: previene card bloccate su una vecchia sessione/tab.
+async function rcRefreshFromCloud(){
+  try{
+    const res=await fetch(PROXY+'/kv/get?key=qm_rcGuests',{cache:'no-store'});
+    const json=await res.json();
+    if(!json.value)return;
+    if(json.value===localStorage.getItem('qm_rcGuests')&&guestsData.length)return;
+    localStorage.setItem('qm_rcGuests',json.value);
+    const cloudGuests=JSON.parse(json.value);
+    if(cloudGuests&&cloudGuests.length){
+      document.getElementById('rcUploadZone').style.display='none';
+      document.getElementById('rcProcessing').style.display='none';
+      rcRenderCards(cloudGuests);
+    }
+  }catch(e){}
+}
 function rcShowProc(msg){document.getElementById('rcProcText').textContent=msg;document.getElementById('rcProcessing').style.display='flex';document.getElementById('rcUploadZone').style.display='none';}
 function rcHideProc(){document.getElementById('rcProcessing').style.display='none';}
 function rcShowError(msg){document.getElementById('rcError').textContent=msg;document.getElementById('rcError').style.display='block';document.getElementById('rcUploadZone').style.display='block';}
