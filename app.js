@@ -761,7 +761,7 @@ function _hkpNUpdateCellDisplay(input){
     const img=document.createElement('img');
     img.className='hkpSymImg';
     img.src='img/'+sym+'.'+HKP_SYM_EXT;
-    img.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;height:90%;object-fit:contain;mix-blend-mode:multiply;pointer-events:none;z-index:2;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;';
+    img.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:72%;height:72%;object-fit:contain;mix-blend-mode:multiply;pointer-events:none;z-index:2;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;';
     td.appendChild(img);
     td.style.background='#fff';
   }else{
