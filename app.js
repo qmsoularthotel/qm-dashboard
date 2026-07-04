@@ -585,6 +585,34 @@ function hkpNRender(p){
   const tab=HKP_NTAB[p];
   document.querySelectorAll('#'+viewId+' .hkpN-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   if(tab==='fondi')hkpNRenderFondi(p);else hkpNRenderGrid(p,tab);
+  hkpNSyncFromCloud(p);
+}
+// hkpNGetData legge solo dalla cache locale/localStorage: su un dispositivo diverso da quello
+// che ha salvato i dati (kvSet in hkpNSave) non arrivano mai senza questo fetch esplicito da KV.
+// Non ri-renderizza MAI se l'utente ha una cella selezionata o in modifica in quel momento,
+// per evitare di invalidare i riferimenti di selezione a metà interazione (bug corretto in precedenza).
+function _hkpNUserBusy(p){
+  const el=document.getElementById('hkpN-'+p+'-body');
+  if(!el)return false;
+  const active=document.activeElement;
+  if(active&&el.contains(active)&&active.tagName==='INPUT')return true;
+  if(_hkpNsel&&_hkpNsel.cells&&_hkpNsel.cells.size)return true;
+  if(_hkpNsel&&_hkpNsel.drag)return true;
+  return false;
+}
+async function hkpNSyncFromCloud(p){
+  try{
+    if(_hkpNUserBusy(p))return;
+    const sk=hkpNStorKey(p);
+    const res=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(sk),{cache:'no-store'});
+    const json=await res.json();
+    if(!json.value)return;
+    if(json.value===localStorage.getItem(sk))return;
+    if(_hkpNUserBusy(p))return; // ricontrolla: l'utente potrebbe aver iniziato a interagire nel frattempo
+    localStorage.setItem(sk,json.value);
+    _hkpNdata[hkpNCacheKey(p)]=JSON.parse(json.value);
+    if(HKP_NTAB[p]!=='fondi')hkpNRenderGrid(p,HKP_NTAB[p]);
+  }catch(e){}
 }
 function hkpNRenderGrid(p,tab){
   const el=document.getElementById('hkpN-'+p+'-body');
