@@ -621,17 +621,18 @@ function hkpNRenderGrid(p,tab){
   let L='<table style="border-collapse:collapse;table-layout:fixed;">';
   L+='<colgroup><col style="width:'+GW+'px"><col style="width:'+RW+'px"></colgroup>';
   L+='<thead><tr style="height:'+RH+'px;">';
-  L+='<th style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:5px 4px;font-size:12px;font-weight:700;text-align:center;height:'+RH+'px;">Gruppo</th>';
-  L+='<th style="background:#f5f6f8;'+B+'padding:5px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;height:'+RH+'px;"></th>';
+  L+='<th style="position:sticky;top:0;z-index:5;background:var(--accent,#1E4080);color:#fff;'+B+'padding:5px 4px;font-size:12px;font-weight:700;text-align:center;height:'+RH+'px;">Gruppo</th>';
+  L+='<th style="position:sticky;top:0;z-index:5;background:#f5f6f8;'+B+'padding:5px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;height:'+RH+'px;"></th>';
   L+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
-    L+='<tr style="height:'+RH+'px;">';
+    const grpBorder=(row.isFirst&&ri>0)?'border-top:3px solid #1a1a1a;':'';
+    L+='<tr style="height:'+RH+'px;'+grpBorder+'">';
     if(row.isFirst){
       L+='<td rowspan="'+row.grpSize+'" style="background:var(--accent,#1E4080);color:#fff;'+B
         +'padding:4px 5px;font-size:13px;font-weight:700;text-align:center;vertical-align:middle;'
-        +'overflow:hidden;line-height:1.5;max-width:'+GW+'px;">'+row.grp.replace(/\n/g,'<br>')+'</td>';
+        +'overflow:hidden;line-height:1.5;max-width:'+GW+'px;'+grpBorder+'">'+row.grp.replace(/\n/g,'<br>')+'</td>';
     }
-    L+='<td style="background:#fff;'+B+'padding:0 10px;font-size:15px;font-weight:500;white-space:nowrap;height:'+RH+'px;vertical-align:middle;overflow:hidden;">'+row.name+'</td>';
+    L+='<td style="background:#fff;'+B+'padding:0 10px;font-size:15px;font-weight:500;white-space:nowrap;height:'+RH+'px;vertical-align:middle;overflow:hidden;'+grpBorder+'">'+row.name+'</td>';
     L+='</tr>';
   });
   L+='<tr style="height:'+RH+'px;"><td style="background:#c8d0e8;'+B+'height:'+RH+'px;"></td>';
@@ -655,17 +656,18 @@ function hkpNRenderGrid(p,tab){
   R+='<thead><tr style="height:'+RH+'px;">';
   days.forEach(d=>{
     const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-    R+='<th style="background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
+    R+='<th style="position:sticky;top:0;z-index:5;background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
   });
   R+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
+    const grpBorder=(row.isFirst&&ri>0)?'border-top:3px solid #1a1a1a;':'';
     R+='<tr style="height:'+RH+'px;">';
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
       const dual=v.includes('/');
       const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
       const iw=colW[d]-2;
-      R+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':(isToday?'#f4f7fd':'#fff'))+';height:'+RH+'px;">'
+      R+='<td style="'+B+'padding:1px;background:'+(v?'#f0f5ff':(isToday?'#f4f7fd':'#fff'))+';height:'+RH+'px;'+grpBorder+'">'
         +'<input type="text" maxlength="10" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" '
         +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
         +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
