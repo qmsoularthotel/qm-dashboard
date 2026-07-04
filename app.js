@@ -693,7 +693,7 @@ function hkpNRenderGrid(p,tab){
       const dual=v.includes('/');
       const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
       const iw=colW[d]-2;
-      R+='<td style="'+B+'padding:1px;background:'+(isToday&&!v?'#f4f7fd':'#fff')+';height:'+RH+'px;">'
+      R+='<td style="'+B+'padding:1px;background:'+(isToday&&!v?'#f4f7fd':'#fff')+';height:'+RH+'px;overflow:hidden;">'
         +'<input type="text" maxlength="10" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" '
         +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
         +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
@@ -761,7 +761,7 @@ function _hkpNUpdateCellDisplay(input){
     const img=document.createElement('img');
     img.className='hkpSymImg';
     img.src='img/'+sym+'.'+HKP_SYM_EXT;
-    img.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:72%;height:72%;object-fit:contain;mix-blend-mode:multiply;pointer-events:none;z-index:2;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;';
+    img.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:82%;height:82%;object-fit:contain;mix-blend-mode:multiply;pointer-events:none;z-index:2;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;';
     td.appendChild(img);
     td.style.background='#fff';
   }else{
@@ -849,7 +849,7 @@ function hkpNRenderFondi(p){
       rooms.forEach(room=>{
         const gri=allRooms.indexOf(room);
         const v=hkpNGetCell(p,'fondi',ti,gri);
-        h+='<td style="'+B+'padding:1px;background:#fff;height:'+RH+'px;">'
+        h+='<td style="'+B+'padding:1px;background:#fff;height:'+RH+'px;overflow:hidden;">'
           +'<input type="text" value="'+v+'" data-p="'+p+'" data-tab="fondi" data-ri="'+ti+'" data-col="'+gri+'" data-fondi="1" '
           +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
           +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
