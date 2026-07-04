@@ -585,6 +585,21 @@ function hkpNRender(p){
   const tab=HKP_NTAB[p];
   document.querySelectorAll('#'+viewId+' .hkpN-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   if(tab==='fondi')hkpNRenderFondi(p);else hkpNRenderGrid(p,tab);
+  hkpNSyncFromCloud(p);
+}
+// hkpNGetData legge solo dalla cache locale/localStorage: su un dispositivo diverso da quello
+// che ha salvato i dati (kvSet in hkpNSave) non arrivano mai senza questo fetch esplicito da KV.
+async function hkpNSyncFromCloud(p){
+  try{
+    const sk=hkpNStorKey(p);
+    const res=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(sk),{cache:'no-store'});
+    const json=await res.json();
+    if(!json.value)return;
+    if(json.value===localStorage.getItem(sk))return;
+    localStorage.setItem(sk,json.value);
+    _hkpNdata[hkpNCacheKey(p)]=JSON.parse(json.value);
+    if(HKP_NTAB[p]!=='fondi')hkpNRenderGrid(p,HKP_NTAB[p]);
+  }catch(e){}
 }
 function hkpNRenderGrid(p,tab){
   const el=document.getElementById('hkpN-'+p+'-body');
@@ -628,9 +643,10 @@ function hkpNRenderGrid(p,tab){
     const grpBorder=(row.isFirst&&ri>0)?'border-top:3px solid #1a1a1a;':'';
     L+='<tr style="height:'+RH+'px;'+grpBorder+'">';
     if(row.isFirst){
+      const grpBorderBlue=(ri>0)?'border-top:3px solid #fff;':'';
       L+='<td rowspan="'+row.grpSize+'" style="background:var(--accent,#1E4080);color:#fff;'+B
         +'padding:4px 5px;font-size:13px;font-weight:700;text-align:center;vertical-align:middle;'
-        +'overflow:hidden;line-height:1.5;max-width:'+GW+'px;'+grpBorder+'">'+row.grp.replace(/\n/g,'<br>')+'</td>';
+        +'overflow:hidden;line-height:1.5;max-width:'+GW+'px;'+grpBorderBlue+'">'+row.grp.replace(/\n/g,'<br>')+'</td>';
     }
     L+='<td style="background:#fff;'+B+'padding:0 10px;font-size:15px;font-weight:500;white-space:nowrap;height:'+RH+'px;vertical-align:middle;overflow:hidden;'+grpBorder+'">'+row.name+'</td>';
     L+='</tr>';
@@ -696,9 +712,9 @@ function hkpNRenderGrid(p,tab){
   }
   h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'\')" style="'+cancelBtnStyle+'">✕ Cancella</button>';
   h+='</div>';
-  h+='<div style="display:flex;border:1px solid #d0d3db;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
-  h+='<div data-hkpnl="'+p+'" style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);overflow:hidden;">'+L+'</div>';
-  h+='<div data-hkpnr="'+p+'" style="overflow-x:auto;flex:1;">'+R+'</div>';
+  h+='<div style="display:flex;border:1px solid #d0d3db;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);max-height:65vh;overflow-y:auto;overflow-x:hidden;">';
+  h+='<div data-hkpnl="'+p+'" style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);">'+L+'</div>';
+  h+='<div data-hkpnr="'+p+'" style="overflow-x:auto;overflow-y:hidden;flex:1;">'+R+'</div>';
   h+='</div>';
   // Riepilogo cameriere
   const colors=[['#dbeafe','#1d4ed8'],['#fef3c7','#92400e'],['#dcfce7','#166534'],['#fce7f3','#9d174d'],['#ede9fe','#4c1d95'],['#ffedd5','#9a3412']];
