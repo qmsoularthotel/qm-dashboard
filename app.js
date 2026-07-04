@@ -633,11 +633,11 @@ function hkpNRenderGrid(p,tab){
 
   // === TABELLA SINISTRA: Gruppo (rowspan) + Camera ===
   // height:RH su ogni <tr> impedisce al rowspan di alterare le altezze → allineamento garantito
-  let L='<table style="border-collapse:separate;border-spacing:0;table-layout:fixed;">';
+  let L='<table style="border-collapse:collapse;table-layout:fixed;">';
   L+='<colgroup><col style="width:'+GW+'px"><col style="width:'+RW+'px"></colgroup>';
   L+='<thead><tr style="height:'+RH+'px;">';
-  L+='<th style="position:sticky;top:0;z-index:5;background:var(--accent,#1E4080);color:#fff;'+B+'padding:5px 4px;font-size:12px;font-weight:700;text-align:center;height:'+RH+'px;">Gruppo</th>';
-  L+='<th style="position:sticky;top:0;z-index:5;background:#f5f6f8;'+B+'padding:5px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;height:'+RH+'px;"></th>';
+  L+='<th style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:5px 4px;font-size:12px;font-weight:700;text-align:center;height:'+RH+'px;">Gruppo</th>';
+  L+='<th style="background:#f5f6f8;'+B+'padding:5px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;height:'+RH+'px;"></th>';
   L+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
     const grpBorder=(row.isFirst&&ri>0)?'border-top:3px solid #1a1a1a;':'';
@@ -665,14 +665,14 @@ function hkpNRenderGrid(p,tab){
   });
 
   // === TABELLA DESTRA: solo giorni (colonna Tot rimossa) ===
-  let R='<table style="border-collapse:separate;border-spacing:0;table-layout:fixed;">';
+  let R='<table style="border-collapse:collapse;table-layout:fixed;">';
   R+='<colgroup>';
   days.forEach(d=>R+='<col style="width:'+colW[d]+'px">');
   R+='</colgroup>';
   R+='<thead><tr style="height:'+RH+'px;">';
   days.forEach(d=>{
     const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-    R+='<th style="position:sticky;top:0;z-index:5;background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
+    R+='<th style="background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
   });
   R+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
@@ -712,9 +712,9 @@ function hkpNRenderGrid(p,tab){
   }
   h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'\')" style="'+cancelBtnStyle+'">✕ Cancella</button>';
   h+='</div>';
-  h+='<div style="display:flex;border:1px solid #d0d3db;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);max-height:65vh;overflow-y:auto;overflow-x:hidden;">';
-  h+='<div data-hkpnl="'+p+'" style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);">'+L+'</div>';
-  h+='<div data-hkpnr="'+p+'" style="overflow-x:auto;overflow-y:hidden;flex:1;">'+R+'</div>';
+  h+='<div style="display:flex;border:1px solid #d0d3db;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
+  h+='<div data-hkpnl="'+p+'" style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);overflow:hidden;">'+L+'</div>';
+  h+='<div data-hkpnr="'+p+'" style="overflow-x:auto;flex:1;">'+R+'</div>';
   h+='</div>';
   // Riepilogo cameriere
   const colors=[['#dbeafe','#1d4ed8'],['#fef3c7','#92400e'],['#dcfce7','#166534'],['#fce7f3','#9d174d'],['#ede9fe','#4c1d95'],['#ffedd5','#9a3412']];
