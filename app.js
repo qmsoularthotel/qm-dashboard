@@ -702,7 +702,7 @@ function hkpNRenderGrid(p,tab){
   const cancelBtnStyle=symBtnStyle+'background:#fef2f2;border-color:#fca5a5;color:#b91c1c;';
   const imgStyle='height:28px;width:auto;mix-blend-mode:multiply;';
   let h='<div style="font-size:17px;font-weight:700;color:#1a1a1a;padding:0 0 8px;letter-spacing:.01em;">'+monLabel+'</div>';
-  h+='<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">';
+  h+='<div style="position:sticky;top:0;z-index:15;background:var(--bg,#fff);display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;padding:6px 0;">';
   if(tab==='camere'){
     h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'RP\')" style="'+symBtnStyle+'"><img src="img/hkp-ripasso.'+HKP_SYM_EXT+'" style="'+imgStyle+'"> Ripasso</button>';
     h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'ND\')" style="'+symBtnStyle+'"><img src="img/hkp-nd.'+HKP_SYM_EXT+'" style="'+imgStyle+'"> Non disturbare</button>';
