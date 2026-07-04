@@ -981,18 +981,10 @@ function hkpNKey(input,e){
   const tab=input.dataset.tab;
   const table=input.closest('table');
   if(e.key==='Escape'){_hkpNClearSel();return;}
-  // Delete/Backspace su selezione multipla → svuota tutte le celle
+  // Delete/Backspace su selezione multipla: gestito a livello globale in _hkpNGlobalDelete
+  // (non qui, per non dipendere dal fatto che questo specifico input abbia ancora il focus)
   if((e.key==='Delete'||e.key==='Backspace')&&_hkpNsel.cells.size>1){
     e.preventDefault();
-    const p=input.dataset.p;
-    _hkpNsel.cells.forEach(key=>{
-      const [sp,stab,sri,scol]=key.split(':');
-      hkpNSetCell(sp,stab,parseInt(sri),scol,'');
-    });
-    _hkpNsel.cells.clear();
-    clearTimeout(_hkpNdebounce[p]);
-    hkpNSave(p);
-    hkpNRender(p);
     return;
   }
   const go=(newRi,newCol)=>{
@@ -1016,6 +1008,25 @@ function hkpNKey(input,e){
 }
 // Termina drag-select al rilascio del mouse ovunque
 document.addEventListener('mouseup',()=>{_hkpNsel.drag=false;});
+// Cancellazione selezione multipla a livello globale: non dipende da quale specifico
+// input abbia ancora il focus dopo un trascinamento (bug: serviva premere Canc due volte)
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Delete'&&e.key!=='Backspace')return;
+  if(!_hkpNsel||!_hkpNsel.cells||_hkpNsel.cells.size<=1)return;
+  const ae=document.activeElement;
+  if(ae&&ae.tagName==='INPUT'&&ae.dataset&&ae.dataset.p&&!_hkpNsel.cells.has(_hkpNSelKey(ae)))return;
+  e.preventDefault();
+  const keysArr=[..._hkpNsel.cells];
+  const [p]=keysArr[0].split(':');
+  keysArr.forEach(key=>{
+    const [sp,stab,sri,scol]=key.split(':');
+    hkpNSetCell(sp,stab,parseInt(sri),scol,'');
+  });
+  _hkpNsel.cells.clear();
+  clearTimeout(_hkpNdebounce[p]);
+  hkpNSave(p);
+  hkpNRender(p);
+});
 // stub for old references still in syncFromCloud
 function hkpSave(p){}
 function hkpRestore(){}
