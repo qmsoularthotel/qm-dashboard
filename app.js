@@ -5215,15 +5215,15 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     try{localStorage.setItem('qm_arriviData',JSON.stringify(arriviData));}catch(e){}
     try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_arriviData',value:JSON.stringify(arriviData)})}).catch(()=>{});}catch(e){}
     // Aggiorna UI
-    ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi');
     document.getElementById('arriviLoadedDate').textContent=arriviData.data;
     setUploadTs('arriviTs');
     arriviUpdateKpi();
     // Aggiorna RC cards: arrivi + fermate arrivate OGGI (stessa data del documento)
+    let _rcCardsOk=true;
     (function(){
       // Claude ora classifica già in "arrivi" tutti gli ospiti con check-in oggi,
       // anche se nel PDF erano già in sezione "In Casa"
-      if(!arriviData||!arriviData.arrivi||!arriviData.arrivi.length)return;
+      if(!arriviData||!arriviData.arrivi||!arriviData.arrivi.length){_rcCardsOk=false;return;}
       const year=arriviData.data?parseInt(arriviData.data.split('/').pop())||new Date().getFullYear():new Date().getFullYear();
       const toGuest=a=>({
         camera:a.camera,
@@ -5235,11 +5235,19 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
         origine:a.origine||''
       });
       const guests=(arriviData.arrivi||[]).map(toGuest).filter(g=>g.nome&&g.nome.trim());
-      if(!guests.length)return;
+      if(!guests.length){_rcCardsOk=false;return;}
       document.getElementById('rcUploadZone').style.display='none';
       document.getElementById('rcProcessing').style.display='none';
       rcRenderCards(guests);
     })();
+    // Se l'analisi non ha prodotto arrivi validi, avvisa chiaramente invece di fallire in silenzio
+    // (le registration card resterebbero quelle vecchie senza che nessuno se ne accorga)
+    if(!_rcCardsOk){
+      ucSetState('arrivi','error',arriviData.data+' · 0 arrivi rilevati — verifica il documento');
+      alert('Attenzione: dal documento caricato non risultano arrivi validi.\nLe registration card NON sono state aggiornate.\nControlla il file e ricarica il Riepilogo Reception.');
+    }else{
+      ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi');
+    }
   }catch(err){
     console.error('[Arrivi] errore caricamento:',err);
     ucSetState('arrivi','error','Errore: '+(err&&err.message?err.message:'caricamento fallito'));
