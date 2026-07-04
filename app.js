@@ -633,7 +633,7 @@ function hkpNRenderGrid(p,tab){
 
   // === TABELLA SINISTRA: Gruppo (rowspan) + Camera ===
   // height:RH su ogni <tr> impedisce al rowspan di alterare le altezze → allineamento garantito
-  let L='<table style="border-collapse:collapse;table-layout:fixed;">';
+  let L='<table style="border-collapse:separate;border-spacing:0;table-layout:fixed;">';
   L+='<colgroup><col style="width:'+GW+'px"><col style="width:'+RW+'px"></colgroup>';
   L+='<thead><tr style="height:'+RH+'px;">';
   L+='<th style="position:sticky;top:0;z-index:5;background:var(--accent,#1E4080);color:#fff;'+B+'padding:5px 4px;font-size:12px;font-weight:700;text-align:center;height:'+RH+'px;">Gruppo</th>';
@@ -665,7 +665,7 @@ function hkpNRenderGrid(p,tab){
   });
 
   // === TABELLA DESTRA: solo giorni (colonna Tot rimossa) ===
-  let R='<table style="border-collapse:collapse;table-layout:fixed;">';
+  let R='<table style="border-collapse:separate;border-spacing:0;table-layout:fixed;">';
   R+='<colgroup>';
   days.forEach(d=>R+='<col style="width:'+colW[d]+'px">');
   R+='</colgroup>';
