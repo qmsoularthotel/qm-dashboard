@@ -3447,6 +3447,11 @@ function renderPulDay(silent){
   if(!silent){const _pts=localStorage.getItem('qm_ts_pulTs');LS.set('pulData',{data:pulData,activeDay:pulActiveDay,ts:_pts?parseInt(_pts):Date.now()});}
 }
 function updateKpiFromPulizie(d){
+  // Se per questa data abbiamo il Riepilogo Reception (AI, deduplicato), usa quel conteggio
+  // reale degli arrivi invece del numero del Report Pulizie, che può essere impreciso/non aggiornato.
+  if(arriviData&&arriviData.data===d.data&&Array.isArray(arriviData.arrivi)){
+    d={...d,arrivi:arriviData.arrivi.length};
+  }
   const occ=d.arrivi - d.partenze; // camere nette in entrata oggi
   // calcolo camere occupate: usiamo arrivi come check-in del giorno
   // e partenze come check-out; l'occupazione è stimata come arrivi della settimana
