@@ -7682,7 +7682,7 @@ function ddtBuildAnalisi(){
     if(!catGrandTotal){
       h+=`<div style="color:var(--text-dim);font-size:12px;padding:8px 0;">Nessuna spesa registrata per ${ddtMonLabel(selMese)}.</div></div>`;
     }else{
-    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">`;
+    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;">`;
     catList.forEach((c,i)=>{
       const pct=catMax?c.total/catMax*100:0;
       const sharePct=catGrandTotal?c.total/catGrandTotal*100:0;
@@ -7744,8 +7744,8 @@ function ddtBuildAnalisi(){
         <span style="font-size:13px;font-weight:800;color:#92400e;">⚠️ Non classificati</span>
         <span style="font-size:11px;color:#92400e;font-weight:700;">${_fmt(uncatTot)}</span>
       </div>
-      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;overflow:hidden;">
-        <div style="padding:7px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="(function(){var d=document.getElementById('uncat-det-spese');d.style.display=d.style.display==='none'?'block':'none';})()">
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;">
+        <div style="padding:7px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-radius:10px 10px 0 0;" onclick="(function(){var d=document.getElementById('uncat-det-spese');d.style.display=d.style.display==='none'?'block':'none';})()">
           <span style="font-size:11px;color:#92400e;">${uncatSorted.length} prodott${uncatSorted.length===1?'o':'i'} senza categoria — spostali con il menu qui sotto</span>
           <span style="font-size:11px;color:#92400e;">▾</span>
         </div>
