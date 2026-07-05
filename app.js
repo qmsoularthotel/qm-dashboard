@@ -5251,22 +5251,11 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     newData.arrivi=fixArriviStruttura(newData.arrivi||[]);
     newData.partenze=newData.partenze||[];
     newData.fermate=newData.fermate||[];
-    // Merge se stesso giorno: arrivi e partenze si accumulano, fermate si sostituiscono
-    if(arriviData&&arriviData.data&&arriviData.data===newData.data){
-      // Chiave per ospite (non per camera): se un ospite cambia camera tra un upload e l'altro
-      // (es. Art 5 → Art 14), la nuova camera deve SOSTITUIRE la vecchia riga, non aggiungersi
-      // come doppione. Fallback sulla camera solo se il nome ospite manca.
-      const mergeKey=x=>{const n=(x.ospite||'').trim().toLowerCase();return n?('n:'+n):('c:'+x.camera);};
-      const mergeByGuest=(existing,incoming)=>{
-        const map=new Map();
-        existing.forEach(x=>map.set(mergeKey(x),x));
-        incoming.forEach(x=>map.set(mergeKey(x),x)); // upload più recente sovrascrive, anche se è cambiata la camera
-        return Array.from(map.values());
-      };
-      newData.arrivi=mergeByGuest(arriviData.arrivi||[],newData.arrivi);
-      newData.partenze=mergeByGuest(arriviData.partenze||[],newData.partenze);
-      // fermate: sempre sostituite (stato corrente in casa)
-    }
+    // Ogni upload del Riepilogo Reception è un'istantanea COMPLETA della giornata, non un
+    // incremento: arrivi/partenze/fermate vengono sempre sostituiti interamente col nuovo
+    // parsing, mai uniti al precedente. Il merge per camera/nome causava doppioni quando un
+    // ospite cambiava camera, e un merge per nome rischiava di unire per errore prenotazioni
+    // diverse con più camere sotto lo stesso nominativo — la sostituzione piena evita entrambi.
     // Guardia deterministica: scarta dagli arrivi chi ha data di arrivo diversa dalla data del documento
     // (l'AI a volte include per errore ospiti già in casa da giorni precedenti classificandoli come "arrivi";
     // applicata DOPO il merge così pulisce anche eventuali residui di upload precedenti nello stesso giorno)
