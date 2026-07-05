@@ -7386,22 +7386,104 @@ function ddtBuildAnalisi(){
     return{...p,list,diff};
   }).sort((a,b)=>b.diff-a.diff);
 
-  // ── C: categorie prodotto ── (stesse icone e stile di breakfast.html)
+  // ── C: categorie prodotto ── (stesse categorie, icone e stile di breakfast.html)
   const CAT_ICONS_SPESE={
-    salumi:    'icone%20app%20breakfast/salumi.png',
-    latticini: 'icone%20app%20breakfast/latte.png',
-    pane:      'icone%20app%20breakfast/dolci.png',
-    bevande:   'icone%20app%20breakfast/bevande.png',
-    frutta:    'icone%20app%20breakfast/frutta.png',
-    uova:      'icone%20app%20breakfast/uova.png',
+    teecaffe:    'icone%20app%20breakfast/the%20camere.png',
+    lievitati:   'icone%20app%20breakfast/dolci.png',
+    latticini:   'icone%20app%20breakfast/latte.png',
+    uova:        'icone%20app%20breakfast/uova.png',
+    bacon:       'icone%20app%20breakfast/bacon.png',
+    salumi:      'icone%20app%20breakfast/salumi.png',
+    miele:       'icone%20app%20breakfast/miele.png',
+    succhi:      'icone%20app%20breakfast/bevande.png',
+    distributori:'icone%20app%20breakfast/distributore.png',
+    frutta:      'icone%20app%20breakfast/frutta.png',
+    sottoli:     'icone%20app%20breakfast/sottoli.png',
+    verdure:     'icone%20app%20breakfast/verdure.png',
+    nonalim:     'icone%20app%20breakfast/non%20alimentari.png',
   };
   const CAT_RULES=[
-    {id:'salumi',   label:'Salumi & Affettati', color:'#fef2f2',fg:'#991b1b', kw:['prosciutto','salame','bresaola','mortadella','speck','coppa','pancetta','wurstel','affettato','salsiccia','salume']},
-    {id:'latticini',label:'Latticini',           color:'#f0fdf4',fg:'#166534', kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone','scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino','fontina']},
-    {id:'pane',     label:'Pane & Dolci',        color:'#fefce8',fg:'#854d0e', kw:['pane','brioche','cornetto','croissant','biscotto','torta','brioches','focaccia','marmellata','nutella','confettura','ciambella','krapfen','plumcake','sfoglia','fetta biscottata','fette biscottate','merendina']},
-    {id:'bevande',  label:'Bevande',              color:'#eff6ff',fg:'#1d4ed8', kw:['succo','acqua','caffè','tè','the ','cappuccino','centrifugato','smoothie','bevanda','nettare','succhi']},
-    {id:'frutta',   label:'Frutta & Verdura',     color:'#dcfce7',fg:'#15803d', kw:['frutta','verdura','fragola','melone','anguria','ananas','banana','mela','pesca','arancia','kiwi','uva','albicocca','lampone','mirtillo','pera','ciliegia','limone','pompelmo']},
-    {id:'uova',     label:'Uova & Cereali',       color:'#fffbeb',fg:'#92400e', kw:['uovo','uova','cereali','fiocchi','avena','granola','corn flakes','muesli','müsli']},
+    // ORDINE CRITICO (identico a breakfast.html):
+    // teecaffe prima di lievitati (bisc.gocce → camere, non lievitati)
+    // lievitati prima di latticini (pancake/waffle con latte → lievitati)
+    // latticini prima di miele (bevande avena/soia → latticini, non cereali)
+    {id:'teecaffe',  label:'☕ Dotazioni bar e camere',                 color:'#f0f9ff',fg:'#0369a1',
+     kw:["te'",'twinings','earl grey','nescafe','bisc.gocce','gocce ciocc',
+         'orzo solub','orzo bimbo','capsule caffe','cialde caffe','caffe solub',
+         'the bag','tea bag','bustina te','infuso','tisana','camomilla','camom.',
+         'the twin','pure green','verde pure',
+         'prosecco','prosecchino','spumante','vino ','minibar',
+         'cocacola','coca cola','coca-cola','aranciata','cedrata','chinotto','limonata',
+         'fanta','sprite','pepsi','birra','peroni','nastro azzurro',
+         's.bened','san benedetto','acqua s.ben','stefano','acqua nat 50']},
+    {id:'lievitati', label:'🥐 Lievitati, Torte & Dolci',          color:'#fefce8',fg:'#854d0e',
+     kw:['pane','brioche','cornetto','croissant','brioches','krapfen','ciambella','sfoglia',
+         'plumcake','focaccia','torta','crostata','pasticceria','frolla','biscotto','biscotti',
+         'merendina','wafer','fetta biscottata','fette biscottate','grissino','cracker','crackers',
+         'tarallo','taralli','panettone','pandoro','colomba','veneziana','babà','baba','veneziane',
+         'pancake','waffle','waffel','wafle','cialda','crepe','crêpe',
+         'pastier','carezza','vien.','vienn','tulip','pasticciotto','rustic',
+         'bisc.','panfette','mini tris','tris fantasia','fantasia 40','nonna rotonda','lemoncake','lemon cake',
+         'focac.']},
+    {id:'latticini', label:'🧀 Latte, Yogurt, Latticini & Formaggi',        color:'#f0fdf4',fg:'#166534',
+     kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone',
+         'scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino',
+         'kefir','fontina','emmental','cheddar','fior di latte','primo sale','asiago','brie',
+         'camembert','gruyere','gruviera','taleggio','caciotta','caciocavallo','robiola',
+         'edamer','edam',
+         'form.','formagg','cacioc','canestr',
+         'bevan. avena','bevanda avena','avena valsoia','avena bio','avena s.g.','latte avena',
+         'drink avena','bevan. soia','bevanda soia','latte soia','drink soia','avena 1 l',
+         'latte mandorla','latte riso','drink riso','bevanda riso','bevanda mandorla']},
+    {id:'uova',      label:'🥚 Uova',                               color:'#fffbeb',fg:'#78350f',
+     kw:['uovo','uova']},
+    {id:'bacon',     label:'🥓 Bacon',                              color:'#fef2f2',fg:'#991b1b',
+     kw:['bacon','pancetta affum','pancetta tesa','pancetta coppata']},
+    {id:'salumi',    label:'🍖 Salumi',                      color:'#fce7f3',fg:'#9d174d',
+     kw:['prosciutto','salame','bresaola','mortadella','mort.','speck','coppa','pancetta','wurstel',
+         'affettato','salsiccia','lardo','guanciale','culatello','lonza','cotto','crudo',
+         'tacchino','fesa tacchino','arrosto tacchino','pollo arrosto','pollo cotto']},
+    {id:'miele',     label:'🍯 Miele, Confetture, Nutella, Frutta secca, Fette biscottate & Cereali', color:'#fef3c7',fg:'#b45309',
+     kw:['miele','sciroppo','scirop.','nutella','crema nocciola','crema di nocciole',
+         'cereali','fiocchi','avena','granola','corn flakes','muesli','kellogg',
+         'frutta secca','noci','mandorle','nocciole','pistacchio','uvetta','anacardi','pinoli','datteri',
+         'marmellata','confettura','conf.s.day','s.day','zucchero','dolcificante','bifette',
+         'semi di chia','chia','sesamo','semi di lino','semi di girasole',
+         'olio extrav','olio oliv','olio di oliv']},
+    {id:'succhi',    label:'🧃 Succhi & Bevande',                   color:'#fff7ed',fg:'#9a3412',
+     kw:['succo brik','brik succo','zuegg','brik arancio','brik pesca','brik ace','brik mela',
+         'succo 200','succo 125','succo di frutta','nectar','nettare',
+         'santal','bev.ace','g.d.sapori']},
+    {id:'distributori',label:'🤖 Distributori bevande',             color:'#fdf4ff',fg:'#7e22ce',
+     kw:['tube ','tube multi','tube silver','tube gold','tube purple','tube red',
+         'multivitamin','multivitam','vitamina c','vitamina d',
+         'caffe spray',"caffe' spray",'caffe lio','spray caffe','liofilizzato','lio.puro',
+         'tostato','caffe tostato','grani caffe',
+         'cioccolato','cacao','orzo instant','cappuccino instant']},
+    {id:'frutta',    label:'🍓 Frutta fresca',                      color:'#dcfce7',fg:'#15803d',
+     kw:['kiwi','melone','anguria','ananas','banana','banan','mela ','mele',
+         'pesca','pesche','percoc','arancia','arance','fragola','fragole',
+         'lampone','lamponi','mirtillo','mirtilli','pera','pere',
+         'ciliegia','ciliegie','pompelmo','mango','papaya',
+         'cantalupo','macedonia','clementine','mandarino','uva','frutta fresca','frutti di bosco',
+         'stark','golden del','fuji','granny']},
+    {id:'sottoli',   label:'🫒 Sottoli & Conserve buffet',          color:'#f7fee7',fg:'#3f6212',
+     kw:["pomodori secchi","sott'olio","sottoli","capperi","giardiniera",
+         "sacla","acciughe","tonno","antipasto","peperoni grig","verdure grig",
+         "melanzane","melanzana","melanzane filetti","d'amico"]},
+    {id:'verdure',   label:'🥗 Verdure buffet',                     color:'#f0fdf4',fg:'#14532d',
+     kw:['pomodori','pomod','ciliegine','insalata','verdura','zucchine','peperoni','rucola','lattuga',
+         'radicchio','spinaci','funghi','carote','sedano','finocchio','broccoli',
+         'cetriol','asparagi','carciofi','cipolla','cavolfiore',
+         'misticanza','songino','indivia','bieta','cavolo',
+         'olive','limone','limoni']},
+    {id:'nonalim',   label:'📦 Non alimentari bar e cucina',                     color:'#f8fafc',fg:'#475569',
+     kw:['pellicola','carta forno','rotolo pvc','alluminio','film pvc','film alim',
+         'sacchetto','busta frigo','guanti mono','tovagliolo','tovaglietta','stuzzicadenti',
+         'detersivo','detergente','sapone mani','candeggina','alcool etil',
+         'carta assorbente','veline','bicchiere monouso','piatto monouso',
+         'bicch.','palette','sacchi','rotolo carta','fazzoletti','tovagliett',
+         'shopper','bag kraft','contenitore alim','vaschetta alim']},
   ];
   const catTotals={};const catItems={};
   CAT_RULES.forEach(c=>{catTotals[c.id]=0;catItems[c.id]=[];});
@@ -7570,7 +7652,7 @@ function ddtBuildAnalisi(){
           <div style="flex:1;min-width:0;padding:10px 10px 8px 12px;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
               ${CAT_ICONS_SPESE[c.id]?`<div style="flex-shrink:0;"><img src="${CAT_ICONS_SPESE[c.id]}" width="38" height="38" style="object-fit:contain;display:block;"></div>`:''}
-              <div style="font-size:13px;font-weight:600;color:var(--text);">${c.label}</div>
+              <div style="font-size:13px;font-weight:600;color:var(--text);">${c.label.replace(/^\S+\s/,'')}</div>
             </div>
             <div style="height:3px;background:var(--border-light);border-radius:2px;"><div style="height:3px;width:${pct.toFixed(1)}%;background:${c.fg};border-radius:2px;"></div></div>
           </div>
