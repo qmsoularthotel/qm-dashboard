@@ -7386,26 +7386,37 @@ function ddtBuildAnalisi(){
     return{...p,list,diff};
   }).sort((a,b)=>b.diff-a.diff);
 
-  // ── C: categorie prodotto ──
+  // ── C: categorie prodotto ── (stesse icone e stile di breakfast.html)
+  const CAT_ICONS_SPESE={
+    salumi:    'icone%20app%20breakfast/salumi.png',
+    latticini: 'icone%20app%20breakfast/latte.png',
+    pane:      'icone%20app%20breakfast/dolci.png',
+    bevande:   'icone%20app%20breakfast/bevande.png',
+    frutta:    'icone%20app%20breakfast/frutta.png',
+    uova:      'icone%20app%20breakfast/uova.png',
+  };
   const CAT_RULES=[
-    {id:'salumi',   label:'🥩 Salumi & Affettati', color:'#fef2f2',fg:'#991b1b', kw:['prosciutto','salame','bresaola','mortadella','speck','coppa','pancetta','wurstel','affettato','salsiccia','salume']},
-    {id:'latticini',label:'🧀 Latticini',           color:'#f0fdf4',fg:'#166534', kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone','scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino','fontina']},
-    {id:'pane',     label:'🥐 Pane & Dolci',        color:'#fefce8',fg:'#854d0e', kw:['pane','brioche','cornetto','croissant','biscotto','torta','brioches','focaccia','marmellata','nutella','confettura','ciambella','krapfen','plumcake','sfoglia','fetta biscottata','fette biscottate','merendina']},
-    {id:'bevande',  label:'🥤 Bevande',              color:'#eff6ff',fg:'#1d4ed8', kw:['succo','acqua','caffè','tè','the ','cappuccino','centrifugato','smoothie','bevanda','nettare','succhi']},
-    {id:'frutta',   label:'🍓 Frutta & Verdura',     color:'#dcfce7',fg:'#15803d', kw:['frutta','verdura','fragola','melone','anguria','ananas','banana','mela','pesca','arancia','kiwi','uva','albicocca','lampone','mirtillo','pera','ciliegia','limone','pompelmo']},
-    {id:'uova',     label:'🥚 Uova & Cereali',       color:'#fffbeb',fg:'#92400e', kw:['uovo','uova','cereali','fiocchi','avena','granola','corn flakes','muesli','müsli']},
+    {id:'salumi',   label:'Salumi & Affettati', color:'#fef2f2',fg:'#991b1b', kw:['prosciutto','salame','bresaola','mortadella','speck','coppa','pancetta','wurstel','affettato','salsiccia','salume']},
+    {id:'latticini',label:'Latticini',           color:'#f0fdf4',fg:'#166534', kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone','scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino','fontina']},
+    {id:'pane',     label:'Pane & Dolci',        color:'#fefce8',fg:'#854d0e', kw:['pane','brioche','cornetto','croissant','biscotto','torta','brioches','focaccia','marmellata','nutella','confettura','ciambella','krapfen','plumcake','sfoglia','fetta biscottata','fette biscottate','merendina']},
+    {id:'bevande',  label:'Bevande',              color:'#eff6ff',fg:'#1d4ed8', kw:['succo','acqua','caffè','tè','the ','cappuccino','centrifugato','smoothie','bevanda','nettare','succhi']},
+    {id:'frutta',   label:'Frutta & Verdura',     color:'#dcfce7',fg:'#15803d', kw:['frutta','verdura','fragola','melone','anguria','ananas','banana','mela','pesca','arancia','kiwi','uva','albicocca','lampone','mirtillo','pera','ciliegia','limone','pompelmo']},
+    {id:'uova',     label:'Uova & Cereali',       color:'#fffbeb',fg:'#92400e', kw:['uovo','uova','cereali','fiocchi','avena','granola','corn flakes','muesli','müsli']},
   ];
-  const catTotals={};
-  CAT_RULES.forEach(c=>{catTotals[c.id]=0;});
-  catTotals.altro=0;
+  const catTotals={};const catItems={};
+  CAT_RULES.forEach(c=>{catTotals[c.id]=0;catItems[c.id]=[];});
+  catTotals.altro=0;catItems.altro=[];
   bkfAll.forEach(ddt=>{
+    const forn=_nf(ddt);
     (ddt.articoli||[]).forEach(a=>{
       if(!a.descrizione)return;
       const desc=a.descrizione.toLowerCase();
       const val=a.totale||(a.qta&&a.prezzo_unit?a.qta*a.prezzo_unit:0);
       if(!val)return;
       const cat=CAT_RULES.find(c=>c.kw.some(kw=>desc.includes(kw)));
-      catTotals[cat?cat.id:'altro']+=val;
+      const cid=cat?cat.id:'altro';
+      catTotals[cid]+=val;
+      catItems[cid].push({desc:a.descrizione,forn,val});
     });
   });
   const catGrandTotal=Object.values(catTotals).reduce((s,v)=>s+v,0);
@@ -7536,27 +7547,47 @@ function ddtBuildAnalisi(){
     h+=`</div></div>`;
   }
 
-  // ── SEZIONE 3: categorie prodotto ──
+  // ── SEZIONE 3: categorie prodotto (stesse icone e stile di breakfast.html) ──
   if(catGrandTotal>0){
-    const catList=[...CAT_RULES.map(c=>({...c,total:catTotals[c.id]})),{id:'altro',label:'📦 Altro',color:'#f1f5f9',fg:'#64748b',total:catTotals.altro}].filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+    const catList=[...CAT_RULES.map(c=>({...c,total:catTotals[c.id],items:catItems[c.id]})),{id:'altro',label:'Altro',color:'#f1f5f9',fg:'#64748b',total:catTotals.altro,items:catItems.altro}].filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
     const catMax=catList[0]?.total||1;
     h+=`<div style="margin-bottom:22px;">
-    <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);margin-bottom:10px;">🏷️ Spesa per categoria</div>
+    <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);margin-bottom:10px;">Spesa per categoria</div>
     <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">`;
     catList.forEach((c,i)=>{
       const pct=catMax?c.total/catMax*100:0;
       const sharePct=catGrandTotal?c.total/catGrandTotal*100:0;
-      h+=`<div style="padding:8px 12px;${i>0?'border-top:1px solid var(--border-light)':''}">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span style="background:${c.color};color:${c.fg};padding:2px 7px;border-radius:4px;font-size:var(--fs-xxs);font-weight:700;">${c.label}</span>
+      const agg={};
+      c.items.forEach(it=>{
+        const k=it.forn+'§'+it.desc;
+        if(!agg[k])agg[k]={desc:it.desc,forn:it.forn,val:0,n:0};
+        agg[k].val+=it.val;agg[k].n++;
+      });
+      const prodotti=Object.values(agg).sort((a,b)=>b.val-a.val);
+      const detId='spesecatdet-'+c.id;
+      h+=`<div style="${i>0?'border-top:1px solid var(--border-light)':''}">
+        <div style="display:flex;align-items:center;gap:0;cursor:pointer;user-select:none;" onclick="(function(){var d=document.getElementById('${detId}');d.style.display=d.style.display==='none'?'block':'none';})()">
+          <div style="flex:1;min-width:0;padding:10px 10px 8px 12px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+              ${CAT_ICONS_SPESE[c.id]?`<div style="flex-shrink:0;"><img src="${CAT_ICONS_SPESE[c.id]}" width="38" height="38" style="object-fit:contain;display:block;"></div>`:''}
+              <div style="font-size:13px;font-weight:600;color:var(--text);">${c.label}</div>
+            </div>
+            <div style="height:3px;background:var(--border-light);border-radius:2px;"><div style="height:3px;width:${pct.toFixed(1)}%;background:${c.fg};border-radius:2px;"></div></div>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:8px;">
-            <span style="font-size:var(--fs-xxs);color:var(--text-dim);">${sharePct.toFixed(0)}%</span>
-            <span style="font-size:var(--fs-xs);font-weight:800;color:var(--text);">${_fmt(c.total)}</span>
+          <div style="padding:10px 12px;text-align:right;flex-shrink:0;">
+            <div style="font-size:14px;font-weight:800;color:var(--text);">${_fmt(c.total)}</div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:1px;">${sharePct.toFixed(0)}%</div>
           </div>
         </div>
-        <div style="height:3px;background:var(--border-light);border-radius:2px;"><div style="height:3px;width:${pct.toFixed(1)}%;background:${c.fg};border-radius:2px;opacity:0.7;"></div></div>
+        <div id="${detId}" style="display:none;border-top:1px solid var(--border-light);padding:8px 12px 10px 16px;background:var(--bg);">
+          ${prodotti.map(p=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;gap:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.desc}</div>
+              <div style="font-size:9px;color:var(--text-dim);">${p.forn}${p.n>1?' · '+p.n+' DDT':''}</div>
+            </div>
+            <span style="font-size:12px;font-weight:700;flex-shrink:0;">${_fmt(p.val)}</span>
+          </div>`).join('')}
+        </div>
       </div>`;
     });
     h+=`</div></div>`;
