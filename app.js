@@ -5266,19 +5266,17 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const _normCam=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
     const _fermateCam=new Set((newData.fermate||[]).map(f=>_normCam(f.camera)));
     if(_fermateCam.size)newData.arrivi=newData.arrivi.filter(a=>!_fermateCam.has(_normCam(a.camera)));
-    // Rete di sicurezza: il Riepilogo Reception cresce nel corso della giornata (nuove prenotazioni
-    // si aggiungono), quindi un nuovo upload con MENO arrivi del precedente è quasi certamente un
-    // errore di lettura AI (non una cancellazione reale). In quel caso non sostituire ciecamente:
-    // riaggiungi le camere mancanti rispetto al giro precedente e avvisa chiaramente, dato che
-    // eventuali errori non possono essere corretti sul momento dall'hotel.
+    // Il nuovo caricamento è sempre la fonte di verità (può diminuire per una cancellazione
+    // legittima, non solo per un errore di lettura AI: i dati non vengono MAI alterati o
+    // "recuperati" automaticamente). Se gli arrivi diminuiscono rispetto al giro precedente,
+    // segnala solo chi non risulta più, per un rapido controllo manuale — cancellazione vera
+    // o errore di lettura, la decisione resta a chi carica il documento.
     let _arriviWarning=null;
     if(arriviData&&arriviData.data===newData.data&&Array.isArray(arriviData.arrivi)&&newData.arrivi.length<arriviData.arrivi.length){
       const seenCam=new Set(newData.arrivi.map(a=>_normCam(a.camera)));
       const missing=arriviData.arrivi.filter(a=>!seenCam.has(_normCam(a.camera)));
       if(missing.length){
-        const before=newData.arrivi.length;
-        newData.arrivi=[...newData.arrivi,...missing];
-        _arriviWarning='Il nuovo caricamento aveva '+before+' arrivi contro i '+arriviData.arrivi.length+' precedenti. Per sicurezza ho mantenuto anche: '+missing.map(a=>(a.ospite||'?')+' ('+a.camera+')').join(', ')+'. Controlla sul documento che siano ancora validi.';
+        _arriviWarning='Gli arrivi sono passati da '+arriviData.arrivi.length+' a '+newData.arrivi.length+'. Non risultano più: '+missing.map(a=>(a.ospite||'?')+' ('+a.camera+')').join(', ')+'. Se è una cancellazione va bene così, altrimenti ricontrolla il documento.';
       }
     }
     arriviData=newData;
