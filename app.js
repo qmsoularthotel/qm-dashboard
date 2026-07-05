@@ -5268,6 +5268,10 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const _normDM=s=>{const m=String(s||'').match(/(\d{1,2})\/(\d{1,2})/);return m?m[1].padStart(2,'0')+'/'+m[2].padStart(2,'0'):'';};
     const _docDM=_normDM(newData.data);
     if(_docDM)newData.arrivi=newData.arrivi.filter(a=>!a.arrivo||_normDM(a.arrivo)===_docDM);
+    // Guardia deterministica: chi è già in "fermate" (in casa da prima) non può essere anche un "arrivo" di oggi
+    const _normCam=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
+    const _fermateCam=new Set((newData.fermate||[]).map(f=>_normCam(f.camera)));
+    if(_fermateCam.size)newData.arrivi=newData.arrivi.filter(a=>!_fermateCam.has(_normCam(a.camera)));
     arriviData=newData;
     // Salva locale + cloud
     arriviData._ts=Date.now();
