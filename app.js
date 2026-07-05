@@ -7312,6 +7312,14 @@ function speseCatMoveProduct(desc,newCatId){
   speseCatSetOverride(desc,newCatId);
   ddtRenderSpese();
 }
+// Menu personalizzato (stile Compass) per riassegnare la categoria di un prodotto,
+// al posto del menu nativo del browser (illeggibile e non personalizzabile)
+function speseCatToggleMenu(id){
+  document.querySelectorAll('.spese-cat-menu').forEach(m=>{if(m.id!==id)m.style.display='none';});
+  const el=document.getElementById(id);
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+document.addEventListener('click',()=>{document.querySelectorAll('.spese-cat-menu').forEach(m=>m.style.display='none');});
 let _ddtTab='spese';
 let _ddtMonth='';
 let _ddtFilter='';
@@ -7701,18 +7709,20 @@ function ddtBuildAnalisi(){
           </div>
         </div>
         <div id="${detId}" style="display:none;border-top:1px solid var(--border-light);padding:8px 12px 10px 16px;background:var(--bg);">
-          ${prodotti.map(p=>{
+          ${prodotti.map((p,pIdx)=>{
             const escDesc=p.desc.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-            const catOptions=CAT_RULES.map(cr=>`<option value="${cr.id}" ${cr.id===c.id?'selected':''}>${cr.label.replace(/^\S+\s/,'')}</option>`).join('');
+            const menuId='spesemenu-'+c.id+'-'+pIdx;
+            const allCats=[...CAT_RULES,{id:'altro',label:'Altro'}];
+            const menuRows=allCats.map(cr=>`<div onclick="event.stopPropagation();speseCatMoveProduct('${escDesc}','${cr.id}');document.getElementById('${menuId}').style.display='none';" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" style="padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap;background:transparent;${cr.id===c.id?'font-weight:700;color:var(--accent);':'color:var(--text);'}">${cr.label.replace(/^\S+\s/,'')}</div>`).join('');
             return`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;gap:8px;">
             <div style="flex:1;min-width:0;">
               <div style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.desc}</div>
               <div style="font-size:9px;color:var(--text-dim);">${p.forn}${p.n>1?' · '+p.n+' DDT':''}</div>
             </div>
-            <select onclick="event.stopPropagation()" onchange="event.stopPropagation();speseCatMoveProduct('${escDesc}',this.value)" title="Sposta in un'altra categoria (vale per tutti i mesi, passati e futuri)" style="font-size:9px;padding:2px 3px;border-radius:4px;border:1px solid var(--border-light);background:var(--surface);color:var(--text-dim);flex-shrink:0;">
-              ${catOptions}
-              <option value="altro" ${c.id==='altro'?'selected':''}>Altro</option>
-            </select>
+            <div style="position:relative;flex-shrink:0;">
+              <button onclick="event.stopPropagation();speseCatToggleMenu('${menuId}')" title="Sposta in un'altra categoria (vale per tutti i mesi, passati e futuri)" style="font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid var(--border-light);background:var(--surface);color:var(--text-dim);cursor:pointer;white-space:nowrap;">Sposta ▾</button>
+              <div id="${menuId}" class="spese-cat-menu" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;z-index:50;background:var(--surface);border:1px solid var(--border-light);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.15);min-width:220px;max-height:280px;overflow-y:auto;">${menuRows}</div>
+            </div>
             <span style="font-size:12px;font-weight:700;flex-shrink:0;white-space:nowrap;">${_fmt(p.val)}</span>
           </div>`;}).join('')}
         </div>
@@ -7740,18 +7750,19 @@ function ddtBuildAnalisi(){
           <span style="font-size:11px;color:#92400e;">▾</span>
         </div>
         <div id="uncat-det-spese" style="display:none;border-top:1px solid #fde68a;padding:6px 12px;">
-          ${uncatSorted.map(p=>{
+          ${uncatSorted.map((p,pIdx)=>{
             const escDesc=p.desc.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-            const catOptions=CAT_RULES.map(cr=>`<option value="${cr.id}">${cr.label.replace(/^\S+\s/,'')}</option>`).join('');
+            const menuId='spesemenu-unc-'+pIdx;
+            const menuRows=CAT_RULES.map(cr=>`<div onclick="event.stopPropagation();speseCatMoveProduct('${escDesc}','${cr.id}');document.getElementById('${menuId}').style.display='none';" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'" style="padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap;background:transparent;color:var(--text);">${cr.label.replace(/^\S+\s/,'')}</div>`).join('');
             return`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;gap:8px;">
             <div style="flex:1;min-width:0;">
               <div style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.desc}</div>
               <div style="font-size:9px;color:var(--text-dim);">${p.forn}${p.n>1?' · '+p.n+' DDT':''}</div>
             </div>
-            <select onclick="event.stopPropagation()" onchange="event.stopPropagation();speseCatMoveProduct('${escDesc}',this.value)" title="Assegna una categoria (vale per tutti i mesi, passati e futuri)" style="font-size:9px;padding:2px 3px;border-radius:4px;border:1px solid #fde68a;background:#fff;color:#92400e;flex-shrink:0;">
-              <option value="">Categoria...</option>
-              ${catOptions}
-            </select>
+            <div style="position:relative;flex-shrink:0;">
+              <button onclick="event.stopPropagation();speseCatToggleMenu('${menuId}')" title="Assegna una categoria (vale per tutti i mesi, passati e futuri)" style="font-size:12px;padding:4px 10px;border-radius:6px;border:1px solid #fde68a;background:#fff;color:#92400e;cursor:pointer;white-space:nowrap;">Assegna ▾</button>
+              <div id="${menuId}" class="spese-cat-menu" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;z-index:50;background:var(--surface);border:1px solid var(--border-light);border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.15);min-width:220px;max-height:280px;overflow-y:auto;">${menuRows}</div>
+            </div>
             <span style="font-size:12px;font-weight:700;flex-shrink:0;white-space:nowrap;">${_fmt(p.val)}</span>
           </div>`;}).join('')}
         </div>
