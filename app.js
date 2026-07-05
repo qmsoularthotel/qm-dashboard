@@ -1915,7 +1915,7 @@ const LS={
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr',
       'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar','inv_orders',
-      'tp_seen_until','hkp_config','ddt'];
+      'tp_seen_until','hkp_config','ddt','spese_cat_override'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
       try{
@@ -1966,6 +1966,9 @@ const LS={
           }
           if(k==='ddt'){
             try{if(document.getElementById('view-spese')?.classList.contains('active')){ddtRenderSpese();ddtRenderList();}}catch(e){}
+          }
+          if(k==='spese_cat_override'){
+            try{speseCatLoadOverride();if(document.getElementById('view-spese')?.classList.contains('active'))ddtRenderSpese();}catch(e){}
           }
           // Per rcGuests: aggiorna guestsData in memoria e ri-renderizza le card se diverse da quelle mostrate
           if(k==='rcGuests'){
@@ -7286,6 +7289,29 @@ const DDT_FORNITORI={
   Valgarda:  {reparto:'bkf', rLabel:'Breakfast',    color:'#ede9fe', fg:'#5b21b6', accent:'#7c3aed'},
 };
 const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+// Riassegnazione manuale categoria prodotto (solo Spese Fornitori): una volta spostato un
+// prodotto in una categoria, resta lì per sempre — in tutti i mesi già caricati e in quelli
+// futuri — perché la chiave è la descrizione del prodotto, non un mese/DDT specifico.
+const SPESE_CAT_OVERRIDE_KEY='qm_spese_cat_override';
+let _speseCatOverride={};
+function speseCatLoadOverride(){
+  try{const s=localStorage.getItem(SPESE_CAT_OVERRIDE_KEY);_speseCatOverride=s?JSON.parse(s):{};}catch(e){_speseCatOverride={};}
+}
+speseCatLoadOverride();
+function speseCatNormDesc(s){return String(s||'').trim().toLowerCase();}
+function speseCatSetOverride(desc,catId){
+  const k=speseCatNormDesc(desc);
+  if(!k)return;
+  _speseCatOverride[k]=catId;
+  const json=JSON.stringify(_speseCatOverride);
+  try{localStorage.setItem(SPESE_CAT_OVERRIDE_KEY,json);}catch(e){}
+  kvSet(SPESE_CAT_OVERRIDE_KEY,json).catch(()=>{});
+}
+function speseCatMoveProduct(desc,newCatId){
+  if(!newCatId)return;
+  speseCatSetOverride(desc,newCatId);
+  ddtRenderSpese();
+}
 let _ddtTab='spese';
 let _ddtMonth='';
 let _ddtFilter='';
@@ -7495,10 +7521,12 @@ function ddtBuildAnalisi(){
       const desc=a.descrizione.toLowerCase();
       const val=a.totale||(a.qta&&a.prezzo_unit?a.qta*a.prezzo_unit:0);
       if(!val)return;
+      // La riassegnazione manuale (speseCatSetOverride) ha sempre priorità sulle keyword
+      const override=_speseCatOverride[speseCatNormDesc(a.descrizione)];
       const cat=CAT_RULES.find(c=>c.kw.some(kw=>desc.includes(kw)));
-      const cid=cat?cat.id:'altro';
-      catTotals[cid]+=val;
-      catItems[cid].push({desc:a.descrizione,forn,val});
+      const cid=override||(cat?cat.id:'altro');
+      catTotals[cid]=(catTotals[cid]||0)+val;
+      (catItems[cid]=catItems[cid]||[]).push({desc:a.descrizione,forn,val});
     });
   });
   const catGrandTotal=Object.values(catTotals).reduce((s,v)=>s+v,0);
@@ -7662,13 +7690,20 @@ function ddtBuildAnalisi(){
           </div>
         </div>
         <div id="${detId}" style="display:none;border-top:1px solid var(--border-light);padding:8px 12px 10px 16px;background:var(--bg);">
-          ${prodotti.map(p=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;gap:8px;">
+          ${prodotti.map(p=>{
+            const escDesc=p.desc.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+            const catOptions=CAT_RULES.map(cr=>`<option value="${cr.id}" ${cr.id===c.id?'selected':''}>${cr.label.replace(/^\S+\s/,'')}</option>`).join('');
+            return`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;gap:8px;">
             <div style="flex:1;min-width:0;">
               <div style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.desc}</div>
               <div style="font-size:9px;color:var(--text-dim);">${p.forn}${p.n>1?' · '+p.n+' DDT':''}</div>
             </div>
-            <span style="font-size:12px;font-weight:700;flex-shrink:0;">${_fmt(p.val)}</span>
-          </div>`).join('')}
+            <select onclick="event.stopPropagation()" onchange="event.stopPropagation();speseCatMoveProduct('${escDesc}',this.value)" title="Sposta in un'altra categoria (vale per tutti i mesi, passati e futuri)" style="font-size:9px;padding:2px 3px;border-radius:4px;border:1px solid var(--border-light);background:var(--surface);color:var(--text-dim);flex-shrink:0;">
+              ${catOptions}
+              <option value="altro" ${c.id==='altro'?'selected':''}>Altro</option>
+            </select>
+            <span style="font-size:12px;font-weight:700;flex-shrink:0;white-space:nowrap;">${_fmt(p.val)}</span>
+          </div>`;}).join('')}
         </div>
       </div>`;
     });
