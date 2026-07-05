@@ -7511,10 +7511,11 @@ function ddtBuildAnalisi(){
          'bicch.','palette','sacchi','rotolo carta','fazzoletti','tovagliett',
          'shopper','bag kraft','contenitore alim','vaschetta alim']},
   ];
-  const catTotals={};const catItems={};
+  const selMese=ddtAnalCurMese();
+  const catDdts=bkfAll.filter(d=>ddtYM(d.data)===selMese);
+  const catTotals={};const catItems={};const uncatItems=[];
   CAT_RULES.forEach(c=>{catTotals[c.id]=0;catItems[c.id]=[];});
-  catTotals.altro=0;catItems.altro=[];
-  bkfAll.forEach(ddt=>{
+  catDdts.forEach(ddt=>{
     const forn=_nf(ddt);
     (ddt.articoli||[]).forEach(a=>{
       if(!a.descrizione)return;
@@ -7523,10 +7524,10 @@ function ddtBuildAnalisi(){
       if(!val)return;
       // La riassegnazione manuale (speseCatSetOverride) ha sempre priorità sulle keyword
       const override=_speseCatOverride[speseCatNormDesc(a.descrizione)];
-      const cat=CAT_RULES.find(c=>c.kw.some(kw=>desc.includes(kw)));
-      const cid=override||(cat?cat.id:'altro');
-      catTotals[cid]=(catTotals[cid]||0)+val;
-      (catItems[cid]=catItems[cid]||[]).push({desc:a.descrizione,forn,val});
+      const cat=override?{id:override}:CAT_RULES.find(c=>c.kw.some(kw=>desc.includes(kw)));
+      if(cat&&catTotals[cat.id]!==undefined){catTotals[cat.id]+=val;catItems[cat.id].push({desc:a.descrizione,forn,val});}
+      else if(override){catTotals[override]=(catTotals[override]||0)+val;(catItems[override]=catItems[override]||[]).push({desc:a.descrizione,forn,val});}
+      else uncatItems.push({desc:a.descrizione,forn,val});
     });
   });
   const catGrandTotal=Object.values(catTotals).reduce((s,v)=>s+v,0);
@@ -7657,13 +7658,23 @@ function ddtBuildAnalisi(){
     h+=`</div></div>`;
   }
 
-  // ── SEZIONE 3: categorie prodotto (stesse icone e stile di breakfast.html) ──
-  if(catGrandTotal>0){
-    const catList=[...CAT_RULES.map(c=>({...c,total:catTotals[c.id],items:catItems[c.id]})),{id:'altro',label:'Altro',color:'#f1f5f9',fg:'#64748b',total:catTotals.altro,items:catItems.altro}].filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+  // ── SEZIONE 3: categorie prodotto (stesse icone, stile e navigazione mese di breakfast.html) ──
+  {
+    const catList=[...CAT_RULES.map(c=>({...c,total:catTotals[c.id],items:catItems[c.id]})),{id:'altro',label:'Altro',color:'#f1f5f9',fg:'#64748b',total:catTotals.altro||0,items:catItems.altro||[]}].filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
     const catMax=catList[0]?.total||1;
+    const nowYMCat=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
+    const isCurCat=selMese===nowYMCat;
     h+=`<div style="margin-bottom:22px;">
-    <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);margin-bottom:10px;">Spesa per categoria</div>
-    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">`;
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+      <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);flex:1;">Spesa per categoria</div>
+      <button onclick="ddtNavAnalMese(-1)" style="width:28px;height:28px;border:1px solid var(--border-light);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">‹</button>
+      <span style="font-size:12px;font-weight:700;color:${isCurCat?'var(--accent)':'var(--text)'};min-width:90px;text-align:center;">${ddtMonLabel(selMese)}</span>
+      <button onclick="ddtNavAnalMese(1)" style="width:28px;height:28px;border:1px solid var(--border-light);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;flex-shrink:0;">›</button>
+    </div>`;
+    if(!catGrandTotal){
+      h+=`<div style="color:var(--text-dim);font-size:12px;padding:8px 0;">Nessuna spesa registrata per ${ddtMonLabel(selMese)}.</div></div>`;
+    }else{
+    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">`;
     catList.forEach((c,i)=>{
       const pct=catMax?c.total/catMax*100:0;
       const sharePct=catGrandTotal?c.total/catGrandTotal*100:0;
@@ -7708,6 +7719,45 @@ function ddtBuildAnalisi(){
       </div>`;
     });
     h+=`</div></div>`;
+    // ── Non classificati ──
+    if(uncatItems.length){
+      const uncatAgg={};
+      uncatItems.forEach(it=>{
+        const k=it.forn+'§'+it.desc;
+        if(!uncatAgg[k])uncatAgg[k]={desc:it.desc,forn:it.forn,val:0,n:0};
+        uncatAgg[k].val+=it.val;uncatAgg[k].n++;
+      });
+      const uncatSorted=Object.values(uncatAgg).sort((a,b)=>b.val-a.val);
+      const uncatTot=uncatSorted.reduce((s,p)=>s+p.val,0);
+      h+=`<div style="margin-bottom:22px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-size:13px;font-weight:800;color:#92400e;">⚠️ Non classificati</span>
+        <span style="font-size:11px;color:#92400e;font-weight:700;">${_fmt(uncatTot)}</span>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;overflow:hidden;">
+        <div style="padding:7px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="(function(){var d=document.getElementById('uncat-det-spese');d.style.display=d.style.display==='none'?'block':'none';})()">
+          <span style="font-size:11px;color:#92400e;">${uncatSorted.length} prodott${uncatSorted.length===1?'o':'i'} senza categoria — spostali con il menu qui sotto</span>
+          <span style="font-size:11px;color:#92400e;">▾</span>
+        </div>
+        <div id="uncat-det-spese" style="display:none;border-top:1px solid #fde68a;padding:6px 12px;">
+          ${uncatSorted.map(p=>{
+            const escDesc=p.desc.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+            const catOptions=CAT_RULES.map(cr=>`<option value="${cr.id}">${cr.label.replace(/^\S+\s/,'')}</option>`).join('');
+            return`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;gap:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.desc}</div>
+              <div style="font-size:9px;color:var(--text-dim);">${p.forn}${p.n>1?' · '+p.n+' DDT':''}</div>
+            </div>
+            <select onclick="event.stopPropagation()" onchange="event.stopPropagation();speseCatMoveProduct('${escDesc}',this.value)" title="Assegna una categoria (vale per tutti i mesi, passati e futuri)" style="font-size:9px;padding:2px 3px;border-radius:4px;border:1px solid #fde68a;background:#fff;color:#92400e;flex-shrink:0;">
+              <option value="">Categoria...</option>
+              ${catOptions}
+            </select>
+            <span style="font-size:12px;font-weight:700;flex-shrink:0;white-space:nowrap;">${_fmt(p.val)}</span>
+          </div>`;}).join('')}
+        </div>
+      </div></div>`;
+    }
+    }
   }
 
   // ── SEZIONE A ──
@@ -7854,6 +7904,17 @@ function ddtNavMonth(dir){
   const d=new Date(y,m-1+dir,1);
   _ddtMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
   ddtRenderSpese();ddtRenderList();
+}
+let _analMese='';
+function ddtAnalCurMese(){
+  if(!_analMese){const n=new Date();_analMese=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
+  return _analMese;
+}
+function ddtNavAnalMese(dir){
+  const[y,m]=ddtAnalCurMese().split('-').map(Number);
+  const d=new Date(y,m-1+dir,1);
+  _analMese=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  ddtRenderSpese();
 }
 function ddtMonLabel(ym){const[y,m]=ym.split('-').map(Number);return DDT_MON[m-1]+' '+y;}
 function ddtFmt(n){if(!n&&n!==0)return'—';return'€ '+Number(n).toFixed(2).replace('.',',');}
