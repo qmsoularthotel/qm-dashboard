@@ -147,7 +147,7 @@
       <div class="nav-item" onclick="setView('spese',this)"><span class="nav-icon"><img src="img/icons/spese-fornitori.png" class="nav-icon-img"></span>Spese Fornitori</div>
 
       <div class="nav-section">Strumenti</div>
-      <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon"><img src="img/icons/mini_app.png" class="nav-icon-img"></span>Mini App</div>
+      <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon"><img src="img/icons/mini_app.png" class="nav-icon-img"></span>Pannello App</div>
       <div class="nav-section" style="display:flex;align-items:center;justify-content:space-between;">
         <span>Upload Center</span>
         <span id="ucProgressLabel" style="font-size:9px;color:var(--text-dim);font-weight:400;">0/6</span>
@@ -1411,116 +1411,80 @@
         </div>
       </div>
       <div class="view" id="view-miniapp">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;" id="miniappGrid">
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">🛏️ Housekeeping</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);">SoulArt · Boutique</span>
-            </div>
-            <div style="padding:10px 16px;" id="miniapp-hk-status"></div>
-            <div style="border-top:1px solid var(--border-light);padding:12px 16px;" id="miniapp-piano-preview">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div>
-            </div>
-            <div style="border-top:1px solid var(--border-light);padding:12px 16px;">
-              <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Link da condividere</div>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input id="hk-url-input" class="form-input" readonly style="flex:1;padding:5px 8px;font-size:var(--fs-xxs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/housekeeper.html">
-                <button onclick="miniappCopy('hk-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;">Copia</button>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:start;" id="miniappGrid">
+          <div class="panel" style="padding:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="font-size:20px;">🛏️</span>
+              <div style="min-width:0;">
+                <div style="font-size:var(--fs-sm);font-weight:700;">Housekeeping</div>
+                <div style="font-size:var(--fs-xxs);color:var(--text-dim);">SoulArt · Boutique</div>
               </div>
             </div>
-            <div style="border-top:1px solid var(--border-light);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-              <div>
-                <div style="font-size:var(--fs-xs);font-weight:600;">App attiva</div>
-                <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">Se disattivata, chi apre l'app vede un messaggio di aggiornamento</div>
-              </div>
-              <button id="miniapp-hk-toggle" onclick="miniappToggleApp('hk')" style="width:44px;height:26px;border-radius:13px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:3px;left:21px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
+            <div id="miniapp-hk-status" style="margin-bottom:10px;"></div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input id="hk-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:10px;color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/housekeeper.html">
+              <button onclick="miniappCopy('hk-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
+              <button id="miniapp-hk-toggle" onclick="miniappToggleApp('hk')" title="Attiva/disattiva app" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
           </div>
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">☕ Breakfast</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Responsabile colazione</span>
-            </div>
-            <div style="padding:10px 16px;" id="miniapp-bkf-status"></div>
-            <div class="panel-body" id="miniapp-bkf-preview">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere l'anteprima</div>
-            </div>
-            <div style="border-top:1px solid var(--border-light);padding:12px 16px;">
-              <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Link da condividere</div>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input id="bkf-url-input" class="form-input" readonly style="flex:1;padding:5px 8px;font-size:var(--fs-xxs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/breakfast.html">
-                <button onclick="miniappCopy('bkf-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;">Copia</button>
+          <div class="panel" style="padding:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="font-size:20px;">☕</span>
+              <div style="min-width:0;">
+                <div style="font-size:var(--fs-sm);font-weight:700;">Breakfast</div>
+                <div style="font-size:var(--fs-xxs);color:var(--text-dim);">Responsabile colazione</div>
               </div>
             </div>
-            <div style="border-top:1px solid var(--border-light);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-              <div>
-                <div style="font-size:var(--fs-xs);font-weight:600;">App attiva</div>
-                <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">Se disattivata, chi apre l'app vede un messaggio di aggiornamento</div>
-              </div>
-              <button id="miniapp-bkf-toggle" onclick="miniappToggleApp('bkf')" style="width:44px;height:26px;border-radius:13px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:3px;left:21px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
+            <div id="miniapp-bkf-status" style="margin-bottom:10px;"></div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input id="bkf-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:10px;color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/breakfast.html">
+              <button onclick="miniappCopy('bkf-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
+              <button id="miniapp-bkf-toggle" onclick="miniappToggleApp('bkf')" title="Attiva/disattiva app" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
           </div>
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">💧 Distribuzione Culligan</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Art Resort</span>
-            </div>
-            <div style="padding:10px 16px;" id="miniapp-cm-status"></div>
-            <div style="border-top:1px solid var(--border-light);padding:12px 16px;">
-              <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Link da condividere</div>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input id="cm-url-input" class="form-input" readonly style="flex:1;padding:5px 8px;font-size:var(--fs-xxs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/controllo-mattino.html">
-                <button onclick="miniappCopy('cm-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;">Copia</button>
+          <div class="panel" style="padding:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="font-size:20px;">💧</span>
+              <div style="min-width:0;">
+                <div style="font-size:var(--fs-sm);font-weight:700;">Distribuzione Culligan</div>
+                <div style="font-size:var(--fs-xxs);color:var(--text-dim);">Art Resort</div>
               </div>
             </div>
-            <div style="border-top:1px solid var(--border-light);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-              <div>
-                <div style="font-size:var(--fs-xs);font-weight:600;">App attiva</div>
-                <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">Se disattivata, chi apre l'app vede un messaggio di aggiornamento</div>
-              </div>
-              <button id="miniapp-cm-toggle" onclick="miniappToggleApp('cm')" style="width:44px;height:26px;border-radius:13px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:3px;left:21px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
+            <div id="miniapp-cm-status" style="margin-bottom:10px;"></div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input id="cm-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:10px;color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/controllo-mattino.html">
+              <button onclick="miniappCopy('cm-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
+              <button id="miniapp-cm-toggle" onclick="miniappToggleApp('cm')" title="Attiva/disattiva app" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
           </div>
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">📦 Inventari Detersivi</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);">SoulArt · Art Resort</span>
-            </div>
-            <div style="padding:10px 16px;" id="miniapp-inv-status"></div>
-            <div style="border-top:1px solid var(--border-light);padding:12px 16px;">
-              <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Link da condividere</div>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input id="inv-url-input" class="form-input" readonly style="flex:1;padding:5px 8px;font-size:var(--fs-xxs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/inventory.html">
-                <button onclick="miniappCopy('inv-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;">Copia</button>
+          <div class="panel" style="padding:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="font-size:20px;">📦</span>
+              <div style="min-width:0;">
+                <div style="font-size:var(--fs-sm);font-weight:700;">Inventari Detersivi</div>
+                <div style="font-size:var(--fs-xxs);color:var(--text-dim);">SoulArt · Art Resort</div>
               </div>
             </div>
-            <div style="border-top:1px solid var(--border-light);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-              <div>
-                <div style="font-size:var(--fs-xs);font-weight:600;">App attiva</div>
-                <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">Se disattivata, chi apre l'app vede un messaggio di aggiornamento</div>
-              </div>
-              <button id="miniapp-inv-toggle" onclick="miniappToggleApp('inv')" style="width:44px;height:26px;border-radius:13px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:3px;left:21px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
+            <div id="miniapp-inv-status" style="margin-bottom:10px;"></div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input id="inv-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:10px;color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/inventory.html">
+              <button onclick="miniappCopy('inv-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
+              <button id="miniapp-inv-toggle" onclick="miniappToggleApp('inv')" title="Attiva/disattiva app" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
           </div>
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">🛡️ DVR &amp; Compliance</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);">General Manager</span>
-            </div>
-            <div style="padding:10px 16px;" id="miniapp-dvr-status"></div>
-            <div style="border-top:1px solid var(--border-light);padding:12px 16px;">
-              <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Link da condividere</div>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input id="dvr-url-input" class="form-input" readonly style="flex:1;padding:5px 8px;font-size:var(--fs-xxs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/dvr.html">
-                <button onclick="miniappCopy('dvr-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;">Copia</button>
+          <div class="panel" style="padding:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="font-size:20px;">🛡️</span>
+              <div style="min-width:0;">
+                <div style="font-size:var(--fs-sm);font-weight:700;">DVR &amp; Compliance</div>
+                <div style="font-size:var(--fs-xxs);color:var(--text-dim);">General Manager</div>
               </div>
             </div>
-            <div style="border-top:1px solid var(--border-light);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-              <div>
-                <div style="font-size:var(--fs-xs);font-weight:600;">App attiva</div>
-                <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">Se disattivata, chi apre l'app vede un messaggio di aggiornamento</div>
-              </div>
-              <button id="miniapp-dvr-toggle" onclick="miniappToggleApp('dvr')" style="width:44px;height:26px;border-radius:13px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:3px;left:21px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
+            <div id="miniapp-dvr-status" style="margin-bottom:10px;"></div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input id="dvr-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:10px;color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/dvr.html">
+              <button onclick="miniappCopy('dvr-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
+              <button id="miniapp-dvr-toggle" onclick="miniappToggleApp('dvr')" title="Attiva/disattiva app" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
           </div>
         </div>
@@ -1580,7 +1544,7 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=457-20260706"></script>
+<script src="app.js?v=458-20260706"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

@@ -368,7 +368,7 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventari Detersivi',spese:'Spese Fornitori','turni-pref':'Preferenze Turni'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari Detersivi',spese:'Spese Fornitori','turni-pref':'Preferenze Turni'};
 const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
@@ -1466,10 +1466,8 @@ function miniappCopy(inputId,btn){
     setTimeout(()=>{btn.textContent=orig;btn.style.background='';},2000);
   }).catch(()=>{inp.select();document.execCommand('copy');});
 }
-// §§ MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone + anteprime)
+// §§ MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone, mosaico)
 function miniappRender(){
-  miniappRenderBkf();
-  miniappRenderPiano();
   miniappRenderStatus();
   miniappLoadAppStatus();
 }
@@ -1495,7 +1493,7 @@ function miniappRenderToggles(){
     const on=_appStatus[k]!==false;
     btn.style.background=on?'var(--green)':'var(--border)';
     const knob=btn.querySelector('.miniapp-toggle-knob');
-    if(knob)knob.style.left=on?'21px':'3px';
+    if(knob)knob.style.left=on?'17px':'2px';
   });
 }
 function miniappToggleApp(key){
@@ -1586,61 +1584,6 @@ function miniappRenderStatus(){
   const inv=document.getElementById('miniapp-inv-status');if(inv)inv.innerHTML=miniappInvStatus();
   const cmEl=document.getElementById('miniapp-cm-status');
   if(cmEl)miniappCmStatus().then(html=>{cmEl.innerHTML=html;});
-}
-function miniappRenderBkf(){
-  const el=document.getElementById('miniapp-bkf-preview');if(!el)return;
-  const today=new Date();
-  const todayLabel=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'][today.getDay()]+' '+String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0');
-  if(!bkfData||!bkfData.length){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere l\'anteprima</div>';return;}
-  const todayIdx=bkfData.findIndex(d=>d.label&&d.label.includes(String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')));
-  const tIdx=todayIdx!==-1?todayIdx:bkfActiveDay;
-  const todayData=bkfData[tIdx];
-  const coperti=todayData?(todayData.adulti+todayData.bambini):0;
-  const t=new Date();t.setHours(0,0,0,0);
-  const gruppiOggi=(bkfGroups||[]).filter(g=>{const a=new Date(g.arrivo||g.data);a.setHours(0,0,0,0);const p=new Date(g.partenza||g.arrivo||g.data);p.setHours(0,0,0,0);return t>=a&&t<=p;});
-  const totPax=gruppiOggi.reduce((s,g)=>s+g.pax,0);
-  const noteOggi=(bkfNotes||{})[todayData?.label]||'';
-  // Oggi
-  let html=`<div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);margin-bottom:8px;">📅 Oggi — ${todayLabel}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-      <div style="background:var(--surface2);border-radius:7px;padding:8px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--accent);">${coperti}</div><div style="font-size:10px;color:var(--text-dim);">Coperti</div></div>
-      <div style="background:var(--surface2);border-radius:7px;padding:8px;text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--text-muted);">${todayData?.noCol||0}</div><div style="font-size:10px;color:var(--text-dim);">Room Only</div></div>
-    </div>
-    ${gruppiOggi.length?`<div style="font-size:var(--fs-xxs);background:#fff3cd;border-radius:6px;padding:6px 10px;color:#856404;margin-bottom:6px;">⚠️ ${gruppiOggi.length} gruppo${gruppiOggi.length>1?'i':''} oggi — ${totPax} persone</div>`:''}
-    ${noteOggi?`<div style="font-size:var(--fs-xxs);color:var(--text-muted);font-style:italic;background:var(--surface2);padding:6px 8px;border-radius:6px;margin-bottom:6px;">📋 ${noteOggi}</div>`:''}`;
-  // Prossimi giorni
-  const nextDays=bkfData.slice(tIdx+1,tIdx+4);
-  if(nextDays.length){
-    html+=`<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px;">Prossimi giorni</div>`;
-    nextDays.forEach(nd=>{
-      const tot=(nd.adulti||0)+(nd.bambini||0);
-      html+=`<div style="background:var(--surface2);border-radius:7px;padding:8px 10px;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:var(--fs-xxs);font-weight:600;color:var(--text);">${nd.label}</span>
-        <span style="font-size:var(--fs-xs);font-weight:700;color:var(--accent);">${tot} <span style="font-size:10px;font-weight:400;color:var(--text-dim);">cop.</span></span>
-        <span style="font-size:var(--fs-xs);font-weight:600;color:var(--text-muted);">${nd.noCol||0} <span style="font-size:10px;font-weight:400;color:var(--text-dim);">RO</span></span>
-      </div>`;
-    });
-  }
-  // Grafico settimanale
-  const pts=bkfData.map(d=>({label:d.label.split(' ')[0],v:(d.adulti||0)+(d.bambini||0)}));
-  const W=600,H=190,PL=28,PR=8,PT=32,PB=32;
-  const plotW=W-PL-PR,plotH=H-PT-PB;
-  const YMAX=Math.max(20,...pts.map(p=>p.v))+8;
-  const sx=i=>PL+i/(pts.length-1||1)*plotW;
-  const sy=v=>PT+plotH-(v/YMAX)*plotH;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
-  const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
-  svg+=`<path d="${linePath}L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z" fill="var(--accent)" opacity="0.1"/>`;
-  svg+=`<path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
-  pts.forEach((p,i)=>{
-    const x=sx(i),y=sy(p.v),isActive=i===tIdx;
-    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?6:4}" fill="var(--accent)" stroke="white" stroke-width="2"/>`;
-    svg+=`<text x="${x}" y="${y-13}" font-size="${isActive?20:17}" fill="var(--accent)" text-anchor="middle" font-weight="${isActive?800:600}">${p.v}</text>`;
-    svg+=`<text x="${x}" y="${H-4}" font-size="14" fill="var(--text-dim)" text-anchor="middle">${p.label}</text>`;
-  });
-  svg+='</svg>';
-  html+=`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border-light);">${svg}</div>`;
-  el.innerHTML=html;
 }
 let pianoNavIdx=null; // indice giorno selezionato nel pannello overview
 
@@ -1785,7 +1728,6 @@ function pianoOvInit(){
   pianoNavRender(idx);
 }
 
-function miniappRenderPiano(){renderPianoGiorno('miniapp-piano-preview');}
 // §§ UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP (fmtNow, fmtUploadTs, setUploadTs)
 function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 function fmtUploadTs(ts){const n=ts?new Date(ts):new Date();const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];return'↑ '+n.getDate()+' '+ms[n.getMonth()]+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
@@ -4707,7 +4649,6 @@ function pianoSetLoaded(silent){
   const box=document.getElementById('pianoUploadBox');if(box)box.style.display='none';
   const li=document.getElementById('pianoLoadedInfo');if(li)li.classList.add('visible');
   try{pianoOvInit();}catch(e){}
-  try{renderPianoGiorno('miniapp-piano-preview',new Date());}catch(e){}
 }
 function resetPianoData(){
   pianoData=null;
