@@ -1417,18 +1417,10 @@
               <span class="panel-title">🛏️ Housekeeping</span>
               <span style="font-size:var(--fs-xxs);color:var(--text-dim);">SoulArt · Boutique</span>
             </div>
-            <div class="panel-body" id="miniapp-hk-preview">
-              <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica Soul App HKP e Boutique App HKP per vedere l'anteprima</div>
-            </div>
+            <div style="padding:10px 16px;" id="miniapp-hk-status"></div>
             <div style="border-top:1px solid var(--border-light);padding:12px 16px;" id="miniapp-piano-preview">
               <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div>
             </div>
-            <div style="border-top:1px solid var(--border-light);padding:10px 16px;display:flex;gap:16px;" id="hk-access-stats">
-              <div><div style="font-size:var(--fs-xxs);color:var(--text-dim);">Oggi</div><div style="font-size:var(--fs-sm);font-weight:700;color:var(--accent);" id="hk-access-today">—</div></div>
-              <div><div style="font-size:var(--fs-xxs);color:var(--text-dim);">Totale</div><div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="hk-access-total">—</div></div>
-              <div style="margin-left:auto;text-align:right;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);">Ultimo accesso</div><div style="font-size:var(--fs-xxs);color:var(--text-muted);" id="hk-access-last">—</div></div>
-            </div>
-            <div style="border-top:1px solid var(--border-light);padding:8px 16px;" id="hk-access-devices"></div>
             <div style="border-top:1px solid var(--border-light);padding:12px 16px;">
               <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Link da condividere</div>
               <div style="display:flex;gap:8px;align-items:center;">
@@ -1442,15 +1434,10 @@
               <span class="panel-title">☕ Breakfast</span>
               <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Responsabile colazione</span>
             </div>
+            <div style="padding:10px 16px;" id="miniapp-bkf-status"></div>
             <div class="panel-body" id="miniapp-bkf-preview">
               <div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere l'anteprima</div>
             </div>
-            <div style="border-top:1px solid var(--border-light);padding:10px 16px;display:flex;gap:16px;" id="bkf-access-stats">
-              <div><div style="font-size:var(--fs-xxs);color:var(--text-dim);">Oggi</div><div style="font-size:var(--fs-sm);font-weight:700;color:var(--accent);" id="bkf-access-today">—</div></div>
-              <div><div style="font-size:var(--fs-xxs);color:var(--text-dim);">Totale</div><div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="bkf-access-total">—</div></div>
-              <div style="margin-left:auto;text-align:right;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);">Ultimo accesso</div><div style="font-size:var(--fs-xxs);color:var(--text-muted);" id="bkf-access-last">—</div></div>
-            </div>
-            <div style="border-top:1px solid var(--border-light);padding:8px 16px;" id="bkf-access-devices"></div>
             <div style="border-top:1px solid var(--border-light);padding:12px 16px;">
               <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Link da condividere</div>
               <div style="display:flex;gap:8px;align-items:center;">
@@ -1461,15 +1448,38 @@
           </div>
           <div class="panel">
             <div class="panel-header">
+              <span class="panel-title">💧 Distribuzione Culligan</span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Art Resort</span>
+            </div>
+            <div style="padding:10px 16px;" id="miniapp-cm-status"></div>
+            <div style="border-top:1px solid var(--border-light);padding:12px 16px;">
+              <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Link da condividere</div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input id="cm-url-input" class="form-input" readonly style="flex:1;padding:5px 8px;font-size:var(--fs-xxs);color:var(--text-muted);background:var(--surface2);" value="https://qmsoularthotel.github.io/qm-dashboard/controllo-mattino.html">
+                <button onclick="miniappCopy('cm-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;">Copia</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">📦 Inventari Detersivi</span>
+              <span style="font-size:var(--fs-xxs);color:var(--text-dim);">SoulArt · Art Resort</span>
+            </div>
+            <div style="padding:10px 16px;" id="miniapp-inv-status"></div>
+            <div style="border-top:1px solid var(--border-light);padding:12px 16px;">
+              <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Link da condividere</div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input id="inv-url-input" class="form-input" readonly style="flex:1;padding:5px 8px;font-size:var(--fs-xxs);color:var(--text-muted);background:var(--surface2);" value="https://qmsoularthotel.github.io/qm-dashboard/inventory.html">
+                <button onclick="miniappCopy('inv-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:5px 12px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;">Copia</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
               <span class="panel-title">🛡️ DVR &amp; Compliance</span>
               <span style="font-size:var(--fs-xxs);color:var(--text-dim);">General Manager</span>
             </div>
-            <div style="border-top:1px solid var(--border-light);padding:10px 16px;display:flex;gap:16px;" id="dvr-access-stats">
-              <div><div style="font-size:var(--fs-xxs);color:var(--text-dim);">Oggi</div><div style="font-size:var(--fs-sm);font-weight:700;color:var(--accent);" id="dvr-access-today">—</div></div>
-              <div><div style="font-size:var(--fs-xxs);color:var(--text-dim);">Totale</div><div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="dvr-access-total">—</div></div>
-              <div style="margin-left:auto;text-align:right;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);">Ultimo accesso</div><div style="font-size:var(--fs-xxs);color:var(--text-muted);" id="dvr-access-last">—</div></div>
-            </div>
-            <div style="border-top:1px solid var(--border-light);padding:8px 16px;" id="dvr-access-devices"></div>
+            <div style="padding:10px 16px;" id="miniapp-dvr-status"></div>
             <div style="border-top:1px solid var(--border-light);padding:12px 16px;">
               <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Link da condividere</div>
               <div style="display:flex;gap:8px;align-items:center;">
@@ -1478,10 +1488,6 @@
               </div>
             </div>
           </div>
-        </div>
-        <div style="margin-top:12px;padding:10px 14px;background:var(--surface);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <span style="font-size:var(--fs-xxs);color:var(--text-dim);">📵 Questo dispositivo non verrà conteggiato nelle statistiche di accesso</span>
-          <button id="notrack-btn" onclick="miniappNoTrackToggle()" style="border-radius:6px;padding:5px 12px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;transition:all .2s;">Escludi questo dispositivo</button>
         </div>
       </div>
       <!-- ── INVENTARIO ── -->
@@ -1539,7 +1545,7 @@
     <div id="arriviModalBody"></div>
   </div>
 </div>
-<script src="app.js?v=455-20260706"></script>
+<script src="app.js?v=456-20260706"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

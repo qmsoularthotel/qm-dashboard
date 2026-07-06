@@ -369,7 +369,7 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
 const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Mini App',inventario:'Inventari Detersivi',spese:'Spese Fornitori','turni-pref':'Preferenze Turni'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Sicurezza',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -1068,7 +1068,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='hkpsheetar')setTimeout(()=>hkpNRender('ar'),50);
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
-  if(id==='miniapp'){setTimeout(miniappRender,50);setTimeout(loadHkAccessStats,100);setTimeout(loadBkfAccessStats,150);setTimeout(loadDvrAccessStats,200);setTimeout(miniappNoTrackRender,50);}
+  if(id==='miniapp'){setTimeout(miniappRender,50);}
   if(id==='dvr'){setTimeout(dvrRender,50);dvrMarkSeen();dvrBadgeUpdate();}
 }
 // §§ DVR — SCADENZE SICUREZZA & COMPLIANCE
@@ -1459,52 +1459,6 @@ function dvrDelete(type,id){
   DVR_DATA[_dvrSoc][type]=(DVR_DATA[_dvrSoc][type]||[]).filter(x=>x.id!==id);
   dvrSave();dvrRenderPanel(type);
 }
-async function loadDvrAccessStats(){
-  try{
-    const res=await fetch(PROXY+'/kv/get?key=qm_dvr_access');
-    const json=await res.json();
-    if(!json.value)return;
-    const d=JSON.parse(json.value);
-    const todayStr=new Date().toISOString().slice(0,10);
-    const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
-    const fmtDt=iso=>{if(!iso)return'—';const dt=new Date(iso);return dt.getDate()+' '+ms[dt.getMonth()]+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');};
-    const todayCount=d.todayDate===todayStr?d.today:0;
-    const el=document.getElementById('dvr-access-today');
-    const elT=document.getElementById('dvr-access-total');
-    const elL=document.getElementById('dvr-access-last');
-    if(el)el.textContent=todayCount;
-    if(elT)elT.textContent=d.total||0;
-    if(elL)elL.textContent=fmtDt(d.last);
-    const elDev=document.getElementById('dvr-access-devices');
-    if(elDev&&d.devices&&Object.keys(d.devices).length){
-      const devEntries=Object.entries(d.devices).sort((a,b)=>(a[1].firstSeen||a[1].last||'').localeCompare(b[1].firstSeen||b[1].last||''));
-      elDev.innerHTML=devEntries.map(([,dev],idx)=>{
-        const devToday=dev.todayDate===todayStr?dev.today:0;
-        const isOnline=dev.last&&(Date.now()-new Date(dev.last).getTime())<3600000;
-        return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;${idx>0?'border-top:1px solid var(--border-light);':''}">
-          <span style="width:7px;height:7px;border-radius:50%;background:${isOnline?'var(--green)':'var(--border)'};flex-shrink:0;"></span>
-          <span style="flex:1;font-size:var(--fs-sm);font-weight:500;">Dispositivo ${idx+1}</span>
-          <span style="font-size:var(--fs-xs);color:var(--text-dim);">${devToday>0?`<b>${devToday}</b> oggi · `:''}<span style="color:var(--text-muted);">${dev.total||0} tot</span></span>
-          <span style="font-size:10px;color:var(--text-muted);">${fmtDt(dev.last)}</span>
-        </div>`;
-      }).join('');
-    }else if(elDev){elDev.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:6px 0;">Nessun dato per dispositivo</div>';}
-  }catch(e){}
-}
-function miniappNoTrackToggle(){
-  const active=localStorage.getItem('qm_no_track')==='1';
-  if(active){localStorage.removeItem('qm_no_track');}else{localStorage.setItem('qm_no_track','1');}
-  miniappNoTrackRender();
-}
-function miniappNoTrackRender(){
-  const btn=document.getElementById('notrack-btn');
-  if(!btn)return;
-  const active=localStorage.getItem('qm_no_track')==='1';
-  btn.textContent=active?'✓ Questo dispositivo è escluso':'Escludi questo dispositivo';
-  btn.style.background=active?'var(--green)':'var(--surface2)';
-  btn.style.color=active?'#fff':'var(--text-dim)';
-  btn.style.border=active?'none':'1px solid var(--border)';
-}
 function miniappCopy(inputId,btn){
   const inp=document.getElementById(inputId);
   navigator.clipboard.writeText(inp.value).then(()=>{
@@ -1512,82 +1466,92 @@ function miniappCopy(inputId,btn){
     setTimeout(()=>{btn.textContent=orig;btn.style.background='';},2000);
   }).catch(()=>{inp.select();document.execCommand('copy');});
 }
-// §§ MINI APP — RENDER (miniappRenderBkf, loadHkAccessStats, renderPianoGiorno)
-function miniappRender(){miniappRenderBkf();miniappRenderPiano();}
-async function loadHkAccessStats(){
-  try{
-    const res=await fetch(PROXY+'/kv/get?key=qm_hk_access');
-    const json=await res.json();
-    if(!json.value)return;
-    const d=JSON.parse(json.value);
-    const todayStr=new Date().toISOString().slice(0,10);
-    const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
-    const fmtDt=iso=>{if(!iso)return'—';const dt=new Date(iso);return dt.getDate()+' '+ms[dt.getMonth()]+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');};
-    const todayCount=d.todayDate===todayStr?d.today:0;
-    const el=document.getElementById('hk-access-today');
-    const elT=document.getElementById('hk-access-total');
-    const elL=document.getElementById('hk-access-last');
-    if(el)el.textContent=todayCount;
-    if(elT)elT.textContent=d.total||0;
-    if(elL)elL.textContent=fmtDt(d.last);
-    // Tabella per dispositivo
-    const elDev=document.getElementById('hk-access-devices');
-    if(elDev&&d.devices&&Object.keys(d.devices).length){
-      // Ordina per firstSeen (primo accesso) per numerarli stabilmente
-      const devEntries=Object.entries(d.devices).sort((a,b)=>(a[1].firstSeen||a[1].last||'').localeCompare(b[1].firstSeen||b[1].last||''));
-      elDev.innerHTML=devEntries.map(([,dev],idx)=>{
-        const devToday=dev.todayDate===todayStr?dev.today:0;
-        const isOnline=dev.last&&(Date.now()-new Date(dev.last).getTime())<3600000;
-        const label=dev.name||('Dispositivo '+(idx+1));
-        return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;${idx>0?'border-top:1px solid var(--border-light);':''}">
-          <span style="width:7px;height:7px;border-radius:50%;background:${isOnline?'var(--green)':'var(--border)'};flex-shrink:0;"></span>
-          <span style="flex:1;font-size:var(--fs-sm);font-weight:500;">${label}</span>
-          <span style="font-size:var(--fs-xs);color:var(--text-dim);">${devToday>0?`<b>${devToday}</b> oggi · `:''}<span style="color:var(--text-muted);">${dev.total||0} tot</span></span>
-          <span style="font-size:10px;color:var(--text-muted);">${fmtDt(dev.last)}</span>
-        </div>`;
-      }).join('');
-    }else if(elDev){elDev.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:6px 0;">Nessun dato per dispositivo</div>';}
-  }catch(e){}
+// §§ MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone + anteprime)
+function miniappRender(){
+  miniappRenderBkf();
+  miniappRenderPiano();
+  miniappRenderStatus();
 }
-async function loadBkfAccessStats(){
+// Pannello di controllo — stato colorato per ciascuna app standalone,
+// calcolato da dati già in memoria/localStorage (nessuna fetch aggiuntiva
+// tranne Culligan, che legge la chiave giornaliera KV come fa cmLoad()).
+function _miniappStatusHTML(color,label,kpi){
+  const colorMap={green:'var(--green)',amber:'var(--amber)',red:'var(--red)'};
+  return`<div style="display:flex;align-items:center;gap:8px;">
+    <span style="width:9px;height:9px;border-radius:50%;background:${colorMap[color]};flex-shrink:0;"></span>
+    <span style="font-size:var(--fs-xs);font-weight:700;color:${colorMap[color]};">${label}</span>
+    ${kpi?`<span style="font-size:var(--fs-xs);color:var(--text-dim);margin-left:auto;">${kpi}</span>`:''}
+  </div>`;
+}
+function miniappHkStatus(){
+  if(!pianoData||!pianoData.giorni||!pianoData.giorni.length)return _miniappStatusHTML('red','Piano non caricato','');
+  const idx=pianoGetGiornoIdx();
+  if(idx===-1)return _miniappStatusHTML('amber','Piano non aggiornato a oggi','');
+  const g=pianoData.giorni[idx]||{};
+  const lib=g.liborio||{cambi:[]};
+  const nCambi=(g.soulart?.cambi?.length||0)+(g.boutique?.cambi?.length||0)+(lib.cambi?.length||0);
+  return _miniappStatusHTML('green','Aggiornato a oggi',`${nCambi} camb${nCambi===1?'io':'i'} camera oggi`);
+}
+function miniappBkfStatus(){
+  if(!bkfData||!bkfData.length)return _miniappStatusHTML('red','Report pasti non caricato','');
+  const today=new Date();
+  const todayStr=String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0');
+  const todayIdx=bkfData.findIndex(d=>d.label&&d.label.includes(todayStr));
+  if(todayIdx===-1)return _miniappStatusHTML('amber','Report non aggiornato a oggi','');
+  const d=bkfData[todayIdx];
+  return _miniappStatusHTML('green','Aggiornato a oggi',`${(d.adulti||0)+(d.bambini||0)} coperti`);
+}
+function miniappDvrStatus(){
+  let scaduti=0,inScadenza=0;
+  DVR_SOC_KEYS.forEach(soc=>{
+    (DVR_DATA[soc]?.dipendenti||[]).forEach(it=>{
+      if(!it.scadenzaContratto)return;
+      const scadMs=new Date(it.scadenzaContratto).setHours(0,0,0,0);
+      const nowMs=new Date().setHours(0,0,0,0);
+      const daysLeft=Math.ceil((scadMs-nowMs)/86400000);
+      if(daysLeft<0)scaduti++;else if(daysLeft<=30)inScadenza++;
+    });
+  });
+  if(scaduti>0)return _miniappStatusHTML('red','Contratti scaduti',`${scaduti} da rinnovare`);
+  if(inScadenza>0)return _miniappStatusHTML('amber','In scadenza ≤30gg',`${inScadenza} contratt${inScadenza===1?'o':'i'}`);
+  return _miniappStatusHTML('green','Tutto in regola','');
+}
+function miniappInvStatus(){
+  let sottoSoglia=0;
+  ['sa','ar'].forEach(wh=>{
+    let catalog={},moves=[];
+    try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+wh)||'{}');}catch(e){}
+    try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+wh)||'[]');}catch(e){}
+    const stock=invCalcStock(catalog,moves);
+    Object.entries(stock).forEach(([bc,qty])=>{
+      if(invItemStatus(qty,catalog[bc]?.soglia??null)!=='ok')sottoSoglia++;
+    });
+  });
+  if(sottoSoglia>=3)return _miniappStatusHTML('red','Scorte da riordinare',`${sottoSoglia} prodotti sotto soglia`);
+  if(sottoSoglia>0)return _miniappStatusHTML('amber','Alcune scorte basse',`${sottoSoglia} prodott${sottoSoglia===1?'o':'i'} sotto soglia`);
+  return _miniappStatusHTML('green','Scorte ok','');
+}
+async function miniappCmStatus(){
+  const d=new Date();
+  const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let state=null;
   try{
-    const res=await fetch(PROXY+'/kv/get?key=qm_bkf_access');
-    const json=await res.json();
-    const todayStr=new Date().toISOString().slice(0,10);
-    const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
-    const fmtDt=iso=>{if(!iso)return'—';const dt=new Date(iso);return dt.getDate()+' '+ms[dt.getMonth()]+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');};
-    const d=json.value?JSON.parse(json.value):null;
-    const todayCount=d&&d.todayDate===todayStr?d.today:0;
-    const el=document.getElementById('bkf-access-today');
-    const elT=document.getElementById('bkf-access-total');
-    const elL=document.getElementById('bkf-access-last');
-    if(el)el.textContent=todayCount;
-    if(elT)elT.textContent=d?.total||0;
-    if(elL)elL.textContent=fmtDt(d?.last);
-    const elDev=document.getElementById('bkf-access-devices');
-    if(elDev){
-      if(d&&d.devices&&Object.keys(d.devices).length){
-        const devEntries=Object.entries(d.devices).sort((a,b)=>(a[1].firstSeen||a[1].last||'').localeCompare(b[1].firstSeen||b[1].last||''));
-        elDev.innerHTML=devEntries.map(([,dev],idx)=>{
-          const devToday=dev.todayDate===todayStr?dev.today:0;
-          const isOnline=dev.last&&(Date.now()-new Date(dev.last).getTime())<3600000;
-          const label=dev.name||('Dispositivo '+(idx+1));
-          return`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;${idx>0?'border-top:1px solid var(--border-light);':''}">
-            <span style="width:7px;height:7px;border-radius:50%;background:${isOnline?'var(--green)':'var(--border)'};flex-shrink:0;"></span>
-            <span style="flex:1;font-size:var(--fs-sm);font-weight:500;">${label}</span>
-            <span style="font-size:var(--fs-xs);color:var(--text-dim);">${devToday>0?`<b>${devToday}</b> oggi · `:''}<span style="color:var(--text-muted);">${dev.total||0} tot</span></span>
-            <span style="font-size:10px;color:var(--text-muted);">${fmtDt(dev.last)}</span>
-          </div>`;
-        }).join('');
-      } else {
-        elDev.innerHTML=`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;color:var(--text-dim);font-size:var(--fs-xs);">
-          <span style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
-          <span style="font-size:var(--fs-sm);font-weight:500;">Responsabile Breakfast</span>
-          <span style="margin-left:auto;font-size:var(--fs-xs);color:var(--text-muted);">accesso rilevato · no tracking</span>
-        </div>`;
-      }
-    }
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+    if(r.ok){const j=await r.json();if(j&&j.value)state=JSON.parse(j.value);}
   }catch(e){}
+  if(!state){try{const r=localStorage.getItem(key);if(r)state=JSON.parse(r);}catch(e){}}
+  if(!state||!Object.keys(state).length)return _miniappStatusHTML('red','Nessun controllo oggi','');
+  const pending=CM_ROOMS.filter(r=>!state[r]?.visited).length;
+  if(pending>0)return _miniappStatusHTML('amber','Giro in corso',`${pending} camer${pending===1?'a':'e'} da visitare`);
+  return _miniappStatusHTML('green','Giro completato',`${CM_ROOMS.length}/${CM_ROOMS.length} camere`);
+}
+function miniappRenderStatus(){
+  const hk=document.getElementById('miniapp-hk-status');if(hk)hk.innerHTML=miniappHkStatus();
+  const bkf=document.getElementById('miniapp-bkf-status');if(bkf)bkf.innerHTML=miniappBkfStatus();
+  const dvr=document.getElementById('miniapp-dvr-status');if(dvr)dvr.innerHTML=miniappDvrStatus();
+  const inv=document.getElementById('miniapp-inv-status');if(inv)inv.innerHTML=miniappInvStatus();
+  const cmEl=document.getElementById('miniapp-cm-status');
+  if(cmEl)miniappCmStatus().then(html=>{cmEl.innerHTML=html;});
 }
 function miniappRenderBkf(){
   const el=document.getElementById('miniapp-bkf-preview');if(!el)return;
