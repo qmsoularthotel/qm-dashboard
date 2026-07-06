@@ -8028,7 +8028,7 @@ function ddtRenderSpese(){
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">${sub}</div>
   </div>`;
   // SAIMA è un fornitore attivo solo a gennaio/febbraio 2026 — da marzo in poi sparisce dai fornitori disponibili
-  const _fornVisibili=Object.entries(DDT_FORNITORI).filter(([nome])=>!(nome==='SAIMA'&&mon>='2026-03'));
+  const _fornVisibili=Object.entries(DDT_FORNITORI).filter(([nome])=>!(nome==='SAIMA'&&mon>='2026-03')&&!(nome==='MARR'&&mon==='2026-01'));
   const _bkfFornLabel=_fornVisibili.filter(([,c])=>c.reparto==='bkf').map(([n])=>n).join(' · ');
   h+=`<div style="display:flex;gap:10px;margin-bottom:16px;">
     ${kpi('DECA',hkTot?ddtFmt(hkTot):'',hkDdt+' DDT · Housekeeping','#2563eb')}
