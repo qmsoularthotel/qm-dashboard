@@ -532,10 +532,10 @@ function speseCatBkfNormDesc(s){return String(s||'').trim().toLowerCase();}
 speseCatBkfLoadOverride();
 const DDT_BKF={
   SDM:      {color:'#e0e1f5',fg:'#292b82', accent:'#292b82', logo:'sdm2.png'},
-  SAIMA:    {color:'#e0e7ff',fg:'#3730a3', accent:'#4f46e5', logo:'saima.png', logoH:60},
+  SAIMA:    {color:'#f5efe9',fg:'#2d1c12', accent:'#6b4a2f', logo:'saima.png', logoH:60},
   MARR:     {color:'#fbdadc',fg:'#db0d15', accent:'#db0d15', logo:'marr.png'},
   Cozzolino:{color:'#e5e5e5',fg:'#000000', accent:'#000000', logo:'icone%20app%20breakfast/frutta.png', iconOnly:true},
-  Valgarda: {color:'#f2eee2',fg:'#8a7643', accent:'#b99e5d', logo:'valgarda.png', logoH:60},
+  Valgarda: {color:'#f2eee2',fg:'#8a7643', accent:'#b99e5d', logo:'valgarda.png', logoH:76},
 };
 function ddtNormForn(s){
   if(!s)return s;
@@ -644,7 +644,7 @@ function ddtBkfRenderSpese(){
   </div>`;
 
   h+=`<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px;">`;
-  Object.entries(DDT_BKF).filter(([nome])=>!(nome==='SAIMA'&&mon>='2026-03')&&!(nome==='MARR'&&mon==='2026-01')).forEach(([nome,conf])=>{
+  Object.entries(DDT_BKF).filter(([nome])=>!(nome==='SAIMA'&&mon>='2026-03')&&!(nome==='MARR'&&mon==='2026-01')&&!(nome==='Valgarda'&&mon<'2026-05')).forEach(([nome,conf])=>{
     const fDdt=monDdt.filter(d=>(ddtNormForn(d.fornitore)||d.fornitore)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const active=_ddtFilter===nome;
