@@ -7590,21 +7590,35 @@ function ddtBuildAnalisi(){
   if(!mesiComuni.length){
     h+=`<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessun dato disponibile — carica DDT e report pasti.</div>`;
   }else{
+    const _varPct=(cur,prev)=>{if(!prev||!cur)return null;return(cur-prev)/prev*100;};
+    // invertGood=true → calo è verde (spesa); invertGood=false → aumento è verde (coperti)
+    const _varBadge=(pct,invertGood)=>{if(pct===null)return'<span style="color:var(--text-dim);font-size:10px;">—</span>';const good=invertGood?pct<0:pct>0;const c=good?'var(--green)':'var(--red)';const arr=pct>0?'↑':'↓';return`<span style="color:${c};font-size:var(--fs-xxs);font-weight:700;">${arr}${Math.abs(pct).toFixed(1)}%</span>`;};
+    const _todayLabelAn='al '+todayD.getDate()+'/'+(todayD.getMonth()+1);
+    const _mesi12=mesiComuni.slice(0,13);
     h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">
     <table style="width:100%;border-collapse:collapse;">
     <thead><tr style="background:var(--bg);">
       <th style="padding:7px 12px;text-align:left;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">MESE</th>
-      <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">SPESA TOTALE</th>
-      <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">COPERTI BB</th>
+      <th style="padding:7px 10px;text-align:center;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">SPESA</th>
+      <th style="padding:7px 10px;text-align:center;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">VAR%</th>
+      <th style="padding:7px 10px;text-align:center;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">COPERTI</th>
+      <th style="padding:7px 10px;text-align:center;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">VAR%</th>
     </tr></thead><tbody>`;
-    mesiComuni.slice(0,12).forEach((ym,i)=>{
+    _mesi12.slice(0,12).forEach((ym,i)=>{
       const spesa=spesaBkfPerMese[ym]||0;
       const cop=copertiPerMese[ym]?.bb||0;
       const isCur=ym===ddtCurMonth();
+      const ymPrev=_mesi12[i+1];
+      const spesaPrev=ymPrev?(spesaBkfPerMese[ymPrev]||0):null;
+      const copPrev=ymPrev?(copertiPerMese[ymPrev]?.bb||0):null;
+      const vSpesa=_varBadge(spesaPrev!==null?_varPct(spesa,spesaPrev):null,true);
+      const vCop=_varBadge(copPrev!==null?_varPct(cop,copPrev):null,false);
       h+=`<tr style="${i>0?'border-top:1px solid var(--border-light)':''}${isCur?';background:var(--accent-bg)':''}">
         <td style="padding:8px 12px;font-size:var(--fs-xs);font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${_monLabel(ym)}</td>
-        <td style="padding:8px 10px;text-align:right;font-size:var(--fs-xs);font-weight:600;color:var(--text);">${spesa?_fmt(spesa):'—'}</td>
-        <td style="padding:8px 10px;text-align:right;font-size:var(--fs-xs);color:var(--text-dim);">${cop||'—'}</td>
+        <td style="padding:8px 10px;text-align:center;font-size:var(--fs-xs);font-weight:600;color:var(--text);">${spesa?_fmt(spesa):'—'}</td>
+        <td style="padding:8px 10px;text-align:center;">${spesa?vSpesa:'<span style="color:var(--text-dim);font-size:10px;">—</span>'}</td>
+        <td style="padding:8px 10px;text-align:center;font-size:var(--fs-xs);color:var(--text-dim);">${cop||'—'}${isCur&&cop?`<br><span style="font-size:9px;color:var(--text-dim);opacity:.7;">${_todayLabelAn}</span>`:''}</td>
+        <td style="padding:8px 10px;text-align:center;">${cop?vCop:'<span style="color:var(--text-dim);font-size:10px;">—</span>'}</td>
       </tr>`;
     });
     h+=`</tbody></table></div>`;
