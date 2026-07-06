@@ -5982,13 +5982,34 @@ function invEditProduct(bc){
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog_'+_invWh,value:JSON.stringify(catalog)})}).catch(()=>{});
   invRender();
 }
+function invAddProduct(){
+  let catalog={};
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
+  const name=prompt('Nome prodotto:','');
+  if(name===null)return;
+  if(!name.trim()){alert('Il nome non può essere vuoto.');return;}
+  let bc=prompt('Codice a barre (lascia vuoto se non disponibile):','');
+  if(bc===null)return;
+  bc=bc.trim()||('manual_'+Date.now());
+  if(catalog[bc]){alert('Codice già usato da un altro prodotto.');return;}
+  const unit=prompt('Unità di misura (es. fl, kg, lt):','');
+  if(unit===null)return;
+  const sogliaRaw=prompt('Soglia minima (lascia vuoto per nessuna soglia):','');
+  if(sogliaRaw===null)return;
+  const n=parseFloat(sogliaRaw);
+  catalog[bc]={name:name.trim(),unit:(unit||'').trim(),soglia:(sogliaRaw.trim()===''||isNaN(n))?null:n};
+  try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog_'+_invWh,value:JSON.stringify(catalog)})}).catch(()=>{});
+  invRender();
+}
 function invRenderCatalog(){
   const el=document.getElementById('inv-catalog-view');
   if(!el)return;
   const{catalog}=invGetData();
   const items=Object.entries(catalog).sort((a,b)=>a[1].name.localeCompare(b[1].name,'it'));
-  if(!items.length){el.innerHTML='<div style="padding:32px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun prodotto in catalogo</div>';return;}
-  el.innerHTML=`<div style="max-width:560px;"><div style="display:flex;flex-direction:column;gap:6px;padding:4px 0;">
+  const addBtn=`<div style="max-width:560px;margin-bottom:10px;"><button onclick="invAddProduct()" style="padding:7px 14px;border-radius:7px;background:var(--accent);color:#fff;border:none;font-size:var(--fs-xs);font-weight:700;cursor:pointer;">+ Nuovo prodotto</button></div>`;
+  if(!items.length){el.innerHTML=addBtn+'<div style="padding:32px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun prodotto in catalogo</div>';return;}
+  el.innerHTML=addBtn+`<div style="max-width:560px;"><div style="display:flex;flex-direction:column;gap:6px;padding:4px 0;">
     ${items.map(([bc,p])=>`
     <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border-light);border-radius:9px;">
       <div style="flex:1;min-width:0;">
