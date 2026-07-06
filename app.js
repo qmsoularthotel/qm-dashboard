@@ -1471,6 +1471,40 @@ function miniappRender(){
   miniappRenderBkf();
   miniappRenderPiano();
   miniappRenderStatus();
+  miniappLoadAppStatus();
+}
+// Interruttore acceso/spento per ciascuna app standalone (qm_app_status in KV,
+// letto da ogni app all'avvio: se il proprio flag è false mostra la schermata
+// "in aggiornamento" invece della UI normale).
+const MINIAPP_KEYS=['hk','bkf','cm','inv','dvr'];
+let _appStatus={};
+async function miniappLoadAppStatus(){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key=qm_app_status',{cache:'no-store'});
+    const j=await r.json();
+    _appStatus=j&&j.value?JSON.parse(j.value):{};
+  }catch(e){
+    try{_appStatus=JSON.parse(localStorage.getItem('qm_app_status')||'{}');}catch(e2){_appStatus={};}
+  }
+  miniappRenderToggles();
+}
+function miniappRenderToggles(){
+  MINIAPP_KEYS.forEach(k=>{
+    const btn=document.getElementById('miniapp-'+k+'-toggle');
+    if(!btn)return;
+    const on=_appStatus[k]!==false;
+    btn.style.background=on?'var(--green)':'var(--border)';
+    const knob=btn.querySelector('.miniapp-toggle-knob');
+    if(knob)knob.style.left=on?'21px':'3px';
+  });
+}
+function miniappToggleApp(key){
+  const on=_appStatus[key]!==false;
+  _appStatus[key]=!on;
+  const json=JSON.stringify(_appStatus);
+  try{localStorage.setItem('qm_app_status',json);}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_app_status',value:json})}).catch(()=>{});
+  miniappRenderToggles();
 }
 // Pannello di controllo — stato colorato per ciascuna app standalone,
 // calcolato da dati già in memoria/localStorage (nessuna fetch aggiuntiva
