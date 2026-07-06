@@ -7300,10 +7300,10 @@ const DDT_FORNITORI={
   DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#dbeafe', fg:'#1d4ed8', accent:'#2563eb'},
   Amonn:     {reparto:'altro', rLabel:'Altro',       color:'#ccfbf1', fg:'#0f766e', accent:'#0d9488'},
   SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#dcfce7', fg:'#166534', accent:'#16a34a'},
+  SAIMA:     {reparto:'bkf', rLabel:'Breakfast',    color:'#e0e7ff', fg:'#3730a3', accent:'#4f46e5'},
   MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fef3c7', fg:'#92400e', accent:'#d97706'},
   Cozzolino: {reparto:'bkf', rLabel:'Breakfast',    color:'#fce7f3', fg:'#9d174d', accent:'#db2777'},
   Valgarda:  {reparto:'bkf', rLabel:'Breakfast',    color:'#ede9fe', fg:'#5b21b6', accent:'#7c3aed'},
-  SAIMA:     {reparto:'bkf', rLabel:'Breakfast',    color:'#e0e7ff', fg:'#3730a3', accent:'#4f46e5'},
 };
 const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 // Riassegnazione manuale categoria prodotto (solo Spese Fornitori): una volta spostato un
@@ -8034,7 +8034,7 @@ function ddtRenderSpese(){
   </div>`;
 
   // ── Chip fornitori (cliccabili) con mesi pills ──
-  h+=`<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:18px;">`;
+  h+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:18px;">`;
   Object.entries(DDT_FORNITORI).forEach(([nome,conf])=>{
     const fDdt=monDdt.filter(d=>_nf(d)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
