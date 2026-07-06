@@ -43,6 +43,9 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`breakfast.html`** — App separata per il breakfast manager
 - **`inventory.html`** — App separata per l'inventario detersivi (mobile, scanner barcode)
 - **`controllo-mattino.html`** — App separata PWA per il giro distribuzione Culligan (mattino)
+- **`dvr.html`** — App separata per consultare/gestire il DVR (General Manager)
+
+Tutte e 5 le app standalone sopra sono controllabili on/off dalla dashboard — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
 
 Non esiste build system, package manager o step di compilazione.
 
@@ -130,7 +133,7 @@ I numeri di camera determinano la struttura di appartenenza:
 | 257 | TURNO — RENDER & NAVIGAZIONE | `renderDay()`, `buildWeekNav()`, `loadWeekData()` |
 | 349 | NAVIGAZIONE VISTE | `setView()`, `pageTitles`, toggle gruppi nav |
 | 357 | HKP OPERATIVE — Google Sheets | `hkpLoad()`, `hkpRenderAll()`, `hkpSave()`, `hkpRestore()` |
-| 525 | MINI APP — RENDER | `miniappRenderBkf()`, `miniappRenderPiano()` |
+| ~525 | MINI APP — PANNELLO DI CONTROLLO | `miniappRenderStatus()`, `miniapp{Hk,Bkf,Cm,Inv,Dvr}Status()`, `miniappToggleApp()`, `miniappLoadBkfBanner()` — vedi sezione dedicata [Pannello App](#pannello-app--centro-controllo-app-standalone) |
 | 540 | DVR — DOCUMENTO VALUTAZIONE RISCHI | `dvrRender()`, `dvrSave()`, `dvrRestore()`, `dvrRenderDipendenti()` |
 | 628 | UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP | `fmtNow()`, `fmtUploadTs()`, `setUploadTs()` |
 | 664 | CHECKLIST — TASK ITEMS | `buildTaskItem()`, `renderTaskList()` |
@@ -243,7 +246,7 @@ grep -n 'id="view-' index.html
 | `view-bkfsheetar` | Operativa Breakfast — Art Resort |
 | `view-hkpsheet` | Operativa Housekeeping — SoulArt Hotel |
 | `view-hkpsheetar` | Operativa Housekeeping — Art Resort |
-| `view-miniapp` | Mini app preview |
+| `view-miniapp` | Pannello App — centro controllo delle 5 app standalone (ex "Mini App") |
 | `view-inventario` | Inventario detersivi (stock + movimenti + analisi + ordini) |
 | `view-turni-pref` | Preferenze turni staff (da Google Forms) |
 | `view-controllo-mattino` | Dashboard distribuzione Culligan (stats + QC settimanale + Stampa A4) |
@@ -426,6 +429,47 @@ Annulla una ricezione: rimuove i movimenti creati (usando `o.movIds`) e resetta 
 | `invOrdersUndoReceived(id)` | Annulla ricezione: rimuove movimenti da movIds, resetta status |
 | `invOrdersDelete(id)` | Elimina ordine (solo se non ricevuto) |
 
+### Aggiunta manuale prodotto al catalogo (senza scanner)
+
+Prima si poteva registrare un nuovo prodotto **solo** scansionando un barcode sconosciuto. Ora esiste anche un percorso da tastiera, in due posti paralleli:
+
+- **`inventory.html`** (tab Catalogo): pulsante **"+ Nuovo"** → `openManualNewProduct()` → apre lo stesso modal usato dallo scanner (`openMoveModal`), ma con un flag `isManualAdd=true` che mostra anche un campo **codice a barre digitabile**. Se lasciato vuoto, `saveMove()` genera un codice sintetico `'manual_'+Date.now()` e verifica che non collida con uno esistente.
+- **Dashboard (`app.js`)**: tab Catalogo → pulsante **"+ Nuovo prodotto"** → `invAddProduct()` — usa una sequenza di `prompt()` (nome, codice a barre opzionale, unità, soglia), stesso pattern di `invEditProduct()` già esistente.
+
+Entrambi i percorsi scrivono nello stesso `qm_inv_catalog_<wh>` — nessuna nuova chiave KV.
+
+---
+
+## Spese Fornitori (view `spese`)
+
+### Scopo
+
+Analisi spesa fornitori: DDT caricati (chiave `qm_ddt`, condivisa con `breakfast.html`), suddivisi per categoria prodotto con classificazione automatica per keyword (`CAT_RULES`).
+
+### Riassegnazione manuale categoria (`qm_spese_cat_override`)
+
+Nella tab **Analisi**, ogni prodotto ha un menu **"Sposta ▾"** per spostarlo manualmente in un'altra categoria — la riassegnazione ha sempre priorità sulle keyword automatiche e vale per sempre (tutti i mesi, passati e futuri), perché la chiave dell'override è la **descrizione del prodotto**, non un mese/DDT specifico.
+
+```js
+const SPESE_CAT_OVERRIDE_KEY = 'qm_spese_cat_override';
+let _speseCatOverride = {};  // { [descrizioneNormalizzata]: categoriaId }
+```
+
+**Persiste anche su `breakfast.html`**: prima la riassegnazione fatta su Compass non veniva letta da `breakfast.html` (che classifica gli stessi DDT solo per keyword) — un prodotto spostato su Compass restava "non classificato" sul telefono. Ora `breakfast.html` legge `qm_spese_cat_override` con la stessa priorità e si risincronizza dal cloud ogni 60s oltre che al caricamento (`ddtBkfSyncFromCloud()`).
+
+### Stato UI persistente tra i re-render
+
+`speseCatMoveProduct()` chiama `ddtRenderSpese()` che rigenera l'intero HTML della vista — questo resettava a `display:none` i pannelli categoria espansi ad ogni spostamento, riportando l'utente alla lista principale. Risolto con stato di modulo persistente:
+
+```js
+let _speseCatOpen = null;      // id categoria espansa (sopravvive al re-render)
+let _speseUncatOpen = false;   // stato pannello "Non classificati"
+```
+
+### Tabella "Spesa e coperti mensili" — allineata a smartphone
+
+La tabella nella dashboard (Compass) aveva solo `MESE | SPESA TOTALE | COPERTI BB`; `breakfast.html` aveva in più le colonne **VAR%** (spesa e coperti, mese su mese) con badge colorato. Allineate: Compass ora mostra le stesse 5 colonne (`MESE | SPESA | VAR% | COPERTI | VAR%`), stile CSS-token invece dei colori hardcoded dello smartphone.
+
 ---
 
 ## Operativa Housekeeping (HKP)
@@ -491,6 +535,8 @@ HKP_URLS = {
 ### Scopo
 
 Gestione dipendenti e documenti DVR per ogni società del gruppo. Dati persistiti in localStorage + KV con chiave `qm_dvr`.
+
+**Voce sidebar**: la sezione menu che contiene il link DVR si chiama **"Fascicolo Dipendenti"** (rinominata da "Sicurezza" — la vista contiene anche anagrafica dipendenti, attestati e scadenze visite mediche, non solo il Documento di Valutazione dei Rischi in senso stretto). Aggiornare sia `index.html` (`nav-section`) sia `app.js` (`breadcrumbs.dvr`) se si rinomina di nuovo — vanno tenuti allineati manualmente, non c'è una fonte unica.
 
 ### Lista Dipendenti — Ordinamento
 
@@ -677,6 +723,67 @@ Conta sostituzioni bottiglie (condizione: `visited && !dnd && !libera && bottigl
 
 **Pulsanti**: WhatsApp albergo (`wa.me/393274919588`) | 📋 Copia testo (`data-msg` attribute) | 👁 Anteprima.
 
+### `rs.ts` — timestamp per camera (per Pannello App)
+
+`saveRoom()` ora scrive anche `rs.ts = Date.now()` oltre a `rs.visited = true`. Serve esclusivamente al Pannello App (vedi sotto) per calcolare l'orario dell'ultimo controllo registrato oggi — non è usato altrove in `controllo-mattino.html` stesso.
+
+---
+
+## Pannello App — Centro Controllo App Standalone
+
+### Scopo
+
+Vista `miniapp` (voce sidebar **"Pannello App"**, ex "Mini App") — pannello di controllo per le 5 app standalone (Housekeeping, Breakfast, Distribuzione Culligan, Inventari Detersivi, DVR). Non è più un semplice elenco di link con contatore accessi: mostra uno **stato colorato** con KPI operativo per ciascuna app, un **toggle on/off** che può disattivarle da remoto, e un **avviso toast** per Breakfast.
+
+### Layout
+
+Griglia mosaico a **3 colonne fisse** (`grid-template-columns:repeat(3,minmax(0,1fr))`) — non `auto-fit`, perché con 5 card l'ultima riga (2 card) andava a stiracchiarsi in modo disomogeneo rispetto alle 4 sopra. Icone delle card identiche a quelle della sidebar (`img/icons/housekeeping.png`, `breakfast_sheet.png`, `acqua_culligan.png`, `inventari_e_ordini.png`, `dvr.png`).
+
+### Stato colorato per card — `miniapp*Status()`
+
+| App | Funzione | Verde | Ambra | Rosso | KPI mostrato |
+|-----|----------|-------|-------|-------|--------------|
+| Housekeeping | `miniappHkStatus()` | Piano caricato e aggiornato a oggi | Piano caricato ma non per oggi | Piano non caricato | `ore HH:MM` da `qm_ts_pianoTs` |
+| Breakfast | `miniappBkfStatus()` | Report presente per oggi | Report caricato ma non per oggi | Report non caricato | `ore HH:MM` da `qm_ts_bkfTs` |
+| Distribuzione Culligan | `miniappCmStatus()` (async) | Giro completato (0 camere pending) | Giro in corso | Nessun controllo oggi | `ore HH:MM` — max di `rs.ts` tra le camere di oggi |
+| Inventari Detersivi | `miniappInvStatus()` | 0 prodotti sotto soglia | 1-2 sotto soglia | ≥3 sotto soglia | `SA gg/mm · AR gg/mm` — data ultima consegna ricevuta per magazzino (`tsRicevuto` degli ordini `status:'ricevuto'`) |
+| DVR & Compliance | `miniappDvrStatus()` | Nessun contratto in scadenza | Contratti in scadenza ≤30gg | Contratti già scaduti | conteggio contratti interessati |
+
+**Nota**: i KPI mostrano un **orario/data reale** (da timestamp di aggiornamento dati), non un conteggio — prima Housekeeping/Breakfast/Culligan mostravano "N cambi camera" / "N coperti" / "N camere da visitare", giudicati poco utili; ora mostrano quando il dato è stato aggiornato l'ultima volta, coerente con lo scopo "pannello di controllo".
+
+### Toggle on/off — `qm_app_status`
+
+Ogni card ha un interruttore (`miniappToggleApp(key)`, key ∈ `hk|bkf|cm|inv|dvr`) che scrive su una chiave KV condivisa:
+
+```js
+const MINIAPP_KEYS = ['hk','bkf','cm','inv','dvr'];
+let _appStatus = {};  // qm_app_status: { hk:true, bkf:false, ... } — assente/true = attiva
+```
+
+**Lato app standalone**: ciascuno dei 5 file (`housekeeper.html`, `breakfast.html`, `controllo-mattino.html`, `inventory.html`, `dvr.html`) ha, subito dopo la dichiarazione di `PROXY`, una funzione `qmCheckAppStatus()` che legge `qm_app_status` (`cache:'no-store'`) e, se il proprio flag è `false`, mostra un overlay fullscreen `#qm-maintenance-screen` (logo Compass + "Applicazione in aggiornamento") al posto della UI normale.
+
+**Ricontrollo mentre l'app resta aperta**: `qmCheckAppStatus()` gira al caricamento, su `visibilitychange` (quando l'app torna in primo piano) e ogni 30s via `setInterval` — necessario perché un'app rimasta aperta in background su uno smartphone (icona home screen mai chiusa) non rileggerebbe mai lo stato senza questo. Se il fetch fallisce (rete assente), l'app **resta utilizzabile** (fail-open) — non blocca mai per un problema di connessione.
+
+**Non implementato**: contatore accessi per dispositivo (rimosso su richiesta esplicita — "non si è rivelato utile"). Le funzioni `loadHkAccessStats`, `loadBkfAccessStats`, `loadDvrAccessStats` e il toggle "escludi questo dispositivo" sono stati eliminati insieme alle relative sezioni UI. Le app standalone continuano a scrivere silenziosamente `qm_hk_access` / `qm_bkf_access` / `qm_dvr_access` (codice non toccato), ma la dashboard non li legge/mostra più.
+
+### Avviso toast — solo Breakfast (`qm_bkf_banner`)
+
+Messaggio scritto dalla dashboard, mostrato come toast temporaneo (7s) su `breakfast.html`, **solo quando si è sulla tab "Analisi"** (attenzione: nel codice quella tab è `switchTab('report')` — non un sub-tab `_ddtBkfTab==='analisi'` dentro Ordini/Acquisti, che esiste ma non è mai raggiungibile da nessun bottone della UI. Il bottom-nav di `breakfast.html` è: Servizio→`day`, Acquisti→`orders`, **Analisi→`report`**).
+
+```js
+const BKF_BANNER_KEY = 'qm_bkf_banner';
+let _bkfBanner = { enabled: false, message: '' };
+```
+
+- Interruttore acceso/spento **indipendente** da quello dell'app (`miniappToggleBkfBanner()` vs `miniappToggleApp('bkf')`).
+- Campo testo libero + pulsante "Salva avviso" (`miniappSaveBkfBanner(btn)` — mostra "✓ Salvato" per 1.5s sul bottone stesso, poi torna al testo originale: è solo conferma visiva, non un errore se sembra "tornare indietro").
+- In `breakfast.html`: `qmCheckBanner()` viene chiamata su `visibilitychange`→visible e dentro `switchTab()` quando `tab==='report'`; si nasconde subito se si esce da quella tab. Non è nel polling a 30s (quello è solo per il check on/off dell'app).
+- Toast: icona SVG bell (non emoji — sostituita due volte su richiesta, prima 📢 poi 🔔, ora SVG outline oro senza sfondo), testo centrato, posizionato `bottom:72px` (sopra la bottom-nav fissa, non sopra di essa — la prima versione a `bottom:16px` copriva i pulsanti Servizio/Acquisti/Analisi).
+
+### Didascalie toggle
+
+Ogni toggle ha una didascalia breve **accanto** ("Attiva/disattiva app"), non più una frase lunga su una riga a parte sopra il link — cambiato dopo feedback che il testo grigio a 9-10px era illeggibile (portato a `--fs-xs`, 13px).
+
 ---
 
 ## Preferenze Turni
@@ -706,6 +813,38 @@ git show 2183997:index.html | grep 'id="view-'
 
 Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (commit `2183997`).
 
+### Commit di riferimento — sessione redesign Pannello App + Spese Fornitori (2026-07-06)
+
+Se qualcosa nel Pannello App, nel toggle on/off, nell'avviso Breakfast o in Spese Fornitori smette di funzionare, questi sono i commit "noti buoni" a cui confrontare o tornare (`git show <hash>:app.js`, `git diff <hash> HEAD -- app.js`, ecc.):
+
+| Commit | Cosa introduce |
+|--------|------------------|
+| `0d56bb4` | Fix stato persistente categorie Spese Fornitori (`_speseCatOpen`) |
+| `2828af1` | `breakfast.html` legge `qm_spese_cat_override` |
+| `31549ab` | Tabella spesa/coperti mensili con VAR% allineata a smartphone |
+| `d5cdb28` / `e510193` | "+ Nuovo prodotto" manuale in `inventory.html` e dashboard |
+| `3615c6b` | Sidebar "Sicurezza" → "Fascicolo Dipendenti" |
+| `26f79a4` | Toggle on/off + schermata manutenzione Compass su tutte e 5 le app |
+| `2606fde` | Ricontrollo on/off su `visibilitychange` + polling 30s (app aperta in background) |
+| `48eb398` | "Mini App" → "Pannello App", redesign a mosaico |
+| `c1f6f70` | KPI orario/data invece di conteggi, avviso toast Breakfast (prima versione) |
+| `08d9231` | Fix avviso Breakfast agganciato alla tab sbagliata (`report`, non un sub-tab di `orders`) |
+| `5afcd8f` | Icone card Pannello App uguali alla sidebar |
+
+Se il **Pannello App è vuoto o rotto**, verificare prima che questi ID esistano ancora in `index.html`: `miniapp-hk-status`, `miniapp-bkf-status`, `miniapp-cm-status`, `miniapp-inv-status`, `miniapp-dvr-status`, `miniapp-hk-toggle` (e gli altri 4 `-toggle`), `bkf-banner-msg`, `miniapp-bkf-banner-toggle`. Le funzioni JS corrispondenti sono tutte in `app.js` sotto il marker `// §§ MINI APP — PANNELLO DI CONTROLLO`.
+
+### Deploy GitHub Pages bloccato — cosa fare
+
+Il 2026-07-06 la pipeline "pages build and deployment" ha smesso di completare i deploy per ~2 ore (run rimasta in coda dal 14/06, non cancellabile né da UI né da API con token normale — nemmeno `force-cancel` funzionava, errore "Cannot cancel a workflow re-run that has not yet queued"). Si è risolta da sola dopo un cambio del Source in **Settings → Pages** (da "Deploy from a branch" a "GitHub Actions" e ritorno) seguito da un nuovo push — non è chiaro quale dei due passaggi abbia effettivamente sbloccato la coda. Se ricapita:
+
+1. Verificare lo stato: `curl -s "https://api.github.com/repos/qmsoularthotel/qm-dashboard/actions/runs?per_page=5"`
+2. Controllare se c'è una run ferma in `"status":"queued"` da più di qualche minuto
+3. Provare prima un retry semplice: `git commit --allow-empty -m "chore: retry deploy" && git push`
+4. Se persiste, in **Settings → Pages** cambiare temporaneamente il Source su "GitHub Actions" e poi rimetterlo su "Deploy from a branch" (branch `main`, cartella `/`), poi ripetere il retry
+5. Se persiste ancora, aprire un ticket a [support.github.com/contact](https://support.github.com/contact) categoria "Errori, problemi... Azioni problemi flusso di lavoro" — servono privilegi che l'utente/token normale non ha per sbloccare una run realmente incastrata
+
+Non creare workflow YAML personalizzati come soluzione: ne è stato creato uno (`​.github/workflows/deploy-pages.yml`, action `actions/deploy-pages@v4`) durante il troubleshooting e poi **eliminato** perché ridondante — la pipeline automatica di GitHub Pages basta da sola quando non è bloccata.
+
 ---
 
 ## Note & Problemi Noti
@@ -729,3 +868,9 @@ Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (comm
 | Date preferenze turni mostrano "Sun" | Apps Script restituisce `String(date)` formato JS | `_tpFmtDate()` usa regex su nome mese inglese |
 | Banner "piano non caricato" sempre giallo | `_renderHome()` chiamata sync prima che `_loadPiano()` completasse | `_loadPiano().then(() => _renderHome())` |
 | Dashboard Culligan non aggiornato da smartphone | `cmLoad()` leggeva localStorage invece di KV | `cmLoad()` legge sempre KV prima |
+| Spesa Fornitori: spostare un prodotto riportava alla lista categorie | `ddtRenderSpese()` rigenera tutto l'HTML, azzerando i pannelli espansi | Stato di modulo `_speseCatOpen`/`_speseUncatOpen` sopravvive al re-render |
+| Prodotti ricategorizzati su Compass restavano "non classificati" su breakfast.html | `breakfast.html` classificava solo per keyword, non leggeva `qm_spese_cat_override` | Aggiunta lettura override + sync ogni 60s |
+| Toggle app spento dalla dashboard non aveva effetto su app già aperta | Check `qm_app_status` girava solo al load iniziale | Ricontrollo anche su `visibilitychange` + `setInterval(30000)` |
+| Avviso Breakfast non compariva mai | Condizione controllava `_ddtBkfTab==='analisi'`, uno stato mai raggiungibile da nessun bottone della UI | Corretto a `_activeTab==='report'` (la tab "Analisi" reale nel bottom-nav) |
+| Banner Breakfast copriva i pulsanti della bottom-nav | Posizionato a `bottom:16px`, dentro l'area della nav fissa (~60px) | Spostato a `bottom:72px`, sopra la nav |
+| Deploy GitHub Pages bloccato per ~2 ore (2026-07-06) | Run "queued" incastrata dal 14/06, non cancellabile da UI/API | Risolta con cambio Source Settings→Pages avanti/indietro + retry — vedi sezione Recovery |
