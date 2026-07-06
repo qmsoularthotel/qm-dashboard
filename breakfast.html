@@ -173,7 +173,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 setInterval(qmCheckAppStatus,30000);
 async function qmCheckBanner(){
   try{
-    if(typeof _activeTab!=='undefined'&&(_activeTab!=='orders'||_ddtBkfTab!=='analisi'))return;
+    if(typeof _activeTab!=='undefined'&&_activeTab!=='report')return;
     const r=await fetch(PROXY+'/kv/get?key=qm_bkf_banner',{cache:'no-store'});
     const j=await r.json();
     const b=j&&j.value?JSON.parse(j.value):{};
@@ -509,9 +509,9 @@ function switchTab(tab){
   document.getElementById('bnv-day').classList.toggle('active',tab==='day');
   document.getElementById('bnv-orders').classList.toggle('active',tab==='orders');
   document.getElementById('bnv-report').classList.toggle('active',tab==='report');
-  if(tab==='orders'){ddtBkfRenderSpese();ddtBkfRenderList();if(_ddtBkfTab==='analisi')qmCheckBanner();}
-  if(tab==='report'){ddtBkfRenderReport();}
-  if(tab!=='orders'||_ddtBkfTab!=='analisi'){const box=document.getElementById('qm-banner-toast');if(box)box.style.display='none';}
+  if(tab==='orders'){ddtBkfRenderSpese();ddtBkfRenderList();}
+  if(tab==='report'){ddtBkfRenderReport();qmCheckBanner();}
+  else{const box=document.getElementById('qm-banner-toast');if(box)box.style.display='none';}
 }
 function ddtBkfRenderReport(){
   const view=document.getElementById('reportContent');if(!view)return;
@@ -553,11 +553,7 @@ let _ddtBkfTab='spese';
 let _ddtUploadModal=null;
 let _ddtParsedData=null;
 let _ddtUploadFornitore='';
-function ddtBkfSetTab(tab){
-  _ddtBkfTab=tab;ddtBkfRenderSpese();if(tab==='spese')ddtBkfRenderList();
-  if(tab==='analisi')qmCheckBanner();
-  else{const box=document.getElementById('qm-banner-toast');if(box)box.style.display='none';}
-}
+function ddtBkfSetTab(tab){_ddtBkfTab=tab;ddtBkfRenderSpese();if(tab==='spese')ddtBkfRenderList();}
 
 function ddtBkfGet(){try{return JSON.parse(localStorage.getItem(DDT_KEY)||'[]');}catch(e){return[];}}
 function ddtBkfSave(arr){
