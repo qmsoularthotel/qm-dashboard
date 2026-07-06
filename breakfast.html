@@ -152,17 +152,20 @@ body{padding-bottom:62px;}
 
 <script>
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
-(async function qmCheckAppStatus(){
+async function qmCheckAppStatus(){
   try{
     const r=await fetch(PROXY+'/kv/get?key=qm_app_status',{cache:'no-store'});
     const j=await r.json();
     const st=j&&j.value?JSON.parse(j.value):{};
-    if(st.bkf===false){
-      document.getElementById('qm-maintenance-screen').style.display='flex';
-      document.body.style.overflow='hidden';
-    }
+    const disabled=st.bkf===false;
+    const scr=document.getElementById('qm-maintenance-screen');
+    if(scr)scr.style.display=disabled?'flex':'none';
+    document.body.style.overflow=disabled?'hidden':'';
   }catch(e){}
-})();
+}
+qmCheckAppStatus();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckAppStatus();});
+setInterval(qmCheckAppStatus,30000);
 const GIORNI=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
 const GIORNI_S=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
 const MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];

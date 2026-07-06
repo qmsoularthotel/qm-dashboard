@@ -472,17 +472,20 @@
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
-(async function qmCheckAppStatus(){
+async function qmCheckAppStatus(){
   try{
     const r=await fetch(PROXY+'/kv/get?key=qm_app_status',{cache:'no-store'});
     const j=await r.json();
     const st=j&&j.value?JSON.parse(j.value):{};
-    if(st.inv===false){
-      document.getElementById('qm-maintenance-screen').style.display='flex';
-      document.body.style.overflow='hidden';
-    }
+    const disabled=st.inv===false;
+    const scr=document.getElementById('qm-maintenance-screen');
+    if(scr)scr.style.display=disabled?'flex':'none';
+    document.body.style.overflow=disabled?'hidden':'';
   }catch(e){}
-})();
+}
+qmCheckAppStatus();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckAppStatus();});
+setInterval(qmCheckAppStatus,30000);
 
 // ── State ───────────────────────────────────────────────────────────────────
 let currentWH  = localStorage.getItem('qm_inv_wh') || 'sa';

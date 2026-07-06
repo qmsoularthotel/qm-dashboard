@@ -207,17 +207,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 </script>
 <script>
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
-(async function qmCheckAppStatus(){
+async function qmCheckAppStatus(){
   try{
     const r=await fetch(PROXY+'/kv/get?key=qm_app_status',{cache:'no-store'});
     const j=await r.json();
     const st=j&&j.value?JSON.parse(j.value):{};
-    if(st.hk===false){
-      document.getElementById('qm-maintenance-screen').style.display='flex';
-      document.body.style.overflow='hidden';
-    }
+    const disabled=st.hk===false;
+    const scr=document.getElementById('qm-maintenance-screen');
+    if(scr)scr.style.display=disabled?'flex':'none';
+    document.body.style.overflow=disabled?'hidden':'';
   }catch(e){}
-})();
+}
+qmCheckAppStatus();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckAppStatus();});
+setInterval(qmCheckAppStatus,30000);
 const GIORNI_FULL=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
 const GIORNI_SHORT=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
 const MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
