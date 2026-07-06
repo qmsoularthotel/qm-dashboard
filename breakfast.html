@@ -460,6 +460,13 @@ function ddtBkfRenderReport(){
 
 // ── DDT ORDINI BKF ────────────────────────────────────────────────────────────
 const DDT_KEY='qm_ddt';
+// Riassegnazione manuale categoria prodotto fatta dalla dashboard (Spese Fornitori):
+// stessa chiave qm_spese_cat_override, qui solo in lettura per riflettere le modifiche di Compass.
+const SPESE_CAT_OVERRIDE_KEY='qm_spese_cat_override';
+let _speseCatOverride={};
+function speseCatBkfLoadOverride(){try{const s=localStorage.getItem(SPESE_CAT_OVERRIDE_KEY);_speseCatOverride=s?JSON.parse(s):{};}catch(e){_speseCatOverride={};}}
+function speseCatBkfNormDesc(s){return String(s||'').trim().toLowerCase();}
+speseCatBkfLoadOverride();
 const DDT_BKF={
   SDM:      {color:'#e0e1f5',fg:'#292b82', accent:'#292b82', logo:'sdm2.png'},
   MARR:     {color:'#fbdadc',fg:'#db0d15', accent:'#db0d15', logo:'marr.png'},
@@ -791,8 +798,11 @@ function ddtBkfBuildAnalisi(){
     const desc=a.descrizione.toLowerCase();
     const val=a.totale||(a.qta&&a.prezzo_unit?a.qta*a.prezzo_unit:0);
     if(!val)return;
-    const cat=CAT_RULES.find(c=>c.kw.some(kw=>desc.includes(kw)));
-    if(cat){catTotals[cat.id]+=val;catItems[cat.id].push({desc:a.descrizione,forn:_nf(ddt),val,data:ddt.data||''});}
+    // La riassegnazione manuale fatta su Compass (speseCatSetOverride) ha sempre priorità sulle keyword
+    const override=_speseCatOverride[speseCatBkfNormDesc(a.descrizione)];
+    const cat=override?{id:override}:CAT_RULES.find(c=>c.kw.some(kw=>desc.includes(kw)));
+    if(cat&&catTotals[cat.id]!==undefined){catTotals[cat.id]+=val;catItems[cat.id].push({desc:a.descrizione,forn:_nf(ddt),val,data:ddt.data||''});}
+    else if(override){catTotals[override]=(catTotals[override]||0)+val;(catItems[override]=catItems[override]||[]).push({desc:a.descrizione,forn:_nf(ddt),val,data:ddt.data||''});}
     else uncatItems.push({desc:a.descrizione,forn:_nf(ddt),val});
   });});
   const catGrandTotal=Object.values(catTotals).reduce((s,v)=>s+v,0);
@@ -1277,18 +1287,35 @@ function ddtBkfDelete(id){
   ddtBkfRenderSpese();
 }
 
-// Carica DDT da KV all'avvio (senza bloccare)
-(async function loadDdt(){
+// Carica DDT + riassegnazioni categoria da KV — all'avvio e poi in polling,
+// così lo smartphone riflette sempre ciò che viene fatto sulla dashboard (Compass)
+async function ddtBkfSyncFromCloud(){
+  let changed=false;
   try{
-    const res=await fetch(PROXY+'/kv/get?key='+DDT_KEY);
+    const res=await fetch(PROXY+'/kv/get?key='+DDT_KEY,{cache:'no-store'});
     const json=await res.json();
     if(json.value&&json.value!==localStorage.getItem(DDT_KEY)){
       try{localStorage.setItem(DDT_KEY,json.value);}catch(e){}
-      // Se la tab Ordini è già aperta, ri-renderizza con i dati freschi dal cloud
-      if(_activeTab==='orders'){try{ddtBkfRenderSpese();ddtBkfRenderList();}catch(e){}}
+      changed=true;
     }
   }catch(e){}
-})();
+  try{
+    const res=await fetch(PROXY+'/kv/get?key='+SPESE_CAT_OVERRIDE_KEY,{cache:'no-store'});
+    const json=await res.json();
+    if(json.value&&json.value!==localStorage.getItem(SPESE_CAT_OVERRIDE_KEY)){
+      try{localStorage.setItem(SPESE_CAT_OVERRIDE_KEY,json.value);}catch(e){}
+      speseCatBkfLoadOverride();
+      changed=true;
+    }
+  }catch(e){}
+  if(!changed)return;
+  try{
+    if(_activeTab==='orders'){ddtBkfRenderSpese();ddtBkfRenderList();}
+    else if(_activeTab==='report'){ddtBkfRenderReport();}
+  }catch(e){}
+}
+ddtBkfSyncFromCloud();
+setInterval(ddtBkfSyncFromCloud,60000);
 
 // Contatore accessi per dispositivo
 (async function trackAccess(){
