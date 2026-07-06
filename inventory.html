@@ -337,8 +337,9 @@
 
   <!-- CATALOG -->
   <div id="view-catalog" style="display:none;">
-    <div class="search-wrap">
-      <input class="search-input" type="search" id="catalogSearch" placeholder="Cerca…" oninput="renderCatalog()">
+    <div class="search-wrap" style="display:flex;gap:8px;align-items:center;">
+      <input class="search-input" type="search" id="catalogSearch" placeholder="Cerca…" oninput="renderCatalog()" style="flex:1;">
+      <button class="btn-primary" onclick="openManualNewProduct()" style="width:auto;padding:9px 14px;white-space:nowrap;margin-top:0;">+ Nuovo</button>
     </div>
     <div class="catalog-list" id="catalogList"></div>
   </div>
@@ -352,6 +353,10 @@
     <div class="sheet-title" id="sheetTitle">Movimento</div>
 
     <!-- New product fields -->
+    <div class="form-group" id="newBarcodeWrap" style="display:none;">
+      <label class="form-label">Codice a barre</label>
+      <input class="form-input" type="text" id="newBarcode" placeholder="lascia vuoto se non disponibile" inputmode="numeric" autocomplete="off">
+    </div>
     <div class="form-group" id="newNameWrap" style="display:none;">
       <label class="form-label">Nome prodotto</label>
       <input class="form-input" type="text" id="newName" placeholder="es. Detersivo piatti 5L…" autocomplete="off">
@@ -450,6 +455,7 @@ let currentTab = 'stock';
 let currentOp  = 'out';
 let pendingBC  = null;   // barcode being processed
 let isNewProd  = false;
+let isManualAdd = false; // true quando il prodotto viene aggiunto da tastiera (Catalogo → + Nuovo), senza scansione
 
 let catalog = {};           // { [barcode]: { name, unit } }
 let moves   = { sa: [], ar: [] };
@@ -746,7 +752,16 @@ async function onBarcodeDetected(bc) {
 function quickMove(bc) {
   pendingBC = bc;
   isNewProd = false;
+  isManualAdd = false;
   openMoveModal(bc, catalog[bc], false);
+}
+
+// Aggiunta manuale da tastiera (Catalogo → + Nuovo), senza passare dallo scanner
+function openManualNewProduct() {
+  pendingBC = null;
+  isNewProd = true;
+  isManualAdd = true;
+  openMoveModal(null, null, true);
 }
 
 function openMoveModal(bc, product, isNew) {
@@ -756,15 +771,18 @@ function openMoveModal(bc, product, isNew) {
   syncUnitChips('');
 
   if (isNew) {
+    document.getElementById('newBarcodeWrap').style.display = isManualAdd ? '' : 'none';
+    document.getElementById('newBarcode').value = '';
     document.getElementById('newNameWrap').style.display = '';
     document.getElementById('newUnitWrap').style.display = '';
     document.getElementById('knownBox').style.display    = 'none';
     document.getElementById('newName').value = '';
     document.getElementById('newUnit').value = '';
-    document.getElementById('sheetTitle').textContent = '🆕 Nuovo prodotto';
+    document.getElementById('sheetTitle').textContent = isManualAdd ? '🆕 Nuovo prodotto (manuale)' : '🆕 Nuovo prodotto';
     document.getElementById('unitHint').textContent   = '';
     setOp('init');
   } else {
+    document.getElementById('newBarcodeWrap').style.display = 'none';
     document.getElementById('newNameWrap').style.display = 'none';
     document.getElementById('newUnitWrap').style.display = 'none';
     document.getElementById('knownBox').style.display    = '';
@@ -777,7 +795,10 @@ function openMoveModal(bc, product, isNew) {
 
   document.getElementById('moveModal').classList.add('open');
   setTimeout(() => {
-    (isNew ? document.getElementById('newName') : document.getElementById('moveQty')).focus();
+    const focusEl = isNew
+      ? (isManualAdd ? document.getElementById('newBarcode') : document.getElementById('newName'))
+      : document.getElementById('moveQty');
+    focusEl.focus();
   }, 150);
 }
 
@@ -791,7 +812,9 @@ function deleteMove(id) {
 
 function closeMoveModal() {
   document.getElementById('moveModal').classList.remove('open');
+  document.getElementById('newBarcodeWrap').style.display = 'none';
   pendingBC = null;
+  isManualAdd = false;
   setTimeout(() => document.getElementById('hwScanInput')?.focus(), 100);
 }
 
@@ -835,6 +858,12 @@ async function saveMove() {
     const name = document.getElementById('newName').value.trim();
     if (!name) { showToast('Inserisci il nome del prodotto'); return; }
     const unit = document.getElementById('newUnit').value.trim();
+    if (isManualAdd) {
+      const typedBc = document.getElementById('newBarcode').value.trim();
+      const bc = typedBc || ('manual_' + Date.now());
+      if (catalog[bc]) { showToast('Codice già usato da un altro prodotto'); return; }
+      pendingBC = bc;
+    }
     catalog[pendingBC] = { name, unit };
   }
 
