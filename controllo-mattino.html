@@ -877,6 +877,7 @@ function toggleSec(sid,makeOn){
 function saveRoom(){
   const rs=_rs(_cur);
   rs.visited=true;
+  rs.ts=Date.now();
   rs.note=document.getElementById('room-note')?.value||'';
   _persist();
   goHome();

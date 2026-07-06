@@ -103,6 +103,11 @@ body{padding-bottom:62px;}
   </div>
 </div>
 
+<div id="qm-banner-toast" style="display:none;position:fixed;left:12px;right:12px;bottom:16px;z-index:9998;background:#1c3a5e;border:1px solid #c9952f;border-radius:10px;padding:10px 12px;gap:8px;align-items:center;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:456px;margin:0 auto;">
+  <span style="font-size:15px;flex-shrink:0;">📢</span>
+  <span id="qm-banner-toast-text" style="font-size:12px;font-weight:500;color:#fff;line-height:1.35;"></span>
+</div>
+
 <div class="header">
   <div class="header-top">
     <div style="display:flex;align-items:center;gap:10px;">
@@ -164,8 +169,23 @@ async function qmCheckAppStatus(){
   }catch(e){}
 }
 qmCheckAppStatus();
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckAppStatus();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){qmCheckAppStatus();qmCheckBanner();}});
 setInterval(qmCheckAppStatus,30000);
+async function qmCheckBanner(){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key=qm_bkf_banner',{cache:'no-store'});
+    const j=await r.json();
+    const b=j&&j.value?JSON.parse(j.value):{};
+    if(!b.enabled||!b.message)return;
+    const box=document.getElementById('qm-banner-toast');
+    const txt=document.getElementById('qm-banner-toast-text');
+    if(!box||!txt)return;
+    txt.textContent=b.message;
+    box.style.display='flex';
+    setTimeout(()=>{box.style.display='none';},7000);
+  }catch(e){}
+}
+qmCheckBanner();
 const GIORNI=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
 const GIORNI_S=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
 const MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];

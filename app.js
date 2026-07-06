@@ -1470,6 +1470,7 @@ function miniappCopy(inputId,btn){
 function miniappRender(){
   miniappRenderStatus();
   miniappLoadAppStatus();
+  miniappLoadBkfBanner();
 }
 // Interruttore acceso/spento per ciascuna app standalone (qm_app_status in KV,
 // letto da ogni app all'avvio: se il proprio flag è false mostra la schermata
@@ -1504,6 +1505,46 @@ function miniappToggleApp(key){
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_app_status',value:json})}).catch(()=>{});
   miniappRenderToggles();
 }
+// Avviso temporaneo (toast) solo per breakfast.html — messaggio scritto qui,
+// mostrato sul telefono per 7s quando l'app torna in primo piano.
+const BKF_BANNER_KEY='qm_bkf_banner';
+let _bkfBanner={enabled:false,message:''};
+async function miniappLoadBkfBanner(){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+BKF_BANNER_KEY,{cache:'no-store'});
+    const j=await r.json();
+    _bkfBanner=j&&j.value?JSON.parse(j.value):{enabled:false,message:''};
+  }catch(e){
+    try{_bkfBanner=JSON.parse(localStorage.getItem(BKF_BANNER_KEY)||'{}');}catch(e2){_bkfBanner={enabled:false,message:''};}
+  }
+  miniappRenderBkfBanner();
+}
+function miniappRenderBkfBanner(){
+  const inp=document.getElementById('bkf-banner-msg');
+  if(inp)inp.value=_bkfBanner.message||'';
+  const btn=document.getElementById('miniapp-bkf-banner-toggle');
+  if(!btn)return;
+  const on=!!_bkfBanner.enabled;
+  btn.style.background=on?'var(--green)':'var(--border)';
+  const knob=btn.querySelector('.miniapp-toggle-knob');
+  if(knob)knob.style.left=on?'17px':'2px';
+}
+function miniappSaveBkfBannerToKV(){
+  const json=JSON.stringify(_bkfBanner);
+  try{localStorage.setItem(BKF_BANNER_KEY,json);}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:BKF_BANNER_KEY,value:json})}).catch(()=>{});
+}
+function miniappToggleBkfBanner(){
+  _bkfBanner.enabled=!_bkfBanner.enabled;
+  miniappSaveBkfBannerToKV();
+  miniappRenderBkfBanner();
+}
+function miniappSaveBkfBanner(btn){
+  const inp=document.getElementById('bkf-banner-msg');
+  _bkfBanner.message=(inp?.value||'').trim();
+  miniappSaveBkfBannerToKV();
+  if(btn){const orig=btn.textContent;btn.textContent='✓ Salvato';setTimeout(()=>{btn.textContent=orig;},1500);}
+}
 // Pannello di controllo — stato colorato per ciascuna app standalone,
 // calcolato da dati già in memoria/localStorage (nessuna fetch aggiuntiva
 // tranne Culligan, che legge la chiave giornaliera KV come fa cmLoad()).
@@ -1515,14 +1556,22 @@ function _miniappStatusHTML(color,label,kpi){
     ${kpi?`<span style="font-size:var(--fs-xs);color:var(--text-dim);margin-left:auto;">${kpi}</span>`:''}
   </div>`;
 }
+function _miniappFmtTime(ts){
+  if(!ts)return'—';
+  const d=new Date(ts);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function _miniappFmtDate(ts){
+  if(!ts)return'mai';
+  const d=new Date(ts);
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+}
 function miniappHkStatus(){
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length)return _miniappStatusHTML('red','Piano non caricato','');
   const idx=pianoGetGiornoIdx();
   if(idx===-1)return _miniappStatusHTML('amber','Piano non aggiornato a oggi','');
-  const g=pianoData.giorni[idx]||{};
-  const lib=g.liborio||{cambi:[]};
-  const nCambi=(g.soulart?.cambi?.length||0)+(g.boutique?.cambi?.length||0)+(lib.cambi?.length||0);
-  return _miniappStatusHTML('green','Aggiornato a oggi',`${nCambi} camb${nCambi===1?'io':'i'} camera oggi`);
+  const ts=parseInt(localStorage.getItem('qm_ts_pianoTs')||'0')||null;
+  return _miniappStatusHTML('green','Aggiornato a oggi',`ore ${_miniappFmtTime(ts)}`);
 }
 function miniappBkfStatus(){
   if(!bkfData||!bkfData.length)return _miniappStatusHTML('red','Report pasti non caricato','');
@@ -1530,8 +1579,8 @@ function miniappBkfStatus(){
   const todayStr=String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0');
   const todayIdx=bkfData.findIndex(d=>d.label&&d.label.includes(todayStr));
   if(todayIdx===-1)return _miniappStatusHTML('amber','Report non aggiornato a oggi','');
-  const d=bkfData[todayIdx];
-  return _miniappStatusHTML('green','Aggiornato a oggi',`${(d.adulti||0)+(d.bambini||0)} coperti`);
+  const ts=parseInt(localStorage.getItem('qm_ts_bkfTs')||'0')||null;
+  return _miniappStatusHTML('green','Aggiornato a oggi',`ore ${_miniappFmtTime(ts)}`);
 }
 function miniappDvrStatus(){
   let scaduti=0,inScadenza=0;
@@ -1559,9 +1608,14 @@ function miniappInvStatus(){
       if(invItemStatus(qty,catalog[bc]?.soglia??null)!=='ok')sottoSoglia++;
     });
   });
-  if(sottoSoglia>=3)return _miniappStatusHTML('red','Scorte da riordinare',`${sottoSoglia} prodotti sotto soglia`);
-  if(sottoSoglia>0)return _miniappStatusHTML('amber','Alcune scorte basse',`${sottoSoglia} prodott${sottoSoglia===1?'o':'i'} sotto soglia`);
-  return _miniappStatusHTML('green','Scorte ok','');
+  const lastDelivery=wh=>{
+    const orders=invOrdersGet().filter(o=>o.wh===wh&&o.status==='ricevuto'&&o.tsRicevuto);
+    return orders.length?Math.max(...orders.map(o=>o.tsRicevuto)):null;
+  };
+  const kpi=`SA ${_miniappFmtDate(lastDelivery('sa'))} · AR ${_miniappFmtDate(lastDelivery('ar'))}`;
+  if(sottoSoglia>=3)return _miniappStatusHTML('red','Scorte da riordinare',kpi);
+  if(sottoSoglia>0)return _miniappStatusHTML('amber','Alcune scorte basse',kpi);
+  return _miniappStatusHTML('green','Scorte ok',kpi);
 }
 async function miniappCmStatus(){
   const d=new Date();
@@ -1573,9 +1627,10 @@ async function miniappCmStatus(){
   }catch(e){}
   if(!state){try{const r=localStorage.getItem(key);if(r)state=JSON.parse(r);}catch(e){}}
   if(!state||!Object.keys(state).length)return _miniappStatusHTML('red','Nessun controllo oggi','');
+  const lastTs=Math.max(0,...CM_ROOMS.map(r=>state[r]?.ts||0))||null;
   const pending=CM_ROOMS.filter(r=>!state[r]?.visited).length;
-  if(pending>0)return _miniappStatusHTML('amber','Giro in corso',`${pending} camer${pending===1?'a':'e'} da visitare`);
-  return _miniappStatusHTML('green','Giro completato',`${CM_ROOMS.length}/${CM_ROOMS.length} camere`);
+  if(pending>0)return _miniappStatusHTML('amber','Giro in corso',`ore ${_miniappFmtTime(lastTs)}`);
+  return _miniappStatusHTML('green','Giro completato',`ore ${_miniappFmtTime(lastTs)}`);
 }
 function miniappRenderStatus(){
   const hk=document.getElementById('miniapp-hk-status');if(hk)hk.innerHTML=miniappHkStatus();
