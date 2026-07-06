@@ -136,6 +136,7 @@ let bkfData=null;
 let currentIdx=0;
 let bkfGroups=[];
 let _bkfHistory={};
+let _historyFromKV=false; // true solo se il fetch KV ha avuto successo — evita di sovrascrivere KV con dati parziali
 const BKF_HIST_KEY='qm_bkf_monthly_history';
 
 // Orologio e data
@@ -379,16 +380,18 @@ function bkfMergeHistory(){
   });
   const json=JSON.stringify(_bkfHistory);
   try{localStorage.setItem(BKF_HIST_KEY,json);}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:BKF_HIST_KEY,value:json})}).catch(()=>{});
+  // Salva su KV solo se abbiamo caricato la history da KV (evita di sovrascrivere con dati parziali)
+  if(_historyFromKV)fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:BKF_HIST_KEY,value:json})}).catch(()=>{});
 }
 
 async function loadAll(){
   document.getElementById('mainContent').innerHTML=`<div class="loading"><div class="spinner"></div>Caricamento...</div>`;
+  _historyFromKV=false;
   // Carica history
   try{
     const rh=await fetch(PROXY+'/kv/get?key='+BKF_HIST_KEY);
     const jh=await rh.json();
-    if(jh.value){const kvH=JSON.parse(jh.value);Object.assign(_bkfHistory,kvH);try{localStorage.setItem(BKF_HIST_KEY,JSON.stringify(_bkfHistory));}catch(e){}}
+    if(jh.value){const kvH=JSON.parse(jh.value);Object.assign(_bkfHistory,kvH);try{localStorage.setItem(BKF_HIST_KEY,JSON.stringify(_bkfHistory));}catch(e){}_historyFromKV=true;}
   }catch(e){}
   try{
     const res=await fetch(PROXY+'/kv/get?key=qm_bkfData');
