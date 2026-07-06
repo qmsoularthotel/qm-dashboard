@@ -7329,8 +7329,22 @@ let _ddtUploadModal=null;
 let _ddtParsedData=null;
 let _ddtUploadFornitore='';
 let _ddtUploadHotel='sa';
+// Categoria/pannello espanso in Analisi Spese Fornitori — persiste tra i re-render
+// così "Sposta" un prodotto non riporta l'utente alla lista principale delle categorie.
+let _speseCatOpen=null;
+let _speseUncatOpen=false;
 
 function ddtSetTab(tab){_ddtTab=tab;ddtRenderSpese();if(tab==='spese')ddtRenderList();}
+function ddtSpeseToggleCat(id){
+  _speseCatOpen=(_speseCatOpen===id)?null:id;
+  const d=document.getElementById('spesecatdet-'+id);
+  if(d)d.style.display=_speseCatOpen===id?'block':'none';
+}
+function ddtSpeseToggleUncat(){
+  _speseUncatOpen=!_speseUncatOpen;
+  const d=document.getElementById('uncat-det-spese');
+  if(d)d.style.display=_speseUncatOpen?'block':'none';
+}
 
 function ddtBuildAnalisi(){
   const all=ddtGet();
@@ -7696,7 +7710,7 @@ function ddtBuildAnalisi(){
       const prodotti=Object.values(agg).sort((a,b)=>b.val-a.val);
       const detId='spesecatdet-'+c.id;
       h+=`<div style="${i>0?'border-top:1px solid var(--border-light)':''}">
-        <div style="display:flex;align-items:center;gap:0;cursor:pointer;user-select:none;" onclick="(function(){var d=document.getElementById('${detId}');d.style.display=d.style.display==='none'?'block':'none';})()">
+        <div style="display:flex;align-items:center;gap:0;cursor:pointer;user-select:none;" onclick="ddtSpeseToggleCat('${c.id}')">
           <div style="flex:1;min-width:0;padding:10px 10px 8px 12px;">
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
               ${CAT_ICONS_SPESE[c.id]?`<div style="flex-shrink:0;"><img src="${CAT_ICONS_SPESE[c.id]}" width="38" height="38" style="object-fit:contain;display:block;"></div>`:''}
@@ -7709,7 +7723,7 @@ function ddtBuildAnalisi(){
             <div style="font-size:10px;color:var(--text-dim);margin-top:1px;">${sharePct.toFixed(0)}%</div>
           </div>
         </div>
-        <div id="${detId}" style="display:none;border-top:1px solid var(--border-light);padding:8px 12px 10px 16px;background:var(--bg);">
+        <div id="${detId}" style="display:${_speseCatOpen===c.id?'block':'none'};border-top:1px solid var(--border-light);padding:8px 12px 10px 16px;background:var(--bg);">
           ${prodotti.map((p,pIdx)=>{
             const escDesc=p.desc.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             const menuId='spesemenu-'+c.id+'-'+pIdx;
@@ -7746,11 +7760,11 @@ function ddtBuildAnalisi(){
         <span style="font-size:11px;color:#92400e;font-weight:700;">${_fmt(uncatTot)}</span>
       </div>
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;">
-        <div style="padding:7px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-radius:10px 10px 0 0;" onclick="(function(){var d=document.getElementById('uncat-det-spese');d.style.display=d.style.display==='none'?'block':'none';})()">
+        <div style="padding:7px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-radius:10px 10px 0 0;" onclick="ddtSpeseToggleUncat()">
           <span style="font-size:11px;color:#92400e;">${uncatSorted.length} prodott${uncatSorted.length===1?'o':'i'} senza categoria — spostali con il menu qui sotto</span>
           <span style="font-size:11px;color:#92400e;">▾</span>
         </div>
-        <div id="uncat-det-spese" style="display:none;border-top:1px solid #fde68a;padding:6px 12px;">
+        <div id="uncat-det-spese" style="display:${_speseUncatOpen?'block':'none'};border-top:1px solid #fde68a;padding:6px 12px;">
           ${uncatSorted.map((p,pIdx)=>{
             const escDesc=p.desc.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             const menuId='spesemenu-unc-'+pIdx;
