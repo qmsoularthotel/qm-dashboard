@@ -7368,7 +7368,7 @@ function ddtBuildAnalisi(){
   // solo fornitori breakfast (esclude DECA/hk, Amonn/altro)
   const bkfAll=all.filter(d=>{const forn=_nf(d);return(DDT_FORNITORI[forn]?.reparto||d.reparto||'bkf')==='bkf';});
   const _conf=f=>DDT_FORNITORI[f]||{color:'#f1f5f9',fg:'#64748b',accent:'#94a3b8'};
-  const _fmt=n=>n!=null&&n!==''?'€'+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+  const _fmt=n=>n!=null&&n!==''?'€'+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:true}):'—';
   const _parseD=s=>{if(!s)return 0;const p=s.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0;};
 
   // ── Carica storico coperti ──
@@ -7973,7 +7973,7 @@ function ddtNavAnalMese(dir){
   ddtRenderSpese();
 }
 function ddtMonLabel(ym){const[y,m]=ym.split('-').map(Number);return DDT_MON[m-1]+' '+y;}
-function ddtFmt(n){if(!n&&n!==0)return'—';return'€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function ddtFmt(n){if(!n&&n!==0)return'—';return'€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:true});}
 function ddtYM(data){
   // "DD/MM/YYYY" → "YYYY-MM"
   const p=(data||'').split('/');
@@ -8148,8 +8148,8 @@ function ddtRenderList(){
     const artRows=(d.articoli||[]).map(a=>`<tr style="border-bottom:1px solid var(--border-light);">
       <td style="padding:6px 12px;font-size:var(--fs-xs);color:var(--text);">${a.descrizione||''}</td>
       <td style="padding:6px 12px;font-size:var(--fs-xs);text-align:right;color:var(--text-dim);white-space:nowrap;">${a.qta!=null?a.qta:''} ${a.unita||''}</td>
-      <td style="padding:6px 12px;font-size:var(--fs-xs);text-align:right;color:var(--text-dim);">${a.prezzo_unit!=null?'€ '+Number(a.prezzo_unit).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}):''}</td>
-      <td style="padding:6px 12px;font-size:var(--fs-xs);text-align:right;font-weight:600;color:var(--text);">${a.totale!=null?'€ '+Number(a.totale).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}):''}</td>
+      <td style="padding:6px 12px;font-size:var(--fs-xs);text-align:right;color:var(--text-dim);">${a.prezzo_unit!=null?'€ '+Number(a.prezzo_unit).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:true}):''}</td>
+      <td style="padding:6px 12px;font-size:var(--fs-xs);text-align:right;font-weight:600;color:var(--text);">${a.totale!=null?'€ '+Number(a.totale).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:true}):''}</td>
       <td></td><td></td><td></td><td></td>
     </tr>`).join('');
     // Main row

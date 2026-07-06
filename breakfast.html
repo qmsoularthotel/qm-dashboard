@@ -586,7 +586,7 @@ function ddtBkfNavAnalMese(dir){
   ddtBkfRenderReport();
 }
 function ddtBkfMonLabel(ym){const[y,m]=ym.split('-').map(Number);return DDT_MON[m-1]+' '+y;}
-function ddtBkfFmt(n){if(!n&&n!==0)return'—';return'€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function ddtBkfFmt(n){if(!n&&n!==0)return'—';return'€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:true});}
 function ddtBkfYM(data){const p=(data||'').split('/');if(p.length!==3)return'';return p[2]+'-'+p[1].padStart(2,'0');}
 
 function ddtBkfToggle(id){
@@ -601,7 +601,7 @@ function ddtBkfToggle(id){
 function ddtBkfRenderSpese(){
   const view=document.getElementById('ordiniContent');if(!view)return;
   const mon=ddtBkfCurMonth();
-  const all=ddtBkfGet().filter(d=>d.reparto==='bkf');
+  const all=ddtBkfGet().filter(d=>d.reparto==='bkf'&&DDT_BKF[ddtNormForn(d.fornitore)||d.fornitore]!==undefined);
   const monDdt=all.filter(d=>ddtGetYM(d)===mon);
   const totale=monDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
 
@@ -704,7 +704,7 @@ function ddtBkfBuildAnalisi(){
   });
   const _nf=d=>ddtNormForn(d.fornitore)||d.fornitore;
   const _conf=f=>DDT_BKF[f]||{color:'#f1f5f9',fg:'#64748b',accent:'#94a3b8'};
-  const _fmt=n=>n!=null&&n!==''?'€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+  const _fmt=n=>n!=null&&n!==''?'€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:true}):'—';
   const _parseD=s=>{if(!s)return 0;const p=s.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0;};
   const MON_IT=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
   const _monLabel=ym=>{const[y,m]=ym.split('-');return MON_IT[parseInt(m)-1]+' '+y;};
@@ -1154,8 +1154,8 @@ function ddtBkfRenderList(){
       const artRows=(d.articoli||[]).map(a=>`<tr>
         <td style="padding:5px 8px;font-size:11px;color:var(--text);">${a.descrizione||''}</td>
         <td style="padding:5px 8px;font-size:11px;text-align:right;color:var(--text-dim);white-space:nowrap;">${a.qta!=null?a.qta:''} ${a.unita||''}</td>
-        <td style="padding:5px 8px;font-size:11px;text-align:right;color:var(--text-dim);white-space:nowrap;">${a.prezzo_unit!=null?'€ '+Number(a.prezzo_unit).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}):''}</td>
-        <td style="padding:5px 8px;font-size:11px;text-align:right;font-weight:600;white-space:nowrap;">${a.totale!=null?'€ '+Number(a.totale).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}):''}</td>
+        <td style="padding:5px 8px;font-size:11px;text-align:right;color:var(--text-dim);white-space:nowrap;">${a.prezzo_unit!=null?'€ '+Number(a.prezzo_unit).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:true}):''}</td>
+        <td style="padding:5px 8px;font-size:11px;text-align:right;font-weight:600;white-space:nowrap;">${a.totale!=null?'€ '+Number(a.totale).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:true}):''}</td>
       </tr>`).join('');
       h+=`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${conf.accent};border-radius:12px;overflow:hidden;">
         <div onclick="ddtBkfToggle('${d.id}')" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;user-select:none;">
