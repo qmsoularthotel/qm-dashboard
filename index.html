@@ -1411,21 +1411,23 @@
         </div>
       </div>
       <div class="view" id="view-miniapp">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:start;" id="miniappGrid">
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start;" id="miniappGrid">
           <div class="panel" style="padding:14px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
               <span style="font-size:20px;">🛏️</span>
               <div style="min-width:0;">
                 <div style="font-size:var(--fs-sm);font-weight:700;">Housekeeping</div>
-                <div style="font-size:var(--fs-xxs);color:var(--text-dim);">SoulArt · Boutique</div>
+                <div style="font-size:var(--fs-xs);color:var(--text-dim);">SoulArt · Boutique</div>
               </div>
             </div>
             <div id="miniapp-hk-status" style="margin-bottom:10px;"></div>
-            <div style="font-size:9px;color:var(--text-dim);margin-bottom:5px;">Il toggle spegne/accende l'app: se spenta, chi la apre vede un avviso invece della UI</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <button id="miniapp-hk-toggle" onclick="miniappToggleApp('hk')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
+              <span style="font-size:var(--fs-xs);color:var(--text-dim);">Attiva/disattiva app</span>
+            </div>
             <div style="display:flex;gap:6px;align-items:center;">
-              <input id="hk-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:10px;color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/housekeeper.html">
+              <input id="hk-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:var(--fs-xs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/housekeeper.html">
               <button onclick="miniappCopy('hk-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
-              <button id="miniapp-hk-toggle" onclick="miniappToggleApp('hk')" title="Attiva/disattiva app" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
           </div>
           <div class="panel" style="padding:14px;">
@@ -1433,20 +1435,22 @@
               <span style="font-size:20px;">☕</span>
               <div style="min-width:0;">
                 <div style="font-size:var(--fs-sm);font-weight:700;">Breakfast</div>
-                <div style="font-size:var(--fs-xxs);color:var(--text-dim);">Responsabile colazione</div>
+                <div style="font-size:var(--fs-xs);color:var(--text-dim);">Responsabile colazione</div>
               </div>
             </div>
             <div id="miniapp-bkf-status" style="margin-bottom:10px;"></div>
-            <div style="font-size:9px;color:var(--text-dim);margin-bottom:5px;">Il toggle spegne/accende l'app: se spenta, chi la apre vede un avviso invece della UI</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <button id="miniapp-bkf-toggle" onclick="miniappToggleApp('bkf')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
+              <span style="font-size:var(--fs-xs);color:var(--text-dim);">Attiva/disattiva app</span>
+            </div>
             <div style="display:flex;gap:6px;align-items:center;">
-              <input id="bkf-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:10px;color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/breakfast.html">
+              <input id="bkf-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:var(--fs-xs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/breakfast.html">
               <button onclick="miniappCopy('bkf-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
-              <button id="miniapp-bkf-toggle" onclick="miniappToggleApp('bkf')" title="Attiva/disattiva app" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
             <div style="border-top:1px solid var(--border-light);margin-top:10px;padding-top:10px;">
-              <div style="font-size:9px;color:var(--text-dim);margin-bottom:5px;">Avviso temporaneo (toast 7s) sullo smartphone quando l'app torna in primo piano</div>
+              <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Avviso (7s, solo su tab Analisi)</div>
               <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-                <input id="bkf-banner-msg" class="form-input" type="text" placeholder="es. Nuovo turno caricato, ricarica la pagina" style="flex:1;min-width:0;padding:4px 6px;font-size:10px;">
+                <input id="bkf-banner-msg" class="form-input" type="text" placeholder="es. Nuovo turno caricato, ricarica" style="flex:1;min-width:0;padding:4px 6px;font-size:var(--fs-xs);">
                 <button id="miniapp-bkf-banner-toggle" onclick="miniappToggleBkfBanner()" title="Attiva/disattiva avviso" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--border);"><span style="position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
               </div>
               <button onclick="miniappSaveBkfBanner(this)" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:5px;padding:5px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">Salva avviso</button>
@@ -1457,15 +1461,17 @@
               <span style="font-size:20px;">💧</span>
               <div style="min-width:0;">
                 <div style="font-size:var(--fs-sm);font-weight:700;">Distribuzione Culligan</div>
-                <div style="font-size:var(--fs-xxs);color:var(--text-dim);">Art Resort</div>
+                <div style="font-size:var(--fs-xs);color:var(--text-dim);">Art Resort</div>
               </div>
             </div>
             <div id="miniapp-cm-status" style="margin-bottom:10px;"></div>
-            <div style="font-size:9px;color:var(--text-dim);margin-bottom:5px;">Il toggle spegne/accende l'app: se spenta, chi la apre vede un avviso invece della UI</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <button id="miniapp-cm-toggle" onclick="miniappToggleApp('cm')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
+              <span style="font-size:var(--fs-xs);color:var(--text-dim);">Attiva/disattiva app</span>
+            </div>
             <div style="display:flex;gap:6px;align-items:center;">
-              <input id="cm-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:10px;color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/controllo-mattino.html">
+              <input id="cm-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:var(--fs-xs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/controllo-mattino.html">
               <button onclick="miniappCopy('cm-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
-              <button id="miniapp-cm-toggle" onclick="miniappToggleApp('cm')" title="Attiva/disattiva app" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
           </div>
           <div class="panel" style="padding:14px;">
@@ -1473,15 +1479,17 @@
               <span style="font-size:20px;">📦</span>
               <div style="min-width:0;">
                 <div style="font-size:var(--fs-sm);font-weight:700;">Inventari Detersivi</div>
-                <div style="font-size:var(--fs-xxs);color:var(--text-dim);">SoulArt · Art Resort</div>
+                <div style="font-size:var(--fs-xs);color:var(--text-dim);">SoulArt · Art Resort</div>
               </div>
             </div>
             <div id="miniapp-inv-status" style="margin-bottom:10px;"></div>
-            <div style="font-size:9px;color:var(--text-dim);margin-bottom:5px;">Il toggle spegne/accende l'app: se spenta, chi la apre vede un avviso invece della UI</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <button id="miniapp-inv-toggle" onclick="miniappToggleApp('inv')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
+              <span style="font-size:var(--fs-xs);color:var(--text-dim);">Attiva/disattiva app</span>
+            </div>
             <div style="display:flex;gap:6px;align-items:center;">
-              <input id="inv-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:10px;color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/inventory.html">
+              <input id="inv-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:var(--fs-xs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/inventory.html">
               <button onclick="miniappCopy('inv-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
-              <button id="miniapp-inv-toggle" onclick="miniappToggleApp('inv')" title="Attiva/disattiva app" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
           </div>
           <div class="panel" style="padding:14px;">
@@ -1489,15 +1497,17 @@
               <span style="font-size:20px;">🛡️</span>
               <div style="min-width:0;">
                 <div style="font-size:var(--fs-sm);font-weight:700;">DVR &amp; Compliance</div>
-                <div style="font-size:var(--fs-xxs);color:var(--text-dim);">General Manager</div>
+                <div style="font-size:var(--fs-xs);color:var(--text-dim);">General Manager</div>
               </div>
             </div>
             <div id="miniapp-dvr-status" style="margin-bottom:10px;"></div>
-            <div style="font-size:9px;color:var(--text-dim);margin-bottom:5px;">Il toggle spegne/accende l'app: se spenta, chi la apre vede un avviso invece della UI</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <button id="miniapp-dvr-toggle" onclick="miniappToggleApp('dvr')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
+              <span style="font-size:var(--fs-xs);color:var(--text-dim);">Attiva/disattiva app</span>
+            </div>
             <div style="display:flex;gap:6px;align-items:center;">
-              <input id="dvr-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:10px;color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/dvr.html">
+              <input id="dvr-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:var(--fs-xs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/dvr.html">
               <button onclick="miniappCopy('dvr-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
-              <button id="miniapp-dvr-toggle" onclick="miniappToggleApp('dvr')" title="Attiva/disattiva app" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
           </div>
         </div>
