@@ -532,6 +532,7 @@ const DDT_BKF={
   MARR:     {color:'#fbdadc',fg:'#db0d15', accent:'#db0d15', logo:'marr.png'},
   Cozzolino:{color:'#e5e5e5',fg:'#000000', accent:'#000000', logo:'icone%20app%20breakfast/frutta.png', iconOnly:true},
   Valgarda: {color:'#f2eee2',fg:'#8a7643', accent:'#b99e5d', logo:'valgarda.png'},
+  SAIMA:    {color:'#e0e7ff',fg:'#3730a3', accent:'#4f46e5', logo:'saima.png'},
 };
 function ddtNormForn(s){
   if(!s)return s;
@@ -1202,6 +1203,7 @@ function ddtBkfOpenUploadModal(){
         <option value="">Seleziona…</option>
         <option value="SDM">SDM</option>
         <option value="MARR">MARR</option>
+        <option value="SAIMA">SAIMA</option>
         <option value="Cozzolino">Cozzolino</option>
         <option value="Valgarda">Valgarda</option>
       </select>
@@ -1291,6 +1293,7 @@ function ddtBkfShowParsed(d){
         <option value="" ${fornKnown?'':'selected'}>Seleziona…</option>
         <option value="SDM" ${fornKnown==='SDM'?'selected':''}>SDM</option>
         <option value="MARR" ${fornKnown==='MARR'?'selected':''}>MARR</option>
+        <option value="SAIMA" ${fornKnown==='SAIMA'?'selected':''}>SAIMA</option>
         <option value="Cozzolino" ${fornKnown==='Cozzolino'?'selected':''}>Cozzolino</option>
         <option value="Valgarda" ${fornKnown==='Valgarda'?'selected':''}>Valgarda</option>
       </select>
@@ -1329,7 +1332,7 @@ function ddtBkfAddArt(){if(!_ddtParsedData)return;(_ddtParsedData.articoli=_ddtP
 function ddtBkfConfirmSave(){
   if(!_ddtParsedData)return;
   const fornFinal=ddtNormForn(_ddtParsedData.fornitore)||_ddtParsedData.fornitore||'';
-  if(!Object.keys(DDT_BKF).includes(fornFinal)){alert('Seleziona il fornitore (SDM, MARR, Cozzolino o Valgarda) prima di salvare.');return;}
+  if(!Object.keys(DDT_BKF).includes(fornFinal)){alert('Seleziona il fornitore (SDM, MARR, SAIMA, Cozzolino o Valgarda) prima di salvare.');return;}
   const arr=ddtBkfGet();
   arr.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6),ts:Date.now(),
     data:_ddtParsedData.data||'',fornitore:fornFinal,

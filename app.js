@@ -7303,6 +7303,7 @@ const DDT_FORNITORI={
   MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fef3c7', fg:'#92400e', accent:'#d97706'},
   Cozzolino: {reparto:'bkf', rLabel:'Breakfast',    color:'#fce7f3', fg:'#9d174d', accent:'#db2777'},
   Valgarda:  {reparto:'bkf', rLabel:'Breakfast',    color:'#ede9fe', fg:'#5b21b6', accent:'#7c3aed'},
+  SAIMA:     {reparto:'bkf', rLabel:'Breakfast',    color:'#e0e7ff', fg:'#3730a3', accent:'#4f46e5'},
 };
 const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 // Riassegnazione manuale categoria prodotto (solo Spese Fornitori): una volta spostato un
@@ -8028,7 +8029,7 @@ function ddtRenderSpese(){
   </div>`;
   h+=`<div style="display:flex;gap:10px;margin-bottom:16px;">
     ${kpi('DECA',hkTot?ddtFmt(hkTot):'',hkDdt+' DDT · Housekeeping','#2563eb')}
-    ${kpi('Fornitori Breakfast',bkfTot?ddtFmt(bkfTot):'',bkfDdt+' DDT · SDM · MARR · Cozzolino · Valgarda','#16a34a')}
+    ${kpi('Fornitori Breakfast',bkfTot?ddtFmt(bkfTot):'',bkfDdt+' DDT · SDM · MARR · SAIMA · Cozzolino · Valgarda','#16a34a')}
     ${kpi('Amonn',amonnTot?ddtFmt(amonnTot):'',amonnDdt+' DDT','#0d9488')}
   </div>`;
 
@@ -8203,6 +8204,7 @@ function ddtOpenUploadModal(){
           <option value="Amonn">Amonn (Housekeeping)</option>
           <option value="SDM">SDM (Breakfast)</option>
           <option value="MARR">MARR (Breakfast)</option>
+          <option value="SAIMA">SAIMA (Breakfast)</option>
           <option value="Cozzolino">Cozzolino (Breakfast)</option>
           <option value="Valgarda">Valgarda (Breakfast)</option>
         </select>
