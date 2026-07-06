@@ -7368,7 +7368,7 @@ function ddtBuildAnalisi(){
   // solo fornitori breakfast (esclude DECA/hk, Amonn/altro)
   const bkfAll=all.filter(d=>{const forn=_nf(d);return(DDT_FORNITORI[forn]?.reparto||d.reparto||'bkf')==='bkf';});
   const _conf=f=>DDT_FORNITORI[f]||{color:'#f1f5f9',fg:'#64748b',accent:'#94a3b8'};
-  const _fmt=n=>n!=null&&n!==''?'€'+Number(n).toFixed(2).replace('.',','):'—';
+  const _fmt=n=>n!=null&&n!==''?'€'+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
   const _parseD=s=>{if(!s)return 0;const p=s.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0;};
 
   // ── Carica storico coperti ──
@@ -7973,7 +7973,7 @@ function ddtNavAnalMese(dir){
   ddtRenderSpese();
 }
 function ddtMonLabel(ym){const[y,m]=ym.split('-').map(Number);return DDT_MON[m-1]+' '+y;}
-function ddtFmt(n){if(!n&&n!==0)return'—';return'€ '+Number(n).toFixed(2).replace('.',',');}
+function ddtFmt(n){if(!n&&n!==0)return'—';return'€ '+Number(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function ddtYM(data){
   // "DD/MM/YYYY" → "YYYY-MM"
   const p=(data||'').split('/');
@@ -8027,15 +8027,18 @@ function ddtRenderSpese(){
     <div style="font-size:var(--fs-lg,20px);font-weight:800;color:${val?accent||'var(--accent)':'var(--text-dim)'};">${val||'—'}</div>
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">${sub}</div>
   </div>`;
+  // SAIMA è un fornitore attivo solo a gennaio/febbraio 2026 — da marzo in poi sparisce dai fornitori disponibili
+  const _fornVisibili=Object.entries(DDT_FORNITORI).filter(([nome])=>!(nome==='SAIMA'&&mon>='2026-03'));
+  const _bkfFornLabel=_fornVisibili.filter(([,c])=>c.reparto==='bkf').map(([n])=>n).join(' · ');
   h+=`<div style="display:flex;gap:10px;margin-bottom:16px;">
     ${kpi('DECA',hkTot?ddtFmt(hkTot):'',hkDdt+' DDT · Housekeeping','#2563eb')}
-    ${kpi('Fornitori Breakfast',bkfTot?ddtFmt(bkfTot):'',bkfDdt+' DDT · SDM · MARR · SAIMA · Cozzolino · Valgarda','#16a34a')}
+    ${kpi('Fornitori Breakfast',bkfTot?ddtFmt(bkfTot):'',bkfDdt+' DDT · '+_bkfFornLabel,'#16a34a')}
     ${kpi('Amonn',amonnTot?ddtFmt(amonnTot):'',amonnDdt+' DDT','#0d9488')}
   </div>`;
 
   // ── Chip fornitori (cliccabili) con mesi pills ──
-  h+=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:18px;">`;
-  Object.entries(DDT_FORNITORI).forEach(([nome,conf])=>{
+  h+=`<div style="display:grid;grid-template-columns:repeat(${_fornVisibili.length},1fr);gap:8px;margin-bottom:18px;">`;
+  _fornVisibili.forEach(([nome,conf])=>{
     const fDdt=monDdt.filter(d=>_nf(d)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const active=_ddtFilter===nome;
@@ -8145,8 +8148,8 @@ function ddtRenderList(){
     const artRows=(d.articoli||[]).map(a=>`<tr style="border-bottom:1px solid var(--border-light);">
       <td style="padding:6px 12px;font-size:var(--fs-xs);color:var(--text);">${a.descrizione||''}</td>
       <td style="padding:6px 12px;font-size:var(--fs-xs);text-align:right;color:var(--text-dim);white-space:nowrap;">${a.qta!=null?a.qta:''} ${a.unita||''}</td>
-      <td style="padding:6px 12px;font-size:var(--fs-xs);text-align:right;color:var(--text-dim);">${a.prezzo_unit!=null?'€ '+Number(a.prezzo_unit).toFixed(2).replace('.',','):''}</td>
-      <td style="padding:6px 12px;font-size:var(--fs-xs);text-align:right;font-weight:600;color:var(--text);">${a.totale!=null?'€ '+Number(a.totale).toFixed(2).replace('.',','):''}</td>
+      <td style="padding:6px 12px;font-size:var(--fs-xs);text-align:right;color:var(--text-dim);">${a.prezzo_unit!=null?'€ '+Number(a.prezzo_unit).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}):''}</td>
+      <td style="padding:6px 12px;font-size:var(--fs-xs);text-align:right;font-weight:600;color:var(--text);">${a.totale!=null?'€ '+Number(a.totale).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}):''}</td>
       <td></td><td></td><td></td><td></td>
     </tr>`).join('');
     // Main row
