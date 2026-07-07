@@ -338,6 +338,15 @@ function loadWeekData(data){
 }
 function buildWeekNav(){const nav=document.getElementById('weekNav');nav.innerHTML='';weekData.giorni.forEach((g,i)=>{const btn=document.createElement('button');btn.className='wday-btn'+(i===activeDay?' active':'');btn.textContent=g.label.split(' ')[0].substring(0,3);btn.title=g.label;btn.onclick=()=>{activeDay=i;renderDay(i);updateWeekNavActive();updateSidebarInfo();};nav.appendChild(btn);});document.getElementById('weekRangeLabel').textContent=weekData.giorni[0].label+' – '+weekData.giorni[weekData.giorni.length-1].label;}
 function updateWeekNavActive(){document.querySelectorAll('.wday-btn').forEach((b,i)=>b.classList.toggle('active',i===activeDay));}
+function changeDayOffset(delta){
+  if(!weekData||!weekData.giorni)return;
+  const newIdx=activeDay+delta;
+  if(newIdx<0||newIdx>=weekData.giorni.length)return;
+  activeDay=newIdx;
+  renderDay(activeDay);
+  updateWeekNavActive();
+  updateSidebarInfo();
+}
 const IS_ABSENT=v=>{if(!v)return false;const u=v.trim().toUpperCase();return['R','RIPOSO','OFF','FERIE'].includes(u);};
 function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(getShift(g.shifts,n))).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_ABSENT(getShift(g.shifts,n))).length+' non in servizio';}
 // Cerca lo shift di un membro DEPTS in modo case-insensitive
@@ -354,7 +363,12 @@ function renderDay(idx){
   const shiftsKeys=new Set(Object.keys(shifts).map(k=>k.toLowerCase()));
   const nonServizio=ALL_STAFF.filter(n=>shiftsKeys.has(n.toLowerCase())&&IS_REST(getShift(shifts,n)));
   let html='';
-  if(nonServizio.length)html+=`<div class="non-servizio-strip"><span class="ns-label">Non in servizio — ${g.label}</span>${nonServizio.map(n=>`<span class="ns-chip">${n}</span>`).join('')}</div>`;
+  html+=`<div class="non-servizio-strip">
+    <button onclick="changeDayOffset(-1)" title="Giorno precedente" style="border:1px solid rgba(198,40,40,.25);background:#fff;color:var(--red);border-radius:6px;width:22px;height:22px;line-height:1;cursor:pointer;flex-shrink:0;font-size:13px;">‹</button>
+    <span class="ns-label">Non in servizio — ${g.label}</span>
+    <button onclick="changeDayOffset(1)" title="Giorno successivo" style="border:1px solid rgba(198,40,40,.25);background:#fff;color:var(--red);border-radius:6px;width:22px;height:22px;line-height:1;cursor:pointer;flex-shrink:0;font-size:13px;">›</button>
+    ${nonServizio.length?nonServizio.map(n=>`<span class="ns-chip">${n}</span>`).join(''):`<span class="ns-chip" style="color:var(--text-dim);border-color:var(--border-light);">Tutti in servizio</span>`}
+  </div>`;
   const shiftRow=(n,sv,cls)=>`<div class="staff-row" style="cursor:pointer;" title="Clicca per correggere" onclick="editShift(${idx},'${n.replace(/'/g,"\\'")}')"><span class="sname">${n}</span><span class="sshift ${cls}">${sv||'—'}</span></div>`;
   html+='<div class="staff-grid">';
   Object.entries(DEPTS).forEach(([key,dept])=>{
