@@ -7974,11 +7974,7 @@ function ddtToggle(id){
   if(chev)chev.style.transform=open?'':'rotate(180deg)';
 }
 function ddtGet(){try{return JSON.parse(localStorage.getItem(DDT_KEY)||'[]');}catch(e){return[];}}
-function ddtNormForn(s){
-  if(!s)return s;
-  const norm=s.toLowerCase().replace(/[\s.\-_]/g,'');
-  return Object.keys(DDT_FORNITORI).find(k=>norm.includes(k.toLowerCase().replace(/[\s.\-_]/g,'')))||s;
-}
+function ddtNormForn(s){return ddtNormFornGeneric(s,DDT_FORNITORI);}
 function ddtSave(arr){
   const json=JSON.stringify(arr);
   try{localStorage.setItem(DDT_KEY,json);}catch(e){}

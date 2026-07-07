@@ -538,11 +538,7 @@ const DDT_BKF={
   Cozzolino:{color:'#e5e5e5',fg:'#000000', accent:'#000000', logo:'icone%20app%20breakfast/frutta.png', iconOnly:true},
   Valgarda: {color:'#f2eee2',fg:'#8a7643', accent:'#b99e5d', logo:'valgarda.png', logoH:76},
 };
-function ddtNormForn(s){
-  if(!s)return s;
-  const norm=s.toLowerCase().replace(/[\s.\-_]/g,'');
-  return Object.keys(DDT_BKF).find(k=>norm.includes(k.toLowerCase().replace(/[\s.\-_]/g,'')))||s;
-}
+function ddtNormForn(s){return ddtNormFornGeneric(s,DDT_BKF);}
 function ddtGetYM(d){
   const ym=ddtBkfYM(d.data);
   if(ym)return ym;
