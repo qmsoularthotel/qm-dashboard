@@ -245,23 +245,79 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
       ...g,
       date:g.date?new Date(g.date+'T12:00:00'):new Date()
     }));
-    // Salva in localStorage + cloud
-    try{
-      const _wts=Date.now();
-      const toSave={giorni:parsed.giorni.map(g=>({...g,date:g.date.toISOString()})),_ts:_wts};
-      localStorage.setItem('qm_weekData',JSON.stringify(toSave));
-      localStorage.setItem('qm_ts_turnoTs',String(_wts));
-      kvSet('qm_weekData',JSON.stringify(toSave));
-    }catch(e){}
-    loadWeekData(parsed);
-    const range=parsed.giorni[0].label+' – '+parsed.giorni[parsed.giorni.length-1].label;
-    ucSetState('turno','loaded',range);
-    setUploadTs('turnoTs');
-    // Forza overview alla data odierna
-    setTimeout(()=>{try{refreshOverviewForDate(new Date());}catch(e){}},100);
+    // Controllo di sicurezza: NON salvare subito. L'AI può leggere male una cella
+    // (es. scambiare due giorni della stessa persona) — prima di scrivere su KV e
+    // sincronizzare su tutti i dispositivi, mostra una tabella di revisione dove
+    // ogni valore letto va confrontato col documento originale e può essere corretto.
+    _turnoPendingParsed=parsed;
+    ucSetState('turno','loading','Verifica il turno prima di salvare');
+    renderTurnoReviewModal(parsed);
   }catch(err){
     ucSetState('turno','error','Errore caricamento');
   }
+}
+let _turnoPendingParsed=null;
+function renderTurnoReviewModal(parsed){
+  const names=[];
+  parsed.giorni.forEach(g=>Object.keys(g.shifts||{}).forEach(n=>{if(!names.includes(n))names.push(n);}));
+  const headerCells=parsed.giorni.map(g=>`<th style="padding:6px 8px;font-size:11px;font-weight:700;color:var(--text-dim);white-space:nowrap;">${g.label}</th>`).join('');
+  const bodyRows=names.map(n=>{
+    const nameEsc=n.replace(/"/g,'&quot;');
+    const cells=parsed.giorni.map((g,gi)=>{
+      const val=(g.shifts[n]||'').toString();
+      const esc=val.replace(/"/g,'&quot;');
+      return `<td style="padding:2px 4px;"><input class="turno-review-cell" data-name="${nameEsc}" data-day="${gi}" value="${esc}" style="width:100%;box-sizing:border-box;padding:4px 2px;font-size:11px;text-align:center;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"></td>`;
+    }).join('');
+    return `<tr><td style="padding:4px 8px;font-size:12px;font-weight:600;white-space:nowrap;position:sticky;left:0;background:var(--surface);">${n}</td>${cells}</tr>`;
+  }).join('');
+  const modal=document.createElement('div');
+  modal.id='turnoReviewModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML=`
+    <div style="background:var(--surface);border-radius:14px;width:100%;max-width:1150px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.3);">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border-light);">
+        <div style="font-weight:700;font-size:15px;color:var(--text);">⚠️ Controlla il turno prima di salvare</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">L'AI ha letto lo screenshot/PDF — confronta ogni valore col documento originale prima di confermare. Puoi correggere direttamente le celle qui sotto.</div>
+      </div>
+      <div style="overflow:auto;flex:1;padding:0 20px;">
+        <table style="border-collapse:collapse;width:100%;">
+          <thead><tr><th style="padding:6px 8px;position:sticky;left:0;background:var(--surface);"></th>${headerCells}</tr></thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border-light);display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="cancelTurnoReview()" style="padding:9px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:13px;">Annulla</button>
+        <button onclick="confirmTurnoReview()" style="padding:9px 20px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;font-size:13px;">✓ Conferma e salva</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+function cancelTurnoReview(){
+  document.getElementById('turnoReviewModal')?.remove();
+  _turnoPendingParsed=null;
+  ucSetState('turno','error','Caricamento annullato — turno precedente invariato');
+}
+function confirmTurnoReview(){
+  if(!_turnoPendingParsed)return;
+  document.querySelectorAll('.turno-review-cell').forEach(inp=>{
+    const name=inp.dataset.name,day=parseInt(inp.dataset.day);
+    if(_turnoPendingParsed.giorni[day])_turnoPendingParsed.giorni[day].shifts[name]=inp.value;
+  });
+  const parsed=_turnoPendingParsed;
+  document.getElementById('turnoReviewModal')?.remove();
+  try{
+    const _wts=Date.now();
+    const toSave={giorni:parsed.giorni.map(g=>({...g,date:g.date.toISOString()})),_ts:_wts};
+    localStorage.setItem('qm_weekData',JSON.stringify(toSave));
+    localStorage.setItem('qm_ts_turnoTs',String(_wts));
+    kvSet('qm_weekData',JSON.stringify(toSave));
+  }catch(e){}
+  loadWeekData(parsed);
+  const range=parsed.giorni[0].label+' – '+parsed.giorni[parsed.giorni.length-1].label;
+  ucSetState('turno','loaded',range);
+  setUploadTs('turnoTs');
+  setTimeout(()=>{try{refreshOverviewForDate(new Date());}catch(e){}},100);
+  _turnoPendingParsed=null;
 }
 // §§ TURNO — RENDER & NAVIGAZIONE (loadWeekData, renderDay, buildWeekNav)
 function loadWeekData(data){
