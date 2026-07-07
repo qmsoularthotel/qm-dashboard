@@ -337,16 +337,7 @@ function loadWeekData(data){
   document.getElementById('btnReload').style.display='block';
 }
 function buildWeekNav(){const nav=document.getElementById('weekNav');nav.innerHTML='';weekData.giorni.forEach((g,i)=>{const btn=document.createElement('button');btn.className='wday-btn'+(i===activeDay?' active':'');btn.textContent=g.label.split(' ')[0].substring(0,3);btn.title=g.label;btn.onclick=()=>{activeDay=i;renderDay(i);updateWeekNavActive();updateSidebarInfo();};nav.appendChild(btn);});document.getElementById('weekRangeLabel').textContent=weekData.giorni[0].label+' – '+weekData.giorni[weekData.giorni.length-1].label;}
-function updateWeekNavActive(){document.querySelectorAll('.wday-btn').forEach((b,i)=>b.classList.toggle('active',i===activeDay));}
-function changeDayOffset(delta){
-  if(!weekData||!weekData.giorni)return;
-  const newIdx=activeDay+delta;
-  if(newIdx<0||newIdx>=weekData.giorni.length)return;
-  activeDay=newIdx;
-  renderDay(activeDay);
-  updateWeekNavActive();
-  updateSidebarInfo();
-}
+function updateWeekNavActive(){document.querySelectorAll('.wday-btn').forEach(b=>{const i=Array.prototype.indexOf.call(b.parentElement.children,b);b.classList.toggle('active',i===activeDay);});}
 const IS_ABSENT=v=>{if(!v)return false;const u=v.trim().toUpperCase();return['R','RIPOSO','OFF','FERIE'].includes(u);};
 function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(getShift(g.shifts,n))).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_ABSENT(getShift(g.shifts,n))).length+' non in servizio';}
 // Cerca lo shift di un membro DEPTS in modo case-insensitive
@@ -364,9 +355,10 @@ function renderDay(idx){
   const nonServizio=ALL_STAFF.filter(n=>shiftsKeys.has(n.toLowerCase())&&IS_REST(getShift(shifts,n)));
   let html='';
   html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-    <button onclick="changeDayOffset(-1)" title="Giorno precedente" style="border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:6px;width:24px;height:24px;line-height:1;cursor:pointer;flex-shrink:0;font-size:13px;">‹</button>
-    <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${g.label}</span>
-    <button onclick="changeDayOffset(1)" title="Giorno successivo" style="border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:6px;width:24px;height:24px;line-height:1;cursor:pointer;flex-shrink:0;font-size:13px;">›</button>
+    <div style="display:flex;gap:2px;flex-shrink:0;">
+      ${weekData.giorni.map((wg,wi)=>`<button onclick="activeDay=${wi};renderDay(${wi});updateWeekNavActive();updateSidebarInfo();" class="wday-btn${wi===idx?' active':''}" style="flex:none;padding:3px 8px;">${wg.label.split(' ')[0].substring(0,3)}</button>`).join('')}
+    </div>
+    <span style="font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;">${g.label}</span>
   </div>`;
   html+=`<div class="non-servizio-strip"><span class="ns-label">Non in servizio</span>${nonServizio.length?nonServizio.map(n=>`<span class="ns-chip">${n}</span>`).join(''):`<span class="ns-chip" style="color:var(--text-dim);border-color:var(--border-light);">Tutti in servizio</span>`}</div>`;
   const shiftRow=(n,sv,cls)=>`<div class="staff-row" style="cursor:pointer;" title="Clicca per correggere" onclick="editShift(${idx},'${n.replace(/'/g,"\\'")}')"><span class="sname">${n}</span><span class="sshift ${cls}">${sv||'—'}</span></div>`;
