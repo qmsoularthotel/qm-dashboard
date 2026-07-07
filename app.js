@@ -363,12 +363,12 @@ function renderDay(idx){
   const shiftsKeys=new Set(Object.keys(shifts).map(k=>k.toLowerCase()));
   const nonServizio=ALL_STAFF.filter(n=>shiftsKeys.has(n.toLowerCase())&&IS_REST(getShift(shifts,n)));
   let html='';
-  html+=`<div class="non-servizio-strip">
-    <button onclick="changeDayOffset(-1)" title="Giorno precedente" style="border:1px solid rgba(198,40,40,.25);background:#fff;color:var(--red);border-radius:6px;width:22px;height:22px;line-height:1;cursor:pointer;flex-shrink:0;font-size:13px;">‹</button>
-    <span class="ns-label">Non in servizio — ${g.label}</span>
-    <button onclick="changeDayOffset(1)" title="Giorno successivo" style="border:1px solid rgba(198,40,40,.25);background:#fff;color:var(--red);border-radius:6px;width:22px;height:22px;line-height:1;cursor:pointer;flex-shrink:0;font-size:13px;">›</button>
-    ${nonServizio.length?nonServizio.map(n=>`<span class="ns-chip">${n}</span>`).join(''):`<span class="ns-chip" style="color:var(--text-dim);border-color:var(--border-light);">Tutti in servizio</span>`}
+  html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+    <button onclick="changeDayOffset(-1)" title="Giorno precedente" style="border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:6px;width:24px;height:24px;line-height:1;cursor:pointer;flex-shrink:0;font-size:13px;">‹</button>
+    <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${g.label}</span>
+    <button onclick="changeDayOffset(1)" title="Giorno successivo" style="border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:6px;width:24px;height:24px;line-height:1;cursor:pointer;flex-shrink:0;font-size:13px;">›</button>
   </div>`;
+  html+=`<div class="non-servizio-strip"><span class="ns-label">Non in servizio</span>${nonServizio.length?nonServizio.map(n=>`<span class="ns-chip">${n}</span>`).join(''):`<span class="ns-chip" style="color:var(--text-dim);border-color:var(--border-light);">Tutti in servizio</span>`}</div>`;
   const shiftRow=(n,sv,cls)=>`<div class="staff-row" style="cursor:pointer;" title="Clicca per correggere" onclick="editShift(${idx},'${n.replace(/'/g,"\\'")}')"><span class="sname">${n}</span><span class="sshift ${cls}">${sv||'—'}</span></div>`;
   html+='<div class="staff-grid">';
   Object.entries(DEPTS).forEach(([key,dept])=>{
