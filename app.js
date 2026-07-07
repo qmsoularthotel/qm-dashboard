@@ -7339,7 +7339,6 @@ const DDT_FORNITORI={
   Cozzolino: {reparto:'bkf', rLabel:'Breakfast',    color:'#fce7f3', fg:'#9d174d', accent:'#db2777'},
   Valgarda:  {reparto:'bkf', rLabel:'Breakfast',    color:'#ede9fe', fg:'#5b21b6', accent:'#7c3aed'},
 };
-const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 // Riassegnazione manuale categoria prodotto (solo Spese Fornitori): una volta spostato un
 // prodotto in una categoria, resta lì per sempre — in tutti i mesi già caricati e in quelli
 // futuri — perché la chiave è la descrizione del prodotto, non un mese/DDT specifico.
@@ -8062,7 +8061,7 @@ function ddtRenderSpese(){
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">${sub}</div>
   </div>`;
   // SAIMA è un fornitore attivo solo a gennaio/febbraio 2026 — da marzo in poi sparisce dai fornitori disponibili
-  const _fornVisibili=Object.entries(DDT_FORNITORI).filter(([nome])=>!(nome==='SAIMA'&&mon>='2026-03')&&!(nome==='MARR'&&mon==='2026-01')&&!(nome==='Valgarda'&&mon<'2026-05'));
+  const _fornVisibili=Object.entries(DDT_FORNITORI).filter(([nome])=>!ddtSupplierHidden(nome,mon));
   const _bkfFornLabel=_fornVisibili.filter(([,c])=>c.reparto==='bkf').map(([n])=>n).join(' · ');
   h+=`<div style="display:flex;gap:10px;margin-bottom:16px;">
     ${kpi('DECA',hkTot?ddtFmt(hkTot):'',hkDdt+' DDT · Housekeeping','#2563eb')}

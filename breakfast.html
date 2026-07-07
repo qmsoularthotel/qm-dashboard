@@ -158,6 +158,7 @@ body{padding-bottom:62px;}
   </div>
 </nav>
 
+<script src="ddt-shared.js?v=1"></script>
 <script>
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
 async function qmCheckAppStatus(){
@@ -548,7 +549,6 @@ function ddtGetYM(d){
   const dt=new Date(d.ts||Date.now());
   return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
 }
-const DDT_MON=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 let _ddtMonth='';
 let _analMese='';
 let _ddtFilter='';
@@ -644,7 +644,7 @@ function ddtBkfRenderSpese(){
   </div>`;
 
   h+=`<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px;">`;
-  Object.entries(DDT_BKF).filter(([nome])=>!(nome==='SAIMA'&&mon>='2026-03')&&!(nome==='MARR'&&mon==='2026-01')&&!(nome==='Valgarda'&&mon<'2026-05')).forEach(([nome,conf])=>{
+  Object.entries(DDT_BKF).filter(([nome])=>!ddtSupplierHidden(nome,mon)).forEach(([nome,conf])=>{
     const fDdt=monDdt.filter(d=>(ddtNormForn(d.fornitore)||d.fornitore)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const active=_ddtFilter===nome;
