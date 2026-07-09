@@ -6834,43 +6834,56 @@ function cmRender(state,key){
   const emp=CM_ROOMS.filter(r=>cmStatus(r)==='empty');
   const pnd=CM_ROOMS.filter(r=>cmStatus(r)==='pending');
 
-  let h=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-    <div style="font-size:var(--fs-xs);color:var(--text-dim);">${dateStr}</div>
-    <div style="display:flex;gap:7px;align-items:center;">
-      <button onclick="cmPrintBottle()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);padding:7px 14px;border-radius:8px;font-weight:700;font-size:var(--fs-xxs);cursor:pointer;">🖨️ Stampa A4</button>
-      <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;padding:7px 14px;border-radius:8px;font-weight:700;font-size:var(--fs-xxs);text-decoration:none;">📱 Apri app mobile</a>
+  const pct=CM_ROOMS.length?visited/CM_ROOMS.length:0;
+  const ringCirc=339;
+  const ringOffset=Math.round(ringCirc-ringCirc*pct);
+  let h=`<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;">
+    <div>
+      <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-weight:700;margin-bottom:2px;">${dateStr}</div>
+      <div style="font-size:22px;font-weight:800;letter-spacing:-.01em;">Distribuzione Culligan</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="cmPrintBottle()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);padding:9px 16px;border-radius:9px;font-weight:700;font-size:var(--fs-xxs);cursor:pointer;">🖨️ Stampa A4</button>
+      <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;padding:9px 16px;border-radius:9px;font-weight:700;font-size:var(--fs-xxs);text-decoration:none;">📱 Apri app mobile</a>
     </div>
   </div>`;
-  h+=`<div style="background:var(--surface);border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-      <span style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;">Camere visitate</span>
-      <span style="font-size:var(--fs-xs);font-weight:800;color:var(--accent);">${visited} / ${CM_ROOMS.length}</span>
+  h+=`<div style="display:grid;grid-template-columns:170px 1fr;gap:20px;background:var(--surface);border:1px solid var(--border-light);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+      <div style="position:relative;width:130px;height:130px;">
+        <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(-90deg);">
+          <circle cx="65" cy="65" r="54" fill="none" stroke="var(--surface2)" stroke-width="10"/>
+          <circle cx="65" cy="65" r="54" fill="none" stroke="var(--accent)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${ringCirc}" stroke-dashoffset="${ringOffset}" style="transition:stroke-dashoffset .6s cubic-bezier(.65,0,.35,1);"/>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div style="font-size:28px;font-weight:800;line-height:1;">${visited}/${CM_ROOMS.length}</div>
+          <div style="font-size:10px;color:var(--text-dim);font-weight:700;margin-top:2px;">CAMERE</div>
+        </div>
+      </div>
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">Visitate oggi</div>
     </div>
-    <div style="height:8px;background:#E5E7EB;border-radius:4px;overflow:hidden;">
-      <div style="height:100%;background:linear-gradient(90deg,var(--accent),#4A7FC1);border-radius:4px;width:${Math.round(visited/CM_ROOMS.length*100)}%;transition:width .4s;"></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+      ${[['💧',btl.length,'Da mettere','var(--accent-bg)','var(--accent)','#B8CEEE'],['✅',ok.length,'Non consumate','var(--green-bg)','var(--green)','#bfe3c2'],['⭕',pnd.length,'Da visitare','var(--surface2)','var(--text-dim)','var(--border-light)']].map(([ico,n,lbl,bg,col,brd])=>`
+      <div style="background:${bg};border:1px solid ${brd};border-radius:12px;padding:14px 12px;text-align:center;">
+        <div style="font-size:20px;line-height:1;">${ico}</div>
+        <div style="font-size:24px;font-weight:800;color:${col};line-height:1.1;margin-top:4px;">${n}</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;font-weight:600;">${lbl.toUpperCase()}</div>
+      </div>`).join('')}
     </div>
-  </div>`;
-  h+=`<div style="display:flex;gap:8px;margin-bottom:14px;">
-    ${[['💧',btl.length,'Da mettere','var(--accent)'],['✅',ok.length,'Non consumate','var(--green)'],['⭕',pnd.length,'Da visitare','var(--text-dim)']].map(([ico,n,lbl,col])=>`
-    <div style="flex:1;background:var(--surface);border-radius:10px;padding:12px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-      <div style="font-size:1.3rem;font-weight:800;color:${col};line-height:1;">${ico} ${n}</div>
-      <div style="font-size:0.6rem;color:var(--text-dim);margin-top:3px;">${n===1?'camera':'camere'} · ${lbl}</div>
-    </div>`).join('')}
   </div>`;
   if(btl.length>0){
-    h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#FEF3C7;color:#92400E;display:flex;align-items:center;gap:6px;">💧 Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}</div>
-      <div style="padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px;">${btl.map(r=>`<span style="padding:5px 14px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:var(--accent-bg);color:var(--accent);border:1.5px solid #B8CEEE;">${r}</span>`).join('')}</div>
+    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);">
+      <div style="padding:13px 18px;font-size:var(--fs-xs);font-weight:700;background:#FEF3C7;color:#92400E;display:flex;align-items:center;gap:6px;">💧 Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}</div>
+      <div style="padding:14px 16px;display:flex;flex-wrap:wrap;gap:8px;">${btl.map(r=>`<span style="padding:6px 15px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:var(--accent-bg);color:var(--accent);border:1.5px solid #B8CEEE;">${r}</span>`).join('')}</div>
     </div>`;
   }else{
-    h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#D1FAE5;color:#065F46;">💧 Nessuna bottiglia consumata — niente da portare ✅</div>
+    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);">
+      <div style="padding:13px 18px;font-size:var(--fs-xs);font-weight:700;background:#D1FAE5;color:#065F46;">💧 Nessuna bottiglia consumata — niente da portare ✅</div>
     </div>`;
   }
   if(pnd.length>0){
-    h+=`<div style="background:var(--surface);border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-      <div style="padding:12px 16px;font-size:var(--fs-xs);font-weight:700;background:#F3F4F6;color:var(--text-dim);">⭕ Non ancora visitate — ${pnd.length} ${pnd.length===1?'camera':'camere'}</div>
-      <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:7px;">${pnd.map(r=>`<span style="padding:5px 14px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:#fff;color:#444;border:1.5px solid #C9CDD4;">${r}</span>`).join('')}</div>
+    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);">
+      <div style="padding:13px 18px;font-size:var(--fs-xs);font-weight:700;background:#F3F4F6;color:var(--text-dim);">⭕ Non ancora visitate — ${pnd.length} ${pnd.length===1?'camera':'camere'}</div>
+      <div style="padding:14px 16px;display:flex;flex-wrap:wrap;gap:8px;">${pnd.map(r=>`<span style="padding:6px 15px;border-radius:20px;font-size:var(--fs-xs);font-weight:700;background:#fff;color:#444;border:1.5px solid #C9CDD4;">${r}</span>`).join('')}</div>
     </div>`;
   }
   el.innerHTML=h;
@@ -6926,13 +6939,15 @@ function cmRenderWeeklyQC(perRoom,totalChecks,weekFrom,weekTo,days){
   const roomsChecked=CM_ROOMS.filter(r=>perRoom[r]>0);
   const roomsNot=CM_ROOMS.filter(r=>!perRoom[r]);
   // Righe per camera: semplici e leggibili
+  const maxN=Math.max(1,...roomsChecked.map(r=>perRoom[r]));
   const roomRows=roomsChecked.length?roomsChecked.map((r,idx)=>{
     const n=perRoom[r];
     const col=n>=5?'var(--green)':n>=3?'var(--accent)':'var(--text)';
-    return`<div style="display:flex;align-items:baseline;gap:10px;padding:9px 14px;${idx>0?'border-top:1px solid var(--border-light)':''};">
+    return`<div style="display:flex;align-items:baseline;gap:10px;padding:10px 18px;${idx>0?'border-top:1px solid var(--border-light)':''};">
       <span style="font-size:14px;font-weight:700;color:var(--text);flex:1;">${r}</span>
-      <span style="font-size:22px;font-weight:900;color:${col};line-height:1;">${n}</span>
-      <span style="font-size:11px;color:var(--text-dim);min-width:30px;">${n===1?'volta':'volte'}</span>
+      <div style="flex:2;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;"><div style="height:100%;border-radius:3px;background:var(--accent);width:${Math.round(n/maxN*100)}%;"></div></div>
+      <span style="font-size:20px;font-weight:900;color:${col};line-height:1;min-width:22px;text-align:right;">${n}</span>
+      <span style="font-size:10px;color:var(--text-dim);min-width:36px;">${n===1?'volta':'volte'}</span>
     </div>`;
   }).join(''):`<div style="color:var(--text-dim);font-size:13px;padding:12px 14px;">Nessun controllo questa settimana.</div>`;
   // Testo anteprima WhatsApp
@@ -6942,20 +6957,20 @@ function cmRenderWeeklyQC(perRoom,totalChecks,weekFrom,weekTo,days){
   const section=document.createElement('div');
   section.style.cssText='margin-top:14px;';
   section.innerHTML=`
-    <div style="background:var(--surface);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-      <div style="padding:12px 16px;background:var(--accent-bg);border-bottom:1px solid #B8CEEE;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);">
+      <div style="padding:16px 18px;background:linear-gradient(135deg,var(--accent),#2c527f);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
         <div>
-          <div style="font-size:var(--fs-xs);font-weight:700;color:var(--accent);">📊 Quality Check Settimanale SoulArt Hotel</div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">${weekFrom} → ${weekTo}</div>
+          <div style="font-size:var(--fs-xs);font-weight:700;">📊 Quality Check Settimanale SoulArt Hotel</div>
+          <div style="font-size:var(--fs-xxs);opacity:.8;margin-top:2px;">${weekFrom} → ${weekTo}</div>
         </div>
         <div style="text-align:right;">
-          <span style="font-size:22px;font-weight:900;color:var(--accent);">${roomsChecked.length}</span>
-          <span style="font-size:var(--fs-xxs);color:var(--text-dim);"> / ${CM_ROOMS.length} camere</span>
+          <span style="font-size:26px;font-weight:800;">${roomsChecked.length}</span>
+          <span style="font-size:var(--fs-xxs);opacity:.75;"> / ${CM_ROOMS.length} camere</span>
         </div>
       </div>
-      <div style="padding:4px 0;">${roomRows}</div>
-      ${roomsNot.length?`<div style="padding:8px 14px;border-top:1px solid var(--border-light);"><span style="font-size:var(--fs-xxs);color:var(--text-dim);">Non visitate: ${roomsNot.join(', ')}</span></div>`:''}
-      <div style="padding:10px 14px;border-top:1px solid var(--border-light);display:flex;flex-direction:column;gap:8px;">
+      <div style="padding:6px 0;">${roomRows}</div>
+      ${roomsNot.length?`<div style="padding:8px 18px;border-top:1px solid var(--border-light);"><span style="font-size:var(--fs-xxs);color:var(--text-dim);">Non visitate: ${roomsNot.join(', ')}</span></div>`:''}
+      <div style="padding:12px 18px;border-top:1px solid var(--border-light);display:flex;flex-direction:column;gap:8px;">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <a href="https://wa.me/393274919588?text=${waText}" target="_blank" style="display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-xs);padding:10px 18px;border-radius:10px;background:#25D366;color:#fff;text-decoration:none;font-weight:700;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.122 1.528 5.857L.057 23.882a.5.5 0 0 0 .607.65l6.277-1.638A11.944 11.944 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.956 9.956 0 0 1-5.13-1.418l-.36-.214-3.733.974.998-3.647-.236-.374A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
