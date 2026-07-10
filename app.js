@@ -8104,28 +8104,28 @@ function ddtRenderSpese(){
   // ── Lista DDT (visibile solo quando chip selezionato) ──
   h+=`<div id="ddtListSection"></div>`;
 
-  // ── Storico 12 mesi — accordion ──
+  // ── Storico 12 mesi — accordion, una colonna per fornitore ──
   const now=new Date();
   const months=[];
   for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
-  const byMon={};months.forEach(m=>{byMon[m]={hk:0,bkf:0};});
-  all.forEach(d=>{const ym=ddtYM(d.data);if(!byMon[ym])return;const rp=_repOf(d);if(rp==='hk')byMon[ym].hk+=(d.totale_ordine||0);else byMon[ym].bkf+=(d.totale_ordine||0);});
+  const fornList=Object.keys(DDT_FORNITORI);
+  const byMon={};months.forEach(m=>{byMon[m]={};fornList.forEach(f=>{byMon[m][f]=0;});});
+  all.forEach(d=>{const ym=ddtYM(d.data);if(!byMon[ym])return;const nf=_nf(d);if(byMon[ym][nf]==null)return;byMon[ym][nf]+=(d.totale_ordine||0);});
   const storId='storico-12m';
-  const th=s=>`<th style="text-align:${s==='Mese'?'left':'right'};padding:7px 12px;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border-light);">${s}</th>`;
+  const th=s=>`<th style="text-align:${s==='Mese'?'left':'right'};padding:7px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border-light);white-space:nowrap;">${s}</th>`;
   h+=`<div style="margin-top:16px;background:var(--surface);border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">
     <div onclick="ddtToggle('${storId}')" style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;">
       <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">Storico 12 mesi</span>
       <span id="ddt-chev-${storId}" style="color:var(--text-dim);font-size:11px;display:inline-block;transition:transform .2s;">▼</span>
     </div>
-    <div id="ddt-body-${storId}" style="display:none;border-top:1px solid var(--border-light);">
+    <div id="ddt-body-${storId}" style="display:none;border-top:1px solid var(--border-light);overflow-x:auto;">
       <table style="border-collapse:collapse;width:100%;">
-      <thead><tr>${th('Mese')}${th('Housekeeping')}${th('Breakfast')}</tr></thead><tbody>`;
+      <thead><tr>${th('Mese')}${fornList.map(f=>th(f)).join('')}</tr></thead><tbody>`;
   [...months].reverse().forEach(ym=>{
     const r=byMon[ym];const isCur=ym===mon;
     h+=`<tr style="background:${isCur?'var(--accent-bg)':''}" >
-      <td style="padding:7px 12px;font-size:var(--fs-xs);font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${ddtMonLabel(ym)}</td>
-      <td style="padding:7px 12px;font-size:var(--fs-xs);text-align:right;color:${r.hk?'var(--text-dim)':'var(--text-dim)'};">${r.hk?ddtFmt(r.hk):'—'}</td>
-      <td style="padding:7px 12px;font-size:var(--fs-xs);text-align:right;color:${r.bkf?'var(--text)':'var(--text-dim)'};">${r.bkf?ddtFmt(r.bkf):'—'}</td>
+      <td style="padding:7px 12px;font-size:var(--fs-xs);font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};white-space:nowrap;">${ddtMonLabel(ym)}</td>
+      ${fornList.map(f=>`<td style="padding:7px 10px;font-size:var(--fs-xs);text-align:right;color:${r[f]?'var(--text)':'var(--text-dim)'};">${r[f]?ddtFmt(r[f]):'—'}</td>`).join('')}
     </tr>`;
   });
   h+=`</tbody></table></div></div>`;
