@@ -7348,6 +7348,7 @@ const DDT_KEY='qm_ddt';
 const DDT_FORNITORI={
   DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#dbeafe', fg:'#1d4ed8', accent:'#2563eb'},
   Amonn:     {reparto:'altro', rLabel:'Altro',       color:'#ccfbf1', fg:'#0f766e', accent:'#0d9488'},
+  Vistaprint:{reparto:'altro', rLabel:'Altro',       color:'#e0e7ff', fg:'#3730a3', accent:'#4f46e5'},
   SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#dcfce7', fg:'#166534', accent:'#16a34a'},
   SAIMA:     {reparto:'bkf', rLabel:'Breakfast',    color:'#f5efe9', fg:'#2d1c12', accent:'#6b4a2f'},
   MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fef3c7', fg:'#92400e', accent:'#d97706'},
@@ -7422,11 +7423,16 @@ function ddtBuildAnalisi(){
   // ── Carica storico coperti ──
   let bkfHist={};
   try{bkfHist=JSON.parse(localStorage.getItem('qm_bkf_monthly_history')||'{}');}catch(e){}
-  // Aggrega per mese YYYY-MM → {bb, ro}
+  // Aggrega per mese YYYY-MM → {bb, ro} — mese corrente: solo date ≤ oggi
+  // (altrimenti il totale include giorni futuri già presenti nello storico,
+  // disallineandosi dall'etichetta "al gg/mm" mostrata in tabella)
+  const _todayCop=new Date();_todayCop.setHours(23,59,59,999);
+  const _nowYMCop=_todayCop.getFullYear()+'-'+String(_todayCop.getMonth()+1).padStart(2,'0');
   const copertiPerMese={};
   Object.entries(bkfHist).forEach(([k,v])=>{
     if(k.length!==10)return;
     const ym=k.substring(0,7);
+    if(ym===_nowYMCop){const dt=new Date(k+'T00:00:00');if(dt>_todayCop)return;}
     if(!copertiPerMese[ym])copertiPerMese[ym]={bb:0,ro:0};
     copertiPerMese[ym].bb+=(v.bb||0);
     copertiPerMese[ym].ro+=(v.ro||0);
