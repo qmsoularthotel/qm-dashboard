@@ -7349,11 +7349,11 @@ const DDT_FORNITORI={
   DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#dbeafe', fg:'#1d4ed8', accent:'#2563eb'},
   Amonn:     {reparto:'altro', rLabel:'Altro',       color:'#ccfbf1', fg:'#0f766e', accent:'#0d9488'},
   Vistaprint:{reparto:'altro', rLabel:'Altro',       color:'#e0e7ff', fg:'#3730a3', accent:'#4f46e5'},
-  SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#dcfce7', fg:'#166534', accent:'#16a34a'},
+  SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#e0e1f5', fg:'#292b82', accent:'#292b82'},
   SAIMA:     {reparto:'bkf', rLabel:'Breakfast',    color:'#f5efe9', fg:'#2d1c12', accent:'#6b4a2f'},
-  MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fef3c7', fg:'#92400e', accent:'#d97706'},
-  Cozzolino: {reparto:'bkf', rLabel:'Breakfast',    color:'#fce7f3', fg:'#9d174d', accent:'#db2777'},
-  Valgarda:  {reparto:'bkf', rLabel:'Breakfast',    color:'#ede9fe', fg:'#5b21b6', accent:'#7c3aed'},
+  MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fbdadc', fg:'#db0d15', accent:'#db0d15'},
+  Cozzolino: {reparto:'bkf', rLabel:'Breakfast',    color:'#e5e5e5', fg:'#000000', accent:'#000000'},
+  Valgarda:  {reparto:'bkf', rLabel:'Breakfast',    color:'#f2eee2', fg:'#8a7643', accent:'#b99e5d'},
 };
 // Riassegnazione manuale categoria prodotto (solo Spese Fornitori): una volta spostato un
 // prodotto in una categoria, resta lì per sempre — in tutti i mesi già caricati e in quelli
