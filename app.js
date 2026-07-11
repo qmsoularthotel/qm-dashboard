@@ -5378,7 +5378,13 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
       // per evidenziarle e permettere di stampare solo quelle — solo se il caricamento
       // precedente era per lo stesso giorno, altrimenti confronteremmo con ieri
       if(_rcSameDayAsPrev){
-        const _rcNormName=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
+        // Chiave per nome tollerante a ordine parole/accenti/maiuscole: l'AI può leggere
+        // lo stesso nome in modo leggermente diverso tra un upload e l'altro (es. "Priva Yeela"
+        // vs "Yeela Priva") — confrontando l'insieme ordinato delle parole invece della stringa
+        // esatta si evita di segnare come "nuova prenotazione" chi ha solo cambiato camera.
+        const _rcNormName=s=>String(s||'').trim().toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+          .split(/\s+/).filter(w=>w.length>1).sort().join(' ');
         const _prevGuests=Array.isArray(guestsData)?guestsData:[];
         const _prevByName={};
         _prevGuests.forEach(g=>{const k=_rcNormName(g.nome);if(k)_prevByName[k]=g;});
