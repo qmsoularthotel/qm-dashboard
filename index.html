@@ -523,6 +523,7 @@
             <div class="rc-toolbar-left"><span class="rc-toolbar-title">Registration cards</span><span class="rc-count-badge" id="rcCountBadge">—</span></div>
             <div style="display:flex;gap:8px;">
               <button class="btn-ghost" onclick="rcResetApp()">Carica altro</button>
+              <button id="rcPrintHighlightBtn" onclick="rcPrintHighlighted()" style="display:none;background:var(--red-bg,#ffebee);color:var(--red,#c62828);border:1px solid var(--red,#c62828);padding:8px 16px;border-radius:6px;font-size:var(--fs-sm);font-weight:600;cursor:pointer;align-items:center;"></button>
               <button class="btn-primary" onclick="preparePrint(null)">Stampa tutte</button>
             </div>
           </div>
@@ -1568,7 +1569,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=1"></script>
-<script src="app.js?v=477-20260711"></script>
+<script src="app.js?v=478-20260711"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
