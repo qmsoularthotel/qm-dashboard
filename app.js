@@ -5336,6 +5336,7 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     arriviUpdateKpi();
     // Aggiorna RC cards: arrivi + fermate arrivate OGGI (stessa data del documento)
     let _rcCardsOk=true;
+    let _rcNoneNeeded=false;
     (function(){
       // Claude ora classifica già in "arrivi" tutti gli ospiti con check-in oggi,
       // anche se nel PDF erano già in sezione "In Casa"
@@ -5350,15 +5351,24 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
         checkout:a.partenza?rcFmtDate(a.partenza,year):'',
         origine:a.origine||''
       });
-      const guests=(arriviData.arrivi||[]).map(toGuest).filter(g=>g.nome&&g.nome.trim());
-      if(!guests.length){_rcCardsOk=false;return;}
+      // Principe/Umberto e Mastrangelo non necessitano di registration card
+      const _rcExclStruct=new Set(['PR','MS']);
+      const guests=(arriviData.arrivi||[]).filter(a=>!_rcExclStruct.has((a.struttura||'').toUpperCase())).map(toGuest).filter(g=>g.nome&&g.nome.trim());
+      if(!guests.length){
+        // Se gli arrivi grezzi c'erano ma erano tutti Principe/Mastrangelo, non è un errore di parsing
+        const _hadRawArrivi=arriviData.arrivi.some(a=>(a.ospite||'').trim());
+        if(_hadRawArrivi){_rcNoneNeeded=true;}else{_rcCardsOk=false;}
+        return;
+      }
       document.getElementById('rcUploadZone').style.display='none';
       document.getElementById('rcProcessing').style.display='none';
       rcRenderCards(guests);
     })();
     // Se l'analisi non ha prodotto arrivi validi, avvisa chiaramente invece di fallire in silenzio
     // (le registration card resterebbero quelle vecchie senza che nessuno se ne accorga)
-    if(!_rcCardsOk){
+    if(_rcNoneNeeded){
+      ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi (nessuna RC — solo Principe/Mastrangelo)');
+    }else if(!_rcCardsOk){
       ucSetState('arrivi','error',arriviData.data+' · 0 arrivi rilevati — verifica il documento');
       alert('Attenzione: dal documento caricato non risultano arrivi validi.\nLe registration card NON sono state aggiornate.\nControlla il file e ricarica il Riepilogo Reception.');
     }else if(_arriviWarning){
