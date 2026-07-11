@@ -398,15 +398,17 @@ select.form-input option{background:var(--surface2);color:var(--text);}
 .btn-modal-close{font-size:var(--fs-sm);padding:5px 12px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:5px;cursor:pointer;}
 .rc-modal-body{padding:18px;max-height:80vh;overflow-y:auto;}
 .mp .pc-header{background:#1A1916;padding:14px 18px;border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:space-between;}
-.mp .pc-title{font-size:12pt;font-weight:600;color:#fff;font-family:'Helvetica Neue',Arial,sans-serif;}
-.mp .pc-sub{font-size:6.5pt;text-transform:uppercase;letter-spacing:.1em;color:#9A9890;margin-top:2px;}
-.mp .pc-header-right{text-align:right;}.mp .pc-rlabel{font-size:6pt;text-transform:uppercase;color:#9A9890;margin-bottom:2px;}
-.mp .pc-room{font-size:20pt;font-weight:600;color:#fff;line-height:1;}
+.mp .pc-hotel-wrap{display:flex;align-items:center;gap:10px;}
+.mp .pc-logo{width:36px;height:36px;object-fit:contain;flex-shrink:0;}
+.mp .pc-hotel-name{font-size:12pt;font-weight:600;color:#fff;line-height:1.2;margin-bottom:3px;font-family:'Helvetica Neue',Arial,sans-serif;}
+.mp .pc-sub{font-size:6.5pt;text-transform:uppercase;letter-spacing:.1em;color:#9A9890;margin-top:0;}
+.mp .pc-room-box{text-align:center;}.mp .pc-rlabel{font-size:6pt;text-transform:uppercase;color:#9A9890;margin-bottom:8px;}
+.mp .pc-room{font-size:20pt;font-weight:600;color:#fff;line-height:1;text-align:center;}
 .mp .pc-body{border:1px solid #E0DED8;border-top:none;border-radius:0 0 6px 6px;padding:12px 15px 14px;}
 .mp .pc-name{font-size:16pt;font-weight:600;padding-bottom:8px;border-bottom:1.5px solid #1A1916;margin-bottom:12px;color:#1A1916;}
-.mp .pc-dates{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #E0DED8;border-radius:4px;overflow:hidden;margin-bottom:12px;}
-.mp .pc-dc{padding:7px 9px;border-right:1px solid #E0DED8;}.mp .pc-dc:last-child{border-right:none;}
-.mp .pc-dl{font-size:6pt;text-transform:uppercase;color:#6A6860;margin-bottom:3px;line-height:1.4;}.mp .pc-dv{font-size:11pt;font-weight:600;color:#1A1916;}
+.mp .pc-dates{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid #E0DED8;border-radius:4px;overflow:hidden;margin-bottom:12px;}
+.mp .pc-dc{padding:7px 6px;border-right:1px solid #E0DED8;}.mp .pc-dc:last-child{border-right:none;}
+.mp .pc-dl{font-size:5.5pt;text-transform:uppercase;color:#6A6860;margin-bottom:3px;line-height:1.4;}.mp .pc-dv{font-size:9.5pt;font-weight:600;color:#1A1916;}
 .mp .pc-bilingual{display:grid;grid-template-columns:1fr 1fr;border:1px solid #E0DED8;border-radius:4px;overflow:hidden;margin-bottom:12px;}
 .mp .pc-lc{padding:9px 11px;}.mp .pc-lc:first-child{border-right:1px solid #E0DED8;}
 .mp .pc-ltag{font-size:6.5pt;font-weight:600;text-transform:uppercase;color:#1A1916;background:#F0EFEC;display:inline-block;padding:1px 6px;border-radius:2px;margin-bottom:4px;}
