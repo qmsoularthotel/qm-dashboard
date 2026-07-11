@@ -5294,8 +5294,22 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const _normDM=s=>{const m=String(s||'').match(/(\d{1,2})\/(\d{1,2})/);return m?m[1].padStart(2,'0')+'/'+m[2].padStart(2,'0'):'';};
     const _docDM=_normDM(newData.data);
     if(_docDM)newData.arrivi=newData.arrivi.filter(a=>!a.arrivo||_normDM(a.arrivo)===_docDM);
-    // Guardia deterministica: chi è già in "fermate" (in casa da prima) non può essere anche un "arrivo" di oggi
     const _normCam=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
+    // Guardia deterministica: chi ha già fatto check-in prima dell'upload finisce nella sezione
+    // "In Casa" del documento e l'AI a volte lo classifica in "fermate" invece che in "arrivi",
+    // anche se la sua data di arrivo coincide con quella del documento — in tal caso è comunque
+    // un arrivo di oggi (semplicemente già check-in-ato), non va perso: lo spostiamo qui in modo
+    // deterministico, senza affidarci solo al prompt AI (non fatto in modo diverso a seconda che
+    // sia un check-in o un check-out: stessa logica usata per non perdere le fermate con partenza=oggi).
+    if(_docDM){
+      const daSpostare=(newData.fermate||[]).filter(f=>f.arrivo&&_normDM(f.arrivo)===_docDM);
+      if(daSpostare.length){
+        newData.arrivi=newData.arrivi.concat(daSpostare);
+        const spostateCam=new Set(daSpostare.map(f=>_normCam(f.camera)));
+        newData.fermate=newData.fermate.filter(f=>!spostateCam.has(_normCam(f.camera)));
+      }
+    }
+    // Guardia deterministica: chi è già in "fermate" (in casa da prima) non può essere anche un "arrivo" di oggi
     const _fermateCam=new Set((newData.fermate||[]).map(f=>_normCam(f.camera)));
     if(_fermateCam.size)newData.arrivi=newData.arrivi.filter(a=>!_fermateCam.has(_normCam(a.camera)));
     // Il nuovo caricamento è sempre la fonte di verità (può diminuire per una cancellazione
