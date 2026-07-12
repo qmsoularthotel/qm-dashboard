@@ -1422,103 +1422,93 @@
         </div>
       </div>
       <div class="view" id="view-miniapp">
-        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start;" id="miniappGrid">
-          <div class="panel" style="padding:14px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <img src="img/icons/housekeeping.png" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start;" id="miniappGrid">
+          <div class="panel" style="padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;">
+              <img src="img/icons/housekeeping.png" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;">
               <div style="min-width:0;">
-                <div style="font-size:var(--fs-sm);font-weight:700;">Housekeeping</div>
-                <div style="font-size:var(--fs-xs);color:var(--text-dim);">SoulArt · Boutique</div>
+                <div style="font-size:15px;font-weight:700;line-height:1.2;">Housekeeping</div>
+                <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">SoulArt · Boutique</div>
               </div>
+              <button id="miniapp-hk-toggle" onclick="miniappToggleApp('hk')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;margin-left:auto;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
-            <div id="miniapp-hk-status" style="margin-bottom:10px;"></div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <button id="miniapp-hk-toggle" onclick="miniappToggleApp('hk')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
-              <span style="font-size:var(--fs-xs);color:var(--text-dim);">Attiva/disattiva app</span>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <input id="hk-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:var(--fs-xs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/housekeeper.html">
-              <button onclick="miniappCopy('hk-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
+            <div id="miniapp-hk-status" style="margin-bottom:14px;"></div>
+            <input id="hk-url-input" type="hidden" value="https://compass-qm.com/housekeeper.html">
+            <div style="display:flex;gap:8px;">
+              <button onclick="miniappCopy('hk-url-input',this)" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:8px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;">Copia link</button>
+              <button onclick="miniappOpen('hk-url-input')" style="flex:1;background:var(--accent);border:none;color:#fff;padding:8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Apri</button>
             </div>
           </div>
-          <div class="panel" style="padding:14px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <img src="img/icons/breakfast_sheet.png" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+          <div class="panel" style="padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;">
+              <img src="img/icons/breakfast_sheet.png" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;">
               <div style="min-width:0;">
-                <div style="font-size:var(--fs-sm);font-weight:700;">Breakfast</div>
-                <div style="font-size:var(--fs-xs);color:var(--text-dim);">Responsabile colazione</div>
+                <div style="font-size:15px;font-weight:700;line-height:1.2;">Breakfast</div>
+                <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Responsabile colazione</div>
               </div>
+              <button id="miniapp-bkf-toggle" onclick="miniappToggleApp('bkf')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;margin-left:auto;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
-            <div id="miniapp-bkf-status" style="margin-bottom:10px;"></div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <button id="miniapp-bkf-toggle" onclick="miniappToggleApp('bkf')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
-              <span style="font-size:var(--fs-xs);color:var(--text-dim);">Attiva/disattiva app</span>
+            <div id="miniapp-bkf-status" style="margin-bottom:14px;"></div>
+            <input id="bkf-url-input" type="hidden" value="https://compass-qm.com/breakfast.html">
+            <div style="display:flex;gap:8px;">
+              <button onclick="miniappCopy('bkf-url-input',this)" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:8px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;">Copia link</button>
+              <button onclick="miniappOpen('bkf-url-input')" style="flex:1;background:var(--accent);border:none;color:#fff;padding:8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Apri</button>
             </div>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <input id="bkf-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:var(--fs-xs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/breakfast.html">
-              <button onclick="miniappCopy('bkf-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
-            </div>
-            <div style="border-top:1px solid var(--border-light);margin-top:10px;padding-top:10px;">
-              <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:6px;">Avviso (7s, solo su tab Analisi)</div>
-              <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-                <input id="bkf-banner-msg" class="form-input" type="text" placeholder="es. Nuovo turno caricato, ricarica" style="flex:1;min-width:0;padding:4px 6px;font-size:var(--fs-xs);">
+            <div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
+              <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Avviso (7s, solo su tab Analisi)</div>
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                <input id="bkf-banner-msg" type="text" placeholder="es. Nuovo turno caricato, ricarica" style="flex:1;min-width:0;padding:7px 9px;font-size:13px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);">
                 <button id="miniapp-bkf-banner-toggle" onclick="miniappToggleBkfBanner()" title="Attiva/disattiva avviso" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--border);"><span style="position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
               </div>
-              <button onclick="miniappSaveBkfBanner(this)" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:5px;padding:5px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">Salva avviso</button>
+              <button onclick="miniappSaveBkfBanner(this)" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;">Salva avviso</button>
             </div>
           </div>
-          <div class="panel" style="padding:14px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <img src="img/icons/acqua_culligan.png" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+          <div class="panel" style="padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;">
+              <img src="img/icons/acqua_culligan.png" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;">
               <div style="min-width:0;">
-                <div style="font-size:var(--fs-sm);font-weight:700;">Distribuzione Culligan</div>
-                <div style="font-size:var(--fs-xs);color:var(--text-dim);">Art Resort</div>
+                <div style="font-size:15px;font-weight:700;line-height:1.2;">Distribuzione Culligan</div>
+                <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Art Resort</div>
               </div>
+              <button id="miniapp-cm-toggle" onclick="miniappToggleApp('cm')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;margin-left:auto;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
-            <div id="miniapp-cm-status" style="margin-bottom:10px;"></div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <button id="miniapp-cm-toggle" onclick="miniappToggleApp('cm')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
-              <span style="font-size:var(--fs-xs);color:var(--text-dim);">Attiva/disattiva app</span>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <input id="cm-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:var(--fs-xs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/controllo-mattino.html">
-              <button onclick="miniappCopy('cm-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
+            <div id="miniapp-cm-status" style="margin-bottom:14px;"></div>
+            <input id="cm-url-input" type="hidden" value="https://compass-qm.com/controllo-mattino.html">
+            <div style="display:flex;gap:8px;">
+              <button onclick="miniappCopy('cm-url-input',this)" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:8px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;">Copia link</button>
+              <button onclick="miniappOpen('cm-url-input')" style="flex:1;background:var(--accent);border:none;color:#fff;padding:8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Apri</button>
             </div>
           </div>
-          <div class="panel" style="padding:14px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <img src="img/icons/inventari_e_ordini.png" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+          <div class="panel" style="padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;">
+              <img src="img/icons/inventari_e_ordini.png" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;">
               <div style="min-width:0;">
-                <div style="font-size:var(--fs-sm);font-weight:700;">Inventari Detersivi</div>
-                <div style="font-size:var(--fs-xs);color:var(--text-dim);">SoulArt · Art Resort</div>
+                <div style="font-size:15px;font-weight:700;line-height:1.2;">Inventari Detersivi</div>
+                <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">SoulArt · Art Resort</div>
               </div>
+              <button id="miniapp-inv-toggle" onclick="miniappToggleApp('inv')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;margin-left:auto;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
-            <div id="miniapp-inv-status" style="margin-bottom:10px;"></div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <button id="miniapp-inv-toggle" onclick="miniappToggleApp('inv')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
-              <span style="font-size:var(--fs-xs);color:var(--text-dim);">Attiva/disattiva app</span>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <input id="inv-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:var(--fs-xs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/inventory.html">
-              <button onclick="miniappCopy('inv-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
+            <div id="miniapp-inv-status" style="margin-bottom:14px;"></div>
+            <input id="inv-url-input" type="hidden" value="https://compass-qm.com/inventory.html">
+            <div style="display:flex;gap:8px;">
+              <button onclick="miniappCopy('inv-url-input',this)" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:8px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;">Copia link</button>
+              <button onclick="miniappOpen('inv-url-input')" style="flex:1;background:var(--accent);border:none;color:#fff;padding:8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Apri</button>
             </div>
           </div>
-          <div class="panel" style="padding:14px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <img src="img/icons/dvr.png" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+          <div class="panel" style="padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;">
+              <img src="img/icons/dvr.png" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;">
               <div style="min-width:0;">
-                <div style="font-size:var(--fs-sm);font-weight:700;">DVR &amp; Compliance</div>
-                <div style="font-size:var(--fs-xs);color:var(--text-dim);">General Manager</div>
+                <div style="font-size:15px;font-weight:700;line-height:1.2;">DVR &amp; Compliance</div>
+                <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">General Manager</div>
               </div>
+              <button id="miniapp-dvr-toggle" onclick="miniappToggleApp('dvr')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;margin-left:auto;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
             </div>
-            <div id="miniapp-dvr-status" style="margin-bottom:10px;"></div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-              <button id="miniapp-dvr-toggle" onclick="miniappToggleApp('dvr')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
-              <span style="font-size:var(--fs-xs);color:var(--text-dim);">Attiva/disattiva app</span>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <input id="dvr-url-input" class="form-input" readonly style="flex:1;min-width:0;padding:4px 6px;font-size:var(--fs-xs);color:var(--text-muted);background:var(--surface2);" value="https://compass-qm.com/dvr.html">
-              <button onclick="miniappCopy('dvr-url-input',this)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xxs);cursor:pointer;white-space:nowrap;flex-shrink:0;">Copia</button>
+            <div id="miniapp-dvr-status" style="margin-bottom:14px;"></div>
+            <input id="dvr-url-input" type="hidden" value="https://compass-qm.com/dvr.html">
+            <div style="display:flex;gap:8px;">
+              <button onclick="miniappCopy('dvr-url-input',this)" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:8px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;">Copia link</button>
+              <button onclick="miniappOpen('dvr-url-input')" style="flex:1;background:var(--accent);border:none;color:#fff;padding:8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Apri</button>
             </div>
           </div>
         </div>
@@ -1579,7 +1569,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=1"></script>
-<script src="app.js?v=485-20260712"></script>
+<script src="app.js?v=486-20260712"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

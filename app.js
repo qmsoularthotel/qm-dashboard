@@ -1523,6 +1523,10 @@ function miniappCopy(inputId,btn){
     setTimeout(()=>{btn.textContent=orig;btn.style.background='';},2000);
   }).catch(()=>{inp.select();document.execCommand('copy');});
 }
+function miniappOpen(inputId){
+  const inp=document.getElementById(inputId);
+  if(inp&&inp.value)window.open(inp.value,'_blank');
+}
 // §§ MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone, mosaico)
 function miniappRender(){
   miniappRenderStatus();
@@ -1606,10 +1610,11 @@ function miniappSaveBkfBanner(btn){
 // calcolato da dati già in memoria/localStorage (nessuna fetch aggiuntiva
 // tranne Culligan, che legge la chiave giornaliera KV come fa cmLoad()).
 function _miniappStatusHTML(color,label,kpi){
-  const colorMap={green:'var(--green)',amber:'var(--amber)',red:'var(--red)'};
-  return`<div style="display:flex;align-items:center;gap:8px;">
-    <span style="width:9px;height:9px;border-radius:50%;background:${colorMap[color]};flex-shrink:0;"></span>
-    <span style="font-size:var(--fs-xs);font-weight:700;color:${colorMap[color]};">${label}</span>
+  const colorMap={green:{c:'var(--green)',bg:'var(--green-bg)'},amber:{c:'var(--amber)',bg:'var(--amber-bg)'},red:{c:'var(--red)',bg:'var(--red-bg)'}};
+  const m=colorMap[color]||colorMap.green;
+  return`<div style="display:flex;align-items:center;gap:8px;background:${m.bg};border-radius:8px;padding:8px 12px;">
+    <span style="width:8px;height:8px;border-radius:50%;background:${m.c};flex-shrink:0;"></span>
+    <span style="font-size:var(--fs-xs);font-weight:700;color:${m.c};">${label}</span>
     ${kpi?`<span style="font-size:var(--fs-xs);color:var(--text-dim);margin-left:auto;">${kpi}</span>`:''}
   </div>`;
 }
