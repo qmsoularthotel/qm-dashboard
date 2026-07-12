@@ -5,7 +5,7 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=214">
+<link rel="stylesheet" href="style.css?v=215">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
@@ -155,11 +155,12 @@
       <div style="margin:0 10px 6px;background:var(--border-light);border-radius:4px;height:4px;overflow:hidden;">
         <div id="ucProgressBar" style="height:100%;background:var(--accent);border-radius:4px;width:0%;transition:width .4s ease;"></div>
       </div>
+      <div id="ucMissingLine" style="display:none;margin:0 10px 8px;font-size:9px;color:var(--amber);"></div>
       <div style="padding:0 10px 10px;">
         <div class="uc-slot" id="uc-turno" onclick="ucToggle('turno')" title="Carica o espandi turno">
           <input type="file" id="turniFileInput" accept="image/*,.xlsx,.xls,.csv,.pdf" style="display:none">
           <span class="uc-icon"><img src="img/icons/turni.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Turno</div><div class="uc-sub" id="uc-turno-sub">Non caricato</div></div>
+          <div class="uc-info"><div class="uc-label">Turno</div><div class="uc-sub" id="uc-turno-sub">Non caricato</div><div class="uc-feeds">→ Piano staff</div></div>
           <span class="uc-badge" id="uc-turno-badge">▾</span>
         </div>
         <div class="uc-panel" id="uc-turno-panel">
@@ -183,7 +184,7 @@
         <div class="uc-slot" id="uc-piano" onclick="ucToggle('piano')" title="Piano settimana camere">
           <input type="file" id="pianoFileInput" accept="application/pdf" style="display:none">
           <span class="uc-icon"><img src="img/icons/piano_settimanale.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Piano settimana</div><div class="uc-sub" id="uc-piano-sub">Non caricato</div></div>
+          <div class="uc-info"><div class="uc-label">Piano settimana</div><div class="uc-sub" id="uc-piano-sub">Non caricato</div><div class="uc-feeds">→ Culligan · Housekeeping</div></div>
           <span class="uc-badge" id="uc-piano-badge">▾</span>
         </div>
         <div class="uc-panel" id="uc-piano-panel">
@@ -200,7 +201,7 @@
         <div class="uc-slot" id="uc-arrivi" onclick="ucToggle('arrivi')" title="Carica o espandi arrivi">
           <input type="file" id="arriviFileInput" accept="application/pdf,image/*" style="display:none">
           <span class="uc-icon"><img src="img/icons/riepilogo_reception.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Riepilogo Reception</div><div class="uc-sub" id="uc-arrivi-sub">Non caricato</div></div>
+          <div class="uc-info"><div class="uc-label">Riepilogo Reception</div><div class="uc-sub" id="uc-arrivi-sub">Non caricato</div><div class="uc-feeds">→ KPI Overview · Breakfast</div></div>
           <span class="uc-badge" id="uc-arrivi-badge">▾</span>
         </div>
         <div class="uc-panel" id="uc-arrivi-panel">
@@ -218,7 +219,7 @@
         <div class="uc-slot" id="uc-bkf" onclick="ucToggle('bkf')" title="Carica o espandi pasti">
           <input type="file" id="bkfFileInput" accept="application/pdf" style="display:none">
           <span class="uc-icon"><img src="img/icons/report_pasti.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Report pasti</div><div class="uc-sub" id="uc-bkf-sub">Non caricato</div></div>
+          <div class="uc-info"><div class="uc-label">Report pasti</div><div class="uc-sub" id="uc-bkf-sub">Non caricato</div><div class="uc-feeds">→ Coperti colazione · Grafico</div></div>
           <span class="uc-badge" id="uc-bkf-badge">▾</span>
         </div>
         <div class="uc-panel" id="uc-bkf-panel">
@@ -240,7 +241,7 @@
         <div class="uc-slot" id="uc-pul" onclick="ucToggle('pul')" title="Carica o espandi pulizie">
           <input type="file" id="pulFileInput" accept="application/pdf" style="display:none">
           <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Report pulizie</div><div class="uc-sub" id="uc-pul-sub">Non caricato</div></div>
+          <div class="uc-info"><div class="uc-label">Report pulizie</div><div class="uc-sub" id="uc-pul-sub">Non caricato</div><div class="uc-feeds">→ KPI Overview · Pulizie</div></div>
           <span class="uc-badge" id="uc-pul-badge">▾</span>
         </div>
         <div class="uc-panel" id="uc-pul-panel">
@@ -266,7 +267,7 @@
         <div class="uc-slot" id="uc-soul" onclick="ucToggle('soul')" title="Soul App HKP">
           <input type="file" id="soulFileInput" accept="application/pdf" style="display:none">
           <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Soul App HKP</div><div class="uc-sub" id="uc-soul-sub">Non caricato</div></div>
+          <div class="uc-info"><div class="uc-label">Soul App HKP</div><div class="uc-sub" id="uc-soul-sub">Non caricato</div><div class="uc-feeds">→ Solo pannello proprio</div></div>
           <span class="uc-badge" id="uc-soul-badge">▾</span>
         </div>
         <div class="uc-panel" id="uc-soul-panel">
@@ -283,7 +284,7 @@
         <div class="uc-slot" id="uc-bout" onclick="ucToggle('bout')" title="Boutique App HKP">
           <input type="file" id="boutFileInput" accept="application/pdf" style="display:none">
           <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Boutique App HKP</div><div class="uc-sub" id="uc-bout-sub">Non caricato</div></div>
+          <div class="uc-info"><div class="uc-label">Boutique App HKP</div><div class="uc-sub" id="uc-bout-sub">Non caricato</div><div class="uc-feeds">→ Solo pannello proprio</div></div>
           <span class="uc-badge" id="uc-bout-badge">▾</span>
         </div>
         <div class="uc-panel" id="uc-bout-panel">
@@ -1570,7 +1571,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=1"></script>
-<script src="app.js?v=482-20260711"></script>
+<script src="app.js?v=483-20260712"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

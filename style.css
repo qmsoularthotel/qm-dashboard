@@ -63,6 +63,7 @@ body.dark .panel{box-shadow:none;}
 .uc-info{flex:1;min-width:0;}
 .uc-label{font-size:var(--fs-xs);font-weight:600;color:var(--text);}
 .uc-sub{font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.uc-feeds{font-size:9px;color:var(--text-dim);opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
 .uc-badge{font-size:11px;flex-shrink:0;color:var(--text-dim);transition:transform .2s;}
 .uc-slot.open .uc-badge{transform:rotate(180deg);}
 .nav-turno-header{display:flex;align-items:center;gap:8px;padding:9px 16px;cursor:pointer;color:var(--text-muted);font-size:var(--fs-sm);transition:all .15s;border-left:2px solid transparent;user-select:none;}

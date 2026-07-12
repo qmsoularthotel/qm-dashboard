@@ -73,16 +73,39 @@ function ucSetState(key,state,sub,silent){
   if(subEl&&sub)subEl.textContent=sub;
   ucUpdateProgress();
 }
+// Fonti tracciate per il riepilogo Upload Center — 'piano' non entra nel conteggio
+// rigoroso "X/6" (Turno resta l'unico davvero settimanale, escluso dalla scadenza 24h
+// in _setUcTs) ma viene comunque segnalato nella riga "mancano" se scaduto/non caricato,
+// perché in pratica viene ricaricato di continuo come gli altri.
+const UC_SOURCES=[
+  {key:'turno',label:'Turno'},
+  {key:'piano',label:'Piano camere'},
+  {key:'arrivi',label:'Arrivi'},
+  {key:'bkf',label:'Report pasti'},
+  {key:'pul',label:'Report pulizie'},
+  {key:'soul',label:'Soul HKP'},
+  {key:'bout',label:'Boutique HKP'}
+];
 function ucUpdateProgress(){
   const slots=['turno','arrivi','pul','bkf','soul','bout'];
   const loaded=slots.filter(k=>{
     const el=document.getElementById('uc-'+k);
-    return el&&el.classList.contains('loaded');
+    return el&&el.classList.contains('loaded')&&!el.classList.contains('stale');
   }).length;
   const bar=document.getElementById('ucProgressBar');
   const label=document.getElementById('ucProgressLabel');
   if(bar)bar.style.width=(loaded/6*100)+'%';
   if(label)label.textContent=loaded+'/6';
+  const missing=UC_SOURCES.filter(({key})=>{
+    const el=document.getElementById('uc-'+key);
+    if(!el)return false;
+    return !el.classList.contains('loaded')||el.classList.contains('stale');
+  }).map(s=>s.label);
+  const missingEl=document.getElementById('ucMissingLine');
+  if(missingEl){
+    if(missing.length){missingEl.style.display='block';missingEl.textContent='Mancano: '+missing.join(', ');}
+    else missingEl.style.display='none';
+  }
 }
 const turniInput=document.getElementById('turniFileInput');
 const turniStatus=document.getElementById('turniStatus');
