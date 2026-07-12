@@ -5110,10 +5110,23 @@ function rcRenderCards(guests){
     hiBtn.style.display=hiCount?'inline-flex':'none';
     hiBtn.textContent='🔴 Stampa evidenziate ('+hiCount+')';
   }
+  rcRenderSourceLine();
   rcUpdateSelectedBtn();
   // Salva per ripristino
   try{localStorage.setItem('qm_rcGuests',JSON.stringify(sorted));}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rcGuests',value:JSON.stringify(sorted)})}).catch(()=>{});}catch(e){}
+}
+// Riga sorgente dati sopra la coda di stampa: da quale documento vengono le card,
+// quando è stato caricato, quanti arrivi contiene — non rende obbligatorio ricaricare.
+function rcRenderSourceLine(){
+  const el=document.getElementById('rcSourceLine');
+  if(!el)return;
+  if(!arriviData||!arriviData.arrivi||!arriviData.arrivi.length){el.style.display='none';return;}
+  let ts=null;
+  try{ts=parseInt(localStorage.getItem('qm_ts_arriviTs')||'0')||null;}catch(e){}
+  const tsStr=ts?fmtUploadTs(ts).replace('↑ ',''):'';
+  el.style.display='flex';
+  el.innerHTML=`<span>📄 Riepilogo Reception caricato${tsStr?' · '+tsStr:''} · ${arriviData.arrivi.length} arrivi rilevati</span><span onclick="document.getElementById('arriviFileInput')?.click();" style="margin-left:auto;color:var(--accent);cursor:pointer;font-weight:600;">Aggiorna file</span>`;
 }
 function rcPrintHighlighted(){
   const idxs=guestsData.map((g,i)=>g.isNew||g.roomChanged?i:-1).filter(i=>i>=0);
@@ -5127,10 +5140,18 @@ function rcToggleSelect(idx,checked){
   rcUpdateSelectedBtn();
 }
 function rcUpdateSelectedBtn(){
-  const btn=document.getElementById('rcPrintSelectedBtn');
-  if(!btn)return;
-  btn.style.display=_rcSelected.size?'inline-flex':'none';
-  btn.textContent='☑️ Stampa selezionate ('+_rcSelected.size+')';
+  const bar=document.getElementById('rcSelectionBar');
+  const barText=document.getElementById('rcSelectionBarText');
+  if(bar){
+    bar.style.display=_rcSelected.size?'flex':'none';
+    if(barText)barText.textContent=_rcSelected.size+(_rcSelected.size===1?' card selezionata per la stampa':' card selezionate per la stampa');
+  }
+  const summaryEl=document.getElementById('rcSummaryLine');
+  if(summaryEl&&Array.isArray(guestsData)){
+    const hiCount=guestsData.filter(g=>g.isNew||g.roomChanged).length;
+    const ready=guestsData.length-hiCount;
+    summaryEl.textContent=ready+' pronte'+(hiCount?' · '+hiCount+' da ristampare':'')+(_rcSelected.size?' · '+_rcSelected.size+' selezionate':'');
+  }
 }
 function rcPrintSelected(){
   const idxs=[..._rcSelected].sort((a,b)=>a-b);
@@ -5143,10 +5164,13 @@ function rcBuildPreview(g,idx){const nights=rcCalcNights(g.checkin,g.checkout);
   const origine=String(g.origine||(arrivoMatch&&arrivoMatch.origine)||'').trim();
   const isBooking=/booking/i.test(origine);
   const origBadge=origine?`<span class="rc-pill" style="background:${isBooking?'var(--accent-bg)':'var(--surface2)'};color:${isBooking?'var(--accent)':'var(--text-dim)'};font-weight:${isBooking?'700':'400'};">${isBooking?BK_ICON:''}${origine}</span>`:'';
-  // Evidenzia in rosso nuove prenotazioni e camere spostate rispetto al caricamento precedente
-  const hiLabel=g.isNew?'🆕 NUOVA PRENOTAZIONE':(g.roomChanged?'↔️ CAMERA SPOSTATA (era '+g.prevCamera+')':'');
-  const hiBadge=hiLabel?`<div style="background:var(--red-bg,#ffebee);color:var(--red,#c62828);font-size:10px;font-weight:800;padding:4px 10px;border-radius:6px;margin-bottom:6px;display:inline-block;">${hiLabel}</div>`:'';
-  const card=document.createElement('div');card.className='rc-card';card.id='rc-card-'+idx;card.style.position='relative';if(hiLabel)card.style.cssText='position:relative;border:2px solid var(--red,#c62828);box-shadow:0 0 0 1px var(--red,#c62828);';
+  // Evidenzia in rosso nuove prenotazioni e camere spostate rispetto al caricamento precedente —
+  // sempre subito sotto l'intestazione della card (vedi ordine in card.innerHTML)
+  const hiIcon=g.isNew?'🆕':(g.roomChanged?'↔️':'');
+  const hiText=g.isNew?'Nuova prenotazione':(g.roomChanged?'Camera spostata — era '+g.prevCamera:'');
+  const hiLabel=hiText;
+  const hiBadge=hiLabel?`<div style="display:flex;align-items:center;gap:6px;background:var(--red-bg,#ffebee);color:var(--red,#c62828);font-size:10.5px;font-weight:700;padding:6px 12px;">${hiIcon} ${hiText}</div>`:'';
+  const card=document.createElement('div');card.className='rc-card';card.id='rc-card-'+idx;card.style.position='relative';if(hiLabel)card.style.cssText='position:relative;border:1px solid var(--red,#c62828);';
   const checkbox=`<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:10px;color:var(--text-dim);flex-shrink:0;"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)" style="cursor:pointer;">Seleziona</label>`;
   card.innerHTML=`<div class="rc-card-top"><span class="rc-card-label">Registration Card</span><span class="rc-card-room">Camera ${g.camera}</span></div>${hiBadge}<div class="rc-card-guest">${g.nome}</div><div class="rc-card-dates"><div class="rc-date-cell"><div class="rc-date-label">Arrivo</div><div class="rc-date-val">${g.checkin||'—'}</div></div><div class="rc-date-cell"><div class="rc-date-label">Partenza</div><div class="rc-date-val">${g.checkout||'—'}</div></div><div class="rc-date-cell"><div class="rc-date-label">Notti</div><div class="rc-date-val">${nights}</div></div></div><div class="rc-pills"><span class="rc-pill">${g.pax} ${g.pax===1?'ospite':'ospiti'}</span><span class="rc-pill">${tratMap[g.trattamento]||g.trattamento}</span>${origBadge}</div><div class="rc-card-footer"><span class="rc-hint">Clicca per anteprima</span><div style="display:flex;align-items:center;gap:8px;">${checkbox}<button class="btn-print-one" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
 function rcOpenModal(idx){const g=guestsData[idx];document.getElementById('rcModalTitle').textContent=g.nome+' — Camera '+g.camera;document.getElementById('rcModalBody').innerHTML=`<div class="mp" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:9pt;color:#1A1916;">${rcCardHTML(g)}</div>`;document.getElementById('rcModalPrintBtn').onclick=()=>{rcCloseModal();setTimeout(()=>preparePrint(idx),150);};document.getElementById('rcModalOverlay').classList.add('open');}

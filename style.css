@@ -379,11 +379,11 @@ select.form-input option{background:var(--surface2);color:var(--text);}
 .rc-card-top{background:var(--surface2);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-light);}
 .rc-card-label{font-size:var(--fs-xxs);letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);}
 .rc-card-room{font-size:var(--fs-sm);font-weight:500;color:var(--accent);background:var(--accent-bg);padding:2px 10px;border-radius:4px;}
-.rc-card-guest{padding:9px 12px 0;font-size:15px;font-weight:500;color:var(--text);}
+.rc-card-guest{padding:9px 12px 0;font-size:13.5px;font-weight:400;color:var(--text);}
 .rc-card-dates{display:grid;grid-template-columns:1fr 1fr 1fr;margin:7px 12px 0;border:1px solid var(--border-light);border-radius:5px;overflow:hidden;}
-.rc-date-cell{padding:5px 8px;border-right:1px solid var(--border-light);}.rc-date-cell:last-child{border-right:none;}
+.rc-date-cell{padding:5px 8px;}
 .rc-date-label{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:2px;}
-.rc-date-val{font-size:var(--fs-xs);font-weight:500;color:var(--text);}
+.rc-date-val{font-size:11.5px;font-weight:400;color:var(--text);}
 .rc-pills{margin:7px 12px 0;display:flex;gap:5px;flex-wrap:wrap;}
 .rc-pill{font-size:var(--fs-xxs);padding:2px 8px;border-radius:10px;border:1px solid var(--border-light);color:var(--text-muted);background:var(--surface2);}
 .rc-card-footer{border-top:1px solid var(--border-light);padding:7px 12px;display:flex;align-items:center;justify-content:space-between;margin-top:9px;}
