@@ -106,9 +106,13 @@ Media pesata: **85% anno corrente / 10% anno-2 / 5% anno-3**, con fattore di dec
 
 ### Hotel Room Detection Logic
 
-I numeri di camera determinano la struttura di appartenenza:
-- `Art` prefix → Art Resort
+I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStruttura()` in app.js):
+- `Art` prefix → **SoulArt Hotel**
 - `200–299` → Boutique Hotel
+- `CAPRI/NAPOLI/PROCIDA/ISCHIA/POSITANO` prefix → Principe/Umberto
+- `LIB` prefix → San Liborio
+- `R1/R2/R3` → Mastrangelo
+- Altre camere numeriche → SoulArt Hotel (fallback)
 
 ### CSS Design Tokens
 
