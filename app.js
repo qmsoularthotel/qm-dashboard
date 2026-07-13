@@ -6939,7 +6939,7 @@ function cmRender(state,key){
       <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;padding:9px 16px;border-radius:9px;font-weight:700;font-size:var(--fs-xxs);text-decoration:none;">📱 Apri app mobile</a>
     </div>
   </div>`;
-  h+=`<div style="display:grid;grid-template-columns:170px 1fr;gap:20px;background:var(--surface);border:1px solid var(--border-light);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);">
+  h+=`<div style="display:grid;grid-template-columns:170px 1fr;gap:20px;align-items:center;background:var(--surface);border:1px solid var(--border-light);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
       <div style="position:relative;width:130px;height:130px;">
         <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(-90deg);">
@@ -6953,7 +6953,7 @@ function cmRender(state,key){
       </div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;">Visitate oggi</div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start;">
       ${[[btl.length,'Da mettere','var(--accent)'],[ok.length,'Non consumate','var(--green)'],[pnd.length,'Da visitare','var(--text-dim)']].map(([n,lbl,tint])=>`
       <div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${tint};border-radius:10px;padding:6px 14px;">
         <div style="display:flex;align-items:center;gap:7px;margin-bottom:1px;">
