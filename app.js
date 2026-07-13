@@ -19,7 +19,7 @@ function toggleDarkMode(){
 const DEPTS={fo:{label:'Front Office',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Iannario R.','Extra Angelica','Extra Benedetta','Raucci A.','Ruggiero B.']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Giuditta','Extra Nunzia','Extra Roberta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
 let weekData=null,activeDay=0;
-const IS_REST=v=>{if(!v)return true;const u=v.trim().toUpperCase();return['R','RIPOSO','OFF','—','-','–',''].includes(u);};
+const IS_REST=v=>{if(!v)return true;const u=v.trim().toUpperCase();return['R','RIPOSO','RIPOSO RICHIESTO','OFF','—','-','–',''].includes(u);};
 // §§ TURNO — ACCORDIONI UC & UPLOAD BOX
 let turnoOpen=false;
 function toggleTurnoAccordion(){}
@@ -361,7 +361,7 @@ function loadWeekData(data){
 }
 function buildWeekNav(){const nav=document.getElementById('weekNav');nav.innerHTML='';weekData.giorni.forEach((g,i)=>{const btn=document.createElement('button');btn.className='wday-btn'+(i===activeDay?' active':'');btn.textContent=g.label.split(' ')[0].substring(0,3);btn.title=g.label;btn.onclick=()=>{activeDay=i;renderDay(i);updateWeekNavActive();updateSidebarInfo();};nav.appendChild(btn);});document.getElementById('weekRangeLabel').textContent=weekData.giorni[0].label+' – '+weekData.giorni[weekData.giorni.length-1].label;}
 function updateWeekNavActive(){document.querySelectorAll('.wday-btn').forEach(b=>{const i=Array.prototype.indexOf.call(b.parentElement.children,b);b.classList.toggle('active',i===activeDay);});}
-const IS_ABSENT=v=>{if(!v)return false;const u=v.trim().toUpperCase();return['R','RIPOSO','OFF','FERIE'].includes(u);};
+const IS_ABSENT=v=>{if(!v)return false;const u=v.trim().toUpperCase();return['R','RIPOSO','RIPOSO RICHIESTO','OFF','FERIE'].includes(u);};
 function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(getShift(g.shifts,n))).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_ABSENT(getShift(g.shifts,n))).length+' non in servizio';}
 // Cerca lo shift di un membro DEPTS in modo case-insensitive
 function getShift(shifts,name){
