@@ -6943,8 +6943,8 @@ function cmRender(state,key){
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
       <div style="position:relative;width:130px;height:130px;">
         <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(-90deg);">
-          <circle cx="65" cy="65" r="54" fill="none" stroke="var(--surface2)" stroke-width="10"/>
-          <circle cx="65" cy="65" r="54" fill="none" stroke="var(--accent)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${ringCirc}" stroke-dashoffset="${ringOffset}" style="transition:stroke-dashoffset .6s cubic-bezier(.65,0,.35,1);"/>
+          <circle cx="65" cy="65" r="54" fill="none" stroke="var(--surface2)" stroke-width="6"/>
+          <circle cx="65" cy="65" r="54" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${ringCirc}" stroke-dashoffset="${ringOffset}" style="transition:stroke-dashoffset .6s cubic-bezier(.65,0,.35,1);"/>
         </svg>
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
           <div style="font-size:28px;font-weight:700;line-height:1;">${visited}/${CM_ROOMS.length}</div>
