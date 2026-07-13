@@ -6943,8 +6943,8 @@ function cmRender(state,key){
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
       <div style="position:relative;width:130px;height:130px;">
         <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(-90deg);">
-          <circle cx="65" cy="65" r="54" fill="none" stroke="var(--surface2)" stroke-width="6"/>
-          <circle cx="65" cy="65" r="54" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" stroke-dasharray="${ringCirc}" stroke-dashoffset="${ringOffset}" style="transition:stroke-dashoffset .6s cubic-bezier(.65,0,.35,1);"/>
+          <circle cx="65" cy="65" r="54" fill="none" stroke="var(--surface2)" stroke-width="4"/>
+          <circle cx="65" cy="65" r="54" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${ringCirc}" stroke-dashoffset="${ringOffset}" style="transition:stroke-dashoffset .6s cubic-bezier(.65,0,.35,1);"/>
         </svg>
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
           <div style="font-size:28px;font-weight:700;line-height:1;">${visited}/${CM_ROOMS.length}</div>
@@ -6954,11 +6954,13 @@ function cmRender(state,key){
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;">Visitate oggi</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-      ${[['💧',btl.length,'Da mettere','var(--accent-bg)','var(--accent)'],['✅',ok.length,'Non consumate','var(--green-bg)','var(--green)'],['⭕',pnd.length,'Da visitare','var(--surface2)','var(--text-dim)']].map(([ico,n,lbl,bg,col])=>`
-      <div style="background:${bg};border-radius:12px;padding:14px 12px;text-align:center;">
-        <div style="font-size:18px;line-height:1;opacity:.85;">${ico}</div>
-        <div style="font-size:22px;font-weight:700;color:${col};line-height:1.1;margin-top:4px;">${n}</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;font-weight:500;">${lbl.toUpperCase()}</div>
+      ${[[btl.length,'Da mettere','var(--accent)'],[ok.length,'Non consumate','var(--green)'],[pnd.length,'Da visitare','var(--text-dim)']].map(([n,lbl,tint])=>`
+      <div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${tint};border-radius:10px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:${tint};flex-shrink:0;"></span>
+          <span style="font-size:10px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">${lbl}</span>
+        </div>
+        <div style="font-size:24px;font-weight:700;color:var(--text);">${n}</div>
       </div>`).join('')}
     </div>
   </div>`;
