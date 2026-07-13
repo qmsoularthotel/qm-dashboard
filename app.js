@@ -6955,12 +6955,12 @@ function cmRender(state,key){
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
       ${[[btl.length,'Da mettere','var(--accent)'],[ok.length,'Non consumate','var(--green)'],[pnd.length,'Da visitare','var(--text-dim)']].map(([n,lbl,tint])=>`
-      <div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${tint};border-radius:10px;padding:14px;">
-        <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">
+      <div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${tint};border-radius:10px;padding:10px 14px;">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
           <span style="width:7px;height:7px;border-radius:50%;background:${tint};flex-shrink:0;"></span>
           <span style="font-size:10px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">${lbl}</span>
         </div>
-        <div style="font-size:24px;font-weight:700;color:var(--text);">${n}</div>
+        <div style="font-size:22px;font-weight:700;color:var(--text);">${n}</div>
       </div>`).join('')}
     </div>
   </div>`;
