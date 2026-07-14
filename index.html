@@ -418,6 +418,23 @@
     </div>
     <div class="content">
       <div class="view active" id="view-overview">
+        <div class="panel" style="margin-bottom:14px;">
+          <div class="panel-header" style="cursor:pointer;" onclick="toggleStaffPanel()">
+            <span style="font-size:14px;">🗓</span>
+            <div style="flex:1;">
+              <span class="panel-title" id="staffPanelTitle">Turno di oggi</span>
+              <span id="staffPanelUpdated" style="display:block;font-size:10px;color:var(--text-dim);text-transform:none;letter-spacing:0;font-weight:400;margin-top:2px;"></span>
+            </div>
+            <span id="staffPanelChevron" style="font-size:12px;color:var(--text-dim);transition:transform .15s;">▾</span>
+          </div>
+          <div class="panel-body" id="staffArea">
+            <div class="ov-empty">
+              <div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+              <div class="ov-empty-text">Nessun turno caricato</div>
+              <div class="ov-empty-sub">Espandi "Carica turno" nella sidebar per caricare il planning</div>
+            </div>
+          </div>
+        </div>
         <div class="panel" style="margin-bottom:14px;position:relative;" id="ov-piano-panel">
           <div class="panel-header">
             <span class="panel-title">🛏 Piano camere</span>
@@ -462,19 +479,6 @@
         <div id="kpi-occ-preview" style="display:none;margin-bottom:14px;"></div>
         <div id="kpi-pul-preview" style="display:none;margin-bottom:14px;"></div>
         <div id="kpi-bkf-preview" style="display:none;margin-bottom:14px;"></div>
-        <div class="panel" style="margin-bottom:14px;">
-          <div class="panel-header">
-            <span style="font-size:14px;">🗓</span>
-            <span class="panel-title">Turno di oggi</span>
-          </div>
-          <div class="panel-body" id="staffArea">
-            <div class="ov-empty">
-              <div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-              <div class="ov-empty-text">Nessun turno caricato</div>
-              <div class="ov-empty-sub">Espandi "Carica turno" nella sidebar per caricare il planning</div>
-            </div>
-          </div>
-        </div>
         <div class="ov-bottom-grid">
           <!-- Task quotidiani -->
           <div class="panel">
@@ -1575,7 +1579,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=1"></script>
-<script src="app.js?v=502-20260714"></script>
+<script src="app.js?v=503-20260714"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
