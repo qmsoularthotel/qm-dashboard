@@ -4568,13 +4568,13 @@ function renderOvBkfChart(){
   }
   const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
   const areaPath=linePath+`L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z`;
-  svg+=`<path d="${areaPath}" fill="var(--amber)" opacity="0.12"/>`;
-  svg+=`<path d="${linePath}" fill="none" stroke="var(--amber)" stroke-width="2"/>`;
+  svg+=`<path d="${areaPath}" fill="var(--accent)" opacity="0.12"/>`;
+  svg+=`<path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
   pts.forEach((p,i)=>{
     const x=sx(i),y=sy(p.v);
     const isActive=i===bkfActiveDay;
-    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?4:3}" fill="${isActive?'var(--amber)':'var(--amber)'}" stroke="white" stroke-width="1.5"/>`;
-    svg+=`<text x="${x}" y="${y-8}" font-size="10" fill="var(--amber)" text-anchor="middle" font-weight="600">${p.v}</text>`;
+    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?4:3}" fill="var(--accent)" stroke="white" stroke-width="1.5"/>`;
+    svg+=`<text x="${x}" y="${y-8}" font-size="10" fill="var(--accent)" text-anchor="middle" font-weight="600">${p.v}</text>`;
     svg+=`<text x="${x}" y="${H-4}" font-size="10" fill="var(--text-dim)" text-anchor="middle">${p.label}</text>`;
   });
   svg+='</svg>';

@@ -453,50 +453,39 @@
           <!-- Riepilogo Booking.com: arrivi oggi + partenze attese — popolato da arriviUpdateKpi() -->
           <div id="ov-booking-box" style="display:none;padding:0 20px 16px;"></div>
         </div>
-        <div class="ov-bkf-grid">
-          <div class="kpi-card" style="border-top-color:#A05A00;">
-            <div class="kpi-card-icon" style="background:var(--amber-bg);">☕</div>
-            <div class="kpi-label">Coperti colazione</div>
-            <div id="kpi-bkf-multiday">
-              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px;">
-                <div class="kpi-value" id="kpi-bkf-tot" style="line-height:1;">—</div>
-                <div class="kpi-delta" id="kpi-bkf-delta" style="color:var(--text-dim);">Carica report pasti</div>
+        <div class="panel" style="margin-bottom:14px;">
+          <div class="panel-header">
+            <span style="font-size:14px;">☕</span>
+            <span class="panel-title">Breakfast</span>
+          </div>
+          <div class="panel-body">
+            <div class="ov-bkf-grid" style="margin-bottom:0;">
+              <div>
+                <div class="kpi-label">Coperti colazione</div>
+                <div id="kpi-bkf-multiday">
+                  <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:2px;">
+                    <div class="kpi-value" id="kpi-bkf-tot" style="line-height:1;">—</div>
+                    <div class="kpi-delta" id="kpi-bkf-delta" style="color:var(--text-dim);">Carica report pasti</div>
+                  </div>
+                  <div class="kpi-sub" id="kpi-bkf-sub"></div>
+                </div>
               </div>
-              <div class="kpi-sub" id="kpi-bkf-sub"></div>
+              <div style="padding:0 16px;border-left:1px solid var(--border-light);border-right:1px solid var(--border-light);">
+                <div id="ov-bkf-chart" style="height:100%;box-sizing:border-box;display:flex;align-items:center;"><div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere il grafico</div></div>
+              </div>
+              <div style="padding-left:16px;">
+                <div class="kpi-label">Room Only</div>
+                <div class="kpi-value" id="kpi-bkf-nocol">—</div>
+                <div class="kpi-delta" id="kpi-bkf-nocol-delta" style="color:var(--text-dim)">Carica report pasti</div>
+                <div class="kpi-sub" id="kpi-bkf-nocol-sub"></div>
+              </div>
             </div>
-          </div>
-          <div class="panel" style="margin:0;" id="ov-bkf-chart-panel">
-            <div id="ov-bkf-chart" style="padding:10px 12px;height:100%;box-sizing:border-box;display:flex;align-items:center;"><div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere il grafico</div></div>
-          </div>
-          <div class="kpi-card" style="border-top-color:#6A6E72;">
-            <div class="kpi-card-icon" style="background:var(--surface2);">✕</div>
-            <div class="kpi-label">Room Only</div>
-            <div class="kpi-value" id="kpi-bkf-nocol">—</div>
-            <div class="kpi-delta" id="kpi-bkf-nocol-delta" style="color:var(--text-dim)">Carica report pasti</div>
-            <div class="kpi-sub" id="kpi-bkf-nocol-sub"></div>
           </div>
         </div>
         <div id="kpi-occ-preview" style="display:none;margin-bottom:14px;"></div>
         <div id="kpi-pul-preview" style="display:none;margin-bottom:14px;"></div>
         <div id="kpi-bkf-preview" style="display:none;margin-bottom:14px;"></div>
-        <div class="ov-bottom-grid">
-          <!-- Task quotidiani -->
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Task quotidiani</span>
-              <span style="font-size:11px;color:var(--text-dim)" id="taskDayLabel"></span>
-              <span style="font-size:11px;color:var(--text-dim);margin-left:auto;" id="taskCounter">0/5</span>
-            </div>
-            <div class="panel-body">
-              <ul class="checklist" id="taskList"></ul>
-              <div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);">
-                <input id="customTaskInput" class="form-input" placeholder="Aggiungi task personalizzato..." style="flex:1;padding:5px 8px;font-size:var(--fs-xs);" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTaskById('customTaskInput')}">
-                <button type="button" onclick="event.preventDefault();event.stopPropagation();addCustomTaskById('customTaskInput')" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:5px 10px;font-size:var(--fs-xs);cursor:pointer;white-space:nowrap;">+ Aggiungi</button>
-              </div>
-            </div>
-          </div>
-          <!-- Pannello recensioni unificato -->
-          <div class="panel" id="ov-rev-import-panel">
+        <div class="panel" id="ov-rev-import-panel" style="margin-bottom:14px;">
             <div class="panel-header">
               <span class="panel-title">⭐ Recensioni</span>
               <span id="ov-rev-import-badge" style="margin-left:4px;display:none;background:var(--amber);color:#fff;border-radius:10px;padding:1px 8px;font-size:var(--fs-xxs);font-weight:600;"></span>
@@ -517,7 +506,6 @@
               </div>
             </div>
           </div>
-        </div>
       </div>
       <div class="view" id="view-registrazione">
         <div class="rc-upload-zone" id="rcUploadZone">
@@ -1579,7 +1567,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=1"></script>
-<script src="app.js?v=505-20260714"></script>
+<script src="app.js?v=506-20260714"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
