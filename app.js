@@ -1878,8 +1878,34 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   const sHtml=renderHotel('SoulArt',giorno.soulart||{}),bHtml=renderHotel('Boutique - San Liborio',bMerged);
   if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per questo giorno</div>';return;}
   const _mob=window.innerWidth<=768;
-  const brandLogo=(!_mob&&elId==='ov-piano-preview')?`<div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0 32px;pointer-events:none;user-select:none;border-left:1px solid var(--border-light);margin-left:8px;"><span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#1A2E55;letter-spacing:.01em;white-space:nowrap;">Compass QM <span style="font-weight:300;color:var(--text-dim);margin:0 6px;">|</span><span style="font-weight:400;color:var(--text-dim);font-size:14px;"> Dashboard</span></span></div>`:'';
-  el.innerHTML=`<div style="display:flex;align-items:stretch;"><div style="min-width:0;width:100%;">${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">↑ partenze · = fermate · ⇄ cambio camera</div></div>${brandLogo}</div>`;
+  let sideBox='';
+  if(!_mob&&elId==='ov-piano-preview'){
+    // Previsione giro Culligan: camere Art occupate stanotte (fermate + partenze di oggi
+    // dal Riepilogo Reception) — disponibile prima di partire per il ritiro
+    let cmN=0;
+    try{
+      if(arriviData){
+        const rooms=new Set();
+        [...(arriviData.fermate||[]),...(arriviData.partenze||[])].forEach(x=>{
+          const c=(x.camera||'').trim().toUpperCase().replace(/\s+/g,' ');
+          if(/^ART\s*\d+/.test(c))rooms.add(c);
+        });
+        cmN=rooms.size;
+      }
+    }catch(e){}
+    if(cmN>0){
+      sideBox=`<div style="flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:0 28px;border-left:1px solid var(--border-light);margin-left:8px;min-width:180px;">
+        <div class="kpi-label" style="margin-bottom:8px;">Distribuzione Culligan — Previsione</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:30px;font-weight:300;line-height:1;">${cmN}</span>
+          <span style="font-size:11px;color:var(--text-dim);">camere da controllare oggi</span>
+        </div>
+      </div>`;
+    }else{
+      sideBox=`<div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0 32px;pointer-events:none;user-select:none;border-left:1px solid var(--border-light);margin-left:8px;"><span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#1A2E55;letter-spacing:.01em;white-space:nowrap;">Compass QM <span style="font-weight:300;color:var(--text-dim);margin:0 6px;">|</span><span style="font-weight:400;color:var(--text-dim);font-size:14px;"> Dashboard</span></span></div>`;
+    }
+  }
+  el.innerHTML=`<div style="display:flex;align-items:stretch;"><div style="min-width:0;width:100%;">${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">↑ partenze · = fermate · ⇄ cambio camera</div></div>${sideBox}</div>`;
 }
 
 function pianoOvInit(){
@@ -5627,6 +5653,8 @@ function arriviUpdateKpi(){
       ovBox.style.display='none';
     }
   }
+  // Aggiorna la previsione Culligan nel pannello Piano camere (dipende da arriviData)
+  try{if(pianoNavIdx!==null&&pianoNavIdx!==undefined)pianoNavRender(pianoNavIdx);}catch(e){}
 }
 function detectStruttura(camera){
   if(!camera)return'NA';
