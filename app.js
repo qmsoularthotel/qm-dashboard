@@ -5559,7 +5559,7 @@ function arriviUpdateKpi(){
     if(bkArrivi.length>0||bkFermate.length>0||bkPartenze.length>0){
       let html=`<div style="border-top:1px solid var(--border-light);padding-top:12px;">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-          ${BK_ICON}<span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Booking.com — Riepilogo giornata</span>
+          ${BK_ICON}<span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Situazione odierna camere Booking.com</span>
         </div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;">`;
       if(bkArrivi.length>0){
