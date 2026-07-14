@@ -1747,6 +1747,38 @@ function miniappRenderStatus(){
   if(cmEl)miniappCmStatus().then(html=>{cmEl.innerHTML=html;});
 }
 let pianoNavIdx=null; // indice giorno selezionato nel pannello overview
+let _cmPianoStats=null; // {prev,cur} camere Art controllate (bottiglia consumata) sett. scorsa/corrente
+async function cmLoadPianoStats(){
+  const now=new Date();
+  const dow=now.getDay(); // 0=Dom..6=Sab
+  const curSunday=new Date(now);curSunday.setDate(now.getDate()-dow);curSunday.setHours(0,0,0,0);
+  const prevSunday=new Date(curSunday);prevSunday.setDate(curSunday.getDate()-7);
+  const keyFor=d=>'qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const curKeys=[];for(let i=0;i<=dow;i++){const d=new Date(curSunday);d.setDate(curSunday.getDate()+i);curKeys.push(keyFor(d));}
+  const prevKeys=[];for(let i=0;i<7;i++){const d=new Date(prevSunday);d.setDate(prevSunday.getDate()+i);prevKeys.push(keyFor(d));}
+  async function fetchDay(key){
+    try{
+      const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+      if(r.ok){const j=await r.json();if(j&&j.value)return JSON.parse(j.value);}
+    }catch(e){}
+    try{const s=localStorage.getItem(key);if(s)return JSON.parse(s);}catch(e){}
+    return null;
+  }
+  function distinctChecked(states){
+    const set=new Set();
+    states.forEach(state=>{
+      if(!state)return;
+      CM_ROOMS.forEach(r=>{
+        const rs=state[r];
+        if(rs&&rs.visited&&!rs.dnd&&!rs.libera&&rs.bottiglia==='consumata')set.add(r);
+      });
+    });
+    return set.size;
+  }
+  const[curStates,prevStates]=await Promise.all([Promise.all(curKeys.map(fetchDay)),Promise.all(prevKeys.map(fetchDay))]);
+  _cmPianoStats={cur:distinctChecked(curStates),prev:distinctChecked(prevStates)};
+  try{if(pianoNavIdx!==null)pianoNavRender(pianoNavIdx);}catch(e){}
+}
 
 function pianoGetGiornoIdx(refDate){
   if(!pianoData||!pianoData.giorni)return -1;
@@ -1893,13 +1925,20 @@ function renderPianoGiorno(elId,refDate,forceIdx){
         cmN=rooms.size;
       }
     }catch(e){}
-    if(cmN>0){
+    const stats=_cmPianoStats;
+    const hasContent=cmN>0||(stats&&(stats.cur>0||stats.prev>0));
+    if(hasContent){
+      const todayLine=cmN>0?`<div style="display:flex;align-items:baseline;gap:8px;${stats?'margin-bottom:10px;':''}">
+        <span style="font-size:30px;font-weight:300;line-height:1;">${cmN}</span>
+        <span style="font-size:11px;color:var(--text-dim);">camere da controllare oggi</span>
+      </div>`:'';
+      const statsLine=stats?`<div style="display:flex;gap:20px;${cmN>0?'border-top:1px solid var(--border-light);padding-top:10px;':''}">
+        <div><div style="font-size:20px;font-weight:700;line-height:1;">${stats.prev}</div><div style="font-size:10px;color:var(--text-dim);margin-top:3px;">controllate<br>sett. scorsa</div></div>
+        <div><div style="font-size:20px;font-weight:700;line-height:1;">${stats.cur}</div><div style="font-size:10px;color:var(--text-dim);margin-top:3px;">controllate<br>questa sett.</div></div>
+      </div>`:'';
       sideBox=`<div style="flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:0 28px;border-left:1px solid var(--border-light);margin-left:8px;min-width:180px;">
-        <div class="kpi-label" style="margin-bottom:8px;">Distribuzione Culligan — Previsione</div>
-        <div style="display:flex;align-items:baseline;gap:8px;">
-          <span style="font-size:30px;font-weight:300;line-height:1;">${cmN}</span>
-          <span style="font-size:11px;color:var(--text-dim);">camere da controllare oggi</span>
-        </div>
+        <div class="kpi-label" style="margin-bottom:8px;">Distribuzione Culligan</div>
+        ${todayLine}${statsLine}
       </div>`;
     }else{
       sideBox=`<div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0 32px;pointer-events:none;user-select:none;border-left:1px solid var(--border-light);margin-left:8px;"><span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#1A2E55;letter-spacing:.01em;white-space:nowrap;">Compass QM <span style="font-weight:300;color:var(--text-dim);margin:0 6px;">|</span><span style="font-weight:400;color:var(--text-dim);font-size:14px;"> Dashboard</span></span></div>`;
@@ -2639,6 +2678,7 @@ setInterval(fetchMeteo,10*60*1000);
 // Mostra KPI topbar se overview è la view iniziale
 (function(){const k=document.getElementById('topbar-kpis');if(k)k.style.display='flex';})();
 try{updateStaffPanelHeader();}catch(e){}
+try{cmLoadPianoStats();}catch(e){}
 // §§ SIDEBAR — OROLOGIO & DATA (updateSbClock, toggleDatePopup, saveDate, updateDateDisplay)
 function updateSbClock(){
   const n=new Date();
