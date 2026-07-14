@@ -459,7 +459,7 @@
             <span class="panel-title">Breakfast</span>
           </div>
           <div class="panel-body">
-            <div class="ov-bkf-grid" style="margin-bottom:0;min-height:220px;">
+            <div class="ov-bkf-grid" style="margin-bottom:0;min-height:220px;grid-template-columns:1fr 3fr 0.8fr;">
               <div>
                 <div class="kpi-label">Coperti colazione</div>
                 <div id="kpi-bkf-multiday">
@@ -480,7 +480,7 @@
                 <div class="kpi-sub" id="kpi-bkf-nocol-sub"></div>
               </div>
             </div>
-            <div id="ov-bkf-stats" style="display:none;border-top:1px solid var(--border-light);margin-top:16px;padding-top:14px;gap:24px;flex-wrap:wrap;"></div>
+            <div id="ov-bkf-stats" style="display:none;border-top:1px solid var(--border-light);margin-top:16px;padding-top:14px;gap:24px;align-items:baseline;overflow-x:auto;"></div>
           </div>
         </div>
         <div id="kpi-occ-preview" style="display:none;margin-bottom:14px;"></div>
@@ -1568,7 +1568,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=1"></script>
-<script src="app.js?v=507-20260714"></script>
+<script src="app.js?v=508-20260714"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

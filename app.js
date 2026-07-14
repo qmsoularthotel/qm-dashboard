@@ -4574,15 +4574,12 @@ function renderOvBkfChart(){
   pts.forEach((p,i)=>{
     const x=sx(i),y=sy(p.v);
     const isActive=i===bkfActiveDay;
-    const vs=String(p.v);
-    const pw=isActive?26+vs.length*9:20+vs.length*7,ph=isActive?20:16;
     svg+=`<circle cx="${x}" cy="${y}" r="${isActive?5:3.5}" fill="var(--accent)" stroke="white" stroke-width="2"/>`;
-    svg+=`<rect x="${x-pw/2}" y="${y-ph-12}" width="${pw}" height="${ph}" rx="${ph/2}" fill="var(--accent)"/>`;
-    svg+=`<text x="${x}" y="${y-12-ph/2+4}" font-size="${isActive?'12':'10.5'}" fill="#fff" text-anchor="middle" font-weight="${isActive?'800':'700'}">${p.v}</text>`;
+    svg+=`<text x="${x}" y="${y-13}" font-size="${isActive?'13':'11.5'}" fill="var(--accent)" text-anchor="middle" font-weight="${isActive?'800':'700'}">${p.v}</text>`;
     svg+=`<text x="${x}" y="${H-8}" font-size="11" fill="${isActive?'var(--accent)':'var(--text-dim)'}" font-weight="${isActive?'700':'400'}" text-anchor="middle">${p.label}</text>`;
   });
   svg+='</svg>';
-  el.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;flex-shrink:0;">Andamento settimanale</div>${svg}`;
+  el.innerHTML=`<div class="kpi-label" style="flex-shrink:0;">Andamento settimanale</div>${svg}`;
 }
 function renderOvBkfStats(){
   const el=document.getElementById('ov-bkf-stats');if(!el)return;
@@ -4596,27 +4593,24 @@ function renderOvBkfStats(){
   const roPct=totToday>0?Math.round((today.noCol||0)/totToday*100):0;
   el.style.display='flex';
   el.innerHTML=`
-    <div style="flex:1;display:flex;gap:24px;flex-wrap:wrap;min-width:220px;">
-      <div>
-        <div class="kpi-label">Media coperti/giorno</div>
-        <div style="font-size:20px;font-weight:700;">${avg}</div>
-      </div>
-      <div style="border-left:1px solid var(--border-light);padding-left:24px;">
-        <div class="kpi-label">Giorno più alto</div>
-        <div style="font-size:14px;font-weight:700;">${maxP.label} <span style="color:var(--green);">· ${maxP.v}</span></div>
-      </div>
-      <div style="border-left:1px solid var(--border-light);padding-left:24px;">
-        <div class="kpi-label">Giorno più basso</div>
-        <div style="font-size:14px;font-weight:700;">${minP.label} <span style="color:var(--red);">· ${minP.v}</span></div>
-      </div>
+    <div>
+      <div class="kpi-label">Media coperti/giorno</div>
+      <div class="kpi-value">${avg}</div>
     </div>
-    <div style="flex:1;min-width:200px;display:flex;flex-direction:column;justify-content:center;">
-      <div class="kpi-label" style="margin-bottom:6px;">Room Only oggi</div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="flex:1;height:8px;border-radius:5px;background:var(--surface2);overflow:hidden;"><div style="width:${roPct}%;height:100%;background:var(--accent);"></div></div>
-        <div style="font-size:14px;font-weight:700;color:var(--accent);min-width:38px;text-align:right;">${roPct}%</div>
-      </div>
-      <div class="kpi-sub" style="margin-top:3px;">${today.noCol||0} su ${totToday} ospiti — ${today.label}</div>
+    <div style="border-left:1px solid var(--border-light);padding-left:24px;">
+      <div class="kpi-label">Giorno più alto</div>
+      <div class="kpi-value" style="color:var(--green);">${maxP.v}</div>
+      <div class="kpi-sub">${maxP.label}</div>
+    </div>
+    <div style="border-left:1px solid var(--border-light);padding-left:24px;">
+      <div class="kpi-label">Giorno più basso</div>
+      <div class="kpi-value" style="color:var(--red);">${minP.v}</div>
+      <div class="kpi-sub">${minP.label}</div>
+    </div>
+    <div style="border-left:1px solid var(--border-light);padding-left:24px;">
+      <div class="kpi-label">Room Only oggi</div>
+      <div class="kpi-value">${roPct}%</div>
+      <div class="kpi-sub">${today.noCol||0} su ${totToday} ospiti</div>
     </div>`;
 }
 // §§ HOUSEKEEPING — HKP UPLOAD & DATI (handleHkFile, hkParseText, hkSetLoaded, resetSoulData/BoutData)
