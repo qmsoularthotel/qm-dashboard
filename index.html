@@ -459,7 +459,7 @@
             <span class="panel-title">Breakfast</span>
           </div>
           <div class="panel-body">
-            <div class="ov-bkf-grid" style="margin-bottom:0;">
+            <div class="ov-bkf-grid" style="margin-bottom:0;min-height:220px;">
               <div>
                 <div class="kpi-label">Coperti colazione</div>
                 <div id="kpi-bkf-multiday">
@@ -470,8 +470,8 @@
                   <div class="kpi-sub" id="kpi-bkf-sub"></div>
                 </div>
               </div>
-              <div style="padding:0 16px;border-left:1px solid var(--border-light);border-right:1px solid var(--border-light);">
-                <div id="ov-bkf-chart" style="height:100%;box-sizing:border-box;display:flex;align-items:center;"><div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere il grafico</div></div>
+              <div style="padding:0 16px;border-left:1px solid var(--border-light);border-right:1px solid var(--border-light);display:flex;">
+                <div id="ov-bkf-chart" style="width:100%;box-sizing:border-box;display:flex;flex-direction:column;"><div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere il grafico</div></div>
               </div>
               <div style="padding-left:16px;">
                 <div class="kpi-label">Room Only</div>
@@ -480,6 +480,7 @@
                 <div class="kpi-sub" id="kpi-bkf-nocol-sub"></div>
               </div>
             </div>
+            <div id="ov-bkf-stats" style="display:none;border-top:1px solid var(--border-light);margin-top:16px;padding-top:14px;gap:24px;flex-wrap:wrap;"></div>
           </div>
         </div>
         <div id="kpi-occ-preview" style="display:none;margin-bottom:14px;"></div>
@@ -1567,7 +1568,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=1"></script>
-<script src="app.js?v=506-20260714"></script>
+<script src="app.js?v=507-20260714"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

@@ -4526,6 +4526,7 @@ function renderBkfDay(silent){
   bkfRenderChart();
   bkfRenderNotes();
   renderOvBkfChart();
+  renderOvBkfStats();
 }
 async function bkfSaveMonthlyHistory(){
   if(!bkfData||!bkfData.length)return;
@@ -4553,32 +4554,70 @@ async function bkfSaveMonthlyHistory(){
 }
 function renderOvBkfChart(){
   const el=document.getElementById('ov-bkf-chart');if(!el)return;
-  if(!bkfData||!bkfData.length){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere il grafico</div>';return;}
+  if(!bkfData||!bkfData.length){el.innerHTML='<div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere il grafico</div>';return;}
   const pts=bkfData.map(d=>({label:d.label.split(' ')[0],v:d.adulti+d.bambini,nc:d.noCol||0}));
-  const W=600,H=160,PL=30,PR=10,PT=20,PB=28;
+  const W=600,H=220,PL=30,PR=10,PT=26,PB=28;
   const plotW=W-PL-PR,plotH=H-PT-PB;
   const YMAX=Math.max(30,...pts.map(p=>p.v))+10;
   const sx=i=>PL+i/(pts.length-1||1)*plotW;
   const sy=v=>PT+plotH-(v/YMAX)*plotH;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;flex:1;min-height:0;display:block;">`;
   for(let v=0;v<=YMAX;v+=Math.ceil(YMAX/4/10)*10){
     const y=sy(v);
     svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="1"/>`;
-    svg+=`<text x="${PL-4}" y="${y+4}" font-size="10" fill="var(--text-dim)" text-anchor="end">${v}</text>`;
+    svg+=`<text x="${PL-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;
   }
   const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
   const areaPath=linePath+`L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z`;
   svg+=`<path d="${areaPath}" fill="var(--accent)" opacity="0.12"/>`;
-  svg+=`<path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
+  svg+=`<path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>`;
   pts.forEach((p,i)=>{
     const x=sx(i),y=sy(p.v);
     const isActive=i===bkfActiveDay;
-    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?4:3}" fill="var(--accent)" stroke="white" stroke-width="1.5"/>`;
-    svg+=`<text x="${x}" y="${y-8}" font-size="10" fill="var(--accent)" text-anchor="middle" font-weight="600">${p.v}</text>`;
-    svg+=`<text x="${x}" y="${H-4}" font-size="10" fill="var(--text-dim)" text-anchor="middle">${p.label}</text>`;
+    const vs=String(p.v);
+    const pw=isActive?26+vs.length*9:20+vs.length*7,ph=isActive?20:16;
+    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?5:3.5}" fill="var(--accent)" stroke="white" stroke-width="2"/>`;
+    svg+=`<rect x="${x-pw/2}" y="${y-ph-12}" width="${pw}" height="${ph}" rx="${ph/2}" fill="var(--accent)"/>`;
+    svg+=`<text x="${x}" y="${y-12-ph/2+4}" font-size="${isActive?'12':'10.5'}" fill="#fff" text-anchor="middle" font-weight="${isActive?'800':'700'}">${p.v}</text>`;
+    svg+=`<text x="${x}" y="${H-8}" font-size="11" fill="${isActive?'var(--accent)':'var(--text-dim)'}" font-weight="${isActive?'700':'400'}" text-anchor="middle">${p.label}</text>`;
   });
   svg+='</svg>';
-  el.innerHTML=svg;
+  el.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;flex-shrink:0;">Andamento settimanale</div>${svg}`;
+}
+function renderOvBkfStats(){
+  const el=document.getElementById('ov-bkf-stats');if(!el)return;
+  if(!bkfData||!bkfData.length){el.style.display='none';el.innerHTML='';return;}
+  const pts=bkfData.map(d=>({label:d.label.split(' ')[0],v:d.adulti+d.bambini}));
+  const avg=Math.round(pts.reduce((s,p)=>s+p.v,0)/pts.length);
+  const maxP=pts.reduce((a,b)=>b.v>a.v?b:a);
+  const minP=pts.reduce((a,b)=>b.v<a.v?b:a);
+  const today=bkfData[bkfActiveDay];
+  const totToday=today.adulti+today.bambini+(today.noCol||0);
+  const roPct=totToday>0?Math.round((today.noCol||0)/totToday*100):0;
+  el.style.display='flex';
+  el.innerHTML=`
+    <div style="flex:1;display:flex;gap:24px;flex-wrap:wrap;min-width:220px;">
+      <div>
+        <div class="kpi-label">Media coperti/giorno</div>
+        <div style="font-size:20px;font-weight:700;">${avg}</div>
+      </div>
+      <div style="border-left:1px solid var(--border-light);padding-left:24px;">
+        <div class="kpi-label">Giorno più alto</div>
+        <div style="font-size:14px;font-weight:700;">${maxP.label} <span style="color:var(--green);">· ${maxP.v}</span></div>
+      </div>
+      <div style="border-left:1px solid var(--border-light);padding-left:24px;">
+        <div class="kpi-label">Giorno più basso</div>
+        <div style="font-size:14px;font-weight:700;">${minP.label} <span style="color:var(--red);">· ${minP.v}</span></div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:200px;display:flex;flex-direction:column;justify-content:center;">
+      <div class="kpi-label" style="margin-bottom:6px;">Room Only oggi</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="flex:1;height:8px;border-radius:5px;background:var(--surface2);overflow:hidden;"><div style="width:${roPct}%;height:100%;background:var(--accent);"></div></div>
+        <div style="font-size:14px;font-weight:700;color:var(--accent);min-width:38px;text-align:right;">${roPct}%</div>
+      </div>
+      <div class="kpi-sub" style="margin-top:3px;">${today.noCol||0} su ${totToday} ospiti — ${today.label}</div>
+    </div>`;
 }
 // §§ HOUSEKEEPING — HKP UPLOAD & DATI (handleHkFile, hkParseText, hkSetLoaded, resetSoulData/BoutData)
 let hkSoulData=null;
@@ -5018,6 +5057,7 @@ function resetBkf(){
   ['kpi-bkf-tot','kpi-bkf-nocol'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
   ['kpi-bkf-delta','kpi-bkf-nocol-delta'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent='Carica report pasti';el.className='kpi-delta';el.style.color='var(--text-dim)';}});
   ['kpi-bkf-sub','kpi-bkf-nocol-sub'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
+  const statsEl=document.getElementById('ov-bkf-stats');if(statsEl){statsEl.style.display='none';statsEl.innerHTML='';}
   LS.del('bkfData');
 }
 function bkfShowStatus(msg){
