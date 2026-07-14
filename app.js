@@ -4561,25 +4561,34 @@ function renderOvBkfChart(){
   const YMAX=Math.max(30,...pts.map(p=>p.v))+10;
   const sx=i=>PL+i/(pts.length-1||1)*plotW;
   const sy=v=>PT+plotH-(v/YMAX)*plotH;
+  const barW=Math.min(50,plotW/pts.length*0.55);
   let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;flex:1;min-height:0;display:block;">`;
   for(let v=0;v<=YMAX;v+=Math.ceil(YMAX/4/10)*10){
     const y=sy(v);
     svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="1"/>`;
     svg+=`<text x="${PL-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;
   }
-  const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
-  const areaPath=linePath+`L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z`;
-  svg+=`<path d="${areaPath}" fill="var(--accent)" opacity="0.12"/>`;
-  svg+=`<path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>`;
+  // Barre coperti
   pts.forEach((p,i)=>{
-    const x=sx(i),y=sy(p.v);
-    const isActive=i===bkfActiveDay;
-    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?5:3.5}" fill="var(--accent)" stroke="white" stroke-width="2"/>`;
-    svg+=`<text x="${x}" y="${y-13}" font-size="${isActive?'13':'11.5'}" fill="var(--accent)" text-anchor="middle" font-weight="${isActive?'800':'700'}">${p.v}</text>`;
+    const x=sx(i),y=sy(p.v),isActive=i===bkfActiveDay;
+    svg+=`<rect x="${x-barW/2}" y="${y}" width="${barW}" height="${sy(0)-y}" rx="4" fill="${isActive?'var(--accent)':'var(--accent-bg)'}" stroke="var(--accent)" stroke-width="1.5"/>`;
+  });
+  // Linea tratteggiata Room Only sulla stessa scala
+  const roLine='M'+pts.map((p,i)=>`${sx(i)},${sy(p.nc)}`).join('L');
+  svg+=`<path d="${roLine}" fill="none" stroke="var(--red)" stroke-width="2" stroke-dasharray="3 3"/>`;
+  pts.forEach((p,i)=>{svg+=`<circle cx="${sx(i)}" cy="${sy(p.nc)}" r="3" fill="var(--red)"/>`;});
+  // Etichette valori + giorni
+  pts.forEach((p,i)=>{
+    const x=sx(i),y=sy(p.v),isActive=i===bkfActiveDay;
+    if(isActive)svg+=`<text x="${x}" y="${y+16}" font-size="13" fill="#fff" text-anchor="middle" font-weight="800">${p.v}</text>`;
+    else svg+=`<text x="${x}" y="${y-6}" font-size="11.5" fill="var(--accent)" text-anchor="middle" font-weight="700">${p.v}</text>`;
     svg+=`<text x="${x}" y="${H-8}" font-size="11" fill="${isActive?'var(--accent)':'var(--text-dim)'}" font-weight="${isActive?'700':'400'}" text-anchor="middle">${p.label}</text>`;
   });
   svg+='</svg>';
-  el.innerHTML=`<div class="kpi-label" style="flex-shrink:0;">Andamento settimanale</div>${svg}`;
+  el.innerHTML=`<div class="kpi-label" style="flex-shrink:0;">Andamento settimanale</div>${svg}<div style="display:flex;gap:14px;flex-shrink:0;margin-top:2px;">
+    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:10px;background:var(--accent);border-radius:2px;display:inline-block;"></span>Coperti</span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:2px;background:var(--red);display:inline-block;"></span>Room Only</span>
+  </div>`;
 }
 function renderOvBkfStats(){
   const el=document.getElementById('ov-bkf-stats');if(!el)return;
