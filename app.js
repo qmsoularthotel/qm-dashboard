@@ -5557,11 +5557,11 @@ function arriviUpdateKpi(){
       ...(arriviData.fermate||[]).filter(f=>isBk(f.origine)&&fermataEscOggi(f))
     ];
     if(bkArrivi.length>0||bkFermate.length>0||bkPartenze.length>0){
-      let html=`<div style="background:var(--surface);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-        <div style="padding:10px 14px;background:var(--accent-bg);border-bottom:1px solid #B8CEEE;display:flex;align-items:center;gap:6px;">
-          ${BK_ICON}<span style="font-size:var(--fs-xs);font-weight:700;color:var(--accent);">Booking.com — Riepilogo giornata</span>
+      let html=`<div style="border-top:1px solid var(--border-light);padding-top:12px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          ${BK_ICON}<span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Booking.com — Riepilogo giornata</span>
         </div>
-        <div style="padding:12px 14px;display:flex;gap:14px;flex-wrap:wrap;">`;
+        <div style="display:flex;gap:14px;flex-wrap:wrap;">`;
       if(bkArrivi.length>0){
         const chips=bkArrivi.map(a=>`<span style="padding:3px 10px;border-radius:10px;background:var(--accent-bg);color:var(--accent);font-size:var(--fs-xxs);font-weight:600;border:1px solid #B8CEEE;">↓ ${a.camera}${a.ospite?' · '+a.ospite.split(' ')[0]:''}</span>`).join('');
         html+=`<div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Check-in <span style="background:var(--accent);color:#fff;border-radius:6px;padding:0 6px;">${bkArrivi.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;

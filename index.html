@@ -450,9 +450,9 @@
             <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:6px;" id="ov-piano-week-row"></div>
           </div>
           <div class="panel-body" id="ov-piano-preview"><div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div></div>
+          <!-- Riepilogo Booking.com: arrivi oggi + partenze attese — popolato da arriviUpdateKpi() -->
+          <div id="ov-booking-box" style="display:none;padding:0 20px 16px;"></div>
         </div>
-        <!-- Box Booking.com: arrivi oggi + partenze attese — popolato da arriviUpdateKpi() -->
-        <div id="ov-booking-box" style="display:none;margin-bottom:14px;"></div>
         <div class="ov-bkf-grid">
           <div class="kpi-card" style="border-top-color:#A05A00;">
             <div class="kpi-card-icon" style="background:var(--amber-bg);">☕</div>
@@ -1579,7 +1579,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=1"></script>
-<script src="app.js?v=503-20260714"></script>
+<script src="app.js?v=504-20260714"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
