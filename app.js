@@ -392,11 +392,12 @@ function renderDay(idx){
   // (grigio), ferie è pianificato (ambra), malattia è l'unico che merita davvero attenzione (rosso)
   function _absenceReason(v){
     const u=String(v||'').trim().toUpperCase();
-    if(u==='MALATTIA')return{label:'Malattia',bg:'var(--red-bg)',fg:'var(--red)'};
-    if(u==='FERIE')return{label:'Ferie',bg:'var(--amber-bg)',fg:'var(--amber)'};
-    if(['R','RIPOSO','RIPOSO RICHIESTO'].includes(u))return{label:'Riposo',bg:'var(--surface2)',fg:'var(--text-dim)'};
-    return{label:'',bg:'var(--surface2)',fg:'var(--text-dim)'};
+    if(['R','RIPOSO','RIPOSO RICHIESTO'].includes(u))return{label:'Riposo',bg:'var(--surface2)',fg:'var(--text-dim)',ord:0};
+    if(u==='MALATTIA')return{label:'Malattia',bg:'var(--red-bg)',fg:'var(--red)',ord:1};
+    if(u==='FERIE')return{label:'Ferie',bg:'var(--amber-bg)',fg:'var(--amber)',ord:2};
+    return{label:'',bg:'var(--surface2)',fg:'var(--text-dim)',ord:3};
   }
+  const nonServizioSorted=[...nonServizio].sort((a,b)=>_absenceReason(getShift(shifts,a)).ord-_absenceReason(getShift(shifts,b)).ord);
   let html='';
   html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
     <div style="display:flex;gap:2px;flex-shrink:0;">
@@ -404,7 +405,7 @@ function renderDay(idx){
     </div>
     <span style="font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;">${g.label}</span>
   </div>`;
-  html+=`<div class="non-servizio-strip" style="background:var(--surface2);border:1.5px solid var(--border);"><span class="ns-label" style="color:var(--text-muted);">Non in servizio</span>${nonServizio.length?nonServizio.map(n=>{const r=_absenceReason(getShift(shifts,n));return`<span class="ns-chip" style="color:var(--text);background:#fff;border:1px solid var(--border-light);display:inline-flex;align-items:center;gap:6px;">${n}${r.label?`<span style="font-size:10px;font-weight:800;padding:3px 9px;border-radius:14px;text-transform:uppercase;letter-spacing:.02em;background:${r.bg};color:${r.fg};">${r.label}</span>`:''}</span>`;}).join(''):`<span class="ns-chip" style="color:var(--text-dim);background:#fff;border:1px solid var(--border-light);">Tutti in servizio</span>`}</div>`;
+  html+=`<div class="non-servizio-strip" style="background:var(--surface2);border:1.5px solid var(--border);"><span class="ns-label" style="color:var(--text-muted);">Non in servizio</span>${nonServizioSorted.length?nonServizioSorted.map(n=>{const r=_absenceReason(getShift(shifts,n));return`<span class="ns-chip" style="color:var(--text);background:#fff;border:1px solid var(--border-light);display:inline-flex;align-items:center;gap:6px;">${n}${r.label?`<span style="font-size:10px;font-weight:800;padding:3px 9px;border-radius:14px;text-transform:uppercase;letter-spacing:.02em;background:${r.bg};color:${r.fg};">${r.label}</span>`:''}</span>`;}).join(''):`<span class="ns-chip" style="color:var(--text-dim);background:#fff;border:1px solid var(--border-light);">Tutti in servizio</span>`}</div>`;
   const shiftRow=(n,sv,cls)=>`<div class="staff-row" style="cursor:pointer;" title="Clicca per correggere" onclick="editShift(${idx},'${n.replace(/'/g,"\\'")}')"><span class="sname">${n}</span><span class="sshift ${cls}">${sv||'—'}</span></div>`;
   html+='<div class="staff-grid">';
   Object.entries(DEPTS).forEach(([key,dept])=>{
