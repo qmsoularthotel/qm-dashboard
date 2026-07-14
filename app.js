@@ -4556,12 +4556,14 @@ function renderOvBkfChart(){
   const el=document.getElementById('ov-bkf-chart');if(!el)return;
   if(!bkfData||!bkfData.length){el.innerHTML='<div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere il grafico</div>';return;}
   const pts=bkfData.map(d=>({label:d.label.split(' ')[0],v:d.adulti+d.bambini,nc:d.noCol||0}));
-  const W=600,H=220,PL=30,PR=10,PT=26,PB=28;
-  const plotW=W-PL-PR,plotH=H-PT-PB;
+  const W=600,H=220,PL0=34,PR0=14,PT=26,PB=28;
+  const plotW0=W-PL0-PR0,plotH=H-PT-PB;
   const YMAX=Math.max(30,...pts.map(p=>p.v))+10;
+  const barW=Math.min(40,plotW0/pts.length*0.5);
+  const PL=PL0+barW/2,PR=PR0+barW/2;
+  const plotW=W-PL-PR;
   const sx=i=>PL+i/(pts.length-1||1)*plotW;
   const sy=v=>PT+plotH-(v/YMAX)*plotH;
-  const barW=Math.min(50,plotW/pts.length*0.55);
   let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;flex:1;min-height:0;display:block;">`;
   for(let v=0;v<=YMAX;v+=Math.ceil(YMAX/4/10)*10){
     const y=sy(v);
@@ -5033,7 +5035,7 @@ function updateKpiFromBkf(d){
   days.forEach((nd,i)=>{
     const nc=nd.adulti+nd.bambini;
     html+=`<div>
-      <div class="kpi-value" style="font-size:${i===0?'var(--fs-xl, 28px)':'22px'};">${nc}</div>
+      <div class="kpi-value" style="font-size:22px;">${nc}</div>
       <div class="kpi-delta" style="color:var(--text-dim);">${nd.adulti}a · ${nd.bambini}b</div>
       <div class="kpi-sub">${nd.label}</div>
     </div>`;
