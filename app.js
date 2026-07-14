@@ -6950,8 +6950,7 @@ function cmRender(state,key){
   const ringOffset=Math.round(ringCirc-ringCirc*pct);
   let h=`<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;">
     <div>
-      <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-weight:700;margin-bottom:2px;">${dateStr}</div>
-      <div style="font-size:22px;font-weight:800;letter-spacing:-.01em;">Distribuzione Culligan</div>
+      <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-weight:700;">${dateStr}</div>
     </div>
     <div style="display:flex;gap:8px;">
       <button onclick="cmPrintBottle()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);padding:9px 16px;border-radius:9px;font-weight:700;font-size:var(--fs-xxs);cursor:pointer;">🖨️ Stampa A4</button>
