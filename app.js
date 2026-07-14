@@ -392,10 +392,10 @@ function renderDay(idx){
   // (grigio), ferie è pianificato (ambra), malattia è l'unico che merita davvero attenzione (rosso)
   function _absenceReason(v){
     const u=String(v||'').trim().toUpperCase();
-    if(u==='MALATTIA')return{label:'Malattia',fg:'var(--red)',bg:'var(--red-bg)',bd:'rgba(198,40,40,.25)'};
-    if(u==='FERIE')return{label:'Ferie',fg:'var(--amber)',bg:'var(--amber-bg)',bd:'rgba(160,90,0,.25)'};
-    if(['R','RIPOSO','RIPOSO RICHIESTO'].includes(u))return{label:'Riposo',fg:'var(--text-dim)',bg:'var(--surface)',bd:'var(--border-light)'};
-    return{label:'',fg:'var(--text-dim)',bg:'var(--surface)',bd:'var(--border-light)'};
+    if(u==='MALATTIA')return{label:'Malattia',dot:'var(--red)',bd:'var(--red)'};
+    if(u==='FERIE')return{label:'Ferie',dot:'var(--amber)',bd:'var(--amber)'};
+    if(['R','RIPOSO','RIPOSO RICHIESTO'].includes(u))return{label:'Riposo',dot:'var(--text-dim)',bd:'var(--border)'};
+    return{label:'',dot:'var(--text-dim)',bd:'var(--border)'};
   }
   let html='';
   html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
@@ -404,7 +404,7 @@ function renderDay(idx){
     </div>
     <span style="font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;">${g.label}</span>
   </div>`;
-  html+=`<div class="non-servizio-strip" style="background:var(--surface);border-color:var(--border-light);"><span class="ns-label" style="color:var(--text-dim);">Non in servizio</span>${nonServizio.length?nonServizio.map(n=>{const r=_absenceReason(getShift(shifts,n));return`<span class="ns-chip" style="color:${r.fg};background:${r.bg};border-color:${r.bd};">${n}${r.label?' · '+r.label:''}</span>`;}).join(''):`<span class="ns-chip" style="color:var(--text-dim);background:var(--surface);border-color:var(--border-light);">Tutti in servizio</span>`}</div>`;
+  html+=`<div class="non-servizio-strip" style="background:var(--surface2);border:1.5px solid var(--border);"><span class="ns-label" style="color:var(--text-muted);">Non in servizio</span>${nonServizio.length?nonServizio.map(n=>{const r=_absenceReason(getShift(shifts,n));return`<span class="ns-chip" style="color:var(--text);background:#fff;border:1.5px solid ${r.bd};display:inline-flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:${r.dot};flex-shrink:0;"></span>${n}${r.label?' · '+r.label:''}</span>`;}).join(''):`<span class="ns-chip" style="color:var(--text-dim);background:#fff;border:1.5px solid var(--border-light);">Tutti in servizio</span>`}</div>`;
   const shiftRow=(n,sv,cls)=>`<div class="staff-row" style="cursor:pointer;" title="Clicca per correggere" onclick="editShift(${idx},'${n.replace(/'/g,"\\'")}')"><span class="sname">${n}</span><span class="sshift ${cls}">${sv||'—'}</span></div>`;
   html+='<div class="staff-grid">';
   Object.entries(DEPTS).forEach(([key,dept])=>{
