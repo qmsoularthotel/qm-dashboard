@@ -315,12 +315,14 @@ function _turnoReconcile(passes){
   return{giorni};
 }
 // §§ TURNO — RENDER & NAVIGAZIONE (loadWeekData, renderDay, buildWeekNav)
-function loadWeekData(data){
-  weekData=data;
-  const today=new Date();
-  const todayD=today.getDate();
-  const todayM=today.getMonth()+1;
-  const todayY=today.getFullYear();
+// Ricerca robusta del giorno corrispondente a refDate in weekData.giorni: prova prima
+// la data esatta (anno/mese/giorno), poi l'abbreviazione del giorno della settimana nel
+// label (es. "Mar" per martedì). Condivisa tra loadWeekData e refreshOverviewForDate così
+// le due funzioni concordano sempre su "il turno di oggi c'è" — prima usavano logiche
+// diverse e potevano disaccordare, mostrando l'avviso "settimana precedente" anche quando
+// il turno era quello giusto.
+function findWeekDayIndex(data,refDate){
+  const refD=refDate.getDate(),refM=refDate.getMonth()+1,refY=refDate.getFullYear();
   function parseLocalDate(g){
     // Prova prima con date field come stringa ISO "2026-03-23"
     if(g.date){
@@ -331,28 +333,38 @@ function loadWeekData(data){
     // Fallback: leggi dal label "Lun 23/03" o "Lun 23/03/2026" o "Lun 23"
     if(g.label){
       const m2=g.label.match(/(\d{1,2})\/(\d{2})(?:\/(\d{4}))?/);
-      if(m2)return{y:m2[3]?parseInt(m2[3]):todayY,mo:parseInt(m2[2]),d:parseInt(m2[1])};
+      if(m2)return{y:m2[3]?parseInt(m2[3]):refY,mo:parseInt(m2[2]),d:parseInt(m2[1])};
       const m3=g.label.match(/(\d{1,2})$/);
-      if(m3)return{y:todayY,mo:todayM,d:parseInt(m3[1])};
+      if(m3)return{y:refY,mo:refM,d:parseInt(m3[1])};
     }
     return null;
   }
   let idx=data.giorni.findIndex(g=>{
     const p=parseLocalDate(g);
-    return p&&p.d===todayD&&p.mo===todayM&&p.y===todayY;
+    return p&&p.d===refD&&p.mo===refM&&p.y===refY;
   });
   if(idx===-1){
-    // Fallback 1: cerca per abbreviazione giorno della settimana nel label (es. "Mar" per martedì)
-    const dayPfx=['dom','lun','mar','mer','gio','ven','sab'][today.getDay()];
-    const byDow=data.giorni.findIndex(g=>g.label&&g.label.toLowerCase().startsWith(dayPfx));
-    if(byDow!==-1){
-      idx=byDow;
-    } else {
-      // Fallback 2: primo o ultimo giorno
-      const lastP=parseLocalDate(data.giorni[data.giorni.length-1]);
-      const isPast=lastP&&(lastP.y<todayY||(lastP.y===todayY&&lastP.mo<todayM)||(lastP.y===todayY&&lastP.mo===todayM&&lastP.d<todayD));
-      idx=isPast?data.giorni.length-1:0;
-    }
+    const dayPfx=['dom','lun','mar','mer','gio','ven','sab'][refDate.getDay()];
+    idx=data.giorni.findIndex(g=>g.label&&g.label.toLowerCase().startsWith(dayPfx));
+  }
+  return idx;
+}
+function loadWeekData(data){
+  weekData=data;
+  const today=new Date();
+  let idx=findWeekDayIndex(data,today);
+  if(idx===-1){
+    // Nessuna corrispondenza nemmeno per giorno della settimana — mostra comunque
+    // il primo o l'ultimo giorno disponibile, il più vicino a oggi
+    const parseLocalDate=g=>{
+      if(g.date){const s=typeof g.date==='string'?g.date:g.date.toISOString?g.date.toISOString():'';const m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return{y:parseInt(m[1]),mo:parseInt(m[2]),d:parseInt(m[3])};}
+      if(g.label){const m2=g.label.match(/(\d{1,2})\/(\d{2})(?:\/(\d{4}))?/);if(m2)return{y:m2[3]?parseInt(m2[3]):today.getFullYear(),mo:parseInt(m2[2]),d:parseInt(m2[1])};}
+      return null;
+    };
+    const todayD=today.getDate(),todayM=today.getMonth()+1,todayY=today.getFullYear();
+    const lastP=parseLocalDate(data.giorni[data.giorni.length-1]);
+    const isPast=lastP&&(lastP.y<todayY||(lastP.y===todayY&&lastP.mo<todayM)||(lastP.y===todayY&&lastP.mo===todayM&&lastP.d<todayD));
+    idx=isPast?data.giorni.length-1:0;
   }
   activeDay=idx;buildWeekNav();renderDay(activeDay);updateSidebarInfo();
   document.getElementById('weekNavWrap').style.display='block';
@@ -2653,7 +2665,8 @@ function refreshOverviewForDate(d){
     const el=document.getElementById('paoloTurno');
     if(el){
       if(weekData){
-        const giorno=weekData.giorni.find(g=>{const gd=g.date instanceof Date?g.date:new Date(g.date);return gd.getFullYear()===ref.getFullYear()&&gd.getMonth()===ref.getMonth()&&gd.getDate()===ref.getDate();});
+        const _pIdx=findWeekDayIndex(weekData,ref);
+        const giorno=_pIdx!==-1?weekData.giorni[_pIdx]:null;
         if(!giorno){el.textContent='Quality Manager';el.style.color='';}
         else{const turno=giorno.shifts['Presta P.'];if(!turno||IS_REST(turno)){el.textContent='Riposo';el.style.color='var(--red)';}else{el.textContent='Turno: '+turno;el.style.color='var(--green)';}}
       }else{el.textContent='Quality Manager';el.style.color='';}
@@ -2662,10 +2675,7 @@ function refreshOverviewForDate(d){
   // 2. Staff area
   try{
     if(weekData){
-      let idx=weekData.giorni.findIndex(g=>{
-        const gd=g.date instanceof Date?g.date:new Date(g.date);
-        return gd.getFullYear()===ref.getFullYear()&&gd.getMonth()===ref.getMonth()&&gd.getDate()===ref.getDate();
-      });
+      let idx=findWeekDayIndex(weekData,ref);
       if(idx!==-1){
         activeDay=idx;renderDay(activeDay);updateWeekNavActive();updateSidebarInfo();
       } else {
