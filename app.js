@@ -631,6 +631,20 @@ function hkpNPrint(p){
   });
   const grandTot=Object.values(rowTotals).reduce((a,b)=>a+b,0);
 
+  // Totale per cameriera — conta le occorrenze di ogni codice non-simbolo su tutto il mese
+  const staffTotals={};
+  rows.forEach((row,ri)=>{
+    days.forEach(d=>{
+      const v=hkpNGetCell(p,tab,ri,d);
+      if(!v)return;
+      v.split('/').forEach(k=>{
+        const t=k.trim();
+        if(t&&!HKP_SYM[t])staffTotals[t]=(staffTotals[t]||0)+1;
+      });
+    });
+  });
+  const staffList=Object.entries(staffTotals).sort((a,b)=>b[1]-a[1]);
+
   // Build print HTML
   let th='<tr><th style="background:#1E4080;color:#fff;padding:6px 10px;white-space:nowrap;border:1px solid #ccc;">Gruppo</th>'
         +'<th style="background:#1E4080;color:#fff;padding:6px 10px;white-space:nowrap;border:1px solid #ccc;">Camera</th>';
@@ -670,13 +684,21 @@ function hkpNPrint(p){
   tbody+='<td style="border:1px solid #ccc;text-align:center;background:#c3e6cb;color:#155724;font-weight:800;font-size:13px;padding:3px 6px;">'+(grandTot||'')+'</td>';
   tbody+='</tr>';
 
+  const staffChips=staffList.length?staffList.map(([code,n])=>
+    '<div style="display:inline-flex;align-items:baseline;gap:6px;background:#f0f5ff;border:1px solid #B8CEEE;border-radius:8px;padding:5px 12px;margin:0 6px 6px 0;">'
+    +'<span style="font-weight:700;font-size:13px;color:#1E4080;">'+code+'</span>'
+    +'<span style="font-size:12px;color:#333;">'+n+'</span></div>'
+  ).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
+
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${hotel} — HKP ${tabLabels[tab]} ${monName} ${y}</title>
 <style>
-@page{size:A4 landscape;margin:10mm}
+@page{size:A4 landscape;margin:8mm}
 body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;margin:0;padding:0}
 h2{margin:0 0 4px;font-size:15px;color:#1E4080}
+h3{margin:0 0 8px;font-size:13px;color:#1E4080}
 p{margin:0 0 10px;font-size:11px;color:#555}
 table{border-collapse:collapse;width:100%}
+.staff-section{margin-top:14px;page-break-inside:avoid;}
 @media print{button{display:none}}
 </style></head><body>
 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
@@ -684,10 +706,14 @@ table{border-collapse:collapse;width:100%}
   <button onclick="window.print()" style="padding:6px 14px;background:#1E4080;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">🖨 Stampa</button>
 </div>
 <table><thead>${th}</thead><tbody>${tbody}</tbody></table>
+<div class="staff-section">
+  <h3>Totale per cameriera — ${monName} ${y}</h3>
+  <div>${staffChips}</div>
+</div>
 </body></html>`;
 
   const w=window.open('','_blank','width=1100,height=750');
-  if(w){w.document.write(html);w.document.close();}
+  if(w){w.document.write(html);w.document.close();w.onload=()=>w.print();}
 }
 function hkpNTab(p,tab){HKP_NTAB[p]=tab;hkpNRender(p);}
 function hkpNRender(p){
