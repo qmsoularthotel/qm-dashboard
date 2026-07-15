@@ -772,7 +772,7 @@ function hkpNRenderGrid(p,tab){
   const monLabel=MON_IT[mo-1]+' '+yr;
   const rows=[];
   conf.forEach(grp=>grp.list.forEach((name,idx)=>rows.push({name,grp:grp.g,isFirst:idx===0,grpSize:grp.list.length})));
-  const dayTotals={};const rowTotals={};const hwCounts={};const symCounts={};
+  const dayTotals={};const rowTotals={};const hwCounts={};const symCounts={};const hwDays={};
   rows.forEach((row,ri)=>{
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
@@ -781,7 +781,7 @@ function hkpNRenderGrid(p,tab){
       v.split('/').forEach(k=>{
         const t=k.trim();if(!t)return;
         if(HKP_SYM[t]){symCounts[t]=(symCounts[t]||0)+1;}
-        else{hwCounts[t]=(hwCounts[t]||0)+1;hasStaff=true;}
+        else{hwCounts[t]=(hwCounts[t]||0)+1;hasStaff=true;(hwDays[t]=hwDays[t]||new Set()).add(d);}
       });
       // Il totale camere conta solo le assegnazioni a una cameriera, non ripasso/non disturbare/camera libera
       if(hasStaff){dayTotals[d]=(dayTotals[d]||0)+1;rowTotals[ri]=(rowTotals[ri]||0)+1;}
@@ -887,9 +887,10 @@ function hkpNRenderGrid(p,tab){
     h+='<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">';
     sortedHw.forEach(([init,cnt])=>{
       const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
+      const gg=hwDays[init]?hwDays[init].size:0;
       h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;">';
       h+='<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:#f1f2f4;color:#333;font-size:12px;font-weight:800;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
-      h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:12px;color:#666;margin-top:1px;">'+fullName+'</div></div></div>';
+      h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:12px;color:#666;margin-top:1px;">'+fullName+'</div><div style="font-size:11px;color:#1a5c2e;font-weight:700;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div></div></div>';
     });
     h+='</div>';
   }
