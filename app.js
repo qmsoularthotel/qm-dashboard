@@ -1747,7 +1747,7 @@ function miniappRenderStatus(){
   if(cmEl)miniappCmStatus().then(html=>{cmEl.innerHTML=html;});
 }
 let pianoNavIdx=null; // indice giorno selezionato nel pannello overview
-let _cmPianoStats=null; // {prev,cur} camere Art controllate (bottiglia consumata) sett. scorsa/corrente
+let _cmPianoStats=null; // {prev,cur} sostituzioni bottiglia Art (eventi, non camere uniche) sett. scorsa/corrente
 async function cmLoadPianoStats(){
   const now=new Date();
   const dow=now.getDay(); // 0=Dom..6=Sab
@@ -1764,19 +1764,19 @@ async function cmLoadPianoStats(){
     try{const s=localStorage.getItem(key);if(s)return JSON.parse(s);}catch(e){}
     return null;
   }
-  function distinctChecked(states){
-    const set=new Set();
+  function totalSostituzioni(states){
+    let n=0;
     states.forEach(state=>{
       if(!state)return;
       CM_ROOMS.forEach(r=>{
         const rs=state[r];
-        if(rs&&rs.visited&&!rs.dnd&&!rs.libera&&rs.bottiglia==='consumata')set.add(r);
+        if(rs&&rs.visited&&!rs.dnd&&!rs.libera&&rs.bottiglia==='consumata')n++;
       });
     });
-    return set.size;
+    return n;
   }
   const[curStates,prevStates]=await Promise.all([Promise.all(curKeys.map(fetchDay)),Promise.all(prevKeys.map(fetchDay))]);
-  _cmPianoStats={cur:distinctChecked(curStates),prev:distinctChecked(prevStates)};
+  _cmPianoStats={cur:totalSostituzioni(curStates),prev:totalSostituzioni(prevStates)};
   try{if(pianoNavIdx!==null)pianoNavRender(pianoNavIdx);}catch(e){}
 }
 
@@ -1933,8 +1933,8 @@ function renderPianoGiorno(elId,refDate,forceIdx){
         <span style="font-size:11px;color:var(--text-dim);">camere da controllare oggi</span>
       </div>`:'';
       const statsLine=stats?`<div style="display:flex;gap:20px;${cmN>0?'border-top:1px solid var(--border-light);padding-top:10px;':''}">
-        <div><div style="font-size:20px;font-weight:700;line-height:1;">${stats.prev}</div><div style="font-size:10px;color:var(--text-dim);margin-top:3px;">controllate<br>sett. scorsa</div></div>
-        <div><div style="font-size:20px;font-weight:700;line-height:1;">${stats.cur}</div><div style="font-size:10px;color:var(--text-dim);margin-top:3px;">controllate<br>questa sett.</div></div>
+        <div><div style="font-size:30px;font-weight:300;line-height:1;">${stats.prev}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">sostituzioni<br>sett. scorsa</div></div>
+        <div><div style="font-size:30px;font-weight:300;line-height:1;">${stats.cur}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">sostituzioni<br>questa sett.</div></div>
       </div>`:'';
       sideBox=`<div style="flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:0 28px;border-left:1px solid var(--border-light);margin-left:8px;min-width:180px;">
         <div class="kpi-label" style="margin-bottom:8px;">Distribuzione Culligan</div>
