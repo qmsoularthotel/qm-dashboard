@@ -595,6 +595,16 @@ function hkpNSaveAll(p){
   const btn=document.getElementById('hkpN-'+p+'-savebtn');
   if(btn){btn.textContent='✓ Salvato';setTimeout(()=>{btn.textContent='Salva';},1800);}
 }
+function hkpNGetRows(p,tab){
+  const conf=HKP_ROOMS[p]&&HKP_ROOMS[p][tab];
+  if(Array.isArray(conf)){
+    const rows=[];
+    conf.forEach(grp=>grp.list.forEach(name=>rows.push(name)));
+    return rows;
+  }
+  if(conf&&Array.isArray(conf.tasks))return conf.tasks;
+  return[];
+}
 function hkpNPrint(p){
   const tab=HKP_NTAB[p]||'camere';
   const tabLabels={camere:'Camere',aree:'Aree Comuni',fondi:'Fondi & Lavaggi'};
@@ -625,9 +635,9 @@ function hkpNPrint(p){
   th+='<th style="background:#1a5c2e;color:#fff;padding:4px 8px;text-align:center;border:1px solid #ccc;">Tot</th></tr>';
 
   let groups=[];
-  if(tab==='camere'){
-    const roomDef=HKP_ROOMS[p]||[];
-    roomDef.forEach(g=>g.rooms.forEach(r=>{groups.push({group:g.label,room:r});}));
+  const conf=HKP_ROOMS[p]&&HKP_ROOMS[p][tab];
+  if(Array.isArray(conf)){
+    conf.forEach(grp=>grp.list.forEach((name,idx)=>groups.push({group:idx===0?grp.g:'',room:name})));
   } else {
     rows.forEach(r=>groups.push({group:'',room:r}));
   }
