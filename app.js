@@ -631,15 +631,18 @@ function hkpNPrint(p){
   });
   const grandTot=Object.values(rowTotals).reduce((a,b)=>a+b,0);
 
-  // Totale per cameriera — conta le occorrenze di ogni codice non-simbolo su tutto il mese
-  const staffTotals={};
+  // Totale per cameriera — conta le occorrenze (camere) di ogni codice non-simbolo
+  // e i giorni di presenza distinti (almeno una camera quel giorno) su tutto il mese
+  const staffTotals={},staffDays={};
   rows.forEach((row,ri)=>{
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
       if(!v)return;
       v.split('/').forEach(k=>{
         const t=k.trim();
-        if(t&&!HKP_SYM[t])staffTotals[t]=(staffTotals[t]||0)+1;
+        if(!t||HKP_SYM[t])return;
+        staffTotals[t]=(staffTotals[t]||0)+1;
+        (staffDays[t]=staffDays[t]||new Set()).add(d);
       });
     });
   });
@@ -684,11 +687,13 @@ function hkpNPrint(p){
   tbody+='<td style="border:1px solid #ccc;text-align:center;background:#c3e6cb;color:#155724;font-weight:800;font-size:13px;padding:3px 6px;">'+(grandTot||'')+'</td>';
   tbody+='</tr>';
 
-  const staffChips=staffList.length?staffList.map(([code,n])=>
-    '<div style="display:inline-flex;align-items:baseline;gap:6px;background:#f0f5ff;border:1px solid #B8CEEE;border-radius:8px;padding:5px 12px;margin:0 6px 6px 0;">'
+  const staffChips=staffList.length?staffList.map(([code,n])=>{
+    const gg=(staffDays[code]?staffDays[code].size:0);
+    return '<div style="display:inline-flex;align-items:baseline;gap:8px;background:#f0f5ff;border:1px solid #B8CEEE;border-radius:8px;padding:5px 12px;margin:0 6px 6px 0;">'
     +'<span style="font-weight:700;font-size:13px;color:#1E4080;">'+code+'</span>'
-    +'<span style="font-size:12px;color:#333;">'+n+'</span></div>'
-  ).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
+    +'<span style="font-size:11px;color:#333;">'+n+' camere</span>'
+    +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">· '+gg+' '+(gg===1?'giorno':'giorni')+'</span></div>';
+  }).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
 
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${hotel} — HKP ${tabLabels[tab]} ${monName} ${y}</title>
 <style>
@@ -707,7 +712,7 @@ table{border-collapse:collapse;width:100%}
 </div>
 <table><thead>${th}</thead><tbody>${tbody}</tbody></table>
 <div class="staff-section">
-  <h3>Totale per cameriera — ${monName} ${y}</h3>
+  <h3>Totale camere e giorni di presenza per cameriera — ${monName} ${y}</h3>
   <div>${staffChips}</div>
 </div>
 </body></html>`;
