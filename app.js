@@ -689,10 +689,12 @@ function hkpNPrint(p){
 
   const staffChips=staffList.length?staffList.map(([code,n])=>{
     const gg=(staffDays[code]?staffDays[code].size:0);
+    const media=gg?(n/gg).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
     return '<div style="display:inline-flex;align-items:baseline;gap:8px;background:#f0f5ff;border:1px solid #B8CEEE;border-radius:8px;padding:5px 12px;margin:0 6px 6px 0;">'
     +'<span style="font-weight:700;font-size:13px;color:#1E4080;">'+code+'</span>'
     +'<span style="font-size:11px;color:#333;">'+n+' camere</span>'
-    +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">· '+gg+' '+(gg===1?'giorno':'giorni')+'</span></div>';
+    +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">· '+gg+' '+(gg===1?'giorno':'giorni')+'</span>'
+    +'<span style="font-size:11px;color:#1E4080;font-weight:700;">· '+media+'/gg</span></div>';
   }).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
 
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${hotel} — HKP ${tabLabels[tab]} ${monName} ${y}</title>
@@ -888,9 +890,10 @@ function hkpNRenderGrid(p,tab){
     sortedHw.forEach(([init,cnt])=>{
       const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
       const gg=hwDays[init]?hwDays[init].size:0;
+      const media=gg?(cnt/gg).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
       h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;">';
       h+='<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:#f1f2f4;color:#333;font-size:12px;font-weight:800;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
-      h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:12px;color:#666;margin-top:1px;">'+fullName+'</div><div style="font-size:11px;color:#1a5c2e;font-weight:700;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div></div></div>';
+      h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:12px;color:#666;margin-top:1px;">'+fullName+'</div><div style="font-size:11px;color:#1a5c2e;font-weight:700;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div><div style="font-size:11px;color:var(--accent,#1E4080);font-weight:700;margin-top:1px;">'+media+' camere/giorno</div></div></div>';
     });
     h+='</div>';
   }
