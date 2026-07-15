@@ -615,14 +615,17 @@ function hkpNPrint(p){
   const rows=hkpNGetRows(p,tab);
   const data=(_hkpNdata[hkpNCacheKey(p)]||{})[tab]||{};
 
-  // Build totals
+  // Build totals — conta le celle con assegnazione cameriera (esclude simboli
+  // come RP/ND/LIB/NE), stessa logica di hkpNRenderGrid, non una somma numerica
   const rowTotals={},dayTotals={};
   rows.forEach((row,ri)=>{
     let rt=0;
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
-      const n=v.split('/').reduce((s,x)=>{const num=parseFloat(x.trim());return s+(isNaN(num)?0:num);},0);
-      rt+=n;dayTotals[d]=(dayTotals[d]||0)+n;
+      if(!v)return;
+      let hasStaff=false;
+      v.split('/').forEach(k=>{const t=k.trim();if(t&&!HKP_SYM[t])hasStaff=true;});
+      if(hasStaff){rt++;dayTotals[d]=(dayTotals[d]||0)+1;}
     });
     rowTotals[ri]=rt;
   });
