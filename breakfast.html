@@ -553,6 +553,7 @@ let _ddtBkfTab='spese';
 let _ddtUploadModal=null;
 let _ddtParsedData=null;
 let _ddtUploadFornitore='';
+let _ddtEditingId=null;
 function ddtBkfSetTab(tab){_ddtBkfTab=tab;ddtBkfRenderSpese();if(tab==='spese')ddtBkfRenderList();}
 
 function ddtBkfGet(){try{return JSON.parse(localStorage.getItem(DDT_KEY)||'[]');}catch(e){return[];}}
@@ -1176,7 +1177,8 @@ function ddtBkfRenderList(){
             </tr></thead>
             <tbody>${artRows}</tbody>
           </table>
-          <div style="padding:10px 14px;border-top:1px solid var(--border);text-align:right;">
+          <div style="padding:10px 14px;border-top:1px solid var(--border);text-align:right;display:flex;gap:8px;justify-content:flex-end;">
+            <button onclick="ddtBkfOpenEditModal('${d.id}')" style="font-size:12px;padding:6px 14px;border-radius:8px;background:var(--accent-bg,#eef4ff);border:1px solid var(--accent);color:var(--accent);cursor:pointer;font-weight:600;">✏️ Modifica</button>
             <button onclick="ddtBkfDelete('${d.id}')" style="font-size:12px;padding:6px 14px;border-radius:8px;background:#fff0f0;border:1px solid #fca5a5;color:#b91c1c;cursor:pointer;font-weight:600;">🗑 Elimina DDT</button>
           </div>
         </div>
@@ -1228,7 +1230,26 @@ function ddtBkfOpenUploadModal(){
   _ddtUploadFornitore='';
 }
 const _ddtUploadHotel='sa';
-function ddtBkfCloseModal(){if(_ddtUploadModal){_ddtUploadModal.remove();_ddtUploadModal=null;}_ddtParsedData=null;}
+function ddtBkfCloseModal(){if(_ddtUploadModal){_ddtUploadModal.remove();_ddtUploadModal=null;}_ddtParsedData=null;_ddtEditingId=null;}
+
+function ddtBkfOpenEditModal(id){
+  const item=ddtBkfGet().find(d=>d.id===id);
+  if(!item)return;
+  if(_ddtUploadModal)_ddtUploadModal.remove();
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;';
+  m.onclick=e=>{if(e.target===m)ddtBkfCloseModal();};
+  m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:20px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;margin:auto;">
+    <button onclick="ddtBkfCloseModal()" style="position:absolute;top:12px;right:12px;background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;">✕</button>
+    <div style="font-size:15px;font-weight:700;margin-bottom:14px;">Modifica DDT</div>
+    <div id="ddt-parsed-result"></div>
+  </div>`;
+  document.body.appendChild(m);
+  _ddtUploadModal=m;
+  _ddtEditingId=id;
+  _ddtParsedData={...item,articoli:(item.articoli||[]).map(a=>({...a}))};
+  ddtBkfShowParsed(_ddtParsedData);
+}
 
 async function ddtBkfHandleFile(input){
   const file=input.files[0];if(!file)return;
@@ -1333,15 +1354,27 @@ function ddtBkfConfirmSave(){
   const fornFinal=ddtNormForn(_ddtParsedData.fornitore)||_ddtParsedData.fornitore||'';
   if(!Object.keys(DDT_BKF).includes(fornFinal)){alert('Seleziona il fornitore (SDM, MARR, SAIMA, Cozzolino o Valgarda) prima di salvare.');return;}
   const arr=ddtBkfGet();
-  arr.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6),ts:Date.now(),
-    data:_ddtParsedData.data||'',fornitore:fornFinal,
-    reparto:'bkf',hotel:_ddtParsedData.hotel||'sa',
-    numero_ddt:_ddtParsedData.numero_ddt||'',
-    articoli:_ddtParsedData.articoli||[],
-    totale_ordine:_ddtParsedData.totale_ordine||0});
+  if(_ddtEditingId){
+    const idx=arr.findIndex(d=>d.id===_ddtEditingId);
+    if(idx!==-1){
+      arr[idx]={...arr[idx],
+        data:_ddtParsedData.data||'',fornitore:fornFinal,
+        numero_ddt:_ddtParsedData.numero_ddt||'',
+        articoli:_ddtParsedData.articoli||[],
+        totale_ordine:_ddtParsedData.totale_ordine||0};
+    }
+  }else{
+    arr.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6),ts:Date.now(),
+      data:_ddtParsedData.data||'',fornitore:fornFinal,
+      reparto:'bkf',hotel:_ddtParsedData.hotel||'sa',
+      numero_ddt:_ddtParsedData.numero_ddt||'',
+      articoli:_ddtParsedData.articoli||[],
+      totale_ordine:_ddtParsedData.totale_ordine||0});
+  }
   ddtBkfSave(arr);
   ddtBkfCloseModal();
   ddtBkfRenderSpese();
+  ddtBkfRenderList();
 }
 function ddtBkfDelete(id){
   if(!confirm('Eliminare questo DDT?'))return;
