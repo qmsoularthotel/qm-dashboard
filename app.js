@@ -607,6 +607,26 @@ function hkpNGetRows(p,tab){
   if(conf&&Array.isArray(conf.tasks))return conf.tasks;
   return[];
 }
+// Presenza reale della cameriera nel mese: va sempre letta dal tab Camere, mai dedotta
+// da altri tab (es. Aree Comuni) — non partecipare alla pulizia aree comuni un giorno
+// non significa che quel giorno non fosse presente in servizio.
+function hkpNCamerePresenceDays(p,days){
+  const conf=HKP_ROOMS[p]&&HKP_ROOMS[p].camere;
+  const presence={};
+  if(!Array.isArray(conf))return presence;
+  const camRows=[];conf.forEach(grp=>grp.list.forEach(name=>camRows.push(name)));
+  camRows.forEach((name,ri)=>{
+    days.forEach(d=>{
+      const v=hkpNGetCell(p,'camere',ri,d);
+      if(!v)return;
+      v.split('/').forEach(k=>{
+        const t=k.trim();
+        if(t&&!HKP_SYM[t])(presence[t]=presence[t]||new Set()).add(d);
+      });
+    });
+  });
+  return presence;
+}
 function hkpNPrint(p){
   const tab=HKP_NTAB[p]||'camere';
   const tabLabels={camere:'Camere',aree:'Aree Comuni',fondi:'Fondi & Lavaggi'};
@@ -695,7 +715,7 @@ function hkpNPrint(p){
   let staffChips;
   if(tab==='aree'){
     staffTitle='Dettaglio interventi per cameriera (esclusi corridoi, terrazzi, aree esterne)';
-    const staffAreaCounts={},staffAreaDays={};
+    const staffAreaCounts={};
     rows.forEach((row,ri)=>{
       if(HKP_AREE_ESCLUSE.has(row))return;
       days.forEach(d=>{
@@ -706,15 +726,17 @@ function hkpNPrint(p){
           if(!t||HKP_SYM[t])return;
           staffAreaCounts[t]=staffAreaCounts[t]||{};
           staffAreaCounts[t][row]=(staffAreaCounts[t][row]||0)+1;
-          (staffAreaDays[t]=staffAreaDays[t]||new Set()).add(d);
         });
       });
     });
+    // Giorni di presenza SEMPRE dal tab Camere — non farlo nel tab Aree significa solo
+    // che quel giorno non ha pulito aree comuni, non che non fosse in servizio
+    const camPresence=hkpNCamerePresenceDays(p,days);
     // Ordinato per interventi/giorno di presenza — unico numero confrontabile equamente
     const staffStats=Object.keys(staffAreaCounts).map(code=>{
       const areas=staffAreaCounts[code];
       const tot=Object.values(areas).reduce((s,n)=>s+n,0);
-      const gg=staffAreaDays[code]?staffAreaDays[code].size:0;
+      const gg=camPresence[code]?camPresence[code].size:0;
       return{code,areas,tot,gg,media:gg?tot/gg:0};
     }).sort((a,b)=>b.media-a.media);
     staffChips=staffStats.length?staffStats.map(({code,areas,tot,gg,media})=>{
@@ -927,7 +949,7 @@ function hkpNRenderGrid(p,tab){
   if(tab==='aree'){
     // Aree comuni: conteggio "chi fa cosa e quante volte", non il totale grezzo — escluse
     // le aree che non richiedono un controllo puntuale (corridoi, terrazzi, aree esterne)
-    const staffAreaCounts={},staffAreaDays={};
+    const staffAreaCounts={};
     rows.forEach((row,ri)=>{
       if(HKP_AREE_ESCLUSE.has(row.name))return;
       days.forEach(d=>{
@@ -938,16 +960,18 @@ function hkpNRenderGrid(p,tab){
           if(!t||HKP_SYM[t])return;
           staffAreaCounts[t]=staffAreaCounts[t]||{};
           staffAreaCounts[t][row.name]=(staffAreaCounts[t][row.name]||0)+1;
-          (staffAreaDays[t]=staffAreaDays[t]||new Set()).add(d);
         });
       });
     });
+    // Giorni di presenza SEMPRE dal tab Camere — non farlo nel tab Aree significa solo
+    // che quel giorno non ha pulito aree comuni, non che non fosse in servizio
+    const camPresence=hkpNCamerePresenceDays(p,days);
     // Metrica principale: interventi per giorno di presenza — è l'unico numero
     // confrontabile equamente tra chi è più o meno presente nel mese
     const staffStats=Object.keys(staffAreaCounts).map(code=>{
       const areas=staffAreaCounts[code];
       const tot=Object.values(areas).reduce((s,n)=>s+n,0);
-      const gg=staffAreaDays[code]?staffAreaDays[code].size:0;
+      const gg=camPresence[code]?camPresence[code].size:0;
       return{code,areas,tot,gg,media:gg?tot/gg:0};
     }).sort((a,b)=>b.media-a.media);
     if(staffStats.length){
