@@ -949,7 +949,7 @@ function hkpNRenderGrid(p,tab){
   const GW=Math.max(70,Math.min(110,maxGrp*7+14));
   const DW=46;const TOTW=46;
   const RH=36; // altezza riga fissa per allineamento tra le due tabelle
-  const B='border:1px solid #d8dae0;';
+  const B='border:1px solid var(--border-light,#dde2ea);';
   const today=new Date();
 
   // === TABELLA SINISTRA: Gruppo (rowspan) + Camera ===
@@ -957,23 +957,23 @@ function hkpNRenderGrid(p,tab){
   let L='<table style="border-collapse:collapse;table-layout:fixed;">';
   L+='<colgroup><col style="width:'+GW+'px"><col style="width:'+RW+'px"></colgroup>';
   L+='<thead><tr style="height:'+RH+'px;">';
-  L+='<th style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:5px 4px;font-size:12px;font-weight:700;text-align:center;height:'+RH+'px;">Gruppo</th>';
-  L+='<th style="background:#f5f6f8;'+B+'padding:5px 10px;font-size:14px;font-weight:700;text-align:left;white-space:nowrap;height:'+RH+'px;"></th>';
+  L+='<th style="background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);'+B+'padding:6px 4px;font-size:11px;font-weight:600;text-align:center;text-transform:uppercase;letter-spacing:.04em;height:'+RH+'px;">Gruppo</th>';
+  L+='<th style="background:var(--surface,#f8f9fb);color:var(--text-dim,#888880);'+B+'padding:6px 10px;font-size:12px;font-weight:600;text-align:left;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;height:'+RH+'px;"></th>';
   L+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
-    const grpBorder=(row.isFirst&&ri>0)?'border-top:2px solid #1a1a1a;':'';
+    const grpBorder=(row.isFirst&&ri>0)?'border-top:2px solid var(--border,#cdd4de);':'';
     L+='<tr style="height:'+RH+'px;'+grpBorder+'">';
     if(row.isFirst){
       const grpBorderBlue=(ri>0)?'border-top:2px solid #fff;':'';
-      L+='<td rowspan="'+row.grpSize+'" style="background:var(--accent,#1E4080);color:#fff;'+B
-        +'padding:4px 5px;font-size:13px;font-weight:700;text-align:center;vertical-align:middle;'
+      L+='<td rowspan="'+row.grpSize+'" style="background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);'+B
+        +'padding:4px 5px;font-size:12px;font-weight:500;text-align:center;vertical-align:middle;'
         +'overflow:hidden;line-height:1.5;max-width:'+GW+'px;'+grpBorderBlue+'">'+row.grp.replace(/\n/g,'<br>')+'</td>';
     }
-    L+='<td style="background:#fff;'+B+'padding:0 10px;font-size:15px;font-weight:500;white-space:nowrap;height:'+RH+'px;vertical-align:middle;overflow:hidden;'+grpBorder+'">'+row.name+'</td>';
+    L+='<td style="background:#fff;'+B+'padding:0 10px;font-size:14px;font-weight:400;color:var(--text,#0c1f33);white-space:nowrap;height:'+RH+'px;vertical-align:middle;overflow:hidden;'+grpBorder+'">'+row.name+'</td>';
     L+='</tr>';
   });
-  L+='<tr style="height:'+RH+'px;"><td style="background:#c8d0e8;'+B+'height:'+RH+'px;"></td>';
-  L+='<td style="background:#c8d0e8;'+B+'padding:0 10px;font-size:14px;font-weight:700;color:#3a4a6b;height:'+RH+'px;vertical-align:middle;white-space:nowrap;">Totali</td></tr>';
+  L+='<tr style="height:'+RH+'px;"><td style="background:var(--surface2,#e8ecf1);'+B+'height:'+RH+'px;"></td>';
+  L+='<td style="background:var(--surface2,#e8ecf1);'+B+'padding:0 10px;font-size:12.5px;font-weight:600;color:var(--text-muted,#4a5568);height:'+RH+'px;vertical-align:middle;white-space:nowrap;">Totali</td></tr>';
   L+='</tbody></table>';
 
   // === Calcolo larghezze dinamiche: misura contenuto reale per ogni colonna ===
@@ -993,29 +993,28 @@ function hkpNRenderGrid(p,tab){
   R+='<thead><tr style="height:'+RH+'px;">';
   days.forEach(d=>{
     const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-    R+='<th style="background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:'+(isToday?'800':'500')+';text-align:center;color:'+(isToday?'var(--accent,#1E4080)':'#555')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1E4080);':'')+'">'+d+'</th>';
+    R+='<th style="background:var(--surface,#f8f9fb);'+B+'padding:6px 2px;font-size:12px;font-weight:'+(isToday?'600':'400')+';text-align:center;color:'+(isToday?'var(--accent,#1c3a5e)':'var(--text-dim,#888880)')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1c3a5e);':'')+'">'+d+'</th>';
   });
   R+='</tr></thead><tbody>';
   rows.forEach((row,ri)=>{
-    const grpBorder=(row.isFirst&&ri>0)?'border-top:2px solid #1a1a1a;':'';
+    const grpBorder=(row.isFirst&&ri>0)?'border-top:2px solid var(--border,#cdd4de);':'';
     R+='<tr style="height:'+RH+'px;">';
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
-      const dual=v.includes('/');
       const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
       const iw=colW[d]-2;
-      R+='<td style="'+B+'padding:1px;background:'+(isToday&&!v?'#f4f7fd':'#fff')+';height:'+RH+'px;overflow:hidden;'+grpBorder+'">'
+      R+='<td style="'+B+'padding:1px;background:'+(isToday&&!v?'var(--accent-bg,#e8f0f8)':'#fff')+';height:'+RH+'px;overflow:hidden;'+grpBorder+'">'
         +'<input type="text" maxlength="10" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" '
         +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
         +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
-        +'style="width:'+iw+'px;height:'+(RH-2)+'px;border:none;background:transparent;text-align:center;font-size:15px;'
-        +'font-family:inherit;padding:0 2px;outline:none;color:'+(dual?'var(--accent,#1E4080)':'#1a1a1a')+';font-weight:'+(v?'700':'400')+';'
+        +'style="width:'+iw+'px;height:'+(RH-2)+'px;border:none;background:transparent;text-align:center;font-size:14px;'
+        +'font-family:inherit;padding:0 2px;outline:none;color:'+(v?'var(--accent,#1c3a5e)':'var(--text,#0c1f33)')+';font-weight:'+(v?'500':'400')+';'
         +'cursor:default;display:block;caret-color:transparent;box-sizing:border-box;"/></td>';
     });
     R+='</tr>';
   });
   R+='<tr style="height:'+RH+'px;">';
-  days.forEach(d=>R+='<td style="'+B+'text-align:center;background:#c8d0e8;color:#3a4a6b;font-size:14px;font-weight:700;height:'+RH+'px;vertical-align:middle;padding:0 2px;">'+(dayTotals[d]||'')+'</td>');
+  days.forEach(d=>R+='<td style="'+B+'text-align:center;background:var(--surface2,#e8ecf1);color:var(--text-muted,#4a5568);font-size:12.5px;font-weight:600;height:'+RH+'px;vertical-align:middle;padding:0 2px;">'+(dayTotals[d]||'')+'</td>');
   R+='</tr></tbody></table>';
 
   // Wrapper: sinistra fissa + destra scrollabile
@@ -1033,8 +1032,8 @@ function hkpNRenderGrid(p,tab){
   }
   h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'\')" style="'+cancelBtnStyle+'">✕ Cancella</button>';
   h+='</div>';
-  h+='<div style="display:flex;border:1px solid #d0d3db;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
-  h+='<div data-hkpnl="'+p+'" style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);overflow:hidden;">'+L+'</div>';
+  h+='<div style="display:flex;border:1px solid var(--border-light,#dde2ea);border-radius:8px;overflow:hidden;background:#fff;">';
+  h+='<div data-hkpnl="'+p+'" style="flex-shrink:0;border-right:2px solid var(--accent-bg,#e8f0f8);overflow:hidden;">'+L+'</div>';
   h+='<div data-hkpnr="'+p+'" style="overflow-x:auto;flex:1;">'+R+'</div>';
   h+='</div>';
   if(tab==='aree'){
@@ -1083,18 +1082,18 @@ function hkpNRenderGrid(p,tab){
           else if(diff<=-10){balColor='#a05a00';balLabel='Fa meno del previsto';}
           else{balColor='#2e7d32';balLabel='Nella norma';}
         }
-        h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;min-width:260px;flex:1;">';
+        h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid var(--border-light,#dde2ea);min-width:260px;flex:1;">';
         h+='<div style="display:flex;align-items:center;gap:10px;">';
-        h+='<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:#f1f2f4;color:#333;font-size:12px;font-weight:800;align-items:center;justify-content:center;flex-shrink:0;">'+code.substring(0,3)+'</span>';
-        h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+tot+' <span style="font-size:11px;font-weight:400;color:#666;">interventi/mese</span></div>';
-        h+='<div style="font-size:12px;color:#666;">'+fullName+' · '+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div></div>';
+        h+='<span style="display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);font-size:11px;font-weight:500;align-items:center;justify-content:center;flex-shrink:0;">'+code.substring(0,3)+'</span>';
+        h+='<div><div style="font-size:21px;font-weight:400;line-height:1.1;color:var(--text,#0c1f33);">'+tot+' <span style="font-size:10.5px;font-weight:400;color:var(--text-dim,#888880);">interventi/mese</span></div>';
+        h+='<div style="font-size:11.5px;color:var(--text-dim,#888880);">'+fullName+' · '+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div></div>';
         h+='</div>';
         h+='<div style="margin-top:8px;">';
-        h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;"><span style="font-size:10px;color:#666;width:64px;flex-shrink:0;">Presenze</span><div style="flex:1;height:10px;border-radius:5px;background:#eef1f5;overflow:hidden;"><div style="width:'+pctPresenza+'%;height:100%;background:#888;"></div></div><span style="font-size:10px;color:#666;width:32px;text-align:right;">'+pctPresenza+'%</span></div>';
-        h+='<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;color:#666;width:64px;flex-shrink:0;">Lavoro fatto</span><div style="flex:1;height:10px;border-radius:5px;background:#eef1f5;overflow:hidden;"><div style="width:'+pctLavoro+'%;height:100%;background:'+balColor+';"></div></div><span style="font-size:10px;color:#666;width:32px;text-align:right;">'+pctLavoro+'%</span></div>';
+        h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;"><span style="font-size:10px;color:var(--text-dim,#888880);width:64px;flex-shrink:0;">Presenze</span><div style="flex:1;height:8px;border-radius:4px;background:var(--surface2,#e8ecf1);overflow:hidden;"><div style="width:'+pctPresenza+'%;height:100%;background:var(--border,#cdd4de);"></div></div><span style="font-size:10px;color:var(--text-dim,#888880);width:32px;text-align:right;">'+pctPresenza+'%</span></div>';
+        h+='<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;color:var(--text-dim,#888880);width:64px;flex-shrink:0;">Lavoro fatto</span><div style="flex:1;height:8px;border-radius:4px;background:var(--surface2,#e8ecf1);overflow:hidden;"><div style="width:'+pctLavoro+'%;height:100%;background:'+balColor+';"></div></div><span style="font-size:10px;color:var(--text-dim,#888880);width:32px;text-align:right;">'+pctLavoro+'%</span></div>';
         h+='</div>';
-        h+='<div style="font-size:11px;font-weight:800;color:'+balColor+';margin-top:6px;">'+balLabel+'</div>';
-        h+='<div style="font-size:13px;color:#555;margin-top:5px;">'+detail+'</div>';
+        h+='<div style="font-size:10.5px;font-weight:500;color:'+balColor+';margin-top:6px;">'+balLabel+'</div>';
+        h+='<div style="font-size:12.5px;color:var(--text-muted,#4a5568);margin-top:5px;">'+detail+'</div>';
         h+='</div>';
       });
       h+='</div>';
@@ -1109,9 +1108,9 @@ function hkpNRenderGrid(p,tab){
         const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
         const gg=hwDays[init]?hwDays[init].size:0;
         const media=gg?(cnt/gg).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
-        h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;">';
-        h+='<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:#f1f2f4;color:#333;font-size:12px;font-weight:800;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
-        h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:12px;color:#666;margin-top:1px;">'+fullName+'</div><div style="font-size:11px;color:#1a5c2e;font-weight:700;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div><div style="font-size:11px;color:var(--accent,#1E4080);font-weight:700;margin-top:1px;">'+media+' camere/giorno</div></div></div>';
+        h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid var(--border-light,#dde2ea);display:flex;align-items:center;gap:10px;">';
+        h+='<span style="display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);font-size:11px;font-weight:500;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
+        h+='<div><div style="font-size:21px;font-weight:400;line-height:1.1;color:var(--text,#0c1f33);">'+cnt+'</div><div style="font-size:11.5px;color:var(--text-dim,#888880);margin-top:1px;">'+fullName+'</div><div style="font-size:10.5px;color:var(--green,#2e7d32);font-weight:500;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div><div style="font-size:10.5px;color:var(--accent,#1c3a5e);font-weight:500;margin-top:1px;">'+media+' camere/giorno</div></div></div>';
       });
       h+='</div>';
     }
@@ -1122,9 +1121,9 @@ function hkpNRenderGrid(p,tab){
     sortedSym.forEach(([code,cnt])=>{
       const symFile=HKP_SYM[code];
       const labels={RP:'Ripasso',ND:'Non disturbare',LIB:'Camera libera',NE:'Non eseguito'};
-      h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;">';
-      h+='<img src="img/'+symFile+'.'+HKP_SYM_EXT+'" style="width:36px;height:36px;object-fit:contain;mix-blend-mode:multiply;">';
-      h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:12px;color:#666;margin-top:1px;">'+(labels[code]||code)+'</div></div></div>';
+      h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid var(--border-light,#dde2ea);display:flex;align-items:center;gap:10px;">';
+      h+='<img src="img/'+symFile+'.'+HKP_SYM_EXT+'" style="width:32px;height:32px;object-fit:contain;mix-blend-mode:multiply;">';
+      h+='<div><div style="font-size:21px;font-weight:400;line-height:1.1;color:var(--text,#0c1f33);">'+cnt+'</div><div style="font-size:11.5px;color:var(--text-dim,#888880);margin-top:1px;">'+(labels[code]||code)+'</div></div></div>';
     });
     h+='</div>';
   }
