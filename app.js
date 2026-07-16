@@ -745,7 +745,7 @@ function hkpNPrint(p){
     const teamAvgFmt2=teamAvg2.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1});
     staffChips=staffStats.length?'<div style="font-size:11px;color:#666;margin-bottom:6px;">⚖️ Media squadra: <b style="color:#1E4080;">'+teamAvgFmt2+' interventi/giorno presenza</b></div>'+staffStats.map(({code,areas,tot,gg,media})=>{
       const mediaFmt=gg?media.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
-      const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>area+' ×'+n).join(' · ');
+      const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>'<div>'+area+' ×'+n+'</div>').join('');
       const ratio=teamAvg2&&gg?media/teamAvg2:null;
       let balColor='#888',balLabel='—';
       if(ratio!=null){
@@ -998,7 +998,7 @@ function hkpNRenderGrid(p,tab){
       staffStats.forEach(({code,areas,tot,gg,media})=>{
         const fullName=HKP_HW_NAMES[code.toUpperCase()]||code;
         const mediaFmt=gg?media.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
-        const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>area+' ×'+n).join(' · ');
+        const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>'<div>'+area+' ×'+n+'</div>').join('');
         const ratio=teamAvg&&gg?media/teamAvg:null;
         let balColor='#888',balLabel='—';
         if(ratio!=null){
