@@ -108,7 +108,7 @@ Claude API chiamata via proxy Cloudflare:
 1. Imposta data corrente
 2. Costruisce KPI bar chart
 3. Pull async da Cloudflare KV (cloud sync)
-4. Ripristina stato localStorage: checklist, reclami, audit, task custom, turni settimanali, arrivi, recensioni, dati HKP, pulizie, pasti, DVR, preferenze turni
+4. Ripristina stato localStorage: reclami, audit, turni settimanali, arrivi, recensioni, dati HKP, pulizie, pasti, DVR, preferenze turni
 5. Avvia timer: clock (10s), meteo (10min), polling overview (30s) — il polling chiama anche `turniPrefLoad()`
 6. IIFE mostra `topbar-kpis` (display:flex) all'avvio
 
@@ -152,10 +152,7 @@ I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStru
 | ~525 | MINI APP — PANNELLO DI CONTROLLO | `miniappRenderStatus()`, `miniapp{Hk,Bkf,Cm,Inv,Dvr}Status()`, `miniappToggleApp()`, `miniappLoadBkfBanner()` — vedi sezione dedicata [Pannello App](#pannello-app--centro-controllo-app-standalone) |
 | 540 | DVR — DOCUMENTO VALUTAZIONE RISCHI | `dvrRender()`, `dvrSave()`, `dvrRestore()`, `dvrRenderDipendenti()` |
 | 628 | UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP | `fmtNow()`, `fmtUploadTs()`, `setUploadTs()` |
-| 664 | CHECKLIST — TASK ITEMS | `buildTaskItem()`, `renderTaskList()` |
 | 696 | STORAGE & SYNC KV | `kvSet()`, `kvGet()`, `syncFromCloud()`, `setSyncStatus()` |
-| 807 | CHECKLIST — STATO CENTRALIZZATO | `TASK_STATE`, `addCustomTask()`, `syncTaskState()` |
-| 1046 | CHECKLIST — RENDER & PROGRESS | `toggleCheck()`, `toggleCheckV2()`, progress updates |
 | 1127 | OVERVIEW — TOGGLE PREVIEW PANELS | Toggle pannelli occupancy/pulizie/breakfast |
 | 1219 | OVERVIEW — GRAFICI & METEO | `buildBarChart()`, `fetchMeteo()`, `toggleWeatherForecast()` |
 | 1299 | SIDEBAR — OROLOGIO & DATA | `updateSbClock()`, `toggleDatePopup()`, `saveDate()` |
@@ -187,7 +184,6 @@ I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStru
 | `DEPTS` | const object | Reparti: `fo` (Front Office), `hk` (Housekeeping), `bkf` (Breakfast), `mt` (Maintenance) — con `label`, `cls`, `members[]` |
 | `REV_HOTELS` | const object | Struttura dati recensioni Booking.com per hotel (sa, bh, sl, pr, ms, ar, sb) |
 | `REV_EXP_HOTELS` | const object | Struttura dati recensioni Expedia per hotel (sa, bh, ar, sb) — con `tone:'bilanciato'` default |
-| `TASK_STATE` | let object | Stato centralizzato di tutti i task checklist |
 | `HKP_DATA` | let object | Dati HKP operative: `{sa: null, ar: null}` |
 | `HKP_TAB` | let object | Tab attivo HKP: `{sa: 'riepilogo', ar: 'riepilogo'}` |
 | `HKP_URLS` | const object | Endpoint Google Apps Script per HKP (sa, ar) |
@@ -248,7 +244,6 @@ grep -n 'id="view-' index.html
 |---------|-------------|
 | `view-overview` | Dashboard principale con KPI, turni, meteo |
 | `view-registrazione` | Registration cards ospiti |
-| `view-checklist` | Task checklist giornaliera |
 | `view-reclami` | Gestione reclami |
 | `view-recensioni-sa` | Recensioni SoulArt |
 | `view-recensioni-bh` | Recensioni Boutique |

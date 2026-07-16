@@ -469,8 +469,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards',checklist:'Checklist operativa','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',checklist:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -2240,55 +2240,6 @@ function _setUcTs(elId,ts){
 function setUploadTs(elId,ts){const t=ts||Date.now();_setUcTs(elId,t);try{localStorage.setItem('qm_ts_'+elId,String(t));}catch(e){}}
 function restoreUploadTs(elId,ts){if(!ts)return;try{const existing=parseInt(localStorage.getItem('qm_ts_'+elId)||'0');if(existing>ts){_setUcTs(elId,existing);return;}_setUcTs(elId,ts);localStorage.setItem('qm_ts_'+elId,String(ts));}catch(e){_setUcTs(elId,ts);}}
 function loadStoredTs(elId){try{const t=localStorage.getItem('qm_ts_'+elId);if(t)_setUcTs(elId,parseInt(t));}catch(e){}}
-const DAILY_TASKS=[
-  {text:'Generazione registration cards',dept:'fo',link:'registrazione'},
-  {text:'Breakfast Sheet SoulArt',dept:'bkf',link:'bkfsheet'},
-  {text:'Breakfast Sheet Galleria',dept:'bkf',link:'bkfsheetar'},
-  {text:'Operativa Housekeeping SoulArt',dept:'hkp',extlink:'https://docs.google.com/spreadsheets/d/1NzJCavF4hb-rHSSERSUgHBcVpHDHrSolMcwpZAtx-Pc/edit'},
-  {text:'Operativa Housekeeping Art Resort',dept:'hkp',extlink:'https://docs.google.com/spreadsheets/d/1FO9YxVpojxWD1eyi_IxVwQOYbddfDk9iOLBtD-fH3qo/edit'},
-  {text:'Incasso prenotazioni NR',dept:'fo'},
-];
-const WED_TASKS=[
-  {text:'Distribuzione ai carrelli Housekeeping',dept:'hkp',badge:'Solo mer'},
-];
-const THU_TASKS=[
-  {text:'Inventario magazzino detersivi',dept:'mt',badge:'Solo gio'},
-  {text:'Compilazione registri Legionella',dept:'mt',badge:'Solo gio'},
-];
-const DEPT_CLS={fo:'dept-fo',hkp:'dept-hk',bkf:'dept-fb',mt:'dept-mt'};
-const DEPT_LABEL={fo:'FO',hkp:'HKP',bkf:'BKF',mt:'MT'};
-// §§ CHECKLIST — TASK ITEMS (buildTaskItem, getTasksForDay, renderTaskList)
-function buildTaskItem(t,listId){
-  const li=document.createElement('li');
-  li.className='check-item';
-  li.setAttribute('data-list',listId);
-  const badgeHtml=t.badge?`<span style="font-size:10px;padding:1px 6px;border-radius:6px;background:var(--amber-bg);color:var(--amber);font-weight:500;">${t.badge}</span>`:'';
-  const linkHtml=t.link?`<span onclick="event.stopPropagation();setView('${t.link}',document.querySelector('[onclick*=\\'${t.link}\\']'))" style="font-size:9px;padding:1px 7px;border-radius:6px;background:var(--accent-bg);color:var(--accent);cursor:pointer;flex-shrink:0;" title="Apri modulo">→ Apri</span>`:t.extlink?`<span onclick="event.stopPropagation();window.open('${t.extlink}','_blank')" style="font-size:9px;padding:1px 7px;border-radius:6px;background:var(--accent-bg);color:var(--accent);cursor:pointer;flex-shrink:0;">↗ Apri</span>`:'';
-  li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${t.text}</span><div class="check-meta"><span class="check-dept ${DEPT_CLS[t.dept]}">${DEPT_LABEL[t.dept]}</span>${badgeHtml}${linkHtml}<span class="check-time"></span></div></div>`;
-  const _s=TASK_STATE[t.text];if(_s?.done){const _b=li.querySelector('.check-box'),_tx=li.querySelector('.check-text'),_te=li.querySelector('.check-time');if(_b){_b.classList.add('done');_b.textContent='✓';}if(_tx)_tx.classList.add('done');if(_te)_te.textContent=_s.time||'';}
-  li.addEventListener('click',()=>toggleCheck(li,listId));
-  return li;
-}
-function getTasksForDay(dow){
-  let tasks=[...DAILY_TASKS];
-  if(dow===3) tasks=[...tasks,...WED_TASKS];
-  if(dow===4) tasks=[...tasks,...THU_TASKS];
-  return tasks;
-}
-function renderTaskList(listId,labelId,counterId){
-  const dow=new Date().getDay();
-  const tasks=getTasksForDay(dow);
-  const ul=document.getElementById(listId);
-  if(!ul)return;
-  ul.innerHTML='';
-  tasks.forEach(t=>ul.appendChild(buildTaskItem(t,listId)));
-  if(counterId)document.getElementById(counterId).textContent='0/'+tasks.length;
-  const ds=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-  const extras=[];
-  if(dow===3)extras.push('+ Mercoledì');
-  if(dow===4)extras.push('+ Giovedì');
-  if(labelId&&extras.length){const el=document.getElementById(labelId);if(el)el.textContent=extras.join(' ');}
-}
 // §§ STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud)
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
 function setSyncStatus(state){
@@ -2342,7 +2293,7 @@ const LS={
   },
   // Carica tutti i dati dal cloud e aggiorna localStorage (chiamata all'avvio)
   syncFromCloud:async()=>{
-    const keys=['checklist','custom_tasks','dept_custom_tasks','pulData','bkfData',
+    const keys=['pulData','bkfData',
       'rev_sa','rev_bh','rev_sl','rev_pr','rev_ms','rev_ar','rev_sb',
       'rev_sent',
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
@@ -2438,326 +2389,6 @@ const LS={
     return synced;
   }
 };
-// §§ CHECKLIST — STATO CENTRALIZZATO & CUSTOM TASK (taskKey, syncTaskState, addCustomTask)
-// ── STATO CENTRALIZZATO CHECKLIST ──
-// Chiave: testo del task. Valore: {done, time}
-// Usato per sincronizzare overview ↔ checklist in tempo reale
-let TASK_STATE={};
-function taskKey(item){
-  return item.querySelector('.check-text')?.textContent?.trim()||'';
-}
-function syncTaskState(key, done, time){
-  if(!key)return;
-  TASK_STATE[key]={done,time};
-  // Aggiorna tutti gli elementi con lo stesso testo in tutte le liste
-  ['taskList','cl-fo','cl-hkp','cl-bkf','cl-mt','cl-custom'].forEach(listId=>{
-    const ul=document.getElementById(listId);if(!ul)return;
-    ul.querySelectorAll('.check-item').forEach(item=>{
-      if(taskKey(item)!==key)return;
-      const b=item.querySelector('.check-box');
-      const t=item.querySelector('.check-text');
-      const te=item.querySelector('.check-time');
-      if(b){b.classList.toggle('done',done);b.textContent=done?'✓':'';}
-      if(t)t.classList.toggle('done',done);
-      if(te)te.textContent=done?(time||fmtNow()):'';
-    });
-  });
-  saveChecklistState();
-  updateClProgress();
-}
-function saveChecklistState(){
-  if(Object.keys(TASK_STATE).length===0)return;
-  LS.set('checklist',{date:LS.today(),state:TASK_STATE});
-  // Salva task personalizzati
-  const customs=[];
-  const ul=document.getElementById('cl-custom');
-  if(ul)ul.querySelectorAll('.check-item').forEach(item=>{
-    const key=taskKey(item);
-    if(key)customs.push(key);
-  });
-  LS.set('custom_tasks',{date:LS.today(),tasks:customs});
-}
-function restoreChecklistState(){
-  const saved=LS.get('checklist',null);
-  if(!saved||saved.date!==LS.today())return;
-  TASK_STATE=saved.state||{};
-  // Applica stato a tutti gli item esistenti
-  ['taskList','cl-fo','cl-hkp','cl-bkf','cl-mt','cl-custom'].forEach(listId=>{
-    const ul=document.getElementById(listId);if(!ul)return;
-    ul.querySelectorAll('.check-item').forEach(item=>{
-      const key=taskKey(item);
-      const s=TASK_STATE[key];
-      if(!s||!s.done)return;
-      const b=item.querySelector('.check-box');
-      const t=item.querySelector('.check-text');
-      const te=item.querySelector('.check-time');
-      if(b){b.classList.add('done');b.textContent='✓';}
-      if(t)t.classList.add('done');
-      if(te&&s.time)te.textContent=s.time;
-    });
-  });
-  updateClProgress();
-}
-// Task personalizzati
-let customTasksLoaded=false;
-function addCustomTaskById(inputId){
-  const inp=document.getElementById(inputId);
-  if(!inp)return;
-  addCustomTask(inp);
-}
-function addCustomTaskByDeptId(dept){
-  const inp=document.getElementById('deptInput-'+dept);
-  if(!inp)return;
-  addCustomTaskToDept(dept,inp);
-}
-function addCustomTask(inp){
-  // Fallback: se non riceve l'input, cerca il primo con valore non vuoto
-  if(!inp||!inp.value){
-    const i1=document.getElementById('customTaskInput');
-    const i2=document.getElementById('customTaskInput2');
-    if(i1&&i1.value.trim())inp=i1;
-    else if(i2&&i2.value.trim())inp=i2;
-    else return;
-  }
-  if(!inp)return;
-  const text=inp.value.trim();
-  if(!text)return;
-  inp.value='';
-  const otherId=inp.id==='customTaskInput'?'customTaskInput2':'customTaskInput';
-  const other=document.getElementById(otherId);
-  if(other)other.value='';
-  // Aggiungi a entrambe le liste
-  ['taskList','cl-custom'].forEach(listId=>{
-    const ul=document.getElementById(listId);if(!ul)return;
-    const li=document.createElement('li');
-    li.className='check-item';
-    li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${text}</span><div class="check-meta"><span class="check-dept" style="background:var(--surface2);color:var(--text-dim);padding:2px 7px;border-radius:4px;font-size:10px;">★</span><span class="check-time"></span><span onclick="removeCustomTask('${text.replace(/'/g,"\\'")}',this,event)" style="font-size:9px;color:var(--text-dim);cursor:pointer;margin-left:auto;">✕</span></div></div>`;
-    li.querySelector('.check-box').addEventListener('click',function(e){
-      e.stopPropagation();
-      const done=!this.classList.contains('done');
-      syncTaskState(text, done, fmtNow());
-      const tot=ul.querySelectorAll('.check-item').length;
-      const dn=ul.querySelectorAll('.check-box.done').length;
-      if(listId==='taskList'){const tc=document.getElementById('taskCounter');if(tc)tc.textContent=dn+'/'+tot;}
-    });
-    li.addEventListener('click',function(){
-      const b=this.querySelector('.check-box');
-      const done=!b.classList.contains('done');
-      syncTaskState(text, done, fmtNow());
-      const tot=ul.querySelectorAll('.check-item').length;
-      const dn=ul.querySelectorAll('.check-box.done').length;
-      if(listId==='taskList'){const tc=document.getElementById('taskCounter');if(tc)tc.textContent=dn+'/'+tot;}
-    });
-    // Applica stato esistente se già spuntato
-    if(TASK_STATE[text]?.done){
-      const b=li.querySelector('.check-box');const t=li.querySelector('.check-text');const te=li.querySelector('.check-time');
-      if(b){b.classList.add('done');b.textContent='✓';}
-      if(t)t.classList.add('done');
-      if(te)te.textContent=TASK_STATE[text].time||'';
-    }
-    ul.appendChild(li);
-  });
-  // Aggiorna contatori
-  const tl=document.getElementById('taskList');
-  if(tl){const tc=document.getElementById('taskCounter');if(tc)tc.textContent=tl.querySelectorAll('.check-box.done').length+'/'+tl.querySelectorAll('.check-item').length;}
-  const cc=document.getElementById('cl-custom');
-  if(cc){const ce=document.getElementById('cl-custom-count');if(ce)ce.textContent=cc.querySelectorAll('.check-box.done').length+'/'+cc.querySelectorAll('.check-item').length;}
-  updateClProgress();
-  saveChecklistState();
-}
-function addCustomTaskToDept(dept, inp){
-  // inp può essere l'elemento input oppure il bottone (in quel caso cerchiamo previousElementSibling)
-  if(inp&&inp.tagName==='BUTTON')inp=inp.previousElementSibling;
-  const text=((inp&&inp.value)||'').trim();
-  if(!text)return;
-  if(inp)inp.value='';
-  const deptCls={fo:'dept-fo',hk:'dept-hk',bkf:'dept-fb',mt:'dept-mt'};
-  const deptLabel={fo:'FO',hk:'HK',bkf:'BKF',mt:'MT'};
-  // Aggiungi in cl-[dept] e in taskList
-  ['cl-'+dept,'taskList'].forEach(listId=>{
-    const ul=document.getElementById(listId);if(!ul)return;
-    const li=document.createElement('li');li.className='check-item';
-    const badge=`<span class="check-dept ${deptCls[dept]||''}">${deptLabel[dept]||dept.toUpperCase()}</span>`;
-    li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${text}</span><div class="check-meta">${badge}<span class="check-time"></span><span onclick="removeDeptTask('${dept}','${text.replace(/'/g,"\\'")}',this,event)" style="font-size:9px;color:var(--text-dim);cursor:pointer;margin-left:auto;">✕</span></div></div>`;
-    li.addEventListener('click',function(){
-      const done=!this.querySelector('.check-box').classList.contains('done');
-      syncTaskState(text,done,done?fmtNow():'');
-      refreshDeptCount(dept);
-      const tc=document.getElementById('taskCounter');
-      const tl=document.getElementById('taskList');
-      if(tc&&tl)tc.textContent=tl.querySelectorAll('.check-box.done').length+'/'+tl.querySelectorAll('.check-item').length;
-    });
-    if(TASK_STATE[text]?.done){
-      const b=li.querySelector('.check-box');const t=li.querySelector('.check-text');const te=li.querySelector('.check-time');
-      if(b){b.classList.add('done');b.textContent='✓';}if(t)t.classList.add('done');if(te)te.textContent=TASK_STATE[text].time||'';
-    }
-    ul.appendChild(li);
-  });
-  refreshDeptCount(dept);
-  const tl=document.getElementById('taskList');
-  if(tl){const tc=document.getElementById('taskCounter');if(tc)tc.textContent=tl.querySelectorAll('.check-box.done').length+'/'+tl.querySelectorAll('.check-item').length;}
-  updateClProgress();
-  saveDeptCustomTasks();
-}
-function removeCustomTask(text, btn, evt){
-  if(evt)evt.stopPropagation();
-  ['taskList','cl-custom'].forEach(listId=>{
-    const ul=document.getElementById(listId);if(!ul)return;
-    ul.querySelectorAll('.check-item').forEach(item=>{if(taskKey(item)===text)item.remove();});
-  });
-  delete TASK_STATE[text];
-  const tl=document.getElementById('taskList');
-  if(tl){const tc=document.getElementById('taskCounter');if(tc)tc.textContent=tl.querySelectorAll('.check-box.done').length+'/'+tl.querySelectorAll('.check-item').length;}
-  const cc=document.getElementById('cl-custom');
-  if(cc){const ce=document.getElementById('cl-custom-count');if(ce)ce.textContent=cc.querySelectorAll('.check-box.done').length+'/'+cc.querySelectorAll('.check-item').length;}
-  updateClProgress();
-  saveChecklistState();
-}
-function removeDeptTask(dept,text,btn,evt){
-  if(evt)evt.stopPropagation();
-  ['cl-'+dept,'taskList'].forEach(listId=>{
-    const ul=document.getElementById(listId);if(!ul)return;
-    ul.querySelectorAll('.check-item').forEach(item=>{if(taskKey(item)===text)item.remove();});
-  });
-  delete TASK_STATE[text];
-  refreshDeptCount(dept);
-  updateClProgress();
-  saveDeptCustomTasks();
-}
-function refreshDeptCount(dept){
-  const ul=document.getElementById('cl-'+dept);
-  const el=document.getElementById('cl-'+dept+'-count');
-  if(ul&&el)el.textContent=ul.querySelectorAll('.check-box.done').length+'/'+ul.querySelectorAll('.check-item').length;
-}
-function saveDeptCustomTasks(){
-  const saved={date:LS.today(),depts:{}};
-  ['fo','hk','bkf','mt'].forEach(dept=>{
-    const ul=document.getElementById('cl-'+dept);if(!ul)return;
-    // Salva solo i task custom (non quelli standard da DAILY_TASKS)
-    const standardKeys=new Set([...DAILY_TASKS,...WED_TASKS,...THU_TASKS].map(t=>t.text));
-    const customs=[];
-    ul.querySelectorAll('.check-item').forEach(item=>{
-      const key=taskKey(item);
-      if(key&&!standardKeys.has(key))customs.push(key);
-    });
-    if(customs.length)saved.depts[dept]=customs;
-  });
-  LS.set('dept_custom_tasks',saved);
-}
-function restoreDeptCustomTasks(){
-  const saved=LS.get('dept_custom_tasks',null);
-  if(!saved||saved.date!==LS.today())return;
-  Object.entries(saved.depts||{}).forEach(([dept,tasks])=>{
-    tasks.forEach(text=>{
-      addCustomTaskToDept(dept,{value:text,tagName:'INPUT'});
-    });
-  });
-}
-function restoreCustomTasks(){
-  const saved=LS.get('custom_tasks',null);
-  if(!saved||saved.date!==LS.today()||!saved.tasks?.length)return;
-  const inp=document.getElementById('customTaskInput');
-  saved.tasks.forEach(text=>{
-    if(inp){inp.value=text;addCustomTask();}
-  });
-  if(inp)inp.value='';
-}
-function toggleCheck(item,listId){
-  const b=item.querySelector('.check-box');
-  const timeEl=item.querySelector('.check-time');
-  const done=!b.classList.contains('done');
-  const key=taskKey(item);
-  const time=done?fmtNow():'';
-  syncTaskState(key, done, time);
-  const ul=document.getElementById(listId);
-  if(!ul)return;
-  const total=ul.querySelectorAll('.check-item').length;
-  const doneN=ul.querySelectorAll('.check-box.done').length;
-  if(listId==='taskList'){
-    document.getElementById('taskCounter').textContent=doneN+'/'+total;
-  }
-}
-// §§ CHECKLIST — RENDER & PROGRESS (toggleCheck, updateClProgress, toggleCheckV2)
-function updateClProgress(){
-  const allLists=['cl-fo','cl-hkp','cl-bkf','cl-mt','cl-custom'];
-  let total=0,done=0;
-  allLists.forEach(id=>{
-    const ul=document.getElementById(id);if(!ul)return;
-    total+=ul.querySelectorAll('.check-item').length;
-    done+=ul.querySelectorAll('.check-box.done').length;
-  });
-  if(total===0)return;
-  const remaining=total-done;
-  const pct=Math.round(done/total*100);
-  const pctEl=document.getElementById('clPct');if(pctEl)pctEl.textContent=pct+'%';
-  const fillEl=document.getElementById('clFill');if(fillEl)fillEl.style.width=pct+'%';
-  // Aggiorna badge nav
-  const badge=document.getElementById('checklistNavBadge');
-  if(badge){
-    badge.textContent=remaining;
-    badge.style.display=remaining===0?'none':'';
-  }
-  const depts={fo:{label:'FO',cls:'dept-fo'},hk:{label:'HK',cls:'dept-hk'},bkf:{label:'BKF',cls:'dept-fb'},mt:{label:'MT',cls:'dept-mt'}};
-  let html='';
-  Object.entries(depts).forEach(([k,v])=>{
-    const ul=document.getElementById('cl-'+k);if(!ul)return;
-    const d=ul.querySelectorAll('.check-box.done').length;
-    const tot=ul.querySelectorAll('.check-item').length;
-    html+=`<span class="cl-dept-stat ${v.cls}">${v.label} ${d}/${tot}</span>`;
-  });
-  const statsEl=document.getElementById('clDeptStats');if(statsEl)statsEl.innerHTML=html;
-}
-function toggleCheckV2(item,dept){
-  const b=item.querySelector('.check-box');
-  const done=!b.classList.contains('done');
-  const key=taskKey(item);
-  syncTaskState(key, done, done?fmtNow():'');
-  const ul=document.getElementById('cl-'+dept);
-  if(ul){const tot=ul.querySelectorAll('.check-item').length,dn=ul.querySelectorAll('.check-box.done').length;const el=document.getElementById('cl-'+dept+'-count');if(el)el.textContent=dn+'/'+tot;}
-}
-(function initCl(){
-  const d=new Date();
-  const ds=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-  const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
-  const el=document.getElementById('clDate');if(el)el.textContent=ds[d.getDay()]+' '+d.getDate()+' '+ms[d.getMonth()]+' '+d.getFullYear();
-  // Render Overview task list
-  renderTaskList('taskList','taskDayLabel','taskCounter');
-  // Render Checklist view — pannelli generati dinamicamente dalla stessa fonte dei task
-  (function initClView(){
-    const dow=new Date().getDay();
-    // Mappa task per reparto
-    const deptTasks={fo:[],hk:[],bkf:[],mt:[]};
-    DAILY_TASKS.forEach(t=>{if(deptTasks[t.dept])deptTasks[t.dept].push(t);});
-    if(dow===3) WED_TASKS.forEach(t=>{if(deptTasks[t.dept])deptTasks[t.dept].push(t);});
-    if(dow===4) THU_TASKS.forEach(t=>{if(deptTasks[t.dept])deptTasks[t.dept].push(t);});
-    ['fo','hk','bkf','mt'].forEach(dept=>{
-      const ul=document.getElementById('cl-'+dept);
-      const countEl=document.getElementById('cl-'+dept+'-count');
-      if(!ul)return;
-      ul.innerHTML='';
-      const tasks=deptTasks[dept];
-      if(!tasks||tasks.length===0){
-        ul.innerHTML=`<li style="padding:10px 0;font-size:var(--fs-xs);color:var(--text-dim);text-align:center;">Nessun task oggi</li>`;
-        if(countEl)countEl.textContent='—';
-        return;
-      }
-      tasks.forEach(t=>{
-        const badgeHtml=t.badge?`<span style="font-size:10px;padding:1px 6px;border-radius:6px;background:var(--amber-bg);color:var(--amber);font-weight:500;">${t.badge}</span>`:'';
-        const linkHtml=t.link?`<span onclick="event.stopPropagation();setView('${t.link}',document.querySelector('[onclick*=\\'${t.link}\\']'))" style="font-size:9px;padding:1px 7px;border-radius:6px;background:var(--accent-bg);color:var(--accent);cursor:pointer;flex-shrink:0;" title="Apri modulo">→ Apri</span>`:t.extlink?`<span onclick="event.stopPropagation();window.open('${t.extlink}','_blank')" style="font-size:9px;padding:1px 7px;border-radius:6px;background:var(--accent-bg);color:var(--accent);cursor:pointer;flex-shrink:0;">↗ Apri</span>`:'';
-        const li=document.createElement('li');
-        li.className='check-item';
-        li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${t.text}</span><div class="check-meta"><span class="check-dept ${DEPT_CLS[t.dept]}">${DEPT_LABEL[t.dept]}</span>${badgeHtml}${linkHtml}<span class="check-time"></span></div></div>`;
-        li.addEventListener('click',function(){toggleCheckV2(this,dept);});
-        ul.appendChild(li);
-      });
-      if(countEl)countEl.textContent='0/'+tasks.length;
-    });
-    // Badge "Solo giovedì" sul pannello MT
-    const mtBadge=document.getElementById('cl-mt-day-badge');
-    if(mtBadge)mtBadge.style.display=(dow===4)?'inline-block':'none';
-    updateClProgress();
-  })();
-})();
 // §§ OVERVIEW — TOGGLE PREVIEW PANELS (toggleOccupazionePreview, togglePulPreview, toggleBkfPreview)
 function toggleOccupazionePreview(e){
   if(e)e.stopPropagation();
@@ -3003,30 +2634,6 @@ function updateDateDisplay(){
 function refreshOverviewForDate(d){
   const ref=new Date(d||customDate||new Date());
   ref.setHours(0,0,0,0);
-  // 0. Pulizia task personalizzati se la data non è oggi
-  try{
-    const todayD=new Date();todayD.setHours(0,0,0,0);
-    if(ref.getTime()!==todayD.getTime()){
-      // Rimuovi task personalizzati da tutte le liste
-      ['cl-custom','taskList'].forEach(listId=>{
-        const ul=document.getElementById(listId);if(!ul)return;
-        const standardKeys=new Set([...DAILY_TASKS,...WED_TASKS,...THU_TASKS].map(t=>t.text));
-        ul.querySelectorAll('.check-item').forEach(item=>{
-          const key=taskKey(item);
-          if(key&&!standardKeys.has(key))item.remove();
-        });
-      });
-      ['fo','hk','bkf','mt'].forEach(dept=>{
-        const ul=document.getElementById('cl-'+dept);if(!ul)return;
-        const standardKeys=new Set([...DAILY_TASKS,...WED_TASKS,...THU_TASKS].map(t=>t.text));
-        ul.querySelectorAll('.check-item').forEach(item=>{
-          const key=taskKey(item);
-          if(key&&!standardKeys.has(key))item.remove();
-        });
-      });
-      TASK_STATE={};
-    }
-  }catch(e){}
   // 1. Turno di Paolo
   try{
     const el=document.getElementById('paoloTurno');
@@ -3056,63 +2663,6 @@ function refreshOverviewForDate(d){
         </div>`;
       }
     }
-  }catch(e){}
-  // 3. Task quotidiani
-  try{
-    const dow=ref.getDay();
-    const ds=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-    const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
-    const clDateEl=document.getElementById('clDate');
-    if(clDateEl)clDateEl.textContent=ds[dow]+' '+ref.getDate()+' '+ms[ref.getMonth()]+' '+ref.getFullYear();
-    let tasks=[...DAILY_TASKS];
-    if(dow===3)tasks=[...tasks,...WED_TASKS];
-    if(dow===4)tasks=[...tasks,...THU_TASKS];
-    const tl=document.getElementById('taskList');
-    if(tl){tl.innerHTML='';tasks.forEach(t=>tl.appendChild(buildTaskItem(t,'taskList')));
-      // Ripristina task personalizzati generici (★)
-      const _ct=LS.get('custom_tasks',null);
-      if(_ct&&_ct.date===LS.today()&&_ct.tasks?.length){_ct.tasks.forEach(text=>{
-        const li=document.createElement('li');li.className='check-item';
-        li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${text}</span><div class="check-meta"><span class="check-dept" style="background:var(--surface2);color:var(--text-dim);padding:2px 7px;border-radius:4px;font-size:10px;">★</span><span class="check-time"></span><span onclick="removeCustomTask('${text.replace(/'/g,"\\'")}',this,event)" style="font-size:9px;color:var(--text-dim);cursor:pointer;margin-left:auto;">✕</span></div></div>`;
-        li.querySelector('.check-box').addEventListener('click',function(e){e.stopPropagation();const done=!this.classList.contains('done');syncTaskState(text,done,fmtNow());const tc2=document.getElementById('taskCounter');if(tc2)tc2.textContent=tl.querySelectorAll('.check-box.done').length+'/'+tl.querySelectorAll('.check-item').length;});
-        li.addEventListener('click',function(){const done=!this.querySelector('.check-box').classList.contains('done');syncTaskState(text,done,fmtNow());const tc2=document.getElementById('taskCounter');if(tc2)tc2.textContent=tl.querySelectorAll('.check-box.done').length+'/'+tl.querySelectorAll('.check-item').length;});
-        if(TASK_STATE[text]?.done){const b=li.querySelector('.check-box');const tx=li.querySelector('.check-text');const te=li.querySelector('.check-time');if(b){b.classList.add('done');b.textContent='✓';}if(tx)tx.classList.add('done');if(te)te.textContent=TASK_STATE[text].time||'';}
-        tl.appendChild(li);
-      });}
-      // Ripristina task personalizzati per reparto
-      const _dct=LS.get('dept_custom_tasks',null);
-      if(_dct&&_dct.date===LS.today()){const _dcls={fo:'dept-fo',hk:'dept-hk',bkf:'dept-fb',mt:'dept-mt'};const _dlbl={fo:'FO',hk:'HK',bkf:'BKF',mt:'MT'};
-        Object.entries(_dct.depts||{}).forEach(([dept,dtasks])=>{dtasks.forEach(text=>{
-          const li=document.createElement('li');li.className='check-item';
-          li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${text}</span><div class="check-meta"><span class="check-dept ${_dcls[dept]||''}">${_dlbl[dept]||dept.toUpperCase()}</span><span class="check-time"></span><span onclick="removeDeptTask('${dept}','${text.replace(/'/g,"\\'")}',this,event)" style="font-size:9px;color:var(--text-dim);cursor:pointer;margin-left:auto;">✕</span></div></div>`;
-          li.addEventListener('click',function(){const done=!this.querySelector('.check-box').classList.contains('done');syncTaskState(text,done,done?fmtNow():'');refreshDeptCount(dept);const tc2=document.getElementById('taskCounter');if(tc2)tc2.textContent=tl.querySelectorAll('.check-box.done').length+'/'+tl.querySelectorAll('.check-item').length;});
-          if(TASK_STATE[text]?.done){const b=li.querySelector('.check-box');const tx=li.querySelector('.check-text');const te=li.querySelector('.check-time');if(b){b.classList.add('done');b.textContent='✓';}if(tx)tx.classList.add('done');if(te)te.textContent=TASK_STATE[text].time||'';}
-          tl.appendChild(li);
-        });});
-      }
-      const tc=document.getElementById('taskCounter');if(tc)tc.textContent=tl.querySelectorAll('.check-box.done').length+'/'+tl.querySelectorAll('.check-item').length;}
-    const deptTasks={fo:[],hk:[],bkf:[],mt:[]};
-    tasks.forEach(t=>{if(deptTasks[t.dept])deptTasks[t.dept].push(t);});
-    ['fo','hk','bkf','mt'].forEach(dept=>{
-      const ul=document.getElementById('cl-'+dept);
-      const countEl=document.getElementById('cl-'+dept+'-count');
-      if(!ul)return;ul.innerHTML='';
-      const dt=deptTasks[dept];
-      if(!dt||!dt.length){ul.innerHTML=`<li style="padding:10px 0;font-size:var(--fs-xs);color:var(--text-dim);text-align:center;">Nessun task oggi</li>`;if(countEl)countEl.textContent='—';return;}
-      dt.forEach(t=>{
-        const badgeHtml=t.badge?`<span style="font-size:10px;padding:1px 6px;border-radius:6px;background:var(--amber-bg);color:var(--amber);font-weight:500;">${t.badge}</span>`:'';
-        const linkHtml=t.link?`<span onclick="event.stopPropagation();setView('${t.link}',document.querySelector('[onclick*=\\'${t.link}\\']'))" style="font-size:9px;padding:1px 7px;border-radius:6px;background:var(--accent-bg);color:var(--accent);cursor:pointer;flex-shrink:0;">→ Apri</span>`:t.extlink?`<span onclick="event.stopPropagation();window.open('${t.extlink}','_blank')" style="font-size:9px;padding:1px 7px;border-radius:6px;background:var(--accent-bg);color:var(--accent);cursor:pointer;flex-shrink:0;">↗ Apri</span>`:'';
-        const li=document.createElement('li');li.className='check-item';
-        li.innerHTML=`<div class="check-box"></div><div class="check-content"><span class="check-text">${t.text}</span><div class="check-meta"><span class="check-dept ${DEPT_CLS[t.dept]}">${DEPT_LABEL[t.dept]}</span>${badgeHtml}${linkHtml}<span class="check-time"></span></div></div>`;
-        const _s=TASK_STATE[t.text];if(_s?.done){const _b=li.querySelector('.check-box'),_tx=li.querySelector('.check-text'),_te=li.querySelector('.check-time');if(_b){_b.classList.add('done');_b.textContent='✓';}if(_tx)_tx.classList.add('done');if(_te)_te.textContent=_s.time||'';}
-        li.addEventListener('click',function(){toggleCheckV2(this,dept);});
-        ul.appendChild(li);
-      });
-      if(countEl)countEl.textContent=ul.querySelectorAll('.check-box.done').length+'/'+dt.length;
-    });
-    const mtBadge=document.getElementById('cl-mt-day-badge');
-    if(mtBadge)mtBadge.style.display=(dow===4)?'inline-block':'none';
-    updateClProgress();
   }catch(e){}
   // 4. Pulizie
   try{
@@ -3225,9 +2775,6 @@ document.querySelector('.content').addEventListener('scroll',function(){
   setTimeout(async()=>{
     // Rileggi REV_SENT da localStorage (può essere stato aggiornato dalla sync cloud)
     try{const s=localStorage.getItem('qm_rev_sent');if(s)REV_SENT=JSON.parse(s);}catch(e){}
-    restoreChecklistState();
-    restoreCustomTasks();
-    restoreDeptCustomTasks();
     ovUpdateRevNoreply();ovUpdateRevImport();
     hkpRestoreConfig();
     dvrRestore();dvrBadgeUpdate();

@@ -5,7 +5,7 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=217">
+<link rel="stylesheet" href="style.css?v=218">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
@@ -88,7 +88,6 @@
       <div class="nav-item active" onclick="setView('overview',this)"><span class="nav-icon"><img src="img/icons/overview.png" class="nav-icon-img"></span>Overview</div>
 
       <div class="nav-section">Operativo Quotidiano</div>
-      <div class="nav-item" onclick="setView('checklist',this)"><span class="nav-icon"><img src="img/icons/cheklist.png" class="nav-icon-img"></span>Checklist<span class="nav-badge" id="checklistNavBadge">6</span></div>
       <div class="nav-item" onclick="setView('registrazione',this)"><span class="nav-icon"><img src="img/icons/registration_cards.png" class="nav-icon-img"></span>Registration Cards</div>
       <div class="nav-group-header" id="hkpGroupToggle" onclick="toggleHkpGroup()">
         <span class="nav-icon"><img src="img/icons/housekeeping.png" class="nav-icon-img"></span>
@@ -536,78 +535,6 @@
           <div id="rcSelectionBar" style="display:none;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:10px 16px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:8px;">
             <span id="rcSelectionBarText" style="font-size:var(--fs-xs);color:var(--accent);font-weight:600;"></span>
             <button onclick="rcPrintSelected()" style="background:var(--accent);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:var(--fs-sm);font-weight:600;cursor:pointer;">Stampa selezionate</button>
-          </div>
-        </div>
-      </div>
-      <div class="view" id="view-checklist">
-        <div class="cl-progress-wrap">
-          <div class="cl-progress-top">
-            <div>
-              <div class="cl-progress-title">Completamento checklist giornaliera</div>
-              <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;" id="clDate"></div>
-            </div>
-            <div class="kpi-value" id="clPct" style="font-size:28px;color:var(--accent)">0%</div>
-          </div>
-          <div class="cl-track"><div class="cl-fill" id="clFill" style="width:0%"></div></div>
-          <div class="cl-dept-stats" id="clDeptStats"></div>
-        </div>
-        <div class="grid-2">
-          <div class="panel">
-            <div class="panel-header"><span class="panel-title">Front Office</span><span class="check-dept dept-fo">FO</span><span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim)" id="cl-fo-count">—</span></div>
-            <div class="panel-body">
-              <ul class="checklist" id="cl-fo"></ul>
-              <div style="display:flex;gap:5px;margin-top:7px;padding-top:7px;border-top:1px solid var(--border-light);">
-                <input id="deptInput-fo" class="form-input cl-add-input" placeholder="Aggiungi task FO..." style="flex:1;padding:4px 8px;font-size:var(--fs-xs);" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTaskByDeptId('fo')}">
-                <button type="button" onclick="event.preventDefault();event.stopPropagation();addCustomTaskByDeptId('fo')" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xs);cursor:pointer;">+</button>
-              </div>
-            </div>
-          </div>
-          <div class="panel">
-            <div class="panel-header"><span class="panel-title">Breakfast</span><span class="check-dept dept-fb">BKF</span><span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim)" id="cl-bkf-count">—</span></div>
-            <div class="panel-body">
-              <ul class="checklist" id="cl-bkf"></ul>
-              <div style="display:flex;gap:5px;margin-top:7px;padding-top:7px;border-top:1px solid var(--border-light);">
-                <input id="deptInput-bkf" class="form-input cl-add-input" placeholder="Aggiungi task BKF..." style="flex:1;padding:4px 8px;font-size:var(--fs-xs);" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTaskByDeptId('bkf')}">
-                <button type="button" onclick="event.preventDefault();event.stopPropagation();addCustomTaskByDeptId('bkf')" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xs);cursor:pointer;">+</button>
-              </div>
-            </div>
-          </div>
-          <div class="panel" id="cl-hkp-panel">
-            <div class="panel-header"><span class="panel-title">Housekeeping</span><span class="check-dept dept-hk">HK</span><span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim)" id="cl-hkp-count">—</span></div>
-            <div class="panel-body">
-              <ul class="checklist" id="cl-hkp"></ul>
-              <div style="display:flex;gap:5px;margin-top:7px;padding-top:7px;border-top:1px solid var(--border-light);">
-                <input id="deptInput-hk" class="form-input cl-add-input" placeholder="Aggiungi task HK..." style="flex:1;padding:4px 8px;font-size:var(--fs-xs);" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTaskByDeptId('hk')}">
-                <button type="button" onclick="event.preventDefault();event.stopPropagation();addCustomTaskByDeptId('hk')" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xs);cursor:pointer;">+</button>
-              </div>
-            </div>
-          </div>
-          <div class="panel" id="cl-mt-panel">
-            <div class="panel-header">
-              <span class="panel-title">Manutenzione</span><span class="check-dept dept-mt">MT</span>
-              <span id="cl-mt-day-badge" style="display:none;margin-left:6px;font-size:9px;padding:1px 7px;border-radius:8px;background:var(--amber-bg);color:var(--amber);">Solo giovedì</span>
-              <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim)" id="cl-mt-count">—</span>
-            </div>
-            <div class="panel-body">
-              <ul class="checklist" id="cl-mt"></ul>
-              <div style="display:flex;gap:5px;margin-top:7px;padding-top:7px;border-top:1px solid var(--border-light);">
-                <input id="deptInput-mt" class="form-input cl-add-input" placeholder="Aggiungi task MT..." style="flex:1;padding:4px 8px;font-size:var(--fs-xs);" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTaskByDeptId('mt')}">
-                <button type="button" onclick="event.preventDefault();event.stopPropagation();addCustomTaskByDeptId('mt')" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xs);cursor:pointer;">+</button>
-              </div>
-            </div>
-          </div>
-          <div class="panel" id="cl-custom-panel">
-            <div class="panel-header">
-              <span class="panel-title">Personalizzati</span>
-              <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim)" id="cl-custom-count">—</span>
-            </div>
-            <div class="panel-body">
-              <ul class="checklist" id="cl-custom"></ul>
-              <div style="display:flex;gap:5px;margin-top:7px;padding-top:7px;border-top:1px solid var(--border-light);">
-                <input id="customTaskInput2" class="form-input" placeholder="Aggiungi task personalizzato..." style="flex:1;padding:4px 8px;font-size:var(--fs-xs);" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTaskById('customTaskInput2')}">
-                <button type="button" onclick="event.preventDefault();event.stopPropagation();addCustomTaskById('customTaskInput2')" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:4px 9px;font-size:var(--fs-xs);cursor:pointer;">+</button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -1568,7 +1495,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=1"></script>
-<script src="app.js?v=533-20260716"></script>
+<script src="app.js?v=534-20260716"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
