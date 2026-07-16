@@ -5101,15 +5101,16 @@ function rcBuildPreview(g,idx){const nights=rcCalcNights(g.checkin,g.checkout);
   const arrivoMatch=arriviData&&arriviData.arrivi&&arriviData.arrivi.find(a=>normCam(a.camera)===normCam(g.camera));
   const origine=String(g.origine||(arrivoMatch&&arrivoMatch.origine)||'').trim();
   const isBooking=/booking/i.test(origine);
-  const origBadge=origine?`<span class="rc-row-pill${isBooking?' booking':''}">${isBooking?BK_ICON:''}${origine}</span>`:'';
-  // Evidenzia in rosso nuove prenotazioni e camere spostate rispetto al caricamento precedente
+  const origBadge=origine?`<span class="rc-gcard-pill${isBooking?' booking':''}">${isBooking?BK_ICON:''}${origine}</span>`:'';
+  // Evidenzia in rosso nuove prenotazioni e camere spostate rispetto al caricamento precedente —
+  // sempre subito sotto l'intestazione della card
   const hiIcon=g.isNew?'🆕':(g.roomChanged?'↔️':'');
   const hiText=g.isNew?'Nuova prenotazione':(g.roomChanged?'Camera spostata — era '+g.prevCamera:'');
   const hiLabel=hiText;
-  const hiTag=hiLabel?`<span class="rc-row-hi-tag">${hiIcon} ${hiText}</span>`:'';
-  const row=document.createElement('div');row.className='rc-row'+(hiLabel?' hi':'');row.id='rc-card-'+idx;
+  const hiBand=hiLabel?`<div class="rc-gcard-hi-band">${hiIcon} ${hiText}</div>`:'';
+  const card=document.createElement('div');card.className='rc-gcard'+(hiLabel?' hi':'');card.id='rc-card-'+idx;
   const checkbox=`<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:10px;color:var(--text-dim);flex-shrink:0;"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)" style="cursor:pointer;">Seleziona</label>`;
-  row.innerHTML=`<span class="rc-row-room">${g.camera}</span><div class="rc-row-main"><div class="rc-row-guest">${g.nome}${hiTag}</div><div class="rc-row-meta"><span><b>Arrivo</b> ${g.checkin||'—'}</span><span><b>Partenza</b> ${g.checkout||'—'}</span><span><b>Notti</b> ${nights}</span><span class="rc-row-pill">${g.pax} ${g.pax===1?'ospite':'ospiti'}</span><span class="rc-row-pill">${tratMap[g.trattamento]||g.trattamento}</span>${origBadge}</div></div><div class="rc-row-actions">${checkbox}<button class="btn-print-one" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div>`;row.addEventListener('click',()=>rcOpenModal(idx));return row;}
+  card.innerHTML=`<div class="rc-gcard-top"><span class="rc-gcard-label">Registration Card</span><span class="rc-gcard-room">Camera ${g.camera}</span></div>${hiBand}<div class="rc-gcard-guest">${g.nome}</div><div class="rc-gcard-dates"><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Arrivo</div><div class="rc-gdate-val">${g.checkin||'—'}</div></div><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Partenza</div><div class="rc-gdate-val">${g.checkout||'—'}</div></div><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Notti</div><div class="rc-gdate-val">${nights}</div></div></div><div class="rc-gcard-pills"><span class="rc-gcard-pill">${g.pax} ${g.pax===1?'ospite':'ospiti'}</span><span class="rc-gcard-pill">${tratMap[g.trattamento]||g.trattamento}</span>${origBadge}</div><div class="rc-gcard-footer"><span class="rc-gcard-hint">Clicca per anteprima</span><div style="display:flex;align-items:center;gap:8px;">${checkbox}<button class="btn-print-one" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
 function rcOpenModal(idx){const g=guestsData[idx];document.getElementById('rcModalTitle').textContent=g.nome+' — Camera '+g.camera;document.getElementById('rcModalBody').innerHTML=`<div class="mp" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:9pt;color:#1A1916;">${rcCardHTML(g)}</div>`;document.getElementById('rcModalPrintBtn').onclick=()=>{rcCloseModal();setTimeout(()=>preparePrint(idx),150);};document.getElementById('rcModalOverlay').classList.add('open');}
 function rcCloseModal(){document.getElementById('rcModalOverlay').classList.remove('open');}
 function rcCloseModalOutside(e){if(e.target===document.getElementById('rcModalOverlay'))rcCloseModal();}
