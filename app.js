@@ -3971,6 +3971,41 @@ const REV_HOTELS={
   ar:{name:'Art Resort',data:[],filtered:[],filters:[],sort:'date_desc',page:0},
   sb:{name:'Santa Brigida',data:[],filtered:[],filters:[],sort:'date_desc',page:0},
 };
+// Caratteristiche distintive per struttura — usate nel prompt di risposta recensioni
+// per valorizzare/difendere l'identità reale di ciascun hotel invece di frasi generiche
+const REV_HOTEL_FACTS={
+  sa:'SoulArt Hotel è una struttura di nuova apertura, nuovissima e super moderna: un boutique hotel situato all\'interno di un palazzo storico degli anni \'30, dove il design minimalista e ultramoderno è una scelta di carattere, non un limite.',
+  bh:'Boutique Hotel del gruppo, situato all\'interno di un palazzo storico degli anni \'30.',
+  sl:'Struttura del gruppo (San Liborio), situata all\'interno di un palazzo storico degli anni \'30, nello stesso complesso Boutique.',
+  pr:'Struttura del gruppo (Principe), situata all\'interno di un palazzo storico degli anni \'30, nello stesso complesso Boutique.',
+  ms:'Struttura del gruppo (Mastrangelo), situata all\'interno di un palazzo storico degli anni \'30, nello stesso complesso Boutique.',
+  ar:'Art Resort è un prestigioso hotel 4 stelle situato all\'interno della celebre Galleria Umberto I, con camere Deluxe e Junior Suite con vista diretta sulla Galleria.',
+  sb:'Art Suite Santa Brigida è una struttura localizzata all\'interno della Galleria Umberto I, con camere Deluxe e Junior Suite con vista diretta sulla Galleria.',
+};
+const REV_DEFENSE_PLAYBOOK=`- Scusati SOLO per reali disservizi accidentali o episodi isolati (es. un guasto tecnico temporaneo) — MAI per caratteristiche strutturali, storiche o di design della struttura.
+- Colazione: è un nostro punto di forza riconosciuto e molto apprezzato — valorizzala e difendila da critiche generiche, non scusarti.
+- Letti e cuscini: sottolinea che sono comodi, di alta qualità, con standard adeguati alla categoria 4 stelle.
+- Rumori dal centro città / insonorizzazione: evidenzia gli infissi di ultima generazione ultra-insonorizzati, pensati apposta per isolare dal contesto esterno pur essendo in posizione centralissima.
+- Arredamento minimal (soprattutto SoulArt): se lamentano l'assenza di armadi o arredi classici, non scusarti — rivendica la scelta di un design minimalista e ultramoderno.
+- Reception/difficoltà a trovare l'hotel: essendo strutture all'interno di palazzi storici o della Galleria Umberto I, spiega che per questa conformazione la reception si trova all'interno dell'edificio e non fronte strada.
+- Ascensore "vecchio": chiarisci che non è vecchio ma ANTICO, coerente con l'epoca del palazzo e preservato appositamente per mantenere intatto il fascino storico dell'edificio.`;
+// Recupera fino a `n` risposte già scritte e presenti nei CSV caricati (stesso codice
+// lingua della recensione corrente) da usare come esempio di stile per l'AI — impara dal
+// tono/registro realmente usato in passato invece di inventarlo da zero
+function revGetStyleExamples(isItalianTarget,n){
+  const pool=[];
+  Object.values(REV_HOTELS).forEach(h=>{
+    (h.data||[]).forEach(r=>{
+      const txt=(r['Risposta della struttura']||'').trim();
+      if(txt.length<40)return;
+      if(revIsItalian(r)!==isItalianTarget)return;
+      pool.push(txt);
+    });
+  });
+  // Varietà: mescola e prendi le prime n invece delle prime n in ordine di caricamento
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  return pool.slice(0,n).map(t=>t.length>600?t.slice(0,600)+'…':t);
+}
 // Init upload per entrambi gli hotel
 ['sa','bh','sl','pr','ms','ar','sb'].forEach(p=>{
   const zone=document.getElementById('revUploadZone-'+p);
@@ -4610,8 +4645,9 @@ async function revGenerateReply(p,gi){
   btn.disabled=true;btn.innerHTML='<div class="rev-gen-spinner"></div> Generazione…';
   const isItalian=revIsItalian(r);
   const lang=isItalian?'italiano':'inglese';
-  const firma=isItalian?'Paolo P. - Quality Manager':'Best regards. Paolo P. - Quality Manager';
+  const firma=isItalian?'Cordiali saluti,\nPaolo P. - Quality Manager':'Best regards,\nPaolo P. - Quality Manager';
   const hotelName=REV_HOTELS[p].name;
+  const hotelFacts=REV_HOTEL_FACTS[p]||'';
   const posText=(r['Recensione positiva']||'').trim();
   const negText=(r['Recensione negativa']||'').trim();
   const hasBookingText=posText.length>3||negText.length>3;
@@ -4626,7 +4662,10 @@ async function revGenerateReply(p,gi){
   const instructionsBlock=isRevision
     ?`\n\nQuesta è la bozza di risposta già generata, che l'utente NON ritiene ancora adatta:\n"""\n${currentDraft}\n"""\n\nCorreggi/riscrivi la bozza seguendo questa indicazione dell'utente (obbligatoria, ha priorità sulle scelte stilistiche libere ma non sulle regole sopra):\n${instructions}`
     :(instructions?`\n\nISTRUZIONI AGGIUNTIVE DELL'UTENTE — tienine conto se pertinenti, senza violare le regole sopra:\n${instructions}`:'');
-  const prompt=`Sei Paolo P., Quality Manager del ${hotelName} a Napoli, un hotel 4 stelle con storia e carattere unico.\n\nDevi rispondere a questa recensione Booking.com in ${lang}.\n\nDATI RECENSIONE:\n- Ospite: ${guestName}\n- Punteggio: ${r._score}/10\n- Titolo: ${r['Titolo della recensione']||'—'}\n- Commento positivo: ${posText||'—'}\n- Commento negativo: ${negText||'—'}\n\nREGOLE — rispettale tutte:\n1. APERTURA: rivolgiti all'ospite per nome ("Dear ${guestName}," / "Cara/Caro ${guestName},") e ringrazia per la recensione — varia il modo ad ogni risposta\n2. LUNGHEZZA: 3 paragrafi. Primo: 1-2 frasi (ringraziamento + positivi). Secondo: 2-3 frasi (feedback/critiche con spiegazione e azione). Terzo: 1 frase (chiusura). Totale 5-7 frasi — né troppo corto né prolisso.\n3. TONO: istituzionale e professionale. Stile sobrio, distanza rispettosa, linguaggio formale senza eccedere in calore.\n4. CRITICHE — REGOLA FONDAMENTALE: non dire mai "hai ragione", "you are right", "you are absolutely right" — riconosci il feedback in modo neutro e professionale (es. "We take note of your observation", "We appreciate your feedback on X") e poi spiega l'azione concreta\n5. PUNTEGGIO: citalo solo se è alto (9-10/10) E la recensione è entusiasta\n6. PUNTI POSITIVI: richiama aspetti specifici citati dall'ospite, non frasi generiche\n7. CARATTERE STRUTTURA: valorizza l'identità storica/unica quando pertinente\n8. CHIUSURA: invita a tornare — varia il phrasing\n9. VIETATO: non invitare mai al contatto diretto né alla prenotazione diretta (OTA)\n10. FIRMA su riga separata: "${firma}"\n11. Non ripetere le parole dell'ospite\n12. Rispondi SOLO con il testo, senza preamboli${instructionsBlock}`;
+  // Impara dallo stile delle risposte già scritte e caricate in Compass (stessa lingua)
+  const examples=revGetStyleExamples(isItalian,3);
+  const examplesBlock=examples.length?`\n\nESEMPI DI RISPOSTE GIÀ SCRITTE E APPROVATE (stesso stile/registro da seguire, non copiarle):\n${examples.map((t,i)=>`${i+1}. ${t}`).join('\n')}`:'';
+  const prompt=`Sei un assistente AI specializzato nella gestione della reputazione online per il nostro gruppo alberghiero di lusso a Napoli. Il tuo compito è redigere risposte professionali, eleganti e strategiche alle recensioni ricevute su Booking.com, a nome di Paolo P. - Quality Manager.\n\nDevi rispondere a questa recensione del ${hotelName} in ${lang}.\n\nDATI RECENSIONE:\n- Ospite: ${guestName}\n- Punteggio: ${r._score}/10\n- Titolo: ${r['Titolo della recensione']||'—'}\n- Commento positivo: ${posText||'—'}\n- Commento negativo: ${negText||'—'}\n\nCARATTERISTICHE DELLA STRUTTURA (usale per valorizzare/difendere, non genericamente):\n${hotelFacts}\n\nREGOLE DI STILE E TONO — rispettale tutte:\n1. TONO FORMALE: rivolgiti all'ospite esclusivamente con il "Lei" (maiuscole di cortesia: La, Le, Suo, Sua se in italiano) — mai dare del tu. In inglese resta comunque formale.\n2. APERTURA: rivolgiti all'ospite per nome e ringrazia per la recensione — varia il modo ad ogni risposta.\n3. LUNGHEZZA: 3 paragrafi. Primo: 1-2 frasi (ringraziamento + positivi). Secondo: 2-3 frasi (feedback/critiche con spiegazione e azione). Terzo: 1 frase (chiusura). Totale 5-7 frasi.\n4. FIDELIZZAZIONE: invita l'ospite a tornare specificamente presso QUESTA struttura (mai formule generiche come "tornare in città" o "a Napoli").\n5. CRITICHE — REGOLA FONDAMENTALE: non dire mai "hai ragione"/"you are right"/"you are absolutely right" — riconosci il feedback in modo neutro e professionale (es. "Prendiamo nota della sua osservazione", "We appreciate your feedback on X") e poi spiega l'azione concreta.\n6. LINEA DIFENSIVA sui reclami:\n${REV_DEFENSE_PLAYBOOK}\n7. PUNTEGGIO: citalo solo se è alto (9-10/10) E la recensione è entusiasta.\n8. PUNTI POSITIVI: richiama aspetti specifici citati dall'ospite, non frasi generiche.\n9. VIETATO: non menzionare mai sito web, telefono, email o vantaggi della prenotazione diretta — Booking.com rileva e penalizza queste risposte.\n10. FIRMA — chiudi ESATTAMENTE su due righe separate così:\n"${firma}"\n11. Non ripetere le parole esatte usate dall'ospite nella sua critica.\n12. Se in inglese: linguaggio semplice, naturale e scorrevole, non complicato.\n13. Rispondi SOLO con il testo della risposta, senza preamboli.${examplesBlock}${instructionsBlock}`;
   try{
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
     const data=await response.json();

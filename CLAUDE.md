@@ -15,11 +15,11 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 
 ## Risposte alle recensioni (Booking.com + Expedia)
 
-- **Firma in italiano:** `Paolo P. - Quality Manager`
-- **Firma in inglese:** `Best regards. Paolo P. - Quality Manager`
+- **Firma in italiano:** su due righe, esattamente `Cordiali saluti,\nPaolo P. - Quality Manager`
+- **Firma in inglese:** su due righe, esattamente `Best regards,\nPaolo P. - Quality Manager`
 - **Struttura**: 3 paragrafi, 5-7 frasi totali. Non di più.
 - **Apertura**: ringrazia sempre della recensione.
-- **Booking.com**: usa sempre il nome dell'ospite nell'apertura.
+- **Booking.com**: usa sempre il nome dell'ospite nell'apertura; tono esclusivamente formale con il "Lei" (maiuscole di cortesia: La, Le, Suo, Sua), mai dare del tu.
 - **Expedia**: usa sempre "Dear Guest," / "Gentile ospite," (policy OTA: nomi non disponibili).
 - **Recensioni Booking senza testo**: non generare risposta ("Nessun commento scritto — risposta non necessaria").
 - **Recensioni Expedia senza testo**: genera risposta breve (2 frasi concise, sempre diversa).
@@ -27,7 +27,11 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **MAI**: "hai ragione", "hai assolutamente ragione" — per critiche usare "Prendiamo nota della sua osservazione" o "Apprezziamo il suo feedback su X".
 - **MAI**: invitare al contatto diretto o alla prenotazione diretta (vietato dalle OTA).
 - Citare il punteggio SOLO se è alto e la recensione è entusiasta, altrimenti non menzionarlo.
-- **Booking.com**: solo tono **Formale** (selettore tono rimosso). La maschera di risposta ha un campo "Istruzioni aggiuntive" opzionale, incluso nel prompt se compilato.
+- **Fidelizzazione**: invitare a tornare specificamente presso quella struttura, mai formule generiche ("tornare in città"/"a Napoli").
+- **Linea difensiva sui reclami** (Booking.com, `REV_DEFENSE_PLAYBOOK` in app.js): scusarsi solo per disservizi accidentali/isolati, mai per caratteristiche strutturali/storiche/di design. Colazione = punto di forza da difendere; letti/cuscini = comodi e di categoria; rumori = infissi ultra-insonorizzati di ultima generazione; arredamento minimal (SoulArt) = scelta di design, non lacuna; reception non fronte-strada = conformazione dell'edificio storico/Galleria Umberto; ascensore "vecchio" = va definito **antico**, preservato per il fascino storico.
+- **Caratteristiche per struttura** (`REV_HOTEL_FACTS` in app.js): SoulArt = nuova apertura, boutique in palazzo anni '30, design minimal ultramoderno; Boutique/San Liborio/Principe/Mastrangelo = palazzo storico anni '30; Art Resort/Santa Brigida = interno Galleria Umberto I, camere Deluxe/Junior Suite vista Galleria.
+- **Esempi di stile**: il prompt include fino a 3 risposte già scritte e presenti nei CSV caricati (stessa lingua) come esempio di registro da seguire (`revGetStyleExamples`).
+- **Booking.com**: solo tono **Formale** (selettore tono rimosso). La maschera di risposta ha un campo "Istruzioni aggiuntive" opzionale: se c'è già una bozza generata, il testo inserito viene usato per **correggere quella bozza specifica** (non per rigenerare da zero ignorandola).
 - **Expedia**: Toni disponibili: **Formale** | **Bilanciato** | **Empatico** (default: Bilanciato). Il tono "Caldo" è stato rimosso.
 - Risposte varie: evitare frasi identiche tra una risposta e l'altra (l'AI si sgama).
 - Includere sempre un invito a tornare.
