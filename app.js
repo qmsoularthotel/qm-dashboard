@@ -834,7 +834,7 @@ function hkpNPrint(p){
       +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;"><span style="font-size:10px;color:#666;width:60px;">Presenze</span><div style="flex:1;height:8px;border-radius:4px;background:#dde2ea;overflow:hidden;"><div style="width:'+pctPresenza+'%;height:100%;background:#888;"></div></div><span style="font-size:10px;color:#666;width:28px;text-align:right;">'+pctPresenza+'%</span></div>'
       +'<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;color:#666;width:60px;">Lavoro</span><div style="flex:1;height:8px;border-radius:4px;background:#dde2ea;overflow:hidden;"><div style="width:'+pctLavoro+'%;height:100%;background:'+balColor+';"></div></div><span style="font-size:10px;color:#666;width:28px;text-align:right;">'+pctLavoro+'%</span></div>'
       +'</div>'
-      +'<div style="font-size:11px;color:#333;margin-top:5px;">'+detail+'</div></div>';
+      +'<div style="font-size:13px;color:#333;margin-top:5px;">'+detail+'</div></div>';
     }).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
   } else {
     staffChips=staffList.length?staffList.map(([code,n])=>{
@@ -1094,7 +1094,7 @@ function hkpNRenderGrid(p,tab){
         h+='<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;color:#666;width:64px;flex-shrink:0;">Lavoro fatto</span><div style="flex:1;height:10px;border-radius:5px;background:#eef1f5;overflow:hidden;"><div style="width:'+pctLavoro+'%;height:100%;background:'+balColor+';"></div></div><span style="font-size:10px;color:#666;width:32px;text-align:right;">'+pctLavoro+'%</span></div>';
         h+='</div>';
         h+='<div style="font-size:11px;font-weight:800;color:'+balColor+';margin-top:6px;">'+balLabel+'</div>';
-        h+='<div style="font-size:11px;color:#555;margin-top:5px;">'+detail+'</div>';
+        h+='<div style="font-size:13px;color:#555;margin-top:5px;">'+detail+'</div>';
         h+='</div>';
       });
       h+='</div>';
