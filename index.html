@@ -5,7 +5,7 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=218">
+<link rel="stylesheet" href="style.css?v=219">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
@@ -519,22 +519,25 @@
         <div class="rc-error" id="rcError"></div>
         <div id="rcResults" style="display:none;margin-top:.9rem;">
           <div id="rcSourceLine" style="display:none;align-items:center;gap:8px;font-size:var(--fs-xxs);color:var(--text-dim);background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:7px 12px;margin-bottom:10px;"></div>
-          <div class="rc-toolbar">
-            <div class="rc-toolbar-left">
-              <span class="rc-toolbar-title">Registration cards</span>
+          <div class="panel">
+            <div class="panel-header">
+              <span style="font-size:14px;">🗂</span>
+              <span class="panel-title">Registration Cards</span>
               <span class="rc-count-badge" id="rcCountBadge">—</span>
               <span id="rcSummaryLine" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;"></span>
+              <div style="margin-left:auto;display:flex;gap:8px;">
+                <button onclick="rcResetApp()" style="background:transparent;color:var(--accent);border:1px solid var(--border);padding:5px 14px;border-radius:6px;font-size:var(--fs-xs);font-weight:400;cursor:pointer;font-family:inherit;">Carica altro</button>
+                <button id="rcPrintHighlightBtn" onclick="rcPrintHighlighted()" style="display:none;background:var(--red-bg);color:var(--red);border:1px solid #f3b8b8;padding:5px 14px;border-radius:6px;font-size:var(--fs-xs);font-weight:400;cursor:pointer;align-items:center;"></button>
+                <button onclick="preparePrint(null)" style="background:var(--accent);color:#fff;border:none;padding:5px 16px;border-radius:6px;font-size:var(--fs-xs);font-weight:400;cursor:pointer;font-family:inherit;">Stampa tutte</button>
+              </div>
             </div>
-            <div style="display:flex;gap:8px;">
-              <button onclick="rcResetApp()" style="background:transparent;color:var(--accent);border:1px solid var(--border);padding:5px 14px;border-radius:6px;font-size:var(--fs-xs);font-weight:500;cursor:pointer;font-family:inherit;">Carica altro</button>
-              <button id="rcPrintHighlightBtn" onclick="rcPrintHighlighted()" style="display:none;background:var(--surface);color:var(--text);border:1px solid var(--border);padding:5px 14px;border-radius:6px;font-size:var(--fs-xs);font-weight:500;cursor:pointer;align-items:center;"></button>
-              <button onclick="preparePrint(null)" style="background:var(--accent);color:#fff;border:none;padding:5px 16px;border-radius:6px;font-size:var(--fs-xs);font-weight:500;cursor:pointer;font-family:inherit;">Stampa tutte</button>
+            <div class="panel-body">
+              <div class="rc-row-list" id="rcCardGrid"></div>
+              <div id="rcSelectionBar" style="display:none;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:10px 16px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:8px;">
+                <span id="rcSelectionBarText" style="font-size:var(--fs-xs);color:var(--accent);font-weight:400;"></span>
+                <button onclick="rcPrintSelected()" style="background:var(--accent);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:var(--fs-sm);font-weight:400;cursor:pointer;">Stampa selezionate</button>
+              </div>
             </div>
-          </div>
-          <div class="rc-card-grid" id="rcCardGrid"></div>
-          <div id="rcSelectionBar" style="display:none;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:10px 16px;background:var(--accent-bg);border:1px solid var(--accent);border-radius:8px;">
-            <span id="rcSelectionBarText" style="font-size:var(--fs-xs);color:var(--accent);font-weight:600;"></span>
-            <button onclick="rcPrintSelected()" style="background:var(--accent);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:var(--fs-sm);font-weight:600;cursor:pointer;">Stampa selezionate</button>
           </div>
         </div>
       </div>
@@ -1495,7 +1498,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=1"></script>
-<script src="app.js?v=534-20260716"></script>
+<script src="app.js?v=535-20260716"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
