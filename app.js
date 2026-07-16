@@ -3974,19 +3974,20 @@ const REV_HOTELS={
 // Caratteristiche distintive per struttura — usate nel prompt di risposta recensioni
 // per valorizzare/difendere l'identità reale di ciascun hotel invece di frasi generiche
 const REV_HOTEL_FACTS={
-  sa:'SoulArt Hotel è una struttura di nuova apertura, nuovissima e super moderna: un boutique hotel situato all\'interno di un palazzo storico degli anni \'30, dove il design minimalista e ultramoderno è una scelta di carattere, non un limite.',
-  bh:'Boutique Hotel del gruppo, situato all\'interno di un palazzo storico degli anni \'30.',
-  sl:'Struttura del gruppo (San Liborio), situata all\'interno di un palazzo storico degli anni \'30, nello stesso complesso Boutique.',
-  pr:'Struttura del gruppo (Principe), situata all\'interno di un palazzo storico degli anni \'30, nello stesso complesso Boutique.',
-  ms:'Struttura del gruppo (Mastrangelo), situata all\'interno di un palazzo storico degli anni \'30, nello stesso complesso Boutique.',
-  ar:'Art Resort è un prestigioso hotel 4 stelle situato all\'interno della celebre Galleria Umberto I, con camere Deluxe e Junior Suite con vista diretta sulla Galleria.',
-  sb:'Art Suite Santa Brigida è una struttura localizzata all\'interno della Galleria Umberto I, con camere Deluxe e Junior Suite con vista diretta sulla Galleria.',
+  sa:'SoulArt Hotel è una struttura di nuova apertura, nuovissima e super moderna: situato in un palazzo storico degli anni \'30 di epoca fascista, nel cuore del centro storico di Napoli a pochi passi da via Toledo. Arredamento e stile minimalisti e ultramoderni — una scelta di carattere, non un limite.',
+  bh:'Boutique Hotel è situato in un palazzo storico degli anni \'30 di epoca fascista, in Piazza Carità, nel cuore del centro storico di Napoli a pochi passi da via Toledo.',
+  sl:'Art Suite San Liborio si trova nel pittoresco Vico San Liborio, nel quartiere della Pignasecca.',
+  pr:'Art Suite Principe Umberto si trova vicino alla Stazione Centrale di Napoli.',
+  ms:'Rooms Mastrangelo si trova vicino alla Stazione Centrale di Napoli.',
+  ar:'Art Resort è un prestigioso hotel 4 stelle situato all\'interno della celebre Galleria Umberto I, a pochi passi da Piazza del Plebiscito, con camere Deluxe e Junior Suite con vista diretta sulla Galleria. Arredamento e stile in barocco napoletano.',
+  sb:'Art Suite Santa Brigida si trova all\'interno della Galleria Umberto I, a pochi passi da Piazza del Plebiscito. Arredamento e stile in barocco napoletano.',
 };
 const REV_DEFENSE_PLAYBOOK=`- Scusati SOLO per reali disservizi accidentali o episodi isolati (es. un guasto tecnico temporaneo) — MAI per caratteristiche strutturali, storiche o di design della struttura.
 - Colazione: è un nostro punto di forza riconosciuto e molto apprezzato — valorizzala e difendila da critiche generiche, non scusarti.
 - Letti e cuscini: sottolinea che sono comodi, di alta qualità, con standard adeguati alla categoria 4 stelle.
 - Rumori dal centro città / insonorizzazione: evidenzia gli infissi di ultima generazione ultra-insonorizzati, pensati apposta per isolare dal contesto esterno pur essendo in posizione centralissima.
-- Arredamento minimal (soprattutto SoulArt): se lamentano l'assenza di armadi o arredi classici, non scusarti — rivendica la scelta di un design minimalista e ultramoderno.
+- Arredamento SoulArt (minimal): se lamentano l'assenza di armadi o arredi classici, non scusarti — rivendica la scelta di un design minimalista e ultramoderno, coerente con l'identità della struttura.
+- Arredamento Art Resort / Art Suite Santa Brigida (barocco napoletano): se lamentano uno stile "eccessivo" o "troppo decorato", non scusarti — rivendica lo stile barocco napoletano come scelta identitaria, in linea con la posizione nella storica Galleria Umberto I.
 - Reception/difficoltà a trovare l'hotel: essendo strutture all'interno di palazzi storici o della Galleria Umberto I, spiega che per questa conformazione la reception si trova all'interno dell'edificio e non fronte strada.
 - Ascensore "vecchio": chiarisci che non è vecchio ma ANTICO, coerente con l'epoca del palazzo e preservato appositamente per mantenere intatto il fascino storico dell'edificio.`;
 // Recupera fino a `n` risposte già scritte e presenti nei CSV caricati (stesso codice
