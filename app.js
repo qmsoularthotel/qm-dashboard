@@ -811,27 +811,30 @@ function hkpNPrint(p){
       const gg=camPresence[code]?camPresence[code].size:0;
       return{code,areas,tot,gg,media:gg?tot/gg:0};
     }).sort((a,b)=>b.tot-a.tot);
-    // Quota proporzionale: interventi totali del gruppo ripartiti in base ai giorni di
-    // presenza reali di ciascuna (tab Camere) — non implica una regola su quante persone
-    // debbano fare le aree comuni, misura solo se il carico effettivo è proporzionato
+    // Confronto semplice per direzione e cameriere: % presenze vs % lavoro fatto sul
+    // totale del gruppo — leggibile senza calcoli, niente formule o "quote"
     const totGGall2=staffStats.reduce((s,x)=>s+x.gg,0),totTOTall2=staffStats.reduce((s,x)=>s+x.tot,0);
-    staffChips=staffStats.length?'<div style="font-size:11px;color:#666;margin-bottom:6px;">📐 Quota proporzionale = interventi totali del gruppo ('+totTOTall2+') ripartiti in base ai giorni di presenza di ciascuna</div>'+staffStats.map(({code,areas,tot,gg})=>{
+    staffChips=staffStats.length?staffStats.map(({code,areas,tot,gg})=>{
       const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>'<div>'+area+' ×'+n+'</div>').join('');
-      const fairShare=totGGall2?totTOTall2*(gg/totGGall2):0;
-      const delta=tot-fairShare;
-      const deltaPct=fairShare?Math.round((delta/fairShare)*100):null;
-      let balColor='#888',balLabel='Quota non calcolabile';
-      if(fairShare>0){
-        if(deltaPct>=15){balColor='#c62828';balLabel='+'+deltaPct+'% oltre la sua quota';}
-        else if(deltaPct<=-15){balColor='#a05a00';balLabel=deltaPct+'% sotto la sua quota';}
-        else{balColor='#2e7d32';balLabel='In linea con la sua quota';}
+      const pctPresenza=totGGall2?Math.round(gg/totGGall2*100):0;
+      const pctLavoro=totTOTall2?Math.round(tot/totTOTall2*100):0;
+      const diff=pctLavoro-pctPresenza;
+      let balColor='#888',balLabel='Nessun confronto possibile';
+      if(gg>0){
+        if(diff>=10){balColor='#c62828';balLabel='Fa più del previsto';}
+        else if(diff<=-10){balColor='#a05a00';balLabel='Fa meno del previsto';}
+        else{balColor='#2e7d32';balLabel='Nella norma';}
       }
-      return '<div style="background:#f0f5ff;border:1px solid #B8CEEE;border-radius:8px;padding:6px 12px;margin:0 0 6px;">'
+      return '<div style="background:#f0f5ff;border:1px solid #B8CEEE;border-radius:8px;padding:8px 12px;margin:0 0 6px;">'
       +'<span style="font-weight:700;font-size:13px;color:#1E4080;">'+code+'</span> '
       +'<span style="font-size:13px;color:#1E4080;font-weight:800;">'+tot+' interventi/mese</span> '
-      +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">· '+gg+' '+(gg===1?'giorno':'giorni')+' presenza · quota '+fairShare.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1})+'</span> '
-      +'<span style="font-size:10px;font-weight:800;color:'+balColor+';">· '+balLabel+'</span>'
-      +'<div style="font-size:11px;color:#333;margin-top:3px;">'+detail+'</div></div>';
+      +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">· '+gg+' '+(gg===1?'giorno':'giorni')+' presenza</span> '
+      +'<span style="font-size:11px;font-weight:800;color:'+balColor+';">· '+balLabel+'</span>'
+      +'<div style="margin-top:5px;max-width:340px;">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;"><span style="font-size:10px;color:#666;width:60px;">Presenze</span><div style="flex:1;height:8px;border-radius:4px;background:#dde2ea;overflow:hidden;"><div style="width:'+pctPresenza+'%;height:100%;background:#888;"></div></div><span style="font-size:10px;color:#666;width:28px;text-align:right;">'+pctPresenza+'%</span></div>'
+      +'<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;color:#666;width:60px;">Lavoro</span><div style="flex:1;height:8px;border-radius:4px;background:#dde2ea;overflow:hidden;"><div style="width:'+pctLavoro+'%;height:100%;background:'+balColor+';"></div></div><span style="font-size:10px;color:#666;width:28px;text-align:right;">'+pctLavoro+'%</span></div>'
+      +'</div>'
+      +'<div style="font-size:11px;color:#333;margin-top:5px;">'+detail+'</div></div>';
     }).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
   } else {
     staffChips=staffList.length?staffList.map(([code,n])=>{
@@ -1063,36 +1066,36 @@ function hkpNRenderGrid(p,tab){
       return{code,areas,tot,gg,media:gg?tot/gg:0};
     }).sort((a,b)=>b.tot-a.tot);
     if(staffStats.length){
-      // Non esiste una regola su quante persone/quanto debbano dedicarsi alle aree comuni:
-      // l'unico dato oggettivo è se il lavoro complessivo è distribuito in proporzione a chi
-      // è effettivamente presente. Quota proporzionale = quanti interventi spetterebbero a
-      // ciascuna se il totale fosse ripartito in base ai SUOI giorni di presenza reali.
+      // Confronto semplice, leggibile da chiunque: due barre affiancate sulla stessa scala
+      // (% presenze sul totale del gruppo vs % lavoro fatto sul totale del gruppo) —
+      // se le due barre sono simili è bilanciato, se una è molto più lunga dell'altra no.
       const totGGall=staffStats.reduce((s,x)=>s+x.gg,0),totTOTall=staffStats.reduce((s,x)=>s+x.tot,0);
-      h+='<div style="margin-top:12px;font-size:11px;color:#666;">📐 Quota proporzionale = interventi totali del gruppo ('+totTOTall+') ripartiti in base ai giorni di presenza di ciascuna — lo scarto sotto mostra chi fa più o meno della sua parte, indipendentemente da quanto è presente.</div>';
-      h+='<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;">';
+      h+='<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">';
       staffStats.forEach(({code,areas,tot,gg})=>{
         const fullName=HKP_HW_NAMES[code.toUpperCase()]||code;
         const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>'<div>'+area+' ×'+n+'</div>').join('');
-        const fairShare=totGGall?totTOTall*(gg/totGGall):0;
-        const delta=tot-fairShare;
-        const deltaPct=fairShare?Math.round((delta/fairShare)*100):null;
-        let balColor='#888',balLabel='Quota non calcolabile';
-        if(fairShare>0){
-          if(deltaPct>=15){balColor='#c62828';balLabel='+'+deltaPct+'% oltre la sua quota';}
-          else if(deltaPct<=-15){balColor='#a05a00';balLabel=deltaPct+'% sotto la sua quota';}
-          else{balColor='#2e7d32';balLabel='In linea con la sua quota';}
+        const pctPresenza=totGGall?Math.round(gg/totGGall*100):0;
+        const pctLavoro=totTOTall?Math.round(tot/totTOTall*100):0;
+        const diff=pctLavoro-pctPresenza;
+        let balColor='#888',balLabel='Nessun confronto possibile';
+        if(gg>0){
+          if(diff>=10){balColor='#c62828';balLabel='Fa più del previsto';}
+          else if(diff<=-10){balColor='#a05a00';balLabel='Fa meno del previsto';}
+          else{balColor='#2e7d32';balLabel='Nella norma';}
         }
-        h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;min-width:250px;flex:1;">';
+        h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;min-width:260px;flex:1;">';
+        h+='<div style="display:flex;align-items:center;gap:10px;">';
         h+='<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:#f1f2f4;color:#333;font-size:12px;font-weight:800;align-items:center;justify-content:center;flex-shrink:0;">'+code.substring(0,3)+'</span>';
-        h+='<div style="min-width:0;flex:1;">';
-        h+='<div style="display:flex;align-items:baseline;gap:6px;">'
-          +'<span style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+tot+'</span>'
-          +'<span style="font-size:11px;color:#666;">interventi/mese</span></div>';
-        h+='<div style="font-size:12px;color:#666;margin-top:1px;">'+fullName+'</div>';
-        h+='<div style="font-size:11px;color:#1a5c2e;font-weight:700;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza · quota '+fairShare.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1})+'</div>';
-        h+='<div style="font-size:11px;font-weight:800;color:'+balColor+';margin-top:5px;">'+balLabel+'</div>';
+        h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+tot+' <span style="font-size:11px;font-weight:400;color:#666;">interventi/mese</span></div>';
+        h+='<div style="font-size:12px;color:#666;">'+fullName+' · '+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div></div>';
+        h+='</div>';
+        h+='<div style="margin-top:8px;">';
+        h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;"><span style="font-size:10px;color:#666;width:64px;flex-shrink:0;">Presenze</span><div style="flex:1;height:10px;border-radius:5px;background:#eef1f5;overflow:hidden;"><div style="width:'+pctPresenza+'%;height:100%;background:#888;"></div></div><span style="font-size:10px;color:#666;width:32px;text-align:right;">'+pctPresenza+'%</span></div>';
+        h+='<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;color:#666;width:64px;flex-shrink:0;">Lavoro fatto</span><div style="flex:1;height:10px;border-radius:5px;background:#eef1f5;overflow:hidden;"><div style="width:'+pctLavoro+'%;height:100%;background:'+balColor+';"></div></div><span style="font-size:10px;color:#666;width:32px;text-align:right;">'+pctLavoro+'%</span></div>';
+        h+='</div>';
+        h+='<div style="font-size:11px;font-weight:800;color:'+balColor+';margin-top:6px;">'+balLabel+'</div>';
         h+='<div style="font-size:11px;color:#555;margin-top:5px;">'+detail+'</div>';
-        h+='</div></div>';
+        h+='</div>';
       });
       h+='</div>';
     }
