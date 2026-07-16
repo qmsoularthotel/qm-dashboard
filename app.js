@@ -811,23 +811,25 @@ function hkpNPrint(p){
       const gg=camPresence[code]?camPresence[code].size:0;
       return{code,areas,tot,gg,media:gg?tot/gg:0};
     }).sort((a,b)=>b.tot-a.tot);
+    // Quota proporzionale: interventi totali del gruppo ripartiti in base ai giorni di
+    // presenza reali di ciascuna (tab Camere) — non implica una regola su quante persone
+    // debbano fare le aree comuni, misura solo se il carico effettivo è proporzionato
     const totGGall2=staffStats.reduce((s,x)=>s+x.gg,0),totTOTall2=staffStats.reduce((s,x)=>s+x.tot,0);
-    const teamAvg2=totGGall2?totTOTall2/totGGall2:0;
-    const teamAvgFmt2=teamAvg2.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1});
-    staffChips=staffStats.length?'<div style="font-size:11px;color:#666;margin-bottom:6px;">⚖️ Media squadra: <b style="color:#1E4080;">'+teamAvgFmt2+' interventi/giorno presenza</b></div>'+staffStats.map(({code,areas,tot,gg,media})=>{
-      const mediaFmt=gg?media.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
+    staffChips=staffStats.length?'<div style="font-size:11px;color:#666;margin-bottom:6px;">📐 Quota proporzionale = interventi totali del gruppo ('+totTOTall2+') ripartiti in base ai giorni di presenza di ciascuna</div>'+staffStats.map(({code,areas,tot,gg})=>{
       const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>'<div>'+area+' ×'+n+'</div>').join('');
-      const ratio=teamAvg2&&gg?media/teamAvg2:null;
-      let balColor='#888',balLabel='—';
-      if(ratio!=null){
-        if(ratio>=1.15){balColor='#c62828';balLabel='Sopra media';}
-        else if(ratio<=0.85){balColor='#a05a00';balLabel='Sotto media';}
-        else{balColor='#2e7d32';balLabel='In linea';}
+      const fairShare=totGGall2?totTOTall2*(gg/totGGall2):0;
+      const delta=tot-fairShare;
+      const deltaPct=fairShare?Math.round((delta/fairShare)*100):null;
+      let balColor='#888',balLabel='Quota non calcolabile';
+      if(fairShare>0){
+        if(deltaPct>=15){balColor='#c62828';balLabel='+'+deltaPct+'% oltre la sua quota';}
+        else if(deltaPct<=-15){balColor='#a05a00';balLabel=deltaPct+'% sotto la sua quota';}
+        else{balColor='#2e7d32';balLabel='In linea con la sua quota';}
       }
       return '<div style="background:#f0f5ff;border:1px solid #B8CEEE;border-radius:8px;padding:6px 12px;margin:0 0 6px;">'
       +'<span style="font-weight:700;font-size:13px;color:#1E4080;">'+code+'</span> '
       +'<span style="font-size:13px;color:#1E4080;font-weight:800;">'+tot+' interventi/mese</span> '
-      +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">· '+gg+' '+(gg===1?'giorno':'giorni')+' presenza · '+mediaFmt+'/giorno</span> '
+      +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">· '+gg+' '+(gg===1?'giorno':'giorni')+' presenza · quota '+fairShare.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1})+'</span> '
       +'<span style="font-size:10px;font-weight:800;color:'+balColor+';">· '+balLabel+'</span>'
       +'<div style="font-size:11px;color:#333;margin-top:3px;">'+detail+'</div></div>';
     }).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
@@ -1061,26 +1063,25 @@ function hkpNRenderGrid(p,tab){
       return{code,areas,tot,gg,media:gg?tot/gg:0};
     }).sort((a,b)=>b.tot-a.tot);
     if(staffStats.length){
-      // Media squadra pesata (totale interventi / totale giorni presenza) — riferimento
-      // per capire a colpo d'occhio se ciascuna cameriera è sopra/sotto/in linea
+      // Non esiste una regola su quante persone/quanto debbano dedicarsi alle aree comuni:
+      // l'unico dato oggettivo è se il lavoro complessivo è distribuito in proporzione a chi
+      // è effettivamente presente. Quota proporzionale = quanti interventi spetterebbero a
+      // ciascuna se il totale fosse ripartito in base ai SUOI giorni di presenza reali.
       const totGGall=staffStats.reduce((s,x)=>s+x.gg,0),totTOTall=staffStats.reduce((s,x)=>s+x.tot,0);
-      const teamAvg=totGGall?totTOTall/totGGall:0;
-      const teamAvgFmt=teamAvg.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1});
-      const maxMedia=Math.max(...staffStats.map(x=>x.media),0.1);
-      h+='<div style="margin-top:12px;font-size:11px;color:#666;">⚖️ Media squadra: <b style="color:#1E4080;">'+teamAvgFmt+' interventi/giorno presenza</b> — riferimento per il bilanciamento sotto</div>';
+      h+='<div style="margin-top:12px;font-size:11px;color:#666;">📐 Quota proporzionale = interventi totali del gruppo ('+totTOTall+') ripartiti in base ai giorni di presenza di ciascuna — lo scarto sotto mostra chi fa più o meno della sua parte, indipendentemente da quanto è presente.</div>';
       h+='<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;">';
-      staffStats.forEach(({code,areas,tot,gg,media})=>{
+      staffStats.forEach(({code,areas,tot,gg})=>{
         const fullName=HKP_HW_NAMES[code.toUpperCase()]||code;
-        const mediaFmt=gg?media.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
         const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>'<div>'+area+' ×'+n+'</div>').join('');
-        const ratio=teamAvg&&gg?media/teamAvg:null;
-        let balColor='#888',balLabel='—';
-        if(ratio!=null){
-          if(ratio>=1.15){balColor='#c62828';balLabel='Sopra media';}
-          else if(ratio<=0.85){balColor='#a05a00';balLabel='Sotto media';}
-          else{balColor='#2e7d32';balLabel='In linea';}
+        const fairShare=totGGall?totTOTall*(gg/totGGall):0;
+        const delta=tot-fairShare;
+        const deltaPct=fairShare?Math.round((delta/fairShare)*100):null;
+        let balColor='#888',balLabel='Quota non calcolabile';
+        if(fairShare>0){
+          if(deltaPct>=15){balColor='#c62828';balLabel='+'+deltaPct+'% oltre la sua quota';}
+          else if(deltaPct<=-15){balColor='#a05a00';balLabel=deltaPct+'% sotto la sua quota';}
+          else{balColor='#2e7d32';balLabel='In linea con la sua quota';}
         }
-        const barPct=Math.round((media/maxMedia)*100);
         h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;min-width:250px;flex:1;">';
         h+='<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:#f1f2f4;color:#333;font-size:12px;font-weight:800;align-items:center;justify-content:center;flex-shrink:0;">'+code.substring(0,3)+'</span>';
         h+='<div style="min-width:0;flex:1;">';
@@ -1088,10 +1089,8 @@ function hkpNRenderGrid(p,tab){
           +'<span style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+tot+'</span>'
           +'<span style="font-size:11px;color:#666;">interventi/mese</span></div>';
         h+='<div style="font-size:12px;color:#666;margin-top:1px;">'+fullName+'</div>';
-        h+='<div style="font-size:11px;color:#1a5c2e;font-weight:700;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza · '+mediaFmt+'/giorno</div>';
-        h+='<div style="display:flex;align-items:center;gap:6px;margin-top:5px;">'
-          +'<div style="flex:1;height:6px;border-radius:4px;background:#eef1f5;overflow:hidden;"><div style="width:'+barPct+'%;height:100%;background:'+balColor+';"></div></div>'
-          +'<span style="font-size:10px;font-weight:800;color:'+balColor+';white-space:nowrap;">'+balLabel+'</span></div>';
+        h+='<div style="font-size:11px;color:#1a5c2e;font-weight:700;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza · quota '+fairShare.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1})+'</div>';
+        h+='<div style="font-size:11px;font-weight:800;color:'+balColor+';margin-top:5px;">'+balLabel+'</div>';
         h+='<div style="font-size:11px;color:#555;margin-top:5px;">'+detail+'</div>';
         h+='</div></div>';
       });
