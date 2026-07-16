@@ -710,19 +710,20 @@ function hkpNPrint(p){
         });
       });
     });
-    const sortedStaff=Object.keys(staffAreaCounts).sort((a,b)=>{
-      const totA=Object.values(staffAreaCounts[a]).reduce((s,n)=>s+n,0);
-      const totB=Object.values(staffAreaCounts[b]).reduce((s,n)=>s+n,0);
-      return totB-totA;
-    });
-    staffChips=sortedStaff.length?sortedStaff.map(code=>{
+    // Ordinato per interventi/giorno di presenza — unico numero confrontabile equamente
+    const staffStats=Object.keys(staffAreaCounts).map(code=>{
       const areas=staffAreaCounts[code];
       const tot=Object.values(areas).reduce((s,n)=>s+n,0);
       const gg=staffAreaDays[code]?staffAreaDays[code].size:0;
+      return{code,areas,tot,gg,media:gg?tot/gg:0};
+    }).sort((a,b)=>b.media-a.media);
+    staffChips=staffStats.length?staffStats.map(({code,areas,tot,gg,media})=>{
+      const mediaFmt=gg?media.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
       const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>area+' ×'+n).join(' · ');
       return '<div style="background:#f0f5ff;border:1px solid #B8CEEE;border-radius:8px;padding:6px 12px;margin:0 0 6px;">'
       +'<span style="font-weight:700;font-size:13px;color:#1E4080;">'+code+'</span> '
-      +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">'+tot+' interventi · '+gg+' '+(gg===1?'giorno':'giorni')+' presenza</span>'
+      +'<span style="font-size:13px;color:#1E4080;font-weight:800;">'+mediaFmt+' interventi/giorno</span> '
+      +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">· '+tot+' interventi · '+gg+' '+(gg===1?'giorno':'giorni')+' presenza</span>'
       +'<div style="font-size:11px;color:#333;margin-top:3px;">'+detail+'</div></div>';
     }).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
   } else {
@@ -941,27 +942,30 @@ function hkpNRenderGrid(p,tab){
         });
       });
     });
-    const sortedStaff=Object.keys(staffAreaCounts).sort((a,b)=>{
-      const totA=Object.values(staffAreaCounts[a]).reduce((s,n)=>s+n,0);
-      const totB=Object.values(staffAreaCounts[b]).reduce((s,n)=>s+n,0);
-      return totB-totA;
-    });
-    if(sortedStaff.length){
-      h+='<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">';
-      sortedStaff.forEach(code=>{
+    // Metrica principale: interventi per giorno di presenza — è l'unico numero
+    // confrontabile equamente tra chi è più o meno presente nel mese
+    const staffStats=Object.keys(staffAreaCounts).map(code=>{
+      const areas=staffAreaCounts[code];
+      const tot=Object.values(areas).reduce((s,n)=>s+n,0);
+      const gg=staffAreaDays[code]?staffAreaDays[code].size:0;
+      return{code,areas,tot,gg,media:gg?tot/gg:0};
+    }).sort((a,b)=>b.media-a.media);
+    if(staffStats.length){
+      h+='<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">';
+      staffStats.forEach(({code,areas,tot,gg,media})=>{
         const fullName=HKP_HW_NAMES[code.toUpperCase()]||code;
-        const areas=staffAreaCounts[code];
-        const tot=Object.values(areas).reduce((s,n)=>s+n,0);
-        const gg=staffAreaDays[code]?staffAreaDays[code].size:0;
+        const mediaFmt=gg?media.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
         const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>area+' ×'+n).join(' · ');
-        h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;">';
-        h+='<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">';
-        h+='<span style="display:inline-flex;width:32px;height:32px;border-radius:50%;background:#f1f2f4;color:#333;font-size:11px;font-weight:800;align-items:center;justify-content:center;flex-shrink:0;">'+code.substring(0,3)+'</span>';
-        h+='<span style="font-weight:700;font-size:13px;color:#1a1a1a;">'+fullName+'</span>';
-        h+='<span style="font-size:11px;color:#1a5c2e;font-weight:700;">'+tot+' interventi · '+gg+' '+(gg===1?'giorno':'giorni')+' presenza</span>';
-        h+='</div>';
-        h+='<div style="font-size:12px;color:#555;margin-top:6px;">'+detail+'</div>';
-        h+='</div>';
+        h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;min-width:230px;flex:1;">';
+        h+='<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:#f1f2f4;color:#333;font-size:12px;font-weight:800;align-items:center;justify-content:center;flex-shrink:0;">'+code.substring(0,3)+'</span>';
+        h+='<div style="min-width:0;">';
+        h+='<div style="display:flex;align-items:baseline;gap:6px;">'
+          +'<span style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+mediaFmt+'</span>'
+          +'<span style="font-size:11px;color:#666;">interventi/giorno</span></div>';
+        h+='<div style="font-size:12px;color:#666;margin-top:1px;">'+fullName+'</div>';
+        h+='<div style="font-size:11px;color:#1a5c2e;font-weight:700;margin-top:1px;">'+tot+' interventi · '+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div>';
+        h+='<div style="font-size:11px;color:#555;margin-top:4px;">'+detail+'</div>';
+        h+='</div></div>';
       });
       h+='</div>';
     }
