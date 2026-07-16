@@ -4539,15 +4539,9 @@ function revRenderList(p){
     const catMini=REV_CATS.map(c=>{const v=parseFloat(r[c]);return isNaN(v)?'':
       `<span style="font-size:var(--fs-xs);padding:3px 8px;border-radius:5px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border-light);">${c.split(' ')[0]} <strong style="color:var(--text);">${v.toFixed(1)}</strong></span>`;
     }).filter(Boolean).join('');
-    const _tone=REV_HOTELS[p].tone||'bilanciato';
     const replyPanel=(!r._hasReply&&!isNotNeeded&&!isSent)?`
       <div class="rev-reply-panel" id="rp-${uid}">
-        <div class="rev-tone-bar">
-          <span style="font-size:10px;color:var(--text-dim);flex-shrink:0;">Tono:</span>
-          <button class="rev-tone-btn${_tone==='formale'?' active':''}" data-p="${p}" data-tone="formale" onclick="revSetTone('${p}','formale',event)">Formale</button>
-          <button class="rev-tone-btn${_tone==='bilanciato'?' active':''}" data-p="${p}" data-tone="bilanciato" onclick="revSetTone('${p}','bilanciato',event)">Bilanciato</button>
-          <button class="rev-tone-btn${_tone==='empatico'?' active':''}" data-p="${p}" data-tone="empatico" onclick="revSetTone('${p}','empatico',event)">Empatico</button>
-        </div>
+        <input type="text" class="rev-instructions-input" id="ri-${uid}" placeholder="Istruzioni aggiuntive per la risposta (opzionale)…" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);background:var(--surface);margin-bottom:6px;box-sizing:border-box;font-family:'Helvetica Neue',Arial,sans-serif;">
         <textarea class="rev-reply-textarea" id="rt-${uid}" placeholder="Genera o scrivi la risposta…" oninput="revUpdateCharCount('${uid}')"></textarea>
         <div class="rev-reply-actions">
           <button class="rev-btn-generate" id="rb-${uid}" onclick="revGenerateReply('${p}',${gi})">✦ Genera risposta</button>
@@ -4564,13 +4558,6 @@ function revRenderList(p){
       <div class="rev-body" id="revBody-${uid}">${pos}${neg}</div>${translateBtn}${reply}${replyPanel}
     </div>`;
   }).join('')+(totalPages>1?`<div class="rev-pagination"><button class="rev-pg-btn" onclick="revSetPage('${p}',${page-1})" ${page===0?'disabled':''}>← Prec</button><span class="rev-pg-info">Pagina ${page+1} di ${totalPages} · ${filtered.length} recensioni</span><button class="rev-pg-btn" onclick="revSetPage('${p}',${page+1})" ${page>=totalPages-1?'disabled':''}>Succ →</button></div>`:'');
-}
-function revSetTone(p,tone,evt){
-  if(evt)evt.stopPropagation();
-  REV_HOTELS[p].tone=tone;
-  document.querySelectorAll(`.rev-tone-btn[data-p="${p}"]`).forEach(b=>{
-    b.classList.toggle('active',b.dataset.tone===tone);
-  });
 }
 function revUpdateCharCount(uid){
   const ta=document.getElementById('rt-'+uid),cc=document.getElementById('rcc-'+uid);
@@ -4625,14 +4612,14 @@ async function revGenerateReply(p,gi){
   const lang=isItalian?'italiano':'inglese';
   const firma=isItalian?'Paolo P. - Quality Manager':'Best regards. Paolo P. - Quality Manager';
   const hotelName=REV_HOTELS[p].name;
-  const tone=REV_HOTELS[p].tone||'bilanciato';
-  const toneDesc=tone==='formale'?'Tono istituzionale e professionale. Stile sobrio, distanza rispettosa, linguaggio formale senza eccedere in calore.':tone==='empatico'?'Tono molto empatico e vicino. Mostra comprensione autentica verso i disagi o le emozioni dell\'ospite. Usa frasi che trasmettono cura personale.':'Tono bilanciato: professionale e cordiale, né freddo né eccessivamente caloroso. Il registro naturale di un Quality Manager competente.';
   const posText=(r['Recensione positiva']||'').trim();
   const negText=(r['Recensione negativa']||'').trim();
   const hasBookingText=posText.length>3||negText.length>3;
   if(!hasBookingText){ta.value='Nessun commento scritto — risposta non necessaria per Booking.com.';btn.disabled=false;btn.innerHTML='✦ Genera risposta';return;}
   const guestName=r["Nome dell'ospite"]||'Ospite';
-  const prompt=`Sei Paolo P., Quality Manager del ${hotelName} a Napoli, un hotel 4 stelle con storia e carattere unico.\n\nDevi rispondere a questa recensione Booking.com in ${lang}.\n\nDATI RECENSIONE:\n- Ospite: ${guestName}\n- Punteggio: ${r._score}/10\n- Titolo: ${r['Titolo della recensione']||'—'}\n- Commento positivo: ${posText||'—'}\n- Commento negativo: ${negText||'—'}\n\nREGOLE — rispettale tutte:\n1. APERTURA: rivolgiti all'ospite per nome ("Dear ${guestName}," / "Cara/Caro ${guestName},") e ringrazia per la recensione — varia il modo ad ogni risposta\n2. LUNGHEZZA: 3 paragrafi. Primo: 1-2 frasi (ringraziamento + positivi). Secondo: 2-3 frasi (feedback/critiche con spiegazione e azione). Terzo: 1 frase (chiusura). Totale 5-7 frasi — né troppo corto né prolisso.\n3. TONO: professionale e caldo come un Quality Manager di un 4 stelle\n4. CRITICHE — REGOLA FONDAMENTALE: non dire mai "hai ragione", "you are right", "you are absolutely right" — riconosci il feedback in modo neutro e professionale (es. "We take note of your observation", "We appreciate your feedback on X") e poi spiega l'azione concreta\n5. PUNTEGGIO: citalo solo se è alto (9-10/10) E la recensione è entusiasta\n6. PUNTI POSITIVI: richiama aspetti specifici citati dall'ospite, non frasi generiche\n7. CARATTERE STRUTTURA: valorizza l'identità storica/unica quando pertinente\n8. CHIUSURA: invita a tornare — varia il phrasing\n9. VIETATO: non invitare mai al contatto diretto né alla prenotazione diretta (OTA)\n10. FIRMA su riga separata: "${firma}"\n11. Non ripetere le parole dell'ospite\n12. Rispondi SOLO con il testo, senza preamboli`;
+  const instructions=(document.getElementById('ri-'+uid)?.value||'').trim();
+  const instructionsBlock=instructions?`\n\nISTRUZIONI AGGIUNTIVE DELL'UTENTE — tienine conto se pertinenti, senza violare le regole sopra:\n${instructions}`:'';
+  const prompt=`Sei Paolo P., Quality Manager del ${hotelName} a Napoli, un hotel 4 stelle con storia e carattere unico.\n\nDevi rispondere a questa recensione Booking.com in ${lang}.\n\nDATI RECENSIONE:\n- Ospite: ${guestName}\n- Punteggio: ${r._score}/10\n- Titolo: ${r['Titolo della recensione']||'—'}\n- Commento positivo: ${posText||'—'}\n- Commento negativo: ${negText||'—'}\n\nREGOLE — rispettale tutte:\n1. APERTURA: rivolgiti all'ospite per nome ("Dear ${guestName}," / "Cara/Caro ${guestName},") e ringrazia per la recensione — varia il modo ad ogni risposta\n2. LUNGHEZZA: 3 paragrafi. Primo: 1-2 frasi (ringraziamento + positivi). Secondo: 2-3 frasi (feedback/critiche con spiegazione e azione). Terzo: 1 frase (chiusura). Totale 5-7 frasi — né troppo corto né prolisso.\n3. TONO: istituzionale e professionale. Stile sobrio, distanza rispettosa, linguaggio formale senza eccedere in calore.\n4. CRITICHE — REGOLA FONDAMENTALE: non dire mai "hai ragione", "you are right", "you are absolutely right" — riconosci il feedback in modo neutro e professionale (es. "We take note of your observation", "We appreciate your feedback on X") e poi spiega l'azione concreta\n5. PUNTEGGIO: citalo solo se è alto (9-10/10) E la recensione è entusiasta\n6. PUNTI POSITIVI: richiama aspetti specifici citati dall'ospite, non frasi generiche\n7. CARATTERE STRUTTURA: valorizza l'identità storica/unica quando pertinente\n8. CHIUSURA: invita a tornare — varia il phrasing\n9. VIETATO: non invitare mai al contatto diretto né alla prenotazione diretta (OTA)\n10. FIRMA su riga separata: "${firma}"\n11. Non ripetere le parole dell'ospite\n12. Rispondi SOLO con il testo, senza preamboli${instructionsBlock}`;
   try{
     const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
     const data=await response.json();

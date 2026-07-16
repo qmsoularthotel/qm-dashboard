@@ -27,7 +27,8 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **MAI**: "hai ragione", "hai assolutamente ragione" — per critiche usare "Prendiamo nota della sua osservazione" o "Apprezziamo il suo feedback su X".
 - **MAI**: invitare al contatto diretto o alla prenotazione diretta (vietato dalle OTA).
 - Citare il punteggio SOLO se è alto e la recensione è entusiasta, altrimenti non menzionarlo.
-- Toni disponibili: **Formale** | **Bilanciato** | **Empatico** (default: Bilanciato). Il tono "Caldo" è stato rimosso.
+- **Booking.com**: solo tono **Formale** (selettore tono rimosso). La maschera di risposta ha un campo "Istruzioni aggiuntive" opzionale, incluso nel prompt se compilato.
+- **Expedia**: Toni disponibili: **Formale** | **Bilanciato** | **Empatico** (default: Bilanciato). Il tono "Caldo" è stato rimosso.
 - Risposte varie: evitare frasi identiche tra una risposta e l'altra (l'AI si sgama).
 - Includere sempre un invito a tornare.
 
@@ -356,11 +357,8 @@ Il reparto `mt` ha logica speciale in `renderDay()`:
 - Critica: MAI "hai ragione/assolutamente ragione" — usare "Prendiamo nota di..."
 - Punteggio: solo se alto E recensione entusiasta
 - Chiusura: invito a tornare, no contatto diretto, no prenotazione diretta
-- Toni: **Formale** | **Bilanciato** | **Empatico** — default `bilanciato`
-
-### Tono Bilanciato
-
-`'Tono bilanciato: professionale e cordiale, né freddo né eccessivamente caloroso. Il registro naturale di un Quality Manager competente.'`
+- Tono: solo **Formale** (selettore tono rimosso — istituzionale e professionale, sobrio, senza eccedere in calore)
+- Campo "Istruzioni aggiuntive" opzionale nella maschera di risposta: se compilato, il testo viene incluso nel prompt come vincolo aggiuntivo (senza poter violare le regole sopra)
 
 ---
 
