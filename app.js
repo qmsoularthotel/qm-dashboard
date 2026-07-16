@@ -1193,13 +1193,13 @@ function hkpNRenderFondi(p){
   const tasks=conf.tasks;
   const [yr,mo]=hkpNCurMon(p).split('-').map(Number);
   const monLabel=HKP_MON_NAMES[mo-1]+' '+yr;
-  const B='border:1px solid #d8dae0;';
+  const B='border:1px solid var(--border-light,#dde2ea);';
   const RH=36;const CW=52;const LW=158;
   const allRooms=conf.groups.flatMap(g=>g.rooms);
-  const symBtnStyle='display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid #d0d3db;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;color:#333;font-weight:600;';
-  const cancelBtnStyle=symBtnStyle+'background:#fef2f2;border-color:#fca5a5;color:#b91c1c;';
+  const symBtnStyle='display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--border,#cdd4de);border-radius:6px;background:#fff;cursor:pointer;font-size:12px;color:var(--text-muted,#4a5568);font-weight:500;';
+  const cancelBtnStyle=symBtnStyle+'background:var(--red-bg,#ffebee);border-color:#f3b8b8;color:var(--red,#c62828);';
   // Header mese
-  let h='<div style="font-size:17px;font-weight:700;color:#1a1a1a;padding:0 0 8px;letter-spacing:.01em;">'+monLabel+'</div>';
+  let h='<div style="font-size:15px;font-weight:500;color:var(--text,#0c1f33);padding:0 0 8px;letter-spacing:.01em;">'+monLabel+'</div>';
   // Toolbar asterischi
   h+='<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">';
   ['*','**','***','****','*****'].forEach(a=>h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\''+a+'\')" style="'+symBtnStyle+'">'+a+'</button>');
@@ -1210,23 +1210,23 @@ function hkpNRenderFondi(p){
     const rooms=grp.rooms;
     // Calcola totali per colonna
     const colTots=rooms.map(room=>{const gri=allRooms.indexOf(room);return tasks.reduce((s,_,ti)=>s+(hkpNGetCell(p,'fondi',ti,gri)?1:0),0);});
-    h+='<div style="border:1px solid #d0d3db;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);">';
+    h+='<div style="border:1px solid var(--border-light,#dde2ea);border-radius:8px;overflow:hidden;background:#fff;">';
     h+='<div style="display:flex;">';
     // Tabella sinistra: etichette task
-    h+='<div style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);overflow:hidden;">';
+    h+='<div style="flex-shrink:0;border-right:2px solid var(--accent-bg,#e8f0f8);overflow:hidden;">';
     h+='<table style="border-collapse:collapse;table-layout:fixed;"><colgroup><col style="width:'+LW+'px"></colgroup>';
-    h+='<thead><tr style="height:'+RH+'px;"><th style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:5px 10px;font-size:13px;font-weight:700;text-align:left;height:'+RH+'px;">'+grp.name+'</th></tr></thead><tbody>';
+    h+='<thead><tr style="height:'+RH+'px;"><th style="background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);'+B+'padding:6px 10px;font-size:12px;font-weight:600;text-align:left;text-transform:uppercase;letter-spacing:.04em;height:'+RH+'px;">'+grp.name+'</th></tr></thead><tbody>';
     tasks.forEach(task=>{
-      h+='<tr style="height:'+RH+'px;"><td style="background:var(--accent,#1E4080);color:#fff;'+B+'padding:4px 10px;font-size:11.5px;font-weight:600;vertical-align:middle;white-space:pre-line;height:'+RH+'px;line-height:1.3;max-width:'+LW+'px;overflow:hidden;">'+task+'</td></tr>';
+      h+='<tr style="height:'+RH+'px;"><td style="background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);'+B+'padding:4px 10px;font-size:11px;font-weight:400;vertical-align:middle;white-space:pre-line;height:'+RH+'px;line-height:1.3;max-width:'+LW+'px;overflow:hidden;">'+task+'</td></tr>';
     });
-    h+='<tr style="height:'+RH+'px;"><td style="background:#c8d0e8;'+B+'padding:0 10px;font-size:13px;font-weight:700;color:#3a4a6b;height:'+RH+'px;vertical-align:middle;">Totali</td></tr>';
+    h+='<tr style="height:'+RH+'px;"><td style="background:var(--surface2,#e8ecf1);'+B+'padding:0 10px;font-size:12.5px;font-weight:600;color:var(--text-muted,#4a5568);height:'+RH+'px;vertical-align:middle;">Totali</td></tr>';
     h+='</tbody></table></div>';
     // Tabella destra: colonne camere (scrollabile)
     h+='<div style="overflow-x:auto;flex:1;">';
     h+='<table style="border-collapse:collapse;table-layout:fixed;"><colgroup>';
     rooms.forEach(()=>h+='<col style="width:'+CW+'px">');
     h+='</colgroup><thead><tr style="height:'+RH+'px;">';
-    rooms.forEach(room=>h+='<th style="background:#f5f6f8;'+B+'padding:5px 2px;font-size:13px;font-weight:500;text-align:center;color:#555;height:'+RH+'px;">'+room+'</th>');
+    rooms.forEach(room=>h+='<th style="background:var(--surface,#f8f9fb);'+B+'padding:6px 2px;font-size:12px;font-weight:400;text-align:center;color:var(--text-dim,#888880);height:'+RH+'px;">'+room+'</th>');
     h+='</tr></thead><tbody>';
     tasks.forEach((_,ti)=>{
       h+='<tr style="height:'+RH+'px;">';
@@ -1237,13 +1237,13 @@ function hkpNRenderFondi(p){
           +'<input type="text" value="'+v+'" data-p="'+p+'" data-tab="fondi" data-ri="'+ti+'" data-col="'+gri+'" data-fondi="1" '
           +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
           +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
-          +'style="width:'+(CW-2)+'px;height:'+(RH-2)+'px;border:none;background:transparent;text-align:center;font-size:15px;'
-          +'font-family:inherit;padding:0 2px;outline:none;caret-color:transparent;display:block;font-weight:'+(v?'700':'400')+';cursor:default;box-sizing:border-box;"/></td>';
+          +'style="width:'+(CW-2)+'px;height:'+(RH-2)+'px;border:none;background:transparent;text-align:center;font-size:14px;'
+          +'font-family:inherit;padding:0 2px;outline:none;caret-color:transparent;display:block;color:'+(v?'var(--accent,#1c3a5e)':'var(--text,#0c1f33)')+';font-weight:'+(v?'500':'400')+';cursor:default;box-sizing:border-box;"/></td>';
       });
       h+='</tr>';
     });
     h+='<tr style="height:'+RH+'px;">';
-    colTots.forEach(tot=>h+='<td style="'+B+'text-align:center;background:#c8d0e8;color:#3a4a6b;font-size:14px;font-weight:700;height:'+RH+'px;vertical-align:middle;padding:0 2px;">'+(tot||'')+'</td>');
+    colTots.forEach(tot=>h+='<td style="'+B+'text-align:center;background:var(--surface2,#e8ecf1);color:var(--text-muted,#4a5568);font-size:12.5px;font-weight:600;height:'+RH+'px;vertical-align:middle;padding:0 2px;">'+(tot||'')+'</td>');
     h+='</tr></tbody></table></div>';
     h+='</div></div>';
   });
