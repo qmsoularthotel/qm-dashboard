@@ -627,6 +627,77 @@ function hkpNCamerePresenceDays(p,days){
   });
   return presence;
 }
+// Matrice "per area → per cameriera": quante volte ciascuna cameriera ha fatto ciascuna
+// area comune (esclusi corridoi/terrazzi/esterne) — dato oggettivo per capire chi fa
+// davvero un compito specifico, non solo il totale complessivo di una persona
+function hkpNAreaStaffMatrix(p,tab,rows,days){
+  const areaNames=[];
+  const matrix={};
+  rows.forEach((row,ri)=>{
+    const name=typeof row==='string'?row:row.name;
+    if(HKP_AREE_ESCLUSE.has(name))return;
+    if(!matrix[name]){matrix[name]={};areaNames.push(name);}
+    days.forEach(d=>{
+      const v=hkpNGetCell(p,tab,ri,d);
+      if(!v)return;
+      v.split('/').forEach(k=>{
+        const t=k.trim();
+        if(!t||HKP_SYM[t])return;
+        matrix[name][t]=(matrix[name][t]||0)+1;
+      });
+    });
+  });
+  const staffCodes=[...new Set(Object.values(matrix).flatMap(m=>Object.keys(m)))]
+    .sort((a,b)=>{
+      const totA=areaNames.reduce((s,ar)=>s+(matrix[ar][a]||0),0);
+      const totB=areaNames.reduce((s,ar)=>s+(matrix[ar][b]||0),0);
+      return totB-totA;
+    });
+  return{areaNames,matrix,staffCodes};
+}
+// Tabella area × cameriera — dato oggettivo e presentabile: chi fa davvero ciascuna area
+// e quante volte, riga per riga, senza ambiguità (utile per un confronto in direzione)
+function hkpNRenderAreaMatrixHTML(p,tab,rows,days,variant){
+  const{areaNames,matrix,staffCodes}=hkpNAreaStaffMatrix(p,tab,rows,days);
+  if(!areaNames.length||!staffCodes.length)return'';
+  const isPrint=variant==='print';
+  const hdrBg=isPrint?'#1E4080':'#f5f6f8',hdrColor=isPrint?'#fff':'#333';
+  const B=isPrint?'border:1px solid #ccc;':'border:1px solid #e2e4e8;';
+  let t='<div style="margin-top:16px;overflow-x:auto;">';
+  t+='<div style="font-size:'+(isPrint?'13px':'12px')+';font-weight:700;color:'+(isPrint?'#1E4080':'#1a1a1a')+';margin-bottom:8px;">Chi fa cosa — tabella area × cameriera</div>';
+  t+='<table style="border-collapse:collapse;font-size:'+(isPrint?'12px':'12px')+';">';
+  t+='<thead><tr>';
+  t+='<th style="'+B+'background:'+hdrBg+';color:'+hdrColor+';padding:5px 10px;text-align:left;white-space:nowrap;">Area</th>';
+  staffCodes.forEach(code=>{
+    const fullName=HKP_HW_NAMES[code.toUpperCase()]||code;
+    t+='<th style="'+B+'background:'+hdrBg+';color:'+hdrColor+';padding:5px 8px;text-align:center;white-space:nowrap;">'+fullName+'</th>';
+  });
+  t+='<th style="'+B+'background:'+(isPrint?'#1a5c2e':'#e2e4e8')+';color:'+(isPrint?'#fff':'#333')+';padding:5px 8px;text-align:center;white-space:nowrap;">Totale</th>';
+  t+='</tr></thead><tbody>';
+  areaNames.forEach(area=>{
+    const rowTot=staffCodes.reduce((s,c)=>s+(matrix[area][c]||0),0);
+    t+='<tr>';
+    t+='<td style="'+B+'padding:4px 10px;white-space:nowrap;color:#333;">'+area+'</td>';
+    staffCodes.forEach(code=>{
+      const n=matrix[area][code]||0;
+      t+='<td style="'+B+'padding:4px 8px;text-align:center;font-weight:'+(n?'700':'400')+';color:'+(n?'#1E4080':'#bbb')+';background:'+(n?'#f0f5ff':'#fff')+';">'+(n||'—')+'</td>';
+    });
+    t+='<td style="'+B+'padding:4px 8px;text-align:center;font-weight:700;background:#d4edda;color:#1a5c2e;">'+rowTot+'</td>';
+    t+='</tr>';
+  });
+  t+='<tr>';
+  t+='<td style="'+B+'padding:4px 10px;font-weight:700;color:#333;">Totale</td>';
+  let grand=0;
+  staffCodes.forEach(code=>{
+    const colTot=areaNames.reduce((s,a)=>s+(matrix[a][code]||0),0);
+    grand+=colTot;
+    t+='<td style="'+B+'padding:4px 8px;text-align:center;font-weight:700;background:#e2e4e8;">'+colTot+'</td>';
+  });
+  t+='<td style="'+B+'padding:4px 8px;text-align:center;font-weight:800;background:#c3e6cb;color:#155724;">'+grand+'</td>';
+  t+='</tr>';
+  t+='</tbody></table></div>';
+  return t;
+}
 function hkpNPrint(p){
   const tab=HKP_NTAB[p]||'camere';
   const tabLabels={camere:'Camere',aree:'Aree Comuni',fondi:'Fondi & Lavaggi'};
@@ -772,6 +843,8 @@ function hkpNPrint(p){
     }).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
   }
 
+  const areaMatrixHTML=tab==='aree'?hkpNRenderAreaMatrixHTML(p,tab,rows,days,'print'):'';
+
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${hotel} — HKP ${tabLabels[tab]} ${monName} ${y}</title>
 <style>
 @page{size:A4 landscape;margin:8mm}
@@ -792,6 +865,7 @@ table{border-collapse:collapse;width:100%}
   <h3>${staffTitle} — ${monName} ${y}</h3>
   <div>${staffChips}</div>
 </div>
+${areaMatrixHTML}
 </body></html>`;
 
   const w=window.open('','_blank','width=1100,height=750');
@@ -1023,6 +1097,7 @@ function hkpNRenderGrid(p,tab){
       });
       h+='</div>';
     }
+    h+=hkpNRenderAreaMatrixHTML(p,tab,rows,days,'screen');
   } else {
     // Riepilogo cameriere: card camere assegnate (senza colori, nome esteso) separate da card simboli (RP/ND/LIB)
     const sortedHw=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
