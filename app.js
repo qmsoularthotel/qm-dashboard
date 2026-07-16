@@ -732,20 +732,21 @@ function hkpNPrint(p){
     // Giorni di presenza SEMPRE dal tab Camere — non farlo nel tab Aree significa solo
     // che quel giorno non ha pulito aree comuni, non che non fosse in servizio
     const camPresence=hkpNCamerePresenceDays(p,days);
-    // Ordinato per interventi/giorno di presenza — unico numero confrontabile equamente
+    // Ordinato per totale interventi nel mese — è il numero richiesto ("chi ha fatto
+    // cosa e quante volte" al mese, non una media giornaliera)
     const staffStats=Object.keys(staffAreaCounts).map(code=>{
       const areas=staffAreaCounts[code];
       const tot=Object.values(areas).reduce((s,n)=>s+n,0);
       const gg=camPresence[code]?camPresence[code].size:0;
       return{code,areas,tot,gg,media:gg?tot/gg:0};
-    }).sort((a,b)=>b.media-a.media);
+    }).sort((a,b)=>b.tot-a.tot);
     staffChips=staffStats.length?staffStats.map(({code,areas,tot,gg,media})=>{
       const mediaFmt=gg?media.toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
       const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>area+' ×'+n).join(' · ');
       return '<div style="background:#f0f5ff;border:1px solid #B8CEEE;border-radius:8px;padding:6px 12px;margin:0 0 6px;">'
       +'<span style="font-weight:700;font-size:13px;color:#1E4080;">'+code+'</span> '
-      +'<span style="font-size:13px;color:#1E4080;font-weight:800;">'+mediaFmt+' interventi/giorno</span> '
-      +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">· '+tot+' interventi · '+gg+' '+(gg===1?'giorno':'giorni')+' presenza</span>'
+      +'<span style="font-size:13px;color:#1E4080;font-weight:800;">'+tot+' interventi/mese</span> '
+      +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">· '+gg+' '+(gg===1?'giorno':'giorni')+' presenza · '+mediaFmt+'/giorno</span>'
       +'<div style="font-size:11px;color:#333;margin-top:3px;">'+detail+'</div></div>';
     }).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
   } else {
@@ -973,7 +974,7 @@ function hkpNRenderGrid(p,tab){
       const tot=Object.values(areas).reduce((s,n)=>s+n,0);
       const gg=camPresence[code]?camPresence[code].size:0;
       return{code,areas,tot,gg,media:gg?tot/gg:0};
-    }).sort((a,b)=>b.media-a.media);
+    }).sort((a,b)=>b.tot-a.tot);
     if(staffStats.length){
       h+='<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">';
       staffStats.forEach(({code,areas,tot,gg,media})=>{
@@ -984,10 +985,10 @@ function hkpNRenderGrid(p,tab){
         h+='<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:#f1f2f4;color:#333;font-size:12px;font-weight:800;align-items:center;justify-content:center;flex-shrink:0;">'+code.substring(0,3)+'</span>';
         h+='<div style="min-width:0;">';
         h+='<div style="display:flex;align-items:baseline;gap:6px;">'
-          +'<span style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+mediaFmt+'</span>'
-          +'<span style="font-size:11px;color:#666;">interventi/giorno</span></div>';
+          +'<span style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+tot+'</span>'
+          +'<span style="font-size:11px;color:#666;">interventi/mese</span></div>';
         h+='<div style="font-size:12px;color:#666;margin-top:1px;">'+fullName+'</div>';
-        h+='<div style="font-size:11px;color:#1a5c2e;font-weight:700;margin-top:1px;">'+tot+' interventi · '+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div>';
+        h+='<div style="font-size:11px;color:#1a5c2e;font-weight:700;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza · '+mediaFmt+'/giorno</div>';
         h+='<div style="font-size:11px;color:#555;margin-top:4px;">'+detail+'</div>';
         h+='</div></div>';
       });
