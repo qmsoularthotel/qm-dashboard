@@ -553,6 +553,8 @@ let _hkpNsel={drag:false,cells:new Set()};
 const HKP_SYM={RP:'hkp-ripasso',ND:'hkp-nd',LIB:'open-sign',NE:'non-eseguito'};
 // Mappatura sigla in griglia → nome esteso cameriera (da completare con l'elenco fornito dall'utente)
 const HKP_HW_NAMES={AM:'Matarese',IA:'Acunzo',CD:'De Masi',LC:'Cavaliere',ANU:'Anushka'};
+// Aree comuni escluse dal conteggio "chi fa cosa" — non richiedono un controllo puntuale
+const HKP_AREE_ESCLUSE=new Set(['Corridoio S.Art Vecchie','Corridoio S.Art Nuovo','Corridoio','Terrazzo Sinistro','Terrazzo Destro','Aree Esterne']);
 const HKP_SYM_EXT='png';
 const HKP_MON_NAMES=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 function hkpNStorKey(p){return 'qm_hkpN_'+p+'_'+hkpNCurMon(p);}
@@ -687,15 +689,53 @@ function hkpNPrint(p){
   tbody+='<td style="border:1px solid #ccc;text-align:center;background:#c3e6cb;color:#155724;font-weight:800;font-size:13px;padding:3px 6px;">'+(grandTot||'')+'</td>';
   tbody+='</tr>';
 
-  const staffChips=staffList.length?staffList.map(([code,n])=>{
-    const gg=(staffDays[code]?staffDays[code].size:0);
-    const media=gg?(n/gg).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
-    return '<div style="display:inline-flex;align-items:baseline;gap:8px;background:#f0f5ff;border:1px solid #B8CEEE;border-radius:8px;padding:5px 12px;margin:0 6px 6px 0;">'
-    +'<span style="font-weight:700;font-size:13px;color:#1E4080;">'+code+'</span>'
-    +'<span style="font-size:11px;color:#333;">'+n+' camere</span>'
-    +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">· '+gg+' '+(gg===1?'giorno':'giorni')+'</span>'
-    +'<span style="font-size:11px;color:#1E4080;font-weight:700;">· '+media+'/gg</span></div>';
-  }).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
+  // Aree comuni: dettaglio "chi fa cosa e quante volte" (esclusi corridoi/terrazzi/esterne),
+  // sostituisce il riepilogo generico usato per Camere
+  let staffTitle='Totale camere e giorni di presenza per cameriera';
+  let staffChips;
+  if(tab==='aree'){
+    staffTitle='Dettaglio interventi per cameriera (esclusi corridoi, terrazzi, aree esterne)';
+    const staffAreaCounts={},staffAreaDays={};
+    rows.forEach((row,ri)=>{
+      if(HKP_AREE_ESCLUSE.has(row))return;
+      days.forEach(d=>{
+        const v=hkpNGetCell(p,tab,ri,d);
+        if(!v)return;
+        v.split('/').forEach(k=>{
+          const t=k.trim();
+          if(!t||HKP_SYM[t])return;
+          staffAreaCounts[t]=staffAreaCounts[t]||{};
+          staffAreaCounts[t][row]=(staffAreaCounts[t][row]||0)+1;
+          (staffAreaDays[t]=staffAreaDays[t]||new Set()).add(d);
+        });
+      });
+    });
+    const sortedStaff=Object.keys(staffAreaCounts).sort((a,b)=>{
+      const totA=Object.values(staffAreaCounts[a]).reduce((s,n)=>s+n,0);
+      const totB=Object.values(staffAreaCounts[b]).reduce((s,n)=>s+n,0);
+      return totB-totA;
+    });
+    staffChips=sortedStaff.length?sortedStaff.map(code=>{
+      const areas=staffAreaCounts[code];
+      const tot=Object.values(areas).reduce((s,n)=>s+n,0);
+      const gg=staffAreaDays[code]?staffAreaDays[code].size:0;
+      const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>area+' ×'+n).join(' · ');
+      return '<div style="background:#f0f5ff;border:1px solid #B8CEEE;border-radius:8px;padding:6px 12px;margin:0 0 6px;">'
+      +'<span style="font-weight:700;font-size:13px;color:#1E4080;">'+code+'</span> '
+      +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">'+tot+' interventi · '+gg+' '+(gg===1?'giorno':'giorni')+' presenza</span>'
+      +'<div style="font-size:11px;color:#333;margin-top:3px;">'+detail+'</div></div>';
+    }).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
+  } else {
+    staffChips=staffList.length?staffList.map(([code,n])=>{
+      const gg=(staffDays[code]?staffDays[code].size:0);
+      const media=gg?(n/gg).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
+      return '<div style="display:inline-flex;align-items:baseline;gap:8px;background:#f0f5ff;border:1px solid #B8CEEE;border-radius:8px;padding:5px 12px;margin:0 6px 6px 0;">'
+      +'<span style="font-weight:700;font-size:13px;color:#1E4080;">'+code+'</span>'
+      +'<span style="font-size:11px;color:#333;">'+n+' camere</span>'
+      +'<span style="font-size:11px;color:#1a5c2e;font-weight:700;">· '+gg+' '+(gg===1?'giorno':'giorni')+'</span>'
+      +'<span style="font-size:11px;color:#1E4080;font-weight:700;">· '+media+'/gg</span></div>';
+    }).join(''):'<div style="font-size:11px;color:#888;">Nessuna assegnazione registrata.</div>';
+  }
 
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${hotel} — HKP ${tabLabels[tab]} ${monName} ${y}</title>
 <style>
@@ -714,7 +754,7 @@ table{border-collapse:collapse;width:100%}
 </div>
 <table><thead>${th}</thead><tbody>${tbody}</tbody></table>
 <div class="staff-section">
-  <h3>Totale camere e giorni di presenza per cameriera — ${monName} ${y}</h3>
+  <h3>${staffTitle} — ${monName} ${y}</h3>
   <div>${staffChips}</div>
 </div>
 </body></html>`;
@@ -883,19 +923,63 @@ function hkpNRenderGrid(p,tab){
   h+='<div data-hkpnl="'+p+'" style="flex-shrink:0;border-right:2px solid var(--accent,#1E4080);overflow:hidden;">'+L+'</div>';
   h+='<div data-hkpnr="'+p+'" style="overflow-x:auto;flex:1;">'+R+'</div>';
   h+='</div>';
-  // Riepilogo cameriere: card camere assegnate (senza colori, nome esteso) separate da card simboli (RP/ND/LIB)
-  const sortedHw=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
-  if(sortedHw.length){
-    h+='<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">';
-    sortedHw.forEach(([init,cnt])=>{
-      const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
-      const gg=hwDays[init]?hwDays[init].size:0;
-      const media=gg?(cnt/gg).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
-      h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;">';
-      h+='<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:#f1f2f4;color:#333;font-size:12px;font-weight:800;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
-      h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:12px;color:#666;margin-top:1px;">'+fullName+'</div><div style="font-size:11px;color:#1a5c2e;font-weight:700;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div><div style="font-size:11px;color:var(--accent,#1E4080);font-weight:700;margin-top:1px;">'+media+' camere/giorno</div></div></div>';
+  if(tab==='aree'){
+    // Aree comuni: conteggio "chi fa cosa e quante volte", non il totale grezzo — escluse
+    // le aree che non richiedono un controllo puntuale (corridoi, terrazzi, aree esterne)
+    const staffAreaCounts={},staffAreaDays={};
+    rows.forEach((row,ri)=>{
+      if(HKP_AREE_ESCLUSE.has(row.name))return;
+      days.forEach(d=>{
+        const v=hkpNGetCell(p,tab,ri,d);
+        if(!v)return;
+        v.split('/').forEach(k=>{
+          const t=k.trim();
+          if(!t||HKP_SYM[t])return;
+          staffAreaCounts[t]=staffAreaCounts[t]||{};
+          staffAreaCounts[t][row.name]=(staffAreaCounts[t][row.name]||0)+1;
+          (staffAreaDays[t]=staffAreaDays[t]||new Set()).add(d);
+        });
+      });
     });
-    h+='</div>';
+    const sortedStaff=Object.keys(staffAreaCounts).sort((a,b)=>{
+      const totA=Object.values(staffAreaCounts[a]).reduce((s,n)=>s+n,0);
+      const totB=Object.values(staffAreaCounts[b]).reduce((s,n)=>s+n,0);
+      return totB-totA;
+    });
+    if(sortedStaff.length){
+      h+='<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">';
+      sortedStaff.forEach(code=>{
+        const fullName=HKP_HW_NAMES[code.toUpperCase()]||code;
+        const areas=staffAreaCounts[code];
+        const tot=Object.values(areas).reduce((s,n)=>s+n,0);
+        const gg=staffAreaDays[code]?staffAreaDays[code].size:0;
+        const detail=Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,n])=>area+' ×'+n).join(' · ');
+        h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;">';
+        h+='<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">';
+        h+='<span style="display:inline-flex;width:32px;height:32px;border-radius:50%;background:#f1f2f4;color:#333;font-size:11px;font-weight:800;align-items:center;justify-content:center;flex-shrink:0;">'+code.substring(0,3)+'</span>';
+        h+='<span style="font-weight:700;font-size:13px;color:#1a1a1a;">'+fullName+'</span>';
+        h+='<span style="font-size:11px;color:#1a5c2e;font-weight:700;">'+tot+' interventi · '+gg+' '+(gg===1?'giorno':'giorni')+' presenza</span>';
+        h+='</div>';
+        h+='<div style="font-size:12px;color:#555;margin-top:6px;">'+detail+'</div>';
+        h+='</div>';
+      });
+      h+='</div>';
+    }
+  } else {
+    // Riepilogo cameriere: card camere assegnate (senza colori, nome esteso) separate da card simboli (RP/ND/LIB)
+    const sortedHw=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
+    if(sortedHw.length){
+      h+='<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">';
+      sortedHw.forEach(([init,cnt])=>{
+        const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
+        const gg=hwDays[init]?hwDays[init].size:0;
+        const media=gg?(cnt/gg).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
+        h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid #e2e4e8;display:flex;align-items:center;gap:10px;">';
+        h+='<span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:#f1f2f4;color:#333;font-size:12px;font-weight:800;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
+        h+='<div><div style="font-size:24px;font-weight:700;line-height:1.1;color:#1a1a1a;">'+cnt+'</div><div style="font-size:12px;color:#666;margin-top:1px;">'+fullName+'</div><div style="font-size:11px;color:#1a5c2e;font-weight:700;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div><div style="font-size:11px;color:var(--accent,#1E4080);font-weight:700;margin-top:1px;">'+media+' camere/giorno</div></div></div>';
+      });
+      h+='</div>';
+    }
   }
   const sortedSym=Object.entries(symCounts).sort((a,b)=>b[1]-a[1]);
   if(sortedSym.length){
