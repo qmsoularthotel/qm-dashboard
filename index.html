@@ -5,7 +5,7 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=226">
+<link rel="stylesheet" href="style.css?v=227">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
@@ -273,11 +273,11 @@
           <button class="btn-reload" id="btnBoutReload" style="display:none" onclick="resetBoutData()">Rimuovi</button>
           <div class="upload-ts" id="boutTs"></div>
         </div>
-        <div class="uc-slot" id="uc-piano" onclick="ucToggle('piano')" title="Piano settimana camere">
+        <div class="uc-slot" id="uc-piano" onclick="ucToggle('piano')" title="Compass Piano Settimanale">
           <input type="file" id="pianoFileInput" accept="application/pdf" style="display:none">
           <span class="uc-dot" id="uc-piano-dot"></span>
           <span class="uc-icon"><img src="img/icons/piano_settimanale.png" class="uc-icon-img"></span>
-          <div class="uc-label">Piano settimana</div>
+          <div class="uc-label">Compass<br>Piano<br>Settimanale</div>
           <div class="uc-sub" id="uc-piano-sub">Non caricato</div>
           <span class="uc-badge" id="uc-piano-badge" style="display:none;">▾</span>
         </div>
@@ -317,6 +317,9 @@
           </div>
           <button class="btn-reload" id="btnBkfReload" style="display:none" onclick="resetBkf()">Rimuovi report</button>
           <div class="upload-ts" id="bkfTs"></div>
+        </div>
+        <div class="uc-slot uc-slot-brand">
+          <img src="img/icons/compass-star.png" class="uc-brand-img" alt="Compass">
         </div>
       </div>
     </nav>
