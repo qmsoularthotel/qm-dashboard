@@ -7444,11 +7444,11 @@ const DDT_FORNITORI={
   DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#dbeafe', fg:'#1d4ed8', accent:'#2563eb'},
   Amonn:     {reparto:'altro', rLabel:'Altro',       color:'#ccfbf1', fg:'#0f766e', accent:'#0d9488'},
   Vistaprint:{reparto:'altro', rLabel:'Altro',       color:'#e0e7ff', fg:'#3730a3', accent:'#4f46e5'},
-  SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#e0e1f5', fg:'#292b82', accent:'#292b82'},
-  SAIMA:     {reparto:'bkf', rLabel:'Breakfast',    color:'#f5efe9', fg:'#2d1c12', accent:'#6b4a2f'},
-  MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fbdadc', fg:'#db0d15', accent:'#db0d15'},
+  SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#e0e1f5', fg:'#292b82', accent:'#292b82', logo:'sdm2.png'},
+  SAIMA:     {reparto:'bkf', rLabel:'Breakfast',    color:'#f5efe9', fg:'#2d1c12', accent:'#6b4a2f', logo:'saima.png'},
+  MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fbdadc', fg:'#db0d15', accent:'#db0d15', logo:'marr.png'},
   Cozzolino: {reparto:'bkf', rLabel:'Breakfast',    color:'#e5e5e5', fg:'#000000', accent:'#000000'},
-  Valgarda:  {reparto:'bkf', rLabel:'Breakfast',    color:'#f2eee2', fg:'#8a7643', accent:'#b99e5d'},
+  Valgarda:  {reparto:'bkf', rLabel:'Breakfast',    color:'#f2eee2', fg:'#8a7643', accent:'#b99e5d', logo:'valgarda.png'},
 };
 // Riassegnazione manuale categoria prodotto (solo Spese Fornitori): una volta spostato un
 // prodotto in una categoria, resta lì per sempre — in tutti i mesi già caricati e in quelli
@@ -8139,13 +8139,6 @@ function ddtRenderSpese(){
   const monDdt=all.filter(d=>ddtYM(d.data)===mon);
   const _nf=d=>ddtNormForn(d.fornitore)||d.fornitore;
   const _repOf=d=>DDT_FORNITORI[_nf(d)]?.reparto||d.reparto||'bkf';
-  const hkTot=monDdt.filter(d=>_repOf(d)==='hk').reduce((s,d)=>s+(d.totale_ordine||0),0);
-  const bkfTot=monDdt.filter(d=>_repOf(d)==='bkf').reduce((s,d)=>s+(d.totale_ordine||0),0);
-  const amonnTot=monDdt.filter(d=>_nf(d)==='Amonn').reduce((s,d)=>s+(d.totale_ordine||0),0);
-  const hkDdt=monDdt.filter(d=>_repOf(d)==='hk').length;
-  const bkfDdt=monDdt.filter(d=>_repOf(d)==='bkf').length;
-  const amonnDdt=monDdt.filter(d=>_nf(d)==='Amonn').length;
-
   // mesi con ordini per fornitore (anno corrente)
   const curYear=new Date().getFullYear();
   const _fornMesi={};
@@ -8166,29 +8159,18 @@ function ddtRenderSpese(){
     <button onclick="ddtOpenUploadModal()" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;flex-shrink:0;margin-left:auto;">📷 Carica DDT</button>
   </div>`;
 
-  // ── 3 KPI separati ──
-  const kpi=(lbl,val,sub,accent)=>`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;padding:12px 16px;flex:1;border-top:2px solid ${accent||'var(--accent)'};">
-    <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">${lbl}</div>
-    <div style="font-size:var(--fs-lg,20px);font-weight:800;color:${val?accent||'var(--accent)':'var(--text-dim)'};">${val||'—'}</div>
-    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">${sub}</div>
-  </div>`;
   // SAIMA è un fornitore attivo solo a gennaio/febbraio 2026 — da marzo in poi sparisce dai fornitori disponibili
   const _fornVisibili=Object.entries(DDT_FORNITORI).filter(([nome])=>!ddtSupplierHidden(nome,mon));
-  const _bkfFornLabel=_fornVisibili.filter(([,c])=>c.reparto==='bkf').map(([n])=>n).join(' · ');
-  h+=`<div style="display:flex;gap:10px;margin-bottom:16px;">
-    ${kpi('DECA',hkTot?ddtFmt(hkTot):'',hkDdt+' DDT · Housekeeping','#2563eb')}
-    ${kpi('Fornitori Breakfast',bkfTot?ddtFmt(bkfTot):'',bkfDdt+' DDT · '+_bkfFornLabel,'#16a34a')}
-    ${kpi('Amonn',amonnTot?ddtFmt(amonnTot):'',amonnDdt+' DDT','#0d9488')}
-  </div>`;
 
-  // ── Chip fornitori (cliccabili) con mesi pills ──
+  // ── Chip fornitori (cliccabili) con logo e mesi pills ──
   h+=`<div style="display:grid;grid-template-columns:repeat(${_fornVisibili.length},1fr);gap:8px;margin-bottom:18px;">`;
   _fornVisibili.forEach(([nome,conf])=>{
     const fDdt=monDdt.filter(d=>_nf(d)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const active=_ddtFilter===nome;
+    const logoHtml=conf.logo?`<img src="${conf.logo}" alt="${nome}" style="height:18px;max-width:70px;object-fit:contain;margin-bottom:4px;display:block;">`:`<div style="font-size:var(--fs-xxs);font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">${nome}</div>`;
     h+=`<div id="ddt-chip-${nome}" onclick="ddtSelectForn('${nome}')" style="background:${active?conf.color:'var(--surface)'};border:1px solid ${active?conf.accent:'var(--border-light)'};border-left:3px solid ${conf.accent};border-radius:9px;padding:9px 12px;cursor:pointer;transition:background .15s,border-color .15s;">
-      <div style="font-size:var(--fs-xxs);font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">${nome}</div>
+      ${logoHtml}
       <div style="font-size:var(--fs-sm);font-weight:800;color:${fTot?conf.fg:'var(--text-dim)'};">${fTot?ddtFmt(fTot):'—'}</div>
       <div style="font-size:var(--fs-xxs);color:${active?conf.fg:'var(--text-dim)'};margin-top:2px;opacity:.8;">${fDdt.length} DDT${active?' ▲':' ▼'}</div>
       ${_mesiPills(nome,conf,active)}
