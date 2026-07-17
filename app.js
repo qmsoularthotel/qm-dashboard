@@ -7442,8 +7442,8 @@ function revExpReset(p){
 const DDT_KEY='qm_ddt';
 const DDT_FORNITORI={
   DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#dbeafe', fg:'#1d4ed8', accent:'#2563eb'},
-  Amonn:     {reparto:'altro', rLabel:'Altro',       color:'#ccfbf1', fg:'#0f766e', accent:'#0d9488'},
-  Vistaprint:{reparto:'altro', rLabel:'Altro',       color:'#e0e7ff', fg:'#3730a3', accent:'#4f46e5'},
+  Amonn:     {reparto:'altro', rLabel:'Altro',       color:'#ccfbf1', fg:'#0f766e', accent:'#0d9488', logo:'amonn.png'},
+  Vistaprint:{reparto:'altro', rLabel:'Altro',       color:'#e0e7ff', fg:'#3730a3', accent:'#4f46e5', logo:'Vistaprint.jpeg'},
   SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#e0e1f5', fg:'#292b82', accent:'#292b82', logo:'sdm2.png'},
   SAIMA:     {reparto:'bkf', rLabel:'Breakfast',    color:'#f5efe9', fg:'#2d1c12', accent:'#6b4a2f', logo:'saima.png'},
   MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fbdadc', fg:'#db0d15', accent:'#db0d15', logo:'marr.png'},
@@ -8168,7 +8168,7 @@ function ddtRenderSpese(){
     const fDdt=monDdt.filter(d=>_nf(d)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const active=_ddtFilter===nome;
-    const logoHtml=conf.logo?`<img src="${conf.logo}" alt="${nome}" style="height:18px;max-width:70px;object-fit:contain;margin-bottom:4px;display:block;">`:`<div style="font-size:var(--fs-xxs);font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;">${nome}</div>`;
+    const logoHtml=conf.logo?`<img src="${conf.logo}" alt="${nome}" style="height:42px;width:100%;object-fit:contain;object-position:left center;margin-bottom:6px;display:block;image-rendering:-webkit-optimize-contrast;">`:`<div style="height:42px;display:flex;align-items:center;font-size:var(--fs-xxs);font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">${nome}</div>`;
     h+=`<div id="ddt-chip-${nome}" onclick="ddtSelectForn('${nome}')" style="background:${active?conf.color:'var(--surface)'};border:1px solid ${active?conf.accent:'var(--border-light)'};border-left:3px solid ${conf.accent};border-radius:9px;padding:9px 12px;cursor:pointer;transition:background .15s,border-color .15s;">
       ${logoHtml}
       <div style="font-size:var(--fs-sm);font-weight:800;color:${fTot?conf.fg:'var(--text-dim)'};">${fTot?ddtFmt(fTot):'—'}</div>
