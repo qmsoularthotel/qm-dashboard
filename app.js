@@ -8142,8 +8142,8 @@ function ddtYM(data){
 function ddtRenderSpese(){
   const view=document.getElementById('inv-spese-view');if(!view)return;
   const tabBar=`<div style="display:flex;gap:0;margin-bottom:16px;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
-    <button onclick="ddtSetTab('spese')" style="flex:1;padding:9px;border:none;background:${_ddtTab==='spese'?'var(--accent)':'var(--surface)'};color:${_ddtTab==='spese'?'#fff':'var(--text-dim)'};font-weight:700;font-size:var(--fs-xs);cursor:pointer;">📋 Spese</button>
-    <button onclick="ddtSetTab('analisi')" style="flex:1;padding:9px;border:none;border-left:1px solid var(--border);background:${_ddtTab==='analisi'?'var(--accent)':'var(--surface)'};color:${_ddtTab==='analisi'?'#fff':'var(--text-dim)'};font-weight:700;font-size:var(--fs-xs);cursor:pointer;">📊 Analisi</button>
+    <button onclick="ddtSetTab('spese')" style="flex:1;padding:9px;border:none;background:${_ddtTab==='spese'?'var(--accent)':'var(--surface)'};color:${_ddtTab==='spese'?'#fff':'var(--text-dim)'};font-weight:700;font-size:var(--fs-xs);cursor:pointer;">📋 DDT &amp; Fornitori</button>
+    <button onclick="ddtSetTab('analisi')" style="flex:1;padding:9px;border:none;border-left:1px solid var(--border);background:${_ddtTab==='analisi'?'var(--accent)':'var(--surface)'};color:${_ddtTab==='analisi'?'#fff':'var(--text-dim)'};font-weight:700;font-size:var(--fs-xs);cursor:pointer;">📊 Insights Breakfast</button>
   </div>`;
   if(_ddtTab==='analisi'){view.innerHTML=tabBar+ddtBuildAnalisi();return;}
   const mon=ddtCurMonth();
