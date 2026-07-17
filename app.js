@@ -8183,7 +8183,7 @@ function ddtRenderSpese(){
     const fDdt=monDdt.filter(d=>_nf(d)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const active=_ddtFilter===nome;
-    const logoHtml=conf.logo?`<img src="${conf.logo}" alt="${nome}" style="height:42px;width:100%;object-fit:contain;object-position:left center;margin-bottom:6px;display:block;image-rendering:-webkit-optimize-contrast;">`:`<div style="height:42px;display:flex;align-items:center;font-size:var(--fs-xxs);font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">${nome}</div>`;
+    const logoHtml=conf.logo?`<img src="${conf.logo}?v=1" alt="${nome}" style="height:42px;width:100%;object-fit:contain;object-position:left center;margin-bottom:6px;display:block;image-rendering:-webkit-optimize-contrast;">`:`<div style="height:42px;display:flex;align-items:center;font-size:var(--fs-xxs);font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">${nome}</div>`;
     h+=`<div id="ddt-chip-${nome}" onclick="ddtSelectForn('${nome}')" style="background:${active?conf.color:'var(--surface)'};border:1px solid ${active?conf.accent:'var(--border-light)'};border-left:3px solid ${conf.accent};border-radius:9px;padding:9px 12px;cursor:pointer;transition:background .15s,border-color .15s;">
       ${logoHtml}
       <div style="font-size:var(--fs-sm);font-weight:800;color:${fTot?conf.fg:'var(--text-dim)'};">${fTot?ddtFmt(fTot):'—'}</div>
