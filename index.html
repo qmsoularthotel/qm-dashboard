@@ -5,7 +5,7 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=220">
+<link rel="stylesheet" href="style.css?v=221">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
@@ -155,14 +155,17 @@
         <div id="ucProgressBar" style="height:100%;background:var(--accent);border-radius:4px;width:0%;transition:width .4s ease;"></div>
       </div>
       <div id="ucMissingLine" style="display:none;margin:0 10px 8px;font-size:9px;color:var(--amber);"></div>
-      <div style="padding:0 10px 10px;">
+      <div class="uc-grid">
         <div class="uc-slot" id="uc-turno" onclick="ucToggle('turno')" title="Carica o espandi turno">
           <input type="file" id="turniFileInput" accept="image/*,.xlsx,.xls,.csv,.pdf" style="display:none">
+          <span class="uc-dot" id="uc-turno-dot"></span>
           <span class="uc-icon"><img src="img/icons/turni.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Turno</div><div class="uc-sub" id="uc-turno-sub">Non caricato</div><div class="uc-feeds">→ Piano staff</div></div>
-          <span class="uc-badge" id="uc-turno-badge">▾</span>
+          <div class="uc-label">Turno</div>
+          <div class="uc-sub" id="uc-turno-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-turno-badge" style="display:none;">▾</span>
         </div>
         <div class="uc-panel" id="uc-turno-panel">
+          <div class="uc-feeds-line">→ Piano staff</div>
           <div id="turniUploadBox" onclick="document.getElementById('turniFileInput').click()" style="cursor:pointer;border:2px dashed var(--border);border-radius:10px;padding:18px 12px;text-align:center;margin:8px 0;color:var(--text-dim);font-size:var(--fs-xs);">
             <div style="font-size:1.6rem;margin-bottom:6px;">📷</div>
             <div style="font-weight:600;color:var(--text);">Carica immagine o PDF</div>
@@ -182,11 +185,14 @@
         </div>
         <div class="uc-slot" id="uc-piano" onclick="ucToggle('piano')" title="Piano settimana camere">
           <input type="file" id="pianoFileInput" accept="application/pdf" style="display:none">
+          <span class="uc-dot" id="uc-piano-dot"></span>
           <span class="uc-icon"><img src="img/icons/piano_settimanale.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Piano settimana</div><div class="uc-sub" id="uc-piano-sub">Non caricato</div><div class="uc-feeds">→ Culligan · App Housekeeper (smistamento camere)</div></div>
-          <span class="uc-badge" id="uc-piano-badge">▾</span>
+          <div class="uc-label">Piano settimana</div>
+          <div class="uc-sub" id="uc-piano-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-piano-badge" style="display:none;">▾</span>
         </div>
         <div class="uc-panel" id="uc-piano-panel">
+          <div class="uc-feeds-line">→ Culligan · App Housekeeper (smistamento camere)</div>
           <div class="upload-box" id="pianoUploadBox">
             <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
             <div class="ub-title">Piano settimana</div><div class="ub-sub">Piano camere settimanale</div>
@@ -199,11 +205,14 @@
         </div>
         <div class="uc-slot" id="uc-arrivi" onclick="ucToggle('arrivi')" title="Carica o espandi arrivi">
           <input type="file" id="arriviFileInput" accept="application/pdf,image/*" style="display:none">
+          <span class="uc-dot" id="uc-arrivi-dot"></span>
           <span class="uc-icon"><img src="img/icons/riepilogo_reception.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Riepilogo Reception</div><div class="uc-sub" id="uc-arrivi-sub">Non caricato</div><div class="uc-feeds">→ KPI Overview · Registration Cards · Piano colazioni</div></div>
-          <span class="uc-badge" id="uc-arrivi-badge">▾</span>
+          <div class="uc-label">Riepilogo Reception</div>
+          <div class="uc-sub" id="uc-arrivi-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-arrivi-badge" style="display:none;">▾</span>
         </div>
         <div class="uc-panel" id="uc-arrivi-panel">
+          <div class="uc-feeds-line">→ KPI Overview · Registration Cards · Piano colazioni</div>
           <div class="upload-box" id="arriviUploadBox">
             <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
             <div class="ub-title">Riepilogo Reception</div>
@@ -217,11 +226,14 @@
         </div>
         <div class="uc-slot" id="uc-bkf" onclick="ucToggle('bkf')" title="Carica o espandi pasti">
           <input type="file" id="bkfFileInput" accept="application/pdf" style="display:none">
+          <span class="uc-dot" id="uc-bkf-dot"></span>
           <span class="uc-icon"><img src="img/icons/report_pasti.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Report pasti</div><div class="uc-sub" id="uc-bkf-sub">Non caricato</div><div class="uc-feeds">→ Coperti colazione · Grafico · App Breakfast</div></div>
-          <span class="uc-badge" id="uc-bkf-badge">▾</span>
+          <div class="uc-label">Report pasti</div>
+          <div class="uc-sub" id="uc-bkf-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-bkf-badge" style="display:none;">▾</span>
         </div>
         <div class="uc-panel" id="uc-bkf-panel">
+          <div class="uc-feeds-line">→ Coperti colazione · Grafico · App Breakfast</div>
           <div class="upload-box" id="bkfUploadBox">
             <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
             <div class="ub-title">Report pasti</div>
@@ -239,11 +251,14 @@
         </div>
         <div class="uc-slot" id="uc-pul" onclick="ucToggle('pul')" title="Carica o espandi pulizie">
           <input type="file" id="pulFileInput" accept="application/pdf" style="display:none">
+          <span class="uc-dot" id="uc-pul-dot"></span>
           <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Report pulizie</div><div class="uc-sub" id="uc-pul-sub">Non caricato</div><div class="uc-feeds">→ KPI Overview · Pulizie</div></div>
-          <span class="uc-badge" id="uc-pul-badge">▾</span>
+          <div class="uc-label">Report pulizie</div>
+          <div class="uc-sub" id="uc-pul-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-pul-badge" style="display:none;">▾</span>
         </div>
         <div class="uc-panel" id="uc-pul-panel">
+          <div class="uc-feeds-line">→ KPI Overview · Pulizie</div>
           <div class="upload-box" id="pulUploadBox">
             <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
             <div class="ub-title">Cruscotto pulizie</div>
@@ -263,16 +278,19 @@
           <button class="btn-reload" id="btnPulReload" style="display:none" onclick="resetPulizie()">Rimuovi pulizie</button>
           <div class="upload-ts" id="pulTs"></div>
         </div>
-        <div class="uc-slot" id="uc-soul" onclick="ucToggle('soul')" title="Soul App HKP">
+        <div class="uc-slot" id="uc-soul" onclick="ucToggle('soul')" title="App Housekeeper — SoulArt">
           <input type="file" id="soulFileInput" accept="application/pdf" style="display:none">
+          <span class="uc-dot" id="uc-soul-dot"></span>
           <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Soul App HKP</div><div class="uc-sub" id="uc-soul-sub">Non caricato</div><div class="uc-feeds">→ App Housekeeper (SoulArt)</div></div>
-          <span class="uc-badge" id="uc-soul-badge">▾</span>
+          <div class="uc-label">App Housekeeper — SoulArt</div>
+          <div class="uc-sub" id="uc-soul-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-soul-badge" style="display:none;">▾</span>
         </div>
         <div class="uc-panel" id="uc-soul-panel">
+          <div class="uc-feeds-line">→ App Housekeeper (SoulArt)</div>
           <div class="upload-box" id="soulUploadBox">
             <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-            <div class="ub-title">Soul App HKP</div><div class="ub-sub">Report pulizie SoulArt</div>
+            <div class="ub-title">App Housekeeper — SoulArt</div><div class="ub-sub">Report pulizie SoulArt</div>
             <span class="ub-formats">.pdf</span>
           </div>
           <div class="turni-status" id="soulStatus"></div>
@@ -280,16 +298,19 @@
           <button class="btn-reload" id="btnSoulReload" style="display:none" onclick="resetSoulData()">Rimuovi</button>
           <div class="upload-ts" id="soulTs"></div>
         </div>
-        <div class="uc-slot" id="uc-bout" onclick="ucToggle('bout')" title="Boutique App HKP">
+        <div class="uc-slot" id="uc-bout" onclick="ucToggle('bout')" title="App Housekeeper — Boutique">
           <input type="file" id="boutFileInput" accept="application/pdf" style="display:none">
+          <span class="uc-dot" id="uc-bout-dot"></span>
           <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
-          <div class="uc-info"><div class="uc-label">Boutique App HKP</div><div class="uc-sub" id="uc-bout-sub">Non caricato</div><div class="uc-feeds">→ App Housekeeper (Boutique)</div></div>
-          <span class="uc-badge" id="uc-bout-badge">▾</span>
+          <div class="uc-label">App Housekeeper — Boutique</div>
+          <div class="uc-sub" id="uc-bout-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-bout-badge" style="display:none;">▾</span>
         </div>
         <div class="uc-panel" id="uc-bout-panel">
+          <div class="uc-feeds-line">→ App Housekeeper (Boutique)</div>
           <div class="upload-box" id="boutUploadBox">
             <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-            <div class="ub-title">Boutique App HKP</div><div class="ub-sub">Report pulizie Boutique</div>
+            <div class="ub-title">App Housekeeper — Boutique</div><div class="ub-sub">Report pulizie Boutique</div>
             <span class="ub-formats">.pdf</span>
           </div>
           <div class="turni-status" id="boutStatus"></div>
