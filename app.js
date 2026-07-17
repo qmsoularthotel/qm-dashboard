@@ -8106,6 +8106,18 @@ function ddtNavMonth(dir){
   _ddtMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
   ddtRenderSpese();ddtRenderList();
 }
+function ddtSetMonth(ym){
+  _ddtMonth=ym;
+  ddtRenderSpese();ddtRenderList();
+}
+// Click su un mese nella pillola di un chip fornitore: vai a quel mese E filtra su quel fornitore
+function ddtGoToMonth(nome,ym,evt){
+  if(evt)evt.stopPropagation();
+  _ddtMonth=ym;
+  _ddtFilter=nome;
+  _ddtSearch='';
+  ddtRenderSpese();ddtRenderList();
+}
 let _analMese='';
 function ddtAnalCurMese(){
   if(!_analMese){const n=new Date();_analMese=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
@@ -8148,15 +8160,18 @@ function ddtRenderSpese(){
   const _mesiPills=(nome,conf,active)=>{
     const mesi=[..._fornMesi[nome]].sort((a,b)=>a-b);
     if(!mesi.length)return `<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">nessun ordine</div>`;
-    return `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:4px;">${mesi.map(m=>`<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:${active?conf.fg+'22':conf.color};color:${active?conf.fg:'var(--text-dim)'};font-weight:600;">${MON_ABB[m-1]}</span>`).join('')}</div>`;
+    return `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:4px;">${mesi.map(m=>{const ym=curYear+'-'+String(m).padStart(2,'0');const isCur=ym===mon;return`<span onclick="ddtGoToMonth('${nome}','${ym}',event)" style="font-size:9px;padding:1px 5px;border-radius:4px;cursor:pointer;background:${isCur?conf.accent:(active?conf.fg+'22':conf.color)};color:${isCur?'#fff':(active?conf.fg:'var(--text-dim)')};font-weight:${isCur?800:600};">${MON_ABB[m-1]}</span>`;}).join('')}</div>`;
   };
 
-  // ── Topbar: mese nav + upload ──
-  let h=tabBar+`<div style="display:flex;align-items:center;gap:10px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--border-light);">
-    <button onclick="ddtNavMonth(-1)" style="width:28px;height:28px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;">‹</button>
-    <span style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${ddtMonLabel(mon)}</span>
-    <button onclick="ddtNavMonth(1)" style="width:28px;height:28px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;">›</button>
-    <button onclick="ddtOpenUploadModal()" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;flex-shrink:0;margin-left:auto;">📷 Carica DDT</button>
+  // ── Topbar: tutti i mesi dell'anno in fila (cliccabili) + upload ──
+  const monthRow=Array.from({length:12},(_,i)=>i+1).map(m=>{
+    const ym=curYear+'-'+String(m).padStart(2,'0');
+    const isCur=ym===mon;
+    return `<button onclick="ddtSetMonth('${ym}')" style="padding:6px 11px;border:1px solid ${isCur?'var(--accent)':'var(--border)'};background:${isCur?'var(--accent)':'var(--surface)'};color:${isCur?'#fff':'var(--text-dim)'};border-radius:7px;font-size:var(--fs-xs);font-weight:${isCur?700:500};cursor:pointer;flex-shrink:0;white-space:nowrap;">${MON_ABB[m-1]}</button>`;
+  }).join('');
+  let h=tabBar+`<div style="display:flex;align-items:center;gap:6px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid var(--border-light);overflow-x:auto;">
+    ${monthRow}
+    <button onclick="ddtOpenUploadModal()" style="padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;flex-shrink:0;margin-left:auto;white-space:nowrap;">📷 Carica DDT</button>
   </div>`;
 
   // SAIMA è un fornitore attivo solo a gennaio/febbraio 2026 — da marzo in poi sparisce dai fornitori disponibili
