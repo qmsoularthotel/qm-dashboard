@@ -8159,8 +8159,8 @@ function ddtRenderSpese(){
   const MON_ABB=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
   const _mesiPills=(nome,conf,active)=>{
     const mesi=[..._fornMesi[nome]].sort((a,b)=>a-b);
-    if(!mesi.length)return `<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">nessun ordine</div>`;
-    return `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:4px;">${mesi.map(m=>{const ym=curYear+'-'+String(m).padStart(2,'0');const isCur=ym===mon;return`<span onclick="ddtGoToMonth('${nome}','${ym}',event)" style="font-size:9px;padding:1px 5px;border-radius:4px;cursor:pointer;background:${isCur?conf.accent:(active?conf.fg+'22':conf.color)};color:${isCur?'#fff':(active?conf.fg:'var(--text-dim)')};font-weight:${isCur?800:600};">${MON_ABB[m-1]}</span>`;}).join('')}</div>`;
+    if(!mesi.length)return `<div style="font-size:9px;color:var(--text-dim);margin-top:10px;">nessun ordine</div>`;
+    return `<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:10px;">${mesi.map(m=>{const ym=curYear+'-'+String(m).padStart(2,'0');const isCur=ym===mon;return`<span onclick="ddtGoToMonth('${nome}','${ym}',event)" style="font-size:9px;padding:1px 5px;border-radius:4px;cursor:pointer;background:${isCur?conf.accent:(active?conf.fg+'22':conf.color)};color:${isCur?'#fff':(active?conf.fg:'var(--text-dim)')};font-weight:${isCur?800:600};">${MON_ABB[m-1]}</span>`;}).join('')}</div>`;
   };
 
   // ── Topbar: tutti i mesi dell'anno in fila (cliccabili) + upload ──
