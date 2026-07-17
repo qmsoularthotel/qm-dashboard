@@ -8177,17 +8177,17 @@ function ddtRenderSpese(){
   // SAIMA è un fornitore attivo solo a gennaio/febbraio 2026 — da marzo in poi sparisce dai fornitori disponibili
   const _fornVisibili=Object.entries(DDT_FORNITORI).filter(([nome])=>!ddtSupplierHidden(nome,mon));
 
-  // ── Chip fornitori (cliccabili) con logo e mesi pills ──
-  h+=`<div style="display:grid;grid-template-columns:repeat(${_fornVisibili.length},1fr);gap:8px;margin-bottom:18px;">`;
+  // ── Card fornitori (cliccabili) con logo in evidenza, importo grande e mesi pills ──
+  h+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-bottom:20px;">`;
   _fornVisibili.forEach(([nome,conf])=>{
     const fDdt=monDdt.filter(d=>_nf(d)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const active=_ddtFilter===nome;
-    const logoHtml=conf.logo?`<img src="${conf.logo}?v=1" alt="${nome}" style="height:42px;width:100%;object-fit:contain;object-position:left center;margin-bottom:6px;display:block;image-rendering:-webkit-optimize-contrast;">`:`<div style="height:42px;display:flex;align-items:center;font-size:var(--fs-xxs);font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">${nome}</div>`;
-    h+=`<div id="ddt-chip-${nome}" onclick="ddtSelectForn('${nome}')" style="background:${active?conf.color:'var(--surface)'};border:1px solid ${active?conf.accent:'var(--border-light)'};border-left:3px solid ${conf.accent};border-radius:9px;padding:9px 12px;cursor:pointer;transition:background .15s,border-color .15s;">
+    const logoHtml=conf.logo?`<img src="${conf.logo}?v=1" alt="${nome}" style="height:56px;max-width:100%;object-fit:contain;display:block;margin:0 auto 10px;image-rendering:-webkit-optimize-contrast;">`:`<div style="height:56px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">${nome}</div>`;
+    h+=`<div id="ddt-chip-${nome}" onclick="ddtSelectForn('${nome}')" style="background:${active?conf.color:'#fff'};border:1px solid ${active?conf.accent:'var(--border-light)'};border-top:3px solid ${conf.accent};border-radius:12px;padding:18px 14px;cursor:pointer;text-align:center;transition:background .15s,border-color .15s,box-shadow .15s;box-shadow:${active?'0 4px 14px rgba(0,0,0,.08)':'none'};">
       ${logoHtml}
-      <div style="font-size:var(--fs-sm);font-weight:800;color:${fTot?conf.fg:'var(--text-dim)'};">${fTot?ddtFmt(fTot):'—'}</div>
-      <div style="font-size:var(--fs-xxs);color:${active?conf.fg:'var(--text-dim)'};margin-top:2px;opacity:.8;">${fDdt.length} DDT${active?' ▲':' ▼'}</div>
+      <div style="font-size:22px;font-weight:300;color:${fTot?conf.fg:'var(--text-dim)'};">${fTot?ddtFmt(fTot):'—'}</div>
+      <div style="font-size:var(--fs-xxs);color:${active?conf.fg:'var(--text-dim)'};margin-top:4px;opacity:.8;">${fDdt.length} DDT · ${conf.rLabel}${active?' ▲':' ▼'}</div>
       ${_mesiPills(nome,conf,active)}
     </div>`;
   });
@@ -8229,22 +8229,7 @@ function ddtRenderSpese(){
 function ddtSelectForn(nome){
   _ddtFilter=(_ddtFilter===nome)?'':nome;
   _ddtSearch='';
-  Object.entries(DDT_FORNITORI).forEach(([k,conf])=>{
-    const chip=document.getElementById('ddt-chip-'+k);
-    if(!chip)return;
-    const active=_ddtFilter===k;
-    chip.style.background=active?conf.color:'var(--surface)';
-    chip.style.borderColor=active?conf.accent:'var(--border-light)';
-    const rows=chip.querySelectorAll('div');
-    if(rows[0])rows[0].style.color=active?conf.fg:'var(--text-dim)';
-    if(rows[2]){
-      const mon=ddtCurMonth();
-      const cnt=ddtGet().filter(d=>ddtYM(d.data)===mon&&(ddtNormForn(d.fornitore)||d.fornitore)===k).length;
-      rows[2].textContent=cnt+' DDT'+(active?' ▲':' ▼');
-      rows[2].style.color=active?conf.fg:'var(--text-dim)';
-    }
-  });
-  ddtRenderList();
+  ddtRenderSpese();
 }
 
 function ddtRenderList(){
