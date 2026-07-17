@@ -7441,13 +7441,13 @@ function revExpReset(p){
 // §§ DDT FORNITORI — upload DDT, spese per fornitore/reparto, storico
 const DDT_KEY='qm_ddt';
 const DDT_FORNITORI={
-  DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#dbeafe', fg:'#1d4ed8', accent:'#2563eb'},
+  DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#fde8d5', fg:'#c25e0b', accent:'#e8720f'},
   Amonn:     {reparto:'altro', rLabel:'Altro',       color:'#fde8e9', fg:'#d90e13', accent:'#d90e13', logo:'amonn.png'},
   Vistaprint:{reparto:'altro', rLabel:'Altro',       color:'#e3f2fb', fg:'#006196', accent:'#006196', logo:'vistaprint.png'},
   SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#e0e1f5', fg:'#292b82', accent:'#292b82', logo:'sdm2.png'},
   SAIMA:     {reparto:'bkf', rLabel:'Breakfast',    color:'#f5efe9', fg:'#2d1c12', accent:'#6b4a2f', logo:'saima.png'},
   MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fbdadc', fg:'#db0d15', accent:'#db0d15', logo:'marr.png'},
-  Cozzolino: {reparto:'bkf', rLabel:'Breakfast',    color:'#e5e5e5', fg:'#000000', accent:'#000000'},
+  Cozzolino: {reparto:'bkf', rLabel:'Breakfast',    color:'#dcebe0', fg:'#1e5631', accent:'#1e5631'},
   Valgarda:  {reparto:'bkf', rLabel:'Breakfast',    color:'#f2eee2', fg:'#8a7643', accent:'#b99e5d', logo:'valgarda.png'},
 };
 // Riassegnazione manuale categoria prodotto (solo Spese Fornitori): una volta spostato un
@@ -8183,7 +8183,10 @@ function ddtRenderSpese(){
     const fDdt=monDdt.filter(d=>_nf(d)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const active=_ddtFilter===nome;
-    const logoHtml=conf.logo?`<img src="${conf.logo}?v=1" alt="${nome}" style="height:56px;max-width:100%;object-fit:contain;display:block;margin:0 auto 10px;image-rendering:-webkit-optimize-contrast;">`:`<div style="height:56px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-xs);font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">${nome}</div>`;
+    const logoHtml=conf.logo?`<img src="${conf.logo}?v=1" alt="${nome}" style="height:56px;max-width:100%;object-fit:contain;display:block;margin:0 auto 10px;image-rendering:-webkit-optimize-contrast;">`:`<div style="height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:10px;">
+      <div style="width:36px;height:3px;background:${conf.accent};border-radius:2px;margin-bottom:8px;"></div>
+      <div style="font-size:${nome.length>8?14:16}px;font-weight:800;letter-spacing:.04em;color:var(--text);text-transform:uppercase;">${nome}</div>
+    </div>`;
     h+=`<div id="ddt-chip-${nome}" onclick="ddtSelectForn('${nome}')" style="background:${active?conf.color:'#fff'};border:1px solid ${active?conf.accent:'var(--border-light)'};border-top:3px solid ${conf.accent};border-radius:12px;padding:18px 14px;cursor:pointer;text-align:center;transition:background .15s,border-color .15s,box-shadow .15s;box-shadow:${active?'0 4px 14px rgba(0,0,0,.08)':'none'};">
       ${logoHtml}
       <div style="font-size:22px;font-weight:600;color:${fTot?'var(--text)':'var(--text-dim)'};">${fTot?ddtFmt(fTot):'—'}</div>
