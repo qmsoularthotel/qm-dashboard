@@ -7442,8 +7442,8 @@ function revExpReset(p){
 const DDT_KEY='qm_ddt';
 const DDT_FORNITORI={
   DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#dbeafe', fg:'#1d4ed8', accent:'#2563eb'},
-  Amonn:     {reparto:'altro', rLabel:'Altro',       color:'#ccfbf1', fg:'#0f766e', accent:'#0d9488', logo:'amonn.png'},
-  Vistaprint:{reparto:'altro', rLabel:'Altro',       color:'#e0e7ff', fg:'#3730a3', accent:'#4f46e5', logo:'Vistaprint.jpeg'},
+  Amonn:     {reparto:'altro', rLabel:'Altro',       color:'#fde8e9', fg:'#d90e13', accent:'#d90e13', logo:'amonn.png'},
+  Vistaprint:{reparto:'altro', rLabel:'Altro',       color:'#e3f2fb', fg:'#006196', accent:'#006196', logo:'vistaprint.png'},
   SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#e0e1f5', fg:'#292b82', accent:'#292b82', logo:'sdm2.png'},
   SAIMA:     {reparto:'bkf', rLabel:'Breakfast',    color:'#f5efe9', fg:'#2d1c12', accent:'#6b4a2f', logo:'saima.png'},
   MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fbdadc', fg:'#db0d15', accent:'#db0d15', logo:'marr.png'},
