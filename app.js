@@ -2221,6 +2221,15 @@ function pianoOvInit(){
 function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 function fmtUploadTs(ts){const n=ts?new Date(ts):new Date();const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];return'↑ '+n.getDate()+' '+ms[n.getMonth()]+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 const TS_TO_UC={turnoTs:'uc-turno-sub',arriviTs:'uc-arrivi-sub',pulTs:'uc-pul-sub',bkfTs:'uc-bkf-sub',soulTs:'uc-soul-sub',boutTs:'uc-bout-sub',pianoTs:'uc-piano-sub'};
+// Soglie pallino tile Upload Center: >12h non aggiornato -> ambra lampeggiante,
+// >24h -> rosso lampeggiante (quest'ultima soglia è anche quella storica di 'stale'
+// usata da ucUpdateProgress per il conteggio X/6 — non cambiare il nome della classe).
+function _ucStaleClasses(slot,ts){
+  if(!slot)return;
+  const age=ts?(Date.now()-ts):Infinity;
+  slot.classList.toggle('stale',!!ts&&age>86400000);
+  slot.classList.toggle('warn12',!!ts&&age>43200000&&age<=86400000);
+}
 function _setUcTs(elId,ts){
   const formatted=fmtUploadTs(ts);
   // Tag collassato (es. #uc-pul-sub) — visibile sempre
@@ -2231,11 +2240,24 @@ function _setUcTs(elId,ts){
   if(tsEl){tsEl.textContent=formatted;tsEl.classList.toggle('visible',!!ts);}
   if(elId==='turnoTs')return;
   if(subId){const slot=document.getElementById(subId.replace('-sub',''));
-    if(slot)slot.classList.toggle('stale',!!ts&&(Date.now()-ts)>86400000);}
+    _ucStaleClasses(slot,ts);}
 }
 function setUploadTs(elId,ts){const t=ts||Date.now();_setUcTs(elId,t);try{localStorage.setItem('qm_ts_'+elId,String(t));}catch(e){}}
 function restoreUploadTs(elId,ts){if(!ts)return;try{const existing=parseInt(localStorage.getItem('qm_ts_'+elId)||'0');if(existing>ts){_setUcTs(elId,existing);return;}_setUcTs(elId,ts);localStorage.setItem('qm_ts_'+elId,String(ts));}catch(e){_setUcTs(elId,ts);}}
 function loadStoredTs(elId){try{const t=localStorage.getItem('qm_ts_'+elId);if(t)_setUcTs(elId,parseInt(t));}catch(e){}}
+// Ricalcola i pallini ambra/rosso lampeggianti anche senza nuovi upload (il tempo passa da solo)
+function ucRefreshStaleTracking(){
+  Object.keys(TS_TO_UC).forEach(elId=>{
+    if(elId==='turnoTs')return;
+    try{
+      const t=parseInt(localStorage.getItem('qm_ts_'+elId)||'0');
+      if(!t)return;
+      const slot=document.getElementById(TS_TO_UC[elId].replace('-sub',''));
+      _ucStaleClasses(slot,t);
+    }catch(e){}
+  });
+}
+setInterval(ucRefreshStaleTracking,60000);
 // §§ STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud)
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
 function setSyncStatus(state){
