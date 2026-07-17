@@ -2178,18 +2178,15 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   const _mob=window.innerWidth<=768;
   let sideBox='';
   if(!_mob&&elId==='ov-piano-preview'){
-    // Previsione giro Culligan: camere Art occupate stanotte (fermate + partenze di oggi
-    // dal Riepilogo Reception) — disponibile prima di partire per il ritiro
+    // Previsione giro Culligan: STESSA fonte e logica usata dall'app smartphone
+    // (controllo-mattino.html → _applyPianoLibere) prima di iniziare il ritiro —
+    // camere Art occupate secondo il Piano Settimana (partenze+fermate+cambi),
+    // non il Riepilogo Reception (fonte diversa, numeri diversi)
     let cmN=0;
     try{
-      if(arriviData){
-        const rooms=new Set();
-        [...(arriviData.fermate||[]),...(arriviData.partenze||[])].forEach(x=>{
-          const c=(x.camera||'').trim().toUpperCase().replace(/\s+/g,' ');
-          if(/^ART\s*\d+/.test(c))rooms.add(c);
-        });
-        cmN=rooms.size;
-      }
+      const sa=giorno.soulart||{};
+      const inPlan=new Set([...(sa.partenze||[]),...(sa.fermate||[]),...(sa.cambi||[])]);
+      cmN=inPlan.size;
     }catch(e){}
     const stats=_cmPianoStats;
     const hasContent=cmN>0||(stats&&(stats.cur>0||stats.prev>0));
