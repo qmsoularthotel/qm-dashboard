@@ -2068,6 +2068,8 @@ function pianoNavRender(idx){
   pianoCheckScadenza();
   // Contenuto giorno
   renderPianoGiorno('ov-piano-preview',null,idx);
+  // Box Culligan accanto al grafico occupazione
+  renderOvCulliganBox(giorno);
 }
 
 function pianoPrevDay(){
@@ -2174,39 +2176,34 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   const bMerged={partenze:[...(giorno.boutique?.partenze||[]),...lib.partenze],fermate:[...(giorno.boutique?.fermate||[]),...lib.fermate],cambi:[...(giorno.boutique?.cambi||[]),...lib.cambi]};
   const sHtml=renderHotel('SoulArt',giorno.soulart||{}),bHtml=renderHotel('Boutique - San Liborio',bMerged);
   if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per questo giorno</div>';return;}
-  const _mob=window.innerWidth<=768;
-  let sideBox='';
-  if(!_mob&&elId==='ov-piano-preview'){
-    // Previsione giro Culligan: STESSA fonte e logica usata dall'app smartphone
-    // (controllo-mattino.html → _applyPianoLibere) prima di iniziare il ritiro —
-    // camere Art occupate secondo il Piano Settimana (partenze+fermate+cambi),
-    // non il Riepilogo Reception (fonte diversa, numeri diversi)
-    let cmN=0;
-    try{
-      const sa=giorno.soulart||{};
-      const inPlan=new Set([...(sa.partenze||[]),...(sa.fermate||[]),...(sa.cambi||[])]);
-      cmN=inPlan.size;
-    }catch(e){}
-    const stats=_cmPianoStats;
-    const hasContent=cmN>0||(stats&&(stats.cur>0||stats.prev>0));
-    if(hasContent){
-      const todayLine=cmN>0?`<div style="display:flex;align-items:baseline;gap:8px;${stats?'margin-bottom:10px;':''}">
-        <span style="font-size:30px;font-weight:300;line-height:1;">${cmN}</span>
-        <span style="font-size:11px;color:var(--text-dim);">camere da controllare oggi</span>
-      </div>`:'';
-      const statsLine=stats?`<div style="display:flex;gap:20px;${cmN>0?'border-top:1px solid var(--border-light);padding-top:10px;':''}">
-        <div><div style="font-size:30px;font-weight:300;line-height:1;">${stats.prev}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">sostituzioni<br>sett. scorsa</div></div>
-        <div><div style="font-size:30px;font-weight:300;line-height:1;">${stats.cur}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">sostituzioni<br>questa sett.</div></div>
-      </div>`:'';
-      sideBox=`<div style="flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:0 28px;border-left:1px solid var(--border-light);margin-left:8px;min-width:180px;">
-        <div class="kpi-label" style="margin-bottom:8px;">Distribuzione Culligan</div>
-        ${todayLine}${statsLine}
-      </div>`;
-    }else{
-      sideBox=`<div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0 32px;pointer-events:none;user-select:none;border-left:1px solid var(--border-light);margin-left:8px;"><span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#1A2E55;letter-spacing:.01em;white-space:nowrap;">Compass QM <span style="font-weight:300;color:var(--text-dim);margin:0 6px;">|</span><span style="font-weight:400;color:var(--text-dim);font-size:14px;"> Dashboard</span></span></div>`;
-    }
-  }
-  el.innerHTML=`<div style="display:flex;align-items:stretch;"><div style="min-width:0;width:100%;">${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div></div>${sideBox}</div>`;
+  el.innerHTML=`${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>`;
+}
+
+// Box "Distribuzione Culligan" — accanto al grafico occupazione in Situazione odierna.
+// Stessa fonte/logica dell'app smartphone (controllo-mattino.html → _applyPianoLibere)
+// prima di iniziare il ritiro: camere Art occupate secondo il Piano Settimana
+// (partenze+fermate+cambi), non il Riepilogo Reception (fonte diversa, numeri diversi).
+function renderOvCulliganBox(giorno){
+  const el=document.getElementById('ov-culligan-box');if(!el)return;
+  if(!giorno){el.innerHTML='';return;}
+  let cmN=0;
+  try{
+    const sa=giorno.soulart||{};
+    const inPlan=new Set([...(sa.partenze||[]),...(sa.fermate||[]),...(sa.cambi||[])]);
+    cmN=inPlan.size;
+  }catch(e){}
+  const stats=_cmPianoStats;
+  const hasContent=cmN>0||(stats&&(stats.cur>0||stats.prev>0));
+  if(!hasContent){el.innerHTML='';return;}
+  const todayLine=cmN>0?`<div style="display:flex;align-items:baseline;gap:8px;${stats?'margin-bottom:10px;':''}">
+    <span style="font-size:30px;font-weight:300;line-height:1;">${cmN}</span>
+    <span style="font-size:11px;color:var(--text-dim);">camere da controllare oggi</span>
+  </div>`:'';
+  const statsLine=stats?`<div style="display:flex;gap:20px;${cmN>0?'border-top:1px solid var(--border-light);padding-top:10px;':''}">
+    <div><div style="font-size:30px;font-weight:300;line-height:1;">${stats.prev}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">sostituzioni<br>sett. scorsa</div></div>
+    <div><div style="font-size:30px;font-weight:300;line-height:1;">${stats.cur}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">sostituzioni<br>questa sett.</div></div>
+  </div>`:'';
+  el.innerHTML=`<div class="kpi-label" style="margin-bottom:8px;">Distribuzione Culligan</div>${todayLine}${statsLine}`;
 }
 
 function pianoOvInit(){
