@@ -4889,7 +4889,7 @@ function _bkfChartRender(elId){
   const plotW=W-PL-PR;
   const sx=i=>PL+i/(pts.length-1||1)*plotW;
   const sy=v=>PT+plotH-(v/YMAX)*plotH;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;flex:1;min-height:0;display:block;">`;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="width:100%;flex:1;min-height:0;display:block;">`;
   for(let v=0;v<=YMAX;v+=Math.ceil(YMAX/4/10)*10){
     const y=sy(v);
     svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="1"/>`;
