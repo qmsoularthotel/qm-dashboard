@@ -2176,7 +2176,14 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   const bMerged={partenze:[...(giorno.boutique?.partenze||[]),...lib.partenze],fermate:[...(giorno.boutique?.fermate||[]),...lib.fermate],cambi:[...(giorno.boutique?.cambi||[]),...lib.cambi]};
   const sHtml=renderHotel('SoulArt',giorno.soulart||{}),bHtml=renderHotel('Boutique - San Liborio',bMerged);
   if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per questo giorno</div>';return;}
-  el.innerHTML=`${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>`;
+  const cols=sHtml&&bHtml
+    ?`<div style="display:flex;gap:20px;align-items:stretch;">
+        <div style="flex:1;min-width:0;">${sHtml}</div>
+        <div style="width:1px;background:var(--border-light);flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">${bHtml}</div>
+      </div>`
+    :`${sHtml}${bHtml}`;
+  el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>`;
 }
 
 // Box "Distribuzione Culligan" — accanto al grafico occupazione in Situazione odierna.
