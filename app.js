@@ -2314,7 +2314,7 @@ const LS={
     const keys=['pulData','bkfData',
       'rev_sa','rev_bh','rev_sl','rev_pr','rev_ms','rev_ar','rev_sb',
       'rev_sent',
-      'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','piano',
+      'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','bkfARChartData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr',
       'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar','inv_orders',
       'tp_seen_until','hkp_config','ddt','spese_cat_override'];
@@ -2852,6 +2852,13 @@ document.querySelector('.content').addEventListener('scroll',function(){
       bkfData=savedBkf.data;bkfActiveDay=savedBkf.activeDay||0;
       setTimeout(()=>{renderBkfData(true);bkfLoadOps();if(savedBkf.ts)restoreUploadTs('bkfTs',savedBkf.ts);else loadStoredTs('bkfTs');},150);
     }
+    // Ripristina il grafico coperti Galleria — persiste sempre, indipendente dal
+    // ciclo di upload/sync del giorno (a differenza della tabella di revisione sotto)
+    const savedARChart=LS.get('bkfARChartData',null);
+    if(savedARChart&&Array.isArray(savedARChart)&&savedARChart.length){
+      bkfARChartData=savedARChart;
+      setTimeout(bkfRenderChartAR,50);
+    }
     // Ripristina BKF Sheet Galleria (solo se i dati sono di oggi)
     const savedARData=LS.get('bkfSheetARData',null);
     if(savedARData&&Array.isArray(savedARData)&&savedARData.length){
@@ -3237,6 +3244,10 @@ function bkfSheetShowError(msg){
 }
 const SHEETS_URL_AR='https://script.google.com/macros/s/AKfycbzmkYzbHDgxOYXe-rnkcjpOsPArlt4gimwXHNiQfCur5FeHM6qfu2BlN0NswI4aICM/exec';
 let bkfSheetARData=[];
+// Dataset separato e persistente per il grafico "Andamento coperti" Galleria — a differenza
+// di bkfSheetARData (righe della revisione corrente, azzerate a ogni "Nuovo caricamento")
+// questo resta invariato tra un ciclo di upload/sync e il successivo.
+let bkfARChartData=[];
 (function initBkfSheetAR(){
   const zone=document.getElementById('bkfSheetARUploadZone');
   const inp=document.getElementById('bkfSheetARFileInput');
@@ -3298,6 +3309,8 @@ REGOLE OBBLIGATORIE:
         <td style="font-size:var(--fs-xs);color:var(--text-muted);">${r.pg||''}</td>
       </tr>`).join('');
     LS.set('bkfSheetARData',bkfSheetARData);
+    bkfARChartData=bkfSheetARData;
+    LS.set('bkfARChartData',bkfARChartData);
     bkfSheetARSetStatus('ready');
     bkfRenderChartAR();
   }catch(err){
@@ -4877,10 +4890,9 @@ function bkfSaveNote(label,value){
 }
 // Grafico identico a quello di Overview (renderOvBkfChart): barre coperti + linea
 // tratteggiata Room Only + legenda, SVG a piena altezza/larghezza della card (flex:1).
-function _bkfChartRender(elId){
+function _bkfChartRender(elId,pts,activeIdx,emptyMsg){
   const el=document.getElementById(elId);if(!el)return;
-  if(!bkfData||!bkfData.length){el.innerHTML='<div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti dall\'Upload Center per visualizzare il grafico</div>';return;}
-  const pts=bkfData.map(d=>({label:d.label.split(' ')[0],v:d.adulti+d.bambini,nc:d.noCol||0}));
+  if(!pts||!pts.length){el.innerHTML=`<div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">${emptyMsg}</div>`;return;}
   const W=600,H=220,PL0=34,PR0=14,PT=26,PB=28;
   const plotW0=W-PL0-PR0,plotH=H-PT-PB;
   const YMAX=Math.max(30,...pts.map(p=>p.v))+10;
@@ -4896,14 +4908,14 @@ function _bkfChartRender(elId){
     svg+=`<text x="${PL-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;
   }
   pts.forEach((p,i)=>{
-    const x=sx(i),y=sy(p.v),isActive=i===bkfActiveDay;
+    const x=sx(i),y=sy(p.v),isActive=i===activeIdx;
     svg+=`<rect x="${x-barW/2}" y="${y}" width="${barW}" height="${sy(0)-y}" rx="4" fill="${isActive?'var(--accent)':'var(--accent-bg)'}" stroke="var(--accent)" stroke-width="1.5"/>`;
   });
   const roLine='M'+pts.map((p,i)=>`${sx(i)},${sy(p.nc)}`).join('L');
   svg+=`<path d="${roLine}" fill="none" stroke="var(--red)" stroke-width="2" stroke-dasharray="3 3"/>`;
   pts.forEach((p,i)=>{svg+=`<circle cx="${sx(i)}" cy="${sy(p.nc)}" r="3" fill="var(--red)"/>`;});
   pts.forEach((p,i)=>{
-    const x=sx(i),y=sy(p.v),isActive=i===bkfActiveDay;
+    const x=sx(i),y=sy(p.v),isActive=i===activeIdx;
     if(isActive)svg+=`<text x="${x}" y="${y+16}" font-size="13" fill="#fff" text-anchor="middle" font-weight="800">${p.v}</text>`;
     else svg+=`<text x="${x}" y="${y-6}" font-size="11.5" fill="var(--accent)" text-anchor="middle" font-weight="700">${p.v}</text>`;
     svg+=`<text x="${x}" y="${H-8}" font-size="11" fill="${isActive?'var(--accent)':'var(--text-dim)'}" font-weight="${isActive?'700':'400'}" text-anchor="middle">${p.label}</text>`;
@@ -4914,8 +4926,14 @@ function _bkfChartRender(elId){
     <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:2px;background:var(--red);display:inline-block;"></span>Room Only</span>
   </div>`;
 }
-function bkfRenderChart(){_bkfChartRender('bkfChartBody');}
-function bkfRenderChartAR(){_bkfChartRender('bkfChartBodyAR');}
+function bkfRenderChart(){
+  const pts=(bkfData||[]).map(d=>({label:d.label.split(' ')[0],v:d.adulti+d.bambini,nc:d.noCol||0}));
+  _bkfChartRender('bkfChartBody',pts,bkfActiveDay,'Carica il report pasti dall\'Upload Center per visualizzare il grafico');
+}
+function bkfRenderChartAR(){
+  const pts=(bkfARChartData||[]).map(r=>({label:(r.d||'—').split(' ')[0],v:(parseInt(r.r)||0)+(parseInt(r.b)||0),nc:parseInt(r.r)||0}));
+  _bkfChartRender('bkfChartBodyAR',pts,pts.length-1,'Carica il file BKF Galleria per visualizzare il grafico');
+}
 function updateKpiFromBkf(d){
   // Room Only
   const noColEl=document.getElementById('kpi-bkf-nocol');
