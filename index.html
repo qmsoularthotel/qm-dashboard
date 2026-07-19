@@ -458,9 +458,10 @@
             </div>
           </div>
         </div>
-        <div class="panel" style="margin-bottom:14px;position:relative;" id="ov-piano-panel">
+        <div class="panel" style="margin-bottom:14px;position:relative;" id="ov-situazione-panel">
           <div class="panel-header">
-            <span class="panel-title">🛏 Piano camere</span>
+            <span style="font-size:14px;">📊</span>
+            <span class="panel-title">Situazione odierna</span>
             <span id="ov-piano-scadenza" style="display:none;margin-left:8px;background:var(--amber);color:#fff;border-radius:4px;padding:1px 7px;font-size:var(--fs-xxs);font-weight:600;"></span>
             <div style="display:flex;align-items:center;gap:4px;margin-left:auto;">
               <button onclick="pianoPrevDay()" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer;font-size:14px;color:var(--text-dim);">‹</button>
@@ -469,12 +470,18 @@
             </div>
           </div>
           <!-- Riepilogo settimana -->
-          <div id="ov-piano-week" style="padding:8px 14px 0;display:none;">
+          <div id="ov-piano-week" style="padding:14px 14px 0;display:none;">
             <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:6px;" id="ov-piano-week-row"></div>
           </div>
-          <div class="panel-body" id="ov-piano-preview"><div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div></div>
           <!-- Riepilogo Booking.com: arrivi oggi + partenze attese — popolato da arriviUpdateKpi() -->
           <div id="ov-booking-box" style="display:none;padding:0 20px 16px;"></div>
+        </div>
+        <div class="panel" style="margin-bottom:14px;position:relative;" id="ov-piano-panel">
+          <div class="panel-header">
+            <span style="font-size:14px;">🧹</span>
+            <span class="panel-title">Housekeeping</span>
+          </div>
+          <div class="panel-body" id="ov-piano-preview"><div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div></div>
         </div>
         <div class="panel" style="margin-bottom:14px;">
           <div class="panel-header">
@@ -1522,7 +1529,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=2"></script>
-<script src="app.js?v=557-20260719"></script>
+<script src="app.js?v=558-20260719"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

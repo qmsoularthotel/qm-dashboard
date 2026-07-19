@@ -2158,14 +2158,13 @@ function renderPianoGiorno(elId,refDate,forceIdx){
     const cambi=sortRooms(data.cambi||[]),partenze=sortRooms(data.partenze||[]),fermate=sortRooms(data.fermate||[]);
     const tuttePartenze=sortRooms([...cambi,...partenze]);
     if(!tuttePartenze.length&&!fermate.length)return'';
-    // KPI numerici
-    const _icoSz=window.innerWidth<=768?'20px':'30px';
+    // Pillole conteggi: Partenza senza arrivo / Partenza con arrivo / Fermata
     let h=`<div style="margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
-        <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${label}</div>
-        ${tuttePartenze.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--amber);"><img src="img/icons/arrivi.png" class="ov-icon" style="width:${_icoSz};height:${_icoSz};object-fit:contain;"> ${tuttePartenze.length}</span>`:''}
-        ${cambi.length?`<span style="font-size:15px;font-weight:700;color:var(--red);">⇄ ${cambi.length}</span>`:''}
-        ${fermate.length?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:15px;font-weight:700;color:var(--accent);"><img src="img/icons/fermata.png" class="ov-icon" style="width:${_icoSz};height:${_icoSz};object-fit:contain;"> ${fermate.length}</span>`:''}
+      <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">${label}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        ${partenze.length?`<div style="text-align:center;background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:6px 14px;"><div style="font-size:9px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.03em;">Partenza senza arrivo</div><div style="font-size:17px;font-weight:700;color:var(--amber);">${partenze.length}</div></div>`:''}
+        ${cambi.length?`<div style="text-align:center;background:#fce8e8;border:1px solid var(--red);border-radius:8px;padding:6px 14px;"><div style="font-size:9px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.03em;">Partenza con arrivo</div><div style="font-size:17px;font-weight:700;color:var(--red);">${cambi.length}</div></div>`:''}
+        ${fermate.length?`<div style="text-align:center;background:var(--accent-bg);border:1px solid var(--accent);border-radius:8px;padding:6px 14px;"><div style="font-size:9px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.03em;">Fermata</div><div style="font-size:17px;font-weight:700;color:var(--accent);">${fermate.length}</div></div>`:''}
       </div>`;
     if(tuttePartenze.length)h+=`<div style="margin-bottom:6px;"><div style="display:flex;flex-wrap:wrap;gap:5px;">${tuttePartenze.map(r=>{const isCambio=cambi.includes(r);return`<span style="background:${isCambio?'#fce8e8':'var(--amber-bg)'};border:1px solid ${isCambio?'var(--red)':'var(--amber)'};color:${isCambio?'var(--red)':'var(--amber)'};font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;">${r}${isCambio?` ⇄`:''}</span>`;}).join('')}</div></div>`;
     if(fermate.length)h+=`<div><div style="display:flex;flex-wrap:wrap;gap:5px;">${fermate.map(r=>`<span style="background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;">${r}</span>`).join('')}</div></div>`;
@@ -2207,7 +2206,7 @@ function renderPianoGiorno(elId,refDate,forceIdx){
       sideBox=`<div style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0 32px;pointer-events:none;user-select:none;border-left:1px solid var(--border-light);margin-left:8px;"><span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#1A2E55;letter-spacing:.01em;white-space:nowrap;">Compass QM <span style="font-weight:300;color:var(--text-dim);margin:0 6px;">|</span><span style="font-weight:400;color:var(--text-dim);font-size:14px;"> Dashboard</span></span></div>`;
     }
   }
-  el.innerHTML=`<div style="display:flex;align-items:stretch;"><div style="min-width:0;width:100%;">${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">↑ partenze · = fermate · ⇄ cambio camera</div></div>${sideBox}</div>`;
+  el.innerHTML=`<div style="display:flex;align-items:stretch;"><div style="min-width:0;width:100%;">${sHtml}${bHtml}<div style="font-size:9px;color:var(--text-dim);margin-top:4px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div></div>${sideBox}</div>`;
 }
 
 function pianoOvInit(){
