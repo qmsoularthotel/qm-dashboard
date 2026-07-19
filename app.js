@@ -3466,7 +3466,18 @@ function renderPulDay(silent){
   document.getElementById('pulOccPct').textContent=occPct+'%  ('+occ+'/'+CAP_CAMERE+')';
   document.getElementById('pulOccFill').style.width=occPct+'%';
   updateKpiFromPulizie(d);
+  renderOvOccChart();
   if(!silent){const _pts=localStorage.getItem('qm_ts_pulTs');LS.set('pulData',{data:pulData,activeDay:pulActiveDay,ts:_pts?parseInt(_pts):Date.now()});}
+}
+// Grafico "Andamento occupazione settimanale" in Situazione odierna — stesso stile SVG
+// del grafico coperti Breakfast (_bkfChartRender), dati reali da pulData (Report pulizie):
+// occupazione % = min(CAP_CAMERE, fermate+arrivi)/CAP_CAMERE, camere libere = il complemento.
+function renderOvOccChart(){
+  const pts=(pulData||[]).map(d=>{
+    const occEst=Math.min(CAP_CAMERE,(d.fermatePulizia||0)+(d.arrivi||0));
+    return{label:d.label.split(' ')[0],v:Math.round((occEst/CAP_CAMERE)*100),nc:CAP_CAMERE-occEst};
+  });
+  _bkfChartRender('ov-occ-chart',pts,pulActiveDay,'Carica il report pulizie per vedere il grafico','Occupazione %','Camere libere');
 }
 function updateKpiFromPulizie(d){
   // Se per questa data abbiamo il Riepilogo Reception (AI, deduplicato), usa quel conteggio
@@ -4901,7 +4912,8 @@ function bkfSaveNote(label,value){
 }
 // Grafico identico a quello di Overview (renderOvBkfChart): barre coperti + linea
 // tratteggiata Room Only + legenda, SVG a piena altezza/larghezza della card (flex:1).
-function _bkfChartRender(elId,pts,activeIdx,emptyMsg){
+function _bkfChartRender(elId,pts,activeIdx,emptyMsg,legendBar,legendLine){
+  legendBar=legendBar||'Coperti';legendLine=legendLine||'Room Only';
   const el=document.getElementById(elId);if(!el)return;
   if(!pts||!pts.length){el.innerHTML=`<div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">${emptyMsg}</div>`;return;}
   const W=600,H=220,PL0=34,PR0=14,PT=26,PB=28;
@@ -4933,8 +4945,8 @@ function _bkfChartRender(elId,pts,activeIdx,emptyMsg){
   });
   svg+='</svg>';
   el.innerHTML=`${svg}<div style="display:flex;gap:14px;flex-shrink:0;margin-top:2px;">
-    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:10px;background:var(--accent);border-radius:2px;display:inline-block;"></span>Coperti</span>
-    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:2px;background:var(--red);display:inline-block;"></span>Room Only</span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:10px;background:var(--accent);border-radius:2px;display:inline-block;"></span>${legendBar}</span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:2px;background:var(--red);display:inline-block;"></span>${legendLine}</span>
   </div>`;
 }
 function bkfRenderChart(){
