@@ -4875,46 +4875,47 @@ function bkfSaveNote(label,value){
   else delete bkfNotes[label];
   bkfSaveOps();
 }
-// Bar chart in stile Overview (buildBarChart): barre colorate, ultimo giorno in evidenza,
-// invece del grafico a linea/area SVG usato in precedenza per l'andamento coperti.
-function _bkfBarChartHtml(pts){
-  const max=Math.max(...pts.map(p=>p.v),1);
-  const H=72;
-  const bars=pts.map((p,i)=>{
-    const isLast=i===pts.length-1;
-    const color=isLast?'var(--accent)':'var(--green)';
-    const h=Math.round((p.v/max)*H);
-    const label=isLast?`<strong>${p.label}</strong>`:p.label;
-    return`<div class="bar-col">
-      <div class="bar-val">${p.v}</div>
-      <div class="bar-wrap" style="height:${H}px;">
-        <div style="width:72%;height:${h}px;background:${color};border-radius:4px 4px 2px 2px;opacity:${isLast?1:.85};transition:height .3s;"></div>
-      </div>
-      <div class="bar-label">${label}</div>
-    </div>`;
-  }).join('');
-  return`<div style="display:flex;gap:0;align-items:flex-end;width:100%;">${bars}</div>`;
-}
-function bkfRenderChart(){
-  const el=document.getElementById('bkfChartBody');
-  if(!el)return;
-  if(!bkfData||!bkfData.length){
-    el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);text-align:center;padding:20px 0;">Carica il report pasti dall\'Upload Center per visualizzare il grafico</div>';
-    return;
+// Grafico identico a quello di Overview (renderOvBkfChart): barre coperti + linea
+// tratteggiata Room Only + legenda, SVG a piena altezza/larghezza della card (flex:1).
+function _bkfChartRender(elId){
+  const el=document.getElementById(elId);if(!el)return;
+  if(!bkfData||!bkfData.length){el.innerHTML='<div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti dall\'Upload Center per visualizzare il grafico</div>';return;}
+  const pts=bkfData.map(d=>({label:d.label.split(' ')[0],v:d.adulti+d.bambini,nc:d.noCol||0}));
+  const W=600,H=220,PL0=34,PR0=14,PT=26,PB=28;
+  const plotW0=W-PL0-PR0,plotH=H-PT-PB;
+  const YMAX=Math.max(30,...pts.map(p=>p.v))+10;
+  const barW=Math.min(40,plotW0/pts.length*0.5);
+  const PL=PL0+barW/2,PR=PR0+barW/2;
+  const plotW=W-PL-PR;
+  const sx=i=>PL+i/(pts.length-1||1)*plotW;
+  const sy=v=>PT+plotH-(v/YMAX)*plotH;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;flex:1;min-height:0;display:block;">`;
+  for(let v=0;v<=YMAX;v+=Math.ceil(YMAX/4/10)*10){
+    const y=sy(v);
+    svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="1"/>`;
+    svg+=`<text x="${PL-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;
   }
-  const pts=bkfData.map(d=>({label:d.label.replace(/\s+\d{4}/,'').trim(),v:d.adulti+d.bambini}));
-  el.innerHTML=_bkfBarChartHtml(pts);
+  pts.forEach((p,i)=>{
+    const x=sx(i),y=sy(p.v),isActive=i===bkfActiveDay;
+    svg+=`<rect x="${x-barW/2}" y="${y}" width="${barW}" height="${sy(0)-y}" rx="4" fill="${isActive?'var(--accent)':'var(--accent-bg)'}" stroke="var(--accent)" stroke-width="1.5"/>`;
+  });
+  const roLine='M'+pts.map((p,i)=>`${sx(i)},${sy(p.nc)}`).join('L');
+  svg+=`<path d="${roLine}" fill="none" stroke="var(--red)" stroke-width="2" stroke-dasharray="3 3"/>`;
+  pts.forEach((p,i)=>{svg+=`<circle cx="${sx(i)}" cy="${sy(p.nc)}" r="3" fill="var(--red)"/>`;});
+  pts.forEach((p,i)=>{
+    const x=sx(i),y=sy(p.v),isActive=i===bkfActiveDay;
+    if(isActive)svg+=`<text x="${x}" y="${y+16}" font-size="13" fill="#fff" text-anchor="middle" font-weight="800">${p.v}</text>`;
+    else svg+=`<text x="${x}" y="${y-6}" font-size="11.5" fill="var(--accent)" text-anchor="middle" font-weight="700">${p.v}</text>`;
+    svg+=`<text x="${x}" y="${H-8}" font-size="11" fill="${isActive?'var(--accent)':'var(--text-dim)'}" font-weight="${isActive?'700':'400'}" text-anchor="middle">${p.label}</text>`;
+  });
+  svg+='</svg>';
+  el.innerHTML=`${svg}<div style="display:flex;gap:14px;flex-shrink:0;margin-top:2px;">
+    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:10px;background:var(--accent);border-radius:2px;display:inline-block;"></span>Coperti</span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:2px;background:var(--red);display:inline-block;"></span>Room Only</span>
+  </div>`;
 }
-function bkfRenderChartAR(){
-  const el=document.getElementById('bkfChartBodyAR');
-  if(!el)return;
-  if(!bkfData||!bkfData.length){
-    el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);text-align:center;padding:20px 0;">Carica il report pasti dall\'Upload Center per visualizzare il grafico</div>';
-    return;
-  }
-  const pts=bkfData.map(d=>({label:d.label.replace(/\s+\d{4}/,'').trim(),v:d.adulti+d.bambini}));
-  el.innerHTML=_bkfBarChartHtml(pts);
-}
+function bkfRenderChart(){_bkfChartRender('bkfChartBody');}
+function bkfRenderChartAR(){_bkfChartRender('bkfChartBodyAR');}
 function updateKpiFromBkf(d){
   // Room Only
   const noColEl=document.getElementById('kpi-bkf-nocol');
