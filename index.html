@@ -5,7 +5,7 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=232">
+<link rel="stylesheet" href="style.css?v=233">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
@@ -155,7 +155,8 @@
         <div id="ucProgressBar" style="height:100%;background:var(--accent);border-radius:4px;width:0%;transition:width .4s ease;"></div>
       </div>
       <div id="ucMissingLine" style="display:none;margin:0 10px 8px;font-size:9px;color:var(--amber);"></div>
-      <div class="uc-grid">
+      <div class="uc-cols">
+        <div class="uc-col">
         <div class="uc-slot" id="uc-turno" onclick="ucToggle('turno')" title="Carica o espandi turno">
           <input type="file" id="turniFileInput" accept="image/*,.xlsx,.xls,.csv,.pdf" style="display:none">
           <span class="uc-dot" id="uc-turno-dot"></span>
@@ -164,59 +165,6 @@
           <div class="uc-sub" id="uc-turno-sub">Non caricato</div>
           <span class="uc-badge" id="uc-turno-badge" style="display:none;">▾</span>
         </div>
-        <div class="uc-slot" id="uc-arrivi" onclick="ucToggle('arrivi')" title="Carica o espandi arrivi">
-          <input type="file" id="arriviFileInput" accept="application/pdf,image/*" style="display:none">
-          <span class="uc-dot" id="uc-arrivi-dot"></span>
-          <span class="uc-icon"><img src="img/icons/riepilogo_reception.png" class="uc-icon-img"></span>
-          <div class="uc-label">Riepilogo Reception</div>
-          <div class="uc-sub" id="uc-arrivi-sub">Non caricato</div>
-          <span class="uc-badge" id="uc-arrivi-badge" style="display:none;">▾</span>
-        </div>
-        <div class="uc-slot" id="uc-pul" onclick="ucToggle('pul')" title="Carica o espandi pulizie">
-          <input type="file" id="pulFileInput" accept="application/pdf" style="display:none">
-          <span class="uc-dot" id="uc-pul-dot"></span>
-          <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
-          <div class="uc-label">Report pulizie</div>
-          <div class="uc-sub" id="uc-pul-sub">Non caricato</div>
-          <span class="uc-badge" id="uc-pul-badge" style="display:none;">▾</span>
-        </div>
-        <div class="uc-slot" id="uc-soul" onclick="ucToggle('soul')" title="Compass Housekeeper SoulArt">
-          <input type="file" id="soulFileInput" accept="application/pdf" style="display:none">
-          <span class="uc-dot" id="uc-soul-dot"></span>
-          <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
-          <div class="uc-label">Compass<br>Housekeeper<br>SoulArt</div>
-          <div class="uc-sub" id="uc-soul-sub">Non caricato</div>
-          <span class="uc-badge" id="uc-soul-badge" style="display:none;">▾</span>
-        </div>
-        <div class="uc-slot" id="uc-bout" onclick="ucToggle('bout')" title="Compass Housekeeper Boutique">
-          <input type="file" id="boutFileInput" accept="application/pdf" style="display:none">
-          <span class="uc-dot" id="uc-bout-dot"></span>
-          <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
-          <div class="uc-label">Compass<br>Housekeeper<br>Boutique</div>
-          <div class="uc-sub" id="uc-bout-sub">Non caricato</div>
-          <span class="uc-badge" id="uc-bout-badge" style="display:none;">▾</span>
-        </div>
-        <div class="uc-slot" id="uc-piano" onclick="ucToggle('piano')" title="Compass Piano Settimanale">
-          <input type="file" id="pianoFileInput" accept="application/pdf" style="display:none">
-          <span class="uc-dot" id="uc-piano-dot"></span>
-          <span class="uc-icon"><img src="img/icons/piano_settimanale.png" class="uc-icon-img"></span>
-          <div class="uc-label">Compass<br>Piano<br>Settimanale</div>
-          <div class="uc-sub" id="uc-piano-sub">Non caricato</div>
-          <span class="uc-badge" id="uc-piano-badge" style="display:none;">▾</span>
-        </div>
-        <div class="uc-slot" id="uc-bkf" onclick="ucToggle('bkf')" title="Carica o espandi pasti">
-          <input type="file" id="bkfFileInput" accept="application/pdf" style="display:none">
-          <span class="uc-dot" id="uc-bkf-dot"></span>
-          <span class="uc-icon"><img src="img/icons/report_pasti.png" class="uc-icon-img"></span>
-          <div class="uc-label">Report pasti</div>
-          <div class="uc-sub" id="uc-bkf-sub">Non caricato</div>
-          <span class="uc-badge" id="uc-bkf-badge" style="display:none;">▾</span>
-        </div>
-        <div class="uc-slot uc-slot-brand">
-          <img src="img/icons/compass-star.png" class="uc-brand-img" alt="Compass">
-        </div>
-      </div>
-      <div class="uc-panels">
         <div class="uc-panel" id="uc-turno-panel">
           <div class="uc-feeds-line">→ Piano staff</div>
           <div id="turniUploadBox" onclick="document.getElementById('turniFileInput').click()" style="cursor:pointer;border:2px dashed var(--border);border-radius:10px;padding:18px 12px;text-align:center;margin:8px 0;color:var(--text-dim);font-size:var(--fs-xs);">
@@ -236,18 +184,13 @@
           <button class="btn-reload" id="btnReload" style="display:none" onclick="resetTurni()">Rimuovi turno</button>
           <div class="upload-ts" id="turnoTs"></div>
         </div>
-        <div class="uc-panel" id="uc-arrivi-panel">
-          <div class="uc-feeds-line">→ KPI Overview · Registration Cards · Piano colazioni</div>
-          <div class="upload-box" id="arriviUploadBox">
-            <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-            <div class="ub-title">Riepilogo Reception</div>
-            <div class="ub-sub">PDF da Hotel in Cloud</div>
-            <span class="ub-formats">.pdf · .jpg · .png</span>
-          </div>
-          <div class="turni-status" id="arriviStatus"></div>
-          <div class="loaded-info" id="arriviLoadedInfo"><div class="li-date" id="arriviLoadedDate"></div><div id="arriviCanali" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;"></div><div id="arriviPartenzeBooking" style="display:none;"></div></div>
-          <button class="btn-reload" id="btnArriviReload" style="display:none" onclick="resetArrivi()">Rimuovi arrivi</button>
-          <div class="upload-ts" id="arriviTs"></div>
+        <div class="uc-slot" id="uc-pul" onclick="ucToggle('pul')" title="Carica o espandi pulizie">
+          <input type="file" id="pulFileInput" accept="application/pdf" style="display:none">
+          <span class="uc-dot" id="uc-pul-dot"></span>
+          <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
+          <div class="uc-label">Report pulizie</div>
+          <div class="uc-sub" id="uc-pul-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-pul-badge" style="display:none;">▾</span>
         </div>
         <div class="uc-panel" id="uc-pul-panel">
           <div class="uc-feeds-line">→ KPI Overview · Pulizie</div>
@@ -270,17 +213,13 @@
           <button class="btn-reload" id="btnPulReload" style="display:none" onclick="resetPulizie()">Rimuovi pulizie</button>
           <div class="upload-ts" id="pulTs"></div>
         </div>
-        <div class="uc-panel" id="uc-soul-panel">
-          <div class="uc-feeds-line">→ Compass Housekeeper (SoulArt)</div>
-          <div class="upload-box" id="soulUploadBox">
-            <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-            <div class="ub-title">Compass Housekeeper SoulArt</div><div class="ub-sub">Report pulizie SoulArt</div>
-            <span class="ub-formats">.pdf</span>
-          </div>
-          <div class="turni-status" id="soulStatus"></div>
-          <div class="loaded-info" id="soulLoadedInfo"><div class="li-date" id="soulLoadedDate"></div></div>
-          <button class="btn-reload" id="btnSoulReload" style="display:none" onclick="resetSoulData()">Rimuovi</button>
-          <div class="upload-ts" id="soulTs"></div>
+        <div class="uc-slot" id="uc-bout" onclick="ucToggle('bout')" title="Compass Housekeeper Boutique">
+          <input type="file" id="boutFileInput" accept="application/pdf" style="display:none">
+          <span class="uc-dot" id="uc-bout-dot"></span>
+          <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
+          <div class="uc-label">Compass<br>Housekeeper<br>Boutique</div>
+          <div class="uc-sub" id="uc-bout-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-bout-badge" style="display:none;">▾</span>
         </div>
         <div class="uc-panel" id="uc-bout-panel">
           <div class="uc-feeds-line">→ Compass Housekeeper (Boutique)</div>
@@ -294,17 +233,13 @@
           <button class="btn-reload" id="btnBoutReload" style="display:none" onclick="resetBoutData()">Rimuovi</button>
           <div class="upload-ts" id="boutTs"></div>
         </div>
-        <div class="uc-panel" id="uc-piano-panel">
-          <div class="uc-feeds-line">→ Culligan · Compass Housekeeper (smistamento camere)</div>
-          <div class="upload-box" id="pianoUploadBox">
-            <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-            <div class="ub-title">Piano settimana</div><div class="ub-sub">Piano camere settimanale</div>
-            <span class="ub-formats">.pdf</span>
-          </div>
-          <div class="turni-status" id="pianoStatus"></div>
-          <div class="loaded-info" id="pianoLoadedInfo"><div class="li-date" id="pianoLoadedDate"></div></div>
-          <button class="btn-reload" id="btnPianoReload" style="display:none" onclick="resetPianoData()">Rimuovi</button>
-          <div class="upload-ts" id="pianoTs"></div>
+        <div class="uc-slot" id="uc-bkf" onclick="ucToggle('bkf')" title="Carica o espandi pasti">
+          <input type="file" id="bkfFileInput" accept="application/pdf" style="display:none">
+          <span class="uc-dot" id="uc-bkf-dot"></span>
+          <span class="uc-icon"><img src="img/icons/report_pasti.png" class="uc-icon-img"></span>
+          <div class="uc-label">Report pasti</div>
+          <div class="uc-sub" id="uc-bkf-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-bkf-badge" style="display:none;">▾</span>
         </div>
         <div class="uc-panel" id="uc-bkf-panel">
           <div class="uc-feeds-line">→ Coperti colazione · Grafico · App Breakfast</div>
@@ -322,7 +257,73 @@
           </div>
           <button class="btn-reload" id="btnBkfReload" style="display:none" onclick="resetBkf()">Rimuovi report</button>
           <div class="upload-ts" id="bkfTs"></div>
+        </div>        </div>
+        <div class="uc-col">
+        <div class="uc-slot" id="uc-arrivi" onclick="ucToggle('arrivi')" title="Carica o espandi arrivi">
+          <input type="file" id="arriviFileInput" accept="application/pdf,image/*" style="display:none">
+          <span class="uc-dot" id="uc-arrivi-dot"></span>
+          <span class="uc-icon"><img src="img/icons/riepilogo_reception.png" class="uc-icon-img"></span>
+          <div class="uc-label">Riepilogo Reception</div>
+          <div class="uc-sub" id="uc-arrivi-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-arrivi-badge" style="display:none;">▾</span>
         </div>
+        <div class="uc-panel" id="uc-arrivi-panel">
+          <div class="uc-feeds-line">→ KPI Overview · Registration Cards · Piano colazioni</div>
+          <div class="upload-box" id="arriviUploadBox">
+            <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
+            <div class="ub-title">Riepilogo Reception</div>
+            <div class="ub-sub">PDF da Hotel in Cloud</div>
+            <span class="ub-formats">.pdf · .jpg · .png</span>
+          </div>
+          <div class="turni-status" id="arriviStatus"></div>
+          <div class="loaded-info" id="arriviLoadedInfo"><div class="li-date" id="arriviLoadedDate"></div><div id="arriviCanali" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;"></div><div id="arriviPartenzeBooking" style="display:none;"></div></div>
+          <button class="btn-reload" id="btnArriviReload" style="display:none" onclick="resetArrivi()">Rimuovi arrivi</button>
+          <div class="upload-ts" id="arriviTs"></div>
+        </div>
+        <div class="uc-slot" id="uc-soul" onclick="ucToggle('soul')" title="Compass Housekeeper SoulArt">
+          <input type="file" id="soulFileInput" accept="application/pdf" style="display:none">
+          <span class="uc-dot" id="uc-soul-dot"></span>
+          <span class="uc-icon"><img src="img/icons/housekeeping.png" class="uc-icon-img"></span>
+          <div class="uc-label">Compass<br>Housekeeper<br>SoulArt</div>
+          <div class="uc-sub" id="uc-soul-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-soul-badge" style="display:none;">▾</span>
+        </div>
+        <div class="uc-panel" id="uc-soul-panel">
+          <div class="uc-feeds-line">→ Compass Housekeeper (SoulArt)</div>
+          <div class="upload-box" id="soulUploadBox">
+            <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
+            <div class="ub-title">Compass Housekeeper SoulArt</div><div class="ub-sub">Report pulizie SoulArt</div>
+            <span class="ub-formats">.pdf</span>
+          </div>
+          <div class="turni-status" id="soulStatus"></div>
+          <div class="loaded-info" id="soulLoadedInfo"><div class="li-date" id="soulLoadedDate"></div></div>
+          <button class="btn-reload" id="btnSoulReload" style="display:none" onclick="resetSoulData()">Rimuovi</button>
+          <div class="upload-ts" id="soulTs"></div>
+        </div>
+        <div class="uc-slot" id="uc-piano" onclick="ucToggle('piano')" title="Compass Piano Settimanale">
+          <input type="file" id="pianoFileInput" accept="application/pdf" style="display:none">
+          <span class="uc-dot" id="uc-piano-dot"></span>
+          <span class="uc-icon"><img src="img/icons/piano_settimanale.png" class="uc-icon-img"></span>
+          <div class="uc-label">Compass<br>Piano<br>Settimanale</div>
+          <div class="uc-sub" id="uc-piano-sub">Non caricato</div>
+          <span class="uc-badge" id="uc-piano-badge" style="display:none;">▾</span>
+        </div>
+        <div class="uc-panel" id="uc-piano-panel">
+          <div class="uc-feeds-line">→ Culligan · Compass Housekeeper (smistamento camere)</div>
+          <div class="upload-box" id="pianoUploadBox">
+            <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
+            <div class="ub-title">Piano settimana</div><div class="ub-sub">Piano camere settimanale</div>
+            <span class="ub-formats">.pdf</span>
+          </div>
+          <div class="turni-status" id="pianoStatus"></div>
+          <div class="loaded-info" id="pianoLoadedInfo"><div class="li-date" id="pianoLoadedDate"></div></div>
+          <button class="btn-reload" id="btnPianoReload" style="display:none" onclick="resetPianoData()">Rimuovi</button>
+          <div class="upload-ts" id="pianoTs"></div>
+        </div>
+        <div class="uc-slot uc-slot-brand">
+          <img src="img/icons/compass-star.png" class="uc-brand-img" alt="Compass">
+        </div>
+      </div>
       </div>
     </nav>
     <div class="sidebar-bottom">
