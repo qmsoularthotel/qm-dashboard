@@ -2314,7 +2314,7 @@ const LS={
     const keys=['pulData','bkfData',
       'rev_sa','rev_bh','rev_sl','rev_pr','rev_ms','rev_ar','rev_sb',
       'rev_sent',
-      'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','bkfARChartData','piano',
+      'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','bkfARChartData','bkfChartData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr',
       'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar','inv_orders',
       'tp_seen_until','hkp_config','ddt','spese_cat_override'];
@@ -2852,8 +2852,13 @@ document.querySelector('.content').addEventListener('scroll',function(){
       bkfData=savedBkf.data;bkfActiveDay=savedBkf.activeDay||0;
       setTimeout(()=>{renderBkfData(true);bkfLoadOps();if(savedBkf.ts)restoreUploadTs('bkfTs',savedBkf.ts);else loadStoredTs('bkfTs');},150);
     }
-    // Ripristina il grafico coperti Galleria — persiste sempre, indipendente dal
-    // ciclo di upload/sync del giorno (a differenza della tabella di revisione sotto)
+    // Ripristina i grafici coperti SoulArt/Galleria — persistono sempre, indipendenti dal
+    // ciclo di upload/sync del giorno (a differenza delle tabelle di revisione sotto)
+    const savedChart=LS.get('bkfChartData',null);
+    if(savedChart&&Array.isArray(savedChart)&&savedChart.length){
+      bkfChartData=savedChart;
+      setTimeout(bkfRenderChart,50);
+    }
     const savedARChart=LS.get('bkfARChartData',null);
     if(savedARChart&&Array.isArray(savedARChart)&&savedARChart.length){
       bkfARChartData=savedARChart;
@@ -3132,6 +3137,10 @@ function ovUpdateRevImport(){
 }
 const SHEETS_URL='https://script.google.com/macros/s/AKfycbz-6oOgrKCZMwhTpmFO3VuaIJQ5EmGnvkriHOiaoshZ8DD1OlSbbl6dSeNgCKkrql4H/exec';
 let bkfSheetData=[];
+// Dataset separato e persistente per il grafico "Andamento coperti" SoulArt, alimentato
+// dall'upload BKF Soul di questo pannello (non dal Report Pasti dell'Upload Center) — resta
+// invariato tra un ciclo di upload/sync e il successivo, stesso pattern di bkfARChartData.
+let bkfChartData=[];
 (function initBkfSheet(){
   const zone=document.getElementById('bkfSheetUploadZone');
   const inp=document.getElementById('bkfSheetFileInput');
@@ -3187,6 +3196,9 @@ REGOLE OBBLIGATORIE:
     // Rimuovi anno se l'AI lo ha aggiunto (es. "dom 14/03/2004" → "dom 14/03")
     bkfSheetData=bkfSheetData.map(r=>({...r,d:r.d?r.d.replace(/(\d{2}\/\d{2})\/\d{4}/,'$1'):r.d}));
     bkfSheetRenderTable();
+    bkfChartData=bkfSheetData;
+    LS.set('bkfChartData',bkfChartData);
+    bkfRenderChart();
     bkfSheetSetStatus('ready');
   }catch(err){
     bkfSheetShowError('Errore: '+err.message);
@@ -4927,8 +4939,8 @@ function _bkfChartRender(elId,pts,activeIdx,emptyMsg){
   </div>`;
 }
 function bkfRenderChart(){
-  const pts=(bkfData||[]).map(d=>({label:d.label.split(' ')[0],v:d.adulti+d.bambini,nc:d.noCol||0}));
-  _bkfChartRender('bkfChartBody',pts,bkfActiveDay,'Carica il report pasti dall\'Upload Center per visualizzare il grafico');
+  const pts=(bkfChartData||[]).map(r=>({label:(r.d||'—').split(' ')[0],v:(parseInt(r.r)||0)+(parseInt(r.b)||0),nc:parseInt(r.r)||0}));
+  _bkfChartRender('bkfChartBody',pts,pts.length-1,'Carica il file BKF Soul per visualizzare il grafico');
 }
 function bkfRenderChartAR(){
   const pts=(bkfARChartData||[]).map(r=>({label:(r.d||'—').split(' ')[0],v:(parseInt(r.r)||0)+(parseInt(r.b)||0),nc:parseInt(r.r)||0}));
