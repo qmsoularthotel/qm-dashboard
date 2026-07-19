@@ -50,7 +50,7 @@ body.dark .panel{box-shadow:none;}
 .uc-slot.loading{opacity:.8;}
 .uc-dot{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--border);}
 .uc-slot.loaded .uc-dot{background:var(--green);}
-.uc-slot.loading .uc-dot{background:var(--amber);}
+.uc-slot.loading .uc-dot{background:var(--red);animation:ucDotBlink .7s ease-in-out infinite;}
 .uc-slot.error .uc-dot{background:var(--red);}
 .uc-slot.loaded.warn12 .uc-dot{background:var(--amber);animation:ucDotBlink 1.1s ease-in-out infinite;}
 .uc-slot.loaded.stale .uc-dot{background:var(--red);animation:ucDotBlink 1.1s ease-in-out infinite;}
