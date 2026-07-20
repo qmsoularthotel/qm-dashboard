@@ -435,7 +435,8 @@ function sortDeptMembers(key,names,shifts){
   // ma prima di tutti gli altri ordinati per codice turno. Solo per Ricevimento
   // (unico reparto con namePriority configurata).
   const hasIntTier=namePriority.length>0;
-  const isInt=n=>/^int/i.test(n.trim());
+  // "Int" è nel valore del turno (es. "INT GALL 9/17"), non nel nome della persona.
+  const isInt=n=>/^int/i.test((getShift(shifts,n)||'').trim());
   const tierOf=n=>{
     const ni=namePriority.indexOf(n);
     if(ni!==-1)return ni; // 0..namePriority.length-1
