@@ -413,6 +413,40 @@ function updateStaffPanelHeader(dateObj){
     updEl.textContent=ts?('Ultimo aggiornamento '+_fmtDateLongIt(new Date(ts))+', '+String(new Date(ts).getHours()).padStart(2,'0')+':'+String(new Date(ts).getMinutes()).padStart(2,'0')):'';
   }
 }
+// Gerarchia di ordinamento del personale in servizio per reparto, in "Turno di oggi":
+// - Ricevimento: Maddaloni e Presta sempre primi, poi gli altri ordinati per codice
+//   turno (AC prima di AG, AG prima di CC, ecc.) — chi non ha uno di questi codici
+//   resta in fondo, nell'ordine in cui compare.
+// - Housekeeping: ordinati in base al valore scritto nel turno (struttura assegnata
+//   quel giorno) secondo questa priorità: SOUL, SOUL N., 200, BRIGIDA, PR/MS.
+// - Breakfast: stesso principio, priorità BKF SOUL, BKF GALL.
+const DEPT_ORDER={
+  fo:{names:['Maddaloni M.','Presta P.'],codes:['AC','AG','CC','CG','NC','NG']},
+  hk:{codes:['SOUL','SOUL N.','200','BRIGIDA','PR/MS']},
+  bkf:{codes:['BKF SOUL','BKF GALL']},
+};
+function sortDeptMembers(key,names,shifts){
+  const cfg=DEPT_ORDER[key];
+  if(!cfg)return names;
+  const namePriority=cfg.names||[];
+  const codePriority=cfg.codes||[];
+  return names.map((n,i)=>({n,i})).sort((A,B)=>{
+    const a=A.n,b=B.n;
+    const ai=namePriority.indexOf(a),bi=namePriority.indexOf(b);
+    if(ai!==-1||bi!==-1){
+      if(ai===-1)return 1;
+      if(bi===-1)return -1;
+      return ai-bi;
+    }
+    const va=(getShift(shifts,a)||'').trim().toUpperCase();
+    const vb=(getShift(shifts,b)||'').trim().toUpperCase();
+    const ca=codePriority.indexOf(va),cb=codePriority.indexOf(vb);
+    if(ca===-1&&cb===-1)return A.i-B.i; // ordine originale invariato
+    if(ca===-1)return 1;
+    if(cb===-1)return -1;
+    return ca-cb;
+  }).map(x=>x.n);
+}
 function renderDay(idx){
   const g=weekData.giorni[idx],shifts=g.shifts,area=document.getElementById('staffArea');
   updateStaffPanelHeader(g.date?(typeof g.date==='string'?new Date(g.date):g.date):null);
@@ -452,7 +486,7 @@ function renderDay(idx){
         return!allStaffLow.has(nl);
       });
     }
-    const showMembers=[...inT,...extras];
+    const showMembers=sortDeptMembers(key,[...inT,...extras],shifts);
     if(!showMembers.length)return;
     const inTCount=inT.length+extras.length;
     html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inTCount} in turno</span></div><div class="staff-list">${showMembers.map(n=>{const sv=(getShift(shifts,n)||'').trim();const isActive=!IS_REST(sv);return shiftRow(n,sv,isActive?'ss-active':'ss-special');}).join('')}</div></div>`;
