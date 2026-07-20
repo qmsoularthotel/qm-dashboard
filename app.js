@@ -2195,12 +2195,42 @@ function renderHkWeekViewContainer(){
     </div>
   </div>`;
 }
+// Matarese e Altre come due colonne affiancate per giorno (non barra+linea) — stessa
+// griglia/etichette/font del grafico standard (_bkfChartRender), stessi colori Compass
+// già usati altrove (accent navy + gold) per un confronto neutro fra le due categorie.
 function renderHkWeekChart(activeIdx){
+  const el=document.getElementById('hk-week-chart');if(!el)return;
   const pts=pianoData.giorni.map(g=>{
     const{m,a}=splitSoulart(g.soulart||{});
-    return{label:(g.label?g.label.split(' ')[0]:'?').substring(0,3),v:hkCarico(m),nc:hkCarico(a)};
+    return{label:(g.label?g.label.split(' ')[0]:'?').substring(0,3),cm:hkCarico(m),ca:hkCarico(a)};
   });
-  _bkfChartRender('hk-week-chart',pts,activeIdx,'Carica il piano settimana per vedere il grafico','Matarese','Altre housekeeper');
+  if(!pts.length){el.innerHTML='<div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere il grafico</div>';return;}
+  const W=600,H=220,PL0=34,PR0=14,PT=26,PB=28;
+  const plotW0=W-PL0-PR0,plotH=H-PT-PB;
+  const YMAX=Math.max(10,...pts.map(p=>Math.max(p.cm,p.ca)))+5;
+  const groupW=Math.min(46,plotW0/pts.length*0.6),barW=groupW/2-1;
+  const PL=PL0+groupW/2,PR=PR0+groupW/2;
+  const plotW=W-PL-PR;
+  const sx=i=>PL+i/(pts.length-1||1)*plotW;
+  const sy=v=>PT+plotH-(v/YMAX)*plotH;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="width:100%;flex:1;min-height:0;display:block;">`;
+  for(let v=0;v<=YMAX;v+=Math.ceil(YMAX/4/5)*5){
+    const y=sy(v);
+    svg+=`<line x1="${PL-groupW/2}" y1="${y}" x2="${W-PR+groupW/2}" y2="${y}" stroke="var(--border-light)" stroke-width="${v===0?1.5:1}"/>`;
+    svg+=`<text x="${PL-groupW/2-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;
+  }
+  pts.forEach((p,i)=>{
+    const x=sx(i),isActive=i===activeIdx;
+    const ym=sy(p.cm),ya=sy(p.ca);
+    svg+=`<rect x="${x-barW-1}" y="${ym}" width="${barW}" height="${sy(0)-ym}" rx="3" fill="var(--accent)" opacity="${isActive?1:.55}"/>`;
+    svg+=`<rect x="${x+1}" y="${ya}" width="${barW}" height="${sy(0)-ya}" rx="3" fill="var(--gold)" opacity="${isActive?1:.55}"/>`;
+    svg+=`<text x="${x}" y="${H-8}" font-size="11" fill="${isActive?'var(--accent)':'var(--text-dim)'}" font-weight="${isActive?'700':'400'}" text-anchor="middle">${p.label}</text>`;
+  });
+  svg+='</svg>';
+  el.innerHTML=`${svg}<div style="display:flex;gap:14px;flex-shrink:0;margin-top:2px;">
+    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:10px;background:var(--accent);border-radius:2px;display:inline-block;"></span>Matarese</span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:10px;background:var(--gold);border-radius:2px;display:inline-block;"></span>Altre housekeeper</span>
+  </div>`;
 }
 
 function renderPianoGiorno(elId,refDate,forceIdx){
