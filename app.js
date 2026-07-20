@@ -931,16 +931,21 @@ async function hkpNSyncFromCloud(p){
 // Card "Riepilogo cameriere" (camere assegnate nel mese) — estratta da hkpNRenderGrid
 // per essere riusata anche nella card Housekeeping di Overview, stessa fonte dati
 // (Operativa Housekeeping) e stesso mese attualmente selezionato lì.
-function hkpMonthlyCameriereHtml(p){
+function hkpMonthlyCameriereHtml(p,roomFilter){
   const tab='camere';
   const conf=HKP_ROOMS[p][tab];
   const [yr,mo]=hkpNCurMon(p).split('-').map(Number);
   const daysInMonth=new Date(yr,mo,0).getDate();
   const days=[];for(let d=1;d<=daysInMonth;d++)days.push(d);
+  // L'array rows include SEMPRE tutte le camere nell'ordine originale — gli indici (ri)
+  // corrispondono a come sono salvate le celle in memoria, non si può filtrare l'array
+  // prima altrimenti si rompe il lookup hkpNGetCell(p,tab,ri,d). Il filtro si applica
+  // solo in fase di conteggio, riga per riga.
   const rows=[];
   conf.forEach(grp=>grp.list.forEach((name,idx)=>rows.push({name,grp:grp.g,isFirst:idx===0,grpSize:grp.list.length})));
   const hwCounts={},hwDays={};
   rows.forEach((row,ri)=>{
+    if(roomFilter&&!roomFilter(row))return;
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
       if(!v)return;
@@ -2374,7 +2379,7 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   }
   // Replica delle card "Riepilogo cameriere" di Operativa Housekeeping — SoulArt
   // (stessa fonte dati e stesso mese selezionato lì), per non dover aprire quella vista.
-  const monthlyCards=hkpMonthlyCameriereHtml('sa');
+  const monthlyCards=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'));
   const monthlyHtml=monthlyCards?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
     <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">🧹 Riepilogo cameriere — SoulArt</div>
     ${monthlyCards}
