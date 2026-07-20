@@ -5096,7 +5096,10 @@ function pianoSetLoaded(silent){
   const btn=document.getElementById('btnPianoReload');if(btn)btn.style.display='block';
   const box=document.getElementById('pianoUploadBox');if(box)box.style.display='none';
   const li=document.getElementById('pianoLoadedInfo');if(li)li.classList.add('visible');
-  try{pianoOvInit();}catch(e){}
+  // Se si sta già guardando un giorno specifico (pianoNavIdx già impostato), resta lì
+  // dopo il nuovo caricamento invece di tornare a oggi — coerente col comportamento
+  // già usato altrove (vedi il polling overview) quando il piano si ricarica.
+  try{if(pianoNavIdx===null)pianoOvInit();else pianoNavRender(pianoNavIdx);}catch(e){}
 }
 function resetPianoData(){
   pianoData=null;
