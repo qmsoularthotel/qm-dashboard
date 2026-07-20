@@ -5,7 +5,7 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=235">
+<link rel="stylesheet" href="style.css?v=236">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
@@ -443,10 +443,10 @@
       <div class="view active" id="view-overview">
         <div class="panel" style="margin-bottom:14px;">
           <div class="panel-header" style="cursor:pointer;" onclick="toggleStaffPanel()">
-            <span style="font-size:14px;">🗓</span>
+            <img src="img/icons/turni.png" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;">
             <div style="flex:1;">
               <span class="panel-title" id="staffPanelTitle">Turno di oggi</span>
-              <span id="staffPanelUpdated" style="display:block;font-size:10px;color:var(--text-dim);text-transform:none;letter-spacing:0;font-weight:400;margin-top:2px;"></span>
+              <span id="staffPanelUpdated" style="display:block;font-size:10px;color:var(--text-muted);text-transform:none;letter-spacing:0;font-weight:500;margin-top:2px;"></span>
             </div>
             <span id="staffPanelChevron" style="font-size:12px;color:var(--text-dim);transition:transform .15s;">▾</span>
           </div>
@@ -1536,7 +1536,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=2"></script>
-<script src="app.js?v=599-20260720"></script>
+<script src="app.js?v=600-20260720"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
