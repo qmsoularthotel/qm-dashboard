@@ -2185,7 +2185,7 @@ function renderHkWeekViewContainer(){
   return`<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:14px;display:flex;align-items:stretch;gap:0;">
     <div style="min-width:0;width:100%;">
       <div class="kpi-label" style="margin-bottom:8px;">Vista settimanale (carico pesato)</div>
-      <div id="hk-week-chart" style="width:100%;box-sizing:border-box;height:270px;display:flex;flex-direction:column;"></div>
+      <div id="hk-week-chart" style="width:100%;box-sizing:border-box;height:300px;display:flex;flex-direction:column;"></div>
     </div>
     <div style="flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:0 0 0 14px;border-left:1px solid var(--border-light);margin-left:8px;min-width:170px;">
       <div class="kpi-label" style="margin-bottom:8px;">Totale settimana</div>
@@ -2208,7 +2208,7 @@ function renderHkWeekChart(activeIdx){
     return{label:(g.label?g.label.split(' ')[0]:'?').substring(0,3),cm:hkCarico(m),ca:hkCarico(a)};
   });
   if(!pts.length){el.innerHTML='<div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere il grafico</div>';return;}
-  const W=600,H=250,PL0=34,PR0=14,PT=26,PB=28;
+  const W=600,H=290,PL0=34,PR0=14,PT=26,PB=28;
   const plotW0=W-PL0-PR0,plotH=H-PT-PB;
   const YMAX=Math.max(10,...pts.map(p=>Math.max(p.cm,p.ca)))+5;
   const groupW=Math.min(46,plotW0/pts.length*0.6),barW=groupW/2-1;
@@ -2225,14 +2225,14 @@ function renderHkWeekChart(activeIdx){
   pts.forEach((p,i)=>{
     const x=sx(i),isActive=i===activeIdx;
     const ym=sy(p.cm),ya=sy(p.ca);
-    svg+=`<rect x="${x-barW-1}" y="${ym}" width="${barW}" height="${sy(0)-ym}" rx="4" fill="${isActive?'var(--accent)':'var(--accent-bg)'}" stroke="var(--accent)" stroke-width="1.5"/>`;
-    svg+=`<rect x="${x+1}" y="${ya}" width="${barW}" height="${sy(0)-ya}" rx="4" fill="${isActive?'#99a6b7':'#eef1f4'}" stroke="#99a6b7" stroke-width="1.5"/>`;
+    svg+=`<rect x="${x-barW-1}" y="${ym}" width="${barW}" height="${sy(0)-ym}" rx="4" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.5"/>`;
+    svg+=`<rect x="${x+1}" y="${ya}" width="${barW}" height="${sy(0)-ya}" rx="4" fill="#e8f0f8" stroke="var(--accent)" stroke-width="1.5"/>`;
     svg+=`<text x="${x}" y="${H-8}" font-size="11" fill="${isActive?'var(--accent)':'var(--text-dim)'}" font-weight="${isActive?'700':'400'}" text-anchor="middle">${p.label}</text>`;
   });
   svg+='</svg>';
   el.innerHTML=`${svg}<div style="display:flex;gap:14px;flex-shrink:0;margin-top:2px;">
     <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:10px;background:var(--accent);border-radius:2px;display:inline-block;"></span>Matarese</span>
-    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:10px;background:#99a6b7;border-radius:2px;display:inline-block;"></span>Altre housekeeper</span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:10px;background:#e8f0f8;border:1px solid var(--accent);border-radius:2px;display:inline-block;"></span>Altre housekeeper</span>
   </div>`;
 }
 
