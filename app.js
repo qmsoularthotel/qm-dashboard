@@ -487,7 +487,7 @@ function renderDay(idx){
   // Raggruppa con una cornice verde sottile i colleghi consecutivi (dopo l'ordinamento)
   // che hanno esattamente lo stesso valore turno (es. due "CG") — capita spesso e aiuta
   // a vederli subito come coppia.
-  const renderStaffRows=(members)=>{
+  const renderStaffRows=(members,deptKey)=>{
     let out='';
     let i=0;
     while(i<members.length){
@@ -498,7 +498,7 @@ function renderDay(idx){
         const smv=(getShift(shifts,m)||'').trim();
         return shiftRow(m,smv,(!IS_REST(smv))?'ss-active':'ss-special');
       }).join('');
-      out+=(j-i)>=2?`<div style="border:1.5px solid var(--green);border-radius:6px;margin:3px 0;overflow:hidden;">${groupRows}</div>`:groupRows;
+      out+=(deptKey==='fo'&&(j-i)>=2)?`<div style="border:1.5px solid #a5d6a7;background:var(--green-bg,#e8f5e9);border-radius:6px;margin:3px 0;overflow:hidden;">${groupRows}</div>`:groupRows;
       i=j;
     }
     return out;
@@ -519,7 +519,7 @@ function renderDay(idx){
     const showMembers=sortDeptMembers(key,[...inT,...extras],shifts);
     if(!showMembers.length)return;
     const inTCount=inT.length+extras.length;
-    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inTCount} in turno</span></div><div class="staff-list">${renderStaffRows(showMembers)}</div></div>`;
+    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inTCount} in turno</span></div><div class="staff-list">${renderStaffRows(showMembers,key)}</div></div>`;
   });
   html+='</div>';area.innerHTML=html;
 }
