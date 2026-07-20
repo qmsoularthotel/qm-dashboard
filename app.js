@@ -944,11 +944,13 @@ function hkpMonthlyCameriereHtml(p,roomFilter){
   const rows=[];
   conf.forEach(grp=>grp.list.forEach((name,idx)=>rows.push({name,grp:grp.g,isFirst:idx===0,grpSize:grp.list.length})));
   const hwCounts={},hwDays={};
+  let lastDayWithData=0;
   rows.forEach((row,ri)=>{
     if(roomFilter&&!roomFilter(row))return;
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
       if(!v)return;
+      if(d>lastDayWithData)lastDayWithData=d;
       v.split('/').forEach(k=>{
         const t=k.trim();if(!t)return;
         if(!HKP_SYM[t]){hwCounts[t]=(hwCounts[t]||0)+1;(hwDays[t]=hwDays[t]||new Set()).add(d);}
@@ -957,7 +959,9 @@ function hkpMonthlyCameriereHtml(p,roomFilter){
   });
   const sortedHw=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
   if(!sortedHw.length)return'';
-  let h='<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+  const MON_IT_FULL=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  let h=`<div style="font-size:10.5px;color:var(--text-dim);margin-bottom:8px;">Dati dall'1 al ${lastDayWithData} ${MON_IT_FULL[mo-1]} ${yr}</div>`;
+  h+='<div style="display:flex;flex-wrap:wrap;gap:8px;">';
   sortedHw.forEach(([init,cnt])=>{
     const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
     const gg=hwDays[init]?hwDays[init].size:0;
