@@ -2214,7 +2214,7 @@ function renderHkWeekViewContainer(){
       ${row('Partenze',totPartM,totPartA)}
       ${row('Fermate',totFermM,totFermA)}
       <div style="border-top:1px solid var(--border-light);padding-top:8px;margin-bottom:8px;">${row('Totali',totM,totA)}</div>
-      <div style="border-top:1px solid var(--border-light);padding-top:8px;margin-bottom:10px;"><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Bilanciamento</div><div style="font-size:16px;font-weight:700;color:${diffColor};">${diffTxt}</div></div>
+      <div style="border-top:1px solid var(--border-light);padding-top:8px;margin-bottom:10px;"><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Bilanciamento</div><div style="font-size:16px;font-weight:700;color:${diffColor};margin-top:6px;">${diffTxt}</div></div>
       <button onclick="setView('hkpsheet')" style="font-size:var(--fs-xs);padding:9px 16px;border:1px solid var(--accent);border-radius:7px;background:var(--accent-bg);color:var(--accent);cursor:pointer;font-weight:600;white-space:nowrap;">Operativa Housekeeping SoulArt</button>
     </div>
   </div>`;
