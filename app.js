@@ -5558,8 +5558,8 @@ function arriviUpdateKpi(){
         html+=`<div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">In fermata <span style="background:var(--accent);color:#fff;border-radius:6px;padding:0 6px;">${bkFermate.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
       }
       if(bkPartenze.length>0){
-        const chips=bkPartenze.map(p=>`<span style="padding:3px 10px;border-radius:10px;background:#FFFBEB;color:#92400E;font-size:var(--fs-xxs);font-weight:600;border:1px solid #FDE68A;">↑ ${p.camera}${p.ospite?' · '+p.ospite.split(' ')[0]:''}</span>`).join('');
-        html+=`<div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Check-out — recensioni attese <span style="background:#D97706;color:#fff;border-radius:6px;padding:0 6px;">${bkPartenze.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
+        const chips=bkPartenze.map(p=>`<span style="padding:3px 10px;border-radius:10px;background:var(--accent-bg);color:var(--accent);font-size:var(--fs-xxs);font-weight:600;border:1px solid #B8CEEE;">↑ ${p.camera}${p.ospite?' · '+p.ospite.split(' ')[0]:''}</span>`).join('');
+        html+=`<div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Check-out — recensioni attese <span style="background:var(--accent);color:#fff;border-radius:6px;padding:0 6px;">${bkPartenze.length}</span></div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips}</div></div>`;
       }
       html+=`</div></div>`;
       ovBox.innerHTML=html;
