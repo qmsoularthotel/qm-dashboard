@@ -2324,8 +2324,8 @@ function renderHkWeekViewContainer(){
     </div>`;
   return`<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:14px;display:flex;align-items:stretch;gap:0;">
     <div style="min-width:0;width:100%;">
-      <div class="kpi-label" style="margin-bottom:2px;">Vista settimanale (carico pesato)</div>
-      <div style="font-size:10.5px;color:var(--text-dim);margin-bottom:8px;">Il numero sopra ogni colonna non è il totale camere: una partenza (pulizia completa) pesa 2, una fermata (rifacimento) pesa 1 — es. 6 partenze + 3 fermate = 15.</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Vista settimanale (carico pesato)</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text-muted);line-height:1.5;margin-bottom:10px;">Il numero sopra ogni colonna non è il totale camere: una partenza (pulizia completa) pesa 2, una fermata (rifacimento) pesa 1 — es. 6 partenze + 3 fermate = 15.</div>
       <div id="hk-week-chart" style="width:100%;box-sizing:border-box;height:300px;display:flex;flex-direction:column;"></div>
     </div>
     <div style="flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:0 0 0 14px;border-left:1px solid var(--border-light);margin-left:8px;min-width:170px;">
