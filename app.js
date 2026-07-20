@@ -2190,14 +2190,15 @@ function renderHkWeekViewContainer(){
     <div style="flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:0 0 0 28px;border-left:1px solid var(--border-light);margin-left:20px;min-width:180px;">
       <div class="kpi-label" style="margin-bottom:8px;">Totale settimana</div>
       <div style="margin-bottom:10px;"><div style="font-size:11px;color:var(--text-dim);">Matarese</div><div style="font-size:26px;font-weight:300;line-height:1;color:var(--accent);">${totM}</div></div>
-      <div style="margin-bottom:10px;"><div style="font-size:11px;color:var(--text-dim);">Altre housekeeper</div><div style="font-size:26px;font-weight:300;line-height:1;color:var(--accent);">${totA}</div></div>
+      <div style="margin-bottom:10px;"><div style="font-size:11px;color:var(--text-dim);">Altre housekeeper</div><div style="font-size:26px;font-weight:300;line-height:1;color:var(--green);">${totA}</div></div>
       <div style="border-top:1px solid var(--border-light);padding-top:8px;"><div style="font-size:11px;color:var(--text-dim);">Bilanciamento</div><div style="font-size:14px;font-weight:700;color:${diffColor};">${diffTxt}</div></div>
     </div>
   </div>`;
 }
 // Matarese e Altre come due colonne affiancate per giorno (non barra+linea) — stessa
-// griglia/etichette/font del grafico standard (_bkfChartRender), stessi colori Compass
-// già usati altrove (accent navy + gold) per un confronto neutro fra le due categorie.
+// griglia/etichette/font del grafico standard (_bkfChartRender). Colori: quelli già
+// stabiliti nel riquadro Housekeeping stesso (accent navy e verde di "Fermata"), non
+// nuovi colori introdotti solo per questo grafico.
 function renderHkWeekChart(activeIdx){
   const el=document.getElementById('hk-week-chart');if(!el)return;
   const pts=pianoData.giorni.map(g=>{
@@ -2223,13 +2224,13 @@ function renderHkWeekChart(activeIdx){
     const x=sx(i),isActive=i===activeIdx;
     const ym=sy(p.cm),ya=sy(p.ca);
     svg+=`<rect x="${x-barW-1}" y="${ym}" width="${barW}" height="${sy(0)-ym}" rx="3" fill="var(--accent)" opacity="${isActive?1:.55}"/>`;
-    svg+=`<rect x="${x+1}" y="${ya}" width="${barW}" height="${sy(0)-ya}" rx="3" fill="var(--gold)" opacity="${isActive?1:.55}"/>`;
+    svg+=`<rect x="${x+1}" y="${ya}" width="${barW}" height="${sy(0)-ya}" rx="3" fill="var(--green)" opacity="${isActive?1:.55}"/>`;
     svg+=`<text x="${x}" y="${H-8}" font-size="11" fill="${isActive?'var(--accent)':'var(--text-dim)'}" font-weight="${isActive?'700':'400'}" text-anchor="middle">${p.label}</text>`;
   });
   svg+='</svg>';
   el.innerHTML=`${svg}<div style="display:flex;gap:14px;flex-shrink:0;margin-top:2px;">
     <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:10px;background:var(--accent);border-radius:2px;display:inline-block;"></span>Matarese</span>
-    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:10px;background:var(--gold);border-radius:2px;display:inline-block;"></span>Altre housekeeper</span>
+    <span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--text-dim);"><span style="width:10px;height:10px;background:var(--green);border-radius:2px;display:inline-block;"></span>Altre housekeeper</span>
   </div>`;
 }
 
