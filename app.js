@@ -2185,17 +2185,16 @@ function hkCarico(rooms){
 // Stesso schema di "Andamento occupazione settimanale": grafico a sinistra, dati a
 // destra separati da un bordo, stessa altezza (240px).
 function renderHkWeekViewContainer(){
-  let totPartM=0,totFermM=0,totPartA=0,totFermA=0,caricoM=0,caricoA=0;
+  let totPartM=0,totFermM=0,totPartA=0,totFermA=0;
   pianoData.giorni.forEach(g=>{
     const{m,a}=splitSoulart(g.soulart||{});
     totPartM+=(m.partenze?.length||0)+(m.cambi?.length||0);
     totFermM+=(m.fermate?.length||0);
     totPartA+=(a.partenze?.length||0)+(a.cambi?.length||0);
     totFermA+=(a.fermate?.length||0);
-    caricoM+=hkCarico(m);caricoA+=hkCarico(a);
   });
   const totM=totPartM+totFermM,totA=totPartA+totFermA;
-  const diff=caricoM-caricoA;
+  const diff=totM-totA;
   const diffTxt=diff===0?'Bilanciato':(diff>0?`Matarese +${diff} rispetto ad Altre`:`Altre +${-diff} rispetto a Matarese`);
   const diffColor=Math.abs(diff)<=2?'var(--green)':'var(--amber)';
   const row=(lbl,vM,vA)=>`<div style="margin-bottom:10px;">
