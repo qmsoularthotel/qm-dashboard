@@ -2158,6 +2158,56 @@ function splitSoulart(rooms){
   (rooms.fermate||[]).forEach(r=>(MATARESE.has(r)?m:a).fermate.push(r));
   return{m,a};
 }
+// Carico pesato: una partenza (pulizia completa) pesa il doppio di una fermata
+// (rifacimento/ripasso) — stima approssimativa per confrontare il carico reale,
+// non solo il numero di camere.
+const HK_WEIGHT_PARTENZA=2,HK_WEIGHT_FERMATA=1;
+function hkCarico(rooms){
+  const nPart=(rooms.partenze?.length||0)+(rooms.cambi?.length||0);
+  const nFerm=rooms.fermate?.length||0;
+  return nPart*HK_WEIGHT_PARTENZA+nFerm*HK_WEIGHT_FERMATA;
+}
+function renderHkWeekView(activeIdx){
+  const days=pianoData.giorni;
+  const loads=days.map(g=>{const{m,a}=splitSoulart(g.soulart||{});return{cm:hkCarico(m),ca:hkCarico(a)};});
+  const max=Math.max(1,...loads.map(l=>Math.max(l.cm,l.ca)));
+  const H=40;
+  const bars=days.map((g,i)=>{
+    const isActive=i===activeIdx;
+    const dayName=(g.label?g.label.split(' ')[0]:'?').substring(0,3);
+    const hM=Math.round((loads[i].cm/max)*H),hA=Math.round((loads[i].ca/max)*H);
+    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:28px;text-align:center;cursor:pointer;">
+      <div style="display:flex;align-items:flex-end;justify-content:center;gap:2px;height:${H}px;margin-bottom:4px;">
+        <div style="width:8px;height:${hM}px;background:var(--accent);border-radius:2px 2px 0 0;opacity:${isActive?1:.45};"></div>
+        <div style="width:8px;height:${hA}px;background:var(--gold);border-radius:2px 2px 0 0;opacity:${isActive?1:.45};"></div>
+      </div>
+      <div style="font-size:9px;font-weight:${isActive?700:400};color:${isActive?'var(--accent)':'var(--text-dim)'};">${dayName}</div>
+    </div>`;
+  }).join('');
+  return`<div style="margin-top:14px;">
+    <div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;">Vista settimanale (carico pesato)</div>
+    <div style="display:flex;gap:4px;align-items:flex-end;">${bars}</div>
+    <div style="display:flex;gap:14px;margin-top:6px;">
+      <span style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text-dim);"><span style="width:8px;height:8px;background:var(--accent);border-radius:2px;display:inline-block;"></span>Matarese</span>
+      <span style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text-dim);"><span style="width:8px;height:8px;background:var(--gold);border-radius:2px;display:inline-block;"></span>Altre</span>
+    </div>
+  </div>`;
+}
+function renderHkHistoryTotal(){
+  let totM=0,totA=0;
+  pianoData.giorni.forEach(g=>{
+    const{m,a}=splitSoulart(g.soulart||{});
+    totM+=hkCarico(m);totA+=hkCarico(a);
+  });
+  const diff=totM-totA;
+  const diffTxt=diff===0?'Bilanciato':(diff>0?`Matarese +${diff}`:`Altre +${-diff}`);
+  const diffColor=Math.abs(diff)<=2?'var(--green)':'var(--amber)';
+  return`<div style="margin-top:14px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border-light);padding-top:12px;">
+    <div><div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Totale settimana — Matarese</div><div style="font-size:20px;font-weight:700;color:var(--accent);">${totM}</div></div>
+    <div><div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Totale settimana — Altre</div><div style="font-size:20px;font-weight:700;color:var(--gold);">${totA}</div></div>
+    <div style="margin-left:auto;text-align:right;"><div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Bilanciamento</div><div style="font-size:14px;font-weight:700;color:${diffColor};">${diffTxt}</div></div>
+  </div>`;
+}
 
 function renderPianoGiorno(elId,refDate,forceIdx){
   const el=document.getElementById(elId);if(!el)return;
@@ -2195,14 +2245,22 @@ function renderPianoGiorno(elId,refDate,forceIdx){
       ?`<span style="position:relative;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;font-weight:700;padding:4px 16px 4px 10px;border-radius:7px;">${r} ⇄<span style="position:absolute;top:3px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--red);animation:ucDotBlink 1.1s ease-in-out infinite;"></span></span>`
       :`<span style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;">${r}</span>`;
     const nPart=cambi.length+partenze.length;
+    const carico=hkCarico({partenze,cambi,fermate});
     let h=`<div style="flex:1;min-width:0;">
       <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">${name}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         ${nPart?`<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--text);">🛫 ${nPart} partenz${nPart===1?'a':'e'}</span>`:''}
         ${fermate.length?`<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--green-bg);border:1px solid var(--green);color:var(--green);">🛏 ${fermate.length} fermat${fermate.length===1?'a':'e'}</span>`:''}
+        <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);" title="Carico pesato: partenza=${HK_WEIGHT_PARTENZA}, fermata=${HK_WEIGHT_FERMATA}">⚖ ${carico}</span>
       </div>`;
-    if(nPart)h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">${partenze.map(r=>chip(r,false)).join('')}${cambi.map(r=>chip(r,true)).join('')}</div>`;
-    if(fermate.length)h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;">${fermate.map(r=>`<span style="background:var(--green-bg);border:1px solid var(--green);color:var(--green);font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;">${r}</span>`).join('')}</div>`;
+    if(nPart){
+      h+=`<div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;">🛫 Partenze</div>`;
+      h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">${partenze.map(r=>chip(r,false)).join('')}${cambi.map(r=>chip(r,true)).join('')}</div>`;
+    }
+    if(fermate.length){
+      h+=`<div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;">🛏 Fermate</div>`;
+      h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;">${fermate.map(r=>`<span style="background:var(--green-bg);border:1px solid var(--green);color:var(--green);font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;">${r}</span>`).join('')}</div>`;
+    }
     h+=`</div>`;return h;
   }
   const lib=giorno.liborio||{partenze:[],fermate:[],cambi:[]};
@@ -2224,12 +2282,21 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   const mCard=renderCameriera('Matarese',m),aCard=renderCameriera('Altre housekeeper',a);
   if(mCard||aCard){
     mHtml=`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
-      <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">👥 Suddivisione cameriere — SoulArt</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">👥 Suddivisione cameriere — SoulArt</span>
+        <div style="display:flex;align-items:center;gap:4px;margin-left:auto;">
+          <button onclick="pianoPrevDay()" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer;font-size:14px;color:var(--text-dim);">‹</button>
+          <span style="font-size:var(--fs-xxs);color:var(--text-dim);min-width:60px;text-align:center;">${giorno.label||'—'}</span>
+          <button onclick="pianoNextDay()" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer;font-size:14px;color:var(--text-dim);">›</button>
+        </div>
+      </div>
       <div style="display:flex;gap:20px;align-items:stretch;">
         ${mCard||'<div style="flex:1;"></div>'}
         <div style="width:1px;background:var(--border-light);flex-shrink:0;"></div>
         ${aCard||'<div style="flex:1;"></div>'}
       </div>
+      ${renderHkWeekView(idx)}
+      ${renderHkHistoryTotal()}
     </div>`;
   }
   el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}`;
