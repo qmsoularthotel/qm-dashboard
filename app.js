@@ -2190,8 +2190,8 @@ function renderHkWeekViewContainer(){
   const row=(lbl,vM,vA)=>`<div style="margin-bottom:8px;">
       <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px;">${lbl}</div>
       <div style="display:flex;gap:16px;">
-        <span style="font-size:15px;font-weight:700;color:var(--accent);">${vM}</span>
-        <span style="font-size:15px;font-weight:700;color:#5b7ca3;">${vA}</span>
+        <span style="font-size:15px;font-weight:700;color:var(--accent);">${vM} <span style="font-size:9px;font-weight:600;color:var(--text-dim);">Matarese</span></span>
+        <span style="font-size:15px;font-weight:700;color:#5b7ca3;">${vA} <span style="font-size:9px;font-weight:600;color:var(--text-dim);">Altre</span></span>
       </div>
     </div>`;
   return`<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:14px;display:flex;align-items:stretch;gap:0;">
