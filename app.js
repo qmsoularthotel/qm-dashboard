@@ -931,6 +931,16 @@ async function hkpNSyncFromCloud(p){
 // Card "Riepilogo cameriere" (camere assegnate nel mese) — estratta da hkpNRenderGrid
 // per essere riusata anche nella card Housekeeping di Overview, stessa fonte dati
 // (Operativa Housekeeping) e stesso mese attualmente selezionato lì.
+// Stato aperto/chiuso delle card "Riepilogo mensile" in Overview — persiste tra un
+// re-render e l'altro della card Housekeeping (cambio giorno ecc.), chiuso di default.
+let _hkMonthlyOpen={sa:false,bh:false};
+function hkMonthlyToggle(key){
+  _hkMonthlyOpen[key]=!_hkMonthlyOpen[key];
+  const body=document.getElementById('hk-monthly-'+key);
+  const chev=document.getElementById('hk-monthly-chev-'+key);
+  if(body)body.style.display=_hkMonthlyOpen[key]?'block':'none';
+  if(chev)chev.style.transform=_hkMonthlyOpen[key]?'rotate(180deg)':'';
+}
 function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel,capacity){
   presenceLabel=presenceLabel||'presenza';
   const tab='camere';
@@ -2393,20 +2403,32 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   }
   // Replica delle card "Riepilogo cameriere" di Operativa Housekeeping — SoulArt e
   // Boutique/San Liborio (stessa fonte dati e stesso mese selezionato lì), per non
-  // dover aprire quella vista.
+  // dover aprire quella vista. Mostrate come due card cliccabili (chiuse di default,
+  // stato ricordato in _hkMonthlyOpen) invece che sempre aperte — "Suddivisione
+  // cameriere" sopra resta invece sempre visibile perché usata di continuo.
   const monthlyCardsSa=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'),'al SoulArt',22);
-  const monthlyHtmlSa=monthlyCardsSa?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
-    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">🧹 Riepilogo cameriere — SoulArt</div>
-    <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Solo camere SoulArt (Art).<br>Per il totale con anche il Boutique: vedi Operativa Housekeeping.</div>
-    ${monthlyCardsSa}
-  </div>`:'';
   const monthlyCardsBh=hkpMonthlyCameriereHtml('sa',row=>!row.name.toUpperCase().startsWith('ART'),'al Boutique',11);
-  const monthlyHtmlBh=monthlyCardsBh?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
-    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">🧹 Riepilogo cameriere — Boutique</div>
-    <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Solo camere Boutique (200) e San Liborio.<br>Per il totale con anche il SoulArt: vedi Operativa Housekeeping.</div>
-    ${monthlyCardsBh}
+  const _hkTile=(key,label,sub)=>`<div onclick="hkMonthlyToggle('${key}')" style="flex:1;background:#fff;border:1px solid var(--border-light);border-radius:9px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:18px;">🧹</span>
+    <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--text);">${label}</div><div style="font-size:10.5px;color:var(--text-dim);">${sub}</div></div>
+    <span id="hk-monthly-chev-${key}" style="font-size:11px;color:var(--text-dim);transition:transform .2s;${_hkMonthlyOpen[key]?'transform:rotate(180deg);':''}">▾</span>
+  </div>`;
+  const monthlyHtml=(monthlyCardsSa||monthlyCardsBh)?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Riepiloghi mensili</div>
+    <div style="display:flex;gap:10px;">
+      ${monthlyCardsSa?_hkTile('sa','Riepilogo SoulArt','Camere Art · mese in corso'):''}
+      ${monthlyCardsBh?_hkTile('bh','Riepilogo Boutique','Camere 200 + Liborio · mese in corso'):''}
+    </div>
+    ${monthlyCardsSa?`<div id="hk-monthly-sa" style="display:${_hkMonthlyOpen.sa?'block':'none'};margin-top:12px;">
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Solo camere SoulArt (Art).<br>Per il totale con anche il Boutique: vedi Operativa Housekeeping.</div>
+      ${monthlyCardsSa}
+    </div>`:''}
+    ${monthlyCardsBh?`<div id="hk-monthly-bh" style="display:${_hkMonthlyOpen.bh?'block':'none'};margin-top:12px;">
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Solo camere Boutique (200) e San Liborio.<br>Per il totale con anche il SoulArt: vedi Operativa Housekeeping.</div>
+      ${monthlyCardsBh}
+    </div>`:''}
   </div>`:'';
-  el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}${monthlyHtmlSa}${monthlyHtmlBh}`;
+  el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}${monthlyHtml}`;
   if(mCard||aCard)renderHkWeekChart(idx);
 }
 
