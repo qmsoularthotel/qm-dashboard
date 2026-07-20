@@ -928,6 +928,42 @@ async function hkpNSyncFromCloud(p){
     if(HKP_NTAB[p]!=='fondi')hkpNRenderGrid(p,HKP_NTAB[p]);
   }catch(e){}
 }
+// Card "Riepilogo cameriere" (camere assegnate nel mese) — estratta da hkpNRenderGrid
+// per essere riusata anche nella card Housekeeping di Overview, stessa fonte dati
+// (Operativa Housekeeping) e stesso mese attualmente selezionato lì.
+function hkpMonthlyCameriereHtml(p){
+  const tab='camere';
+  const conf=HKP_ROOMS[p][tab];
+  const [yr,mo]=hkpNCurMon(p).split('-').map(Number);
+  const daysInMonth=new Date(yr,mo,0).getDate();
+  const days=[];for(let d=1;d<=daysInMonth;d++)days.push(d);
+  const rows=[];
+  conf.forEach(grp=>grp.list.forEach((name,idx)=>rows.push({name,grp:grp.g,isFirst:idx===0,grpSize:grp.list.length})));
+  const hwCounts={},hwDays={};
+  rows.forEach((row,ri)=>{
+    days.forEach(d=>{
+      const v=hkpNGetCell(p,tab,ri,d);
+      if(!v)return;
+      v.split('/').forEach(k=>{
+        const t=k.trim();if(!t)return;
+        if(!HKP_SYM[t]){hwCounts[t]=(hwCounts[t]||0)+1;(hwDays[t]=hwDays[t]||new Set()).add(d);}
+      });
+    });
+  });
+  const sortedHw=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
+  if(!sortedHw.length)return'';
+  let h='<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+  sortedHw.forEach(([init,cnt])=>{
+    const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
+    const gg=hwDays[init]?hwDays[init].size:0;
+    const media=gg?(cnt/gg).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
+    h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid var(--border-light,#dde2ea);display:flex;align-items:center;gap:10px;">';
+    h+='<span style="display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);font-size:11px;font-weight:500;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
+    h+='<div><div style="font-size:21px;font-weight:400;line-height:1.1;color:var(--text,#0c1f33);">'+cnt+'</div><div style="font-size:11.5px;color:var(--text-dim,#888880);margin-top:1px;">'+fullName+'</div><div style="font-size:10.5px;color:var(--green,#2e7d32);font-weight:500;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div><div style="font-size:10.5px;color:var(--accent,#1c3a5e);font-weight:500;margin-top:1px;">'+media+' camere/giorno</div></div></div>';
+  });
+  h+='</div>';
+  return h;
+}
 function hkpNRenderGrid(p,tab){
   const el=document.getElementById('hkpN-'+p+'-body');
   if(!el)return;
@@ -1112,19 +1148,8 @@ function hkpNRenderGrid(p,tab){
     h+=hkpNRenderAreaMatrixHTML(p,tab,rows,days,'screen');
   } else {
     // Riepilogo cameriere: card camere assegnate (senza colori, nome esteso) separate da card simboli (RP/ND/LIB)
-    const sortedHw=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
-    if(sortedHw.length){
-      h+='<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;">';
-      sortedHw.forEach(([init,cnt])=>{
-        const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
-        const gg=hwDays[init]?hwDays[init].size:0;
-        const media=gg?(cnt/gg).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
-        h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid var(--border-light,#dde2ea);display:flex;align-items:center;gap:10px;">';
-        h+='<span style="display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);font-size:11px;font-weight:500;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
-        h+='<div><div style="font-size:21px;font-weight:400;line-height:1.1;color:var(--text,#0c1f33);">'+cnt+'</div><div style="font-size:11.5px;color:var(--text-dim,#888880);margin-top:1px;">'+fullName+'</div><div style="font-size:10.5px;color:var(--green,#2e7d32);font-weight:500;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div><div style="font-size:10.5px;color:var(--accent,#1c3a5e);font-weight:500;margin-top:1px;">'+media+' camere/giorno</div></div></div>';
-      });
-      h+='</div>';
-    }
+    const cardsHtml=hkpMonthlyCameriereHtml(p);
+    if(cardsHtml)h+='<div style="margin-top:12px;">'+cardsHtml+'</div>';
   }
   const sortedSym=Object.entries(symCounts).sort((a,b)=>b[1]-a[1]);
   if(sortedSym.length){
@@ -2347,7 +2372,14 @@ function renderPianoGiorno(elId,refDate,forceIdx){
       ${renderHkWeekViewContainer()}
     </div>`;
   }
-  el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}`;
+  // Replica delle card "Riepilogo cameriere" di Operativa Housekeeping — SoulArt
+  // (stessa fonte dati e stesso mese selezionato lì), per non dover aprire quella vista.
+  const monthlyCards=hkpMonthlyCameriereHtml('sa');
+  const monthlyHtml=monthlyCards?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">🧹 Riepilogo cameriere — SoulArt</div>
+    ${monthlyCards}
+  </div>`:'';
+  el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}${monthlyHtml}`;
   if(mCard||aCard)renderHkWeekChart(idx);
 }
 
