@@ -2174,14 +2174,26 @@ function hkCarico(rooms){
 // Stesso schema di "Andamento occupazione settimanale": grafico a sinistra, dati a
 // destra separati da un bordo, stessa altezza (240px).
 function renderHkWeekViewContainer(){
-  let totM=0,totA=0;
+  let totPartM=0,totFermM=0,totPartA=0,totFermA=0,caricoM=0,caricoA=0;
   pianoData.giorni.forEach(g=>{
     const{m,a}=splitSoulart(g.soulart||{});
-    totM+=hkCarico(m);totA+=hkCarico(a);
+    totPartM+=(m.partenze?.length||0)+(m.cambi?.length||0);
+    totFermM+=(m.fermate?.length||0);
+    totPartA+=(a.partenze?.length||0)+(a.cambi?.length||0);
+    totFermA+=(a.fermate?.length||0);
+    caricoM+=hkCarico(m);caricoA+=hkCarico(a);
   });
-  const diff=totM-totA;
+  const totM=totPartM+totFermM,totA=totPartA+totFermA;
+  const diff=caricoM-caricoA;
   const diffTxt=diff===0?'Bilanciato':(diff>0?`Matarese +${diff}`:`Altre +${-diff}`);
   const diffColor=Math.abs(diff)<=2?'var(--green)':'var(--amber)';
+  const row=(lbl,vM,vA)=>`<div style="margin-bottom:8px;">
+      <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px;">${lbl}</div>
+      <div style="display:flex;gap:16px;">
+        <span style="font-size:15px;font-weight:700;color:var(--accent);">${vM}</span>
+        <span style="font-size:15px;font-weight:700;color:#5b7ca3;">${vA}</span>
+      </div>
+    </div>`;
   return`<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:14px;display:flex;align-items:stretch;gap:0;">
     <div style="min-width:0;width:100%;">
       <div class="kpi-label" style="margin-bottom:8px;">Vista settimanale (carico pesato)</div>
@@ -2189,11 +2201,11 @@ function renderHkWeekViewContainer(){
     </div>
     <div style="flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:0 0 0 14px;border-left:1px solid var(--border-light);margin-left:8px;min-width:170px;">
       <div class="kpi-label" style="margin-bottom:8px;">Totale settimana</div>
-      <div style="display:flex;gap:20px;margin-bottom:10px;">
-        <div><div style="font-size:11px;color:var(--text-dim);">Matarese</div><div style="font-size:26px;font-weight:300;line-height:1;color:var(--accent);">${totM}</div></div>
-        <div><div style="font-size:11px;color:var(--text-dim);">Altre housekeeper</div><div style="font-size:26px;font-weight:300;line-height:1;color:#99a6b7;">${totA}</div></div>
-      </div>
-      <div style="border-top:1px solid var(--border-light);padding-top:8px;"><div style="font-size:11px;color:var(--text-dim);">Bilanciamento</div><div style="font-size:14px;font-weight:700;color:${diffColor};">${diffTxt}</div></div>
+      ${row('Partenze',totPartM,totPartA)}
+      ${row('Fermate',totFermM,totFermA)}
+      <div style="border-top:1px solid var(--border-light);padding-top:8px;margin-bottom:8px;">${row('Totali',totM,totA)}</div>
+      <div style="border-top:1px solid var(--border-light);padding-top:8px;margin-bottom:10px;"><div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Bilanciamento</div><div style="font-size:14px;font-weight:700;color:${diffColor};">${diffTxt}</div></div>
+      <button onclick="setView('hkpsheet')" style="font-size:var(--fs-xxs);padding:6px 12px;border:1px solid var(--accent);border-radius:7px;background:var(--accent-bg);color:var(--accent);cursor:pointer;font-weight:600;white-space:nowrap;">🧹 Operativa Housekeeping SoulArt</button>
     </div>
   </div>`;
 }
