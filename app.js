@@ -2158,18 +2158,19 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   function sortRooms(arr){return[...arr].sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''))||0,nb=parseInt(b.replace(/\D/g,''))||0;return na-nb;});}
   function renderHotel(label,data){
     const cambi=sortRooms(data.cambi||[]),partenze=sortRooms(data.partenze||[]),fermate=sortRooms(data.fermate||[]);
-    const tuttePartenze=sortRooms([...cambi,...partenze]);
-    if(!tuttePartenze.length&&!fermate.length)return'';
-    // Pillole conteggi: Partenza senza arrivo / Partenza con arrivo / Fermata
+    if(!cambi.length&&!partenze.length&&!fermate.length)return'';
+    const dot=`<span style="position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--red);animation:ucDotBlink 1.1s ease-in-out infinite;"></span>`;
+    // Pillole conteggi: Partenza senza arrivo (neutra) / Partenza con arrivo (neutra + pallino rosso lampeggiante) / Fermata (verde)
     let h=`<div style="margin-bottom:10px;">
       <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">${label}</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-        ${partenze.length?`<div style="text-align:center;background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:6px 14px;"><div style="font-size:9px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.03em;">Partenza senza arrivo</div><div style="font-size:17px;font-weight:700;color:var(--amber);">${partenze.length}</div></div>`:''}
-        ${cambi.length?`<div style="text-align:center;background:#fce8e8;border:1px solid var(--red);border-radius:8px;padding:6px 14px;"><div style="font-size:9px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.03em;">Partenza con arrivo</div><div style="font-size:17px;font-weight:700;color:var(--red);">${cambi.length}</div></div>`:''}
-        ${fermate.length?`<div style="text-align:center;background:var(--accent-bg);border:1px solid var(--accent);border-radius:8px;padding:6px 14px;"><div style="font-size:9px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.03em;">Fermata</div><div style="font-size:17px;font-weight:700;color:var(--accent);">${fermate.length}</div></div>`:''}
+        ${partenze.length?`<div style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;"><div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Partenza senza arrivo</div><div style="font-size:17px;font-weight:700;color:var(--text);">${partenze.length}</div></div>`:''}
+        ${cambi.length?`<div style="position:relative;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;">${dot}<div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Partenza con arrivo</div><div style="font-size:17px;font-weight:700;color:var(--text);">${cambi.length}</div></div>`:''}
+        ${fermate.length?`<div style="text-align:center;background:var(--green-bg);border:1px solid var(--green);border-radius:8px;padding:6px 14px;"><div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.03em;">Fermata</div><div style="font-size:17px;font-weight:700;color:var(--green);">${fermate.length}</div></div>`:''}
       </div>`;
-    if(tuttePartenze.length)h+=`<div style="margin-bottom:6px;"><div style="display:flex;flex-wrap:wrap;gap:5px;">${tuttePartenze.map(r=>{const isCambio=cambi.includes(r);return`<span style="background:${isCambio?'#fce8e8':'var(--amber-bg)'};border:1px solid ${isCambio?'var(--red)':'var(--amber)'};color:${isCambio?'var(--red)':'var(--amber)'};font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;">${r}${isCambio?` ⇄`:''}</span>`;}).join('')}</div></div>`;
-    if(fermate.length)h+=`<div><div style="display:flex;flex-wrap:wrap;gap:5px;">${fermate.map(r=>`<span style="background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;">${r}</span>`).join('')}</div></div>`;
+    if(partenze.length)h+=`<div style="margin-bottom:6px;"><div style="display:flex;flex-wrap:wrap;gap:5px;">${partenze.map(r=>`<span style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;">${r}</span>`).join('')}</div></div>`;
+    if(cambi.length)h+=`<div style="margin-bottom:6px;"><div style="display:flex;flex-wrap:wrap;gap:5px;">${cambi.map(r=>`<span style="position:relative;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;font-weight:700;padding:4px 16px 4px 10px;border-radius:7px;">${r} ⇄<span style="position:absolute;top:3px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--red);animation:ucDotBlink 1.1s ease-in-out infinite;"></span></span>`).join('')}</div></div>`;
+    if(fermate.length)h+=`<div><div style="display:flex;flex-wrap:wrap;gap:5px;">${fermate.map(r=>`<span style="background:var(--green-bg);border:1px solid var(--green);color:var(--green);font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;">${r}</span>`).join('')}</div></div>`;
     h+=`</div>`;return h;
   }
   const lib=giorno.liborio||{partenze:[],fermate:[],cambi:[]};
