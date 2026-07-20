@@ -2198,11 +2198,11 @@ function renderHkWeekViewContainer(){
   const diff=caricoM-caricoA;
   const diffTxt=diff===0?'Bilanciato':(diff>0?`Matarese +${diff}`:`Altre +${-diff}`);
   const diffColor=Math.abs(diff)<=2?'var(--green)':'var(--amber)';
-  const row=(lbl,vM,vA)=>`<div style="margin-bottom:8px;">
-      <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px;">${lbl}</div>
-      <div style="display:flex;gap:16px;">
-        <span style="font-size:15px;font-weight:700;color:var(--accent);">${vM} <span style="font-size:9px;font-weight:600;color:var(--text-dim);">Matarese</span></span>
-        <span style="font-size:15px;font-weight:700;color:#5b7ca3;">${vA} <span style="font-size:9px;font-weight:600;color:var(--text-dim);">Altre</span></span>
+  const row=(lbl,vM,vA)=>`<div style="margin-bottom:10px;">
+      <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px;">${lbl}</div>
+      <div style="display:flex;gap:20px;align-items:baseline;">
+        <div><span style="font-size:22px;font-weight:300;line-height:1;color:var(--accent);">${vM}</span><div style="font-size:9px;color:var(--text-dim);margin-top:2px;">Matarese</div></div>
+        <div><span style="font-size:22px;font-weight:300;line-height:1;color:#5b7ca3;">${vA}</span><div style="font-size:9px;color:var(--text-dim);margin-top:2px;">Altre</div></div>
       </div>
     </div>`;
   return`<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:14px;display:flex;align-items:stretch;gap:0;">
@@ -2234,7 +2234,7 @@ function renderHkWeekChart(activeIdx){
   const W=600,H=290,PL0=34,PR0=14,PT=26,PB=28;
   const plotW0=W-PL0-PR0,plotH=H-PT-PB;
   const YMAX=Math.max(10,...pts.map(p=>Math.max(p.cm,p.ca)))+5;
-  const groupW=Math.min(46,plotW0/pts.length*0.6),barW=groupW/2-1;
+  const groupW=Math.min(58,plotW0/pts.length*0.72),barW=groupW/2-1;
   const PL=PL0+groupW/2,PR=PR0+groupW/2;
   const plotW=W-PL-PR;
   const sx=i=>PL+i/(pts.length-1||1)*plotW;
