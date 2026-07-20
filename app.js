@@ -2496,7 +2496,7 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   if(mCard||aCard)renderHkWeekChart(idx);
 }
 
-// Box "Distribuzione Culligan" — accanto al grafico occupazione in Situazione odierna.
+// Box "Distribuzione Culligan" — accanto al grafico occupazione in Piano del giorno.
 // Stessa fonte/logica dell'app smartphone (controllo-mattino.html → _applyPianoLibere)
 // prima di iniziare il ritiro: camere Art occupate secondo il Piano Settimana
 // (partenze+fermate+cambi), non il Riepilogo Reception (fonte diversa, numeri diversi).
@@ -3783,7 +3783,7 @@ function renderPulDay(silent){
   renderOvOccChart();
   if(!silent){const _pts=localStorage.getItem('qm_ts_pulTs');LS.set('pulData',{data:pulData,activeDay:pulActiveDay,ts:_pts?parseInt(_pts):Date.now()});}
 }
-// Grafico "Andamento occupazione settimanale" in Situazione odierna — stesso stile SVG
+// Grafico "Andamento occupazione settimanale" in Piano del giorno — stesso stile SVG
 // del grafico coperti Breakfast (_bkfChartRender), dati reali da pulData (Report pulizie):
 // occupazione % = min(CAP_CAMERE, fermate+arrivi)/CAP_CAMERE, camere libere = il complemento.
 function renderOvOccChart(){
