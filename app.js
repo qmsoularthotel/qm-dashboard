@@ -2225,8 +2225,8 @@ function renderHkWeekChart(activeIdx){
   pts.forEach((p,i)=>{
     const x=sx(i),isActive=i===activeIdx;
     const ym=sy(p.cm),ya=sy(p.ca);
-    svg+=`<rect x="${x-barW-1}" y="${ym}" width="${barW}" height="${sy(0)-ym}" rx="3" fill="var(--accent)" opacity="${isActive?1:.55}"/>`;
-    svg+=`<rect x="${x+1}" y="${ya}" width="${barW}" height="${sy(0)-ya}" rx="3" fill="#99a6b7" opacity="${isActive?1:.55}"/>`;
+    svg+=`<rect x="${x-barW-1}" y="${ym}" width="${barW}" height="${sy(0)-ym}" rx="4" fill="${isActive?'var(--accent)':'var(--accent-bg)'}" stroke="var(--accent)" stroke-width="1.5"/>`;
+    svg+=`<rect x="${x+1}" y="${ya}" width="${barW}" height="${sy(0)-ya}" rx="4" fill="${isActive?'#99a6b7':'#eef1f4'}" stroke="#99a6b7" stroke-width="1.5"/>`;
     svg+=`<text x="${x}" y="${H-8}" font-size="11" fill="${isActive?'var(--accent)':'var(--text-dim)'}" font-weight="${isActive?'700':'400'}" text-anchor="middle">${p.label}</text>`;
   });
   svg+='</svg>';
