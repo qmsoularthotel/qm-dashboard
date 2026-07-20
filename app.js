@@ -2167,31 +2167,22 @@ function hkCarico(rooms){
   const nFerm=rooms.fermate?.length||0;
   return nPart*HK_WEIGHT_PARTENZA+nFerm*HK_WEIGHT_FERMATA;
 }
-function renderHkWeekView(activeIdx){
-  const days=pianoData.giorni;
-  const loads=days.map(g=>{const{m,a}=splitSoulart(g.soulart||{});return{cm:hkCarico(m),ca:hkCarico(a)};});
-  const max=Math.max(1,...loads.map(l=>Math.max(l.cm,l.ca)));
-  const H=40;
-  const bars=days.map((g,i)=>{
-    const isActive=i===activeIdx;
-    const dayName=(g.label?g.label.split(' ')[0]:'?').substring(0,3);
-    const hM=Math.round((loads[i].cm/max)*H),hA=Math.round((loads[i].ca/max)*H);
-    return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:28px;text-align:center;cursor:pointer;">
-      <div style="display:flex;align-items:flex-end;justify-content:center;gap:2px;height:${H}px;margin-bottom:4px;">
-        <div style="width:8px;height:${hM}px;background:var(--accent);border-radius:2px 2px 0 0;opacity:${isActive?1:.45};"></div>
-        <div style="width:8px;height:${hA}px;background:var(--gold);border-radius:2px 2px 0 0;opacity:${isActive?1:.45};"></div>
-      </div>
-      <div style="font-size:9px;font-weight:${isActive?700:400};color:${isActive?'var(--accent)':'var(--text-dim)'};">${dayName}</div>
-    </div>`;
-  }).join('');
+// Contenitore per la vista settimanale — popolato via _bkfChartRender() (stesso motore
+// SVG di Breakfast/Occupazione: barra accent + linea rossa tratteggiata) subito dopo
+// che questo markup viene inserito nel DOM, così lo stile del grafico resta sempre
+// identico in tutta la dashboard invece di reinventarlo con div colorati ad-hoc.
+function renderHkWeekViewContainer(){
   return`<div style="margin-top:14px;">
     <div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;">Vista settimanale (carico pesato)</div>
-    <div style="display:flex;gap:4px;align-items:flex-end;">${bars}</div>
-    <div style="display:flex;gap:14px;margin-top:6px;">
-      <span style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text-dim);"><span style="width:8px;height:8px;background:var(--accent);border-radius:2px;display:inline-block;"></span>Matarese</span>
-      <span style="display:flex;align-items:center;gap:4px;font-size:9px;color:var(--text-dim);"><span style="width:8px;height:8px;background:var(--gold);border-radius:2px;display:inline-block;"></span>Altre</span>
-    </div>
+    <div id="hk-week-chart" style="width:100%;box-sizing:border-box;height:170px;display:flex;flex-direction:column;"></div>
   </div>`;
+}
+function renderHkWeekChart(activeIdx){
+  const pts=pianoData.giorni.map(g=>{
+    const{m,a}=splitSoulart(g.soulart||{});
+    return{label:(g.label?g.label.split(' ')[0]:'?').substring(0,3),v:hkCarico(m),nc:hkCarico(a)};
+  });
+  _bkfChartRender('hk-week-chart',pts,activeIdx,'Carica il piano settimana per vedere il grafico','Matarese','Altre housekeeper');
 }
 function renderHkHistoryTotal(){
   let totM=0,totA=0;
@@ -2295,11 +2286,12 @@ function renderPianoGiorno(elId,refDate,forceIdx){
         <div style="width:1px;background:var(--border-light);flex-shrink:0;"></div>
         ${aCard||'<div style="flex:1;"></div>'}
       </div>
-      ${renderHkWeekView(idx)}
+      ${renderHkWeekViewContainer()}
       ${renderHkHistoryTotal()}
     </div>`;
   }
   el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}`;
+  if(mCard||aCard)renderHkWeekChart(idx);
 }
 
 // Box "Distribuzione Culligan" — accanto al grafico occupazione in Situazione odierna.
