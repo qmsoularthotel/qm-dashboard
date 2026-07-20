@@ -2391,15 +2391,22 @@ function renderPianoGiorno(elId,refDate,forceIdx){
       ${renderHkWeekViewContainer()}
     </div>`;
   }
-  // Replica delle card "Riepilogo cameriere" di Operativa Housekeeping — SoulArt
-  // (stessa fonte dati e stesso mese selezionato lì), per non dover aprire quella vista.
-  const monthlyCards=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'),'al SoulArt',22);
-  const monthlyHtml=monthlyCards?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
+  // Replica delle card "Riepilogo cameriere" di Operativa Housekeeping — SoulArt e
+  // Boutique/San Liborio (stessa fonte dati e stesso mese selezionato lì), per non
+  // dover aprire quella vista.
+  const monthlyCardsSa=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'),'al SoulArt',22);
+  const monthlyHtmlSa=monthlyCardsSa?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
     <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">🧹 Riepilogo cameriere — SoulArt</div>
     <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Solo camere SoulArt (Art).<br>Per il totale con anche il Boutique: vedi Operativa Housekeeping.</div>
-    ${monthlyCards}
+    ${monthlyCardsSa}
   </div>`:'';
-  el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}${monthlyHtml}`;
+  const monthlyCardsBh=hkpMonthlyCameriereHtml('sa',row=>!row.name.toUpperCase().startsWith('ART'),'al Boutique',11);
+  const monthlyHtmlBh=monthlyCardsBh?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">🧹 Riepilogo cameriere — Boutique</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Solo camere Boutique (200) e San Liborio.<br>Per il totale con anche il SoulArt: vedi Operativa Housekeeping.</div>
+    ${monthlyCardsBh}
+  </div>`:'';
+  el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}${monthlyHtmlSa}${monthlyHtmlBh}`;
   if(mCard||aCard)renderHkWeekChart(idx);
 }
 
