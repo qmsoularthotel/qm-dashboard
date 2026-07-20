@@ -2367,6 +2367,8 @@ function renderHkWeekChart(activeIdx){
     const ym=sy(p.cm),ya=sy(p.ca);
     svg+=`<rect x="${x-barW-3}" y="${ym}" width="${barW}" height="${sy(0)-ym}" rx="4" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.5"/>`;
     svg+=`<rect x="${x+3}" y="${ya}" width="${barW}" height="${sy(0)-ya}" rx="4" fill="#e8f0f8" stroke="var(--accent)" stroke-width="1.5"/>`;
+    svg+=`<text x="${x-barW-3+barW/2}" y="${ym-6}" font-size="11" font-weight="700" fill="var(--accent)" text-anchor="middle">${p.cm}</text>`;
+    svg+=`<text x="${x+3+barW/2}" y="${ya-6}" font-size="11" font-weight="700" fill="var(--accent)" text-anchor="middle">${p.ca}</text>`;
     svg+=`<text x="${x}" y="${H-8}" font-size="11" fill="${isActive?'var(--accent)':'var(--text-dim)'}" font-weight="${isActive?'700':'400'}" text-anchor="middle">${p.label}</text>`;
   });
   svg+='</svg>';
