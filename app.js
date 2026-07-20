@@ -931,7 +931,8 @@ async function hkpNSyncFromCloud(p){
 // Card "Riepilogo cameriere" (camere assegnate nel mese) — estratta da hkpNRenderGrid
 // per essere riusata anche nella card Housekeeping di Overview, stessa fonte dati
 // (Operativa Housekeeping) e stesso mese attualmente selezionato lì.
-function hkpMonthlyCameriereHtml(p,roomFilter){
+function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel){
+  presenceLabel=presenceLabel||'presenza';
   const tab='camere';
   const conf=HKP_ROOMS[p][tab];
   const [yr,mo]=hkpNCurMon(p).split('-').map(Number);
@@ -960,7 +961,7 @@ function hkpMonthlyCameriereHtml(p,roomFilter){
   const sortedHw=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
   if(!sortedHw.length)return'';
   const MON_IT_FULL=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
-  let h=`<div style="font-size:10.5px;color:var(--text-dim);margin-bottom:8px;">Dati dall'1 al ${lastDayWithData} ${MON_IT_FULL[mo-1]} ${yr}</div>`;
+  let h=`<div style="font-size:10.5px;color:var(--text-dim);margin-bottom:8px;">Periodo: <strong style="color:var(--text-muted);font-weight:600;">1 – ${lastDayWithData} ${MON_IT_FULL[mo-1]} ${yr}</strong></div>`;
   h+='<div style="display:flex;flex-wrap:wrap;gap:8px;">';
   sortedHw.forEach(([init,cnt])=>{
     const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
@@ -968,7 +969,7 @@ function hkpMonthlyCameriereHtml(p,roomFilter){
     const media=gg?(cnt/gg).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
     h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid var(--border-light,#dde2ea);display:flex;align-items:center;gap:10px;">';
     h+='<span style="display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);font-size:11px;font-weight:500;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
-    h+='<div><div style="font-size:21px;font-weight:400;line-height:1.1;color:var(--text,#0c1f33);">'+cnt+'</div><div style="font-size:11.5px;color:var(--text-dim,#888880);margin-top:1px;">'+fullName+'</div><div style="font-size:10.5px;color:var(--green,#2e7d32);font-weight:500;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' presenza</div><div style="font-size:10.5px;color:var(--accent,#1c3a5e);font-weight:500;margin-top:1px;">'+media+' camere/giorno</div></div></div>';
+    h+='<div><div style="font-size:21px;font-weight:400;line-height:1.1;color:var(--text,#0c1f33);">'+cnt+'</div><div style="font-size:11.5px;color:var(--text-dim,#888880);margin-top:1px;">'+fullName+'</div><div style="font-size:10.5px;color:var(--green,#2e7d32);font-weight:500;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' '+presenceLabel+'</div><div style="font-size:10.5px;color:var(--accent,#1c3a5e);font-weight:500;margin-top:1px;">'+media+' camere/giorno</div></div></div>';
   });
   h+='</div>';
   return h;
@@ -2383,10 +2384,10 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   }
   // Replica delle card "Riepilogo cameriere" di Operativa Housekeeping — SoulArt
   // (stessa fonte dati e stesso mese selezionato lì), per non dover aprire quella vista.
-  const monthlyCards=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'));
+  const monthlyCards=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'),'al SoulArt');
   const monthlyHtml=monthlyCards?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
     <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">🧹 Riepilogo cameriere — SoulArt</div>
-    <div style="font-size:10.5px;color:var(--text-dim);margin-bottom:12px;">Conta solo le camere lavorate da ciascuna housekeeper al SoulArt (Art) — per il dato completo, incluso il Boutique, vedi Operativa Housekeeping.</div>
+    <div style="font-size:10.5px;color:var(--text-dim);margin-bottom:12px;line-height:1.5;">Solo camere SoulArt (Art).<br>Per il totale con anche il Boutique: vedi Operativa Housekeeping.</div>
     ${monthlyCards}
   </div>`:'';
   el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}${monthlyHtml}`;
