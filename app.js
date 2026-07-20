@@ -430,14 +430,24 @@ function sortDeptMembers(key,names,shifts){
   if(!cfg)return names;
   const namePriority=cfg.names||[];
   const codePriority=cfg.codes||[];
+  // Livello intermedio: nomi che iniziano con "Int" (interinali) vanno sempre subito
+  // dopo Maddaloni/Presta (o in prima posizione se entrambi assenti quel giorno),
+  // ma prima di tutti gli altri ordinati per codice turno. Solo per Ricevimento
+  // (unico reparto con namePriority configurata).
+  const hasIntTier=namePriority.length>0;
+  const isInt=n=>/^int/i.test(n.trim());
+  const tierOf=n=>{
+    const ni=namePriority.indexOf(n);
+    if(ni!==-1)return ni; // 0..namePriority.length-1
+    if(hasIntTier&&isInt(n))return 1000; // livello intermedio
+    return 2000; // tutti gli altri
+  };
   return names.map((n,i)=>({n,i})).sort((A,B)=>{
     const a=A.n,b=B.n;
-    const ai=namePriority.indexOf(a),bi=namePriority.indexOf(b);
-    if(ai!==-1||bi!==-1){
-      if(ai===-1)return 1;
-      if(bi===-1)return -1;
-      return ai-bi;
-    }
+    const ta=tierOf(a),tb=tierOf(b);
+    if(ta!==tb)return ta-tb;
+    if(ta===1000)return A.i-B.i; // più Int: ordine originale tra loro
+    if(ta<1000)return 0; // stesso nome in namePriority (non capita, ta è già indice univoco)
     const va=(getShift(shifts,a)||'').trim().toUpperCase();
     const vb=(getShift(shifts,b)||'').trim().toUpperCase();
     const ca=codePriority.indexOf(va),cb=codePriority.indexOf(vb);
