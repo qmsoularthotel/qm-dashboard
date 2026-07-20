@@ -484,6 +484,25 @@ function renderDay(idx){
   </div>`;
   html+=`<div class="non-servizio-strip" style="background:var(--surface2);border:1.5px solid var(--border);"><span class="ns-label" style="color:var(--text-muted);">Non in servizio</span>${nonServizioSorted.length?nonServizioSorted.map(n=>{const r=_absenceReason(getShift(shifts,n));return`<span class="ns-chip" style="color:var(--text);background:#fff;border:1px solid var(--border-light);display:inline-flex;align-items:center;gap:6px;">${n}${r.label?`<span style="font-size:10px;font-weight:800;padding:3px 9px;border-radius:14px;text-transform:uppercase;letter-spacing:.02em;background:${r.bg};color:${r.fg};">${r.label}</span>`:''}</span>`;}).join(''):`<span class="ns-chip" style="color:var(--text-dim);background:#fff;border:1px solid var(--border-light);">Tutti in servizio</span>`}</div>`;
   const shiftRow=(n,sv,cls)=>`<div class="staff-row" style="cursor:pointer;" title="Clicca per correggere" onclick="editShift(${idx},'${n.replace(/'/g,"\\'")}')"><span class="sname">${n}</span><span class="sshift ${cls}">${sv||'—'}</span></div>`;
+  // Raggruppa con una cornice verde sottile i colleghi consecutivi (dopo l'ordinamento)
+  // che hanno esattamente lo stesso valore turno (es. due "CG") — capita spesso e aiuta
+  // a vederli subito come coppia.
+  const renderStaffRows=(members)=>{
+    let out='';
+    let i=0;
+    while(i<members.length){
+      const sv=(getShift(shifts,members[i])||'').trim();
+      let j=i+1;
+      while(j<members.length&&sv&&(getShift(shifts,members[j])||'').trim().toUpperCase()===sv.toUpperCase())j++;
+      const groupRows=members.slice(i,j).map(m=>{
+        const smv=(getShift(shifts,m)||'').trim();
+        return shiftRow(m,smv,(!IS_REST(smv))?'ss-active':'ss-special');
+      }).join('');
+      out+=(j-i)>=2?`<div style="border:1.5px solid var(--green);border-radius:6px;margin:3px 0;overflow:hidden;">${groupRows}</div>`:groupRows;
+      i=j;
+    }
+    return out;
+  };
   html+='<div class="staff-grid">';
   Object.entries(DEPTS).forEach(([key,dept])=>{
     // Membri DEPTS in turno
@@ -500,7 +519,7 @@ function renderDay(idx){
     const showMembers=sortDeptMembers(key,[...inT,...extras],shifts);
     if(!showMembers.length)return;
     const inTCount=inT.length+extras.length;
-    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inTCount} in turno</span></div><div class="staff-list">${showMembers.map(n=>{const sv=(getShift(shifts,n)||'').trim();const isActive=!IS_REST(sv);return shiftRow(n,sv,isActive?'ss-active':'ss-special');}).join('')}</div></div>`;
+    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inTCount} in turno</span></div><div class="staff-list">${renderStaffRows(showMembers)}</div></div>`;
   });
   html+='</div>';area.innerHTML=html;
 }
