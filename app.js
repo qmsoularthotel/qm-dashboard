@@ -931,7 +931,7 @@ async function hkpNSyncFromCloud(p){
 // Card "Riepilogo cameriere" (camere assegnate nel mese) — estratta da hkpNRenderGrid
 // per essere riusata anche nella card Housekeeping di Overview, stessa fonte dati
 // (Operativa Housekeeping) e stesso mese attualmente selezionato lì.
-function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel){
+function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel,capacity){
   presenceLabel=presenceLabel||'presenza';
   const tab='camere';
   const conf=HKP_ROOMS[p][tab];
@@ -945,15 +945,18 @@ function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel){
   const rows=[];
   conf.forEach(grp=>grp.list.forEach((name,idx)=>rows.push({name,grp:grp.g,isFirst:idx===0,grpSize:grp.list.length})));
   const hwCounts={},hwDays={};
-  let lastDayWithData=0;
+  let lastDayWithData=0,libCount=0,occCount=0;
   rows.forEach((row,ri)=>{
     if(roomFilter&&!roomFilter(row))return;
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
       if(!v)return;
       if(d>lastDayWithData)lastDayWithData=d;
-      v.split('/').forEach(k=>{
-        const t=k.trim();if(!t)return;
+      const tokens=v.split('/').map(k=>k.trim()).filter(Boolean);
+      // Camere libere ("LIB") = non occupate quel giorno — usate per stimare il
+      // coefficiente di riempimento (solo se è indicata una capacità camere).
+      if(tokens.some(t=>t.toUpperCase()==='LIB'))libCount++;else occCount++;
+      tokens.forEach(t=>{
         if(!HKP_SYM[t]){hwCounts[t]=(hwCounts[t]||0)+1;(hwDays[t]=hwDays[t]||new Set()).add(d);}
       });
     });
@@ -961,7 +964,13 @@ function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel){
   const sortedHw=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
   if(!sortedHw.length)return'';
   const MON_IT_FULL=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
-  let h=`<div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">Periodo: <strong style="color:var(--text);font-weight:700;">1 – ${lastDayWithData} ${MON_IT_FULL[mo-1]} ${yr}</strong></div>`;
+  let occHtml='';
+  if(capacity){
+    const totRoomDays=libCount+occCount;
+    const occPct=totRoomDays?Math.round(occCount/totRoomDays*100):null;
+    if(occPct!==null)occHtml=` · <strong style="color:var(--accent);font-weight:700;">${occPct}%</strong> <span style="color:var(--text-dim);">riempimento (su ${capacity} camere)</span>`;
+  }
+  let h=`<div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">Periodo: <strong style="color:var(--text);font-weight:700;">1 – ${lastDayWithData} ${MON_IT_FULL[mo-1]} ${yr}</strong>${occHtml}</div>`;
   h+='<div style="display:flex;flex-wrap:wrap;gap:8px;">';
   sortedHw.forEach(([init,cnt])=>{
     const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
@@ -2384,7 +2393,7 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   }
   // Replica delle card "Riepilogo cameriere" di Operativa Housekeeping — SoulArt
   // (stessa fonte dati e stesso mese selezionato lì), per non dover aprire quella vista.
-  const monthlyCards=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'),'al SoulArt');
+  const monthlyCards=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'),'al SoulArt',22);
   const monthlyHtml=monthlyCards?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
     <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">🧹 Riepilogo cameriere — SoulArt</div>
     <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Solo camere SoulArt (Art).<br>Per il totale con anche il Boutique: vedi Operativa Housekeeping.</div>
