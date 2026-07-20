@@ -961,7 +961,7 @@ function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel){
   const sortedHw=Object.entries(hwCounts).sort((a,b)=>b[1]-a[1]);
   if(!sortedHw.length)return'';
   const MON_IT_FULL=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
-  let h=`<div style="font-size:10.5px;color:var(--text-dim);margin-bottom:8px;">Periodo: <strong style="color:var(--text-muted);font-weight:600;">1 – ${lastDayWithData} ${MON_IT_FULL[mo-1]} ${yr}</strong></div>`;
+  let h=`<div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">Periodo: <strong style="color:var(--text);font-weight:700;">1 – ${lastDayWithData} ${MON_IT_FULL[mo-1]} ${yr}</strong></div>`;
   h+='<div style="display:flex;flex-wrap:wrap;gap:8px;">';
   sortedHw.forEach(([init,cnt])=>{
     const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
@@ -2387,7 +2387,7 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   const monthlyCards=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'),'al SoulArt');
   const monthlyHtml=monthlyCards?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
     <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">🧹 Riepilogo cameriere — SoulArt</div>
-    <div style="font-size:10.5px;color:var(--text-dim);margin-bottom:12px;line-height:1.5;">Solo camere SoulArt (Art).<br>Per il totale con anche il Boutique: vedi Operativa Housekeeping.</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Solo camere SoulArt (Art).<br>Per il totale con anche il Boutique: vedi Operativa Housekeeping.</div>
     ${monthlyCards}
   </div>`:'';
   el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}${monthlyHtml}`;
