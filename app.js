@@ -2353,7 +2353,7 @@ function renderHkWeekChart(activeIdx){
   const plotW0=W-PL0-PR0,plotH=H-PT-PB;
   const YMAX=Math.max(10,...pts.map(p=>Math.max(p.cm,p.ca)))+5;
   const groupW=Math.min(58,plotW0/pts.length*0.72),barW=groupW/2-1;
-  const PL=PL0+groupW/2+8,PR=PR0+groupW/2;
+  const PL=PL0+groupW/2+22,PR=PR0+groupW/2;
   const plotW=W-PL-PR;
   const sx=i=>PL+i/(pts.length-1||1)*plotW;
   const sy=v=>PT+plotH-(v/YMAX)*plotH;
