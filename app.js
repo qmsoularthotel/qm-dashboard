@@ -2145,6 +2145,20 @@ function pianoCheckScadenza(){
   else{badge.style.display='none';}
 }
 
+// Stessa suddivisione camere fissa dell'app smartphone (housekeeper.html) — sola lettura,
+// solo per controllare il risultato del bilanciamento carico cameriere (che avviene
+// spostando fisicamente le camere sul PMS, poi caricando il Piano Settimana: non è
+// un'assegnazione modificabile da qui).
+const MATARESE=new Set(['Art 1','Art 2','Art 3','Art 4','Art 5','Art 6','Art 7','Art 10','Art 11','Art 12','Art 22']);
+function splitSoulart(rooms){
+  const m={partenze:[],fermate:[],cambi:[]},a={partenze:[],fermate:[],cambi:[]};
+  if(!rooms)return{m,a};
+  (rooms.cambi||[]).forEach(r=>(MATARESE.has(r)?m:a).cambi.push(r));
+  (rooms.partenze||[]).forEach(r=>(MATARESE.has(r)?m:a).partenze.push(r));
+  (rooms.fermate||[]).forEach(r=>(MATARESE.has(r)?m:a).fermate.push(r));
+  return{m,a};
+}
+
 function renderPianoGiorno(elId,refDate,forceIdx){
   const el=document.getElementById(elId);if(!el)return;
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){
@@ -2174,6 +2188,23 @@ function renderPianoGiorno(elId,refDate,forceIdx){
     if(fermate.length)h+=`<div>${groupLbl('Fermata')}<div style="display:flex;flex-wrap:wrap;gap:5px;">${fermate.map(r=>`<span style="background:var(--green-bg);border:1px solid var(--green);color:var(--green);font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;">${r}</span>`).join('')}</div></div>`;
     h+=`</div>`;return h;
   }
+  function renderCameriera(name,rooms){
+    const cambi=sortRooms(rooms.cambi||[]),partenze=sortRooms(rooms.partenze||[]),fermate=sortRooms(rooms.fermate||[]);
+    if(!cambi.length&&!partenze.length&&!fermate.length)return'';
+    const chip=(r,isCambio)=>isCambio
+      ?`<span style="position:relative;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;font-weight:700;padding:4px 16px 4px 10px;border-radius:7px;">${r} ⇄<span style="position:absolute;top:3px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--red);animation:ucDotBlink 1.1s ease-in-out infinite;"></span></span>`
+      :`<span style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;">${r}</span>`;
+    const nPart=cambi.length+partenze.length;
+    let h=`<div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <span style="font-size:13px;font-weight:700;color:var(--text);">${name}</span>
+        ${nPart?`<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--text);">🛫 ${nPart} partenz${nPart===1?'a':'e'}</span>`:''}
+        ${fermate.length?`<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--green-bg);border:1px solid var(--green);color:var(--green);">🛏 ${fermate.length} fermat${fermate.length===1?'a':'e'}</span>`:''}
+      </div>`;
+    if(nPart)h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;">${partenze.map(r=>chip(r,false)).join('')}${cambi.map(r=>chip(r,true)).join('')}</div>`;
+    if(fermate.length)h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;">${fermate.map(r=>`<span style="background:var(--green-bg);border:1px solid var(--green);color:var(--green);font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;">${r}</span>`).join('')}</div>`;
+    h+=`</div>`;return h;
+  }
   const lib=giorno.liborio||{partenze:[],fermate:[],cambi:[]};
   const bMerged={partenze:[...(giorno.boutique?.partenze||[]),...lib.partenze],fermate:[...(giorno.boutique?.fermate||[]),...lib.fermate],cambi:[...(giorno.boutique?.cambi||[]),...lib.cambi]};
   const sHtml=renderHotel('SoulArt',giorno.soulart||{}),bHtml=renderHotel('Boutique - San Liborio',bMerged);
@@ -2185,7 +2216,23 @@ function renderPianoGiorno(elId,refDate,forceIdx){
         <div style="flex:1;min-width:0;">${bHtml}</div>
       </div>`
     :`${sHtml}${bHtml}`;
-  el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>`;
+  // Suddivisione cameriere SoulArt (Matarese / Altre) — sola lettura, stesso elenco fisso
+  // camere dell'app smartphone, per controllare il risultato del bilanciamento carico
+  // fatto spostando le camere sul PMS prima di caricare il Piano Settimana.
+  let mHtml='';
+  const {m,a}=splitSoulart(giorno.soulart);
+  const mCard=renderCameriera('Matarese',m),aCard=renderCameriera('Altre housekeeper',a);
+  if(mCard||aCard){
+    mHtml=`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">👥 Suddivisione cameriere — SoulArt</div>
+      <div style="display:flex;gap:20px;align-items:stretch;">
+        ${mCard||'<div style="flex:1;"></div>'}
+        <div style="width:1px;background:var(--border-light);flex-shrink:0;"></div>
+        ${aCard||'<div style="flex:1;"></div>'}
+      </div>
+    </div>`;
+  }
+  el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}`;
 }
 
 // Box "Distribuzione Culligan" — accanto al grafico occupazione in Situazione odierna.
