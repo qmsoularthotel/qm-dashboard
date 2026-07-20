@@ -2196,8 +2196,8 @@ function renderPianoGiorno(elId,refDate,forceIdx){
       :`<span style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;">${r}</span>`;
     const nPart=cambi.length+partenze.length;
     let h=`<div style="flex:1;min-width:0;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">${name}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-        <span style="font-size:13px;font-weight:700;color:var(--text);">${name}</span>
         ${nPart?`<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--text);">🛫 ${nPart} partenz${nPart===1?'a':'e'}</span>`:''}
         ${fermate.length?`<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--green-bg);border:1px solid var(--green);color:var(--green);">🛏 ${fermate.length} fermat${fermate.length===1?'a':'e'}</span>`:''}
       </div>`;
