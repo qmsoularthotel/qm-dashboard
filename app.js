@@ -441,7 +441,7 @@ function renderDay(idx){
         return!allStaffLow.has(nl);
       });
     }
-    const showMembers=key==='mt'?dept.members:[...inT,...extras];
+    const showMembers=[...inT,...extras];
     if(!showMembers.length)return;
     const inTCount=inT.length+extras.length;
     html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inTCount} in turno</span></div><div class="staff-list">${showMembers.map(n=>{const sv=(getShift(shifts,n)||'').trim();const isActive=!IS_REST(sv);return shiftRow(n,sv,isActive?'ss-active':'ss-special');}).join('')}</div></div>`;
