@@ -2171,20 +2171,9 @@ function hkCarico(rooms){
 // SVG di Breakfast/Occupazione: barra accent + linea rossa tratteggiata) subito dopo
 // che questo markup viene inserito nel DOM, così lo stile del grafico resta sempre
 // identico in tutta la dashboard invece di reinventarlo con div colorati ad-hoc.
+// Stesso schema di "Andamento occupazione settimanale": grafico a sinistra, dati a
+// destra separati da un bordo, stessa altezza (240px).
 function renderHkWeekViewContainer(){
-  return`<div style="margin-top:14px;">
-    <div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;">Vista settimanale (carico pesato)</div>
-    <div id="hk-week-chart" style="width:100%;box-sizing:border-box;height:170px;display:flex;flex-direction:column;"></div>
-  </div>`;
-}
-function renderHkWeekChart(activeIdx){
-  const pts=pianoData.giorni.map(g=>{
-    const{m,a}=splitSoulart(g.soulart||{});
-    return{label:(g.label?g.label.split(' ')[0]:'?').substring(0,3),v:hkCarico(m),nc:hkCarico(a)};
-  });
-  _bkfChartRender('hk-week-chart',pts,activeIdx,'Carica il piano settimana per vedere il grafico','Matarese','Altre housekeeper');
-}
-function renderHkHistoryTotal(){
   let totM=0,totA=0;
   pianoData.giorni.forEach(g=>{
     const{m,a}=splitSoulart(g.soulart||{});
@@ -2193,11 +2182,25 @@ function renderHkHistoryTotal(){
   const diff=totM-totA;
   const diffTxt=diff===0?'Bilanciato':(diff>0?`Matarese +${diff}`:`Altre +${-diff}`);
   const diffColor=Math.abs(diff)<=2?'var(--green)':'var(--amber)';
-  return`<div style="margin-top:14px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border-light);padding-top:12px;">
-    <div><div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Totale settimana — Matarese</div><div style="font-size:20px;font-weight:700;color:var(--accent);">${totM}</div></div>
-    <div><div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Totale settimana — Altre</div><div style="font-size:20px;font-weight:700;color:var(--gold);">${totA}</div></div>
-    <div style="margin-left:auto;text-align:right;"><div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Bilanciamento</div><div style="font-size:14px;font-weight:700;color:${diffColor};">${diffTxt}</div></div>
+  return`<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:14px;display:flex;align-items:stretch;gap:0;">
+    <div style="min-width:0;width:100%;">
+      <div class="kpi-label" style="margin-bottom:8px;">Vista settimanale (carico pesato)</div>
+      <div id="hk-week-chart" style="width:100%;box-sizing:border-box;height:240px;display:flex;flex-direction:column;"></div>
+    </div>
+    <div style="flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:0 0 0 28px;border-left:1px solid var(--border-light);margin-left:20px;min-width:180px;">
+      <div class="kpi-label" style="margin-bottom:8px;">Totale settimana</div>
+      <div style="margin-bottom:10px;"><div style="font-size:11px;color:var(--text-dim);">Matarese</div><div style="font-size:26px;font-weight:300;line-height:1;color:var(--accent);">${totM}</div></div>
+      <div style="margin-bottom:10px;"><div style="font-size:11px;color:var(--text-dim);">Altre housekeeper</div><div style="font-size:26px;font-weight:300;line-height:1;color:var(--accent);">${totA}</div></div>
+      <div style="border-top:1px solid var(--border-light);padding-top:8px;"><div style="font-size:11px;color:var(--text-dim);">Bilanciamento</div><div style="font-size:14px;font-weight:700;color:${diffColor};">${diffTxt}</div></div>
+    </div>
   </div>`;
+}
+function renderHkWeekChart(activeIdx){
+  const pts=pianoData.giorni.map(g=>{
+    const{m,a}=splitSoulart(g.soulart||{});
+    return{label:(g.label?g.label.split(' ')[0]:'?').substring(0,3),v:hkCarico(m),nc:hkCarico(a)};
+  });
+  _bkfChartRender('hk-week-chart',pts,activeIdx,'Carica il piano settimana per vedere il grafico','Matarese','Altre housekeeper');
 }
 
 function renderPianoGiorno(elId,refDate,forceIdx){
@@ -2287,7 +2290,6 @@ function renderPianoGiorno(elId,refDate,forceIdx){
         ${aCard||'<div style="flex:1;"></div>'}
       </div>
       ${renderHkWeekViewContainer()}
-      ${renderHkHistoryTotal()}
     </div>`;
   }
   el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}`;
