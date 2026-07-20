@@ -2385,7 +2385,8 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   // (stessa fonte dati e stesso mese selezionato lì), per non dover aprire quella vista.
   const monthlyCards=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'));
   const monthlyHtml=monthlyCards?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
-    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">🧹 Riepilogo cameriere — SoulArt</div>
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">🧹 Riepilogo cameriere — SoulArt</div>
+    <div style="font-size:10.5px;color:var(--text-dim);margin-bottom:12px;">Conta solo le camere lavorate da ciascuna housekeeper al SoulArt (Art) — per il dato completo, incluso il Boutique, vedi Operativa Housekeeping.</div>
     ${monthlyCards}
   </div>`:'';
   el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}${monthlyHtml}`;
