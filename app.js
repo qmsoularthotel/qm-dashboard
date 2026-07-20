@@ -2353,15 +2353,16 @@ function renderHkWeekChart(activeIdx){
   const plotW0=W-PL0-PR0,plotH=H-PT-PB;
   const YMAX=Math.max(10,...pts.map(p=>Math.max(p.cm,p.ca)))+5;
   const groupW=Math.min(58,plotW0/pts.length*0.72),barW=groupW/2-1;
-  const PL=PL0+groupW/2+22,PR=PR0+groupW/2;
+  const AXGAP=20; // spazio vuoto tra la linea/etichette dell'asse verticale e la prima colonna
+  const PL=PL0+groupW/2+AXGAP,PR=PR0+groupW/2;
   const plotW=W-PL-PR;
   const sx=i=>PL+i/(pts.length-1||1)*plotW;
   const sy=v=>PT+plotH-(v/YMAX)*plotH;
   let svg=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="width:100%;flex:1;min-height:0;display:block;">`;
   for(let v=0;v<=YMAX;v+=Math.ceil(YMAX/4/5)*5){
     const y=sy(v);
-    svg+=`<line x1="${PL-groupW/2}" y1="${y}" x2="${W-PR+groupW/2}" y2="${y}" stroke="var(--border-light)" stroke-width="${v===0?1.5:1}"/>`;
-    svg+=`<text x="${PL-groupW/2-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;
+    svg+=`<line x1="${PL0}" y1="${y}" x2="${W-PR+groupW/2}" y2="${y}" stroke="var(--border-light)" stroke-width="${v===0?1.5:1}"/>`;
+    svg+=`<text x="${PL0-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;
   }
   pts.forEach((p,i)=>{
     const x=sx(i),isActive=i===activeIdx;
