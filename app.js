@@ -2196,7 +2196,7 @@ function renderHkWeekViewContainer(){
   });
   const totM=totPartM+totFermM,totA=totPartA+totFermA;
   const diff=caricoM-caricoA;
-  const diffTxt=diff===0?'Bilanciato':(diff>0?`Matarese +${diff}`:`Altre +${-diff}`);
+  const diffTxt=diff===0?'Bilanciato':(diff>0?`Matarese +${diff} rispetto ad Altre`:`Altre +${-diff} rispetto a Matarese`);
   const diffColor=Math.abs(diff)<=2?'var(--green)':'var(--amber)';
   const row=(lbl,vM,vA)=>`<div style="margin-bottom:10px;">
       <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px;">${lbl}</div>
