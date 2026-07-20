@@ -2205,7 +2205,7 @@ function renderHkWeekViewContainer(){
       ${row('Fermate',totFermM,totFermA)}
       <div style="border-top:1px solid var(--border-light);padding-top:8px;margin-bottom:8px;">${row('Totali',totM,totA)}</div>
       <div style="border-top:1px solid var(--border-light);padding-top:8px;margin-bottom:10px;"><div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Bilanciamento</div><div style="font-size:14px;font-weight:700;color:${diffColor};">${diffTxt}</div></div>
-      <button onclick="setView('hkpsheet')" style="font-size:var(--fs-xxs);padding:6px 12px;border:1px solid var(--accent);border-radius:7px;background:var(--accent-bg);color:var(--accent);cursor:pointer;font-weight:600;white-space:nowrap;">🧹 Operativa Housekeeping SoulArt</button>
+      <button onclick="setView('hkpsheet')" style="font-size:var(--fs-xs);padding:9px 16px;border:1px solid var(--accent);border-radius:7px;background:var(--accent-bg);color:var(--accent);cursor:pointer;font-weight:600;white-space:nowrap;">Operativa Housekeeping SoulArt</button>
     </div>
   </div>`;
 }
@@ -2237,8 +2237,8 @@ function renderHkWeekChart(activeIdx){
   pts.forEach((p,i)=>{
     const x=sx(i),isActive=i===activeIdx;
     const ym=sy(p.cm),ya=sy(p.ca);
-    svg+=`<rect x="${x-barW-1}" y="${ym}" width="${barW}" height="${sy(0)-ym}" rx="4" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.5"/>`;
-    svg+=`<rect x="${x+1}" y="${ya}" width="${barW}" height="${sy(0)-ya}" rx="4" fill="#e8f0f8" stroke="var(--accent)" stroke-width="1.5"/>`;
+    svg+=`<rect x="${x-barW-3}" y="${ym}" width="${barW}" height="${sy(0)-ym}" rx="4" fill="var(--accent)" stroke="var(--accent)" stroke-width="1.5"/>`;
+    svg+=`<rect x="${x+3}" y="${ya}" width="${barW}" height="${sy(0)-ya}" rx="4" fill="#e8f0f8" stroke="var(--accent)" stroke-width="1.5"/>`;
     svg+=`<text x="${x}" y="${H-8}" font-size="11" fill="${isActive?'var(--accent)':'var(--text-dim)'}" font-weight="${isActive?'700':'400'}" text-anchor="middle">${p.label}</text>`;
   });
   svg+='</svg>';
