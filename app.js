@@ -2416,8 +2416,8 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   const monthlyHtml=(monthlyCardsSa||monthlyCardsBh)?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
     <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Riepiloghi mensili</div>
     <div style="display:flex;gap:10px;">
-      ${monthlyCardsSa?_hkTile('sa','Riepilogo SoulArt','Camere Art · mese in corso'):''}
-      ${monthlyCardsBh?_hkTile('bh','Riepilogo Boutique','Camere 200 + Liborio · mese in corso'):''}
+      ${monthlyCardsSa?_hkTile('sa','Riepilogo Housekeepers SoulArt','Camere Art · mese in corso'):''}
+      ${monthlyCardsBh?_hkTile('bh','Riepilogo Housekeepers Boutique','Camere 200 + Liborio · mese in corso'):''}
     </div>
     ${monthlyCardsSa?`<div id="hk-monthly-sa" style="display:${_hkMonthlyOpen.sa?'block':'none'};margin-top:12px;">
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Solo camere SoulArt (Art).<br>Per il totale con anche il Boutique: vedi Operativa Housekeeping.</div>
