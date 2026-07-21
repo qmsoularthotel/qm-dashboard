@@ -7270,27 +7270,38 @@ function cmRender(state,key){
   if(!el)return;
   const d=new Date();
   const dateStr=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  function cmStatus(room){
-    const rs=state&&state[room];
-    if(!rs||!rs.visited)return'pending';
-    if(rs.libera)return'empty';
-    const nc=Object.values(rs.checks||{}).some(v=>!v);
-    const needsBottle=rs.bottiglia==='consumata';
-    if(nc&&needsBottle)return'both';if(nc)return'warn';if(needsBottle)return'bottle';return'ok';
-  }
   // Nessun dato ancora per oggi (es. subito dopo mezzanotte, prima che il giro mobile
   // inizi) — mostra comunque la card completa con bottiglia vuota e tutte le camere
   // "da visitare", invece di un placeholder che lascia la pagina vuota fino al primo
   // salvataggio da smartphone.
   state=state||{};
-  const visited=CM_ROOMS.filter(r=>state[r]?.visited).length;
-  const btl=CM_ROOMS.filter(r=>{const s=cmStatus(r);return s==='bottle'||s==='both';});
-  const wrn=CM_ROOMS.filter(r=>{const s=cmStatus(r);return s==='warn'||s==='both';});
-  const ok=CM_ROOMS.filter(r=>cmStatus(r)==='ok');
+  // Camere effettivamente occupate oggi secondo il Piano Settimana — stessa logica
+  // dell'app smartphone (_applyPianoLibere): le camere non in partenze/fermate/cambi
+  // sono "libere" e non contano come "da visitare", altrimenti il totale mostrato
+  // resta sempre fisso a 22 anche quando l'hotel non è pieno.
+  const giornoIdx=pianoGetGiornoIdx(d);
+  const giornoCM=(pianoData&&pianoData.giorni&&giornoIdx>=0)?pianoData.giorni[giornoIdx]:null;
+  const inPlan=giornoCM?new Set([...(giornoCM.soulart?.partenze||[]),...(giornoCM.soulart?.fermate||[]),...(giornoCM.soulart?.cambi||[])]):null;
+  function cmStatus(room){
+    const rs=state[room];
+    if(!rs||!rs.visited){
+      if(inPlan&&!inPlan.has(room))return'empty';
+      return'pending';
+    }
+    if(rs.libera)return'empty';
+    const nc=Object.values(rs.checks||{}).some(v=>!v);
+    const needsBottle=rs.bottiglia==='consumata';
+    if(nc&&needsBottle)return'both';if(nc)return'warn';if(needsBottle)return'bottle';return'ok';
+  }
+  const CM_OCCUPIED=inPlan?CM_ROOMS.filter(r=>inPlan.has(r)):CM_ROOMS;
+  const visited=CM_OCCUPIED.filter(r=>state[r]?.visited).length;
+  const btl=CM_OCCUPIED.filter(r=>{const s=cmStatus(r);return s==='bottle'||s==='both';});
+  const wrn=CM_OCCUPIED.filter(r=>{const s=cmStatus(r);return s==='warn'||s==='both';});
+  const ok=CM_OCCUPIED.filter(r=>cmStatus(r)==='ok');
   const emp=CM_ROOMS.filter(r=>cmStatus(r)==='empty');
-  const pnd=CM_ROOMS.filter(r=>cmStatus(r)==='pending');
+  const pnd=CM_OCCUPIED.filter(r=>cmStatus(r)==='pending');
 
-  const pct=CM_ROOMS.length?visited/CM_ROOMS.length:0;
+  const pct=CM_OCCUPIED.length?visited/CM_OCCUPIED.length:0;
   let h=`<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
     <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-weight:700;">${dateStr}</div>
     <div style="display:flex;gap:8px;">
@@ -7312,7 +7323,7 @@ function cmRender(state,key){
       </svg>
     </div>
     <div>
-      <div style="font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:14px;">${visited}<span style="font-size:15px;font-weight:400;color:var(--text-dim);"> / ${CM_ROOMS.length} camere visitate</span></div>
+      <div style="font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:14px;">${visited}<span style="font-size:15px;font-weight:400;color:var(--text-dim);"> / ${CM_OCCUPIED.length} camere visitate</span></div>
       <div style="display:flex;gap:22px;flex-wrap:wrap;">
         <div><div style="font-size:22px;font-weight:300;color:var(--accent);line-height:1;">${btl.length}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">Da mettere</div></div>
         <div><div style="font-size:22px;font-weight:300;color:var(--green);line-height:1;">${ok.length}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">Non consumate</div></div>
