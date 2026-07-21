@@ -7317,9 +7317,9 @@ function cmRender(state,key){
   const cmBottlePath='M22 11h20v24c6 4 10 10 10 17v52c0 4-3 7-7 7H19c-4 0-7-3-7-7V52c0-7 4-13 10-17V11z';
   const fillH=Math.round(112*pct);
   const fillY=14+(112-fillH);
-  h+=`<div style="display:grid;grid-template-columns:100px 1fr;gap:26px;align-items:center;margin-bottom:16px;">
-    <div style="position:relative;width:80px;height:165px;margin:0 auto;">
-      <svg width="80" height="165" viewBox="0 0 64 132">
+  h+=`<div style="display:grid;grid-template-columns:130px 1fr;gap:26px;align-items:center;margin-bottom:16px;">
+    <div style="position:relative;width:104px;height:214.5px;margin:0 auto;">
+      <svg width="104" height="214.5" viewBox="0 0 64 132">
         <defs>
           <clipPath id="cmBottleClip"><path d="${cmBottlePath}"/></clipPath>
           <mask id="cmLogoMask"><image href="img/logo-culligan.png" x="13" y="64" width="38" height="11.45"/></mask>
