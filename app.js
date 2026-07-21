@@ -7296,8 +7296,6 @@ function cmRender(state,key){
   const pnd=CM_ROOMS.filter(r=>cmStatus(r)==='pending');
 
   const pct=CM_ROOMS.length?visited/CM_ROOMS.length:0;
-  const ringCirc=339;
-  const ringOffset=Math.round(ringCirc-ringCirc*pct);
   let h=`<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
     <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-weight:700;">${dateStr}</div>
     <div style="display:flex;gap:8px;">
@@ -7305,27 +7303,26 @@ function cmRender(state,key){
       <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;padding:9px 16px;border-radius:9px;font-weight:700;font-size:var(--fs-xxs);text-decoration:none;">📱 Apri app mobile</a>
     </div>
   </div>`;
-  h+=`<div style="display:grid;grid-template-columns:150px 1fr;gap:20px;align-items:center;margin-bottom:16px;">
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
-      <div style="position:relative;width:130px;height:130px;">
-        <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(-90deg);">
-          <circle cx="65" cy="65" r="54" fill="none" stroke="var(--surface2)" stroke-width="4"/>
-          <circle cx="65" cy="65" r="54" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${ringCirc}" stroke-dashoffset="${ringOffset}" style="transition:stroke-dashoffset .6s cubic-bezier(.65,0,.35,1);"/>
-        </svg>
-        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-          <div style="font-size:26px;font-weight:700;line-height:1;">${visited}/${CM_ROOMS.length}</div>
-          <div style="font-size:9.5px;color:var(--text-dim);font-weight:600;margin-top:2px;">CAMERE</div>
-        </div>
-      </div>
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;">Visitate oggi</div>
+  // Metafora bottiglia: coerente col soggetto (distribuzione acqua Culligan) — il livello
+  // di riempimento della sagoma è la % di camere visitate, invece di un anello generico.
+  const fillH=Math.round(114*pct);
+  const fillY=6+(114-fillH);
+  h+=`<div style="display:grid;grid-template-columns:90px 1fr;gap:26px;align-items:center;margin-bottom:16px;">
+    <div style="position:relative;width:70px;height:120px;margin:0 auto;">
+      <svg width="70" height="120" viewBox="0 0 70 120">
+        <defs><clipPath id="cmBottleClip"><path d="M24 6h22v14c8 4 12 10 12 20v66c0 4-3 8-8 8H20c-5 0-8-4-8-8V40c0-10 4-16 12-20V6z"/></clipPath></defs>
+        <path d="M24 6h22v14c8 4 12 10 12 20v66c0 4-3 8-8 8H20c-5 0-8-4-8-8V40c0-10 4-16 12-20V6z" fill="var(--surface2)" stroke="var(--border)" stroke-width="1.5"/>
+        <rect x="8" y="${fillY}" width="54" height="${fillH}" fill="var(--accent)" clip-path="url(#cmBottleClip)" style="transition:y .6s cubic-bezier(.65,0,.35,1),height .6s cubic-bezier(.65,0,.35,1);"/>
+        <rect x="27" y="2" width="16" height="8" rx="2" fill="var(--border)"/>
+      </svg>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:stretch;">
-      ${[[btl.length,'Da mettere','💧','','var(--accent)','var(--accent-bg)'],[ok.length,'Non consumate','✓','green','var(--green)','var(--green-bg)'],[pnd.length,'Da visitare','⭕','','var(--text-dim)','var(--surface2)']].map(([n,lbl,icon,variant,iconColor,iconBg])=>`
-      <div class="kpi-card ${variant}" style="padding:12px 14px 10px;border-top-color:${variant?'':iconColor};">
-        <div class="kpi-card-icon" style="width:24px;height:24px;font-size:11px;top:8px;right:8px;${variant?'':`background:${iconBg};color:${iconColor};`}">${icon}</div>
-        <div class="kpi-label" style="margin-bottom:4px;">${lbl}</div>
-        <div class="kpi-value" style="font-size:26px;">${n}</div>
-      </div>`).join('')}
+    <div>
+      <div style="font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:14px;">${visited}<span style="font-size:15px;font-weight:400;color:var(--text-dim);"> / ${CM_ROOMS.length} camere visitate</span></div>
+      <div style="display:flex;gap:22px;flex-wrap:wrap;">
+        <div><div style="font-size:22px;font-weight:300;color:var(--accent);line-height:1;">${btl.length}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">Da mettere</div></div>
+        <div><div style="font-size:22px;font-weight:300;color:var(--green);line-height:1;">${ok.length}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">Non consumate</div></div>
+        <div><div style="font-size:22px;font-weight:300;color:var(--text-dim);line-height:1;">${pnd.length}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">Da visitare</div></div>
+      </div>
     </div>
   </div>`;
   const groupLbl=(t,tint)=>`<div style="font-size:12px;font-weight:700;color:${tint||'var(--text-muted)'};text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">${t}</div>`;
