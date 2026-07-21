@@ -7319,14 +7319,12 @@ function cmRender(state,key){
       </div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;">Visitate oggi</div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start;">
-      ${[[btl.length,'Da mettere','var(--accent)'],[ok.length,'Non consumate','var(--green)'],[pnd.length,'Da visitare','var(--text-dim)']].map(([n,lbl,tint])=>`
-      <div style="background:var(--surface2);border-left:3px solid ${tint};border-radius:8px;padding:6px 14px;">
-        <div style="display:flex;align-items:center;gap:7px;margin-bottom:1px;">
-          <span style="width:7px;height:7px;border-radius:50%;background:${tint};flex-shrink:0;"></span>
-          <span style="font-size:10px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">${lbl}</span>
-        </div>
-        <div style="font-size:28px;font-weight:700;color:var(--text);line-height:1.15;">${n}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:stretch;">
+      ${[[btl.length,'Da mettere','💧','','var(--accent)','var(--accent-bg)'],[ok.length,'Non consumate','✓','green','var(--green)','var(--green-bg)'],[pnd.length,'Da visitare','⭕','','var(--text-dim)','var(--surface2)']].map(([n,lbl,icon,variant,iconColor,iconBg])=>`
+      <div class="kpi-card ${variant}" style="padding:12px 14px 10px;border-top-color:${variant?'':iconColor};">
+        <div class="kpi-card-icon" style="width:24px;height:24px;font-size:11px;top:8px;right:8px;${variant?'':`background:${iconBg};color:${iconColor};`}">${icon}</div>
+        <div class="kpi-label" style="margin-bottom:4px;">${lbl}</div>
+        <div class="kpi-value" style="font-size:26px;">${n}</div>
       </div>`).join('')}
     </div>
   </div>`;
