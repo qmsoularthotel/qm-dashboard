@@ -7278,16 +7278,11 @@ function cmRender(state,key){
     const needsBottle=rs.bottiglia==='consumata';
     if(nc&&needsBottle)return'both';if(nc)return'warn';if(needsBottle)return'bottle';return'ok';
   }
-  if(!state||!Object.keys(state).length){
-    el.innerHTML=`<div style="text-align:center;padding:24px 20px 16px;color:var(--text-dim);">
-      <div style="font-size:2rem;margin-bottom:8px;">🌅</div>
-      <div style="font-weight:700;font-size:var(--fs-sm);margin-bottom:4px;">Nessun controllo per oggi</div>
-      <div style="font-size:var(--fs-xs);margin-bottom:14px;">${dateStr}</div>
-      <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;padding:10px 18px;border-radius:10px;font-weight:700;font-size:var(--fs-xs);text-decoration:none;">📱 Apri app mobile</a>
-    </div>`;
-    cmLoadWeeklyQC();
-    return;
-  }
+  // Nessun dato ancora per oggi (es. subito dopo mezzanotte, prima che il giro mobile
+  // inizi) — mostra comunque la card completa con bottiglia vuota e tutte le camere
+  // "da visitare", invece di un placeholder che lascia la pagina vuota fino al primo
+  // salvataggio da smartphone.
+  state=state||{};
   const visited=CM_ROOMS.filter(r=>state[r]?.visited).length;
   const btl=CM_ROOMS.filter(r=>{const s=cmStatus(r);return s==='bottle'||s==='both';});
   const wrn=CM_ROOMS.filter(r=>{const s=cmStatus(r);return s==='warn'||s==='both';});
