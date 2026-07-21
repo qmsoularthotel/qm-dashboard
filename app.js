@@ -3094,6 +3094,13 @@ document.querySelector('.content').addEventListener('scroll',function(){
       }
     }catch(e){}
     try{turniPrefLoad();}catch(e){}
+    // Sincronizza dati Operativa Housekeeping SoulArt da KV anche se quella view non è
+    // mai stata aperta in questa sessione — altrimenti i Riepiloghi mensili in Overview
+    // (SoulArt/Boutique) restano fermi allo snapshot letto da localStorage all'avvio.
+    try{
+      await hkpNSyncFromCloud('sa');
+      if(pianoNavIdx!==null)pianoNavRender(pianoNavIdx);
+    }catch(e){}
   },30000);
   const alertTimeEl=document.getElementById('alertTime');if(alertTimeEl)alertTimeEl.textContent='Aggiornato '+String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');
   buildBarChart();
