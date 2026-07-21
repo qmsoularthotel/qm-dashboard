@@ -7314,7 +7314,7 @@ function cmRender(state,key){
   // Sagoma ridisegnata sulla bottiglia Culligan reale (collo stretto e lungo, corpo dritto).
   // Etichetta col logo: sopra il livello del liquido è colorata come il riempimento,
   // sotto — appena il livello la raggiunge — diventa bianca per restare leggibile.
-  const cmBottlePath='M23.5 11h17v24c6 5 9 11 11.5 17v57c0 6.6-5.4 12-12 12H24c-6 0-10-5.4-12-12V52c2-7 5-13 11.5-17V11z';
+  const cmBottlePath='M23.5 11h17v24c2 8 9 15 11.5 17v62c0 4-3 7-7 7H19c-4 0-7-3-7-7V52c2.5-2 9.5-9 11.5-17V11z';
   const fillH=Math.round(107*pct);
   const fillY=14+(107-fillH);
   h+=`<div style="display:grid;grid-template-columns:130px 1fr;gap:26px;align-items:center;margin-bottom:16px;">
