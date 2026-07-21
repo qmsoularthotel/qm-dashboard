@@ -7400,16 +7400,22 @@ function cmRenderWeeklyQC(perRoom,totalChecks,weekFrom,weekTo,days){
   // Camere in ordine crescente (Art 1 → Art 22), già in ordine in CM_ROOMS
   const roomsChecked=CM_ROOMS.filter(r=>perRoom[r]>0);
   const roomsNot=CM_ROOMS.filter(r=>!perRoom[r]);
-  // Righe per camera: semplici e leggibili
-  const maxN=Math.max(1,...roomsChecked.map(r=>perRoom[r]));
-  const roomRows=roomsChecked.length?roomsChecked.map((r,idx)=>{
-    const n=perRoom[r];
-    const col=n>=5?'var(--green)':n>=3?'var(--accent)':'var(--text)';
-    return`<div style="display:flex;align-items:baseline;gap:10px;padding:10px 18px;${idx>0?'border-top:1px solid var(--border-light)':''};">
-      <span style="font-size:14px;font-weight:600;color:var(--text);flex:1;">${r}</span>
-      <div style="flex:2;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;"><div style="height:100%;border-radius:3px;background:var(--accent);width:${Math.round(n/maxN*100)}%;"></div></div>
-      <span style="font-size:18px;font-weight:700;color:${col};line-height:1;min-width:22px;text-align:right;">${n}</span>
-      <span style="font-size:10px;color:var(--text-dim);min-width:36px;">${n===1?'volta':'volte'}</span>
+  // Registro cronologico: un rigo per giorno (Dom→oggi) con le camere effettivamente
+  // rifornite quel giorno, invece di un totale aggregato per camera — mostra l'ordine
+  // reale del giro invece di solo il numero finale.
+  const pastDays=days.filter(dy=>!dy.isFuture);
+  const logRows=pastDays.length?pastDays.map((dy,idx)=>{
+    const roomsDay=dy.state?CM_ROOMS.filter(r=>{
+      const rs=dy.state[r];
+      return rs&&rs.visited&&!rs.dnd&&!rs.libera&&rs.bottiglia==='consumata';
+    }):[];
+    const bodyHtml=roomsDay.length
+      ?`Bottiglia sostituita in ${roomsDay.map(r=>`<strong style="font-weight:700;">${r}</strong>`).join(', ')}`
+      :`<span style="color:var(--text-dim);font-style:italic;">Nessun giro registrato</span>`;
+    return`<div style="display:flex;gap:12px;padding:9px 18px;${idx>0?'border-top:1px solid var(--border-light)':''};">
+      <div style="width:70px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;padding-top:1px;">${dy.label} ${dy.date}</div>
+      <div style="width:2px;background:var(--border-light);position:relative;flex-shrink:0;"><span style="position:absolute;left:-3px;top:2px;width:8px;height:8px;border-radius:50%;background:${roomsDay.length?'var(--green)':'var(--surface2)'};"></span></div>
+      <div style="flex:1;font-size:12.5px;color:var(--text);line-height:1.5;padding-bottom:2px;">${bodyHtml}</div>
     </div>`;
   }).join(''):`<div style="color:var(--text-dim);font-size:13px;padding:12px 14px;">Nessun controllo questa settimana.</div>`;
   // Testo anteprima WhatsApp
@@ -7430,7 +7436,7 @@ function cmRenderWeeklyQC(perRoom,totalChecks,weekFrom,weekTo,days){
           <span style="font-size:var(--fs-xxs);color:var(--text-dim);"> / ${CM_ROOMS.length} camere</span>
         </div>
       </div>
-      <div style="padding:6px 0;">${roomRows}</div>
+      <div style="padding:4px 0;">${logRows}</div>
       ${roomsNot.length?`<div style="padding:8px 18px;border-top:1px solid var(--border-light);"><span style="font-size:var(--fs-xxs);color:var(--text-dim);">Non visitate: ${roomsNot.join(', ')}</span></div>`:''}
       <div style="padding:12px 18px;border-top:1px solid var(--border-light);display:flex;flex-direction:column;gap:8px;">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
