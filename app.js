@@ -7808,7 +7808,7 @@ function revExpReset(p){
 // §§ DDT FORNITORI — upload DDT, spese per fornitore/reparto, storico
 const DDT_KEY='qm_ddt';
 const DDT_FORNITORI={
-  DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#fde8d5', fg:'#c25e0b', accent:'#e8720f', logo:'deca.png'},
+  DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#eceef0', fg:'#4a4a4a', accent:'#6b6b6b', logo:'deca.png'},
   Amonn:     {reparto:'altro', rLabel:'Altro',       color:'#fde8e9', fg:'#d90e13', accent:'#d90e13', logo:'amonn.png'},
   Vistaprint:{reparto:'altro', rLabel:'Altro',       color:'#e3f2fb', fg:'#006196', accent:'#006196', logo:'vistaprint.png'},
   SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#e0e1f5', fg:'#292b82', accent:'#292b82', logo:'sdm2.png'},
