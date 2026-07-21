@@ -7311,15 +7311,28 @@ function cmRender(state,key){
   </div>`;
   // Metafora bottiglia: coerente col soggetto (distribuzione acqua Culligan) — il livello
   // di riempimento della sagoma è la % di camere visitate, invece di un anello generico.
-  const fillH=Math.round(114*pct);
-  const fillY=6+(114-fillH);
-  h+=`<div style="display:grid;grid-template-columns:90px 1fr;gap:26px;align-items:center;margin-bottom:16px;">
-    <div style="position:relative;width:70px;height:120px;margin:0 auto;">
-      <svg width="70" height="120" viewBox="0 0 70 120">
-        <defs><clipPath id="cmBottleClip"><path d="M24 6h22v14c8 4 12 10 12 20v66c0 4-3 8-8 8H20c-5 0-8-4-8-8V40c0-10 4-16 12-20V6z"/></clipPath></defs>
-        <path d="M24 6h22v14c8 4 12 10 12 20v66c0 4-3 8-8 8H20c-5 0-8-4-8-8V40c0-10 4-16 12-20V6z" fill="var(--surface2)" stroke="var(--border)" stroke-width="1.5"/>
-        <rect x="8" y="${fillY}" width="54" height="${fillH}" fill="var(--accent)" clip-path="url(#cmBottleClip)" style="transition:y .6s cubic-bezier(.65,0,.35,1),height .6s cubic-bezier(.65,0,.35,1);"/>
-        <rect x="27" y="2" width="16" height="8" rx="2" fill="var(--border)"/>
+  // Sagoma ridisegnata sulla bottiglia Culligan reale (collo stretto e lungo, corpo dritto).
+  // Etichetta col logo: sopra il livello del liquido è colorata come il riempimento,
+  // sotto — appena il livello la raggiunge — diventa bianca per restare leggibile.
+  const cmBottlePath='M22 11h20v24c6 4 10 10 10 17v52c0 4-3 7-7 7H19c-4 0-7-3-7-7V52c0-7 4-13 10-17V11z';
+  const fillH=Math.round(112*pct);
+  const fillY=14+(112-fillH);
+  h+=`<div style="display:grid;grid-template-columns:80px 1fr;gap:26px;align-items:center;margin-bottom:16px;">
+    <div style="position:relative;width:64px;height:132px;margin:0 auto;">
+      <svg width="64" height="132" viewBox="0 0 64 132">
+        <defs>
+          <clipPath id="cmBottleClip"><path d="${cmBottlePath}"/></clipPath>
+          <mask id="cmLogoMask"><image href="img/logo-culligan.png" x="13" y="64" width="38" height="11.45"/></mask>
+          <clipPath id="cmLogoAbove"><rect x="0" y="0" width="64" height="${fillY}"/></clipPath>
+          <clipPath id="cmLogoBelow"><rect x="0" y="${fillY}" width="64" height="${132-fillY}"/></clipPath>
+        </defs>
+        <path d="${cmBottlePath}" fill="var(--surface2)" stroke="var(--border)" stroke-width="1.5"/>
+        <rect x="6" y="${fillY}" width="52" height="${fillH}" fill="var(--accent)" clip-path="url(#cmBottleClip)" style="transition:y .6s cubic-bezier(.65,0,.35,1),height .6s cubic-bezier(.65,0,.35,1);"/>
+        <g clip-path="url(#cmBottleClip)">
+          <g clip-path="url(#cmLogoAbove)"><rect x="0" y="60" width="64" height="20" fill="var(--accent)" mask="url(#cmLogoMask)"/></g>
+          <g clip-path="url(#cmLogoBelow)"><rect x="0" y="60" width="64" height="20" fill="#fff" mask="url(#cmLogoMask)"/></g>
+        </g>
+        <rect x="24" y="4" width="16" height="7" rx="1.2" fill="#B9C2CC" stroke="#8B95A1" stroke-width="1"/>
       </svg>
     </div>
     <div>
