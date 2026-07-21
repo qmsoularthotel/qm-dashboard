@@ -2289,12 +2289,22 @@ function splitSoulart(rooms){
 }
 // Carico pesato: una partenza (pulizia completa) pesa il doppio di una fermata
 // (rifacimento/ripasso) — stima approssimativa per confrontare il carico reale,
-// non solo il numero di camere.
+// non solo il numero di camere. Alcune camere (più grandi/complesse) hanno un peso
+// leggermente maggiore: Art 1,2,3,8,9,13 = "pesanti", tutte le altre = standard.
 const HK_WEIGHT_PARTENZA=2,HK_WEIGHT_FERMATA=1;
+const HK_WEIGHT_PARTENZA_HEAVY=2.5,HK_WEIGHT_FERMATA_HEAVY=1.5;
+const HK_HEAVY_ROOMS=new Set(['Art 1','Art 2','Art 3','Art 8','Art 9','Art 13']);
+function hkRoomWeight(room,isPartenza){
+  const heavy=HK_HEAVY_ROOMS.has(room);
+  if(isPartenza)return heavy?HK_WEIGHT_PARTENZA_HEAVY:HK_WEIGHT_PARTENZA;
+  return heavy?HK_WEIGHT_FERMATA_HEAVY:HK_WEIGHT_FERMATA;
+}
 function hkCarico(rooms){
-  const nPart=(rooms.partenze?.length||0)+(rooms.cambi?.length||0);
-  const nFerm=rooms.fermate?.length||0;
-  return nPart*HK_WEIGHT_PARTENZA+nFerm*HK_WEIGHT_FERMATA;
+  let tot=0;
+  (rooms.partenze||[]).forEach(r=>tot+=hkRoomWeight(r,true));
+  (rooms.cambi||[]).forEach(r=>tot+=hkRoomWeight(r,true));
+  (rooms.fermate||[]).forEach(r=>tot+=hkRoomWeight(r,false));
+  return tot;
 }
 // Contenitore per la vista settimanale — popolato via _bkfChartRender() (stesso motore
 // SVG di Breakfast/Occupazione: barra accent + linea rossa tratteggiata) subito dopo
@@ -2325,7 +2335,7 @@ function renderHkWeekViewContainer(){
   return`<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:14px;display:flex;align-items:stretch;gap:0;">
     <div style="min-width:0;width:100%;">
       <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">Vista settimanale (carico pesato)</div>
-      <div style="font-size:13px;font-weight:500;color:var(--text-muted);line-height:1.5;margin-bottom:10px;">Il numero sopra ogni colonna non è il totale camere: una partenza (pulizia completa) pesa 2, una fermata (rifacimento) pesa 1 — es. 6 partenze + 3 fermate = 15.</div>
+      <div style="font-size:13px;font-weight:500;color:var(--text-muted);line-height:1.5;margin-bottom:10px;">Il numero sopra ogni colonna non è il totale camere: una partenza pesa 2 e una fermata 1 (2,5 e 1,5 per le camere Art 1,2,3,8,9,13, più impegnative) — es. 6 partenze + 3 fermate = 15.</div>
       <div id="hk-week-chart" style="width:100%;box-sizing:border-box;height:300px;display:flex;flex-direction:column;"></div>
     </div>
     <div style="flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:0 0 0 14px;border-left:1px solid var(--border-light);margin-left:8px;min-width:170px;">
@@ -2417,12 +2427,13 @@ function renderPianoGiorno(elId,refDate,forceIdx){
       :`<span style="background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;">${r}</span>`;
     const nPart=cambi.length+partenze.length;
     const carico=hkCarico({partenze,cambi,fermate});
+    const caricoTxt=carico.toLocaleString('it-IT',{minimumFractionDigits:carico%1?1:0,maximumFractionDigits:1});
     let h=`<div style="flex:1;min-width:0;">
       <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">${name}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
         ${nPart?`<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--text);">🛫 ${nPart} partenz${nPart===1?'a':'e'}</span>`:''}
         ${fermate.length?`<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--green-bg);border:1px solid var(--green);color:var(--green);">🛏 ${fermate.length} fermat${fermate.length===1?'a':'e'}</span>`:''}
-        <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);" title="Carico pesato: partenza=${HK_WEIGHT_PARTENZA}, fermata=${HK_WEIGHT_FERMATA}">⚖ ${carico}</span>
+        <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);" title="Carico pesato: partenza=${HK_WEIGHT_PARTENZA} (${HK_WEIGHT_PARTENZA_HEAVY} per Art 1,2,3,8,9,13), fermata=${HK_WEIGHT_FERMATA} (${HK_WEIGHT_FERMATA_HEAVY} per Art 1,2,3,8,9,13)">⚖ ${caricoTxt}</span>
       </div>`;
     if(nPart){
       h+=`<div style="font-size:9px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;">🛫 Partenze</div>`;
