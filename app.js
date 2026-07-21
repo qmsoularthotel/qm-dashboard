@@ -8550,7 +8550,7 @@ function ddtRenderSpese(){
     const fDdt=monDdt.filter(d=>_nf(d)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const active=_ddtFilter===nome;
-    const logoHtml=conf.logo?`<img src="${conf.logo}?v=3" alt="${nome}" style="height:56px;max-width:100%;object-fit:contain;display:block;margin:0 auto 10px;image-rendering:-webkit-optimize-contrast;">`:`<div style="height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:10px;">
+    const logoHtml=conf.logo?`<img src="${conf.logo}?v=4" alt="${nome}" style="height:56px;max-width:100%;object-fit:contain;display:block;margin:0 auto 10px;">`:`<div style="height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:10px;">
       <div style="width:36px;height:3px;background:${conf.accent};border-radius:2px;margin-bottom:8px;"></div>
       <div style="font-size:${nome.length>8?14:16}px;font-weight:800;letter-spacing:.04em;color:var(--text);text-transform:uppercase;">${nome}</div>
     </div>`;
