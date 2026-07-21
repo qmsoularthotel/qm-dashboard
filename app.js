@@ -7298,55 +7298,52 @@ function cmRender(state,key){
   const pct=CM_ROOMS.length?visited/CM_ROOMS.length:0;
   const ringCirc=339;
   const ringOffset=Math.round(ringCirc-ringCirc*pct);
-  let h=`<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;">
-    <div>
-      <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-weight:700;">${dateStr}</div>
-    </div>
+  let h=`<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+    <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-weight:700;">${dateStr}</div>
     <div style="display:flex;gap:8px;">
-      <button onclick="cmPrintBottle()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);padding:9px 16px;border-radius:9px;font-weight:700;font-size:var(--fs-xxs);cursor:pointer;">🖨️ Stampa A4</button>
+      <button onclick="cmPrintBottle()" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:9px 16px;border-radius:9px;font-weight:700;font-size:var(--fs-xxs);cursor:pointer;">🖨️ Stampa A4</button>
       <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;padding:9px 16px;border-radius:9px;font-weight:700;font-size:var(--fs-xxs);text-decoration:none;">📱 Apri app mobile</a>
     </div>
   </div>`;
-  h+=`<div style="display:grid;grid-template-columns:170px 1fr;gap:20px;align-items:center;background:var(--surface);border:1px solid var(--border-light);border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);">
+  h+=`<div style="display:grid;grid-template-columns:150px 1fr;gap:20px;align-items:center;margin-bottom:16px;">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
-      <div style="position:relative;width:130px;height:130px;">
-        <svg width="130" height="130" viewBox="0 0 130 130" style="transform:rotate(-90deg);">
+      <div style="position:relative;width:120px;height:120px;">
+        <svg width="120" height="120" viewBox="0 0 130 130" style="transform:rotate(-90deg);">
           <circle cx="65" cy="65" r="54" fill="none" stroke="var(--surface2)" stroke-width="4"/>
           <circle cx="65" cy="65" r="54" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${ringCirc}" stroke-dashoffset="${ringOffset}" style="transition:stroke-dashoffset .6s cubic-bezier(.65,0,.35,1);"/>
         </svg>
         <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-          <div style="font-size:28px;font-weight:700;line-height:1;">${visited}/${CM_ROOMS.length}</div>
-          <div style="font-size:10px;color:var(--text-dim);font-weight:600;margin-top:2px;">CAMERE</div>
+          <div style="font-size:26px;font-weight:700;line-height:1;">${visited}/${CM_ROOMS.length}</div>
+          <div style="font-size:9.5px;color:var(--text-dim);font-weight:600;margin-top:2px;">CAMERE</div>
         </div>
       </div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;">Visitate oggi</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:start;">
       ${[[btl.length,'Da mettere','var(--accent)'],[ok.length,'Non consumate','var(--green)'],[pnd.length,'Da visitare','var(--text-dim)']].map(([n,lbl,tint])=>`
-      <div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${tint};border-radius:10px;padding:6px 14px;">
+      <div style="background:var(--surface2);border-left:3px solid ${tint};border-radius:8px;padding:6px 14px;">
         <div style="display:flex;align-items:center;gap:7px;margin-bottom:1px;">
           <span style="width:7px;height:7px;border-radius:50%;background:${tint};flex-shrink:0;"></span>
           <span style="font-size:10px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">${lbl}</span>
         </div>
-        <div style="font-size:32px;font-weight:700;color:var(--text);line-height:1.15;">${n}</div>
+        <div style="font-size:28px;font-weight:700;color:var(--text);line-height:1.15;">${n}</div>
       </div>`).join('')}
     </div>
   </div>`;
+  const groupLbl=(t,tint)=>`<div style="font-size:12px;font-weight:700;color:${tint||'var(--text-muted)'};text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">${t}</div>`;
+  h+=`<div style="border-top:1px solid var(--border-light);margin-top:2px;padding-top:14px;margin-bottom:14px;">`;
   if(btl.length>0){
-    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);">
-      <div style="padding:13px 18px;font-size:var(--fs-xs);font-weight:600;background:var(--amber-bg);color:var(--amber);display:flex;align-items:center;gap:6px;">💧 Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}</div>
-      <div style="padding:14px 16px;display:flex;flex-wrap:wrap;gap:8px;">${btl.map(r=>`<span style="padding:6px 15px;border-radius:20px;font-size:var(--fs-xs);font-weight:600;background:var(--accent-bg);color:var(--accent);border:1px solid #B8CEEE;">${r}</span>`).join('')}</div>
-    </div>`;
+    h+=groupLbl(`💧 Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}`,'var(--amber)');
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:8px;">${btl.map(r=>`<span style="padding:6px 15px;border-radius:20px;font-size:var(--fs-xs);font-weight:600;background:var(--accent-bg);color:var(--accent);border:1px solid #B8CEEE;">${r}</span>`).join('')}</div>`;
   }else{
-    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);">
-      <div style="padding:13px 18px;font-size:var(--fs-xs);font-weight:600;background:var(--green-bg);color:var(--green);">💧 Nessuna bottiglia consumata — niente da portare ✅</div>
-    </div>`;
+    h+=`<div style="font-size:var(--fs-xs);font-weight:600;color:var(--green);">💧 Nessuna bottiglia consumata — niente da portare ✅</div>`;
   }
+  h+=`</div>`;
   if(pnd.length>0){
-    h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);">
-      <div style="padding:13px 18px;font-size:var(--fs-xs);font-weight:600;background:var(--surface2);color:var(--text-dim);">⭕ Non ancora visitate — ${pnd.length} ${pnd.length===1?'camera':'camere'}</div>
-      <div style="padding:14px 16px;display:flex;flex-wrap:wrap;gap:8px;">${pnd.map(r=>`<span style="padding:6px 15px;border-radius:20px;font-size:var(--fs-xs);font-weight:600;background:var(--surface);color:var(--text-dim);border:1px solid var(--border-light);">${r}</span>`).join('')}</div>
-    </div>`;
+    h+=`<div style="border-top:1px solid var(--border-light);padding-top:14px;">`;
+    h+=groupLbl(`⭕ Non ancora visitate — ${pnd.length} ${pnd.length===1?'camera':'camere'}`);
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:8px;">${pnd.map(r=>`<span style="padding:6px 15px;border-radius:20px;font-size:var(--fs-xs);font-weight:600;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border-light);">${r}</span>`).join('')}</div>`;
+    h+=`</div>`;
   }
   el.innerHTML=h;
   // Carica report QC settimanale in background
@@ -7412,46 +7409,44 @@ function cmRenderWeeklyQC(perRoom,totalChecks,weekFrom,weekTo,days){
     const bodyHtml=roomsDay.length
       ?`Bottiglia sostituita in ${roomsDay.map(r=>`<strong style="font-weight:700;">${r}</strong>`).join(', ')}`
       :`<span style="color:var(--text-dim);font-style:italic;">Nessun giro registrato</span>`;
-    return`<div style="display:flex;gap:12px;padding:9px 18px;${idx>0?'border-top:1px solid var(--border-light)':''};">
+    return`<div style="display:flex;gap:12px;padding:9px 0;${idx>0?'border-top:1px solid var(--border-light)':''};">
       <div style="width:70px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;padding-top:1px;">${dy.label} ${dy.date}</div>
       <div style="width:2px;background:var(--border-light);position:relative;flex-shrink:0;"><span style="position:absolute;left:-3px;top:2px;width:8px;height:8px;border-radius:50%;background:${roomsDay.length?'var(--green)':'var(--surface2)'};"></span></div>
       <div style="flex:1;font-size:12.5px;color:var(--text);line-height:1.5;padding-bottom:2px;">${bodyHtml}</div>
     </div>`;
-  }).join(''):`<div style="color:var(--text-dim);font-size:13px;padding:12px 14px;">Nessun controllo questa settimana.</div>`;
+  }).join(''):`<div style="color:var(--text-dim);font-size:13px;padding:10px 0;">Nessun controllo questa settimana.</div>`;
   // Testo anteprima WhatsApp
   const waLines=roomsChecked.map(r=>`• ${r} — ${perRoom[r]} ${perRoom[r]===1?'volta':'volte'}`).join('\n');
   const waMsg=`Ciao Laura ti invio il report settimanale dei miei controlli qualità nelle camere SoulArt legati alla distribuzione delle Bottiglie Culligan.\n\n📊 Quality Check Settimanale SoulArt Hotel\n${weekFrom} → ${weekTo}\n\n✅ ${roomsChecked.length} ${roomsChecked.length===1?'camera controllata':'camere controllate'} su ${CM_ROOMS.length}\n\n${waLines||'Nessun dato'}\n\nQuality Manager Paolo P.`;
   const waText=encodeURIComponent(waMsg);
   const section=document.createElement('div');
-  section.style.cssText='margin-top:14px;';
+  section.style.cssText='border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;';
   section.innerHTML=`
-    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);">
-      <div style="padding:16px 18px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
         <div>
-          <div style="font-size:var(--fs-xs);font-weight:700;">📊 Quality Check Settimanale SoulArt Hotel</div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">${weekFrom} → ${weekTo}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">📊 Quality Check Settimanale SoulArt Hotel</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">${weekFrom} → ${weekTo}</div>
         </div>
         <div style="text-align:right;">
-          <span style="font-size:24px;font-weight:700;">${roomsChecked.length}</span>
-          <span style="font-size:var(--fs-xxs);color:var(--text-dim);"> / ${CM_ROOMS.length} camere</span>
+          <span style="font-size:20px;font-weight:700;color:var(--text);">${roomsChecked.length}</span>
+          <span style="font-size:11px;color:var(--text-dim);"> / ${CM_ROOMS.length} camere</span>
         </div>
       </div>
-      <div style="padding:4px 0;">${logRows}</div>
-      ${roomsNot.length?`<div style="padding:8px 18px;border-top:1px solid var(--border-light);"><span style="font-size:var(--fs-xxs);color:var(--text-dim);">Non visitate: ${roomsNot.join(', ')}</span></div>`:''}
-      <div style="padding:12px 18px;border-top:1px solid var(--border-light);display:flex;flex-direction:column;gap:8px;">
+      <div>${logRows}</div>
+      ${roomsNot.length?`<div style="padding-top:8px;margin-top:4px;border-top:1px solid var(--border-light);"><span style="font-size:11px;color:var(--text-dim);">Non visitate: ${roomsNot.join(', ')}</span></div>`:''}
+      <div style="padding-top:12px;margin-top:10px;border-top:1px solid var(--border-light);display:flex;flex-direction:column;gap:8px;">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <a href="https://wa.me/393274919588?text=${waText}" target="_blank" style="display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-xs);padding:10px 18px;border-radius:10px;background:#25D366;color:#fff;text-decoration:none;font-weight:700;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.122 1.528 5.857L.057 23.882a.5.5 0 0 0 .607.65l6.277-1.638A11.944 11.944 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.956 9.956 0 0 1-5.13-1.418l-.36-.214-3.733.974.998-3.647-.236-.374A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
             WhatsApp albergo
           </a>
-          <button data-msg="${waMsg.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" onclick="navigator.clipboard.writeText(this.dataset.msg).then(()=>{this.textContent='✓ Copiato!';setTimeout(()=>this.textContent='📋 Copia testo',2000);});" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:var(--fs-xs);color:var(--text);cursor:pointer;font-weight:600;">📋 Copia testo</button>
-          <button onclick="const p=this.parentNode.parentNode.querySelector('.qc-preview');p.style.display=p.style.display==='none'?'block':'none';this.textContent=p.style.display==='none'?'👁 Anteprima':'✕ Chiudi';" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:var(--fs-xs);color:var(--text-dim);cursor:pointer;">👁 Anteprima</button>
+          <button data-msg="${waMsg.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" onclick="navigator.clipboard.writeText(this.dataset.msg).then(()=>{this.textContent='✓ Copiato!';setTimeout(()=>this.textContent='📋 Copia testo',2000);});" style="display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:var(--fs-xs);color:var(--text);cursor:pointer;font-weight:600;">📋 Copia testo</button>
+          <button onclick="const p=this.parentNode.parentNode.querySelector('.qc-preview');p.style.display=p.style.display==='none'?'block':'none';this.textContent=p.style.display==='none'?'👁 Anteprima':'✕ Chiudi';" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:var(--fs-xs);color:var(--text-dim);cursor:pointer;">👁 Anteprima</button>
         </div>
-        <div class="qc-preview" style="display:none;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:12px;">
-          <pre style="font-family:inherit;font-size:12px;color:#166534;white-space:pre-wrap;margin:0;">${waMsg.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</pre>
+        <div class="qc-preview" style="display:none;background:var(--green-bg);border:1px solid var(--green);border-radius:8px;padding:12px;">
+          <pre style="font-family:inherit;font-size:12px;color:var(--green);white-space:pre-wrap;margin:0;">${waMsg.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</pre>
         </div>
-      </div>
-    </div>`;
+      </div>`;
   el.appendChild(section);
 }
 

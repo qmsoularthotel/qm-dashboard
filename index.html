@@ -1514,7 +1514,13 @@
       </div>
       <!-- ── CONTROLLO MATTINO ── -->
       <div class="view" id="view-controllo-mattino">
-        <div id="cm-content"></div>
+        <div class="panel">
+          <div class="panel-header">
+            <img src="img/icons/acqua_culligan.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+            <span class="panel-title">Distribuzione Culligan</span>
+          </div>
+          <div class="panel-body" id="cm-content"></div>
+        </div>
       </div>
   </main>
 </div>
@@ -1536,7 +1542,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=2"></script>
-<script src="app.js?v=625-20260721"></script>
+<script src="app.js?v=626-20260721"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
