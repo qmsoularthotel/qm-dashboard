@@ -7407,24 +7407,24 @@ function cmRenderWeeklyQC(perRoom,totalChecks,weekFrom,weekTo,days){
       return rs&&rs.visited&&!rs.dnd&&!rs.libera&&rs.bottiglia==='consumata';
     }):[];
     const bodyHtml=roomsDay.length
-      ?`Bottiglia sostituita in ${roomsDay.map(r=>`<strong style="font-weight:700;">${r}</strong>`).join(', ')}`
-      :`<span style="color:var(--text-dim);font-style:italic;">Nessun giro registrato</span>`;
+      ?`<div style="display:flex;flex-wrap:wrap;gap:6px;">${roomsDay.map(r=>`<span style="padding:3px 11px;border-radius:14px;font-size:11px;font-weight:600;background:var(--accent-bg);color:var(--accent);border:1px solid #B8CEEE;">${r}</span>`).join('')}</div>`
+      :`<span style="color:var(--text-dim);font-style:italic;font-size:12px;">Nessun giro registrato</span>`;
     return`<div style="display:flex;gap:12px;padding:9px 0;${idx>0?'border-top:1px solid var(--border-light)':''};">
-      <div style="width:70px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;padding-top:1px;">${dy.label} ${dy.date}</div>
-      <div style="width:2px;background:var(--border-light);position:relative;flex-shrink:0;"><span style="position:absolute;left:-3px;top:2px;width:8px;height:8px;border-radius:50%;background:${roomsDay.length?'var(--green)':'var(--surface2)'};"></span></div>
-      <div style="flex:1;font-size:12.5px;color:var(--text);line-height:1.5;padding-bottom:2px;">${bodyHtml}</div>
+      <div style="width:70px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;padding-top:3px;">${dy.label} ${dy.date}</div>
+      <div style="width:2px;background:var(--border-light);position:relative;flex-shrink:0;"><span style="position:absolute;left:-3px;top:4px;width:8px;height:8px;border-radius:50%;background:${roomsDay.length?'var(--green)':'var(--surface2)'};"></span></div>
+      <div style="flex:1;padding-bottom:2px;">${bodyHtml}</div>
     </div>`;
   }).join(''):`<div style="color:var(--text-dim);font-size:13px;padding:10px 0;">Nessun controllo questa settimana.</div>`;
   // Testo anteprima WhatsApp
   const waLines=roomsChecked.map(r=>`• ${r} — ${perRoom[r]} ${perRoom[r]===1?'volta':'volte'}`).join('\n');
-  const waMsg=`Ciao Laura ti invio il report settimanale dei miei controlli qualità nelle camere SoulArt legati alla distribuzione delle Bottiglie Culligan.\n\n📊 Quality Check Settimanale SoulArt Hotel\n${weekFrom} → ${weekTo}\n\n✅ ${roomsChecked.length} ${roomsChecked.length===1?'camera controllata':'camere controllate'} su ${CM_ROOMS.length}\n\n${waLines||'Nessun dato'}\n\nQuality Manager Paolo P.`;
+  const waMsg=`Ciao Laura ti invio il report settimanale dei miei controlli qualità nelle camere SoulArt legati alla distribuzione delle Bottiglie Culligan.\n\n📊 Camere controllate nella settimana\n${weekFrom} → ${weekTo}\n\n✅ ${roomsChecked.length} ${roomsChecked.length===1?'camera controllata':'camere controllate'} su ${CM_ROOMS.length}\n\n${waLines||'Nessun dato'}\n\nQuality Manager Paolo P.`;
   const waText=encodeURIComponent(waMsg);
   const section=document.createElement('div');
   section.style.cssText='border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;';
   section.innerHTML=`
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
         <div>
-          <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">📊 Quality Check Settimanale SoulArt Hotel</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">📊 Camere controllate nella settimana</div>
           <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">${weekFrom} → ${weekTo}</div>
         </div>
         <div style="text-align:right;">
@@ -7433,7 +7433,10 @@ function cmRenderWeeklyQC(perRoom,totalChecks,weekFrom,weekTo,days){
         </div>
       </div>
       <div>${logRows}</div>
-      ${roomsNot.length?`<div style="padding-top:8px;margin-top:4px;border-top:1px solid var(--border-light);"><span style="font-size:11px;color:var(--text-dim);">Non visitate: ${roomsNot.join(', ')}</span></div>`:''}
+      ${roomsNot.length?`<div style="padding-top:10px;margin-top:6px;border-top:1px solid var(--border-light);">
+        <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;">Non visitate questa settimana</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">${roomsNot.map(r=>`<span style="padding:3px 11px;border-radius:14px;font-size:11px;font-weight:600;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border-light);">${r}</span>`).join('')}</div>
+      </div>`:''}
       <div style="padding-top:12px;margin-top:10px;border-top:1px solid var(--border-light);display:flex;flex-direction:column;gap:8px;">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <a href="https://wa.me/393274919588?text=${waText}" target="_blank" style="display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-xs);padding:10px 18px;border-radius:10px;background:#25D366;color:#fff;text-decoration:none;font-weight:700;">
