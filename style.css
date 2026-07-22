@@ -56,6 +56,13 @@ body.dark .panel{box-shadow:none;}
 .uc-slot.loaded.stale .uc-dot{background:var(--red);animation:ucDotBlink 1.1s ease-in-out infinite;}
 @keyframes ucDotBlink{0%,100%{opacity:1;}50%{opacity:.2;}}
 @keyframes ucBorderBlink{0%,100%{border-color:var(--red);}50%{border-color:var(--border-light);}}
+/* Distribuzione Culligan — animazione di riempimento della bottiglia al caricamento
+   della pagina (parte vuota e sale fino al livello reale), poi la superficie del
+   liquido "respira" con un leggero movimento continuo. Valori dinamici via --cm-fy/--cm-fh. */
+#cm-content .cm-fill{animation:cmFillUp 1.6s cubic-bezier(.22,.61,.36,1) both;}
+@keyframes cmFillUp{0%{y:121;height:0;}100%{y:var(--cm-fy);height:var(--cm-fh);}}
+#cm-content .cm-wave{animation:cmWave 2.6s ease-in-out 1.6s infinite;}
+@keyframes cmWave{0%,100%{transform:translateY(0);}50%{transform:translateY(-1.2px);}}
 .uc-panel{display:none;grid-column:1/-1;background:var(--accent-bg);border:1px solid var(--border-light);border-radius:8px;padding:10px;margin-bottom:2px;}
 .uc-panel.open{display:block;}
 .uc-feeds-line{font-size:10.5px;color:var(--text-muted);margin-bottom:8px;}

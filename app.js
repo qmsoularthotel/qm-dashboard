@@ -7330,7 +7330,8 @@ function cmRender(state,key){
           <clipPath id="cmLogoBelow"><rect x="0" y="${fillY}" width="64" height="${142-fillY}"/></clipPath>
         </defs>
         <path d="${cmBottlePath}" fill="var(--surface2)" stroke="var(--border)" stroke-width="1.5"/>
-        <rect x="6" y="${fillY}" width="52" height="${fillH}" fill="var(--accent)" clip-path="url(#cmBottleClip)" style="transition:y .6s cubic-bezier(.65,0,.35,1),height .6s cubic-bezier(.65,0,.35,1);"/>
+        <rect class="cm-fill" x="6" y="${fillY}" width="52" height="${fillH}" fill="var(--accent)" clip-path="url(#cmBottleClip)" style="--cm-fy:${fillY};--cm-fh:${fillH};transition:y .6s cubic-bezier(.65,0,.35,1),height .6s cubic-bezier(.65,0,.35,1);"/>
+        <rect class="cm-wave" x="6" y="${fillY}" width="52" height="3" fill="var(--accent)" opacity=".5" clip-path="url(#cmBottleClip)"/>
         <g clip-path="url(#cmBottleClip)">
           <g clip-path="url(#cmLogoAbove)"><rect x="0" y="60" width="64" height="20" fill="var(--accent)" mask="url(#cmLogoMask)"/></g>
           <g clip-path="url(#cmLogoBelow)"><rect x="0" y="60" width="64" height="20" fill="#fff" mask="url(#cmLogoMask)"/></g>
