@@ -7339,12 +7339,14 @@ function cmRender(state,key){
       </svg>
     </div>
     <div>
-      <div style="font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:28px;">${visited}<span style="font-size:15px;font-weight:400;color:var(--text-dim);"> / ${CM_OCCUPIED.length} camere visitate</span></div>
-      ${[[btl.length,'Da mettere',cmIconBottle,'#2F80D9','#E4F0FC'],[ok.length,'Non consumate',cmIconCheck,'var(--green)','var(--green-bg)'],[pnd.length,'Da visitare',cmIconEye,'var(--text-dim)','var(--surface2)']].map(([n,lbl,icon,fg,bg],idx)=>`
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;${idx>0?'border-top:1px solid var(--border-light);':''}">
-        <div><div style="font-size:22px;font-weight:300;color:${fg};line-height:1;">${n}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">${lbl}</div></div>
-        <div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${bg};color:${fg};">${icon}</div>
-      </div>`).join('')}
+      <div style="font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:16px;">${visited}<span style="font-size:15px;font-weight:400;color:var(--text-dim);"> / ${CM_OCCUPIED.length} camere visitate</span></div>
+      <div style="border-top:1px solid var(--border-light);padding-top:16px;display:flex;gap:22px;flex-wrap:wrap;">
+        ${[[btl.length,'Da mettere',cmIconBottle,'#2F80D9','#E4F0FC'],[ok.length,'Non consumate',cmIconCheck,'var(--green)','var(--green-bg)'],[pnd.length,'Da visitare',cmIconEye,'var(--text-dim)','var(--surface2)']].map(([n,lbl,icon,fg,bg])=>`
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${bg};color:${fg};">${icon}</div>
+          <div><div style="font-size:22px;font-weight:300;color:${fg};line-height:1;">${n}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">${lbl}</div></div>
+        </div>`).join('')}
+      </div>
     </div>
   </div>`;
   const groupLbl=(t,tint)=>`<div style="font-size:12px;font-weight:700;color:${tint||'var(--text-muted)'};text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">${t}</div>`;
