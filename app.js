@@ -7309,34 +7309,41 @@ function cmRender(state,key){
       <a href="controllo-mattino.html" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;padding:9px 16px;border-radius:9px;font-weight:700;font-size:var(--fs-xxs);text-decoration:none;">📱 Apri app mobile</a>
     </div>
   </div>`;
-  // Bottiglia: sagoma decorativa piena (Culligan reale — collo stretto e lungo, corpo
-  // dritto, etichetta col logo), sempre colorata; l'indicatore reale è l'anello a fianco
-  // (percentuale camere visitate) invece del vecchio riempimento graduale del liquido.
+  // Metafora bottiglia: coerente col soggetto (distribuzione acqua Culligan) — il livello
+  // di riempimento della sagoma è la % di camere visitate, invece di un anello generico.
+  // Sagoma ridisegnata sulla bottiglia Culligan reale (collo stretto e lungo, corpo dritto).
+  // Etichetta col logo: sopra il livello del liquido è colorata come il riempimento,
+  // sotto — appena il livello la raggiunge — diventa bianca per restare leggibile.
   const cmBottlePath='M23.5 11h17v24c9 2 11 9 11.5 17v62c0 4-3 7-7 7H19c-4 0-7-3-7-7V52c0.5-8 2.5-15 11.5-17V11z';
-  const ringCirc2=188.5;
-  const ringOffset2=Math.round(ringCirc2-ringCirc2*pct);
-  h+=`<div style="display:grid;grid-template-columns:130px 1fr;gap:26px;align-items:center;margin-bottom:6px;">
-    <div style="position:relative;width:104px;height:230.75px;margin:0 auto;filter:drop-shadow(0 6px 8px rgba(0,0,0,.10)) drop-shadow(0 1px 2px rgba(0,0,0,.06));">
+  const fillH=Math.round(107*pct);
+  const fillY=14+(107-fillH);
+  h+=`<div style="display:grid;grid-template-columns:130px 1fr;gap:26px;align-items:center;margin-bottom:16px;">
+    <div style="position:relative;width:104px;height:230.75px;margin:0 auto;">
       <svg width="104" height="230.75" viewBox="0 0 64 142">
-        <path d="${cmBottlePath}" fill="var(--accent)" stroke="var(--accent)" stroke-width="1"/>
+        <defs>
+          <clipPath id="cmBottleClip"><path d="${cmBottlePath}"/></clipPath>
+          <mask id="cmLogoMask"><image href="img/logo-culligan.png" x="13" y="64" width="38" height="11.45"/></mask>
+          <clipPath id="cmLogoAbove"><rect x="0" y="0" width="64" height="${fillY}"/></clipPath>
+          <clipPath id="cmLogoBelow"><rect x="0" y="${fillY}" width="64" height="${142-fillY}"/></clipPath>
+        </defs>
+        <path d="${cmBottlePath}" fill="var(--surface2)" stroke="var(--border)" stroke-width="1.5"/>
+        <rect x="6" y="${fillY}" width="52" height="${fillH}" fill="var(--accent)" clip-path="url(#cmBottleClip)" style="transition:y .6s cubic-bezier(.65,0,.35,1),height .6s cubic-bezier(.65,0,.35,1);"/>
+        <g clip-path="url(#cmBottleClip)">
+          <g clip-path="url(#cmLogoAbove)"><rect x="0" y="60" width="64" height="20" fill="var(--accent)" mask="url(#cmLogoMask)"/></g>
+          <g clip-path="url(#cmLogoBelow)"><rect x="0" y="60" width="64" height="20" fill="#fff" mask="url(#cmLogoMask)"/></g>
+        </g>
         <rect x="24" y="4" width="16" height="7" rx="1.2" fill="#B9C2CC" stroke="#8B95A1" stroke-width="1"/>
-        <image href="img/logo-culligan.png" x="15" y="64" width="34" height="10.25"/>
       </svg>
     </div>
     <div>
-      <div style="font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:4px;">${visited}<span style="font-size:15px;font-weight:400;color:var(--text-dim);"> / ${CM_OCCUPIED.length}</span></div>
-      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:14px;">Camere visitate</div>
-      <svg width="72" height="72" viewBox="0 0 72 72" style="transform:rotate(-90deg);">
-        <circle cx="36" cy="36" r="30" fill="none" stroke="var(--surface2)" stroke-width="5"/>
-        <circle cx="36" cy="36" r="30" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-dasharray="${ringCirc2}" stroke-dashoffset="${ringOffset2}" style="transition:stroke-dashoffset .6s cubic-bezier(.65,0,.35,1);"/>
-      </svg>
+      <div style="font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:14px;">${visited}<span style="font-size:15px;font-weight:400;color:var(--text-dim);"> / ${CM_OCCUPIED.length} camere visitate</span></div>
+      <div style="display:flex;gap:22px;flex-wrap:wrap;">
+        <div><div style="font-size:22px;font-weight:300;color:var(--accent);line-height:1;">${btl.length}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">Da mettere</div></div>
+        <div><div style="font-size:22px;font-weight:300;color:var(--green);line-height:1;">${ok.length}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">Non consumate</div></div>
+        <div><div style="font-size:22px;font-weight:300;color:var(--text-dim);line-height:1;">${pnd.length}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">Da visitare</div></div>
+      </div>
     </div>
   </div>`;
-  h+=[[btl.length,'Da mettere','💧','var(--accent)','var(--accent-bg)'],[ok.length,'Non consumate','✓','var(--green)','var(--green-bg)'],[pnd.length,'Da visitare','👁','var(--text-dim)','var(--surface2)']].map(([n,lbl,icon,fg,bg])=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-top:1px solid var(--border-light);">
-      <div><div style="font-size:26px;font-weight:700;line-height:1;color:${fg};">${n}</div><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-top:3px;">${lbl}</div></div>
-      <div style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;background:${bg};color:${fg};">${icon}</div>
-    </div>`).join('');
   const groupLbl=(t,tint)=>`<div style="font-size:12px;font-weight:700;color:${tint||'var(--text-muted)'};text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">${t}</div>`;
   h+=`<div style="border-top:1px solid var(--border-light);margin-top:2px;padding-top:14px;margin-bottom:14px;">`;
   if(btl.length>0){
