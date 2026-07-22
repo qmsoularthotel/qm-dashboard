@@ -104,34 +104,32 @@ body{min-height:100vh;overflow-x:hidden;}
 
 /* ══ ROOM GRID ══ */
 .rooms-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.room-card{background:var(--surface);border-radius:var(--r);
-  padding:14px 6px 12px;cursor:pointer;
+.room-card{background:#fff;border-radius:var(--r);overflow:hidden;padding:0;cursor:pointer;
   box-shadow:var(--sh-lift),var(--card-top);
   border:var(--card-border);text-align:center;
   -webkit-tap-highlight-color:transparent;transition:transform .12s,box-shadow .12s;
-  display:flex;flex-direction:column;align-items:center;gap:2px;}
-.room-card:active{transform:scale(.91);box-shadow:0 1px 4px rgba(0,0,0,.08);}
-.room-card.s-empty  {opacity:.38;box-shadow:0 1px 4px rgba(0,0,0,.05);}
-.room-card.s-bottle {background:var(--blue-bg); border-top:5px solid #2563EB;box-shadow:0 6px 18px rgba(37,99,235,.15),var(--card-top);}
-.room-card.s-both   {background:var(--blue-bg); border-top:5px solid #2563EB;box-shadow:0 6px 18px rgba(37,99,235,.15),var(--card-top);}
-.room-card.s-ok     {background:var(--green-bg);border-top:5px solid #059669;box-shadow:0 6px 18px rgba(5,150,105,.13),var(--card-top);}
-.room-card.s-dnd    {background:var(--red-bg);  border-top:5px solid #DC2626;box-shadow:0 6px 18px rgba(220,38,38,.13),var(--card-top);}
-.room-card.s-missing{background:var(--red-bg);  border-top:5px solid #DC2626;box-shadow:0 6px 18px rgba(220,38,38,.13),var(--card-top);}
-.room-card.s-pending{border-top:5px solid var(--border);}
-/* Numero camera colorato per stato */
-.room-card.s-bottle .rc-roomnum,
-.room-card.s-both .rc-roomnum   { color:#1D4ED8; }
-.room-card.s-ok .rc-roomnum     { color:#059669; }
-.room-card.s-dnd .rc-roomnum,
-.room-card.s-missing .rc-roomnum{ color:#DC2626; }
-.room-card.s-empty .rc-roomnum  { color:var(--text-muted); }
-.room-card.s-pending .rc-roomnum{ color:var(--text); }
+  display:flex;flex-direction:column;}
+.room-card:active{transform:scale(.94);}
+.room-card.s-empty{opacity:.38;}
+/* metà superiore: colore pieno per stato (visibile da lontano), contiene il numero */
+.rc-top{padding:14px 4px 10px;background:var(--surface2);}
+.room-card.s-bottle .rc-top,
+.room-card.s-both .rc-top   {background:#2563EB;}
+.room-card.s-ok .rc-top     {background:#059669;}
+.room-card.s-warn .rc-top   {background:var(--amber);}
+.room-card.s-dnd .rc-top,
+.room-card.s-missing .rc-top{background:#DC2626;}
+.room-card.s-pending .rc-top{background:var(--surface2);}
+/* metà inferiore: bianca, per icona piano + etichetta + stato testuale */
+.rc-bottom{padding:6px 4px 10px;background:#fff;}
 
 /* numero camera — grande per lettura da carrello */
 .rc-num{display:flex;flex-direction:column;align-items:center;gap:0;line-height:1;}
 .rc-prefix{font-size:.52rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--text-muted);line-height:1.4;margin-bottom:-2px;}
-.rc-roomnum{font-size:3.5rem;font-weight:900;color:#111;line-height:.95;letter-spacing:-.03em;}
+  color:rgba(255,255,255,.75);line-height:1.4;margin-bottom:-2px;}
+.rc-roomnum{font-size:3.5rem;font-weight:900;color:#fff;line-height:.95;letter-spacing:-.03em;}
+.room-card.s-pending .rc-prefix,.room-card.s-empty .rc-prefix{color:var(--text-muted);}
+.room-card.s-pending .rc-roomnum,.room-card.s-empty .rc-roomnum{color:var(--text);}
 
 /* icona piano — elemento principale */
 .rc-piano-ico{font-size:1.8rem;line-height:1;margin:2px 0 0;}
@@ -696,14 +694,18 @@ function _renderHome(){
     const rNum=rParts.length>1?rParts.slice(1).join(' '):room;
     const rPfx=rParts.length>1?rParts[0]:'';
     return`<div class="room-card s-${st}" id="rc-${room.replace(/\s+/g,'-')}" onclick="openRoom('${room}')">
-      <div class="rc-num">
-        ${rPfx?`<span class="rc-prefix">${rPfx}</span>`:''}
-        <span class="rc-roomnum">${rNum}</span>
-        ${isBk?'<span style="font-size:.55rem;background:#2563EB;color:#fff;border-radius:4px;padding:1px 5px;font-weight:700;margin-top:1px;line-height:1.6;">BK</span>':''}
+      <div class="rc-top">
+        <div class="rc-num">
+          ${rPfx?`<span class="rc-prefix">${rPfx}</span>`:''}
+          <span class="rc-roomnum">${rNum}</span>
+          ${isBk?'<span style="font-size:.55rem;background:rgba(255,255,255,.92);color:#1c3a5e;border-radius:4px;padding:1px 5px;font-weight:700;margin-top:1px;line-height:1.6;">BK</span>':''}
+        </div>
       </div>
-      <div class="rc-piano-ico">${ico}</div>
-      <div class="rc-piano-lbl">${lbl}</div>
-      <div class="rc-dot d-${st}">${dot}</div>
+      <div class="rc-bottom">
+        <div class="rc-piano-ico">${ico}</div>
+        <div class="rc-piano-lbl">${lbl}</div>
+        <div class="rc-dot d-${st}">${dot}</div>
+      </div>
     </div>`;
   }).join('');
 }
