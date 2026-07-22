@@ -7317,9 +7317,12 @@ function cmRender(state,key){
   const cmBottlePath='M23.5 11h17v24c9 2 11 9 11.5 17v62c0 4-3 7-7 7H19c-4 0-7-3-7-7V52c0.5-8 2.5-15 11.5-17V11z';
   const fillH=Math.round(107*pct);
   const fillY=14+(107-fillH);
-  h+=`<div style="display:grid;grid-template-columns:230px 1fr;gap:26px;align-items:center;margin-bottom:16px;">
-    <div style="position:relative;width:208px;height:461.5px;margin:0 auto;filter:drop-shadow(0 6px 8px rgba(0,0,0,.10)) drop-shadow(0 1px 2px rgba(0,0,0,.06));">
-      <svg width="208" height="461.5" viewBox="0 0 64 142">
+  const cmIconBottle='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6M9 2v3.2c0 .6-.3 1.1-.8 1.5C7.1 7.6 6.5 9 6.5 10.5V20a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-9.5c0-1.5-.6-2.9-1.7-3.8-.5-.4-.8-.9-.8-1.5V2"/></svg>';
+  const cmIconCheck='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>';
+  const cmIconEye='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>';
+  h+=`<div style="display:grid;grid-template-columns:180px 1fr;gap:26px;align-items:center;margin-bottom:16px;">
+    <div style="position:relative;width:156px;height:346.125px;margin:0 auto;filter:drop-shadow(0 6px 8px rgba(0,0,0,.10)) drop-shadow(0 1px 2px rgba(0,0,0,.06));">
+      <svg width="156" height="346.125" viewBox="0 0 64 142">
         <defs>
           <clipPath id="cmBottleClip"><path d="${cmBottlePath}"/></clipPath>
           <mask id="cmLogoMask"><image href="img/logo-culligan.png" x="13" y="64" width="38" height="11.45"/></mask>
@@ -7336,12 +7339,12 @@ function cmRender(state,key){
       </svg>
     </div>
     <div>
-      <div style="font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:14px;">${visited}<span style="font-size:15px;font-weight:400;color:var(--text-dim);"> / ${CM_OCCUPIED.length} camere visitate</span></div>
-      <div style="display:flex;gap:22px;flex-wrap:wrap;">
-        <div><div style="font-size:22px;font-weight:300;color:var(--accent);line-height:1;">${btl.length}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">Da mettere</div></div>
-        <div><div style="font-size:22px;font-weight:300;color:var(--green);line-height:1;">${ok.length}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">Non consumate</div></div>
-        <div><div style="font-size:22px;font-weight:300;color:var(--text-dim);line-height:1;">${pnd.length}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">Da visitare</div></div>
-      </div>
+      <div style="font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:28px;">${visited}<span style="font-size:15px;font-weight:400;color:var(--text-dim);"> / ${CM_OCCUPIED.length} camere visitate</span></div>
+      ${[[btl.length,'Da mettere',cmIconBottle,'#2F80D9','#E4F0FC'],[ok.length,'Non consumate',cmIconCheck,'var(--green)','var(--green-bg)'],[pnd.length,'Da visitare',cmIconEye,'var(--text-dim)','var(--surface2)']].map(([n,lbl,icon,fg,bg],idx)=>`
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;${idx>0?'border-top:1px solid var(--border-light);':''}">
+        <div><div style="font-size:22px;font-weight:300;color:${fg};line-height:1;">${n}</div><div style="font-size:10.5px;color:var(--text-dim);text-transform:uppercase;margin-top:4px;">${lbl}</div></div>
+        <div style="width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${bg};color:${fg};">${icon}</div>
+      </div>`).join('')}
     </div>
   </div>`;
   const groupLbl=(t,tint)=>`<div style="font-size:12px;font-weight:700;color:${tint||'var(--text-muted)'};text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">${t}</div>`;
