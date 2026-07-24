@@ -5760,7 +5760,13 @@ function bkfBookingRender(){
   const isToday=_bkfBookingDayOffset===0;
   const all=Object.values(BKF_ROOM_INFO).flat().filter(r=>r&&r.camera); // ogni camera può avere più prenotazioni (cambio)
   const rows=all.filter(r=>/booking/i.test(r.origine||'')&&_bkfGuestPresentOn(r,target,isToday));
-  rows.sort((a,b)=>{const na=parseInt((a.camera||'').replace(/\D/g,''))||0,nb=parseInt((b.camera||'').replace(/\D/g,''))||0;return na-nb;});
+  // Camere "200" (Boutique) prima, poi le "Art" (SoulArt) — non ordinamento puramente
+  // numerico, altrimenti Art 12 finirebbe prima di 207.
+  rows.sort((a,b)=>{
+    const ga=/^art/i.test((a.camera||'').trim())?1:0,gb=/^art/i.test((b.camera||'').trim())?1:0;
+    if(ga!==gb)return ga-gb;
+    return (parseInt((a.camera||'').replace(/\D/g,''))||0)-(parseInt((b.camera||'').replace(/\D/g,''))||0);
+  });
   if(!all.length&&!BKF_ROOM_AMBIGUOUS){el.innerHTML='';return;}
   const warnHtml=(isToday&&BKF_ROOM_AMBIGUOUS)?`<div style="background:var(--amber-bg);color:var(--amber);border-radius:8px;padding:8px 12px;font-size:11.5px;font-weight:600;margin-bottom:10px;">⚠️ Ci sono stati cambi camera oggi non riconducibili con certezza — verifica manualmente le camere Booking.com sotto.</div>`:'';
   el.innerHTML=`<div style="border-top:1px solid var(--border-light);margin-top:16px;padding-top:14px;">
@@ -5773,13 +5779,15 @@ function bkfBookingRender(){
       </div>
     </div>
     ${warnHtml}
-    ${rows.length?`<div style="display:flex;flex-direction:column;gap:0;">${rows.map((r,idx)=>`
-      <div style="display:flex;align-items:center;gap:12px;padding:9px 0;${idx>0?'border-top:1px solid var(--border-light);':''}">
-        <span style="font-size:13px;font-weight:700;color:var(--accent);min-width:44px;">${r.camera}</span>
-        <span style="flex:1;font-size:13px;color:var(--text);">${r.nome||'—'}</span>
-        <span style="font-size:11px;color:var(--text-dim);">${r.trattamento||''}</span>
-        <span style="font-size:11px;color:var(--text-dim);min-width:60px;text-align:right;">out ${r.checkout||'—'}</span>
-      </div>`).join('')}</div>`:`<div style="color:var(--text-dim);font-size:12.5px;">Nessun ospite Booking.com a colazione ${isToday?'oggi':'quel giorno'}.</div>`}
+    ${rows.length?`<div style="display:flex;flex-direction:column;gap:0;">${rows.map((r,idx)=>{
+      const isRO=/^ro$/i.test((r.trattamento||'').trim());
+      return`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;padding:9px 0;${idx>0?'border-top:1px solid var(--border-light);':''}">
+        <span style="font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;">${r.camera}</span>
+        <span style="flex:1;min-width:120px;font-size:13px;color:var(--text);word-break:break-word;">${r.nome||'—'}</span>
+        ${r.trattamento?`<span style="font-size:10px;font-weight:800;padding:3px 7px;border-radius:5px;letter-spacing:.02em;flex-shrink:0;background:${isRO?'var(--surface2)':'var(--green-bg)'};color:${isRO?'var(--text-dim)':'var(--green)'};">${r.trattamento}</span>`:''}
+        <span style="font-size:11px;color:var(--text-dim);flex-shrink:0;">out ${r.checkout||'—'}</span>
+      </div>`;
+    }).join('')}</div>`:`<div style="color:var(--text-dim);font-size:12.5px;">Nessun ospite Booking.com a colazione ${isToday?'oggi':'quel giorno'}.</div>`}
   </div>`;
 }
 function toggleArriviAccordion(){}
