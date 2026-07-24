@@ -3058,6 +3058,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
           arriviUpdateKpi();ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi',true);
           try{document.getElementById('arriviLoadedDate').textContent=arriviData.data;}catch(e){}
           restoreUploadTs('arriviTs',obj._ts);
+          bkfRoomInfoBuild();
         }
       }
       // Controlla weekData
@@ -3159,6 +3160,10 @@ document.querySelector('.content').addEventListener('scroll',function(){
         ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi',true);
         document.getElementById('arriviLoadedDate').textContent=arriviData.data;
         if(arriviData._ts)restoreUploadTs('arriviTs',arriviData._ts);else loadStoredTs('arriviTs');
+        // Se BKF_ROOM_INFO è ancora vuoto (es. subito dopo il deploy di questa funzione,
+        // prima di qualsiasi nuovo caricamento) popolalo subito dal Riepilogo Reception
+        // già presente, invece di aspettare il prossimo upload per mostrare qualcosa.
+        if(!Object.keys(BKF_ROOM_INFO).length)bkfRoomInfoBuild();else bkfBookingRender();
       }
     }catch(e){}
     // Ripristina RC guests
