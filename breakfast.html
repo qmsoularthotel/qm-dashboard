@@ -294,7 +294,10 @@ function renderDay(){
   // Colazione Booking.com — snapshot ospiti Booking.com a colazione, filtrato sul giorno
   // navigato con le stesse frecce ‹ › del servizio: chi arriva quel giorno non conta ancora
   // (non ha ancora fatto colazione), chi parte quel giorno conta (l'ha fatta prima di uscire).
-  {
+  // Oltre domani i dati non sono affidabili (dipendono da arrivi/checkout non ancora
+  // riflessi nell'ultimo Riepilogo Reception caricato) — vista limitata a oggi e domani.
+  const _bkDayOffset=ddRef?Math.round((new Date(ddRef.getFullYear(),ddRef.getMonth(),ddRef.getDate())-new Date(today.getFullYear(),today.getMonth(),today.getDate()))/86400000):0;
+  if(_bkDayOffset>=0&&_bkDayOffset<=1){
     const _bkShortDate=s=>{
       if(!s)return null;
       const m=String(s).trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);

@@ -5716,7 +5716,9 @@ function bkfRoomInfoBuild(){
   bkfBookingRender();
 }
 function bkfBookingNav(delta){
-  _bkfBookingDayOffset+=delta;
+  // Oltre domani i dati non sono affidabili (dipendono da arrivi/checkout non ancora
+  // riflessi nell'ultimo Riepilogo Reception caricato) — vista limitata a oggi e domani.
+  _bkfBookingDayOffset=Math.max(0,Math.min(1,_bkfBookingDayOffset+delta));
   bkfBookingRender();
 }
 function _pianoFindTodayGiorno(data){
@@ -5765,9 +5767,9 @@ function bkfBookingRender(){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
       <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${BK_ICON} Colazione Booking.com</div>
       <div style="display:flex;align-items:center;gap:6px;">
-        <button onclick="bkfBookingNav(-1)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:24px;height:24px;cursor:pointer;color:var(--text-muted);font-size:12px;">‹</button>
+        <button onclick="bkfBookingNav(-1)" ${_bkfBookingDayOffset<=0?'disabled':''} style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:24px;height:24px;cursor:pointer;color:var(--text-muted);font-size:12px;${_bkfBookingDayOffset<=0?'opacity:.35;cursor:default;':''}">‹</button>
         <span style="font-size:11.5px;color:var(--text-dim);min-width:74px;text-align:center;text-transform:capitalize;">${isToday?'Oggi':dateLbl}</span>
-        <button onclick="bkfBookingNav(1)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:24px;height:24px;cursor:pointer;color:var(--text-muted);font-size:12px;">›</button>
+        <button onclick="bkfBookingNav(1)" ${_bkfBookingDayOffset>=1?'disabled':''} style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:24px;height:24px;cursor:pointer;color:var(--text-muted);font-size:12px;${_bkfBookingDayOffset>=1?'opacity:.35;cursor:default;':''}">›</button>
       </div>
     </div>
     ${warnHtml}
