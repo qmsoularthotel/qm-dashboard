@@ -90,15 +90,7 @@
       <div class="nav-section">Operativo Quotidiano</div>
       <div class="nav-item" onclick="setView('registrazione',this)"><span class="nav-icon"><img src="img/icons/registration_cards.png" class="nav-icon-img"></span>Registration Cards</div>
       <div class="nav-item" onclick="setView('room-division',this)"><span class="nav-icon"><img src="img/icons/piano_settimanale.png" class="nav-icon-img"></span>Room Division</div>
-      <div class="nav-group-header" id="hkpGroupToggle" onclick="toggleHkpGroup()">
-        <span class="nav-icon"><img src="img/icons/housekeeping.png" class="nav-icon-img"></span>
-        <span>Operativa Housekeeping</span>
-        <span class="nav-group-chevron">▾</span>
-      </div>
-      <div class="nav-group-items" id="hkpGroupItems">
-        <div class="nav-item" onclick="setView('hkpsheet',this)"><span class="nav-icon">↳</span>SoulArt Hotel</div>
-        <div class="nav-item" onclick="setView('hkpsheetar',this)"><span class="nav-icon">↳</span>Art Resort</div>
-      </div>
+      <div class="nav-item" onclick="setView('controllo-mattino',this)"><span class="nav-icon"><img src="img/icons/acqua_culligan.png" class="nav-icon-img"></span>Distribuzione Culligan</div>
       <div class="nav-group-header" id="bkfGroupToggle" onclick="toggleBkfGroup()">
         <span class="nav-icon"><img src="img/icons/breakfast_sheet.png" class="nav-icon-img"></span>
         <span>Breakfast Sheet</span>
@@ -108,7 +100,15 @@
         <div class="nav-item" onclick="setView('bkfsheet',this)"><span class="nav-icon">↳</span>SoulArt Hotel</div>
         <div class="nav-item" onclick="setView('bkfsheetar',this)"><span class="nav-icon">↳</span>Art Resort Galleria</div>
       </div>
-      <div class="nav-item" onclick="setView('controllo-mattino',this)"><span class="nav-icon"><img src="img/icons/acqua_culligan.png" class="nav-icon-img"></span>Distribuzione Culligan</div>
+      <div class="nav-group-header" id="hkpGroupToggle" onclick="toggleHkpGroup()">
+        <span class="nav-icon"><img src="img/icons/housekeeping.png" class="nav-icon-img"></span>
+        <span>Operativa Housekeeping</span>
+        <span class="nav-group-chevron">▾</span>
+      </div>
+      <div class="nav-group-items" id="hkpGroupItems">
+        <div class="nav-item" onclick="setView('hkpsheet',this)"><span class="nav-icon">↳</span>SoulArt Hotel</div>
+        <div class="nav-item" onclick="setView('hkpsheetar',this)"><span class="nav-icon">↳</span>Art Resort</div>
+      </div>
 
       <div class="nav-section">Qualità</div>
       <div class="nav-group-header" id="recGroupToggle" onclick="toggleRecGroup()">
@@ -1550,7 +1550,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=2"></script>
-<script src="app.js?v=660-20260724"></script>
+<script src="app.js?v=661-20260724"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
