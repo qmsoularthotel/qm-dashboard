@@ -5031,6 +5031,7 @@ async function handlePianoFile(file){
     const data=parsePianoItems(allItems);
     if(!data||!data.giorni||!data.giorni.length)throw new Error('Nessun dato trovato');
     data._ts=Date.now();
+    bkfRoomInfoReconcilePianoChange(pianoData,data);
     pianoData=data;
     localStorage.setItem('qm_piano',JSON.stringify(data));
     setSyncStatus('syncing');
@@ -5600,6 +5601,90 @@ function closeCatModal(){
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeCatModal();closeArriviModal();}});
 // §§ ARRIVI GIORNALIERI — UPLOAD & RENDER (handleArriviFile, resetArrivi, arriviUpdateKpi, detectStruttura, renderArriviModal)
 let arriviData=null;
+// §§ COLAZIONE BOOKING.COM — snapshot ospiti per camera (nome/origine/trattamento/checkout)
+// costruito dal Riepilogo Reception, e "seguito" quando cambia camera durante la room
+// division: il Piano Settimana non ha mai il nome ospite, quindi non possiamo scoprire CHI
+// si è spostato, ma se il confronto tra due caricamenti del Piano mostra esattamente una
+// camera che esce dai "cambi" di oggi e una sola che vi entra, è ragionevole assumere che
+// sia la stessa prenotazione spostata — migriamo l'informazione dalla vecchia alla nuova
+// camera. Se il confronto è ambiguo (più di uno spostamento insieme) non indoviniamo
+// l'abbinamento: segnaliamo solo che qualcosa è cambiato e serve una verifica manuale.
+let BKF_ROOM_INFO={};
+let BKF_ROOM_AMBIGUOUS=0;
+(()=>{try{const s=localStorage.getItem('qm_bkf_room_info');if(s)BKF_ROOM_INFO=JSON.parse(s);}catch(e){}
+  try{const a=localStorage.getItem('qm_bkf_room_ambiguous');if(a)BKF_ROOM_AMBIGUOUS=parseInt(a)||0;}catch(e){}
+  setTimeout(()=>bkfBookingRender(),200);})();
+function bkfRoomInfoPersist(){
+  try{localStorage.setItem('qm_bkf_room_info',JSON.stringify(BKF_ROOM_INFO));}catch(e){}
+  try{localStorage.setItem('qm_bkf_room_ambiguous',String(BKF_ROOM_AMBIGUOUS));}catch(e){}
+  kvSet('qm_bkf_room_info',JSON.stringify(BKF_ROOM_INFO)).catch(()=>{});
+  kvSet('qm_bkf_room_ambiguous',String(BKF_ROOM_AMBIGUOUS)).catch(()=>{});
+}
+function bkfRoomInfoBuild(){
+  if(!arriviData)return;
+  const map={};
+  const add=list=>(list||[]).forEach(a=>{
+    const cam=(a.camera||'').trim();
+    if(!cam)return;
+    map[cam]={camera:cam,nome:a.ospite||'',origine:a.origine||'',trattamento:a.trattamento||'',checkout:a.partenza||'',pax:a.pax||null};
+  });
+  add(arriviData.fermate);
+  add(arriviData.arrivi); // gli arrivi di oggi sono il dato più fresco, sovrascrivono le fermate sulla stessa camera
+  BKF_ROOM_INFO=map;
+  BKF_ROOM_AMBIGUOUS=0; // riepilogo appena ricaricato: azzera eventuali segnalazioni precedenti
+  bkfRoomInfoPersist();
+  bkfBookingRender();
+}
+function _pianoFindTodayGiorno(data){
+  if(!data||!data.giorni)return null;
+  const ref=new Date();
+  const refStr=String(ref.getDate()).padStart(2,'0')+'/'+String(ref.getMonth()+1).padStart(2,'0')+'/'+ref.getFullYear();
+  const normDate=s=>s.split('/').map((p,i)=>i<2?p.padStart(2,'0'):p).join('/');
+  return data.giorni.find(g=>g.data&&normDate(g.data)===refStr)||null;
+}
+function bkfRoomInfoReconcilePianoChange(oldData,newData){
+  try{
+    const oldG=_pianoFindTodayGiorno(oldData);
+    const newG=_pianoFindTodayGiorno(newData);
+    if(!oldG||!newG)return; // niente da confrontare (il piano non copriva oggi prima o dopo)
+    const oldCambi=new Set((oldG.soulart&&oldG.soulart.cambi)||[]);
+    const newCambi=new Set((newG.soulart&&newG.soulart.cambi)||[]);
+    const removed=[...oldCambi].filter(r=>!newCambi.has(r));
+    const added=[...newCambi].filter(r=>!oldCambi.has(r));
+    if(!removed.length&&!added.length)return;
+    if(removed.length===1&&added.length===1){
+      const from=removed[0],to=added[0];
+      if(BKF_ROOM_INFO[from]){
+        BKF_ROOM_INFO[to]={...BKF_ROOM_INFO[from],camera:to};
+        delete BKF_ROOM_INFO[from];
+      }
+    }else{
+      // più camere cambiate insieme: non c'è modo di sapere quale prenotazione è andata dove
+      BKF_ROOM_AMBIGUOUS+=removed.length+added.length;
+    }
+    bkfRoomInfoPersist();
+    bkfBookingRender();
+  }catch(e){}
+}
+function bkfBookingRender(){
+  const el=document.getElementById('ov-bkf-booking');
+  if(!el)return;
+  const rows=Object.values(BKF_ROOM_INFO).filter(r=>/booking/i.test(r.origine||''));
+  if(!rows.length&&!BKF_ROOM_AMBIGUOUS){el.innerHTML='';return;}
+  rows.sort((a,b)=>{const na=parseInt((a.camera||'').replace(/\D/g,''))||0,nb=parseInt((b.camera||'').replace(/\D/g,''))||0;return na-nb;});
+  const warnHtml=BKF_ROOM_AMBIGUOUS?`<div style="background:var(--amber-bg);color:var(--amber);border-radius:8px;padding:8px 12px;font-size:11.5px;font-weight:600;margin-bottom:10px;">⚠️ Ci sono stati cambi camera oggi non riconducibili con certezza — verifica manualmente le camere Booking.com sotto.</div>`:'';
+  el.innerHTML=`<div style="border-top:1px solid var(--border-light);margin-top:16px;padding-top:14px;">
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">${BK_ICON} Colazione Booking.com</div>
+    ${warnHtml}
+    ${rows.length?`<div style="display:flex;flex-direction:column;gap:0;">${rows.map((r,idx)=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:9px 0;${idx>0?'border-top:1px solid var(--border-light);':''}">
+        <span style="font-size:13px;font-weight:700;color:var(--accent);min-width:44px;">${r.camera}</span>
+        <span style="flex:1;font-size:13px;color:var(--text);">${r.nome||'—'}</span>
+        <span style="font-size:11px;color:var(--text-dim);">${r.trattamento||''}</span>
+        <span style="font-size:11px;color:var(--text-dim);min-width:60px;text-align:right;">out ${r.checkout||'—'}</span>
+      </div>`).join('')}</div>`:`<div style="color:var(--text-dim);font-size:12.5px;">Nessun ospite Booking.com in casa dall'ultimo Riepilogo Reception.</div>`}
+  </div>`;
+}
 function toggleArriviAccordion(){}
 const arriviBox={classList:{add:()=>{},remove:()=>{}}};
 const arriviInput=document.getElementById('arriviFileInput');
@@ -5746,6 +5831,7 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     document.getElementById('arriviLoadedDate').textContent=arriviData.data;
     setUploadTs('arriviTs');
     arriviUpdateKpi();
+    bkfRoomInfoBuild();
     // Aggiorna RC cards: arrivi + fermate arrivate OGGI (stessa data del documento)
     let _rcCardsOk=true;
     let _rcNoneNeeded=false;
