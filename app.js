@@ -5631,6 +5631,9 @@ function bkfRoomInfoBuild(){
   const add=list=>(list||[]).forEach(a=>{
     const cam=(a.camera||'').trim();
     if(!cam)return;
+    // Principe/Umberto e Mastrangelo non fanno colazione tracciata qui — escluse
+    const strut=(a.struttura||'').trim().toUpperCase();
+    if(strut==='PR'||strut==='MS')return;
     map[cam]={camera:cam,nome:a.ospite||'',origine:a.origine||'',trattamento:a.trattamento||'',checkout:a.partenza||'',pax:a.pax||null};
   });
   add(arriviData.fermate);
