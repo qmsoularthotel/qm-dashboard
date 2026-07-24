@@ -89,6 +89,7 @@
 
       <div class="nav-section">Operativo Quotidiano</div>
       <div class="nav-item" onclick="setView('registrazione',this)"><span class="nav-icon"><img src="img/icons/registration_cards.png" class="nav-icon-img"></span>Registration Cards</div>
+      <div class="nav-item" onclick="setView('room-division',this)"><span class="nav-icon"><img src="img/icons/piano_settimanale.png" class="nav-icon-img"></span>Room Division</div>
       <div class="nav-group-header" id="hkpGroupToggle" onclick="toggleHkpGroup()">
         <span class="nav-icon"><img src="img/icons/housekeeping.png" class="nav-icon-img"></span>
         <span>Operativa Housekeeping</span>
@@ -1511,6 +1512,15 @@
         <div id="turni-pref-content"></div>
       </div>
       <!-- ── CONTROLLO MATTINO ── -->
+      <div class="view" id="view-room-division">
+        <div class="panel">
+          <div class="panel-header">
+            <img src="img/icons/piano_settimanale.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+            <span class="panel-title">Room Division</span>
+          </div>
+          <div class="panel-body" id="rd-content"></div>
+        </div>
+      </div>
       <div class="view" id="view-controllo-mattino">
         <div class="panel">
           <div class="panel-header">
@@ -1540,7 +1550,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=2"></script>
-<script src="app.js?v=659-20260724"></script>
+<script src="app.js?v=660-20260724"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

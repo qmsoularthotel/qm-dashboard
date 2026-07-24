@@ -544,7 +544,7 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Room Division','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan'};
 const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
@@ -2212,6 +2212,8 @@ function pianoNavRender(idx){
   renderPianoGiorno('ov-piano-preview',null,idx);
   // Box Culligan accanto al grafico occupazione
   renderOvCulliganBox(giorno);
+  // Room Division (view separata dal menu laterale)
+  renderRoomDivision(idx);
 }
 
 function pianoPrevDay(){
@@ -2432,6 +2434,33 @@ function renderPianoGiorno(elId,refDate,forceIdx){
     if(fermate.length)h+=`<div>${groupLbl('Fermata')}<div style="display:flex;flex-wrap:wrap;gap:5px;">${fermate.map(r=>`<span style="background:var(--green-bg);border:1px solid var(--green);color:var(--green);font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;">${r}</span>`).join('')}</div></div>`;
     h+=`</div>`;return h;
   }
+  const lib=giorno.liborio||{partenze:[],fermate:[],cambi:[]};
+  const bMerged={partenze:[...(giorno.boutique?.partenze||[]),...lib.partenze],fermate:[...(giorno.boutique?.fermate||[]),...lib.fermate],cambi:[...(giorno.boutique?.cambi||[]),...lib.cambi]};
+  const sHtml=renderHotel('SoulArt',giorno.soulart||{}),bHtml=renderHotel('Boutique - San Liborio',bMerged);
+  if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per questo giorno</div>';return;}
+  const cols=sHtml&&bHtml
+    ?`<div style="display:flex;gap:20px;align-items:stretch;">
+        <div style="flex:1;min-width:0;">${sHtml}</div>
+        <div style="width:1px;background:var(--border-light);flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">${bHtml}</div>
+      </div>`
+    :`${sHtml}${bHtml}`;
+  el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>`;
+}
+
+// §§ ROOM DIVISION — Suddivisione cameriere, vista settimanale carico pesato e
+// riepiloghi mensili SoulArt/Boutique. Spostati fuori dalla card Housekeeping
+// dell'Overview in una view dedicata del menu laterale (stesso pianoNavIdx/giorno
+// condiviso con "Piano del giorno" — cambiare giorno da un pannello aggiorna anche
+// l'altro).
+function renderRoomDivision(idx){
+  const el=document.getElementById('rd-content');if(!el)return;
+  if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){
+    el.innerHTML=`<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere la suddivisione cameriere</div>`;return;
+  }
+  const giorno=pianoData.giorni[idx];
+  if(!giorno){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Giorno non disponibile</div>';return;}
+  function sortRooms(arr){return[...arr].sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''))||0,nb=parseInt(b.replace(/\D/g,''))||0;return na-nb;});}
   function renderCameriera(name,rooms){
     const cambi=sortRooms(rooms.cambi||[]),partenze=sortRooms(rooms.partenze||[]),fermate=sortRooms(rooms.fermate||[]);
     if(!cambi.length&&!partenze.length&&!fermate.length)return'';
@@ -2458,17 +2487,6 @@ function renderPianoGiorno(elId,refDate,forceIdx){
     }
     h+=`</div>`;return h;
   }
-  const lib=giorno.liborio||{partenze:[],fermate:[],cambi:[]};
-  const bMerged={partenze:[...(giorno.boutique?.partenze||[]),...lib.partenze],fermate:[...(giorno.boutique?.fermate||[]),...lib.fermate],cambi:[...(giorno.boutique?.cambi||[]),...lib.cambi]};
-  const sHtml=renderHotel('SoulArt',giorno.soulart||{}),bHtml=renderHotel('Boutique - San Liborio',bMerged);
-  if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per questo giorno</div>';return;}
-  const cols=sHtml&&bHtml
-    ?`<div style="display:flex;gap:20px;align-items:stretch;">
-        <div style="flex:1;min-width:0;">${sHtml}</div>
-        <div style="width:1px;background:var(--border-light);flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;">${bHtml}</div>
-      </div>`
-    :`${sHtml}${bHtml}`;
   // Suddivisione cameriere SoulArt (Matarese / Altre) — sola lettura, stesso elenco fisso
   // camere dell'app smartphone, per controllare il risultato del bilanciamento carico
   // fatto spostando le camere sul PMS prima di caricare il Piano Settimana.
@@ -2476,7 +2494,7 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   const {m,a}=splitSoulart(giorno.soulart);
   const mCard=renderCameriera('Matarese',m),aCard=renderCameriera('Altre housekeeper',a);
   if(mCard||aCard){
-    mHtml=`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
+    mHtml=`<div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
         <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">👥 Suddivisione cameriere — SoulArt</span>
         <div style="display:flex;align-items:center;gap:4px;margin-left:auto;">
@@ -2492,6 +2510,8 @@ function renderPianoGiorno(elId,refDate,forceIdx){
       </div>
       ${renderHkWeekViewContainer()}
     </div>`;
+  }else{
+    mHtml=`<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessun cambio/partenza/fermata SoulArt per questo giorno.</div>`;
   }
   // Replica delle card "Riepilogo cameriere" di Operativa Housekeeping — SoulArt e
   // Boutique/San Liborio (stessa fonte dati e stesso mese selezionato lì), per non
@@ -2520,7 +2540,7 @@ function renderPianoGiorno(elId,refDate,forceIdx){
       ${monthlyCardsBh}
     </div>`:''}
   </div>`:'';
-  el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>${mHtml}${monthlyHtml}`;
+  el.innerHTML=`${mHtml}${monthlyHtml}`;
   if(mCard||aCard)renderHkWeekChart(idx);
 }
 
