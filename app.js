@@ -5691,7 +5691,25 @@ function bkfRoomInfoBuild(){
   // un confronto stringa esatto farebbe scattare un reset completo per errore.
   const normDate=s=>String(s||'').trim().split('/').map((p,i)=>i<2?p.padStart(2,'0'):p).join('/');
   const sameDay=BKF_ROOM_INFO_DATE&&normDate(BKF_ROOM_INFO_DATE)===normDate(arriviData.data);
-  BKF_ROOM_INFO=sameDay?{...BKF_ROOM_INFO,...freshMap}:freshMap;
+  if(sameDay){
+    // Fusione per SINGOLA prenotazione, non per intera camera: quando una camera ha un
+    // turnover, il documento nuovo la riporta comunque (col nuovo ospite arrivato) — un
+    // merge a livello di camera sovrascriverebbe l'intero array perdendo la partenza
+    // precedente. Le partenze già note per oggi si tengono sempre; fermate/arrivi si
+    // aggiornano con l'ultimo documento (evita di trascinare avanti dati vecchi su chi
+    // resta o su chi arriva).
+    const merged={...freshMap};
+    Object.keys(BKF_ROOM_INFO).forEach(cam=>{
+      const oldPartenze=(BKF_ROOM_INFO[cam]||[]).filter(r=>r.tipo==='partenza');
+      if(!oldPartenze.length)return;
+      const already=new Set((merged[cam]||[]).filter(r=>r.tipo==='partenza').map(r=>r.nome));
+      const toAdd=oldPartenze.filter(r=>!already.has(r.nome));
+      if(toAdd.length)merged[cam]=[...(merged[cam]||[]),...toAdd];
+    });
+    BKF_ROOM_INFO=merged;
+  }else{
+    BKF_ROOM_INFO=freshMap;
+  }
   BKF_ROOM_INFO_DATE=arriviData.data;
   BKF_ROOM_AMBIGUOUS=0; // riepilogo appena ricaricato: azzera eventuali segnalazioni precedenti
   bkfRoomInfoPersist();
