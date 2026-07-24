@@ -5686,7 +5686,11 @@ function bkfRoomInfoBuild(){
   // vecchio invece di sostituirlo, così un checkout già visto resta noto per la
   // giornata anche se il caricamento successivo non lo riporta più. Il reset completo
   // avviene solo quando il documento cambia giorno.
-  const sameDay=BKF_ROOM_INFO_DATE===arriviData.data;
+  // Confronto tollerante: l'AI può restituire la data del documento con formattazione
+  // leggermente diversa tra un caricamento e l'altro (es. "24/7/2026" vs "24/07/2026") —
+  // un confronto stringa esatto farebbe scattare un reset completo per errore.
+  const normDate=s=>String(s||'').trim().split('/').map((p,i)=>i<2?p.padStart(2,'0'):p).join('/');
+  const sameDay=BKF_ROOM_INFO_DATE&&normDate(BKF_ROOM_INFO_DATE)===normDate(arriviData.data);
   BKF_ROOM_INFO=sameDay?{...BKF_ROOM_INFO,...freshMap}:freshMap;
   BKF_ROOM_INFO_DATE=arriviData.data;
   BKF_ROOM_AMBIGUOUS=0; // riepilogo appena ricaricato: azzera eventuali segnalazioni precedenti
