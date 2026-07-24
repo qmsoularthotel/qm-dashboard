@@ -304,7 +304,11 @@ function renderDay(){
       return isNaN(dt)?null:dt;
     };
     const targetDay=ddRef?new Date(ddRef.getFullYear(),ddRef.getMonth(),ddRef.getDate()):null;
+    // Per "oggi" il tipo riga (arrivo/fermata/partenza) è un dato certo del Riepilogo
+    // Reception — usarlo come regola primaria invece di dipendere dal parsing della data,
+    // che per alcune righe l'AI può non leggere correttamente.
     const presentOn=r=>{
+      if(isToday)return r.tipo!=='arrivo';
       if(!targetDay)return true;
       const ci=_bkShortDate(r.checkin),co=_bkShortDate(r.checkout);
       if(ci&&ci>=targetDay)return false;

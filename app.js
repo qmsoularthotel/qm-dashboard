@@ -5640,7 +5640,11 @@ function _bkfParseShortDate(s){
 // Un ospite conta per il giorno "target" solo se è già in casa quella mattina: arrivato
 // PRIMA (non lo stesso giorno — chi arriva oggi non ha ancora fatto colazione oggi) e non
 // ancora ripartito (chi parte oggi conta ancora, ha fatto colazione prima di andarsene).
-function _bkfGuestPresentOn(g,targetDate){
+// Per "oggi" (isToday=true) il tipo riga (arrivo/fermata/partenza) è un dato certo del
+// Riepilogo Reception — usarlo come regola primaria, senza dipendere dal parsing della
+// data di arrivo/partenza che per alcune righe l'AI può non leggere correttamente.
+function _bkfGuestPresentOn(g,targetDate,isToday){
+  if(isToday)return g.tipo!=='arrivo';
   const ci=_bkfParseShortDate(g.checkin);
   const co=_bkfParseShortDate(g.checkout);
   if(ci&&ci>=targetDate)return false;
@@ -5714,7 +5718,7 @@ function bkfBookingRender(){
   const dateLbl=target.toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});
   const isToday=_bkfBookingDayOffset===0;
   const all=Object.values(BKF_ROOM_INFO).filter(r=>r.camera); // esclude eventuali chiavi meta
-  const rows=all.filter(r=>/booking/i.test(r.origine||'')&&_bkfGuestPresentOn(r,target));
+  const rows=all.filter(r=>/booking/i.test(r.origine||'')&&_bkfGuestPresentOn(r,target,isToday));
   rows.sort((a,b)=>{const na=parseInt((a.camera||'').replace(/\D/g,''))||0,nb=parseInt((b.camera||'').replace(/\D/g,''))||0;return na-nb;});
   if(!all.length&&!BKF_ROOM_AMBIGUOUS){el.innerHTML='';return;}
   const warnHtml=(isToday&&BKF_ROOM_AMBIGUOUS)?`<div style="background:var(--amber-bg);color:var(--amber);border-radius:8px;padding:8px 12px;font-size:11.5px;font-weight:600;margin-bottom:10px;">⚠️ Ci sono stati cambi camera oggi non riconducibili con certezza — verifica manualmente le camere Booking.com sotto.</div>`:'';
