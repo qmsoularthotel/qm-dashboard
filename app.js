@@ -5625,25 +5625,55 @@ function bkfRoomInfoPersist(){
   kvSet('qm_bkf_room_info',JSON.stringify(BKF_ROOM_INFO)).catch(()=>{});
   kvSet('qm_bkf_room_ambiguous',String(BKF_ROOM_AMBIGUOUS)).catch(()=>{});
 }
+// Converte date brevi tipo "20/3" o "20/3/2026" in Date (mezzanotte). Senza anno usa
+// quello corrente — sufficiente per l'orizzonte di pochi giorni di questa vista.
+function _bkfParseShortDate(s){
+  if(!s)return null;
+  const m=String(s).trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if(!m)return null;
+  const day=parseInt(m[1]),mon=parseInt(m[2])-1;
+  let year=m[3]?parseInt(m[3]):new Date().getFullYear();
+  if(year<100)year+=2000;
+  const d=new Date(year,mon,day);d.setHours(0,0,0,0);
+  return isNaN(d)?null:d;
+}
+// Un ospite conta per il giorno "target" solo se è già in casa quella mattina: arrivato
+// PRIMA (non lo stesso giorno — chi arriva oggi non ha ancora fatto colazione oggi) e non
+// ancora ripartito (chi parte oggi conta ancora, ha fatto colazione prima di andarsene).
+function _bkfGuestPresentOn(g,targetDate){
+  const ci=_bkfParseShortDate(g.checkin);
+  const co=_bkfParseShortDate(g.checkout);
+  if(ci&&ci>=targetDate)return false;
+  if(co&&co<targetDate)return false;
+  return true;
+}
+let _bkfBookingDayOffset=0;
 function bkfRoomInfoBuild(){
   if(!arriviData)return;
   const map={};
-  const add=list=>(list||[]).forEach(a=>{
+  const add=(list,tipo)=>(list||[]).forEach(a=>{
     const cam=(a.camera||'').trim();
     if(!cam)return;
     // Principe/Umberto e Mastrangelo non fanno colazione tracciata qui — escluse.
     // Controlla il nome camera (stessa regola di fixArriviStruttura), non il campo
-    // struttura: nelle "fermate" arriva grezzo dall'AI e non sempre è affidabile.
+    // struttura: nelle "fermate"/"partenze" arriva grezzo dall'AI e non sempre è affidabile.
     const c=cam.toUpperCase();
     if(/^(CAPRI|NAPOLI|PROCIDA|ISCHIA|POSITANO)/i.test(c))return; // Principe/Umberto
     if(/^R[123]$/i.test(c))return; // Rooms Mastrangelo
-    map[cam]={camera:cam,nome:a.ospite||'',origine:a.origine||'',trattamento:a.trattamento||'',checkout:a.partenza||'',pax:a.pax||null};
+    const checkin=a.arrivo||null;
+    const checkout=a.partenza||(tipo==='partenza'?arriviData.data:null);
+    map[cam]={camera:cam,nome:a.ospite||'',origine:a.origine||'',trattamento:a.trattamento||'',checkin,checkout,pax:a.pax||null,tipo};
   });
-  add(arriviData.fermate);
-  add(arriviData.arrivi); // gli arrivi di oggi sono il dato più fresco, sovrascrivono le fermate sulla stessa camera
+  add(arriviData.fermate,'fermata');
+  add(arriviData.partenze,'partenza');
+  add(arriviData.arrivi,'arrivo'); // gli arrivi di oggi sono il dato più fresco, sovrascrivono se stessa camera
   BKF_ROOM_INFO=map;
   BKF_ROOM_AMBIGUOUS=0; // riepilogo appena ricaricato: azzera eventuali segnalazioni precedenti
   bkfRoomInfoPersist();
+  bkfBookingRender();
+}
+function bkfBookingNav(delta){
+  _bkfBookingDayOffset+=delta;
   bkfBookingRender();
 }
 function _pianoFindTodayGiorno(data){
@@ -5680,12 +5710,23 @@ function bkfRoomInfoReconcilePianoChange(oldData,newData){
 function bkfBookingRender(){
   const el=document.getElementById('ov-bkf-booking');
   if(!el)return;
-  const rows=Object.values(BKF_ROOM_INFO).filter(r=>/booking/i.test(r.origine||''));
-  if(!rows.length&&!BKF_ROOM_AMBIGUOUS){el.innerHTML='';return;}
+  const target=new Date();target.setHours(0,0,0,0);target.setDate(target.getDate()+_bkfBookingDayOffset);
+  const dateLbl=target.toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});
+  const isToday=_bkfBookingDayOffset===0;
+  const all=Object.values(BKF_ROOM_INFO).filter(r=>r.camera); // esclude eventuali chiavi meta
+  const rows=all.filter(r=>/booking/i.test(r.origine||'')&&_bkfGuestPresentOn(r,target));
   rows.sort((a,b)=>{const na=parseInt((a.camera||'').replace(/\D/g,''))||0,nb=parseInt((b.camera||'').replace(/\D/g,''))||0;return na-nb;});
-  const warnHtml=BKF_ROOM_AMBIGUOUS?`<div style="background:var(--amber-bg);color:var(--amber);border-radius:8px;padding:8px 12px;font-size:11.5px;font-weight:600;margin-bottom:10px;">⚠️ Ci sono stati cambi camera oggi non riconducibili con certezza — verifica manualmente le camere Booking.com sotto.</div>`:'';
+  if(!all.length&&!BKF_ROOM_AMBIGUOUS){el.innerHTML='';return;}
+  const warnHtml=(isToday&&BKF_ROOM_AMBIGUOUS)?`<div style="background:var(--amber-bg);color:var(--amber);border-radius:8px;padding:8px 12px;font-size:11.5px;font-weight:600;margin-bottom:10px;">⚠️ Ci sono stati cambi camera oggi non riconducibili con certezza — verifica manualmente le camere Booking.com sotto.</div>`:'';
   el.innerHTML=`<div style="border-top:1px solid var(--border-light);margin-top:16px;padding-top:14px;">
-    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">${BK_ICON} Colazione Booking.com</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
+      <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${BK_ICON} Colazione Booking.com</div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button onclick="bkfBookingNav(-1)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:24px;height:24px;cursor:pointer;color:var(--text-muted);font-size:12px;">‹</button>
+        <span style="font-size:11.5px;color:var(--text-dim);min-width:74px;text-align:center;text-transform:capitalize;">${isToday?'Oggi':dateLbl}</span>
+        <button onclick="bkfBookingNav(1)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;width:24px;height:24px;cursor:pointer;color:var(--text-muted);font-size:12px;">›</button>
+      </div>
+    </div>
     ${warnHtml}
     ${rows.length?`<div style="display:flex;flex-direction:column;gap:0;">${rows.map((r,idx)=>`
       <div style="display:flex;align-items:center;gap:12px;padding:9px 0;${idx>0?'border-top:1px solid var(--border-light);':''}">
@@ -5693,7 +5734,7 @@ function bkfBookingRender(){
         <span style="flex:1;font-size:13px;color:var(--text);">${r.nome||'—'}</span>
         <span style="font-size:11px;color:var(--text-dim);">${r.trattamento||''}</span>
         <span style="font-size:11px;color:var(--text-dim);min-width:60px;text-align:right;">out ${r.checkout||'—'}</span>
-      </div>`).join('')}</div>`:`<div style="color:var(--text-dim);font-size:12.5px;">Nessun ospite Booking.com in casa dall'ultimo Riepilogo Reception.</div>`}
+      </div>`).join('')}</div>`:`<div style="color:var(--text-dim);font-size:12.5px;">Nessun ospite Booking.com a colazione ${isToday?'oggi':'quel giorno'}.</div>`}
   </div>`;
 }
 function toggleArriviAccordion(){}
