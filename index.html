@@ -1423,12 +1423,9 @@
               <button onclick="miniappOpen('bkf-url-input')" style="flex:1;background:var(--accent);border:none;color:#fff;padding:8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Apri</button>
             </div>
             <div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
-              <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Avviso (7s, solo su tab Analisi)</div>
-              <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                <input id="bkf-banner-msg" type="text" placeholder="es. Nuovo turno caricato, ricarica" style="flex:1;min-width:0;padding:7px 9px;font-size:13px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);">
-                <button id="miniapp-bkf-banner-toggle" onclick="miniappToggleBkfBanner()" title="Attiva/disattiva avviso" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:var(--border);"><span style="position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
-              </div>
-              <button onclick="miniappSaveBkfBanner(this)" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;">Salva avviso</button>
+              <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Avviso (7s) — scegli su quale tab attivarlo, un messaggio diverso per ciascuna</div>
+              <div id="miniapp-bkf-banner-tabs" style="display:flex;flex-direction:column;gap:10px;"></div>
+              <button onclick="miniappSaveBkfBanner(this)" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;margin-top:10px;">Salva avvisi</button>
             </div>
           </div>
           <div class="panel" style="padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
@@ -1543,7 +1540,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=2"></script>
-<script src="app.js?v=658-20260724"></script>
+<script src="app.js?v=659-20260724"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

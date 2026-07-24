@@ -178,10 +178,11 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 setInterval(qmCheckAppStatus,30000);
 async function qmCheckBanner(){
   try{
-    if(typeof _activeTab!=='undefined'&&_activeTab!=='report')return;
+    const tab=typeof _activeTab!=='undefined'?_activeTab:'day';
     const r=await fetch(PROXY+'/kv/get?key=qm_bkf_banner',{cache:'no-store'});
     const j=await r.json();
-    const b=j&&j.value?JSON.parse(j.value):{};
+    const all=j&&j.value?JSON.parse(j.value):{};
+    const b=all[tab]||{};
     if(!b.enabled||!b.message)return;
     const box=document.getElementById('qm-banner-toast');
     const txt=document.getElementById('qm-banner-toast-text');
@@ -582,8 +583,9 @@ function switchTab(tab){
   document.getElementById('bnv-orders').classList.toggle('active',tab==='orders');
   document.getElementById('bnv-report').classList.toggle('active',tab==='report');
   if(tab==='orders'){ddtBkfRenderSpese();ddtBkfRenderList();}
-  if(tab==='report'){ddtBkfRenderReport();qmCheckBanner();}
-  else{const box=document.getElementById('qm-banner-toast');if(box)box.style.display='none';}
+  if(tab==='report'){ddtBkfRenderReport();}
+  const box=document.getElementById('qm-banner-toast');if(box)box.style.display='none';
+  qmCheckBanner();
 }
 function ddtBkfRenderReport(){
   const view=document.getElementById('reportContent');if(!view)return;

@@ -2005,43 +2005,56 @@ function miniappToggleApp(key){
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_app_status',value:json})}).catch(()=>{});
   miniappRenderToggles();
 }
-// Avviso temporaneo (toast) solo per breakfast.html — messaggio scritto qui,
-// mostrato sul telefono per 7s quando l'app torna in primo piano.
+// Avviso temporaneo (toast) solo per breakfast.html — un messaggio (e uno stato
+// attivo/disattivo) indipendente per ciascuna delle 3 tab dell'app (Servizio/
+// Acquisti/Analisi), mostrato sul telefono per 7s quando si è su quella tab.
 const BKF_BANNER_KEY='qm_bkf_banner';
-let _bkfBanner={enabled:false,message:''};
+const BKF_BANNER_TABS=[['day','Servizio'],['orders','Acquisti'],['report','Analisi']];
+let _bkfBanner={day:{enabled:false,message:''},orders:{enabled:false,message:''},report:{enabled:false,message:''}};
+function _bkfBannerNorm(v){
+  const out={};
+  BKF_BANNER_TABS.forEach(([k])=>{out[k]=(v&&v[k])?{enabled:!!v[k].enabled,message:v[k].message||''}:{enabled:false,message:''};});
+  return out;
+}
 async function miniappLoadBkfBanner(){
   try{
     const r=await fetch(PROXY+'/kv/get?key='+BKF_BANNER_KEY,{cache:'no-store'});
     const j=await r.json();
-    _bkfBanner=j&&j.value?JSON.parse(j.value):{enabled:false,message:''};
+    _bkfBanner=_bkfBannerNorm(j&&j.value?JSON.parse(j.value):null);
   }catch(e){
-    try{_bkfBanner=JSON.parse(localStorage.getItem(BKF_BANNER_KEY)||'{}');}catch(e2){_bkfBanner={enabled:false,message:''};}
+    try{_bkfBanner=_bkfBannerNorm(JSON.parse(localStorage.getItem(BKF_BANNER_KEY)||'null'));}catch(e2){_bkfBanner=_bkfBannerNorm(null);}
   }
   miniappRenderBkfBanner();
 }
 function miniappRenderBkfBanner(){
-  const inp=document.getElementById('bkf-banner-msg');
-  if(inp)inp.value=_bkfBanner.message||'';
-  const btn=document.getElementById('miniapp-bkf-banner-toggle');
-  if(!btn)return;
-  const on=!!_bkfBanner.enabled;
-  btn.style.background=on?'var(--green)':'var(--border)';
-  const knob=btn.querySelector('.miniapp-toggle-knob');
-  if(knob)knob.style.left=on?'17px':'2px';
+  const wrap=document.getElementById('miniapp-bkf-banner-tabs');
+  if(!wrap)return;
+  wrap.innerHTML=BKF_BANNER_TABS.map(([k,lbl])=>{
+    const st=_bkfBanner[k]||{enabled:false,message:''};
+    return`<div>
+      <div style="font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">${lbl}</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input data-bkf-banner-tab="${k}" type="text" value="${(st.message||'').replace(/"/g,'&quot;')}" placeholder="es. Nuovo turno caricato, ricarica" style="flex:1;min-width:0;padding:7px 9px;font-size:13px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);">
+        <button onclick="miniappToggleBkfBanner('${k}')" title="Attiva/disattiva avviso su ${lbl}" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:${st.enabled?'var(--green)':'var(--border)'};"><span style="position:absolute;top:2px;left:${st.enabled?'17px':'2px'};width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;"></span></button>
+      </div>
+    </div>`;
+  }).join('');
 }
 function miniappSaveBkfBannerToKV(){
   const json=JSON.stringify(_bkfBanner);
   try{localStorage.setItem(BKF_BANNER_KEY,json);}catch(e){}
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:BKF_BANNER_KEY,value:json})}).catch(()=>{});
 }
-function miniappToggleBkfBanner(){
-  _bkfBanner.enabled=!_bkfBanner.enabled;
+function miniappToggleBkfBanner(tab){
+  _bkfBanner[tab].enabled=!_bkfBanner[tab].enabled;
   miniappSaveBkfBannerToKV();
   miniappRenderBkfBanner();
 }
 function miniappSaveBkfBanner(btn){
-  const inp=document.getElementById('bkf-banner-msg');
-  _bkfBanner.message=(inp?.value||'').trim();
+  document.querySelectorAll('[data-bkf-banner-tab]').forEach(inp=>{
+    const tab=inp.dataset.bkfBannerTab;
+    if(_bkfBanner[tab])_bkfBanner[tab].message=(inp.value||'').trim();
+  });
   miniappSaveBkfBannerToKV();
   if(btn){const orig=btn.textContent;btn.textContent='✓ Salvato';setTimeout(()=>{btn.textContent=orig;},1500);}
 }
