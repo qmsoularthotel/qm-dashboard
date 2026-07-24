@@ -5616,14 +5616,18 @@ let arriviData=null;
 // l'abbinamento: segnaliamo solo che qualcosa è cambiato e serve una verifica manuale.
 let BKF_ROOM_INFO={};
 let BKF_ROOM_AMBIGUOUS=0;
+let BKF_ROOM_INFO_DATE=null; // data del documento rappresentato dallo snapshot corrente
 (()=>{try{const s=localStorage.getItem('qm_bkf_room_info');if(s)BKF_ROOM_INFO=JSON.parse(s);}catch(e){}
   try{const a=localStorage.getItem('qm_bkf_room_ambiguous');if(a)BKF_ROOM_AMBIGUOUS=parseInt(a)||0;}catch(e){}
+  try{const d=localStorage.getItem('qm_bkf_room_info_date');if(d)BKF_ROOM_INFO_DATE=d;}catch(e){}
   setTimeout(()=>bkfBookingRender(),200);})();
 function bkfRoomInfoPersist(){
   try{localStorage.setItem('qm_bkf_room_info',JSON.stringify(BKF_ROOM_INFO));}catch(e){}
   try{localStorage.setItem('qm_bkf_room_ambiguous',String(BKF_ROOM_AMBIGUOUS));}catch(e){}
+  try{localStorage.setItem('qm_bkf_room_info_date',BKF_ROOM_INFO_DATE||'');}catch(e){}
   kvSet('qm_bkf_room_info',JSON.stringify(BKF_ROOM_INFO)).catch(()=>{});
   kvSet('qm_bkf_room_ambiguous',String(BKF_ROOM_AMBIGUOUS)).catch(()=>{});
+  kvSet('qm_bkf_room_info_date',BKF_ROOM_INFO_DATE||'').catch(()=>{});
 }
 // Converte date brevi tipo "20/3" o "20/3/2026" in Date (mezzanotte). Senza anno usa
 // quello corrente — sufficiente per l'orizzonte di pochi giorni di questa vista.
@@ -5657,7 +5661,7 @@ function bkfRoomInfoBuild(){
   // Una camera può avere DUE prenotazioni lo stesso giorno (cambio: qualcuno parte e un
   // altro arriva) — un oggetto singolo per camera perdeva quella in partenza sovrascritta
   // dall'arrivo. Ogni camera ora ha un ARRAY di prenotazioni, non una sola.
-  const map={};
+  const freshMap={};
   const add=(list,tipo)=>(list||[]).forEach(a=>{
     const cam=(a.camera||'').trim();
     if(!cam)return;
@@ -5669,12 +5673,22 @@ function bkfRoomInfoBuild(){
     if(/^R[123]$/i.test(c))return; // Rooms Mastrangelo
     const checkin=a.arrivo||null;
     const checkout=a.partenza||(tipo==='partenza'?arriviData.data:null);
-    (map[cam]=map[cam]||[]).push({camera:cam,nome:a.ospite||'',origine:a.origine||'',trattamento:a.trattamento||'',checkin,checkout,pax:a.pax||null,tipo});
+    (freshMap[cam]=freshMap[cam]||[]).push({camera:cam,nome:a.ospite||'',origine:a.origine||'',trattamento:a.trattamento||'',checkin,checkout,pax:a.pax||null,tipo});
   });
   add(arriviData.fermate,'fermata');
   add(arriviData.partenze,'partenza');
   add(arriviData.arrivi,'arrivo');
-  BKF_ROOM_INFO=map;
+  // Il Riepilogo Reception, quando una camera ha un checkout (con o senza turnover),
+  // spesso SMETTE di riportare l'ospite uscito nei caricamenti successivi dello stesso
+  // giorno — non perché sia sbagliato, ma perché la reception lo processa e Hotel in
+  // Cloud lo toglie dal documento. Se ricarichiamo più volte lo STESSO giorno, quelle
+  // camere non devono sparire da Compass/app: si fonde il nuovo documento su quello
+  // vecchio invece di sostituirlo, così un checkout già visto resta noto per la
+  // giornata anche se il caricamento successivo non lo riporta più. Il reset completo
+  // avviene solo quando il documento cambia giorno.
+  const sameDay=BKF_ROOM_INFO_DATE===arriviData.data;
+  BKF_ROOM_INFO=sameDay?{...BKF_ROOM_INFO,...freshMap}:freshMap;
+  BKF_ROOM_INFO_DATE=arriviData.data;
   BKF_ROOM_AMBIGUOUS=0; // riepilogo appena ricaricato: azzera eventuali segnalazioni precedenti
   bkfRoomInfoPersist();
   bkfBookingRender();
