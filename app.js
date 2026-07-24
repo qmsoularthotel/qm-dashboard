@@ -5631,9 +5631,12 @@ function bkfRoomInfoBuild(){
   const add=list=>(list||[]).forEach(a=>{
     const cam=(a.camera||'').trim();
     if(!cam)return;
-    // Principe/Umberto e Mastrangelo non fanno colazione tracciata qui — escluse
-    const strut=(a.struttura||'').trim().toUpperCase();
-    if(strut==='PR'||strut==='MS')return;
+    // Principe/Umberto e Mastrangelo non fanno colazione tracciata qui — escluse.
+    // Controlla il nome camera (stessa regola di fixArriviStruttura), non il campo
+    // struttura: nelle "fermate" arriva grezzo dall'AI e non sempre è affidabile.
+    const c=cam.toUpperCase();
+    if(/^(CAPRI|NAPOLI|PROCIDA|ISCHIA|POSITANO)/i.test(c))return; // Principe/Umberto
+    if(/^R[123]$/i.test(c))return; // Rooms Mastrangelo
     map[cam]={camera:cam,nome:a.ospite||'',origine:a.origine||'',trattamento:a.trattamento||'',checkout:a.partenza||'',pax:a.pax||null};
   });
   add(arriviData.fermate);
