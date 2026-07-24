@@ -315,7 +315,7 @@ function renderDay(){
       if(co&&co<targetDay)return false;
       return true;
     };
-    const bkRows=Object.values(bkfRoomInfo||{}).filter(r=>r.camera&&/booking/i.test(r.origine||'')&&presentOn(r))
+    const bkRows=Object.values(bkfRoomInfo||{}).flat().filter(r=>r&&r.camera&&/booking/i.test(r.origine||'')&&presentOn(r))
       .sort((a,b)=>{const na=parseInt((a.camera||'').replace(/\D/g,''))||0,nb=parseInt((b.camera||'').replace(/\D/g,''))||0;return na-nb;});
     if(bkRows.length||(isToday&&bkfRoomAmbiguous)){
       html+=`<div class="section-title">🅱️ Colazione Booking.com</div>

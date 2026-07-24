@@ -5654,6 +5654,9 @@ function _bkfGuestPresentOn(g,targetDate,isToday){
 let _bkfBookingDayOffset=0;
 function bkfRoomInfoBuild(){
   if(!arriviData)return;
+  // Una camera può avere DUE prenotazioni lo stesso giorno (cambio: qualcuno parte e un
+  // altro arriva) — un oggetto singolo per camera perdeva quella in partenza sovrascritta
+  // dall'arrivo. Ogni camera ora ha un ARRAY di prenotazioni, non una sola.
   const map={};
   const add=(list,tipo)=>(list||[]).forEach(a=>{
     const cam=(a.camera||'').trim();
@@ -5666,11 +5669,11 @@ function bkfRoomInfoBuild(){
     if(/^R[123]$/i.test(c))return; // Rooms Mastrangelo
     const checkin=a.arrivo||null;
     const checkout=a.partenza||(tipo==='partenza'?arriviData.data:null);
-    map[cam]={camera:cam,nome:a.ospite||'',origine:a.origine||'',trattamento:a.trattamento||'',checkin,checkout,pax:a.pax||null,tipo};
+    (map[cam]=map[cam]||[]).push({camera:cam,nome:a.ospite||'',origine:a.origine||'',trattamento:a.trattamento||'',checkin,checkout,pax:a.pax||null,tipo});
   });
   add(arriviData.fermate,'fermata');
   add(arriviData.partenze,'partenza');
-  add(arriviData.arrivi,'arrivo'); // gli arrivi di oggi sono il dato più fresco, sovrascrivono se stessa camera
+  add(arriviData.arrivi,'arrivo');
   BKF_ROOM_INFO=map;
   BKF_ROOM_AMBIGUOUS=0; // riepilogo appena ricaricato: azzera eventuali segnalazioni precedenti
   bkfRoomInfoPersist();
@@ -5700,7 +5703,7 @@ function bkfRoomInfoReconcilePianoChange(oldData,newData){
     if(removed.length===1&&added.length===1){
       const from=removed[0],to=added[0];
       if(BKF_ROOM_INFO[from]){
-        BKF_ROOM_INFO[to]={...BKF_ROOM_INFO[from],camera:to};
+        BKF_ROOM_INFO[to]=BKF_ROOM_INFO[from].map(r=>({...r,camera:to}));
         delete BKF_ROOM_INFO[from];
       }
     }else{
@@ -5717,7 +5720,7 @@ function bkfBookingRender(){
   const target=new Date();target.setHours(0,0,0,0);target.setDate(target.getDate()+_bkfBookingDayOffset);
   const dateLbl=target.toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});
   const isToday=_bkfBookingDayOffset===0;
-  const all=Object.values(BKF_ROOM_INFO).filter(r=>r.camera); // esclude eventuali chiavi meta
+  const all=Object.values(BKF_ROOM_INFO).flat().filter(r=>r&&r.camera); // ogni camera può avere più prenotazioni (cambio)
   const rows=all.filter(r=>/booking/i.test(r.origine||'')&&_bkfGuestPresentOn(r,target,isToday));
   rows.sort((a,b)=>{const na=parseInt((a.camera||'').replace(/\D/g,''))||0,nb=parseInt((b.camera||'').replace(/\D/g,''))||0;return na-nb;});
   if(!all.length&&!BKF_ROOM_AMBIGUOUS){el.innerHTML='';return;}
