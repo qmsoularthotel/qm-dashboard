@@ -321,7 +321,10 @@ function renderDay(){
     const bkRows=Object.values(bkfRoomInfo||{}).flat().filter(r=>r&&r.camera&&/booking/i.test(r.origine||'')&&presentOn(r))
       .sort((a,b)=>{const na=parseInt((a.camera||'').replace(/\D/g,''))||0,nb=parseInt((b.camera||'').replace(/\D/g,''))||0;return na-nb;});
     if(bkRows.length||(isToday&&bkfRoomAmbiguous)){
-      html+=`<div class="section-title">🅱️ Colazione Booking.com</div>
+      html+=`<div style="display:flex;align-items:center;gap:6px;margin:16px 0 8px;padding-left:2px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;background:#003580;color:#fff;font-size:11px;font-weight:800;font-family:Arial,sans-serif;flex-shrink:0;">B</span>
+        <span style="font-size:12.5px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:.06em;">Colazione Booking.com</span>
+      </div>
       <div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:10px;">`;
       if(isToday&&bkfRoomAmbiguous){
         html+=`<div style="padding:10px 14px;background:#fff3e0;color:#a05a00;font-size:12.5px;font-weight:600;">⚠️ Cambi camera oggi non riconducibili con certezza — verifica manualmente.</div>`;
