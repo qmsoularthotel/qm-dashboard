@@ -1,3 +1,25 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// INTERRUTTORE DI RITORNO — HKP DERIVATO DAL PIANO SETTIMANALE
+// ═══════════════════════════════════════════════════════════════════════════
+// I tre report pulizie (Cruscotto pulizie, Soul HKP, Boutique HKP) contengono
+// SOLO conteggi aggregati arrivi/fermate/partenze per giorno — nessun numero di
+// camera. Sono tutti ricavabili dal Piano Settimanale, che è già caricato e molto
+// più ricco (dettaglio camera per camera). Derivandoli si eliminano 3 upload
+// quotidiani su 6 e i numeri si aggiornano da soli a ogni ricarica del Piano.
+//
+// Corrispondenza verificata sui PDF reali del 26/07/2026, tutti i giorni:
+//   pul  (Cruscotto pulizie) = soulart + boutique + liborio
+//   soul (Compass HKP SoulArt)  = solo soulart
+//   bout (Compass HKP Boutique) = solo boutique (San Liborio lo somma a valle
+//                                 housekeeper.html, vedi boutAdj)
+//
+// ⚠️  PER TORNARE INDIETRO: metti false qui sotto e ricarica.
+//     Riappaiono i 3 slot nell'Upload Center e tornano attivi gli upload manuali
+//     dei PDF — il loro codice (handleHkFile, pulParseText, ecc.) è rimasto
+//     intatto e funzionante, non è stato rimosso nulla.
+const HKP_DERIVE_FROM_PIANO=true;
+const HKP_DERIVED_SLOTS=['pul','soul','bout'];
+
 // Booking.com icon — usato ovunque al posto dell'emoji 📘
 const BK_ICON=`<svg width="13" height="13" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:2px;flex-shrink:0;"><rect width="24" height="24" rx="4" fill="#003580"/><text x="5" y="18" font-family="Arial,sans-serif" font-size="17" font-weight="bold" fill="white">B</text></svg>`;
 
@@ -79,8 +101,18 @@ function ucSetState(key,state,sub,silent){
   if(subEl&&sub)subEl.textContent=sub;
   ucUpdateProgress();
 }
+// Nasconde gli slot dei report ora derivati dal Piano (vedi HKP_DERIVE_FROM_PIANO in
+// cima al file). Gli elementi restano nel DOM e il loro codice di upload è intatto:
+// rimettendo il flag a false riappaiono e tornano funzionanti senza altre modifiche.
+(function ucHideDerivedSlots(){
+  if(!HKP_DERIVE_FROM_PIANO)return;
+  HKP_DERIVED_SLOTS.forEach(k=>{
+    const slot=document.getElementById('uc-'+k);if(slot)slot.style.display='none';
+    const panel=document.getElementById('uc-'+k+'-panel');if(panel)panel.style.display='none';
+  });
+})();
 // Fonti tracciate per il riepilogo Upload Center — 'piano' non entra nel conteggio
-// rigoroso "X/6" (Turno resta l'unico davvero settimanale, escluso dalla scadenza 24h
+// rigoroso "X/N" (Turno resta l'unico davvero settimanale, escluso dalla scadenza 24h
 // in _setUcTs) ma viene comunque segnalato nella riga "mancano" se scaduto/non caricato,
 // perché in pratica viene ricaricato di continuo come gli altri.
 const UC_SOURCES=[
@@ -91,17 +123,19 @@ const UC_SOURCES=[
   {key:'pul',label:'Report pulizie'},
   {key:'soul',label:'Soul HKP'},
   {key:'bout',label:'Boutique HKP'}
-];
+].filter(s=>!(HKP_DERIVE_FROM_PIANO&&HKP_DERIVED_SLOTS.includes(s.key)));
 function ucUpdateProgress(){
-  const slots=['turno','arrivi','pul','bkf','soul','bout'];
+  const slots=['turno','arrivi','pul','bkf','soul','bout']
+    .filter(k=>!(HKP_DERIVE_FROM_PIANO&&HKP_DERIVED_SLOTS.includes(k)));
+  const tot=slots.length;
   const loaded=slots.filter(k=>{
     const el=document.getElementById('uc-'+k);
     return el&&el.classList.contains('loaded')&&!el.classList.contains('stale');
   }).length;
   const bar=document.getElementById('ucProgressBar');
   const label=document.getElementById('ucProgressLabel');
-  if(bar)bar.style.width=(loaded/6*100)+'%';
-  if(label)label.textContent=loaded+'/6';
+  if(bar)bar.style.width=(tot?loaded/tot*100:0)+'%';
+  if(label)label.textContent=loaded+'/'+tot;
   const missing=UC_SOURCES.filter(({key})=>{
     const el=document.getElementById('uc-'+key);
     if(!el)return false;
@@ -5115,7 +5149,11 @@ function parsePianoItems(items){
   cols.sort((a,b)=>a.x-b.x);
   const firstColX=cols[0].x;
   const BH=new Set(['201','203','204','205','206','207','208','209','210','211']);
-  const giorni=cols.map(c=>({label:c.label,data:c.data,soulart:{partenze:[],fermate:[],cambi:[]},boutique:{partenze:[],fermate:[],cambi:[]},liborio:{partenze:[],fermate:[],cambi:[]}}));
+  // 'arrivi' = camere con SOLO arrivo (+N senza partenza): prima non venivano
+  // registrate da nessuna parte. Servono per derivare il conteggio arrivi dei report
+  // pulizie (vedi hkpDeriveFromPiano). Nessuna vista esistente le legge, quindi
+  // aggiungerle non altera partenze/fermate/cambi né la logica Culligan/Room Division.
+  const giorni=cols.map(c=>({label:c.label,data:c.data,soulart:{partenze:[],fermate:[],cambi:[],arrivi:[]},boutique:{partenze:[],fermate:[],cambi:[],arrivi:[]},liborio:{partenze:[],fermate:[],cambi:[],arrivi:[]}}));
   // Righe dati: tutto dopo header+daterow (anche page 2+)
   const hPage=rows[hIdx].p;
   const skipUntil=nextRow&&nextRow.p===hPage&&dateItems.length?hIdx+1:hIdx;
@@ -5144,10 +5182,51 @@ function parsePianoItems(items){
       const hasMinus=val.includes('-'),hasPlus=val.includes('+');
       if(hasMinus&&hasPlus)giorni[ci][roomType].cambi.push(roomCode);
       else if(hasMinus)giorni[ci][roomType].partenze.push(roomCode);
+      else if(hasPlus)giorni[ci][roomType].arrivi.push(roomCode);
       else if(val.includes('='))giorni[ci][roomType].fermate.push(roomCode);
     });
   }
   return{stampato,giorni};
+}
+// Deriva dal Piano Settimanale i conteggi che prima arrivavano dai tre PDF report
+// pulizie. Vedi il commento dell'interruttore HKP_DERIVE_FROM_PIANO in cima al file.
+// I dati salvati prima di questa modifica non hanno il campo 'arrivi' (arrivi puri):
+// in quel caso il conteggio arrivi resta sottostimato finché non si ricarica il Piano,
+// senza però rompere nulla — si risistema da solo al primo upload.
+function _hkpCountDay(g,keys){
+  let arrivi=0,fermate=0,partenze=0;
+  keys.forEach(k=>{
+    const s=g[k];if(!s)return;
+    const nCambi=(s.cambi||[]).length;
+    arrivi+=nCambi+(s.arrivi||[]).length;   // cambio = partenza + arrivo sulla stessa camera
+    partenze+=nCambi+(s.partenze||[]).length;
+    fermate+=(s.fermate||[]).length;
+  });
+  return{arrivi,fermate,partenze};
+}
+function hkpDeriveFromPiano(){
+  if(!HKP_DERIVE_FROM_PIANO)return;
+  if(!pianoData||!pianoData.giorni||!pianoData.giorni.length)return;
+  const mk=keys=>pianoData.giorni.map(g=>{
+    const c=_hkpCountDay(g,keys);
+    return{label:g.label,data:g.data,arrivi:c.arrivi,fermate:c.fermate,fermatePulizia:c.fermate,partenze:c.partenze};
+  });
+  const ts=pianoData._ts||Date.now();
+  // Cruscotto pulizie → KPI Overview + grafico occupazione
+  pulData=mk(['soulart','boutique','liborio']);
+  pulActiveDay=0;
+  try{renderPulData(true);}catch(e){}
+  try{LS.set('pulData',{data:pulData,activeDay:pulActiveDay,ts});}catch(e){}
+  // Compass Housekeeper SoulArt / Boutique → KPI Overview + app housekeeper.html
+  // (il bilanciamento cameriere e il dettaglio camere di quell'app leggono già il
+  // Piano direttamente, qui si replicano solo i conteggi aggregati delle card KPI)
+  hkSoulData={struttura:'SoulArt Hotel',giorni:mk(['soulart']),caricato:new Date().toISOString(),_ts:ts};
+  hkBoutData={struttura:'Boutique Hotel',giorni:mk(['boutique']),caricato:new Date().toISOString(),_ts:ts};
+  try{localStorage.setItem('qm_hk_soul',JSON.stringify(hkSoulData));}catch(e){}
+  try{localStorage.setItem('qm_hk_bout',JSON.stringify(hkBoutData));}catch(e){}
+  kvSet('qm_hk_soul',JSON.stringify(hkSoulData)).catch(()=>{});
+  kvSet('qm_hk_bout',JSON.stringify(hkBoutData)).catch(()=>{});
+  try{hkSetLoaded('soul',true);hkSetLoaded('bout',true);}catch(e){}
 }
 function pianoSetLoaded(silent){
   if(!pianoData||!pianoData.giorni)return;
@@ -5157,6 +5236,8 @@ function pianoSetLoaded(silent){
   const btn=document.getElementById('btnPianoReload');if(btn)btn.style.display='block';
   const box=document.getElementById('pianoUploadBox');if(box)box.style.display='none';
   const li=document.getElementById('pianoLoadedInfo');if(li)li.classList.add('visible');
+  // Conteggi pulizie/HKP derivati dal Piano (sostituiscono 3 upload PDF)
+  try{hkpDeriveFromPiano();}catch(e){}
   // Se si sta già guardando un giorno specifico (pianoNavIdx già impostato), resta lì
   // dopo il nuovo caricamento invece di tornare a oggi — coerente col comportamento
   // già usato altrove (vedi il polling overview) quando il piano si ricarica.
