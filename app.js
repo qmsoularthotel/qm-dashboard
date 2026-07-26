@@ -2528,8 +2528,11 @@ function hkSuggestMoves(maxN){
   out.sbilanciati.sort((a,b)=>Math.abs(b.dp)-Math.abs(a.dp));
   const scoreCur=days.reduce((t,d,i)=>t+(i<todayIdx?0:_hkDayScore(d)),0);
   if(scoreCur<0.01)return out;
-  // Spostabile = prenotazione non ancora arrivata e non un blocco/riprotezione
-  const spostabile=b=>b.start>=todayIdx&&!b.speciale;
+  // Spostabile = qualsiasi soggiorno non ancora iniziato, riprotezioni comprese
+  // (si possono riassegnare a un'altra camera come una prenotazione). Restano fuori
+  // solo gli ospiti già in casa. Il flag `speciale` serve però a segnalarle
+  // nell'interfaccia, per non farle passare per prenotazioni normali.
+  const spostabile=b=>b.start>=todayIdx;
   const mosse=[];
   const valuta=(cand,changes)=>{
     const{guadagno,effetti}=_hkEffetto(days,stato,changes,todayIdx,N);
@@ -2544,7 +2547,7 @@ function hkSuggestMoves(maxN){
         if(B===A||MATARESE.has(B))return;                // B sempre lato Altre
         // 1) spostamento semplice: X entra in B così com'è
         if(_hkFits(X,BL[B],[],N)){
-          valuta({tipo:'sposta',from:A,to:B,cat:tipo,start:X.start,end:X.end},
+          valuta({tipo:'sposta',from:A,to:B,cat:tipo,start:X.start,end:X.end,xSpec:!!X.speciale},
                  {[A]:(BL[A]||[]).filter(z=>z!==X),[B]:(BL[B]||[]).concat([X])});
           return;                                        // se entra già, niente scambi o catene
         }
@@ -2555,14 +2558,14 @@ function hkSuggestMoves(maxN){
         if(!spostabile(Y))return;                        // ospite già in casa: non si tocca
         // 2) scambio: Y va in A al posto di X
         if(_hkFits(Y,BL[A],[X],N)){
-          valuta({tipo:'scambia',from:A,to:B,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end},
+          valuta({tipo:'scambia',from:A,to:B,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end,xSpec:!!X.speciale,ySpec:!!Y.speciale},
                  {[A]:(BL[A]||[]).filter(z=>z!==X).concat([Y]),[B]:(BL[B]||[]).filter(z=>z!==Y).concat([X])});
         }
         // 3) catena a tre: Y si sposta in una terza camera C, liberando B per X
         stessoTipo.forEach(C=>{
           if(C===A||C===B)return;
           if(!_hkFits(Y,BL[C],[],N))return;
-          valuta({tipo:'catena',from:A,to:B,via:C,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end},
+          valuta({tipo:'catena',from:A,to:B,via:C,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end,xSpec:!!X.speciale,ySpec:!!Y.speciale},
                  {[A]:(BL[A]||[]).filter(z=>z!==X),
                   [B]:(BL[B]||[]).filter(z=>z!==Y).concat([X]),
                   [C]:(BL[C]||[]).concat([Y])});
@@ -2591,7 +2594,6 @@ function hkSuggestMoves(maxN){
       const X=(BL[r]||[]).find(b=>b.end===g.i&&!b.openEnd);
       let perche;
       if(!X)perche='soggiorno non ricostruibile dal Piano';
-      else if(X.speciale)perche='riprotezione o blocco camera, non spostabile';
       else if(X.start<todayIdx)perche='ospite già in casa da prima';
       else{
         const contro=ART.filter(o=>MATARESE.has(o)!==inMat&&pianoData.tipi[o]===tipo);
@@ -2645,9 +2647,12 @@ function renderHkSuggestions(){
   }
   const frecciaG=`<span style="color:var(--text-dim);font-weight:400;">→</span>`;
   const frecciaB=`<span style="color:var(--accent);font-weight:400;">⇄</span>`;
+  // Una riprotezione si può spostare come una prenotazione, ma va detto: chi legge deve
+  // sapere che sta muovendo un blocco camera e non un ospite.
+  const tagRip=`<span style="background:var(--amber-bg);color:var(--amber);border-radius:4px;padding:1px 5px;font-size:9.5px;font-weight:700;margin-left:4px;">riprotezione</span>`;
   const righe=s.mosse.map((m,i)=>{
-    const periodo=m.start===m.end?lbl(m.start):lbl(m.start)+' → '+lbl(m.end);
-    const perY=m.yStart!=null?(m.yStart===m.yEnd?lbl(m.yStart):lbl(m.yStart)+' → '+lbl(m.yEnd)):'';
+    const periodo=(m.start===m.end?lbl(m.start):lbl(m.start)+' → '+lbl(m.end))+(m.xSpec?tagRip:'');
+    const perY=m.yStart!=null?((m.yStart===m.yEnd?lbl(m.yStart):lbl(m.yStart)+' → '+lbl(m.yEnd))+(m.ySpec?tagRip:'')):'';
     let titolo,dett;
     if(m.tipo==='scambia'){
       titolo=`${m.from} ${frecciaB} ${m.to}`;
