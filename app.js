@@ -2355,6 +2355,157 @@ function hkCarico(rooms){
   (rooms.fermate||[]).forEach(r=>tot+=hkRoomWeight(r,false));
   return tot;
 }
+
+// ═══ SUGGERIMENTI DI BILANCIAMENTO ═══════════════════════════════════════════
+// Il carico di una prenotazione non pesa su un giorno solo: un ospite che arriva
+// lunedì e parte giovedì pesa su tutti e quattro i giorni. Spostare una camera
+// quindi ri-bilancia più giorni insieme — è il calcolo che a mano è scomodo e che
+// qui viene simulato. Sono SOLO suggerimenti: le modifiche vanno fatte a mano nel PMS.
+//
+// Vincoli (decisi con l'utente):
+//  - stessa tipologia camera (dal Piano, campo `tipi`)
+//  - camera di destinazione libera per TUTTA la durata del soggiorno
+//  - solo prenotazioni non ancora arrivate: gli ospiti già in casa non si spostano
+//    se non per motivi gravi, quindi i soggiorni iniziati prima di oggi sono esclusi
+function _hkRoomState(giorno,room){
+  const s=(giorno&&giorno.soulart)||{};
+  if((s.cambi||[]).includes(room))return'cambio';
+  if((s.partenze||[]).includes(room))return'partenza';
+  if((s.fermate||[]).includes(room))return'fermata';
+  if((s.arrivi||[]).includes(room))return'arrivo';
+  return null;
+}
+// Stessa scala di hkCarico: cambio/partenza pesano come partenza, fermata come
+// fermata, arrivo puro 0 (la camera era libera, non va rifatta quella mattina).
+function _hkStateWeight(room,state){
+  if(state==='partenza'||state==='cambio')return hkRoomWeight(room,true);
+  if(state==='fermata')return hkRoomWeight(room,false);
+  return 0;
+}
+// Stato della camera dopo aver tolto il contributo di un soggiorno: su un giorno di
+// "cambio" (uno parte e un altro arriva) togliendo l'arrivo resta la partenza e viceversa.
+function _hkRemoveContrib(state,contrib){
+  if(state==='cambio')return contrib==='arrivo'?'partenza':contrib==='partenza'?'arrivo':state;
+  if(state===contrib)return null;
+  return state;
+}
+// Ricostruisce i soggiorni: '+' apre un blocco, '=' lo prosegue, '-' lo chiude.
+// I soggiorni già in corso al primo giorno della settimana non vengono ricostruiti
+// (start resta null) e restano quindi esclusi dai suggerimenti — è voluto.
+function hkBuildBlocks(){
+  if(!pianoData||!pianoData.giorni)return[];
+  const giorni=pianoData.giorni;
+  const rooms=new Set();
+  giorni.forEach(g=>{const s=g.soulart||{};['partenze','fermate','cambi','arrivi'].forEach(k=>(s[k]||[]).forEach(r=>rooms.add(r)));});
+  const blocks=[];
+  rooms.forEach(room=>{
+    let start=null;
+    giorni.forEach((g,i)=>{
+      const st=_hkRoomState(g,room);
+      if(st==='partenza'||st==='cambio'){
+        if(start!==null)blocks.push({room,start,end:i});
+        start=null;
+      }
+      if(st==='arrivo'||st==='cambio')start=i;
+    });
+    if(start!==null)blocks.push({room,start,end:giorni.length-1,openEnd:true});
+  });
+  return blocks;
+}
+function _hkBlockContrib(b,d){
+  if(d<b.start||d>b.end)return null;
+  if(d===b.start)return'arrivo';
+  if(d===b.end&&!b.openEnd)return'partenza';
+  return'fermata';
+}
+function hkWeekCarico(){
+  let m=0,a=0;
+  ((pianoData&&pianoData.giorni)||[]).forEach(g=>{
+    const s=g.soulart||{};
+    new Set([...(s.partenze||[]),...(s.fermate||[]),...(s.cambi||[]),...(s.arrivi||[])]).forEach(room=>{
+      const w=_hkStateWeight(room,_hkRoomState(g,room));
+      if(MATARESE.has(room))m+=w;else a+=w;
+    });
+  });
+  return{m,a};
+}
+function hkSuggestMoves(maxN){
+  const out={ok:false,motivo:'',bilancio:0,mosse:[]};
+  if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){out.motivo='piano';return out;}
+  if(!pianoData.tipi||!Object.keys(pianoData.tipi).length){out.motivo='tipi';return out;}
+  const giorni=pianoData.giorni;
+  const cur=hkWeekCarico();
+  out.bilancio=cur.m-cur.a;
+  out.ok=true;
+  if(Math.abs(out.bilancio)<0.01)return out; // già in pari
+  const ART=Object.keys(pianoData.tipi).filter(r=>/^art\s/i.test(r));
+  const stato={};
+  ART.forEach(r=>{stato[r]=giorni.map(g=>_hkRoomState(g,r));});
+  const todayIdx=Math.max(0,pianoGetGiornoIdx());
+  const blocks=hkBuildBlocks().filter(b=>b.start>=todayIdx);
+  const mosse=[];
+  blocks.forEach(b=>{
+    const from=b.room,fromM=MATARESE.has(from),tipo=pianoData.tipi[from];
+    if(!tipo||!stato[from])return;
+    ART.forEach(to=>{
+      if(to===from||MATARESE.has(to)===fromM)return;   // stesso gruppo: non cambia nulla
+      if(pianoData.tipi[to]!==tipo)return;             // tipologia diversa
+      if(!stato[to])return;
+      for(let d=b.start;d<=b.end;d++)if(stato[to][d])return; // dev'essere libera tutti i giorni
+      let dM=0,dA=0;
+      for(let d=b.start;d<=b.end;d++){
+        const contrib=_hkBlockContrib(b,d);
+        const oldF=stato[from][d];
+        const dFrom=_hkStateWeight(from,_hkRemoveContrib(oldF,contrib))-_hkStateWeight(from,oldF);
+        const dTo=_hkStateWeight(to,contrib);
+        if(fromM){dM+=dFrom;dA+=dTo;}else{dA+=dFrom;dM+=dTo;}
+      }
+      const nuovo=(cur.m+dM)-(cur.a+dA);
+      const guadagno=Math.abs(out.bilancio)-Math.abs(nuovo);
+      if(guadagno>0.01)mosse.push({from,to,tipo,start:b.start,end:b.end,nuovo,guadagno});
+    });
+  });
+  mosse.sort((x,y)=>y.guadagno-x.guadagno);
+  out.mosse=mosse.slice(0,maxN||3);
+  return out;
+}
+function _hkNum(n){return n.toLocaleString('it-IT',{minimumFractionDigits:n%1?1:0,maximumFractionDigits:1});}
+function _hkSgn(n){return(n>0?'+':'')+_hkNum(n);}
+function renderHkSuggestions(){
+  const s=hkSuggestMoves(3);
+  const box=(inner,tint)=>`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">💡 Come bilanciare la settimana</div>${inner}</div>`;
+  if(!s.ok){
+    if(s.motivo==='tipi')return box(`<div style="background:var(--amber-bg);color:var(--amber);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">Ricarica il Piano Settimanale per attivare i suggerimenti — quello in memoria è stato caricato prima di questa funzione e non contiene le tipologie camera.</div>`);
+    return'';
+  }
+  const bil=s.bilancio;
+  const chi=bil>0?'Matarese':'Altre housekeeper';
+  const testa=`<div style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px;">Carico pesato settimana — differenza <strong style="color:${Math.abs(bil)<=4?'var(--green)':'var(--amber)'};">${_hkNum(Math.abs(bil))}</strong>${Math.abs(bil)>0.01?` a carico di <strong style="color:var(--text);">${chi}</strong>`:''}</div>`;
+  if(!s.mosse.length){
+    const msg=Math.abs(bil)<=4
+      ?`<div style="background:var(--green-bg);color:var(--green);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">✓ Settimana in equilibrio — nessuno spostamento necessario.</div>`
+      :`<div style="background:var(--surface2);color:var(--text-muted);border-radius:8px;padding:10px 14px;font-size:12.5px;line-height:1.5;">Nessuno spostamento utile disponibile: le camere libere della stessa tipologia non coprono l'intero soggiorno di nessuna prenotazione in arrivo. Si può correggere solo cambiando le assegnazioni a monte, in fase di prenotazione.</div>`;
+    return box(testa+msg);
+  }
+  const lbl=i=>((pianoData.giorni[i]&&pianoData.giorni[i].label)||'—');
+  const righe=s.mosse.map((m,i)=>{
+    const periodo=m.start===m.end?lbl(m.start):lbl(m.start)+' → '+lbl(m.end);
+    return`<div style="display:flex;align-items:center;gap:14px;padding:11px 0;${i>0?'border-top:1px solid var(--border-light);':''}">
+      <span style="width:22px;height:22px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;color:var(--text);">${m.from} <span style="color:var(--text-dim);font-weight:400;">→</span> ${m.to}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">${periodo} · ${m.tipo} · ${m.to} libera per tutto il soggiorno</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:13px;font-weight:700;color:var(--green);">${_hkSgn(bil)} → ${_hkSgn(m.nuovo)}</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">−${_hkNum(m.guadagno)} di squilibrio</div>
+      </div>
+    </div>`;
+  }).join('');
+  const nota=`<div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.5;">Solo prenotazioni non ancora arrivate, stessa tipologia camera. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
+  return box(testa+righe+nota);
+}
 // Contenitore per la vista settimanale — popolato via _bkfChartRender() (stesso motore
 // SVG di Breakfast/Occupazione: barra accent + linea rossa tratteggiata) subito dopo
 // che questo markup viene inserito nel DOM, così lo stile del grafico resta sempre
@@ -2574,7 +2725,9 @@ function renderRoomDivision(idx){
       ${monthlyCardsBh}
     </div>`:''}
   </div>`:'';
-  el.innerHTML=`${mHtml}${monthlyHtml}`;
+  let sugg='';
+  try{sugg=renderHkSuggestions();}catch(e){sugg='';}
+  el.innerHTML=`${mHtml}${sugg}${monthlyHtml}`;
   if(mCard||aCard)renderHkWeekChart(idx);
 }
 
@@ -5154,6 +5307,10 @@ function parsePianoItems(items){
   // pulizie (vedi hkpDeriveFromPiano). Nessuna vista esistente le legge, quindi
   // aggiungerle non altera partenze/fermate/cambi né la logica Culligan/Room Division.
   const giorni=cols.map(c=>({label:c.label,data:c.data,soulart:{partenze:[],fermate:[],cambi:[],arrivi:[]},boutique:{partenze:[],fermate:[],cambi:[],arrivi:[]},liborio:{partenze:[],fermate:[],cambi:[],arrivi:[]}}));
+  // Tipologia camera (es. "AS DLX DP", "AS SUI"): è nel PDF subito dopo lo slash ma
+  // finora veniva scartata. Serve ai suggerimenti di bilanciamento, che propongono
+  // spostamenti solo tra camere della stessa tipologia.
+  const tipi={};
   // Righe dati: tutto dopo header+daterow (anche page 2+)
   const hPage=rows[hIdx].p;
   const skipUntil=nextRow&&nextRow.p===hPage&&dateItems.length?hIdx+1:hIdx;
@@ -5169,6 +5326,15 @@ function parsePianoItems(items){
     if(!roomCode){const bhM=rowStr.match(/\b(20[1-9]|210|211)\b/);if(bhM&&BH.has(bhM[1])){roomCode=bhM[1];roomType='boutique';}}
     if(!roomCode&&/\bAS_LIB\b/i.test(rowStr)){roomCode='Liborio';roomType='liborio';}
     if(!roomCode)continue;
+    // Tipologia: subito dopo lo slash, fino al primo valore (-,+,=,..)
+    // "Art 5 / AS DLX DP -2 +2 …" → "AS DLX DP"
+    if(!tipi[roomCode]){
+      const sp=rowStr.indexOf('/');
+      if(sp>=0){
+        const tm=rowStr.slice(sp+1).match(/^\s*([A-Z][A-Z0-9_]*(?:\s+[A-Z][A-Z0-9_]*)*)/);
+        if(tm)tipi[roomCode]=tm[1].trim();
+      }
+    }
     // Item valore: in zona colonne, contiene -, +, = o ".."
     const valItems=its.filter(it=>it.x>=firstColX-25&&(/^[-+=]/.test(it.s)||it.s==='..'));
     const colVals=cols.map(()=>'');
@@ -5186,7 +5352,7 @@ function parsePianoItems(items){
       else if(val.includes('='))giorni[ci][roomType].fermate.push(roomCode);
     });
   }
-  return{stampato,giorni};
+  return{stampato,giorni,tipi};
 }
 // Deriva dal Piano Settimanale i conteggi che prima arrivavano dai tre PDF report
 // pulizie. Vedi il commento dell'interruttore HKP_DERIVE_FROM_PIANO in cima al file.
