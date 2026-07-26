@@ -2418,16 +2418,28 @@ function _hkBlockContrib(b,d){
   if(d===b.end&&!b.openEnd)return'partenza';
   return'fermata';
 }
-function hkWeekCarico(){
-  let m=0,a=0;
+// Una partenza (o un cambio, che è comunque una camera da rifare da capo) è ciò che
+// le housekeeper percepiscono come "lavoro". Il carico pesato è più corretto ma per
+// loro è astratto: la domanda che fanno è "perché io ho più partenze di lei?".
+// Quindi l'obiettivo è doppio — bilanciare il carico E il numero di partenze — con
+// le partenze pesate di più perché è lì che nasce la percezione di ingiustizia.
+const _hkIsPartenza=s=>(s==='partenza'||s==='cambio')?1:0;
+// Quanto vale uno squilibrio di UNA partenza in unità di carico. Una partenza pesa
+// già 2 (2,5 sulle camere grandi): a 3 conta più del suo peso reale, così a parità di
+// carico il motore preferisce sempre la soluzione con le partenze più pari.
+// Alzarlo rende il bilanciamento delle partenze ancora più prioritario.
+const HK_PESO_PARTENZE=3;
+function _hkScore(dCarico,dPartenze){return Math.abs(dCarico)+HK_PESO_PARTENZE*Math.abs(dPartenze);}
+function hkWeekTotals(){
+  let cM=0,cA=0,pM=0,pA=0;
   ((pianoData&&pianoData.giorni)||[]).forEach(g=>{
     const s=g.soulart||{};
     new Set([...(s.partenze||[]),...(s.fermate||[]),...(s.cambi||[]),...(s.arrivi||[])]).forEach(room=>{
-      const w=_hkStateWeight(room,_hkRoomState(g,room));
-      if(MATARESE.has(room))m+=w;else a+=w;
+      const st=_hkRoomState(g,room),w=_hkStateWeight(room,st),p=_hkIsPartenza(st);
+      if(MATARESE.has(room)){cM+=w;pM+=p;}else{cA+=w;pA+=p;}
     });
   });
-  return{m,a};
+  return{cM,cA,pM,pA};
 }
 // Una finestra di giorni [d1,d2] è "pulita" per una camera se nessun soggiorno la
 // attraversa ai bordi: nessuno era già dentro il giorno prima di d1, e nessuno resta
@@ -2447,14 +2459,16 @@ function _hkWindowClean(stato,room,d1,d2,N){
 // Esempio reale: Art 5 con un soggiorno di 4 notti ⇄ Art 14 con due soggiorni da 2
 // notti nelle stesse date — scambio valido anche se nessuna delle due è libera.
 function hkSuggestMoves(maxN){
-  const out={ok:false,motivo:'',bilancio:0,mosse:[]};
+  const out={ok:false,motivo:'',bilancio:0,bilPart:0,mosse:[]};
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){out.motivo='piano';return out;}
   if(!pianoData.tipi||!Object.keys(pianoData.tipi).length){out.motivo='tipi';return out;}
   const giorni=pianoData.giorni,N=giorni.length;
-  const cur=hkWeekCarico();
-  out.bilancio=cur.m-cur.a;
+  const cur=hkWeekTotals();
+  out.bilancio=cur.cM-cur.cA;   // squilibrio carico pesato
+  out.bilPart=cur.pM-cur.pA;    // squilibrio numero partenze
   out.ok=true;
-  if(Math.abs(out.bilancio)<0.01)return out; // già in pari
+  const scoreCur=_hkScore(out.bilancio,out.bilPart);
+  if(scoreCur<0.01)return out;  // già in pari su entrambi i fronti
   const ART=Object.keys(pianoData.tipi).filter(r=>/^art\s/i.test(r));
   const stato={};
   ART.forEach(r=>{stato[r]=giorni.map(g=>_hkRoomState(g,r));});
@@ -2472,20 +2486,23 @@ function hkSuggestMoves(maxN){
         if(!_hkWindowClean(stato,A,d1,d1,N)&&!_hkWindowClean(stato,B,d1,d1,N))continue;
         for(let d2=d1;d2<N;d2++){
           if(!_hkWindowClean(stato,A,d1,d2,N)||!_hkWindowClean(stato,B,d1,d2,N))continue;
-          let dM=0,dA=0,vuoto=true;
+          let dM=0,dA=0,dpM=0,dpA=0,vuoto=true;
           for(let d=d1;d<=d2;d++){
             const sa=stato[A][d],sb=stato[B][d];
             if(sa||sb)vuoto=false;
             dM+=_hkStateWeight(A,sb)-_hkStateWeight(A,sa); // A prende il contenuto di B
             dA+=_hkStateWeight(B,sa)-_hkStateWeight(B,sb); // B prende quello di A
+            dpM+=_hkIsPartenza(sb)-_hkIsPartenza(sa);
+            dpA+=_hkIsPartenza(sa)-_hkIsPartenza(sb);
           }
           if(vuoto)continue;
-          const nuovo=(cur.m+dM)-(cur.a+dA);
-          const guadagno=Math.abs(out.bilancio)-Math.abs(nuovo);
+          const nuovo=(cur.cM+dM)-(cur.cA+dA);
+          const nuovoPart=(cur.pM+dpM)-(cur.pA+dpA);
+          const guadagno=scoreCur-_hkScore(nuovo,nuovoPart);
           const ampiezza=d2-d1;
           // A parità di guadagno preferisci la finestra più stretta: meno spostamenti da fare
           if(guadagno>0.01&&(!best||guadagno>best.guadagno+0.01||(Math.abs(guadagno-best.guadagno)<=0.01&&ampiezza<best.ampiezza))){
-            best={from:A,to:B,tipo,start:d1,end:d2,nuovo,guadagno,ampiezza,
+            best={from:A,to:B,tipo,start:d1,end:d2,nuovo,nuovoPart,guadagno,ampiezza,
                   nA:nSogg(A,d1,d2),nB:nSogg(B,d1,d2)};
           }
         }
@@ -2507,12 +2524,22 @@ function renderHkSuggestions(){
     if(s.motivo==='tipi')return box(`<div style="background:var(--amber-bg);color:var(--amber);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">Ricarica il Piano Settimanale per attivare i suggerimenti — quello in memoria è stato caricato prima di questa funzione e non contiene le tipologie camera.</div>`);
     return'';
   }
-  const bil=s.bilancio;
-  const chi=bil>0?'Matarese':'Altre housekeeper';
-  const testa=`<div style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px;">Carico pesato settimana — differenza <strong style="color:${Math.abs(bil)<=4?'var(--green)':'var(--amber)'};">${_hkNum(Math.abs(bil))}</strong>${Math.abs(bil)>0.01?` a carico di <strong style="color:var(--text);">${chi}</strong>`:''}</div>`;
+  const bil=s.bilancio,bilP=s.bilPart;
+  const chi=v=>v>0?'Matarese':'Altre';
+  // Due metriche affiancate: le partenze sono quelle che le housekeeper contano davvero,
+  // il carico pesato è quello che conta per l'organizzazione. Vanno viste insieme.
+  const metrica=(lbl,val,soglia,fmt)=>`<div style="flex:1;min-width:120px;">
+      <div style="font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">${lbl}</div>
+      <div style="font-size:18px;font-weight:700;color:${Math.abs(val)<=soglia?'var(--green)':'var(--amber)'};line-height:1;">${Math.abs(val)<0.01?'in pari':fmt(Math.abs(val))+' su '+chi(val)}</div>
+    </div>`;
+  const testa=`<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);">
+    ${metrica('Differenza partenze',bilP,1,n=>_hkNum(n))}
+    ${metrica('Differenza carico pesato',bil,4,n=>_hkNum(n))}
+  </div>`;
   if(!s.mosse.length){
-    const msg=Math.abs(bil)<=4
-      ?`<div style="background:var(--green-bg);color:var(--green);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">✓ Settimana in equilibrio — nessuno spostamento necessario.</div>`
+    const inPari=Math.abs(bilP)<=1&&Math.abs(bil)<=4;
+    const msg=inPari
+      ?`<div style="background:var(--green-bg);color:var(--green);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">✓ Settimana in equilibrio — nessuno scambio necessario.</div>`
       :`<div style="background:var(--surface2);color:var(--text-muted);border-radius:8px;padding:10px 14px;font-size:12.5px;line-height:1.5;">Nessuno scambio utile disponibile: tra le camere della stessa tipologia non esiste una finestra di giorni scambiabile senza spezzare a metà il soggiorno di qualcuno. Si può correggere solo cambiando le assegnazioni a monte, in fase di prenotazione.</div>`;
     return box(testa+msg);
   }
@@ -2532,13 +2559,13 @@ function renderHkSuggestions(){
         <div style="font-size:14px;font-weight:700;color:var(--text);">${titolo}</div>
         <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">${periodo} · ${m.tipo} · ${dett}</div>
       </div>
-      <div style="text-align:right;flex-shrink:0;">
-        <div style="font-size:13px;font-weight:700;color:var(--green);">${_hkSgn(bil)} → ${_hkSgn(m.nuovo)}</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">−${_hkNum(m.guadagno)} di squilibrio</div>
+      <div style="text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;">
+        <div style="font-size:12.5px;font-weight:700;color:${Math.abs(m.nuovoPart)<Math.abs(bilP)?'var(--green)':'var(--text-muted)'};">partenze ${_hkSgn(bilP)} → ${_hkSgn(m.nuovoPart)}</div>
+        <div style="font-size:11px;color:${Math.abs(m.nuovo)<Math.abs(bil)?'var(--green)':'var(--text-muted)'};margin-top:2px;">carico ${_hkSgn(bil)} → ${_hkSgn(m.nuovo)}</div>
       </div>
     </div>`;
   }).join('');
-  const nota=`<div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.5;">Scambio reciproco: tutto ciò che è in una camera va nell'altra e viceversa, quindi non serve che la destinazione sia libera. Solo stessa tipologia, solo prenotazioni non ancora arrivate, mai spezzando un soggiorno a metà. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
+  const nota=`<div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.5;">Ordinati dando priorità al pareggio delle <strong>partenze</strong>, poi al carico pesato. Scambio reciproco: tutto ciò che è in una camera va nell'altra e viceversa, quindi non serve che la destinazione sia libera. Solo stessa tipologia, solo prenotazioni non ancora arrivate, mai spezzando un soggiorno a metà. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
   return box(testa+righe+nota);
 }
 // Contenitore per la vista settimanale — popolato via _bkfChartRender() (stesso motore
