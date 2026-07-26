@@ -264,6 +264,36 @@ grep -n 'id="view-' index.html
 
 ---
 
+## Upload quotidiani — cosa si carica e cosa è derivato
+
+Si caricano **3 PDF** (non 6): Riepilogo Reception, Piano Settimanale, Report pasti.
+
+I tre report pulizie (`pul` Cruscotto pulizie, `soul` Soul HKP, `bout` Boutique HKP)
+**non si caricano più**: contengono solo conteggi aggregati arrivi/fermate/partenze per
+giorno, senza numeri di camera, ed è tutto ricavabile dal Piano Settimanale.
+
+`hkpDeriveFromPiano()` in `app.js` li genera a ogni caricamento del Piano, negli stessi
+formati che producevano `pulParseText()` / `hkParseText()`:
+
+| Derivato | Somma di | Alimenta |
+|----------|----------|----------|
+| `pulData` | soulart + boutique + liborio | KPI Overview, grafico occupazione |
+| `hkSoulData` | soulart | KPI Overview, card KPI `housekeeper.html` |
+| `hkBoutData` | boutique (San Liborio sommato a valle, vedi `boutAdj`) | idem |
+
+**Attenzione a non "riparare" cose che non sono rotte:**
+- `parsePianoItems` registra anche `arrivi` (arrivi puri `+N` senza partenza). Serve solo
+  alla derivazione — Culligan, Room Division e bilanciamento cameriere usano
+  `partenze`/`fermate`/`cambi` e vanno lasciati così (un arrivo puro non è una camera
+  occupata al mattino).
+- Il bilanciamento cameriere Matarese/Altre e il dettaglio camere di `housekeeper.html`
+  leggono **il Piano**, non i report HKP — è sempre stato così.
+
+**Per tornare agli upload manuali**: `HKP_DERIVE_FROM_PIANO=false` in cima ad `app.js`.
+Riappaiono i 3 slot e gli handler di upload, mai rimossi.
+
+---
+
 ## Turno Settimanale
 
 ### Come funziona
