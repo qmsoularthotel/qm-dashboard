@@ -2391,6 +2391,10 @@ function hkBuildBlocks(){
   const rooms=new Set();
   giorni.forEach(g=>{const s=g.soulart||{};['partenze','fermate','cambi','arrivi'].forEach(k=>(s[k]||[]).forEach(r=>rooms.add(r)));});
   const N=giorni.length,byRoom={};
+  // Celle con pax non valorizzati: l'arrivo (o la partenza) è una riprotezione/blocco
+  // camera, non un ospite. Il soggiorno che ne nasce va contato ma non spostato.
+  const incA=new Set((pianoData&&pianoData.incArr)||[]);
+  const incP=new Set((pianoData&&pianoData.incPar)||[]);
   rooms.forEach(room=>{
     const out=[];let cur=null;
     giorni.forEach((g,i)=>{
@@ -2399,8 +2403,8 @@ function hkBuildBlocks(){
       // iniziato prima della settimana: serve per calcolare gli stati, ma non è
       // spostabile (start:-1) perché è un ospite già in casa.
       if((st==='fermata'||st==='partenza'||st==='cambio')&&!cur)cur={room,start:-1,openStart:true};
-      if(st==='partenza'||st==='cambio'){if(cur){cur.end=i;out.push(cur);cur=null;}}
-      if(st==='arrivo'||st==='cambio')cur={room,start:i};
+      if(st==='partenza'||st==='cambio'){if(cur){cur.end=i;if(incP.has(room+'|'+i))cur.speciale=true;out.push(cur);cur=null;}}
+      if(st==='arrivo'||st==='cambio'){cur={room,start:i};if(incA.has(room+'|'+i))cur.speciale=true;}
     });
     if(cur){cur.end=N-1;cur.openEnd=true;out.push(cur);}
     byRoom[room]=out;
@@ -2448,30 +2452,72 @@ const HK_PESO_PARTENZE=3;
 // Lo squilibrio di un giorno = |differenza carico| + peso × |differenza partenze|;
 // l'obiettivo complessivo è la somma su tutti i giorni.
 function _hkDayScore(d){return Math.abs(d.cM-d.cA)+HK_PESO_PARTENZE*Math.abs(d.pM-d.pA);}
-function hkDayTotals(){
-  return((pianoData&&pianoData.giorni)||[]).map(g=>{
-    const s=g.soulart||{};
+// I totali si calcolano dagli stati RICOSTRUITI DAI SOGGIORNI, non da quelli grezzi del
+// Piano. Differiscono quando una cella contiene solo ".." (pax ignoti): il Piano la
+// lascia vuota anche se la camera è occupata — succede con le riprotezioni, che durano
+// più giorni e hanno i pax non valorizzati. Usando i soggiorni la camera risulta
+// correttamente occupata, e soprattutto la base di partenza coincide con quella usata
+// per simulare gli spostamenti: altrimenti ogni simulazione produce un delta fantasma.
+function hkDayTotalsFrom(stato,rooms,N){
+  const out=[];
+  for(let d=0;d<N;d++){
     let cM=0,cA=0,pM=0,pA=0;
-    new Set([...(s.partenze||[]),...(s.fermate||[]),...(s.cambi||[]),...(s.arrivi||[])]).forEach(room=>{
-      const st=_hkRoomState(g,room),w=_hkStateWeight(room,st),p=_hkIsPartenza(st);
-      if(MATARESE.has(room)){cM+=w;pM+=p;}else{cA+=w;pA+=p;}
+    rooms.forEach(r=>{
+      const s=stato[r]?stato[r][d]:null;
+      const w=_hkStateWeight(r,s),p=_hkIsPartenza(s);
+      if(MATARESE.has(r)){cM+=w;pM+=p;}else{cA+=w;pA+=p;}
     });
-    return{cM,cA,pM,pA};
-  });
+    out.push({cM,cA,pM,pA});
+  }
+  return out;
 }
-// Motore: prova a spostare un singolo SOGGIORNO da una camera Matarese a una delle
-// Altre (stessa tipologia), oppure a scambiarlo con un soggiorno di quella camera.
-// La fattibilità si misura sulle NOTTI occupate, non sui giorni: così un soggiorno
-// può entrare in una camera che quel giorno ha un check-out la mattina.
+// Un soggiorno entra in una camera se le sue notti non si sovrappongono a quelle dei
+// soggiorni già presenti (esclusi quelli che vengono spostati via nella stessa mossa).
+function _hkFits(block,blocks,escludi,N){
+  const n=_hkNights(block,N);
+  return!(blocks||[]).some(z=>escludi.indexOf(z)<0&&_hkOverlap(n,_hkNights(z,N)));
+}
+// Effetto di una riassegnazione: `changes` è {camera: nuoviSoggiorni}. Calcola quanto
+// migliora (o peggiora) lo squilibrio complessivo e su quali giorni.
+function _hkEffetto(days,stato,changes,todayIdx,N){
+  const nuovi={};
+  Object.keys(changes).forEach(r=>{nuovi[r]=_hkStatesFromBlocks(changes[r],N);});
+  let delta=0;const effetti=[];
+  for(let d=todayIdx;d<N;d++){
+    const o=days[d];
+    let cM=o.cM,cA=o.cA,pM=o.pM,pA=o.pA;
+    Object.keys(changes).forEach(r=>{
+      const os=stato[r][d],ns=nuovi[r][d];
+      const dw=_hkStateWeight(r,ns)-_hkStateWeight(r,os),dp=_hkIsPartenza(ns)-_hkIsPartenza(os);
+      if(MATARESE.has(r)){cM+=dw;pM+=dp;}else{cA+=dw;pA+=dp;}
+    });
+    const n={cM,cA,pM,pA},so=_hkDayScore(o),sn=_hkDayScore(n);
+    delta+=sn-so;
+    if(sn<so-0.01)effetti.push({i:d,daP:[o.pM,o.pA],aP:[n.pM,n.pA]});
+  }
+  return{guadagno:-delta,effetti};
+}
+// Motore. Tre forme di riassegnazione, in ordine di complessità per chi deve poi
+// eseguirle a mano nel PMS:
+//   1. spostamento  — il soggiorno va in una camera libera in quelle notti
+//   2. scambio      — due soggiorni si scambiano di camera
+//   3. catena a 3   — il soggiorno va in B, e il soggiorno di B che dà fastidio si
+//                     sposta in una terza camera C, liberando lo spazio
+// La fattibilità si misura sulle NOTTI, non sui giorni: chi parte la mattina non
+// occupa quella notte, quindi un altro può entrare lo stesso giorno.
 function hkSuggestMoves(maxN){
   const out={ok:false,motivo:'',giorni:[],sbilanciati:[],mosse:[],ostacoli:[]};
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){out.motivo='piano';return out;}
   if(!pianoData.tipi||!Object.keys(pianoData.tipi).length){out.motivo='tipi';return out;}
   const giorni=pianoData.giorni,N=giorni.length;
-  const days=hkDayTotals();
+  const todayIdx=Math.max(0,pianoGetGiornoIdx());
+  const ART=Object.keys(pianoData.tipi).filter(r=>/^art\s/i.test(r));
+  const BL=hkBuildBlocks();
+  const stato={};
+  ART.forEach(r=>{stato[r]=_hkStatesFromBlocks(BL[r]||[],N);});
+  const days=hkDayTotalsFrom(stato,ART,N);
   out.ok=true;
   out.giorni=days;
-  const todayIdx=Math.max(0,pianoGetGiornoIdx());
   // Diagnosi: i giorni da qui in avanti con partenze non pari (≥2 di differenza:
   // con numeri dispari uno di scarto è inevitabile e nessuno lo percepisce come ingiusto)
   days.forEach((d,i)=>{
@@ -2482,63 +2528,60 @@ function hkSuggestMoves(maxN){
   out.sbilanciati.sort((a,b)=>Math.abs(b.dp)-Math.abs(a.dp));
   const scoreCur=days.reduce((t,d,i)=>t+(i<todayIdx?0:_hkDayScore(d)),0);
   if(scoreCur<0.01)return out;
-  const ART=Object.keys(pianoData.tipi).filter(r=>/^art\s/i.test(r));
-  const stato={};
-  ART.forEach(r=>{stato[r]=giorni.map(g=>_hkRoomState(g,r));});
-  const BL=hkBuildBlocks();
-  const nights={};
-  ART.forEach(r=>{(BL[r]||[]).forEach(b=>{nights[r]=nights[r]||[];nights[r].push({b,n:_hkNights(b,N)});});});
-  const occupate=(room,escluso)=>{
-    const s=new Set();
-    (nights[room]||[]).forEach(x=>{if(x.b!==escluso)x.n.forEach(d=>s.add(d));});
-    return s;
-  };
-  const spostabile=b=>b.start>=todayIdx; // esclude gli ospiti già in casa (start -1)
+  // Spostabile = prenotazione non ancora arrivata e non un blocco/riprotezione
+  const spostabile=b=>b.start>=todayIdx&&!b.speciale;
   const mosse=[];
+  const valuta=(cand,changes)=>{
+    const{guadagno,effetti}=_hkEffetto(days,stato,changes,todayIdx,N);
+    if(guadagno>0.01)mosse.push(Object.assign({guadagno,effetti},cand));
+  };
   ART.forEach(A=>{
     if(!MATARESE.has(A))return;                          // A sempre lato Matarese
     const tipo=pianoData.tipi[A];if(!tipo)return;
-    ART.forEach(B=>{
-      if(MATARESE.has(B))return;                         // B sempre lato Altre
-      if(pianoData.tipi[B]!==tipo)return;                // stessa tipologia
-      let best=null;
-      (BL[A]||[]).filter(spostabile).forEach(X=>{
-        const nX=_hkNights(X,N);
-        [null,...(BL[B]||[]).filter(spostabile)].forEach(Y=>{
-          if(_hkOverlap(nX,occupate(B,Y)))return;        // X non entra in B
-          if(Y&&_hkOverlap(_hkNights(Y,N),occupate(A,X)))return; // Y non entra in A
-          const nuoviA=(BL[A]||[]).filter(z=>z!==X).concat(Y?[Y]:[]);
-          const nuoviB=(BL[B]||[]).filter(z=>z!==Y).concat([X]);
-          const sA=_hkStatesFromBlocks(nuoviA,N),sB=_hkStatesFromBlocks(nuoviB,N);
-          let delta=0;const effetti=[];
-          for(let d=todayIdx;d<N;d++){
-            const o=days[d];
-            const n={cM:o.cM-_hkStateWeight(A,stato[A][d])+_hkStateWeight(A,sA[d]),
-                     cA:o.cA-_hkStateWeight(B,stato[B][d])+_hkStateWeight(B,sB[d]),
-                     pM:o.pM-_hkIsPartenza(stato[A][d])+_hkIsPartenza(sA[d]),
-                     pA:o.pA-_hkIsPartenza(stato[B][d])+_hkIsPartenza(sB[d])};
-            const so=_hkDayScore(o),sn=_hkDayScore(n);
-            delta+=sn-so;
-            if(sn<so-0.01)effetti.push({i:d,daP:[o.pM,o.pA],aP:[n.pM,n.pA]});
-          }
-          const guadagno=-delta;
-          if(guadagno>0.01&&(!best||guadagno>best.guadagno+0.01))
-            best={from:A,to:B,tipo,start:X.start,end:X.end,guadagno,effetti,scambio:!!Y,
-                  yStart:Y?Y.start:null,yEnd:Y?Y.end:null};
+    const stessoTipo=ART.filter(r=>pianoData.tipi[r]===tipo);
+    (BL[A]||[]).filter(spostabile).forEach(X=>{
+      stessoTipo.forEach(B=>{
+        if(B===A||MATARESE.has(B))return;                // B sempre lato Altre
+        // 1) spostamento semplice: X entra in B così com'è
+        if(_hkFits(X,BL[B],[],N)){
+          valuta({tipo:'sposta',from:A,to:B,cat:tipo,start:X.start,end:X.end},
+                 {[A]:(BL[A]||[]).filter(z=>z!==X),[B]:(BL[B]||[]).concat([X])});
+          return;                                        // se entra già, niente scambi o catene
+        }
+        // Chi dà fastidio in B? Se è più d'uno la mossa diventa ingestibile a mano.
+        const intralcio=(BL[B]||[]).filter(z=>_hkOverlap(_hkNights(X,N),_hkNights(z,N)));
+        if(intralcio.length!==1)return;
+        const Y=intralcio[0];
+        if(!spostabile(Y))return;                        // ospite già in casa: non si tocca
+        // 2) scambio: Y va in A al posto di X
+        if(_hkFits(Y,BL[A],[X],N)){
+          valuta({tipo:'scambia',from:A,to:B,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end},
+                 {[A]:(BL[A]||[]).filter(z=>z!==X).concat([Y]),[B]:(BL[B]||[]).filter(z=>z!==Y).concat([X])});
+        }
+        // 3) catena a tre: Y si sposta in una terza camera C, liberando B per X
+        stessoTipo.forEach(C=>{
+          if(C===A||C===B)return;
+          if(!_hkFits(Y,BL[C],[],N))return;
+          valuta({tipo:'catena',from:A,to:B,via:C,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end},
+                 {[A]:(BL[A]||[]).filter(z=>z!==X),
+                  [B]:(BL[B]||[]).filter(z=>z!==Y).concat([X]),
+                  [C]:(BL[C]||[]).concat([Y])});
         });
       });
-      if(best)mosse.push(best);
     });
   });
-  mosse.sort((x,y)=>y.guadagno-x.guadagno);
-  out.mosse=mosse.slice(0,maxN||3);
+  // A parità di beneficio preferisci la mossa più semplice da eseguire nel PMS
+  const costo={sposta:0,scambia:1,catena:2};
+  mosse.sort((x,y)=>Math.abs(y.guadagno-x.guadagno)>0.01?y.guadagno-x.guadagno:costo[x.tipo]-costo[y.tipo]);
+  // Una sola proposta per coppia di camere coinvolte, per non ripetere varianti simili
+  const visti=new Set();
+  out.mosse=mosse.filter(m=>{const k=m.from+'>'+m.to+'>'+m.start;if(visti.has(k))return false;visti.add(k);return true;}).slice(0,maxN||3);
   // Se un giorno resta sbilanciato e non c'è mossa che lo migliori, spiega il perché
   // camera per camera: è l'informazione che serve davvero per capire se il vincolo è
   // strutturale (tipologia senza corrispettivo) o solo di disponibilità.
   if(!out.mosse.length&&out.sbilanciati.length){
     const g=out.sbilanciati[0];
     const eccesso=g.dp>0;                                 // chi ha più partenze
-    const lato=eccesso?MATARESE:null;
     ART.forEach(r=>{
       const inMat=MATARESE.has(r);
       if(eccesso?!inMat:inMat)return;
@@ -2547,7 +2590,9 @@ function hkSuggestMoves(maxN){
       const tipo=pianoData.tipi[r]||'—';
       const X=(BL[r]||[]).find(b=>b.end===g.i&&!b.openEnd);
       let perche;
-      if(!X||!spostabile(X))perche='ospite già in casa da prima';
+      if(!X)perche='soggiorno non ricostruibile dal Piano';
+      else if(X.speciale)perche='riprotezione o blocco camera, non spostabile';
+      else if(X.start<todayIdx)perche='ospite già in casa da prima';
       else{
         const contro=ART.filter(o=>MATARESE.has(o)!==inMat&&pianoData.tipi[o]===tipo);
         if(!contro.length)perche='nessuna camera '+tipo+' dall\'altro lato';
@@ -2598,19 +2643,28 @@ function renderHkSuggestions(){
       ${righe?`<div style="font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.5;">Se il blocco è la tipologia, l'unico modo per sbloccarlo è consentire scambi tra tipologie diverse (es. a parità di capienza).</div>`:''}
     </div>`);
   }
+  const frecciaG=`<span style="color:var(--text-dim);font-weight:400;">→</span>`;
+  const frecciaB=`<span style="color:var(--accent);font-weight:400;">⇄</span>`;
   const righe=s.mosse.map((m,i)=>{
     const periodo=m.start===m.end?lbl(m.start):lbl(m.start)+' → '+lbl(m.end);
-    const titolo=m.scambio
-      ?`${m.from} <span style="color:var(--accent);font-weight:400;">⇄</span> ${m.to}`
-      :`${m.from} <span style="color:var(--text-dim);font-weight:400;">→</span> ${m.to}`;
-    const dett=m.scambio
-      ?`scambio con il soggiorno ${lbl(m.yStart)} → ${lbl(m.yEnd)} di ${m.to}`
-      :`${m.to} libera in quelle notti`;
+    const perY=m.yStart!=null?(m.yStart===m.yEnd?lbl(m.yStart):lbl(m.yStart)+' → '+lbl(m.yEnd)):'';
+    let titolo,dett;
+    if(m.tipo==='scambia'){
+      titolo=`${m.from} ${frecciaB} ${m.to}`;
+      dett=`scambio col soggiorno ${perY} di ${m.to}`;
+    }else if(m.tipo==='catena'){
+      // Due spostamenti in sequenza: va detto chiaramente, sono due operazioni nel PMS
+      titolo=`${m.from} ${frecciaG} ${m.to} ${frecciaG} ${m.via}`;
+      dett=`2 spostamenti: sposta prima ${perY} da ${m.to} a ${m.via}, poi ${periodo} da ${m.from} a ${m.to}`;
+    }else{
+      titolo=`${m.from} ${frecciaG} ${m.to}`;
+      dett=`${m.to} libera in quelle notti`;
+    }
     return`<div style="display:flex;align-items:center;gap:14px;padding:11px 0;${i>0?'border-top:1px solid var(--border-light);':''}">
       <span style="width:22px;height:22px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:14px;font-weight:700;color:var(--text);">${titolo}</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">soggiorno ${periodo} · ${m.tipo} · ${dett}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">soggiorno ${periodo} · ${m.cat} · ${dett}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;">
         ${m.effetti.slice(0,3).map(e=>`<div style="font-size:11.5px;color:var(--green);font-weight:600;white-space:nowrap;">${lbl(e.i)}: ${e.daP[0]}-${e.daP[1]} → ${e.aP[0]}-${e.aP[1]}</div>`).join('')}
@@ -5425,7 +5479,7 @@ function parsePianoItems(items){
   // Tipologia camera (es. "AS DLX DP", "AS SUI"): è nel PDF subito dopo lo slash ma
   // finora veniva scartata. Serve ai suggerimenti di bilanciamento, che propongono
   // spostamenti solo tra camere della stessa tipologia.
-  const tipi={};
+  const tipi={},incArr=[],incPar=[];
   // Righe dati: tutto dopo header+daterow (anche page 2+)
   const hPage=rows[hIdx].p;
   const skipUntil=nextRow&&nextRow.p===hPage&&dateItems.length?hIdx+1:hIdx;
@@ -5460,6 +5514,13 @@ function parsePianoItems(items){
     });
     colVals.forEach((val,ci)=>{
       if(!val||/^\.+$/.test(val))return;
+      // Pax non valorizzati ("+..", "-..") = riprotezioni o blocchi camera, non
+      // prenotazioni normali: si contano come occupazione e come lavoro, ma non si
+      // possono spostare in un'altra camera come un ospite. Arrivo e partenza vanno
+      // distinti: in "-1+.." parte un ospite vero (-1) ed entra un blocco (+..).
+      const mMinus=val.match(/-([\d.]*)/),mPlus=val.match(/\+([\d.]*)/);
+      if(mPlus&&mPlus[1].indexOf('.')>=0)incArr.push(roomCode+'|'+ci);
+      if(mMinus&&mMinus[1].indexOf('.')>=0)incPar.push(roomCode+'|'+ci);
       const hasMinus=val.includes('-'),hasPlus=val.includes('+');
       if(hasMinus&&hasPlus)giorni[ci][roomType].cambi.push(roomCode);
       else if(hasMinus)giorni[ci][roomType].partenze.push(roomCode);
@@ -5467,7 +5528,7 @@ function parsePianoItems(items){
       else if(val.includes('='))giorni[ci][roomType].fermate.push(roomCode);
     });
   }
-  return{stampato,giorni,tipi};
+  return{stampato,giorni,tipi,incArr,incPar};
 }
 // Deriva dal Piano Settimanale i conteggi che prima arrivavano dai tre PDF report
 // pulizie. Vedi il commento dell'interruttore HKP_DERIVE_FROM_PIANO in cima al file.
