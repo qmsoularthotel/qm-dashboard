@@ -2482,7 +2482,7 @@ function _hkFits(block,blocks,escludi,N){
 function _hkEffetto(days,stato,changes,todayIdx,N){
   const nuovi={};
   Object.keys(changes).forEach(r=>{nuovi[r]=_hkStatesFromBlocks(changes[r],N);});
-  let delta=0;const effetti=[];
+  let delta=0;const effetti=[],peggiori=[],giorni={};
   for(let d=todayIdx;d<N;d++){
     const o=days[d];
     let cM=o.cM,cA=o.cA,pM=o.pM,pA=o.pA;
@@ -2493,9 +2493,17 @@ function _hkEffetto(days,stato,changes,todayIdx,N){
     });
     const n={cM,cA,pM,pA},so=_hkDayScore(o),sn=_hkDayScore(n);
     delta+=sn-so;
-    if(sn<so-0.01)effetti.push({i:d,daP:[o.pM,o.pA],aP:[n.pM,n.pA]});
+    // `giorni` tiene il prima/dopo di OGNI giorno toccato, non solo di quelli migliorati:
+    // serve per filtrare le mosse sul giorno che l'utente sta guardando in Room Division
+    // e per dirgli se una mossa che aiuta quel giorno ne peggiora un altro.
+    // Serve anche il carico: una mossa può lasciare le partenze pari e riequilibrare solo
+    // il carico — senza mostrarlo la riga sembrerebbe "2-4 → 2-4", cioè inutile.
+    const ef={i:d,daP:[o.pM,o.pA],aP:[n.pM,n.pA],daC:[o.cM,o.cA],aC:[n.cM,n.cA]};
+    giorni[d]=Object.assign({so,sn},ef);
+    if(sn<so-0.01)effetti.push(ef);
+    else if(sn>so+0.01)peggiori.push(ef);
   }
-  return{guadagno:-delta,effetti};
+  return{guadagno:-delta,effetti,peggiori,giorni};
 }
 // Motore. Tre forme di riassegnazione, in ordine di complessità per chi deve poi
 // eseguirle a mano nel PMS:
@@ -2505,8 +2513,12 @@ function _hkEffetto(days,stato,changes,todayIdx,N){
 //                     sposta in una terza camera C, liberando lo spazio
 // La fattibilità si misura sulle NOTTI, non sui giorni: chi parte la mattina non
 // occupa quella notte, quindi un altro può entrare lo stesso giorno.
-function hkSuggestMoves(maxN){
-  const out={ok:false,motivo:'',giorni:[],sbilanciati:[],mosse:[],ostacoli:[]};
+// `focusIdx` = giorno selezionato in Room Division. Quando è valorizzato, la ricerca
+// resta comunque su tutta la settimana (una mossa tocca più giorni e il bilancio
+// complessivo non deve peggiorare), ma vengono proposte solo le mosse che migliorano
+// QUEL giorno, ordinate per quanto lo migliorano. Senza focus vale il criterio globale.
+function hkSuggestMoves(maxN,focusIdx){
+  const out={ok:false,motivo:'',giorni:[],sbilanciati:[],mosse:[],ostacoli:[],focus:null};
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){out.motivo='piano';return out;}
   if(!pianoData.tipi||!Object.keys(pianoData.tipi).length){out.motivo='tipi';return out;}
   const giorni=pianoData.giorni,N=giorni.length;
@@ -2526,8 +2538,21 @@ function hkSuggestMoves(maxN){
     if(Math.abs(dp)>=2)out.sbilanciati.push({i,pM:d.pM,pA:d.pA,dp});
   });
   out.sbilanciati.sort((a,b)=>Math.abs(b.dp)-Math.abs(a.dp));
+  // Stato del giorno selezionato, così la vista può parlare di quel giorno anche quando
+  // è già in pari (o è passato) invece di ragionare solo sulla settimana.
+  const hasFocus=typeof focusIdx==='number'&&focusIdx>=0&&focusIdx<N;
+  if(hasFocus){
+    const f=days[focusIdx];
+    out.focus={i:focusIdx,pM:f.pM,pA:f.pA,cM:f.cM,cA:f.cA,
+      passato:focusIdx<todayIdx,
+      // Vale la pena parlarne solo se lo scarto si nota: 2 partenze (con numeri dispari
+      // una di scarto è inevitabile e nessuno la percepisce) o 2 di carico, che è quanto
+      // pesa una camera intera. Sotto, il giorno è di fatto in pari e segnalarlo è rumore.
+      sbilanciato:Math.abs(f.pM-f.pA)>=2||Math.abs(f.cM-f.cA)>=2};
+  }
   const scoreCur=days.reduce((t,d,i)=>t+(i<todayIdx?0:_hkDayScore(d)),0);
   if(scoreCur<0.01)return out;
+  if(hasFocus&&(out.focus.passato||!out.focus.sbilanciato))return out;
   // Spostabile = qualsiasi soggiorno non ancora iniziato, riprotezioni comprese
   // (si possono riassegnare a un'altra camera come una prenotazione). Restano fuori
   // solo gli ospiti già in casa. Il flag `speciale` serve però a segnalarle
@@ -2535,8 +2560,17 @@ function hkSuggestMoves(maxN){
   const spostabile=b=>b.start>=todayIdx;
   const mosse=[];
   const valuta=(cand,changes)=>{
-    const{guadagno,effetti}=_hkEffetto(days,stato,changes,todayIdx,N);
-    if(guadagno>0.01)mosse.push(Object.assign({guadagno,effetti},cand));
+    const{guadagno,effetti,peggiori,giorni}=_hkEffetto(days,stato,changes,todayIdx,N);
+    if(guadagno<=0.01)return;                              // mai peggiorare la settimana
+    // Con un giorno selezionato conta solo se aiuta QUEL giorno: una mossa che pareggia
+    // il venerdì non è una risposta utile a chi sta guardando il mercoledì.
+    let gFocus=0;
+    if(hasFocus){
+      const f=giorni[focusIdx];
+      if(!f||f.sn>=f.so-0.01)return;
+      gFocus=f.so-f.sn;
+    }
+    mosse.push(Object.assign({guadagno,gFocus,effetti,peggiori,giorni},cand));
   };
   ART.forEach(A=>{
     if(!MATARESE.has(A))return;                          // A sempre lato Matarese
@@ -2575,16 +2609,28 @@ function hkSuggestMoves(maxN){
   });
   // A parità di beneficio preferisci la mossa più semplice da eseguire nel PMS
   const costo={sposta:0,scambia:1,catena:2};
-  mosse.sort((x,y)=>Math.abs(y.guadagno-x.guadagno)>0.01?y.guadagno-x.guadagno:costo[x.tipo]-costo[y.tipo]);
+  mosse.sort((x,y)=>{
+    // Con un giorno selezionato vince chi migliora di più QUEL giorno; il beneficio sulla
+    // settimana resta come secondo criterio, così tra due mosse equivalenti sul giorno
+    // si preferisce quella che aiuta anche il resto.
+    if(hasFocus&&Math.abs(y.gFocus-x.gFocus)>0.01)return y.gFocus-x.gFocus;
+    if(Math.abs(y.guadagno-x.guadagno)>0.01)return y.guadagno-x.guadagno;
+    return costo[x.tipo]-costo[y.tipo];
+  });
   // Una sola proposta per coppia di camere coinvolte, per non ripetere varianti simili
   const visti=new Set();
   out.mosse=mosse.filter(m=>{const k=m.from+'>'+m.to+'>'+m.start;if(visti.has(k))return false;visti.add(k);return true;}).slice(0,maxN||3);
   // Se un giorno resta sbilanciato e non c'è mossa che lo migliori, spiega il perché
   // camera per camera: è l'informazione che serve davvero per capire se il vincolo è
   // strutturale (tipologia senza corrispettivo) o solo di disponibilità.
-  if(!out.mosse.length&&out.sbilanciati.length){
-    const g=out.sbilanciati[0];
-    const eccesso=g.dp>0;                                 // chi ha più partenze
+  // Con un giorno selezionato si spiega QUEL giorno; altrimenti il peggiore della settimana.
+  const gDiag=hasFocus?{i:focusIdx,pM:days[focusIdx].pM,pA:days[focusIdx].pA,dp:days[focusIdx].pM-days[focusIdx].pA}
+                      :out.sbilanciati[0];
+  if(!out.mosse.length&&gDiag){
+    const g=gDiag;
+    out.diag=g;
+    // Chi ha più partenze; a pari partenze si guarda chi ha più carico.
+    const eccesso=g.dp!==0?g.dp>0:days[g.i].cM>days[g.i].cA;
     ART.forEach(r=>{
       const inMat=MATARESE.has(r);
       if(eccesso?!inMat:inMat)return;
@@ -2606,11 +2652,23 @@ function hkSuggestMoves(maxN){
   return out;
 }
 function _hkNum(n){return n.toLocaleString('it-IT',{minimumFractionDigits:n%1?1:0,maximumFractionDigits:1});}
+// Prima/dopo di un giorno: mostra le partenze se cambiano, altrimenti il carico — così una
+// riga non sembra mai un "2-4 → 2-4" senza effetto quando il guadagno è sul solo carico.
+function _hkEffTxt(l,e){
+  const cambiaP=e.daP[0]!==e.aP[0]||e.daP[1]!==e.aP[1];
+  return cambiaP
+    ?`${l}: ${e.daP[0]}-${e.daP[1]} → ${e.aP[0]}-${e.aP[1]}`
+    :`${l}: carico ${_hkNum(e.daC[0])}-${_hkNum(e.daC[1])} → ${_hkNum(e.aC[0])}-${_hkNum(e.aC[1])}`;
+}
 function _hkSgn(n){return(n>0?'+':'')+_hkNum(n);}
-function renderHkSuggestions(){
-  const s=hkSuggestMoves(3);
+function renderHkSuggestions(focusIdx){
+  const s=hkSuggestMoves(3,focusIdx);
+  const fLbl=(pianoData&&pianoData.giorni&&pianoData.giorni[focusIdx]&&pianoData.giorni[focusIdx].label)||'';
+  // Il titolo dice di quale giorno si sta parlando: i suggerimenti seguono il giorno
+  // selezionato nella suddivisione cameriere qui sopra, non la settimana intera.
+  const titolo=s.focus&&fLbl?'💡 Come bilanciare '+fLbl:'💡 Come bilanciare la settimana';
   const box=(inner,tint)=>`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
-    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">💡 Come bilanciare la settimana</div>${inner}</div>`;
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">${titolo}</div>${inner}</div>`;
   if(!s.ok){
     if(s.motivo==='tipi')return box(`<div style="background:var(--amber-bg);color:var(--amber);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">Ricarica il Piano Settimanale per attivare i suggerimenti — quello in memoria è stato caricato prima di questa funzione e non contiene le tipologie camera.</div>`);
     return'';
@@ -2618,29 +2676,55 @@ function renderHkSuggestions(){
   const lbl=i=>((pianoData.giorni[i]&&pianoData.giorni[i].label)||'—');
   // Diagnosi per giorno: è il singolo giorno che le housekeeper confrontano tra loro,
   // non il totale della settimana (che può chiudere 27 a 27 con dentro un 6 contro 3).
-  const testa=s.sbilanciati.length
-    ?`<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);">
-        <div style="font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;">Giorni con partenze sbilanciate</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">${s.sbilanciati.map(g=>
-          `<span style="display:inline-flex;align-items:center;gap:6px;background:var(--amber-bg);border:1px solid var(--amber-border,#ffcc80);border-radius:7px;padding:4px 10px;font-size:12px;">
-            <strong style="color:var(--amber);">${lbl(g.i)}</strong>
-            <span style="color:var(--text-muted);font-variant-numeric:tabular-nums;">${g.pM} <span style="color:var(--text-dim);">Mat</span> · ${g.pA} <span style="color:var(--text-dim);">Altre</span></span>
-          </span>`).join('')}</div>
-      </div>`
-    :`<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);font-size:12.5px;color:var(--green);font-weight:600;">✓ Nessun giorno con partenze sbilanciate da oggi in avanti.</div>`;
+  const pill=(l,pM,pA,col)=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--${col}-bg);border:1px solid var(--${col});border-radius:7px;padding:4px 10px;font-size:12px;">
+      <strong style="color:var(--${col});">${l}</strong>
+      <span style="color:var(--text-muted);font-variant-numeric:tabular-nums;">${pM} <span style="color:var(--text-dim);">Mat</span> · ${pA} <span style="color:var(--text-dim);">Altre</span></span>
+    </span>`;
+  // Con un giorno selezionato la testa parla di quel giorno; gli altri giorni squilibrati
+  // restano come promemoria cliccabile ("cambia giorno per i suoi suggerimenti").
+  let testa;
+  if(s.focus){
+    const f=s.focus,altri=s.sbilanciati.filter(g=>g.i!==f.i);
+    const suo=f.passato
+      ?`<div style="font-size:12.5px;color:var(--text-dim);">${fLbl} è già passato: niente da riorganizzare.</div>`
+      :(f.sbilanciato
+        ?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            ${pill(fLbl,f.pM,f.pA,'amber')}
+            <span style="font-size:11.5px;color:var(--text-dim);font-variant-numeric:tabular-nums;">carico ${_hkNum(f.cM)} · ${_hkNum(f.cA)}</span>
+          </div>`
+        :`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            ${pill(fLbl,f.pM,f.pA,'green')}
+            <span style="font-size:12.5px;color:var(--green);font-weight:600;">✓ già equilibrato</span>
+          </div>`);
+    testa=`<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);">
+      <div style="font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;">Partenze del giorno selezionato</div>
+      ${suo}
+      ${altri.length?`<div style="font-size:11px;color:var(--text-dim);margin-top:9px;line-height:1.5;">Altri giorni da sistemare: ${altri.map(g=>`<strong style="color:var(--amber);">${lbl(g.i)}</strong> ${g.pM}-${g.pA}`).join(' · ')} — spostati su quel giorno con ‹ › per i suoi suggerimenti.</div>`:''}
+    </div>`;
+  }else{
+    testa=s.sbilanciati.length
+      ?`<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);">
+          <div style="font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;">Giorni con partenze sbilanciate</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">${s.sbilanciati.map(g=>pill(lbl(g.i),g.pM,g.pA,'amber')).join('')}</div>
+        </div>`
+      :`<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);font-size:12.5px;color:var(--green);font-weight:600;">✓ Nessun giorno con partenze sbilanciate da oggi in avanti.</div>`;
+  }
   if(!s.mosse.length){
-    if(!s.sbilanciati.length)return box(testa+`<div style="background:var(--green-bg);color:var(--green);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">✓ Nessuno scambio necessario.</div>`);
+    // Giorno passato o già in pari: la testa ha già detto tutto, non serve un secondo box.
+    if(s.focus&&(s.focus.passato||!s.focus.sbilanciato))return box(testa);
+    if(!s.focus&&!s.sbilanciati.length)return box(testa+`<div style="background:var(--green-bg);color:var(--green);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">✓ Nessuno scambio necessario.</div>`);
+    if(!s.diag)return box(testa);
     // Nessuna mossa possibile: invece di un generico "non si può", spiega camera per
     // camera cosa blocca il giorno peggiore. Serve a capire se il vincolo è strutturale
     // (una tipologia che sta tutta da un lato) o solo di disponibilità in quelle notti.
-    const g=s.sbilanciati[0];
+    const g=s.diag;
     const righe=s.ostacoli.map(o=>`<div style="display:flex;gap:10px;padding:6px 0;font-size:12px;">
         <span style="font-weight:700;color:var(--text);min-width:52px;">${o.camera}</span>
         <span style="color:var(--text-dim);min-width:62px;">${o.tipo}</span>
         <span style="color:var(--text-muted);flex:1;">${o.perche}</span>
       </div>`).join('');
     return box(testa+`<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;">
-      <div style="font-size:12.5px;color:var(--text-muted);line-height:1.5;margin-bottom:${righe?'8px':'0'};">Nessuno scambio possibile con le regole attuali. Perché <strong style="color:var(--text);">${lbl(g.i)}</strong> resta ${g.pM}-${g.pA}:</div>
+      <div style="font-size:12.5px;color:var(--text-muted);line-height:1.5;margin-bottom:${righe?'8px':'0'};">Nessuno scambio possibile con le regole attuali. Perché <strong style="color:var(--text);">${lbl(g.i)}</strong> resta ${g.dp!==0?`${g.pM}-${g.pA}`:`con il carico a ${_hkNum(s.giorni[g.i].cM)}-${_hkNum(s.giorni[g.i].cA)}`}:</div>
       ${righe}
       ${righe?`<div style="font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.5;">Se il blocco è la tipologia, l'unico modo per sbloccarlo è consentire scambi tra tipologie diverse (es. a parità di capienza).</div>`:''}
     </div>`);
@@ -2672,12 +2756,17 @@ function renderHkSuggestions(){
         <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">soggiorno ${periodo} · ${m.cat} · ${dett}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;">
-        ${m.effetti.slice(0,3).map(e=>`<div style="font-size:11.5px;color:var(--green);font-weight:600;white-space:nowrap;">${lbl(e.i)}: ${e.daP[0]}-${e.daP[1]} → ${e.aP[0]}-${e.aP[1]}</div>`).join('')}
+        ${(s.focus?[...m.effetti].sort((a,b)=>(a.i===s.focus.i?-1:0)-(b.i===s.focus.i?-1:0)):m.effetti).slice(0,3).map(e=>{
+          const isF=s.focus&&e.i===s.focus.i;   // il giorno che si sta guardando va in evidenza
+          return`<div style="font-size:11.5px;color:var(--green);font-weight:${isF?'800':'600'};white-space:nowrap;${isF?'':'opacity:.75;'}">${_hkEffTxt(lbl(e.i),e)}</div>`;
+        }).join('')}
         ${m.effetti.length>3?`<div style="font-size:10px;color:var(--text-dim);">+${m.effetti.length-3} altri giorni</div>`:''}
+        ${(m.peggiori||[]).slice(0,2).map(e=>`<div style="font-size:11px;color:var(--amber);font-weight:600;white-space:nowrap;">${_hkEffTxt(lbl(e.i),e)}</div>`).join('')}
       </div>
     </div>`;
   }).join('');
-  const nota=`<div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.5;">I numeri a destra sono le <strong>partenze di quel giorno</strong> (Matarese-Altre) prima e dopo. L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana. Solo stessa tipologia e solo prenotazioni non ancora arrivate. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
+  const haPegg=s.mosse.some(m=>(m.peggiori||[]).length);
+  const nota=`<div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.5;">I numeri a destra sono il prima e dopo di ogni giorno (Matarese-Altre): le <strong>partenze</strong> se cambiano, il <strong>carico</strong> se la mossa riequilibra solo quello${s.focus?`. <strong>${fLbl}</strong> è in evidenza`:''}${haPegg?`; in <span style="color:var(--amber);font-weight:700;">ambra</span> i giorni che peggiorano — il bilancio complessivo resta comunque migliore`:''}. ${s.focus?`Sono elencate solo le mosse che migliorano <strong>${fLbl}</strong>: cambia giorno per vedere le sue.`:`L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana.`} Solo stessa tipologia e solo prenotazioni non ancora arrivate. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
   return box(testa+righe+nota);
 }
 // Contenitore per la vista settimanale — popolato via _bkfChartRender() (stesso motore
@@ -2900,7 +2989,9 @@ function renderRoomDivision(idx){
     </div>`:''}
   </div>`:'';
   let sugg='';
-  try{sugg=renderHkSuggestions();}catch(e){sugg='';}
+  // I suggerimenti seguono il giorno selezionato con ‹ › qui sopra: chi guarda mercoledì
+  // vuole sapere come sistemare mercoledì, non la settimana in generale.
+  try{sugg=renderHkSuggestions(idx);}catch(e){sugg='';}
   el.innerHTML=`${mHtml}${sugg}${monthlyHtml}`;
   if(mCard||aCard)renderHkWeekChart(idx);
 }
