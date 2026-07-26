@@ -2446,6 +2446,11 @@ const _hkIsPartenza=s=>(s==='partenza'||s==='cambio')?1:0;
 // carico il motore preferisce sempre la soluzione con le partenze più pari.
 // Alzarlo rende il bilanciamento delle partenze ancora più prioritario.
 const HK_PESO_PARTENZE=3;
+// Tipologie che non si spostano mai: Junior Suite e Suite. Restano nel conteggio del
+// carico e delle partenze (il lavoro c'è comunque), ma il motore non le propone né come
+// camera di partenza né come destinazione. Aggiungere qui una sigla la esclude del tutto.
+const HK_TIPI_FISSE=['JS','SUI'];
+const _hkFissa=r=>HK_TIPI_FISSE.indexOf((pianoData&&pianoData.tipi&&pianoData.tipi[r])||'')>=0;
 // L'equilibrio va cercato GIORNO PER GIORNO, non sui totali di settimana: una
 // settimana può chiudere 27 partenze a 27 e avere comunque un mercoledì da 6 contro 3.
 // È il singolo giorno che le housekeeper vivono, ed è lì che nasce la lamentela.
@@ -2575,7 +2580,8 @@ function hkSuggestMoves(maxN,focusIdx){
   ART.forEach(A=>{
     if(!MATARESE.has(A))return;                          // A sempre lato Matarese
     const tipo=pianoData.tipi[A];if(!tipo)return;
-    const stessoTipo=ART.filter(r=>pianoData.tipi[r]===tipo);
+    if(_hkFissa(A))return;                               // JS e SUI non si spostano mai
+    const stessoTipo=ART.filter(r=>pianoData.tipi[r]===tipo&&!_hkFissa(r));
     (BL[A]||[]).filter(spostabile).forEach(X=>{
       stessoTipo.forEach(B=>{
         if(B===A||MATARESE.has(B))return;                // B sempre lato Altre
@@ -2639,7 +2645,8 @@ function hkSuggestMoves(maxN,focusIdx){
       const tipo=pianoData.tipi[r]||'—';
       const X=(BL[r]||[]).find(b=>b.end===g.i&&!b.openEnd);
       let perche;
-      if(!X)perche='soggiorno non ricostruibile dal Piano';
+      if(_hkFissa(r))perche='tipologia mai spostabile';       // la sigla è già nella colonna accanto
+      else if(!X)perche='soggiorno non ricostruibile dal Piano';
       else if(X.start<todayIdx)perche='ospite già in casa da prima';
       else{
         const contro=ART.filter(o=>MATARESE.has(o)!==inMat&&pianoData.tipi[o]===tipo);
@@ -2726,7 +2733,7 @@ function renderHkSuggestions(focusIdx){
     return box(testa+`<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;">
       <div style="font-size:12.5px;color:var(--text-muted);line-height:1.5;margin-bottom:${righe?'8px':'0'};">Nessuno scambio possibile con le regole attuali. Perché <strong style="color:var(--text);">${lbl(g.i)}</strong> resta ${g.dp!==0?`${g.pM}-${g.pA}`:`con il carico a ${_hkNum(s.giorni[g.i].cM)}-${_hkNum(s.giorni[g.i].cA)}`}:</div>
       ${righe}
-      ${righe?`<div style="font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.5;">Se il blocco è la tipologia, l'unico modo per sbloccarlo è consentire scambi tra tipologie diverse (es. a parità di capienza).</div>`:''}
+      ${righe?`<div style="font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.5;">${HK_TIPI_FISSE.join(' e ')} sono escluse per scelta e non verranno mai proposte. Per le altre, se il blocco è la tipologia l'unico modo per sbloccarlo è consentire scambi tra tipologie diverse (es. a parità di capienza).</div>`:''}
     </div>`);
   }
   const frecciaG=`<span style="color:var(--text-dim);font-weight:400;">→</span>`;
@@ -2766,7 +2773,7 @@ function renderHkSuggestions(focusIdx){
     </div>`;
   }).join('');
   const haPegg=s.mosse.some(m=>(m.peggiori||[]).length);
-  const nota=`<div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.5;">I numeri a destra sono il prima e dopo di ogni giorno (Matarese-Altre): le <strong>partenze</strong> se cambiano, il <strong>carico</strong> se la mossa riequilibra solo quello${s.focus?`. <strong>${fLbl}</strong> è in evidenza`:''}${haPegg?`; in <span style="color:var(--amber);font-weight:700;">ambra</span> i giorni che peggiorano — il bilancio complessivo resta comunque migliore`:''}. ${s.focus?`Sono elencate solo le mosse che migliorano <strong>${fLbl}</strong>: cambia giorno per vedere le sue.`:`L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana.`} Solo stessa tipologia e solo prenotazioni non ancora arrivate. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
+  const nota=`<div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.5;">I numeri a destra sono il prima e dopo di ogni giorno (Matarese-Altre): le <strong>partenze</strong> se cambiano, il <strong>carico</strong> se la mossa riequilibra solo quello${s.focus?`. <strong>${fLbl}</strong> è in evidenza`:''}${haPegg?`; in <span style="color:var(--amber);font-weight:700;">ambra</span> i giorni che peggiorano — il bilancio complessivo resta comunque migliore`:''}. ${s.focus?`Sono elencate solo le mosse che migliorano <strong>${fLbl}</strong>: cambia giorno per vedere le sue.`:`L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana.`} Solo stessa tipologia, solo prenotazioni non ancora arrivate, e ${HK_TIPI_FISSE.join(' / ')} mai spostate. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
   return box(testa+righe+nota);
 }
 // Contenitore per la vista settimanale — popolato via _bkfChartRender() (stesso motore
