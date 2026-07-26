@@ -2429,11 +2429,28 @@ function hkWeekCarico(){
   });
   return{m,a};
 }
+// Una finestra di giorni [d1,d2] è "pulita" per una camera se nessun soggiorno la
+// attraversa ai bordi: nessuno era già dentro il giorno prima di d1, e nessuno resta
+// oltre d2. Solo così si può scambiare il contenuto di due camere senza spezzare a
+// metà il soggiorno di qualcuno.
+function _hkWindowClean(stato,room,d1,d2,N){
+  const s=stato[room];if(!s)return false;
+  const eraIeri=x=>x==='fermata'||x==='partenza'||x==='cambio'; // c'era già il giorno prima
+  const restaDomani=x=>x==='fermata'||x==='arrivo'||x==='cambio'; // resta il giorno dopo
+  if(eraIeri(s[d1]))return false;
+  if(d2+1<N)return!eraIeri(s[d2+1]);
+  return!restaDomani(s[d2]);
+}
+// Suggerisce SCAMBI reciproci tra una camera Matarese e una delle Altre: tutto ciò
+// che c'è in A nella finestra va in B e viceversa. Il caso "camera di destinazione
+// libera" è semplicemente lo scambio con una camera vuota, quindi resta coperto.
+// Esempio reale: Art 5 con un soggiorno di 4 notti ⇄ Art 14 con due soggiorni da 2
+// notti nelle stesse date — scambio valido anche se nessuna delle due è libera.
 function hkSuggestMoves(maxN){
   const out={ok:false,motivo:'',bilancio:0,mosse:[]};
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){out.motivo='piano';return out;}
   if(!pianoData.tipi||!Object.keys(pianoData.tipi).length){out.motivo='tipi';return out;}
-  const giorni=pianoData.giorni;
+  const giorni=pianoData.giorni,N=giorni.length;
   const cur=hkWeekCarico();
   out.bilancio=cur.m-cur.a;
   out.ok=true;
@@ -2442,30 +2459,41 @@ function hkSuggestMoves(maxN){
   const stato={};
   ART.forEach(r=>{stato[r]=giorni.map(g=>_hkRoomState(g,r));});
   const todayIdx=Math.max(0,pianoGetGiornoIdx());
-  const blocks=hkBuildBlocks().filter(b=>b.start>=todayIdx);
+  const nSogg=(room,d1,d2)=>{let n=0;for(let d=d1;d<=d2;d++){const s=stato[room][d];if(s==='arrivo'||s==='cambio')n++;}return n;};
   const mosse=[];
-  blocks.forEach(b=>{
-    const from=b.room,fromM=MATARESE.has(from),tipo=pianoData.tipi[from];
-    if(!tipo||!stato[from])return;
-    ART.forEach(to=>{
-      if(to===from||MATARESE.has(to)===fromM)return;   // stesso gruppo: non cambia nulla
-      if(pianoData.tipi[to]!==tipo)return;             // tipologia diversa
-      if(!stato[to])return;
-      for(let d=b.start;d<=b.end;d++)if(stato[to][d])return; // dev'essere libera tutti i giorni
-      let dM=0,dA=0;
-      for(let d=b.start;d<=b.end;d++){
-        const contrib=_hkBlockContrib(b,d);
-        const oldF=stato[from][d];
-        const dFrom=_hkStateWeight(from,_hkRemoveContrib(oldF,contrib))-_hkStateWeight(from,oldF);
-        const dTo=_hkStateWeight(to,contrib);
-        if(fromM){dM+=dFrom;dA+=dTo;}else{dA+=dFrom;dM+=dTo;}
+  ART.forEach(A=>{
+    if(!MATARESE.has(A)||!stato[A])return;               // A sempre lato Matarese
+    const tipo=pianoData.tipi[A];if(!tipo)return;
+    ART.forEach(B=>{
+      if(MATARESE.has(B)||!stato[B])return;              // B sempre lato Altre
+      if(pianoData.tipi[B]!==tipo)return;                // stessa tipologia
+      let best=null;
+      for(let d1=todayIdx;d1<N;d1++){
+        if(!_hkWindowClean(stato,A,d1,d1,N)&&!_hkWindowClean(stato,B,d1,d1,N))continue;
+        for(let d2=d1;d2<N;d2++){
+          if(!_hkWindowClean(stato,A,d1,d2,N)||!_hkWindowClean(stato,B,d1,d2,N))continue;
+          let dM=0,dA=0,vuoto=true;
+          for(let d=d1;d<=d2;d++){
+            const sa=stato[A][d],sb=stato[B][d];
+            if(sa||sb)vuoto=false;
+            dM+=_hkStateWeight(A,sb)-_hkStateWeight(A,sa); // A prende il contenuto di B
+            dA+=_hkStateWeight(B,sa)-_hkStateWeight(B,sb); // B prende quello di A
+          }
+          if(vuoto)continue;
+          const nuovo=(cur.m+dM)-(cur.a+dA);
+          const guadagno=Math.abs(out.bilancio)-Math.abs(nuovo);
+          const ampiezza=d2-d1;
+          // A parità di guadagno preferisci la finestra più stretta: meno spostamenti da fare
+          if(guadagno>0.01&&(!best||guadagno>best.guadagno+0.01||(Math.abs(guadagno-best.guadagno)<=0.01&&ampiezza<best.ampiezza))){
+            best={from:A,to:B,tipo,start:d1,end:d2,nuovo,guadagno,ampiezza,
+                  nA:nSogg(A,d1,d2),nB:nSogg(B,d1,d2)};
+          }
+        }
       }
-      const nuovo=(cur.m+dM)-(cur.a+dA);
-      const guadagno=Math.abs(out.bilancio)-Math.abs(nuovo);
-      if(guadagno>0.01)mosse.push({from,to,tipo,start:b.start,end:b.end,nuovo,guadagno});
+      if(best)mosse.push(best);
     });
   });
-  mosse.sort((x,y)=>y.guadagno-x.guadagno);
+  mosse.sort((x,y)=>Math.abs(y.guadagno-x.guadagno)>0.01?y.guadagno-x.guadagno:x.ampiezza-y.ampiezza);
   out.mosse=mosse.slice(0,maxN||3);
   return out;
 }
@@ -2485,17 +2513,24 @@ function renderHkSuggestions(){
   if(!s.mosse.length){
     const msg=Math.abs(bil)<=4
       ?`<div style="background:var(--green-bg);color:var(--green);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">✓ Settimana in equilibrio — nessuno spostamento necessario.</div>`
-      :`<div style="background:var(--surface2);color:var(--text-muted);border-radius:8px;padding:10px 14px;font-size:12.5px;line-height:1.5;">Nessuno spostamento utile disponibile: le camere libere della stessa tipologia non coprono l'intero soggiorno di nessuna prenotazione in arrivo. Si può correggere solo cambiando le assegnazioni a monte, in fase di prenotazione.</div>`;
+      :`<div style="background:var(--surface2);color:var(--text-muted);border-radius:8px;padding:10px 14px;font-size:12.5px;line-height:1.5;">Nessuno scambio utile disponibile: tra le camere della stessa tipologia non esiste una finestra di giorni scambiabile senza spezzare a metà il soggiorno di qualcuno. Si può correggere solo cambiando le assegnazioni a monte, in fase di prenotazione.</div>`;
     return box(testa+msg);
   }
   const lbl=i=>((pianoData.giorni[i]&&pianoData.giorni[i].label)||'—');
+  const sogg=n=>n+(n===1?' soggiorno':' soggiorni');
   const righe=s.mosse.map((m,i)=>{
     const periodo=m.start===m.end?lbl(m.start):lbl(m.start)+' → '+lbl(m.end);
+    // Se una delle due camere è vuota nella finestra non è uno scambio ma un semplice
+    // spostamento: mostralo con la freccia singola nel verso giusto.
+    let titolo,dett;
+    if(!m.nB){titolo=`${m.from} <span style="color:var(--text-dim);font-weight:400;">→</span> ${m.to}`;dett=`${sogg(m.nA)} · ${m.to} libera`;}
+    else if(!m.nA){titolo=`${m.to} <span style="color:var(--text-dim);font-weight:400;">→</span> ${m.from}`;dett=`${sogg(m.nB)} · ${m.from} libera`;}
+    else{titolo=`${m.from} <span style="color:var(--accent);font-weight:400;">⇄</span> ${m.to}`;dett=`${sogg(m.nA)} ⇄ ${sogg(m.nB)}`;}
     return`<div style="display:flex;align-items:center;gap:14px;padding:11px 0;${i>0?'border-top:1px solid var(--border-light);':''}">
       <span style="width:22px;height:22px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:14px;font-weight:700;color:var(--text);">${m.from} <span style="color:var(--text-dim);font-weight:400;">→</span> ${m.to}</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">${periodo} · ${m.tipo} · ${m.to} libera per tutto il soggiorno</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);">${titolo}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">${periodo} · ${m.tipo} · ${dett}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;">
         <div style="font-size:13px;font-weight:700;color:var(--green);">${_hkSgn(bil)} → ${_hkSgn(m.nuovo)}</div>
@@ -2503,7 +2538,7 @@ function renderHkSuggestions(){
       </div>
     </div>`;
   }).join('');
-  const nota=`<div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.5;">Solo prenotazioni non ancora arrivate, stessa tipologia camera. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
+  const nota=`<div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.5;">Scambio reciproco: tutto ciò che è in una camera va nell'altra e viceversa, quindi non serve che la destinazione sia libera. Solo stessa tipologia, solo prenotazioni non ancora arrivate, mai spezzando un soggiorno a metà. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
   return box(testa+righe+nota);
 }
 // Contenitore per la vista settimanale — popolato via _bkfChartRender() (stesso motore
