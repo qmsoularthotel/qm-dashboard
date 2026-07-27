@@ -498,7 +498,14 @@ function renderDay(idx){
   // Indice case-insensitive dei nomi DEPTS per escluderli dagli extra
   const allStaffLow=new Set(ALL_STAFF.map(n=>n.toLowerCase()));
   const shiftsKeys=new Set(Object.keys(shifts).map(k=>k.toLowerCase()));
-  const nonServizio=ALL_STAFF.filter(n=>shiftsKeys.has(n.toLowerCase())&&IS_REST(getShift(shifts,n)));
+  // Chi cambia ogni settimana (extra HK non in DEPTS) compare nel turno ma non in
+  // ALL_STAFF: se è a riposo va comunque mostrata da qualche parte, altrimenti sparisce
+  // del tutto dalla giornata invece di finire nella striscia "Non in servizio".
+  const extraNames=Object.keys(shifts).filter(n=>!allStaffLow.has(n.toLowerCase()));
+  const nonServizio=[
+    ...ALL_STAFF.filter(n=>shiftsKeys.has(n.toLowerCase())&&IS_REST(getShift(shifts,n))),
+    ...extraNames.filter(n=>IS_REST(getShift(shifts,n)))
+  ];
   // Motivo dell'assenza per differenziare la striscia "Non in servizio" — riposo è normale
   // (grigio), ferie è pianificato (ambra), malattia è l'unico che merita davvero attenzione (rosso)
   function _absenceReason(v){
