@@ -110,6 +110,11 @@ function ucSetState(key,state,sub,silent){
     const slot=document.getElementById('uc-'+k);if(slot)slot.style.display='none';
     const panel=document.getElementById('uc-'+k+'-panel');if(panel)panel.style.display='none';
   });
+  // 'Compass Piano Settimanale' era affiancata a 'Compass Housekeeper Boutique', ora
+  // nascosta: nella griglia a 2 colonne finirebbe accoppiata per caso con 'Report pasti'
+  // (il prossimo slot visibile), e aprire l'una sposterebbe l'altra. A piena larghezza
+  // resta da sola nella sua riga: aprirla non tocca più nessun'altra scheda.
+  const piano=document.getElementById('uc-piano');if(piano)piano.style.gridColumn='1/-1';
 })();
 // Fonti tracciate per il riepilogo Upload Center — 'piano' non entra nel conteggio
 // rigoroso "X/N" (Turno resta l'unico davvero settimanale, escluso dalla scadenza 24h
@@ -4288,8 +4293,8 @@ function renderPulData(silent){
     nav.appendChild(btn);
   });
   ucSetState('pul','loaded',pulData[0].label+' – '+pulData[pulData.length-1].label,silent);
-  // Mostra dati, nascondi upload box
-  const pulBox=document.getElementById('pulUploadBox');if(pulBox)pulBox.style.display='none';
+  // Il box resta cliccabile anche a dati già caricati: un nuovo file si carica con un
+  // solo clic, senza dover prima premere "Rimuovi" (come già per Turno e Arrivi).
   document.getElementById('pulLoadedInfo').classList.add('visible');
   document.getElementById('pulStatGrid').style.display='grid';
   document.getElementById('pulOccBar').style.display='block';
@@ -5319,7 +5324,7 @@ function renderBkfData(silent){
     nav.appendChild(btn);
   });
   ucSetState('bkf','loaded',bkfData[0].label+' – '+bkfData[bkfData.length-1].label,silent);
-  const bkfBox=document.getElementById('bkfUploadBox');if(bkfBox)bkfBox.style.display='none';
+  // Box sempre cliccabile: ricaricare non richiede prima "Rimuovi report" (v. pul/piano).
   document.getElementById('bkfLoadedInfo').classList.add('visible');
   document.getElementById('bkfStatGrid').style.display='grid';
   document.getElementById('btnBkfReload').style.display='block';
@@ -5691,7 +5696,7 @@ function pianoSetLoaded(silent){
   ucSetState('piano','loaded',range,silent);
   const dateEl=document.getElementById('pianoLoadedDate');if(dateEl)dateEl.textContent='Settimana: '+range;
   const btn=document.getElementById('btnPianoReload');if(btn)btn.style.display='block';
-  const box=document.getElementById('pianoUploadBox');if(box)box.style.display='none';
+  // Box sempre cliccabile: ricaricare il piano non richiede prima "Rimuovi" (v. pul/bkf).
   const li=document.getElementById('pianoLoadedInfo');if(li)li.classList.add('visible');
   // Conteggi pulizie/HKP derivati dal Piano (sostituiscono 3 upload PDF)
   try{hkpDeriveFromPiano();}catch(e){}
