@@ -757,8 +757,8 @@ Il giro reale è in due passaggi: 1) **ritiro** delle vuote, stanza per stanza n
 
 - Ogni camera ha un campo `consegnata:boolean` (default `false`) in `_defaultRoom()`.
 - `_redeliverRooms()` = camere con stato `bottle`/`both` (bottiglia consumata, non DND) — le stesse della Stampa A4.
-- Bottone **"🚰 Riconsegna"** in home (badge col numero da consegnare) → `showRedeliver()` → schermata `#s-redeliver` con una riga per camera, spunta = `toggleConsegnata(room)` (persiste su localStorage + KV come tutto il resto).
-- La Stampa A4 resta disponibile invariata (non è stata rimossa): la spunta in app è un'alternativa, non una sostituzione forzata.
+- Bottone **"🚰 Riconsegna"** in home (badge col numero da consegnare, unico bottone rimasto — "Riepilogo" è stato tolto perché non necessario) → `showRedeliver()` → schermata `#s-redeliver` con le **stesse tile della home** (`.room-card`/`.rooms-grid`, non una lista) — leggibili a distanza perché il telefono resta fissato sul carrello. Blu = da riconsegnare, verde = consegnata. Tap sulla tile = `toggleConsegnata(room)` (persiste su localStorage + KV).
+- `showSummary()`/`printBottle()` (schermata Riepilogo + Stampa A4 da telefono) sono rimasti nel codice ma senza più un bottone che li richiami — irraggiungibili di proposito, non cancellati, nel caso servano di nuovo. La Stampa A4 resta comunque disponibile dal dashboard Compass (`cmPrintBottle()` in `app.js`).
 
 ### Dashboard (`cmLoad()`) — KV come source of truth
 

@@ -353,8 +353,7 @@ textarea:focus{outline:none;border-color:var(--text-muted);}
     </div>
     <div class="stat-grid" id="stat-row"></div>
     <div class="action-row">
-      <button class="btn-sec" onclick="showRedeliver()">🚰 Riconsegna<span id="redeliver-badge"></span></button>
-      <button class="btn-main" onclick="showSummary()">Riepilogo</button>
+      <button class="btn-main" onclick="showRedeliver()">🚰 Riconsegna<span id="redeliver-badge"></span></button>
     </div>
     <div class="rooms-grid" id="rooms-grid"></div>
   </div>
@@ -1003,13 +1002,24 @@ function _renderRedeliver(){
   if(!rooms.length){
     h+=`<div class="sum-card" style="margin:12px;"><div class="sum-hdr h-ok">✅ Nessuna bottiglia da riconsegnare</div></div>`;
   } else {
-    h+=`<div style="margin:8px 12px 24px;background:var(--surface);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh-lift),var(--card-top);border:var(--card-border);">`;
+    // Stesse tile della home (leggibili a distanza, telefono fissato sul carrello):
+    // blu = da riconsegnare (come lo stato 'bottle' in home), verde = consegnata.
+    h+=`<div class="rooms-grid" style="margin:8px 12px 24px;">`;
     rooms.forEach(r=>{
       const on=_rs(r).consegnata;
-      const ps=_pianoSt(r);
-      h+=`<div class="chk-item" onclick="toggleConsegnata('${r}')">
-        <div class="chk-box${on?' on':''}">${on?'✓':''}</div>
-        <div class="chk-lbl">${r}${ps?' <span style="font-size:.85rem;opacity:.7;">'+PIANO_ICO[ps]+'</span>':''}</div>
+      const rParts=r.split(' ');
+      const rNum=rParts.length>1?rParts.slice(1).join(' '):r;
+      const rPfx=rParts.length>1?rParts[0]:'';
+      h+=`<div class="room-card s-${on?'ok':'bottle'}" onclick="toggleConsegnata('${r}')">
+        <div class="rc-top">
+          <div class="rc-num">
+            ${rPfx?`<span class="rc-prefix">${rPfx}</span>`:''}
+            <span class="rc-roomnum">${rNum}</span>
+          </div>
+        </div>
+        <div class="rc-bottom">
+          <div class="rc-dot d-${on?'ok':'bottle'}">${on?'✓ consegnata':'🚰 da fare'}</div>
+        </div>
       </div>`;
     });
     h+=`</div>`;
