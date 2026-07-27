@@ -353,6 +353,7 @@ textarea:focus{outline:none;border-color:var(--text-muted);}
     </div>
     <div class="stat-grid" id="stat-row"></div>
     <div class="action-row">
+      <button class="btn-sec" onclick="showRedeliver()">🚰 Riconsegna<span id="redeliver-badge"></span></button>
       <button class="btn-main" onclick="showSummary()">Riepilogo</button>
     </div>
     <div class="rooms-grid" id="rooms-grid"></div>
@@ -382,6 +383,18 @@ textarea:focus{outline:none;border-color:var(--text-muted);}
     <span class="hdr-date" id="sum-chip"></span>
   </div>
   <div class="sum-body" id="sum-body"></div>
+</div>
+
+<!-- ══ RICONSEGNA BOTTIGLIE ═══════════════ -->
+<div class="screen" id="s-redeliver">
+  <div class="hdr">
+    <button class="btn-back" onclick="goHome()">‹</button>
+    <svg viewBox="0 0 36 36" width="28" height="28" style="flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="18,1 21,13 27,9 23,15 35,18 23,21 27,27 21,23 18,35 15,23 9,27 13,21 1,18 13,15 9,9 15,13" fill="#c9952f"/><polygon points="18,6 20,14 18,12 16,14" fill="rgba(255,255,255,.5)"/><polygon points="18,30 16,22 18,24 20,22" fill="rgba(255,255,255,.25)"/></svg>
+    <div class="hdr-sep"></div>
+    <div class="hdr-center"><div class="hdr-title">Riconsegna bottiglie</div></div>
+    <span class="hdr-date" id="redeliver-chip"></span>
+  </div>
+  <div class="cl-body" id="redeliver-body"></div>
 </div>
 
 <script>
@@ -583,7 +596,7 @@ function _persist() {
 function _defaultRoom() {
   const checks={};
   ALL_IDS.forEach(id=>checks[id]=true);
-  return {visited:false, libera:false, dnd:false, bottiglia:'consumata', checks, note:''};
+  return {visited:false, libera:false, dnd:false, bottiglia:'consumata', checks, note:'', consegnata:false};
 }
 function _rs(room) {
   if(!_state[room])_state[room]=_defaultRoom();
@@ -608,6 +621,11 @@ function _status(room) {
   return 'ok';
 }
 
+// Camere con bottiglia trovata vuota durante il giro di ritiro (stato 'bottle'/'both'),
+// escluse le Non Disturbare — sono quelle che vanno riconsegnate piene nel secondo giro.
+function _redeliverRooms(){
+  return ROOMS.filter(r=>{const s=_status(r);return s==='bottle'||s==='both';});
+}
 // ── HELPERS ──────────────────────────
 function _fmtShort(){const d=new Date();return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');}
 function _fmtFull(){return new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
@@ -658,6 +676,10 @@ function _renderHome(){
     else if(s==='ok')            nOk++;
     else if(s==='pending')       nPend++;
   });
+  // Badge riconsegna: quante restano da riconsegnare (bottiglia vuota, non ancora consegnata)
+  const daRiconsegnare=_redeliverRooms().filter(r=>!_rs(r).consegnata).length;
+  document.getElementById('redeliver-badge').textContent=daRiconsegnare?' ('+daRiconsegnare+')':'';
+
   document.getElementById('stat-row').innerHTML=[
     [nBtl,'Da portare','var(--amber)','var(--amber-bg)','rgba(217,119,6,.18)'],
     [nDnd,'Non Dist.','var(--red)','var(--red-bg)','rgba(220,38,38,.15)'],
@@ -958,6 +980,48 @@ function showSummary(){
   _screen('s-summary');
 }
 
+// ── RICONSEGNA BOTTIGLIE ─────────────
+// Secondo giro della giornata: dopo il ritiro delle vuote (fatto stanza per stanza
+// nell'app) e il riempimento, si torna in ogni camera segnalata per lasciare la
+// bottiglia piena. Sostituisce la lista stampata in A4 — la spunta qui equivale
+// al segno fatto a penna sul foglio.
+function showRedeliver(){
+  document.getElementById('redeliver-chip').textContent=_fmtShort();
+  _renderRedeliver();
+  _screen('s-redeliver');
+}
+function _renderRedeliver(){
+  const rooms=_redeliverRooms();
+  const done=rooms.filter(r=>_rs(r).consegnata).length;
+  let h=`<div class="prog-wrap" style="margin:12px 12px 4px;">
+    <div class="prog-row">
+      <span class="prog-lbl">Bottiglie riconsegnate</span>
+      <span class="prog-val">${done} / ${rooms.length}</span>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" style="width:${rooms.length?done/rooms.length*100:0}%"></div></div>
+  </div>`;
+  if(!rooms.length){
+    h+=`<div class="sum-card" style="margin:12px;"><div class="sum-hdr h-ok">✅ Nessuna bottiglia da riconsegnare</div></div>`;
+  } else {
+    h+=`<div style="margin:8px 12px 24px;background:var(--surface);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh-lift),var(--card-top);border:var(--card-border);">`;
+    rooms.forEach(r=>{
+      const on=_rs(r).consegnata;
+      const ps=_pianoSt(r);
+      h+=`<div class="chk-item" onclick="toggleConsegnata('${r}')">
+        <div class="chk-box${on?' on':''}">${on?'✓':''}</div>
+        <div class="chk-lbl">${r}${ps?' <span style="font-size:.85rem;opacity:.7;">'+PIANO_ICO[ps]+'</span>':''}</div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }
+  document.getElementById('redeliver-body').innerHTML=h;
+}
+function toggleConsegnata(room){
+  const rs=_rs(room);
+  rs.consegnata=!rs.consegnata;
+  _persist();
+  _renderRedeliver();
+}
 function resetDay(){
   if(!confirm('Azzerare tutti i controlli di oggi?'))return;
   _state={};_persist();_loadPiano().then(()=>goHome());

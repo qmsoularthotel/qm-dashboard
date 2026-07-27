@@ -751,6 +751,15 @@ Anche quando `!state` (nessun dato per oggi), il render chiama **sempre** `cmLoa
 
 È una **funzione** (non costante) — calcola la chiave KV al momento della chiamata, non al caricamento della pagina. Non trasformarla in `const`.
 
+### Riconsegna bottiglie — secondo giro della giornata
+
+Il giro reale è in due passaggi: 1) **ritiro** delle vuote, stanza per stanza nell'app (`bottiglia:'consumata'` = vuota trovata); 2) dopo il riempimento, **riconsegna** delle piene. Il secondo passaggio prima usava la Stampa A4 (`cmPrintBottle()`/`printBottle()`) come checklist cartacea; ora esiste anche come checklist nell'app stessa.
+
+- Ogni camera ha un campo `consegnata:boolean` (default `false`) in `_defaultRoom()`.
+- `_redeliverRooms()` = camere con stato `bottle`/`both` (bottiglia consumata, non DND) — le stesse della Stampa A4.
+- Bottone **"🚰 Riconsegna"** in home (badge col numero da consegnare) → `showRedeliver()` → schermata `#s-redeliver` con una riga per camera, spunta = `toggleConsegnata(room)` (persiste su localStorage + KV come tutto il resto).
+- La Stampa A4 resta disponibile invariata (non è stata rimossa): la spunta in app è un'alternativa, non una sostituzione forzata.
+
 ### Dashboard (`cmLoad()`) — KV come source of truth
 
 Legge sempre KV prima (fonte dei dati scritti da smartphone), poi fallback localStorage.
