@@ -110,11 +110,9 @@ function ucSetState(key,state,sub,silent){
     const slot=document.getElementById('uc-'+k);if(slot)slot.style.display='none';
     const panel=document.getElementById('uc-'+k+'-panel');if(panel)panel.style.display='none';
   });
-  // 'Compass Piano Settimanale' era affiancata a 'Compass Housekeeper Boutique', ora
-  // nascosta: nella griglia a 2 colonne finirebbe accoppiata per caso con 'Report pasti'
-  // (il prossimo slot visibile), e aprire l'una sposterebbe l'altra. A piena larghezza
-  // resta da sola nella sua riga: aprirla non tocca più nessun'altra scheda.
-  const piano=document.getElementById('uc-piano');if(piano)piano.style.gridColumn='1/-1';
+  // 'Piano Settimanale' resta affiancata a 'Report pasti' per scelta: allarga invece
+  // la tile del logo Compass, che va comunque tenuta in ultima posizione da sola.
+  const brand=document.querySelector('.uc-slot-brand');if(brand)brand.style.gridColumn='1/-1';
 })();
 // Fonti tracciate per il riepilogo Upload Center — 'piano' non entra nel conteggio
 // rigoroso "X/N" (Turno resta l'unico davvero settimanale, escluso dalla scadenza 24h
