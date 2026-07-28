@@ -1063,7 +1063,12 @@ function _renderRedeliver(){
       // sceglie. In fermata niente striscia — "pronta" non si applica.
       const stripCls=pr===true?'yes':pr===false?'no':'pending';
       const stripTxt=pr===true?'✓ pronta':pr===false?'🧹 non pronta':'da confermare';
-      const strip=readyRelevant?`<div class="rc-ready-strip ${stripCls}">${stripTxt}</div>`:'';
+      // In fermata "pronta" non si applica: niente testo, ma la striscia resta —
+      // stesso colore della tile sopra (gold/oliva) — solo per tenere tutte le card
+      // della stessa altezza nella griglia, invece di lasciarle più corte.
+      const strip=readyRelevant
+        ?`<div class="rc-ready-strip ${stripCls}">${stripTxt}</div>`
+        :`<div class="rc-ready-strip" style="background:${on?'var(--sage-4)':'var(--gold-2)'};"></div>`;
       const tap=readyRelevant?`openReadySheet('${r}')`:`toggleConsegnata('${r}')`;
       h+=`<div class="room-card s-${on?'consegnata':'bottle'}" onclick="${tap}">
         ${tileTop}
