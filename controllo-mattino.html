@@ -124,14 +124,22 @@ body{min-height:100vh;overflow-x:hidden;}
    della griglia. min-height copre anche la variante con badge; il contenuto più corto
    resta centrato invece di lasciare la fascia più bassa. */
 .rc-top{position:relative;padding:14px 4px 10px;background:var(--surface2);min-height:104px;display:flex;align-items:center;justify-content:center;}
-/* Badge "camera pronta" — solo Riconsegna, solo camere non in fermata. Tocco separato
-   dalla tile (stopPropagation), ciclo non verificata → pronta → non pronta → non verificata.
+/* "Camera pronta" — solo Riconsegna, solo camere non in fermata (partenza/cambio).
+   Tap sulla tile apre un foglio con due bottoni grandi (.ready-sheet) invece di un
+   bersaglio piccolo da colpire in movimento; la scelta lascia una striscia fissa in
+   fondo alla card (.rc-ready-strip), indipendente dal colore gold/oliva sopra.
    Sincronizzato su KV: la reception lo vede su Compass mentre il giro è in corso. */
-.rc-ready{position:absolute;top:6px;right:6px;font-size:.58rem;font-weight:800;
-  padding:3px 8px;border-radius:20px;line-height:1.3;-webkit-tap-highlight-color:transparent;
-  background:rgba(255,255,255,.92);color:var(--text-dim);}
-.rc-ready.on{background:var(--green);color:#fff;}
-.rc-ready.off{background:#fff;color:var(--red);border:1.5px solid var(--red);}
+.rc-ready-strip{height:22px;display:flex;align-items:center;justify-content:center;
+  font-size:.58rem;font-weight:800;color:#fff;}
+.rc-ready-strip.yes{background:var(--green);}
+.rc-ready-strip.no{background:var(--amber);}
+.ready-sheet{background:#fff;padding:14px;}
+.ready-sheet-title{font-size:.8rem;font-weight:700;color:var(--text);text-align:center;margin-bottom:12px;}
+.ready-sheet-btns{display:flex;gap:10px;}
+.ready-big{flex:1;border:none;border-radius:12px;padding:20px 8px;font-size:.82rem;
+  font-weight:800;line-height:1.7;-webkit-tap-highlight-color:transparent;}
+.ready-big.no{background:var(--amber-bg);color:var(--amber);}
+.ready-big.yes{background:var(--green-bg);color:var(--green);}
 .room-card.s-bottle .rc-top,
 .room-card.s-both .rc-top   {background:var(--gold-2);}
 .room-card.s-ok .rc-top     {background:var(--green);}
@@ -993,7 +1001,11 @@ function showSummary(){
 // nell'app) e il riempimento, si torna in ogni camera segnalata per lasciare la
 // bottiglia piena. Sostituisce la lista stampata in A4 — la spunta qui equivale
 // al segno fatto a penna sul foglio.
+// Camera il cui foglio "pronta/non pronta" è aperto in questo momento — una sola alla
+// volta, resettata ogni volta che si entra nella schermata.
+let _readySheetRoom=null;
 function showRedeliver(){
+  _readySheetRoom=null;
   document.getElementById('redeliver-chip').textContent=_fmtShort();
   _renderRedeliver();
   _screen('s-redeliver');
@@ -1012,29 +1024,47 @@ function _renderRedeliver(){
     h+=`<div class="sum-card" style="margin:12px;"><div class="sum-hdr h-consegnata">✅ Nessuna bottiglia da riconsegnare</div></div>`;
   } else {
     // Stesse tile della home (leggibili a distanza, telefono fissato sul carrello):
-    // blu = da riconsegnare (come lo stato 'bottle' in home), verde = consegnata.
+    // gold = da riconsegnare, oliva = consegnata.
     h+=`<div class="rooms-grid" style="margin:8px 12px 24px;">`;
     rooms.forEach(r=>{
       const on=_rs(r).consegnata;
       const rParts=r.split(' ');
       const rNum=rParts.length>1?rParts.slice(1).join(' '):r;
       const rPfx=rParts.length>1?rParts[0]:'';
-      // Badge pronta/non pronta: solo camere non in fermata (partenza/cambio), dove
-      // "pronta per il check-in" ha senso — in fermata l'ospite è già in camera.
+      // "Pronta per il check-in" ha senso solo per camere non in fermata (partenza/
+      // cambio) — in fermata l'ospite è già dentro. Per quelle il tap resta il vecchio
+      // toggle diretto di consegnata; per le altre il tap apre il foglio di scelta.
       const ps=_pianoSt(r);
-      const showReady=ps&&ps!=='fermata';
-      const pr=showReady?_rs(r).pronta:null;
-      const readyCls=pr===true?'on':pr===false?'off':'';
-      const readyTxt=pr===true?'✓ pronta':pr===false?'non pronta':'da verificare';
-      const readyBadge=showReady?`<span class="rc-ready ${readyCls}" onclick="event.stopPropagation();togglePronta('${r}')">${readyTxt}</span>`:'';
-      h+=`<div class="room-card s-${on?'consegnata':'bottle'}" onclick="toggleConsegnata('${r}')">
-        <div class="rc-top">
-          ${readyBadge}
+      const readyRelevant=ps&&ps!=='fermata';
+      const pr=readyRelevant?_rs(r).pronta:null;
+      const tileTop=`<div class="rc-top">
           <div class="rc-num">
             ${rPfx?`<span class="rc-prefix">${rPfx}</span>`:''}
             <span class="rc-roomnum">${rNum}</span>
           </div>
-        </div>
+        </div>`;
+      if(readyRelevant&&_readySheetRoom===r){
+        // Foglio aperto: card a piena larghezza con due bottoni grandi. La bottiglia
+        // si lascia comunque, pronta o no — scegliendo segna anche consegnata.
+        h+=`<div class="room-card s-${on?'consegnata':'bottle'}" style="grid-column:1/-1;cursor:default;" onclick="event.stopPropagation();">
+          ${tileTop}
+          <div class="ready-sheet">
+            <div class="ready-sheet-title">Art ${rNum} è pronta per il check-in?</div>
+            <div class="ready-sheet-btns">
+              <button class="ready-big no" onclick="chooseReady('${r}',false)">🧹<br>Non pronta</button>
+              <button class="ready-big yes" onclick="chooseReady('${r}',true)">✓<br>Pronta</button>
+            </div>
+          </div>
+        </div>`;
+        return;
+      }
+      const stripCls=pr===true?'yes':pr===false?'no':'';
+      const stripTxt=pr===true?'✓ pronta':pr===false?'🧹 non pronta':'';
+      const strip=readyRelevant&&stripCls?`<div class="rc-ready-strip ${stripCls}">${stripTxt}</div>`:'';
+      const tap=readyRelevant?`openReadySheet('${r}')`:`toggleConsegnata('${r}')`;
+      h+=`<div class="room-card s-${on?'consegnata':'bottle'}" onclick="${tap}">
+        ${tileTop}
+        ${strip}
       </div>`;
     });
     h+=`</div>`;
@@ -1047,12 +1077,20 @@ function toggleConsegnata(room){
   _persist();
   _renderRedeliver();
 }
-// Ciclo non verificata → pronta → non pronta → non verificata. Persistito nello stesso
-// stato giornaliero (qm_cm_YYYY-MM-DD) già sincronizzato su KV — la reception lo legge
-// da Compass senza bisogno di altro.
-function togglePronta(room){
+// Apre/chiude il foglio "pronta/non pronta" per una camera (una sola alla volta).
+function openReadySheet(room){
+  _readySheetRoom=_readySheetRoom===room?null:room;
+  _renderRedeliver();
+}
+// Scelta fatta: la bottiglia si lascia comunque (consegnata sempre true), pronta/non
+// pronta resta come badge permanente sulla card. Persistito nello stesso stato
+// giornaliero (qm_cm_YYYY-MM-DD) già sincronizzato su KV — la reception lo legge da
+// Compass in tempo reale, senza bisogno d'altro.
+function chooseReady(room,val){
   const rs=_rs(room);
-  rs.pronta=rs.pronta===null?true:rs.pronta===true?false:null;
+  rs.pronta=val;
+  rs.consegnata=true;
+  _readySheetRoom=null;
   _persist();
   _renderRedeliver();
 }
