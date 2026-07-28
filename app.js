@@ -2256,6 +2256,8 @@ function pianoNavRender(idx){
   renderPianoGiorno('ov-piano-preview',null,idx);
   // Box Culligan accanto al grafico occupazione
   renderOvCulliganBox(giorno);
+  // Stato preparazione camere in partenza/cambio (async: fetch KV separato)
+  try{renderOvRoomReadiness(giorno);}catch(e){}
   // Room Division (view separata dal menu laterale)
   renderRoomDivision(idx);
 }
@@ -3043,6 +3045,39 @@ function renderOvCulliganBox(giorno){
     <div><div style="font-size:30px;font-weight:300;line-height:1;">${stats.cur}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">sostituzioni<br>questa sett.</div></div>
   </div>`:'';
   el.innerHTML=`<div class="kpi-label" style="margin-bottom:8px;">Distribuzione Culligan</div>${todayLine}${statsLine}`;
+}
+
+// Stato di preparazione delle camere in partenza/cambio oggi, segnato dal QM sullo
+// smartphone mentre gira per la riconsegna bottiglie (app Culligan → togglePronta()).
+// Letto qui dallo stesso stato giornaliero (qm_cm_YYYY-MM-DD) via KV: la reception lo
+// vede in tempo reale senza dover chiedere via radio/telefono se una camera è pronta.
+// Escluse le camere in fermata: l'ospite è già dentro, "pronta" non ha senso per loro.
+async function renderOvRoomReadiness(giorno){
+  const el=document.getElementById('ov-room-readiness');if(!el)return;
+  if(!giorno){el.innerHTML='';return;}
+  const sa=giorno.soulart||{};
+  const cambio=new Set(sa.cambi||[]),partenza=new Set(sa.partenze||[]);
+  const rooms=CM_ROOMS.filter(r=>cambio.has(r)||partenza.has(r));
+  if(!rooms.length){el.innerHTML='';return;}
+  const d=new Date();
+  const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let state=null;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+    if(r.ok){const j=await r.json();if(j&&j.value)state=JSON.parse(j.value);}
+  }catch(e){}
+  if(!state){try{const s=localStorage.getItem(key);if(s)state=JSON.parse(s);}catch(e){}}
+  const chip=r=>{
+    const p=state&&state[r]?state[r].pronta:null;
+    const cfg=p===true?{bg:'var(--green-bg)',fg:'var(--green)',lbl:'✓ pronta'}
+      :p===false?{bg:'var(--amber-bg)',fg:'var(--amber)',lbl:'🧹 non pronta'}
+      :{bg:'var(--surface2)',fg:'var(--text-dim)',lbl:'da verificare'};
+    return`<span style="display:inline-flex;align-items:center;gap:5px;background:${cfg.bg};color:${cfg.fg};border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:600;">
+      <strong>${r}</strong>${cambio.has(r)?' <span style="font-size:9px;opacity:.7;font-weight:700;">check-in oggi</span>':''} · ${cfg.lbl}
+    </span>`;
+  };
+  el.innerHTML=`<div class="kpi-label" style="border-top:1px solid var(--border-light);padding-top:12px;margin-bottom:8px;">🔑 Camere in partenza oggi — stato preparazione</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">${rooms.map(chip).join('')}</div>`;
 }
 
 function pianoOvInit(){

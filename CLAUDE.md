@@ -757,8 +757,16 @@ Il giro reale è in due passaggi: 1) **ritiro** delle vuote, stanza per stanza n
 
 - Ogni camera ha un campo `consegnata:boolean` (default `false`) in `_defaultRoom()`.
 - `_redeliverRooms()` = camere con stato `bottle`/`both` (bottiglia consumata, non DND) — le stesse della Stampa A4.
-- Bottone **"🚰 Riconsegna"** in home (badge col numero da consegnare, unico bottone rimasto — "Riepilogo" è stato tolto perché non necessario) → `showRedeliver()` → schermata `#s-redeliver` con le **stesse tile della home** (`.room-card`/`.rooms-grid`, non una lista) — leggibili a distanza perché il telefono resta fissato sul carrello. Blu = da riconsegnare, verde = consegnata. Tap sulla tile = `toggleConsegnata(room)` (persiste su localStorage + KV).
+- Bottone **"🚰 Riconsegna"** in home (badge col numero da consegnare, unico bottone rimasto — "Riepilogo" è stato tolto perché non necessario) → `showRedeliver()` → schermata `#s-redeliver` con le **stesse tile della home** (`.room-card`/`.rooms-grid`, non una lista) — leggibili a distanza perché il telefono resta fissato sul carrello. Gold = da riconsegnare, verde oliva `#4F7942` = consegnata (stesso verde di "non consumata" nel giro di ritiro — stesso significato: bottiglia a posto). Tap sulla tile = `toggleConsegnata(room)` (persiste su localStorage + KV). Niente più pillola di testo sotto la tile: il colore basta.
 - `showSummary()`/`printBottle()` (schermata Riepilogo + Stampa A4 da telefono) sono rimasti nel codice ma senza più un bottone che li richiami — irraggiungibili di proposito, non cancellati, nel caso servano di nuovo. La Stampa A4 resta comunque disponibile dal dashboard Compass (`cmPrintBottle()` in `app.js`).
+
+### Camere "pronte" — visibile in tempo reale alla reception
+
+Durante la riconsegna capita di lasciare la bottiglia in una camera non ancora pronta (HK non ha finito). Per camere **non in fermata** (partenza/cambio — in fermata l'ospite è già dentro, "pronta" non si applica), ogni tile in `#s-redeliver` mostra un badge in alto a destra (`.rc-ready`), toccabile separatamente dalla tile (`event.stopPropagation()`): ciclo **non verificata → ✓ pronta → 🧹 non pronta → non verificata**, `togglePronta(room)`.
+
+- Campo `pronta:boolean|null` in `_defaultRoom()` — stesso oggetto stato giornaliero (`qm_cm_YYYY-MM-DD`) già sincronizzato su KV da `_persist()`, nessuna chiave nuova.
+- Lato Compass: `renderOvRoomReadiness(giorno)` in `app.js` (vicino a `renderOvCulliganBox`) legge lo stesso KV, filtra le camere Art in `cambi`/`partenze` del Piano del giorno, e mostra una pillola per camera in `#ov-room-readiness` (Overview, sotto il grafico occupazione) — verde "✓ pronta", ambra "🧹 non pronta", grigio "da verificare". Le camere in `cambi` hanno l'etichetta "check-in oggi".
+- Chiamata da `pianoNavRender()` (quindi ad ogni cambio giorno/ricarica Piano) e già dentro il polling 30s esistente (che richiama `pianoNavRender(pianoNavIdx)`) — si aggiorna da sola mentre il giro è in corso, senza bisogno di ricaricare la pagina.
 
 ### Dashboard (`cmLoad()`) — KV come source of truth
 
