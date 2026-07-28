@@ -377,7 +377,6 @@ textarea:focus{outline:none;border-color:var(--text-muted);}
     <span class="hdr-date" id="home-chip"></span>
   </div>
   <div class="body">
-    <div id="piano-banner"></div>
     <div class="prog-wrap">
       <div class="prog-row">
         <span class="prog-lbl">Camere visitate</span>
@@ -683,18 +682,6 @@ function goHome(){
 function _renderHome(){
   document.getElementById('home-chip').textContent=_fmtShort();
 
-  // Piano banner
-  const pb=document.getElementById('piano-banner');
-  if(_pianoDay){
-    const sa=_pianoDay.soulart;
-    const nLib=ROOMS.filter(r=>_pianoSt(r)==='libera').length;
-    pb.innerHTML=`<div class="piano-banner loaded">✅ Piano caricato — ${sa.partenze.length} partenze · ${sa.fermate.length} fermate · ${sa.cambi.length} partenze+arrivo · ${nLib} libere</div>`;
-  } else if(_pianoLoaded){
-    pb.innerHTML=`<div class="piano-banner partial">⚠️ Piano trovato ma non include la data di oggi — ricaricare il piano dal dashboard per la settimana corrente</div>`;
-  } else {
-    pb.innerHTML=`<div class="piano-banner missing"><span>⚠️ Piano non trovato — caricarlo dal dashboard</span><button class="btn-reload-piano" onclick="_reloadPianoCloud()">🔄 Ricarica</button></div>`;
-  }
-
   // Progress (esclude le libere auto-impostate)
   const active=ROOMS.filter(r=>_pianoSt(r)!=='libera'||!_pianoDay);
   const visited=active.filter(r=>_state[r]?.visited&&!_state[r]?.libera).length;
@@ -716,9 +703,9 @@ function _renderHome(){
   document.getElementById('redeliver-badge').textContent=daRiconsegnare?' ('+daRiconsegnare+')':'';
 
   document.getElementById('stat-row').innerHTML=[
-    [nBtl,'Da portare','var(--amber)','var(--amber-bg)','rgba(217,119,6,.18)'],
+    [nBtl,'Da portare','var(--navy-light)','var(--navy-light-bg)','rgba(91,122,156,.3)'],
     [nDnd,'Non Dist.','var(--red)','var(--red-bg)','rgba(220,38,38,.15)'],
-    [nOk, 'OK','var(--green)','var(--green-bg)','rgba(5,150,105,.15)'],
+    [nOk, 'OK','var(--navy)','var(--navy-bg)','rgba(28,58,94,.18)'],
     [nPend,'Da fare','var(--text-dim)','var(--surface2)','rgba(0,0,0,.08)'],
   ].map(([n,lbl,col,bg,bdr])=>`<div class="stat-box" style="background:${bg};border:1.5px solid ${bdr};">
     <div class="stat-n" style="color:${col}">${n}</div>
@@ -753,7 +740,7 @@ function _renderHome(){
     // Bottiglia navy piena (non più blu, resta nella famiglia navy) più grande della
     // spunta perché è lo stato che richiede un'azione — deve saltare all'occhio di più.
     const sideIcon=(st==='bottle'||st==='both')
-      ?`<svg class="rc-side-ico" viewBox="0 0 24 24" width="40" height="40" fill="var(--navy)"><path d="M9 2h6M9 2v3.2c0 .6-.3 1.1-.8 1.5C7.1 7.6 6.5 9 6.5 10.5V20a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-9.5c0-1.5-.6-2.9-1.7-3.8-.5-.4-.8-.9-.8-1.5V2"/></svg>`
+      ?`<svg class="rc-side-ico" viewBox="0 0 24 24" width="48" height="48" fill="var(--navy)"><path d="M9 2h6M9 2v3.2c0 .6-.3 1.1-.8 1.5C7.1 7.6 6.5 9 6.5 10.5V20a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-9.5c0-1.5-.6-2.9-1.7-3.8-.5-.4-.8-.9-.8-1.5V2"/></svg>`
       :st==='ok'
       ?`<svg class="rc-side-ico" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>`
       :'';
