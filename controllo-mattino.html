@@ -145,6 +145,13 @@ body{min-height:100vh;overflow-x:hidden;}
 .room-card.s-both .rc-top   {background:var(--gold-2);}
 .room-card.s-ok .rc-top     {background:var(--green);}
 .room-card.s-consegnata .rc-top{background:var(--sage-4);}
+/* Riconsegna: navy sempre, non più gold/oliva — lo stato (da riconsegnare/consegnata)
+   lo dice l'icona in filigrana dietro il numero, non il colore della tile. Scoperto solo
+   qui (#s-redeliver) perché la home continua a usare gold-2 per lo stato "bottle". */
+#s-redeliver .room-card.s-bottle .rc-top,
+#s-redeliver .room-card.s-both .rc-top,
+#s-redeliver .room-card.s-consegnata .rc-top{background:var(--navy);}
+.rc-watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);opacity:.22;pointer-events:none;z-index:0;}
 .room-card.s-warn .rc-top   {background:var(--amber);}
 .room-card.s-dnd .rc-top,
 .room-card.s-missing .rc-top{background:var(--red);}
@@ -153,7 +160,7 @@ body{min-height:100vh;overflow-x:hidden;}
 .rc-bottom{padding:6px 4px 10px;background:#fff;}
 
 /* numero camera — grande per lettura da carrello */
-.rc-num{display:flex;flex-direction:column;align-items:center;gap:0;line-height:1;}
+.rc-num{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:0;line-height:1;}
 .rc-prefix{font-size:.52rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
   color:rgba(255,255,255,.75);line-height:1.4;margin-bottom:-2px;}
 .rc-roomnum{font-size:3.5rem;font-weight:900;color:#fff;line-height:.95;letter-spacing:-.03em;}
@@ -1038,7 +1045,13 @@ function _renderRedeliver(){
       const ps=_pianoSt(r);
       const readyRelevant=ps&&ps!=='fermata';
       const pr=readyRelevant?_rs(r).pronta:null;
+      // Icona in filigrana dietro il numero: bottiglia = ancora da riconsegnare,
+      // spunta = consegnata. La tile resta sempre navy — solo l'icona cambia.
+      const wm=on
+        ?`<svg class="rc-watermark" viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>`
+        :`<svg class="rc-watermark" viewBox="0 0 24 24" width="64" height="64" fill="#fff"><path d="M9 2h6M9 2v3.2c0 .6-.3 1.1-.8 1.5C7.1 7.6 6.5 9 6.5 10.5V20a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-9.5c0-1.5-.6-2.9-1.7-3.8-.5-.4-.8-.9-.8-1.5V2"/></svg>`;
       const tileTop=`<div class="rc-top">
+          ${wm}
           <div class="rc-num">
             ${rPfx?`<span class="rc-prefix">${rPfx}</span>`:''}
             <span class="rc-roomnum">${rNum}</span>
@@ -1064,11 +1077,11 @@ function _renderRedeliver(){
       const stripCls=pr===true?'yes':pr===false?'no':'pending';
       const stripTxt=pr===true?'✓ pronta':pr===false?'🧹 non pronta':'da confermare';
       // In fermata "pronta" non si applica: niente testo, ma la striscia resta —
-      // stesso colore della tile sopra (gold/oliva) — solo per tenere tutte le card
-      // della stessa altezza nella griglia, invece di lasciarle più corte.
+      // stesso colore navy della tile sopra — solo per tenere tutte le card della
+      // stessa altezza nella griglia, invece di lasciarle più corte.
       const strip=readyRelevant
         ?`<div class="rc-ready-strip ${stripCls}">${stripTxt}</div>`
-        :`<div class="rc-ready-strip" style="background:${on?'var(--sage-4)':'var(--gold-2)'};"></div>`;
+        :`<div class="rc-ready-strip" style="background:var(--navy);"></div>`;
       const tap=readyRelevant?`openReadySheet('${r}')`:`toggleConsegnata('${r}')`;
       h+=`<div class="room-card s-${on?'consegnata':'bottle'}" onclick="${tap}">
         ${tileTop}
