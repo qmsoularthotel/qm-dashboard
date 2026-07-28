@@ -153,7 +153,7 @@ body{min-height:100vh;overflow-x:hidden;}
 #s-redeliver .room-card.s-bottle .rc-top,
 #s-redeliver .room-card.s-both .rc-top,
 #s-redeliver .room-card.s-consegnata .rc-top{background:var(--navy);}
-.rc-watermark{position:absolute;bottom:0;right:0;opacity:.32;pointer-events:none;z-index:0;}
+.rc-watermark{position:absolute;bottom:6px;right:6px;opacity:.34;pointer-events:none;z-index:0;}
 .room-card.s-warn .rc-top   {background:var(--amber);}
 .room-card.s-dnd .rc-top,
 .room-card.s-missing .rc-top{background:var(--red);}
@@ -1050,8 +1050,8 @@ function _renderRedeliver(){
       // Icona in filigrana dietro il numero: bottiglia = ancora da riconsegnare,
       // spunta = consegnata. La tile resta sempre navy — solo l'icona cambia.
       const wm=on
-        ?`<svg class="rc-watermark" viewBox="0 0 24 24" width="72" height="72" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>`
-        :`<svg class="rc-watermark" viewBox="0 0 24 24" width="72" height="72" fill="#fff"><path d="M9 2h6M9 2v3.2c0 .6-.3 1.1-.8 1.5C7.1 7.6 6.5 9 6.5 10.5V20a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-9.5c0-1.5-.6-2.9-1.7-3.8-.5-.4-.8-.9-.8-1.5V2"/></svg>`;
+        ?`<svg class="rc-watermark" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>`
+        :`<svg class="rc-watermark" viewBox="0 0 24 24" width="40" height="40" fill="#fff"><path d="M9 2h6M9 2v3.2c0 .6-.3 1.1-.8 1.5C7.1 7.6 6.5 9 6.5 10.5V20a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-9.5c0-1.5-.6-2.9-1.7-3.8-.5-.4-.8-.9-.8-1.5V2"/></svg>`;
       const tileTop=`<div class="rc-top">
           ${wm}
           <div class="rc-num">
