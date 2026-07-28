@@ -770,6 +770,8 @@ Per camere **non in fermata** (partenza/cambio — in fermata l'ospite è già d
 
 **Distribuzione (bseg in camera)**: `bc-consumata` = `var(--navy-light)`/`var(--navy-light-bg)` (#5B7A9C), `bc-noncons` = `var(--navy)`/`var(--navy-bg)` (#1c3a5e) — stessa tinta di brand della Riconsegna, due sole intensità invece di due colori diversi. `--gold-1` (vecchio colore di `bc-consumata`) rimosso perché non più usato da nessuna parte.
 
+**Home (`_renderHome()`)**: le tile "bottle"/"both" (bottiglia consumata) e "ok" (non consumata, tutto conforme) usano la stessa coppia navy-light/navy della distribuzione, con un'icona **affiancata** al numero dentro `.rc-top-row` (non in filigrana come in Riconsegna): bottiglia blu (`var(--blue)`) per "bottle"/"both", spunta bianca per "ok". La parte bassa bianca della card (`.rc-bottom`, icona/etichetta piano) resta invariata. `--gold-2` (vecchio colore di queste tile) rimosso, non più usato.
+
 - Campo `pronta:boolean|null` in `_defaultRoom()` — stesso oggetto stato giornaliero (`qm_cm_YYYY-MM-DD`) già sincronizzato su KV da `_persist()`, nessuna chiave nuova.
 - Lato Compass: `renderOvRoomReadiness(giorno)` in `app.js` (vicino a `renderOvCulliganBox`) legge lo stesso KV, filtra le camere Art in `cambi`/`partenze` del Piano del giorno, e mostra una pillola per camera in `#ov-room-readiness` (Overview, sotto il grafico occupazione) — verde "✓ pronta", ambra "🧹 non pronta", grigio "da verificare". Le camere in `cambi` hanno l'etichetta "check-in oggi".
 - Chiamata da `pianoNavRender()` (quindi ad ogni cambio giorno/ricarica Piano) e già dentro il polling 30s esistente (che richiama `pianoNavRender(pianoNavIdx)`) — si aggiorna da sola mentre il giro è in corso, senza bisogno di ricaricare la pagina.

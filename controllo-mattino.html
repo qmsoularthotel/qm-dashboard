@@ -16,8 +16,6 @@
   /* Distribuzione: acqua consumata = navy chiaro, non consumata = navy pieno —
      stessa tinta di brand della Riconsegna, solo due intensità. */
   --navy-light:#5B7A9C; --navy-light-bg:#EAF0F6;
-  /* Bottiglia da riconsegnare in home (tile "bottle"/"both") */
-  --gold-2:#A67C00; --gold-2-bg:#FBF0D9;
   --gold-4:#8A6D1F;
   /* Verde oliva — barra avanzamento e banner "consegnata" in Riconsegna
      (la tile è tornata navy, vedi rc-watermark) */
@@ -144,12 +142,14 @@ body{min-height:100vh;overflow-x:hidden;}
 .ready-big.no{background:var(--amber-bg);color:var(--amber);}
 .ready-big.yes{background:var(--green-bg);color:var(--green);}
 .room-card.s-bottle .rc-top,
-.room-card.s-both .rc-top   {background:var(--gold-2);}
-.room-card.s-ok .rc-top     {background:var(--green);}
+.room-card.s-both .rc-top   {background:var(--navy-light);}
+.room-card.s-ok .rc-top     {background:var(--navy);}
 .room-card.s-consegnata .rc-top{background:var(--sage-4);}
-/* Riconsegna: navy sempre, non più gold/oliva — lo stato (da riconsegnare/consegnata)
-   lo dice l'icona in filigrana dietro il numero, non il colore della tile. Scoperto solo
-   qui (#s-redeliver) perché la home continua a usare gold-2 per lo stato "bottle". */
+.rc-top-row{display:flex;align-items:center;gap:8px;}
+.rc-side-ico{flex-shrink:0;}
+/* Riconsegna: navy sempre — lo stato (da riconsegnare/consegnata) lo dice l'icona in
+   filigrana dietro il numero, non il colore della tile. Scoperto solo qui (#s-redeliver)
+   perché la home usa navy-light/navy con icona affiancata invece che in filigrana. */
 #s-redeliver .room-card.s-bottle .rc-top,
 #s-redeliver .room-card.s-both .rc-top,
 #s-redeliver .room-card.s-consegnata .rc-top{background:var(--navy);}
@@ -747,12 +747,23 @@ function _renderHome(){
     const rParts=room.split(' ');
     const rNum=rParts.length>1?rParts.slice(1).join(' '):room;
     const rPfx=rParts.length>1?rParts[0]:'';
+    // Icona affiancata al numero: bottiglia blu = ancora da controllare/consumata,
+    // spunta = non consumata/tutto ok. Solo su questi due stati, non sostituisce il
+    // resto della card — la parte bassa bianca con le info camera resta invariata.
+    const sideIcon=(st==='bottle'||st==='both')
+      ?`<svg class="rc-side-ico" viewBox="0 0 24 24" width="30" height="30" fill="var(--blue)"><path d="M9 2h6M9 2v3.2c0 .6-.3 1.1-.8 1.5C7.1 7.6 6.5 9 6.5 10.5V20a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-9.5c0-1.5-.6-2.9-1.7-3.8-.5-.4-.8-.9-.8-1.5V2"/></svg>`
+      :st==='ok'
+      ?`<svg class="rc-side-ico" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>`
+      :'';
     return`<div class="room-card s-${st}" id="rc-${room.replace(/\s+/g,'-')}" onclick="openRoom('${room}')">
       <div class="rc-top">
-        <div class="rc-num">
-          ${rPfx?`<span class="rc-prefix">${rPfx}</span>`:''}
-          <span class="rc-roomnum">${rNum}</span>
-          ${isBk?'<span style="font-size:.55rem;background:rgba(255,255,255,.92);color:#1c3a5e;border-radius:4px;padding:1px 5px;font-weight:700;margin-top:1px;line-height:1.6;">BK</span>':''}
+        <div class="rc-top-row">
+          ${sideIcon}
+          <div class="rc-num">
+            ${rPfx?`<span class="rc-prefix">${rPfx}</span>`:''}
+            <span class="rc-roomnum">${rNum}</span>
+            ${isBk?'<span style="font-size:.55rem;background:rgba(255,255,255,.92);color:#1c3a5e;border-radius:4px;padding:1px 5px;font-weight:700;margin-top:1px;line-height:1.6;">BK</span>':''}
+          </div>
         </div>
       </div>
       <div class="rc-bottom">
