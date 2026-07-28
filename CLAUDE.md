@@ -776,7 +776,7 @@ Legge sempre KV prima (fonte dei dati scritti da smartphone), poi fallback local
 
 ### QC Settimanale
 
-Conta sostituzioni bottiglie (condizione: `visited && !dnd && !libera && bottiglia==='consumata'`) per le 7 chiavi della settimana corrente da KV.
+Conta le camere **effettivamente controllate** (condizione: `pronta===true`) per le 7 chiavi della settimana corrente da KV — non le bottiglie sostituite (`bottiglia==='consumata'`, usata invece dal contatore "sostituzioni" nel box Culligan di Overview, metrica diversa). Solo le camere confermate "pronta" nel foglio di riconsegna sono state davvero ispezionate: quando non è pronta si lascia solo la bottiglia piena senza controllare nulla, quindi non conta. Stessa condizione sia nel totale (`cmLoadWeeklyQC`) sia nel registro cronologico per giorno dentro `cmRenderWeeklyQC`.
 
 **Pulsanti**: WhatsApp albergo (`wa.me/393274919588`) | 📋 Copia testo (`data-msg` attribute) | 👁 Anteprima.
 

@@ -8202,8 +8202,10 @@ async function cmLoadWeeklyQC(){
     if(!state)return;
     CM_ROOMS.forEach(r=>{
       const rs=state[r];
-      // QC solo quando bottiglia consumata e sostituita (non su non consumate, DND né camere libere)
-      if(rs&&rs.visited&&!rs.dnd&&!rs.libera&&rs.bottiglia==='consumata'){perRoom[r]++;totalChecks++;}
+      // QC solo sulle camere segnate "pronta" durante la riconsegna — sono le uniche
+      // davvero controllate. Se non è pronta si lascia solo la bottiglia piena senza
+      // verificare nulla, quindi non conta come camera controllata.
+      if(rs&&rs.pronta===true){perRoom[r]++;totalChecks++;}
     });
   });
   const weekFrom=days[0].date;
@@ -8224,7 +8226,7 @@ function cmRenderWeeklyQC(perRoom,totalChecks,weekFrom,weekTo,days){
   const logRows=pastDays.length?pastDays.map((dy,idx)=>{
     const roomsDay=dy.state?CM_ROOMS.filter(r=>{
       const rs=dy.state[r];
-      return rs&&rs.visited&&!rs.dnd&&!rs.libera&&rs.bottiglia==='consumata';
+      return rs&&rs.pronta===true;
     }):[];
     const bodyHtml=roomsDay.length
       ?`<div style="display:flex;flex-wrap:wrap;gap:6px;">${roomsDay.map(r=>`<span style="padding:3px 11px;border-radius:14px;font-size:11px;font-weight:600;background:var(--accent-bg);color:var(--accent);border:1px solid #B8CEEE;">${r}</span>`).join('')}</div>`
