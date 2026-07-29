@@ -766,14 +766,14 @@ Ogni voce è **sempre modificabile** (dalla reception i movimenti recenti, da Co
 
 ### App reception (`reception.html`)
 
-- Due tab: **Fondo Cassa** (bottoni "Conta e conferma turno" / "Nuovo buono spesa": importo, **motivazione** in testo libero — obbligatoria, sopra "Chi preleva" nel modulo — poi persona; niente più causale a chip, tolta su richiesta) e **Incasso Contante** (bottone "Conta e consegna incasso" con fascia a chip 07/15/23).
+- Due tab: **Fondo Cassa** (bottoni "Conta e conferma fondo cassa" / "Nuovo buono spesa": importo, **motivazione** in testo libero — obbligatoria, sopra "Chi preleva" nel modulo — poi persona; niente più causale a chip, tolta su richiesta) e **Incasso Contante** (bottone "Conta e consegna incasso" con fascia a chip 07/15/23).
 - Il movimento `tipo:'buono'` ha campo `motivazione` (obbligatorio), non più `causale`/`nota`. `renderFondo()`/`receptionRender()` (Compass) leggono `m.motivazione||m.nota` per compatibilità con eventuali voci salvate prima di questo cambio.
 
 ### Stampa A4 del buono spesa
 
 Ogni riga `tipo:'buono'` nello storico ha un link **"stampa"** (accanto a "correggi", sia in `reception.html` sia nel pannello Compass) — `printBuono(id)` / `receptionPrintBuono(id)`, stesso template duplicato nei due file (nessuna condivisione di codice tra standalone app e `app.js`, pattern consolidato). Genera un documento A4 **volutamente semplice**: solo testo nero e sottolineature, niente logo né sfondi pieni — va all'amministrazione, non serve una veste elaborata, e consuma meno toner.
 
-Il modulo "Nuovo buono spesa" ha anche un bottone **"🖨️ Salva e stampa"** accanto a "Salva": `saveBuono(true)` salva il movimento e chiama subito `printBuono(m.id)` sul nuovo id, senza dover poi cercare la riga nello storico. `saveBuono()` senza argomento (il normale bottone "Salva") continua a non stampare.
+Il modulo "Nuovo buono spesa" ha **un solo bottone**, "🖨️ Salva e stampa" — il "Salva" semplice (senza stampa) è stato tolto perché non serve: `saveBuono()` salva il movimento e chiama sempre `printBuono(m.id)` sul nuovo id, senza dover poi cercare la riga nello storico.
 
 Campi: data/ora dal movimento, importo, **Consegna (amministrativo)** = `m.persona` (chi ha prelevato in app), **Riceve** = sempre lasciato in bianco (l'app non cattura chi riceve materialmente il denaro), motivazione, due righe firma in fondo (consegna/riceve). Apertura con `window.open('','_blank')` + `document.write()` + `print()` dopo 400ms, stesso pattern già usato altrove nel dashboard (es. `cmPrintBottle()`).
 - Stato sempre visibile in alto: saldo fondo cassa con tag "✓ in regola" / "mancano X€"; prossima consegna incasso con tag "✓ consegnata" / "⚠ non ancora consegnata" — pensato per restare aperta su schermo a reception, non per essere cercata quando serve.

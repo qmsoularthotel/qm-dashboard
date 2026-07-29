@@ -148,7 +148,7 @@ tr:last-child td{border-bottom:none;}
       <div id="fondo-tag"></div>
     </div>
     <div class="action-row">
-      <button class="btn btn-primary" onclick="openContaModal()">🧮 Conta e conferma turno</button>
+      <button class="btn btn-primary" onclick="openContaModal()">🧮 Conta e conferma fondo cassa</button>
       <button class="btn btn-secondary" onclick="openBuonoModal()">🧾 Nuovo buono spesa</button>
     </div>
     <h2>Storico movimenti</h2>
@@ -182,7 +182,7 @@ tr:last-child td{border-bottom:none;}
 <!-- ══ MODALS ══ -->
 <div class="ovl" id="ovl-conta">
   <div class="modal">
-    <h3>Conta e conferma turno</h3>
+    <h3>Conta e conferma fondo cassa</h3>
     <div class="field"><label>Importo contato (€)</label><input type="number" id="conta-importo" placeholder="100" step="0.01"></div>
     <div class="field"><label>Chi conta</label><select id="conta-persona"></select></div>
     <div class="field"><label>Nota (opzionale)</label><textarea id="conta-nota" placeholder="es. mancano 5€, verificato con..."></textarea></div>
@@ -201,8 +201,7 @@ tr:last-child td{border-bottom:none;}
     <div class="field"><label>Chi preleva</label><select id="buono-persona"></select></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('ovl-buono')">Annulla</button>
-      <button class="btn btn-secondary" onclick="saveBuono(true)">🖨️ Salva e stampa</button>
-      <button class="btn btn-primary" onclick="saveBuono()">Salva</button>
+      <button class="btn btn-primary" onclick="saveBuono()">🖨️ Salva e stampa</button>
     </div>
   </div>
 </div>
@@ -346,7 +345,7 @@ function saveConta(){
   closeModal('ovl-conta');
   renderFondo();
 }
-function saveBuono(andPrint){
+function saveBuono(){
   const importo=parseFloat(document.getElementById('buono-importo').value);
   const motivazione=document.getElementById('buono-motivazione').value.trim();
   const persona=document.getElementById('buono-persona').value;
@@ -357,7 +356,7 @@ function saveBuono(andPrint){
   kvSetLocal(KEY_FONDO,_fondo);
   closeModal('ovl-buono');
   renderFondo();
-  if(andPrint===true)printBuono(m.id);
+  printBuono(m.id);
 }
 function fmtTs(ts){
   const d=new Date(ts);
