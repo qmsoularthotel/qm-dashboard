@@ -621,3 +621,18 @@ body.dark .panel{box-shadow:0 2px 8px rgba(0,0,0,.22);}
 .rev-tone-btn{padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:10px;color:var(--text-muted);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;transition:all .12s;}
 .rev-tone-btn:hover{border-color:var(--accent);color:var(--accent);}
 .rev-tone-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* ── Pulsanti icona azione (Reception, storico movimenti) con didascalia al passaggio
+   del mouse — bolla stile Compass invece del tooltip nativo del browser. ── */
+.rc-act-btn{position:relative;width:26px;height:26px;border-radius:50%;background:var(--accent-bg);
+  border:1px solid var(--border);color:var(--accent);display:inline-flex;align-items:center;
+  justify-content:center;cursor:pointer;margin-right:5px;}
+.rc-act-btn::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;
+  transform:translateX(-50%) translateY(2px);background:var(--accent);color:#fff;font-size:11px;
+  font-weight:600;padding:5px 9px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;
+  transition:opacity .15s,transform .15s;z-index:30;}
+.rc-act-btn::before{content:'';position:absolute;bottom:calc(100% + 3px);left:50%;
+  transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--accent);
+  opacity:0;pointer-events:none;transition:opacity .15s;z-index:30;}
+.rc-act-btn:hover::after,.rc-act-btn:hover::before{opacity:1;transform:translateX(-50%) translateY(0);}
+.rc-act-btn:hover{background:var(--accent);color:#fff;}

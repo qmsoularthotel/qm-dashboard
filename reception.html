@@ -74,13 +74,28 @@ tr:last-child td{border-bottom:none;}
 .empty-row{color:var(--text-muted);font-style:italic;text-align:center;padding:22px;}
 
 /* Azioni riga storico — icone circolari stile Compass invece di link testuali che
-   si accatastavano su più righe (illeggibili in una colonna stretta). */
+   si accatastavano su più righe (illeggibili in una colonna stretta). Didascalia in
+   bolla al passaggio del mouse (data-tip), non il tooltip nativo del browser. */
 .act-row{display:flex;gap:6px;align-items:center;}
-.act-btn{width:28px;height:28px;border-radius:50%;background:var(--navy-bg);border:1px solid var(--border);
+.act-btn{position:relative;width:28px;height:28px;border-radius:50%;background:var(--navy-bg);border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--navy);flex-shrink:0;
-  transition:background .15s;}
-.act-btn:hover{background:var(--navy-light-bg);}
+  transition:background .15s,color .15s;}
+.act-btn:hover{background:var(--navy);color:#fff;}
 .act-btn svg{width:14px;height:14px;}
+.act-btn::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;
+  transform:translateX(-50%) translateY(2px);background:var(--navy);color:#fff;font-size:11px;
+  font-weight:600;padding:5px 9px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;
+  transition:opacity .15s,transform .15s;z-index:30;}
+.act-btn::before{content:'';position:absolute;bottom:calc(100% + 3px);left:50%;
+  transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--navy);
+  opacity:0;pointer-events:none;transition:opacity .15s;z-index:30;}
+.act-btn:hover::after,.act-btn:hover::before{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* Badge Tipo nello storico — stesse icone dei bottoni azione, niente più emoji. */
+.tipo-cell{display:flex;align-items:center;gap:8px;}
+.tipo-badge{width:22px;height:22px;border-radius:50%;background:var(--navy);border:1.5px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
+.tipo-badge svg{width:12px;height:12px;}
 
 /* Modal */
 .ovl{display:none;position:fixed;inset:0;background:rgba(12,31,51,.45);z-index:500;
@@ -451,7 +466,13 @@ function fmtTs(ts){
   return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
 function fmtEuro(n){return (n<0?'-':'')+'€'+Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
-const TIPO_LBL={conteggio:'🧮 Conteggio',buono:'🧾 Buono spesa',ripristino:'🔄 Ripristino'};
+const TIPO_LBL={conteggio:'Conteggio',buono:'Buono spesa',ripristino:'Ripristino'};
+// Icone badge Tipo — stesse icone dei bottoni azione (euro pieno per conteggio, modulo/foglio
+// per buono spesa), niente più emoji.
+const ICON_CONTEGGIO='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 3.5C9 3.5 5.3 6.7 4.3 11H2v2h2c0 .3 0 .7.1 1H2v2h2.6c1.2 4 4.8 6.5 9 6.5 1.9 0 3.7-.6 5.1-1.6l-1.3-1.7c-1.1.7-2.4 1.1-3.8 1.1-3 0-5.5-1.7-6.6-4.3h6.4v-2H6.5a7 7 0 0 1 0-1H15v-2H6.7c1.1-2.6 3.6-4.4 6.6-4.4 1.4 0 2.7.4 3.8 1.1l1.3-1.7c-1.4-1-3.2-1.6-5-1.6z"/></svg>';
+const ICON_BUONO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>';
+const ICON_RIPRISTINO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg>';
+const TIPO_ICON={conteggio:ICON_CONTEGGIO,buono:ICON_BUONO,ripristino:ICON_RIPRISTINO};
 // Icone azione riga storico — stroke navy stile Compass, coerenti coi badge dei bottoni.
 const ICON_STAMPA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M6 17v4h12v-4"/></svg>';
 const ICON_SPOSTA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12M15 3l4 4-4 4"/><path d="M17 17H5M9 21l-4-4 4-4"/></svg>';
@@ -488,15 +509,15 @@ function renderFondo(){
     const incassoNote=isBuono&&importoIncasso>0
       ?`<span style="color:var(--text-dim);font-size:11px;margin-left:6px;">(+ ${fmtEuro(importoIncasso)} da incasso)</span>`
       :'';
-    const printBtn=isBuono?`<button class="act-btn" title="Stampa" onclick="printBuono('${m.id}')">${ICON_STAMPA}</button>`:'';
-    const spostaBtn=isBuono&&m.importo>0?`<button class="act-btn" title="Sposta a incasso" onclick="spostaBuonoAIncasso('${m.id}')">${ICON_SPOSTA}</button>`:'';
+    const printBtn=isBuono?`<button class="act-btn" data-tip="Stampa" onclick="printBuono('${m.id}')">${ICON_STAMPA}</button>`:'';
+    const spostaBtn=isBuono&&m.importo>0?`<button class="act-btn" data-tip="Sposta a incasso" onclick="spostaBuonoAIncasso('${m.id}')">${ICON_SPOSTA}</button>`:'';
     return`<tr>
       <td class="mono">${fmtTs(m.ts)}</td>
-      <td>${TIPO_LBL[m.tipo]||m.tipo}</td>
+      <td><div class="tipo-cell"><span class="tipo-badge">${TIPO_ICON[m.tipo]||''}</span>${TIPO_LBL[m.tipo]||m.tipo}</div></td>
       <td class="mono">${amountCell}${incassoNote}</td>
       <td>${m.persona||'—'}</td>
       <td>${(m.motivazione||m.nota||'').replace(/</g,'&lt;')}</td>
-      <td><div class="act-row">${printBtn}${spostaBtn}<button class="act-btn" title="Correggi" onclick="openEdit('${KEY_FONDO}','${m.id}')">${ICON_CORREGGI}</button></div></td>
+      <td><div class="act-row">${printBtn}${spostaBtn}<button class="act-btn" data-tip="Correggi" onclick="openEdit('${KEY_FONDO}','${m.id}')">${ICON_CORREGGI}</button></div></td>
     </tr>`;
   }).join(''):'<tr><td colspan="6" class="empty-row">Nessun movimento registrato.</td></tr>';
 }
@@ -629,7 +650,7 @@ function renderIncasso(){
       <td>${m.consegnaDa||'—'}</td>
       <td>${m.consegnaA||'—'}</td>
       <td>${(m.nota||'').replace(/</g,'&lt;')}</td>
-      <td><div class="act-row"><button class="act-btn" title="Correggi" onclick="openEdit('${KEY_INCASSO}','${m.id}')">${ICON_CORREGGI}</button></div></td>
+      <td><div class="act-row"><button class="act-btn" data-tip="Correggi" onclick="openEdit('${KEY_INCASSO}','${m.id}')">${ICON_CORREGGI}</button></div></td>
     </tr>`;
   }).join(''):'<tr><td colspan="7" class="empty-row">Nessuna consegna registrata.</td></tr>';
 }

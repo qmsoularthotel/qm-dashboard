@@ -9719,14 +9719,24 @@ function _receptionFondoBreakdown(){
 }
 function _receptionFmtTs(ts){const d=new Date(ts);return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 function _receptionFmtEuro(n){return(n<0?'-':'')+'€'+Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
-const RECEPTION_TIPO_LBL={conteggio:'🧮 Conteggio',buono:'🧾 Buono spesa',ripristino:'🔄 Ripristino'};
+const RECEPTION_TIPO_LBL={conteggio:'Conteggio',buono:'Buono spesa',ripristino:'Ripristino'};
+// Badge Tipo nello storico — stesse icone dei bottoni azione di reception.html, niente più emoji.
+const RECEPTION_ICON_CONTEGGIO='<svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M13.5 3.5C9 3.5 5.3 6.7 4.3 11H2v2h2c0 .3 0 .7.1 1H2v2h2.6c1.2 4 4.8 6.5 9 6.5 1.9 0 3.7-.6 5.1-1.6l-1.3-1.7c-1.1.7-2.4 1.1-3.8 1.1-3 0-5.5-1.7-6.6-4.3h6.4v-2H6.5a7 7 0 0 1 0-1H15v-2H6.7c1.1-2.6 3.6-4.4 6.6-4.4 1.4 0 2.7.4 3.8 1.1l1.3-1.7c-1.4-1-3.2-1.6-5-1.6z"/></svg>';
+const RECEPTION_ICON_BUONO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>';
+const RECEPTION_ICON_RIPRISTINO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5"/></svg>';
+const RECEPTION_TIPO_ICON={conteggio:RECEPTION_ICON_CONTEGGIO,buono:RECEPTION_ICON_BUONO,ripristino:RECEPTION_ICON_RIPRISTINO};
+function _receptionTipoCell(tipo){
+  const icon=RECEPTION_TIPO_ICON[tipo]||'';
+  const lbl=RECEPTION_TIPO_LBL[tipo]||tipo;
+  return `<div style="display:flex;align-items:center;gap:8px;"><span style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${icon}</span>${lbl}</div>`;
+}
 // Icone azione riga storico — stessi glifi di reception.html, colori Compass (--accent/--accent-bg)
 // invece dei link testuali che si accatastavano su più righe in colonne strette.
 const RECEPTION_ICON_STAMPA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M6 17v4h12v-4"/></svg>';
 const RECEPTION_ICON_SPOSTA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M7 7h12M15 3l4 4-4 4"/><path d="M17 17H5M9 21l-4-4 4-4"/></svg>';
 const RECEPTION_ICON_CORREGGI='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>';
-function _receptionActBtn(icon,title,onclick){
-  return `<button onclick="${onclick}" title="${title}" style="width:26px;height:26px;border-radius:50%;background:var(--accent-bg);border:1px solid var(--border);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;margin-right:5px;">${icon}</button>`;
+function _receptionActBtn(icon,tip,onclick){
+  return `<button onclick="${onclick}" class="rc-act-btn" data-tip="${tip}">${icon}</button>`;
 }
 function receptionEditFondo(id){
   const m=_receptionFondo.find(x=>x.id===id);if(!m)return;
@@ -9892,7 +9902,7 @@ function receptionRender(){
       const spostaLink=isBuono&&m.importo>0?_receptionActBtn(RECEPTION_ICON_SPOSTA,'Sposta a incasso',`receptionSpostaBuonoIncasso('${m.id}')`):'';
       return`<tr style="border-bottom:1px solid var(--border-light);">
         <td style="padding:8px 10px;white-space:nowrap;">${_receptionFmtTs(m.ts)}</td>
-        <td style="padding:8px 10px;">${RECEPTION_TIPO_LBL[m.tipo]||m.tipo}</td>
+        <td style="padding:8px 10px;">${_receptionTipoCell(m.tipo)}</td>
         <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${amountCell}${incassoNote}</td>
         <td style="padding:8px 10px;">${m.persona||'—'}</td>
         <td style="padding:8px 10px;color:var(--text-dim);">${(m.motivazione||m.nota||'').replace(/</g,'&lt;')}</td>
