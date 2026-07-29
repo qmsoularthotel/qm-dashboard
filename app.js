@@ -496,7 +496,7 @@ function sortDeptMembers(key,names,shifts){
   }).map(x=>x.n);
 }
 function renderDay(idx){
-  const g=weekData.giorni[idx],shifts=g.shifts,area=document.getElementById('staffArea');
+  const g=weekData.giorni[idx],shifts=g.shifts;
   updateStaffPanelHeader(g.date?(typeof g.date==='string'?new Date(g.date):g.date):null);
   // Indice case-insensitive dei nomi DEPTS per escluderli dagli extra
   const allStaffLow=new Set(ALL_STAFF.map(n=>n.toLowerCase()));
@@ -565,8 +565,13 @@ function renderDay(idx){
     const inTCount=inT.length+extras.length;
     html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inTCount} in turno</span></div><div class="staff-list">${renderStaffRows(showMembers,key)}</div></div>`;
   });
-  html+='</div>';area.innerHTML=html;
+  html+='</div>';_setStaffAreaHTML(html);
 }
+// Scrive lo stesso HTML in ogni copia del pannello turno — l'originale in Overview
+// (#staffArea) e lo specchio nella vista "Turnazione Corrente" (#staffAreaMirror),
+// entrambi con classe .staff-area-mirror. Un solo renderDay() li tiene sincronizzati
+// invece di dover duplicare la logica o richiamarla due volte.
+function _setStaffAreaHTML(html){document.querySelectorAll('.staff-area-mirror').forEach(el=>el.innerHTML=html);}
 function editShift(dayIdx,nome){
   if(!weekData||!weekData.giorni[dayIdx])return;
   const shifts=weekData.giorni[dayIdx].shifts;
@@ -586,10 +591,10 @@ function editShift(dayIdx,nome){
 function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caricato');turniInput.value='';
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
-  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`;}
+  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Room Division','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano',reception:'Reception'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Room Division','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -1599,6 +1604,10 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='turni-pref'){try{turniPrefRender();turniPrefMarkAllSeen();}catch(e){}}
   if(id==='controllo-mattino'){try{cmLoad();}catch(e){}}
   if(id==='reception'){try{receptionLoad();}catch(e){}}
+  // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
+  // .staff-area-mirror) — ririchiamato qui solo per popolare lo specchio se la vista
+  // viene aperta prima che Overview l'abbia mai fatto in questa sessione.
+  if(id==='turnazione'){try{if(weekData)renderDay(activeDay);}catch(e){}}
   if(id==='registrazione'){try{rcRefreshFromCloud();}catch(e){}}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='overview'&&weekData){
@@ -3544,12 +3553,11 @@ function refreshOverviewForDate(d){
       } else {
         // Oggi non è nella settimana caricata — mostra avviso
         updateStaffPanelHeader(ref);
-        const sa=document.getElementById('staffArea');
-        if(sa)sa.innerHTML=`<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:10px;padding:14px 16px;text-align:center;">
+        _setStaffAreaHTML(`<div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:10px;padding:14px 16px;text-align:center;">
           <div style="font-size:1.3rem;margin-bottom:6px;">⚠️</div>
           <div style="font-weight:700;font-size:13px;color:#92400E;margin-bottom:4px;">Turni settimana precedente</div>
           <div style="font-size:12px;color:#92400E;">Carica il turno della settimana corrente per vedere il personale di oggi.</div>
-        </div>`;
+        </div>`);
       }
     }
   }catch(e){}
