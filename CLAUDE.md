@@ -791,6 +791,13 @@ Ogni voce è **sempre modificabile** (dalla reception i movimenti recenti, da Co
 
 ### App reception (`reception.html`)
 
+**Allineamento ai token reali di Compass (`style.css`)**: alcuni dettagli visivi introdotti durante lo sviluppo (badge circolari con anello oro, numeri in grassetto, raggi larghi 12-14px) erano invenzioni di sessione, non il linguaggio visivo effettivo del resto della dashboard. Corretti per coerenza con `.panel`/`.kpi-card`/`.btn-primary` in `style.css`:
+- Card con `border-top:4px solid var(--gold)` (4px, non un bordo sottile uniforme) — firma di ogni `.panel`/`.kpi-card` in Compass.
+- Numero grande (fondo cassa, incasso) in `font-weight:300` (non 800), come `.kpi-value` — le cifre pesanti non fanno parte del linguaggio Compass.
+- Raggi stretti: 8px per card/tabelle/modal, 6px per bottoni e campi input (`--r:8px`, prima 12px).
+- Bottoni con hover a sollevamento + ombra tinta navy (`transform:translateY(-2px)`, come `.btn-primary:hover` reale), non più statici.
+- Badge azione (`.act-btn`) e badge Tipo (`.tipo-badge`) sono quadrati arrotondati (7px) con sfondo tinto e icona dello stesso colore (`var(--navy-bg)`/`var(--navy)`), non più cerchi pieni con anello oro — stessa coppia sfondo-tinto/icona-colorata di `.kpi-card-icon` nel resto della dashboard. Sui bottoni azione principali (`.btn-badge`), il badge dei bottoni secondari (bianchi) segue la stessa logica; quello dei bottoni primari (navy pieno) resta un quadrato bianco-translucido con icona bianca, perché lì lo sfondo è già navy.
+
 - Due tab: **Fondo Cassa** (bottoni "Conta e conferma fondo cassa" / "Nuovo buono spesa": importo, **motivazione** in testo libero — obbligatoria, sopra "Chi preleva" nel modulo — poi persona; niente più causale a chip, tolta su richiesta) e **Incasso Contante** (bottone "Conta e consegna incasso" con fascia a chip 07/15/23).
 - Il movimento `tipo:'buono'` ha campo `motivazione` (obbligatorio), non più `causale`/`nota`. `renderFondo()`/`receptionRender()` (Compass) leggono `m.motivazione||m.nota` per compatibilità con eventuali voci salvate prima di questo cambio.
 
