@@ -9720,6 +9720,14 @@ function _receptionFondoBreakdown(){
 function _receptionFmtTs(ts){const d=new Date(ts);return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 function _receptionFmtEuro(n){return(n<0?'-':'')+'€'+Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
 const RECEPTION_TIPO_LBL={conteggio:'🧮 Conteggio',buono:'🧾 Buono spesa',ripristino:'🔄 Ripristino'};
+// Icone azione riga storico — stessi glifi di reception.html, colori Compass (--accent/--accent-bg)
+// invece dei link testuali che si accatastavano su più righe in colonne strette.
+const RECEPTION_ICON_STAMPA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M6 17v4h12v-4"/></svg>';
+const RECEPTION_ICON_SPOSTA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M7 7h12M15 3l4 4-4 4"/><path d="M17 17H5M9 21l-4-4 4-4"/></svg>';
+const RECEPTION_ICON_CORREGGI='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>';
+function _receptionActBtn(icon,title,onclick){
+  return `<button onclick="${onclick}" title="${title}" style="width:26px;height:26px;border-radius:50%;background:var(--accent-bg);border:1px solid var(--border);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;margin-right:5px;">${icon}</button>`;
+}
 function receptionEditFondo(id){
   const m=_receptionFondo.find(x=>x.id===id);if(!m)return;
   const nuovo=prompt('Nuovo importo per "'+(RECEPTION_TIPO_LBL[m.tipo]||m.tipo)+'" del '+_receptionFmtTs(m.ts)+' (attuale: '+m.importo+'):',m.importo);
@@ -9881,14 +9889,14 @@ function receptionRender(){
       const importoIncasso=m.importoIncasso||0;
       const amountCell=isBuono&&m.importo<=0?'—':sign+_receptionFmtEuro(m.importo)+editedTag+diffTag;
       const incassoNote=isBuono&&importoIncasso>0?` <span style="font-size:10px;color:var(--text-dim);">(+ ${_receptionFmtEuro(importoIncasso)} da incasso)</span>`:'';
-      const spostaLink=isBuono&&m.importo>0?`<span onclick="receptionSpostaBuonoIncasso('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;margin-right:10px;">sposta a incasso</span>`:'';
+      const spostaLink=isBuono&&m.importo>0?_receptionActBtn(RECEPTION_ICON_SPOSTA,'Sposta a incasso',`receptionSpostaBuonoIncasso('${m.id}')`):'';
       return`<tr style="border-bottom:1px solid var(--border-light);">
         <td style="padding:8px 10px;white-space:nowrap;">${_receptionFmtTs(m.ts)}</td>
         <td style="padding:8px 10px;">${RECEPTION_TIPO_LBL[m.tipo]||m.tipo}</td>
         <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${amountCell}${incassoNote}</td>
         <td style="padding:8px 10px;">${m.persona||'—'}</td>
         <td style="padding:8px 10px;color:var(--text-dim);">${(m.motivazione||m.nota||'').replace(/</g,'&lt;')}</td>
-        <td style="padding:8px 10px;white-space:nowrap;">${isBuono?`<span onclick="receptionPrintBuono('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;margin-right:10px;">stampa</span>`:''}${spostaLink}<span onclick="receptionEditFondo('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;">modifica</span></td>
+        <td style="padding:8px 10px;white-space:nowrap;">${isBuono?_receptionActBtn(RECEPTION_ICON_STAMPA,'Stampa',`receptionPrintBuono('${m.id}')`):''}${spostaLink}${_receptionActBtn(RECEPTION_ICON_CORREGGI,'Correggi',`receptionEditFondo('${m.id}')`)}</td>
       </tr>`;
     }).join(''):'<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-dim);font-style:italic;">Nessun movimento.</td></tr>'}</tbody>
   </table></div>`;
@@ -9917,7 +9925,7 @@ function receptionRender(){
         <td style="padding:8px 10px;">${m.consegnaDa||'—'}</td>
         <td style="padding:8px 10px;">${m.consegnaA||'—'}</td>
         <td style="padding:8px 10px;color:var(--text-dim);">${(m.nota||'').replace(/</g,'&lt;')}</td>
-        <td style="padding:8px 10px;"><span onclick="receptionEditIncasso('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;">modifica</span></td>
+        <td style="padding:8px 10px;">${_receptionActBtn(RECEPTION_ICON_CORREGGI,'Correggi',`receptionEditIncasso('${m.id}')`)}</td>
       </tr>`;
     }).join(''):'<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-dim);font-style:italic;">Nessuna consegna registrata.</td></tr>'}</tbody>
   </table></div>`;

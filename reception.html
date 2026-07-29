@@ -70,9 +70,17 @@ th{text-align:left;font-size:.7rem;font-weight:700;text-transform:uppercase;lett
 td{padding:11px 14px;font-size:.88rem;border-bottom:1px solid var(--border);vertical-align:top;}
 tr:last-child td{border-bottom:none;}
 .mono{font-variant-numeric:tabular-nums;}
-.edit-link{color:var(--navy);font-size:.78rem;font-weight:700;cursor:pointer;background:none;border:none;padding:0;}
 .edited-tag{font-size:.65rem;color:var(--text-muted);font-style:italic;margin-left:6px;}
 .empty-row{color:var(--text-muted);font-style:italic;text-align:center;padding:22px;}
+
+/* Azioni riga storico — icone circolari stile Compass invece di link testuali che
+   si accatastavano su più righe (illeggibili in una colonna stretta). */
+.act-row{display:flex;gap:6px;align-items:center;}
+.act-btn{width:28px;height:28px;border-radius:50%;background:var(--navy-bg);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--navy);flex-shrink:0;
+  transition:background .15s;}
+.act-btn:hover{background:var(--navy-light-bg);}
+.act-btn svg{width:14px;height:14px;}
 
 /* Modal */
 .ovl{display:none;position:fixed;inset:0;background:rgba(12,31,51,.45);z-index:500;
@@ -182,7 +190,7 @@ tr:last-child td{border-bottom:none;}
       <div id="incasso-tag"></div>
     </div>
     <div class="action-row">
-      <button class="btn btn-primary" onclick="openIncassoModal()">💰 Conta e consegna incasso</button>
+      <button class="btn btn-primary" onclick="openIncassoModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 9v0M18 15v0"/></svg></span> Conta e consegna incasso</button>
     </div>
     <div id="incasso-buoni-info"></div>
     <h2>Storico consegne</h2>
@@ -201,7 +209,7 @@ tr:last-child td{border-bottom:none;}
     <div class="field"><label>Contanti (€)</label><input type="number" id="conta-contanti" placeholder="0" step="0.01" oninput="_contaAggiornaTotale()"></div>
     <div class="field"><label>Buoni spesa in essere (€)</label><div class="f-readonly" id="conta-buoni">€0,00</div></div>
     <div class="field" style="border-top:1.5px solid var(--border);padding-top:14px;"><label>Totale fondo cassa</label><div class="f-readonly f-total" id="conta-totale">€0,00</div></div>
-    <div class="field"><label>Chi conta</label><select id="conta-persona"></select></div>
+    <div class="field"><label>Operatore di reception</label><select id="conta-persona"></select></div>
     <div class="field"><label>Nota (opzionale)</label><textarea id="conta-nota" placeholder="es. mancano 5€, verificato con..."></textarea></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('ovl-conta')">Annulla</button>
@@ -260,7 +268,7 @@ const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
 const KEY_FONDO = 'qm_cassa_fondo';
 const KEY_INCASSO = 'qm_cassa_incasso';
 const FONDO_TARGET = 100;
-const STAFF = ['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Vatiero R.',"D'Andrea F.",'Grieco V.','Iannario R.','Raucci A.','Ruggiero B.'];
+const STAFF = ['Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Vatiero R.','Grieco V.','Iannario R.','Raucci A.','Ruggiero B.'];
 const FASCE = [['07','07:00 (notte→mattina)'],['15','15:00 (mattina→pomeriggio)'],['23','23:00 (pomeriggio→notte)']];
 
 async function qmCheckAppStatus(){
@@ -444,6 +452,10 @@ function fmtTs(ts){
 }
 function fmtEuro(n){return (n<0?'-':'')+'€'+Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
 const TIPO_LBL={conteggio:'🧮 Conteggio',buono:'🧾 Buono spesa',ripristino:'🔄 Ripristino'};
+// Icone azione riga storico — stroke navy stile Compass, coerenti coi badge dei bottoni.
+const ICON_STAMPA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M6 17v4h12v-4"/></svg>';
+const ICON_SPOSTA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12M15 3l4 4-4 4"/><path d="M17 17H5M9 21l-4-4 4-4"/></svg>';
+const ICON_CORREGGI='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>';
 
 function renderFondo(){
   const bd=fondoBreakdown();
@@ -476,15 +488,15 @@ function renderFondo(){
     const incassoNote=isBuono&&importoIncasso>0
       ?`<span style="color:var(--text-dim);font-size:11px;margin-left:6px;">(+ ${fmtEuro(importoIncasso)} da incasso)</span>`
       :'';
-    const printLink=isBuono?`<button class="edit-link" onclick="printBuono('${m.id}')">stampa</button> `:'';
-    const spostaLink=isBuono&&m.importo>0?`<button class="edit-link" onclick="spostaBuonoAIncasso('${m.id}')">sposta a incasso</button> `:'';
+    const printBtn=isBuono?`<button class="act-btn" title="Stampa" onclick="printBuono('${m.id}')">${ICON_STAMPA}</button>`:'';
+    const spostaBtn=isBuono&&m.importo>0?`<button class="act-btn" title="Sposta a incasso" onclick="spostaBuonoAIncasso('${m.id}')">${ICON_SPOSTA}</button>`:'';
     return`<tr>
       <td class="mono">${fmtTs(m.ts)}</td>
       <td>${TIPO_LBL[m.tipo]||m.tipo}</td>
       <td class="mono">${amountCell}${incassoNote}</td>
       <td>${m.persona||'—'}</td>
       <td>${(m.motivazione||m.nota||'').replace(/</g,'&lt;')}</td>
-      <td>${printLink}${spostaLink}<button class="edit-link" onclick="openEdit('${KEY_FONDO}','${m.id}')">correggi</button></td>
+      <td><div class="act-row">${printBtn}${spostaBtn}<button class="act-btn" title="Correggi" onclick="openEdit('${KEY_FONDO}','${m.id}')">${ICON_CORREGGI}</button></div></td>
     </tr>`;
   }).join(''):'<tr><td colspan="6" class="empty-row">Nessun movimento registrato.</td></tr>';
 }
@@ -617,7 +629,7 @@ function renderIncasso(){
       <td>${m.consegnaDa||'—'}</td>
       <td>${m.consegnaA||'—'}</td>
       <td>${(m.nota||'').replace(/</g,'&lt;')}</td>
-      <td><button class="edit-link" onclick="openEdit('${KEY_INCASSO}','${m.id}')">correggi</button></td>
+      <td><div class="act-row"><button class="act-btn" title="Correggi" onclick="openEdit('${KEY_INCASSO}','${m.id}')">${ICON_CORREGGI}</button></div></td>
     </tr>`;
   }).join(''):'<tr><td colspan="7" class="empty-row">Nessuna consegna registrata.</td></tr>';
 }
