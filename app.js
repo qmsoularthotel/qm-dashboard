@@ -9702,6 +9702,21 @@ function _receptionFondoSaldo(){
   });
   return s;
 }
+// Il fondo è contanti + buoni spesa in essere (non ancora ripristinati): un buono è un
+// cambio di forma del denaro, non una perdita, quindi il totale non deve scendere solo
+// perché è stato emesso un buono. Stessa formula di reception.html (fondoBreakdown()).
+function _receptionFondoBreakdown(){
+  const contanti=_receptionFondoSaldo();
+  const sorted=[..._receptionFondo].sort((a,b)=>a.ts-b.ts);
+  let baseTs=-Infinity,buoni=0;
+  sorted.forEach(m=>{if(m.tipo==='conteggio'){baseTs=m.ts;buoni=m.buoniSpesa||0;}});
+  sorted.forEach(m=>{
+    if(m.ts<=baseTs)return;
+    if(m.tipo==='buono')buoni+=m.importo;
+    if(m.tipo==='ripristino')buoni-=m.importo;
+  });
+  return{contanti,buoni,saldo:contanti+buoni};
+}
 function _receptionFmtTs(ts){const d=new Date(ts);return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 function _receptionFmtEuro(n){return(n<0?'-':'')+'€'+Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
 const RECEPTION_TIPO_LBL={conteggio:'🧮 Conteggio',buono:'🧾 Buono spesa',ripristino:'🔄 Ripristino'};
@@ -9804,7 +9819,8 @@ function receptionEditIncasso(id){
 }
 function receptionRender(){
   const el=document.getElementById('reception-content');if(!el)return;
-  const saldo=_receptionFondoSaldo();
+  const bd=_receptionFondoBreakdown();
+  const saldo=bd.saldo;
   const saldoOk=saldo>=RECEPTION_FONDO_TARGET;
   const fondoRows=[..._receptionFondo].sort((a,b)=>b.ts-a.ts).slice(0,80);
   const incassoRows=[..._receptionIncasso].sort((a,b)=>b.ts-a.ts).slice(0,80);
@@ -9813,6 +9829,10 @@ function receptionRender(){
     <div style="display:inline-block;background:${saldoOk?'var(--green-bg)':'var(--amber-bg)'};border-radius:10px;padding:16px 18px;min-width:220px;">
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">Fondo cassa attuale</div>
       <div style="font-size:28px;font-weight:800;color:${saldoOk?'var(--green)':'var(--amber)'};margin-top:4px;">${_receptionFmtEuro(saldo)}</div>
+      <div style="display:flex;gap:16px;margin-top:6px;">
+        <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Contanti <b style="color:var(--text);">${_receptionFmtEuro(bd.contanti)}</b></span>
+        <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Buoni spesa in essere <b style="color:var(--text);">${_receptionFmtEuro(bd.buoni)}</b></span>
+      </div>
       ${!saldoOk?`<div style="font-size:var(--fs-xs);color:var(--amber);margin-top:4px;">mancano ${_receptionFmtEuro(RECEPTION_FONDO_TARGET-saldo)}</div>`:''}
       <button onclick="receptionAddRipristino()" style="margin-top:10px;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;">🔄 Registra ripristino</button>
     </div>

@@ -39,6 +39,12 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
   display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
 .status-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);}
 .status-val{font-size:2.3rem;font-weight:800;line-height:1.1;margin-top:4px;}
+.status-breakdown{display:flex;gap:18px;margin-top:8px;}
+.status-bd-item{font-size:.78rem;color:var(--text-dim);}
+.status-bd-item b{color:var(--text);font-variant-numeric:tabular-nums;}
+.f-readonly{background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:11px 12px;
+  font-size:.95rem;font-weight:700;color:var(--text-dim);}
+.f-total{color:var(--navy);font-size:1.2rem;}
 .status-tag{font-size:.85rem;font-weight:700;padding:6px 14px;border-radius:20px;}
 .status-tag.ok{background:var(--green-bg);color:var(--green);}
 .status-tag.warn{background:var(--amber-bg);color:var(--amber);}
@@ -50,6 +56,10 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
 .btn-primary{background:var(--navy);color:#fff;}
 .btn-secondary{background:#fff;border:1.5px solid var(--border);color:var(--text);}
 .btn:active{opacity:.85;}
+.btn-badge{width:26px;height:26px;border-radius:50%;background:var(--navy);border:1.5px solid var(--gold,#c9952f);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.btn-secondary .btn-badge{background:var(--navy);}
+.btn-badge svg{width:14px;height:14px;}
 
 h2{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:26px 0 12px;}
 
@@ -144,12 +154,16 @@ tr:last-child td{border-bottom:none;}
       <div>
         <div class="status-label">Fondo cassa attuale</div>
         <div class="status-val" id="fondo-saldo">—</div>
+        <div class="status-breakdown">
+          <span class="status-bd-item">Contanti <b id="fondo-contanti">—</b></span>
+          <span class="status-bd-item">Buoni spesa in essere <b id="fondo-buoni">—</b></span>
+        </div>
       </div>
       <div id="fondo-tag"></div>
     </div>
     <div class="action-row">
-      <button class="btn btn-primary" onclick="openContaModal()">🧮 Conta e conferma fondo cassa</button>
-      <button class="btn btn-secondary" onclick="openBuonoModal()">🧾 Nuovo buono spesa</button>
+      <button class="btn btn-primary" onclick="openContaModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M13.5 3.5C9 3.5 5.3 6.7 4.3 11H2v2h2c0 .3 0 .7.1 1H2v2h2.6c1.2 4 4.8 6.5 9 6.5 1.9 0 3.7-.6 5.1-1.6l-1.3-1.7c-1.1.7-2.4 1.1-3.8 1.1-3 0-5.5-1.7-6.6-4.3h6.4v-2H6.5a7 7 0 0 1 0-1H15v-2H6.7c1.1-2.6 3.6-4.4 6.6-4.4 1.4 0 2.7.4 3.8 1.1l1.3-1.7c-1.4-1-3.2-1.6-5-1.6z"/></svg></span> Conta e conferma fondo cassa</button>
+      <button class="btn btn-secondary" onclick="openBuonoModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg></span> Nuovo buono spesa</button>
     </div>
     <h2>Storico movimenti</h2>
     <table>
@@ -183,7 +197,9 @@ tr:last-child td{border-bottom:none;}
 <div class="ovl" id="ovl-conta">
   <div class="modal">
     <h3>Conta e conferma fondo cassa</h3>
-    <div class="field"><label>Importo contato (€)</label><input type="number" id="conta-importo" placeholder="100" step="0.01"></div>
+    <div class="field"><label>Contanti (€)</label><input type="number" id="conta-contanti" placeholder="0" step="0.01" oninput="_contaAggiornaTotale()"></div>
+    <div class="field"><label>Buoni spesa in essere (€)</label><div class="f-readonly" id="conta-buoni">€0,00</div></div>
+    <div class="field" style="border-top:1.5px solid var(--border);padding-top:14px;"><label>Totale fondo cassa</label><div class="f-readonly f-total" id="conta-totale">€0,00</div></div>
     <div class="field"><label>Chi conta</label><select id="conta-persona"></select></div>
     <div class="field"><label>Nota (opzionale)</label><textarea id="conta-nota" placeholder="es. mancano 5€, verificato con..."></textarea></div>
     <div class="modal-actions">
@@ -293,7 +309,12 @@ function chipVal(containerId){
 
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
-function openContaModal(){document.getElementById('conta-importo').value='';document.getElementById('conta-nota').value='';openModal('ovl-conta');}
+function openContaModal(){
+  document.getElementById('conta-contanti').value='';
+  document.getElementById('conta-nota').value='';
+  _contaAggiornaTotale();
+  openModal('ovl-conta');
+}
 function openBuonoModal(){document.getElementById('buono-importo').value='';document.getElementById('buono-motivazione').value='';openModal('ovl-buono');}
 function openIncassoModal(){document.getElementById('incasso-importo').value='';document.getElementById('incasso-nota').value='';openModal('ovl-incasso');}
 
@@ -331,16 +352,42 @@ function fondoSaldo(){
   });
   return s;
 }
+// Il fondo è sempre contanti + buoni spesa non ancora ripristinati dall'amministrazione
+// (un buono "vale" come il contante che ha sostituito, finché non viene rimborsato).
+// Riparte dalla componente buoniSpesa dell'ultimo conteggio (0 se non ne registrava —
+// conteggi vecchi, prima di questo campo, restano quindi "tutto contanti", invariato)
+// e la aggiorna con i buoni presi e i ripristini ricevuti da allora.
+function fondoBreakdown(){
+  const contanti=fondoSaldo(); // contanti fisici stimati — formula invariata (già validata)
+  const sorted=[..._fondo].sort((a,b)=>a.ts-b.ts);
+  let baseTs=-Infinity,buoni=0;
+  sorted.forEach(m=>{if(m.tipo==='conteggio'){baseTs=m.ts;buoni=m.buoniSpesa||0;}});
+  sorted.forEach(m=>{
+    if(m.ts<=baseTs)return;
+    if(m.tipo==='buono')buoni+=m.importo;
+    if(m.tipo==='ripristino')buoni-=m.importo;
+  });
+  // Totale = contanti + buoni in essere: un buono è un cambio di forma (contante → voucher),
+  // non una perdita — il totale non deve scendere solo perché è stato emesso un buono.
+  return{contanti,buoni,saldo:contanti+buoni};
+}
+function _contaAggiornaTotale(){
+  const contanti=parseFloat(document.getElementById('conta-contanti').value)||0;
+  const buoni=fondoBreakdown().buoni;
+  document.getElementById('conta-buoni').textContent=fmtEuro(buoni);
+  document.getElementById('conta-totale').textContent=fmtEuro(contanti+buoni);
+}
 function saveConta(){
-  const importo=parseFloat(document.getElementById('conta-importo').value);
+  const contanti=parseFloat(document.getElementById('conta-contanti').value);
   const persona=document.getElementById('conta-persona').value;
   const nota=document.getElementById('conta-nota').value.trim();
-  if(isNaN(importo)){alert('Inserisci un importo valido.');return;}
-  // Differenza rispetto a quanto ci si aspettava PRIMA di questo conteggio — resta
-  // visibile nello storico (spiegata o no), invece di sparire nel nuovo saldo.
+  if(isNaN(contanti)){alert('Inserisci un importo valido.');return;}
+  const buoniSpesa=fondoBreakdown().buoni;
+  // atteso/differenza si confrontano solo sui contanti: i buoni in essere sono legittimi
+  // e non devono generare una differenza fittizia rispetto all'atteso.
   const atteso=fondoSaldo();
-  const differenza=Math.round((importo-atteso)*100)/100;
-  _fondo.push({id:uid(),ts:Date.now(),tipo:'conteggio',importo,atteso,differenza,persona,nota,edits:[]});
+  const differenza=Math.round((contanti-atteso)*100)/100;
+  _fondo.push({id:uid(),ts:Date.now(),tipo:'conteggio',importo:contanti,contanti,buoniSpesa,atteso,differenza,persona,nota,edits:[]});
   kvSetLocal(KEY_FONDO,_fondo);
   closeModal('ovl-conta');
   renderFondo();
@@ -366,8 +413,11 @@ function fmtEuro(n){return (n<0?'-':'')+'€'+Math.abs(n).toLocaleString('it-IT'
 const TIPO_LBL={conteggio:'🧮 Conteggio',buono:'🧾 Buono spesa',ripristino:'🔄 Ripristino'};
 
 function renderFondo(){
-  const saldo=fondoSaldo();
+  const bd=fondoBreakdown();
+  const saldo=bd.saldo;
   document.getElementById('fondo-saldo').textContent=fmtEuro(saldo);
+  document.getElementById('fondo-contanti').textContent=fmtEuro(bd.contanti);
+  document.getElementById('fondo-buoni').textContent=fmtEuro(bd.buoni);
   const tagEl=document.getElementById('fondo-tag');
   if(saldo>=FONDO_TARGET){
     tagEl.innerHTML='<span class="status-tag ok">✓ in regola</span>';
