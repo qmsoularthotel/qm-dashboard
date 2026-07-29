@@ -261,6 +261,7 @@ grep -n 'id="view-' index.html
 | `view-inventario` | Inventario detersivi (stock + movimenti + analisi + ordini) |
 | `view-turni-pref` | Preferenze turni staff (da Google Forms) |
 | `view-controllo-mattino` | Dashboard distribuzione Culligan (stats + QC settimanale + Stampa A4) |
+| `view-reception` | Fondo Cassa & Incasso Contante — sola lettura + modifica per il QM |
 
 ---
 
@@ -718,6 +719,47 @@ Versione corrente: **`qm-v3`**. Pattern:
 - **Asset statici** → cache-first (il cache buster gestisce gli aggiornamenti)
 
 `sw-controllo-mattino.js` è legacy e si auto-disinstalla. Non modificarlo.
+
+---
+
+## Reception — Cassa (reception.html)
+
+### Scopo
+
+App standalone **desktop** (non mobile-first: usata sui PC di reception, non su smartphone) per la gestione di due registri distinti, mai unificati:
+
+- **Fondo Cassa**: fondo fisso da €100, contato a ogni cambio turno, temporaneamente ridotto dai buoni spesa e riportato a 100 dall'amministrazione.
+- **Incasso Contante**: cassa separata, consegnata a 3 fasce fisse (07:00 / 15:00 / 23:00), nessun legame col fondo cassa.
+
+I receptionist operano solo su questa app (non accedono a Compass regolarmente — Compass resta un pannello di controllo per il QM). La voce di menu **"Reception"** in Compass (Operativo Quotidiano, dopo Distribuzione Culligan → `view-reception`) legge lo stesso KV in sola lettura + **modifica libera di qualunque voce** per il QM.
+
+### Modello dati — registro di movimenti, mai un numero solo
+
+Due chiavi KV, ciascuna un array JSON di movimenti:
+
+| Chiave | Contenuto |
+|--------|-----------|
+| `qm_cassa_fondo` | `{id, ts, tipo:'conteggio'\|'buono'\|'ripristino', importo, causale, persona, nota, edits:[]}` |
+| `qm_cassa_incasso` | `{id, ts, fascia:'07'\|'15'\|'23', importo, consegnaDa, consegnaA, nota, edits:[]}` |
+
+Il saldo del fondo cassa **non è mai un campo modificabile a mano**: si calcola sempre `100 + Σripristini - Σbuoni` (`fondoSaldo()` in `reception.html`, `_receptionFondoSaldo()` in `app.js` — stessa formula in entrambi i posti, tenerla allineata se cambia). Il "conteggio" è solo una verifica — non altera il saldo — così una discrepanza resta visibile invece di sparire silenziosamente.
+
+### Modifica con storico, non sovrascrittura silenziosa
+
+Ogni voce è **sempre modificabile** (dalla reception i movimenti recenti, da Compass qualsiasi voce), ma ogni correzione aggiunge una riga a `m.edits` (`{ts, persona, campo, vecchio, nuovo, motivo}`) invece di sostituire il valore senza lasciare traccia — "deve rimanere traccia di tutto" anche quando si corregge un errore di battitura. La tabella mostra `(corretto N×)` accanto a ogni voce già modificata.
+
+### App reception (`reception.html`)
+
+- Due tab: **Fondo Cassa** (bottoni "Conta e conferma turno" / "Nuovo buono spesa" con causale a chip predefiniti) e **Incasso Contante** (bottone "Conta e consegna incasso" con fascia a chip 07/15/23).
+- Stato sempre visibile in alto: saldo fondo cassa con tag "✓ in regola" / "mancano X€"; prossima consegna incasso con tag "✓ consegnata" / "⚠ non ancora consegnata" — pensato per restare aperta su schermo a reception, non per essere cercata quando serve.
+- `incassoStatus()` determina la fascia "dovuta" dall'ora corrente (07-15 → dovuta 07, 15-23 → dovuta 15, 23-07 → dovuta 23) e controlla se esiste già una consegna di quella fascia per la data odierna.
+- **Nessun "ripristino amministrazione"** in quest'app di proposito — è un'azione che tipicamente non fa il receptionist, resta disponibile solo su Compass (`receptionAddRipristino()`).
+- `STAFF` è una copia hardcoded di `DEPTS.fo.members` (stesso pattern di `ROOMS` in `controllo-mattino.html` — le app standalone non condividono variabili con `app.js`, tenerle allineate manualmente se cambia lo staff FO).
+- Stessa schermata di manutenzione delle altre app standalone (`qm_app_status`, chiave `cassa` — non ancora agganciata al Pannello App/toggle on-off: se serve, aggiungere `'cassa'` a `MINIAPP_KEYS` in `app.js` e una card nella vista Pannello App, stesso schema delle altre 5 app).
+
+### Lato Compass (`app.js` §§ RECEPTION — CASSA, `index.html` `#view-reception`)
+
+`receptionLoad()` (chiamata da `setView('reception',...)`) legge entrambe le chiavi KV e chiama `receptionRender()`. Modifica via `receptionEditFondo(id)` / `receptionEditIncasso(id)` — usano `prompt()` per nuovo importo e motivo (stesso pattern di modifica rapida già usato altrove nel dashboard, es. `editShift`), non un modale dedicato.
 
 ---
 

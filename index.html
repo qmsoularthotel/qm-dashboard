@@ -91,6 +91,7 @@
       <div class="nav-item" onclick="setView('registrazione',this)"><span class="nav-icon"><img src="img/icons/registration_cards.png" class="nav-icon-img"></span>Registration Cards</div>
       <div class="nav-item" onclick="setView('room-division',this)"><span class="nav-icon"><img src="img/icons/piano_settimanale.png" class="nav-icon-img"></span>Room Division</div>
       <div class="nav-item" onclick="setView('controllo-mattino',this)"><span class="nav-icon"><img src="img/icons/acqua_culligan.png" class="nav-icon-img"></span>Distribuzione Culligan</div>
+      <div class="nav-item" onclick="setView('reception',this)"><span class="nav-icon">💶</span>Reception</div>
       <div class="nav-group-header" id="bkfGroupToggle" onclick="toggleBkfGroup()">
         <span class="nav-icon"><img src="img/icons/breakfast_sheet.png" class="nav-icon-img"></span>
         <span>Breakfast Sheet</span>
@@ -1531,6 +1532,16 @@
           <div class="panel-body" id="cm-content"></div>
         </div>
       </div>
+      <div class="view" id="view-reception">
+        <div class="panel">
+          <div class="panel-header">
+            <span style="font-size:18px;">💶</span>
+            <span class="panel-title">Reception — Fondo Cassa &amp; Incasso Contante</span>
+            <a href="reception.html" target="_blank" style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;padding:7px 14px;border-radius:9px;font-weight:700;font-size:var(--fs-xxs);text-decoration:none;">🖥️ Apri app reception</a>
+          </div>
+          <div class="panel-body" id="reception-content"></div>
+        </div>
+      </div>
   </main>
 </div>
 <div id="catChartModal" onclick="closeCatModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:20px;">
@@ -1551,7 +1562,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=2"></script>
-<script src="app.js?v=676-20260728"></script>
+<script src="app.js?v=677-20260728"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

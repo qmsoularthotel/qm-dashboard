@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reception — Compass QM</title>
+<style>
+:root{
+  --navy:#1c3a5e; --navy-bg:#e8f0f8;
+  --navy-light:#5B7A9C; --navy-light-bg:#EAF0F6;
+  --gold:#c9952f;
+  --green:#2e7d32; --green-bg:#e8f5e9; --green-border:#a5d6a7;
+  --amber:#e65100; --amber-bg:#fff3e0; --amber-border:#ffcc80;
+  --red:#c62828; --red-bg:#ffebee; --red-border:#ef9a9a;
+  --bg:#eef1f5; --surface:#f8f9fb; --surface2:#e8ecf1; --border:rgba(28,58,94,.12);
+  --text:#0c1f33; --text-dim:#4a5568; --text-muted:#888;
+  --r:12px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;}
+#qm-maintenance-screen{display:none;position:fixed;inset:0;z-index:99999;background:#1A2E55;align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:20px;box-sizing:border-box;text-align:center;}
+
+.hdr{background:var(--navy);color:#fff;padding:16px 28px;display:flex;align-items:center;gap:14px;}
+.hdr-title{font-size:1.15rem;font-weight:700;}
+.hdr-sub{font-size:.78rem;color:rgba(255,255,255,.6);margin-top:2px;}
+.hdr-right{margin-left:auto;font-size:.85rem;color:rgba(255,255,255,.75);}
+
+.tabs{display:flex;gap:6px;padding:16px 28px 0;background:var(--bg);}
+.tab-btn{padding:11px 22px;border:1px solid var(--border);border-bottom:none;border-radius:10px 10px 0 0;
+  background:var(--surface2);color:var(--text-dim);font-weight:700;font-size:.9rem;cursor:pointer;}
+.tab-btn.active{background:#fff;color:var(--navy);border-color:var(--border);}
+
+.wrap{max-width:920px;margin:0 auto;padding:24px 28px 60px;}
+.panel{display:none;}
+.panel.active{display:block;}
+
+.status-card{background:#fff;border-radius:var(--r);padding:22px 26px;margin-bottom:20px;
+  border:1.5px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.05);
+  display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+.status-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);}
+.status-val{font-size:2.3rem;font-weight:800;line-height:1.1;margin-top:4px;}
+.status-tag{font-size:.85rem;font-weight:700;padding:6px 14px;border-radius:20px;}
+.status-tag.ok{background:var(--green-bg);color:var(--green);}
+.status-tag.warn{background:var(--amber-bg);color:var(--amber);}
+.status-tag.late{background:var(--red-bg);color:var(--red);}
+
+.action-row{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;}
+.btn{padding:16px 22px;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;gap:10px;}
+.btn-primary{background:var(--navy);color:#fff;}
+.btn-secondary{background:#fff;border:1.5px solid var(--border);color:var(--text);}
+.btn:active{opacity:.85;}
+
+h2{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:26px 0 12px;}
+
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--r);overflow:hidden;
+  border:1px solid var(--border);}
+th{text-align:left;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  color:var(--text-muted);padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);}
+td{padding:11px 14px;font-size:.88rem;border-bottom:1px solid var(--border);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+.mono{font-variant-numeric:tabular-nums;}
+.edit-link{color:var(--navy);font-size:.78rem;font-weight:700;cursor:pointer;background:none;border:none;padding:0;}
+.edited-tag{font-size:.65rem;color:var(--text-muted);font-style:italic;margin-left:6px;}
+.empty-row{color:var(--text-muted);font-style:italic;text-align:center;padding:22px;}
+
+/* Modal */
+.ovl{display:none;position:fixed;inset:0;background:rgba(12,31,51,.45);z-index:500;
+  align-items:center;justify-content:center;padding:20px;}
+.ovl.open{display:flex;}
+.modal{background:#fff;border-radius:14px;padding:26px 28px;width:100%;max-width:440px;
+  box-shadow:0 10px 40px rgba(0,0,0,.25);}
+.modal h3{margin:0 0 18px;font-size:1.1rem;color:var(--navy);}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:.78rem;font-weight:700;color:var(--text-dim);margin-bottom:6px;}
+.field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1.5px solid var(--border);
+  border-radius:8px;font-size:.95rem;font-family:inherit;color:var(--text);background:var(--surface);}
+.field textarea{resize:vertical;min-height:50px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);
+  font-size:.82rem;font-weight:600;color:var(--text-dim);cursor:pointer;}
+.chip.sel{background:var(--navy);border-color:var(--navy);color:#fff;}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+.btn-cancel{background:none;border:none;color:var(--text-muted);font-weight:700;padding:11px 16px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div id="qm-maintenance-screen">
+  <svg viewBox="0 0 36 36" width="62" height="62" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="18" cy="18" r="16.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.3"/>
+    <polygon points="18,2 20.68,11.53 18,18 15.32,11.53" fill="#c9952f"/>
+    <polygon points="34,18 24.47,15.32 18,18 24.47,20.68" fill="#c9952f"/>
+    <polygon points="18,34 15.32,24.47 18,18 20.68,24.47" fill="#c9952f"/>
+    <polygon points="2,18 11.53,20.68 18,18 11.53,15.32" fill="#c9952f"/>
+    <polygon points="29.31,6.69 20.68,11.53 18,18 24.47,15.32" fill="rgba(255,255,255,.8)"/>
+    <polygon points="29.31,29.31 24.47,20.68 18,18 20.68,24.47" fill="rgba(255,255,255,.8)"/>
+    <polygon points="6.69,29.31 15.32,24.47 18,18 11.53,20.68" fill="rgba(255,255,255,.8)"/>
+    <polygon points="6.69,6.69 11.53,15.32 18,18 15.32,11.53" fill="rgba(255,255,255,.8)"/>
+    <circle cx="18" cy="18" r="2" fill="rgba(255,255,255,.9)"/>
+  </svg>
+  <div>
+    <div style="font-size:23px;font-weight:700;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
+    <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:5px;">Connected · Automated · Precise</div>
+  </div>
+  <div style="width:70px;border-top:1px solid rgba(255,255,255,.15);margin:8px 0;"></div>
+  <div>
+    <div style="font-size:19px;font-weight:600;color:#fff;">Applicazione in aggiornamento</div>
+    <div style="font-size:14px;color:rgba(255,255,255,.6);margin-top:18px;line-height:1.6;">Torna operativa a breve.<br>Contatta il Quality Manager per info.</div>
+  </div>
+</div>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-title">💶 Reception — Cassa</div>
+    <div class="hdr-sub">SoulArt Hotel</div>
+  </div>
+  <div class="hdr-right" id="hdr-clock"></div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tab-btn-fondo" onclick="switchTab('fondo')">Fondo Cassa</button>
+  <button class="tab-btn" id="tab-btn-incasso" onclick="switchTab('incasso')">Incasso Contante</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ══ FONDO CASSA ══ -->
+  <div class="panel active" id="panel-fondo">
+    <div class="status-card">
+      <div>
+        <div class="status-label">Fondo cassa attuale</div>
+        <div class="status-val" id="fondo-saldo">—</div>
+      </div>
+      <div id="fondo-tag"></div>
+    </div>
+    <div class="action-row">
+      <button class="btn btn-primary" onclick="openContaModal()">🧮 Conta e conferma turno</button>
+      <button class="btn btn-secondary" onclick="openBuonoModal()">🧾 Nuovo buono spesa</button>
+    </div>
+    <h2>Storico movimenti</h2>
+    <table>
+      <thead><tr><th>Data/ora</th><th>Tipo</th><th>Importo</th><th>Persona</th><th>Nota</th><th></th></tr></thead>
+      <tbody id="fondo-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- ══ INCASSO CONTANTE ══ -->
+  <div class="panel" id="panel-incasso">
+    <div class="status-card">
+      <div>
+        <div class="status-label">Prossima consegna</div>
+        <div class="status-val" id="incasso-next">—</div>
+      </div>
+      <div id="incasso-tag"></div>
+    </div>
+    <div class="action-row">
+      <button class="btn btn-primary" onclick="openIncassoModal()">💰 Conta e consegna incasso</button>
+    </div>
+    <h2>Storico consegne</h2>
+    <table>
+      <thead><tr><th>Data/ora</th><th>Fascia</th><th>Importo</th><th>Consegna</th><th>Riceve</th><th>Nota</th><th></th></tr></thead>
+      <tbody id="incasso-tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ══ MODALS ══ -->
+<div class="ovl" id="ovl-conta">
+  <div class="modal">
+    <h3>Conta e conferma turno</h3>
+    <div class="field"><label>Importo contato (€)</label><input type="number" id="conta-importo" placeholder="100" step="0.01"></div>
+    <div class="field"><label>Chi conta</label><select id="conta-persona"></select></div>
+    <div class="field"><label>Nota (opzionale)</label><textarea id="conta-nota" placeholder="es. mancano 5€, verificato con..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('ovl-conta')">Annulla</button>
+      <button class="btn btn-primary" onclick="saveConta()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovl-buono">
+  <div class="modal">
+    <h3>Nuovo buono spesa</h3>
+    <div class="field"><label>Importo prelevato (€)</label><input type="number" id="buono-importo" placeholder="0" step="0.01"></div>
+    <div class="field"><label>Causale</label>
+      <div class="chip-row" id="buono-causale-chips"></div>
+    </div>
+    <div class="field"><label>Chi preleva</label><select id="buono-persona"></select></div>
+    <div class="field"><label>Nota (opzionale)</label><textarea id="buono-nota"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('ovl-buono')">Annulla</button>
+      <button class="btn btn-primary" onclick="saveBuono()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovl-incasso">
+  <div class="modal">
+    <h3>Conta e consegna incasso</h3>
+    <div class="field"><label>Fascia</label>
+      <div class="chip-row" id="incasso-fascia-chips"></div>
+    </div>
+    <div class="field"><label>Importo contato (€)</label><input type="number" id="incasso-importo" placeholder="0" step="0.01"></div>
+    <div class="field"><label>Chi consegna</label><select id="incasso-da"></select></div>
+    <div class="field"><label>Chi riceve</label><select id="incasso-a"></select></div>
+    <div class="field"><label>Nota (opzionale)</label><textarea id="incasso-nota"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('ovl-incasso')">Annulla</button>
+      <button class="btn btn-primary" onclick="saveIncasso()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovl-edit">
+  <div class="modal">
+    <h3>Correggi importo</h3>
+    <div class="field"><label>Nuovo importo (€)</label><input type="number" id="edit-importo" step="0.01"></div>
+    <div class="field"><label>Chi corregge</label><select id="edit-persona"></select></div>
+    <div class="field"><label>Motivo della correzione</label><textarea id="edit-motivo" placeholder="es. errore di battitura, era 45 non 54"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('ovl-edit')">Annulla</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Correggi</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
+const KEY_FONDO = 'qm_cassa_fondo';
+const KEY_INCASSO = 'qm_cassa_incasso';
+const FONDO_TARGET = 100;
+const STAFF = ['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.',"D'Andrea F.",'Grieco V.','Extra Night','Iannario R.','Extra Angelica','Extra Benedetta','Raucci A.','Ruggiero B.'];
+const CAUSALI = ['Manutenzione','Pulizie','Ufficio','Fornitori','Altro'];
+const FASCE = [['07','07:00 (notte→mattina)'],['15','15:00 (mattina→pomeriggio)'],['23','23:00 (pomeriggio→notte)']];
+
+async function qmCheckAppStatus(){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key=qm_app_status',{cache:'no-store'});
+    const j=await r.json();
+    const st=j&&j.value?JSON.parse(j.value):{};
+    const disabled=st.cassa===false;
+    const scr=document.getElementById('qm-maintenance-screen');
+    if(scr)scr.style.display=disabled?'flex':'none';
+    document.body.style.overflow=disabled?'hidden':'';
+  }catch(e){}
+}
+qmCheckAppStatus();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckAppStatus();});
+setInterval(qmCheckAppStatus,30000);
+
+function tick(){
+  const n=new Date();
+  document.getElementById('hdr-clock').textContent=n.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'})+' · '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+}
+tick();setInterval(tick,15000);
+
+function switchTab(t){
+  document.getElementById('tab-btn-fondo').classList.toggle('active',t==='fondo');
+  document.getElementById('tab-btn-incasso').classList.toggle('active',t==='incasso');
+  document.getElementById('panel-fondo').classList.toggle('active',t==='fondo');
+  document.getElementById('panel-incasso').classList.toggle('active',t==='incasso');
+}
+
+function fillSelect(id,opts){
+  const el=document.getElementById(id);
+  el.innerHTML=opts.map(o=>`<option value="${o}">${o}</option>`).join('');
+}
+[['conta-persona'],['buono-persona'],['incasso-da'],['incasso-a'],['edit-persona']].forEach(([id])=>fillSelect(id,STAFF));
+
+document.getElementById('buono-causale-chips').innerHTML=CAUSALI.map((c,i)=>
+  `<span class="chip${i===0?' sel':''}" data-v="${c}" onclick="selChip(this)">${c}</span>`).join('');
+document.getElementById('incasso-fascia-chips').innerHTML=FASCE.map(([v,l],i)=>
+  `<span class="chip${i===0?' sel':''}" data-v="${v}" onclick="selChip(this)">${l}</span>`).join('');
+
+function selChip(el){
+  [...el.parentNode.children].forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function chipVal(containerId){
+  const sel=document.querySelector('#'+containerId+' .sel');
+  return sel?sel.dataset.v:null;
+}
+
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function openContaModal(){document.getElementById('conta-importo').value='';document.getElementById('conta-nota').value='';openModal('ovl-conta');}
+function openBuonoModal(){document.getElementById('buono-importo').value='';document.getElementById('buono-nota').value='';openModal('ovl-buono');}
+function openIncassoModal(){document.getElementById('incasso-importo').value='';document.getElementById('incasso-nota').value='';openModal('ovl-incasso');}
+
+// ── STORAGE ──────────────────────────
+async function kvGet(key){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+    if(r.ok){const j=await r.json();if(j&&j.value)return JSON.parse(j.value);}
+  }catch(e){}
+  try{const s=localStorage.getItem(key);if(s)return JSON.parse(s);}catch(e){}
+  return [];
+}
+function kvSetLocal(key,data){
+  try{localStorage.setItem(key,JSON.stringify(data));}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value:JSON.stringify(data)})}).catch(()=>{});
+}
+
+let _fondo=[],_incasso=[];
+function uid(){return Date.now()+'_'+Math.random().toString(36).slice(2,8);}
+
+// ── FONDO CASSA ──────────────────────
+function fondoSaldo(){
+  let s=FONDO_TARGET;
+  _fondo.forEach(m=>{
+    if(m.tipo==='buono')s-=m.importo;
+    if(m.tipo==='ripristino')s+=m.importo;
+  });
+  return s;
+}
+function saveConta(){
+  const importo=parseFloat(document.getElementById('conta-importo').value);
+  const persona=document.getElementById('conta-persona').value;
+  const nota=document.getElementById('conta-nota').value.trim();
+  if(isNaN(importo)){alert('Inserisci un importo valido.');return;}
+  _fondo.push({id:uid(),ts:Date.now(),tipo:'conteggio',importo,persona,nota,edits:[]});
+  kvSetLocal(KEY_FONDO,_fondo);
+  closeModal('ovl-conta');
+  renderFondo();
+}
+function saveBuono(){
+  const importo=parseFloat(document.getElementById('buono-importo').value);
+  const causale=chipVal('buono-causale-chips');
+  const persona=document.getElementById('buono-persona').value;
+  const nota=document.getElementById('buono-nota').value.trim();
+  if(isNaN(importo)||importo<=0){alert('Inserisci un importo valido.');return;}
+  _fondo.push({id:uid(),ts:Date.now(),tipo:'buono',importo,causale,persona,nota,edits:[]});
+  kvSetLocal(KEY_FONDO,_fondo);
+  closeModal('ovl-buono');
+  renderFondo();
+}
+function fmtTs(ts){
+  const d=new Date(ts);
+  return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function fmtEuro(n){return (n<0?'-':'')+'€'+Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+const TIPO_LBL={conteggio:'🧮 Conteggio',buono:'🧾 Buono spesa',ripristino:'🔄 Ripristino'};
+
+function renderFondo(){
+  const saldo=fondoSaldo();
+  document.getElementById('fondo-saldo').textContent=fmtEuro(saldo);
+  const tagEl=document.getElementById('fondo-tag');
+  if(saldo>=FONDO_TARGET){
+    tagEl.innerHTML='<span class="status-tag ok">✓ in regola</span>';
+  }else{
+    tagEl.innerHTML=`<span class="status-tag warn">mancano ${fmtEuro(FONDO_TARGET-saldo)} — da ripristinare</span>`;
+  }
+  const rows=[..._fondo].sort((a,b)=>b.ts-a.ts).slice(0,60);
+  document.getElementById('fondo-tbody').innerHTML=rows.length?rows.map(m=>{
+    const editedTag=m.edits&&m.edits.length?`<span class="edited-tag">(corretto ${m.edits.length}×)</span>`:'';
+    const sign=m.tipo==='buono'?'-':(m.tipo==='ripristino'?'+':'');
+    return`<tr>
+      <td class="mono">${fmtTs(m.ts)}</td>
+      <td>${TIPO_LBL[m.tipo]||m.tipo}${m.causale?' · '+m.causale:''}</td>
+      <td class="mono">${sign}${fmtEuro(m.importo)}${editedTag}</td>
+      <td>${m.persona||'—'}</td>
+      <td>${(m.nota||'').replace(/</g,'&lt;')}</td>
+      <td><button class="edit-link" onclick="openEdit('${KEY_FONDO}','${m.id}')">correggi</button></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="6" class="empty-row">Nessun movimento registrato.</td></tr>';
+}
+
+// ── INCASSO CONTANTE ─────────────────
+function todayKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function incassoStatus(){
+  const now=new Date();
+  const h=now.getHours()+now.getMinutes()/60;
+  const slots=[[7,'07'],[15,'15'],[23,'23']];
+  // Trova la fascia più recente già "scattata" oggi (7<=h<15 => 07, 15<=h<23 => 15, 23<=h||h<7 => 23)
+  let due,dueLbl,nextLbl;
+  if(h>=7&&h<15){due='07';dueLbl='07:00';nextLbl='15:00';}
+  else if(h>=15&&h<23){due='15';dueLbl='15:00';nextLbl='23:00';}
+  else {due='23';dueLbl='23:00';nextLbl='07:00';}
+  const tKey=todayKey();
+  const done=_incasso.some(m=>m.fascia===due&&(new Date(m.ts).getFullYear()+'-'+String(new Date(m.ts).getMonth()+1).padStart(2,'0')+'-'+String(new Date(m.ts).getDate()).padStart(2,'0'))===tKey);
+  return{due,dueLbl,nextLbl,done};
+}
+function saveIncasso(){
+  const fascia=chipVal('incasso-fascia-chips');
+  const importo=parseFloat(document.getElementById('incasso-importo').value);
+  const consegnaDa=document.getElementById('incasso-da').value;
+  const consegnaA=document.getElementById('incasso-a').value;
+  const nota=document.getElementById('incasso-nota').value.trim();
+  if(isNaN(importo)){alert('Inserisci un importo valido.');return;}
+  _incasso.push({id:uid(),ts:Date.now(),fascia,importo,consegnaDa,consegnaA,nota,edits:[]});
+  kvSetLocal(KEY_INCASSO,_incasso);
+  closeModal('ovl-incasso');
+  renderIncasso();
+}
+function renderIncasso(){
+  const st=incassoStatus();
+  document.getElementById('incasso-next').textContent=st.done?st.nextLbl:st.dueLbl;
+  const tagEl=document.getElementById('incasso-tag');
+  tagEl.innerHTML=st.done
+    ?'<span class="status-tag ok">✓ fascia '+st.dueLbl+' consegnata</span>'
+    :'<span class="status-tag late">⚠ fascia '+st.dueLbl+' non ancora consegnata</span>';
+  const rows=[..._incasso].sort((a,b)=>b.ts-a.ts).slice(0,60);
+  const fasciaLbl={'07':'07:00','15':'15:00','23':'23:00'};
+  document.getElementById('incasso-tbody').innerHTML=rows.length?rows.map(m=>{
+    const editedTag=m.edits&&m.edits.length?`<span class="edited-tag">(corretto ${m.edits.length}×)</span>`:'';
+    return`<tr>
+      <td class="mono">${fmtTs(m.ts)}</td>
+      <td>${fasciaLbl[m.fascia]||m.fascia}</td>
+      <td class="mono">${fmtEuro(m.importo)}${editedTag}</td>
+      <td>${m.consegnaDa||'—'}</td>
+      <td>${m.consegnaA||'—'}</td>
+      <td>${(m.nota||'').replace(/</g,'&lt;')}</td>
+      <td><button class="edit-link" onclick="openEdit('${KEY_INCASSO}','${m.id}')">correggi</button></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="7" class="empty-row">Nessuna consegna registrata.</td></tr>';
+}
+
+// ── CORREZIONE (con storico, mai sovrascrittura silenziosa) ──
+let _editTarget=null;
+function openEdit(key,id){
+  const list=key===KEY_FONDO?_fondo:_incasso;
+  const m=list.find(x=>x.id===id);
+  if(!m)return;
+  _editTarget={key,id};
+  document.getElementById('edit-importo').value=m.importo;
+  openModal('ovl-edit');
+}
+function saveEdit(){
+  if(!_editTarget)return;
+  const list=_editTarget.key===KEY_FONDO?_fondo:_incasso;
+  const m=list.find(x=>x.id===_editTarget.id);
+  if(!m)return;
+  const nuovo=parseFloat(document.getElementById('edit-importo').value);
+  const persona=document.getElementById('edit-persona').value;
+  const motivo=document.getElementById('edit-motivo').value.trim();
+  if(isNaN(nuovo)){alert('Inserisci un importo valido.');return;}
+  if(!motivo){alert('Indica il motivo della correzione.');return;}
+  m.edits=m.edits||[];
+  m.edits.push({ts:Date.now(),persona,campo:'importo',vecchio:m.importo,nuovo,motivo});
+  m.importo=nuovo;
+  kvSetLocal(_editTarget.key,list);
+  closeModal('ovl-edit');
+  renderFondo();renderIncasso();
+}
+
+// ── INIT ─────────────────────────────
+(async function init(){
+  _fondo=await kvGet(KEY_FONDO);
+  _incasso=await kvGet(KEY_INCASSO);
+  renderFondo();
+  renderIncasso();
+})();
+setInterval(async()=>{
+  _fondo=await kvGet(KEY_FONDO);
+  _incasso=await kvGet(KEY_INCASSO);
+  renderFondo();renderIncasso();
+},30000);
+</script>
+</body>
+</html>

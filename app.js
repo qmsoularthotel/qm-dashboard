@@ -588,8 +588,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();document.getElementById('staffArea').innerHTML=`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`;}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Room Division','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Room Division','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Reception'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Operativo Quotidiano',reception:'Operativo Quotidiano'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -1598,6 +1598,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='spese'){try{ddtRenderSpese();if(_ddtTab==='spese')ddtRenderList();}catch(e){}}
   if(id==='turni-pref'){try{turniPrefRender();turniPrefMarkAllSeen();}catch(e){}}
   if(id==='controllo-mattino'){try{cmLoad();}catch(e){}}
+  if(id==='reception'){try{receptionLoad();}catch(e){}}
   if(id==='registrazione'){try{rcRefreshFromCloud();}catch(e){}}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='overview'&&weekData){
@@ -9650,4 +9651,130 @@ function ddtDelete(id){
   if(!confirm('Eliminare questo DDT?'))return;
   ddtSave(ddtGet().filter(d=>d.id!==id));
   ddtRenderList();ddtRenderSpese();
+}
+
+// §§ RECEPTION — CASSA (fondo cassa, incasso contante)
+// Sola lettura + modifica libera per il QM. I receptionist operano sull'app dedicata
+// (reception.html, aperta sui PC di reception): qui si legge lo stesso KV per avere il
+// quadro completo e poter correggere qualunque voce, con storico delle correzioni mai
+// perso (m.edits), mai sovrascrittura silenziosa.
+let _receptionFondo=[],_receptionIncasso=[];
+const RECEPTION_FONDO_TARGET=100;
+async function receptionLoad(){
+  const el=document.getElementById('reception-content');if(!el)return;
+  el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Caricamento…</div>';
+  async function fetchKey(key){
+    try{
+      const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+      if(r.ok){const j=await r.json();if(j&&j.value)return JSON.parse(j.value);}
+    }catch(e){}
+    try{const s=localStorage.getItem(key);if(s)return JSON.parse(s);}catch(e){}
+    return[];
+  }
+  [_receptionFondo,_receptionIncasso]=await Promise.all([fetchKey('qm_cassa_fondo'),fetchKey('qm_cassa_incasso')]);
+  receptionRender();
+}
+function _receptionSave(key,list){
+  try{localStorage.setItem(key,JSON.stringify(list));}catch(e){}
+  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value:JSON.stringify(list)})}).catch(()=>{});
+}
+// Saldo = 100 + ripristini - buoni spesa. Il "conteggio" è solo una verifica, non
+// modifica il saldo — se non torna, resta lì come discrepanza da vedere nello storico.
+function _receptionFondoSaldo(){
+  let s=RECEPTION_FONDO_TARGET;
+  _receptionFondo.forEach(m=>{if(m.tipo==='buono')s-=m.importo;if(m.tipo==='ripristino')s+=m.importo;});
+  return s;
+}
+function _receptionFmtTs(ts){const d=new Date(ts);return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function _receptionFmtEuro(n){return(n<0?'-':'')+'€'+Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+const RECEPTION_TIPO_LBL={conteggio:'🧮 Conteggio',buono:'🧾 Buono spesa',ripristino:'🔄 Ripristino'};
+function receptionEditFondo(id){
+  const m=_receptionFondo.find(x=>x.id===id);if(!m)return;
+  const nuovo=prompt('Nuovo importo per "'+(RECEPTION_TIPO_LBL[m.tipo]||m.tipo)+'" del '+_receptionFmtTs(m.ts)+' (attuale: '+m.importo+'):',m.importo);
+  if(nuovo===null)return;
+  const val=parseFloat(nuovo);if(isNaN(val))return;
+  const motivo=prompt('Motivo della correzione:','');
+  if(!motivo)return;
+  m.edits=m.edits||[];
+  m.edits.push({ts:Date.now(),persona:'Quality Manager',campo:'importo',vecchio:m.importo,nuovo:val,motivo});
+  m.importo=val;
+  _receptionSave('qm_cassa_fondo',_receptionFondo);
+  receptionRender();
+}
+// L'amministrazione riporta il fondo a 100 — unica azione che tipicamente non passa
+// dall'app di reception (loro contano e prelevano, non ripristinano), quindi resta
+// disponibile qui su Compass.
+function receptionAddRipristino(){
+  const importo=prompt("Importo ripristinato dall'amministrazione (€):",'');
+  if(importo===null)return;
+  const val=parseFloat(importo);if(isNaN(val)||val<=0)return;
+  const nota=prompt('Nota (opzionale):','')||'';
+  _receptionFondo.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,8),ts:Date.now(),tipo:'ripristino',importo:val,persona:'Amministrazione',nota,edits:[]});
+  _receptionSave('qm_cassa_fondo',_receptionFondo);
+  receptionRender();
+}
+function receptionEditIncasso(id){
+  const m=_receptionIncasso.find(x=>x.id===id);if(!m)return;
+  const nuovo=prompt('Nuovo importo per la consegna delle '+(m.fascia||'')+':00 del '+_receptionFmtTs(m.ts)+' (attuale: '+m.importo+'):',m.importo);
+  if(nuovo===null)return;
+  const val=parseFloat(nuovo);if(isNaN(val))return;
+  const motivo=prompt('Motivo della correzione:','');
+  if(!motivo)return;
+  m.edits=m.edits||[];
+  m.edits.push({ts:Date.now(),persona:'Quality Manager',campo:'importo',vecchio:m.importo,nuovo:val,motivo});
+  m.importo=val;
+  _receptionSave('qm_cassa_incasso',_receptionIncasso);
+  receptionRender();
+}
+function receptionRender(){
+  const el=document.getElementById('reception-content');if(!el)return;
+  const saldo=_receptionFondoSaldo();
+  const saldoOk=saldo>=RECEPTION_FONDO_TARGET;
+  const fondoRows=[..._receptionFondo].sort((a,b)=>b.ts-a.ts).slice(0,80);
+  const incassoRows=[..._receptionIncasso].sort((a,b)=>b.ts-a.ts).slice(0,80);
+  const fasciaLbl={'07':'07:00','15':'15:00','23':'23:00'};
+  let h=`<div style="margin-bottom:20px;">
+    <div style="display:inline-block;background:${saldoOk?'var(--green-bg)':'var(--amber-bg)'};border-radius:10px;padding:16px 18px;min-width:220px;">
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">Fondo cassa attuale</div>
+      <div style="font-size:28px;font-weight:800;color:${saldoOk?'var(--green)':'var(--amber)'};margin-top:4px;">${_receptionFmtEuro(saldo)}</div>
+      ${!saldoOk?`<div style="font-size:var(--fs-xs);color:var(--amber);margin-top:4px;">mancano ${_receptionFmtEuro(RECEPTION_FONDO_TARGET-saldo)}</div>`:''}
+      <button onclick="receptionAddRipristino()" style="margin-top:10px;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;">🔄 Registra ripristino</button>
+    </div>
+  </div>`;
+
+  h+=`<div style="font-size:var(--fs-sm);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 10px;">Fondo Cassa — storico movimenti</div>`;
+  h+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+    <thead><tr style="background:var(--surface2);"><th style="text-align:left;padding:8px 10px;">Data/ora</th><th style="text-align:left;padding:8px 10px;">Tipo</th><th style="text-align:right;padding:8px 10px;">Importo</th><th style="text-align:left;padding:8px 10px;">Persona</th><th style="text-align:left;padding:8px 10px;">Nota</th><th></th></tr></thead>
+    <tbody>${fondoRows.length?fondoRows.map(m=>{
+      const sign=m.tipo==='buono'?'-':(m.tipo==='ripristino'?'+':'');
+      const editedTag=m.edits&&m.edits.length?` <span style="font-size:10px;color:var(--text-dim);font-style:italic;">(corretto ${m.edits.length}×)</span>`:'';
+      return`<tr style="border-bottom:1px solid var(--border-light);">
+        <td style="padding:8px 10px;white-space:nowrap;">${_receptionFmtTs(m.ts)}</td>
+        <td style="padding:8px 10px;">${RECEPTION_TIPO_LBL[m.tipo]||m.tipo}${m.causale?' · '+m.causale:''}</td>
+        <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${sign}${_receptionFmtEuro(m.importo)}${editedTag}</td>
+        <td style="padding:8px 10px;">${m.persona||'—'}</td>
+        <td style="padding:8px 10px;color:var(--text-dim);">${(m.nota||'').replace(/</g,'&lt;')}</td>
+        <td style="padding:8px 10px;"><span onclick="receptionEditFondo('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;">modifica</span></td>
+      </tr>`;
+    }).join(''):'<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-dim);font-style:italic;">Nessun movimento.</td></tr>'}</tbody>
+  </table></div>`;
+
+  h+=`<div style="font-size:var(--fs-sm);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:26px 0 10px;">Incasso Contante — storico consegne</div>`;
+  h+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+    <thead><tr style="background:var(--surface2);"><th style="text-align:left;padding:8px 10px;">Data/ora</th><th style="text-align:left;padding:8px 10px;">Fascia</th><th style="text-align:right;padding:8px 10px;">Importo</th><th style="text-align:left;padding:8px 10px;">Consegna</th><th style="text-align:left;padding:8px 10px;">Riceve</th><th style="text-align:left;padding:8px 10px;">Nota</th><th></th></tr></thead>
+    <tbody>${incassoRows.length?incassoRows.map(m=>{
+      const editedTag=m.edits&&m.edits.length?` <span style="font-size:10px;color:var(--text-dim);font-style:italic;">(corretto ${m.edits.length}×)</span>`:'';
+      return`<tr style="border-bottom:1px solid var(--border-light);">
+        <td style="padding:8px 10px;white-space:nowrap;">${_receptionFmtTs(m.ts)}</td>
+        <td style="padding:8px 10px;">${fasciaLbl[m.fascia]||m.fascia}</td>
+        <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${_receptionFmtEuro(m.importo)}${editedTag}</td>
+        <td style="padding:8px 10px;">${m.consegnaDa||'—'}</td>
+        <td style="padding:8px 10px;">${m.consegnaA||'—'}</td>
+        <td style="padding:8px 10px;color:var(--text-dim);">${(m.nota||'').replace(/</g,'&lt;')}</td>
+        <td style="padding:8px 10px;"><span onclick="receptionEditIncasso('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;">modifica</span></td>
+      </tr>`;
+    }).join(''):'<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-dim);font-style:italic;">Nessuna consegna registrata.</td></tr>'}</tbody>
+  </table></div>`;
+
+  el.innerHTML=h;
 }
