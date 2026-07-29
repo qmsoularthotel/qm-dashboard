@@ -153,7 +153,7 @@ tr:last-child td{border-bottom:none;}
     </div>
     <h2>Storico movimenti</h2>
     <table>
-      <thead><tr><th>Data/ora</th><th>Tipo</th><th>Importo</th><th>Persona</th><th>Nota</th><th></th></tr></thead>
+      <thead><tr><th>Data/ora</th><th>Tipo</th><th>Importo</th><th>Persona</th><th>Motivazione</th><th></th></tr></thead>
       <tbody id="fondo-tbody"></tbody>
     </table>
   </div>
@@ -197,11 +197,8 @@ tr:last-child td{border-bottom:none;}
   <div class="modal">
     <h3>Nuovo buono spesa</h3>
     <div class="field"><label>Importo prelevato (€)</label><input type="number" id="buono-importo" placeholder="0" step="0.01"></div>
-    <div class="field"><label>Causale</label>
-      <div class="chip-row" id="buono-causale-chips"></div>
-    </div>
+    <div class="field"><label>Motivazione</label><textarea id="buono-motivazione" placeholder="es. materiale di ricambio per manutenzione impianto idraulico"></textarea></div>
     <div class="field"><label>Chi preleva</label><select id="buono-persona"></select></div>
-    <div class="field"><label>Nota (opzionale)</label><textarea id="buono-nota"></textarea></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('ovl-buono')">Annulla</button>
       <button class="btn btn-primary" onclick="saveBuono()">Salva</button>
@@ -246,7 +243,6 @@ const KEY_FONDO = 'qm_cassa_fondo';
 const KEY_INCASSO = 'qm_cassa_incasso';
 const FONDO_TARGET = 100;
 const STAFF = ['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Vatiero R.',"D'Andrea F.",'Grieco V.','Iannario R.','Raucci A.','Ruggiero B.'];
-const CAUSALI = ['Manutenzione','Pulizie','Ufficio','Fornitori','Altro'];
 const FASCE = [['07','07:00 (notte→mattina)'],['15','15:00 (mattina→pomeriggio)'],['23','23:00 (pomeriggio→notte)']];
 
 async function qmCheckAppStatus(){
@@ -283,8 +279,6 @@ function fillSelect(id,opts){
 }
 [['conta-persona'],['buono-persona'],['incasso-da'],['incasso-a'],['edit-persona']].forEach(([id])=>fillSelect(id,STAFF));
 
-document.getElementById('buono-causale-chips').innerHTML=CAUSALI.map((c,i)=>
-  `<span class="chip${i===0?' sel':''}" data-v="${c}" onclick="selChip(this)">${c}</span>`).join('');
 document.getElementById('incasso-fascia-chips').innerHTML=FASCE.map(([v,l],i)=>
   `<span class="chip${i===0?' sel':''}" data-v="${v}" onclick="selChip(this)">${l}</span>`).join('');
 
@@ -300,7 +294,7 @@ function chipVal(containerId){
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function openContaModal(){document.getElementById('conta-importo').value='';document.getElementById('conta-nota').value='';openModal('ovl-conta');}
-function openBuonoModal(){document.getElementById('buono-importo').value='';document.getElementById('buono-nota').value='';openModal('ovl-buono');}
+function openBuonoModal(){document.getElementById('buono-importo').value='';document.getElementById('buono-motivazione').value='';openModal('ovl-buono');}
 function openIncassoModal(){document.getElementById('incasso-importo').value='';document.getElementById('incasso-nota').value='';openModal('ovl-incasso');}
 
 // ── STORAGE ──────────────────────────
@@ -353,11 +347,11 @@ function saveConta(){
 }
 function saveBuono(){
   const importo=parseFloat(document.getElementById('buono-importo').value);
-  const causale=chipVal('buono-causale-chips');
+  const motivazione=document.getElementById('buono-motivazione').value.trim();
   const persona=document.getElementById('buono-persona').value;
-  const nota=document.getElementById('buono-nota').value.trim();
   if(isNaN(importo)||importo<=0){alert('Inserisci un importo valido.');return;}
-  _fondo.push({id:uid(),ts:Date.now(),tipo:'buono',importo,causale,persona,nota,edits:[]});
+  if(!motivazione){alert('La motivazione è obbligatoria.');return;}
+  _fondo.push({id:uid(),ts:Date.now(),tipo:'buono',importo,motivazione,persona,edits:[]});
   kvSetLocal(KEY_FONDO,_fondo);
   closeModal('ovl-buono');
   renderFondo();
@@ -389,10 +383,10 @@ function renderFondo(){
       :'';
     return`<tr>
       <td class="mono">${fmtTs(m.ts)}</td>
-      <td>${TIPO_LBL[m.tipo]||m.tipo}${m.causale?' · '+m.causale:''}</td>
+      <td>${TIPO_LBL[m.tipo]||m.tipo}</td>
       <td class="mono">${sign}${fmtEuro(m.importo)}${editedTag}${diffTag}</td>
       <td>${m.persona||'—'}</td>
-      <td>${(m.nota||'').replace(/</g,'&lt;')}</td>
+      <td>${(m.motivazione||m.nota||'').replace(/</g,'&lt;')}</td>
       <td><button class="edit-link" onclick="openEdit('${KEY_FONDO}','${m.id}')">correggi</button></td>
     </tr>`;
   }).join(''):'<tr><td colspan="6" class="empty-row">Nessun movimento registrato.</td></tr>';

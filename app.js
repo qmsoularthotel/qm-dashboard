@@ -9761,7 +9761,7 @@ function receptionRender(){
 
   h+=`<div style="font-size:var(--fs-sm);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 10px;">Fondo Cassa — storico movimenti</div>`;
   h+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
-    <thead><tr style="background:var(--surface2);"><th style="text-align:left;padding:8px 10px;">Data/ora</th><th style="text-align:left;padding:8px 10px;">Tipo</th><th style="text-align:right;padding:8px 10px;">Importo</th><th style="text-align:left;padding:8px 10px;">Persona</th><th style="text-align:left;padding:8px 10px;">Nota</th><th></th></tr></thead>
+    <thead><tr style="background:var(--surface2);"><th style="text-align:left;padding:8px 10px;">Data/ora</th><th style="text-align:left;padding:8px 10px;">Tipo</th><th style="text-align:right;padding:8px 10px;">Importo</th><th style="text-align:left;padding:8px 10px;">Persona</th><th style="text-align:left;padding:8px 10px;">Motivazione</th><th></th></tr></thead>
     <tbody>${fondoRows.length?fondoRows.map(m=>{
       const sign=m.tipo==='buono'?'-':(m.tipo==='ripristino'?'+':'');
       const editedTag=m.edits&&m.edits.length?` <span style="font-size:10px;color:var(--text-dim);font-style:italic;">(corretto ${m.edits.length}×)</span>`:'';
@@ -9772,10 +9772,10 @@ function receptionRender(){
         :'';
       return`<tr style="border-bottom:1px solid var(--border-light);">
         <td style="padding:8px 10px;white-space:nowrap;">${_receptionFmtTs(m.ts)}</td>
-        <td style="padding:8px 10px;">${RECEPTION_TIPO_LBL[m.tipo]||m.tipo}${m.causale?' · '+m.causale:''}</td>
+        <td style="padding:8px 10px;">${RECEPTION_TIPO_LBL[m.tipo]||m.tipo}</td>
         <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${sign}${_receptionFmtEuro(m.importo)}${editedTag}${diffTag}</td>
         <td style="padding:8px 10px;">${m.persona||'—'}</td>
-        <td style="padding:8px 10px;color:var(--text-dim);">${(m.nota||'').replace(/</g,'&lt;')}</td>
+        <td style="padding:8px 10px;color:var(--text-dim);">${(m.motivazione||m.nota||'').replace(/</g,'&lt;')}</td>
         <td style="padding:8px 10px;"><span onclick="receptionEditFondo('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;">modifica</span></td>
       </tr>`;
     }).join(''):'<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-dim);font-style:italic;">Nessun movimento.</td></tr>'}</tbody>

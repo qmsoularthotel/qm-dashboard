@@ -766,7 +766,8 @@ Ogni voce è **sempre modificabile** (dalla reception i movimenti recenti, da Co
 
 ### App reception (`reception.html`)
 
-- Due tab: **Fondo Cassa** (bottoni "Conta e conferma turno" / "Nuovo buono spesa" con causale a chip predefiniti) e **Incasso Contante** (bottone "Conta e consegna incasso" con fascia a chip 07/15/23).
+- Due tab: **Fondo Cassa** (bottoni "Conta e conferma turno" / "Nuovo buono spesa": importo, **motivazione** in testo libero — obbligatoria, sopra "Chi preleva" nel modulo — poi persona; niente più causale a chip, tolta su richiesta) e **Incasso Contante** (bottone "Conta e consegna incasso" con fascia a chip 07/15/23).
+- Il movimento `tipo:'buono'` ha campo `motivazione` (obbligatorio), non più `causale`/`nota`. `renderFondo()`/`receptionRender()` (Compass) leggono `m.motivazione||m.nota` per compatibilità con eventuali voci salvate prima di questo cambio.
 - Stato sempre visibile in alto: saldo fondo cassa con tag "✓ in regola" / "mancano X€"; prossima consegna incasso con tag "✓ consegnata" / "⚠ non ancora consegnata" — pensato per restare aperta su schermo a reception, non per essere cercata quando serve.
 - `incassoStatus()` determina la fascia "dovuta" dall'ora corrente (07-15 → dovuta 07, 15-23 → dovuta 15, 23-07 → dovuta 23) e controlla se esiste già una consegna di quella fascia per la data odierna.
 - **Nessun "ripristino amministrazione"** in quest'app di proposito — è un'azione che tipicamente non fa il receptionist, resta disponibile solo su Compass (`receptionAddRipristino()`).
