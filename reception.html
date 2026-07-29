@@ -184,6 +184,7 @@ tr:last-child td{border-bottom:none;}
     <div class="action-row">
       <button class="btn btn-primary" onclick="openIncassoModal()">💰 Conta e consegna incasso</button>
     </div>
+    <div id="incasso-buoni-info"></div>
     <h2>Storico consegne</h2>
     <table>
       <thead><tr><th>Data/ora</th><th>Fascia</th><th>Importo</th><th>Consegna</th><th>Riceve</th><th>Nota</th><th></th></tr></thead>
@@ -212,7 +213,8 @@ tr:last-child td{border-bottom:none;}
 <div class="ovl" id="ovl-buono">
   <div class="modal">
     <h3>Nuovo buono spesa</h3>
-    <div class="field"><label>Importo prelevato (€)</label><input type="number" id="buono-importo" placeholder="0" step="0.01"></div>
+    <div class="field"><label>Importo prelevato da fondo cassa (€)</label><input type="number" id="buono-importo" placeholder="0" step="0.01"></div>
+    <div class="field"><label>Importo prelevato da incasso giornaliero (€)</label><input type="number" id="buono-importo-incasso" placeholder="0" step="0.01"></div>
     <div class="field"><label>Motivazione</label><textarea id="buono-motivazione" placeholder="es. materiale di ricambio per manutenzione impianto idraulico"></textarea></div>
     <div class="field"><label>Chi preleva</label><select id="buono-persona"></select></div>
     <div class="modal-actions">
@@ -315,7 +317,7 @@ function openContaModal(){
   _contaAggiornaTotale();
   openModal('ovl-conta');
 }
-function openBuonoModal(){document.getElementById('buono-importo').value='';document.getElementById('buono-motivazione').value='';openModal('ovl-buono');}
+function openBuonoModal(){document.getElementById('buono-importo').value='';document.getElementById('buono-importo-incasso').value='';document.getElementById('buono-motivazione').value='';openModal('ovl-buono');}
 function openIncassoModal(){document.getElementById('incasso-importo').value='';document.getElementById('incasso-nota').value='';openModal('ovl-incasso');}
 
 // ── STORAGE ──────────────────────────
@@ -392,18 +394,49 @@ function saveConta(){
   closeModal('ovl-conta');
   renderFondo();
 }
+// Un buono spesa può essere pagato dal fondo cassa, dall'incasso giornaliero, o in parte
+// dall'uno e in parte dall'altro. Solo la quota "importo" (da fondo cassa) entra nel
+// calcolo di fondoSaldo()/fondoBreakdown() — la quota "importoIncasso" non tocca il fondo
+// cassa, perché quei soldi non ci sono mai passati (prelevati direttamente dall'incasso).
 function saveBuono(){
-  const importo=parseFloat(document.getElementById('buono-importo').value);
+  const importoFondo=parseFloat(document.getElementById('buono-importo').value)||0;
+  const importoIncasso=parseFloat(document.getElementById('buono-importo-incasso').value)||0;
   const motivazione=document.getElementById('buono-motivazione').value.trim();
   const persona=document.getElementById('buono-persona').value;
-  if(isNaN(importo)||importo<=0){alert('Inserisci un importo valido.');return;}
+  if(importoFondo<=0&&importoIncasso<=0){alert('Inserisci almeno uno dei due importi.');return;}
   if(!motivazione){alert('La motivazione è obbligatoria.');return;}
-  const m={id:uid(),ts:Date.now(),tipo:'buono',importo,motivazione,persona,edits:[]};
+  const m={id:uid(),ts:Date.now(),tipo:'buono',importo:importoFondo,importoIncasso,motivazione,persona,edits:[]};
   _fondo.push(m);
   kvSetLocal(KEY_FONDO,_fondo);
   closeModal('ovl-buono');
   renderFondo();
+  renderIncasso();
   printBuono(m.id);
+}
+// Sposta (in tutto o in parte) la quota di un buono già registrato dal fondo cassa
+// all'incasso giornaliero — è il modo in cui in pratica si "ripristina" il fondo senza
+// un vero e proprio ripristino amministrativo: si riclassifica una spesa già fatta come
+// pagata dall'incasso invece che dal fondo. Riduce importo (fondo) e aumenta importoIncasso
+// della stessa cifra, con traccia in edits — mai una sovrascrittura silenziosa.
+function spostaBuonoAIncasso(id){
+  const m=_fondo.find(x=>x.id===id);
+  if(!m||m.tipo!=='buono')return;
+  const max=m.importo||0;
+  if(max<=0){alert('Questo buono è già interamente a carico dell\'incasso giornaliero.');return;}
+  const valStr=prompt('Quanto spostare dal fondo cassa all\'incasso giornaliero? (max '+fmtEuro(max)+')',max.toFixed(2));
+  if(valStr===null)return;
+  const val=parseFloat(valStr);
+  if(isNaN(val)||val<=0||val>max){alert('Importo non valido.');return;}
+  const persona=prompt('Chi effettua lo spostamento?','');
+  if(!persona)return;
+  const vecchioFondo=m.importo,vecchioIncasso=m.importoIncasso||0;
+  m.importo=Math.round((vecchioFondo-val)*100)/100;
+  m.importoIncasso=Math.round((vecchioIncasso+val)*100)/100;
+  m.edits=m.edits||[];
+  m.edits.push({ts:Date.now(),persona,campo:'importo/importoIncasso',vecchio:`fondo ${fmtEuro(vecchioFondo)} · incasso ${fmtEuro(vecchioIncasso)}`,nuovo:`fondo ${fmtEuro(m.importo)} · incasso ${fmtEuro(m.importoIncasso)}`,motivo:`Spostato ${fmtEuro(val)} dal fondo cassa all'incasso giornaliero`});
+  kvSetLocal(KEY_FONDO,_fondo);
+  renderFondo();
+  renderIncasso();
 }
 function fmtTs(ts){
   const d=new Date(ts);
@@ -433,14 +466,25 @@ function renderFondo(){
     const diffTag=(m.tipo==='conteggio'&&m.differenza)
       ?`<span style="color:${m.differenza<0?'var(--red)':'var(--green)'};font-weight:700;font-size:11px;margin-left:6px;">(${m.differenza>0?'+':''}${fmtEuro(m.differenza)} vs atteso ${fmtEuro(m.atteso)})</span>`
       :'';
-    const printLink=m.tipo==='buono'?`<button class="edit-link" onclick="printBuono('${m.id}')">stampa</button> `:'';
+    const isBuono=m.tipo==='buono';
+    const importoIncasso=m.importoIncasso||0;
+    // Un buono pagato interamente dall'incasso ha "importo" (quota fondo) a 0 — niente
+    // trattino "-€0,00" fuorviante, solo la nota della quota incasso.
+    const amountCell=isBuono&&m.importo<=0
+      ?'—'
+      :sign+fmtEuro(m.importo)+editedTag+diffTag;
+    const incassoNote=isBuono&&importoIncasso>0
+      ?`<span style="color:var(--text-dim);font-size:11px;margin-left:6px;">(+ ${fmtEuro(importoIncasso)} da incasso)</span>`
+      :'';
+    const printLink=isBuono?`<button class="edit-link" onclick="printBuono('${m.id}')">stampa</button> `:'';
+    const spostaLink=isBuono&&m.importo>0?`<button class="edit-link" onclick="spostaBuonoAIncasso('${m.id}')">sposta a incasso</button> `:'';
     return`<tr>
       <td class="mono">${fmtTs(m.ts)}</td>
       <td>${TIPO_LBL[m.tipo]||m.tipo}</td>
-      <td class="mono">${sign}${fmtEuro(m.importo)}${editedTag}${diffTag}</td>
+      <td class="mono">${amountCell}${incassoNote}</td>
       <td>${m.persona||'—'}</td>
       <td>${(m.motivazione||m.nota||'').replace(/</g,'&lt;')}</td>
-      <td>${printLink}<button class="edit-link" onclick="openEdit('${KEY_FONDO}','${m.id}')">correggi</button></td>
+      <td>${printLink}${spostaLink}<button class="edit-link" onclick="openEdit('${KEY_FONDO}','${m.id}')">correggi</button></td>
     </tr>`;
   }).join(''):'<tr><td colspan="6" class="empty-row">Nessun movimento registrato.</td></tr>';
 }
@@ -450,6 +494,11 @@ function _buonoPrintHTML(m){
   const d=new Date(m.ts);
   const dataStr=d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})+' · ore '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const importoIncasso=m.importoIncasso||0;
+  const totale=(m.importo||0)+importoIncasso;
+  const fonteNote=importoIncasso>0
+    ?`<div style="font-size:8.5pt;color:var(--dim);margin-top:4px;">di cui da fondo cassa ${fmtEuro(m.importo||0)} · da incasso giornaliero ${fmtEuro(importoIncasso)}</div>`
+    :'';
   return`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Buono Spesa</title>
 <style>
 :root{--text:#111;--dim:#555;}
@@ -481,7 +530,8 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;color:var(--text);font-size:1
     <div><div class="doc-hotel">SoulArt Hotel</div><div class="doc-num">Fondo Cassa — Reception</div></div>
     <div><div class="doc-title">Buono Spesa</div><div class="doc-num">${dataStr}</div></div>
   </div>
-  <div class="amount-row"><span class="amount-lbl">Importo prelevato</span><span class="amount-val">${fmtEuro(m.importo)}</span></div>
+  <div class="amount-row"><span class="amount-lbl">Importo prelevato</span><span class="amount-val">${fmtEuro(totale)}</span></div>
+  ${fonteNote}
   <div class="row">
     <div class="f"><div class="f-lbl">Consegna (amministrativo)</div><div class="f-val">${esc(m.persona)||'&nbsp;'}</div></div>
     <div class="f"><div class="f-lbl">Riceve</div><div class="f-val blank">&nbsp;</div></div>
@@ -530,6 +580,24 @@ function saveIncasso(){
   closeModal('ovl-incasso');
   renderIncasso();
 }
+// Riepilogo informativo (non un registro a parte): elenca i buoni spesa di oggi pagati
+// dall'incasso invece che dal fondo cassa, così chi conta/consegna sa perché il contante
+// trovato è più basso del previsto — nessuna nuova chiave KV, deriva da _fondo.
+function renderIncassoBuoniInfo(){
+  const el=document.getElementById('incasso-buoni-info');
+  if(!el)return;
+  const tKey=todayKey();
+  const rows=_fondo.filter(m=>{
+    if(m.tipo!=='buono'||!(m.importoIncasso>0))return false;
+    const d=new Date(m.ts);
+    return (d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'))===tKey;
+  });
+  if(!rows.length){el.innerHTML='';return;}
+  const tot=rows.reduce((s,m)=>s+m.importoIncasso,0);
+  el.innerHTML=`<div style="background:var(--navy-light-bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:.8rem;">
+    <b>Buoni spesa pagati oggi dall'incasso (${fmtEuro(tot)}):</b> ${rows.map(m=>fmtEuro(m.importoIncasso)+' — '+(m.motivazione||'').replace(/</g,'&lt;')).join(' · ')}
+  </div>`;
+}
 function renderIncasso(){
   const st=incassoStatus();
   document.getElementById('incasso-next').textContent=st.done?st.nextLbl:st.dueLbl;
@@ -537,6 +605,7 @@ function renderIncasso(){
   tagEl.innerHTML=st.done
     ?'<span class="status-tag ok">✓ fascia '+st.dueLbl+' consegnata</span>'
     :'<span class="status-tag late">⚠ fascia '+st.dueLbl+' non ancora consegnata</span>';
+  renderIncassoBuoniInfo();
   const rows=[..._incasso].sort((a,b)=>b.ts-a.ts).slice(0,60);
   const fasciaLbl={'07':'07:00','15':'15:00','23':'23:00'};
   document.getElementById('incasso-tbody').innerHTML=rows.length?rows.map(m=>{

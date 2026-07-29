@@ -9752,6 +9752,11 @@ function _receptionBuonoPrintHTML(m){
   const d=new Date(m.ts);
   const dataStr=d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})+' · ore '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const importoIncasso=m.importoIncasso||0;
+  const totale=(m.importo||0)+importoIncasso;
+  const fonteNote=importoIncasso>0
+    ?`<div style="font-size:8.5pt;color:var(--dim);margin-top:4px;">di cui da fondo cassa ${_receptionFmtEuro(m.importo||0)} · da incasso giornaliero ${_receptionFmtEuro(importoIncasso)}</div>`
+    :'';
   return`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Buono Spesa</title>
 <style>
 :root{--text:#111;--dim:#555;}
@@ -9783,7 +9788,8 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;color:var(--text);font-size:1
     <div><div class="doc-hotel">SoulArt Hotel</div><div class="doc-num">Fondo Cassa — Reception</div></div>
     <div><div class="doc-title">Buono Spesa</div><div class="doc-num">${dataStr}</div></div>
   </div>
-  <div class="amount-row"><span class="amount-lbl">Importo prelevato</span><span class="amount-val">${_receptionFmtEuro(m.importo)}</span></div>
+  <div class="amount-row"><span class="amount-lbl">Importo prelevato</span><span class="amount-val">${_receptionFmtEuro(totale)}</span></div>
+  ${fonteNote}
   <div class="row">
     <div class="f"><div class="f-lbl">Consegna (amministrativo)</div><div class="f-val">${esc(m.persona)||'&nbsp;'}</div></div>
     <div class="f"><div class="f-lbl">Riceve</div><div class="f-val blank">&nbsp;</div></div>
@@ -9803,6 +9809,28 @@ function receptionPrintBuono(id){
   if(!w){alert('Abilita i popup per stampare.');return;}
   w.document.write(_receptionBuonoPrintHTML(m));w.document.close();
   setTimeout(()=>w.print(),400);
+}
+// Sposta (in tutto o in parte) la quota di un buono già registrato dal fondo cassa
+// all'incasso giornaliero — riclassifica una spesa già fatta come pagata dall'incasso
+// invece che dal fondo, "ripristinando" il fondo senza un vero ripristino amministrativo.
+// Stessa logica di spostaBuonoAIncasso() in reception.html.
+function receptionSpostaBuonoIncasso(id){
+  const m=_receptionFondo.find(x=>x.id===id);
+  if(!m||m.tipo!=='buono')return;
+  const max=m.importo||0;
+  if(max<=0){alert("Questo buono è già interamente a carico dell'incasso giornaliero.");return;}
+  const valStr=prompt('Quanto spostare dal fondo cassa all\'incasso giornaliero? (max '+_receptionFmtEuro(max)+')',max.toFixed(2));
+  if(valStr===null)return;
+  const val=parseFloat(valStr);
+  if(isNaN(val)||val<=0||val>max){alert('Importo non valido.');return;}
+  const motivo=prompt('Motivo dello spostamento (opzionale):','')||'';
+  const vecchioFondo=m.importo,vecchioIncasso=m.importoIncasso||0;
+  m.importo=Math.round((vecchioFondo-val)*100)/100;
+  m.importoIncasso=Math.round((vecchioIncasso+val)*100)/100;
+  m.edits=m.edits||[];
+  m.edits.push({ts:Date.now(),persona:'Quality Manager',campo:'importo/importoIncasso',vecchio:`fondo ${_receptionFmtEuro(vecchioFondo)} · incasso ${_receptionFmtEuro(vecchioIncasso)}`,nuovo:`fondo ${_receptionFmtEuro(m.importo)} · incasso ${_receptionFmtEuro(m.importoIncasso)}`,motivo:`Spostato ${_receptionFmtEuro(val)} dal fondo cassa all'incasso giornaliero${motivo?' — '+motivo:''}`});
+  _receptionSave('qm_cassa_fondo',_receptionFondo);
+  receptionRender();
 }
 function receptionEditIncasso(id){
   const m=_receptionIncasso.find(x=>x.id===id);if(!m)return;
@@ -9849,17 +9877,34 @@ function receptionRender(){
       const diffTag=(m.tipo==='conteggio'&&m.differenza)
         ?` <span style="font-size:10px;font-weight:700;color:${m.differenza<0?'var(--red)':'var(--green)'};">(${m.differenza>0?'+':''}${_receptionFmtEuro(m.differenza)} vs atteso ${_receptionFmtEuro(m.atteso)})</span>`
         :'';
+      const isBuono=m.tipo==='buono';
+      const importoIncasso=m.importoIncasso||0;
+      const amountCell=isBuono&&m.importo<=0?'—':sign+_receptionFmtEuro(m.importo)+editedTag+diffTag;
+      const incassoNote=isBuono&&importoIncasso>0?` <span style="font-size:10px;color:var(--text-dim);">(+ ${_receptionFmtEuro(importoIncasso)} da incasso)</span>`:'';
+      const spostaLink=isBuono&&m.importo>0?`<span onclick="receptionSpostaBuonoIncasso('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;margin-right:10px;">sposta a incasso</span>`:'';
       return`<tr style="border-bottom:1px solid var(--border-light);">
         <td style="padding:8px 10px;white-space:nowrap;">${_receptionFmtTs(m.ts)}</td>
         <td style="padding:8px 10px;">${RECEPTION_TIPO_LBL[m.tipo]||m.tipo}</td>
-        <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${sign}${_receptionFmtEuro(m.importo)}${editedTag}${diffTag}</td>
+        <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${amountCell}${incassoNote}</td>
         <td style="padding:8px 10px;">${m.persona||'—'}</td>
         <td style="padding:8px 10px;color:var(--text-dim);">${(m.motivazione||m.nota||'').replace(/</g,'&lt;')}</td>
-        <td style="padding:8px 10px;white-space:nowrap;">${m.tipo==='buono'?`<span onclick="receptionPrintBuono('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;margin-right:10px;">stampa</span>`:''}<span onclick="receptionEditFondo('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;">modifica</span></td>
+        <td style="padding:8px 10px;white-space:nowrap;">${isBuono?`<span onclick="receptionPrintBuono('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;margin-right:10px;">stampa</span>`:''}${spostaLink}<span onclick="receptionEditFondo('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;">modifica</span></td>
       </tr>`;
     }).join(''):'<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-dim);font-style:italic;">Nessun movimento.</td></tr>'}</tbody>
   </table></div>`;
 
+  const _tKey=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
+  const buoniIncassoOggi=_receptionFondo.filter(m=>{
+    if(m.tipo!=='buono'||!(m.importoIncasso>0))return false;
+    const d=new Date(m.ts);
+    return (d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'))===_tKey;
+  });
+  if(buoniIncassoOggi.length){
+    const totIncassoOggi=buoniIncassoOggi.reduce((s,m)=>s+m.importoIncasso,0);
+    h+=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:10px;padding:12px 14px;margin:20px 0 10px;font-size:var(--fs-xs);">
+      <b>Buoni spesa pagati oggi dall'incasso (${_receptionFmtEuro(totIncassoOggi)}):</b> ${buoniIncassoOggi.map(m=>_receptionFmtEuro(m.importoIncasso)+' — '+(m.motivazione||'').replace(/</g,'&lt;')).join(' · ')}
+    </div>`;
+  }
   h+=`<div style="font-size:var(--fs-sm);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:26px 0 10px;">Incasso Contante — storico consegne</div>`;
   h+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
     <thead><tr style="background:var(--surface2);"><th style="text-align:left;padding:8px 10px;">Data/ora</th><th style="text-align:left;padding:8px 10px;">Fascia</th><th style="text-align:right;padding:8px 10px;">Importo</th><th style="text-align:left;padding:8px 10px;">Consegna</th><th style="text-align:left;padding:8px 10px;">Riceve</th><th style="text-align:left;padding:8px 10px;">Nota</th><th></th></tr></thead>

@@ -753,7 +753,7 @@ Due chiavi KV, ciascuna un array JSON di movimenti:
 
 | Chiave | Contenuto |
 |--------|-----------|
-| `qm_cassa_fondo` | `{id, ts, tipo:'conteggio'\|'buono'\|'ripristino', importo, causale, persona, nota, edits:[]}` |
+| `qm_cassa_fondo` | `{id, ts, tipo:'conteggio'\|'buono'\|'ripristino', importo, importoIncasso, motivazione, persona, nota, edits:[]}` — `importo` = quota a carico del fondo cassa (letta da `fondoSaldo()`), `importoIncasso` = quota pagata dall'incasso giornaliero (non tocca il fondo), solo su `tipo:'buono'` |
 | `qm_cassa_incasso` | `{id, ts, fascia:'07'\|'15'\|'23', importo, consegnaDa, consegnaA, nota, edits:[]}` |
 
 Il saldo del fondo cassa **non è mai un campo modificabile a mano**: si calcola sempre a partire dall'**ultimo conteggio fisico registrato** (non sempre dai 100 ideali) + i buoni/ripristini avvenuti dopo (`fondoSaldo()` in `reception.html`, `_receptionFondoSaldo()` in `app.js` — stessa formula in entrambi i posti, tenerla allineata se cambia). Se non è mai stato fatto un conteggio, si parte dai 100 di default.
@@ -768,6 +768,22 @@ Il fondo non è un solo numero: è **contanti fisici + buoni spesa non ancora ri
 - `fondoBreakdown()` (`reception.html`) / `_receptionFondoBreakdown()` (`app.js` — stessa formula, tenerle allineate) calcolano separatamente i **buoni in essere**: ripartono dal campo `buoniSpesa` salvato sull'ultimo conteggio (0 se assente — conteggi vecchi restano "tutto contanti", nessuna migrazione dati necessaria), poi `+= buono.importo` e `-= ripristino.importo` per i movimenti successivi (un ripristino salda/rimborsa i buoni in essere). Ritornano `{contanti, buoni, saldo}` con `saldo = contanti + buoni` — è questo **saldo/totale**, non i soli contanti, il numero mostrato come "Fondo cassa attuale" e confrontato con `FONDO_TARGET` per il tag ✓/⚠.
 - Nel modal "Conta e conferma fondo cassa": il campo si chiama **"Contanti (€)"** (non più "Importo contato"), sotto compare in sola lettura "Buoni spesa in essere (€)" (dal breakdown corrente) e poi il **"Totale fondo cassa"** = contanti inseriti + buoni correnti. `saveConta()` salva `contanti`, `buoniSpesa` (istantanea, non cambia col solo conteggio) e usa `importo:contanti` (il campo che `fondoSaldo()` legge come base) — **non** `contanti+buoniSpesa`: se `importo` includesse anche i buoni, la formula dei contanti si gonfierebbe permanentemente del valore dei buoni ancora in essere. `atteso`/`differenza` restano confrontati **solo sui contanti** (mai sul totale), altrimenti un buono legittimo genererebbe una differenza fittizia.
 - Nella home (sia `reception.html` sia il pannello Compass) il numero grande "Fondo cassa attuale" mostra il totale, con sotto una riga di dettaglio "Contanti X · Buoni spesa in essere Y".
+
+### Buono pagato dall'incasso giornaliero, non dal fondo cassa
+
+Un buono spesa **non è sempre** prelevato dal fondo cassa: spesso viene pagato con la cassa dell'incasso giornaliero (i contanti del servizio, non ancora consegnati), e in quel caso **non deve** ridurre il fondo cassa — quei soldi non ci sono mai passati.
+
+Il modulo "Nuovo buono spesa" ha quindi **due campi importo**: "Importo prelevato da fondo cassa (€)" (`buono-importo`, invariato nell'id) e "Importo prelevato da incasso giornaliero (€)" (`buono-importo-incasso`, nuovo) — almeno uno dei due dev'essere > 0. Il movimento salvato ha `importo` (quota fondo cassa — **stesso campo di sempre**, letto da `fondoSaldo()`/`fondoBreakdown()` senza alcuna modifica a quelle formule) e `importoIncasso` (quota incasso, nuovo campo, ignorata dai calcoli del fondo). Un buono può quindi essere: tutto da fondo, tutto da incasso (`importo:0`), o misto.
+
+Nello storico del fondo cassa, un buono con `importo<=0` mostra "—" invece di "-€0,00" (fuorviante), con una nota "(+ X da incasso)" quando `importoIncasso>0`. Nello stampato A4 l'importo totale resta `importo+importoIncasso`, con una riga extra "di cui da fondo cassa X · da incasso giornaliero Y" solo quando entrambe le quote sono valorizzate.
+
+Nel tab Incasso Contante (sia `reception.html` sia il pannello Compass) un riquadro informativo elenca i buoni di oggi pagati dall'incasso (`renderIncassoBuoniInfo()` in `reception.html`, blocco equivalente dentro `receptionRender()` in `app.js`) — **derivato da `_fondo`/`_receptionFondo`, nessuna nuova chiave KV**: serve solo a spiegare perché il contante consegnato è più basso del previsto.
+
+### "Sposta a incasso" — come si ripristina il fondo senza un ripristino amministrativo
+
+Caso frequente: un buono già registrato a carico del fondo cassa viene in un secondo momento **riclassificato** come pagato dall'incasso giornaliero (es. l'amministrazione decide di far assorbire quella spesa dall'incasso), così il fondo cassa torna (in tutto o in parte) al suo valore senza che l'amministrazione debba fare un vero ripristino in contanti.
+
+`spostaBuonoAIncasso(id)` in `reception.html` / `receptionSpostaBuonoIncasso(id)` in `app.js` (stessa logica): chiede quanto spostare (max = `importo` corrente del buono), sposta quella cifra da `importo` a `importoIncasso` sullo stesso movimento (non crea un nuovo movimento), e registra un `edits[]` con vecchio/nuovo valore di entrambi i campi e motivo — mai una correzione silenziosa. Poiché `fondoSaldo()`/`fondoBreakdown()` leggono solo `m.importo` per i buoni, ridurre `importo` fa automaticamente risalire i "contanti" stimati e scendere i "buoni in essere" della stessa cifra, senza toccare il totale. Link "sposta a incasso" visibile solo sulle righe `tipo:'buono'` con `importo>0` (niente da spostare altrimenti).
 
 ### Modifica con storico, non sovrascrittura silenziosa
 
