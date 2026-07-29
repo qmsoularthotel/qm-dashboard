@@ -201,6 +201,7 @@ tr:last-child td{border-bottom:none;}
     <div class="field"><label>Chi preleva</label><select id="buono-persona"></select></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('ovl-buono')">Annulla</button>
+      <button class="btn btn-secondary" onclick="saveBuono(true)">🖨️ Salva e stampa</button>
       <button class="btn btn-primary" onclick="saveBuono()">Salva</button>
     </div>
   </div>
@@ -345,16 +346,18 @@ function saveConta(){
   closeModal('ovl-conta');
   renderFondo();
 }
-function saveBuono(){
+function saveBuono(andPrint){
   const importo=parseFloat(document.getElementById('buono-importo').value);
   const motivazione=document.getElementById('buono-motivazione').value.trim();
   const persona=document.getElementById('buono-persona').value;
   if(isNaN(importo)||importo<=0){alert('Inserisci un importo valido.');return;}
   if(!motivazione){alert('La motivazione è obbligatoria.');return;}
-  _fondo.push({id:uid(),ts:Date.now(),tipo:'buono',importo,motivazione,persona,edits:[]});
+  const m={id:uid(),ts:Date.now(),tipo:'buono',importo,motivazione,persona,edits:[]};
+  _fondo.push(m);
   kvSetLocal(KEY_FONDO,_fondo);
   closeModal('ovl-buono');
   renderFondo();
+  if(andPrint===true)printBuono(m.id);
 }
 function fmtTs(ts){
   const d=new Date(ts);
