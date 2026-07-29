@@ -50,16 +50,16 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
 .status-tag.warn{background:var(--amber-bg);color:var(--amber);}
 .status-tag.late{background:var(--red-bg);color:var(--red);}
 
-.action-row{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;}
-.btn{padding:16px 22px;border:none;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;
-  display:flex;align-items:center;gap:10px;}
+.action-row{display:flex;gap:10px;margin-bottom:24px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px;}
+.btn{padding:13px 16px;border:none;border-radius:10px;font-size:.86rem;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0;}
 .btn-primary{background:var(--navy);color:#fff;}
 .btn-secondary{background:#fff;border:1.5px solid var(--border);color:var(--text);}
 .btn:active{opacity:.85;}
-.btn-badge{width:26px;height:26px;border-radius:50%;background:var(--navy);border:1.5px solid var(--gold,#c9952f);
+.btn-badge{width:22px;height:22px;border-radius:50%;background:var(--navy);border:1.5px solid var(--gold,#c9952f);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .btn-secondary .btn-badge{background:var(--navy);}
-.btn-badge svg{width:14px;height:14px;}
+.btn-badge svg{width:12px;height:12px;}
 
 h2{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:26px 0 12px;}
 
