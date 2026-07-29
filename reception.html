@@ -187,6 +187,7 @@ tr:last-child td{border-bottom:none;}
     <div class="action-row">
       <button class="btn btn-primary" onclick="openContaModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M13.5 3.5C9 3.5 5.3 6.7 4.3 11H2v2h2c0 .3 0 .7.1 1H2v2h2.6c1.2 4 4.8 6.5 9 6.5 1.9 0 3.7-.6 5.1-1.6l-1.3-1.7c-1.1.7-2.4 1.1-3.8 1.1-3 0-5.5-1.7-6.6-4.3h6.4v-2H6.5a7 7 0 0 1 0-1H15v-2H6.7c1.1-2.6 3.6-4.4 6.6-4.4 1.4 0 2.7.4 3.8 1.1l1.3-1.7c-1.4-1-3.2-1.6-5-1.6z"/></svg></span> Conta e conferma fondo cassa</button>
       <button class="btn btn-secondary" onclick="openBuonoModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg></span> Nuovo buono spesa</button>
+      <button class="btn btn-secondary" onclick="openRipristinoModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span> Aggiungi al fondo cassa</button>
     </div>
     <h2>Storico movimenti</h2>
     <table>
@@ -243,6 +244,19 @@ tr:last-child td{border-bottom:none;}
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal('ovl-buono')">Annulla</button>
       <button class="btn btn-primary" onclick="saveBuono()">🖨️ Salva e stampa</button>
+    </div>
+  </div>
+</div>
+
+<div class="ovl" id="ovl-ripristino">
+  <div class="modal">
+    <h3>Aggiungi al fondo cassa</h3>
+    <div class="field"><label>Importo (€)</label><input type="number" id="ripristino-importo" placeholder="0" step="0.01"></div>
+    <div class="field"><label>Operatore di reception</label><select id="ripristino-persona"></select></div>
+    <div class="field"><label>Nota (opzionale)</label><textarea id="ripristino-nota" placeholder="es. ripristino amministrazione, arrotondamento..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('ovl-ripristino')">Annulla</button>
+      <button class="btn btn-primary" onclick="saveRipristino()">Salva</button>
     </div>
   </div>
 </div>
@@ -318,7 +332,7 @@ function fillSelect(id,opts){
   const el=document.getElementById(id);
   el.innerHTML=opts.map(o=>`<option value="${o}">${o}</option>`).join('');
 }
-[['conta-persona'],['buono-persona'],['incasso-da'],['incasso-a'],['edit-persona']].forEach(([id])=>fillSelect(id,STAFF));
+[['conta-persona'],['buono-persona'],['incasso-da'],['incasso-a'],['edit-persona'],['ripristino-persona']].forEach(([id])=>fillSelect(id,STAFF));
 
 document.getElementById('incasso-fascia-chips').innerHTML=FASCE.map(([v,l],i)=>
   `<span class="chip${i===0?' sel':''}" data-v="${v}" onclick="selChip(this)">${l}</span>`).join('');
@@ -341,6 +355,7 @@ function openContaModal(){
   openModal('ovl-conta');
 }
 function openBuonoModal(){document.getElementById('buono-importo').value='';document.getElementById('buono-importo-incasso').value='';document.getElementById('buono-motivazione').value='';openModal('ovl-buono');}
+function openRipristinoModal(){document.getElementById('ripristino-importo').value='';document.getElementById('ripristino-nota').value='';openModal('ovl-ripristino');}
 function openIncassoModal(){document.getElementById('incasso-importo').value='';document.getElementById('incasso-nota').value='';openModal('ovl-incasso');}
 
 // ── STORAGE ──────────────────────────
@@ -436,6 +451,19 @@ function saveBuono(){
   renderIncasso();
   printBuono(m.id);
 }
+// Aggiunge fondi al fondo cassa (es. ripristino dall'amministrazione, arrotondamento) —
+// stesso tipo 'ripristino' già usato da fondoSaldo()/fondoBreakdown(), nessuna nuova
+// formula: un ripristino aumenta i contanti e riduce i buoni spesa in essere.
+function saveRipristino(){
+  const importo=parseFloat(document.getElementById('ripristino-importo').value);
+  const persona=document.getElementById('ripristino-persona').value;
+  const nota=document.getElementById('ripristino-nota').value.trim();
+  if(isNaN(importo)||importo<=0){alert('Inserisci un importo valido.');return;}
+  _fondo.push({id:uid(),ts:Date.now(),tipo:'ripristino',importo,persona,nota,edits:[]});
+  kvSetLocal(KEY_FONDO,_fondo);
+  closeModal('ovl-ripristino');
+  renderFondo();
+}
 // Sposta (in tutto o in parte) la quota di un buono già registrato dal fondo cassa
 // all'incasso giornaliero — è il modo in cui in pratica si "ripristina" il fondo senza
 // un vero e proprio ripristino amministrativo: si riclassifica una spesa già fatta come
@@ -465,7 +493,7 @@ function fmtTs(ts){
   const d=new Date(ts);
   return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
-function fmtEuro(n){return (n<0?'-':'')+'€'+Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtEuro(n){return (n<0?'-':'')+'€ '+Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
 const TIPO_LBL={conteggio:'Conteggio',buono:'Buono spesa',ripristino:'Ripristino'};
 // Icone badge Tipo — stesse icone dei bottoni azione (euro pieno per conteggio, modulo/foglio
 // per buono spesa), niente più emoji.
@@ -477,6 +505,18 @@ const TIPO_ICON={conteggio:ICON_CONTEGGIO,buono:ICON_BUONO,ripristino:ICON_RIPRI
 const ICON_STAMPA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M6 17v4h12v-4"/></svg>';
 const ICON_SPOSTA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12M15 3l4 4-4 4"/><path d="M17 17H5M9 21l-4-4 4-4"/></svg>';
 const ICON_CORREGGI='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>';
+const ICON_CANCELLA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/></svg>';
+// Elimina un movimento (fondo o incasso): rimozione definitiva, non un edits[] — riservata
+// a correggere voci sbagliate per errore (es. doppioni, prove) con conferma esplicita.
+function cancellaMovimento(key,id){
+  const list=key===KEY_FONDO?_fondo:_incasso;
+  const idx=list.findIndex(x=>x.id===id);
+  if(idx===-1)return;
+  if(!confirm('Eliminare definitivamente questo movimento? Non è più recuperabile.'))return;
+  list.splice(idx,1);
+  kvSetLocal(key,list);
+  if(key===KEY_FONDO)renderFondo();else renderIncasso();
+}
 
 function renderFondo(){
   const bd=fondoBreakdown();
@@ -517,7 +557,7 @@ function renderFondo(){
       <td class="mono">${amountCell}${incassoNote}</td>
       <td>${m.persona||'—'}</td>
       <td>${(m.motivazione||m.nota||'').replace(/</g,'&lt;')}</td>
-      <td><div class="act-row">${printBtn}${spostaBtn}<button class="act-btn" data-tip="Correggi" onclick="openEdit('${KEY_FONDO}','${m.id}')">${ICON_CORREGGI}</button></div></td>
+      <td><div class="act-row">${printBtn}${spostaBtn}<button class="act-btn" data-tip="Correggi" onclick="openEdit('${KEY_FONDO}','${m.id}')">${ICON_CORREGGI}</button><button class="act-btn" data-tip="Elimina" onclick="cancellaMovimento('${KEY_FONDO}','${m.id}')">${ICON_CANCELLA}</button></div></td>
     </tr>`;
   }).join(''):'<tr><td colspan="6" class="empty-row">Nessun movimento registrato.</td></tr>';
 }
@@ -650,7 +690,7 @@ function renderIncasso(){
       <td>${m.consegnaDa||'—'}</td>
       <td>${m.consegnaA||'—'}</td>
       <td>${(m.nota||'').replace(/</g,'&lt;')}</td>
-      <td><div class="act-row"><button class="act-btn" data-tip="Correggi" onclick="openEdit('${KEY_INCASSO}','${m.id}')">${ICON_CORREGGI}</button></div></td>
+      <td><div class="act-row"><button class="act-btn" data-tip="Correggi" onclick="openEdit('${KEY_INCASSO}','${m.id}')">${ICON_CORREGGI}</button><button class="act-btn" data-tip="Elimina" onclick="cancellaMovimento('${KEY_INCASSO}','${m.id}')">${ICON_CANCELLA}</button></div></td>
     </tr>`;
   }).join(''):'<tr><td colspan="7" class="empty-row">Nessuna consegna registrata.</td></tr>';
 }

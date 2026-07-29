@@ -9718,7 +9718,7 @@ function _receptionFondoBreakdown(){
   return{contanti,buoni,saldo:contanti+buoni};
 }
 function _receptionFmtTs(ts){const d=new Date(ts);return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
-function _receptionFmtEuro(n){return(n<0?'-':'')+'€'+Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function _receptionFmtEuro(n){return(n<0?'-':'')+'€ '+Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
 const RECEPTION_TIPO_LBL={conteggio:'Conteggio',buono:'Buono spesa',ripristino:'Ripristino'};
 // Badge Tipo nello storico — stesse icone dei bottoni azione di reception.html, niente più emoji.
 const RECEPTION_ICON_CONTEGGIO='<svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><path d="M13.5 3.5C9 3.5 5.3 6.7 4.3 11H2v2h2c0 .3 0 .7.1 1H2v2h2.6c1.2 4 4.8 6.5 9 6.5 1.9 0 3.7-.6 5.1-1.6l-1.3-1.7c-1.1.7-2.4 1.1-3.8 1.1-3 0-5.5-1.7-6.6-4.3h6.4v-2H6.5a7 7 0 0 1 0-1H15v-2H6.7c1.1-2.6 3.6-4.4 6.6-4.4 1.4 0 2.7.4 3.8 1.1l1.3-1.7c-1.4-1-3.2-1.6-5-1.6z"/></svg>';
@@ -9735,6 +9735,25 @@ function _receptionTipoCell(tipo){
 const RECEPTION_ICON_STAMPA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M6 17v4h12v-4"/></svg>';
 const RECEPTION_ICON_SPOSTA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M7 7h12M15 3l4 4-4 4"/><path d="M17 17H5M9 21l-4-4 4-4"/></svg>';
 const RECEPTION_ICON_CORREGGI='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>';
+const RECEPTION_ICON_CANCELLA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/></svg>';
+// Elimina un movimento (fondo o incasso): rimozione definitiva, non un edits[] — riservata
+// a correggere voci sbagliate per errore. Stessa logica di cancellaMovimento() in reception.html.
+function receptionDeleteFondo(id){
+  const idx=_receptionFondo.findIndex(x=>x.id===id);
+  if(idx===-1)return;
+  if(!confirm('Eliminare definitivamente questo movimento? Non è più recuperabile.'))return;
+  _receptionFondo.splice(idx,1);
+  _receptionSave('qm_cassa_fondo',_receptionFondo);
+  receptionRender();
+}
+function receptionDeleteIncasso(id){
+  const idx=_receptionIncasso.findIndex(x=>x.id===id);
+  if(idx===-1)return;
+  if(!confirm('Eliminare definitivamente questo movimento? Non è più recuperabile.'))return;
+  _receptionIncasso.splice(idx,1);
+  _receptionSave('qm_cassa_incasso',_receptionIncasso);
+  receptionRender();
+}
 function _receptionActBtn(icon,tip,onclick){
   return `<button onclick="${onclick}" class="rc-act-btn" data-tip="${tip}">${icon}</button>`;
 }
@@ -9906,7 +9925,7 @@ function receptionRender(){
         <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${amountCell}${incassoNote}</td>
         <td style="padding:8px 10px;">${m.persona||'—'}</td>
         <td style="padding:8px 10px;color:var(--text-dim);">${(m.motivazione||m.nota||'').replace(/</g,'&lt;')}</td>
-        <td style="padding:8px 10px;white-space:nowrap;">${isBuono?_receptionActBtn(RECEPTION_ICON_STAMPA,'Stampa',`receptionPrintBuono('${m.id}')`):''}${spostaLink}${_receptionActBtn(RECEPTION_ICON_CORREGGI,'Correggi',`receptionEditFondo('${m.id}')`)}</td>
+        <td style="padding:8px 10px;white-space:nowrap;">${isBuono?_receptionActBtn(RECEPTION_ICON_STAMPA,'Stampa',`receptionPrintBuono('${m.id}')`):''}${spostaLink}${_receptionActBtn(RECEPTION_ICON_CORREGGI,'Correggi',`receptionEditFondo('${m.id}')`)}${_receptionActBtn(RECEPTION_ICON_CANCELLA,'Elimina',`receptionDeleteFondo('${m.id}')`)}</td>
       </tr>`;
     }).join(''):'<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-dim);font-style:italic;">Nessun movimento.</td></tr>'}</tbody>
   </table></div>`;
@@ -9935,7 +9954,7 @@ function receptionRender(){
         <td style="padding:8px 10px;">${m.consegnaDa||'—'}</td>
         <td style="padding:8px 10px;">${m.consegnaA||'—'}</td>
         <td style="padding:8px 10px;color:var(--text-dim);">${(m.nota||'').replace(/</g,'&lt;')}</td>
-        <td style="padding:8px 10px;">${_receptionActBtn(RECEPTION_ICON_CORREGGI,'Correggi',`receptionEditIncasso('${m.id}')`)}</td>
+        <td style="padding:8px 10px;">${_receptionActBtn(RECEPTION_ICON_CORREGGI,'Correggi',`receptionEditIncasso('${m.id}')`)}${_receptionActBtn(RECEPTION_ICON_CANCELLA,'Elimina',`receptionDeleteIncasso('${m.id}')`)}</td>
       </tr>`;
     }).join(''):'<tr><td colspan="7" style="padding:16px;text-align:center;color:var(--text-dim);font-style:italic;">Nessuna consegna registrata.</td></tr>'}</tbody>
   </table></div>`;
