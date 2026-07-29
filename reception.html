@@ -308,9 +308,17 @@ let _fondo=[],_incasso=[];
 function uid(){return Date.now()+'_'+Math.random().toString(36).slice(2,8);}
 
 // ── FONDO CASSA ──────────────────────
+// Il saldo riparte dall'ULTIMO conteggio fisico (non sempre dai 100 ideali): chi conta
+// alla consegna trova quello che c'è davvero, anche se non torna e nessuno sa spiegare
+// perché — va comunque accettato, ed è quella la base reale su cui contare i buoni
+// successivi. Se non è mai stato fatto un conteggio, si parte dai 100 di default.
 function fondoSaldo(){
-  let s=FONDO_TARGET;
-  _fondo.forEach(m=>{
+  const sorted=[..._fondo].sort((a,b)=>a.ts-b.ts);
+  let base=FONDO_TARGET,baseTs=-Infinity;
+  sorted.forEach(m=>{if(m.tipo==='conteggio'){base=m.importo;baseTs=m.ts;}});
+  let s=base;
+  sorted.forEach(m=>{
+    if(m.ts<=baseTs)return; // già dentro il conteggio più recente
     if(m.tipo==='buono')s-=m.importo;
     if(m.tipo==='ripristino')s+=m.importo;
   });
@@ -321,7 +329,11 @@ function saveConta(){
   const persona=document.getElementById('conta-persona').value;
   const nota=document.getElementById('conta-nota').value.trim();
   if(isNaN(importo)){alert('Inserisci un importo valido.');return;}
-  _fondo.push({id:uid(),ts:Date.now(),tipo:'conteggio',importo,persona,nota,edits:[]});
+  // Differenza rispetto a quanto ci si aspettava PRIMA di questo conteggio — resta
+  // visibile nello storico (spiegata o no), invece di sparire nel nuovo saldo.
+  const atteso=fondoSaldo();
+  const differenza=Math.round((importo-atteso)*100)/100;
+  _fondo.push({id:uid(),ts:Date.now(),tipo:'conteggio',importo,atteso,differenza,persona,nota,edits:[]});
   kvSetLocal(KEY_FONDO,_fondo);
   closeModal('ovl-conta');
   renderFondo();
@@ -357,10 +369,15 @@ function renderFondo(){
   document.getElementById('fondo-tbody').innerHTML=rows.length?rows.map(m=>{
     const editedTag=m.edits&&m.edits.length?`<span class="edited-tag">(corretto ${m.edits.length}×)</span>`:'';
     const sign=m.tipo==='buono'?'-':(m.tipo==='ripristino'?'+':'');
+    // Differenza del conteggio rispetto all'atteso: resta visibile anche senza una
+    // spiegazione — non deve sparire nel saldo, solo essere segnalata.
+    const diffTag=(m.tipo==='conteggio'&&m.differenza)
+      ?`<span style="color:${m.differenza<0?'var(--red)':'var(--green)'};font-weight:700;font-size:11px;margin-left:6px;">(${m.differenza>0?'+':''}${fmtEuro(m.differenza)} vs atteso ${fmtEuro(m.atteso)})</span>`
+      :'';
     return`<tr>
       <td class="mono">${fmtTs(m.ts)}</td>
       <td>${TIPO_LBL[m.tipo]||m.tipo}${m.causale?' · '+m.causale:''}</td>
-      <td class="mono">${sign}${fmtEuro(m.importo)}${editedTag}</td>
+      <td class="mono">${sign}${fmtEuro(m.importo)}${editedTag}${diffTag}</td>
       <td>${m.persona||'—'}</td>
       <td>${(m.nota||'').replace(/</g,'&lt;')}</td>
       <td><button class="edit-link" onclick="openEdit('${KEY_FONDO}','${m.id}')">correggi</button></td>

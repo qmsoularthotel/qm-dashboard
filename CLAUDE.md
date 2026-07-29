@@ -756,7 +756,9 @@ Due chiavi KV, ciascuna un array JSON di movimenti:
 | `qm_cassa_fondo` | `{id, ts, tipo:'conteggio'\|'buono'\|'ripristino', importo, causale, persona, nota, edits:[]}` |
 | `qm_cassa_incasso` | `{id, ts, fascia:'07'\|'15'\|'23', importo, consegnaDa, consegnaA, nota, edits:[]}` |
 
-Il saldo del fondo cassa **non è mai un campo modificabile a mano**: si calcola sempre `100 + Σripristini - Σbuoni` (`fondoSaldo()` in `reception.html`, `_receptionFondoSaldo()` in `app.js` — stessa formula in entrambi i posti, tenerla allineata se cambia). Il "conteggio" è solo una verifica — non altera il saldo — così una discrepanza resta visibile invece di sparire silenziosamente.
+Il saldo del fondo cassa **non è mai un campo modificabile a mano**: si calcola sempre a partire dall'**ultimo conteggio fisico registrato** (non sempre dai 100 ideali) + i buoni/ripristini avvenuti dopo (`fondoSaldo()` in `reception.html`, `_receptionFondoSaldo()` in `app.js` — stessa formula in entrambi i posti, tenerla allineata se cambia). Se non è mai stato fatto un conteggio, si parte dai 100 di default.
+
+Il conteggio a inizio turno spesso non torna (es. 98€ invece di 100€) e **nessuno sa spiegare perché** — va comunque accettato: chi arriva in turno non può bloccarsi in attesa di una spiegazione. Ogni conteggio registra `atteso` (il saldo calcolato subito prima) e `differenza` (`importo - atteso`): la discrepanza resta sempre visibile nello storico, spiegata o no, ma **diventa la nuova base reale** su cui contare i buoni successivi — altrimenti il saldo calcolato diverge subito dalla cassa fisica (es. contati 98€, buono da 5€: il saldo dev'essere 93€, non 95€ come sarebbe partendo sempre dai 100 ideali).
 
 ### Modifica con storico, non sovrascrittura silenziosa
 

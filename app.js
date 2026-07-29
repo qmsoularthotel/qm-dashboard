@@ -9686,11 +9686,20 @@ function _receptionSave(key,list){
   try{localStorage.setItem(key,JSON.stringify(list));}catch(e){}
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value:JSON.stringify(list)})}).catch(()=>{});
 }
-// Saldo = 100 + ripristini - buoni spesa. Il "conteggio" è solo una verifica, non
-// modifica il saldo — se non torna, resta lì come discrepanza da vedere nello storico.
+// Il saldo riparte dall'ULTIMO conteggio fisico, non sempre dai 100 ideali: se alla
+// consegna si contano 98€ senza una spiegazione, quella resta comunque la base reale su
+// cui contare i buoni successivi — altrimenti il saldo calcolato diverge subito dalla
+// cassa vera. Stessa formula di reception.html (fondoSaldo()): tenerle allineate.
 function _receptionFondoSaldo(){
-  let s=RECEPTION_FONDO_TARGET;
-  _receptionFondo.forEach(m=>{if(m.tipo==='buono')s-=m.importo;if(m.tipo==='ripristino')s+=m.importo;});
+  const sorted=[..._receptionFondo].sort((a,b)=>a.ts-b.ts);
+  let base=RECEPTION_FONDO_TARGET,baseTs=-Infinity;
+  sorted.forEach(m=>{if(m.tipo==='conteggio'){base=m.importo;baseTs=m.ts;}});
+  let s=base;
+  sorted.forEach(m=>{
+    if(m.ts<=baseTs)return;
+    if(m.tipo==='buono')s-=m.importo;
+    if(m.tipo==='ripristino')s+=m.importo;
+  });
   return s;
 }
 function _receptionFmtTs(ts){const d=new Date(ts);return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'})+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
@@ -9756,10 +9765,15 @@ function receptionRender(){
     <tbody>${fondoRows.length?fondoRows.map(m=>{
       const sign=m.tipo==='buono'?'-':(m.tipo==='ripristino'?'+':'');
       const editedTag=m.edits&&m.edits.length?` <span style="font-size:10px;color:var(--text-dim);font-style:italic;">(corretto ${m.edits.length}×)</span>`:'';
+      // Differenza del conteggio vs il saldo atteso — visibile anche senza spiegazione,
+      // non deve sparire nel nuovo saldo (vedi _receptionFondoSaldo).
+      const diffTag=(m.tipo==='conteggio'&&m.differenza)
+        ?` <span style="font-size:10px;font-weight:700;color:${m.differenza<0?'var(--red)':'var(--green)'};">(${m.differenza>0?'+':''}${_receptionFmtEuro(m.differenza)} vs atteso ${_receptionFmtEuro(m.atteso)})</span>`
+        :'';
       return`<tr style="border-bottom:1px solid var(--border-light);">
         <td style="padding:8px 10px;white-space:nowrap;">${_receptionFmtTs(m.ts)}</td>
         <td style="padding:8px 10px;">${RECEPTION_TIPO_LBL[m.tipo]||m.tipo}${m.causale?' · '+m.causale:''}</td>
-        <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${sign}${_receptionFmtEuro(m.importo)}${editedTag}</td>
+        <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${sign}${_receptionFmtEuro(m.importo)}${editedTag}${diffTag}</td>
         <td style="padding:8px 10px;">${m.persona||'—'}</td>
         <td style="padding:8px 10px;color:var(--text-dim);">${(m.nota||'').replace(/</g,'&lt;')}</td>
         <td style="padding:8px 10px;"><span onclick="receptionEditFondo('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;">modifica</span></td>
