@@ -731,7 +731,7 @@ App standalone **desktop** (non mobile-first: usata sui PC di reception, non su 
 - **Fondo Cassa**: fondo fisso da €100, contato a ogni cambio turno, temporaneamente ridotto dai buoni spesa e riportato a 100 dall'amministrazione.
 - **Incasso Contante**: cassa separata, consegnata a 3 fasce fisse (07:00 / 15:00 / 23:00), nessun legame col fondo cassa.
 
-I receptionist operano solo su questa app (non accedono a Compass regolarmente — Compass resta un pannello di controllo per il QM). La voce di menu **"Reception"** in Compass (Operativo Quotidiano, dopo Distribuzione Culligan → `view-reception`) legge lo stesso KV in sola lettura + **modifica libera di qualunque voce** per il QM.
+I receptionist operano solo su questa app (non accedono a Compass regolarmente — Compass resta un pannello di controllo per il QM). Sezione di menu dedicata **"Reception"** in Compass, voce **"Passaggi di Cassa"** (→ `view-reception`) — legge lo stesso KV in sola lettura + **modifica libera di qualunque voce** per il QM.
 
 ### Modello dati — registro di movimenti, mai un numero solo
 
@@ -754,7 +754,7 @@ Ogni voce è **sempre modificabile** (dalla reception i movimenti recenti, da Co
 - Stato sempre visibile in alto: saldo fondo cassa con tag "✓ in regola" / "mancano X€"; prossima consegna incasso con tag "✓ consegnata" / "⚠ non ancora consegnata" — pensato per restare aperta su schermo a reception, non per essere cercata quando serve.
 - `incassoStatus()` determina la fascia "dovuta" dall'ora corrente (07-15 → dovuta 07, 15-23 → dovuta 15, 23-07 → dovuta 23) e controlla se esiste già una consegna di quella fascia per la data odierna.
 - **Nessun "ripristino amministrazione"** in quest'app di proposito — è un'azione che tipicamente non fa il receptionist, resta disponibile solo su Compass (`receptionAddRipristino()`).
-- `STAFF` è una copia hardcoded di `DEPTS.fo.members` (stesso pattern di `ROOMS` in `controllo-mattino.html` — le app standalone non condividono variabili con `app.js`, tenerle allineate manualmente se cambia lo staff FO).
+- `STAFF` è una copia hardcoded di `DEPTS.fo.members` **ridotta**: esclude Imparato G., Barbosa D., Extra Night, Extra Angelica, Extra Benedetta (non gestiscono la cassa) — a differenza di `ROOMS` in `controllo-mattino.html`, qui l'elenco NON coincide col reparto FO completo di `app.js`. Tenerlo allineato manualmente solo per le persone che maneggiano davvero la cassa, non ad ogni cambio dello staff FO.
 - Stessa schermata di manutenzione delle altre app standalone (`qm_app_status`, chiave `cassa` — non ancora agganciata al Pannello App/toggle on-off: se serve, aggiungere `'cassa'` a `MINIAPP_KEYS` in `app.js` e una card nella vista Pannello App, stesso schema delle altre 5 app).
 
 ### Lato Compass (`app.js` §§ RECEPTION — CASSA, `index.html` `#view-reception`)
