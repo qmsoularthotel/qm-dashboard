@@ -9730,6 +9730,65 @@ function receptionAddRipristino(){
   _receptionSave('qm_cassa_fondo',_receptionFondo);
   receptionRender();
 }
+// Stampa A4 del buono spesa — stesso template semplice bianco/nero di reception.html
+// (poco toner, va all'amministrazione): "Riceve" resta sempre in bianco perché l'app
+// non cattura chi riceve materialmente il denaro, solo chi lo preleva.
+function _receptionBuonoPrintHTML(m){
+  const d=new Date(m.ts);
+  const dataStr=d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})+' · ore '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Buono Spesa</title>
+<style>
+:root{--text:#111;--dim:#555;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:var(--text);font-size:11pt;}
+@page{size:A4;margin:22mm;}
+.doc-hdr{border-bottom:1.5px solid #111;padding-bottom:14px;margin-bottom:26px;display:flex;justify-content:space-between;align-items:baseline;}
+.doc-hotel{font-size:12pt;font-weight:700;}
+.doc-title{font-size:15pt;font-weight:700;letter-spacing:.02em;text-align:right;}
+.doc-num{font-size:9pt;color:var(--dim);margin-top:2px;}
+.amount-row{display:flex;align-items:baseline;gap:10px;margin:8px 0 24px;padding-bottom:10px;border-bottom:1px solid #999;}
+.amount-lbl{font-size:8.5pt;text-transform:uppercase;letter-spacing:.04em;color:var(--dim);}
+.amount-val{font-size:20pt;font-weight:700;margin-left:auto;}
+.f{margin-bottom:16px;}
+.f-lbl{font-size:8.5pt;text-transform:uppercase;letter-spacing:.04em;color:var(--dim);margin-bottom:4px;}
+.f-val{font-size:12pt;border-bottom:1px solid #999;padding-bottom:5px;min-height:18px;}
+.f-val.blank{color:#bbb;font-size:10pt;font-style:italic;}
+.row{display:flex;gap:30px;margin-bottom:26px;}
+.row .f{flex:1;margin-bottom:0;}
+.motiv-lbl{font-size:8.5pt;text-transform:uppercase;letter-spacing:.04em;color:var(--dim);margin-bottom:5px;}
+.motiv-val{font-size:11.5pt;line-height:1.7;border-bottom:1px solid #999;padding-bottom:6px;min-height:40px;margin-bottom:60px;}
+.sign-row{display:flex;gap:40px;padding-top:10px;}
+.sign-col{flex:1;}
+.sign-role{font-size:8.5pt;text-transform:uppercase;letter-spacing:.04em;color:var(--dim);margin-bottom:40px;}
+.sign-line{border-bottom:1px solid #111;}
+.sign-caption{font-size:8pt;color:var(--dim);margin-top:5px;}
+</style></head><body>
+  <div class="doc-hdr">
+    <div><div class="doc-hotel">SoulArt Hotel</div><div class="doc-num">Fondo Cassa — Reception</div></div>
+    <div><div class="doc-title">Buono Spesa</div><div class="doc-num">${dataStr}</div></div>
+  </div>
+  <div class="amount-row"><span class="amount-lbl">Importo prelevato</span><span class="amount-val">${_receptionFmtEuro(m.importo)}</span></div>
+  <div class="row">
+    <div class="f"><div class="f-lbl">Consegna (amministrativo)</div><div class="f-val">${esc(m.persona)||'&nbsp;'}</div></div>
+    <div class="f"><div class="f-lbl">Riceve</div><div class="f-val blank">&nbsp;</div></div>
+  </div>
+  <div class="motiv-lbl">Motivazione dell'uscita di cassa</div>
+  <div class="motiv-val">${esc(m.motivazione)}</div>
+  <div class="sign-row">
+    <div class="sign-col"><div class="sign-role">Firma amministrativo che consegna</div><div class="sign-line"></div><div class="sign-caption">${esc(m.persona)}</div></div>
+    <div class="sign-col"><div class="sign-role">Firma di chi riceve</div><div class="sign-line"></div><div class="sign-caption">&nbsp;</div></div>
+  </div>
+</body></html>`;
+}
+function receptionPrintBuono(id){
+  const m=_receptionFondo.find(x=>x.id===id);
+  if(!m){alert('Movimento non trovato.');return;}
+  const w=window.open('','_blank');
+  if(!w){alert('Abilita i popup per stampare.');return;}
+  w.document.write(_receptionBuonoPrintHTML(m));w.document.close();
+  setTimeout(()=>w.print(),400);
+}
 function receptionEditIncasso(id){
   const m=_receptionIncasso.find(x=>x.id===id);if(!m)return;
   const nuovo=prompt('Nuovo importo per la consegna delle '+(m.fascia||'')+':00 del '+_receptionFmtTs(m.ts)+' (attuale: '+m.importo+'):',m.importo);
@@ -9776,7 +9835,7 @@ function receptionRender(){
         <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${sign}${_receptionFmtEuro(m.importo)}${editedTag}${diffTag}</td>
         <td style="padding:8px 10px;">${m.persona||'—'}</td>
         <td style="padding:8px 10px;color:var(--text-dim);">${(m.motivazione||m.nota||'').replace(/</g,'&lt;')}</td>
-        <td style="padding:8px 10px;"><span onclick="receptionEditFondo('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;">modifica</span></td>
+        <td style="padding:8px 10px;white-space:nowrap;">${m.tipo==='buono'?`<span onclick="receptionPrintBuono('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;margin-right:10px;">stampa</span>`:''}<span onclick="receptionEditFondo('${m.id}')" style="color:var(--accent);font-weight:700;font-size:11px;cursor:pointer;">modifica</span></td>
       </tr>`;
     }).join(''):'<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-dim);font-style:italic;">Nessun movimento.</td></tr>'}</tbody>
   </table></div>`;
