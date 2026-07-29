@@ -123,7 +123,7 @@ body{min-height:100vh;overflow-x:hidden;}
    comune la fascia colorata risulterebbe più alta solo su quelle, rompendo l'allineamento
    della griglia. min-height copre anche la variante con badge; il contenuto più corto
    resta centrato invece di lasciare la fascia più bassa. */
-.rc-top{position:relative;padding:14px 4px 10px;background:var(--surface2);min-height:104px;display:flex;align-items:center;justify-content:center;}
+.rc-top{position:relative;padding:14px 9px 10px;background:var(--surface2);min-height:104px;display:flex;align-items:center;justify-content:center;}
 /* "Camera pronta" — solo Riconsegna, solo camere non in fermata (partenza/cambio).
    Tap sulla tile apre un foglio con due bottoni grandi (.ready-sheet) invece di un
    bersaglio piccolo da colpire in movimento; la scelta lascia una striscia fissa in
@@ -145,7 +145,7 @@ body{min-height:100vh;overflow-x:hidden;}
 .room-card.s-both .rc-top   {background:var(--navy-light);}
 .room-card.s-ok .rc-top     {background:var(--navy);}
 .room-card.s-consegnata .rc-top{background:var(--sage-4);}
-.rc-top-row{display:flex;align-items:center;gap:8px;}
+.rc-top-row{display:flex;align-items:center;gap:5px;}
 .rc-side-ico{flex-shrink:0;}
 /* Riconsegna: navy sempre — lo stato (da riconsegnare/consegnata) lo dice l'icona in
    filigrana dietro il numero, non il colore della tile. Scoperto solo qui (#s-redeliver)
@@ -740,7 +740,7 @@ function _renderHome(){
     // Bottiglia navy piena (non più blu, resta nella famiglia navy) più grande della
     // spunta perché è lo stato che richiede un'azione — deve saltare all'occhio di più.
     const sideIcon=(st==='bottle'||st==='both')
-      ?`<svg class="rc-side-ico" viewBox="0 0 24 24" width="48" height="48" fill="var(--navy)"><path d="M9 2h6M9 2v3.2c0 .6-.3 1.1-.8 1.5C7.1 7.6 6.5 9 6.5 10.5V20a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-9.5c0-1.5-.6-2.9-1.7-3.8-.5-.4-.8-.9-.8-1.5V2"/></svg>`
+      ?`<svg class="rc-side-ico" viewBox="0 0 24 24" width="52" height="52" fill="var(--navy)"><path d="M9 2h6M9 2v3.2c0 .6-.3 1.1-.8 1.5C7.1 7.6 6.5 9 6.5 10.5V20a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-9.5c0-1.5-.6-2.9-1.7-3.8-.5-.4-.8-.9-.8-1.5V2"/></svg>`
       :st==='ok'
       ?`<svg class="rc-side-ico" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>`
       :'';
