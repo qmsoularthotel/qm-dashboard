@@ -14,10 +14,10 @@
   --red:#c62828; --red-bg:#ffebee; --red-border:#ef9a9a;
   --bg:#eef1f5; --surface:#f8f9fb; --surface2:#e8ecf1; --border:rgba(28,58,94,.12);
   --text:#0c1f33; --text-dim:#4a5568; --text-muted:#888;
-  --r:12px;
+  --r:8px;
 }
 *{box-sizing:border-box;}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;}
 #qm-maintenance-screen{display:none;position:fixed;inset:0;z-index:99999;background:#1A2E55;align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:20px;box-sizing:border-box;text-align:center;}
 
 .hdr{background:var(--navy);color:#fff;padding:16px 28px;display:flex;align-items:center;gap:14px;}
@@ -26,58 +26,62 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
 .hdr-right{margin-left:auto;font-size:.85rem;color:rgba(255,255,255,.75);}
 
 .tabs{display:flex;gap:6px;padding:16px 28px 0;background:var(--bg);}
-.tab-btn{padding:11px 22px;border:1px solid var(--border);border-bottom:none;border-radius:10px 10px 0 0;
-  background:var(--surface2);color:var(--text-dim);font-weight:700;font-size:.9rem;cursor:pointer;}
+.tab-btn{padding:11px 22px;border:1px solid var(--border);border-bottom:none;border-radius:6px 6px 0 0;
+  background:var(--surface2);color:var(--text-dim);font-weight:600;font-size:.9rem;cursor:pointer;}
 .tab-btn.active{background:#fff;color:var(--navy);border-color:var(--border);}
 
 .wrap{max-width:920px;margin:0 auto;padding:24px 28px 60px;}
 .panel{display:none;}
 .panel.active{display:block;}
 
+/* Card con bordo oro in cima, 4px — stessa firma di .panel/.kpi-card nel resto di Compass
+   (style.css), non un bordo sottile uguale su tutti i lati come prima. */
 .status-card{background:#fff;border-radius:var(--r);padding:22px 26px;margin-bottom:20px;
-  border:1.5px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,.04),0 3px 10px rgba(0,0,0,.05);
+  border:1px solid var(--border-light,var(--border));border-top:4px solid var(--gold);box-shadow:0 2px 8px rgba(0,0,0,.07);
   display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
-.status-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);}
-.status-val{font-size:2.3rem;font-weight:800;line-height:1.1;margin-top:4px;}
+.status-label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);}
+.status-val{font-size:2.2rem;font-weight:300;letter-spacing:-.02em;line-height:1.1;margin-top:4px;}
 .status-breakdown{display:flex;gap:18px;margin-top:8px;}
 .status-bd-item{font-size:.78rem;color:var(--text-dim);}
-.status-bd-item b{color:var(--text);font-variant-numeric:tabular-nums;}
-.f-readonly{background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:11px 12px;
-  font-size:.95rem;font-weight:700;color:var(--text-dim);}
-.f-total{color:var(--navy);font-size:1.2rem;}
-.status-tag{font-size:.85rem;font-weight:700;padding:6px 14px;border-radius:20px;}
+.status-bd-item b{color:var(--text);font-variant-numeric:tabular-nums;font-weight:600;}
+.f-readonly{background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;padding:11px 12px;
+  font-size:.95rem;font-weight:600;color:var(--text-dim);}
+.f-total{color:var(--navy);font-size:1.2rem;font-weight:600;}
+.status-tag{font-size:.82rem;font-weight:600;padding:6px 14px;border-radius:20px;}
 .status-tag.ok{background:var(--green-bg);color:var(--green);}
 .status-tag.warn{background:var(--amber-bg);color:var(--amber);}
 .status-tag.late{background:var(--red-bg);color:var(--red);}
 
 .action-row{display:flex;gap:10px;margin-bottom:24px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px;}
-.btn{padding:13px 16px;border:none;border-radius:10px;font-size:.86rem;font-weight:700;cursor:pointer;
-  display:flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0;}
+.btn{padding:12px 16px;border:none;border-radius:6px;font-size:.86rem;font-weight:600;letter-spacing:.2px;cursor:pointer;
+  display:flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0;transition:transform .15s,box-shadow .15s,background .15s;}
 .btn-primary{background:var(--navy);color:#fff;}
+.btn-primary:hover{background:#0c1f33;transform:translateY(-2px);box-shadow:0 4px 12px rgba(28,58,94,.25);}
 .btn-secondary{background:#fff;border:1.5px solid var(--border);color:var(--text);}
-.btn:active{opacity:.85;}
-.btn-badge{width:22px;height:22px;border-radius:50%;background:var(--navy);border:1.5px solid var(--gold,#c9952f);
+.btn-secondary:hover{border-color:var(--navy);color:var(--navy);transform:translateY(-2px);box-shadow:0 4px 12px rgba(28,58,94,.12);}
+.btn:active{transform:translateY(0);opacity:.9;}
+.btn-badge{width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,.18);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.btn-secondary .btn-badge{background:var(--navy);}
+.btn-secondary .btn-badge{background:var(--navy-bg);color:var(--navy);}
 .btn-badge svg{width:12px;height:12px;}
 
-h2{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:26px 0 12px;}
+h2{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:26px 0 12px;}
 
 table{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--r);overflow:hidden;
   border:1px solid var(--border);}
-th{text-align:left;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
-  color:var(--text-muted);padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);}
+th{text-align:left;font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--text-dim);padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);}
 td{padding:11px 14px;font-size:.88rem;border-bottom:1px solid var(--border);vertical-align:top;}
 tr:last-child td{border-bottom:none;}
 .mono{font-variant-numeric:tabular-nums;}
 .edited-tag{font-size:.65rem;color:var(--text-muted);font-style:italic;margin-left:6px;}
 .empty-row{color:var(--text-muted);font-style:italic;text-align:center;padding:22px;}
 
-/* Azioni riga storico — icone circolari stile Compass invece di link testuali che
-   si accatastavano su più righe (illeggibili in una colonna stretta). Didascalia in
-   bolla al passaggio del mouse (data-tip), non il tooltip nativo del browser. */
+/* Azioni riga storico — quadrati arrotondati (7px), stessa forma di .kpi-card-icon nel
+   resto di Compass — non più cerchi. Didascalia in bolla al passaggio del mouse
+   (data-tip), non il tooltip nativo del browser. */
 .act-row{display:flex;gap:6px;align-items:center;}
-.act-btn{position:relative;width:28px;height:28px;border-radius:50%;background:var(--navy-bg);border:1px solid var(--border);
+.act-btn{position:relative;width:28px;height:28px;border-radius:7px;background:var(--navy-bg);border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--navy);flex-shrink:0;
   transition:background .15s,color .15s;}
 .act-btn:hover{background:var(--navy);color:#fff;}
@@ -91,23 +95,24 @@ tr:last-child td{border-bottom:none;}
   opacity:0;pointer-events:none;transition:opacity .15s;z-index:30;}
 .act-btn:hover::after,.act-btn:hover::before{opacity:1;transform:translateX(-50%) translateY(0);}
 
-/* Badge Tipo nello storico — stesse icone dei bottoni azione, niente più emoji. */
+/* Badge Tipo nello storico — quadrato tinta navy/icona navy (stessa coppia di .kpi-card-icon
+   nel resto di Compass: sfondo tinto della categoria, non più cerchio pieno con anello oro). */
 .tipo-cell{display:flex;align-items:center;gap:8px;}
-.tipo-badge{width:22px;height:22px;border-radius:50%;background:var(--navy);border:1.5px solid var(--gold);
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
+.tipo-badge{width:22px;height:22px;border-radius:7px;background:var(--navy-bg);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--navy);}
 .tipo-badge svg{width:12px;height:12px;}
 
 /* Modal */
 .ovl{display:none;position:fixed;inset:0;background:rgba(12,31,51,.45);z-index:500;
   align-items:center;justify-content:center;padding:20px;}
 .ovl.open{display:flex;}
-.modal{background:#fff;border-radius:14px;padding:26px 28px;width:100%;max-width:440px;
+.modal{background:#fff;border-radius:8px;padding:26px 28px;width:100%;max-width:440px;
   box-shadow:0 10px 40px rgba(0,0,0,.25);}
-.modal h3{margin:0 0 18px;font-size:1.1rem;color:var(--navy);}
+.modal h3{margin:0 0 18px;font-size:1.1rem;font-weight:600;color:var(--navy);}
 .field{margin-bottom:16px;}
-.field label{display:block;font-size:.78rem;font-weight:700;color:var(--text-dim);margin-bottom:6px;}
+.field label{display:block;font-size:.78rem;font-weight:600;color:var(--text-dim);margin-bottom:6px;}
 .field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1.5px solid var(--border);
-  border-radius:8px;font-size:.95rem;font-family:inherit;color:var(--text);background:var(--surface);}
+  border-radius:6px;font-size:.95rem;font-family:inherit;color:var(--text);background:var(--surface);}
 .field textarea{resize:vertical;min-height:50px;}
 .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
 .chip{padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);
@@ -186,8 +191,8 @@ tr:last-child td{border-bottom:none;}
     </div>
     <div class="action-row">
       <button class="btn btn-primary" onclick="openContaModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M13.5 3.5C9 3.5 5.3 6.7 4.3 11H2v2h2c0 .3 0 .7.1 1H2v2h2.6c1.2 4 4.8 6.5 9 6.5 1.9 0 3.7-.6 5.1-1.6l-1.3-1.7c-1.1.7-2.4 1.1-3.8 1.1-3 0-5.5-1.7-6.6-4.3h6.4v-2H6.5a7 7 0 0 1 0-1H15v-2H6.7c1.1-2.6 3.6-4.4 6.6-4.4 1.4 0 2.7.4 3.8 1.1l1.3-1.7c-1.4-1-3.2-1.6-5-1.6z"/></svg></span> Conta e conferma fondo cassa</button>
-      <button class="btn btn-secondary" onclick="openBuonoModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg></span> Nuovo buono spesa</button>
-      <button class="btn btn-secondary" onclick="openRipristinoModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span> Aggiungi al fondo cassa</button>
+      <button class="btn btn-secondary" onclick="openBuonoModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg></span> Nuovo buono spesa</button>
+      <button class="btn btn-secondary" onclick="openRipristinoModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span> Aggiungi al fondo cassa</button>
     </div>
     <h2>Storico movimenti</h2>
     <table>
