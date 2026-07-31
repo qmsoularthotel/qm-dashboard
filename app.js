@@ -9900,26 +9900,29 @@ function receptionRender(){
   const fondoRows=[..._receptionFondo].sort((a,b)=>b.ts-a.ts).slice(0,80);
   const incassoRows=[..._receptionIncasso].sort((a,b)=>b.ts-a.ts).slice(0,80);
   const fasciaLbl={'07':'07:00','15':'15:00','23':'23:00'};
-  // Due numeri alla pari (contanti fisici / buoni spesa) invece di un unico totale
-  // grande: scrivere solo il totale era fuorviante, sembrava la cifra fisica in cassa
-  // quando invece include i buoni non ancora rimborsati. Stessa logica di reception.html.
-  let h=`<div style="margin-bottom:20px;">
-    <div style="display:inline-block;background:${saldoOk?'var(--green-bg)':'var(--amber-bg)'};border-radius:10px;padding:16px 18px;min-width:280px;">
-      <div style="display:flex;gap:28px;flex-wrap:wrap;">
-        <div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">Contanti in cassa</div>
-          <div style="font-size:24px;font-weight:300;letter-spacing:-.02em;margin-top:4px;color:var(--text);">${_receptionFmtEuro(bd.contanti)}</div>
-        </div>
-        <div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">Buoni spesa in essere</div>
-          <div style="font-size:24px;font-weight:300;letter-spacing:-.02em;margin-top:4px;color:var(--text);">${_receptionFmtEuro(bd.buoni)}</div>
-        </div>
-      </div>
-      <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:10px;">Totale fondo cassa: <b style="color:${saldoOk?'var(--green)':'var(--amber)'};">${_receptionFmtEuro(saldo)}</b></div>
-      ${!saldoOk?`<div style="font-size:var(--fs-xs);color:var(--amber);margin-top:4px;">mancano ${_receptionFmtEuro(RECEPTION_FONDO_TARGET-saldo)}</div>`:''}
-      <button onclick="receptionAddRipristino()" style="margin-top:10px;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;">🔄 Registra ripristino</button>
+  // Vere kpi-card di Compass (stesse classi .kpi-card/.kpi-card-icon/.kpi-label/.kpi-value
+  // di style.css, usate in Overview) invece di un pannello inventato per questa vista:
+  // Contanti e buoni alla pari, nessuno dei due "il" numero principale — scrivere solo
+  // il totale era fuorviante, sembrava la cifra fisica in cassa quando invece include
+  // i buoni non ancora rimborsati. Stessa logica di reception.html.
+  let h=`<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;margin-bottom:20px;align-items:stretch;max-width:640px;">
+    <div class="kpi-card blue">
+      <div class="kpi-card-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M13.5 3.5C9 3.5 5.3 6.7 4.3 11H2v2h2c0 .3 0 .7.1 1H2v2h2.6c1.2 4 4.8 6.5 9 6.5 1.9 0 3.7-.6 5.1-1.6l-1.3-1.7c-1.1.7-2.4 1.1-3.8 1.1-3 0-5.5-1.7-6.6-4.3h6.4v-2H6.5a7 7 0 0 1 0-1H15v-2H6.7c1.1-2.6 3.6-4.4 6.6-4.4 1.4 0 2.7.4 3.8 1.1l1.3-1.7c-1.4-1-3.2-1.6-5-1.6z"/></svg></div>
+      <div class="kpi-label">Contanti in cassa</div>
+      <div class="kpi-value">${_receptionFmtEuro(bd.contanti)}</div>
     </div>
-  </div>`;
+    <div class="kpi-card">
+      <div class="kpi-card-icon" style="background:var(--gold-bg);color:var(--gold);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg></div>
+      <div class="kpi-label">Buoni spesa in essere</div>
+      <div class="kpi-value">${_receptionFmtEuro(bd.buoni)}</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:16px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:150px;">
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Totale</div>
+      <div style="font-size:22px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums;">${_receptionFmtEuro(saldo)}</div>
+      <span style="font-size:var(--fs-xxs);font-weight:700;padding:4px 11px;border-radius:20px;background:${saldoOk?'var(--green-bg)':'var(--amber-bg)'};color:${saldoOk?'var(--green)':'var(--amber)'};">${saldoOk?'✓ in regola':'mancano '+_receptionFmtEuro(RECEPTION_FONDO_TARGET-saldo)}</span>
+    </div>
+  </div>
+  <button onclick="receptionAddRipristino()" style="margin-bottom:20px;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;">🔄 Registra ripristino</button>`;
 
   h+=`<div style="font-size:var(--fs-sm);font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 10px;">Fondo Cassa — storico movimenti</div>`;
   h+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
