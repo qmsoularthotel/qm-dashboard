@@ -70,6 +70,12 @@ body.dark .panel{box-shadow:none;}
 .uc-icon-img{width:32px;height:32px;border-radius:50%;object-fit:cover;display:block;}
 .nav-icon-img{width:38px;height:38px;border-radius:50%;object-fit:cover;display:block;flex-shrink:0;}
 .nav-icon:has(.nav-icon-img){width:38px;opacity:1;flex-shrink:0;}
+/* Badge SVG navy/oro per le voci menu ridisegnate in stile Compass — stesso ingombro
+   38px delle icone PNG accanto, cerchio pieno invece di foto. */
+.nav-icon-badge{width:38px;height:38px;border-radius:50%;background:var(--accent);border:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.nav-icon-badge svg{width:18px;height:18px;}
+.nav-icon:has(.nav-icon-badge){width:38px;opacity:1;flex-shrink:0;}
 .ov-icon{filter:contrast(1.15);}
 .topbar-kpi-chip img{filter:contrast(1.15);}
 .ov-bkf-grid{display:grid;grid-template-columns:1fr 2fr 1fr;gap:10px;margin-bottom:14px;align-items:stretch;}

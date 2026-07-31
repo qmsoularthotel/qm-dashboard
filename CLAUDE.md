@@ -232,6 +232,18 @@ I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStru
 
 ---
 
+## Icone Sidebar — badge SVG navy/oro (`.nav-icon-badge`)
+
+13 delle voci del menu principale usano un badge SVG inline (cerchio navy `var(--accent)`, anello oro `var(--gold)`, icona bianca stroke/fill 18px) al posto della foto PNG originale — stesso linguaggio visivo dei bottoni di Reception (`.btn-badge` in `reception.html`). Classe `.nav-icon-badge` in `style.css`, stesso ingombro 38px di `.nav-icon-img` così l'allineamento con le voci rimaste a icona PNG non cambia.
+
+**Voci convertite**: Overview (casa), Registration Cards (passaporto), Room Division (chiave), Distribuzione Culligan (goccia d'acqua), Breakfast Sheet (tazza), Operativa Housekeeping (scopa), Passaggi di Cassa (glifo € pieno — stessa icona del bottone "Conta e conferma fondo cassa"), Preferenze Turni (calendario con spunta), Turnazione Corrente (gruppo persone), Recensioni Booking (stella piena), Recensioni Expedia (stella outline), DVR (scudo), Inventari e Ordini (scatola).
+
+**Voci rimaste a icona PNG** (non convertite su richiesta): Spese Fornitori, Pannello App — se in futuro si convertono anche queste, riusare lo stesso pattern `<span class="nav-icon-badge"><svg>...</svg></span>` al posto di `<img class="nav-icon-img">`.
+
+Non c'è generazione di file immagine: sono tutti `<svg>` inline nel markup di `index.html`, nessun asset in `img/icons/` aggiunto o modificato — i PNG originali restano nella cartella ma non più referenziati da queste 13 voci.
+
+---
+
 ## Inventario Viste Obbligatorie (index.html)
 
 Tutte le view devono essere presenti. Verifica con:
