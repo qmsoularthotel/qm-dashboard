@@ -236,11 +236,13 @@ I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStru
 
 13 delle voci del menu principale usano un badge SVG inline (cerchio navy `var(--accent)`, anello oro `var(--gold)`, icona bianca stroke/fill 18px) al posto della foto PNG originale — stesso linguaggio visivo dei bottoni di Reception (`.btn-badge` in `reception.html`). Classe `.nav-icon-badge` in `style.css`, stesso ingombro 38px di `.nav-icon-img` così l'allineamento con le voci rimaste a icona PNG non cambia.
 
-**Voci convertite**: Overview (casa), Registration Cards (passaporto), Room Division (chiave), Distribuzione Culligan (goccia d'acqua), Breakfast Sheet (tazza), Operativa Housekeeping (scopa), Passaggi di Cassa (glifo € pieno — stessa icona del bottone "Conta e conferma fondo cassa"), Preferenze Turni (calendario con spunta), Turnazione Corrente (gruppo persone), Recensioni Booking (stella piena), Recensioni Expedia (stella outline), DVR (scudo), Inventari e Ordini (scatola).
+**Voci convertite**: Overview (casa), Registration Cards (passaporto), Room Division (chiave), Distribuzione Culligan (goccia d'acqua), Breakfast Sheet (tazza), Operativa Housekeeping (scopa), Passaggi di Cassa (glifo € pieno — stessa icona del bottone "Conta e conferma fondo cassa"), Preferenze Turni (calendario con spunta), Turnazione Corrente (gruppo persone), Recensioni Booking (stella piena), Recensioni Expedia (stella outline), DVR (scudo), Inventari e Ordini (scatola), Spese Fornitori (grafico a barre), Pannello App (griglia app).
 
-**Voci rimaste a icona PNG** (non convertite su richiesta): Spese Fornitori, Pannello App — se in futuro si convertono anche queste, riusare lo stesso pattern `<span class="nav-icon-badge"><svg>...</svg></span>` al posto di `<img class="nav-icon-img">`.
+Non c'è generazione di file immagine: sono tutti `<svg>` inline nel markup di `index.html`, nessun asset in `img/icons/` aggiunto o modificato — i PNG originali restano nella cartella ma non più referenziati da queste voci.
 
-Non c'è generazione di file immagine: sono tutti `<svg>` inline nel markup di `index.html`, nessun asset in `img/icons/` aggiunto o modificato — i PNG originali restano nella cartella ma non più referenziati da queste 13 voci.
+### Icone Upload Center — `.uc-icon-badge`
+
+Stesso trattamento applicato alle 4 card visibili dell'Upload Center in sidebar (`.uc-slot`): classe `.uc-icon-badge` in `style.css` (32px, stesso ingombro di `.uc-icon-img`) — Turno (griglia turni), Riepilogo Reception (campanello), Piano Settimanale (calendario settimana), Report pasti (posate). Le card nascoste (`uc-pul`, `uc-soul`, `uc-bout` — non più nel flusso upload da quando `HKP_DERIVE_FROM_PIANO=true`, vedi sezione "Upload quotidiani") restano con l'icona PNG originale, irraggiungibili comunque dall'interfaccia.
 
 ---
 

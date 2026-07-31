@@ -68,6 +68,11 @@ body.dark .panel{box-shadow:none;}
 .uc-feeds-line{font-size:10.5px;color:var(--text-muted);margin-bottom:8px;}
 .uc-icon{font-size:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-bottom:2px;}
 .uc-icon-img{width:32px;height:32px;border-radius:50%;object-fit:cover;display:block;}
+/* Badge SVG navy/oro per le card dell'Upload Center — stesso ingombro 32px di .uc-icon-img,
+   stesso linguaggio di .nav-icon-badge. */
+.uc-icon-badge{width:32px;height:32px;border-radius:50%;background:var(--accent);border:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.uc-icon-badge svg{width:15px;height:15px;}
 .nav-icon-img{width:38px;height:38px;border-radius:50%;object-fit:cover;display:block;flex-shrink:0;}
 .nav-icon:has(.nav-icon-img){width:38px;opacity:1;flex-shrink:0;}
 /* Badge SVG navy/oro per le voci menu ridisegnate in stile Compass — stesso ingombro
