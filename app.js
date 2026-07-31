@@ -8138,14 +8138,18 @@ function cmRender(state,key){
   const fillY=14+(107-fillH);
   // Bollicine dentro il liquido — clippate all'intersezione tra la sagoma della bottiglia
   // e il rettangolo del riempimento attuale (fillY/fillH), così restano sempre nella zona
-  // di liquido vera anche quando il livello sale/scende col progredire del giro.
-  const cmBubbles=Array.from({length:12},()=>{
+  // di liquido vera anche quando il livello sale/scende col progredire del giro. Ogni bolla
+  // risale fino alla superficie (distanza = cy-fillY, dinamica), non un tragitto fisso corto
+  // — altrimenti con la bottiglia piena (107 unità di liquido) il movimento era impercettibile.
+  const cmBubbles=Array.from({length:16},()=>{
     const r=1+Math.random()*1.3;
     const cx=(14+Math.random()*36).toFixed(1);
-    const cy=(fillY+2+Math.random()*Math.max(fillH-4,1)).toFixed(1);
-    const dur=(2.2+Math.random()*1.8).toFixed(2);
+    const cyNum=fillY+2+Math.random()*Math.max(fillH-4,1);
+    const cy=cyNum.toFixed(1);
+    const rise=Math.max(cyNum-fillY,4).toFixed(1);
+    const dur=(1.6+Math.random()*1.6).toFixed(2);
     const delay=(-Math.random()*dur).toFixed(2);
-    return`<circle class="cm-bubble" cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" style="--cm-bdur:${dur}s;--cm-bdelay:${delay}s;"/>`;
+    return`<circle class="cm-bubble" cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" style="--cm-bdur:${dur}s;--cm-bdelay:${delay}s;--cm-brise:${rise}px;"/>`;
   }).join('');
   const cmIconBottle='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6M9 2v3.2c0 .6-.3 1.1-.8 1.5C7.1 7.6 6.5 9 6.5 10.5V20a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-9.5c0-1.5-.6-2.9-1.7-3.8-.5-.4-.8-.9-.8-1.5V2"/></svg>';
   const cmIconCheck='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>';
