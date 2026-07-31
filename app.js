@@ -8006,9 +8006,39 @@ function turniPrefRender(){
 
   const prefColor=p=>{const u=(p||'').toUpperCase();if(u.includes('FERIE'))return'var(--amber)';if(u.includes('RIPOSO'))return'var(--text-muted)';if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';return'var(--text)';};
 
+  // Riga singola richiesta — estratta per essere riusata sia nella vista raggruppata
+  // per mese (nessun giorno selezionato) sia nella vista piatta (giorno selezionato).
+  const rowHtml=r=>{
+    const isNew=seenUntil ? (r.ts&&r.ts>seenUntil) : false;
+    const d=new Date(r.ts);
+    const tsStr=isNaN(d)?_tpFmtDate(r.ts):d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+    return`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${isNew?'var(--accent)':'transparent'};border-radius:8px;padding:11px 14px;margin-bottom:5px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
+      <div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
+          ${isNew?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--accent);color:#fff;flex-shrink:0;">NUOVO</span>':''}
+          <span style="font-size:var(--fs-xs);font-weight:700;">${_esc(r.nome)}</span>
+          <span style="font-size:var(--fs-xxs);color:var(--text-dim);background:var(--bg);padding:1px 7px;border-radius:4px;">${_esc(r.reparto)}</span>
+        </div>
+        <div style="font-size:var(--fs-xs);font-weight:700;color:${prefColor(r.preferenza)};margin-bottom:3px;">${_esc(r.preferenza)}</div>
+        <div style="display:flex;gap:12px;font-size:var(--fs-xxs);color:var(--text-muted);">
+          <span>📅 Per il <b>${_esc(_tpFmtDate(r.giornoRichiesto))}</b></span>
+          <span>Richiesta: ${_esc(_tpFmtDate(r.dataRichiesta))}</span>
+        </div>
+        ${r.motivazione?`<div style="margin-top:4px;font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;">${_esc(r.motivazione)}</div>`:''}
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);white-space:nowrap;">${tsStr}</div>
+    </div>`;
+  };
+
   let listHtml='';
   if(!items.length){
     listHtml='<div style="padding:20px 0;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna richiesta</div>';
+  } else if(_tpCalDay){
+    // Giorno selezionato dal calendario: chi ha chiesto cosa PER quel giorno, subito —
+    // niente raggruppamento per mese di invio (fuorviante quando si è già filtrato per
+    // un giorno preciso, e nascondeva le richieste sotto etichette di mesi diversi).
+    listHtml+=`<div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:12px 0 6px;">Richieste per il ${_tpCalDay}</div>`;
+    items.forEach(r=>{listHtml+=rowHtml(r);});
   } else {
     const grouped={};
     items.forEach(r=>{
@@ -8019,27 +8049,7 @@ function turniPrefRender(){
     });
     Object.entries(grouped).forEach(([mese,rows])=>{
       listHtml+=`<div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:12px 0 6px;">${mese}</div>`;
-      rows.forEach(r=>{
-        const isNew=seenUntil ? (r.ts&&r.ts>seenUntil) : false;
-        const d=new Date(r.ts);
-        const tsStr=isNaN(d)?_tpFmtDate(r.ts):d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
-        listHtml+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${isNew?'var(--accent)':'transparent'};border-radius:8px;padding:11px 14px;margin-bottom:5px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
-          <div>
-            <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
-              ${isNew?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--accent);color:#fff;flex-shrink:0;">NUOVO</span>':''}
-              <span style="font-size:var(--fs-xs);font-weight:700;">${_esc(r.nome)}</span>
-              <span style="font-size:var(--fs-xxs);color:var(--text-dim);background:var(--bg);padding:1px 7px;border-radius:4px;">${_esc(r.reparto)}</span>
-            </div>
-            <div style="font-size:var(--fs-xs);font-weight:700;color:${prefColor(r.preferenza)};margin-bottom:3px;">${_esc(r.preferenza)}</div>
-            <div style="display:flex;gap:12px;font-size:var(--fs-xxs);color:var(--text-muted);">
-              <span>📅 Per il <b>${_esc(_tpFmtDate(r.giornoRichiesto))}</b></span>
-              <span>Richiesta: ${_esc(_tpFmtDate(r.dataRichiesta))}</span>
-            </div>
-            ${r.motivazione?`<div style="margin-top:4px;font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;">${_esc(r.motivazione)}</div>`:''}
-          </div>
-          <div style="font-size:10px;color:var(--text-dim);white-space:nowrap;">${tsStr}</div>
-        </div>`;
-      });
+      rows.forEach(r=>{listHtml+=rowHtml(r);});
     });
   }
 
