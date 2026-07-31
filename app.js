@@ -8138,15 +8138,18 @@ function cmRender(state,key){
   const fillY=14+(107-fillH);
   // Bollicine dentro il liquido — clippate all'intersezione tra la sagoma della bottiglia
   // e il rettangolo del riempimento attuale (fillY/fillH), così restano sempre nella zona
-  // di liquido vera anche quando il livello sale/scende col progredire del giro. Ogni bolla
-  // risale fino alla superficie (distanza = cy-fillY, dinamica), non un tragitto fisso corto
-  // — altrimenti con la bottiglia piena (107 unità di liquido) il movimento era impercettibile.
+  // di liquido vera anche quando il livello sale/scende col progredire del giro. Nascono
+  // vicino al FONDO del liquido (non distribuite su tutta l'altezza — altrimenti metà
+  // nascevano già a metà colonna) e risalgono quasi fino alla superficie, tragitto lungo
+  // come nell'artefatto di riferimento.
+  const cmBottomY=fillY+fillH;
+  const cmSpawnBand=Math.max(Math.min(fillH*0.3,20),3);
   const cmBubbles=Array.from({length:16},()=>{
     const r=1+Math.random()*1.3;
     const cx=(14+Math.random()*36).toFixed(1);
-    const cyNum=fillY+2+Math.random()*Math.max(fillH-4,1);
+    const cyNum=cmBottomY-2-Math.random()*cmSpawnBand;
     const cy=cyNum.toFixed(1);
-    const rise=Math.max(cyNum-fillY,4).toFixed(1);
+    const rise=Math.max(cyNum-fillY-2,4).toFixed(1);
     const dur=(1.6+Math.random()*1.6).toFixed(2);
     const delay=(-Math.random()*dur).toFixed(2);
     return`<circle class="cm-bubble" cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" style="--cm-bdur:${dur}s;--cm-bdelay:${delay}s;--cm-brise:${rise}px;"/>`;
