@@ -917,6 +917,12 @@ Il banner `#piano-banner` (stato caricamento Piano, sopra "Camere visitate") è 
 - Lato Compass: `renderOvRoomReadiness(giorno)` in `app.js` (vicino a `renderOvCulliganBox`) legge lo stesso KV, filtra le camere Art in `cambi`/`partenze` del Piano del giorno, e mostra una pillola per camera in `#ov-room-readiness` (Overview, sotto il grafico occupazione) — verde "✓ pronta", ambra "🧹 non pronta", grigio "da verificare". Le camere in `cambi` hanno l'etichetta "check-in oggi".
 - Chiamata da `pianoNavRender()` (quindi ad ogni cambio giorno/ricarica Piano) e già dentro il polling 30s esistente (che richiama `pianoNavRender(pianoNavIdx)`) — si aggiorna da sola mentre il giro è in corso, senza bisogno di ricaricare la pagina.
 
+### Bottiglia animata (Overview → box Culligan)
+
+`renderOvCulliganBox()` in `app.js` disegna una sagoma SVG di bottiglia Culligan reale (`cmBottlePath`, `viewBox="0 0 64 142"`, logo mascherato da `img/logo-culligan.png`) che si riempie in base a `visited / camere occupate del giorno` — **camere visitate durante il giro**, non un conteggio esatto di bottiglie fisicamente sostituite (una camera "vista" conta anche se non aveva bisogno di bottiglia nuova). Al caricamento parte vuota e sale fino al livello reale (`cmFillUp`), poi la superficie "respira" (`cmWave`) — animazioni in `style.css`.
+
+**Bollicine nel liquido**: generate in `app.js` (array `cmBubbles`, 12 cerchi con posizione/durata/ritardo randomizzati ad ogni render) e clippate all'**intersezione** tra la sagoma della bottiglia (`cmBottleClip`) e il rettangolo del riempimento attuale (`cmLiquidClip`, stessi `fillY`/`fillH` del liquido) — così restano sempre dentro la zona di liquido vera, anche quando il livello sale/scende col progredire del giro (non clippate solo alla sagoma intera, altrimenti apparirebbero anche sopra il livello del liquido). Animazione `cmBubbleRise` in `style.css`, classe `.cm-bubble`, rispetta `prefers-reduced-motion`. Nessun bubble generato se `fillH<=4` (bottiglia praticamente vuota).
+
 ### Dashboard (`cmLoad()`) — KV come source of truth
 
 Legge sempre KV prima (fonte dei dati scritti da smartphone), poi fallback localStorage.

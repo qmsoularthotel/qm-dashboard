@@ -8136,6 +8136,17 @@ function cmRender(state,key){
   const cmBottlePath='M23.5 11h17v24c9 2 11 9 11.5 17v62c0 4-3 7-7 7H19c-4 0-7-3-7-7V52c0.5-8 2.5-15 11.5-17V11z';
   const fillH=Math.round(107*pct);
   const fillY=14+(107-fillH);
+  // Bollicine dentro il liquido — clippate all'intersezione tra la sagoma della bottiglia
+  // e il rettangolo del riempimento attuale (fillY/fillH), così restano sempre nella zona
+  // di liquido vera anche quando il livello sale/scende col progredire del giro.
+  const cmBubbles=Array.from({length:12},()=>{
+    const r=1+Math.random()*1.3;
+    const cx=(14+Math.random()*36).toFixed(1);
+    const cy=(fillY+2+Math.random()*Math.max(fillH-4,1)).toFixed(1);
+    const dur=(2.2+Math.random()*1.8).toFixed(2);
+    const delay=(-Math.random()*dur).toFixed(2);
+    return`<circle class="cm-bubble" cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" style="--cm-bdur:${dur}s;--cm-bdelay:${delay}s;"/>`;
+  }).join('');
   const cmIconBottle='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6M9 2v3.2c0 .6-.3 1.1-.8 1.5C7.1 7.6 6.5 9 6.5 10.5V20a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2v-9.5c0-1.5-.6-2.9-1.7-3.8-.5-.4-.8-.9-.8-1.5V2"/></svg>';
   const cmIconCheck='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M7.5 12.5l3 3 6-6.5"/></svg>';
   const cmIconEye='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>';
@@ -8147,10 +8158,12 @@ function cmRender(state,key){
           <mask id="cmLogoMask"><image href="img/logo-culligan.png" x="13" y="64" width="38" height="11.45"/></mask>
           <clipPath id="cmLogoAbove"><rect x="0" y="0" width="64" height="${fillY}"/></clipPath>
           <clipPath id="cmLogoBelow"><rect x="0" y="${fillY}" width="64" height="${142-fillY}"/></clipPath>
+          <clipPath id="cmLiquidClip"><rect x="6" y="${fillY}" width="52" height="${fillH}"/></clipPath>
         </defs>
         <path d="${cmBottlePath}" fill="var(--surface2)" stroke="var(--border)" stroke-width="1.5"/>
         <rect class="cm-fill" x="6" y="${fillY}" width="52" height="${fillH}" fill="var(--accent)" clip-path="url(#cmBottleClip)" style="--cm-fy:${fillY};--cm-fh:${fillH};transition:y .6s cubic-bezier(.65,0,.35,1),height .6s cubic-bezier(.65,0,.35,1);"/>
         <rect class="cm-wave" x="6" y="${fillY}" width="52" height="3" fill="var(--accent)" opacity=".5" clip-path="url(#cmBottleClip)"/>
+        ${fillH>4?`<g clip-path="url(#cmBottleClip)"><g clip-path="url(#cmLiquidClip)">${cmBubbles}</g></g>`:''}
         <g clip-path="url(#cmBottleClip)">
           <g clip-path="url(#cmLogoAbove)"><rect x="0" y="60" width="64" height="20" fill="var(--accent)" mask="url(#cmLogoMask)"/></g>
           <g clip-path="url(#cmLogoBelow)"><rect x="0" y="60" width="64" height="20" fill="#fff" mask="url(#cmLogoMask)"/></g>
