@@ -60,9 +60,9 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
 .btn-secondary{background:#fff;border:1.5px solid var(--border);color:var(--text);}
 .btn-secondary:hover{border-color:var(--navy);color:var(--navy);transform:translateY(-2px);box-shadow:0 4px 12px rgba(28,58,94,.12);}
 .btn:active{transform:translateY(0);opacity:.9;}
-.btn-badge{width:22px;height:22px;border-radius:7px;background:rgba(255,255,255,.18);
+.btn-badge{width:22px;height:22px;border-radius:50%;background:var(--navy);border:1.5px solid var(--gold,#c9952f);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.btn-secondary .btn-badge{background:var(--navy-bg);color:var(--navy);}
+.btn-secondary .btn-badge{background:var(--navy);}
 .btn-badge svg{width:12px;height:12px;}
 
 h2{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:26px 0 12px;}
@@ -81,7 +81,7 @@ tr:last-child td{border-bottom:none;}
    resto di Compass — non più cerchi. Didascalia in bolla al passaggio del mouse
    (data-tip), non il tooltip nativo del browser. */
 .act-row{display:flex;gap:6px;align-items:center;}
-.act-btn{position:relative;width:28px;height:28px;border-radius:7px;background:var(--navy-bg);border:1px solid var(--border);
+.act-btn{position:relative;width:28px;height:28px;border-radius:50%;background:var(--navy-bg);border:1px solid var(--border);
   display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--navy);flex-shrink:0;
   transition:background .15s,color .15s;}
 .act-btn:hover{background:var(--navy);color:#fff;}
@@ -95,11 +95,11 @@ tr:last-child td{border-bottom:none;}
   opacity:0;pointer-events:none;transition:opacity .15s;z-index:30;}
 .act-btn:hover::after,.act-btn:hover::before{opacity:1;transform:translateX(-50%) translateY(0);}
 
-/* Badge Tipo nello storico — quadrato tinta navy/icona navy (stessa coppia di .kpi-card-icon
-   nel resto di Compass: sfondo tinto della categoria, non più cerchio pieno con anello oro). */
+/* Badge Tipo nello storico — cerchio navy con anello oro e icona bianca, stesse icone
+   dei bottoni azione principali. */
 .tipo-cell{display:flex;align-items:center;gap:8px;}
-.tipo-badge{width:22px;height:22px;border-radius:7px;background:var(--navy-bg);
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--navy);}
+.tipo-badge{width:22px;height:22px;border-radius:50%;background:var(--navy);border:1.5px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
 .tipo-badge svg{width:12px;height:12px;}
 
 /* Modal */
@@ -191,8 +191,8 @@ tr:last-child td{border-bottom:none;}
     </div>
     <div class="action-row">
       <button class="btn btn-primary" onclick="openContaModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M13.5 3.5C9 3.5 5.3 6.7 4.3 11H2v2h2c0 .3 0 .7.1 1H2v2h2.6c1.2 4 4.8 6.5 9 6.5 1.9 0 3.7-.6 5.1-1.6l-1.3-1.7c-1.1.7-2.4 1.1-3.8 1.1-3 0-5.5-1.7-6.6-4.3h6.4v-2H6.5a7 7 0 0 1 0-1H15v-2H6.7c1.1-2.6 3.6-4.4 6.6-4.4 1.4 0 2.7.4 3.8 1.1l1.3-1.7c-1.4-1-3.2-1.6-5-1.6z"/></svg></span> Conta e conferma fondo cassa</button>
-      <button class="btn btn-secondary" onclick="openBuonoModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg></span> Nuovo buono spesa</button>
-      <button class="btn btn-secondary" onclick="openRipristinoModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span> Aggiungi al fondo cassa</button>
+      <button class="btn btn-secondary" onclick="openBuonoModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg></span> Nuovo buono spesa</button>
+      <button class="btn btn-secondary" onclick="openRipristinoModal()"><span class="btn-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span> Aggiungi al fondo cassa</button>
     </div>
     <h2>Storico movimenti</h2>
     <table>
