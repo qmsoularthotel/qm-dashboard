@@ -9900,14 +9900,22 @@ function receptionRender(){
   const fondoRows=[..._receptionFondo].sort((a,b)=>b.ts-a.ts).slice(0,80);
   const incassoRows=[..._receptionIncasso].sort((a,b)=>b.ts-a.ts).slice(0,80);
   const fasciaLbl={'07':'07:00','15':'15:00','23':'23:00'};
+  // Due numeri alla pari (contanti fisici / buoni spesa) invece di un unico totale
+  // grande: scrivere solo il totale era fuorviante, sembrava la cifra fisica in cassa
+  // quando invece include i buoni non ancora rimborsati. Stessa logica di reception.html.
   let h=`<div style="margin-bottom:20px;">
-    <div style="display:inline-block;background:${saldoOk?'var(--green-bg)':'var(--amber-bg)'};border-radius:10px;padding:16px 18px;min-width:220px;">
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">Fondo cassa attuale</div>
-      <div style="font-size:28px;font-weight:800;color:${saldoOk?'var(--green)':'var(--amber)'};margin-top:4px;">${_receptionFmtEuro(saldo)}</div>
-      <div style="display:flex;gap:16px;margin-top:6px;">
-        <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Contanti <b style="color:var(--text);">${_receptionFmtEuro(bd.contanti)}</b></span>
-        <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Buoni spesa in essere <b style="color:var(--text);">${_receptionFmtEuro(bd.buoni)}</b></span>
+    <div style="display:inline-block;background:${saldoOk?'var(--green-bg)':'var(--amber-bg)'};border-radius:10px;padding:16px 18px;min-width:280px;">
+      <div style="display:flex;gap:28px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">Contanti in cassa</div>
+          <div style="font-size:24px;font-weight:300;letter-spacing:-.02em;margin-top:4px;color:var(--text);">${_receptionFmtEuro(bd.contanti)}</div>
+        </div>
+        <div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">Buoni spesa in essere</div>
+          <div style="font-size:24px;font-weight:300;letter-spacing:-.02em;margin-top:4px;color:var(--text);">${_receptionFmtEuro(bd.buoni)}</div>
+        </div>
       </div>
+      <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:10px;">Totale fondo cassa: <b style="color:${saldoOk?'var(--green)':'var(--amber)'};">${_receptionFmtEuro(saldo)}</b></div>
       ${!saldoOk?`<div style="font-size:var(--fs-xs);color:var(--amber);margin-top:4px;">mancano ${_receptionFmtEuro(RECEPTION_FONDO_TARGET-saldo)}</div>`:''}
       <button onclick="receptionAddRipristino()" style="margin-top:10px;background:var(--accent);color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;">🔄 Registra ripristino</button>
     </div>
