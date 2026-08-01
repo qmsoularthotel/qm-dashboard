@@ -2590,11 +2590,14 @@ function hkSuggestMoves(maxN,focusIdx){
   const scoreCur=days.reduce((t,d,i)=>t+(i<todayIdx?0:_hkDayScore(d)),0);
   if(scoreCur<0.01)return out;
   if(hasFocus&&(out.focus.passato||!out.focus.sbilanciato))return out;
-  // Spostabile = qualsiasi soggiorno non ancora iniziato, riprotezioni comprese
-  // (si possono riassegnare a un'altra camera come una prenotazione). Restano fuori
-  // solo gli ospiti già in casa. Il flag `speciale` serve però a segnalarle
-  // nell'interfaccia, per non farle passare per prenotazioni normali.
-  const spostabile=b=>b.start>=todayIdx;
+  // Spostabile = soggiorno che arriva DOPO oggi, riprotezioni comprese (si possono
+  // riassegnare a un'altra camera come una prenotazione). Restano fuori sia gli ospiti
+  // già in casa SIA gli arrivi previsti proprio oggi (start===todayIdx) anche se non
+  // hanno ancora fatto il check-in — reception/HK possono già lavorare su quella camera
+  // per la giornata odierna, quindi non va proposta come riassegnabile. Il flag
+  // `speciale` serve a segnalare le riprotezioni nell'interfaccia, per non farle
+  // passare per prenotazioni normali.
+  const spostabile=b=>b.start>todayIdx;
   const mosse=[];
   const valuta=(cand,changes)=>{
     const{guadagno,effetti,peggiori,giorni}=_hkEffetto(days,stato,changes,todayIdx,N);
@@ -2613,6 +2616,9 @@ function hkSuggestMoves(maxN,focusIdx){
     if(!MATARESE.has(A))return;                          // A sempre lato Matarese
     const tipo=pianoData.tipi[A];if(!tipo)return;
     if(_hkFissa(A))return;                               // JS e SUI non si spostano mai
+    // Vincolo non negoziabile: solo scambi tra camere della STESSA tipologia (stessoTipo
+    // qui sotto è l'unico bacino da cui pescare B/C in tutti e tre i tipi di mossa più giù
+    // — sposta, scambia, catena). Mai proporre un cambio tra tipologie diverse.
     const stessoTipo=ART.filter(r=>pianoData.tipi[r]===tipo&&!_hkFissa(r));
     (BL[A]||[]).filter(spostabile).forEach(X=>{
       stessoTipo.forEach(B=>{
