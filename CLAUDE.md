@@ -624,6 +624,10 @@ Alzare ulteriormente `HK_PESO_PARTENZE` rende il bilanciamento delle partenze an
 
 Se non c'è nessuna mossa possibile, `out.ostacoli` spiega camera per camera perché (tipologia senza corrispettivo dall'altro lato, oppure occupata in quelle notti).
 
+### "Ci sono altre possibilità?" — mostra alternative già calcolate, non ne cerca di nuove
+
+`hkSuggestMoves()` calcola sempre **tutte** le mosse valide e migliorative, poi le taglia a `maxN` (default 3) — `out.totMosse` tiene il conteggio prima del taglio, `out.mosse` è la lista tagliata. Il bottone "Ci sono altre possibilità?" (visibile solo se `totMosse>mosse.length`, altrimenti non c'è nulla in più da mostrare) chiama `hkSuggMore()`, che alza `_hkSuggMoreN` di 5 e rirenderizza — non ricalcola l'algoritmo da capo con criteri diversi, semplicemente alza il tetto e mostra alternative che esistevano già. `_hkSuggMoreN` si azzera in `pianoNavRender()` solo quando il giorno selezionato **cambia davvero** (non ad ogni refresh del polling 30s sullo stesso giorno, altrimenti l'espansione sparirebbe da sola pochi secondi dopo averla aperta).
+
 ---
 
 ## DVR — Documento Valutazione Rischi

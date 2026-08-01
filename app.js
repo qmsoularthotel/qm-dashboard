@@ -2252,6 +2252,10 @@ function pianoGetGiornoIdx(refDate){
 
 function pianoNavRender(idx){
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length)return;
+  // Cambio giorno reale (non un semplice refresh dello stesso giorno, es. dal polling
+  // 30s): il "Ci sono altre possibilità?" espanso da un giorno non deve restare aperto
+  // per un altro giorno, quindi si resetta solo qui.
+  if(pianoNavIdx!==idx)_hkSuggMoreN=0;
   pianoNavIdx=idx;
   const giorno=pianoData.giorni[idx];
   if(!giorno)return;
@@ -2663,7 +2667,9 @@ function hkSuggestMoves(maxN,focusIdx){
   });
   // Una sola proposta per coppia di camere coinvolte, per non ripetere varianti simili
   const visti=new Set();
-  out.mosse=mosse.filter(m=>{const k=m.from+'>'+m.to+'>'+m.start;if(visti.has(k))return false;visti.add(k);return true;}).slice(0,maxN||3);
+  const dedup=mosse.filter(m=>{const k=m.from+'>'+m.to+'>'+m.start;if(visti.has(k))return false;visti.add(k);return true;});
+  out.totMosse=dedup.length;              // quante alternative esistono davvero, prima del taglio
+  out.mosse=dedup.slice(0,maxN||3);
   // Se un giorno resta sbilanciato e non c'è mossa che lo migliori, spiega il perché
   // camera per camera: è l'informazione che serve davvero per capire se il vincolo è
   // strutturale (tipologia senza corrispettivo) o solo di disponibilità.
@@ -2706,8 +2712,12 @@ function _hkEffTxt(l,e){
     :`${l}: carico ${_hkNum(e.daC[0])}-${_hkNum(e.daC[1])} → ${_hkNum(e.aC[0])}-${_hkNum(e.aC[1])}`;
 }
 function _hkSgn(n){return(n>0?'+':'')+_hkNum(n);}
+// Quante mosse mostrare oltre le prime 3 — "Ci sono altre possibilità?" alza il tetto,
+// invece di rigenerare da capo: le alternative in più esistevano già, erano solo tagliate.
+let _hkSuggMoreN=0;
+function hkSuggMore(){_hkSuggMoreN+=5;try{renderRoomDivision(pianoNavIdx);}catch(e){}}
 function renderHkSuggestions(focusIdx){
-  const s=hkSuggestMoves(3,focusIdx);
+  const s=hkSuggestMoves(3+_hkSuggMoreN,focusIdx);
   const fLbl=(pianoData&&pianoData.giorni&&pianoData.giorni[focusIdx]&&pianoData.giorni[focusIdx].label)||'';
   // Il titolo dice di quale giorno si sta parlando: i suggerimenti seguono il giorno
   // selezionato nella suddivisione cameriere qui sopra, non la settimana intera.
@@ -2812,7 +2822,13 @@ function renderHkSuggestions(focusIdx){
   }).join('');
   const haPegg=s.mosse.some(m=>(m.peggiori||[]).length);
   const nota=`<div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.5;">I numeri a destra sono il prima e dopo di ogni giorno (Matarese-Altre): le <strong>partenze</strong> se cambiano, il <strong>carico</strong> se la mossa riequilibra solo quello${s.focus?`. <strong>${fLbl}</strong> è in evidenza`:''}${haPegg?`; in <span style="color:var(--amber);font-weight:700;">ambra</span> i giorni che peggiorano — il bilancio complessivo resta comunque migliore`:''}. ${s.focus?`Sono elencate solo le mosse che migliorano <strong>${fLbl}</strong>: cambia giorno per vedere le sue.`:`L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana.`} Solo stessa tipologia e solo prenotazioni non ancora arrivate. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
-  return box(testa+righe+nota);
+  // "Ci sono altre possibilità?" — mostra solo se esistono davvero altre alternative già
+  // calcolate e tagliate dal limite mosse mostrate, non un pulsante sempre presente a vuoto.
+  const altreN=s.totMosse-s.mosse.length;
+  const altreBtn=altreN>0
+    ?`<button onclick="hkSuggMore()" style="margin-top:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;">Ci sono altre possibilità? <span style="color:var(--text-dim);font-weight:400;">(+${Math.min(altreN,5)})</span></button>`
+    :'';
+  return box(testa+righe+altreBtn+nota);
 }
 // Contenitore per la vista settimanale — popolato via _bkfChartRender() (stesso motore
 // SVG di Breakfast/Occupazione: barra accent + linea rossa tratteggiata) subito dopo
