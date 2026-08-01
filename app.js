@@ -2487,6 +2487,10 @@ const HK_TIPI_FISSE=['JS','SUI'];
 // peso del carico, qui è "non si tocca".
 const HK_CAMERE_FISSE=new Set(['Art 1','Art 2','Art 3','Art 8','Art 9','Art 13']);
 const _hkFissa=r=>HK_CAMERE_FISSE.has(r)||HK_TIPI_FISSE.indexOf((pianoData&&pianoData.tipi&&pianoData.tipi[r])||'')>=0;
+// Etichette leggibili per le tipologie camera nei suggerimenti/diagnostica Room Division —
+// i codici grezzi del Piano ("AS SUP", "AS DLX DP") non sono immediatamente comprensibili.
+const HK_TIPO_LABELS={'AS SUP':'Superior','AS DLX DP':'Deluxe'};
+const _hkTipoLbl=t=>HK_TIPO_LABELS[t]||t;
 // L'equilibrio va cercato GIORNO PER GIORNO, non sui totali di settimana: una
 // settimana può chiudere 27 partenze a 27 e avere comunque un mercoledì da 6 contro 3.
 // È il singolo giorno che le housekeeper vivono, ed è lì che nasce la lamentela.
@@ -2633,30 +2637,55 @@ function hkSuggestMoves(maxN,focusIdx){
                  {[A]:(BL[A]||[]).filter(z=>z!==X),[B]:(BL[B]||[]).concat([X])});
           return;                                        // se entra già, niente scambi o catene
         }
-        // Chi dà fastidio in B? Se è più d'uno la mossa diventa ingestibile a mano.
+        // Chi dà fastidio in B?
         const intralcio=(BL[B]||[]).filter(z=>_hkOverlap(_hkNights(X,N),_hkNights(z,N)));
-        if(intralcio.length!==1)return;
-        const Y=intralcio[0];
-        if(!spostabile(Y))return;                        // ospite già in casa: non si tocca
-        // 2) scambio: Y va in A al posto di X
-        if(_hkFits(Y,BL[A],[X],N)){
-          valuta({tipo:'scambia',from:A,to:B,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end,xSpec:!!X.speciale,ySpec:!!Y.speciale},
-                 {[A]:(BL[A]||[]).filter(z=>z!==X).concat([Y]),[B]:(BL[B]||[]).filter(z=>z!==Y).concat([X])});
+        if(!intralcio.length)return;                      // non dovrebbe succedere: se non c'è overlap _hkFits sarebbe già stato true sopra
+        if(intralcio.length===1){
+          const Y=intralcio[0];
+          if(!spostabile(Y))return;                       // ospite già in casa: non si tocca
+          // 2) scambio: Y va in A al posto di X
+          if(_hkFits(Y,BL[A],[X],N)){
+            valuta({tipo:'scambia',from:A,to:B,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end,xSpec:!!X.speciale,ySpec:!!Y.speciale},
+                   {[A]:(BL[A]||[]).filter(z=>z!==X).concat([Y]),[B]:(BL[B]||[]).filter(z=>z!==Y).concat([X])});
+          }
+          // 3) catena a tre: Y si sposta in una terza camera C, liberando B per X
+          stessoTipo.forEach(C=>{
+            if(C===A||C===B)return;
+            if(!_hkFits(Y,BL[C],[],N))return;
+            valuta({tipo:'catena',from:A,to:B,via:C,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end,xSpec:!!X.speciale,ySpec:!!Y.speciale},
+                   {[A]:(BL[A]||[]).filter(z=>z!==X),
+                    [B]:(BL[B]||[]).filter(z=>z!==Y).concat([X]),
+                    [C]:(BL[C]||[]).concat([Y])});
+          });
+          return;
         }
-        // 3) catena a tre: Y si sposta in una terza camera C, liberando B per X
-        stessoTipo.forEach(C=>{
-          if(C===A||C===B)return;
-          if(!_hkFits(Y,BL[C],[],N))return;
-          valuta({tipo:'catena',from:A,to:B,via:C,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end,xSpec:!!X.speciale,ySpec:!!Y.speciale},
-                 {[A]:(BL[A]||[]).filter(z=>z!==X),
-                  [B]:(BL[B]||[]).filter(z=>z!==Y).concat([X]),
-                  [C]:(BL[C]||[]).concat([Y])});
+        // 4) più soggiorni sovrapposti in B: "occupata" non vuol dire automaticamente
+        // bloccata anche con più di un ospite di mezzo — prova a ricollocare OGNUNO in
+        // una camera libera diversa della stessa tipologia (una a testa, non incrociati
+        // tra loro: niente scambi multipli, solo destinazioni libere dirette, per restare
+        // un'operazione che si può ancora eseguire a mano nel PMS senza troppi passaggi).
+        if(intralcio.some(z=>!spostabile(z)))return;        // un ospite già in casa: blocco reale, non risolvibile
+        const usate=new Set([A,B]);
+        const assegnazioni=[];
+        const tutteRicollocate=intralcio.every(Z=>{
+          const C=stessoTipo.find(c=>!usate.has(c)&&_hkFits(Z,BL[c],[],N));
+          if(!C)return false;
+          usate.add(C);
+          assegnazioni.push({Z,C});
+          return true;
         });
+        if(!tutteRicollocate)return;
+        const changesMulti={[A]:(BL[A]||[]).filter(z=>z!==X),
+          [B]:(BL[B]||[]).filter(z=>intralcio.indexOf(z)<0).concat([X])};
+        assegnazioni.forEach(({Z,C})=>{changesMulti[C]=(BL[C]||[]).concat([Z]);});
+        valuta({tipo:'catena-multi',from:A,to:B,cat:tipo,start:X.start,end:X.end,xSpec:!!X.speciale,
+                vias:assegnazioni.map(a=>({room:a.C,start:a.Z.start,end:a.Z.end,speciale:!!a.Z.speciale}))},
+               changesMulti);
       });
     });
   });
   // A parità di beneficio preferisci la mossa più semplice da eseguire nel PMS
-  const costo={sposta:0,scambia:1,catena:2};
+  const costo={sposta:0,scambia:1,catena:2,'catena-multi':3};
   mosse.sort((x,y)=>{
     // Con un giorno selezionato vince chi migliora di più QUEL giorno; il beneficio sulla
     // settimana resta come secondo criterio, così tra due mosse equivalenti sul giorno
@@ -2694,10 +2723,29 @@ function hkSuggestMoves(maxN,focusIdx){
       else if(X.start<todayIdx)perche='ospite già in casa da prima';
       else{
         const contro=ART.filter(o=>MATARESE.has(o)!==inMat&&pianoData.tipi[o]===tipo);
-        if(!contro.length)perche='nessuna camera '+tipo+' dall\'altro lato';
-        else perche='le '+tipo+' dell\'altro lato sono occupate in quelle notti';
+        if(!contro.length)perche='nessuna camera '+_hkTipoLbl(tipo)+' dall\'altro lato';
+        else{
+          // "Occupata" da sola non basta a spiegare il blocco — dice PERCHÉ, guardando il
+          // primo candidato (rappresentativo, non un'analisi esaustiva di tutti), invece
+          // del generico "sono occupate" che non distingue un ospite già in casa da un
+          // soggiorno semplicemente non spostabile altrove, né un blocco reale da un caso
+          // con più occupanti non ricollocabili.
+          const B=contro[0];
+          const intralcio=(BL[B]||[]).filter(z=>_hkOverlap(_hkNights(X,N),_hkNights(z,N)));
+          if(!intralcio.length)perche=`${B} risultava libera — riprova, potrebbe essere un caso limite`;
+          else if(intralcio.length===1){
+            const Y=intralcio[0];
+            perche=!spostabile(Y)
+              ?`${B} occupata da un ospite già in casa`
+              :`${B} occupata da un soggiorno che non entra né in ${r} né altrove`;
+          }else if(intralcio.some(z=>!spostabile(z))){
+            perche=`${B} occupata da più soggiorni, incluso un ospite già in casa`;
+          }else{
+            perche=`${B} occupata da più soggiorni sovrapposti — non è stato possibile ricollocarli tutti`;
+          }
+        }
       }
-      out.ostacoli.push({giorno:g.i,camera:r,tipo,perche});
+      out.ostacoli.push({giorno:g.i,camera:r,tipo:_hkTipoLbl(tipo),perche});
     });
   }
   return out;
@@ -2800,6 +2848,12 @@ function renderHkSuggestions(focusIdx){
       // Due spostamenti in sequenza: va detto chiaramente, sono due operazioni nel PMS
       titolo=`${m.from} ${frecciaG} ${m.to} ${frecciaG} ${m.via}`;
       dett=`2 spostamenti: sposta prima ${perY} da ${m.to} a ${m.via}, poi ${periodo} da ${m.from} a ${m.to}`;
+    }else if(m.tipo==='catena-multi'){
+      // Più soggiorni sovrapposti in "to", ognuno ricollocato in una camera diversa
+      // della stessa tipologia — va detto quanti spostamenti servono davvero, non solo 2.
+      const viaLbl=v=>(v.start===v.end?lbl(v.start):lbl(v.start)+' → '+lbl(v.end))+(v.speciale?tagRip:'');
+      titolo=`${m.from} ${frecciaG} ${m.to} <span style="font-size:11px;color:var(--text-dim);font-weight:600;">(+${m.vias.length} camere)</span>`;
+      dett=`${1+m.vias.length} spostamenti: ${m.vias.map(v=>`${m.to}→${v.room} (${viaLbl(v)})`).join(', ')}, poi ${periodo} da ${m.from} a ${m.to}`;
     }else{
       titolo=`${m.from} ${frecciaG} ${m.to}`;
       dett=`${m.to} libera in quelle notti`;
@@ -2808,7 +2862,7 @@ function renderHkSuggestions(focusIdx){
       <span style="width:22px;height:22px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:14px;font-weight:700;color:var(--text);">${titolo}</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">soggiorno ${periodo} · ${m.cat} · ${dett}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">soggiorno ${periodo} · ${_hkTipoLbl(m.cat)} · ${dett}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;">
         ${(s.focus?[...m.effetti].sort((a,b)=>(a.i===s.focus.i?-1:0)-(b.i===s.focus.i?-1:0)):m.effetti).slice(0,3).map(e=>{
