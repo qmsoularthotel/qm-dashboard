@@ -2464,10 +2464,15 @@ function _hkStatesFromBlocks(bs,N){
 // le partenze pesate di più perché è lì che nasce la percezione di ingiustizia.
 const _hkIsPartenza=s=>(s==='partenza'||s==='cambio')?1:0;
 // Quanto vale uno squilibrio di UNA partenza in unità di carico. Una partenza pesa
-// già 2 (2,5 sulle camere grandi): a 3 conta più del suo peso reale, così a parità di
-// carico il motore preferisce sempre la soluzione con le partenze più pari.
-// Alzarlo rende il bilanciamento delle partenze ancora più prioritario.
-const HK_PESO_PARTENZE=3;
+// già 2 (2,5 sulle camere grandi): a 3 contava poco più del suo peso reale — bastava a
+// spareggiare a parità di carico, ma troppe mosse che pareggiavano le partenze venivano
+// scartate perché peggioravano di poco il carico generale altrove, risultando in "guadagno"
+// complessivo negativo e quindi pochi suggerimenti. Le cameriere non ragionano in carico
+// pesato (è un concetto astratto per loro): guardano il numero di partenze assegnate a
+// testa, quindi qui il peso è alzato molto di più — una partenza in meno/in più conta come
+// 4 camere intere di carico, così il motore accetta anche mosse che peggiorano il carico
+// pur di pareggiare le partenze, e propone più soluzioni.
+const HK_PESO_PARTENZE=8;
 // Tipologie che non si spostano mai: Junior Suite e Suite. Restano nel conteggio del
 // carico e delle partenze (il lavoro c'è comunque), ma il motore non le propone né come
 // camera di partenza né come destinazione. Aggiungere qui una sigla la esclude del tutto.
