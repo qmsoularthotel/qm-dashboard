@@ -2628,6 +2628,27 @@ function hkSuggestMoves(maxN,focusIdx){
     // qui sotto è l'unico bacino da cui pescare B/C in tutti e tre i tipi di mossa più giù
     // — sposta, scambia, catena). Mai proporre un cambio tra tipologie diverse.
     const stessoTipo=ART.filter(r=>pianoData.tipi[r]===tipo&&!_hkFissa(r));
+    // Scambio IN BLOCCO: tutti i soggiorni futuri di A passano a B e viceversa, non un
+    // soggiorno alla volta — è quello che si intende davvero quando si dice "sposta Art X
+    // su Art Y per tutta la settimana". Chi è già in casa (non spostabile) resta dov'è
+    // fisicamente; si scambiano solo le prenotazioni non ancora arrivate. Sempre valido
+    // strutturalmente (stessa tipologia) A PATTO che i soggiorni futuri di A entrino tra
+    // gli ospiti già in casa di B e viceversa — per questo serve comunque _hkFits.
+    const futureA=(BL[A]||[]).filter(spostabile);
+    if(futureA.length){
+      const restA=(BL[A]||[]).filter(z=>!spostabile(z));
+      stessoTipo.forEach(B=>{
+        if(B===A||MATARESE.has(B))return;
+        const futureB=(BL[B]||[]).filter(spostabile);
+        if(!futureB.length)return;
+        const restB=(BL[B]||[]).filter(z=>!spostabile(z));
+        if(!futureA.every(z=>_hkFits(z,restB,[],N)))return;
+        if(!futureB.every(z=>_hkFits(z,restA,[],N)))return;
+        valuta({tipo:'scambio-blocco',from:A,to:B,cat:tipo,nA:futureA.length,nB:futureB.length,
+                start:Math.min(...futureA.map(z=>z.start),...futureB.map(z=>z.start))},
+               {[A]:restA.concat(futureB),[B]:restB.concat(futureA)});
+      });
+    }
     (BL[A]||[]).filter(spostabile).forEach(X=>{
       stessoTipo.forEach(B=>{
         if(B===A||MATARESE.has(B))return;                // B sempre lato Altre
@@ -2685,7 +2706,7 @@ function hkSuggestMoves(maxN,focusIdx){
     });
   });
   // A parità di beneficio preferisci la mossa più semplice da eseguire nel PMS
-  const costo={sposta:0,scambia:1,catena:2,'catena-multi':3};
+  const costo={sposta:0,scambia:1,catena:2,'scambio-blocco':2,'catena-multi':3};
   mosse.sort((x,y)=>{
     // Con un giorno selezionato vince chi migliora di più QUEL giorno; il beneficio sulla
     // settimana resta come secondo criterio, così tra due mosse equivalenti sul giorno
@@ -2854,6 +2875,11 @@ function renderHkSuggestions(focusIdx){
       const viaLbl=v=>(v.start===v.end?lbl(v.start):lbl(v.start)+' → '+lbl(v.end))+(v.speciale?tagRip:'');
       titolo=`${m.from} ${frecciaG} ${m.to} <span style="font-size:11px;color:var(--text-dim);font-weight:600;">(+${m.vias.length} camere)</span>`;
       dett=`${1+m.vias.length} spostamenti: ${m.vias.map(v=>`${m.to}→${v.room} (${viaLbl(v)})`).join(', ')}, poi ${periodo} da ${m.from} a ${m.to}`;
+    }else if(m.tipo==='scambio-blocco'){
+      // Non un soggiorno alla volta: TUTTE le prenotazioni future delle due camere si
+      // scambiano in un colpo solo — chi è già in casa resta dov'è fisicamente.
+      titolo=`${m.from} ${frecciaB} ${m.to} <span style="font-size:11px;color:var(--text-dim);font-weight:600;">(tutta la settimana)</span>`;
+      dett=`scambio in blocco: ${m.nA} prenotazion${m.nA===1?'e':'i'} future da ${m.from} a ${m.to}, ${m.nB} da ${m.to} a ${m.from} — chi è già in casa resta dov'è`;
     }else{
       titolo=`${m.from} ${frecciaG} ${m.to}`;
       dett=`${m.to} libera in quelle notti`;
