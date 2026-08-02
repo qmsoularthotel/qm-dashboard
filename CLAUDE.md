@@ -981,6 +981,12 @@ Il banner `#piano-banner` (stato caricamento Piano, sopra "Camere visitate") è 
 
 Il punto di nascita (`cy`) è vicino al **fondo** del liquido (`cmBottomY - spawnBand`, non distribuito su tutta l'altezza) e ogni bolla risale quasi fino alla superficie (`--cm-brise`, variabile CSS per bolla) — prima `cy` era campionato uniformemente su tutta la colonna di liquido, quindi circa metà delle bolle nascevano già a metà altezza invece che dal basso, un difetto visibile confrontato con l'artefatto di riferimento (dove tutte nascono vicino al fondo del frame). Animazione `cmBubbleRise` in `style.css`, classe `.cm-bubble`, rispetta `prefers-reduced-motion`. Nessun bubble generato se `fillH<=4` (bottiglia praticamente vuota).
 
+### Annulla — ritiro e riconsegna
+
+**Schermata camera (ritiro, `s-room`)**: ogni tap (bottiglia, checklist, libera, DND) scrive **subito** in memoria su `_state[room]`, non solo premendo "Salva camera" — prima il tasto "‹" chiamava `goHome()` direttamente, senza annullare nulla: le modifiche restavano comunque in memoria e potevano finire salvate lo stesso alla prossima `_persist()` (es. salvando un'altra camera, dato che persiste l'intero `_state`). Ora `openRoom(room)` fotografa lo stato della camera (`_roomSnapshot`/`_roomSnapshotRoom`) **solo quando si entra in una camera diversa** da quella già fotografata (non ad ogni ri-render interno che le funzioni di tap richiamano per aggiornare la vista — altrimenti la fotografia si aggiornerebbe ad ogni tap invece di restare quella originale). Il tasto "‹" chiama `cancelRoom()`, che ripristina `_state[room]` alla fotografia prima di tornare alla home. `saveRoom()` svuota la fotografia dopo aver salvato.
+
+**Foglio pronta/non pronta (riconsegna)**: una volta scelto "pronta" o "non pronta" (`chooseReady()`), prima non si poteva tornare a "da confermare" — solo passare da un'opzione all'altra. Aggiunto un link "Annulla" sotto i due bottoni grandi (non un terzo bottone alla pari: i due bersagli principali restano grandi, si usa camminando) — `cancelReadySheet(room)` chiude il foglio senza scegliere, e se una scelta era già stata fatta la annulla (`pronta:null`, `consegnata:false`).
+
 ### Dashboard (`cmLoad()`) — KV come source of truth
 
 Legge sempre KV prima (fonte dei dati scritti da smartphone), poi fallback localStorage.

@@ -141,6 +141,11 @@ body{min-height:100vh;overflow-x:hidden;}
   font-weight:800;line-height:1.7;-webkit-tap-highlight-color:transparent;}
 .ready-big.no{background:var(--amber-bg);color:var(--amber);}
 .ready-big.yes{background:var(--green-bg);color:var(--green);}
+/* Link piccolo sotto i due bottoni grandi, non un terzo bottone alla pari — i due
+   bersagli principali restano grandi (si usa camminando), l'annulla è un'uscita di
+   sicurezza secondaria, non un'azione che compete per spazio/attenzione. */
+.ready-cancel{display:block;width:100%;background:none;border:none;color:var(--text-dim);
+  font-size:.76rem;font-weight:600;text-align:center;padding:10px 0 2px;-webkit-tap-highlight-color:transparent;}
 .room-card.s-bottle .rc-top,
 .room-card.s-both .rc-top   {background:var(--navy-light);}
 .room-card.s-ok .rc-top     {background:var(--navy);}
@@ -395,7 +400,7 @@ textarea:focus{outline:none;border-color:var(--text-muted);}
 <!-- ══ CHECKLIST CAMERA ═══════════════════ -->
 <div class="screen" id="s-room">
   <div class="hdr">
-    <button class="btn-back" onclick="goHome()">‹</button>
+    <button class="btn-back" onclick="cancelRoom()">‹</button>
     <svg viewBox="0 0 36 36" width="28" height="28" style="flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="18,1 21,13 27,9 23,15 35,18 23,21 27,27 21,23 18,35 15,23 9,27 13,21 1,18 13,15 9,9 15,13" fill="#c9952f"/><polygon points="18,6 20,14 18,12 16,14" fill="rgba(255,255,255,.5)"/><polygon points="18,30 16,22 18,24 20,22" fill="rgba(255,255,255,.25)"/></svg>
     <div class="hdr-sep"></div>
     <div class="hdr-center"><div class="hdr-title" id="room-title">Art 1</div></div>
@@ -764,7 +769,18 @@ function _renderHome(){
 }
 
 // ── CHECKLIST ────────────────────────
+// Fotografia dello stato della camera al momento dell'apertura — permette di annullare
+// le modifiche fatte in questa visita (bottiglia/checklist/libera/DND, tutte applicate
+// subito in memoria ad ogni tap, non solo al "Salva") tornando indietro con "‹". Non va
+// ripresa ad ogni re-render interno della stessa camera (setBottle/toggleLibera/ecc.
+// richiamano openRoom() per aggiornare la vista) — solo quando si entra in una camera
+// diversa da quella già fotografata.
+let _roomSnapshot=null,_roomSnapshotRoom=null;
 function openRoom(room){
+  if(_roomSnapshotRoom!==room){
+    _roomSnapshotRoom=room;
+    _roomSnapshot=JSON.parse(JSON.stringify(_rs(room)));
+  }
   _cur=room;
   const rs=_rs(room);
   const ps=_pianoSt(room);
@@ -935,6 +951,15 @@ function saveRoom(){
   rs.ts=Date.now();
   rs.note=document.getElementById('room-note')?.value||'';
   _persist();
+  _roomSnapshot=null;_roomSnapshotRoom=null;
+  goHome();
+}
+// Annulla: ripristina la camera com'era prima di questa visita (bottiglia, checklist,
+// libera, DND — tutto ciò che è stato toccato senza mai premere "Salva camera") e torna
+// alla home. Niente conferma: è un'azione sicura, non tocca nulla già salvato prima.
+function cancelRoom(){
+  if(_roomSnapshotRoom&&_roomSnapshot)_state[_roomSnapshotRoom]=_roomSnapshot;
+  _roomSnapshot=null;_roomSnapshotRoom=null;
   goHome();
 }
 
@@ -1075,6 +1100,7 @@ function _renderRedeliver(){
               <button class="ready-big no" onclick="chooseReady('${r}',false)">🧹<br>Non pronta</button>
               <button class="ready-big yes" onclick="chooseReady('${r}',true)">✓<br>Pronta</button>
             </div>
+            <button class="ready-cancel" onclick="cancelReadySheet('${r}')">Annulla</button>
           </div>
         </div>`;
         return;
@@ -1120,6 +1146,20 @@ function chooseReady(room,val){
   rs.consegnata=true;
   _readySheetRoom=null;
   _persist();
+  _renderRedeliver();
+}
+// Chiude il foglio senza scegliere; se una scelta era già stata fatta in precedenza
+// (pronta/non pronta), la annulla riportando la camera a "da confermare" — prima non
+// c'era modo di tornare indietro una volta scelto, solo di passare da pronta a non
+// pronta o viceversa.
+function cancelReadySheet(room){
+  const rs=_rs(room);
+  if(rs.pronta!==null){
+    rs.pronta=null;
+    rs.consegnata=false;
+    _persist();
+  }
+  _readySheetRoom=null;
   _renderRedeliver();
 }
 function resetDay(){
