@@ -2611,12 +2611,20 @@ function hkSuggestMoves(maxN,focusIdx){
     const{guadagno,effetti,peggiori,giorni}=_hkEffetto(days,stato,changes,todayIdx,N);
     if(guadagno<=0.01)return;                              // mai peggiorare la settimana
     // Con un giorno selezionato conta solo se aiuta QUEL giorno: una mossa che pareggia
-    // il venerdì non è una risposta utile a chi sta guardando il mercoledì.
+    // il venerdì non è una risposta utile a chi sta guardando il mercoledì. Eccezione:
+    // lo scambio in blocco (scambio-blocco) riguarda TUTTA la settimana per costruzione,
+    // non un giorno solo — filtrarlo sul singolo giorno in focus lo scartava ingiustamente
+    // anche quando migliorava tutti gli altri giorni della vista settimanale. Per quello
+    // basta il guadagno complessivo già verificato sopra.
     let gFocus=0;
     if(hasFocus){
       const f=giorni[focusIdx];
-      if(!f||f.sn>=f.so-0.01)return;
-      gFocus=f.so-f.sn;
+      if(cand.tipo==='scambio-blocco'){
+        gFocus=f?f.so-f.sn:0;                             // usato solo per l'ordinamento, non filtra
+      }else{
+        if(!f||f.sn>=f.so-0.01)return;
+        gFocus=f.so-f.sn;
+      }
     }
     mosse.push(Object.assign({guadagno,gFocus,effetti,peggiori,giorni},cand));
   };
