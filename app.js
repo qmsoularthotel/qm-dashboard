@@ -3181,8 +3181,11 @@ async function renderOvRoomReadiness(giorno){
   const el=document.getElementById('ov-room-readiness');if(!el)return;
   if(!giorno){el.innerHTML='';return;}
   const sa=giorno.soulart||{};
-  const cambio=new Set(sa.cambi||[]),partenza=new Set(sa.partenze||[]);
-  const rooms=CM_ROOMS.filter(r=>cambio.has(r)||partenza.has(r));
+  // Solo le partenze CON un nuovo arrivo lo stesso giorno (cambio) — una partenza pura
+  // senza check-in successivo non ha bisogno di essere "pronta per qualcuno" entro
+  // un orario preciso, quindi non compare più qui (prima mostrava anche quelle).
+  const cambio=new Set(sa.cambi||[]);
+  const rooms=CM_ROOMS.filter(r=>cambio.has(r));
   if(!rooms.length){el.innerHTML='';return;}
   const d=new Date();
   const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -3197,11 +3200,13 @@ async function renderOvRoomReadiness(giorno){
     const cfg=p===true?{bg:'var(--green-bg)',fg:'var(--green)',lbl:'✓ pronta'}
       :p===false?{bg:'var(--amber-bg)',fg:'var(--amber)',lbl:'🧹 non pronta'}
       :{bg:'var(--surface2)',fg:'var(--text-dim)',lbl:'da verificare'};
+    // Niente più tag "check-in oggi" per camera: ora è vero per tutte quelle mostrate
+    // (solo cambi), ripeterlo su ogni pillola sarebbe ridondante — lo dice già il titolo.
     return`<span style="display:inline-flex;align-items:center;gap:5px;background:${cfg.bg};color:${cfg.fg};border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:600;">
-      <strong>${r}</strong>${cambio.has(r)?' <span style="font-size:9px;opacity:.7;font-weight:700;">check-in oggi</span>':''} · ${cfg.lbl}
+      <strong>${r}</strong> · ${cfg.lbl}
     </span>`;
   };
-  el.innerHTML=`<div class="kpi-label" style="border-top:1px solid var(--border-light);padding-top:12px;margin-bottom:8px;">🔑 Camere in partenza oggi — stato preparazione</div>
+  el.innerHTML=`<div class="kpi-label" style="border-top:1px solid var(--border-light);padding-top:12px;margin-bottom:8px;">🔑 Camere in partenza con nuovo arrivo oggi — stato preparazione</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;">${rooms.map(chip).join('')}</div>`;
 }
 
