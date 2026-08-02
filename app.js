@@ -2693,11 +2693,17 @@ function hkSuggestMoves(maxN,focusIdx){
         // una camera libera diversa della stessa tipologia (una a testa, non incrociati
         // tra loro: niente scambi multipli, solo destinazioni libere dirette, per restare
         // un'operazione che si può ancora eseguire a mano nel PMS senza troppi passaggi).
+        // A stessa è una destinazione valida: si è appena liberata con la partenza di X,
+        // quindi uno degli occupanti di B potrebbe semplicemente entrare lì — escluderla
+        // a priori scartava soluzioni valide (es. A libera solo in parte delle notti di X,
+        // ma abbastanza per uno dei soggiorni sovrapposti in B).
         if(intralcio.some(z=>!spostabile(z)))return;        // un ospite già in casa: blocco reale, non risolvibile
-        const usate=new Set([A,B]);
+        const candidatiMulti=[A,...stessoTipo.filter(c=>c!==A&&c!==B)];
+        const fitsInCandidato=(Z,C)=>C===A?_hkFits(Z,BL[A],[X],N):_hkFits(Z,BL[C],[],N);
+        const usate=new Set([B]);
         const assegnazioni=[];
         const tutteRicollocate=intralcio.every(Z=>{
-          const C=stessoTipo.find(c=>!usate.has(c)&&_hkFits(Z,BL[c],[],N));
+          const C=candidatiMulti.find(c=>!usate.has(c)&&fitsInCandidato(Z,c));
           if(!C)return false;
           usate.add(C);
           assegnazioni.push({Z,C});
@@ -2706,7 +2712,7 @@ function hkSuggestMoves(maxN,focusIdx){
         if(!tutteRicollocate)return;
         const changesMulti={[A]:(BL[A]||[]).filter(z=>z!==X),
           [B]:(BL[B]||[]).filter(z=>intralcio.indexOf(z)<0).concat([X])};
-        assegnazioni.forEach(({Z,C})=>{changesMulti[C]=(BL[C]||[]).concat([Z]);});
+        assegnazioni.forEach(({Z,C})=>{changesMulti[C]=(changesMulti[C]||BL[C]||[]).concat([Z]);});
         valuta({tipo:'catena-multi',from:A,to:B,cat:tipo,start:X.start,end:X.end,xSpec:!!X.speciale,
                 vias:assegnazioni.map(a=>({room:a.C,start:a.Z.start,end:a.Z.end,speciale:!!a.Z.speciale}))},
                changesMulti);
