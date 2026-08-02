@@ -3203,22 +3203,36 @@ async function renderOvRoomReadiness(giorno){
     if(r.ok){const j=await r.json();if(j&&j.value)state=JSON.parse(j.value);}
   }catch(e){}
   if(!state){try{const s=localStorage.getItem(key);if(s)state=JSON.parse(s);}catch(e){}}
-  const chip=r=>{
+  // Card "day-tile" (stessa impaginazione delle card giorno di pianoNavRender: nome in
+  // alto, due cerchi icona separati da un filo verticale, stato in fondo, bordo colorato
+  // in cima) applicata a ogni camera invece che a un giorno della settimana — molto più
+  // visibile delle pillole di testo di prima. Cerchio sinistro = camera/arrivo (fisso,
+  // navy); cerchio destro = stato pronta/non pronta (colora anche il bordo in cima).
+  const iconDoor='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2"><path d="M3 18v-5a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v5"/><path d="M3 18h18M5 13V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
+  const iconCheck='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>';
+  const iconBroom='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2"><path d="M19 5 9 15"/><path d="M14 20a3 3 0 1 1-6 0c0-1.5 1-2 1-3.5S8 13 8 13h4s-1 1.5-1 3.5 1 2 1 3.5z"/></svg>';
+  const iconQ='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 1.8-2 3.3"/><circle cx="12" cy="17" r=".6" fill="#fff" stroke="none"/></svg>';
+  const roomCard=r=>{
     const p=state&&state[r]?state[r].pronta:null;
-    const cfg=p===true?{bg:'var(--green-bg)',fg:'var(--green)',lbl:'✓ pronta'}
-      :p===false?{bg:'var(--amber-bg)',fg:'var(--amber)',lbl:'🧹 non pronta'}
-      :{bg:'var(--surface2)',fg:'var(--text-dim)',lbl:'da verificare'};
-    // Niente più tag "check-in oggi" per camera: ora è vero per tutte quelle mostrate
-    // (solo cambi), ripeterlo su ogni pillola sarebbe ridondante — lo dice già il titolo.
+    const cfg=p===true?{border:'var(--green)',icon:iconCheck,iconBg:'var(--green)',fg:'var(--green)',lbl:'✓ Pronta'}
+      :p===false?{border:'var(--amber)',icon:iconBroom,iconBg:'var(--amber)',fg:'var(--amber)',lbl:'🧹 Non pronta'}
+      :{border:'var(--border)',icon:iconQ,iconBg:'var(--text-dim)',fg:'var(--text-dim)',lbl:'Da verificare'};
     // Cliccabile per segnarla pronta al volo da Compass — la fonte primaria resta
     // sempre l'app Culligan sul campo, questo è solo un override rapido per il QM
     // quando serve correggere senza aprire il telefono (scrive sulla stessa chiave KV).
-    return`<span onclick="ovMarkRoomPronta('${r}')" title="Clicca per segnare pronta" style="display:inline-flex;align-items:center;gap:5px;background:${cfg.bg};color:${cfg.fg};border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;">
-      <strong>${r}</strong> · ${cfg.lbl}
-    </span>`;
+    return`<div onclick="ovMarkRoomPronta('${r}')" title="Clicca per segnare pronta" style="flex:1;min-width:110px;background:var(--surface);border:1px solid var(--border-light);border-top:3px solid ${cfg.border};border-radius:10px;padding:12px 8px 10px;text-align:center;cursor:pointer;transition:transform .12s;">
+      <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1;">${r}</div>
+      <div style="font-size:11px;color:var(--text-dim);margin:2px 0 8px;">check-in oggi</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;">
+        <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent);flex-shrink:0;">${iconDoor}</div>
+        <div style="width:1px;height:32px;background:var(--border-light);"></div>
+        <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${cfg.iconBg};flex-shrink:0;">${cfg.icon}</div>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:${cfg.fg};">${cfg.lbl}</div>
+    </div>`;
   };
   el.innerHTML=`<div class="kpi-label" style="border-top:1px solid var(--border-light);padding-top:12px;margin-bottom:8px;">🔑 Camere in partenza con nuovo arrivo oggi — stato preparazione</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;">${rooms.map(chip).join('')}</div>`;
+    <div style="display:flex;flex-wrap:wrap;gap:12px;">${rooms.map(roomCard).join('')}</div>`;
 }
 // Segna una camera "pronta" direttamente da Overview — scrive sulla STESSA chiave KV
 // (qm_cm_YYYY-MM-DD) che legge/scrive l'app Culligan sul campo, quella resta sempre la
