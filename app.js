@@ -3183,7 +3183,9 @@ function renderOvCulliganBox(giorno){
 // Letto qui dallo stesso stato giornaliero (qm_cm_YYYY-MM-DD) via KV: la reception lo
 // vede in tempo reale senza dover chiedere via radio/telefono se una camera è pronta.
 // Escluse le camere in fermata: l'ospite è già dentro, "pronta" non ha senso per loro.
+let _ovReadinessGiorno=null;                // ultimo giorno renderizzato, per ri-renderizzare dopo un click
 async function renderOvRoomReadiness(giorno){
+  _ovReadinessGiorno=giorno;
   const el=document.getElementById('ov-room-readiness');if(!el)return;
   if(!giorno){el.innerHTML='';return;}
   const sa=giorno.soulart||{};
@@ -3208,12 +3210,43 @@ async function renderOvRoomReadiness(giorno){
       :{bg:'var(--surface2)',fg:'var(--text-dim)',lbl:'da verificare'};
     // Niente più tag "check-in oggi" per camera: ora è vero per tutte quelle mostrate
     // (solo cambi), ripeterlo su ogni pillola sarebbe ridondante — lo dice già il titolo.
-    return`<span style="display:inline-flex;align-items:center;gap:5px;background:${cfg.bg};color:${cfg.fg};border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:600;">
+    // Cliccabile per segnarla pronta al volo da Compass — la fonte primaria resta
+    // sempre l'app Culligan sul campo, questo è solo un override rapido per il QM
+    // quando serve correggere senza aprire il telefono (scrive sulla stessa chiave KV).
+    return`<span onclick="ovMarkRoomPronta('${r}')" title="Clicca per segnare pronta" style="display:inline-flex;align-items:center;gap:5px;background:${cfg.bg};color:${cfg.fg};border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;">
       <strong>${r}</strong> · ${cfg.lbl}
     </span>`;
   };
   el.innerHTML=`<div class="kpi-label" style="border-top:1px solid var(--border-light);padding-top:12px;margin-bottom:8px;">🔑 Camere in partenza con nuovo arrivo oggi — stato preparazione</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;">${rooms.map(chip).join('')}</div>`;
+}
+// Segna una camera "pronta" direttamente da Overview — scrive sulla STESSA chiave KV
+// (qm_cm_YYYY-MM-DD) che legge/scrive l'app Culligan sul campo, quella resta sempre la
+// fonte primaria di verità: questo è solo un override rapido per il QM, non sostituisce
+// il giro reale. Non tocca visited/checks/consegnata — solo il campo pronta e il ts.
+async function ovMarkRoomPronta(room){
+  const d=new Date();
+  const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let state=null;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+    if(r.ok){const j=await r.json();if(j&&j.value)state=JSON.parse(j.value);}
+  }catch(e){}
+  if(!state){try{const s=localStorage.getItem(key);if(s)state=JSON.parse(s);}catch(e){}}
+  if(!state)state={};
+  if(!state[room]){
+    // Stessa forma di _defaultRoom() in controllo-mattino.html — se la camera non è
+    // ancora stata toccata dall'app Culligan oggi, crea un oggetto compatibile invece
+    // di scriverne uno parziale che confonderebbe l'app quando lo rilegge.
+    const checks={};
+    Object.keys(CM_LABELS).forEach(id=>checks[id]=true);
+    state[room]={visited:false,libera:false,dnd:false,bottiglia:'consumata',checks,note:'',consegnata:false,pronta:null};
+  }
+  state[room].pronta=true;
+  state[room].ts=Date.now();
+  try{localStorage.setItem(key,JSON.stringify(state));}catch(e){}
+  kvSet(key,JSON.stringify(state)).catch(()=>{});
+  if(_ovReadinessGiorno)renderOvRoomReadiness(_ovReadinessGiorno);
 }
 
 function pianoOvInit(){
