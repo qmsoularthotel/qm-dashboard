@@ -10181,9 +10181,19 @@ function receptionRender(){
 // Traccia digitale della distinta cartacea che le housekeeper compilano ogni giorno
 // (data / tipologia / quantità / motivo / firma HK). Le HKP continuano a scrivere sul
 // cartaceo — questa vista è solo per il QM, che trascrive qui i dati e da qui genera la
-// distinta riepilogativa A4 da far firmare a Raimondo ogni 15 giorni. Solo SoulArt.
+// distinta riepilogativa A4 da far firmare a Raimondo ogni 15 giorni.
+// Le due strutture che fanno capo al QM: Art Resort resta fuori di proposito (fa capo al
+// Sig. Maddaloni, non al QM, e la sua ditta di pulizie è esterna).
 const RESI_KEY='qm_resi_biancheria';
-const RESI_HOTEL='SoulArt Hotel';
+const RESI_HOTELS={sa:'SoulArt Hotel',bh:'Boutique Hotel Piazza Carità'};
+// Struttura selezionata nella vista. Righe/ritiri salvati prima di questa aggiunta non
+// hanno il campo `hotel`: valgono come SoulArt (era l'unica struttura gestita), così i
+// dati già inseriti restano dove sono invece di sparire dal filtro.
+let _resiHotel='sa';
+const _resiH=x=>x.hotel||'sa';
+// Ogni quanti giorni va consegnato il sacco a Raimondo — oltre questa soglia la vista
+// segnala che il periodo aperto è da chiudere.
+const RESI_GIORNI_RITIRO=15;
 // Tipologie e motivi predefiniti — modificabili dall'interfaccia (salvati nella stessa
 // chiave KV), così i totali per tipologia restano coerenti invece di dipendere da come
 // ognuno scrive la stessa cosa.
@@ -10217,7 +10227,23 @@ function _resiSave(){
 
 // Righe non ancora consegnate a Raimondo = periodo aperto in corso. Registrando un
 // ritiro vengono "chiuse" (ritiroId valorizzato) e non compaiono più nel periodo aperto.
-function _resiAperte(){return _resi.righe.filter(r=>!r.ritiroId);}
+// Sempre filtrate per struttura: i due sacchi sono distinti e vanno consegnati separati.
+function _resiAperte(h){const hot=h||_resiHotel;return _resi.righe.filter(r=>!r.ritiroId&&_resiH(r)===hot);}
+function _resiRitiri(h){const hot=h||_resiHotel;return _resi.ritiri.filter(r=>_resiH(r)===hot);}
+function resiSetHotel(h){if(!RESI_HOTELS[h])return;_resiHotel=h;resiRender();}
+// Da quanti giorni non si consegna: dall'ultimo ritiro della struttura, o — se non ce n'è
+// mai stato uno — dal reso più vecchio ancora aperto. null quando non c'è nulla da
+// consegnare (niente righe aperte = nessun sacco in attesa, nessun avviso da dare).
+function _resiGiorniDaUltimoRitiro(h){
+  const aperte=_resiAperte(h);
+  if(!aperte.length)return null;
+  const rit=_resiRitiri(h).map(r=>_resiParseData(r.dataRitiro)).filter(Boolean).sort((a,b)=>b-a);
+  const date=aperte.map(r=>_resiParseData(r.data)).filter(Boolean).sort((a,b)=>a-b);
+  const rif=rit.length?rit[0]:(date.length?date[0]:null);
+  if(!rif)return null;
+  const oggi=new Date();oggi.setHours(0,0,0,0);
+  return Math.floor((oggi-rif)/86400000);
+}
 
 // Il form di inserimento è sempre visibile in cima alla vista: il bottone "+ Nuovo reso"
 // nell'intestazione del pannello serve solo a portarci il focus quando si è più in basso
@@ -10241,7 +10267,7 @@ function resiSubmit(){
   // input type=date restituisce yyyy-MM-dd: si normalizza a dd/MM/yyyy come nel cartaceo
   const iso=data.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   const dataIt=iso?`${iso[3]}/${iso[2]}/${iso[1]}`:data;
-  _resi.righe.push({id:_resiUid(),ts:Date.now(),data:dataIt,tipologia,qta,motivo,hk,ritiroId:null,edits:[]});
+  _resi.righe.push({id:_resiUid(),ts:Date.now(),hotel:_resiHotel,data:dataIt,tipologia,qta,motivo,hk,ritiroId:null,edits:[]});
   _resiSave();
   const q=document.getElementById('resi-f-qta');if(q)q.value='';
   resiRender();
@@ -10279,7 +10305,7 @@ function resiRegistraRitiro(){
   const dataRitiro=prompt('Data del ritiro (gg/mm/aaaa):',_resiFmtData(new Date()));
   if(!dataRitiro)return;
   const date=aperte.map(r=>_resiParseData(r.data)).filter(Boolean).sort((a,b)=>a-b);
-  const rit={id:_resiUid(),ts:Date.now(),
+  const rit={id:_resiUid(),ts:Date.now(),hotel:_resiHotel,
     dal:date.length?_resiFmtData(date[0]):dataRitiro,
     al:date.length?_resiFmtData(date[date.length-1]):dataRitiro,
     sacchi:nSacchi,totPezzi,dataRitiro,firmato:false};
@@ -10321,9 +10347,37 @@ function resiRender(){
   const oggiIso=new Date().toISOString().slice(0,10);
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
+  // Selettore struttura: i due sacchi sono distinti e si consegnano separatamente, quindi
+  // periodo aperto, totali, avviso e distinta sono sempre di una struttura sola. Il badge
+  // sulla linguetta non attiva segnala se anche lì c'è un periodo da chiudere, altrimenti
+  // un ritardo sull'altra struttura resterebbe invisibile finché non ci si passa sopra.
+  const tabs=Object.entries(RESI_HOTELS).map(([k,nome])=>{
+    const att=k===_resiHotel;
+    const gg=_resiGiorniDaUltimoRitiro(k);
+    const late=gg!==null&&gg>=RESI_GIORNI_RITIRO;
+    return`<button onclick="resiSetHotel('${k}')" style="padding:9px 18px;border:1px solid var(--border);border-bottom:none;border-radius:6px 6px 0 0;background:${att?'#fff':'var(--surface2)'};color:${att?'var(--accent)':'var(--text-dim)'};font-weight:600;font-size:var(--fs-xs);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;display:inline-flex;align-items:center;gap:7px;">
+      ${esc(nome)}${!att&&late?`<span style="width:7px;height:7px;border-radius:50%;background:var(--amber);"></span>`:''}
+    </button>`;
+  }).join('');
+  let h=`<div style="display:flex;gap:6px;border-bottom:1px solid var(--border);margin-bottom:18px;">${tabs}</div>`;
+
+  // Avviso ritiro: il sacco va consegnato ogni 15 giorni. Compare solo se c'è davvero
+  // qualcosa da consegnare (righe aperte) — senza resi in attesa non c'è nulla da
+  // sollecitare, e un avviso perenne diventerebbe rumore da ignorare.
+  const gg=_resiGiorniDaUltimoRitiro();
+  if(gg!==null&&gg>=RESI_GIORNI_RITIRO){
+    h+=`<div style="background:var(--amber-bg);border:1.5px solid var(--amber);border-radius:8px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:18px;">⚠️</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:var(--fs-sm);font-weight:700;color:#7a3a00;">Sacco da consegnare a Raimondo — ${gg} giorni dall'ultimo ritiro</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:2px;">${totPezzi} pezzi in attesa per ${esc(RESI_HOTELS[_resiHotel])}. Stampa la distinta e registra il ritiro quando passa.</div>
+      </div>
+    </div>`;
+  }
+
   // Form di inserimento — sempre visibile, è l'azione principale di questa vista
-  let h=`<div id="resi-form" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:14px 16px;margin-bottom:18px;">
-    <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Nuovo reso — ${RESI_HOTEL}</div>
+  h+=`<div id="resi-form" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:14px 16px;margin-bottom:18px;">
+    <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Nuovo reso — ${esc(RESI_HOTELS[_resiHotel])}</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
       <div style="flex:0 0 140px;">
         <label style="display:block;font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:4px;">Data</label>
@@ -10406,7 +10460,7 @@ function resiRender(){
   </table></div>`;
 
   // Storico ritiri già consegnati a Raimondo
-  const ritiri=_resi.ritiri.slice().sort((a,b)=>b.ts-a.ts);
+  const ritiri=_resiRitiri().slice().sort((a,b)=>b.ts-a.ts);
   if(ritiri.length){
     h+=`<div style="font-size:var(--fs-sm);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:26px 0 10px;">Ritiri consegnati a Raimondo</div>`;
     h+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
@@ -10440,6 +10494,9 @@ function resiPrintDistinta(ritiroId){
   const righe=ritiroId?_resi.righe.filter(r=>r.ritiroId===ritiroId):_resiAperte();
   if(!righe.length){alert('Nessun reso da stampare per questo periodo.');return;}
   const rit=ritiroId?_resi.ritiri.find(x=>x.id===ritiroId):null;
+  // La struttura è quella del ritiro che si sta ristampando, non quella selezionata ora
+  // nella vista: ristampando un vecchio periodo l'intestazione deve restare la sua.
+  const hotelNome=RESI_HOTELS[rit?_resiH(rit):_resiHotel]||RESI_HOTELS.sa;
   const ord=righe.slice().sort((a,b)=>{
     const da=_resiParseData(a.data),db=_resiParseData(b.data);
     return (da?da.getTime():0)-(db?db.getTime():0);
@@ -10477,7 +10534,7 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 </style></head><body>
   <div class="hdr">
     <div><div class="title">Distinta Reso Biancheria Inidonea</div><div class="sub">Fornitore Raimondo</div></div>
-    <div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">${RESI_HOTEL}</div></div>
+    <div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">${esc(hotelNome)}</div></div>
   </div>
   <div class="meta">
     <div><div class="meta-lbl">Periodo dal</div><div class="meta-val">${esc(dal)}</div></div>

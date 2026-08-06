@@ -920,21 +920,29 @@ Campi: data/ora dal movimento, importo, **Consegna (amministrativo)** = `m.perso
 
 Traccia digitale della **distinta cartacea** che le housekeeper compilano ogni giorno per la biancheria macchiata/difettata da rendere al fornitore Raimondo. Deliberatamente **solo lato Compass e solo per il QM**: le HKP continuano a scrivere sul modulo cartaceo come da procedura, il QM trascrive qui e da qui genera la distinta riepilogativa A4 da far firmare a Raimondo. Nessuna app mobile per le cameriere, nessun accesso per la ditta esterna di Art Resort.
 
-**Solo SoulArt Hotel** (`RESI_HOTEL`): Boutique e Art Resort restano interamente su carta (Art Resort fa capo al Sig. Maddaloni, non al QM). Se un domani servisse anche il Boutique, va aggiunto un selettore struttura — oggi la costante è fissa apposta.
+**Due strutture** (`RESI_HOTELS`): SoulArt Hotel (`sa`) e Boutique Hotel Piazza Carità (`bh`), selezionabili a linguette. **Art Resort resta fuori di proposito** — fa capo al Sig. Maddaloni, non al QM, e la sua ditta di pulizie è esterna. I due sacchi sono fisicamente distinti e si consegnano separatamente, quindi periodo aperto, totali, avviso e distinta sono **sempre di una struttura sola**.
 
 ### Modello dati (chiave KV `qm_resi_biancheria`)
 
 ```js
 {
-  righe:  [{id, ts, data:'dd/MM/yyyy', tipologia, qta, motivo, hk, ritiroId, edits:[]}],
-  ritiri: [{id, ts, dal, al, sacchi, totPezzi, dataRitiro, firmato}],
-  tipologie: [...]   // null = usa RESI_TIPOLOGIE_DEFAULT
+  righe:  [{id, ts, hotel:'sa'|'bh', data:'dd/MM/yyyy', tipologia, qta, motivo, hk, ritiroId, edits:[]}],
+  ritiri: [{id, ts, hotel, dal, al, sacchi, totPezzi, dataRitiro, firmato}],
+  tipologie: [...]   // null = usa RESI_TIPOLOGIE_DEFAULT (condivise tra le strutture)
 }
 ```
+
+Righe e ritiri salvati **prima** dell'aggiunta del Boutique non hanno il campo `hotel`: `_resiH()` li fa valere come SoulArt (era l'unica struttura gestita), così i dati già inseriti restano dove sono invece di sparire dal filtro.
 
 **Periodo aperto = righe con `ritiroId:null`.** Non esiste una "quindicina" calcolata a calendario: le righe si accumulano nel periodo aperto finché non si registra un ritiro, che le chiude tutte assegnando il proprio id — rispecchia la procedura reale (il ritiro avviene "ogni 15 giorni" ma nella pratica quando passa Raimondo). Il periodo `dal`/`al` del ritiro è ricavato dalle **date minime/massime delle righe**, non dalla data del ritiro. `resiDelRitiro()` annulla un ritiro rimettendo le sue righe nel periodo aperto.
 
 Le correzioni di quantità (`resiEditQta`) aggiungono sempre una riga a `edits[]` con vecchio/nuovo valore e motivo — stesso principio della cassa reception, mai sovrascrittura silenziosa.
+
+### Avviso ritiro (`RESI_GIORNI_RITIRO = 15`)
+
+`_resiGiorniDaUltimoRitiro(hotel)` conta i giorni **dall'ultimo ritiro** della struttura, o — se non ce n'è mai stato uno — **dal reso più vecchio ancora aperto**. Oltre la soglia compare un banner ambra sopra il form.
+
+Ritorna `null` (nessun avviso) quando **non ci sono righe aperte**: senza resi in attesa non c'è nulla da sollecitare, e un avviso perenne diventerebbe rumore da ignorare. Sulla linguetta della struttura **non** selezionata compare un pallino ambra se anche lì il periodo è da chiudere — altrimenti un ritardo sull'altra struttura resterebbe invisibile finché non ci si passa sopra.
 
 ### Tipologie e motivi
 
@@ -943,6 +951,8 @@ Le correzioni di quantità (`resiEditQta`) aggiungono sempre una riga a `edits[]
 ### Stampa A4 (`resiPrintDistinta(ritiroId)`)
 
 Replica il modulo cartaceo originale: intestazione struttura + periodo + totale pezzi, riquadro con le 3 note della procedura, tabella `Data | Tipologia | Quantità | Motivo | Firma HK`, blocco "Ritiro Fornitore Raimondo" con n° sacchi/totale/data e riga firma, blocco "Consegna distinta firmata" al Sig. Presta. Senza argomento stampa il **periodo aperto** (righe da consegnare); con un `ritiroId` **ristampa** un periodo già consegnato. Stesso pattern `window.open` + `document.write` + `print()` usato altrove nel dashboard.
+
+L'intestazione riporta la struttura **del ritiro che si sta ristampando** (`rit.hotel`), non quella selezionata al momento nella vista: ristampando un vecchio periodo del Boutique mentre si è sulla linguetta SoulArt, la distinta deve restare del Boutique.
 
 ---
 
