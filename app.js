@@ -593,8 +593,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Room Division','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Room Division','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano',hkpsheet:'Operativa Housekeeping',hkpsheetar:'Operativa Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Biancheria'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -1604,6 +1604,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='turni-pref'){try{turniPrefRender();turniPrefMarkAllSeen();}catch(e){}}
   if(id==='controllo-mattino'){try{cmLoad();}catch(e){}}
   if(id==='reception'){try{receptionLoad();}catch(e){}}
+  if(id==='resi-biancheria'){try{resiLoad();}catch(e){}}
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
   // .staff-area-mirror) — ririchiamato qui solo per popolare lo specchio se la vista
   // viene aperta prima che Overview l'abbia mai fatto in questa sessione.
@@ -10174,4 +10175,347 @@ function receptionRender(){
   </table></div>`;
 
   el.innerHTML=h;
+}
+
+// §§ RESI BIANCHERIA — Distinta reso biancheria inidonea (Fornitore Raimondo)
+// Traccia digitale della distinta cartacea che le housekeeper compilano ogni giorno
+// (data / tipologia / quantità / motivo / firma HK). Le HKP continuano a scrivere sul
+// cartaceo — questa vista è solo per il QM, che trascrive qui i dati e da qui genera la
+// distinta riepilogativa A4 da far firmare a Raimondo ogni 15 giorni. Solo SoulArt.
+const RESI_KEY='qm_resi_biancheria';
+const RESI_HOTEL='SoulArt Hotel';
+// Tipologie e motivi predefiniti — modificabili dall'interfaccia (salvati nella stessa
+// chiave KV), così i totali per tipologia restano coerenti invece di dipendere da come
+// ognuno scrive la stessa cosa.
+const RESI_TIPOLOGIE_DEFAULT=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Copripiumino matrimoniale','Copripiumino singolo','Coprimaterasso','Asciugamano viso','Asciugamano corpo','Asciugamano bidet','Tappetino bagno','Accappatoio','Tovaglia','Tovagliolo'];
+const RESI_MOTIVI=['Macchiata','Strappata','Usurata','Ingiallita','Bruciata','Scolorita','Altro'];
+let _resi={righe:[],ritiri:[],tipologie:null};
+
+function _resiUid(){return Date.now()+'_'+Math.random().toString(36).slice(2,8);}
+function _resiTipologie(){return (_resi.tipologie&&_resi.tipologie.length)?_resi.tipologie:RESI_TIPOLOGIE_DEFAULT;}
+function _resiFmtData(d){const x=d instanceof Date?d:new Date(d);return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear();}
+// dd/MM/yyyy -> Date, per ordinare e trovare il periodo (min/max) di un gruppo di righe
+function _resiParseData(s){const m=String(s||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;}
+
+async function resiLoad(){
+  const el=document.getElementById('resi-content');if(!el)return;
+  el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Caricamento…</div>';
+  let data=null;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(RESI_KEY),{cache:'no-store'});
+    if(r.ok){const j=await r.json();if(j&&j.value)data=JSON.parse(j.value);}
+  }catch(e){}
+  if(!data){try{const s=localStorage.getItem(RESI_KEY);if(s)data=JSON.parse(s);}catch(e){}}
+  _resi=Object.assign({righe:[],ritiri:[],tipologie:null},data||{});
+  resiRender();
+}
+function _resiSave(){
+  const json=JSON.stringify(_resi);
+  try{localStorage.setItem(RESI_KEY,json);}catch(e){}
+  kvSet(RESI_KEY,json).catch(()=>{});
+}
+
+// Righe non ancora consegnate a Raimondo = periodo aperto in corso. Registrando un
+// ritiro vengono "chiuse" (ritiroId valorizzato) e non compaiono più nel periodo aperto.
+function _resiAperte(){return _resi.righe.filter(r=>!r.ritiroId);}
+
+// Il form di inserimento è sempre visibile in cima alla vista: il bottone "+ Nuovo reso"
+// nell'intestazione del pannello serve solo a portarci il focus quando si è più in basso
+// nella pagina, non ad aprire/chiudere nulla.
+function resiAddRow(){
+  const f=document.getElementById('resi-form');
+  if(!f)return;
+  f.scrollIntoView({behavior:'smooth',block:'center'});
+  const q=document.getElementById('resi-f-qta');
+  if(q)setTimeout(()=>q.focus(),300);
+}
+function resiSubmit(){
+  const data=(document.getElementById('resi-f-data')||{}).value||'';
+  const tipologia=(document.getElementById('resi-f-tipologia')||{}).value||'';
+  const qta=parseInt((document.getElementById('resi-f-qta')||{}).value,10);
+  const motivo=(document.getElementById('resi-f-motivo')||{}).value||'';
+  const hk=((document.getElementById('resi-f-hk')||{}).value||'').trim();
+  if(!data){alert('Inserisci la data.');return;}
+  if(!tipologia){alert('Seleziona la tipologia del pezzo.');return;}
+  if(isNaN(qta)||qta<=0){alert('Inserisci una quantità valida.');return;}
+  // input type=date restituisce yyyy-MM-dd: si normalizza a dd/MM/yyyy come nel cartaceo
+  const iso=data.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const dataIt=iso?`${iso[3]}/${iso[2]}/${iso[1]}`:data;
+  _resi.righe.push({id:_resiUid(),ts:Date.now(),data:dataIt,tipologia,qta,motivo,hk,ritiroId:null,edits:[]});
+  _resiSave();
+  const q=document.getElementById('resi-f-qta');if(q)q.value='';
+  resiRender();
+}
+function resiDelRow(id){
+  const i=_resi.righe.findIndex(r=>r.id===id);if(i<0)return;
+  const r=_resi.righe[i];
+  if(!confirm(`Eliminare il reso del ${r.data} — ${r.tipologia} ×${r.qta}?`))return;
+  _resi.righe.splice(i,1);
+  _resiSave();resiRender();
+}
+// Correzione con storico, mai sovrascrittura silenziosa — stesso principio della cassa.
+function resiEditQta(id){
+  const r=_resi.righe.find(x=>x.id===id);if(!r)return;
+  const v=prompt(`Nuova quantità per "${r.tipologia}" del ${r.data} (attuale: ${r.qta}):`,r.qta);
+  if(v===null)return;
+  const n=parseInt(v,10);if(isNaN(n)||n<=0){alert('Quantità non valida.');return;}
+  const motivo=prompt('Motivo della correzione:','');
+  if(!motivo)return;
+  r.edits=r.edits||[];
+  r.edits.push({ts:Date.now(),persona:'Quality Manager',campo:'qta',vecchio:r.qta,nuovo:n,motivo});
+  r.qta=n;
+  _resiSave();resiRender();
+}
+// Chiude il periodo aperto: tutte le righe non consegnate vengono associate al ritiro,
+// con il periodo (dal/al) ricavato dalle date delle righe stesse.
+function resiRegistraRitiro(){
+  const aperte=_resiAperte();
+  if(!aperte.length){alert('Nessun reso da consegnare in questo periodo.');return;}
+  const totPezzi=aperte.reduce((s,r)=>s+r.qta,0);
+  const sacchi=prompt(`Sacchi ritirati da Raimondo (totale pezzi: ${totPezzi}):`,'1');
+  if(sacchi===null)return;
+  const nSacchi=parseInt(sacchi,10);
+  if(isNaN(nSacchi)||nSacchi<=0){alert('Numero sacchi non valido.');return;}
+  const dataRitiro=prompt('Data del ritiro (gg/mm/aaaa):',_resiFmtData(new Date()));
+  if(!dataRitiro)return;
+  const date=aperte.map(r=>_resiParseData(r.data)).filter(Boolean).sort((a,b)=>a-b);
+  const rit={id:_resiUid(),ts:Date.now(),
+    dal:date.length?_resiFmtData(date[0]):dataRitiro,
+    al:date.length?_resiFmtData(date[date.length-1]):dataRitiro,
+    sacchi:nSacchi,totPezzi,dataRitiro,firmato:false};
+  _resi.ritiri.push(rit);
+  aperte.forEach(r=>{r.ritiroId=rit.id;});
+  _resiSave();resiRender();
+}
+// La distinta cartacea torna firmata da Raimondo: si spunta qui, così si vede subito
+// quali periodi sono chiusi davvero e quali sono ancora in attesa della ricevuta.
+function resiToggleFirmato(id){
+  const r=_resi.ritiri.find(x=>x.id===id);if(!r)return;
+  r.firmato=!r.firmato;
+  _resiSave();resiRender();
+}
+function resiDelRitiro(id){
+  const i=_resi.ritiri.findIndex(x=>x.id===id);if(i<0)return;
+  if(!confirm('Annullare questo ritiro? I resi torneranno nel periodo aperto.'))return;
+  _resi.righe.forEach(r=>{if(r.ritiroId===id)r.ritiroId=null;});
+  _resi.ritiri.splice(i,1);
+  _resiSave();resiRender();
+}
+function resiEditTipologie(){
+  const cur=_resiTipologie().join('\n');
+  const v=prompt('Tipologie di pezzo (una per riga):',cur);
+  if(v===null)return;
+  const list=v.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!list.length){alert('Serve almeno una tipologia.');return;}
+  _resi.tipologie=list;
+  _resiSave();resiRender();
+}
+
+function resiRender(){
+  const el=document.getElementById('resi-content');if(!el)return;
+  const aperte=_resiAperte().slice().sort((a,b)=>{
+    const da=_resiParseData(a.data),db=_resiParseData(b.data);
+    return (db?db.getTime():0)-(da?da.getTime():0)||b.ts-a.ts;
+  });
+  const totPezzi=aperte.reduce((s,r)=>s+r.qta,0);
+  const oggiIso=new Date().toISOString().slice(0,10);
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Form di inserimento — sempre visibile, è l'azione principale di questa vista
+  let h=`<div id="resi-form" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:14px 16px;margin-bottom:18px;">
+    <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Nuovo reso — ${RESI_HOTEL}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:0 0 140px;">
+        <label style="display:block;font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:4px;">Data</label>
+        <input type="date" id="resi-f-data" value="${oggiIso}" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:#fff;color:var(--text);">
+      </div>
+      <div style="flex:1 1 200px;min-width:160px;">
+        <label style="display:block;font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:4px;">Tipologia pezzo</label>
+        <select id="resi-f-tipologia" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:#fff;color:var(--text);">
+          ${_resiTipologie().map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('')}
+        </select>
+      </div>
+      <div style="flex:0 0 90px;">
+        <label style="display:block;font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:4px;">Quantità</label>
+        <input type="number" id="resi-f-qta" min="1" step="1" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:#fff;color:var(--text);">
+      </div>
+      <div style="flex:0 0 140px;">
+        <label style="display:block;font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:4px;">Motivo reso</label>
+        <select id="resi-f-motivo" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:#fff;color:var(--text);">
+          ${RESI_MOTIVI.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('')}
+        </select>
+      </div>
+      <div style="flex:0 0 140px;">
+        <label style="display:block;font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:4px;">Housekeeper</label>
+        <input type="text" id="resi-f-hk" placeholder="chi ha firmato" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:#fff;color:var(--text);">
+      </div>
+      <button onclick="resiSubmit()" style="background:var(--accent);color:#fff;border:none;padding:9px 18px;border-radius:6px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">Aggiungi</button>
+    </div>
+    <div style="margin-top:8px;"><span onclick="resiEditTipologie()" style="font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Modifica elenco tipologie</span></div>
+  </div>`;
+
+  // Riepilogo del periodo aperto: totale + dettaglio per tipologia (è il numero che
+  // finisce sulla distinta e che Raimondo controlla al ritiro)
+  const perTip={};
+  aperte.forEach(r=>{perTip[r.tipologia]=(perTip[r.tipologia]||0)+r.qta;});
+  const tipRows=Object.entries(perTip).sort((a,b)=>b[1]-a[1]);
+  h+=`<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;margin-bottom:18px;align-items:stretch;max-width:720px;">
+    <div class="kpi-card blue">
+      <div class="kpi-card-icon" style="background:var(--accent-bg);color:var(--accent);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/></svg></div>
+      <div class="kpi-label">Pezzi da consegnare</div>
+      <div class="kpi-value">${totPezzi}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-icon" style="background:var(--gold-bg);color:var(--gold);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg></div>
+      <div class="kpi-label">Righe in distinta</div>
+      <div class="kpi-value">${aperte.length}</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:16px 20px;display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:180px;">
+      <button onclick="resiPrintDistinta()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">🖨️ Stampa distinta A4</button>
+      <button onclick="resiRegistraRitiro()" style="background:#fff;color:var(--accent);border:1.5px solid var(--border);border-radius:7px;padding:9px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">✓ Registra ritiro Raimondo</button>
+    </div>
+  </div>`;
+
+  if(tipRows.length){
+    h+=`<div style="font-size:var(--fs-sm);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:0 0 10px;">Totale per tipologia</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">${tipRows.map(([t,n])=>`<span style="background:var(--surface2);border:1px solid var(--border-light);border-radius:20px;padding:5px 13px;font-size:var(--fs-xs);color:var(--text);">${esc(t)} <b>${n}</b></span>`).join('')}</div>`;
+  }
+
+  // Elenco righe del periodo aperto
+  h+=`<div style="font-size:var(--fs-sm);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:0 0 10px;">Periodo aperto — resi non ancora consegnati</div>`;
+  h+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+    <thead><tr style="background:var(--surface2);">
+      <th style="text-align:left;padding:8px 10px;">Data</th>
+      <th style="text-align:left;padding:8px 10px;">Tipologia pezzo</th>
+      <th style="text-align:right;padding:8px 10px;">Quantità</th>
+      <th style="text-align:left;padding:8px 10px;">Motivo reso</th>
+      <th style="text-align:left;padding:8px 10px;">Housekeeper</th>
+      <th></th>
+    </tr></thead>
+    <tbody>${aperte.length?aperte.map(r=>{
+      const editedTag=r.edits&&r.edits.length?` <span style="font-size:10px;color:var(--text-dim);font-style:italic;">(corretto ${r.edits.length}×)</span>`:'';
+      return`<tr style="border-bottom:1px solid var(--border-light);">
+        <td style="padding:8px 10px;white-space:nowrap;">${esc(r.data)}</td>
+        <td style="padding:8px 10px;">${esc(r.tipologia)}</td>
+        <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${r.qta}${editedTag}</td>
+        <td style="padding:8px 10px;color:var(--text-dim);">${esc(r.motivo)}</td>
+        <td style="padding:8px 10px;color:var(--text-dim);">${esc(r.hk)||'—'}</td>
+        <td style="padding:8px 10px;white-space:nowrap;">${_receptionActBtn(RECEPTION_ICON_CORREGGI,'Correggi quantità',`resiEditQta('${r.id}')`)}${_receptionActBtn(RECEPTION_ICON_CANCELLA,'Elimina',`resiDelRow('${r.id}')`)}</td>
+      </tr>`;
+    }).join(''):'<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-dim);font-style:italic;">Nessun reso registrato in questo periodo.</td></tr>'}</tbody>
+  </table></div>`;
+
+  // Storico ritiri già consegnati a Raimondo
+  const ritiri=_resi.ritiri.slice().sort((a,b)=>b.ts-a.ts);
+  if(ritiri.length){
+    h+=`<div style="font-size:var(--fs-sm);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:26px 0 10px;">Ritiri consegnati a Raimondo</div>`;
+    h+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+      <thead><tr style="background:var(--surface2);">
+        <th style="text-align:left;padding:8px 10px;">Periodo</th>
+        <th style="text-align:left;padding:8px 10px;">Data ritiro</th>
+        <th style="text-align:right;padding:8px 10px;">Sacchi</th>
+        <th style="text-align:right;padding:8px 10px;">Pezzi</th>
+        <th style="text-align:left;padding:8px 10px;">Ricevuta firmata</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${ritiri.map(rt=>`<tr style="border-bottom:1px solid var(--border-light);">
+        <td style="padding:8px 10px;white-space:nowrap;">${esc(rt.dal)} → ${esc(rt.al)}</td>
+        <td style="padding:8px 10px;white-space:nowrap;">${esc(rt.dataRitiro)}</td>
+        <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${rt.sacchi}</td>
+        <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${rt.totPezzi}</td>
+        <td style="padding:8px 10px;"><span onclick="resiToggleFirmato('${rt.id}')" style="cursor:pointer;font-size:var(--fs-xxs);font-weight:600;padding:4px 11px;border-radius:20px;background:${rt.firmato?'var(--green-bg)':'var(--amber-bg)'};color:${rt.firmato?'var(--green)':'var(--amber)'};">${rt.firmato?'✓ firmata':'in attesa'}</span></td>
+        <td style="padding:8px 10px;white-space:nowrap;">${_receptionActBtn(RECEPTION_ICON_STAMPA,'Ristampa distinta',`resiPrintDistinta('${rt.id}')`)}${_receptionActBtn(RECEPTION_ICON_CANCELLA,'Annulla ritiro',`resiDelRitiro('${rt.id}')`)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+
+  el.innerHTML=h;
+}
+
+// Stampa A4 della distinta — stesso impianto del modulo cartaceo (intestazione struttura
+// e periodo, tabella data/tipologia/quantità/motivo/firma HK, blocco ritiro con firma di
+// Raimondo e blocco consegna al Sig. Presta). Senza id stampa il periodo aperto; con un
+// ritiroId ristampa quel periodo già consegnato.
+function resiPrintDistinta(ritiroId){
+  const righe=ritiroId?_resi.righe.filter(r=>r.ritiroId===ritiroId):_resiAperte();
+  if(!righe.length){alert('Nessun reso da stampare per questo periodo.');return;}
+  const rit=ritiroId?_resi.ritiri.find(x=>x.id===ritiroId):null;
+  const ord=righe.slice().sort((a,b)=>{
+    const da=_resiParseData(a.data),db=_resiParseData(b.data);
+    return (da?da.getTime():0)-(db?db.getTime():0);
+  });
+  const date=ord.map(r=>_resiParseData(r.data)).filter(Boolean);
+  const dal=rit?rit.dal:(date.length?_resiFmtData(date[0]):'___/___/____');
+  const al=rit?rit.al:(date.length?_resiFmtData(date[date.length-1]):'___/___/____');
+  const totPezzi=ord.reduce((s,r)=>s+r.qta,0);
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Distinta Reso Biancheria</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;font-size:10.5pt;}
+@page{size:A4;margin:16mm;}
+.hdr{border-bottom:1.5px solid #111;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;}
+.title{font-size:14pt;font-weight:700;letter-spacing:.01em;}
+.sub{font-size:9pt;color:#555;margin-top:2px;}
+.meta{display:flex;gap:34px;margin-bottom:14px;font-size:10pt;}
+.meta-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;}
+.meta-val{font-weight:700;margin-top:2px;}
+.warn{border:1px solid #999;padding:8px 10px;margin-bottom:14px;font-size:8.5pt;line-height:1.6;color:#333;}
+table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+th{text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:1.5px solid #111;padding:6px 6px;}
+td{padding:7px 6px;border-bottom:1px solid #ccc;font-size:10pt;}
+td.r{text-align:right;}
+tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-top:8px;}
+.blk{border:1px solid #999;padding:10px 12px;margin-bottom:12px;}
+.blk-t{font-size:8.5pt;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:#333;margin-bottom:10px;}
+.row{display:flex;gap:26px;margin-bottom:12px;}
+.f{flex:1;}
+.f-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;margin-bottom:3px;}
+.f-val{font-size:11pt;border-bottom:1px solid #999;padding-bottom:4px;min-height:17px;}
+.sign{border-bottom:1px solid #111;margin-top:34px;}
+.sign-c{font-size:8pt;color:#555;margin-top:4px;}
+</style></head><body>
+  <div class="hdr">
+    <div><div class="title">Distinta Reso Biancheria Inidonea</div><div class="sub">Fornitore Raimondo</div></div>
+    <div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">${RESI_HOTEL}</div></div>
+  </div>
+  <div class="meta">
+    <div><div class="meta-lbl">Periodo dal</div><div class="meta-val">${esc(dal)}</div></div>
+    <div><div class="meta-lbl">al</div><div class="meta-val">${esc(al)}</div></div>
+    <div><div class="meta-lbl">Totale pezzi</div><div class="meta-val">${totPezzi}</div></div>
+  </div>
+  <div class="warn">
+    • Mettere la biancheria macchiata / difettata in un sacco distinto, dedicato esclusivamente a Raimondo.<br>
+    • NON conteggiarla come normale biancheria sporca nei dati giornalieri.<br>
+    • A fine servizio, consegnare la lista al Sig. Presta.
+  </div>
+  <table>
+    <thead><tr><th style="width:70px;">Data</th><th>Tipologia pezzo</th><th style="width:60px;text-align:right;">Quantità</th><th style="width:110px;">Motivo reso</th><th style="width:120px;">Firma HK</th></tr></thead>
+    <tbody>${ord.map(r=>`<tr><td>${esc(r.data)}</td><td>${esc(r.tipologia)}</td><td class="r">${r.qta}</td><td>${esc(r.motivo)}</td><td>${esc(r.hk)}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="2">Totale pezzi</td><td class="r">${totPezzi}</td><td colspan="2"></td></tr></tfoot>
+  </table>
+  <div class="blk">
+    <div class="blk-t">Ritiro Fornitore Raimondo (ogni 15 giorni)</div>
+    <div class="row">
+      <div class="f"><div class="f-lbl">Sacchi ritirati n°</div><div class="f-val">${rit?esc(String(rit.sacchi)):'&nbsp;'}</div></div>
+      <div class="f"><div class="f-lbl">Totale pezzi</div><div class="f-val">${totPezzi}</div></div>
+      <div class="f"><div class="f-lbl">Data</div><div class="f-val">${rit?esc(rit.dataRitiro):'&nbsp;'}</div></div>
+    </div>
+    <div class="sign"></div>
+    <div class="sign-c">Firma per ricevuta — Fornitore Raimondo</div>
+  </div>
+  <div class="blk">
+    <div class="blk-t">Consegna distinta firmata</div>
+    <div class="row">
+      <div class="f"><div class="f-lbl">Consegnata a</div><div class="f-val">Sig. Presta</div></div>
+      <div class="f"><div class="f-lbl">Data</div><div class="f-val">&nbsp;</div></div>
+    </div>
+    <div class="sign"></div>
+    <div class="sign-c">Firma Responsabile / Management</div>
+  </div>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w){alert('Abilita i popup per stampare.');return;}
+  w.document.write(html);w.document.close();
+  setTimeout(()=>w.print(),400);
 }

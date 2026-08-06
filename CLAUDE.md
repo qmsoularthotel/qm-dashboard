@@ -277,6 +277,7 @@ grep -n 'id="view-' index.html
 | `view-turnazione` | "Turnazione Corrente" — specchio del pannello turno di Overview (`.staff-area-mirror`) |
 | `view-controllo-mattino` | Dashboard distribuzione Culligan (stats + QC settimanale + Stampa A4) |
 | `view-reception` | Fondo Cassa & Incasso Contante — sola lettura + modifica per il QM |
+| `view-resi-biancheria` | Resi biancheria inidonea al fornitore Raimondo (solo SoulArt, solo QM) |
 
 ---
 
@@ -910,6 +911,38 @@ Campi: data/ora dal movimento, importo, **Consegna (amministrativo)** = `m.perso
 ### Lato Compass (`app.js` §§ RECEPTION — CASSA, `index.html` `#view-reception`)
 
 `receptionLoad()` (chiamata da `setView('reception',...)`) legge entrambe le chiavi KV e chiama `receptionRender()`. Modifica via `receptionEditFondo(id)` / `receptionEditIncasso(id)` — usano `prompt()` per nuovo importo e motivo (stesso pattern di modifica rapida già usato altrove nel dashboard, es. `editShift`), non un modale dedicato.
+
+---
+
+## Resi Biancheria — Fornitore Raimondo (view `resi-biancheria`)
+
+### Scopo e confini
+
+Traccia digitale della **distinta cartacea** che le housekeeper compilano ogni giorno per la biancheria macchiata/difettata da rendere al fornitore Raimondo. Deliberatamente **solo lato Compass e solo per il QM**: le HKP continuano a scrivere sul modulo cartaceo come da procedura, il QM trascrive qui e da qui genera la distinta riepilogativa A4 da far firmare a Raimondo. Nessuna app mobile per le cameriere, nessun accesso per la ditta esterna di Art Resort.
+
+**Solo SoulArt Hotel** (`RESI_HOTEL`): Boutique e Art Resort restano interamente su carta (Art Resort fa capo al Sig. Maddaloni, non al QM). Se un domani servisse anche il Boutique, va aggiunto un selettore struttura — oggi la costante è fissa apposta.
+
+### Modello dati (chiave KV `qm_resi_biancheria`)
+
+```js
+{
+  righe:  [{id, ts, data:'dd/MM/yyyy', tipologia, qta, motivo, hk, ritiroId, edits:[]}],
+  ritiri: [{id, ts, dal, al, sacchi, totPezzi, dataRitiro, firmato}],
+  tipologie: [...]   // null = usa RESI_TIPOLOGIE_DEFAULT
+}
+```
+
+**Periodo aperto = righe con `ritiroId:null`.** Non esiste una "quindicina" calcolata a calendario: le righe si accumulano nel periodo aperto finché non si registra un ritiro, che le chiude tutte assegnando il proprio id — rispecchia la procedura reale (il ritiro avviene "ogni 15 giorni" ma nella pratica quando passa Raimondo). Il periodo `dal`/`al` del ritiro è ricavato dalle **date minime/massime delle righe**, non dalla data del ritiro. `resiDelRitiro()` annulla un ritiro rimettendo le sue righe nel periodo aperto.
+
+Le correzioni di quantità (`resiEditQta`) aggiungono sempre una riga a `edits[]` con vecchio/nuovo valore e motivo — stesso principio della cassa reception, mai sovrascrittura silenziosa.
+
+### Tipologie e motivi
+
+`RESI_TIPOLOGIE_DEFAULT` (13 voci standard: lenzuola, federe, copripiumino, asciugamani, ecc.) è modificabile dall'interfaccia ("Modifica elenco tipologie" → salva in `_resi.tipologie`), così i totali per tipologia restano coerenti invece di dipendere da come ognuno scrive la stessa cosa. `RESI_MOTIVI` è invece fisso nel codice (Macchiata, Strappata, Usurata, Ingiallita, Bruciata, Scolorita, Altro).
+
+### Stampa A4 (`resiPrintDistinta(ritiroId)`)
+
+Replica il modulo cartaceo originale: intestazione struttura + periodo + totale pezzi, riquadro con le 3 note della procedura, tabella `Data | Tipologia | Quantità | Motivo | Firma HK`, blocco "Ritiro Fornitore Raimondo" con n° sacchi/totale/data e riga firma, blocco "Consegna distinta firmata" al Sig. Presta. Senza argomento stampa il **periodo aperto** (righe da consegnare); con un `ritiroId` **ristampa** un periodo già consegnato. Stesso pattern `window.open` + `document.write` + `print()` usato altrove nel dashboard.
 
 ---
 
