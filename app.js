@@ -101,18 +101,14 @@ function ucSetState(key,state,sub,silent){
   if(subEl&&sub)subEl.textContent=sub;
   ucUpdateProgress();
 }
-// Nasconde gli slot dei report ora derivati dal Piano (vedi HKP_DERIVE_FROM_PIANO in
-// cima al file). Gli elementi restano nel DOM e il loro codice di upload è intatto:
-// rimettendo il flag a false riappaiono e tornano funzionanti senza altre modifiche.
+// Nasconde l'intera riga (.uc-row) dei report ora derivati dal Piano (vedi
+// HKP_DERIVE_FROM_PIANO in cima al file) — Report pulizie/Soul HKP/Boutique HKP
+// vivono tutti nella stessa riga uc-row-derived. Gli elementi restano nel DOM e
+// il loro codice di upload è intatto: rimettendo il flag a false la riga riappare
+// e torna funzionante senza altre modifiche.
 (function ucHideDerivedSlots(){
   if(!HKP_DERIVE_FROM_PIANO)return;
-  HKP_DERIVED_SLOTS.forEach(k=>{
-    const slot=document.getElementById('uc-'+k);if(slot)slot.style.display='none';
-    const panel=document.getElementById('uc-'+k+'-panel');if(panel)panel.style.display='none';
-  });
-  // 'Piano Settimanale' resta affiancata a 'Report pasti' per scelta: allarga invece
-  // la tile del logo Compass, che va comunque tenuta in ultima posizione da sola.
-  const brand=document.querySelector('.uc-slot-brand');if(brand)brand.style.gridColumn='1/-1';
+  const row=document.getElementById('uc-row-derived');if(row)row.style.display='none';
 })();
 // Fonti tracciate per il riepilogo Upload Center — 'piano' non entra nel conteggio
 // rigoroso "X/N" (Turno resta l'unico davvero settimanale, escluso dalla scadenza 24h
@@ -594,7 +590,7 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
 const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Suddivisione Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping · Operativa HKP',hkpsheetar:'Housekeeping · Operativa HKP',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Biancheria'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping · Operativa HKP',hkpsheetar:'Housekeeping · Operativa HKP',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -2838,7 +2834,7 @@ function renderHkSuggestions(focusIdx){
     testa=`<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);">
       <div style="font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;">Partenze del giorno selezionato</div>
       ${suo}
-      ${altri.length?`<div style="font-size:11px;color:var(--text-dim);margin-top:9px;line-height:1.5;">Altri giorni da sistemare: ${altri.map(g=>`<strong style="color:var(--amber);">${lbl(g.i)}</strong> ${g.pM}-${g.pA}`).join(' · ')} — spostati su quel giorno con ‹ › per i suoi suggerimenti.</div>`:''}
+      ${altri.length?`<div style="font-size:12px;color:var(--text-muted);margin-top:9px;line-height:1.5;">Altri giorni da sistemare: ${altri.map(g=>`<strong style="color:var(--amber);">${lbl(g.i)}</strong> ${g.pM}-${g.pA}`).join(' · ')} — spostati su quel giorno con ‹ › per i suoi suggerimenti.</div>`:''}
     </div>`;
   }else{
     testa=s.sbilanciati.length
@@ -2857,15 +2853,15 @@ function renderHkSuggestions(focusIdx){
     // camera cosa blocca il giorno peggiore. Serve a capire se il vincolo è strutturale
     // (una tipologia che sta tutta da un lato) o solo di disponibilità in quelle notti.
     const g=s.diag;
-    const righe=s.ostacoli.map(o=>`<div style="display:flex;gap:10px;padding:6px 0;font-size:12px;">
+    const righe=s.ostacoli.map(o=>`<div style="display:flex;gap:10px;padding:7px 0;font-size:12.5px;">
         <span style="font-weight:700;color:var(--text);min-width:52px;">${o.camera}</span>
-        <span style="color:var(--text-dim);min-width:62px;">${o.tipo}</span>
-        <span style="color:var(--text-muted);flex:1;">${o.perche}</span>
+        <span style="color:var(--text-muted);min-width:62px;">${o.tipo}</span>
+        <span style="color:var(--text);flex:1;">${o.perche}</span>
       </div>`).join('');
     return box(testa+`<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;">
-      <div style="font-size:12.5px;color:var(--text-muted);line-height:1.5;margin-bottom:${righe?'8px':'0'};">Nessuno scambio possibile con le regole attuali. Perché <strong style="color:var(--text);">${lbl(g.i)}</strong> resta ${g.dp!==0?`${g.pM}-${g.pA}`:`con il carico a ${_hkNum(s.giorni[g.i].cM)}-${_hkNum(s.giorni[g.i].cA)}`}${righe?':':' non ci sono camere riassegnabili in quel giorno.'}</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.55;margin-bottom:${righe?'8px':'0'};">Nessuno scambio possibile con le regole attuali. Perché <strong style="color:var(--text);">${lbl(g.i)}</strong> resta ${g.dp!==0?`${g.pM}-${g.pA}`:`con il carico a ${_hkNum(s.giorni[g.i].cM)}-${_hkNum(s.giorni[g.i].cA)}`}${righe?':':' non ci sono camere riassegnabili in quel giorno.'}</div>
       ${righe}
-      ${righe?`<div style="font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.5;">Se il blocco è la tipologia, l'unico modo per sbloccarlo è consentire scambi tra tipologie diverse (es. a parità di capienza).</div>`:''}
+      ${righe?`<div style="font-size:12px;color:var(--text-muted);margin-top:8px;line-height:1.5;">Se il blocco è la tipologia, l'unico modo per sbloccarlo è consentire scambi tra tipologie diverse (es. a parità di capienza).</div>`:''}
     </div>`);
   }
   const frecciaG=`<span style="color:var(--text-dim);font-weight:400;">→</span>`;
@@ -2902,21 +2898,21 @@ function renderHkSuggestions(focusIdx){
     return`<div style="display:flex;align-items:center;gap:14px;padding:11px 0;${i>0?'border-top:1px solid var(--border-light);':''}">
       <span style="width:22px;height:22px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:14px;font-weight:700;color:var(--text);">${titolo}</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">soggiorno ${periodo} · ${_hkTipoLbl(m.cat)} · ${dett}</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);">${titolo}</div>
+        <div style="font-size:12.5px;color:var(--text-muted);margin-top:3px;line-height:1.4;">soggiorno ${periodo} · ${_hkTipoLbl(m.cat)} · ${dett}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;">
         ${(s.focus?[...m.effetti].sort((a,b)=>(a.i===s.focus.i?-1:0)-(b.i===s.focus.i?-1:0)):m.effetti).slice(0,3).map(e=>{
           const isF=s.focus&&e.i===s.focus.i;   // il giorno che si sta guardando va in evidenza
           return`<div style="font-size:11.5px;color:var(--green);font-weight:${isF?'800':'600'};white-space:nowrap;${isF?'':'opacity:.75;'}">${_hkEffTxt(lbl(e.i),e)}</div>`;
         }).join('')}
-        ${m.effetti.length>3?`<div style="font-size:10px;color:var(--text-dim);">+${m.effetti.length-3} altri giorni</div>`:''}
+        ${m.effetti.length>3?`<div style="font-size:11px;color:var(--text-muted);">+${m.effetti.length-3} altri giorni</div>`:''}
         ${(m.peggiori||[]).slice(0,2).map(e=>`<div style="font-size:11px;color:var(--amber);font-weight:600;white-space:nowrap;">${_hkEffTxt(lbl(e.i),e)}</div>`).join('')}
       </div>
     </div>`;
   }).join('');
   const haPegg=s.mosse.some(m=>(m.peggiori||[]).length);
-  const nota=`<div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.5;">I numeri a destra sono il prima e dopo di ogni giorno (Matarese-Altre): le <strong>partenze</strong> se cambiano, il <strong>carico</strong> se la mossa riequilibra solo quello${s.focus?`. <strong>${fLbl}</strong> è in evidenza`:''}${haPegg?`; in <span style="color:var(--amber);font-weight:700;">ambra</span> i giorni che peggiorano — il bilancio complessivo resta comunque migliore`:''}. ${s.focus?`Sono elencate solo le mosse che migliorano <strong>${fLbl}</strong>: cambia giorno per vedere le sue.`:`L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana.`} Solo stessa tipologia e solo prenotazioni non ancora arrivate. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
+  const nota=`<div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.55;">I numeri a destra sono il prima e dopo di ogni giorno (Matarese-Altre): le <strong style="color:var(--text);">partenze</strong> se cambiano, il <strong style="color:var(--text);">carico</strong> se la mossa riequilibra solo quello${s.focus?`. <strong style="color:var(--text);">${fLbl}</strong> è in evidenza`:''}${haPegg?`; in <span style="color:var(--amber);font-weight:700;">ambra</span> i giorni che peggiorano — il bilancio complessivo resta comunque migliore`:''}. ${s.focus?`Sono elencate solo le mosse che migliorano <strong style="color:var(--text);">${fLbl}</strong>: cambia giorno per vedere le sue.`:`L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana.`} Solo stessa tipologia e solo prenotazioni non ancora arrivate. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
   // "Ci sono altre possibilità?" — mostra solo se esistono davvero altre alternative già
   // calcolate e tagliate dal limite mosse mostrate, non un pulsante sempre presente a vuoto.
   const altreN=s.totMosse-s.mosse.length;

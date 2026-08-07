@@ -244,6 +244,12 @@ Non c'è generazione di file immagine: sono tutti `<svg>` inline nel markup di `
 
 Stesso trattamento applicato alle 4 card visibili dell'Upload Center in sidebar (`.uc-slot`): classe `.uc-icon-badge` in `style.css` (32px, stesso ingombro di `.uc-icon-img`) — Turno (griglia turni), Riepilogo Reception (campanello), Piano Settimanale (calendario settimana), Report pasti (posate). Le card nascoste (`uc-pul`, `uc-soul`, `uc-bout` — non più nel flusso upload da quando `HKP_DERIVE_FROM_PIANO=true`, vedi sezione "Upload quotidiani") restano con l'icona PNG originale, irraggiungibili comunque dall'interfaccia.
 
+### Layout Upload Center — `.uc-row` / `.uc-row-cards` (non più CSS grid condivisa)
+
+Ogni "riga" di card è un `<div class="uc-row">` indipendente che contiene un `.uc-row-cards` (flex, le card sempre affiancate) seguito dai `.uc-panel` di quella riga (block, non più `grid-column:1/-1` dentro una grid unica). Prima tutte le card e tutti i pannelli condividevano un'unica `.uc-grid{display:grid}`: aprire il pannello di una card a metà lista (es. "Piano Settimanale") spingeva in basso, fuori dal loro allineamento a coppia, tutte le card successive — e per "Report pasti" il pannello finiva addirittura sotto la tile del logo Compass invece che sotto la propria card, perché quest'ultima ha `grid-column:1/-1` e la ricalcolava fuori posto nell'auto-placement della grid condivisa.
+
+Righe attuali: (Turno, Riepilogo Reception) · `uc-row-derived` (Report pulizie, Compass Housekeeper SoulArt, Compass Housekeeper Boutique — nascosta in blocco da `ucHideDerivedSlots()` quando `HKP_DERIVE_FROM_PIANO=true`, non più le singole card) · (Piano Settimanale, Report pasti) · tile logo Compass da sola. Ogni pannello resta un fratello diretto delle sue card nello stesso `.uc-row`, quindi si apre sempre subito sotto di esse indipendentemente da cosa c'è nelle righe successive.
+
 ---
 
 ## Inventario Viste Obbligatorie (index.html)
@@ -929,6 +935,8 @@ Campi: data/ora dal movimento, importo, **Consegna (amministrativo)** = `m.perso
 Traccia digitale della **distinta cartacea** che le housekeeper compilano ogni giorno per la biancheria macchiata/difettata da rendere al fornitore Raimondo. Deliberatamente **solo lato Compass e solo per il QM**: le HKP continuano a scrivere sul modulo cartaceo come da procedura, il QM trascrive qui e da qui genera la distinta riepilogativa A4 da far firmare a Raimondo. Nessuna app mobile per le cameriere, nessun accesso per la ditta esterna di Art Resort.
 
 **Due strutture** (`RESI_HOTELS`): SoulArt Hotel (`sa`) e Boutique Hotel Piazza Carità (`bh`), selezionabili a linguette. **Art Resort resta fuori di proposito** — fa capo al Sig. Maddaloni, non al QM, e la sua ditta di pulizie è esterna. I due sacchi sono fisicamente distinti e si consegnano separatamente, quindi periodo aperto, totali, avviso e distinta sono **sempre di una struttura sola**.
+
+**Voce menu**: la voce sidebar "Resi Biancheria" vive dentro la sezione **Housekeeping** (insieme a "Operativa HKP" e "Suddivisione Camere"), non più in una sezione "Biancheria" a sé — eliminata perché conteneva una sola voce. `breadcrumbs['resi-biancheria']` è `'Housekeeping'`.
 
 ### Modello dati (chiave KV `qm_resi_biancheria`)
 

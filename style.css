@@ -43,7 +43,16 @@ body.dark .panel{box-shadow:none;}
 .nav-item.active .nav-icon{opacity:1;}
 .nav-badge{margin-left:auto;background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:var(--fs-xxs);}
 .nav-turno-wrap{}
-.uc-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 10px 10px;}
+/* Upload Center: ogni "riga" (.uc-row) è un blocco verticale indipendente —
+   le card (.uc-row-cards, flex) restano sempre affiancate qualunque sia lo stato
+   di apertura di un pannello, e il pannello aperto (.uc-panel) è semplicemente il
+   blocco successivo nello stesso .uc-row, quindi compare sempre subito sotto le
+   sue card e mai dopo righe/tile successive (prima usava un'unica CSS grid
+   condivisa: aprire un pannello a metà lista spostava tutte le card sotto). */
+.uc-grid{display:flex;flex-direction:column;gap:7px;padding:0 10px 10px;}
+.uc-row{display:flex;flex-direction:column;gap:7px;}
+.uc-row-cards{display:flex;gap:7px;}
+.uc-row-cards .uc-slot{flex:1;min-width:0;}
 .uc-slot{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px;padding:12px 6px;border-radius:10px;border:1px solid var(--border-light);cursor:pointer;background:#fff;transition:all .15s;}
 .uc-slot:hover{border-color:var(--accent);background:var(--accent-bg);}
 .uc-slot.open{border-color:var(--accent);background:var(--accent-bg);box-shadow:0 3px 10px rgba(0,0,0,.08);}
@@ -76,7 +85,7 @@ body.dark .panel{box-shadow:none;}
 @media (prefers-reduced-motion: reduce){
   #cm-content .cm-bubble{animation:none;opacity:.3;}
 }
-.uc-panel{display:none;grid-column:1/-1;background:var(--accent-bg);border:1px solid var(--border-light);border-radius:8px;padding:10px;margin-bottom:2px;}
+.uc-panel{display:none;background:var(--accent-bg);border:1px solid var(--border-light);border-radius:8px;padding:10px;margin-bottom:2px;}
 .uc-panel.open{display:block;}
 .uc-feeds-line{font-size:10.5px;color:var(--text-muted);margin-bottom:8px;}
 .uc-icon{font-size:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-bottom:2px;}
