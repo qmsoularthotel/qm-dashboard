@@ -137,6 +137,29 @@ I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStru
 --amber: #A05A00
 ```
 
+### Responsive / smartphone — regola d'oro: mai `grid-template-columns` inline
+
+Tutta la responsività vive in **un solo blocco** `@media(max-width:768px)` in fondo a `style.css`. Perché funzioni, le griglie devono essere definite con una **classe**, mai con uno `style=""` inline: **uno stile inline vince sempre su una media query**, quindi una griglia scritta inline resta multi-colonna sullo smartphone qualunque cosa dica il `@media`. È stato esattamente il bug di Breakfast Sheet, DVR, Pannello App e del blocco colazioni in Overview, tutti scritti inline e quindi mai collassati.
+
+Classi disponibili (definite sopra il blocco `@media`, collassate dentro):
+
+| Classe | Desktop | Mobile |
+|--------|---------|--------|
+| `.grid-2` | `1fr 1fr` | `1fr` |
+| `.grid-3` | `2fr 1fr` | `1fr` |
+| `.grid-2-wide` | `1fr 1.5fr` | `1fr` |
+| `.ov-bkf-grid` | `1fr 2fr 1fr` | `1fr` |
+| `.ov-bkf-grid-wide` | `1fr 3fr 0.8fr` | `1fr` |
+| `.miniapp-grid` | `repeat(3,minmax(0,1fr))` | `1fr` |
+| `.inv-stock-row` | `1fr 72px 52px 88px 44px` | `1fr 44px 62px 40px`, 2ª colonna ("Ultimo mov.") nascosta |
+
+`gap`, `margin` e `align-items` possono restare inline senza problemi: non incidono sul numero di colonne e conservano la spaziatura originale di ogni vista. Solo `grid-template-columns` (e `display:grid`) vanno nella classe.
+
+**Altre regole mobile già presenti:**
+- `.app{height:100svh;min-height:100svh}` — fuori dalla media query `.app` ha `height:100vh;min-height:640px`, e su iOS Safari `100vh` include l'area dietro la barra indirizzi (fondo pagina tagliato). Serve sovrascrivere **height**, non solo `min-height`.
+- `.panel-body table{display:block;overflow-x:auto;min-width:100%}` — le tabelle dati larghe (Spese Fornitori, Inventari e Ordini, Breakfast Sheet) diventano il proprio contenitore scorrevole invece di allargare la pagina. Non serve più aggiungere a mano un wrapper `overflow-x:auto` intorno a ogni nuova tabella. Le stampe (`invPrintStock`, `invOrdersPrint`, `resiPrintDistinta`) scrivono in un altro documento e non sono toccate.
+- I modali usano già ovunque `max-width:NNNpx;width:100%` — schema da mantenere per i nuovi.
+
 ---
 
 ## §§ Section Map (app.js)

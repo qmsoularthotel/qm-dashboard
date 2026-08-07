@@ -225,6 +225,17 @@ body.dark .panel{box-shadow:none;}
 .ss-special{background:var(--accent-bg);color:var(--accent);}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
 .grid-3{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;}
+/* Griglie che prima erano scritte inline nell'HTML delle viste (Breakfast Sheet, DVR,
+   Pannello App, Overview): uno stile inline vince sempre sulle media query, quindi
+   restavano multi-colonna anche su smartphone. Portate qui come classi così il blocco
+   @media(max-width:768px) può davvero collassarle a una colonna. Il gap/margin resta
+   inline dove era personalizzato: non incide sulla responsività e conserva la spaziatura. */
+.grid-2-wide{display:grid;grid-template-columns:1fr 1.5fr;}
+/* Righe stock Inventario: 256px di colonne fisse lasciavano ~20px al nome del prodotto
+   su uno schermo da 375px. Portata in CSS per poterla stringere su mobile. */
+.inv-stock-row{display:grid;grid-template-columns:1fr 72px 52px 88px 44px;gap:6px;}
+.ov-bkf-grid-wide{grid-template-columns:1fr 3fr 0.8fr;}
+.miniapp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
 .panel{background:var(--surface);border:1px solid var(--border-light);border-radius:8px;border-top:4px solid var(--gold);}
 .panel-header{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-light);gap:8px;}
 .panel-title{font-size:var(--fs-xxs);color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;flex:1;font-weight:600;}
@@ -499,9 +510,17 @@ select.form-input option{background:var(--surface2);color:var(--text);}
 
 @media(max-width:768px){
   .mobile-menu-btn{display:flex;}
+  /* Tabelle dati larghe (Spese Fornitori, Inventari e Ordini, Breakfast Sheet): invece
+     di allargare la pagina e costringere a scorrere tutto in orizzontale, ogni tabella
+     diventa il proprio contenitore scorrevole. min-width:100% le tiene comunque piene
+     quando ci starebbero. Le stampe usano un altro documento, non sono toccate. */
+  .panel-body table{display:block;overflow-x:auto;min-width:100%;-webkit-overflow-scrolling:touch;}
   .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:100;transform:translateX(-100%);transition:transform .25s ease;width:270px;box-shadow:4px 0 20px rgba(0,0,0,.15);}
   .sidebar.mobile-open{transform:translateX(0);}
-  .app{min-height:100svh;}
+  /* iOS Safari: 100vh (impostato su .app fuori da qui) include l'area dietro la barra
+     indirizzi, quindi il fondo pagina restava tagliato. 100svh è l'altezza realmente
+     visibile. Serve anche height, non solo min-height: .app ha height:100vh fisso. */
+  .app{height:100svh;min-height:100svh;}
   .content{padding:10px 10px 24px;}
   .topbar{padding:8px 12px;gap:8px;flex-wrap:wrap;}
   .page-title{font-size:15px;}
@@ -523,8 +542,16 @@ select.form-input option{background:var(--surface2);color:var(--text);}
   .rc-card-grid{grid-template-columns:1fr;}
   .rev-filter-bar{gap:5px;}
   .rev-reply-actions{flex-wrap:wrap;}
+  /* Griglie ex-inline delle viste (vedi .grid-2-wide/.miniapp-grid sopra) */
+  .grid-2-wide{grid-template-columns:1fr;}
+  .miniapp-grid{grid-template-columns:1fr;}
+  /* Inventario: su mobile sparisce "Ultimo mov." (2ª colonna, la meno urgente da
+     leggere al volo) e le restanti si stringono, così il nome prodotto resta leggibile. */
+  .inv-stock-row{grid-template-columns:1fr 44px 62px 40px;gap:4px;}
+  .inv-stock-row > :nth-child(2){display:none;}
   /* Overview */
   .ov-bkf-grid{grid-template-columns:1fr;}
+  .ov-bkf-grid-wide{grid-template-columns:1fr;}
   .ov-bottom-grid{grid-template-columns:1fr;}
   #ov-piano-week-row{gap:3px;}
   #ov-piano-week-row > div{min-width:54px;padding:8px 4px 8px;}

@@ -7167,7 +7167,7 @@ function invRenderStock(catalog,moves){
   // Apply filter
   const items=_invFilter==='alert'?allItems.filter(i=>i.status!=='ok'):_invFilter==='ok'?allItems.filter(i=>i.status==='ok'):allItems;
   // Column headers
-  const hdrs=`<div style="display:grid;grid-template-columns:1fr 72px 52px 88px 44px;gap:6px;padding:4px 12px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;">
+  const hdrs=`<div class="inv-stock-row" style="padding:4px 12px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;">
     <div>Prodotto</div><div style="text-align:center;">Ultimo mov.</div><div style="text-align:center;">Soglia</div><div style="text-align:right;">Stock</div><div></div>
   </div>`;
   // Rows
@@ -7177,7 +7177,7 @@ function invRenderStock(catalog,moves){
     const lastStr=invFmtDate(it.last?.ts);
     const sogliaStr=it.soglia!=null?`<span style="cursor:pointer;color:var(--text-muted);" onclick="invEditSoglia('${it.bc}')" title="Modifica soglia">${it.soglia}</span>`:`<span style="cursor:pointer;color:var(--text-dim);font-style:italic;" onclick="invEditSoglia('${it.bc}')" title="Imposta soglia">—</span>`;
     const unit=it.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:2px;">${_esc(it.unit)}</span>`:'';
-    return`<div style="display:grid;grid-template-columns:1fr 72px 52px 88px 44px;gap:6px;align-items:center;padding:9px 12px;background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderColor};border-radius:8px;margin-bottom:5px;">
+    return`<div class="inv-stock-row" style="align-items:center;padding:9px 12px;background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderColor};border-radius:8px;margin-bottom:5px;">
       <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;">${lastStr}</div>
       <div style="font-size:var(--fs-xs);text-align:center;">${sogliaStr}</div>
