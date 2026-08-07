@@ -10114,7 +10114,7 @@ function receptionRender(){
   // Contanti e buoni alla pari, nessuno dei due "il" numero principale — scrivere solo
   // il totale era fuorviante, sembrava la cifra fisica in cassa quando invece include
   // i buoni non ancora rimborsati. Stessa logica di reception.html.
-  let h=`<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;margin-bottom:20px;align-items:stretch;max-width:640px;">
+  let h=`<div class="reception-kpi-grid" style="margin-bottom:20px;align-items:stretch;max-width:640px;">
     <div class="kpi-card blue">
       <div class="kpi-card-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M13.5 3.5C9 3.5 5.3 6.7 4.3 11H2v2h2c0 .3 0 .7.1 1H2v2h2.6c1.2 4 4.8 6.5 9 6.5 1.9 0 3.7-.6 5.1-1.6l-1.3-1.7c-1.1.7-2.4 1.1-3.8 1.1-3 0-5.5-1.7-6.6-4.3h6.4v-2H6.5a7 7 0 0 1 0-1H15v-2H6.7c1.1-2.6 3.6-4.4 6.6-4.4 1.4 0 2.7.4 3.8 1.1l1.3-1.7c-1.4-1-3.2-1.6-5-1.6z"/></svg></div>
       <div class="kpi-label">Contanti</div>

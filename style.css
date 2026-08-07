@@ -241,6 +241,9 @@ body.dark .panel{box-shadow:none;}
    La colonna dati ha flex-shrink:0 e una min-width: su smartphone si prendeva ~180px dei
    375 disponibili e schiacciava il grafico e il testo a una parola per riga. Come classe
    può impilarsi sotto sul mobile. Il bordo separatore ruota di conseguenza (sinistra→sopra). */
+/* Passaggi di Cassa: Contanti | Buoni spesa | Totale. Su mobile le prime due restano
+   affiancate e il Totale passa sotto a piena larghezza (vedi @media). */
+.reception-kpi-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;}
 .side-split{display:flex;align-items:stretch;gap:0;}
 .side-split > .side-split-main{min-width:0;width:100%;}
 .side-split-aside{flex-shrink:0;display:flex;flex-direction:column;justify-content:center;
@@ -541,6 +544,18 @@ select.form-input option{background:var(--surface2);color:var(--text);}
   .topbar-right .datetime-chip .date-txt{display:none;}
   .weather-city{display:none;}
   .kpi-grid{grid-template-columns:1fr 1fr;}
+  /* Card KPI a due colonne su 375px: ~150px per card. Con padding 20px e valore a 30px
+     "€ 100,00" andava a capo e l'etichetta finiva sotto l'icona (posizionata absolute
+     in alto a destra). Card più compatte, icona più piccola e spazio riservato
+     all'etichetta perché non ci passi sotto. Vale per Overview e Passaggi di Cassa. */
+  .kpi-card{padding:14px 14px 12px;}
+  .kpi-card-icon{right:10px;top:10px;width:24px;height:24px;border-radius:6px;}
+  .kpi-card-icon svg{width:13px;height:13px;}
+  .kpi-label{padding-right:28px;margin-bottom:6px;}
+  .kpi-value{font-size:22px;}
+  /* Passaggi di Cassa: Contanti e Buoni affiancati, Totale a tutta larghezza sotto */
+  .reception-kpi-grid{grid-template-columns:1fr 1fr;}
+  .reception-kpi-grid > :last-child{grid-column:1/-1;}
   .staff-grid{grid-template-columns:1fr 1fr;}
   .grid-2{grid-template-columns:1fr;}
   .grid-3{grid-template-columns:1fr;}

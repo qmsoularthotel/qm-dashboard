@@ -152,6 +152,9 @@ Classi disponibili (definite sopra il blocco `@media`, collassate dentro):
 | `.ov-bkf-grid-wide` | `1fr 3fr 0.8fr` | `1fr` |
 | `.miniapp-grid` | `repeat(3,minmax(0,1fr))` | `1fr` |
 | `.inv-stock-row` | `1fr 72px 52px 88px 44px` | `1fr 44px 62px 40px`, 2ª colonna ("Ultimo mov.") nascosta |
+| `.reception-kpi-grid` | `1fr 1fr auto` | `1fr 1fr`, il "Totale" (ultimo figlio) va a tutta larghezza sotto |
+
+**Card KPI (`.kpi-card`) su mobile** — a due colonne su 375px ogni card sta in ~150px: con il padding a 20px e `.kpi-value` a 30px l'importo andava a capo (`€ 100,` troncato) e `.kpi-label`, che non ha spazio riservato a destra, finiva **sotto** `.kpi-card-icon` (posizionata `absolute` in alto a destra) — si leggeva `CO[€]NT` invece di `CONTANTI`. Nella media query le card si compattano: padding 14px, icona 24px, `.kpi-value` 22px e `.kpi-label{padding-right:28px}` per non passare sotto l'icona. Vale per tutte le ~40 card KPI del progetto, Overview compresa.
 
 **Schema "grafico a sinistra + riquadro dati a destra"** — `.side-split` (contenitore flex) con dentro `.side-split-main` (il grafico, `min-width:0` così può stringersi) e `.side-split-aside` (la colonna dati, `flex-shrink:0` + `min-width:172px`). Usato in **Overview** (occupazione settimanale + bottiglia Culligan) e in **Bilanciamento Camere** (vista settimanale + totali). Su mobile `.side-split` diventa `flex-direction:column` e l'aside si impila sotto, con il separatore che passa da bordo sinistro a bordo superiore. Era scritto inline in entrambi i punti: la colonna dati si teneva ~180px dei 375 disponibili e schiacciava grafico e testo a una parola per riga.
 
