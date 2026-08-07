@@ -189,7 +189,7 @@ I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStru
 | `HKP_URLS` | const object | Endpoint Google Apps Script per HKP (sa, ar) |
 | `DVR_DATA` | let object | Dati DVR per società: `{geriart: {...}, ...}` |
 | `IS_REST` | const fn | Ritorna `true` se il valore turno è vuoto/null (non in programma) |
-| `IS_ABSENT` | const fn | Ritorna `true` SOLO per valori espliciti: `R`, `RIPOSO`, `OFF`, `FERIE` — usare per contare assenze reali |
+| `IS_ABSENT` | const fn | Ritorna `true` SOLO per valori espliciti: `R`, `RIPOSO`, `R RICHIESTO`, `RECUPERO`, `MALATTIA`, `OFF`, `FERIE` — usare per contare assenze reali |
 | `weekData` | let | Dati turno settimana parsati (non più fallback hardcoded) |
 | `activeDay` | let | Indice giorno attivo (0-6) |
 | `PROXY` | const string | `https://anthropic-proxy.qm-d82.workers.dev` |
@@ -412,19 +412,16 @@ Membri fissi: `Matarese A., Nacci M., De Masi C., Chiantese M., Extra Antonella,
 const IS_ABSENT = v => {
   if (!v) return false;
   const u = v.trim().toUpperCase();
-  return ['R', 'RIPOSO', 'OFF', 'FERIE'].includes(u);
+  if (['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO','MALATTIA','OFF','FERIE'].includes(u)) return true;
+  return u.includes('RECUPER')||u.includes('RIPOSO')||u.includes('MALATTIA')||u.includes('FERIE')||u.includes('RICHIEST');
 };
 ```
 
-`IS_ABSENT` ritorna `true` solo per valori espliciti di assenza, non per chi semplicemente non è in turno.
+`IS_ABSENT` ritorna `true` solo per valori espliciti di assenza, non per chi semplicemente non è in turno. **`R Richiesto`** (riposo richiesto dal dipendente, scritto abbreviato nel turno) conta come riposo tanto in `IS_ABSENT` quanto in `IS_REST` — entrambe matchano via `u.includes('RICHIEST')`, non solo la stringa "RIPOSO RICHIESTO" per esteso.
 
-### Manutenzione (`mt`) — Comportamento Speciale
+### Manutenzione (`mt`) — non deve mai sparire
 
-Il reparto `mt` ha logica speciale in `renderDay()`:
-- **Sempre visibile** anche quando `inT.length === 0` (nessuno in turno)
-- **Sempre mostra tutti i membri**: `showMembers = key==='mt' ? dept.members : inT`
-- **Active styling per qualsiasi shift non-riposo**: `isActive = key==='mt' ? !IS_REST(sv) : ['P','AC','CG',...].includes(sv)`
-- Ragione: il personale di manutenzione può avere turni custom (es. '9-17') non nella lista standard
+Il reparto `mt` ha un solo addetto fisso (Basile G.). Le altre card in `renderDay()` restano nascoste quando nessuno è in turno (`if(!showMembers.length)return;`), ma per `mt` questo dava l'impressione di un dato mancante quando l'addetto è a riposo/ferie — la card spariva del tutto invece di mostrare "nessuno in turno". Fix: solo per `key==='mt'`, quando `showMembers` è vuoto viene comunque renderizzata la card con un placeholder ("Nessuno in turno") invece di fare `return` senza stampare nulla. Le altre card (fo/hk/bkf) restano nascoste come prima quando vuote.
 
 ---
 
@@ -1192,7 +1189,7 @@ Non creare workflow YAML personalizzati come soluzione: ne è stato creato uno (
 |----------|-------|-----|
 | HKP views scomparse | Sovrascrittura accidentale index.html | Recuperare da git `2183997` |
 | Browser usa versione vecchia app.js | Cache buster non aggiornato | Aggiornare `?v=...` in `<script src="app.js?v=...">` |
-| MT card non visibile in overview | `inT.length === 0` saltava il reparto | `showMembers = key==='mt' ? dept.members : inT` |
+| MT card sparisce quando l'addetto è a riposo/ferie | `if(!showMembers.length)return;` saltava il reparto per tutti, mt incluso | Solo per `key==='mt'`, se vuoto renderizza comunque la card con placeholder "Nessuno in turno" |
 | Extra HK non visibili in overview | `renderDay` iterava solo `dept.members` | Aggiunti extra dal turno non in DEPTS alla card HK |
 | Turno upload box non appare | `#turniUploadBox` mancante in `#uc-turno-panel` | Aggiunto `div#turniUploadBox` nel pannello sidebar |
 | Warning "settimana precedente" con turno corretto | Confronto `getTime()` sensibile al timezone | Confronto con `getFullYear/Month/Date` |
@@ -1202,6 +1199,7 @@ Non creare workflow YAML personalizzati come soluzione: ne è stato creato uno (
 | Voce Expedia scompare dopo Cmd+R | SW v2 cachava HTML senza `no-store` | `sw.js` aggiornato a `qm-v3` con `cache:'no-store'` per HTML |
 | `rcFmtDate` restituiva URL Google nel caso else | URL rimasta per errore nel ternary | Else branch corretto: `return raw` |
 | "Non in servizio" conta anche chi non è in turno | `IS_REST(v)` ritorna true per valori null/vuoti | Usare `IS_ABSENT(v)` che richiede R/FERIE espliciti |
+| "R Richiesto" in turno trattato come attivo invece che riposo | Nessun match in `IS_REST`/`IS_ABSENT`/`_absenceReason` per la stringa "R RICHIESTO" (solo "RIPOSO RICHIESTO" era coperta) | Aggiunto `u.includes('RICHIEST')` a tutte e tre le funzioni |
 | DVR vuoto su altro PC | `syncFromCloud` non chiamava `dvrRestore()` | Aggiunto `dvrRestore()` nel case `dvr` di `syncFromCloud` |
 | Inventario vuoto al refresh | `invRender()` controlla `active` prima che la view sia attiva | `setView()` chiama `invRender()` quando `id === 'inventario'` |
 | Date preferenze turni mostrano "Sun" | Apps Script restituisce `String(date)` formato JS | `_tpFmtDate()` usa regex su nome mese inglese |
