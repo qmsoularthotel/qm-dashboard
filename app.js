@@ -415,7 +415,11 @@ function updateWeekNavActive(){document.querySelectorAll('.wday-btn').forEach(b=
 const IS_ABSENT=v=>{
   if(!v)return false;
   const u=v.trim().toUpperCase();
-  if(['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO','MALATTIA','OFF','FERIE'].includes(u))return true;
+  // Un trattino nella cella del turno è un valore esplicito ("non lavora quel giorno"),
+  // diverso da una cella vuota (nessun dato): va contato come assenza reale, altrimenti
+  // la persona non finisce né tra gli "in turno" (esclusa da IS_REST, corretto) né tra i
+  // "non in servizio" (IS_ABSENT non lo riconosceva) — spariva dai conteggi della sidebar.
+  if(['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO','MALATTIA','OFF','FERIE','-','–','—'].includes(u))return true;
   return u.includes('RECUPER')||u.includes('RIPOSO')||u.includes('MALATTIA')||u.includes('FERIE')||u.includes('RICHIEST');
 };
 function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(getShift(g.shifts,n))).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_ABSENT(getShift(g.shifts,n))).length+' non in servizio';}

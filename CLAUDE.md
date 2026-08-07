@@ -189,7 +189,7 @@ I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStru
 | `HKP_URLS` | const object | Endpoint Google Apps Script per HKP (sa, ar) |
 | `DVR_DATA` | let object | Dati DVR per società: `{geriart: {...}, ...}` |
 | `IS_REST` | const fn | Ritorna `true` se il valore turno è vuoto/null (non in programma) |
-| `IS_ABSENT` | const fn | Ritorna `true` SOLO per valori espliciti: `R`, `RIPOSO`, `R RICHIESTO`, `RECUPERO`, `MALATTIA`, `OFF`, `FERIE` — usare per contare assenze reali |
+| `IS_ABSENT` | const fn | Ritorna `true` SOLO per valori espliciti: `R`, `RIPOSO`, `R RICHIESTO`, `RECUPERO`, `MALATTIA`, `OFF`, `FERIE`, trattino (`-`/`–`/`—`) — usare per contare assenze reali |
 | `weekData` | let | Dati turno settimana parsati (non più fallback hardcoded) |
 | `activeDay` | let | Indice giorno attivo (0-6) |
 | `PROXY` | const string | `https://anthropic-proxy.qm-d82.workers.dev` |
@@ -412,12 +412,12 @@ Membri fissi: `Matarese A., Nacci M., De Masi C., Chiantese M., Extra Antonella,
 const IS_ABSENT = v => {
   if (!v) return false;
   const u = v.trim().toUpperCase();
-  if (['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO','MALATTIA','OFF','FERIE'].includes(u)) return true;
+  if (['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO','MALATTIA','OFF','FERIE','-','–','—'].includes(u)) return true;
   return u.includes('RECUPER')||u.includes('RIPOSO')||u.includes('MALATTIA')||u.includes('FERIE')||u.includes('RICHIEST');
 };
 ```
 
-`IS_ABSENT` ritorna `true` solo per valori espliciti di assenza, non per chi semplicemente non è in turno. **`R Richiesto`** (riposo richiesto dal dipendente, scritto abbreviato nel turno) conta come riposo tanto in `IS_ABSENT` quanto in `IS_REST` — entrambe matchano via `u.includes('RICHIEST')`, non solo la stringa "RIPOSO RICHIESTO" per esteso.
+`IS_ABSENT` ritorna `true` solo per valori espliciti di assenza, non per chi semplicemente non è in turno (cella vuota/`undefined`, che resta `false`). **`R Richiesto`** (riposo richiesto dal dipendente, scritto abbreviato nel turno) conta come riposo tanto in `IS_ABSENT` quanto in `IS_REST` — entrambe matchano via `u.includes('RICHIEST')`, non solo la stringa "RIPOSO RICHIESTO" per esteso. Un **trattino** (`-`) nella cella è diverso da una cella vuota: è un valore esplicito messo da chi compila il turno per dire "non lavora quel giorno", quindi va contato come assenza reale — prima `IS_REST('-')` era già `true` (escluso da "in turno") ma `IS_ABSENT('-')` era `false` (non contato tra i "non in servizio"), e la persona spariva da entrambi i conteggi della sidebar invece di finire in uno dei due.
 
 ### Manutenzione (`mt`) — non deve mai sparire
 
@@ -1200,6 +1200,7 @@ Non creare workflow YAML personalizzati come soluzione: ne è stato creato uno (
 | `rcFmtDate` restituiva URL Google nel caso else | URL rimasta per errore nel ternary | Else branch corretto: `return raw` |
 | "Non in servizio" conta anche chi non è in turno | `IS_REST(v)` ritorna true per valori null/vuoti | Usare `IS_ABSENT(v)` che richiede R/FERIE espliciti |
 | "R Richiesto" in turno trattato come attivo invece che riposo | Nessun match in `IS_REST`/`IS_ABSENT`/`_absenceReason` per la stringa "R RICHIESTO" (solo "RIPOSO RICHIESTO" era coperta) | Aggiunto `u.includes('RICHIEST')` a tutte e tre le funzioni |
+| Trattino nel turno: la persona non appare né "in turno" né "non in servizio" | `IS_REST('-')` era `true` (esclusa da "in turno") ma `IS_ABSENT('-')` era `false` (esclusa anche da "non in servizio") | Aggiunto `-`/`–`/`—` alla lista esplicita di `IS_ABSENT` |
 | DVR vuoto su altro PC | `syncFromCloud` non chiamava `dvrRestore()` | Aggiunto `dvrRestore()` nel case `dvr` di `syncFromCloud` |
 | Inventario vuoto al refresh | `invRender()` controlla `active` prima che la view sia attiva | `setView()` chiama `invRender()` quando `id === 'inventario'` |
 | Date preferenze turni mostrano "Sun" | Apps Script restituisce `String(date)` formato JS | `_tpFmtDate()` usa regex su nome mese inglese |
