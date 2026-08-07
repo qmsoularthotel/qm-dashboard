@@ -2966,13 +2966,13 @@ function renderHkWeekViewContainer(){
         <div><span style="font-size:22px;font-weight:300;line-height:1;color:#5b7ca3;">${vA}</span><div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Altre</div></div>
       </div>
     </div>`;
-  return`<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:14px;display:flex;align-items:stretch;gap:0;">
-    <div style="min-width:0;width:100%;">
+  return`<div class="side-split" style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:14px;">
+    <div class="side-split-main">
       <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">Vista settimanale (carico pesato)</div>
       <div style="font-size:13px;font-weight:500;color:var(--text-muted);line-height:1.5;margin-bottom:10px;">Il numero sopra ogni colonna non è il totale camere: una partenza pesa 2 e una fermata 1 (2,5 e 1,5 per le camere Art 1,2,3,8,9,13, più impegnative) — es. 6 partenze + 3 fermate = 15.</div>
       <div id="hk-week-chart" style="width:100%;box-sizing:border-box;height:300px;display:flex;flex-direction:column;"></div>
     </div>
-    <div style="flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding:0 0 0 14px;border-left:1px solid var(--border-light);margin-left:8px;min-width:170px;">
+    <div class="side-split-aside">
       <div class="kpi-label" style="margin-bottom:8px;">Totale settimana</div>
       ${row('Partenze',totPartM,totPartA)}
       ${row('Fermate',totFermM,totFermA)}

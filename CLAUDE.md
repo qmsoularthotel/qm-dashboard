@@ -153,6 +153,8 @@ Classi disponibili (definite sopra il blocco `@media`, collassate dentro):
 | `.miniapp-grid` | `repeat(3,minmax(0,1fr))` | `1fr` |
 | `.inv-stock-row` | `1fr 72px 52px 88px 44px` | `1fr 44px 62px 40px`, 2ª colonna ("Ultimo mov.") nascosta |
 
+**Schema "grafico a sinistra + riquadro dati a destra"** — `.side-split` (contenitore flex) con dentro `.side-split-main` (il grafico, `min-width:0` così può stringersi) e `.side-split-aside` (la colonna dati, `flex-shrink:0` + `min-width:172px`). Usato in **Overview** (occupazione settimanale + bottiglia Culligan) e in **Bilanciamento Camere** (vista settimanale + totali). Su mobile `.side-split` diventa `flex-direction:column` e l'aside si impila sotto, con il separatore che passa da bordo sinistro a bordo superiore. Era scritto inline in entrambi i punti: la colonna dati si teneva ~180px dei 375 disponibili e schiacciava grafico e testo a una parola per riga.
+
 `gap`, `margin` e `align-items` possono restare inline senza problemi: non incidono sul numero di colonne e conservano la spaziatura originale di ogni vista. Solo `grid-template-columns` (e `display:grid`) vanno nella classe.
 
 **Altre regole mobile già presenti:**

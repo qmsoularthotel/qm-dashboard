@@ -236,6 +236,15 @@ body.dark .panel{box-shadow:none;}
 .inv-stock-row{display:grid;grid-template-columns:1fr 72px 52px 88px 44px;gap:6px;}
 .ov-bkf-grid-wide{grid-template-columns:1fr 3fr 0.8fr;}
 .miniapp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
+/* Schema ricorrente "grafico a sinistra + riquadro dati a destra" (Overview: occupazione
+   settimanale + bottiglia Culligan; Bilanciamento Camere: vista settimanale + totali).
+   La colonna dati ha flex-shrink:0 e una min-width: su smartphone si prendeva ~180px dei
+   375 disponibili e schiacciava il grafico e il testo a una parola per riga. Come classe
+   può impilarsi sotto sul mobile. Il bordo separatore ruota di conseguenza (sinistra→sopra). */
+.side-split{display:flex;align-items:stretch;gap:0;}
+.side-split > .side-split-main{min-width:0;width:100%;}
+.side-split-aside{flex-shrink:0;display:flex;flex-direction:column;justify-content:center;
+  border-left:1px solid var(--border-light);padding-left:20px;margin-left:14px;min-width:172px;}
 .panel{background:var(--surface);border:1px solid var(--border-light);border-radius:8px;border-top:4px solid var(--gold);}
 .panel-header{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-light);gap:8px;}
 .panel-title{font-size:var(--fs-xxs);color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;flex:1;font-weight:600;}
@@ -545,6 +554,10 @@ select.form-input option{background:var(--surface2);color:var(--text);}
   /* Griglie ex-inline delle viste (vedi .grid-2-wide/.miniapp-grid sopra) */
   .grid-2-wide{grid-template-columns:1fr;}
   .miniapp-grid{grid-template-columns:1fr;}
+  /* Grafico + riquadro dati: impilati, separatore da bordo sinistro a bordo superiore */
+  .side-split{flex-direction:column;}
+  .side-split-aside{border-left:none;padding-left:0;margin-left:0;min-width:0;
+    border-top:1px solid var(--border-light);padding-top:14px;margin-top:12px;}
   /* Inventario: su mobile sparisce "Ultimo mov." (2ª colonna, la meno urgente da
      leggere al volo) e le restanti si stringono, così il nome prodotto resta leggibile. */
   .inv-stock-row{grid-template-columns:1fr 44px 62px 40px;gap:4px;}
