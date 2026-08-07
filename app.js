@@ -280,7 +280,7 @@ REGOLE:
 1. Per i dipendenti fissi: abbina il nome del planning al più simile in lista (es. "MADDALONI" → "Maddaloni M.", "De Rosa" → "De Rosa T.") e usa il nome della lista come chiave.
 2. Per l'Housekeeping: il personale cambia ogni settimana. Usa il nome ESATTAMENTE come scritto nel planning (es. "Extra Maria", "Rossi A."). Non tentare di abbinarlo a nessuna lista.
 3. Includi TUTTE le persone visibili nel planning senza saltarne nessuna.
-4. Celle con solo "-" o "." o vuote → metti "R".
+4. Celle con solo un trattino ("-") → metti esattamente "-" nel JSON, NON convertirlo in "R": il trattino indica una persona non pertinente quel giorno (es. non ancora in servizio quella settimana), diverso da un riposo vero. Celle con solo "." o completamente vuote → metti "R".
 5. "R" da solo → "R" (riposo). "P" è turno valido (presenza), NON è riposo.
 6. Qualsiasi altro valore ("P", "AC", "CG", "AG", "CC", "NC", "NG", "FERIE", "9-17", ecc.) → valore ESATTO della cella.
 7. Date "lunedì 30 marzo" → date "2026-03-30", label "Lun 30/03". Includi tutti i 7 giorni.

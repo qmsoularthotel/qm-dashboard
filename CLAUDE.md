@@ -438,6 +438,12 @@ Applicata in due punti:
 
 `IS_ABSENT` resta senza il trattino nell'elenco esplicito (di proposito — vedi tabella "Global Variables & Constants"): un trattino non deve contare né tra gli "in turno" né tra i "non in servizio" nei conteggi della sidebar (`updateSidebarInfo`).
 
+**Il trattino deve arrivare intatto dal parsing.** `IS_DASH` funziona solo se il valore del turno salvato è davvero il carattere `"-"`. Il prompt di `handleTurniFile` (upload screenshot/PDF via Claude) ha una regola dedicata per questo — **regola 4**, che PRIMA convertiva ogni cella con trattino in `"R"` prima di salvarla, rendendo `IS_DASH` inutile perché il dato originale era già perso. Ora la regola dice esplicitamente di scrivere `"-"` nel JSON:
+
+> `4. Celle con solo un trattino ("-") → metti esattamente "-" nel JSON, NON convertirlo in "R" [...]. Celle con solo "." o completamente vuote → metti "R".`
+
+Se il trattino torna a comparire come "Riposo" nonostante `IS_DASH` sia presente, il primo sospetto è questa regola nel prompt (non la logica JS): un caricamento del turno fatto PRIMA di questa correzione ha già salvato "R" al posto del trattino in `weekData`, quindi serve un **nuovo upload** per rigenerare i dati corretti — il vecchio weekData in localStorage/KV non si autocorregge.
+
 ### Manutenzione (`mt`) — non deve mai sparire
 
 Il reparto `mt` ha un solo addetto fisso (Basile G.). Le altre card in `renderDay()` restano nascoste quando nessuno è in turno (`if(!showMembers.length)return;`), ma per `mt` questo dava l'impressione di un dato mancante quando l'addetto è a riposo/ferie — la card spariva del tutto invece di mostrare "nessuno in turno". Fix: solo per `key==='mt'`, quando `showMembers` è vuoto viene comunque renderizzata la card con un placeholder ("Nessuno in turno") invece di fare `return` senza stampare nulla. Le altre card (fo/hk/bkf) restano nascoste come prima quando vuote.
@@ -1219,7 +1225,7 @@ Non creare workflow YAML personalizzati come soluzione: ne è stato creato uno (
 | `rcFmtDate` restituiva URL Google nel caso else | URL rimasta per errore nel ternary | Else branch corretto: `return raw` |
 | "Non in servizio" conta anche chi non è in turno | `IS_REST(v)` ritorna true per valori null/vuoti | Usare `IS_ABSENT(v)` che richiede R/FERIE espliciti |
 | "R Richiesto" in turno trattato come attivo invece che riposo | Nessun match in `IS_REST`/`IS_ABSENT`/`_absenceReason` per la stringa "R RICHIESTO" (solo "RIPOSO RICHIESTO" era coperta) | Aggiunto `u.includes('RICHIEST')` a tutte e tre le funzioni |
-| Trattino nel turno mostrato come "Riposo" nella striscia "Non in servizio" e nel widget `paoloTurno` | `IS_REST('-')` è `true` (corretto, esclude da "in turno") ma veniva letto anche come vero riposo nelle liste, mentre un trattino è "non pertinente", non un'assenza | Aggiunta `IS_DASH(v)`, usata per escludere il trattino da `nonServizio` (renderDay) e dal ramo "Riposo" di `paoloTurno` — resta comunque escluso da "in turno" e da `IS_ABSENT`, quindi non appare in nessuna delle due liste |
+| Trattino nel turno mostrato come "Riposo" nella striscia "Non in servizio" e nel widget `paoloTurno`, anche dopo un nuovo upload | Causa reale: il **prompt** di `handleTurniFile` (regola 4) diceva a Claude di convertire ogni cella con trattino in `"R"` prima ancora di salvarla — `IS_DASH` lato app non riceveva mai il carattere originale, quindi non poteva funzionare | Corretta la regola 4 del prompt: il trattino va scritto esattamente come `"-"` nel JSON, non più convertito in `"R"`. Aggiunta anche `IS_DASH(v)`, usata per escludere il trattino da `nonServizio` (renderDay) e dal ramo "Riposo" di `paoloTurno` — resta comunque escluso da "in turno" e da `IS_ABSENT`, quindi non appare in nessuna delle due liste. **Serve un nuovo upload del turno** perché i dati già salvati con la vecchia regola hanno il trattino già trasformato in "R" e restano indistinguibili da un riposo vero |
 | DVR vuoto su altro PC | `syncFromCloud` non chiamava `dvrRestore()` | Aggiunto `dvrRestore()` nel case `dvr` di `syncFromCloud` |
 | Inventario vuoto al refresh | `invRender()` controlla `active` prima che la view sia attiva | `setView()` chiama `invRender()` quando `id === 'inventario'` |
 | Date preferenze turni mostrano "Sun" | Apps Script restituisce `String(date)` formato JS | `_tpFmtDate()` usa regex su nome mese inglese |
