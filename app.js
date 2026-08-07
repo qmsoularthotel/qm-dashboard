@@ -48,6 +48,15 @@ const IS_REST=v=>{
   // Match anche su etichette composte tipo "R Recupero", "R Richiesto", "Recupero straordinario" ecc.
   return u.includes('RECUPER')||u.includes('RIPOSO')||u.includes('MALATTIA')||u.includes('FERIE')||u.includes('RICHIEST');
 };
+// Un trattino nella cella del turno non è un riposo vero e proprio (nessuno lo ha deciso/
+// richiesto), è un valore "non pertinente" — la persona non deve comparire né come in
+// servizio (già escluso da IS_REST) né come "non in servizio"/Riposo nelle liste, a
+// differenza di R/RIPOSO/FERIE ecc. che restano assenze vere e vanno mostrate.
+const IS_DASH=v=>{
+  if(!v)return false;
+  const u=v.trim();
+  return u==='-'||u==='–'||u==='—';
+};
 // §§ TURNO — ACCORDIONI UC & UPLOAD BOX
 let turnoOpen=false;
 function toggleTurnoAccordion(){}
@@ -415,11 +424,9 @@ function updateWeekNavActive(){document.querySelectorAll('.wday-btn').forEach(b=
 const IS_ABSENT=v=>{
   if(!v)return false;
   const u=v.trim().toUpperCase();
-  // Un trattino nella cella del turno è un valore esplicito ("non lavora quel giorno"),
-  // diverso da una cella vuota (nessun dato): va contato come assenza reale, altrimenti
-  // la persona non finisce né tra gli "in turno" (esclusa da IS_REST, corretto) né tra i
-  // "non in servizio" (IS_ABSENT non lo riconosceva) — spariva dai conteggi della sidebar.
-  if(['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO','MALATTIA','OFF','FERIE','-','–','—'].includes(u))return true;
+  // Il trattino resta fuori di proposito: non è un'assenza reale (R/RIPOSO/FERIE/...),
+  // è un valore "non pertinente" che non deve contare né come in turno né come assente.
+  if(['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO','MALATTIA','OFF','FERIE'].includes(u))return true;
   return u.includes('RECUPER')||u.includes('RIPOSO')||u.includes('MALATTIA')||u.includes('FERIE')||u.includes('RICHIEST');
 };
 function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(getShift(g.shifts,n))).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_ABSENT(getShift(g.shifts,n))).length+' non in servizio';}
@@ -506,8 +513,8 @@ function renderDay(idx){
   // del tutto dalla giornata invece di finire nella striscia "Non in servizio".
   const extraNames=Object.keys(shifts).filter(n=>!allStaffLow.has(n.toLowerCase()));
   const nonServizio=[
-    ...ALL_STAFF.filter(n=>shiftsKeys.has(n.toLowerCase())&&IS_REST(getShift(shifts,n))),
-    ...extraNames.filter(n=>IS_REST(getShift(shifts,n)))
+    ...ALL_STAFF.filter(n=>shiftsKeys.has(n.toLowerCase())&&IS_REST(getShift(shifts,n))&&!IS_DASH(getShift(shifts,n))),
+    ...extraNames.filter(n=>IS_REST(getShift(shifts,n))&&!IS_DASH(getShift(shifts,n)))
   ];
   // Motivo dell'assenza per differenziare la striscia "Non in servizio" — riposo è normale
   // (grigio), ferie è pianificato (ambra), malattia è l'unico che merita davvero attenzione (rosso)
@@ -3722,7 +3729,7 @@ function refreshOverviewForDate(d){
         const _pIdx=findWeekDayIndex(weekData,ref);
         const giorno=_pIdx!==-1?weekData.giorni[_pIdx]:null;
         if(!giorno){el.textContent='Quality Manager';el.style.color='';}
-        else{const turno=giorno.shifts['Presta P.'];if(!turno||IS_REST(turno)){el.textContent='Riposo';el.style.color='var(--red)';}else{el.textContent='Turno: '+turno;el.style.color='var(--green)';}}
+        else{const turno=giorno.shifts['Presta P.'];if(IS_DASH(turno)){el.textContent='Quality Manager';el.style.color='';}else if(!turno||IS_REST(turno)){el.textContent='Riposo';el.style.color='var(--red)';}else{el.textContent='Turno: '+turno;el.style.color='var(--green)';}}
       }else{el.textContent='Quality Manager';el.style.color='';}
     }
   }catch(e){}

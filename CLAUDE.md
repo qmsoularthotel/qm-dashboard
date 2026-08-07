@@ -189,7 +189,8 @@ I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStru
 | `HKP_URLS` | const object | Endpoint Google Apps Script per HKP (sa, ar) |
 | `DVR_DATA` | let object | Dati DVR per società: `{geriart: {...}, ...}` |
 | `IS_REST` | const fn | Ritorna `true` se il valore turno è vuoto/null (non in programma) |
-| `IS_ABSENT` | const fn | Ritorna `true` SOLO per valori espliciti: `R`, `RIPOSO`, `R RICHIESTO`, `RECUPERO`, `MALATTIA`, `OFF`, `FERIE`, trattino (`-`/`–`/`—`) — usare per contare assenze reali |
+| `IS_ABSENT` | const fn | Ritorna `true` SOLO per valori espliciti: `R`, `RIPOSO`, `R RICHIESTO`, `RECUPERO`, `MALATTIA`, `OFF`, `FERIE` — usare per contare assenze reali. Il trattino resta fuori di proposito, vedi `IS_DASH` |
+| `IS_DASH` | const fn | Ritorna `true` solo per `-`/`–`/`—`: un trattino nel turno non è un'assenza vera, è "non pertinente" — la persona non deve comparire né come in servizio né come non in servizio/Riposo |
 | `weekData` | let | Dati turno settimana parsati (non più fallback hardcoded) |
 | `activeDay` | let | Indice giorno attivo (0-6) |
 | `PROXY` | const string | `https://anthropic-proxy.qm-d82.workers.dev` |
@@ -412,12 +413,30 @@ Membri fissi: `Matarese A., Nacci M., De Masi C., Chiantese M., Extra Antonella,
 const IS_ABSENT = v => {
   if (!v) return false;
   const u = v.trim().toUpperCase();
-  if (['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO','MALATTIA','OFF','FERIE','-','–','—'].includes(u)) return true;
+  if (['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO','MALATTIA','OFF','FERIE'].includes(u)) return true;
   return u.includes('RECUPER')||u.includes('RIPOSO')||u.includes('MALATTIA')||u.includes('FERIE')||u.includes('RICHIEST');
 };
 ```
 
-`IS_ABSENT` ritorna `true` solo per valori espliciti di assenza, non per chi semplicemente non è in turno (cella vuota/`undefined`, che resta `false`). **`R Richiesto`** (riposo richiesto dal dipendente, scritto abbreviato nel turno) conta come riposo tanto in `IS_ABSENT` quanto in `IS_REST` — entrambe matchano via `u.includes('RICHIEST')`, non solo la stringa "RIPOSO RICHIESTO" per esteso. Un **trattino** (`-`) nella cella è diverso da una cella vuota: è un valore esplicito messo da chi compila il turno per dire "non lavora quel giorno", quindi va contato come assenza reale — prima `IS_REST('-')` era già `true` (escluso da "in turno") ma `IS_ABSENT('-')` era `false` (non contato tra i "non in servizio"), e la persona spariva da entrambi i conteggi della sidebar invece di finire in uno dei due.
+`IS_ABSENT` ritorna `true` solo per valori espliciti di assenza, non per chi semplicemente non è in turno (cella vuota/`undefined`, che resta `false`). **`R Richiesto`** (riposo richiesto dal dipendente, scritto abbreviato nel turno) conta come riposo tanto in `IS_ABSENT` quanto in `IS_REST` — entrambe matchano via `u.includes('RICHIEST')`, non solo la stringa "RIPOSO RICHIESTO" per esteso.
+
+### Trattino nel turno — non è un riposo, è "non pertinente"
+
+Un **trattino** (`-`/`–`/`—`) nella cella del turno è diverso sia da una cella vuota sia da un vero riposo: significa che quella persona/giorno non è pertinente (es. non ancora assunta, fuori roster quella settimana), non che abbia richiesto un giorno libero. `IS_REST('-')` è comunque `true` (va escluso da "in turno", corretto: non sta lavorando), ma non deve MAI comparire come "Riposo" — né nella striscia "Non in servizio" di `renderDay()`, né nel widget `paoloTurno` della sidebar. Per questo esiste `IS_DASH(v)`, usata per escludere esplicitamente il trattino da quelle liste anche se `IS_REST` lo classificherebbe come riposo:
+
+```js
+const IS_DASH = v => {
+  if (!v) return false;
+  const u = v.trim();
+  return u==='-'||u==='–'||u==='—';
+};
+```
+
+Applicata in due punti:
+- `renderDay()`, calcolo di `nonServizio`: `IS_REST(...) && !IS_DASH(...)` — chi ha il trattino non entra nella striscia "Non in servizio".
+- `paoloTurno` (sidebar, `refreshOverviewForDate`): se il turno di Presta P. è un trattino mostra `'Quality Manager'` (stato neutro) invece di `'Riposo'` in rosso.
+
+`IS_ABSENT` resta senza il trattino nell'elenco esplicito (di proposito — vedi tabella "Global Variables & Constants"): un trattino non deve contare né tra gli "in turno" né tra i "non in servizio" nei conteggi della sidebar (`updateSidebarInfo`).
 
 ### Manutenzione (`mt`) — non deve mai sparire
 
@@ -1200,7 +1219,7 @@ Non creare workflow YAML personalizzati come soluzione: ne è stato creato uno (
 | `rcFmtDate` restituiva URL Google nel caso else | URL rimasta per errore nel ternary | Else branch corretto: `return raw` |
 | "Non in servizio" conta anche chi non è in turno | `IS_REST(v)` ritorna true per valori null/vuoti | Usare `IS_ABSENT(v)` che richiede R/FERIE espliciti |
 | "R Richiesto" in turno trattato come attivo invece che riposo | Nessun match in `IS_REST`/`IS_ABSENT`/`_absenceReason` per la stringa "R RICHIESTO" (solo "RIPOSO RICHIESTO" era coperta) | Aggiunto `u.includes('RICHIEST')` a tutte e tre le funzioni |
-| Trattino nel turno: la persona non appare né "in turno" né "non in servizio" | `IS_REST('-')` era `true` (esclusa da "in turno") ma `IS_ABSENT('-')` era `false` (esclusa anche da "non in servizio") | Aggiunto `-`/`–`/`—` alla lista esplicita di `IS_ABSENT` |
+| Trattino nel turno mostrato come "Riposo" nella striscia "Non in servizio" e nel widget `paoloTurno` | `IS_REST('-')` è `true` (corretto, esclude da "in turno") ma veniva letto anche come vero riposo nelle liste, mentre un trattino è "non pertinente", non un'assenza | Aggiunta `IS_DASH(v)`, usata per escludere il trattino da `nonServizio` (renderDay) e dal ramo "Riposo" di `paoloTurno` — resta comunque escluso da "in turno" e da `IS_ABSENT`, quindi non appare in nessuna delle due liste |
 | DVR vuoto su altro PC | `syncFromCloud` non chiamava `dvrRestore()` | Aggiunto `dvrRestore()` nel case `dvr` di `syncFromCloud` |
 | Inventario vuoto al refresh | `invRender()` controlla `active` prima che la view sia attiva | `setView()` chiama `invRender()` quando `id === 'inventario'` |
 | Date preferenze turni mostrano "Sun" | Apps Script restituisce `String(date)` formato JS | `_tpFmtDate()` usa regex su nome mese inglese |
