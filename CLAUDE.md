@@ -237,7 +237,7 @@ I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStru
 
 13 delle voci del menu principale usano un badge SVG inline (cerchio navy `var(--accent)`, anello oro `var(--gold)`, icona bianca stroke/fill 18px) al posto della foto PNG originale — stesso linguaggio visivo dei bottoni di Reception (`.btn-badge` in `reception.html`). Classe `.nav-icon-badge` in `style.css`, stesso ingombro 38px di `.nav-icon-img` così l'allineamento con le voci rimaste a icona PNG non cambia.
 
-**Voci convertite**: Overview (casa), Registration Cards (passaporto), Suddivisione Camere (ex "Room Division", chiave), Distribuzione Culligan (goccia d'acqua), Breakfast Sheet (tazza), Operativa HKP (ex "Operativa Housekeeping", scopa), Passaggi di Cassa (glifo € pieno — stessa icona del bottone "Conta e conferma fondo cassa"), Preferenze Turni (calendario con spunta), Turnazione Corrente (gruppo persone), Recensioni Booking (stella piena), Recensioni Expedia (stella outline), DVR (scudo), Inventari e Ordini (scatola), Spese Fornitori (grafico a barre), Pannello App (griglia app).
+**Voci convertite**: Overview (casa), Registration Cards (passaporto), Bilanciamento Camere (ex "Room Division"/"Suddivisione Camere", chiave), Distribuzione Culligan (goccia d'acqua), Breakfast Sheet (tazza), Operativa HKP (ex "Operativa Housekeeping", scopa), Passaggi di Cassa (glifo € pieno — stessa icona del bottone "Conta e conferma fondo cassa"), Preferenze Turni (calendario con spunta), Turnazione Corrente (gruppo persone), Recensioni Booking (stella piena), Recensioni Expedia (stella outline), DVR (scudo), Inventari e Ordini (scatola), Spese Fornitori (grafico a barre), Pannello App (griglia app).
 
 Non c'è generazione di file immagine: sono tutti `<svg>` inline nel markup di `index.html`, nessun asset in `img/icons/` aggiunto o modificato — i PNG originali restano nella cartella ma non più referenziati da queste voci.
 
@@ -385,9 +385,9 @@ La sezione menu **Staff** è stata eliminata: "Preferenze Turni" si è spostata 
 
 Creata una sezione menu propria **Housekeeping**, tra "Operativo Quotidiano" e "Reception", che raggruppa:
 - **Operativa HKP** (ex "Operativa Housekeeping") — `nav-group-header` con sottovoci SoulArt Hotel / Art Resort (`view-hkpsheet`/`view-hkpsheetar`), invariate nel comportamento.
-- **Suddivisione Camere** (ex "Room Division", `view-room-division`) — stesso `onclick="setView('room-division',this)"` e stessa icona di prima, solo spostata di sezione e rinominata.
+- **Bilanciamento Camere** (ex "Room Division", poi "Suddivisione Camere", `view-room-division`) — stesso `onclick="setView('room-division',this)"` e stessa icona di prima, solo spostata di sezione e rinominata.
 
-Entrambe le voci prima vivevano dentro **Operativo Quotidiano**. `pageTitles['room-division']` è ora `'Suddivisione Camere'`, `breadcrumbs['room-division']` è `'Housekeeping'`, `breadcrumbs.hkpsheet`/`breadcrumbs.hkpsheetar` sono `'Housekeeping · Operativa HKP'`. Il `<span class="panel-title">` della vista `view-room-division` è stato aggiornato allo stesso modo.
+Entrambe le voci prima vivevano dentro **Operativo Quotidiano**. `pageTitles['room-division']` è ora `'Bilanciamento Camere'`, `breadcrumbs['room-division']` è `'Housekeeping'`, `breadcrumbs.hkpsheet`/`breadcrumbs.hkpsheetar` sono `'Housekeeping · Operativa HKP'`. Il `<span class="panel-title">` della vista `view-room-division` è stato aggiornato allo stesso modo.
 
 ---
 
@@ -634,7 +634,7 @@ HKP_URLS = {
 
 ---
 
-## Suddivisione Camere (ex "Room Division") — Suggerimenti di bilanciamento (`hkSuggestMoves()`)
+## Bilanciamento Camere (ex "Room Division", poi "Suddivisione Camere") — Suggerimenti di bilanciamento (`hkSuggestMoves()`)
 
 ### Scopo
 
@@ -958,7 +958,7 @@ Traccia digitale della **distinta cartacea** che le housekeeper compilano ogni g
 
 **Due strutture** (`RESI_HOTELS`): SoulArt Hotel (`sa`) e Boutique Hotel Piazza Carità (`bh`), selezionabili a linguette. **Art Resort resta fuori di proposito** — fa capo al Sig. Maddaloni, non al QM, e la sua ditta di pulizie è esterna. I due sacchi sono fisicamente distinti e si consegnano separatamente, quindi periodo aperto, totali, avviso e distinta sono **sempre di una struttura sola**.
 
-**Voce menu**: la voce sidebar "Resi Biancheria" vive dentro la sezione **Housekeeping** (insieme a "Operativa HKP" e "Suddivisione Camere"), non più in una sezione "Biancheria" a sé — eliminata perché conteneva una sola voce. `breadcrumbs['resi-biancheria']` è `'Housekeeping'`.
+**Voce menu**: la voce sidebar "Resi Biancheria" vive dentro la sezione **Housekeeping** (insieme a "Operativa HKP" e "Bilanciamento Camere"), non più in una sezione "Biancheria" a sé — eliminata perché conteneva una sola voce. `breadcrumbs['resi-biancheria']` è `'Housekeeping'`.
 
 ### Modello dati (chiave KV `qm_resi_biancheria`)
 
