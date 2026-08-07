@@ -236,7 +236,7 @@ I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStru
 
 13 delle voci del menu principale usano un badge SVG inline (cerchio navy `var(--accent)`, anello oro `var(--gold)`, icona bianca stroke/fill 18px) al posto della foto PNG originale — stesso linguaggio visivo dei bottoni di Reception (`.btn-badge` in `reception.html`). Classe `.nav-icon-badge` in `style.css`, stesso ingombro 38px di `.nav-icon-img` così l'allineamento con le voci rimaste a icona PNG non cambia.
 
-**Voci convertite**: Overview (casa), Registration Cards (passaporto), Room Division (chiave), Distribuzione Culligan (goccia d'acqua), Breakfast Sheet (tazza), Operativa Housekeeping (scopa), Passaggi di Cassa (glifo € pieno — stessa icona del bottone "Conta e conferma fondo cassa"), Preferenze Turni (calendario con spunta), Turnazione Corrente (gruppo persone), Recensioni Booking (stella piena), Recensioni Expedia (stella outline), DVR (scudo), Inventari e Ordini (scatola), Spese Fornitori (grafico a barre), Pannello App (griglia app).
+**Voci convertite**: Overview (casa), Registration Cards (passaporto), Suddivisione Camere (ex "Room Division", chiave), Distribuzione Culligan (goccia d'acqua), Breakfast Sheet (tazza), Operativa HKP (ex "Operativa Housekeeping", scopa), Passaggi di Cassa (glifo € pieno — stessa icona del bottone "Conta e conferma fondo cassa"), Preferenze Turni (calendario con spunta), Turnazione Corrente (gruppo persone), Recensioni Booking (stella piena), Recensioni Expedia (stella outline), DVR (scudo), Inventari e Ordini (scatola), Spese Fornitori (grafico a barre), Pannello App (griglia app).
 
 Non c'è generazione di file immagine: sono tutti `<svg>` inline nel markup di `index.html`, nessun asset in `img/icons/` aggiunto o modificato — i PNG originali restano nella cartella ma non più referenziati da queste voci.
 
@@ -269,8 +269,8 @@ grep -n 'id="view-' index.html
 | `view-audit` | Audit qualità |
 | `view-bkfsheet` | Operativa Breakfast — SoulArt |
 | `view-bkfsheetar` | Operativa Breakfast — Art Resort |
-| `view-hkpsheet` | Operativa Housekeeping — SoulArt Hotel |
-| `view-hkpsheetar` | Operativa Housekeeping — Art Resort |
+| `view-hkpsheet` | Operativa HKP (Housekeeping) — SoulArt Hotel |
+| `view-hkpsheetar` | Operativa HKP (Housekeeping) — Art Resort |
 | `view-miniapp` | Pannello App — centro controllo delle 5 app standalone (ex "Mini App") |
 | `view-inventario` | Inventario detersivi (stock + movimenti + analisi + ordini) |
 | `view-turni-pref` | Preferenze turni staff (da Google Forms) |
@@ -373,6 +373,14 @@ Voce di menu nella sezione **Reception**, non un pannello indipendente: mostra l
 ### Riorganizzazione sezione "Reception" (menu)
 
 La sezione menu **Staff** è stata eliminata: "Preferenze Turni" si è spostata dentro **Reception**, insieme a "Passaggi di Cassa" e "Turnazione Corrente". `breadcrumbs['turni-pref']` e `breadcrumbs['turnazione']` sono ora `'Reception'` (prima `'turni-pref'` era `'Operativo Quotidiano'`).
+
+### Nuova sezione "Housekeeping" (menu)
+
+Creata una sezione menu propria **Housekeeping**, tra "Operativo Quotidiano" e "Reception", che raggruppa:
+- **Operativa HKP** (ex "Operativa Housekeeping") — `nav-group-header` con sottovoci SoulArt Hotel / Art Resort (`view-hkpsheet`/`view-hkpsheetar`), invariate nel comportamento.
+- **Suddivisione Camere** (ex "Room Division", `view-room-division`) — stesso `onclick="setView('room-division',this)"` e stessa icona di prima, solo spostata di sezione e rinominata.
+
+Entrambe le voci prima vivevano dentro **Operativo Quotidiano**. `pageTitles['room-division']` è ora `'Suddivisione Camere'`, `breadcrumbs['room-division']` è `'Housekeeping'`, `breadcrumbs.hkpsheet`/`breadcrumbs.hkpsheetar` sono `'Housekeeping · Operativa HKP'`. Il `<span class="panel-title">` della vista `view-room-division` è stato aggiornato allo stesso modo.
 
 ---
 
@@ -540,7 +548,7 @@ La tabella nella dashboard (Compass) aveva solo `MESE | SPESA TOTALE | COPERTI B
 
 ---
 
-## Operativa Housekeeping (HKP)
+## Operativa HKP (ex "Operativa Housekeeping")
 
 ### Scopo
 
@@ -598,7 +606,7 @@ HKP_URLS = {
 
 ---
 
-## Room Division — Suggerimenti di bilanciamento (`hkSuggestMoves()`)
+## Suddivisione Camere (ex "Room Division") — Suggerimenti di bilanciamento (`hkSuggestMoves()`)
 
 ### Scopo
 
