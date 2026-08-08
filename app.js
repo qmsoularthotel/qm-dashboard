@@ -5023,6 +5023,33 @@ function revRenderExpiring(p){
   const hasExp=allExpiring.length>0;
   const proiezioneDelta=scoreAfterBoth!==null&&scoreAttuale!==null?(Math.round(scoreAfterBoth*10)/10)-(Math.round(scoreAttuale*10)/10):null;
   const proiezioneColor=proiezioneDelta===null?'var(--text-dim)':proiezioneDelta>=0?'var(--green)':'var(--red)';
+  // ── Modalità compatta ────────────────────────────────────────────────────
+  // Con il decadimento calibrato le recensioni in uscita sono la coda più leggera dello
+  // storico: su una struttura grande (emivita ~174 gg) ~8 recensioni in scadenza pesano
+  // lo 0,08% del totale e per spostare il punteggio di 0,1 dovrebbero scostarsi di 134
+  // punti su una scala 1-10 — impossibile per costruzione. Col vecchio modello a bucket
+  // invece la fascia 24-36 mesi valeva un 5% fisso e la scadenza si vedeva davvero.
+  // Resta però rilevante sulle strutture piccole con storico lungo, dove l'emivita
+  // calibrata è molto più alta: lì poche uscite valgono punti percentuali veri.
+  // Criterio: si guarda lo scostamento EFFETTIVAMENTE calcolato, non una stima.
+  const _expPesoTot=punteggioBooking(scored,_expHl,nowTs).pesoEff;
+  const _expPesoUscita=allExpiring.reduce((acc,r)=>{
+    const gg=(nowTs-r._dateTs)/86400000;
+    return(gg>=0&&gg<=REV_FINESTRA_GG)?acc+Math.pow(0.5,gg/_expHl):acc;
+  },0);
+  const _expQuota=_expPesoTot>0?_expPesoUscita/_expPesoTot:0;
+  const _expDelta=(scoreAttuale!==null&&scoreAfterBoth!==null)?Math.abs(scoreAfterBoth-scoreAttuale):0;
+  const _expInvisibile=scoreAttuale===null||(_expDelta<0.01&&Math.round(scoreAttuale*10)===Math.round(scoreAfterBoth*10));
+  if(_expInvisibile){
+    el.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.5;">
+      <span style="font-size:15px;">⏳</span>
+      <span style="flex:1;min-width:220px;">${allExpiring.length===0
+        ?`<strong style="color:var(--text);">Nessuna recensione in scadenza</strong> questa o la prossima settimana.`
+        :`<strong style="color:var(--text);">${allExpiring.length} recension${allExpiring.length===1?'e in scadenza':'i in scadenza'}</strong> questa/prossima settimana, ma pesano solo il <strong style="color:var(--text);">${(_expQuota*100).toFixed(2)}%</strong> del punteggio: uscendo lo sposterebbero di ${_expDelta<0.005?'meno di 0,01':_expDelta.toFixed(3)}, invisibile sul valore mostrato da Booking.`}
+        <span style="color:var(--text-dim);">Con l'emivita calibrata (${_expHl} gg) le recensioni vecchie hanno già perso quasi tutto il peso.</span></span>
+    </div>`;
+    return;
+  }
   let html=`<div class="panel">
     <div class="panel-header">
       <span class="panel-title">⏳ Recensioni in scadenza</span>

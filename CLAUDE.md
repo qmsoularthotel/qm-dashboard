@@ -256,6 +256,22 @@ Sono **tre** e vanno tenuti allineati, altrimenti la stessa struttura mostra num
 
 Il pannello **Recensioni in scadenza** aveva una sua `calcScore` interna a 85/10/5: la struttura del pannello non andava toccata, ma continuava a mostrare `8.8` mentre la card sopra mostrava `8.9`. Ora usa `punteggioBooking`. Nello stesso pannello i chip `BUCKET: F1 (85%) · F2 (10%) · F3 (5%)` non avevano più senso e sono diventati **"Peso per età"**: quanta parte del peso effettivo porta ogni fascia d'età, calcolata sui pesi reali (es. con emivita 64 gg: 0–6 mesi 86%, 6–12 mesi 12%, 1–2 anni 2%, 2–3 anni 0%). Molto più informativo delle percentuali fisse, e mostra a colpo d'occhio perché le recensioni vecchie non spostano il punteggio.
 
+### Pannello "Recensioni in scadenza" — adattivo
+
+Col decadimento calibrato le recensioni in uscita sono la **coda più leggera** dello storico, quindi il pannello quasi sempre non dice nulla di azionabile. Misurato su SoulArt (652 rec, emivita 174 gg): le ~8 recensioni che scadono questa/prossima settimana pesano lo **0,075%** del totale — per spostare il punteggio visualizzato di 0,1 dovrebbero avere una media che si scosta di **134 punti** su una scala 1–10, impossibile per costruzione. Col vecchio modello a bucket la fascia 24–36 mesi valeva un 5% fisso e una scadenza si vedeva davvero: è da lì che nasceva il pannello.
+
+Resta invece rilevante sulle **strutture piccole con storico lungo**, dove l'emivita calibrata è molto più alta e poche uscite valgono punti percentuali veri.
+
+Quindi il pannello si **auto-riduce**: `revRenderExpiring` calcola lo scostamento realmente prodotto dalle uscite (`scoreAfterBoth` vs `scoreAttuale`) e se è sotto 0,01 **e** non cambia il punteggio arrotondato, rende una riga sola ("N in scadenza, pesano X%, effetto invisibile") invece del pannello esteso. Il criterio usa la differenza **calcolata**, non una stima sul numero di recensioni.
+
+Comportamento verificato:
+
+| Scenario | Emivita | Peso in uscita | Δ punteggio | Modalità |
+|----------|---------|----------------|-------------|----------|
+| Struttura grande | 174 gg | 0,06% | 0,0001 | compatta |
+| Struttura media | 350 gg | 0,44% | 0,0025 | compatta |
+| Struttura piccola, storico lungo | 600 gg | 1,25% | 0,0206 | **completa** |
+
 ### Cosa NON è stato toccato
 
 Import CSV, conteggio "senza risposta", **score per categoria** e **andamento categorie** (restano a 85/10/5 per scelta: sono metriche per categoria, non IL punteggio della struttura), filtri e ordinamenti della lista, la logica di scadenza settimanale del pannello Recensioni in scadenza, tutta la sezione **Recensioni Expedia** (modello di punteggio diverso).
