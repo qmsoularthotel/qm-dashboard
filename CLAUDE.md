@@ -112,9 +112,9 @@ Claude API chiamata via proxy Cloudflare:
 5. Avvia timer: clock (10s), meteo (10min), polling overview (30s) — il polling chiama anche `turniPrefLoad()`
 6. IIFE mostra `topbar-kpis` (display:flex) all'avvio
 
-### Review Scoring Formula
+### Review Scoring Formula (Booking)
 
-Media pesata: **85% anno corrente / 10% anno-2 / 5% anno-3**, con fattore di decadimento a 271 giorni per il tracking delle scadenze.
+**Decadimento esponenziale continuo con emivita calibrata** — vedi sezione dedicata "Punteggio Booking — decadimento continuo e calibrazione". Il vecchio modello a tre bucket annuali 85/10/5 è stato sostituito. Resta 85/10/5 solo per gli **score per categoria** e per l'**andamento categorie**, che il refactor non doveva toccare.
 
 ### Hotel Room Detection Logic
 
@@ -164,6 +164,71 @@ Classi disponibili (definite sopra il blocco `@media`, collassate dentro):
 - `.app{height:100svh;min-height:100svh}` — fuori dalla media query `.app` ha `height:100vh;min-height:640px`, e su iOS Safari `100vh` include l'area dietro la barra indirizzi (fondo pagina tagliato). Serve sovrascrivere **height**, non solo `min-height`.
 - `.panel-body table{display:block;overflow-x:auto;min-width:100%}` — le tabelle dati larghe (Spese Fornitori, Inventari e Ordini, Breakfast Sheet) diventano il proprio contenitore scorrevole invece di allargare la pagina. Non serve più aggiungere a mano un wrapper `overflow-x:auto` intorno a ogni nuova tabella. Le stampe (`invPrintStock`, `invOrdersPrint`, `resiPrintDistinta`) scrivono in un altro documento e non sono toccate.
 - I modali usano già ovunque `max-width:NNNpx;width:100%` — schema da mantenere per i nuovi.
+
+---
+
+## Punteggio Booking — decadimento continuo e calibrazione
+
+### Perché è cambiato
+
+Il modello precedente usava tre bucket annuali con pesi fissi: F1 ultimi 12 mesi 85%, F2 12–24 mesi 10%, F3 24–36 mesi 5%. Due difetti strutturali:
+
+1. Dentro F1 una recensione di ieri e una di 11 mesi fa pesavano **identicamente** (85% entrambe).
+2. Al 366° giorno il peso crollava da 85% a 10% — una funzione a gradini che produce salti artificiali del punteggio quando una recensione attraversa un confine di bucket, senza che sia successo nulla in hotel.
+
+Verificato su SoulArt (652 rec, 24/08/2023 → 07/08/2026): il modello dava 8.8429 → mostrava **8.8**, mentre Booking mostra **8.9**. Sottostima di ~0.06 che tarava male tutti i calcoli previsionali.
+
+### Le funzioni (sezione `§§ RECENSIONI BOOKING — PUNTEGGIO A DECADIMENTO CONTINUO` in `app.js`)
+
+| Funzione | Scopo |
+|----------|-------|
+| `punteggioBooking(rec, hl, oggi)` | `{score, pesoEff, nInFinestra}`. Peso di ogni recensione = `0.5^(giorni/hl)`, finestra `REV_FINESTRA_GG=1095` (36 mesi) |
+| `calibraHalfLife(rec, scoreReale, oggi)` | Scansiona hl da 20 a 1200 gg e restituisce `{hl, fascia:[min,max], fuoriModello}` — le emivite che riproducono il punteggio dichiarato |
+| `revSoglia(target)` | `target - 0.05`: Booking arrotonda a una cifra, per **vedere** 8.9 basta superare 8.85 |
+| `revHl(p)` / `revCalibStato(p)` | Emivita in uso per la struttura e stato calibrazione |
+| `revCalibApply(p, score)` / `revCalibInput(p, val)` | Ricalcolo e persistenza della calibrazione |
+| `revRitmoAlGiorno(scored, oggiTs)` | Recensioni/giorno degli ultimi 12 mesi |
+| `revSimulaTarget(...)` | Simulazione giorno per giorno, vedi sotto |
+| `revRenderCalib(p, pb, hl)` / `revRenderImpact(p, pb)` | I due pannelli nuovi |
+
+Le funzioni accettano sia la forma interna `{_dateTs,_score}` sia quella documentata `{data,voto}` (helper `_revTs`/`_revVoto`), così restano testabili in isolamento.
+
+### Calibrazione sul punteggio reale
+
+Ogni struttura ha una calibrazione **indipendente**. L'utente inserisce il punteggio che Booking mostra in cima a *Extranet → Recensioni* (una cifra decimale) e da lì si ricava l'emivita.
+
+- Chiave KV **`qm_rev_calib`**: `{ sa:{scoreReale, ts, hl, fascia, fuoriModello}, ... }`, letta dal cloud in `restoreReviews()` così il valore inserito su un PC vale su tutti.
+- **Non bloccante**: senza valore si usa `REV_HL_DEFAULT=173` e si mostra il badge `non calibrato`.
+- Oltre `REV_CALIB_STALE_GG=90` giorni dall'inserimento → badge `calibrazione da aggiornare`.
+- Se nessuna emivita riproduce il valore → `fuoriModello`, avviso rosso esplicito e `console.warn`. **Non fallisce in silenzio**: o il numero è digitato male, o il CSV non è aggiornato.
+
+### Regola di arrotondamento — e come monitorarla
+
+Si assume che Booking **arrotondi**: `soglia = targetVisualizzato - 0.05`. Verificato sui dati SoulArt: se troncasse servirebbe 8.90 pieno per vedere 8.9, ma il massimo ottenibile con qualsiasi emivita è 8.8765 — sotto 8.90 — mentre Booking mostra 8.9. Quindi l'arrotondamento è l'ipotesi corretta.
+
+**Segnale di allarme**: se in futuro la calibrazione restituisse `fuoriModello` in modo sistematico su più strutture, è il sintomo che la regola di arrotondamento (o il modello) va rivista. I casi sono loggati in console da `revCalibApply`.
+
+### Simulazione previsionale
+
+Il vecchio calcolo teneva i pesi **congelati** e sovrastimava molto lo sforzo (per SoulArt ~74 recensioni contro le ~10 reali). `revSimulaTarget` simula giorno per giorno: le recensioni esistenti **invecchiano** (e possono uscire dalla finestra 36 mesi) mentre le nuove arrivano al ritmo storico della struttura, distribuite uniformemente. Restituisce il primo giorno in cui si supera la soglia, esposto sia in **numero di recensioni** sia in **tempo stimato**, con un intervallo calcolato sugli estremi della fascia di emivite compatibili.
+
+**Caso "non raggiungibile"**: con una media ponderata il punteggio converge alla media delle recensioni in arrivo. Se il voto del flusso è ≤ soglia il target è irraggiungibile **a prescindere dal tempo**, e viene detto esplicitamente invece di restituire un numero. Per SoulArt la media reale degli ultimi 12 mesi è 8.86, sotto la soglia 8.95 dell'obiettivo 9.0.
+
+### Pannello "Impatto di una nuova recensione"
+
+`delta(voto) = (voto - score) / (pesoEff + 1)` per i voti 10, 9, 8, 7, 5, 3. Con score 8.866 e pesoEff 150.5: `+0.007` per un 10, `−0.026` per un 5. Evidenzia l'**asimmetria** (un voto basso pesa 3–4 volte più di un voto pieno): è l'informazione che cambia le priorità operative — intercettare l'ospite scontento vale più che chiedere altri 10.
+
+**È un pannello aggiuntivo**: "Recensioni in scadenza" (`revRenderExpiring`) resta dov'è e invariato, non è stato sostituito.
+
+### Cosa NON è stato toccato
+
+Import CSV, conteggio "senza risposta", **score per categoria** e **andamento categorie** (restano a 85/10/5 per scelta), filtri e ordinamenti della lista, pannello "Recensioni in scadenza", tutta la sezione **Recensioni Expedia** (modello di punteggio diverso).
+
+L'**andamento score** (`openScoreTrend`) invece è stato allineato al nuovo modello: se fosse rimasto a 85/10/5 il grafico avrebbe mostrato un valore diverso dalla card.
+
+### Nota metodologica (riportata anche nella UI)
+
+L'algoritmo di Booking.com non è pubblico. Questo è un modello **calibrato** sul punteggio reale della struttura, non una replica. Anche dopo la calibrazione resta una fascia di emivite compatibili (per SoulArt 62–285 giorni), quindi le previsioni vanno lette come **ordini di grandezza**.
 
 ---
 

@@ -5,7 +5,7 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=247">
+<link rel="stylesheet" href="style.css?v=248">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
@@ -629,6 +629,7 @@
             <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-sa">—</div><div class="kpi-delta up" id="rev-count-sub-sa"></div></div>
             <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-sa">—</div><div class="kpi-delta down" id="rev-noreply-sub-sa"></div></div>
           </div>
+          <div id="rev-calib-sa"></div>
           <div id="rev-target-sa" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
             <div style="font-size:18px;">🎯</div>
             <div style="flex:1;">
@@ -639,6 +640,7 @@
           <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
           <div class="rev-cat-grid" id="revCatGrid-sa"></div>
           <div id="rev-expiring-sa" style="display:block;margin-bottom:14px;"></div>
+          <div id="rev-impact-sa"></div>
           <div class="panel" style="margin-bottom:14px;">
             <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
             <div class="panel-body" style="padding:14px;" id="revCatTrend-sa">
@@ -685,6 +687,7 @@
             <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-bh">—</div><div class="kpi-delta up" id="rev-count-sub-bh"></div></div>
             <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-bh">—</div><div class="kpi-delta down" id="rev-noreply-sub-bh"></div></div>
           </div>
+          <div id="rev-calib-bh"></div>
           <div id="rev-target-bh" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
             <div style="font-size:18px;">🎯</div>
             <div style="flex:1;">
@@ -695,6 +698,7 @@
           <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
           <div class="rev-cat-grid" id="revCatGrid-bh"></div>
           <div id="rev-expiring-bh" style="display:block;margin-bottom:14px;"></div>
+          <div id="rev-impact-bh"></div>
           <div class="panel" style="margin-bottom:14px;">
             <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
             <div class="panel-body" style="padding:14px;" id="revCatTrend-bh">
@@ -741,6 +745,7 @@
             <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-sl">—</div><div class="kpi-delta up" id="rev-count-sub-sl"></div></div>
             <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-sl">—</div><div class="kpi-delta down" id="rev-noreply-sub-sl"></div></div>
           </div>
+          <div id="rev-calib-sl"></div>
           <div id="rev-target-sl" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
             <div style="font-size:18px;">🎯</div>
             <div style="flex:1;">
@@ -751,6 +756,7 @@
           <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
           <div class="rev-cat-grid" id="revCatGrid-sl"></div>
           <div id="rev-expiring-sl" style="display:block;margin-bottom:14px;"></div>
+          <div id="rev-impact-sl"></div>
           <div class="panel" style="margin-bottom:14px;">
             <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
             <div class="panel-body" style="padding:14px;" id="revCatTrend-sl">
@@ -797,6 +803,7 @@
             <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-pr">—</div><div class="kpi-delta up" id="rev-count-sub-pr"></div></div>
             <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-pr">—</div><div class="kpi-delta down" id="rev-noreply-sub-pr"></div></div>
           </div>
+          <div id="rev-calib-pr"></div>
           <div id="rev-target-pr" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
             <div style="font-size:18px;">🎯</div>
             <div style="flex:1;">
@@ -807,6 +814,7 @@
           <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
           <div class="rev-cat-grid" id="revCatGrid-pr"></div>
           <div id="rev-expiring-pr" style="display:block;margin-bottom:14px;"></div>
+          <div id="rev-impact-pr"></div>
           <div class="panel" style="margin-bottom:14px;">
             <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
             <div class="panel-body" style="padding:14px;" id="revCatTrend-pr">
@@ -853,6 +861,7 @@
             <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-ms">—</div><div class="kpi-delta up" id="rev-count-sub-ms"></div></div>
             <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-ms">—</div><div class="kpi-delta down" id="rev-noreply-sub-ms"></div></div>
           </div>
+          <div id="rev-calib-ms"></div>
           <div id="rev-target-ms" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
             <div style="font-size:18px;">🎯</div>
             <div style="flex:1;">
@@ -863,6 +872,7 @@
           <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
           <div class="rev-cat-grid" id="revCatGrid-ms"></div>
           <div id="rev-expiring-ms" style="display:block;margin-bottom:14px;"></div>
+          <div id="rev-impact-ms"></div>
           <div class="panel" style="margin-bottom:14px;">
             <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
             <div class="panel-body" style="padding:14px;" id="revCatTrend-ms">
@@ -909,6 +919,7 @@
             <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-ar">—</div><div class="kpi-delta up" id="rev-count-sub-ar"></div></div>
             <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-ar">—</div><div class="kpi-delta down" id="rev-noreply-sub-ar"></div></div>
           </div>
+          <div id="rev-calib-ar"></div>
           <div id="rev-target-ar" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
             <div style="font-size:18px;">🎯</div>
             <div style="flex:1;">
@@ -919,6 +930,7 @@
           <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
           <div class="rev-cat-grid" id="revCatGrid-ar"></div>
           <div id="rev-expiring-ar" style="display:block;margin-bottom:14px;"></div>
+          <div id="rev-impact-ar"></div>
           <div class="panel" style="margin-bottom:14px;">
             <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
             <div class="panel-body" style="padding:14px;" id="revCatTrend-ar">
@@ -965,6 +977,7 @@
             <div class="kpi-card green"><div class="kpi-card-icon">✓</div><div class="kpi-label">Recensioni totali</div><div class="kpi-value" id="rev-count-sb">—</div><div class="kpi-delta up" id="rev-count-sub-sb"></div></div>
             <div class="kpi-card amber"><div class="kpi-card-icon">!</div><div class="kpi-label">Senza risposta</div><div class="kpi-value" id="rev-noreply-sb">—</div><div class="kpi-delta down" id="rev-noreply-sub-sb"></div></div>
           </div>
+          <div id="rev-calib-sb"></div>
           <div id="rev-target-sb" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
             <div style="font-size:18px;">🎯</div>
             <div style="flex:1;">
@@ -975,6 +988,7 @@
           <div style="margin-bottom:6px;font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;">Score per categoria</div>
           <div class="rev-cat-grid" id="revCatGrid-sb"></div>
           <div id="rev-expiring-sb" style="display:block;margin-bottom:14px;"></div>
+          <div id="rev-impact-sb"></div>
           <div class="panel" style="margin-bottom:14px;">
             <div class="panel-header"><span class="panel-title">Andamento categorie</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">media mensile</span></div>
             <div class="panel-body" style="padding:14px;" id="revCatTrend-sb">
@@ -1604,7 +1618,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=2"></script>
-<script src="app.js?v=716-20260807"></script>
+<script src="app.js?v=717-20260807"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

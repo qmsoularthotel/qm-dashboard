@@ -3961,6 +3961,13 @@ document.querySelector('.content').addEventListener('scroll',function(){
     }
     // Ripristina recensioni — prima da localStorage, poi da cloud se mancano
     async function restoreReviews(){
+      // Calibrazioni punteggio Booking (emivita per struttura): il cloud è la fonte, così
+      // il valore inserito su un PC vale su tutti. Se il fetch fallisce si tiene il locale.
+      try{
+        const rc=await fetch(PROXY+'/kv/get?key='+REV_CALIB_KEY,{cache:'no-store'});
+        const rj=await rc.json();
+        if(rj.value){REV_CALIB=JSON.parse(rj.value)||{};localStorage.setItem(REV_CALIB_KEY,rj.value);}
+      }catch(e){}
       for(const p of ['sa','bh','sl','pr','ms','ar','sb']){
         try{
           let csvText=localStorage.getItem('qm_rev_'+p);
@@ -4044,21 +4051,12 @@ function openScoreTrend(p){
     labels.push(mesiBrevi[cur.getMonth()]+'\''+String(cur.getFullYear()).slice(2));
     cur.setMonth(cur.getMonth()+1);
   }
-  // Per ogni mese calcola lo score ponderato 85/10/5 usando tutte le rec fino a quel mese
+  // Stesso modello della card Punteggio medio (decadimento continuo con emivita calibrata):
+  // se qui restasse il vecchio 85/10/5 il grafico mostrerebbe un valore diverso dalla card.
+  const _trendHl=revHl(p);
   function calcWeightedAt(refDate){
     const refTs=refDate.getTime()+30*24*60*60*1000; // fine del mese
-    const available=scored.filter(r=>r._dateTs<=refTs);
-    if(!available.length)return null;
-    const f1=available.filter(r=>(refTs-r._dateTs)/86400000<=365);
-    const f2=available.filter(r=>{const d=(refTs-r._dateTs)/86400000;return d>365&&d<=730;});
-    const f3=available.filter(r=>{const d=(refTs-r._dateTs)/86400000;return d>730&&d<=1096;});
-    const avg=arr=>arr.length?arr.reduce((s,r)=>s+r._score,0)/arr.length:null;
-    const a1=avg(f1),a2=avg(f2),a3=avg(f3);
-    let wT=0,wS=0;
-    if(a1!==null){wT+=0.85;wS+=0.85*a1;}
-    if(a2!==null){wT+=0.10;wS+=0.10*a2;}
-    if(a3!==null){wT+=0.05;wS+=0.05*a3;}
-    return wT>0?wS/wT:null;
+    return punteggioBooking(scored,_trendHl,refTs).score;
   }
   const vals=months.map(m=>calcWeightedAt(m));
   const validVals=vals.filter(v=>v!==null);
@@ -4066,7 +4064,7 @@ function openScoreTrend(p){
   const title=REV_HOTELS[p].name;
   document.getElementById('catChartModalTitle').textContent='📈 Andamento score — '+title;
   document.getElementById('catChartModalTitle').style.color='#003580';
-  document.getElementById('catChartModalSub').textContent='Score ponderato Booking 85/10/5 · '+months.length+' mesi · tutto il periodo';
+  document.getElementById('catChartModalSub').textContent='Decadimento continuo, emivita '+_trendHl+'gg · '+months.length+' mesi · tutto il periodo';
   const W=700,H=260,PL=40,PR=20,PT=30,PB=40;
   const plotW=W-PL-PR,plotH=H-PT-PB;
   const minY=Math.max(0,Math.min(...validVals)-0.2);
@@ -5093,6 +5091,239 @@ function revRenderExpiring(p){
   el.style.display='block';
   el.innerHTML=html;
 }
+// §§ RECENSIONI BOOKING — PUNTEGGIO A DECADIMENTO CONTINUO + CALIBRAZIONE
+// Sostituisce il vecchio modello a tre bucket annuali con pesi fissi 85/10/5.
+// Perché: dentro il bucket "ultimi 12 mesi" una recensione di ieri e una di 11 mesi fa
+// pesavano identicamente, poi al 366° giorno il peso crollava da 85% a 10%. Una funzione
+// a gradini che approssima male una curva continua e produce salti artificiali quando una
+// recensione attraversa un confine di bucket, senza che sia successo nulla in hotel.
+// Verificato su SoulArt (652 rec): il modello a bucket dava 8.84 → mostrava 8.8, mentre
+// Booking mostra 8.9. Sottostima di ~0.06 che tarava male tutti i calcoli previsionali.
+//
+// ATTENZIONE: non è l'algoritmo di Booking (non è pubblico). È un modello calibrato sul
+// punteggio reale che la struttura legge nell'extranet. Anche dopo la calibrazione resta
+// una fascia di emivite compatibili, quindi le previsioni sono ordini di grandezza.
+const REV_HL_DEFAULT=173;          // emivita di ripiego se la struttura non è calibrata
+const REV_FINESTRA_GG=1095;        // 36 mesi: finestra di validità delle recensioni Booking
+const REV_CALIB_KEY='qm_rev_calib';
+const REV_CALIB_STALE_GG=90;       // oltre questo, la calibrazione va rinfrescata
+let REV_CALIB={};
+
+// Le recensioni interne hanno {_dateTs,_score}; la firma pubblica documentata è
+// {data,voto}. Accettate entrambe così le funzioni restano testabili in isolamento.
+const _revTs=r=>r._dateTs!=null?r._dateTs:new Date(r.data).getTime();
+const _revVoto=r=>r._score!=null?r._score:r.voto;
+
+/**
+ * Punteggio Booking stimato con decadimento esponenziale continuo.
+ * @param {Array<{data:string|Date,voto:number}>} recensioni
+ * @param {number} halfLifeGiorni - emivita del peso di una recensione
+ * @param {Date|number} oggi
+ * @returns {{score:number|null, pesoEff:number, nInFinestra:number}}
+ */
+function punteggioBooking(recensioni,halfLifeGiorni=REV_HL_DEFAULT,oggi=new Date()){
+  const oggiTs=oggi instanceof Date?oggi.getTime():oggi;
+  let num=0,den=0,n=0;
+  for(const r of recensioni||[]){
+    const voto=_revVoto(r);
+    if(!(voto>0))continue;
+    const gg=(oggiTs-_revTs(r))/86400000;
+    if(!(gg>=0)||gg>REV_FINESTRA_GG)continue;
+    const w=Math.pow(0.5,gg/halfLifeGiorni);
+    num+=w*voto;den+=w;n++;
+  }
+  return den>0
+    ?{score:num/den,pesoEff:den,nInFinestra:n}
+    :{score:null,pesoEff:0,nInFinestra:0};
+}
+
+/**
+ * Trova l'emivita compatibile con il punteggio realmente mostrato da Booking.
+ * scoreReale ha una sola cifra decimale, quindi il valore vero sta in
+ * [scoreReale-0.05, scoreReale+0.05): restituisce il centro della fascia di emivite
+ * compatibili, più gli estremi. fuoriModello=true se nessuna emivita lo riproduce.
+ */
+function calibraHalfLife(recensioni,scoreReale,oggi=new Date()){
+  const min=scoreReale-0.05,max=scoreReale+0.05;
+  const compatibili=[];
+  for(let hl=20;hl<=1200;hl++){
+    const s=punteggioBooking(recensioni,hl,oggi).score;
+    if(s!==null&&s>=min&&s<max)compatibili.push(hl);
+  }
+  if(!compatibili.length)return{hl:REV_HL_DEFAULT,fascia:null,fuoriModello:true};
+  const centro=compatibili[Math.floor(compatibili.length/2)];
+  return{hl:centro,fascia:[compatibili[0],compatibili[compatibili.length-1]],fuoriModello:false};
+}
+
+// Booking mostra una sola cifra decimale e arrotonda: per far comparire 8.9 basta
+// superare 8.85, non raggiungere 8.90. Tutti i target passano da qui.
+// (Se troncasse servirebbe 8.90 pieno: su SoulArt il troncamento è incompatibile col
+// modello — il massimo con qualsiasi emivita è 8.8765, sotto 8.90, mentre Booking mostra
+// 8.9 — quindi l'arrotondamento è l'ipotesi corretta. Se in futuro la calibrazione
+// restituisse fuoriModello in modo sistematico su più strutture, è il segnale che questa
+// regola va rivista: i casi vengono loggati in console da revCalibApply.)
+const revSoglia=targetVisualizzato=>targetVisualizzato-0.05;
+
+// ── Stato calibrazione per struttura ────────────────────────────────────────
+// { sa:{scoreReale:8.9, ts:<ms>, hl:173, fascia:[62,285], fuoriModello:false}, ... }
+function revCalibLoad(){
+  try{const s=localStorage.getItem(REV_CALIB_KEY);if(s)REV_CALIB=JSON.parse(s)||{};}catch(e){REV_CALIB={};}
+}
+function revCalibSave(){
+  try{localStorage.setItem(REV_CALIB_KEY,JSON.stringify(REV_CALIB));}catch(e){}
+  try{kvSet(REV_CALIB_KEY,JSON.stringify(REV_CALIB));}catch(e){}
+}
+revCalibLoad();
+
+// Emivita da usare per una struttura: quella calibrata, altrimenti il default.
+function revHl(p){
+  const c=REV_CALIB[p];
+  return(c&&c.hl&&!c.fuoriModello)?c.hl:REV_HL_DEFAULT;
+}
+function revCalibStato(p){
+  const c=REV_CALIB[p];
+  if(!c||c.scoreReale==null)return{stato:'non-calibrato'};
+  if(c.fuoriModello)return{stato:'fuori-modello',scoreReale:c.scoreReale,ts:c.ts};
+  const gg=(Date.now()-(c.ts||0))/86400000;
+  return{stato:gg>REV_CALIB_STALE_GG?'da-aggiornare':'ok',scoreReale:c.scoreReale,ts:c.ts,hl:c.hl,fascia:c.fascia,gg:Math.floor(gg)};
+}
+
+// Ricalcola l'emivita di una struttura dal punteggio reale digitato dall'utente.
+function revCalibApply(p,scoreReale){
+  const scored=(REV_HOTELS[p].data||[]).filter(r=>r._score>0&&r._dateTs>0);
+  if(!scored.length)return;
+  const res=calibraHalfLife(scored,scoreReale);
+  REV_CALIB[p]={scoreReale:scoreReale,ts:Date.now(),hl:res.hl,fascia:res.fascia,fuoriModello:res.fuoriModello};
+  if(res.fuoriModello){
+    // Non fallire in silenzio: o il numero è digitato male, o il CSV non è aggiornato,
+    // o la regola di arrotondamento assunta non regge più (vedi nota su revSoglia).
+    console.warn('[Recensioni] Calibrazione fuori modello per '+p+': nessuna emivita tra 20 e 1200 giorni riproduce il punteggio '+scoreReale+'. Modello o dato da verificare.');
+  }
+  revCalibSave();
+}
+function revCalibInput(p,val){
+  const v=parseFloat(String(val).replace(',','.'));
+  if(isNaN(v)||v<1||v>10){
+    delete REV_CALIB[p];revCalibSave();
+  }else{
+    revCalibApply(p,Math.round(v*10)/10);
+  }
+  try{revRenderStats(p);}catch(e){}
+}
+
+// ── Simulazione previsionale ────────────────────────────────────────────────
+// Fa decadere ANCHE le recensioni esistenti mentre arrivano le nuove: il vecchio calcolo
+// teneva i pesi congelati e sovrastimava di molto lo sforzo necessario (per SoulArt ~74
+// recensioni contro le ~10 reali). Restituisce il primo giorno in cui si supera la soglia.
+function revRitmoAlGiorno(scored,oggiTs){
+  const ultimoAnno=scored.filter(r=>(oggiTs-r._dateTs)/86400000<=365);
+  return ultimoAnno.length/365;
+}
+/**
+ * @returns {{raggiungibile:boolean, motivo?:string, nRec?:number, giorni?:number}}
+ */
+function revSimulaTarget(scored,hl,targetVisualizzato,votoNuove,recAlGiorno,oggiTs){
+  const soglia=revSoglia(targetVisualizzato);
+  const attuale=punteggioBooking(scored,hl,oggiTs).score;
+  if(attuale!==null&&attuale>=soglia)return{raggiungibile:true,nRec:0,giorni:0};
+  // Con una media ponderata il punteggio converge alla media delle recensioni in arrivo:
+  // se il flusso vale meno della soglia, il target è irraggiungibile a prescindere dal tempo.
+  if(votoNuove<=soglia)return{raggiungibile:false,motivo:'flusso'};
+  if(!(recAlGiorno>0))return{raggiungibile:false,motivo:'nessun-flusso'};
+  const MAX_GG=REV_FINESTRA_GG;
+  for(let t=1;t<=MAX_GG;t++){
+    const oraTs=oggiTs+t*86400000;
+    let num=0,den=0;
+    for(const r of scored){
+      const gg=(oraTs-r._dateTs)/86400000;
+      if(gg>REV_FINESTRA_GG)continue;          // uscita dalla finestra 36 mesi
+      const w=Math.pow(0.5,gg/hl);
+      num+=w*r._score;den+=w;
+    }
+    const nNuove=Math.floor(recAlGiorno*t);
+    for(let j=1;j<=nNuove;j++){
+      const eta=t-j/recAlGiorno;               // arrivi distribuiti uniformemente
+      const w=Math.pow(0.5,eta/hl);
+      num+=w*votoNuove;den+=w;
+    }
+    if(den>0&&num/den>=soglia)return{raggiungibile:true,nRec:nNuove,giorni:t};
+  }
+  return{raggiungibile:false,motivo:'oltre-orizzonte'};
+}
+
+// ── UI: calibrazione sul punteggio reale ────────────────────────────────────
+// Non bloccante: senza valore inserito si usa l'emivita di default e si mostra il badge
+// "non calibrato". Il dashboard resta pienamente funzionante.
+function revRenderCalib(p,pb,hl){
+  const el=document.getElementById('rev-calib-'+p);
+  if(!el)return;
+  const cs=revCalibStato(p);
+  const c=REV_CALIB[p]||{};
+  const fmtD=ts=>{const d=new Date(ts);return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();};
+  let badge='',avviso='';
+  if(cs.stato==='non-calibrato'){
+    badge=`<span style="font-size:var(--fs-xxs);font-weight:700;padding:3px 10px;border-radius:12px;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);">non calibrato</span>`;
+  }else if(cs.stato==='fuori-modello'){
+    badge=`<span style="font-size:var(--fs-xxs);font-weight:700;padding:3px 10px;border-radius:12px;background:var(--red-bg);color:var(--red);">fuori modello</span>`;
+    avviso=`<div style="margin-top:8px;background:var(--red-bg);color:var(--red);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.5;">
+      <strong>Punteggio non riproducibile.</strong> Nessuna emivita tra 20 e 1200 giorni produce ${Number(cs.scoreReale).toFixed(1)} con queste recensioni: o il numero è stato digitato male, o il CSV non è aggiornato all'ultima esportazione. Nel frattempo si usa l'emivita di default (${REV_HL_DEFAULT} giorni).</div>`;
+  }else{
+    const col=cs.stato==='da-aggiornare'?'amber':'green';
+    badge=`<span style="font-size:var(--fs-xxs);font-weight:700;padding:3px 10px;border-radius:12px;background:var(--${col}-bg);color:var(--${col});">calibrato su ${Number(cs.scoreReale).toFixed(1)} il ${fmtD(cs.ts)}</span>`;
+    if(cs.stato==='da-aggiornare')avviso=`<div style="margin-top:8px;background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.5;">Calibrazione di ${cs.gg} giorni fa: ricontrolla il punteggio nell'extranet e reinseriscilo per tenere allineate le previsioni.</div>`;
+  }
+  const fasciaTxt=(c.fascia&&!c.fuoriModello)
+    ?` · fascia compatibile ${c.fascia[0]}–${c.fascia[1]} gg`
+    :'';
+  el.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1 1 240px;min-width:200px;">
+        <label for="revCalibIn-${p}" style="display:block;font-size:var(--fs-xs);font-weight:700;color:var(--text);margin-bottom:2px;">Punteggio Booking reale</label>
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);">lo trovi in cima a Extranet → Recensioni</div>
+      </div>
+      <input id="revCalibIn-${p}" type="number" step="0.1" min="1" max="10" inputmode="decimal"
+        value="${c.scoreReale!=null?Number(c.scoreReale).toFixed(1):''}" placeholder="es. 8.9"
+        onchange="revCalibInput('${p}',this.value)"
+        style="width:92px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-sm);font-weight:700;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;">
+      ${badge}
+    </div>
+    ${avviso}
+    <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;">
+      Emivita in uso <strong style="color:var(--text-muted);">${hl} giorni</strong>${fasciaTxt} · peso effettivo ≈ <strong style="color:var(--text-muted);">${Math.round(pb.pesoEff)}</strong> su ${pb.nInFinestra} recensioni nella finestra di 36 mesi.
+      L'algoritmo di Booking non è pubblico: questo è un modello calibrato sul punteggio reale della struttura, non una replica. Anche dopo la calibrazione resta una fascia di emivite compatibili, quindi le previsioni vanno lette come ordini di grandezza.
+    </div>
+  </div>`;
+}
+
+// ── UI: impatto di una nuova recensione ─────────────────────────────────────
+// delta(voto) = (voto - score) / (pesoEff + 1). L'asimmetria è l'informazione che
+// cambia le priorità operative: un voto basso pesa 3-4 volte più di un voto pieno.
+function revRenderImpact(p,pb){
+  const el=document.getElementById('rev-impact-'+p);
+  if(!el)return;
+  if(pb.score===null){el.innerHTML='';return;}
+  const voti=[10,9,8,7,5,3];
+  const delta=v=>(v-pb.score)/(pb.pesoEff+1);
+  const d10=delta(10),d5=delta(5);
+  const rapporto=d10>0?Math.abs(d5)/d10:null;
+  const celle=voti.map(v=>{
+    const d=delta(v);
+    const col=d>=0?'var(--green)':'var(--red)';
+    const bg=d>=0?'var(--green-bg)':'var(--red-bg)';
+    return`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:10px 8px;text-align:center;">
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">voto ${v}</div>
+      <div style="margin-top:5px;display:inline-block;padding:3px 9px;border-radius:12px;background:${bg};color:${col};font-size:var(--fs-sm);font-weight:700;font-variant-numeric:tabular-nums;">${d>=0?'+':'−'}${Math.abs(d).toFixed(3)}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML=`<div class="panel" style="margin-bottom:14px;">
+    <div class="panel-header"><span class="panel-title">Impatto di una nuova recensione</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">peso effettivo ≈ ${Math.round(pb.pesoEff)}</span></div>
+    <div class="panel-body" style="padding:14px;">
+      <div class="rev-impact-grid">${celle}</div>
+      ${rapporto?`<div style="margin-top:10px;background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.5;">
+        <strong>Un 5 pesa ${rapporto.toFixed(1)} volte più di un 10.</strong> Evitare una recensione bassa vale molto più che ottenerne una piena: la priorità operativa è intercettare l'ospite scontento prima che scriva, non chiedere altri 10.</div>`:''}
+    </div>
+  </div>`;
+}
 function revRenderStats(p){
   const data=REV_HOTELS[p].data;
   if(!data.length)return;
@@ -5100,28 +5331,15 @@ function revRenderStats(p){
   const scores=scored.map(r=>r._score);
   // Media semplice
   const avgSimple=scores.reduce((a,b)=>a+b,0)/scores.length;
-  // Media ponderata Booking.com 2025: 85% ultimi 12m, 10% 12-24m, 5% 24-36m
-  const DECAY_F1=270*24*60*60*1000;
+  // Punteggio a decadimento esponenziale continuo con emivita calibrata sul punteggio
+  // reale della struttura (vedi sezione RECENSIONI BOOKING — PUNTEGGIO A DECADIMENTO
+  // CONTINUO). Sostituisce i tre bucket annuali 85/10/5, che facevano pesare uguale una
+  // recensione di ieri e una di 11 mesi fa e poi crollare il peso di colpo al 366° giorno.
   const now=Date.now();
-  const fascia1=scored.filter(r=>(now-r._dateTs)/(24*60*60*1000)<=365);
-  const fascia2=scored.filter(r=>{const d=(now-r._dateTs)/(24*60*60*1000);return d>365&&d<=730;});
-  const fascia3=scored.filter(r=>{const d=(now-r._dateTs)/(24*60*60*1000);return d>730&&d<=1096;});
-  // Score visualizzato: media SEMPLICE per fascia (allineato a Booking)
-  const avg1=fascia1.length?fascia1.reduce((s,r)=>s+r._score,0)/fascia1.length:null;
-  const avg2=fascia2.length?fascia2.reduce((s,r)=>s+r._score,0)/fascia2.length:null;
-  const avg3=fascia3.length?fascia3.reduce((s,r)=>s+r._score,0)/fascia3.length:null;
-  // Score visualizzato con media semplice per fascia
-  let wTotal=0,wScore=0;
-  if(avg1!==null){wTotal+=0.85;wScore+=0.85*avg1;}
-  if(avg2!==null){wTotal+=0.10;wScore+=0.10*avg2;}
-  if(avg3!==null){wTotal+=0.05;wScore+=0.05*avg3;}
-  const avgWeighted=wTotal>0?wScore/wTotal:avgSimple;
-  // Media fascia1 con decadimento interno (solo per simulatore)
-  const avg1Decay=fascia1.length?(()=>{
-    const ws=fascia1.reduce((s,r)=>s+Math.exp(-(now-r._dateTs)/DECAY_F1)*r._score,0);
-    const wt=fascia1.reduce((s,r)=>s+Math.exp(-(now-r._dateTs)/DECAY_F1),0);
-    return wt?ws/wt:null;
-  })():null;
+  const hl=revHl(p);
+  const pb=punteggioBooking(scored,hl,now);
+  const avgWeighted=pb.score!==null?pb.score:avgSimple;
+  const pesoEff=pb.pesoEff;
   const noReply=data.filter(r=>!r._hasReply && REV_SENT[revUniqueKey(p,r)]!=='not_needed').length;
   const nrBtn=document.getElementById('revFlt-'+p+'-noreply');
   if(nrBtn){
@@ -5132,9 +5350,13 @@ function revRenderStats(p){
   }
   const g=id=>document.getElementById(id+'-'+p);
   g('rev-avg').textContent=(Math.round(avgWeighted*10)/10).toFixed(1);
-  g('rev-avg-sub').textContent='ponderato Booking 85/10/5 · media semplice '+avgSimple.toFixed(1);
+  g('rev-avg-sub').textContent='decadimento continuo, emivita '+(revCalibStato(p).stato==='ok'||revCalibStato(p).stato==='da-aggiornare'?'calibrata ':'')+hl+'gg · media semplice '+avgSimple.toFixed(1);
+  const avgCard=g('rev-avg');
+  if(avgCard&&avgCard.closest('.kpi-card'))avgCard.closest('.kpi-card').title='Stima calibrata sul punteggio reale inserito — non è il calcolo ufficiale di Booking. Clicca per vedere l\u2019andamento.';
   g('rev-count').textContent=data.length;
-  g('rev-count-sub').textContent=data.length+' recensioni importate';
+  // Il peso effettivo è il denominatore reale dei calcoli previsionali: spiega perché
+  // poche recensioni recenti muovono il punteggio più di tante vecchie.
+  g('rev-count-sub').textContent=data.length+' importate · peso effettivo ≈ '+Math.round(pesoEff);
   g('rev-noreply').textContent=noReply;
   g('rev-noreply-sub').textContent=noReply>0?noReply+' in attesa di risposta':'Tutte con risposta';
   const dates=data.map(r=>r._date).filter(d=>!isNaN(d));
@@ -5164,46 +5386,58 @@ function revRenderStats(p){
   const targetTitle=document.getElementById('rev-target-title-'+p);
   const targetDetail=document.getElementById('rev-target-detail-'+p);
   if(targetEl&&targetTitle&&targetDetail){
-    const displayScore=Math.round(avgWeighted*10)/10; // score visualizzato (ceil)
-    const target=Math.round((displayScore+0.1)*10)/10; // prossimo decimo sopra il display
-    function simAvgWithN(n, scoreVal){
-      // Simulatore usa decadimento interno fascia1 — nuove rec pesano di più
-      const newF1=[...fascia1,...Array(n).fill({_score:scoreVal,_dateTs:now})];
-      const ws=newF1.reduce((s,r)=>s+Math.exp(-(now-r._dateTs)/DECAY_F1)*r._score,0);
-      const wt=newF1.reduce((s,r)=>s+Math.exp(-(now-r._dateTs)/DECAY_F1),0);
-      const newAvg1=wt?ws/wt:scoreVal;
-      let wT=0.85, wS=0.85*newAvg1;
-      if(avg2!==null){wT+=0.10;wS+=0.10*avg2;}
-      if(avg3!==null){wT+=0.05;wS+=0.05*avg3;}
-      return wS/wT;
-    }
-    // Recensioni in scadenza — impatto futuro
+    const displayScore=Math.round(avgWeighted*10)/10;
+    const target=Math.round((displayScore+0.1)*10)/10;
+    // Booking arrotonda a una cifra: per vedere 8.9 basta superare 8.85, non 8.90.
+    const soglia=revSoglia(target);
+    // Recensioni in scadenza — nota informativa, il pannello dedicato resta separato
     const THREE_YEARS=3*365.25*24*60*60*1000;
     const expiringThisMonth=scored.filter(r=>{
       const exp=r._dateTs+THREE_YEARS;
       return exp>=now&&exp<=(now+30*24*60*60*1000);
     });
-    const MAX_SIM=300;
-    let needed10=0,needed9=0;
-    for(let n=1;n<=MAX_SIM;n++){
-      if(!needed10&&simAvgWithN(n,10)>=target-0.005)needed10=n;
-      if(!needed9&&simAvgWithN(n,9)>=target-0.005)needed9=n;
-      if(needed10&&needed9)break;
-    }
-    targetEl.style.display='flex';
     const expiringNote=expiringThisMonth.length>0
       ?` · ⚠️ ${expiringThisMonth.length} rec. in scadenza entro 30gg`:'';
-    if(needed10>0&&needed10<MAX_SIM){
-      targetTitle.textContent=needed10===1
-        ?`1 recensione con 10 per raggiungere ${target.toFixed(1)}`
-        :`${needed10} recensioni con 10 per raggiungere ${target.toFixed(1)}`;
-      const detail9=needed9>0&&needed9<MAX_SIM?` · con 9: ${needed9} rec`:'';
-      targetDetail.textContent=`Score attuale: ${displayScore.toFixed(1)} → obiettivo ${target.toFixed(1)}${detail9}${expiringNote}`;
-    } else {
+    const ritmo=revRitmoAlGiorno(scored,now);
+    // La simulazione fa invecchiare anche le recensioni esistenti mentre arrivano le
+    // nuove: a pesi congelati lo sforzo risultava 5-7 volte più alto del reale.
+    const sim10=revSimulaTarget(scored,hl,target,10,ritmo,now);
+    const sim9=revSimulaTarget(scored,hl,target,9,ritmo,now);
+    const mesi=g_=>g_<30?`${g_} giorni`:(g_<365?`~${Math.round(g_/30)} mesi`:`~${(g_/365).toFixed(1)} anni`);
+    targetEl.style.display='flex';
+    if(sim10.raggiungibile&&sim10.nRec===0){
       targetTitle.textContent=`Score già a ${displayScore.toFixed(1)} — ottimo!`;
       targetDetail.textContent=expiringNote||'';
+    }else if(sim10.raggiungibile){
+      targetTitle.textContent=sim10.nRec===1
+        ?`1 recensione con 10 per raggiungere ${target.toFixed(1)}`
+        :`${sim10.nRec} recensioni con 10 per raggiungere ${target.toFixed(1)}`;
+      // Intervallo temporale sugli estremi della fascia di emivite compatibili: fuori da
+      // quella fascia la previsione non è distinguibile, va letta come ordine di grandezza.
+      const cs=revCalibStato(p);
+      let range='';
+      if(cs.fascia){
+        const a=revSimulaTarget(scored,cs.fascia[0],target,10,ritmo,now);
+        const b=revSimulaTarget(scored,cs.fascia[1],target,10,ritmo,now);
+        const gg=[a,b].filter(x=>x.raggiungibile&&x.giorni).map(x=>x.giorni);
+        if(gg.length===2&&Math.min(...gg)!==Math.max(...gg))range=` (fascia ${mesi(Math.min(...gg))}–${mesi(Math.max(...gg))})`;
+      }
+      const d9=sim9.raggiungibile&&sim9.nRec?` · con 9: ${sim9.nRec} rec`:'';
+      targetDetail.textContent=`Score attuale ${displayScore.toFixed(1)} → obiettivo ${target.toFixed(1)} (serve superare ${soglia.toFixed(2)}) · stimati ${mesi(sim10.giorni)}${range}${d9}${expiringNote}`;
+    }else if(sim10.motivo==='flusso'){
+      targetTitle.textContent=`${target.toFixed(1)} non raggiungibile al ritmo qualitativo attuale`;
+      targetDetail.textContent=`Con una media ponderata il punteggio converge alla media delle recensioni in arrivo: serve superare ${soglia.toFixed(2)}, quindi finché la qualità media non sale il target resta fuori portata a prescindere dal tempo.${expiringNote}`;
+    }else if(sim10.motivo==='nessun-flusso'){
+      targetTitle.textContent=`Nessuna recensione negli ultimi 12 mesi`;
+      targetDetail.textContent=`Senza un flusso in arrivo non è possibile stimare i tempi.${expiringNote}`;
+    }else{
+      targetTitle.textContent=`${target.toFixed(1)} oltre l'orizzonte di 36 mesi`;
+      targetDetail.textContent=`Anche con sole recensioni da 10 il target non si raggiunge entro la finestra di validità Booking.${expiringNote}`;
     }
   }
+  // Pannelli aggiuntivi: calibrazione e impatto di una nuova recensione
+  try{revRenderCalib(p,pb,hl);}catch(e){}
+  try{revRenderImpact(p,pb);}catch(e){}
 }
 function revSetPage(p,page){
   const h=REV_HOTELS[p];

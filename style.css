@@ -321,6 +321,8 @@ select.form-input option{background:var(--surface2);color:var(--text);}
 .rev-upload-sub{font-size:var(--fs-sm);color:var(--text-muted);}
 .rev-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
 .rev-cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+/* Impatto di una nuova recensione: 6 voti campione (10,9,8,7,5,3) */
+.rev-impact-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
 .rev-cat-card{background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:12px 14px;border-top:4px solid var(--gold);}
 .rev-cat-label{font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
 .rev-cat-val{font-size:24px;font-weight:300;color:var(--text);line-height:1;margin-bottom:6px;}
@@ -562,6 +564,7 @@ select.form-input option{background:var(--surface2);color:var(--text);}
   .trend-grid{grid-template-columns:1fr 1fr;}
   .rev-body{grid-template-columns:1fr;}
   .rev-cat-grid{grid-template-columns:1fr 1fr;}
+  .rev-impact-grid{grid-template-columns:repeat(3,1fr);}
   .rev-kpi-grid{grid-template-columns:1fr 1fr;}
   .rc-card-grid{grid-template-columns:1fr;}
   .rev-filter-bar{gap:5px;}
