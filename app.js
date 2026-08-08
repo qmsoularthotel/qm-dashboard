@@ -4925,19 +4925,11 @@ function revRenderExpiring(p){
     .filter(r=>r._expDate>=startThisWeek&&r._expDate<=endNextWeek);
   const thisWeek=allExpiring.filter(r=>r._expDate<=endThisWeek);
   const nextWeek=allExpiring.filter(r=>r._expDate>endThisWeek);
-  // ── Funzione calcolo score ponderato Booking 85/10/5 ──
+  // Stesso modello della card Punteggio medio: se qui restasse il vecchio 85/10/5 questo
+  // pannello mostrerebbe uno "score attuale" diverso da quello in cima alla pagina.
+  const _expHl=revHl(p);
   function calcScore(reviewSet){
-    const f1=reviewSet.filter(r=>(nowTs-r._dateTs)/(86400000)<=365);
-    const f2=reviewSet.filter(r=>{const d=(nowTs-r._dateTs)/86400000;return d>365&&d<=730;});
-    const f3=reviewSet.filter(r=>{const d=(nowTs-r._dateTs)/86400000;return d>730&&d<=1096;});
-    const a1=f1.length?f1.reduce((s,r)=>s+r._score,0)/f1.length:null;
-    const a2=f2.length?f2.reduce((s,r)=>s+r._score,0)/f2.length:null;
-    const a3=f3.length?f3.reduce((s,r)=>s+r._score,0)/f3.length:null;
-    let wT=0,wS=0;
-    if(a1!==null){wT+=0.85;wS+=0.85*a1;}
-    if(a2!==null){wT+=0.10;wS+=0.10*a2;}
-    if(a3!==null){wT+=0.05;wS+=0.05*a3;}
-    return wT>0?wS/wT:null;
+    return punteggioBooking(reviewSet,_expHl,nowTs).score;
   }
   const scoreAttuale=calcScore(scored);
   // Score dopo scadenza questa settimana
@@ -5052,24 +5044,30 @@ function revRenderExpiring(p){
       <div style="font-size:18px;font-weight:700;color:${proiezioneColor};">${proiezioneDelta!==null?(proiezioneDelta>=0?'▲ +':'▼ ')+proiezioneDelta.toFixed(2):''}</div>`:''}
     </div>`;
   }
-  // ── Debug bucket f1/f2/f3 ──
-  const dbF1=scored.filter(r=>(nowTs-r._dateTs)/86400000<=365);
-  const dbF2=scored.filter(r=>{const d=(nowTs-r._dateTs)/86400000;return d>365&&d<=730;});
-  const dbF3=scored.filter(r=>{const d=(nowTs-r._dateTs)/86400000;return d>730&&d<=1096;});
-  const dbA1=dbF1.length?dbF1.reduce((s,r)=>s+r._score,0)/dbF1.length:null;
-  const dbA2=dbF2.length?dbF2.reduce((s,r)=>s+r._score,0)/dbF2.length:null;
-  const dbA3=dbF3.length?dbF3.reduce((s,r)=>s+r._score,0)/dbF3.length:null;
-  html+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-    <div style="font-size:9px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;align-self:center;">Bucket:</div>
-    <div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:6px;padding:3px 8px;font-size:10px;">
-      <span style="color:var(--accent);font-weight:700;">F1</span> <span style="color:var(--text-dim);">${dbF1.length} rec · avg </span><span style="font-weight:700;">${dbA1!==null?dbA1.toFixed(2):'—'}</span> <span style="color:var(--text-dim);">(85%)</span>
-    </div>
-    <div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:6px;padding:3px 8px;font-size:10px;">
-      <span style="color:var(--accent);font-weight:700;">F2</span> <span style="color:var(--text-dim);">${dbF2.length} rec · avg </span><span style="font-weight:700;">${dbA2!==null?dbA2.toFixed(2):'—'}</span> <span style="color:var(--text-dim);">(10%)</span>
-    </div>
-    <div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:6px;padding:3px 8px;font-size:10px;">
-      <span style="color:var(--accent);font-weight:700;">F3</span> <span style="color:var(--text-dim);">${dbF3.length} rec · avg </span><span style="font-weight:700;">${dbA3!==null?dbA3.toFixed(2):'—'}</span> <span style="color:var(--text-dim);">(5%)</span>
-    </div>
+  // Ripartizione del peso reale per età (non più i bucket 85/10/5): con il decadimento
+  // continuo conta quanto peso porta ogni fascia d'età, non una percentuale fissa.
+  const _expPb=punteggioBooking(scored,_expHl,nowTs);
+  const fasceEta=[
+    {lbl:'0–6 mesi',min:0,max:183},
+    {lbl:'6–12 mesi',min:183,max:365},
+    {lbl:'1–2 anni',min:365,max:730},
+    {lbl:'2–3 anni',min:730,max:REV_FINESTRA_GG}
+  ].map(f=>{
+    let pw=0,n=0,sv=0;
+    for(const r of scored){
+      const gg=(nowTs-r._dateTs)/86400000;
+      if(!(gg>=f.min)||gg>f.max||gg>REV_FINESTRA_GG)continue;
+      const w=Math.pow(0.5,gg/_expHl);
+      pw+=w;n++;sv+=w*r._score;
+    }
+    return{lbl:f.lbl,n:n,peso:pw,quota:_expPb.pesoEff>0?pw/_expPb.pesoEff:0,avg:pw>0?sv/pw:null};
+  }).filter(f=>f.n>0);
+  html+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+    <div style="font-size:9px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Peso per età:</div>
+    ${fasceEta.map(f=>`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:6px;padding:3px 8px;font-size:10px;">
+      <span style="color:var(--accent);font-weight:700;">${f.lbl}</span> <span style="color:var(--text-dim);">${f.n} rec · avg </span><span style="font-weight:700;">${f.avg!==null?f.avg.toFixed(2):'—'}</span> <span style="color:var(--text-dim);">(${(f.quota*100).toFixed(0)}% del peso)</span>
+    </div>`).join('')}
+    <div style="font-size:9px;color:var(--text-dim);">emivita ${_expHl} gg</div>
   </div>`;
   if(!hasExp){
     html+=`<div style="color:var(--green);font-size:var(--fs-xs);">✓ Nessuna recensione in scadenza questa o la prossima settimana</div>`;

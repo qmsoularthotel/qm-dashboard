@@ -244,11 +244,21 @@ La **simulazione previsionale tiene già conto delle uscite**: `revSimulaTarget`
 
 **È un pannello aggiuntivo**: "Recensioni in scadenza" (`revRenderExpiring`) resta dov'è e invariato, non è stato sostituito.
 
+### Tutti i punti che mostrano IL punteggio devono usare `punteggioBooking` + `revHl(p)`
+
+Sono **tre** e vanno tenuti allineati, altrimenti la stessa struttura mostra numeri diversi nella stessa pagina:
+
+| Punto | Funzione |
+|-------|----------|
+| Card "Punteggio medio" | `revRenderStats` → `punteggioBooking(scored, hl, now)` |
+| Grafico "Andamento score" (icona ⤢) | `openScoreTrend` → `_trendHl` |
+| "Score attuale" nel pannello Recensioni in scadenza | `revRenderExpiring` → `_expHl` |
+
+Il pannello **Recensioni in scadenza** aveva una sua `calcScore` interna a 85/10/5: la struttura del pannello non andava toccata, ma continuava a mostrare `8.8` mentre la card sopra mostrava `8.9`. Ora usa `punteggioBooking`. Nello stesso pannello i chip `BUCKET: F1 (85%) · F2 (10%) · F3 (5%)` non avevano più senso e sono diventati **"Peso per età"**: quanta parte del peso effettivo porta ogni fascia d'età, calcolata sui pesi reali (es. con emivita 64 gg: 0–6 mesi 86%, 6–12 mesi 12%, 1–2 anni 2%, 2–3 anni 0%). Molto più informativo delle percentuali fisse, e mostra a colpo d'occhio perché le recensioni vecchie non spostano il punteggio.
+
 ### Cosa NON è stato toccato
 
-Import CSV, conteggio "senza risposta", **score per categoria** e **andamento categorie** (restano a 85/10/5 per scelta), filtri e ordinamenti della lista, pannello "Recensioni in scadenza", tutta la sezione **Recensioni Expedia** (modello di punteggio diverso).
-
-L'**andamento score** (`openScoreTrend`) invece è stato allineato al nuovo modello: se fosse rimasto a 85/10/5 il grafico avrebbe mostrato un valore diverso dalla card.
+Import CSV, conteggio "senza risposta", **score per categoria** e **andamento categorie** (restano a 85/10/5 per scelta: sono metriche per categoria, non IL punteggio della struttura), filtri e ordinamenti della lista, la logica di scadenza settimanale del pannello Recensioni in scadenza, tutta la sezione **Recensioni Expedia** (modello di punteggio diverso).
 
 ### Nota metodologica (riportata anche nella UI)
 
