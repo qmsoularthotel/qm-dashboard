@@ -4981,14 +4981,14 @@ function revRenderExpiring(p){
     let html=`<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border-light);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
         <span style="font-size:var(--fs-xs);font-weight:600;color:${weekColor};">${title}</span>
-        <span style="font-size:10px;background:var(--surface2);padding:2px 8px;border-radius:8px;color:var(--text-dim);">${reviews.length} recension${reviews.length===1?'e':'i'}</span>
+        <span style="font-size:var(--fs-xxs);font-weight:600;background:var(--surface2);padding:3px 9px;border-radius:8px;color:var(--text-muted);">${reviews.length} recension${reviews.length===1?'e':'i'}</span>
         <span style="font-size:11px;" title="${sem.label}">${sem.icon} ${sem.label}</span>`;
     if(afterScore!==null&&scoreAttuale!==null){
       const dScoreAtt=Math.round(scoreAttuale*10)/10;
       const dScoreAft=Math.round(afterScore*10)/10;
       const delta=dScoreAft-dScoreAtt;
       const dc=delta>=0?'var(--green)':'var(--red)';
-      html+=`<span style="margin-left:auto;font-size:var(--fs-xs);font-weight:700;color:${dc};">${dScoreAtt.toFixed(1)} → ${dScoreAft.toFixed(1)} <span style="font-size:10px;">(${delta>=0?'+':''}${delta.toFixed(1)})</span></span>`;
+      html+=`<span style="margin-left:auto;font-size:var(--fs-xs);font-weight:700;color:${dc};">${dScoreAtt.toFixed(1)} → ${dScoreAft.toFixed(1)} <span style="font-size:var(--fs-xxs);">(${delta>=0?'+':''}${delta.toFixed(1)})</span></span>`;
     }
     html+=`</div>`;
     if(!reviews.length){html+=`<div style="color:var(--green);font-size:var(--fs-xs);">✓ Nessuna recensione in scadenza</div></div>`;return html;}
@@ -5006,7 +5006,7 @@ function revRenderExpiring(p){
       html+=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:7px;padding:8px 10px;">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
           <span style="font-size:13px;font-weight:700;color:${g.color};">${g.label}</span>
-          <span style="font-size:9px;background:${g.color};color:#fff;border-radius:8px;padding:1px 6px;font-weight:600;">${group.length}</span>
+          <span style="font-size:var(--fs-xxs);background:${g.color};color:#fff;border-radius:9px;padding:2px 8px;font-weight:700;">${group.length}</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px;">
           ${group.map(r=>`<div style="font-size:var(--fs-xxs);color:var(--text-dim);display:flex;justify-content:space-between;gap:4px;">
@@ -5033,12 +5033,12 @@ function revRenderExpiring(p){
   if(scoreAttuale!==null){
     html+=`<div style="display:flex;align-items:center;gap:16px;background:var(--surface2);border-radius:8px;padding:12px 16px;margin-bottom:14px;flex-wrap:wrap;">
       <div style="text-align:center;">
-        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Score attuale</div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Score attuale</div>
         <div style="font-size:24px;font-weight:700;color:var(--accent);">${(Math.round(scoreAttuale*10)/10).toFixed(1)}</div>
       </div>
       ${hasExp?`<div style="font-size:20px;color:var(--text-dim);">→</div>
       <div style="text-align:center;">
-        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Dopo scadenze</div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Dopo scadenze</div>
         <div style="font-size:24px;font-weight:700;color:${proiezioneColor};">${scoreAfterBoth!==null?(Math.round(scoreAfterBoth*10)/10).toFixed(1):'—'}</div>
       </div>
       <div style="font-size:18px;font-weight:700;color:${proiezioneColor};">${proiezioneDelta!==null?(proiezioneDelta>=0?'▲ +':'▼ ')+proiezioneDelta.toFixed(2):''}</div>`:''}
@@ -5063,11 +5063,11 @@ function revRenderExpiring(p){
     return{lbl:f.lbl,n:n,peso:pw,quota:_expPb.pesoEff>0?pw/_expPb.pesoEff:0,avg:pw>0?sv/pw:null};
   }).filter(f=>f.n>0);
   html+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
-    <div style="font-size:9px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Peso per età:</div>
-    ${fasceEta.map(f=>`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:6px;padding:3px 8px;font-size:10px;">
-      <span style="color:var(--accent);font-weight:700;">${f.lbl}</span> <span style="color:var(--text-dim);">${f.n} rec · avg </span><span style="font-weight:700;">${f.avg!==null?f.avg.toFixed(2):'—'}</span> <span style="color:var(--text-dim);">(${(f.quota*100).toFixed(0)}% del peso)</span>
+    <div style="font-size:var(--fs-xxs);color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;">Peso per età:</div>
+    ${fasceEta.map(f=>`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:7px;padding:4px 10px;font-size:var(--fs-xs);">
+      <span style="color:var(--accent);font-weight:700;">${f.lbl}</span> <span style="color:var(--text-muted);">${f.n} rec · avg </span><span style="font-weight:700;color:var(--text);">${f.avg!==null?f.avg.toFixed(2):'—'}</span> <span style="color:var(--text-muted);">(${(f.quota*100).toFixed(0)}% del peso)</span>
     </div>`).join('')}
-    <div style="font-size:9px;color:var(--text-dim);">emivita ${_expHl} gg</div>
+    <div style="font-size:var(--fs-xxs);color:var(--text-muted);font-weight:600;">emivita ${_expHl} gg</div>
   </div>`;
   if(!hasExp){
     html+=`<div style="color:var(--green);font-size:var(--fs-xs);">✓ Nessuna recensione in scadenza questa o la prossima settimana</div>`;
@@ -5297,14 +5297,14 @@ function revRenderCalib(p,pb,hl){
   const fmtD=ts=>{const d=new Date(ts);return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();};
   let badge='',avviso='';
   if(cs.stato==='non-calibrato'){
-    badge=`<span style="font-size:var(--fs-xxs);font-weight:700;padding:3px 10px;border-radius:12px;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);">non calibrato</span>`;
+    badge=`<span style="font-size:var(--fs-xs);font-weight:700;padding:4px 11px;border-radius:12px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);">non calibrato</span>`;
   }else if(cs.stato==='fuori-modello'){
-    badge=`<span style="font-size:var(--fs-xxs);font-weight:700;padding:3px 10px;border-radius:12px;background:var(--red-bg);color:var(--red);">fuori modello</span>`;
+    badge=`<span style="font-size:var(--fs-xs);font-weight:700;padding:4px 11px;border-radius:12px;background:var(--red-bg);color:var(--red);">fuori modello</span>`;
     avviso=`<div style="margin-top:8px;background:var(--red-bg);color:var(--red);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.5;">
       <strong>Punteggio non riproducibile.</strong> Nessuna emivita tra 20 e 1200 giorni produce ${Number(cs.scoreReale).toFixed(1)} con queste recensioni: o il numero è stato digitato male, o il CSV non è aggiornato all'ultima esportazione. Nel frattempo si usa l'emivita di default (${REV_HL_DEFAULT} giorni).</div>`;
   }else{
     const col=cs.stato==='da-aggiornare'?'amber':'green';
-    badge=`<span style="font-size:var(--fs-xxs);font-weight:700;padding:3px 10px;border-radius:12px;background:var(--${col}-bg);color:var(--${col});">calibrato su ${Number(cs.scoreReale).toFixed(1)} il ${fmtD(cs.ts)}</span>`;
+    badge=`<span style="font-size:var(--fs-xs);font-weight:700;padding:4px 11px;border-radius:12px;background:var(--${col}-bg);color:var(--${col});">calibrato su ${Number(cs.scoreReale).toFixed(1)} il ${fmtD(cs.ts)}</span>`;
     if(cs.stato==='da-aggiornare')avviso=`<div style="margin-top:8px;background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.5;">Calibrazione di ${cs.gg} giorni fa: ricontrolla il punteggio nell'extranet e reinseriscilo per tenere allineate le previsioni.</div>`;
   }
   const fasciaTxt=(c.fascia&&!c.fuoriModello)
@@ -5314,7 +5314,7 @@ function revRenderCalib(p,pb,hl){
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <div style="flex:1 1 240px;min-width:200px;">
         <label for="revCalibIn-${p}" style="display:block;font-size:var(--fs-xs);font-weight:700;color:var(--text);margin-bottom:2px;">Punteggio Booking reale</label>
-        <div style="font-size:var(--fs-xxs);color:var(--text-dim);">lo trovi in cima a Extranet → Recensioni</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);">lo trovi in cima a Extranet → Recensioni</div>
       </div>
       <input id="revCalibIn-${p}" type="number" step="0.1" min="1" max="10" inputmode="decimal"
         value="${c.scoreReale!=null?Number(c.scoreReale).toFixed(1):''}" placeholder="es. 8.9"
@@ -5323,8 +5323,8 @@ function revRenderCalib(p,pb,hl){
       ${badge}
     </div>
     ${avviso}
-    <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;">
-      Emivita in uso <strong style="color:var(--text-muted);">${hl} giorni</strong>${fasciaTxt} · peso effettivo ≈ <strong style="color:var(--text-muted);">${Math.round(pb.pesoEff)}</strong> su ${pb.nInFinestra} recensioni nella finestra di 36 mesi.
+    <div style="margin-top:8px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;">
+      Emivita in uso <strong style="color:var(--text);">${hl} giorni</strong>${fasciaTxt} · peso effettivo ≈ <strong style="color:var(--text);">${Math.round(pb.pesoEff)}</strong> su ${pb.nInFinestra} recensioni nella finestra di 36 mesi.
       L'algoritmo di Booking non è pubblico: questo è un modello calibrato sul punteggio reale della struttura, non una replica. Anche dopo la calibrazione resta una fascia di emivite compatibili, quindi le previsioni vanno lette come ordini di grandezza.
     </div>
   </div>`;
@@ -5354,7 +5354,7 @@ function revRenderImpact(p,pb,scored,hl,oggiTs){
       ?` Senza nuove recensioni il punteggio si sposterebbe di <strong>${scad90.deriva>0?'+':'−'}${Math.abs(scad90.deriva).toFixed(2)}</strong>.`
       :' La deriva sul punteggio è sotto il centesimo.';
     const rilevante=quota>=0.5;
-    scadHtml=`<div style="margin-top:10px;background:${rilevante?'var(--accent-bg)':'var(--surface2)'};border:1px solid var(--border-light);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.55;">
+    scadHtml=`<div style="margin-top:10px;background:${rilevante?'var(--accent-bg)':'var(--surface2)'};border:1px solid var(--border-light);border-radius:7px;padding:10px 13px;font-size:var(--fs-xs);color:var(--text);line-height:1.6;">
       <strong style="color:var(--text);">Fra 90 giorni</strong> escono dalla finestra dei 36 mesi <strong style="color:var(--text);">${scad90.nUscita}</strong> recensioni${scad90.mediaUscita!=null?` (media ${scad90.mediaUscita.toFixed(1)})`:''}, pari al <strong style="color:var(--text);">${quota.toFixed(1)}%</strong> del peso attuale.${derivaTxt}
       ${rilevante?'':`Con l'emivita calibrata (${hl} gg) le recensioni in uscita pesano ormai quasi nulla: le scadenze non sono la leva su cui agire.`}
       <span style="display:block;margin-top:5px;">Nello stesso periodo il peso effettivo passa da <strong style="color:var(--text);">${Math.round(scad90.pesoEffOra)}</strong> a <strong style="color:var(--text);">${Math.round(scad90.pesoEffFut)}</strong> — quasi tutto per <strong style="color:var(--text);">invecchiamento</strong> dello storico, le uscite ne spiegano solo ${quota.toFixed(1)} punti percentuali. Con un denominatore più basso un 10 varrà <strong style="color:var(--green);">+${d10fut.toFixed(3)}</strong> invece di +${delta(10).toFixed(3)}: aspettare rende ogni recensione più efficace, ma si parte da un punteggio diverso.</span>
@@ -5365,7 +5365,7 @@ function revRenderImpact(p,pb,scored,hl,oggiTs){
     const col=d>=0?'var(--green)':'var(--red)';
     const bg=d>=0?'var(--green-bg)':'var(--red-bg)';
     return`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:10px 8px;text-align:center;">
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">voto ${v}</div>
+      <div style="font-size:var(--fs-xs);color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">voto ${v}</div>
       <div style="margin-top:5px;display:inline-block;padding:3px 9px;border-radius:12px;background:${bg};color:${col};font-size:var(--fs-sm);font-weight:700;font-variant-numeric:tabular-nums;">${d>=0?'+':'−'}${Math.abs(d).toFixed(3)}</div>
     </div>`;
   }).join('');
