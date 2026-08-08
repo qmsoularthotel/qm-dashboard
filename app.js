@@ -5251,6 +5251,43 @@ function revSimulaTarget(scored,hl,targetVisualizzato,votoNuove,recAlGiorno,oggi
   return{raggiungibile:false,motivo:'oltre-orizzonte'};
 }
 
+// ── Effetto delle recensioni in scadenza ────────────────────────────────────
+// Quanto pesa davvero l'uscita dalla finestra dei 36 mesi dipende TUTTO dall'emivita
+// calibrata, quindi va misurato per struttura invece di assumerlo: una recensione al
+// 1094° giorno vale l'1,2% di una di oggi con emivita 173 gg, ma il 7% con emivita 285
+// e oltre il 20% con emivita 500 (tipico delle strutture con poche recensioni).
+// Nel vecchio modello a bucket la fascia 24-36 mesi pesava invece un 5% fisso a
+// prescindere dall'età, il che sovrastimava sistematicamente le scadenze recenti e
+// sottostimava quelle delle strutture con storico lungo.
+//
+// La "deriva" è dove va il punteggio fra N giorni SENZA nuove recensioni: somma
+// invecchiamento e uscite. Se è negativa servono più recensioni nuove del previsto —
+// revSimulaTarget ne tiene già conto perché fa scorrere il tempo su tutto lo storico.
+function revEffettoScadenze(scored,hl,oggiTs,orizzonteGg){
+  const ora=punteggioBooking(scored,hl,oggiTs);
+  const fut=punteggioBooking(scored,hl,oggiTs+orizzonteGg*86400000);
+  let pesoUscita=0,nUscita=0,sommaVoti=0;
+  for(const r of scored){
+    const gg=(oggiTs-r._dateTs)/86400000;
+    if(!(gg>=0)||gg>REV_FINESTRA_GG)continue;
+    if(REV_FINESTRA_GG-gg<=orizzonteGg){          // esce entro l'orizzonte
+      const w=Math.pow(0.5,gg/hl);
+      pesoUscita+=w;nUscita++;sommaVoti+=w*r._score;
+    }
+  }
+  return{
+    nUscita:nUscita,
+    pesoUscita:pesoUscita,
+    quotaPeso:ora.pesoEff>0?pesoUscita/ora.pesoEff:0,
+    mediaUscita:pesoUscita>0?sommaVoti/pesoUscita:null,
+    scoreOra:ora.score,
+    scoreFut:fut.score,
+    deriva:(fut.score!=null&&ora.score!=null)?fut.score-ora.score:null,
+    pesoEffOra:ora.pesoEff,
+    pesoEffFut:fut.pesoEff
+  };
+}
+
 // ── UI: calibrazione sul punteggio reale ────────────────────────────────────
 // Non bloccante: senza valore inserito si usa l'emivita di default e si mostra il badge
 // "non calibrato". Il dashboard resta pienamente funzionante.
@@ -5298,14 +5335,33 @@ function revRenderCalib(p,pb,hl){
 // ── UI: impatto di una nuova recensione ─────────────────────────────────────
 // delta(voto) = (voto - score) / (pesoEff + 1). L'asimmetria è l'informazione che
 // cambia le priorità operative: un voto basso pesa 3-4 volte più di un voto pieno.
-function revRenderImpact(p,pb){
+function revRenderImpact(p,pb,scored,hl,oggiTs){
   const el=document.getElementById('rev-impact-'+p);
   if(!el)return;
   if(pb.score===null){el.innerHTML='';return;}
+  // Le scadenze abbassano il peso effettivo, e un peso effettivo più basso significa che
+  // ogni nuova recensione conta di più: è la faccia utile del calo, va mostrata accanto
+  // all'impatto di oggi invece di restare un avviso staccato.
+  const scad90=(scored&&hl&&oggiTs)?revEffettoScadenze(scored,hl,oggiTs,90):null;
   const voti=[10,9,8,7,5,3];
   const delta=v=>(v-pb.score)/(pb.pesoEff+1);
   const d10=delta(10),d5=delta(5);
   const rapporto=d10>0?Math.abs(d5)/d10:null;
+  // Riga "fra 90 giorni": quanto peso esce e quanto varrà allora una nuova recensione.
+  let scadHtml='';
+  if(scad90&&scad90.nUscita>0){
+    const quota=scad90.quotaPeso*100;
+    const d10fut=(10-(scad90.scoreFut!=null?scad90.scoreFut:pb.score))/(scad90.pesoEffFut+1);
+    const derivaTxt=(scad90.deriva!=null&&Math.abs(scad90.deriva)>=0.005)
+      ?` Senza nuove recensioni il punteggio si sposterebbe di <strong>${scad90.deriva>0?'+':'−'}${Math.abs(scad90.deriva).toFixed(2)}</strong>.`
+      :' La deriva sul punteggio è sotto il centesimo.';
+    const rilevante=quota>=0.5;
+    scadHtml=`<div style="margin-top:10px;background:${rilevante?'var(--accent-bg)':'var(--surface2)'};border:1px solid var(--border-light);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.55;">
+      <strong style="color:var(--text);">Fra 90 giorni</strong> escono dalla finestra dei 36 mesi <strong style="color:var(--text);">${scad90.nUscita}</strong> recensioni${scad90.mediaUscita!=null?` (media ${scad90.mediaUscita.toFixed(1)})`:''}, pari al <strong style="color:var(--text);">${quota.toFixed(1)}%</strong> del peso attuale.${derivaTxt}
+      ${rilevante?'':`Con l'emivita calibrata (${hl} gg) le recensioni in uscita pesano ormai quasi nulla: le scadenze non sono la leva su cui agire.`}
+      <span style="display:block;margin-top:5px;">Nello stesso periodo il peso effettivo passa da <strong style="color:var(--text);">${Math.round(scad90.pesoEffOra)}</strong> a <strong style="color:var(--text);">${Math.round(scad90.pesoEffFut)}</strong> — quasi tutto per <strong style="color:var(--text);">invecchiamento</strong> dello storico, le uscite ne spiegano solo ${quota.toFixed(1)} punti percentuali. Con un denominatore più basso un 10 varrà <strong style="color:var(--green);">+${d10fut.toFixed(3)}</strong> invece di +${delta(10).toFixed(3)}: aspettare rende ogni recensione più efficace, ma si parte da un punteggio diverso.</span>
+    </div>`;
+  }
   const celle=voti.map(v=>{
     const d=delta(v);
     const col=d>=0?'var(--green)':'var(--red)';
@@ -5321,6 +5377,7 @@ function revRenderImpact(p,pb){
       <div class="rev-impact-grid">${celle}</div>
       ${rapporto?`<div style="margin-top:10px;background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.5;">
         <strong>Un 5 pesa ${rapporto.toFixed(1)} volte più di un 10.</strong> Evitare una recensione bassa vale molto più che ottenerne una piena: la priorità operativa è intercettare l'ospite scontento prima che scriva, non chiedere altri 10.</div>`:''}
+      ${scadHtml}
     </div>
   </div>`;
 }
@@ -5396,8 +5453,17 @@ function revRenderStats(p){
       const exp=r._dateTs+THREE_YEARS;
       return exp>=now&&exp<=(now+30*24*60*60*1000);
     });
-    const expiringNote=expiringThisMonth.length>0
-      ?` · ⚠️ ${expiringThisMonth.length} rec. in scadenza entro 30gg`:'';
+    // Nota scadenze quantificata: quanto peso esce davvero e come sposta il punteggio,
+    // invece di un generico "N recensioni in scadenza" che non dice se conta o no.
+    const scad30=revEffettoScadenze(scored,hl,now,30);
+    let expiringNote='';
+    if(expiringThisMonth.length>0){
+      const quota=(scad30.quotaPeso*100);
+      const dz=scad30.deriva!=null?Math.abs(scad30.deriva):0;
+      expiringNote=quota<0.5
+        ? ` · ${expiringThisMonth.length} rec. in scadenza entro 30gg (peso ${quota.toFixed(1)}%, ininfluenti)`
+        : ` · ⚠️ ${expiringThisMonth.length} rec. in scadenza entro 30gg = ${quota.toFixed(1)}% del peso${dz>=0.005?` (punteggio ${scad30.deriva>0?'+':'−'}${dz.toFixed(2)} se non arriva nulla)`:''}`;
+    }
     const ritmo=revRitmoAlGiorno(scored,now);
     // La simulazione fa invecchiare anche le recensioni esistenti mentre arrivano le
     // nuove: a pesi congelati lo sforzo risultava 5-7 volte più alto del reale.
@@ -5437,7 +5503,7 @@ function revRenderStats(p){
   }
   // Pannelli aggiuntivi: calibrazione e impatto di una nuova recensione
   try{revRenderCalib(p,pb,hl);}catch(e){}
-  try{revRenderImpact(p,pb);}catch(e){}
+  try{revRenderImpact(p,pb,scored,hl,now);}catch(e){}
 }
 function revSetPage(p,page){
   const h=REV_HOTELS[p];

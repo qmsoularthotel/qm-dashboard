@@ -214,6 +214,30 @@ Il vecchio calcolo teneva i pesi **congelati** e sovrastimava molto lo sforzo (p
 
 **Caso "non raggiungibile"**: con una media ponderata il punteggio converge alla media delle recensioni in arrivo. Se il voto del flusso è ≤ soglia il target è irraggiungibile **a prescindere dal tempo**, e viene detto esplicitamente invece di restituire un numero. Per SoulArt la media reale degli ultimi 12 mesi è 8.86, sotto la soglia 8.95 dell'obiettivo 9.0.
 
+### Peso delle recensioni in scadenza — `revEffettoScadenze()`
+
+Quanto conta l'uscita dalla finestra dei 36 mesi **dipende tutto dall'emivita calibrata**, quindi va misurato per struttura invece di assumerlo. Peso di una recensione al 1094° giorno rispetto a una di oggi:
+
+| Emivita | Peso residuo | Serve per valerne una di oggi |
+|---------|--------------|-------------------------------|
+| 64 gg | 0,001% | ~140.000 |
+| 173 gg | 1,2% | 80 |
+| 285 gg | 7,0% | 14 |
+| 500 gg | 21,9% | 5 |
+| 800 gg | 38,8% | 3 |
+
+Nel vecchio modello a bucket la fascia 24–36 mesi pesava un **5% fisso** a prescindere dall'età: sovrastimava le scadenze delle strutture grandi (emivita corta) e sottostimava quelle delle strutture piccole con storico lungo, dove l'emivita calibrata è molto più alta e una singola uscita sposta il punteggio di centesimi.
+
+`revEffettoScadenze(scored, hl, oggiTs, orizzonteGg)` restituisce `{nUscita, pesoUscita, quotaPeso, mediaUscita, scoreOra, scoreFut, deriva, pesoEffOra, pesoEffFut}`. La **deriva** è dove va il punteggio fra N giorni senza nuove recensioni: somma invecchiamento e uscite.
+
+Usata in due punti:
+- **Riquadro obiettivo**: la nota scadenze è quantificata (`N rec = X% del peso`) invece del generico `⚠️ N recensioni in scadenza`, e sotto lo 0,5% dice esplicitamente *ininfluenti*.
+- **Pannello impatto**: riga "fra 90 giorni" con recensioni in uscita, quota di peso, deriva e nuovo peso effettivo.
+
+**Attenzione a non confondere due cose diverse**: il calo del peso effettivo su 90 giorni è quasi tutto **invecchiamento** dello storico, non scadenze. Su una struttura grande con emivita 173 gg il peso passa da ~147 a ~102 (−30%) mentre le uscite valgono lo 0,55%. Il testo della UI lo dice esplicitamente, perché attribuire il calo alle scadenze porterebbe a decisioni sbagliate.
+
+La **simulazione previsionale tiene già conto delle uscite**: `revSimulaTarget` scorre il tempo su tutto lo storico e salta le recensioni oltre `REV_FINESTRA_GG`, quindi non serve correggerla a valle.
+
 ### Pannello "Impatto di una nuova recensione"
 
 `delta(voto) = (voto - score) / (pesoEff + 1)` per i voti 10, 9, 8, 7, 5, 3. Con score 8.866 e pesoEff 150.5: `+0.007` per un 10, `−0.026` per un 5. Evidenzia l'**asimmetria** (un voto basso pesa 3–4 volte più di un voto pieno): è l'informazione che cambia le priorità operative — intercettare l'ospite scontento vale più che chiedere altri 10.
