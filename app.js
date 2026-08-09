@@ -7629,7 +7629,17 @@ function invRenderAnalysis(catalog,moves){
     const consumoSett=consumo>0?Math.round((consumo/effectiveDays)*7*10)/10:0;
     const consumoGg=consumoSett/7;
     const autonomia=consumoGg>0?Math.round((stock[bc]??0)/consumoGg):null;
-    return{bc,name:p.name,unit:p.unit||'',qty:stock[bc]??0,consumo,rifornimento,consumoSett,autonomia,hasMoves:bm.length>0};
+    // Media settimanale/mensile "quanto dura in media" — SEMPRE su tutto lo storico del
+    // prodotto, indipendente dal filtro periodo sopra: una media non deve cambiare a
+    // seconda di cosa hai cliccato, altrimenti non è più una media ma un dato del periodo.
+    // Stesso smorzamento minimo 14gg di "Tutto" (un prodotto con 2 soli giorni di storico
+    // darebbe una media falsata).
+    const allOuts=bm.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0);
+    const storicoDays=bm.length?Math.max(1,Math.ceil((now-Math.min(...bm.map(m=>m.ts)))/86400000)):1;
+    const mediaDays=Math.max(14,storicoDays);
+    const mediaSett=allOuts>0?Math.round((allOuts/mediaDays)*7*10)/10:0;
+    const mediaMese=allOuts>0?Math.round((allOuts/mediaDays)*30*10)/10:0;
+    return{bc,name:p.name,unit:p.unit||'',qty:stock[bc]??0,consumo,rifornimento,consumoSett,mediaSett,mediaMese,autonomia,hasMoves:bm.length>0};
   }).filter(it=>it.hasMoves);
 
   if(!items.length){
@@ -7689,26 +7699,33 @@ function invRenderAnalysis(catalog,moves){
     }).join('')}
   </div>`:'';
 
-  // Tabella dettaglio — ordine alfabetico
-  const sorted=[...items].sort((a,b)=>a.name.localeCompare(b.name,'it'));
-  const hdrs=`<div style="display:grid;grid-template-columns:1fr 80px 70px;gap:4px;padding:4px 10px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;">
+  // Tabella dettaglio — ordinata per consumo medio settimanale decrescente: i prodotti
+  // che si consumano di più stanno in cima, non sparsi in mezzo all'ordine alfabetico.
+  const sorted=[...items].sort((a,b)=>b.mediaSett-a.mediaSett||a.name.localeCompare(b.name,'it'));
+  const GRID='1fr 64px 64px 64px';
+  const hdrs=`<div style="display:grid;grid-template-columns:${GRID};gap:4px;padding:4px 10px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;">
     <div>Prodotto</div>
-    <div>Cons./sett</div>
+    <div>Media/sett</div>
+    <div>Media/mese</div>
     <div>Stock</div>
   </div>`;
   const rows=sorted.map(it=>{
     const borderL=it.autonomia!==null&&it.autonomia<=7?'var(--red)':it.autonomia!==null&&it.autonomia<=14?'var(--amber)':'transparent';
     const unit=it.unit?` <span style="font-size:9px;color:var(--text-dim);">${_esc(it.unit)}</span>`:'';
     return`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderL};border-radius:8px;padding:8px 10px;margin-bottom:5px;">
-      <div style="display:grid;grid-template-columns:1fr 80px 70px;gap:4px;align-items:center;">
+      <div style="display:grid;grid-template-columns:${GRID};gap:4px;align-items:center;">
         <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
-        <div style="font-size:var(--fs-xs);">${it.consumoSett>0?`${it.consumoSett}${unit}`:'—'}</div>
+        <div style="font-size:var(--fs-xs);">${it.mediaSett>0?`${it.mediaSett}${unit}`:'—'}</div>
+        <div style="font-size:var(--fs-xs);">${it.mediaMese>0?`${it.mediaMese}${unit}`:'—'}</div>
         <div style="font-size:var(--fs-xs);">${it.qty}${unit}</div>
       </div>
     </div>`;
   }).join('');
 
-  el.innerHTML=periodHtml+kpi+urgBlock+`<div style="max-width:420px;"><div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:7px;">📋 Dettaglio prodotti</div>`+hdrs+rows+`</div>`;
+  el.innerHTML=periodHtml+kpi+urgBlock+`<div style="max-width:460px;">
+    <div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:2px;">📋 Dettaglio prodotti</div>
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:7px;">Media su tutto lo storico — non cambia col periodo selezionato sopra, quello riguarda solo i totali e "Da riordinare".</div>
+  `+hdrs+rows+`</div>`;
 }
 function invPrintStock(){
   const{catalog,moves}=invGetData();

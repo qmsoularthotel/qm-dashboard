@@ -644,6 +644,24 @@ Il filtro periodo (7/30/90 giorni, o "Tutto") controlla sia la finestra dei movi
 const effectiveDays=_invPeriod>0?days:Math.max(14,days);
 ```
 
+### Tabella dettaglio prodotti — media/sett e media/mese sempre su tutto lo storico
+
+Prima la tabella mostrava un'unica colonna "Cons./sett" legata al filtro periodo selezionato sopra, in ordine alfabetico. Due problemi: (1) una "media" che cambia a seconda di quale bottone hai cliccato non è più una media, è il dato di un periodo; (2) l'ordine alfabetico nasconde a colpo d'occhio quali prodotti si consumano di più.
+
+Aggiunte **due colonne fisse, indipendenti dal filtro periodo**: `mediaSett` e `mediaMese`, calcolate sempre su tutto lo storico del prodotto (stesso smorzamento minimo 14gg di "Tutto", mai sui giorni del filtro corrente):
+
+```js
+const allOuts=bm.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0);
+const storicoDays=bm.length?Math.max(1,Math.ceil((now-Math.min(...bm.map(m=>m.ts)))/86400000)):1;
+const mediaDays=Math.max(14,storicoDays);
+const mediaSett=allOuts>0?Math.round((allOuts/mediaDays)*7*10)/10:0;
+const mediaMese=allOuts>0?Math.round((allOuts/mediaDays)*30*10)/10:0;
+```
+
+Il filtro periodo (7/30/90/Tutto) in cima continua a controllare solo i KPI "Totale scaricato/caricato" e la sezione "Da riordinare" (autonomia), che invece è giusto restino legati a un periodo recente — sono domande diverse ("quanto dura in media" vs "cosa sta succedendo adesso").
+
+La tabella è anche stata **riordinata per consumo medio settimanale decrescente** (`sorted.sort((a,b)=>b.mediaSett-a.mediaSett)`), non più alfabetico: i prodotti che si consumano di più sono in cima.
+
 ### Flusso ricezione merce (DDT modal)
 
 Quando si clicca **✅ Ricevuto** su un ordine in stato `ordinato`, si apre un modal DDT invece di caricare automaticamente le quantità:
