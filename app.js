@@ -9199,6 +9199,110 @@ const DDT_FORNITORI={
 // Riassegnazione manuale categoria prodotto (solo Spese Fornitori): una volta spostato un
 // prodotto in una categoria, resta lì per sempre — in tutti i mesi già caricati e in quelli
 // futuri — perché la chiave è la descrizione del prodotto, non un mese/DDT specifico.
+// Categorie prodotto Spese Fornitori — costanti globali (non più locali a ddtBuildAnalisi)
+// così sono riusabili anche dal report mensile stampabile (ddtPrintMonthReport).
+// Stesse categorie, icone e stile di breakfast.html: se si tocca una delle due copie di
+// dati/classificazione, verificare che l'altra (qui non c'è più una copia — c'è solo qui)
+// resti coerente con quella di breakfast.html.
+const CAT_ICONS_SPESE={
+    teecaffe:    'icone%20app%20breakfast/the%20camere.png',
+    lievitati:   'icone%20app%20breakfast/dolci.png',
+    latticini:   'icone%20app%20breakfast/latte.png',
+    uova:        'icone%20app%20breakfast/uova.png',
+    bacon:       'icone%20app%20breakfast/bacon.png',
+    salumi:      'icone%20app%20breakfast/salumi.png',
+    miele:       'icone%20app%20breakfast/miele.png',
+    succhi:      'icone%20app%20breakfast/bevande.png',
+    distributori:'icone%20app%20breakfast/distributore.png',
+    frutta:      'icone%20app%20breakfast/frutta.png',
+    sottoli:     'icone%20app%20breakfast/sottoli.png',
+    verdure:     'icone%20app%20breakfast/verdure.png',
+    nonalim:     'icone%20app%20breakfast/non%20alimentari.png',
+};
+const CAT_RULES=[
+    // ORDINE CRITICO (identico a breakfast.html):
+    // teecaffe prima di lievitati (bisc.gocce → camere, non lievitati)
+    // lievitati prima di latticini (pancake/waffle con latte → lievitati)
+    // latticini prima di miele (bevande avena/soia → latticini, non cereali)
+    {id:'teecaffe',  label:'☕ Dotazioni bar e camere',                 color:'#f0f9ff',fg:'#0369a1',
+     kw:["te'",'twinings','earl grey','nescafe','bisc.gocce','gocce ciocc',
+         'orzo solub','orzo bimbo','capsule caffe','cialde caffe','caffe solub',
+         'the bag','tea bag','bustina te','infuso','tisana','camomilla','camom.',
+         'the twin','pure green','verde pure',
+         'prosecco','prosecchino','spumante','vino ','minibar',
+         'cocacola','coca cola','coca-cola','aranciata','cedrata','chinotto','limonata',
+         'fanta','sprite','pepsi','birra','peroni','nastro azzurro',
+         's.bened','san benedetto','acqua s.ben','stefano','acqua nat 50']},
+    {id:'lievitati', label:'🥐 Lievitati, Torte & Dolci',          color:'#fefce8',fg:'#854d0e',
+     kw:['pane','brioche','cornetto','croissant','brioches','krapfen','ciambella','sfoglia',
+         'plumcake','focaccia','torta','crostata','pasticceria','frolla','biscotto','biscotti',
+         'merendina','wafer','fetta biscottata','fette biscottate','grissino','cracker','crackers',
+         'tarallo','taralli','panettone','pandoro','colomba','veneziana','babà','baba','veneziane',
+         'pancake','waffle','waffel','wafle','cialda','crepe','crêpe',
+         'pastier','carezza','vien.','vienn','tulip','pasticciotto','rustic',
+         'bisc.','panfette','mini tris','tris fantasia','fantasia 40','nonna rotonda','lemoncake','lemon cake',
+         'focac.']},
+    {id:'latticini', label:'🧀 Latte, Yogurt, Latticini & Formaggi',        color:'#f0fdf4',fg:'#166534',
+     kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone',
+         'scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino',
+         'kefir','fontina','emmental','cheddar','fior di latte','primo sale','asiago','brie',
+         'camembert','gruyere','gruviera','taleggio','caciotta','caciocavallo','robiola',
+         'edamer','edam',
+         'form.','formagg','cacioc','canestr',
+         'bevan. avena','bevanda avena','avena valsoia','avena bio','avena s.g.','latte avena',
+         'drink avena','bevan. soia','bevanda soia','latte soia','drink soia','avena 1 l',
+         'latte mandorla','latte riso','drink riso','bevanda riso','bevanda mandorla']},
+    {id:'uova',      label:'🥚 Uova',                               color:'#fffbeb',fg:'#78350f',
+     kw:['uovo','uova']},
+    {id:'bacon',     label:'🥓 Bacon',                              color:'#fef2f2',fg:'#991b1b',
+     kw:['bacon','pancetta affum','pancetta tesa','pancetta coppata']},
+    {id:'salumi',    label:'🍖 Salumi',                      color:'#fce7f3',fg:'#9d174d',
+     kw:['prosciutto','salame','bresaola','mortadella','mort.','speck','coppa','pancetta','wurstel',
+         'affettato','salsiccia','lardo','guanciale','culatello','lonza','cotto','crudo',
+         'tacchino','fesa tacchino','arrosto tacchino','pollo arrosto','pollo cotto']},
+    {id:'miele',     label:'🍯 Miele, Confetture, Nutella, Frutta secca, Fette biscottate & Cereali', color:'#fef3c7',fg:'#b45309',
+     kw:['miele','sciroppo','scirop.','nutella','crema nocciola','crema di nocciole',
+         'cereali','fiocchi','avena','granola','corn flakes','muesli','kellogg',
+         'frutta secca','noci','mandorle','nocciole','pistacchio','uvetta','anacardi','pinoli','datteri',
+         'marmellata','confettura','conf.s.day','s.day','zucchero','dolcificante','bifette',
+         'semi di chia','chia','sesamo','semi di lino','semi di girasole',
+         'olio extrav','olio oliv','olio di oliv']},
+    {id:'succhi',    label:'🧃 Succhi & Bevande',                   color:'#fff7ed',fg:'#9a3412',
+     kw:['succo brik','brik succo','zuegg','brik arancio','brik pesca','brik ace','brik mela',
+         'succo 200','succo 125','succo di frutta','nectar','nettare',
+         'santal','bev.ace','g.d.sapori']},
+    {id:'distributori',label:'🤖 Distributori bevande',             color:'#fdf4ff',fg:'#7e22ce',
+     kw:['tube ','tube multi','tube silver','tube gold','tube purple','tube red',
+         'multivitamin','multivitam','vitamina c','vitamina d',
+         'caffe spray',"caffe' spray",'caffe lio','spray caffe','liofilizzato','lio.puro',
+         'tostato','caffe tostato','grani caffe',
+         'cioccolato','cacao','orzo instant','cappuccino instant']},
+    {id:'frutta',    label:'🍓 Frutta fresca',                      color:'#dcfce7',fg:'#15803d',
+     kw:['kiwi','melone','anguria','ananas','banana','banan','mela ','mele',
+         'pesca','pesche','percoc','arancia','arance','fragola','fragole',
+         'lampone','lamponi','mirtillo','mirtilli','pera','pere',
+         'ciliegia','ciliegie','pompelmo','mango','papaya',
+         'cantalupo','macedonia','clementine','mandarino','uva','frutta fresca','frutti di bosco',
+         'stark','golden del','fuji','granny']},
+    {id:'sottoli',   label:'🫒 Sottoli & Conserve buffet',          color:'#f7fee7',fg:'#3f6212',
+     kw:["pomodori secchi","sott'olio","sottoli","capperi","giardiniera",
+         "sacla","acciughe","tonno","antipasto","peperoni grig","verdure grig",
+         "melanzane","melanzana","melanzane filetti","d'amico"]},
+    {id:'verdure',   label:'🥗 Verdure buffet',                     color:'#f0fdf4',fg:'#14532d',
+     kw:['pomodori','pomod','ciliegine','insalata','verdura','zucchine','peperoni','rucola','lattuga',
+         'radicchio','spinaci','funghi','carote','sedano','finocchio','broccoli',
+         'cetriol','asparagi','carciofi','cipolla','cavolfiore',
+         'misticanza','songino','indivia','bieta','cavolo',
+         'olive','limone','limoni']},
+    {id:'nonalim',   label:'📦 Non alimentari bar e cucina',                     color:'#f8fafc',fg:'#475569',
+     kw:['pellicola','carta forno','rotolo pvc','alluminio','film pvc','film alim',
+         'sacchetto','busta frigo','guanti mono','tovagliolo','tovaglietta','stuzzicadenti',
+         'detersivo','detergente','sapone mani','candeggina','alcool etil',
+         'carta assorbente','veline','bicchiere monouso','piatto monouso',
+         'bicch.','palette','sacchi','rotolo carta','fazzoletti','tovagliett',
+         'shopper','bag kraft','contenitore alim','vaschetta alim']},
+];
+
 const SPESE_CAT_OVERRIDE_KEY='qm_spese_cat_override';
 let _speseCatOverride={};
 function speseCatLoadOverride(){
@@ -9350,105 +9454,7 @@ function ddtBuildAnalisi(){
     return{...p,list,diff};
   }).sort((a,b)=>b.diff-a.diff);
 
-  // ── C: categorie prodotto ── (stesse categorie, icone e stile di breakfast.html)
-  const CAT_ICONS_SPESE={
-    teecaffe:    'icone%20app%20breakfast/the%20camere.png',
-    lievitati:   'icone%20app%20breakfast/dolci.png',
-    latticini:   'icone%20app%20breakfast/latte.png',
-    uova:        'icone%20app%20breakfast/uova.png',
-    bacon:       'icone%20app%20breakfast/bacon.png',
-    salumi:      'icone%20app%20breakfast/salumi.png',
-    miele:       'icone%20app%20breakfast/miele.png',
-    succhi:      'icone%20app%20breakfast/bevande.png',
-    distributori:'icone%20app%20breakfast/distributore.png',
-    frutta:      'icone%20app%20breakfast/frutta.png',
-    sottoli:     'icone%20app%20breakfast/sottoli.png',
-    verdure:     'icone%20app%20breakfast/verdure.png',
-    nonalim:     'icone%20app%20breakfast/non%20alimentari.png',
-  };
-  const CAT_RULES=[
-    // ORDINE CRITICO (identico a breakfast.html):
-    // teecaffe prima di lievitati (bisc.gocce → camere, non lievitati)
-    // lievitati prima di latticini (pancake/waffle con latte → lievitati)
-    // latticini prima di miele (bevande avena/soia → latticini, non cereali)
-    {id:'teecaffe',  label:'☕ Dotazioni bar e camere',                 color:'#f0f9ff',fg:'#0369a1',
-     kw:["te'",'twinings','earl grey','nescafe','bisc.gocce','gocce ciocc',
-         'orzo solub','orzo bimbo','capsule caffe','cialde caffe','caffe solub',
-         'the bag','tea bag','bustina te','infuso','tisana','camomilla','camom.',
-         'the twin','pure green','verde pure',
-         'prosecco','prosecchino','spumante','vino ','minibar',
-         'cocacola','coca cola','coca-cola','aranciata','cedrata','chinotto','limonata',
-         'fanta','sprite','pepsi','birra','peroni','nastro azzurro',
-         's.bened','san benedetto','acqua s.ben','stefano','acqua nat 50']},
-    {id:'lievitati', label:'🥐 Lievitati, Torte & Dolci',          color:'#fefce8',fg:'#854d0e',
-     kw:['pane','brioche','cornetto','croissant','brioches','krapfen','ciambella','sfoglia',
-         'plumcake','focaccia','torta','crostata','pasticceria','frolla','biscotto','biscotti',
-         'merendina','wafer','fetta biscottata','fette biscottate','grissino','cracker','crackers',
-         'tarallo','taralli','panettone','pandoro','colomba','veneziana','babà','baba','veneziane',
-         'pancake','waffle','waffel','wafle','cialda','crepe','crêpe',
-         'pastier','carezza','vien.','vienn','tulip','pasticciotto','rustic',
-         'bisc.','panfette','mini tris','tris fantasia','fantasia 40','nonna rotonda','lemoncake','lemon cake',
-         'focac.']},
-    {id:'latticini', label:'🧀 Latte, Yogurt, Latticini & Formaggi',        color:'#f0fdf4',fg:'#166534',
-     kw:['latte','yogurt','burro','formaggio','mozzarella','ricotta','panna','mascarpone',
-         'scamorza','provolone','pecorino','grana','parmigiano','philadelphia','stracchino',
-         'kefir','fontina','emmental','cheddar','fior di latte','primo sale','asiago','brie',
-         'camembert','gruyere','gruviera','taleggio','caciotta','caciocavallo','robiola',
-         'edamer','edam',
-         'form.','formagg','cacioc','canestr',
-         'bevan. avena','bevanda avena','avena valsoia','avena bio','avena s.g.','latte avena',
-         'drink avena','bevan. soia','bevanda soia','latte soia','drink soia','avena 1 l',
-         'latte mandorla','latte riso','drink riso','bevanda riso','bevanda mandorla']},
-    {id:'uova',      label:'🥚 Uova',                               color:'#fffbeb',fg:'#78350f',
-     kw:['uovo','uova']},
-    {id:'bacon',     label:'🥓 Bacon',                              color:'#fef2f2',fg:'#991b1b',
-     kw:['bacon','pancetta affum','pancetta tesa','pancetta coppata']},
-    {id:'salumi',    label:'🍖 Salumi',                      color:'#fce7f3',fg:'#9d174d',
-     kw:['prosciutto','salame','bresaola','mortadella','mort.','speck','coppa','pancetta','wurstel',
-         'affettato','salsiccia','lardo','guanciale','culatello','lonza','cotto','crudo',
-         'tacchino','fesa tacchino','arrosto tacchino','pollo arrosto','pollo cotto']},
-    {id:'miele',     label:'🍯 Miele, Confetture, Nutella, Frutta secca, Fette biscottate & Cereali', color:'#fef3c7',fg:'#b45309',
-     kw:['miele','sciroppo','scirop.','nutella','crema nocciola','crema di nocciole',
-         'cereali','fiocchi','avena','granola','corn flakes','muesli','kellogg',
-         'frutta secca','noci','mandorle','nocciole','pistacchio','uvetta','anacardi','pinoli','datteri',
-         'marmellata','confettura','conf.s.day','s.day','zucchero','dolcificante','bifette',
-         'semi di chia','chia','sesamo','semi di lino','semi di girasole',
-         'olio extrav','olio oliv','olio di oliv']},
-    {id:'succhi',    label:'🧃 Succhi & Bevande',                   color:'#fff7ed',fg:'#9a3412',
-     kw:['succo brik','brik succo','zuegg','brik arancio','brik pesca','brik ace','brik mela',
-         'succo 200','succo 125','succo di frutta','nectar','nettare',
-         'santal','bev.ace','g.d.sapori']},
-    {id:'distributori',label:'🤖 Distributori bevande',             color:'#fdf4ff',fg:'#7e22ce',
-     kw:['tube ','tube multi','tube silver','tube gold','tube purple','tube red',
-         'multivitamin','multivitam','vitamina c','vitamina d',
-         'caffe spray',"caffe' spray",'caffe lio','spray caffe','liofilizzato','lio.puro',
-         'tostato','caffe tostato','grani caffe',
-         'cioccolato','cacao','orzo instant','cappuccino instant']},
-    {id:'frutta',    label:'🍓 Frutta fresca',                      color:'#dcfce7',fg:'#15803d',
-     kw:['kiwi','melone','anguria','ananas','banana','banan','mela ','mele',
-         'pesca','pesche','percoc','arancia','arance','fragola','fragole',
-         'lampone','lamponi','mirtillo','mirtilli','pera','pere',
-         'ciliegia','ciliegie','pompelmo','mango','papaya',
-         'cantalupo','macedonia','clementine','mandarino','uva','frutta fresca','frutti di bosco',
-         'stark','golden del','fuji','granny']},
-    {id:'sottoli',   label:'🫒 Sottoli & Conserve buffet',          color:'#f7fee7',fg:'#3f6212',
-     kw:["pomodori secchi","sott'olio","sottoli","capperi","giardiniera",
-         "sacla","acciughe","tonno","antipasto","peperoni grig","verdure grig",
-         "melanzane","melanzana","melanzane filetti","d'amico"]},
-    {id:'verdure',   label:'🥗 Verdure buffet',                     color:'#f0fdf4',fg:'#14532d',
-     kw:['pomodori','pomod','ciliegine','insalata','verdura','zucchine','peperoni','rucola','lattuga',
-         'radicchio','spinaci','funghi','carote','sedano','finocchio','broccoli',
-         'cetriol','asparagi','carciofi','cipolla','cavolfiore',
-         'misticanza','songino','indivia','bieta','cavolo',
-         'olive','limone','limoni']},
-    {id:'nonalim',   label:'📦 Non alimentari bar e cucina',                     color:'#f8fafc',fg:'#475569',
-     kw:['pellicola','carta forno','rotolo pvc','alluminio','film pvc','film alim',
-         'sacchetto','busta frigo','guanti mono','tovagliolo','tovaglietta','stuzzicadenti',
-         'detersivo','detergente','sapone mani','candeggina','alcool etil',
-         'carta assorbente','veline','bicchiere monouso','piatto monouso',
-         'bicch.','palette','sacchi','rotolo carta','fazzoletti','tovagliett',
-         'shopper','bag kraft','contenitore alim','vaschetta alim']},
-  ];
+  // ── C: categorie prodotto ── (CAT_RULES/CAT_ICONS_SPESE ora globali, vedi sopra DDT_FORNITORI)
   const selMese=ddtAnalCurMese();
   const catDdts=bkfAll.filter(d=>ddtYM(d.data)===selMese);
   const catTotals={};const catItems={};const uncatItems=[];
@@ -10268,7 +10274,8 @@ function ddtOpenPrintModal(){
   m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
   m.onclick=e=>{if(e.target===m)m.remove();};
   m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-    <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:14px;">🖨️ Report spese fornitori</div>
+    <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:14px;">🖨️ Report Breakfast</div>
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:14px;margin-top:-8px;">Stesso contenuto della tab "Insights Breakfast", per il mese scelto</div>
     <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">MESE</label>
     <select id="ddt-print-mese" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);background:var(--surface);margin-bottom:16px;">${opts}</select>
     <div style="display:flex;gap:8px;">
@@ -10279,68 +10286,165 @@ function ddtOpenPrintModal(){
   document.body.appendChild(m);
 }
 
-// Report A4 stampabile del mese scelto: totale, DDT ricevuti, riepilogo per fornitore
-// (con reparto e hotel) e — quando disponibili — coperti breakfast ed euro/coperto,
-// stesso indicatore mostrato nella tabella "Spesa e coperti mensili" della tab Analisi.
+// Report A4 stampabile del mese scelto: **stessi contenuti di "Insights Breakfast"**
+// (proiezione, spesa/coperti/€ per coperto, trend prezzi, top prodotti, prodotti più
+// frequenti, confronto tra fornitori, spesa per categoria), tutti ricalcolati SOLO sui
+// DDT breakfast (bkf, come fa ddtBuildAnalisi) e filtrati al mese scelto — non un elenco
+// DDT (quello resta nella vista a schermo, qui non serve: il report è per la responsabile
+// del breakfast, che deve leggere l'andamento, non i singoli documenti).
 function ddtPrintMonthReport(ym){
   if(!ym)return;
   document.getElementById('ddtPrintModal')?.remove();
   const all=ddtGet();
-  const monDdt=all.filter(d=>ddtYM(d.data)===ym).sort((a,b)=>{
-    const pd=s=>{const p=(s||'').split('/');return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0;};
-    return pd(a.data)-pd(b.data);
-  });
   const _nf=d=>ddtNormForn(d.fornitore)||d.fornitore||'—';
+  const bkfAll=all.filter(d=>(DDT_FORNITORI[_nf(d)]?.reparto||d.reparto||'bkf')==='bkf');
+  const monDdt=bkfAll.filter(d=>ddtYM(d.data)===ym);
+  const [pY,pM]=ym.split('-').map(Number);
+  const prevYm=pM===1?`${pY-1}-12`:`${pY}-${String(pM-1).padStart(2,'0')}`;
+  const prevMonDdt=bkfAll.filter(d=>ddtYM(d.data)===prevYm);
   const totale=monDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
+  const totalePrev=prevMonDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
+  const monLabel=ddtMonLabel(ym);
+  const varSpesa=totalePrev?((totale-totalePrev)/totalePrev*100):null;
 
-  // Riepilogo per fornitore
-  const perForn={};
-  monDdt.forEach(d=>{
-    const nf=_nf(d);
-    if(!perForn[nf])perForn[nf]={tot:0,n:0,conf:DDT_FORNITORI[nf]||{}};
-    perForn[nf].tot+=(d.totale_ordine||0);perForn[nf].n++;
-  });
-  const fornRows=Object.entries(perForn).sort((a,b)=>b[1].tot-a[1].tot).map(([nome,v])=>`
-    <tr>
-      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:12px;font-weight:600;">${nome}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;color:#888;">${v.conf.rLabel||'—'}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:12px;text-align:center;">${v.n}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:12px;text-align:right;font-weight:700;">${ddtFmt(v.tot)}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:right;color:#888;">${totale?(v.tot/totale*100).toFixed(0)+'%':'—'}</td>
-    </tr>`).join('');
-
-  // Riepilogo per hotel
-  const perHotel={};
-  monDdt.forEach(d=>{const h=d.hotel==='ar'?'Art Resort':'SoulArt Hotel';perHotel[h]=(perHotel[h]||0)+(d.totale_ordine||0);});
-  const hotelRows=Object.entries(perHotel).sort((a,b)=>b[1]-a[1]).map(([h,v])=>`
-    <span style="display:inline-flex;align-items:center;gap:6px;background:#f0f0f2;border-radius:8px;padding:6px 12px;margin-right:8px;">
-      <span style="font-size:11px;color:#888;">${h}</span><span style="font-size:12px;font-weight:700;">${ddtFmt(v)}</span>
-    </span>`).join('');
-
-  // Coperti breakfast del mese (stessa fonte della tab Analisi, granularità giornaliera)
+  // Coperti BB del mese e del precedente — stessa fonte/granularità della card "Spesa e
+  // coperti mensili" (qm_bkf_monthly_history, chiave YYYY-MM-DD).
   let bkfHistPrint={};
   try{bkfHistPrint=JSON.parse(localStorage.getItem('qm_bkf_monthly_history')||'{}');}catch(e){}
-  const copertiMese=Object.entries(bkfHistPrint).filter(([k])=>k.length===10&&k.startsWith(ym)).reduce((s,[,v])=>s+(v.bb||0),0);
-  const spesaBkfMese=monDdt.filter(d=>(DDT_FORNITORI[_nf(d)]?.reparto||d.reparto)==='bkf').reduce((s,d)=>s+(d.totale_ordine||0),0);
-  const perCoperto=copertiMese?spesaBkfMese/copertiMese:null;
-  const copertoBox=copertiMese?`
-    <div class="kpi-box"><div class="kpi-lbl">Coperti BB</div><div class="kpi-val">${copertiMese}</div></div>
-    <div class="kpi-box"><div class="kpi-lbl">€ / coperto</div><div class="kpi-val">${ddtFmt(perCoperto)}</div></div>`:'';
+  const _copertiMese=y=>Object.entries(bkfHistPrint).filter(([k])=>k.length===10&&k.startsWith(y)).reduce((s,[,v])=>s+(v.bb||0),0);
+  const coperti=_copertiMese(ym),copertiPrev=_copertiMese(prevYm);
+  const perCoperto=coperti?totale/coperti:null;
+  const perCopertoPrev=copertiPrev?totalePrev/copertiPrev:null;
+  const varCoperti=copertiPrev?((coperti-copertiPrev)/copertiPrev*100):null;
+  const varPerCop=perCopertoPrev?((perCoperto-perCopertoPrev)/perCopertoPrev*100):null;
 
-  // Elenco dettagliato DDT
-  const listRows=monDdt.map((d,i)=>`
-    <tr style="background:${i%2===0?'#fff':'#f8f8f9'};">
-      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;color:#888;white-space:nowrap;">${d.data||'—'}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;font-weight:600;">${_nf(d)}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;color:#888;">${d.numero_ddt||'—'}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;color:#888;">${d.hotel==='ar'?'Art Resort':'SoulArt'}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:center;color:#888;">${(d.articoli||[]).length}</td>
-      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:right;font-weight:700;">${ddtFmt(d.totale_ordine)}</td>
+  // Il mese scelto è ancora in corso (spesa parziale) → avviso, niente proiezione fine
+  // mese sul cartaceo: la proiezione ha senso solo guardando la dashboard in tempo reale,
+  // su un report stampato diventerebbe subito un dato vecchio e fuorviante.
+  const todayYm=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');})();
+  const inCorso=ym===todayYm;
+
+  const fmtVar=(pct,invertGood)=>{
+    if(pct===null)return'<span style="color:#999;">mese prec. n/d</span>';
+    const good=invertGood?pct<=0:pct>=0;
+    const col=Math.abs(pct)<1?'#999':(good?'#1E7A48':'#C0352A');
+    const arr=pct>0.5?'↑':pct<-0.5?'↓':'→';
+    return`<span style="color:${col};font-weight:700;">${arr} ${Math.abs(pct).toFixed(1)}%</span> <span style="color:#999;">vs ${ddtMonLabel(prevYm)}</span>`;
+  };
+
+  // ── Trend prezzi: cosa è cambiato IN QUESTO MESE (non tutta la storia) ──
+  // Serve lo storico completo (non solo monDdt) per trovare l'ultimo prezzo registrato
+  // PRIMA del mese scelto, da usare come base del confronto.
+  const _parseD=s=>{if(!s)return 0;const p=s.split('/');return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0;};
+  const monStart=new Date(pY,pM-1,1).getTime(),monEnd=new Date(pY,pM,0,23,59,59,999).getTime();
+  const priceMap={};
+  bkfAll.forEach(d=>{
+    const forn=_nf(d);
+    (d.articoli||[]).forEach(a=>{
+      if(!a.descrizione||a.prezzo_unit==null)return;
+      const k=forn+'||'+a.descrizione.toLowerCase().trim().replace(/\s+/g,' ');
+      if(!priceMap[k])priceMap[k]={desc:a.descrizione,forn,entries:[]};
+      priceMap[k].entries.push({ts:_parseD(d.data),prezzo:Number(a.prezzo_unit),data:d.data});
+    });
+  });
+  const trendMese=Object.values(priceMap).map(p=>{
+    const sorted=[...p.entries].sort((a,b)=>a.ts-b.ts);
+    const before=[...sorted].reverse().find(e=>e.ts<monStart);
+    const inMonth=sorted.filter(e=>e.ts>=monStart&&e.ts<=monEnd);
+    if(!before||!inMonth.length)return null;
+    const cur=inMonth[inMonth.length-1];
+    const varPct=before.prezzo?((cur.prezzo-before.prezzo)/before.prezzo*100):0;
+    return{desc:p.desc,forn:p.forn,before,cur,varPct};
+  }).filter(x=>x&&Math.abs(x.varPct)>5).sort((a,b)=>b.varPct-a.varPct);
+
+  // ── Top prodotti per spesa e per frequenza — solo su questo mese ──
+  const prodAgg={};
+  monDdt.forEach(d=>{
+    const forn=_nf(d);
+    (d.articoli||[]).forEach(a=>{
+      if(!a.descrizione)return;
+      const k=a.descrizione.toLowerCase().trim().replace(/\s+/g,' ');
+      if(!prodAgg[k])prodAgg[k]={desc:a.descrizione,total:0,count:0,forn:new Set()};
+      prodAgg[k].total+=(a.totale||(a.qta&&a.prezzo_unit?a.qta*a.prezzo_unit:0));
+      prodAgg[k].count++;prodAgg[k].forn.add(forn);
+    });
+  });
+  const topSpendMese=Object.values(prodAgg).filter(p=>p.total>0).sort((a,b)=>b.total-a.total).slice(0,10);
+
+  // ── Confronto tra fornitori sullo stesso prodotto — solo su questo mese ──
+  const multiMap={};
+  monDdt.forEach(d=>{
+    const forn=_nf(d);
+    (d.articoli||[]).forEach(a=>{
+      if(!a.descrizione||a.prezzo_unit==null)return;
+      const k=a.descrizione.toLowerCase().trim().replace(/\s+/g,' ');
+      if(!multiMap[k])multiMap[k]={desc:a.descrizione,forn:{}};
+      if(!multiMap[k].forn[forn])multiMap[k].forn[forn]=[];
+      multiMap[k].forn[forn].push(Number(a.prezzo_unit));
+    });
+  });
+  const multiMese=Object.values(multiMap).filter(p=>Object.keys(p.forn).length>=2).map(p=>{
+    const list=Object.entries(p.forn).map(([f,pp])=>({f,avg:pp.reduce((s,v)=>s+v,0)/pp.length})).sort((a,b)=>a.avg-b.avg);
+    const diff=((list[list.length-1].avg-list[0].avg)/list[0].avg*100);
+    return{desc:p.desc,list,diff};
+  }).sort((a,b)=>b.diff-a.diff).slice(0,10);
+
+  // ── Spesa per categoria — stessa classificazione della dashboard (CAT_RULES globali +
+  // riassegnazioni manuali _speseCatOverride), solo su questo mese ──
+  const catTotals={};CAT_RULES.forEach(c=>{catTotals[c.id]=0;});
+  let catAltro=0;
+  monDdt.forEach(d=>{
+    (d.articoli||[]).forEach(a=>{
+      if(!a.descrizione)return;
+      const desc=a.descrizione.toLowerCase();
+      const val=a.totale||(a.qta&&a.prezzo_unit?a.qta*a.prezzo_unit:0);
+      if(!val)return;
+      const override=_speseCatOverride[speseCatNormDesc(a.descrizione)];
+      const cat=override?{id:override}:CAT_RULES.find(c=>c.kw.some(kw=>desc.includes(kw)));
+      if(cat&&catTotals[cat.id]!==undefined)catTotals[cat.id]+=val;
+      else if(override)catTotals[override]=(catTotals[override]||0)+val;
+      else catAltro+=val;
+    });
+  });
+  const catList=[...CAT_RULES.map(c=>({label:c.label,total:catTotals[c.id]||0})),{label:'Altro',total:catAltro}].filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+
+  // ── HTML ──
+  const kpiBox=(lbl,val)=>`<div class="kpi-box"><div class="kpi-lbl">${lbl}</div><div class="kpi-val">${val}</div></div>`;
+  const trendRows=trendMese.map(p=>`
+    <tr>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;font-weight:600;">${p.desc}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;color:#888;">${p.forn}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:right;color:#888;">${ddtFmt(p.before.prezzo)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:right;font-weight:700;">${ddtFmt(p.cur.prezzo)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:right;font-weight:700;color:#C0352A;">↑ ${p.varPct.toFixed(1)}%</td>
+    </tr>`).join('');
+  const topSpendRows=topSpendMese.map((p,i)=>`
+    <tr>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;color:#888;">${i+1}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;font-weight:600;">${p.desc}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;color:#888;">${[...p.forn].join(', ')}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:center;color:#888;">${p.count}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:right;font-weight:700;">${ddtFmt(p.total)}</td>
+    </tr>`).join('');
+  const multiRows=multiMese.map(p=>`
+    <tr>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;font-weight:600;">${p.desc}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;color:#888;">${p.list.map(l=>l.f+' '+ddtFmt(l.avg)).join(' · ')}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:right;font-weight:700;color:${p.diff>20?'#C0352A':'#888'};">+${p.diff.toFixed(0)}%</td>
+    </tr>`).join('');
+  const catMax=catList[0]?.total||1;
+  const catRows=catList.map(c=>`
+    <tr>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;font-weight:600;">${c.label}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;">
+        <div style="background:#e5e5e7;border-radius:3px;height:6px;width:100%;overflow:hidden;"><div style="background:#1E4080;height:6px;width:${(c.total/catMax*100).toFixed(0)}%;"></div></div>
+      </td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:right;font-weight:700;">${ddtFmt(c.total)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:right;color:#888;">${totale?(c.total/totale*100).toFixed(0)+'%':'—'}</td>
     </tr>`).join('');
 
-  const monLabel=ddtMonLabel(ym);
   const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
-  <title>Report Spese Fornitori — ${monLabel}</title>
+  <title>Report Breakfast — ${monLabel}</title>
   <style>
     @page{size:A4;margin:16mm 14mm;}
     body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1c1c1e;margin:0;}
@@ -10348,21 +10452,24 @@ function ddtPrintMonthReport(ym){
     h1{font-size:18px;font-weight:700;margin:0 0 3px;}
     h2{font-size:13px;font-weight:700;margin:22px 0 8px;color:#1E4080;text-transform:uppercase;letter-spacing:.04em;}
     .sub{font-size:11px;color:#888;}
+    .badge-corso{display:inline-block;background:#fffbeb;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:8px;}
     .date-badge{background:#1E4080;color:#fff;padding:10px 18px;border-radius:8px;text-align:center;flex-shrink:0;}
     .date-badge-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;opacity:.75;margin-bottom:4px;}
     .date-badge-value{font-size:15px;font-weight:700;line-height:1.2;}
     .kpi-row{display:flex;gap:10px;flex-wrap:wrap;}
-    .kpi-box{background:#f8f8f9;border-radius:8px;padding:10px 16px;flex:1;min-width:110px;}
+    .kpi-box{background:#f8f8f9;border-radius:8px;padding:10px 16px;flex:1;min-width:130px;}
     .kpi-lbl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
-    .kpi-val{font-size:18px;font-weight:800;color:#1E4080;}
+    .kpi-val{font-size:17px;font-weight:800;color:#1E4080;}
+    .kpi-var{font-size:11px;margin-top:3px;}
     table{width:100%;border-collapse:collapse;}
     thead th{background:#f0f0f2;color:#555;padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;text-align:left;}
-    tfoot td{padding:8px 10px 0;font-size:10px;color:#999;}
+    .empty{font-size:11px;color:#999;padding:8px 0;}
+    .avviso{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:10px 14px;font-size:11px;margin-top:6px;}
   </style>
   </head><body>
   <div class="header">
     <div>
-      <h1>📑 Report Spese Fornitori</h1>
+      <h1>☕ Report Breakfast — Spese Fornitori${inCorso?'<span class="badge-corso">mese in corso</span>':''}</h1>
       <div class="sub">${monLabel} · stampato il ${new Date().toLocaleString('it-IT')}</div>
     </div>
     <div class="date-badge">
@@ -10370,23 +10477,37 @@ function ddtPrintMonthReport(ym){
       <div class="date-badge-value">${ddtFmt(totale)}</div>
     </div>
   </div>
-  <div class="kpi-row">
-    <div class="kpi-box"><div class="kpi-lbl">DDT ricevuti</div><div class="kpi-val">${monDdt.length}</div></div>
-    <div class="kpi-box"><div class="kpi-lbl">Fornitori</div><div class="kpi-val">${Object.keys(perForn).length}</div></div>
-    ${copertoBox}
+  ${inCorso?`<div class="avviso">Il mese è ancora in corso: il totale e i confronti sotto sono parziali, calcolati sui giorni già trascorsi.</div>`:''}
+  <div class="kpi-row" style="margin-top:14px;">
+    <div class="kpi-box"><div class="kpi-lbl">Spesa</div><div class="kpi-val">${ddtFmt(totale)}</div><div class="kpi-var">${fmtVar(varSpesa,true)}</div></div>
+    <div class="kpi-box"><div class="kpi-lbl">Coperti BB</div><div class="kpi-val">${coperti||'—'}</div><div class="kpi-var">${fmtVar(varCoperti,false)}</div></div>
+    <div class="kpi-box"><div class="kpi-lbl">€ / coperto</div><div class="kpi-val">${perCoperto!=null?ddtFmt(perCoperto):'—'}</div><div class="kpi-var">${fmtVar(varPerCop,true)}</div></div>
+    ${kpiBox('DDT ricevuti',monDdt.length)}
   </div>
-  ${Object.keys(perHotel).length>1?`<h2>Per struttura</h2><div>${hotelRows}</div>`:''}
-  <h2>Per fornitore</h2>
-  <table>
-    <thead><tr><th>Fornitore</th><th>Reparto</th><th style="text-align:center;">DDT</th><th style="text-align:right;">Totale</th><th style="text-align:right;">%</th></tr></thead>
-    <tbody>${fornRows}</tbody>
-  </table>
-  <h2>Elenco DDT</h2>
-  <table>
-    <thead><tr><th>Data</th><th>Fornitore</th><th>N° DDT</th><th>Struttura</th><th style="text-align:center;">Art.</th><th style="text-align:right;">Totale</th></tr></thead>
-    <tbody>${listRows}</tbody>
-    <tfoot><tr><td colspan="6">${monDdt.length} documenti</td></tr></tfoot>
-  </table>
+
+  <h2>📈 Trend prezzi — variazioni di questo mese</h2>
+  ${trendRows?`<table>
+    <thead><tr><th>Prodotto</th><th>Fornitore</th><th style="text-align:right;">Prima</th><th style="text-align:right;">${monLabel.split(' ')[0]}</th><th style="text-align:right;">Var.</th></tr></thead>
+    <tbody>${trendRows}</tbody>
+  </table>`:`<div class="empty">Nessun rialzo &gt;5% registrato questo mese.</div>`}
+
+  <h2>🏆 Top 10 prodotti per spesa</h2>
+  ${topSpendRows?`<table>
+    <thead><tr><th>#</th><th>Prodotto</th><th>Fornitore</th><th style="text-align:center;">Volte</th><th style="text-align:right;">Totale</th></tr></thead>
+    <tbody>${topSpendRows}</tbody>
+  </table>`:`<div class="empty">Nessun dato per questo mese.</div>`}
+
+  <h2>⚖️ Stesso prodotto, fornitori diversi</h2>
+  ${multiRows?`<table>
+    <thead><tr><th>Prodotto</th><th>Prezzo medio per fornitore</th><th style="text-align:right;">Differenza</th></tr></thead>
+    <tbody>${multiRows}</tbody>
+  </table>`:`<div class="empty">Nessun prodotto acquistato da più fornitori questo mese.</div>`}
+
+  <h2>🏷️ Spesa per categoria</h2>
+  ${catRows?`<table>
+    <thead><tr><th>Categoria</th><th></th><th style="text-align:right;">Totale</th><th style="text-align:right;">%</th></tr></thead>
+    <tbody>${catRows}</tbody>
+  </table>`:`<div class="empty">Nessuna spesa classificata per questo mese.</div>`}
   </body></html>`;
 
   const w=window.open('','_blank');
@@ -10395,7 +10516,6 @@ function ddtPrintMonthReport(ym){
   w.document.close();
   w.onload=()=>w.print();
 }
-
 // §§ RECEPTION — CASSA (fondo cassa, incasso contante)
 // Sola lettura + modifica libera per il QM. I receptionist operano sull'app dedicata
 // (reception.html, aperta sui PC di reception): qui si legge lo stesso KV per avere il

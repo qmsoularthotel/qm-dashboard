@@ -769,16 +769,21 @@ Solo su Compass (non su `breakfast.html`). Bottone **"🖨️ Report"** dentro `
 
 `ddtOpenPrintModal()` apre un modal con un `<select>` dei soli mesi che hanno almeno un DDT caricato (non tutti i 12 mesi dell'anno), più recenti in cima, mese corrente preselezionato quando presente. Se non c'è nessun DDT, un `alert()` lo dice subito invece di aprire un modal vuoto.
 
-`ddtPrintMonthReport(ym)` genera una pagina A4 stampabile (stesso schema di `invPrintStock()`: `window.open('','_blank')` + `document.write` + `w.onload=()=>w.print()`), con:
-- Totale del mese in evidenza, DDT ricevuti, fornitori distinti
-- **Coperti BB ed € /coperto** quando ci sono dati breakfast per quel mese (stessa fonte `qm_bkf_monthly_history`, stesso indicatore già mostrato nella tabella "Spesa e coperti mensili" della tab Analisi — solo la spesa dei fornitori `reparto:'bkf'` entra nel calcolo del €/coperto, coerente con quella tabella)
-- Riepilogo per struttura (solo se sono coinvolte sia SoulArt che Art Resort quel mese)
-- Riepilogo per fornitore: reparto, N° DDT, totale, quota % sul totale del mese
-- Elenco dettagliato di ogni DDT (data, fornitore, N° DDT, struttura, N° articoli, totale)
+**Il report rispecchia il contenuto della tab "Insights Breakfast" (`ddtBuildAnalisi()`), non la tab "DDT & Fornitori"** — è per la responsabile del breakfast, deve leggere l'andamento, non consultare i singoli documenti. Prima conteneva un elenco DDT dettagliato ed era scritto da zero senza ricalcare le sezioni di Insights Breakfast: tolto l'elenco, riscritto per coprire le stesse sezioni, tutte **ricalcolate solo sui DDT `reparto:'bkf'`** (come fa `ddtBuildAnalisi`, esclude DECA/hk e Amonn/altro) e **filtrate al mese scelto**:
 
-**Non include la scomposizione per categoria prodotto** (quella di "Spesa per categoria" nella tab Analisi): `CAT_RULES`/`CAT_ICONS_SPESE` sono costanti locali dentro `ddtBuildAnalisi()`, non globali — estrarle per riusarle qui è un refactor a parte, non fatto per non rischiare di far divergere le due copie della classificazione. Se in futuro serve il report per categoria, va prima reso `CAT_RULES` una costante globale.
+| Sezione | Cosa mostra | Nota |
+|---------|-------------|------|
+| KPI in testa | Spesa, coperti BB, €/coperto, N° DDT — ciascuno con variazione % vs il mese precedente | Stessa fonte giornaliera `qm_bkf_monthly_history` della tabella "Spesa e coperti mensili" |
+| 📈 Trend prezzi | Prodotti con un rialzo >5% **nel mese scelto** (non in assoluto): confronta l'ultimo prezzo registrato nel mese con l'ultimo prezzo prima dell'inizio del mese | Diverso da `alerts` di `ddtBuildAnalisi`, che è su tutta la storia — qui la finestra è quella del mese |
+| 🏆 Top 10 prodotti per spesa | Ricalcolato solo sui DDT del mese scelto | `ddtBuildAnalisi` lo mostra su tutta la storia; nel report non avrebbe senso, va isolato al mese |
+| ⚖️ Stesso prodotto, fornitori diversi | Confronto prezzo medio tra fornitori, solo DDT del mese scelto | Equivalente a `multiItems`, ricalcolato per mese |
+| 🏷️ Spesa per categoria | Stessa classificazione della dashboard (`CAT_RULES` + `_speseCatOverride`), solo sul mese scelto | Reso possibile rendendo `CAT_RULES`/`CAT_ICONS_SPESE` **costanti globali** (prima erano locali a `ddtBuildAnalisi`, impossibile riusarle altrove — vedi sotto) |
 
-Verificato con dati sintetici (`osascript`): mese giusto isolato dagli altri, totale/conteggi corretti, coperti aggregati dalla granularità giornaliera, struttura e fornitori distinti nel riepilogo.
+Se il mese scelto è quello in corso, un avviso in cima dice che spesa e confronti sono parziali (calcolati sui giorni già trascorsi) — niente proiezione a fine mese sul cartaceo: su un report stampato la proiezione diventerebbe subito un dato vecchio e fuorviante, ha senso solo guardando la dashboard in tempo reale.
+
+**`CAT_RULES`/`CAT_ICONS_SPESE` sono ora costanti globali** (spostate sopra `SPESE_CAT_OVERRIDE_KEY`, subito dopo `DDT_FORNITORI`), non più locali dentro `ddtBuildAnalisi()`. `ddtBuildAnalisi()` le usa esattamente come prima (stesso nome, nessuna modifica al suo codice a parte togliere la doppia dichiarazione locale) — è **l'unica copia**, non due copie da tenere allineate: se si tocca la classificazione (aggiungere una keyword, una categoria), farlo qui in cima al file, non dentro `ddtBuildAnalisi`.
+
+Verificato con dati sintetici (`osascript`): mese isolato correttamente dagli altri, DDT non-breakfast esclusi, trend/top/multi-fornitore/categorie tutti ricalcolati sul solo mese scelto con importi verificati a mano, coperti aggregati dalla granularità giornaliera, avviso "mese in corso" quando pertinente.
 
 ### Trend prezzi — bottone "Verifica DDT" per risalire ai refusi di scansione
 
