@@ -9891,9 +9891,14 @@ function ddtYM(data){
 // ── TAB SPESE ─────────────────────────────────────────────────────────────────
 function ddtRenderSpese(){
   const view=document.getElementById('inv-spese-view');if(!view)return;
-  const tabBar=`<div style="display:flex;gap:0;margin-bottom:16px;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
-    <button onclick="ddtSetTab('spese')" style="flex:1;padding:9px;border:none;background:${_ddtTab==='spese'?'var(--accent)':'var(--surface)'};color:${_ddtTab==='spese'?'#fff':'var(--text-dim)'};font-weight:700;font-size:var(--fs-xs);cursor:pointer;">🗂️ DDT &amp; Fornitori</button>
-    <button onclick="ddtSetTab('analisi')" style="flex:1;padding:9px;border:none;border-left:1px solid var(--border);background:${_ddtTab==='analisi'?'var(--accent)':'var(--surface)'};color:${_ddtTab==='analisi'?'#fff':'var(--text-dim)'};font-weight:700;font-size:var(--fs-xs);cursor:pointer;">🔍 Insights Breakfast</button>
+  // Il bottone report vive dentro tabBar (non nei due branch sotto) così è visibile
+  // in entrambe le tab — "DDT & Fornitori" ritorna subito dopo se _ddtTab è 'analisi'.
+  const tabBar=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <div style="display:flex;gap:0;flex:1;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
+      <button onclick="ddtSetTab('spese')" style="flex:1;padding:9px;border:none;background:${_ddtTab==='spese'?'var(--accent)':'var(--surface)'};color:${_ddtTab==='spese'?'#fff':'var(--text-dim)'};font-weight:700;font-size:var(--fs-xs);cursor:pointer;">🗂️ DDT &amp; Fornitori</button>
+      <button onclick="ddtSetTab('analisi')" style="flex:1;padding:9px;border:none;border-left:1px solid var(--border);background:${_ddtTab==='analisi'?'var(--accent)':'var(--surface)'};color:${_ddtTab==='analisi'?'#fff':'var(--text-dim)'};font-weight:700;font-size:var(--fs-xs);cursor:pointer;">🔍 Insights Breakfast</button>
+    </div>
+    <button onclick="ddtOpenPrintModal()" style="padding:9px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-weight:700;font-size:var(--fs-xs);cursor:pointer;white-space:nowrap;flex-shrink:0;">🖨️ Report</button>
   </div>`;
   if(_ddtTab==='analisi'){view.innerHTML=tabBar+ddtBuildAnalisi();return;}
   const mon=ddtCurMonth();
@@ -10247,6 +10252,148 @@ function ddtDelete(id){
   if(!confirm('Eliminare questo DDT?'))return;
   ddtSave(ddtGet().filter(d=>d.id!==id));
   ddtRenderList();ddtRenderSpese();
+}
+
+// ── REPORT MENSILE STAMPABILE ───────────────────────────────────────────────
+// Modal per scegliere il mese: solo i mesi che hanno almeno un DDT caricato,
+// più recenti in cima. Il mese corrente è preselezionato quando presente.
+function ddtOpenPrintModal(){
+  const all=ddtGet();
+  const mesi=[...new Set(all.map(d=>ddtYM(d.data)).filter(Boolean))].sort().reverse();
+  if(!mesi.length){alert('Nessun DDT caricato: non c\'è ancora nulla da riportare.');return;}
+  const curMon=ddtCurMonth();
+  const opts=mesi.map(ym=>`<option value="${ym}" ${ym===curMon?'selected':''}>${ddtMonLabel(ym)}</option>`).join('');
+  const m=document.createElement('div');
+  m.id='ddtPrintModal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.onclick=e=>{if(e.target===m)m.remove();};
+  m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:14px;">🖨️ Report spese fornitori</div>
+    <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">MESE</label>
+    <select id="ddt-print-mese" style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);background:var(--surface);margin-bottom:16px;">${opts}</select>
+    <div style="display:flex;gap:8px;">
+      <button onclick="document.getElementById('ddtPrintModal').remove()" style="flex:1;padding:9px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-weight:600;font-size:var(--fs-xs);cursor:pointer;">Annulla</button>
+      <button onclick="ddtPrintMonthReport(document.getElementById('ddt-print-mese').value)" style="flex:1;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;">Genera report</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
+
+// Report A4 stampabile del mese scelto: totale, DDT ricevuti, riepilogo per fornitore
+// (con reparto e hotel) e — quando disponibili — coperti breakfast ed euro/coperto,
+// stesso indicatore mostrato nella tabella "Spesa e coperti mensili" della tab Analisi.
+function ddtPrintMonthReport(ym){
+  if(!ym)return;
+  document.getElementById('ddtPrintModal')?.remove();
+  const all=ddtGet();
+  const monDdt=all.filter(d=>ddtYM(d.data)===ym).sort((a,b)=>{
+    const pd=s=>{const p=(s||'').split('/');return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0;};
+    return pd(a.data)-pd(b.data);
+  });
+  const _nf=d=>ddtNormForn(d.fornitore)||d.fornitore||'—';
+  const totale=monDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
+
+  // Riepilogo per fornitore
+  const perForn={};
+  monDdt.forEach(d=>{
+    const nf=_nf(d);
+    if(!perForn[nf])perForn[nf]={tot:0,n:0,conf:DDT_FORNITORI[nf]||{}};
+    perForn[nf].tot+=(d.totale_ordine||0);perForn[nf].n++;
+  });
+  const fornRows=Object.entries(perForn).sort((a,b)=>b[1].tot-a[1].tot).map(([nome,v])=>`
+    <tr>
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:12px;font-weight:600;">${nome}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;color:#888;">${v.conf.rLabel||'—'}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:12px;text-align:center;">${v.n}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:12px;text-align:right;font-weight:700;">${ddtFmt(v.tot)}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:right;color:#888;">${totale?(v.tot/totale*100).toFixed(0)+'%':'—'}</td>
+    </tr>`).join('');
+
+  // Riepilogo per hotel
+  const perHotel={};
+  monDdt.forEach(d=>{const h=d.hotel==='ar'?'Art Resort':'SoulArt Hotel';perHotel[h]=(perHotel[h]||0)+(d.totale_ordine||0);});
+  const hotelRows=Object.entries(perHotel).sort((a,b)=>b[1]-a[1]).map(([h,v])=>`
+    <span style="display:inline-flex;align-items:center;gap:6px;background:#f0f0f2;border-radius:8px;padding:6px 12px;margin-right:8px;">
+      <span style="font-size:11px;color:#888;">${h}</span><span style="font-size:12px;font-weight:700;">${ddtFmt(v)}</span>
+    </span>`).join('');
+
+  // Coperti breakfast del mese (stessa fonte della tab Analisi, granularità giornaliera)
+  let bkfHistPrint={};
+  try{bkfHistPrint=JSON.parse(localStorage.getItem('qm_bkf_monthly_history')||'{}');}catch(e){}
+  const copertiMese=Object.entries(bkfHistPrint).filter(([k])=>k.length===10&&k.startsWith(ym)).reduce((s,[,v])=>s+(v.bb||0),0);
+  const spesaBkfMese=monDdt.filter(d=>(DDT_FORNITORI[_nf(d)]?.reparto||d.reparto)==='bkf').reduce((s,d)=>s+(d.totale_ordine||0),0);
+  const perCoperto=copertiMese?spesaBkfMese/copertiMese:null;
+  const copertoBox=copertiMese?`
+    <div class="kpi-box"><div class="kpi-lbl">Coperti BB</div><div class="kpi-val">${copertiMese}</div></div>
+    <div class="kpi-box"><div class="kpi-lbl">€ / coperto</div><div class="kpi-val">${ddtFmt(perCoperto)}</div></div>`:'';
+
+  // Elenco dettagliato DDT
+  const listRows=monDdt.map((d,i)=>`
+    <tr style="background:${i%2===0?'#fff':'#f8f8f9'};">
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;color:#888;white-space:nowrap;">${d.data||'—'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;font-weight:600;">${_nf(d)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;color:#888;">${d.numero_ddt||'—'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;color:#888;">${d.hotel==='ar'?'Art Resort':'SoulArt'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:center;color:#888;">${(d.articoli||[]).length}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #e5e5e7;font-size:11px;text-align:right;font-weight:700;">${ddtFmt(d.totale_ordine)}</td>
+    </tr>`).join('');
+
+  const monLabel=ddtMonLabel(ym);
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
+  <title>Report Spese Fornitori — ${monLabel}</title>
+  <style>
+    @page{size:A4;margin:16mm 14mm;}
+    body{font-family:'Helvetica Neue',Arial,sans-serif;color:#1c1c1e;margin:0;}
+    .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:16px;}
+    h1{font-size:18px;font-weight:700;margin:0 0 3px;}
+    h2{font-size:13px;font-weight:700;margin:22px 0 8px;color:#1E4080;text-transform:uppercase;letter-spacing:.04em;}
+    .sub{font-size:11px;color:#888;}
+    .date-badge{background:#1E4080;color:#fff;padding:10px 18px;border-radius:8px;text-align:center;flex-shrink:0;}
+    .date-badge-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;opacity:.75;margin-bottom:4px;}
+    .date-badge-value{font-size:15px;font-weight:700;line-height:1.2;}
+    .kpi-row{display:flex;gap:10px;flex-wrap:wrap;}
+    .kpi-box{background:#f8f8f9;border-radius:8px;padding:10px 16px;flex:1;min-width:110px;}
+    .kpi-lbl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
+    .kpi-val{font-size:18px;font-weight:800;color:#1E4080;}
+    table{width:100%;border-collapse:collapse;}
+    thead th{background:#f0f0f2;color:#555;padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;text-align:left;}
+    tfoot td{padding:8px 10px 0;font-size:10px;color:#999;}
+  </style>
+  </head><body>
+  <div class="header">
+    <div>
+      <h1>📑 Report Spese Fornitori</h1>
+      <div class="sub">${monLabel} · stampato il ${new Date().toLocaleString('it-IT')}</div>
+    </div>
+    <div class="date-badge">
+      <div class="date-badge-label">Totale mese</div>
+      <div class="date-badge-value">${ddtFmt(totale)}</div>
+    </div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi-box"><div class="kpi-lbl">DDT ricevuti</div><div class="kpi-val">${monDdt.length}</div></div>
+    <div class="kpi-box"><div class="kpi-lbl">Fornitori</div><div class="kpi-val">${Object.keys(perForn).length}</div></div>
+    ${copertoBox}
+  </div>
+  ${Object.keys(perHotel).length>1?`<h2>Per struttura</h2><div>${hotelRows}</div>`:''}
+  <h2>Per fornitore</h2>
+  <table>
+    <thead><tr><th>Fornitore</th><th>Reparto</th><th style="text-align:center;">DDT</th><th style="text-align:right;">Totale</th><th style="text-align:right;">%</th></tr></thead>
+    <tbody>${fornRows}</tbody>
+  </table>
+  <h2>Elenco DDT</h2>
+  <table>
+    <thead><tr><th>Data</th><th>Fornitore</th><th>N° DDT</th><th>Struttura</th><th style="text-align:center;">Art.</th><th style="text-align:right;">Totale</th></tr></thead>
+    <tbody>${listRows}</tbody>
+    <tfoot><tr><td colspan="6">${monDdt.length} documenti</td></tr></tfoot>
+  </table>
+  </body></html>`;
+
+  const w=window.open('','_blank');
+  if(!w)return;
+  w.document.write(html);
+  w.document.close();
+  w.onload=()=>w.print();
 }
 
 // §§ RECEPTION — CASSA (fondo cassa, incasso contante)

@@ -763,6 +763,23 @@ Comportamento (identico in `ddtShowParsedResult` di `app.js` e `ddtBkfShowParsed
 
 Il campo **Totale € del DDT** in cima alla maschera resta comunque editabile a mano (per allinearlo a un totale con IVA/arrotondamenti diverso dalla somma delle righe): l'ultima modifica manuale a quel campo resta finché non si tocca di nuovo qtà/prezzo di una riga, che lo sovrascrive.
 
+### Report mensile stampabile — `ddtOpenPrintModal()` / `ddtPrintMonthReport(ym)`
+
+Solo su Compass (non su `breakfast.html`). Bottone **"🖨️ Report"** dentro `tabBar` di `ddtRenderSpese()` — a fianco delle due tab, non dentro nessuna delle due, così è visibile sia in "DDT & Fornitori" sia in "Insights Breakfast".
+
+`ddtOpenPrintModal()` apre un modal con un `<select>` dei soli mesi che hanno almeno un DDT caricato (non tutti i 12 mesi dell'anno), più recenti in cima, mese corrente preselezionato quando presente. Se non c'è nessun DDT, un `alert()` lo dice subito invece di aprire un modal vuoto.
+
+`ddtPrintMonthReport(ym)` genera una pagina A4 stampabile (stesso schema di `invPrintStock()`: `window.open('','_blank')` + `document.write` + `w.onload=()=>w.print()`), con:
+- Totale del mese in evidenza, DDT ricevuti, fornitori distinti
+- **Coperti BB ed € /coperto** quando ci sono dati breakfast per quel mese (stessa fonte `qm_bkf_monthly_history`, stesso indicatore già mostrato nella tabella "Spesa e coperti mensili" della tab Analisi — solo la spesa dei fornitori `reparto:'bkf'` entra nel calcolo del €/coperto, coerente con quella tabella)
+- Riepilogo per struttura (solo se sono coinvolte sia SoulArt che Art Resort quel mese)
+- Riepilogo per fornitore: reparto, N° DDT, totale, quota % sul totale del mese
+- Elenco dettagliato di ogni DDT (data, fornitore, N° DDT, struttura, N° articoli, totale)
+
+**Non include la scomposizione per categoria prodotto** (quella di "Spesa per categoria" nella tab Analisi): `CAT_RULES`/`CAT_ICONS_SPESE` sono costanti locali dentro `ddtBuildAnalisi()`, non globali — estrarle per riusarle qui è un refactor a parte, non fatto per non rischiare di far divergere le due copie della classificazione. Se in futuro serve il report per categoria, va prima reso `CAT_RULES` una costante globale.
+
+Verificato con dati sintetici (`osascript`): mese giusto isolato dagli altri, totale/conteggi corretti, coperti aggregati dalla granularità giornaliera, struttura e fornitori distinti nel riepilogo.
+
 ### Trend prezzi — bottone "Verifica DDT" per risalire ai refusi di scansione
 
 Nel pannello "📈 Trend prezzi" (tab Insights Breakfast di Spese Fornitori, `ddtBuildAnalisi()`), un rialzo >5% è quasi sempre un **refuso della scansione AI** (es. `14,75` letto `59,00`) più che un vero aumento del fornitore. Prima non c'era modo di risalire a QUALE DDT avesse generato il prezzo sospetto se non cercandolo a mano nella lista per fornitore/mese.
