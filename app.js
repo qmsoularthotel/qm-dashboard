@@ -7726,23 +7726,27 @@ function invRenderAnalysis(catalog,moves){
     if(best<=0.6)return{label:'sotto media',bg:'var(--green-bg)',fg:'var(--green)'};
     return{label:'in linea',bg:'var(--surface2)',fg:'var(--text-dim)'};
   };
+  // Media/sett e Media/mese SEMPRE visibili in colonna (l'utente le deve vedere senza
+  // dover aprire l'accordion) — solo il consumo REALE di dettaglio (ultimi 7gg/da inizio
+  // mese) resta dietro al tocco, per non tornare a sei colonne colorate.
   const rows=sorted.map((it,i)=>{
     const borderL=it.autonomia!==null&&it.autonomia<=7?'var(--red)':it.autonomia!==null&&it.autonomia<=14?'var(--amber)':'transparent';
     const r=ritmo(it);
     const zebra=i%2===1?'background:var(--bg);':'';
-    const rid='inv-an-'+it.bc;
     const detCell=(lbl,media,reale)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0;">
-      <span style="color:var(--text-dim);">${lbl}</span>
-      <span><span style="color:var(--text-muted);">media ${media>0?media:'—'}</span> · <b style="color:var(--text);">reale ${reale>0?reale:'—'}</b></span>
+      <span style="color:var(--text-dim);">${lbl}, reale</span>
+      <span><b style="color:var(--text);">${reale>0?reale:'—'}</b> <span style="color:var(--text-muted);">(media ${media>0?media:'—'})</span></span>
     </div>`;
     return`<tr onclick="invAnToggle('${it.bc}')" style="${zebra}border-left:3px solid ${borderL};cursor:pointer;">
-      <td style="padding:8px 10px;font-size:var(--fs-xs);font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</td>
+      <td style="padding:8px 10px;font-size:var(--fs-xs);font-weight:600;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</td>
+      <td style="padding:8px 8px;font-size:var(--fs-xs);text-align:right;color:var(--text-muted);white-space:nowrap;">${it.mediaSett>0?it.mediaSett:'—'}</td>
+      <td style="padding:8px 8px;font-size:var(--fs-xs);text-align:right;color:var(--text-muted);white-space:nowrap;">${it.mediaMese>0?it.mediaMese:'—'}</td>
       <td style="padding:8px 10px;font-size:var(--fs-xs);text-align:right;color:var(--text-muted);white-space:nowrap;">${it.qty}${it.unit?' '+_esc(it.unit):''}</td>
       <td style="padding:8px 10px;text-align:right;"><span style="background:${r.bg};color:${r.fg};font-size:var(--fs-xxs);font-weight:700;padding:3px 10px;border-radius:10px;white-space:nowrap;">${r.label}</span></td>
       <td style="padding:8px 10px;text-align:center;color:var(--text-dim);font-size:11px;width:20px;"><span id="inv-an-chev-${it.bc}">▾</span></td>
     </tr>
     <tr id="inv-an-body-${it.bc}" style="display:none;${zebra}border-left:3px solid ${borderL};">
-      <td colspan="4" style="padding:0 10px 10px;font-size:var(--fs-xs);">
+      <td colspan="6" style="padding:0 10px 10px;font-size:var(--fs-xs);">
         ${detCell('Settimana',it.mediaSett,it.cons7gg)}
         ${detCell('Mese',it.mediaMese,it.consMeseCorr)}
       </td>
@@ -7752,6 +7756,8 @@ function invRenderAnalysis(catalog,moves){
     <table style="border-collapse:collapse;width:100%;">
       <thead><tr style="background:var(--bg);">
         <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Prodotto</th>
+        <th style="padding:6px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;" title="Media settimanale, tutto lo storico">Media/sett</th>
+        <th style="padding:6px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;" title="Media mensile, tutto lo storico">Media/mese</th>
         <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;">Stock</th>
         <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;">Ritmo</th>
         <th></th>
@@ -7762,7 +7768,7 @@ function invRenderAnalysis(catalog,moves){
 
   el.innerHTML=periodHtml+kpi+urgBlock+`<div>
     <div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:2px;">📋 Dettaglio prodotti</div>
-    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:7px;">Tocca un prodotto per vedere media storica e consumo reale (ultimi 7gg / da inizio mese) — indipendenti dal periodo selezionato sopra, che riguarda solo i totali e "Da riordinare".</div>
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:7px;">Media = tutto lo storico. Tocca un prodotto per il consumo reale (ultimi 7gg / da inizio mese), indipendente dal periodo selezionato sopra, che riguarda solo i totali e "Da riordinare".</div>
   `+tableHtml+`</div>`;
 }
 function invAnToggle(bc){
