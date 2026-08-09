@@ -978,36 +978,68 @@ function ddtBkfBuildAnalisi(){
   let h='';
 
   // ── Spesa & coperti mensili ──
+  // Stessa logica di app.js/Compass (§§ Spesa e coperti mensili — tenere allineate):
+  // niente più due colonne "VAR%" ambigue, delta sotto il valore con il mese di
+  // confronto esplicito, aggiunta la spesa per coperto (il numero che conta davvero:
+  // spesa e coperti possono muoversi insieme senza cambiare il costo per ospite), e il
+  // mese in corso confrontato a parità di giorni — non contro il mese precedente intero,
+  // che mostrava sempre e comunque un calo enorme indipendentemente dal ritmo reale.
   h+=`<div style="margin-bottom:20px;">
   <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:4px;">☕ Spesa e coperti mensili</div>
-  <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Spesa fornitori e coperti BB per mese.</div>`;
+  <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">Spesa fornitori e coperti BB per mese · sotto ogni valore la variazione rispetto al mese precedente.</div>`;
   if(!mesiTutti.length){h+=`<div style="color:var(--text-dim);font-size:12px;">Nessun dato — carica DDT e report pasti.</div>`;}
   else{
-    const _varPct=(cur,prev)=>{if(!prev||!cur)return null;return(cur-prev)/prev*100;};
-    // invertGood=true → calo è verde (spesa); invertGood=false → aumento è verde (coperti)
-    const _varBadge=(pct,invertGood)=>{if(pct===null)return'<span style="color:var(--text-dim);font-size:10px;">—</span>';const good=invertGood?pct<0:pct>0;const c=good?'#16a34a':'#dc2626';const arr=pct>0?'↑':'↓';return`<span style="color:${c};font-size:11px;font-weight:700;">${arr}${Math.abs(pct).toFixed(1)}%</span>`;};
+    const _varPct=(cur,prev)=>{if(!prev)return null;return(cur-prev)/prev*100;};
+    // invertGood=true → calo è verde (spesa, €/coperto); invertGood=false → aumento è verde (coperti)
+    const _varLine=(pct,prevVal,fmtPrev,invertGood)=>{
+      if(pct===null)return'<div style="font-size:10px;color:var(--text-dim);margin-top:2px;">mese prec. n/d</div>';
+      const good=invertGood?pct<=0:pct>=0;
+      const c=Math.abs(pct)<1?'var(--text-dim)':(good?'var(--green)':'var(--red)');
+      const arr=pct>0.5?'↑':pct<-0.5?'↓':'→';
+      return`<div style="font-size:10px;color:${c};font-weight:700;margin-top:2px;white-space:nowrap;">${arr} ${Math.abs(pct).toFixed(1)}% <span style="color:var(--text-dim);font-weight:400;">vs ${fmtPrev(prevVal)}</span></div>`;
+    };
+    const _spesaPrimiGG=(ym,n)=>all.filter(d=>{if(ddtBkfYM(d.data)!==ym)return false;const dd=parseInt((d.data||'').split('/')[0],10);return dd&&dd<=n;}).reduce((s,d)=>s+(d.totale_ordine||0),0);
+    const _copPrimiGG=(ym,n)=>Object.entries(_bkfHistory).filter(([k])=>k.length===10&&k.startsWith(ym)&&parseInt(k.substring(8,10),10)<=n).reduce((s,[,v])=>s+(v.bb||0),0);
     const _mesi12=mesiTutti.slice(0,13);
     h+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;"><table style="width:100%;border-collapse:collapse;table-layout:fixed;">
     <thead><tr style="background:var(--bg);">
-      <th style="padding:8px 12px;text-align:left;font-size:10px;color:var(--text-dim);font-weight:700;width:28%;">MESE</th>
-      <th style="padding:8px 4px;text-align:center;font-size:10px;color:var(--text-dim);font-weight:700;width:18%;">SPESA</th>
-      <th style="padding:8px 4px;text-align:center;font-size:10px;color:var(--text-dim);font-weight:700;width:14%;">VAR%</th>
-      <th style="padding:8px 4px;text-align:center;font-size:10px;color:var(--text-dim);font-weight:700;width:22%;">COPERTI</th>
-      <th style="padding:8px 4px;text-align:center;font-size:10px;color:var(--text-dim);font-weight:700;width:18%;">VAR%</th>
+      <th style="padding:8px 8px;text-align:left;font-size:10px;color:var(--text-dim);font-weight:700;width:26%;">MESE</th>
+      <th style="padding:8px 4px;text-align:center;font-size:10px;color:var(--text-dim);font-weight:700;width:26%;">SPESA</th>
+      <th style="padding:8px 4px;text-align:center;font-size:10px;color:var(--text-dim);font-weight:700;width:24%;">COPERTI</th>
+      <th style="padding:8px 4px;text-align:center;font-size:10px;color:var(--text-dim);font-weight:700;width:24%;">€/COP.</th>
     </tr></thead><tbody>`;
     _mesi12.slice(0,12).forEach((ym,i)=>{
       const spesa=spesaPerMese[ym]||0,cop=copertiPerMese[ym]?.bb||0,isCur=ym===nowYM;
+      const perCop=cop?spesa/cop:null;
       const ymPrev=_mesi12[i+1];
-      const spesaPrev=ymPrev?(spesaPerMese[ymPrev]||0):null;
-      const copPrev=ymPrev?(copertiPerMese[ymPrev]?.bb||0):null;
-      const vSpesa=_varBadge(spesaPrev!==null?_varPct(spesa,spesaPrev):null,true);
-      const vCop=_varBadge(copPrev!==null?_varPct(cop,copPrev):null,false);
+      let spesaPrev,copPrev,fmtPrevSpesa,fmtPrevCop,ggNote='';
+      if(isCur&&ymPrev){
+        spesaPrev=_spesaPrimiGG(ymPrev,dayOfMon);
+        copPrev=_copPrimiGG(ymPrev,dayOfMon);
+        fmtPrevSpesa=v=>'gg 1-'+dayOfMon+' '+_monLabel(ymPrev).split(' ')[0];
+        fmtPrevCop=fmtPrevSpesa;
+        ggNote=`<div style="font-size:9px;color:var(--text-dim);opacity:.75;">al ${todayD.getDate()}/${todayD.getMonth()+1}</div>`;
+      }else{
+        spesaPrev=ymPrev?(spesaPerMese[ymPrev]||0):null;
+        copPrev=ymPrev?(copertiPerMese[ymPrev]?.bb||0):null;
+        fmtPrevSpesa=v=>_fmt(v)+' '+_monLabel(ymPrev).split(' ')[0];
+        fmtPrevCop=v=>v+' '+_monLabel(ymPrev).split(' ')[0];
+      }
+      const perCopPrev=(spesaPrev&&copPrev)?spesaPrev/copPrev:null;
+      const vSpesa=spesa?_varLine(spesaPrev!==null?_varPct(spesa,spesaPrev):null,spesaPrev,fmtPrevSpesa,true):'';
+      const vCop=cop?_varLine(copPrev!==null?_varPct(cop,copPrev):null,copPrev,fmtPrevCop,false):'';
+      const vPerCop=perCop!==null?_varLine(perCopPrev!==null?_varPct(perCop,perCopPrev):null,perCopPrev,v=>_fmt(v)+' '+_monLabel(ymPrev).split(' ')[0],true):'';
       h+=`<tr style="${i>0?'border-top:1px solid var(--border)':''}${isCur?';background:#e8f0fe':''}">
-        <td style="padding:8px 12px;font-size:12px;font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${_monLabel(ym)}</td>
-        <td style="padding:8px 4px;text-align:center;font-size:12px;font-weight:600;">${spesa?_fmt(spesa):'—'}</td>
-        <td style="padding:8px 4px;text-align:center;">${spesa?vSpesa:'<span style="color:var(--text-dim);font-size:10px;">—</span>'}</td>
-        <td style="padding:8px 4px;text-align:center;font-size:12px;color:var(--text-dim);">${cop||'—'}${isCur&&cop?`<br><span style="font-size:9px;color:var(--text-dim);opacity:.7;">${_todayLabelAn}</span>`:''}  </td>
-        <td style="padding:8px 4px;text-align:center;">${cop?vCop:'<span style="color:var(--text-dim);font-size:10px;">—</span>'}</td>
+        <td style="padding:8px 8px;font-size:12px;font-weight:${isCur?700:400};color:${isCur?'var(--accent)':'var(--text)'};">${_monLabel(ym)}${isCur?'<div style="font-size:9px;color:var(--accent);opacity:.8;">in corso</div>':''}</td>
+        <td style="padding:8px 4px;text-align:center;">
+          <div style="font-size:12px;font-weight:600;">${spesa?_fmt(spesa):'—'}</div>${vSpesa}
+        </td>
+        <td style="padding:8px 4px;text-align:center;">
+          <div style="font-size:12px;color:var(--text);">${cop||'—'}${ggNote}</div>${vCop}
+        </td>
+        <td style="padding:8px 4px;text-align:center;">
+          <div style="font-size:12px;font-weight:700;color:var(--accent);">${perCop!==null?_fmt(perCop):'—'}</div>${vPerCop}
+        </td>
       </tr>`;
     });
     h+=`</tbody></table></div>`;

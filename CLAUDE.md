@@ -713,9 +713,18 @@ let _speseCatOpen = null;      // id categoria espansa (sopravvive al re-render)
 let _speseUncatOpen = false;   // stato pannello "Non classificati"
 ```
 
-### Tabella "Spesa e coperti mensili" — allineata a smartphone
+### Tabella "Spesa e coperti mensili" — variazione mese su mese ridisegnata
 
-La tabella nella dashboard (Compass) aveva solo `MESE | SPESA TOTALE | COPERTI BB`; `breakfast.html` aveva in più le colonne **VAR%** (spesa e coperti, mese su mese) con badge colorato. Allineate: Compass ora mostra le stesse 5 colonne (`MESE | SPESA | VAR% | COPERTI | VAR%`), stile CSS-token invece dei colori hardcoded dello smartphone.
+La tabella nella dashboard (Compass) aveva solo `MESE | SPESA TOTALE | COPERTI BB`; `breakfast.html` aveva in più le colonne **VAR%** (spesa e coperti, mese su mese) con badge colorato. Prima allineate mostrando le stesse 5 colonne su entrambi (`MESE | SPESA | VAR% | COPERTI | VAR%`).
+
+**Poi giudicata "troppo difficile" e ridisegnata** (stessa logica su Compass e `breakfast.html`, tenerle allineate se si tocca una delle due):
+
+- **Due colonne "VAR%" identiche erano ambigue** — non si capiva a colpo d'occhio quale percentuale appartenesse a spesa e quale a coperti. Ora il delta sta **sotto il valore a cui si riferisce** (niente colonne separate), con il mese e il valore di confronto scritti per esteso (`↑ 10.0% vs € 3.000,00 Giu`) invece di una percentuale nuda.
+- **Il mese in corso confrontava i primi N giorni contro il mese precedente INTERO** — mostrava quindi sempre e comunque un calo enorme, indipendentemente dal ritmo reale (es. 9 giorni di agosto contro tutto luglio). Corretto con un confronto **a parità di giorni**: primi N giorni del mese in corso contro i primi N giorni del mese precedente (`_spesaPrimiGG`/`_copPrimiGG` in `app.js`, filtrano DDT per giorno e `bkfHist`/`_bkfHistory` — quest'ultimo ha granularità giornaliera per data `YYYY-MM-DD` — allo stesso modo). Le righe dei mesi passati (mese pieno) restano confrontate a mese pieno, invariato.
+- **Aggiunta la colonna € / COPERTO** (spesa ÷ coperti): è il numero che dice se il costo per ospite sta davvero salendo. Prima spesa e coperti potevano mostrare due frecce diverse senza dire nulla sull'efficienza reale — es. spesa +10% e coperti +10% nello stesso mese sembrano due segnali contrastanti da leggere separatamente, ma il costo per coperto è **invariato**: è esattamente questo che la colonna nuova rende immediato da vedere, cosa impossibile prima.
+- Il mese senza precedente da confrontare mostra `mese prec. n/d` invece di un trattino muto.
+
+Verificato con dati sintetici (`osascript`): confronto a parità di giorni corretto, colonna €/coperto stabile quando spesa e coperti si muovono in proporzione, riga di mese pieno confrontata a mese pieno.
 
 ### Modifica di un DDT già inserito — su Compass e su `breakfast.html`
 
