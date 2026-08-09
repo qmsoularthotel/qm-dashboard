@@ -9301,7 +9301,10 @@ function ddtBuildAnalisi(){
       if(!a.descrizione||a.prezzo_unit==null)return;
       const k=forn+'||'+a.descrizione.toLowerCase().trim().replace(/\s+/g,' ');
       if(!priceMap[k])priceMap[k]={desc:a.descrizione,forn,entries:[]};
-      priceMap[k].entries.push({data:ddt.data,ts:_parseD(ddt.data),prezzo:Number(a.prezzo_unit),unita:a.unita||''});
+      // ddtId/numeroDdt servono a risalire in un clic al documento che ha generato il
+      // prezzo, spesso un refuso di scansione (es. 14,75 letto come 59,00) più che un
+      // rialzo reale — vedi bottone "Verifica DDT" più sotto.
+      priceMap[k].entries.push({data:ddt.data,ts:_parseD(ddt.data),prezzo:Number(a.prezzo_unit),unita:a.unita||'',ddtId:ddt.id,numeroDdt:ddt.numero_ddt||''});
     });
   });
   const trendItems=Object.values(priceMap).filter(p=>p.entries.length>=2).map(p=>{
@@ -9723,13 +9726,20 @@ function ddtBuildAnalisi(){
   }else{
     if(alerts.length){
       alerts.forEach(p=>{
-        h+=`<div style="background:#fef2f2;border-left:3px solid var(--red);border-radius:8px;padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;">
-          <div><div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${p.desc}</div>
+        // Il rialzo è quasi sempre un refuso di scansione (es. 14,75 letto 59,00) più che
+        // un aumento reale del fornitore: il bottone porta dritto al DDT con il prezzo più
+        // alto (p.latest, quello che genera l'alert) invece di dover cercarlo a mano nella
+        // lista DDT per fornitore/mese.
+        const ddtRef=p.latest.numeroDdt?`DDT ${p.latest.numeroDdt}`:'DDT '+p.latest.data;
+        h+=`<div style="background:#fef2f2;border-left:3px solid var(--red);border-radius:8px;padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${p.desc}</div>
           <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${p.forn} · ${p.prev.data} → ${p.latest.data}</div></div>
-          <div style="text-align:right;flex-shrink:0;margin-left:12px;">
+          <div style="text-align:right;flex-shrink:0;">
             <div style="font-size:var(--fs-sm);font-weight:800;color:var(--red);">↑ ${p.varPct.toFixed(1)}%</div>
             <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${_fmt(p.prev.prezzo)} → <b>${_fmt(p.latest.prezzo)}</b></div>
-          </div></div>`;
+          </div>
+          ${p.latest.ddtId?`<button onclick="ddtOpenEditModal('${p.latest.ddtId}')" title="Apre il ${ddtRef} per controllare/correggere il prezzo scansionato" style="font-size:var(--fs-xxs);font-weight:700;padding:5px 10px;border-radius:7px;background:#fff;border:1px solid var(--red);color:var(--red);cursor:pointer;white-space:nowrap;flex-shrink:0;">🔍 Verifica ${ddtRef}</button>`:''}
+          </div>`;
       });
     }
     h+=`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;overflow:hidden;margin-top:${alerts.length?8:0}px;">
@@ -9740,17 +9750,23 @@ function ddtBuildAnalisi(){
       <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">ATTUALE</th>
       <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">VAR%</th>
       <th style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;">MIN–MAX</th>
+      <th style="padding:7px 10px;text-align:center;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;"></th>
     </tr></thead><tbody>`;
     trendItems.slice(0,25).forEach((p,i)=>{
       const vc=p.varPct>5?'var(--red)':p.varPct<-5?'var(--green)':'var(--text-dim)';
       const arr=p.varPct>0.5?'↑':p.varPct<-0.5?'↓':'→';
       const c=_conf(p.forn);
+      // Il valore MAX potrebbe essere il prezzo reale più alto pagato, oppure un refuso di
+      // scansione: il bottone porta dritto al DDT che l'ha generato per verificarlo.
+      const maxEntry=p.sorted.find(e=>e.prezzo===p.max);
+      const maxRef=maxEntry?.ddtId?`<button onclick="ddtOpenEditModal('${maxEntry.ddtId}')" title="Apre il DDT del ${_fmt(p.max)} (${maxEntry.numeroDdt?'DDT '+maxEntry.numeroDdt+', ':''}${maxEntry.data}) per verificarlo" style="font-size:11px;padding:2px 6px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;">🔍</button>`:'';
       h+=`<tr style="${i>0?'border-top:1px solid var(--border-light)':''}">
         <td style="padding:7px 12px;font-size:var(--fs-xs);color:var(--text);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${p.desc}">${p.desc}</td>
         <td style="padding:7px 12px;"><span style="background:${c.color};color:${c.fg};padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;">${p.forn}</span></td>
         <td style="padding:7px 10px;text-align:right;font-size:var(--fs-xs);font-weight:700;">${_fmt(p.latest.prezzo)}</td>
         <td style="padding:7px 10px;text-align:right;font-size:var(--fs-xs);font-weight:700;color:${vc};">${arr} ${Math.abs(p.varPct).toFixed(1)}%</td>
         <td style="padding:7px 10px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;">${_fmt(p.min)}–${_fmt(p.max)}</td>
+        <td style="padding:7px 10px;text-align:center;">${maxRef}</td>
       </tr>`;
     });
     h+=`</tbody></table></div>`;

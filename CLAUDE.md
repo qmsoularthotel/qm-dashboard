@@ -747,6 +747,17 @@ Comportamento (identico in `ddtShowParsedResult` di `app.js` e `ddtBkfShowParsed
 
 Il campo **Totale € del DDT** in cima alla maschera resta comunque editabile a mano (per allinearlo a un totale con IVA/arrotondamenti diverso dalla somma delle righe): l'ultima modifica manuale a quel campo resta finché non si tocca di nuovo qtà/prezzo di una riga, che lo sovrascrive.
 
+### Trend prezzi — bottone "Verifica DDT" per risalire ai refusi di scansione
+
+Nel pannello "📈 Trend prezzi" (tab Insights Breakfast di Spese Fornitori, `ddtBuildAnalisi()`), un rialzo >5% è quasi sempre un **refuso della scansione AI** (es. `14,75` letto `59,00`) più che un vero aumento del fornitore. Prima non c'era modo di risalire a QUALE DDT avesse generato il prezzo sospetto se non cercandolo a mano nella lista per fornitore/mese.
+
+`priceMap` ora porta `ddtId`/`numeroDdt` su ogni entry di prezzo (non solo `data`/`prezzo`/`unita`), presi da `ddt.id`/`ddt.numero_ddt` al momento della costruzione. Due punti di accesso diretto, entrambi via `ddtOpenEditModal(id)` (stessa funzione della modifica DDT, vedi sopra):
+
+- **Card alert** (`alerts`, rialzo >5%): bottone rosso "🔍 Verifica DDT NNN" che apre il **`p.latest`** — quello con il prezzo più alto tra i due confrontati, che ha generato l'alert.
+- **Riga della tabella storico** (`trendItems`): icona 🔍 nell'ultima colonna che apre il DDT dell'entry con `prezzo===p.max` (`p.sorted.find(...)`, non necessariamente l'ultimo cronologicamente — il massimo storico può essere un DDT più vecchio).
+
+Aprire il DDT da qui usa la stessa maschera di modifica di Compass: si corregge il prezzo lì, si salva, e `ddtConfirmSave()` richiama `ddtRenderSpese()` che ridisegna subito il pannello Trend prezzi con il valore corretto — nessun passaggio aggiuntivo per tornare alla lista DDT.
+
 ---
 
 ## Operativa HKP (ex "Operativa Housekeeping")
