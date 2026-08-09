@@ -952,18 +952,6 @@ function ddtBkfBuildAnalisi(){
   });
   const topSpend=Object.values(topProdSpend).filter(p=>p.total>0).sort((a,b)=>b.total-a.total).slice(0,10);
 
-  // Variazioni M vs M-1
-  const variazioni=[];
-  for(let i=0;i<Math.min(mesiTutti.length-1,6);i++){
-    const mNow=mesiTutti[i],mPrev=mesiTutti[i+1];
-    const spNow=spesaPerMese[mNow]||0,spPrev=spesaPerMese[mPrev]||0;
-    if(!spPrev)continue;
-    const copNow=copertiPerMese[mNow]?.bb||0,copPrev=copertiPerMese[mPrev]?.bb||0;
-    const deltaSpesa=spNow-spPrev,deltaCop=copNow-copPrev;
-    const spxCop=copPrev>0?spPrev/copPrev:0;
-    variazioni.push({mNow,mPrev,spNow,spPrev,deltaSpesa,deltaCop,copNow,copPrev,impattoCop:spxCop*deltaCop,impattoAltro:deltaSpesa-(spxCop*deltaCop)});
-  }
-
   // Alert preventivo
   const todayD=new Date();
   const nowYM=todayD.getFullYear()+'-'+String(todayD.getMonth()+1).padStart(2,'0');
@@ -976,6 +964,29 @@ function ddtBkfBuildAnalisi(){
   const spesaPrevMon=spesaPerMese[prevYM]||0;
 
   let h='';
+
+  // ── Alert preventivo (prima di "Spesa e coperti mensili": vedi app.js/Compass) ──
+  if(spesaCurr>0&&dayOfMon<daysInMon){
+    const projDelta=projected-spesaPrevMon,isOver=projDelta>0;
+    const projDeltaPct=spesaPrevMon?projDelta/spesaPrevMon*100:0;
+    const big=Math.abs(projDeltaPct)>10;
+    const alertColor=big?(isOver?'#fef2f2':'#f0fdf4'):'#fffbeb';
+    const alertBorder=big?(isOver?'#dc2626':'#16a34a'):'#d97706';
+    const alertFg=big?(isOver?'#dc2626':'#16a34a'):'#92400e';
+    h+=`<div style="margin-bottom:20px;">
+    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:8px;">🔔 Proiezione mese corrente</div>
+    <div style="background:${alertColor};border:1px solid ${alertBorder};border-radius:10px;padding:14px 16px;">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div><div style="font-size:10px;color:var(--text-dim);margin-bottom:2px;">Spesa al ${dayOfMon}/${String(todayD.getMonth()+1).padStart(2,'0')}</div>
+        <div style="font-size:20px;font-weight:800;">${_fmt(spesaCurr)}</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:3px;">${curMonDdts.length} DDT · ${daysInMon-dayOfMon} giorni rimanenti</div></div>
+        <div style="text-align:right;"><div style="font-size:10px;color:var(--text-dim);margin-bottom:2px;">Proiezione fine mese</div>
+        <div style="font-size:20px;font-weight:800;">${_fmt(projected)}</div>
+        ${spesaPrevMon?`<div style="font-size:12px;font-weight:700;color:${alertFg};margin-top:3px;">${isOver?'↑':'↓'} ${Math.abs(projDeltaPct).toFixed(1)}% vs ${_monLabel(prevYM)}</div>`:''}
+        </div>
+      </div>
+    </div></div>`;
+  }
 
   // ── Spesa & coperti mensili ──
   // Stessa logica di app.js/Compass (§§ Spesa e coperti mensili — tenere allineate):
@@ -1045,29 +1056,6 @@ function ddtBkfBuildAnalisi(){
     h+=`</tbody></table></div>`;
   }
   h+=`</div>`;
-
-  // ── Alert preventivo ──
-  if(spesaCurr>0&&dayOfMon<daysInMon){
-    const projDelta=projected-spesaPrevMon,isOver=projDelta>0;
-    const projDeltaPct=spesaPrevMon?projDelta/spesaPrevMon*100:0;
-    const big=Math.abs(projDeltaPct)>10;
-    const alertColor=big?(isOver?'#fef2f2':'#f0fdf4'):'#fffbeb';
-    const alertBorder=big?(isOver?'#dc2626':'#16a34a'):'#d97706';
-    const alertFg=big?(isOver?'#dc2626':'#16a34a'):'#92400e';
-    h+=`<div style="margin-bottom:20px;">
-    <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:8px;">🔔 Proiezione mese corrente</div>
-    <div style="background:${alertColor};border:1px solid ${alertBorder};border-radius:10px;padding:14px 16px;">
-      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-        <div><div style="font-size:10px;color:var(--text-dim);margin-bottom:2px;">Spesa al ${dayOfMon}/${String(todayD.getMonth()+1).padStart(2,'0')}</div>
-        <div style="font-size:20px;font-weight:800;">${_fmt(spesaCurr)}</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:3px;">${curMonDdts.length} DDT · ${daysInMon-dayOfMon} giorni rimanenti</div></div>
-        <div style="text-align:right;"><div style="font-size:10px;color:var(--text-dim);margin-bottom:2px;">Proiezione fine mese</div>
-        <div style="font-size:20px;font-weight:800;">${_fmt(projected)}</div>
-        ${spesaPrevMon?`<div style="font-size:12px;font-weight:700;color:${alertFg};margin-top:3px;">${isOver?'↑':'↓'} ${Math.abs(projDeltaPct).toFixed(1)}% vs ${_monLabel(prevYM)}</div>`:''}
-        </div>
-      </div>
-    </div></div>`;
-  }
 
   // ── Categorie ──
   {

@@ -726,6 +726,13 @@ La tabella nella dashboard (Compass) aveva solo `MESE | SPESA TOTALE | COPERTI B
 
 Verificato con dati sintetici (`osascript`): confronto a parità di giorni corretto, colonna €/coperto stabile quando spesa e coperti si muovono in proporzione, riga di mese pieno confrontata a mese pieno.
 
+### Ordine sezioni tab Analisi — Proiezione prima di Spesa e coperti; rimossa "Variazione mese su mese"
+
+Due modifiche successive (stessa logica su Compass e `breakfast.html`):
+
+- **🔔 Proiezione mese corrente** (l'alert con spesa-a-oggi vs proiezione fine mese) ora è la **prima** sezione della tab Analisi, prima di "☕ Spesa e coperti mensili": è l'informazione più immediatamente azionabile (dove sta andando la spesa *questo* mese), la tabella sotto è lo storico di dettaglio.
+- **Eliminato interamente il pannello "📊 Variazione mese su mese"** (su Compass; su `breakfast.html` la stessa logica esisteva già come variabile `variazioni` calcolata ma mai renderizzata — codice morto, rimosso anche quello). Scomponeva la variazione di spesa in "impatto coperti" vs "prezzi & volumi" — giudicato di troppo dettaglio/difficile da leggere insieme alla tabella sopra, che con la colonna €/coperto copre già la stessa domanda in modo più diretto. Non toccare per errore il testo `_varLine`/i delta della tabella "Spesa e coperti mensili" (sezione precedente) pensando che sia lo stesso pannello: sono due cose diverse, uno resta e uno è stato tolto.
+
 ### Modifica di un DDT già inserito — su Compass e su `breakfast.html`
 
 Prima si poteva modificare un DDT già salvato **solo** su `breakfast.html` (`ddtBkfOpenEditModal`). Su Compass c'era solo "🗑 Elimina DDT" nella riga di dettaglio della lista (`ddtRenderList`), niente modifica: per correggere un prezzo bisognava cancellare e ricaricare da capo.

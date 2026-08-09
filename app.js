@@ -9470,20 +9470,6 @@ function ddtBuildAnalisi(){
   });
   const catGrandTotal=Object.values(catTotals).reduce((s,v)=>s+v,0);
 
-  // ── Variazioni mensili (confronto M vs M-1) ──
-  const variazioni=[];
-  for(let i=0;i<Math.min(mesiComuni.length-1,6);i++){
-    const mNow=mesiComuni[i],mPrev=mesiComuni[i+1];
-    const spNow=spesaBkfPerMese[mNow]||0,spPrev=spesaBkfPerMese[mPrev]||0;
-    const copNow=copertiPerMese[mNow]?.bb||0,copPrev=copertiPerMese[mPrev]?.bb||0;
-    if(!spPrev)continue;
-    const deltaSpesa=spNow-spPrev,deltaCop=copNow-copPrev;
-    const spxCop=copPrev>0?spPrev/copPrev:0;
-    const impattoCop=spxCop*deltaCop;
-    const impattoAltro=deltaSpesa-impattoCop;
-    variazioni.push({mNow,mPrev,spNow,spPrev,deltaSpesa,deltaCop,copNow,copPrev,impattoCop,impattoAltro});
-  }
-
   // ── Alert preventivo (mese corrente in corso) ──
   const todayD=new Date();
   const nowYM=todayD.getFullYear()+'-'+String(todayD.getMonth()+1).padStart(2,'0');
@@ -9497,6 +9483,38 @@ function ddtBuildAnalisi(){
   const spesaPrevMon=spesaBkfPerMese[prevYM]||0;
 
   let h='';
+
+  // ── SEZIONE 4: alert preventivo (prima di "Spesa e coperti mensili": è l'informazione
+  // più immediatamente azionabile — dove sta andando la spesa questo mese — mentre la
+  // tabella sotto è lo storico di dettaglio) ──
+  if(spesaCurr>0&&dayOfMon<daysInMon){
+    const projDelta=projected-spesaPrevMon;
+    const projDeltaPct=spesaPrevMon?projDelta/spesaPrevMon*100:0;
+    const isOver=projDelta>0;
+    const alertColor=Math.abs(projDeltaPct)>10?(isOver?'#fef2f2':'#f0fdf4'):'#fffbeb';
+    const alertBorder=Math.abs(projDeltaPct)>10?(isOver?'var(--red)':'var(--green)'):'var(--amber)';
+    const alertFg=Math.abs(projDeltaPct)>10?(isOver?'var(--red)':'var(--green)'):'#92400e';
+    const arrow=isOver?'↑':'↓';
+    h+=`<div style="margin-bottom:22px;">
+    <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);margin-bottom:8px;">🔔 Proiezione mese corrente</div>
+    <div style="background:${alertColor};border:1px solid ${alertBorder};border-radius:10px;padding:14px 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:2px;">Spesa al ${dayOfMon}/${String(todayD.getMonth()+1).padStart(2,'0')}</div>
+          <div style="font-size:var(--fs-md);font-weight:800;color:var(--text);">${_fmt(spesaCurr)}</div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">su ${curMonDdts.length} DDT caricati (${daysInMon-dayOfMon} giorni rimanenti)</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:2px;">Proiezione a fine mese</div>
+          <div style="font-size:var(--fs-md);font-weight:800;color:var(--text);">${_fmt(projected)}</div>
+          ${spesaPrevMon?`<div style="font-size:var(--fs-xs);font-weight:700;color:${alertFg};margin-top:4px;">${arrow} ${Math.abs(projDeltaPct).toFixed(1)}% vs ${_monLabel(prevYM)} (${_fmt(spesaPrevMon)})</div>`:''}
+        </div>
+      </div>
+      ${spesaPrevMon&&Math.abs(projDeltaPct)>10?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid ${alertBorder};opacity:0.9;font-size:var(--fs-xxs);color:var(--text);">
+        <b>Attenzione:</b> al ritmo attuale si prevede una spesa ${isOver?'superiore':'inferiore'} del ${Math.abs(projDeltaPct).toFixed(0)}% rispetto al mese scorso.
+      </div>`:''}
+    </div></div>`;
+  }
 
   // ── SEZIONE 0: Spesa e coperti mensili ──
   // Prima: due colonne "VAR%" identiche (una per spesa, una per coperti) senza dire a cosa
@@ -9578,76 +9596,6 @@ function ddtBuildAnalisi(){
     h+=`</tbody></table></div>`;
   }
   h+=`</div>`;
-
-  // ── SEZIONE 4: alert preventivo ──
-  if(spesaCurr>0&&dayOfMon<daysInMon){
-    const projDelta=projected-spesaPrevMon;
-    const projDeltaPct=spesaPrevMon?projDelta/spesaPrevMon*100:0;
-    const isOver=projDelta>0;
-    const alertColor=Math.abs(projDeltaPct)>10?(isOver?'#fef2f2':'#f0fdf4'):'#fffbeb';
-    const alertBorder=Math.abs(projDeltaPct)>10?(isOver?'var(--red)':'var(--green)'):'var(--amber)';
-    const alertFg=Math.abs(projDeltaPct)>10?(isOver?'var(--red)':'var(--green)'):'#92400e';
-    const arrow=isOver?'↑':'↓';
-    h+=`<div style="margin-bottom:22px;">
-    <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);margin-bottom:8px;">🔔 Proiezione mese corrente</div>
-    <div style="background:${alertColor};border:1px solid ${alertBorder};border-radius:10px;padding:14px 16px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-        <div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:2px;">Spesa al ${dayOfMon}/${String(todayD.getMonth()+1).padStart(2,'0')}</div>
-          <div style="font-size:var(--fs-md);font-weight:800;color:var(--text);">${_fmt(spesaCurr)}</div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">su ${curMonDdts.length} DDT caricati (${daysInMon-dayOfMon} giorni rimanenti)</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:2px;">Proiezione a fine mese</div>
-          <div style="font-size:var(--fs-md);font-weight:800;color:var(--text);">${_fmt(projected)}</div>
-          ${spesaPrevMon?`<div style="font-size:var(--fs-xs);font-weight:700;color:${alertFg};margin-top:4px;">${arrow} ${Math.abs(projDeltaPct).toFixed(1)}% vs ${_monLabel(prevYM)} (${_fmt(spesaPrevMon)})</div>`:''}
-        </div>
-      </div>
-      ${spesaPrevMon&&Math.abs(projDeltaPct)>10?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid ${alertBorder};opacity:0.9;font-size:var(--fs-xxs);color:var(--text);">
-        <b>Attenzione:</b> al ritmo attuale si prevede una spesa ${isOver?'superiore':'inferiore'} del ${Math.abs(projDeltaPct).toFixed(0)}% rispetto al mese scorso.
-      </div>`:''}
-    </div></div>`;
-  }
-
-  // ── SEZIONE 2: variazione mensile scomposta ──
-  if(variazioni.length){
-    h+=`<div style="margin-bottom:22px;">
-    <div style="font-size:var(--fs-sm);font-weight:800;color:var(--text);margin-bottom:4px;">📊 Variazione mese su mese</div>
-    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:10px;">Quanto della variazione dipende dai coperti e quanto da prezzi/volumi.</div>
-    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">`;
-    variazioni.forEach((v,i)=>{
-      const isPos=v.deltaSpesa>=0;
-      const dc=isPos?'var(--red)':'var(--green)';
-      const dPct=v.spPrev?v.deltaSpesa/v.spPrev*100:0;
-      const copSign=v.deltaCop>=0?'+':'';
-      const impCopSign=v.impattoCop>=0?'+':'';
-      const impAltSign=v.impattoAltro>=0?'+':'';
-      const copColor=v.deltaCop>=0?'var(--text-dim)':'var(--green)';
-      const altColor=v.impattoAltro>50?'var(--red)':v.impattoAltro<-50?'var(--green)':'var(--text-dim)';
-      h+=`<div style="padding:10px 14px;${i>0?'border-top:1px solid var(--border-light)':''}">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${_monLabel(v.mNow)}</span>
-          <span style="font-size:var(--fs-xs);font-weight:800;color:${dc};">${isPos?'+':''}${_fmt(v.deltaSpesa)} (${isPos?'+':''}${dPct.toFixed(1)}%)</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-          ${v.copPrev>0?`<div style="background:var(--bg);border-radius:6px;padding:6px 10px;">
-            <div style="font-size:9px;color:var(--text-dim);font-weight:700;margin-bottom:2px;">IMPATTO COPERTI</div>
-            <div style="font-size:var(--fs-xs);font-weight:700;color:${copColor};">${impCopSign}${_fmt(v.impattoCop)}</div>
-            <div style="font-size:9px;color:var(--text-dim);">${copSign}${v.deltaCop} coperti BB</div>
-          </div>`:`<div style="background:var(--bg);border-radius:6px;padding:6px 10px;">
-            <div style="font-size:9px;color:var(--text-dim);font-weight:700;margin-bottom:2px;">IMPATTO COPERTI</div>
-            <div style="font-size:var(--fs-xxs);color:var(--text-dim);">Dati coperti non disponibili</div>
-          </div>`}
-          <div style="background:var(--bg);border-radius:6px;padding:6px 10px;">
-            <div style="font-size:9px;color:var(--text-dim);font-weight:700;margin-bottom:2px;">PREZZI & VOLUMI</div>
-            <div style="font-size:var(--fs-xs);font-weight:700;color:${altColor};">${impAltSign}${_fmt(v.impattoAltro)}</div>
-            <div style="font-size:9px;color:var(--text-dim);">${_monLabel(v.mPrev)} → ${_monLabel(v.mNow)}</div>
-          </div>
-        </div>
-      </div>`;
-    });
-    h+=`</div></div>`;
-  }
 
   // ── SEZIONE 3: categorie prodotto (stesse icone, stile e navigazione mese di breakfast.html) ──
   {
