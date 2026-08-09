@@ -7639,7 +7639,14 @@ function invRenderAnalysis(catalog,moves){
     const mediaDays=Math.max(14,storicoDays);
     const mediaSett=allOuts>0?Math.round((allOuts/mediaDays)*7*10)/10:0;
     const mediaMese=allOuts>0?Math.round((allOuts/mediaDays)*30*10)/10:0;
-    return{bc,name:p.name,unit:p.unit||'',qty:stock[bc]??0,consumo,rifornimento,consumoSett,mediaSett,mediaMese,autonomia,hasMoves:bm.length>0};
+    // Consumo REALE (non media) negli ultimi 7gg e nel mese in corso a oggi — a fianco
+    // delle medie storiche, per vedere se il ritmo recente si scosta da quello abituale.
+    // Fissi, indipendenti dal filtro periodo sopra: "ultimi 7gg" è sempre gli ultimi 7gg
+    // da adesso, non il consumo del periodo selezionato con quei bottoni.
+    const cons7gg=bm.filter(m=>m.type==='out'&&m.ts>=now-7*86400000).reduce((s,m)=>s+m.qty,0);
+    const meseStart=new Date();meseStart.setDate(1);meseStart.setHours(0,0,0,0);
+    const consMeseCorr=bm.filter(m=>m.type==='out'&&m.ts>=meseStart.getTime()).reduce((s,m)=>s+m.qty,0);
+    return{bc,name:p.name,unit:p.unit||'',qty:stock[bc]??0,consumo,rifornimento,consumoSett,mediaSett,mediaMese,cons7gg,consMeseCorr,autonomia,hasMoves:bm.length>0};
   }).filter(it=>it.hasMoves);
 
   if(!items.length){
@@ -7701,36 +7708,55 @@ function invRenderAnalysis(catalog,moves){
 
   // Tabella dettaglio — ordinata per consumo medio settimanale decrescente: i prodotti
   // che si consumano di più stanno in cima, non sparsi in mezzo all'ordine alfabetico.
+  // Sei colonne (media + reale per settimana e mese, più stock): una griglia div non ci
+  // stava più leggibile, passata a <table> con intestazioni raggruppate SETTIMANA/MESE
+  // così si capisce subito quali due colonne vanno confrontate tra loro.
   const sorted=[...items].sort((a,b)=>b.mediaSett-a.mediaSett||a.name.localeCompare(b.name,'it'));
-  // Colonne più larghe delle etichette (~64px) mandavano "MEDIA/SETT"/"MEDIA/MESE" in
-  // overflow l'una sull'altra invece di andare a capo — niente wrap perché le celle non
-  // avevano min-width:0. Etichette accorciate ("Sett"/"Mese", il titolo sopra la tabella
-  // dice già "Media") e colonne allargate così restano leggibili anche su schermi stretti.
-  const GRID='1fr 58px 58px 56px';
-  const thStyle='min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-  const hdrs=`<div style="display:grid;grid-template-columns:${GRID};gap:6px;padding:4px 10px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-top:4px;">
-    <div style="${thStyle}">Prodotto</div>
-    <div style="${thStyle}" title="Media settimanale">Sett</div>
-    <div style="${thStyle}" title="Media mensile">Mese</div>
-    <div style="${thStyle}">Stock</div>
-  </div>`;
-  const rows=sorted.map(it=>{
+  const thS='padding:5px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;white-space:nowrap;';
+  const tdS='padding:6px 8px;font-size:var(--fs-xs);text-align:right;white-space:nowrap;';
+  const rows=sorted.map((it,i)=>{
     const borderL=it.autonomia!==null&&it.autonomia<=7?'var(--red)':it.autonomia!==null&&it.autonomia<=14?'var(--amber)':'transparent';
-    const unit=it.unit?` <span style="font-size:9px;color:var(--text-dim);">${_esc(it.unit)}</span>`:'';
-    return`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderL};border-radius:8px;padding:8px 10px;margin-bottom:5px;">
-      <div style="display:grid;grid-template-columns:${GRID};gap:6px;align-items:center;">
-        <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
-        <div style="font-size:var(--fs-xs);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.mediaSett>0?`${it.mediaSett}${unit}`:'—'}</div>
-        <div style="font-size:var(--fs-xs);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.mediaMese>0?`${it.mediaMese}${unit}`:'—'}</div>
-        <div style="font-size:var(--fs-xs);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.qty}${unit}</div>
-      </div>
-    </div>`;
+    // Il consumo reale che si scosta molto dalla media è il segnale utile: evidenziato,
+    // non solo elencato accanto — altrimenti bisogna fare il confronto a mente riga per riga.
+    const scarto=(reale,media)=>{
+      if(!(media>0))return'var(--text)';
+      const r=reale/media;
+      return r>=1.3?'var(--red)':r<=0.6?'var(--green)':'var(--text)';
+    };
+    const zebra=i%2===1?'background:var(--bg);':'';
+    return`<tr style="${zebra}border-left:3px solid ${borderL};">
+      <td style="padding:6px 10px;font-size:var(--fs-xs);font-weight:600;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</td>
+      <td style="${tdS}color:var(--text-muted);">${it.mediaSett>0?it.mediaSett:'—'}</td>
+      <td style="${tdS}font-weight:700;color:${scarto(it.cons7gg,it.mediaSett)};">${it.cons7gg>0?it.cons7gg:'—'}</td>
+      <td style="${tdS}color:var(--text-muted);">${it.mediaMese>0?it.mediaMese:'—'}</td>
+      <td style="${tdS}font-weight:700;color:${scarto(it.consMeseCorr,it.mediaMese)};">${it.consMeseCorr>0?it.consMeseCorr:'—'}</td>
+      <td style="${tdS}color:var(--text-muted);">${it.qty}${it.unit?' '+_esc(it.unit):''}</td>
+    </tr>`;
   }).join('');
+  const tableHtml=`<div style="overflow-x:auto;background:var(--surface);border:1px solid var(--border-light);border-radius:10px;">
+    <table style="border-collapse:collapse;width:100%;">
+      <thead>
+        <tr style="background:var(--bg);">
+          <th rowspan="2" style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;vertical-align:bottom;">Prodotto</th>
+          <th colspan="2" style="padding:5px 8px 2px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border-light);">Settimana</th>
+          <th colspan="2" style="padding:5px 8px 2px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border-light);">Mese</th>
+          <th rowspan="2" style="padding:6px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;vertical-align:bottom;">Stock</th>
+        </tr>
+        <tr style="background:var(--bg);">
+          <th style="${thS}" title="Media settimanale su tutto lo storico">Media</th>
+          <th style="${thS}" title="Consumo reale negli ultimi 7 giorni">Ultimi 7gg</th>
+          <th style="${thS}" title="Media mensile su tutto lo storico">Media</th>
+          <th style="${thS}" title="Consumo reale dal 1° del mese a oggi">Da inizio mese</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
 
-  el.innerHTML=periodHtml+kpi+urgBlock+`<div style="max-width:460px;">
+  el.innerHTML=periodHtml+kpi+urgBlock+`<div>
     <div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:2px;">📋 Dettaglio prodotti</div>
-    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:7px;">Media su tutto lo storico — non cambia col periodo selezionato sopra, quello riguarda solo i totali e "Da riordinare".</div>
-  `+hdrs+rows+`</div>`;
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:7px;">Media = tutto lo storico, sempre uguale. Ultimi 7gg/Da inizio mese = consumo reale, indipendenti dal periodo selezionato sopra (quello riguarda solo i totali e "Da riordinare"). In rosso dove il ritmo reale supera di molto la media, in verde dove è molto sotto.</div>
+  `+tableHtml+`</div>`;
 }
 function invPrintStock(){
   const{catalog,moves}=invGetData();

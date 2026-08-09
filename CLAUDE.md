@@ -662,6 +662,30 @@ Il filtro periodo (7/30/90/Tutto) in cima continua a controllare solo i KPI "Tot
 
 La tabella è anche stata **riordinata per consumo medio settimanale decrescente** (`sorted.sort((a,b)=>b.mediaSett-a.mediaSett)`), non più alfabetico: i prodotti che si consumano di più sono in cima.
 
+**Poi estesa a 6 colonne**: media e consumo reale affiancati, sia per settimana che per mese, così si vede subito se il ritmo recente si scosta da quello abituale invece di dover leggere solo un numero medio:
+
+| Colonna | Calcolo | Fisso o legato al filtro periodo? |
+|---------|---------|-----------------------------------|
+| Media (settimana) | `mediaSett`, tutto lo storico | Fisso |
+| Ultimi 7gg | Somma scarichi con `ts>=now-7*86400000` | Fisso — sempre gli ultimi 7 giorni reali da adesso, **non** il consumo del periodo selezionato con i bottoni 7/30/90 sopra |
+| Media (mese) | `mediaMese`, tutto lo storico | Fisso |
+| Da inizio mese | Somma scarichi dal giorno 1 del mese corrente (`00:00`) a oggi | Fisso — mese solare a oggi (mese-to-date), non un rolling 30 giorni |
+| Stock | `invCalcStock` | — |
+
+La tabella è passata da griglia di `<div>` a una vera `<table>` con intestazioni raggruppate su due righe (`SETTIMANA`/`MESE` con `colspan="2"`, poi `Media`/`Ultimi 7gg` e `Media`/`Da inizio mese` sotto) — con 6 colonne numeriche la griglia div non restava leggibile, il raggruppamento visivo dice subito quali due colonne vanno confrontate tra loro.
+
+**Il valore reale (7gg/mese corrente) è colorato in base allo scarto dalla propria media**, non solo elencato accanto — altrimenti il confronto tocca farlo a mente riga per riga:
+
+```js
+const scarto=(reale,media)=>{
+  if(!(media>0))return'var(--text)';
+  const r=reale/media;
+  return r>=1.3?'var(--red)':r<=0.6?'var(--green)':'var(--text)';
+};
+```
+
+Rosso quando il ritmo reale supera la media di almeno il 30%, verde quando è sotto il 60% — soglie arbitrarie ma pensate per non accendersi su normali fluttuazioni giornaliere.
+
 ### Flusso ricezione merce (DDT modal)
 
 Quando si clicca **✅ Ricevuto** su un ordine in stato `ordinato`, si apre un modal DDT invece di caricare automaticamente le quantità:
