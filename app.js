@@ -7702,22 +7702,27 @@ function invRenderAnalysis(catalog,moves){
   // Tabella dettaglio — ordinata per consumo medio settimanale decrescente: i prodotti
   // che si consumano di più stanno in cima, non sparsi in mezzo all'ordine alfabetico.
   const sorted=[...items].sort((a,b)=>b.mediaSett-a.mediaSett||a.name.localeCompare(b.name,'it'));
-  const GRID='1fr 64px 64px 64px';
-  const hdrs=`<div style="display:grid;grid-template-columns:${GRID};gap:4px;padding:4px 10px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:4px;">
-    <div>Prodotto</div>
-    <div>Media/sett</div>
-    <div>Media/mese</div>
-    <div>Stock</div>
+  // Colonne più larghe delle etichette (~64px) mandavano "MEDIA/SETT"/"MEDIA/MESE" in
+  // overflow l'una sull'altra invece di andare a capo — niente wrap perché le celle non
+  // avevano min-width:0. Etichette accorciate ("Sett"/"Mese", il titolo sopra la tabella
+  // dice già "Media") e colonne allargate così restano leggibili anche su schermi stretti.
+  const GRID='1fr 58px 58px 56px';
+  const thStyle='min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+  const hdrs=`<div style="display:grid;grid-template-columns:${GRID};gap:6px;padding:4px 10px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-top:4px;">
+    <div style="${thStyle}">Prodotto</div>
+    <div style="${thStyle}" title="Media settimanale">Sett</div>
+    <div style="${thStyle}" title="Media mensile">Mese</div>
+    <div style="${thStyle}">Stock</div>
   </div>`;
   const rows=sorted.map(it=>{
     const borderL=it.autonomia!==null&&it.autonomia<=7?'var(--red)':it.autonomia!==null&&it.autonomia<=14?'var(--amber)':'transparent';
     const unit=it.unit?` <span style="font-size:9px;color:var(--text-dim);">${_esc(it.unit)}</span>`:'';
     return`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderL};border-radius:8px;padding:8px 10px;margin-bottom:5px;">
-      <div style="display:grid;grid-template-columns:${GRID};gap:4px;align-items:center;">
+      <div style="display:grid;grid-template-columns:${GRID};gap:6px;align-items:center;">
         <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
-        <div style="font-size:var(--fs-xs);">${it.mediaSett>0?`${it.mediaSett}${unit}`:'—'}</div>
-        <div style="font-size:var(--fs-xs);">${it.mediaMese>0?`${it.mediaMese}${unit}`:'—'}</div>
-        <div style="font-size:var(--fs-xs);">${it.qty}${unit}</div>
+        <div style="font-size:var(--fs-xs);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.mediaSett>0?`${it.mediaSett}${unit}`:'—'}</div>
+        <div style="font-size:var(--fs-xs);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.mediaMese>0?`${it.mediaMese}${unit}`:'—'}</div>
+        <div style="font-size:var(--fs-xs);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.qty}${unit}</div>
       </div>
     </div>`;
   }).join('');
