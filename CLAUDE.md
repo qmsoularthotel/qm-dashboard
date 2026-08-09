@@ -717,6 +717,36 @@ let _speseUncatOpen = false;   // stato pannello "Non classificati"
 
 La tabella nella dashboard (Compass) aveva solo `MESE | SPESA TOTALE | COPERTI BB`; `breakfast.html` aveva in più le colonne **VAR%** (spesa e coperti, mese su mese) con badge colorato. Allineate: Compass ora mostra le stesse 5 colonne (`MESE | SPESA | VAR% | COPERTI | VAR%`), stile CSS-token invece dei colori hardcoded dello smartphone.
 
+### Modifica di un DDT già inserito — su Compass e su `breakfast.html`
+
+Prima si poteva modificare un DDT già salvato **solo** su `breakfast.html` (`ddtBkfOpenEditModal`). Su Compass c'era solo "🗑 Elimina DDT" nella riga di dettaglio della lista (`ddtRenderList`), niente modifica: per correggere un prezzo bisognava cancellare e ricaricare da capo.
+
+Aggiunto `ddtOpenEditModal(id)` in `app.js`, speculare a quella di `breakfast.html`: precompila `_ddtParsedData` col DDT esistente e riusa la stessa maschera dell'inserimento (`ddtShowParsedResult`). Nuova variabile `_ddtEditingId` — quando è valorizzata, `ddtConfirmSave()` aggiorna il record esistente nell'array invece di pusharne uno nuovo; `ddtCloseModal()` la resetta a `null`. Bottone **"✏️ Modifica"** accanto a "🗑 Elimina DDT" nella riga di dettaglio.
+
+**Nota**: in modalità modifica su Compass, fornitore e hotel restano quelli originali (non c'è un campo per cambiarli nella maschera — a differenza di `data`/`numero_ddt`/`totale`/articoli, che sono tutti editabili). Se in futuro serve poterli correggere, va aggiunto un campo fornitore/hotel dentro `ddtShowParsedResult` come già fa `ddtBkfShowParsed` su `breakfast.html`.
+
+### Ricalcolo automatico dei totali — `ddtRecalcRowTotale()` / `ddtRecalcTotaleOrdine()` (`ddt-shared.js`)
+
+Prima modificare qtà o prezzo unitario di una riga (in inserimento o in modifica, su entrambi i file) non toccava il campo Totale della riga né il Totale del DDT: bisognava ricalcolarli e digitarli a mano. Due funzioni pure in `ddt-shared.js` (nessun accesso al DOM, quindi utilizzabili identiche da entrambi i file):
+
+```js
+function ddtRecalcRowTotale(articoli,i){       // totale riga = qta × prezzo_unit
+  const a=articoli[i]; const q=Number(a.qta),p=Number(a.prezzo_unit);
+  if(!isNaN(q)&&!isNaN(p))a.totale=Math.round(q*p*100)/100;
+}
+function ddtRecalcTotaleOrdine(d){              // totale DDT = somma dei totali riga
+  const somma=(d.articoli||[]).reduce((s,a)=>{const t=Number(a.totale);return isNaN(t)?s:s+t;},0);
+  d.totale_ordine=Math.round(somma*100)/100;
+}
+```
+
+Comportamento (identico in `ddtShowParsedResult` di `app.js` e `ddtBkfShowParsed` di `breakfast.html`):
+- `onchange` su **Qtà** o **P.Unit** di una riga → `ddtRecalcRowTotale` (ricalcola quella riga) → `ddtRecalcTotaleOrdine` (ricalcola il DDT) → ri-render.
+- `onchange` su **Totale** riga digitato a mano (es. per applicare uno sconto) → **non** tocca qtà/prezzo, ricalcola solo il totale del DDT.
+- Rimuovere una riga (`ddtRemoveArticolo`/`ddtBkfRemoveArt`) ricalcola il totale del DDT.
+
+Il campo **Totale € del DDT** in cima alla maschera resta comunque editabile a mano (per allinearlo a un totale con IVA/arrotondamenti diverso dalla somma delle righe): l'ultima modifica manuale a quel campo resta finché non si tocca di nuovo qtà/prezzo di una riga, che lo sovrascrive.
+
 ---
 
 ## Operativa HKP (ex "Operativa Housekeeping")

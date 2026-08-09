@@ -9235,6 +9235,7 @@ let _ddtUploadModal=null;
 let _ddtParsedData=null;
 let _ddtUploadFornitore='';
 let _ddtUploadHotel='sa';
+let _ddtEditingId=null;
 // Categoria/pannello espanso in Analisi Spese Fornitori — persiste tra i re-render
 // così "Sposta" un prodotto non riporta l'utente alla lista principale delle categorie.
 let _speseCatOpen=null;
@@ -10053,7 +10054,8 @@ function ddtRenderList(){
             </tr></thead>
             <tbody>${artRows}</tbody>
           </table>
-          <div style="padding:8px 12px;text-align:right;">
+          <div style="padding:8px 12px;text-align:right;display:flex;gap:8px;justify-content:flex-end;">
+            <button onclick="event.stopPropagation();ddtOpenEditModal('${d.id}')" style="font-size:var(--fs-xxs);padding:5px 14px;border-radius:8px;background:var(--accent-bg);border:1px solid var(--accent);color:var(--accent);cursor:pointer;font-weight:600;">✏️ Modifica</button>
             <button onclick="event.stopPropagation();ddtDelete('${d.id}')" style="font-size:var(--fs-xxs);padding:5px 14px;border-radius:8px;background:#fff0f0;border:1px solid #fca5a5;color:#b91c1c;cursor:pointer;font-weight:600;">🗑 Elimina DDT</button>
           </div>
         </div>
@@ -10106,7 +10108,31 @@ function ddtOpenUploadModal(){
   document.body.appendChild(m);
   _ddtUploadModal=m;
 }
-function ddtCloseModal(){if(_ddtUploadModal){_ddtUploadModal.remove();_ddtUploadModal=null;}_ddtParsedData=null;}
+function ddtCloseModal(){if(_ddtUploadModal){_ddtUploadModal.remove();_ddtUploadModal=null;}_ddtParsedData=null;_ddtEditingId=null;}
+
+// Modifica di un DDT già salvato — prima disponibile solo su breakfast.html
+// (ddtBkfOpenEditModal). Stessa maschera dell'inserimento (ddtShowParsedResult),
+// precompilata con i dati esistenti; ddtConfirmSave aggiorna il record invece di
+// crearne uno nuovo quando _ddtEditingId è impostato.
+function ddtOpenEditModal(id){
+  const item=ddtGet().find(d=>d.id===id);
+  if(!item)return;
+  if(_ddtUploadModal)_ddtUploadModal.remove();
+  const m=document.createElement('div');
+  m.id='ddtModal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+  m.onclick=e=>{if(e.target===m)ddtCloseModal();};
+  m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:24px;max-width:500px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;margin:auto;">
+    <button onclick="ddtCloseModal()" style="position:absolute;top:14px;right:14px;background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;">✕</button>
+    <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:16px;">✏️ Modifica DDT</div>
+    <div id="ddt-parsed-result"></div>
+  </div>`;
+  document.body.appendChild(m);
+  _ddtUploadModal=m;
+  _ddtEditingId=id;
+  _ddtParsedData={...item,articoli:(item.articoli||[]).map(a=>({...a}))};
+  ddtShowParsedResult(_ddtParsedData);
+}
 
 async function ddtHandleFileSelect(input){
   const file=input.files[0];if(!file)return;
@@ -10144,12 +10170,15 @@ async function ddtHandleFileSelect(input){
 function ddtShowParsedResult(d){
   const result=document.getElementById('ddt-parsed-result');if(!result)return;
   const inp=(val,cb,w,type,step)=>`<input ${type?'type="'+type+'"':''} ${step?'step="'+step+'"':''} value="${val!=null?val:''}" onchange="${cb}" style="width:${w||'100%'};padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);background:var(--surface);${type==='number'?'text-align:right;':''}">`;
+  // Qtà e prezzo unitario ricalcolano da soli il totale della riga (qta*prezzo); il
+  // totale riga (anche se digitato a mano) ricalcola sempre il totale del DDT — vedi
+  // ddtRecalcRowTotale/ddtRecalcTotaleOrdine in ddt-shared.js, condivise con breakfast.html.
   const artRows=(d.articoli||[]).map((a,i)=>`<tr>
     <td style="padding:3px 4px;">${inp(a.descrizione,'_ddtParsedData.articoli['+i+'].descrizione=this.value','130px','','')}</td>
-    <td style="padding:3px 4px;">${inp(a.qta,'_ddtParsedData.articoli['+i+'].qta=parseFloat(this.value)||0','55px','number','0.001')}</td>
+    <td style="padding:3px 4px;">${inp(a.qta,'_ddtParsedData.articoli['+i+'].qta=parseFloat(this.value)||0;ddtRecalcRowTotale(_ddtParsedData.articoli,'+i+');ddtRecalcTotaleOrdine(_ddtParsedData);ddtShowParsedResult(_ddtParsedData)','55px','number','0.001')}</td>
     <td style="padding:3px 4px;">${inp(a.unita,'_ddtParsedData.articoli['+i+'].unita=this.value','40px','','')}</td>
-    <td style="padding:3px 4px;">${inp(a.prezzo_unit,'_ddtParsedData.articoli['+i+'].prezzo_unit=parseFloat(this.value)||0','65px','number','0.01')}</td>
-    <td style="padding:3px 4px;">${inp(a.totale,'_ddtParsedData.articoli['+i+'].totale=parseFloat(this.value)||0','65px','number','0.01')}</td>
+    <td style="padding:3px 4px;">${inp(a.prezzo_unit,'_ddtParsedData.articoli['+i+'].prezzo_unit=parseFloat(this.value)||0;ddtRecalcRowTotale(_ddtParsedData.articoli,'+i+');ddtRecalcTotaleOrdine(_ddtParsedData);ddtShowParsedResult(_ddtParsedData)','65px','number','0.01')}</td>
+    <td style="padding:3px 4px;">${inp(a.totale,'_ddtParsedData.articoli['+i+'].totale=parseFloat(this.value)||0;ddtRecalcTotaleOrdine(_ddtParsedData);ddtShowParsedResult(_ddtParsedData)','65px','number','0.01')}</td>
     <td style="padding:3px 4px;"><button onclick="ddtRemoveArticolo(${i})" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--surface);">✕</button></td>
   </tr>`).join('');
   result.style.display='';
@@ -10183,18 +10212,30 @@ function ddtShowParsedResult(d){
     <button onclick="ddtConfirmSave()" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;">💾 Salva DDT</button>
   </div>`;
 }
-function ddtRemoveArticolo(i){if(!_ddtParsedData)return;_ddtParsedData.articoli.splice(i,1);ddtShowParsedResult(_ddtParsedData);}
+function ddtRemoveArticolo(i){if(!_ddtParsedData)return;_ddtParsedData.articoli.splice(i,1);ddtRecalcTotaleOrdine(_ddtParsedData);ddtShowParsedResult(_ddtParsedData);}
 function ddtAddArticolo(){if(!_ddtParsedData)return;(_ddtParsedData.articoli=_ddtParsedData.articoli||[]).push({descrizione:'',qta:null,unita:'',prezzo_unit:null,totale:null});ddtShowParsedResult(_ddtParsedData);}
 
 function ddtConfirmSave(){
   if(!_ddtParsedData)return;
   const arr=ddtGet();
-  arr.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6),ts:Date.now(),
-    data:_ddtParsedData.data||'',fornitore:_ddtParsedData.fornitore||'',
-    reparto:_ddtParsedData.reparto||'bkf',hotel:_ddtParsedData.hotel||'sa',
-    numero_ddt:_ddtParsedData.numero_ddt||'',
-    articoli:_ddtParsedData.articoli||[],
-    totale_ordine:_ddtParsedData.totale_ordine||0});
+  if(_ddtEditingId){
+    const idx=arr.findIndex(d=>d.id===_ddtEditingId);
+    if(idx>=0){
+      arr[idx]={...arr[idx],
+        data:_ddtParsedData.data||'',fornitore:_ddtParsedData.fornitore||'',
+        reparto:_ddtParsedData.reparto||arr[idx].reparto||'bkf',hotel:_ddtParsedData.hotel||arr[idx].hotel||'sa',
+        numero_ddt:_ddtParsedData.numero_ddt||'',
+        articoli:_ddtParsedData.articoli||[],
+        totale_ordine:_ddtParsedData.totale_ordine||0};
+    }
+  }else{
+    arr.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6),ts:Date.now(),
+      data:_ddtParsedData.data||'',fornitore:_ddtParsedData.fornitore||'',
+      reparto:_ddtParsedData.reparto||'bkf',hotel:_ddtParsedData.hotel||'sa',
+      numero_ddt:_ddtParsedData.numero_ddt||'',
+      articoli:_ddtParsedData.articoli||[],
+      totale_ordine:_ddtParsedData.totale_ordine||0});
+  }
   ddtSave(arr);
   ddtCloseModal();
   ddtRenderList();ddtRenderSpese();

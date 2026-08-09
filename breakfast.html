@@ -159,7 +159,7 @@ body{padding-bottom:62px;}
   </div>
 </nav>
 
-<script src="ddt-shared.js?v=2"></script>
+<script src="ddt-shared.js?v=3"></script>
 <script>
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
 async function qmCheckAppStatus(){
@@ -1366,12 +1366,15 @@ async function ddtBkfHandleFile(input){
 function ddtBkfShowParsed(d){
   const result=document.getElementById('ddt-parsed-result');if(!result)return;
   const inp=(val,cb,w,type,step)=>`<input ${type?'type="'+type+'"':''} ${step?'step="'+step+'"':''} value="${val!=null?val:''}" onchange="${cb}" style="width:${w||'100%'};padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);${type==='number'?'text-align:right;':''}">`;
+  // Qtà e prezzo unitario ricalcolano da soli il totale della riga (qta*prezzo); il
+  // totale riga (anche se digitato a mano) ricalcola sempre il totale del DDT — vedi
+  // ddtRecalcRowTotale/ddtRecalcTotaleOrdine in ddt-shared.js, condivise con Compass.
   const artRows=(d.articoli||[]).map((a,i)=>`<tr>
     <td style="padding:3px 4px;">${inp(a.descrizione,'_ddtParsedData.articoli['+i+'].descrizione=this.value','120px','','')}</td>
-    <td style="padding:3px 4px;">${inp(a.qta,'_ddtParsedData.articoli['+i+'].qta=parseFloat(this.value)||0','48px','number','0.001')}</td>
+    <td style="padding:3px 4px;">${inp(a.qta,'_ddtParsedData.articoli['+i+'].qta=parseFloat(this.value)||0;ddtRecalcRowTotale(_ddtParsedData.articoli,'+i+');ddtRecalcTotaleOrdine(_ddtParsedData);ddtBkfShowParsed(_ddtParsedData)','48px','number','0.001')}</td>
     <td style="padding:3px 4px;">${inp(a.unita,'_ddtParsedData.articoli['+i+'].unita=this.value','36px','','')}</td>
-    <td style="padding:3px 4px;">${inp(a.prezzo_unit,'_ddtParsedData.articoli['+i+'].prezzo_unit=parseFloat(this.value)||0','58px','number','0.01')}</td>
-    <td style="padding:3px 4px;">${inp(a.totale,'_ddtParsedData.articoli['+i+'].totale=parseFloat(this.value)||0','58px','number','0.01')}</td>
+    <td style="padding:3px 4px;">${inp(a.prezzo_unit,'_ddtParsedData.articoli['+i+'].prezzo_unit=parseFloat(this.value)||0;ddtRecalcRowTotale(_ddtParsedData.articoli,'+i+');ddtRecalcTotaleOrdine(_ddtParsedData);ddtBkfShowParsed(_ddtParsedData)','58px','number','0.01')}</td>
+    <td style="padding:3px 4px;">${inp(a.totale,'_ddtParsedData.articoli['+i+'].totale=parseFloat(this.value)||0;ddtRecalcTotaleOrdine(_ddtParsedData);ddtBkfShowParsed(_ddtParsedData)','58px','number','0.01')}</td>
     <td style="padding:3px 4px;"><button onclick="ddtBkfRemoveArt(${i})" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">✕</button></td>
   </tr>`).join('');
   const fornKnown=Object.keys(DDT_BKF).includes(d.fornitore)?d.fornitore:'';
@@ -1416,7 +1419,7 @@ function ddtBkfShowParsed(d){
     <button onclick="ddtBkfConfirmSave()" style="width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">💾 Salva DDT</button>
   </div>`;
 }
-function ddtBkfRemoveArt(i){if(!_ddtParsedData)return;_ddtParsedData.articoli.splice(i,1);ddtBkfShowParsed(_ddtParsedData);}
+function ddtBkfRemoveArt(i){if(!_ddtParsedData)return;_ddtParsedData.articoli.splice(i,1);ddtRecalcTotaleOrdine(_ddtParsedData);ddtBkfShowParsed(_ddtParsedData);}
 function ddtBkfAddArt(){if(!_ddtParsedData)return;(_ddtParsedData.articoli=_ddtParsedData.articoli||[]).push({descrizione:'',qta:null,unita:'',prezzo_unit:null,totale:null});ddtBkfShowParsed(_ddtParsedData);}
 
 function ddtBkfConfirmSave(){
