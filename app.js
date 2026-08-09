@@ -7708,55 +7708,70 @@ function invRenderAnalysis(catalog,moves){
 
   // Tabella dettaglio — ordinata per consumo medio settimanale decrescente: i prodotti
   // che si consumano di più stanno in cima, non sparsi in mezzo all'ordine alfabetico.
-  // Sei colonne (media + reale per settimana e mese, più stock): una griglia div non ci
-  // stava più leggibile, passata a <table> con intestazioni raggruppate SETTIMANA/MESE
-  // così si capisce subito quali due colonne vanno confrontate tra loro.
+  // "Opzione B" del confronto tra design fatto vedere all'utente: una sola riga di
+  // intestazione (non due), un badge di testo al posto di due numeri colorati per riga
+  // (con sei colonne quasi ogni riga aveva un colore, il colore smetteva di significare
+  // qualcosa), i valori grezzi (media/reale per settimana e mese) spostati in un dettaglio
+  // a tendina per prodotto invece di stare sempre in vista.
   const sorted=[...items].sort((a,b)=>b.mediaSett-a.mediaSett||a.name.localeCompare(b.name,'it'));
-  const thS='padding:5px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;white-space:nowrap;';
-  const tdS='padding:6px 8px;font-size:var(--fs-xs);text-align:right;white-space:nowrap;';
+  // Badge unico che riassume l'andamento: guarda lo scarto più marcato tra i due periodi
+  // (settimana/mese) invece di due giudizi separati che potrebbero anche contraddirsi.
+  const ritmo=it=>{
+    const rS=it.mediaSett>0?it.cons7gg/it.mediaSett:null;
+    const rM=it.mediaMese>0?it.consMeseCorr/it.mediaMese:null;
+    const cands=[rS,rM].filter(r=>r!==null);
+    if(!cands.length)return{label:'nessun dato',bg:'var(--surface2)',fg:'var(--text-dim)'};
+    const worst=Math.max(...cands),best=Math.min(...cands);
+    if(worst>=1.3)return{label:'sopra media',bg:'var(--amber-bg)',fg:'var(--amber)'};
+    if(best<=0.6)return{label:'sotto media',bg:'var(--green-bg)',fg:'var(--green)'};
+    return{label:'in linea',bg:'var(--surface2)',fg:'var(--text-dim)'};
+  };
   const rows=sorted.map((it,i)=>{
     const borderL=it.autonomia!==null&&it.autonomia<=7?'var(--red)':it.autonomia!==null&&it.autonomia<=14?'var(--amber)':'transparent';
-    // Il consumo reale che si scosta molto dalla media è il segnale utile: evidenziato,
-    // non solo elencato accanto — altrimenti bisogna fare il confronto a mente riga per riga.
-    const scarto=(reale,media)=>{
-      if(!(media>0))return'var(--text)';
-      const r=reale/media;
-      return r>=1.3?'var(--red)':r<=0.6?'var(--green)':'var(--text)';
-    };
+    const r=ritmo(it);
     const zebra=i%2===1?'background:var(--bg);':'';
-    return`<tr style="${zebra}border-left:3px solid ${borderL};">
-      <td style="padding:6px 10px;font-size:var(--fs-xs);font-weight:600;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</td>
-      <td style="${tdS}color:var(--text-muted);">${it.mediaSett>0?it.mediaSett:'—'}</td>
-      <td style="${tdS}font-weight:700;color:${scarto(it.cons7gg,it.mediaSett)};">${it.cons7gg>0?it.cons7gg:'—'}</td>
-      <td style="${tdS}color:var(--text-muted);">${it.mediaMese>0?it.mediaMese:'—'}</td>
-      <td style="${tdS}font-weight:700;color:${scarto(it.consMeseCorr,it.mediaMese)};">${it.consMeseCorr>0?it.consMeseCorr:'—'}</td>
-      <td style="${tdS}color:var(--text-muted);">${it.qty}${it.unit?' '+_esc(it.unit):''}</td>
+    const rid='inv-an-'+it.bc;
+    const detCell=(lbl,media,reale)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0;">
+      <span style="color:var(--text-dim);">${lbl}</span>
+      <span><span style="color:var(--text-muted);">media ${media>0?media:'—'}</span> · <b style="color:var(--text);">reale ${reale>0?reale:'—'}</b></span>
+    </div>`;
+    return`<tr onclick="invAnToggle('${it.bc}')" style="${zebra}border-left:3px solid ${borderL};cursor:pointer;">
+      <td style="padding:8px 10px;font-size:var(--fs-xs);font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</td>
+      <td style="padding:8px 10px;font-size:var(--fs-xs);text-align:right;color:var(--text-muted);white-space:nowrap;">${it.qty}${it.unit?' '+_esc(it.unit):''}</td>
+      <td style="padding:8px 10px;text-align:right;"><span style="background:${r.bg};color:${r.fg};font-size:var(--fs-xxs);font-weight:700;padding:3px 10px;border-radius:10px;white-space:nowrap;">${r.label}</span></td>
+      <td style="padding:8px 10px;text-align:center;color:var(--text-dim);font-size:11px;width:20px;"><span id="inv-an-chev-${it.bc}">▾</span></td>
+    </tr>
+    <tr id="inv-an-body-${it.bc}" style="display:none;${zebra}border-left:3px solid ${borderL};">
+      <td colspan="4" style="padding:0 10px 10px;font-size:var(--fs-xs);">
+        ${detCell('Settimana',it.mediaSett,it.cons7gg)}
+        ${detCell('Mese',it.mediaMese,it.consMeseCorr)}
+      </td>
     </tr>`;
   }).join('');
   const tableHtml=`<div style="overflow-x:auto;background:var(--surface);border:1px solid var(--border-light);border-radius:10px;">
     <table style="border-collapse:collapse;width:100%;">
-      <thead>
-        <tr style="background:var(--bg);">
-          <th rowspan="2" style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;vertical-align:bottom;">Prodotto</th>
-          <th colspan="2" style="padding:5px 8px 2px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border-light);">Settimana</th>
-          <th colspan="2" style="padding:5px 8px 2px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border-light);">Mese</th>
-          <th rowspan="2" style="padding:6px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;vertical-align:bottom;">Stock</th>
-        </tr>
-        <tr style="background:var(--bg);">
-          <th style="${thS}" title="Media settimanale su tutto lo storico">Media</th>
-          <th style="${thS}" title="Consumo reale negli ultimi 7 giorni">Ultimi 7gg</th>
-          <th style="${thS}" title="Media mensile su tutto lo storico">Media</th>
-          <th style="${thS}" title="Consumo reale dal 1° del mese a oggi">Da inizio mese</th>
-        </tr>
-      </thead>
+      <thead><tr style="background:var(--bg);">
+        <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Prodotto</th>
+        <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;">Stock</th>
+        <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;">Ritmo</th>
+        <th></th>
+      </tr></thead>
       <tbody>${rows}</tbody>
     </table>
   </div>`;
 
   el.innerHTML=periodHtml+kpi+urgBlock+`<div>
     <div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:2px;">📋 Dettaglio prodotti</div>
-    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:7px;">Media = tutto lo storico, sempre uguale. Ultimi 7gg/Da inizio mese = consumo reale, indipendenti dal periodo selezionato sopra (quello riguarda solo i totali e "Da riordinare"). In rosso dove il ritmo reale supera di molto la media, in verde dove è molto sotto.</div>
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:7px;">Tocca un prodotto per vedere media storica e consumo reale (ultimi 7gg / da inizio mese) — indipendenti dal periodo selezionato sopra, che riguarda solo i totali e "Da riordinare".</div>
   `+tableHtml+`</div>`;
+}
+function invAnToggle(bc){
+  const body=document.getElementById('inv-an-body-'+bc);
+  const chev=document.getElementById('inv-an-chev-'+bc);
+  if(!body)return;
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'table-row';
+  if(chev)chev.textContent=open?'▾':'▴';
 }
 function invPrintStock(){
   const{catalog,moves}=invGetData();
