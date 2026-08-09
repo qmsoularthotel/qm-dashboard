@@ -7619,9 +7619,13 @@ function invRenderAnalysis(catalog,moves){
     const consumo=periodOuts.reduce((s,m)=>s+m.qty,0);
     const rifornimento=periodIns.reduce((s,m)=>s+m.qty,0);
     const days=_invPeriod>0?_invPeriod:(bm.length?Math.max(1,Math.ceil((now-Math.min(...bm.map(m=>m.ts)))/86400000)):1);
-    // Consumo settimanale: basato su scarichi (out), periodo minimo 14gg per smorzare
-    // picchi da pochi dati. Con dati sufficienti converge al valore reale.
-    const effectiveDays=Math.max(14,days);
+    // Consumo settimanale: basato su scarichi (out). Il minimo 14gg per smorzare picchi
+    // da pochi dati vale SOLO per "Tutto" (days ricavato dallo storico reale, che per un
+    // prodotto appena inserito può essere di 1-2 giorni). Con un periodo fisso scelto
+    // dall'utente (7/30/90) days è già quel numero: applicare comunque il minimo 14
+    // dimezzava il consumo mostrato col filtro "7 giorni" (divideva per 14 invece che
+    // per 7 un consumo reale di soli 7 giorni).
+    const effectiveDays=_invPeriod>0?days:Math.max(14,days);
     const consumoSett=consumo>0?Math.round((consumo/effectiveDays)*7*10)/10:0;
     const consumoGg=consumoSett/7;
     const autonomia=consumoGg>0?Math.round((stock[bc]??0)/consumoGg):null;
