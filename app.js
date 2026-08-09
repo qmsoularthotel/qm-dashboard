@@ -66,7 +66,7 @@ function ucToggle(key){
   if(!panel)return;
   const isOpen=panel.classList.contains('open');
   // Chiudi tutti gli altri
-  ['turno','arrivi','pul','bkf','soul','bout'].forEach(k=>{
+  ['turno','arrivi','pul','bkf','soul','bout','piano'].forEach(k=>{
     if(k===key)return;
     const p=document.getElementById('uc-'+k+'-panel');
     const s=document.getElementById('uc-'+k);
@@ -93,7 +93,7 @@ function ucSetState(key,state,sub,silent){
     slot.classList.add('loaded');
     if(!silent){
       // Fisarmonica: chiudi tutti, apri questo
-      ['turno','arrivi','pul','bkf','soul','bout'].forEach(k=>{
+      ['turno','arrivi','pul','bkf','soul','bout','piano'].forEach(k=>{
         const p=document.getElementById('uc-'+k+'-panel');
         const s=document.getElementById('uc-'+k);
         if(p){p.classList.remove('open');}
