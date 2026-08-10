@@ -5128,7 +5128,11 @@ function revRenderExpiring(p){
 // ATTENZIONE: non è l'algoritmo di Booking (non è pubblico). È un modello calibrato sul
 // punteggio reale che la struttura legge nell'extranet. Anche dopo la calibrazione resta
 // una fascia di emivite compatibili, quindi le previsioni sono ordini di grandezza.
-const REV_HL_DEFAULT=173;          // emivita di ripiego se la struttura non è calibrata
+// Emivita di ripiego se la struttura non è calibrata. 136 giorni non è la sola
+// calibrazione sul punteggio (che da sola dà una fascia larga 62-285 gg), ma il centro
+// della fascia ristretta osservando TRE transizioni reali del display su SoulArt
+// (8.9 → voto 5 → 8.8 → voto 10 → 8.9): 121-151 gg. Più affidabile del solo punteggio.
+const REV_HL_DEFAULT=136;
 const REV_FINESTRA_GG=1095;        // 36 mesi: finestra di validità delle recensioni Booking
 const REV_CALIB_KEY='qm_rev_calib';
 const REV_CALIB_STALE_GG=90;       // oltre questo, la calibrazione va rinfrescata
@@ -5190,7 +5194,7 @@ function calibraHalfLife(recensioni,scoreReale,oggi=new Date()){
 const revSoglia=targetVisualizzato=>targetVisualizzato-0.05;
 
 // ── Stato calibrazione per struttura ────────────────────────────────────────
-// { sa:{scoreReale:8.9, ts:<ms>, hl:173, fascia:[62,285], fuoriModello:false}, ... }
+// { sa:{scoreReale:8.9, ts:<ms>, hl:136, fascia:[62,285], fuoriModello:false}, ... }
 function revCalibLoad(){
   try{const s=localStorage.getItem(REV_CALIB_KEY);if(s)REV_CALIB=JSON.parse(s)||{};}catch(e){REV_CALIB={};}
 }
@@ -5279,7 +5283,7 @@ function revSimulaTarget(scored,hl,targetVisualizzato,votoNuove,recAlGiorno,oggi
 // ── Effetto delle recensioni in scadenza ────────────────────────────────────
 // Quanto pesa davvero l'uscita dalla finestra dei 36 mesi dipende TUTTO dall'emivita
 // calibrata, quindi va misurato per struttura invece di assumerlo: una recensione al
-// 1094° giorno vale l'1,2% di una di oggi con emivita 173 gg, ma il 7% con emivita 285
+// 1094° giorno vale lo 0,4% di una di oggi con emivita 136 gg, ma il 7% con emivita 285
 // e oltre il 20% con emivita 500 (tipico delle strutture con poche recensioni).
 // Nel vecchio modello a bucket la fascia 24-36 mesi pesava invece un 5% fisso a
 // prescindere dall'età, il che sovrastimava sistematicamente le scadenze recenti e
@@ -5387,25 +5391,133 @@ function revRenderImpact(p,pb,scored,hl,oggiTs){
       <span style="display:block;margin-top:5px;">Nello stesso periodo il peso effettivo passa da <strong style="color:var(--text);">${Math.round(scad90.pesoEffOra)}</strong> a <strong style="color:var(--text);">${Math.round(scad90.pesoEffFut)}</strong> — quasi tutto per <strong style="color:var(--text);">invecchiamento</strong> dello storico, le uscite ne spiegano solo ${quota.toFixed(1)} punti percentuali. Con un denominatore più basso un 10 varrà <strong style="color:var(--green);">+${d10fut.toFixed(3)}</strong> invece di +${delta(10).toFixed(3)}: aspettare rende ogni recensione più efficace, ma si parte da un punteggio diverso.</span>
     </div>`;
   }
-  const celle=voti.map(v=>{
+  // La domanda operativa non è "di quanto scende il decimale interno" ma "quale voto fa
+  // cambiare la CIFRA che Booking mostra". Il delta da solo non lo dice: serve simulare il
+  // nuovo score e riarrotondarlo. Righe evidenziate solo dove il display cambia davvero.
+  const displayOra=Math.round(pb.score*10)/10;
+  const soglia=revSoglia(displayOra);            // sotto questa, Booking mostra un decimo in meno
+  const margine=pb.score-soglia;
+  const votiTab=[10,9,8,7,5,3];
+  const righeTab=votiTab.map(v=>{
     const d=delta(v);
-    const col=d>=0?'var(--green)':'var(--red)';
-    const bg=d>=0?'var(--green-bg)':'var(--red-bg)';
-    return`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:10px 8px;text-align:center;">
-      <div style="font-size:var(--fs-xs);color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">voto ${v}</div>
-      <div style="margin-top:5px;display:inline-block;padding:3px 9px;border-radius:12px;background:${bg};color:${col};font-size:var(--fs-sm);font-weight:700;font-variant-numeric:tabular-nums;">${d>=0?'+':'−'}${Math.abs(d).toFixed(3)}</div>
-    </div>`;
+    const nuovo=pb.score+d;
+    const disp=Math.round(nuovo*10)/10;
+    const scende=disp<displayOra, sale=disp>displayOra;
+    const bg=scende?'var(--red-bg)':sale?'var(--green-bg)':'transparent';
+    const fg=scende?'var(--red)':sale?'var(--green)':'var(--text)';
+    return`<tr style="background:${bg};">
+      <td style="padding:6px 10px;font-size:var(--fs-xs);font-weight:700;color:${fg};">${v}</td>
+      <td style="padding:6px 10px;font-size:var(--fs-xs);text-align:right;color:var(--text-muted);font-variant-numeric:tabular-nums;">${d>=0?'+':'−'}${Math.abs(d).toFixed(3)}</td>
+      <td style="padding:6px 10px;font-size:var(--fs-xs);text-align:right;color:var(--text-muted);font-variant-numeric:tabular-nums;">${nuovo.toFixed(3)}</td>
+      <td style="padding:6px 10px;font-size:var(--fs-sm);text-align:right;font-weight:800;color:${fg};font-variant-numeric:tabular-nums;">${disp.toFixed(1)}</td>
+    </tr>`;
   }).join('');
+  // Voto più basso che NON fa scendere la cifra: la soglia operativa da comunicare in hotel.
+  let votoSicuro=null;
+  for(let v=1;v<=10;v++){
+    if(Math.round((pb.score+delta(v))*10)/10>=displayOra){votoSicuro=v;break;}
+  }
+  const allerta=margine<0.010;
+  const margHtml=`<div style="background:${allerta?'var(--red-bg)':'var(--surface2)'};border:1px solid ${allerta?'var(--red)':'var(--border-light)'};border-radius:8px;padding:10px 13px;margin-bottom:12px;font-size:var(--fs-xs);line-height:1.55;color:var(--text);">
+    <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+      <strong style="font-size:var(--fs-sm);color:${allerta?'var(--red)':'var(--text)'};">Margine ${margine>=0?'+':'−'}${Math.abs(margine).toFixed(3)}</strong>
+      <span style="color:var(--text-muted);">sopra ${soglia.toFixed(2)}, la soglia per continuare a mostrare <strong style="color:var(--text);">${displayOra.toFixed(1)}</strong></span>
+    </div>
+    ${allerta?`<div style="margin-top:5px;color:var(--red);font-weight:600;">Margine sottile: basta una recensione mediocre per far scendere la cifra mostrata.</div>`:''}
+    ${votoSicuro!==null?`<div style="margin-top:5px;color:var(--text-muted);">${votoSicuro<=1?'Anche un 1 non farebbe scendere la cifra.':`Fino a un <strong style="color:var(--text);">${votoSicuro}</strong> resti a ${displayOra.toFixed(1)}; da <strong style="color:var(--red);">${votoSicuro-1}</strong> in giù scende.`}</div>`:`<div style="margin-top:5px;color:var(--red);font-weight:600;">Qualunque voto in arrivo fa scendere la cifra mostrata.</div>`}
+  </div>`;
   el.innerHTML=`<div class="panel" style="margin-bottom:14px;">
-    <div class="panel-header"><span class="panel-title">Impatto di una nuova recensione</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">peso effettivo ≈ ${Math.round(pb.pesoEff)}</span></div>
+    <div class="panel-header"><span class="panel-title">Impatto della prossima recensione</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">peso effettivo ≈ ${Math.round(pb.pesoEff)}</span></div>
     <div class="panel-body" style="padding:14px;">
-      <div class="rev-impact-grid">${celle}</div>
+      ${margHtml}
+      <div style="overflow-x:auto;border:1px solid var(--border-light);border-radius:8px;">
+        <table style="border-collapse:collapse;width:100%;">
+          <thead><tr style="background:var(--bg);">
+            <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Voto</th>
+            <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;">Delta</th>
+            <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;">Nuovo score</th>
+            <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;">Mostrato</th>
+          </tr></thead>
+          <tbody>${righeTab}</tbody>
+        </table>
+      </div>
       ${rapporto?`<div style="margin-top:10px;background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.5;">
         <strong>Un 5 pesa ${rapporto.toFixed(1)} volte più di un 10.</strong> Evitare una recensione bassa vale molto più che ottenerne una piena: la priorità operativa è intercettare l'ospite scontento prima che scriva, non chiedere altri 10.</div>`:''}
       ${scadHtml}
     </div>
   </div>`;
 }
+// ── UI: distribuzione del peso nel tempo ────────────────────────────────────
+// Rende visibile perché poche recensioni recenti spostano il punteggio mentre centinaia
+// di vecchie non contano quasi nulla. Fasce di ampiezza pari a un'emivita: per costruzione
+// la prima vale circa il 50% del peso, la seconda circa il 25%, e così via.
+function revRenderDistrib(p,pb,scored,hl,oggiTs){
+  const el=document.getElementById('rev-distrib-'+p);
+  if(!el)return;
+  if(pb.score===null||!scored||!scored.length){el.innerHTML='';return;}
+  const soglia=revSoglia(Math.round(pb.score*10)/10);
+  const fasce=[
+    {min:0,max:hl},
+    {min:hl,max:2*hl},
+    {min:2*hl,max:3*hl},
+    {min:3*hl,max:5*hl},
+    {min:5*hl,max:REV_FINESTRA_GG}
+  ].filter(f=>f.min<REV_FINESTRA_GG).map(f=>{
+    let n=0,peso=0,somma=0;
+    for(const r of scored){
+      const gg=(oggiTs-r._dateTs)/86400000;
+      if(!(gg>=f.min)||gg>=f.max||gg>REV_FINESTRA_GG)continue;
+      const w=Math.pow(0.5,gg/hl);
+      n++;peso+=w;somma+=w*r._score;
+    }
+    const lbl=f.max>=REV_FINESTRA_GG?`oltre ${Math.round(f.min)} gg`:`${Math.round(f.min)}–${Math.round(f.max)} gg`;
+    return{lbl,n,peso,quota:pb.pesoEff>0?peso/pb.pesoEff:0,media:peso>0?somma/peso:null};
+  }).filter(f=>f.n>0);
+  if(!fasce.length){el.innerHTML='';return;}
+  const righe=fasce.map(f=>{
+    // Media della fascia colorata rispetto alla soglia obiettivo: si legge a colpo d'occhio
+    // se il periodo che sta GUADAGNANDO peso è migliore o peggiore di quello che lo perde.
+    const col=f.media===null?'var(--text-dim)':(f.media>=soglia?'var(--green)':'var(--red)');
+    return`<tr>
+      <td style="padding:7px 10px;font-size:var(--fs-xs);color:var(--text);white-space:nowrap;">${f.lbl}</td>
+      <td style="padding:7px 10px;font-size:var(--fs-xs);text-align:right;color:var(--text-muted);">${f.n}</td>
+      <td style="padding:7px 10px;width:45%;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:hidden;min-width:40px;">
+            <div style="height:7px;width:${(f.quota*100).toFixed(1)}%;background:var(--accent);border-radius:4px;"></div>
+          </div>
+          <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;min-width:44px;text-align:right;">${(f.quota*100).toFixed(1)}%</span>
+        </div>
+      </td>
+      <td style="padding:7px 10px;font-size:var(--fs-xs);text-align:right;font-weight:700;color:${col};font-variant-numeric:tabular-nums;">${f.media!==null?f.media.toFixed(2):'—'}</td>
+    </tr>`;
+  }).join('');
+  // "Gli ultimi N giorni valgono il 50% del punteggio": N ricavato cumulando le fasce fino
+  // a superare metà del peso, non assunto uguale all'emivita (che lo approssima soltanto).
+  let cum=0,gg50=null;
+  for(const f of fasce){cum+=f.quota;if(cum>=0.5){gg50=f.lbl;break;}}
+  el.innerHTML=`<div class="panel" style="margin-bottom:14px;">
+    <div class="panel-header"><span class="panel-title">Distribuzione del peso nel tempo</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">emivita ${hl} gg</span></div>
+    <div class="panel-body" style="padding:14px;">
+      <div style="overflow-x:auto;border:1px solid var(--border-light);border-radius:8px;">
+        <table style="border-collapse:collapse;width:100%;">
+          <thead><tr style="background:var(--bg);">
+            <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Fascia</th>
+            <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;">Rec.</th>
+            <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Quota del peso</th>
+            <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;">Media voti</th>
+          </tr></thead>
+          <tbody>${righe}</tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.55;">
+        ${gg50?`Le recensioni degli <strong style="color:var(--text);">ultimi ${gg50.replace('–',' – ').replace(' gg','')} giorni</strong> valgono da sole metà del punteggio.`:''}
+        Media in <span style="color:var(--green);font-weight:700;">verde</span> dove la fascia è sopra la soglia ${soglia.toFixed(2)}, in <span style="color:var(--red);font-weight:700;">rosso</span> dove è sotto: se la fascia recente è più rossa di quelle vecchie il punteggio sta peggiorando anche senza che il numero mostrato sia ancora cambiato.
+      </div>
+    </div>
+  </div>`;
+}
+
 function revRenderStats(p){
   const data=REV_HOTELS[p].data;
   if(!data.length)return;
@@ -5529,6 +5641,7 @@ function revRenderStats(p){
   // Pannelli aggiuntivi: calibrazione e impatto di una nuova recensione
   try{revRenderCalib(p,pb,hl);}catch(e){}
   try{revRenderImpact(p,pb,scored,hl,now);}catch(e){}
+  try{revRenderDistrib(p,pb,scored,hl,now);}catch(e){}
 }
 function revSetPage(p,page){
   const h=REV_HOTELS[p];

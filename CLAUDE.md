@@ -198,7 +198,7 @@ Le funzioni accettano sia la forma interna `{_dateTs,_score}` sia quella documen
 Ogni struttura ha una calibrazione **indipendente**. L'utente inserisce il punteggio che Booking mostra in cima a *Extranet → Recensioni* (una cifra decimale) e da lì si ricava l'emivita.
 
 - Chiave KV **`qm_rev_calib`**: `{ sa:{scoreReale, ts, hl, fascia, fuoriModello}, ... }`, letta dal cloud in `restoreReviews()` così il valore inserito su un PC vale su tutti.
-- **Non bloccante**: senza valore si usa `REV_HL_DEFAULT=173` e si mostra il badge `non calibrato`.
+- **Non bloccante**: senza valore si usa `REV_HL_DEFAULT=136` e si mostra il badge `non calibrato`. **136 non deriva dalla sola calibrazione sul punteggio** (che da sola dà una fascia larga 62–285 gg, troppo per un default): è il centro della fascia ristretta osservando **tre transizioni reali del display** su SoulArt (8.9 → un voto 5 → 8.8 → un voto 10 → 8.9), che restringe a 121–151 gg. Un'osservazione empirica vale più di una calibrazione su un solo numero.
 - Oltre `REV_CALIB_STALE_GG=90` giorni dall'inserimento → badge `calibrazione da aggiornare`.
 - Se nessuna emivita riproduce il valore → `fuoriModello`, avviso rosso esplicito e `console.warn`. **Non fallisce in silenzio**: o il numero è digitato male, o il CSV non è aggiornato.
 
@@ -234,15 +234,37 @@ Usata in due punti:
 - **Riquadro obiettivo**: la nota scadenze è quantificata (`N rec = X% del peso`) invece del generico `⚠️ N recensioni in scadenza`, e sotto lo 0,5% dice esplicitamente *ininfluenti*.
 - **Pannello impatto**: riga "fra 90 giorni" con recensioni in uscita, quota di peso, deriva e nuovo peso effettivo.
 
-**Attenzione a non confondere due cose diverse**: il calo del peso effettivo su 90 giorni è quasi tutto **invecchiamento** dello storico, non scadenze. Su una struttura grande con emivita 173 gg il peso passa da ~147 a ~102 (−30%) mentre le uscite valgono lo 0,55%. Il testo della UI lo dice esplicitamente, perché attribuire il calo alle scadenze porterebbe a decisioni sbagliate.
+**Attenzione a non confondere due cose diverse**: il calo del peso effettivo su 90 giorni è quasi tutto **invecchiamento** dello storico, non scadenze. Su una struttura grande con emivita ~136-173 gg il peso passa da ~147 a ~102 (−30%) mentre le uscite valgono lo 0,55%. Il testo della UI lo dice esplicitamente, perché attribuire il calo alle scadenze porterebbe a decisioni sbagliate.
 
 La **simulazione previsionale tiene già conto delle uscite**: `revSimulaTarget` scorre il tempo su tutto lo storico e salta le recensioni oltre `REV_FINESTRA_GG`, quindi non serve correggerla a valle.
 
-### Pannello "Impatto di una nuova recensione"
+### Pannello "Impatto della prossima recensione"
 
-`delta(voto) = (voto - score) / (pesoEff + 1)` per i voti 10, 9, 8, 7, 5, 3. Con score 8.866 e pesoEff 150.5: `+0.007` per un 10, `−0.026` per un 5. Evidenzia l'**asimmetria** (un voto basso pesa 3–4 volte più di un voto pieno): è l'informazione che cambia le priorità operative — intercettare l'ospite scontento vale più che chiedere altri 10.
+Prima mostrava solo `delta(voto) = (voto - score) / (pesoEff + 1)` come griglia di sei numeri colorati. **Riprogettato attorno alla domanda operativa vera**: non "di quanto scende il decimale interno" ma **quale voto fa cambiare la cifra che Booking mostra**. Il delta da solo non lo dice — serve ricalcolare `score + delta` e riarrotondare a una cifra:
+
+```
+delta(voto)  = (voto - score) / (pesoEff + 1)
+nuovoScore   = score + delta(voto)
+nuovoDisplay = Math.round(nuovoScore * 10) / 10
+```
+
+Tabella per voto (10, 9, 8, 7, 5, 3) con quattro colonne: Voto, Delta, Nuovo score, **Mostrato**. Le righe sono evidenziate **solo dove il display cambia davvero** (rosso se scende, verde se sale) — se metà delle righe è colorata il colore smette di significare qualcosa, come già successo nella tabella Inventari.
+
+In testa al pannello:
+- **Margine dalla soglia** (`score - soglia`, es. `+0.097 sopra 8.75`). Sotto `0.010` diventa **stato di allerta** rosso: basta una recensione mediocre per cambiare cifra.
+- **Voto più basso che non fa scendere la cifra**, ricalcolato ciclando `v` da 1 a 10 e prendendo il primo il cui display resta ≥ a quello attuale ("fino a un 7 resti a 8.9; da 6 in giù scende"). È la soglia operativa comunicabile in hotel.
 
 **È un pannello aggiuntivo**: "Recensioni in scadenza" (`revRenderExpiring`) resta dov'è e invariato, non è stato sostituito.
+
+### Pannello "Distribuzione del peso nel tempo" — `revRenderDistrib()`
+
+Rende visibile perché poche recensioni recenti spostano il punteggio mentre centinaia di vecchie non contano quasi nulla — la domanda che nasce naturalmente vedendo `652 importate · peso effettivo ≈ 119`.
+
+Fasce di ampiezza pari a **un'emivita** (`0–hl`, `hl–2hl`, `2hl–3hl`, `3hl–5hl`, `oltre 5hl`): per costruzione del decadimento esponenziale la prima vale circa il **50%** del peso, la seconda circa il 25%, e così via. Per ciascuna: numero recensioni, quota % del peso (con barra orizzontale proporzionale) e media dei voti.
+
+La **media di ogni fascia è colorata rispetto alla soglia obiettivo** (verde sopra, rossa sotto): si legge a colpo d'occhio se il periodo che sta *guadagnando* peso è migliore o peggiore di quello che lo sta *perdendo* — cioè se il punteggio sta peggiorando prima che il numero mostrato cambi.
+
+Riga di sintesi sotto la tabella: *"le recensioni degli ultimi N giorni valgono da sole metà del punteggio"*, con N ricavato **cumulando le quote reali** fino a superare 0.5, non assunto uguale all'emivita (che lo approssima soltanto).
 
 ### Tutti i punti che mostrano IL punteggio devono usare `punteggioBooking` + `revHl(p)`
 
