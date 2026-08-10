@@ -608,8 +608,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping · Operativa HKP',hkpsheetar:'Housekeeping · Operativa HKP',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria',prestay:'Pre-stay — ospiti in arrivo'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping · Operativa HKP',hkpsheetar:'Housekeeping · Operativa HKP',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',prestay:'Reception'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -1620,6 +1620,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='controllo-mattino'){try{cmLoad();}catch(e){}}
   if(id==='reception'){try{receptionLoad();}catch(e){}}
   if(id==='resi-biancheria'){try{resiLoad();}catch(e){}}
+  if(id==='prestay'){try{prestayRender();}catch(e){}}
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
   // .staff-area-mirror) — ririchiamato qui solo per popolare lo specchio se la vista
   // viene aperta prima che Overview l'abbia mai fatto in questa sessione.
@@ -3968,6 +3969,20 @@ document.querySelector('.content').addEventListener('scroll',function(){
         const rj=await rc.json();
         if(rj.value){REV_CALIB=JSON.parse(rj.value)||{};localStorage.setItem(REV_CALIB_KEY,rj.value);}
       }catch(e){}
+      // Pre-stay: contatti ospiti e stato invii, più i testi dei messaggi. Il cloud è la
+      // fonte così chi scrive dalla reception e chi controlla dall'ufficio vedono lo stesso
+      // stato e non si mandano doppioni.
+      for(const k of [PRESTAY_KEY,PRESTAY_TPL_KEY]){
+        try{
+          const r=await fetch(PROXY+'/kv/get?key='+k,{cache:'no-store'});
+          const j=await r.json();
+          if(j.value){
+            if(k===PRESTAY_KEY)_prestay=JSON.parse(j.value)||{};else _prestayTpl=JSON.parse(j.value)||{};
+            localStorage.setItem(k,j.value);
+          }
+        }catch(e){}
+      }
+      try{if(document.getElementById('prestay-content'))prestayRender();}catch(e){}
       for(const p of ['sa','bh','sl','pr','ms','ar','sb']){
         try{
           let csvText=localStorage.getItem('qm_rev_'+p);
@@ -10702,6 +10717,301 @@ function ddtPrintMonthReport(ym){
   w.document.close();
   w.onload=()=>w.print();
 }
+// §§ PRE-STAY — MESSAGGI AGLI OSPITI IN ARRIVO FRA 2 GIORNI
+// Ogni giorno si scrive agli ospiti che arrivano fra due giorni. I contatti (mail,
+// telefono) stanno sul PMS e NON sono esportabili: si inseriscono a mano. Quello che
+// però Compass sa già è QUALI CAMERE hanno un arrivo quel giorno — dal Piano Settimanale,
+// che copre 7 giorni. Quindi la lista si pre-popola da sola e si compila solo il contatto:
+// oltre a risparmiare digitazione, dice quanti ospiti aspettarsi (con l'inserimento libero
+// non sapresti mai se ne hai dimenticato uno).
+//
+// ATTENZIONE: il Piano copre SoulArt (Art 1-22), Boutique (201-211) e San Liborio. Principe
+// e Mastrangelo non ci sono: per quelli si usa "+ Aggiungi ospite" (riga libera).
+//
+// Compass è un sito statico e non può spedire mail: apre il messaggio già scritto nel
+// client di posta (mailto:) o in WhatsApp (wa.me, stesso meccanismo del giro Culligan) e
+// l'invio lo conferma l'utente. Lo stato "inviato" è quindi una spunta manuale — segnata
+// automaticamente al click sul pulsante, ma sempre correggibile.
+const PRESTAY_KEY='qm_prestay';
+const PRESTAY_TPL_KEY='qm_prestay_tpl';
+const PRESTAY_GG=2;                 // quanti giorni prima dell'arrivo si scrive
+let _prestay={};                    // { 'YYYY-MM-DD': { 'Art 12': {nome,email,tel,lang,mailTs,waTs} } }
+let _prestayTpl={};                 // { sa:{it:{ogg,corpo}, en:{...}}, ... }
+let _prestayData=null;              // data selezionata 'YYYY-MM-DD' (null = oggi+2)
+let _prestayTplOpen=false;
+
+// Strutture coperte. Il Piano usa le chiavi soulart/boutique/liborio: qui si mappano sui
+// codici già in uso altrove in Compass (sa/bh/sl), più pr/ms per le righe manuali.
+const PRESTAY_HOTELS={
+  sa:{name:'SoulArt Hotel',piano:'soulart'},
+  bh:{name:'Boutique Hotel',piano:'boutique'},
+  sl:{name:'San Liborio',piano:'liborio'},
+  ar:{name:'Art Resort',piano:null},
+  pr:{name:'Principe',piano:null},
+  ms:{name:'Mastrangelo',piano:null}
+};
+// Testi di partenza: sono segnaposto da riscrivere dalla schermata (Modifica testi).
+// I placeholder {nome} {camera} {struttura} {data} vengono sostituiti all'invio.
+const PRESTAY_TPL_DEFAULT={
+  it:{ogg:'Il suo arrivo al {struttura}',corpo:'Gentile {nome},\n\nmanca poco al suo arrivo previsto per il {data} presso {struttura}.\n\n[SCRIVI QUI IL TESTO DEL PRE-STAY]\n\nRestiamo a disposizione per qualsiasi necessità.\n\nCordiali saluti,\n{struttura}'},
+  en:{ogg:'Your upcoming stay at {struttura}',corpo:'Dear {nome},\n\nyour arrival at {struttura} on {data} is approaching.\n\n[WRITE THE PRE-STAY TEXT HERE]\n\nWe remain at your disposal for anything you may need.\n\nBest regards,\n{struttura}'}
+};
+
+function _psFmtISO(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _psFmtIT(iso){const[y,m,d]=iso.split('-');return d+'/'+m+'/'+y;}
+function _psTargetISO(){
+  if(_prestayData)return _prestayData;
+  const d=new Date();d.setDate(d.getDate()+PRESTAY_GG);return _psFmtISO(d);
+}
+function _psLoad(){
+  try{const s=localStorage.getItem(PRESTAY_KEY);_prestay=s?JSON.parse(s):{};}catch(e){_prestay={};}
+  try{const s=localStorage.getItem(PRESTAY_TPL_KEY);_prestayTpl=s?JSON.parse(s):{};}catch(e){_prestayTpl={};}
+}
+function _psSave(){
+  try{localStorage.setItem(PRESTAY_KEY,JSON.stringify(_prestay));}catch(e){}
+  try{kvSet(PRESTAY_KEY,JSON.stringify(_prestay));}catch(e){}
+}
+function _psSaveTpl(){
+  try{localStorage.setItem(PRESTAY_TPL_KEY,JSON.stringify(_prestayTpl));}catch(e){}
+  try{kvSet(PRESTAY_TPL_KEY,JSON.stringify(_prestayTpl));}catch(e){}
+}
+_psLoad();
+function _psTpl(hotel,lang){
+  const h=_prestayTpl[hotel]||{};
+  const t=h[lang];
+  if(t&&(t.ogg||t.corpo))return t;
+  return PRESTAY_TPL_DEFAULT[lang]||PRESTAY_TPL_DEFAULT.it;
+}
+// Camere con un arrivo nella data scelta, prese dal Piano. I CAMBI contano: un cambio è
+// partenza + arrivo lo stesso giorno, quindi c'è comunque un ospite nuovo a cui scrivere.
+function _psCamereDaPiano(iso){
+  const out=[];
+  if(!pianoData||!pianoData.giorni)return out;
+  const itDate=_psFmtIT(iso);
+  const g=pianoData.giorni.find(x=>x.data===itDate);
+  if(!g)return out;
+  Object.entries(PRESTAY_HOTELS).forEach(([code,conf])=>{
+    if(!conf.piano)return;
+    const sez=g[conf.piano];if(!sez)return;
+    [...(sez.arrivi||[]),...(sez.cambi||[])].forEach(cam=>{
+      if(!out.some(o=>o.camera===cam))out.push({camera:cam,hotel:code});
+    });
+  });
+  return out;
+}
+function _psRec(iso,camera){
+  if(!_prestay[iso])_prestay[iso]={};
+  if(!_prestay[iso][camera])_prestay[iso][camera]={nome:'',email:'',tel:'',lang:'it'};
+  return _prestay[iso][camera];
+}
+function prestaySetField(camera,campo,val){
+  const iso=_psTargetISO();
+  const r=_psRec(iso,camera);
+  r[campo]=val;
+  if(campo==='hotel')r.hotel=val;
+  _psSave();
+  if(campo==='lang'||campo==='hotel')prestayRender();
+}
+function prestayNavDay(delta){
+  const d=new Date(_psTargetISO()+'T12:00:00');
+  d.setDate(d.getDate()+delta);
+  _prestayData=_psFmtISO(d);
+  prestayRender();
+}
+function prestayOggi(){_prestayData=null;prestayRender();}
+function prestayAddManuale(){
+  const cam=prompt('Camera o riferimento prenotazione (es. Capri, R2, Art 5):');
+  if(cam===null)return;
+  const c=cam.trim();if(!c)return;
+  const iso=_psTargetISO();
+  const r=_psRec(iso,c);
+  if(!r.hotel)r.hotel='pr';
+  r.manuale=true;
+  _psSave();prestayRender();
+}
+function prestayDelRiga(camera){
+  const iso=_psTargetISO();
+  if(!_prestay[iso]||!_prestay[iso][camera])return;
+  if(!confirm('Rimuovere '+camera+' dalla lista di questo giorno?'))return;
+  delete _prestay[iso][camera];
+  _psSave();prestayRender();
+}
+// L'hotel di una riga può NON essere nel record salvato: per le righe che vengono dal
+// Piano è noto solo dalla sezione del Piano in cui compare la camera. Va quindi risolto
+// ogni volta, altrimenti {struttura} resta vuoto nel messaggio e il template usato è
+// quello sbagliato.
+function _psHotelOf(iso,camera){
+  const r=(_prestay[iso]||{})[camera];
+  if(r&&r.hotel)return r.hotel;
+  const c=_psCamereDaPiano(iso).find(x=>x.camera===camera);
+  return c?c.hotel:'sa';
+}
+// Sostituzione segnaposto: fatta al momento dell'invio, non salvata — così se cambi il
+// template i messaggi non ancora inviati usano subito la versione nuova.
+function _psCompila(txt,r,camera,iso,hotel){
+  const hn=(PRESTAY_HOTELS[hotel||r.hotel]||{}).name||'';
+  return String(txt||'')
+    .replace(/\{nome\}/g,(r.nome||'').trim()||'Ospite')
+    .replace(/\{camera\}/g,camera)
+    .replace(/\{struttura\}/g,hn)
+    .replace(/\{data\}/g,_psFmtIT(iso));
+}
+function prestayInviaMail(camera){
+  const iso=_psTargetISO(),r=_psRec(iso,camera);
+  if(!r.email){alert('Inserisci prima l\'indirizzo email di questo ospite.');return;}
+  const hotel=_psHotelOf(iso,camera);
+  const t=_psTpl(hotel,r.lang||'it');
+  const ogg=_psCompila(t.ogg,r,camera,iso,hotel),corpo=_psCompila(t.corpo,r,camera,iso,hotel);
+  window.location.href='mailto:'+encodeURIComponent(r.email)+'?subject='+encodeURIComponent(ogg)+'&body='+encodeURIComponent(corpo);
+  r.mailTs=Date.now();_psSave();
+  setTimeout(prestayRender,300);
+}
+function prestayInviaWa(camera){
+  const iso=_psTargetISO(),r=_psRec(iso,camera);
+  const tel=(r.tel||'').replace(/[^\d+]/g,'');
+  if(!tel){alert('Inserisci prima il numero di telefono di questo ospite.');return;}
+  const hotel=_psHotelOf(iso,camera);
+  const t=_psTpl(hotel,r.lang||'it');
+  const corpo=_psCompila(t.corpo,r,camera,iso,hotel);
+  window.open('https://wa.me/'+tel.replace(/^\+/,'')+'?text='+encodeURIComponent(corpo),'_blank');
+  r.waTs=Date.now();_psSave();
+  setTimeout(prestayRender,300);
+}
+// Lo stato "inviato" nasce dal click sul pulsante, ma è una spunta come le altre: se il
+// client di posta non si apre, o si annulla, va poterla togliere a mano.
+function prestayToggleInviato(camera,canale){
+  const iso=_psTargetISO(),r=_psRec(iso,camera);
+  const k=canale==='wa'?'waTs':'mailTs';
+  r[k]=r[k]?null:Date.now();
+  _psSave();prestayRender();
+}
+function prestayToggleTpl(){_prestayTplOpen=!_prestayTplOpen;prestayRender();}
+function prestaySetTpl(hotel,lang,campo,val){
+  if(!_prestayTpl[hotel])_prestayTpl[hotel]={};
+  if(!_prestayTpl[hotel][lang])_prestayTpl[hotel][lang]={...(PRESTAY_TPL_DEFAULT[lang]||{})};
+  _prestayTpl[hotel][lang][campo]=val;
+  _psSaveTpl();
+}
+function prestayRender(){
+  const el=document.getElementById('prestay-content');
+  if(!el)return;
+  const iso=_psTargetISO();
+  const dt=new Date(iso+'T12:00:00');
+  const GIORNI=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  const MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  const oggiIso=_psFmtISO(new Date());
+  const ggDa=Math.round((dt-new Date(oggiIso+'T12:00:00'))/86400000);
+
+  // Righe: quelle dal Piano + quelle aggiunte a mano per la stessa data
+  const daPiano=_psCamereDaPiano(iso);
+  const salvate=_prestay[iso]||{};
+  const righeMap={};
+  daPiano.forEach(x=>{righeMap[x.camera]={camera:x.camera,hotel:x.hotel,daPiano:true};});
+  Object.keys(salvate).forEach(cam=>{
+    if(righeMap[cam])return;
+    righeMap[cam]={camera:cam,hotel:salvate[cam].hotel||'pr',daPiano:false};
+  });
+  const righe=Object.values(righeMap).sort((a,b)=>a.camera.localeCompare(b.camera,'it',{numeric:true}));
+
+  const compilate=righe.filter(x=>{const r=salvate[x.camera];return r&&(r.email||r.tel);}).length;
+  const inviate=righe.filter(x=>{const r=salvate[x.camera];return r&&(r.mailTs||r.waTs);}).length;
+
+  let h=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+    <button onclick="prestayNavDay(-1)" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;">‹</button>
+    <div style="min-width:210px;text-align:center;">
+      <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${GIORNI[dt.getDay()]} ${dt.getDate()} ${MESI[dt.getMonth()]}</div>
+      <div style="font-size:var(--fs-xxs);color:${ggDa===PRESTAY_GG?'var(--accent)':'var(--text-dim)'};font-weight:${ggDa===PRESTAY_GG?700:400};">${ggDa===0?'oggi':ggDa===1?'domani':ggDa>0?'fra '+ggDa+' giorni':'passato'}${ggDa===PRESTAY_GG?' · da contattare oggi':''}</div>
+    </div>
+    <button onclick="prestayNavDay(1)" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;">›</button>
+    ${ggDa!==PRESTAY_GG?`<button onclick="prestayOggi()" style="padding:6px 12px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">Torna a fra ${PRESTAY_GG} giorni</button>`:''}
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <span style="font-size:var(--fs-xs);color:var(--text-muted);">${compilate}/${righe.length} con contatto · <strong style="color:${inviate===righe.length&&righe.length?'var(--green)':'var(--text)'};">${inviate} inviati</strong></span>
+      <button onclick="prestayAddManuale()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">+ Aggiungi ospite</button>
+      <button onclick="prestayToggleTpl()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">✏️ Modifica testi</button>
+    </div>
+  </div>`;
+
+  if(!righe.length){
+    const noPiano=!pianoData||!pianoData.giorni||!pianoData.giorni.length;
+    h+=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:9px;padding:18px;text-align:center;color:var(--text-muted);font-size:var(--fs-xs);line-height:1.6;">
+      ${noPiano
+        ? 'Piano Settimanale non caricato: senza il Piano non si sa quali camere hanno un arrivo. Caricalo dall\'Upload Center, oppure aggiungi gli ospiti a mano con "+ Aggiungi ospite".'
+        : 'Nessun arrivo previsto in questa data secondo il Piano Settimanale.<br>Se sai di un arrivo su Principe o Mastrangelo (non coperti dal Piano), aggiungilo con "+ Aggiungi ospite".'}
+    </div>`;
+  }else{
+    const inpS='padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;width:100%;box-sizing:border-box;';
+    h+=`<div style="overflow-x:auto;border:1px solid var(--border-light);border-radius:10px;background:var(--surface);">
+      <table style="border-collapse:collapse;width:100%;min-width:760px;">
+      <thead><tr style="background:var(--bg);">
+        <th style="padding:7px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Camera</th>
+        <th style="padding:7px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Ospite</th>
+        <th style="padding:7px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Email</th>
+        <th style="padding:7px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Telefono</th>
+        <th style="padding:7px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:center;">Lingua</th>
+        <th style="padding:7px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:center;">Invio</th>
+        <th></th>
+      </tr></thead><tbody>`;
+    righe.forEach((x,i)=>{
+      const r=salvate[x.camera]||{nome:'',email:'',tel:'',lang:'it'};
+      const hotel=r.hotel||x.hotel||'sa';
+      const zebra=i%2===1?'background:var(--bg);':'';
+      const esc=s=>String(s||'').replace(/"/g,'&quot;');
+      const camEsc=x.camera.replace(/'/g,"\\'");
+      const mailOk=!!r.mailTs,waOk=!!r.waTs;
+      const chip=(ok,ts,lbl,fn)=>`<span onclick="prestayToggleInviato('${camEsc}','${fn}')" title="${ok?'Inviato il '+new Date(ts).toLocaleString('it-IT')+' — clicca per annullare':'Segna come inviato'}" style="cursor:pointer;font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:10px;background:${ok?'var(--green-bg)':'var(--surface2)'};color:${ok?'var(--green)':'var(--text-dim)'};border:1px solid ${ok?'#9fd3b5':'var(--border-light)'};">${ok?'✓':'○'} ${lbl}</span>`;
+      h+=`<tr style="${zebra}">
+        <td style="padding:7px 10px;font-size:var(--fs-xs);font-weight:700;white-space:nowrap;">${x.camera}
+          <div style="font-size:9px;color:var(--text-dim);font-weight:400;">${(PRESTAY_HOTELS[hotel]||{}).name||''}${x.daPiano?'':' · manuale'}</div></td>
+        <td style="padding:5px 8px;"><input value="${esc(r.nome)}" placeholder="Cognome Nome" onchange="prestaySetField('${camEsc}','nome',this.value)" style="${inpS}min-width:130px;"></td>
+        <td style="padding:5px 8px;"><input type="email" value="${esc(r.email)}" placeholder="email@…" onchange="prestaySetField('${camEsc}','email',this.value)" style="${inpS}min-width:150px;"></td>
+        <td style="padding:5px 8px;"><input value="${esc(r.tel)}" placeholder="+39…" onchange="prestaySetField('${camEsc}','tel',this.value)" style="${inpS}min-width:110px;"></td>
+        <td style="padding:5px 8px;text-align:center;">
+          <select onchange="prestaySetField('${camEsc}','lang',this.value)" style="${inpS}width:auto;min-width:56px;">
+            <option value="it" ${(r.lang||'it')==='it'?'selected':''}>IT</option>
+            <option value="en" ${r.lang==='en'?'selected':''}>EN</option>
+          </select>
+        </td>
+        <td style="padding:5px 10px;white-space:nowrap;text-align:center;">
+          <button onclick="prestayInviaMail('${camEsc}')" title="Apre il client di posta col messaggio già scritto" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:13px;margin-right:3px;">✉️</button>
+          <button onclick="prestayInviaWa('${camEsc}')" title="Apre WhatsApp col messaggio già scritto" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:13px;">💬</button>
+          <div style="margin-top:4px;display:flex;gap:4px;justify-content:center;">${chip(mailOk,r.mailTs,'mail','mail')}${chip(waOk,r.waTs,'wa','wa')}</div>
+        </td>
+        <td style="padding:5px 8px;text-align:center;">${x.daPiano?'':`<button onclick="prestayDelRiga('${camEsc}')" title="Rimuovi riga" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:13px;">✕</button>`}</td>
+      </tr>`;
+    });
+    h+=`</tbody></table></div>
+    <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Le camere in arrivo arrivano dal Piano Settimanale (inclusi i cambi: partenza e arrivo lo stesso giorno significa comunque un ospite nuovo). Nome e contatti vanno letti dal PMS e inseriti qui. I pulsanti aprono il messaggio già compilato: l'invio lo confermi tu, e la spunta si può correggere cliccandola.</div>`;
+  }
+
+  // Editor testi — un template per struttura e lingua, con segnaposto
+  if(_prestayTplOpen){
+    const hotels=Object.keys(PRESTAY_HOTELS);
+    h+=`<div class="panel" style="margin-top:16px;">
+      <div class="panel-header"><span class="panel-title">Testi pre-stay</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">segnaposto: {nome} {camera} {struttura} {data}</span></div>
+      <div class="panel-body" style="padding:14px;">
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:12px;line-height:1.55;">Un testo per struttura e lingua. I segnaposto vengono sostituiti al momento dell'invio, quindi modificando un testo cambiano subito anche i messaggi non ancora inviati. L'oggetto vale solo per la mail; WhatsApp usa il solo corpo.</div>
+        ${hotels.map(hc=>{
+          const conf=PRESTAY_HOTELS[hc];
+          return`<div style="margin-bottom:14px;border:1px solid var(--border-light);border-radius:9px;overflow:hidden;">
+            <div style="background:var(--bg);padding:7px 12px;font-size:var(--fs-xs);font-weight:700;color:var(--text);">${conf.name}</div>
+            <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              ${['it','en'].map(lg=>{
+                const t=_psTpl(hc,lg);
+                return`<div>
+                  <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">${lg.toUpperCase()}</div>
+                  <input value="${String(t.ogg||'').replace(/"/g,'&quot;')}" placeholder="Oggetto" onchange="prestaySetTpl('${hc}','${lg}','ogg',this.value)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;margin-bottom:5px;">
+                  <textarea rows="7" placeholder="Corpo del messaggio" onchange="prestaySetTpl('${hc}','${lg}','corpo',this.value)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;line-height:1.5;resize:vertical;">${String(t.corpo||'')}</textarea>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+  el.innerHTML=h;
+}
+
 // §§ RECEPTION — CASSA (fondo cassa, incasso contante)
 // Sola lettura + modifica libera per il QM. I receptionist operano sull'app dedicata
 // (reception.html, aperta sui PC di reception): qui si legge lo stesso KV per avere il

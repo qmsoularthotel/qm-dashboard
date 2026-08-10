@@ -115,6 +115,7 @@
 
       <div class="nav-section">Reception</div>
       <div class="nav-item" onclick="setView('reception',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M13.5 3.5C9 3.5 5.3 6.7 4.3 11H2v2h2c0 .3 0 .7.1 1H2v2h2.6c1.2 4 4.8 6.5 9 6.5 1.9 0 3.7-.6 5.1-1.6l-1.3-1.7c-1.1.7-2.4 1.1-3.8 1.1-3 0-5.5-1.7-6.6-4.3h6.4v-2H6.5a7 7 0 0 1 0-1H15v-2H6.7c1.1-2.6 3.6-4.4 6.6-4.4 1.4 0 2.7.4 3.8 1.1l1.3-1.7c-1.4-1-3.2-1.6-5-1.6z"/></svg></span></span>Passaggi di Cassa</div>
+      <div class="nav-item" onclick="setView('prestay',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span></span>Pre-stay</div>
       <div class="nav-item" onclick="setView('turni-pref',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15l2 2 4-4"/></svg></span></span>Preferenze Turni<span class="nav-badge" id="turniPrefBadge" style="display:none;"></span></div>
       <div class="nav-item" onclick="setView('turnazione',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-5 7-5s7 1.5 7 5"/><circle cx="17" cy="8" r="2.5"/><path d="M17 13c2.5 0 4.5 1.3 4.5 4"/></svg></span></span>Turnazione Corrente</div>
 
@@ -1586,6 +1587,15 @@
           <div class="panel-body" id="reception-content"></div>
         </div>
       </div>
+      <div class="view" id="view-prestay">
+        <div class="panel">
+          <div class="panel-header">
+            <span style="font-size:18px;">✉️</span>
+            <span class="panel-title">Pre-stay — ospiti in arrivo</span>
+          </div>
+          <div class="panel-body" id="prestay-content"></div>
+        </div>
+      </div>
       <div class="view" id="view-turnazione">
         <div class="panel">
           <div class="panel-header">
@@ -1625,7 +1635,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=735-20260810"></script>
+<script src="app.js?v=736-20260810"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

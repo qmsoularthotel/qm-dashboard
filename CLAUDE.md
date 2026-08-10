@@ -450,6 +450,7 @@ grep -n 'id="view-' index.html
 | `view-controllo-mattino` | Dashboard distribuzione Culligan (stats + QC settimanale + Stampa A4) |
 | `view-reception` | Fondo Cassa & Incasso Contante — sola lettura + modifica per il QM |
 | `view-resi-biancheria` | Resi biancheria inidonea al fornitore Raimondo (solo SoulArt, solo QM) |
+| `view-prestay` | Pre-stay — messaggi agli ospiti in arrivo fra 2 giorni |
 
 ---
 
@@ -1238,6 +1239,50 @@ Campi: data/ora dal movimento, importo, **Consegna (amministrativo)** = `m.perso
 ### Lato Compass (`app.js` §§ RECEPTION — CASSA, `index.html` `#view-reception`)
 
 `receptionLoad()` (chiamata da `setView('reception',...)`) legge entrambe le chiavi KV e chiama `receptionRender()`. Modifica via `receptionEditFondo(id)` / `receptionEditIncasso(id)` — usano `prompt()` per nuovo importo e motivo (stesso pattern di modifica rapida già usato altrove nel dashboard, es. `editShift`), non un modale dedicato.
+
+---
+
+## Pre-stay — messaggi agli ospiti in arrivo (view `prestay`)
+
+### Scopo e vincolo di partenza
+
+Ogni giorno si scrive agli ospiti che arrivano **fra 2 giorni** (`PRESTAY_GG=2`). I contatti (mail, telefono) stanno sul PMS e **non sono esportabili in alcun formato**: vanno inseriti a mano, non c'è modo di aggirarlo.
+
+**Quello che però Compass sa già è QUALI CAMERE hanno un arrivo quel giorno**, dal Piano Settimanale (copre 7 giorni). Quindi la lista si pre-popola e si compila solo il contatto. Non è solo risparmio di digitazione: dice **quanti** ospiti aspettarsi, e con l'inserimento libero non sapresti mai se ne hai dimenticato uno — la vista mostra `3/5 con contatto`.
+
+`_psCamereDaPiano(iso)` prende da `pianoData.giorni[].{soulart,boutique,liborio}` sia `arrivi` sia **`cambi`**: un cambio è partenza + arrivo lo stesso giorno, quindi c'è comunque un ospite nuovo a cui scrivere. Dimenticare i `cambi` significherebbe saltare metà degli arrivi.
+
+**Il Piano copre solo SoulArt (Art 1–22), Boutique (201–211) e San Liborio.** Principe, Mastrangelo e Art Resort non ci sono: per quelli c'è **"+ Aggiungi ospite"**, che crea una riga libera con camera digitata a mano (`manuale:true`, eliminabile con la ✕; le righe dal Piano non sono eliminabili).
+
+### Invio — Compass non spedisce, apre il messaggio già scritto
+
+Compass è un sito statico su GitHub Pages: non ha SMTP e non può inviare nulla. I due pulsanti aprono il messaggio **già compilato** e l'invio lo conferma l'utente:
+
+| Pulsante | Meccanismo | Note |
+|----------|-----------|------|
+| ✉️ mail | `mailto:` con `subject` e `body` già scritti | Apre il client di posta predefinito |
+| 💬 WhatsApp | `wa.me/<numero>?text=…` | Stesso meccanismo del giro Culligan; il numero viene ripulito da spazi e `+` |
+
+Di conseguenza **lo stato "inviato" è una spunta, non una certezza**: viene segnata al click sul pulsante, ma è sempre correggibile cliccando il chip `✓ mail` / `✓ wa` (se il client non si apre, o si annulla l'invio). Salvata su KV `qm_prestay` così chi scrive dalla reception e chi controlla dall'ufficio vedono lo stesso stato e non si mandano doppioni.
+
+### Modello dati
+
+```js
+qm_prestay     = { 'YYYY-MM-DD': { 'Art 12': {nome,email,tel,lang:'it'|'en',hotel?,manuale?,mailTs,waTs} } }
+qm_prestay_tpl = { sa:{it:{ogg,corpo}, en:{ogg,corpo}}, bh:{…}, sl:{…}, ar:{…}, pr:{…}, ms:{…} }
+```
+
+### Template — editabili dalla schermata, non nel codice
+
+Un testo per **struttura e lingua** (IT/EN), modificabile da "✏️ Modifica testi" senza toccare il codice. `PRESTAY_TPL_DEFAULT` contiene solo segnaposto (`[SCRIVI QUI IL TESTO DEL PRE-STAY]`) da riscrivere al primo uso.
+
+Segnaposto sostituiti **al momento dell'invio, non salvati** (`_psCompila`): modificando un template cambiano subito anche i messaggi non ancora inviati.
+
+`{nome}` · `{camera}` · `{struttura}` · `{data}` — l'oggetto vale solo per la mail, WhatsApp usa il solo corpo.
+
+### `_psHotelOf(iso,camera)` — non togliere
+
+Per le righe che vengono dal Piano **l'hotel non è nel record salvato**: è noto solo dalla sezione del Piano in cui la camera compare. Va quindi risolto a ogni invio (`record.hotel` → altrimenti Piano → altrimenti `sa`). Senza, `{struttura}` resta vuoto nel messaggio **e viene usato il template della struttura sbagliata** — bug trovato in test prima del rilascio, non ripristinare la vecchia `r.hotel||'sa'`.
 
 ---
 
