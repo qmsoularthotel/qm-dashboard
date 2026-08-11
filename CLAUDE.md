@@ -1330,6 +1330,19 @@ Compass è un sito statico su GitHub Pages: non ha SMTP e non può inviare nulla
 
 Di conseguenza **lo stato "inviato" è una spunta, non una certezza**: viene segnata al click sul pulsante, ma è sempre correggibile cliccando il chip `✓ mail` / `✓ wa` (se il client non si apre, o si annulla l'invio). Salvata su KV `qm_prestay` così chi scrive dalla reception e chi controlla dall'ufficio vedono lo stesso stato e non si mandano doppioni.
 
+### Anteprima prima dell'invio — `prestayAnteprima(camera, canale)`
+
+I pulsanti ✉️/💬 **non spediscono al volo**: aprono un modal col messaggio già compilato e **modificabile**, e solo da lì parte l'invio (`prestayInviaDaAnteprima()` → `_psSpedisciMail` / `_psSpedisciWa`). Con nome e contatti copiati a mano dal PMS, un refuso o un segnaposto rimasto vuoto si vedono solo rileggendo — e una mail sbagliata a un ospite non si richiama indietro.
+
+**Le correzioni valgono per quel singolo invio**, non toccano il template: altrimenti una modifica al volo per un ospite se la porterebbero dietro tutti i successivi. Per cambiare il testo di tutti c'è "✏️ Modifica testi".
+
+Il modal segnala tre cose che si notano solo rileggendo:
+- il testo contiene ancora `[SCRIVI QUI IL TESTO DEL PRE-STAY]` (template mai personalizzato);
+- il nome ospite è vuoto → il messaggio dirà genericamente "Gentile Ospite";
+- è rimasto un segnaposto tra graffe non sostituito (di solito scritto male, es. `{Nome}`).
+
+Per WhatsApp il campo oggetto non compare (non esiste) e il pulsante dice "Apri WhatsApp". L'etichetta distingue anche fra invio diretto e apertura del client di posta, così si sa sempre cosa sta per succedere.
+
 ### Modello dati
 
 ```js
