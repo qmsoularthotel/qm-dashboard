@@ -43,7 +43,7 @@ cambiare per usarne un altro è solo la `fetch` finale.
 Passi:
 
 1. Crea l'account.
-2. Aggiungi come dominio **`invii.soularthotel.com`** (il sottodominio, non
+2. Aggiungi come dominio **`mail.soularthotel.com`** (il sottodominio, non
    `soularthotel.com`).
 3. Il servizio mostrerà dei **record DNS da aggiungere** (tipicamente un TXT per l'SPF del
    sottodominio e uno o più record per il DKIM). Vanno inseriti nel pannello DNS di
@@ -53,12 +53,12 @@ Passi:
 5. Genera una **API key** e tienila da parte per il passo 2.
 
 **I record vanno sul sottodominio.** Se il servizio chiede di creare un record chiamato
-`invii` o `resend._domainkey.invii`, va inserito così su Register dentro la zona di
+`mail` o `resend._domainkey.mail`, va inserito così su Register dentro la zona di
 `soularthotel.com` — Register aggiunge da sé il dominio in fondo. Non va toccato nessun
 record esistente: si aggiungono soltanto righe nuove.
 
 L'indirizzo mittente deve appartenere al dominio verificato. **Va verificato il
-sottodominio `invii.soularthotel.com`, non `soularthotel.com`**: è precisamente questo che
+sottodominio `mail.soularthotel.com`, non `soularthotel.com`**: è precisamente questo che
 tiene separati i DNS dell'invio da quelli della posta esistente.
 
 ---
@@ -71,11 +71,11 @@ Su Cloudflare → Workers → il vostro worker → Settings → Variables → **
 |------|--------|
 | `RESEND_KEY` | la API key del servizio di invio |
 | `PRESTAY_KEY` | una password lunga inventata da voi (è quella che inserirete in Compass) |
-| `PRESTAY_FROM` | mittente, sul **sottodominio**: `Quality Manager <qm@invii.soularthotel.com>` |
+| `PRESTAY_FROM` | mittente, sul **sottodominio**: `Quality Manager <qm@mail.soularthotel.com>` |
 | `PRESTAY_REPLYTO` | indirizzo a cui rispondono gli ospiti: `qm@soularthotel.com` |
 
 **Perché mittente e risposta sono diversi.** Si spedisce da un sottodominio nuovo
-(`invii.soularthotel.com`) così i record DNS del dominio principale — su cui gira la posta
+(`mail.soularthotel.com`) così i record DNS del dominio principale — su cui gira la posta
 vera dell'hotel — **non vengono toccati**: nessun rischio che le mail quotidiane inizino a
 finire in spam. Il `Reply-To` riporta però le risposte degli ospiti su
 `qm@soularthotel.com`, dove le leggi già.
