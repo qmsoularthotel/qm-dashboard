@@ -1341,7 +1341,19 @@ Il modal segnala tre cose che si notano solo rileggendo:
 - il nome ospite è vuoto → il messaggio dirà genericamente "Gentile Ospite";
 - è rimasto un segnaposto tra graffe non sostituito (di solito scritto male, es. `{Nome}`).
 
-Per WhatsApp il campo oggetto non compare (non esiste) e il pulsante dice "Apri WhatsApp". L'etichetta distingue anche fra invio diretto e apertura del client di posta, così si sa sempre cosa sta per succedere.
+**Tre pulsanti per riga, tre modi di aprire la stessa anteprima** (`canale`):
+
+| Pulsante | `canale` | Cosa mostra |
+|----------|----------|-------------|
+| 👁 | `'both'` | messaggio + **entrambe** le vie di invio: si sceglie da lì. L'oggetto è marcato "solo per la mail" |
+| ✉️ | `'mail'` | anteprima già orientata alla mail, un solo pulsante di invio |
+| 💬 | `'wa'` | anteprima senza campo oggetto (WhatsApp non ce l'ha) |
+
+Con `'both'` compaiono solo le vie per cui esiste il contatto: se manca il telefono resta il solo pulsante mail. Senza nessun contatto l'anteprima non si apre e lo dice.
+
+`prestayInviaDaAnteprima(canaleScelto)` accetta il canale come argomento proprio per il caso `'both'`, dove la scelta avviene nel modal e non è nota all'apertura.
+
+L'etichetta del pulsante mail distingue fra invio diretto ("Invia la mail") e apertura del client ("Apri il client di posta"), così si sa sempre cosa sta per succedere.
 
 ### Modello dati
 
@@ -1371,6 +1383,8 @@ Per le righe che vengono dal Piano **l'hotel non è nel record salvato**: è not
 Traccia digitale della **distinta cartacea** che le housekeeper compilano ogni giorno per la biancheria macchiata/difettata da rendere al fornitore Raimondo. Deliberatamente **solo lato Compass e solo per il QM**: le HKP continuano a scrivere sul modulo cartaceo come da procedura, il QM trascrive qui e da qui genera la distinta riepilogativa A4 da far firmare a Raimondo. Nessuna app mobile per le cameriere, nessun accesso per la ditta esterna di Art Resort.
 
 **Due strutture** (`RESI_HOTELS`): SoulArt Hotel (`sa`) e Boutique Hotel Piazza Carità (`bh`), selezionabili a linguette. **Art Resort resta fuori di proposito** — fa capo al Sig. Maddaloni, non al QM, e la sua ditta di pulizie è esterna. I due sacchi sono fisicamente distinti e si consegnano separatamente, quindi periodo aperto, totali, avviso e distinta sono **sempre di una struttura sola**.
+
+**Voce menu**: "Messaggi Pre-stay" vive in **Operativo Quotidiano**, subito dopo Registration Cards — è un'attività quotidiana di reception, non un'impostazione. `breadcrumbs.prestay` è `'Operativo Quotidiano'`.
 
 **Voce menu**: la voce sidebar "Resi Biancheria" vive dentro la sezione **Housekeeping** (insieme a "Operativa HKP" e "Bilanciamento Camere"), non più in una sezione "Biancheria" a sé — eliminata perché conteneva una sola voce. `breadcrumbs['resi-biancheria']` è `'Housekeeping'`.
 

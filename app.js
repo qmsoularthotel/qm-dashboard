@@ -608,8 +608,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria',prestay:'Pre-stay — ospiti in arrivo'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping · Operativa HKP',hkpsheetar:'Housekeeping · Operativa HKP',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',prestay:'Reception'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria',prestay:'Messaggi Pre-stay'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping · Operativa HKP',hkpsheetar:'Housekeeping · Operativa HKP',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',prestay:'Operativo Quotidiano'};
 let hkpGroupOpen=false;
 function toggleHkpGroup(){
   hkpGroupOpen=!hkpGroupOpen;
@@ -11100,14 +11100,18 @@ function _psSpedisciWa(camera,corpo){
 let _psAnteprima=null;   // {camera,canale}
 function prestayAnteprima(camera,canale){
   const iso=_psTargetISO(),r=_psRec(iso,camera);
-  if(canale==='mail'&&!r.email){alert('Inserisci prima l\'indirizzo email di questo ospite.');return;}
-  if(canale==='wa'&&!(r.tel||'').replace(/[^\d+]/g,'')){alert('Inserisci prima il numero di telefono di questo ospite.');return;}
+  const haMail=!!r.email,haTel=!!(r.tel||'').replace(/[^\d+]/g,'');
+  // canale 'both' = pulsante Anteprima: mostra il messaggio e lascia scegliere da lì come
+  // mandarlo. ✉️/💬 aprono la stessa anteprima ma già orientata a un canale solo.
+  if(canale==='mail'&&!haMail){alert('Inserisci prima l\'indirizzo email di questo ospite.');return;}
+  if(canale==='wa'&&!haTel){alert('Inserisci prima il numero di telefono di questo ospite.');return;}
+  if(canale==='both'&&!haMail&&!haTel){alert('Inserisci prima almeno un contatto (email o telefono) per vedere l\'anteprima.');return;}
   const hotel=_psHotelOf(iso,camera);
   const t=_psTpl(hotel,r.lang||'it');
   const ogg=_psCompila(t.ogg,r,camera,iso,hotel);
   const corpo=_psCompila(t.corpo,r,camera,iso,hotel);
   _psAnteprima={camera,canale};
-  const dest=canale==='mail'?r.email:(r.tel||'');
+  const dest=canale==='mail'?r.email:canale==='wa'?(r.tel||''):[r.email,r.tel].filter(Boolean).join(' · ')||'nessun contatto';
   const nomeH=(PRESTAY_HOTELS[hotel]||{}).name||'';
   // Avvisi su ciò che si nota solo rileggendo: segnaposto non sostituiti (template mai
   // personalizzato) e nome ospite mancante, che fa uscire un generico "Gentile Ospite".
@@ -11122,19 +11126,20 @@ function prestayAnteprima(camera,canale){
   m.onclick=e=>{if(e.target===m)prestayChiudiAnteprima();};
   m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:22px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto;">
     <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;flex-wrap:wrap;">
-      <span style="font-size:var(--fs-sm);font-weight:700;">${canale==='mail'?'✉️ Anteprima mail':'💬 Anteprima WhatsApp'}</span>
+      <span style="font-size:var(--fs-sm);font-weight:700;">${canale==='mail'?'✉️ Anteprima mail':canale==='wa'?'💬 Anteprima WhatsApp':'👁 Anteprima messaggio'}</span>
       <span style="font-size:var(--fs-xs);color:var(--text-muted);">${camera} · ${nomeH} · ${(r.lang||'it').toUpperCase()}</span>
     </div>
     <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:12px;">A: <strong style="color:var(--text);">${esc(dest)}</strong>${canale==='mail'&&_psMailPronto()?' · parte davvero da qui':canale==='mail'?' · si aprirà il client di posta':''}</div>
     ${avvisi.length?`<div style="background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.55;margin-bottom:12px;">${avvisi.map(a=>'• '+a).join('<br>')}</div>`:''}
-    ${canale==='mail'?`<label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">OGGETTO</label>
+    ${canale!=='wa'?`<label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">OGGETTO${canale==='both'?' <span style="font-weight:400;text-transform:none;">(solo per la mail)</span>':''}</label>
     <input id="psAntOgg" value="${String(ogg).replace(/"/g,'&quot;')}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;margin-bottom:10px;">`:''}
     <label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">MESSAGGIO</label>
     <textarea id="psAntCorpo" rows="13" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;line-height:1.6;resize:vertical;">${esc(corpo)}</textarea>
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.5;">Le modifiche qui valgono solo per questo invio. Per cambiare il testo di tutti, usa "✏️ Modifica testi".</div>
-    <div style="display:flex;gap:8px;margin-top:14px;">
-      <button onclick="prestayChiudiAnteprima()" style="flex:1;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-weight:600;font-size:var(--fs-xs);cursor:pointer;">Annulla</button>
-      <button onclick="prestayInviaDaAnteprima()" style="flex:2;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;">${canale==='mail'?(_psMailPronto()?'Invia la mail':'Apri il client di posta'):'Apri WhatsApp'}</button>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+      <button onclick="prestayChiudiAnteprima()" style="flex:1;min-width:90px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-weight:600;font-size:var(--fs-xs);cursor:pointer;">${canale==='both'?'Chiudi':'Annulla'}</button>
+      ${canale!=='wa'&&haMail?`<button onclick="prestayInviaDaAnteprima('mail')" style="flex:2;min-width:150px;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;">${_psMailPronto()?'✉️ Invia la mail':'✉️ Apri il client di posta'}</button>`:''}
+      ${canale!=='mail'&&haTel?`<button onclick="prestayInviaDaAnteprima('wa')" style="flex:2;min-width:130px;padding:10px;background:${canale==='both'?'var(--surface)':'var(--accent)'};color:${canale==='both'?'var(--text)':'#fff'};border:${canale==='both'?'1px solid var(--border)':'none'};border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;">💬 Apri WhatsApp</button>`:''}
     </div>
   </div>`;
   document.body.appendChild(m);
@@ -11144,9 +11149,10 @@ function prestayChiudiAnteprima(){
   if(m)m.remove();
   _psAnteprima=null;
 }
-function prestayInviaDaAnteprima(){
+function prestayInviaDaAnteprima(canaleScelto){
   if(!_psAnteprima)return;
-  const{camera,canale}=_psAnteprima;
+  const camera=_psAnteprima.camera;
+  const canale=canaleScelto||_psAnteprima.canale;
   const oggEl=document.getElementById('psAntOgg'),corpoEl=document.getElementById('psAntCorpo');
   const ogg=oggEl?oggEl.value:'';
   const corpo=corpoEl?corpoEl.value:'';
@@ -11257,6 +11263,7 @@ function prestayRender(){
           </select>
         </td>
         <td style="padding:5px 10px;white-space:nowrap;text-align:center;">
+          <button onclick="prestayAnteprima('${camEsc}','both')" title="Vedi e correggi il messaggio prima di mandarlo" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:13px;margin-right:3px;">👁</button>
           <button onclick="prestayAnteprima('${camEsc}','mail')" ${inFlight?'disabled':''} title="Anteprima del messaggio prima di inviare" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:${inFlight?'wait':'pointer'};font-size:13px;margin-right:3px;opacity:${inFlight?'.5':'1'};">${inFlight?'⏳':'✉️'}</button>
           <button onclick="prestayAnteprima('${camEsc}','wa')" title="Anteprima, poi apre WhatsApp" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:13px;">💬</button>
           <div style="margin-top:4px;display:flex;gap:4px;justify-content:center;">${chip(mailOk,r.mailTs,'mail','mail')}${chip(waOk,r.waTs,'wa','wa')}</div>
