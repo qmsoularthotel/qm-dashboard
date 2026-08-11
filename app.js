@@ -11052,22 +11052,15 @@ function prestaySetMailCfg(campo,val){
 function prestayToggleMailCfg(){_prestayMailCfgOpen=!_prestayMailCfgOpen;prestayRender();}
 let _prestayMailCfgOpen=false;
 
-function prestayInviaMail(camera){
+// Spedizione vera e propria — chiamata dall'anteprima, non direttamente dal pulsante.
+function _psSpedisciMail(camera,ogg,corpo){
   const iso=_psTargetISO(),r=_psRec(iso,camera);
-  if(!r.email){alert('Inserisci prima l\'indirizzo email di questo ospite.');return;}
-  const hotel=_psHotelOf(iso,camera);
-  const t=_psTpl(hotel,r.lang||'it');
-  const ogg=_psCompila(t.ogg,r,camera,iso,hotel),corpo=_psCompila(t.corpo,r,camera,iso,hotel);
   if(!_psMailPronto()){
-    // Non configurato: comportamento di prima, apre il client di posta.
     window.location.href='mailto:'+encodeURIComponent(r.email)+'?subject='+encodeURIComponent(ogg)+'&body='+encodeURIComponent(corpo);
     r.mailTs=Date.now();_psSave();
     setTimeout(prestayRender,300);
     return;
   }
-  // Invio diretto: la mail parte davvero, quindi si chiede conferma — con nome e dati
-  // presi a mano dal PMS, saltare del tutto la rilettura non è prudente.
-  if(!confirm('Inviare la mail a '+r.email+'?\n\nOggetto: '+ogg))return;
   const btnKey='ps-mail-'+camera;
   _psMailInFlight[btnKey]=true;prestayRender();
   fetch(_psMailCfg.endpoint,{
@@ -11089,17 +11082,80 @@ function prestayInviaMail(camera){
   });
 }
 let _psMailInFlight={};
-function prestayInviaWa(camera){
+function _psSpedisciWa(camera,corpo){
   const iso=_psTargetISO(),r=_psRec(iso,camera);
   const tel=(r.tel||'').replace(/[^\d+]/g,'');
   if(!tel){alert('Inserisci prima il numero di telefono di questo ospite.');return;}
-  const hotel=_psHotelOf(iso,camera);
-  const t=_psTpl(hotel,r.lang||'it');
-  const corpo=_psCompila(t.corpo,r,camera,iso,hotel);
   window.open('https://wa.me/'+tel.replace(/^\+/,'')+'?text='+encodeURIComponent(corpo),'_blank');
   r.waTs=Date.now();_psSave();
   setTimeout(prestayRender,300);
 }
+// ── Anteprima prima dell'invio ──────────────────────────────────────────────
+// I pulsanti ✉️/💬 non spediscono più al volo: aprono il messaggio già compilato,
+// modificabile. Con nome e contatti copiati a mano dal PMS, un refuso nel nome o un
+// segnaposto rimasto vuoto si vedono solo rileggendo — e una mail sbagliata a un ospite
+// non si richiama indietro. Le correzioni valgono per QUESTO invio soltanto: il template
+// resta com'è (si cambia da "Modifica testi"), altrimenti una correzione al volo per un
+// ospite si porterebbe dietro tutti i successivi.
+let _psAnteprima=null;   // {camera,canale}
+function prestayAnteprima(camera,canale){
+  const iso=_psTargetISO(),r=_psRec(iso,camera);
+  if(canale==='mail'&&!r.email){alert('Inserisci prima l\'indirizzo email di questo ospite.');return;}
+  if(canale==='wa'&&!(r.tel||'').replace(/[^\d+]/g,'')){alert('Inserisci prima il numero di telefono di questo ospite.');return;}
+  const hotel=_psHotelOf(iso,camera);
+  const t=_psTpl(hotel,r.lang||'it');
+  const ogg=_psCompila(t.ogg,r,camera,iso,hotel);
+  const corpo=_psCompila(t.corpo,r,camera,iso,hotel);
+  _psAnteprima={camera,canale};
+  const dest=canale==='mail'?r.email:(r.tel||'');
+  const nomeH=(PRESTAY_HOTELS[hotel]||{}).name||'';
+  // Avvisi su ciò che si nota solo rileggendo: segnaposto non sostituiti (template mai
+  // personalizzato) e nome ospite mancante, che fa uscire un generico "Gentile Ospite".
+  const avvisi=[];
+  if(/\[SCRIVI QUI|\[WRITE THE/i.test(corpo))avvisi.push('Il testo contiene ancora il segnaposto da riscrivere: personalizzalo in "Modifica testi", oppure correggilo qui sotto solo per questo invio.');
+  if(!(r.nome||'').trim())avvisi.push('Nome ospite vuoto: il messaggio dirà genericamente "Gentile Ospite".');
+  if(/\{[a-z]+\}/i.test(corpo)||/\{[a-z]+\}/i.test(ogg))avvisi.push('C\'è un segnaposto tra graffe non sostituito: controlla che sia scritto esattamente {nome}, {camera}, {struttura} o {data}.');
+  const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const m=document.createElement('div');
+  m.id='psAnteprimaModal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+  m.onclick=e=>{if(e.target===m)prestayChiudiAnteprima();};
+  m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:22px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto;">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;flex-wrap:wrap;">
+      <span style="font-size:var(--fs-sm);font-weight:700;">${canale==='mail'?'✉️ Anteprima mail':'💬 Anteprima WhatsApp'}</span>
+      <span style="font-size:var(--fs-xs);color:var(--text-muted);">${camera} · ${nomeH} · ${(r.lang||'it').toUpperCase()}</span>
+    </div>
+    <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:12px;">A: <strong style="color:var(--text);">${esc(dest)}</strong>${canale==='mail'&&_psMailPronto()?' · parte davvero da qui':canale==='mail'?' · si aprirà il client di posta':''}</div>
+    ${avvisi.length?`<div style="background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.55;margin-bottom:12px;">${avvisi.map(a=>'• '+a).join('<br>')}</div>`:''}
+    ${canale==='mail'?`<label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">OGGETTO</label>
+    <input id="psAntOgg" value="${String(ogg).replace(/"/g,'&quot;')}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;margin-bottom:10px;">`:''}
+    <label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">MESSAGGIO</label>
+    <textarea id="psAntCorpo" rows="13" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;line-height:1.6;resize:vertical;">${esc(corpo)}</textarea>
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.5;">Le modifiche qui valgono solo per questo invio. Per cambiare il testo di tutti, usa "✏️ Modifica testi".</div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button onclick="prestayChiudiAnteprima()" style="flex:1;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-weight:600;font-size:var(--fs-xs);cursor:pointer;">Annulla</button>
+      <button onclick="prestayInviaDaAnteprima()" style="flex:2;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;">${canale==='mail'?(_psMailPronto()?'Invia la mail':'Apri il client di posta'):'Apri WhatsApp'}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
+function prestayChiudiAnteprima(){
+  const m=document.getElementById('psAnteprimaModal');
+  if(m)m.remove();
+  _psAnteprima=null;
+}
+function prestayInviaDaAnteprima(){
+  if(!_psAnteprima)return;
+  const{camera,canale}=_psAnteprima;
+  const oggEl=document.getElementById('psAntOgg'),corpoEl=document.getElementById('psAntCorpo');
+  const ogg=oggEl?oggEl.value:'';
+  const corpo=corpoEl?corpoEl.value:'';
+  if(!corpo.trim()){alert('Il messaggio è vuoto.');return;}
+  prestayChiudiAnteprima();
+  if(canale==='mail')_psSpedisciMail(camera,ogg,corpo);
+  else _psSpedisciWa(camera,corpo);
+}
+
 // Lo stato "inviato" nasce dal click sul pulsante, ma è una spunta come le altre: se il
 // client di posta non si apre, o si annulla, va poterla togliere a mano.
 function prestayToggleInviato(camera,canale){
@@ -11201,8 +11257,8 @@ function prestayRender(){
           </select>
         </td>
         <td style="padding:5px 10px;white-space:nowrap;text-align:center;">
-          <button onclick="prestayInviaMail('${camEsc}')" ${inFlight?'disabled':''} title="${_psMailPronto()?'Invia la mail (con conferma)':'Apre il client di posta col messaggio già scritto'}" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:${inFlight?'wait':'pointer'};font-size:13px;margin-right:3px;opacity:${inFlight?'.5':'1'};">${inFlight?'⏳':'✉️'}</button>
-          <button onclick="prestayInviaWa('${camEsc}')" title="Apre WhatsApp col messaggio già scritto" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:13px;">💬</button>
+          <button onclick="prestayAnteprima('${camEsc}','mail')" ${inFlight?'disabled':''} title="Anteprima del messaggio prima di inviare" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:${inFlight?'wait':'pointer'};font-size:13px;margin-right:3px;opacity:${inFlight?'.5':'1'};">${inFlight?'⏳':'✉️'}</button>
+          <button onclick="prestayAnteprima('${camEsc}','wa')" title="Anteprima, poi apre WhatsApp" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:13px;">💬</button>
           <div style="margin-top:4px;display:flex;gap:4px;justify-content:center;">${chip(mailOk,r.mailTs,'mail','mail')}${chip(waOk,r.waTs,'wa','wa')}</div>
           ${r.mailErr&&!mailOk?`<div style="margin-top:3px;font-size:9px;color:var(--red);max-width:150px;white-space:normal;line-height:1.3;">${String(r.mailErr).substring(0,60)}</div>`:''}
         </td>
