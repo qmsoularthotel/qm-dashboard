@@ -42,14 +42,24 @@ cambiare per usarne un altro è solo la `fetch` finale.
 
 Passi:
 
-1. Crea l'account e verifica il dominio da cui vuoi spedire (es. `compass-qm.com` o il
-   dominio della posta aziendale).
-2. Il servizio ti darà **record DNS da aggiungere** (SPF e DKIM). Vanno inseriti dove
-   gestite il dominio. **Senza questi record le mail partono ma finiscono in spam.**
-3. Genera una **API key** e tienila da parte per il passo 2.
+1. Crea l'account.
+2. Aggiungi come dominio **`invii.soularthotel.com`** (il sottodominio, non
+   `soularthotel.com`).
+3. Il servizio mostrerà dei **record DNS da aggiungere** (tipicamente un TXT per l'SPF del
+   sottodominio e uno o più record per il DKIM). Vanno inseriti nel pannello DNS di
+   **Register.it**, dove è gestito `soularthotel.com`.
+   **Senza questi record le mail partono ma finiscono in spam.**
+4. Attendi che il servizio segni il dominio come verificato (di solito minuti, a volte ore).
+5. Genera una **API key** e tienila da parte per il passo 2.
 
-L'indirizzo mittente deve appartenere al dominio verificato: non si può spedire "da"
-un indirizzo Register se il dominio non è verificato presso il servizio.
+**I record vanno sul sottodominio.** Se il servizio chiede di creare un record chiamato
+`invii` o `resend._domainkey.invii`, va inserito così su Register dentro la zona di
+`soularthotel.com` — Register aggiunge da sé il dominio in fondo. Non va toccato nessun
+record esistente: si aggiungono soltanto righe nuove.
+
+L'indirizzo mittente deve appartenere al dominio verificato. **Va verificato il
+sottodominio `invii.soularthotel.com`, non `soularthotel.com`**: è precisamente questo che
+tiene separati i DNS dell'invio da quelli della posta esistente.
 
 ---
 
@@ -61,7 +71,14 @@ Su Cloudflare → Workers → il vostro worker → Settings → Variables → **
 |------|--------|
 | `RESEND_KEY` | la API key del servizio di invio |
 | `PRESTAY_KEY` | una password lunga inventata da voi (è quella che inserirete in Compass) |
-| `PRESTAY_FROM` | mittente, es. `Quality Manager <qm@compass-qm.com>` |
+| `PRESTAY_FROM` | mittente, sul **sottodominio**: `Quality Manager <qm@invii.soularthotel.com>` |
+| `PRESTAY_REPLYTO` | indirizzo a cui rispondono gli ospiti: `qm@soularthotel.com` |
+
+**Perché mittente e risposta sono diversi.** Si spedisce da un sottodominio nuovo
+(`invii.soularthotel.com`) così i record DNS del dominio principale — su cui gira la posta
+vera dell'hotel — **non vengono toccati**: nessun rischio che le mail quotidiane inizino a
+finire in spam. Il `Reply-To` riporta però le risposte degli ospiti su
+`qm@soularthotel.com`, dove le leggi già.
 
 Vanno inseriti come **Encrypted**, non come plain text: altrimenti restano leggibili
 nella dashboard di Cloudflare.
@@ -130,7 +147,13 @@ async function handlePrestayMail(request, env) {
       'Authorization': 'Bearer ' + env.RESEND_KEY,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ from: env.PRESTAY_FROM, to: [to], subject, text })
+    body: JSON.stringify({
+      from: env.PRESTAY_FROM,
+      to: [to],
+      reply_to: env.PRESTAY_REPLYTO,
+      subject,
+      text
+    })
   });
 
   if (!r.ok) {
