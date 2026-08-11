@@ -10993,9 +10993,17 @@ function prestayAddManuale(){
   const cam=prompt('Camera o riferimento prenotazione (es. Capri, R2, Art 5):');
   if(cam===null)return;
   const c=cam.trim();if(!c)return;
+  // La struttura va CHIESTA, non indovinata: prima veniva assegnato d'ufficio 'pr'
+  // (Principe) e la mail nominava la struttura sbagliata usando pure il template sbagliato.
+  const codici=Object.keys(PRESTAY_HOTELS);
+  const elenco=codici.map((k,i)=>(i+1)+') '+PRESTAY_HOTELS[k].name).join('\n');
+  const scelta=prompt('Struttura di '+c+':\n\n'+elenco+'\n\nScrivi il numero:','1');
+  if(scelta===null)return;
+  const idx=parseInt(scelta,10)-1;
+  if(!(idx>=0&&idx<codici.length)){alert('Struttura non valida: aggiungi di nuovo la riga e scrivi un numero da 1 a '+codici.length+'.');return;}
   const iso=_psTargetISO();
   const r=_psRec(iso,c);
-  if(!r.hotel)r.hotel='pr';
+  r.hotel=codici[idx];
   r.manuale=true;
   _psSave();prestayRender();
 }
@@ -11178,7 +11186,11 @@ function prestayRender(){
       const chip=(ok,ts,lbl,fn)=>`<span onclick="prestayToggleInviato('${camEsc}','${fn}')" title="${ok?'Inviato il '+new Date(ts).toLocaleString('it-IT')+' — clicca per annullare':'Segna come inviato'}" style="cursor:pointer;font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:10px;background:${ok?'var(--green-bg)':'var(--surface2)'};color:${ok?'var(--green)':'var(--text-dim)'};border:1px solid ${ok?'#9fd3b5':'var(--border-light)'};">${ok?'✓':'○'} ${lbl}</span>`;
       h+=`<tr style="${zebra}">
         <td style="padding:7px 10px;font-size:var(--fs-xs);font-weight:700;white-space:nowrap;">${x.camera}
-          <div style="font-size:9px;color:var(--text-dim);font-weight:400;">${(PRESTAY_HOTELS[hotel]||{}).name||''}${x.daPiano?'':' · manuale'}</div></td>
+          ${x.daPiano
+            ?`<div style="font-size:9px;color:var(--text-dim);font-weight:400;">${(PRESTAY_HOTELS[hotel]||{}).name||''}</div>`
+            :`<select onchange="prestaySetField('${camEsc}','hotel',this.value)" title="Struttura — determina il testo usato" style="margin-top:2px;font-size:9px;padding:1px 3px;border:1px solid var(--border-light);border-radius:4px;background:var(--surface);color:var(--text-dim);font-family:inherit;max-width:120px;">
+              ${Object.keys(PRESTAY_HOTELS).map(k=>`<option value="${k}" ${k===hotel?'selected':''}>${PRESTAY_HOTELS[k].name}</option>`).join('')}
+            </select>`}</td>
         <td style="padding:5px 8px;"><input value="${esc(r.nome)}" placeholder="Cognome Nome" onchange="prestaySetField('${camEsc}','nome',this.value)" style="${inpS}min-width:130px;"></td>
         <td style="padding:5px 8px;"><input type="email" value="${esc(r.email)}" placeholder="email@…" onchange="prestaySetField('${camEsc}','email',this.value)" style="${inpS}min-width:150px;"></td>
         <td style="padding:5px 8px;"><input value="${esc(r.tel)}" placeholder="+39…" onchange="prestaySetField('${camEsc}','tel',this.value)" style="${inpS}min-width:110px;"></td>

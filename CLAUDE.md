@@ -1294,6 +1294,8 @@ Ogni giorno si scrive agli ospiti che arrivano **fra 2 giorni** (`PRESTAY_GG=2`)
 
 **Il Piano copre solo SoulArt (Art 1–22), Boutique (201–211) e San Liborio.** Principe, Mastrangelo e Art Resort non ci sono: per quelli c'è **"+ Aggiungi ospite"**, che crea una riga libera con camera digitata a mano (`manuale:true`, eliminabile con la ✕; le righe dal Piano non sono eliminabili).
 
+**La struttura di una riga manuale va CHIESTA, non indovinata.** Nella prima versione `prestayAddManuale()` assegnava d'ufficio `'pr'` (Principe): il messaggio nominava quindi la struttura sbagliata **e usava il template sbagliato**, scoperto solo alla prima mail di prova reale. Ora un secondo prompt fa scegliere la struttura da un elenco numerato, e le righe manuali hanno un `<select>` per correggerla dopo senza doverle rifare. Le righe dal Piano mostrano invece la struttura come testo fisso: lì è già nota e corretta.
+
 ### Invio mail diretto — opzionale, via Cloudflare Worker
 
 Il pulsante ✉️ ha **due comportamenti** a seconda della configurazione (`⚙️ Invio mail` nella barra della sezione):
@@ -1306,6 +1308,10 @@ Il pulsante ✉️ ha **due comportamenti** a seconda della configurazione (`⚙
 Il codice del Worker, i passaggi su Cloudflare, il servizio di invio e i record DNS sono in **`worker-prestay-mail.md`** (documentazione, non servita dall'app).
 
 **Perché serve una chiave.** Un endpoint pubblico che spedisce mail è un **relay per spam**: Compass è raggiungibile da chiunque e il sorgente è pubblico. Tre protezioni sovrapposte: chiave condivisa (`X-Prestay-Key`), controllo dell'origine, tetto giornaliero sul Worker. Nessuna è invalicabile da sola, insieme rendono l'endpoint poco interessante da attaccare.
+
+**Configurazione reale in uso** (fatta l'11/08/2026): si spedisce da `qm@mail.compass-qm.com` — sottodominio su Namecheap, dove il QM ha accesso ai DNS; `soularthotel.com` è amministrato nell'area clienti Register dell'hotel, non accessibile. Servizio di invio Resend, region Ireland. I tre record DNS (DKIM, SPF TXT, SPF MX) sono su `compass-qm.com`; il DMARC proposto è stato saltato di proposito perché finirebbe sul dominio principale. Per aggiungere l'MX è stato necessario passare Namecheap da "Email Forwarding" a **Custom MX** — verificato prima che non ci fossero inoltri configurati, quindi nessuna perdita. `compass-qm.com` non ha più record MX: se un domani servisse un inoltro vanno reinseriti i cinque `eforward1-5.registrar-servers.com` (priorità 10,10,10,15,20).
+
+**Due trappole trovate alla prima prova reale**: il display name in `PRESTAY_FROM` va **tra virgolette e senza caratteri non-ASCII** (un trattino lungo `—` faceva scartare il nome, e Gmail mostrava solo l'indirizzo); e le variabili nuove diventano attive **solo dopo un nuovo deploy** del Worker, non al salvataggio.
 
 **La chiave sta solo nel browser** (`localStorage`, chiave `qm_prestay_mailcfg`) — **mai su KV, mai nel codice**: non deve finire su GitHub né essere sincronizzata sugli altri PC insieme al resto dei dati. Va quindi reinserita su ogni postazione da cui si vuole spedire. Verificato in test che non compaia dentro `qm_prestay`.
 
