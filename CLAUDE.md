@@ -202,6 +202,46 @@ Ogni struttura ha una calibrazione **indipendente**. L'utente inserisce il punte
 - Oltre `REV_CALIB_STALE_GG=90` giorni dall'inserimento → badge `calibrazione da aggiornare`.
 - Se nessuna emivita riproduce il valore → `fuoriModello`, avviso rosso esplicito e `console.warn`. **Non fallisce in silenzio**: o il numero è digitato male, o il CSV non è aggiornato.
 
+### Registro osservazioni — calibrazione per intersezione di vincoli
+
+Un singolo punteggio arrotondato a una cifra è un vincolo **debole**: su SoulArt dà una fascia larga 155 gg (78–233). Ma ogni lettura fatta in un momento diverso è un vincolo **indipendente**, e intersecandoli la fascia crolla — tre osservazioni attorno a due transizioni reali (8.9 → rec. da 5 → 8.8 → rec. da 10 → 8.9) la portano a 121–151 gg.
+
+Per questo il campo "Punteggio Booking reale" **non sovrascrive più**: appende al registro `osservazioni:[{ts,display}]` della struttura. Prima ogni inserimento buttava via l'informazione precedente.
+
+`calibraDaOsservazioni(recensioni, osservazioni)` valuta ogni osservazione **sul sottoinsieme di recensioni antecedenti al suo timestamp** — è questo che rende informativa una transizione (prima/dopo una singola recensione) — e tiene le emivite che soddisfano *tutte* le osservazioni.
+
+**Il timestamp delle recensioni deve includere l'ora.** `revParseCsv` faceva `.split(' ')[0]` scartandola: più recensioni possono arrivare lo stesso giorno e senza l'ora l'ordine fra recensione e lettura del punteggio si perde, cioè sparisce proprio ciò che rende informativa la transizione. Ora parsa `YYYY-MM-DDTHH:MM:SS` (lo spazio va convertito in `T`, Safari non parsa la forma con lo spazio), con fallback alla sola data.
+
+### Gerarchia delle fonti — `revCalibRicalcola(p)`
+
+| Priorità | Fonte | Condizione |
+|----------|-------|------------|
+| 1 | `osservazioni` | ≥ 2 osservazioni usabili e non contraddittorie |
+| 2 | `singolo` | fallback: calibrazione sull'osservazione più recente usabile |
+| 3 | `default` | registro vuoto, o punteggio fuori modello → `REV_HL_DEFAULT` (136) |
+
+La fonte in uso è **sempre mostrata** nel pannello (`emivita 136gg · da 3 osservazioni (fascia 121–151)`), non solo il numero.
+
+**Il ricalcolo è O(emivite × osservazioni × recensioni)** (~1200 × 10 × 657): si esegue **solo** aggiungendo/rimuovendo un'osservazione o reimportando un CSV — mai a ogni render — e il risultato è memorizzato su KV. I sottoinsiemi di recensioni sono precalcolati fuori dal ciclo sulle emivite.
+
+### Osservazioni "in attesa" — e la tensione con l'uso reale
+
+Un'osservazione con timestamp **successivo all'ultima recensione del CSV** non è valutabile (mancherebbero le recensioni arrivate dopo l'export): viene marcata `in attesa` nel registro ed esclusa dal calcolo, non ignorata in silenzio.
+
+**Attenzione al caso d'uso**: il pannello incoraggia a registrare il punteggio *appena cambia, senza ricaricare il CSV* — ed è il dato più prezioso — ma quelle osservazioni restano `in attesa` finché non si reimporta. Per questo `revCalibRicalcola` è agganciato **a entrambi i punti di import** (upload nuovo e restore da KV): al primo import successivo diventano usabili da sole. Se le osservazioni sembrano "non fare effetto", è quasi sempre questo: manca un reimport del CSV.
+
+### Contraddizioni e qualità
+
+Se **nessuna** emivita soddisfa tutte le osservazioni, si mostra un avviso che **elenca le osservazioni e chiede quale rimuovere** — non si scarta niente automaticamente: l'utente sa quale è sbagliata, il dashboard no. Cause riportate nell'avviso: valore digitato male; Booking aggiorna con ritardo o a lotti; recensioni rimosse per moderazione che restano nel CSV; modello inadatto a quella struttura. Nel frattempo si ricade sulla fonte 2.
+
+**Ampiezza della fascia = affidabilità** (`revCalibQualita`): > 100 gg `calibrazione debole` · 30–100 gg `discreta` · < 30 gg `solida`. Quando è debole compare il suggerimento attivo *"registra il punteggio ogni volta che cambia cifra: bastano 3–4 osservazioni per dimezzare l'incertezza"*.
+
+**Le osservazioni che catturano un cambio di cifra valgono molto più di quelle che ripetono lo stesso valore** — verificato in test: aggiungendo una terza osservazione che ripete `8.8` la fascia non si stringe affatto, mentre le due che catturano il cambio la portano da 161 a 143 gg. Se il registro contiene solo valori identici il pannello lo segnala esplicitamente (`tuttiUguali`).
+
+### Migrazione
+
+`revCalibMigra()` converte il vecchio formato a valore singolo (`{scoreReale, ts, hl, fascia}`) nella prima riga del registro. Gira a ogni `revCalibLoad()`, è idempotente (salta i record che hanno già `osservazioni`).
+
 ### Regola di arrotondamento — e come monitorarla
 
 Si assume che Booking **arrotondi**: `soglia = targetVisualizzato - 0.05`. Verificato sui dati SoulArt: se troncasse servirebbe 8.90 pieno per vedere 8.9, ma il massimo ottenibile con qualsiasi emivita è 8.8765 — sotto 8.90 — mentre Booking mostra 8.9. Quindi l'arrotondamento è l'ipotesi corretta.

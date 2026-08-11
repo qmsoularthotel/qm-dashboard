@@ -4000,6 +4000,9 @@ document.querySelector('.content').addEventListener('scroll',function(){
           REV_HOTELS[p].data=rows;
           REV_HOTELS[p].filtered=[...rows];
           revAutoMarkNoComment(p,rows);
+          // Un nuovo CSV può rendere valutabili osservazioni prima "in attesa" (perché
+          // successive all'ultima recensione esportata): ricalcola qui, non a ogni render.
+          try{revCalibRicalcola(p);}catch(e){}
           document.getElementById('revContent-'+p).style.display='block';
           document.getElementById('revUploadZone-'+p).style.display='none';
           // Timestamp upload: prima dal localStorage, poi dal cloud KV
@@ -4744,6 +4747,9 @@ function revHandleFile(p,file){
       REV_HOTELS[p].data=rows;
       REV_HOTELS[p].filtered=[...rows];
       revAutoMarkNoComment(p,rows);
+      // Un nuovo CSV può rendere valutabili osservazioni prima "in attesa" (perché
+      // successive all'ultima recensione esportata): ricalcola qui, non a ogni render.
+      try{revCalibRicalcola(p);}catch(e){}
       document.getElementById('revProcessing-'+p).style.display='none';
       document.getElementById('revContent-'+p).style.display='block';
       revRenderStats(p);
@@ -4799,8 +4805,13 @@ function revParseCsv(text){
     headers.forEach((h,j)=>obj[h]=(vals[j]||'').trim());
     if(!obj['Punteggio della recensione'])continue;
     obj._score=parseFloat(obj['Punteggio della recensione'])||0;
-    const rawDate=(obj['Data della recensione']||'').split(' ')[0];
-    const parsedDate=new Date(rawDate);
+    // Timestamp COMPLETO (YYYY-MM-DD HH:MM:SS), non la sola data: più recensioni possono
+    // arrivare lo stesso giorno, e per la calibrazione dalle osservazioni è proprio
+    // l'ORDINE fra recensione e lettura del punteggio a rendere informativa la transizione.
+    // Lo spazio va convertito in 'T' — Safari non parsa "2026-08-09 15:00:00".
+    const rawFull=(obj['Data della recensione']||'').trim();
+    let parsedDate=new Date(rawFull.replace(' ','T'));
+    if(isNaN(parsedDate))parsedDate=new Date(rawFull.split(' ')[0]);
     obj._dateTs=isNaN(parsedDate)?0:parsedDate.getTime();
     obj._date=isNaN(parsedDate)?new Date(0):parsedDate;
     obj._hasReply=!!(obj['Risposta della struttura']&&obj['Risposta della struttura'].trim());
@@ -5205,53 +5216,176 @@ function calibraHalfLife(recensioni,scoreReale,oggi=new Date()){
 // modello — il massimo con qualsiasi emivita è 8.8765, sotto 8.90, mentre Booking mostra
 // 8.9 — quindi l'arrotondamento è l'ipotesi corretta. Se in futuro la calibrazione
 // restituisse fuoriModello in modo sistematico su più strutture, è il segnale che questa
-// regola va rivista: i casi vengono loggati in console da revCalibApply.)
+// regola va rivista: i casi vengono loggati in console da revCalibRicalcola.)
 const revSoglia=targetVisualizzato=>targetVisualizzato-0.05;
 
-// ── Stato calibrazione per struttura ────────────────────────────────────────
-// { sa:{scoreReale:8.9, ts:<ms>, hl:136, fascia:[62,285], fuoriModello:false}, ... }
+// ── Registro osservazioni per struttura ─────────────────────────────────────
+// Un singolo punteggio arrotondato a una cifra è un vincolo DEBOLE: su SoulArt la fascia
+// compatibile è larga 155 giorni (78-233). Ma ogni lettura fatta in un momento diverso è
+// un vincolo INDIPENDENTE, e intersecandoli la fascia crolla: tre osservazioni attorno a
+// due transizioni reali (8.9 → rec. da 5 → 8.8 → rec. da 10 → 8.9) la portano a 121-151.
+// Per questo il campo "Punteggio Booking reale" non sovrascrive più il valore precedente
+// ma APPENDE al registro: prima l'informazione veniva buttata via a ogni inserimento.
+//
+// { sa:{ osservazioni:[{ts,display}], hl, fascia, fonte, contraddittorio, nUsate }, ... }
 function revCalibLoad(){
   try{const s=localStorage.getItem(REV_CALIB_KEY);if(s)REV_CALIB=JSON.parse(s)||{};}catch(e){REV_CALIB={};}
+  revCalibMigra();
+}
+// Migrazione dal formato a valore singolo: l'osservazione già inserita non va persa,
+// diventa la prima riga del registro.
+function revCalibMigra(){
+  let cambiato=false;
+  Object.keys(REV_CALIB||{}).forEach(p=>{
+    const c=REV_CALIB[p];
+    if(!c||Array.isArray(c.osservazioni))return;
+    c.osservazioni=(c.scoreReale!=null&&c.ts)?[{ts:new Date(c.ts).toISOString(),display:c.scoreReale}]:[];
+    cambiato=true;
+  });
+  if(cambiato){try{localStorage.setItem(REV_CALIB_KEY,JSON.stringify(REV_CALIB));}catch(e){}}
 }
 function revCalibSave(){
   try{localStorage.setItem(REV_CALIB_KEY,JSON.stringify(REV_CALIB));}catch(e){}
   try{kvSet(REV_CALIB_KEY,JSON.stringify(REV_CALIB));}catch(e){}
 }
 revCalibLoad();
+function revOss(p){const c=REV_CALIB[p];return(c&&Array.isArray(c.osservazioni))?c.osservazioni:[];}
 
-// Emivita da usare per una struttura: quella calibrata, altrimenti il default.
-function revHl(p){
-  const c=REV_CALIB[p];
-  return(c&&c.hl&&!c.fuoriModello)?c.hl:REV_HL_DEFAULT;
-}
-function revCalibStato(p){
-  const c=REV_CALIB[p];
-  if(!c||c.scoreReale==null)return{stato:'non-calibrato'};
-  if(c.fuoriModello)return{stato:'fuori-modello',scoreReale:c.scoreReale,ts:c.ts};
-  const gg=(Date.now()-(c.ts||0))/86400000;
-  return{stato:gg>REV_CALIB_STALE_GG?'da-aggiornare':'ok',scoreReale:c.scoreReale,ts:c.ts,hl:c.hl,fascia:c.fascia,gg:Math.floor(gg)};
+/**
+ * Emivite compatibili con TUTTE le osservazioni registrate.
+ * Ogni osservazione è valutata sul sottoinsieme di recensioni antecedenti al suo timestamp:
+ * è questo che rende informativa una transizione (prima/dopo una singola recensione).
+ * Un'osservazione successiva all'ultima recensione del CSV non è valutabile — mancherebbero
+ * le recensioni arrivate dopo l'export — e viene esclusa, non ignorata in silenzio.
+ */
+function calibraDaOsservazioni(recensioni,osservazioni){
+  const rec=(recensioni||[]).filter(r=>r._score>0&&r._dateTs>0);
+  const oss=(osservazioni||[]).filter(o=>o&&o.ts&&o.display!=null);
+  if(!rec.length||!oss.length)return{hl:null,fascia:null,contraddittorio:false,nUsate:0,nAttesa:oss.length};
+  const ultimaRec=Math.max(...rec.map(r=>r._dateTs));
+  const usabili=oss.filter(o=>+new Date(o.ts)<=ultimaRec);
+  const nAttesa=oss.length-usabili.length;
+  if(!usabili.length)return{hl:null,fascia:null,contraddittorio:false,nUsate:0,nAttesa};
+  // Sottoinsiemi precalcolati una volta sola: dentro il ciclo sulle emivite rifiltrare
+  // 657 recensioni × 1200 emivite × N osservazioni sarebbe inutilmente pesante.
+  const ctx=usabili.map(o=>{
+    const t=+new Date(o.ts);
+    return{ts:t,display:Number(o.display),sub:rec.filter(r=>r._dateTs<=t)};
+  }).filter(c=>c.sub.length);
+  if(!ctx.length)return{hl:null,fascia:null,contraddittorio:false,nUsate:0,nAttesa};
+  const compatibili=[];
+  for(let hl=20;hl<=1200;hl++){
+    let ok=true;
+    for(const c of ctx){
+      const s=punteggioBooking(c.sub,hl,c.ts).score;
+      if(!(s!==null&&s>=c.display-0.05&&s<c.display+0.05)){ok=false;break;}
+    }
+    if(ok)compatibili.push(hl);
+  }
+  if(!compatibili.length)return{hl:null,fascia:null,contraddittorio:true,nUsate:ctx.length,nAttesa};
+  return{
+    hl:compatibili[Math.floor(compatibili.length/2)],
+    fascia:[compatibili[0],compatibili[compatibili.length-1]],
+    contraddittorio:false,nUsate:ctx.length,nAttesa
+  };
 }
 
-// Ricalcola l'emivita di una struttura dal punteggio reale digitato dall'utente.
-function revCalibApply(p,scoreReale){
-  const scored=(REV_HOTELS[p].data||[]).filter(r=>r._score>0&&r._dateTs>0);
-  if(!scored.length)return;
-  const res=calibraHalfLife(scored,scoreReale);
-  REV_CALIB[p]={scoreReale:scoreReale,ts:Date.now(),hl:res.hl,fascia:res.fascia,fuoriModello:res.fuoriModello};
-  if(res.fuoriModello){
-    // Non fallire in silenzio: o il numero è digitato male, o il CSV non è aggiornato,
-    // o la regola di arrotondamento assunta non regge più (vedi nota su revSoglia).
-    console.warn('[Recensioni] Calibrazione fuori modello per '+p+': nessuna emivita tra 20 e 1200 giorni riproduce il punteggio '+scoreReale+'. Modello o dato da verificare.');
+// Gerarchia delle fonti: intersezione (≥2 osservazioni) → punteggio singolo → default.
+// Il risultato viene MEMORIZZATO su KV perché il ciclo è O(emivite × oss × recensioni):
+// va rifatto solo aggiungendo un'osservazione o reimportando il CSV, mai a ogni render.
+function revCalibRicalcola(p){
+  const scored=(REV_HOTELS[p]&&REV_HOTELS[p].data||[]).filter(r=>r._score>0&&r._dateTs>0);
+  const oss=revOss(p);
+  if(!REV_CALIB[p])REV_CALIB[p]={osservazioni:[]};
+  const c=REV_CALIB[p];
+  c.osservazioni=oss;
+  if(!scored.length||!oss.length){
+    c.hl=null;c.fascia=null;c.fonte='default';c.contraddittorio=false;c.nUsate=0;c.nAttesa=oss.length;
+    revCalibSave();return;
+  }
+  const multi=calibraDaOsservazioni(scored,oss);
+  if(multi.nUsate>=2&&!multi.contraddittorio&&multi.hl){
+    c.hl=multi.hl;c.fascia=multi.fascia;c.fonte='osservazioni';
+    c.contraddittorio=false;c.nUsate=multi.nUsate;c.nAttesa=multi.nAttesa;
+    revCalibSave();return;
+  }
+  // Contraddizione o una sola osservazione: si ricade sul punteggio più recente usabile.
+  const ultimaRec=Math.max(...scored.map(r=>r._dateTs));
+  const usabili=oss.filter(o=>+new Date(o.ts)<=ultimaRec).sort((a,b)=>+new Date(b.ts)-+new Date(a.ts));
+  const nAttesa=oss.length-usabili.length;
+  if(!usabili.length){
+    c.hl=null;c.fascia=null;c.fonte='default';c.contraddittorio=!!multi.contraddittorio;c.nUsate=0;c.nAttesa=nAttesa;
+    revCalibSave();return;
+  }
+  const ultima=usabili[0];
+  const single=calibraHalfLife(scored.filter(r=>r._dateTs<=+new Date(ultima.ts)),Number(ultima.display),new Date(ultima.ts));
+  c.hl=single.fuoriModello?null:single.hl;
+  c.fascia=single.fascia;
+  c.fonte=single.fuoriModello?'default':'singolo';
+  c.fuoriModello=single.fuoriModello;
+  c.contraddittorio=!!multi.contraddittorio;
+  c.nUsate=multi.nUsate;c.nAttesa=nAttesa;
+  if(single.fuoriModello){
+    console.warn('[Recensioni] Calibrazione fuori modello per '+p+': nessuna emivita tra 20 e 1200 giorni riproduce il punteggio '+ultima.display+'. Modello o dato da verificare.');
   }
   revCalibSave();
 }
+
+// Emivita in uso. Ordine: intersezione osservazioni → punteggio singolo → default 136.
+function revHl(p){
+  const c=REV_CALIB[p];
+  return(c&&c.hl&&!c.contraddittorio)?c.hl:REV_HL_DEFAULT;
+}
+// Ampiezza della fascia compatibile = affidabilità della calibrazione.
+function revCalibQualita(fascia){
+  if(!fascia)return null;
+  const amp=fascia[1]-fascia[0];
+  if(amp>100)return{amp,label:'calibrazione debole',col:'amber'};
+  if(amp>=30)return{amp,label:'calibrazione discreta',col:'accent'};
+  return{amp,label:'calibrazione solida',col:'green'};
+}
+function revCalibStato(p){
+  const c=REV_CALIB[p];
+  const oss=revOss(p);
+  if(!c||!oss.length)return{stato:'non-calibrato',oss:[],fonte:'default'};
+  const ultima=[...oss].sort((a,b)=>+new Date(b.ts)-+new Date(a.ts))[0];
+  const gg=(Date.now()-+new Date(ultima.ts))/86400000;
+  return{
+    stato:c.contraddittorio?'contraddittorio':(c.fonte==='default'&&c.fuoriModello?'fuori-modello':(gg>REV_CALIB_STALE_GG?'da-aggiornare':'ok')),
+    scoreReale:ultima.display,ts:+new Date(ultima.ts),gg:Math.floor(gg),
+    hl:c.hl,fascia:c.fascia,fonte:c.fonte||'default',
+    nUsate:c.nUsate||0,nAttesa:c.nAttesa||0,oss,
+    qualita:revCalibQualita(c.fascia),
+    tuttiUguali:oss.length>1&&oss.every(o=>Number(o.display)===Number(oss[0].display))
+  };
+}
+
+// Aggiunge un'osservazione al registro. Non serve ricaricare il CSV: anzi, registrare il
+// punteggio proprio quando CAMBIA cifra è il caso più prezioso (è la transizione a
+// restringere la fascia, non la ripetizione dello stesso valore).
+function revCalibAddOss(p,display){
+  if(!REV_CALIB[p])REV_CALIB[p]={osservazioni:[]};
+  const c=REV_CALIB[p];
+  if(!Array.isArray(c.osservazioni))c.osservazioni=[];
+  const now=Date.now();
+  const ultima=[...c.osservazioni].sort((a,b)=>+new Date(b.ts)-+new Date(a.ts))[0];
+  // Stesso valore entro 24h: non è un vincolo nuovo, è la stessa lettura ripetuta.
+  if(ultima&&Number(ultima.display)===Number(display)&&(now-+new Date(ultima.ts))<86400000)return false;
+  c.osservazioni.push({ts:new Date(now).toISOString(),display:Number(display)});
+  revCalibRicalcola(p);
+  return true;
+}
+function revCalibDelOss(p,ts){
+  const c=REV_CALIB[p];
+  if(!c||!Array.isArray(c.osservazioni))return;
+  c.osservazioni=c.osservazioni.filter(o=>o.ts!==ts);
+  revCalibRicalcola(p);
+  try{revRenderStats(p);}catch(e){}
+}
 function revCalibInput(p,val){
   const v=parseFloat(String(val).replace(',','.'));
-  if(isNaN(v)||v<1||v>10){
-    delete REV_CALIB[p];revCalibSave();
-  }else{
-    revCalibApply(p,Math.round(v*10)/10);
-  }
+  if(isNaN(v)||v<1||v>10){try{revRenderStats(p);}catch(e){}return;}
+  revCalibAddOss(p,Math.round(v*10)/10);
   try{revRenderStats(p);}catch(e){}
 }
 
@@ -5339,39 +5473,75 @@ function revRenderCalib(p,pb,hl){
   const el=document.getElementById('rev-calib-'+p);
   if(!el)return;
   const cs=revCalibStato(p);
-  const c=REV_CALIB[p]||{};
   const fmtD=ts=>{const d=new Date(ts);return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();};
+  const fmtDT=ts=>{const d=new Date(ts);return d.getDate()+'/'+(d.getMonth()+1)+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
   let badge='',avviso='';
   if(cs.stato==='non-calibrato'){
     badge=`<span style="font-size:var(--fs-xs);font-weight:700;padding:4px 11px;border-radius:12px;background:var(--surface2);color:var(--text-muted);border:1px solid var(--border);">non calibrato</span>`;
+  }else if(cs.stato==='contraddittorio'){
+    badge=`<span style="font-size:var(--fs-xs);font-weight:700;padding:4px 11px;border-radius:12px;background:var(--red-bg);color:var(--red);">osservazioni in conflitto</span>`;
+    // Non scartare arbitrariamente un'osservazione: l'utente sa quale è sbagliata, il
+    // dashboard no. Si elencano e si chiede quale rimuovere, ricadendo intanto sull'ultima.
+    avviso=`<div style="margin-top:8px;background:var(--red-bg);color:var(--red);border-radius:7px;padding:10px 13px;font-size:var(--fs-xs);line-height:1.6;">
+      <strong>Nessuna emivita spiega tutte le osservazioni insieme.</strong> Cause possibili: un valore digitato male; Booking aggiorna il punteggio con ritardo o a lotti, quindi la cifra letta non rifletteva ancora l'ultima recensione; recensioni rimosse da Booking per moderazione che restano nel CSV; oppure il modello esponenziale non descrive bene questa struttura.
+      <span style="display:block;margin-top:4px;">Rimuovi con la ✕ l'osservazione che ritieni sbagliata. Nel frattempo si usa la sola osservazione più recente.</span>
+    </div>`;
   }else if(cs.stato==='fuori-modello'){
     badge=`<span style="font-size:var(--fs-xs);font-weight:700;padding:4px 11px;border-radius:12px;background:var(--red-bg);color:var(--red);">fuori modello</span>`;
     avviso=`<div style="margin-top:8px;background:var(--red-bg);color:var(--red);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.5;">
       <strong>Punteggio non riproducibile.</strong> Nessuna emivita tra 20 e 1200 giorni produce ${Number(cs.scoreReale).toFixed(1)} con queste recensioni: o il numero è stato digitato male, o il CSV non è aggiornato all'ultima esportazione. Nel frattempo si usa l'emivita di default (${REV_HL_DEFAULT} giorni).</div>`;
   }else{
     const col=cs.stato==='da-aggiornare'?'amber':'green';
-    badge=`<span style="font-size:var(--fs-xs);font-weight:700;padding:4px 11px;border-radius:12px;background:var(--${col}-bg);color:var(--${col});">calibrato su ${Number(cs.scoreReale).toFixed(1)} il ${fmtD(cs.ts)}</span>`;
-    if(cs.stato==='da-aggiornare')avviso=`<div style="margin-top:8px;background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.5;">Calibrazione di ${cs.gg} giorni fa: ricontrolla il punteggio nell'extranet e reinseriscilo per tenere allineate le previsioni.</div>`;
+    badge=`<span style="font-size:var(--fs-xs);font-weight:700;padding:4px 11px;border-radius:12px;background:var(--${col}-bg);color:var(--${col});">${cs.oss.length} osservazion${cs.oss.length===1?'e':'i'} · ultima ${fmtD(cs.ts)}</span>`;
+    if(cs.stato==='da-aggiornare')avviso=`<div style="margin-top:8px;background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.5;">Ultima osservazione di ${cs.gg} giorni fa: registra di nuovo il punteggio dall'extranet per tenere allineate le previsioni.</div>`;
   }
-  const fasciaTxt=(c.fascia&&!c.fuoriModello)
-    ?` · fascia compatibile ${c.fascia[0]}–${c.fascia[1]} gg`
-    :'';
+  // Fonte in uso: dice sempre da dove viene l'emivita, non solo quale numero è.
+  const fonteTxt=cs.fonte==='osservazioni'?`da ${cs.nUsate} osservazioni`:cs.fonte==='singolo'?'da punteggio singolo':'default';
+  const q=cs.qualita;
+  const qBadge=q?`<span style="font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:10px;background:var(--${q.col}-bg);color:var(--${q.col});margin-left:6px;">${q.label} · fascia ${q.amp} gg</span>`:'';
+  const fasciaTxt=cs.fascia?` (fascia ${cs.fascia[0]}–${cs.fascia[1]} gg)`:'';
+  // Suggerimenti attivi: cosa fare per stringere la fascia, non solo constatarne l'ampiezza.
+  let sugg='';
+  if(q&&q.col==='amber'){
+    sugg=`<div style="margin-top:6px;font-size:var(--fs-xs);color:var(--amber);line-height:1.55;">Registra il punteggio ogni volta che cambia cifra: bastano 3–4 osservazioni per dimezzare l'incertezza.</div>`;
+  }
+  if(cs.tuttiUguali){
+    sugg+=`<div style="margin-top:6px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.55;">Tutte le osservazioni riportano ${Number(cs.oss[0].display).toFixed(1)} — la fascia si restringe solo osservando un <strong>cambio</strong> di cifra, non ripetendo lo stesso valore.</div>`;
+  }
+  // Registro: lista compatta, ogni riga eliminabile per correggere un errore di battitura.
+  const ultimaRecTs=(()=>{const d=(REV_HOTELS[p]&&REV_HOTELS[p].data||[]).filter(r=>r._dateTs>0);return d.length?Math.max(...d.map(r=>r._dateTs)):0;})();
+  const ossHtml=cs.oss.length?`<div style="margin-top:10px;border-top:1px solid var(--border-light);padding-top:8px;">
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">Registro osservazioni</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      ${[...cs.oss].sort((a,b)=>+new Date(b.ts)-+new Date(a.ts)).map(o=>{
+        const attesa=ultimaRecTs&&+new Date(o.ts)>ultimaRecTs;
+        return`<span style="display:inline-flex;align-items:center;gap:6px;background:${attesa?'var(--surface2)':'var(--surface)'};border:1px solid var(--border-light);border-radius:8px;padding:4px 8px;font-size:var(--fs-xs);">
+          <strong style="color:var(--text);">${Number(o.display).toFixed(1)}</strong>
+          <span style="color:var(--text-dim);">${fmtDT(o.ts)}</span>
+          ${attesa?`<span title="Registrata dopo l'ultima recensione presente nel CSV: verrà usata al prossimo import" style="font-size:9px;color:var(--amber);font-weight:700;">in attesa</span>`:''}
+          <span onclick="revCalibDelOss('${p}','${o.ts}')" title="Rimuovi questa osservazione" style="cursor:pointer;color:var(--text-dim);font-weight:700;">✕</span>
+        </span>`;
+      }).join('')}
+    </div>
+  </div>`:'';
   el.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <div style="flex:1 1 240px;min-width:200px;">
         <label for="revCalibIn-${p}" style="display:block;font-size:var(--fs-xs);font-weight:700;color:var(--text);margin-bottom:2px;">Punteggio Booking reale</label>
-        <div style="font-size:var(--fs-xs);color:var(--text-muted);">lo trovi in cima a Extranet → Recensioni</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);">lo trovi in cima a Extranet → Recensioni · registralo <strong>ogni volta che cambia</strong>, anche senza ricaricare il CSV</div>
       </div>
       <input id="revCalibIn-${p}" type="number" step="0.1" min="1" max="10" inputmode="decimal"
-        value="${c.scoreReale!=null?Number(c.scoreReale).toFixed(1):''}" placeholder="es. 8.9"
+        value="" placeholder="es. 8.9"
         onchange="revCalibInput('${p}',this.value)"
         style="width:92px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-sm);font-weight:700;text-align:center;font-family:'Helvetica Neue',Arial,sans-serif;">
       ${badge}
     </div>
     ${avviso}
+    ${ossHtml}
     <div style="margin-top:8px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;">
-      Emivita in uso <strong style="color:var(--text);">${hl} giorni</strong>${fasciaTxt} · peso effettivo ≈ <strong style="color:var(--text);">${Math.round(pb.pesoEff)}</strong> su ${pb.nInFinestra} recensioni nella finestra di 36 mesi.
-      L'algoritmo di Booking non è pubblico: questo è un modello calibrato sul punteggio reale della struttura, non una replica. Anche dopo la calibrazione resta una fascia di emivite compatibili, quindi le previsioni vanno lette come ordini di grandezza.
+      Emivita in uso <strong style="color:var(--text);">${hl} giorni</strong> · <strong style="color:var(--text);">${fonteTxt}</strong>${fasciaTxt}${qBadge} · peso effettivo ≈ <strong style="color:var(--text);">${Math.round(pb.pesoEff)}</strong> su ${pb.nInFinestra} recensioni nella finestra di 36 mesi.
+      ${sugg}
+      <span style="display:block;margin-top:6px;">L'algoritmo di Booking non è pubblico: questo è un modello calibrato sul punteggio reale della struttura, non una replica. Anche dopo la calibrazione resta una fascia di emivite compatibili, quindi le previsioni vanno lette come ordini di grandezza.</span>
     </div>
   </div>`;
 }
