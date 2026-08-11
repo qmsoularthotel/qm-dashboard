@@ -1294,7 +1294,26 @@ Ogni giorno si scrive agli ospiti che arrivano **fra 2 giorni** (`PRESTAY_GG=2`)
 
 **Il Piano copre solo SoulArt (Art 1–22), Boutique (201–211) e San Liborio.** Principe, Mastrangelo e Art Resort non ci sono: per quelli c'è **"+ Aggiungi ospite"**, che crea una riga libera con camera digitata a mano (`manuale:true`, eliminabile con la ✕; le righe dal Piano non sono eliminabili).
 
-### Invio — Compass non spedisce, apre il messaggio già scritto
+### Invio mail diretto — opzionale, via Cloudflare Worker
+
+Il pulsante ✉️ ha **due comportamenti** a seconda della configurazione (`⚙️ Invio mail` nella barra della sezione):
+
+| Stato | Comportamento |
+|-------|---------------|
+| Non configurato (default) | `mailto:` — apre il client di posta col messaggio già scritto |
+| Configurato | `POST` all'endpoint del Worker: **la mail parte davvero**, previa conferma |
+
+Il codice del Worker, i passaggi su Cloudflare, il servizio di invio e i record DNS sono in **`worker-prestay-mail.md`** (documentazione, non servita dall'app).
+
+**Perché serve una chiave.** Un endpoint pubblico che spedisce mail è un **relay per spam**: Compass è raggiungibile da chiunque e il sorgente è pubblico. Tre protezioni sovrapposte: chiave condivisa (`X-Prestay-Key`), controllo dell'origine, tetto giornaliero sul Worker. Nessuna è invalicabile da sola, insieme rendono l'endpoint poco interessante da attaccare.
+
+**La chiave sta solo nel browser** (`localStorage`, chiave `qm_prestay_mailcfg`) — **mai su KV, mai nel codice**: non deve finire su GitHub né essere sincronizzata sugli altri PC insieme al resto dei dati. Va quindi reinserita su ogni postazione da cui si vuole spedire. Verificato in test che non compaia dentro `qm_prestay`.
+
+**Se l'invio fallisce la riga NON viene segnata come inviata** e l'errore resta visibile sulla riga (chiave sbagliata, rete assente, rifiuto del servizio): altrimenti un errore silenzioso farebbe credere che l'ospite sia stato contattato. Un reinvio riuscito azzera l'errore. Con l'invio diretto si chiede **conferma** prima di spedire: con nome e dati presi a mano dal PMS, saltare del tutto la rilettura non è prudente.
+
+Togliendo la chiave si torna immediatamente al comportamento `mailto:`.
+
+### Invio — quando non configurato, Compass non spedisce ma apre il messaggio già scritto
 
 Compass è un sito statico su GitHub Pages: non ha SMTP e non può inviare nulla. I due pulsanti aprono il messaggio **già compilato** e l'invio lo conferma l'utente:
 

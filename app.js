@@ -11026,16 +11026,61 @@ function _psCompila(txt,r,camera,iso,hotel){
     .replace(/\{struttura\}/g,hn)
     .replace(/\{data\}/g,_psFmtIT(iso));
 }
+// Configurazione invio diretto. Endpoint e chiave stanno SOLO in questo browser
+// (localStorage, non KV): la chiave non deve finire su GitHub né essere sincronizzata su
+// altri dispositivi insieme al resto dei dati. Vedi worker-prestay-mail.md per il codice
+// del Worker e il motivo per cui una chiave serve (un endpoint di invio aperto è un relay
+// per spam). Senza configurazione si continua ad aprire il client di posta come prima:
+// la sezione resta usabile anche su un PC dove non si vuole mettere la chiave.
+const PRESTAY_MAIL_CFG_KEY='qm_prestay_mailcfg';
+let _psMailCfg={endpoint:'',key:''};
+try{const c=localStorage.getItem(PRESTAY_MAIL_CFG_KEY);if(c)_psMailCfg=JSON.parse(c)||_psMailCfg;}catch(e){}
+function _psMailPronto(){return!!(_psMailCfg.endpoint&&_psMailCfg.key);}
+function prestaySetMailCfg(campo,val){
+  _psMailCfg[campo]=String(val||'').trim();
+  try{localStorage.setItem(PRESTAY_MAIL_CFG_KEY,JSON.stringify(_psMailCfg));}catch(e){}
+  prestayRender();
+}
+function prestayToggleMailCfg(){_prestayMailCfgOpen=!_prestayMailCfgOpen;prestayRender();}
+let _prestayMailCfgOpen=false;
+
 function prestayInviaMail(camera){
   const iso=_psTargetISO(),r=_psRec(iso,camera);
   if(!r.email){alert('Inserisci prima l\'indirizzo email di questo ospite.');return;}
   const hotel=_psHotelOf(iso,camera);
   const t=_psTpl(hotel,r.lang||'it');
   const ogg=_psCompila(t.ogg,r,camera,iso,hotel),corpo=_psCompila(t.corpo,r,camera,iso,hotel);
-  window.location.href='mailto:'+encodeURIComponent(r.email)+'?subject='+encodeURIComponent(ogg)+'&body='+encodeURIComponent(corpo);
-  r.mailTs=Date.now();_psSave();
-  setTimeout(prestayRender,300);
+  if(!_psMailPronto()){
+    // Non configurato: comportamento di prima, apre il client di posta.
+    window.location.href='mailto:'+encodeURIComponent(r.email)+'?subject='+encodeURIComponent(ogg)+'&body='+encodeURIComponent(corpo);
+    r.mailTs=Date.now();_psSave();
+    setTimeout(prestayRender,300);
+    return;
+  }
+  // Invio diretto: la mail parte davvero, quindi si chiede conferma — con nome e dati
+  // presi a mano dal PMS, saltare del tutto la rilettura non è prudente.
+  if(!confirm('Inviare la mail a '+r.email+'?\n\nOggetto: '+ogg))return;
+  const btnKey='ps-mail-'+camera;
+  _psMailInFlight[btnKey]=true;prestayRender();
+  fetch(_psMailCfg.endpoint,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Prestay-Key':_psMailCfg.key},
+    body:JSON.stringify({to:r.email,subject:ogg,text:corpo})
+  }).then(res=>res.json().catch(()=>({ok:false,error:'risposta non leggibile'})))
+   .then(j=>{
+    delete _psMailInFlight[btnKey];
+    if(j&&j.ok){r.mailTs=Date.now();r.mailErr=null;}
+    else{r.mailErr=(j&&j.error)||'invio fallito';}
+    _psSave();prestayRender();
+    if(r.mailErr)alert('Invio non riuscito: '+r.mailErr+'\n\nLa riga resta da inviare. Se il problema persiste puoi usare WhatsApp o togliere la configurazione per tornare al client di posta.');
+  }).catch(e=>{
+    delete _psMailInFlight[btnKey];
+    r.mailErr=e.message||'rete non raggiungibile';
+    _psSave();prestayRender();
+    alert('Invio non riuscito: '+r.mailErr);
+  });
 }
+let _psMailInFlight={};
 function prestayInviaWa(camera){
   const iso=_psTargetISO(),r=_psRec(iso,camera);
   const tel=(r.tel||'').replace(/[^\d+]/g,'');
@@ -11098,6 +11143,7 @@ function prestayRender(){
       <span style="font-size:var(--fs-xs);color:var(--text-muted);">${compilate}/${righe.length} con contatto · <strong style="color:${inviate===righe.length&&righe.length?'var(--green)':'var(--text)'};">${inviate} inviati</strong></span>
       <button onclick="prestayAddManuale()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">+ Aggiungi ospite</button>
       <button onclick="prestayToggleTpl()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">✏️ Modifica testi</button>
+      <button onclick="prestayToggleMailCfg()" title="${_psMailPronto()?'Invio diretto attivo su questo browser':'Non configurato: il pulsante mail apre il client di posta'}" style="padding:6px 12px;border:1px solid ${_psMailPronto()?'var(--green)':'var(--border)'};background:${_psMailPronto()?'var(--green-bg)':'var(--surface)'};color:${_psMailPronto()?'var(--green)':'var(--text)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">⚙️ Invio mail${_psMailPronto()?' ✓':''}</button>
     </div>
   </div>`;
 
@@ -11128,6 +11174,7 @@ function prestayRender(){
       const esc=s=>String(s||'').replace(/"/g,'&quot;');
       const camEsc=x.camera.replace(/'/g,"\\'");
       const mailOk=!!r.mailTs,waOk=!!r.waTs;
+      const inFlight=!!_psMailInFlight['ps-mail-'+x.camera];
       const chip=(ok,ts,lbl,fn)=>`<span onclick="prestayToggleInviato('${camEsc}','${fn}')" title="${ok?'Inviato il '+new Date(ts).toLocaleString('it-IT')+' — clicca per annullare':'Segna come inviato'}" style="cursor:pointer;font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:10px;background:${ok?'var(--green-bg)':'var(--surface2)'};color:${ok?'var(--green)':'var(--text-dim)'};border:1px solid ${ok?'#9fd3b5':'var(--border-light)'};">${ok?'✓':'○'} ${lbl}</span>`;
       h+=`<tr style="${zebra}">
         <td style="padding:7px 10px;font-size:var(--fs-xs);font-weight:700;white-space:nowrap;">${x.camera}
@@ -11142,15 +11189,43 @@ function prestayRender(){
           </select>
         </td>
         <td style="padding:5px 10px;white-space:nowrap;text-align:center;">
-          <button onclick="prestayInviaMail('${camEsc}')" title="Apre il client di posta col messaggio già scritto" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:13px;margin-right:3px;">✉️</button>
+          <button onclick="prestayInviaMail('${camEsc}')" ${inFlight?'disabled':''} title="${_psMailPronto()?'Invia la mail (con conferma)':'Apre il client di posta col messaggio già scritto'}" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:${inFlight?'wait':'pointer'};font-size:13px;margin-right:3px;opacity:${inFlight?'.5':'1'};">${inFlight?'⏳':'✉️'}</button>
           <button onclick="prestayInviaWa('${camEsc}')" title="Apre WhatsApp col messaggio già scritto" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:13px;">💬</button>
           <div style="margin-top:4px;display:flex;gap:4px;justify-content:center;">${chip(mailOk,r.mailTs,'mail','mail')}${chip(waOk,r.waTs,'wa','wa')}</div>
+          ${r.mailErr&&!mailOk?`<div style="margin-top:3px;font-size:9px;color:var(--red);max-width:150px;white-space:normal;line-height:1.3;">${String(r.mailErr).substring(0,60)}</div>`:''}
         </td>
         <td style="padding:5px 8px;text-align:center;">${x.daPiano?'':`<button onclick="prestayDelRiga('${camEsc}')" title="Rimuovi riga" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:13px;">✕</button>`}</td>
       </tr>`;
     });
     h+=`</tbody></table></div>
     <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Le camere in arrivo arrivano dal Piano Settimanale (inclusi i cambi: partenza e arrivo lo stesso giorno significa comunque un ospite nuovo). Nome e contatti vanno letti dal PMS e inseriti qui. I pulsanti aprono il messaggio già compilato: l'invio lo confermi tu, e la spunta si può correggere cliccandola.</div>`;
+  }
+
+  // Configurazione invio diretto — chiave salvata solo in questo browser
+  if(_prestayMailCfgOpen){
+    const esc=v=>String(v||'').replace(/"/g,'&quot;');
+    h+=`<div class="panel" style="margin-top:16px;">
+      <div class="panel-header"><span class="panel-title">Invio mail diretto</span><span style="font-size:var(--fs-xxs);color:${_psMailPronto()?'var(--green)':'var(--text-dim)'};font-weight:700;">${_psMailPronto()?'attivo su questo browser':'non configurato'}</span></div>
+      <div class="panel-body" style="padding:14px;">
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;margin-bottom:12px;">
+          Senza configurazione il pulsante ✉️ apre il client di posta, come prima. Configurandolo, la mail parte davvero con un clic (previa conferma).
+          <strong style="color:var(--text);">Endpoint e chiave restano solo in questo browser</strong> — non vengono sincronizzati sugli altri PC né salvati sul cloud, quindi vanno reinseriti su ogni postazione da cui vuoi spedire.
+          Il codice del Worker e i passaggi su Cloudflare e DNS sono in <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;">worker-prestay-mail.md</code> nel repository.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">ENDPOINT</label>
+            <input value="${esc(_psMailCfg.endpoint)}" placeholder="https://…workers.dev/prestay/send" onchange="prestaySetMailCfg('endpoint',this.value)" style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;">
+          </div>
+          <div>
+            <label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">CHIAVE (PRESTAY_KEY)</label>
+            <input type="password" value="${esc(_psMailCfg.key)}" placeholder="la password scelta sul Worker" onchange="prestaySetMailCfg('key',this.value)" style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;">
+          </div>
+        </div>
+        ${_psMailPronto()?`<div style="margin-top:10px;background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.55;">
+          <strong>Prima di usarlo con gli ospiti</strong>, manda una mail di prova a te stesso con "+ Aggiungi ospite" e controlla che arrivi <strong>e che non finisca in spam</strong>: se ci finisce mancano i record DNS (SPF/DKIM) del dominio, o non sono ancora propagati.</div>`:''}
+      </div>
+    </div>`;
   }
 
   // Editor testi — un template per struttura e lingua, con segnaposto
