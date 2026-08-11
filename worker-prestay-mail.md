@@ -43,22 +43,32 @@ cambiare per usarne un altro è solo la `fetch` finale.
 Passi:
 
 1. Crea l'account.
-2. Aggiungi come dominio **`mail.soularthotel.com`** (il sottodominio, non
+2. Aggiungi come dominio **`mail.compass-qm.com`** (il sottodominio, non
    `soularthotel.com`).
 3. Il servizio mostrerà dei **record DNS da aggiungere** (tipicamente un TXT per l'SPF del
    sottodominio e uno o più record per il DKIM). Vanno inseriti nel pannello DNS di
-   **Register.it**, dove è gestito `soularthotel.com`.
+   **Namecheap**, dove è gestito `compass-qm.com`.
    **Senza questi record le mail partono ma finiscono in spam.**
 4. Attendi che il servizio segni il dominio come verificato (di solito minuti, a volte ore).
 5. Genera una **API key** e tienila da parte per il passo 2.
 
-**I record vanno sul sottodominio.** Se il servizio chiede di creare un record chiamato
-`mail` o `resend._domainkey.mail`, va inserito così su Register dentro la zona di
-`soularthotel.com` — Register aggiunge da sé il dominio in fondo. Non va toccato nessun
-record esistente: si aggiungono soltanto righe nuove.
+**I record vanno sul sottodominio.** Su Namecheap si inseriscono in *Advanced DNS* con il
+nome relativo (`send.mail`, `resend._domainkey.mail`): Namecheap aggiunge da sé
+`.compass-qm.com` in fondo. Non va toccato nessun record esistente: si aggiungono soltanto
+righe nuove.
+
+**Il DMARC proposto dal servizio va saltato.** Il suo nome è `_dmarc` senza il suffisso del
+sottodominio, quindi finirebbe sul dominio principale invece che su `mail.` — ed è marcato
+come opzionale: non serve a far partire le mail.
+
+**Perché non `soularthotel.com`.** La casella del QM è su quel dominio, ma i suoi DNS sono
+amministrati nell'area clienti Register dell'hotel, a cui il QM non ha accesso. Si spedisce
+quindi da `compass-qm.com` (dominio di Compass, su Namecheap) e si riportano le risposte su
+`qm@soularthotel.com` col `Reply-To`. Quello che l'ospite legge per primo è comunque il
+**nome** del mittente ("SoulArt Hotel — Quality Manager"), non l'indirizzo tecnico.
 
 L'indirizzo mittente deve appartenere al dominio verificato. **Va verificato il
-sottodominio `mail.soularthotel.com`, non `soularthotel.com`**: è precisamente questo che
+sottodominio `mail.compass-qm.com`, non `soularthotel.com`**: è precisamente questo che
 tiene separati i DNS dell'invio da quelli della posta esistente.
 
 ---
@@ -71,11 +81,11 @@ Su Cloudflare → Workers → il vostro worker → Settings → Variables → **
 |------|--------|
 | `RESEND_KEY` | la API key del servizio di invio |
 | `PRESTAY_KEY` | una password lunga inventata da voi (è quella che inserirete in Compass) |
-| `PRESTAY_FROM` | mittente, sul **sottodominio**: `Quality Manager <qm@mail.soularthotel.com>` |
+| `PRESTAY_FROM` | mittente, sul **sottodominio**: `SoulArt Hotel — Quality Manager <qm@mail.compass-qm.com>` |
 | `PRESTAY_REPLYTO` | indirizzo a cui rispondono gli ospiti: `qm@soularthotel.com` |
 
 **Perché mittente e risposta sono diversi.** Si spedisce da un sottodominio nuovo
-(`mail.soularthotel.com`) così i record DNS del dominio principale — su cui gira la posta
+(`mail.compass-qm.com`) così i record DNS del dominio principale — su cui gira la posta
 vera dell'hotel — **non vengono toccati**: nessun rischio che le mail quotidiane inizino a
 finire in spam. Il `Reply-To` riporta però le risposte degli ospiti su
 `qm@soularthotel.com`, dove le leggi già.
