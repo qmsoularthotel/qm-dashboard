@@ -11073,7 +11073,10 @@ function _psMdToHtml(txt){
     else{if(modo==='ul')flush();modo='p';buf.push(riga);}
   }
   flush();
-  return out;
+  // Stesso font usato negli input di Compass (style.css usa questa pila per tutti i
+  // form-input): senza specificarlo qui la mail arriverebbe col font di default del client
+  // dell'ospite, e l'anteprima "Come apparirà nella mail" non rispecchierebbe il risultato reale.
+  return '<div style="font-family:\'Helvetica Neue\',Arial,sans-serif;font-size:15px;line-height:1.5;color:#1a1a1a;">'+out+'</div>';
 }
 // Marcatori tolti, righe elenco convertite in punto elenco leggibile: per il mailto: (il
 // client di posta apre un body testo semplice, non HTML) e come fallback generico.
@@ -11084,24 +11087,32 @@ function _psMdStrip(txt){
 // Toolbar B/I/• sopra le textarea dei template: avvolge la selezione (o inserisce un
 // segnaposto se non c'è selezione) e simula il change così il salvataggio (onchange) parte
 // subito, anche se il valore è stato scritto via JS e non digitato.
+// focus() su una textarea fuori dalla viewport la scrolla in vista: su un editor con 12
+// textarea (6 strutture × 2 lingue) questo faceva "saltare" la pagina in fondo ad ogni
+// click sulla toolbar. Si salva la posizione di scroll prima e la si ripristina subito
+// dopo — il cursore nella textarea resta comunque dove serve, solo la pagina non si muove.
 function _psWrapSel(taId,before,after){
   const ta=document.getElementById(taId);
   if(!ta)return;
+  const scrollY=window.scrollY;
   const s=ta.selectionStart,e=ta.selectionEnd,val=ta.value;
   const sel=val.slice(s,e)||'testo';
   ta.value=val.slice(0,s)+before+sel+after+val.slice(e);
-  ta.focus();ta.selectionStart=s+before.length;ta.selectionEnd=s+before.length+sel.length;
+  ta.focus();ta.setSelectionRange(s+before.length,s+before.length+sel.length);
   ta.dispatchEvent(new Event('change'));
+  window.scrollTo(0,scrollY);
 }
 function _psBulletSel(taId){
   const ta=document.getElementById(taId);
   if(!ta)return;
+  const scrollY=window.scrollY;
   const s=ta.selectionStart,e=ta.selectionEnd,val=ta.value;
   let sel=val.slice(s,e)||'voce elenco';
   sel=sel.split('\n').map(r=>r.trim()?('- '+r.replace(/^\s*-\s+/,'')):r).join('\n');
   ta.value=val.slice(0,s)+sel+val.slice(e);
-  ta.focus();ta.selectionStart=s;ta.selectionEnd=s+sel.length;
+  ta.focus();ta.setSelectionRange(s,s+sel.length);
   ta.dispatchEvent(new Event('change'));
+  window.scrollTo(0,scrollY);
 }
 const PS_TOOLBAR_STYLE='padding:3px 8px;border:1px solid var(--border);background:var(--surface);border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;color:var(--text-dim);';
 const psToolbar=taId=>`<div style="display:flex;gap:4px;margin-bottom:4px;">
@@ -11226,10 +11237,10 @@ function prestayAnteprima(camera,canale){
     <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:12px;">A: <strong style="color:var(--text);">${esc(dest)}</strong>${canale==='mail'&&_psMailPronto()?' · parte davvero da qui':canale==='mail'?' · si aprirà il client di posta':''}</div>
     ${avvisi.length?`<div style="background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.55;margin-bottom:12px;">${avvisi.map(a=>'• '+a).join('<br>')}</div>`:''}
     ${canale!=='wa'?`<label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">OGGETTO${canale==='both'?' <span style="font-weight:400;text-transform:none;">(solo per la mail)</span>':''}</label>
-    <input id="psAntOgg" value="${String(ogg).replace(/"/g,'&quot;')}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;margin-bottom:10px;">`:''}
+    <input id="psAntOgg" value="${String(ogg).replace(/"/g,'&quot;')}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:'Helvetica Neue',Arial,sans-serif;margin-bottom:10px;">`:''}
     <label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">MESSAGGIO</label>
     ${psToolbar('psAntCorpo')}
-    <textarea id="psAntCorpo" rows="13" oninput="${canale!=='wa'?"const rp=document.getElementById('psAntRendered');if(rp)rp.innerHTML=_psMdToHtml(this.value);":''}" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;line-height:1.6;resize:vertical;">${esc(corpo)}</textarea>
+    <textarea id="psAntCorpo" rows="13" oninput="${canale!=='wa'?"const rp=document.getElementById('psAntRendered');if(rp)rp.innerHTML=_psMdToHtml(this.value);":''}" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:'Helvetica Neue',Arial,sans-serif;line-height:1.6;resize:vertical;">${esc(corpo)}</textarea>
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.5;"><code style="background:var(--surface2);padding:0 4px;border-radius:3px;">*grassetto*</code> · <code style="background:var(--surface2);padding:0 4px;border-radius:3px;">_corsivo_</code> · righe con "- " per gli elenchi. Le modifiche qui valgono solo per questo invio: per cambiare il testo di tutti usa "✏️ Modifica testi".</div>
     ${canale!=='wa'?`<div style="margin-top:10px;">
       <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">COME APPARIRÀ NELLA MAIL</div>
@@ -11419,9 +11430,9 @@ function prestayRender(){
                 const taId='ps-tpl-'+hc+'-'+lg;
                 return`<div>
                   <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">${lg.toUpperCase()}</div>
-                  <input value="${String(t.ogg||'').replace(/"/g,'&quot;')}" placeholder="Oggetto" onchange="prestaySetTpl('${hc}','${lg}','ogg',this.value)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;margin-bottom:5px;">
+                  <input value="${String(t.ogg||'').replace(/"/g,'&quot;')}" placeholder="Oggetto" onchange="prestaySetTpl('${hc}','${lg}','ogg',this.value)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:'Helvetica Neue',Arial,sans-serif;margin-bottom:5px;">
                   ${psToolbar(taId)}
-                  <textarea id="${taId}" rows="7" placeholder="Corpo del messaggio" onchange="prestaySetTpl('${hc}','${lg}','corpo',this.value)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;line-height:1.5;resize:vertical;">${String(t.corpo||'')}</textarea>
+                  <textarea id="${taId}" rows="7" placeholder="Corpo del messaggio" onchange="prestaySetTpl('${hc}','${lg}','corpo',this.value)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:'Helvetica Neue',Arial,sans-serif;line-height:1.5;resize:vertical;">${String(t.corpo||'')}</textarea>
                 </div>`;
               }).join('')}
             </div>
