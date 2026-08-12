@@ -11076,7 +11076,7 @@ function _psMdToHtml(txt){
   // Stesso font usato negli input di Compass (style.css usa questa pila per tutti i
   // form-input): senza specificarlo qui la mail arriverebbe col font di default del client
   // dell'ospite, e l'anteprima "Come apparirà nella mail" non rispecchierebbe il risultato reale.
-  return '<div style="font-family:\'Helvetica Neue\',Arial,sans-serif;font-size:15px;line-height:1.5;color:#1a1a1a;">'+out+'</div>';
+  return '<div style="font-family:\'Helvetica Neue\',Arial,sans-serif;font-size:13px;line-height:1.5;color:#1a1a1a;">'+out+'</div>';
 }
 // Marcatori tolti, righe elenco convertite in punto elenco leggibile: per il mailto: (il
 // client di posta apre un body testo semplice, non HTML) e come fallback generico.
