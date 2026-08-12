@@ -10910,6 +10910,13 @@ let _prestayTpl={};                 // { sa:{it:{ogg,corpo}, en:{...}}, ... }
 let _prestayData=null;              // data selezionata 'YYYY-MM-DD' (null = oggi+2)
 let _prestayTplOpen=false;
 
+// Icone busta/nuvoletta/occhio — stesso stile outline (stroke, non emoji) già usato per
+// l'icona "Messaggi Pre-stay" nella sidebar, per coerenza visiva nei pulsanti della riga.
+const PS_ICON_EYE='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>';
+const PS_ICON_MAIL='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
+const PS_ICON_WA='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+const PS_ICON_LOAD='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"/></svg>';
+
 // Strutture coperte. Il Piano usa le chiavi soulart/boutique/liborio: qui si mappano sui
 // codici già in uso altrove in Compass (sa/bh/sl), più pr/ms per le righe manuali.
 const PRESTAY_HOTELS={
@@ -11126,7 +11133,7 @@ function prestayAnteprima(camera,canale){
   m.onclick=e=>{if(e.target===m)prestayChiudiAnteprima();};
   m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:22px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto;">
     <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;flex-wrap:wrap;">
-      <span style="font-size:var(--fs-sm);font-weight:700;">${canale==='mail'?'✉️ Anteprima mail':canale==='wa'?'💬 Anteprima WhatsApp':'👁 Anteprima messaggio'}</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-sm);font-weight:700;">${canale==='mail'?PS_ICON_MAIL+' Anteprima mail':canale==='wa'?PS_ICON_WA+' Anteprima WhatsApp':PS_ICON_EYE+' Anteprima messaggio'}</span>
       <span style="font-size:var(--fs-xs);color:var(--text-muted);">${camera} · ${nomeH} · ${(r.lang||'it').toUpperCase()}</span>
     </div>
     <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:12px;">A: <strong style="color:var(--text);">${esc(dest)}</strong>${canale==='mail'&&_psMailPronto()?' · parte davvero da qui':canale==='mail'?' · si aprirà il client di posta':''}</div>
@@ -11138,8 +11145,8 @@ function prestayAnteprima(camera,canale){
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.5;">Le modifiche qui valgono solo per questo invio. Per cambiare il testo di tutti, usa "✏️ Modifica testi".</div>
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
       <button onclick="prestayChiudiAnteprima()" style="flex:1;min-width:90px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-weight:600;font-size:var(--fs-xs);cursor:pointer;">${canale==='both'?'Chiudi':'Annulla'}</button>
-      ${canale!=='wa'&&haMail?`<button onclick="prestayInviaDaAnteprima('mail')" style="flex:2;min-width:150px;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;">${_psMailPronto()?'✉️ Invia la mail':'✉️ Apri il client di posta'}</button>`:''}
-      ${canale!=='mail'&&haTel?`<button onclick="prestayInviaDaAnteprima('wa')" style="flex:2;min-width:130px;padding:10px;background:${canale==='both'?'var(--surface)':'var(--accent)'};color:${canale==='both'?'var(--text)':'#fff'};border:${canale==='both'?'1px solid var(--border)':'none'};border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;">💬 Apri WhatsApp</button>`:''}
+      ${canale!=='wa'&&haMail?`<button onclick="prestayInviaDaAnteprima('mail')" style="flex:2;min-width:150px;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;">${PS_ICON_MAIL}${_psMailPronto()?'Invia la mail':'Apri il client di posta'}</button>`:''}
+      ${canale!=='mail'&&haTel?`<button onclick="prestayInviaDaAnteprima('wa')" style="flex:2;min-width:130px;padding:10px;background:${canale==='both'?'#e9faf0':'#25D366'};color:${canale==='both'?'#1a9f4f':'#fff'};border:${canale==='both'?'1px solid #25D366':'none'};border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;">${PS_ICON_WA}Apri WhatsApp</button>`:''}
     </div>
   </div>`;
   document.body.appendChild(m);
@@ -11263,9 +11270,9 @@ function prestayRender(){
           </select>
         </td>
         <td style="padding:5px 10px;white-space:nowrap;text-align:center;">
-          <button onclick="prestayAnteprima('${camEsc}','both')" title="Vedi e correggi il messaggio prima di mandarlo" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:13px;margin-right:3px;">👁</button>
-          <button onclick="prestayAnteprima('${camEsc}','mail')" ${inFlight?'disabled':''} title="Anteprima del messaggio prima di inviare" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:${inFlight?'wait':'pointer'};font-size:13px;margin-right:3px;opacity:${inFlight?'.5':'1'};">${inFlight?'⏳':'✉️'}</button>
-          <button onclick="prestayAnteprima('${camEsc}','wa')" title="Anteprima, poi apre WhatsApp" style="padding:5px 9px;border:1px solid var(--border);background:var(--surface);border-radius:6px;cursor:pointer;font-size:13px;">💬</button>
+          <button onclick="prestayAnteprima('${camEsc}','both')" title="Vedi e correggi il messaggio prima di mandarlo" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:7px;cursor:pointer;margin-right:3px;vertical-align:middle;">${PS_ICON_EYE}</button>
+          <button onclick="prestayAnteprima('${camEsc}','mail')" ${inFlight?'disabled':''} title="Anteprima del messaggio prima di inviare" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:${inFlight?'wait':'pointer'};margin-right:3px;opacity:${inFlight?'.5':'1'};vertical-align:middle;">${inFlight?PS_ICON_LOAD:PS_ICON_MAIL}</button>
+          <button onclick="prestayAnteprima('${camEsc}','wa')" title="Anteprima, poi apre WhatsApp" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #25D366;background:#e9faf0;color:#1a9f4f;border-radius:7px;cursor:pointer;vertical-align:middle;">${PS_ICON_WA}</button>
           <div style="margin-top:4px;display:flex;gap:4px;justify-content:center;">${chip(mailOk,r.mailTs,'mail','mail')}${chip(waOk,r.waTs,'wa','wa')}</div>
           ${r.mailErr&&!mailOk?`<div style="margin-top:3px;font-size:9px;color:var(--red);max-width:150px;white-space:normal;line-height:1.3;">${String(r.mailErr).substring(0,60)}</div>`:''}
         </td>
