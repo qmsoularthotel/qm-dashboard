@@ -11043,6 +11043,73 @@ function _psHotelOf(iso,camera){
   const c=_psCamereDaPiano(iso).find(x=>x.camera===camera);
   return c?c.hotel:'sa';
 }
+// ── Formattazione leggera nei template ──────────────────────────────────────
+// Sintassi nativa WhatsApp (*grassetto*, _corsivo_, righe "- voce" per elenchi): il canale
+// WhatsApp non ha bisogno di alcuna conversione, la riceve così com'è. Solo la mail va
+// tradotta in HTML (Resend accetta un campo html oltre a text) e il testo semplice del
+// mailto: (che non sa mostrare HTML) va ripulito dai marcatori.
+function _psMdInline(s){
+  return s.replace(/\*([^*\n]+)\*/g,'<strong>$1</strong>').replace(/_([^_\n]+)_/g,'<em>$1</em>');
+}
+// Riga per riga, non a blocchi separati da riga vuota: un elenco che segue subito una riga
+// di testo introduttiva (caso reale comune, "Ecco alcune info:\n- Check-in\n- Wifi", senza
+// riga vuota in mezzo) va comunque riconosciuto come elenco, non trascinato nel paragrafo.
+function _psMdToHtml(txt){
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const righe=String(txt||'').split('\n');
+  let out='',buf=[],modo=null;
+  const flush=()=>{
+    if(buf.length){
+      out+=modo==='ul'
+        ?'<ul style="margin:0 0 12px;padding-left:20px;">'+buf.map(r=>'<li>'+_psMdInline(esc(r))+'</li>').join('')+'</ul>'
+        :'<p style="margin:0 0 12px;">'+buf.map(r=>_psMdInline(esc(r))).join('<br>')+'</p>';
+    }
+    buf=[];modo=null;
+  };
+  for(const riga of righe){
+    if(!riga.trim()){flush();continue;}
+    const m=riga.match(/^\s*-\s+(.*)$/);
+    if(m){if(modo==='p')flush();modo='ul';buf.push(m[1]);}
+    else{if(modo==='ul')flush();modo='p';buf.push(riga);}
+  }
+  flush();
+  return out;
+}
+// Marcatori tolti, righe elenco convertite in punto elenco leggibile: per il mailto: (il
+// client di posta apre un body testo semplice, non HTML) e come fallback generico.
+function _psMdStrip(txt){
+  return String(txt||'').split('\n').map(r=>r.replace(/^\s*-\s+/,'• ')).join('\n')
+    .replace(/\*([^*\n]+)\*/g,'$1').replace(/_([^_\n]+)_/g,'$1');
+}
+// Toolbar B/I/• sopra le textarea dei template: avvolge la selezione (o inserisce un
+// segnaposto se non c'è selezione) e simula il change così il salvataggio (onchange) parte
+// subito, anche se il valore è stato scritto via JS e non digitato.
+function _psWrapSel(taId,before,after){
+  const ta=document.getElementById(taId);
+  if(!ta)return;
+  const s=ta.selectionStart,e=ta.selectionEnd,val=ta.value;
+  const sel=val.slice(s,e)||'testo';
+  ta.value=val.slice(0,s)+before+sel+after+val.slice(e);
+  ta.focus();ta.selectionStart=s+before.length;ta.selectionEnd=s+before.length+sel.length;
+  ta.dispatchEvent(new Event('change'));
+}
+function _psBulletSel(taId){
+  const ta=document.getElementById(taId);
+  if(!ta)return;
+  const s=ta.selectionStart,e=ta.selectionEnd,val=ta.value;
+  let sel=val.slice(s,e)||'voce elenco';
+  sel=sel.split('\n').map(r=>r.trim()?('- '+r.replace(/^\s*-\s+/,'')):r).join('\n');
+  ta.value=val.slice(0,s)+sel+val.slice(e);
+  ta.focus();ta.selectionStart=s;ta.selectionEnd=s+sel.length;
+  ta.dispatchEvent(new Event('change'));
+}
+const PS_TOOLBAR_STYLE='padding:3px 8px;border:1px solid var(--border);background:var(--surface);border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;color:var(--text-dim);';
+const psToolbar=taId=>`<div style="display:flex;gap:4px;margin-bottom:4px;">
+  <button type="button" title="Grassetto: *testo*" onclick="_psWrapSel('${taId}','*','*')" style="${PS_TOOLBAR_STYLE}">B</button>
+  <button type="button" title="Corsivo: _testo_" onclick="_psWrapSel('${taId}','_','_')" style="${PS_TOOLBAR_STYLE}font-style:italic;">I</button>
+  <button type="button" title="Elenco puntato: righe che iniziano con &quot;- &quot;" onclick="_psBulletSel('${taId}')" style="${PS_TOOLBAR_STYLE}">•</button>
+</div>`;
+
 // Sostituzione segnaposto: fatta al momento dell'invio, non salvata — così se cambi il
 // template i messaggi non ancora inviati usano subito la versione nuova.
 function _psCompila(txt,r,camera,iso,hotel){
@@ -11075,17 +11142,22 @@ let _prestayMailCfgOpen=false;
 function _psSpedisciMail(camera,ogg,corpo){
   const iso=_psTargetISO(),r=_psRec(iso,camera);
   if(!_psMailPronto()){
-    window.location.href='mailto:'+encodeURIComponent(r.email)+'?subject='+encodeURIComponent(ogg)+'&body='+encodeURIComponent(corpo);
+    // Il client di posta apre un body testo semplice: niente HTML, quindi i marcatori
+    // *grassetto*/_corsivo_ vanno tolti invece di lasciarli visibili come asterischi.
+    window.location.href='mailto:'+encodeURIComponent(r.email)+'?subject='+encodeURIComponent(ogg)+'&body='+encodeURIComponent(_psMdStrip(corpo));
     r.mailTs=Date.now();_psSave();
     setTimeout(prestayRender,300);
     return;
   }
   const btnKey='ps-mail-'+camera;
   _psMailInFlight[btnKey]=true;prestayRender();
+  // html oltre a text: se il Worker non lo inoltra ancora a Resend (versioni precedenti a
+  // questa funzionalità), il campo viene semplicemente ignorato e la mail parte comunque
+  // in solo testo — nessuna rottura, va solo aggiornato/ridistribuito per avere il rendering.
   fetch(_psMailCfg.endpoint,{
     method:'POST',
     headers:{'Content-Type':'application/json','X-Prestay-Key':_psMailCfg.key},
-    body:JSON.stringify({to:r.email,subject:ogg,text:corpo})
+    body:JSON.stringify({to:r.email,subject:ogg,text:_psMdStrip(corpo),html:_psMdToHtml(corpo)})
   }).then(res=>res.json().catch(()=>({ok:false,error:'risposta non leggibile'})))
    .then(j=>{
     delete _psMailInFlight[btnKey];
@@ -11105,7 +11177,10 @@ function _psSpedisciWa(camera,corpo){
   const iso=_psTargetISO(),r=_psRec(iso,camera);
   const tel=(r.tel||'').replace(/[^\d+]/g,'');
   if(!tel){alert('Inserisci prima il numero di telefono di questo ospite.');return;}
-  window.open('https://wa.me/'+tel.replace(/^\+/,'')+'?text='+encodeURIComponent(corpo),'_blank');
+  // *grassetto* e _corsivo_ sono già la sintassi nativa di WhatsApp: nessuna conversione.
+  // Le righe "- voce" (WhatsApp non ha un vero elenco puntato) diventano "• voce".
+  const testoWa=String(corpo||'').split('\n').map(r=>r.replace(/^\s*-\s+/,'• ')).join('\n');
+  window.open('https://wa.me/'+tel.replace(/^\+/,'')+'?text='+encodeURIComponent(testoWa),'_blank');
   r.waTs=Date.now();_psSave();
   setTimeout(prestayRender,300);
 }
@@ -11153,8 +11228,13 @@ function prestayAnteprima(camera,canale){
     ${canale!=='wa'?`<label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">OGGETTO${canale==='both'?' <span style="font-weight:400;text-transform:none;">(solo per la mail)</span>':''}</label>
     <input id="psAntOgg" value="${String(ogg).replace(/"/g,'&quot;')}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;margin-bottom:10px;">`:''}
     <label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">MESSAGGIO</label>
-    <textarea id="psAntCorpo" rows="13" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;line-height:1.6;resize:vertical;">${esc(corpo)}</textarea>
-    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.5;">Le modifiche qui valgono solo per questo invio. Per cambiare il testo di tutti, usa "✏️ Modifica testi".</div>
+    ${psToolbar('psAntCorpo')}
+    <textarea id="psAntCorpo" rows="13" oninput="${canale!=='wa'?"const rp=document.getElementById('psAntRendered');if(rp)rp.innerHTML=_psMdToHtml(this.value);":''}" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;line-height:1.6;resize:vertical;">${esc(corpo)}</textarea>
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.5;"><code style="background:var(--surface2);padding:0 4px;border-radius:3px;">*grassetto*</code> · <code style="background:var(--surface2);padding:0 4px;border-radius:3px;">_corsivo_</code> · righe con "- " per gli elenchi. Le modifiche qui valgono solo per questo invio: per cambiare il testo di tutti usa "✏️ Modifica testi".</div>
+    ${canale!=='wa'?`<div style="margin-top:10px;">
+      <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">COME APPARIRÀ NELLA MAIL</div>
+      <div id="psAntRendered" style="border:1px solid var(--border-light);border-radius:7px;padding:10px 13px;background:var(--surface2);font-size:var(--fs-xs);color:var(--text);line-height:1.5;">${_psMdToHtml(corpo)}</div>
+    </div>`:''}
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
       <button onclick="prestayChiudiAnteprima()" style="flex:1;min-width:90px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-weight:600;font-size:var(--fs-xs);cursor:pointer;">${canale==='both'?'Chiudi':'Annulla'}</button>
       ${canale!=='wa'&&haMail?`<button onclick="prestayInviaDaAnteprima('mail')" style="flex:2;min-width:150px;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;">${PS_ICON_MAIL}${_psMailPronto()?'Invia la mail':'Apri il client di posta'}</button>`:''}
@@ -11328,7 +11408,7 @@ function prestayRender(){
     h+=`<div class="panel" style="margin-top:16px;">
       <div class="panel-header"><span class="panel-title">Testi pre-stay</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">segnaposto: {nome} {camera} {struttura} {data}</span></div>
       <div class="panel-body" style="padding:14px;">
-        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:12px;line-height:1.55;">Un testo per struttura e lingua. I segnaposto vengono sostituiti al momento dell'invio, quindi modificando un testo cambiano subito anche i messaggi non ancora inviati. L'oggetto vale solo per la mail; WhatsApp usa il solo corpo.</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:12px;line-height:1.55;">Un testo per struttura e lingua. I segnaposto vengono sostituiti al momento dell'invio, quindi modificando un testo cambiano subito anche i messaggi non ancora inviati. L'oggetto vale solo per la mail; WhatsApp usa il solo corpo. Nel corpo puoi usare <code style="background:var(--surface2);padding:0 4px;border-radius:3px;">*grassetto*</code>, <code style="background:var(--surface2);padding:0 4px;border-radius:3px;">_corsivo_</code> e righe che iniziano con "- " per un elenco puntato: su WhatsApp si vedono resi, sulla mail diventano HTML vero (grassetto/corsivo/elenco).</div>
         ${hotels.map(hc=>{
           const conf=PRESTAY_HOTELS[hc];
           return`<div style="margin-bottom:14px;border:1px solid var(--border-light);border-radius:9px;overflow:hidden;">
@@ -11336,10 +11416,12 @@ function prestayRender(){
             <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               ${['it','en'].map(lg=>{
                 const t=_psTpl(hc,lg);
+                const taId='ps-tpl-'+hc+'-'+lg;
                 return`<div>
                   <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">${lg.toUpperCase()}</div>
                   <input value="${String(t.ogg||'').replace(/"/g,'&quot;')}" placeholder="Oggetto" onchange="prestaySetTpl('${hc}','${lg}','ogg',this.value)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;margin-bottom:5px;">
-                  <textarea rows="7" placeholder="Corpo del messaggio" onchange="prestaySetTpl('${hc}','${lg}','corpo',this.value)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;line-height:1.5;resize:vertical;">${String(t.corpo||'')}</textarea>
+                  ${psToolbar(taId)}
+                  <textarea id="${taId}" rows="7" placeholder="Corpo del messaggio" onchange="prestaySetTpl('${hc}','${lg}','corpo',this.value)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;line-height:1.5;resize:vertical;">${String(t.corpo||'')}</textarea>
                 </div>`;
               }).join('')}
             </div>

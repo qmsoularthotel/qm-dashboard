@@ -1374,6 +1374,24 @@ Segnaposto sostituiti **al momento dell'invio, non salvati** (`_psCompila`): mod
 
 `{nome}` · `{camera}` · `{struttura}` · `{data}` — l'oggetto vale solo per la mail, WhatsApp usa il solo corpo.
 
+### Formattazione nei template — sintassi nativa WhatsApp, tradotta per la mail
+
+Sintassi nel corpo: `*grassetto*`, `_corsivo_`, righe che iniziano con `- ` per un elenco puntato. Scelta deliberatamente **identica alla sintassi nativa di WhatsApp** (non Markdown standard, che userebbe `**grassetto**`): il canale WhatsApp non richiede quindi nessuna conversione, solo la mail va tradotta.
+
+| Funzione | Uso | Canale |
+|----------|-----|--------|
+| `_psMdToHtml(txt)` | markup → HTML (`<strong>`/`<em>`/`<ul><li>`/`<p>`), con escape HTML prima della conversione (niente injection da un nome ospite scritto male) | mail via Worker (`html` oltre a `text` nella POST a `/prestay/send`) |
+| `_psMdStrip(txt)` | toglie i marcatori, converte `- ` in `• ` | `mailto:` (il client apre un body testo semplice, non sa mostrare HTML) |
+| corpo grezzo, nessuna conversione | i marcatori sono già ciò che WhatsApp si aspetta | `_psSpedisciWa` (solo `- `→`• `, `*`/`_` restano intatti) |
+
+`_psMdToHtml` lavora **riga per riga**, non a blocchi separati da riga vuota: un elenco che segue subito una riga introduttiva senza riga vuota in mezzo (`"Ecco alcune info:\n- Check-in\n- Wifi"`, caso reale comune) va comunque riconosciuto come elenco — un primo tentativo a blocchi lo trascinava dentro il paragrafo perché non tutte le righe del blocco erano bullet.
+
+**Toolbar B/I/•** sopra ogni textarea (editor template e corpo dell'anteprima), stessa funzione condivisa `_psWrapSel(taId,before,after)` / `_psBulletSel(taId)`: avvolge la selezione (o inserisce un segnaposto "testo"/"voce elenco" se non c'è selezione) e simula un evento `change` così il salvataggio (`onchange="prestaySetTpl(...)"`) parte anche se il valore è stato scritto via JS, non digitato.
+
+Nell'anteprima, quando `canale!=='wa'`, sotto la textarea compare un riquadro **"Come apparirà nella mail"** che mostra `_psMdToHtml` renderizzato, aggiornato in diretta (`oninput` sulla textarea) — utile perché il grassetto/corsivo/elenco nella mail sono resi realmente, mentre nel corpo grezzo restano solo asterischi/trattini.
+
+**Worker**: perché la mail arrivi davvero in HTML serve che `handlePrestayMail` sul Cloudflare Worker inoltri anche `html` a Resend, oltre a `text` — vedi `worker-prestay-mail.md`. Senza aggiornare/ridistribuire il Worker, la mail parte comunque (usa il campo `text`, che Compass manda già ripulito dai marcatori via `_psMdStrip`), solo senza grassetto/corsivo/elenco resi.
+
 ### `_psHotelOf(iso,camera)` — non togliere
 
 Per le righe che vengono dal Piano **l'hotel non è nel record salvato**: è noto solo dalla sezione del Piano in cui la camera compare. Va quindi risolto a ogni invio (`record.hotel` → altrimenti Piano → altrimenti `sa`). Senza, `{struttura}` resta vuoto nel messaggio **e viene usato il template della struttura sbagliata** — bug trovato in test prima del rilascio, non ripristinare la vecchia `r.hotel||'sa'`.

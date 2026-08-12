@@ -137,7 +137,7 @@ async function handlePrestayMail(request, env) {
   try { body = await request.json(); }
   catch (e) { return Response.json({ ok: false, error: 'JSON non valido' }, { status: 400, headers: cors }); }
 
-  const { to, subject, text } = body || {};
+  const { to, subject, text, html } = body || {};
   if (!to || !subject || !text)
     return Response.json({ ok: false, error: 'Mancano destinatario, oggetto o testo' }, { status: 400, headers: cors });
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to))
@@ -162,7 +162,8 @@ async function handlePrestayMail(request, env) {
       to: [to],
       reply_to: env.PRESTAY_REPLYTO,
       subject,
-      text
+      text,
+      ...(html ? { html } : {})
     })
   });
 
@@ -187,6 +188,14 @@ if (new URL(request.url).pathname === '/prestay/send') {
 Se il binding KV nel vostro Worker non si chiama `KV`, correggete `env.KV` di
 conseguenza (il contatore è l'unica cosa che lo usa: togliendolo si perde solo il
 limite giornaliero).
+
+**Aggiornamento 12/08/2026 — formattazione (grassetto/corsivo/elenchi).** Compass ora manda
+anche un campo `html` oltre a `text` (Resend accetta entrambi). Se il vostro Worker è già
+deployato con la versione precedente di questo file, **la mail continua a funzionare
+comunque** — parte solo in solo testo, senza grassetto/corsivo/elenco resi. Per vederli
+resi, incollate di nuovo il codice di `handlePrestayMail` (con l'`html` aggiunto qui sopra)
+sul Worker e fate un nuovo **Deploy** — come per i secret, una modifica al codice non ha
+effetto finché non si ridistribuisce.
 
 ---
 
