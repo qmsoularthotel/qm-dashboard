@@ -4747,8 +4747,15 @@ function revHandleFile(p,file){
       REV_HOTELS[p].data=rows;
       REV_HOTELS[p].filtered=[...rows];
       revAutoMarkNoComment(p,rows);
-      // Un nuovo CSV può rendere valutabili osservazioni prima "in attesa" (perché
-      // successive all'ultima recensione esportata): ricalcola qui, non a ogni render.
+      // Timestamp di QUESTO import, salvato SUBITO: revCalibRicalcola lo usa come limite di
+      // "usabilità" delle osservazioni (vedi nota lì) — deve già essere in localStorage
+      // quando lo legge, non quello dell'import precedente.
+      const _revTs=Date.now();
+      try{localStorage.setItem('qm_ts_rev_'+p,String(_revTs));
+        fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_ts_rev_'+p,value:String(_revTs)})}).catch(()=>{});} catch(e){}
+      // Un nuovo CSV può rendere valutabili osservazioni prima "in attesa", anche senza
+      // recensioni nuove (l'import fresco da solo conferma "nessuna novità"): ricalcola
+      // qui, non a ogni render.
       try{revCalibRicalcola(p);}catch(e){}
       document.getElementById('revProcessing-'+p).style.display='none';
       document.getElementById('revContent-'+p).style.display='block';
@@ -4759,10 +4766,6 @@ function revHandleFile(p,file){
       ovUpdateRevNoreply();ovUpdateRevImport();
       // Salva il testo CSV grezzo in localStorage e cloud KV
       try{localStorage.setItem('qm_rev_'+p, csvText);}catch(e){}
-      // Salva timestamp upload
-      const _revTs=Date.now();
-      try{localStorage.setItem('qm_ts_rev_'+p,String(_revTs));
-        fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_ts_rev_'+p,value:String(_revTs)})}).catch(()=>{});} catch(e){}
       revShowTs(p,_revTs);
       try{
         fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -5255,15 +5258,19 @@ function revOss(p){const c=REV_CALIB[p];return(c&&Array.isArray(c.osservazioni))
  * Emivite compatibili con TUTTE le osservazioni registrate.
  * Ogni osservazione è valutata sul sottoinsieme di recensioni antecedenti al suo timestamp:
  * è questo che rende informativa una transizione (prima/dopo una singola recensione).
- * Un'osservazione successiva all'ultima recensione del CSV non è valutabile — mancherebbero
- * le recensioni arrivate dopo l'export — e viene esclusa, non ignorata in silenzio.
+ * Un'osservazione è valutabile fino al momento dell'ultimo IMPORT del CSV (non fino
+ * all'ultima recensione che contiene): un import fresco è la prova che a quel momento non
+ * c'erano recensioni più recenti, anche se il CSV non ne aggiunge di nuove. Senza questo
+ * limite un'osservazione presa oggi resterebbe "in attesa" per sempre finché non arriva
+ * davvero una recensione nuova — anche quando l'assenza di novità è già stata verificata
+ * ri-esportando il CSV.
  */
-function calibraDaOsservazioni(recensioni,osservazioni){
+function calibraDaOsservazioni(recensioni,osservazioni,importTs){
   const rec=(recensioni||[]).filter(r=>r._score>0&&r._dateTs>0);
   const oss=(osservazioni||[]).filter(o=>o&&o.ts&&o.display!=null);
   if(!rec.length||!oss.length)return{hl:null,fascia:null,contraddittorio:false,nUsate:0,nAttesa:oss.length};
-  const ultimaRec=Math.max(...rec.map(r=>r._dateTs));
-  const usabili=oss.filter(o=>+new Date(o.ts)<=ultimaRec);
+  const limite=importTs!=null?importTs:Math.max(...rec.map(r=>r._dateTs));
+  const usabili=oss.filter(o=>+new Date(o.ts)<=limite);
   const nAttesa=oss.length-usabili.length;
   if(!usabili.length)return{hl:null,fascia:null,contraddittorio:false,nUsate:0,nAttesa};
   // Sottoinsiemi precalcolati una volta sola: dentro il ciclo sulle emivite rifiltrare
@@ -5303,15 +5310,17 @@ function revCalibRicalcola(p){
     c.hl=null;c.fascia=null;c.fonte='default';c.contraddittorio=false;c.nUsate=0;c.nAttesa=oss.length;
     revCalibSave();return;
   }
-  const multi=calibraDaOsservazioni(scored,oss);
+  // Limite di "usabilità": l'ultimo import del CSV per questa struttura (qm_ts_rev_<p>),
+  // non l'ultima recensione che contiene. Vedi nota su calibraDaOsservazioni.
+  const importTs=Math.max(parseInt(localStorage.getItem('qm_ts_rev_'+p)||'0')||0,Math.max(...scored.map(r=>r._dateTs)));
+  const multi=calibraDaOsservazioni(scored,oss,importTs);
   if(multi.nUsate>=2&&!multi.contraddittorio&&multi.hl){
     c.hl=multi.hl;c.fascia=multi.fascia;c.fonte='osservazioni';
     c.contraddittorio=false;c.nUsate=multi.nUsate;c.nAttesa=multi.nAttesa;
     revCalibSave();return;
   }
   // Contraddizione o una sola osservazione: si ricade sul punteggio più recente usabile.
-  const ultimaRec=Math.max(...scored.map(r=>r._dateTs));
-  const usabili=oss.filter(o=>+new Date(o.ts)<=ultimaRec).sort((a,b)=>+new Date(b.ts)-+new Date(a.ts));
+  const usabili=oss.filter(o=>+new Date(o.ts)<=importTs).sort((a,b)=>+new Date(b.ts)-+new Date(a.ts));
   const nAttesa=oss.length-usabili.length;
   if(!usabili.length){
     c.hl=null;c.fascia=null;c.fonte='default';c.contraddittorio=!!multi.contraddittorio;c.nUsate=0;c.nAttesa=nAttesa;
@@ -5509,16 +5518,19 @@ function revRenderCalib(p,pb,hl){
     sugg+=`<div style="margin-top:6px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.55;">Tutte le osservazioni riportano ${Number(cs.oss[0].display).toFixed(1)} — la fascia si restringe solo osservando un <strong>cambio</strong> di cifra, non ripetendo lo stesso valore.</div>`;
   }
   // Registro: lista compatta, ogni riga eliminabile per correggere un errore di battitura.
-  const ultimaRecTs=(()=>{const d=(REV_HOTELS[p]&&REV_HOTELS[p].data||[]).filter(r=>r._dateTs>0);return d.length?Math.max(...d.map(r=>r._dateTs)):0;})();
+  // "in attesa" fino all'ultimo IMPORT del CSV (qm_ts_rev_<p>), non fino all'ultima
+  // recensione che contiene: un import fresco basta a confermare l'osservazione anche
+  // senza recensioni nuove, perché prova che a quel momento non ce n'erano.
+  const importTs=(()=>{const t=parseInt(localStorage.getItem('qm_ts_rev_'+p)||'0')||0;const d=(REV_HOTELS[p]&&REV_HOTELS[p].data||[]).filter(r=>r._dateTs>0);const ultimaRecTs=d.length?Math.max(...d.map(r=>r._dateTs)):0;return Math.max(t,ultimaRecTs);})();
   const ossHtml=cs.oss.length?`<div style="margin-top:10px;border-top:1px solid var(--border-light);padding-top:8px;">
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">Registro osservazioni</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;">
       ${[...cs.oss].sort((a,b)=>+new Date(b.ts)-+new Date(a.ts)).map(o=>{
-        const attesa=ultimaRecTs&&+new Date(o.ts)>ultimaRecTs;
+        const attesa=importTs&&+new Date(o.ts)>importTs;
         return`<span style="display:inline-flex;align-items:center;gap:6px;background:${attesa?'var(--surface2)':'var(--surface)'};border:1px solid var(--border-light);border-radius:8px;padding:4px 8px;font-size:var(--fs-xs);">
           <strong style="color:var(--text);">${Number(o.display).toFixed(1)}</strong>
           <span style="color:var(--text-dim);">${fmtDT(o.ts)}</span>
-          ${attesa?`<span title="Registrata dopo l'ultima recensione presente nel CSV: verrà usata al prossimo import" style="font-size:9px;color:var(--amber);font-weight:700;">in attesa</span>`:''}
+          ${attesa?`<span title="Registrata dopo l'ultimo import del CSV: ricarica il CSV (anche senza nuove recensioni) per confermarla" style="font-size:9px;color:var(--amber);font-weight:700;">in attesa</span>`:''}
           <span onclick="revCalibDelOss('${p}','${o.ts}')" title="Rimuovi questa osservazione" style="cursor:pointer;color:var(--text-dim);font-weight:700;">✕</span>
         </span>`;
       }).join('')}

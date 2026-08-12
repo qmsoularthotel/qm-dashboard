@@ -224,11 +224,15 @@ La fonte in uso è **sempre mostrata** nel pannello (`emivita 136gg · da 3 osse
 
 **Il ricalcolo è O(emivite × osservazioni × recensioni)** (~1200 × 10 × 657): si esegue **solo** aggiungendo/rimuovendo un'osservazione o reimportando un CSV — mai a ogni render — e il risultato è memorizzato su KV. I sottoinsiemi di recensioni sono precalcolati fuori dal ciclo sulle emivite.
 
-### Osservazioni "in attesa" — e la tensione con l'uso reale
+### Osservazioni "in attesa" — limite = ultimo IMPORT, non ultima recensione (fix 12/08/2026)
 
-Un'osservazione con timestamp **successivo all'ultima recensione del CSV** non è valutabile (mancherebbero le recensioni arrivate dopo l'export): viene marcata `in attesa` nel registro ed esclusa dal calcolo, non ignorata in silenzio.
+Un'osservazione è "usabile" solo fino a un limite temporale, altrimenti resta marcata `in attesa` nel registro ed esclusa dal calcolo (non ignorata in silenzio). **Il limite è il timestamp dell'ultimo import del CSV per quella struttura** (`localStorage['qm_ts_rev_'+p]`), calcolato in `revCalibRicalcola(p)` e passato a `calibraDaOsservazioni(recensioni, osservazioni, importTs)`.
 
-**Attenzione al caso d'uso**: il pannello incoraggia a registrare il punteggio *appena cambia, senza ricaricare il CSV* — ed è il dato più prezioso — ma quelle osservazioni restano `in attesa` finché non si reimporta. Per questo `revCalibRicalcola` è agganciato **a entrambi i punti di import** (upload nuovo e restore da KV): al primo import successivo diventano usabili da sole. Se le osservazioni sembrano "non fare effetto", è quasi sempre questo: manca un reimport del CSV.
+**Versione originale (bug)**: il limite era la data dell'ultima recensione *contenuta* nel CSV, non la data dell'import. Caso reale che l'ha scoperto: recensioni ferme al 10/08, osservazione "8.2" registrata il 12/08, poi CSV **ri-esportato e ricaricato lo stesso 12/08** (confermando che non c'erano recensioni nuove) — restava comunque `in attesa` per sempre, perché l'ultima recensione nel CSV era e restava il 10/08. La card "Punteggio medio" continuava quindi a mostrare la stima calibrata sull'osservazione precedente (8.3), disallineata dal valore reale appena letto (8.2), e il target "recensioni per raggiungere X" veniva calcolato su quella base sbagliata.
+
+**Perché il fix è corretto**: un import fresco del CSV, anche se non porta recensioni nuove, **è di per sé la prova** che a quel momento non ce n'erano — non serve aspettare una recensione futura per "sbloccare" l'osservazione. Restava solo da spostare il limite dalla data-recensione alla data-import. Attenzione all'ordine in `revHandleFile`: `localStorage['qm_ts_rev_'+p]` va scritto **prima** di chiamare `revCalibRicalcola(p)` nello stesso handler — altrimenti il ricalcolo legge ancora il timestamp dell'import precedente.
+
+**Caso d'uso resta**: il pannello incoraggia a registrare il punteggio *appena cambia, senza dover ricaricare il CSV* — è il dato più prezioso — ma quelle osservazioni restano `in attesa` finché non arriva un import (nuovo o di conferma) con timestamp successivo alla loro registrazione. Se le osservazioni sembrano "non fare effetto" anche dopo un reimport, verificare che l'import sia avvenuto **dopo** l'orario dell'osservazione, non solo lo stesso giorno.
 
 ### Contraddizioni e qualità
 
