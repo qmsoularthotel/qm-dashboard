@@ -10939,6 +10939,21 @@ const PRESTAY_HOTELS={
   pr:{name:'Principe',piano:null},
   ms:{name:'Mastrangelo',piano:null}
 };
+// Nome mostrato come MITTENTE della mail (invio diretto via Worker) — separato da
+// PRESTAY_HOTELS[].name perché quello alimenta anche {struttura} nel corpo del messaggio
+// e non va toccato per non allungare il testo ovunque nell'app. Qui serve il nome che
+// l'ospite deve riconoscere subito nella casella di posta: "Boutique Hotel" da solo si
+// confonde più facilmente di "Boutique Hotel Piazza Carità". L'indirizzo mittente
+// (qm@mail.compass-qm.com) resta fisso per tutte le strutture: cambia solo il nome
+// visualizzato, il Worker lo ricompone attorno all'indirizzo di PRESTAY_FROM.
+const PRESTAY_FROM_NAME={
+  sa:'SoulArt Hotel',
+  bh:'Boutique Hotel Piazza Carità',
+  sl:'San Liborio',
+  ar:'Art Resort',
+  pr:'Principe',
+  ms:'Mastrangelo'
+};
 // Testi di partenza: sono segnaposto da riscrivere dalla schermata (Modifica testi).
 // I placeholder {nome} {camera} {struttura} {data} vengono sostituiti all'invio.
 const PRESTAY_TPL_DEFAULT={
@@ -11162,13 +11177,17 @@ function _psSpedisciMail(camera,ogg,corpo){
   }
   const btnKey='ps-mail-'+camera;
   _psMailInFlight[btnKey]=true;prestayRender();
-  // html oltre a text: se il Worker non lo inoltra ancora a Resend (versioni precedenti a
-  // questa funzionalità), il campo viene semplicemente ignorato e la mail parte comunque
-  // in solo testo — nessuna rottura, va solo aggiornato/ridistribuito per avere il rendering.
+  const hotel=_psHotelOf(iso,camera);
+  const nomeFrom=PRESTAY_FROM_NAME[hotel];
+  const fromName=nomeFrom?nomeFrom+' - Quality Manager':'';
+  // html/fromName oltre a text: se il Worker non li inoltra ancora a Resend (versioni
+  // precedenti a questa funzionalità), i campi vengono semplicemente ignorati e la mail
+  // parte comunque in solo testo col mittente di default — nessuna rottura, va solo
+  // aggiornato/ridistribuito per avere rendering e mittente per struttura.
   fetch(_psMailCfg.endpoint,{
     method:'POST',
     headers:{'Content-Type':'application/json','X-Prestay-Key':_psMailCfg.key},
-    body:JSON.stringify({to:r.email,subject:ogg,text:_psMdStrip(corpo),html:_psMdToHtml(corpo)})
+    body:JSON.stringify({to:r.email,subject:ogg,text:_psMdStrip(corpo),html:_psMdToHtml(corpo),fromName})
   }).then(res=>res.json().catch(()=>({ok:false,error:'risposta non leggibile'})))
    .then(j=>{
     delete _psMailInFlight[btnKey];

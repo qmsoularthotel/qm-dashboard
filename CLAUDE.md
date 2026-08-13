@@ -1317,6 +1317,14 @@ Il codice del Worker, i passaggi su Cloudflare, il servizio di invio e i record 
 
 **Due trappole trovate alla prima prova reale**: il display name in `PRESTAY_FROM` va **tra virgolette e senza caratteri non-ASCII** (un trattino lungo `—` faceva scartare il nome, e Gmail mostrava solo l'indirizzo); e le variabili nuove diventano attive **solo dopo un nuovo deploy** del Worker, non al salvataggio.
 
+### Mittente per struttura — `PRESTAY_FROM_NAME`
+
+`PRESTAY_FROM` sul Worker è **un solo indirizzo per tutte le strutture** (`qm@mail.compass-qm.com`, l'unico dominio verificato su Resend) — ma il nome mostrato all'ospite non deve essere sempre "SoulArt Hotel": un ospite del Boutique che vede "SoulArt Hotel" come mittente non lo riconosce. `PRESTAY_FROM_NAME` (app.js, vicino a `PRESTAY_HOTELS`) mappa `hotel → nome da mostrare`, **deliberatamente un oggetto separato da `PRESTAY_HOTELS[].name`**: quello alimenta anche `{struttura}` nel corpo dei messaggi, allungarlo lì (es. "Boutique Hotel Piazza Carità" invece di "Boutique Hotel") avrebbe cambiato il testo di ogni template esistente, non solo il mittente.
+
+`_psSpedisciMail` manda `fromName` (es. `"Boutique Hotel Piazza Carità - Quality Manager"`) nel body della POST al Worker, che lo ricompone attorno all'indirizzo fisso di `PRESTAY_FROM` (regex su `<...>`), ripulito da virgolette/parentesi/a-capo prima di finire nell'header `From` — un client (o una richiesta malformata) potrebbe altrimenti mandare qualunque stringa. Senza `fromName` (client vecchio, o hotel non mappato) il Worker ricade su `PRESTAY_FROM` intero, comportamento identico a prima.
+
+Il `mailto:` (invio non configurato) **non è toccato**: il client di posta dell'utente decide da solo il mittente, non è mai stato possibile personalizzarlo da lì.
+
 **La chiave sta solo nel browser** (`localStorage`, chiave `qm_prestay_mailcfg`) — **mai su KV, mai nel codice**: non deve finire su GitHub né essere sincronizzata sugli altri PC insieme al resto dei dati. Va quindi reinserita su ogni postazione da cui si vuole spedire. Verificato in test che non compaia dentro `qm_prestay`.
 
 **Se l'invio fallisce la riga NON viene segnata come inviata** e l'errore resta visibile sulla riga (chiave sbagliata, rete assente, rifiuto del servizio): altrimenti un errore silenzioso farebbe credere che l'ospite sia stato contattato. Un reinvio riuscito azzera l'errore. Con l'invio diretto si chiede **conferma** prima di spedire: con nome e dati presi a mano dal PMS, saltare del tutto la rilettura non è prudente.

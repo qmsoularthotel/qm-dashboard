@@ -81,7 +81,7 @@ Su Cloudflare → Workers → il vostro worker → Settings → Variables → **
 |------|--------|
 | `RESEND_KEY` | la API key del servizio di invio |
 | `PRESTAY_KEY` | una password lunga inventata da voi (è quella che inserirete in Compass) |
-| `PRESTAY_FROM` | mittente, sul **sottodominio**: `SoulArt Hotel — Quality Manager <qm@mail.compass-qm.com>` |
+| `PRESTAY_FROM` | mittente **di riserva** (usato se Compass non manda un nome per struttura), sul **sottodominio**: `SoulArt Hotel - Quality Manager <qm@mail.compass-qm.com>` — l'indirizzo qui dentro (`qm@mail.compass-qm.com`) è anche quello riusato per comporre il mittente per-struttura, vedi "mittente per struttura" più sotto |
 | `PRESTAY_REPLYTO` | indirizzo a cui rispondono gli ospiti: `qm@soularthotel.com` |
 
 **Perché mittente e risposta sono diversi.** Si spedisce da un sottodominio nuovo
@@ -137,11 +137,24 @@ async function handlePrestayMail(request, env) {
   try { body = await request.json(); }
   catch (e) { return Response.json({ ok: false, error: 'JSON non valido' }, { status: 400, headers: cors }); }
 
-  const { to, subject, text, html } = body || {};
+  const { to, subject, text, html, fromName } = body || {};
   if (!to || !subject || !text)
     return Response.json({ ok: false, error: 'Mancano destinatario, oggetto o testo' }, { status: 400, headers: cors });
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to))
     return Response.json({ ok: false, error: 'Indirizzo non valido' }, { status: 400, headers: cors });
+
+  // Nome mittente per struttura (es. "Boutique Hotel Piazza Carità - Quality Manager"):
+  // l'indirizzo resta sempre quello di PRESTAY_FROM (dominio verificato), cambia solo il
+  // nome visualizzato davanti. Ripulito da virgolette/parentesi/a-capo per non rompere
+  // l'header From — un client potrebbe mandare qualunque stringa nel body.
+  const mittente = (() => {
+    if (!fromName) return env.PRESTAY_FROM;
+    const nome = String(fromName).replace(/["\r\n<>]/g, '').trim().slice(0, 120);
+    if (!nome) return env.PRESTAY_FROM;
+    const m = env.PRESTAY_FROM.match(/<([^>]+)>/);
+    const addr = m ? m[1] : env.PRESTAY_FROM.trim();
+    return `"${nome}" <${addr}>`;
+  })();
 
   // Tetto giornaliero: usa lo stesso KV già collegato al Worker.
   const oggi = new Date().toISOString().slice(0, 10);
@@ -158,7 +171,7 @@ async function handlePrestayMail(request, env) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      from: env.PRESTAY_FROM,
+      from: mittente,
       to: [to],
       reply_to: env.PRESTAY_REPLYTO,
       subject,
@@ -196,6 +209,13 @@ comunque** — parte solo in solo testo, senza grassetto/corsivo/elenco resi. Pe
 resi, incollate di nuovo il codice di `handlePrestayMail` (con l'`html` aggiunto qui sopra)
 sul Worker e fate un nuovo **Deploy** — come per i secret, una modifica al codice non ha
 effetto finché non si ridistribuisce.
+
+**Aggiornamento 13/08/2026 — mittente per struttura.** Compass ora manda anche `fromName`
+(es. `"Boutique Hotel Piazza Carità - Quality Manager"`), diverso da struttura a struttura.
+L'indirizzo resta sempre lo stesso (`qm@mail.compass-qm.com`, quello verificato su Resend):
+solo il **nome mostrato** cambia, ricomposto attorno a quell'indirizzo. Senza aggiornare il
+Worker la mail parte comunque con il mittente fisso di `PRESTAY_FROM` per tutte le
+strutture — nessuna rottura, solo il nome resta generico finché non si ridistribuisce.
 
 ---
 
