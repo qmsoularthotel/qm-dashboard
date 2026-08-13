@@ -5594,7 +5594,7 @@ function revRenderImpact(p,pb,scored,hl,oggiTs){
   const displayOra=Math.round(pb.score*10)/10;
   const soglia=revSoglia(displayOra);            // sotto questa, Booking mostra un decimo in meno
   const margine=pb.score-soglia;
-  const votiTab=[10,9,8,7,5,3];
+  const votiTab=[10,9,8,7,6,5,4,3,2,1];
   const righeTab=votiTab.map(v=>{
     const d=delta(v);
     const nuovo=pb.score+d;
