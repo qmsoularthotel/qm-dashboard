@@ -10941,16 +10941,14 @@ const PRESTAY_HOTELS={
 };
 // Nome mostrato come MITTENTE della mail (invio diretto via Worker) — separato da
 // PRESTAY_HOTELS[].name perché quello alimenta anche {struttura} nel corpo del messaggio
-// e non va toccato per non allungare il testo ovunque nell'app. Qui serve il nome completo
-// che l'ospite deve riconoscere subito nella casella di posta — "- Quality Manager" incluso
-// solo dove va (SoulArt e Boutique: le due strutture "storiche" col QM come riferimento
-// diretto), non aggiunto automaticamente per tutte, perché su San Liborio/Principe/
-// Mastrangelo suonerebbe fuori posto. L'indirizzo mittente (qm@mail.compass-qm.com) resta
-// fisso per tutte le strutture: cambia solo il nome visualizzato, il Worker lo ricompone
-// attorno all'indirizzo di PRESTAY_FROM.
+// e non va toccato per non allungare il testo ovunque nell'app. Qui serve solo il nome
+// della struttura, senza "Quality Manager" (tolto da tutte, incluse SoulArt/Boutique dove
+// era stato messo in un primo momento). L'indirizzo mittente (qm@mail.compass-qm.com)
+// resta fisso per tutte le strutture: cambia solo il nome visualizzato, il Worker lo
+// ricompone attorno all'indirizzo di PRESTAY_FROM.
 const PRESTAY_FROM_NAME={
-  sa:'SoulArt Hotel - Quality Manager',
-  bh:'Boutique Hotel Piazza Carità - Quality Manager',
+  sa:'SoulArt Hotel | Design Experience',
+  bh:'Boutique Hotel Piazza Carità',
   sl:'Art Suite San Liborio',
   ar:'Art Resort',
   pr:'Art Suite Principe Umberto',

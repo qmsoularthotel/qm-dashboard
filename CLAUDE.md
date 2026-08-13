@@ -1323,7 +1323,7 @@ Il codice del Worker, i passaggi su Cloudflare, il servizio di invio e i record 
 
 `_psSpedisciMail` manda `fromName` (il valore già completo di `PRESTAY_FROM_NAME[hotel]`) nel body della POST al Worker, che lo ricompone attorno all'indirizzo fisso di `PRESTAY_FROM` (regex su `<...>`), ripulito da virgolette/parentesi/a-capo prima di finire nell'header `From` — un client (o una richiesta malformata) potrebbe altrimenti mandare qualunque stringa. Senza `fromName` (client vecchio, o hotel non mappato) il Worker ricade su `PRESTAY_FROM` intero, comportamento identico a prima.
 
-**"- Quality Manager" non è automatico per tutti**: nei nomi di `PRESTAY_FROM_NAME` è già incluso dove ci sta (SoulArt, Boutique), assente per le altre (`Art Suite San Liborio`, `Art Resort`, `Art Suite Principe Umberto`, `Rooms Mastrangelo`) — su richiesta esplicita, suonava fuori posto lì. **Non concatenarlo di nuovo in `_psSpedisciMail`**: la stringa in `PRESTAY_FROM_NAME` è già il nome finale, va passata così com'è.
+**"- Quality Manager" è stato tolto da tutti i mittenti** (prima c'era su SoulArt/Boutique, rimosso su richiesta esplicita nella stessa sessione): `PRESTAY_FROM_NAME` contiene solo nomi di struttura, senza suffisso ruolo. **Non concatenarlo di nuovo in `_psSpedisciMail`**: la stringa in `PRESTAY_FROM_NAME` è già il nome finale, va passata così com'è. SoulArt ha in più `| Design Experience` (barretta verticale, spazi attorno) — solo SoulArt, non le altre strutture.
 
 Il `mailto:` (invio non configurato) **non è toccato**: il client di posta dell'utente decide da solo il mittente, non è mai stato possibile personalizzarlo da lì.
 
