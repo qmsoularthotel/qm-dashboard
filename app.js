@@ -10941,18 +10941,20 @@ const PRESTAY_HOTELS={
 };
 // Nome mostrato come MITTENTE della mail (invio diretto via Worker) — separato da
 // PRESTAY_HOTELS[].name perché quello alimenta anche {struttura} nel corpo del messaggio
-// e non va toccato per non allungare il testo ovunque nell'app. Qui serve il nome che
-// l'ospite deve riconoscere subito nella casella di posta: "Boutique Hotel" da solo si
-// confonde più facilmente di "Boutique Hotel Piazza Carità". L'indirizzo mittente
-// (qm@mail.compass-qm.com) resta fisso per tutte le strutture: cambia solo il nome
-// visualizzato, il Worker lo ricompone attorno all'indirizzo di PRESTAY_FROM.
+// e non va toccato per non allungare il testo ovunque nell'app. Qui serve il nome completo
+// che l'ospite deve riconoscere subito nella casella di posta — "- Quality Manager" incluso
+// solo dove va (SoulArt e Boutique: le due strutture "storiche" col QM come riferimento
+// diretto), non aggiunto automaticamente per tutte, perché su San Liborio/Principe/
+// Mastrangelo suonerebbe fuori posto. L'indirizzo mittente (qm@mail.compass-qm.com) resta
+// fisso per tutte le strutture: cambia solo il nome visualizzato, il Worker lo ricompone
+// attorno all'indirizzo di PRESTAY_FROM.
 const PRESTAY_FROM_NAME={
-  sa:'SoulArt Hotel',
-  bh:'Boutique Hotel Piazza Carità',
-  sl:'San Liborio',
+  sa:'SoulArt Hotel - Quality Manager',
+  bh:'Boutique Hotel Piazza Carità - Quality Manager',
+  sl:'Art Suite San Liborio',
   ar:'Art Resort',
-  pr:'Principe',
-  ms:'Mastrangelo'
+  pr:'Art Suite Principe Umberto',
+  ms:'Rooms Mastrangelo'
 };
 // Testi di partenza: sono segnaposto da riscrivere dalla schermata (Modifica testi).
 // I placeholder {nome} {camera} {struttura} {data} vengono sostituiti all'invio.
@@ -11178,8 +11180,7 @@ function _psSpedisciMail(camera,ogg,corpo){
   const btnKey='ps-mail-'+camera;
   _psMailInFlight[btnKey]=true;prestayRender();
   const hotel=_psHotelOf(iso,camera);
-  const nomeFrom=PRESTAY_FROM_NAME[hotel];
-  const fromName=nomeFrom?nomeFrom+' - Quality Manager':'';
+  const fromName=PRESTAY_FROM_NAME[hotel]||'';
   // html/fromName oltre a text: se il Worker non li inoltra ancora a Resend (versioni
   // precedenti a questa funzionalità), i campi vengono semplicemente ignorati e la mail
   // parte comunque in solo testo col mittente di default — nessuna rottura, va solo
