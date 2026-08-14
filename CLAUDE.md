@@ -1327,6 +1327,18 @@ Il codice del Worker, i passaggi su Cloudflare, il servizio di invio e i record 
 
 Il `mailto:` (invio non configurato) **non è toccato**: il client di posta dell'utente decide da solo il mittente, non è mai stato possibile personalizzarlo da lì.
 
+### Perché si spedisce via SMTP e non più via Resend (14/08/2026)
+
+Le mail inviate da `mail.compass-qm.com` via Resend finivano **in spam su Hotmail/Outlook** nonostante autenticazione perfetta — verificato sugli header reali: `dkim=pass`, `dmarc=pass`, `compauth=pass reason=100`, ma `SCL: 5` e `OFR:SpamFilterAuthJ`, cioè "autenticata ma giudicata spam". **Non era un problema di DNS o di codice: era reputazione di un dominio di invio nuovo**, che matura solo in settimane di invii.
+
+Scartate: aspettare (il progetto doveva partire subito); tornare a `mailto:` (impraticabile ai volumi reali — decine di aperture del client, scelta manuale del mittente fra più strutture, impossibile dai PC senza client); verificare `soularthotel.com` su Resend (DNS nell'area Register dell'hotel, autorizzazione non ottenibile).
+
+**Soluzione**: il Worker parla SMTP direttamente col server di Register (`authsmtp.securemail.pro:465`, TLS implicito, `AUTH LOGIN`) e spedisce **dalla casella vera `qm@soularthotel.com`** — stessa reputazione della posta che il QM manda da anni. Compass non cambia: stesso clic, stesso endpoint, stesso payload (`fromName` incluso). Codice completo e dettagli in **`worker-prestay-mail.md` §6**.
+
+Il Worker **ricade automaticamente su Resend** se le variabili `SMTP_*` non ci sono: per tornare indietro basta rimuoverle, senza toccare il codice.
+
+**Non "semplificare" queste quattro cose nel Worker** (tutte verificate in test): risposte SMTP multiriga lette solo su righe già terminate da CRLF (un `250 OK` spezzato a metà sembrerebbe completo); corpo in base64 (risolve accenti *e* dot-stuffing insieme); intestazioni RFC 2047 (`Carità` altrimenti illeggibile); `MAIL FROM` uguale all'utente autenticato (i server condivisi rifiutano mittenti di busta diversi — il nome per struttura sta nell'header `From:`, che è quello che l'ospite legge).
+
 **La chiave sta solo nel browser** (`localStorage`, chiave `qm_prestay_mailcfg`) — **mai su KV, mai nel codice**: non deve finire su GitHub né essere sincronizzata sugli altri PC insieme al resto dei dati. Va quindi reinserita su ogni postazione da cui si vuole spedire. Verificato in test che non compaia dentro `qm_prestay`.
 
 **Se l'invio fallisce la riga NON viene segnata come inviata** e l'errore resta visibile sulla riga (chiave sbagliata, rete assente, rifiuto del servizio): altrimenti un errore silenzioso farebbe credere che l'ospite sia stato contattato. Un reinvio riuscito azzera l'errore. Con l'invio diretto si chiede **conferma** prima di spedire: con nome e dati presi a mano dal PMS, saltare del tutto la rilettura non è prudente.

@@ -243,3 +243,377 @@ Manda la prima mail **a te stesso**, non a un ospite:
    servizio di invio.
 
 Solo dopo questi quattro controlli conviene usarlo con gli ospiti veri.
+
+---
+
+## 6. Invio dalla casella reale dell'hotel (SMTP) — soluzione al problema Hotmail
+
+### Perché si è dovuto cambiare strada
+
+Con l'invio via Resend da `mail.compass-qm.com` l'autenticazione risultava **perfetta**
+(verificato sugli header di una mail realmente ricevuta: `dkim=pass`, `dmarc=pass`,
+`compauth=pass reason=100`), ma Microsoft la classificava comunque come spam:
+
+```
+X-MS-Exchange-Organization-SCL: 5
+X-Microsoft-Antispam-Mailbox-Delivery: ... dest:J; OFR:SpamFilterAuthJ
+```
+
+`SpamFilterAuthJ` significa esattamente "autenticata correttamente, ma il filtro spam
+l'ha giudicata spam": non è un problema di configurazione, è **reputazione di un dominio
+di invio nuovo**. Si risolve da sé in settimane di invii regolari — tempo che il progetto
+non aveva.
+
+Le alternative scartate:
+
+- **Aspettare** che la reputazione maturi: il pre-stay doveva partire subito.
+- **Tornare a `mailto:`**: impraticabile ai volumi reali — decine di aperture del client,
+  scelta manuale del mittente giusto fra più strutture (con rischio di sbagliare), e
+  impossibile dai PC senza client di posta configurato.
+- **Verificare `soularthotel.com` su Resend**: sarebbe la soluzione più pulita, ma i DNS
+  di quel dominio sono nell'area clienti Register dell'hotel e l'autorizzazione non è
+  ottenibile.
+
+### La soluzione adottata
+
+Il Worker si collega **direttamente al server SMTP di Register** e spedisce **dalla
+casella vera** `qm@soularthotel.com`: stesso mittente, stessi server in uscita e stessa
+reputazione della posta che il QM manda a mano da anni. Compass continua a spedire con un
+clic da qualsiasi PC, senza client di posta.
+
+Parametri verificati (agosto 2026):
+
+| Voce | Valore |
+|------|--------|
+| Host | `authsmtp.securemail.pro` (risolve su `smtp.securemail.pro`, 81.88.48.66) |
+| Porta | **465**, TLS implicito |
+| Autenticazione | `AUTH LOGIN` (annunciata dal server insieme a `PLAIN`) |
+| Certificato | SAN include `*.securemail.pro` → la verifica dell'hostname dal Worker passa |
+
+Il TLS implicito su 465 è la ragione per cui questa strada è praticabile da un Worker:
+niente `STARTTLS` da negoziare, basta `secureTransport: 'on'` su `connect()`.
+
+### Variabili da aggiungere sul Worker
+
+Tutte come **Secret**, tranne host e porta che possono restare testo:
+
+| Nome | Valore |
+|------|--------|
+| `SMTP_HOST` | `authsmtp.securemail.pro` |
+| `SMTP_PORT` | `465` |
+| `SMTP_USER` | `qm@soularthotel.com` |
+| `SMTP_PASS` | la password della casella — **Secret**, mai altrove |
+| `SMTP_FROM` | opzionale, default = `SMTP_USER` |
+
+`RESEND_KEY` e `PRESTAY_FROM` **vanno lasciate**: se un domani si tolgono le variabili
+SMTP, il Worker torna da solo a spedire via Resend senza modifiche al codice.
+
+**Nota di sicurezza.** `SMTP_PASS` è la password della casella vera: chi la ottiene non
+manda solo mail, entra nella casella. Resta protetta dalle stesse tre barriere di prima
+(chiave `X-Prestay-Key`, controllo origine, tetto giornaliero) e non lascia mai
+Cloudflare — Compass non la vede né la salva. Va comunque cambiata se si sospetta una
+fuga, e non va mai incollata in chat, ticket o screenshot.
+
+### Dettagli implementativi che non vanno "semplificati"
+
+- **Risposte SMTP multiriga**: l'EHLO di Register risponde su 5 righe (`250-…` fino a
+  `250 OK`). Si legge finché non arriva una riga col codice **seguito da spazio**, e si
+  guardano **solo le righe già terminate da CRLF**: un `250 OK` arrivato spezzato a metà
+  sembrerebbe completo e verrebbe consumato in anticipo. Verificato in test.
+- **Corpo in base64**: risolve in un colpo solo gli accenti e il *dot stuffing* — una riga
+  con un punto isolato chiuderebbe il `DATA` — perché l'alfabeto base64 non contiene il
+  punto.
+- **Intestazioni RFC 2047**: `Boutique Hotel Piazza Carità` e gli oggetti accentati vanno
+  codificati `=?UTF-8?B?…?=`, altrimenti arrivano illeggibili.
+- **`MAIL FROM` = utente autenticato**: i server condivisi rifiutano un mittente di busta
+  diverso dall'utente con cui ci si è autenticati. Il nome per struttura resta
+  nell'intestazione `From:`, che è quella che l'ospite legge.
+- **Solo CRLF**: un LF isolato rompe il protocollo.
+
+### Codice completo del Worker
+
+```js
+import { connect } from 'cloudflare:sockets';
+
+export default {
+  async fetch(request, env) {
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, X-Prestay-Key',
+    };
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    const url = new URL(request.url);
+    const json = (obj, status) => new Response(JSON.stringify(obj), {
+      status: status || 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
+    // ── KV STORAGE ──
+    if (url.pathname === '/kv/get') {
+      const key = url.searchParams.get('key');
+      if (!key) return new Response('missing key', { status: 400, headers: corsHeaders });
+      const value = await env.QM_STORAGE.get(key);
+      return json({ value });
+    }
+
+    if (url.pathname === '/kv/set') {
+      const body = await request.json();
+      await env.QM_STORAGE.put(body.key, body.value);
+      return json({ ok: true });
+    }
+
+    if (url.pathname === '/kv/delete') {
+      const key = url.searchParams.get('key');
+      if (!key) return new Response('missing key', { status: 400, headers: corsHeaders });
+      await env.QM_STORAGE.delete(key);
+      return json({ ok: true });
+    }
+
+    // ── INVIO MAIL PRE-STAY ──
+    if (url.pathname === '/prestay/send') {
+      const origin = request.headers.get('Origin') || '';
+      const ORIGINI = [
+        'https://www.compass-qm.com',
+        'https://compass-qm.com',
+        'https://qmsoularthotel.github.io'
+      ];
+      if (!ORIGINI.includes(origin)) return json({ ok: false, error: 'Origine non ammessa' }, 403);
+      if (request.headers.get('X-Prestay-Key') !== env.PRESTAY_KEY) {
+        return json({ ok: false, error: 'Chiave non valida' }, 401);
+      }
+
+      let dati;
+      try { dati = await request.json(); }
+      catch (e) { return json({ ok: false, error: 'Dati non validi' }, 400); }
+      if (!dati.to || !dati.subject || !dati.text) {
+        return json({ ok: false, error: 'Mancano destinatario, oggetto o testo' }, 400);
+      }
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(dati.to)) {
+        return json({ ok: false, error: 'Indirizzo non valido' }, 400);
+      }
+
+      // Tetto giornaliero
+      const oggi = new Date().toISOString().slice(0, 10);
+      const contatore = 'prestay_count_' + oggi;
+      let n = 0;
+      try { n = parseInt(await env.QM_STORAGE.get(contatore) || '0', 10) || 0; } catch (e) {}
+      if (n >= 60) return json({ ok: false, error: 'Limite giornaliero raggiunto' }, 429);
+
+      // SMTP se configurato (si spedisce dalla casella vera dell'hotel), altrimenti Resend.
+      const viaSmtp = !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
+      try {
+        if (viaSmtp) await inviaConSmtp(env, dati);
+        else await inviaConResend(env, dati);
+      } catch (e) {
+        return json({ ok: false, error: (e && e.message) || 'invio fallito' }, 502);
+      }
+
+      try { await env.QM_STORAGE.put(contatore, String(n + 1), { expirationTtl: 172800 }); } catch (e) {}
+      return json({ ok: true });
+    }
+
+    // ── ANTHROPIC PROXY ──
+    const body = await request.json();
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await response.json();
+    return json(data);
+  }
+};
+
+// ────────────────────────────────────────────────────────────────────────────
+// Helper comuni
+// ────────────────────────────────────────────────────────────────────────────
+
+// base64 di una stringa UTF-8, a blocchi: lo spread di un array grande
+// (String.fromCharCode(...arr)) supera lo stack su messaggi lunghi.
+function b64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(bin);
+}
+
+// Intestazioni con caratteri non ASCII (es. "Carità") vanno codificate RFC 2047,
+// altrimenti il nome mittente o l'oggetto arrivano illeggibili.
+function encHeader(s) {
+  const v = String(s || '');
+  return /^[\x20-\x7E]*$/.test(v) ? v : '=?UTF-8?B?' + b64(v) + '?=';
+}
+
+// Estrae l'indirizzo da "Nome <a@b.c>" oppure restituisce la stringa già pulita.
+function soloIndirizzo(s) {
+  const m = String(s || '').match(/<([^>]+)>/);
+  return (m ? m[1] : String(s || '')).trim();
+}
+
+function wrap76(s) {
+  return s.replace(/(.{1,76})/g, '$1\r\n');
+}
+
+// Corpo MIME: due parti (testo e HTML) entrambe in base64. Il base64 risolve da solo
+// sia i caratteri accentati sia il "dot stuffing" (una riga con un punto isolato
+// chiuderebbe il DATA), perché il suo alfabeto non contiene il punto.
+function costruisciMessaggio(dati, fromHeader, replyTo) {
+  const boundary = '----compass' + Date.now().toString(36);
+  const dominio = (soloIndirizzo(fromHeader).split('@')[1]) || 'localhost';
+  const data = new Date().toUTCString().replace(/GMT$/, '+0000');
+  const righe = [
+    'From: ' + fromHeader,
+    'To: ' + dati.to,
+    replyTo ? 'Reply-To: ' + replyTo : null,
+    'Subject: ' + encHeader(dati.subject),
+    'Message-ID: <' + crypto.randomUUID() + '@' + dominio + '>',
+    'Date: ' + data,
+    'MIME-Version: 1.0',
+    'Content-Type: multipart/alternative; boundary="' + boundary + '"',
+    '',
+    '--' + boundary,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    wrap76(b64(dati.text)).trimEnd(),
+    '--' + boundary,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    wrap76(b64(dati.html || dati.text)).trimEnd(),
+    '--' + boundary + '--',
+    ''
+  ].filter(r => r !== null);
+  return righe.join('\r\n');
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Invio via SMTP autenticato (casella reale dell'hotel)
+// ────────────────────────────────────────────────────────────────────────────
+async function inviaConSmtp(env, dati) {
+  const host = env.SMTP_HOST;
+  const port = Number(env.SMTP_PORT || 465);
+  const socket = connect({ hostname: host, port }, { secureTransport: 'on', allowHalfOpen: false });
+
+  const writer = socket.writable.getWriter();
+  const reader = socket.readable.getReader();
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  // Una risposta SMTP può essere multiriga: le intermedie hanno "250-", l'ultima "250 ".
+  // Si legge finché non arriva una riga col codice seguito da spazio. Si guardano solo le
+  // righe già terminate da CRLF: l'ultima porzione del buffer può essere ancora parziale
+  // (un "250 OK" arrivato a metà sembrerebbe completo e verrebbe consumato in anticipo).
+  async function leggi(attesi) {
+    for (;;) {
+      const fine = buffer.lastIndexOf('\r\n');
+      if (fine !== -1) {
+        const complete = buffer.slice(0, fine).split('\r\n');
+        for (let i = 0; i < complete.length; i++) {
+          if (/^\d{3} /.test(complete[i])) {
+            const finale = complete[i];
+            buffer = buffer.slice(complete.slice(0, i + 1).join('\r\n').length + 2);
+            const codice = parseInt(finale.slice(0, 3), 10);
+            if (attesi && !attesi.includes(codice)) {
+              throw new Error('SMTP ' + codice + ': ' + finale.slice(0, 160));
+            }
+            return codice;
+          }
+        }
+      }
+      const { value, done } = await reader.read();
+      if (done) throw new Error('connessione SMTP chiusa dal server');
+      buffer += decoder.decode(value, { stream: true });
+    }
+  }
+  const scrivi = (s) => writer.write(encoder.encode(s));
+
+  try {
+    await leggi([220]);
+    await scrivi('EHLO compass-qm.com\r\n');
+    await leggi([250]);
+
+    await scrivi('AUTH LOGIN\r\n');
+    await leggi([334]);
+    await scrivi(b64(env.SMTP_USER) + '\r\n');
+    await leggi([334]);
+    await scrivi(b64(env.SMTP_PASS) + '\r\n');
+    await leggi([235]);
+
+    // Il mittente di busta deve essere la casella autenticata: molti server
+    // rifiutano un MAIL FROM diverso dall'utente con cui ci si è autenticati.
+    const mittenteBusta = soloIndirizzo(env.SMTP_FROM || env.SMTP_USER);
+    await scrivi('MAIL FROM:<' + mittenteBusta + '>\r\n');
+    await leggi([250]);
+    await scrivi('RCPT TO:<' + dati.to + '>\r\n');
+    await leggi([250, 251]);
+    await scrivi('DATA\r\n');
+    await leggi([354]);
+
+    const nome = String(dati.fromName || '').replace(/["\r\n<>]/g, '').trim().slice(0, 120);
+    const fromHeader = nome
+      ? encHeader(nome) + ' <' + mittenteBusta + '>'
+      : mittenteBusta;
+    const messaggio = costruisciMessaggio(dati, fromHeader, env.PRESTAY_REPLYTO || mittenteBusta);
+
+    await scrivi(messaggio + '\r\n.\r\n');
+    await leggi([250]);
+    await scrivi('QUIT\r\n');
+  } finally {
+    try { await writer.close(); } catch (e) {}
+    try { await socket.close(); } catch (e) {}
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Invio via Resend (usato solo se SMTP non è configurato)
+// ────────────────────────────────────────────────────────────────────────────
+async function inviaConResend(env, dati) {
+  let mittente = env.PRESTAY_FROM;
+  if (dati.fromName) {
+    const nome = String(dati.fromName).replace(/["\r\n<>]/g, '').trim().slice(0, 120);
+    if (nome) mittente = '"' + nome + '" <' + soloIndirizzo(env.PRESTAY_FROM) + '>';
+  }
+  const invio = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + env.RESEND_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: mittente,
+      to: [dati.to],
+      reply_to: env.PRESTAY_REPLYTO,
+      subject: dati.subject,
+      text: dati.text,
+      ...(dati.html ? { html: dati.html } : {})
+    })
+  });
+  if (!invio.ok) {
+    const errTxt = await invio.text().catch(() => '');
+    throw new Error('Invio rifiutato: ' + errTxt.slice(0, 200));
+  }
+}
+```
+
+### Prova prima di usarlo sul serio
+
+1. Manda una mail di prova **a te stesso**, possibilmente su Hotmail/Outlook.
+2. Controlla che il mittente sia `qm@soularthotel.com` col nome della struttura giusta.
+3. Controlla che **non sia in spam** — è il motivo per cui esiste tutta questa sezione.
+4. Verifica grassetto/corsivo/elenchi resi.
+
+Se compare un errore `SMTP 535`, la password è sbagliata o Register richiede
+un'abilitazione all'invio SMTP esterno per quella casella.
