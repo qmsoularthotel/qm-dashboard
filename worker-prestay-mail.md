@@ -615,5 +615,15 @@ async function inviaConResend(env, dati) {
 3. Controlla che **non sia in spam** — è il motivo per cui esiste tutta questa sezione.
 4. Verifica grassetto/corsivo/elenchi resi.
 
+**Esito (14/08/2026): funziona.** Prima mail di prova su Hotmail arrivata **in posta in
+arrivo**, non più in spam — che era l'intero motivo di questa sezione. Deploy verificato
+anche lato endpoint: 403 su origine non ammessa, 401 su chiave errata, `/kv/*` ancora 200
+(nessuna regressione su sync/turni), preflight CORS con `X-Prestay-Key` corretto.
+
+**Da tenere d'occhio col tempo**: `authsmtp.securemail.pro` è un SMTP condiviso di Register,
+che può avere limiti di invio orari/giornalieri non documentati. Il tetto di 60/giorno nel
+Worker è nostro, non loro. Se un giorno gli invii iniziassero a fallire in blocco a metà
+giornata con errori `4xx`, è lì che va guardato — non nel codice.
+
 Se compare un errore `SMTP 535`, la password è sbagliata o Register richiede
 un'abilitazione all'invio SMTP esterno per quella casella.
