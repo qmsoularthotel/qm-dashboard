@@ -3206,11 +3206,16 @@ async function renderOvRoomReadiness(giorno){
   const el=document.getElementById('ov-room-readiness');if(!el)return;
   if(!giorno){el.innerHTML='';return;}
   const sa=giorno.soulart||{};
-  // Solo le partenze CON un nuovo arrivo lo stesso giorno (cambio) — una partenza pura
-  // senza check-in successivo non ha bisogno di essere "pronta per qualcuno" entro
-  // un orario preciso, quindi non compare più qui (prima mostrava anche quelle).
+  // Due categorie, entrambe con un check-in oggi:
+  //  - CAMBIO (partenza + arrivo): va rifatta, lo stato "pronta" lo decide chi passa;
+  //  - ARRIVO PURO (nessuna partenza prima): la camera era già libera e pulita, quindi
+  //    si mostra GIÀ PRONTA — prima mancava del tutto e la reception non vedeva un pezzo
+  //    degli arrivi della giornata.
+  // Le partenze pure restano fuori: senza un check-in successivo non devono essere
+  // "pronte per qualcuno" entro un orario.
   const cambio=new Set(sa.cambi||[]);
-  const rooms=CM_ROOMS.filter(r=>cambio.has(r));
+  const arrivoPuro=new Set((sa.arrivi||[]).filter(r=>!cambio.has(r)));
+  const rooms=CM_ROOMS.filter(r=>cambio.has(r)||arrivoPuro.has(r));
   if(!rooms.length){el.innerHTML='';return;}
   const d=new Date();
   const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -3231,15 +3236,21 @@ async function renderOvRoomReadiness(giorno){
   const iconQ='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 1.8-2 3.3"/><circle cx="12" cy="17" r=".6" fill="#fff" stroke="none"/></svg>';
   const roomCard=r=>{
     const p=state&&state[r]?state[r].pronta:null;
-    const cfg=p===true?{border:'var(--green)',icon:iconCheck,iconBg:'var(--green)',fg:'var(--green)',lbl:'✓ Pronta'}
-      :p===false?{border:'var(--amber)',icon:iconBroom,iconBg:'var(--amber)',fg:'var(--amber)',lbl:'🧹 Non pronta'}
+    // Un arrivo senza partenza precedente parte da "pronta": la camera non è stata
+    // occupata la notte prima, non c'è nulla da rifare. Se però chi è passato l'ha
+    // segnata esplicitamente (p non null) vince quello che ha visto sul posto.
+    const soloArrivo=arrivoPuro.has(r);
+    const stato=p!==null&&p!==undefined?p:(soloArrivo?true:null);
+    const cfg=stato===true?{border:'var(--green)',icon:iconCheck,iconBg:'var(--green)',fg:'var(--green)',lbl:'✓ Pronta'}
+      :stato===false?{border:'var(--amber)',icon:iconBroom,iconBg:'var(--amber)',fg:'var(--amber)',lbl:'🧹 Non pronta'}
       :{border:'var(--border)',icon:iconQ,iconBg:'var(--text-dim)',fg:'var(--text-dim)',lbl:'Da verificare'};
+    const sotto=soloArrivo?'arrivo · nessuna partenza':'check-in oggi';
     // Cliccabile per segnarla pronta al volo da Compass — la fonte primaria resta
     // sempre l'app Culligan sul campo, questo è solo un override rapido per il QM
     // quando serve correggere senza aprire il telefono (scrive sulla stessa chiave KV).
     return`<div onclick="ovMarkRoomPronta('${r}')" title="Clicca per segnare pronta" style="flex:1;min-width:110px;background:var(--surface);border:1px solid var(--border-light);border-top:3px solid ${cfg.border};border-radius:10px;padding:12px 8px 10px;text-align:center;cursor:pointer;transition:transform .12s;">
       <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1;">${r}</div>
-      <div style="font-size:11px;color:var(--text-dim);margin:2px 0 8px;">check-in oggi</div>
+      <div style="font-size:11px;color:var(--text-dim);margin:2px 0 8px;">${sotto}</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;">
         <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent);flex-shrink:0;">${iconDoor}</div>
         <div style="width:1px;height:32px;background:var(--border-light);"></div>
@@ -3248,7 +3259,7 @@ async function renderOvRoomReadiness(giorno){
       <div style="font-size:13px;font-weight:700;color:${cfg.fg};">${cfg.lbl}</div>
     </div>`;
   };
-  el.innerHTML=`<div class="kpi-label" style="border-top:1px solid var(--border-light);padding-top:12px;margin-bottom:8px;">🔑 Camere in partenza con nuovo arrivo oggi — stato preparazione</div>
+  el.innerHTML=`<div class="kpi-label" style="border-top:1px solid var(--border-light);padding-top:12px;margin-bottom:8px;">🔑 Camere con check-in oggi — stato preparazione</div>
     <div style="display:flex;flex-wrap:wrap;gap:12px;">${rooms.map(roomCard).join('')}</div>`;
 }
 // Segna una camera "pronta" direttamente da Overview — scrive sulla STESSA chiave KV

@@ -839,6 +839,27 @@ function openRoom(room){
     </div>
   </div>`;
 
+  // Bottiglia non consumata su una camera in PARTENZA + ARRIVO: la stanza va comunque
+  // rifatta per il nuovo ospite, ma trovando la bottiglia piena non si passa dal giro di
+  // riconsegna — la domanda "è pronta?" resterebbe senza risposta e la reception non
+  // saprebbe se può dare la camera. Si chiede qui, subito, mentre si è davanti alla porta.
+  if(!rs.dnd&&rs.bottiglia==='non_consumata'&&_pianoSt(_cur)==='cambio'){
+    const pr=rs.pronta;
+    h+=`<div class="bottle-card">
+      <div class="bottle-card-title">🔑 Camera ${_cur} è pronta per il nuovo ospite?</div>
+      <div class="bottle-seg">
+        <button class="bseg ${pr===true?'bc-noncons':''}" onclick="setProntaDaBottiglia(true)">
+          <span class="bseg-ico">✅</span>
+          <span class="bseg-body"><span class="bseg-lbl">Pronta</span><span class="bseg-sub">si può dare al check-in</span></span>
+        </button>
+        <button class="bseg ${pr===false?'bc-nonpres':''}" onclick="setProntaDaBottiglia(false)">
+          <span class="bseg-ico">🧹</span>
+          <span class="bseg-body"><span class="bseg-lbl">Non pronta</span><span class="bseg-sub">va ancora rifatta</span></span>
+        </button>
+      </div>
+    </div>`;
+  }
+
   if(rs.dnd){
     // DND attivo: mostra messaggio, nascondi checklist
     h+=`<div class="dnd-card">
@@ -875,13 +896,24 @@ function openRoom(room){
   _screen('s-room');
 }
 
+// Scelta "pronta" fatta dal dettaglio camera (bottiglia non consumata su un cambio).
+// Scrive lo stesso campo usato dal foglio della Riconsegna e letto da Compass.
+function setProntaDaBottiglia(val){
+  const rs=_rs(_cur);
+  rs.pronta=val;
+  openRoom(_cur);
+}
 function setBottle(val){
   const rs=_rs(_cur);
   const wasDnd=rs.dnd;
+  const prima=rs.bottiglia;
   rs.bottiglia=val;
   rs.dnd=false;
-  if(wasDnd){
-    openRoom(_cur); // ri-render per mostrare la checklist
+  // Passando a "non consumata" su una camera in cambio compare la domanda sulla camera
+  // pronta: serve ridisegnare, non basta aggiornare le classi dei pulsanti.
+  const cambiaDomanda=(val==='non_consumata')!==(prima==='non_consumata');
+  if(wasDnd||(cambiaDomanda&&_pianoSt(_cur)==='cambio')){
+    openRoom(_cur);
   } else {
     const c=document.getElementById('bb-cons');
     const n=document.getElementById('bb-nc');

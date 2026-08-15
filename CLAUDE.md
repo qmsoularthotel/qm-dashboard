@@ -1629,6 +1629,28 @@ Il punto di nascita (`cy`) è vicino al **fondo** del liquido (`cmBottomY - spaw
 
 Legge sempre KV prima (fonte dei dati scritti da smartphone), poi fallback localStorage.
 
+### Camera pronta — due punti di raccolta, stesso campo (15/08/2026)
+
+`rs.pronta` (`true`/`false`/`null`) si imposta da **due** punti dell'app Culligan, che scrivono lo stesso campo sulla stessa chiave `qm_cm_YYYY-MM-DD`:
+
+1. **Foglio nella vista Riconsegna** (`chooseReady`) — il percorso storico, per le camere che si visitano nel giro;
+2. **Dettaglio camera** (`setProntaDaBottiglia`) — compare quando la bottiglia è **non consumata** *e* la camera è in **cambio** (partenza + arrivo). Motivo: trovando la bottiglia piena non si passa dal giro di riconsegna, quindi la domanda "è pronta?" resterebbe senza risposta proprio su una camera che va rifatta per il nuovo ospite, e la reception non saprebbe se può darla. Si chiede lì, davanti alla porta.
+
+`setBottle` ridisegna il dettaglio **solo quando la domanda compare o sparisce** (passaggio da/verso `non_consumata` su un cambio), altrimenti continua ad aggiornare le sole classi dei pulsanti — un `openRoom` a ogni tocco farebbe sfarfallare la schermata.
+
+### Overview — stato preparazione: cambi **e** arrivi puri
+
+`renderOvRoomReadiness` mostra le camere con un **check-in oggi**, in due categorie:
+
+| Categoria | Da dove | Stato iniziale |
+|---|---|---|
+| **Cambio** (partenza + arrivo) | `sa.cambi` | `Da verificare` — va rifatta, lo decide chi passa |
+| **Arrivo puro** (nessuna partenza prima) | `sa.arrivi` meno i cambi | **già `✓ Pronta`** — la camera non era occupata la notte prima, non c'è nulla da rifare |
+
+Gli arrivi puri prima **non comparivano affatto**: la reception non vedeva un pezzo degli arrivi della giornata. Le partenze pure restano fuori di proposito (senza un check-in successivo non devono essere pronte entro un orario) e così le fermate (l'ospite è già dentro).
+
+**Un sopralluogo esplicito vince sempre sul valore predefinito**: se `state[room].pronta` è valorizzato si usa quello anche per un arrivo puro — chi è passato può aver trovato la camera non a posto. Il default scatta solo quando il campo è `null`. La sottoscritta della card distingue i due casi (`arrivo · nessuna partenza` contro `check-in oggi`).
+
 ### QC Settimanale
 
 Conta le camere **effettivamente controllate** (condizione: `pronta===true`) per le 7 chiavi della settimana corrente da KV — non le bottiglie sostituite (`bottiglia==='consumata'`, usata invece dal contatore "sostituzioni" nel box Culligan di Overview, metrica diversa). Solo le camere confermate "pronta" nel foglio di riconsegna sono state davvero ispezionate: quando non è pronta si lascia solo la bottiglia piena senza controllare nulla, quindi non conta. Stessa condizione sia nel totale (`cmLoadWeeklyQC`) sia nel registro cronologico per giorno dentro `cmRenderWeeklyQC`.
