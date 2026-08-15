@@ -1352,6 +1352,10 @@ Ricaricare una lista aggiornata è normale (le prenotazioni cambiano fino all'ul
 - **salta chi non ha email e chi ha già `mailTs`**, quindi ripremere il pulsante dopo aver aggiunto un ospite manda solo la mail mancante — verificato in test;
 - non passa dall'anteprima (è il senso dell'invio in blocco) ma chiede conferma con il conteggio, segnalando quanti arrivi verranno saltati perché senza email.
 
+**La normalizzazione vale anche sui dati GIÀ salvati**: applicarla solo all'import lasciava in maiuscolo tutto ciò che era stato caricato prima (i dati vivono su KV e sopravvivono agli aggiornamenti dell'app — è il caso normale, non l'eccezione). `_psGiorno` ripassa i nomi a ogni apertura del giorno e salva **solo se qualcosa è cambiato**, così non innesca un ciclo di scritture su KV. Anche la migrazione dal vecchio formato normalizza subito, non alla seconda apertura.
+
+**Lo slot dell'Upload Center va ripristinato dopo un refresh** — `prestaySetLoaded()`: lo stato del riquadro vive nel DOM, i dati in localStorage/KV, quindi dopo Cmd+R il riquadro tornava "Non caricato" pur avendo gli arrivi. Viene richiamato all'avvio e dopo il pull da KV (arrivi importati su un altro PC). Stesso schema di `pianoSetLoaded`.
+
 **Nomi in maiuscolo** — `_psNomeUmano(s)`: gli export del PMS danno "SALADINI LAURA" o "DABBARHI Ayoub", che in un messaggio all'ospite si leggono come una sgridata. La normalizzazione lavora **parola per parola**, non sull'intera stringa, proprio per gestire il secondo caso; una parola con maiuscole e minuscole insieme è voluta ("McDonald", "O'Brien") e non viene toccata. Le particelle (`de`, `di`, `van`, `der`…) restano minuscole se non iniziali, e i composti con apostrofo o trattino sono gestiti ("D'ANGELO" → "D'Angelo"). Si applica sia all'import sia alla digitazione manuale.
 
 **Il caricamento del PDF è solo nell'Upload Center** (riquadro "Arrivi Pre-stay"): il pulsante dentro la vista è stato rimosso perché ridondante.
@@ -1360,7 +1364,7 @@ Ricaricare una lista aggiornata è normale (le prenotazioni cambiano fino all'ul
 
 | Funzione | Comportamento voluto |
 |---|---|
-| `prestayToggleTpl` | **porta in cima** (`scrollTop=0`): l'editor è lungo e si apre in fondo, riportare su dà il riferimento di dove si è |
+| `prestayToggleTpl` | **porta l'editor in vista** (`scrollTop` sull'`offsetTop` di `#psTplPanel`): si costruisce in fondo alla vista, quindi né lasciare fermo né andare in cima lo mostrerebbe. Chiudendolo si torna in cima all'elenco |
 | `prestayToggleMailCfg` | conserva la posizione (`_psSenzaSalto`) |
 | `_psWrapSel` / `_psBulletSel` | conservano la posizione: `focus()` su una textarea fuori vista la trascinerebbe in vista |
 

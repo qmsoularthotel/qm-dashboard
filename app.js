@@ -3983,6 +3983,9 @@ document.querySelector('.content').addEventListener('scroll',function(){
         }catch(e){}
       }
       try{if(document.getElementById('prestay-content'))prestayRender();}catch(e){}
+      // Gli arrivi possono arrivare dal cloud (importati su un altro PC): anche in quel
+      // caso lo slot dell'Upload Center deve risultare caricato.
+      try{prestaySetLoaded(true);}catch(e){}
       for(const p of ['sa','bh','sl','pr','ms','ar','sb']){
         try{
           let csvText=localStorage.getItem('qm_rev_'+p);
@@ -11005,6 +11008,18 @@ function _psSaveTpl(){
   try{kvSet(PRESTAY_TPL_KEY,JSON.stringify(_prestayTpl));}catch(e){}
 }
 _psLoad();
+// Dopo un refresh lo slot dell'Upload Center ripartiva da "Non caricato" anche con gli
+// arrivi già importati: lo stato del riquadro vive nel DOM, i dati invece in localStorage/KV.
+// Va quindi ricostruito al caricamento, come fanno gli altri slot (vedi pianoSetLoaded).
+function prestaySetLoaded(silent){
+  const iso=_psTargetISO();
+  const g=_prestay[iso];
+  const n=(g&&Array.isArray(g.arrivi))?g.arrivi.length:0;
+  if(!n)return;
+  try{ucSetState('prestay','loaded',n+' arriv'+(n===1?'o':'i')+' · '+_psFmtIT(iso).slice(0,5),silent!==false);}catch(e){}
+  try{loadStoredTs('prestayTs');}catch(e){}
+}
+setTimeout(()=>{try{prestaySetLoaded(true);}catch(e){}},250);
 function _psTpl(hotel,lang){
   const h=_prestayTpl[hotel]||{};
   const t=h[lang];
@@ -11094,12 +11109,23 @@ function _psNuovaScheda(hotel){
 function _psGiorno(iso){
   if(!_prestay[iso])_prestay[iso]={arrivi:[]};
   const g=_prestay[iso];
+  if(Array.isArray(g.arrivi)){
+    // Normalizzazione anche dei nomi GIÀ salvati: applicarla solo all'import lasciava in
+    // maiuscolo tutto ciò che era stato caricato prima della modifica, ed è esattamente il
+    // caso normale (i dati stanno su KV e sopravvivono agli aggiornamenti dell'app).
+    let tocc=false;
+    g.arrivi.forEach(a=>{
+      const n=_psNomeUmano(a.nome);
+      if(n!==a.nome){a.nome=n;tocc=true;}
+    });
+    if(tocc)_psSave();
+  }
   if(!Array.isArray(g.arrivi)){
     const arrivi=[];
     Object.keys(g).forEach(k=>{
       const r=g[k];
       if(!r||typeof r!=='object'||Array.isArray(r))return;
-      arrivi.push({id:_psNuovoId(),hotel:r.hotel||'sa',nome:r.nome||'',email:r.email||'',
+      arrivi.push({id:_psNuovoId(),hotel:r.hotel||'sa',nome:_psNomeUmano(r.nome||''),email:r.email||'',
                    tel:r.tel||'',lang:r.lang||'it',mailTs:r.mailTs||null,waTs:r.waTs||null,
                    mailErr:r.mailErr||null});
       delete g[k];
@@ -11541,13 +11567,21 @@ function prestayToggleInviato(id,canale){
   a[k]=a[k]?null:Date.now();
   _psSave();prestayRender();
 }
-// L'editor dei testi è lungo e si apre in fondo alla vista: riportare la pagina in cima
-// dà il riferimento di dove ci si trova invece di lasciare l'occhio a metà elenco.
+// L'editor dei testi si costruisce in fondo alla vista: aprendolo senza spostare la pagina
+// sembrava non succedere nulla. Lo si porta IN VISTA (non "in cima": in cima ci sono gli
+// arrivi, l'editor resterebbe comunque fuori schermo).
 function prestayToggleTpl(){
   _prestayTplOpen=!_prestayTplOpen;
   prestayRender();
   const c=_psScroller();
-  if(c){c.scrollTop=0;requestAnimationFrame(()=>{c.scrollTop=0;});}
+  if(!c)return;
+  if(!_prestayTplOpen){c.scrollTop=0;return;}     // chiudendo si torna all'elenco
+  const porta=()=>{
+    const p=document.getElementById('psTplPanel');
+    if(p)c.scrollTop=Math.max(0,p.offsetTop-c.offsetTop-8);
+  };
+  porta();
+  requestAnimationFrame(porta);                   // il layout può assestarsi dopo
 }
 function prestaySetTpl(hotel,lang,campo,val){
   if(!_prestayTpl[hotel])_prestayTpl[hotel]={};
@@ -11695,7 +11729,7 @@ function prestayRender(){
   // Editor testi — un template per struttura e lingua, con segnaposto
   if(_prestayTplOpen){
     const hotels=Object.keys(PRESTAY_HOTELS);
-    h+=`<div class="panel" style="margin-top:16px;">
+    h+=`<div class="panel" id="psTplPanel" style="margin-top:16px;">
       <div class="panel-header"><span class="panel-title">Testi pre-stay</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">segnaposto: {nome} {struttura} {data}</span></div>
       <div class="panel-body" style="padding:14px;">
         <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:12px;line-height:1.55;">Un testo per struttura e lingua. I segnaposto vengono sostituiti al momento dell'invio, quindi modificando un testo cambiano subito anche i messaggi non ancora inviati. L'oggetto vale solo per la mail; WhatsApp usa il solo corpo. Nel corpo puoi usare <code style="background:var(--surface2);padding:0 4px;border-radius:3px;">*grassetto*</code>, <code style="background:var(--surface2);padding:0 4px;border-radius:3px;">_corsivo_</code> e righe che iniziano con "- " per un elenco puntato.</div>
