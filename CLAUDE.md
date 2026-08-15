@@ -1292,13 +1292,31 @@ Campi: data/ora dal movimento, importo, **Consegna (amministrativo)** = `m.perso
 
 Ogni giorno si scrive agli ospiti che arrivano **fra 2 giorni** (`PRESTAY_GG=2`). I contatti (mail, telefono) stanno sul PMS e **non sono esportabili in alcun formato**: vanno inseriti a mano, non c'è modo di aggirarlo.
 
-**Quello che però Compass sa già è QUALI CAMERE hanno un arrivo quel giorno**, dal Piano Settimanale (copre 7 giorni). Quindi la lista si pre-popola e si compila solo il contatto. Non è solo risparmio di digitazione: dice **quanti** ospiti aspettarsi, e con l'inserimento libero non sapresti mai se ne hai dimenticato uno — la vista mostra `3/5 con contatto`.
+### GLI OSPITI NON SONO LEGATI ALLA CAMERA — non reintrodurre quella chiave
 
-`_psCamereDaPiano(iso)` prende da `pianoData.giorni[].{soulart,boutique,liborio}` sia `arrivi` sia **`cambi`**: un cambio è partenza + arrivo lo stesso giorno, quindi c'è comunque un ospite nuovo a cui scrivere. Dimenticare i `cambi` significherebbe saltare metà degli arrivi.
+Il Piano Settimanale serve **solo a sapere QUANTI arrivi ci sono per struttura** in quel giorno (`_psArriviPerStruttura(iso)`). Le schede sono **"Arrivo 1, 2, 3…" dentro il gruppo della struttura**, identificate da un `id` proprio: il numero di camera non compare da nessuna parte.
 
-**Il Piano copre solo SoulArt (Art 1–22), Boutique (201–211) e San Liborio.** Principe, Mastrangelo e Art Resort non ci sono: per quelli c'è **"+ Aggiungi ospite"**, che crea una riga libera con camera digitata a mano (`manuale:true`, eliminabile con la ✕; le righe dal Piano non sono eliminabili).
+**Perché** (storia da non ripetere — è costata tre implementazioni successive): la prima versione indicizzava i dati per camera, `_prestay[iso][camera]`. Ma la reception sposta gli ospiti di stanza di continuo, e a ogni spostamento i contatti restavano orfani sulla vecchia riga mentre la nuova camera compariva vuota da ricompilare. Si è provato prima con un pulsante di spostamento manuale (rifiutato: *"io non posso ricordare dove sposto ciascun ospite"*), poi col consolidamento automatico per email (ancora troppo: richiedeva di ridigitare l'email), poi con l'inferenza dal diff del Piano — che è **inaffidabile per costruzione**: il Piano contiene solo data/struttura/camera, quindi *"203 sparita, 204 comparsa"* è indistinguibile da *"una prenotazione cancellata più una nuova"*, e indovinare significa prima o poi attribuire i contatti di un ospite a un altro.
 
-**La struttura di una riga manuale va CHIESTA, non indovinata.** Nella prima versione `prestayAddManuale()` assegnava d'ufficio `'pr'` (Principe): il messaggio nominava quindi la struttura sbagliata **e usava il template sbagliato**, scoperto solo alla prima mail di prova reale. Ora un secondo prompt fa scegliere la struttura da un elenco numerato, e le righe manuali hanno un `<select>` per correggerla dopo senza doverle rifare. Le righe dal Piano mostrano invece la struttura come testo fisso: lì è già nota e corretta.
+La soluzione è stata **togliere del tutto l'aggancio**: senza camera non c'è niente da riagganciare, e uno spostamento diventa un non-evento. Il numero di camera qui non serviva a nulla — **non compare nel messaggio** (confermato dall'utente: non ci sarà mai) e non determina il testo, che dipende dalla struttura. Se un domani si volesse mostrare la camera all'ospite, ripensare l'intero modello, non aggiungere un campo camera come chiave.
+
+Il conteggio dal Piano resta la rete di sicurezza contro il dimenticare un ospite: la vista mostra `3/5 con contatto` e, per gruppo, `3 arrivi · Piano: 3`.
+
+`_psArriviPerStruttura(iso)` conta le **camere** in `arrivi` + `cambi` di `pianoData.giorni[].{soulart,boutique,liborio}`, deduplicate con un `Set`: un cambio è partenza + arrivo lo stesso giorno, quindi c'è comunque un ospite nuovo a cui scrivere — dimenticare i `cambi` salterebbe metà degli arrivi — ma una stanza presente in entrambe le liste non va contata due volte.
+
+**Il Piano copre solo SoulArt, Boutique e San Liborio.** Art Resort, Principe e Mastrangelo non ci sono: per quelli c'è **"+ Aggiungi arrivo"**, che chiede la struttura da un elenco numerato. **La struttura va CHIESTA, non indovinata**: nella prima versione veniva assegnata d'ufficio `'pr'` (Principe) e il messaggio nominava la struttura sbagliata usando pure il template sbagliato — scoperto solo alla prima mail di prova reale. Non introdurre fallback di struttura scelti d'ufficio.
+
+### Allineamento al conteggio — `_psAllinea(iso)`
+
+Crea le schede vuote mancanti perché il numero corrisponda agli arrivi previsti. È idempotente (verificato: più render non duplicano nulla).
+
+**Non cancella mai schede in eccesso.** Se il Piano scende da 3 a 2 arrivi mentre ne hai già compilati 3, il gruppo mostra in ambra *"Il Piano ne prevede 2: verifica se una prenotazione è cambiata (non elimino nulla da solo)"* e decidi tu con la ✕. Buttare via dati digitati a mano perché un conteggio è cambiato è il modo più rapido per perdere un ospite.
+
+Se il conteggio sale, compare una scheda vuota in più: i dati già inseriti non vengono toccati.
+
+### Migrazione dal vecchio formato
+
+`_psGiorno(iso)` migra **pigramente** (alla prima apertura di quella data) dal formato indicizzato per camera `{'203':{…}}` al nuovo `{arrivi:[…]}`: ogni vecchia riga diventa una scheda normale conservando nome, email, telefono, lingua, struttura e stato di invio — si perde solo la camera come chiave, che è il punto. Verificato che non si ripeta alla seconda apertura.
 
 ### Invio mail diretto — opzionale, via Cloudflare Worker
 
@@ -1384,9 +1402,11 @@ L'etichetta del pulsante mail distingue fra invio diretto ("Invia la mail") e ap
 ### Modello dati
 
 ```js
-qm_prestay     = { 'YYYY-MM-DD': { 'Art 12': {nome,email,tel,lang:'it'|'en',hotel?,manuale?,mailTs,waTs} } }
+qm_prestay     = { 'YYYY-MM-DD': { arrivi: [ {id,hotel,nome,email,tel,lang:'it'|'en',mailTs,waTs,mailErr} ] } }
 qm_prestay_tpl = { sa:{it:{ogg,corpo}, en:{ogg,corpo}}, bh:{…}, sl:{…}, ar:{…}, pr:{…}, ms:{…} }
 ```
+
+`id` è generato (`_psNuovoId`) e non cambia mai: è l'unica identità della scheda, usata da invio, anteprima e spunte. **Nessun campo camera**, per le ragioni sopra.
 
 ### Template — editabili dalla schermata, non nel codice
 
@@ -1394,7 +1414,7 @@ Un testo per **struttura e lingua** (IT/EN), modificabile da "✏️ Modifica te
 
 Segnaposto sostituiti **al momento dell'invio, non salvati** (`_psCompila`): modificando un template cambiano subito anche i messaggi non ancora inviati.
 
-`{nome}` · `{camera}` · `{struttura}` · `{data}` — l'oggetto vale solo per la mail, WhatsApp usa il solo corpo.
+`{nome}` · `{struttura}` · `{data}` — l'oggetto vale solo per la mail, WhatsApp usa il solo corpo. **`{camera}` non esiste più**: gli ospiti non sono legati a una stanza.
 
 ### Formattazione nei template — sintassi nativa WhatsApp, tradotta per la mail
 
@@ -1413,40 +1433,6 @@ Sintassi nel corpo: `*grassetto*`, `_corsivo_`, righe che iniziano con `- ` per 
 Nell'anteprima, quando `canale!=='wa'`, sotto la textarea compare un riquadro **"Come apparirà nella mail"** che mostra `_psMdToHtml` renderizzato, aggiornato in diretta (`oninput` sulla textarea) — utile perché il grassetto/corsivo/elenco nella mail sono resi realmente, mentre nel corpo grezzo restano solo asterischi/trattini.
 
 **Worker**: perché la mail arrivi davvero in HTML serve che `handlePrestayMail` sul Cloudflare Worker inoltri anche `html` a Resend, oltre a `text` — vedi `worker-prestay-mail.md`. Senza aggiornare/ridistribuire il Worker, la mail parte comunque (usa il campo `text`, che Compass manda già ripulito dai marcatori via `_psMdStrip`), solo senza grassetto/corsivo/elenco resi.
-
-### `_psHotelOf(iso,camera)` — non togliere
-
-Per le righe che vengono dal Piano **l'hotel non è nel record salvato**: è noto solo dalla sezione del Piano in cui la camera compare. Va quindi risolto a ogni invio (`record.hotel` → altrimenti Piano → altrimenti `sa`). Senza, `{struttura}` resta vuoto nel messaggio **e viene usato il template della struttura sbagliata** — bug trovato in test prima del rilascio, non ripristinare la vecchia `r.hotel||'sa'`.
-
-### Cambio camera dell'ospite — consolidamento automatico (15/08/2026)
-
-I dati sono indicizzati **per numero di camera** (`_prestay[iso][camera]`), non per ospite: un cambio di stanza — operazione quotidiana in hotel — li lasciava orfani sulla vecchia riga, con la nuova camera vuota da ricompilare a mano.
-
-**Vincolo che determina cosa è automatizzabile.** Il Piano contiene solo data, struttura e numero di camera. Quando 203 sparisce e compare 207 **non esiste nel dato** nulla che distingua "stesso ospite spostato" da "prenotazione cancellata + prenotazione nuova": qualsiasi euristica sul diff del Piano finirebbe prima o poi per attribuire i contatti di un ospite a un altro. **Non implementare quella strada.**
-
-L'identità vera dell'ospite è l'**email**, che l'utente digita comunque leggendola dal PMS. `_psConsolidaOrfane(iso,camera)` è agganciata a `prestaySetField` sui campi `email` e `nome`: scrivendo l'email nella riga della camera nuova, la vecchia riga orfana viene riconosciuta e **le due si uniscono da sole** — nessun pulsante, nulla da ricordare. `_psAvviso` mostra poi in verde cosa è successo (una riga che sparisce mentre si digita, senza spiegazione, sembra un dato perso).
-
-**Si uniscono SOLO le righe orfane**, mai due righe entrambe presenti nel Piano: quelle sono due camere realmente in arrivo — tipicamente una prenotazione familiare su due stanze con un solo indirizzo — e unirle cancellerebbe una camera vera dall'elenco. È l'unica distinzione che il Piano consente senza indovinare.
-
-Regole di riconoscimento e di merge (15 test sintetici sul codice reale):
-
-| Situazione | Esito |
-|---|---|
-| Orfana con **stessa email** | unite |
-| Orfana **senza email**, stesso nome (normalizzato) | unite — meglio del dato perso, il nome è digitato a mano quindi vale solo come ripiego |
-| Orfana con **email diversa**, stesso nome | **non** unite (omonimi) |
-| Due righe **entrambe nel Piano**, stessa email | **non** unite (famiglia su due camere) |
-| Email vuota | nessuna unione |
-
-Nel merge **la riga nuova vince** sui campi già compilati; dall'orfana si recupera ciò che manca e **sempre `mailTs`/`waTs`** — è il dato che impedisce di **rimandare il messaggio a chi l'ha già ricevuto**. `lang` scelta esplicitamente sulla riga nuova non viene sovrascritta (`_langTocca`). Se la camera nuova è nel Piano vince la sua struttura: uno spostamento può attraversare le strutture (203 Boutique → Art 5 SoulArt) e allora cambiano template e mittente.
-
-**Il numero di camera non compare mai nel testo del messaggio** (confermato dall'utente): è per questo che uno spostamento non può far arrivare un'informazione sbagliata all'ospite, e il problema si riduce a non perdere dati e non mandare doppioni. Se un domani si introducesse `{camera}` nei template, questa premessa salta e servirebbe un avviso sugli invii già partiti.
-
-**Altra correzione della stessa sessione**: la struttura si fissa sul record al primo dato digitato (`if(!r.hotel)r.hotel=_psHotelOf(iso,camera)`). Prima le righe dal Piano non la salvavano mai e, uscendo dal Piano, il render ripiegava su `||'pr'`: la riga diventava **Principe**, con testo e mittente sbagliati. È la seconda volta che un default silenzioso a Principe manda un messaggio errato all'ospite (la prima fu `prestayAddManuale`) — **non introdurre altri fallback di struttura scelti d'ufficio**: vanno risolti dal dato o segnalati.
-
-Le righe rimaste fuori dal Piano restano marcate "non più nel Piano" in ambra, così si vede che c'è stato uno spostamento; spariscono da sole appena si compila la camera nuova.
-
-**Approccio scartato**: un pulsante "sposta in un'altra camera" (implementato e poi rimosso su indicazione esplicita dell'utente — *"io non posso ricordare dove sposto ciascun ospite, deve avvenire tutto in maniera automatica"*). Non reintrodurre comandi manuali che richiedono di ricordare lo stato del PMS.
 
 ---
 
