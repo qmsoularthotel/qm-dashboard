@@ -10939,11 +10939,13 @@ const PS_ICON_LOAD='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" 
 
 // Strutture. `piano` è la chiave usata dal Piano Settimanale: null = struttura non coperta
 // dal Piano, i cui arrivi vanno aggiunti a mano.
+// L'ORDINE DELLE CHIAVI È L'ORDINE DEI GRUPPI nella pagina: Boutique per prima, poi
+// SoulArt, San Liborio, Principe, Mastrangelo. Art Resort è escluso di proposito dal
+// pre-stay (non lo si contatta da qui). Cambiando l'ordine qui cambia la pagina.
 const PRESTAY_HOTELS={
-  sa:{name:'SoulArt Hotel',piano:'soulart'},
   bh:{name:'Boutique Hotel',piano:'boutique'},
+  sa:{name:'SoulArt Hotel',piano:'soulart'},
   sl:{name:'San Liborio',piano:'liborio'},
-  ar:{name:'Art Resort',piano:null},
   pr:{name:'Principe',piano:null},
   ms:{name:'Mastrangelo',piano:null}
 };
@@ -10951,13 +10953,32 @@ const PRESTAY_HOTELS={
 // PRESTAY_HOTELS[].name perché quello alimenta anche {struttura} nel corpo del messaggio.
 // Qui serve il nome completo che l'ospite deve riconoscere nella casella di posta.
 const PRESTAY_FROM_NAME={
-  sa:'SoulArt Hotel | Design Experience',
   bh:'Boutique Hotel Piazza Carità',
+  sa:'SoulArt Hotel | Design Experience',
   sl:'Art Suite San Liborio',
-  ar:'Art Resort',
   pr:'Art Suite Principe Umberto',
   ms:'Rooms Mastrangelo'
 };
+// I nomi dal PMS arrivano spesso tutti in maiuscolo ("SALADINI LAURA"): in un messaggio a
+// un ospite si leggono come se gli si stesse gridando addosso. Si normalizzano SOLO se non
+// contengono già minuscole — così un nome scritto a mano correttamente ("Chacon Oviedo
+// Karina") o con maiuscole interne volute ("McDonald", "D'Angelo") non viene toccato.
+// Le particelle nobiliari e i prefissi restano minuscoli, come si scrivono in italiano.
+const PS_PARTICELLE=new Set(['de','di','da','del','della','dei','degli','dal','dalla','van','von','der','den','la','le','lo','di\'','y','e']);
+function _psNomeUmano(s){
+  const t=String(s||'').trim();
+  if(!t)return'';
+  // Parola per parola, non sull'intera stringa: negli export capita il solo cognome in
+  // maiuscolo ("DABBARHI Ayoub"), che va ammorbidito lo stesso. Una parola con maiuscole
+  // e minuscole insieme è voluta ("McDonald", "O'Brien") e non si tocca.
+  return t.split(/\s+/).map((p,i)=>{
+    if(!/^[A-ZÀ-Ý][A-ZÀ-Ý'’\-]*$/.test(p)||p.length<2)return p;   // non tutta maiuscola
+    const b=p.toLowerCase();
+    if(i>0&&PS_PARTICELLE.has(b))return b;
+    // Tratta anche i composti con apostrofo o trattino: d'angelo -> D'Angelo
+    return b.replace(/(^|['’-])([a-zà-ÿ])/g,(m,sep,c)=>sep+c.toUpperCase());
+  }).join(' ');
+}
 // Testi di partenza: sono segnaposto da riscrivere dalla schermata (Modifica testi).
 // I placeholder {nome} {struttura} {data} vengono sostituiti all'invio.
 const PRESTAY_TPL_DEFAULT={
@@ -11057,7 +11078,7 @@ function _psParsePdfArrivi(items){
     // Riga di continuazione: nome andato a capo. Si accoda solo se una prenotazione è aperta.
     if(ospite&&arrivi.length)arrivi[arrivi.length-1].nome=(arrivi[arrivi.length-1].nome+' '+ospite).trim();
   });
-  arrivi.forEach(a=>{a.nome=a.nome.replace(/\s+/g,' ').trim();});
+  arrivi.forEach(a=>{a.nome=_psNomeUmano(a.nome.replace(/\s+/g,' ').trim());});
   return{iso,arrivi};
 }
 
@@ -11204,9 +11225,12 @@ function prestaySetScheda(id,campo,val){
   const iso=_psTargetISO();
   const a=_psScheda(iso,id);
   if(!a)return;
-  a[campo]=val;
+  // Anche digitando (o incollando dal PMS) un nome tutto maiuscolo va ammorbidito: finisce
+  // nel messaggio all'ospite. Chi scrive in maiuscolo/minuscolo normale non viene toccato.
+  a[campo]=campo==='nome'?_psNomeUmano(val):val;
   _psSave();
-  if(campo==='lang'||campo==='hotel')prestayRender();
+  if(campo==='nome'&&a[campo]!==val)prestayRender();
+  else if(campo==='lang'||campo==='hotel')prestayRender();
 }
 function prestayNavDay(delta){
   const d=new Date(_psTargetISO()+'T12:00:00');
@@ -11215,8 +11239,8 @@ function prestayNavDay(delta){
   prestayRender();
 }
 function prestayOggi(){_prestayData=null;prestayRender();}
-// Aggiunge un arrivo non previsto dal Piano: serve per Art Resort, Principe e Mastrangelo
-// (non coperti dal Piano) e per una prenotazione arrivata dopo l'ultimo caricamento.
+// Aggiunge un arrivo non presente nell'export: serve per Principe e Mastrangelo (che nel
+// PDF possono mancare) e per una prenotazione arrivata dopo l'ultimo caricamento.
 function prestayAddArrivo(){
   const codici=Object.keys(PRESTAY_HOTELS);
   const elenco=codici.map((k,i)=>(i+1)+') '+PRESTAY_HOTELS[k].name).join('\n');
@@ -11337,11 +11361,35 @@ function prestaySetMailCfg(campo,val){
   try{localStorage.setItem(PRESTAY_MAIL_CFG_KEY,JSON.stringify(_psMailCfg));}catch(e){}
   prestayRender();
 }
-function prestayToggleMailCfg(){_prestayMailCfgOpen=!_prestayMailCfgOpen;prestayRender();}
+// Aprire/chiudere un pannello ridisegna tutta la vista: se l'altezza cambia il browser
+// riporta la pagina in cima e sembra un "salto". Si conserva la posizione di scorrimento.
+function _psSenzaSalto(fn){
+  const y=window.scrollY;
+  fn();
+  if(window.scrollY!==y)window.scrollTo(0,y);
+  // Il ricalcolo del layout può avvenire subito dopo: si ripristina anche al frame seguente.
+  requestAnimationFrame(()=>{if(window.scrollY!==y)window.scrollTo(0,y);});
+}
+function prestayToggleMailCfg(){_prestayMailCfgOpen=!_prestayMailCfgOpen;_psSenzaSalto(prestayRender);}
 let _prestayMailCfgOpen=false;
 let _psMailInFlight={};
 
 // Spedizione vera e propria — chiamata dall'anteprima, non direttamente dal pulsante.
+// Nucleo dell'invio: restituisce una Promise così può essere usato sia da un singolo
+// pulsante sia dall'invio di gruppo, che deve aspettare una mail prima di partire con la
+// successiva. Non apre mai alert: chi chiama decide come segnalare.
+function _psInviaMail(a,ogg,corpo){
+  const fromName=PRESTAY_FROM_NAME[a.hotel]||'';
+  return fetch(_psMailCfg.endpoint,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Prestay-Key':_psMailCfg.key},
+    body:JSON.stringify({to:a.email,subject:ogg,text:_psMdStrip(corpo),html:_psMdToHtml(corpo),fromName})
+  }).then(res=>res.json().catch(()=>({ok:false,error:'risposta non leggibile'})))
+   .then(j=>{
+    if(j&&j.ok){a.mailTs=Date.now();a.mailErr=null;return true;}
+    a.mailErr=(j&&j.error)||'invio fallito';return false;
+  }).catch(e=>{a.mailErr=e.message||'rete non raggiungibile';return false;});
+}
 function _psSpedisciMail(id,ogg,corpo){
   const iso=_psTargetISO(),a=_psScheda(iso,id);
   if(!a)return;
@@ -11354,24 +11402,46 @@ function _psSpedisciMail(id,ogg,corpo){
     return;
   }
   _psMailInFlight[id]=true;prestayRender();
-  const fromName=PRESTAY_FROM_NAME[a.hotel]||'';
-  fetch(_psMailCfg.endpoint,{
-    method:'POST',
-    headers:{'Content-Type':'application/json','X-Prestay-Key':_psMailCfg.key},
-    body:JSON.stringify({to:a.email,subject:ogg,text:_psMdStrip(corpo),html:_psMdToHtml(corpo),fromName})
-  }).then(res=>res.json().catch(()=>({ok:false,error:'risposta non leggibile'})))
-   .then(j=>{
+  _psInviaMail(a,ogg,corpo).then(ok=>{
     delete _psMailInFlight[id];
-    if(j&&j.ok){a.mailTs=Date.now();a.mailErr=null;}
-    else{a.mailErr=(j&&j.error)||'invio fallito';}
     _psSave();prestayRender();
-    if(a.mailErr)alert('Invio non riuscito: '+a.mailErr+'\n\nL\'arrivo resta da contattare. Se il problema persiste puoi usare WhatsApp o togliere la configurazione per tornare al client di posta.');
-  }).catch(e=>{
-    delete _psMailInFlight[id];
-    a.mailErr=e.message||'rete non raggiungibile';
-    _psSave();prestayRender();
-    alert('Invio non riuscito: '+a.mailErr);
+    if(!ok)alert('Invio non riuscito: '+a.mailErr+'\n\nL\'arrivo resta da contattare. Se il problema persiste puoi usare WhatsApp o togliere la configurazione per tornare al client di posta.');
   });
+}
+// Invio in blocco di una struttura. Le mail partono UNA ALLA VOLTA, aspettando l'esito
+// della precedente: l'SMTP condiviso di Register e il tetto giornaliero del Worker non
+// gradiscono raffiche, e in caso di errore si sa esattamente dove ci si è fermati.
+// Si salta chi non ha email e chi è già stato contattato — così ripremere il pulsante
+// dopo aver aggiunto un ospite manda solo la mail mancante, non di nuovo tutte.
+async function prestayInviaGruppo(hotel){
+  const iso=_psTargetISO();
+  const nome=(PRESTAY_HOTELS[hotel]||{}).name||hotel;
+  if(!_psMailPronto()){
+    alert('L\'invio diretto non è configurato su questo browser, quindi l\'invio in blocco non è disponibile: aprirebbe una finestra del client di posta per ogni ospite.\n\nConfiguralo da "Impostazioni", oppure manda i messaggi uno alla volta.');
+    return;
+  }
+  const tutti=(_psGiorno(iso).arrivi||[]).filter(a=>a.hotel===hotel);
+  const daFare=tutti.filter(a=>a.email&&!a.mailTs);
+  const senzaMail=tutti.filter(a=>!a.email).length;
+  if(!daFare.length){
+    alert(senzaMail
+      ? 'Nessuna mail da inviare per '+nome+': '+senzaMail+' arriv'+(senzaMail===1?'o è':'i sono')+' senza indirizzo email.'
+      : 'Per '+nome+' le mail sono già state inviate tutte.');
+    return;
+  }
+  const avvisoVuoti=senzaMail?'\n\n'+senzaMail+' arriv'+(senzaMail===1?'o verrà saltato perché non ha':'i verranno saltati perché non hanno')+' email.':'';
+  if(!confirm('Inviare '+daFare.length+' mail per '+nome+'?'+avvisoVuoti+'\n\nPartono una alla volta, con il testo del template. Non c\'è anteprima: per rileggere prima di mandare usa i pulsanti sulla singola riga.'))return;
+  let ok=0,ko=0;
+  for(const a of daFare){
+    _psMailInFlight[a.id]=true;prestayRender();
+    const t=_psTpl(a.hotel,a.lang||'it');
+    const riuscito=await _psInviaMail(a,_psCompila(t.ogg,a,iso),_psCompila(t.corpo,a,iso));
+    delete _psMailInFlight[a.id];
+    riuscito?ok++:ko++;
+    _psSave();prestayRender();
+  }
+  _psAvviso=nome+': '+ok+' mail inviat'+(ok===1?'a':'e')+(ko?' · '+ko+' non riuscit'+(ko===1?'a':'e')+', l\'errore è indicato sulla riga':'');
+  prestayRender();
 }
 function _psSpedisciWa(id,corpo){
   const iso=_psTargetISO(),a=_psScheda(iso,id);
@@ -11466,7 +11536,7 @@ function prestayToggleInviato(id,canale){
   a[k]=a[k]?null:Date.now();
   _psSave();prestayRender();
 }
-function prestayToggleTpl(){_prestayTplOpen=!_prestayTplOpen;prestayRender();}
+function prestayToggleTpl(){_prestayTplOpen=!_prestayTplOpen;_psSenzaSalto(prestayRender);}
 function prestaySetTpl(hotel,lang,campo,val){
   if(!_prestayTpl[hotel])_prestayTpl[hotel]={};
   if(!_prestayTpl[hotel][lang])_prestayTpl[hotel][lang]={...(PRESTAY_TPL_DEFAULT[lang]||{})};
@@ -11498,13 +11568,9 @@ function prestayRender(){
     ${ggDa!==PRESTAY_GG?`<button onclick="prestayOggi()" style="padding:6px 12px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">Torna a fra ${PRESTAY_GG} giorni</button>`:''}
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <span style="font-size:var(--fs-xs);color:var(--text-muted);">${compilati}/${arrivi.length} con contatto · <strong style="color:${inviati===arrivi.length&&arrivi.length?'var(--green)':'var(--text)'};">${inviati} inviati</strong></span>
-      <label style="padding:6px 12px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">
-        Carica PDF arrivi
-        <input type="file" accept="application/pdf,.pdf" style="display:none;" onchange="if(this.files[0]){prestayHandlePdf(this.files[0]);this.value='';}">
-      </label>
       <button onclick="prestayAddArrivo()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">+ Aggiungi arrivo</button>
       <button onclick="prestayToggleTpl()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">✏️ Modifica testi</button>
-      <button onclick="prestayToggleMailCfg()" title="${_psMailPronto()?'Invio diretto attivo su questo browser':'Non configurato: il pulsante mail apre il client di posta'}" style="padding:6px 12px;border:1px solid ${_psMailPronto()?'var(--green)':'var(--border)'};background:${_psMailPronto()?'var(--green-bg)':'var(--surface)'};color:${_psMailPronto()?'var(--green)':'var(--text)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">⚙️ Invio mail${_psMailPronto()?' ✓':''}</button>
+      <button onclick="prestayToggleMailCfg()" title="${_psMailPronto()?'Invio diretto attivo su questo browser':'Non configurato: il pulsante mail apre il client di posta'}" style="padding:6px 12px;border:1px solid ${_psMailPronto()?'var(--green)':'var(--border)'};background:${_psMailPronto()?'var(--green-bg)':'var(--surface)'};color:${_psMailPronto()?'var(--green)':'var(--text)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">⚙️ Impostazioni${_psMailPronto()?' ✓':''}</button>
     </div>
   </div>`;
 
@@ -11517,7 +11583,7 @@ function prestayRender(){
 
   if(!arrivi.length){
     h+=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:9px;padding:18px;text-align:center;color:var(--text-muted);font-size:var(--fs-xs);line-height:1.6;">
-      Nessun arrivo per questa data.<br>Esporta la lista <strong>Arrivi</strong> dal PMS in PDF e caricala con <strong>"Carica PDF arrivi"</strong>: nomi e strutture si compilano da soli, restano da inserire solo email e telefono.<br>Per un arrivo isolato puoi anche usare "+ Aggiungi arrivo".
+      Nessun arrivo per questa data.<br>Esporta la lista <strong>Arrivi</strong> dal PMS in PDF e caricala dall'Upload Center, riquadro <strong>"Arrivi Pre-stay"</strong>: nomi e strutture si compilano da soli, restano da inserire solo email e telefono.<br>Per un arrivo isolato puoi anche usare "+ Aggiungi arrivo".
     </div>`;
   }else{
     const inpS='padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:\'Helvetica Neue\',Arial,sans-serif;width:100%;box-sizing:border-box;';
@@ -11526,10 +11592,13 @@ function prestayRender(){
     Object.keys(PRESTAY_HOTELS).forEach(hc=>{
       const gruppo=arrivi.filter(a=>a.hotel===hc);
       if(!gruppo.length)return;
+      const daInviare=gruppo.filter(a=>a.email&&!a.mailTs).length;
       h+=`<div style="margin-bottom:16px;border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">
         <div style="background:var(--bg);padding:8px 13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${PRESTAY_HOTELS[hc].name}</span>
           <span style="font-size:var(--fs-xxs);color:var(--text-dim);">${gruppo.length} arriv${gruppo.length===1?'o':'i'}</span>
+          ${daInviare?`<button onclick="prestayInviaGruppo('${hc}')" title="Invia il messaggio a tutti gli arrivi di questa struttura che hanno un'email e non sono ancora stati contattati" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">${PS_ICON_MAIL}Invia tutte (${daInviare})</button>`
+            :`<span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">${gruppo.some(a=>a.mailTs)?'mail inviate':''}</span>`}
         </div>
         <div style="overflow-x:auto;">
         <table style="border-collapse:collapse;width:100%;min-width:700px;">

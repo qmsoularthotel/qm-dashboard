@@ -1342,6 +1342,24 @@ Ricaricare una lista aggiornata è normale (le prenotazioni cambiano fino all'ul
 
 **Verificato con 34 test sul PDF reale del 17/08/2026** (9 arrivi, 3 Boutique + 6 SoulArt): nomi su più righe ricomposti, tipi camera mai finiti nel nome, intestazione e riga totali non importate, contatti e stato di invio conservati al re-import, nessun duplicato.
 
+### Ordine delle strutture, invio in blocco, nomi (15/08/2026)
+
+**L'ordine delle chiavi di `PRESTAY_HOTELS` è l'ordine dei gruppi nella pagina**: Boutique, SoulArt, San Liborio, Principe, Mastrangelo. Per cambiare l'ordine si riordinano le chiavi, non serve altro. **Art Resort è stato rimosso di proposito** dal pre-stay (e da `PRESTAY_FROM_NAME`): da qui non lo si contatta.
+
+**Invio in blocco per struttura** — `prestayInviaGruppo(hotel)`, pulsante "Invia tutte (N)" nell'intestazione del gruppo:
+- richiede l'invio diretto configurato; col solo `mailto:` si rifiuta e lo spiega, perché aprirebbe una finestra del client per ogni ospite;
+- **manda una mail alla volta, aspettando l'esito della precedente** (`await`): l'SMTP condiviso di Register e il tetto giornaliero del Worker non gradiscono raffiche, e in caso di errore si sa dove ci si è fermati;
+- **salta chi non ha email e chi ha già `mailTs`**, quindi ripremere il pulsante dopo aver aggiunto un ospite manda solo la mail mancante — verificato in test;
+- non passa dall'anteprima (è il senso dell'invio in blocco) ma chiede conferma con il conteggio, segnalando quanti arrivi verranno saltati perché senza email.
+
+**Nomi in maiuscolo** — `_psNomeUmano(s)`: gli export del PMS danno "SALADINI LAURA" o "DABBARHI Ayoub", che in un messaggio all'ospite si leggono come una sgridata. La normalizzazione lavora **parola per parola**, non sull'intera stringa, proprio per gestire il secondo caso; una parola con maiuscole e minuscole insieme è voluta ("McDonald", "O'Brien") e non viene toccata. Le particelle (`de`, `di`, `van`, `der`…) restano minuscole se non iniziali, e i composti con apostrofo o trattino sono gestiti ("D'ANGELO" → "D'Angelo"). Si applica sia all'import sia alla digitazione manuale.
+
+**Il caricamento del PDF è solo nell'Upload Center** (riquadro "Arrivi Pre-stay"): il pulsante dentro la vista è stato rimosso perché ridondante.
+
+**`_psSenzaSalto(fn)`**: aprire "Modifica testi" o "Impostazioni" ridisegna tutta la vista e, cambiando l'altezza, il browser riportava la pagina in cima. Si conserva `window.scrollY` attorno al ridisegno e lo si ripristina anche al frame successivo (il layout può assestarsi dopo). Usarlo per ogni nuovo pannello a fisarmonica della sezione.
+
+Il pulsante di configurazione si chiama **"Impostazioni"**, non più "Invio mail".
+
 Per un arrivo isolato o per strutture non presenti nell'export resta **"+ Aggiungi arrivo"**, che **chiede la struttura** da un elenco numerato. **La struttura va CHIESTA, non indovinata**: nella prima versione veniva assegnata d'ufficio `'pr'` (Principe) e il messaggio nominava la struttura sbagliata usando pure il template sbagliato — scoperto solo alla prima mail di prova reale. Non introdurre fallback di struttura scelti d'ufficio.
 
 ### Migrazione dal vecchio formato
