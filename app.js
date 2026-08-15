@@ -10991,21 +10991,74 @@ function _psTpl(hotel,lang){
   return PRESTAY_TPL_DEFAULT[lang]||PRESTAY_TPL_DEFAULT.it;
 }
 
-// Quanti arrivi per struttura in quella data, secondo il Piano. I CAMBI contano: un cambio
-// è partenza e arrivo lo stesso giorno, quindi c'è comunque un ospite nuovo a cui scrivere.
-// Si contano le camere per non contare due volte una stanza che compare in entrambe le liste.
-function _psArriviPerStruttura(iso){
-  const out={};
-  if(!pianoData||!pianoData.giorni)return out;
-  const g=pianoData.giorni.find(x=>x.data===_psFmtIT(iso));
-  if(!g)return out;
-  Object.entries(PRESTAY_HOTELS).forEach(([code,conf])=>{
-    if(!conf.piano)return;
-    const sez=g[conf.piano];if(!sez)return;
-    const camere=new Set([...(sez.arrivi||[]),...(sez.cambi||[])]);
-    if(camere.size)out[code]=camere.size;
+// ── Lettura del PDF "Arrivi" del PMS ────────────────────────────────────────
+// Il pre-stay NON dipende più dal Piano Settimanale: la fonte è il PDF Arrivi del PMS, che
+// elenca le prenotazioni reali del giorno con il nome dell'ospite. Il Piano dava solo un
+// conteggio di camere; questo dà i nomi, quindi è insieme più completo e più attendibile.
+//
+// Il PDF NON contiene email né telefono (verificato sull'export reale): quelli restano da
+// inserire a mano dal PMS. L'importazione serve a fissare QUANTI arrivi ci sono, CHI sono
+// e a quale struttura appartengono — cioè la parte che non si può controllare a memoria.
+//
+// La camera viene usata SOLO qui, per dedurre la struttura (204 → Boutique, Art 5 →
+// SoulArt), e poi buttata via: le schede restano "Arrivo 1, 2, 3…" senza camera, così uno
+// spostamento di stanza continua a non avere alcun effetto. Non salvarla nelle schede.
+//
+// Parsing deterministico sulle COLONNE (coordinate x), non sul testo concatenato: nomi e
+// tipi camera vanno a capo ("Chacon Oviedo / Karina", "AS / SUP") e un parser a stringa li
+// spezzerebbe o li mescolerebbe. Verificato sull'export reale del 17/08/2026.
+const PS_COL_OSPITE_DA=90;    // x minima della colonna "Ospite (Prenotante)"
+const PS_COL_OSPITE_A=177;    // x della colonna "Pax": fine della colonna ospite
+// Riconosce l'inizio di una prenotazione nella colonna "Numero/Tipo" (es. "204 / PC STD",
+// "Art 10 / AS"). Esclude l'intestazione "Numero/", che pure contiene una barra.
+const PS_RE_CAMERA=/^(\d{1,4}|Art\s*\d+|LIB\s*\w*|R\s*\d|CAPRI|NAPOLI|PROCIDA|ISCHIA|POSITANO)\b/i;
+// Struttura dalla camera: stesse regole di fixArriviStruttura, in minuscolo per PRESTAY_HOTELS.
+function _psStrutturaDaCamera(camera){
+  const c=String(camera||'').trim().toUpperCase();
+  if(/^(CAPRI|NAPOLI|PROCIDA|ISCHIA|POSITANO)/.test(c))return'pr';
+  if(/^LIB/.test(c))return'sl';
+  if(/^R\s*[123]$/.test(c))return'ms';
+  if(/^\d+$/.test(c)&&+c>=200&&+c<=299)return'bh';
+  return'sa';                                   // Art XX e altre numeriche → SoulArt
+}
+/**
+ * @param {Array<{s:string,x:number,y:number}>} items testo con coordinate (da pdf.js)
+ * @returns {{iso:string|null, arrivi:Array<{camera,nome,hotel}>}}
+ */
+function _psParsePdfArrivi(items){
+  const righe=new Map();
+  (items||[]).forEach(it=>{
+    const s=String(it.s||'').trim();if(!s)return;
+    const y=Math.round(it.y);
+    if(!righe.has(y))righe.set(y,[]);
+    righe.get(y).push({s,x:it.x});
   });
-  return out;
+  const ordinate=[...righe.entries()].sort((a,b)=>b[0]-a[0]).map(e=>e[1]);
+  const col=(r,da,a)=>r.filter(i=>i.x>=da&&i.x<a).sort((p,q)=>p.x-q.x).map(i=>i.s).join(' ').trim();
+  // Data dall'intestazione "Arrivi - 17/08/2026": importare nel giorno sbagliato sarebbe
+  // peggio che non importare, quindi la si legge dal documento invece di assumerla.
+  let iso=null;
+  for(const r of ordinate){
+    const m=r.map(i=>i.s).join(' ').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(m){iso=m[3]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');break;}
+  }
+  const arrivi=[];
+  ordinate.forEach(r=>{
+    const sinistra=col(r,0,PS_COL_OSPITE_DA);
+    const ospite=col(r,PS_COL_OSPITE_DA,PS_COL_OSPITE_A);
+    const barra=sinistra.indexOf('/');
+    if(barra>0){
+      const camera=sinistra.slice(0,barra).trim();
+      if(PS_RE_CAMERA.test(camera)){
+        arrivi.push({camera,nome:ospite,hotel:_psStrutturaDaCamera(camera)});
+        return;
+      }
+    }
+    // Riga di continuazione: nome andato a capo. Si accoda solo se una prenotazione è aperta.
+    if(ospite&&arrivi.length)arrivi[arrivi.length-1].nome=(arrivi[arrivi.length-1].nome+' '+ospite).trim();
+  });
+  arrivi.forEach(a=>{a.nome=a.nome.replace(/\s+/g,' ').trim();});
+  return{iso,arrivi};
 }
 
 let _psSeq=0;
@@ -11035,20 +11088,88 @@ function _psGiorno(iso){
   }
   return g;
 }
-// Crea le schede vuote mancanti perché il numero corrisponda agli arrivi previsti dal Piano.
-// NON cancella mai schede in eccesso: se il Piano prevede meno arrivi di quelli compilati
-// (prenotazione saltata) lo si segnala e decide l'utente — buttare via dati digitati a mano
-// per un conteggio che cambia è il modo più rapido per perdere un ospite.
-function _psAllinea(iso){
+// Importa gli arrivi letti dal PDF nella giornata, SENZA perdere ciò che è già stato
+// digitato: ricaricare una lista aggiornata è un'operazione normale (le prenotazioni
+// cambiano fino all'ultimo) e non deve costare la ridigitazione delle email.
+//
+// Regole, in ordine:
+//  1. stesso nome nella stessa struttura → si tiene la scheda esistente (email e telefono
+//     già inseriti restano, insieme allo stato di invio);
+//  2. nome nuovo → riempie una scheda vuota della struttura, altrimenti ne crea una;
+//  3. scheda con dati che non è più nella lista → NON si cancella, si marca `fuoriLista`
+//     (prenotazione cancellata o nome cambiato: lo decide l'utente, non il codice);
+//  4. scheda vuota non più nella lista → si rimuove, non serviva a nulla.
+function _psNomeChiave(s){
+  return String(s||'').toLowerCase().replace(/[^a-zà-ÿ\s]/gi,' ').replace(/\s+/g,' ').trim()
+    .split(' ').sort().join(' ');   // ordine indifferente: "Rossi Mario" = "Mario Rossi"
+}
+function _psImportaArrivi(iso,lista){
   const g=_psGiorno(iso);
-  const attesi=_psArriviPerStruttura(iso);
-  let cambiato=false;
-  Object.keys(attesi).forEach(h=>{
-    const n=g.arrivi.filter(a=>a.hotel===h).length;
-    for(let i=n;i<attesi[h];i++){g.arrivi.push(_psNuovaScheda(h));cambiato=true;}
+  const esistenti=g.arrivi||[];
+  const usate=new Set();
+  const risultato=[];
+  let nuovi=0,ritrovati=0;
+  (lista||[]).forEach(a=>{
+    const chiave=_psNomeChiave(a.nome);
+    let s=chiave?esistenti.find(e=>!usate.has(e.id)&&e.hotel===a.hotel&&_psNomeChiave(e.nome)===chiave):null;
+    if(s){ritrovati++;}
+    else{
+      s=esistenti.find(e=>!usate.has(e.id)&&e.hotel===a.hotel&&_psVuota(e));
+      if(s)s.nome=a.nome;
+      else{s=_psNuovaScheda(a.hotel);s.nome=a.nome;nuovi++;}
+    }
+    s.fuoriLista=false;
+    usate.add(s.id);
+    risultato.push(s);
   });
-  if(cambiato)_psSave();
-  return attesi;
+  // Schede rimaste fuori dalla lista importata
+  let fuori=0;
+  esistenti.forEach(e=>{
+    if(usate.has(e.id))return;
+    if(_psVuota(e))return;              // scheda vuota inutile: si lascia cadere
+    e.fuoriLista=true;fuori++;
+    risultato.push(e);
+  });
+  g.arrivi=risultato;
+  _psSave();
+  return{totale:(lista||[]).length,nuovi,ritrovati,fuori};
+}
+async function prestayHandlePdf(file){
+  const box=document.getElementById('psUploadStato');
+  const msg=t=>{if(box)box.textContent=t;};
+  try{
+    msg('Lettura del PDF…');
+    const ab=await file.arrayBuffer();
+    const pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(ab)}).promise;
+    const items=[];
+    for(let p=1;p<=pdfDoc.numPages;p++){
+      const page=await pdfDoc.getPage(p);
+      const tc=await page.getTextContent();
+      // Le pagine successive ripartono dall'alto: si sfalsa la y per non mescolare le righe.
+      tc.items.forEach(it=>{
+        const s=(it.str||'').trim();
+        if(s)items.push({s,x:it.transform[4],y:it.transform[5]-(p-1)*10000});
+      });
+    }
+    const{iso,arrivi}=_psParsePdfArrivi(items);
+    if(!arrivi.length){
+      msg('Nessun arrivo riconosciuto in questo PDF. Controlla di aver esportato la lista "Arrivi" dal PMS.');
+      return;
+    }
+    // La data si prende dal documento: importare nel giorno sbagliato sarebbe peggio che
+    // non importare. Se manca, si usa il giorno mostrato.
+    const target=iso||_psTargetISO();
+    const r=_psImportaArrivi(target,arrivi);
+    _prestayData=target;
+    _psAvviso='Importati '+r.totale+' arrivi del '+_psFmtIT(target)+
+      (r.ritrovati?' · '+r.ritrovati+' già presenti, contatti conservati':'')+
+      (r.nuovi?' · '+r.nuovi+' nuovi':'')+
+      (r.fuori?' · '+r.fuori+' non più in lista, segnalati in ambra':'');
+    msg('');
+    prestayRender();
+  }catch(e){
+    msg('Errore nella lettura: '+(e&&e.message||e));
+  }
 }
 function _psScheda(iso,id){return (_psGiorno(iso).arrivi||[]).find(a=>a.id===id)||null;}
 function _psVuota(a){return !(a.nome||a.email||a.tel);}
@@ -11337,7 +11458,6 @@ function prestayRender(){
   const oggiIso=_psFmtISO(new Date());
   const ggDa=Math.round((dt-new Date(oggiIso+'T12:00:00'))/86400000);
 
-  const attesi=_psAllinea(iso);
   const arrivi=_psGiorno(iso).arrivi||[];
   const compilati=arrivi.filter(a=>a.email||a.tel).length;
   const inviati=arrivi.filter(a=>a.mailTs||a.waTs).length;
@@ -11352,11 +11472,17 @@ function prestayRender(){
     ${ggDa!==PRESTAY_GG?`<button onclick="prestayOggi()" style="padding:6px 12px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">Torna a fra ${PRESTAY_GG} giorni</button>`:''}
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <span style="font-size:var(--fs-xs);color:var(--text-muted);">${compilati}/${arrivi.length} con contatto · <strong style="color:${inviati===arrivi.length&&arrivi.length?'var(--green)':'var(--text)'};">${inviati} inviati</strong></span>
+      <label style="padding:6px 12px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">
+        Carica PDF arrivi
+        <input type="file" accept="application/pdf,.pdf" style="display:none;" onchange="if(this.files[0]){prestayHandlePdf(this.files[0]);this.value='';}">
+      </label>
       <button onclick="prestayAddArrivo()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">+ Aggiungi arrivo</button>
       <button onclick="prestayToggleTpl()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">✏️ Modifica testi</button>
       <button onclick="prestayToggleMailCfg()" title="${_psMailPronto()?'Invio diretto attivo su questo browser':'Non configurato: il pulsante mail apre il client di posta'}" style="padding:6px 12px;border:1px solid ${_psMailPronto()?'var(--green)':'var(--border)'};background:${_psMailPronto()?'var(--green-bg)':'var(--surface)'};color:${_psMailPronto()?'var(--green)':'var(--text)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">⚙️ Invio mail${_psMailPronto()?' ✓':''}</button>
     </div>
   </div>`;
+
+  h+=`<div id="psUploadStato" style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:10px;"></div>`;
 
   if(_psAvviso){
     h+=`<div style="background:var(--green-bg);border:1px solid var(--green);border-radius:8px;padding:9px 13px;margin-bottom:12px;font-size:var(--fs-xs);color:var(--green);line-height:1.5;">${_psAvviso}</div>`;
@@ -11364,11 +11490,8 @@ function prestayRender(){
   }
 
   if(!arrivi.length){
-    const noPiano=!pianoData||!pianoData.giorni||!pianoData.giorni.length;
     h+=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:9px;padding:18px;text-align:center;color:var(--text-muted);font-size:var(--fs-xs);line-height:1.6;">
-      ${noPiano
-        ? 'Piano Settimanale non caricato: senza il Piano non si sa quanti arrivi ci sono. Caricalo dall\'Upload Center, oppure aggiungi gli ospiti a mano con "+ Aggiungi arrivo".'
-        : 'Nessun arrivo previsto in questa data secondo il Piano Settimanale.<br>Se sai di un arrivo su Art Resort, Principe o Mastrangelo (non coperti dal Piano), aggiungilo con "+ Aggiungi arrivo".'}
+      Nessun arrivo per questa data.<br>Esporta la lista <strong>Arrivi</strong> dal PMS in PDF e caricala con <strong>"Carica PDF arrivi"</strong>: nomi e strutture si compilano da soli, restano da inserire solo email e telefono.<br>Per un arrivo isolato puoi anche usare "+ Aggiungi arrivo".
     </div>`;
   }else{
     const inpS='padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:\'Helvetica Neue\',Arial,sans-serif;width:100%;box-sizing:border-box;';
@@ -11377,13 +11500,10 @@ function prestayRender(){
     Object.keys(PRESTAY_HOTELS).forEach(hc=>{
       const gruppo=arrivi.filter(a=>a.hotel===hc);
       if(!gruppo.length)return;
-      const att=attesi[hc];
-      const diff=att!=null&&gruppo.length!==att;
       h+=`<div style="margin-bottom:16px;border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">
         <div style="background:var(--bg);padding:8px 13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${PRESTAY_HOTELS[hc].name}</span>
-          <span style="font-size:var(--fs-xxs);color:var(--text-dim);">${gruppo.length} arriv${gruppo.length===1?'o':'i'}${att!=null?' · Piano: '+att:''}</span>
-          ${diff?`<span style="font-size:var(--fs-xxs);font-weight:700;color:var(--amber);">Il Piano ne prevede ${att}: verifica se una prenotazione è cambiata (non elimino nulla da solo)</span>`:''}
+          <span style="font-size:var(--fs-xxs);color:var(--text-dim);">${gruppo.length} arriv${gruppo.length===1?'o':'i'}</span>
         </div>
         <div style="overflow-x:auto;">
         <table style="border-collapse:collapse;width:100%;min-width:700px;">
@@ -11402,7 +11522,8 @@ function prestayRender(){
         const inFlight=!!_psMailInFlight[a.id];
         const chip=(ok,ts,lbl,fn)=>`<span onclick="prestayToggleInviato('${a.id}','${fn}')" title="${ok?'Inviato il '+new Date(ts).toLocaleString('it-IT')+' — clicca per annullare':'Segna come inviato'}" style="cursor:pointer;font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:10px;background:${ok?'var(--green-bg)':'var(--surface2)'};color:${ok?'var(--green)':'var(--text-dim)'};border:1px solid ${ok?'#9fd3b5':'var(--border-light)'};">${ok?'✓':'○'} ${lbl}</span>`;
         h+=`<tr style="${zebra}">
-          <td style="padding:7px 10px;font-size:var(--fs-xs);font-weight:700;white-space:nowrap;color:var(--text-muted);">Arrivo ${i+1}</td>
+          <td style="padding:7px 10px;font-size:var(--fs-xs);font-weight:700;white-space:nowrap;color:var(--text-muted);">Arrivo ${i+1}
+            ${a.fuoriLista?`<div title="Non compare nell'ultima lista arrivi importata: la prenotazione potrebbe essere stata cancellata o il nome corretto. Non elimino nulla da solo." style="font-size:9px;font-weight:700;color:var(--amber);white-space:normal;max-width:110px;line-height:1.3;margin-top:2px;">non più in lista</div>`:''}</td>
           <td style="padding:5px 8px;"><input value="${esc(a.nome)}" placeholder="Cognome Nome" onchange="prestaySetScheda('${a.id}','nome',this.value)" style="${inpS}min-width:130px;"></td>
           <td style="padding:5px 8px;"><input type="email" value="${esc(a.email)}" placeholder="email@…" onchange="prestaySetScheda('${a.id}','email',this.value)" style="${inpS}min-width:150px;"></td>
           <td style="padding:5px 8px;"><input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}min-width:110px;"></td>

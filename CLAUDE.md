@@ -1300,19 +1300,41 @@ Il Piano Settimanale serve **solo a sapere QUANTI arrivi ci sono per struttura**
 
 La soluzione è stata **togliere del tutto l'aggancio**: senza camera non c'è niente da riagganciare, e uno spostamento diventa un non-evento. Il numero di camera qui non serviva a nulla — **non compare nel messaggio** (confermato dall'utente: non ci sarà mai) e non determina il testo, che dipende dalla struttura. Se un domani si volesse mostrare la camera all'ospite, ripensare l'intero modello, non aggiungere un campo camera come chiave.
 
-Il conteggio dal Piano resta la rete di sicurezza contro il dimenticare un ospite: la vista mostra `3/5 con contatto` e, per gruppo, `3 arrivi · Piano: 3`.
+### Fonte degli arrivi: il PDF del PMS, NON più il Piano Settimanale (15/08/2026)
 
-`_psArriviPerStruttura(iso)` conta le **camere** in `arrivi` + `cambi` di `pianoData.giorni[].{soulart,boutique,liborio}`, deduplicate con un `Set`: un cambio è partenza + arrivo lo stesso giorno, quindi c'è comunque un ospite nuovo a cui scrivere — dimenticare i `cambi` salterebbe metà degli arrivi — ma una stanza presente in entrambe le liste non va contata due volte.
+Il pre-stay è stato **staccato dal Piano Settimanale** e collegato al **PDF "Arrivi" esportato dal PMS**. Il Piano dava solo un conteggio di camere; il PDF elenca le prenotazioni reali **con il nome dell'ospite**, quindi è insieme più completo e più attendibile. `pianoData` non è più letto da questa sezione.
 
-**Il Piano copre solo SoulArt, Boutique e San Liborio.** Art Resort, Principe e Mastrangelo non ci sono: per quelli c'è **"+ Aggiungi arrivo"**, che chiede la struttura da un elenco numerato. **La struttura va CHIESTA, non indovinata**: nella prima versione veniva assegnata d'ufficio `'pr'` (Principe) e il messaggio nominava la struttura sbagliata usando pure il template sbagliato — scoperto solo alla prima mail di prova reale. Non introdurre fallback di struttura scelti d'ufficio.
+**Il PDF non contiene email né telefono** (verificato sull'export reale): quelli restano manuali. L'import serve a fissare *quanti* arrivi ci sono, *chi* sono e a *quale struttura* appartengono — la parte che non si può controllare a memoria.
 
-### Allineamento al conteggio — `_psAllinea(iso)`
+**La camera viene usata solo in fase di lettura**, per dedurre la struttura (`_psStrutturaDaCamera`: 204 → Boutique, Art 5 → SoulArt, LIB → San Liborio, R1-3 → Mastrangelo, CAPRI/NAPOLI/… → Principe, altre numeriche → SoulArt — stesse regole di `fixArriviStruttura`), e poi **scartata**: le schede non hanno campo camera. Verificato in test. Non salvarla.
 
-Crea le schede vuote mancanti perché il numero corrisponda agli arrivi previsti. È idempotente (verificato: più render non duplicano nulla).
+#### Parsing deterministico sulle colonne — `_psParsePdfArrivi(items)`
 
-**Non cancella mai schede in eccesso.** Se il Piano scende da 3 a 2 arrivi mentre ne hai già compilati 3, il gruppo mostra in ambra *"Il Piano ne prevede 2: verifica se una prenotazione è cambiata (non elimino nulla da solo)"* e decidi tu con la ✕. Buttare via dati digitati a mano perché un conteggio è cambiato è il modo più rapido per perdere un ospite.
+Niente chiamata AI: si legge la posizione `x` di ogni frammento di testo da pdf.js. **Motivo**: nomi e tipi camera vanno a capo nell'export reale (`Chacon Oviedo` / `Karina`, `AS` / `SUP`), e un parser sul testo concatenato li spezzerebbe o infilerebbe il tipo camera dentro il nome.
 
-Se il conteggio sale, compare una scheda vuota in più: i dati già inseriti non vengono toccati.
+| Costante | Valore | Significato |
+|---|---|---|
+| `PS_COL_OSPITE_DA` | 90 | x minima della colonna "Ospite (Prenotante)" |
+| `PS_COL_OSPITE_A` | 177 | x della colonna "Pax" = fine colonna ospite |
+
+Nell'export reale: camera/tipo a x 40–77, ospite a x 96–135, Pax a 177,5. Una riga con `/` nella colonna sinistra apre una prenotazione; le righe successive senza `/` sono continuazioni e il loro testo nella colonna ospite viene **accodato al nome**. `PS_RE_CAMERA` valida la camera così che l'intestazione `Numero/` non venga scambiata per una prenotazione.
+
+**La data si legge dall'intestazione** (`Arrivi - 17/08/2026`) e l'import va su quel giorno, spostando anche la vista: importare nel giorno sbagliato sarebbe peggio che non importare.
+
+#### Re-import senza perdere il lavoro fatto — `_psImportaArrivi(iso,lista)`
+
+Ricaricare una lista aggiornata è normale (le prenotazioni cambiano fino all'ultimo) e **non deve costare la ridigitazione delle email**. Regole, in ordine:
+
+1. stesso nome nella stessa struttura → si **tiene la scheda esistente**, con email, telefono, lingua e stato di invio;
+2. nome nuovo → riempie una scheda vuota della struttura, altrimenti ne crea una;
+3. scheda con dati non più in lista → **non si cancella**, si marca `fuoriLista` e compare "non più in lista" in ambra (prenotazione cancellata o nome corretto: decide l'utente);
+4. scheda vuota non più in lista → si rimuove, non serviva.
+
+`_psNomeChiave` normalizza minuscole, punteggiatura **e ordine delle parole**: "Rossi Mario" e "MARIO ROSSI" sono la stessa persona — altrimenti un'inversione nome/cognome fra due export creerebbe un doppione e un doppio messaggio.
+
+**Verificato con 34 test sul PDF reale del 17/08/2026** (9 arrivi, 3 Boutique + 6 SoulArt): nomi su più righe ricomposti, tipi camera mai finiti nel nome, intestazione e riga totali non importate, contatti e stato di invio conservati al re-import, nessun duplicato.
+
+Per un arrivo isolato o per strutture non presenti nell'export resta **"+ Aggiungi arrivo"**, che **chiede la struttura** da un elenco numerato. **La struttura va CHIESTA, non indovinata**: nella prima versione veniva assegnata d'ufficio `'pr'` (Principe) e il messaggio nominava la struttura sbagliata usando pure il template sbagliato — scoperto solo alla prima mail di prova reale. Non introdurre fallback di struttura scelti d'ufficio.
 
 ### Migrazione dal vecchio formato
 
