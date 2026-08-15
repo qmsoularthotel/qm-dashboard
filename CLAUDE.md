@@ -1418,6 +1418,18 @@ Nell'anteprima, quando `canale!=='wa'`, sotto la textarea compare un riquadro **
 
 Per le righe che vengono dal Piano **l'hotel non è nel record salvato**: è noto solo dalla sezione del Piano in cui la camera compare. Va quindi risolto a ogni invio (`record.hotel` → altrimenti Piano → altrimenti `sa`). Senza, `{struttura}` resta vuoto nel messaggio **e viene usato il template della struttura sbagliata** — bug trovato in test prima del rilascio, non ripristinare la vecchia `r.hotel||'sa'`.
 
+### Cambio camera dell'ospite — `prestaySpostaCamera(camera)` (15/08/2026)
+
+I dati sono indicizzati **per numero di camera** (`_prestay[iso][camera]`), non per ospite: un cambio di stanza — operazione quotidiana in hotel — li lasciava quindi orfani sulla vecchia riga, con la nuova camera vuota da ricompilare a mano.
+
+Tre modifiche, tutte verificate con 20 test sintetici sul codice reale:
+
+1. **La struttura si fissa sul record al primo dato digitato** (`prestaySetField` → `if(!r.hotel)r.hotel=_psHotelOf(iso,camera)`). Prima le righe dal Piano non la salvavano mai, e quando la camera usciva dal Piano l'informazione era irrecuperabile: il render ripiegava su `||'pr'` e la riga diventava **Principe**, con testo e mittente della struttura sbagliata. Stessa classe di bug di quello già corretto in `prestayAddManuale` — è la seconda volta che un default silenzioso a Principe manda un messaggio errato all'ospite: **non introdurre altri fallback di struttura scelti d'ufficio**, risolverla o segnalarla.
+2. **Righe orfane segnalate** (`orfana:!salvate[cam].manuale`): una riga con dati che non è più nel Piano e non è stata aggiunta a mano mostra "non più nel Piano" in ambra. Serve a distinguerla da una riga manuale legittima, che non va segnalata.
+3. **Pulsante di spostamento** (icona `PS_ICON_MOVE`, compare solo sulle righe che hanno almeno un dato): trasferisce **tutto** — contatti, lingua e `mailTs`/`waTs`. Lo stato di invio va con l'ospite di proposito: dimenticarlo farebbe **rimandare il messaggio a chi l'ha già ricevuto**.
+
+**Se la camera di destinazione è nel Piano, vince la struttura del Piano**, non quella di partenza: uno spostamento può attraversare le strutture (203 Boutique → Art 5 SoulArt) e in quel caso cambiano template e mittente. Se la destinazione ha già dei dati si chiede conferma prima di sovrascrivere; annullare, lasciare vuoto o indicare la stessa camera non modifica nulla.
+
 ---
 
 ## Resi Biancheria — Fornitore Raimondo (view `resi-biancheria`)
