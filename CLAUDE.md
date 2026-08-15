@@ -1308,6 +1308,14 @@ Il pre-stay è stato **staccato dal Piano Settimanale** e collegato al **PDF "Ar
 
 **La camera viene usata solo in fase di lettura**, per dedurre la struttura (`_psStrutturaDaCamera`: 204 → Boutique, Art 5 → SoulArt, LIB → San Liborio, R1-3 → Mastrangelo, CAPRI/NAPOLI/… → Principe, altre numeriche → SoulArt — stesse regole di `fixArriviStruttura`), e poi **scartata**: le schede non hanno campo camera. Verificato in test. Non salvarla.
 
+#### Dove si carica
+
+Due punti, stessa funzione `prestayHandlePdf(file)`: lo slot **"Arrivi Pre-stay"** nell'Upload Center (prima riga, accanto a "Riepilogo Reception") e il pulsante **"Carica PDF arrivi"** dentro la vista. Lo stato viene riportato in entrambi.
+
+**Nome scelto**: "Arrivi Pre-stay" e non "Pre-Stay Message" — quello che si carica è la *lista arrivi*, non un messaggio; e va distinto da "Riepilogo Reception", che è lo stesso tipo di report del PMS ma esportato per la giornata corrente anziché per fra due giorni.
+
+Aggiungendo altri slot ricordarsi di inserire la chiave negli **elenchi della fisarmonica** in `ucToggle` e `ucSetState` (`['turno','arrivi','prestay',…]`), altrimenti il pannello non si chiude quando se ne apre un altro. Lo slot **non** è incluso in `ucUpdateProgress`: non modifica il contatore giornaliero degli upload.
+
 #### Parsing deterministico sulle colonne — `_psParsePdfArrivi(items)`
 
 Niente chiamata AI: si legge la posizione `x` di ogni frammento di testo da pdf.js. **Motivo**: nomi e tipi camera vanno a capo nell'export reale (`Chacon Oviedo` / `Karina`, `AS` / `SUP`), e un parser sul testo concatenato li spezzerebbe o infilerebbe il tipo camera dentro il nome.

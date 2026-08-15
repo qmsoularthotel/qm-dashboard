@@ -66,7 +66,7 @@ function ucToggle(key){
   if(!panel)return;
   const isOpen=panel.classList.contains('open');
   // Chiudi tutti gli altri
-  ['turno','arrivi','pul','bkf','soul','bout','piano'].forEach(k=>{
+  ['turno','arrivi','prestay','pul','bkf','soul','bout','piano'].forEach(k=>{
     if(k===key)return;
     const p=document.getElementById('uc-'+k+'-panel');
     const s=document.getElementById('uc-'+k);
@@ -93,7 +93,7 @@ function ucSetState(key,state,sub,silent){
     slot.classList.add('loaded');
     if(!silent){
       // Fisarmonica: chiudi tutti, apri questo
-      ['turno','arrivi','pul','bkf','soul','bout','piano'].forEach(k=>{
+      ['turno','arrivi','prestay','pul','bkf','soul','bout','piano'].forEach(k=>{
         const p=document.getElementById('uc-'+k+'-panel');
         const s=document.getElementById('uc-'+k);
         if(p){p.classList.remove('open');}
@@ -11134,11 +11134,15 @@ function _psImportaArrivi(iso,lista){
   _psSave();
   return{totale:(lista||[]).length,nuovi,ritrovati,fuori};
 }
+// Caricabile da due punti — dall'Upload Center (slot "Arrivi Pre-stay") e dal pulsante
+// dentro la vista — che chiamano la stessa funzione: lo stato viene riportato in entrambi.
 async function prestayHandlePdf(file){
   const box=document.getElementById('psUploadStato');
   const msg=t=>{if(box)box.textContent=t;};
+  const uc=(stato,sub)=>{try{ucSetState('prestay',stato,sub,true);}catch(e){}};
   try{
     msg('Lettura del PDF…');
+    uc('loading','Lettura PDF...');
     const ab=await file.arrayBuffer();
     const pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(ab)}).promise;
     const items=[];
@@ -11154,6 +11158,7 @@ async function prestayHandlePdf(file){
     const{iso,arrivi}=_psParsePdfArrivi(items);
     if(!arrivi.length){
       msg('Nessun arrivo riconosciuto in questo PDF. Controlla di aver esportato la lista "Arrivi" dal PMS.');
+      uc('error','Nessun arrivo riconosciuto');
       return;
     }
     // La data si prende dal documento: importare nel giorno sbagliato sarebbe peggio che
@@ -11166,11 +11171,32 @@ async function prestayHandlePdf(file){
       (r.nuovi?' · '+r.nuovi+' nuovi':'')+
       (r.fuori?' · '+r.fuori+' non più in lista, segnalati in ambra':'');
     msg('');
+    uc('loaded',r.totale+' arriv'+(r.totale===1?'o':'i')+' · '+_psFmtIT(target).slice(0,5));
+    try{setUploadTs('prestayTs');}catch(e){}
     prestayRender();
   }catch(e){
     msg('Errore nella lettura: '+(e&&e.message||e));
+    uc('error','Errore nella lettura');
   }
 }
+// Collegamento dello slot Upload Center (click sul riquadro, drag&drop, input file).
+(function(){
+  const box=document.getElementById('prestayUploadBox');
+  const inp=document.getElementById('prestayFileInput');
+  if(!inp)return;
+  if(box){
+    box.addEventListener('click',()=>inp.click());
+    box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});
+    box.addEventListener('dragleave',()=>box.classList.remove('dragover'));
+    box.addEventListener('drop',e=>{
+      e.preventDefault();box.classList.remove('dragover');
+      const f=e.dataTransfer.files[0];
+      if(f&&/pdf$/i.test(f.type||f.name))prestayHandlePdf(f);
+      else ucSetState('prestay','error','Carica un PDF.');
+    });
+  }
+  inp.addEventListener('change',e=>{if(e.target.files[0]){prestayHandlePdf(e.target.files[0]);e.target.value='';}});
+})();
 function _psScheda(iso,id){return (_psGiorno(iso).arrivi||[]).find(a=>a.id===id)||null;}
 function _psVuota(a){return !(a.nome||a.email||a.tel);}
 
