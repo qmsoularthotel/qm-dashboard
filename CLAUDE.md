@@ -1418,17 +1418,35 @@ Nell'anteprima, quando `canale!=='wa'`, sotto la textarea compare un riquadro **
 
 Per le righe che vengono dal Piano **l'hotel non è nel record salvato**: è noto solo dalla sezione del Piano in cui la camera compare. Va quindi risolto a ogni invio (`record.hotel` → altrimenti Piano → altrimenti `sa`). Senza, `{struttura}` resta vuoto nel messaggio **e viene usato il template della struttura sbagliata** — bug trovato in test prima del rilascio, non ripristinare la vecchia `r.hotel||'sa'`.
 
-### Cambio camera dell'ospite — `prestaySpostaCamera(camera)` (15/08/2026)
+### Cambio camera dell'ospite — consolidamento automatico (15/08/2026)
 
-I dati sono indicizzati **per numero di camera** (`_prestay[iso][camera]`), non per ospite: un cambio di stanza — operazione quotidiana in hotel — li lasciava quindi orfani sulla vecchia riga, con la nuova camera vuota da ricompilare a mano.
+I dati sono indicizzati **per numero di camera** (`_prestay[iso][camera]`), non per ospite: un cambio di stanza — operazione quotidiana in hotel — li lasciava orfani sulla vecchia riga, con la nuova camera vuota da ricompilare a mano.
 
-Tre modifiche, tutte verificate con 20 test sintetici sul codice reale:
+**Vincolo che determina cosa è automatizzabile.** Il Piano contiene solo data, struttura e numero di camera. Quando 203 sparisce e compare 207 **non esiste nel dato** nulla che distingua "stesso ospite spostato" da "prenotazione cancellata + prenotazione nuova": qualsiasi euristica sul diff del Piano finirebbe prima o poi per attribuire i contatti di un ospite a un altro. **Non implementare quella strada.**
 
-1. **La struttura si fissa sul record al primo dato digitato** (`prestaySetField` → `if(!r.hotel)r.hotel=_psHotelOf(iso,camera)`). Prima le righe dal Piano non la salvavano mai, e quando la camera usciva dal Piano l'informazione era irrecuperabile: il render ripiegava su `||'pr'` e la riga diventava **Principe**, con testo e mittente della struttura sbagliata. Stessa classe di bug di quello già corretto in `prestayAddManuale` — è la seconda volta che un default silenzioso a Principe manda un messaggio errato all'ospite: **non introdurre altri fallback di struttura scelti d'ufficio**, risolverla o segnalarla.
-2. **Righe orfane segnalate** (`orfana:!salvate[cam].manuale`): una riga con dati che non è più nel Piano e non è stata aggiunta a mano mostra "non più nel Piano" in ambra. Serve a distinguerla da una riga manuale legittima, che non va segnalata.
-3. **Pulsante di spostamento** (icona `PS_ICON_MOVE`, compare solo sulle righe che hanno almeno un dato): trasferisce **tutto** — contatti, lingua e `mailTs`/`waTs`. Lo stato di invio va con l'ospite di proposito: dimenticarlo farebbe **rimandare il messaggio a chi l'ha già ricevuto**.
+L'identità vera dell'ospite è l'**email**, che l'utente digita comunque leggendola dal PMS. `_psConsolidaOrfane(iso,camera)` è agganciata a `prestaySetField` sui campi `email` e `nome`: scrivendo l'email nella riga della camera nuova, la vecchia riga orfana viene riconosciuta e **le due si uniscono da sole** — nessun pulsante, nulla da ricordare. `_psAvviso` mostra poi in verde cosa è successo (una riga che sparisce mentre si digita, senza spiegazione, sembra un dato perso).
 
-**Se la camera di destinazione è nel Piano, vince la struttura del Piano**, non quella di partenza: uno spostamento può attraversare le strutture (203 Boutique → Art 5 SoulArt) e in quel caso cambiano template e mittente. Se la destinazione ha già dei dati si chiede conferma prima di sovrascrivere; annullare, lasciare vuoto o indicare la stessa camera non modifica nulla.
+**Si uniscono SOLO le righe orfane**, mai due righe entrambe presenti nel Piano: quelle sono due camere realmente in arrivo — tipicamente una prenotazione familiare su due stanze con un solo indirizzo — e unirle cancellerebbe una camera vera dall'elenco. È l'unica distinzione che il Piano consente senza indovinare.
+
+Regole di riconoscimento e di merge (15 test sintetici sul codice reale):
+
+| Situazione | Esito |
+|---|---|
+| Orfana con **stessa email** | unite |
+| Orfana **senza email**, stesso nome (normalizzato) | unite — meglio del dato perso, il nome è digitato a mano quindi vale solo come ripiego |
+| Orfana con **email diversa**, stesso nome | **non** unite (omonimi) |
+| Due righe **entrambe nel Piano**, stessa email | **non** unite (famiglia su due camere) |
+| Email vuota | nessuna unione |
+
+Nel merge **la riga nuova vince** sui campi già compilati; dall'orfana si recupera ciò che manca e **sempre `mailTs`/`waTs`** — è il dato che impedisce di **rimandare il messaggio a chi l'ha già ricevuto**. `lang` scelta esplicitamente sulla riga nuova non viene sovrascritta (`_langTocca`). Se la camera nuova è nel Piano vince la sua struttura: uno spostamento può attraversare le strutture (203 Boutique → Art 5 SoulArt) e allora cambiano template e mittente.
+
+**Il numero di camera non compare mai nel testo del messaggio** (confermato dall'utente): è per questo che uno spostamento non può far arrivare un'informazione sbagliata all'ospite, e il problema si riduce a non perdere dati e non mandare doppioni. Se un domani si introducesse `{camera}` nei template, questa premessa salta e servirebbe un avviso sugli invii già partiti.
+
+**Altra correzione della stessa sessione**: la struttura si fissa sul record al primo dato digitato (`if(!r.hotel)r.hotel=_psHotelOf(iso,camera)`). Prima le righe dal Piano non la salvavano mai e, uscendo dal Piano, il render ripiegava su `||'pr'`: la riga diventava **Principe**, con testo e mittente sbagliati. È la seconda volta che un default silenzioso a Principe manda un messaggio errato all'ospite (la prima fu `prestayAddManuale`) — **non introdurre altri fallback di struttura scelti d'ufficio**: vanno risolti dal dato o segnalati.
+
+Le righe rimaste fuori dal Piano restano marcate "non più nel Piano" in ambra, così si vede che c'è stato uno spostamento; spariscono da sole appena si compila la camera nuova.
+
+**Approccio scartato**: un pulsante "sposta in un'altra camera" (implementato e poi rimosso su indicazione esplicita dell'utente — *"io non posso ricordare dove sposto ciascun ospite, deve avvenire tutto in maniera automatica"*). Non reintrodurre comandi manuali che richiedono di ricordare lo stato del PMS.
 
 ---
 

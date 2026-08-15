@@ -10928,7 +10928,6 @@ const PS_ICON_EYE='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" s
 const PS_ICON_MAIL='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
 const PS_ICON_WA='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
 const PS_ICON_LOAD='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"/></svg>';
-const PS_ICON_MOVE='<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13M14 5l3 3-3 3"/><path d="M20 16H7M10 13l-3 3 3 3"/></svg>';
 
 // Strutture coperte. Il Piano usa le chiavi soulart/boutique/liborio: qui si mappano sui
 // codici già in uso altrove in Compass (sa/bh/sl), più pr/ms per le righe manuali.
@@ -11020,37 +11019,65 @@ function prestaySetField(camera,campo,val){
   // della struttura sbagliata. Vedi anche _psHotelOf.
   if(campo==='hotel')r.hotel=val;
   else if(!r.hotel)r.hotel=_psHotelOf(iso,camera);
+  if(campo==='lang')r._langTocca=true;   // scelta esplicita: non va sovrascritta dal merge
+  // Scrivendo email o nome si può star ricompilando un ospite spostato di camera: se la
+  // vecchia riga è ancora lì orfana, le due si uniscono da sole (vedi _psConsolidaOrfane).
+  let unita=null;
+  if(campo==='email'||campo==='nome')unita=_psConsolidaOrfane(iso,camera);
   _psSave();
+  if(unita){
+    _psAvviso='Dati di '+unita+' spostati su '+camera+': stesso ospite, era rimasto sulla camera precedente.';
+    prestayRender();
+    return;
+  }
   if(campo==='lang'||campo==='hotel')prestayRender();
 }
-// Sposta l'ospite in un'altra camera portandosi dietro TUTTO: contatti, lingua, stato di
-// invio. I dati sono indicizzati per camera, quindi senza questo un cambio di stanza li
-// lascerebbe orfani sulla vecchia riga e costringerebbe a ridigitarli sulla nuova.
-function prestaySpostaCamera(camera){
-  const iso=_psTargetISO();
-  const r=(_prestay[iso]||{})[camera];
-  if(!r)return;
-  // Suggerisce le camere in arrivo oggi ancora senza dati: quasi sempre la destinazione è lì.
-  const libere=_psCamereDaPiano(iso)
-    .filter(x=>{const s=(_prestay[iso]||{})[x.camera];return x.camera!==camera&&!(s&&(s.nome||s.email||s.tel));})
-    .map(x=>x.camera);
-  const hint=libere.length?'\n\nIn arrivo oggi e ancora senza dati:\n'+libere.join(', '):'';
-  const nuova=prompt('Sposta l\'ospite di '+camera+' in quale camera?\n\nContatti, lingua e stato di invio si spostano con lui.'+hint,'');
-  if(nuova===null)return;
-  const n=nuova.trim();
-  if(!n||n===camera)return;
-  const dest=(_prestay[iso]||{})[n];
-  if(dest&&(dest.nome||dest.email||dest.tel)){
-    if(!confirm('La camera '+n+' ha già dei dati'+(dest.nome?' ('+dest.nome+')':'')+'.\n\nSostituirli con quelli di '+camera+'?'))return;
-  }
-  if(!_prestay[iso])_prestay[iso]={};
-  _prestay[iso][n]={...r};
-  // Cambiare camera può voler dire cambiare struttura (es. 203 Boutique → Art 5 SoulArt):
-  // se la nuova camera è nel Piano vince la struttura del Piano, altrimenti resta la vecchia.
-  const dalPiano=_psCamereDaPiano(iso).find(x=>x.camera===n);
-  if(dalPiano)_prestay[iso][n].hotel=dalPiano.hotel;
-  delete _prestay[iso][camera];
-  _psSave();prestayRender();
+let _psAvviso=null;
+// Consolidamento automatico dopo un cambio di camera.
+//
+// I dati sono indicizzati per camera, ma l'ospite è identificato dall'EMAIL. Se la
+// reception sposta l'ospite, al ricaricamento del Piano la vecchia camera esce dall'elenco
+// (riga "orfana", con i dati già inseriti) e compare la nuova, vuota. Appena si scrive lì
+// l'email — l'unica cosa che si farebbe comunque, leggendola dal PMS — si riconosce che è
+// la stessa persona e le due righe vengono unite da sole: niente da ricordare, niente
+// pulsanti da premere, e soprattutto lo stato di invio viene con lei, quindi a un ospite
+// già contattato il messaggio non riparte.
+//
+// Si uniscono SOLO le righe orfane, mai due righe entrambe presenti nel Piano: quelle sono
+// due camere realmente in arrivo (una prenotazione familiare su due stanze con un solo
+// indirizzo), non uno spostamento — unirle cancellerebbe una camera vera dall'elenco.
+// È l'unica distinzione che il Piano permette di fare senza indovinare.
+function _psNorm(s){return String(s||'').trim().toLowerCase();}
+function _psConsolidaOrfane(iso,camera){
+  const giorno=_prestay[iso]||{};
+  const r=giorno[camera];
+  if(!r)return null;
+  const email=_psNorm(r.email),nome=_psNorm(r.nome);
+  if(!email&&!nome)return null;
+  const nelPiano=new Set(_psCamereDaPiano(iso).map(x=>x.camera));
+  let unita=null;
+  Object.keys(giorno).forEach(altra=>{
+    if(altra===camera||nelPiano.has(altra))return;      // mai toccare una camera ancora in arrivo
+    const o=giorno[altra];
+    if(!o)return;
+    // Stessa persona: l'email è il riscontro affidabile; il nome vale solo se l'orfana non
+    // ha email (digitato a mano, quindi meno affidabile — ma meglio di perdere il dato).
+    const stessa=email&&_psNorm(o.email)===email ? true
+               : (!_psNorm(o.email)&&nome&&_psNorm(o.nome)===nome);
+    if(!stessa)return;
+    // La riga nuova vince sui campi già compilati; dall'orfana si recupera ciò che manca
+    // e SEMPRE lo stato di invio, che è il dato che evita il doppio messaggio.
+    if(!r.nome&&o.nome)r.nome=o.nome;
+    if(!r.email&&o.email)r.email=o.email;
+    if(!r.tel&&o.tel)r.tel=o.tel;
+    if(o.lang&&!r._langTocca)r.lang=o.lang;
+    if(o.mailTs&&!r.mailTs)r.mailTs=o.mailTs;
+    if(o.waTs&&!r.waTs)r.waTs=o.waTs;
+    if(o.mailErr&&!r.mailErr)r.mailErr=o.mailErr;
+    delete giorno[altra];
+    unita=altra;
+  });
+  return unita;
 }
 function prestayNavDay(delta){
   const d=new Date(_psTargetISO()+'T12:00:00');
@@ -11386,6 +11413,13 @@ function prestayRender(){
     </div>
   </div>`;
 
+  // Il consolidamento avviene da solo: va però DETTO, altrimenti una riga che sparisce
+  // mentre si digita sembra un dato perso. Si mostra una volta sola, poi si azzera.
+  if(_psAvviso){
+    h+=`<div style="background:var(--green-bg);border:1px solid var(--green);border-radius:8px;padding:9px 13px;margin-bottom:12px;font-size:var(--fs-xs);color:var(--green);line-height:1.5;">${_psAvviso}</div>`;
+    _psAvviso=null;
+  }
+
   if(!righe.length){
     const noPiano=!pianoData||!pianoData.giorni||!pianoData.giorni.length;
     h+=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:9px;padding:18px;text-align:center;color:var(--text-muted);font-size:var(--fs-xs);line-height:1.6;">
@@ -11422,7 +11456,7 @@ function prestayRender(){
             :`<select onchange="prestaySetField('${camEsc}','hotel',this.value)" title="Struttura — determina il testo usato" style="margin-top:2px;font-size:9px;padding:1px 3px;border:1px solid var(--border-light);border-radius:4px;background:var(--surface);color:var(--text-dim);font-family:inherit;max-width:120px;">
               ${Object.keys(PRESTAY_HOTELS).map(k=>`<option value="${k}" ${k===hotel?'selected':''}>${PRESTAY_HOTELS[k].name}</option>`).join('')}
             </select>`}
-          ${x.orfana?`<div title="Questa camera non risulta più in arrivo nel Piano: probabilmente l'ospite è stato spostato. Usa il pulsante di spostamento per portare i dati sulla camera giusta." style="margin-top:3px;font-size:9px;font-weight:700;color:var(--amber);white-space:normal;max-width:130px;line-height:1.3;">non più nel Piano</div>`:''}</td>
+          ${x.orfana?`<div title="Questa camera non risulta più in arrivo nel Piano: l'ospite è probabilmente stato spostato. Scrivi la sua email nella riga della camera nuova e le due righe si uniscono da sole." style="margin-top:3px;font-size:9px;font-weight:700;color:var(--amber);white-space:normal;max-width:130px;line-height:1.3;">non più nel Piano</div>`:''}</td>
         <td style="padding:5px 8px;"><input value="${esc(r.nome)}" placeholder="Cognome Nome" onchange="prestaySetField('${camEsc}','nome',this.value)" style="${inpS}min-width:130px;"></td>
         <td style="padding:5px 8px;"><input type="email" value="${esc(r.email)}" placeholder="email@…" onchange="prestaySetField('${camEsc}','email',this.value)" style="${inpS}min-width:150px;"></td>
         <td style="padding:5px 8px;"><input value="${esc(r.tel)}" placeholder="+39…" onchange="prestaySetField('${camEsc}','tel',this.value)" style="${inpS}min-width:110px;"></td>
@@ -11439,9 +11473,7 @@ function prestayRender(){
           <div style="margin-top:4px;display:flex;gap:4px;justify-content:center;">${chip(mailOk,r.mailTs,'mail','mail')}${chip(waOk,r.waTs,'wa','wa')}</div>
           ${r.mailErr&&!mailOk?`<div style="margin-top:3px;font-size:9px;color:var(--red);max-width:150px;white-space:normal;line-height:1.3;">${String(r.mailErr).substring(0,60)}</div>`:''}
         </td>
-        <td style="padding:5px 8px;text-align:center;white-space:nowrap;">
-          ${(r.nome||r.email||r.tel)?`<button onclick="prestaySpostaCamera('${camEsc}')" title="L'ospite ha cambiato camera: sposta qui contatti, lingua e stato di invio" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;border:1px solid var(--border);background:var(--surface);color:${x.orfana?'var(--amber)':'var(--text-dim)'};border-radius:6px;cursor:pointer;vertical-align:middle;">${PS_ICON_MOVE}</button>`:''}
-          ${x.daPiano?'':`<button onclick="prestayDelRiga('${camEsc}')" title="Rimuovi riga" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:13px;vertical-align:middle;margin-left:2px;">✕</button>`}</td>
+        <td style="padding:5px 8px;text-align:center;white-space:nowrap;">${x.daPiano?'':`<button onclick="prestayDelRiga('${camEsc}')" title="Rimuovi riga" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:13px;vertical-align:middle;">✕</button>`}</td>
       </tr>`;
     });
     h+=`</tbody></table></div>
