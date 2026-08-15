@@ -5,7 +5,7 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=248">
+<link rel="stylesheet" href="style.css?v=249">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
@@ -181,25 +181,6 @@
               <div class="uc-sub" id="uc-arrivi-sub">Non caricato</div>
               <span class="uc-badge" id="uc-arrivi-badge" style="display:none;">▾</span>
             </div>
-            <div class="uc-slot" id="uc-prestay" onclick="ucToggle('prestay')" title="Lista arrivi per i messaggi pre-stay">
-              <input type="file" id="prestayFileInput" accept="application/pdf,.pdf" style="display:none">
-              <span class="uc-dot" id="uc-prestay-dot"></span>
-              <span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span></span>
-              <div class="uc-label">Arrivi<br>Pre-stay</div>
-              <div class="uc-sub" id="uc-prestay-sub">Non caricato</div>
-              <span class="uc-badge" id="uc-prestay-badge" style="display:none;">▾</span>
-            </div>
-          </div>
-          <div class="uc-panel" id="uc-prestay-panel">
-            <div class="uc-feeds-line">→ Messaggi Pre-stay (nomi e strutture)</div>
-            <div class="upload-box" id="prestayUploadBox">
-              <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-              <div class="ub-title">Arrivi Pre-stay</div>
-              <div class="ub-sub">Lista arrivi del PMS, di norma fra 2 giorni</div>
-              <span class="ub-formats">.pdf</span>
-            </div>
-            <div class="turni-status" id="prestayStatus"></div>
-            <div class="upload-ts" id="prestayTs"></div>
           </div>
           <div class="uc-panel" id="uc-turno-panel">
             <div class="uc-feeds-line">→ Piano staff</div>
@@ -232,6 +213,49 @@
             <div class="loaded-info" id="arriviLoadedInfo"><div class="li-date" id="arriviLoadedDate"></div><div id="arriviCanali" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;"></div><div id="arriviPartenzeBooking" style="display:none;"></div></div>
             <button class="btn-reload" id="btnArriviReload" style="display:none" onclick="resetArrivi()">Rimuovi arrivi</button>
             <div class="upload-ts" id="arriviTs"></div>
+          </div>
+        </div>
+        <div class="uc-row">
+          <div class="uc-row-cards">
+            <div class="uc-slot" id="uc-prestay" onclick="ucToggle('prestay')" title="Lista arrivi per i messaggi pre-stay">
+              <input type="file" id="prestayFileInput" accept="application/pdf,.pdf" style="display:none">
+              <span class="uc-dot" id="uc-prestay-dot"></span>
+              <span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span></span>
+              <div class="uc-label">Arrivi<br>Pre-stay</div>
+              <div class="uc-sub" id="uc-prestay-sub">Non caricato</div>
+              <span class="uc-badge" id="uc-prestay-badge" style="display:none;">▾</span>
+            </div>
+            <div class="uc-slot" id="uc-piano" onclick="ucToggle('piano')" title="Piano Settimanale">
+              <input type="file" id="pianoFileInput" accept="application/pdf" style="display:none">
+              <span class="uc-dot" id="uc-piano-dot"></span>
+              <span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15h2M13 15h3M8 18h2"/></svg></span></span>
+              <div class="uc-label">Piano<br>Settimanale</div>
+              <div class="uc-sub" id="uc-piano-sub">Non caricato</div>
+              <span class="uc-badge" id="uc-piano-badge" style="display:none;">▾</span>
+            </div>
+          </div>
+          <div class="uc-panel" id="uc-prestay-panel">
+            <div class="uc-feeds-line">→ Messaggi Pre-stay (nomi e strutture)</div>
+            <div class="upload-box" id="prestayUploadBox">
+              <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
+              <div class="ub-title">Arrivi Pre-stay</div>
+              <div class="ub-sub">Lista arrivi del PMS, di norma fra 2 giorni</div>
+              <span class="ub-formats">.pdf</span>
+            </div>
+            <div class="turni-status" id="prestayStatus"></div>
+            <div class="upload-ts" id="prestayTs"></div>
+          </div>
+          <div class="uc-panel" id="uc-piano-panel">
+            <div class="uc-feeds-line">→ Culligan · Compass Housekeeper (smistamento camere)</div>
+            <div class="upload-box" id="pianoUploadBox">
+              <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
+              <div class="ub-title">Piano settimana</div><div class="ub-sub">Piano camere settimanale</div>
+              <span class="ub-formats">.pdf</span>
+            </div>
+            <div class="turni-status" id="pianoStatus"></div>
+            <div class="loaded-info" id="pianoLoadedInfo"><div class="li-date" id="pianoLoadedDate"></div></div>
+            <button class="btn-reload" id="btnPianoReload" style="display:none" onclick="resetPianoData()">Rimuovi</button>
+            <div class="upload-ts" id="pianoTs"></div>
           </div>
         </div>
         <div class="uc-row" id="uc-row-derived">
@@ -309,14 +333,6 @@
         </div>
         <div class="uc-row">
           <div class="uc-row-cards">
-            <div class="uc-slot" id="uc-piano" onclick="ucToggle('piano')" title="Piano Settimanale">
-              <input type="file" id="pianoFileInput" accept="application/pdf" style="display:none">
-              <span class="uc-dot" id="uc-piano-dot"></span>
-              <span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15h2M13 15h3M8 18h2"/></svg></span></span>
-              <div class="uc-label">Piano<br>Settimanale</div>
-              <div class="uc-sub" id="uc-piano-sub">Non caricato</div>
-              <span class="uc-badge" id="uc-piano-badge" style="display:none;">▾</span>
-            </div>
             <div class="uc-slot" id="uc-bkf" onclick="ucToggle('bkf')" title="Carica o espandi pasti">
               <input type="file" id="bkfFileInput" accept="application/pdf" style="display:none">
               <span class="uc-dot" id="uc-bkf-dot"></span>
@@ -325,18 +341,9 @@
               <div class="uc-sub" id="uc-bkf-sub">Non caricato</div>
               <span class="uc-badge" id="uc-bkf-badge" style="display:none;">▾</span>
             </div>
-          </div>
-          <div class="uc-panel" id="uc-piano-panel">
-            <div class="uc-feeds-line">→ Culligan · Compass Housekeeper (smistamento camere)</div>
-            <div class="upload-box" id="pianoUploadBox">
-              <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-              <div class="ub-title">Piano settimana</div><div class="ub-sub">Piano camere settimanale</div>
-              <span class="ub-formats">.pdf</span>
+            <div class="uc-slot uc-slot-brand">
+              <img src="img/icons/compass-star.png" class="uc-brand-img" alt="Compass">
             </div>
-            <div class="turni-status" id="pianoStatus"></div>
-            <div class="loaded-info" id="pianoLoadedInfo"><div class="li-date" id="pianoLoadedDate"></div></div>
-            <button class="btn-reload" id="btnPianoReload" style="display:none" onclick="resetPianoData()">Rimuovi</button>
-            <div class="upload-ts" id="pianoTs"></div>
           </div>
           <div class="uc-panel" id="uc-bkf-panel">
             <div class="uc-feeds-line">→ Coperti colazione · Grafico · App Breakfast</div>
@@ -354,13 +361,6 @@
             </div>
             <button class="btn-reload" id="btnBkfReload" style="display:none" onclick="resetBkf()">Rimuovi report</button>
             <div class="upload-ts" id="bkfTs"></div>
-          </div>
-        </div>
-        <div class="uc-row">
-          <div class="uc-row-cards">
-            <div class="uc-slot uc-slot-brand">
-              <img src="img/icons/compass-star.png" class="uc-brand-img" alt="Compass">
-            </div>
           </div>
         </div>
       </div>
@@ -1654,7 +1654,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=755-20260815"></script>
+<script src="app.js?v=756-20260815"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
