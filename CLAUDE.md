@@ -1356,7 +1356,22 @@ Ricaricare una lista aggiornata è normale (le prenotazioni cambiano fino all'ul
 
 **Il caricamento del PDF è solo nell'Upload Center** (riquadro "Arrivi Pre-stay"): il pulsante dentro la vista è stato rimosso perché ridondante.
 
-**`_psSenzaSalto(fn)`**: aprire "Modifica testi" o "Impostazioni" ridisegna tutta la vista e, cambiando l'altezza, il browser riportava la pagina in cima. Si conserva `window.scrollY` attorno al ridisegno e lo si ripristina anche al frame successivo (il layout può assestarsi dopo). Usarlo per ogni nuovo pannello a fisarmonica della sezione.
+**Scorrimento — attenzione: a scorrere NON è la finestra** ma il contenitore `.content` (`overflow-y:auto`). Agire su `window.scrollY` / `window.scrollTo` non ha alcun effetto: è stato un errore commesso e corretto. Tutto ciò che tocca lo scorrimento passa da `_psScroller()`.
+
+| Funzione | Comportamento voluto |
+|---|---|
+| `prestayToggleTpl` | **porta in cima** (`scrollTop=0`): l'editor è lungo e si apre in fondo, riportare su dà il riferimento di dove si è |
+| `prestayToggleMailCfg` | conserva la posizione (`_psSenzaSalto`) |
+| `_psWrapSel` / `_psBulletSel` | conservano la posizione: `focus()` su una textarea fuori vista la trascinerebbe in vista |
+
+In entrambi i casi si riapplica anche a `requestAnimationFrame`, perché il layout può assestarsi dopo il ridisegno.
+
+**Evidenza degli invii** — un pallino piccolo non bastava ("così non è intuitivo"). Ora, a tre livelli:
+- **riga**: chi è già stato contattato ha sfondo verde tenue e barra verde a sinistra (`inset 3px 0 0`), così si distingue senza leggere; sostituisce la zebratura per quella riga;
+- **chip**: pieno verde con l'**ora** dell'invio (`✓ mail 17:20`) invece del solo segno di spunta; resta cliccabile per correggere a mano;
+- **intestazione di gruppo e barra in alto**: `N/M contattati`, che diventa verde pieno con ✓ quando il gruppo è completo, e il bordo del gruppo diventa verde.
+
+Chi non ha né email né telefono non sparisce: il gruppo mostra in ambra `N senza contatto inserito`, così un ospite senza recapito non passa per "fatto".
 
 Il pulsante di configurazione si chiama **"Impostazioni"**, non più "Invio mail".
 

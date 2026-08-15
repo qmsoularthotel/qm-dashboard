@@ -11311,25 +11311,25 @@ function _psMdStrip(txt){
 function _psWrapSel(taId,before,after){
   const ta=document.getElementById(taId);
   if(!ta)return;
-  const scrollY=window.scrollY;
+  const cont=_psScroller(),scrollY=cont?cont.scrollTop:0;
   const s=ta.selectionStart,e=ta.selectionEnd,val=ta.value;
   const sel=val.slice(s,e)||'testo';
   ta.value=val.slice(0,s)+before+sel+after+val.slice(e);
   ta.focus();ta.setSelectionRange(s+before.length,s+before.length+sel.length);
   ta.dispatchEvent(new Event('change'));
-  window.scrollTo(0,scrollY);
+  if(cont)cont.scrollTop=scrollY;
 }
 function _psBulletSel(taId){
   const ta=document.getElementById(taId);
   if(!ta)return;
-  const scrollY=window.scrollY;
+  const cont=_psScroller(),scrollY=cont?cont.scrollTop:0;
   const s=ta.selectionStart,e=ta.selectionEnd,val=ta.value;
   let sel=val.slice(s,e)||'voce elenco';
   sel=sel.split('\n').map(r=>r.trim()?('- '+r.replace(/^\s*-\s+/,'')):r).join('\n');
   ta.value=val.slice(0,s)+sel+val.slice(e);
   ta.focus();ta.setSelectionRange(s,s+sel.length);
   ta.dispatchEvent(new Event('change'));
-  window.scrollTo(0,scrollY);
+  if(cont)cont.scrollTop=scrollY;
 }
 const PS_TOOLBAR_STYLE='padding:3px 8px;border:1px solid var(--border);background:var(--surface);border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;color:var(--text-dim);';
 const psToolbar=taId=>`<div style="display:flex;gap:4px;margin-bottom:4px;">
@@ -11361,14 +11361,19 @@ function prestaySetMailCfg(campo,val){
   try{localStorage.setItem(PRESTAY_MAIL_CFG_KEY,JSON.stringify(_psMailCfg));}catch(e){}
   prestayRender();
 }
-// Aprire/chiudere un pannello ridisegna tutta la vista: se l'altezza cambia il browser
-// riporta la pagina in cima e sembra un "salto". Si conserva la posizione di scorrimento.
+// A scorrere NON è la finestra ma il contenitore `.content` (overflow-y:auto): agire su
+// window.scrollY non ha effetto. Tutto ciò che tocca lo scorrimento in questa sezione deve
+// passare da qui.
+function _psScroller(){return document.querySelector('.content');}
+// Conserva la posizione: usato quando il ridisegno non deve spostare l'occhio.
 function _psSenzaSalto(fn){
-  const y=window.scrollY;
+  const c=_psScroller(),y=c?c.scrollTop:0;
   fn();
-  if(window.scrollY!==y)window.scrollTo(0,y);
-  // Il ricalcolo del layout può avvenire subito dopo: si ripristina anche al frame seguente.
-  requestAnimationFrame(()=>{if(window.scrollY!==y)window.scrollTo(0,y);});
+  if(c){
+    c.scrollTop=y;
+    // Il layout può assestarsi al frame successivo: si ripristina di nuovo.
+    requestAnimationFrame(()=>{c.scrollTop=y;});
+  }
 }
 function prestayToggleMailCfg(){_prestayMailCfgOpen=!_prestayMailCfgOpen;_psSenzaSalto(prestayRender);}
 let _prestayMailCfgOpen=false;
@@ -11536,7 +11541,14 @@ function prestayToggleInviato(id,canale){
   a[k]=a[k]?null:Date.now();
   _psSave();prestayRender();
 }
-function prestayToggleTpl(){_prestayTplOpen=!_prestayTplOpen;_psSenzaSalto(prestayRender);}
+// L'editor dei testi è lungo e si apre in fondo alla vista: riportare la pagina in cima
+// dà il riferimento di dove ci si trova invece di lasciare l'occhio a metà elenco.
+function prestayToggleTpl(){
+  _prestayTplOpen=!_prestayTplOpen;
+  prestayRender();
+  const c=_psScroller();
+  if(c){c.scrollTop=0;requestAnimationFrame(()=>{c.scrollTop=0;});}
+}
 function prestaySetTpl(hotel,lang,campo,val){
   if(!_prestayTpl[hotel])_prestayTpl[hotel]={};
   if(!_prestayTpl[hotel][lang])_prestayTpl[hotel][lang]={...(PRESTAY_TPL_DEFAULT[lang]||{})};
@@ -11567,7 +11579,10 @@ function prestayRender(){
     <button onclick="prestayNavDay(1)" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;">›</button>
     ${ggDa!==PRESTAY_GG?`<button onclick="prestayOggi()" style="padding:6px 12px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">Torna a fra ${PRESTAY_GG} giorni</button>`:''}
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <span style="font-size:var(--fs-xs);color:var(--text-muted);">${compilati}/${arrivi.length} con contatto · <strong style="color:${inviati===arrivi.length&&arrivi.length?'var(--green)':'var(--text)'};">${inviati} inviati</strong></span>
+      <span style="display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-xs);color:var(--text-muted);">
+        ${compilati}/${arrivi.length} con contatto
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-weight:700;background:${arrivi.length&&inviati===arrivi.length?'var(--green)':'var(--surface2)'};color:${arrivi.length&&inviati===arrivi.length?'#fff':'var(--text)'};border:1px solid ${arrivi.length&&inviati===arrivi.length?'var(--green)':'var(--border-light)'};">${arrivi.length&&inviati===arrivi.length?'✓ ':''}${inviati}/${arrivi.length} contattati</span>
+      </span>
       <button onclick="prestayAddArrivo()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">+ Aggiungi arrivo</button>
       <button onclick="prestayToggleTpl()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">✏️ Modifica testi</button>
       <button onclick="prestayToggleMailCfg()" title="${_psMailPronto()?'Invio diretto attivo su questo browser':'Non configurato: il pulsante mail apre il client di posta'}" style="padding:6px 12px;border:1px solid ${_psMailPronto()?'var(--green)':'var(--border)'};background:${_psMailPronto()?'var(--green-bg)':'var(--surface)'};color:${_psMailPronto()?'var(--green)':'var(--text)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">⚙️ Impostazioni${_psMailPronto()?' ✓':''}</button>
@@ -11593,12 +11608,15 @@ function prestayRender(){
       const gruppo=arrivi.filter(a=>a.hotel===hc);
       if(!gruppo.length)return;
       const daInviare=gruppo.filter(a=>a.email&&!a.mailTs).length;
-      h+=`<div style="margin-bottom:16px;border:1px solid var(--border-light);border-radius:10px;overflow:hidden;">
-        <div style="background:var(--bg);padding:8px 13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      const contattati=gruppo.filter(a=>a.mailTs||a.waTs).length;
+      const tuttiFatti=contattati===gruppo.length;
+      h+=`<div style="margin-bottom:16px;border:1px solid ${tuttiFatti?'var(--green)':'var(--border-light)'};border-radius:10px;overflow:hidden;">
+        <div style="background:${tuttiFatti?'var(--green-bg)':'var(--bg)'};padding:8px 13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${PRESTAY_HOTELS[hc].name}</span>
-          <span style="font-size:var(--fs-xxs);color:var(--text-dim);">${gruppo.length} arriv${gruppo.length===1?'o':'i'}</span>
+          <span style="font-size:var(--fs-xxs);font-weight:700;color:${tuttiFatti?'var(--green)':'var(--text-dim)'};">${contattati}/${gruppo.length} contattati</span>
           ${daInviare?`<button onclick="prestayInviaGruppo('${hc}')" title="Invia il messaggio a tutti gli arrivi di questa struttura che hanno un'email e non sono ancora stati contattati" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">${PS_ICON_MAIL}Invia tutte (${daInviare})</button>`
-            :`<span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">${gruppo.some(a=>a.mailTs)?'mail inviate':''}</span>`}
+            :tuttiFatti?`<span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">✓ tutti contattati</span>`
+            :`<span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">${gruppo.length-contattati} senza contatto inserito</span>`}
         </div>
         <div style="overflow-x:auto;">
         <table style="border-collapse:collapse;width:100%;min-width:700px;">
@@ -11612,10 +11630,16 @@ function prestayRender(){
           <th></th>
         </tr></thead><tbody>`;
       gruppo.forEach((a,i)=>{
-        const zebra=i%2===1?'background:var(--bg);':'';
         const mailOk=!!a.mailTs,waOk=!!a.waTs;
         const inFlight=!!_psMailInFlight[a.id];
-        const chip=(ok,ts,lbl,fn)=>`<span onclick="prestayToggleInviato('${a.id}','${fn}')" title="${ok?'Inviato il '+new Date(ts).toLocaleString('it-IT')+' — clicca per annullare':'Segna come inviato'}" style="cursor:pointer;font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:10px;background:${ok?'var(--green-bg)':'var(--surface2)'};color:${ok?'var(--green)':'var(--text-dim)'};border:1px solid ${ok?'#9fd3b5':'var(--border-light)'};">${ok?'✓':'○'} ${lbl}</span>`;
+        // Un arrivo già contattato si deve riconoscere SENZA leggere: riga verde tenue e
+        // barra verde a sinistra. Il pallino minuscolo di prima si notava solo cercandolo,
+        // e su un elenco di dieci ospiti serve capire a colpo d'occhio quali restano.
+        const fatto=mailOk||waOk;
+        const zebra=fatto?'background:var(--green-bg);box-shadow:inset 3px 0 0 var(--green);'
+                         :(i%2===1?'background:var(--bg);':'');
+        const ora=ts=>{const d=new Date(ts);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
+        const chip=(ok,ts,lbl,fn)=>`<span onclick="prestayToggleInviato('${a.id}','${fn}')" title="${ok?'Inviato il '+new Date(ts).toLocaleString('it-IT')+' — clicca per annullare':'Non ancora inviato — clicca per segnarlo come inviato a mano'}" style="cursor:pointer;font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:10px;background:${ok?'var(--green)':'var(--surface2)'};color:${ok?'#fff':'var(--text-dim)'};border:1px solid ${ok?'var(--green)':'var(--border-light)'};">${ok?'✓ '+lbl+' '+ora(ts):'○ '+lbl}</span>`;
         h+=`<tr style="${zebra}">
           <td style="padding:7px 10px;font-size:var(--fs-xs);font-weight:700;white-space:nowrap;color:var(--text-muted);">Arrivo ${i+1}
             ${a.fuoriLista?`<div title="Non compare nell'ultima lista arrivi importata: la prenotazione potrebbe essere stata cancellata o il nome corretto. Non elimino nulla da solo." style="font-size:9px;font-weight:700;color:var(--amber);white-space:normal;max-width:110px;line-height:1.3;margin-top:2px;">non più in lista</div>`:''}</td>
