@@ -1344,7 +1344,7 @@ Ricaricare una lista aggiornata è normale (le prenotazioni cambiano fino all'ul
 
 ### Impaginazione a schede, non a tabella (16/08/2026)
 
-Gli arrivi sono **schede in griglia** (`repeat(auto-fill,minmax(320px,1fr))`) dentro il gruppo della struttura, non righe di tabella. La tabella tagliava le email — `cgroth.972512@guest.boo` — proprio sul dato che si incolla a mano e che quindi va riletto; nella scheda i tre campi sono impilati a piena larghezza.
+Gli arrivi sono **schede in griglia a tre colonne fisse** (`repeat(3,minmax(0,1fr))`, come il Pannello App) dentro il gruppo della struttura, non righe di tabella. Contorno a **2px** perché le schede si stacchino dallo sfondo, e il numero d'arrivo è una pastiglia con il numero in un cerchietto — non più testo minuto in grigio: su tredici schede serve individuarlo senza cercarlo. La tabella tagliava le email — `cgroth.972512@guest.boo` — proprio sul dato che si incolla a mano e che quindi va riletto; nella scheda i tre campi sono impilati a piena larghezza.
 
 Una scheda già contattata ha **fondo e bordo verdi** e il pulsante diventa **"Rinvia"** senza riempimento pieno: resta possibile, ma non è più l'azione attesa. Il resto (spunte correggibili, badge `non più in lista`, avviso indirizzo Booking, errore di invio) è invariato, solo ricollocato.
 

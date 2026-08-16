@@ -11688,7 +11688,7 @@ function prestayRender(){
             :tuttiFatti?`<span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">✓ tutti contattati</span>`
             :`<span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">${bloccatiGruppo?bloccatiGruppo+' con indirizzo Booking':(gruppo.length-contattati)+' senza contatto inserito'}</span>`}
         </div>
-        <div style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;">`;
+        <div style="padding:12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">`;
       gruppo.forEach((a,i)=>{
         const mailOk=!!a.mailTs,waOk=!!a.waTs;
         const inFlight=!!_psMailInFlight[a.id];
@@ -11697,9 +11697,10 @@ function prestayRender(){
         const fatto=mailOk||waOk;
         const ora=ts=>{const d=new Date(ts);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
         const chip=(ok,ts,lbl,fn)=>`<span onclick="prestayToggleInviato('${a.id}','${fn}')" title="${ok?'Inviato il '+new Date(ts).toLocaleString('it-IT')+' — clicca per annullare':'Non ancora inviato — clicca per segnarlo come inviato a mano'}" style="cursor:pointer;font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:10px;background:${ok?'var(--green)':'var(--surface2)'};color:${ok?'#fff':'var(--text-dim)'};border:1px solid ${ok?'var(--green)':'var(--border-light)'};">${ok?'✓ '+lbl+' '+ora(ts):'○ '+lbl}</span>`;
-        h+=`<div style="background:${fatto?'var(--green-bg)':'var(--surface)'};border:1px solid ${fatto?'var(--green)':'var(--border-light)'};border-radius:10px;padding:10px 12px;">
+        h+=`<div style="background:${fatto?'var(--green-bg)':'var(--surface)'};border:2px solid ${fatto?'var(--green)':'var(--border)'};border-radius:10px;padding:11px 13px;">
           <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
-            <span style="font-size:var(--fs-xxs);font-weight:700;color:${fatto?'var(--green)':'var(--text-dim)'};">Arrivo ${i+1}</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:14px;background:${fatto?'var(--green)':'var(--accent-bg)'};color:${fatto?'#fff':'var(--accent)'};font-size:var(--fs-xs);font-weight:800;line-height:1;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${fatto?'rgba(255,255,255,.25)':'var(--accent)'};color:#fff;font-size:var(--fs-xxs);font-weight:800;">${i+1}</span>Arrivo</span>
             ${a.fuoriLista?`<span title="Non compare nell'ultima lista arrivi importata: la prenotazione potrebbe essere stata cancellata o il nome corretto. Non elimino nulla da solo." style="font-size:9px;font-weight:700;color:var(--amber);">non più in lista</span>`:''}
             <select onchange="prestaySetScheda('${a.id}','lang',this.value)" title="Lingua del messaggio" style="${inpS}width:auto;min-width:52px;margin-left:auto;padding:3px 6px;">
               <option value="it" ${(a.lang||'it')==='it'?'selected':''}>IT</option>
