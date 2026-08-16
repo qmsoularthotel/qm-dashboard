@@ -10977,7 +10977,7 @@ const PRESTAY_HOTELS={
 // COME SI TOGLIE QUESTO BLOCCO: quando sul Worker `SMTP_USER` e `SMTP_PASS` saranno
 // quelli di booking@soularthotel.com, mettere questa costante a true. Nient'altro da
 // cambiare: il Worker compone il mittente dalle variabili (vedi worker-prestay-mail.md).
-const PRESTAY_MITTENTE_BOOKING_OK=false;
+const PRESTAY_MITTENTE_BOOKING_OK=true;
 const _psAliasBooking=e=>/@(guest\.)?booking\.com$/i.test(String(e||'').trim());
 // true quando la mail a quell'indirizzo NON verrebbe recapitata con il mittente attuale
 const _psBookingBloccato=e=>!PRESTAY_MITTENTE_BOOKING_OK&&_psAliasBooking(e);
