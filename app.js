@@ -11688,52 +11688,39 @@ function prestayRender(){
             :tuttiFatti?`<span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">✓ tutti contattati</span>`
             :`<span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">${bloccatiGruppo?bloccatiGruppo+' con indirizzo Booking':(gruppo.length-contattati)+' senza contatto inserito'}</span>`}
         </div>
-        <div style="overflow-x:auto;">
-        <table style="border-collapse:collapse;width:100%;min-width:700px;">
-        <thead><tr style="background:var(--surface2);">
-          <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Arrivo</th>
-          <th style="padding:6px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Ospite</th>
-          <th style="padding:6px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Email</th>
-          <th style="padding:6px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Telefono</th>
-          <th style="padding:6px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:center;">Lingua</th>
-          <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:center;">Invio</th>
-          <th></th>
-        </tr></thead><tbody>`;
+        <div style="padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;">`;
       gruppo.forEach((a,i)=>{
         const mailOk=!!a.mailTs,waOk=!!a.waTs;
         const inFlight=!!_psMailInFlight[a.id];
-        // Un arrivo già contattato si deve riconoscere SENZA leggere: riga verde tenue e
-        // barra verde a sinistra. Il pallino minuscolo di prima si notava solo cercandolo,
-        // e su un elenco di dieci ospiti serve capire a colpo d'occhio quali restano.
+        // Una scheda già contattata si riconosce senza leggere: fondo e bordo verdi. Il
+        // pulsante resta, ma diventa "Rinvia" e perde il pieno — non è più l'azione attesa.
         const fatto=mailOk||waOk;
-        const zebra=fatto?'background:var(--green-bg);box-shadow:inset 3px 0 0 var(--green);'
-                         :(i%2===1?'background:var(--bg);':'');
         const ora=ts=>{const d=new Date(ts);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
         const chip=(ok,ts,lbl,fn)=>`<span onclick="prestayToggleInviato('${a.id}','${fn}')" title="${ok?'Inviato il '+new Date(ts).toLocaleString('it-IT')+' — clicca per annullare':'Non ancora inviato — clicca per segnarlo come inviato a mano'}" style="cursor:pointer;font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:10px;background:${ok?'var(--green)':'var(--surface2)'};color:${ok?'#fff':'var(--text-dim)'};border:1px solid ${ok?'var(--green)':'var(--border-light)'};">${ok?'✓ '+lbl+' '+ora(ts):'○ '+lbl}</span>`;
-        h+=`<tr style="${zebra}">
-          <td style="padding:7px 10px;font-size:var(--fs-xs);font-weight:700;white-space:nowrap;color:var(--text-muted);">Arrivo ${i+1}
-            ${a.fuoriLista?`<div title="Non compare nell'ultima lista arrivi importata: la prenotazione potrebbe essere stata cancellata o il nome corretto. Non elimino nulla da solo." style="font-size:9px;font-weight:700;color:var(--amber);white-space:normal;max-width:110px;line-height:1.3;margin-top:2px;">non più in lista</div>`:''}</td>
-          <td style="padding:5px 8px;"><input value="${esc(a.nome)}" placeholder="Cognome Nome" onchange="prestaySetScheda('${a.id}','nome',this.value)" style="${inpS}min-width:130px;"></td>
-          <td style="padding:5px 8px;"><input type="email" value="${esc(a.email)}" placeholder="email@…" onchange="prestaySetScheda('${a.id}','email',this.value)" style="${inpS}min-width:150px;${_psBookingBloccato(a.email)?'border-color:var(--amber);':''}">
-            ${_psBookingBloccato(a.email)?`<div title="Booking inoltra alla casella dell'ospite solo le mail spedite da booking@soularthotel.com. Da un altro mittente le scarta senza avvisare: la mail risulterebbe inviata ma non arriverebbe." style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.3;margin-top:3px;max-width:170px;white-space:normal;">indirizzo Booking · non recapitabile con il mittente attuale</div>`:''}</td>
-          <td style="padding:5px 8px;"><input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}min-width:110px;"></td>
-          <td style="padding:5px 8px;text-align:center;">
-            <select onchange="prestaySetScheda('${a.id}','lang',this.value)" style="${inpS}width:auto;min-width:56px;">
+        h+=`<div style="background:${fatto?'var(--green-bg)':'var(--surface)'};border:1px solid ${fatto?'var(--green)':'var(--border-light)'};border-radius:10px;padding:10px 12px;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
+            <span style="font-size:var(--fs-xxs);font-weight:700;color:${fatto?'var(--green)':'var(--text-dim)'};">Arrivo ${i+1}</span>
+            ${a.fuoriLista?`<span title="Non compare nell'ultima lista arrivi importata: la prenotazione potrebbe essere stata cancellata o il nome corretto. Non elimino nulla da solo." style="font-size:9px;font-weight:700;color:var(--amber);">non più in lista</span>`:''}
+            <select onchange="prestaySetScheda('${a.id}','lang',this.value)" title="Lingua del messaggio" style="${inpS}width:auto;min-width:52px;margin-left:auto;padding:3px 6px;">
               <option value="it" ${(a.lang||'it')==='it'?'selected':''}>IT</option>
               <option value="en" ${a.lang==='en'?'selected':''}>EN</option>
             </select>
-          </td>
-          <td style="padding:5px 10px;white-space:nowrap;text-align:center;">
-            <button onclick="prestayAnteprima('${a.id}','both')" title="Vedi e correggi il messaggio prima di mandarlo" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:7px;cursor:pointer;margin-right:3px;vertical-align:middle;">${PS_ICON_EYE}</button>
-            <button onclick="prestayAnteprima('${a.id}','mail')" ${inFlight?'disabled':''} title="Anteprima del messaggio prima di inviare" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:${inFlight?'wait':'pointer'};margin-right:3px;opacity:${inFlight?'.5':'1'};vertical-align:middle;">${inFlight?PS_ICON_LOAD:PS_ICON_MAIL}</button>
-            <button onclick="prestayAnteprima('${a.id}','wa')" title="Anteprima, poi apre WhatsApp" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #25D366;background:#e9faf0;color:#1a9f4f;border-radius:7px;cursor:pointer;vertical-align:middle;">${PS_ICON_WA}</button>
-            <div style="margin-top:4px;display:flex;gap:4px;justify-content:center;">${chip(mailOk,a.mailTs,'mail','mail')}${chip(waOk,a.waTs,'wa','wa')}</div>
-            ${a.mailErr&&!mailOk?`<div style="margin-top:3px;font-size:9px;color:var(--red);max-width:150px;white-space:normal;line-height:1.3;">${String(a.mailErr).substring(0,60)}</div>`:''}
-          </td>
-          <td style="padding:5px 8px;text-align:center;"><button onclick="prestayDelScheda('${a.id}')" title="Elimina questo arrivo" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:13px;">✕</button></td>
-        </tr>`;
+            <button onclick="prestayDelScheda('${a.id}')" title="Elimina questo arrivo" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:13px;line-height:1;padding:0 2px;">✕</button>
+          </div>
+          <input value="${esc(a.nome)}" placeholder="Cognome Nome" onchange="prestaySetScheda('${a.id}','nome',this.value)" style="${inpS}font-weight:700;font-size:var(--fs-sm);margin-bottom:5px;">
+          <input type="email" value="${esc(a.email)}" placeholder="email@…" onchange="prestaySetScheda('${a.id}','email',this.value)" title="${esc(a.email)}" style="${inpS}margin-bottom:5px;${_psBookingBloccato(a.email)?'border-color:var(--amber);':''}">
+          ${_psBookingBloccato(a.email)?`<div style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.35;margin:-2px 0 5px;">indirizzo Booking · non recapitabile con il mittente attuale</div>`:''}
+          <input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}margin-bottom:9px;">
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+            <button onclick="prestayAnteprima('${a.id}','both')" title="Vedi e correggi il messaggio prima di mandarlo" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:7px;cursor:pointer;">${PS_ICON_EYE}</button>
+            <button onclick="prestayAnteprima('${a.id}','mail')" ${inFlight?'disabled':''} title="Anteprima del messaggio prima di inviare" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;height:28px;border:1px solid var(--accent);background:${fatto?'var(--surface)':'var(--accent)'};color:${fatto?'var(--accent)':'#fff'};border-radius:7px;cursor:${inFlight?'wait':'pointer'};opacity:${inFlight?'.5':'1'};font-size:var(--fs-xxs);font-weight:700;">${inFlight?PS_ICON_LOAD:PS_ICON_MAIL}${fatto?'Rinvia':'Invia'}</button>
+            <button onclick="prestayAnteprima('${a.id}','wa')" title="Anteprima, poi apre WhatsApp" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #25D366;background:#e9faf0;color:#1a9f4f;border-radius:7px;cursor:pointer;">${PS_ICON_WA}</button>
+            <span style="margin-left:auto;display:flex;gap:4px;">${chip(mailOk,a.mailTs,'mail','mail')}${chip(waOk,a.waTs,'wa','wa')}</span>
+          </div>
+          ${a.mailErr&&!mailOk?`<div style="margin-top:6px;font-size:9px;color:var(--red);line-height:1.35;">${String(a.mailErr).substring(0,80)}</div>`:''}
+        </div>`;
       });
-      h+=`</tbody></table></div></div>`;
+      h+=`</div></div>`;
     });
     h+=`<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Il numero di arrivi per struttura viene dal Piano Settimanale (i cambi contano: partenza e arrivo lo stesso giorno significa comunque un ospite nuovo). Gli ospiti <strong>non sono legati alla camera</strong>: se la reception li sposta di stanza qui non cambia nulla. Nome e contatti vanno letti dal PMS. I pulsanti aprono il messaggio già compilato: l'invio lo confermi tu, e la spunta si può correggere cliccandola.</div>`;
   }
