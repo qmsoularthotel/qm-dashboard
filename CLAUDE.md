@@ -1650,9 +1650,11 @@ Legge sempre KV prima (fonte dei dati scritti da smartphone), poi fallback local
 `rs.pronta` (`true`/`false`/`null`) si imposta da **due** punti dell'app Culligan, che scrivono lo stesso campo sulla stessa chiave `qm_cm_YYYY-MM-DD`:
 
 1. **Foglio nella vista Riconsegna** (`chooseReady`) — il percorso storico, per le camere che si visitano nel giro;
-2. **Dettaglio camera** (`setProntaDaBottiglia`) — compare quando la bottiglia è **non consumata** *e* la camera è in **cambio** (partenza + arrivo). Motivo: trovando la bottiglia piena non si passa dal giro di riconsegna, quindi la domanda "è pronta?" resterebbe senza risposta proprio su una camera che va rifatta per il nuovo ospite, e la reception non saprebbe se può darla. Si chiede lì, davanti alla porta.
+2. **Popup dal dettaglio camera** (`apriPopPronta` → `scegliProntaPop`) — si apre impostando la bottiglia su **non consumata** in una camera in **cambio** (partenza + arrivo). Motivo: trovando la bottiglia piena non si passa dal giro di riconsegna, quindi la domanda "è pronta?" resterebbe senza risposta proprio su una camera che va rifatta per il nuovo ospite.
 
-`setBottle` ridisegna il dettaglio **solo quando la domanda compare o sparisce** (passaggio da/verso `non_consumata` su un cambio), altrimenti continua ad aggiornare le sole classi dei pulsanti — un `openRoom` a ogni tocco farebbe sfarfallare la schermata.
+È un **nodo aggiunto al `body`**, non parte del render della camera: così non viene spazzato via da un `openRoom` successivo e sta sopra la barra di salvataggio (`z-index` 400 contro 200). Va quindi chiuso a mano — `goHome()` lo fa, altrimenti resterebbe sopra la griglia riferito a una stanza che non si sta più guardando.
+
+Si apre **solo al cambio effettivo di valore** (`prima!=='non_consumata'`): ritoccare il pulsante già attivo non deve far ricomparire il popup, mentre tornarci da un altro valore sì, così una scelta sbagliata si corregge. "Decido dopo" chiude senza scrivere nulla. Verificato con 16 test.
 
 ### Overview — stato preparazione: cambi **e** arrivi puri
 

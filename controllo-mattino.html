@@ -146,6 +146,12 @@ body{min-height:100vh;overflow-x:hidden;}
    sicurezza secondaria, non un'azione che compete per spazio/attenzione. */
 .ready-cancel{display:block;width:100%;background:none;border:none;color:var(--text-dim);
   font-size:.76rem;font-weight:600;text-align:center;padding:10px 0 2px;-webkit-tap-highlight-color:transparent;}
+/* Popup "camera pronta" — compare impostando la bottiglia su "non consumata" in una
+   camera con arrivo. Sopra la save-bar (z-index 200) perché ci si sovrappone. */
+.ready-pop{position:fixed;inset:0;z-index:400;background:rgba(12,26,48,.55);
+  display:flex;align-items:center;justify-content:center;padding:18px;}
+.ready-pop-card{background:#fff;border-radius:16px;padding:18px 16px;width:100%;max-width:340px;
+  box-shadow:0 18px 50px rgba(0,0,0,.32);}
 .room-card.s-bottle .rc-top,
 .room-card.s-both .rc-top   {background:var(--navy-light);}
 .room-card.s-ok .rc-top     {background:var(--navy);}
@@ -677,6 +683,9 @@ function _scrollToRoom(room){
   if(el)el.scrollIntoView({block:'center',behavior:'instant'});
 }
 function goHome(){
+  // Il popup vive sul body: uscendo dalla camera va chiuso a mano, altrimenti resterebbe
+  // sopra la griglia riferendosi a una stanza che non si sta più guardando.
+  chiudiPopPronta();
   const lastRoom=_cur;
   _screen('s-home');
   _renderHome();
@@ -839,26 +848,6 @@ function openRoom(room){
     </div>
   </div>`;
 
-  // Bottiglia non consumata su una camera in PARTENZA + ARRIVO: la stanza va comunque
-  // rifatta per il nuovo ospite, ma trovando la bottiglia piena non si passa dal giro di
-  // riconsegna — la domanda "è pronta?" resterebbe senza risposta e la reception non
-  // saprebbe se può dare la camera. Si chiede qui, subito, mentre si è davanti alla porta.
-  if(!rs.dnd&&rs.bottiglia==='non_consumata'&&_pianoSt(_cur)==='cambio'){
-    const pr=rs.pronta;
-    h+=`<div class="bottle-card">
-      <div class="bottle-card-title">🔑 Camera ${_cur} è pronta per il nuovo ospite?</div>
-      <div class="bottle-seg">
-        <button class="bseg ${pr===true?'bc-noncons':''}" onclick="setProntaDaBottiglia(true)">
-          <span class="bseg-ico">✅</span>
-          <span class="bseg-body"><span class="bseg-lbl">Pronta</span><span class="bseg-sub">si può dare al check-in</span></span>
-        </button>
-        <button class="bseg ${pr===false?'bc-nonpres':''}" onclick="setProntaDaBottiglia(false)">
-          <span class="bseg-ico">🧹</span>
-          <span class="bseg-body"><span class="bseg-lbl">Non pronta</span><span class="bseg-sub">va ancora rifatta</span></span>
-        </button>
-      </div>
-    </div>`;
-  }
 
   if(rs.dnd){
     // DND attivo: mostra messaggio, nascondi checklist
@@ -896,12 +885,38 @@ function openRoom(room){
   _screen('s-room');
 }
 
-// Scelta "pronta" fatta dal dettaglio camera (bottiglia non consumata su un cambio).
-// Scrive lo stesso campo usato dal foglio della Riconsegna e letto da Compass.
-function setProntaDaBottiglia(val){
-  const rs=_rs(_cur);
-  rs.pronta=val;
-  openRoom(_cur);
+// Popup "camera pronta" — si apre impostando la bottiglia su "non consumata" in una camera
+// in partenza + arrivo. Trovando la bottiglia piena non si passa dal giro di riconsegna,
+// quindi la domanda resterebbe senza risposta proprio su una camera che va rifatta per il
+// nuovo ospite. Scrive lo stesso campo `pronta` del foglio della Riconsegna, letto da Compass.
+// È un nodo aggiunto al body, non parte del render della camera: così non viene spazzato
+// via dal successivo openRoom e resta sopra la barra di salvataggio.
+let _popProntaRoom=null;
+function apriPopPronta(room){
+  chiudiPopPronta();
+  _popProntaRoom=room;
+  const d=document.createElement('div');
+  d.className='ready-pop';
+  d.id='readyPop';
+  d.onclick=e=>{if(e.target===d)chiudiPopPronta();};
+  d.innerHTML=`<div class="ready-pop-card">
+    <div class="ready-sheet-title">${room} è pronta per il nuovo ospite?</div>
+    <div class="ready-sheet-btns">
+      <button class="ready-big no" onclick="scegliProntaPop(false)">🧹<br>Non pronta</button>
+      <button class="ready-big yes" onclick="scegliProntaPop(true)">✓<br>Pronta</button>
+    </div>
+    <button class="ready-cancel" onclick="chiudiPopPronta()">Decido dopo</button>
+  </div>`;
+  document.body.appendChild(d);
+}
+function chiudiPopPronta(){
+  const d=document.getElementById('readyPop');
+  if(d)d.remove();
+  _popProntaRoom=null;
+}
+function scegliProntaPop(val){
+  if(_popProntaRoom)_rs(_popProntaRoom).pronta=val;
+  chiudiPopPronta();
 }
 function setBottle(val){
   const rs=_rs(_cur);
@@ -909,10 +924,11 @@ function setBottle(val){
   const prima=rs.bottiglia;
   rs.bottiglia=val;
   rs.dnd=false;
-  // Passando a "non consumata" su una camera in cambio compare la domanda sulla camera
-  // pronta: serve ridisegnare, non basta aggiornare le classi dei pulsanti.
-  const cambiaDomanda=(val==='non_consumata')!==(prima==='non_consumata');
-  if(wasDnd||(cambiaDomanda&&_pianoSt(_cur)==='cambio')){
+  // Passando a "non consumata" su una camera in cambio si chiede subito se è pronta.
+  // Solo al cambio effettivo di valore: ritoccare il pulsante già attivo non deve
+  // far ricomparire il popup.
+  const appenaImpostata=val==='non_consumata'&&prima!=='non_consumata';
+  if(wasDnd){
     openRoom(_cur);
   } else {
     const c=document.getElementById('bb-cons');
@@ -924,6 +940,7 @@ function setBottle(val){
     if(p)p.className='bseg'+(val==='non_presente'?' bc-nonpres':'');
     if(d)d.className='bseg';
   }
+  if(appenaImpostata&&_pianoSt(_cur)==='cambio')apriPopPronta(_cur);
 }
 function setBottleDnd(){
   const rs=_rs(_cur);
