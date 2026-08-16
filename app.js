@@ -10966,6 +10966,22 @@ const PRESTAY_HOTELS={
 // Nome mostrato come MITTENTE della mail (invio diretto via Worker) — separato da
 // PRESTAY_HOTELS[].name perché quello alimenta anche {struttura} nel corpo del messaggio.
 // Qui serve il nome completo che l'ospite deve riconoscere nella casella di posta.
+// ── Vincolo Booking.com ─────────────────────────────────────────────────────
+// Gli ospiti che prenotano su Booking hanno un indirizzo mascherato @guest.booking.com,
+// che è un relay: Booking inoltra alla casella vera dell'ospite SOLO le mail spedite
+// dall'indirizzo registrato sull'Extranet della struttura (booking@soularthotel.com).
+// Da qualunque altro mittente le SCARTA IN SILENZIO — nessun rimbalzo, nessun errore.
+// Per noi l'invio risulta riuscito e la spunta verde direbbe una cosa falsa, che è il
+// motivo per cui queste righe vanno riconosciute e trattate a parte.
+//
+// COME SI TOGLIE QUESTO BLOCCO: quando sul Worker `SMTP_USER` e `SMTP_PASS` saranno
+// quelli di booking@soularthotel.com, mettere questa costante a true. Nient'altro da
+// cambiare: il Worker compone il mittente dalle variabili (vedi worker-prestay-mail.md).
+const PRESTAY_MITTENTE_BOOKING_OK=false;
+const _psAliasBooking=e=>/@(guest\.)?booking\.com$/i.test(String(e||'').trim());
+// true quando la mail a quell'indirizzo NON verrebbe recapitata con il mittente attuale
+const _psBookingBloccato=e=>!PRESTAY_MITTENTE_BOOKING_OK&&_psAliasBooking(e);
+
 const PRESTAY_FROM_NAME={
   bh:'Boutique Hotel Piazza Carità',
   sa:'SoulArt Hotel | Design Experience',
@@ -11463,16 +11479,23 @@ async function prestayInviaGruppo(hotel){
     return;
   }
   const tutti=(_psGiorno(iso).arrivi||[]).filter(a=>a.hotel===hotel);
-  const daFare=tutti.filter(a=>a.email&&!a.mailTs);
+  // Gli indirizzi Booking vengono ESCLUSI, non spediti: Booking li scarterebbe in silenzio
+  // e resterebbero segnati come inviati pur non essendo arrivati a nessuno. Meglio un
+  // conteggio che resta incompleto — è la verità — di una spunta verde che mente.
+  const bloccati=tutti.filter(a=>a.email&&!a.mailTs&&_psBookingBloccato(a.email)).length;
+  const daFare=tutti.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email));
   const senzaMail=tutti.filter(a=>!a.email).length;
   if(!daFare.length){
-    alert(senzaMail
-      ? 'Nessuna mail da inviare per '+nome+': '+senzaMail+' arriv'+(senzaMail===1?'o è':'i sono')+' senza indirizzo email.'
+    alert(senzaMail||bloccati
+      ? 'Nessuna mail da inviare per '+nome+'.'
+        +(senzaMail?'\n\n· '+senzaMail+' arriv'+(senzaMail===1?'o è':'i sono')+' senza indirizzo email.':'')
+        +(bloccati?'\n\n· '+bloccati+' ha'+(bloccati===1?'':'nno')+' un indirizzo Booking, recapitabile solo spedendo da booking@soularthotel.com. Contattali su WhatsApp, se hai il numero.':'')
       : 'Per '+nome+' le mail sono già state inviate tutte.');
     return;
   }
   const avvisoVuoti=senzaMail?'\n\n'+senzaMail+' arriv'+(senzaMail===1?'o verrà saltato perché non ha':'i verranno saltati perché non hanno')+' email.':'';
-  if(!confirm('Inviare '+daFare.length+' mail per '+nome+'?'+avvisoVuoti+'\n\nPartono una alla volta, con il testo del template. Non c\'è anteprima: per rileggere prima di mandare usa i pulsanti sulla singola riga.'))return;
+  const avvisoBooking=bloccati?'\n\n'+bloccati+' indirizz'+(bloccati===1?'o Booking verrà saltato':'i Booking verranno saltati')+': Booking li scarta se la mail non parte da booking@soularthotel.com.':'';
+  if(!confirm('Inviare '+daFare.length+' mail per '+nome+'?'+avvisoVuoti+avvisoBooking+'\n\nPartono una alla volta, con il testo del template. Non c\'è anteprima: per rileggere prima di mandare usa i pulsanti sulla singola riga.'))return;
   let ok=0,ko=0;
   for(const a of daFare){
     _psMailInFlight[a.id]=true;prestayRender();
@@ -11521,6 +11544,7 @@ function prestayAnteprima(id,canale){
   if(/\[SCRIVI QUI|\[WRITE THE/i.test(corpo))avvisi.push('Il testo contiene ancora il segnaposto da riscrivere: personalizzalo in "Modifica testi", oppure correggilo qui sotto solo per questo invio.');
   if(!(a.nome||'').trim())avvisi.push('Nome ospite vuoto: il messaggio dirà genericamente "Gentile Ospite".');
   if(/\{[a-z]+\}/i.test(corpo)||/\{[a-z]+\}/i.test(ogg))avvisi.push('C\'è un segnaposto tra graffe non sostituito: controlla che sia scritto esattamente {nome}, {struttura} o {data}.');
+  if(canale!=='wa'&&_psBookingBloccato(a.email))avvisi.push('<strong>Questo è un indirizzo Booking</strong>: viene recapitato solo se la mail parte da booking@soularthotel.com. Con il mittente attuale Booking la scarta senza avvisare — risulterebbe inviata senza esserlo. Puoi contattare l\'ospite su WhatsApp, se hai il numero.');
   const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const m=document.createElement('div');
   m.id='psAnteprimaModal';
@@ -11652,7 +11676,8 @@ function prestayRender(){
     Object.keys(PRESTAY_HOTELS).forEach(hc=>{
       const gruppo=arrivi.filter(a=>a.hotel===hc);
       if(!gruppo.length)return;
-      const daInviare=gruppo.filter(a=>a.email&&!a.mailTs).length;
+      const daInviare=gruppo.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email)).length;
+      const bloccatiGruppo=gruppo.filter(a=>_psBookingBloccato(a.email)&&!a.mailTs).length;
       const contattati=gruppo.filter(a=>a.mailTs||a.waTs).length;
       const tuttiFatti=contattati===gruppo.length;
       h+=`<div style="margin-bottom:16px;border:1px solid ${tuttiFatti?'var(--green)':'var(--border-light)'};border-radius:10px;overflow:hidden;">
@@ -11661,7 +11686,7 @@ function prestayRender(){
           <span style="font-size:var(--fs-xxs);font-weight:700;color:${tuttiFatti?'var(--green)':'var(--text-dim)'};">${contattati}/${gruppo.length} contattati</span>
           ${daInviare?`<button onclick="prestayInviaGruppo('${hc}')" title="Invia il messaggio a tutti gli arrivi di questa struttura che hanno un'email e non sono ancora stati contattati" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">${PS_ICON_MAIL}Invia tutte (${daInviare})</button>`
             :tuttiFatti?`<span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">✓ tutti contattati</span>`
-            :`<span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">${gruppo.length-contattati} senza contatto inserito</span>`}
+            :`<span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">${bloccatiGruppo?bloccatiGruppo+' con indirizzo Booking':(gruppo.length-contattati)+' senza contatto inserito'}</span>`}
         </div>
         <div style="overflow-x:auto;">
         <table style="border-collapse:collapse;width:100%;min-width:700px;">
@@ -11689,7 +11714,8 @@ function prestayRender(){
           <td style="padding:7px 10px;font-size:var(--fs-xs);font-weight:700;white-space:nowrap;color:var(--text-muted);">Arrivo ${i+1}
             ${a.fuoriLista?`<div title="Non compare nell'ultima lista arrivi importata: la prenotazione potrebbe essere stata cancellata o il nome corretto. Non elimino nulla da solo." style="font-size:9px;font-weight:700;color:var(--amber);white-space:normal;max-width:110px;line-height:1.3;margin-top:2px;">non più in lista</div>`:''}</td>
           <td style="padding:5px 8px;"><input value="${esc(a.nome)}" placeholder="Cognome Nome" onchange="prestaySetScheda('${a.id}','nome',this.value)" style="${inpS}min-width:130px;"></td>
-          <td style="padding:5px 8px;"><input type="email" value="${esc(a.email)}" placeholder="email@…" onchange="prestaySetScheda('${a.id}','email',this.value)" style="${inpS}min-width:150px;"></td>
+          <td style="padding:5px 8px;"><input type="email" value="${esc(a.email)}" placeholder="email@…" onchange="prestaySetScheda('${a.id}','email',this.value)" style="${inpS}min-width:150px;${_psBookingBloccato(a.email)?'border-color:var(--amber);':''}">
+            ${_psBookingBloccato(a.email)?`<div title="Booking inoltra alla casella dell'ospite solo le mail spedite da booking@soularthotel.com. Da un altro mittente le scarta senza avvisare: la mail risulterebbe inviata ma non arriverebbe." style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.3;margin-top:3px;max-width:170px;white-space:normal;">indirizzo Booking · non recapitabile con il mittente attuale</div>`:''}</td>
           <td style="padding:5px 8px;"><input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}min-width:110px;"></td>
           <td style="padding:5px 8px;text-align:center;">
             <select onchange="prestaySetScheda('${a.id}','lang',this.value)" style="${inpS}width:auto;min-width:56px;">

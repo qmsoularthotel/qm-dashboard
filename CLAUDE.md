@@ -1402,6 +1402,22 @@ Il codice del Worker, i passaggi su Cloudflare, il servizio di invio e i record 
 
 **Due trappole trovate alla prima prova reale**: il display name in `PRESTAY_FROM` va **tra virgolette e senza caratteri non-ASCII** (un trattino lungo `—` faceva scartare il nome, e Gmail mostrava solo l'indirizzo); e le variabili nuove diventano attive **solo dopo un nuovo deploy** del Worker, non al salvataggio.
 
+### Vincolo Booking.com — `PRESTAY_MITTENTE_BOOKING_OK` (16/08/2026)
+
+Gli ospiti che prenotano su Booking hanno un indirizzo mascherato `@guest.booking.com`, che è un **relay**: Booking inoltra alla casella vera **solo le mail spedite dall'indirizzo registrato sull'Extranet della struttura** — `booking@soularthotel.com`. Da qualunque altro mittente le **scarta in silenzio**: nessun rimbalzo, nessun errore.
+
+**Perché è pericoloso e non solo scomodo**: il nostro invio va a buon fine (Register accetta e consegna a Booking), quindi `mailTs` verrebbe valorizzato e la riga diventerebbe verde "inviata" per un messaggio che nessuno ha ricevuto. Una spunta che mente è peggio di una mancante.
+
+Finché il mittente non è quello autorizzato:
+- `_psAliasBooking(email)` riconosce gli indirizzi (`@guest.booking.com` e `@booking.com`, con trim e case-insensitive; non confonde `booking.com@gmail.com` né domini simili);
+- la riga mostra il campo email bordato ambra e la nota *"indirizzo Booking · non recapitabile con il mittente attuale"*;
+- l'anteprima mail aggiunge un avviso esplicito, suggerendo WhatsApp come alternativa;
+- **l'invio in blocco li ESCLUDE** invece di spedirli nel vuoto, e dice quanti ne ha saltati. Il conteggio del gruppo resta quindi incompleto — ed è corretto così.
+
+**Come si sblocca**: quando su Cloudflare `SMTP_USER` e `SMTP_PASS` saranno quelli di `booking@soularthotel.com`, mettere `PRESTAY_MITTENTE_BOOKING_OK=true`. **Nient'altro da cambiare**: il Worker compone mittente di busta e intestazione `From` da `SMTP_FROM || SMTP_USER`, quindi cambiare le due variabili sposta l'invio sulla casella giusta senza toccare il codice. Verificato in test che con la costante a `true` quegli indirizzi tornano inviabili.
+
+**Nota su `PRESTAY_REPLYTO`**: oggi punta a `qm@soularthotel.com`. Passando a `booking@`, valutare se allinearlo — una risposta dell'ospite dentro il thread Booking dovrebbe restare nel loro sistema, e un `Reply-To` divergente può essere riscritto o ignorato dal relay.
+
 ### Mittente per struttura — `PRESTAY_FROM_NAME`
 
 `PRESTAY_FROM` sul Worker è **un solo indirizzo per tutte le strutture** (`qm@mail.compass-qm.com`, l'unico dominio verificato su Resend) — ma il nome mostrato all'ospite non deve essere sempre "SoulArt Hotel": un ospite del Boutique che vede "SoulArt Hotel" come mittente non lo riconosce. `PRESTAY_FROM_NAME` (app.js, vicino a `PRESTAY_HOTELS`) mappa `hotel → nome da mostrare`, **deliberatamente un oggetto separato da `PRESTAY_HOTELS[].name`**: quello alimenta anche `{struttura}` nel corpo dei messaggi, allungarlo lì (es. "Boutique Hotel Piazza Carità" invece di "Boutique Hotel") avrebbe cambiato il testo di ogni template esistente, non solo il mittente.
