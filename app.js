@@ -11738,7 +11738,7 @@ function prestayRender(){
         const bordo=fatto?'var(--green)':_psBordoPerEmail(a.email);
         h+=`<div id="psCard-${a.id}" data-fatto="${fatto?'1':'0'}" style="position:relative;background:${fatto?'var(--green-bg)':'var(--surface)'};border:2px solid ${bordo};border-radius:10px;padding:11px 13px;">
           ${ital?`<div style="position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(244,244,246,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);pointer-events:none;">
-            <span style="font-size:var(--fs-sm);font-weight:800;letter-spacing:.14em;color:var(--text-muted);text-shadow:0 1px 0 #fff;">ITALCAMEL</span>
+            <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--text);opacity:.62;text-shadow:0 1px 0 #fff;white-space:nowrap;">ITALCAMEL</span>
           </div>`:''}
           <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
             <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:14px;background:${fatto?'var(--green)':'var(--accent-bg)'};color:${fatto?'#fff':'var(--accent)'};font-size:var(--fs-xs);font-weight:800;line-height:1;">
