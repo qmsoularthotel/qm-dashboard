@@ -1370,7 +1370,13 @@ Sono in `worker.js`, verificate con 24 test; non semplificarle:
 
 Si scaricano i primi 16 KB del messaggio (`BODY.PEEK[]<0.16384>`): il testo dell'ospite sta in cima, prima della citazione, e il consumo resta prevedibile.
 
-**Variabili nuove sul Worker**: `IMAP_HOST` = `mail.securemail.pro` (**non** `mail.register.it`: risponde, ma il certificato è emesso per `*.securemail.pro` e la verifica dell'hostname fallirebbe — stesso inciampo dell'SMTP), `IMAP_PORT` = 993, `IMAP_USER`, `IMAP_PASS`.
+**Variabili nuove sul Worker**: `IMAP_HOST` = **`pop.securemail.pro`** (il nome dice "pop" ma serve IMAP: è l'host che Register indica per la posta in entrata), `IMAP_PORT` = 993, `IMAP_USER` = indirizzo completo, `IMAP_PASS`.
+
+**Due host scartati, entrambi provati sul campo** — vale la pena ricordarlo perché il secondo errore è insidioso:
+- `mail.register.it`: risponde in IMAP, ma il certificato è per `*.securemail.pro` e la verifica dell'hostname fallirebbe dal Worker;
+- `mail.securemail.pro`: risponde **e** il certificato combacia, quindi sembrava corretto — ma la casella non vive su quel nodo e Dovecot rifiuta le credenziali con `AUTHENTICATIONFAILED`. L'errore sembra "password sbagliata" mentre significa "utente sconosciuto su questo server".
+
+**Lezione**: su hosting condiviso l'host di posta va preso dalle istruzioni del fornitore, non dedotto dal fatto che un nome risponda e presenti il certificato giusto.
 
 ### Colore del bordo = canale di provenienza (17/08/2026)
 

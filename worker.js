@@ -301,8 +301,15 @@ async function inviaConResend(env, dati) {
 // ────────────────────────────────────────────────────────────────────────────
 // Lettura risposte via IMAP
 // ────────────────────────────────────────────────────────────────────────────
-// Host: mail.securemail.pro:993 (TLS implicito). NON usare mail.register.it: risponde,
-// ma il certificato è emesso per *.securemail.pro e la verifica dell'hostname fallirebbe.
+// Host: pop.securemail.pro:993, TLS implicito — è quello indicato da Register per la
+// posta in entrata (il nome dice "pop" ma serve IMAP).
+// DUE HOST DA NON USARE, entrambi provati:
+//  - mail.register.it: risponde, ma il certificato è per *.securemail.pro e la verifica
+//    dell'hostname fallirebbe dal Worker;
+//  - mail.securemail.pro: risponde E il certificato combacia, ma la casella non vive su
+//    quel nodo e Dovecot rifiuta le credenziali con AUTHENTICATIONFAILED — un errore che
+//    sembra "password sbagliata" mentre è "utente sconosciuto su questo server".
+//    Su hosting condiviso l'host va preso dalle istruzioni del fornitore, non dedotto.
 async function leggiRisposte(env, indirizzi, giorni) {
   const socket = connect(
     { hostname: env.IMAP_HOST, port: Number(env.IMAP_PORT || 993) },
