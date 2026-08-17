@@ -1341,6 +1341,21 @@ Ricaricare una lista aggiornata è normale (le prenotazioni cambiano fino all'ul
 
 **Verificato con 34 test sul PDF reale del 17/08/2026** (9 arrivi, 3 Boutique + 6 SoulArt): nomi su più righe ricomposti, tipi camera mai finiti nel nome, intestazione e riga totali non importate, contatti e stato di invio conservati al re-import, nessun duplicato.
 
+### Adattamento a smartphone (17/08/2026)
+
+Schede e barra sono costruite in JS con **stili in linea**, che non possono rispondere alla larghezza. Le sole parti che devono adattarsi stanno quindi in `style.css` come classi — non spostarle di nuovo in linea:
+
+| Classe | Desktop | ≤1200px | ≤768px |
+|---|---|---|---|
+| `.ps-grid` | 3 colonne | 2 colonne | **1 colonna** |
+| `.ps-bar-stato` | allineato a destra | idem | a capo, piena larghezza |
+| `.ps-bar-prog` | barra a destra | idem | a sinistra |
+| `.ps-bar-cfg` | gruppo a destra | idem | a capo, pulsanti espansi |
+
+A tre colonne su telefono il campo email diventa illeggibile — ed è proprio il dato che si incolla dal PMS e si rilegge, quindi una colonna sola è la scelta obbligata, non un ripiego estetico.
+
+Verificato dal vivo a schermo stretto: `.ps-grid` risolve a una colonna e `margin-left` di stato e configurazione passa a `0`. Il breakpoint 768px è lo stesso già usato dal resto di Compass (sidebar a cassetto, tabelle scorrevoli).
+
 ### Barra di intestazione su due piani (17/08/2026)
 
 Prima era una riga sola con data, due contatori e quattro pulsanti. I due contatori — `9/14 con contatto` e `9/14 contattati` — si leggevano come una ripetizione pur dicendo cose diverse, e i pulsanti avevano tutti lo stesso peso pur non avendo lo stesso uso.
