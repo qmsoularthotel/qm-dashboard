@@ -1354,7 +1354,7 @@ I conteggi sono sui **contattabili** (Italcamel esclusi, vedi sopra). Con zero c
 
 ### Impaginazione a schede, non a tabella (16/08/2026)
 
-Gli arrivi sono **schede in griglia a tre colonne fisse** (`repeat(3,minmax(0,1fr))`, come il Pannello App) dentro il gruppo della struttura, non righe di tabella. Contorno a **2px** perché le schede si stacchino dallo sfondo, e il numero d'arrivo è una pastiglia con il numero in un cerchietto — non più testo minuto in grigio: su tredici schede serve individuarlo senza cercarlo. La tabella tagliava le email — `cgroth.972512@guest.boo` — proprio sul dato che si incolla a mano e che quindi va riletto; nella scheda i tre campi sono impilati a piena larghezza.
+Gli arrivi sono **schede in griglia a tre colonne fisse** (`repeat(3,minmax(0,1fr))`, come il Pannello App) dentro il gruppo della struttura, non righe di tabella. Contorno a **2px** perché le schede si stacchino dallo sfondo. Il numero d'arrivo è una **pastiglia tenue** con `Arrivo N` come testo unico: una prima versione con il numero dentro un cerchietto pieno e peso 800 risultava troppo pesante, una a testo grigio minuto troppo debole — questa sta in mezzo, e diventa verde a invio avvenuto. La tabella tagliava le email — `cgroth.972512@guest.boo` — proprio sul dato che si incolla a mano e che quindi va riletto; nella scheda i tre campi sono impilati a piena larghezza.
 
 Una scheda già contattata ha **fondo e bordo verdi** e il pulsante diventa **"Rinvia"** senza riempimento pieno: resta possibile, ma non è più l'azione attesa. Il resto (spunte correggibili, badge `non più in lista`, avviso indirizzo Booking, errore di invio) è invariato, solo ricollocato.
 
@@ -1406,13 +1406,14 @@ Il bordo della scheda dice da dove arriva la prenotazione, leggendolo dall'**ind
 
 ### Arrivi Italcamel — spunta manuale, scheda spenta
 
-Gli arrivi di un tour operator non portano né email né telefono dell'ospite: non sono contattabili e non devono sembrare "da compilare". Si segnano con una **casella sulla scheda** (`prestayToggleItalcamel`), che la spegne: sovrapposizione sfocata (`backdrop-filter`) con la scritta **ITALCAMEL** nella tipografia del logo Compass — stesse quattro proprietà di `.logo-title` in `style.css` (`'Helvetica Neue'`, 20px, peso 700, `letter-spacing:-.01em`). Se il logo cambia carattere, questa scritta va aggiornata a mano: sono due punti separati, non c'è una classe condivisa.
+Gli arrivi di un tour operator non portano né email né telefono dell'ospite: non sono contattabili e non devono sembrare "da compilare". Si segnano con una **casella sulla scheda** (`prestayToggleItalcamel`), che la spegne: sovrapposizione sfocata (`backdrop-filter`) con la scritta **Italcamel** (non in maiuscolo) nella tipografia del logo Compass — stesse quattro proprietà di `.logo-title` in `style.css` (`'Helvetica Neue'`, 20px, peso 700, `letter-spacing:-.01em`). Se il logo cambia carattere, questa scritta va aggiornata a mano: sono due punti separati, non c'è una classe condivisa.
 
 **Fuori dai conteggi.** Gli arrivi Italcamel restano visibili ma **non entrano nei contatori**, né in quelli del gruppo né in quelli della barra in alto: non sono contattabili per definizione, quindi tenerli nel denominatore avrebbe lasciato i gruppi eternamente incompleti (`2/5`) e l'avviso ambra accesso anche a lavoro finito. Ora il gruppo mostra `2/2 contattati · + 3 Italcamel` e il verde di "tutti contattati" scatta quando il lavoro è davvero finito. Un gruppo di soli Italcamel **non** si dichiara completo: zero contattabili non è un traguardo.
 
 **Perché a mano e non dedotto**: un primo tentativo leggeva le colonne Azienda/Gruppo del PDF (x 315–411), ma **il PMS non le popola** — nell'export reale contengono sempre `-`. Il parsing è stato rimosso: non reintrodurlo senza prima verificare che quelle colonne abbiano un contenuto.
 
 Due dettagli che non vanno semplificati:
+- la casella sta **in fondo alla scheda, allineata a destra**, dopo i pulsanti;
 - la sovrapposizione è `pointer-events:none` e la **casella sta sopra di essa** (`z-index:3` contro `2`), altrimenti spegnendo la scheda non si potrebbe più riaccenderla;
 - il flag `italcamel` **non viene toccato da `_psImportaArrivi`**: è una marcatura dell'utente e deve sopravvivere al reimport del PDF. Verificato in test.
 

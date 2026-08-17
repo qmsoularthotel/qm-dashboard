@@ -11817,11 +11817,10 @@ function prestayRender(){
         const bordo=fatto?'var(--green)':_psBordoPerEmail(a.email);
         h+=`<div id="psCard-${a.id}" data-fatto="${fatto?'1':'0'}" style="position:relative;background:${fatto?'var(--green-bg)':'var(--surface)'};border:2px solid ${bordo};border-radius:10px;padding:11px 13px;">
           ${ital?`<div style="position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(244,244,246,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);pointer-events:none;">
-            <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--text);opacity:.62;text-shadow:0 1px 0 #fff;white-space:nowrap;">ITALCAMEL</span>
+            <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--text);opacity:.62;text-shadow:0 1px 0 #fff;white-space:nowrap;">Italcamel</span>
           </div>`:''}
           <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
-            <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:14px;background:${fatto?'var(--green)':'var(--accent-bg)'};color:${fatto?'#fff':'var(--accent)'};font-size:var(--fs-xs);font-weight:800;line-height:1;">
-              <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${fatto?'rgba(255,255,255,.25)':'var(--accent)'};color:#fff;font-size:var(--fs-xxs);font-weight:800;">${i+1}</span>Arrivo</span>
+            <span style="padding:2px 9px;border-radius:12px;background:${fatto?'var(--green-bg)':'var(--surface2)'};color:${fatto?'var(--green)':'var(--text-muted)'};border:1px solid ${fatto?'var(--green)':'var(--border-light)'};font-size:var(--fs-xxs);font-weight:700;line-height:1.5;white-space:nowrap;">Arrivo ${i+1}</span>
             ${a.fuoriLista?`<span title="Non compare nell'ultima lista arrivi importata: la prenotazione potrebbe essere stata cancellata o il nome corretto. Non elimino nulla da solo." style="font-size:9px;font-weight:700;color:var(--amber);">non più in lista</span>`:''}
             <select onchange="prestaySetScheda('${a.id}','lang',this.value)" title="Lingua del messaggio" style="${inpS}width:auto;min-width:52px;margin-left:auto;padding:3px 6px;">
               <option value="it" ${(a.lang||'it')==='it'?'selected':''}>IT</option>
@@ -11832,10 +11831,7 @@ function prestayRender(){
           <input value="${esc(a.nome)}" placeholder="Cognome Nome" onchange="prestaySetScheda('${a.id}','nome',this.value)" style="${inpS}font-weight:700;font-size:var(--fs-sm);margin-bottom:5px;">
           <input type="email" value="${esc(a.email)}" placeholder="email@…" oninput="_psAggiornaBordo('${a.id}',this.value)" onchange="prestaySetScheda('${a.id}','email',this.value)" title="${esc(a.email)}" style="${inpS}margin-bottom:5px;${_psBookingBloccato(a.email)?'border-color:var(--amber);':''}">
           ${_psBookingBloccato(a.email)?`<div style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.35;margin:-2px 0 5px;">indirizzo Booking · non recapitabile con il mittente attuale</div>`:''}
-          <input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}margin-bottom:7px;">
-          <label title="Arrivo di gruppo Italcamel: nessun contatto dell'ospite, la scheda si spegne" style="position:relative;z-index:3;display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:var(--fs-xxs);font-weight:700;color:${ital?'var(--text)':'var(--text-dim)'};cursor:pointer;user-select:none;">
-            <input type="checkbox" ${ital?'checked':''} onchange="prestayToggleItalcamel('${a.id}')" style="width:15px;height:15px;margin:0;cursor:pointer;accent-color:var(--accent);">Italcamel
-          </label>
+          <input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}margin-bottom:9px;">
           <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
             <button onclick="prestayAnteprima('${a.id}','both')" title="Vedi e correggi il messaggio prima di mandarlo" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:7px;cursor:pointer;">${PS_ICON_EYE}</button>
             <button onclick="prestayAnteprima('${a.id}','mail')" ${inFlight?'disabled':''} title="Anteprima del messaggio prima di inviare" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;height:28px;border:1px solid var(--accent);background:${fatto?'var(--surface)':'var(--accent)'};color:${fatto?'var(--accent)':'#fff'};border-radius:7px;cursor:${inFlight?'wait':'pointer'};opacity:${inFlight?'.5':'1'};font-size:var(--fs-xxs);font-weight:700;">${inFlight?PS_ICON_LOAD:PS_ICON_MAIL}${fatto?'Rinvia':'Invia'}</button>
@@ -11843,6 +11839,11 @@ function prestayRender(){
             <span style="margin-left:auto;display:flex;gap:4px;">${chip(mailOk,a.mailTs,'mail','mail')}${chip(waOk,a.waTs,'wa','wa')}</span>
           </div>
           ${a.mailErr&&!mailOk?`<div style="margin-top:6px;font-size:9px;color:var(--red);line-height:1.35;">${String(a.mailErr).substring(0,80)}</div>`:''}
+          <div style="position:relative;z-index:3;display:flex;justify-content:flex-end;margin-top:8px;">
+            <label title="Arrivo di gruppo Italcamel: nessun contatto dell'ospite, la scheda si spegne" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-xxs);font-weight:700;color:${ital?'var(--text)':'var(--text-dim)'};cursor:pointer;user-select:none;">
+              <input type="checkbox" ${ital?'checked':''} onchange="prestayToggleItalcamel('${a.id}')" style="width:15px;height:15px;margin:0;cursor:pointer;accent-color:var(--accent);">Italcamel
+            </label>
+          </div>
           ${(()=>{const rp=_psRisposta(iso,a.email);if(!rp)return'';
             return`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--accent-bg);border-left:3px solid var(--accent);">
               <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--accent);margin-bottom:4px;">Ha risposto${rp.data?' · '+String(rp.data).replace(/\s*\+\d{4}.*$/,'').trim():''}</div>
