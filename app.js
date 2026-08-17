@@ -11614,7 +11614,11 @@ function _psSpedisciWa(id,corpo){
 // Con nome e contatti copiati a mano dal PMS, un refuso o un segnaposto rimasto vuoto si
 // vedono solo rileggendo — e una mail sbagliata a un ospite non si richiama indietro. Le
 // correzioni valgono per QUESTO invio soltanto: il template resta com'è.
-let _psAnteprima=null;   // {id,canale}
+// Aprendo l'anteprima si vuole vedere IL MESSAGGIO, non il testo sorgente con gli
+// asterischi: si mostra quindi il risultato finito, come lo leggerà l'ospite. La modifica
+// resta a un clic sulla matita, ma non è più la modalità predefinita — nella maggior parte
+// dei casi si apre solo per rileggere prima di premere invio.
+let _psAnteprima=null;   // {id,canale,ogg,corpo,modifica}
 function prestayAnteprima(id,canale){
   const iso=_psTargetISO(),a=_psScheda(iso,id);
   if(!a)return;
@@ -11623,45 +11627,70 @@ function prestayAnteprima(id,canale){
   if(canale==='wa'&&!haTel){alert('Inserisci prima il numero di telefono di questo ospite.');return;}
   if(canale==='both'&&!haMail&&!haTel){alert('Inserisci prima almeno un contatto (email o telefono) per vedere l\'anteprima.');return;}
   const t=_psTpl(a.hotel,a.lang||'it');
-  const ogg=_psCompila(t.ogg,a,iso);
-  const corpo=_psCompila(t.corpo,a,iso);
-  _psAnteprima={id,canale};
-  const dest=canale==='mail'?a.email:canale==='wa'?(a.tel||''):[a.email,a.tel].filter(Boolean).join(' · ')||'nessun contatto';
-  const nomeH=(PRESTAY_HOTELS[a.hotel]||{}).name||'';
-  const avvisi=[];
-  if(/\[SCRIVI QUI|\[WRITE THE/i.test(corpo))avvisi.push('Il testo contiene ancora il segnaposto da riscrivere: personalizzalo in "Modifica testi", oppure correggilo qui sotto solo per questo invio.');
-  if(!(a.nome||'').trim())avvisi.push('Nome ospite vuoto: il messaggio dirà genericamente "Gentile Ospite".');
-  if(/\{[a-z]+\}/i.test(corpo)||/\{[a-z]+\}/i.test(ogg))avvisi.push('C\'è un segnaposto tra graffe non sostituito: controlla che sia scritto esattamente {nome}, {struttura} o {data}.');
-  if(canale!=='wa'&&_psBookingBloccato(a.email))avvisi.push('<strong>Questo è un indirizzo Booking</strong>: viene recapitato solo se la mail parte da booking@soularthotel.com. Con il mittente attuale Booking la scarta senza avvisare — risulterebbe inviata senza esserlo. Puoi contattare l\'ospite su WhatsApp, se hai il numero.');
-  const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  _psAnteprima={id,canale,ogg:_psCompila(t.ogg,a,iso),corpo:_psCompila(t.corpo,a,iso),modifica:false};
   const m=document.createElement('div');
   m.id='psAnteprimaModal';
   m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
   m.onclick=e=>{if(e.target===m)prestayChiudiAnteprima();};
-  m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:22px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto;">
-    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;flex-wrap:wrap;">
+  m.innerHTML='<div id="psAntBox" onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:22px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto;"></div>';
+  document.body.appendChild(m);
+  _psAntRendi();
+}
+// Passa da lettura a modifica e viceversa, conservando ciò che è stato scritto.
+function prestayAntModifica(){
+  if(!_psAnteprima)return;
+  if(_psAnteprima.modifica)_psAntLeggiCampi();
+  _psAnteprima.modifica=!_psAnteprima.modifica;
+  _psAntRendi();
+}
+// Travasa il contenuto dei campi nello stato: va fatto PRIMA di ridisegnare o di inviare,
+// altrimenti una correzione appena digitata andrebbe persa.
+function _psAntLeggiCampi(){
+  if(!_psAnteprima)return;
+  const o=document.getElementById('psAntOgg'),c=document.getElementById('psAntCorpo');
+  if(o)_psAnteprima.ogg=o.value;
+  if(c)_psAnteprima.corpo=c.value;
+}
+function _psAntRendi(){
+  const box=document.getElementById('psAntBox');
+  if(!box||!_psAnteprima)return;
+  const {id,canale,ogg,corpo,modifica}=_psAnteprima;
+  const iso=_psTargetISO(),a=_psScheda(iso,id);
+  if(!a)return;
+  const haMail=!!a.email,haTel=!!(a.tel||'').replace(/[^\d+]/g,'');
+  const dest=canale==='mail'?a.email:canale==='wa'?(a.tel||''):[a.email,a.tel].filter(Boolean).join(' · ')||'nessun contatto';
+  const nomeH=(PRESTAY_HOTELS[a.hotel]||{}).name||'';
+  const avvisi=[];
+  if(/\[SCRIVI QUI|\[WRITE THE/i.test(corpo))avvisi.push('Il testo contiene ancora il segnaposto da riscrivere: personalizzalo in "Modifica testi", oppure correggilo qui con la matita solo per questo invio.');
+  if(!(a.nome||'').trim())avvisi.push('Nome ospite vuoto: il messaggio dirà genericamente "Gentile Ospite".');
+  if(/\{[a-z]+\}/i.test(corpo)||/\{[a-z]+\}/i.test(ogg))avvisi.push('C\'è un segnaposto tra graffe non sostituito: controlla che sia scritto esattamente {nome}, {struttura} o {data}.');
+  if(canale!=='wa'&&_psBookingBloccato(a.email))avvisi.push('<strong>Questo è un indirizzo Booking</strong>: viene recapitato solo se la mail parte da booking@soularthotel.com. Con il mittente attuale Booking la scarta senza avvisare — risulterebbe inviata senza esserlo.');
+  const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const matita='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>';
+
+  box.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;">
       <span style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-sm);font-weight:700;">${canale==='mail'?PS_ICON_MAIL+' Anteprima mail':canale==='wa'?PS_ICON_WA+' Anteprima WhatsApp':PS_ICON_EYE+' Anteprima messaggio'}</span>
       <span style="font-size:var(--fs-xs);color:var(--text-muted);">${nomeH} · ${(a.lang||'it').toUpperCase()}</span>
+      <button onclick="prestayAntModifica()" title="${modifica?'Torna a vedere il messaggio finito':'Modifica il testo solo per questo invio'}" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid ${modifica?'var(--accent)':'var(--border)'};background:${modifica?'var(--accent-bg)':'var(--surface)'};color:${modifica?'var(--accent)':'var(--text-dim)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">${matita}${modifica?'Fine':'Modifica'}</button>
     </div>
     <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:12px;">A: <strong style="color:var(--text);">${esc(dest)}</strong>${canale==='mail'&&_psMailPronto()?' · parte davvero da qui':canale==='mail'?' · si aprirà il client di posta':''}</div>
     ${avvisi.length?`<div style="background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.55;margin-bottom:12px;">${avvisi.map(v=>'• '+v).join('<br>')}</div>`:''}
-    ${canale!=='wa'?`<label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">OGGETTO${canale==='both'?' <span style="font-weight:400;text-transform:none;">(solo per la mail)</span>':''}</label>
-    <input id="psAntOgg" value="${String(ogg).replace(/"/g,'&quot;')}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:'Helvetica Neue',Arial,sans-serif;margin-bottom:10px;">`:''}
-    <label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">MESSAGGIO</label>
-    ${psToolbar('psAntCorpo')}
-    <textarea id="psAntCorpo" rows="13" oninput="${canale!=='wa'?"const rp=document.getElementById('psAntRendered');if(rp)rp.innerHTML=_psMdToHtml(this.value);":''}" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:'Helvetica Neue',Arial,sans-serif;line-height:1.6;resize:vertical;">${esc(corpo)}</textarea>
-    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.5;"><code style="background:var(--surface2);padding:0 4px;border-radius:3px;">*grassetto*</code> · <code style="background:var(--surface2);padding:0 4px;border-radius:3px;">_corsivo_</code> · righe con "- " per gli elenchi. Le modifiche qui valgono solo per questo invio: per cambiare il testo di tutti usa "✏️ Modifica testi".</div>
-    ${canale!=='wa'?`<div style="margin-top:10px;">
-      <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">COME APPARIRÀ NELLA MAIL</div>
-      <div id="psAntRendered" style="border:1px solid var(--border-light);border-radius:7px;padding:10px 13px;background:var(--surface2);font-size:var(--fs-xs);color:var(--text);line-height:1.5;">${_psMdToHtml(corpo)}</div>
-    </div>`:''}
+    ${modifica?`
+      ${canale!=='wa'?`<label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">OGGETTO${canale==='both'?' <span style="font-weight:400;text-transform:none;">(solo per la mail)</span>':''}</label>
+      <input id="psAntOgg" value="${String(ogg).replace(/"/g,'&quot;')}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:'Helvetica Neue',Arial,sans-serif;margin-bottom:10px;">`:''}
+      ${psToolbar('psAntCorpo')}
+      <textarea id="psAntCorpo" rows="14" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:'Helvetica Neue',Arial,sans-serif;line-height:1.6;resize:vertical;">${esc(corpo)}</textarea>
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.5;"><code style="background:var(--surface2);padding:0 4px;border-radius:3px;">*grassetto*</code> · <code style="background:var(--surface2);padding:0 4px;border-radius:3px;">_corsivo_</code> · righe con "- " per gli elenchi. Le modifiche valgono solo per questo invio: per cambiare il testo di tutti usa "✏️ Modifica testi".</div>
+    `:`
+      ${canale!=='wa'?`<div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border-light);">${esc(ogg)}</div>`:''}
+      <div style="border:1px solid var(--border-light);border-radius:8px;padding:14px 16px;background:var(--surface2);font-size:var(--fs-xs);color:var(--text);line-height:1.55;max-height:420px;overflow-y:auto;">${_psMdToHtml(corpo)}</div>
+    `}
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
       <button onclick="prestayChiudiAnteprima()" style="flex:1;min-width:90px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-weight:600;font-size:var(--fs-xs);cursor:pointer;">${canale==='both'?'Chiudi':'Annulla'}</button>
       ${canale!=='wa'&&haMail?`<button onclick="prestayInviaDaAnteprima('mail')" style="flex:2;min-width:150px;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;">${PS_ICON_MAIL}${_psMailPronto()?'Invia la mail':'Apri il client di posta'}</button>`:''}
       ${canale!=='mail'&&haTel?`<button onclick="prestayInviaDaAnteprima('wa')" style="flex:2;min-width:130px;padding:10px;background:${canale==='both'?'#e9faf0':'#25D366'};color:${canale==='both'?'#1a9f4f':'#fff'};border:${canale==='both'?'1px solid #25D366':'none'};border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;">${PS_ICON_WA}Apri WhatsApp</button>`:''}
-    </div>
-  </div>`;
-  document.body.appendChild(m);
+    </div>`;
 }
 function prestayChiudiAnteprima(){
   const m=document.getElementById('psAnteprimaModal');
@@ -11670,12 +11699,10 @@ function prestayChiudiAnteprima(){
 }
 function prestayInviaDaAnteprima(canaleScelto){
   if(!_psAnteprima)return;
-  const id=_psAnteprima.id;
+  _psAntLeggiCampi();                       // eventuali correzioni non ancora confermate
+  const {id,ogg,corpo}=_psAnteprima;
   const canale=canaleScelto||_psAnteprima.canale;
-  const oggEl=document.getElementById('psAntOgg'),corpoEl=document.getElementById('psAntCorpo');
-  const ogg=oggEl?oggEl.value:'';
-  const corpo=corpoEl?corpoEl.value:'';
-  if(!corpo.trim()){alert('Il messaggio è vuoto.');return;}
+  if(!String(corpo||'').trim()){alert('Il messaggio è vuoto.');return;}
   prestayChiudiAnteprima();
   if(canale==='mail')_psSpedisciMail(id,ogg,corpo);
   else _psSpedisciWa(id,corpo);

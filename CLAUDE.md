@@ -1534,6 +1534,12 @@ Di conseguenza **lo stato "inviato" è una spunta, non una certezza**: viene seg
 
 ### Anteprima prima dell'invio — `prestayAnteprima(camera, canale)`
 
+**Dal 17/08/2026 l'anteprima si apre in LETTURA**: mostra il messaggio **finito**, come lo leggerà l'ospite — testo reso, grassetti applicati, oggetto come titolo — non il sorgente con gli asterischi. Nella maggior parte dei casi la si apre solo per rileggere prima di premere invio, e vedere il markup era rumore.
+
+La modifica resta a un clic sulla **matita** in alto a destra (`prestayAntModifica`), che scopre oggetto, barra B/I/• e casella di testo; il pulsante diventa "Fine".
+
+**`_psAntLeggiCampi()` va chiamata prima di ogni ridisegno e prima dell'invio**: travasa il contenuto dei campi nello stato `_psAnteprima`. Senza, una correzione appena digitata andrebbe persa passando a lettura, o non finirebbe nel messaggio spedito se si preme invia senza confermare. Verificato in test.
+
 I pulsanti ✉️/💬 **non spediscono al volo**: aprono un modal col messaggio già compilato e **modificabile**, e solo da lì parte l'invio (`prestayInviaDaAnteprima()` → `_psSpedisciMail` / `_psSpedisciWa`). Con nome e contatti copiati a mano dal PMS, un refuso o un segnaposto rimasto vuoto si vedono solo rileggendo — e una mail sbagliata a un ospite non si richiama indietro.
 
 **Le correzioni valgono per quel singolo invio**, non toccano il template: altrimenti una modifica al volo per un ospite se la porterebbero dietro tutti i successivi. Per cambiare il testo di tutti c'è "✏️ Modifica testi".
