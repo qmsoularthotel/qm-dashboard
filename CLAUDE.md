@@ -486,7 +486,6 @@ grep -n 'id="view-' index.html
 | `view-bkfsheet` | Operativa Breakfast — SoulArt |
 | `view-bkfsheetar` | Operativa Breakfast — Art Resort |
 | `view-hkpsheet` | Operativa HKP (Housekeeping) — SoulArt Hotel |
-| `view-hkpsheetar` | Operativa HKP (Housekeeping) — Art Resort |
 | `view-miniapp` | Pannello App — centro controllo delle 5 app standalone (ex "Mini App") |
 | `view-inventario` | Inventario detersivi (stock + movimenti + analisi + ordini) |
 | `view-turni-pref` | Preferenze turni staff (da Google Forms) |
@@ -594,7 +593,7 @@ La sezione menu **Staff** è stata eliminata: "Preferenze Turni" si è spostata 
 ### Nuova sezione "Housekeeping" (menu)
 
 Creata una sezione menu propria **Housekeeping**, tra "Operativo Quotidiano" e "Reception", che raggruppa:
-- **Operativa HKP** (ex "Operativa Housekeeping") — `nav-group-header` con sottovoci SoulArt Hotel / Art Resort (`view-hkpsheet`/`view-hkpsheetar`), invariate nel comportamento.
+- **Operativa HKP** — voce diretta su `view-hkpsheet` (SoulArt). Dal 17/08/2026 **Art Resort è stato rimosso**: restando una sola struttura, il gruppo a fisarmonica e la scelta nel menu non avevano più ragione d'essere. Rimossi anche `view-hkpsheetar`, la chiave `ar` in `HKP_URL_DEFAULTS`/`HKP_CONFIG` e la funzione `toggleHkpGroup`.
 - **Bilanciamento Camere** (ex "Room Division", poi "Suddivisione Camere", `view-room-division`) — stesso `onclick="setView('room-division',this)"` e stessa icona di prima, solo spostata di sezione e rinominata.
 
 Entrambe le voci prima vivevano dentro **Operativo Quotidiano**. `pageTitles['room-division']` è ora `'Bilanciamento Camere'`, `breadcrumbs['room-division']` è `'Housekeeping'`, `breadcrumbs.hkpsheet`/`breadcrumbs.hkpsheetar` sono `'Housekeeping · Operativa HKP'`. Il `<span class="panel-title">` della vista `view-room-division` è stato aggiornato allo stesso modo.
@@ -1848,7 +1847,7 @@ git show 2183997:index.html | grep 'id="view-'
 # c973287 — versione stabile pre-modifiche
 ```
 
-Le viste `view-hkpsheet` e `view-hkpsheetar` sono state perse e recuperate (commit `2183997`).
+Le viste `view-hkpsheet` e `view-hkpsheetar` erano state perse e recuperate (commit `2183997`). `view-hkpsheetar` è stata poi **rimossa di proposito** il 17/08/2026: non recuperarla dai commit vecchi credendola persa di nuovo.
 
 ### Commit di riferimento — sessione redesign Pannello App + Spese Fornitori (2026-07-06)
 

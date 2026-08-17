@@ -608,31 +608,26 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Housekeeping — SoulArt',hkpsheetar:'Housekeeping — Art Resort',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria',prestay:'Messaggi Pre-stay'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping · Operativa HKP',hkpsheetar:'Housekeeping · Operativa HKP',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',prestay:'Operativo Quotidiano'};
-let hkpGroupOpen=false;
-function toggleHkpGroup(){
-  hkpGroupOpen=!hkpGroupOpen;
-  document.getElementById('hkpGroupToggle').classList.toggle('open',hkpGroupOpen);
-  document.getElementById('hkpGroupItems').classList.toggle('open',hkpGroupOpen);
-}
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria',prestay:'Messaggi Pre-stay'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',prestay:'Operativo Quotidiano'};
 // §§ HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore)
+// Operativa HKP: solo SoulArt. Art Resort è stato rimosso (17/08/2026) — non più
+// necessario, quindi via anche la scelta della struttura dal menu.
 const HKP_URL_DEFAULTS={
-  sa:{foglio:'https://docs.google.com/spreadsheets/d/1lhbaUyFTzLX6NNForKkad3KQTF9HH0BB1BFdhZJZSmo/edit',script:'https://script.google.com/macros/s/AKfycbw1xDrmcRUm0WqM47wTmTin4eqC4wJn9w1KLZbq2XiMryEu6a2UWNsUF6hYcNRjVYgc/exec'},
-  ar:{foglio:'https://docs.google.com/spreadsheets/d/1pwqVFHiix6LSSIao-LhX4h5vN2psXLJrTRVMl2eJDGs/edit',script:'https://script.google.com/macros/s/AKfycbyiWIlDqHcaCQPmyZ5qV9LKET-eSaFpl5k4u2uKZse1D0NstbBzReidBIa4s1t7gdA/exec'}
+  sa:{foglio:'https://docs.google.com/spreadsheets/d/1lhbaUyFTzLX6NNForKkad3KQTF9HH0BB1BFdhZJZSmo/edit',script:'https://script.google.com/macros/s/AKfycbw1xDrmcRUm0WqM47wTmTin4eqC4wJn9w1KLZbq2XiMryEu6a2UWNsUF6hYcNRjVYgc/exec'}
 };
-let HKP_CONFIG={sa:{...HKP_URL_DEFAULTS.sa},ar:{...HKP_URL_DEFAULTS.ar}};
+let HKP_CONFIG={sa:{...HKP_URL_DEFAULTS.sa}};
 function hkpSaveConfig(){
   const json=JSON.stringify(HKP_CONFIG);
   try{localStorage.setItem('qm_hkp_config',json);}catch(e){}
   kvSet('qm_hkp_config',json).catch(()=>{});
 }
 function hkpRestoreConfig(){
-  try{const s=localStorage.getItem('qm_hkp_config');if(s){const p=JSON.parse(s);['sa','ar'].forEach(k=>{if(p[k]?.foglio)HKP_CONFIG[k].foglio=p[k].foglio;if(p[k]?.script)HKP_CONFIG[k].script=p[k].script;});}}catch(e){}
-  ['sa','ar'].forEach(k=>{const link=document.getElementById('hkp-'+k+'-link');if(link)link.href=HKP_CONFIG[k].foglio;});
+  try{const s=localStorage.getItem('qm_hkp_config');if(s){const p=JSON.parse(s);['sa'].forEach(k=>{if(p[k]?.foglio)HKP_CONFIG[k].foglio=p[k].foglio;if(p[k]?.script)HKP_CONFIG[k].script=p[k].script;});}}catch(e){}
+  ['sa'].forEach(k=>{const link=document.getElementById('hkp-'+k+'-link');if(link)link.href=HKP_CONFIG[k].foglio;});
 }
 function hkpEditUrl(p){
-  const nome=p==='sa'?'SoulArt':'Art Resort';
+  const nome='SoulArt';
   const curFoglio=HKP_CONFIG[p].foglio;
   const curScript=HKP_CONFIG[p].script;
   const newFoglio=(prompt(`[${nome}] URL Google Sheets (Apri foglio):\n\nIncolla il nuovo URL del foglio mensile:`,curFoglio)||'').trim();
@@ -1609,7 +1604,6 @@ function toggleBkfGroup(){
   document.getElementById('bkfGroupItems').classList.toggle('open',bkfGroupOpen);
 }
 function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id]||id;const bc=document.getElementById('breadcrumb');if(bc)bc.textContent=breadcrumbs[id]||'';const kpis=document.getElementById('topbar-kpis');if(kpis)kpis.style.display=id==='overview'?'flex':'none';if(navEl){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navEl.classList.add('active');}
-  if(id==='hkpsheet'||id==='hkpsheetar'){if(!hkpGroupOpen){hkpGroupOpen=true;document.getElementById('hkpGroupToggle').classList.add('open');document.getElementById('hkpGroupItems').classList.add('open');}}
   if(id==='bkfsheet'||id==='bkfsheetar'){if(!bkfGroupOpen){bkfGroupOpen=true;document.getElementById('bkfGroupToggle').classList.add('open');document.getElementById('bkfGroupItems').classList.add('open');}}
   if(id.startsWith('recensioni-')&&!id.startsWith('recensioni-exp-')){if(!recGroupOpen){recGroupOpen=true;document.getElementById('recGroupToggle').classList.add('open');document.getElementById('recGroupItems').classList.add('open');}}
   if(id.startsWith('recensioni-exp-')){if(!expGroupOpen){expGroupOpen=true;document.getElementById('expGroupToggle').classList.add('open');document.getElementById('expGroupItems').classList.add('open');}}
@@ -1632,7 +1626,6 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
     try{refreshOverviewForDate(new Date());}catch(e){}
   }
   if(id==='hkpsheet')setTimeout(()=>hkpNRender('sa'),50);
-  if(id==='hkpsheetar')setTimeout(()=>hkpNRender('ar'),50);
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
   if(id==='miniapp'){setTimeout(miniappRender,50);}
