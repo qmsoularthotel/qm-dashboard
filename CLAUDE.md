@@ -1348,6 +1348,30 @@ Gli arrivi sono **schede in griglia a tre colonne fisse** (`repeat(3,minmax(0,1f
 
 Una scheda già contattata ha **fondo e bordo verdi** e il pulsante diventa **"Rinvia"** senza riempimento pieno: resta possibile, ma non è più l'azione attesa. Il resto (spunte correggibili, badge `non più in lista`, avviso indirizzo Booking, errore di invio) è invariato, solo ricollocato.
 
+### Risposte degli ospiti sulle schede (17/08/2026)
+
+Nel pre-stay si chiedono orario di arrivo, preferenza sul letto e allergie. Le risposte servono a chi prepara la camera, ma cercarle nella webmail è un lavoro a parte: il pulsante **"↓ Controlla risposte"** le porta sulle schede.
+
+`prestayControllaRisposte()` manda al Worker **gli indirizzi degli arrivi di quella data**; il Worker (`/prestay/risposte` in `worker.js`) si collega in IMAP alla casella del QM e cerca **solo messaggi provenienti da quegli indirizzi**. Non è un dettaglio implementativo ma la ragione per cui la cosa è accettabile: **l'endpoint non può restituire il resto della casella**, nemmeno a chi avesse la chiave. Non sostituirlo con un "leggi le ultime N mail e filtra lato client".
+
+L'endpoint si **ricava** da quello di invio (`/prestay/send` → `/prestay/risposte`, vedi `_psEndpointRisposte`): una sola impostazione da tenere allineata invece di due.
+
+Le risposte stanno **solo in localStorage** (`qm_prestay_risposte`), mai su KV: sono messaggi di ospiti, e spargerli su tutti i dispositivi per una comodità di lettura non vale il rischio.
+
+**Limite noto**: chi risponde *dentro* la messaggistica di Booking senza usare la mail non genera un messaggio nella casella, quindi non compare. Quelle risposte si leggono solo nell'Extranet, e l'avviso lo dice invece di far pensare a un guasto.
+
+#### Parsing IMAP — le tre insidie già risolte
+
+Sono in `worker.js`, verificate con 24 test; non semplificarle:
+
+1. **Completamento della risposta** (`imapCompleta`): la riga `TAG OK` può comparire *dentro* i dati di un literal `{N}`. Si scandisce in sequenza saltando i literal, invece di cercare la stringa nel buffer — un test copre esattamente questo caso.
+2. **Codifiche del corpo**: `quoted-printable` e `base64` vanno decodificati e poi **reinterpretati come UTF-8**, altrimenti gli accenti si rompono. Su un `multipart/alternative` si prende la parte `text/plain`, ripiegando sull'HTML ripulito solo se manca.
+3. **Taglio della citazione** (`soloRisposta`): la risposta contiene tutto il nostro pre-stay citato sotto. Si taglia al primo marcatore (`>`, `Il … ha scritto:`, `On … wrote:`, `Messaggio originale`, underscore) — senza questo, l'informazione utile sarebbe illeggibile.
+
+Si scaricano i primi 16 KB del messaggio (`BODY.PEEK[]<0.16384>`): il testo dell'ospite sta in cima, prima della citazione, e il consumo resta prevedibile.
+
+**Variabili nuove sul Worker**: `IMAP_HOST` = `mail.securemail.pro` (**non** `mail.register.it`: risponde, ma il certificato è emesso per `*.securemail.pro` e la verifica dell'hostname fallirebbe — stesso inciampo dell'SMTP), `IMAP_PORT` = 993, `IMAP_USER`, `IMAP_PASS`.
+
 ### Colore del bordo = canale di provenienza (17/08/2026)
 
 Il bordo della scheda dice da dove arriva la prenotazione, leggendolo dall'**indirizzo email** (`_psBordoPerEmail`). Serve perché tono del messaggio e vincoli di recapito cambiano per canale.

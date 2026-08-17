@@ -4,8 +4,11 @@ Compass è un sito statico: il browser non può parlare SMTP, quindi per far par
 davvero una mail serve un pezzo di server. Lo si aggiunge al Worker che già usate
 (`anthropic-proxy.qm-d82.workers.dev`, quello di Claude e del KV).
 
-Questo file è **documentazione + codice da incollare su Cloudflare**: non viene servito
-da GitHub Pages e non fa parte dell'app.
+Questo file è **documentazione**: spiega il perché delle scelte e la storia dei problemi
+incontrati. Il **codice da incollare su Cloudflare è `worker.js`** nella radice del
+repository — quella è la sorgente canonica, versionata; i frammenti citati qui possono
+essere più vecchi. Né questo file né `worker.js` vengono serviti da GitHub Pages come parte
+dell'app.
 
 ---
 

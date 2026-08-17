@@ -11462,6 +11462,60 @@ function _psSenzaSalto(fn){
     requestAnimationFrame(()=>{c.scrollTop=y;});
   }
 }
+// ── Risposte degli ospiti ───────────────────────────────────────────────────
+// Nel pre-stay si chiedono orario di arrivo, preferenza sul letto e allergie: le risposte
+// servono a chi prepara la camera, ma andarle a cercare nella webmail è un lavoro a parte.
+// Il Worker le legge in IMAP cercando SOLO gli indirizzi degli arrivi del giorno, quindi
+// l'endpoint non può restituire il resto della casella (vedi worker.js).
+//
+// Restano SOLO in questo browser: sono messaggi di ospiti, e tenerli fuori da KV evita di
+// spargere corrispondenza su tutti i dispositivi per una comodità di lettura.
+const PRESTAY_RISP_KEY='qm_prestay_risposte';
+let _psRisposte={};            // { iso: { 'email': {data,oggetto,testo} } }
+try{const r=localStorage.getItem(PRESTAY_RISP_KEY);if(r)_psRisposte=JSON.parse(r)||{};}catch(e){}
+let _psRispInCorso=false;
+function _psRisposta(iso,email){
+  const e=String(email||'').trim().toLowerCase();
+  return (e&&_psRisposte[iso]&&_psRisposte[iso][e])||null;
+}
+// L'endpoint delle risposte sta accanto a quello di invio: si ricava dallo stesso indirizzo
+// configurato, senza chiedere all'utente una seconda impostazione da tenere allineata.
+function _psEndpointRisposte(){
+  const e=String(_psMailCfg.endpoint||'').trim();
+  if(!e)return'';
+  return e.replace(/\/prestay\/send\/?$/,'/prestay/risposte');
+}
+async function prestayControllaRisposte(){
+  if(_psRispInCorso)return;
+  const iso=_psTargetISO();
+  const ep=_psEndpointRisposte();
+  if(!ep||!_psMailCfg.key){
+    alert('Per leggere le risposte serve la configurazione in "Impostazioni": è la stessa di quella usata per inviare.');
+    return;
+  }
+  const indirizzi=[...new Set((_psGiorno(iso).arrivi||[])
+    .map(a=>String(a.email||'').trim().toLowerCase()).filter(Boolean))];
+  if(!indirizzi.length){alert('Nessun indirizzo email inserito in questa data: non c\'è nulla da cercare.');return;}
+  _psRispInCorso=true;prestayRender();
+  try{
+    const r=await fetch(ep,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Prestay-Key':_psMailCfg.key},
+      body:JSON.stringify({indirizzi,giorni:14})
+    });
+    const j=await r.json().catch(()=>({ok:false,error:'risposta non leggibile'}));
+    if(!j||!j.ok)throw new Error((j&&j.error)||'lettura non riuscita');
+    _psRisposte[iso]=j.risposte||{};
+    try{localStorage.setItem(PRESTAY_RISP_KEY,JSON.stringify(_psRisposte));}catch(e){}
+    const n=Object.keys(_psRisposte[iso]).length;
+    _psAvviso=n?n+' rispost'+(n===1?'a':'e')+' trovat'+(n===1?'a':'e')+' e mostrat'+(n===1?'a':'e')+' sulle schede.'
+              :'Nessuna risposta dagli ospiti di questa data. Chi ha scritto dentro la messaggistica di Booking non compare qui: quelle si leggono solo nell\'Extranet.';
+  }catch(e){
+    alert('Non è stato possibile leggere le risposte: '+(e&&e.message||e));
+  }finally{
+    _psRispInCorso=false;prestayRender();
+  }
+}
 function prestayToggleMailCfg(){_prestayMailCfgOpen=!_prestayMailCfgOpen;_psSenzaSalto(prestayRender);}
 let _prestayMailCfgOpen=false;
 let _psMailInFlight={};
@@ -11687,6 +11741,7 @@ function prestayRender(){
         <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-weight:700;background:${arrivi.length&&inviati===arrivi.length?'var(--green)':'var(--surface2)'};color:${arrivi.length&&inviati===arrivi.length?'#fff':'var(--text)'};border:1px solid ${arrivi.length&&inviati===arrivi.length?'var(--green)':'var(--border-light)'};">${arrivi.length&&inviati===arrivi.length?'✓ ':''}${inviati}/${arrivi.length} contattati</span>
       </span>
       <button onclick="prestayAddArrivo()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">+ Aggiungi arrivo</button>
+      <button onclick="prestayControllaRisposte()" ${_psRispInCorso?'disabled':''} title="Cerca nella casella del Quality Manager le risposte degli ospiti di questa data" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:${_psRispInCorso?'wait':'pointer'};font-size:var(--fs-xxs);font-weight:600;opacity:${_psRispInCorso?'.6':'1'};">${_psRispInCorso?'Lettura…':'↓ Controlla risposte'}</button>
       <button onclick="prestayToggleTpl()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">✏️ Modifica testi</button>
       <button onclick="prestayToggleMailCfg()" title="${_psMailPronto()?'Invio diretto attivo su questo browser':'Non configurato: il pulsante mail apre il client di posta'}" style="padding:6px 12px;border:1px solid ${_psMailPronto()?'var(--green)':'var(--border)'};background:${_psMailPronto()?'var(--green-bg)':'var(--surface)'};color:${_psMailPronto()?'var(--green)':'var(--text)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">⚙️ Impostazioni${_psMailPronto()?' ✓':''}</button>
     </div>
@@ -11764,6 +11819,11 @@ function prestayRender(){
             <span style="margin-left:auto;display:flex;gap:4px;">${chip(mailOk,a.mailTs,'mail','mail')}${chip(waOk,a.waTs,'wa','wa')}</span>
           </div>
           ${a.mailErr&&!mailOk?`<div style="margin-top:6px;font-size:9px;color:var(--red);line-height:1.35;">${String(a.mailErr).substring(0,80)}</div>`:''}
+          ${(()=>{const rp=_psRisposta(iso,a.email);if(!rp)return'';
+            return`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--accent-bg);border-left:3px solid var(--accent);">
+              <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--accent);margin-bottom:4px;">Ha risposto${rp.data?' · '+String(rp.data).replace(/\s*\+\d{4}.*$/,'').trim():''}</div>
+              <div style="font-size:var(--fs-xs);color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word;">${String(rp.testo||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+            </div>`;})()}
         </div>`;
       });
       h+=`</div></div>`;
