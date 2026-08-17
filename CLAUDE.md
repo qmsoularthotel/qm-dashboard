@@ -1398,6 +1398,8 @@ Il bordo della scheda dice da dove arriva la prenotazione, leggendolo dall'**ind
 
 Gli arrivi di un tour operator non portano né email né telefono dell'ospite: non sono contattabili e non devono sembrare "da compilare". Si segnano con una **casella sulla scheda** (`prestayToggleItalcamel`), che la spegne: sovrapposizione sfocata (`backdrop-filter`) con la scritta **ITALCAMEL** nella tipografia del logo Compass — stesse quattro proprietà di `.logo-title` in `style.css` (`'Helvetica Neue'`, 20px, peso 700, `letter-spacing:-.01em`). Se il logo cambia carattere, questa scritta va aggiornata a mano: sono due punti separati, non c'è una classe condivisa.
 
+**Fuori dai conteggi.** Gli arrivi Italcamel restano visibili ma **non entrano nei contatori**, né in quelli del gruppo né in quelli della barra in alto: non sono contattabili per definizione, quindi tenerli nel denominatore avrebbe lasciato i gruppi eternamente incompleti (`2/5`) e l'avviso ambra accesso anche a lavoro finito. Ora il gruppo mostra `2/2 contattati · + 3 Italcamel` e il verde di "tutti contattati" scatta quando il lavoro è davvero finito. Un gruppo di soli Italcamel **non** si dichiara completo: zero contattabili non è un traguardo.
+
 **Perché a mano e non dedotto**: un primo tentativo leggeva le colonne Azienda/Gruppo del PDF (x 315–411), ma **il PMS non le popola** — nell'export reale contengono sempre `-`. Il parsing è stato rimosso: non reintrodurlo senza prima verificare che quelle colonne abbiano un contenuto.
 
 Due dettagli che non vanno semplificati:

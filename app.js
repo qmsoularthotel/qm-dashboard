@@ -11724,8 +11724,12 @@ function prestayRender(){
   const ggDa=Math.round((dt-new Date(oggiIso+'T12:00:00'))/86400000);
 
   const arrivi=_psGiorno(iso).arrivi||[];
-  const compilati=arrivi.filter(a=>a.email||a.tel).length;
-  const inviati=arrivi.filter(a=>a.mailTs||a.waTs).length;
+  // Gli arrivi Italcamel restano visibili ma FUORI DAI CONTEGGI: non sono contattabili per
+  // definizione, quindi tenerli nel denominatore terrebbe i gruppi eternamente incompleti e
+  // l'avviso ambra accesso anche a lavoro finito.
+  const contattabili=arrivi.filter(a=>!_psItalcamel(a));
+  const compilati=contattabili.filter(a=>a.email||a.tel).length;
+  const inviati=contattabili.filter(a=>a.mailTs||a.waTs).length;
 
   let h=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
     <button onclick="prestayNavDay(-1)" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;">‹</button>
@@ -11737,8 +11741,8 @@ function prestayRender(){
     ${ggDa!==PRESTAY_GG?`<button onclick="prestayOggi()" style="padding:6px 12px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">Torna a fra ${PRESTAY_GG} giorni</button>`:''}
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <span style="display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-xs);color:var(--text-muted);">
-        ${compilati}/${arrivi.length} con contatto
-        <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-weight:700;background:${arrivi.length&&inviati===arrivi.length?'var(--green)':'var(--surface2)'};color:${arrivi.length&&inviati===arrivi.length?'#fff':'var(--text)'};border:1px solid ${arrivi.length&&inviati===arrivi.length?'var(--green)':'var(--border-light)'};">${arrivi.length&&inviati===arrivi.length?'✓ ':''}${inviati}/${arrivi.length} contattati</span>
+        ${compilati}/${contattabili.length} con contatto
+        <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-weight:700;background:${contattabili.length&&inviati===contattabili.length?'var(--green)':'var(--surface2)'};color:${contattabili.length&&inviati===contattabili.length?'#fff':'var(--text)'};border:1px solid ${contattabili.length&&inviati===contattabili.length?'var(--green)':'var(--border-light)'};">${contattabili.length&&inviati===contattabili.length?'✓ ':''}${inviati}/${contattabili.length} contattati</span>
       </span>
       <button onclick="prestayAddArrivo()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">+ Aggiungi arrivo</button>
       <button onclick="prestayControllaRisposte()" ${_psRispInCorso?'disabled':''} title="Cerca nella casella del Quality Manager le risposte degli ospiti di questa data" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:${_psRispInCorso?'wait':'pointer'};font-size:var(--fs-xxs);font-weight:600;opacity:${_psRispInCorso?'.6':'1'};">${_psRispInCorso?'Lettura…':'↓ Controlla risposte'}</button>
@@ -11765,17 +11769,20 @@ function prestayRender(){
     Object.keys(PRESTAY_HOTELS).forEach(hc=>{
       const gruppo=arrivi.filter(a=>a.hotel===hc);
       if(!gruppo.length)return;
-      const daInviare=gruppo.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email)).length;
-      const bloccatiGruppo=gruppo.filter(a=>_psBookingBloccato(a.email)&&!a.mailTs).length;
-      const contattati=gruppo.filter(a=>a.mailTs||a.waTs).length;
-      const tuttiFatti=contattati===gruppo.length;
+      const gContattabili=gruppo.filter(a=>!_psItalcamel(a));
+      const nItal=gruppo.length-gContattabili.length;
+      const daInviare=gContattabili.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email)).length;
+      const bloccatiGruppo=gContattabili.filter(a=>_psBookingBloccato(a.email)&&!a.mailTs).length;
+      const contattati=gContattabili.filter(a=>a.mailTs||a.waTs).length;
+      const tuttiFatti=gContattabili.length>0&&contattati===gContattabili.length;
       h+=`<div style="margin-bottom:16px;border:1px solid ${tuttiFatti?'var(--green)':'var(--border-light)'};border-radius:10px;overflow:hidden;">
         <div style="background:${tuttiFatti?'var(--green-bg)':'var(--bg)'};padding:8px 13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${PRESTAY_HOTELS[hc].name}</span>
-          <span style="font-size:var(--fs-xxs);font-weight:700;color:${tuttiFatti?'var(--green)':'var(--text-dim)'};">${contattati}/${gruppo.length} contattati</span>
+          <span style="font-size:var(--fs-xxs);font-weight:700;color:${tuttiFatti?'var(--green)':'var(--text-dim)'};">${contattati}/${gContattabili.length} contattati</span>
+          ${nItal?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);">+ ${nItal} Italcamel</span>`:''}
           ${daInviare?`<button onclick="prestayInviaGruppo('${hc}')" title="Invia il messaggio a tutti gli arrivi di questa struttura che hanno un'email e non sono ancora stati contattati" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">${PS_ICON_MAIL}Invia tutte (${daInviare})</button>`
             :tuttiFatti?`<span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">✓ tutti contattati</span>`
-            :`<span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">${bloccatiGruppo?bloccatiGruppo+' con indirizzo Booking':(gruppo.length-contattati)+' senza contatto inserito'}</span>`}
+            :`<span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">${bloccatiGruppo?bloccatiGruppo+' con indirizzo Booking':(gContattabili.length-contattati)+' senza contatto inserito'}</span>`}
         </div>
         <div style="padding:12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">`;
       gruppo.forEach((a,i)=>{
