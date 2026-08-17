@@ -11072,19 +11072,16 @@ function _psTpl(hotel,lang){
 // spezzerebbe o li mescolerebbe. Verificato sull'export reale del 17/08/2026.
 const PS_COL_OSPITE_DA=90;    // x minima della colonna "Ospite (Prenotante)"
 const PS_COL_OSPITE_A=177;    // x della colonna "Pax": fine della colonna ospite
-// Colonne "Azienda" e "Gruppo" (x 315-411 nell'export reale, `-` quando vuote): servono a
-// riconoscere gli arrivi di un tour operator come ITALCAMEL, che non portano né email né
-// telefono dell'ospite e quindi non sono contattabili.
-const PS_COL_AZIENDA_DA=315;
-const PS_COL_AZIENDA_A=411;
-
 // ── Colore del bordo della scheda in base al canale di provenienza ──────────
 // L'indirizzo email dice da dove arriva la prenotazione, e riconoscerlo a colpo d'occhio
 // conta: il tono del messaggio e i vincoli di recapito cambiano per canale.
+// I colori sono scelti per DISTINGUERSI FRA LORO, non per fedelta al marchio: il blu
+// istituzionale di Booking (#003580) e talmente scuro da confondersi col nero delle dirette
+// e col marrone di G2, quindi si usa il loro blu chiaro.
 const PS_BORDI=[
-  {re:/@guest\.booking\.com$/i,        col:'#003580'},   // blu Booking.com
-  {re:/expediapartnercentral\.com/i,    col:'#ffd933'},   // giallo Expedia
-  {re:/g2-travel\.com/i,                col:'#76573a'}    // marrone G2 Travel
+  {re:/@guest\.booking\.com$/i,        col:'#0071C2'},   // blu Booking, tono chiaro
+  {re:/expediapartnercentral\.com/i,    col:'#FFB300'},   // giallo Expedia piu carico
+  {re:/g2-travel\.com/i,                col:'#76573A'}    // marrone G2 Travel
 ];
 const PS_BORDO_ALTRI='#111111';        // qualunque altro indirizzo
 function _psBordoPerEmail(email){
@@ -11099,7 +11096,16 @@ function _psAggiornaBordo(id,email){
   const c=document.getElementById('psCard-'+id);
   if(c&&c.dataset.fatto!=='1')c.style.borderColor=_psBordoPerEmail(email);
 }
-const _psItalcamel=a=>/italcamel/i.test(String(a&&a.azienda||''));
+// Italcamel si segna A MANO: il PMS non popola la colonna Azienda del PDF, quindi non c'e
+// modo di dedurlo dal documento. Spuntandolo la scheda si spegne — quegli arrivi non hanno
+// contatti dell'ospite e non devono sembrare "da compilare".
+const _psItalcamel=a=>!!(a&&a.italcamel);
+function prestayToggleItalcamel(id){
+  const iso=_psTargetISO(),a=_psScheda(iso,id);
+  if(!a)return;
+  a.italcamel=!a.italcamel;
+  _psSave();prestayRender();
+}
 // Riconosce l'inizio di una prenotazione nella colonna "Numero/Tipo" (es. "204 / PC STD",
 // "Art 10 / AS"). Esclude l'intestazione "Numero/", che pure contiene una barra.
 const PS_RE_CAMERA=/^(\d{1,4}|Art\s*\d+|LIB\s*\w*|R\s*\d|CAPRI|NAPOLI|PROCIDA|ISCHIA|POSITANO)\b/i;
@@ -11141,25 +11147,21 @@ function _psParsePdfArrivi(items){
     if(barra>0){
       const camera=sinistra.slice(0,barra).trim();
       if(PS_RE_CAMERA.test(camera)){
-        const az=col(r,PS_COL_AZIENDA_DA,PS_COL_AZIENDA_A).replace(/^-+$/,'').trim();
-        arrivi.push({camera,nome:ospite,hotel:_psStrutturaDaCamera(camera),azienda:az});
+        arrivi.push({camera,nome:ospite,hotel:_psStrutturaDaCamera(camera)});
         return;
       }
     }
     // Riga di continuazione: nome andato a capo. Si accoda solo se una prenotazione è aperta.
     if(ospite&&arrivi.length)arrivi[arrivi.length-1].nome=(arrivi[arrivi.length-1].nome+' '+ospite).trim();
   });
-  arrivi.forEach(a=>{
-    a.nome=_psNomeUmano(a.nome.replace(/\s+/g,' ').trim());
-    a.azienda=String(a.azienda||'').replace(/\s+/g,' ').replace(/^-+\s*/,'').trim();
-  });
+  arrivi.forEach(a=>{a.nome=_psNomeUmano(a.nome.replace(/\s+/g,' ').trim());});
   return{iso,arrivi};
 }
 
 let _psSeq=0;
 function _psNuovoId(){return 'a'+Date.now().toString(36)+(_psSeq++).toString(36);}
 function _psNuovaScheda(hotel){
-  return{id:_psNuovoId(),hotel:hotel,nome:'',email:'',tel:'',lang:'it',azienda:'',mailTs:null,waTs:null,mailErr:null};
+  return{id:_psNuovoId(),hotel:hotel,nome:'',email:'',tel:'',lang:'it',mailTs:null,waTs:null,mailErr:null};
 }
 // Accesso al giorno, con migrazione dal vecchio formato indicizzato per camera
 // (`{'203':{...}}`) al nuovo (`{arrivi:[…]}`). La migrazione è pigra — avviene alla prima
@@ -11185,7 +11187,7 @@ function _psGiorno(iso){
       const r=g[k];
       if(!r||typeof r!=='object'||Array.isArray(r))return;
       arrivi.push({id:_psNuovoId(),hotel:r.hotel||'sa',nome:_psNomeUmano(r.nome||''),email:r.email||'',
-                   tel:r.tel||'',lang:r.lang||'it',azienda:r.azienda||'',mailTs:r.mailTs||null,
+                   tel:r.tel||'',lang:r.lang||'it',italcamel:!!r.italcamel,mailTs:r.mailTs||null,
                    waTs:r.waTs||null,mailErr:r.mailErr||null});
       delete g[k];
     });
@@ -11224,9 +11226,6 @@ function _psImportaArrivi(iso,lista){
       if(s)s.nome=a.nome;
       else{s=_psNuovaScheda(a.hotel);s.nome=a.nome;nuovi++;}
     }
-    // L'azienda viene dal PDF e va aggiornata anche sulle schede ritrovate: un arrivo può
-    // passare a un tour operator (o uscirne) fra due export.
-    s.azienda=a.azienda||'';
     s.fuoriLista=false;
     usate.add(s.id);
     risultato.push(s);
@@ -11754,7 +11753,10 @@ function prestayRender(){
           <input value="${esc(a.nome)}" placeholder="Cognome Nome" onchange="prestaySetScheda('${a.id}','nome',this.value)" style="${inpS}font-weight:700;font-size:var(--fs-sm);margin-bottom:5px;">
           <input type="email" value="${esc(a.email)}" placeholder="email@…" oninput="_psAggiornaBordo('${a.id}',this.value)" onchange="prestaySetScheda('${a.id}','email',this.value)" title="${esc(a.email)}" style="${inpS}margin-bottom:5px;${_psBookingBloccato(a.email)?'border-color:var(--amber);':''}">
           ${_psBookingBloccato(a.email)?`<div style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.35;margin:-2px 0 5px;">indirizzo Booking · non recapitabile con il mittente attuale</div>`:''}
-          <input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}margin-bottom:9px;">
+          <input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}margin-bottom:7px;">
+          <label title="Arrivo di gruppo Italcamel: nessun contatto dell'ospite, la scheda si spegne" style="position:relative;z-index:3;display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:var(--fs-xxs);font-weight:700;color:${ital?'var(--text)':'var(--text-dim)'};cursor:pointer;user-select:none;">
+            <input type="checkbox" ${ital?'checked':''} onchange="prestayToggleItalcamel('${a.id}')" style="width:15px;height:15px;margin:0;cursor:pointer;accent-color:var(--accent);">Italcamel
+          </label>
           <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
             <button onclick="prestayAnteprima('${a.id}','both')" title="Vedi e correggi il messaggio prima di mandarlo" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:7px;cursor:pointer;">${PS_ICON_EYE}</button>
             <button onclick="prestayAnteprima('${a.id}','mail')" ${inFlight?'disabled':''} title="Anteprima del messaggio prima di inviare" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;height:28px;border:1px solid var(--accent);background:${fatto?'var(--surface)':'var(--accent)'};color:${fatto?'var(--accent)':'#fff'};border-radius:7px;cursor:${inFlight?'wait':'pointer'};opacity:${inFlight?'.5':'1'};font-size:var(--fs-xxs);font-weight:700;">${inFlight?PS_ICON_LOAD:PS_ICON_MAIL}${fatto?'Rinvia':'Invia'}</button>

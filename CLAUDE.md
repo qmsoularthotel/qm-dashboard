@@ -1354,19 +1354,25 @@ Il bordo della scheda dice da dove arriva la prenotazione, leggendolo dall'**ind
 
 | Indirizzo | Bordo |
 |---|---|
-| `@guest.booking.com` | `#003580` (blu Booking) |
-| contiene `expediapartnercentral.com` | `#ffd933` |
-| contiene `g2-travel.com` | `#76573a` |
+| `@guest.booking.com` | `#0071C2` (blu Booking, tono chiaro) |
+| contiene `expediapartnercentral.com` | `#FFB300` |
+| contiene `g2-travel.com` | `#76573A` |
 | qualunque altro | `#111111` (nero) |
 | **già contattato** | verde — **vince su tutti**, `data-fatto="1"` |
 
+**I colori sono scelti per distinguersi fra loro, non per fedeltà al marchio.** Il blu istituzionale di Booking (`#003580`) era indistinguibile dal nero delle dirette e dal marrone di G2 — si usa il loro blu chiaro. Il giallo Expedia è stato scurito da `#ffd933` a `#FFB300` perché quello pallido non si leggeva. Cambiandoli in futuro, verificarli **affiancati**, non uno per uno.
+
 **Il bordo cambia mentre si digita**, non al termine: `oninput` chiama `_psAggiornaBordo(id,email)` che tocca **solo** `style.borderColor` della scheda. Un `prestayRender()` a ogni tasto farebbe perdere il fuoco al campo — non sostituirlo con un re-render. `onchange` resta separato e continua a salvare.
 
-### Arrivi Italcamel — scheda sfocata
+### Arrivi Italcamel — spunta manuale, scheda spenta
 
-Gli arrivi di un tour operator non portano né email né telefono dell'ospite: non sono contattabili e non devono sembrare "da compilare". `_psItalcamel(a)` li riconosce dal campo `azienda`, e la scheda riceve una sovrapposizione sfocata (`backdrop-filter`) con la scritta **ITALCAMEL**, in `pointer-events:none` così non intercetta i clic.
+Gli arrivi di un tour operator non portano né email né telefono dell'ospite: non sono contattabili e non devono sembrare "da compilare". Si segnano con una **casella sulla scheda** (`prestayToggleItalcamel`), che la spegne: sovrapposizione sfocata (`backdrop-filter`) con la scritta **ITALCAMEL**.
 
-Il campo `azienda` viene dalle colonne **Azienda + Gruppo** del PDF (x 315–411, `-` quando vuote — vedi `PS_COL_AZIENDA_DA/A`), aggiunte al parser proprio per questo. Viene **riaggiornato a ogni reimport**, anche sulle schede ritrovate: un arrivo può passare a un tour operator, o uscirne, fra due export.
+**Perché a mano e non dedotto**: un primo tentativo leggeva le colonne Azienda/Gruppo del PDF (x 315–411), ma **il PMS non le popola** — nell'export reale contengono sempre `-`. Il parsing è stato rimosso: non reintrodurlo senza prima verificare che quelle colonne abbiano un contenuto.
+
+Due dettagli che non vanno semplificati:
+- la sovrapposizione è `pointer-events:none` e la **casella sta sopra di essa** (`z-index:3` contro `2`), altrimenti spegnendo la scheda non si potrebbe più riaccenderla;
+- il flag `italcamel` **non viene toccato da `_psImportaArrivi`**: è una marcatura dell'utente e deve sopravvivere al reimport del PDF. Verificato in test.
 
 ### Ordine delle strutture, invio in blocco, nomi (15/08/2026)
 
