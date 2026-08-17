@@ -11766,11 +11766,11 @@ function prestayRender(){
       </div>
       <button onclick="prestayNavDay(1)" title="Giorno successivo" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;">›</button>
       ${ggDa!==PRESTAY_GG?`<button onclick="prestayOggi()" style="padding:5px 11px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">Torna a fra ${PRESTAY_GG} giorni</button>`:''}
-      <div style="margin-left:auto;text-align:right;">
+      <div class="ps-bar-stato">
         <div style="font-size:var(--fs-sm);font-weight:700;color:${tuttoFatto?'var(--green)':'var(--text)'};white-space:nowrap;">
           ${tuttoFatto?'✓ ':''}${inviati} <span style="font-size:var(--fs-xs);font-weight:400;color:var(--text-muted);">di ${contattabili.length} contattati</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:5px;">
+        <div class="ps-bar-prog">
           ${contattabili.length-inviati>0?`<span style="font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">${contattabili.length-inviati} da fare</span>`:''}
           <div style="width:150px;height:5px;background:var(--border-light);border-radius:3px;overflow:hidden;">
             <div style="width:${pct}%;height:5px;background:${tuttoFatto?'var(--green)':'var(--accent)'};transition:width .2s;"></div>
@@ -11781,7 +11781,7 @@ function prestayRender(){
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 13px;border-top:1px solid var(--border-light);background:var(--bg);">
       <button onclick="prestayControllaRisposte()" ${_psRispInCorso?'disabled':''} title="Cerca nella casella del Quality Manager le risposte degli ospiti di questa data" style="${bott}cursor:${_psRispInCorso?'wait':'pointer'};opacity:${_psRispInCorso?'.6':'1'};">${_psRispInCorso?'Lettura…':'↓ Controlla risposte'}</button>
       <button onclick="prestayAddArrivo()" style="${bott}">+ Aggiungi arrivo</button>
-      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+      <div class="ps-bar-cfg">
         <button onclick="prestayToggleTpl()" style="${bott}">✏️ Modifica testi</button>
         <button onclick="prestayToggleMailCfg()" title="${_psMailPronto()?'Invio diretto attivo su questo browser':'Non configurato: il pulsante mail apre il client di posta'}" style="padding:6px 12px;border:1px solid ${_psMailPronto()?'var(--green)':'var(--border)'};background:${_psMailPronto()?'var(--green-bg)':'var(--surface)'};color:${_psMailPronto()?'var(--green)':'var(--text)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">⚙️ Impostazioni${_psMailPronto()?' ✓':''}</button>
       </div>
@@ -11821,7 +11821,7 @@ function prestayRender(){
             :tuttiFatti?`<span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">✓ tutti contattati</span>`
             :`<span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">${bloccatiGruppo?bloccatiGruppo+' con indirizzo Booking':(gContattabili.length-contattati)+' senza contatto inserito'}</span>`}
         </div>
-        <div style="padding:12px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">`;
+        <div class="ps-grid">`;
       gruppo.forEach((a,i)=>{
         const mailOk=!!a.mailTs,waOk=!!a.waTs;
         const inFlight=!!_psMailInFlight[a.id];

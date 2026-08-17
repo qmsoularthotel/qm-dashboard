@@ -522,8 +522,27 @@ select.form-input option{background:var(--surface2);color:var(--text);}
 .mobile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:98;}
 .mobile-overlay.open{display:block;}
 
+/* ── Messaggi Pre-stay ──────────────────────────────────────────────────────
+   Le schede degli arrivi e la barra di intestazione sono costruite in JS con stili in
+   linea: quelli non possono adattarsi alla larghezza. Le sole parti che devono rispondere
+   stanno qui, così su smartphone la pagina resta usabile (vedi @media più sotto). */
+.ps-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:12px;}
+.ps-bar-stato{margin-left:auto;text-align:right;}
+.ps-bar-prog{display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:5px;}
+.ps-bar-cfg{margin-left:auto;display:flex;gap:8px;align-items:center;}
+
+@media(max-width:1200px){.ps-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:768px){
   .mobile-menu-btn{display:flex;}
+  /* Pre-stay su smartphone: una scheda per riga — a tre colonne i campi email diventano
+     illeggibili, ed è proprio l'email il dato che si incolla e si rilegge. Lo stato e il
+     gruppo di configurazione escono dall'allineamento a destra e vanno a capo a tutta
+     larghezza, altrimenti si schiacciano contro il bordo. */
+  .ps-grid{grid-template-columns:1fr;gap:10px;padding:10px;}
+  .ps-bar-stato{margin-left:0;width:100%;text-align:left;}
+  .ps-bar-prog{justify-content:flex-start;}
+  .ps-bar-cfg{margin-left:0;width:100%;}
+  .ps-bar-cfg button{flex:1;}
   /* Tabelle dati larghe (Spese Fornitori, Inventari e Ordini, Breakfast Sheet): invece
      di allargare la pagina e costringere a scorrere tutto in orizzontale, ogni tabella
      diventa il proprio contenitore scorrevole. min-width:100% le tiene comunque piene
