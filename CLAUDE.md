@@ -1342,6 +1342,16 @@ Ricaricare una lista aggiornata è normale (le prenotazioni cambiano fino all'ul
 
 **Verificato con 34 test sul PDF reale del 17/08/2026** (9 arrivi, 3 Boutique + 6 SoulArt): nomi su più righe ricomposti, tipi camera mai finiti nel nome, intestazione e riga totali non importate, contatti e stato di invio conservati al re-import, nessun duplicato.
 
+### Barra di intestazione su due piani (17/08/2026)
+
+Prima era una riga sola con data, due contatori e quattro pulsanti. I due contatori — `9/14 con contatto` e `9/14 contattati` — si leggevano come una ripetizione pur dicendo cose diverse, e i pulsanti avevano tutti lo stesso peso pur non avendo lo stesso uso.
+
+Ora due piani dentro un unico riquadro:
+- **sopra**: navigazione del giorno, data, e a destra **un solo numero** (`9 di 14 contattati`) con `N da fare` in ambra e una barra di avanzamento. A completamento: spunta, barra piena, tutto verde;
+- **sotto**, separata da un filo: le azioni. A sinistra quelle quotidiane (**Controlla risposte**, **Aggiungi arrivo**), a destra raggruppate quelle di configurazione (**Modifica testi**, **Impostazioni**) — stanno insieme perché si usano raramente e per ragioni affini.
+
+I conteggi sono sui **contattabili** (Italcamel esclusi, vedi sopra). Con zero contattabili non compare la spunta di completamento: non è un traguardo. Verificato con 19 test, casi limite inclusi.
+
 ### Impaginazione a schede, non a tabella (16/08/2026)
 
 Gli arrivi sono **schede in griglia a tre colonne fisse** (`repeat(3,minmax(0,1fr))`, come il Pannello App) dentro il gruppo della struttura, non righe di tabella. Contorno a **2px** perché le schede si stacchino dallo sfondo, e il numero d'arrivo è una pastiglia con il numero in un cerchietto — non più testo minuto in grigio: su tredici schede serve individuarlo senza cercarlo. La tabella tagliava le email — `cgroth.972512@guest.boo` — proprio sul dato che si incolla a mano e che quindi va riletto; nella scheda i tre campi sono impilati a piena larghezza.

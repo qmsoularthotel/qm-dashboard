@@ -11728,26 +11728,43 @@ function prestayRender(){
   // definizione, quindi tenerli nel denominatore terrebbe i gruppi eternamente incompleti e
   // l'avviso ambra accesso anche a lavoro finito.
   const contattabili=arrivi.filter(a=>!_psItalcamel(a));
-  const compilati=contattabili.filter(a=>a.email||a.tel).length;
   const inviati=contattabili.filter(a=>a.mailTs||a.waTs).length;
 
-  let h=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-    <button onclick="prestayNavDay(-1)" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;">‹</button>
-    <div style="min-width:210px;text-align:center;">
-      <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${GIORNI[dt.getDay()]} ${dt.getDate()} ${MESI[dt.getMonth()]}</div>
-      <div style="font-size:var(--fs-xxs);color:${ggDa===PRESTAY_GG?'var(--accent)':'var(--text-dim)'};font-weight:${ggDa===PRESTAY_GG?700:400};">${ggDa===0?'oggi':ggDa===1?'domani':ggDa>0?'fra '+ggDa+' giorni':'passato'}${ggDa===PRESTAY_GG?' · da contattare oggi':''}</div>
+  // Barra su DUE piani: sopra dove sei e come stai andando, sotto cosa puoi fare.
+  // Prima erano tutti sulla stessa riga, con due contatori quasi identici affiancati
+  // ("9/14 con contatto" e "9/14 contattati") che si leggevano come una ripetizione.
+  // Ora un numero solo più la barra di avanzamento; "da fare" resta esplicito.
+  const tuttoFatto=contattabili.length>0&&inviati===contattabili.length;
+  const pct=contattabili.length?Math.round(inviati/contattabili.length*100):0;
+  const bott='padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;';
+  let h=`<div style="border:1px solid var(--border-light);border-radius:10px;margin-bottom:14px;overflow:hidden;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 13px;">
+      <button onclick="prestayNavDay(-1)" title="Giorno precedente" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;">‹</button>
+      <div style="min-width:190px;">
+        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${GIORNI[dt.getDay()]} ${dt.getDate()} ${MESI[dt.getMonth()]}</div>
+        <div style="font-size:var(--fs-xxs);color:${ggDa===PRESTAY_GG?'var(--accent)':'var(--text-dim)'};font-weight:${ggDa===PRESTAY_GG?700:400};">${ggDa===0?'oggi':ggDa===1?'domani':ggDa>0?'fra '+ggDa+' giorni':'passato'}${ggDa===PRESTAY_GG?' · da contattare oggi':''}</div>
+      </div>
+      <button onclick="prestayNavDay(1)" title="Giorno successivo" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;">›</button>
+      ${ggDa!==PRESTAY_GG?`<button onclick="prestayOggi()" style="padding:5px 11px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">Torna a fra ${PRESTAY_GG} giorni</button>`:''}
+      <div style="margin-left:auto;text-align:right;">
+        <div style="font-size:var(--fs-sm);font-weight:700;color:${tuttoFatto?'var(--green)':'var(--text)'};white-space:nowrap;">
+          ${tuttoFatto?'✓ ':''}${inviati} <span style="font-size:var(--fs-xs);font-weight:400;color:var(--text-muted);">di ${contattabili.length} contattati</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:5px;">
+          ${contattabili.length-inviati>0?`<span style="font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">${contattabili.length-inviati} da fare</span>`:''}
+          <div style="width:150px;height:5px;background:var(--border-light);border-radius:3px;overflow:hidden;">
+            <div style="width:${pct}%;height:5px;background:${tuttoFatto?'var(--green)':'var(--accent)'};transition:width .2s;"></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <button onclick="prestayNavDay(1)" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;">›</button>
-    ${ggDa!==PRESTAY_GG?`<button onclick="prestayOggi()" style="padding:6px 12px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">Torna a fra ${PRESTAY_GG} giorni</button>`:''}
-    <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <span style="display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-xs);color:var(--text-muted);">
-        ${compilati}/${contattabili.length} con contatto
-        <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-weight:700;background:${contattabili.length&&inviati===contattabili.length?'var(--green)':'var(--surface2)'};color:${contattabili.length&&inviati===contattabili.length?'#fff':'var(--text)'};border:1px solid ${contattabili.length&&inviati===contattabili.length?'var(--green)':'var(--border-light)'};">${contattabili.length&&inviati===contattabili.length?'✓ ':''}${inviati}/${contattabili.length} contattati</span>
-      </span>
-      <button onclick="prestayAddArrivo()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">+ Aggiungi arrivo</button>
-      <button onclick="prestayControllaRisposte()" ${_psRispInCorso?'disabled':''} title="Cerca nella casella del Quality Manager le risposte degli ospiti di questa data" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:${_psRispInCorso?'wait':'pointer'};font-size:var(--fs-xxs);font-weight:600;opacity:${_psRispInCorso?'.6':'1'};">${_psRispInCorso?'Lettura…':'↓ Controlla risposte'}</button>
-      <button onclick="prestayToggleTpl()" style="padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">✏️ Modifica testi</button>
-      <button onclick="prestayToggleMailCfg()" title="${_psMailPronto()?'Invio diretto attivo su questo browser':'Non configurato: il pulsante mail apre il client di posta'}" style="padding:6px 12px;border:1px solid ${_psMailPronto()?'var(--green)':'var(--border)'};background:${_psMailPronto()?'var(--green-bg)':'var(--surface)'};color:${_psMailPronto()?'var(--green)':'var(--text)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">⚙️ Impostazioni${_psMailPronto()?' ✓':''}</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 13px;border-top:1px solid var(--border-light);background:var(--bg);">
+      <button onclick="prestayControllaRisposte()" ${_psRispInCorso?'disabled':''} title="Cerca nella casella del Quality Manager le risposte degli ospiti di questa data" style="${bott}cursor:${_psRispInCorso?'wait':'pointer'};opacity:${_psRispInCorso?'.6':'1'};">${_psRispInCorso?'Lettura…':'↓ Controlla risposte'}</button>
+      <button onclick="prestayAddArrivo()" style="${bott}">+ Aggiungi arrivo</button>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+        <button onclick="prestayToggleTpl()" style="${bott}">✏️ Modifica testi</button>
+        <button onclick="prestayToggleMailCfg()" title="${_psMailPronto()?'Invio diretto attivo su questo browser':'Non configurato: il pulsante mail apre il client di posta'}" style="padding:6px 12px;border:1px solid ${_psMailPronto()?'var(--green)':'var(--border)'};background:${_psMailPronto()?'var(--green-bg)':'var(--surface)'};color:${_psMailPronto()?'var(--green)':'var(--text)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">⚙️ Impostazioni${_psMailPronto()?' ✓':''}</button>
+      </div>
     </div>
   </div>`;
 
