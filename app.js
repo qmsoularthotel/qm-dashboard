@@ -11835,9 +11835,9 @@ function prestayRender(){
         // e marcata: non c'è nulla da compilare né da inviare.
         const ital=_psItalcamel(a);
         const bordo=fatto?'var(--green)':_psBordoPerEmail(a.email);
-        h+=`<div id="psCard-${a.id}" data-fatto="${fatto?'1':'0'}" style="position:relative;background:${fatto?'var(--green-bg)':'var(--surface)'};border:2px solid ${bordo};border-radius:10px;padding:11px 13px;">
+        h+=`<div id="psCard-${a.id}" data-fatto="${fatto?'1':'0'}" style="position:relative;background:${fatto?'var(--green-bg)':'var(--surface)'};border:1px solid ${bordo};border-radius:10px;padding:11px 13px;">
           ${ital?`<div style="position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(244,244,246,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);pointer-events:none;">
-            <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--text);opacity:.62;text-shadow:0 1px 0 #fff;white-space:nowrap;">Italcamel</span>
+            <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:26px;font-weight:700;letter-spacing:-.01em;color:var(--text);opacity:.62;text-shadow:0 1px 0 #fff;white-space:nowrap;">Italcamel</span>
           </div>`:''}
           <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
             <span style="padding:2px 9px;border-radius:12px;background:${fatto?'var(--green-bg)':'var(--surface2)'};color:${fatto?'var(--green)':'var(--text-muted)'};border:1px solid ${fatto?'var(--green)':'var(--border-light)'};font-size:var(--fs-xxs);font-weight:700;line-height:1.5;white-space:nowrap;">Arrivo ${i+1}</span>
