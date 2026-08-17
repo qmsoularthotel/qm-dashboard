@@ -1348,6 +1348,26 @@ Gli arrivi sono **schede in griglia a tre colonne fisse** (`repeat(3,minmax(0,1f
 
 Una scheda già contattata ha **fondo e bordo verdi** e il pulsante diventa **"Rinvia"** senza riempimento pieno: resta possibile, ma non è più l'azione attesa. Il resto (spunte correggibili, badge `non più in lista`, avviso indirizzo Booking, errore di invio) è invariato, solo ricollocato.
 
+### Colore del bordo = canale di provenienza (17/08/2026)
+
+Il bordo della scheda dice da dove arriva la prenotazione, leggendolo dall'**indirizzo email** (`_psBordoPerEmail`). Serve perché tono del messaggio e vincoli di recapito cambiano per canale.
+
+| Indirizzo | Bordo |
+|---|---|
+| `@guest.booking.com` | `#003580` (blu Booking) |
+| contiene `expediapartnercentral.com` | `#ffd933` |
+| contiene `g2-travel.com` | `#76573a` |
+| qualunque altro | `#111111` (nero) |
+| **già contattato** | verde — **vince su tutti**, `data-fatto="1"` |
+
+**Il bordo cambia mentre si digita**, non al termine: `oninput` chiama `_psAggiornaBordo(id,email)` che tocca **solo** `style.borderColor` della scheda. Un `prestayRender()` a ogni tasto farebbe perdere il fuoco al campo — non sostituirlo con un re-render. `onchange` resta separato e continua a salvare.
+
+### Arrivi Italcamel — scheda sfocata
+
+Gli arrivi di un tour operator non portano né email né telefono dell'ospite: non sono contattabili e non devono sembrare "da compilare". `_psItalcamel(a)` li riconosce dal campo `azienda`, e la scheda riceve una sovrapposizione sfocata (`backdrop-filter`) con la scritta **ITALCAMEL**, in `pointer-events:none` così non intercetta i clic.
+
+Il campo `azienda` viene dalle colonne **Azienda + Gruppo** del PDF (x 315–411, `-` quando vuote — vedi `PS_COL_AZIENDA_DA/A`), aggiunte al parser proprio per questo. Viene **riaggiornato a ogni reimport**, anche sulle schede ritrovate: un arrivo può passare a un tour operator, o uscirne, fra due export.
+
 ### Ordine delle strutture, invio in blocco, nomi (15/08/2026)
 
 **L'ordine delle chiavi di `PRESTAY_HOTELS` è l'ordine dei gruppi nella pagina**: Boutique, SoulArt, San Liborio, Principe, Mastrangelo. Per cambiare l'ordine si riordinano le chiavi, non serve altro. **Art Resort è stato rimosso di proposito** dal pre-stay (e da `PRESTAY_FROM_NAME`): da qui non lo si contatta.
