@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='256-20260623';
+  const V='257-20260818';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -104,6 +104,7 @@
       <div class="nav-section">Housekeeping</div>
       <div class="nav-item" onclick="setView('hkpsheet',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5 9 15"/><path d="M14 20a3 3 0 1 1-6 0c0-1.5 1-2 1-3.5S8 13 8 13h4s-1 1.5-1 3.5 1 2 1 3.5z"/></svg></span></span>Operativa HKP</div>
       <div class="nav-item" onclick="setView('room-division',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2"/><path d="M8 10v11M15 3v18M15 8h5M15 14h5"/></svg></span></span>Bilanciamento Camere</div>
+      <div class="nav-item" onclick="setView('biancheria',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l4-3 3 2 4 0 3-2 4 3-2 4h-1v9H6v-9H5z"/></svg></span></span>Biancheria</div>
       <div class="nav-item" onclick="setView('resi-biancheria',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/></svg></span></span>Resi Biancheria</div>
 
       <div class="nav-section">Reception</div>
@@ -1598,6 +1599,11 @@
           <div class="panel-body staff-area-mirror" id="staffAreaMirror"></div>
         </div>
       </div>
+      <div class="view" id="view-biancheria">
+        <div class="panel" style="background:none;border:none;box-shadow:none;padding:0;">
+          <div id="bia-content"></div>
+        </div>
+      </div>
       <div class="view" id="view-resi-biancheria">
         <div class="panel">
           <div class="panel-header">
@@ -1628,7 +1634,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=776-20260818"></script>
+<script src="app.js?v=777-20260818"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

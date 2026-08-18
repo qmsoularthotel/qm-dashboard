@@ -1917,6 +1917,80 @@ Non creare workflow YAML personalizzati come soluzione: ne è stato creato uno (
 
 ---
 
+## Biancheria — Ciclo pulito/sporco (Fornitore Raimondo)
+
+Vista `biancheria` (`§§ BIANCHERIA` in app.js, chiave KV `qm_biancheria`). **Da non
+confondere con `resi-biancheria`**, che è un modulo diverso: quello tratta i pezzi
+inidonei (macchiati, strappati) che viaggiano in un sacco separato con distinta propria
+ogni 15 giorni; questo tratta il giro normale del pulito e dello sporco.
+
+### Il problema che risolve
+
+Raimondo consegna il pulito lasciando la **sua** distinta, che l'albergo conserva, ma
+**ritira lo sporco senza che nessuno lo conti e senza firmare niente**. Mancando quel
+documento, quando salta fuori del materiale mancante non si può stabilire se è sparito
+dentro l'albergo o se non è tornato dalla lavanderia. Il modulo genera la distinta di
+consegna che oggi non esiste.
+
+### Lo sporco non si conta a parte
+
+La quantità che esce **è** la somma dei consumi giornalieri dei fogli camera del periodo.
+Non esiste una seconda conta dei sacchi: se dal giro scorso sono state consumate 26
+federe, escono 26 federe. Il campo resta correggibile, ma il valore proposto viene sempre
+dai consumi.
+
+### REGOLA DEL PERIODO — il giorno del giro resta fuori
+
+Raimondo passa alle **8:00**, prima che le cameriere lavorino. Quindi:
+
+> Il giro del giorno D ritira i consumi **dal giorno del giro precedente (incluso) al
+> giorno prima di D (incluso)**. Il consumo del giorno stesso del giro finisce nel giro
+> successivo.
+
+Con il calendario martedì / giovedì / sabato: martedì ritira sab+dom+lun, giovedì ritira
+mar+mer, sabato ritira gio+ven.
+
+Il `dal` si ricava dai **giri realmente registrati**, non dal calendario: se un giro
+salta, il successivo copre da solo il buco. Non sostituire questa logica con un calcolo
+sui giorni della settimana.
+
+### Congelamento dello sporco consegnato
+
+`consegnato` viene salvato sul giro al momento della registrazione, non ricalcolato al
+volo. Correggere più tardi un consumo giornaliero non deve cambiare i giri già chiusi né
+le distinte già firmate da Raimondo.
+
+### Confronto e saldo
+
+- **Atteso** al giro N = `consegnato` del giro N-1 (stessa struttura). Al primo giro è
+  `null` e la colonna mostra `—`.
+- **Ricevuto** si precompila uguale all'atteso: nel caso normale non si digita nulla, si
+  interviene solo quando la distinta di Raimondo dice altro.
+- **Saldo** = somma su tutti i giri di (ricevuto − atteso). Un singolo giro può chiudere
+  in pari per caso; è il cumulato che rivela una perdita sistematica.
+
+### Voci e strutture
+
+Le sette voci dei fogli camera (`BIA_VOCI`) sono **diverse** da `RESI_TIPOLOGIE_DEFAULT`
+e non vanno unificate: `Lenzuolo matrimoniale, Lenzuolo singolo, Federa, Telo doccia,
+Asciugamano viso, Asciugamano bidet, Scendibagno`. Strutture: SoulArt e Boutique
+(`BIA_HOTELS`), come per i resi — Art Resort resta fuori.
+
+### Funzioni
+
+| Funzione | Scopo |
+|----------|-------|
+| `biaLoad()` | Carica da KV con fallback localStorage, poi render |
+| `_biaPeriodo(hotel,dataGiro)` | Intervallo dei consumi ritirati — vedi regola sopra |
+| `_biaSommaConsumi(hotel,dal,al)` | Somma per voce nell'intervallo, estremi inclusi |
+| `_biaAtteso(hotel,dataGiro)` | Sporco consegnato al giro precedente |
+| `_biaSaldo(hotel)` | Cumulato dei pezzi non rientrati per voce |
+| `biaSalvaConsumi()` | Salva i 7 totali del giorno (sovrascrive se la data esiste già) |
+| `biaRegistraGiro()` | Registra/aggiorna il giro congelando `consegnato` |
+| `biaPrintDistinta(giroId)` | Distinta A4 di consegna; senza id usa il form corrente |
+
+---
+
 ## Note & Problemi Noti
 
 | Problema | Causa | Fix |

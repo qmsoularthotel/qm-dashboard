@@ -608,8 +608,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria',prestay:'Messaggi Pre-stay'};
-const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',prestay:'Operativo Quotidiano'};
+const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria',biancheria:'Biancheria — Ciclo Raimondo',prestay:'Messaggi Pre-stay'};
+const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',biancheria:'Housekeeping',prestay:'Operativo Quotidiano'};
 // §§ HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore)
 // Operativa HKP: solo SoulArt. Art Resort è stato rimosso (17/08/2026) — non più
 // necessario, quindi via anche la scelta della struttura dal menu.
@@ -1614,6 +1614,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='controllo-mattino'){try{cmLoad();}catch(e){}}
   if(id==='reception'){try{receptionLoad();}catch(e){}}
   if(id==='resi-biancheria'){try{resiLoad();}catch(e){}}
+  if(id==='biancheria'){try{biaLoad();}catch(e){}}
   if(id==='prestay'){try{prestayRender();}catch(e){}}
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
   // .staff-area-mirror) — ririchiamato qui solo per popolare lo specchio se la vista
@@ -12652,6 +12653,421 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 </body></html>`;
   const w=window.open('','_blank');
   if(!w){alert('Abilita i popup per stampare.');return;}
+  w.document.write(html);w.document.close();
+  setTimeout(()=>w.print(),400);
+}
+
+// §§ BIANCHERIA — Ciclo pulito/sporco (Fornitore Raimondo)
+// Modulo distinto da §§ RESI BIANCHERIA: quello tratta i pezzi inidonei (macchiati,
+// strappati) che viaggiano in un sacco a parte; questo tratta il giro normale del
+// pulito e dello sporco.
+//
+// Il problema che risolve: Raimondo consegna il pulito lasciando la SUA distinta, ma
+// ritira lo sporco senza che nessuno lo conti e senza firmare niente. Mancando quel
+// documento, quando salta fuori del materiale mancante non c'è modo di sapere se è
+// sparito dentro l'albergo o se non è tornato dalla lavanderia. Qui si genera la
+// distinta di consegna che oggi non esiste.
+//
+// Il conteggio dello sporco NON si conta a parte: è la somma dei consumi che le
+// cameriere dichiarano ogni giorno sui fogli camera. Se dal giro scorso sono state
+// consumate 26 federe, sono 26 le federe che escono.
+const BIA_KEY='qm_biancheria';
+const BIA_HOTELS={sa:'SoulArt Hotel',bh:'Boutique Hotel Piazza Carità'};
+// Le sette voci dei fogli camera, nell'ordine in cui le cameriere le trovano sul
+// cartaceo: inserire i numeri seguendo lo stesso ordine riduce gli errori di battitura.
+const BIA_VOCI=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno'];
+let _bia={consumi:[],giri:[]};
+let _biaHotel='sa';
+const _biaH=x=>x.hotel||'sa';
+
+function _biaUid(){return Date.now()+'_'+Math.random().toString(36).slice(2,8);}
+function _biaFmt(d){const x=d instanceof Date?d:new Date(d);return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear();}
+function _biaParse(s){const m=String(s||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;}
+// dd/MM/yyyy <-> yyyy-MM-dd, per i campi <input type="date">
+function _biaToIso(s){const d=_biaParse(s);return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):'';}
+function _biaFromIso(s){const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:'';}
+function _biaOggi(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function _biaVuote(){const o={};BIA_VOCI.forEach(v=>o[v]=0);return o;}
+function _biaTot(q){return BIA_VOCI.reduce((s,v)=>s+(Number(q&&q[v])||0),0);}
+
+async function biaLoad(){
+  const el=document.getElementById('bia-content');if(!el)return;
+  el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Caricamento…</div>';
+  let data=null;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(BIA_KEY),{cache:'no-store'});
+    if(r.ok){const j=await r.json();if(j&&j.value)data=JSON.parse(j.value);}
+  }catch(e){}
+  if(!data){try{const s=localStorage.getItem(BIA_KEY);if(s)data=JSON.parse(s);}catch(e){}}
+  _bia=Object.assign({consumi:[],giri:[]},data||{});
+  biaRender();
+}
+function _biaSave(){
+  const json=JSON.stringify(_bia);
+  try{localStorage.setItem(BIA_KEY,json);}catch(e){}
+  kvSet(BIA_KEY,json).catch(()=>{});
+}
+
+function _biaConsumi(h){const hot=h||_biaHotel;return _bia.consumi.filter(c=>_biaH(c)===hot);}
+function _biaGiri(h){
+  const hot=h||_biaHotel;
+  return _bia.giri.filter(g=>_biaH(g)===hot)
+    .sort((a,b)=>(_biaParse(a.data)||0)-(_biaParse(b.data)||0));
+}
+function biaSetHotel(h){if(!BIA_HOTELS[h])return;_biaHotel=h;biaRender();}
+
+// Il giro del giorno D ritira i consumi dal giro precedente (incluso) al giorno prima
+// di D (incluso). Il consumo del giorno stesso del giro resta fuori: Raimondo passa
+// alle 8:00, prima che le cameriere lavorino, quindi quello sporco lo ritira il giro
+// successivo. Il "dal" si prende dai giri realmente registrati, non dal calendario
+// martedì/giovedì/sabato: se un giro salta, il successivo copre da solo il buco.
+function _biaPeriodo(hotel,dataGiro){
+  const d=_biaParse(dataGiro);if(!d)return null;
+  const al=new Date(d.getTime()-86400000);
+  const prec=_biaGiri(hotel).filter(g=>{const gd=_biaParse(g.data);return gd&&gd<d;});
+  let dal;
+  if(prec.length){
+    dal=_biaParse(prec[prec.length-1].data);
+  }else{
+    // Primo giro in assoluto: si parte dal consumo più vecchio registrato.
+    const date=_biaConsumi(hotel).map(c=>_biaParse(c.data)).filter(Boolean).sort((a,b)=>a-b);
+    dal=date.length?date[0]:al;
+  }
+  if(dal>al)return{dal:dal,al:al,vuoto:true};
+  return{dal:dal,al:al,vuoto:false};
+}
+// Somma dei consumi giornalieri nell'intervallo, estremi inclusi.
+function _biaSommaConsumi(hotel,dal,al){
+  const out=_biaVuote();
+  _biaConsumi(hotel).forEach(c=>{
+    const d=_biaParse(c.data);
+    if(!d||d<dal||d>al)return;
+    BIA_VOCI.forEach(v=>out[v]+=(Number(c.q&&c.q[v])||0));
+  });
+  return out;
+}
+// Quanto Raimondo deve riportare a questo giro = lo sporco che gli è stato consegnato
+// al giro precedente. null quando non c'è un giro precedente con cui confrontarsi.
+function _biaAtteso(hotel,dataGiro){
+  const d=_biaParse(dataGiro);if(!d)return null;
+  const prec=_biaGiri(hotel).filter(g=>{const gd=_biaParse(g.data);return gd&&gd<d;});
+  if(!prec.length)return null;
+  return prec[prec.length-1].consegnato||null;
+}
+// Saldo cumulato per voce: quanto manca sommando tutti i giri chiusi. Un singolo giro
+// può tornare in pari per caso; è la somma nel tempo che dice se c'è una perdita
+// sistematica. Negativo = pezzi non rientrati.
+function _biaSaldo(hotel){
+  const out=_biaVuote();
+  const giri=_biaGiri(hotel);
+  giri.forEach(g=>{
+    const att=_biaAtteso(hotel,g.data);
+    if(!att||!g.ricevuto)return;
+    BIA_VOCI.forEach(v=>out[v]+=((Number(g.ricevuto[v])||0)-(Number(att[v])||0)));
+  });
+  return out;
+}
+
+// ── Inserimento consumi giornalieri ──
+// Un totale al giorno per struttura: il QM somma i fogli delle cameriere e riporta qui
+// le sette voci. Reinserendo una data già presente si sovrascrive quella riga invece di
+// crearne una seconda, così una correzione non raddoppia i numeri.
+function biaSalvaConsumi(){
+  const iso=(document.getElementById('bia-cons-data')||{}).value||'';
+  const data=_biaFromIso(iso);
+  if(!data){alert('Indica la data dei consumi.');return;}
+  const q=_biaVuote();
+  BIA_VOCI.forEach((v,i)=>{
+    const el=document.getElementById('bia-c-'+i);
+    q[v]=Math.max(0,Number(el&&el.value)||0);
+  });
+  if(_biaTot(q)===0&&!confirm('Tutti i valori sono a zero. Salvare comunque?'))return;
+  const esistente=_bia.consumi.find(c=>_biaH(c)===_biaHotel&&c.data===data);
+  if(esistente){esistente.q=q;}
+  else{_bia.consumi.push({id:_biaUid(),hotel:_biaHotel,data:data,q:q});}
+  _biaSave();biaRender();
+}
+function biaEliminaConsumo(id){
+  const c=_bia.consumi.find(x=>x.id===id);
+  if(!c||!confirm('Eliminare i consumi del '+c.data+'?'))return;
+  _bia.consumi=_bia.consumi.filter(x=>x.id!==id);
+  _biaSave();biaRender();
+}
+
+// ── Registrazione del giro ──
+// Lo sporco consegnato viene congelato al momento della registrazione: se più avanti si
+// corregge un consumo giornaliero, i giri già chiusi (e le distinte già firmate) non
+// devono cambiare sotto i piedi.
+function biaRegistraGiro(){
+  const iso=(document.getElementById('bia-giro-data')||{}).value||'';
+  const data=_biaFromIso(iso);
+  if(!data){alert('Indica la data del giro.');return;}
+  const consegnato=_biaVuote(),ricevuto=_biaVuote();
+  BIA_VOCI.forEach((v,i)=>{
+    const es=document.getElementById('bia-s-'+i),er=document.getElementById('bia-r-'+i);
+    consegnato[v]=Math.max(0,Number(es&&es.value)||0);
+    ricevuto[v]=Math.max(0,Number(er&&er.value)||0);
+  });
+  const g=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===data);
+  if(g){
+    if(!confirm('Esiste già un giro del '+data+' per questa struttura. Sovrascriverlo?'))return;
+    g.consegnato=consegnato;g.ricevuto=ricevuto;g.ts=Date.now();
+  }else{
+    _bia.giri.push({id:_biaUid(),hotel:_biaHotel,data:data,consegnato:consegnato,ricevuto:ricevuto,ts:Date.now()});
+  }
+  _biaSave();biaRender();
+}
+function biaEliminaGiro(id){
+  const g=_bia.giri.find(x=>x.id===id);
+  if(!g||!confirm('Eliminare il giro del '+g.data+'?\n\nI giri successivi useranno un periodo diverso.'))return;
+  _bia.giri=_bia.giri.filter(x=>x.id!==id);
+  _biaSave();biaRender();
+}
+
+function biaRender(){
+  const el=document.getElementById('bia-content');if(!el)return;
+  const oggi=_biaOggi();
+  const giri=_biaGiri();
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Data del giro proposta: oggi. Il periodo coperto si ricalcola da lì.
+  const giroIso=(document.getElementById('bia-giro-data')||{}).value||_biaToIso(_biaFmt(oggi));
+  const giroData=_biaFromIso(giroIso)||_biaFmt(oggi);
+  const per=_biaPeriodo(_biaHotel,giroData);
+  const sporco=per&&!per.vuoto?_biaSommaConsumi(_biaHotel,per.dal,per.al):_biaVuote();
+  const atteso=_biaAtteso(_biaHotel,giroData);
+  const saldo=_biaSaldo();
+  const giaReg=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===giroData);
+
+  let h='';
+
+  // Selettore struttura
+  h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+    <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      ${Object.keys(BIA_HOTELS).map(k=>`<button onclick="biaSetHotel('${k}')" style="border:none;padding:7px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;background:${k===_biaHotel?'var(--accent)':'var(--surface)'};color:${k===_biaHotel?'#fff':'var(--text-dim)'};">${esc(BIA_HOTELS[k])}</button>`).join('')}
+    </div>
+  </div>`;
+
+  // ── Consumi del giorno ──
+  const consOggi=_bia.consumi.find(c=>_biaH(c)===_biaHotel&&c.data===_biaFmt(oggi));
+  h+=`<div class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><span class="panel-title">Consumi giornalieri dai fogli camera</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">somma i fogli delle cameriere e riporta i totali</span>
+    </div>
+    <div class="panel-body" style="padding:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data</label>
+        <input type="date" id="bia-cons-data" value="${_biaToIso(_biaFmt(oggi))}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
+        ${BIA_VOCI.map((v,i)=>`<div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${esc(v)}</div>
+          <input type="number" min="0" id="bia-c-${i}" value="${consOggi?(Number(consOggi.q[v])||0):0}" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);text-align:center;">
+        </div>`).join('')}
+      </div>
+      <div style="margin-top:12px;">
+        <button onclick="biaSalvaConsumi()" style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">Salva consumi</button>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Il giro ──
+  const periodoTxt=per?(per.vuoto?'nessun giorno da ritirare':'dal '+_biaFmt(per.dal)+' al '+_biaFmt(per.al)):'—';
+  h+=`<div class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><span class="panel-title">Giro di Raimondo</span>
+      ${giaReg?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">giro già registrato</span>':''}
+    </div>
+    <div class="panel-body" style="padding:14px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+        <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data del giro</label>
+        <input type="date" id="bia-giro-data" value="${giroIso}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
+        <span style="font-size:var(--fs-xxs);color:var(--text-dim);">ritira i consumi ${esc(periodoTxt)}</span>
+      </div>`;
+
+  if(per&&per.vuoto){
+    h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:10px;">Non ci sono giorni da ritirare per questa data: c'è già un giro registrato lo stesso giorno o successivo.</div>`;
+  }
+
+  // Righe: atteso (dal giro prima) / ricevuto (dalla distinta di Raimondo) / sporco che esce
+  const diffTot=BIA_VOCI.reduce((s,v)=>{
+    if(!atteso)return s;
+    const r=giaReg?(Number(giaReg.ricevuto[v])||0):(Number(atteso[v])||0);
+    return s+(r-(Number(atteso[v])||0));
+  },0);
+  if(atteso&&diffTot!==0){
+    h+=`<div style="background:var(--red-bg,rgba(192,53,42,.08));border-left:3px solid var(--red);padding:9px 11px;font-size:var(--fs-xs);color:var(--red);line-height:1.45;margin-bottom:10px;">Rispetto a quanto consegnato il giro scorso mancano ${Math.abs(diffTot)} pezzi.</div>`;
+  }
+
+  h+=`<div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+      <thead><tr>
+        <th style="text-align:left;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Tipologia</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Atteso</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Ricevuto</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Δ</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Sporco che esce</th>
+      </tr></thead>
+      <tbody>`;
+  BIA_VOCI.forEach((v,i)=>{
+    const att=atteso?(Number(atteso[v])||0):null;
+    const ric=giaReg?(Number(giaReg.ricevuto[v])||0):(att===null?0:att);
+    const spo=giaReg?(Number(giaReg.consegnato[v])||0):(Number(sporco[v])||0);
+    const d=att===null?null:(ric-att);
+    const bad=d!==null&&d!==0;
+    h+=`<tr style="${bad?'background:rgba(192,53,42,.06);':''}">
+      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));">${esc(v)}</td>
+      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;color:var(--text-dim);">${att===null?'—':att}</td>
+      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-r-${i}" value="${ric}" oninput="biaRender()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
+      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;font-weight:700;color:${d===null?'var(--text-dim)':(d===0?'var(--green)':'var(--red)')};">${d===null?'—':(d>0?'+'+d:d)}</td>
+      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-s-${i}" value="${spo}" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
+    </tr>`;
+  });
+  h+=`</tbody></table></div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="biaRegistraGiro()" style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">${giaReg?'Aggiorna giro':'Registra giro'}</button>
+        <button onclick="biaPrintDistinta()" style="background:var(--surface);color:var(--accent);border:1.5px solid var(--border);padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">Stampa distinta di consegna</button>
+      </div>
+      <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Lo <strong>sporco che esce</strong> è la somma dei consumi del periodo: è già il numero giusto, correggilo solo se il sacco contiene qualcosa di diverso. Il <strong>ricevuto</strong> parte uguale all'atteso — toccalo solo se la distinta di Raimondo dice altro.</div>
+    </div>
+  </div>`;
+
+  // ── Saldo cumulato ──
+  const saldoTot=_biaTot(saldo);
+  if(giri.length){
+    h+=`<div class="panel" style="margin-bottom:16px;">
+      <div class="panel-header"><span class="panel-title">Pezzi non rientrati — totale da inizio registrazioni</span>
+        <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${saldoTot<0?'var(--red)':'var(--green)'};">${saldoTot===0?'in pari':saldoTot}</span>
+      </div>
+      <div class="panel-body" style="padding:14px;">
+        ${BIA_VOCI.map(v=>{const n=saldo[v];return`<div style="display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${n<0?'var(--red)':(n>0?'var(--amber)':'var(--green)')};">${n===0?'in pari':n}</span></div>`;}).join('')}
+        <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Un singolo giro può chiudere in pari per caso. È questo totale che dice se la perdita è occasionale o continua.</div>
+      </div>
+    </div>`;
+  }
+
+  // ── Storico ──
+  if(giri.length){
+    h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Giri registrati</span></div><div class="panel-body" style="padding:0;">`;
+    giri.slice().reverse().forEach(g=>{
+      const att=_biaAtteso(_biaHotel,g.data);
+      const d=att?BIA_VOCI.reduce((s,v)=>s+((Number(g.ricevuto[v])||0)-(Number(att[v])||0)),0):null;
+      h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
+        <span style="font-weight:700;">${esc(g.data)}</span>
+        <span style="color:var(--text-dim);">consegnati ${_biaTot(g.consegnato)} · ricevuti ${_biaTot(g.ricevuto)}</span>
+        ${d===null?'':`<span style="font-weight:700;color:${d===0?'var(--green)':'var(--red)'};">${d===0?'in pari':(d>0?'+'+d:d)}</span>`}
+        <span style="margin-left:auto;display:flex;gap:6px;">
+          <button onclick="biaPrintDistinta('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Distinta</button>
+          <button onclick="biaEliminaGiro('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
+        </span>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  }
+
+  // ── Consumi registrati di recente ──
+  const rec=_biaConsumi().slice().sort((a,b)=>(_biaParse(b.data)||0)-(_biaParse(a.data)||0)).slice(0,14);
+  if(rec.length){
+    h+=`<div class="panel" style="margin-top:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti</span></div><div class="panel-body" style="padding:0;">`;
+    rec.forEach(c=>{
+      h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
+        <span style="font-weight:600;">${esc(c.data)}</span>
+        <span style="color:var(--text-dim);">${_biaTot(c.q)} pezzi</span>
+        <button onclick="biaEliminaConsumo('${c.id}')" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  }
+
+  el.innerHTML=h;
+}
+
+// Distinta di consegna A4 — il documento che oggi manca. Senza id stampa il giro
+// impostato nel form (anche non ancora registrato, così la si può portare già compilata
+// al momento del ritiro); con un id ristampa un giro dello storico.
+function biaPrintDistinta(giroId){
+  const g=giroId?_bia.giri.find(x=>x.id===giroId):null;
+  let hotel,data,q,per;
+  if(g){
+    hotel=_biaH(g);data=g.data;q=g.consegnato;per=_biaPeriodo(hotel,data);
+  }else{
+    hotel=_biaHotel;
+    const iso=(document.getElementById('bia-giro-data')||{}).value||'';
+    data=_biaFromIso(iso)||_biaFmt(_biaOggi());
+    q=_biaVuote();
+    BIA_VOCI.forEach((v,i)=>{const e=document.getElementById('bia-s-'+i);q[v]=Math.max(0,Number(e&&e.value)||0);});
+    per=_biaPeriodo(hotel,data);
+  }
+  const tot=_biaTot(q);
+  if(!tot){alert('Non c\'è niente da consegnare: tutte le quantità sono a zero.');return;}
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const periodo=per&&!per.vuoto?(_biaFmt(per.dal)+' — '+_biaFmt(per.al)):'—';
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Distinta di Consegna Biancheria</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;font-size:10.5pt;}
+@page{size:A4;margin:16mm;}
+.hdr{border-bottom:1.5px solid #111;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;}
+.title{font-size:14pt;font-weight:700;letter-spacing:.01em;}
+.sub{font-size:9pt;color:#555;margin-top:2px;}
+.meta{display:flex;gap:34px;margin-bottom:14px;font-size:10pt;}
+.meta-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;}
+.meta-val{font-weight:700;margin-top:2px;}
+.warn{border:1px solid #999;padding:8px 10px;margin-bottom:14px;font-size:8.5pt;line-height:1.6;color:#333;}
+table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+th{text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:1.5px solid #111;padding:6px 6px;}
+td{padding:7px 6px;border-bottom:1px solid #ccc;font-size:10pt;}
+td.r{text-align:right;}
+tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-top:8px;}
+.blk{border:1px solid #999;padding:10px 12px;margin-bottom:12px;}
+.blk-t{font-size:8.5pt;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:#333;margin-bottom:10px;}
+.row{display:flex;gap:26px;margin-bottom:12px;}
+.f{flex:1;}
+.f-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;margin-bottom:3px;}
+.f-val{font-size:11pt;border-bottom:1px solid #999;padding-bottom:4px;min-height:17px;}
+.sign{border-bottom:1px solid #111;margin-top:34px;}
+.sign-c{font-size:8pt;color:#555;margin-top:4px;}
+</style></head><body>
+  <div class="hdr">
+    <div><div class="title">Distinta di Consegna Biancheria Sporca</div><div class="sub">Fornitore Raimondo</div></div>
+    <div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">${esc(BIA_HOTELS[hotel]||'')}</div></div>
+  </div>
+  <div class="meta">
+    <div><div class="meta-lbl">Data ritiro</div><div class="meta-val">${esc(data)}</div></div>
+    <div><div class="meta-lbl">Consumi del periodo</div><div class="meta-val">${esc(periodo)}</div></div>
+    <div><div class="meta-lbl">Totale pezzi</div><div class="meta-val">${tot}</div></div>
+  </div>
+  <div class="warn">
+    • Le quantità sotto indicate corrispondono ai consumi rilevati sui fogli camera del periodo.<br>
+    • La biancheria inidonea (macchiata / difettata) viaggia in un sacco separato, con distinta propria, e NON è conteggiata qui.<br>
+    • Il rientro del pulito corrispondente è atteso al giro successivo.
+  </div>
+  <table>
+    <thead><tr><th>Tipologia pezzo</th><th style="width:90px;text-align:right;">Quantità</th></tr></thead>
+    <tbody>${BIA_VOCI.map(v=>`<tr><td>${esc(v)}</td><td class="r">${Number(q[v])||0}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td>Totale pezzi consegnati</td><td class="r">${tot}</td></tr></tfoot>
+  </table>
+  <div class="blk">
+    <div class="blk-t">Ritiro Fornitore Raimondo</div>
+    <div class="row">
+      <div class="f"><div class="f-lbl">Data ritiro</div><div class="f-val">${esc(data)}</div></div>
+      <div class="f"><div class="f-lbl">Totale pezzi</div><div class="f-val">${tot}</div></div>
+      <div class="f"><div class="f-lbl">Sacchi n°</div><div class="f-val">&nbsp;</div></div>
+    </div>
+    <div class="sign"></div>
+    <div class="sign-c">Firma per ricevuta — Fornitore Raimondo</div>
+  </div>
+  <div class="blk">
+    <div class="blk-t">Consegna a cura di</div>
+    <div class="row">
+      <div class="f"><div class="f-lbl">Nome</div><div class="f-val">&nbsp;</div></div>
+      <div class="f"><div class="f-lbl">Data</div><div class="f-val">&nbsp;</div></div>
+    </div>
+    <div class="sign"></div>
+    <div class="sign-c">Firma Responsabile / Management</div>
+  </div>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w){alert('Il browser ha bloccato la finestra di stampa.');return;}
   w.document.write(html);w.document.close();
   setTimeout(()=>w.print(),400);
 }
