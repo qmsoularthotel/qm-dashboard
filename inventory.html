@@ -306,7 +306,9 @@
   var nav=performance.getEntriesByType('navigation')[0];
   var s=document.getElementById('qm-splash');
   if(!s) return;
-  if(nav && nav.type==='reload'){ s.remove(); return; }
+  var swReload=false;
+  try{ if(sessionStorage.getItem('qm_sw_reload')){ swReload=true; sessionStorage.removeItem('qm_sw_reload'); } }catch(e){}
+  if(nav && nav.type==='reload' && !swReload){ s.remove(); return; }
   setTimeout(function(){ s.style.opacity='0'; setTimeout(function(){ s.remove(); },520); },3000);
 })();
 </script>
@@ -1140,7 +1142,7 @@ function initHWScanner() {
       reg.addEventListener('updatefound', () => {
         const newSW = reg.installing;
         newSW.addEventListener('statechange', () => {
-          if (newSW.state === 'activated') location.reload();
+          if (newSW.state === 'activated') { try{sessionStorage.setItem('qm_sw_reload','1');}catch(e){} location.reload(); }
         });
       });
     }).catch(() => {});
