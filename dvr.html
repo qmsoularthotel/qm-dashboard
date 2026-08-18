@@ -97,9 +97,9 @@
 <body>
 
 <div id="qm-splash" style="position:fixed;inset:0;z-index:99998;background:#1A2E55;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .5s ease;" onclick="this.style.opacity='0';setTimeout(()=>this.remove(),520);">
-  <div style="position:relative;width:70px;height:70px;display:flex;align-items:center;justify-content:center;">
-    <div style="position:absolute;width:70px;height:70px;border-radius:50%;border:1.3px solid rgba(201,149,47,.55);animation:qmSplashRing 1.8s ease-out infinite;"></div>
-    <svg viewBox="0 0 36 36" width="56" height="56" xmlns="http://www.w3.org/2000/svg">
+  <div style="position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center;">
+    <div style="position:absolute;width:150px;height:150px;border-radius:50%;border:2.6px solid rgba(201,149,47,.55);animation:qmSplashRing 1.8s ease-out infinite;"></div>
+    <svg viewBox="0 0 36 36" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
       <circle cx="18" cy="18" r="16.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.3"/>
       <g style="animation:qmSplashNeedle 2.2s cubic-bezier(.6,0,.4,1) infinite;transform-origin:18px 18px;">
         <polygon points="18,6 20,18 18,30 16,18" fill="#c9952f"/>
@@ -107,9 +107,9 @@
       <circle cx="18" cy="18" r="2" fill="rgba(255,255,255,.9)"/>
     </svg>
   </div>
-  <div style="font-size:16px;font-weight:500;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
-  <div style="width:34px;border-top:1px solid rgba(255,255,255,.18);"></div>
-  <div style="font-size:13px;color:rgba(255,255,255,.7);">DVR &amp; Compliance</div>
+  <div style="font-size:30px;font-weight:500;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
+  <div style="width:60px;border-top:1px solid rgba(255,255,255,.18);"></div>
+  <div style="font-size:22px;color:rgba(255,255,255,.7);">DVR &amp; Compliance</div>
 </div>
 <style>
 @keyframes qmSplashRing{0%{transform:scale(.6);opacity:.8;}100%{transform:scale(2.4);opacity:0;}}
@@ -121,7 +121,7 @@
   var s=document.getElementById('qm-splash');
   if(!s) return;
   if(nav && nav.type==='reload'){ s.remove(); return; }
-  setTimeout(function(){ s.style.opacity='0'; setTimeout(function(){ s.remove(); },520); },1300);
+  setTimeout(function(){ s.style.opacity='0'; setTimeout(function(){ s.remove(); },520); },3000);
 })();
 </script>
 
