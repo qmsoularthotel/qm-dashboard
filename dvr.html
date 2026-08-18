@@ -109,11 +109,12 @@
   </div>
   <div style="font-size:30px;font-weight:500;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
   <div style="width:60px;border-top:1px solid rgba(255,255,255,.18);"></div>
-  <div style="font-size:22px;color:rgba(255,255,255,.7);">DVR &amp; Compliance</div>
+  <div style="font-size:22px;color:rgba(255,255,255,.7);opacity:0;animation:qmSplashName .9s cubic-bezier(.2,.8,.3,1) .5s forwards;">DVR &amp; Compliance</div>
 </div>
 <style>
 @keyframes qmSplashRing{0%{transform:scale(.6);opacity:.8;}100%{transform:scale(2.4);opacity:0;}}
 @keyframes qmSplashNeedle{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+@keyframes qmSplashName{0%{opacity:0;transform:translateY(10px);}100%{opacity:1;transform:translateY(0);}}
 </style>
 <script>
 (function(){
