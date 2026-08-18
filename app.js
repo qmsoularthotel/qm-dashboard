@@ -11471,6 +11471,13 @@ function _psRisposta(iso,email){
   const e=String(email||'').trim().toLowerCase();
   return (e&&_psRisposte[iso]&&_psRisposte[iso][e])||null;
 }
+function _psRispToggle(id,btn){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const espanso=el.style.maxHeight==='none';
+  if(espanso){el.style.maxHeight='4.5em';el.style.overflow='hidden';if(btn)btn.textContent='Mostra tutto ▾';}
+  else{el.style.maxHeight='none';el.style.overflow='visible';if(btn)btn.textContent='Mostra meno ▴';}
+}
 // L'endpoint delle risposte sta accanto a quello di invio: si ricava dallo stesso indirizzo
 // configurato, senza chiedere all'utente una seconda impostazione da tenere allineata.
 function _psEndpointRisposte(){
@@ -11865,9 +11872,14 @@ function prestayRender(){
             </label>
           </div>
           ${(()=>{const rp=_psRisposta(iso,a.email);if(!rp)return'';
+            const testo=String(rp.testo||'');
+            const testoEsc=testo.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const rid='psRisp_'+String(a.id).replace(/[^a-zA-Z0-9_]/g,'');
+            const lungo=testo.length>200||testo.split('\n').length>4;
             return`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--accent-bg);border-left:3px solid var(--accent);">
               <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--accent);margin-bottom:4px;">Ha risposto${rp.data?' · '+String(rp.data).replace(/\s*\+\d{4}.*$/,'').trim():''}</div>
-              <div style="font-size:var(--fs-xs);color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word;">${String(rp.testo||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+              <div id="${rid}" style="font-size:var(--fs-xs);color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word;${lungo?'max-height:4.5em;overflow:hidden;':''}">${testoEsc}</div>
+              ${lungo?`<div style="text-align:right;margin-top:2px;"><button type="button" onclick="_psRispToggle('${rid}',this)" style="border:none;background:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;padding:2px 0;">Mostra tutto ▾</button></div>`:''}
             </div>`;})()}
         </div>`;
       });
