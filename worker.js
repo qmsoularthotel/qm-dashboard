@@ -439,43 +439,57 @@ function utf8(s) {
   } catch (e) { return s; }
 }
 
+// Trova la parte di testo "foglia" (text/plain, o text/html come ripiego) dentro
+// un blocco intestazioni+corpo. Alcune webmail annidano un multipart/alternative
+// dentro un multipart/mixed esterno: senza ricorsione, la parte scelta al primo
+// livello è a sua volta un multipart, e i suoi boundary/intestazioni finiscono
+// nel testo mostrato. Si ricorsa finché non si trova una parte non-multipart.
+function trovaParteTesto(testa, corpo) {
+  const ctGrezzo = (testa.match(/Content-Type:\s*([^\r\n]+(?:\r\n[ \t][^\r\n]*)*)/i) || [])[1] || '';
+  const ct = ctGrezzo.replace(/\r\n[ \t]+/g, ' ').trim();
+  const boundary = (ct.match(/boundary="?([^";]+)"?/i) || [])[1];
+  const cte = ((testa.match(/Content-Transfer-Encoding:\s*([^\r\n]+)/i) || [])[1] || '').trim().toLowerCase();
+
+  if (boundary) {
+    const parti = corpo.split('--' + boundary);
+    let scelta = null, sceltaHtml = null;
+    for (const p of parti) {
+      if (!p || /^--\s*$/.test(p.trim())) continue;
+      const s = p.indexOf('\r\n\r\n');
+      if (s === -1) continue;
+      const ph = p.slice(0, s), pb = p.slice(s + 4);
+      const sub = trovaParteTesto(ph, pb);
+      if (!sub) continue;
+      if (/text\/plain/i.test(sub.ct) && !scelta) scelta = sub;
+      else if (/text\/html/i.test(sub.ct) && !sceltaHtml) sceltaHtml = sub;
+    }
+    return scelta || sceltaHtml || null;
+  }
+  return { corpo, cte, ct };
+}
+
 // Dal messaggio grezzo: intestazioni utili + corpo in testo semplice.
-// Su un multipart si cerca la prima parte text/plain; se c'è solo HTML si ripulisce.
+// Su un multipart si cerca la prima parte text/plain (anche annidata); se c'è solo HTML si ripulisce.
 function estraiMessaggio(raw) {
   const sep = raw.indexOf('\r\n\r\n');
   const testa = sep === -1 ? raw : raw.slice(0, sep);
-  let corpo = sep === -1 ? '' : raw.slice(sep + 4);
+  const corpoGrezzo = sep === -1 ? '' : raw.slice(sep + 4);
 
   const hdr = (nome) => {
     const re = new RegExp('^' + nome + ':\\s*([\\s\\S]*?)(?=\\r\\n[^ \\t]|$)', 'im');
     const m = testa.match(re);
     return m ? m[1].replace(/\r\n[ \t]+/g, ' ').trim() : '';
   };
-  const ct = hdr('Content-Type');
-  const boundary = (ct.match(/boundary="?([^";]+)"?/i) || [])[1];
 
-  let cte = hdr('Content-Transfer-Encoding').toLowerCase();
-  if (boundary) {
-    const parti = corpo.split('--' + boundary);
-    let scelta = null, scelte_html = null;
-    for (const p of parti) {
-      const s = p.indexOf('\r\n\r\n');
-      if (s === -1) continue;
-      const ph = p.slice(0, s), pb = p.slice(s + 4);
-      const pct = (ph.match(/Content-Type:\s*([^;\r\n]+)/i) || [])[1] || '';
-      const pcte = ((ph.match(/Content-Transfer-Encoding:\s*([^\r\n]+)/i) || [])[1] || '').trim().toLowerCase();
-      if (/text\/plain/i.test(pct) && !scelta) scelta = { corpo: pb, cte: pcte };
-      else if (/text\/html/i.test(pct) && !scelte_html) scelte_html = { corpo: pb, cte: pcte };
-    }
-    const usata = scelta || scelte_html;
-    if (usata) { corpo = usata.corpo; cte = usata.cte; }
-  }
+  const parte = trovaParteTesto(testa, corpoGrezzo) ||
+    { corpo: corpoGrezzo, cte: hdr('Content-Transfer-Encoding').toLowerCase(), ct: hdr('Content-Type') };
 
-  if (cte === 'base64') corpo = utf8(b64Decode(corpo));
-  else if (cte === 'quoted-printable') corpo = utf8(qpDecode(corpo));
+  let corpo = parte.corpo;
+  if (parte.cte === 'base64') corpo = utf8(b64Decode(corpo));
+  else if (parte.cte === 'quoted-printable') corpo = utf8(qpDecode(corpo));
   else corpo = utf8(corpo);
 
-  if (/<[a-z][\s\S]*>/i.test(corpo) && !/text\/plain/i.test(ct) && corpo.indexOf('<') > -1) {
+  if (/text\/html/i.test(parte.ct) && /<[a-z][\s\S]*>/i.test(corpo)) {
     corpo = corpo.replace(/<style[\s\S]*?<\/style>/gi, '')
                  .replace(/<br\s*\/?>/gi, '\n')
                  .replace(/<\/p>/gi, '\n')
