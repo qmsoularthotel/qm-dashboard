@@ -519,7 +519,7 @@ dvrRender();
 dvrSyncCloud();
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw-dvr.js').catch(() => {});
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 // §§ ACCESS LOG (one-time write on open)
 (function(){

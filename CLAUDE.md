@@ -1168,10 +1168,29 @@ Cliccando il chip occupazione si apre `#occ-panel`. Barre orizzontali per strutt
 
 ## Service Worker (`sw.js`)
 
-Versione corrente: **`qm-v3`**. Pattern:
-- **Proxy/KV/Google Sheets requests** → sempre network, mai cache
+Versione corrente: **`qm-v26`**. Pattern:
+- **Proxy/KV/Google Sheets/cataloghi barcode** → sempre network, mai cache
 - **HTML files** → network-first con `cache:'no-store'` (garantisce Cmd+R sempre aggiornato)
 - **Asset statici** → cache-first (il cache buster gestisce gli aggiornamenti)
+
+### UN SOLO service worker per tutto il sito — non reintrodurne uno per app
+
+`sw.js` è registrato da `index.html`, `housekeeper.html`, `controllo-mattino.html`,
+`inventory.html` e `dvr.html`. `breakfast.html` non ne registra nessuno (mai avuto).
+
+Fino al 2026-08-18 esistevano **quattro** service worker (`sw-housekeeper.js`,
+`sw-inventory.js`, `sw-dvr.js` e questo), ognuno registrato dalla propria app ma tutti
+**sullo stesso scope radice**. Il browser tiene un solo service worker per scope: ogni
+app che si apriva *sostituiva* la registrazione della precedente, e all'attivazione
+eseguiva `caches.keys().filter(k => k !== CACHE).map(delete)` — cancellando quindi le
+cache delle altre app, che non riconosceva come proprie. Le pagine venivano così servite
+a intermittenza da versioni diverse (sintomo osservato: lo splash a volte vecchio a volte
+nuovo, senza una regola apparente). Tre dei quattro avevano anche perso il
+`cache:'no-store'` sull'HTML, che peggiorava la cosa ma **non ne era la causa**.
+
+I tre file per-app restano sul disco ma non sono più referenziati da nessuna pagina: non
+vanno cancellati (una pagina vecchia ancora in cache potrebbe richiederli) e non vanno
+riattivati. Se serve cambiare la strategia di cache, si cambia solo qui.
 
 `sw-controllo-mattino.js` è legacy e si auto-disinstalla. Non modificarlo.
 
@@ -1928,3 +1947,5 @@ Non creare workflow YAML personalizzati come soluzione: ne è stato creato uno (
 | Banner Breakfast copriva i pulsanti della bottom-nav | Posizionato a `bottom:16px`, dentro l'area della nav fissa (~60px) | Spostato a `bottom:72px`, sopra la nav |
 | Deploy GitHub Pages bloccato per ~2 ore (2026-07-06) | Run "queued" incastrata dal 14/06, non cancellabile da UI/API | Risolta con cambio Source Settings→Pages avanti/indietro + retry — vedi sezione Recovery |
 | Inventario, filtro "7 giorni" mostrava metà del consumo reale | `effectiveDays` aveva un minimo di 14gg applicato anche ai periodi fissi scelti dall'utente, non solo a "Tutto" | `effectiveDays=_invPeriod>0?days:Math.max(14,days)` — il minimo 14 vale solo per "Tutto" |
+| Splash mini app a volte vecchio a volte nuovo, senza regola | 4 service worker sullo stesso scope radice si sostituivano a vicenda e si cancellavano le cache l'uno dell'altro | Un solo `sw.js` registrato da tutte le app — vedi [Service Worker](#service-worker-swjs) |
+| Splash saltato o tagliato a metà | `location.reload()` del service worker aggiornato è indistinguibile da un Cmd+R via `nav.type` | Flag `qm_sw_reload` in `sessionStorage` prima del reload automatico |

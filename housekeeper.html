@@ -626,7 +626,7 @@ setInterval(loadAll,10*60*1000);
 })();
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw-housekeeper.js').then(reg => {
+  navigator.serviceWorker.register('./sw.js').then(reg => {
     // Controlla aggiornamenti ad ogni apertura
     reg.update();
     // Quando il nuovo SW è pronto, ricarica la pagina automaticamente

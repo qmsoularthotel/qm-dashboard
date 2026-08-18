@@ -1135,9 +1135,9 @@ function initHWScanner() {
   });
   _requestWakeLock();
 
-  // Service Worker — network-first per inventory.html, auto-reload su aggiornamento
+  // Service Worker unificato sw.js (uno per tutto il sito, vedi commento in sw.js)
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw-inventory.js').then(reg => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
       reg.update();
       reg.addEventListener('updatefound', () => {
         const newSW = reg.installing;
