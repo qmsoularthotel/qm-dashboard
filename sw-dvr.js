@@ -2,7 +2,7 @@
 // Strategia: network-first per dvr.html (sempre aggiornato),
 // cache-first per asset statici
 
-const CACHE = 'qm-dvr-v1';
+const CACHE = 'qm-dvr-v2';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
@@ -27,7 +27,7 @@ self.addEventListener('fetch', e => {
   // dvr.html: network-first, aggiorna cache, fallback offline
   if (url.includes('dvr.html') || url.endsWith('/dvr')) {
     e.respondWith(
-      fetch(e.request).then(res => {
+      fetch(e.request, { cache: 'no-store' }).then(res => {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return res;

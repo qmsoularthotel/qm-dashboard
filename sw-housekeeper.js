@@ -2,7 +2,7 @@
 // Strategia: network-first per housekeeper.html (sempre aggiornato),
 // cache-first per asset statici (img, css, font)
 
-const CACHE = 'qm-hk-v1';
+const CACHE = 'qm-hk-v2';
 
 self.addEventListener('install', e => {
   self.skipWaiting(); // attiva immediatamente senza aspettare tab chiuse
@@ -22,7 +22,7 @@ self.addEventListener('fetch', e => {
   // housekeeper.html: sempre network, aggiorna cache, fallback se offline
   if (url.includes('housekeeper.html') || url.endsWith('/housekeeper')) {
     e.respondWith(
-      fetch(e.request).then(res => {
+      fetch(e.request, { cache: 'no-store' }).then(res => {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return res;
