@@ -12435,7 +12435,7 @@ function resiRender(){
     const att=k===_resiHotel;
     const gg=_resiGiorniDaUltimoRitiro(k);
     const late=gg!==null&&gg>=RESI_GIORNI_RITIRO;
-    return`<button onclick="resiSetHotel('${k}')" style="padding:9px 18px;border:1px solid var(--border);border-bottom:none;border-radius:6px 6px 0 0;background:${att?'#fff':'var(--surface2)'};color:${att?'var(--accent)':'var(--text-dim)'};font-weight:600;font-size:var(--fs-xs);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;display:inline-flex;align-items:center;gap:7px;">
+    return`<button onclick="resiSetHotel('${k}')" style="padding:9px 18px;border:1px solid var(--border);border-bottom:none;border-radius:6px 6px 0 0;background:${att?'#fff':'var(--surface2)'};color:${att?'var(--accent)':'var(--text-dim)'};font-weight:600;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:7px;">
       ${esc(nome)}${!att&&late?`<span style="width:7px;height:7px;border-radius:50%;background:var(--amber);"></span>`:''}
     </button>`;
   }).join('');
@@ -12483,7 +12483,7 @@ function resiRender(){
         <label style="display:block;font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:4px;">Housekeeper</label>
         <input type="text" id="resi-f-hk" placeholder="chi ha firmato" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:#fff;color:var(--text);">
       </div>
-      <button onclick="resiSubmit()" style="background:var(--accent);color:#fff;border:none;padding:9px 18px;border-radius:6px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">Aggiungi</button>
+      <button onclick="resiSubmit()" style="background:var(--accent);color:#fff;border:none;padding:9px 18px;border-radius:6px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;">Aggiungi</button>
     </div>
     <div style="margin-top:8px;"><span onclick="resiEditTipologie()" style="font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Modifica elenco tipologie</span></div>
   </div>`;
@@ -12505,8 +12505,8 @@ function resiRender(){
       <div class="kpi-value">${aperte.length}</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:16px 20px;display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:180px;">
-      <button onclick="resiPrintDistinta()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">🖨️ Stampa distinta A4</button>
-      <button onclick="resiRegistraRitiro()" style="background:#fff;color:var(--accent);border:1.5px solid var(--border);border-radius:7px;padding:9px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">✓ Registra ritiro Raimondo</button>
+      <button onclick="resiPrintDistinta()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">🖨️ Stampa distinta A4</button>
+      <button onclick="resiRegistraRitiro()" style="background:#fff;color:var(--accent);border:1.5px solid var(--border);border-radius:7px;padding:9px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">✓ Registra ritiro Raimondo</button>
     </div>
   </div>`;
 

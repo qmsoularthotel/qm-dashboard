@@ -746,3 +746,9 @@ body.dark .panel{box-shadow:0 2px 8px rgba(0,0,0,.22);}
   opacity:0;pointer-events:none;transition:opacity .15s;z-index:30;}
 .rc-act-btn:hover::after,.rc-act-btn:hover::before{opacity:1;transform:translateX(-50%) translateY(0);}
 .rc-act-btn:hover{background:var(--accent);color:#fff;}
+
+/* I controlli di form non ereditano il font dal body: senza questo, bottoni e campi
+   delle due viste biancheria uscivano col font di default del browser invece che con
+   quello di Compass. Stessa scelta già fatta da .btn-primary / .btn-ghost. */
+#view-biancheria button,#view-biancheria input,#view-biancheria select,#view-biancheria textarea,
+#view-resi-biancheria button,#view-resi-biancheria input,#view-resi-biancheria select,#view-resi-biancheria textarea{font-family:inherit;}
