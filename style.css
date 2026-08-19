@@ -217,7 +217,6 @@ body.dark .panel{box-shadow:none;}
 .sdh{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--border-light);background:var(--surface2);}
 .sdh-name{font-size:var(--fs-xxs);letter-spacing:.08em;text-transform:uppercase;font-weight:600;}
 .sdh-name.fo,.sdh-name.hk,.sdh-name.bkf,.sdh-name.mt{color:#0F4E9A;}
-.sdh-count{font-size:var(--fs-xxs);color:var(--text-dim);background:var(--surface);border:1px solid var(--border-light);padding:1px 8px;border-radius:10px;}
 .staff-list{padding:7px 13px;}
 .staff-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-light);}
 .staff-row:last-child{border-bottom:none;}

@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=256">
+<link rel="stylesheet" href="style.css?v=257">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='267-20260818';
+  const V='268-20260818';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -22,13 +22,20 @@
 </div>
 <script>
 (function(){
-  var nav = performance.getEntriesByType('navigation')[0];
-  var isReload = nav && nav.type === 'reload';
-  if(isReload){
-    var s=document.getElementById('splash');
-    if(s) s.remove();
+  // Lo splash va solo alla prima apertura di Compass in questa scheda. Non basta
+  // guardare nav.type==='reload': quando la versione nell'URL non combacia, lo script
+  // qui sopra fa location.replace, e quella è una navigazione di tipo 'navigate'. Siccome
+  // la versione cambia a ogni pubblicazione, ogni aggiornamento faceva ripartire il video.
+  // sessionStorage sopravvive ai ricaricamenti e alla redirezione, e si azzera quando la
+  // scheda viene chiusa: e' esattamente "solo in apertura".
+  var gia=false;
+  try{ gia = sessionStorage.getItem('qm_splash')==='1'; }catch(e){}
+  if(gia){
+    var s0=document.getElementById('splash');
+    if(s0) s0.remove();
     return;
   }
+  try{ sessionStorage.setItem('qm_splash','1'); }catch(e){}
   var v=document.getElementById('splash-video');
   if(v){
     v.playbackRate=1.8;
@@ -1634,7 +1641,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=787-20260818"></script>
+<script src="app.js?v=788-20260818"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

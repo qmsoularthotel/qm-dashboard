@@ -584,12 +584,11 @@ function renderDay(idx){
       // (Basile G.), sparire del tutto dava l'impressione di un dato mancante.
       // Le altre card invece restano nascoste quando nessuno è in turno.
       if(key==='mt'){
-        html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">0 in turno</span></div><div class="staff-list"><div style="padding:6px 2px;text-align:center;color:var(--text-dim);font-size:var(--fs-xs);">Nessuno in turno</div></div></div>`;
+        html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span></div><div class="staff-list"><div style="padding:6px 2px;text-align:center;color:var(--text-dim);font-size:var(--fs-xs);">Nessuno in turno</div></div></div>`;
       }
       return;
     }
-    const inTCount=inT.length+extras.length;
-    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span><span class="sdh-count">${inTCount} in turno</span></div><div class="staff-list">${renderStaffRows(showMembers,key)}</div></div>`;
+    html+=`<div class="staff-dept-card"><div class="sdh"><span class="sdh-name ${dept.cls}">${dept.label}</span></div><div class="staff-list">${renderStaffRows(showMembers,key)}</div></div>`;
   });
   html+='</div>';_setStaffAreaHTML(html);
 }
