@@ -3270,7 +3270,10 @@ function renderOvCulliganBox(giorno){
 // vede in tempo reale senza dover chiedere via radio/telefono se una camera è pronta.
 // Escluse le camere in fermata: l'ospite è già dentro, "pronta" non ha senso per loro.
 let _ovReadinessGiorno=null;                // ultimo giorno renderizzato, per ri-renderizzare dopo un click
-async function renderOvRoomReadiness(giorno){
+// statoNoto: stato giornaliero già in mano al chiamante. Serve dopo un clic sulla card —
+// senza, il render rileggeva dal cloud mentre la scrittura era ancora in volo e poteva
+// tornare il valore vecchio: la card non cambiava e sembrava servisse un secondo clic.
+async function renderOvRoomReadiness(giorno,statoNoto){
   _ovReadinessGiorno=giorno;
   const el=document.getElementById('ov-room-readiness');if(!el)return;
   if(!giorno){el.innerHTML='';return;}
@@ -3288,12 +3291,14 @@ async function renderOvRoomReadiness(giorno){
   if(!rooms.length){el.innerHTML='';return;}
   const d=new Date();
   const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  let state=null;
-  try{
-    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
-    if(r.ok){const j=await r.json();if(j&&j.value)state=JSON.parse(j.value);}
-  }catch(e){}
-  if(!state){try{const s=localStorage.getItem(key);if(s)state=JSON.parse(s);}catch(e){}}
+  let state=statoNoto||null;
+  if(!state){
+    try{
+      const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+      if(r.ok){const j=await r.json();if(j&&j.value)state=JSON.parse(j.value);}
+    }catch(e){}
+    if(!state){try{const s=localStorage.getItem(key);if(s)state=JSON.parse(s);}catch(e){}}
+  }
   // Card "day-tile" (stessa impaginazione delle card giorno di pianoNavRender: nome in
   // alto, cerchio icona, stato in fondo, bordo colorato in cima) applicata a ogni camera
   // invece che a un giorno della settimana. Un solo cerchio, che è lo stato: prima ce
@@ -3360,7 +3365,7 @@ async function ovMarkRoomPronta(room,valore){
   state[room].ts=Date.now();
   try{localStorage.setItem(key,JSON.stringify(state));}catch(e){}
   kvSet(key,JSON.stringify(state)).catch(()=>{});
-  if(_ovReadinessGiorno)renderOvRoomReadiness(_ovReadinessGiorno);
+  if(_ovReadinessGiorno)renderOvRoomReadiness(_ovReadinessGiorno,state);
 }
 
 function pianoOvInit(){
