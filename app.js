@@ -3317,7 +3317,7 @@ async function renderOvRoomReadiness(giorno){
     // Cliccabile per segnarla pronta al volo da Compass — la fonte primaria resta
     // sempre l'app Culligan sul campo, questo è solo un override rapido per il QM
     // quando serve correggere senza aprire il telefono (scrive sulla stessa chiave KV).
-    return`<div onclick="ovMarkRoomPronta('${r}')" title="Clicca per segnare pronta" style="flex:1;min-width:110px;background:var(--surface);border:1px solid var(--border-light);border-top:3px solid ${cfg.border};border-radius:10px;padding:12px 8px 10px;text-align:center;cursor:pointer;transition:transform .12s;">
+    return`<div onclick="ovMarkRoomPronta('${r}',${stato===true?'false':'true'})" title="${stato===true?'Clicca per segnarla NON pronta':'Clicca per segnarla pronta'}" style="background:var(--surface);border:1px solid var(--border-light);border-top:3px solid ${cfg.border};border-radius:10px;padding:12px 8px 10px;text-align:center;cursor:pointer;transition:transform .12s;">
       <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1;">${r}</div>
       <div style="font-size:11px;color:var(--text-dim);margin:2px 0 8px;">${sotto}</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;">
@@ -3329,13 +3329,16 @@ async function renderOvRoomReadiness(giorno){
     </div>`;
   };
   el.innerHTML=`<div class="kpi-label" style="border-top:1px solid var(--border-light);padding-top:12px;margin-bottom:8px;">🔑 Camere con check-in oggi — stato preparazione</div>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;">${rooms.map(roomCard).join('')}</div>`;
+    <div class="ov-room-grid">${rooms.map(roomCard).join('')}</div>`;
 }
 // Segna una camera "pronta" direttamente da Overview — scrive sulla STESSA chiave KV
 // (qm_cm_YYYY-MM-DD) che legge/scrive l'app Culligan sul campo, quella resta sempre la
 // fonte primaria di verità: questo è solo un override rapido per il QM, non sostituisce
 // il giro reale. Non tocca visited/checks/consegnata — solo il campo pronta e il ts.
-async function ovMarkRoomPronta(room){
+// valore: true = pronta, false = non pronta. Lo passa la card in base a quello che sta
+// mostrando, così un clic inverte sempre lo stato visibile — serve a correggere una
+// camera segnata pronta per sbaglio, prima si poteva solo confermare.
+async function ovMarkRoomPronta(room,valore){
   const d=new Date();
   const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   let state=null;
@@ -3353,7 +3356,7 @@ async function ovMarkRoomPronta(room){
     Object.keys(CM_LABELS).forEach(id=>checks[id]=true);
     state[room]={visited:false,libera:false,dnd:false,bottiglia:'consumata',checks,note:'',consegnata:false,pronta:null};
   }
-  state[room].pronta=true;
+  state[room].pronta=(valore===false?false:true);
   state[room].ts=Date.now();
   try{localStorage.setItem(key,JSON.stringify(state));}catch(e){}
   kvSet(key,JSON.stringify(state)).catch(()=>{});

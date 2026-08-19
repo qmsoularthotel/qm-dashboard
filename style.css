@@ -215,6 +215,11 @@ body.dark .panel{box-shadow:none;}
 /* L'etichetta occupa una riga intera: i nomi vanno a capo tutti insieme sulla
    successiva, invece di iniziare in coda alla scritta e proseguire disallineati. */
 .ns-label{font-size:var(--fs-xxs);letter-spacing:.06em;text-transform:uppercase;color:var(--red);font-weight:600;grid-column:1/-1;}
+/* Camere con check-in oggi: griglia a celle uguali. Erano flex con flex:1, quindi
+   l'ultima card rimasta da sola su una riga si allargava a tutta larghezza e le altre
+   cambiavano misura a ogni ridimensionamento della finestra. In griglia ogni card occupa
+   una cella e basta, anche quando è sola sull'ultima riga. */
+.ov-room-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:12px;}
 .ns-chip{font-size:var(--fs-sm);padding:4px 10px;background:#fff;border:1px solid rgba(198,40,40,.25);border-radius:10px;color:var(--red);display:flex;flex-wrap:nowrap;align-items:center;justify-content:center;gap:6px;text-align:center;min-width:0;}
 /* Il riquadro del motivo (Riposo/Ferie/Malattia) sta sempre a fianco del cognome, mai
    sulla riga sotto: non si stringe e non va a capo, mentre è il cognome a cedere spazio
