@@ -207,11 +207,15 @@ body.dark .panel{box-shadow:none;}
 .ov-empty-icon svg{width:18px;height:18px;stroke:var(--text-dim);fill:none;stroke-width:1.5;}
 .ov-empty-text{font-size:var(--fs-base);color:var(--text-muted);font-weight:500;}
 .ov-empty-sub{font-size:var(--fs-sm);color:var(--text-dim);margin-top:4px;}
-.non-servizio-strip{background:var(--red-bg);border:1px solid rgba(198,40,40,.25);border-radius:7px;padding:9px 13px;margin-bottom:12px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+/* Griglia a celle uguali invece del flusso a capo: le pastiglie erano larghe quanto il
+   loro contenuto (un cognome corto contro uno lungo) e quelle col riquadro Riposo/Ferie
+   erano pure più alte delle altre. align-items resta sul valore predefinito (stretch)
+   proprio per pareggiare anche l'altezza. */
+.non-servizio-strip{background:var(--red-bg);border:1px solid rgba(198,40,40,.25);border-radius:7px;padding:9px 13px;margin-bottom:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px;}
 /* L'etichetta occupa una riga intera: i nomi vanno a capo tutti insieme sulla
    successiva, invece di iniziare in coda alla scritta e proseguire disallineati. */
-.ns-label{font-size:var(--fs-xxs);letter-spacing:.06em;text-transform:uppercase;color:var(--red);flex-shrink:0;font-weight:600;flex-basis:100%;}
-.ns-chip{font-size:var(--fs-sm);padding:2px 10px;background:#fff;border:1px solid rgba(198,40,40,.25);border-radius:10px;color:var(--red);}
+.ns-label{font-size:var(--fs-xxs);letter-spacing:.06em;text-transform:uppercase;color:var(--red);font-weight:600;grid-column:1/-1;}
+.ns-chip{font-size:var(--fs-sm);padding:4px 10px;background:#fff;border:1px solid rgba(198,40,40,.25);border-radius:10px;color:var(--red);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 6px;text-align:center;min-width:0;}
 .staff-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;max-width:100%;}
 .staff-dept-card{background:var(--surface);border:1px solid var(--border-light);border-radius:8px;overflow:hidden;border-top:4px solid var(--gold);}
 .sdh{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--border-light);background:var(--surface2);}
