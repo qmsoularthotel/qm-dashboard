@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=251">
+<link rel="stylesheet" href="style.css?v=252">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='261-20260818';
+  const V='262-20260818';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -509,15 +509,15 @@
             <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:6px;" id="ov-piano-week-row"></div>
           </div>
           <!-- Riepilogo Booking.com: arrivi oggi + partenze attese — popolato da arriviUpdateKpi() -->
-          <div id="ov-booking-box" style="display:none;padding:0 20px 16px;"></div>
+          <div id="ov-booking-box" class="ov-pad" style="display:none;"></div>
           <!-- Camere in partenza con arrivo — subito sotto la situazione Booking.com,
                non in fondo dopo il grafico occupazione: deve saltare all'occhio alla
                reception, non essere l'ultima cosa scorrendo la pagina. -->
-          <div id="ov-room-readiness" style="padding:0 20px 16px;"></div>
-          <div class="side-split" style="padding:0 20px 16px;border-top:1px solid var(--border-light);margin-top:4px;">
+          <div id="ov-room-readiness" class="ov-pad"></div>
+          <div class="side-split ov-pad" style="border-top:1px solid var(--border-light);margin-top:4px;">
             <div class="side-split-main">
               <div class="kpi-label" style="margin:12px 0 8px;">Andamento occupazione settimanale</div>
-              <div id="ov-occ-chart" style="width:100%;box-sizing:border-box;height:240px;display:flex;flex-direction:column;"><div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pulizie per vedere il grafico</div></div>
+              <div id="ov-occ-chart" style="width:100%;box-sizing:border-box;display:flex;flex-direction:column;"><div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pulizie per vedere il grafico</div></div>
             </div>
             <div id="ov-culligan-box" class="side-split-aside" style="padding-top:12px;"></div>
           </div>
@@ -546,10 +546,10 @@
                   <div class="kpi-sub" id="kpi-bkf-sub"></div>
                 </div>
               </div>
-              <div style="padding:0 16px;border-left:1px solid var(--border-light);border-right:1px solid var(--border-light);display:flex;">
+              <div class="ov-bkf-mid">
                 <div id="ov-bkf-chart" style="width:100%;box-sizing:border-box;display:flex;flex-direction:column;"><div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">Carica il report pasti per vedere il grafico</div></div>
               </div>
-              <div style="padding-left:16px;">
+              <div class="ov-bkf-right">
                 <div class="kpi-label">Room Only</div>
                 <div class="kpi-value" id="kpi-bkf-nocol">—</div>
                 <div class="kpi-delta" id="kpi-bkf-nocol-delta" style="color:var(--text-dim)">Carica report pasti</div>
@@ -1634,7 +1634,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=781-20260818"></script>
+<script src="app.js?v=782-20260818"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

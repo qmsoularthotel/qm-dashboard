@@ -531,6 +531,15 @@ select.form-input option{background:var(--surface2);color:var(--text);}
 .ps-bar-prog{display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:5px;}
 .ps-bar-cfg{margin-left:auto;display:flex;gap:8px;align-items:center;}
 
+/* Overview — parti che devono adattarsi allo smartphone. Stavano negli stili in linea
+   dentro index.html, dove nessuna @media può raggiungerle (stesso motivo delle .ps-* più
+   sopra). */
+.ov-pad{padding:0 20px 16px;}
+#ov-occ-chart{height:240px;}
+/* Breakfast: le tre celle sono divise da bordi verticali. */
+.ov-bkf-mid{padding:0 16px;border-left:1px solid var(--border-light);border-right:1px solid var(--border-light);display:flex;}
+.ov-bkf-right{padding-left:16px;}
+
 @media(max-width:1200px){.ps-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:768px){
   .mobile-menu-btn{display:flex;}
@@ -605,6 +614,16 @@ select.form-input option{background:var(--surface2);color:var(--text);}
   .ov-bottom-grid{grid-template-columns:1fr;}
   #ov-piano-week-row{gap:3px;}
   #ov-piano-week-row > div{min-width:54px;padding:8px 4px 8px;}
+  /* 20px per lato più i 10px di .content mangiavano un sesto della larghezza utile */
+  .ov-pad{padding:0 12px 14px;}
+  /* Impilandosi in una colonna sola, i bordi laterali della cella centrale diventavano
+     due linee verticali in mezzo al nulla: vanno girati sopra/sotto, e l'indentazione
+     della terza cella non ha più senso quando non è più a fianco. */
+  .ov-bkf-mid{padding:14px 0;border-left:none;border-right:none;
+    border-top:1px solid var(--border-light);border-bottom:1px solid var(--border-light);}
+  .ov-bkf-right{padding-left:0;padding-top:12px;}
+  .ov-bkf-grid{min-height:0!important;}
+  #ov-occ-chart{height:190px;}
   .panel-header{flex-wrap:wrap;gap:4px;}
   #occ-panel{padding:10px 12px;}
 }
