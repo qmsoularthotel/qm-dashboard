@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=253">
+<link rel="stylesheet" href="style.css?v=254">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='264-20260818';
+  const V='265-20260818';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1634,7 +1634,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=784-20260818"></script>
+<script src="app.js?v=785-20260818"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

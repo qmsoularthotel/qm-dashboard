@@ -534,6 +534,14 @@ select.form-input option{background:var(--surface2);color:var(--text);}
 /* Overview — parti che devono adattarsi allo smartphone. Stavano negli stili in linea
    dentro index.html, dove nessuna @media può raggiungerle (stesso motivo delle .ps-* più
    sopra). */
+/* Pastiglie camera (Housekeeping in Overview e Bilanciamento Camere): griglia a colonne
+   uguali invece del flusso a capo. Dimensionate sul contenuto, "Art 1" è stretta e
+   "Art 12 ⇄" è larga: a capo libero finivano due pastiglie su una riga e una sola su
+   quella dopo, in modo apparentemente casuale. auto-fill tiene il massimo numero di
+   colonne che ci stanno e scende da solo a una sola quando la colonna è troppo stretta
+   perché due ci entrino davvero. */
+.room-chip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:5px;}
+.room-chip-grid > span{text-align:center;white-space:nowrap;}
 .ov-pad{padding:0 20px 16px;}
 .ov-week-wrap{padding:14px 14px 0;}
 #ov-occ-chart{height:240px;}
