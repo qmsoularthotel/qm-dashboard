@@ -257,13 +257,19 @@ async function handleTurniFile(file){
     const mediaType=isPDF?'application/pdf':file.type||'image/jpeg';
     const staff=ALL_STAFF;
     const foStaff=Object.values(DEPTS).filter((_,i)=>i!==1).flatMap(d=>d.members);
+    const _oggi=new Date();
+    const _annoOggi=_oggi.getFullYear();
+    const _oggiIso=_annoOggi+'-'+String(_oggi.getMonth()+1).padStart(2,'0')+'-'+String(_oggi.getDate()).padStart(2,'0');
     const prompt=`Sei un assistente che analizza planning settimanali di turni per un hotel.
+OGGI È ${_oggiIso}. Il planning riguarda quasi sempre la settimana corrente o quella
+successiva: se nell'immagine non compare l'anno, usa ${_annoOggi}. Non dedurre l'anno da
+altro.
 Analizza questa immagine/PDF del planning e restituisci SOLO un oggetto JSON valido con questa struttura esatta:
 {
   "giorni": [
     {
       "label": "Lun 23/03",
-      "date": "2026-03-23",
+      "date": "${_annoOggi}-03-23",
       "shifts": {
         "Nome Cognome": "turno",
         ...
@@ -283,7 +289,7 @@ REGOLE:
 4. Celle con solo un trattino ("-") → metti esattamente "-" nel JSON, NON convertirlo in "R": il trattino indica una persona non pertinente quel giorno (es. non ancora in servizio quella settimana), diverso da un riposo vero. Celle con solo "." o completamente vuote → metti "R".
 5. "R" da solo → "R" (riposo). "P" è turno valido (presenza), NON è riposo.
 6. Qualsiasi altro valore ("P", "AC", "CG", "AG", "CC", "NC", "NG", "FERIE", "9-17", ecc.) → valore ESATTO della cella.
-7. Date "lunedì 30 marzo" → date "2026-03-30", label "Lun 30/03". Includi tutti i 7 giorni.
+7. Date "lunedì 30 marzo" → date "${_annoOggi}-03-30", label "Lun 30/03". Includi tutti i 7 giorni.
 
 Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const contentBlock=isPDF
@@ -303,7 +309,7 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     // Converti date string in oggetti Date
     parsed.giorni=parsed.giorni.map(g=>({
       ...g,
-      date:g.date?new Date(g.date+'T12:00:00'):new Date()
+      date:g.date?_annoPlausibile(new Date(g.date+'T12:00:00')):new Date()
     }));
     // Salva in localStorage + cloud
     try{
@@ -323,6 +329,32 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     ucSetState('turno','error','Errore caricamento');
   }
 }
+// Il planning fotografato riporta "lunedì 30 marzo" senza anno, quindi l'anno lo deve
+// dedurre il modello: e può sbagliarlo (è successo, con un turno datato 2025 caricato nel
+// 2026). Rete di sicurezza: fra l'anno restituito e i due adiacenti si tiene quello che
+// avvicina di più la data a oggi. Vale anche per le settimane a cavallo di capodanno,
+// dove giorni della stessa settimana appartengono ad anni diversi — per questo la scelta
+// è per singolo giorno e non per l'intera settimana.
+function _annoPlausibile(d){
+  if(!(d instanceof Date)||isNaN(d))return d;
+  const G=86400000;
+  const oggi=new Date();oggi.setHours(12,0,0,0);
+  // Entro sei mesi la data è già plausibile per un planning: non si tocca.
+  if(Math.abs(d-oggi)<=180*G)return d;
+  let best=d,bestDist=Math.abs(d-oggi);
+  for(let off=-3;off<=3;off++){
+    if(!off)continue;
+    const c=new Date(d.getTime());
+    c.setFullYear(d.getFullYear()+off);
+    const dist=Math.abs(c-oggi);
+    if(dist<bestDist){best=c;bestDist=dist;}
+  }
+  // Si corregge solo se cambiare anno riporta la data a ridosso di oggi: è il segno di un
+  // anno sbagliato. Una data lontana che resta lontana anche cambiando anno (un planning
+  // di gennaio riaperto in agosto) va lasciata com'è, non spostata all'anno dopo.
+  return bestDist<=90*G?best:d;
+}
+
 async function _turnoClaudeParse(contentBlock,prompt){
   const response=await fetch('https://anthropic-proxy.qm-d82.workers.dev/v1/messages',{
     method:'POST',
