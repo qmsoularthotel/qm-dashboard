@@ -540,7 +540,12 @@ select.form-input option{background:var(--surface2);color:var(--text);}
    quella dopo, in modo apparentemente casuale. auto-fill tiene il massimo numero di
    colonne che ci stanno e scende da solo a una sola quando la colonna è troppo stretta
    perché due ci entrino davvero. */
-.room-chip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:5px;}
+/* Le due strutture del pannello Housekeeping. Su schermo largo stanno affiancate con un
+   filetto in mezzo; su smartphone si impilano — vedi @media. */
+.piano-cols{display:flex;gap:20px;align-items:stretch;}
+.piano-col{flex:1;min-width:0;}
+.piano-cols-div{width:1px;background:var(--border-light);flex-shrink:0;}
+.room-chip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:5px;}
 .room-chip-grid > span{text-align:center;white-space:nowrap;}
 .ov-pad{padding:0 20px 16px;}
 .ov-week-wrap{padding:14px 14px 0;}
@@ -627,6 +632,12 @@ select.form-input option{background:var(--surface2);color:var(--text);}
   .ov-week-wrap{padding:10px 6px 0;}
   /* 20px per lato più i 10px di .content mangiavano un sesto della larghezza utile */
   .ov-pad{padding:0 12px 14px;}
+  /* Affiancate, le due strutture avevano metà schermo a testa: con ~170px sia i riquadri
+     di conteggio sia le camere si incolonnavano uno sotto l'altro, allungando la pagina
+     al punto da doverla scorrere più volte. Impilate, ciascuna prende tutta la larghezza:
+     i conteggi tornano in fila e le camere passano da due a quattro colonne. */
+  .piano-cols{flex-direction:column;gap:14px;}
+  .piano-cols-div{width:auto;height:1px;}
   /* Impilandosi in una colonna sola, i bordi laterali della cella centrale diventavano
      due linee verticali in mezzo al nulla: vanno girati sopra/sotto, e l'indentazione
      della terza cella non ha più senso quando non è più a fianco. */

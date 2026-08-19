@@ -3086,10 +3086,10 @@ function renderPianoGiorno(elId,refDate,forceIdx){
   const sHtml=renderHotel('SoulArt',giorno.soulart||{}),bHtml=renderHotel('Boutique - San Liborio',bMerged);
   if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per questo giorno</div>';return;}
   const cols=sHtml&&bHtml
-    ?`<div style="display:flex;gap:20px;align-items:stretch;">
-        <div style="flex:1;min-width:0;">${sHtml}</div>
-        <div style="width:1px;background:var(--border-light);flex-shrink:0;"></div>
-        <div style="flex:1;min-width:0;">${bHtml}</div>
+    ?`<div class="piano-cols">
+        <div class="piano-col">${sHtml}</div>
+        <div class="piano-cols-div"></div>
+        <div class="piano-col">${bHtml}</div>
       </div>`
     :`${sHtml}${bHtml}`;
   el.innerHTML=`${cols}<div style="font-size:9px;color:var(--text-dim);margin-top:8px;">↑ partenza senza arrivo · = fermata · ⇄ partenza con arrivo</div>`;
