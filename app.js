@@ -2303,12 +2303,17 @@ function pianoRenderWeek(activeIdx){
   wrap.style.display='block';
   const today=new Date();today.setHours(0,0,0,0);
   const _mob=window.innerWidth<=768;
-  const _ico=_mob?'18px':'36px';
-  const _numFs=_mob?'14px':'18px';
+  // Su smartphone i sette giorni devono stare tutti in schermo insieme, senza scorrere.
+  // Per ottenerlo senza rimpicciolire le cifre non si stringe la scheda: si impilano le
+  // due metriche invece di affiancarle. Affiancate sono loro a imporre la larghezza
+  // minima (due icone + due numeri + separatore); impilate, ogni riga usa tutta la
+  // larghezza della scheda e il numero resta leggibile anche a 40px.
+  const _ico=_mob?'12px':'36px';
+  const _numFs=_mob?'16px':'18px';
   const _dayFs=_mob?'12px':'15px';
   const _dateFs=_mob?'10px':'11px';
-  const _pad=_mob?'8px 4px 6px':'12px 8px 10px';
-  const _minW=_mob?'48px':'70px';
+  const _pad=_mob?'7px 2px 6px':'12px 8px 10px';
+  const _minW=_mob?'36px':'70px';
   row.innerHTML=pianoData.giorni.map((g,i)=>{
     const lib=g.liborio||{partenze:[],fermate:[],cambi:[]};
     const bMerged={partenze:[...(g.boutique?.partenze||[]),...lib.partenze],fermate:[...(g.boutique?.fermate||[]),...lib.fermate],cambi:[...(g.boutique?.cambi||[]),...lib.cambi]};
@@ -2326,22 +2331,34 @@ function pianoRenderWeek(activeIdx){
     return`<div onclick="pianoNavRender(${i})" style="flex:1;min-width:${_minW};background:${bg};border:1px solid var(--border);${borderTop}border-radius:10px;padding:${_pad};text-align:center;cursor:pointer;transition:all .15s;">
       <div style="font-size:${_dayFs};font-weight:700;color:${isActive?'var(--accent)':'var(--text)'};line-height:1;">${dayName}</div>
       <div style="font-size:${_dateFs};color:var(--text-dim);margin-bottom:6px;margin-top:2px;">${dayDate}</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:${_mob?'4px':'10px'};margin-bottom:5px;">
+      ${_mob?`<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:5px;">
+        <div style="display:flex;align-items:center;justify-content:center;gap:2px;">
+          <img src="img/icons/fermata.png" class="ov-icon" style="width:${_ico};height:${_ico};object-fit:contain;">
+          <span style="font-size:${_numFs};font-weight:700;color:${fColor};line-height:1;">${totF}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:2px;">
+          <img src="img/icons/arrivi.png" class="ov-icon" style="width:${_ico};height:${_ico};object-fit:contain;">
+          <span style="font-size:${_numFs};font-weight:700;color:${pColor};line-height:1;">${totP}</span>
+        </div>
+      </div>`:`<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:5px;">
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
           <img src="img/icons/fermata.png" class="ov-icon" style="width:${_ico};height:${_ico};object-fit:contain;">
           <span style="font-size:${_numFs};font-weight:700;color:${fColor};line-height:1;">${totF}</span>
         </div>
-        ${!_mob?`<div style="width:1px;height:40px;background:var(--border-light);"></div>`:''}
+        <div style="width:1px;height:40px;background:var(--border-light);"></div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
           <img src="img/icons/arrivi.png" class="ov-icon" style="width:${_ico};height:${_ico};object-fit:contain;">
           <span style="font-size:${_numFs};font-weight:700;color:${pColor};line-height:1;">${totP}</span>
         </div>
-      </div>
+      </div>`}
       <div style="border-top:1px solid var(--border-light);padding-top:4px;">
         <span style="font-size:10px;color:var(--text-dim);">tot </span><span style="font-size:${_mob?'12px':'14px'};font-weight:700;color:var(--text);">${totTot}</span>
       </div>
     </div>`;
   }).join('');
+  // Il gap è in linea sull'elemento in index.html: per stringerlo su smartphone va
+  // scritto qui, altrimenti nessuna regola CSS lo raggiunge.
+  row.style.gap=_mob?'3px':'4px';
 }
 
 function pianoCheckScadenza(){

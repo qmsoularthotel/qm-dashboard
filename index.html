@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=252">
+<link rel="stylesheet" href="style.css?v=253">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='262-20260818';
+  const V='263-20260818';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -505,7 +505,7 @@
             </div>
           </div>
           <!-- Riepilogo settimana -->
-          <div id="ov-piano-week" style="padding:14px 14px 0;display:none;">
+          <div id="ov-piano-week" class="ov-week-wrap" style="display:none;">
             <div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:6px;" id="ov-piano-week-row"></div>
           </div>
           <!-- Riepilogo Booking.com: arrivi oggi + partenze attese — popolato da arriviUpdateKpi() -->
@@ -1634,7 +1634,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=782-20260818"></script>
+<script src="app.js?v=783-20260818"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
