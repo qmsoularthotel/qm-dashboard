@@ -12849,7 +12849,13 @@ function biaRender(){
   </div>`;
 
   // ── Consumi del giorno ──
-  const consOggi=_bia.consumi.find(c=>_biaH(c)===_biaHotel&&c.data===_biaFmt(oggi));
+  // La data scelta va riletta dal campo prima di rigenerare l'HTML: riscrivendo sempre
+  // la data di oggi, qualunque giorno selezionato tornava indietro subito. I sette
+  // valori mostrati sono quelli della data selezionata, non quelli di oggi, così si
+  // possono correggere anche i giorni passati.
+  const consIso=(document.getElementById('bia-cons-data')||{}).value||_biaToIso(_biaFmt(oggi));
+  const consData=_biaFromIso(consIso)||_biaFmt(oggi);
+  const consSel=_bia.consumi.find(c=>_biaH(c)===_biaHotel&&c.data===consData);
   h+=`<div class="panel" style="margin-bottom:16px;">
     <div class="panel-header"><span class="panel-title">Consumi giornalieri dai fogli camera</span>
       <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">somma i fogli delle cameriere e riporta i totali</span>
@@ -12857,12 +12863,12 @@ function biaRender(){
     <div class="panel-body" style="padding:14px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
         <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data</label>
-        <input type="date" id="bia-cons-data" value="${_biaToIso(_biaFmt(oggi))}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
+        <input type="date" id="bia-cons-data" value="${consIso}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
         ${BIA_VOCI.map((v,i)=>`<div>
           <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${esc(v)}</div>
-          <input type="number" min="0" id="bia-c-${i}" value="${consOggi?(Number(consOggi.q[v])||0):0}" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);text-align:center;">
+          <input type="number" min="0" id="bia-c-${i}" value="${consSel?(Number(consSel.q[v])||0):0}" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);text-align:center;">
         </div>`).join('')}
       </div>
       <div style="margin-top:12px;">
