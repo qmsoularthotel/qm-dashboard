@@ -2361,6 +2361,22 @@ function pianoRenderWeek(activeIdx){
   row.style.gap=_mob?'3px':'4px';
 }
 
+// pianoRenderWeek decide la disposizione (cifre affiancate su desktop, impilate su
+// smartphone) leggendo window.innerWidth al momento del disegno. Ridimensionando la
+// finestra restava quella scelta prima, fino al disegno successivo — e quello lo fa solo
+// il polling ogni 30 secondi: abbastanza per vedersi il layout da telefono su desktop e
+// credere che sia rotto. Si ridisegna solo quando la soglia viene davvero attraversata,
+// non a ogni pixel di trascinamento del bordo.
+let _pianoEraMob=window.innerWidth<=768;
+let _pianoResizeT=null;
+window.addEventListener('resize',()=>{
+  const oraMob=window.innerWidth<=768;
+  if(oraMob===_pianoEraMob)return;
+  _pianoEraMob=oraMob;
+  clearTimeout(_pianoResizeT);
+  _pianoResizeT=setTimeout(()=>{try{if(pianoNavIdx!==null)pianoRenderWeek(pianoNavIdx);}catch(e){}},120);
+});
+
 function pianoCheckScadenza(){
   const badge=document.getElementById('ov-piano-scadenza');
   if(!badge||!pianoData||!pianoData.giorni)return;
