@@ -215,7 +215,17 @@ body.dark .panel{box-shadow:none;}
 /* L'etichetta occupa una riga intera: i nomi vanno a capo tutti insieme sulla
    successiva, invece di iniziare in coda alla scritta e proseguire disallineati. */
 .ns-label{font-size:var(--fs-xxs);letter-spacing:.06em;text-transform:uppercase;color:var(--red);font-weight:600;grid-column:1/-1;}
-.ns-chip{font-size:var(--fs-sm);padding:4px 10px;background:#fff;border:1px solid rgba(198,40,40,.25);border-radius:10px;color:var(--red);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 6px;text-align:center;min-width:0;}
+.ns-chip{font-size:var(--fs-sm);padding:4px 10px;background:#fff;border:1px solid rgba(198,40,40,.25);border-radius:10px;color:var(--red);display:flex;flex-wrap:nowrap;align-items:center;justify-content:center;gap:6px;text-align:center;min-width:0;}
+/* Il riquadro del motivo (Riposo/Ferie/Malattia) sta sempre a fianco del cognome, mai
+   sulla riga sotto: non si stringe e non va a capo, mentre è il cognome a cedere spazio
+   e semmai a troncare. Gli stili fissi stanno qui; da JS arrivano solo i colori, che
+   dipendono dal motivo. */
+.ns-nome{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ns-motivo{flex-shrink:0;white-space:nowrap;font-size:10px;font-weight:800;padding:3px 9px;border-radius:14px;text-transform:uppercase;letter-spacing:.02em;}
+/* Situazione odierna Booking.com: pastiglie tutte della stessa larghezza, incolonnate,
+   invece di andare a capo secondo la lunghezza del nome dell'ospite. */
+.bk-chip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:4px;}
+.bk-chip-grid > span{display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
 .staff-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;max-width:100%;}
 .staff-dept-card{background:var(--surface);border:1px solid var(--border-light);border-radius:8px;overflow:hidden;border-top:4px solid var(--gold);}
 .sdh{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--border-light);background:var(--surface2);}
@@ -644,6 +654,10 @@ select.form-input option{background:var(--surface2);color:var(--text);}
   /* Su smartphone bastano i cognomi: l'iniziale del nome è marcata a parte proprio
      per poterla togliere qui, sia nelle righe del turno sia fra i non in servizio. */
   .s-ini{display:none;}
+  /* Esattamente due colonne: con auto-fill, sulla larghezza reale del telefono ne
+     usciva una sola e la striscia diventava un elenco lunghissimo. */
+  .non-servizio-strip{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .bk-chip-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
   .piano-cols{flex-direction:column;gap:14px;}
   .piano-cols-div{width:auto;height:1px;}
   /* Impilandosi in una colonna sola, i bordi laterali della cella centrale diventavano
