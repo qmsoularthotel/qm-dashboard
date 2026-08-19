@@ -208,7 +208,9 @@ body.dark .panel{box-shadow:none;}
 .ov-empty-text{font-size:var(--fs-base);color:var(--text-muted);font-weight:500;}
 .ov-empty-sub{font-size:var(--fs-sm);color:var(--text-dim);margin-top:4px;}
 .non-servizio-strip{background:var(--red-bg);border:1px solid rgba(198,40,40,.25);border-radius:7px;padding:9px 13px;margin-bottom:12px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
-.ns-label{font-size:var(--fs-xxs);letter-spacing:.06em;text-transform:uppercase;color:var(--red);flex-shrink:0;font-weight:600;}
+/* L'etichetta occupa una riga intera: i nomi vanno a capo tutti insieme sulla
+   successiva, invece di iniziare in coda alla scritta e proseguire disallineati. */
+.ns-label{font-size:var(--fs-xxs);letter-spacing:.06em;text-transform:uppercase;color:var(--red);flex-shrink:0;font-weight:600;flex-basis:100%;}
 .ns-chip{font-size:var(--fs-sm);padding:2px 10px;background:#fff;border:1px solid rgba(198,40,40,.25);border-radius:10px;color:var(--red);}
 .staff-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;max-width:100%;}
 .staff-dept-card{background:var(--surface);border:1px solid var(--border-light);border-radius:8px;overflow:hidden;border-top:4px solid var(--gold);}
@@ -636,6 +638,9 @@ select.form-input option{background:var(--surface2);color:var(--text);}
      di conteggio sia le camere si incolonnavano uno sotto l'altro, allungando la pagina
      al punto da doverla scorrere più volte. Impilate, ciascuna prende tutta la larghezza:
      i conteggi tornano in fila e le camere passano da due a quattro colonne. */
+  /* Su smartphone bastano i cognomi: l'iniziale del nome è marcata a parte proprio
+     per poterla togliere qui, sia nelle righe del turno sia fra i non in servizio. */
+  .s-ini{display:none;}
   .piano-cols{flex-direction:column;gap:14px;}
   .piano-cols-div{width:auto;height:1px;}
   /* Impilandosi in una colonna sola, i bordi laterali della cella centrale diventavano

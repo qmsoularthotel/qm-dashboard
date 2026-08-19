@@ -502,6 +502,17 @@ function sortDeptMembers(key,names,shifts){
     return ca-cb;
   }).map(x=>x.n);
 }
+// I nomi del turno arrivano come "Cognome I." (es. "Maddaloni M."). L'iniziale viene
+// separata in uno span invece di essere tolta qui: su smartphone la nasconde il CSS, così
+// non serve ridisegnare al ridimensionamento della finestra (vedi il caso del piano del
+// giorno, dove leggere innerWidth al momento del disegno lasciava il layout sbagliato
+// fino al polling successivo). Chi non ha quel formato — "Extra Night", i nomi liberi
+// delle extra HK — resta intatto.
+const _nomeIniz=n=>{
+  const m=String(n||'').match(/^(.*\S)(\s+[A-Za-z\u00C0-\u024F]\.)$/);
+  return m?`${m[1]}<span class="s-ini">${m[2]}</span>`:String(n||'');
+};
+
 function renderDay(idx){
   const g=weekData.giorni[idx],shifts=g.shifts;
   updateStaffPanelHeader(g.date?(typeof g.date==='string'?new Date(g.date):g.date):null);
@@ -533,8 +544,8 @@ function renderDay(idx){
     </div>
     <span style="font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;">${g.label}</span>
   </div>`;
-  html+=`<div class="non-servizio-strip" style="background:var(--surface2);border:1.5px solid var(--border);"><span class="ns-label" style="color:var(--text-muted);">Non in servizio</span>${nonServizioSorted.length?nonServizioSorted.map(n=>{const r=_absenceReason(getShift(shifts,n));return`<span class="ns-chip" style="color:var(--text);background:#fff;border:1px solid var(--border-light);display:inline-flex;align-items:center;gap:6px;">${n}${r.label?`<span style="font-size:10px;font-weight:800;padding:3px 9px;border-radius:14px;text-transform:uppercase;letter-spacing:.02em;background:${r.bg};color:${r.fg};">${r.label}</span>`:''}</span>`;}).join(''):`<span class="ns-chip" style="color:var(--text-dim);background:#fff;border:1px solid var(--border-light);">Tutti in servizio</span>`}</div>`;
-  const shiftRow=(n,sv,cls)=>`<div class="staff-row" style="cursor:pointer;" title="Clicca per correggere" onclick="editShift(${idx},'${n.replace(/'/g,"\\'")}')"><span class="sname">${n}</span><span class="sshift ${cls}">${sv||'—'}</span></div>`;
+  html+=`<div class="non-servizio-strip" style="background:var(--surface2);border:1.5px solid var(--border);"><span class="ns-label" style="color:var(--text-muted);">Non in servizio</span>${nonServizioSorted.length?nonServizioSorted.map(n=>{const r=_absenceReason(getShift(shifts,n));return`<span class="ns-chip" style="color:var(--text);background:#fff;border:1px solid var(--border-light);display:inline-flex;align-items:center;gap:6px;">${_nomeIniz(n)}${r.label?`<span style="font-size:10px;font-weight:800;padding:3px 9px;border-radius:14px;text-transform:uppercase;letter-spacing:.02em;background:${r.bg};color:${r.fg};">${r.label}</span>`:''}</span>`;}).join(''):`<span class="ns-chip" style="color:var(--text-dim);background:#fff;border:1px solid var(--border-light);">Tutti in servizio</span>`}</div>`;
+  const shiftRow=(n,sv,cls)=>`<div class="staff-row" style="cursor:pointer;" title="Clicca per correggere" onclick="editShift(${idx},'${n.replace(/'/g,"\\'")}')"><span class="sname">${_nomeIniz(n)}</span><span class="sshift ${cls}">${sv||'—'}</span></div>`;
   // Raggruppa con una cornice verde sottile i colleghi consecutivi (dopo l'ordinamento)
   // che hanno esattamente lo stesso valore turno (es. due "CG") — capita spesso e aiuta
   // a vederli subito come coppia.
