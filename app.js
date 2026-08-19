@@ -3295,13 +3295,15 @@ async function renderOvRoomReadiness(giorno){
   }catch(e){}
   if(!state){try{const s=localStorage.getItem(key);if(s)state=JSON.parse(s);}catch(e){}}
   // Card "day-tile" (stessa impaginazione delle card giorno di pianoNavRender: nome in
-  // alto, due cerchi icona separati da un filo verticale, stato in fondo, bordo colorato
-  // in cima) applicata a ogni camera invece che a un giorno della settimana — molto più
-  // visibile delle pillole di testo di prima. Cerchio sinistro = camera/arrivo (fisso,
-  // navy); cerchio destro = stato pronta/non pronta (colora anche il bordo in cima).
-  const iconDoor='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2"><path d="M3 18v-5a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v5"/><path d="M3 18h18M5 13V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
-  const iconCheck='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>';
-  const iconBroom='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#fff" stroke-width="2"><path d="M19 5 9 15"/><path d="M14 20a3 3 0 1 1-6 0c0-1.5 1-2 1-3.5S8 13 8 13h4s-1 1.5-1 3.5 1 2 1 3.5z"/></svg>';
+  // alto, cerchio icona, stato in fondo, bordo colorato in cima) applicata a ogni camera
+  // invece che a un giorno della settimana. Un solo cerchio, che è lo stato: prima ce
+  // n'era anche uno navy fisso con l'icona della camera, uguale su tutte le card — non
+  // distingueva niente e rubava spazio. L'icona è un letto: liscio quando la camera è
+  // pronta, con la coperta mossa quando non lo è.
+  const _bedBase='<path d="M2 18v-6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6"/><path d="M6 10V8a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/>';
+  const _bedSvg=d=>'<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+_bedBase+d+'</svg>';
+  const iconBedOk=_bedSvg('<path d="M2 14.5h20"/>');
+  const iconBedNo=_bedSvg('<path d="M2.5 14.6c3-1.8 6 1.2 9-.6s6 1.2 9-.6"/>');
   const iconQ='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 1.8-2 3.3"/><circle cx="12" cy="17" r=".6" fill="#fff" stroke="none"/></svg>';
   const roomCard=r=>{
     const p=state&&state[r]?state[r].pronta:null;
@@ -3310,8 +3312,8 @@ async function renderOvRoomReadiness(giorno){
     // segnata esplicitamente (p non null) vince quello che ha visto sul posto.
     const soloArrivo=arrivoPuro.has(r);
     const stato=p!==null&&p!==undefined?p:(soloArrivo?true:null);
-    const cfg=stato===true?{border:'var(--green)',icon:iconCheck,iconBg:'var(--green)',fg:'var(--green)',lbl:'✓ Pronta'}
-      :stato===false?{border:'var(--amber)',icon:iconBroom,iconBg:'var(--amber)',fg:'var(--amber)',lbl:'🧹 Non pronta'}
+    const cfg=stato===true?{border:'var(--green)',icon:iconBedOk,iconBg:'var(--green)',fg:'var(--green)',lbl:'Pronta'}
+      :stato===false?{border:'var(--red)',icon:iconBedNo,iconBg:'var(--red)',fg:'var(--red)',lbl:'Non pronta'}
       :{border:'var(--border)',icon:iconQ,iconBg:'var(--text-dim)',fg:'var(--text-dim)',lbl:'Da verificare'};
     const sotto=soloArrivo?'arrivo · nessuna partenza':'check-in oggi';
     // Cliccabile per segnarla pronta al volo da Compass — la fonte primaria resta
@@ -3320,9 +3322,7 @@ async function renderOvRoomReadiness(giorno){
     return`<div onclick="ovMarkRoomPronta('${r}',${stato===true?'false':'true'})" title="${stato===true?'Clicca per segnarla NON pronta':'Clicca per segnarla pronta'}" style="background:var(--surface);border:1px solid var(--border-light);border-top:3px solid ${cfg.border};border-radius:10px;padding:12px 8px 10px;text-align:center;cursor:pointer;transition:transform .12s;">
       <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1;">${r}</div>
       <div style="font-size:11px;color:var(--text-dim);margin:2px 0 8px;">${sotto}</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px;">
-        <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent);flex-shrink:0;">${iconDoor}</div>
-        <div style="width:1px;height:32px;background:var(--border-light);"></div>
+      <div style="display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
         <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${cfg.iconBg};flex-shrink:0;">${cfg.icon}</div>
       </div>
       <div style="font-size:13px;font-weight:700;color:${cfg.fg};">${cfg.lbl}</div>
