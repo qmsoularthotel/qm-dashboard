@@ -11305,7 +11305,7 @@ function _psParsePdfArrivi(items){
 let _psSeq=0;
 function _psNuovoId(){return 'a'+Date.now().toString(36)+(_psSeq++).toString(36);}
 function _psNuovaScheda(hotel){
-  return{id:_psNuovoId(),hotel:hotel,nome:'',email:'',tel:'',lang:'it',origine:'',italcamel:false,mailTs:null,waTs:null,mailErr:null};
+  return{id:_psNuovoId(),hotel:hotel,nome:'',email:'',tel:'',lang:'it',origine:'',codice:'',italcamel:false,mailTs:null,waTs:null,mailErr:null};
 }
 // Accesso al giorno, con migrazione dal vecchio formato indicizzato per camera
 // (`{'203':{...}}`) al nuovo (`{arrivi:[…]}`). La migrazione è pigra — avviene alla prima
@@ -11363,13 +11363,24 @@ function _psImportaArrivi(iso,lista){
   let nuovi=0,ritrovati=0;
   (lista||[]).forEach(a=>{
     const chiave=_psNomeChiave(a.nome);
-    let s=chiave?esistenti.find(e=>!usate.has(e.id)&&e.hotel===a.hotel&&_psNomeChiave(e.nome)===chiave):null;
-    if(s){ritrovati++;}
+    // 1) Codice della prenotazione: è l'unico riferimento che NON cambia. Il nome sì —
+    //    al check-in viene registrato il documento di chi si presenta, che può essere
+    //    l'accompagnatore. Senza questo abbinamento la stessa prenotazione tornava come
+    //    un secondo arrivo, con il pre-stay già inviato rimasto sulla scheda vecchia.
+    let s=a.codice?esistenti.find(e=>!usate.has(e.id)&&e.codice&&e.codice===a.codice):null;
+    if(s){ritrovati++;s.nome=a.nome;}     // il nome segue quello del PMS
     else{
-      s=esistenti.find(e=>!usate.has(e.id)&&e.hotel===a.hotel&&_psVuota(e));
-      if(s)s.nome=a.nome;
-      else{s=_psNuovaScheda(a.hotel);s.nome=a.nome;nuovi++;}
+      // 2) Nome, per le schede importate prima che ci fosse il codice
+      s=chiave?esistenti.find(e=>!usate.has(e.id)&&e.hotel===a.hotel&&_psNomeChiave(e.nome)===chiave):null;
+      if(s){ritrovati++;}
+      else{
+        s=esistenti.find(e=>!usate.has(e.id)&&e.hotel===a.hotel&&_psVuota(e));
+        if(s)s.nome=a.nome;
+        else{s=_psNuovaScheda(a.hotel);s.nome=a.nome;nuovi++;}
+      }
     }
+    if(a.codice)s.codice=a.codice;
+    s.hotel=a.hotel;                      // una prenotazione può cambiare struttura
     s.fuoriLista=false;
     // Canale di provenienza dal PMS, quando il file lo porta (export "Prenotazioni").
     // Colora il bordo della scheda già all'import, senza aspettare che si digiti l'email,
@@ -13262,7 +13273,7 @@ const PREN_UNICO=true;
 // 215.7 Partenza, 300.2 Alloggio, 354.7 Ospiti, 388.7 Stato, 563 Tratt., 595.4 Origine.
 const PREN_COL={
   ospite:[0,64], arrivo:[162,215], partenza:[215,268],
-  alloggio:[300,354], ospiti:[354,388], stato:[388,424],
+  alloggio:[300,354], ospiti:[354,388], stato:[388,424], codice:[470,519],
   tratt:[563,595], origine:[595,649]
 };
 const PREN_RE_DATA=/^(\d{2})\/(\d{2})\/(\d{4})$/;
@@ -13338,6 +13349,7 @@ function _prenParse(items){
         arrivo, partenza:_prenData(_prenCella(ws,PREN_COL.partenza)),
         camera, tipo, pax:pax.a+pax.b, adulti:pax.a, bambini:pax.b,
         stato:_prenCella(ws,PREN_COL.stato),
+        codice:_prenCella(ws,PREN_COL.codice),
         tratt:_prenCella(ws,PREN_COL.tratt),
         origine:_prenCella(ws,PREN_COL.origine),
         struttura:_prenStruttura(all)
@@ -13347,6 +13359,7 @@ function _prenParse(items){
       const p=out[out.length-1];
       const n=_prenCella(ws,PREN_COL.ospite); if(n)p.ospite+=' '+n;
       const t=_prenCella(ws,PREN_COL.alloggio); if(t)p.tipo=(p.tipo+' '+t).trim();
+      const k=_prenCella(ws,PREN_COL.codice); if(k)p.codice=(p.codice+' '+k).trim();
     }
   });
   // Solo prenotazioni valide: le cancellate non devono contare da nessuna parte.
@@ -13433,6 +13446,7 @@ function _prenPrestay(pren,iso){
   return pren.filter(p=>p.arrivo===iso).map(p=>({
     camera:p.camera,
     nome:p.ospite,
+    codice:p.codice,
     hotel:_prenStruttura(p.alloggio||p.camera).toLowerCase(),
     origine:p.origine
   }));

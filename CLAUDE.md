@@ -2253,6 +2253,29 @@ tornavano — errore trovato proprio così.
 arrivi**, mai a fermate e partenze, per cui alcune camere Art risultavano `AR` (Art Resort)
 invece di `SA`. Qui la struttura è assegnata in modo deterministico a tutte e tre le liste.
 
+### L'abbinamento delle schede va sul CODICE, non sul nome
+
+Il nome dell'ospite **cambia**: al check-in viene registrato il documento di chi si
+presenta, che può essere l'accompagnatore. Caso reale (20/08/2026): pre-stay inviato a
+"Marino Ilenia", al banco registrata "Della Sala Maria Concetta", e al reimport la stessa
+prenotazione tornava come un secondo arrivo — con l'invio già fatto rimasto sulla scheda
+vecchia e una scheda nuova apparentemente da compilare.
+
+`_psImportaArrivi` abbina in quest'ordine:
+
+1. **`codice`** della prenotazione (colonna `Codice`, x 470–519) — non cambia mai. Presente
+   e univoco su tutte le prenotazioni dell'export (verificato: 158 su 158, zero duplicati).
+   Quando combacia, **il nome viene aggiornato** con quello del PMS.
+2. **nome**, per le schede importate prima che il codice esistesse
+3. prima scheda vuota della stessa struttura
+4. scheda nuova
+
+Il codice va a capo nell'export (`7BK7M6L` + `7MXYPP`): va accodato come il nome, altrimenti
+resta troncato e non abbina più.
+
+Abbinando per codice si aggiorna anche `hotel`: una prenotazione può essere spostata di
+struttura senza per questo diventare un secondo arrivo.
+
 ### Il canale colora la scheda pre-stay all'import
 
 La colonna `Origine` viene salvata sulla scheda (`a.origine`) e decide il colore del bordo
