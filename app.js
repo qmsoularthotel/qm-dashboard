@@ -3343,7 +3343,7 @@ async function renderOvRoomReadiness(giorno,statoNoto){
     // quando serve correggere senza aprire il telefono (scrive sulla stessa chiave KV).
     return`<div onclick="ovMarkRoomPronta('${r}',${_next.v})" title="Clicca per segnarla ${_next.t}" style="background:var(--surface);border:1px solid var(--border-light);border-top:3px solid ${cfg.border};border-radius:10px;padding:12px 8px 10px;text-align:center;cursor:pointer;transition:transform .12s;">
       <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1;">${r}</div>
-      <div style="font-size:11px;color:var(--text-dim);margin:2px 0 8px;">${sotto}</div>
+      <div style="font-size:11px;color:var(--text-dim);margin:2px 0 8px;line-height:1.35;min-height:30px;display:flex;align-items:center;justify-content:center;">${sotto}</div>
       <div style="display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
         <div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${cfg.iconBg};flex-shrink:0;">${cfg.icon}</div>
       </div>
