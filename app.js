@@ -679,7 +679,7 @@ function hkpEditUrl(p){
   if(newScript&&newScript!==curScript)HKP_CONFIG[p].script=newScript;
   hkpSaveConfig();
   const link=document.getElementById('hkp-'+p+'-link');if(link)link.href=HKP_CONFIG[p].foglio;
-  alert(`URL ${nome} aggiornati. Clicca Aggiorna per ricaricare i dati.`);
+  cqAvviso(`URL ${nome} aggiornati. Clicca Aggiorna per ricaricare i dati.`);
 }
 // §§ HKP NATIVE — griglia nativa (Camere / Aree Comuni / Fondi & Lavaggi)
 // Storage: una chiave per hotel/mese → qm_hkpN_{p}_{yyyy-mm}
@@ -4761,7 +4761,7 @@ function pulShowStatus(msg){
 }
 function pulShowError(msg){
   ucSetState('pul','error','Errore');
-  alert(msg);
+  cqAvviso(msg);
 }
 // §§ RECENSIONI — SCORING & INIT UPLOAD (weightedAvgF1, revHandleFile init per tutti gli hotel)
 const DECAY_F1_MS=270*24*60*60*1000;
@@ -6732,7 +6732,7 @@ function bkfSaveGroup(){
   const pax=parseInt(document.getElementById('bkfGrpPax').value)||0;
   const orario=document.getElementById('bkfGrpOrario').value.trim();
   const note=document.getElementById('bkfGrpNote').value.trim();
-  if(!nome||!arrivo||!partenza||!pax){alert('Compila almeno nome, date e numero persone.');return;}
+  if(!nome||!arrivo||!partenza||!pax){cqAvviso('Compila almeno nome, date e numero persone.');return;}
   bkfGroups.push({id:Date.now(),nome,arrivo,partenza,pax,orario,note});
   bkfGroups.sort((a,b)=>a.arrivo.localeCompare(b.arrivo));
   document.getElementById('bkfGroupModal').style.display='none';
@@ -6995,7 +6995,7 @@ function rcRenderSourceLine(){
 }
 function rcPrintHighlighted(){
   const idxs=guestsData.map((g,i)=>g.isNew||g.roomChanged?i:-1).filter(i=>i>=0);
-  if(!idxs.length){alert('Nessuna card nuova o con camera spostata da stampare.');return;}
+  if(!idxs.length){cqAvviso('Nessuna card nuova o con camera spostata da stampare.');return;}
   preparePrintIdxs(idxs);
 }
 function rcToggleSelect(idx,checked){
@@ -7020,7 +7020,7 @@ function rcUpdateSelectedBtn(){
 }
 function rcPrintSelected(){
   const idxs=[..._rcSelected].sort((a,b)=>a-b);
-  if(!idxs.length){alert('Nessuna card selezionata.');return;}
+  if(!idxs.length){cqAvviso('Nessuna card selezionata.');return;}
   preparePrintIdxs(idxs);
 }
 function rcBuildPreview(g,idx){const nights=rcCalcNights(g.checkin,g.checkout);
@@ -7554,10 +7554,10 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
       ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi (nessuna RC — solo Principe/Mastrangelo)');
     }else if(!_rcCardsOk){
       ucSetState('arrivi','error',arriviData.data+' · 0 arrivi rilevati — verifica il documento');
-      alert('Attenzione: dal documento caricato non risultano arrivi validi.\nLe registration card NON sono state aggiornate.\nControlla il file e ricarica il Riepilogo Reception.');
+      cqAvviso('Attenzione: dal documento caricato non risultano arrivi validi.\nLe registration card NON sono state aggiornate.\nControlla il file e ricarica il Riepilogo Reception.');
     }else if(_arriviWarning){
       ucSetState('arrivi','error',arriviData.data+' · '+arriviData.arrivi.length+' arrivi — verifica manuale consigliata');
-      alert('⚠️ Controllo automatico\n\n'+_arriviWarning);
+      cqAvviso('⚠️ Controllo automatico\n\n'+_arriviWarning);
     }else{
       ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi');
     }
@@ -7993,7 +7993,7 @@ function invEditQty(bc,currentQty){
   const val=prompt(`Nuova quantità in stock per "${p.name}":`,currentQty);
   if(val===null)return;
   const n=parseFloat(val);
-  if(isNaN(n)||n<0){alert('Quantità non valida');return;}
+  if(isNaN(n)||n<0){cqAvviso('Quantità non valida');return;}
   let moves=[];
   try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
   moves.push({id:Date.now()+'_'+Math.random().toString(36).slice(2),barcode:bc,type:'init',qty:n,ts:Date.now(),note:'Rettifica da dashboard'});
@@ -8282,7 +8282,7 @@ function invEditProduct(bc){
   const p=catalog[bc];if(!p)return;
   const newName=prompt('Nome prodotto:',p.name);
   if(newName===null)return;
-  if(!newName.trim()){alert('Il nome non può essere vuoto.');return;}
+  if(!newName.trim()){cqAvviso('Il nome non può essere vuoto.');return;}
   const newUnit=prompt('Unità di misura (es. fl, kg, lt):',p.unit||'');
   if(newUnit===null)return;
   const sogliaRaw=prompt('Soglia minima (lascia vuoto per nessuna soglia):',p.soglia!=null?p.soglia:'');
@@ -8298,11 +8298,11 @@ function invAddProduct(){
   try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
   const name=prompt('Nome prodotto:','');
   if(name===null)return;
-  if(!name.trim()){alert('Il nome non può essere vuoto.');return;}
+  if(!name.trim()){cqAvviso('Il nome non può essere vuoto.');return;}
   let bc=prompt('Codice a barre (lascia vuoto se non disponibile):','');
   if(bc===null)return;
   bc=bc.trim()||('manual_'+Date.now());
-  if(catalog[bc]){alert('Codice già usato da un altro prodotto.');return;}
+  if(catalog[bc]){cqAvviso('Codice già usato da un altro prodotto.');return;}
   const unit=prompt('Unità di misura (es. fl, kg, lt):','');
   if(unit===null)return;
   const sogliaRaw=prompt('Soglia minima (lascia vuoto per nessuna soglia):','');
@@ -8544,7 +8544,7 @@ function invOrdersOpenModal(){
 
 function invOrdersAddItem(){
   const bc=document.getElementById('invOrdProd')?.value;
-  if(!bc){alert('Seleziona un prodotto.');return;}
+  if(!bc){cqAvviso('Seleziona un prodotto.');return;}
   const qtyRaw=parseInt(document.getElementById('invOrdQty')?.value)||0;
   const qty=qtyRaw>0?qtyRaw:null;
   let catSA={},catAR={};
@@ -8579,8 +8579,8 @@ function invOrdersSubmit(){
   const date=(document.getElementById('invOrdDate')?.value||'').trim();
   const wh=document.getElementById('invOrdWh')?.value||'sa';
   const fornitore=(document.getElementById('invOrdFornitore')?.value||'').trim();
-  if(!date){alert('Inserisci la data ordine.');return;}
-  if(!_invOrdersDraft.length){alert('Aggiungi almeno un prodotto.');return;}
+  if(!date){cqAvviso('Inserisci la data ordine.');return;}
+  if(!_invOrdersDraft.length){cqAvviso('Aggiungi almeno un prodotto.');return;}
   const orders=invOrdersGet();
   orders.push({id:Date.now()+'_'+Math.random().toString(36).slice(2,6),wh,date,ts:Date.now(),fornitore,status:'ordinato',items:[..._invOrdersDraft]});
   invOrdersSave(orders);
@@ -8826,7 +8826,7 @@ function invOrdersPrint(){
     (_invOrdersWh==='tutti'||o.wh===_invOrdersWh)&&
     (_invOrdersStatus==='tutti'||o.status===_invOrdersStatus)
   );
-  if(!filtered.length){alert('Nessun ordine da stampare.');return;}
+  if(!filtered.length){cqAvviso('Nessun ordine da stampare.');return;}
   const sBadgeTxt=s=>s==='ordinato'?'In attesa':s==='ricevuto'?'Ricevuto':'Annullato';
   const rows=filtered.map(o=>{
     const itemList=(o.items||[]).map(it=>`<tr><td style="padding:3px 8px;font-size:11px;">${it.name}</td><td style="padding:3px 8px;font-size:11px;text-align:right;">${it.qty?it.qty+(it.unit?' '+it.unit:''):''}</td></tr>`).join('');
@@ -9396,7 +9396,7 @@ ${dndRooms.length>0?`<div class="sec-title red">🚫 Non Disturbare — verifica
 </div>
 </body></html>`;
   const w=window.open('','_blank');
-  if(!w){alert('Abilita i popup per stampare.');return;}
+  if(!w){cqAvviso('Abilita i popup per stampare.');return;}
   w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);
 }
 function _esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -10765,7 +10765,7 @@ async function ddtDelete(id){
 function ddtOpenPrintModal(){
   const all=ddtGet();
   const mesi=[...new Set(all.map(d=>ddtYM(d.data)).filter(Boolean))].sort().reverse();
-  if(!mesi.length){alert('Nessun DDT caricato: non c\'è ancora nulla da riportare.');return;}
+  if(!mesi.length){cqAvviso('Nessun DDT caricato: non c\'è ancora nulla da riportare.');return;}
   const curMon=ddtCurMonth();
   const opts=mesi.map(ym=>`<option value="${ym}" ${ym===curMon?'selected':''}>${ddtMonLabel(ym)}</option>`).join('');
   const m=document.createElement('div');
@@ -11504,7 +11504,7 @@ function prestayAddArrivo(){
   const scelta=prompt('Struttura del nuovo arrivo:\n\n'+elenco+'\n\nScrivi il numero:','1');
   if(scelta===null)return;
   const idx=parseInt(scelta,10)-1;
-  if(!(idx>=0&&idx<codici.length)){alert('Struttura non valida: riprova scrivendo un numero da 1 a '+codici.length+'.');return;}
+  if(!(idx>=0&&idx<codici.length)){cqAvviso('Struttura non valida: riprova scrivendo un numero da 1 a '+codici.length+'.');return;}
   const iso=_psTargetISO();
   _psGiorno(iso).arrivi.push(_psNuovaScheda(codici[idx]));
   _psSave();prestayRender();
@@ -11667,12 +11667,12 @@ async function prestayControllaRisposte(){
   const iso=_psTargetISO();
   const ep=_psEndpointRisposte();
   if(!ep||!_psMailCfg.key){
-    alert('Per leggere le risposte serve la configurazione in "Impostazioni": è la stessa di quella usata per inviare.');
+    cqAvviso('Per leggere le risposte serve la configurazione in "Impostazioni": è la stessa di quella usata per inviare.');
     return;
   }
   const indirizzi=[...new Set((_psGiorno(iso).arrivi||[])
     .map(a=>String(a.email||'').trim().toLowerCase()).filter(Boolean))];
-  if(!indirizzi.length){alert('Nessun indirizzo email inserito in questa data: non c\'è nulla da cercare.');return;}
+  if(!indirizzi.length){cqAvviso('Nessun indirizzo email inserito in questa data: non c\'è nulla da cercare.');return;}
   _psRispInCorso=true;prestayRender();
   try{
     const r=await fetch(ep,{
@@ -11688,7 +11688,7 @@ async function prestayControllaRisposte(){
     _psAvviso=n?n+' rispost'+(n===1?'a':'e')+' trovat'+(n===1?'a':'e')+' e mostrat'+(n===1?'a':'e')+' sulle schede.'
               :'Nessuna risposta dagli ospiti di questa data. Chi ha scritto dentro la messaggistica di Booking non compare qui: quelle si leggono solo nell\'Extranet.';
   }catch(e){
-    alert('Non è stato possibile leggere le risposte: '+(e&&e.message||e));
+    cqAvviso('Non è stato possibile leggere le risposte: '+(e&&e.message||e));
   }finally{
     _psRispInCorso=false;prestayRender();
   }
@@ -11728,7 +11728,7 @@ function _psSpedisciMail(id,ogg,corpo){
   _psInviaMail(a,ogg,corpo).then(ok=>{
     delete _psMailInFlight[id];
     _psSave();prestayRender();
-    if(!ok)alert('Invio non riuscito: '+a.mailErr+'\n\nL\'arrivo resta da contattare. Se il problema persiste puoi usare WhatsApp o togliere la configurazione per tornare al client di posta.');
+    if(!ok)cqAvviso('Invio non riuscito: '+a.mailErr+'\n\nL\'arrivo resta da contattare. Se il problema persiste puoi usare WhatsApp o togliere la configurazione per tornare al client di posta.');
   });
 }
 // Invio in blocco di una struttura. Le mail partono UNA ALLA VOLTA, aspettando l'esito
@@ -11740,7 +11740,7 @@ async function prestayInviaGruppo(hotel){
   const iso=_psTargetISO();
   const nome=(PRESTAY_HOTELS[hotel]||{}).name||hotel;
   if(!_psMailPronto()){
-    alert('L\'invio diretto non è configurato su questo browser, quindi l\'invio in blocco non è disponibile: aprirebbe una finestra del client di posta per ogni ospite.\n\nConfiguralo da "Impostazioni", oppure manda i messaggi uno alla volta.');
+    cqAvviso('L\'invio diretto non è configurato su questo browser, quindi l\'invio in blocco non è disponibile: aprirebbe una finestra del client di posta per ogni ospite.\n\nConfiguralo da "Impostazioni", oppure manda i messaggi uno alla volta.');
     return;
   }
   const tutti=(_psGiorno(iso).arrivi||[]).filter(a=>a.hotel===hotel);
@@ -11751,7 +11751,7 @@ async function prestayInviaGruppo(hotel){
   const daFare=tutti.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email));
   const senzaMail=tutti.filter(a=>!a.email).length;
   if(!daFare.length){
-    alert(senzaMail||bloccati
+    cqAvviso(senzaMail||bloccati
       ? 'Nessuna mail da inviare per '+nome+'.'
         +(senzaMail?'\n\n· '+senzaMail+' arriv'+(senzaMail===1?'o è':'i sono')+' senza indirizzo email.':'')
         +(bloccati?'\n\n· '+bloccati+' ha'+(bloccati===1?'':'nno')+' un indirizzo Booking, recapitabile solo spedendo da booking@soularthotel.com. Contattali su WhatsApp, se hai il numero.':'')
@@ -11780,7 +11780,7 @@ function _psSpedisciWa(id,corpo){
   const iso=_psTargetISO(),a=_psScheda(iso,id);
   if(!a)return;
   const tel=(a.tel||'').replace(/[^\d+]/g,'');
-  if(!tel){alert('Inserisci prima il numero di telefono di questo ospite.');return;}
+  if(!tel){cqAvviso('Inserisci prima il numero di telefono di questo ospite.');return;}
   // *grassetto* e _corsivo_ sono già la sintassi nativa di WhatsApp: nessuna conversione.
   // Le righe "- voce" (WhatsApp non ha un vero elenco puntato) diventano "• voce".
   const testoWa=String(corpo||'').split('\n').map(r=>r.replace(/^\s*-\s+/,'• ')).join('\n');
@@ -11803,9 +11803,9 @@ function prestayAnteprima(id,canale){
   const iso=_psTargetISO(),a=_psScheda(iso,id);
   if(!a)return;
   const haMail=!!a.email,haTel=!!(a.tel||'').replace(/[^\d+]/g,'');
-  if(canale==='mail'&&!haMail){alert('Inserisci prima l\'indirizzo email di questo ospite.');return;}
-  if(canale==='wa'&&!haTel){alert('Inserisci prima il numero di telefono di questo ospite.');return;}
-  if(canale==='both'&&!haMail&&!haTel){alert('Inserisci prima almeno un contatto (email o telefono) per vedere l\'anteprima.');return;}
+  if(canale==='mail'&&!haMail){cqAvviso('Inserisci prima l\'indirizzo email di questo ospite.');return;}
+  if(canale==='wa'&&!haTel){cqAvviso('Inserisci prima il numero di telefono di questo ospite.');return;}
+  if(canale==='both'&&!haMail&&!haTel){cqAvviso('Inserisci prima almeno un contatto (email o telefono) per vedere l\'anteprima.');return;}
   const t=_psTpl(a.hotel,a.lang||'it');
   _psAnteprima={id,canale,ogg:_psCompila(t.ogg,a,iso),corpo:_psCompila(t.corpo,a,iso),modifica:false};
   const m=document.createElement('div');
@@ -11882,7 +11882,7 @@ function prestayInviaDaAnteprima(canaleScelto){
   _psAntLeggiCampi();                       // eventuali correzioni non ancora confermate
   const {id,ogg,corpo}=_psAnteprima;
   const canale=canaleScelto||_psAnteprima.canale;
-  if(!String(corpo||'').trim()){alert('Il messaggio è vuoto.');return;}
+  if(!String(corpo||'').trim()){cqAvviso('Il messaggio è vuoto.');return;}
   prestayChiudiAnteprima();
   if(canale==='mail')_psSpedisciMail(id,ogg,corpo);
   else _psSpedisciWa(id,corpo);
@@ -12308,9 +12308,9 @@ body{font-family:'Helvetica Neue',Arial,sans-serif;color:var(--text);font-size:1
 }
 function receptionPrintBuono(id){
   const m=_receptionFondo.find(x=>x.id===id);
-  if(!m){alert('Movimento non trovato.');return;}
+  if(!m){cqAvviso('Movimento non trovato.');return;}
   const w=window.open('','_blank');
-  if(!w){alert('Abilita i popup per stampare.');return;}
+  if(!w){cqAvviso('Abilita i popup per stampare.');return;}
   w.document.write(_receptionBuonoPrintHTML(m));w.document.close();
   setTimeout(()=>w.print(),400);
 }
@@ -12322,11 +12322,11 @@ function receptionSpostaBuonoIncasso(id){
   const m=_receptionFondo.find(x=>x.id===id);
   if(!m||m.tipo!=='buono')return;
   const max=m.importo||0;
-  if(max<=0){alert("Questo buono è già interamente a carico dell'incasso giornaliero.");return;}
+  if(max<=0){cqAvviso("Questo buono è già interamente a carico dell'incasso giornaliero.");return;}
   const valStr=prompt('Quanto spostare dal fondo cassa all\'incasso giornaliero? (max '+_receptionFmtEuro(max)+')',max.toFixed(2));
   if(valStr===null)return;
   const val=parseFloat(valStr);
-  if(isNaN(val)||val<=0||val>max){alert('Importo non valido.');return;}
+  if(isNaN(val)||val<=0||val>max){cqAvviso('Importo non valido.');return;}
   const motivo=prompt('Motivo dello spostamento (opzionale):','')||'';
   const vecchioFondo=m.importo,vecchioIncasso=m.importoIncasso||0;
   m.importo=Math.round((vecchioFondo-val)*100)/100;
@@ -12524,9 +12524,9 @@ function resiSubmit(){
   const qta=parseInt((document.getElementById('resi-f-qta')||{}).value,10);
   const motivo=(document.getElementById('resi-f-motivo')||{}).value||'';
   const hk=((document.getElementById('resi-f-hk')||{}).value||'').trim();
-  if(!data){alert('Inserisci la data.');return;}
-  if(!tipologia){alert('Seleziona la tipologia del pezzo.');return;}
-  if(isNaN(qta)||qta<=0){alert('Inserisci una quantità valida.');return;}
+  if(!data){cqAvviso('Inserisci la data.');return;}
+  if(!tipologia){cqAvviso('Seleziona la tipologia del pezzo.');return;}
+  if(isNaN(qta)||qta<=0){cqAvviso('Inserisci una quantità valida.');return;}
   // input type=date restituisce yyyy-MM-dd: si normalizza a dd/MM/yyyy come nel cartaceo
   const iso=data.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   const dataIt=iso?`${iso[3]}/${iso[2]}/${iso[1]}`:data;
@@ -12547,7 +12547,7 @@ function resiEditQta(id){
   const r=_resi.righe.find(x=>x.id===id);if(!r)return;
   const v=prompt(`Nuova quantità per "${r.tipologia}" del ${r.data} (attuale: ${r.qta}):`,r.qta);
   if(v===null)return;
-  const n=parseInt(v,10);if(isNaN(n)||n<=0){alert('Quantità non valida.');return;}
+  const n=parseInt(v,10);if(isNaN(n)||n<=0){cqAvviso('Quantità non valida.');return;}
   const motivo=prompt('Motivo della correzione:','');
   if(!motivo)return;
   r.edits=r.edits||[];
@@ -12559,12 +12559,12 @@ function resiEditQta(id){
 // con il periodo (dal/al) ricavato dalle date delle righe stesse.
 function resiRegistraRitiro(){
   const aperte=_resiAperte();
-  if(!aperte.length){alert('Nessun reso da consegnare in questo periodo.');return;}
+  if(!aperte.length){cqAvviso('Nessun reso da consegnare in questo periodo.');return;}
   const totPezzi=aperte.reduce((s,r)=>s+r.qta,0);
   const sacchi=prompt(`Sacchi ritirati da Raimondo (totale pezzi: ${totPezzi}):`,'1');
   if(sacchi===null)return;
   const nSacchi=parseInt(sacchi,10);
-  if(isNaN(nSacchi)||nSacchi<=0){alert('Numero sacchi non valido.');return;}
+  if(isNaN(nSacchi)||nSacchi<=0){cqAvviso('Numero sacchi non valido.');return;}
   const dataRitiro=prompt('Data del ritiro (gg/mm/aaaa):',_resiFmtData(new Date()));
   if(!dataRitiro)return;
   const date=aperte.map(r=>_resiParseData(r.data)).filter(Boolean).sort((a,b)=>a-b);
@@ -12595,7 +12595,7 @@ function resiEditTipologie(){
   const v=prompt('Tipologie di pezzo (una per riga):',cur);
   if(v===null)return;
   const list=v.split('\n').map(s=>s.trim()).filter(Boolean);
-  if(!list.length){alert('Serve almeno una tipologia.');return;}
+  if(!list.length){cqAvviso('Serve almeno una tipologia.');return;}
   _resi.tipologie=list;
   _resiSave();resiRender();
 }
@@ -12755,7 +12755,7 @@ function resiRender(){
 // ritiroId ristampa quel periodo già consegnato.
 function resiPrintDistinta(ritiroId){
   const righe=ritiroId?_resi.righe.filter(r=>r.ritiroId===ritiroId):_resiAperte();
-  if(!righe.length){alert('Nessun reso da stampare per questo periodo.');return;}
+  if(!righe.length){cqAvviso('Nessun reso da stampare per questo periodo.');return;}
   const rit=ritiroId?_resi.ritiri.find(x=>x.id===ritiroId):null;
   // La struttura è quella del ritiro che si sta ristampando, non quella selezionata ora
   // nella vista: ristampando un vecchio periodo l'intestazione deve restare la sua.
@@ -12835,7 +12835,7 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
   </div>
 </body></html>`;
   const w=window.open('','_blank');
-  if(!w){alert('Abilita i popup per stampare.');return;}
+  if(!w){cqAvviso('Abilita i popup per stampare.');return;}
   w.document.write(html);w.document.close();
   setTimeout(()=>w.print(),400);
 }
@@ -12958,7 +12958,7 @@ function _biaSaldo(hotel){
 async function biaSalvaConsumi(){
   const iso=(document.getElementById('bia-cons-data')||{}).value||'';
   const data=_biaFromIso(iso);
-  if(!data){alert('Indica la data dei consumi.');return;}
+  if(!data){cqAvviso('Indica la data dei consumi.');return;}
   const q=_biaVuote();
   BIA_VOCI.forEach((v,i)=>{
     const el=document.getElementById('bia-c-'+i);
@@ -12985,7 +12985,7 @@ async function biaEliminaConsumo(id){
 async function biaRegistraGiro(){
   const iso=(document.getElementById('bia-giro-data')||{}).value||'';
   const data=_biaFromIso(iso);
-  if(!data){alert('Indica la data del giro.');return;}
+  if(!data){cqAvviso('Indica la data del giro.');return;}
   const consegnato=_biaVuote(),ricevuto=_biaVuote();
   BIA_VOCI.forEach((v,i)=>{
     const es=document.getElementById('bia-s-'+i),er=document.getElementById('bia-r-'+i);
@@ -13189,7 +13189,7 @@ function biaPrintDistinta(giroId){
     per=_biaPeriodo(hotel,data);
   }
   const tot=_biaTot(q);
-  if(!tot){alert('Non c\'è niente da consegnare: tutte le quantità sono a zero.');return;}
+  if(!tot){cqAvviso('Non c\'è niente da consegnare: tutte le quantità sono a zero.');return;}
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const periodo=per&&!per.vuoto?(_biaFmt(per.dal)+' — '+_biaFmt(per.al)):'—';
   const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Distinta di Consegna Biancheria</title>
@@ -13258,7 +13258,7 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
   </div>
 </body></html>`;
   const w=window.open('','_blank');
-  if(!w){alert('Il browser ha bloccato la finestra di stampa.');return;}
+  if(!w){cqAvviso('Il browser ha bloccato la finestra di stampa.');return;}
   w.document.write(html);w.document.close();
   setTimeout(()=>w.print(),400);
 }
@@ -13625,7 +13625,17 @@ function cqConferma(titolo,testo,opz){
   const o=opz||{};
   return _cqApri({titolo,testo,ok:o.ok||'Conferma',tipo:o.tipo||'attenzione'});
 }
+// Accetta anche un messaggio solo, nel formato dei vecchi alert() con gli a capo: la
+// prima riga diventa il titolo, il resto la spiegazione, e gli a capo si trasformano in
+// interruzioni di riga vere (in HTML \n non manda a capo).
 function cqAvviso(titolo,testo,opz){
   const o=opz||{};
-  return _cqApri({titolo,testo,ok:o.ok||'Ho capito',tipo:o.tipo||'info',soloAvviso:true});
+  let t=String(titolo||''), c=testo;
+  if(c===undefined&&/\n/.test(t)){
+    const i=t.indexOf('\n');
+    c=t.slice(i).replace(/^\n+/,'');
+    t=t.slice(0,i);
+  }
+  if(typeof c==='string')c=c.replace(/\n/g,'<br>');
+  return _cqApri({titolo:t,testo:c||'',ok:o.ok||'Ho capito',tipo:o.tipo||'info',soloAvviso:true});
 }

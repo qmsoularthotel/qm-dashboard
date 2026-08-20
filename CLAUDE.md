@@ -2396,8 +2396,18 @@ proporzione, per non scalinettare il contorno.
 Invio conferma, Esc e clic fuori dal riquadro annullano. Se il contenitore `#cqDialog` non
 esiste si ripiega su `confirm()` nativo invece di bloccare l'operazione.
 
-**Restano 46 `alert()`** non convertiti: `cqAvviso` è pronta, ma la conversione ha lo stesso
-vincolo dell'`async`.
+### Gli avvisi non si attendono
+
+`alert()` era una notifica, non una domanda: nella quasi totalità dei casi il codice dopo si
+limitava a `return`. Le 46 chiamate sono quindi state convertite in `cqAvviso(...)`
+**senza `await`**, e nessuna funzione ha dovuto diventare `async`. Verificato prima che non
+ci fossero due avvisi consecutivi, che con una finestra non bloccante si sovrascriverebbero
+(i due vicini in `handleArriviFile` sono in rami alternativi).
+
+`cqAvviso` accetta anche un messaggio solo, nel vecchio formato con gli `\n`: divide la
+prima riga come titolo, il resto come spiegazione, e converte gli a capo in `<br>` — in
+HTML `\n` non manda a capo. Per questo la conversione è stata una sostituzione diretta
+`alert(` → `cqAvviso(` senza riscrivere i 46 testi a mano.
 
 ---
 
@@ -2429,6 +2439,21 @@ nessuno se ne accorga. L'alternativa proposta e non ancora realizzata: un punto
 `/versione` nel Worker che dichiari la propria versione, e un controllo in
 `test/esegui.sh` che la confronti con quella nel repository, segnalando se la produzione è
 indietro. Richiede un ultimo copia-incolla per attivarsi, poi non si dimentica più.
+
+---
+
+## Numeri di versione — `bash strumenti/versione.sh`
+
+I `?v=` in `index.html` costringono il browser a ricaricare i file modificati. Senza, si
+ricarica la pagina e non cambia niente.
+
+Lo strumento li aggiorna **solo se serve**: confronta `app.js` e `style.css` con l'ultimo
+commit e tocca soltanto quelli davvero cambiati. `app.js` e la costante `V` si aggiornano
+insieme — `V` è quella che forza il ricaricamento della pagina.
+
+`test/esegui.sh` **segnala** se `app.js` o `style.css` sono cambiati senza che `index.html`
+lo sia, ed esce con codice 1. Segnala invece di correggere da solo: uno strumento che
+modifica i file mentre stai controllando altro è peggio del problema che risolve.
 
 ---
 

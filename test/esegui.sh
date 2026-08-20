@@ -39,7 +39,26 @@ try {
 
 echo "$USCITA" | grep -v "^ESITO:"
 
-if echo "$USCITA" | grep -q "^ESITO:OK"; then
+# Numeri di versione: se app.js o style.css sono cambiati ma index.html no, chi ricarica
+# la pagina continua a vedere la versione vecchia e nessuno dei due capisce perché.
+# Si segnala qui invece di aggiornarli d'ufficio: uno strumento che modifica i file mentre
+# stai controllando qualcos'altro è peggio del problema che risolve.
+VERSIONE_KO=0
+_mod() { git diff HEAD --name-only -- "$1" 2>/dev/null | grep -q . ; }
+if _mod app.js && ! _mod index.html; then
+  echo ""
+  echo "  ATTENZIONE  app.js è cambiato ma il numero di versione no."
+  echo "              Lancia:  bash strumenti/versione.sh"
+  VERSIONE_KO=1
+fi
+if _mod style.css && ! _mod index.html; then
+  echo ""
+  echo "  ATTENZIONE  style.css è cambiato ma il numero di versione no."
+  echo "              Lancia:  bash strumenti/versione.sh"
+  VERSIONE_KO=1
+fi
+
+if echo "$USCITA" | grep -q "^ESITO:OK" && [ "$VERSIONE_KO" = "0" ]; then
   exit 0
 fi
 exit 1

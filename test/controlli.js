@@ -127,6 +127,21 @@ ok('su smartphone resta il cognome', soloCognome('Maddaloni M.'), 'Maddaloni');
 ok('cognome composto',               soloCognome('De Rosa T.'),   'De Rosa');
 ok('nome senza iniziale intatto',    soloCognome('Extra Night'),  'Extra Night');
 
+sez('Finestre di avviso');
+// I vecchi messaggi contenevano a capo scritti con \n, che in HTML non mandano a capo:
+// cqAvviso deve dividerli in titolo + spiegazione e convertire gli a capo.
+var _vistoAvviso = null;
+var _cqApriVero = _cqApri;
+_cqApri = function (o) { _vistoAvviso = o; return Promise.resolve(true); };
+cqAvviso('Inserisci la data.');
+ok('messaggio breve: tutto nel titolo', _vistoAvviso.titolo, 'Inserisci la data.');
+ok('messaggio breve: nessuna spiegazione', _vistoAvviso.testo, '');
+cqAvviso('Prima riga.\nSeconda riga.\nTerza riga.');
+ok('messaggio lungo: titolo = prima riga', _vistoAvviso.titolo, 'Prima riga.');
+ok('messaggio lungo: a capo convertiti', _vistoAvviso.testo, 'Seconda riga.<br>Terza riga.');
+ok('nessun a capo grezzo nel titolo', /\n/.test(_vistoAvviso.titolo), false);
+_cqApri = _cqApriVero;
+
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 console.log(KO === 0
