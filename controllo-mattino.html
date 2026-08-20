@@ -946,7 +946,7 @@ function chiudiPopPronta(){
   _popProntaRoom=null;
 }
 function scegliProntaPop(val){
-  if(_popProntaRoom)_rs(_popProntaRoom).pronta=val;
+  if(_popProntaRoom){const rs=_rs(_popProntaRoom);rs.pronta=val;rs.prontaVerificata=true;}
   chiudiPopPronta();
 }
 function setBottle(val){
@@ -1223,6 +1223,13 @@ function openReadySheet(room){
 function chooseReady(room,val){
   const rs=_rs(room);
   rs.pronta=val;
+  // prontaVerificata distingue "qualcuno ha davvero controllato questa camera" da
+  // "esiste una voce nello stato per altri motivi" (es. il conteggio bottiglie da
+  // riconsegnare tocca _rs() per ogni camera, creando l'oggetto anche senza che nessuno
+  // abbia guardato lo stato di preparazione). Compass legge questo flag, non la sola
+  // presenza della voce, per decidere se applicare il valore automatico o quello scelto
+  // a mano — incluso un reset esplicito a "da verificare".
+  rs.prontaVerificata=true;
   rs.consegnata=true;
   _readySheetRoom=null;
   _persist();
@@ -1236,6 +1243,7 @@ function cancelReadySheet(room){
   const rs=_rs(room);
   if(rs.pronta!==null){
     rs.pronta=null;
+    rs.prontaVerificata=true;
     rs.consegnata=false;
     _persist();
   }

@@ -3311,21 +3311,22 @@ async function renderOvRoomReadiness(giorno,statoNoto){
   const iconBedNo=_bedSvg('<path d="M2.5 14.6c3-1.8 6 1.2 9-.6s6 1.2 9-.6"/>');
   const iconQ='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 1.8-2 3.3"/><circle cx="12" cy="17" r=".6" fill="#fff" stroke="none"/></svg>';
   const roomCard=r=>{
-    // "toccata" = esiste una voce per questa camera nello stato del giorno — creata
-    // dall'app Culligan quando qualcuno la visita, o da qui al primo clic. Finché nessuno
-    // l'ha toccata la voce non esiste affatto (vedi _applyPianoLibere in
-    // controllo-mattino.html), quindi è questo — non pronta===null — il segnale di "mai
-    // verificata da nessuno".
-    const toccata=!!(state&&state[r]);
-    const p=toccata?state[r].pronta:undefined;
-    // Un arrivo senza partenza precedente parte da "pronta" SOLO se non è mai stata
-    // toccata: la camera non era occupata la notte prima, non c'è nulla da rifare. Ma se
-    // la camera è stata toccata (da Culligan o dal terzo clic qui) e pronta è null, è un
-    // "Da verificare" scelto esplicitamente e deve restare tale — non ricadere sul valore
-    // automatico, altrimenti il terzo clic del ciclo non avrebbe alcun effetto visibile
-    // sulle camere con solo arrivo.
+    // "verificata" = qualcuno ha DAVVERO scelto uno stato per questa camera — non basta
+    // che esista una voce nello stato del giorno: _rs() in controllo-mattino.html crea
+    // l'oggetto anche per motivi che non c'entrano con la preparazione (es. il conteggio
+    // delle bottiglie da riconsegnare tocca ogni camera). Senza distinguerlo, una camera
+    // mai controllata da nessuno risultava già "toccata" al solo aprire l'app Culligan,
+    // e mostrava "Da verificare" invece del valore automatico. Il flag prontaVerificata
+    // lo scrivono solo le scelte umane vere: chooseReady/cancelReadySheet/
+    // scegliProntaPop in controllo-mattino.html, e ovMarkRoomPronta qui.
+    const verificata=!!(state&&state[r]&&state[r].prontaVerificata);
+    const p=verificata?state[r].pronta:undefined;
+    // Un arrivo senza partenza precedente parte da "pronta" finché nessuno l'ha
+    // verificata davvero: la camera non era occupata la notte prima, non c'è nulla da
+    // rifare. Una volta verificata, pronta:null è un "Da verificare" scelto
+    // esplicitamente (reset) e resta tale — non ricade sul valore automatico.
     const soloArrivo=arrivoPuro.has(r);
-    const stato=p===true||p===false?p:(!toccata&&soloArrivo?true:null);
+    const stato=p===true||p===false?p:(!verificata&&soloArrivo?true:null);
     const cfg=stato===true?{border:'var(--green)',icon:iconBedOk,iconBg:'var(--green)',fg:'var(--green)',lbl:'Pronta'}
       :stato===false?{border:'var(--red)',icon:iconBedNo,iconBg:'var(--red)',fg:'var(--red)',lbl:'Non pronta'}
       :{border:'var(--border)',icon:iconQ,iconBg:'var(--text-dim)',fg:'var(--text-dim)',lbl:'Da verificare'};
@@ -3380,6 +3381,12 @@ async function ovMarkRoomPronta(room,valore){
     state[room]={visited:false,libera:false,dnd:false,bottiglia:'consumata',checks,note:'',consegnata:false,pronta:null};
   }
   state[room].pronta=(valore===undefined?true:valore);
+  // Stesso flag scritto da controllo-mattino.html (chooseReady/cancelReadySheet): segna
+  // che QUESTO valore è una scelta vera, distinta da un oggetto creato per altri motivi
+  // (es. il conteggio bottiglie tocca ogni camera senza che nessuno ne verifichi lo
+  // stato). Senza questo, un clic da Compass su una camera mai controllata sarebbe
+  // indistinguibile da quella stessa camera toccata solo di striscio dall'app Culligan.
+  state[room].prontaVerificata=true;
   state[room].ts=Date.now();
   try{localStorage.setItem(key,JSON.stringify(state));}catch(e){}
   kvSet(key,JSON.stringify(state)).catch(()=>{});
