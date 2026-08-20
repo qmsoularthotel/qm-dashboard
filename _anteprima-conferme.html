@@ -1,0 +1,90 @@
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anteprima conferme Compass</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body{padding:26px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;}
+  h1{font-size:17px;font-weight:600;margin:0 0 4px;}
+  p.n{font-size:13px;color:var(--text-muted);margin:0 0 20px;line-height:1.5;}
+  .prova{display:flex;gap:10px;flex-wrap:wrap;}
+  .prova button{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 15px;font-size:13px;cursor:pointer;font-family:inherit;color:var(--text);}
+  #esito{margin-top:18px;font-size:13px;color:var(--text-muted);min-height:20px;}
+</style>
+
+<h1>Finestra di conferma — anteprima</h1>
+<p class="n">Pagina temporanea: carica il CSS vero di Compass, quindi quello che vedi è
+l'implementazione reale. Prova anche Invio, Esc e il clic fuori dal riquadro.</p>
+
+<div class="prova">
+  <button onclick="p1()">Eliminare un arrivo</button>
+  <button onclick="p2()">Inviare i messaggi</button>
+  <button onclick="p3()">Avviso a un pulsante</button>
+</div>
+<div id="esito"></div>
+
+<div class="cq-dialog" id="cqDialog">
+  <div class="cq-box">
+    <div class="cq-ico" id="cqIco"></div>
+    <div class="cq-title" id="cqTitle"></div>
+    <div class="cq-sub" id="cqSub"></div>
+    <div class="cq-btns">
+      <button class="cq-ok" id="cqOk"></button>
+      <button class="cq-no" id="cqNo">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CQ_ICONE={
+  elimina:{bg:'var(--red-bg)',col:'var(--red)',
+    d:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>'},
+  invia:{bg:'var(--accent-bg)',col:'var(--accent)',
+    d:'<path d="M4 4h16v12H5.2L4 17.5z"/><path d="M8 9h8M8 12h5"/>'},
+  attenzione:{bg:'var(--amber-bg)',col:'var(--amber)',
+    d:'<path d="M12 3l9 16H3z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".6" fill="currentColor" stroke="none"/>'},
+  info:{bg:'var(--accent-bg)',col:'var(--accent)',
+    d:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.6" r=".6" fill="currentColor" stroke="none"/>'}
+};
+function _cqApri(o){
+  const d=document.getElementById('cqDialog');
+  const ic=CQ_ICONE[o.tipo]||CQ_ICONE.info;
+  const ico=document.getElementById('cqIco');
+  ico.style.background=ic.bg;
+  ico.innerHTML='<svg viewBox="0 0 24 24" stroke="'+ic.col+'" stroke-linecap="round" stroke-linejoin="round">'+ic.d+'</svg>';
+  document.getElementById('cqTitle').textContent=o.titolo||'';
+  document.getElementById('cqSub').innerHTML=o.testo||'';
+  const bOk=document.getElementById('cqOk'), bNo=document.getElementById('cqNo');
+  bOk.textContent=o.ok||'Conferma';
+  bNo.style.display=o.soloAvviso?'none':'';
+  d.classList.add('open');
+  bOk.focus();
+  return new Promise(res=>{
+    const fine=v=>{d.classList.remove('open');bOk.onclick=bNo.onclick=d.onclick=null;document.removeEventListener('keydown',tasto);res(v);};
+    const tasto=e=>{if(e.key==='Escape')fine(false);if(e.key==='Enter')fine(true);};
+    bOk.onclick=()=>fine(true);
+    bNo.onclick=()=>fine(false);
+    d.onclick=e=>{if(e.target===d)fine(false);};
+    document.addEventListener('keydown',tasto);
+  });
+}
+function cqConferma(t,s,o){o=o||{};return _cqApri({titolo:t,testo:s,ok:o.ok||'Conferma',tipo:o.tipo||'attenzione'});}
+function cqAvviso(t,s,o){o=o||{};return _cqApri({titolo:t,testo:s,ok:o.ok||'Ho capito',tipo:o.tipo||'info',soloAvviso:true});}
+
+const esito=t=>document.getElementById('esito').textContent=t;
+async function p1(){
+  const ok=await cqConferma('Eliminare questo arrivo?',
+    '<strong>Milano Emanuela</strong><br>I dati inseriti andranno persi.',
+    {ok:'Elimina',tipo:'elimina'});
+  esito(ok?'→ eliminato':'→ annullato');
+}
+async function p2(){
+  const ok=await cqConferma('Inviare 12 messaggi?',
+    'SoulArt Hotel · 12 ospiti con email<br>3 senza contatto verranno saltati.',
+    {ok:'Invia',tipo:'invia'});
+  esito(ok?'→ invio avviato':'→ annullato');
+}
+async function p3(){
+  await cqAvviso('Nessun arrivo riconosciuto',
+    'Controlla di aver esportato con filtro <strong>Presenti</strong> e tutte le strutture.');
+  esito('→ avviso chiuso');
+}
+</script>
