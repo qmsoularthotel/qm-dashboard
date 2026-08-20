@@ -2215,6 +2215,21 @@ Verificata riproducendo il report del PMS su 8 giorni su 8, per entrambe le righ
 
 Sbagliare una delle due fa divergere i numeri dal PMS senza che si veda.
 
+### L'intervallo si deduce dai dati, non dal PDF
+
+Il PDF **non riporta** l'intervallo chiesto all'export (a differenza del vecchio Report
+pasti, che scriveva "Lista dei pasti dal … al …"). Si ricava così:
+
+> **dal** = prima `Partenza` presente nel file · **al** = ultimo `Arrivo`
+
+Una prenotazione compare in "Presenti dal X al Y" solo se parte dopo X e arriva prima di Y,
+quindi quei due estremi coincidono col filtro impostato.
+
+**Non usare "primo arrivo → ultima partenza"**: sconfinano largamente fuori dal periodo,
+perché includono chi era già dentro da giorni e chi resterà per settimane. Con quella
+regola il grafico delle colazioni copriva 22 giorni invece di 8 — errore realmente
+commesso e corretto.
+
 ### Adulti/bambini: si tiene solo il totale
 
 La colonna `Ospiti` non riporta lo split in modo affidabile (una prenotazione che il PMS

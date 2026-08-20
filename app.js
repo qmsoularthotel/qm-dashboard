@@ -13300,11 +13300,24 @@ function _prenParse(items){
   return out.filter(p=>p.partenza&&!/annull|cancell/i.test(p.stato));
 }
 
-// Intervallo coperto dal file, per sapere quali giorni si possono derivare.
+// Intervallo che è stato chiesto al PMS all'export, dedotto dai dati: il PDF non lo
+// riporta da nessuna parte.
+//
+// Una prenotazione compare in "Presenti dal X al Y" solo se parte DOPO X (altrimenti se
+// n'era già andata) e arriva PRIMA di Y (altrimenti non è ancora arrivata). Quindi la
+// prima partenza presente nel file è X e l'ultimo arrivo è Y.
+//
+// NON si può usare "primo arrivo → ultima partenza": quelli sconfinano largamente fuori
+// dal periodo, perché includono chi era già dentro da giorni e chi resterà per settimane.
+// Usandoli, il grafico colazioni copriva 22 giorni invece di 8.
+//
+// Se per caso nessuno parte esattamente il primo giorno o arriva esattamente l'ultimo,
+// l'intervallo risulta un po' più stretto del richiesto: si perde al massimo un giorno di
+// coda, mai se ne inventano di inesistenti.
 function _prenIntervallo(pren){
   if(!pren.length)return null;
   const arr=pren.map(p=>p.arrivo).sort(), par=pren.map(p=>p.partenza).sort();
-  return{dal:arr[0], al:par[par.length-1]};
+  return{dal:par[0], al:arr[arr.length-1]};
 }
 
 // ── Derivazione 1: qm_arriviData (sostituisce il Riepilogo Reception) ──
