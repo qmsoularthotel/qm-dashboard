@@ -2401,6 +2401,37 @@ vincolo dell'`async`.
 
 ---
 
+## Pubblicazione del Worker — resta MANUALE, di proposito (20/08/2026)
+
+`worker.js` si pubblica a mano: Cloudflare → Workers → anthropic-proxy → Modifica codice →
+Cmd+A → incolla → Deploy.
+
+**Valutata e scartata l'automazione via GitHub Actions.** Il motivo non è la difficoltà:
+è il rapporto fra rischio e guadagno.
+
+Il Worker non è solo codice. Ha collegato il binding KV `QM_STORAGE` — cioè la
+sincronizzazione fra dispositivi, su cui poggia **tutto** Compass — e circa quattordici
+variabili d'ambiente impostate dal pannello (`SMTP_*`, `IMAP_*`, `PRESTAY_KEY`,
+`ANTHROPIC_API_KEY`, `RESEND_KEY`…). Pubblicando con `wrangler` quella configurazione va
+ridichiarata in un `wrangler.toml`: un errore lì non rompe le mail, rompe la
+sincronizzazione, e con essa l'intera applicazione.
+
+Il guadagno sarebbe risparmiare un copia-incolla che capita circa una volta al mese.
+
+**Se un domani si decide di farlo davvero**: verificare prima, una per una, tutte le
+variabili e il binding presenti nel pannello Cloudflare, e provare su un Worker di prova
+prima di toccare quello vivo. Non improvvisare.
+
+### Il problema che resta aperto
+
+Una correzione a `worker.js` può essere scritta, versionata e **non attiva**, senza che
+nessuno se ne accorga. L'alternativa proposta e non ancora realizzata: un punto
+`/versione` nel Worker che dichiari la propria versione, e un controllo in
+`test/esegui.sh` che la confronti con quella nel repository, segnalando se la produzione è
+indietro. Richiede un ultimo copia-incolla per attivarsi, poi non si dimentica più.
+
+---
+
 ## Rete di sicurezza — `bash test/esegui.sh`
 
 **Lanciarla prima di ogni pubblicazione.** Esce con codice 1 se qualcosa non torna.
