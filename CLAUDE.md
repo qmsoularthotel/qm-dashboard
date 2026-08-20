@@ -2269,6 +2269,14 @@ Il canale **vince sull'email**: un ospite Booking che lascia un indirizzo privat
 blu. Per questo `_psAggiornaBordo` legge `data-canale` sulla card e, se c'è, non tocca il
 colore mentre si digita.
 
+Sulla scheda compare anche una **pastiglia col nome del canale** (`_psCanaleNome`), dello
+stesso colore del bordo:
+
+`Booking` · `Expedia` · `Italcamel` · `G2 Travel` · **`Diretta`** per CRSVertical, che è il
+motore di prenotazione del sito — chiamarla col nome del fornitore non direbbe niente a chi
+legge. Un'origine non prevista viene mostrata com'è (accorciata a 14 caratteri); senza
+origine non compare nessuna pastiglia.
+
 **Italcamel si accende da sola** quando l'origine lo dichiara: la spunta manuale resta per
 i casi non coperti, ma non è più l'unico modo.
 

@@ -11205,6 +11205,22 @@ const PS_CANALI=[
 // Colore dovuto al canale dichiarato dal PMS, o stringa vuota se il file non lo portava.
 // Serve al render per marcare la scheda (data-canale) e a _psAggiornaBordo per non
 // sovrascriverlo mentre si digita l'email.
+// Etichetta leggibile del canale, per mostrarlo sulla scheda. "CRSVertical" e' il motore
+// di prenotazione del sito: quelle sono prenotazioni dirette, e chiamarle col nome del
+// fornitore non direbbe niente a chi legge.
+const PS_CANALI_NOME=[
+  {re:/booking/i,        txt:'Booking'},
+  {re:/expedia/i,        txt:'Expedia'},
+  {re:/italcamel/i,      txt:'Italcamel'},
+  {re:/g2[\s-]*travel/i, txt:'G2 Travel'},
+  {re:/crs|vertical/i,   txt:'Diretta'}
+];
+function _psCanaleNome(a){
+  const o=String(a&&a.origine||'').trim();
+  if(!o)return'';
+  for(const c of PS_CANALI_NOME)if(c.re.test(o))return c.txt;
+  return o.length>14?o.slice(0,14):o;      // origine sconosciuta: si mostra com'e'
+}
 function _psCanaleCol(a){
   const o=String(a&&a.origine||'').trim();
   if(o)for(const c of PS_CANALI)if(c.re.test(o))return c.col;
@@ -11993,6 +12009,8 @@ function prestayRender(){
           <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
             <span style="padding:2px 9px;border-radius:12px;background:${fatto?'var(--green-bg)':'var(--surface2)'};color:${fatto?'var(--green)':'var(--text-muted)'};border:1px solid ${fatto?'var(--green)':'var(--border-light)'};font-size:var(--fs-xxs);font-weight:700;line-height:1.5;white-space:nowrap;">Arrivo ${i+1}</span>
             ${a.fuoriLista?`<span title="Non compare nell'ultima lista arrivi importata: la prenotazione potrebbe essere stata cancellata o il nome corretto. Non elimino nulla da solo." style="font-size:9px;font-weight:700;color:var(--amber);">non più in lista</span>`:''}
+            ${(()=>{const n=_psCanaleNome(a);if(!n)return'';const col=_psCanaleCol(a)||'var(--text-dim)';
+              return`<span title="Provenienza della prenotazione, dal PMS" style="padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;border:1px solid ${col};color:${col};background:#fff;white-space:nowrap;">${n}</span>`;})()}
             <select onchange="prestaySetScheda('${a.id}','lang',this.value)" title="Lingua del messaggio" style="${inpS}width:auto;min-width:52px;margin-left:auto;padding:3px 6px;">
               <option value="it" ${(a.lang||'it')==='it'?'selected':''}>IT</option>
               <option value="en" ${a.lang==='en'?'selected':''}>EN</option>
