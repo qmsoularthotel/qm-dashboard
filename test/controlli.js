@@ -1,0 +1,134 @@
+// Controlli automatici sui CALCOLI di Compass.
+//
+// Coprono di proposito i punti dove un errore NON si vede: numeri che restano plausibili
+// anche se sbagliati (colazioni, periodi della biancheria, abbinamento delle schede,
+// anno del turno). Gli errori di impaginazione si notano subito guardando lo schermo;
+// questi no, e possono restare nascosti per mesi.
+//
+// Si lancia con:  bash test/esegui.sh
+//
+// Tutti i nomi sono inventati: nessun dato di ospiti reali sta nel repository.
+
+var KO = 0, OK = 0;
+function sez(t) { console.log('\n' + t); }
+function ok(nome, ottenuto, atteso) {
+  var buono = String(ottenuto) === String(atteso);
+  buono ? OK++ : KO++;
+  console.log('  ' + (buono ? 'ok  ' : 'NO  ') + nome +
+              (buono ? '' : '   ottenuto ' + ottenuto + ', atteso ' + atteso));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+sez('Colazioni ricavate dalle prenotazioni');
+// Regola: la colazione si conta il mattino DOPO la notte (arrivo < giorno <= partenza).
+// Le colazioni contano tutte le strutture, i "no colazione" solo SoulArt e Boutique.
+// Dati che rappresentano un export "Presenti dal 10 al 13 maggio": qualcuno era gia'
+// dentro, qualcuno parte il primo giorno, qualcuno arriva l'ultimo.
+var PREN = [
+  { ospite: 'Rossi Mario',  arrivo: '2026-05-08', partenza: '2026-05-10', alloggio: 'Art 5 / AS Superior', camera: 'Art 5', pax: 2, tratt: 'BB', struttura: 'SA', origine: 'Booking.com', codice: 'AAA 111' },
+  { ospite: 'Gialli Marco', arrivo: '2026-05-09', partenza: '2026-05-13', alloggio: 'Art 2 / AS Deluxe',   camera: 'Art 2', pax: 3, tratt: 'BB', struttura: 'SA', origine: 'Expedia',     codice: 'EEE 555' },
+  { ospite: 'Bianchi Anna', arrivo: '2026-05-10', partenza: '2026-05-12', alloggio: '204 / PC Standard',   camera: '204',   pax: 1, tratt: 'RO', struttura: 'BH', origine: 'Expedia',     codice: 'BBB 222' },
+  // senza colazione ma al Principe, che non la serve: NON deve entrare nei "no colazione"
+  { ospite: 'Verdi Luca',   arrivo: '2026-05-10', partenza: '2026-05-12', alloggio: 'Capri / UM DOPPIA',   camera: 'Capri', pax: 2, tratt: 'RO', struttura: 'PR', origine: 'Booking.com', codice: 'CCC 333' },
+  { ospite: 'Neri Sara',    arrivo: '2026-05-13', partenza: '2026-05-15', alloggio: 'Art 9 / AS Superior', camera: 'Art 9', pax: 2, tratt: 'BB', struttura: 'SA', origine: 'Italcamel',   codice: 'DDD 444' }
+];
+var bkf = _prenBkfData(PREN);
+function giorno(d) { return bkf.data.filter(function (x) { return x.data === d; })[0]; }
+ok('periodo: dalla prima partenza',       _prenIntervallo(PREN).dal, '2026-05-10');
+ok('periodo: all\'ultimo arrivo',         _prenIntervallo(PREN).al,  '2026-05-13');
+ok('giorni prodotti',                     bkf.data.length, 4);
+ok('10/05 colazioni (Rossi 2 + Gialli 3)', giorno('10/05/2026').colTot, 5);
+ok('10/05 no colazione',                   giorno('10/05/2026').noCol, 0);
+ok('11/05 colazioni (solo Gialli)',        giorno('11/05/2026').colTot, 3);
+ok('11/05 no colazione (solo Bianchi)',    giorno('11/05/2026').noCol, 1);
+ok('il Principe non entra nei no colazione', giorno('11/05/2026').noCol !== 3, true);
+ok('13/05 colazioni: Neri arriva, non fa colazione', giorno('13/05/2026').colTot, 3);
+
+sez('Struttura dedotta dall\'alloggio');
+ok('Art -> SoulArt',                _prenStruttura('Art 5 / AS Superior'), 'SA');
+ok('2xx -> Boutique',               _prenStruttura('204 / PC Standard'),   'BH');
+ok('Capri -> Principe',             _prenStruttura('Capri / UM DOPPIA'),   'PR');
+ok('R3 -> Mastrangelo',             _prenStruttura('R3 / MS'),             'MS');
+ok('AS_LIB -> San Liborio',         _prenStruttura('AS_LIB / AS'),         'SL');
+ok('camera non assegnata: UM -> Principe',  _prenStruttura('UM TRIPLA CLASSIC'), 'PR');
+ok('camera non assegnata: MS -> Mastrangelo', _prenStruttura('MS Family'),       'MS');
+ok('camera non assegnata: AS -> SoulArt',     _prenStruttura('AS Suite'),        'SA');
+
+sez('Arrivi, partenze e fermate di una giornata');
+var ad = _prenArriviData(PREN, '2026-05-10');
+ok('il 10/05 arrivano Bianchi e Verdi', ad.arrivi.length,   2);
+ok('il 10/05 parte Rossi',              ad.partenze.length, 1);
+ok('il 10/05 resta Gialli',             ad.fermate.length,  1);
+ok('camere occupate quella notte',      ad.totale_stanze,   3);
+ok('forma attesa dalle app: .camera',   ad.fermate.every(function (x) { return 'camera' in x; }), true);
+ok('forma attesa dalle app: .origine',  ad.fermate.every(function (x) { return 'origine' in x; }), true);
+ok('data nel formato del PMS',          ad.data, '10/05/2026');
+
+sez('Multicamera: una prenotazione, una scheda');
+var MULTI = [
+  { ospite: 'Neri Paolo', arrivo: '2026-05-20', partenza: '2026-05-22', alloggio: 'Art 3 / AS', camera: 'Art 3', pax: 2, tratt: 'BB', origine: 'Booking.com', codice: 'XXX 1' },
+  { ospite: 'Neri Paolo', arrivo: '2026-05-20', partenza: '2026-05-22', alloggio: 'Art 4 / AS', camera: 'Art 4', pax: 2, tratt: 'BB', origine: 'Booking.com', codice: 'XXX 2' },
+  { ospite: 'Gialli Sara', arrivo: '2026-05-20', partenza: '2026-05-21', alloggio: 'Art 9 / AS', camera: 'Art 9', pax: 1, tratt: 'BB', origine: 'Expedia', codice: 'YYY 1' }
+];
+var ps = _prenPrestay(MULTI, '2026-05-20');
+ok('3 righe diventano 2 schede', ps.length, 2);
+var neri = ps.filter(function (x) { return x.nome === 'Neri Paolo'; })[0];
+ok('Neri copre 2 camere', neri.camere.length, 2);
+ok('Neri conserva 2 codici', neri.codici.length, 2);
+
+sez('Abbinamento delle schede al reimport');
+var _giorni = {};
+_psGiorno = function (iso) { if (!_giorni[iso]) _giorni[iso] = { arrivi: [] }; return _giorni[iso]; };
+_psSave = function () {};
+prestayRender = function () {};
+var G = '2026-05-20';
+_psImportaArrivi(G, [{ nome: 'Neri Paolo', hotel: 'sa', origine: 'Booking.com', codici: ['XXX 1', 'XXX 2'], camere: ['Art 3', 'Art 4'] }]);
+_psGiorno(G).arrivi[0].email = 'neri@esempio.it';
+_psGiorno(G).arrivi[0].mailTs = 999;
+// stessa prenotazione, ma al check-in e' stato registrato un altro nome
+_psImportaArrivi(G, [{ nome: 'Neri Giulia', hotel: 'sa', origine: 'Booking.com', codici: ['XXX 1', 'XXX 2'], camere: ['Art 3', 'Art 4'] }]);
+ok('cambio nome: nessun doppione',   _psGiorno(G).arrivi.length, 1);
+ok('cambio nome: il nome si aggiorna', _psGiorno(G).arrivi[0].nome, 'Neri Giulia');
+ok('cambio nome: email conservata',  _psGiorno(G).arrivi[0].email, 'neri@esempio.it');
+ok('cambio nome: invio conservato',  _psGiorno(G).arrivi[0].mailTs, 999);
+
+sez('Canale della prenotazione');
+ok('Booking -> blu',        _psBordo({ origine: 'Booking.com', email: '' }), '#0071C2');
+ok('Booking troncato',      _psBordo({ origine: 'Booking.co',  email: '' }), '#0071C2');
+ok('Expedia -> giallo',     _psBordo({ origine: 'Expedia',     email: '' }), '#FFB300');
+ok('il canale vince sull\'email privata', _psBordo({ origine: 'Booking.com', email: 'tizio@gmail.com' }), '#0071C2');
+ok('senza canale: decide l\'email',       _psBordo({ email: 'x@guest.booking.com' }), '#0071C2');
+ok('CRSVertical si chiama Diretta',       _psCanaleNome({ origine: 'CRSVErtical' }), 'Diretta');
+
+sez('Biancheria: periodo ritirato da Raimondo');
+// Il giro del giorno D ritira dal giro precedente (incluso) al giorno prima di D.
+_bia = { consumi: [
+    { id: 'c1', hotel: 'sa', data: '15/08/2026', q: { 'Federa': 10 } },
+    { id: 'c2', hotel: 'sa', data: '16/08/2026', q: { 'Federa': 8 } },
+    { id: 'c3', hotel: 'sa', data: '17/08/2026', q: { 'Federa': 6 } },
+    { id: 'c4', hotel: 'sa', data: '18/08/2026', q: { 'Federa': 5 } }
+  ], giri: [ { id: 'g1', hotel: 'sa', data: '15/08/2026', consegnato: { 'Federa': 20 }, ricevuto: { 'Federa': 20 } } ] };
+_biaHotel = 'sa';
+var per = _biaPeriodo('sa', '18/08/2026');
+ok('parte dal giro precedente', _biaFmt(per.dal), '15/08/2026');
+ok('finisce il giorno prima',   _biaFmt(per.al),  '17/08/2026');
+ok('il giorno del giro resta fuori', _biaSommaConsumi('sa', per.dal, per.al)['Federa'], 24);
+
+sez('Anno del turno');
+var oggi = new Date(); var A = oggi.getFullYear();
+function annoDi(iso) { var d = _annoPlausibile(new Date(iso + 'T12:00:00')); return d.getFullYear(); }
+var mm = String(oggi.getMonth() + 1).padStart(2, '0'), gg = String(oggi.getDate()).padStart(2, '0');
+ok('anno sbagliato di uno: corretto', annoDi((A - 1) + '-' + mm + '-' + gg), A);
+ok('data odierna: non toccata',       annoDi(A + '-' + mm + '-' + gg), A);
+
+sez('Nomi del turno');
+function soloCognome(n) { return _nomeIniz(n).replace(/<span class="s-ini">[\s\S]*?<\/span>/g, ''); }
+ok('su smartphone resta il cognome', soloCognome('Maddaloni M.'), 'Maddaloni');
+ok('cognome composto',               soloCognome('De Rosa T.'),   'De Rosa');
+ok('nome senza iniziale intatto',    soloCognome('Extra Night'),  'Extra Night');
+
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\n' + '─'.repeat(52));
+console.log(KO === 0
+  ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'
+  : KO + ' CONTROLLI FALLITI su ' + (OK + KO));

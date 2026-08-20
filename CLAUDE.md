@@ -2401,6 +2401,51 @@ vincolo dell'`async`.
 
 ---
 
+## Rete di sicurezza — `bash test/esegui.sh`
+
+**Lanciarla prima di ogni pubblicazione.** Esce con codice 1 se qualcosa non torna.
+
+```
+test/ambiente.js   finti document, window, fetch, localStorage… perché app.js si carichi
+test/controlli.js  i casi di prova
+test/esegui.sh     lo script da lanciare
+```
+
+### Cosa copre e perché proprio quello
+
+Solo i **calcoli**, non l'aspetto. Il criterio è: un errore di impaginazione si vede subito
+guardando lo schermo, un errore nei numeri no — resta plausibile e può passare inosservato
+per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dall'alloggio,
+arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
+prenotazione, periodo della biancheria, anno del turno, nomi del turno. 45 controlli.
+
+### Come funziona
+
+Carica **tutto** `app.js` nell'ambiente finto, invece di ritagliarne pezzi per numero di
+riga: quel ritaglio si rompeva a ogni modifica del file, ed era già successo più volte.
+`const`/`let` di primo livello vengono convertiti in `var`, altrimenti in `eval` restano
+chiusi e le funzioni non sarebbero raggiungibili.
+
+### Aggiungere un controllo
+
+Una riga in `test/controlli.js`:
+
+```js
+ok('descrizione leggibile', valoreOttenuto, valoreAtteso);
+```
+
+Le funzioni di `app.js` sono già tutte disponibili. **Usare sempre nomi inventati**: nel
+repository non deve finire nessun dato di ospiti reali.
+
+### Verificata sabotando il codice
+
+Non basta che i controlli passino: devono anche **fallire quando serve**. Provata
+introducendo di proposito tre difetti — regola delle colazioni spostata di un giorno,
+Principe incluso nei "no colazione", abbinamento per codice disattivato. Tutti e tre
+colti, con il dettaglio di cosa non tornava.
+
+---
+
 ## Note & Problemi Noti
 
 | Problema | Causa | Fix |
