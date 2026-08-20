@@ -2358,6 +2358,49 @@ Le prenotazioni annullate vengono scartate (`stato`). `origine` arriva dal PMS: 
 
 ---
 
+## Conferme — finestra Compass al posto di `confirm()`
+
+`§§ CONFERME` in `app.js`. Sostituisce i dialoghi nativi del browser, che mostrano
+"compass-qm.com dice", non si possono impaginare e compaiono ancorate in alto.
+
+```js
+if(!await cqConferma('Eliminare questo arrivo?',
+    '<strong>'+nome+'</strong><br>I dati inseriti andranno persi.',
+    {ok:'Elimina'}))return;
+
+await cqAvviso('Nessun arrivo riconosciuto','Controlla il filtro dell\'export.');
+```
+
+`cqConferma` restituisce una **Promise<boolean>**: chi la chiama deve essere `async`. Le 17
+conferme convertite erano tutte gestori di `onclick`, che ignorano il valore restituito —
+per questo renderle asincrone è stato sicuro. **Verificarlo prima**, se se ne convertono
+altre: una funzione il cui risultato viene usato in modo sincrono si romperebbe.
+
+Il secondo argomento accetta **HTML** (`<strong>`, `<br>`), non `\n`.
+
+### Aspetto
+
+Impianto ereditato da `.print-dialog`: stesse misure, stessa ombra, pulsante navy come
+"Stampa". **Nessuna icona per tipo**: al loro posto la rosa dei venti del logo
+(`img/compass-stella.png`) grande e sbiadita nell'angolo superiore sinistro, inclinata di
+22°, ritagliata dal bordo — è un `::before` sul riquadro, quindi non aggiunge nodi. Titolo,
+testo e pulsanti hanno `position:relative` per stare sopra. Testo sempre centrato.
+
+`img/compass-stella.png` è derivata da `loghi compass/compass logo stella.png`, che ha il
+canale alpha ma **nessun pixel trasparente**: lo sfondo bianco pieno dentro la finestra si
+sarebbe visto come un rettangolo. Il bianco è stato reso trasparente sfumando i bordi in
+proporzione, per non scalinettare il contorno.
+
+### Comportamento
+
+Invio conferma, Esc e clic fuori dal riquadro annullano. Se il contenitore `#cqDialog` non
+esiste si ripiega su `confirm()` nativo invece di bloccare l'operazione.
+
+**Restano 46 `alert()`** non convertiti: `cqAvviso` è pronta, ma la conversione ha lo stesso
+vincolo dell'`async`.
+
+---
+
 ## Note & Problemi Noti
 
 | Problema | Causa | Fix |

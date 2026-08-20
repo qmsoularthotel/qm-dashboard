@@ -1946,8 +1946,8 @@ function dvrToggleScadContr(val){
   const show=['Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'].includes(val);
   if(w)w.style.display=show?'':'none';
 }
-function dvrEmpDelete(id){
-  if(!confirm('Eliminare questo dipendente?'))return;
+async function dvrEmpDelete(id){
+  if(!await cqConferma('Eliminare questo dipendente?','Verranno persi anche i documenti e le scadenze collegate.',{ok:'Elimina'}))return;
   DVR_DATA[_dvrSoc].dipendenti=(DVR_DATA[_dvrSoc].dipendenti||[]).filter(x=>x.id!==id);
   dvrSave();dvrRenderDipendenti();
 }
@@ -2057,8 +2057,8 @@ function dvrSaveEntry(){
   else items.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),...entry});
   dvrSave();dvrCloseModal();dvrRenderPanel(_dvrModalType);
 }
-function dvrDelete(type,id){
-  if(!confirm('Eliminare questa voce?'))return;
+async function dvrDelete(type,id){
+  if(!await cqConferma('Eliminare questa voce?','L\'operazione non si può annullare.',{ok:'Elimina'}))return;
   DVR_DATA[_dvrSoc][type]=(DVR_DATA[_dvrSoc][type]||[]).filter(x=>x.id!==id);
   dvrSave();dvrRenderPanel(type);
 }
@@ -7977,8 +7977,8 @@ function invRenderMoves(catalog,moves){
   }
   el.innerHTML=`<div style="max-width:560px;">${html}</div>`;
 }
-function invDeleteMove(id){
-  if(!confirm('Eliminare questo movimento?'))return;
+async function invDeleteMove(id){
+  if(!await cqConferma('Eliminare questo movimento?','La giacenza del prodotto verrà ricalcolata.',{ok:'Elimina'}))return;
   let moves=[];
   try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
   const filtered=moves.filter(m=>m.id!==id);
@@ -8013,11 +8013,11 @@ function invEditSoglia(bc){
   fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog_'+_invWh,value:JSON.stringify(catalog)})}).catch(()=>{});
   invRender();
 }
-function invDeleteProduct(bc){
+async function invDeleteProduct(bc){
   let catalog={};
   try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
   const name=catalog[bc]?.name||bc;
-  if(!confirm(`Eliminare "${name}" dal catalogo di questo magazzino?\nI movimenti di questo magazzino verranno rimossi. L'altro magazzino non viene modificato.`))return;
+  if(!await cqConferma('Eliminare questo prodotto dal catalogo?',`<strong>${name}</strong><br>I movimenti di questo magazzino verranno rimossi. L'altro magazzino non viene toccato.`,{ok:'Elimina'}))return;
   delete catalog[bc];
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
   let moves=[];
@@ -8701,8 +8701,8 @@ function invOrdersCancel(id){
   if(o){o.status='annullato';invOrdersSave(orders);invRenderOrders();}
 }
 
-function invOrdersUndoReceived(id){
-  if(!confirm('Annullare la ricezione? I movimenti di carico creati verranno rimossi dall\'inventario.'))return;
+async function invOrdersUndoReceived(id){
+  if(!await cqConferma('Annullare la ricezione?','I movimenti di carico creati verranno rimossi dall\'inventario e l\'ordine tornerà in attesa.',{ok:'Annulla ricezione'}))return;
   const orders=invOrdersGet();
   const o=orders.find(x=>x.id===id);
   if(!o)return;
@@ -8725,8 +8725,8 @@ function invOrdersUndoReceived(id){
   invRenderOrders();
 }
 
-function invOrdersDelete(id){
-  if(!confirm('Eliminare questo ordine?'))return;
+async function invOrdersDelete(id){
+  if(!await cqConferma('Eliminare questo ordine?','L\'operazione non si può annullare.',{ok:'Elimina'}))return;
   const orders=invOrdersGet().filter(o=>o.id!==id);
   invOrdersSave(orders);
   invRenderOrders();
@@ -10753,8 +10753,8 @@ function ddtConfirmSave(){
   ddtCloseModal();
   ddtRenderList();ddtRenderSpese();
 }
-function ddtDelete(id){
-  if(!confirm('Eliminare questo DDT?'))return;
+async function ddtDelete(id){
+  if(!await cqConferma('Eliminare questo DDT?','Le righe di spesa collegate spariranno dalle analisi.',{ok:'Elimina'}))return;
   ddtSave(ddtGet().filter(d=>d.id!==id));
   ddtRenderList();ddtRenderSpese();
 }
@@ -11509,12 +11509,12 @@ function prestayAddArrivo(){
   _psGiorno(iso).arrivi.push(_psNuovaScheda(codici[idx]));
   _psSave();prestayRender();
 }
-function prestayDelScheda(id){
+async function prestayDelScheda(id){
   const iso=_psTargetISO();
   const g=_psGiorno(iso);
   const a=(g.arrivi||[]).find(x=>x.id===id);
   if(!a)return;
-  if(!_psVuota(a)&&!confirm('Eliminare questo arrivo'+(a.nome?' ('+a.nome+')':'')+'?\n\nI dati inseriti andranno persi.'))return;
+  if(!_psVuota(a)&&!await cqConferma('Eliminare questo arrivo?',(a.nome?'<strong>'+a.nome+'</strong><br>':'')+'I dati inseriti andranno persi.',{ok:'Elimina'}))return;
   g.arrivi=g.arrivi.filter(x=>x.id!==id);
   _psSave();prestayRender();
 }
@@ -11758,9 +11758,12 @@ async function prestayInviaGruppo(hotel){
       : 'Per '+nome+' le mail sono già state inviate tutte.');
     return;
   }
-  const avvisoVuoti=senzaMail?'\n\n'+senzaMail+' arriv'+(senzaMail===1?'o verrà saltato perché non ha':'i verranno saltati perché non hanno')+' email.':'';
-  const avvisoBooking=bloccati?'\n\n'+bloccati+' indirizz'+(bloccati===1?'o Booking verrà saltato':'i Booking verranno saltati')+': Booking li scarta se la mail non parte da booking@soularthotel.com.':'';
-  if(!confirm('Inviare '+daFare.length+' mail per '+nome+'?'+avvisoVuoti+avvisoBooking+'\n\nPartono una alla volta, con il testo del template. Non c\'è anteprima: per rileggere prima di mandare usa i pulsanti sulla singola riga.'))return;
+  const avvisoVuoti=senzaMail?'<br><br>'+senzaMail+' arriv'+(senzaMail===1?'o verrà saltato perché non ha':'i verranno saltati perché non hanno')+' email.':'';
+  const avvisoBooking=bloccati?'<br><br>'+bloccati+' indirizz'+(bloccati===1?'o Booking verrà saltato':'i Booking verranno saltati')+': Booking li scarta se la mail non parte da booking@soularthotel.com.':'';
+  if(!await cqConferma('Inviare '+daFare.length+' '+(daFare.length===1?'messaggio':'messaggi')+'?',
+      '<strong>'+nome+'</strong>'+avvisoVuoti+avvisoBooking
+      +'<br><br>Partono uno alla volta, col testo del template. Non c\'è anteprima: per rileggere prima di mandare usa il pulsante su una singola scheda.',
+      {ok:'Invia'}))return;
   let ok=0,ko=0;
   for(const a of daFare){
     _psMailInFlight[a.id]=true;prestayRender();
@@ -12202,18 +12205,18 @@ const RECEPTION_ICON_CORREGGI='<svg viewBox="0 0 24 24" fill="none" stroke="curr
 const RECEPTION_ICON_CANCELLA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/></svg>';
 // Elimina un movimento (fondo o incasso): rimozione definitiva, non un edits[] — riservata
 // a correggere voci sbagliate per errore. Stessa logica di cancellaMovimento() in reception.html.
-function receptionDeleteFondo(id){
+async function receptionDeleteFondo(id){
   const idx=_receptionFondo.findIndex(x=>x.id===id);
   if(idx===-1)return;
-  if(!confirm('Eliminare definitivamente questo movimento? Non è più recuperabile.'))return;
+  if(!await cqConferma('Eliminare questo movimento?','Non sarà più recuperabile.',{ok:'Elimina'}))return;
   _receptionFondo.splice(idx,1);
   _receptionSave('qm_cassa_fondo',_receptionFondo);
   receptionRender();
 }
-function receptionDeleteIncasso(id){
+async function receptionDeleteIncasso(id){
   const idx=_receptionIncasso.findIndex(x=>x.id===id);
   if(idx===-1)return;
-  if(!confirm('Eliminare definitivamente questo movimento? Non è più recuperabile.'))return;
+  if(!await cqConferma('Eliminare questo movimento?','Non sarà più recuperabile.',{ok:'Elimina'}))return;
   _receptionIncasso.splice(idx,1);
   _receptionSave('qm_cassa_incasso',_receptionIncasso);
   receptionRender();
@@ -12532,10 +12535,10 @@ function resiSubmit(){
   const q=document.getElementById('resi-f-qta');if(q)q.value='';
   resiRender();
 }
-function resiDelRow(id){
+async function resiDelRow(id){
   const i=_resi.righe.findIndex(r=>r.id===id);if(i<0)return;
   const r=_resi.righe[i];
-  if(!confirm(`Eliminare il reso del ${r.data} — ${r.tipologia} ×${r.qta}?`))return;
+  if(!await cqConferma('Eliminare questo reso?',`<strong>${r.tipologia} ×${r.qta}</strong><br>Reso del ${r.data}.`,{ok:'Elimina'}))return;
   _resi.righe.splice(i,1);
   _resiSave();resiRender();
 }
@@ -12580,9 +12583,9 @@ function resiToggleFirmato(id){
   r.firmato=!r.firmato;
   _resiSave();resiRender();
 }
-function resiDelRitiro(id){
+async function resiDelRitiro(id){
   const i=_resi.ritiri.findIndex(x=>x.id===id);if(i<0)return;
-  if(!confirm('Annullare questo ritiro? I resi torneranno nel periodo aperto.'))return;
+  if(!await cqConferma('Annullare questo ritiro?','I resi torneranno nel periodo aperto, pronti per una nuova distinta.',{ok:'Annulla ritiro'}))return;
   _resi.righe.forEach(r=>{if(r.ritiroId===id)r.ritiroId=null;});
   _resi.ritiri.splice(i,1);
   _resiSave();resiRender();
@@ -12952,7 +12955,7 @@ function _biaSaldo(hotel){
 // Un totale al giorno per struttura: il QM somma i fogli delle cameriere e riporta qui
 // le sette voci. Reinserendo una data già presente si sovrascrive quella riga invece di
 // crearne una seconda, così una correzione non raddoppia i numeri.
-function biaSalvaConsumi(){
+async function biaSalvaConsumi(){
   const iso=(document.getElementById('bia-cons-data')||{}).value||'';
   const data=_biaFromIso(iso);
   if(!data){alert('Indica la data dei consumi.');return;}
@@ -12961,15 +12964,16 @@ function biaSalvaConsumi(){
     const el=document.getElementById('bia-c-'+i);
     q[v]=Math.max(0,Number(el&&el.value)||0);
   });
-  if(_biaTot(q)===0&&!confirm('Tutti i valori sono a zero. Salvare comunque?'))return;
+  if(_biaTot(q)===0&&!await cqConferma('Tutti i valori sono a zero','Salvare comunque i consumi di questa giornata?',{ok:'Salva'}))return;
   const esistente=_bia.consumi.find(c=>_biaH(c)===_biaHotel&&c.data===data);
   if(esistente){esistente.q=q;}
   else{_bia.consumi.push({id:_biaUid(),hotel:_biaHotel,data:data,q:q});}
   _biaSave();biaRender();
 }
-function biaEliminaConsumo(id){
+async function biaEliminaConsumo(id){
   const c=_bia.consumi.find(x=>x.id===id);
-  if(!c||!confirm('Eliminare i consumi del '+c.data+'?'))return;
+  if(!c)return;
+  if(!await cqConferma('Eliminare questi consumi?','<strong>'+c.data+'</strong><br>I giri già registrati non cambiano.',{ok:'Elimina'}))return;
   _bia.consumi=_bia.consumi.filter(x=>x.id!==id);
   _biaSave();biaRender();
 }
@@ -12978,7 +12982,7 @@ function biaEliminaConsumo(id){
 // Lo sporco consegnato viene congelato al momento della registrazione: se più avanti si
 // corregge un consumo giornaliero, i giri già chiusi (e le distinte già firmate) non
 // devono cambiare sotto i piedi.
-function biaRegistraGiro(){
+async function biaRegistraGiro(){
   const iso=(document.getElementById('bia-giro-data')||{}).value||'';
   const data=_biaFromIso(iso);
   if(!data){alert('Indica la data del giro.');return;}
@@ -12990,16 +12994,17 @@ function biaRegistraGiro(){
   });
   const g=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===data);
   if(g){
-    if(!confirm('Esiste già un giro del '+data+' per questa struttura. Sovrascriverlo?'))return;
+    if(!await cqConferma('Esiste già un giro per questa data','<strong>'+data+'</strong><br>Sovrascriverlo con i valori attuali?',{ok:'Sovrascrivi'}))return;
     g.consegnato=consegnato;g.ricevuto=ricevuto;g.ts=Date.now();
   }else{
     _bia.giri.push({id:_biaUid(),hotel:_biaHotel,data:data,consegnato:consegnato,ricevuto:ricevuto,ts:Date.now()});
   }
   _biaSave();biaRender();
 }
-function biaEliminaGiro(id){
+async function biaEliminaGiro(id){
   const g=_bia.giri.find(x=>x.id===id);
-  if(!g||!confirm('Eliminare il giro del '+g.data+'?\n\nI giri successivi useranno un periodo diverso.'))return;
+  if(!g)return;
+  if(!await cqConferma('Eliminare questo giro?','<strong>'+g.data+'</strong><br>I giri successivi useranno un periodo diverso.',{ok:'Elimina'}))return;
   _bia.giri=_bia.giri.filter(x=>x.id!==id);
   _biaSave();biaRender();
 }
