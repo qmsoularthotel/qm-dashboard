@@ -13586,24 +13586,10 @@ function prenApplicaVisibilitaSlot(){
 //
 // cqConferma restituisce una Promise<boolean>: chi la usa deve essere `async` e mettere
 // `await`. cqAvviso è la versione a un pulsante, per i messaggi informativi.
-const CQ_ICONE={
-  elimina:{bg:'var(--red-bg)',col:'var(--red)',
-    d:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>'},
-  invia:{bg:'var(--accent-bg)',col:'var(--accent)',
-    d:'<path d="M4 4h16v12H5.2L4 17.5z"/><path d="M8 9h8M8 12h5"/>'},
-  attenzione:{bg:'var(--amber-bg)',col:'var(--amber)',
-    d:'<path d="M12 3l9 16H3z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".6" fill="currentColor" stroke="none"/>'},
-  info:{bg:'var(--accent-bg)',col:'var(--accent)',
-    d:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.6" r=".6" fill="currentColor" stroke="none"/>'}
-};
 let _cqChiudi=null;
 function _cqApri(o){
   const d=document.getElementById('cqDialog');
   if(!d)return Promise.resolve(o.soloAvviso?true:window.confirm(o.titolo));   // ripiego
-  const ic=CQ_ICONE[o.tipo]||CQ_ICONE.info;
-  const ico=document.getElementById('cqIco');
-  ico.style.background=ic.bg;
-  ico.innerHTML='<svg viewBox="0 0 24 24" stroke="'+ic.col+'" stroke-linecap="round" stroke-linejoin="round">'+ic.d+'</svg>';
   document.getElementById('cqTitle').textContent=o.titolo||'';
   document.getElementById('cqSub').innerHTML=o.testo||'';
   const bOk=document.getElementById('cqOk'), bNo=document.getElementById('cqNo');
