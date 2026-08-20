@@ -3330,7 +3330,7 @@ async function renderOvRoomReadiness(giorno,statoNoto){
     const cfg=stato===true?{border:'var(--green)',icon:iconBedOk,iconBg:'var(--green)',fg:'var(--green)',lbl:'Pronta'}
       :stato===false?{border:'var(--red)',icon:iconBedNo,iconBg:'var(--red)',fg:'var(--red)',lbl:'Non pronta'}
       :{border:'var(--border)',icon:iconQ,iconBg:'var(--text-dim)',fg:'var(--text-dim)',lbl:'Da verificare'};
-    const sotto=soloArrivo?'arrivo · nessuna partenza':'check-in oggi';
+    const sotto=soloArrivo?'solo arrivo (pulita)':'partenza/arrivo';
     // Ciclo a tre stati con un clic solo: da verificare -> pronta -> non pronta -> da
     // verificare. Il terzo passaggio segna esplicitamente "da verificare" — vale anche
     // sulle camere con solo arrivo, che partono pronte di default ma una volta toccate
