@@ -2253,6 +2253,28 @@ tornavano — errore trovato proprio così.
 arrivi**, mai a fermate e partenze, per cui alcune camere Art risultavano `AR` (Art Resort)
 invece di `SA`. Qui la struttura è assegnata in modo deterministico a tutte e tre le liste.
 
+### Multicamera: una sola scheda, non una per camera
+
+Una prenotazione su più camere compare nell'export come **una riga per camera**. È una sola
+prenotazione con una sola email, quindi deve produrre **una sola scheda**.
+
+**Il codice NON è condiviso fra le camere del gruppo** — verificato sul file reale: fra 158
+prenotazioni non ce ne sono due uguali, nemmeno all'interno dei gruppi (e nemmeno spezzando
+il codice nei suoi due token). Quello che coincide sono **nome, arrivo, partenza e canale**:
+è su quelli che `_prenPrestay` raggruppa. Nel file di prova emergono 9 gruppi, da 2 a 4
+camere (Olimpio Michele ne ha 4, Talhami Alla 3).
+
+La scheda conserva `codici[]` con i codici di **tutte** le camere: al reimport basta che
+**uno** combaci, così il gruppo si riconosce anche se una camera viene tolta o cambiata.
+`codice` resta valorizzato col primo, per le schede salvate prima che la lista esistesse.
+
+Sulla card compare una pastiglia ambra **"N camere"** con l'elenco nel tooltip: senza,
+il raggruppamento sarebbe invisibile e sembrerebbe che manchino degli arrivi.
+
+**Attenzione**: due ospiti diversi con lo stesso nome, stesso arrivo e stessa partenza
+verrebbero uniti. È il compromesso accettato — la pastiglia "N camere" lo rende però
+visibile a colpo d'occhio.
+
 ### L'abbinamento delle schede va sul CODICE, non sul nome
 
 Il nome dell'ospite **cambia**: al check-in viene registrato il documento di chi si

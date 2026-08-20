@@ -11305,7 +11305,7 @@ function _psParsePdfArrivi(items){
 let _psSeq=0;
 function _psNuovoId(){return 'a'+Date.now().toString(36)+(_psSeq++).toString(36);}
 function _psNuovaScheda(hotel){
-  return{id:_psNuovoId(),hotel:hotel,nome:'',email:'',tel:'',lang:'it',origine:'',codice:'',italcamel:false,mailTs:null,waTs:null,mailErr:null};
+  return{id:_psNuovoId(),hotel:hotel,nome:'',email:'',tel:'',lang:'it',origine:'',codice:'',codici:[],camere:[],italcamel:false,mailTs:null,waTs:null,mailErr:null};
 }
 // Accesso al giorno, con migrazione dal vecchio formato indicizzato per camera
 // (`{'203':{...}}`) al nuovo (`{arrivi:[…]}`). La migrazione è pigra — avviene alla prima
@@ -11367,7 +11367,12 @@ function _psImportaArrivi(iso,lista){
     //    al check-in viene registrato il documento di chi si presenta, che può essere
     //    l'accompagnatore. Senza questo abbinamento la stessa prenotazione tornava come
     //    un secondo arrivo, con il pre-stay già inviato rimasto sulla scheda vecchia.
-    let s=a.codice?esistenti.find(e=>!usate.has(e.id)&&e.codice&&e.codice===a.codice):null;
+    // Una multicamera ha un codice per camera: basta che UNO combaci per riconoscere la
+    // scheda. `codici` è la lista completa; `codice` resta come primo elemento per le
+    // schede salvate prima che esistesse la lista.
+    const cod=a.codici&&a.codici.length?a.codici:(a.codice?[a.codice]:[]);
+    const suoi=e=>(e.codici&&e.codici.length?e.codici:(e.codice?[e.codice]:[]));
+    let s=cod.length?esistenti.find(e=>!usate.has(e.id)&&suoi(e).some(c=>cod.includes(c))):null;
     if(s){ritrovati++;s.nome=a.nome;}     // il nome segue quello del PMS
     else{
       // 2) Nome, per le schede importate prima che ci fosse il codice
@@ -11379,7 +11384,8 @@ function _psImportaArrivi(iso,lista){
         else{s=_psNuovaScheda(a.hotel);s.nome=a.nome;nuovi++;}
       }
     }
-    if(a.codice)s.codice=a.codice;
+    if(cod.length){s.codici=cod;s.codice=cod[0];}
+    if(a.camere)s.camere=a.camere;        // camere della prenotazione, per mostrarne il numero
     s.hotel=a.hotel;                      // una prenotazione può cambiare struttura
     s.fuoriLista=false;
     // Canale di provenienza dal PMS, quando il file lo porta (export "Prenotazioni").
@@ -12020,6 +12026,8 @@ function prestayRender(){
           <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
             <span style="padding:2px 9px;border-radius:12px;background:${fatto?'var(--green-bg)':'var(--surface2)'};color:${fatto?'var(--green)':'var(--text-muted)'};border:1px solid ${fatto?'var(--green)':'var(--border-light)'};font-size:var(--fs-xxs);font-weight:700;line-height:1.5;white-space:nowrap;">Arrivo ${i+1}</span>
             ${a.fuoriLista?`<span title="Non compare nell'ultima lista arrivi importata: la prenotazione potrebbe essere stata cancellata o il nome corretto. Non elimino nulla da solo." style="font-size:9px;font-weight:700;color:var(--amber);">non più in lista</span>`:''}
+            ${(()=>{const nc=(a.camere||[]).length;if(nc<2)return'';
+              return`<span title="Prenotazione multicamera: ${a.camere.join(', ')} — un solo messaggio, l'email è la stessa" style="padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;border:1px solid var(--amber);color:var(--amber);background:#fff;white-space:nowrap;">${nc} camere</span>`;})()}
             ${(()=>{const n=_psCanaleNome(a);if(!n)return'';const col=_psCanaleCol(a)||'var(--text-dim)';
               return`<span title="Provenienza della prenotazione, dal PMS" style="padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;border:1px solid ${col};color:${col};background:#fff;white-space:nowrap;">${n}</span>`;})()}
             <select onchange="prestaySetScheda('${a.id}','lang',this.value)" title="Lingua del messaggio" style="${inpS}width:auto;min-width:52px;margin-left:auto;padding:3px 6px;">
@@ -13442,14 +13450,29 @@ function _prenBkfData(pren){
 // dedurre la struttura e viene poi scartata (le schede non hanno campo camera).
 // `origine` è la novità: il canale arriva dal PMS invece di essere indovinato dall'email,
 // e Italcamel si riconosce da sé senza la spunta manuale.
+// Una prenotazione multicamera compare come UNA RIGA PER CAMERA. Il codice però è diverso
+// per ogni camera — verificato sul file reale: fra 158 prenotazioni non ce ne sono due
+// uguali, nemmeno nei gruppi. Quello che coincide sono nome, arrivo, partenza e canale.
+// Si raggruppa su quelli: è una sola prenotazione con una sola email, quindi una sola
+// scheda. Nel file di prova ne emergono 9, da 2 a 4 camere ciascuna.
+//
+// I codici di TUTTE le camere del gruppo restano sulla scheda: servono all'abbinamento al
+// reimport, e basta che uno solo combaci.
 function _prenPrestay(pren,iso){
-  return pren.filter(p=>p.arrivo===iso).map(p=>({
-    camera:p.camera,
-    nome:p.ospite,
-    codice:p.codice,
-    hotel:_prenStruttura(p.alloggio||p.camera).toLowerCase(),
-    origine:p.origine
-  }));
+  const gruppi=new Map();
+  pren.filter(p=>p.arrivo===iso).forEach(p=>{
+    const k=[_psNomeChiave(p.ospite),p.arrivo,p.partenza,p.origine].join('|');
+    let g=gruppi.get(k);
+    if(!g){
+      g={camera:p.camera, nome:p.ospite, codici:[],
+         hotel:_prenStruttura(p.alloggio||p.camera).toLowerCase(),
+         origine:p.origine, camere:[]};
+      gruppi.set(k,g);
+    }
+    if(p.codice)g.codici.push(p.codice);
+    if(p.camera)g.camere.push(p.camera);
+  });
+  return[...gruppi.values()].map(g=>({...g,codice:g.codici[0]||''}));
 }
 
 // ── Upload e applicazione ──
