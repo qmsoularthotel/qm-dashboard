@@ -2253,6 +2253,29 @@ tornavano — errore trovato proprio così.
 arrivi**, mai a fermate e partenze, per cui alcune camere Art risultavano `AR` (Art Resort)
 invece di `SA`. Qui la struttura è assegnata in modo deterministico a tutte e tre le liste.
 
+### Il canale colora la scheda pre-stay all'import
+
+La colonna `Origine` viene salvata sulla scheda (`a.origine`) e decide il colore del bordo
+tramite `PS_CANALI`, **prima** che si digiti l'email:
+
+`booking` blu · `expedia` giallo · `g2 travel` marrone · `italcamel` viola · altri neutro
+
+Prima il canale si deduceva dall'indirizzo email (`PS_BORDI`), che però si inserisce a
+mano: all'import le schede restavano neutre e prendevano colore solo a compilazione fatta.
+Quella regola resta come **ripiego** per le schede vecchie o aggiunte a mano, e per le
+prenotazioni la cui origine non è fra quelle mappate.
+
+Il canale **vince sull'email**: un ospite Booking che lascia un indirizzo privato resta
+blu. Per questo `_psAggiornaBordo` legge `data-canale` sulla card e, se c'è, non tocca il
+colore mentre si digita.
+
+**Italcamel si accende da sola** quando l'origine lo dichiara: la spunta manuale resta per
+i casi non coperti, ma non è più l'unico modo.
+
+Attenzione a `Booking.co`: il PDF manda a capo `Booking.com` e nella colonna resta troncato.
+Le espressioni di `PS_CANALI` cercano sottostringhe (`/booking/i`), non uguaglianze, proprio
+per questo.
+
 ### Tornare indietro
 
 `PREN_UNICO=false` in cima alla sezione: riappaiono i tre slot e tornano attivi i loro

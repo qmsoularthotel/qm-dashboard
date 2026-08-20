@@ -11191,12 +11191,38 @@ function _psBordoPerEmail(email){
   for(const b of PS_BORDI)if(b.re.test(e))return b.col;
   return PS_BORDO_ALTRI;
 }
+// Canale di provenienza dichiarato dal PMS (colonna Origine dell'export Prenotazioni).
+// Ha la precedenza sull'email: l'email la digiti tu dopo, quindi all'import la scheda
+// sarebbe grigia e prenderebbe colore solo a compilazione avvenuta — invece il canale si
+// sa gia' dal file. Restano le regole sull'email come ripiego per le schede vecchie o
+// aggiunte a mano.
+const PS_CANALI=[
+  {re:/booking/i,        col:'#0071C2'},
+  {re:/expedia/i,        col:'#FFB300'},
+  {re:/g2[\s-]*travel/i, col:'#76573A'},
+  {re:/italcamel/i,      col:'#7B5EA7'}
+];
+// Colore dovuto al canale dichiarato dal PMS, o stringa vuota se il file non lo portava.
+// Serve al render per marcare la scheda (data-canale) e a _psAggiornaBordo per non
+// sovrascriverlo mentre si digita l'email.
+function _psCanaleCol(a){
+  const o=String(a&&a.origine||'').trim();
+  if(o)for(const c of PS_CANALI)if(c.re.test(o))return c.col;
+  return '';
+}
+function _psBordo(a){
+  return _psCanaleCol(a)||_psBordoPerEmail(a&&a.email);
+}
 // Il bordo deve cambiare mentre si digita, non al termine: un re-render a ogni tasto
 // farebbe perdere il fuoco al campo, quindi si tocca solo lo stile della scheda.
 // Le schede già inviate restano verdi: `data-fatto` le esclude.
 function _psAggiornaBordo(id,email){
   const c=document.getElementById('psCard-'+id);
-  if(c&&c.dataset.fatto!=='1')c.style.borderColor=_psBordoPerEmail(email);
+  if(!c||c.dataset.fatto==='1')return;
+  // Se il canale arriva dal PMS resta quello: digitare un indirizzo privato non deve
+  // cambiare il colore di una prenotazione che sappiamo essere Booking o Expedia.
+  if(c.dataset.canale){c.style.borderColor=c.dataset.canale;return;}
+  c.style.borderColor=_psBordoPerEmail(email);
 }
 // Italcamel si segna A MANO: il PMS non popola la colonna Azienda del PDF, quindi non c'e
 // modo di dedurlo dal documento. Spuntandolo la scheda si spegne — quegli arrivi non hanno
@@ -11263,7 +11289,7 @@ function _psParsePdfArrivi(items){
 let _psSeq=0;
 function _psNuovoId(){return 'a'+Date.now().toString(36)+(_psSeq++).toString(36);}
 function _psNuovaScheda(hotel){
-  return{id:_psNuovoId(),hotel:hotel,nome:'',email:'',tel:'',lang:'it',mailTs:null,waTs:null,mailErr:null};
+  return{id:_psNuovoId(),hotel:hotel,nome:'',email:'',tel:'',lang:'it',origine:'',italcamel:false,mailTs:null,waTs:null,mailErr:null};
 }
 // Accesso al giorno, con migrazione dal vecchio formato indicizzato per camera
 // (`{'203':{...}}`) al nuovo (`{arrivi:[…]}`). La migrazione è pigra — avviene alla prima
@@ -11329,6 +11355,15 @@ function _psImportaArrivi(iso,lista){
       else{s=_psNuovaScheda(a.hotel);s.nome=a.nome;nuovi++;}
     }
     s.fuoriLista=false;
+    // Canale di provenienza dal PMS, quando il file lo porta (export "Prenotazioni").
+    // Colora il bordo della scheda già all'import, senza aspettare che si digiti l'email,
+    // e accende da sé la spunta Italcamel — che prima si metteva a mano perché il vecchio
+    // PDF arrivi non aveva l'informazione. Il vecchio import non passa `origine` e qui non
+    // tocca nulla, quindi le schede esistenti restano come sono.
+    if(a.origine){
+      s.origine=a.origine;
+      if(/italcamel/i.test(a.origine))s.italcamel=true;
+    }
     usate.add(s.id);
     risultato.push(s);
   });
@@ -11950,8 +11985,8 @@ function prestayRender(){
         // dedotto dall'indirizzo. Italcamel non ha contatti, quindi la scheda resta sfocata
         // e marcata: non c'è nulla da compilare né da inviare.
         const ital=_psItalcamel(a);
-        const bordo=fatto?'var(--green)':_psBordoPerEmail(a.email);
-        h+=`<div id="psCard-${a.id}" data-fatto="${fatto?'1':'0'}" style="position:relative;background:${fatto?'var(--green-bg)':'var(--surface)'};border:1px solid ${bordo};border-radius:10px;padding:11px 13px;">
+        const bordo=fatto?'var(--green)':_psBordo(a);
+        h+=`<div id="psCard-${a.id}" data-fatto="${fatto?'1':'0'}" data-canale="${_psCanaleCol(a)||''}" style="position:relative;background:${fatto?'var(--green-bg)':'var(--surface)'};border:1px solid ${bordo};border-radius:10px;padding:11px 13px;">
           ${ital?`<div style="position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(244,244,246,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);pointer-events:none;">
             <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:26px;font-weight:700;letter-spacing:-.01em;color:var(--text);opacity:.62;text-shadow:0 1px 0 #fff;white-space:nowrap;">Italcamel</span>
           </div>`:''}
