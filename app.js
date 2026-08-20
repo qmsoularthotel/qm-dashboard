@@ -3311,20 +3311,29 @@ async function renderOvRoomReadiness(giorno,statoNoto){
   const iconBedNo=_bedSvg('<path d="M2.5 14.6c3-1.8 6 1.2 9-.6s6 1.2 9-.6"/>');
   const iconQ='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 1.8-2 3.3"/><circle cx="12" cy="17" r=".6" fill="#fff" stroke="none"/></svg>';
   const roomCard=r=>{
-    const p=state&&state[r]?state[r].pronta:null;
-    // Un arrivo senza partenza precedente parte da "pronta": la camera non è stata
-    // occupata la notte prima, non c'è nulla da rifare. Se però chi è passato l'ha
-    // segnata esplicitamente (p non null) vince quello che ha visto sul posto.
+    // "toccata" = esiste una voce per questa camera nello stato del giorno — creata
+    // dall'app Culligan quando qualcuno la visita, o da qui al primo clic. Finché nessuno
+    // l'ha toccata la voce non esiste affatto (vedi _applyPianoLibere in
+    // controllo-mattino.html), quindi è questo — non pronta===null — il segnale di "mai
+    // verificata da nessuno".
+    const toccata=!!(state&&state[r]);
+    const p=toccata?state[r].pronta:undefined;
+    // Un arrivo senza partenza precedente parte da "pronta" SOLO se non è mai stata
+    // toccata: la camera non era occupata la notte prima, non c'è nulla da rifare. Ma se
+    // la camera è stata toccata (da Culligan o dal terzo clic qui) e pronta è null, è un
+    // "Da verificare" scelto esplicitamente e deve restare tale — non ricadere sul valore
+    // automatico, altrimenti il terzo clic del ciclo non avrebbe alcun effetto visibile
+    // sulle camere con solo arrivo.
     const soloArrivo=arrivoPuro.has(r);
-    const stato=p!==null&&p!==undefined?p:(soloArrivo?true:null);
+    const stato=p===true||p===false?p:(!toccata&&soloArrivo?true:null);
     const cfg=stato===true?{border:'var(--green)',icon:iconBedOk,iconBg:'var(--green)',fg:'var(--green)',lbl:'Pronta'}
       :stato===false?{border:'var(--red)',icon:iconBedNo,iconBg:'var(--red)',fg:'var(--red)',lbl:'Non pronta'}
       :{border:'var(--border)',icon:iconQ,iconBg:'var(--text-dim)',fg:'var(--text-dim)',lbl:'Da verificare'};
     const sotto=soloArrivo?'arrivo · nessuna partenza':'check-in oggi';
     // Ciclo a tre stati con un clic solo: da verificare -> pronta -> non pronta -> da
-    // verificare. Il terzo passaggio riporta la camera allo stato di partenza, per
-    // correggere una segnatura sbagliata. Sulle camere con solo arrivo "da verificare"
-    // coincide col valore automatico (pronta), quindi lì si vede come una alternanza.
+    // verificare. Il terzo passaggio segna esplicitamente "da verificare" — vale anche
+    // sulle camere con solo arrivo, che partono pronte di default ma una volta toccate
+    // seguono il ciclo come tutte le altre (vedi la nota su "toccata" sopra).
     const _next=stato===true?{v:'false',t:'NON pronta'}
       :stato===false?{v:'null',t:'da verificare'}
       :{v:'true',t:'pronta'};
