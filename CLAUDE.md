@@ -2167,6 +2167,106 @@ accorgimento.
 
 ---
 
+## Prenotazioni — il file unico che sostituisce tre upload (2026-08-20)
+
+Vista: nessuna (è solo uno slot di Upload Center). Codice: `§§ PRENOTAZIONI` in `app.js`.
+Interruttore: **`PREN_UNICO`** in cima alla sezione.
+
+### Cosa si carica
+
+PMS (Hotel in Cloud) → **Prenotazioni** → filtro **Presenti** → intervallo di date →
+**tutte le strutture** → Esporta.
+
+**Deve essere "Presenti", non "Arrivi".** Il PMS permette un filtro per volta, ma ogni riga
+porta con sé *sia* `Arrivo` *sia* `Partenza`: da "Presenti" su un intervallo si ricava, per
+qualsiasi giorno del periodo, chi arriva, chi parte e chi resta. Con "Arrivi" servirebbero
+tre export separati.
+
+### Cosa sostituisce
+
+| Upload precedente | Chiave scritta | Come si ricava |
+|---|---|---|
+| Riepilogo Reception | `qm_arriviData` | arrivi = `Arrivo`=giorno · partenze = `Partenza`=giorno · fermate = `Arrivo` < giorno < `Partenza` |
+| Report pasti | `qm_bkfData` | colazioni e no-colazione per ogni giorno dell'intervallo |
+| Arrivi Pre-stay | schede `_prestay` | un import per ogni giorno futuro presente nel file |
+
+Da 3 caricamenti al giorno a **1**. Turno e Piano Settimanale restano invariati.
+
+### La forma dei dati NON cambia
+
+`qm_arriviData` e `qm_bkfData` vengono scritte **identiche a prima**, campo per campo. È un
+vincolo, non un dettaglio: le leggono tre app standalone.
+
+| App | Chiave | Campi usati |
+|---|---|---|
+| `housekeeper.html` | `qm_arriviData` | `.camera` |
+| `controllo-mattino.html` | `qm_arriviData` | `.camera`, `.origine` (test `/booking/i`) |
+| `breakfast.html` | `qm_bkfData` | `data`, `label`, `noCol`, e `adulti`+`bambini` **sempre sommati** |
+
+### REGOLA DELLE COLAZIONI — il mattino dopo, e solo due strutture
+
+Verificata riproducendo il report del PMS su 8 giorni su 8, per entrambe le righe:
+
+> **Colazioni**: prenotazioni con `arrivo < giorno <= partenza` (la colazione si serve il
+> mattino DOPO la notte) e trattamento `BB`. **Tutte le strutture.**
+>
+> **No colazione**: stessa finestra, trattamento `RO`, ma **solo SoulArt e Boutique** —
+> sono le uniche che servono la colazione, altrove `RO` è la norma e non viene conteggiato.
+
+Sbagliare una delle due fa divergere i numeri dal PMS senza che si veda.
+
+### Adulti/bambini: si tiene solo il totale
+
+La colonna `Ospiti` non riporta lo split in modo affidabile (una prenotazione che il PMS
+conta 1 adulto + 1 bambino può comparire come `2`). Il **totale è sempre corretto**. Si
+scrive quindi il totale in `adulti` e `0` in `bambini`: nessuno usa i due campi separati —
+`app.js` e `breakfast.html` li sommano in tutti i punti tranne una scritta decorativa.
+
+### La struttura si deduce dall'alloggio INTERO, non dal numero di camera
+
+`_prenStruttura` riceve `"Art 21 / AS Superior"`, non `"Art 21"`. Quando la camera non è
+ancora assegnata il PMS scrive lì solo il tipo (`UM TRIPLA CLASSIC`, `MS Family`,
+`AS Suite`) e il codice dopo la barra è l'unico appiglio:
+
+`AS`=SoulArt · `PC`=Boutique · `UM`=Principe · `MS`=Mastrangelo · `AS_LIB`=San Liborio
+(controllato per primo, altrimenti lo intercetta `AS`).
+
+Senza questo ripiego quelle prenotazioni finivano tutte su SoulArt e i "no colazione" non
+tornavano — errore trovato proprio così.
+
+**Correzione di un difetto preesistente**: `fixArriviStruttura` veniva applicata **solo agli
+arrivi**, mai a fermate e partenze, per cui alcune camere Art risultavano `AR` (Art Resort)
+invece di `SA`. Qui la struttura è assegnata in modo deterministico a tutte e tre le liste.
+
+### Tornare indietro
+
+`PREN_UNICO=false` in cima alla sezione: riappaiono i tre slot e tornano attivi i loro
+handler, **mai rimossi** (`handleArriviFile`, `prestayHandlePdf`, `handleBkfFile`). Stesso
+schema di `HKP_DERIVE_FROM_PIANO`. Punto di ritorno completo: tag git
+**`pre-prenotazioni-unico`**.
+
+### Perché il parsing è deterministico e non AI
+
+Colonne a posizione x fissa, come `_psParsePdfArrivi`: nomi e tipi camera vanno a capo
+nell'export reale, e un parser sul testo concatenato li spezzerebbe. Niente chiamata AI
+significa anche nessun costo e nessuna variabilità fra un caricamento e l'altro.
+
+| Colonna | x |
+|---|---|
+| Ospite | 0–64 |
+| Arrivo | 162–215 |
+| Partenza | 215–268 |
+| Alloggio | 300–354 |
+| Ospiti | 354–388 |
+| Stato | 388–424 |
+| Tratt. | 563–595 |
+| Origine | 595–649 |
+
+Le prenotazioni annullate vengono scartate (`stato`). `origine` arriva dal PMS: è il canale
+(Booking, Expedia, Italcamel, CRSVertical), che prima si indovinava dall'email.
+
+---
+
 ## Note & Problemi Noti
 
 | Problema | Causa | Fix |
@@ -2204,3 +2304,4 @@ accorgimento.
 | Arrivi puri sempre grigi anche dopo Cmd+R | `_rs()` crea la voce come effetto collaterale del conteggio bottiglie: "esiste una voce" non significa "qualcuno ha guardato" | Flag `prontaVerificata`, scritto solo dalle scelte umane |
 | Icone card camere disallineate | `solo arrivo (pulita)` va su due righe, `partenza/arrivo` su una | `min-height` per due righe sul sottotitolo, testo centrato |
 | Turno datato con l'anno sbagliato | Il prompt non dichiarava la data odierna e il planning non riporta l'anno | Data odierna nel prompt + `_annoPlausibile()` sulle date restituite |
+| Camere Art marcate "Art Resort" nelle fermate | `fixArriviStruttura` applicata solo a `arrivi`, mai a `fermate`/`partenze` | Struttura dedotta in modo deterministico da `_prenStruttura` su tutte e tre le liste |

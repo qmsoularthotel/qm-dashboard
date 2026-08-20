@@ -66,7 +66,7 @@ function ucToggle(key){
   if(!panel)return;
   const isOpen=panel.classList.contains('open');
   // Chiudi tutti gli altri
-  ['turno','arrivi','prestay','pul','bkf','soul','bout','piano'].forEach(k=>{
+  ['turno','pren','arrivi','prestay','pul','bkf','soul','bout','piano'].forEach(k=>{
     if(k===key)return;
     const p=document.getElementById('uc-'+k+'-panel');
     const s=document.getElementById('uc-'+k);
@@ -93,7 +93,7 @@ function ucSetState(key,state,sub,silent){
     slot.classList.add('loaded');
     if(!silent){
       // Fisarmonica: chiudi tutti, apri questo
-      ['turno','arrivi','prestay','pul','bkf','soul','bout','piano'].forEach(k=>{
+      ['turno','pren','arrivi','prestay','pul','bkf','soul','bout','piano'].forEach(k=>{
         const p=document.getElementById('uc-'+k+'-panel');
         const s=document.getElementById('uc-'+k);
         if(p){p.classList.remove('open');}
@@ -13185,3 +13185,294 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
   w.document.write(html);w.document.close();
   setTimeout(()=>w.print(),400);
 }
+
+// §§ PRENOTAZIONI — file unico dal PMS (arrivi + colazioni + pre-stay)
+//
+// Un solo export sostituisce tre upload: Riepilogo Reception, Arrivi Pre-stay e Report
+// pasti. Nel PMS (Hotel in Cloud): Prenotazioni → filtro **Presenti** → intervallo di
+// date → tutte le strutture → Esporta.
+//
+// Perché "Presenti" e non "Arrivi": ogni riga porta con sé sia `Arrivo` sia `Partenza`,
+// quindi da un solo file si ricava, per QUALSIASI giorno dell'intervallo, chi arriva, chi
+// parte e chi resta. Con il filtro "Arrivi" servirebbero tre export separati (il PMS
+// permette un filtro per volta) — vedi la nota in CLAUDE.md.
+//
+// Il parsing è deterministico sulle posizioni x delle colonne, senza AI: stesso approccio
+// di _psParsePdfArrivi, stesso motivo (i nomi e i tipi camera vanno a capo).
+//
+// PREN_UNICO=false → tutto torna esattamente com'era: riappaiono i tre slot separati e i
+// loro handler, che NON vengono rimossi. Stesso schema di HKP_DERIVE_FROM_PIANO.
+const PREN_UNICO=true;
+
+// Posizioni x delle colonne nell'export reale (pagina orizzontale, larghezza 842pt).
+// Verificate sull'export del 20/08/2026: intestazioni a x=10 Ospite, 162.5 Arrivo,
+// 215.7 Partenza, 300.2 Alloggio, 354.7 Ospiti, 388.7 Stato, 563 Tratt., 595.4 Origine.
+const PREN_COL={
+  ospite:[0,64], arrivo:[162,215], partenza:[215,268],
+  alloggio:[300,354], ospiti:[354,388], stato:[388,424],
+  tratt:[563,595], origine:[595,649]
+};
+const PREN_RE_DATA=/^(\d{2})\/(\d{2})\/(\d{4})$/;
+
+function _prenCella(ws,r){return ws.filter(w=>w.x>=r[0]&&w.x<r[1]).map(w=>w.s).join(' ').trim();}
+function _prenData(s){const m=String(s||'').trim().match(PREN_RE_DATA);return m?m[3]+'-'+m[2]+'-'+m[1]:null;}
+function _prenGiorniTra(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);}
+
+// "2" -> {a:2,b:0} · "2 + 1" -> {a:2,b:1}. L'export non riporta sempre la suddivisione
+// (una prenotazione che il PMS conta 1 adulto + 1 bambino qui può comparire come "2"):
+// il TOTALE è corretto, lo split no. Nessuno lo usa separato — app.js e breakfast.html
+// sommano sempre — quindi si tiene il totale e si lascia 0 sui bambini.
+function _prenPax(s){
+  const m=String(s||'').match(/\d+/g)||[];
+  return{a:+(m[0]||0), b:+(m[1]||0)};
+}
+
+// "Art 21 / AS Superior" -> {camera:'Art 21', tipo:'AS Superior'}
+function _prenCamera(alloggio){
+  const s=String(alloggio||'').trim();
+  const i=s.indexOf('/');
+  if(i===-1)return{camera:s,tipo:''};
+  return{camera:s.slice(0,i).trim(), tipo:s.slice(i+1).trim()};
+}
+
+// Codici struttura maiuscoli, come li usa già qm_arriviData (SA/BH/SL/PR/MS).
+// Stesse regole di fixArriviStruttura: TUTTE le camere Art sono SoulArt.
+//
+// Si guarda l'alloggio INTERO ("Art 21 / AS Superior"), non il solo numero di camera,
+// perché quando la camera non è ancora assegnata il PMS scrive lì solo il tipo — es.
+// "UM TRIPLA CLASSIC", "MS Family", "AS Suite". Il codice tipo dopo la barra identifica
+// comunque la struttura: AS=SoulArt, PC=Boutique, UM=Principe, MS=Mastrangelo,
+// AS_LIB=San Liborio. Senza questo ripiego quelle prenotazioni finivano tutte su SoulArt
+// e falsavano i conteggi (verificato: i "no colazione" del report non tornavano).
+function _prenStruttura(alloggio){
+  const c=String(alloggio||'').trim().toUpperCase();
+  if(/LIB/.test(c))return'SL';                                  // AS_LIB, prima di AS
+  if(/^(CAPRI|NAPOLI|PROCIDA|ISCHIA|POSITANO)/.test(c))return'PR';
+  if(/^R\s*[123]\b/.test(c))return'MS';
+  if(/^\d+/.test(c)&&+c.match(/^\d+/)[0]>=200&&+c.match(/^\d+/)[0]<=299)return'BH';
+  if(/^ART\s*\d/.test(c))return'SA';
+  // camera non assegnata: decide il codice tipo
+  if(/\bUM\b/.test(c))return'PR';
+  if(/\bPC\b/.test(c))return'BH';
+  if(/\bMS\b/.test(c))return'MS';
+  if(/\bAS\b/.test(c))return'SA';
+  return'SA';
+}
+
+/**
+ * Legge l'export "Prenotazioni" e restituisce una prenotazione per riga logica.
+ * @param {Array<{s:string,x:number,y:number}>} items testo con coordinate (da pdf.js)
+ */
+function _prenParse(items){
+  // Raggruppa per riga: stessa tolleranza usata dal parser pre-stay.
+  const perRiga=new Map();
+  items.forEach(it=>{
+    const k=Math.round(it.y/3);
+    if(!perRiga.has(k))perRiga.set(k,[]);
+    perRiga.get(k).push(it);
+  });
+  const chiavi=[...perRiga.keys()].sort((a,b)=>b-a);   // y decrescente = alto → basso
+  const out=[];
+  chiavi.forEach(k=>{
+    const ws=perRiga.get(k).sort((a,b)=>a.x-b.x);
+    const arrivo=_prenData(_prenCella(ws,PREN_COL.arrivo));
+    if(arrivo){
+      const all=_prenCella(ws,PREN_COL.alloggio);
+      const{camera,tipo}=_prenCamera(all);
+      const pax=_prenPax(_prenCella(ws,PREN_COL.ospiti));
+      out.push({
+        ospite:_prenCella(ws,PREN_COL.ospite), alloggio:all,
+        arrivo, partenza:_prenData(_prenCella(ws,PREN_COL.partenza)),
+        camera, tipo, pax:pax.a+pax.b, adulti:pax.a, bambini:pax.b,
+        stato:_prenCella(ws,PREN_COL.stato),
+        tratt:_prenCella(ws,PREN_COL.tratt),
+        origine:_prenCella(ws,PREN_COL.origine),
+        struttura:_prenStruttura(all)
+      });
+    }else if(out.length){
+      // Riga di continuazione: nome e tipo camera vanno a capo nell'export reale.
+      const p=out[out.length-1];
+      const n=_prenCella(ws,PREN_COL.ospite); if(n)p.ospite+=' '+n;
+      const t=_prenCella(ws,PREN_COL.alloggio); if(t)p.tipo=(p.tipo+' '+t).trim();
+    }
+  });
+  // Solo prenotazioni valide: le cancellate non devono contare da nessuna parte.
+  return out.filter(p=>p.partenza&&!/annull|cancell/i.test(p.stato));
+}
+
+// Intervallo coperto dal file, per sapere quali giorni si possono derivare.
+function _prenIntervallo(pren){
+  if(!pren.length)return null;
+  const arr=pren.map(p=>p.arrivo).sort(), par=pren.map(p=>p.partenza).sort();
+  return{dal:arr[0], al:par[par.length-1]};
+}
+
+// ── Derivazione 1: qm_arriviData (sostituisce il Riepilogo Reception) ──
+// Stessa identica forma di prima, così Culligan e housekeeper.html continuano a leggerla
+// senza sapere che il file sorgente è cambiato.
+function _prenArriviData(pren,iso){
+  const dmy=s=>{const[a,m,g]=s.split('-');return (+g)+'/'+(+m);};   // "20/8", come prima
+  const base=p=>({camera:p.camera, struttura:p.struttura, ospite:p.ospite, pax:p.pax,
+                  arrivo:dmy(p.arrivo), partenza:dmy(p.partenza), origine:p.origine});
+  const arrivi=[],fermate=[],partenze=[];
+  pren.forEach(p=>{
+    if(p.arrivo===iso)      arrivi.push({...base(p), tipo_camera:p.tipo, trattamento:p.tratt, note:'', alert:false});
+    else if(p.partenza===iso) partenze.push(base(p));
+    else if(p.arrivo<iso&&iso<p.partenza) fermate.push(base(p));
+  });
+  const[a,m,g]=iso.split('-');
+  return{
+    data:g+'/'+m+'/'+a,
+    totale_stanze:arrivi.length+fermate.length,
+    totale_persone:[...arrivi,...fermate].reduce((s,x)=>s+(x.pax||0),0),
+    arrivi, partenze, fermate, _ts:Date.now()
+  };
+}
+
+// ── Derivazione 2: qm_bkfData (sostituisce il Report pasti) ──
+// Convenzione verificata sul report reale: la colazione si conta il MATTINO DOPO la notte,
+// cioè arrivo < giorno <= partenza. Le colazioni contano tutte le strutture; i "no
+// colazione" solo SoulArt e Boutique, le uniche che servono la colazione — entrambe le
+// regole riproducono il report del PMS su 8 giorni su 8.
+const PREN_STRUTT_PASTI=['SA','BH'];
+const PREN_GG=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+function _prenBkfData(pren){
+  const per=_prenIntervallo(pren); if(!per)return null;
+  const giorni=[];
+  for(let i=0;;i++){
+    const d=new Date(per.dal+'T12:00:00'); d.setDate(d.getDate()+i);
+    const iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(iso>per.al)break;
+    const dentro=pren.filter(p=>p.arrivo<iso&&iso<=p.partenza);
+    const bb=dentro.filter(p=>p.tratt==='BB');
+    const ro=dentro.filter(p=>p.tratt==='RO'&&PREN_STRUTT_PASTI.includes(p.struttura));
+    const colTot=bb.reduce((s,p)=>s+p.pax,0);
+    if(!dentro.length&&!giorni.length)continue;      // salta i giorni vuoti iniziali
+    giorni.push({
+      label:PREN_GG[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'),
+      data:String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(),
+      noCol:ro.reduce((s,p)=>s+p.pax,0),
+      colTot, adulti:colTot, bambini:0     // vedi _prenPax: lo split non è affidabile, il totale sì
+    });
+  }
+  return{data:giorni, activeDay:0, ts:Date.now()};
+}
+
+// ── Derivazione 3: schede pre-stay (sostituisce Arrivi Pre-stay) ──
+// Stessa forma attesa da _psImportaArrivi: {camera, nome, hotel}. La camera serve solo a
+// dedurre la struttura e viene poi scartata (le schede non hanno campo camera).
+// `origine` è la novità: il canale arriva dal PMS invece di essere indovinato dall'email,
+// e Italcamel si riconosce da sé senza la spunta manuale.
+function _prenPrestay(pren,iso){
+  return pren.filter(p=>p.arrivo===iso).map(p=>({
+    camera:p.camera,
+    nome:p.ospite,
+    hotel:_prenStruttura(p.alloggio||p.camera).toLowerCase(),
+    origine:p.origine
+  }));
+}
+
+// ── Upload e applicazione ──
+// Scrive le stesse chiavi che scrivevano i tre upload separati, nella stessa forma:
+// nulla a valle (Culligan, housekeeper.html, breakfast.html) si accorge del cambio.
+function _prenOggiIso(){
+  const d=customDate||new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+async function prenHandlePdf(file){
+  const uc=(stato,sub)=>{try{ucSetState('pren',stato,sub,true);}catch(e){}};
+  const box=document.getElementById('prenStatus');
+  const msg=t=>{if(box)box.textContent=t;};
+  try{
+    msg('Lettura del PDF…'); uc('loading','Lettura PDF...');
+    const ab=await file.arrayBuffer();
+    const pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(ab)}).promise;
+    const items=[];
+    for(let p=1;p<=pdfDoc.numPages;p++){
+      const tc=await (await pdfDoc.getPage(p)).getTextContent();
+      // Le pagine successive ripartono dall'alto: si sfalsa la y per non mescolare le righe.
+      tc.items.forEach(it=>{const s=(it.str||'').trim();if(s)items.push({s,x:it.transform[4],y:it.transform[5]-(p-1)*10000});});
+    }
+    const pren=_prenParse(items);
+    if(!pren.length){
+      msg('Nessuna prenotazione riconosciuta. Controlla di aver esportato con filtro "Presenti" e tutte le strutture.');
+      uc('error','Nessuna prenotazione'); return;
+    }
+    const per=_prenIntervallo(pren);
+    const iso=_prenOggiIso();
+
+    // 1. Arrivi del giorno corrente (ex Riepilogo Reception)
+    const ad=_prenArriviData(pren,iso);
+    arriviData=ad;
+    try{localStorage.setItem('qm_arriviData',JSON.stringify(ad));}catch(e){}
+    kvSet('qm_arriviData',JSON.stringify(ad)).catch(()=>{});
+    try{arriviUpdateKpi();}catch(e){}
+
+    // 2. Colazioni per tutto l'intervallo (ex Report pasti)
+    const bd=_prenBkfData(pren);
+    if(bd&&bd.data.length){
+      bkfData=bd.data; bkfActiveDay=0;
+      try{localStorage.setItem('qm_bkfData',JSON.stringify(bd));}catch(e){}
+      kvSet('qm_bkfData',JSON.stringify(bd)).catch(()=>{});
+      try{updateKpiFromBkf();}catch(e){}
+    }
+
+    // 3. Schede pre-stay: si importano TUTTI i giorni dell'intervallo, non solo oggi.
+    //    _psImportaArrivi conserva email/telefono già inseriti (confronto per nome), quindi
+    //    ricaricare il file dopo nuove prenotazioni non fa perdere il lavoro fatto.
+    let giorniPs=0, schedePs=0;
+    const viste=new Set(pren.map(p=>p.arrivo));
+    viste.forEach(g=>{
+      if(g<iso)return;                                  // il passato non serve ai pre-stay
+      const lista=_prenPrestay(pren,g);
+      if(!lista.length)return;
+      try{_psImportaArrivi(g,lista); giorniPs++; schedePs+=lista.length;}catch(e){}
+    });
+
+    const dmy=s=>{const[a,m,g]=s.split('-');return g+'/'+m;};
+    const riass=pren.length+' prenotazioni · '+dmy(per.dal)+'–'+dmy(per.al);
+    msg('Caricato: '+ad.arrivi.length+' arrivi oggi, '+(bd?bd.data.length:0)+' giorni di colazioni, '+schedePs+' schede pre-stay su '+giorniPs+' giorni.');
+    uc('loaded',riass);
+    setUploadTs('prenTs');
+    try{refreshOverviewForDate(customDate||new Date());}catch(e){}
+    try{prestayRender();}catch(e){}
+  }catch(err){
+    msg('Errore nella lettura del PDF: '+(err&&err.message?err.message:err));
+    uc('error','Errore caricamento');
+  }
+}
+
+// Nasconde gli slot sostituiti quando il file unico è attivo, e viceversa. Gli slot e i
+// loro handler restano nel codice: PREN_UNICO=false li fa riapparire identici a prima.
+function prenApplicaVisibilitaSlot(){
+  const mostra=(id,vis)=>{const e=document.getElementById(id);if(e)e.style.display=vis?'':'none';};
+  ['uc-arrivi','uc-prestay','uc-bkf'].forEach(id=>mostra(id,!PREN_UNICO));
+  mostra('uc-pren',PREN_UNICO);
+}
+
+// Collegamento dello slot Upload Center (click, drag&drop, input file) — stesso schema
+// degli altri slot. La visibilità viene applicata subito: con PREN_UNICO=false questo
+// slot resta nascosto e riappaiono i tre che sostituisce.
+(function(){
+  const box=document.getElementById('prenUploadBox');
+  const inp=document.getElementById('prenFileInput');
+  try{prenApplicaVisibilitaSlot();}catch(e){}
+  if(!inp)return;
+  if(box){
+    box.addEventListener('click',()=>inp.click());
+    box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});
+    box.addEventListener('dragleave',()=>box.classList.remove('dragover'));
+    box.addEventListener('drop',e=>{
+      e.preventDefault();box.classList.remove('dragover');
+      const f=e.dataTransfer.files[0];
+      if(f&&/pdf$/i.test(f.type||f.name))prenHandlePdf(f);
+      else ucSetState('pren','error','Carica un PDF.');
+    });
+  }
+  inp.addEventListener('change',e=>{
+    const f=e.target.files[0];
+    if(f)prenHandlePdf(f);
+    e.target.value='';
+  });
+})();
