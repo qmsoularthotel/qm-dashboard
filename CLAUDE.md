@@ -1385,6 +1385,13 @@ La soluzione è stata **togliere del tutto l'aggancio**: senza camera non c'è n
 
 Il pre-stay è stato **staccato dal Piano Settimanale** e collegato al **PDF "Arrivi" esportato dal PMS**. Il Piano dava solo un conteggio di camere; il PDF elenca le prenotazioni reali **con il nome dell'ospite**, quindi è insieme più completo e più attendibile. `pianoData` non è più letto da questa sezione.
 
+**Perché non il Piano, e perché un giorno alla volta** (riconfermato il 2026-08-20): il
+Piano contiene **solo numeri di camera** (`Art 5`, `Art 10`) e nessun nome — verificato sui
+dati reali in KV. Servirebbe quindi digitare a mano anche i nomi, non solo mail e telefono.
+E non ha senso nemmeno caricare in anticipo più PDF Arrivi di giorni diversi: **le
+prenotazioni entrano di continuo**, quindi una lista caricata in anticipo è già incompleta
+il giorno dopo. Il PDF del giorno, caricato quando serve, è la fonte più aggiornata.
+
 **Il PDF non contiene email né telefono** (verificato sull'export reale): quelli restano manuali. L'import serve a fissare *quanti* arrivi ci sono, *chi* sono e a *quale struttura* appartengono — la parte che non si può controllare a memoria.
 
 **La camera viene usata solo in fase di lettura**, per dedurre la struttura (`_psStrutturaDaCamera`: 204 → Boutique, Art 5 → SoulArt, LIB → San Liborio, R1-3 → Mastrangelo, CAPRI/NAPOLI/… → Principe, altre numeriche → SoulArt — stesse regole di `fixArriviStruttura`), e poi **scartata**: le schede non hanno campo camera. Verificato in test. Non salvarla.
