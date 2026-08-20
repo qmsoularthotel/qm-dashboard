@@ -1,6 +1,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Anteprima conferme Compass</title>
-<link rel="stylesheet" href="style.css?v=260">
+<link rel="stylesheet" href="style.css?v=261">
 <style>
   body{padding:26px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;}
   h1{font-size:17px;font-weight:600;margin:0 0 4px;}
@@ -11,28 +11,29 @@
   #esito{margin-top:16px;font-size:13px;color:var(--text-muted);min-height:20px;}
 
   /* Le tre inclinazioni da confrontare: sovrascrivono solo la filigrana */
-  .cq-dialog.v-b .cq-box::before{left:-78px;top:-78px;width:245px;height:245px;opacity:.10;transform:rotate(35deg);}
-  .cq-dialog.v-c .cq-box::before{left:-34px;top:-34px;width:140px;height:140px;opacity:.18;transform:rotate(15deg);}
+  /* varianti di dimensione, stessa inclinazione di 22 gradi */
+  .cq-dialog.v-b .cq-box::before{left:-150px;top:-150px;width:420px;height:420px;opacity:.11;}
+  .cq-dialog.v-c .cq-box::before{left:-185px;top:-185px;width:520px;height:520px;opacity:.09;}
 </style>
 
 <h1>Finestra di conferma — anteprima</h1>
 <p class="n">Usa il foglio di stile vero di Compass: quello che vedi è l'implementazione
 reale. Prova anche Invio, Esc e il clic fuori dal riquadro.</p>
 
-<div class="sez">A — inclinata 22°, opacità 13% (impostazione attuale)</div>
+<div class="sez">A — 330px, opacità 13% (impostazione attuale)</div>
 <div class="prova">
   <button onclick="p('a','elimina')">Eliminare un arrivo</button>
   <button onclick="p('a','invia')">Inviare i messaggi</button>
   <button onclick="p('a','avviso')">Avviso a un pulsante</button>
 </div>
 
-<div class="sez">B — più grande, 35°, più tenue</div>
+<div class="sez">B — 420px, ancora più grande</div>
 <div class="prova">
   <button onclick="p('b','elimina')">Eliminare un arrivo</button>
   <button onclick="p('b','invia')">Inviare i messaggi</button>
 </div>
 
-<div class="sez">C — più contenuta, 15°, più marcata</div>
+<div class="sez">C — 520px, occupa quasi tutta la finestra</div>
 <div class="prova">
   <button onclick="p('c','elimina')">Eliminare un arrivo</button>
   <button onclick="p('c','invia')">Inviare i messaggi</button>
