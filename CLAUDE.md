@@ -540,6 +540,31 @@ Il turno si carica **manualmente ogni settimana** con uno screenshot o PDF del p
 
 **Formati accettati**: immagini (PNG, JPG), PDF, Excel/TSV.
 
+### L'anno NON lo indovina il modello (`_annoPlausibile`)
+
+Il planning fotografato riporta "lunedì 30 marzo" **senza anno**. Il prompt dichiara quindi
+la data odierna (`OGGI È ${_oggiIso}`) e istruisce a usare l'anno corrente; anche gli
+esempi dentro il prompt si generano da `_annoOggi`, non sono scritti a mano.
+
+In più, ogni data restituita passa da `_annoPlausibile()`, che corregge l'anno quando è
+palesemente sbagliato — è già successo: un turno di agosto 2026 caricato e datato 2025,
+con l'intestazione dell'Overview che mostrava l'anno sbagliato tutti i giorni.
+
+La regola è **deliberatamente prudente**, e la prima versione ("scegli l'anno più vicino a
+oggi") era sbagliata — spostava al 2027 un planning di gennaio 2026, che è legittimo:
+
+> Si corregge **solo** se la data dista più di **180 giorni** da oggi **e** se cambiando
+> anno (±3) torna entro **90 giorni**. Altrimenti si lascia com'è.
+
+La scelta è **per singolo giorno**, non per l'intera settimana, così le settimane a cavallo
+di capodanno restano corrette (giorni della stessa settimana possono appartenere ad anni
+diversi).
+
+**Attenzione**: agisce al caricamento. Un turno **già in memoria** con l'anno sbagliato non
+si corregge da solo — va ricaricato il planning, oppure corretto direttamente il valore
+`qm_weekData` su KV (fatto il 2026-08-20; ricordarsi che il browser adotta la versione dal
+cloud solo se `_ts` è **maggiore** di `qm_ts_turnoTs` in localStorage).
+
 ### Niente più auto-sync da Google Sheets
 
 Il vecchio sistema di aggiornamento automatico dal foglio Google è stato rimosso. Rimane solo il **KV sync tra dispositivi**: quando si carica il turno su un PC, appare su tutti gli altri PC dell'hotel entro 30 secondi.
@@ -1166,6 +1191,41 @@ Cliccando il chip occupazione si apre `#occ-panel`. Barre orizzontali per strutt
 
 ---
 
+## Splash — solo alla prima apertura, non a ogni aggiornamento
+
+### Compass (`index.html`)
+
+Lo splash video parte **una volta per scheda**, non a ogni ricaricamento. La decisione
+passa da `sessionStorage.qm_splash`, non da `nav.type==='reload'`:
+
+```js
+var gia=false;
+try{ gia = sessionStorage.getItem('qm_splash')==='1'; }catch(e){}
+if(gia){ /* rimuovi lo splash */ return; }
+try{ sessionStorage.setItem('qm_splash','1'); }catch(e){}
+```
+
+**Perché non basta `nav.type`**: quando la versione nell'URL non combacia, lo script di
+controllo versione in cima al file fa `location.replace(...)`, che è una navigazione di
+tipo `navigate`, **non** `reload`. Siccome la versione cambia a ogni pubblicazione, in
+pratica ogni aggiornamento dell'utente passava di lì e il video ripartiva.
+`sessionStorage` sopravvive sia al ricaricamento sia alla redirezione e si azzera quando
+la scheda viene chiusa: è esattamente "solo in apertura".
+
+### Le 5 app standalone
+
+Splash proprio, in CSS (nessun video): sfondo navy, bussola con ago che oscilla ed eco
+radar, "Compass QM" e sotto il nome dell'app. Resta 3 secondi, si salta al tocco, e non
+compare sui ricaricamenti.
+
+**Eccezione al ricaricamento**: `housekeeper.html` e `inventory.html` fanno
+`location.reload()` quando il nuovo service worker si attiva. Quel reload sarebbe
+indistinguibile da un F5 manuale, quindi prima di ricaricare marcano
+`sessionStorage.qm_sw_reload` e lo splash lo tratta come una prima apertura — altrimenti
+verrebbe saltato o troncato a metà.
+
+---
+
 ## Service Worker (`sw.js`)
 
 Versione corrente: **`qm-v26`**. Pattern:
@@ -1188,9 +1248,12 @@ a intermittenza da versioni diverse (sintomo osservato: lo splash a volte vecchi
 nuovo, senza una regola apparente). Tre dei quattro avevano anche perso il
 `cache:'no-store'` sull'HTML, che peggiorava la cosa ma **non ne era la causa**.
 
-I tre file per-app restano sul disco ma non sono più referenziati da nessuna pagina: non
-vanno cancellati (una pagina vecchia ancora in cache potrebbe richiederli) e non vanno
-riattivati. Se serve cambiare la strategia di cache, si cambia solo qui.
+I tre file per-app (`sw-housekeeper.js`, `sw-inventory.js`, `sw-dvr.js`) sono stati
+**eliminati** il 2026-08-20, a migrazione conclusa: nessuna pagina li referenziava più. Se
+un dispositivo molto vecchio provasse ancora a registrarli, `register()` fallisce e il
+`.catch()` già presente lo assorbe — l'app resta usabile, semplicemente senza service
+worker finché non ricarica. **Non reintrodurli.** Se serve cambiare la strategia di cache,
+si cambia solo qui.
 
 `sw-controllo-mattino.js` è legacy e si auto-disinstalla. Non modificarlo.
 
@@ -1774,14 +1837,70 @@ Si apre **solo al cambio effettivo di valore** (`prima!=='non_consumata'`): rito
 
 `renderOvRoomReadiness` mostra le camere con un **check-in oggi**, in due categorie:
 
-| Categoria | Da dove | Stato iniziale |
-|---|---|---|
-| **Cambio** (partenza + arrivo) | `sa.cambi` | `Da verificare` — va rifatta, lo decide chi passa |
-| **Arrivo puro** (nessuna partenza prima) | `sa.arrivi` meno i cambi | **già `✓ Pronta`** — la camera non era occupata la notte prima, non c'è nulla da rifare |
+| Categoria | Da dove | Sottotitolo card | Stato predefinito |
+|---|---|---|---|
+| **Cambio** (partenza + arrivo) | `sa.cambi` | `partenza/arrivo` | `Da verificare` (grigio) — va rifatta, lo decide chi passa |
+| **Arrivo puro** (nessuna partenza prima) | `sa.arrivi` meno i cambi | `solo arrivo (pulita)` | **`Pronta`** (verde) — non era occupata la notte prima, non c'è nulla da rifare |
 
 Gli arrivi puri prima **non comparivano affatto**: la reception non vedeva un pezzo degli arrivi della giornata. Le partenze pure restano fuori di proposito (senza un check-in successivo non devono essere pronte entro un orario) e così le fermate (l'ospite è già dentro).
 
-**Un sopralluogo esplicito vince sempre sul valore predefinito**: se `state[room].pronta` è valorizzato si usa quello anche per un arrivo puro — chi è passato può aver trovato la camera non a posto. Il default scatta solo quando il campo è `null`. La sottoscritta della card distingue i due casi (`arrivo · nessuna partenza` contro `check-in oggi`).
+#### `prontaVerificata` — NON usare `pronta!==null` per capire se qualcuno ha guardato
+
+Questo è il punto su cui si sbaglia, ed è già costato due correzioni sbagliate di fila
+(2026-08-20).
+
+`_rs(room)` in `controllo-mattino.html` **crea la voce della camera se manca**, e viene
+chiamata anche per motivi che non c'entrano nulla con la preparazione — per esempio
+`_redeliverRooms()` la invoca su ogni camera solo per contare le bottiglie da
+riconsegnare. Basta quindi **aprire l'app Culligan** al mattino perché ogni camera in
+piano abbia un oggetto con `pronta:null`, senza che nessuno abbia guardato niente.
+
+Ne segue che **né** `state[room]` esistente **né** `pronta===null` dicono se qualcuno ha
+davvero deciso. Serve il flag dedicato:
+
+```js
+const verificata = !!(state && state[r] && state[r].prontaVerificata);
+const p = verificata ? state[r].pronta : undefined;
+const stato = p===true||p===false ? p : (!verificata && soloArrivo ? true : null);
+```
+
+`prontaVerificata:true` lo scrivono **solo** le scelte umane vere:
+`chooseReady`, `cancelReadySheet`, `scegliProntaPop` in `controllo-mattino.html`, e
+`ovMarkRoomPronta` in `app.js`. Senza il flag vale sempre il valore predefinito della
+tabella sopra, qualunque cosa contenga l'oggetto.
+
+Il flag serve anche a rendere distinguibile un **reset esplicito**: dopo il terzo clic
+`pronta` torna `null` ma `prontaVerificata` resta `true`, quindi la card mostra
+`Da verificare` invece di ricadere sul verde automatico.
+
+#### Ciclo a tre stati con un clic solo
+
+Ogni card — di qualunque categoria, anche già pronta — al clic avanza:
+`Da verificare → Pronta → Non pronta → Da verificare`. Il valore da scrivere lo calcola la
+card (`_next`) in base a quello che **sta mostrando**, e il `title` annuncia cosa farà il
+prossimo clic. `ovMarkRoomPronta(room, valore)` scrive il valore così com'è
+(`undefined` → `true`, per compatibilità con la vecchia chiamata senza argomento).
+
+#### `statoNoto` — perché il render non rilegge dal cloud dopo un clic
+
+`renderOvRoomReadiness(giorno, statoNoto)`: chi ha appena scritto passa il proprio stato e
+il render **salta la rilettura**. Senza, si rileggeva da KV mentre `kvSet` era ancora in
+volo (non è atteso), tornava il valore precedente, la card non cambiava e sembrava
+servisse un secondo clic — che poi invertiva di nuovo, da cui un comportamento
+apparentemente casuale. Il polling e le altre chiamate continuano a leggere da KV.
+
+#### Impaginazione delle card
+
+Griglia `.ov-room-grid` (`auto-fill`, celle da 132px), **non** flex: con `flex:1`
+l'ultima card rimasta sola su una riga si allargava a tutta larghezza e le altre
+cambiavano misura a ogni ridimensionamento. Il sottotitolo ha `min-height` per due righe
+con testo centrato: senza, `solo arrivo (pulita)` andando a capo spingeva il cerchio più
+in basso e disallineava le icone della fila.
+
+L'icona è **un solo cerchio**, che è lo stato (prima ce n'era anche uno navy fisso con
+l'icona della camera, identico su tutte le card: non distingueva niente). Dentro, un letto
+col lenzuolo dritto (verde, pronta) o mosso (rosso, non pronta); punto interrogativo
+grigio per `Da verificare`.
 
 ### QC Settimanale
 
@@ -1991,6 +2110,56 @@ Asciugamano viso, Asciugamano bidet, Scendibagno`. Strutture: SoulArt e Boutique
 
 ---
 
+## Adattamento a smartphone — regola generale
+
+**Gli stili in linea non si adattano.** Gran parte delle viste è costruita in JS con
+`style="..."`: nessuna `@media` può raggiungerli. Ogni volta che una misura deve cambiare
+su smartphone va **spostata in una classe CSS**, lasciando in linea solo ciò che è
+davvero dinamico (colori calcolati, stati). Le classi nate così:
+
+| Classe | Dove | Perché esiste |
+|---|---|---|
+| `.ps-grid`, `.ps-bar-*` | Messaggi Pre-stay | Schede a 3/2/1 colonne; barra di stato che va a capo |
+| `.ov-pad` | Blocchi del Piano del giorno | 20px per lato mangiavano un sesto della larghezza su 375px |
+| `.ov-bkf-mid`, `.ov-bkf-right` | Pannello Breakfast | Impilandosi, i bordi **verticali** fra le tre celle restavano ai lati come linee nel nulla: diventano sopra/sotto |
+| `.ov-week-wrap` | Striscia 7 giorni | Margine ridotto per lasciare larghezza alle schede |
+| `.piano-cols`, `.piano-col`, `.piano-cols-div` | Housekeeping in Overview | Le due strutture **si impilano** su smartphone (vedi sotto) |
+| `.room-chip-grid` | Camere (Overview + Bilanciamento) | Griglia a colonne uguali invece del capo libero |
+| `.ov-room-grid` | Card stato preparazione | Celle fisse: l'ultima card sola non si allarga |
+| `.non-servizio-strip`, `.ns-*` | Turno di oggi | Pastiglie tutte uguali, motivo mai a capo |
+| `.s-ini` | Nomi del turno | Nasconde l'iniziale del nome (solo cognomi su smartphone) |
+
+### Il collo di bottiglia è la larghezza disponibile, non la dimensione del testo
+
+Due errori commessi e corretti, entrambi risolti guardando **cosa occupa la larghezza**
+invece di rimpicciolire:
+
+- **Striscia dei 7 giorni**: si stringevano le schede a 48px per farceli stare tutti, e i
+  numeri scendevano a 14px. Ma la larghezza minima la imponevano le **due cifre
+  affiancate**. Impilandole, ogni riga usa tutta la scheda e il numero **sale** a 16px pur
+  con schede più strette.
+- **Camere Housekeeping**: le pastiglie non erano il problema — lo era il fatto che le due
+  strutture stessero **affiancate**, con ~170px a testa. Impilate, si passa da 1-2 colonne
+  a 3-4 e la pagina si accorcia molto.
+
+### Nomi: separare, non troncare
+
+L'iniziale del nome (`Maddaloni M.`) è racchiusa in `<span class="s-ini">` da `_nomeIniz()`
+e **nascosta dal CSS** su smartphone, invece di essere tolta in JS. Così non serve
+ridisegnare al ridimensionamento della finestra.
+
+### Attenzione a `window.innerWidth` letto al momento del disegno
+
+`pianoRenderWeek` sceglie la disposizione leggendo `window.innerWidth`. Il valore resta
+quello del **momento del disegno**: ridimensionando la finestra il layout restava sbagliato
+fino al ridisegno successivo (che il polling fa solo ogni 30s), col risultato di vedere il
+layout da telefono su desktop e di vederlo "guarire da solo" dopo mezzo minuto. C'è ora un
+listener su `resize` che ridisegna **solo quando la soglia dei 768px viene attraversata**.
+Se si aggiunge altrove una scelta di layout basata su `innerWidth`, serve lo stesso
+accorgimento.
+
+---
+
 ## Note & Problemi Noti
 
 | Problema | Causa | Fix |
@@ -2023,3 +2192,8 @@ Asciugamano viso, Asciugamano bidet, Scendibagno`. Strutture: SoulArt e Boutique
 | Inventario, filtro "7 giorni" mostrava metà del consumo reale | `effectiveDays` aveva un minimo di 14gg applicato anche ai periodi fissi scelti dall'utente, non solo a "Tutto" | `effectiveDays=_invPeriod>0?days:Math.max(14,days)` — il minimo 14 vale solo per "Tutto" |
 | Splash mini app a volte vecchio a volte nuovo, senza regola | 4 service worker sullo stesso scope radice si sostituivano a vicenda e si cancellavano le cache l'uno dell'altro | Un solo `sw.js` registrato da tutte le app — vedi [Service Worker](#service-worker-swjs) |
 | Splash saltato o tagliato a metà | `location.reload()` del service worker aggiornato è indistinguibile da un Cmd+R via `nav.type` | Flag `qm_sw_reload` in `sessionStorage` prima del reload automatico |
+| Splash ripartiva a ogni aggiornamento | `nav.type==='reload'` non intercetta il `location.replace` del controllo versione, che è `navigate` | Flag `qm_splash` in `sessionStorage` |
+| Stato camera: serviva un secondo clic | Il render rileggeva da KV mentre `kvSet` era ancora in volo | Parametro `statoNoto`: chi scrive passa il proprio stato |
+| Arrivi puri sempre grigi anche dopo Cmd+R | `_rs()` crea la voce come effetto collaterale del conteggio bottiglie: "esiste una voce" non significa "qualcuno ha guardato" | Flag `prontaVerificata`, scritto solo dalle scelte umane |
+| Icone card camere disallineate | `solo arrivo (pulita)` va su due righe, `partenza/arrivo` su una | `min-height` per due righe sul sottotitolo, testo centrato |
+| Turno datato con l'anno sbagliato | Il prompt non dichiarava la data odierna e il planning non riporta l'anno | Data odierna nel prompt + `_annoPlausibile()` sulle date restituite |
