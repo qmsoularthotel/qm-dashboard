@@ -3321,10 +3321,17 @@ async function renderOvRoomReadiness(giorno,statoNoto){
       :stato===false?{border:'var(--red)',icon:iconBedNo,iconBg:'var(--red)',fg:'var(--red)',lbl:'Non pronta'}
       :{border:'var(--border)',icon:iconQ,iconBg:'var(--text-dim)',fg:'var(--text-dim)',lbl:'Da verificare'};
     const sotto=soloArrivo?'arrivo · nessuna partenza':'check-in oggi';
+    // Ciclo a tre stati con un clic solo: da verificare -> pronta -> non pronta -> da
+    // verificare. Il terzo passaggio riporta la camera allo stato di partenza, per
+    // correggere una segnatura sbagliata. Sulle camere con solo arrivo "da verificare"
+    // coincide col valore automatico (pronta), quindi lì si vede come una alternanza.
+    const _next=stato===true?{v:'false',t:'NON pronta'}
+      :stato===false?{v:'null',t:'da verificare'}
+      :{v:'true',t:'pronta'};
     // Cliccabile per segnarla pronta al volo da Compass — la fonte primaria resta
     // sempre l'app Culligan sul campo, questo è solo un override rapido per il QM
     // quando serve correggere senza aprire il telefono (scrive sulla stessa chiave KV).
-    return`<div onclick="ovMarkRoomPronta('${r}',${stato===true?'false':'true'})" title="${stato===true?'Clicca per segnarla NON pronta':'Clicca per segnarla pronta'}" style="background:var(--surface);border:1px solid var(--border-light);border-top:3px solid ${cfg.border};border-radius:10px;padding:12px 8px 10px;text-align:center;cursor:pointer;transition:transform .12s;">
+    return`<div onclick="ovMarkRoomPronta('${r}',${_next.v})" title="Clicca per segnarla ${_next.t}" style="background:var(--surface);border:1px solid var(--border-light);border-top:3px solid ${cfg.border};border-radius:10px;padding:12px 8px 10px;text-align:center;cursor:pointer;transition:transform .12s;">
       <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1;">${r}</div>
       <div style="font-size:11px;color:var(--text-dim);margin:2px 0 8px;">${sotto}</div>
       <div style="display:flex;align-items:center;justify-content:center;margin-bottom:6px;">
@@ -3340,9 +3347,11 @@ async function renderOvRoomReadiness(giorno,statoNoto){
 // (qm_cm_YYYY-MM-DD) che legge/scrive l'app Culligan sul campo, quella resta sempre la
 // fonte primaria di verità: questo è solo un override rapido per il QM, non sostituisce
 // il giro reale. Non tocca visited/checks/consegnata — solo il campo pronta e il ts.
-// valore: true = pronta, false = non pronta. Lo passa la card in base a quello che sta
-// mostrando, così un clic inverte sempre lo stato visibile — serve a correggere una
-// camera segnata pronta per sbaglio, prima si poteva solo confermare.
+// valore: true = pronta, false = non pronta, null = da verificare (torna allo stato di
+// partenza). Lo passa la card in base a quello che sta mostrando, così un clic fa sempre
+// avanzare il ciclo. Chiamata senza argomento: pronta, come faceva prima.
+// null è lo stesso valore che controllo-mattino.html usa per "non ancora verificata",
+// quindi l'app sul campo lo rilegge correttamente.
 async function ovMarkRoomPronta(room,valore){
   const d=new Date();
   const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -3361,7 +3370,7 @@ async function ovMarkRoomPronta(room,valore){
     Object.keys(CM_LABELS).forEach(id=>checks[id]=true);
     state[room]={visited:false,libera:false,dnd:false,bottiglia:'consumata',checks,note:'',consegnata:false,pronta:null};
   }
-  state[room].pronta=(valore===false?false:true);
+  state[room].pronta=(valore===undefined?true:valore);
   state[room].ts=Date.now();
   try{localStorage.setItem(key,JSON.stringify(state));}catch(e){}
   kvSet(key,JSON.stringify(state)).catch(()=>{});
