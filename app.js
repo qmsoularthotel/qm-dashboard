@@ -6921,6 +6921,70 @@ rcUploadZone.addEventListener('dragleave',()=>rcUploadZone.classList.remove('dra
 rcUploadZone.addEventListener('drop',e=>{e.preventDefault();rcUploadZone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')handleRCFile(f);else rcShowError('Carica un file PDF.');});
 rcFileInput.addEventListener('change',e=>{if(e.target.files[0])handleRCFile(e.target.files[0]);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){rcCloseModal();closePrintDialog();}});
+// Deriva le registration card dagli arrivi correnti (arriviData) — arrivi con check-in
+// oggi, esclusi Principe e Mastrangelo che non ne hanno bisogno.
+//
+// Estratta da handleArriviFile perché serve IDENTICA al caricamento del file unico
+// Prenotazioni (prenHandlePdf): quello scriveva qm_arriviData ma non ridisegnava le card,
+// che restavano quindi ferme al giorno precedente pur avendo caricato il PDF del giorno.
+//
+// sameDayAsPrev: confronta col set precedente per evidenziare nuove prenotazioni e camere
+// spostate. Ha senso solo se il caricamento precedente era dello stesso giorno, altrimenti
+// si confronterebbe con gli ospiti di ieri.
+//
+// Ritorna 'ok' · 'nessuna' (arrivi presenti, ma tutti Principe/Mastrangelo) · 'vuoto'
+// (nessun arrivo valido: le card NON sono state aggiornate).
+function rcAggiornaDaArrivi(sameDayAsPrev){
+    // Claude ora classifica già in "arrivi" tutti gli ospiti con check-in oggi,
+    // anche se nel PDF erano già in sezione "In Casa"
+    if(!arriviData||!arriviData.arrivi||!arriviData.arrivi.length){return'vuoto';}
+    const year=arriviData.data?parseInt(arriviData.data.split('/').pop())||new Date().getFullYear():new Date().getFullYear();
+    const toGuest=a=>({
+      camera:a.camera,
+      nome:_psNomeUmano(a.ospite||''),
+      pax:parseInt(a.pax)||1,
+      trattamento:a.trattamento||'BB',
+      checkin:a.arrivo?rcFmtDate(a.arrivo,year):'',
+      checkout:a.partenza?rcFmtDate(a.partenza,year):'',
+      origine:a.origine||'',
+      struttura:a.struttura||'',
+      tipoCamera:a.tipo_camera||''
+    });
+    // Principe/Umberto e Mastrangelo non necessitano di registration card
+    const _rcExclStruct=new Set(['PR','MS']);
+    let guests=(arriviData.arrivi||[]).filter(a=>!_rcExclStruct.has((a.struttura||'').toUpperCase())).map(toGuest).filter(g=>g.nome&&g.nome.trim());
+    // Segna nuove prenotazioni e camere spostate rispetto al set precedente di RC,
+    // per evidenziarle e permettere di stampare solo quelle — solo se il caricamento
+    // precedente era per lo stesso giorno, altrimenti confronteremmo con ieri
+    if(sameDayAsPrev){
+      // Chiave per nome tollerante a ordine parole/accenti/maiuscole: l'AI può leggere
+      // lo stesso nome in modo leggermente diverso tra un upload e l'altro (es. "Priva Yeela"
+      // vs "Yeela Priva") — confrontando l'insieme ordinato delle parole invece della stringa
+      // esatta si evita di segnare come "nuova prenotazione" chi ha solo cambiato camera.
+      const _rcNormName=s=>String(s||'').trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .split(/\s+/).filter(w=>w.length>1).sort().join(' ');
+      const _prevGuests=Array.isArray(guestsData)?guestsData:[];
+      const _prevByName={};
+      _prevGuests.forEach(g=>{const k=_rcNormName(g.nome);if(k)_prevByName[k]=g;});
+      guests=guests.map(g=>{
+        const prev=_prevByName[_rcNormName(g.nome)];
+        if(!prev)return{...g,isNew:true};
+        if(String(prev.camera||'').trim()!==String(g.camera||'').trim())return{...g,roomChanged:true,prevCamera:prev.camera};
+        return g;
+      });
+    }
+    if(!guests.length){
+      // Se gli arrivi grezzi c'erano ma erano tutti Principe/Mastrangelo, non è un errore di parsing
+      const _hadRawArrivi=arriviData.arrivi.some(a=>(a.ospite||'').trim());
+      return _hadRawArrivi?'nessuna':'vuoto';
+    }
+    document.getElementById('rcUploadZone').style.display='none';
+    document.getElementById('rcProcessing').style.display='none';
+    rcRenderCards(guests);
+    return'ok';
+}
+
 // §§ REGISTRATION CARDS — RC (handleRCFile, rcParseGuests, rcRenderCards)
 async function handleRCFile(file){rcShowProc('Lettura del PDF...');rcHideError();try{const ab=await file.arrayBuffer();const pdfData=new Uint8Array(ab);rcShowProc('Estrazione testo...');const pdfDoc=await pdfjsLib.getDocument({data:pdfData}).promise;let fullText='';for(let i=1;i<=pdfDoc.numPages;i++){const page=await pdfDoc.getPage(i);const tc=await page.getTextContent();fullText+=tc.items.map(x=>x.str).join(' ')+'\n';}const guests=rcParseGuests(fullText);rcHideProc();if(!guests.length){rcShowProc('Analisi AI in corso...');try{await handleArriviFile(file);}finally{rcHideProc();}}else{rcRenderCards(guests);}}catch(err){rcHideProc();rcShowError('Errore: '+err.message);}}
 function rcCleanName(raw){let name=raw.trim().replace(/\s*\([^)]+\)/g,'').trim();const cp=new RegExp('^('+ROOM_CODES.join('|')+')\\s+','i');let prev='';while(prev!==name){prev=name;name=name.replace(cp,'').trim();}return name;}
@@ -6987,11 +7051,16 @@ function rcRenderSourceLine(){
   const el=document.getElementById('rcSourceLine');
   if(!el)return;
   if(!arriviData||!arriviData.arrivi||!arriviData.arrivi.length){el.style.display='none';return;}
+  // Col file unico la fonte è l'export Prenotazioni, non più il Riepilogo Reception:
+  // nome, timestamp e slot da riaprire cambiano di conseguenza (vedi PREN_UNICO).
+  const unico=(typeof PREN_UNICO!=='undefined'&&PREN_UNICO);
+  const doc=unico?'Prenotazioni (PMS)':'Riepilogo Reception';
+  const inputId=unico?'prenFileInput':'arriviFileInput';
   let ts=null;
-  try{ts=parseInt(localStorage.getItem('qm_ts_arriviTs')||'0')||null;}catch(e){}
+  try{ts=parseInt(localStorage.getItem('qm_ts_'+(unico?'prenTs':'arriviTs'))||'0')||null;}catch(e){}
   const tsStr=ts?fmtUploadTs(ts).replace('↑ ',''):'';
   el.style.display='flex';
-  el.innerHTML=`<span>📄 Riepilogo Reception caricato${tsStr?' · '+tsStr:''} · ${arriviData.arrivi.length} arrivi rilevati</span><span onclick="document.getElementById('arriviFileInput')?.click();" style="margin-left:auto;color:var(--accent);cursor:pointer;font-weight:600;">Aggiorna file</span>`;
+  el.innerHTML=`<span>📄 ${doc} caricato${tsStr?' · '+tsStr:''} · ${arriviData.arrivi.length} arrivi rilevati</span><span onclick="document.getElementById('${inputId}')?.click();" style="margin-left:auto;color:var(--accent);cursor:pointer;font-weight:600;">Aggiorna file</span>`;
 }
 function rcPrintHighlighted(){
   const idxs=guestsData.map((g,i)=>g.isNew||g.roomChanged?i:-1).filter(i=>i>=0);
@@ -7496,58 +7565,9 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     arriviUpdateKpi();
     bkfRoomInfoBuild();
     // Aggiorna RC cards: arrivi + fermate arrivate OGGI (stessa data del documento)
-    let _rcCardsOk=true;
-    let _rcNoneNeeded=false;
-    (function(){
-      // Claude ora classifica già in "arrivi" tutti gli ospiti con check-in oggi,
-      // anche se nel PDF erano già in sezione "In Casa"
-      if(!arriviData||!arriviData.arrivi||!arriviData.arrivi.length){_rcCardsOk=false;return;}
-      const year=arriviData.data?parseInt(arriviData.data.split('/').pop())||new Date().getFullYear():new Date().getFullYear();
-      const toGuest=a=>({
-        camera:a.camera,
-        nome:a.ospite||'',
-        pax:parseInt(a.pax)||1,
-        trattamento:a.trattamento||'BB',
-        checkin:a.arrivo?rcFmtDate(a.arrivo,year):'',
-        checkout:a.partenza?rcFmtDate(a.partenza,year):'',
-        origine:a.origine||'',
-        struttura:a.struttura||'',
-        tipoCamera:a.tipo_camera||''
-      });
-      // Principe/Umberto e Mastrangelo non necessitano di registration card
-      const _rcExclStruct=new Set(['PR','MS']);
-      let guests=(arriviData.arrivi||[]).filter(a=>!_rcExclStruct.has((a.struttura||'').toUpperCase())).map(toGuest).filter(g=>g.nome&&g.nome.trim());
-      // Segna nuove prenotazioni e camere spostate rispetto al set precedente di RC,
-      // per evidenziarle e permettere di stampare solo quelle — solo se il caricamento
-      // precedente era per lo stesso giorno, altrimenti confronteremmo con ieri
-      if(_rcSameDayAsPrev){
-        // Chiave per nome tollerante a ordine parole/accenti/maiuscole: l'AI può leggere
-        // lo stesso nome in modo leggermente diverso tra un upload e l'altro (es. "Priva Yeela"
-        // vs "Yeela Priva") — confrontando l'insieme ordinato delle parole invece della stringa
-        // esatta si evita di segnare come "nuova prenotazione" chi ha solo cambiato camera.
-        const _rcNormName=s=>String(s||'').trim().toLowerCase()
-          .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-          .split(/\s+/).filter(w=>w.length>1).sort().join(' ');
-        const _prevGuests=Array.isArray(guestsData)?guestsData:[];
-        const _prevByName={};
-        _prevGuests.forEach(g=>{const k=_rcNormName(g.nome);if(k)_prevByName[k]=g;});
-        guests=guests.map(g=>{
-          const prev=_prevByName[_rcNormName(g.nome)];
-          if(!prev)return{...g,isNew:true};
-          if(String(prev.camera||'').trim()!==String(g.camera||'').trim())return{...g,roomChanged:true,prevCamera:prev.camera};
-          return g;
-        });
-      }
-      if(!guests.length){
-        // Se gli arrivi grezzi c'erano ma erano tutti Principe/Mastrangelo, non è un errore di parsing
-        const _hadRawArrivi=arriviData.arrivi.some(a=>(a.ospite||'').trim());
-        if(_hadRawArrivi){_rcNoneNeeded=true;}else{_rcCardsOk=false;}
-        return;
-      }
-      document.getElementById('rcUploadZone').style.display='none';
-      document.getElementById('rcProcessing').style.display='none';
-      rcRenderCards(guests);
-    })();
+    const _rcEsito=rcAggiornaDaArrivi(_rcSameDayAsPrev);
+    const _rcCardsOk=_rcEsito!=='vuoto';
+    const _rcNoneNeeded=_rcEsito==='nessuna';
     // Se l'analisi non ha prodotto arrivi validi, avvisa chiaramente invece di fallire in silenzio
     // (le registration card resterebbero quelle vecchie senza che nessuno se ne accorga)
     if(_rcNoneNeeded){
@@ -13511,11 +13531,21 @@ async function prenHandlePdf(file){
     const iso=_prenOggiIso();
 
     // 1. Arrivi del giorno corrente (ex Riepilogo Reception)
+    // Lo stesso giorno del caricamento precedente? Serve a rcAggiornaDaArrivi per
+    // evidenziare nuove prenotazioni e camere spostate invece di segnare tutto come nuovo.
     const ad=_prenArriviData(pren,iso);
+    const _rcStessoGiorno=!!(arriviData&&arriviData.data===ad.data);
     arriviData=ad;
     try{localStorage.setItem('qm_arriviData',JSON.stringify(ad));}catch(e){}
     kvSet('qm_arriviData',JSON.stringify(ad)).catch(()=>{});
     try{arriviUpdateKpi();}catch(e){}
+    try{bkfRoomInfoBuild();}catch(e){}
+
+    // 1b. Registration card del giorno. Senza questo passaggio le card restavano quelle
+    //     dell'ultimo Riepilogo Reception caricato a mano: qm_arriviData era aggiornata,
+    //     ma nessuno ridisegnava la vista Registrazione.
+    let _rcEsito='vuoto';
+    try{_rcEsito=rcAggiornaDaArrivi(_rcStessoGiorno);}catch(e){console.error('[Prenotazioni] registration card:',e);}
 
     // 2. Colazioni per tutto l'intervallo (ex Report pasti)
     const bd=_prenBkfData(pren);
@@ -13540,7 +13570,12 @@ async function prenHandlePdf(file){
 
     const dmy=s=>{const[a,m,g]=s.split('-');return g+'/'+m;};
     const riass=pren.length+' prenotazioni · '+dmy(per.dal)+'–'+dmy(per.al);
-    msg('Caricato: '+ad.arrivi.length+' arrivi oggi, '+(bd?bd.data.length:0)+' giorni di colazioni, '+schedePs+' schede pre-stay su '+giorniPs+' giorni.');
+    // L'esito delle registration card va detto: se restano quelle vecchie deve saperlo chi
+    // carica, non scoprirlo stampando la card di un ospite partito ieri.
+    const rcNota=_rcEsito==='ok'?'registration card aggiornate'
+      :_rcEsito==='nessuna'?'nessuna registration card (solo Principe/Mastrangelo)'
+      :'⚠️ registration card NON aggiornate: nessun arrivo valido per oggi';
+    msg('Caricato: '+ad.arrivi.length+' arrivi oggi, '+(bd?bd.data.length:0)+' giorni di colazioni, '+schedePs+' schede pre-stay su '+giorniPs+' giorni. '+rcNota+'.');
     uc('loaded',riass);
     setUploadTs('prenTs');
     try{refreshOverviewForDate(customDate||new Date());}catch(e){}

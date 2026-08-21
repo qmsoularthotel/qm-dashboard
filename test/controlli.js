@@ -100,6 +100,43 @@ ok('il canale vince sull\'email privata', _psBordo({ origine: 'Booking.com', ema
 ok('senza canale: decide l\'email',       _psBordo({ email: 'x@guest.booking.com' }), '#0071C2');
 ok('CRSVertical si chiama Diretta',       _psCanaleNome({ origine: 'CRSVErtical' }), 'Diretta');
 
+sez('Registration card ricavate dagli arrivi');
+// Il PDF unico Prenotazioni scrive qm_arriviData: da li' devono nascere anche le card,
+// altrimenti restano quelle dell'ultimo Riepilogo Reception caricato a mano.
+var RC_PREN = [
+  { ospite: 'BIANCHI ANNA', arrivo: '2026-05-10', partenza: '2026-05-12', alloggio: '204 / PC Standard', camera: '204', pax: 1, tratt: 'BB', struttura: 'BH', origine: 'Booking.com', codice: 'B 1' },
+  // Principe: non serve registration card, va escluso
+  { ospite: 'VERDI LUCA',   arrivo: '2026-05-10', partenza: '2026-05-12', alloggio: 'Capri / UM DOPPIA', camera: 'Capri', pax: 2, tratt: 'RO', struttura: 'PR', origine: 'Booking.com', codice: 'C 1' }
+];
+arriviData = _prenArriviData(RC_PREN, '2026-05-10');
+guestsData = [];
+ok('card generate dagli arrivi del giorno', rcAggiornaDaArrivi(false), 'ok');
+ok('una sola card (Principe escluso)',      guestsData.length, 1);
+ok('nome ammorbidito, non urlato',          guestsData[0].nome, 'Bianchi Anna');
+ok('camera riportata',                      guestsData[0].camera, '204');
+ok('anno preso dalla data del documento',   guestsData[0].checkin, '10/05/2026');
+
+// Ricaricando lo stesso giorno, chi ha cambiato camera va evidenziato invece di
+// risultare una prenotazione nuova.
+var RC_SPOSTATA = [
+  { ospite: 'BIANCHI ANNA', arrivo: '2026-05-10', partenza: '2026-05-12', alloggio: '205 / PC Standard', camera: '205', pax: 1, tratt: 'BB', struttura: 'BH', origine: 'Booking.com', codice: 'B 1' }
+];
+arriviData = _prenArriviData(RC_SPOSTATA, '2026-05-10');
+rcAggiornaDaArrivi(true);
+ok('camera spostata, non nuova prenotazione', guestsData[0].roomChanged, true);
+ok('ricorda la camera precedente',            guestsData[0].prevCamera, '204');
+
+// Arrivi tutti al Principe: non e' un errore di lettura, semplicemente non servono card.
+arriviData = _prenArriviData([RC_PREN[1]], '2026-05-10');
+ok('solo Principe/Mastrangelo: nessuna card', rcAggiornaDaArrivi(false), 'nessuna');
+// Nessun arrivo: le card NON vanno aggiornate, e chi carica deve saperlo.
+arriviData = _prenArriviData(RC_PREN, '2026-05-19');
+ok('nessun arrivo: card lasciate stare',      rcAggiornaDaArrivi(false), 'vuoto');
+// Il difetto originale non era nel calcolo ma nel collegamento: prenHandlePdf scriveva
+// qm_arriviData senza ridisegnare le card. Serve un PDF vero per eseguirla, quindi si
+// controlla che la chiamata ci sia.
+ok('il file unico ridisegna le card', /rcAggiornaDaArrivi/.test(String(prenHandlePdf)), true);
+
 sez('Biancheria: periodo ritirato da Raimondo');
 // Il giro del giorno D ritira dal giro precedente (incluso) al giorno prima di D.
 _bia = { consumi: [

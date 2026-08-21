@@ -2189,8 +2189,39 @@ tre export separati.
 | Riepilogo Reception | `qm_arriviData` | arrivi = `Arrivo`=giorno · partenze = `Partenza`=giorno · fermate = `Arrivo` < giorno < `Partenza` |
 | Report pasti | `qm_bkfData` | colazioni e no-colazione per ogni giorno dell'intervallo |
 | Arrivi Pre-stay | schede `_prestay` | un import per ogni giorno futuro presente nel file |
+| (nessuno: derivato) | `qm_rcGuests` | registration card del giorno, da `qm_arriviData` — vedi sotto |
 
 Da 3 caricamenti al giorno a **1**. Turno e Piano Settimanale restano invariati.
+
+### Le registration card sono una derivazione, non un effetto collaterale
+
+Scrivere `qm_arriviData` **non** aggiorna le registration card: la vista Registrazione
+legge `qm_rcGuests`, che va riscritto a parte. Nella prima versione `prenHandlePdf` non lo
+faceva, quindi caricando il PDF Prenotazioni le card restavano quelle dell'ultimo
+Riepilogo Reception caricato a mano — con l'aggravante che tutto il resto (arrivi,
+colazioni, pre-stay) si aggiornava regolarmente, per cui sembrava un problema della sola
+vista Registrazione e non del caricamento.
+
+La derivazione vive in **`rcAggiornaDaArrivi(sameDayAsPrev)`**, estratta dall'IIFE che
+stava dentro `handleArriviFile`: unica copia, chiamata da entrambi i percorsi di
+caricamento. Esclude Principe e Mastrangelo (non fanno registration card) e restituisce:
+
+| Esito | Significato |
+|---|---|
+| `ok` | card ridisegnate |
+| `nessuna` | c'erano arrivi, ma tutti Principe/Mastrangelo — non è un errore |
+| `vuoto` | nessun arrivo valido: le card **non** sono state toccate |
+
+L'esito finisce nel messaggio dello slot: *"… registration card aggiornate"* oppure
+l'avviso che non lo sono. Card ferme senza dirlo sono peggio di un errore, perché si
+stampa la scheda di un ospite partito ieri.
+
+I nomi passano da `_psNomeUmano`: l'export del PMS è in maiuscolo (`BIANCHI ANNA`) e sulla
+card stampata, a 24pt, si legge come una sgridata. Stessa regola già in uso nel pre-stay.
+
+`rcRenderSourceLine` (la riga "documento caricato" sopra la coda di stampa) segue
+`PREN_UNICO`: con il file unico nomina *Prenotazioni (PMS)*, legge `qm_ts_prenTs` e
+riapre `prenFileInput` — non più il Riepilogo Reception, il cui slot è nascosto.
 
 ### La forma dei dati NON cambia
 
@@ -2539,4 +2570,5 @@ colti, con il dettaglio di cosa non tornava.
 | Arrivi puri sempre grigi anche dopo Cmd+R | `_rs()` crea la voce come effetto collaterale del conteggio bottiglie: "esiste una voce" non significa "qualcuno ha guardato" | Flag `prontaVerificata`, scritto solo dalle scelte umane |
 | Icone card camere disallineate | `solo arrivo (pulita)` va su due righe, `partenza/arrivo` su una | `min-height` per due righe sul sottotitolo, testo centrato |
 | Turno datato con l'anno sbagliato | Il prompt non dichiarava la data odierna e il planning non riporta l'anno | Data odierna nel prompt + `_annoPlausibile()` sulle date restituite |
+| Registration card ferme al giorno prima dopo aver caricato il PDF Prenotazioni | `prenHandlePdf` scriveva `qm_arriviData` ma non `qm_rcGuests`: la derivazione delle card viveva dentro `handleArriviFile`, cioè nel percorso di upload che il file unico ha sostituito | Estratta in `rcAggiornaDaArrivi()`, chiamata da entrambi i percorsi; l'esito viene scritto nel messaggio dello slot |
 | Camere Art marcate "Art Resort" nelle fermate | `fixArriviStruttura` applicata solo a `arrivi`, mai a `fermate`/`partenze` | Struttura dedotta in modo deterministico da `_prenStruttura` su tutte e tre le liste |
