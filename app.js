@@ -13862,6 +13862,9 @@ function prenApplicaVisibilitaSlot(){
   const mostra=(id,vis)=>{const e=document.getElementById(id);if(e)e.style.display=vis?'':'none';};
   ['uc-arrivi','uc-prestay','uc-bkf'].forEach(id=>mostra(id,!PREN_UNICO));
   mostra('uc-pren',PREN_UNICO);
+  // Con il file unico, "Report pasti" è l'unica tessera della sua riga: la riga vuota
+  // resterebbe a occupare lo spazio fra le altre (uc-grid ha gap, non margini sulle card).
+  mostra('uc-row-pasti',!PREN_UNICO);
 }
 
 // Collegamento dello slot Upload Center (click, drag&drop, input file) — stesso schema

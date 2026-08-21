@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='295-20260821';
+  const V='296-20260821';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -191,6 +191,14 @@
               <div class="uc-sub" id="uc-arrivi-sub">Non caricato</div>
               <span class="uc-badge" id="uc-arrivi-badge" style="display:none;">▾</span>
             </div>
+            <div class="uc-slot" id="uc-pren" onclick="ucToggle('pren')" title="Export Prenotazioni del PMS: arrivi, colazioni e pre-stay in un file solo">
+              <input type="file" id="prenFileInput" accept="application/pdf,.pdf" style="display:none">
+              <span class="uc-dot" id="uc-pren-dot"></span>
+              <span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v4M16 4v4"/><path d="M7 14h4M7 17h7"/></svg></span></span>
+              <div class="uc-label">Prenotazioni</div>
+              <div class="uc-sub" id="uc-pren-sub">Non caricato</div>
+              <span class="uc-badge" id="uc-pren-badge" style="display:none;">▾</span>
+            </div>
           </div>
           <div class="uc-panel" id="uc-turno-panel">
             <div class="uc-feeds-line">→ Piano staff</div>
@@ -224,17 +232,20 @@
             <button class="btn-reload" id="btnArriviReload" style="display:none" onclick="resetArrivi()">Rimuovi arrivi</button>
             <div class="upload-ts" id="arriviTs"></div>
           </div>
+          <div class="uc-panel" id="uc-pren-panel">
+            <div class="uc-feeds-line">→ Arrivi · Colazioni · Messaggi Pre-stay</div>
+            <div class="upload-box" id="prenUploadBox">
+              <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+              <div class="ub-title">Prenotazioni</div>
+              <div class="ub-sub">PMS → Prenotazioni → filtro <strong>Presenti</strong> → intervallo di date → tutte le strutture</div>
+              <span class="ub-formats">.pdf</span>
+            </div>
+            <div class="turni-status" id="prenStatus"></div>
+            <div class="loaded-info" id="prenLoadedInfo"><div class="li-date" id="prenTs"></div></div>
+          </div>
         </div>
         <div class="uc-row">
           <div class="uc-row-cards">
-            <div class="uc-slot" id="uc-pren" onclick="ucToggle('pren')" title="Export Prenotazioni del PMS: arrivi, colazioni e pre-stay in un file solo">
-              <input type="file" id="prenFileInput" accept="application/pdf,.pdf" style="display:none">
-              <span class="uc-dot" id="uc-pren-dot"></span>
-              <span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v4M16 4v4"/><path d="M7 14h4M7 17h7"/></svg></span></span>
-              <div class="uc-label">Prenotazioni</div>
-              <div class="uc-sub" id="uc-pren-sub">Non caricato</div>
-              <span class="uc-badge" id="uc-pren-badge" style="display:none;">▾</span>
-            </div>
             <div class="uc-slot" id="uc-prestay" onclick="ucToggle('prestay')" title="Lista arrivi per i messaggi pre-stay">
               <input type="file" id="prestayFileInput" accept="application/pdf,.pdf" style="display:none">
               <span class="uc-dot" id="uc-prestay-dot"></span>
@@ -251,17 +262,9 @@
               <div class="uc-sub" id="uc-piano-sub">Non caricato</div>
               <span class="uc-badge" id="uc-piano-badge" style="display:none;">▾</span>
             </div>
-          </div>
-          <div class="uc-panel" id="uc-pren-panel">
-            <div class="uc-feeds-line">→ Arrivi · Colazioni · Messaggi Pre-stay</div>
-            <div class="upload-box" id="prenUploadBox">
-              <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-              <div class="ub-title">Prenotazioni</div>
-              <div class="ub-sub">PMS → Prenotazioni → filtro <strong>Presenti</strong> → intervallo di date → tutte le strutture</div>
-              <span class="ub-formats">.pdf</span>
+            <div class="uc-slot uc-slot-brand">
+              <img src="img/icons/compass-star.png" class="uc-brand-img" alt="Compass">
             </div>
-            <div class="turni-status" id="prenStatus"></div>
-            <div class="loaded-info" id="prenLoadedInfo"><div class="li-date" id="prenTs"></div></div>
           </div>
           <div class="uc-panel" id="uc-prestay-panel">
             <div class="uc-feeds-line">→ Messaggi Pre-stay (nomi e strutture)</div>
@@ -360,7 +363,7 @@
             <div class="upload-ts" id="boutTs"></div>
           </div>
         </div>
-        <div class="uc-row">
+        <div class="uc-row" id="uc-row-pasti">
           <div class="uc-row-cards">
             <div class="uc-slot" id="uc-bkf" onclick="ucToggle('bkf')" title="Carica o espandi pasti">
               <input type="file" id="bkfFileInput" accept="application/pdf" style="display:none">
@@ -369,9 +372,6 @@
               <div class="uc-label">Report pasti</div>
               <div class="uc-sub" id="uc-bkf-sub">Non caricato</div>
               <span class="uc-badge" id="uc-bkf-badge" style="display:none;">▾</span>
-            </div>
-            <div class="uc-slot uc-slot-brand">
-              <img src="img/icons/compass-star.png" class="uc-brand-img" alt="Compass">
             </div>
           </div>
           <div class="uc-panel" id="uc-bkf-panel">
@@ -1670,7 +1670,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=814-20260821"></script>
+<script src="app.js?v=815-20260821"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
