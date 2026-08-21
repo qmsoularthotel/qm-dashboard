@@ -1580,9 +1580,9 @@ Il codice del Worker, i passaggi su Cloudflare, il servizio di invio e i record 
 
 **Due trappole trovate alla prima prova reale**: il display name in `PRESTAY_FROM` va **tra virgolette e senza caratteri non-ASCII** (un trattino lungo `—` faceva scartare il nome, e Gmail mostrava solo l'indirizzo); e le variabili nuove diventano attive **solo dopo un nuovo deploy** del Worker, non al salvataggio.
 
-### Vincolo Booking.com — `PRESTAY_MITTENTE_BOOKING_OK` (16/08/2026)
+### Vincolo Booking.com — il mittente si VERIFICA, non si dichiara (21/08/2026)
 
-Gli ospiti che prenotano su Booking hanno un indirizzo mascherato `@guest.booking.com`, che è un **relay**: Booking inoltra alla casella vera **solo le mail spedite dall'indirizzo registrato sull'Extranet della struttura** — `booking@soularthotel.com`. Da qualunque altro mittente le **scarta in silenzio**: nessun rimbalzo, nessun errore.
+Gli ospiti che prenotano su Booking hanno un indirizzo mascherato `@guest.booking.com`, che è un **relay**: Booking inoltra alla casella vera **solo le mail spedite dall'indirizzo registrato sull'Extranet della struttura** — `booking@soularthotel.com` (costante `PRESTAY_BOOKING_MITTENTE`). Da qualunque altro mittente le rifiuta: a volte le **scarta in silenzio** (nessun rimbalzo, nessun errore), a volte le **rimanda indietro** con un bounce nella casella del mittente.
 
 **Perché è pericoloso e non solo scomodo**: il nostro invio va a buon fine (Register accetta e consegna a Booking), quindi `mailTs` verrebbe valorizzato e la riga diventerebbe verde "inviata" per un messaggio che nessuno ha ricevuto. Una spunta che mente è peggio di una mancante.
 
@@ -1592,7 +1592,26 @@ Finché il mittente non è quello autorizzato:
 - l'anteprima mail aggiunge un avviso esplicito, suggerendo WhatsApp come alternativa;
 - **l'invio in blocco li ESCLUDE** invece di spedirli nel vuoto, e dice quanti ne ha saltati. Il conteggio del gruppo resta quindi incompleto — ed è corretto così.
 
-**Come si sblocca**: quando su Cloudflare `SMTP_USER` e `SMTP_PASS` saranno quelli di `booking@soularthotel.com`, mettere `PRESTAY_MITTENTE_BOOKING_OK=true`. **Nient'altro da cambiare**: il Worker compone mittente di busta e intestazione `From` da `SMTP_FROM || SMTP_USER`, quindi cambiare le due variabili sposta l'invio sulla casella giusta senza toccare il codice. Verificato in test che con la costante a `true` quegli indirizzi tornano inviabili.
+#### Perché la costante scritta a mano non poteva funzionare (rimbalzi del 21/08/2026)
+
+`PRESTAY_MITTENTE_BOOKING_OK` era stata messa a `true` — cioè *"ormai spediamo dall'indirizzo registrato su Booking"* — **senza che sul Worker fosse cambiato niente**: `SMTP_USER` era ed è rimasta `qm@soularthotel.com`. Compass ha quindi ripreso a spedire agli indirizzi `@guest.booking.com` dal mittente sbagliato, e le mail sono tornate indietro. Dalla dashboard era invisibile: l'invio riusciva (Register accetta e consegna a Booking, il rifiuto arriva dopo) e la scheda diventava verde.
+
+**L'equivoco da non ripetere**: *"l'indirizzo è ok sull'Extranet"* e *"le mail partono da quell'indirizzo"* sono due cose diverse. L'Extranet dice quale mittente è **autorizzato**; solo il Worker sa quale mittente stiamo **usando**. Una costante in `app.js` non può saperlo: sta in un file che nessuno ridistribuisce quando si tocca una variabile su Cloudflare.
+
+Il blocco non dipende quindi più da una costante:
+
+| Funzione | Ruolo |
+|---|---|
+| `prestayVerificaMittente()` | chiede a `GET /prestay/stato` sul Worker da quale casella parte davvero la posta (pulsante **Verifica mittente** in Impostazioni) |
+| `_psMitt` (`qm_prestay_mittente`, localStorage) | ultima risposta: `{mittente,mittenteDa,via,smtpHost,replyTo,imap,versione,ts}` |
+| `_psMittenteOkBooking()` | confronta il mittente reale con `PRESTAY_BOOKING_MITTENTE` |
+| `PRESTAY_MITTENTE_BOOKING_OK` | **solo** l'assunzione finché non si è mai verificato: ora `false` — un invio in meno è meno grave di una spunta verde che mente |
+
+`/prestay/stato` restituisce solo indirizzi e nomi di host (mai password), dietro la stessa chiave e lo stesso controllo di origine degli altri percorsi `/prestay/*`, e dichiara `WORKER_VERSIONE`: se la verifica risponde `404`, il Worker in produzione è più vecchio di `worker.js` e va ripubblicato — cosa che, pubblicando a mano, capita.
+
+**Come si sblocca davvero**: su Cloudflare `SMTP_USER`/`SMTP_PASS` della casella `booking@soularthotel.com`, **cancellare `SMTP_FROM`** se è rimasta impostata (`SMTP_FROM || SMTP_USER`: vince lei, ed è la svista che rende inutile cambiare `SMTP_USER`), ripubblicare il Worker, premere **Verifica mittente**. Il pannello lo dice esplicitamente quando il mittente arriva da `SMTP_FROM`. Verificato in test che con il mittente giusto quegli indirizzi tornano inviabili, e che restano bloccati sia col mittente sbagliato sia quando non è mai stato verificato.
+
+**Spostando la casella di invio si spostano anche le risposte**: `IMAP_USER`/`IMAP_PASS` alimentano "Controlla risposte" e puntano oggi a `qm@soularthotel.com`. Se restano lì mentre si spedisce da `booking@`, le risposte degli ospiti non compaiono più. Il pannello segnala il disallineamento invece di lasciarlo scoprire per caso.
 
 **Nota su `PRESTAY_REPLYTO`**: oggi punta a `qm@soularthotel.com`. Passando a `booking@`, valutare se allinearlo — una risposta dell'ospite dentro il thread Booking dovrebbe restare nel loro sistema, e un `Reply-To` divergente può essere riscritto o ignorato dal relay.
 
@@ -2583,7 +2602,8 @@ Solo i **calcoli**, non l'aspetto. Il criterio è: un errore di impaginazione si
 guardando lo schermo, un errore nei numeri no — resta plausibile e può passare inosservato
 per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dall'alloggio,
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
-prenotazione, periodo della biancheria, anno del turno, nomi del turno. 45 controlli.
+prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
+dal relay Booking. 101 controlli.
 
 ### Come funziona
 
@@ -2650,4 +2670,5 @@ colti, con il dettaglio di cosa non tornava.
 | Icone card camere disallineate | `solo arrivo (pulita)` va su due righe, `partenza/arrivo` su una | `min-height` per due righe sul sottotitolo, testo centrato |
 | Turno datato con l'anno sbagliato | Il prompt non dichiarava la data odierna e il planning non riporta l'anno | Data odierna nel prompt + `_annoPlausibile()` sulle date restituite |
 | Registration card ferme al giorno prima dopo aver caricato il PDF Prenotazioni | `prenHandlePdf` scriveva `qm_arriviData` ma non `qm_rcGuests`: la derivazione delle card viveva dentro `handleArriviFile`, cioè nel percorso di upload che il file unico ha sostituito | Estratta in `rcAggiornaDaArrivi()`, chiamata da entrambi i percorsi; l'esito viene scritto nel messaggio dello slot |
+| Mail pre-stay agli ospiti Booking di nuovo respinte, pur essendo `booking@soularthotel.com` corretto sull'Extranet | `PRESTAY_MITTENTE_BOOKING_OK` messa a `true` in `app.js` mentre sul Worker `SMTP_USER` era rimasta `qm@soularthotel.com`: Compass toglieva il blocco senza che il mittente fosse cambiato. L'Extranet dice quale mittente è autorizzato, non quale si sta usando | Il blocco ora segue il mittente che il Worker dichiara su `/prestay/stato` (**Impostazioni → Verifica mittente**), non una costante. Per spedire davvero da `booking@`: `SMTP_USER`/`SMTP_PASS` su Cloudflare, `SMTP_FROM` cancellata, Worker ripubblicato — e `IMAP_USER`/`IMAP_PASS` spostati sulla stessa casella, altrimenti spariscono le risposte |
 | Camere Art marcate "Art Resort" nelle fermate | `fixArriviStruttura` applicata solo a `arrivi`, mai a `fermate`/`partenze` | Struttura dedotta in modo deterministico da `_prenStruttura` su tutte e tre le liste |

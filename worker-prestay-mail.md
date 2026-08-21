@@ -304,9 +304,24 @@ Tutte come **Secret**, tranne host e porta che possono restare testo:
 |------|--------|
 | `SMTP_HOST` | `authsmtp.securemail.pro` |
 | `SMTP_PORT` | `465` |
-| `SMTP_USER` | `qm@soularthotel.com` |
+| `SMTP_USER` | la casella da cui deve partire la posta (vedi avvertenza qui sotto) |
 | `SMTP_PASS` | la password della casella — **Secret**, mai altrove |
-| `SMTP_FROM` | opzionale, default = `SMTP_USER` |
+| `SMTP_FROM` | opzionale, default = `SMTP_USER` — **se impostata vince su `SMTP_USER`** |
+
+> **`SMTP_USER` decide se gli ospiti Booking ricevono o no.** Gli indirizzi mascherati
+> `@guest.booking.com` sono un relay che accetta posta **solo** dall'indirizzo registrato
+> sull'Extranet della struttura (`booking@soularthotel.com`): da qualunque altro mittente
+> la respinge — a volte in silenzio, a volte con un rimbalzo che torna nella casella del
+> mittente. Se le mail pre-stay agli ospiti Booking tornano indietro, il primo controllo è
+> qui, non sull'Extranet: l'Extranet dice quale mittente è autorizzato, non quale stiamo
+> usando. Da Compass lo si legge in **Messaggi Pre-stay → Impostazioni → Verifica
+> mittente**, che interroga `/prestay/stato`.
+>
+> Cambiando `SMTP_USER`/`SMTP_PASS` per spedire da `booking@soularthotel.com` vanno
+> ricordate altre due cose: **cancellare `SMTP_FROM`** se è rimasta impostata (altrimenti
+> il mittente non cambia affatto), e sapere che le risposte degli ospiti arriveranno in
+> quella casella — quindi anche `IMAP_USER`/`IMAP_PASS`, che alimentano "Controlla
+> risposte", vanno spostati lì, altrimenti le risposte smettono di comparire.
 
 `RESEND_KEY` e `PRESTAY_FROM` **vanno lasciate**: se un domani si tolgono le variabili
 SMTP, il Worker torna da solo a spedire via Resend senza modifiche al codice.
@@ -614,7 +629,8 @@ async function inviaConResend(env, dati) {
 ### Prova prima di usarlo sul serio
 
 1. Manda una mail di prova **a te stesso**, possibilmente su Hotmail/Outlook.
-2. Controlla che il mittente sia `qm@soularthotel.com` col nome della struttura giusta.
+2. Controlla che il mittente sia quello impostato in `SMTP_USER`, col nome della struttura
+   giusta. Lo stesso indirizzo lo dichiara `/prestay/stato` senza dover mandare nulla.
 3. Controlla che **non sia in spam** — è il motivo per cui esiste tutta questa sezione.
 4. Verifica grassetto/corsivo/elenchi resi.
 
@@ -630,3 +646,40 @@ giornata con errori `4xx`, è lì che va guardato — non nel codice.
 
 Se compare un errore `SMTP 535`, la password è sbagliata o Register richiede
 un'abilitazione all'invio SMTP esterno per quella casella.
+
+---
+
+## 7. `/prestay/stato` — chi spedisce davvero (21/08/2026)
+
+`GET /prestay/stato`, stessa chiave e stesso controllo di origine degli altri percorsi
+`/prestay/*`. Risponde con **soli indirizzi e nomi di host, nessuna password**:
+
+```json
+{ "ok": true, "versione": "2026-08-21", "via": "smtp",
+  "mittente": "qm@soularthotel.com", "mittenteDa": "SMTP_USER",
+  "smtpHost": "authsmtp.securemail.pro",
+  "replyTo": "qm@soularthotel.com", "imap": "qm@soularthotel.com" }
+```
+
+### Perché esiste
+
+Il mittente lo decidono le variabili del Worker, che Compass non può vedere. Ad agosto 2026
+la costante `PRESTAY_MITTENTE_BOOKING_OK` in `app.js` era stata messa a `true` — cioè
+"ormai spediamo dall'indirizzo registrato su Booking" — **senza che sul Worker fosse
+cambiato niente**. Compass ha quindi ripreso a mandare le mail agli indirizzi
+`@guest.booking.com` da `qm@soularthotel.com`, e Booking le ha rimandate indietro. Dalla
+dashboard non c'era modo di accorgersene: l'invio risultava riuscito e la spunta diventava
+verde.
+
+Il blocco degli indirizzi Booking **non dipende più da una costante scritta a mano**: si
+basa sul mittente che il Worker dichiara qui (`_psMittenteOkBooking()` in `app.js`).
+Finché non è stato verificato su quella postazione, si assume che non sia quello giusto —
+un invio in meno è meno grave di una spunta verde che mente.
+
+### `versione`
+
+Il Worker si pubblica a mano, quindi una correzione può essere scritta, versionata e **non
+attiva**. `WORKER_VERSIONE` in cima a `worker.js` viene restituita qui: se "Verifica
+mittente" risponde `404`, il Worker in produzione è più vecchio di `worker.js` e va
+ripubblicato.
+

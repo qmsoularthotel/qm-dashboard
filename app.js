@@ -11122,17 +11122,45 @@ const PRESTAY_HOTELS={
 // Gli ospiti che prenotano su Booking hanno un indirizzo mascherato @guest.booking.com,
 // che è un relay: Booking inoltra alla casella vera dell'ospite SOLO le mail spedite
 // dall'indirizzo registrato sull'Extranet della struttura (booking@soularthotel.com).
-// Da qualunque altro mittente le SCARTA IN SILENZIO — nessun rimbalzo, nessun errore.
-// Per noi l'invio risulta riuscito e la spunta verde direbbe una cosa falsa, che è il
-// motivo per cui queste righe vanno riconosciute e trattate a parte.
+// Da qualunque altro mittente le rifiuta: a volte le SCARTA IN SILENZIO — nessun rimbalzo,
+// nessun errore, per noi l'invio risulta riuscito e la spunta verde direbbe una cosa falsa
+// — a volte le RIMANDA INDIETRO, con un rimbalzo che arriva nella casella del mittente
+// (agosto 2026, dopo che il blocco era stato tolto senza cambiare mittente sul Worker).
+// In entrambi i casi l'ospite non riceve niente: è il motivo per cui queste righe vanno
+// riconosciute e trattate a parte.
 //
-// COME SI TOGLIE QUESTO BLOCCO: quando sul Worker `SMTP_USER` e `SMTP_PASS` saranno
-// quelli di booking@soularthotel.com, mettere questa costante a true. Nient'altro da
-// cambiare: il Worker compone il mittente dalle variabili (vedi worker-prestay-mail.md).
-const PRESTAY_MITTENTE_BOOKING_OK=true;
+// COME SI TOGLIE QUESTO BLOCCO: si mettono `SMTP_USER` e `SMTP_PASS` della casella
+// booking@soularthotel.com sul Worker, si ripubblica, poi si preme "Verifica mittente" in
+// Impostazioni. Non c'è più una costante da cambiare a mano: il blocco cade da solo
+// quando il Worker dichiara di spedire da quell'indirizzo (vedi worker-prestay-mail.md).
+// ATTENZIONE alla svista che ha fatto ripartire i rimbalzi: se sul Worker è rimasta
+// impostata `SMTP_FROM`, quella vince su `SMTP_USER` e il mittente non cambia.
+// L'indirizzo registrato sull'Extranet Booking della struttura: è l'UNICO da cui il relay
+// @guest.booking.com accetta posta. Averlo "ok su Extranet" non basta — deve essere anche
+// quello da cui Compass spedisce davvero, cioè SMTP_USER sul Worker.
+const PRESTAY_BOOKING_MITTENTE='booking@soularthotel.com';
+// Assunzione usata SOLO finché il mittente reale non è stato verificato (vedi
+// prestayVerificaMittente): fino ad allora si dà per scontato che non sia quello giusto,
+// perché è lo stato in cui il sistema è nato e perché una spunta verde sbagliata è peggio
+// di un invio in meno. Una costante scritta a mano qui non può sapere cosa c'è su
+// Cloudflare: è esattamente così che le mail hanno ripreso a rimbalzare senza avvisi.
+const PRESTAY_MITTENTE_BOOKING_OK=false;
+const PS_MITT_KEY='qm_prestay_mittente';
+// Ultima verifica del mittente reale, chiesta al Worker: {mittente,mittenteDa,via,smtpHost,
+// replyTo,imap,versione,ts}. Sta in localStorage come la configurazione di invio — è una
+// diagnosi di questa postazione, si rifà con un clic.
+let _psMitt=null;
+try{const s=localStorage.getItem(PS_MITT_KEY);if(s)_psMitt=JSON.parse(s)||null;}catch(e){}
+function _psMittenteAttuale(){return _psMitt&&_psMitt.mittente?String(_psMitt.mittente).trim():'';}
+// Il mittente reale coincide con quello registrato su Booking? Se non è mai stato
+// verificato si ricade sull'assunzione qui sopra.
+function _psMittenteOkBooking(){
+  const m=_psMittenteAttuale();
+  return m?m.toLowerCase()===PRESTAY_BOOKING_MITTENTE:PRESTAY_MITTENTE_BOOKING_OK;
+}
 const _psAliasBooking=e=>/@(guest\.)?booking\.com$/i.test(String(e||'').trim());
 // true quando la mail a quell'indirizzo NON verrebbe recapitata con il mittente attuale
-const _psBookingBloccato=e=>!PRESTAY_MITTENTE_BOOKING_OK&&_psAliasBooking(e);
+const _psBookingBloccato=e=>!_psMittenteOkBooking()&&_psAliasBooking(e);
 
 const PRESTAY_FROM_NAME={
   bh:'Boutique Hotel Piazza Carità',
@@ -11743,6 +11771,84 @@ async function prestayControllaRisposte(){
     _psRispInCorso=false;prestayRender();
   }
 }
+// Chiede al Worker da quale casella parte davvero la posta. È l'unica risposta possibile
+// alla domanda "perché le mail agli indirizzi Booking tornano indietro se sull'Extranet
+// l'indirizzo è quello giusto?": l'Extranet dice quale mittente è autorizzato, questo dice
+// quale mittente stiamo usando. Finché i due non coincidono, il relay rifiuta.
+function _psEndpointStato(){
+  const e=String(_psMailCfg.endpoint||'').trim();
+  if(!e)return'';
+  return e.replace(/\/prestay\/send\/?$/,'/prestay/stato');
+}
+let _psMittInCorso=false;
+async function prestayVerificaMittente(){
+  if(_psMittInCorso)return;
+  const ep=_psEndpointStato();
+  if(!ep||!_psMailCfg.key){
+    cqAvviso('Serve prima la configurazione qui sotto','Endpoint e chiave sono gli stessi usati per inviare.');
+    return;
+  }
+  _psMittInCorso=true;prestayRender();
+  try{
+    const r=await fetch(ep,{method:'GET',headers:{'X-Prestay-Key':_psMailCfg.key}});
+    // 404 = il Worker in produzione è più vecchio di questo file. Si pubblica a mano, quindi
+    // è un caso normale, non un guasto: va detto con le istruzioni invece che come errore.
+    if(r.status===404)throw new Error('Il Worker pubblicato non conosce ancora questa verifica: va ripubblicato worker.js su Cloudflare (Workers → anthropic-proxy → Modifica codice → Deploy).');
+    const j=await r.json().catch(()=>null);
+    if(!j||!j.ok)throw new Error((j&&j.error)||'risposta non leggibile');
+    _psMitt={mittente:j.mittente||'',mittenteDa:j.mittenteDa||'',via:j.via||'',smtpHost:j.smtpHost||'',
+             replyTo:j.replyTo||'',imap:j.imap||'',versione:j.versione||'',ts:Date.now()};
+    try{localStorage.setItem(PS_MITT_KEY,JSON.stringify(_psMitt));}catch(e){}
+  }catch(e){
+    cqAvviso('Verifica non riuscita',(e&&e.message)||String(e));
+  }finally{
+    _psMittInCorso=false;prestayRender();
+  }
+}
+// Esito della verifica, dentro il pannello Impostazioni. Mostra sempre e comunque i due
+// indirizzi affiancati — quello registrato su Booking e quello da cui spediamo — perché è
+// il confronto, non il singolo valore, a spiegare i rimbalzi.
+function _psMittRiquadro(){
+  const esc=t=>String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const bott='padding:6px 12px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:7px;font-size:var(--fs-xxs);font-weight:700;font-family:inherit;cursor:'+(_psMittInCorso?'wait':'pointer')+';opacity:'+(_psMittInCorso?'.6':'1')+';';
+  let h='<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:12px;">'
+    +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
+    +'<button onclick="prestayVerificaMittente()" '+(_psMittInCorso?'disabled':'')+' style="'+bott+'">'+(_psMittInCorso?'Verifica…':'Verifica mittente')+'</button>'
+    +'<span style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;flex:1;min-width:220px;">Chiede al Worker da quale casella parte davvero la posta. Sull\'Extranet Booking è registrato <strong>'+esc(PRESTAY_BOOKING_MITTENTE)+'</strong>, e gli indirizzi <strong>@guest.booking.com</strong> accettano posta solo da lì: da qualunque altro mittente la rimandano indietro.</span>'
+    +'</div>';
+  if(!_psMitt){
+    return h+'<div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Mai verificato su questa postazione. Finché non lo è, gli arrivi con indirizzo Booking restano segnati come non recapitabili e l\'invio in blocco li salta.</div></div>';
+  }
+  const m=_psMittenteAttuale(),okB=_psMittenteOkBooking();
+  const col=okB?'var(--green)':'var(--red)',bg=okB?'var(--green-bg)':'var(--red-bg)';
+  const quando=new Date(_psMitt.ts||Date.now());
+  const hhmm=String(quando.getHours()).padStart(2,'0')+':'+String(quando.getMinutes()).padStart(2,'0');
+  h+='<div style="margin-top:10px;border:1px solid '+col+';background:'+bg+';border-radius:8px;padding:10px 12px;">'
+    +'<div style="font-size:var(--fs-xs);font-weight:700;color:'+col+';margin-bottom:6px;">'
+    +(okB?'Spediamo dall\'indirizzo registrato su Booking':'Spediamo da un indirizzo diverso da quello registrato su Booking')+'</div>'
+    +'<div style="font-size:var(--fs-xxs);color:var(--text);line-height:1.7;">'
+    +'mittente reale: <strong>'+esc(m||'(nessuno)')+'</strong>'+(_psMitt.mittenteDa?' <span style="color:var(--text-dim);">(variabile '+esc(_psMitt.mittenteDa)+')</span>':'')+'<br>'
+    +'registrato su Booking: <strong>'+esc(PRESTAY_BOOKING_MITTENTE)+'</strong><br>'
+    +'invio: '+esc(_psMitt.via||'?')+(_psMitt.smtpHost?' · '+esc(_psMitt.smtpHost):'')
+    +(_psMitt.replyTo?' · risposte a '+esc(_psMitt.replyTo):'')
+    +'</div>';
+  if(!okB){
+    h+='<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text);line-height:1.6;">'
+      +'È questo il motivo dei rimbalzi: sull\'Extranet l\'indirizzo può essere giusto, ma la mail non parte da lì. '
+      +'Su Cloudflare (Workers → anthropic-proxy → Impostazioni) vanno messe <strong>SMTP_USER</strong> e <strong>SMTP_PASS</strong> della casella '+esc(PRESTAY_BOOKING_MITTENTE)+', '
+      +'e va <strong>cancellata SMTP_FROM</strong> se presente: resta lei a decidere il mittente'+(_psMitt.mittenteDa==='SMTP_FROM'?' — ed è proprio il caso attuale':'')+'. '
+      +'Poi si ripubblica il Worker e si preme di nuovo questo pulsante.</div>';
+  }
+  // La casella letta in IMAP è quella dove finiscono le risposte degli ospiti: cambiando
+  // casella di invio, le risposte cambiano posto e "Controlla risposte" smetterebbe di
+  // trovarle senza dire perché.
+  if(_psMitt.imap&&m&&_psMitt.imap.toLowerCase()!==m.toLowerCase()){
+    h+='<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-muted);line-height:1.6;">"Controlla risposte" legge <strong>'+esc(_psMitt.imap)+'</strong>, che non è la casella da cui si spedisce: le risposte degli ospiti arrivano dove torna il messaggio, quindi se non compaiono vanno allineate anche <strong>IMAP_USER</strong>/<strong>IMAP_PASS</strong>.</div>';
+  }
+  h+='<div style="margin-top:8px;font-size:9px;color:var(--text-dim);">verificato alle '+hhmm+' · Worker versione '+esc(_psMitt.versione||'sconosciuta')+'</div>'
+    +'</div></div>';
+  return h;
+}
 function prestayToggleMailCfg(){_prestayMailCfgOpen=!_prestayMailCfgOpen;_psSenzaSalto(prestayRender);}
 let _prestayMailCfgOpen=false;
 let _psMailInFlight={};
@@ -11804,12 +11910,12 @@ async function prestayInviaGruppo(hotel){
     cqAvviso(senzaMail||bloccati
       ? 'Nessuna mail da inviare per '+nome+'.'
         +(senzaMail?'\n\n· '+senzaMail+' arriv'+(senzaMail===1?'o è':'i sono')+' senza indirizzo email.':'')
-        +(bloccati?'\n\n· '+bloccati+' ha'+(bloccati===1?'':'nno')+' un indirizzo Booking, recapitabile solo spedendo da booking@soularthotel.com. Contattali su WhatsApp, se hai il numero.':'')
+        +(bloccati?'\n\n· '+bloccati+' ha'+(bloccati===1?'':'nno')+' un indirizzo Booking, recapitabile solo spedendo da '+PRESTAY_BOOKING_MITTENTE+'. Controlla da quale casella parte la posta con Impostazioni → Verifica mittente. Nel frattempo contattali su WhatsApp, se hai il numero.':'')
       : 'Per '+nome+' le mail sono già state inviate tutte.');
     return;
   }
   const avvisoVuoti=senzaMail?'<br><br>'+senzaMail+' arriv'+(senzaMail===1?'o verrà saltato perché non ha':'i verranno saltati perché non hanno')+' email.':'';
-  const avvisoBooking=bloccati?'<br><br>'+bloccati+' indirizz'+(bloccati===1?'o Booking verrà saltato':'i Booking verranno saltati')+': Booking li scarta se la mail non parte da booking@soularthotel.com.':'';
+  const avvisoBooking=bloccati?'<br><br>'+bloccati+' indirizz'+(bloccati===1?'o Booking verrà saltato':'i Booking verranno saltati')+': Booking li rimanda indietro se la mail non parte da '+PRESTAY_BOOKING_MITTENTE+'.':'';
   if(!await cqConferma('Inviare '+daFare.length+' '+(daFare.length===1?'messaggio':'messaggi')+'?',
       '<strong>'+nome+'</strong>'+avvisoVuoti+avvisoBooking
       +'<br><br>Partono uno alla volta, col testo del template. Non c\'è anteprima: per rileggere prima di mandare usa il pulsante su una singola scheda.',
@@ -11894,7 +12000,13 @@ function _psAntRendi(){
   if(/\[SCRIVI QUI|\[WRITE THE/i.test(corpo))avvisi.push('Il testo contiene ancora il segnaposto da riscrivere: personalizzalo in "Modifica testi", oppure correggilo qui con la matita solo per questo invio.');
   if(!(a.nome||'').trim())avvisi.push('Nome ospite vuoto: il messaggio dirà genericamente "Gentile Ospite".');
   if(/\{[a-z]+\}/i.test(corpo)||/\{[a-z]+\}/i.test(ogg))avvisi.push('C\'è un segnaposto tra graffe non sostituito: controlla che sia scritto esattamente {nome}, {struttura} o {data}.');
-  if(canale!=='wa'&&_psBookingBloccato(a.email))avvisi.push('<strong>Questo è un indirizzo Booking</strong>: viene recapitato solo se la mail parte da booking@soularthotel.com. Con il mittente attuale Booking la scarta senza avvisare — risulterebbe inviata senza esserlo.');
+  if(canale!=='wa'&&_psBookingBloccato(a.email)){
+    const mitt=_psMittenteAttuale();
+    avvisi.push('<strong>Questo è un indirizzo Booking</strong>: viene recapitato solo se la mail parte da '+PRESTAY_BOOKING_MITTENTE+'. '
+      +(mitt?'Compass spedisce da <strong>'+mitt+'</strong>, quindi Booking la rimanda indietro.'
+            :'Il mittente da cui Compass spedisce non è stato verificato (Impostazioni → Verifica mittente): se non è quello, Booking la rimanda indietro o la scarta senza avvisare.')
+      +' Risulterebbe inviata senza esserlo.');
+  }
   const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const matita='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>';
 
@@ -12091,7 +12203,7 @@ function prestayRender(){
           </div>
           <input value="${esc(a.nome)}" placeholder="Cognome Nome" onchange="prestaySetScheda('${a.id}','nome',this.value)" style="${inpS}font-weight:700;font-size:var(--fs-sm);margin-bottom:5px;">
           <input type="email" value="${esc(a.email)}" placeholder="email@…" oninput="_psAggiornaBordo('${a.id}',this.value)" onchange="prestaySetScheda('${a.id}','email',this.value)" title="${esc(a.email)}" style="${inpS}margin-bottom:5px;${_psBookingBloccato(a.email)?'border-color:var(--amber);':''}">
-          ${_psBookingBloccato(a.email)?`<div style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.35;margin:-2px 0 5px;">indirizzo Booking · non recapitabile con il mittente attuale</div>`:''}
+          ${_psBookingBloccato(a.email)?`<div style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.35;margin:-2px 0 5px;" title="${esc(_psMittenteAttuale()?'Compass spedisce da '+_psMittenteAttuale()+', Booking accetta solo '+PRESTAY_BOOKING_MITTENTE:'Mittente mai verificato: Impostazioni → Verifica mittente')}">indirizzo Booking · non recapitabile con il mittente attuale</div>`:''}
           <input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}margin-bottom:9px;">
           <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
             <button onclick="prestayAnteprima('${a.id}','both')" title="Vedi e correggi il messaggio prima di mandarlo" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:7px;cursor:pointer;">${PS_ICON_EYE}</button>
@@ -12143,6 +12255,7 @@ function prestayRender(){
             <input type="password" value="${escv(_psMailCfg.key)}" placeholder="la password scelta sul Worker" onchange="prestaySetMailCfg('key',this.value)" style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;">
           </div>
         </div>
+        ${_psMittRiquadro()}
       </div>
     </div>`;
   }
