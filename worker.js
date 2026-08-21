@@ -28,7 +28,7 @@ const ORIGINI = [
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /prestay/stato.
-const WORKER_VERSIONE = '2026-08-21';
+const WORKER_VERSIONE = '2026-08-21.2';
 
 const PRESTAY_MAX_GIORNO = 60;      // tetto di sicurezza sugli invii, non un limite d'uso
 const RISPOSTE_MAX_INDIRIZZI = 30;  // quante caselle si possono interrogare in una volta
@@ -102,6 +102,17 @@ export default {
       }
       try { await env.QM_STORAGE.put(contatore, String(n + 1), { expirationTtl: 172800 }); } catch (e) {}
       return json({ ok: true });
+    }
+
+    // ── QUALE VERSIONE È IN PRODUZIONE ──
+    // Il Worker si pubblica a mano: una correzione può essere scritta, versionata e non
+    // attiva, senza che nessuno se ne accorga (è successo il 21/08/2026, per ore). Questo
+    // punto permette a test/esegui.sh di confrontare la versione viva con quella nel
+    // repository e segnalare la differenza prima di ogni pubblicazione.
+    // Senza chiave di proposito: una stringa di versione non è un segreto, e un controllo
+    // che richiede credenziali è un controllo che nessuno esegue.
+    if (url.pathname === '/versione') {
+      return json({ ok: true, versione: WORKER_VERSIONE });
     }
 
     // ── CHI SPEDISCE DAVVERO ──

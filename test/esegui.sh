@@ -78,6 +78,22 @@ if git fetch -q origin 2>/dev/null; then
   fi
 fi
 
+# Worker non pubblicato: worker.js si pubblica a mano su Cloudflare (vedi CLAUDE.md, la
+# pubblicazione automatica è stata valutata e scartata). Una correzione può quindi essere
+# scritta, versionata e non attiva — successo il 21/08/2026, per ore, senza alcun segnale.
+# Il Worker dichiara la propria versione su /versione: qui si confronta con quella scritta
+# nel file. Non blocca: se manca la rete, o se il punto /versione non c'è ancora perché il
+# Worker in produzione è anteriore a questo controllo, si tace e si va avanti.
+VIVA=$(curl -s -m 6 "https://anthropic-proxy.qm-d82.workers.dev/versione" 2>/dev/null \
+       | sed -n 's/.*"versione"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+LOCALE=$(sed -n "s/^const WORKER_VERSIONE = '\([^']*\)'.*/\1/p" worker.js)
+if [ -n "$VIVA" ] && [ -n "$LOCALE" ] && [ "$VIVA" != "$LOCALE" ]; then
+  echo ""
+  echo "  ATTENZIONE  il Worker pubblicato è la versione $VIVA, worker.js è la $LOCALE."
+  echo "              Le correzioni a mail e risposte NON sono attive finché non lo ripubblichi:"
+  echo "              Cloudflare → Workers → anthropic-proxy → Modifica codice → Cmd+A → incolla → Deploy."
+fi
+
 if echo "$USCITA" | grep -q "^ESITO:OK" && [ "$VERSIONE_KO" = "0" ] && [ "$COPIA_KO" = "0" ]; then
   exit 0
 fi
