@@ -1123,7 +1123,7 @@ Cliccando il chip occupazione si apre `#occ-panel`. Barre orizzontali per strutt
 | `renderArriviData()` | Render KPI cards arrivi |
 | `buildBarChart(data)` | Generatore SVG bar chart |
 | `fetchMeteo()` | Fetch previsioni meteo |
-| `updateSbClock()` | Aggiorna orologio sidebar (ogni 10s) |
+| `updateSbClock()` | **Inerte**: aggiornava `#sbClock`/`#sbShift`, rimossi dal redisegno della sidebar. Gira ancora ogni 10s ma non scrive da nessuna parte (le scritture sono protette da `if(el)`). Non "ripararlo": l'orologio in sidebar non esiste più di proposito |
 
 ### Recensioni Booking
 
@@ -1185,7 +1185,7 @@ Cliccando il chip occupazione si apre `#occ-panel`. Barre orizzontali per strutt
 
 | Intervallo | Scopo |
 |-----------|-------|
-| 10 sec | `updateSbClock()` — aggiorna orologio sidebar |
+| 10 sec | `updateSbClock()` — **inerte**, vedi Funzioni Chiave: gli elementi che aggiornava non esistono più |
 | 10 min | `fetchMeteo()` — aggiorna previsioni meteo |
 | 30 sec | Polling overview + cloud sync + `turniPrefLoad()` + sync weekData da KV |
 
@@ -2691,6 +2691,23 @@ colti, con il dettaglio di cosa non tornava.
 ---
 
 ## Note & Problemi Noti
+
+### Riferimenti inerti — non sono guasti, non "ripararli" (verificato 21/08/2026)
+
+Un controllo su tutti gli `onclick` e su tutti i `getElementById` letterali ha dato:
+**nessun pulsante orfano** (212 handler, tutti con la loro funzione) e **8 elementi cercati
+ma inesistenti**, tutti protetti da `if(el)` e quindi innocui:
+
+`sbClock`, `sbShift` (orologio sidebar, rimosso col redisegno) · `qualityBarChart` ·
+`darkToggle` · `alertTime` · `kpi-checkin`, `kpi-checkin-sub`, `kpi-checkout-delta`
+(sostituiti da `kpi-arrivi*` quando i chip del topbar sono stati rifatti).
+
+Sono residui di parti della pagina eliminate. Trovarli e "sistemarli" significherebbe
+riportare in vita funzioni che nessuno ha chiesto. Se un giorno si volesse ripulire, si
+rimuovono le righe che li cercano — mai si aggiungono gli elementi mancanti.
+
+Per rifare il controllo: cercare gli `id` in `getElementById('…')` dentro `app.js` e
+confrontarli con quelli presenti in `index.html`.
 
 | Problema | Causa | Fix |
 |----------|-------|-----|
