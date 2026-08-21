@@ -12949,6 +12949,48 @@ function _biaGiri(h){
 }
 function biaSetHotel(h){if(!BIA_HOTELS[h])return;_biaHotel=h;biaRender();}
 
+// Calendario reale del giro: Raimondo passa martedì, giovedì e sabato (0=domenica).
+// Serve SOLO come ripiego quando non c'è ancora nessun giro registrato: il "dal" continua
+// a prendersi dai giri realmente registrati, così un giro saltato viene assorbito dal
+// successivo. Il calendario non deve mai scavalcare un giro registrato.
+const BIA_GIORNI_GIRO=[2,4,6];
+const BIA_GG_NOMI=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+const BIA_GIORNI_GIRO_TXT='martedì, giovedì e sabato';
+
+// Ultimo giorno di calendario in cui Raimondo sarebbe passato PRIMA di d.
+function _biaGiroCalPrec(d){
+  const x=new Date(d.getTime());
+  for(let i=0;i<7;i++){
+    x.setDate(x.getDate()-1);
+    if(BIA_GIORNI_GIRO.includes(x.getDay()))return x;
+  }
+  return new Date(d.getTime()-86400000);
+}
+function _biaGiornoGiro(d){return BIA_GIORNI_GIRO.includes(d.getDay());}
+function _biaGiorniPeriodo(per){
+  const out=[];
+  if(!per||per.vuoto)return out;
+  for(let x=new Date(per.dal.getTime());x<=per.al;x.setDate(x.getDate()+1))out.push(new Date(x.getTime()));
+  return out;
+}
+// I giorni del periodo per cui non è stato registrato nessun consumo: senza questi lo
+// sporco che esce è incompleto, ed è la cosa che si dimentica più facilmente.
+function _biaGiorniSenzaConsumi(hotel,per){
+  const avuti=new Set(_biaConsumi(hotel).map(c=>c.data));
+  return _biaGiorniPeriodo(per).filter(d=>!avuti.has(_biaFmt(d)));
+}
+function _biaGgEtichetta(d){return BIA_GG_NOMI[d.getDay()]+' '+String(d.getDate()).padStart(2,'0');}
+// Fino a quattro giorni si scrivono per esteso ("giovedì 20 e venerdì 21"): un intervallo
+// di date non dice a colpo d'occhio se sono i giorni giusti, i nomi dei giorni sì.
+function _biaPeriodoTxt(per){
+  if(!per)return'—';
+  if(per.vuoto)return'nessun giorno da ritirare';
+  const gg=_biaGiorniPeriodo(per).map(_biaGgEtichetta);
+  if(gg.length===1)return'di '+gg[0];
+  if(gg.length<=4)return'di '+gg.slice(0,-1).join(', ')+' e '+gg[gg.length-1];
+  return'dal '+_biaFmt(per.dal)+' al '+_biaFmt(per.al)+' ('+gg.length+' giorni)';
+}
+
 // Il giro del giorno D ritira i consumi dal giro precedente (incluso) al giorno prima
 // di D (incluso). Il consumo del giorno stesso del giro resta fuori: Raimondo passa
 // alle 8:00, prima che le cameriere lavorino, quindi quello sporco lo ritira il giro
@@ -12958,16 +13000,25 @@ function _biaPeriodo(hotel,dataGiro){
   const d=_biaParse(dataGiro);if(!d)return null;
   const al=new Date(d.getTime()-86400000);
   const prec=_biaGiri(hotel).filter(g=>{const gd=_biaParse(g.data);return gd&&gd<d;});
-  let dal;
+  let dal,fonte;
   if(prec.length){
     dal=_biaParse(prec[prec.length-1].data);
+    fonte='giro';
   }else{
-    // Primo giro in assoluto: si parte dal consumo più vecchio registrato.
+    // Primo giro in assoluto: si parte dal giorno in cui Raimondo sarebbe passato la volta
+    // prima secondo il calendario, oppure dal consumo più vecchio registrato se è ancora
+    // più indietro — quei consumi non sono mai stati consegnati a nessuno, quindi escono
+    // adesso. Prima si guardava solo ai consumi: registrandone uno solo, il periodo si
+    // riduceva a quel giorno e sembrava che l'app ignorasse il ritmo del giro.
+    const cal=_biaGiroCalPrec(d);
     const date=_biaConsumi(hotel).map(c=>_biaParse(c.data)).filter(Boolean).sort((a,b)=>a-b);
-    dal=date.length?date[0]:al;
+    const primo=date.length?date[0]:null;
+    const daConsumi=!!(primo&&primo<cal);
+    dal=daConsumi?primo:cal;
+    fonte=daConsumi?'consumi':'calendario';
   }
-  if(dal>al)return{dal:dal,al:al,vuoto:true};
-  return{dal:dal,al:al,vuoto:false};
+  if(dal>al)return{dal:dal,al:al,vuoto:true,fonte:fonte};
+  return{dal:dal,al:al,vuoto:false,fonte:fonte};
 }
 // Somma dei consumi giornalieri nell'intervallo, estremi inclusi.
 function _biaSommaConsumi(hotel,dal,al){
@@ -13153,7 +13204,15 @@ function biaRender(){
   </div>`;
 
   // ── Il giro ──
-  const periodoTxt=per?(per.vuoto?'nessun giorno da ritirare':'dal '+_biaFmt(per.dal)+' al '+_biaFmt(per.al)):'—';
+  // Il periodo si scrive con i nomi dei giorni e si dice SEMPRE da dove nasce il "dal":
+  // un intervallo di date senza spiegazione non permette di accorgersi che è sbagliato.
+  const periodoTxt=_biaPeriodoTxt(per);
+  const giroDate=_biaParse(giroData);
+  const mancanti=per?_biaGiorniSenzaConsumi(_biaHotel,per):[];
+  const fonteTxt=!per?'':
+      per.fonte==='giro'?'Il periodo parte dal giro precedente registrato.':
+      per.fonte==='consumi'?'Nessun giro registrato prima: escono anche i consumi più vecchi mai consegnati.':
+      'Nessun giro registrato prima: il periodo parte dal giorno di calendario precedente (il giro passa '+BIA_GIORNI_GIRO_TXT+').';
   h+=`<div class="panel" style="margin-bottom:16px;">
     <div class="panel-header"><span class="panel-title">Giro di Raimondo</span>
       ${giaReg?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">giro già registrato</span>':''}
@@ -13163,7 +13222,20 @@ function biaRender(){
         <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data del giro</label>
         <input type="date" id="bia-giro-data" value="${giroIso}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
         <span style="font-size:var(--fs-xxs);color:var(--text-dim);">ritira i consumi ${esc(periodoTxt)}</span>
-      </div>`;
+      </div>
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:8px;">${esc(fonteTxt)}</div>`;
+
+  // Data fuori calendario: non è un errore (un giro straordinario è legittimo), ma se è
+  // una svista è meglio accorgersene prima di stampare la distinta.
+  if(giroDate&&!_biaGiornoGiro(giroDate)){
+    h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:8px;">Il ${esc(_biaFmt(giroDate))} è un ${esc(BIA_GG_NOMI[giroDate.getDay()])}: di norma il giro passa ${BIA_GIORNI_GIRO_TXT}.</div>`;
+  }
+
+  // Giorni del periodo senza consumi registrati: è quello che rende incompleto lo sporco
+  // che esce, ed è la dimenticanza più facile da fare.
+  if(mancanti.length){
+    h+=`<div style="background:rgba(160,90,0,.08);border-left:3px solid var(--amber);padding:9px 11px;font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:10px;">Nessun consumo registrato per ${esc(mancanti.map(_biaGgEtichetta).join(', '))}. Finché mancano, lo sporco che esce è incompleto: inseriscili nel riquadro qui sopra cambiando la data.</div>`;
+  }
 
   if(per&&per.vuoto){
     h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:10px;">Non ci sono giorni da ritirare per questa data: c'è già un giro registrato lo stesso giorno o successivo.</div>`;

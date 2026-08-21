@@ -177,6 +177,41 @@ ok('parte dal giro precedente', _biaFmt(per.dal), '15/08/2026');
 ok('finisce il giorno prima',   _biaFmt(per.al),  '17/08/2026');
 ok('il giorno del giro resta fuori', _biaSommaConsumi('sa', per.dal, per.al)['Federa'], 24);
 
+sez('Biancheria: calendario del giro');
+// Raimondo passa martedi', giovedi' e sabato. Il sabato ritira giovedi' e venerdi', il
+// martedi' ritira sabato/domenica/lunedi', il giovedi' ritira martedi' e mercoledi'.
+function _giro(consumi, giri, dataGiro) {
+  _bia = { consumi: consumi.map(function (d) { return { id: d, hotel: 'sa', data: d, q: { Federa: 5 } }; }),
+           giri:    giri.map(function (d) { return { id: d, hotel: 'sa', data: d, consegnato: { Federa: 5 }, ricevuto: { Federa: 5 } }; }) };
+  _biaHotel = 'sa';
+  return _biaPeriodo('sa', dataGiro);
+}
+var g = _giro(['21/08/2026'], [], '22/08/2026');        // sabato, nessun giro registrato
+ok('sabato: parte da giovedi\'',       _biaFmt(g.dal), '20/08/2026');
+ok('sabato: arriva a venerdi\'',       _biaFmt(g.al),  '21/08/2026');
+ok('lo dice con i nomi dei giorni',    _biaPeriodoTxt(g), 'di giovedì 20 e venerdì 21');
+ok('e dice da dove nasce il "dal"',    g.fonte, 'calendario');
+// Il giorno mancante e' proprio quello che rende incompleto il sacco: va segnalato.
+ok('giovedi\' senza consumi, segnalato', _biaGiorniSenzaConsumi('sa', g).map(_biaGgEtichetta).join(''), 'giovedì 20');
+
+g = _giro(['24/08/2026'], [], '25/08/2026');            // martedi'
+ok('martedi\': parte da sabato',       _biaFmt(g.dal), '22/08/2026');
+ok('martedi\': tre giorni',            _biaPeriodoTxt(g), 'di sabato 22, domenica 23 e lunedì 24');
+
+g = _giro(['25/08/2026'], [], '27/08/2026');            // giovedi'
+ok('giovedi\': parte da martedi\'',    _biaFmt(g.dal), '25/08/2026');
+
+// I consumi mai consegnati non si perdono: se sono piu' indietro del calendario, escono.
+g = _giro(['18/08/2026', '21/08/2026'], [], '22/08/2026');
+ok('consumi piu\' vecchi: escono lo stesso', _biaFmt(g.dal), '18/08/2026');
+ok('e la fonte lo dichiara',                  g.fonte, 'consumi');
+
+// Il calendario NON deve mai scavalcare un giro registrato: un giro saltato resta
+// assorbito dal successivo, che copre il buco da solo.
+g = _giro(['23/08/2026'], ['22/08/2026'], '27/08/2026');   // giovedi', ultimo giro sabato
+ok('giro saltato: copre il buco',   _biaFmt(g.dal), '22/08/2026');
+ok('il giro registrato ha la meglio', g.fonte, 'giro');
+
 sez('Biancheria: la casella Ricevuto');
 // Il difetto: la casella chiamava biaRender() a ogni tasto, che ridisegnava la tabella
 // con il valore calcolato — la cifra digitata spariva e sembrava impossibile inserirla.

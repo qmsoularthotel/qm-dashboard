@@ -2080,6 +2080,33 @@ Il `dal` si ricava dai **giri realmente registrati**, non dal calendario: se un 
 salta, il successivo copre da solo il buco. Non sostituire questa logica con un calcolo
 sui giorni della settimana.
 
+#### Il calendario serve solo al primo giro — `BIA_GIORNI_GIRO`
+
+Finché **non esiste nessun giro registrato** non c'è un "dal" da cui partire. La prima
+versione ripiegava sul consumo più vecchio registrato, e con un solo giorno inserito il
+periodo si riduceva a quel giorno: per un giro di sabato con i soli consumi del venerdì
+mostrava *"dal 21/08 al 21/08"*, e sembrava che l'app ignorasse il ritmo del giro.
+
+Il ripiego ora è: **il giorno di calendario in cui Raimondo sarebbe passato la volta
+prima** (`BIA_GIORNI_GIRO=[2,4,6]`, martedì/giovedì/sabato), **oppure il consumo più
+vecchio registrato se è ancora più indietro** — quei consumi non sono mai stati consegnati
+a nessuno, quindi escono adesso invece di restare orfani.
+
+`_biaPeriodo` restituisce anche `fonte` (`giro` · `calendario` · `consumi`), **mostrata
+sempre nel pannello**: un intervallo di date senza spiegazione non permette di accorgersi
+che è sbagliato. Il calendario non scavalca mai un giro registrato — verificato in test.
+
+Due segnalazioni nate dallo stesso equivoco:
+
+- **giorni del periodo senza consumi registrati** (`_biaGiorniSenzaConsumi`), in ambra:
+  è ciò che rende incompleto lo sporco che esce, ed è la dimenticanza più facile;
+- **data del giro fuori calendario** (una domenica): non è un errore — un giro
+  straordinario è legittimo — ma se è una svista va vista prima di stampare la distinta.
+
+Il periodo si scrive con i **nomi dei giorni** fino a quattro giorni (*"di giovedì 20 e
+venerdì 21"*), non come intervallo di date: `18/08 → 21/08` non dice a colpo d'occhio se
+sono i giorni giusti, `martedì 18 … venerdì 21` sì.
+
 ### Congelamento dello sporco consegnato
 
 `consegnato` viene salvato sul giro al momento della registrazione, non ricalcolato al
