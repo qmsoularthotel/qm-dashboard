@@ -2087,14 +2087,24 @@ versione ripiegava sul consumo più vecchio registrato, e con un solo giorno ins
 periodo si riduceva a quel giorno: per un giro di sabato con i soli consumi del venerdì
 mostrava *"dal 21/08 al 21/08"*, e sembrava che l'app ignorasse il ritmo del giro.
 
-Il ripiego ora è: **il giorno di calendario in cui Raimondo sarebbe passato la volta
-prima** (`BIA_GIORNI_GIRO=[2,4,6]`, martedì/giovedì/sabato), **oppure il consumo più
-vecchio registrato se è ancora più indietro** — quei consumi non sono mai stati consegnati
-a nessuno, quindi escono adesso invece di restare orfani.
+Il ripiego è **il giorno di calendario in cui Raimondo sarebbe passato la volta prima**
+(`BIA_GIORNI_GIRO=[2,4,6]`, martedì/giovedì/sabato): sabato → giovedì, martedì → sabato,
+giovedì → martedì. Vale **identico per tutte e due le strutture**: è il ritmo del
+fornitore, non una caratteristica dell'hotel — ma consumi e giri restano separati per
+struttura.
 
-`_biaPeriodo` restituisce anche `fonte` (`giro` · `calendario` · `consumi`), **mostrata
-sempre nel pannello**: un intervallo di date senza spiegazione non permette di accorgersi
-che è sbagliato. Il calendario non scavalca mai un giro registrato — verificato in test.
+**I consumi più vecchi del calendario restano fuori.** Una versione intermedia li faceva
+uscire tutti ("escono anche i consumi più vecchi mai consegnati"), e per un giro di sabato
+mostrava *da martedì a venerdì* invece di *giovedì e venerdì*. È sbagliato perché **i giri
+avvengono comunque, registrati qui o no**: quello sporco è già uscito con i giri fatti
+prima di iniziare a usare il modulo. Restano fuori dal sacco, ma il pannello li **nomina**
+in una riga a parte, con l'indicazione di registrare quel giro se davvero non erano mai
+stati consegnati — sparire in silenzio sarebbe peggio che restare fuori con una
+spiegazione.
+
+`_biaPeriodo` restituisce anche `fonte` (`giro` · `calendario`), **mostrata sempre nel
+pannello**: un intervallo di date senza spiegazione non permette di accorgersi che è
+sbagliato. Il calendario non scavalca mai un giro registrato — verificato in test.
 
 Due segnalazioni nate dallo stesso equivoco:
 

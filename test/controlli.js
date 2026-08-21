@@ -201,10 +201,21 @@ ok('martedi\': tre giorni',            _biaPeriodoTxt(g), 'di sabato 22, domenic
 g = _giro(['25/08/2026'], [], '27/08/2026');            // giovedi'
 ok('giovedi\': parte da martedi\'',    _biaFmt(g.dal), '25/08/2026');
 
-// I consumi mai consegnati non si perdono: se sono piu' indietro del calendario, escono.
-g = _giro(['18/08/2026', '21/08/2026'], [], '22/08/2026');
-ok('consumi piu\' vecchi: escono lo stesso', _biaFmt(g.dal), '18/08/2026');
-ok('e la fonte lo dichiara',                  g.fonte, 'consumi');
+// I giri avvengono anche quando non sono registrati qui: i consumi piu' vecchi del
+// calendario sono gia' usciti, e NON devono rientrare nel sacco di domani.
+g = _giro(['18/08/2026', '19/08/2026', '21/08/2026'], [], '22/08/2026');
+ok('consumi piu\' vecchi: restano fuori', _biaFmt(g.dal), '20/08/2026');
+ok('il sabato resta giovedi\' e venerdi\'', _biaPeriodoTxt(g), 'di giovedì 20 e venerdì 21');
+
+// Il calendario vale identico per il Boutique: e' il ritmo del fornitore, non una
+// caratteristica della struttura. Ogni struttura ha pero' i SUOI consumi e i SUOI giri.
+_bia = { consumi: [{ id: 'x', hotel: 'bh', data: '21/08/2026', q: { Federa: 3 } },
+                   { id: 'y', hotel: 'sa', data: '21/08/2026', q: { Federa: 9 } }], giri: [] };
+_biaHotel = 'bh';
+var gb = _biaPeriodo('bh', '22/08/2026');
+ok('Boutique: stesso calendario',      _biaPeriodoTxt(gb), 'di giovedì 20 e venerdì 21');
+ok('Boutique: conta i propri consumi', _biaSommaConsumi('bh', gb.dal, gb.al)['Federa'], 3);
+ok('SoulArt non entra nel Boutique',   _biaSommaConsumi('bh', gb.dal, gb.al)['Federa'] !== 12, true);
 
 // Il calendario NON deve mai scavalcare un giro registrato: un giro saltato resta
 // assorbito dal successivo, che copre il buco da solo.
