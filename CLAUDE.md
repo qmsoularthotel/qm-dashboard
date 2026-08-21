@@ -2561,13 +2561,27 @@ Il guadagno sarebbe risparmiare un copia-incolla che capita circa una volta al m
 variabili e il binding presenti nel pannello Cloudflare, e provare su un Worker di prova
 prima di toccare quello vivo. Non improvvisare.
 
-### Il problema che resta aperto
+### Il problema che restava aperto — risolto il 21/08/2026
 
-Una correzione a `worker.js` può essere scritta, versionata e **non attiva**, senza che
-nessuno se ne accorga. L'alternativa proposta e non ancora realizzata: un punto
-`/versione` nel Worker che dichiari la propria versione, e un controllo in
-`test/esegui.sh` che la confronti con quella nel repository, segnalando se la produzione è
-indietro. Richiede un ultimo copia-incolla per attivarsi, poi non si dimentica più.
+Una correzione a `worker.js` poteva essere scritta, versionata e **non attiva**, senza che
+nessuno se ne accorgesse: il 21/08/2026 è successo per ore, mentre si cercava la causa dei
+rimbalzi Booking proprio nel Worker non pubblicato.
+
+Ora il Worker dichiara la propria versione su **`GET /versione`** (senza chiave: una
+stringa di versione non è un segreto, e un controllo che richiede credenziali è un
+controllo che nessuno esegue), e `test/esegui.sh` la confronta con `WORKER_VERSIONE` in
+`worker.js` prima di ogni pubblicazione:
+
+```
+ATTENZIONE  il Worker pubblicato è la versione X, worker.js è la Y.
+            Le correzioni a mail e risposte NON sono attive finché non lo ripubblichi.
+```
+
+**Non blocca** la pubblicazione: tace se manca la rete, e tace se in produzione gira un
+Worker anteriore a questo controllo (nessun `/versione` → niente da confrontare).
+
+**Quando si modifica `worker.js`, cambiare anche `WORKER_VERSIONE`**, altrimenti il
+controllo confronta due numeri uguali e non segnala nulla.
 
 ---
 
