@@ -2567,6 +2567,45 @@ modifica i file mentre stai controllando altro è peggio del problema che risolv
 
 ---
 
+## Lavorare da due Mac — casa e hotel
+
+```
+bash strumenti/inizio.sh      quando si COMINCIA su una macchina
+bash test/esegui.sh           prima di ogni pubblicazione
+```
+
+`inizio.sh` confronta questa copia con il repository remoto e si comporta così:
+
+| Situazione | Cosa fa |
+|---|---|
+| tutto allineato | lo dice e basta |
+| questa copia è indietro | si allinea da sola e rilancia la rete di sicurezza |
+| ci sono modifiche non salvate | **si ferma** e le elenca |
+| le due copie sono divergenti | **si ferma** e mostra cosa c'è di là e cosa di qua |
+| lavoro non ancora pubblicato | avvisa che dall'altra macchina non si vede |
+
+Non decide mai da solo come riunire due versioni divergenti: quello va guardato caso per
+caso.
+
+`test/esegui.sh` controlla in più se la copia è rimasta indietro, così non si pubblica
+partendo da codice vecchio — è ciò che fa divergere le due versioni. Se manca la rete il
+controllo viene saltato, per poter lavorare scollegati.
+
+### `.DS_Store` non va nel repository
+
+Era tracciato: il Finder lo riscrive di continuo, quindi risultava sempre "modificato" su
+entrambi i Mac e poteva generare conflitti su un file che non contiene niente di utile.
+Tolto dal repository e messo in `.gitignore`. **Non reintrodurlo.**
+
+### Cosa resta fuori dal repository
+
+`culligan.png`, `icone compass/` e `loghi compass/` non sono tracciati: stanno solo sul
+Mac dove sono stati creati. Nessun codice li richiama — `img/compass-stella.png`, che serve
+alle finestre di conferma, è invece dentro il repository. Se un domani servissero anche
+altrove, vanno aggiunti.
+
+---
+
 ## Rete di sicurezza — `bash test/esegui.sh`
 
 **Lanciarla prima di ogni pubblicazione.** Esce con codice 1 se qualcosa non torna.

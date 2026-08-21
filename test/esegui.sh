@@ -58,7 +58,21 @@ if _mod style.css && ! _mod index.html; then
   VERSIONE_KO=1
 fi
 
-if echo "$USCITA" | grep -q "^ESITO:OK" && [ "$VERSIONE_KO" = "0" ]; then
+# Copia vecchia: se nel frattempo l'altra macchina ha pubblicato qualcosa, pubblicare da
+# qui farebbe divergere le due versioni, e riunirle a mano è la parte fastidiosa. Il
+# controllo non blocca se manca la rete: si lavora anche scollegati.
+COPIA_KO=0
+if git fetch -q origin 2>/dev/null; then
+  DIETRO=$(git rev-list --count HEAD..origin/main 2>/dev/null || echo 0)
+  if [ "$DIETRO" -gt 0 ]; then
+    echo ""
+    echo "  ATTENZIONE  questa copia è indietro di $DIETRO modifiche fatte sull'altra macchina."
+    echo "              Lancia:  bash strumenti/inizio.sh"
+    COPIA_KO=1
+  fi
+fi
+
+if echo "$USCITA" | grep -q "^ESITO:OK" && [ "$VERSIONE_KO" = "0" ] && [ "$COPIA_KO" = "0" ]; then
   exit 0
 fi
 exit 1

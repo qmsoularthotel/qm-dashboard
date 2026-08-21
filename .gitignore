@@ -1,1 +1,7 @@
+# Cartella di lavoro di Claude Code
 .claude/
+
+# Metadati del Finder: li riscrive di continuo, risultavano "modificati" su entrambi i
+# Mac e potevano generare conflitti su un file che non contiene nulla di utile.
+.DS_Store
+**/.DS_Store
