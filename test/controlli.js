@@ -263,6 +263,38 @@ ok('nessun a capo grezzo nel titolo', /\n/.test(_vistoAvviso.titolo), false);
 _cqApri = _cqApriVero;
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Mittente delle mail pre-stay (indirizzi Booking)');
+// Gli indirizzi @guest.booking.com accettano posta SOLO dall'indirizzo registrato
+// sull'Extranet. Il blocco non deve dipendere da una costante scritta a mano — che non
+// sa cosa c'è sul Worker — ma dal mittente che il Worker dichiara.
+var _mittVero = _psMitt;
+_psMitt = null;                       // mai verificato
+ok('alias riconosciuto: guest.booking.com', _psAliasBooking('abc.123@guest.booking.com'), true);
+ok('alias riconosciuto: booking.com',       _psAliasBooking('  X@Booking.com '),          true);
+ok('non e un alias: booking.com nel nome',  _psAliasBooking('booking.com@gmail.com'),     false);
+ok('non e un alias: dominio simile',        _psAliasBooking('tizio@guest.booking.com.co'), false);
+ok('senza verifica: indirizzo Booking bloccato', _psBookingBloccato('abc@guest.booking.com'), true);
+ok('senza verifica: indirizzo normale libero',   _psBookingBloccato('mario@gmail.com'),       false);
+
+_psMitt = { mittente: 'qm@soularthotel.com' };   // il mittente di sempre
+ok('mittente sbagliato: Booking bloccato',  _psBookingBloccato('abc@guest.booking.com'), true);
+ok('mittente sbagliato: non e quello Booking', _psMittenteOkBooking(), false);
+
+_psMitt = { mittente: 'BOOKING@SoulArtHotel.com' };  // quello registrato, con altre maiuscole
+ok('mittente giusto: riconosciuto',          _psMittenteOkBooking(), true);
+ok('mittente giusto: Booking non bloccato',  _psBookingBloccato('abc@guest.booking.com'), false);
+ok('mittente giusto: indirizzo normale libero', _psBookingBloccato('mario@gmail.com'),    false);
+_psMitt = _mittVero;
+
+// L'endpoint della verifica si ricava da quello dell'invio: una sola impostazione.
+var _cfgVero = _psMailCfg;
+_psMailCfg = { endpoint: 'https://esempio.workers.dev/prestay/send', key: 'x' };
+ok('endpoint stato ricavato da send', _psEndpointStato(), 'https://esempio.workers.dev/prestay/stato');
+_psMailCfg = { endpoint: '', key: '' };
+ok('senza configurazione nessun endpoint', _psEndpointStato(), '');
+_psMailCfg = _cfgVero;
+
+// ─────────────────────────────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 console.log(KO === 0
   ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'

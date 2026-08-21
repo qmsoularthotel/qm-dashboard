@@ -7,6 +7,7 @@
 // Cosa fa, in ordine di percorso:
 //   /kv/get|set|delete   archivio condiviso fra i dispositivi (binding QM_STORAGE)
 //   /prestay/send        invio del messaggio pre-stay (SMTP della casella dell'hotel)
+//   /prestay/stato       da quale casella parte la posta (nessun segreto, solo indirizzi)
 //   /prestay/risposte    lettura IMAP delle SOLE risposte degli ospiti indicati
 //   qualsiasi altro      proxy verso l'API Anthropic
 //
@@ -24,6 +25,11 @@ const ORIGINI = [
   'https://compass-qm.com',
   'https://qmsoularthotel.github.io'
 ];
+// Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
+// senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
+// produzione contiene davvero l'ultima correzione. Lo restituisce /prestay/stato.
+const WORKER_VERSIONE = '2026-08-21';
+
 const PRESTAY_MAX_GIORNO = 60;      // tetto di sicurezza sugli invii, non un limite d'uso
 const RISPOSTE_MAX_INDIRIZZI = 30;  // quante caselle si possono interrogare in una volta
 
@@ -96,6 +102,30 @@ export default {
       }
       try { await env.QM_STORAGE.put(contatore, String(n + 1), { expirationTtl: 172800 }); } catch (e) {}
       return json({ ok: true });
+    }
+
+    // ── CHI SPEDISCE DAVVERO ──
+    // Il mittente delle mail lo decidono le variabili di questo Worker, non Compass: dalla
+    // dashboard non c'era quindi alcun modo di sapere da quale casella partono. Serve a
+    // spiegare i rimbalzi degli indirizzi @guest.booking.com, che Booking recapita SOLO se
+    // la mail parte dall'indirizzo registrato sull'Extranet della struttura.
+    // Restituisce solo indirizzi e nomi di host: nessuna password, e comunque dietro la
+    // stessa chiave e lo stesso controllo di origine degli altri percorsi /prestay/*.
+    if (url.pathname === '/prestay/stato') {
+      const no = autorizza(); if (no) return no;
+      const viaSmtp = !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
+      return json({
+        ok: true,
+        versione: WORKER_VERSIONE,
+        via: viaSmtp ? 'smtp' : (env.RESEND_KEY ? 'resend' : 'nessuno'),
+        // Esattamente ciò che finisce in MAIL FROM e nell'intestazione From: se SMTP_FROM
+        // è rimasta impostata, vince lei — è la svista che rende inutile cambiare SMTP_USER.
+        mittente: soloIndirizzo(viaSmtp ? (env.SMTP_FROM || env.SMTP_USER || '') : (env.PRESTAY_FROM || '')),
+        mittenteDa: viaSmtp ? (env.SMTP_FROM ? 'SMTP_FROM' : 'SMTP_USER') : 'PRESTAY_FROM',
+        smtpHost: viaSmtp ? String(env.SMTP_HOST || '') : '',
+        replyTo: soloIndirizzo(env.PRESTAY_REPLYTO || ''),
+        imap: soloIndirizzo(env.IMAP_USER || '')
+      });
     }
 
     // ── LETTURA RISPOSTE DEGLI OSPITI ──
