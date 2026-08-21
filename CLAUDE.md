@@ -2223,6 +2223,24 @@ card stampata, a 24pt, si legge come una sgridata. Stessa regola già in uso nel
 `PREN_UNICO`: con il file unico nomina *Prenotazioni (PMS)*, legge `qm_ts_prenTs` e
 riapre `prenFileInput` — non più il Riepilogo Reception, il cui slot è nascosto.
 
+### Le card si riallineano da sole — `rcRiallineaConArrivi()`
+
+`qm_rcGuests` e `qm_arriviData` sono chiavi **indipendenti**: la seconda può cambiare
+senza la prima (un altro PC che carica, il polling che la rilegge da KV, una versione
+dell'app in cui il caricamento non ridisegnava le card). Il sintomo non si nota
+guardando: card perfettamente plausibili, ma dell'ospite sbagliato.
+
+All'apertura della vista Registrazione (`rcRefreshFromCloud`) e al ripristino all'avvio,
+le card vengono rigenerate se **entrambe** le condizioni valgono:
+
+1. il documento arrivi è di **oggi** — un documento vecchio non genera MAI card, meglio
+   lasciare quelle che ci sono, che almeno la riga sorgente data e attribuisce;
+2. **nessuna** card ha il check-in di quel giorno — ne basta una che combaci per
+   considerarle allineate, perché qualcuna può essere stata aggiunta a mano.
+
+Chi carica il PDF quindi non deve fare altro: se il caricamento è avvenuto su un altro PC,
+o prima che questa correzione fosse pubblicata, basta aprire la vista.
+
 ### La forma dei dati NON cambia
 
 `qm_arriviData` e `qm_bkfData` vengono scritte **identiche a prima**, campo per campo. È un

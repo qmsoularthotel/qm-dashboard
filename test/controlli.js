@@ -137,6 +137,32 @@ ok('nessun arrivo: card lasciate stare',      rcAggiornaDaArrivi(false), 'vuoto'
 // controlla che la chiamata ci sia.
 ok('il file unico ridisegna le card', /rcAggiornaDaArrivi/.test(String(prenHandlePdf)), true);
 
+sez('Card riallineate senza ricaricare il PDF');
+// qm_rcGuests e qm_arriviData sono chiavi indipendenti: la seconda puo' essere aggiornata
+// senza la prima. Aprendo la vista, card di un altro giorno vanno rigenerate da sole.
+var _rcOggiVero = rcTodayStr;
+rcTodayStr = function () { return '10/05/2026'; };
+
+arriviData = _prenArriviData(RC_PREN, '2026-05-10');
+guestsData = [{ camera: '203', nome: 'Ospite Di Ieri', checkin: '09/05/2026', checkout: '11/05/2026', pax: 1, trattamento: 'BB' }];
+ok('card di ieri, documento di oggi: rigenerate', rcRiallineaConArrivi(), true);
+ok('ora le card sono del giorno giusto',          guestsData[0].checkin, '10/05/2026');
+
+// Gia' allineate: non si tocca niente (un rigenero inutile perderebbe le card aggiunte a mano).
+guestsData[0].marcatore = 'intatto';
+ok('card gia\' di oggi: nessun rigenero', rcRiallineaConArrivi(), false);
+ok('card lasciate come stavano',           guestsData[0].marcatore, 'intatto');
+
+// Documento vecchio: non deve MAI generare card, meglio quelle che ci sono.
+rcTodayStr = function () { return '11/05/2026'; };
+guestsData = [];
+ok('documento di ieri: nessuna card generata', rcRiallineaConArrivi(), false);
+ok('nessuna card inventata',                   guestsData.length, 0);
+rcTodayStr = _rcOggiVero;
+// Anche qui il rischio e' il collegamento, non il calcolo: la funzione esiste ma nessuno
+// la chiama all'apertura della vista.
+ok('la vista Registrazione riallinea all\'apertura', /rcRiallineaConArrivi/.test(String(rcRefreshFromCloud)), true);
+
 sez('Biancheria: periodo ritirato da Raimondo');
 // Il giro del giorno D ritira dal giro precedente (incluso) al giorno prima di D.
 _bia = { consumi: [

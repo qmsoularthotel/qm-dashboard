@@ -4032,6 +4032,10 @@ document.querySelector('.content').addEventListener('scroll',function(){
             rcRenderCards(guests);
           }
         }
+        // Gli arrivi sono già stati ripristinati sopra: se le card salvate sono di ieri
+        // (o non ci sono) e il documento è di oggi, si rigenerano subito invece di
+        // aspettare che qualcuno ricarichi il PDF.
+        rcRiallineaConArrivi();
       }catch(e){}
     },300);
     // Ripristina report pulizie
@@ -6985,6 +6989,29 @@ function rcAggiornaDaArrivi(sameDayAsPrev){
     return'ok';
 }
 
+// Card di un giorno diverso dal documento arrivi? Le rigenera, senza aspettare un nuovo
+// caricamento del PDF.
+//
+// qm_rcGuests e qm_arriviData sono due chiavi INDIPENDENTI: la seconda può essere
+// aggiornata senza la prima — da un altro PC, dal polling che la rilegge da KV, o da una
+// versione dell'app in cui il caricamento non ridisegnava le card. Il sintomo è sempre lo
+// stesso e non si nota guardando: card perfettamente plausibili, ma dell'ospite sbagliato.
+//
+// Due condizioni, entrambe necessarie:
+//  1. il documento arrivi è di OGGI — un documento vecchio non deve MAI generare card,
+//     meglio lasciare quelle che ci sono (che almeno la riga sorgente data e attribuisce);
+//  2. nessuna card ha il check-in di quel giorno. Ne basta una che combaci per considerarle
+//     allineate: qualcuna può essere stata aggiunta a mano.
+function rcRiallineaConArrivi(){
+  if(!arriviData||!Array.isArray(arriviData.arrivi)||!arriviData.arrivi.length)return false;
+  if(arriviData.data!==rcTodayStr())return false;
+  const cards=Array.isArray(guestsData)?guestsData:[];
+  if(cards.length&&cards.some(g=>g.checkin===arriviData.data))return false;
+  const esito=rcAggiornaDaArrivi(false);
+  if(esito==='ok')console.log('[RC] card riallineate al documento del '+arriviData.data);
+  return esito==='ok';
+}
+
 // §§ REGISTRATION CARDS — RC (handleRCFile, rcParseGuests, rcRenderCards)
 async function handleRCFile(file){rcShowProc('Lettura del PDF...');rcHideError();try{const ab=await file.arrayBuffer();const pdfData=new Uint8Array(ab);rcShowProc('Estrazione testo...');const pdfDoc=await pdfjsLib.getDocument({data:pdfData}).promise;let fullText='';for(let i=1;i<=pdfDoc.numPages;i++){const page=await pdfDoc.getPage(i);const tc=await page.getTextContent();fullText+=tc.items.map(x=>x.str).join(' ')+'\n';}const guests=rcParseGuests(fullText);rcHideProc();if(!guests.length){rcShowProc('Analisi AI in corso...');try{await handleArriviFile(file);}finally{rcHideProc();}}else{rcRenderCards(guests);}}catch(err){rcHideProc();rcShowError('Errore: '+err.message);}}
 function rcCleanName(raw){let name=raw.trim().replace(/\s*\([^)]+\)/g,'').trim();const cp=new RegExp('^('+ROOM_CODES.join('|')+')\\s+','i');let prev='';while(prev!==name){prev=name;name=name.replace(cp,'').trim();}return name;}
@@ -7117,16 +7144,19 @@ async function rcRefreshFromCloud(){
   try{
     const res=await fetch(PROXY+'/kv/get?key=qm_rcGuests',{cache:'no-store'});
     const json=await res.json();
-    if(!json.value)return;
-    if(json.value===localStorage.getItem('qm_rcGuests')&&guestsData.length)return;
-    localStorage.setItem('qm_rcGuests',json.value);
-    const cloudGuests=JSON.parse(json.value);
-    if(cloudGuests&&cloudGuests.length){
-      document.getElementById('rcUploadZone').style.display='none';
-      document.getElementById('rcProcessing').style.display='none';
-      rcRenderCards(cloudGuests);
+    const nuove=json.value&&!(json.value===localStorage.getItem('qm_rcGuests')&&guestsData.length);
+    if(nuove){
+      localStorage.setItem('qm_rcGuests',json.value);
+      const cloudGuests=JSON.parse(json.value);
+      if(cloudGuests&&cloudGuests.length){
+        document.getElementById('rcUploadZone').style.display='none';
+        document.getElementById('rcProcessing').style.display='none';
+        rcRenderCards(cloudGuests);
+      }
     }
   }catch(e){}
+  // Allineare le card al cloud non basta: su KV possono essere vecchie quanto quelle locali.
+  try{rcRiallineaConArrivi();}catch(e){}
 }
 function rcShowProc(msg){document.getElementById('rcProcText').textContent=msg;document.getElementById('rcProcessing').style.display='flex';document.getElementById('rcUploadZone').style.display='none';}
 function rcHideProc(){document.getElementById('rcProcessing').style.display='none';}
