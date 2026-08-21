@@ -2614,7 +2614,12 @@ altrove, vanno aggiunti.
 test/ambiente.js   finti document, window, fetch, localStorage… perché app.js si carichi
 test/controlli.js  i casi di prova
 test/esegui.sh     lo script da lanciare
+test/node.js       esecutore per ambienti con Node
 ```
+
+**Funziona su entrambe le macchine.** `esegui.sh` usa Node dove c'è (Linux, claude.ai) e
+`osascript` dove non c'è (Mac). Le due strade leggono gli stessi file e fanno gli stessi
+controlli: se se ne modifica una, aggiornare anche l'altra.
 
 ### Cosa copre e perché proprio quello
 

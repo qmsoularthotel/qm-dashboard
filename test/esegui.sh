@@ -15,7 +15,12 @@ if [ ! -f app.js ]; then
   exit 1
 fi
 
-USCITA=$(osascript -l JavaScript -e '
+# Due strade per lo stesso lavoro: Node dove c'è (Linux, claude.ai), altrimenti osascript
+# (Mac senza Node). Stessi file, stessi controlli.
+if command -v node >/dev/null 2>&1; then
+  USCITA=$(node test/node.js 2>&1)
+else
+  USCITA=$(osascript -l JavaScript -e '
 function leggi(p){ return $.NSString.stringWithContentsOfFileEncodingError(p,$.NSUTF8StringEncoding,null).js; }
 
 // 1. Sintassi: se app.js non si carica, i controlli non avrebbero senso.
@@ -36,6 +41,7 @@ try {
   console.log("ESITO:FALLITO");
 }
 ' 2>&1)
+fi
 
 echo "$USCITA" | grep -v "^ESITO:"
 
