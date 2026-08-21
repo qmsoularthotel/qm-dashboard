@@ -13817,7 +13817,13 @@ async function prenHandlePdf(file){
       bkfData=bd.data; bkfActiveDay=0;
       try{localStorage.setItem('qm_bkfData',JSON.stringify(bd));}catch(e){}
       kvSet('qm_bkfData',JSON.stringify(bd)).catch(()=>{});
+      // Segnatempo delle colazioni. Lo scriveva solo il vecchio upload del Report pasti:
+      // senza questa riga i dati si aggiornavano ma il Pannello App continuava a mostrare
+      // l'ora dell'ultimo caricamento manuale, indistinguibile da un caricamento mancato.
+      try{localStorage.setItem('qm_ts_bkfTs',String(bd.ts));}catch(e){}
+      try{setUploadTs('bkfTs',bd.ts);}catch(e){}
       try{updateKpiFromBkf();}catch(e){}
+      try{renderBkfData();}catch(e){}
     }
 
     // 3. Schede pre-stay: si importano TUTTI i giorni dell'intervallo, non solo oggi.

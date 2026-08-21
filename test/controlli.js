@@ -43,6 +43,12 @@ ok('11/05 colazioni (solo Gialli)',        giorno('11/05/2026').colTot, 3);
 ok('11/05 no colazione (solo Bianchi)',    giorno('11/05/2026').noCol, 1);
 ok('il Principe non entra nei no colazione', giorno('11/05/2026').noCol !== 3, true);
 ok('13/05 colazioni: Neri arriva, non fa colazione', giorno('13/05/2026').colTot, 3);
+// Il Pannello App legge l'ora dell'ultimo aggiornamento colazioni da qm_ts_bkfTs, non dai
+// dati: se il caricamento Prenotazioni non la scrive, i numeri sono freschi ma la scheda
+// dichiara una data vecchia — cioè esattamente il sintomo di un caricamento non avvenuto.
+ok('le colazioni portano il proprio segnatempo', typeof bkf.ts === 'number' && bkf.ts > 0, true);
+ok('il caricamento Prenotazioni scrive qm_ts_bkfTs',
+   /qm_ts_bkfTs/.test(String(prenHandlePdf)) && /setUploadTs\(\s*['"]bkfTs['"]/.test(String(prenHandlePdf)), true);
 
 sez('Struttura dedotta dall\'alloggio');
 ok('Art -> SoulArt',                _prenStruttura('Art 5 / AS Superior'), 'SA');
