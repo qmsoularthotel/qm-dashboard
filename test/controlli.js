@@ -47,6 +47,13 @@ ok('13/05 colazioni: Neri arriva, non fa colazione', giorno('13/05/2026').colTot
 // dati: se il caricamento Prenotazioni non la scrive, i numeri sono freschi ma la scheda
 // dichiara una data vecchia — cioè esattamente il sintomo di un caricamento non avvenuto.
 ok('le colazioni portano il proprio segnatempo', typeof bkf.ts === 'number' && bkf.ts > 0, true);
+// Stessa classe di difetto del segnatempo colazioni: dato aggiornato, tessera che dichiara
+// "Non caricato". Il riepilogo va scritto al caricamento e riletto all'avvio.
+ok('il caricamento Prenotazioni salva il proprio riepilogo',
+   /PREN_RIASS_KEY/.test(String(prenHandlePdf)), true);
+ok('la tessera Prenotazioni si ricostruisce dopo un Cmd+R',
+   typeof prenRestoreSlot === 'function' && /PREN_RIASS_KEY/.test(String(prenRestoreSlot))
+   && /ucSetState\(\s*['"]pren['"]\s*,\s*['"]loaded['"]/.test(String(prenRestoreSlot)), true);
 ok('il caricamento Prenotazioni scrive qm_ts_bkfTs',
    /qm_ts_bkfTs/.test(String(prenHandlePdf)) && /setUploadTs\(\s*['"]bkfTs['"]/.test(String(prenHandlePdf)), true);
 

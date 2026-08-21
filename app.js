@@ -13564,6 +13564,10 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 // PREN_UNICO=false → tutto torna esattamente com'era: riappaiono i tre slot separati e i
 // loro handler, che NON vengono rimossi. Stesso schema di HKP_DERIVE_FROM_PIANO.
 const PREN_UNICO=true;
+// Riepilogo dell'ultimo caricamento ("147 prenotazioni · 21/08–28/08"), per ricostruire la
+// tessera dell'Upload Center dopo un ricaricamento della pagina. Del PDF non si conserva
+// altro: arrivi, colazioni e pre-stay hanno già ciascuno il proprio archivio.
+const PREN_RIASS_KEY='qm_pren_riass';
 
 // Posizioni x delle colonne nell'export reale (pagina orizzontale, larghezza 842pt).
 // Verificate sull'export del 20/08/2026: intestazioni a x=10 Ospite, 162.5 Arrivo,
@@ -13848,6 +13852,9 @@ async function prenHandlePdf(file){
     msg('Caricato: '+ad.arrivi.length+' arrivi oggi, '+(bd?bd.data.length:0)+' giorni di colazioni, '+schedePs+' schede pre-stay su '+giorniPs+' giorni. '+rcNota+'.');
     uc('loaded',riass);
     setUploadTs('prenTs');
+    // Senza questa riga, dopo un Cmd+R la tessera torna a "Non caricato" pur essendo stati
+    // aggiornati arrivi, colazioni e pre-stay: identica a un caricamento mai avvenuto.
+    try{localStorage.setItem(PREN_RIASS_KEY,JSON.stringify({riass:riass,ts:Date.now()}));}catch(e){}
     try{refreshOverviewForDate(customDate||new Date());}catch(e){}
     try{prestayRender();}catch(e){}
   }catch(err){
@@ -13867,6 +13874,18 @@ function prenApplicaVisibilitaSlot(){
   mostra('uc-row-pasti',!PREN_UNICO);
 }
 
+// Ricostruisce la tessera Prenotazioni dopo un ricaricamento della pagina, come
+// pianoSetLoaded fa per il Piano Settimanale. Silenziosa: non apre l'accordione.
+function prenRestoreSlot(){
+  if(!PREN_UNICO)return;
+  let s=null;
+  try{s=JSON.parse(localStorage.getItem(PREN_RIASS_KEY)||'null');}catch(e){}
+  if(!s||!s.riass)return;
+  ucSetState('pren','loaded',s.riass,true);
+  const li=document.getElementById('prenLoadedInfo');if(li)li.classList.add('visible');
+  if(s.ts){try{restoreUploadTs('prenTs',s.ts);}catch(e){}}
+}
+
 // Collegamento dello slot Upload Center (click, drag&drop, input file) — stesso schema
 // degli altri slot. La visibilità viene applicata subito: con PREN_UNICO=false questo
 // slot resta nascosto e riappaiono i tre che sostituisce.
@@ -13874,6 +13893,7 @@ function prenApplicaVisibilitaSlot(){
   const box=document.getElementById('prenUploadBox');
   const inp=document.getElementById('prenFileInput');
   try{prenApplicaVisibilitaSlot();}catch(e){}
+  try{prenRestoreSlot();}catch(e){}
   if(!inp)return;
   if(box){
     box.addEventListener('click',()=>inp.click());
