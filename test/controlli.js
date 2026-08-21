@@ -177,6 +177,17 @@ ok('parte dal giro precedente', _biaFmt(per.dal), '15/08/2026');
 ok('finisce il giorno prima',   _biaFmt(per.al),  '17/08/2026');
 ok('il giorno del giro resta fuori', _biaSommaConsumi('sa', per.dal, per.al)['Federa'], 24);
 
+sez('Biancheria: la casella Ricevuto');
+// Il difetto: la casella chiamava biaRender() a ogni tasto, che ridisegnava la tabella
+// con il valore calcolato — la cifra digitata spariva e sembrava impossibile inserirla.
+ok('Ricevuto aggiorna solo il delta',      /oninput="biaAggiornaDelta\(\)"/.test(String(biaRender)), true);
+ok('Ricevuto non ridisegna il pannello',   /id="bia-r-\$\{i\}"[^>]*oninput="biaRender/.test(String(biaRender)), false);
+ok('la cella del delta e\' identificabile', /id="bia-d-\$\{i\}"/.test(String(biaRender)), true);
+// L'avviso diceva "mancano" anche quando rientrava piu' roba di quanta ne era uscita.
+ok('meno pezzi: mancano',   /mancano 4 pezzi/.test(_biaMsgDiff(-4)), true);
+ok('piu\' pezzi: non "mancano"', /mancano/.test(_biaMsgDiff(3)), false);
+ok('in pari: nessun avviso',  _biaMsgDiff(0), '');
+
 sez('Anno del turno');
 var oggi = new Date(); var A = oggi.getFullYear();
 function annoDi(iso) { var d = _annoPlausibile(new Date(iso + 'T12:00:00')); return d.getFullYear(); }

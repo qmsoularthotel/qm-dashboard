@@ -2102,11 +2102,35 @@ e non vanno unificate: `Lenzuolo matrimoniale, Lenzuolo singolo, Federa, Telo do
 Asciugamano viso, Asciugamano bidet, Scendibagno`. Strutture: SoulArt e Boutique
 (`BIA_HOTELS`), come per i resi — Art Resort resta fuori.
 
+### La casella "Ricevuto" non ridisegna il pannello
+
+`biaRender()` rigenera **tutto** l'HTML della vista. La casella *Ricevuto* aveva
+`oninput="biaRender()"` per aggiornare la colonna Δ mentre si digita: a ogni tasto la
+tabella veniva ricostruita con il valore **calcolato** (l'atteso, cioè `0` finché non
+esiste un giro precedente), quindi la cifra appena digitata spariva e il campo perdeva il
+fuoco. Da fuori sembrava semplicemente che il numero non si potesse inserire — segnalato
+come *"tento di digitare il numero ma resta sempre 0"*.
+
+Ora l'`oninput` chiama `biaAggiornaDelta()`, che tocca **solo** le celle interessate: il Δ
+di ogni riga (`bia-d-N`), lo sfondo della riga e l'avviso di ammanco (`bia-diff-msg`, ora
+sempre presente nel DOM e nascosto quando non serve). L'atteso della tabella a schermo sta
+in `_biaAttesoVis`, scritto da `biaRender()`.
+
+**Regola per qualunque casella futura di questo pannello**: aggiornare i pezzi che
+cambiano, mai ridisegnare tutto sotto le dita di chi sta scrivendo.
+
+Nella stessa correzione: l'avviso diceva *"mancano N pezzi"* anche quando ne rientravano
+**più** di quanti ne erano usciti (usava `Math.abs` su una differenza con segno) —
+`_biaMsgDiff(tot)` ora distingue i due casi. Le tre caselle numeriche hanno
+`onfocus="this.select()"`: partendo da `0`, digitare senza cancellare dava `50` invece di
+`5`.
+
 ### Funzioni
 
 | Funzione | Scopo |
 |----------|-------|
 | `biaLoad()` | Carica da KV con fallback localStorage, poi render |
+| `biaAggiornaDelta()` | Aggiorna Δ e avviso mentre si digita, senza rigenerare l'HTML |
 | `_biaPeriodo(hotel,dataGiro)` | Intervallo dei consumi ritirati — vedi regola sopra |
 | `_biaSommaConsumi(hotel,dal,al)` | Somma per voce nell'intervallo, estremi inclusi |
 | `_biaAtteso(hotel,dataGiro)` | Sporco consegnato al giro precedente |

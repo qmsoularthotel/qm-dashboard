@@ -13059,6 +13059,45 @@ async function biaEliminaGiro(id){
   _biaSave();biaRender();
 }
 
+// La colonna Δ e l'avviso di ammanco si aggiornano MENTRE si digita, ma senza rigenerare
+// l'HTML del pannello: la casella "Ricevuto" chiamava biaRender() a ogni tasto, che la
+// ridisegnava da capo con il valore calcolato (l'atteso, o 0 al primo giro). La cifra
+// appena digitata veniva quindi buttata via a ogni battuta e il campo perdeva il fuoco:
+// da fuori sembrava semplicemente che il numero non si potesse inserire.
+//
+// Qui si toccano solo le celle interessate. Stessa regola per qualunque casella futura in
+// questo pannello: aggiornare i pezzi che cambiano, mai ridisegnare tutto sotto le dita.
+let _biaAttesoVis=null;   // atteso della tabella attualmente a schermo
+
+function _biaMsgDiff(tot){
+  if(!tot)return'';
+  return tot<0
+    ?'Rispetto a quanto consegnato il giro scorso mancano '+Math.abs(tot)+' pezzi.'
+    :'Sono rientrati '+tot+' pezzi in più di quanti ne erano stati consegnati il giro scorso.';
+}
+
+function biaAggiornaDelta(){
+  const att=_biaAttesoVis;
+  let tot=0;
+  BIA_VOCI.forEach((v,i)=>{
+    const er=document.getElementById('bia-r-'+i), cella=document.getElementById('bia-d-'+i);
+    if(!er||!cella)return;
+    if(!att){cella.textContent='—';return;}
+    const d=(Number(er.value)||0)-(Number(att[v])||0);
+    tot+=d;
+    cella.textContent=d>0?'+'+d:String(d);
+    cella.style.color=d===0?'var(--green)':'var(--red)';
+    const tr=er.closest?er.closest('tr'):null;
+    if(tr)tr.style.background=d===0?'':'rgba(192,53,42,.06)';
+  });
+  const avviso=document.getElementById('bia-diff-msg');
+  if(avviso){
+    const msg=att?_biaMsgDiff(tot):'';
+    avviso.textContent=msg;
+    avviso.style.display=msg?'':'none';
+  }
+}
+
 function biaRender(){
   const el=document.getElementById('bia-content');if(!el)return;
   const oggi=_biaOggi();
@@ -13073,6 +13112,7 @@ function biaRender(){
   const atteso=_biaAtteso(_biaHotel,giroData);
   const saldo=_biaSaldo();
   const giaReg=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===giroData);
+  _biaAttesoVis=atteso;   // la tabella disegnata sotto si riferisce a questo atteso
 
   let h='';
 
@@ -13103,7 +13143,7 @@ function biaRender(){
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
         ${BIA_VOCI.map((v,i)=>`<div>
           <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${esc(v)}</div>
-          <input type="number" min="0" id="bia-c-${i}" value="${consSel?(Number(consSel.q[v])||0):0}" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);text-align:center;">
+          <input type="number" min="0" id="bia-c-${i}" value="${consSel?(Number(consSel.q[v])||0):0}" onfocus="this.select()" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);text-align:center;">
         </div>`).join('')}
       </div>
       <div style="margin-top:12px;">
@@ -13135,9 +13175,8 @@ function biaRender(){
     const r=giaReg?(Number(giaReg.ricevuto[v])||0):(Number(atteso[v])||0);
     return s+(r-(Number(atteso[v])||0));
   },0);
-  if(atteso&&diffTot!==0){
-    h+=`<div style="background:var(--red-bg,rgba(192,53,42,.08));border-left:3px solid var(--red);padding:9px 11px;font-size:var(--fs-xs);color:var(--red);line-height:1.45;margin-bottom:10px;">Rispetto a quanto consegnato il giro scorso mancano ${Math.abs(diffTot)} pezzi.</div>`;
-  }
+  const msgDiff=atteso?_biaMsgDiff(diffTot):'';
+  h+=`<div id="bia-diff-msg" style="background:var(--red-bg,rgba(192,53,42,.08));border-left:3px solid var(--red);padding:9px 11px;font-size:var(--fs-xs);color:var(--red);line-height:1.45;margin-bottom:10px;${msgDiff?'':'display:none;'}">${esc(msgDiff)}</div>`;
 
   h+=`<div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
@@ -13158,9 +13197,9 @@ function biaRender(){
     h+=`<tr style="${bad?'background:rgba(192,53,42,.06);':''}">
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));">${esc(v)}</td>
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;color:var(--text-dim);">${att===null?'—':att}</td>
-      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-r-${i}" value="${ric}" oninput="biaRender()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
-      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;font-weight:700;color:${d===null?'var(--text-dim)':(d===0?'var(--green)':'var(--red)')};">${d===null?'—':(d>0?'+'+d:d)}</td>
-      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-s-${i}" value="${spo}" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
+      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-r-${i}" value="${ric}" oninput="biaAggiornaDelta()" onfocus="this.select()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
+      <td id="bia-d-${i}" style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;font-weight:700;color:${d===null?'var(--text-dim)':(d===0?'var(--green)':'var(--red)')};">${d===null?'—':(d>0?'+'+d:d)}</td>
+      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-s-${i}" value="${spo}" onfocus="this.select()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
     </tr>`;
   });
   h+=`</tbody></table></div>
