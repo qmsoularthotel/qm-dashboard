@@ -2692,6 +2692,27 @@ colti, con il dettaglio di cosa non tornava.
 
 ## Note & Problemi Noti
 
+### Aggiornamento automatico delle 5 app standalone (22/08/2026)
+
+Ogni app (`housekeeper`, `breakfast`, `controllo-mattino`, `inventory`, `dvr`) contiene
+`qmCheckVersione()`, accanto a `qmCheckAppStatus()`: una richiesta **HEAD** sul proprio file
+confronta l'**ETag** con quello letto al caricamento e, se il file è cambiato, ricarica la
+pagina. Gira al caricamento, al ritorno in primo piano e ogni 10 minuti.
+
+- **Nessun numero di versione da mantenere**: l'ETag cambia solo se cambia il contenuto.
+- **Non ricarica mentre si scrive** in un `INPUT`/`TEXTAREA`/`SELECT`: riprova al giro dopo.
+- `sw.js` mette in cache **solo le GET**: `Cache.put` rifiuta le HEAD e lasciava una promessa
+  respinta a ogni controllo.
+
+**Perché esiste**: un'app aperta e mai chiusa continuava a usare il codice con cui era stata
+caricata, per settimane. Il 22/08/2026 una copia rimasta aperta ha riscritto l'archivio
+colazioni con la regola vecchia ore dopo la pubblicazione della correzione. **Spegnere
+l'app dal Pannello App non basta**: `qmCheckAppStatus()` mostra l'overlay di manutenzione ma
+non ferma il codice sottostante, che continua a leggere e scrivere.
+
+**Limite da ricordare**: un'app già aperta con il codice *precedente* a questa modifica non
+si aggiorna da sola — non contiene ancora `qmCheckVersione()`. Va chiusa a mano una volta.
+
 ### Riferimenti inerti — non sono guasti, non "ripararli" (verificato 21/08/2026)
 
 Un controllo su tutti gli `onclick` e su tutti i `getElementById` letterali ha dato:
