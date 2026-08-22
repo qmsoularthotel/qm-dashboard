@@ -1230,7 +1230,7 @@ verrebbe saltato o troncato a metà.
 
 Versione corrente: **`qm-v26`**. Pattern:
 - **Proxy/KV/Google Sheets/cataloghi barcode** → sempre network, mai cache
-- **HTML files** → network-first con `cache:'no-store'` (garantisce Cmd+R sempre aggiornato)
+- **HTML files** → **sempre rete, mai cache** (`cache:'no-store'`, nessun ripiego). Non è una svista: la copia salvata veniva servita quando la rete al risveglio non rispondeva subito — cioè all'apertura dell'app da spenta — e riapparivano versioni vecchie all'infinito. GitHub Pages manda inoltre `cache-control: max-age=600` sugli HTML, quindi senza `no-store` il telefono riusa comunque la pagina per 10 minuti. **Prezzo accettato**: senza rete le pagine non si aprono (vivono di dati cloud, e una pagina vecchia che mostra numeri sbagliati è peggio di una che non si apre)
 - **Asset statici** → cache-first (il cache buster gestisce gli aggiornamenti)
 
 ### UN SOLO service worker per tutto il sito — non reintrodurne uno per app
