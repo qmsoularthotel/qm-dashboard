@@ -284,8 +284,11 @@ setInterval(qmCheckAppStatus,30000);
 //
 // Non ricarica mentre si sta scrivendo in un campo, per non far perdere quello che si sta
 // digitando: riproverà al controllo successivo.
-let _qmVersioneFile=null;
+let _qmVersioneFile=null,_qmVersioneTs=0;
 async function qmCheckVersione(){
+  // Tre eventi possono chiamarla a raffica (risveglio + fuoco + timer): una verifica ogni
+  // 20 secondi basta e avanza, il resto sarebbe traffico inutile sul telefono.
+  const ora=Date.now(); if(ora-_qmVersioneTs<20000)return; _qmVersioneTs=ora;
   try{
     const r=await fetch(location.pathname,{method:'HEAD',cache:'no-store'});
     const v=r.headers.get('ETag')||r.headers.get('Last-Modified')||'';
@@ -298,7 +301,16 @@ async function qmCheckVersione(){
   }catch(e){}                                                // rete assente: si riprova
 }
 qmCheckVersione();
+// Tre risvegli diversi, perche' i telefoni ne usano tre.
+//  - visibilitychange: si torna sull'app fra le schede aperte
+//  - pageshow con persisted: la pagina era CONGELATA e viene ripristinata. E' il caso di
+//    chi chiude l'app dalla schermata iniziale e la riapre: il telefono non ricarica
+//    niente, rimette a schermo il DOM di prima, e senza questo evento l'app resterebbe
+//    col codice vecchio finche' non si preme aggiorna a mano.
+//  - focus: rete assente al risveglio, il controllo fallisce e si riprova al primo fuoco.
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckVersione();});
+window.addEventListener('pageshow',e=>{if(e&&e.persisted)qmCheckVersione();});
+window.addEventListener('focus',()=>qmCheckVersione());
 setInterval(qmCheckVersione,600000);   // ogni 10 minuti
 
 function setSyncStatus(s){const d=document.getElementById('syncDot');if(d)d.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');}
