@@ -6334,6 +6334,26 @@ function renderBkfDay(silent){
   renderOvBkfChart();
   renderOvBkfStats();
 }
+// Fonde i giorni di colazione appena caricati con quelli già in memoria.
+//
+// Il caricamento sostituiva l'intera serie. Bastava allora un export del PMS filtrato su
+// un giorno solo — cosa che si fa senza pensarci — per cancellare la previsione dei giorni
+// successivi: il grafico dell'app Breakfast restava senza dati, e la responsabile perdeva
+// lo strumento con cui organizza il servizio. Il 22/08/2026 è successo alle 21:18.
+//
+// Regola: i giorni presenti nel nuovo caricamento vincono (sono più freschi), gli altri
+// restano. Si tengono da ieri l'altro in avanti: più indietro non serve al grafico e i
+// giorni passati sono comunque già nell'archivio mensile.
+function _bkfFondi(vecchi,nuovi){
+  const chiave=d=>bkfHistChiave(d)||'';
+  const per={};
+  (Array.isArray(vecchi)?vecchi:[]).forEach(d=>{const k=chiave(d);if(k)per[k]=d;});
+  (nuovi||[]).forEach(d=>{const k=chiave(d);if(k)per[k]=d;});
+  const limite=new Date(); limite.setHours(0,0,0,0); limite.setDate(limite.getDate()-2);
+  const lim=limite.getFullYear()+'-'+String(limite.getMonth()+1).padStart(2,'0')+'-'+String(limite.getDate()).padStart(2,'0');
+  return Object.keys(per).filter(k=>k>=lim).sort().map(k=>per[k]);
+}
+
 // Chiave YYYY-MM-DD da una riga di bkfData (che porta la data come GG/MM/AAAA).
 function bkfHistChiave(d){
   if(!d||!d.data)return null;
@@ -13981,6 +14001,11 @@ async function prenHandlePdf(file){
     // 2. Colazioni per tutto l'intervallo (ex Report pasti)
     const bd=_prenBkfData(pren);
     if(bd&&bd.data.length){
+      // I giorni caricati si FONDONO con quelli già presenti, non li sostituiscono.
+      // Il grafico della previsione è lo strumento su cui la responsabile organizza il
+      // servizio: un export filtrato su un giorno solo lo azzerava per intero, e non c'era
+      // modo di accorgersene se non guardando il grafico vuoto. Vedi _bkfFondi().
+      bd.data=_bkfFondi(bkfData,bd.data);
       bkfData=bd.data; bkfActiveDay=0;
       try{localStorage.setItem('qm_bkfData',JSON.stringify(bd));}catch(e){}
       kvSet('qm_bkfData',JSON.stringify(bd)).catch(()=>{});

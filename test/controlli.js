@@ -259,6 +259,30 @@ ok('martedi\': tre giorni',            _biaPeriodoTxt(g), 'di sabato 22, domenic
 g = _giro(['25/08/2026'], [], '27/08/2026');            // giovedi'
 ok('giovedi\': parte da martedi\'',    _biaFmt(g.dal), '25/08/2026');
 
+sez('Colazioni: un caricamento stretto non cancella la previsione');
+// Il grafico della previsione e' lo strumento su cui la responsabile organizza il
+// servizio. Un export del PMS filtrato su un giorno solo sostituiva l'intera serie e lo
+// azzerava, senza alcun segnale (22/08/2026, ore 21:18).
+function _gio(off, v) {
+  var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + off);
+  return { data: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(),
+           label: 'x', adulti: v, bambini: 0, noCol: 0 };
+}
+var serie = [_gio(0, 55), _gio(1, 39), _gio(2, 31), _gio(3, 49)];
+var stretto = _bkfFondi(serie, [_gio(0, 60)]);
+ok('caricamento di un giorno solo: la serie resta', stretto.length, 4);
+ok('il giorno caricato e\' aggiornato',             stretto[0].adulti, 60);
+ok('i giorni futuri restano quelli di prima',       stretto[3].adulti, 49);
+var esteso = _bkfFondi(serie, [_gio(3, 50), _gio(4, 44)]);
+ok('un caricamento piu\' ampio aggiunge i giorni',  esteso.length, 5);
+ok('e sovrascrive quelli in comune',                esteso[3].adulti, 50);
+ok('la serie resta in ordine di data',
+   esteso.map(function (d) { return d.data; }).join('|') ===
+   esteso.map(function (d) { return d.data; }).slice().sort(function (a, b) {
+     return a.slice(6) + a.slice(3, 5) + a.slice(0, 2) < b.slice(6) + b.slice(3, 5) + b.slice(0, 2) ? -1 : 1; }).join('|'), true);
+ok('i giorni molto vecchi non si accumulano',       _bkfFondi([_gio(-30, 10)], [_gio(0, 55)]).length, 1);
+ok('senza dati precedenti funziona lo stesso',      _bkfFondi(null, [_gio(0, 55)]).length, 1);
+
 sez('Biancheria: vigilia del ritiro (quando si stampa la distinta)');
 // La distinta va preparata il POMERIGGIO PRIMA: la mattina del ritiro, alle 8, la
 // reception e' nel pieno dei check-out e non la stampa nessuno — i dati si perdevano
