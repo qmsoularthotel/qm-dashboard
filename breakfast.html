@@ -51,6 +51,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .kpi-val.sm{font-size:28px;}
 .kpi-lbl{font-size:11px;color:var(--text-dim);letter-spacing:.04em;}
 
+/* Pannello con intestazione e divisori: un blocco solo invece di riquadri annidati.
+   Stessi colori di prima (--surface, --border): cambia la struttura, non la tavolozza.
+   I numeri stanno allineati a sinistra sotto la loro etichetta, così scorrendo la pagina
+   l'occhio segue una colonna sola invece di rimbalzare fra valori centrati. */
+.pan{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;}
+.pan-head{padding:9px 13px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+.pan-t{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;}
+.pan-s{font-size:12px;color:var(--text);}
+.pan-cols{display:grid;}
+.pan-c{padding:9px 13px;border-right:1px solid var(--border);}
+.pan-c:last-child{border-right:0;}
+.pan-k{font-size:11px;color:var(--text-dim);margin-bottom:1px;}
+.pan-v{font-size:20px;font-weight:700;line-height:1.15;color:var(--accent);}
+.pan-v.muted{color:var(--text-muted);}
+.pan-v.big{font-size:23px;}
+
 .no-data{background:var(--surface);border-radius:12px;padding:32px 24px;text-align:center;color:var(--text-dim);font-size:14px;border:1px solid var(--border);}
 
 .section-title{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 8px;padding-left:2px;}
@@ -330,27 +346,20 @@ function renderDay(){
 
   let html='';
 
-  // KPI principale
-  html+=`<div class="kpi-grid" style="grid-template-columns:1fr;margin-bottom:10px;">
-    <div class="kpi-card" style="border-top:3px solid var(--accent);">
-      <div class="kpi-lbl" style="margin-bottom:6px;">Coperti totali</div>
-      <div class="kpi-val">${coperti}</div>
+  // Coperti del giorno — un pannello solo: il totale nell'intestazione, il dettaglio in tre
+  // colonne divise da filetti. Prima il totale era ripetuto due volte (il riquadro grande e
+  // la tessera BB dicevano lo stesso numero).
+  html+=`<div class="pan">
+    <div class="pan-head">
+      <div style="display:flex;align-items:baseline;gap:9px;">
+        <div style="font-size:32px;font-weight:700;color:var(--accent);line-height:1;">${coperti}</div>
+        <span class="pan-t">Coperti totali</span>
+      </div>
     </div>
-  </div>`;
-
-  // KPI dettaglio
-  html+=`<div class="kpi-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:10px;">
-    <div class="kpi-card">
-      <div class="kpi-val sm">${coperti}</div>
-      <div class="kpi-lbl">BB</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-val sm" style="color:var(--text-muted);">${d.noCol||0}</div>
-      <div class="kpi-lbl">RO</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-val sm" style="color:var(--green);">${paxGruppi||0}</div>
-      <div class="kpi-lbl">Pax Gruppi</div>
+    <div class="pan-cols" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="pan-c"><div class="pan-k">BB</div><div class="pan-v">${coperti}</div></div>
+      <div class="pan-c"><div class="pan-k">RO</div><div class="pan-v muted">${d.noCol||0}</div></div>
+      <div class="pan-c"><div class="pan-k">Pax Gruppi</div><div class="pan-v" style="color:${paxGruppi?'var(--green)':'var(--text-dim)'};">${paxGruppi||0}</div></div>
     </div>
   </div>`;
 
@@ -411,19 +420,22 @@ function renderDay(){
     }
   }
 
-  // Grafico settimanale
-  html+=`<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);padding:12px 14px;margin-bottom:10px;" id="bkf-chart-wrap"></div>`;
+  // Grafico della previsione. L'intestazione dice cosa mostra e la forbice della settimana:
+  // prima il grafico galleggiava senza titolo.
+  html+=`<div class="pan">
+    <div class="pan-head"><span class="pan-t">Prossimi ${bkfData.length} giorni</span><span class="pan-s" id="bkf-chart-range" style="color:var(--text-dim);font-size:11px;"></span></div>
+    <div style="padding:10px 8px 4px;" id="bkf-chart-wrap"></div>
+  </div>`;
 
-  // Domani
+  // Domani — la data sale nell'intestazione, accanto all'etichetta a cui si riferisce.
   const tomorrow=bkfData[currentIdx+1];
   if(tomorrow){
     const totTom=(tomorrow.adulti||0)+(tomorrow.bambini||0);
-    html+=`<div class="section-title">Domani</div>
-    <div class="preview-card">
-      <div class="preview-day">${tomorrow.label}</div>
-      <div class="preview-row" style="grid-template-columns:1fr 1fr;">
-        <div class="preview-item"><div class="preview-val">${totTom}</div><div class="preview-lbl">BB</div></div>
-        <div class="preview-item"><div class="preview-val muted">${tomorrow.noCol||0}</div><div class="preview-lbl">RO</div></div>
+    html+=`<div class="pan">
+      <div class="pan-head"><span class="pan-t">Domani</span><span class="pan-s">${tomorrow.label}</span></div>
+      <div class="pan-cols" style="grid-template-columns:1fr 1fr;">
+        <div class="pan-c"><div class="pan-k">BB</div><div class="pan-v">${totTom}</div></div>
+        <div class="pan-c"><div class="pan-k">RO</div><div class="pan-v muted">${tomorrow.noCol||0}</div></div>
       </div>
     </div>`;
   }
@@ -502,22 +514,23 @@ function renderMonthlyStats(){
     bb+=(_bkfHistory[k].bb||0);ro+=(_bkfHistory[k].ro||0);days++;
   });
 
-  const btnStyle=`position:absolute;top:50%;transform:translateY(-50%);border:none;background:var(--surface2);border-radius:6px;cursor:pointer;font-size:16px;color:var(--text);padding:4px 9px;font-weight:500;`;
-  let h=`<div id="bkf-monthly-wrap"><div class="section-title">Riepilogo mese</div>`;
-  h+=`<div ontouchstart="_bkfTS(event)" ontouchend="_bkfTE(event)" style="position:relative;background:var(--surface);border-radius:12px;border:${isCur?'2px solid var(--accent)':'1px solid var(--border)'};padding:14px 32px;margin-bottom:10px;text-align:center;">`;
-  h+=`<button onclick="bkfMonthNav(-1)" style="${btnStyle}left:4px;">‹</button>`;
-  h+=`<button onclick="bkfMonthNav(1)" style="${btnStyle}right:4px;${!canNext?'opacity:.2;pointer-events:none;':''}">›</button>`;
-  h+=`<div style="margin-bottom:${days?'10px':'0'};">`;
-  h+=`<span style="font-size:18px;font-weight:700;color:${isCur?'var(--accent)':'var(--text)'};">${fmtYM(viewYM)}</span>`;
-  if(days)h+=`<span style="font-size:11px;color:var(--text-dim);margin-left:6px;vertical-align:middle;">${days} giorni</span>`;
+  // Mese e frecce salgono nell'intestazione: lì si capisce che navigano il mese, mentre
+  // messe ai lati dei numeri sembravano riferirsi a quelli.
+  const btnStyle=`border:none;background:none;cursor:pointer;font-size:16px;color:var(--text-dim);padding:0 4px;line-height:1;`;
+  let h=`<div id="bkf-monthly-wrap">`;
+  h+=`<div class="pan" ontouchstart="_bkfTS(event)" ontouchend="_bkfTE(event)">`;
+  h+=`<div class="pan-head" style="align-items:center;">`;
+  h+=`<button onclick="bkfMonthNav(-1)" style="${btnStyle}">‹</button>`;
+  h+=`<span class="pan-t" style="color:${isCur?'var(--accent)':'var(--text-dim)'};">${fmtYM(viewYM)}${days?' · '+days+' giorni':''}</span>`;
+  h+=`<button onclick="bkfMonthNav(1)" style="${btnStyle}${!canNext?'opacity:.2;pointer-events:none;':''}">›</button>`;
   h+=`</div>`;
   if(days){
-    h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">`;
-    h+=`<div><div style="font-size:32px;font-weight:800;color:var(--accent);line-height:1;">${bb}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">BB totali</div></div>`;
-    h+=`<div><div style="font-size:32px;font-weight:800;color:var(--text-dim);line-height:1;">${ro}</div><div style="font-size:11px;color:var(--text-dim);margin-top:3px;">RO totali</div></div>`;
+    h+=`<div class="pan-cols" style="grid-template-columns:1fr 1fr;">`;
+    h+=`<div class="pan-c"><div class="pan-k">BB totali</div><div class="pan-v big">${bb}</div></div>`;
+    h+=`<div class="pan-c"><div class="pan-k">RO totali</div><div class="pan-v big muted">${ro}</div></div>`;
     h+=`</div>`;
   }else{
-    h+=`<div style="color:var(--text-dim);font-size:12px;padding:6px 0;">Nessun dato</div>`;
+    h+=`<div style="color:var(--text-dim);font-size:12px;padding:10px 13px;">Nessun dato</div>`;
   }
   h+=`</div></div>`;
   return h;
@@ -532,25 +545,36 @@ function renderChart(){
   const step=Math.ceil(YMAX/4/10)*10||10;
   const sx=i=>PL+i/(pts.length-1||1)*plotW;
   const sy=v=>PT+plotH-(v/YMAX)*plotH;
+  // Colonne, non una linea: fra un giorno e l'altro non c'è continuità da rappresentare —
+  // sono otto giornate distinte, ognuna con le sue camere. Il giorno mostrato è pieno, gli
+  // altri attenuati: si distingue a colpo d'occhio quello che si sta guardando da ciò che
+  // è previsto. I colori restano quelli dell'app (oro dell'accento, blu dei valori).
+  const bw=Math.min(34,plotW/pts.length*0.62);
+  const cx=i=>PL+(i+0.5)*(plotW/pts.length);
+  // "oggi" va sul giorno reale, non su quello selezionato: navigando avanti l'etichetta
+  // seguirebbe la colonna sbagliata e direbbe una cosa falsa.
+  let tIdx=-1; try{tIdx=findTodayIdx();}catch(e){}
   let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
   for(let v=0;v<=YMAX;v+=step){
     const y=sy(v);
-    svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#e2d8cc" stroke-width="1"/>`;
+    svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="${v===0?'#d9cfc2':'#ece5db'}" stroke-width="1"/>`;
     svg+=`<text x="${PL-4}" y="${y+5}" font-size="14" fill="#9a8878" text-anchor="end">${v}</text>`;
   }
-  const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
-  const areaPath=linePath+`L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z`;
-  svg+=`<path d="${areaPath}" fill="#c9952f" opacity="0.12"/>`;
-  svg+=`<path d="${linePath}" fill="none" stroke="#c9952f" stroke-width="2.5"/>`;
   pts.forEach((p,i)=>{
-    const x=sx(i),y=sy(p.v);
+    const x=cx(i),y=sy(p.v),hgt=sy(0)-y;
     const isActive=i===currentIdx;
-    svg+=`<circle cx="${x}" cy="${y}" r="${isActive?7:5}" fill="#c9952f" stroke="white" stroke-width="2"/>`;
-    svg+=`<text x="${x}" y="${y-14}" font-size="${isActive?22:18}" fill="#1c3a5e" text-anchor="middle" font-weight="${isActive?'800':'600'}">${p.v}</text>`;
-    svg+=`<text x="${x}" y="${H-5}" font-size="15" fill="#9a8878" text-anchor="middle">${p.label}</text>`;
+    svg+=`<rect x="${x-bw/2}" y="${y}" width="${bw}" height="${hgt}" rx="2" fill="${isActive?'#c9952f':'#e0c58a'}"/>`;
+    svg+=`<text x="${x}" y="${y-7}" font-size="${isActive?20:16}" fill="#1c3a5e" text-anchor="middle" font-weight="${isActive?'800':'600'}">${p.v}</text>`;
+    svg+=`<text x="${x}" y="${H-5}" font-size="15" fill="${isActive?'#1c3a5e':'#9a8878'}" text-anchor="middle" font-weight="${isActive?'700':'400'}">${i===tIdx?'oggi':p.label}</text>`;
   });
   svg+='</svg>';
   el.innerHTML=svg;
+  // Forbice della settimana nell'intestazione del pannello.
+  const rg=document.getElementById('bkf-chart-range');
+  if(rg&&pts.length){
+    const vals=pts.map(p=>p.v);
+    rg.textContent='min '+Math.min(...vals)+' · max '+Math.max(...vals);
+  }
 }
 // Chiave YYYY-MM-DD da una riga di bkfData (che porta la data come GG/MM/AAAA).
 function _bkfChiaveGiorno(d){
