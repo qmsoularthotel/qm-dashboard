@@ -86,6 +86,12 @@ BKF_KO=0
 # vecchio a tempo indeterminato — ed e' cosi' che una correzione pubblicata resta inefficace
 # senza che nessuno se ne accorga (22/08/2026, archivio colazioni).
 for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.html dvr.html; do
+  if ! grep -q 'QM_APP_BUILD' "$_app"; then
+    echo ""
+    echo "  ERRORE      $_app non dichiara piu' la propria versione (QM_APP_BUILD)."
+    echo "              Senza, l'app non puo' accorgersi di essere una copia vecchia."
+    BKF_KO=1
+  fi
   if ! grep -q 'qmCheckVersione' "$_app"; then
     echo ""
     echo "  ERRORE      $_app non si aggiorna piu' da sola quando pubblichi una correzione."

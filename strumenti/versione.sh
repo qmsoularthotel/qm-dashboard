@@ -52,6 +52,25 @@ if cambiato('style.css'):
 if s != orig:
     open('index.html', 'w', encoding='utf-8').write(s)
 
+# Le 5 app standalone portano dentro di sé la propria versione (QM_APP_BUILD): all'avvio
+# la confrontano con quella pubblicata e, se non coincide, si ricaricano. Senza questo
+# aggiornamento automatico il numero resterebbe fermo e il controllo diventerebbe inutile:
+# l'app crederebbe di essere aggiornata qualunque cosa succeda.
+for app in ('housekeeper.html', 'breakfast.html', 'controllo-mattino.html',
+            'inventory.html', 'dvr.html'):
+    if not cambiato(app):
+        continue
+    t = open(app, encoding='utf-8').read()
+    m = re.search(r"const QM_APP_BUILD='([\d-]+)\.(\d+)'", t)
+    if not m:
+        continue
+    data, n = m.group(1), int(m.group(2))
+    oggi_p = datetime.date.today().strftime('%Y-%m-%d')
+    nuovo = f"{oggi_p}.{n + 1 if data == oggi_p else 1}"
+    t = re.sub(r"const QM_APP_BUILD='[^']*'", f"const QM_APP_BUILD='{nuovo}'", t)
+    open(app, 'w', encoding='utf-8').write(t)
+    fatto.append(f"{app} -> {nuovo}")
+
 if fatto:
     for f in fatto:
         print('  aggiornato ' + f)

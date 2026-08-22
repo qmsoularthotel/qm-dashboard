@@ -284,7 +284,32 @@ setInterval(qmCheckAppStatus,30000);
 //
 // Non ricarica mentre si sta scrivendo in un campo, per non far perdere quello che si sta
 // digitando: riproverà al controllo successivo.
+// Versione di QUESTO file, aggiornata da strumenti/versione.sh a ogni pubblicazione.
+// Serve a rispondere alla domanda che il controllo sull'ETag non sapeva porsi: la pagina
+// che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
+// prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
+// parte gia' sbagliato e nessun controllo successivo se ne accorge.
+const QM_APP_BUILD='2026-08-22.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
+
+// Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
+// pronta, ripiega sulla copia salvata: e' cosi' che riaprendo l'app si rivedeva la
+// versione vecchia. Un indirizzo mai visto prima non e' in nessuna cache.
+// Il segno in sessionStorage impedisce di ricaricare all'infinito se qualcosa non torna.
+function _qmRicarica(){
+  try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
+  location.replace(location.pathname+'?v='+Date.now());
+}
+
+// All'avvio: confronta la versione scritta dentro questa pagina con quella pubblicata.
+async function qmCheckBuild(){
+  try{
+    const r=await fetch(location.pathname+'?c='+Date.now(),{cache:'no-store'});
+    const t=await r.text();
+    const m=t.match(/QM_APP_BUILD='([^']+)'/);
+    if(m&&m[1]&&m[1]!==QM_APP_BUILD)_qmRicarica();
+  }catch(e){}
+}
 async function qmCheckVersione(){
   // Tre eventi possono chiamarla a raffica (risveglio + fuoco + timer): una verifica ogni
   // 20 secondi basta e avanza, il resto sarebbe traffico inutile sul telefono.
@@ -300,6 +325,7 @@ async function qmCheckVersione(){
     location.reload();
   }catch(e){}                                                // rete assente: si riprova
 }
+qmCheckBuild();
 qmCheckVersione();
 // Tre risvegli diversi, perche' i telefoni ne usano tre.
 //  - visibilitychange: si torna sull'app fra le schede aperte
