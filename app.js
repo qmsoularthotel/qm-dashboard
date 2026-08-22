@@ -13021,7 +13021,20 @@ const BIA_KEY='qm_biancheria';
 const BIA_HOTELS={sa:'SoulArt Hotel',bh:'Boutique Hotel Piazza Carità'};
 // Le sette voci dei fogli camera, nell'ordine in cui le cameriere le trovano sul
 // cartaceo: inserire i numeri seguendo lo stesso ordine riduce gli errori di battitura.
+// L'ordine è solo di presentazione — i dati salvati sono indicizzati per NOME, quindi
+// riordinare non sposta nessun numero già registrato. Rinominare una voce sì: quella
+// orfanerebbe i valori salvati sotto il vecchio nome.
 const BIA_VOCI=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno'];
+// Nella tabella del giro le voci si leggono in un ordine diverso: prima la biancheria da
+// letto, poi gli asciugamani, infine telo doccia e scendibagno. È l'ordine in cui si
+// contano i pezzi preparando il sacco, e NON è quello del foglio camera — che invece
+// resta identico nel riquadro dei consumi giornalieri, dove si ricopia dal cartaceo.
+//
+// Le due liste contengono le stesse sette voci: BIA_VOCI resta l'elenco canonico, e gli
+// id delle caselle (bia-r-N / bia-s-N / bia-d-N) seguono SEMPRE la sua posizione. Così
+// chi rilegge i campi — biaRegistraGiro, biaPrintDistinta, biaAggiornaDelta — continua a
+// scorrere BIA_VOCI e non può disallinearsi con l'ordine mostrato a schermo.
+const BIA_VOCI_GIRO=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Asciugamano viso','Asciugamano bidet','Telo doccia','Scendibagno'];
 let _bia={consumi:[],giri:[]};
 let _biaHotel='sa';
 const _biaH=x=>x.hotel||'sa';
@@ -13383,7 +13396,8 @@ function biaRender(){
         <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Sporco che esce</th>
       </tr></thead>
       <tbody>`;
-  BIA_VOCI.forEach((v,i)=>{
+  BIA_VOCI_GIRO.forEach(v=>{
+    const i=BIA_VOCI.indexOf(v);          // id canonico: vedi la nota su BIA_VOCI_GIRO
     const att=atteso?(Number(atteso[v])||0):null;
     const ric=giaReg?(Number(giaReg.ricevuto[v])||0):(att===null?0:att);
     const spo=giaReg?(Number(giaReg.consegnato[v])||0):(Number(sporco[v])||0);

@@ -190,6 +190,34 @@ ok('parte dal giro precedente', _biaFmt(per.dal), '15/08/2026');
 ok('finisce il giorno prima',   _biaFmt(per.al),  '17/08/2026');
 ok('il giorno del giro resta fuori', _biaSommaConsumi('sa', per.dal, per.al)['Federa'], 24);
 
+sez('Biancheria: ordine delle voci');
+// Due ordini diversi, di proposito: i consumi si ricopiano dal foglio camera, il giro si
+// conta preparando il sacco. Valgono per tutte e due le strutture (le liste sono uniche).
+ok('consumi: ordine del foglio camera', BIA_VOCI.join(' · '),
+   'Lenzuolo matrimoniale · Lenzuolo singolo · Federa · Telo doccia · Asciugamano viso · Asciugamano bidet · Scendibagno');
+ok('giro: telo doccia dopo gli asciugamani', BIA_VOCI_GIRO.join(' · '),
+   'Lenzuolo matrimoniale · Lenzuolo singolo · Federa · Asciugamano viso · Asciugamano bidet · Telo doccia · Scendibagno');
+// Stesse sette voci: se una comparisse in una lista sola, una riga sparirebbe da una
+// delle due tabelle senza che nessuno se ne accorga.
+ok('le due liste contengono le stesse voci',
+   BIA_VOCI.slice().sort().join('|') === BIA_VOCI_GIRO.slice().sort().join('|'), true);
+// Gli id delle caselle seguono BIA_VOCI: chi rilegge i campi scorre quella lista, e un
+// ordine di visualizzazione diverso non deve far finire i numeri sulla voce sbagliata.
+// (const/var: l'ambiente di prova converte i const di primo livello in var)
+ok('la tabella del giro usa l\'indice canonico',
+   /(const|var) i=BIA_VOCI\.indexOf\(v\)/.test(String(biaRender)), true);
+// I dati gia' salvati sono indicizzati per NOME, non per posizione: riordinare la lista
+// non deve spostare nessun numero.
+_bia = { consumi: [{ id: 'v', hotel: 'sa', data: '21/08/2026',
+                     q: { 'Lenzuolo matrimoniale': 1, 'Lenzuolo singolo': 2, 'Federa': 3,
+                          'Telo doccia': 4, 'Asciugamano viso': 5, 'Asciugamano bidet': 6, 'Scendibagno': 7 } }],
+         giri: [] };
+_biaHotel = 'sa';
+var vecchi = _biaSommaConsumi('sa', _biaParse('21/08/2026'), _biaParse('21/08/2026'));
+ok('telo doccia resta 4',      vecchi['Telo doccia'], 4);
+ok('asciugamano viso resta 5', vecchi['Asciugamano viso'], 5);
+ok('totale invariato',         _biaTot(vecchi), 28);
+
 sez('Biancheria: calendario del giro');
 // Raimondo passa martedi', giovedi' e sabato. Il sabato ritira giovedi' e venerdi', il
 // martedi' ritira sabato/domenica/lunedi', il giovedi' ritira martedi' e mercoledi'.
