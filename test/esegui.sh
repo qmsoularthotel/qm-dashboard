@@ -82,6 +82,18 @@ fi
 # non app.js). L'archivio mensile e' condiviso fra dashboard e app: se una delle due
 # tornasse ad archiviare i giorni futuri, il totale del mese ricomincerebbe a mentire.
 BKF_KO=0
+# Aggiornamento automatico: senza, un'app rimasta aperta continua a girare col codice
+# vecchio a tempo indeterminato — ed e' cosi' che una correzione pubblicata resta inefficace
+# senza che nessuno se ne accorga (22/08/2026, archivio colazioni).
+for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.html dvr.html; do
+  if ! grep -q 'qmCheckVersione' "$_app"; then
+    echo ""
+    echo "  ERRORE      $_app non si aggiorna piu' da sola quando pubblichi una correzione."
+    echo "              Manca qmCheckVersione(): l'app resterebbe al codice vecchio finche'"
+    echo "              qualcuno non la chiude a mano."
+    BKF_KO=1
+  fi
+done
 if ! grep -q 'key>oggi' breakfast.html; then
   echo ""
   echo "  ERRORE      breakfast.html non esclude piu' i giorni futuri dall'archivio mensile."

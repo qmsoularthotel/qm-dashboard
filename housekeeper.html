@@ -252,6 +252,38 @@ async function qmCheckAppStatus(){
 qmCheckAppStatus();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckAppStatus();});
 setInterval(qmCheckAppStatus,30000);
+
+// ── AGGIORNAMENTO AUTOMATICO DELL'APP ──
+// Un'app aperta e mai chiusa continua a usare il codice con cui è stata caricata: sullo
+// smartphone può restare settimane nello scorrimento delle app aperte. Il 22/08/2026 una
+// copia rimasta aperta ha continuato a riscrivere l'archivio delle colazioni con la regola
+// vecchia, ore dopo che la correzione era stata pubblicata — e da qui non c'era modo né di
+// accorgersene né di rimediare: spegnere l'app dal Pannello App copre l'interfaccia ma non
+// ferma il codice che gira sotto.
+//
+// Qui si chiede al server se il file di QUESTA pagina è cambiato, confrontando l'ETag (o in
+// mancanza la data di ultima modifica): cambia solo quando cambia il contenuto, quindi non
+// c'è nessun numero di versione da ricordare di aggiornare. La richiesta è HEAD: scarica le
+// intestazioni, non la pagina.
+//
+// Non ricarica mentre si sta scrivendo in un campo, per non far perdere quello che si sta
+// digitando: riproverà al controllo successivo.
+let _qmVersioneFile=null;
+async function qmCheckVersione(){
+  try{
+    const r=await fetch(location.pathname,{method:'HEAD',cache:'no-store'});
+    const v=r.headers.get('ETag')||r.headers.get('Last-Modified')||'';
+    if(!v)return;                                            // server che non le espone
+    if(_qmVersioneFile===null){_qmVersioneFile=v;return;}     // prima lettura: riferimento
+    if(v===_qmVersioneFile)return;
+    const a=document.activeElement;
+    if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return; // sta scrivendo: non ora
+    location.reload();
+  }catch(e){}                                                // rete assente: si riprova
+}
+qmCheckVersione();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckVersione();});
+setInterval(qmCheckVersione,600000);   // ogni 10 minuti
 const GIORNI_FULL=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
 const GIORNI_SHORT=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
 const MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];

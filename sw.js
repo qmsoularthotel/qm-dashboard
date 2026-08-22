@@ -52,8 +52,12 @@ self.addEventListener('fetch', e => {
   ) {
     e.respondWith(
       fetch(e.request, { cache: 'no-store' }).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
+        // Solo le GET si mettono in cache: le app controllano di essere aggiornate con una
+        // richiesta HEAD (vedi qmCheckVersione), e Cache.put rifiuta tutto ciò che non è GET.
+        if (e.request.method === 'GET') {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
         return res;
       }).catch(() => caches.match(e.request))
     );
@@ -63,7 +67,7 @@ self.addEventListener('fetch', e => {
   // Asset statici (img, js, css): cache-first (il cache buster gestisce gli aggiornamenti)
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-      if (res.ok) {
+      if (res.ok && e.request.method === 'GET') {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
       }
