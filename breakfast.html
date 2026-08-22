@@ -520,17 +520,43 @@ function renderChart(){
   svg+='</svg>';
   el.innerHTML=svg;
 }
-function bkfMergeHistory(){
-  if(!bkfData||!bkfData.length)return;
+// Chiave YYYY-MM-DD da una riga di bkfData (che porta la data come GG/MM/AAAA).
+function _bkfChiaveGiorno(d){
+  if(!d||!d.data)return null;
+  const p=String(d.data).split('/');if(p.length!==3)return null;
+  return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+}
+function _bkfOggiKey(){
+  const n=new Date();
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+}
+// Nell'archivio mensile entrano SOLO i giorni già trascorsi, oggi compreso.
+//
+// Un giorno futuro è una previsione, non un dato: le prenotazioni per quella data
+// continuano ad arrivare. Registrandolo in anticipo, la fotografia scattata quel giorno
+// restava nell'archivio e non veniva più corretta — nessuno torna a ricaricare il 12
+// agosto. È così che agosto 2026 risultava sottostimato di 32 colazioni su 1187: i giorni
+// dall'8 al 13 erano stati scritti quando mancavano ancora prenotazioni (il 12 agosto ne
+// mancavano sedici), e tre giorni risultavano invece gonfiati da prenotazioni poi
+// cancellate e mai tolte.
+//
+// Con questa regola ogni giornata entra nell'archivio non prima del giorno stesso, quando
+// i numeri sono ormai definitivi, e viene riscritta a ogni caricamento successivo che la
+// comprenda. Se un giorno non venisse caricato affatto resterebbe fuori dal totale: un
+// dato mancante si vede, un dato sbagliato no.
+function bkfAggiornaHistoryInMemoria(){
   // Rimuovi vecchi record in formato YYYY-MM (aggregati mensili, formato obsoleto)
   Object.keys(_bkfHistory).forEach(k=>{if(k.length!==10)delete _bkfHistory[k];});
-  // Salva ogni giorno come YYYY-MM-DD → {bb, ro}
-  bkfData.forEach(d=>{
-    if(!d.data)return;
-    const p=d.data.split('/');if(p.length!==3)return;
-    const key=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
-    _bkfHistory[key]={bb:(d.adulti||0)+(d.bambini||0),ro:(d.noCol||0)};
+  const oggi=_bkfOggiKey();
+  (bkfData||[]).forEach(d=>{
+    const key=_bkfChiaveGiorno(d);
+    if(!key||key>oggi)return;   // confronto fra stringhe ISO: l'ordine è quello giusto
+    _bkfHistory[key]={bb:(d.adulti||0)+(d.bambini||0),ro:(d.noCol||0),ts:Date.now()};
   });
+}
+function bkfMergeHistory(){
+  if(!bkfData||!bkfData.length)return;
+  bkfAggiornaHistoryInMemoria();
   const json=JSON.stringify(_bkfHistory);
   try{localStorage.setItem(BKF_HIST_KEY,json);}catch(e){}
   // Salva su KV solo se abbiamo caricato la history da KV (evita di sovrascrivere con dati parziali)
@@ -589,10 +615,9 @@ try{
   if(c){const saved=JSON.parse(c);bkfData=saved.data||[];bkfData._ts=saved.ts||null;
     // Non salvare su KV qui: _bkfHistory dal localStorage locale potrebbe essere incompleto.
     // Il merge completo (con KV) avviene in loadAll(). Aggiorniamo solo la memoria.
-    if(bkfData.length){
-      Object.keys(_bkfHistory).forEach(k=>{if(k.length!==10)delete _bkfHistory[k];});
-      bkfData.forEach(d=>{if(!d.data)return;const p=d.data.split('/');if(p.length!==3)return;const key=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');_bkfHistory[key]={bb:(d.adulti||0)+(d.bambini||0),ro:(d.noCol||0)};});
-    }
+    // Stessa regola del percorso principale — una sola funzione, altrimenti la copia
+    // rimasta indietro reintroduce il difetto senza che si veda.
+    if(bkfData.length)bkfAggiornaHistoryInMemoria();
     try{const si=sessionStorage.getItem('bkf_day_idx');currentIdx=si!==null?Math.min(parseInt(si),bkfData.length-1):findTodayIdx();}catch(e){currentIdx=findTodayIdx();}
     renderDay();}
 }catch(e){}

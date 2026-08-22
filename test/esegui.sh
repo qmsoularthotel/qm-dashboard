@@ -78,6 +78,17 @@ if git fetch -q origin 2>/dev/null; then
   fi
 fi
 
+# Stessa regola in breakfast.html, che i controlli non possono caricare (e' una pagina a se,
+# non app.js). L'archivio mensile e' condiviso fra dashboard e app: se una delle due
+# tornasse ad archiviare i giorni futuri, il totale del mese ricomincerebbe a mentire.
+BKF_KO=0
+if ! grep -q 'key>oggi' breakfast.html; then
+  echo ""
+  echo "  ERRORE      breakfast.html non esclude piu' i giorni futuri dall'archivio mensile."
+  echo "              Cerca bkfAggiornaHistoryInMemoria(): serve il controllo key>oggi."
+  BKF_KO=1
+fi
+
 # Worker non pubblicato: worker.js si pubblica a mano su Cloudflare (vedi CLAUDE.md, la
 # pubblicazione automatica è stata valutata e scartata). Una correzione può quindi essere
 # scritta, versionata e non attiva — successo il 21/08/2026, per ore, senza alcun segnale.
@@ -94,7 +105,7 @@ if [ -n "$VIVA" ] && [ -n "$LOCALE" ] && [ "$VIVA" != "$LOCALE" ]; then
   echo "              Cloudflare → Workers → anthropic-proxy → Modifica codice → Cmd+A → incolla → Deploy."
 fi
 
-if echo "$USCITA" | grep -q "^ESITO:OK" && [ "$VERSIONE_KO" = "0" ] && [ "$COPIA_KO" = "0" ]; then
+if echo "$USCITA" | grep -q "^ESITO:OK" && [ "$VERSIONE_KO" = "0" ] && [ "$COPIA_KO" = "0" ] && [ "$BKF_KO" = "0" ]; then
   exit 0
 fi
 exit 1

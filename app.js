@@ -6332,6 +6332,28 @@ function renderBkfDay(silent){
   renderOvBkfChart();
   renderOvBkfStats();
 }
+// Chiave YYYY-MM-DD da una riga di bkfData (che porta la data come GG/MM/AAAA).
+function bkfHistChiave(d){
+  if(!d||!d.data)return null;
+  const p=String(d.data).split('/');if(p.length!==3)return null;
+  return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+}
+function bkfHistOggi(){
+  const n=new Date();
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+}
+// Nell'archivio mensile delle colazioni entrano SOLO i giorni già trascorsi, oggi compreso.
+//
+// Un giorno futuro è una previsione, non un dato: le prenotazioni per quella data
+// continuano ad arrivare. Archiviandolo in anticipo, la fotografia scattata quel giorno
+// restava per sempre — nessuno torna a ricaricare il 12 agosto. Il 22/08/2026 l'archivio
+// dichiarava per agosto 1155 colazioni contro le 1187 del PMS: i giorni dall'8 al 13 erano
+// stati scritti quando mancavano ancora prenotazioni (il 12 ne mancavano sedici), tre
+// giorni erano gonfiati da prenotazioni poi cancellate, e in coda c'erano già archiviati
+// il 30 agosto con 21 colazioni e il 31 con 8.
+//
+// Sono numeri usati per confronti fra mesi: devono essere veri, non plausibili.
+// Il confronto fra chiavi è fra stringhe ISO, il cui ordine alfabetico è quello di calendario.
 async function bkfSaveMonthlyHistory(){
   if(!bkfData||!bkfData.length)return;
   const HIST_KEY='qm_bkf_monthly_history';
@@ -6345,13 +6367,17 @@ async function bkfSaveMonthlyHistory(){
   }
   // Rimuovi vecchi record formato YYYY-MM (aggregati mensili, obsoleti)
   Object.keys(hist).forEach(k=>{if(k.length!==10)delete hist[k];});
-  // Salva ogni giorno come YYYY-MM-DD → {bb, ro}
+  // Salva ogni giorno come YYYY-MM-DD → {bb, ro}, MA solo i giorni già trascorsi.
+  // Vedi bkfHistOggi(): un giorno futuro è una previsione e non va archiviato.
+  const _oggi=bkfHistOggi();
   bkfData.forEach(d=>{
-    if(!d.data)return;
-    const p=d.data.split('/');if(p.length!==3)return;
-    const key=p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
-    hist[key]={bb:(d.adulti||0)+(d.bambini||0),ro:(d.noCol||0)};
+    const key=bkfHistChiave(d);
+    if(!key||key>_oggi)return;
+    hist[key]={bb:(d.adulti||0)+(d.bambini||0),ro:(d.noCol||0),ts:Date.now()};
   });
+  // Ripulisce le previsioni archiviate dal comportamento precedente: senza questo, i giorni
+  // futuri già scritti diventerebbero "storico" al loro arrivo con numeri provvisori.
+  Object.keys(hist).forEach(k=>{if(k.length===10&&k>_oggi)delete hist[k];});
   const json=JSON.stringify(hist);
   try{localStorage.setItem(HIST_KEY,json);}catch(e){}
   kvSet(HIST_KEY,json).catch(()=>{});

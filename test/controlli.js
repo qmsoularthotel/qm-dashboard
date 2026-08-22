@@ -57,6 +57,23 @@ ok('la tessera Prenotazioni si ricostruisce dopo un Cmd+R',
 ok('il caricamento Prenotazioni scrive qm_ts_bkfTs',
    /qm_ts_bkfTs/.test(String(prenHandlePdf)) && /setUploadTs\(\s*['"]bkfTs['"]/.test(String(prenHandlePdf)), true);
 
+sez('Archivio mensile colazioni: solo giorni gia\' trascorsi');
+// Il totale del mese serve per confrontare mesi diversi: deve essere vero, non plausibile.
+// Archiviare un giorno futuro significa congelare una previsione — il 22/08/2026 agosto
+// dichiarava 1155 colazioni contro le 1187 reali, e il 31 agosto era gia' archiviato con 8.
+ok('data del PMS -> chiave ISO', bkfHistChiave({ data: '12/08/2026' }), '2026-08-12');
+ok('giorno con una cifra sola',  bkfHistChiave({ data: '1/8/2026' }),   '2026-08-01');
+ok('riga senza data ignorata',   bkfHistChiave({}), null);
+ok('oggi in formato ISO',        /^\d{4}-\d{2}-\d{2}$/.test(bkfHistOggi()), true);
+// L'ordine alfabetico delle chiavi ISO deve coincidere con quello di calendario: e' su
+// questo che si regge il confronto "giorno futuro".
+ok('ordine ISO = ordine di calendario', '2026-08-09' < '2026-08-12', true);
+ok('fine mese non inganna il confronto', '2026-08-31' < '2026-09-01', true);
+ok('i giorni futuri non entrano nell\'archivio',
+   /key\s*>\s*_oggi/.test(String(bkfSaveMonthlyHistory)), true);
+ok('le previsioni gia\' archiviate vengono tolte',
+   /k\s*>\s*_oggi/.test(String(bkfSaveMonthlyHistory)) && /delete hist\[k\]/.test(String(bkfSaveMonthlyHistory)), true);
+
 sez('Struttura dedotta dall\'alloggio');
 ok('Art -> SoulArt',                _prenStruttura('Art 5 / AS Superior'), 'SA');
 ok('2xx -> Boutique',               _prenStruttura('204 / PC Standard'),   'BH');
