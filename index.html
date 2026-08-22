@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='300-20260822';
+  const V='301-20260822';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -512,6 +512,10 @@
     </div>
     <div class="content">
       <div class="view active" id="view-overview">
+        <!-- Promemoria biancheria: compare solo il pomeriggio prima di un ritiro, e solo
+             finché la distinta non è stata stampata. Sta qui e non nella pagina Biancheria
+             perché è in Overview che si passa: se non lo si vede qui, non ci si pensa. -->
+        <div id="bia-promemoria" style="display:none;"></div>
         <div class="panel" style="margin-bottom:14px;">
           <div class="panel-header" style="cursor:pointer;" onclick="toggleStaffPanel()">
             <img src="img/icons/turni.png" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;">
@@ -1670,7 +1674,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=819-20260822"></script>
+<script src="app.js?v=820-20260822"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

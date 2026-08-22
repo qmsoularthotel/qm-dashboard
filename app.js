@@ -3880,6 +3880,8 @@ function refreshOverviewForDate(d){
   }catch(e){}
   // 6. Piano camere
   try{if(pianoNavIdx===null)pianoOvInit();else{pianoCheckScadenza();pianoRenderWeek(pianoNavIdx);}}catch(e){}
+  // 7. Promemoria distinta biancheria (solo la vigilia di un ritiro, se non è stampata)
+  try{biaRenderPromemoria();}catch(e){}
 }
 document.addEventListener('click',()=>{
   document.getElementById('datePopup')?.classList.remove('open');
@@ -13063,6 +13065,34 @@ const BIA_VOCI=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Telo doccia
 const BIA_VOCI_GIRO=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Asciugamano viso','Asciugamano bidet','Telo doccia','Scendibagno'];
 let _bia={consumi:[],giri:[]};
 let _biaHotel='sa';
+// Pannelli richiudibili: la spiegazione del ciclo e lo storico non servono ogni giorno,
+// ma tenerli sempre aperti rendeva la pagina un muro.
+let _biaGuida=false, _biaStorico=false;
+function biaToggleGuida(){_biaGuida=!_biaGuida;biaRender();}
+// Promemoria in Overview: il pomeriggio prima di un ritiro, finché la distinta non è
+// stampata. Legge da localStorage e non dal cloud — deve poter girare a ogni render
+// dell'Overview senza chiamate di rete, e i dati arrivano comunque dalla sincronizzazione.
+function biaRenderPromemoria(){
+  const el=document.getElementById('bia-promemoria');if(!el)return;
+  const oggi=_biaOggi();
+  if(!_biaVigiliaGiro(oggi)){el.style.display='none';return;}
+  if(!Object.keys(_biaDist).length){
+    try{const s=localStorage.getItem(BIA_DIST_KEY);if(s)_biaDist=JSON.parse(s)||{};}catch(e){}
+  }
+  const domani=_biaFmt(_biaDomani(oggi));
+  const mancano=Object.keys(BIA_HOTELS).filter(k=>!_biaDistStampata(k,domani));
+  if(!mancano.length){el.style.display='none';return;}
+  const quali=mancano.map(k=>BIA_HOTELS[k]).join(' e ');
+  el.style.display='';
+  el.innerHTML=`<div style="border:1.5px solid var(--amber);border-left-width:4px;border-radius:10px;background:rgba(160,90,0,.07);padding:12px 15px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+    <div style="flex:1;min-width:220px;">
+      <div style="font-size:var(--fs-sm);font-weight:700;color:var(--amber);">Biancheria: domani passa Raimondo</div>
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-top:3px;">La distinta dei sacchi va stampata <strong>oggi pomeriggio</strong> e lasciata in reception — domattina alle 8 non c'è tempo. Manca: ${quali}.</div>
+    </div>
+    <button onclick="setView('biancheria')" style="background:var(--amber);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;">Prepara la distinta</button>
+  </div>`;
+}
+function biaToggleStorico(){_biaStorico=!_biaStorico;biaRender();}
 const _biaH=x=>x.hotel||'sa';
 
 function _biaUid(){return Date.now()+'_'+Math.random().toString(36).slice(2,8);}
@@ -13085,6 +13115,7 @@ async function biaLoad(){
   }catch(e){}
   if(!data){try{const s=localStorage.getItem(BIA_KEY);if(s)data=JSON.parse(s);}catch(e){}}
   _bia=Object.assign({consumi:[],giri:[]},data||{});
+  try{await _biaDistCarica();}catch(e){}
   biaRender();
 }
 function _biaSave(){
@@ -13108,6 +13139,34 @@ function biaSetHotel(h){if(!BIA_HOTELS[h])return;_biaHotel=h;biaRender();}
 const BIA_GIORNI_GIRO=[2,4,6];
 const BIA_GG_NOMI=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
 const BIA_GIORNI_GIRO_TXT='martedì, giovedì e sabato';
+
+// ── I DUE MOMENTI DEL GIRO ──
+// Il giro è un momento solo per il fornitore, ma due per noi, in due giorni diversi:
+//   VIGILIA (lunedì, mercoledì, venerdì, di pomeriggio) — si preparano i sacchi e si
+//     STAMPA la distinta. I numeri sono già definitivi: il giro del martedì ritira
+//     sabato, domenica e lunedì, tutti giorni chiusi entro lunedì pomeriggio.
+//   GIORNO DEL GIRO (martedì, giovedì, sabato, alle 8) — Raimondo arriva, si registra
+//     cosa ha portato. La distinta è già sul bancone.
+// Prepararla la mattina stessa non funziona: alle 8 la reception è nel pieno dei
+// check-out e nessuno stampa niente. È il motivo per cui i dati si perdevano.
+function _biaDomani(d){const x=new Date(d.getTime());x.setDate(x.getDate()+1);x.setHours(0,0,0,0);return x;}
+function _biaVigiliaGiro(d){return _biaGiornoGiro(_biaDomani(d));}
+
+// Distinte già stampate. Sta in una chiave SUA: l'archivio dei consumi e dei giri
+// (qm_biancheria) non va toccato per una cosa che riguarda solo i promemoria.
+const BIA_DIST_KEY='qm_bia_distinte';
+let _biaDist={};
+const _biaDistId=(hotel,data)=>hotel+'|'+data;
+const _biaDistStampata=(hotel,data)=>!!_biaDist[_biaDistId(hotel,data)];
+function _biaDistSegna(hotel,data){
+  _biaDist[_biaDistId(hotel,data)]=Date.now();
+  try{localStorage.setItem(BIA_DIST_KEY,JSON.stringify(_biaDist));}catch(e){}
+  kvSet(BIA_DIST_KEY,JSON.stringify(_biaDist)).catch(()=>{});
+}
+async function _biaDistCarica(){
+  try{const s=localStorage.getItem(BIA_DIST_KEY);if(s)_biaDist=JSON.parse(s)||{};}catch(e){}
+  try{const v=await kvGet(BIA_DIST_KEY);if(v){_biaDist=JSON.parse(v)||{};localStorage.setItem(BIA_DIST_KEY,v);}}catch(e){}
+}
 
 // Ultimo giorno di calendario in cui Raimondo sarebbe passato PRIMA di d.
 function _biaGiroCalPrec(d){
@@ -13308,8 +13367,13 @@ function biaRender(){
   const giri=_biaGiri();
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-  // Data del giro proposta: oggi. Il periodo coperto si ricalcola da lì.
-  const giroIso=(document.getElementById('bia-giro-data')||{}).value||_biaToIso(_biaFmt(oggi));
+  // Data del giro proposta. Nei giorni che precedono un giro si propone DOMANI, perché è
+  // il pomeriggio prima che la distinta va preparata e stampata: lasciando "oggi" chi non
+  // conosce il meccanismo calcolerebbe il periodo sbagliato senza accorgersene.
+  // È solo il valore suggerito nel campo: resta modificabile e nessun calcolo cambia.
+  const vigilia=_biaVigiliaGiro(oggi);
+  const propostaGiro=vigilia?_biaDomani(oggi):oggi;
+  const giroIso=(document.getElementById('bia-giro-data')||{}).value||_biaToIso(_biaFmt(propostaGiro));
   const giroData=_biaFromIso(giroIso)||_biaFmt(oggi);
   const per=_biaPeriodo(_biaHotel,giroData);
   const sporco=per&&!per.vuoto?_biaSommaConsumi(_biaHotel,per.dal,per.al):_biaVuote();
@@ -13319,6 +13383,48 @@ function biaRender(){
   _biaAttesoVis=atteso;   // la tabella disegnata sotto si riferisce a questo atteso
 
   let h='';
+
+  // ── COSA FARE OGGI ──
+  // Il motivo per cui questa pagina era difficile da usare non era il calcolo: era che
+  // mostrava tutto insieme senza mai dire cosa tocca fare adesso. I compiti sono due e
+  // non capitano lo stesso giorno — i consumi ogni giorno, la distinta la vigilia, il
+  // controllo di cosa ha portato il giorno del giro. Qui si dice quello e basta.
+  const consOggi=_bia.consumi.find(c=>_biaH(c)===_biaHotel&&c.data===_biaFmt(oggi));
+  const giornoGiro=_biaGiornoGiro(oggi);
+  const dataDomani=_biaFmt(_biaDomani(oggi));
+  const distPronta=_biaDistStampata(_biaHotel,vigilia?dataDomani:_biaFmt(oggi));
+  const giroOggiReg=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===_biaFmt(oggi));
+  const passi=[];
+  if(!consOggi)passi.push({t:'Inserisci i consumi di oggi',d:'Somma i fogli camera delle cameriere e riporta i totali qui sotto.'});
+  if(vigilia&&!distPronta)passi.push({t:'Prepara e stampa la distinta per domani',d:'Domani alle 8 passa Raimondo: la distinta va stampata oggi pomeriggio e lasciata in reception. Domattina non ci sarà tempo.'});
+  if(giornoGiro&&!giroOggiReg)passi.push({t:'Registra cosa ha portato Raimondo',d:'Scrivi le quantità della sua distinta e controlla che corrispondano a quelle attese.'});
+  const nomeOggi=BIA_GG_NOMI[oggi.getDay()];
+  h+=`<div style="border:1.5px solid ${passi.length?'var(--accent)':'var(--green)'};border-radius:12px;padding:14px 16px;margin-bottom:16px;background:var(--surface);">
+    <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);font-weight:700;margin-bottom:8px;">Cosa fare oggi · ${esc(nomeOggi)} ${esc(_biaFmt(oggi))}</div>`;
+  if(!passi.length){
+    h+=`<div style="font-size:var(--fs-sm);font-weight:700;color:var(--green);">Tutto fatto per oggi.</div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;line-height:1.5;">${giornoGiro?'Il giro di oggi è registrato.':(vigilia?'La distinta per domani è stampata.':'Oggi Raimondo non passa e non c\'è distinta da preparare.')}</div>`;
+  }else{
+    passi.forEach((p,i)=>{
+      h+=`<div style="display:flex;gap:10px;align-items:flex-start;${i?'margin-top:10px;':''}">
+        <span style="flex:0 0 22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:var(--fs-xxs);font-weight:700;display:flex;align-items:center;justify-content:center;">${i+1}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:var(--fs-sm);font-weight:700;">${esc(p.t)}</div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-top:2px;">${esc(p.d)}</div>
+        </div>
+      </div>`;
+    });
+  }
+  h+=`<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">
+      <button onclick="biaToggleGuida()" style="background:none;border:none;padding:0;font-size:var(--fs-xxs);color:var(--accent);font-weight:600;cursor:pointer;">Come funziona il ciclo ${_biaGuida?'▴':'▾'}</button>
+      <div style="${_biaGuida?'':'display:none;'}font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.7;margin-top:6px;">
+        <strong>1.</strong> Ogni giorno le cameriere consegnano i fogli camera: i totali si inseriscono qui.<br>
+        <strong>2.</strong> Il pomeriggio prima del passaggio — ${esc(BIA_GG_NOMI[1])}, ${esc(BIA_GG_NOMI[3])} e ${esc(BIA_GG_NOMI[5])} — si stampa la distinta dei sacchi che escono e si lascia in reception.<br>
+        <strong>3.</strong> ${BIA_GIORNI_GIRO_TXT.charAt(0).toUpperCase()+BIA_GIORNI_GIRO_TXT.slice(1)} alle 8 Raimondo ritira i sacchi e consegna il pulito: si registra quanto ha portato.<br>
+        <strong>4.</strong> Se ha portato meno del dovuto la differenza resta segnata, e il totale in fondo dice se la perdita è occasionale o continua.
+      </div>
+    </div>
+  </div>`;
 
   // Selettore struttura
   h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
@@ -13372,8 +13478,9 @@ function biaRender(){
     ?_biaConsumi(_biaHotel).map(c=>_biaParse(c.data)).filter(x=>x&&x<per.dal).sort((a,b)=>a-b)
     :[];
   h+=`<div class="panel" style="margin-bottom:16px;">
-    <div class="panel-header"><span class="panel-title">Giro di Raimondo</span>
-      ${giaReg?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">giro già registrato</span>':''}
+    <div class="panel-header"><span class="panel-title">${vigilia&&!giaReg?'Prepara il ritiro di domani':'Giro di Raimondo'}</span>
+      ${giaReg?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">giro già registrato</span>'
+        :(vigilia&&distPronta?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">distinta stampata</span>':'')}
     </div>
     <div class="panel-body" style="padding:14px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
@@ -13416,10 +13523,10 @@ function biaRender(){
     <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
       <thead><tr>
         <th style="text-align:left;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Tipologia</th>
-        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Atteso</th>
-        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Ricevuto</th>
-        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Δ</th>
-        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Sporco che esce</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Doveva portare</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Ha portato</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Differenza</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Sacchi da dargli</th>
       </tr></thead>
       <tbody>`;
   BIA_VOCI_GIRO.forEach(v=>{
@@ -13438,11 +13545,19 @@ function biaRender(){
     </tr>`;
   });
   h+=`</tbody></table></div>
-      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-        <button onclick="biaRegistraGiro()" style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">${giaReg?'Aggiorna giro':'Registra giro'}</button>
-        <button onclick="biaPrintDistinta()" style="background:var(--surface);color:var(--accent);border:1.5px solid var(--border);padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">Stampa distinta di consegna</button>
-      </div>
-      <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Lo <strong>sporco che esce</strong> è la somma dei consumi del periodo: è già il numero giusto, correggilo solo se il sacco contiene qualcosa di diverso. Il <strong>ricevuto</strong> parte uguale all'atteso — toccalo solo se la distinta di Raimondo dice altro.</div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">`;
+  // Il pulsante in evidenza è quello del momento: la vigilia si stampa, il giorno del giro
+  // si registra. Restano entrambi disponibili — un giro straordinario o una ristampa non
+  // devono diventare impossibili — ma quello giusto si vede per primo.
+  const bPrimario='background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
+  const bSecondario='background:var(--surface);color:var(--accent);border:1.5px solid var(--border);padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
+  const bStampa=`<button onclick="biaPrintDistinta()" style="${vigilia&&!giaReg?bPrimario:bSecondario}">${distPronta?'Ristampa la distinta':'Stampa la distinta'}</button>`;
+  const bRegistra=`<button onclick="biaRegistraGiro()" style="${vigilia&&!giaReg?bSecondario:bPrimario}">${giaReg?'Aggiorna giro':'Registra cosa ha portato'}</button>`;
+  h+=(vigilia&&!giaReg)?(bStampa+bRegistra):(bRegistra+bStampa);
+  h+=`</div>
+      <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">${vigilia&&!giaReg
+        ?'Oggi serve solo la <strong>stampa</strong>: i sacchi da dargli sono già calcolati dai consumi. Domattina, quando Raimondo arriva, si torna qui e si registra cosa ha portato.'
+        :'I <strong>sacchi da dargli</strong> sono la somma dei consumi del periodo: è già il numero giusto, correggilo solo se il sacco contiene qualcosa di diverso. <strong>Ha portato</strong> parte uguale a quanto doveva — toccalo solo se la distinta di Raimondo dice altro.'}</div>
     </div>
   </div>`;
 
@@ -13461,7 +13576,13 @@ function biaRender(){
   }
 
   // ── Storico ──
-  if(giri.length){
+  // Chiuso di default: serve per controllare o ristampare, non nell'uso quotidiano.
+  if(giri.length||_biaConsumi().length){
+    h+=`<div style="margin-bottom:${_biaStorico?'16px':'0'};">
+      <button onclick="biaToggleStorico()" style="background:none;border:none;padding:0;font-size:var(--fs-xs);color:var(--accent);font-weight:600;cursor:pointer;">Storico e ristampe ${_biaStorico?'▴':'▾'}</button>
+    </div>`;
+  }
+  if(giri.length&&_biaStorico){
     h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Giri registrati</span></div><div class="panel-body" style="padding:0;">`;
     giri.slice().reverse().forEach(g=>{
       const att=_biaAtteso(_biaHotel,g.data);
@@ -13481,7 +13602,7 @@ function biaRender(){
 
   // ── Consumi registrati di recente ──
   const rec=_biaConsumi().slice().sort((a,b)=>(_biaParse(b.data)||0)-(_biaParse(a.data)||0)).slice(0,14);
-  if(rec.length){
+  if(rec.length&&_biaStorico){
     h+=`<div class="panel" style="margin-top:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti</span></div><div class="panel-body" style="padding:0;">`;
     rec.forEach(c=>{
       h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
@@ -13514,6 +13635,8 @@ function biaPrintDistinta(giroId){
   }
   const tot=_biaTot(q);
   if(!tot){cqAvviso('Non c\'è niente da consegnare: tutte le quantità sono a zero.');return;}
+  // Serve al promemoria in Overview, che deve sparire una volta stampata.
+  try{_biaDistSegna(hotel,data);}catch(e){}
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const periodo=per&&!per.vuoto?(_biaFmt(per.dal)+' — '+_biaFmt(per.al)):'—';
   const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Distinta di Consegna Biancheria</title>

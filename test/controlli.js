@@ -259,6 +259,31 @@ ok('martedi\': tre giorni',            _biaPeriodoTxt(g), 'di sabato 22, domenic
 g = _giro(['25/08/2026'], [], '27/08/2026');            // giovedi'
 ok('giovedi\': parte da martedi\'',    _biaFmt(g.dal), '25/08/2026');
 
+sez('Biancheria: vigilia del ritiro (quando si stampa la distinta)');
+// La distinta va preparata il POMERIGGIO PRIMA: la mattina del ritiro, alle 8, la
+// reception e' nel pieno dei check-out e non la stampa nessuno — i dati si perdevano
+// cosi'. I giorni di preparazione sono quindi lunedi', mercoledi' e venerdi'.
+// I numeri sono gia' definitivi: il giro del martedi' ritira sabato/domenica/lunedi',
+// tutti giorni chiusi entro lunedi' pomeriggio.
+function _gg(y, m, d) { return new Date(y, m - 1, d); }
+ok('lunedi\' e\' vigilia (ritiro martedi\')',   _biaVigiliaGiro(_gg(2026, 8, 24)), true);
+ok('mercoledi\' e\' vigilia (ritiro giovedi\')', _biaVigiliaGiro(_gg(2026, 8, 26)), true);
+ok('venerdi\' e\' vigilia (ritiro sabato)',      _biaVigiliaGiro(_gg(2026, 8, 28)), true);
+ok('martedi\' NON e\' vigilia',                  _biaVigiliaGiro(_gg(2026, 8, 25)), false);
+ok('sabato NON e\' vigilia',                     _biaVigiliaGiro(_gg(2026, 8, 29)), false);
+ok('domenica NON e\' vigilia',                   _biaVigiliaGiro(_gg(2026, 8, 30)), false);
+// Il campo "data del giro" la vigilia deve proporre DOMANI: lasciando "oggi" si
+// calcolerebbe il periodo sbagliato senza che nulla lo segnali.
+ok('domani di lunedi\' 24 e\' martedi\' 25', _biaFmt(_biaDomani(_gg(2026, 8, 24))), '25/08/2026');
+ok('domani regge il cambio di mese',         _biaFmt(_biaDomani(_gg(2026, 8, 31))), '01/09/2026');
+// La distinta stampata si segna in una chiave sua: l'archivio dei consumi e dei giri
+// non va toccato per un promemoria.
+ok('la distinta non risulta stampata prima', _biaDistStampata('sa', '25/08/2026'), false);
+_biaDist['sa|25/08/2026'] = 1;
+ok('una volta segnata, risulta stampata',    _biaDistStampata('sa', '25/08/2026'), true);
+ok('e vale solo per quella struttura',       _biaDistStampata('bh', '25/08/2026'), false);
+_biaDist = {};
+
 // I giri avvengono anche quando non sono registrati qui: i consumi piu' vecchi del
 // calendario sono gia' usciti, e NON devono rientrare nel sacco di domani.
 g = _giro(['18/08/2026', '19/08/2026', '21/08/2026'], [], '22/08/2026');
