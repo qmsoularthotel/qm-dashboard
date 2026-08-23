@@ -429,7 +429,12 @@ ok('anche Maddaloni ha una sede sola', TURNI_SEDE_UNICA.indexOf('Maddaloni M.') 
 ok('gli altri no',                   TURNI_SEDE_UNICA.indexOf('Perez L.'), -1);
 // Va detto da quando si conta: senza, un "3 domeniche" non si sa se e' su un mese o un anno.
 ok('la tabella dichiara da quando conta', /conteggio dal /.test(String(turniRenderStats)), true);
-ok('la tabella lascia vuote le sue sedi', /sedeUnica\?vuota/.test(String(turniRenderStats)), true);
+ok('la tabella non conta le sue sedi',
+   /sedeUnica/.test(String(turniRenderStats)) && /non si applica/.test(String(turniRenderStats)), true);
+// L'interruttore barre/numeri deve restare: e' la via d'uscita se la lettura grafica non
+// convince, e senza di esso tornare indietro vorrebbe dire rimettere mano al codice.
+ok('si puo\' passare da barre a numeri', typeof turniToggleVista === 'function', true);
+ok('la scelta viene ricordata', /TURNI_VISTA_KEY/.test(String(turniToggleVista)), true);
 ok('NG resta Art Resort',       turniNormalizza('NG').sede, 'galleria');
 ok('NC resta SoulArt',          turniNormalizza('NC').sede, 'soulart');
 ok('chi manca non viene inventato', turniOrdina(['Perez L.']).join(','), 'Perez L.');
