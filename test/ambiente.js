@@ -46,10 +46,15 @@ function _memoria() {
 var localStorage = _memoria();
 var sessionStorage = _memoria();
 
+// `location` come globale, non solo dentro `window`: _psChiave() la legge per distinguere
+// la copia di sviluppo (che scrive su qm_prestay_dev) da quella di produzione.
+var location = { search: '', href: 'https://compass-qm.com/', hostname: 'compass-qm.com',
+                 protocol: 'https:', replace: _noop, reload: _noop };
+
 var window = {
   innerWidth: 1400, innerHeight: 900,
   addEventListener: _noop, removeEventListener: _noop,
-  location: { search: '', href: 'https://compass-qm.com/', replace: _noop, reload: _noop },
+  location: location,
   open: function () { return null; },
   matchMedia: function () { return { matches: false, addListener: _noop, addEventListener: _noop }; },
   scrollTo: _noop, getComputedStyle: function () { return {}; }

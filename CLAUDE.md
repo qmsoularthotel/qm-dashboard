@@ -1694,6 +1694,36 @@ qm_prestay_tpl = { sa:{it:{ogg,corpo}, en:{ogg,corpo}}, bh:{…}, sl:{…}, ar:{
 
 `id` è generato (`_psNuovoId`) e non cambia mai: è l'unica identità della scheda, usata da invio, anteprima e spunte. **Nessun campo camera**, per le ragioni sopra.
 
+`rimossi:[id]` (per giorno) è la traccia delle schede eliminate a mano: senza, la fusione descritta sotto le rimetterebbe dentro a ogni salvataggio e cancellarle diventerebbe impossibile. Se ne tengono le ultime 100. `ts` sulla scheda è l'ultima modifica fatta a mano, e decide chi vince su spunta Italcamel e lingua.
+
+### Il salvataggio non può più cancellare — incidente del 22/08/2026
+
+**Cos'è successo.** `_psSave()` scriveva su KV **l'intero oggetto di tutti i giorni**, senza rileggere e senza guardie: ultimo che scrive vince, in silenzio. È bastata una copia partita con il `localStorage` vuoto — un altro profilo del browser, o **la copia di sviluppo, che punta allo stesso Worker della produzione** — perché un caricamento del PDF Prenotazioni riscrivesse la chiave con schede nuove: nomi presenti, email e telefono vuoti, spunte di invio perse. I 19 pre-stay del 24 agosto, **già inviati via WhatsApp e mail**, sono spariti.
+
+**Perché non si è potuto recuperare.** All'avvio il ripristino dal cloud faceva `localStorage.setItem(k, j.value)`, cioè **sovrascriveva la copia locale con quella del cloud già impoverita**. Aprendo Compass la mattina dopo — gesto normale, nessun avviso — è sparita anche l'ultima copia buona rimasta su quella postazione. KV non è versionato: non c'era altro da cui ripartire.
+
+**Le regole ora**, in ordine di importanza:
+
+| Regola | Dove |
+|---|---|
+| Non si scrive mai alla cieca: si rilegge il cloud e, se non risponde, **la scrittura non parte** | `_psScriviCloud` |
+| Si **fonde** invece di sostituire: una scheda compilata che sta sul cloud e non in memoria viene rimessa dentro | `_psFondi` |
+| La corrispondenza è per **codice prenotazione**, poi nome+struttura — mai per `id`, che una reimportazione rigenera | `_psStessaScheda` |
+| Un valore già presente in locale non viene mai sovrascritto da quello remoto: **quello lo si sta digitando adesso** | `_psAssorbi` |
+| Un invio non si perde mai: se risulta contattato da una parte, è contattato | `_psAssorbi` |
+| All'avvio si fonde, **non si sostituisce**: una giornata che sta solo in locale sopravvive all'apertura | `restoreReviews` |
+| Prima di una reimportazione in blocco ci si riallinea al cloud | `prestayHandlePdf`, `prenHandlePdf` |
+| Una scrittura per volta, le altre si accodano | `_psSalvaCloud` |
+| L'esito è **visibile**: pallino di sincronizzazione + riquadro rosso nella vista | `_psSegnalaCloud` |
+
+**"Compilata" (`_psCompilata`) vuol dire che c'è qualcosa da perdere**: email, telefono, `mailTs` o `waTs`. Il solo nome non basta — quello lo rigenera l'importazione, e trattarlo come dato da salvare riempirebbe le giornate di doppioni.
+
+**La copia di sviluppo scrive su una chiave sua** (`_psChiave()`: `qm_prestay_dev` quando l'host è `localhost`/`127.0.0.1` o il protocollo è `file:`), e lo dichiara in console. Aprire una copia locale non deve poter toccare i dati veri — è metà della causa di questo incidente. **Se in futuro si aggiungono altre chiavi KV scritte per intero da più postazioni, vale lo stesso ragionamento**: rileggi, fondi, e non far scrivere la copia di sviluppo sulla chiave di produzione.
+
+**La vista si rilegge da sola ogni 60 secondi** mentre resta aperta, ma **non ridisegna se qualcuno sta scrivendo** dentro di essa (`INPUT`/`TEXTAREA`/`SELECT` col fuoco): rigenerare l'HTML sotto le dita fa perdere il testo in corso — stessa lezione della casella "Ricevuto" in Biancheria. Una copia ferma da ore non è solo scomoda: è il punto di partenza di ogni sovrascrittura.
+
+Coperto da **26 controlli** in `test/controlli.js` ("Pre-stay: la fusione col cloud non perde niente"), che riproducono esattamente lo scenario del 22/08: cloud pieno, copia in memoria appena reimportata con `id` nuovi.
+
 ### Template — editabili dalla schermata, non nel codice
 
 Un testo per **struttura e lingua** (IT/EN), modificabile da "✏️ Modifica testi" senza toccare il codice. `PRESTAY_TPL_DEFAULT` contiene solo segnaposto (`[SCRIVI QUI IL TESTO DEL PRE-STAY]`) da riscrivere al primo uso.
@@ -2661,7 +2691,7 @@ guardando lo schermo, un errore nei numeri no — resta plausibile e può passar
 per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dall'alloggio,
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
-dal relay Booking. 101 controlli.
+dal relay Booking, fusione dei pre-stay col cloud. 165 controlli.
 
 ### Come funziona
 
@@ -2770,4 +2800,5 @@ confrontarli con quelli presenti in `index.html`.
 | Turno datato con l'anno sbagliato | Il prompt non dichiarava la data odierna e il planning non riporta l'anno | Data odierna nel prompt + `_annoPlausibile()` sulle date restituite |
 | Registration card ferme al giorno prima dopo aver caricato il PDF Prenotazioni | `prenHandlePdf` scriveva `qm_arriviData` ma non `qm_rcGuests`: la derivazione delle card viveva dentro `handleArriviFile`, cioè nel percorso di upload che il file unico ha sostituito | Estratta in `rcAggiornaDaArrivi()`, chiamata da entrambi i percorsi; l'esito viene scritto nel messaggio dello slot |
 | Mail pre-stay agli ospiti Booking di nuovo respinte, pur essendo `booking@soularthotel.com` corretto sull'Extranet | `PRESTAY_MITTENTE_BOOKING_OK` messa a `true` in `app.js` mentre sul Worker `SMTP_USER` era rimasta `qm@soularthotel.com`: Compass toglieva il blocco senza che il mittente fosse cambiato. L'Extranet dice quale mittente è autorizzato, non quale si sta usando | Il blocco ora segue il mittente che il Worker dichiara su `/prestay/stato` (**Impostazioni → Verifica mittente**), non una costante. Per spedire davvero da `booking@`: `SMTP_USER`/`SMTP_PASS` su Cloudflare, `SMTP_FROM` cancellata, Worker ripubblicato — e `IMAP_USER`/`IMAP_PASS` spostati sulla stessa casella, altrimenti spariscono le risposte |
+| Pre-stay di una giornata già inviata tornati vuoti: nomi presenti, email/telefono da reinserire, spunte di invio perse | `_psSave()` scriveva su KV **tutti i giorni in blocco**, senza rileggere: una copia col `localStorage` vuoto (altro profilo, o la copia di sviluppo che punta allo stesso Worker) importava il PDF Prenotazioni e sovrascriveva il lavoro fatto. E siccome all'avvio il ripristino dal cloud **sovrascrive anche il localStorage**, riaprire Compass cancellava l'ultima copia buona rimasta | Rilettura obbligatoria prima di ogni scrittura, **fusione** invece di sostituzione (per codice prenotazione, mai per `id`), avvio che fonde invece di sostituire, chiave separata per la copia di sviluppo, errore di scrittura visibile. Vedi "Il salvataggio non può più cancellare" |
 | Camere Art marcate "Art Resort" nelle fermate | `fixArriviStruttura` applicata solo a `arrivi`, mai a `fermate`/`partenze` | Struttura dedotta in modo deterministico da `_prenStruttura` su tutte e tre le liste |

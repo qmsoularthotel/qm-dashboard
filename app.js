@@ -1657,7 +1657,9 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='reception'){try{receptionLoad();}catch(e){}}
   if(id==='resi-biancheria'){try{resiLoad();}catch(e){}}
   if(id==='biancheria'){try{biaLoad();}catch(e){}}
-  if(id==='prestay'){try{prestayRender();}catch(e){}}
+  // Si mostra subito ciò che c'è, poi si rilegge il cloud: chi apre la vista deve vedere
+  // anche quello che ha scritto un'altra postazione, senza aspettare e senza schermo vuoto.
+  if(id==='prestay'){try{prestayRender();}catch(e){}try{_psSincronizza().then(ok=>{if(ok)prestayRender();});}catch(e){}}
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
   // .staff-area-mirror) — ririchiamato qui solo per popolare lo specchio se la vista
   // viene aperta prima che Overview l'abbia mai fatto in questa sessione.
@@ -4091,16 +4093,16 @@ document.querySelector('.content').addEventListener('scroll',function(){
       // Pre-stay: contatti ospiti e stato invii, più i testi dei messaggi. Il cloud è la
       // fonte così chi scrive dalla reception e chi controlla dall'ufficio vedono lo stesso
       // stato e non si mandano doppioni.
-      for(const k of [PRESTAY_KEY,PRESTAY_TPL_KEY]){
-        try{
-          const r=await fetch(PROXY+'/kv/get?key='+k,{cache:'no-store'});
-          const j=await r.json();
-          if(j.value){
-            if(k===PRESTAY_KEY)_prestay=JSON.parse(j.value)||{};else _prestayTpl=JSON.parse(j.value)||{};
-            localStorage.setItem(k,j.value);
-          }
-        }catch(e){}
-      }
+      // Le schede si FONDONO, non si sostituiscono. Sostituire ha un costo nascosto
+      // scoperto il 22/08/2026: se il cloud è già stato impoverito, l'avvio riscrive anche
+      // il localStorage e cancella l'ultima copia buona rimasta su quella postazione —
+      // che è esattamente come è andata persa la prova di quanto era stato inviato.
+      try{await _psSincronizza();}catch(e){}
+      try{
+        const r=await fetch(PROXY+'/kv/get?key='+PRESTAY_TPL_KEY,{cache:'no-store'});
+        const j=await r.json();
+        if(j.value){_prestayTpl=JSON.parse(j.value)||{};localStorage.setItem(PRESTAY_TPL_KEY,j.value);}
+      }catch(e){}
       try{if(document.getElementById('prestay-content'))prestayRender();}catch(e){}
       // Gli arrivi possono arrivare dal cloud (importati su un altro PC): anche in quel
       // caso lo slot dell'Upload Center deve risultare caricato.
@@ -11135,7 +11137,20 @@ function ddtPrintMonthReport(ym){
 //
 // Compass è un sito statico e non può spedire da sé: la mail parte dal Worker (invio
 // diretto, vedi worker-prestay-mail.md) oppure apre il client di posta; WhatsApp usa wa.me.
-const PRESTAY_KEY='qm_prestay';
+// La copia aperta da localhost o da file:// parla con lo STESSO Worker della produzione.
+// Il 22/08/2026 è bastato quello: un caricamento di prova ha riscritto la chiave condivisa
+// e i pre-stay del 24 agosto, già inviati, sono spariti. La copia di sviluppo scrive quindi
+// su una chiave sua, e lo dichiara in console per non far cercare dati che non vedrà.
+function _psChiave(){
+  const h=(typeof location!=='undefined'&&location.hostname)||'';
+  const pr=(typeof location!=='undefined'&&location.protocol)||'';
+  if(pr==='file:'||/^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(h)){
+    try{console.warn('Compass: copia di sviluppo — i pre-stay usano qm_prestay_dev, non i dati di produzione.');}catch(e){}
+    return 'qm_prestay_dev';
+  }
+  return 'qm_prestay';
+}
+const PRESTAY_KEY=_psChiave();
 const PRESTAY_TPL_KEY='qm_prestay_tpl';
 const PRESTAY_GG=2;                 // quanti giorni prima dell'arrivo si scrive
 let _prestay={};                    // { 'YYYY-MM-DD': { arrivi:[{id,hotel,nome,email,tel,lang,mailTs,waTs}] } }
@@ -11254,10 +11269,184 @@ function _psLoad(){
   try{const s=localStorage.getItem(PRESTAY_KEY);_prestay=s?JSON.parse(s):{};}catch(e){_prestay={};}
   try{const s=localStorage.getItem(PRESTAY_TPL_KEY);_prestayTpl=s?JSON.parse(s):{};}catch(e){_prestayTpl={};}
 }
-function _psSave(){
-  try{localStorage.setItem(PRESTAY_KEY,JSON.stringify(_prestay));}catch(e){}
-  try{kvSet(PRESTAY_KEY,JSON.stringify(_prestay));}catch(e){}
+// ── Il cloud è condiviso: un salvataggio non deve mai poter cancellare ──────
+// COSA È SUCCESSO (22/08/2026, da non ripetere). _psSave() scriveva su KV l'INTERO oggetto
+// di tutti i giorni, senza rileggere e senza guardie. È bastata una copia partita con il
+// localStorage vuoto — un altro profilo del browser, o la copia di sviluppo, che punta allo
+// stesso Worker — perché un caricamento del PDF Prenotazioni riscrivesse la chiave con
+// schede nuove: nomi presenti, email e telefono vuoti, spunte di invio perse. I pre-stay del
+// 24 agosto, già inviati, sono spariti. E siccome all'avvio il ripristino dal cloud
+// SOVRASCRIVE il localStorage, riaprendo Compass è sparita anche l'ultima copia locale:
+// nessuno se n'è accorto finché la giornata non è stata riaperta a mano.
+//
+// Tre regole, in ordine di importanza:
+//  1. non si scrive MAI alla cieca: prima si rilegge il cloud, e se non risponde la
+//     scrittura non parte — senza sapere cosa c'è di là non si può sovrascriverlo;
+//  2. si FONDE invece di sostituire: una scheda compilata che sta sul cloud e non nella
+//     copia in memoria viene rimessa dentro. La corrispondenza è per codice prenotazione,
+//     poi per nome+struttura — non per `id`, che una reimportazione rigenera;
+//  3. l'esito è visibile: pallino di sincronizzazione e avviso nella vista, invece di
+//     lasciar credere che sia salvato quando è solo su questo computer.
+let _psCloudOk=false;      // true dopo una lettura riuscita del cloud in questa sessione
+let _psCloudErr='';        // ultimo errore di scrittura, mostrato nella vista
+let _psInFlight=null;      // scrittura in corso: le altre si accodano, non si accavallano
+let _psDaSalvare=false;    // è arrivata una modifica mentre si scriveva
+
+const _psCodiciDi=a=>(a&&a.codici&&a.codici.length)?a.codici:(a&&a.codice?[a.codice]:[]);
+// "Compilata" = c'è qualcosa che si perderebbe. Il solo nome non basta: quello lo
+// rigenera l'importazione, mentre email, telefono e spunte di invio si digitano a mano.
+const _psCompilata=a=>!!(a&&(a.email||a.tel||a.mailTs||a.waTs));
+// Stessa prenotazione? Il codice non cambia mai, il nome sì (al check-in si registra il
+// documento di chi si presenta) e l'`id` men che meno: una reimportazione ne crea di nuovi
+// per le stesse persone — ed è esattamente così che le schede si sono duplicate a vuoto.
+function _psStessaScheda(a,b){
+  if(!a||!b)return false;
+  const ca=_psCodiciDi(a),cb=_psCodiciDi(b);
+  if(ca.length&&cb.length&&ca.some(c=>cb.includes(c)))return true;
+  if(a.id&&b.id&&a.id===b.id)return true;
+  const na=_psNomeChiave(a.nome);
+  return !!na&&na===_psNomeChiave(b.nome)&&a.hotel===b.hotel;
 }
+// Campo per campo: la copia in memoria può essere più VECCHIA di quella sul cloud, quindi
+// un valore che qui manca e là c'è va ripreso. Non si sovrascrive mai un valore già
+// presente in locale: quello lo si sta digitando adesso.
+function _psAssorbi(a,r){
+  ['nome','email','tel','origine','codice'].forEach(k=>{if(!a[k]&&r[k])a[k]=r[k];});
+  if(!(a.codici&&a.codici.length)&&r.codici&&r.codici.length)a.codici=r.codici;
+  if(!(a.camere&&a.camere.length)&&r.camere&&r.camere.length)a.camere=r.camere;
+  // Un invio non si perde mai: se risulta contattato da una parte, è contattato.
+  if(r.mailTs&&(!a.mailTs||r.mailTs<a.mailTs))a.mailTs=r.mailTs;
+  if(r.waTs&&(!a.waTs||r.waTs<a.waTs))a.waTs=r.waTs;
+  // Spunta Italcamel e lingua: le si riprende solo se qui nessuno ha ancora toccato la
+  // scheda (`ts`), altrimenti togliere la spunta non avrebbe effetto — tornerebbe da sola.
+  if(!a.ts){
+    if(r.italcamel)a.italcamel=true;
+    if(r.lang&&r.lang!==a.lang)a.lang=r.lang;
+  }
+}
+/**
+ * Fusione conservativa fra la copia sul cloud e quella in memoria.
+ * Non perde mai una scheda compilata; un giorno che sta solo sul cloud si tiene intero
+ * (una copia stale semplicemente non ce l'ha). Le schede eliminate di proposito non
+ * tornano: `prestayDelScheda` ne lascia traccia in `rimossi`.
+ */
+function _psFondi(remoto,locale){
+  const out={};
+  Object.keys(remoto||{}).forEach(iso=>{out[iso]=remoto[iso];});
+  Object.keys(locale||{}).forEach(iso=>{
+    const L=locale[iso]||{},R=(remoto||{})[iso];
+    if(!R||!Array.isArray(R.arrivi)){out[iso]=L;return;}
+    // Giornata locale ancora nel vecchio formato indicizzato per camera: tenerla com'è
+    // scarterebbe la versione già migrata sul cloud, migrarla e basta scarterebbe quella
+    // locale. Si convertono le voci al volo (come fa _psGiorno) e si fondono le due.
+    const arrivi=Array.isArray(L.arrivi)?L.arrivi.slice():Object.keys(L).map(k=>L[k])
+      .filter(r=>r&&typeof r==='object'&&!Array.isArray(r))
+      .map(r=>({id:_psNuovoId(),hotel:r.hotel||'sa',nome:r.nome||'',email:r.email||'',tel:r.tel||'',
+                lang:r.lang||'it',italcamel:!!r.italcamel,mailTs:r.mailTs||null,waTs:r.waTs||null}));
+    const rimossi=new Set([].concat(L.rimossi||[],R.rimossi||[]));
+    R.arrivi.forEach(r=>{
+      if(!_psCompilata(r))return;              // vuota: non c'è niente da salvare
+      if(r.id&&rimossi.has(r.id))return;       // eliminata di proposito
+      const gemella=arrivi.find(a=>_psStessaScheda(a,r));
+      if(gemella)_psAssorbi(gemella,r);
+      else arrivi.push(r);
+    });
+    out[iso]=Object.assign({},L,{arrivi:arrivi});
+    if(rimossi.size)out[iso].rimossi=[...rimossi].slice(-100);
+  });
+  return out;
+}
+// Lettura del cloud. Distingue "non risponde" (null: non si scrive) da "chiave mai
+// scritta" ({}: si può scrivere) — confonderli vorrebbe dire o non salvare mai il primo
+// giorno, o sovrascrivere tutto al primo errore di rete.
+async function _psLeggiCloud(){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+PRESTAY_KEY,{cache:'no-store'});
+    if(!r.ok)return null;
+    const j=await r.json();
+    if(j.value===null||j.value===undefined)return{};
+    const o=JSON.parse(j.value);
+    return(o&&typeof o==='object'&&!Array.isArray(o))?o:{};
+  }catch(e){return null;}
+}
+// Riallineamento al cloud senza scrivere: si usa all'apertura della vista, prima di una
+// reimportazione in blocco e a intervalli mentre la pagina resta aperta. Importare
+// partendo da una copia vecchia è ciò che ha cancellato i pre-stay del 24 agosto.
+async function _psSincronizza(){
+  const remoto=await _psLeggiCloud();
+  if(remoto===null)return false;
+  _psCloudOk=true;
+  _prestay=_psFondi(remoto,_prestay);
+  try{localStorage.setItem(PRESTAY_KEY,JSON.stringify(_prestay));}catch(e){}
+  return true;
+}
+function _psSave(){
+  // Il locale è immediato: qualunque cosa succeda al cloud, quello che si è appena
+  // digitato non deve dipendere dalla rete.
+  try{localStorage.setItem(PRESTAY_KEY,JSON.stringify(_prestay));}catch(e){}
+  return _psSalvaCloud();
+}
+// Una scrittura per volta. Le modifiche che arrivano mentre è in corso non lanciano una
+// seconda rilettura-scrittura in parallelo (si sovrascriverebbero a vicenda): si accodano.
+function _psSalvaCloud(){
+  if(_psInFlight){_psDaSalvare=true;return _psInFlight;}
+  _psInFlight=(async()=>{
+    try{return await _psScriviCloud();}
+    catch(e){
+      // Nessuna promessa respinta a vuoto: l'errore si mostra, non finisce in console.
+      _psCloudErr='Salvataggio non riuscito ('+(e&&e.message||e)+'): le modifiche sono solo su questo computer.';
+      try{setSyncStatus('error');}catch(_){}
+      _psSegnalaCloud();
+      return false;
+    }
+    finally{
+      _psInFlight=null;
+      if(_psDaSalvare){_psDaSalvare=false;_psSalvaCloud();}
+    }
+  })();
+  return _psInFlight;
+}
+async function _psScriviCloud(){
+  const remoto=await _psLeggiCloud();
+  if(remoto===null){
+    _psCloudErr='Il cloud non risponde: le modifiche sono salvate solo su questo computer. Non chiudere la pagina finché il pallino non torna verde.';
+    try{setSyncStatus('error');}catch(e){}
+    _psSegnalaCloud();
+    return false;
+  }
+  _psCloudOk=true;
+  _prestay=_psFondi(remoto,_prestay);
+  try{localStorage.setItem(PRESTAY_KEY,JSON.stringify(_prestay));}catch(e){}
+  try{setSyncStatus('syncing');}catch(e){}
+  const ok=await kvSet(PRESTAY_KEY,JSON.stringify(_prestay));
+  _psCloudErr=ok?'':'Il cloud non ha accettato il salvataggio: le modifiche sono solo su questo computer.';
+  try{setSyncStatus(ok?'ok':'error');}catch(e){}
+  _psSegnalaCloud();
+  return ok;
+}
+// L'avviso si scrive DIRETTAMENTE nel suo elemento, senza passare da prestayRender():
+// un ridisegno mentre si compila un campo farebbe perdere il fuoco e il testo in corso.
+function _psSegnalaCloud(){
+  const el=document.getElementById('psCloudErr');
+  if(!el)return;
+  el.textContent=_psCloudErr||'';
+  el.style.display=_psCloudErr?'block':'none';
+}
+// Il cloud si rilegge anche mentre la pagina resta aperta. Due postazioni che lavorano
+// sulla stessa giornata devono vedersi — e una copia ferma da ore è il punto di partenza di
+// ogni sovrascrittura. NON si ridisegna mentre qualcuno sta scrivendo dentro la vista:
+// rigenerare l'HTML sotto le dita fa perdere il fuoco e il testo in corso (stessa lezione
+// della casella "Ricevuto" in Biancheria).
+setInterval(async()=>{
+  const v=document.getElementById('view-prestay');
+  if(!v||!v.classList.contains('active'))return;
+  const f=document.activeElement;
+  if(f&&v.contains&&v.contains(f)&&/^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName||''))return;
+  const iso=_psTargetISO();
+  const prima=JSON.stringify(_prestay[iso]||{});
+  const ok=await _psSincronizza();
+  if(ok&&JSON.stringify(_prestay[iso]||{})!==prima){try{prestayRender();}catch(e){}}
+},60000);
 function _psSaveTpl(){
   try{localStorage.setItem(PRESTAY_TPL_KEY,JSON.stringify(_prestayTpl));}catch(e){}
   try{kvSet(PRESTAY_TPL_KEY,JSON.stringify(_prestayTpl));}catch(e){}
@@ -11374,6 +11563,7 @@ function prestayToggleItalcamel(id){
   const iso=_psTargetISO(),a=_psScheda(iso,id);
   if(!a)return;
   a.italcamel=!a.italcamel;
+  a.ts=Date.now();
   _psSave();prestayRender();
 }
 // Riconosce l'inizio di una prenotazione nella colonna "Numero/Tipo" (es. "204 / PC STD",
@@ -11568,6 +11758,9 @@ async function prestayHandlePdf(file){
     // La data si prende dal documento: importare nel giorno sbagliato sarebbe peggio che
     // non importare. Se manca, si usa il giorno mostrato.
     const target=iso||_psTargetISO();
+    // Riallineamento PRIMA di importare: importare partendo da una copia vecchia è ciò che
+    // il 22/08/2026 ha cancellato i pre-stay del 24 già inviati.
+    await _psSincronizza();
     const r=_psImportaArrivi(target,arrivi);
     _prestayData=target;
     _psAvviso='Importati '+r.totale+' arrivi del '+_psFmtIT(target)+
@@ -11611,6 +11804,7 @@ function prestaySetScheda(id,campo,val){
   // Anche digitando (o incollando dal PMS) un nome tutto maiuscolo va ammorbidito: finisce
   // nel messaggio all'ospite. Chi scrive in maiuscolo/minuscolo normale non viene toccato.
   a[campo]=campo==='nome'?_psNomeUmano(val):val;
+  a.ts=Date.now();          // toccata a mano: la fusione non deve rimettere i valori vecchi
   _psSave();
   if(campo==='nome'&&a[campo]!==val)prestayRender();
   else if(campo==='lang'||campo==='hotel')prestayRender();
@@ -11642,6 +11836,9 @@ async function prestayDelScheda(id){
   if(!a)return;
   if(!_psVuota(a)&&!await cqConferma('Eliminare questo arrivo?',(a.nome?'<strong>'+a.nome+'</strong><br>':'')+'I dati inseriti andranno persi.',{ok:'Elimina'}))return;
   g.arrivi=g.arrivi.filter(x=>x.id!==id);
+  // Traccia dell'eliminazione: senza, la fusione col cloud rimetterebbe dentro la scheda
+  // ogni volta, e cancellarla diventerebbe impossibile. Si tengono le ultime 100.
+  g.rimossi=[...new Set([].concat(g.rimossi||[],[id]))].slice(-100);
   _psSave();prestayRender();
 }
 
@@ -12154,7 +12351,8 @@ function prestayRender(){
   const tuttoFatto=contattabili.length>0&&inviati===contattabili.length;
   const pct=contattabili.length?Math.round(inviati/contattabili.length*100):0;
   const bott='padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;';
-  let h=`<div style="border:1px solid var(--border-light);border-radius:10px;margin-bottom:14px;overflow:hidden;">
+  let h=`<div id="psCloudErr" style="display:none;margin-bottom:12px;padding:10px 13px;border:1px solid var(--red);background:#fdecea;color:var(--red);border-radius:8px;font-size:var(--fs-xxs);font-weight:600;line-height:1.45;"></div>
+  <div style="border:1px solid var(--border-light);border-radius:10px;margin-bottom:14px;overflow:hidden;">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 13px;">
       <button onclick="prestayNavDay(-1)" title="Giorno precedente" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;">‹</button>
       <div style="min-width:190px;">
@@ -12338,6 +12536,7 @@ function prestayRender(){
   }
 
   el.innerHTML=h;
+  _psSegnalaCloud();          // il riquadro è appena stato rigenerato: va ripopolato
 }
 // §§ RECEPTION — CASSA (fondo cassa, incasso contante)
 // Sola lettura + modifica libera per il QM. I receptionist operano sull'app dedicata
@@ -14022,6 +14221,9 @@ async function prenHandlePdf(file){
     //    _psImportaArrivi conserva email/telefono già inseriti (confronto per nome), quindi
     //    ricaricare il file dopo nuove prenotazioni non fa perdere il lavoro fatto.
     let giorniPs=0, schedePs=0;
+    // Come sopra: si riparte dalla copia del cloud, non da quella che questa scheda del
+    // browser si porta dietro da chissà quando.
+    await _psSincronizza();
     const viste=new Set(pren.map(p=>p.arrivo));
     viste.forEach(g=>{
       if(g<iso)return;                                  // il passato non serve ai pre-stay

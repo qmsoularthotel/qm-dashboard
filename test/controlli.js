@@ -402,6 +402,98 @@ ok('senza configurazione nessun endpoint', _psEndpointStato(), '');
 _psMailCfg = _cfgVero;
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Pre-stay: la fusione col cloud non perde niente');
+// Il 22/08/2026 una copia partita con il localStorage vuoto ha riscritto la chiave
+// condivisa e ha cancellato i pre-stay del 24 gia' inviati. Questi controlli descrivono
+// esattamente quella situazione: cloud pieno, copia in memoria appena reimportata.
+
+// Cloud: due schede compilate, una gia' contattata via WhatsApp.
+var CLOUD = { '2026-08-24': { arrivi: [
+  { id: 'v1', hotel: 'bh', nome: 'Brunetaud Mathilde', email: 'm@esempio.it', tel: '+39333111',
+    codici: ['AAA 111'], codice: 'AAA 111', lang: 'it', waTs: 1000, mailTs: null },
+  { id: 'v2', hotel: 'bh', nome: 'De Toro Rebeca', email: 'r@esempio.it', tel: '',
+    codici: ['BBB 222'], codice: 'BBB 222', lang: 'en', mailTs: 2000, waTs: null }
+] } };
+// In memoria: le stesse due persone appena reimportate dal PDF — id nuovi, contatti vuoti.
+var LOCALE = { '2026-08-24': { arrivi: [
+  { id: 'n1', hotel: 'bh', nome: 'Brunetaud Mathilde', email: '', tel: '',
+    codici: ['AAA 111'], codice: 'AAA 111', lang: 'it', mailTs: null, waTs: null },
+  { id: 'n2', hotel: 'bh', nome: 'De Toro Rebeca', email: '', tel: '',
+    codici: ['BBB 222'], codice: 'BBB 222', lang: 'it', mailTs: null, waTs: null }
+] } };
+var F = _psFondi(CLOUD, LOCALE);
+var f24 = F['2026-08-24'].arrivi;
+ok('reimportazione: nessuna scheda duplicata',   f24.length, 2);
+ok('reimportazione: email recuperata',           f24[0].email, 'm@esempio.it');
+ok('reimportazione: telefono recuperato',        f24[0].tel, '+39333111');
+ok('reimportazione: WhatsApp inviato conservato', f24[0].waTs, 1000);
+ok('reimportazione: mail inviata conservata',    f24[1].mailTs, 2000);
+ok('reimportazione: lingua ripresa dal cloud',   f24[1].lang, 'en');
+
+// Il caso che ha fatto il danno: copia in memoria completamente vuota.
+var V = _psFondi(CLOUD, {});
+ok('copia vuota: la giornata resta',             V['2026-08-24'].arrivi.length, 2);
+ok('copia vuota: i contatti restano',            V['2026-08-24'].arrivi[0].email, 'm@esempio.it');
+
+// Una giornata che sta solo sul cloud non deve sparire perche' qui non c'e'.
+var G = _psFondi({ '2026-08-25': { arrivi: [{ id: 'z', hotel: 'sa', nome: 'Verdi Ugo', email: 'u@esempio.it' }] } },
+                 { '2026-08-24': { arrivi: [] } });
+ok('giorno solo sul cloud: conservato',          Object.keys(G).sort().join(','), '2026-08-24,2026-08-25');
+
+// Chi digita adesso vince su chi ha letto prima: il valore locale non si sovrascrive.
+var D = _psFondi({ 'g': { arrivi: [{ id: 'x', hotel: 'sa', nome: 'Neri Ada', email: 'vecchia@esempio.it', tel: '+39000' }] } },
+                 { 'g': { arrivi: [{ id: 'x', hotel: 'sa', nome: 'Neri Ada', email: 'nuova@esempio.it', tel: '' }] } });
+ok('valore appena digitato non sovrascritto',    D.g.arrivi[0].email, 'nuova@esempio.it');
+ok('valore mancante ripreso dal cloud',          D.g.arrivi[0].tel, '+39000');
+
+// Eliminare deve restare possibile: senza traccia la fusione la rimetterebbe dentro.
+var E = _psFondi({ 'g': { arrivi: [{ id: 'x', hotel: 'sa', nome: 'Neri Ada', email: 'a@esempio.it' }] } },
+                 { 'g': { arrivi: [], rimossi: ['x'] } });
+ok('scheda eliminata non torna',                 E.g.arrivi.length, 0);
+
+// Giornata locale ancora nel vecchio formato (indicizzata per camera): non deve far
+// scartare ne' la versione migrata sul cloud ne' quella locale.
+var VF = _psFondi({ 'g': { arrivi: [{ id: 'r1', hotel: 'sa', nome: 'Verdi Ugo', email: 'u@esempio.it' }] } },
+                  { 'g': { '203': { hotel: 'bh', nome: 'Neri Ada', email: 'a@esempio.it', tel: '+39222' } } });
+ok('vecchio formato: scheda locale migrata',  VF.g.arrivi.length, 2);
+ok('vecchio formato: cloud non scartato',
+   VF.g.arrivi.filter(function (a) { return a.email === 'u@esempio.it'; }).length, 1);
+ok('vecchio formato: locale non scartato',
+   VF.g.arrivi.filter(function (a) { return a.email === 'a@esempio.it'; }).length, 1);
+
+// Una scheda vuota sul cloud non ha niente da salvare: non deve tornare a ingombrare.
+var Z = _psFondi({ 'g': { arrivi: [{ id: 'x', hotel: 'sa', nome: 'Boh', email: '', tel: '' }] } },
+                 { 'g': { arrivi: [] } });
+ok('scheda vuota sul cloud non torna',           Z.g.arrivi.length, 0);
+
+// Riconoscimento della stessa prenotazione: il codice conta piu' del nome, che al
+// check-in puo' cambiare (si registra il documento di chi si presenta).
+ok('stesso codice, nome diverso: stessa scheda',
+   _psStessaScheda({ id: 'a', codici: ['AAA 111'], nome: 'Marino Ilenia', hotel: 'sa' },
+                   { id: 'b', codici: ['AAA 111'], nome: 'Della Sala Maria', hotel: 'sa' }), true);
+ok('stesso nome, struttura diversa: schede diverse',
+   _psStessaScheda({ id: 'a', nome: 'Rossi Mario', hotel: 'sa' },
+                   { id: 'b', nome: 'Rossi Mario', hotel: 'bh' }), false);
+ok('nome invertito: stessa scheda',
+   _psStessaScheda({ id: 'a', nome: 'Rossi Mario', hotel: 'sa' },
+                   { id: 'b', nome: 'MARIO ROSSI', hotel: 'sa' }), true);
+
+// "Compilata" = c'e' qualcosa che si perderebbe. Il solo nome lo rigenera l'importazione.
+ok('solo il nome non e compilata',   _psCompilata({ nome: 'Rossi Mario' }), false);
+ok('con il telefono e compilata',    _psCompilata({ tel: '+39333' }), true);
+ok('gia contattata e compilata',     _psCompilata({ waTs: 1 }), true);
+
+// La produzione scrive sulla chiave condivisa; la copia di sviluppo su una sua.
+ok('chiave di produzione',           PRESTAY_KEY, 'qm_prestay');
+location.hostname = 'localhost';
+ok('copia di sviluppo separata',     _psChiave(), 'qm_prestay_dev');
+location.hostname = 'compass-qm.com';
+location.protocol = 'file:';
+ok('copia aperta da file:// separata', _psChiave(), 'qm_prestay_dev');
+location.protocol = 'https:';
+ok('tornati in produzione',          _psChiave(), 'qm_prestay');
+
+// ─────────────────────────────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 console.log(KO === 0
   ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'
