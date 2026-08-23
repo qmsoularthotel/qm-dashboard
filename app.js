@@ -429,8 +429,47 @@ function findWeekDayIndex(data,refDate){
   }
   return idx;
 }
+// ── ARCHIVIO DELLE SETTIMANE DI TURNO ───────────────────────────────────────
+// Finora ogni caricamento sostituiva il turno precedente: la settimana passata spariva.
+// Qui ogni settimana viene conservata con la sua chiave (il lunedì, in formato ISO), così
+// caricare il turno nuovo non cancella più quello vecchio e le statistiche hanno una base.
+//
+// Si archivia a OGNI loadWeekData, anche quando il turno arriva dal ripristino e non da un
+// caricamento: riscrivere la stessa settimana con lo stesso contenuto non fa danno, e in
+// cambio l'archivio si popola da solo senza dipendere da un gesto che qualcuno può scordare.
+const TURNI_STORICO_KEY='qm_turni_storico';
+const _turnoIso=d=>{const x=d instanceof Date?d:new Date(d);return isNaN(x.getTime())?null:x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');};
+/** Voce d'archivio per una settimana. Pura: niente rete, niente localStorage. */
+function turniVoceStorico(data){
+  if(!data||!Array.isArray(data.giorni)||!data.giorni.length)return null;
+  const giorni=data.giorni
+    .map(g=>({data:_turnoIso(g.date),shifts:g.shifts||{}}))
+    .filter(g=>g.data);
+  if(!giorni.length)return null;
+  return{chiave:giorni[0].data,dal:giorni[0].data,al:giorni[giorni.length-1].data,giorni,ts:Date.now()};
+}
+async function turniArchivia(data){
+  const voce=turniVoceStorico(data);
+  if(!voce)return;
+  let arch={};
+  try{const s=localStorage.getItem(TURNI_STORICO_KEY);if(s)arch=JSON.parse(s)||{};}catch(e){}
+  // Fusione col cloud prima di scrivere: due postazioni che caricano settimane diverse
+  // devono sommarsi, non cancellarsi. È l'errore che il 23/08/2026 ha azzerato le
+  // osservazioni delle recensioni.
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+TURNI_STORICO_KEY,{cache:'no-store'});
+    const j=await r.json();
+    if(j&&j.value)arch=Object.assign(JSON.parse(j.value)||{},arch);
+  }catch(e){}
+  const {chiave,...resto}=voce;
+  arch[chiave]=resto;
+  const json=JSON.stringify(arch);
+  try{localStorage.setItem(TURNI_STORICO_KEY,json);}catch(e){}
+  kvSet(TURNI_STORICO_KEY,json).catch(()=>{});
+}
 function loadWeekData(data){
   weekData=data;
+  try{turniArchivia(data);}catch(e){}
   const today=new Date();
   let idx=findWeekDayIndex(data,today);
   if(idx===-1){

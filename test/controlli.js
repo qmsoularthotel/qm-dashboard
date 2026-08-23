@@ -283,6 +283,27 @@ ok('la serie resta in ordine di data',
 ok('i giorni molto vecchi non si accumulano',       _bkfFondi([_gio(-30, 10)], [_gio(0, 55)]).length, 1);
 ok('senza dati precedenti funziona lo stesso',      _bkfFondi(null, [_gio(0, 55)]).length, 1);
 
+sez('Archivio delle settimane di turno');
+// Finora caricare il turno nuovo cancellava quello vecchio: nessuna settimana passata
+// restava, e senza settimane passate non esistono statistiche.
+var _sett = { giorni: [
+  { date: '2026-08-17T10:00:00.000Z', label: 'Lun 17/08', shifts: { 'Rossi M.': 'P', 'Bianchi A.': 'R' } },
+  { date: '2026-08-18T10:00:00.000Z', label: 'Mar 18/08', shifts: { 'Rossi M.': 'CG' } },
+  { date: '2026-08-23T10:00:00.000Z', label: 'Dom 23/08', shifts: { 'Rossi M.': 'R' } }
+] };
+var _voce = turniVoceStorico(_sett);
+ok('la settimana si archivia sotto il primo giorno', _voce.chiave, '2026-08-17');
+ok('conserva il primo e l\'ultimo giorno', _voce.dal + '→' + _voce.al, '2026-08-17→2026-08-23');
+ok('conserva tutti i giorni',              _voce.giorni.length, 3);
+ok('e i turni di ciascuno',                _voce.giorni[0].shifts['Rossi M.'], 'P');
+ok('anche i riposi, che servono a contarli', _voce.giorni[0].shifts['Bianchi A.'], 'R');
+ok('porta il momento in cui e\' stata archiviata', typeof _voce.ts === 'number' && _voce.ts > 0, true);
+// Un turno vuoto o malformato non deve sporcare l'archivio con voci senza data.
+ok('settimana vuota: niente da archiviare',  turniVoceStorico({ giorni: [] }), null);
+ok('dato assente: niente da archiviare',     turniVoceStorico(null), null);
+ok('giorni senza data valida vengono scartati',
+   turniVoceStorico({ giorni: [{ date: 'boh', shifts: {} }] }), null);
+
 sez('Punteggio Booking: la finestra e\' un parametro, non una certezza');
 // Il modello teneva fissa la finestra a 36 mesi e faceva variare solo l'emivita: quando il
 // punteggio reale non rientrava, l'unica spiegazione offerta era "il CSV e' incompleto".
