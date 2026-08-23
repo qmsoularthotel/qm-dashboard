@@ -4103,10 +4103,21 @@ document.querySelector('.content').addEventListener('scroll',function(){
     async function restoreReviews(){
       // Calibrazioni punteggio Booking (emivita per struttura): il cloud è la fonte, così
       // il valore inserito su un PC vale su tutti. Se il fetch fallisce si tiene il locale.
+      // Si FONDE, non si sostituisce: se il cloud è già stato impoverito da un'altra
+      // postazione, sostituire cancellerebbe anche l'ultima copia buona rimasta qui —
+      // ed è esattamente così che il 23/08/2026 sono sparite le osservazioni di tutte le
+      // strutture. Vale la stessa cautela già adottata per le schede pre-stay.
       try{
         const rc=await fetch(PROXY+'/kv/get?key='+REV_CALIB_KEY,{cache:'no-store'});
         const rj=await rc.json();
-        if(rj.value){REV_CALIB=JSON.parse(rj.value)||{};localStorage.setItem(REV_CALIB_KEY,rj.value);}
+        if(rj.value){
+          const remoto=JSON.parse(rj.value)||{};
+          REV_CALIB=revCalibFondi(remoto,REV_CALIB);
+          const fuso=JSON.stringify(REV_CALIB);
+          localStorage.setItem(REV_CALIB_KEY,fuso);
+          // Se il locale conteneva osservazioni che il cloud non aveva, va restituito.
+          if(fuso!==rj.value)kvSet(REV_CALIB_KEY,fuso).catch(()=>{});
+        }
       }catch(e){}
       // Pre-stay: contatti ospiti e stato invii, più i testi dei messaggi. Il cloud è la
       // fonte così chi scrive dalla reception e chi controlla dall'ufficio vedono lo stesso
@@ -5397,8 +5408,45 @@ function revCalibMigra(){
   });
   if(cambiato){try{localStorage.setItem(REV_CALIB_KEY,JSON.stringify(REV_CALIB));}catch(e){}}
 }
-function revCalibSave(){
+/**
+ * Fonde due registri di calibrazione. Le osservazioni di ciascuna struttura si UNISCONO
+ * per timestamp; quelle elencate fra le rimosse restano fuori da entrambe le parti.
+ *
+ * Il 23/08/2026 il registro di TUTTE le strutture è stato azzerato: il salvataggio
+ * riscriveva nel cloud l'intero registro della postazione, senza guardare cosa c'era già.
+ * Basta una postazione che parte con la memoria vuota — o un caricamento dal cloud non
+ * ancora concluso quando si digita il primo valore — e settimane di osservazioni spariscono
+ * in un colpo, senza alcun segnale. Le osservazioni sono la materia prima della
+ * calibrazione: perderle significa ricominciare a imparare da zero.
+ */
+function revCalibFondi(a,b){
+  const out={};
+  const chiavi=new Set([...Object.keys(a||{}),...Object.keys(b||{})]);
+  chiavi.forEach(p=>{
+    const x=(a&&a[p])||{}, y=(b&&b[p])||{};
+    const rimosse=[...new Set([...(x.rimosse||[]),...(y.rimosse||[])])];
+    const per={};
+    [...(x.osservazioni||[]),...(y.osservazioni||[])].forEach(o=>{
+      if(o&&o.ts!=null&&rimosse.indexOf(o.ts)<0)per[o.ts]=o;
+    });
+    const oss=Object.keys(per).sort().map(k=>per[k]);
+    // Il resto (emivita, fascia, fonte) è ricalcolato da revCalibRicalcola a partire dalle
+    // osservazioni: si tiene la versione più ricca, tanto viene rifatta.
+    const base=(y.osservazioni||[]).length>=(x.osservazioni||[]).length?y:x;
+    out[p]=Object.assign({},base,{osservazioni:oss},rimosse.length?{rimosse}:{});
+  });
+  return out;
+}
+async function revCalibSave(){
   try{localStorage.setItem(REV_CALIB_KEY,JSON.stringify(REV_CALIB));}catch(e){}
+  // Legge cosa c'è nel cloud e ci fonde il proprio registro, invece di sostituirlo.
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+REV_CALIB_KEY,{cache:'no-store'});
+    const j=await r.json();
+    const remoto=j&&j.value?JSON.parse(j.value):{};
+    REV_CALIB=revCalibFondi(remoto,REV_CALIB);
+    try{localStorage.setItem(REV_CALIB_KEY,JSON.stringify(REV_CALIB));}catch(e){}
+  }catch(e){}
   try{kvSet(REV_CALIB_KEY,JSON.stringify(REV_CALIB));}catch(e){}
 }
 revCalibLoad();
@@ -5562,6 +5610,11 @@ function revCalibDelOss(p,ts){
   const c=REV_CALIB[p];
   if(!c||!Array.isArray(c.osservazioni))return;
   c.osservazioni=c.osservazioni.filter(o=>o.ts!==ts);
+  // Lapide: senza, la fusione col cloud farebbe riapparire l'osservazione appena tolta,
+  // perché sull'altra postazione quella riga esiste ancora e nessuno saprebbe che è stata
+  // cancellata di proposito.
+  if(!Array.isArray(c.rimosse))c.rimosse=[];
+  if(c.rimosse.indexOf(ts)<0)c.rimosse.push(ts);
   revCalibRicalcola(p);
   try{revRenderStats(p);}catch(e){}
 }

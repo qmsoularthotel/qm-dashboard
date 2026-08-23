@@ -283,6 +283,26 @@ ok('la serie resta in ordine di data',
 ok('i giorni molto vecchi non si accumulano',       _bkfFondi([_gio(-30, 10)], [_gio(0, 55)]).length, 1);
 ok('senza dati precedenti funziona lo stesso',      _bkfFondi(null, [_gio(0, 55)]).length, 1);
 
+sez('Calibrazione recensioni: i registri si fondono, non si sostituiscono');
+// Il 23/08/2026 le osservazioni di TUTTE le strutture sono sparite: il salvataggio
+// riscriveva nel cloud il registro della postazione senza guardare cosa c'era gia'.
+// Sono la materia prima della calibrazione: perderle significa ricominciare da zero.
+var _casa   = { sa:{ osservazioni:[{ts:100,display:8.9},{ts:200,display:8.8}] } };
+var _hotel  = { sa:{ osservazioni:[{ts:300,display:8.9}] },
+                pr:{ osservazioni:[{ts:400,display:6.6}] } };
+var _fuso = revCalibFondi(_casa,_hotel);
+ok('nessuna osservazione persa',        _fuso.sa.osservazioni.length, 3);
+ok('restano in ordine di tempo',        _fuso.sa.osservazioni.map(function(o){return o.ts;}).join(','), '100,200,300');
+ok('una struttura nuova entra',         _fuso.pr.osservazioni.length, 1);
+ok('la stessa lettura non si duplica',  revCalibFondi(_casa,_casa).sa.osservazioni.length, 2);
+// La cancellazione deve reggere alla fusione, altrimenti l'osservazione tolta riappare
+// dall'altra postazione e non si riesce piu' a eliminarla.
+var _conLapide = { sa:{ osservazioni:[{ts:100,display:8.9}], rimosse:[200] } };
+ok('una cancellata non torna indietro',  revCalibFondi(_casa,_conLapide).sa.osservazioni.length, 1);
+ok('la lapide viene conservata',         revCalibFondi(_casa,_conLapide).sa.rimosse.join(','), '200');
+ok('fondere con il vuoto non distrugge', revCalibFondi({},_casa).sa.osservazioni.length, 2);
+ok('e nemmeno nel verso opposto',        revCalibFondi(_casa,{}).sa.osservazioni.length, 2);
+
 sez('Biancheria: vigilia del ritiro (quando si stampa la distinta)');
 // La distinta va preparata il POMERIGGIO PRIMA: la mattina del ritiro, alle 8, la
 // reception e' nel pieno dei check-out e non la stampa nessuno — i dati si perdevano
