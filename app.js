@@ -596,17 +596,6 @@ function turniOrdina(nomi){
   const resto=nomi.filter(n=>testa.indexOf(n)<0&&notte.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
   return testa.concat(resto,notte);
 }
-// Preferenza di lettura: barre o numeri secchi. Sta in localStorage perche' e' una scelta
-// di chi guarda, non un dato: in reception puo' servire il colpo d'occhio, in ufficio il
-// valore esatto. L'interruttore e' nell'intestazione del pannello.
-const TURNI_VISTA_KEY='qm_turni_vista';
-let _turniBarre=true;
-try{_turniBarre=localStorage.getItem(TURNI_VISTA_KEY)!=='numeri';}catch(e){}
-function turniToggleVista(){
-  _turniBarre=!_turniBarre;
-  try{localStorage.setItem(TURNI_VISTA_KEY,_turniBarre?'barre':'numeri');}catch(e){}
-  turniRenderStats();
-}
 function turniRenderStats(){
   const el=document.getElementById('turniStatsWrap');if(!el)return;
   const st=turniStatistiche(turniStoricoLeggi(),DEPTS.fo.members);
@@ -621,78 +610,56 @@ function turniRenderStats(){
   const presenti=DEPTS.fo.members.filter(n=>st.per[n]&&st.per[n].giorni>0);
   const righe=turniOrdina(presenti).map(n=>({n,s:st.per[n],notte:TURNI_NOTTURNI.indexOf(n)>=0,
     sedeUnica:TURNI_SEDE_UNICA.indexOf(n)>=0}));
-  const B=_turniBarre;
-  // I massimi si calcolano SOLO sui turni di giorno: le cinque notti di un notturno
-  // schiaccerebbero tutte le altre barre e il confronto non direbbe piu' niente.
-  const dg=righe.filter(r=>!r.notte);
-  const mx=k=>Math.max(1,...dg.map(r=>r.s[k]||0));
-  const mMa=mx('mattina'), mPo=mx('pomeriggio');
-  const mSede=Math.max(1,...righe.filter(r=>!r.sedeUnica).map(r=>Math.max(r.s.galleria,r.s.soulart)));
-  const bb='border-bottom:1px solid var(--border-light,var(--border));';
+  // Il secondo argomento apre un gruppo: filetto verticale a sinistra. I gruppi sono
+  // "cosa ha fatto" | "dove" | "assenze", e senza separatore la riga e' un muro di numeri.
   const sep='border-left:2px solid var(--border);';
-  const punto='<span style="color:var(--border);">·</span>';
-  const th=(l,o)=>`<th style="padding:6px ${o&&o.p||'6px'};text-align:${o&&o.a||'center'};font-size:var(--fs-xxs);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);font-weight:600;border-bottom:1px solid var(--border);${o&&o.g?sep:''}${o&&o.w?'min-width:'+(B?o.w:60)+'px;':''}">${l}</th>`;
-  const num=(v,col)=>v?`<b style="color:${col||'var(--accent)'};">${v}</b>`:punto;
-  const barra=(v,max,col)=>!v?punto:`<span style="display:inline-flex;align-items:center;gap:7px;width:100%;">
-      <span style="flex:1;height:7px;background:var(--border-light,#e4e4e8);border-radius:4px;overflow:hidden;"><span style="display:block;width:${Math.round(v/max*100)}%;height:100%;background:${col};border-radius:4px;"></span></span>
-      <b style="color:var(--accent);min-width:8px;">${v}</b></span>`;
-  const cellaSede=r=>{
-    if(r.sedeUnica)return `<span style="color:var(--text-dim);font-size:var(--fs-xxs);">non si applica</span>`;
-    const a=r.s.galleria,b=r.s.soulart;
-    if(!a&&!b)return punto;
-    if(!B)return num(a)+' <span style="color:var(--text-dim);">·</span> '+num(b);
-    return `<span style="display:inline-flex;align-items:center;gap:6px;width:100%;">
-      <span style="flex:1;display:flex;gap:2px;height:7px;">
-        <span style="width:${Math.round(a/mSede*50)}%;background:var(--accent);border-radius:4px;"></span>
-        <span style="width:${Math.round(b/mSede*50)}%;background:var(--text-muted,#c4c4ca);border-radius:4px;"></span>
-      </span><b style="color:var(--text);white-space:nowrap;">${a}·${b}</b></span>`;
-  };
+  const th=(l,g)=>`<th style="text-align:center;padding:7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;white-space:nowrap;${g?sep:''}">${l}</th>`;
+  const td=(v,extra)=>`<td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;${extra||''}">${v}</td>`;
+  // Per i notturni hanno senso solo domeniche, ferie e malattie: mattine, pomeriggi e sede
+  // non descrivono il loro lavoro, e riempirle di zeri farebbe sembrare che non lavorino.
+  const vuota=extra=>td('<span style="color:var(--border);">·</span>',extra);
+  // Per i notturni: il numero se c'e', il puntino se e' zero. Uno zero farebbe sembrare
+  // che non lavorino, ma nascondere un valore vero e' peggio.
+  const cellaN=(v,extra)=>v?td(v,extra):vuota(extra);
   el.innerHTML=`<div class="panel" style="margin-top:14px;">
     <div class="panel-header"><span class="panel-title">Statistiche ricevimento</span>
-      <span style="margin-left:auto;display:flex;align-items:center;gap:10px;">
-        <span style="font-size:var(--fs-xxs);color:var(--text-dim);">conteggio dal ${gg(st.dal)} · ${st.settimane} settiman${st.settimane===1?'a':'e'}</span>
-        <button onclick="turniToggleVista()" title="Passa da barre a numeri" style="border:1px solid var(--border);background:${B?'var(--accent)':'var(--surface)'};color:${B?'#fff':'var(--text-dim)'};font-size:var(--fs-xxs);padding:4px 11px;border-radius:15px;cursor:pointer;font-family:inherit;">${B?'barre':'numeri'}</button>
-      </span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">conteggio dal ${gg(st.dal)} · ${st.settimane} settiman${st.settimane===1?'a':'e'}</span>
     </div>
     <div class="panel-body" style="padding:0;">
       ${st.ignoti&&st.ignoti.length?`<div style="margin:12px 13px 0;background:rgba(160,90,0,.08);border-left:3px solid var(--amber);padding:10px 12px;font-size:var(--fs-xs);color:var(--amber);line-height:1.6;">
         <strong>${st.ignoti.length} codic${st.ignoti.length===1?'e non riconosciuto':'i non riconosciuti'}: non ${st.ignoti.length===1?'entra':'entrano'} in nessun conteggio.</strong><br>
-        ${st.ignoti.map(u=>`<span style="font-weight:700;">${esc(u.codice)}</span> — ${u.volte} volt${u.volte===1?'a':'e'} (${u.chi.map(esc).join(', ')})`).join('<br>')}
+        ${st.ignoti.map(u=>`<span style="font-family:'Helvetica Neue',Arial,sans-serif;font-weight:700;">${esc(u.codice)}</span> — ${u.volte} volt${u.volte===1?'a':'e'} (${u.chi.map(esc).join(', ')})`).join('<br>')}
         <span style="display:block;margin-top:5px;color:var(--text-dim);font-weight:400;">Se è un turno nuovo, segnalamelo e lo aggiungo alle categorie.</span>
       </div>`:''}
-      ${st.settimane<4?`<div style="margin:12px 13px 0;background:rgba(160,90,0,.08);border-left:3px solid var(--amber);padding:8px 11px;font-size:var(--fs-xs);color:var(--amber);line-height:1.5;">
-        Conteggio appena avviato: con ${st.settimane===1?'una settimana sola':'poche settimane'} i numeri non sono ancora confrontabili. Diventano indicativi dopo un mese.</div>`:''}
-      <div style="overflow-x:auto;padding-top:9px;">
+      <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
           <thead><tr>
-            ${th('Persona',{a:'left',p:'12px'})}
-            ${th('Mattine',{a:'left',p:'8px',w:110})}
-            ${th('Pomeriggi',{a:'left',p:'8px',w:110})}
-            ${th('Art Resort · SoulArt',{a:'left',p:'8px',g:1,w:125})}
-            ${th('P',{g:1})}${th('Interm.')}${th('Notti')}${th('Domen.')}
-            ${th('Malattia',{g:1})}${th('Ferie')}
+            <th style="text-align:left;padding:7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Persona</th>
+            ${th('P')}${th('Mattine')}${th('Pomeriggi')}${th('Intermedi')}${th('Notti')}${th('Domeniche')}${th('Art Resort',true)}${th('SoulArt')}${th('Malattia',true)}${th('Ferie')}
           </tr></thead>
           <tbody>
             ${righe.map(({n,s,notte,sedeUnica},i)=>{
               const primoNotte=notte&&(i===0||!righe[i-1].notte);
               return `<tr${primoNotte?' style="border-top:2px solid var(--border);"':''}>
-              <td style="padding:8px 12px;${bb}font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}</td>
-              <td style="padding:8px;${bb}">${B&&!notte?barra(s.mattina,mMa,'var(--accent)'):num(s.mattina)}</td>
-              <td style="padding:8px;${bb}">${B&&!notte?barra(s.pomeriggio,mPo,'#7f92b6'):num(s.pomeriggio)}</td>
-              <td style="padding:8px;${bb}${sep}">${cellaSede({s,sedeUnica})}</td>
-              <td style="padding:8px 6px;text-align:center;${bb}${sep}">${num(s.p+s.pgall)}</td>
-              <td style="padding:8px 6px;text-align:center;${bb}">${num(s.intermedi)}</td>
-              <td style="padding:8px 6px;text-align:center;${bb}white-space:nowrap;">${s.notti?`<b style="color:var(--accent);${!notte?'font-weight:700;':''}">${s.notti}</b> <span style="color:var(--text-dim);font-size:var(--fs-xxs);">${s.nottiG}AR·${s.nottiC}SA</span>`:punto}</td>
-              <td style="padding:8px 6px;text-align:center;${bb}">${num(s.riposiDomenica)}</td>
-              <td style="padding:8px 6px;text-align:center;${bb}${sep}">${num(s.malattia,'var(--red)')}</td>
-              <td style="padding:8px 6px;text-align:center;${bb}">${num(s.ferie,'var(--amber)')}</td>
+              <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}</td>
+              ${notte?cellaN(s.p+s.pgall):td((s.p+s.pgall)||'—')}
+              ${notte?cellaN(s.mattina):td(s.mattina||'—')}
+              ${notte?cellaN(s.pomeriggio):td(s.pomeriggio||'—')}
+              ${notte?cellaN(s.intermedi):td(s.intermedi||'—')}
+              ${td(s.notti?`${s.notti}<span style="color:var(--text-dim);font-size:var(--fs-xxs);"> ${s.nottiG}AR·${s.nottiC}SA</span>`:'—',s.notti&&!notte?'font-weight:700;':'')}
+              ${td(s.riposiDomenica||'—',s.riposiDomenica?'font-weight:700;':'color:var(--text-dim);')}
+              ${sedeUnica?vuota(sep):(notte?cellaN(s.galleria,sep):td(s.galleria||'—',sep))}
+              ${sedeUnica?vuota():(notte?cellaN(s.soulart):td(s.soulart||'—'))}
+              ${td(s.malattia||'—',sep+(s.malattia?'color:var(--red);font-weight:700;':'color:var(--text-dim);'))}
+              ${td(s.ferie||'—',s.ferie?'color:var(--amber);font-weight:700;':'color:var(--text-dim);')}
             </tr>`;}).join('')}
           </tbody>
         </table>
       </div>
       <div style="padding:11px 13px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;border-top:1px solid var(--border);">
-        Le barre confrontano solo fra chi fa turni di giorno: le notti di un notturno le schiaccerebbero tutte. Nella colonna struttura la barra piena è l'Art Resort, quella chiara il SoulArt.
-        <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti hanno la loro colonna, con il dettaglio di sede (AR, SA). <strong>P</strong> comprende P e P Gall. Riposo, riposo richiesto e recupero contano come riposo.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
+        <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. L'orario degli intermedi non conta: la sede la dice la sigla. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (AR = Art Resort, SA = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
+        Riposo, riposo richiesto e recupero contano come riposo.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
+
       </div>
     </div>
   </div>`;
