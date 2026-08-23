@@ -344,6 +344,42 @@ qmCheckAppStatus();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckAppStatus();});
 setInterval(qmCheckAppStatus,30000);
 
+// ── Aggiornamento automatico del codice ─────────────────────────────────────
+// Questa pagina resta aperta tutto il giorno sui PC di reception: senza questo controllo
+// continuava a girare con il codice con cui era stata caricata, anche per settimane dopo
+// una correzione. Stessa tecnica delle app standalone: una HEAD e si confronta l'ETag,
+// che cambia solo se il file e' cambiato davvero — nessun numero di versione da mantenere.
+// NON si ricarica mentre si sta scrivendo o con un modale aperto: sarebbe un conteggio o
+// un buono spesa a meta' buttato via.
+let _qmEtag=null,_qmEtagTs=0;
+function _qmCassaOccupata(){
+  try{
+    const a=document.activeElement;
+    if(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')||a.isContentEditable))return true;
+    const m=document.querySelectorAll('[class*="modal"],[class*="overlay"]');
+    for(let i=0;i<m.length;i++){
+      if(m[i].offsetParent!==null&&m[i].getBoundingClientRect().height>40)return true;
+    }
+  }catch(e){}
+  return false;
+}
+async function qmCheckVersione(){
+  const ora=Date.now(); if(ora-_qmEtagTs<20000)return; _qmEtagTs=ora;
+  try{
+    const r=await fetch(location.pathname,{method:'HEAD',cache:'no-store'});
+    const v=r.headers.get('ETag')||r.headers.get('Last-Modified')||'';
+    if(!v)return;
+    if(_qmEtag===null){_qmEtag=v;return;}
+    if(v===_qmEtag)return;
+    if(_qmCassaOccupata())return;
+    location.reload();
+  }catch(e){}
+}
+qmCheckVersione();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckVersione();});
+window.addEventListener('focus',()=>qmCheckVersione());
+setInterval(qmCheckVersione,600000);
+
 function tick(){
   const n=new Date();
   document.getElementById('hdr-clock').textContent=n.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'})+' · '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');

@@ -2227,6 +2227,44 @@ Nella stessa correzione: l'avviso diceva *"mancano N pezzi"* anche quando ne rie
 
 ---
 
+## Sincronizzazione continua — ogni postazione si aggiorna da sola
+
+`§§ SINCRONIZZAZIONE CONTINUA` in `app.js`. Nato dalla richiesta: *"Compass deve dare risultati affidabili ed essere sempre aggiornato indipendentemente da quale postazione è accesa o spenta. Non posso chiedere ai collaboratori di uscire e rientrare."*
+
+Prima Compass restava fermo a quello che aveva letto **all'avvio**: chi caricava un PDF su un PC lo vedeva, su tutti gli altri la pagina mostrava i dati vecchi finché qualcuno non premeva Cmd+R. E una copia ferma da ore non è solo scomoda: è **il punto di partenza di ogni sovrascrittura** (vedi l'incidente pre-stay del 22/08/2026). Tenere le postazioni fresche è una misura di sicurezza, non una comodità.
+
+### Tre livelli
+
+| Livello | Cosa fa | Dove |
+|---|---|---|
+| **Codice** | Una `HEAD` sulla pagina confronta l'**ETag**: se il file è cambiato, la pagina si ricarica da sola. Nessun numero di versione da mantenere a mano | `qmCheckVersione` in `app.js` e in `reception.html` |
+| **Dati** | Il polling a 30s ora guarda anche **Piano Settimanale** e **registration card**, che nessuno rileggeva | `_qmSyncGiro` |
+| **Viste** | La vista attiva si ridisegna quando è arrivato un dato nuovo | `_qmRidisegnaVista` |
+
+`index.html` e `reception.html` erano le **uniche due pagine senza aggiornamento automatico del codice** — proprio quelle che restano aperte tutto il giorno. Le 5 app standalone ce l'avevano dal 22/08.
+
+### Non si ridisegna mai a vuoto — `_qmCambiato`
+
+Il polling segna `_qmCambiato=true` solo nei rami che hanno davvero applicato un dato nuovo (arrivi, turno, pulizie, colazioni, Piano). Senza quel flag si ridisegnerebbe ogni 30 secondi anche quando non è cambiato niente: accordion che si richiudono da soli, pannelli che sfarfallano, e il giorno del turno che torna a oggi mentre lo stai leggendo.
+
+### `_qmOccupato()` — non si tocca niente mentre l'utente lavora
+
+Ridisegnare sotto le dita fa perdere il testo in corso; ricaricare butta via un modale a metà (un'anteprima già corretta, un DDT in compilazione). Si salta il giro se: il fuoco è in un `INPUT`/`TEXTAREA`/`SELECT` o in un elemento editabile, `#cqDialog` è aperto, o c'è a schermo un elemento con `modal`/`overlay` nel nome (`offsetParent` non nullo e alto più di 40px). Nel dubbio si aspetta il giro dopo — 30 secondi, non un problema.
+
+### Overview: **mai** `loadWeekData` nel ridisegno in sottofondo
+
+`loadWeekData()` rimette `activeDay` a **oggi**, e anche `refreshOverviewForDate` lo fa (punto 2 della funzione). Chiamarli in un aggiornamento automatico significa strappare via il giorno che l'utente sta guardando nella striscia del turno, ogni 30 secondi. `_qmRidisegnaVista('overview')` quindi **non chiama `loadWeekData`** e, dopo il ridisegno, **rimette il giorno che era selezionato**:
+
+```js
+const prima=activeDay;
+refreshOverviewForDate(customDate||new Date());
+if(nG&&prima!==activeDay&&prima>=0&&prima<nG){activeDay=prima;renderDay(activeDay);updateWeekNavActive();}
+```
+
+### `_qmRidisegnaVista` è separato dai ganci di `setView` — di proposito
+
+`setView` oltre a ridisegnare fa cose che in un aggiornamento in sottofondo **non devono succedere**: apre i gruppi del menu, riporta lo scorrimento in cima, e soprattutto chiama `turniPrefMarkAllSeen()` — un aggiornamento automatico che segna lette le Preferenze Turni le farebbe sparire dal badge senza che nessuno le abbia guardate. Le due liste vanno quindi tenute allineate a mano: **aggiungendo una vista, aggiungerla in tutti e due i posti.**
+
 ## Adattamento a smartphone — regola generale
 
 **Gli stili in linea non si adattano.** Gran parte delle viste è costruita in JS con

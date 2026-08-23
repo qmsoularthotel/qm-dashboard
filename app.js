@@ -3903,6 +3903,10 @@ document.querySelector('.content').addEventListener('scroll',function(){
   // Auto-poll KV ogni 2 minuti per aggiornamenti da Drive script
   let _lastPollTs=Date.now();
   setInterval(async()=>{
+    // Segna se questo giro ha portato dati nuovi: la vista attiva si ridisegna solo
+    // allora. Ridisegnare a vuoto ogni 30 secondi darebbe fastidio a chi ci sta lavorando
+    // (accordion che si richiudono, giorno del turno che torna a oggi).
+    let _qmCambiato=false;
     try{
       // Controlla arrivi
       const ar=await fetch(PROXY+'/kv/get?key=qm_arriviData',{cache:'no-store'}).then(r=>r.json());
@@ -3917,6 +3921,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
           try{document.getElementById('arriviLoadedDate').textContent=arriviData.data;}catch(e){}
           restoreUploadTs('arriviTs',obj._ts);
           bkfRoomInfoBuild();
+          _qmCambiato=true;
         }
       }
       // Controlla weekData
@@ -3933,6 +3938,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
           const range=restored.giorni[0].label+' – '+restored.giorni[restored.giorni.length-1].label;
           ucSetState('turno','loaded',range,true);
           restoreUploadTs('turnoTs',obj._ts);
+          _qmCambiato=true;
         }
       }
     }catch(e){}
@@ -3948,6 +3954,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
           pulData=obj.data||obj;pulActiveDay=obj.activeDay||0;
           renderPulData(true);
           restoreUploadTs('pulTs',obj.ts);
+          _qmCambiato=true;
         }
       }
       const bd=await fetch(PROXY+'/kv/get?key=qm_bkfData',{cache:'no-store'}).then(r=>r.json());
@@ -3960,6 +3967,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
           bkfData=obj.data||obj;bkfActiveDay=obj.activeDay||0;
           renderBkfData(true);
           restoreUploadTs('bkfTs',obj.ts);
+          _qmCambiato=true;
         }
       }
     }catch(e){}
@@ -3970,6 +3978,15 @@ document.querySelector('.content').addEventListener('scroll',function(){
     try{
       await hkpNSyncFromCloud('sa');
       if(pianoNavIdx!==null)pianoNavRender(pianoNavIdx);
+    }catch(e){}
+    // Chiavi che questo polling non guardava (Piano, registration card) e ridisegno della
+    // vista attiva: senza, un PDF caricato da un'altra postazione restava invisibile qui
+    // finché qualcuno non ricaricava la pagina a mano. Vedi §§ SINCRONIZZAZIONE CONTINUA.
+    try{
+      if(await _qmSyncGiro())_qmCambiato=true;
+      // Si ridisegna solo se questo giro ha portato dati nuovi, e solo se nessuno sta
+      // scrivendo o ha un modale aperto. Vale per qualunque vista, Overview compresa.
+      if(_qmCambiato&&!_qmOccupato())_qmRidisegnaVista(_qmVistaAttiva());
     }catch(e){}
   },30000);
   const alertTimeEl=document.getElementById('alertTime');if(alertTimeEl)alertTimeEl.textContent='Aggiornato '+String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');
@@ -14357,3 +14374,132 @@ function cqAvviso(titolo,testo,opz){
   if(typeof c==='string')c=c.replace(/\n/g,'<br>');
   return _cqApri({titolo:t,testo:c||'',ok:o.ok||'Ho capito',tipo:o.tipo||'info',soloAvviso:true});
 }
+
+// §§ SINCRONIZZAZIONE CONTINUA — ogni postazione si aggiorna da sola
+// Il problema che risolve: Compass restava fermo a quello che aveva letto all'avvio.
+// Chi caricava un PDF su un PC lo vedeva; su tutti gli altri la pagina continuava a
+// mostrare i dati vecchi finché qualcuno non premeva Cmd+R — e non si può chiedere ai
+// collaboratori di uscire e rientrare per vedere il dato giusto. Peggio: una copia ferma
+// da ore è anche il punto di partenza di ogni sovrascrittura (vedi l'incidente pre-stay
+// del 22/08/2026), quindi tenere le postazioni fresche non è comodità, è sicurezza.
+//
+// Tre cose, tutte automatiche:
+//  1. il CODICE della pagina si aggiorna da solo (ETag), come già fanno le 5 app standalone;
+//  2. le CHIAVI che il polling non guardava (Piano Settimanale, registration card) vengono
+//     rilette a ogni giro;
+//  3. la VISTA ATTIVA si ridisegna: Overview sempre — è il cruscotto, deve essere vivo —
+//     le altre quando qualcosa è davvero cambiato.
+
+// Non si tocca niente mentre l'utente sta lavorando: un ridisegno sotto le dita fa perdere
+// il testo in corso, e un ricaricamento butta via un modale a metà (un'anteprima già
+// corretta, un DDT in compilazione). Nel dubbio si aspetta il giro dopo.
+function _qmOccupato(){
+  try{
+    const a=document.activeElement;
+    if(a&&(/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')||a.isContentEditable))return true;
+    const cq=document.getElementById('cqDialog');
+    if(cq&&cq.classList.contains('open'))return true;
+    // Un modale aperto è quasi sempre un lavoro a metà. `offsetParent` nullo = non a
+    // schermo, quindi i modali chiusi (display:none) non contano.
+    const m=document.querySelectorAll('[class*="modal"],[class*="overlay"],[id*="Modal"]');
+    for(let i=0;i<m.length;i++){
+      if(m[i].offsetParent!==null&&m[i].getBoundingClientRect().height>40)return true;
+    }
+  }catch(e){}
+  return false;
+}
+function _qmVistaAttiva(){
+  const v=document.querySelector('.view.active');
+  return v?String(v.id||'').replace(/^view-/,''):'';
+}
+// Ridisegno della sola vista attiva. DELIBERATAMENTE separato dai ganci di setView, che
+// oltre a ridisegnare fanno cose che qui NON devono succedere: aprire i gruppi del menu,
+// riportare lo scorrimento in cima, e soprattutto marcare come lette le Preferenze Turni
+// (turniPrefMarkAllSeen) — un aggiornamento in sottofondo che le segna lette le farebbe
+// sparire dal badge senza che nessuno le abbia guardate. Se si aggiunge una vista, va
+// aggiunta in tutte e due i posti.
+function _qmRidisegnaVista(id){
+  try{
+    if(id==='overview'){
+      // NON si chiama loadWeekData qui: rimette activeDay a oggi, e in un aggiornamento
+      // in sottofondo vorrebbe dire strappare via il giorno che si sta guardando nella
+      // striscia del turno. Per lo stesso motivo si rimette il giorno scelto dopo il
+      // ridisegno, che invece lo riporta a oggi da sé (refreshOverviewForDate, punto 2).
+      const prima=activeDay;
+      refreshOverviewForDate(customDate||new Date());
+      const nG=(weekData&&weekData.giorni)?weekData.giorni.length:0;
+      if(nG&&prima!==activeDay&&prima>=0&&prima<nG){
+        activeDay=prima;
+        try{renderDay(activeDay);updateWeekNavActive();}catch(e){}
+      }
+    }
+    else if(id==='inventario')invRender();
+    else if(id==='spese'){ddtRenderSpese();if(_ddtTab==='spese')ddtRenderList();}
+    else if(id==='turni-pref')turniPrefRender();
+    else if(id==='controllo-mattino')cmLoad();
+    else if(id==='reception')receptionLoad();
+    else if(id==='resi-biancheria')resiLoad();
+    else if(id==='biancheria')biaLoad();
+    else if(id==='prestay')prestayRender();
+    else if(id==='turnazione'){if(weekData)renderDay(activeDay);}
+    else if(id==='hkpsheet')hkpNRender('sa');
+    else if(id==='bkfsheet')bkfRenderChart();
+    else if(id==='bkfsheetar')bkfRenderChartAR();
+    else if(id==='miniapp')miniappRender();
+  }catch(e){}
+}
+// Chiavi che il polling storico non guardava. Il Piano è la più importante: da lì vengono
+// occupazione, camere, giro Culligan e bilanciamento cameriere, quindi un Piano caricato
+// altrove non arrivava mai sulle altre postazioni.
+async function _qmSyncGiro(){
+  let cambiato=false;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key=qm_piano',{cache:'no-store'});
+    const j=await r.json();
+    if(j.value){
+      const obj=JSON.parse(j.value);
+      const locale=parseInt(localStorage.getItem('qm_ts_pianoTs')||'0');
+      if(obj&&obj._ts&&obj._ts>locale){
+        // Stesso trattamento del caricamento a mano: senza questa riconciliazione le note
+        // per camera resterebbero attaccate a prenotazioni che il nuovo Piano ha spostato.
+        try{bkfRoomInfoReconcilePianoChange(pianoData,obj);}catch(e){}
+        pianoData=obj;
+        try{localStorage.setItem('qm_piano',j.value);}catch(e){}
+        pianoSetLoaded(true);
+        restoreUploadTs('pianoTs',obj._ts);
+        cambiato=true;
+      }
+    }
+  }catch(e){}
+  // Registration card: rcRefreshFromCloud sa già confrontarsi col cloud e riallinearsi
+  // agli arrivi del giorno, quindi qui basta richiamarla.
+  try{await rcRefreshFromCloud();}catch(e){}
+  return cambiato;
+}
+
+// ── Aggiornamento automatico del codice di Compass ──────────────────────────
+// Stessa tecnica delle 5 app standalone (qmCheckVersione): una HEAD sulla pagina e si
+// confronta l'ETag, che cambia solo se il file è cambiato davvero — nessun numero di
+// versione da tenere allineato a mano. Compass e reception.html erano le uniche due
+// pagine senza: proprio quelle che restano aperte tutto il giorno.
+let _qmEtag=null,_qmEtagTs=0;
+async function qmCheckVersione(){
+  const ora=Date.now();
+  if(ora-_qmEtagTs<20000)return;          // tre eventi possono chiamarla a raffica
+  _qmEtagTs=ora;
+  try{
+    const r=await fetch(location.pathname,{method:'HEAD',cache:'no-store'});
+    const v=r.headers.get('ETag')||r.headers.get('Last-Modified')||'';
+    if(!v)return;                          // server che non le espone: si lascia perdere
+    if(_qmEtag===null){_qmEtag=v;return;}  // prima lettura: è il riferimento
+    if(v===_qmEtag)return;
+    if(_qmOccupato())return;               // lavoro a metà: si riprova al giro dopo
+    location.reload();
+  }catch(e){}                              // rete assente: si riprova
+}
+try{
+  qmCheckVersione();
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckVersione();});
+  window.addEventListener('focus',()=>qmCheckVersione());
+  setInterval(qmCheckVersione,600000);     // ogni 10 minuti
+}catch(e){}
