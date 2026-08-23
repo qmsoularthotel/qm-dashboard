@@ -86,6 +86,17 @@ BKF_KO=0
 # vecchio a tempo indeterminato — ed e' cosi' che una correzione pubblicata resta inefficace
 # senza che nessuno se ne accorga (22/08/2026, archivio colazioni).
 for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.html dvr.html; do
+  # Le richieste devono avere la maschera di Compass, non quelle del browser: "compass-qm.com
+  # dice" su un'azione che cancella dati non dice a nessuno chi sta chiedendo.
+  case "$_app" in
+    breakfast.html|inventory.html|controllo-mattino.html)
+      if ! grep -q 'function cqConferma' "$_app"; then
+        echo ""
+        echo "  ERRORE      $_app non ha piu' la finestra di conferma di Compass."
+        echo "              Le richieste tornerebbero a essere quelle grigie del browser."
+        BKF_KO=1
+      fi ;;
+  esac
   if ! grep -q 'QM_APP_BUILD' "$_app"; then
     echo ""
     echo "  ERRORE      $_app non dichiara piu' la propria versione (QM_APP_BUILD)."

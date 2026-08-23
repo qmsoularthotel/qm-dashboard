@@ -540,7 +540,7 @@ setInterval(qmCheckAppStatus,30000);
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-08-22.2';
+const QM_APP_BUILD='2026-08-23.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -943,8 +943,8 @@ function openMoveModal(bc, product, isNew) {
   }, 150);
 }
 
-function deleteMove(id) {
-  if (!confirm('Eliminare questo movimento?')) return;
+async function deleteMove(id) {
+  if (!await cqConferma('Eliminare questo movimento?','La giacenza verrà ricalcolata senza di esso.',{ok:'Elimina'})) return;
   moves[currentWH] = moves[currentWH].filter(m => m.id !== id);
   renderAll();
   pushToCloud();
@@ -1027,10 +1027,10 @@ async function saveMove() {
 }
 
 // ── Edit catalog product ──────────────────────────────────────────────────────
-function deleteProduct(bc) {
+async function deleteProduct(bc) {
   const p = catalog[bc];
   if (!p) return;
-  if (!confirm(`Eliminare "${p.name}" dal catalogo?\n\nI movimenti esistenti non verranno eliminati.`)) return;
+  if (!await cqConferma(`Eliminare "${p.name}" dal catalogo?`,'I movimenti già registrati restano: sparisce solo il prodotto dal catalogo.',{ok:'Elimina'})) return;
   delete catalog[bc];
   pushToCloud();
   renderAll();
@@ -1234,5 +1234,79 @@ function initHWScanner() {
   if (!navigator.onLine) updateOnlineStatus();
 })();
 </script>
+<!-- ── Finestra di conferma Compass ─────────────────────────────────────────
+     Stessa maschera della dashboard, portata qui il 23/08/2026: le finestre del
+     browser mostrano "compass-qm.com dice", compaiono ancorate in alto e non si
+     impaginano. La rosa dei venti dice che a chiedere è Compass — su un'azione che
+     cancella dati è l'informazione che conta di più.
+     Non usare confirm()/alert(): usare cqConferma (Promise<boolean>, serve await)
+     oppure cqAvviso (un pulsante solo, non serve await). -->
+<style>
+.cq-dialog{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100000;align-items:center;justify-content:center;padding:16px;}
+.cq-dialog.open{display:flex;}
+.cq-box{position:relative;overflow:hidden;background:var(--surface,#fff);border-radius:10px;width:400px;max-width:100%;padding:26px;text-align:center;border:1px solid var(--border,#e0e0e4);box-shadow:0 20px 60px rgba(0,0,0,.28);}
+.cq-box::before{content:'';position:absolute;left:-120px;top:-120px;width:330px;height:330px;
+  background:url('img/compass-stella.png') no-repeat center/contain;
+  opacity:.13;transform:rotate(22deg);pointer-events:none;}
+.cq-title{position:relative;font-size:16px;font-weight:600;color:var(--text,#1a1a1a);margin-bottom:6px;}
+.cq-sub{position:relative;font-size:13px;color:var(--text-muted,#6b6b70);margin-bottom:22px;line-height:1.5;}
+.cq-btns{position:relative;display:flex;gap:10px;justify-content:center;}
+.cq-ok{background:#1c3a5e;color:#fff;border:none;padding:9px 26px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;}
+.cq-no{background:transparent;color:var(--text-muted,#6b6b70);border:1px solid var(--border,#e0e0e4);padding:9px 16px;border-radius:6px;font-size:14px;cursor:pointer;font-family:inherit;}
+</style>
+<div class="cq-dialog" id="cqDialog">
+  <div class="cq-box">
+    <div class="cq-title" id="cqTitle"></div>
+    <div class="cq-sub" id="cqSub"></div>
+    <div class="cq-btns">
+      <button class="cq-ok" id="cqOk"></button>
+      <button class="cq-no" id="cqNo">Annulla</button>
+    </div>
+  </div>
+</div>
+<script>
+function _cqApri(o){
+  const d=document.getElementById('cqDialog');
+  if(!d)return Promise.resolve(o.soloAvviso?true:window.confirm(o.titolo));   // ripiego
+  document.getElementById('cqTitle').textContent=o.titolo||'';
+  document.getElementById('cqSub').innerHTML=o.testo||'';
+  const bOk=document.getElementById('cqOk'), bNo=document.getElementById('cqNo');
+  bOk.textContent=o.ok||'Conferma';
+  bNo.style.display=o.soloAvviso?'none':'';
+  d.classList.add('open');
+  bOk.focus();
+  return new Promise(res=>{
+    const fine=v=>{
+      d.classList.remove('open');
+      bOk.onclick=bNo.onclick=d.onclick=null;
+      document.removeEventListener('keydown',tasto);
+      res(v);
+    };
+    const tasto=e=>{ if(e.key==='Escape')fine(false); if(e.key==='Enter')fine(true); };
+    bOk.onclick=()=>fine(true);
+    bNo.onclick=()=>fine(false);
+    d.onclick=e=>{if(e.target===d)fine(false);};
+    document.addEventListener('keydown',tasto);
+  });
+}
+function cqConferma(titolo,testo,opz){
+  const o=opz||{};
+  return _cqApri({titolo,testo,ok:o.ok||'Conferma'});
+}
+// Accetta anche un messaggio solo con gli a capo, nel formato dei vecchi alert():
+// la prima riga diventa il titolo, il resto la spiegazione.
+function cqAvviso(titolo,testo,opz){
+  const o=opz||{};
+  let t=String(titolo||''), c=testo;
+  if(c===undefined&&/\n/.test(t)){
+    const i=t.indexOf('\n');
+    c=t.slice(i).replace(/^\n+/,'');
+    t=t.slice(0,i);
+  }
+  if(typeof c==='string')c=c.replace(/\n/g,'<br>');
+  return _cqApri({titolo:t,testo:c||'',ok:o.ok||'Ho capito',soloAvviso:true});
+}
+</script>
+
 </body>
 </html>
