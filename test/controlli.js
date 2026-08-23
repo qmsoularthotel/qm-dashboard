@@ -409,6 +409,19 @@ var _gr = turniStatistiche({ '2026-08-24': { ts:1, dal:'2026-08-24', al:'2026-08
 ok('le sue notti si contano',   _gr.per['Grieco V.'].notti, 1);
 ok('e sono a SoulArt',          _gr.per['Grieco V.'].nottiC, 1);
 ok('il suo pomeriggio si vede', _gr.per['Grieco V.'].pomeriggio, 1);
+// Vatiero non e' un notturno ma copre le notti in emergenza: se la tabella non ha una
+// colonna Notti, quelle notti non compaiono da nessuna parte — non fra mattine e
+// pomeriggi, e nemmeno nei totali di sede, da cui le notti sono escluse. La sua riga lo
+// farebbe sembrare uno che ha lavorato molto meno del vero.
+var _va = turniStatistiche({ '2026-08-24': { ts:1, dal:'2026-08-24', al:'2026-08-25', giorni:[
+  { data:'2026-08-24', shifts:{ 'Vatiero R.':'NC' } },
+  { data:'2026-08-25', shifts:{ 'Vatiero R.':'NC' } }
+] } }, ['Vatiero R.']);
+ok('le notti di chi notturno non e\' si contano', _va.per['Vatiero R.'].notti, 2);
+ok('e si sa dove le ha fatte',                    _va.per['Vatiero R.'].nottiC, 2);
+ok('non finiscono fra i pomeriggi',               _va.per['Vatiero R.'].pomeriggio, 0);
+ok('ne\' nel totale di sede',                     _va.per['Vatiero R.'].soulart, 0);
+ok('la colonna Notti esiste nella tabella',       /th\('Notti'\)/.test(String(turniRenderStats)), true);
 ok('NG resta Art Resort',       turniNormalizza('NG').sede, 'galleria');
 ok('NC resta SoulArt',          turniNormalizza('NC').sede, 'soulart');
 ok('chi manca non viene inventato', turniOrdina(['Perez L.']).join(','), 'Perez L.');
