@@ -489,9 +489,19 @@ function turniNormalizza(cod){
   if(!c||c==='-')return null;
   const exR=/\(EX R\)/.test(c);
   const base=c.replace(/\(EX R\)/,'').replace(/\s+/g,' ').trim();
-  if(/^R\b/.test(base))return{tipo:'riposo',exR:false};      // R, R RICHIESTO, R RECUPERO …
+  // Riposo in tutte le forme viste nei fogli reali: 'R', 'R RICHIESTO',
+  // 'R RECUPERO 23/08', 'RIPOSO RICHIESTO', 'RECUPERO RIPOSO'.
+  if(/^R\b/.test(base)||/^RIPOSO\b/.test(base)||/^RECUPERO RIPOSO\b/.test(base))return{tipo:'riposo',exR:false};
   if(base==='FERIE')return{tipo:'ferie',exR:false};
   if(base==='MALATTIA')return{tipo:'malattia',exR:false};
+  // Intermedi: 'INT CAR 9/17', 'INT CAR 10/18', 'INT GALL 10/18'.
+  // L'orario NON identifica la struttura — nel turno del 24-30/08 lo stesso 10/18 compare
+  // sia come CAR sia come GALL. Si guarda solo la sigla della sede e si ignora l'orario,
+  // altrimenti un cambio d'orario farebbe sparire il turno dai conteggi.
+  const mInt=base.match(/^INT\s+(CAR|GALL)\b/);
+  if(mInt)return{tipo:'turno',codice:'INT '+mInt[1],exR,
+    sede:mInt[1]==='GALL'?'galleria':'soulart',fascia:'intermedio',
+    label:'Intermedio '+(mInt[1]==='GALL'?'Art Resort':'SoulArt')};
   if(base==='PGALL')return{tipo:'pgall',exR};
   if(base==='P')return{tipo:'p',exR};
   if(TURNI_CODICI[base])return Object.assign({tipo:'turno',codice:base,exR},TURNI_CODICI[base]);
@@ -503,7 +513,7 @@ function turniNormalizza(cod){
  * colonna loro, con il dettaglio per sede. È la lettura chiesta in reception.
  */
 function turniStatistiche(archivio,membri){
-  const vuoto=()=>({riposi:0,riposiDomenica:0,mattina:0,pomeriggio:0,notti:0,nottiG:0,nottiC:0,
+  const vuoto=()=>({riposi:0,riposiDomenica:0,mattina:0,pomeriggio:0,intermedi:0,notti:0,nottiG:0,nottiC:0,
     galleria:0,soulart:0,p:0,pgall:0,ferie:0,malattia:0,riposiLavorati:0,giorni:0,altro:0});
   const out={}; (membri||[]).forEach(n=>out[n]=vuoto());
   const sett=Object.keys(archivio||{}).sort();
@@ -525,6 +535,7 @@ function turniStatistiche(archivio,membri){
         if(n.tipo!=='turno'){s.altro++;return;}
         if(n.fascia==='mattina'){s.mattina++;}
         else if(n.fascia==='pomeriggio'){s.pomeriggio++;}
+        else if(n.fascia==='intermedio'){s.intermedi++;}
         else if(n.fascia==='notte'){s.notti++;if(n.sede==='galleria')s.nottiG++;else s.nottiC++;}
         if(n.fascia!=='notte'){ if(n.sede==='galleria')s.galleria++; else s.soulart++; }
       });
@@ -577,7 +588,7 @@ function turniRenderStats(){
         <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
           <thead><tr>
             <th style="text-align:left;padding:7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Persona</th>
-            ${th('Domeniche')}${th('Mattine')}${th('Pomeriggi')}${th('Art Resort')}${th('SoulArt')}${th('P')}${th('Ferie')}${th('Malattia')}
+            ${th('Domeniche')}${th('Mattine')}${th('Intermedi')}${th('Pomeriggi')}${th('Art Resort')}${th('SoulArt')}${th('P')}${th('Ferie')}${th('Malattia')}
           </tr></thead>
           <tbody>
             ${righe.map(({n,s,notte},i)=>{
@@ -586,6 +597,7 @@ function turniRenderStats(){
               <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}</td>
               ${td(s.riposiDomenica||'—',s.riposiDomenica?'font-weight:700;':'color:var(--text-dim);')}
               ${notte?vuota:td(s.mattina||'—')}
+              ${notte?vuota:td(s.intermedi||'—')}
               ${notte?vuota:td(s.pomeriggio||'—')}
               ${notte?vuota:td(s.galleria||'—')}
               ${notte?vuota:td(s.soulart||'—')}
@@ -597,7 +609,7 @@ function turniRenderStats(){
         </table>
       </div>
       <div style="padding:11px 13px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;border-top:1px solid var(--border);">
-        <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG, <strong>SoulArt</strong> = AC + CC; le notti non entrano nel conteggio per sede. <strong>P</strong> comprende P e P Gall.
+        <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. L'orario degli intermedi non conta: la sede la dice la sigla. <strong>P</strong> comprende P e P Gall.
         Riposo, riposo richiesto e recupero contano come riposo.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
         ${righe.some(x=>x.s.altro)?'<br>Codici non riconosciuti (non conteggiati): '+righe.filter(x=>x.s.altro).map(x=>esc(x.n)+' '+x.s.altro).join(', ')+'.':''}
       </div>

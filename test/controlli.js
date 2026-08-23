@@ -318,6 +318,18 @@ ok('NG e\' una notte in Galleria',    turniNormalizza('NG').fascia, 'notte');
 ok('la casella vuota non conta',      turniNormalizza(''), null);
 ok('il trattino non conta',           turniNormalizza('-'), null);
 ok('un codice sconosciuto e\' "altro"', turniNormalizza('9-14').tipo, 'altro');
+// Intermedi, dal turno reale del 24-30/08. L'orario NON identifica la struttura: 10/18
+// compare sia come CAR sia come GALL, quindi si guarda solo la sigla della sede.
+ok('INT CAR e\' un intermedio a SoulArt',
+   turniNormalizza('INT CAR 9/17').sede + '/' + turniNormalizza('INT CAR 9/17').fascia, 'soulart/intermedio');
+ok('lo stesso con un altro orario',   turniNormalizza('INT CAR 10/18').sede, 'soulart');
+ok('INT GALL e\' un intermedio all\'Art Resort',
+   turniNormalizza('INT GALL 10/18').sede + '/' + turniNormalizza('INT GALL 10/18').fascia, 'galleria/intermedio');
+ok('un intermedio senza orario regge lo stesso', turniNormalizza('INT GALL').sede, 'galleria');
+// Riposo nelle forme usate dagli altri reparti, se un giorno comparissero al ricevimento.
+ok('RIPOSO RICHIESTO e\' riposo',     turniNormalizza('RIPOSO RICHIESTO').tipo, 'riposo');
+ok('RECUPERO RIPOSO e\' riposo',      turniNormalizza('RECUPERO RIPOSO').tipo, 'riposo');
+ok('R RECUPERO con la data e\' riposo', turniNormalizza('R RECUPERO 23/08').tipo, 'riposo');
 
 // 17/08/2026 e' un lunedi', quindi il 23 e' domenica: il riposo di domenica va distinto.
 var _arch = { '2026-08-17': { dal:'2026-08-17', al:'2026-08-23', giorni: [
@@ -336,6 +348,15 @@ ok('pomeriggio di Presta',            _sf.per['Presta P.'].pomeriggio, 1);
 ok('Galleria di Presta (CG, senza notti)', _sf.per['Presta P.'].galleria, 1);
 ok('SoulArt di Presta (AC)',          _sf.per['Presta P.'].soulart, 1);
 ok('la notte non entra nella sede',   _sf.per['Perez L.'].galleria, 0);
+// Un intermedio non e' ne' mattina ne' pomeriggio, ma e' lavoro in quella sede: deve
+// contarsi nella colonna Intermedi E nel totale della struttura.
+var _int = turniStatistiche({ '2026-08-24': { dal:'2026-08-24', al:'2026-08-24', giorni:[
+  { data:'2026-08-24', shifts:{ 'Raucci A.':'INT CAR 10/18', 'Ruggiero B.':'INT GALL 10/18' } }
+] } }, ['Raucci A.','Ruggiero B.']);
+ok('intermedio contato',              _int.per['Raucci A.'].intermedi, 1);
+ok('e attribuito a SoulArt',          _int.per['Raucci A.'].soulart, 1);
+ok('non finisce fra le mattine',      _int.per['Raucci A.'].mattina, 0);
+ok('INT GALL va all\'Art Resort',     _int.per['Ruggiero B.'].galleria, 1);
 ok('ma si conta come notte',          _sf.per['Perez L.'].notti, 1);
 ok('e si sa in quale sede',           _sf.per['Perez L.'].nottiG, 1);
 ok('ferie contate',                   _sf.per['Presta P.'].ferie, 1);
