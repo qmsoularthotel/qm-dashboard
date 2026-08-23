@@ -283,6 +283,28 @@ ok('la serie resta in ordine di data',
 ok('i giorni molto vecchi non si accumulano',       _bkfFondi([_gio(-30, 10)], [_gio(0, 55)]).length, 1);
 ok('senza dati precedenti funziona lo stesso',      _bkfFondi(null, [_gio(0, 55)]).length, 1);
 
+sez('Punteggio Booking: la finestra e\' un parametro, non una certezza');
+// Il modello teneva fissa la finestra a 36 mesi e faceva variare solo l'emivita: quando il
+// punteggio reale non rientrava, l'unica spiegazione offerta era "il CSV e' incompleto".
+// Sul Principe (23/08/2026) il CSV era completo — era la finestra a essere troppo lunga.
+var GG = 86400000, ORA = new Date('2026-08-23T12:00:00Z').getTime();
+function _rec(giorniFa, voto) { return { _dateTs: ORA - giorniFa * GG, _score: voto }; }
+var _set = [_rec(10, 10), _rec(20, 10), _rec(700, 4), _rec(800, 4)];
+ok('finestra piena: entrano tutte',
+   punteggioBooking(_set, 1200, ORA, 1095).nInFinestra, 4);
+ok('finestra corta: le vecchie restano fuori',
+   punteggioBooking(_set, 1200, ORA, 365).nInFinestra, 2);
+ok('e il punteggio cambia di conseguenza',
+   Math.round(punteggioBooking(_set, 1200, ORA, 365).score * 100) / 100, 10);
+ok('fuori finestra non pesa nemmeno un poco',
+   punteggioBooking([_rec(2000, 1)], 1200, ORA, 1095).score, null);
+// Se il punteggio e' gia' riproducibile a 36 mesi non si accorcia niente: accorciare
+// spiegherebbe qualunque valore, guardando sempre meno recensioni.
+// Bersaglio scelto dal modello stesso: e' per costruzione riproducibile a 36 mesi.
+var _atteso = Math.round(punteggioBooking(_set, 136, ORA, 1095).score * 10) / 10;
+var _facile = calibraFinestra(_set, _atteso, new Date(ORA));
+ok('finestra piena compatibile: si tiene quella', _facile && _facile.mesi, 36);
+
 sez('Calibrazione recensioni: i registri si fondono, non si sostituiscono');
 // Il 23/08/2026 le osservazioni di TUTTE le strutture sono sparite: il salvataggio
 // riscriveva nel cloud il registro della postazione senza guardare cosa c'era gia'.
