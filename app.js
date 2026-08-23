@@ -640,7 +640,7 @@ function turniRenderStats(){
               ${notte?cellaN(s.mattina):td(s.mattina||'—')}
               ${notte?cellaN(s.pomeriggio):td(s.pomeriggio||'—')}
               ${notte?cellaN(s.intermedi):td(s.intermedi||'—')}
-              ${td(s.notti?`${s.notti}<span style="color:var(--text-dim);font-size:var(--fs-xxs);"> ${s.nottiG}G·${s.nottiC}C</span>`:'—',s.notti&&!notte?'font-weight:700;':'')}
+              ${td(s.notti?`${s.notti}<span style="color:var(--text-dim);font-size:var(--fs-xxs);"> ${s.nottiG}AR·${s.nottiC}SA</span>`:'—',s.notti&&!notte?'font-weight:700;':'')}
               ${td(s.riposiDomenica||'—',s.riposiDomenica?'font-weight:700;':'color:var(--text-dim);')}
               ${notte?cellaN(s.galleria,sep):td(s.galleria||'—',sep)}
               ${notte?cellaN(s.soulart):td(s.soulart||'—')}
@@ -651,7 +651,7 @@ function turniRenderStats(){
         </table>
       </div>
       <div style="padding:11px 13px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;border-top:1px solid var(--border);">
-        <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. L'orario degli intermedi non conta: la sede la dice la sigla. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (G = Art Resort, C = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
+        <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. L'orario degli intermedi non conta: la sede la dice la sigla. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (AR = Art Resort, SA = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
         Riposo, riposo richiesto e recupero contano come riposo.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
 
       </div>
