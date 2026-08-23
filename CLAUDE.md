@@ -238,6 +238,28 @@ Un'osservazione è "usabile" solo fino a un limite temporale, altrimenti resta m
 
 Se **nessuna** emivita soddisfa tutte le osservazioni, si mostra un avviso che **elenca le osservazioni e chiede quale rimuovere** — non si scarta niente automaticamente: l'utente sa quale è sbagliata, il dashboard no. Cause riportate nell'avviso: valore digitato male; Booking aggiorna con ritardo o a lotti; recensioni rimosse per moderazione che restano nel CSV; modello inadatto a quella struttura. Nel frattempo si ricade sulla fonte 2.
 
+### "Conflitto" e "fuori modello" sono due diagnosi diverse (fix 23/08/2026)
+
+`calibraDaOsservazioni` segnalava `contraddittorio` ogni volta che nessuna emivita soddisfaceva tutte le osservazioni — **anche quando l'osservazione era una sola**. Su Principe (371 recensioni, registrato 6.6) il pannello diceva quindi *"osservazioni in conflitto — rimuovi quella sbagliata"*, con una sola riga nel registro: niente da rimuovere, e la diagnosi vera taciuta. `revCalibStato` per giunta dà a `contraddittorio` la precedenza su `fuori-modello`, quindi il messaggio corretto non compariva mai.
+
+La distinzione ora è quella giusta:
+
+| Caso | Condizione | Messaggio |
+|---|---|---|
+| **Conflitto** | ≥ 2 osservazioni, **ognuna riproducibile da sola**, ma nessuna emivita le soddisfa insieme | elenca e chiede quale togliere |
+| **Fuori modello** | almeno una osservazione non è riproducibile **nemmeno da sola** | dice di quanto e da che parte |
+
+Il secondo giro (`daSola`) costa quanto il primo, ma si paga **solo quando qualcosa non torna**, mai nel caso normale.
+
+### `range` — di quanto si sbaglia, non solo che si sbaglia
+
+`calibraHalfLife` restituisce anche `range:[min,max]`: i punteggi producibili con quelle recensioni facendo variare l'emivita in tutto l'intervallo esplorato (20–1200 gg). Senza, *"punteggio non riproducibile"* era una constatazione muta — un valore fuori di due centesimi e uno fuori di mezzo punto hanno cause opposte:
+
+- **sotto il minimo** → Booking sta contando qualcosa di peggiore di quanto c'è nel CSV, tipicamente recensioni recenti non ancora nell'export: **riesportare il CSV** è il rimedio;
+- **sopra il massimo** → il CSV contiene recensioni che Booking non conta più (moderazione, fuori finestra), oppure il numero è digitato male.
+
+Il valore è memorizzato in `REV_CALIB[p].range` insieme a `nRec`, così il pannello lo mostra senza ricalcolare.
+
 **Ampiezza della fascia = affidabilità** (`revCalibQualita`): > 100 gg `calibrazione debole` · 30–100 gg `discreta` · < 30 gg `solida`. Quando è debole compare il suggerimento attivo *"registra il punteggio ogni volta che cambia cifra: bastano 3–4 osservazioni per dimezzare l'incertezza"*.
 
 **Le osservazioni che catturano un cambio di cifra valgono molto più di quelle che ripetono lo stesso valore** — verificato in test: aggiungendo una terza osservazione che ripete `8.8` la fascia non si stringe affatto, mentre le due che catturano il cambio la portano da 161 a 143 gg. Se il registro contiene solo valori identici il pannello lo segnala esplicitamente (`tuttiUguali`).
@@ -2764,7 +2786,7 @@ guardando lo schermo, un errore nei numeri no — resta plausibile e può passar
 per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dall'alloggio,
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
-dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi. 184 controlli.
+dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione. 194 controlli.
 
 ### Come funziona
 

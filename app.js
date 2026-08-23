@@ -5346,13 +5346,21 @@ function punteggioBooking(recensioni,halfLifeGiorni=REV_HL_DEFAULT,oggi=new Date
 function calibraHalfLife(recensioni,scoreReale,oggi=new Date()){
   const min=scoreReale-0.05,max=scoreReale+0.05;
   const compatibili=[];
+  let sMin=null,sMax=null;
   for(let hl=20;hl<=1200;hl++){
     const s=punteggioBooking(recensioni,hl,oggi).score;
-    if(s!==null&&s>=min&&s<max)compatibili.push(hl);
+    if(s===null)continue;
+    if(sMin===null||s<sMin)sMin=s;
+    if(sMax===null||s>sMax)sMax=s;
+    if(s>=min&&s<max)compatibili.push(hl);
   }
-  if(!compatibili.length)return{hl:REV_HL_DEFAULT,fascia:null,fuoriModello:true};
+  // `range` = i punteggi che il modello può produrre con QUESTE recensioni, facendo
+  // variare l'emivita in tutto l'intervallo esplorato. Serve alla diagnosi: un valore
+  // fuori di due centesimi e uno fuori di mezzo punto hanno cause diverse.
+  const range=(sMin===null)?null:[sMin,sMax];
+  if(!compatibili.length)return{hl:REV_HL_DEFAULT,fascia:null,fuoriModello:true,range};
   const centro=compatibili[Math.floor(compatibili.length/2)];
-  return{hl:centro,fascia:[compatibili[0],compatibili[compatibili.length-1]],fuoriModello:false};
+  return{hl:centro,fascia:[compatibili[0],compatibili[compatibili.length-1]],fuoriModello:false,range};
 }
 
 // Booking mostra una sola cifra decimale e arrotonda: per far comparire 8.9 basta
@@ -5431,7 +5439,26 @@ function calibraDaOsservazioni(recensioni,osservazioni,importTs){
     }
     if(ok)compatibili.push(hl);
   }
-  if(!compatibili.length)return{hl:null,fascia:null,contraddittorio:true,nUsate:ctx.length,nAttesa};
+  if(!compatibili.length){
+    // Un conflitto vero esiste solo se ogni osservazione, PRESA DA SOLA, è riproducibile:
+    // allora il problema è che non stanno insieme, e ha senso chiedere quale togliere.
+    // Se invece una non è riproducibile nemmeno da sola, il caso è "fuori modello" — e
+    // parlare di conflitto manderebbe a cercare un colpevole fra le altre, che non c'è.
+    // Con una sola osservazione non può esserci contraddizione per definizione.
+    // Il secondo giro costa quanto il primo, ma si paga solo quando qualcosa non torna.
+    const daSola=c=>{
+      for(let hl=20;hl<=1200;hl++){
+        const s=punteggioBooking(c.sub,hl,c.ts).score;
+        if(s!==null&&s>=c.display-0.05&&s<c.display+0.05)return true;
+      }
+      return false;
+    };
+    const tutteRiproducibili=ctx.every(daSola);
+    return{hl:null,fascia:null,
+           contraddittorio:ctx.length>1&&tutteRiproducibili,
+           fuoriModello:!tutteRiproducibili,
+           nUsate:ctx.length,nAttesa};
+  }
   return{
     hl:compatibili[Math.floor(compatibili.length/2)],
     fascia:[compatibili[0],compatibili[compatibili.length-1]],
@@ -5474,6 +5501,11 @@ function revCalibRicalcola(p){
   c.fascia=single.fascia;
   c.fonte=single.fuoriModello?'default':'singolo';
   c.fuoriModello=single.fuoriModello;
+  c.range=single.range||null;      // punteggi producibili con queste recensioni
+  c.nRec=scored.length;
+  // Se nemmeno il confronto d'insieme trova un'emivita e la causa è che un'osservazione
+  // non è riproducibile, il caso resta "fuori modello" anche con più osservazioni.
+  if(multi.fuoriModello)c.fuoriModello=true;
   c.contraddittorio=!!multi.contraddittorio;
   c.nUsate=multi.nUsate;c.nAttesa=nAttesa;
   if(single.fuoriModello){
@@ -5502,10 +5534,10 @@ function revCalibStato(p){
   const ultima=[...oss].sort((a,b)=>+new Date(b.ts)-+new Date(a.ts))[0];
   const gg=(Date.now()-+new Date(ultima.ts))/86400000;
   return{
-    stato:c.contraddittorio?'contraddittorio':(c.fonte==='default'&&c.fuoriModello?'fuori-modello':(gg>REV_CALIB_STALE_GG?'da-aggiornare':'ok')),
+    stato:c.contraddittorio?'contraddittorio':(c.fuoriModello?'fuori-modello':(gg>REV_CALIB_STALE_GG?'da-aggiornare':'ok')),
     scoreReale:ultima.display,ts:+new Date(ultima.ts),gg:Math.floor(gg),
     hl:c.hl,fascia:c.fascia,fonte:c.fonte||'default',
-    nUsate:c.nUsate||0,nAttesa:c.nAttesa||0,oss,
+    nUsate:c.nUsate||0,nAttesa:c.nAttesa||0,oss,range:c.range||null,nRec:c.nRec||0,
     qualita:revCalibQualita(c.fascia),
     tuttiUguali:oss.length>1&&oss.every(o=>Number(o.display)===Number(oss[0].display))
   };
@@ -5639,8 +5671,25 @@ function revRenderCalib(p,pb,hl){
     </div>`;
   }else if(cs.stato==='fuori-modello'){
     badge=`<span style="font-size:var(--fs-xs);font-weight:700;padding:4px 11px;border-radius:12px;background:var(--red-bg);color:var(--red);">fuori modello</span>`;
-    avviso=`<div style="margin-top:8px;background:var(--red-bg);color:var(--red);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.5;">
-      <strong>Punteggio non riproducibile.</strong> Nessuna emivita tra 20 e 1200 giorni produce ${Number(cs.scoreReale).toFixed(1)} con queste recensioni: o il numero è stato digitato male, o il CSV non è aggiornato all'ultima esportazione. Nel frattempo si usa l'emivita di default (${REV_HL_DEFAULT} giorni).</div>`;
+    // Non basta dire "non riproducibile": di quanto, e da che parte, sono due diagnosi
+    // diverse. Sotto il minimo = Booking conta qualcosa di peggiore che nel CSV non c'è
+    // (tipicamente recensioni recenti non ancora esportate). Sopra il massimo = il CSV
+    // contiene recensioni che Booking non conta più, o il numero è digitato male.
+    const rg=cs.range;
+    const letto=Number(cs.scoreReale);
+    let diagnosi='';
+    if(rg){
+      const sotto=letto<rg[0],dist=sotto?rg[0]-letto:letto-rg[1];
+      diagnosi=`Con queste ${cs.nRec} recensioni il modello può produrre da <strong>${rg[0].toFixed(2)}</strong> a <strong>${rg[1].toFixed(2)}</strong> (emivite da 20 a 1200 giorni). Il valore letto, <strong>${letto.toFixed(1)}</strong>, sta <strong>${sotto?'sotto il minimo':'sopra il massimo'} di ${dist.toFixed(2)}</strong>.`
+        +`<span style="display:block;margin-top:4px;">${sotto
+          ? 'Booking sta quindi contando qualcosa di peggiore di quanto c\'è nel CSV: di solito recensioni recenti non ancora presenti nell\'export. Riesporta il CSV dall\'Extranet e ricaricalo.'
+          : 'Il CSV contiene quindi recensioni che Booking non conta più (rimosse per moderazione o fuori finestra), oppure il numero è stato digitato male.'}</span>`;
+    }else{
+      diagnosi=`Nessuna emivita tra 20 e 1200 giorni produce ${letto.toFixed(1)} con queste recensioni.`;
+    }
+    avviso=`<div style="margin-top:8px;background:var(--red-bg);color:var(--red);border-radius:7px;padding:10px 13px;font-size:var(--fs-xs);line-height:1.6;">
+      <strong>Punteggio non riproducibile.</strong> ${diagnosi}
+      <span style="display:block;margin-top:4px;">Nel frattempo si usa l'emivita di default (${REV_HL_DEFAULT} giorni), quindi il punteggio mostrato resta una stima.</span></div>`;
   }else{
     const col=cs.stato==='da-aggiornare'?'amber':'green';
     badge=`<span style="font-size:var(--fs-xs);font-weight:700;padding:4px 11px;border-radius:12px;background:var(--${col}-bg);color:var(--${col});">${cs.oss.length} osservazion${cs.oss.length===1?'e':'i'} · ultima ${fmtD(cs.ts)}</span>`;

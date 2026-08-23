@@ -580,6 +580,48 @@ var V2 = _qmFondiElenchi({ righe: [{ id: 'r1' }, { id: 'r2' }] }, {}, new Set())
 ok('copia vuota non cancella l archivio', V2.righe.length, 2);
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Calibrazione: conflitto e "fuori modello" sono cose diverse');
+// Caso reale (Principe, 23/08/2026): registrato 6.6 con una sola osservazione, il
+// pannello diceva "osservazioni in conflitto" e chiedeva quale rimuovere — con una sola
+// osservazione non c'e' niente da rimuovere, e la diagnosi giusta e' un'altra.
+
+var GG = 86400000;
+var OGGI = new Date('2026-08-23T11:00:00').getTime();
+// Storico tutto attorno a 9: nessuna emivita puo' produrre 6.6.
+var REC9 = [];
+for (var i = 0; i < 40; i++) REC9.push({ _dateTs: OGGI - (i * 10 + 1) * GG, _score: 9 });
+
+var UNA = calibraDaOsservazioni(REC9, [{ ts: OGGI - GG, display: 6.6 }], OGGI);
+ok('una sola osservazione: nessun conflitto',  UNA.contraddittorio, false);
+ok('una sola osservazione: fuori modello',     UNA.fuoriModello, true);
+
+// Due osservazioni entrambe irriproducibili non sono un conflitto fra loro.
+var DUE_FUORI = calibraDaOsservazioni(REC9,
+  [{ ts: OGGI - 2 * GG, display: 6.6 }, { ts: OGGI - GG, display: 6.5 }], OGGI);
+ok('due valori irriproducibili: non e conflitto', DUE_FUORI.contraddittorio, false);
+ok('due valori irriproducibili: fuori modello',   DUE_FUORI.fuoriModello, true);
+
+// Conflitto vero: due letture entrambe riproducibili da sole, ma non insieme.
+// Storico che cambia nel tempo, cosi' emivite diverse danno punteggi diversi.
+var RECMIX = [];
+for (var j = 0; j < 30; j++) RECMIX.push({ _dateTs: OGGI - (200 + j * 10) * GG, _score: 10 });
+for (var k = 0; k < 30; k++) RECMIX.push({ _dateTs: OGGI - (1 + k * 3) * GG, _score: 6 });
+var vicino = punteggioBooking(RECMIX, 20, new Date(OGGI)).score;
+var lontano = punteggioBooking(RECMIX, 1200, new Date(OGGI)).score;
+var CONF = calibraDaOsservazioni(RECMIX,
+  [{ ts: OGGI - GG, display: Math.round(vicino * 10) / 10 },
+   { ts: OGGI - GG, display: Math.round(lontano * 10) / 10 }], OGGI);
+ok('due letture inconciliabili: conflitto',    CONF.contraddittorio, true);
+ok('due letture inconciliabili: non fuori modello', CONF.fuoriModello, false);
+
+// L'intervallo producibile serve a dire DI QUANTO si sbaglia, non solo che si sbaglia.
+var CH = calibraHalfLife(REC9, 6.6, new Date(OGGI));
+ok('fuori modello riconosciuto',               CH.fuoriModello, true);
+ok('intervallo producibile presente',          Array.isArray(CH.range), true);
+ok('6.6 sta sotto il minimo producibile',      CH.range[0] > 6.65, true);
+ok('minimo non maggiore del massimo',          CH.range[0] <= CH.range[1], true);
+
+// ─────────────────────────────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 console.log(KO === 0
   ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'
