@@ -467,6 +467,126 @@ async function turniArchivia(data){
   try{localStorage.setItem(TURNI_STORICO_KEY,json);}catch(e){}
   kvSet(TURNI_STORICO_KEY,json).catch(()=>{});
 }
+// ── STATISTICHE TURNI — SOLO RICEVIMENTO ────────────────────────────────────
+// Housekeeping, breakfast e manutenzione usano codici tutti loro ('9-14', 'SOUL N.',
+// 'BKF GALL'): mescolarli renderebbe i totali privi di significato. Qui si contano solo
+// i membri di DEPTS.fo.
+//
+// I codici arrivano scritti a mano e hanno varianti: 'R RICHIESTO' e 'R RECUPERO 19/08'
+// sono riposi come 'R'; 'P (EX R)' è una P su un giorno che era di riposo. Normalizzare
+// serve a non avere venti categorie da una sola occorrenza.
+const TURNI_CODICI={
+  AC:{sede:'soulart',fascia:'mattina', label:'Apertura SoulArt'},
+  AG:{sede:'galleria',fascia:'mattina', label:'Apertura Galleria'},
+  CC:{sede:'soulart',fascia:'pomeriggio',label:'Chiusura SoulArt'},
+  CG:{sede:'galleria',fascia:'pomeriggio',label:'Chiusura Galleria'},
+  NC:{sede:'soulart',fascia:'notte',   label:'Notte SoulArt'},
+  NG:{sede:'galleria',fascia:'notte',   label:'Notte Galleria'}
+};
+/** Riduce un codice scritto a mano alla sua categoria. Puro. */
+function turniNormalizza(cod){
+  const c=String(cod||'').toUpperCase().replace(/\s+/g,' ').trim();
+  if(!c||c==='-')return null;
+  const exR=/\(EX R\)/.test(c);
+  const base=c.replace(/\(EX R\)/,'').replace(/\s+/g,' ').trim();
+  if(/^R\b/.test(base))return{tipo:'riposo',exR:false};      // R, R RICHIESTO, R RECUPERO …
+  if(base==='FERIE')return{tipo:'ferie',exR:false};
+  if(base==='MALATTIA')return{tipo:'malattia',exR:false};
+  if(base==='PGALL')return{tipo:'pgall',exR};
+  if(base==='P')return{tipo:'p',exR};
+  if(TURNI_CODICI[base])return Object.assign({tipo:'turno',codice:base,exR},TURNI_CODICI[base]);
+  return{tipo:'altro',codice:base,exR};
+}
+/**
+ * Conteggi per persona sulle settimane archiviate. Puro: riceve l'archivio, non lo legge.
+ * Galleria e SoulArt contano mattina e pomeriggio, non le notti: le notti hanno una
+ * colonna loro, con il dettaglio per sede. È la lettura chiesta in reception.
+ */
+function turniStatistiche(archivio,membri){
+  const vuoto=()=>({riposi:0,riposiDomenica:0,mattina:0,pomeriggio:0,notti:0,nottiG:0,nottiC:0,
+    galleria:0,soulart:0,p:0,pgall:0,ferie:0,malattia:0,riposiLavorati:0,giorni:0,altro:0});
+  const out={}; (membri||[]).forEach(n=>out[n]=vuoto());
+  const sett=Object.keys(archivio||{}).sort();
+  sett.forEach(k=>{
+    (archivio[k].giorni||[]).forEach(g=>{
+      const d=new Date(g.data+'T12:00:00');
+      const domenica=d.getDay()===0;
+      Object.keys(g.shifts||{}).forEach(nome=>{
+        if(!out[nome])return;                       // non è del ricevimento
+        const n=turniNormalizza(g.shifts[nome]);
+        if(!n)return;
+        const s=out[nome]; s.giorni++;
+        if(n.exR)s.riposiLavorati++;
+        if(n.tipo==='riposo'){s.riposi++;if(domenica)s.riposiDomenica++;return;}
+        if(n.tipo==='ferie'){s.ferie++;return;}
+        if(n.tipo==='malattia'){s.malattia++;return;}
+        if(n.tipo==='p'){s.p++;return;}
+        if(n.tipo==='pgall'){s.pgall++;return;}
+        if(n.tipo!=='turno'){s.altro++;return;}
+        if(n.fascia==='mattina'){s.mattina++;}
+        else if(n.fascia==='pomeriggio'){s.pomeriggio++;}
+        else if(n.fascia==='notte'){s.notti++;if(n.sede==='galleria')s.nottiG++;else s.nottiC++;}
+        if(n.fascia!=='notte'){ if(n.sede==='galleria')s.galleria++; else s.soulart++; }
+      });
+    });
+  });
+  return{per:out,settimane:sett.length,dal:sett[0]||null,al:sett.length?archivio[sett[sett.length-1]].al:null};
+}
+function turniStoricoLeggi(){
+  try{const s=localStorage.getItem(TURNI_STORICO_KEY);if(s)return JSON.parse(s)||{};}catch(e){}
+  return{};
+}
+function turniRenderStats(){
+  const el=document.getElementById('turniStatsWrap');if(!el)return;
+  const st=turniStatistiche(turniStoricoLeggi(),DEPTS.fo.members);
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if(!st.settimane){
+    el.innerHTML=`<div class="panel" style="margin-top:14px;"><div class="panel-header"><span class="panel-title">Statistiche ricevimento</span></div>
+      <div class="panel-body" style="padding:14px;font-size:var(--fs-xs);color:var(--text-dim);line-height:1.6;">
+        Nessuna settimana ancora in archivio. Ogni turno caricato da qui in avanti viene conservato: le prime statistiche utili arrivano dopo tre o quattro settimane.</div></div>`;
+    return;
+  }
+  const gg=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]:'—';};
+  const righe=DEPTS.fo.members.map(n=>({n,s:st.per[n]})).filter(x=>x.s.giorni>0)
+    .sort((a,b)=>a.n.localeCompare(b.n));
+  const th=t=>`<th style="text-align:${t.a||'center'};padding:7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;white-space:nowrap;">${t.l}</th>`;
+  const td=(v,extra)=>`<td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;${extra||''}">${v}</td>`;
+  el.innerHTML=`<div class="panel" style="margin-top:14px;">
+    <div class="panel-header"><span class="panel-title">Statistiche ricevimento</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">${st.settimane} settiman${st.settimane===1?'a':'e'} · ${gg(st.dal)} – ${gg(st.al)}</span>
+    </div>
+    <div class="panel-body" style="padding:0;">
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+          <thead><tr>
+            ${th({l:'Persona',a:'left'})}${th({l:'Riposi'})}${th({l:'di dom.'})}${th({l:'Mattina'})}${th({l:'Pomeriggio'})}${th({l:'Notti'})}${th({l:'Galleria'})}${th({l:'SoulArt'})}${th({l:'P'})}${th({l:'P Gall'})}${th({l:'Ferie'})}${th({l:'Malattia'})}
+          </tr></thead>
+          <tbody>
+            ${righe.map(({n,s})=>`<tr>
+              <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}</td>
+              ${td(s.riposi||'—')}
+              ${td(s.riposiDomenica||'—',s.riposiDomenica?'font-weight:700;':'color:var(--text-dim);')}
+              ${td(s.mattina||'—')}
+              ${td(s.pomeriggio||'—')}
+              ${td(s.notti?`${s.notti}<span style="color:var(--text-dim);font-size:var(--fs-xxs);"> (${s.nottiG}G·${s.nottiC}C)</span>`:'—')}
+              ${td(s.galleria||'—')}
+              ${td(s.soulart||'—')}
+              ${td(s.p||'—')}
+              ${td(s.pgall||'—')}
+              ${td(s.ferie||'—',s.ferie?'color:var(--amber);font-weight:700;':'color:var(--text-dim);')}
+              ${td(s.malattia||'—',s.malattia?'color:var(--red);font-weight:700;':'color:var(--text-dim);')}
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:11px 13px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;border-top:1px solid var(--border);">
+        Galleria e SoulArt contano mattina e pomeriggio; le notti hanno la loro colonna, con il dettaglio fra parentesi (G = Galleria, C = SoulArt).
+        Riposo, riposo richiesto e recupero sono contati insieme.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
+        ${righe.some(x=>x.s.altro)?'<br>Codici non riconosciuti (non conteggiati): '+righe.filter(x=>x.s.altro).map(x=>esc(x.n)+' '+x.s.altro).join(', ')+'.':''}
+      </div>
+    </div>
+  </div>`;
+}
 function loadWeekData(data){
   weekData=data;
   try{turniArchivia(data);}catch(e){}
@@ -1702,7 +1822,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
   // .staff-area-mirror) — ririchiamato qui solo per popolare lo specchio se la vista
   // viene aperta prima che Overview l'abbia mai fatto in questa sessione.
-  if(id==='turnazione'){try{if(weekData)renderDay(activeDay);}catch(e){}}
+  if(id==='turnazione'){try{if(weekData)renderDay(activeDay);}catch(e){}try{turniRenderStats();}catch(e){}}
   if(id==='registrazione'){try{rcRefreshFromCloud();}catch(e){}}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='overview'&&weekData){

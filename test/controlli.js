@@ -304,6 +304,45 @@ ok('dato assente: niente da archiviare',     turniVoceStorico(null), null);
 ok('giorni senza data valida vengono scartati',
    turniVoceStorico({ giorni: [{ date: 'boh', shifts: {} }] }), null);
 
+sez('Statistiche turni ricevimento');
+// I codici sono scritti a mano e hanno varianti: senza normalizzazione ci si ritrova venti
+// categorie da una occorrenza sola, e i totali non dicono niente.
+ok('R e\' riposo',                    turniNormalizza('R').tipo, 'riposo');
+ok('anche il riposo richiesto',       turniNormalizza('R RICHIESTO').tipo, 'riposo');
+ok('anche il recupero con la data',   turniNormalizza('R RECUPERO 19/08').tipo, 'riposo');
+ok('P (EX R) resta una P',            turniNormalizza('P (EX R)').tipo, 'p');
+ok('ma segnala il riposo saltato',    turniNormalizza('P (EX R)').exR, true);
+ok('AG e\' Galleria di mattina',      turniNormalizza('ag').sede + '/' + turniNormalizza('ag').fascia, 'galleria/mattina');
+ok('CC e\' SoulArt di pomeriggio',    turniNormalizza('CC').sede + '/' + turniNormalizza('CC').fascia, 'soulart/pomeriggio');
+ok('NG e\' una notte in Galleria',    turniNormalizza('NG').fascia, 'notte');
+ok('la casella vuota non conta',      turniNormalizza(''), null);
+ok('il trattino non conta',           turniNormalizza('-'), null);
+ok('un codice sconosciuto e\' "altro"', turniNormalizza('9-14').tipo, 'altro');
+
+// 17/08/2026 e' un lunedi', quindi il 23 e' domenica: il riposo di domenica va distinto.
+var _arch = { '2026-08-17': { dal:'2026-08-17', al:'2026-08-23', giorni: [
+  { data:'2026-08-17', shifts:{ 'Presta P.':'AC', 'Perez L.':'R',   'Nacci M.':'SOUL' } },
+  { data:'2026-08-18', shifts:{ 'Presta P.':'CG', 'Perez L.':'NG' } },
+  { data:'2026-08-23', shifts:{ 'Presta P.':'R',  'Perez L.':'R'  } },
+  { data:'2026-08-19', shifts:{ 'Presta P.':'FERIE', 'Perez L.':'P (EX R)' } }
+] } };
+var _sf = turniStatistiche(_arch, ['Presta P.','Perez L.']);
+ok('una settimana in archivio',       _sf.settimane, 1);
+ok('riposi di Perez',                 _sf.per['Perez L.'].riposi, 2);
+ok('di cui di domenica',              _sf.per['Perez L.'].riposiDomenica, 1);
+ok('il riposo del lunedi\' non e\' domenica', _sf.per['Presta P.'].riposiDomenica, 1);
+ok('mattina di Presta',               _sf.per['Presta P.'].mattina, 1);
+ok('pomeriggio di Presta',            _sf.per['Presta P.'].pomeriggio, 1);
+ok('Galleria di Presta (CG, senza notti)', _sf.per['Presta P.'].galleria, 1);
+ok('SoulArt di Presta (AC)',          _sf.per['Presta P.'].soulart, 1);
+ok('la notte non entra nella sede',   _sf.per['Perez L.'].galleria, 0);
+ok('ma si conta come notte',          _sf.per['Perez L.'].notti, 1);
+ok('e si sa in quale sede',           _sf.per['Perez L.'].nottiG, 1);
+ok('ferie contate',                   _sf.per['Presta P.'].ferie, 1);
+ok('riposo poi lavorato segnalato',   _sf.per['Perez L.'].riposiLavorati, 1);
+// L'housekeeping non deve entrare: ha codici suoi e i totali diventerebbero senza senso.
+ok('chi non e\' del ricevimento resta fuori', _sf.per['Nacci M.'] === undefined, true);
+
 sez('Punteggio Booking: la finestra e\' un parametro, non una certezza');
 // Il modello teneva fissa la finestra a 36 mesi e faceva variare solo l'emivita: quando il
 // punteggio reale non rientrava, l'unica spiegazione offerta era "il CSV e' incompleto".
