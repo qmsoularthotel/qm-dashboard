@@ -5932,7 +5932,18 @@ function revRenderStats(p){
   }
   const g=id=>document.getElementById(id+'-'+p);
   g('rev-avg').textContent=(Math.round(avgWeighted*10)/10).toFixed(1);
-  g('rev-avg-sub').textContent='decadimento continuo, emivita '+(revCalibStato(p).stato==='ok'||revCalibStato(p).stato==='da-aggiornare'?'calibrata ':'')+hl+'gg · media semplice '+avgSimple.toFixed(1);
+  // La card mostrava solo il numero calcolato: chi legge 6.7 qui e 6.6 sull'Extranet non
+  // ha modo di sapere se il modello e' calibrato o se sta tirando a indovinare. Quando
+  // c'e' un'osservazione registrata la si nomina, e se non e' riproducibile lo si dice:
+  // un numero grande senza avvertenza viene preso per buono.
+  const _cs=revCalibStato(p);
+  const _calib=(_cs.stato==='ok'||_cs.stato==='da-aggiornare');
+  let _sub='decadimento continuo, emivita '+(_calib?'calibrata ':'')+hl+'gg · media semplice '+avgSimple.toFixed(1);
+  if(_cs.oss&&_cs.oss.length&&_cs.scoreReale!=null){
+    _sub+=' · Booking mostra '+Number(_cs.scoreReale).toFixed(1);
+    if(!_calib)_sub+=' — non riproducibile con queste recensioni: il numero qui sopra è una stima';
+  }
+  g('rev-avg-sub').textContent=_sub;
   const avgCard=g('rev-avg');
   if(avgCard&&avgCard.closest('.kpi-card'))avgCard.closest('.kpi-card').title='Stima calibrata sul punteggio reale inserito — non è il calcolo ufficiale di Booking. Clicca per vedere l\u2019andamento.';
   g('rev-count').textContent=data.length;
