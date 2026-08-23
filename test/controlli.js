@@ -425,7 +425,10 @@ ok('la colonna Notti esiste nella tabella',       /th\('Notti'\)/.test(String(tu
 // Presta lavora solo al SoulArt: le colonne di sede restano vuote, perche' un
 // "SoulArt 1 · Art Resort 0" sembrerebbe uno squilibrio da correggere invece che la norma.
 ok('Presta ha una sede sola',        TURNI_SEDE_UNICA.indexOf('Presta P.') >= 0, true);
+ok('anche Maddaloni ha una sede sola', TURNI_SEDE_UNICA.indexOf('Maddaloni M.') >= 0, true);
 ok('gli altri no',                   TURNI_SEDE_UNICA.indexOf('Perez L.'), -1);
+// Va detto da quando si conta: senza, un "3 domeniche" non si sa se e' su un mese o un anno.
+ok('la tabella dichiara da quando conta', /conteggio dal /.test(String(turniRenderStats)), true);
 ok('la tabella lascia vuote le sue sedi', /sedeUnica\?vuota/.test(String(turniRenderStats)), true);
 ok('NG resta Art Resort',       turniNormalizza('NG').sede, 'galleria');
 ok('NC resta SoulArt',          turniNormalizza('NC').sede, 'soulart');

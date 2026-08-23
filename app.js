@@ -588,7 +588,8 @@ const TURNI_ORDINE_TESTA=['Maddaloni M.','Presta P.'];
 // Chi lavora in una sede sola: le colonne Art Resort e SoulArt restano vuote, perche' il
 // confronto fra le due non dice niente sul suo lavoro. Presta sta sempre al SoulArt, e un
 // "SoulArt 1 · Art Resort 0" sembrerebbe uno squilibrio da correggere invece che la norma.
-const TURNI_SEDE_UNICA=['Presta P.'];
+// Vale anche per Maddaloni.
+const TURNI_SEDE_UNICA=['Presta P.','Maddaloni M.'];
 function turniOrdina(nomi){
   const testa=TURNI_ORDINE_TESTA.filter(n=>nomi.indexOf(n)>=0);
   const notte=nomi.filter(n=>TURNI_NOTTURNI.indexOf(n)>=0).sort((a,b)=>a.localeCompare(b));
@@ -622,7 +623,7 @@ function turniRenderStats(){
   const cellaN=(v,extra)=>v?td(v,extra):vuota(extra);
   el.innerHTML=`<div class="panel" style="margin-top:14px;">
     <div class="panel-header"><span class="panel-title">Statistiche ricevimento</span>
-      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">${st.settimane} settiman${st.settimane===1?'a':'e'} · ${gg(st.dal)} – ${gg(st.al)}</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">conteggio dal ${gg(st.dal)} · ${st.settimane} settiman${st.settimane===1?'a':'e'}</span>
     </div>
     <div class="panel-body" style="padding:0;">
       ${st.ignoti&&st.ignoti.length?`<div style="margin:12px 13px 0;background:rgba(160,90,0,.08);border-left:3px solid var(--amber);padding:10px 12px;font-size:var(--fs-xs);color:var(--amber);line-height:1.6;">
