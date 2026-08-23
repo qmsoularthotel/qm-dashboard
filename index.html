@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=261">
+<link rel="stylesheet" href="style.css?v=262">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='315-20260823';
+  const V='316-20260823';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -57,17 +57,9 @@
     </div>
   </div>
 </div>
-<div class="print-dialog" id="printDialog">
-  <div class="print-dialog-box">
-    <div class="pd-icon"><svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></div>
-    <div class="pd-title" id="pdTitle">Stampa pronta</div>
-    <div class="pd-subtitle" id="pdSubtitle">Clicca Stampa per aprire la finestra di stampa del browser.</div>
-    <div class="pd-buttons">
-      <button class="pd-btn-print" onclick="executePrint()">Stampa</button>
-      <button class="pd-btn-close" onclick="closePrintDialog()">Chiudi</button>
-    </div>
-  </div>
-</div>
+<!-- La finestra di stampa era qui, con un riquadro tutto suo. Ora usa cqConferma come
+     ogni altra richiesta di Compass: resta solo l'iframe che porta il contenuto da
+     stampare. Non reintrodurre maschere dedicate per singole azioni. -->
 <div id="rcModalOverlay" class="rc-modal-overlay" onclick="rcCloseModalOutside(event)">
   <div class="rc-modal-box">
     <div class="rc-modal-topbar">
@@ -1678,7 +1670,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=834-20260823"></script>
+<script src="app.js?v=835-20260823"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

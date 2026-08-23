@@ -526,11 +526,13 @@ select.form-input option{background:var(--surface2);color:var(--text);}
 .mp .pc-slabel{font-size:7pt;text-transform:uppercase;color:#6A6860;margin-bottom:28px;}.mp .pc-sline{border-bottom:1.5px solid #1A1916;}
 /* ── Finestra di conferma Compass ────────────────────────────────────────────
    Sostituisce confirm()/alert() del browser, che mostrano "compass-qm.com dice",
-   non si possono impaginare e compaiono ancorate in alto. Stesso impianto del
-   dialogo di stampa (.print-dialog), da cui eredita misure e ombra: non è uno
-   stile nuovo, è quello già in uso. Il pulsante di conferma è sempre navy come
-   "Stampa"; il rosso resta all'icona, per segnalare che l'azione non si annulla
-   senza introdurre un secondo colore di pulsante. */
+   non si possono impaginare e compaiono ancorate in alto.
+   È l'UNICA maschera per le richieste di Compass: dal 23/08/2026 ci passa anche
+   la stampa delle registration card, che aveva un riquadro suo con un'icona verde
+   in un cerchio. Non creare maschere dedicate per singole azioni — una finestra
+   che chiede qualcosa deve avere sempre lo stesso aspetto.
+   Il pulsante di conferma è sempre navy; il rosso resta all'icona, per segnalare
+   che l'azione non si annulla senza introdurre un secondo colore di pulsante. */
 .cq-dialog{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100000;align-items:center;justify-content:center;padding:16px;}
 .cq-dialog.open{display:flex;}
 .cq-box{position:relative;overflow:hidden;background:var(--surface);border-radius:10px;width:400px;max-width:100%;padding:26px;text-align:center;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.22);box-sizing:border-box;}
@@ -545,16 +547,6 @@ select.form-input option{background:var(--surface2);color:var(--text);}
 .cq-btns{position:relative;display:flex;gap:10px;justify-content:center;}
 .cq-ok{background:#1c3a5e;color:#fff;border:none;padding:9px 26px;border-radius:6px;font-size:var(--fs-sm);font-weight:500;cursor:pointer;font-family:inherit;}
 .cq-no{background:transparent;color:var(--text-muted);border:1px solid var(--border);padding:9px 16px;border-radius:6px;font-size:var(--fs-sm);cursor:pointer;font-family:inherit;}
-.print-dialog{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;align-items:center;justify-content:center;}
-.print-dialog.open{display:flex;}
-.print-dialog-box{background:var(--surface);border-radius:10px;width:400px;padding:26px;text-align:center;border:1px solid var(--border);}
-.pd-icon{width:48px;height:48px;background:var(--green-bg);border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;}
-.pd-icon svg{width:22px;height:22px;stroke:var(--green);fill:none;stroke-width:2;}
-.pd-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;}
-.pd-subtitle{font-size:13px;color:var(--text-muted);margin-bottom:22px;line-height:1.5;}
-.pd-buttons{display:flex;gap:10px;justify-content:center;}
-.pd-btn-print{background:#1c3a5e;color:#fff;border:none;padding:9px 26px;border-radius:6px;font-size:var(--fs-sm);font-weight:500;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;}
-.pd-btn-close{background:transparent;color:var(--text-muted);border:1px solid var(--border);padding:9px 16px;border-radius:6px;font-size:var(--fs-sm);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;}
 #printIframe{position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;border:none;pointer-events:none;}
 
 /* ── MOBILE ────────────────────────────────────────────── */
@@ -774,7 +766,6 @@ body.dark .panel{box-shadow:0 2px 8px rgba(0,0,0,.22);}
 .nav-badge{animation:badge-pulse 2.5s ease-in-out infinite;}
 
 /* Print dialog */
-.print-dialog-box{box-shadow:0 20px 60px rgba(0,0,0,.22);}
 
 /* Staff dept cards */
 .staff-dept-card{box-shadow:0 1px 4px rgba(0,0,0,.07);}
