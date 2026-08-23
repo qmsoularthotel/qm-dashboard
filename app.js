@@ -601,11 +601,14 @@ function turniRenderStats(){
   const gg=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]:'—';};
   const presenti=DEPTS.fo.members.filter(n=>st.per[n]&&st.per[n].giorni>0);
   const righe=turniOrdina(presenti).map(n=>({n,s:st.per[n],notte:TURNI_NOTTURNI.indexOf(n)>=0}));
-  const th=l=>`<th style="text-align:center;padding:7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;white-space:nowrap;">${l}</th>`;
+  // Il secondo argomento apre un gruppo: filetto verticale a sinistra. I gruppi sono
+  // "cosa ha fatto" | "dove" | "assenze", e senza separatore la riga e' un muro di numeri.
+  const sep='border-left:2px solid var(--border);';
+  const th=(l,g)=>`<th style="text-align:center;padding:7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;white-space:nowrap;${g?sep:''}">${l}</th>`;
   const td=(v,extra)=>`<td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;${extra||''}">${v}</td>`;
   // Per i notturni hanno senso solo domeniche, ferie e malattie: mattine, pomeriggi e sede
   // non descrivono il loro lavoro, e riempirle di zeri farebbe sembrare che non lavorino.
-  const vuota=td('<span style="color:var(--border);">·</span>');
+  const vuota=extra=>td('<span style="color:var(--border);">·</span>',extra);
   el.innerHTML=`<div class="panel" style="margin-top:14px;">
     <div class="panel-header"><span class="panel-title">Statistiche ricevimento</span>
       <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">${st.settimane} settiman${st.settimane===1?'a':'e'} · ${gg(st.dal)} – ${gg(st.al)}</span>
@@ -620,22 +623,22 @@ function turniRenderStats(){
         <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
           <thead><tr>
             <th style="text-align:left;padding:7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Persona</th>
-            ${th('Domeniche')}${th('Mattine')}${th('Intermedi')}${th('Pomeriggi')}${th('Art Resort')}${th('SoulArt')}${th('P')}${th('Ferie')}${th('Malattia')}
+            ${th('P')}${th('Mattine')}${th('Pomeriggi')}${th('Intermedi')}${th('Domeniche')}${th('Art Resort',true)}${th('SoulArt')}${th('Malattia',true)}${th('Ferie')}
           </tr></thead>
           <tbody>
             ${righe.map(({n,s,notte},i)=>{
               const primoNotte=notte&&(i===0||!righe[i-1].notte);
               return `<tr${primoNotte?' style="border-top:2px solid var(--border);"':''}>
               <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}</td>
+              ${notte?vuota():td((s.p+s.pgall)||'—')}
+              ${notte?vuota():td(s.mattina||'—')}
+              ${notte?vuota():td(s.pomeriggio||'—')}
+              ${notte?vuota():td(s.intermedi||'—')}
               ${td(s.riposiDomenica||'—',s.riposiDomenica?'font-weight:700;':'color:var(--text-dim);')}
-              ${notte?vuota:td(s.mattina||'—')}
-              ${notte?vuota:td(s.intermedi||'—')}
-              ${notte?vuota:td(s.pomeriggio||'—')}
-              ${notte?vuota:td(s.galleria||'—')}
-              ${notte?vuota:td(s.soulart||'—')}
-              ${notte?vuota:td((s.p+s.pgall)||'—')}
+              ${notte?vuota(sep):td(s.galleria||'—',sep)}
+              ${notte?vuota():td(s.soulart||'—')}
+              ${td(s.malattia||'—',sep+(s.malattia?'color:var(--red);font-weight:700;':'color:var(--text-dim);'))}
               ${td(s.ferie||'—',s.ferie?'color:var(--amber);font-weight:700;':'color:var(--text-dim);')}
-              ${td(s.malattia||'—',s.malattia?'color:var(--red);font-weight:700;':'color:var(--text-dim);')}
             </tr>`;}).join('')}
           </tbody>
         </table>
