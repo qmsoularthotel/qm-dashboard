@@ -578,7 +578,10 @@ function turniStoricoLeggi(){
 // settimana 17-23/08 Vatiero risultava con sole notti perché stava coprendo un'emergenza,
 // e una regola automatica lo avrebbe classificato notturno. Il ruolo è un fatto sulla
 // persona, non qualcosa che si ricava da una settimana. Aggiornare qui quando cambia.
-const TURNI_NOTTURNI=["D'Andrea F.",'Iannario R.'];
+// Grieco e' un notturno che fa una o due CC a settimana: per questo le colonne diurne dei
+// notturni si riempiono quando c'e' un numero e restano vuote solo quando e' zero.
+// Svuotarle sempre nasconderebbe proprio il dato che distingue il suo turno dagli altri.
+const TURNI_NOTTURNI=["D'Andrea F.",'Iannario R.','Grieco V.'];
 // Ordine di reception: i due riferimenti in cima, poi gli altri in ordine alfabetico,
 // i notturni in fondo (fra loro alfabetici).
 const TURNI_ORDINE_TESTA=['Maddaloni M.','Presta P.'];
@@ -609,6 +612,9 @@ function turniRenderStats(){
   // Per i notturni hanno senso solo domeniche, ferie e malattie: mattine, pomeriggi e sede
   // non descrivono il loro lavoro, e riempirle di zeri farebbe sembrare che non lavorino.
   const vuota=extra=>td('<span style="color:var(--border);">·</span>',extra);
+  // Per i notturni: il numero se c'e', il puntino se e' zero. Uno zero farebbe sembrare
+  // che non lavorino, ma nascondere un valore vero e' peggio.
+  const cellaN=(v,extra)=>v?td(v,extra):vuota(extra);
   el.innerHTML=`<div class="panel" style="margin-top:14px;">
     <div class="panel-header"><span class="panel-title">Statistiche ricevimento</span>
       <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">${st.settimane} settiman${st.settimane===1?'a':'e'} · ${gg(st.dal)} – ${gg(st.al)}</span>
@@ -630,13 +636,13 @@ function turniRenderStats(){
               const primoNotte=notte&&(i===0||!righe[i-1].notte);
               return `<tr${primoNotte?' style="border-top:2px solid var(--border);"':''}>
               <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}</td>
-              ${notte?vuota():td((s.p+s.pgall)||'—')}
-              ${notte?vuota():td(s.mattina||'—')}
-              ${notte?vuota():td(s.pomeriggio||'—')}
-              ${notte?vuota():td(s.intermedi||'—')}
+              ${notte?cellaN(s.p+s.pgall):td((s.p+s.pgall)||'—')}
+              ${notte?cellaN(s.mattina):td(s.mattina||'—')}
+              ${notte?cellaN(s.pomeriggio):td(s.pomeriggio||'—')}
+              ${notte?cellaN(s.intermedi):td(s.intermedi||'—')}
               ${td(s.riposiDomenica||'—',s.riposiDomenica?'font-weight:700;':'color:var(--text-dim);')}
-              ${notte?vuota(sep):td(s.galleria||'—',sep)}
-              ${notte?vuota():td(s.soulart||'—')}
+              ${notte?cellaN(s.galleria,sep):td(s.galleria||'—',sep)}
+              ${notte?cellaN(s.soulart):td(s.soulart||'—')}
               ${td(s.malattia||'—',sep+(s.malattia?'color:var(--red);font-weight:700;':'color:var(--text-dim);'))}
               ${td(s.ferie||'—',s.ferie?'color:var(--amber);font-weight:700;':'color:var(--text-dim);')}
             </tr>`;}).join('')}

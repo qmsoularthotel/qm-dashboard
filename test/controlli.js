@@ -393,12 +393,24 @@ ok('chi non e\' del ricevimento resta fuori', _sf.per['Nacci M.'] === undefined,
 // in ordine alfabetico. I notturni sono un elenco esplicito e non una deduzione dai dati:
 // nella settimana 17-23/08 Vatiero aveva solo notti perche' copriva un'emergenza, e una
 // regola automatica lo avrebbe spostato in fondo per sempre.
-var _ord = turniOrdina(['Perez L.', "D'Andrea F.", 'Presta P.', 'Barbosa D.', 'Iannario R.', 'Maddaloni M.', 'Vatiero R.']);
+var _ord = turniOrdina(['Perez L.', "D'Andrea F.", 'Presta P.', 'Barbosa D.', 'Iannario R.', 'Maddaloni M.', 'Vatiero R.', 'Grieco V.']);
 ok('Maddaloni primo',        _ord[0], 'Maddaloni M.');
 ok('Presta secondo',         _ord[1], 'Presta P.');
 ok('poi in ordine alfabetico', _ord.slice(2, 5).join(','), 'Barbosa D.,Perez L.,Vatiero R.');
-ok('i notturni in fondo',    _ord.slice(5).join(','), "D'Andrea F.,Iannario R.");
+ok('i notturni in fondo',    _ord.slice(5).join(','), "D'Andrea F.,Grieco V.,Iannario R.");
 ok('Vatiero non e\' un notturno', TURNI_NOTTURNI.indexOf('Vatiero R.'), -1);
+// Grieco e' un notturno che fa una o due CC a settimana: deve stare in fondo con gli
+// altri notturni, ma i suoi pomeriggi non devono sparire dalla tabella.
+ok('Grieco e\' fra i notturni', TURNI_NOTTURNI.indexOf('Grieco V.') >= 0, true);
+var _gr = turniStatistiche({ '2026-08-24': { ts:1, dal:'2026-08-24', al:'2026-08-25', giorni:[
+  { data:'2026-08-24', shifts:{ 'Grieco V.':'NC' } },
+  { data:'2026-08-25', shifts:{ 'Grieco V.':'CC' } }
+] } }, ['Grieco V.']);
+ok('le sue notti si contano',   _gr.per['Grieco V.'].notti, 1);
+ok('e sono a SoulArt',          _gr.per['Grieco V.'].nottiC, 1);
+ok('il suo pomeriggio si vede', _gr.per['Grieco V.'].pomeriggio, 1);
+ok('NG resta Art Resort',       turniNormalizza('NG').sede, 'galleria');
+ok('NC resta SoulArt',          turniNormalizza('NC').sede, 'soulart');
 ok('chi manca non viene inventato', turniOrdina(['Perez L.']).join(','), 'Perez L.');
 
 sez('Punteggio Booking: la finestra e\' un parametro, non una certezza');
