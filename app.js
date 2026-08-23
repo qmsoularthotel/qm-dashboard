@@ -14696,6 +14696,18 @@ async function _qmSyncGiro(){
 // confronta l'ETag, che cambia solo se il file è cambiato davvero — nessun numero di
 // versione da tenere allineato a mano. Compass e reception.html erano le uniche due
 // pagine senza: proprio quelle che restano aperte tutto il giorno.
+// La versione in esecuzione, scritta nel topbar accanto al pallino di sincronizzazione.
+// Si legge dal parametro ?v= dell'URL, che e' la stessa stringa che decide quale app.js
+// il browser carica: se qui compare un numero vecchio, la pagina NON ha il codice nuovo —
+// ed e' esattamente la domanda che altrimenti resta senza risposta quando una correzione
+// sembra non arrivare.
+(function(){
+  try{
+    const v=new URLSearchParams(location.search).get('v')||'?';
+    const el=document.getElementById('appVer');
+    if(el)el.textContent='v'+v;
+  }catch(e){}
+})();
 let _qmEtag=null,_qmEtagTs=0;
 async function qmCheckVersione(){
   const ora=Date.now();
