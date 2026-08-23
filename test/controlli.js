@@ -494,6 +494,43 @@ location.protocol = 'https:';
 ok('tornati in produzione',          _psChiave(), 'qm_prestay');
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Cassa: due postazioni non si cancellano i movimenti');
+// Il registro e' additivo e riguarda denaro contato: scrivere l'elenco intero voleva dire
+// che chi salvava per ultimo riscriveva senza il movimento dell'altro, in silenzio.
+
+var REMOTO = [
+  { id: 'm1', ts: 100, tipo: 'conteggio', importo: 100 },
+  { id: 'm2', ts: 200, tipo: 'buono', importo: 20 }
+];
+var LOCALE = [
+  { id: 'm1', ts: 100, tipo: 'conteggio', importo: 100 },
+  { id: 'm3', ts: 300, tipo: 'buono', importo: 5 }      // registrato qui, il cloud non ce l'ha
+];
+var U = _cassaUnisci(REMOTO, LOCALE, new Set());
+ok('unione: nessun movimento perso',      U.length, 3);
+ok('unione: ordine per data',             U.map(function (m) { return m.id; }).join(','), 'm1,m2,m3');
+ok('unione: nessun duplicato',            U.filter(function (m) { return m.id === 'm1'; }).length, 1);
+
+// A parita' di id vince la versione con piu' correzioni: per costruzione e' la piu' recente.
+var C = _cassaUnisci(
+  [{ id: 'x', ts: 1, importo: 100, edits: [] }],
+  [{ id: 'x', ts: 1, importo: 98, edits: [{ motivo: 'ricontato' }] }], new Set());
+ok('correzione piu recente vince',        C[0].importo, 98);
+var C2 = _cassaUnisci(
+  [{ id: 'x', ts: 1, importo: 98, edits: [{ motivo: 'ricontato' }] }],
+  [{ id: 'x', ts: 1, importo: 100, edits: [] }], new Set());
+ok('correzione vince anche se e sul cloud', C2[0].importo, 98);
+
+// Un movimento eliminato non deve tornare a ogni salvataggio.
+var R = _cassaUnisci(REMOTO, LOCALE, new Set(['m2']));
+ok('movimento eliminato non torna',       R.map(function (m) { return m.id; }).join(','), 'm1,m3');
+
+// Robustezza: voci senza id (dati sporchi) non devono far saltare l'unione.
+var S = _cassaUnisci([null, { ts: 5 }, { id: 'a', ts: 1 }], [], new Set());
+ok('voci senza id ignorate',              S.length, 1);
+ok('registro vuoto da entrambe le parti', _cassaUnisci([], [], new Set()).length, 0);
+
+// ─────────────────────────────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 console.log(KO === 0
   ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'

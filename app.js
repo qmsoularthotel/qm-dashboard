@@ -12573,12 +12573,85 @@ async function receptionLoad(){
     try{const s=localStorage.getItem(key);if(s)return JSON.parse(s);}catch(e){}
     return[];
   }
-  [_receptionFondo,_receptionIncasso]=await Promise.all([fetchKey('qm_cassa_fondo'),fetchKey('qm_cassa_incasso')]);
+  const [f,i,rim]=await Promise.all([fetchKey('qm_cassa_fondo'),fetchKey('qm_cassa_incasso'),fetchKey(RECEPTION_RIMOSSI_KEY)]);
+  if(rim&&!Array.isArray(rim)&&typeof rim==='object')_receptionRimossi={fondo:rim.fondo||[],incasso:rim.incasso||[]};
+  _receptionLetto['qm_cassa_fondo']=true;_receptionLetto['qm_cassa_incasso']=true;
+  // I movimenti eliminati non tornano a schermo solo perché un'altra postazione ne aveva
+  // ancora una copia: si filtrano qui, una volta, e il resto del pannello non se ne accorge.
+  _receptionFondo=_cassaUnisci(f,[],_receptionRimossiSet('qm_cassa_fondo'));
+  _receptionIncasso=_cassaUnisci(i,[],_receptionRimossiSet('qm_cassa_incasso'));
   receptionRender();
 }
-function _receptionSave(key,list){
+// ── Scrittura sicura dei registri di cassa ──────────────────────────────────
+// Stessa classe di problema dei pre-stay (22/08/2026): si scriveva l'elenco INTERO con la
+// copia che questa postazione si portava dietro. Due receptionist che registrano nello
+// stesso momento da due PC si cancellavano un movimento a testa, in silenzio — e qui si
+// tratta di denaro contato. Ora si rilegge e si UNISCE per id.
+//
+// Le eliminazioni sono rare e volute, ma con l'unione tornerebbero dentro a ogni
+// salvataggio: l'id eliminato resta quindi in `qm_cassa_rimossi`, chiave separata per non
+// cambiare la forma degli array che reception.html e Compass si scambiano da sempre.
+const RECEPTION_RIMOSSI_KEY='qm_cassa_rimossi';
+let _receptionRimossi={fondo:[],incasso:[]};
+let _receptionLetto={};        // chiave -> il cloud è stato letto almeno una volta qui
+const _receptionRamo=key=>key==='qm_cassa_fondo'?'fondo':'incasso';
+const _receptionRimossiSet=key=>new Set(_receptionRimossi[_receptionRamo(key)]||[]);
+/**
+ * Unione di due registri per `id`. Un movimento non sparisce mai perché un'altra
+ * postazione aveva una copia più vecchia; a parità di id vince la versione con più
+ * correzioni (`edits`), che per costruzione è la più recente.
+ */
+function _cassaUnisci(remoto,locale,rimossi){
+  const out=[],pos={};
+  [].concat(remoto||[],locale||[]).forEach(m=>{
+    if(!m||!m.id)return;
+    if(rimossi&&rimossi.has(m.id))return;
+    if(!(m.id in pos)){pos[m.id]=out.length;out.push(m);return;}
+    const p=out[pos[m.id]];
+    if((m.edits||[]).length>(p.edits||[]).length)out[pos[m.id]]=m;
+  });
+  return out.sort((a,b)=>(a.ts||0)-(b.ts||0));
+}
+async function _receptionSave(key,list){
   try{localStorage.setItem(key,JSON.stringify(list));}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value:JSON.stringify(list)})}).catch(()=>{});
+  let finale=list,letto=false;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+    if(r.ok){
+      const j=await r.json();
+      const remoto=j&&j.value?JSON.parse(j.value):[];
+      finale=_cassaUnisci(Array.isArray(remoto)?remoto:[],list,_receptionRimossiSet(key));
+      letto=_receptionLetto[key]=true;
+    }
+  }catch(e){}
+  // Se non si è potuto rileggere, si scrive solo se il cloud era già stato letto in questa
+  // sessione: allora la copia locale contiene tutto ciò che c'era, e il rischio è al più
+  // perdere un movimento registrato altrove negli ultimi secondi. Senza mai aver letto,
+  // scrivere vorrebbe dire sovrascrivere alla cieca — è così che sono spariti i pre-stay.
+  if(!letto&&!_receptionLetto[key]){setSyncStatus('error');return list;}
+  if(key==='qm_cassa_fondo')_receptionFondo=finale;else _receptionIncasso=finale;
+  try{localStorage.setItem(key,JSON.stringify(finale));}catch(e){}
+  setSyncStatus('syncing');
+  const ok=await kvSet(key,JSON.stringify(finale));
+  setSyncStatus(ok?'ok':'error');
+  return finale;
+}
+// L'eliminazione va registrata prima del salvataggio dell'elenco, altrimenti l'unione
+// dentro _receptionSave rimetterebbe dentro il movimento appena tolto. Gli id eliminati si
+// uniscono a loro volta fra postazioni: sono solo stringhe, l'unione non può che crescere.
+async function _receptionSegnaRimosso(key,id){
+  const ramo=_receptionRamo(key);
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+RECEPTION_RIMOSSI_KEY,{cache:'no-store'});
+    if(r.ok){const j=await r.json();const o=j&&j.value?JSON.parse(j.value):null;
+      if(o&&typeof o==='object'){
+        _receptionRimossi.fondo=[...new Set([].concat(_receptionRimossi.fondo||[],o.fondo||[]))];
+        _receptionRimossi.incasso=[...new Set([].concat(_receptionRimossi.incasso||[],o.incasso||[]))];
+      }}
+  }catch(e){}
+  if((_receptionRimossi[ramo]||[]).indexOf(id)===-1)_receptionRimossi[ramo].push(id);
+  try{localStorage.setItem(RECEPTION_RIMOSSI_KEY,JSON.stringify(_receptionRimossi));}catch(e){}
+  try{await kvSet(RECEPTION_RIMOSSI_KEY,JSON.stringify(_receptionRimossi));}catch(e){}
 }
 // Il saldo riparte dall'ULTIMO conteggio fisico, non sempre dai 100 ideali: se alla
 // consegna si contano 98€ senza una spiegazione, quella resta comunque la base reale su
@@ -12637,7 +12710,8 @@ async function receptionDeleteFondo(id){
   if(idx===-1)return;
   if(!await cqConferma('Eliminare questo movimento?','Non sarà più recuperabile.',{ok:'Elimina'}))return;
   _receptionFondo.splice(idx,1);
-  _receptionSave('qm_cassa_fondo',_receptionFondo);
+  await _receptionSegnaRimosso('qm_cassa_fondo',id);
+  await _receptionSave('qm_cassa_fondo',_receptionFondo);
   receptionRender();
 }
 async function receptionDeleteIncasso(id){
@@ -12645,7 +12719,8 @@ async function receptionDeleteIncasso(id){
   if(idx===-1)return;
   if(!await cqConferma('Eliminare questo movimento?','Non sarà più recuperabile.',{ok:'Elimina'}))return;
   _receptionIncasso.splice(idx,1);
-  _receptionSave('qm_cassa_incasso',_receptionIncasso);
+  await _receptionSegnaRimosso('qm_cassa_incasso',id);
+  await _receptionSave('qm_cassa_incasso',_receptionIncasso);
   receptionRender();
 }
 function _receptionActBtn(icon,tip,onclick){

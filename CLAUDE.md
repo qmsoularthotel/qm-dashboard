@@ -1309,6 +1309,21 @@ Caso frequente: un buono già registrato a carico del fondo cassa viene in un se
 
 `spostaBuonoAIncasso(id)` in `reception.html` / `receptionSpostaBuonoIncasso(id)` in `app.js` (stessa logica): chiede quanto spostare (max = `importo` corrente del buono), sposta quella cifra da `importo` a `importoIncasso` sullo stesso movimento (non crea un nuovo movimento), e registra un `edits[]` con vecchio/nuovo valore di entrambi i campi e motivo — mai una correzione silenziosa. Poiché `fondoSaldo()`/`fondoBreakdown()` leggono solo `m.importo` per i buoni, ridurre `importo` fa automaticamente risalire i "contanti" stimati e scendere i "buoni in essere" della stessa cifra, senza toccare il totale. Link "sposta a incasso" visibile solo sulle righe `tipo:'buono'` con `importo>0` (niente da spostare altrimenti).
 
+### Scrittura sicura dei registri — due postazioni non si cancellano i movimenti
+
+Stessa classe di problema dei pre-stay (22/08/2026), su denaro contato: `kvSetLocal` (`reception.html`) e `_receptionSave` (`app.js`) scrivevano **l'elenco intero** con la copia che quella postazione si portava dietro. Due receptionist che registravano nello stesso momento da due PC si cancellavano un movimento a testa, in silenzio — e il polling a 30s che *sostituiva* `_fondo` con la copia del cloud faceva sparire anche in locale un movimento la cui scrittura non era andata a buon fine.
+
+Ora si rilegge e si **unisce per `id`** (`_cassaUnisci`, stessa funzione duplicata nei due file — `test/esegui.sh` controlla che ci sia in entrambi):
+
+- un movimento non sparisce mai perché un'altra postazione aveva una copia più vecchia;
+- a parità di `id` vince la versione con **più `edits`**, che per costruzione è la più recente;
+- l'unione vale anche nel polling e all'avvio: si unisce alla copia in memoria, non la si sostituisce;
+- senza aver mai letto il cloud in quella sessione **non si scrive** — sarebbe sovrascrivere alla cieca.
+
+**Le eliminazioni hanno bisogno di una traccia.** Con l'unione, un movimento eliminato tornerebbe dentro a ogni salvataggio. L'id finisce quindi in **`qm_cassa_rimossi`** (`{fondo:[…],incasso:[…]}`), chiave **separata** per non cambiare la forma degli array che `reception.html` e Compass si scambiano da sempre. Va segnato **prima** di salvare l'elenco, altrimenti l'unione dentro il salvataggio rimette dentro ciò che si è appena tolto. Gli id rimossi si uniscono a loro volta fra postazioni: sono stringhe, l'unione non può che crescere.
+
+**Limite noto**: `cancellaMovimento` è ora `async`; i suoi `onclick` ignorano la promessa, come già facevano. E una postazione ferma da meno di 30 secondi può ancora far riapparire per un giro un movimento eliminato altrove — l'eliminazione è rara e voluta, mentre perdere un movimento registrato è il danno grave: la priorità è quella.
+
 ### Modifica con storico, non sovrascrittura silenziosa
 
 Ogni voce è **sempre modificabile** (dalla reception i movimenti recenti, da Compass qualsiasi voce), ma ogni correzione aggiunge una riga a `m.edits` (`{ts, persona, campo, vecchio, nuovo, motivo}`) invece di sostituire il valore senza lasciare traccia — "deve rimanere traccia di tutto" anche quando si corregge un errore di battitura. La tabella mostra `(corretto N×)` accanto a ogni voce già modificata.
@@ -2729,7 +2744,7 @@ guardando lo schermo, un errore nei numeri no — resta plausibile e può passar
 per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dall'alloggio,
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
-dal relay Booking, fusione dei pre-stay col cloud. 165 controlli.
+dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa. 173 controlli.
 
 ### Come funziona
 

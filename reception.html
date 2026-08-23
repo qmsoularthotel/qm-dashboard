@@ -432,9 +432,66 @@ async function kvGet(key){
   try{const s=localStorage.getItem(key);if(s)return JSON.parse(s);}catch(e){}
   return [];
 }
-function kvSetLocal(key,data){
+// ── Scrittura sicura dei registri ───────────────────────────────────────────
+// Prima si scriveva l'elenco INTERO con la copia che questo PC si portava dietro: due
+// receptionist che registravano nello stesso momento da due postazioni si cancellavano un
+// movimento a testa, in silenzio — e qui si tratta di denaro contato. Ora si rilegge e si
+// UNISCE per id. Stessa logica di _receptionSave/_cassaUnisci in app.js: se si tocca una,
+// va toccata anche l'altra (test/esegui.sh lo controlla).
+const KEY_RIMOSSI='qm_cassa_rimossi';
+let _rimossi={fondo:[],incasso:[]};
+let _letto={};
+function _ramo(key){return key===KEY_FONDO?'fondo':'incasso';}
+function _rimossiSet(key){return new Set(_rimossi[_ramo(key)]||[]);}
+function _cassaUnisci(remoto,locale,rimossi){
+  const out=[],pos={};
+  [].concat(remoto||[],locale||[]).forEach(function(m){
+    if(!m||!m.id)return;
+    if(rimossi&&rimossi.has(m.id))return;
+    if(!(m.id in pos)){pos[m.id]=out.length;out.push(m);return;}
+    const p=out[pos[m.id]];
+    if((m.edits||[]).length>(p.edits||[]).length)out[pos[m.id]]=m;
+  });
+  return out.sort(function(a,b){return (a.ts||0)-(b.ts||0);});
+}
+async function kvSetLocal(key,data){
   try{localStorage.setItem(key,JSON.stringify(data));}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value:JSON.stringify(data)})}).catch(()=>{});
+  let finale=data,letto=false;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+    if(r.ok){
+      const j=await r.json();
+      const remoto=j&&j.value?JSON.parse(j.value):[];
+      finale=_cassaUnisci(Array.isArray(remoto)?remoto:[],data,_rimossiSet(key));
+      letto=_letto[key]=true;
+    }
+  }catch(e){}
+  // Senza aver mai letto il cloud non si scrive: sarebbe sovrascrivere alla cieca.
+  if(!letto&&!_letto[key])return data;
+  if(key===KEY_FONDO)_fondo=finale;else if(key===KEY_INCASSO)_incasso=finale;
+  try{localStorage.setItem(key,JSON.stringify(finale));}catch(e){}
+  try{
+    await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value:JSON.stringify(finale)})});
+  }catch(e){}
+  return finale;
+}
+// L'id eliminato va segnato PRIMA di salvare l'elenco, altrimenti l'unione rimetterebbe
+// dentro il movimento appena tolto.
+async function segnaRimosso(key,id){
+  const ramo=_ramo(key);
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+KEY_RIMOSSI,{cache:'no-store'});
+    if(r.ok){const j=await r.json();const o=j&&j.value?JSON.parse(j.value):null;
+      if(o&&typeof o==='object'){
+        _rimossi.fondo=[...new Set([].concat(_rimossi.fondo||[],o.fondo||[]))];
+        _rimossi.incasso=[...new Set([].concat(_rimossi.incasso||[],o.incasso||[]))];
+      }}
+  }catch(e){}
+  if((_rimossi[ramo]||[]).indexOf(id)===-1)_rimossi[ramo].push(id);
+  try{localStorage.setItem(KEY_RIMOSSI,JSON.stringify(_rimossi));}catch(e){}
+  try{
+    await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY_RIMOSSI,value:JSON.stringify(_rimossi)})});
+  }catch(e){}
 }
 
 let _fondo=[],_incasso=[];
@@ -573,13 +630,14 @@ const ICON_CORREGGI='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 const ICON_CANCELLA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/></svg>';
 // Elimina un movimento (fondo o incasso): rimozione definitiva, non un edits[] — riservata
 // a correggere voci sbagliate per errore (es. doppioni, prove) con conferma esplicita.
-function cancellaMovimento(key,id){
+async function cancellaMovimento(key,id){
   const list=key===KEY_FONDO?_fondo:_incasso;
   const idx=list.findIndex(x=>x.id===id);
   if(idx===-1)return;
   if(!confirm('Eliminare definitivamente questo movimento? Non è più recuperabile.'))return;
   list.splice(idx,1);
-  kvSetLocal(key,list);
+  await segnaRimosso(key,id);
+  await kvSetLocal(key,list);
   if(key===KEY_FONDO)renderFondo();else renderIncasso();
 }
 
@@ -789,17 +847,19 @@ function saveEdit(){
 }
 
 // ── INIT ─────────────────────────────
-(async function init(){
-  _fondo=await kvGet(KEY_FONDO);
-  _incasso=await kvGet(KEY_INCASSO);
-  renderFondo();
-  renderIncasso();
-})();
-setInterval(async()=>{
-  _fondo=await kvGet(KEY_FONDO);
-  _incasso=await kvGet(KEY_INCASSO);
+async function ricaricaRegistri(){
+  const rim=await kvGet(KEY_RIMOSSI);
+  if(rim&&!Array.isArray(rim)&&typeof rim==='object')_rimossi={fondo:rim.fondo||[],incasso:rim.incasso||[]};
+  const f=await kvGet(KEY_FONDO), i=await kvGet(KEY_INCASSO);
+  _letto[KEY_FONDO]=true;_letto[KEY_INCASSO]=true;
+  // Si UNISCE alla copia in memoria invece di sostituirla: un movimento appena registrato
+  // e non ancora arrivato sul cloud sparirebbe al primo giro di polling.
+  _fondo=_cassaUnisci(f,_fondo,_rimossiSet(KEY_FONDO));
+  _incasso=_cassaUnisci(i,_incasso,_rimossiSet(KEY_INCASSO));
   renderFondo();renderIncasso();
-},30000);
+}
+ricaricaRegistri();
+setInterval(ricaricaRegistri,30000);
 </script>
 </body>
 </html>

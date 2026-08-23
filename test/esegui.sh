@@ -100,6 +100,31 @@ for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.htm
     BKF_KO=1
   fi
 done
+# Compass e la cassa restano aperte tutto il giorno sui PC: senza il controllo sull'ETag
+# continuerebbero a girare col codice con cui sono state caricate, anche per settimane.
+# Per Compass il controllo vive in app.js (index.html non ha JS proprio oltre a splash e
+# versione); per la cassa dentro reception.html, che e' una pagina a se.
+for _pag in app.js reception.html; do
+  if ! grep -q 'qmCheckVersione' "$_pag"; then
+    echo ""
+    echo "  ERRORE      $_pag non controlla piu' se il codice pubblicato e' cambiato."
+    echo "              Sono le pagine che restano aperte tutto il giorno: senza, una"
+    echo "              correzione pubblicata non arriva mai su quella postazione."
+    BKF_KO=1
+  fi
+done
+# La scrittura sicura dei registri di cassa e' duplicata in reception.html e app.js (una
+# e' una pagina a se, l'altra la dashboard): se una delle due tornasse a sovrascrivere
+# l'elenco intero, due postazioni ricomincerebbero a cancellarsi i movimenti a vicenda.
+for _pag in reception.html app.js; do
+  if ! grep -q '_cassaUnisci' "$_pag"; then
+    echo ""
+    echo "  ERRORE      $_pag non unisce piu' i registri di cassa per id."
+    echo "              Due postazioni che registrano insieme si perderebbero un"
+    echo "              movimento a testa, in silenzio, su denaro contato."
+    BKF_KO=1
+  fi
+done
 if ! grep -q 'key>oggi' breakfast.html; then
   echo ""
   echo "  ERRORE      breakfast.html non esclude piu' i giorni futuri dall'archivio mensile."
