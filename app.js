@@ -448,6 +448,15 @@ function turniVoceStorico(data){
   if(!giorni.length)return null;
   return{chiave:giorni[0].data,dal:giorni[0].data,al:giorni[giorni.length-1].data,giorni,ts:Date.now()};
 }
+/** Fonde due archivi: per ogni settimana vince la voce archiviata più di recente. */
+function turniFondiArchivi(a,b){
+  const out=Object.assign({},a||{});
+  Object.keys(b||{}).forEach(k=>{
+    const vecchia=out[k], nuova=b[k];
+    if(!vecchia||!(vecchia.ts>0)||(nuova&&nuova.ts>0&&nuova.ts>=vecchia.ts))out[k]=nuova;
+  });
+  return out;
+}
 async function turniArchivia(data){
   const voce=turniVoceStorico(data);
   if(!voce)return;
@@ -456,16 +465,24 @@ async function turniArchivia(data){
   // Fusione col cloud prima di scrivere: due postazioni che caricano settimane diverse
   // devono sommarsi, non cancellarsi. È l'errore che il 23/08/2026 ha azzerato le
   // osservazioni delle recensioni.
+  //
+  // Per la STESSA settimana vince la versione più recente, non quella locale: il turno
+  // cambia più volte in settimana e si ricarica ogni volta. Se la reception ha appena
+  // caricato una variazione e qui c'è ancora la copia di lunedì, tenere la locale
+  // riporterebbe indietro il turno di tutti.
   try{
     const r=await fetch(PROXY+'/kv/get?key='+TURNI_STORICO_KEY,{cache:'no-store'});
     const j=await r.json();
-    if(j&&j.value)arch=Object.assign(JSON.parse(j.value)||{},arch);
+    if(j&&j.value)arch=turniFondiArchivi(JSON.parse(j.value)||{},arch);
   }catch(e){}
   const {chiave,...resto}=voce;
   arch[chiave]=resto;
   const json=JSON.stringify(arch);
   try{localStorage.setItem(TURNI_STORICO_KEY,json);}catch(e){}
   kvSet(TURNI_STORICO_KEY,json).catch(()=>{});
+  // Il turno cambia più volte in settimana: chi sta guardando le statistiche deve vederle
+  // aggiornate subito dopo il caricamento, non alla prossima apertura della vista.
+  try{turniRenderStats();}catch(e){}
 }
 // ── STATISTICHE TURNI — SOLO RICEVIMENTO ────────────────────────────────────
 // Housekeeping, breakfast e manutenzione usano codici tutti loro ('9-14', 'SOUL N.',
@@ -516,6 +533,9 @@ function turniStatistiche(archivio,membri){
   const vuoto=()=>({riposi:0,riposiDomenica:0,mattina:0,pomeriggio:0,intermedi:0,notti:0,nottiG:0,nottiC:0,
     galleria:0,soulart:0,p:0,pgall:0,ferie:0,malattia:0,riposiLavorati:0,giorni:0,altro:0});
   const out={}; (membri||[]).forEach(n=>out[n]=vuoto());
+  // I codici che non so leggere vanno raccolti PER ESTESO, non contati e basta: sapere che
+  // "ci sono 3 codici sconosciuti" non serve a nessuno, sapere che sono 'INT BOU 9/17' sì.
+  const ignoti={};
   const sett=Object.keys(archivio||{}).sort();
   sett.forEach(k=>{
     (archivio[k].giorni||[]).forEach(g=>{
@@ -532,7 +552,13 @@ function turniStatistiche(archivio,membri){
         if(n.tipo==='malattia'){s.malattia++;return;}
         if(n.tipo==='p'){s.p++;return;}
         if(n.tipo==='pgall'){s.pgall++;return;}
-        if(n.tipo!=='turno'){s.altro++;return;}
+        if(n.tipo!=='turno'){
+          s.altro++;
+          const k=String(g.shifts[nome]||'').toUpperCase().replace(/\s+/g,' ').trim();
+          if(!ignoti[k])ignoti[k]={codice:k,volte:0,chi:{}};
+          ignoti[k].volte++; ignoti[k].chi[nome]=true;
+          return;
+        }
         if(n.fascia==='mattina'){s.mattina++;}
         else if(n.fascia==='pomeriggio'){s.pomeriggio++;}
         else if(n.fascia==='intermedio'){s.intermedi++;}
@@ -541,7 +567,8 @@ function turniStatistiche(archivio,membri){
       });
     });
   });
-  return{per:out,settimane:sett.length,dal:sett[0]||null,al:sett.length?archivio[sett[sett.length-1]].al:null};
+  return{per:out,settimane:sett.length,dal:sett[0]||null,al:sett.length?archivio[sett[sett.length-1]].al:null,
+    ignoti:Object.keys(ignoti).sort().map(k=>({codice:k,volte:ignoti[k].volte,chi:Object.keys(ignoti[k].chi)}))};
 }
 function turniStoricoLeggi(){
   try{const s=localStorage.getItem(TURNI_STORICO_KEY);if(s)return JSON.parse(s)||{};}catch(e){}
@@ -584,6 +611,11 @@ function turniRenderStats(){
       <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">${st.settimane} settiman${st.settimane===1?'a':'e'} · ${gg(st.dal)} – ${gg(st.al)}</span>
     </div>
     <div class="panel-body" style="padding:0;">
+      ${st.ignoti&&st.ignoti.length?`<div style="margin:12px 13px 0;background:rgba(160,90,0,.08);border-left:3px solid var(--amber);padding:10px 12px;font-size:var(--fs-xs);color:var(--amber);line-height:1.6;">
+        <strong>${st.ignoti.length} codic${st.ignoti.length===1?'e non riconosciuto':'i non riconosciuti'}: non ${st.ignoti.length===1?'entra':'entrano'} in nessun conteggio.</strong><br>
+        ${st.ignoti.map(u=>`<span style="font-family:'Helvetica Neue',Arial,sans-serif;font-weight:700;">${esc(u.codice)}</span> — ${u.volte} volt${u.volte===1?'a':'e'} (${u.chi.map(esc).join(', ')})`).join('<br>')}
+        <span style="display:block;margin-top:5px;color:var(--text-dim);font-weight:400;">Se è un turno nuovo, segnalamelo e lo aggiungo alle categorie.</span>
+      </div>`:''}
       <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
           <thead><tr>
@@ -611,7 +643,7 @@ function turniRenderStats(){
       <div style="padding:11px 13px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;border-top:1px solid var(--border);">
         <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. L'orario degli intermedi non conta: la sede la dice la sigla. <strong>P</strong> comprende P e P Gall.
         Riposo, riposo richiesto e recupero contano come riposo.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
-        ${righe.some(x=>x.s.altro)?'<br>Codici non riconosciuti (non conteggiati): '+righe.filter(x=>x.s.altro).map(x=>esc(x.n)+' '+x.s.altro).join(', ')+'.':''}
+
       </div>
     </div>
   </div>`;

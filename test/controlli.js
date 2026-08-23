@@ -357,6 +357,31 @@ ok('intermedio contato',              _int.per['Raucci A.'].intermedi, 1);
 ok('e attribuito a SoulArt',          _int.per['Raucci A.'].soulart, 1);
 ok('non finisce fra le mattine',      _int.per['Raucci A.'].mattina, 0);
 ok('INT GALL va all\'Art Resort',     _int.per['Ruggiero B.'].galleria, 1);
+
+// Un codice mai visto non deve sparire in silenzio: va detto QUALE, chi lo ha e quante
+// volte. Sapere che "ci sono 3 codici sconosciuti" non serve a nessuno.
+var _ign = turniStatistiche({ '2026-08-24': { dal:'2026-08-24', al:'2026-08-25', giorni:[
+  { data:'2026-08-24', shifts:{ 'Perez L.':'INT BOU 9/17', 'Raucci A.':'AC' } },
+  { data:'2026-08-25', shifts:{ 'Perez L.':'int bou 9/17' } }
+] } }, ['Perez L.','Raucci A.']);
+ok('il codice ignoto viene riportato', _ign.ignoti.length, 1);
+ok('con il testo esatto',              _ign.ignoti[0].codice, 'INT BOU 9/17');
+ok('quante volte compare',             _ign.ignoti[0].volte, 2);
+ok('maiuscole e minuscole non lo sdoppiano', _ign.ignoti.length, 1);
+ok('e di chi e\'',                     _ign.ignoti[0].chi.join(','), 'Perez L.');
+ok('non finisce in nessun conteggio',  _ign.per['Perez L.'].mattina + _ign.per['Perez L.'].soulart, 0);
+ok('i codici buoni non ci finiscono',  _ign.per['Raucci A.'].mattina, 1);
+
+// Ricaricare la stessa settimana: vince la versione archiviata piu' di recente, non la
+// locale. Il turno cambia piu' volte in settimana e si ricarica ogni volta.
+var _vecchia = { '2026-08-24': { ts: 100, giorni: [{ data:'2026-08-24', shifts:{ 'Perez L.':'R' } }] } };
+var _nuova   = { '2026-08-24': { ts: 200, giorni: [{ data:'2026-08-24', shifts:{ 'Perez L.':'AC' } }] } };
+ok('la variazione piu\' recente vince',
+   turniFondiArchivi(_vecchia, _nuova)['2026-08-24'].giorni[0].shifts['Perez L.'], 'AC');
+ok('e non torna indietro nel verso opposto',
+   turniFondiArchivi(_nuova, _vecchia)['2026-08-24'].giorni[0].shifts['Perez L.'], 'AC');
+ok('settimane diverse si sommano',
+   Object.keys(turniFondiArchivi(_vecchia, { '2026-08-31': { ts: 1, giorni: [] } })).length, 2);
 ok('ma si conta come notte',          _sf.per['Perez L.'].notti, 1);
 ok('e si sa in quale sede',           _sf.per['Perez L.'].nottiG, 1);
 ok('ferie contate',                   _sf.per['Presta P.'].ferie, 1);
