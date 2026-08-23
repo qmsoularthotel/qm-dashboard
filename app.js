@@ -1728,10 +1728,9 @@ function dvrBadgeUpdate(){
   badge.textContent=count;
   badge.style.display=show?'inline':'none';
 }
-function dvrSave(){
-  const json=JSON.stringify(DVR_DATA);
-  try{localStorage.setItem('qm_dvr',json);}catch(e){}
-  kvSet('qm_dvr',json).catch(()=>{});
+async function dvrSave(){
+  // Rilegge e fonde invece di sovrascrivere: vedi _qmSalvaArchivio.
+  DVR_DATA=await _qmSalvaArchivio('qm_dvr',DVR_DATA);
   dvrBadgeUpdate();
 }
 // §§ MOBILE SIDEBAR
@@ -1951,6 +1950,7 @@ function dvrToggleScadContr(val){
 async function dvrEmpDelete(id){
   if(!await cqConferma('Eliminare questo dipendente?','Verranno persi anche i documenti e le scadenze collegate.',{ok:'Elimina'}))return;
   DVR_DATA[_dvrSoc].dipendenti=(DVR_DATA[_dvrSoc].dipendenti||[]).filter(x=>x.id!==id);
+  _qmSegnaRimosso(DVR_DATA,id);
   dvrSave();dvrRenderDipendenti();
 }
 function dvrStatus(scadenza){
@@ -2062,7 +2062,8 @@ function dvrSaveEntry(){
 async function dvrDelete(type,id){
   if(!await cqConferma('Eliminare questa voce?','L\'operazione non si può annullare.',{ok:'Elimina'}))return;
   DVR_DATA[_dvrSoc][type]=(DVR_DATA[_dvrSoc][type]||[]).filter(x=>x.id!==id);
-  dvrSave();dvrRenderPanel(type);
+  _qmSegnaRimosso(DVR_DATA,id);
+  await dvrSave();dvrRenderPanel(type);
 }
 function miniappCopy(inputId,btn){
   const inp=document.getElementById(inputId);
@@ -12975,19 +12976,12 @@ function _resiParseData(s){const m=String(s||'').match(/^(\d{2})\/(\d{2})\/(\d{4
 async function resiLoad(){
   const el=document.getElementById('resi-content');if(!el)return;
   el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Caricamento…</div>';
-  let data=null;
-  try{
-    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(RESI_KEY),{cache:'no-store'});
-    if(r.ok){const j=await r.json();if(j&&j.value)data=JSON.parse(j.value);}
-  }catch(e){}
-  if(!data){try{const s=localStorage.getItem(RESI_KEY);if(s)data=JSON.parse(s);}catch(e){}}
-  _resi=Object.assign({righe:[],ritiri:[],tipologie:null},data||{});
+  _resi=await _qmLeggiArchivio(RESI_KEY,{righe:[],ritiri:[],tipologie:null});
   resiRender();
 }
-function _resiSave(){
-  const json=JSON.stringify(_resi);
-  try{localStorage.setItem(RESI_KEY,json);}catch(e){}
-  kvSet(RESI_KEY,json).catch(()=>{});
+async function _resiSave(){
+  _resi=await _qmSalvaArchivio(RESI_KEY,_resi);
+  return _resi;
 }
 
 // Righe non ancora consegnate a Raimondo = periodo aperto in corso. Registrando un
@@ -13090,7 +13084,8 @@ async function resiDelRitiro(id){
   if(!await cqConferma('Annullare questo ritiro?','I resi torneranno nel periodo aperto, pronti per una nuova distinta.',{ok:'Annulla ritiro'}))return;
   _resi.righe.forEach(r=>{if(r.ritiroId===id)r.ritiroId=null;});
   _resi.ritiri.splice(i,1);
-  _resiSave();resiRender();
+  _qmSegnaRimosso(_resi,id);
+  await _resiSave();resiRender();
 }
 function resiEditTipologie(){
   const cur=_resiTipologie().join('\n');
@@ -13419,20 +13414,15 @@ function _biaTot(q){return BIA_VOCI.reduce((s,v)=>s+(Number(q&&q[v])||0),0);}
 async function biaLoad(){
   const el=document.getElementById('bia-content');if(!el)return;
   el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Caricamento…</div>';
-  let data=null;
-  try{
-    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(BIA_KEY),{cache:'no-store'});
-    if(r.ok){const j=await r.json();if(j&&j.value)data=JSON.parse(j.value);}
-  }catch(e){}
-  if(!data){try{const s=localStorage.getItem(BIA_KEY);if(s)data=JSON.parse(s);}catch(e){}}
-  _bia=Object.assign({consumi:[],giri:[]},data||{});
+  // Si FONDE cloud e copia locale invece di preferire l'uno all'altra: una registrazione
+  // che non era arrivata sul cloud non deve sparire riaprendo la pagina.
+  _bia=await _qmLeggiArchivio(BIA_KEY,{consumi:[],giri:[]});
   try{await _biaDistCarica();}catch(e){}
   biaRender();
 }
-function _biaSave(){
-  const json=JSON.stringify(_bia);
-  try{localStorage.setItem(BIA_KEY,json);}catch(e){}
-  kvSet(BIA_KEY,json).catch(()=>{});
+async function _biaSave(){
+  _bia=await _qmSalvaArchivio(BIA_KEY,_bia);
+  return _bia;
 }
 
 function _biaConsumi(h){const hot=h||_biaHotel;return _bia.consumi.filter(c=>_biaH(c)===hot);}
@@ -13599,7 +13589,8 @@ async function biaEliminaConsumo(id){
   if(!c)return;
   if(!await cqConferma('Eliminare questi consumi?','<strong>'+c.data+'</strong><br>I giri già registrati non cambiano.',{ok:'Elimina'}))return;
   _bia.consumi=_bia.consumi.filter(x=>x.id!==id);
-  _biaSave();biaRender();
+  _qmSegnaRimosso(_bia,id);
+  await _biaSave();biaRender();
 }
 
 // ── Registrazione del giro ──
@@ -13630,7 +13621,8 @@ async function biaEliminaGiro(id){
   if(!g)return;
   if(!await cqConferma('Eliminare questo giro?','<strong>'+g.data+'</strong><br>I giri successivi useranno un periodo diverso.',{ok:'Elimina'}))return;
   _bia.giri=_bia.giri.filter(x=>x.id!==id);
-  _biaSave();biaRender();
+  _qmSegnaRimosso(_bia,id);
+  await _biaSave();biaRender();
 }
 
 // La colonna Δ e l'avviso di ammanco si aggiornano MENTRE si digita, ma senza rigenerare
@@ -14464,6 +14456,93 @@ function cqAvviso(titolo,testo,opz){
 //     rilette a ogni giro;
 //  3. la VISTA ATTIVA si ridisegna: Overview sempre — è il cruscotto, deve essere vivo —
 //     le altre quando qualcosa è davvero cambiato.
+
+// ── Salvataggio sicuro degli archivi a elenchi ──────────────────────────────
+// DVR, Biancheria e Resi Biancheria hanno tutti la stessa forma: un oggetto le cui
+// proprietà sono elenchi di record con `id` — `{righe:[…],ritiri:[…]}`,
+// `{consumi:[…],giri:[…]}`, `{geriart:{visite:[…],…}}` — più qualche campo che elenco non
+// è (le `tipologie` dei resi). E avevano tutti lo stesso difetto dei pre-stay: si scriveva
+// l'oggetto INTERO con la copia che quella postazione si portava dietro, quindi una copia
+// vecchia poteva cancellare quello che era stato aggiunto altrove, in silenzio.
+// Qui non è mai successo perché li tocca praticamente solo il QM da una postazione, ma la
+// forma del difetto è identica e il costo di chiuderla è basso.
+const _qmElencoRecord=a=>Array.isArray(a)&&a.every(x=>x&&typeof x==='object'&&!Array.isArray(x)&&x.id);
+// Unione di due elenchi per `id`. Il locale viene per ultimo: a parità di id vince la
+// versione di questa postazione, che è quella appena modificata a mano.
+function _qmUnisciRecord(remoto,locale,rimossi){
+  const out=[],pos={};
+  [].concat(remoto||[],locale||[]).forEach(m=>{
+    if(!m||!m.id)return;
+    if(rimossi&&rimossi.has(m.id))return;
+    if(!(m.id in pos)){pos[m.id]=out.length;out.push(m);return;}
+    out[pos[m.id]]=m;
+  });
+  return out;
+}
+// Fusione ricorsiva: gli elenchi di record si uniscono, gli oggetti si scendono (serve al
+// DVR, che è annidato per società), tutto il resto è un'impostazione e vince il locale.
+function _qmFondiElenchi(remoto,locale,rimossi){
+  const ogg=v=>v&&typeof v==='object'&&!Array.isArray(v);
+  const R=ogg(remoto)?remoto:{},L=ogg(locale)?locale:{};
+  const out={};
+  [...new Set([...Object.keys(R),...Object.keys(L)])].forEach(k=>{
+    const r=R[k],l=L[k];
+    if(_qmElencoRecord(r)&&_qmElencoRecord(l))out[k]=_qmUnisciRecord(r,l,rimossi);
+    else if(_qmElencoRecord(r)&&(l===undefined||l===null))out[k]=r;
+    else if(_qmElencoRecord(l)&&(r===undefined||r===null))out[k]=l;
+    else if(ogg(r)&&ogg(l))out[k]=_qmFondiElenchi(r,l,rimossi);
+    else out[k]=(l!==undefined&&l!==null)?l:r;
+  });
+  return out;
+}
+let _qmArchivioLetto={};      // chiave -> il cloud è stato letto almeno una volta qui
+// Rilegge, fonde e scrive. Restituisce l'archivio fuso, che il chiamante deve rimettere
+// nella propria variabile: da lì in poi è quello buono.
+async function _qmSalvaArchivio(key,locale){
+  const json=JSON.stringify(locale);
+  try{localStorage.setItem(key,json);}catch(e){}
+  let finale=locale,letto=false;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+    if(r.ok){
+      const j=await r.json();
+      const remoto=j&&j.value?JSON.parse(j.value):{};
+      const rim=[...new Set([].concat((remoto&&remoto._rimossi)||[],(locale&&locale._rimossi)||[]))];
+      finale=_qmFondiElenchi(remoto,locale,new Set(rim));
+      if(rim.length)finale._rimossi=rim.slice(-300);
+      letto=_qmArchivioLetto[key]=true;
+    }
+  }catch(e){}
+  // Senza aver mai letto il cloud in questa sessione non si scrive: sarebbe sovrascrivere
+  // alla cieca, che è esattamente come sono spariti i pre-stay del 24 agosto.
+  if(!letto&&!_qmArchivioLetto[key]){try{setSyncStatus('error');}catch(e){}return locale;}
+  try{localStorage.setItem(key,JSON.stringify(finale));}catch(e){}
+  try{setSyncStatus('syncing');}catch(e){}
+  const ok=await kvSet(key,JSON.stringify(finale));
+  try{setSyncStatus(ok?'ok':'error');}catch(e){}
+  return finale;
+}
+// Un record eliminato di proposito non deve tornare dentro alla prima fusione.
+function _qmSegnaRimosso(archivio,id){
+  if(!archivio||!id)return archivio;
+  archivio._rimossi=[...new Set([].concat(archivio._rimossi||[],[id]))].slice(-300);
+  return archivio;
+}
+// Lettura con fusione: la copia locale può contenere qualcosa che il cloud non ha ancora
+// (una scrittura non andata a buon fine). Sostituirla la butterebbe via.
+async function _qmLeggiArchivio(key,vuoto){
+  let remoto=null,locale=null;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+    if(r.ok){const j=await r.json();if(j&&j.value){remoto=JSON.parse(j.value);_qmArchivioLetto[key]=true;}}
+  }catch(e){}
+  try{const l=localStorage.getItem(key);if(l)locale=JSON.parse(l);}catch(e){}
+  if(remoto===null&&locale===null)return Object.assign({},vuoto);
+  if(remoto===null)return Object.assign({},vuoto,locale);
+  if(locale===null)return Object.assign({},vuoto,remoto);
+  const rim=[...new Set([].concat(remoto._rimossi||[],locale._rimossi||[]))];
+  return Object.assign({},vuoto,_qmFondiElenchi(remoto,locale,new Set(rim)));
+}
 
 // Non si tocca niente mentre l'utente sta lavorando: un ridisegno sotto le dita fa perdere
 // il testo in corso, e un ricaricamento butta via un modale a metà (un'anteprima già

@@ -2258,6 +2258,26 @@ Prima Compass restava fermo a quello che aveva letto **all'avvio**: chi caricava
 
 `index.html` e `reception.html` erano le **uniche due pagine senza aggiornamento automatico del codice** — proprio quelle che restano aperte tutto il giorno. Le 5 app standalone ce l'avevano dal 22/08.
 
+### Salvataggio sicuro degli archivi a elenchi — DVR, Biancheria, Resi
+
+`_qmSalvaArchivio` / `_qmLeggiArchivio` / `_qmFondiElenchi` nella stessa sezione. I tre archivi hanno la **stessa forma**: un oggetto le cui proprietà sono elenchi di record con `id` — `{righe:[…],ritiri:[…]}`, `{consumi:[…],giri:[…]}`, `{geriart:{visite:[…],dipendenti:[…]}}` — più qualche campo che elenco non è (`tipologie` dei resi). E avevano tutti lo stesso difetto dei pre-stay: si scriveva l'oggetto **intero** con la copia che quella postazione si portava dietro.
+
+Qui non è mai successo perché li tocca praticamente solo il QM da una postazione, ma la forma del difetto era identica.
+
+| Regola | Nota |
+|---|---|
+| Si rilegge e si **fonde** prima di scrivere | `_qmSalvaArchivio` |
+| Gli elenchi di record si uniscono per `id`; a parità di id vince il **locale**, che è quello appena modificato a mano | `_qmUnisciRecord` |
+| Gli oggetti si scendono ricorsivamente — serve al DVR, annidato per società | `_qmFondiElenchi` |
+| Un array che **non** è fatto di record con `id` (le `tipologie`) è un'impostazione, non un registro: vince il locale e non si unisce | `_qmElencoRecord` |
+| Senza aver mai letto il cloud in quella sessione **non si scrive** | `_qmSalvaArchivio` |
+| Anche la lettura fonde: una scrittura non andata a buon fine non si butta via riaprendo | `_qmLeggiArchivio` |
+| Le eliminazioni lasciano l'id in `_rimossi` dentro l'archivio stesso, altrimenti la fusione le rimetterebbe dentro | `_qmSegnaRimosso` |
+
+**`qm_dvr` è letto anche da `dvr.html`**, che però non lo scrive mai (scrive solo `qm_dvr_access`): la chiave `_rimossi` aggiunta in cima all'oggetto non lo disturba, perché itera `DVR_SOC_KEYS`. `qm_biancheria` e `qm_resi_biancheria` sono solo di Compass.
+
+**`dvrSave`, `_biaSave` e `_resiSave` sono ora `async`** e **riassegnano** la loro variabile (`DVR_DATA`, `_bia`, `_resi`) con l'archivio fuso. Chi tiene un riferimento a un elenco *attraverso* l'attesa (`const items=DVR_DATA[soc].dipendenti`) modificherebbe l'oggetto vecchio: verificato che nessun chiamante lo faccia, ma è la trappola da ricordare aggiungendone di nuovi.
+
 ### Non si ridisegna mai a vuoto — `_qmCambiato`
 
 Il polling segna `_qmCambiato=true` solo nei rami che hanno davvero applicato un dato nuovo (arrivi, turno, pulizie, colazioni, Piano). Senza quel flag si ridisegnerebbe ogni 30 secondi anche quando non è cambiato niente: accordion che si richiudono da soli, pannelli che sfarfallano, e il giorno del turno che torna a oggi mentre lo stai leggendo.
@@ -2744,7 +2764,7 @@ guardando lo schermo, un errore nei numeri no — resta plausibile e può passar
 per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dall'alloggio,
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
-dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa. 173 controlli.
+dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi. 184 controlli.
 
 ### Come funziona
 

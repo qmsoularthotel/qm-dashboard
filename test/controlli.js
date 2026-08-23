@@ -531,6 +531,55 @@ ok('voci senza id ignorate',              S.length, 1);
 ok('registro vuoto da entrambe le parti', _cassaUnisci([], [], new Set()).length, 0);
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Archivi a elenchi: DVR, Biancheria, Resi non si sovrascrivono');
+// Stessa forma per tutti e tre: un oggetto le cui proprieta' sono elenchi di record con
+// `id`. Prima si scriveva l'oggetto intero, quindi una copia vecchia poteva cancellare
+// quello che era stato aggiunto da un'altra postazione.
+
+// Resi biancheria: due righe registrate su postazioni diverse.
+var A1 = _qmFondiElenchi(
+  { righe: [{ id: 'r1', qta: 3 }], ritiri: [], tipologie: ['Federa', 'Telo doccia'] },
+  { righe: [{ id: 'r2', qta: 5 }], ritiri: [], tipologie: null },
+  new Set());
+ok('resi: nessuna riga persa',        A1.righe.length, 2);
+ok('resi: ordine e identita',         A1.righe.map(function (r) { return r.id; }).join(','), 'r1,r2');
+// `tipologie` e' un elenco di stringhe: e' un'impostazione, non un registro, e non va
+// unita record per record — altrimenti si duplicherebbe a ogni salvataggio.
+ok('resi: tipologie non duplicate',   A1.tipologie.length, 2);
+ok('elenco di stringhe non e un registro', _qmElencoRecord(['Federa']), false);
+ok('elenco vuoto vale come registro',      _qmElencoRecord([]), true);
+
+// A parita' di id vince la copia locale: e' quella appena modificata a mano.
+var A2 = _qmFondiElenchi(
+  { righe: [{ id: 'r1', qta: 3 }] },
+  { righe: [{ id: 'r1', qta: 9 }] }, new Set());
+ok('stesso id: vince la modifica locale', A2.righe[0].qta, 9);
+
+// Un record eliminato di proposito non torna dentro alla prima fusione.
+var A3 = _qmFondiElenchi(
+  { righe: [{ id: 'r1' }, { id: 'r2' }] },
+  { righe: [{ id: 'r2' }] }, new Set(['r1']));
+ok('record eliminato non torna',      A3.righe.map(function (r) { return r.id; }).join(','), 'r2');
+
+// DVR: annidato per societa', quindi la fusione deve scendere di un livello.
+var D = _qmFondiElenchi(
+  { geriart: { dipendenti: [{ id: 'd1', nome: 'Rossi Mario' }], visite: [] } },
+  { geriart: { dipendenti: [{ id: 'd2', nome: 'Neri Ada' }], visite: [] } },
+  new Set());
+ok('dvr: fusione annidata per societa', D.geriart.dipendenti.length, 2);
+
+// Biancheria: una registrazione che sta solo sul cloud non deve sparire.
+var B = _qmFondiElenchi(
+  { consumi: [{ id: 'c1', data: '21/08/2026' }], giri: [{ id: 'g1' }] },
+  { consumi: [], giri: [] }, new Set());
+ok('biancheria: consumo solo sul cloud conservato', B.consumi.length, 1);
+ok('biancheria: giro solo sul cloud conservato',    B.giri.length, 1);
+
+// Copia locale completamente vuota: e' il caso che ha fatto il danno sui pre-stay.
+var V2 = _qmFondiElenchi({ righe: [{ id: 'r1' }, { id: 'r2' }] }, {}, new Set());
+ok('copia vuota non cancella l archivio', V2.righe.length, 2);
+
+// ─────────────────────────────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 console.log(KO === 0
   ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'
