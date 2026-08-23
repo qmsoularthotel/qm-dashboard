@@ -343,6 +343,18 @@ ok('riposo poi lavorato segnalato',   _sf.per['Perez L.'].riposiLavorati, 1);
 // L'housekeeping non deve entrare: ha codici suoi e i totali diventerebbero senza senso.
 ok('chi non e\' del ricevimento resta fuori', _sf.per['Nacci M.'] === undefined, true);
 
+// Ordine della tabella: i due riferimenti in cima, i notturni in fondo, il resto in mezzo
+// in ordine alfabetico. I notturni sono un elenco esplicito e non una deduzione dai dati:
+// nella settimana 17-23/08 Vatiero aveva solo notti perche' copriva un'emergenza, e una
+// regola automatica lo avrebbe spostato in fondo per sempre.
+var _ord = turniOrdina(['Perez L.', "D'Andrea F.", 'Presta P.', 'Barbosa D.', 'Iannario R.', 'Maddaloni M.', 'Vatiero R.']);
+ok('Maddaloni primo',        _ord[0], 'Maddaloni M.');
+ok('Presta secondo',         _ord[1], 'Presta P.');
+ok('poi in ordine alfabetico', _ord.slice(2, 5).join(','), 'Barbosa D.,Perez L.,Vatiero R.');
+ok('i notturni in fondo',    _ord.slice(5).join(','), "D'Andrea F.,Iannario R.");
+ok('Vatiero non e\' un notturno', TURNI_NOTTURNI.indexOf('Vatiero R.'), -1);
+ok('chi manca non viene inventato', turniOrdina(['Perez L.']).join(','), 'Perez L.');
+
 sez('Punteggio Booking: la finestra e\' un parametro, non una certezza');
 // Il modello teneva fissa la finestra a 36 mesi e faceva variare solo l'emivita: quando il
 // punteggio reale non rientrava, l'unica spiegazione offerta era "il CSV e' incompleto".

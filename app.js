@@ -536,6 +536,20 @@ function turniStoricoLeggi(){
   try{const s=localStorage.getItem(TURNI_STORICO_KEY);if(s)return JSON.parse(s)||{};}catch(e){}
   return{};
 }
+// Chi fa le notti di ruolo. È un ELENCO ESPLICITO, non una deduzione dai dati: nella
+// settimana 17-23/08 Vatiero risultava con sole notti perché stava coprendo un'emergenza,
+// e una regola automatica lo avrebbe classificato notturno. Il ruolo è un fatto sulla
+// persona, non qualcosa che si ricava da una settimana. Aggiornare qui quando cambia.
+const TURNI_NOTTURNI=["D'Andrea F.",'Iannario R.'];
+// Ordine di reception: i due riferimenti in cima, poi gli altri in ordine alfabetico,
+// i notturni in fondo (fra loro alfabetici).
+const TURNI_ORDINE_TESTA=['Maddaloni M.','Presta P.'];
+function turniOrdina(nomi){
+  const testa=TURNI_ORDINE_TESTA.filter(n=>nomi.indexOf(n)>=0);
+  const notte=nomi.filter(n=>TURNI_NOTTURNI.indexOf(n)>=0).sort((a,b)=>a.localeCompare(b));
+  const resto=nomi.filter(n=>testa.indexOf(n)<0&&notte.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
+  return testa.concat(resto,notte);
+}
 function turniRenderStats(){
   const el=document.getElementById('turniStatsWrap');if(!el)return;
   const st=turniStatistiche(turniStoricoLeggi(),DEPTS.fo.members);
@@ -547,10 +561,13 @@ function turniRenderStats(){
     return;
   }
   const gg=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]:'—';};
-  const righe=DEPTS.fo.members.map(n=>({n,s:st.per[n]})).filter(x=>x.s.giorni>0)
-    .sort((a,b)=>a.n.localeCompare(b.n));
-  const th=t=>`<th style="text-align:${t.a||'center'};padding:7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;white-space:nowrap;">${t.l}</th>`;
+  const presenti=DEPTS.fo.members.filter(n=>st.per[n]&&st.per[n].giorni>0);
+  const righe=turniOrdina(presenti).map(n=>({n,s:st.per[n],notte:TURNI_NOTTURNI.indexOf(n)>=0}));
+  const th=l=>`<th style="text-align:center;padding:7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;white-space:nowrap;">${l}</th>`;
   const td=(v,extra)=>`<td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;${extra||''}">${v}</td>`;
+  // Per i notturni hanno senso solo domeniche, ferie e malattie: mattine, pomeriggi e sede
+  // non descrivono il loro lavoro, e riempirle di zeri farebbe sembrare che non lavorino.
+  const vuota=td('<span style="color:var(--border);">·</span>');
   el.innerHTML=`<div class="panel" style="margin-top:14px;">
     <div class="panel-header"><span class="panel-title">Statistiche ricevimento</span>
       <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">${st.settimane} settiman${st.settimane===1?'a':'e'} · ${gg(st.dal)} – ${gg(st.al)}</span>
@@ -559,29 +576,29 @@ function turniRenderStats(){
       <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
           <thead><tr>
-            ${th({l:'Persona',a:'left'})}${th({l:'Riposi'})}${th({l:'di dom.'})}${th({l:'Mattina'})}${th({l:'Pomeriggio'})}${th({l:'Notti'})}${th({l:'Galleria'})}${th({l:'SoulArt'})}${th({l:'P'})}${th({l:'P Gall'})}${th({l:'Ferie'})}${th({l:'Malattia'})}
+            <th style="text-align:left;padding:7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Persona</th>
+            ${th('Domeniche')}${th('Mattine')}${th('Pomeriggi')}${th('Art Resort')}${th('SoulArt')}${th('P')}${th('Ferie')}${th('Malattia')}
           </tr></thead>
           <tbody>
-            ${righe.map(({n,s})=>`<tr>
-              <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}</td>
-              ${td(s.riposi||'—')}
+            ${righe.map(({n,s,notte},i)=>{
+              const primoNotte=notte&&(i===0||!righe[i-1].notte);
+              return `<tr${primoNotte?' style="border-top:2px solid var(--border);"':''}>
+              <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}</td>
               ${td(s.riposiDomenica||'—',s.riposiDomenica?'font-weight:700;':'color:var(--text-dim);')}
-              ${td(s.mattina||'—')}
-              ${td(s.pomeriggio||'—')}
-              ${td(s.notti?`${s.notti}<span style="color:var(--text-dim);font-size:var(--fs-xxs);"> (${s.nottiG}G·${s.nottiC}C)</span>`:'—')}
-              ${td(s.galleria||'—')}
-              ${td(s.soulart||'—')}
-              ${td(s.p||'—')}
-              ${td(s.pgall||'—')}
+              ${notte?vuota:td(s.mattina||'—')}
+              ${notte?vuota:td(s.pomeriggio||'—')}
+              ${notte?vuota:td(s.galleria||'—')}
+              ${notte?vuota:td(s.soulart||'—')}
+              ${notte?vuota:td((s.p+s.pgall)||'—')}
               ${td(s.ferie||'—',s.ferie?'color:var(--amber);font-weight:700;':'color:var(--text-dim);')}
               ${td(s.malattia||'—',s.malattia?'color:var(--red);font-weight:700;':'color:var(--text-dim);')}
-            </tr>`).join('')}
+            </tr>`;}).join('')}
           </tbody>
         </table>
       </div>
       <div style="padding:11px 13px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;border-top:1px solid var(--border);">
-        Galleria e SoulArt contano mattina e pomeriggio; le notti hanno la loro colonna, con il dettaglio fra parentesi (G = Galleria, C = SoulArt).
-        Riposo, riposo richiesto e recupero sono contati insieme.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
+        <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG, <strong>SoulArt</strong> = AC + CC; le notti non entrano nel conteggio per sede. <strong>P</strong> comprende P e P Gall.
+        Riposo, riposo richiesto e recupero contano come riposo.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
         ${righe.some(x=>x.s.altro)?'<br>Codici non riconosciuti (non conteggiati): '+righe.filter(x=>x.s.altro).map(x=>esc(x.n)+' '+x.s.altro).join(', ')+'.':''}
       </div>
     </div>
