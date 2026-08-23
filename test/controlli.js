@@ -422,6 +422,11 @@ ok('e si sa dove le ha fatte',                    _va.per['Vatiero R.'].nottiC, 
 ok('non finiscono fra i pomeriggi',               _va.per['Vatiero R.'].pomeriggio, 0);
 ok('ne\' nel totale di sede',                     _va.per['Vatiero R.'].soulart, 0);
 ok('la colonna Notti esiste nella tabella',       /th\('Notti'\)/.test(String(turniRenderStats)), true);
+// Presta lavora solo al SoulArt: le colonne di sede restano vuote, perche' un
+// "SoulArt 1 · Art Resort 0" sembrerebbe uno squilibrio da correggere invece che la norma.
+ok('Presta ha una sede sola',        TURNI_SEDE_UNICA.indexOf('Presta P.') >= 0, true);
+ok('gli altri no',                   TURNI_SEDE_UNICA.indexOf('Perez L.'), -1);
+ok('la tabella lascia vuote le sue sedi', /sedeUnica\?vuota/.test(String(turniRenderStats)), true);
 ok('NG resta Art Resort',       turniNormalizza('NG').sede, 'galleria');
 ok('NC resta SoulArt',          turniNormalizza('NC').sede, 'soulart');
 ok('chi manca non viene inventato', turniOrdina(['Perez L.']).join(','), 'Perez L.');

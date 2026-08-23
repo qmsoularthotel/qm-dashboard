@@ -585,6 +585,10 @@ const TURNI_NOTTURNI=["D'Andrea F.",'Iannario R.','Grieco V.'];
 // Ordine di reception: i due riferimenti in cima, poi gli altri in ordine alfabetico,
 // i notturni in fondo (fra loro alfabetici).
 const TURNI_ORDINE_TESTA=['Maddaloni M.','Presta P.'];
+// Chi lavora in una sede sola: le colonne Art Resort e SoulArt restano vuote, perche' il
+// confronto fra le due non dice niente sul suo lavoro. Presta sta sempre al SoulArt, e un
+// "SoulArt 1 · Art Resort 0" sembrerebbe uno squilibrio da correggere invece che la norma.
+const TURNI_SEDE_UNICA=['Presta P.'];
 function turniOrdina(nomi){
   const testa=TURNI_ORDINE_TESTA.filter(n=>nomi.indexOf(n)>=0);
   const notte=nomi.filter(n=>TURNI_NOTTURNI.indexOf(n)>=0).sort((a,b)=>a.localeCompare(b));
@@ -603,7 +607,8 @@ function turniRenderStats(){
   }
   const gg=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]:'—';};
   const presenti=DEPTS.fo.members.filter(n=>st.per[n]&&st.per[n].giorni>0);
-  const righe=turniOrdina(presenti).map(n=>({n,s:st.per[n],notte:TURNI_NOTTURNI.indexOf(n)>=0}));
+  const righe=turniOrdina(presenti).map(n=>({n,s:st.per[n],notte:TURNI_NOTTURNI.indexOf(n)>=0,
+    sedeUnica:TURNI_SEDE_UNICA.indexOf(n)>=0}));
   // Il secondo argomento apre un gruppo: filetto verticale a sinistra. I gruppi sono
   // "cosa ha fatto" | "dove" | "assenze", e senza separatore la riga e' un muro di numeri.
   const sep='border-left:2px solid var(--border);';
@@ -632,7 +637,7 @@ function turniRenderStats(){
             ${th('P')}${th('Mattine')}${th('Pomeriggi')}${th('Intermedi')}${th('Notti')}${th('Domeniche')}${th('Art Resort',true)}${th('SoulArt')}${th('Malattia',true)}${th('Ferie')}
           </tr></thead>
           <tbody>
-            ${righe.map(({n,s,notte},i)=>{
+            ${righe.map(({n,s,notte,sedeUnica},i)=>{
               const primoNotte=notte&&(i===0||!righe[i-1].notte);
               return `<tr${primoNotte?' style="border-top:2px solid var(--border);"':''}>
               <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}</td>
@@ -642,8 +647,8 @@ function turniRenderStats(){
               ${notte?cellaN(s.intermedi):td(s.intermedi||'—')}
               ${td(s.notti?`${s.notti}<span style="color:var(--text-dim);font-size:var(--fs-xxs);"> ${s.nottiG}AR·${s.nottiC}SA</span>`:'—',s.notti&&!notte?'font-weight:700;':'')}
               ${td(s.riposiDomenica||'—',s.riposiDomenica?'font-weight:700;':'color:var(--text-dim);')}
-              ${notte?cellaN(s.galleria,sep):td(s.galleria||'—',sep)}
-              ${notte?cellaN(s.soulart):td(s.soulart||'—')}
+              ${sedeUnica?vuota(sep):(notte?cellaN(s.galleria,sep):td(s.galleria||'—',sep))}
+              ${sedeUnica?vuota():(notte?cellaN(s.soulart):td(s.soulart||'—'))}
               ${td(s.malattia||'—',sep+(s.malattia?'color:var(--red);font-weight:700;':'color:var(--text-dim);'))}
               ${td(s.ferie||'—',s.ferie?'color:var(--amber);font-weight:700;':'color:var(--text-dim);')}
             </tr>`;}).join('')}
