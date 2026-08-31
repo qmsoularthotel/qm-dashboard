@@ -11624,7 +11624,15 @@ const PRESTAY_HOTELS={
 // L'indirizzo registrato sull'Extranet Booking della struttura: è l'UNICO da cui il relay
 // @guest.booking.com accetta posta. Averlo "ok su Extranet" non basta — deve essere anche
 // quello da cui Compass spedisce davvero, cioè SMTP_USER sul Worker.
-const PRESTAY_BOOKING_MITTENTE='booking@soularthotel.com';
+// Indirizzo che Booking ha registrato come mittente autorizzato, STRUTTURA PER STRUTTURA:
+// le liste degli indirizzi approvati sull'Extranet sono separate per struttura, e il
+// Boutique spedisce da un dominio tutto suo. Con un indirizzo solo il controllo direbbe il
+// falso su tutte le strutture tranne una.
+const PRESTAY_BOOKING_MITTENTE={
+  _default:'booking@soularthotel.com',
+  bh:'booking@hotelpiazzacarita.com'
+};
+const _psMittAtteso=p=>(PRESTAY_BOOKING_MITTENTE[p]||PRESTAY_BOOKING_MITTENTE._default).toLowerCase();
 // Assunzione usata SOLO finché il mittente reale non è stato verificato (vedi
 // prestayVerificaMittente): fino ad allora si dà per scontato che non sia quello giusto,
 // perché è lo stato in cui il sistema è nato e perché una spunta verde sbagliata è peggio
@@ -11637,16 +11645,21 @@ const PS_MITT_KEY='qm_prestay_mittente';
 // diagnosi di questa postazione, si rifà con un clic.
 let _psMitt=null;
 try{const s=localStorage.getItem(PS_MITT_KEY);if(s)_psMitt=JSON.parse(s)||null;}catch(e){}
-function _psMittenteAttuale(){return _psMitt&&_psMitt.mittente?String(_psMitt.mittente).trim():'';}
+// Mittente reale per una struttura: quello dichiarato dal Worker per la sua casella
+// propria, altrimenti quello principale. Senza struttura si intende il principale.
+function _psMittenteAttuale(p){
+  if(p&&_psMitt&&_psMitt.caselle&&_psMitt.caselle[p])return String(_psMitt.caselle[p]).trim();
+  return _psMitt&&_psMitt.mittente?String(_psMitt.mittente).trim():'';
+}
 // Il mittente reale coincide con quello registrato su Booking? Se non è mai stato
 // verificato si ricade sull'assunzione qui sopra.
-function _psMittenteOkBooking(){
-  const m=_psMittenteAttuale();
-  return m?m.toLowerCase()===PRESTAY_BOOKING_MITTENTE:PRESTAY_MITTENTE_BOOKING_OK;
+function _psMittenteOkBooking(p){
+  const m=_psMittenteAttuale(p);
+  return m?m.toLowerCase()===_psMittAtteso(p):PRESTAY_MITTENTE_BOOKING_OK;
 }
 const _psAliasBooking=e=>/@(guest\.)?booking\.com$/i.test(String(e||'').trim());
 // true quando la mail a quell'indirizzo NON verrebbe recapitata con il mittente attuale
-const _psBookingBloccato=e=>!_psMittenteOkBooking()&&_psAliasBooking(e);
+const _psBookingBloccato=(e,p)=>!_psMittenteOkBooking(p)&&_psAliasBooking(e);
 
 const PRESTAY_FROM_NAME={
   bh:'Boutique Hotel Piazza Carità',
@@ -12487,7 +12500,12 @@ function _psMittRiquadro(){
   if(!_psMitt){
     return h+'<div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Mai verificato su questa postazione. Finché non lo è, gli arrivi con indirizzo Booking restano segnati come non recapitabili e l\'invio in blocco li salta.</div></div>';
   }
-  const m=_psMittenteAttuale(),okB=_psMittenteOkBooking();
+  // Ogni struttura ha la sua riga: da quando il Boutique spedisce da un dominio suo, un
+  // semaforo unico non basta piu' — puo' essere a posto una struttura e non un'altra.
+  const strutture=Object.keys(PRESTAY_FROM_NAME);
+  const stato=strutture.map(k=>({k,nome:PRESTAY_FROM_NAME[k],
+    mitt:_psMittenteAttuale(k),atteso:_psMittAtteso(k),ok:_psMittenteOkBooking(k)}));
+  const m=_psMittenteAttuale(),okB=stato.every(s=>s.ok);
   const col=okB?'var(--green)':'var(--red)',bg=okB?'var(--green-bg)':'var(--red-bg)';
   const quando=new Date(_psMitt.ts||Date.now());
   const hhmm=String(quando.getHours()).padStart(2,'0')+':'+String(quando.getMinutes()).padStart(2,'0');
@@ -12496,14 +12514,21 @@ function _psMittRiquadro(){
     +(okB?'Spediamo dall\'indirizzo registrato su Booking':'Spediamo da un indirizzo diverso da quello registrato su Booking')+'</div>'
     +'<div style="font-size:var(--fs-xxs);color:var(--text);line-height:1.7;">'
     +'mittente reale: <strong>'+esc(m||'(nessuno)')+'</strong>'+(_psMitt.mittenteDa?' <span style="color:var(--text-dim);">(variabile '+esc(_psMitt.mittenteDa)+')</span>':'')+'<br>'
-    +'registrato su Booking: <strong>'+esc(PRESTAY_BOOKING_MITTENTE)+'</strong><br>'
     +'invio: '+esc(_psMitt.via||'?')+(_psMitt.smtpHost?' · '+esc(_psMitt.smtpHost):'')
     +(_psMitt.replyTo?' · risposte a '+esc(_psMitt.replyTo):'')
+    +'</div>'
+    +'<div style="margin-top:8px;border-top:1px solid var(--border-light);padding-top:7px;font-size:var(--fs-xxs);line-height:1.7;">'
+    +stato.map(s=>'<div style="display:flex;gap:6px;align-items:baseline;">'
+        +'<span style="color:'+(s.ok?'var(--green)':'var(--red)')+';font-weight:700;">'+(s.ok?'✓':'✕')+'</span>'
+        +'<span style="min-width:120px;color:var(--text-dim);">'+esc(s.nome)+'</span>'
+        +'<span style="color:var(--text);">'+esc(s.mitt||'(non verificato)')+'</span>'
+        +(s.ok?'':'<span style="color:var(--red);"> — Booking attende '+esc(s.atteso)+'</span>')
+      +'</div>').join('')
     +'</div>';
   if(!okB){
     h+='<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text);line-height:1.6;">'
       +'È questo il motivo dei rimbalzi: sull\'Extranet l\'indirizzo può essere giusto, ma la mail non parte da lì. '
-      +'Su Cloudflare (Workers → anthropic-proxy → Impostazioni) vanno messe <strong>SMTP_USER</strong> e <strong>SMTP_PASS</strong> della casella '+esc(PRESTAY_BOOKING_MITTENTE)+', '
+      +'Su Cloudflare (Workers → anthropic-proxy → Impostazioni) serve la casella giusta per ogni struttura: <strong>SMTP_USER</strong>/<strong>SMTP_PASS</strong> per quella principale, e <strong>SMTP_USER_&lt;COD&gt;</strong>/<strong>SMTP_PASS_&lt;COD&gt;</strong> per chi ne ha una sua (per esempio SMTP_USER_BH per il Boutique), '
       +'e va <strong>cancellata SMTP_FROM</strong> se presente: resta lei a decidere il mittente'+(_psMitt.mittenteDa==='SMTP_FROM'?' — ed è proprio il caso attuale':'')+'. '
       +'Poi si ripubblica il Worker e si preme di nuovo questo pulsante.</div>';
   }
@@ -12530,7 +12555,9 @@ function _psInviaMail(a,ogg,corpo){
   return fetch(_psMailCfg.endpoint,{
     method:'POST',
     headers:{'Content-Type':'application/json','X-Prestay-Key':_psMailCfg.key},
-    body:JSON.stringify({to:a.email,subject:ogg,text:_psMdStrip(corpo),html:_psMdToHtml(corpo),fromName})
+    // La struttura decide da quale casella parte: il Boutique ha la sua (vedi casellaPer nel
+    // Worker). Senza questo campo tutte le mail partirebbero dalla casella principale.
+    body:JSON.stringify({to:a.email,subject:ogg,text:_psMdStrip(corpo),html:_psMdToHtml(corpo),fromName,hotel:a.hotel})
   }).then(res=>res.json().catch(()=>({ok:false,error:'risposta non leggibile'})))
    .then(j=>{
     if(j&&j.ok){a.mailTs=Date.now();a.mailErr=null;return true;}
@@ -12571,8 +12598,8 @@ async function prestayInviaGruppo(hotel){
   // Gli indirizzi Booking vengono ESCLUSI, non spediti: Booking li scarterebbe in silenzio
   // e resterebbero segnati come inviati pur non essendo arrivati a nessuno. Meglio un
   // conteggio che resta incompleto — è la verità — di una spunta verde che mente.
-  const bloccati=tutti.filter(a=>a.email&&!a.mailTs&&_psBookingBloccato(a.email)).length;
-  const daFare=tutti.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email));
+  const bloccati=tutti.filter(a=>a.email&&!a.mailTs&&_psBookingBloccato(a.email,a.hotel)).length;
+  const daFare=tutti.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email,a.hotel));
   const senzaMail=tutti.filter(a=>!a.email).length;
   if(!daFare.length){
     cqAvviso(senzaMail||bloccati
@@ -12668,9 +12695,9 @@ function _psAntRendi(){
   if(/\[SCRIVI QUI|\[WRITE THE/i.test(corpo))avvisi.push('Il testo contiene ancora il segnaposto da riscrivere: personalizzalo in "Modifica testi", oppure correggilo qui con la matita solo per questo invio.');
   if(!(a.nome||'').trim())avvisi.push('Nome ospite vuoto: il messaggio dirà genericamente "Gentile Ospite".');
   if(/\{[a-z]+\}/i.test(corpo)||/\{[a-z]+\}/i.test(ogg))avvisi.push('C\'è un segnaposto tra graffe non sostituito: controlla che sia scritto esattamente {nome}, {struttura} o {data}.');
-  if(canale!=='wa'&&_psBookingBloccato(a.email)){
-    const mitt=_psMittenteAttuale();
-    avvisi.push('<strong>Questo è un indirizzo Booking</strong>: viene recapitato solo se la mail parte da '+PRESTAY_BOOKING_MITTENTE+'. '
+  if(canale!=='wa'&&_psBookingBloccato(a.email,a.hotel)){
+    const mitt=_psMittenteAttuale(a.hotel);
+    avvisi.push('<strong>Questo è un indirizzo Booking</strong>: viene recapitato solo se la mail parte da '+_psMittAtteso(a.hotel)+'. '
       +(mitt?'Compass spedisce da <strong>'+mitt+'</strong>, quindi Booking la rimanda indietro.'
             :'Il mittente da cui Compass spedisce non è stato verificato (Impostazioni → Verifica mittente): se non è quello, Booking la rimanda indietro o la scarta senza avvisare.')
       +' Risulterebbe inviata senza esserlo.');
@@ -12826,8 +12853,8 @@ function prestayRender(){
       if(!gruppo.length)return;
       const gContattabili=gruppo.filter(a=>!_psItalcamel(a));
       const nItal=gruppo.length-gContattabili.length;
-      const daInviare=gContattabili.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email)).length;
-      const bloccatiGruppo=gContattabili.filter(a=>_psBookingBloccato(a.email)&&!a.mailTs).length;
+      const daInviare=gContattabili.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email,a.hotel)).length;
+      const bloccatiGruppo=gContattabili.filter(a=>_psBookingBloccato(a.email,a.hotel)&&!a.mailTs).length;
       const contattati=gContattabili.filter(a=>a.mailTs||a.waTs).length;
       const tuttiFatti=gContattabili.length>0&&contattati===gContattabili.length;
       h+=`<div style="margin-bottom:16px;border:1px solid ${tuttiFatti?'var(--green)':'var(--border-light)'};border-radius:10px;overflow:hidden;">
@@ -12871,8 +12898,8 @@ function prestayRender(){
             <button onclick="prestayDelScheda('${a.id}')" title="Elimina questo arrivo" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:13px;line-height:1;padding:0 2px;">✕</button>
           </div>
           <input value="${esc(a.nome)}" placeholder="Cognome Nome" onchange="prestaySetScheda('${a.id}','nome',this.value)" style="${inpS}font-weight:700;font-size:var(--fs-sm);margin-bottom:5px;">
-          <input type="email" value="${esc(a.email)}" placeholder="email@…" oninput="_psAggiornaBordo('${a.id}',this.value)" onchange="prestaySetScheda('${a.id}','email',this.value)" title="${esc(a.email)}" style="${inpS}margin-bottom:5px;${_psBookingBloccato(a.email)?'border-color:var(--amber);':''}">
-          ${_psBookingBloccato(a.email)?`<div style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.35;margin:-2px 0 5px;" title="${esc(_psMittenteAttuale()?'Compass spedisce da '+_psMittenteAttuale()+', Booking accetta solo '+PRESTAY_BOOKING_MITTENTE:'Mittente mai verificato: Impostazioni → Verifica mittente')}">indirizzo Booking · non recapitabile con il mittente attuale</div>`:''}
+          <input type="email" value="${esc(a.email)}" placeholder="email@…" oninput="_psAggiornaBordo('${a.id}',this.value)" onchange="prestaySetScheda('${a.id}','email',this.value)" title="${esc(a.email)}" style="${inpS}margin-bottom:5px;${_psBookingBloccato(a.email,a.hotel)?'border-color:var(--amber);':''}">
+          ${_psBookingBloccato(a.email,a.hotel)?`<div style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.35;margin:-2px 0 5px;" title="${esc(_psMittenteAttuale(a.hotel)?'Compass spedisce da '+_psMittenteAttuale(a.hotel)+', Booking accetta solo '+_psMittAtteso(a.hotel):'Mittente mai verificato: Impostazioni → Verifica mittente')}">indirizzo Booking · non recapitabile con il mittente attuale</div>`:''}
           <input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}margin-bottom:9px;">
           <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
             <button onclick="prestayAnteprima('${a.id}','both')" title="Vedi e correggi il messaggio prima di mandarlo" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:7px;cursor:pointer;">${PS_ICON_EYE}</button>

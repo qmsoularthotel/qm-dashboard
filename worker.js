@@ -15,6 +15,8 @@
 //   QM_STORAGE (binding KV) · ANTHROPIC_API_KEY
 //   PRESTAY_KEY            chiave condivisa con Compass (header X-Prestay-Key)
 //   SMTP_HOST/PORT/USER/PASS   invio; il mittente è SMTP_FROM oppure SMTP_USER
+//   SMTP_USER_<COD>/SMTP_PASS_<COD>  casella propria di una struttura (es. _BH), che
+//                          scavalca quella principale solo per i suoi messaggi
 //   PRESTAY_REPLYTO        indirizzo per le risposte degli ospiti
 //   IMAP_HOST/PORT/USER/PASS   lettura risposte (casella del Quality Manager)
 //   RESEND_KEY, PRESTAY_FROM   riserva usata solo se le variabili SMTP mancano
@@ -28,7 +30,46 @@ const ORIGINI = [
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /prestay/stato.
-const WORKER_VERSIONE = '2026-08-21.2';
+const WORKER_VERSIONE = '2026-08-31';
+
+// ── UNA CASELLA PER STRUTTURA ──
+// Booking recapita all'ospite solo se la mail parte dall'indirizzo registrato sull'Extranet
+// di QUELLA struttura, e le liste sono separate per struttura. Il Boutique spedisce da
+// booking@hotelpiazzacarita.com, che sta su un dominio diverso: non e' un alias, e' un'altra
+// casella con un'altra password.
+//
+// Per aggiungere una struttura bastano due variabili su Cloudflare, senza toccare il codice:
+//   SMTP_USER_<COD>   indirizzo (es. SMTP_USER_BH)
+//   SMTP_PASS_<COD>   password, da salvare come segreto
+// e, solo se il server di posta e' diverso da quello principale:
+//   SMTP_HOST_<COD>, SMTP_PORT_<COD>, PRESTAY_REPLYTO_<COD>
+// Chi non ha una casella sua continua a usare quella principale: le altre strutture non
+// cambiano comportamento. Il codice struttura arriva da Compass nel campo "hotel".
+function casellaPer(env, hotel) {
+  const c = String(hotel || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const suo = c && env['SMTP_USER_' + c] && env['SMTP_PASS_' + c];
+  return {
+    host: (suo && env['SMTP_HOST_' + c]) || env.SMTP_HOST,
+    port: Number((suo && env['SMTP_PORT_' + c]) || env.SMTP_PORT || 465),
+    user: suo ? env['SMTP_USER_' + c] : env.SMTP_USER,
+    pass: suo ? env['SMTP_PASS_' + c] : env.SMTP_PASS,
+    // SMTP_FROM vale solo per la casella principale: una struttura con casella propria deve
+    // spedire dalla sua, altrimenti si torna al problema che si voleva risolvere.
+    from: suo ? env['SMTP_USER_' + c] : (env.SMTP_FROM || env.SMTP_USER),
+    replyTo: (suo && env['PRESTAY_REPLYTO_' + c]) || env.PRESTAY_REPLYTO || '',
+    propria: !!suo,
+    codice: c
+  };
+}
+// Le strutture che hanno una casella propria, per /prestay/stato. Nessuna password.
+function caselleDichiarate(env) {
+  const out = {};
+  for (const k in env) {
+    const m = /^SMTP_USER_([A-Z0-9]+)$/.exec(k);
+    if (m && env['SMTP_PASS_' + m[1]]) out[m[1].toLowerCase()] = soloIndirizzo(env[k]);
+  }
+  return out;
+}
 
 const PRESTAY_MAX_GIORNO = 60;      // tetto di sicurezza sugli invii, non un limite d'uso
 const RISPOSTE_MAX_INDIRIZZI = 30;  // quante caselle si possono interrogare in una volta
@@ -93,7 +134,8 @@ export default {
       try { n = parseInt(await env.QM_STORAGE.get(contatore) || '0', 10) || 0; } catch (e) {}
       if (n >= PRESTAY_MAX_GIORNO) return json({ ok: false, error: 'Limite giornaliero raggiunto' }, 429);
 
-      const viaSmtp = !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
+      const cas = casellaPer(env, dati.hotel);
+      const viaSmtp = !!(cas.host && cas.user && cas.pass);
       try {
         if (viaSmtp) await inviaConSmtp(env, dati);
         else await inviaConResend(env, dati);
@@ -133,6 +175,11 @@ export default {
         // è rimasta impostata, vince lei — è la svista che rende inutile cambiare SMTP_USER.
         mittente: soloIndirizzo(viaSmtp ? (env.SMTP_FROM || env.SMTP_USER || '') : (env.PRESTAY_FROM || '')),
         mittenteDa: viaSmtp ? (env.SMTP_FROM ? 'SMTP_FROM' : 'SMTP_USER') : 'PRESTAY_FROM',
+        // Strutture con casella propria: { bh: 'booking@hotelpiazzacarita.com', ... }.
+        // Compass ne ha bisogno per sapere, struttura per struttura, da quale indirizzo
+        // partira' davvero la mail: con un mittente solo il controllo sugli indirizzi
+        // Booking direbbe il falso su tutte le strutture tranne una.
+        caselle: caselleDichiarate(env),
         smtpHost: viaSmtp ? String(env.SMTP_HOST || '') : '',
         replyTo: soloIndirizzo(env.PRESTAY_REPLYTO || ''),
         imap: soloIndirizzo(env.IMAP_USER || '')
@@ -237,9 +284,9 @@ function costruisciMessaggio(dati, fromHeader, replyTo) {
 }
 
 async function inviaConSmtp(env, dati) {
-  const host = env.SMTP_HOST;
-  const port = Number(env.SMTP_PORT || 465);
-  const socket = connect({ hostname: host, port }, { secureTransport: 'on', allowHalfOpen: false });
+  // La casella dipende dalla struttura del messaggio: vedi casellaPer().
+  const cas = casellaPer(env, dati.hotel);
+  const socket = connect({ hostname: cas.host, port: cas.port }, { secureTransport: 'on', allowHalfOpen: false });
 
   const writer = socket.writable.getWriter();
   const reader = socket.readable.getReader();
@@ -282,14 +329,14 @@ async function inviaConSmtp(env, dati) {
 
     await scrivi('AUTH LOGIN\r\n');
     await leggi([334]);
-    await scrivi(b64(env.SMTP_USER) + '\r\n');
+    await scrivi(b64(cas.user) + '\r\n');
     await leggi([334]);
-    await scrivi(b64(env.SMTP_PASS) + '\r\n');
+    await scrivi(b64(cas.pass) + '\r\n');
     await leggi([235]);
 
     // Il mittente di busta deve essere la casella autenticata: molti server
     // rifiutano un MAIL FROM diverso dall'utente con cui ci si è autenticati.
-    const mittenteBusta = soloIndirizzo(env.SMTP_FROM || env.SMTP_USER);
+    const mittenteBusta = soloIndirizzo(cas.from);
     await scrivi('MAIL FROM:<' + mittenteBusta + '>\r\n');
     await leggi([250]);
     await scrivi('RCPT TO:<' + dati.to + '>\r\n');
@@ -301,7 +348,7 @@ async function inviaConSmtp(env, dati) {
     const fromHeader = nome
       ? encHeader(nome) + ' <' + mittenteBusta + '>'
       : mittenteBusta;
-    const messaggio = costruisciMessaggio(dati, fromHeader, env.PRESTAY_REPLYTO || mittenteBusta);
+    const messaggio = costruisciMessaggio(dati, fromHeader, cas.replyTo || mittenteBusta);
 
     await scrivi(messaggio + '\r\n.\r\n');
     await leggi([250]);

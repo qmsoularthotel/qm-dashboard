@@ -584,6 +584,23 @@ _psMitt = { mittente: 'BOOKING@SoulArtHotel.com' };  // quello registrato, con a
 ok('mittente giusto: riconosciuto',          _psMittenteOkBooking(), true);
 ok('mittente giusto: Booking non bloccato',  _psBookingBloccato('abc@guest.booking.com'), false);
 ok('mittente giusto: indirizzo normale libero', _psBookingBloccato('mario@gmail.com'),    false);
+
+// Una casella per struttura. Il Boutique spedisce da booking@hotelpiazzacarita.com, che sta
+// su un dominio suo: le liste degli indirizzi approvati su Booking sono separate per
+// struttura, quindi un mittente solo direbbe il falso su tutte tranne una.
+ok('il Boutique attende il suo indirizzo', _psMittAtteso('bh'), 'booking@hotelpiazzacarita.com');
+ok('le altre strutture quello principale', _psMittAtteso('sa'), 'booking@soularthotel.com');
+ok('una struttura sconosciuta usa il principale', _psMittAtteso('xx'), 'booking@soularthotel.com');
+_psMitt = { mittente: 'booking@soularthotel.com', caselle: { bh: 'booking@hotelpiazzacarita.com' } };
+ok('SoulArt a posto',                _psMittenteOkBooking('sa'), true);
+ok('Boutique a posto con la sua',    _psMittenteOkBooking('bh'), true);
+ok('Boutique non bloccato',          _psBookingBloccato('abc@guest.booking.com', 'bh'), false);
+ok('SoulArt non bloccato',           _psBookingBloccato('abc@guest.booking.com', 'sa'), false);
+// Se la casella del Boutique non e' configurata sul Worker, le sue mail partirebbero da
+// quella principale: Booking le rifiuterebbe, e va bloccato solo il Boutique.
+_psMitt = { mittente: 'booking@soularthotel.com', caselle: {} };
+ok('senza casella propria il Boutique e bloccato', _psBookingBloccato('abc@guest.booking.com', 'bh'), true);
+ok('ma le altre strutture restano libere',         _psBookingBloccato('abc@guest.booking.com', 'sa'), false);
 _psMitt = _mittVero;
 
 // L'endpoint della verifica si ricava da quello dell'invio: una sola impostazione.
