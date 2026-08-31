@@ -2645,9 +2645,9 @@ function pianoRenderWeek(activeIdx){
 // pianoRenderWeek decide la disposizione (cifre affiancate su desktop, impilate su
 // smartphone) leggendo window.innerWidth al momento del disegno. Ridimensionando la
 // finestra restava quella scelta prima, fino al disegno successivo — e quello lo fa solo
-// il polling ogni 30 secondi: abbastanza per vedersi il layout da telefono su desktop e
-// credere che sia rotto. Si ridisegna solo quando la soglia viene davvero attraversata,
-// non a ogni pixel di trascinamento del bordo.
+// il giro di polling, un minuto dopo: abbastanza per vedersi il layout da telefono su
+// desktop e credere che sia rotto. Si ridisegna solo quando la soglia viene davvero
+// attraversata, non a ogni pixel di trascinamento del bordo.
 let _pianoEraMob=window.innerWidth<=768;
 let _pianoResizeT=null;
 window.addEventListener('resize',()=>{
@@ -4137,11 +4137,12 @@ document.querySelector('.content').addEventListener('scroll',function(){
   updateDateDisplay();
   function tick(){const n=new Date();document.getElementById('liveTime').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
   tick();setInterval(tick,10000);
-  // Auto-poll KV ogni 2 minuti per aggiornamenti da Drive script
-  let _lastPollTs=Date.now();
-  setInterval(async()=>{
+  // Giro di sincronizzazione dal cloud. Passa da `_qmPolling`, quindi si ferma quando la
+  // scheda è nascosta e riparte al ritorno in primo piano: sette letture KV per giro su
+  // una postazione che nessuno sta guardando erano il grosso del consumo giornaliero.
+  _qmPolling(async()=>{
     // Segna se questo giro ha portato dati nuovi: la vista attiva si ridisegna solo
-    // allora. Ridisegnare a vuoto ogni 30 secondi darebbe fastidio a chi ci sta lavorando
+    // allora. Ridisegnare a vuoto a ogni giro darebbe fastidio a chi ci sta lavorando
     // (accordion che si richiudono, giorno del turno che torna a oggi).
     let _qmCambiato=false;
     try{
@@ -4225,7 +4226,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
       // scrivendo o ha un modale aperto. Vale per qualunque vista, Overview compresa.
       if(_qmCambiato&&!_qmOccupato())_qmRidisegnaVista(_qmVistaAttiva());
     }catch(e){}
-  },30000);
+  },60000);
   const alertTimeEl=document.getElementById('alertTime');if(alertTimeEl)alertTimeEl.textContent='Aggiornato '+String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');
   buildBarChart();
   // Sync dal cloud poi ripristina TUTTI i dati
@@ -11874,6 +11875,7 @@ function _psSegnalaCloud(){
 // rigenerare l'HTML sotto le dita fa perdere il fuoco e il testo in corso (stessa lezione
 // della casella "Ricevuto" in Biancheria).
 setInterval(async()=>{
+  if(document.visibilityState!=='visible')return;   // scheda nascosta: nessuno la legge
   const v=document.getElementById('view-prestay');
   if(!v||!v.classList.contains('active'))return;
   const f=document.activeElement;
@@ -14974,6 +14976,43 @@ async function _qmLeggiArchivio(key,vuoto){
   if(locale===null)return Object.assign({},vuoto,remoto);
   const rim=[...new Set([].concat(remoto._rimossi||[],locale._rimossi||[]))];
   return Object.assign({},vuoto,_qmFondiElenchi(remoto,locale,new Set(rim)));
+}
+
+// ── Il polling si ferma a scheda nascosta — `_qmPolling` ────────────────────
+// Una scheda in secondo piano, o un PC di reception acceso di notte, continuava a
+// interrogare il cloud ogni 30 secondi come se qualcuno la stesse guardando. Sono
+// letture che nessuno vede mai: il giro di Compass ne fa SETTE (arrivi, turno, pulizie,
+// colazioni, HKP, Piano, registration card), cioè 20.160 al giorno per ogni scheda
+// lasciata aperta — da sole bastano a consumare il tetto giornaliero KV del piano
+// gratuito. Il 31/08/2026 Cloudflare ha segnalato il 50% raggiunto a metà serata, con
+// tre postazioni aperte e nessuno che stava lavorando.
+//
+// Questo NON indebolisce la regola per cui una copia ferma da ore è il punto di partenza
+// di ogni sovrascrittura (incidente pre-stay del 22/08/2026): una scheda nascosta non la
+// sta usando nessuno, e il giro riparte SUBITO al ritorno in primo piano — cioè prima che
+// qualcuno possa scriverci sopra. È la stessa tecnica con cui `qmCheckVersione` aggiorna
+// il codice della pagina.
+//
+// `visibilitychange` scatta quando la scheda passa in secondo piano o la finestra viene
+// ridotta a icona, NON quando la finestra perde semplicemente il fuoco restando a schermo:
+// una postazione con Compass affiancato a un altro programma continua quindi ad
+// aggiornarsi, ed è giusto così — lì il dato lo si sta guardando davvero.
+function _qmPolling(fn,ms){
+  let inCorso=false,ultimo=0;
+  const giro=async()=>{
+    if(document.visibilityState!=='visible')return;  // nessuno sta guardando
+    if(inCorso)return;                               // il giro precedente non è finito
+    // Tornando in primo piano subito dopo un giro non se ne fa un altro: senza questa
+    // guardia, alternare due finestre a raffica moltiplicherebbe le letture invece di
+    // ridurle, che è l'opposto di quello che serve.
+    if(Date.now()-ultimo<ms/3)return;
+    inCorso=true;
+    try{await fn();}catch(e){}
+    inCorso=false;ultimo=Date.now();
+  };
+  setInterval(giro,ms);
+  try{document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')giro();});}catch(e){}
+  return giro;
 }
 
 // Non si tocca niente mentre l'utente sta lavorando: un ridisegno sotto le dita fa perdere

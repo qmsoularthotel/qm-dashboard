@@ -220,7 +220,12 @@ async function qmCheckAppStatus(){
 }
 qmCheckAppStatus();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){qmCheckAppStatus();qmCheckBanner();}});
-setInterval(qmCheckAppStatus,30000);
+// Il controllo gira solo quando l'app è davvero a schermo: un'app lasciata aperta in
+// secondo piano sul telefono leggeva il cloud ogni 30 secondi per settimane, e sono
+// letture che nessuno vede (avviso Cloudflare sul tetto KV, 31/08/2026). Il ritorno in
+// primo piano lo ricontrolla comunque subito, con il gestore qui sopra: spegnere l'app
+// dal Pannello App resta immediato per chi la sta usando.
+setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60000);
 
 // ── AGGIORNAMENTO AUTOMATICO DELL'APP ──
 // Un'app aperta e mai chiusa continua a usare il codice con cui è stata caricata: sullo
@@ -242,7 +247,7 @@ setInterval(qmCheckAppStatus,30000);
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-08-23.1';
+const QM_APP_BUILD='2026-08-31.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -1651,7 +1656,10 @@ async function ddtBkfSyncFromCloud(){
   }catch(e){}
 }
 ddtBkfSyncFromCloud();
-setInterval(ddtBkfSyncFromCloud,60000);
+// Anche questa si ferma a scheda nascosta: l'app resta aperta per giorni nello scorrimento
+// delle app del telefono, e riletture che nessuno guarda consumano solo il tetto KV.
+setInterval(()=>{if(document.visibilityState==='visible')ddtBkfSyncFromCloud();},60000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')ddtBkfSyncFromCloud();});
 
 // Contatore accessi per dispositivo
 (async function trackAccess(){

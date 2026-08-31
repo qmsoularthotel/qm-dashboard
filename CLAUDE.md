@@ -109,7 +109,7 @@ Claude API chiamata via proxy Cloudflare:
 2. Costruisce KPI bar chart
 3. Pull async da Cloudflare KV (cloud sync)
 4. Ripristina stato localStorage: reclami, audit, turni settimanali, arrivi, recensioni, dati HKP, pulizie, pasti, DVR, preferenze turni
-5. Avvia timer: clock (10s), meteo (10min), polling overview (30s) — il polling chiama anche `turniPrefLoad()`
+5. Avvia timer: clock (10s), meteo (10min), polling overview (60s, **fermo a scheda nascosta**) — il polling chiama anche `turniPrefLoad()`
 6. IIFE mostra `topbar-kpis` (display:flex) all'avvio
 
 ### Review Scoring Formula (Booking)
@@ -387,7 +387,7 @@ L'algoritmo di Booking.com non è pubblico. Questo è un modello **calibrato** s
 | 1127 | OVERVIEW — TOGGLE PREVIEW PANELS | Toggle pannelli occupancy/pulizie/breakfast |
 | 1219 | OVERVIEW — GRAFICI & METEO | `buildBarChart()`, `fetchMeteo()`, `toggleWeatherForecast()` |
 | 1299 | SIDEBAR — OROLOGIO & DATA | `updateSbClock()`, `toggleDatePopup()`, `saveDate()` |
-| 1351 | OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 30s | `refreshOverviewForDate()`, polling loop, `renderArriviData()` |
+| 1351 | OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 60s | `refreshOverviewForDate()`, polling loop, `renderArriviData()` |
 | 1669 | RECENSIONI — SCORE TREND MODAL | Modal trend punteggi con media pesata |
 | 1756 | OVERVIEW — RECENSIONI NO-REPLY | Tracking recensioni senza risposta in overview |
 | 1828 | BKF SHEET — ANALISI AI | `bkfSheetAnalyze()`, `bkfSheetARAnalyze()` via Claude API |
@@ -589,7 +589,7 @@ cloud solo se `_ts` è **maggiore** di `qm_ts_turnoTs` in localStorage).
 
 ### Niente più auto-sync da Google Sheets
 
-Il vecchio sistema di aggiornamento automatico dal foglio Google è stato rimosso. Rimane solo il **KV sync tra dispositivi**: quando si carica il turno su un PC, appare su tutti gli altri PC dell'hotel entro 30 secondi.
+Il vecchio sistema di aggiornamento automatico dal foglio Google è stato rimosso. Rimane solo il **KV sync tra dispositivi**: quando si carica il turno su un PC, appare su tutti gli altri PC dell'hotel entro un minuto (subito, su una postazione che torna in primo piano).
 
 ### Upload box in index.html
 
@@ -1067,7 +1067,7 @@ Nato da un caso reale: l'utente indicava una data (evidenziata come "oggi" nel P
 
 ### "Ci sono altre possibilità?" — mostra alternative già calcolate, non ne cerca di nuove
 
-`hkSuggestMoves()` calcola sempre **tutte** le mosse valide e migliorative, poi le taglia a `maxN` (default 3) — `out.totMosse` tiene il conteggio prima del taglio, `out.mosse` è la lista tagliata. Il bottone "Ci sono altre possibilità?" (visibile solo se `totMosse>mosse.length`, altrimenti non c'è nulla in più da mostrare) chiama `hkSuggMore()`, che alza `_hkSuggMoreN` di 5 e rirenderizza — non ricalcola l'algoritmo da capo con criteri diversi, semplicemente alza il tetto e mostra alternative che esistevano già. `_hkSuggMoreN` si azzera in `pianoNavRender()` solo quando il giorno selezionato **cambia davvero** (non ad ogni refresh del polling 30s sullo stesso giorno, altrimenti l'espansione sparirebbe da sola pochi secondi dopo averla aperta).
+`hkSuggestMoves()` calcola sempre **tutte** le mosse valide e migliorative, poi le taglia a `maxN` (default 3) — `out.totMosse` tiene il conteggio prima del taglio, `out.mosse` è la lista tagliata. Il bottone "Ci sono altre possibilità?" (visibile solo se `totMosse>mosse.length`, altrimenti non c'è nulla in più da mostrare) chiama `hkSuggMore()`, che alza `_hkSuggMoreN` di 5 e rirenderizza — non ricalcola l'algoritmo da capo con criteri diversi, semplicemente alza il tetto e mostra alternative che esistevano già. `_hkSuggMoreN` si azzera in `pianoNavRender()` solo quando il giorno selezionato **cambia davvero** (non ad ogni refresh del polling sullo stesso giorno, altrimenti l'espansione sparirebbe da sola pochi secondi dopo averla aperta).
 
 ---
 
@@ -1209,7 +1209,7 @@ Cliccando il chip occupazione si apre `#occ-panel`. Barre orizzontali per strutt
 |-----------|-------|
 | 10 sec | `updateSbClock()` — **inerte**, vedi Funzioni Chiave: gli elementi che aggiornava non esistono più |
 | 10 min | `fetchMeteo()` — aggiorna previsioni meteo |
-| 30 sec | Polling overview + cloud sync + `turniPrefLoad()` + sync weekData da KV |
+| 60 sec | Polling overview + cloud sync + `turniPrefLoad()` + sync weekData da KV — **solo a scheda visibile**, vedi [Consumo KV](#consumo-kv--il-polling-si-ferma-a-scheda-nascosta) |
 
 ---
 
@@ -1344,7 +1344,7 @@ Ora si rilegge e si **unisce per `id`** (`_cassaUnisci`, stessa funzione duplica
 
 **Le eliminazioni hanno bisogno di una traccia.** Con l'unione, un movimento eliminato tornerebbe dentro a ogni salvataggio. L'id finisce quindi in **`qm_cassa_rimossi`** (`{fondo:[…],incasso:[…]}`), chiave **separata** per non cambiare la forma degli array che `reception.html` e Compass si scambiano da sempre. Va segnato **prima** di salvare l'elenco, altrimenti l'unione dentro il salvataggio rimette dentro ciò che si è appena tolto. Gli id rimossi si uniscono a loro volta fra postazioni: sono stringhe, l'unione non può che crescere.
 
-**Limite noto**: `cancellaMovimento` è ora `async`; i suoi `onclick` ignorano la promessa, come già facevano. E una postazione ferma da meno di 30 secondi può ancora far riapparire per un giro un movimento eliminato altrove — l'eliminazione è rara e voluta, mentre perdere un movimento registrato è il danno grave: la priorità è quella.
+**Limite noto**: `cancellaMovimento` è ora `async`; i suoi `onclick` ignorano la promessa, come già facevano. E una postazione ferma da meno di un minuto può ancora far riapparire per un giro un movimento eliminato altrove — l'eliminazione è rara e voluta, mentre perdere un movimento registrato è il danno grave: la priorità è quella.
 
 ### Modifica con storico, non sovrascrittura silenziosa
 
@@ -1928,7 +1928,7 @@ Il banner `#piano-banner` (stato caricamento Piano, sopra "Camere visitate") è 
 - **Pillole cliccabili — segna pronta al volo da Compass** (`ovMarkRoomPronta(room)`): scrive sulla **stessa** chiave KV (`qm_cm_YYYY-MM-DD`) che legge/scrive l'app Culligan sul campo — quella resta sempre la fonte primaria di verità, questo è solo un override rapido per il QM quando serve correggere senza aprire il telefono. Se la camera non è mai stata toccata dall'app Culligan oggi, crea un oggetto stato compatibile con `_defaultRoom()` di `controllo-mattino.html` (stessi campi: `visited`/`libera`/`dnd`/`bottiglia`/`checks`/`note`/`consegnata`/`pronta`, `checks` con le stesse chiavi di `CM_LABELS`) invece di scriverne uno parziale che confonderebbe l'app quando lo rilegge; se esiste già, tocca **solo** `pronta`/`ts`, lasciando invariati tutti gli altri campi scritti dall'app Culligan (visited, checks, note, consegnata...).
 - **Card "day-tile" invece di pillole di testo** — molto più visibili per la reception. Stessa impaginazione delle card giorno di `pianoNavRender()` (nome in alto, due cerchi icona separati da un filo verticale, bordo colorato in cima): cerchio sinistro = camera/arrivo (fisso, navy, icona porta); cerchio destro = stato pronta/non pronta/da verificare (verde/ambra/grigio, colora anche il bordo in cima alla card). Stesso click-to-mark-pronta di prima (`ovMarkRoomPronta`).
 - **Posizione**: `#ov-room-readiness` è ora subito dopo `#ov-booking-box` (riepilogo arrivi Booking.com), **prima** del grafico occupazione settimanale — non più in fondo dopo il grafico. Deve saltare all'occhio scorrendo la pagina, non essere l'ultima cosa in basso.
-- Chiamata da `pianoNavRender()` (quindi ad ogni cambio giorno/ricarica Piano) e già dentro il polling 30s esistente (che richiama `pianoNavRender(pianoNavIdx)`) — si aggiorna da sola mentre il giro è in corso, senza bisogno di ricaricare la pagina.
+- Chiamata da `pianoNavRender()` (quindi ad ogni cambio giorno/ricarica Piano) e già dentro il polling esistente (che richiama `pianoNavRender(pianoNavIdx)`) — si aggiorna da sola mentre il giro è in corso, senza bisogno di ricaricare la pagina.
 
 ### Bottiglia animata (Overview → box Culligan)
 
@@ -2073,7 +2073,7 @@ let _appStatus = {};  // qm_app_status: { hk:true, bkf:false, ... } — assente/
 
 **Lato app standalone**: ciascuno dei 5 file (`housekeeper.html`, `breakfast.html`, `controllo-mattino.html`, `inventory.html`, `dvr.html`) ha, subito dopo la dichiarazione di `PROXY`, una funzione `qmCheckAppStatus()` che legge `qm_app_status` (`cache:'no-store'`) e, se il proprio flag è `false`, mostra un overlay fullscreen `#qm-maintenance-screen` (logo Compass + "Applicazione in aggiornamento") al posto della UI normale.
 
-**Ricontrollo mentre l'app resta aperta**: `qmCheckAppStatus()` gira al caricamento, su `visibilitychange` (quando l'app torna in primo piano) e ogni 30s via `setInterval` — necessario perché un'app rimasta aperta in background su uno smartphone (icona home screen mai chiusa) non rileggerebbe mai lo stato senza questo. Se il fetch fallisce (rete assente), l'app **resta utilizzabile** (fail-open) — non blocca mai per un problema di connessione.
+**Ricontrollo mentre l'app resta aperta**: `qmCheckAppStatus()` gira al caricamento, su `visibilitychange` (quando l'app torna in primo piano) e ogni 60s via `setInterval`, **solo mentre l'app è a schermo** — necessario perché un'app rimasta aperta in background su uno smartphone (icona home screen mai chiusa) non rileggerebbe mai lo stato senza questo. Se il fetch fallisce (rete assente), l'app **resta utilizzabile** (fail-open) — non blocca mai per un problema di connessione.
 
 **Non implementato**: contatore accessi per dispositivo (rimosso su richiesta esplicita — "non si è rivelato utile"). Le funzioni `loadHkAccessStats`, `loadBkfAccessStats`, `loadDvrAccessStats` e il toggle "escludi questo dispositivo" sono stati eliminati insieme alle relative sezioni UI. Le app standalone continuano a scrivere silenziosamente `qm_hk_access` / `qm_bkf_access` / `qm_dvr_access` (codice non toccato), ma la dashboard non li legge/mostra più.
 
@@ -2088,7 +2088,7 @@ let _bkfBanner = { enabled: false, message: '' };
 
 - Interruttore acceso/spento **indipendente** da quello dell'app (`miniappToggleBkfBanner()` vs `miniappToggleApp('bkf')`).
 - Campo testo libero + pulsante "Salva avviso" (`miniappSaveBkfBanner(btn)` — mostra "✓ Salvato" per 1.5s sul bottone stesso, poi torna al testo originale: è solo conferma visiva, non un errore se sembra "tornare indietro").
-- In `breakfast.html`: `qmCheckBanner()` viene chiamata su `visibilitychange`→visible e dentro `switchTab()` quando `tab==='report'`; si nasconde subito se si esce da quella tab. Non è nel polling a 30s (quello è solo per il check on/off dell'app).
+- In `breakfast.html`: `qmCheckBanner()` viene chiamata su `visibilitychange`→visible e dentro `switchTab()` quando `tab==='report'`; si nasconde subito se si esce da quella tab. Non è nel polling periodico (quello è solo per il check on/off dell'app).
 - Toast: icona SVG bell (non emoji — sostituita due volte su richiesta, prima 📢 poi 🔔, ora SVG outline oro senza sfondo), testo centrato, posizionato `bottom:72px` (sopra la bottom-nav fissa, non sopra di essa — la prima versione a `bottom:16px` copriva i pulsanti Servizio/Acquisti/Analisi).
 
 ### Didascalie toggle
@@ -2308,7 +2308,7 @@ Prima Compass restava fermo a quello che aveva letto **all'avvio**: chi caricava
 | Livello | Cosa fa | Dove |
 |---|---|---|
 | **Codice** | Una `HEAD` sulla pagina confronta l'**ETag**: se il file è cambiato, la pagina si ricarica da sola. Nessun numero di versione da mantenere a mano | `qmCheckVersione` in `app.js` e in `reception.html` |
-| **Dati** | Il polling a 30s ora guarda anche **Piano Settimanale** e **registration card**, che nessuno rileggeva | `_qmSyncGiro` |
+| **Dati** | Il polling ora guarda anche **Piano Settimanale** e **registration card**, che nessuno rileggeva | `_qmSyncGiro` |
 | **Viste** | La vista attiva si ridisegna quando è arrivato un dato nuovo | `_qmRidisegnaVista` |
 
 `index.html` e `reception.html` erano le **uniche due pagine senza aggiornamento automatico del codice** — proprio quelle che restano aperte tutto il giorno. Le 5 app standalone ce l'avevano dal 22/08.
@@ -2333,17 +2333,67 @@ Qui non è mai successo perché li tocca praticamente solo il QM da una postazio
 
 **`dvrSave`, `_biaSave` e `_resiSave` sono ora `async`** e **riassegnano** la loro variabile (`DVR_DATA`, `_bia`, `_resi`) con l'archivio fuso. Chi tiene un riferimento a un elenco *attraverso* l'attesa (`const items=DVR_DATA[soc].dipendenti`) modificherebbe l'oggetto vecchio: verificato che nessun chiamante lo faccia, ma è la trappola da ricordare aggiungendone di nuovi.
 
+### Consumo KV — il polling si ferma a scheda nascosta
+
+Il 31/08/2026 Cloudflare ha avvisato che l'account aveva consumato il **50% del tetto
+giornaliero KV del piano gratuito** (100.000 letture al giorno) a metà serata, senza che
+nessuno stesse lavorando. Il conto tornava fin troppo bene:
+
+| Pagina | Chiavi lette per giro | Ogni | Letture/giorno a pagina aperta |
+|---|---|---|---|
+| Compass | `arriviData`, `weekData`, `pulData`, `bkfData`, `hkp_n_sa`, `piano`, `rcGuests` = **7** | 30s | **20.160** |
+| `reception.html` (`ricaricaRegistri`) | 3 | 30s | 8.640 |
+| Le 5 app standalone (`qmCheckAppStatus`) | 1 ciascuna | 30s | 2.880 ciascuna |
+| `breakfast.html` (`ddtBkfSyncFromCloud`) | 2 | 60s | 2.880 |
+
+**Tre Compass aperti sui PC di reception facevano 60.000 letture al giorno da soli**, quasi
+tutte di notte o a schermo spento, e nessuna di quelle letture veniva mai guardata da
+qualcuno. Il tetto non si superava per un uso intenso: si superava per pagine dimenticate
+aperte.
+
+Due misure, entrambe solo lato client (nessuna modifica al Worker):
+
+1. **`_qmPolling(fn,ms)`** (`§§ SINCRONIZZAZIONE CONTINUA`): il giro parte solo se
+   `document.visibilityState==='visible'`, e riparte **subito** al `visibilitychange` di
+   ritorno in primo piano. Stessa tecnica di `qmCheckVersione`. Usato dal giro principale
+   di Compass; le altre pagine hanno la stessa guardia scritta in linea (duplicazione
+   voluta: le app standalone non condividono codice con `app.js`).
+2. **Intervallo da 30 a 60 secondi** sul giro di Compass, su `ricaricaRegistri` di
+   `reception.html` e su `qmCheckAppStatus` delle 5 app.
+
+Insieme portano il consumo a vuoto sotto il 10% di prima.
+
+**Perché non contraddice la regola per cui una copia ferma è pericolosa** (incidente
+pre-stay del 22/08/2026): una scheda nascosta non la sta usando nessuno, e il giro riparte
+prima che torni utilizzabile. Il rischio è una copia *visibile* e vecchia, non una copia
+nascosta.
+
+`visibilitychange` **non** scatta quando la finestra perde solo il fuoco restando a
+schermo: una postazione con Compass affiancato a un altro programma continua ad
+aggiornarsi, ed è giusto — lì il dato lo si sta guardando davvero.
+
+**Il tetto più stretto è quello delle scritture: 1.000 al giorno**, contro 100.000 letture.
+Il polling non scrive mai, quindi non c'è stato problema finora, ma un giro Culligan lungo
+(`_persist()` a ogni tocco) o una serata di pre-stay ci si avvicinano. Se un domani
+l'avviso riguardasse le scritture, è lì che va guardato — non nel polling.
+
+**Se non bastasse**, il passo successivo è una chiave **manifest** con i timestamp di tutte
+le chiavi: si legge quella (1 lettura) e le altre solo quando una è cambiata davvero,
+portando il giro di Compass da 7 letture a 1. Richiede però di toccare `worker.js` e
+**ripubblicarlo a mano** (vedi "Pubblicazione del Worker"), quindi non è stato fatto
+insieme a queste due misure, che non richiedono nulla.
+
 ### Non si ridisegna mai a vuoto — `_qmCambiato`
 
-Il polling segna `_qmCambiato=true` solo nei rami che hanno davvero applicato un dato nuovo (arrivi, turno, pulizie, colazioni, Piano). Senza quel flag si ridisegnerebbe ogni 30 secondi anche quando non è cambiato niente: accordion che si richiudono da soli, pannelli che sfarfallano, e il giorno del turno che torna a oggi mentre lo stai leggendo.
+Il polling segna `_qmCambiato=true` solo nei rami che hanno davvero applicato un dato nuovo (arrivi, turno, pulizie, colazioni, Piano). Senza quel flag si ridisegnerebbe a ogni giro anche quando non è cambiato niente: accordion che si richiudono da soli, pannelli che sfarfallano, e il giorno del turno che torna a oggi mentre lo stai leggendo.
 
 ### `_qmOccupato()` — non si tocca niente mentre l'utente lavora
 
-Ridisegnare sotto le dita fa perdere il testo in corso; ricaricare butta via un modale a metà (un'anteprima già corretta, un DDT in compilazione). Si salta il giro se: il fuoco è in un `INPUT`/`TEXTAREA`/`SELECT` o in un elemento editabile, `#cqDialog` è aperto, o c'è a schermo un elemento con `modal`/`overlay` nel nome (`offsetParent` non nullo e alto più di 40px). Nel dubbio si aspetta il giro dopo — 30 secondi, non un problema.
+Ridisegnare sotto le dita fa perdere il testo in corso; ricaricare butta via un modale a metà (un'anteprima già corretta, un DDT in compilazione). Si salta il giro se: il fuoco è in un `INPUT`/`TEXTAREA`/`SELECT` o in un elemento editabile, `#cqDialog` è aperto, o c'è a schermo un elemento con `modal`/`overlay` nel nome (`offsetParent` non nullo e alto più di 40px). Nel dubbio si aspetta il giro dopo — un minuto, non un problema.
 
 ### Overview: **mai** `loadWeekData` nel ridisegno in sottofondo
 
-`loadWeekData()` rimette `activeDay` a **oggi**, e anche `refreshOverviewForDate` lo fa (punto 2 della funzione). Chiamarli in un aggiornamento automatico significa strappare via il giorno che l'utente sta guardando nella striscia del turno, ogni 30 secondi. `_qmRidisegnaVista('overview')` quindi **non chiama `loadWeekData`** e, dopo il ridisegno, **rimette il giorno che era selezionato**:
+`loadWeekData()` rimette `activeDay` a **oggi**, e anche `refreshOverviewForDate` lo fa (punto 2 della funzione). Chiamarli in un aggiornamento automatico significa strappare via il giorno che l'utente sta guardando nella striscia del turno, a ogni giro. `_qmRidisegnaVista('overview')` quindi **non chiama `loadWeekData`** e, dopo il ridisegno, **rimette il giorno che era selezionato**:
 
 ```js
 const prima=activeDay;
@@ -2397,7 +2447,7 @@ ridisegnare al ridimensionamento della finestra.
 
 `pianoRenderWeek` sceglie la disposizione leggendo `window.innerWidth`. Il valore resta
 quello del **momento del disegno**: ridimensionando la finestra il layout restava sbagliato
-fino al ridisegno successivo (che il polling fa solo ogni 30s), col risultato di vedere il
+fino al ridisegno successivo (che il polling fa solo al giro dopo), col risultato di vedere il
 layout da telefono su desktop e di vederlo "guarire da solo" dopo mezzo minuto. C'è ora un
 listener su `resize` che ridisegna **solo quando la soglia dei 768px viene attraversata**.
 Se si aggiunge altrove una scelta di layout basata su `innerWidth`, serve lo stesso
@@ -2819,7 +2869,13 @@ guardando lo schermo, un errore nei numeri no — resta plausibile e può passar
 per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dall'alloggio,
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
-dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione. 194 controlli.
+dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, cancello del polling a
+scheda nascosta. 297 controlli.
+
+Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
+guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire
+niente** — la stessa categoria di errore invisibile, e da una copia ferma sono partite le
+sovrascritture del 22/08/2026.
 
 ### Come funziona
 
@@ -2929,4 +2985,5 @@ confrontarli con quelli presenti in `index.html`.
 | Registration card ferme al giorno prima dopo aver caricato il PDF Prenotazioni | `prenHandlePdf` scriveva `qm_arriviData` ma non `qm_rcGuests`: la derivazione delle card viveva dentro `handleArriviFile`, cioè nel percorso di upload che il file unico ha sostituito | Estratta in `rcAggiornaDaArrivi()`, chiamata da entrambi i percorsi; l'esito viene scritto nel messaggio dello slot |
 | Mail pre-stay agli ospiti Booking di nuovo respinte, pur essendo `booking@soularthotel.com` corretto sull'Extranet | `PRESTAY_MITTENTE_BOOKING_OK` messa a `true` in `app.js` mentre sul Worker `SMTP_USER` era rimasta `qm@soularthotel.com`: Compass toglieva il blocco senza che il mittente fosse cambiato. L'Extranet dice quale mittente è autorizzato, non quale si sta usando | Il blocco ora segue il mittente che il Worker dichiara su `/prestay/stato` (**Impostazioni → Verifica mittente**), non una costante. Per spedire davvero da `booking@`: `SMTP_USER`/`SMTP_PASS` su Cloudflare, `SMTP_FROM` cancellata, Worker ripubblicato — e `IMAP_USER`/`IMAP_PASS` spostati sulla stessa casella, altrimenti spariscono le risposte |
 | Pre-stay di una giornata già inviata tornati vuoti: nomi presenti, email/telefono da reinserire, spunte di invio perse | `_psSave()` scriveva su KV **tutti i giorni in blocco**, senza rileggere: una copia col `localStorage` vuoto (altro profilo, o la copia di sviluppo che punta allo stesso Worker) importava il PDF Prenotazioni e sovrascriveva il lavoro fatto. E siccome all'avvio il ripristino dal cloud **sovrascrive anche il localStorage**, riaprire Compass cancellava l'ultima copia buona rimasta | Rilettura obbligatoria prima di ogni scrittura, **fusione** invece di sostituzione (per codice prenotazione, mai per `id`), avvio che fonde invece di sostituire, chiave separata per la copia di sviluppo, errore di scrittura visibile. Vedi "Il salvataggio non può più cancellare" |
+| Avviso Cloudflare: 50% del tetto giornaliero KV consumato senza che nessuno lavorasse | Il polling girava ogni 30s anche a scheda nascosta: 7 letture a giro su Compass, 20.160 al giorno per ogni pagina lasciata aperta | `_qmPolling` ferma il giro quando la scheda non è visibile e lo riprende al ritorno in primo piano; intervallo da 30 a 60 secondi. Vedi "Consumo KV" |
 | Camere Art marcate "Art Resort" nelle fermate | `fixArriviStruttura` applicata solo a `arrivi`, mai a `fermate`/`partenze` | Struttura dedotta in modo deterministico da `_prenStruttura` su tutte e tre le liste |

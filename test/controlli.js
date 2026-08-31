@@ -832,6 +832,33 @@ ok('6.6 sta sotto il minimo producibile',      CH.range[0] > 6.65, true);
 ok('minimo non maggiore del massimo',          CH.range[0] <= CH.range[1], true);
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Polling: si ferma a scheda nascosta, riparte quando torna');
+// Un cancello rotto qui non si vede: se il giro non ripartisse piu', la postazione
+// resterebbe ferma senza dire niente — ed e' proprio da una copia ferma che sono partite
+// le sovrascritture del 22/08/2026. Vale la pena controllarlo.
+var _pGiri = 0;
+var _pFn = function () { _pGiri++; return Promise.resolve(); };
+// `ms` piccolo: la guardia anti-raffica vale ms/3, qui trascurabile.
+var _pTick = _qmPolling(_pFn, 3);
+
+document.visibilityState = 'hidden';
+_pTick();
+ok('scheda nascosta: nessuna lettura',        _pGiri, 0);
+
+document.visibilityState = 'visible';
+_pTick();
+ok('tornata visibile: il giro riparte',       _pGiri, 1);
+
+// Alternare due finestre a raffica non deve moltiplicare le letture.
+_pTick();
+ok('seconda chiamata immediata: nessun giro', _pGiri, 1);
+
+document.visibilityState = 'hidden';
+_pTick();
+ok('di nuovo nascosta: resta ferma',          _pGiri, 1);
+document.visibilityState = 'visible';
+
+// ─────────────────────────────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 console.log(KO === 0
   ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'

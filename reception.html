@@ -342,7 +342,12 @@ async function qmCheckAppStatus(){
 }
 qmCheckAppStatus();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckAppStatus();});
-setInterval(qmCheckAppStatus,30000);
+// Il controllo gira solo quando la pagina è davvero a schermo: qui resta aperta tutto il
+// giorno (e spesso tutta la notte) sul PC di reception, e leggeva il cloud ogni 30 secondi
+// anche a schermo spento — letture che nessuno vede (avviso Cloudflare sul tetto KV,
+// 31/08/2026). Il ritorno in primo piano lo ricontrolla comunque subito, con il gestore
+// qui sopra: spegnere l'app dal Pannello App resta immediato per chi la sta usando.
+setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60000);
 
 // ── Aggiornamento automatico del codice ─────────────────────────────────────
 // Questa pagina resta aperta tutto il giorno sui PC di reception: senza questo controllo
@@ -859,7 +864,25 @@ async function ricaricaRegistri(){
   renderFondo();renderIncasso();
 }
 ricaricaRegistri();
-setInterval(ricaricaRegistri,30000);
+// Tre letture del cloud a giro (rimossi, fondo, incasso). Girava ogni 30 secondi anche di
+// notte, con la pagina lasciata aperta sul PC di reception: 8.640 letture al giorno per
+// postazione, tutte a vuoto. Ora si ferma a scheda nascosta e riparte al ritorno in primo
+// piano, prima che qualcuno possa registrare un movimento su una copia vecchia.
+// Il giro è passato da 30 a 60 secondi: la finestra in cui una postazione ferma può far
+// riapparire per un giro un movimento eliminato altrove raddoppia, ma resta il male
+// minore rispetto a perdere un movimento appena registrato (vedi `_cassaUnisci`).
+(function(){
+  let inCorso=false,ultimo=0;
+  const giro=async()=>{
+    if(document.visibilityState!=='visible')return;
+    if(inCorso||Date.now()-ultimo<20000)return;
+    inCorso=true;
+    try{await ricaricaRegistri();}catch(e){}
+    inCorso=false;ultimo=Date.now();
+  };
+  setInterval(giro,60000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')giro();});
+})();
 </script>
 </body>
 </html>
