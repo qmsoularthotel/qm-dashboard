@@ -1648,6 +1648,39 @@ Il blocco non dipende quindi più da una costante:
 
 **Come si sblocca davvero**: su Cloudflare `SMTP_USER`/`SMTP_PASS` della casella `booking@soularthotel.com`, **cancellare `SMTP_FROM`** se è rimasta impostata (`SMTP_FROM || SMTP_USER`: vince lei, ed è la svista che rende inutile cambiare `SMTP_USER`), ripubblicare il Worker, premere **Verifica mittente**. Il pannello lo dice esplicitamente quando il mittente arriva da `SMTP_FROM`. Verificato in test che con il mittente giusto quegli indirizzi tornano inviabili, e che restano bloccati sia col mittente sbagliato sia quando non è mai stato verificato.
 
+### Una casella per struttura (31/08/2026)
+
+Le liste degli indirizzi approvati sull'Extranet Booking sono **separate per struttura**, e
+il Boutique spedisce da `booking@hotelpiazzacarita.com` — dominio diverso, casella diversa,
+password diversa. Un mittente unico non poteva funzionare per tutte.
+
+`casellaPer(env, hotel)` in `worker.js` sceglie `SMTP_USER_<COD>`/`SMTP_PASS_<COD>` se
+esistono entrambe, altrimenti la casella principale. **Aggiungere una struttura non
+richiede modifiche al codice**, solo le variabili su Cloudflare:
+
+| Variabile | Esempio | Quando serve |
+|-----------|---------|--------------|
+| `SMTP_USER_BH` | `booking@hotelpiazzacarita.com` | sempre |
+| `SMTP_PASS_BH` | (segreto) | sempre |
+| `PRESTAY_REPLYTO_BH` | `booking@hotelpiazzacarita.com, qm@soularthotel.com` | per far arrivare le risposte in entrambe le caselle |
+| `SMTP_HOST_BH` | — | **solo** se il server di invio è diverso. Boutique e SoulArt sono entrambi su register.it, quindi non serve |
+
+`SMTP_FROM` vale **solo** per la casella principale: una struttura con casella propria deve
+spedire dalla sua, altrimenti si torna al problema che si voleva risolvere.
+
+Lato Compass: `PRESTAY_BOOKING_MITTENTE` è una mappa (`_default` + `bh`), `_psBookingBloccato(email, hotel)`
+segue la struttura della scheda, e l'invio manda `hotel` nel payload — senza quel campo
+tutte le mail partirebbero dalla casella principale. Il pannello **Verifica mittente**
+mostra una riga per struttura: con due caselle un semaforo unico non basta, può essere a
+posto una e non l'altra.
+
+**Trappola vista in produzione**: `SMTP 535 5.7.0 authentication rejected` con credenziali
+giuste. Due cause, in ordine: la password incollata si porta dietro uno spazio o un a capo
+(rimedio: **riscriverla a mano**, non incollarla), e le variabili **non diventano attive
+finché non si ripubblica il Worker**. Se anche così viene rifiutata, verificare che la
+casella sia abilitata all'invio autenticato su `authsmtp.securemail.pro`: la webmail
+funziona per un'altra strada, quindi entrare in webmail **non** dimostra che possa spedire.
+
 **Spostando la casella di invio si spostano anche le risposte**: `IMAP_USER`/`IMAP_PASS` alimentano "Controlla risposte" e puntano oggi a `qm@soularthotel.com`. Se restano lì mentre si spedisce da `booking@`, le risposte degli ospiti non compaiono più. Il pannello segnala il disallineamento invece di lasciarlo scoprire per caso.
 
 **Nota su `PRESTAY_REPLYTO`**: oggi punta a `qm@soularthotel.com`. Passando a `booking@`, valutare se allinearlo — una risposta dell'ospite dentro il thread Booking dovrebbe restare nel loro sistema, e un `Reply-To` divergente può essere riscritto o ignorato dal relay.
