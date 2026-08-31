@@ -67,3 +67,24 @@ ok('taglia su "ha scritto:"',
 ok('taglia su "wrote:"',
    soloRisposta('Thanks' + CR + CR + 'On 31 Aug 2026 Tizio wrote:' + CR + '> text'), 'Thanks');
 ok('taglia sulle righe citate', soloRisposta('Ok' + CR + '> vecchio'), 'Ok');
+// Le webmail mandano a capo la frase di introduzione quando e' lunga: riga per riga
+// nessuna corrisponde, e il 31/08/2026 l'intero pre-stay e' rimasto attaccato sotto la
+// risposta. Si risale il blocco contiguo fino a dove l'introduzione comincia.
+ok('introduzione spezzata in due righe',
+   soloRisposta('Prova' + CR + CR + 'Il lun 31 ago 2026, 20:49 Boutique Hotel Piazza Carita' + CR +
+                '<booking@hotelpiazzacarita.com> ha scritto:' + CR + CR + '> citato'), 'Prova');
+ok('introduzione spezzata in tre righe',
+   soloRisposta('Grazie' + CR + CR + 'Il lun 31 ago 2026, 20:49' + CR +
+                'Boutique Hotel <booking@x.com>' + CR + 'ha scritto:' + CR + '> citato'), 'Grazie');
+ok('introduzione inglese spezzata',
+   soloRisposta('Thanks' + CR + CR + 'On Mon, 31 Aug 2026 at 20:49 Boutique' + CR +
+                '<booking@x.com> wrote:' + CR + '> quoted'), 'Thanks');
+// E il taglio non deve mangiarsi il testo dell'ospite: una risposta che finisce con i due
+// punti, o che comincia con "Il", resta intera.
+ok('risposta che finisce con i due punti',
+   soloRisposta('Vi scrivo questo:' + CR + 'va bene cosi'), 'Vi scrivo questo:\nva bene cosi');
+ok('risposta che comincia con "Il"',
+   soloRisposta('Il volo atterra alle 14' + CR + 'Grazie'), 'Il volo atterra alle 14\nGrazie');
+ok('risposta senza citazione resta intera',
+   soloRisposta('Buongiorno,' + CR + 'arriveremo alle 15.' + CR + 'Grazie'),
+   'Buongiorno,\narriveremo alle 15.\nGrazie');

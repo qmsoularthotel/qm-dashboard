@@ -30,7 +30,7 @@ const ORIGINI = [
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /prestay/stato.
-const WORKER_VERSIONE = '2026-08-31.2';
+const WORKER_VERSIONE = '2026-08-31.3';
 
 // ── UNA CASELLA PER STRUTTURA ──
 // Booking recapita all'ospite solo se la mail parte dall'indirizzo registrato sull'Extranet
@@ -618,11 +618,34 @@ const TAGLI = [
   /^inviato da/i,
   /^sent from my/i
 ];
+// Una riga che CHIUDE l'introduzione della citazione, ovunque cominci: le webmail mandano
+// a capo la frase quando e' lunga ("Il lun 31 ago 2026, 20:49 Boutique Hotel Piazza Carita'
+// <booking@hotelpiazzacarita.com> ha scritto:"), e riga per riga nessuna delle due
+// corrisponde. Il 31/08/2026 e' cosi' che l'intero pre-stay e' rimasto attaccato sotto la
+// risposta dell'ospite.
+const CHIUDE_INTRO = /(ha scritto|wrote|a \u00e9crit|schrieb)\s*:\s*$/i;
+// L'inizio della stessa frase, per togliere anche la riga precedente quando la frase era
+// spezzata. Deve restare stretta: una riga qualsiasi che comincia per "Il" non basta.
+const APRE_INTRO = /^(il|on|le|am|el)\b.{0,200}$/i;
 function soloRisposta(txt) {
   const righe = String(txt || '').replace(/\r\n/g, '\n').split('\n');
   const out = [];
   for (const r of righe) {
-    if (TAGLI.some(re => re.test(r.trim()))) break;
+    const v = r.trim();
+    if (TAGLI.some(re => re.test(v))) break;
+    if (CHIUDE_INTRO.test(v)) {
+      // La frase poteva cominciare qualche riga sopra: si risale il blocco contiguo (senza
+      // righe vuote, al massimo tre) fino a trovare dove l'introduzione comincia, e si
+      // taglia da li'. Le righe vuote fermano la risalita: separano il testo dell'ospite.
+      let inizio = -1;
+      for (let i = out.length - 1, passi = 0; i >= 0 && passi < 3; i--, passi++) {
+        const prec = out[i].trim();
+        if (!prec) break;
+        if (APRE_INTRO.test(prec) && !/[.!?]$/.test(prec)) { inizio = i; break; }
+      }
+      if (inizio >= 0) out.length = inizio;
+      break;
+    }
     out.push(r);
   }
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
