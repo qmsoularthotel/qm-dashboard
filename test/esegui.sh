@@ -32,9 +32,13 @@ console.log("sintassi di app.js: ok");
 //    funzioni non sarebbero raggiungibili: si convertono in var.
 var ambiente = leggi("test/ambiente.js");
 var app      = leggi("app.js").replace(/^(\s*)(const|let)\s/gm, "$1var ");
-var casi     = leggi("test/controlli.js");
+var worker   = leggi("worker.js")
+  .replace("import { connect } from '"'"'cloudflare:sockets'"'"';", "var connect=function(){};")
+  .replace("export default {", "var _workerFetch = {")
+  .replace(/^(\s*)(const|let)\s/gm, "$1var ");
+var casi     = leggi("test/controlli.js") + "\n" + leggi("test/mime.js");
 try {
-  eval(ambiente + "\n" + app + "\n" + casi);
+  eval(ambiente + "\n" + app + "\n" + worker + "\n" + casi);
   console.log(KO > 0 ? "ESITO:FALLITO" : "ESITO:OK");
 } catch (e) {
   console.log("\nERRORE DURANTE I CONTROLLI: " + e);

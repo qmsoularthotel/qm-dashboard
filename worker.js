@@ -30,7 +30,7 @@ const ORIGINI = [
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /prestay/stato.
-const WORKER_VERSIONE = '2026-08-31';
+const WORKER_VERSIONE = '2026-08-31.2';
 
 // ── UNA CASELLA PER STRUTTURA ──
 // Booking recapita all'ospite solo se la mail parte dall'indirizzo registrato sull'Extranet
@@ -532,10 +532,27 @@ function utf8(s) {
 // dentro un multipart/mixed esterno: senza ricorsione, la parte scelta al primo
 // livello è a sua volta un multipart, e i suoi boundary/intestazioni finiscono
 // nel testo mostrato. Si ricorsa finché non si trova una parte non-multipart.
+// Separatore dedotto dal CORPO, quando l'intestazione non lo dichiara.
+// Il 31/08/2026 una risposta e' comparsa sulla scheda con dentro il separatore, le
+// intestazioni della parte e gli accenti non decodificati (Carit=C3=A0): il messaggio era
+// diviso in parti ma la riga Content-Type in cima non c'era o non era leggibile, e senza
+// separatore il programma restituisce il corpo cosi' com'e'. Da li' discendono tutti e tre
+// i sintomi — testo grezzo, accenti rotti (la codifica e' dichiarata DENTRO la parte) e
+// citazione non tagliata (la riga "ha scritto:" resta spezzata a meta').
+// Non serve sapere perche' l'intestazione manchi: il corpo si presenta da solo come diviso,
+// e fidarsi di quello che si vede e' piu' robusto che pretendere una dichiarazione.
+function boundaryDalCorpo(corpo) {
+  const prima = String(corpo || '').replace(/^\s*\r?\n/, '').split(/\r?\n/)[0] || '';
+  const m = prima.match(/^--([0-9A-Za-z'()+_,.\/:=?-]{8,70})\s*$/);
+  if (!m) return null;
+  // Deve comparire almeno due volte: un separatore vero apre e chiude.
+  const occorrenze = String(corpo).split('--' + m[1]).length - 1;
+  return occorrenze >= 2 ? m[1] : null;
+}
 function trovaParteTesto(testa, corpo) {
   const ctGrezzo = (testa.match(/Content-Type:\s*([^\r\n]+(?:\r\n[ \t][^\r\n]*)*)/i) || [])[1] || '';
   const ct = ctGrezzo.replace(/\r\n[ \t]+/g, ' ').trim();
-  const boundary = (ct.match(/boundary="?([^";]+)"?/i) || [])[1];
+  const boundary = (ct.match(/boundary="?([^";]+)"?/i) || [])[1] || boundaryDalCorpo(corpo);
   const cte = ((testa.match(/Content-Transfer-Encoding:\s*([^\r\n]+)/i) || [])[1] || '').trim().toLowerCase();
 
   if (boundary) {
