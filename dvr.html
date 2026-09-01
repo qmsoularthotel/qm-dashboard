@@ -254,6 +254,24 @@
 
 <script>
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
+
+// ── SCRITTURE SUL CLOUD ──────────────────────────────────────────────────────
+// Il piano gratuito di Cloudflare concede 1.000 scritture al giorno e l'01/09/2026 siamo
+// arrivati a 934. Il consumo non veniva da chi lavorava: quest'app riscriveva l'archivio
+// delle colazioni ogni dieci minuti, per ogni dispositivo con l'app aperta, quasi sempre
+// con dati identici. Qui si ricorda l'ultimo valore scritto per chiave e si salta la
+// scrittura se non e' cambiato nulla. Se fallisce si dimentica, altrimenti quel valore non
+// verrebbe piu' ritentato.
+const _qmKvUltimo={};
+function qmKvSet(key,value){
+  const v=typeof value==='string'?value:JSON.stringify(value);
+  if(_qmKvUltimo[key]===v)return Promise.resolve(true);
+  _qmKvUltimo[key]=v;
+  return qmKvSet(key,v)
+    .then(r=>{if(!r.ok)delete _qmKvUltimo[key];return r.ok;})
+    .catch(e=>{delete _qmKvUltimo[key];throw e;});
+}
+
 async function qmCheckAppStatus(){
   try{
     const r=await fetch(PROXY+'/kv/get?key=qm_app_status',{cache:'no-store'});
@@ -294,7 +312,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-08-31.1';
+const QM_APP_BUILD='2026-09-01.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -616,7 +634,7 @@ if ('serviceWorker' in navigator) {
       dev.today=dev.todayDate===todayStr?(dev.today||0)+1:1;
       dev.todayDate=todayStr;dev.last=nowIso;
       d.devices[devId]=dev;
-      await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_dvr_access',value:JSON.stringify(d)})});
+      await qmKvSet('qm_dvr_access',JSON.stringify(d));
     }catch(e){}
   })();
 })();

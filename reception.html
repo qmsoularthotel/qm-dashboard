@@ -323,6 +323,24 @@ tr:last-child td{border-bottom:none;}
 <script>
 'use strict';
 const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
+
+// ── SCRITTURE SUL CLOUD ──────────────────────────────────────────────────────
+// Il piano gratuito di Cloudflare concede 1.000 scritture al giorno e l'01/09/2026 siamo
+// arrivati a 934. Il consumo non veniva da chi lavorava: quest'app riscriveva l'archivio
+// delle colazioni ogni dieci minuti, per ogni dispositivo con l'app aperta, quasi sempre
+// con dati identici. Qui si ricorda l'ultimo valore scritto per chiave e si salta la
+// scrittura se non e' cambiato nulla. Se fallisce si dimentica, altrimenti quel valore non
+// verrebbe piu' ritentato.
+const _qmKvUltimo={};
+function qmKvSet(key,value){
+  const v=typeof value==='string'?value:JSON.stringify(value);
+  if(_qmKvUltimo[key]===v)return Promise.resolve(true);
+  _qmKvUltimo[key]=v;
+  return qmKvSet(key,v)
+    .then(r=>{if(!r.ok)delete _qmKvUltimo[key];return r.ok;})
+    .catch(e=>{delete _qmKvUltimo[key];throw e;});
+}
+
 const KEY_FONDO = 'qm_cassa_fondo';
 const KEY_INCASSO = 'qm_cassa_incasso';
 const FONDO_TARGET = 100;
@@ -495,7 +513,7 @@ async function segnaRimosso(key,id){
   if((_rimossi[ramo]||[]).indexOf(id)===-1)_rimossi[ramo].push(id);
   try{localStorage.setItem(KEY_RIMOSSI,JSON.stringify(_rimossi));}catch(e){}
   try{
-    await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY_RIMOSSI,value:JSON.stringify(_rimossi)})});
+    await qmKvSet(KEY_RIMOSSI,JSON.stringify(_rimossi));
   }catch(e){}
 }
 

@@ -101,6 +101,16 @@ for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.htm
         BKF_KO=1
       fi ;;
   esac
+  # Scritture sul cloud: il piano gratuito ne concede 1.000 al giorno e l'01/09/2026 siamo
+  # arrivati a 934, quasi tutte ripetizioni identiche partite da sole. Senza il filtro si
+  # torna a consumarle a vuoto, e quando il limite e' superato due postazioni smettono di
+  # vedersi fino a mezzanotte.
+  if ! grep -q 'function qmKvSet' "$_app"; then
+    echo ""
+    echo "  ERRORE      $_app non filtra piu' le scritture identiche sul cloud."
+    echo "              Il limite giornaliero si esaurirebbe di nuovo a vuoto."
+    BKF_KO=1
+  fi
   if ! grep -q 'QM_APP_BUILD' "$_app"; then
     echo ""
     echo "  ERRORE      $_app non dichiara piu' la propria versione (QM_APP_BUILD)."

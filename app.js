@@ -4367,8 +4367,14 @@ document.querySelector('.content').addEventListener('scroll',function(){
           REV_CALIB=revCalibFondi(remoto,REV_CALIB);
           const fuso=JSON.stringify(REV_CALIB);
           localStorage.setItem(REV_CALIB_KEY,fuso);
-          // Se il locale conteneva osservazioni che il cloud non aveva, va restituito.
-          if(fuso!==rj.value)kvSet(REV_CALIB_KEY,fuso).catch(()=>{});
+          // Si restituisce al cloud SOLO se il locale aveva davvero qualcosa in più.
+          // Confrontare le due stringhe sembrava equivalente e non lo è: la fusione
+          // ricostruisce gli oggetti, l'ordine delle chiavi cambia, e il testo risultava
+          // diverso a ogni apertura della pagina anche senza un dato nuovo — una scrittura
+          // per ogni caricamento, su un limite di mille al giorno.
+          const _conta=o=>Object.keys(o||{}).reduce((n,k)=>n+(((o[k]||{}).osservazioni||[]).length),0);
+          if(_conta(REV_CALIB)>_conta(remoto)||Object.keys(REV_CALIB).length>Object.keys(remoto).length)
+            kvSet(REV_CALIB_KEY,fuso).catch(()=>{});
         }
       }catch(e){}
       // Pre-stay: contatti ospiti e stato invii, più i testi dei messaggi. Il cloud è la
