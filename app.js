@@ -13470,7 +13470,14 @@ async function resiDelRow(id){
   const r=_resi.righe[i];
   if(!await cqConferma('Eliminare questo reso?',`<strong>${r.tipologia} ×${r.qta}</strong><br>Reso del ${r.data}.`,{ok:'Elimina'}))return;
   _resi.righe.splice(i,1);
-  _resiSave();resiRender();
+  // L'id va segnato PRIMA di salvare, altrimenti la fusione lo rimette dentro: la riga
+  // sta ancora sul cloud, e _qmUnisciRecord riporta i record che il locale non ha piu'.
+  // Senza questa riga il cestino non cancellava niente — la riga spariva per un istante
+  // e tornava al primo giro. E' l'unica eliminazione degli archivi a elenchi che se ne
+  // era dimenticata: dvrEmpDelete, dvrDelete, resiDelRitiro e le due della biancheria
+  // chiamano tutte _qmSegnaRimosso.
+  _qmSegnaRimosso(_resi,id);
+  await _resiSave();resiRender();
 }
 // Correzione con storico, mai sovrascrittura silenziosa — stesso principio della cassa.
 function resiEditQta(id){

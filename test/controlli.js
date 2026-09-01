@@ -979,6 +979,27 @@ ok('sa a quale ritiro rimetterle',          RI[0].rit.id, 'rit1');
 ok('struttura senza ritiri: niente da fare', _resiRiaperte('bh').length, 0);
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Ogni eliminazione lascia la sua traccia');
+// Con la fusione, un record eliminato torna dentro al primo salvataggio se il suo id non
+// finisce in `_rimossi`. resiDelRow se n'era dimenticata: il cestino faceva sparire la
+// riga per un istante e la riga tornava, senza nessun errore a schermo. Le altre quattro
+// eliminazioni degli archivi a elenchi lo facevano gia'.
+var _arch = { righe: [{ id: 'z1' }, { id: 'z2' }] };
+_qmSegnaRimosso(_arch, 'z1');
+ok('l id eliminato viene segnato',        (_arch._rimossi || []).join(','), 'z1');
+// La riga sta ancora sul cloud: senza la traccia la fusione la riporterebbe dentro.
+var _dopo = _qmUnisciRecord([{ id: 'z1' }, { id: 'z2' }], [{ id: 'z2' }], new Set(_arch._rimossi));
+ok('la riga eliminata non torna',         _dopo.map(function (r) { return r.id; }).join(','), 'z2');
+var _senza = _qmUnisciRecord([{ id: 'z1' }, { id: 'z2' }], [{ id: 'z2' }], new Set());
+ok('senza traccia sarebbe tornata',       _senza.length, 2);
+
+// Sentinella: se domani qualcuno aggiunge un'eliminazione dimenticandosi la traccia, il
+// difetto non si vede provando l'app un attimo — la riga sparisce e torna dopo.
+// (la sentinella guarda il sorgente della funzione: e' il solo modo di accorgersene a freddo)
+ok('resiDelRow segna l id rimosso',       /_qmSegnaRimosso/.test(String(resiDelRow)), true);
+ok('resiDelRitiro pure',                  /_qmSegnaRimosso/.test(String(resiDelRitiro)), true);
+
+// ─────────────────────────────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 console.log(KO === 0
   ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'
