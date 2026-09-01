@@ -884,7 +884,7 @@ function editShift(dayIdx,nome){
 function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caricato');turniInput.value='';
   try{localStorage.removeItem('qm_weekData');}catch(e){}
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
-  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_weekData',value:null})}).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
+  try{kvSet('qm_weekData',null).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
 const pageTitles={overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Pannello App',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria',biancheria:'Gestione Biancheria',prestay:'Messaggi Pre-stay'};
 const breadcrumbs={overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti',miniapp:'Strumenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',biancheria:'Housekeeping',prestay:'Operativo Quotidiano'};
@@ -2348,7 +2348,7 @@ function miniappToggleApp(key){
   _appStatus[key]=!on;
   const json=JSON.stringify(_appStatus);
   try{localStorage.setItem('qm_app_status',json);}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_app_status',value:json})}).catch(()=>{});
+  kvSet('qm_app_status',json).catch(()=>{});
   miniappRenderToggles();
 }
 // Avviso temporaneo (toast) solo per breakfast.html — un messaggio (e uno stato
@@ -2389,7 +2389,7 @@ function miniappRenderBkfBanner(){
 function miniappSaveBkfBannerToKV(){
   const json=JSON.stringify(_bkfBanner);
   try{localStorage.setItem(BKF_BANNER_KEY,json);}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:BKF_BANNER_KEY,value:json})}).catch(()=>{});
+  kvSet(BKF_BANNER_KEY,json).catch(()=>{});
 }
 function miniappToggleBkfBanner(tab){
   _bkfBanner[tab].enabled=!_bkfBanner[tab].enabled;
@@ -3702,7 +3702,20 @@ const styleEl=document.createElement('style');
 styleEl.textContent='@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}';
 document.head.appendChild(styleEl);
 // Storage ibrido: localStorage (veloce/offline) + KV cloud (sync tra dispositivi)
+// Ultimo valore scritto per ogni chiave in questa sessione. Serve a non riscrivere ciò che
+// è già identico: il piano gratuito di Cloudflare concede 1.000 scritture al giorno, e
+// l'01/09/2026 siamo arrivati al 90% del limite. Il consumo non veniva da chi lavorava ma
+// da salvataggi ripetuti a vuoto — rcRenderCards riscriveva l'elenco ospiti a OGNI
+// ridisegno, non a ogni modifica, e turniArchivia riscriveva l'archivio dei turni a ogni
+// apertura della pagina anche quando la settimana era identica.
+//
+// La memoria è di sessione: al primo salvataggio dopo un ricaricamento si scrive comunque
+// una volta, il che è giusto — non sappiamo cosa sia successo altrove nel frattempo.
+const _kvUltimo={};
 async function kvSet(key,value,retries=3){
+  const v=typeof value==='string'?value:JSON.stringify(value);
+  if(_kvUltimo[key]===v)return true;   // già scritto identico: non si consuma una scrittura
+  _kvUltimo[key]=v;
   for(let i=0;i<retries;i++){
     try{
       const res=await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value})});
@@ -3710,6 +3723,8 @@ async function kvSet(key,value,retries=3){
     }catch(e){}
     if(i<retries-1)await new Promise(r=>setTimeout(r,1500*(i+1)));
   }
+  // Non riuscita: si dimentica, altrimenti quel valore non verrebbe più ritentato.
+  delete _kvUltimo[key];
   return false;
 }
 const LS={
@@ -5121,7 +5136,7 @@ function revAutoMarkNoComment(p,rows){
   });
   if(changed){
     try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
-    try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
+    try{kvSet('qm_rev_sent',JSON.stringify(REV_SENT)).catch(()=>{});}catch(e){}
   }
 }
 function revHandleFile(p,file){
@@ -5142,7 +5157,7 @@ function revHandleFile(p,file){
       // quando lo legge, non quello dell'import precedente.
       const _revTs=Date.now();
       try{localStorage.setItem('qm_ts_rev_'+p,String(_revTs));
-        fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_ts_rev_'+p,value:String(_revTs)})}).catch(()=>{});} catch(e){}
+        kvSet('qm_ts_rev_'+p,String(_revTs)).catch(()=>{});} catch(e){}
       // Un nuovo CSV può rendere valutabili osservazioni prima "in attesa", anche senza
       // recensioni nuove (l'import fresco da solo conferma "nessuna novità"): ricalcola
       // qui, non a ogni render.
@@ -5157,10 +5172,7 @@ function revHandleFile(p,file){
       // Salva il testo CSV grezzo in localStorage e cloud KV
       try{localStorage.setItem('qm_rev_'+p, csvText);}catch(e){}
       revShowTs(p,_revTs);
-      try{
-        fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({key:'qm_rev_'+p, value:csvText})}).catch(()=>{});
-      }catch(e){}
+      try{kvSet('qm_rev_'+p,csvText).catch(()=>{});}catch(e){}
     }catch(err){revShowError(p,'Errore: '+err.message);}
   };
   reader.readAsText(file,'UTF-8');
@@ -6544,7 +6556,7 @@ function revMarkSent(p,gi){
   const key=revUniqueKey(p,r);
   REV_SENT[key]=!REV_SENT[key];
   try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
-  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
+  try{kvSet('qm_rev_sent',JSON.stringify(REV_SENT)).catch(()=>{});}catch(e){}
   revRenderList(p);
   revRenderStats(p);
   revRenderExpiring(p);
@@ -6625,7 +6637,7 @@ function revUndoNotNeeded(p,gi){
   const key=revUniqueKey(p,r);
   delete REV_SENT[key];
   try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
-  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
+  try{kvSet('qm_rev_sent',JSON.stringify(REV_SENT)).catch(()=>{});}catch(e){}
   revApplyFilters(p);revRenderStats(p);
 }
 function revMarkNotNeeded(p,gi){
@@ -6633,7 +6645,7 @@ function revMarkNotNeeded(p,gi){
   const key=revUniqueKey(p,r);
   REV_SENT[key]='not_needed';
   try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
-  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
+  try{kvSet('qm_rev_sent',JSON.stringify(REV_SENT)).catch(()=>{});}catch(e){}
   revApplyFilters(p);revRenderStats(p);
 }
 function revShowTs(p,ts){
@@ -7155,7 +7167,7 @@ function pianoSetLoaded(silent){
 function resetPianoData(){
   pianoData=null;
   localStorage.removeItem('qm_piano');
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_piano',value:null})}).catch(()=>{});
+  kvSet('qm_piano',null).catch(()=>{});
   ucSetState('piano','','Non caricato');
   const box=document.getElementById('pianoUploadBox');if(box)box.style.display='';
   const li=document.getElementById('pianoLoadedInfo');if(li)li.classList.remove('visible');
@@ -7174,8 +7186,8 @@ function bkfLoadOps(){
 function bkfSaveOps(){
   try{localStorage.setItem('qm_bkfGroups',JSON.stringify(bkfGroups));}catch(e){}
   try{localStorage.setItem('qm_bkfNotes',JSON.stringify(bkfNotes));}catch(e){}
-  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_bkfGroups',value:JSON.stringify(bkfGroups)})}).catch(()=>{});}catch(e){}
-  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_bkfNotes',value:JSON.stringify(bkfNotes)})}).catch(()=>{});}catch(e){}
+  try{kvSet('qm_bkfGroups',JSON.stringify(bkfGroups)).catch(()=>{});}catch(e){}
+  try{kvSet('qm_bkfNotes',JSON.stringify(bkfNotes)).catch(()=>{});}catch(e){}
 }
 function bkfAddGroup(){
   const today=new Date();
@@ -7544,7 +7556,7 @@ function rcRenderCards(guests){
   rcUpdateSelectedBtn();
   // Salva per ripristino
   try{localStorage.setItem('qm_rcGuests',JSON.stringify(sorted));}catch(e){}
-  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rcGuests',value:JSON.stringify(sorted)})}).catch(()=>{});}catch(e){}
+  try{kvSet('qm_rcGuests',JSON.stringify(sorted)).catch(()=>{});}catch(e){}
 }
 // Riga sorgente dati sopra la coda di stampa: da quale documento vengono le card,
 // quando è stato caricato, quanti arrivi contiene — non rende obbligatorio ricaricare.
@@ -8062,7 +8074,7 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     // Salva locale + cloud
     arriviData._ts=Date.now();
     try{localStorage.setItem('qm_arriviData',JSON.stringify(arriviData));}catch(e){}
-    try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_arriviData',value:JSON.stringify(arriviData)})}).catch(()=>{});}catch(e){}
+    try{kvSet('qm_arriviData',JSON.stringify(arriviData)).catch(()=>{});}catch(e){}
     // Aggiorna UI
     document.getElementById('arriviLoadedDate').textContent=arriviData.data;
     setUploadTs('arriviTs');
@@ -8097,7 +8109,7 @@ function resetArrivi(){
   document.getElementById('arriviLoadedDate').textContent='';
   document.getElementById('btnArriviReload').style.display='none';
   try{localStorage.removeItem('qm_arriviData');}catch(e){}
-  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_arriviData',value:null})}).catch(()=>{});}catch(e){}
+  try{kvSet('qm_arriviData',null).catch(()=>{});}catch(e){}
 }
 function arriviUpdateKpi(){
   if(!arriviData)return;
@@ -8507,7 +8519,7 @@ async function invDeleteMove(id){
   try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
   const filtered=moves.filter(m=>m.id!==id);
   try{localStorage.setItem('qm_inv_moves_'+_invWh,JSON.stringify(filtered));}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_moves_'+_invWh,value:JSON.stringify(filtered)})}).catch(()=>{});
+  kvSet('qm_inv_moves_'+_invWh,JSON.stringify(filtered)).catch(()=>{});
   invRender();
 }
 function invEditQty(bc,currentQty){
@@ -8522,7 +8534,7 @@ function invEditQty(bc,currentQty){
   try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
   moves.push({id:Date.now()+'_'+Math.random().toString(36).slice(2),barcode:bc,type:'init',qty:n,ts:Date.now(),note:'Rettifica da dashboard'});
   try{localStorage.setItem('qm_inv_moves_'+_invWh,JSON.stringify(moves));}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_moves_'+_invWh,value:JSON.stringify(moves)})}).catch(()=>{});
+  kvSet('qm_inv_moves_'+_invWh,JSON.stringify(moves)).catch(()=>{});
   invRender();
 }
 function invEditSoglia(bc){
@@ -8534,7 +8546,7 @@ function invEditSoglia(bc){
   const n=parseFloat(val);
   catalog[bc].soglia=(val.trim()===''||isNaN(n))?null:n;
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog_'+_invWh,value:JSON.stringify(catalog)})}).catch(()=>{});
+  kvSet('qm_inv_catalog_'+_invWh,JSON.stringify(catalog)).catch(()=>{});
   invRender();
 }
 async function invDeleteProduct(bc){
@@ -8548,8 +8560,8 @@ async function invDeleteProduct(bc){
   try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
   const filtered=moves.filter(m=>m.barcode!==bc);
   try{localStorage.setItem('qm_inv_moves_'+_invWh,JSON.stringify(filtered));}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_moves_'+_invWh,value:JSON.stringify(filtered)})}).catch(()=>{});
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog_'+_invWh,value:JSON.stringify(catalog)})}).catch(()=>{});
+  kvSet('qm_inv_moves_'+_invWh,JSON.stringify(filtered)).catch(()=>{});
+  kvSet('qm_inv_catalog_'+_invWh,JSON.stringify(catalog)).catch(()=>{});
   invRender();
 }
 function invQuickRestock(bc){
@@ -8814,7 +8826,7 @@ function invEditProduct(bc){
   const n=parseFloat(sogliaRaw);
   catalog[bc]={...p,name:newName.trim(),unit:newUnit.trim(),soglia:(sogliaRaw.trim()===''||isNaN(n))?null:n};
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog_'+_invWh,value:JSON.stringify(catalog)})}).catch(()=>{});
+  kvSet('qm_inv_catalog_'+_invWh,JSON.stringify(catalog)).catch(()=>{});
   invRender();
 }
 function invAddProduct(){
@@ -8834,7 +8846,7 @@ function invAddProduct(){
   const n=parseFloat(sogliaRaw);
   catalog[bc]={name:name.trim(),unit:(unit||'').trim(),soglia:(sogliaRaw.trim()===''||isNaN(n))?null:n};
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
-  fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_inv_catalog_'+_invWh,value:JSON.stringify(catalog)})}).catch(()=>{});
+  kvSet('qm_inv_catalog_'+_invWh,JSON.stringify(catalog)).catch(()=>{});
   invRender();
 }
 function invRenderCatalog(){
@@ -9995,8 +10007,8 @@ function revExpHandleFile(p,file){
       try{localStorage.setItem('qm_rev_exp_'+p,e.target.result);}catch(ex){}
       const ts=Date.now();
       try{localStorage.setItem('qm_ts_rev_exp_'+p,String(ts));}catch(ex){}
-      try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_exp_'+p,value:e.target.result})}).catch(()=>{});}catch(ex){}
-      try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_ts_rev_exp_'+p,value:String(ts)})}).catch(()=>{});}catch(ex){}
+      try{kvSet('qm_rev_exp_'+p,e.target.result).catch(()=>{});}catch(ex){}
+      try{kvSet('qm_ts_rev_exp_'+p,String(ts)).catch(()=>{});}catch(ex){}
       revExpShowTs(p,ts);
     }catch(err){
       document.getElementById('revExpProcessing-'+p).style.display='none';
@@ -10194,7 +10206,7 @@ function revExpMarkSent(p,gi){
   const key=revExpUniqueKey(p,r);
   REV_SENT[key]=!REV_SENT[key];
   try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
-  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_sent',value:JSON.stringify(REV_SENT)})}).catch(()=>{});}catch(e){}
+  try{kvSet('qm_rev_sent',JSON.stringify(REV_SENT)).catch(()=>{});}catch(e){}
   revExpRenderList(p);revExpRenderStats(p);
 }
 
@@ -10204,7 +10216,7 @@ function revExpReset(p){
   document.getElementById('revExpUploadZone-'+p).style.display='flex';
   document.getElementById('revExpError-'+p).style.display='none';
   try{localStorage.removeItem('qm_rev_exp_'+p);}catch(e){}
-  try{fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:'qm_rev_exp_'+p,value:''})}).catch(()=>{});}catch(e){}
+  try{kvSet('qm_rev_exp_'+p,'').catch(()=>{});}catch(e){}
 }
 
 // §§ DDT FORNITORI — upload DDT, spese per fornitore/reparto, storico
