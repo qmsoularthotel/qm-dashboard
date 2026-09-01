@@ -6024,6 +6024,10 @@ function revEffettoScadenze(scored,hl,oggiTs,orizzonteGg,finestraGg=REV_FINESTRA
 function revRenderCalib(p,pb,hl){
   const el=document.getElementById('rev-calib-'+p);
   if(!el)return;
+  // Serve qui: `esc` non e' globale, e usarla senza definirla fa fallire l'intera funzione
+  // — il riquadro "Punteggio Booking reale" sparisce del tutto invece di mostrare un testo
+  // sbagliato. Un errore in un ramo raro puo' cancellare un pannello intero (01/09/2026).
+  const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const cs=revCalibStato(p);
   const fmtD=ts=>{const d=new Date(ts);return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();};
   const fmtDT=ts=>{const d=new Date(ts);return d.getDate()+'/'+(d.getMonth()+1)+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
@@ -6052,14 +6056,17 @@ function revRenderCalib(p,pb,hl){
     // Prima si spiegava sempre col confronto sul valore piu' recente, che poteva essere
     // perfettamente compatibile — e usciva "sopra il massimo di -0.00" (01/09/2026).
     if(cs.incoerenti&&cs.incoerenti.length){
-      const el=cs.incoerenti.map(x=>{
+      // Non chiamarla `el`: e' il nome dell'elemento della pagina qualche riga sopra, e
+      // riusarlo qui lo nasconde. Nel browser sarebbe innocuo (blocco separato), ma la rete
+      // di sicurezza converte le dichiarazioni e il riquadro smetteva di disegnarsi.
+      const elenco=cs.incoerenti.map(x=>{
         const d=new Date(x.ts);
         return '<strong>'+esc(Number(x.display).toFixed(1))+'</strong> del '
           +String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')
           +' (su '+x.nRec+' recensioni note allora)';
       }).join(', ');
       diagnosi='Non e\' il punteggio di oggi a non tornare, ma '
-        +(cs.incoerenti.length===1?'un\'osservazione registrata prima':'alcune osservazioni registrate prima')+': '+el+'. '
+        +(cs.incoerenti.length===1?'un\'osservazione registrata prima':'alcune osservazioni registrate prima')+': '+elenco+'. '
         +'Con le recensioni presenti nel CSV a quel momento il modello non poteva arrivarci: '
         +'di solito significa che allora mancavano recensioni recenti, arrivate nell\'export successivo. '
         +'<span style="display:block;margin-top:4px;">Togli quella riga dal registro con la ✕ qui sotto: le altre osservazioni restano e la calibrazione si stringe di nuovo.</span>';

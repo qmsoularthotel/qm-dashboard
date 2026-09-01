@@ -1033,3 +1033,34 @@ var _ok2 = calibraDaOsservazioni(_REC, [
 ok('osservazioni coerenti: emivita trovata', _ok2.hl > 0, true);
 ok('nessuna accusata',                       (_ok2.incoerenti || []).length, 0);
 ok('e nessun conflitto dichiarato',          !!_ok2.contraddittorio, false);
+
+sez('Riquadro "Punteggio Booking reale": deve disegnarsi sempre');
+// 01/09/2026: il riquadro e' sparito del tutto perche' un ramo nuovo usava `esc`, che in
+// quella funzione non esisteva. Un errore in un caso raro cancellava un pannello intero,
+// e chi guarda non vede un messaggio sbagliato: non vede niente. Qui si chiama la funzione
+// in tutti gli stati possibili e si pretende che non sollevi errori.
+(function () {
+  var elFinto = { innerHTML: '' };
+  var _getEl = document.getElementById;
+  document.getElementById = function (id) { return /^rev-calib-/.test(id) ? elFinto : _getEl.call(document, id); };
+  var _calibVero = REV_CALIB, _hotelVeri = REV_HOTELS.sa;
+  var ORA = Date.now(), GG = 86400000;
+  var casi = {
+    'mai calibrato':   { osservazioni: [] },
+    'una osservazione':{ osservazioni: [{ ts: new Date(ORA - GG).toISOString(), display: 8.9 }], hl: 156, fascia: [78, 234], fonte: 'singolo', nUsate: 1 },
+    'fuori modello':   { osservazioni: [{ ts: new Date(ORA - GG).toISOString(), display: 8.9 }], fonte: 'default', fuoriModello: true, range: [8.4, 8.8], nRec: 677,
+                         incoerenti: [{ ts: ORA - 9 * GG, display: 8.9, nRec: 663 }] },
+    'senza incoerenti':{ osservazioni: [{ ts: new Date(ORA - GG).toISOString(), display: 8.9 }], fonte: 'default', fuoriModello: true, range: [8.4, 8.8], nRec: 677, incoerenti: [] },
+    'contraddittorio': { osservazioni: [{ ts: new Date(ORA - GG).toISOString(), display: 8.9 }], contraddittorio: true, nUsate: 2 },
+    'da aggiornare':   { osservazioni: [{ ts: new Date(ORA - 90 * GG).toISOString(), display: 8.9 }], hl: 156, fascia: [78, 234], fonte: 'singolo', nUsate: 1 }
+  };
+  Object.keys(casi).forEach(function (nome) {
+    REV_CALIB = { sa: casi[nome] };
+    var esploso = false, vuoto = true;
+    try { elFinto.innerHTML = ''; revRenderCalib('sa', { pesoEff: 404, nInFinestra: 677 }, 156); vuoto = !elFinto.innerHTML; }
+    catch (e) { esploso = true; }
+    ok('si disegna: ' + nome, !esploso && !vuoto, true);
+  });
+  REV_CALIB = _calibVero; REV_HOTELS.sa = _hotelVeri;
+  document.getElementById = _getEl;
+})();
