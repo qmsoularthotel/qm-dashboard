@@ -5781,10 +5781,17 @@ function calibraDaOsservazioni(recensioni,osservazioni,importTs){
       }
       return false;
     };
-    const tutteRiproducibili=ctx.every(daSola);
+    // Quali non tornano, non solo quante: senza il nome e la data, la scheda finisce per
+    // accusare il CSV di oggi per colpa di una lettura di dieci giorni fa (01/09/2026:
+    // SoulArt dichiarato fuori modello per l'8.9 annotato il 23/08, mentre le altre tre
+    // osservazioni e il CSV attuale erano perfettamente coerenti).
+    const incoerenti=ctx.filter(c=>!daSola(c))
+      .map(c=>({ts:c.ts,display:c.display,nRec:c.sub.length}));
+    const tutteRiproducibili=!incoerenti.length;
     return{hl:null,fascia:null,
            contraddittorio:ctx.length>1&&tutteRiproducibili,
            fuoriModello:!tutteRiproducibili,
+           incoerenti,
            nUsate:ctx.length,nAttesa};
   }
   return{
@@ -5849,6 +5856,8 @@ function revCalibRicalcola(p){
   // non è riproducibile, il caso resta "fuori modello" anche con più osservazioni —
   // a meno che accorciando la finestra il punteggio sia tornato riproducibile.
   if(multi.fuoriModello&&!c.finestraGg)c.fuoriModello=true;
+  // Le osservazioni che il modello non riesce a riprodurre, per poterle nominare.
+  c.incoerenti=(multi.incoerenti||[]).map(x=>({ts:x.ts,display:x.display,nRec:x.nRec}));
   c.contraddittorio=!!multi.contraddittorio;
   c.nUsate=multi.nUsate;c.nAttesa=nAttesa;
   if(c.fuoriModello){
@@ -5892,6 +5901,7 @@ function revCalibStato(p){
     scoreReale:ultima.display,ts:+new Date(ultima.ts),gg:Math.floor(gg),
     hl:c.hl,fascia:c.fascia,fonte:c.fonte||'default',
     nUsate:c.nUsate||0,nAttesa:c.nAttesa||0,oss,range:c.range||null,nRec:c.nRec||0,
+    incoerenti:c.incoerenti||[],
     qualita:revCalibQualita(c.fascia),
     tuttiUguali:oss.length>1&&oss.every(o=>Number(o.display)===Number(oss[0].display))
   };
@@ -6037,7 +6047,23 @@ function revRenderCalib(p,pb,hl){
     const rg=cs.range;
     const letto=Number(cs.scoreReale);
     let diagnosi='';
-    if(rg){
+    // Se il verdetto viene da UNA osservazione vecchia che non si riproduce, il colpevole
+    // e' quella, non il CSV di oggi: dirlo con la sua data, e proporre di toglierla.
+    // Prima si spiegava sempre col confronto sul valore piu' recente, che poteva essere
+    // perfettamente compatibile — e usciva "sopra il massimo di -0.00" (01/09/2026).
+    if(cs.incoerenti&&cs.incoerenti.length){
+      const el=cs.incoerenti.map(x=>{
+        const d=new Date(x.ts);
+        return '<strong>'+esc(Number(x.display).toFixed(1))+'</strong> del '
+          +String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')
+          +' (su '+x.nRec+' recensioni note allora)';
+      }).join(', ');
+      diagnosi='Non e\' il punteggio di oggi a non tornare, ma '
+        +(cs.incoerenti.length===1?'un\'osservazione registrata prima':'alcune osservazioni registrate prima')+': '+el+'. '
+        +'Con le recensioni presenti nel CSV a quel momento il modello non poteva arrivarci: '
+        +'di solito significa che allora mancavano recensioni recenti, arrivate nell\'export successivo. '
+        +'<span style="display:block;margin-top:4px;">Togli quella riga dal registro con la ✕ qui sotto: le altre osservazioni restano e la calibrazione si stringe di nuovo.</span>';
+    }else if(rg){
       const sotto=letto<rg[0],dist=sotto?rg[0]-letto:letto-rg[1];
       diagnosi=`Con queste ${cs.nRec} recensioni il modello può produrre da <strong>${rg[0].toFixed(2)}</strong> a <strong>${rg[1].toFixed(2)}</strong> (emivite da 20 a 1200 giorni). Il valore letto, <strong>${letto.toFixed(1)}</strong>, sta <strong>${sotto?'sotto il minimo':'sopra il massimo'} di ${dist.toFixed(2)}</strong>.`
         +`<span style="display:block;margin-top:4px;">${sotto

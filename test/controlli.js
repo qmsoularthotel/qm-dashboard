@@ -1004,3 +1004,32 @@ console.log('\n' + '─'.repeat(52));
 console.log(KO === 0
   ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'
   : KO + ' CONTROLLI FALLITI su ' + (OK + KO));
+
+sez('Calibrazione: quale osservazione non torna');
+// 01/09/2026: SoulArt dichiarato "fuori modello" e il messaggio accusava il CSV di oggi
+// ("contiene recensioni che Booking non conta piu'"), con una distanza assurda di -0.00.
+// La causa era un'osservazione di dieci giorni prima: l'8.9 del 23/08, che con le
+// recensioni note allora il modello non poteva produrre. Le altre tre erano coerenti.
+var _ORA = new Date('2026-09-01T10:00:00Z').getTime();
+var _GG2 = 86400000;
+function _rc(giorniFa, voto) { return { _dateTs: _ORA - giorniFa * _GG2, _score: voto }; }
+// Recensioni tutte da 9: nessuna emivita puo' produrre 10, nessuna puo' produrre 5.
+var _REC = [_rc(1, 9), _rc(5, 9), _rc(30, 9), _rc(200, 9)];
+var _multi = calibraDaOsservazioni(_REC, [
+  { ts: new Date(_ORA - 2 * _GG2).toISOString(), display: 9 },    // riproducibile
+  { ts: new Date(_ORA - 1 * _GG2).toISOString(), display: 5 }     // impossibile
+], _ORA);
+ok('il caso e\' fuori modello, non un conflitto', _multi.fuoriModello, true);
+ok('e non viene chiamato conflitto',              _multi.contraddittorio, false);
+ok('si sa quante osservazioni non tornano',       _multi.incoerenti.length, 1);
+ok('e qual e\'',                                  _multi.incoerenti[0].display, 5);
+ok('con quante recensioni note allora',           _multi.incoerenti[0].nRec > 0, true);
+// Quando le osservazioni tornano, non si accusa nessuno: il risultato porta un'emivita e
+// l'elenco delle incoerenti resta vuoto.
+var _ok2 = calibraDaOsservazioni(_REC, [
+  { ts: new Date(_ORA - 3 * _GG2).toISOString(), display: 9 },
+  { ts: new Date(_ORA - 1 * _GG2).toISOString(), display: 9 }
+], _ORA);
+ok('osservazioni coerenti: emivita trovata', _ok2.hl > 0, true);
+ok('nessuna accusata',                       (_ok2.incoerenti || []).length, 0);
+ok('e nessun conflitto dichiarato',          !!_ok2.contraddittorio, false);
