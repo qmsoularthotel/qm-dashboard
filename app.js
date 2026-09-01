@@ -476,6 +476,23 @@ async function turniArchivia(data){
     if(j&&j.value)arch=turniFondiArchivi(JSON.parse(j.value)||{},arch);
   }catch(e){}
   const {chiave,...resto}=voce;
+  // Se la settimana in archivio e' gia' identica non si riscrive niente. Il confronto
+  // ignora il segnatempo, che cambia a ogni chiamata e da solo farebbe sembrare tutto
+  // diverso. Serve perche' turniArchivia parte a OGNI apertura della pagina: con tre
+  // postazioni e qualche ricaricamento sono decine di scritture al giorno per un archivio
+  // che non e' cambiato (il filtro in kvSet non basta, vale solo dentro una sessione).
+  const _uguale=(a,b)=>{
+    if(!a||!b)return false;
+    try{
+      const pulisci=x=>JSON.stringify({dal:x.dal,al:x.al,giorni:x.giorni});
+      return pulisci(a)===pulisci(b);
+    }catch(e){return false;}
+  };
+  if(_uguale(arch[chiave],resto)){
+    try{localStorage.setItem(TURNI_STORICO_KEY,JSON.stringify(arch));}catch(e){}
+    try{turniRenderStats();}catch(e){}
+    return;
+  }
   arch[chiave]=resto;
   const json=JSON.stringify(arch);
   try{localStorage.setItem(TURNI_STORICO_KEY,json);}catch(e){}

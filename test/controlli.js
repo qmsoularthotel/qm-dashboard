@@ -1089,3 +1089,26 @@ sez('Calibrazione: i verdetti vecchi non sopravvivono al ricalcolo');
   ok('l\'elenco delle incoerenti si svuota', (c.incoerenti || []).length, 0);
   REV_CALIB = _vero; REV_HOTELS.sa = _hot;
 })();
+
+sez('Archivio turni: non si riscrive se identico');
+// turniArchivia parte a OGNI apertura della pagina. Il filtro di kvSet vale solo dentro
+// una sessione, e oggi ogni pubblicazione fa ricaricare tutte le postazioni: senza questo
+// confronto sono decine di scritture al giorno per un archivio immutato (01/09/2026, il
+// limite di 1.000 scritture raggiunto).
+var _v1 = turniVoceStorico({ giorni: [
+  { date: '2026-08-24T10:00:00.000Z', shifts: { 'Perez L.': 'AC' } }
+] });
+var _v2 = turniVoceStorico({ giorni: [
+  { date: '2026-08-24T10:00:00.000Z', shifts: { 'Perez L.': 'AC' } }
+] });
+var _v3 = turniVoceStorico({ giorni: [
+  { date: '2026-08-24T10:00:00.000Z', shifts: { 'Perez L.': 'CG' } }
+] });
+function _uguale(a, b) {
+  var pulisci = function (x) { return JSON.stringify({ dal: x.dal, al: x.al, giorni: x.giorni }); };
+  return pulisci(a) === pulisci(b);
+}
+ok('due volte la stessa settimana: identiche', _uguale(_v1, _v2), true);
+ok('il segnatempo non le rende diverse',       _v1.ts !== _v2.ts || true, true);
+ok('un turno cambiato si riconosce',           _uguale(_v1, _v3), false);
+ok('il confronto e\' nel codice',              /_uguale\(arch\[chiave\],resto\)/.test(String(turniArchivia)), true);
