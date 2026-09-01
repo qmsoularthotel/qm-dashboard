@@ -859,6 +859,54 @@ ok('di nuovo nascosta: resta ferma',          _pGiri, 1);
 document.visibilityState = 'visible';
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Resi biancheria: il taglio del periodo alla consegna');
+// Raimondo passa alle 8:00, prima che le cameriere lavorino: i resi trovati nella
+// giornata STESSA del ritiro non sono nel sacco che porta via. Prima si chiudevano tutte
+// le righe aperte, quelle di oggi comprese, e quei pezzi sparivano dentro una distinta
+// gia' consegnata — un ammanco che poi nessuno sa spiegare, e che sulla carta non si vede.
+_resi = {
+  righe: [
+    { id: 'x1', hotel: 'sa', data: '28/08/2026', tipologia: 'Federa',       qta: 4, ritiroId: null },
+    { id: 'x2', hotel: 'sa', data: '31/08/2026', tipologia: 'Telo doccia',  qta: 2, ritiroId: null },
+    // il giorno stesso del ritiro: resta aperto, va nel sacco successivo
+    { id: 'x3', hotel: 'sa', data: '01/09/2026', tipologia: 'Federa',       qta: 3, ritiroId: null },
+    // gia' consegnato in un ritiro precedente: non deve rientrare
+    { id: 'x4', hotel: 'sa', data: '20/08/2026', tipologia: 'Accappatoio',  qta: 1, ritiroId: 'vecchio' },
+    // l'altra struttura: i due sacchi sono distinti e si consegnano separatamente
+    { id: 'x5', hotel: 'bh', data: '28/08/2026', tipologia: 'Federa',       qta: 9, ritiroId: null }
+  ],
+  ritiri: [], tipologie: null
+};
+_resiHotel = 'sa';
+
+var RC = _resiDaConsegnare('01/09/2026');
+ok('consegna solo i giorni PRIMA del ritiro', RC.map(function (r) { return r.id; }).join(','), 'x1,x2');
+ok('il giorno del ritiro resta aperto',       RC.filter(function (r) { return r.id === 'x3'; }).length, 0);
+ok('una riga gia consegnata non rientra',     RC.filter(function (r) { return r.id === 'x4'; }).length, 0);
+ok('l altra struttura resta fuori',           RC.filter(function (r) { return r.id === 'x5'; }).length, 0);
+ok('totale pezzi della distinta',             RC.reduce(function (s, r) { return s + r.qta; }, 0), 6);
+// Dopo la consegna in elenco resta esattamente quello che il sacco non ha portato via.
+ok('cosa resta in elenco dopo la consegna',   _resiAperte().length - RC.length, 1);
+
+// Il sacco della struttura giusta: stesse date, elenco diverso.
+ok('Boutique consegna il proprio sacco',      _resiDaConsegnare('01/09/2026', 'bh').map(function (r) { return r.id; }).join(','), 'x5');
+
+// Ritiro saltato: il successivo copre da solo il buco, senza regole di calendario.
+ok('ritiro saltato: copre tutto l arretrato', _resiDaConsegnare('15/09/2026').length, 3);
+
+// Tutto quello che c'e' e' del giorno stesso o dopo: il sacco e' vuoto, e va detto
+// invece di registrare un ritiro da zero pezzi.
+ok('niente da consegnare il 31/08',           _resiDaConsegnare('31/08/2026').map(function (r) { return r.id; }).join(','), 'x1');
+ok('niente da consegnare il 28/08',           _resiDaConsegnare('28/08/2026').length, 0);
+
+// Data del ritiro illeggibile: non si consegna niente alla cieca.
+ok('data ritiro non valida: nessuna riga',    _resiDaConsegnare('non una data').length, 0);
+
+// Una riga con data illeggibile si consegna invece di restare aperta per sempre.
+_resi.righe.push({ id: 'x6', hotel: 'sa', data: '', tipologia: 'Federa', qta: 1, ritiroId: null });
+ok('riga senza data leggibile va in distinta', _resiDaConsegnare('01/09/2026').filter(function (r) { return r.id === 'x6'; }).length, 1);
+
+// ─────────────────────────────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 console.log(KO === 0
   ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'

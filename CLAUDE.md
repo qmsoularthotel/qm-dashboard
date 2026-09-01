@@ -1846,7 +1846,30 @@ Traccia digitale della **distinta cartacea** che le housekeeper compilano ogni g
 
 Righe e ritiri salvati **prima** dell'aggiunta del Boutique non hanno il campo `hotel`: `_resiH()` li fa valere come SoulArt (era l'unica struttura gestita), così i dati già inseriti restano dove sono invece di sparire dal filtro.
 
-**Periodo aperto = righe con `ritiroId:null`.** Non esiste una "quindicina" calcolata a calendario: le righe si accumulano nel periodo aperto finché non si registra un ritiro, che le chiude tutte assegnando il proprio id — rispecchia la procedura reale (il ritiro avviene "ogni 15 giorni" ma nella pratica quando passa Raimondo). Il periodo `dal`/`al` del ritiro è ricavato dalle **date minime/massime delle righe**, non dalla data del ritiro. `resiDelRitiro()` annulla un ritiro rimettendo le sue righe nel periodo aperto.
+**Periodo aperto = righe con `ritiroId:null`.** Non esiste una "quindicina" calcolata a calendario: le righe si accumulano nel periodo aperto finché non si registra un ritiro, che le chiude assegnando il proprio id — rispecchia la procedura reale (il ritiro avviene "ogni 15 giorni" ma nella pratica quando passa Raimondo). Il periodo `dal`/`al` del ritiro è ricavato dalle **date minime/massime delle righe consegnate**, non dalla data del ritiro. `resiDelRitiro()` annulla un ritiro rimettendo le sue righe nel periodo aperto.
+
+### La stampa della distinta È la consegna — e il taglio è al giorno del ritiro (01/09/2026)
+
+Due difetti che si sommavano, entrambi invisibili guardando la schermata:
+
+1. **`resiPrintDistinta()` non toccava i dati.** A chiudere il periodo era solo il bottone separato "✓ Registra ritiro Raimondo": chi stampava la distinta, la faceva firmare a Raimondo e gli consegnava il sacco si ritrovava l'elenco "Periodo aperto — resi non ancora consegnati" ancora pieno dei pezzi appena dati via. Alla consegna successiva finivano in distinta una seconda volta.
+2. **Si chiudevano tutte le righe aperte, quelle del giorno stesso comprese.** Raimondo passa alle **8:00**, prima che le cameriere lavorino: i resi trovati nella giornata del ritiro non sono nel sacco che porta via. Finivano dentro una distinta già consegnata, cioè sparivano — e un pezzo che manca senza comparire da nessuna parte è esattamente il problema che questo modulo esiste per risolvere.
+
+| Funzione | Ruolo |
+|---|---|
+| `_resiDaConsegnare(dataRitiro,h)` | Le righe aperte **datate PRIMA** del giorno del ritiro. È il taglio |
+| `_resiChiudiPeriodo()` | **Unico** punto che crea un ritiro: chiede data e sacchi, mostra cosa esce e cosa resta, chiude. Ci passano sia la stampa sia "Registra ritiro" |
+| `resiPrintDistinta(id)` | Senza `id`: chiude il periodo **e poi** stampa la distinta di quel ritiro (sacchi e data già compilati, prima restavano in bianco). Con un `id`: ristampa, non tocca nulla |
+| `resiPrintBozza()` | Copia di lavoro del periodo aperto, **non** chiude niente — marcata BOZZA sul foglio. È l'unico modo rimasto di stampare senza consegnare |
+| `resiRegistraRitiro()` | Per chi consegna senza stampare |
+
+**La regola del taglio è la stessa del modulo Biancheria** ("il consumo del giorno del giro finisce nel giro successivo"): stesso fornitore, stesso passaggio delle 8:00. Se un domani cambia l'orario di Raimondo, vanno cambiate tutte e due.
+
+La conferma prima di chiudere **dice sempre quante righe restano aperte** e perché: senza, un elenco che non si svuota del tutto sembrerebbe un guasto. Se *tutte* le righe aperte sono del giorno del ritiro o successive non si registra un ritiro da zero pezzi: si spiega che quel sacco è vuoto.
+
+**Attenzione all'ordine dentro `_resiChiudiPeriodo`**: `ritiroId` e il `push` del ritiro vanno fatti **prima** dell'`await _resiSave()`. `_resiSave()` riassegna `_resi` con l'archivio fuso dal cloud, quindi dopo l'attesa quegli oggetti non sono più quelli dentro `_resi` e le modifiche andrebbero perse (stessa trappola annotata in "Salvataggio sicuro degli archivi a elenchi").
+
+Coperto da **12 controlli** in `test/controlli.js` ("Resi biancheria: il taglio del periodo alla consegna"), verificati sabotando la regola (`d<lim` → `d<=lim`): 6 falliscono.
 
 Le correzioni di quantità (`resiEditQta`) aggiungono sempre una riga a `edits[]` con vecchio/nuovo valore e motivo — stesso principio della cassa reception, mai sovrascrittura silenziosa.
 
@@ -1860,9 +1883,11 @@ Ritorna `null` (nessun avviso) quando **non ci sono righe aperte**: senza resi i
 
 `RESI_TIPOLOGIE_DEFAULT` (13 voci standard: lenzuola, federe, copripiumino, asciugamani, ecc.) è modificabile dall'interfaccia ("Modifica elenco tipologie" → salva in `_resi.tipologie`), così i totali per tipologia restano coerenti invece di dipendere da come ognuno scrive la stessa cosa. `RESI_MOTIVI` è invece fisso nel codice (Macchiata, Strappata, Usurata, Ingiallita, Bruciata, Scolorita, Altro).
 
-### Stampa A4 (`resiPrintDistinta(ritiroId)`)
+### Stampa A4 (`_resiStampa(ritiroId,bozza)`)
 
-Replica il modulo cartaceo originale: intestazione struttura + periodo + totale pezzi, riquadro con le 3 note della procedura, tabella `Data | Tipologia | Quantità | Motivo | Firma HK`, blocco "Ritiro Fornitore Raimondo" con n° sacchi/totale/data e riga firma, blocco "Consegna distinta firmata" al Sig. Presta. Senza argomento stampa il **periodo aperto** (righe da consegnare); con un `ritiroId` **ristampa** un periodo già consegnato. Stesso pattern `window.open` + `document.write` + `print()` usato altrove nel dashboard.
+Replica il modulo cartaceo originale: intestazione struttura + periodo + totale pezzi, riquadro con le 3 note della procedura, tabella `Data | Tipologia | Quantità | Motivo | Firma HK`, blocco "Ritiro Fornitore Raimondo" con n° sacchi/totale/data e riga firma, blocco "Consegna distinta firmata" al Sig. Presta. Stesso pattern `window.open` + `document.write` + `print()` usato altrove nel dashboard.
+
+È il solo disegnatore del documento: ci arrivano `resiPrintDistinta(id)` (dopo aver chiuso il periodo, o per una ristampa) e `resiPrintBozza()`. Con `bozza` in cima al foglio compare l'avviso che il periodo **non** è chiuso — altrimenti una copia di lavoro sarebbe indistinguibile dalla distinta buona e potrebbe essere firmata da Raimondo per sbaglio.
 
 L'intestazione riporta la struttura **del ritiro che si sta ristampando** (`rit.hotel`), non quella selezionata al momento nella vista: ristampando un vecchio periodo del Boutique mentre si è sulla linguetta SoulArt, la distinta deve restare del Boutique.
 

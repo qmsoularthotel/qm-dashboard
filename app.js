@@ -13485,26 +13485,66 @@ function resiEditQta(id){
   r.qta=n;
   _resiSave();resiRender();
 }
-// Chiude il periodo aperto: tutte le righe non consegnate vengono associate al ritiro,
-// con il periodo (dal/al) ricavato dalle date delle righe stesse.
-function resiRegistraRitiro(){
+// IL TAGLIO DEL PERIODO — Raimondo passa alle 8:00, prima che le cameriere lavorino:
+// i resi trovati nella giornata STESSA del ritiro non sono nel sacco che porta via,
+// appartengono gia' al periodo successivo. E' la stessa regola del giro pulito/sporco
+// (§§ BIANCHERIA, "il consumo del giorno del giro finisce nel giro successivo"): prima
+// qui si chiudevano tutte le righe aperte, quelle di oggi comprese, e i pezzi raccolti
+// dopo il passaggio sparivano dentro una distinta gia' consegnata.
+// Una riga con data illeggibile si consegna invece di restare aperta per sempre: meglio
+// in distinta che dimenticata.
+function _resiDaConsegnare(dataRitiro,h){
+  const lim=_resiParseData(dataRitiro);
+  if(!lim)return [];
+  return _resiAperte(h).filter(r=>{const d=_resiParseData(r.data);return !d||d<lim;});
+}
+
+// Chiude il periodo aperto e registra il ritiro. E' l'UNICO punto che crea un ritiro: ci
+// passano sia "Registra ritiro" sia la stampa della distinta, che consegna e chiude nello
+// stesso gesto. Prima la stampa non toccava i dati, quindi chi stampava e consegnava si
+// ritrovava l'elenco "resi non ancora consegnati" pieno di pezzi gia' dati a Raimondo.
+// Restituisce {rit,consegnate,restano}, oppure null se non c'e' nulla da consegnare o si annulla.
+async function _resiChiudiPeriodo(){
   const aperte=_resiAperte();
-  if(!aperte.length){cqAvviso('Nessun reso da consegnare in questo periodo.');return;}
-  const totPezzi=aperte.reduce((s,r)=>s+r.qta,0);
-  const sacchi=prompt(`Sacchi ritirati da Raimondo (totale pezzi: ${totPezzi}):`,'1');
-  if(sacchi===null)return;
-  const nSacchi=parseInt(sacchi,10);
-  if(isNaN(nSacchi)||nSacchi<=0){cqAvviso('Numero sacchi non valido.');return;}
+  if(!aperte.length){cqAvviso('Niente da consegnare','Il periodo aperto e\' vuoto: non c\'e\' nessun reso da mettere nel sacco.');return null;}
   const dataRitiro=prompt('Data del ritiro (gg/mm/aaaa):',_resiFmtData(new Date()));
-  if(!dataRitiro)return;
-  const date=aperte.map(r=>_resiParseData(r.data)).filter(Boolean).sort((a,b)=>a-b);
+  if(!dataRitiro)return null;
+  if(!_resiParseData(dataRitiro)){cqAvviso('Data non valida','Scrivi la data come gg/mm/aaaa, per esempio '+_resiFmtData(new Date())+'.');return null;}
+  const consegnate=_resiDaConsegnare(dataRitiro);
+  const restano=aperte.length-consegnate.length;
+  // Tutto quello che c'e' in elenco e' del giorno del ritiro o dopo: il sacco e' vuoto.
+  // Si dice perche', invece di lasciar credere a un guasto.
+  if(!consegnate.length){
+    cqAvviso('Nessun reso da consegnare il '+dataRitiro,
+      'Tutti i '+aperte.length+' resi in elenco sono datati '+dataRitiro+' o dopo. Raimondo passa alle 8:00, prima che le cameriere lavorino: quei pezzi vanno nel sacco del ritiro successivo.');
+    return null;
+  }
+  const totPezzi=consegnate.reduce((s,r)=>s+r.qta,0);
+  const date=consegnate.map(r=>_resiParseData(r.data)).filter(Boolean).sort((a,b)=>a-b);
+  const dal=date.length?_resiFmtData(date[0]):dataRitiro;
+  const al=date.length?_resiFmtData(date[date.length-1]):dataRitiro;
+  if(!await cqConferma('Consegnare '+totPezzi+' pezzi a Raimondo?',
+      RESI_HOTELS[_resiHotel]+' &middot; '+consegnate.length+' righe dal <strong>'+dal+'</strong> al <strong>'+al+'</strong>.'
+      +(restano?'<br><br>I '+restano+' resi dal '+dataRitiro+' in poi <strong>restano nel periodo aperto</strong>: Raimondo passa alle 8:00, quei pezzi vanno nel sacco del prossimo ritiro.':''),
+      {ok:'Consegna e chiudi'}))return null;
+  const sacchi=prompt(`Sacchi ritirati da Raimondo (totale pezzi: ${totPezzi}):`,'1');
+  if(sacchi===null)return null;
+  const nSacchi=parseInt(sacchi,10);
+  if(isNaN(nSacchi)||nSacchi<=0){cqAvviso('Numero sacchi non valido.');return null;}
   const rit={id:_resiUid(),ts:Date.now(),hotel:_resiHotel,
-    dal:date.length?_resiFmtData(date[0]):dataRitiro,
-    al:date.length?_resiFmtData(date[date.length-1]):dataRitiro,
-    sacchi:nSacchi,totPezzi,dataRitiro,firmato:false};
+    dal,al,sacchi:nSacchi,totPezzi,dataRitiro,firmato:false};
   _resi.ritiri.push(rit);
-  aperte.forEach(r=>{r.ritiroId=rit.id;});
-  _resiSave();resiRender();
+  // ritiroId e push PRIMA dell'await: _resiSave() riassegna _resi con l'archivio fuso,
+  // e dopo l'attesa questi oggetti non sono piu' quelli dentro _resi.
+  consegnate.forEach(r=>{r.ritiroId=rit.id;});
+  await _resiSave();
+  return {rit,consegnate,restano};
+}
+
+async function resiRegistraRitiro(){
+  const esito=await _resiChiudiPeriodo();
+  if(!esito)return;
+  resiRender();
 }
 // La distinta cartacea torna firmata da Raimondo: si spunta qui, così si vede subito
 // quali periodi sono chiusi davvero e quali sono ancora in attesa della ricevuta.
@@ -13564,7 +13604,7 @@ function resiRender(){
       <span style="font-size:18px;">⚠️</span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:var(--fs-sm);font-weight:700;color:#7a3a00;">Sacco da consegnare a Raimondo — ${gg} giorni dall'ultimo ritiro</div>
-        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:2px;">${totPezzi} pezzi in attesa per ${esc(RESI_HOTELS[_resiHotel])}. Stampa la distinta e registra il ritiro quando passa.</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:2px;">${totPezzi} pezzi in attesa per ${esc(RESI_HOTELS[_resiHotel])}. Stampando la distinta il periodo si chiude: i resi di oggi restano in elenco per il prossimo sacco.</div>
       </div>
     </div>`;
   }
@@ -13619,8 +13659,9 @@ function resiRender(){
       <div class="kpi-value">${aperte.length}</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:16px 20px;display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:180px;">
-      <button onclick="resiPrintDistinta()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">🖨️ Stampa distinta A4</button>
-      <button onclick="resiRegistraRitiro()" style="background:#fff;color:var(--accent);border:1.5px solid var(--border);border-radius:7px;padding:9px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">✓ Registra ritiro Raimondo</button>
+      <button onclick="resiPrintDistinta()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">🖨️ Stampa distinta e consegna</button>
+      <button onclick="resiRegistraRitiro()" style="background:#fff;color:var(--accent);border:1.5px solid var(--border);border-radius:7px;padding:9px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">✓ Registra ritiro senza stampa</button>
+      <span onclick="resiPrintBozza()" style="font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;text-align:center;">Anteprima — non chiude il periodo</span>
     </div>
   </div>`;
 
@@ -13680,11 +13721,24 @@ function resiRender(){
   el.innerHTML=h;
 }
 
+// Stampare la distinta E' la consegna: chiude il periodo aperto nello stesso gesto, con
+// il taglio al giorno del ritiro (vedi _resiDaConsegnare). Con un ritiroId ristampa un
+// periodo gia' consegnato e non tocca nulla. Per una copia di lavoro c'e' resiPrintBozza().
+async function resiPrintDistinta(ritiroId){
+  if(ritiroId){_resiStampa(ritiroId);return;}
+  const esito=await _resiChiudiPeriodo();
+  if(!esito)return;
+  resiRender();
+  _resiStampa(esito.rit.id);
+}
+// Copia di lavoro del periodo aperto: nessun ritiro registrato, sacchi e data in bianco,
+// l'elenco resta dov'e'. Serve per il controllo con le housekeeper prima della consegna.
+function resiPrintBozza(){_resiStampa(null,true);}
+
 // Stampa A4 della distinta — stesso impianto del modulo cartaceo (intestazione struttura
 // e periodo, tabella data/tipologia/quantità/motivo/firma HK, blocco ritiro con firma di
-// Raimondo e blocco consegna al Sig. Presta). Senza id stampa il periodo aperto; con un
-// ritiroId ristampa quel periodo già consegnato.
-function resiPrintDistinta(ritiroId){
+// Raimondo e blocco consegna al Sig. Presta). Senza id stampa il periodo aperto in bozza.
+function _resiStampa(ritiroId,bozza){
   const righe=ritiroId?_resi.righe.filter(r=>r.ritiroId===ritiroId):_resiAperte();
   if(!righe.length){cqAvviso('Nessun reso da stampare per questo periodo.');return;}
   const rit=ritiroId?_resi.ritiri.find(x=>x.id===ritiroId):null;
@@ -13730,6 +13784,7 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
     <div><div class="title">Distinta Reso Biancheria Inidonea</div><div class="sub">Fornitore Raimondo</div></div>
     <div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">${esc(hotelNome)}</div></div>
   </div>
+  ${bozza?'<div class="warn" style="border-width:1.5px;font-weight:700;color:#111;">BOZZA — copia di lavoro. Il periodo non e\' ancora chiuso e questi resi restano in elenco. La distinta da far firmare a Raimondo si stampa da &laquo;Stampa distinta e consegna&raquo;.</div>':''}
   <div class="meta">
     <div><div class="meta-lbl">Periodo dal</div><div class="meta-val">${esc(dal)}</div></div>
     <div><div class="meta-lbl">al</div><div class="meta-val">${esc(al)}</div></div>
