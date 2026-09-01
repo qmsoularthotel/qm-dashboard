@@ -13499,6 +13499,44 @@ function _resiDaConsegnare(dataRitiro,h){
   return _resiAperte(h).filter(r=>{const d=_resiParseData(r.data);return !d||d<lim;});
 }
 
+// RIGHE TORNATE INDIETRO — riparazione dei dati gia' danneggiati.
+// Il difetto di fusione qui sopra (_QM_CHIUSURE) e' chiuso da oggi, ma le righe che erano
+// gia' rientrate nel periodo aperto restano dove sono: nessuno sa piu' a quale ritiro
+// appartenessero, perche' `ritiroId` era stato azzerato.
+// Si riconoscono dalla data: una riga aperta che cade DENTRO il periodo di un ritiro gia'
+// consegnato e' per forza una riga che quel ritiro aveva chiuso — `dal`/`al` sono per
+// costruzione il minimo e il massimo delle righe che ha portato via.
+// Resta un caso in cui l'accostamento sbaglia: un reso trascritto in ritardo, datato
+// dentro un periodo gia' consegnato ma mai finito nel sacco. Per questo la riassegnazione
+// NON e' automatica: si mostra cosa si sta per fare e decide l'utente, come per le
+// osservazioni in conflitto della calibrazione.
+function _resiRiaperte(h){
+  const hot=h||_resiHotel;
+  const rit=_resiRitiri(hot);
+  const out=[];
+  _resiAperte(hot).forEach(r=>{
+    const d=_resiParseData(r.data);if(!d)return;
+    const q=rit.find(t=>{const a=_resiParseData(t.dal),b=_resiParseData(t.al);return a&&b&&d>=a&&d<=b;});
+    if(q)out.push({riga:r,rit:q});
+  });
+  return out;
+}
+async function resiRiassegnaRiaperte(){
+  const casi=_resiRiaperte();
+  if(!casi.length){cqAvviso('Niente da riassegnare','Nessun reso in elenco cade dentro un periodo gia\' consegnato.');return;}
+  const conta={};
+  casi.forEach(c=>{conta[c.rit.id]=conta[c.rit.id]||{rit:c.rit,n:0,pezzi:0};conta[c.rit.id].n++;conta[c.rit.id].pezzi+=c.riga.qta;});
+  const elenco=Object.keys(conta).map(id=>{const x=conta[id];
+    return '&bull; ritiro del <strong>'+x.rit.dataRitiro+'</strong> ('+x.rit.dal+' &rarr; '+x.rit.al+'): '+x.n+' righe, '+x.pezzi+' pezzi';}).join('<br>');
+  if(!await cqConferma('Rimettere '+casi.length+' resi nella distinta a cui appartengono?',
+      'Cadono dentro un periodo gia\' consegnato a Raimondo:<br><br>'+elenco+
+      '<br><br>Spariscono dal periodo aperto e tornano nel loro ritiro, che e\' dove erano prima di tornare indietro.<br><br>Se invece sono resi veri, trascritti in ritardo e mai messi nel sacco, annulla: vanno consegnati col prossimo ritiro.',
+      {ok:'Riassegna'}))return;
+  casi.forEach(c=>{c.riga.ritiroId=c.rit.id;});
+  await _resiSave();
+  resiRender();
+}
+
 // Chiude il periodo aperto e registra il ritiro. E' l'UNICO punto che crea un ritiro: ci
 // passano sia "Registra ritiro" sia la stampa della distinta, che consegna e chiude nello
 // stesso gesto. Prima la stampa non toccava i dati, quindi chi stampava e consegnava si
@@ -13594,6 +13632,23 @@ function resiRender(){
     </button>`;
   }).join('');
   let h=`<div style="display:flex;gap:6px;border-bottom:1px solid var(--border);margin-bottom:18px;">${tabs}</div>`;
+
+  // Righe tornate indietro da una postazione ferma: si segnalano invece di lasciarle
+  // confuse con i resi da consegnare — sono gia' state date a Raimondo, e riconsegnarle
+  // significa contarle due volte. Il pannello compare solo quando ce ne sono davvero.
+  const riap=_resiRiaperte();
+  if(riap.length){
+    const pz=riap.reduce((s,c)=>s+c.riga.qta,0);
+    const rits=[...new Set(riap.map(c=>c.rit.dataRitiro))].join(', ');
+    h+=`<div style="background:var(--amber-bg);border:1.5px solid var(--amber);border-radius:8px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:18px;">↩️</span>
+      <div style="flex:1;min-width:220px;">
+        <div style="font-size:var(--fs-sm);font-weight:700;color:#7a3a00;">${riap.length} resi in elenco risultano già consegnati</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:2px;">${pz} pezzi che cadono dentro il ritiro del ${esc(rits)}. Erano chiusi e sono tornati indietro da una postazione rimasta ferma: se li riconsegni li conti due volte.</div>
+      </div>
+      <button onclick="resiRiassegnaRiaperte()" style="background:var(--amber);color:#fff;border:none;border-radius:7px;padding:8px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">Rimettili nella loro distinta</button>
+    </div>`;
+  }
 
   // Avviso ritiro: il sacco va consegnato ogni 15 giorni. Compare solo se c'è davvero
   // qualcosa da consegnare (righe aperte) — senza resi in attesa non c'è nulla da
@@ -14956,15 +15011,41 @@ function cqAvviso(titolo,testo,opz){
 // Qui non è mai successo perché li tocca praticamente solo il QM da una postazione, ma la
 // forma del difetto è identica e il costo di chiuderla è basso.
 const _qmElencoRecord=a=>Array.isArray(a)&&a.every(x=>x&&typeof x==='object'&&!Array.isArray(x)&&x.id);
+
+// UNA CHIUSURA NON SI ANNULLA PER ANZIANITÀ DELLA COPIA.
+// `ritiroId` sui resi biancheria lega la riga alla distinta consegnata a Raimondo: è un
+// passaggio di stato, non un campo che si corregge a mano. Con la sola regola "a parità di
+// id vince il locale" bastava una postazione ferma a prima della consegna — o anche solo
+// il suo localStorage, che _qmLeggiArchivio fonde allo stesso modo — per rimettere
+// `ritiroId:null` sopra righe già consegnate: quelle righe ricomparivano nel periodo
+// aperto e alla consegna successiva finivano in distinta una seconda volta.
+// È successo davvero: ritiro del 22/08/2026 registrato e firmato (06/08 → 20/08, 25
+// pezzi), e le sue righe di nuovo in elenco come "non ancora consegnate".
+// ECCEZIONE: se quel ritiro è stato annullato di proposito (resiDelRitiro lo mette in
+// `_rimossi`) la riga DEVE riaprirsi — quello è l'undo dell'utente, non una copia vecchia.
+// Aggiungendo altri campi di chiusura, basta metterli qui.
+const _QM_CHIUSURE=['ritiroId'];
+function _qmTieniChiusure(prec,m,rimossi){
+  let out=m;
+  _QM_CHIUSURE.forEach(campo=>{
+    if(!(campo in m)&&!(campo in (prec||{})))return;
+    const viva=x=>(x&&x[campo]&&!(rimossi&&rimossi.has(x[campo])))?x[campo]:null;
+    const val=viva(m)||viva(prec)||null;
+    if(out[campo]!==val){if(out===m)out=Object.assign({},m);out[campo]=val;}
+  });
+  return out;
+}
+
 // Unione di due elenchi per `id`. Il locale viene per ultimo: a parità di id vince la
-// versione di questa postazione, che è quella appena modificata a mano.
+// versione di questa postazione, che è quella appena modificata a mano — tranne per i
+// campi di chiusura, dove vince chi è chiuso (vedi sopra).
 function _qmUnisciRecord(remoto,locale,rimossi){
   const out=[],pos={};
   [].concat(remoto||[],locale||[]).forEach(m=>{
     if(!m||!m.id)return;
     if(rimossi&&rimossi.has(m.id))return;
-    if(!(m.id in pos)){pos[m.id]=out.length;out.push(m);return;}
-    out[pos[m.id]]=m;
+    if(!(m.id in pos)){pos[m.id]=out.length;out.push(_qmTieniChiusure(null,m,rimossi));return;}
+    out[pos[m.id]]=_qmTieniChiusure(out[pos[m.id]],m,rimossi);
   });
   return out;
 }

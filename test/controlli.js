@@ -907,6 +907,78 @@ _resi.righe.push({ id: 'x6', hotel: 'sa', data: '', tipologia: 'Federa', qta: 1,
 ok('riga senza data leggibile va in distinta', _resiDaConsegnare('01/09/2026').filter(function (r) { return r.id === 'x6'; }).length, 1);
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Resi biancheria: una consegna non torna indietro da sola');
+// Il difetto vero, trovato il 01/09/2026 su dati reali: il ritiro del 22/08 era
+// registrato e firmato (06/08 -> 20/08, 25 pezzi) e le sue righe erano di nuovo in
+// elenco come "non ancora consegnate". Causa: _qmUnisciRecord faceva vincere il locale a
+// parita' di id, quindi una postazione ferma a prima della consegna — o anche solo il suo
+// localStorage, che _qmLeggiArchivio fonde allo stesso modo — rimetteva ritiroId:null
+// sopra righe gia' consegnate. Alla consegna dopo finivano in distinta due volte.
+
+// Cloud: riga chiusa. Locale: la stessa riga come la ricorda una copia vecchia.
+var CH = _qmUnisciRecord(
+  [{ id: 'r1', qta: 3, ritiroId: 'rit1' }],
+  [{ id: 'r1', qta: 3, ritiroId: null }], new Set());
+ok('la riga consegnata resta consegnata',   CH[0].ritiroId, 'rit1');
+
+// E nel verso opposto: chi ha appena consegnato non viene disfatto dal cloud vecchio.
+var CH2 = _qmUnisciRecord(
+  [{ id: 'r1', ritiroId: null }],
+  [{ id: 'r1', ritiroId: 'rit1' }], new Set());
+ok('e non torna indietro nel verso opposto', CH2[0].ritiroId, 'rit1');
+
+// Su tutto il resto vince ancora il locale: e' la correzione appena fatta a mano.
+var CH3 = _qmUnisciRecord(
+  [{ id: 'r1', qta: 3, ritiroId: 'rit1' }],
+  [{ id: 'r1', qta: 7, ritiroId: null }], new Set());
+ok('la quantita corretta a mano vince',     CH3[0].qta, 7);
+ok('ma la chiusura resta',                  CH3[0].ritiroId, 'rit1');
+
+// L'undo dell'utente deve funzionare: resiDelRitiro cancella il ritiro e ne mette l'id
+// in _rimossi. Da li' in poi la riga DEVE riaprirsi, altrimenti "Annulla ritiro" non
+// annullerebbe piu' niente.
+var CH4 = _qmUnisciRecord(
+  [{ id: 'r1', ritiroId: 'rit1' }],
+  [{ id: 'r1', ritiroId: null }], new Set(['rit1']));
+ok('ritiro annullato: la riga si riapre',   String(CH4[0].ritiroId), 'null');
+
+// Un record che non ha il campo non se lo deve ritrovare addosso.
+var CH5 = _qmUnisciRecord([{ id: 'g1', sacchi: 1 }], [{ id: 'g1', sacchi: 2 }], new Set());
+ok('nessun campo chiusura inventato',       ('ritiroId' in CH5[0]), false);
+ok('e il resto si fonde come prima',        CH5[0].sacchi, 2);
+
+// La fusione non deve mutare gli oggetti di partenza: _resi li tiene per riferimento.
+var _orig = { id: 'r1', ritiroId: null };
+_qmUnisciRecord([{ id: 'r1', ritiroId: 'rit1' }], [_orig], new Set());
+ok('l originale non viene mutato',          String(_orig.ritiroId), 'null');
+
+// ── Riparazione dei dati gia' danneggiati ───────────────────────────────────
+// Una riga aperta che cade dentro il periodo di un ritiro consegnato e' per forza una
+// riga che quel ritiro aveva chiuso: dal/al sono il minimo e il massimo delle righe che
+// ha portato via.
+_resi = {
+  righe: [
+    { id: 'y1', hotel: 'sa', data: '09/08/2026', tipologia: 'Federa',      qta: 2, ritiroId: null },
+    { id: 'y2', hotel: 'sa', data: '20/08/2026', tipologia: 'Federa',      qta: 1, ritiroId: null },
+    { id: 'y3', hotel: 'sa', data: '22/08/2026', tipologia: 'Federa',      qta: 3, ritiroId: null },
+    { id: 'y4', hotel: 'sa', data: '10/08/2026', tipologia: 'Accappatoio', qta: 1, ritiroId: 'rit1' },
+    { id: 'y5', hotel: 'bh', data: '09/08/2026', tipologia: 'Federa',      qta: 9, ritiroId: null }
+  ],
+  ritiri: [{ id: 'rit1', hotel: 'sa', dal: '06/08/2026', al: '20/08/2026', dataRitiro: '22/08/2026', sacchi: 1, totPezzi: 25 }],
+  tipologie: null
+};
+_resiHotel = 'sa';
+var RI = _resiRiaperte();
+ok('riconosce le righe tornate indietro',   RI.map(function (c) { return c.riga.id; }).join(','), 'y1,y2');
+ok('l estremo del periodo e compreso',      RI.filter(function (c) { return c.riga.id === 'y2'; }).length, 1);
+ok('una riga fuori periodo non si tocca',   RI.filter(function (c) { return c.riga.id === 'y3'; }).length, 0);
+ok('l altra struttura non entra',           RI.filter(function (c) { return c.riga.id === 'y5'; }).length, 0);
+ok('le righe gia chiuse non si ricontano',  RI.filter(function (c) { return c.riga.id === 'y4'; }).length, 0);
+ok('sa a quale ritiro rimetterle',          RI[0].rit.id, 'rit1');
+// Il Boutique non ha ritiri: nessuna riga da riassegnare, nessun pannello.
+ok('struttura senza ritiri: niente da fare', _resiRiaperte('bh').length, 0);
+
+// ─────────────────────────────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 console.log(KO === 0
   ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'

@@ -1873,6 +1873,22 @@ Coperto da **12 controlli** in `test/controlli.js` ("Resi biancheria: il taglio 
 
 Le correzioni di quantità (`resiEditQta`) aggiungono sempre una riga a `edits[]` con vecchio/nuovo valore e motivo — stesso principio della cassa reception, mai sovrascrittura silenziosa.
 
+### Una consegna non torna indietro da sola (01/09/2026)
+
+**Il difetto vero**, trovato su dati reali dopo la correzione qui sopra: il ritiro del 22/08 era registrato **e firmato** (`06/08 → 20/08`, 1 sacco, 25 pezzi), e le sue righe erano di nuovo nel periodo aperto come *"non ancora consegnate"*. Non erano state riaperte da nessuno: erano **tornate indietro**.
+
+Causa, in `_qmUnisciRecord` (§§ SINCRONIZZAZIONE CONTINUA): a parità di `id` vinceva **sempre** il locale. La regola è giusta per una correzione fatta a mano, ma `ritiroId` non è un campo che si corregge — è un **passaggio di stato**, e "assente" ne è la versione più vecchia. Bastava quindi una postazione ferma a prima della consegna (o anche solo il suo `localStorage`, che `_qmLeggiArchivio` fonde allo stesso modo) per rimettere `ritiroId:null` sopra righe già consegnate. Alla consegna successiva finivano in distinta una seconda volta.
+
+`_QM_CHIUSURE=['ritiroId']` inverte la regola per quei campi soli: **vince chi è chiuso**. Con una eccezione necessaria — se il ritiro è in `_rimossi` (cioè `resiDelRitiro` lo ha annullato di proposito) la riga **deve** riaprirsi, altrimenti "Annulla ritiro" non annullerebbe più niente. Su tutti gli altri campi continua a vincere il locale. La fusione **non muta** i record di partenza (`Object.assign` su copia): `_resi` li tiene per riferimento.
+
+Aggiungendo in futuro altri campi che segnano una chiusura irreversibile, basta metterli in `_QM_CHIUSURE`.
+
+**Le righe già tornate indietro non si riparano da sole** — `ritiroId` era stato azzerato, non c'è più traccia di quale ritiro le avesse chiuse. `_resiRiaperte()` le riconosce **dalla data**: una riga aperta che cade dentro il periodo di un ritiro consegnato è per forza una riga che quel ritiro aveva chiuso, perché `dal`/`al` sono per costruzione il minimo e il massimo delle righe che ha portato via. Un banner ambra le segnala e `resiRiassegnaRiaperte()` le rimette al loro posto.
+
+**La riassegnazione non è automatica**, e il motivo è un caso reale che l'accostamento per data sbaglierebbe: un reso trascritto in ritardo, datato dentro un periodo già consegnato ma mai finito nel sacco. La conferma dice quante righe e quali ritiri tocca, e ricorda quel caso — stessa scelta delle osservazioni in conflitto della calibrazione: l'utente sa quale è sbagliata, il dashboard no.
+
+Coperto da **15 controlli** ("Resi biancheria: una consegna non torna indietro da sola"), verificati sabotando sia `_QM_CHIUSURE` sia l'estremo del periodo.
+
 ### Avviso ritiro (`RESI_GIORNI_RITIRO = 15`)
 
 `_resiGiorniDaUltimoRitiro(hotel)` conta i giorni **dall'ultimo ritiro** della struttura, o — se non ce n'è mai stato uno — **dal reso più vecchio ancora aperto**. Oltre la soglia compare un banner ambra sopra il form.
@@ -2348,6 +2364,7 @@ Qui non è mai successo perché li tocca praticamente solo il QM da una postazio
 |---|---|
 | Si rilegge e si **fonde** prima di scrivere | `_qmSalvaArchivio` |
 | Gli elenchi di record si uniscono per `id`; a parità di id vince il **locale**, che è quello appena modificato a mano | `_qmUnisciRecord` |
+| **Tranne i campi di chiusura** (`_QM_CHIUSURE`, oggi il solo `ritiroId`): lì vince chi è **chiuso**, perché "assente" è la versione più vecchia di un passaggio di stato, non una correzione. Salvo che la chiusura sia in `_rimossi`: quello è l'undo dell'utente | `_qmTieniChiusure` |
 | Gli oggetti si scendono ricorsivamente — serve al DVR, annidato per società | `_qmFondiElenchi` |
 | Un array che **non** è fatto di record con `id` (le `tipologie`) è un'impostazione, non un registro: vince il locale e non si unisce | `_qmElencoRecord` |
 | Senza aver mai letto il cloud in quella sessione **non si scrive** | `_qmSalvaArchivio` |
@@ -3011,4 +3028,5 @@ confrontarli con quelli presenti in `index.html`.
 | Mail pre-stay agli ospiti Booking di nuovo respinte, pur essendo `booking@soularthotel.com` corretto sull'Extranet | `PRESTAY_MITTENTE_BOOKING_OK` messa a `true` in `app.js` mentre sul Worker `SMTP_USER` era rimasta `qm@soularthotel.com`: Compass toglieva il blocco senza che il mittente fosse cambiato. L'Extranet dice quale mittente è autorizzato, non quale si sta usando | Il blocco ora segue il mittente che il Worker dichiara su `/prestay/stato` (**Impostazioni → Verifica mittente**), non una costante. Per spedire davvero da `booking@`: `SMTP_USER`/`SMTP_PASS` su Cloudflare, `SMTP_FROM` cancellata, Worker ripubblicato — e `IMAP_USER`/`IMAP_PASS` spostati sulla stessa casella, altrimenti spariscono le risposte |
 | Pre-stay di una giornata già inviata tornati vuoti: nomi presenti, email/telefono da reinserire, spunte di invio perse | `_psSave()` scriveva su KV **tutti i giorni in blocco**, senza rileggere: una copia col `localStorage` vuoto (altro profilo, o la copia di sviluppo che punta allo stesso Worker) importava il PDF Prenotazioni e sovrascriveva il lavoro fatto. E siccome all'avvio il ripristino dal cloud **sovrascrive anche il localStorage**, riaprire Compass cancellava l'ultima copia buona rimasta | Rilettura obbligatoria prima di ogni scrittura, **fusione** invece di sostituzione (per codice prenotazione, mai per `id`), avvio che fonde invece di sostituire, chiave separata per la copia di sviluppo, errore di scrittura visibile. Vedi "Il salvataggio non può più cancellare" |
 | Avviso Cloudflare: 50% del tetto giornaliero KV consumato senza che nessuno lavorasse | Il polling girava ogni 30s anche a scheda nascosta: 7 letture a giro su Compass, 20.160 al giorno per ogni pagina lasciata aperta | `_qmPolling` ferma il giro quando la scheda non è visibile e lo riprende al ritorno in primo piano; intervallo da 30 a 60 secondi. Vedi "Consumo KV" |
+| Resi biancheria già consegnati e firmati di nuovo in elenco come "non ancora consegnati" | `_qmUnisciRecord` faceva vincere il locale a parità di `id`: una postazione ferma a prima della consegna (o il suo solo `localStorage`, che `_qmLeggiArchivio` fonde uguale) rimetteva `ritiroId:null` sopra righe chiuse. Alla consegna dopo finivano in distinta due volte | `_QM_CHIUSURE`: sui campi di chiusura vince chi è chiuso, salvo ritiro annullato di proposito. Per le righe già tornate indietro, banner + `resiRiassegnaRiaperte()`, che le riconosce dalla data e chiede conferma |
 | Camere Art marcate "Art Resort" nelle fermate | `fixArriviStruttura` applicata solo a `arrivi`, mai a `fermate`/`partenze` | Struttura dedotta in modo deterministico da `_prenStruttura` su tutte e tre le liste |
