@@ -2947,6 +2947,22 @@ colti, con il dettaglio di cosa non tornava.
 
 ---
 
+### La finestra è 36 mesi — è un fatto, non un parametro (confermato 01/09/2026)
+
+Booking toglie le recensioni dopo **36 mesi** (`REV_FINESTRA_GG=1095`). Confermato dalla
+proprietà, non dedotto.
+
+**Tentativo rimosso**: il 23/08/2026, non riuscendo a riprodurre il 6.6 del Principe, era
+stata aggiunta una `calibraFinestra()` che accorciava la finestra fino a 12 mesi finché il
+punteggio tornava. Sul Principe aveva "risolto" scegliendo 21 mesi. Era una spiegazione
+**fabbricata**: una finestra corta riproduce qualunque punteggio proprio perché guarda meno
+recensioni. Rimossa insieme a `revFinestra()` e al campo `finestraGg`; i dati calibrati così
+sono stati riportati a "da ricalcolare".
+
+**Se un punteggio non è riproducibile con 36 mesi la causa è nei dati**, tipicamente
+recensioni recenti non ancora presenti nell'export: si riesporta il CSV dall'Extranet.
+Tre controlli in `test/controlli.js` impediscono di reintrodurre la scorciatoia.
+
 ## Note & Problemi Noti
 
 ### Aggiornamento automatico delle 5 app standalone (22/08/2026)

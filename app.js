@@ -4485,7 +4485,7 @@ function openScoreTrend(p){
   const _trendHl=revHl(p);
   function calcWeightedAt(refDate){
     const refTs=refDate.getTime()+30*24*60*60*1000; // fine del mese
-    return punteggioBooking(scored,_trendHl,refTs,revFinestra(p)).score;
+    return punteggioBooking(scored,_trendHl,refTs).score;
   }
   const vals=months.map(m=>calcWeightedAt(m));
   const validVals=vals.filter(v=>v!==null);
@@ -5366,7 +5366,7 @@ function revRenderExpiring(p){
   // pannello mostrerebbe uno "score attuale" diverso da quello in cima alla pagina.
   const _expHl=revHl(p);
   function calcScore(reviewSet){
-    return punteggioBooking(reviewSet,_expHl,nowTs,revFinestra(p)).score;
+    return punteggioBooking(reviewSet,_expHl,nowTs).score;
   }
   const scoreAttuale=calcScore(scored);
   // Score dopo scadenza questa settimana
@@ -5469,7 +5469,7 @@ function revRenderExpiring(p){
   // Resta però rilevante sulle strutture piccole con storico lungo, dove l'emivita
   // calibrata è molto più alta: lì poche uscite valgono punti percentuali veri.
   // Criterio: si guarda lo scostamento EFFETTIVAMENTE calcolato, non una stima.
-  const _expPesoTot=punteggioBooking(scored,_expHl,nowTs,revFinestra(p)).pesoEff;
+  const _expPesoTot=punteggioBooking(scored,_expHl,nowTs).pesoEff;
   const _expPesoUscita=allExpiring.reduce((acc,r)=>{
     const gg=(nowTs-r._dateTs)/86400000;
     return(gg>=0&&gg<=REV_FINESTRA_GG)?acc+Math.pow(0.5,gg/_expHl):acc;
@@ -5510,7 +5510,7 @@ function revRenderExpiring(p){
   }
   // Ripartizione del peso reale per età (non più i bucket 85/10/5): con il decadimento
   // continuo conta quanto peso porta ogni fascia d'età, non una percentuale fissa.
-  const _expPb=punteggioBooking(scored,_expHl,nowTs,revFinestra(p));
+  const _expPb=punteggioBooking(scored,_expHl,nowTs);
   const fasceEta=[
     {lbl:'0–6 mesi',min:0,max:183},
     {lbl:'6–12 mesi',min:183,max:365},
@@ -5629,30 +5629,15 @@ function calibraHalfLife(recensioni,scoreReale,oggi=new Date(),finestraGg=REV_FI
   return{hl:centro,fascia:[compatibili[0],compatibili[compatibili.length-1]],fuoriModello:false,range};
 }
 
-/**
- * Cerca una FINESTRA più corta di 36 mesi che renda riproducibile il punteggio reale.
- *
- * Il modello teneva fissa la finestra e faceva variare solo l'emivita. Quando il punteggio
- * di Booking non rientrava nella fascia producibile, l'unica spiegazione offerta era "il
- * CSV è incompleto" — una causa mai verificata. Sul Principe (23/08/2026) il CSV era
- * completo: con 371 recensioni il modello a 36 mesi non poteva scendere sotto 6.69, ma
- * accorciando la finestra 6.6 si riproduce in decine di combinazioni (18 mesi ed emivita
- * 200 giorni danno 6.61). Booking del resto dichiara una finestra di 24 mesi, non 36.
- *
- * Si esplora da 12 a 36 mesi. Fra le finestre compatibili si prende la PIÙ LUNGA: a parità
- * di aderenza è quella che butta via meno dati, e finestre corte spiegano qualunque
- * punteggio proprio perché guardano poche recensioni.
- */
-function calibraFinestra(recensioni,scoreReale,oggi=new Date()){
-  let migliore=null;
-  for(let mesi=36;mesi>=12;mesi--){
-    const fin=Math.round(mesi*30.44);
-    if(fin>=REV_FINESTRA_GG&&mesi!==36)continue;
-    const c=calibraHalfLife(recensioni,scoreReale,oggi,fin);
-    if(!c.fuoriModello){migliore={finestraGg:fin,mesi,hl:c.hl,fascia:c.fascia,range:c.range};break;}
-  }
-  return migliore;
-}
+// NOTA STORICA — la finestra NON si calibra, e' un fatto.
+// Il 23/08/2026, non riuscendo a riprodurre il 6.6 del Principe, era stata aggiunta una
+// calibraFinestra() che accorciava la finestra fino a 12 mesi finche' il punteggio tornava.
+// L'01/09/2026 e' stato confermato che Booking toglie le recensioni dopo 36 mesi: quella
+// funzione non spiegava nulla, FABBRICAVA una spiegazione guardando meno recensioni — e
+// una finestra corta spiega qualunque punteggio, proprio perche' ne guarda poche.
+// E' stata rimossa insieme a revFinestra() e al campo finestraGg. Se un punteggio non e'
+// riproducibile con 36 mesi, la causa e' nei dati (tipicamente recensioni recenti non
+// ancora presenti nell'export), non nell'ampiezza della finestra: non reintrodurla.
 
 // Booking mostra una sola cifra decimale e arrotonda: per far comparire 8.9 basta
 // superare 8.85, non raggiungere 8.90. Tutti i target passano da qui.
@@ -5814,7 +5799,7 @@ function revCalibRicalcola(p){
   // sopravvivevano ai rami che escono prima: tolta l'osservazione incoerente la
   // calibrazione riusciva (emivita 190, fascia 103-277) ma la scheda continuava a dire
   // "fuori modello", perche' nessuno aveva mai spento quella bandierina (01/09/2026).
-  c.fuoriModello=false; c.incoerenti=[]; c.finestraGg=null; c.range=null;
+  c.fuoriModello=false; c.incoerenti=[]; c.range=null;
   if(!scored.length||!oss.length){
     c.hl=null;c.fascia=null;c.fonte='default';c.contraddittorio=false;c.nUsate=0;c.nAttesa=oss.length;
     revCalibSave();return;
@@ -5841,34 +5826,21 @@ function revCalibRicalcola(p){
   c.fascia=single.fascia;
   c.fonte=single.fuoriModello?'default':'singolo';
   c.fuoriModello=single.fuoriModello;
-  c.finestraGg=null;
-  // Fuori modello a 36 mesi non vuol dire che i dati siano sbagliati: può voler dire che
-  // la finestra è troppo lunga. Prima di dichiarare il punteggio irriproducibile si prova
-  // ad accorciarla — vedi calibraFinestra.
-  if(single.fuoriModello){
-    const f=calibraFinestra(scored.filter(r=>r._dateTs<=+new Date(ultima.ts)),Number(ultima.display),new Date(ultima.ts));
-    if(f){
-      c.hl=f.hl;c.fascia=f.fascia;c.finestraGg=f.finestraGg;c.mesiFinestra=f.mesi;
-      c.fonte='finestra';c.fuoriModello=false;c.range=f.range||null;
-    }
-  }
   // Il range va tenuto solo se la finestra è rimasta quella standard: con una finestra
   // accorciata i punteggi producibili sono altri, e mostrare quelli vecchi accuserebbe il
   // dato di un'incompatibilità che non c'è più.
-  if(!c.finestraGg)c.range=single.range||null;   // punteggi producibili con queste recensioni
+  c.range=single.range||null;   // punteggi producibili con queste recensioni
   c.nRec=scored.length;
   // Se nemmeno il confronto d'insieme trova un'emivita e la causa è che un'osservazione
   // non è riproducibile, il caso resta "fuori modello" anche con più osservazioni —
   // a meno che accorciando la finestra il punteggio sia tornato riproducibile.
-  if(multi.fuoriModello&&!c.finestraGg)c.fuoriModello=true;
+  if(multi.fuoriModello)c.fuoriModello=true;
   // Le osservazioni che il modello non riesce a riprodurre, per poterle nominare.
   c.incoerenti=(multi.incoerenti||[]).map(x=>({ts:x.ts,display:x.display,nRec:x.nRec}));
   c.contraddittorio=!!multi.contraddittorio;
   c.nUsate=multi.nUsate;c.nAttesa=nAttesa;
   if(c.fuoriModello){
     console.warn('[Recensioni] Calibrazione fuori modello per '+p+': nessuna emivita tra 20 e 1200 giorni riproduce il punteggio '+ultima.display+', nemmeno accorciando la finestra fino a 12 mesi. Modello o dato da verificare.');
-  }else if(c.finestraGg){
-    console.info('[Recensioni] '+p+': punteggio '+ultima.display+' riprodotto con finestra '+c.mesiFinestra+' mesi ed emivita '+c.hl+' giorni (a 36 mesi era fuori modello).');
   }
   revCalibSave();
 }
@@ -5877,15 +5849,6 @@ function revCalibRicalcola(p){
 function revHl(p){
   const c=REV_CALIB[p];
   return(c&&c.hl&&!c.contraddittorio)?c.hl:REV_HL_DEFAULT;
-}
-// Finestra in uso per questa struttura. Di norma 36 mesi; più corta solo dove la
-// calibrazione ha dovuto accorciarla per riprodurre il punteggio reale (vedi
-// calibraFinestra). Va passata a punteggioBooking insieme all'emivita: una calibrazione
-// scritta e non usata nei calcoli sarebbe peggio che non averla, perché la scheda
-// dichiarerebbe una cosa e i numeri ne direbbero un'altra.
-function revFinestra(p){
-  const c=REV_CALIB[p];
-  return(c&&c.finestraGg&&!c.contraddittorio)?c.finestraGg:REV_FINESTRA_GG;
 }
 // Ampiezza della fascia compatibile = affidabilità della calibrazione.
 function revCalibQualita(fascia){
@@ -6095,7 +6058,6 @@ function revRenderCalib(p,pb,hl){
   // Fonte in uso: dice sempre da dove viene l'emivita, non solo quale numero è.
   const fonteTxt=cs.fonte==='osservazioni'?`da ${cs.nUsate} osservazioni`
     :cs.fonte==='singolo'?'da punteggio singolo'
-    :cs.fonte==='finestra'?'da punteggio singolo, con finestra accorciata'
     :'default';
   const q=cs.qualita;
   const qBadge=q?`<span style="font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:10px;background:var(--${q.col}-bg);color:var(--${q.col});margin-left:6px;">${q.label} · fascia ${q.amp} gg</span>`:'';
@@ -6142,7 +6104,7 @@ function revRenderCalib(p,pb,hl){
     ${avviso}
     ${ossHtml}
     <div style="margin-top:8px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;">
-      Emivita in uso <strong style="color:var(--text);">${hl} giorni</strong> · <strong style="color:var(--text);">${fonteTxt}</strong>${fasciaTxt}${qBadge} · peso effettivo ≈ <strong style="color:var(--text);">${Math.round(pb.pesoEff)}</strong> su ${pb.nInFinestra} recensioni nella finestra di <strong style="color:var(--text);">${Math.round(revFinestra(p)/30.44)} mesi</strong>${REV_CALIB[p]&&REV_CALIB[p].finestraGg?', accorciata dalla calibrazione: con 36 mesi il punteggio reale non era riproducibile':''}.
+      Emivita in uso <strong style="color:var(--text);">${hl} giorni</strong> · <strong style="color:var(--text);">${fonteTxt}</strong>${fasciaTxt}${qBadge} · peso effettivo ≈ <strong style="color:var(--text);">${Math.round(pb.pesoEff)}</strong> su ${pb.nInFinestra} recensioni nella finestra di <strong style="color:var(--text);">36 mesi</strong>: dopo quel termine Booking le toglie.
       ${sugg}
       <span style="display:block;margin-top:6px;">L'algoritmo di Booking non è pubblico: questo è un modello calibrato sul punteggio reale della struttura, non una replica. Anche dopo la calibrazione resta una fascia di emivite compatibili, quindi le previsioni vanno lette come ordini di grandezza.</span>
     </div>
@@ -6159,7 +6121,7 @@ function revRenderImpact(p,pb,scored,hl,oggiTs){
   // Le scadenze abbassano il peso effettivo, e un peso effettivo più basso significa che
   // ogni nuova recensione conta di più: è la faccia utile del calo, va mostrata accanto
   // all'impatto di oggi invece di restare un avviso staccato.
-  const scad90=(scored&&hl&&oggiTs)?revEffettoScadenze(scored,hl,oggiTs,90,revFinestra(p)):null;
+  const scad90=(scored&&hl&&oggiTs)?revEffettoScadenze(scored,hl,oggiTs,90):null;
   const voti=[10,9,8,7,5,3];
   const delta=v=>(v-pb.score)/(pb.pesoEff+1);
   const d10=delta(10),d5=delta(5);
@@ -6319,7 +6281,7 @@ function revRenderStats(p){
   // recensione di ieri e una di 11 mesi fa e poi crollare il peso di colpo al 366° giorno.
   const now=Date.now();
   const hl=revHl(p);
-  const pb=punteggioBooking(scored,hl,now,revFinestra(p));
+  const pb=punteggioBooking(scored,hl,now);
   const avgWeighted=pb.score!==null?pb.score:avgSimple;
   const pesoEff=pb.pesoEff;
   const noReply=data.filter(r=>!r._hasReply && REV_SENT[revUniqueKey(p,r)]!=='not_needed').length;
@@ -6380,7 +6342,7 @@ function revRenderStats(p){
     });
     // Nota scadenze quantificata: quanto peso esce davvero e come sposta il punteggio,
     // invece di un generico "N recensioni in scadenza" che non dice se conta o no.
-    const scad30=revEffettoScadenze(scored,hl,now,30,revFinestra(p));
+    const scad30=revEffettoScadenze(scored,hl,now,30);
     let expiringNote='';
     if(expiringThisMonth.length>0){
       const quota=(scad30.quotaPeso*100);
@@ -6392,8 +6354,8 @@ function revRenderStats(p){
     const ritmo=revRitmoAlGiorno(scored,now);
     // La simulazione fa invecchiare anche le recensioni esistenti mentre arrivano le
     // nuove: a pesi congelati lo sforzo risultava 5-7 volte più alto del reale.
-    const sim10=revSimulaTarget(scored,hl,target,10,ritmo,now,revFinestra(p));
-    const sim9=revSimulaTarget(scored,hl,target,9,ritmo,now,revFinestra(p));
+    const sim10=revSimulaTarget(scored,hl,target,10,ritmo,now);
+    const sim9=revSimulaTarget(scored,hl,target,9,ritmo,now);
     const mesi=g_=>g_<30?`${g_} giorni`:(g_<365?`~${Math.round(g_/30)} mesi`:`~${(g_/365).toFixed(1)} anni`);
     targetEl.style.display='flex';
     if(sim10.raggiungibile&&sim10.nRec===0){
@@ -6408,8 +6370,8 @@ function revRenderStats(p){
       const cs=revCalibStato(p);
       let range='';
       if(cs.fascia){
-        const a=revSimulaTarget(scored,cs.fascia[0],target,10,ritmo,now,revFinestra(p));
-        const b=revSimulaTarget(scored,cs.fascia[1],target,10,ritmo,now,revFinestra(p));
+        const a=revSimulaTarget(scored,cs.fascia[0],target,10,ritmo,now);
+        const b=revSimulaTarget(scored,cs.fascia[1],target,10,ritmo,now);
         const gg=[a,b].filter(x=>x.raggiungibile&&x.giorni).map(x=>x.giorni);
         if(gg.length===2&&Math.min(...gg)!==Math.max(...gg))range=` (fascia ${mesi(Math.min(...gg))}–${mesi(Math.max(...gg))})`;
       }

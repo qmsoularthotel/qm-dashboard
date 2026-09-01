@@ -449,12 +449,12 @@ ok('e il punteggio cambia di conseguenza',
    Math.round(punteggioBooking(_set, 1200, ORA, 365).score * 100) / 100, 10);
 ok('fuori finestra non pesa nemmeno un poco',
    punteggioBooking([_rec(2000, 1)], 1200, ORA, 1095).score, null);
-// Se il punteggio e' gia' riproducibile a 36 mesi non si accorcia niente: accorciare
-// spiegherebbe qualunque valore, guardando sempre meno recensioni.
-// Bersaglio scelto dal modello stesso: e' per costruzione riproducibile a 36 mesi.
-var _atteso = Math.round(punteggioBooking(_set, 136, ORA, 1095).score * 10) / 10;
-var _facile = calibraFinestra(_set, _atteso, new Date(ORA));
-ok('finestra piena compatibile: si tiene quella', _facile && _facile.mesi, 36);
+// La finestra NON e' un parametro: l'01/09/2026 e' stato confermato che Booking toglie le
+// recensioni dopo 36 mesi. La calibraFinestra() che l'accorciava e' stata rimossa —
+// accorciarla non spiegava il punteggio, lo fabbricava guardando meno recensioni.
+ok('la finestra resta di 36 mesi', REV_FINESTRA_GG, 1095);
+ok('nessuna scorciatoia sulla finestra', typeof calibraFinestra === 'undefined', true);
+ok('e nessuna finestra per struttura',   typeof revFinestra === 'undefined', true);
 
 sez('Calibrazione recensioni: i registri si fondono, non si sostituiscono');
 // Il 23/08/2026 le osservazioni di TUTTE le strutture sono sparite: il salvataggio
@@ -1081,12 +1081,11 @@ sez('Calibrazione: i verdetti vecchi non sopravvivono al ricalcolo');
       { ts: new Date(ORA - 5 * GG).toISOString(), display: 9 },
       { ts: new Date(ORA - 2 * GG).toISOString(), display: 9 }
     ], fuoriModello: true, incoerenti: [{ ts: ORA - 9 * GG, display: 8.9, nRec: 663 }],
-       finestraGg: 400, range: [8.4, 8.8] } };
+       range: [8.4, 8.8] } };
   try { revCalibRicalcola('sa'); } catch (e) {}
   var c = REV_CALIB.sa;
   ok('la calibrazione riesce',            c.hl > 0, true);
   ok('e "fuori modello" viene spento',    !!c.fuoriModello, false);
   ok('l\'elenco delle incoerenti si svuota', (c.incoerenti || []).length, 0);
-  ok('e la finestra accorciata si azzera', !!c.finestraGg, false);
   REV_CALIB = _vero; REV_HOTELS.sa = _hot;
 })();
