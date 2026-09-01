@@ -1064,3 +1064,29 @@ sez('Riquadro "Punteggio Booking reale": deve disegnarsi sempre');
   REV_CALIB = _calibVero; REV_HOTELS.sa = _hotelVeri;
   document.getElementById = _getEl;
 })();
+
+sez('Calibrazione: i verdetti vecchi non sopravvivono al ricalcolo');
+// 01/09/2026: tolta l'osservazione incoerente la calibrazione riusciva, ma la scheda
+// continuava a dire "fuori modello" — la bandierina del giro precedente restava accesa
+// perche' il ramo che riesce esce prima di azzerarla. Un dato corretto mostrato come
+// guasto e' peggio di un errore visibile: non si capisce cosa fare.
+(function () {
+  var _vero = REV_CALIB, _hot = REV_HOTELS.sa;
+  var ORA = Date.now(), GG = 86400000;
+  var rec = [];
+  for (var i = 1; i <= 40; i++) rec.push({ _dateTs: ORA - i * 3 * GG, _score: 9 });
+  REV_HOTELS.sa = { data: rec };
+  // Si parte da uno stato "sporco": verdetti di un giro precedente ancora appiccicati.
+  REV_CALIB = { sa: { osservazioni: [
+      { ts: new Date(ORA - 5 * GG).toISOString(), display: 9 },
+      { ts: new Date(ORA - 2 * GG).toISOString(), display: 9 }
+    ], fuoriModello: true, incoerenti: [{ ts: ORA - 9 * GG, display: 8.9, nRec: 663 }],
+       finestraGg: 400, range: [8.4, 8.8] } };
+  try { revCalibRicalcola('sa'); } catch (e) {}
+  var c = REV_CALIB.sa;
+  ok('la calibrazione riesce',            c.hl > 0, true);
+  ok('e "fuori modello" viene spento',    !!c.fuoriModello, false);
+  ok('l\'elenco delle incoerenti si svuota', (c.incoerenti || []).length, 0);
+  ok('e la finestra accorciata si azzera', !!c.finestraGg, false);
+  REV_CALIB = _vero; REV_HOTELS.sa = _hot;
+})();

@@ -5810,6 +5810,11 @@ function revCalibRicalcola(p){
   if(!REV_CALIB[p])REV_CALIB[p]={osservazioni:[]};
   const c=REV_CALIB[p];
   c.osservazioni=oss;
+  // Ogni ricalcolo riparte pulito. Senza questo, i verdetti del giro precedente
+  // sopravvivevano ai rami che escono prima: tolta l'osservazione incoerente la
+  // calibrazione riusciva (emivita 190, fascia 103-277) ma la scheda continuava a dire
+  // "fuori modello", perche' nessuno aveva mai spento quella bandierina (01/09/2026).
+  c.fuoriModello=false; c.incoerenti=[]; c.finestraGg=null; c.range=null;
   if(!scored.length||!oss.length){
     c.hl=null;c.fascia=null;c.fonte='default';c.contraddittorio=false;c.nUsate=0;c.nAttesa=oss.length;
     revCalibSave();return;
