@@ -2226,6 +2226,22 @@ aggiornamento automatico sembrerebbe una riapertura. **Il CSS di STAMPA e l'ante
 `.mp` non sono stati toccati**: quella è la scheda che si consegna all'ospite, non
 l'interfaccia.
 
+**La scheda stampata segue lo stesso linguaggio** (02/09/2026): intestazione navy con filo
+oro sotto, bordi delle sezioni navy invece che neri, fasce di sezione in azzurro tenue,
+etichette IT/EN come pastiglie navy piene. **Il testo resta nero**: su una stampante in
+bianco e nero il navy diventa grigio scuro e un testo grigio si legge peggio; l'oro è solo
+decorativo, quindi stampato in monocromatico non porta via nessuna informazione. Nessun
+marchio Compass sul foglio: è un documento che si consegna all'ospite, non uno strumento
+interno.
+
+**Ogni scheda usciva con una SECONDA PAGINA BIANCA dietro** — un foglio sprecato per ogni
+ospite, difetto presente fin dall'origine. `.print-page` è alta `297mm` esatti e ha i suoi
+margini interni (11/13mm), ma i margini di stampa del browser si sommano: il foglio non
+entra nell'area stampabile e trabocca. Risolto con `@page { size: A4; margin: 0; }` dentro
+il blocco di stampa. Verificato generando il PDF con Chromium prima e dopo: 2 pagine contro
+1, e con due ospiti 2 pagine (non 4). La riga della firma resta dentro il foglio (misurata:
+contenuto 1123px = altezza pagina, firma a 1064).
+
 **pdf.js arriva da un CDN e la sua assenza non deve uccidere la pagina**: la riga
 `pdfjsLib.GlobalWorkerOptions.workerSrc = …` in cima allo script lanciava un errore che
 portava giù *tutto* il resto — la pagina restava a schermo ma inerte, e il riquadro di
