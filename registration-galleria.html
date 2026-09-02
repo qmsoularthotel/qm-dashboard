@@ -243,6 +243,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div style="font-size:30px;font-weight:500;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
   <div style="width:60px;border-top:1px solid rgba(255,255,255,.18);"></div>
   <div style="font-size:22px;color:rgba(255,255,255,.7);">Registration Cards</div>
+  <div style="font-size:13px;color:rgba(255,255,255,.42);line-height:1.5;max-width:340px;padding:0 18px;box-sizing:border-box;text-align:center;">Art Resort Galleria Umberto, Art Suite Santa Brigida</div>
 </div>
 <style>
 @keyframes qmSplashRing{0%{transform:scale(.6);opacity:.8;}100%{transform:scale(2.4);opacity:0;}}
@@ -351,7 +352,7 @@ qmPingUso();
 // confronta l'ETag del proprio file (cambia solo se cambia il contenuto: nessun numero di
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina — che risponde
 // alla domanda che l'ETag non sa porsi: sto gia' eseguendo una copia vecchia?
-const QM_APP_BUILD='2026-09-02.4';
+const QM_APP_BUILD='2026-09-02.5';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
