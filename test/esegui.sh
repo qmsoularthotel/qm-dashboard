@@ -89,7 +89,7 @@ BKF_KO=0
 # Aggiornamento automatico: senza, un'app rimasta aperta continua a girare col codice
 # vecchio a tempo indeterminato — ed e' cosi' che una correzione pubblicata resta inefficace
 # senza che nessuno se ne accorga (22/08/2026, archivio colazioni).
-for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.html dvr.html registration-galleria.html; do
+for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.html dvr.html; do
   # Le richieste devono avere la maschera di Compass, non quelle del browser: "compass-qm.com
   # dice" su un'azione che cancella dati non dice a nessuno chi sta chiedendo.
   case "$_app" in
@@ -108,27 +108,19 @@ for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.htm
   # Da una macchina non abilitata non si deve intravedere niente: velo pieno, non
   # trasparente, e invalicabile appena il Worker rifiuta (401). Se sparisse, i dati degli
   # ospiti tornerebbero visibili a chiunque digiti l'indirizzo.
-  # registration-galleria.html e' un'applicazione a se': non fa parte di Compass e compare
-  # nel Pannello App solo per poterla accendere e spegnere. Non ha schermata di
-  # abilitazione di proposito. USA pero' il cloud (qm_rc_last, qm_app_status): quando si
-  # chiudera' la porta va deciso cosa farne — vedi CLAUDE.md, sezione accesso.
-  case "$_app" in
-    registration-galleria.html) ;;
-    *)
-      if ! grep -q 'qmMostraAttivazione' "$_app"; then
-        echo ""
-        echo "  ERRORE      $_app non mostra piu' la schermata di abilitazione."
-        echo "              Una macchina non abilitata vedrebbe i dati degli ospiti."
-        BKF_KO=1
-      fi
-      if ! grep -q 'res.status===401' "$_app"; then
-        echo ""
-        echo "  ERRORE      $_app non reagisce piu' al rifiuto del Worker (401)."
-        echo "              Chiudendo la porta mostrerebbe una pagina vuota invece della"
-        echo "              schermata di abilitazione: sembrerebbe un guasto."
-        BKF_KO=1
-      fi ;;
-  esac
+  if ! grep -q 'qmMostraAttivazione' "$_app"; then
+    echo ""
+    echo "  ERRORE      $_app non mostra piu' la schermata di abilitazione."
+    echo "              Una macchina non abilitata vedrebbe i dati degli ospiti."
+    BKF_KO=1
+  fi
+  if ! grep -q 'res.status===401' "$_app"; then
+    echo ""
+    echo "  ERRORE      $_app non reagisce piu' al rifiuto del Worker (401)."
+    echo "              Chiudendo la porta mostrerebbe una pagina vuota invece della"
+    echo "              schermata di abilitazione: sembrerebbe un guasto."
+    BKF_KO=1
+  fi
   if ! grep -q 'function qmKvSet' "$_app"; then
     echo ""
     echo "  ERRORE      $_app non filtra piu' le scritture identiche sul cloud."
@@ -166,6 +158,30 @@ for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.htm
     echo "  ERRORE      $_app non si aggiorna piu' da sola quando pubblichi una correzione."
     echo "              Manca qmCheckVersione(): l'app resterebbe al codice vecchio finche'"
     echo "              qualcuno non la chiude a mano."
+    BKF_KO=1
+  fi
+done
+
+# registration-galleria.html e' un'app a se': dei colleghi della Galleria, fuori da Compass.
+# Il 02/09/2026 le e' stato tolto ogni contatto col cloud, ed e' questa la ragione per cui
+# non ha una schermata di abilitazione e non compare piu' nel Pannello App. Se qualcuno le
+# rimettesse una fetch verso il Worker, tornerebbe a chiedere un lasciapassare che chi la
+# usa non ha: l'app smetterebbe di funzionare in Galleria, e nessuno collegherebbe la cosa
+# a una riga aggiunta qui.
+if grep -qE "anthropic-proxy|/kv/|qmKvSet" registration-galleria.html; then
+  echo ""
+  echo "  ERRORE      registration-galleria.html e' tornata a usare il cloud di Compass."
+  echo "              Deve restare indipendente: senza lasciapassare il Worker la rifiuta"
+  echo "              e i colleghi della Galleria non stampano piu' le schede."
+  BKF_KO=1
+fi
+# L'aggiornamento automatico invece deve restarci: guarda solo il proprio file, non serve
+# nessun server, ed e' l'unico modo perche' una correzione pubblicata arrivi a chi tiene
+# l'app sempre aperta.
+for _c in QM_APP_BUILD qmCheckVersione; do
+  if ! grep -q "$_c" registration-galleria.html; then
+    echo ""
+    echo "  ERRORE      registration-galleria.html non si aggiorna piu' da sola ($_c)."
     BKF_KO=1
   fi
 done

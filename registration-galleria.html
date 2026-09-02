@@ -261,98 +261,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 })();
 </script>
 
-<div id="qm-maintenance-screen" style="display:none;position:fixed;inset:0;z-index:99999;background:#1A2E55;align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:20px;box-sizing:border-box;text-align:center;">
-  <svg viewBox="0 0 36 36" width="62" height="62" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="18" cy="18" r="16.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.3"/>
-    <polygon points="18,2 20.68,11.53 18,18 15.32,11.53" fill="#c9952f"/>
-    <polygon points="34,18 24.47,15.32 18,18 24.47,20.68" fill="#c9952f"/>
-    <polygon points="18,34 15.32,24.47 18,18 20.68,24.47" fill="#c9952f"/>
-    <polygon points="2,18 11.53,20.68 18,18 11.53,15.32" fill="#c9952f"/>
-    <polygon points="29.31,6.69 20.68,11.53 18,18 24.47,15.32" fill="rgba(255,255,255,.8)"/>
-    <polygon points="29.31,29.31 24.47,20.68 18,18 20.68,24.47" fill="rgba(255,255,255,.8)"/>
-    <polygon points="6.69,29.31 15.32,24.47 18,18 11.53,20.68" fill="rgba(255,255,255,.8)"/>
-    <polygon points="6.69,6.69 11.53,15.32 18,18 15.32,11.53" fill="rgba(255,255,255,.8)"/>
-    <circle cx="18" cy="18" r="2" fill="rgba(255,255,255,.9)"/>
-  </svg>
-  <div>
-    <div style="font-size:23px;font-weight:700;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
-    <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:5px;white-space:nowrap;">Connected &middot; Automated &middot; Precise</div>
-  </div>
-  <div style="width:70px;border-top:1px solid rgba(255,255,255,.15);margin:8px 0;"></div>
-  <div>
-    <div style="font-size:19px;font-weight:600;color:#fff;">Applicazione in aggiornamento</div>
-    <div style="font-size:14px;color:rgba(255,255,255,.6);margin-top:18px;line-height:1.6;">Torna operativa a breve.<br>Contatta il Quality Manager per info.</div>
-  </div>
-</div>
-
 <script>
-// ── COLLEGAMENTO A COMPASS — SOLO CONTROLLO, NESSUN DATO ────────────────────
-// Quest'app resta di chi la usa: legge il PDF degli arrivi NEL BROWSER (pdf.js) e stampa.
-// Nomi degli ospiti, date, camere e i dati della carta di credito NON escono da qui e NON
-// finiscono sul cloud. Non e' una cautela generica: /kv/get sul Worker e' senza
-// autenticazione, quindi qualunque cosa finisse su KV sarebbe leggibile da chiunque
-// conosca l'indirizzo, che e' pubblico nel sorgente. Su una scheda con nome ospite e
-// numero di carta sarebbe inaccettabile.
+// ── APP INDIPENDENTE — NESSUN COLLEGAMENTO AL CLOUD ────────────────────────
+// Quest'app non parla con il Worker di Compass e non scrive niente su KV: legge il PDF
+// degli arrivi NEL BROWSER (pdf.js) e stampa. Nomi degli ospiti, date, camere e dati
+// della carta di credito non escono da qui.
 //
-// Dal Pannello App di Compass si controllano quindi solo due cose:
-//   1. acceso/spento (chiave 'rc' in qm_app_status) — mostra la schermata di manutenzione;
-//   2. quando e' stata usata l'ultima volta (qm_rc_last: un solo orario, nient'altro).
-const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
-
-const _qmKvUltimo={};
-// LA SCRITTURA VERA, e deve restare una funzione SEPARATA da qmKvSet: nella prima versione
-// del filtro anti-ripetizioni (01/09/2026) qui c'era una chiamata a qmKvSet stessa, che
-// trovava il valore appena memorizzato e tornava subito — la fetch non partiva mai, in
-// silenzio, su tutte le app.
-function _qmKvScrivi(key,v){
-  return fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({key:key,value:v})});
-}
-function qmKvSet(key,value){
-  const v=typeof value==='string'?value:JSON.stringify(value);
-  if(_qmKvUltimo[key]===v)return Promise.resolve(true);
-  _qmKvUltimo[key]=v;
-  return _qmKvScrivi(key,v)
-    .then(r=>{if(!r.ok)delete _qmKvUltimo[key];return r.ok;})
-    .catch(e=>{delete _qmKvUltimo[key];throw e;});
-}
-
-async function qmCheckAppStatus(){
-  try{
-    const r=await fetch(PROXY+'/kv/get?key=qm_app_status',{cache:'no-store'});
-    const j=await r.json();
-    const st=j&&j.value?JSON.parse(j.value):{};
-    const disabled=st.rc===false;
-    const scr=document.getElementById('qm-maintenance-screen');
-    if(scr)scr.style.display=disabled?'flex':'none';
-    document.body.style.overflow=disabled?'hidden':'';
-  }catch(e){}
-}
-qmCheckAppStatus();
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckAppStatus();});
-// Solo mentre l'app e' davvero a schermo: un'app lasciata aperta in secondo piano leggeva
-// il cloud per settimane, letture che nessuno guarda (avviso Cloudflare, 31/08/2026).
-setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60000);
-
-// Ultimo utilizzo, per il Pannello App: SOLO un orario. Si riscrive al massimo ogni mezz'ora
-// (il tetto delle scritture sul piano gratuito e' 1.000 al giorno, ed e' quello stretto).
-async function qmPingUso(){
-  try{
-    const r=await fetch(PROXY+'/kv/get?key=qm_rc_last',{cache:'no-store'});
-    const j=await r.json();
-    const prec=j&&j.value?JSON.parse(j.value):null;
-    if(prec&&prec.ts&&Date.now()-prec.ts<1800000)return;
-    qmKvSet('qm_rc_last',JSON.stringify({ts:Date.now()})).catch(()=>{});
-  }catch(e){}
-}
-qmPingUso();
+// Fino al 02/09/2026 mandava al cloud due sole cose — acceso/spento (chiave 'rc' in
+// qm_app_status) e l'orario dell'ultimo utilizzo (qm_rc_last) — ed era per questo che
+// compariva nel Pannello App. Sono state tolte di proposito: l'app non fa parte di
+// Compass, e con l'accesso al Worker ora riservato ai dispositivi abilitati, restare
+// agganciata avrebbe voluto dire chiedere un lasciapassare anche a chi la usa solo per
+// stampare le schede. Il prezzo, accettato: dal Pannello App non si spegne piu' e non si
+// vede piu' quando e' stata usata l'ultima volta.
+//
+// L'unica cosa rimasta e' l'aggiornamento automatico qui sotto, che guarda solo il
+// proprio file e non ha bisogno di nessun server.
 
 // ── AGGIORNAMENTO AUTOMATICO ──
 // Un'app aperta e mai chiusa continua a usare il codice con cui e' stata caricata. Si
 // confronta l'ETag del proprio file (cambia solo se cambia il contenuto: nessun numero di
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina — che risponde
 // alla domanda che l'ETag non sa porsi: sto gia' eseguendo una copia vecchia?
-const QM_APP_BUILD='2026-09-02.5';
+const QM_APP_BUILD='2026-09-02.6';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}

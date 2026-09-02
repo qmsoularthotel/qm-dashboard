@@ -2190,29 +2190,33 @@ Conta le camere **effettivamente controllate** (condizione: `pronta===true`) per
 
 ---
 
-## Registration Cards Galleria — l'app di un'altra struttura, controllata ma non gestita
+## Registration Cards Galleria — un'app a sé, fuori da Compass
 
 `registration-galleria.html`. È il file HTML che i colleghi dell'altra struttura già usavano
 per generare le registration card: legge il PDF arrivi del PMS con pdf.js **dentro il
 browser** e stampa le schede A4 (dati carta di credito e firma inclusi, da compilare a
-mano). Il loro codice non è stato riscritto: è quello, con in più il solo blocco di
-controllo Compass.
+mano). Il loro codice non è stato riscritto: è quello, con in più l'aggiornamento
+automatico e la veste grafica Compass.
 
 **Perché non è una vista dentro Compass**: i colleghi non hanno (e non devono avere) accesso
 a Compass, che resta il pannello del QM. Serviva una pagina loro, con un indirizzo loro.
 
-**Non manda NIENTE sul cloud, ed è una scelta, non una dimenticanza.** `/kv/get` sul Worker
-è senza autenticazione: qualunque cosa finisse su KV sarebbe leggibile da chiunque conosca
-l'indirizzo, che è pubblico nel sorgente. Su una scheda con nome dell'ospite e numero di
-carta di credito sarebbe inaccettabile. Se un domani si volesse sincronizzare qualcosa di
-questa app, prima va protetto l'archivio KV.
+**Non manda NIENTE sul cloud, ed è una scelta, non una dimenticanza.** Legge il PDF nel
+browser e stampa: nomi degli ospiti, date, camere e dati della carta non escono da lì.
 
-Dal **Pannello App** si controllano quindi solo due cose:
+**Dal 02/09/2026 non tocca il cloud in nessun modo, e quindi non compare più nel Pannello
+App.** Fino a quel giorno mandava due sole cose — acceso/spento (chiave `rc` in
+`qm_app_status`) e l'orario dell'ultimo utilizzo (`qm_rc_last`) — ed era per questo che
+aveva una scheda nel pannello. Sono state tolte quando l'accesso al Worker è stato
+riservato ai dispositivi abilitati: restare agganciata avrebbe voluto dire chiedere un
+lasciapassare anche ai colleghi della Galleria, che usano l'app solo per stampare le
+schede e non hanno niente a che fare con Compass. **Il prezzo, accettato consapevolmente:
+dal Pannello App non si spegne più da remoto e non si vede più quando è stata usata.** Se
+serve fermarla, si toglie il file o si cambia il link.
 
-| Cosa | Come |
-|---|---|
-| Acceso / spento | chiave `rc` in `qm_app_status`, come le altre cinque app: mostra la schermata di manutenzione al posto dell'interfaccia |
-| Ultimo utilizzo | `qm_rc_last` = `{ts}`, **solo un orario**. Scritto al massimo ogni 30 minuti (il tetto stretto è quello delle scritture: 1.000 al giorno) |
+Per questo non ha (e non deve avere) la schermata di abilitazione delle altre cinque app.
+Un controllo in `test/esegui.sh` verifica che non le rientri dentro una `fetch` verso il
+Worker: succederebbe in silenzio e l'app smetterebbe di funzionare in Galleria.
 
 Ha anche l'aggiornamento automatico delle altre app (`QM_APP_BUILD` + confronto ETag), con
 una guardia in più: non si ricarica mentre è aperta l'anteprima di una scheda.
