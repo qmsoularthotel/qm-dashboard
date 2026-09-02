@@ -12529,6 +12529,41 @@ function _psEndpointStato(){
   return e.replace(/\/prestay\/send\/?$/,'/prestay/stato');
 }
 let _psMittInCorso=false;
+// La risposta del Worker, messa in forma. `caselle` è il campo che conta e che PRIMA
+// VENIVA BUTTATO VIA: senza, _psMittenteAttuale('bh') ricadeva sulla casella principale e
+// il confronto con l'indirizzo registrato sull'Extranet del Boutique falliva sempre. Ogni
+// arrivo Booking del Boutique risultava quindi "non recapitabile" anche quando la mail era
+// partita dalla casella giusta ed era arrivata: il Worker sceglie la casella da sé
+// (casellaPer), Compass si limitava a raccontare male ciò che era già successo bene.
+function _psMittDaRisposta(j){
+  return{mittente:j.mittente||'',mittenteDa:j.mittenteDa||'',via:j.via||'',smtpHost:j.smtpHost||'',
+         caselle:j.caselle||{},replyTo:j.replyTo||'',imap:j.imap||'',versione:j.versione||'',ts:Date.now()};
+}
+function _psMittSalva(m){
+  _psMitt=m;
+  try{localStorage.setItem(PS_MITT_KEY,JSON.stringify(_psMitt));}catch(e){}
+}
+// La verifica si faceva SOLO a mano, una volta per postazione: chi non la premeva vedeva
+// ogni indirizzo Booking marcato come non recapitabile, e l'invio in blocco li saltava,
+// anche con tutto configurato bene. Ma le credenziali per chiederlo sono le stesse
+// dell'invio: se l'invio è configurato, si chiede da soli. In silenzio, senza finestre:
+// è una diagnosi, non un'operazione dell'utente, e non deve interrompere chi sta
+// compilando i contatti. Il pulsante in Impostazioni resta per rifarla su richiesta.
+const PS_MITT_TTL=6*3600*1000;
+let _psMittAuto=false;
+function _psVerificaAuto(){
+  if(_psMittAuto||_psMittInCorso||!_psMailPronto())return;
+  // Una verifica vecchia va rifatta, e una senza `caselle` viene dalla versione con il
+  // difetto qui sopra: va rifatta comunque, altrimenti l'errore resterebbe in cache.
+  if(_psMitt&&_psMitt.caselle&&(Date.now()-(_psMitt.ts||0))<PS_MITT_TTL)return;
+  const ep=_psEndpointStato();
+  if(!ep)return;
+  _psMittAuto=true;
+  fetch(ep,{method:'GET',headers:{'X-Prestay-Key':_psMailCfg.key}})
+    .then(r=>r.ok?r.json():null)
+    .then(j=>{if(!j||!j.ok)return;_psMittSalva(_psMittDaRisposta(j));prestayRender();})
+    .catch(()=>{});
+}
 async function prestayVerificaMittente(){
   if(_psMittInCorso)return;
   const ep=_psEndpointStato();
@@ -12544,9 +12579,7 @@ async function prestayVerificaMittente(){
     if(r.status===404)throw new Error('Il Worker pubblicato non conosce ancora questa verifica: va ripubblicato worker.js su Cloudflare (Workers → anthropic-proxy → Modifica codice → Deploy).');
     const j=await r.json().catch(()=>null);
     if(!j||!j.ok)throw new Error((j&&j.error)||'risposta non leggibile');
-    _psMitt={mittente:j.mittente||'',mittenteDa:j.mittenteDa||'',via:j.via||'',smtpHost:j.smtpHost||'',
-             replyTo:j.replyTo||'',imap:j.imap||'',versione:j.versione||'',ts:Date.now()};
-    try{localStorage.setItem(PS_MITT_KEY,JSON.stringify(_psMitt));}catch(e){}
+    _psMittSalva(_psMittDaRisposta(j));
   }catch(e){
     cqAvviso('Verifica non riuscita',(e&&e.message)||String(e));
   }finally{
@@ -12562,10 +12595,14 @@ function _psMittRiquadro(){
   let h='<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:12px;">'
     +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
     +'<button onclick="prestayVerificaMittente()" '+(_psMittInCorso?'disabled':'')+' style="'+bott+'">'+(_psMittInCorso?'Verifica…':'Verifica mittente')+'</button>'
-    +'<span style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;flex:1;min-width:220px;">Chiede al Worker da quale casella parte davvero la posta. Sull\'Extranet Booking è registrato <strong>'+esc(PRESTAY_BOOKING_MITTENTE)+'</strong>, e gli indirizzi <strong>@guest.booking.com</strong> accettano posta solo da lì: da qualunque altro mittente la rimandano indietro.</span>'
+    +'<span style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;flex:1;min-width:220px;">Chiede al Worker da quale casella parte davvero la posta. Sull\'Extranet Booking è registrato un indirizzo per struttura ('+esc(Object.keys(PRESTAY_FROM_NAME).map(k=>_psMittAtteso(k)).filter((v,i,z)=>z.indexOf(v)===i).join(', '))+'), e gli indirizzi <strong>@guest.booking.com</strong> accettano posta solo da lì: da qualunque altro mittente la rimandano indietro.</span>'
     +'</div>';
   if(!_psMitt){
-    return h+'<div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Mai verificato su questa postazione. Finché non lo è, gli arrivi con indirizzo Booking restano segnati come non recapitabili e l\'invio in blocco li salta.</div></div>';
+    return h+'<div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">'
+      +(_psMailPronto()
+        ? 'Non ancora riuscita su questa postazione: viene tentata da sola all\'apertura della sezione, quindi se resta vuota il Worker non risponde o la chiave non è quella giusta.'
+        : 'Con l\'invio diretto configurato la verifica si fa da sola. Senza, la mail parte dal client di posta e Compass non può sapere da quale indirizzo.')
+      +'</div></div>';
   }
   // Ogni struttura ha la sua riga: da quando il Boutique spedisce da un dominio suo, un
   // semaforo unico non basta piu' — puo' essere a posto una struttura e non un'altra.
@@ -12854,6 +12891,7 @@ function prestaySetTpl(hotel,lang,campo,val){
 function prestayRender(){
   const el=document.getElementById('prestay-content');
   if(!el)return;
+  _psVerificaAuto();          // da sola, in sottofondo: vedi _psVerificaAuto
   const iso=_psTargetISO();
   const dt=new Date(iso+'T12:00:00');
   const GIORNI=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
@@ -12972,8 +13010,18 @@ function prestayRender(){
             <button onclick="prestayDelScheda('${a.id}')" title="Elimina questo arrivo" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:13px;line-height:1;padding:0 2px;">✕</button>
           </div>
           <input value="${esc(a.nome)}" placeholder="Cognome Nome" onchange="prestaySetScheda('${a.id}','nome',this.value)" style="${inpS}font-weight:700;font-size:var(--fs-sm);margin-bottom:5px;">
-          <input type="email" value="${esc(a.email)}" placeholder="email@…" oninput="_psAggiornaBordo('${a.id}',this.value)" onchange="prestaySetScheda('${a.id}','email',this.value)" title="${esc(a.email)}" style="${inpS}margin-bottom:5px;${_psBookingBloccato(a.email,_psHotelMitt(a))?'border-color:var(--amber);':''}">
-          ${_psBookingBloccato(a.email,_psHotelMitt(a))?`<div style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.35;margin:-2px 0 5px;" title="${esc(_psMittenteAttuale(_psHotelMitt(a))?'Compass spedisce da '+_psMittenteAttuale(_psHotelMitt(a))+', Booking accetta solo '+_psMittAtteso(_psHotelMitt(a)):'Mittente mai verificato: Impostazioni → Verifica mittente')}">indirizzo Booking · non recapitabile con il mittente attuale</div>`:''}
+          <input type="email" value="${esc(a.email)}" placeholder="email@…" oninput="_psAggiornaBordo('${a.id}',this.value)" onchange="prestaySetScheda('${a.id}','email',this.value)" title="${esc(a.email)}" style="${inpS}margin-bottom:5px;${(!a.mailTs&&_psBookingBloccato(a.email,_psHotelMitt(a)))?'border-color:var(--amber);':''}">
+          ${(()=>{
+            // L'avviso riguarda una mail DA MANDARE: su una già partita sarebbe una smentita
+            // a cose fatte, per giunta falsa se il messaggio è arrivato.
+            if(a.mailTs||!_psBookingBloccato(a.email,_psHotelMitt(a)))return'';
+            const hm=_psHotelMitt(a),reale=_psMittenteAttuale(hm);
+            // Due situazioni diverse, che vanno dette in modo diverso: sappiamo che il
+            // mittente è sbagliato, oppure non lo sappiamo ancora. La seconda è un'ipotesi
+            // e non va scritta come un fatto.
+            return reale
+              ? `<div style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.35;margin:-2px 0 5px;" title="${esc('Compass spedisce da '+reale+', Booking accetta solo '+_psMittAtteso(hm))}">indirizzo Booking · parte da ${esc(reale)}, Booking accetta solo ${esc(_psMittAtteso(hm))}</div>`
+              : `<div style="font-size:9px;font-weight:700;color:var(--text-dim);line-height:1.35;margin:-2px 0 5px;" title="Compass non ha ancora saputo dal Worker da quale casella parte la posta: Impostazioni → Verifica mittente">indirizzo Booking · mittente non ancora verificato</div>`;})()}
           <input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}margin-bottom:6px;">
           ${(()=>{
             // Da quale struttura parte il messaggio. Normalmente quella d'arrivo; si cambia
