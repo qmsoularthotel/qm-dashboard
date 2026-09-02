@@ -108,19 +108,27 @@ for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.htm
   # Da una macchina non abilitata non si deve intravedere niente: velo pieno, non
   # trasparente, e invalicabile appena il Worker rifiuta (401). Se sparisse, i dati degli
   # ospiti tornerebbero visibili a chiunque digiti l'indirizzo.
-  if ! grep -q 'qmMostraAttivazione' "$_app"; then
-    echo ""
-    echo "  ERRORE      $_app non mostra piu' la schermata di abilitazione."
-    echo "              Una macchina non abilitata vedrebbe i dati degli ospiti."
-    BKF_KO=1
-  fi
-  if ! grep -q 'res.status===401' "$_app"; then
-    echo ""
-    echo "  ERRORE      $_app non reagisce piu' al rifiuto del Worker (401)."
-    echo "              Chiudendo la porta mostrerebbe una pagina vuota invece della"
-    echo "              schermata di abilitazione: sembrerebbe un guasto."
-    BKF_KO=1
-  fi
+  # registration-galleria.html e' un'applicazione a se': non fa parte di Compass e compare
+  # nel Pannello App solo per poterla accendere e spegnere. Non ha schermata di
+  # abilitazione di proposito. USA pero' il cloud (qm_rc_last, qm_app_status): quando si
+  # chiudera' la porta va deciso cosa farne — vedi CLAUDE.md, sezione accesso.
+  case "$_app" in
+    registration-galleria.html) ;;
+    *)
+      if ! grep -q 'qmMostraAttivazione' "$_app"; then
+        echo ""
+        echo "  ERRORE      $_app non mostra piu' la schermata di abilitazione."
+        echo "              Una macchina non abilitata vedrebbe i dati degli ospiti."
+        BKF_KO=1
+      fi
+      if ! grep -q 'res.status===401' "$_app"; then
+        echo ""
+        echo "  ERRORE      $_app non reagisce piu' al rifiuto del Worker (401)."
+        echo "              Chiudendo la porta mostrerebbe una pagina vuota invece della"
+        echo "              schermata di abilitazione: sembrerebbe un guasto."
+        BKF_KO=1
+      fi ;;
+  esac
   if ! grep -q 'function qmKvSet' "$_app"; then
     echo ""
     echo "  ERRORE      $_app non filtra piu' le scritture identiche sul cloud."
