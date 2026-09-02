@@ -11697,6 +11697,26 @@ const _psAliasBooking=e=>/@(guest\.)?booking\.com$/i.test(String(e||'').trim());
 // true quando la mail a quell'indirizzo NON verrebbe recapitata con il mittente attuale
 const _psBookingBloccato=(e,p)=>!_psMittenteOkBooking(p)&&_psAliasBooking(e);
 
+// ── Struttura di PRENOTAZIONE ≠ struttura di ARRIVO ─────────────────────────
+// Un ospite che ha prenotato al Boutique e riceve un upgrade viene spostato al SoulArt, ma
+// lo scopre solo quando arriva: il pre-stay deve partire dalla struttura in cui HA
+// PRENOTATO — quel nome mittente, quel testo e soprattutto QUELLA casella di posta.
+// Mandarlo dall'altra significa scrivere all'ospite da un albergo che non conosce, e con
+// un alias @guest.booking.com la mail non arriva nemmeno: le liste dei mittenti
+// autorizzati sull'Extranet sono separate per struttura.
+//
+// NON è deducibile dall'export: il PMS riporta la camera ASSEGNATA, che dopo l'upgrade è
+// già quella nuova, e non esiste una colonna con la struttura di prenotazione. `mitt` è
+// quindi una scelta fatta a mano sulla scheda; vuoto (il caso normale) vuol dire "la
+// stessa in cui arriva". La scheda resta comunque nel gruppo della struttura di ARRIVO:
+// i conteggi per struttura devono continuare a combaciare con la lista arrivi del PMS,
+// che è la rete di sicurezza contro il dimenticarne uno.
+function _psHotelMitt(a){
+  const m=a&&a.mitt;
+  return (m&&PRESTAY_HOTELS[m])?m:((a&&a.hotel)||'');
+}
+const _psMittDiverso=a=>!!(a&&a.mitt&&PRESTAY_HOTELS[a.mitt]&&a.mitt!==a.hotel);
+
 const PRESTAY_FROM_NAME={
   bh:'Boutique Hotel Piazza Carità',
   sa:'SoulArt Hotel | Design Experience',
@@ -11793,6 +11813,7 @@ function _psAssorbi(a,r){
   // scheda (`ts`), altrimenti togliere la spunta non avrebbe effetto — tornerebbe da sola.
   if(!a.ts){
     if(r.italcamel)a.italcamel=true;
+    if(r.mitt&&!a.mitt)a.mitt=r.mitt;   // scelta a mano, come la spunta Italcamel
     if(r.lang&&r.lang!==a.lang)a.lang=r.lang;
   }
 }
@@ -12094,7 +12115,7 @@ function _psParsePdfArrivi(items){
 let _psSeq=0;
 function _psNuovoId(){return 'a'+Date.now().toString(36)+(_psSeq++).toString(36);}
 function _psNuovaScheda(hotel){
-  return{id:_psNuovoId(),hotel:hotel,nome:'',email:'',tel:'',lang:'it',origine:'',codice:'',codici:[],camere:[],italcamel:false,mailTs:null,waTs:null,mailErr:null};
+  return{id:_psNuovoId(),hotel:hotel,mitt:'',nome:'',email:'',tel:'',lang:'it',origine:'',codice:'',codici:[],camere:[],italcamel:false,mailTs:null,waTs:null,mailErr:null};
 }
 // Accesso al giorno, con migrazione dal vecchio formato indicizzato per camera
 // (`{'203':{...}}`) al nuovo (`{arrivi:[…]}`). La migrazione è pigra — avviene alla prima
@@ -12175,7 +12196,14 @@ function _psImportaArrivi(iso,lista){
     }
     if(cod.length){s.codici=cod;s.codice=cod[0];}
     if(a.camere)s.camere=a.camere;        // camere della prenotazione, per mostrarne il numero
+    // Una prenotazione che cambia struttura fra due caricamenti è quasi sempre un upgrade:
+    // proprio il caso in cui il messaggio deve continuare a partire dalla struttura di
+    // prenotazione. Non si decide da soli — potrebbe anche essere la correzione di una
+    // camera sbagliata — ma si ricorda quella di prima e la scheda propone di usarla come
+    // mittente. `mitt`, se già scelto a mano, non viene mai toccato dall'importazione.
+    if(s.hotel&&a.hotel&&s.hotel!==a.hotel)s.hotelPrec=s.hotel;
     s.hotel=a.hotel;                      // una prenotazione può cambiare struttura
+    if(s.hotelPrec===a.hotel)delete s.hotelPrec;
     s.fuoriLista=false;
     // Canale di provenienza dal PMS, quando il file lo porta (export "Prenotazioni").
     // Colora il bordo della scheda già all'import, senza aspettare che si digiti l'email,
@@ -12280,7 +12308,7 @@ function prestaySetScheda(id,campo,val){
   a.ts=Date.now();          // toccata a mano: la fusione non deve rimettere i valori vecchi
   _psSave();
   if(campo==='nome'&&a[campo]!==val)prestayRender();
-  else if(campo==='lang'||campo==='hotel')prestayRender();
+  else if(campo==='lang'||campo==='hotel'||campo==='mitt')prestayRender();
 }
 function prestayNavDay(delta){
   const d=new Date(_psTargetISO()+'T12:00:00');
@@ -12395,7 +12423,9 @@ const psToolbar=taId=>`<div style="display:flex;gap:4px;margin-bottom:4px;">
 // template i messaggi non ancora inviati usano subito la versione nuova.
 // NON esiste {camera}: gli ospiti non sono legati a una stanza (vedi nota in cima).
 function _psCompila(txt,a,iso){
-  const hn=(PRESTAY_HOTELS[a.hotel]||{}).name||'';
+  // {struttura} è la struttura che SCRIVE, cioè quella di prenotazione: un ospite del
+  // Boutique spostato al SoulArt per un upgrade non sa ancora nulla del SoulArt.
+  const hn=(PRESTAY_HOTELS[_psHotelMitt(a)]||{}).name||'';
   return String(txt||'')
     .replace(/\{nome\}/g,(a.nome||'').trim()||'Ospite')
     .replace(/\{struttura\}/g,hn)
@@ -12588,13 +12618,14 @@ let _psMailInFlight={};
 // pulsante sia dall'invio di gruppo, che deve aspettare una mail prima di partire con la
 // successiva. Non apre mai alert: chi chiama decide come segnalare.
 function _psInviaMail(a,ogg,corpo){
-  const fromName=PRESTAY_FROM_NAME[a.hotel]||'';
+  const hm=_psHotelMitt(a);
+  const fromName=PRESTAY_FROM_NAME[hm]||'';
   return fetch(_psMailCfg.endpoint,{
     method:'POST',
     headers:{'Content-Type':'application/json','X-Prestay-Key':_psMailCfg.key},
     // La struttura decide da quale casella parte: il Boutique ha la sua (vedi casellaPer nel
     // Worker). Senza questo campo tutte le mail partirebbero dalla casella principale.
-    body:JSON.stringify({to:a.email,subject:ogg,text:_psMdStrip(corpo),html:_psMdToHtml(corpo),fromName,hotel:a.hotel})
+    body:JSON.stringify({to:a.email,subject:ogg,text:_psMdStrip(corpo),html:_psMdToHtml(corpo),fromName,hotel:hm})
   }).then(res=>res.json().catch(()=>({ok:false,error:'risposta non leggibile'})))
    .then(j=>{
     if(j&&j.ok){a.mailTs=Date.now();a.mailErr=null;return true;}
@@ -12635,19 +12666,23 @@ async function prestayInviaGruppo(hotel){
   // Gli indirizzi Booking vengono ESCLUSI, non spediti: Booking li scarterebbe in silenzio
   // e resterebbero segnati come inviati pur non essendo arrivati a nessuno. Meglio un
   // conteggio che resta incompleto — è la verità — di una spunta verde che mente.
-  const bloccati=tutti.filter(a=>a.email&&!a.mailTs&&_psBookingBloccato(a.email,a.hotel)).length;
-  const daFare=tutti.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email,a.hotel));
+  const bloccati=tutti.filter(a=>a.email&&!a.mailTs&&_psBookingBloccato(a.email,_psHotelMitt(a))).length;
+  const daFare=tutti.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email,_psHotelMitt(a)));
   const senzaMail=tutti.filter(a=>!a.email).length;
+  // Gli indirizzi ammessi dal relay dipendono dalla struttura che SCRIVE, che su una scheda
+  // con mittente cambiato non è quella del gruppo: si elencano quelli davvero in gioco.
+  const attesi=[...new Set(tutti.filter(a=>a.email&&!a.mailTs&&_psBookingBloccato(a.email,_psHotelMitt(a)))
+                                .map(a=>_psMittAtteso(_psHotelMitt(a))))].join(' o ');
   if(!daFare.length){
     cqAvviso(senzaMail||bloccati
       ? 'Nessuna mail da inviare per '+nome+'.'
         +(senzaMail?'\n\n· '+senzaMail+' arriv'+(senzaMail===1?'o è':'i sono')+' senza indirizzo email.':'')
-        +(bloccati?'\n\n· '+bloccati+' ha'+(bloccati===1?'':'nno')+' un indirizzo Booking, recapitabile solo spedendo da '+PRESTAY_BOOKING_MITTENTE+'. Controlla da quale casella parte la posta con Impostazioni → Verifica mittente. Nel frattempo contattali su WhatsApp, se hai il numero.':'')
+        +(bloccati?'\n\n· '+bloccati+' ha'+(bloccati===1?'':'nno')+' un indirizzo Booking, recapitabile solo spedendo da '+attesi+'. Controlla da quale casella parte la posta con Impostazioni → Verifica mittente. Nel frattempo contattali su WhatsApp, se hai il numero.':'')
       : 'Per '+nome+' le mail sono già state inviate tutte.');
     return;
   }
   const avvisoVuoti=senzaMail?'<br><br>'+senzaMail+' arriv'+(senzaMail===1?'o verrà saltato perché non ha':'i verranno saltati perché non hanno')+' email.':'';
-  const avvisoBooking=bloccati?'<br><br>'+bloccati+' indirizz'+(bloccati===1?'o Booking verrà saltato':'i Booking verranno saltati')+': Booking li rimanda indietro se la mail non parte da '+PRESTAY_BOOKING_MITTENTE+'.':'';
+  const avvisoBooking=bloccati?'<br><br>'+bloccati+' indirizz'+(bloccati===1?'o Booking verrà saltato':'i Booking verranno saltati')+': Booking li rimanda indietro se la mail non parte da '+attesi+'.':'';
   if(!await cqConferma('Inviare '+daFare.length+' '+(daFare.length===1?'messaggio':'messaggi')+'?',
       '<strong>'+nome+'</strong>'+avvisoVuoti+avvisoBooking
       +'<br><br>Partono uno alla volta, col testo del template. Non c\'è anteprima: per rileggere prima di mandare usa il pulsante su una singola scheda.',
@@ -12655,7 +12690,7 @@ async function prestayInviaGruppo(hotel){
   let ok=0,ko=0;
   for(const a of daFare){
     _psMailInFlight[a.id]=true;prestayRender();
-    const t=_psTpl(a.hotel,a.lang||'it');
+    const t=_psTpl(_psHotelMitt(a),a.lang||'it');
     const riuscito=await _psInviaMail(a,_psCompila(t.ogg,a,iso),_psCompila(t.corpo,a,iso));
     delete _psMailInFlight[a.id];
     riuscito?ok++:ko++;
@@ -12694,7 +12729,7 @@ function prestayAnteprima(id,canale){
   if(canale==='mail'&&!haMail){cqAvviso('Inserisci prima l\'indirizzo email di questo ospite.');return;}
   if(canale==='wa'&&!haTel){cqAvviso('Inserisci prima il numero di telefono di questo ospite.');return;}
   if(canale==='both'&&!haMail&&!haTel){cqAvviso('Inserisci prima almeno un contatto (email o telefono) per vedere l\'anteprima.');return;}
-  const t=_psTpl(a.hotel,a.lang||'it');
+  const t=_psTpl(_psHotelMitt(a),a.lang||'it');
   _psAnteprima={id,canale,ogg:_psCompila(t.ogg,a,iso),corpo:_psCompila(t.corpo,a,iso),modifica:false};
   const m=document.createElement('div');
   m.id='psAnteprimaModal';
@@ -12727,14 +12762,15 @@ function _psAntRendi(){
   if(!a)return;
   const haMail=!!a.email,haTel=!!(a.tel||'').replace(/[^\d+]/g,'');
   const dest=canale==='mail'?a.email:canale==='wa'?(a.tel||''):[a.email,a.tel].filter(Boolean).join(' · ')||'nessun contatto';
-  const nomeH=(PRESTAY_HOTELS[a.hotel]||{}).name||'';
+  const hm=_psHotelMitt(a),altraStruttura=_psMittDiverso(a);
+  const nomeH=(PRESTAY_HOTELS[hm]||{}).name||'';
   const avvisi=[];
   if(/\[SCRIVI QUI|\[WRITE THE/i.test(corpo))avvisi.push('Il testo contiene ancora il segnaposto da riscrivere: personalizzalo in "Modifica testi", oppure correggilo qui con la matita solo per questo invio.');
   if(!(a.nome||'').trim())avvisi.push('Nome ospite vuoto: il messaggio dirà genericamente "Gentile Ospite".');
   if(/\{[a-z]+\}/i.test(corpo)||/\{[a-z]+\}/i.test(ogg))avvisi.push('C\'è un segnaposto tra graffe non sostituito: controlla che sia scritto esattamente {nome}, {struttura} o {data}.');
-  if(canale!=='wa'&&_psBookingBloccato(a.email,a.hotel)){
-    const mitt=_psMittenteAttuale(a.hotel);
-    avvisi.push('<strong>Questo è un indirizzo Booking</strong>: viene recapitato solo se la mail parte da '+_psMittAtteso(a.hotel)+'. '
+  if(canale!=='wa'&&_psBookingBloccato(a.email,hm)){
+    const mitt=_psMittenteAttuale(hm);
+    avvisi.push('<strong>Questo è un indirizzo Booking</strong>: viene recapitato solo se la mail parte da '+_psMittAtteso(hm)+'. '
       +(mitt?'Compass spedisce da <strong>'+mitt+'</strong>, quindi Booking la rimanda indietro.'
             :'Il mittente da cui Compass spedisce non è stato verificato (Impostazioni → Verifica mittente): se non è quello, Booking la rimanda indietro o la scarta senza avvisare.')
       +' Risulterebbe inviata senza esserlo.');
@@ -12748,7 +12784,8 @@ function _psAntRendi(){
       <span style="font-size:var(--fs-xs);color:var(--text-muted);">${nomeH} · ${(a.lang||'it').toUpperCase()}</span>
       <button onclick="prestayAntModifica()" title="${modifica?'Torna a vedere il messaggio finito':'Modifica il testo solo per questo invio'}" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid ${modifica?'var(--accent)':'var(--border)'};background:${modifica?'var(--accent-bg)':'var(--surface)'};color:${modifica?'var(--accent)':'var(--text-dim)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">${matita}${modifica?'Fine':'Modifica'}</button>
     </div>
-    <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:12px;">A: <strong style="color:var(--text);">${esc(dest)}</strong>${canale==='mail'&&_psMailPronto()?' · parte davvero da qui':canale==='mail'?' · si aprirà il client di posta':''}</div>
+    <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:${altraStruttura?'8':'12'}px;">A: <strong style="color:var(--text);">${esc(dest)}</strong>${canale==='mail'&&_psMailPronto()?' · parte davvero da qui':canale==='mail'?' · si aprirà il client di posta':''}</div>
+    ${altraStruttura?`<div style="background:var(--accent-bg);color:var(--accent);border-radius:7px;padding:8px 12px;font-size:var(--fs-xs);line-height:1.55;margin-bottom:12px;">Parte da <strong>${esc(PRESTAY_FROM_NAME[hm]||nomeH)}</strong>${canale==='wa'?', col testo di quella struttura':', casella e testo di quella struttura'} — l'ospite arriva al <strong>${esc((PRESTAY_HOTELS[a.hotel]||{}).name||'')}</strong> ma ha prenotato altrove.</div>`:''}
     ${avvisi.length?`<div style="background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.55;margin-bottom:12px;">${avvisi.map(v=>'• '+v).join('<br>')}</div>`:''}
     ${modifica?`
       ${canale!=='wa'?`<label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">OGGETTO${canale==='both'?' <span style="font-weight:400;text-transform:none;">(solo per la mail)</span>':''}</label>
@@ -12890,8 +12927,8 @@ function prestayRender(){
       if(!gruppo.length)return;
       const gContattabili=gruppo.filter(a=>!_psItalcamel(a));
       const nItal=gruppo.length-gContattabili.length;
-      const daInviare=gContattabili.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email,a.hotel)).length;
-      const bloccatiGruppo=gContattabili.filter(a=>_psBookingBloccato(a.email,a.hotel)&&!a.mailTs).length;
+      const daInviare=gContattabili.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email,_psHotelMitt(a))).length;
+      const bloccatiGruppo=gContattabili.filter(a=>_psBookingBloccato(a.email,_psHotelMitt(a))&&!a.mailTs).length;
       const contattati=gContattabili.filter(a=>a.mailTs||a.waTs).length;
       const tuttiFatti=gContattabili.length>0&&contattati===gContattabili.length;
       h+=`<div style="margin-bottom:16px;border:1px solid ${tuttiFatti?'var(--green)':'var(--border-light)'};border-radius:10px;overflow:hidden;">
@@ -12935,9 +12972,23 @@ function prestayRender(){
             <button onclick="prestayDelScheda('${a.id}')" title="Elimina questo arrivo" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:13px;line-height:1;padding:0 2px;">✕</button>
           </div>
           <input value="${esc(a.nome)}" placeholder="Cognome Nome" onchange="prestaySetScheda('${a.id}','nome',this.value)" style="${inpS}font-weight:700;font-size:var(--fs-sm);margin-bottom:5px;">
-          <input type="email" value="${esc(a.email)}" placeholder="email@…" oninput="_psAggiornaBordo('${a.id}',this.value)" onchange="prestaySetScheda('${a.id}','email',this.value)" title="${esc(a.email)}" style="${inpS}margin-bottom:5px;${_psBookingBloccato(a.email,a.hotel)?'border-color:var(--amber);':''}">
-          ${_psBookingBloccato(a.email,a.hotel)?`<div style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.35;margin:-2px 0 5px;" title="${esc(_psMittenteAttuale(a.hotel)?'Compass spedisce da '+_psMittenteAttuale(a.hotel)+', Booking accetta solo '+_psMittAtteso(a.hotel):'Mittente mai verificato: Impostazioni → Verifica mittente')}">indirizzo Booking · non recapitabile con il mittente attuale</div>`:''}
-          <input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}margin-bottom:9px;">
+          <input type="email" value="${esc(a.email)}" placeholder="email@…" oninput="_psAggiornaBordo('${a.id}',this.value)" onchange="prestaySetScheda('${a.id}','email',this.value)" title="${esc(a.email)}" style="${inpS}margin-bottom:5px;${_psBookingBloccato(a.email,_psHotelMitt(a))?'border-color:var(--amber);':''}">
+          ${_psBookingBloccato(a.email,_psHotelMitt(a))?`<div style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.35;margin:-2px 0 5px;" title="${esc(_psMittenteAttuale(_psHotelMitt(a))?'Compass spedisce da '+_psMittenteAttuale(_psHotelMitt(a))+', Booking accetta solo '+_psMittAtteso(_psHotelMitt(a)):'Mittente mai verificato: Impostazioni → Verifica mittente')}">indirizzo Booking · non recapitabile con il mittente attuale</div>`:''}
+          <input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}margin-bottom:6px;">
+          ${(()=>{
+            // Da quale struttura parte il messaggio. Normalmente quella d'arrivo; si cambia
+            // quando l'ospite ha prenotato altrove ed è qui per un upgrade, perché la
+            // struttura in cui si ritrova non la conosce ancora.
+            const hm=_psHotelMitt(a),alt=_psMittDiverso(a);
+            const opz=Object.keys(PRESTAY_HOTELS).map(k=>
+              `<option value="${k===a.hotel?'':k}" ${k===hm?'selected':''}>${PRESTAY_HOTELS[k].name}${k===a.hotel?' · arrivo':''}</option>`).join('');
+            const sugg=(!a.mitt&&a.hotelPrec&&PRESTAY_HOTELS[a.hotelPrec]&&a.hotelPrec!==a.hotel)?a.hotelPrec:'';
+            return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:${alt||sugg?'4':'9'}px;">
+              <span title="Struttura da cui parte il messaggio: casella di posta, nome del mittente e testo del pre-stay" style="font-size:9px;font-weight:700;color:${alt?'var(--accent)':'var(--text-dim)'};letter-spacing:.03em;white-space:nowrap;">SCRIVE</span>
+              <select onchange="prestaySetScheda('${a.id}','mitt',this.value)" title="Da quale struttura parte il messaggio. Cambiala se l'ospite ha prenotato altrove ed è qui per un upgrade: riceverebbe una mail da un albergo che non conosce, e se l'indirizzo è un alias Booking non gli arriverebbe affatto." style="${inpS}padding:3px 6px;${alt?'border-color:var(--accent);background:var(--accent-bg);color:var(--accent);font-weight:700;':''}">${opz}</select>
+            </div>
+            ${alt?`<div style="font-size:9px;font-weight:700;color:var(--accent);line-height:1.35;margin-bottom:8px;">prenotato al ${PRESTAY_HOTELS[hm].name} · arriva al ${PRESTAY_HOTELS[a.hotel].name}</div>`:''}
+            ${sugg?`<div style="font-size:9px;color:var(--amber);line-height:1.4;margin-bottom:8px;">Nell'ultimo caricamento è passato dal ${PRESTAY_HOTELS[sugg].name} a questa struttura: se è un upgrade, il messaggio deve partire ancora dal ${PRESTAY_HOTELS[sugg].name}. <button type="button" onclick="prestaySetScheda('${a.id}','mitt','${sugg}')" style="border:none;background:none;padding:0;color:var(--accent);font-size:9px;font-weight:700;cursor:pointer;text-decoration:underline;">scrivi da lì</button></div>`:''}`;})()}
           <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
             <button onclick="prestayAnteprima('${a.id}','both')" title="Vedi e correggi il messaggio prima di mandarlo" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:7px;cursor:pointer;">${PS_ICON_EYE}</button>
             <button onclick="prestayAnteprima('${a.id}','mail')" ${inFlight?'disabled':''} title="Anteprima del messaggio prima di inviare" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;height:28px;border:1px solid var(--accent);background:${fatto?'var(--surface)':'var(--accent)'};color:${fatto?'var(--accent)':'#fff'};border-radius:7px;cursor:${inFlight?'wait':'pointer'};opacity:${inFlight?'.5':'1'};font-size:var(--fs-xxs);font-weight:700;">${inFlight?PS_ICON_LOAD:PS_ICON_MAIL}${fatto?'Rinvia':'Invia'}</button>
@@ -12964,7 +13015,7 @@ function prestayRender(){
       });
       h+=`</div></div>`;
     });
-    h+=`<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Il numero di arrivi per struttura viene dal Piano Settimanale (i cambi contano: partenza e arrivo lo stesso giorno significa comunque un ospite nuovo). Gli ospiti <strong>non sono legati alla camera</strong>: se la reception li sposta di stanza qui non cambia nulla. Nome e contatti vanno letti dal PMS. I pulsanti aprono il messaggio già compilato: l'invio lo confermi tu, e la spunta si può correggere cliccandola.</div>`;
+    h+=`<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Il numero di arrivi per struttura viene dal Piano Settimanale (i cambi contano: partenza e arrivo lo stesso giorno significa comunque un ospite nuovo). Gli ospiti <strong>non sono legati alla camera</strong>: se la reception li sposta di stanza qui non cambia nulla. Nome e contatti vanno letti dal PMS. I pulsanti aprono il messaggio già compilato: l'invio lo confermi tu, e la spunta si può correggere cliccandola. Il campo <strong>SCRIVE</strong> di ogni scheda dice da quale struttura parte il messaggio: cambialo per chi ha prenotato altrove ed è qui per un upgrade — non conosce ancora questa struttura, e con un indirizzo Booking la mail non gli arriverebbe nemmeno.</div>`;
   }
 
   // Configurazione invio diretto — chiave salvata solo in questo browser

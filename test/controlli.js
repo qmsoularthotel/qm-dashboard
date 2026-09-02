@@ -704,6 +704,48 @@ location.protocol = 'https:';
 ok('tornati in produzione',          _psChiave(), 'qm_prestay');
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Pre-stay: chi ha prenotato altrove riceve dalla sua struttura');
+// Un ospite del Boutique con upgrade dorme al SoulArt ma non lo sa fino all'arrivo: il
+// messaggio deve partire dal Boutique — nome mittente, testo e casella di posta — mentre
+// la scheda resta nel gruppo della struttura in cui arriva, perche' i conteggi per
+// struttura devono continuare a combaciare con la lista arrivi del PMS.
+
+var UPG = { id: 'u1', hotel: 'sa', mitt: 'bh', nome: 'Rossi Mario', email: 'x@guest.booking.com' };
+var NORM = { id: 'n1', hotel: 'sa', nome: 'Verdi Ada', email: 'a@esempio.it' };
+ok('senza scelta scrive la struttura di arrivo', _psHotelMitt(NORM), 'sa');
+ok('con la scelta scrive quella di prenotazione', _psHotelMitt(UPG), 'bh');
+ok('struttura inesistente: si ricade sull arrivo', _psHotelMitt({ hotel: 'sa', mitt: 'zz' }), 'sa');
+ok('la struttura di arrivo non cambia mai',      UPG.hotel, 'sa');
+ok('scheda normale non e marcata',               _psMittDiverso(NORM), false);
+ok('scheda con upgrade e marcata',               _psMittDiverso(UPG), true);
+ok('mitt uguale all arrivo non e una differenza', _psMittDiverso({ hotel: 'sa', mitt: 'sa' }), false);
+
+// {struttura} nel testo: l'ospite deve leggere l'albergo che ha prenotato.
+ok('nel messaggio compare la struttura prenotata',
+   _psCompila('Il suo arrivo al {struttura}', UPG, '2026-09-04'), 'Il suo arrivo al Boutique Hotel');
+ok('senza upgrade compare quella di arrivo',
+   _psCompila('Il suo arrivo al {struttura}', NORM, '2026-09-04'), 'Il suo arrivo al SoulArt Hotel');
+
+// Il relay Booking accetta solo il mittente registrato sull'Extranet DI QUELLA STRUTTURA:
+// e' il motivo per cui la scelta deve seguire anche il controllo, non solo il testo.
+// Qui la casella principale (SoulArt) e' quella sbagliata, quella del Boutique e' giusta.
+var _mittPrima = _psMitt;
+_psMitt = { mittente: 'qm@soularthotel.com', caselle: { bh: 'booking@hotelpiazzacarita.com' } };
+ok('alias Booking bloccato con la casella dell arrivo',
+   _psBookingBloccato(UPG.email, _psHotelMitt({ id: 'u1', hotel: 'sa', email: UPG.email })), true);
+ok('e recapitabile scrivendo dal Boutique',
+   _psBookingBloccato(UPG.email, _psHotelMitt(UPG)), false);
+_psMitt = _mittPrima;
+
+// La scelta e' fatta a mano: ne' il cloud ne' una reimportazione la devono cancellare.
+var M = _psFondi({ 'g': { arrivi: [{ id: 'x', hotel: 'sa', mitt: 'bh', nome: 'Rossi Mario', email: 'r@esempio.it' }] } },
+                 { 'g': { arrivi: [{ id: 'y', hotel: 'sa', nome: 'Rossi Mario', email: '', tel: '' }] } });
+ok('mittente scelto ripreso dal cloud',          M.g.arrivi[0].mitt, 'bh');
+var M2 = _psFondi({ 'g': { arrivi: [{ id: 'x', hotel: 'sa', mitt: 'bh', nome: 'Rossi Mario', email: 'r@esempio.it' }] } },
+                  { 'g': { arrivi: [{ id: 'x', hotel: 'sa', mitt: '', ts: 9, nome: 'Rossi Mario', email: 'r@esempio.it' }] } });
+ok('tolto a mano qui, non torna dal cloud',      M2.g.arrivi[0].mitt || '(vuoto)', '(vuoto)');
+
+// ─────────────────────────────────────────────────────────────────────────────
 sez('Cassa: due postazioni non si cancellano i movimenti');
 // Il registro e' additivo e riguarda denaro contato: scrivere l'elenco intero voleva dire
 // che chi salvava per ultimo riscriveva senza il movimento dell'altro, in silenzio.

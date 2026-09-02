@@ -1617,6 +1617,59 @@ Il codice del Worker, i passaggi su Cloudflare, il servizio di invio e i record 
 
 **Due trappole trovate alla prima prova reale**: il display name in `PRESTAY_FROM` va **tra virgolette e senza caratteri non-ASCII** (un trattino lungo `—` faceva scartare il nome, e Gmail mostrava solo l'indirizzo); e le variabili nuove diventano attive **solo dopo un nuovo deploy** del Worker, non al salvataggio.
 
+### Struttura di PRENOTAZIONE ≠ struttura di ARRIVO — campo `mitt` (02/09/2026)
+
+Un ospite che prenota al **Boutique** e riceve un **upgrade** dorme al SoulArt, ma **non
+lo sa fino a quando non arriva in hotel**. Il pre-stay deve quindi partire dalla struttura
+in cui *ha prenotato*: quel nome mittente, quel testo, e soprattutto **quella casella di
+posta**. Mandarlo dall'altra vuol dire scrivergli da un albergo che non conosce — e se
+l'indirizzo è un alias `@guest.booking.com` **non gli arriva affatto**, perché le liste dei
+mittenti autorizzati sull'Extranet sono separate per struttura (vedi "Una casella per
+struttura").
+
+**Non è deducibile dall'export**: il PMS riporta la camera **assegnata**, che dopo
+l'upgrade è già quella nuova, e non esiste una colonna con la struttura di prenotazione.
+La scelta è quindi **manuale, per scheda**.
+
+| Campo | Significato |
+|---|---|
+| `hotel` | struttura di **arrivo** — decide il gruppo nella pagina. **Non cambia mai per un upgrade** |
+| `mitt` | struttura di **prenotazione**, cioè chi scrive. Vuoto (caso normale) = la stessa di `hotel` |
+| `hotelPrec` | struttura in cui la prenotazione risultava al caricamento precedente. Solo un suggerimento, vedi sotto |
+
+`_psHotelMitt(a)` è **l'unico modo** di ricavare la struttura che scrive; `_psMittDiverso(a)`
+dice se è un caso da segnalare. Tutto ciò che riguarda il *messaggio* passa da lì:
+`{struttura}` in `_psCompila`, il template (`_psTpl`), `PRESTAY_FROM_NAME` e il campo
+`hotel` mandato al Worker in `_psInviaMail` (è quello che sceglie la casella SMTP, vedi
+`casellaPer`), il blocco Booking (`_psBookingBloccato`, `_psMittAtteso`,
+`_psMittenteAttuale`) sia sulla scheda sia nell'invio in blocco.
+
+**Il raggruppamento resta su `hotel`, di proposito**: il numero di arrivi per struttura è
+la rete di sicurezza contro il dimenticarne uno e deve continuare a combaciare con la lista
+del PMS. Una scheda con mittente cambiato resta quindi nel gruppo della struttura d'arrivo,
+con una riga in accent (`prenotato al … · arriva al …`) e il selettore evidenziato, così la
+deviazione è visibile senza aprire nulla. Anche l'anteprima lo dichiara in testa.
+
+**Il suggerimento automatico non decide.** In `_psImportaArrivi`, se una prenotazione già
+esistente cambia struttura fra due caricamenti, la struttura di prima viene ricordata in
+`hotelPrec` e la scheda **propone** ("scrivi da lì") di usarla come mittente. Non la si
+applica da sola: un cambio di struttura può anche essere la correzione di una camera
+sbagliata, e indovinare vorrebbe dire scrivere all'ospite dall'albergo sbagliato — lo
+stesso errore che questa funzione esiste per evitare. Il suggerimento **non compare** se
+`mitt` è già stato scelto a mano.
+
+**`mitt` sopravvive a tutto**: `_psImportaArrivi` non lo tocca (come la spunta Italcamel) e
+`_psAssorbi` lo riprende dal cloud solo se qui la scheda non è mai stata toccata (`ts`) —
+altrimenti toglierlo a mano non avrebbe effetto, tornerebbe da solo al primo giro.
+
+**Corretto nella stessa modifica**: due messaggi dell'invio in blocco concatenavano
+`PRESTAY_BOOKING_MITTENTE`, che dal 31/08/2026 è una **mappa** e non più una stringa — si
+leggeva `[object Object]`. Ora l'elenco dei mittenti attesi si ricava dalle schede
+realmente bloccate, che con i mittenti per struttura possono essere più di uno.
+
+Coperto da **15 controlli** in `test/controlli.js` ("Pre-stay: chi ha prenotato altrove
+riceve dalla sua struttura"), verificati sabotando `_psHotelMitt`: 3 falliscono.
+
 ### Vincolo Booking.com — il mittente si VERIFICA, non si dichiara (21/08/2026)
 
 Gli ospiti che prenotano su Booking hanno un indirizzo mascherato `@guest.booking.com`, che è un **relay**: Booking inoltra alla casella vera **solo le mail spedite dall'indirizzo registrato sull'Extranet della struttura** — `booking@soularthotel.com` (costante `PRESTAY_BOOKING_MITTENTE`). Da qualunque altro mittente le rifiuta: a volte le **scarta in silenzio** (nessun rimbalzo, nessun errore), a volte le **rimanda indietro** con un bounce nella casella del mittente.
@@ -1758,11 +1811,14 @@ L'etichetta del pulsante mail distingue fra invio diretto ("Invia la mail") e ap
 ### Modello dati
 
 ```js
-qm_prestay     = { 'YYYY-MM-DD': { arrivi: [ {id,hotel,nome,email,tel,lang:'it'|'en',mailTs,waTs,mailErr} ] } }
+qm_prestay     = { 'YYYY-MM-DD': { arrivi: [ {id,hotel,mitt,nome,email,tel,lang:'it'|'en',mailTs,waTs,mailErr} ] } }
 qm_prestay_tpl = { sa:{it:{ogg,corpo}, en:{ogg,corpo}}, bh:{…}, sl:{…}, ar:{…}, pr:{…}, ms:{…} }
 ```
 
 `id` è generato (`_psNuovoId`) e non cambia mai: è l'unica identità della scheda, usata da invio, anteprima e spunte. **Nessun campo camera**, per le ragioni sopra.
+
+`hotel` è la struttura di **arrivo**; `mitt` (di norma vuoto) è quella di **prenotazione**,
+cioè da chi parte il messaggio — vedi "Struttura di PRENOTAZIONE ≠ struttura di ARRIVO".
 
 `rimossi:[id]` (per giorno) è la traccia delle schede eliminate a mano: senza, la fusione descritta sotto le rimetterebbe dentro a ogni salvataggio e cancellarle diventerebbe impossibile. Se ne tengono le ultime 100. `ts` sulla scheda è l'ultima modifica fatta a mano, e decide chi vince su spunta Italcamel e lingua.
 
