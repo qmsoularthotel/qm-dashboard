@@ -112,12 +112,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   .print-page:last-child { page-break-after: avoid; }
 
   /* HEADER */
-  .pc-header { background: #1c3a5e !important; border-bottom: 3px solid #c9952f !important; padding: 15px 22px; border-radius: 7px 7px 0 0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-  .pc-title { font-size: 15pt; font-weight: 700; color: #fff !important; }
-  .pc-sub { font-size: 8pt; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.62) !important; margin-top: 3px; }
+  /* FONDO BIANCO, non navy pieno: un blocco pieno alto 15mm su tutta la larghezza e per
+     ogni ospite consuma troppo toner. L'identita' resta nel testo navy e nel filo oro. */
+  .pc-header { background: #fff !important; border: 1.5px solid #1c3a5e; border-bottom: 2.5px solid #c9952f !important; padding: 14px 22px; border-radius: 7px 7px 0 0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .pc-title { font-size: 15pt; font-weight: 700; color: #1c3a5e !important; }
+  .pc-sub { font-size: 8pt; text-transform: uppercase; letter-spacing: .1em; color: #555 !important; margin-top: 3px; }
   .pc-header-right { text-align: right; }
-  .pc-rlabel { font-size: 7.5pt; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.62) !important; margin-bottom: 3px; }
-  .pc-room { font-size: 28pt; font-weight: 700; color: #fff !important; line-height: 1; }
+  .pc-rlabel { font-size: 7.5pt; text-transform: uppercase; letter-spacing: .1em; color: #555 !important; margin-bottom: 3px; }
+  .pc-room { font-size: 28pt; font-weight: 700; color: #1c3a5e !important; line-height: 1; }
 
   /* BODY */
   .pc-body { border: 1.5px solid #1c3a5e; border-top: none; border-radius: 0 0 7px 7px; padding: 16px 20px 16px; flex: 1; display: flex; flex-direction: column; }
@@ -179,12 +181,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 }
 
 /* ---- MODAL PREVIEW ---- */
-.mp .pc-header { background: #1c3a5e; border-bottom: 2.5px solid #c9952f; padding: 13px 18px; border-radius: 6px 6px 0 0; display: flex; align-items: center; justify-content: space-between; }
-.mp .pc-title { font-size: 12pt; font-weight: 700; color: #fff; }
-.mp .pc-sub { font-size: 6.5pt; text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.62); margin-top: 2px; }
+.mp .pc-header { background: #fff; border: 1.5px solid #1c3a5e; border-bottom: 2.5px solid #c9952f; padding: 12px 18px; border-radius: 6px 6px 0 0; display: flex; align-items: center; justify-content: space-between; }
+.mp .pc-title { font-size: 12pt; font-weight: 700; color: #1c3a5e; }
+.mp .pc-sub { font-size: 6.5pt; text-transform: uppercase; letter-spacing: .1em; color: #555; margin-top: 2px; }
 .mp .pc-header-right { text-align: right; }
-.mp .pc-rlabel { font-size: 6pt; text-transform: uppercase; color: rgba(255,255,255,.62); margin-bottom: 2px; }
-.mp .pc-room { font-size: 20pt; font-weight: 700; color: #fff; line-height: 1; }
+.mp .pc-rlabel { font-size: 6pt; text-transform: uppercase; color: #555; margin-bottom: 2px; }
+.mp .pc-room { font-size: 20pt; font-weight: 700; color: #1c3a5e; line-height: 1; }
 .mp .pc-body { border: 1.5px solid #1c3a5e; border-top: none; border-radius: 0 0 6px 6px; padding: 12px 15px 14px; }
 .mp .pc-name { font-size: 16pt; font-weight: 700; padding-bottom: 8px; border-bottom: 1.5px solid #1c3a5e; margin-bottom: 12px; }
 .mp .pc-dates { display: grid; grid-template-columns: repeat(4,1fr); border: 1.5px solid #1c3a5e; border-radius: 4px; overflow: hidden; margin-bottom: 12px; }
@@ -349,7 +351,7 @@ qmPingUso();
 // confronta l'ETag del proprio file (cambia solo se cambia il contenuto: nessun numero di
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina — che risponde
 // alla domanda che l'ETag non sa porsi: sto gia' eseguendo una copia vecchia?
-const QM_APP_BUILD='2026-09-02.3';
+const QM_APP_BUILD='2026-09-02.4';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}

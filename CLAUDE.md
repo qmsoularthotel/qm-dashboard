@@ -2226,9 +2226,14 @@ aggiornamento automatico sembrerebbe una riapertura. **Il CSS di STAMPA e l'ante
 `.mp` non sono stati toccati**: quella è la scheda che si consegna all'ospite, non
 l'interfaccia.
 
-**La scheda stampata segue lo stesso linguaggio** (02/09/2026): intestazione navy con filo
-oro sotto, bordi delle sezioni navy invece che neri, fasce di sezione in azzurro tenue,
-etichette IT/EN come pastiglie navy piene. **Il testo resta nero**: su una stampante in
+**La scheda stampata segue lo stesso linguaggio** (02/09/2026): bordi delle sezioni navy
+invece che neri, fasce di sezione in azzurro tenue, etichette IT/EN come pastiglie navy
+piene. **L'intestazione è a FONDO BIANCO**, con titolo e numero camera in navy e il filo
+oro sotto: la prima versione la riempiva di navy pieno, ed è stata rifatta subito — un
+blocco pieno alto ~20mm su tutta la larghezza, per ogni ospite di ogni giorno, consuma
+troppo toner. È l'unico riempimento a copertura piena che c'era; le fasce di sezione
+rimaste sono azzurro chiarissimo. **Se si ritocca questa scheda, non reintrodurre fondi
+pieni.** **Il testo resta nero**: su una stampante in
 bianco e nero il navy diventa grigio scuro e un testo grigio si legge peggio; l'oro è solo
 decorativo, quindi stampato in monocromatico non porta via nessuna informazione. Nessun
 marchio Compass sul foglio: è un documento che si consegna all'ospite, non uno strumento
