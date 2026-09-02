@@ -2947,6 +2947,19 @@ bash strumenti/inizio.sh      quando si COMINCIA su una macchina
 bash test/esegui.sh           prima di ogni pubblicazione
 ```
 
+**`inizio.sh` parte da solo** (dal 02/09/2026): `.claude/settings.json` contiene un hook
+`SessionStart` che lo esegue all'apertura di ogni sessione di Claude Code in questa
+cartella. Nasce da un equivoco reale — *"da casa non lo faccio mai, credo lo faccia da
+solo"* — e il rischio non è teorico: cominciare a modificare una copia vecchia è ciò che
+fa divergere le due macchine. Il file è versionato, quindi vale su entrambi i Mac appena
+lo si scarica.
+
+Non cambia il comportamento dello script: si allinea da solo solo quando è sicuro, e negli
+altri casi si limita a spiegare e fermarsi (il suo `exit 1` non blocca la sessione, il
+testo finisce nel contesto). Resta lanciabile a mano quando serve, ed è ancora l'unico modo
+di rilanciarlo **senza** riaprire la sessione. Per disattivarlo o modificarlo: `/hooks`,
+oppure `.claude/settings.json`.
+
 `inizio.sh` confronta questa copia con il repository remoto e si comporta così:
 
 | Situazione | Cosa fa |
