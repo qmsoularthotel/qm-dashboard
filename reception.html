@@ -374,10 +374,9 @@ function qmMostraAttivazione(bloccante){
   // splash di Compass, cosi' chi arriva capisce dove si trova e che non e' un guasto.
   d.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#1E3553;display:flex;align-items:center;justify-content:center;padding:18px;font-family:inherit;';
   d.innerHTML='<div style="max-width:360px;width:100%;text-align:center;color:#fff;">'
-    +'<img src="img/compass-stella.png" alt="" style="width:74px;height:74px;object-fit:contain;opacity:.9;margin-bottom:14px;">'
-    +'<div style="font-size:19px;font-weight:600;letter-spacing:.02em;margin-bottom:2px;">Compass</div>'
-    +'<div style="font-size:14px;color:#9fb0cb;margin-bottom:16px;">Dispositivo da abilitare</div>'
-    +'<div style="font-size:13px;color:#c3cede;line-height:1.55;margin-bottom:16px;">Incolla qui il codice che hai ricevuto. Si fa una volta sola: poi questa schermata non comparirà più.</div>'
+    +'<img src="img/compass-stella.png" alt="" style="width:96px;height:96px;object-fit:contain;margin-bottom:16px;filter:brightness(1.18) saturate(1.1) drop-shadow(0 0 18px rgba(201,149,47,.5));">'
+    +'<div style="font-size:19px;font-weight:600;letter-spacing:.02em;margin-bottom:2px;">Compass <span style="color:#C9952F;">QM</span></div>'
+    +'<div style="font-size:14px;color:#9fb0cb;margin-bottom:20px;">Dispositivo da abilitare</div>'
     +'<input id="qm-attiva-campo" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="incolla il codice"'
     +' style="width:100%;padding:10px;border:1px solid #4a5f80;background:#16283f;color:#fff;border-radius:8px;font-size:14px;text-align:center;font-family:inherit;margin-bottom:12px;">'
     +'<div style="display:flex;gap:9px;justify-content:center;">'
