@@ -12438,7 +12438,16 @@ function _psCompila(txt,a,iso){
 const PRESTAY_MAIL_CFG_KEY='qm_prestay_mailcfg';
 let _psMailCfg={endpoint:'',key:''};
 try{const c=localStorage.getItem(PRESTAY_MAIL_CFG_KEY);if(c)_psMailCfg=JSON.parse(c)||_psMailCfg;}catch(e){}
-function _psMailPronto(){return!!(_psMailCfg.endpoint&&_psMailCfg.key);}
+// L'ENDPOINT NON È UN SEGRETO — è lo stesso Worker che tutta l'app già usa, scritto in
+// chiaro nel sorgente. Farlo digitare a mano su ogni postazione era metà della
+// configurazione per niente. Resta sovrascrivibile (un Worker di prova, un trasloco), ma
+// se il campo è vuoto vale questo. Il SEGRETO è solo la chiave, e quella non può essere
+// distribuita dall'app: /kv/get del Worker è senza autenticazione, quindi qualunque cosa
+// finisse su KV sarebbe leggibile da chiunque conosca l'indirizzo — e una chiave di invio
+// pubblica è un relay per spam a nome dell'albergo.
+const PRESTAY_ENDPOINT_DEF=PROXY+'/prestay/send';
+function _psEndpoint(){return String(_psMailCfg.endpoint||'').trim()||PRESTAY_ENDPOINT_DEF;}
+function _psMailPronto(){return!!String(_psMailCfg.key||'').trim();}
 function prestaySetMailCfg(campo,val){
   _psMailCfg[campo]=String(val||'').trim();
   try{localStorage.setItem(PRESTAY_MAIL_CFG_KEY,JSON.stringify(_psMailCfg));}catch(e){}
@@ -12524,9 +12533,7 @@ async function prestayControllaRisposte(){
 // l'indirizzo è quello giusto?": l'Extranet dice quale mittente è autorizzato, questo dice
 // quale mittente stiamo usando. Finché i due non coincidono, il relay rifiuta.
 function _psEndpointStato(){
-  const e=String(_psMailCfg.endpoint||'').trim();
-  if(!e)return'';
-  return e.replace(/\/prestay\/send\/?$/,'/prestay/stato');
+  return _psEndpoint().replace(/\/prestay\/send\/?$/,'/prestay/stato');
 }
 let _psMittInCorso=false;
 // La risposta del Worker, messa in forma. `caselle` è il campo che conta e che PRIMA
@@ -12647,6 +12654,18 @@ function _psMittRiquadro(){
   return h;
 }
 function prestayToggleMailCfg(){_prestayMailCfgOpen=!_prestayMailCfgOpen;_psSenzaSalto(prestayRender);}
+// La chiave si deve poter RILEGGERE, non solo scrivere: è così che si porta su una
+// postazione nuova senza andarla a ripescare su Cloudflare. Sta comunque solo in questo
+// browser, e il pannello si apre di proposito (non è a schermo mentre passa qualcuno).
+let _psChiaveVisibile=false;
+function prestayToggleChiave(){_psChiaveVisibile=!_psChiaveVisibile;_psSenzaSalto(prestayRender);}
+function prestayCopiaChiave(btn){
+  const k=String(_psMailCfg.key||'');
+  if(!k)return;
+  const fatto=()=>{const t=btn.textContent;btn.textContent='Copiata';setTimeout(()=>{btn.textContent=t;},1500);};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(k).then(fatto).catch(()=>{_psChiaveVisibile=true;prestayRender();});
+  else{_psChiaveVisibile=true;prestayRender();}
+}
 let _prestayMailCfgOpen=false;
 let _psMailInFlight={};
 
@@ -12657,7 +12676,7 @@ let _psMailInFlight={};
 function _psInviaMail(a,ogg,corpo){
   const hm=_psHotelMitt(a);
   const fromName=PRESTAY_FROM_NAME[hm]||'';
-  return fetch(_psMailCfg.endpoint,{
+  return fetch(_psEndpoint(),{
     method:'POST',
     headers:{'Content-Type':'application/json','X-Prestay-Key':_psMailCfg.key},
     // La struttura decide da quale casella parte: il Boutique ha la sua (vedi casellaPer nel
@@ -13077,14 +13096,16 @@ function prestayRender(){
           <strong style="color:var(--text);">Endpoint e chiave restano solo in questo browser</strong> — non vengono sincronizzati sugli altri PC né salvati sul cloud, quindi vanno reinseriti su ogni postazione da cui vuoi spedire.
           Il codice del Worker e i passaggi su Cloudflare e DNS sono in <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;">worker-prestay-mail.md</code> nel repository.
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div>
-            <label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">ENDPOINT</label>
-            <input value="${escv(_psMailCfg.endpoint)}" placeholder="https://…workers.dev/prestay/send" onchange="prestaySetMailCfg('endpoint',this.value)" style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;">
+        <div>
+          <label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">CHIAVE (PRESTAY_KEY) — l'unica cosa da inserire</label>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input id="psCfgKey" type="${_psChiaveVisibile?'text':'password'}" value="${escv(_psMailCfg.key)}" placeholder="la password scelta sul Worker" onchange="prestaySetMailCfg('key',this.value)" style="flex:1;min-width:0;box-sizing:border-box;padding:7px 9px;border:1px solid ${_psMailPronto()?'var(--green)':'var(--amber)'};border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;">
+            <button onclick="prestayToggleChiave()" title="${_psChiaveVisibile?'Nascondi':'Mostra la chiave, per copiarla su un altro computer'}" style="padding:7px 11px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">${_psChiaveVisibile?'Nascondi':'Mostra'}</button>
+            ${_psMailCfg.key?`<button onclick="prestayCopiaChiave(this)" title="Copia la chiave negli appunti per incollarla sull'altro computer" style="padding:7px 11px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">Copia</button>`:''}
           </div>
-          <div>
-            <label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">CHIAVE (PRESTAY_KEY)</label>
-            <input type="password" value="${escv(_psMailCfg.key)}" placeholder="la password scelta sul Worker" onchange="prestaySetMailCfg('key',this.value)" style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;">
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-top:6px;">
+            L'indirizzo del Worker non serve più inserirlo: è quello che Compass usa già per tutto il resto (<code style="background:var(--surface2);padding:1px 5px;border-radius:4px;">${escv(PRESTAY_ENDPOINT_DEF)}</code>)${_psMailCfg.endpoint&&_psMailCfg.endpoint.trim()&&_psMailCfg.endpoint.trim()!==PRESTAY_ENDPOINT_DEF?` — su questa postazione ne è impostato un altro: <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;">${escv(_psMailCfg.endpoint)}</code>, <button onclick="prestaySetMailCfg('endpoint','')" style="border:none;background:none;padding:0;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;text-decoration:underline;">torna a quello normale</button>`:''}.
+            Per attivare l'invio su un computer nuovo: <strong>Mostra</strong> e <strong>Copia</strong> la chiave da una postazione che già funziona, e incollala qui.
           </div>
         </div>
         ${_psMittRiquadro()}

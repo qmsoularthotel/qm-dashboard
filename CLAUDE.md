@@ -1793,6 +1793,26 @@ Il Worker **ricade automaticamente su Resend** se le variabili `SMTP_*` non ci s
 
 **Non "semplificare" queste quattro cose nel Worker** (tutte verificate in test): risposte SMTP multiriga lette solo su righe già terminate da CRLF (un `250 OK` spezzato a metà sembrerebbe completo); corpo in base64 (risolve accenti *e* dot-stuffing insieme); intestazioni RFC 2047 (`Carità` altrimenti illeggibile); `MAIL FROM` uguale all'utente autenticato (i server condivisi rifiutano mittenti di busta diversi — il nome per struttura sta nell'header `From:`, che è quello che l'ospite legge).
 
+### Configurazione dell'invio: solo la chiave, e si può rileggere (02/09/2026)
+
+Prima servivano **due** campi su ogni postazione, endpoint e chiave, e il campo chiave era
+`type="password"`: non si poteva rileggere quanto inserito, quindi per attivare un computer
+nuovo bisognava ripescare il valore su Cloudflare.
+
+- **L'endpoint non è un segreto**: è lo stesso Worker che tutta l'app già usa, scritto in
+  chiaro nel sorgente. Ora `_psEndpoint()` ricade su `PROXY+'/prestay/send'` quando il
+  campo è vuoto, e il campo è sparito dal pannello (resta sovrascrivibile — un Worker di
+  prova — con un collegamento per tornare a quello normale). `_psMailPronto()` guarda
+  quindi solo la chiave.
+- **La chiave si mostra e si copia** (`prestayToggleChiave`, `prestayCopiaChiave`): è così
+  che la si porta su un'altra postazione senza andarla a cercare altrove.
+
+**Perché non si può distribuire da sola**: `/kv/get` sul Worker è **senza autenticazione**
+— qualunque cosa finisse su KV sarebbe leggibile da chiunque conosca l'indirizzo, che è
+pubblico nel sorgente. Una chiave d'invio pubblica è un relay per spam a nome dell'albergo.
+Finché l'archivio KV non è protetto, la chiave resta per postazione: è un incollaggio, una
+volta per computer.
+
 **La chiave sta solo nel browser** (`localStorage`, chiave `qm_prestay_mailcfg`) — **mai su KV, mai nel codice**: non deve finire su GitHub né essere sincronizzata sugli altri PC insieme al resto dei dati. Va quindi reinserita su ogni postazione da cui si vuole spedire. Verificato in test che non compaia dentro `qm_prestay`.
 
 **Se l'invio fallisce la riga NON viene segnata come inviata** e l'errore resta visibile sulla riga (chiave sbagliata, rete assente, rifiuto del servizio): altrimenti un errore silenzioso farebbe credere che l'ospite sia stato contattato. Un reinvio riuscito azzera l'errore. Con l'invio diretto si chiede **conferma** prima di spedire: con nome e dati presi a mano dal PMS, saltare del tutto la rilettura non è prudente.

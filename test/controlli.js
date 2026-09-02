@@ -607,8 +607,14 @@ _psMitt = _mittVero;
 var _cfgVero = _psMailCfg;
 _psMailCfg = { endpoint: 'https://esempio.workers.dev/prestay/send', key: 'x' };
 ok('endpoint stato ricavato da send', _psEndpointStato(), 'https://esempio.workers.dev/prestay/stato');
+// L'indirizzo del Worker non e' un segreto e non si inserisce piu' a mano: senza
+// configurazione resta noto, quello che manca e' la chiave.
 _psMailCfg = { endpoint: '', key: '' };
-ok('senza configurazione nessun endpoint', _psEndpointStato(), '');
+ok('endpoint noto anche senza configurazione', _psEndpointStato(), PROXY + '/prestay/stato');
+ok('senza chiave l\'invio diretto non e pronto', _psMailPronto(), false);
+_psMailCfg = { endpoint: '', key: 'k' };
+ok('con la sola chiave l\'invio e pronto',       _psMailPronto(), true);
+ok('e usa il Worker di sempre',                  _psEndpoint(), PROXY + '/prestay/send');
 _psMailCfg = _cfgVero;
 
 // ─────────────────────────────────────────────────────────────────────────────
