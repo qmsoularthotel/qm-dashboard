@@ -111,6 +111,26 @@ for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.htm
     echo "              Il limite giornaliero si esaurirebbe di nuovo a vuoto."
     BKF_KO=1
   fi
+  # Il filtro qui sopra, nella sua prima versione, chiamava SE STESSO invece della fetch:
+  # la seconda chiamata trovava il valore appena memorizzato e tornava subito, quindi la
+  # scrittura non partiva mai. Nessun errore da nessuna parte, l'app continuava a salvare
+  # in localStorage e nessun altro dispositivo vedeva piu' niente (giro Culligan del 02/09).
+  # Il controllo di prima non bastava: verificava che la funzione esistesse, non che
+  # scrivesse.
+  # Si guarda DENTRO il corpo della funzione (dalla riga della firma alla graffa di
+  # chiusura, saltando la firma stessa): un commento che cita l'errore, o un altro
+  # chiamante legittimo altrove nel file, non devono far scattare il controllo.
+  if sed -n '/^function qmKvSet(/,/^}/p' "$_app" | tail -n +2 | grep -q 'qmKvSet('; then
+    echo ""
+    echo "  ERRORE      $_app: qmKvSet chiama se stessa, la scrittura sul cloud non parte."
+    echo "              L'app sembra funzionare ma i dati restano solo su quel dispositivo."
+    BKF_KO=1
+  fi
+  if ! grep -q "_qmKvScrivi" "$_app"; then
+    echo ""
+    echo "  ERRORE      $_app non ha piu' _qmKvScrivi: chi esegue davvero la scrittura?"
+    BKF_KO=1
+  fi
   if ! grep -q 'QM_APP_BUILD' "$_app"; then
     echo ""
     echo "  ERRORE      $_app non dichiara piu' la propria versione (QM_APP_BUILD)."

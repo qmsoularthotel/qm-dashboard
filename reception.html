@@ -332,11 +332,21 @@ const PROXY = 'https://anthropic-proxy.qm-d82.workers.dev';
 // scrittura se non e' cambiato nulla. Se fallisce si dimentica, altrimenti quel valore non
 // verrebbe piu' ritentato.
 const _qmKvUltimo={};
+// LA SCRITTURA VERA, e deve restare una funzione SEPARATA da qmKvSet. Nella prima versione
+// del filtro (01/09/2026) qui c'era `return qmKvSet(key,v)`: la chiamata ricorsiva trovava
+// il valore appena memorizzato, tornava subito `Promise.resolve(true)` e la fetch NON
+// PARTIVA MAI. Nessun errore da nessuna parte — l'app continuava a salvare in
+// localStorage, quindi sul dispositivo sembrava tutto a posto, mentre nessun altro
+// dispositivo vedeva piu' niente. Il giro Culligan del 02/09 e' sparito cosi'.
+function _qmKvScrivi(key,v){
+  return fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key:key,value:v})});
+}
 function qmKvSet(key,value){
   const v=typeof value==='string'?value:JSON.stringify(value);
   if(_qmKvUltimo[key]===v)return Promise.resolve(true);
   _qmKvUltimo[key]=v;
-  return qmKvSet(key,v)
+  return _qmKvScrivi(key,v)
     .then(r=>{if(!r.ok)delete _qmKvUltimo[key];return r.ok;})
     .catch(e=>{delete _qmKvUltimo[key];throw e;});
 }

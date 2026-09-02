@@ -3075,6 +3075,57 @@ non ferma il codice sottostante, che continua a leggere e scrivere.
 **Limite da ricordare**: un'app già aperta con il codice *precedente* a questa modifica non
 si aggiorna da sola — non contiene ancora `qmCheckVersione()`. Va chiusa a mano una volta.
 
+### Il filtro sulle scritture KV chiamava se stesso — nessuna app scriveva più (02/09/2026)
+
+**Sintomo**: il giro Culligan del 02/09 fatto regolarmente sul telefono (bottiglie ritirate,
+riconsegnate, camere impostate "pronta") e sul PC il pannello mostrava `0 / 13 camere
+visitate`, con tutte le camere ancora "da visitare". I giorni precedenti c'erano.
+
+**Causa**, introdotta il 01/09/2026 (commit `3ef692f`, il filtro anti-scritture-identiche):
+
+```js
+function qmKvSet(key,value){
+  ...
+  _qmKvUltimo[key]=v;
+  return qmKvSet(key,v)      // ← se stessa, non la fetch
+```
+
+La seconda chiamata trovava `_qmKvUltimo[key]===v` (appena impostato), tornava
+`Promise.resolve(true)` e **la fetch non partiva mai**. Nessun errore da nessuna parte: le
+app salvano prima in `localStorage`, quindi sul dispositivo sembrava tutto a posto, mentre
+nessun altro dispositivo vedeva più niente. Il `.catch(()=>{})` dei chiamanti avrebbe
+comunque nascosto un errore, ma non ce n'era nemmeno uno da nascondere.
+
+Colpiti tutti e sei i file che avevano ricevuto il filtro. **`app.js` no**: lì `kvSet` fa la
+fetch direttamente, senza wrapper.
+
+| File | Cosa non arrivava sul cloud dal 01/09 19:44 |
+|---|---|
+| `controllo-mattino.html` | il giro del giorno (`qm_cm_<data>`) — l'intero stato camere |
+| `breakfast.html` | archivio colazioni (`qm_bkf_monthly_history`) e **DDT** inseriti dal telefono |
+| `inventory.html` | tutto: il suo `kvSet` interno passa di lì (catalogo, movimenti, ordini) |
+| `reception.html` | solo `qm_cassa_rimossi`: i movimenti passano da `kvSetLocal`, che ha una fetch propria. **Le eliminazioni** però non si propagavano |
+| `housekeeper.html`, `dvr.html` | solo i contatori di accesso, che nessuno legge più |
+
+**Correzione**: la scrittura vera è ora una funzione separata, `_qmKvScrivi(key,v)`, e
+`qmKvSet` chiama quella. Il filtro resta e continua a saltare le scritture identiche
+(verificato: prima scrittura → una fetch, seconda identica → nessuna).
+
+**Recupero del giro già fatto** (`_load()` in `controllo-mattino.html`): se la giornata sta
+in `localStorage` ma **sul cloud non c'è nulla**, si ripubblica. È esattamente lo stato
+prodotto dal difetto, e la condizione "cloud vuoto per quella chiave" lo rende sicuro: se il
+cloud ha già qualcosa è più aggiornato di questa copia e non va toccato. Gli altri archivi
+si riallineano alla prima scrittura successiva, che manda comunque l'elenco intero.
+
+**Perché la rete di sicurezza non l'ha visto**: la sentinella controllava che
+`function qmKvSet` **esistesse**, non che scrivesse. Ora guarda dentro il corpo della
+funzione e fallisce se contiene una chiamata a se stessa, e pretende `_qmKvScrivi`.
+Verificata rimettendo il difetto: la segnala.
+
+**Regola che ne esce**: una sentinella che controlla la *presenza* di una funzione non
+controlla niente. Quando la si aggiunge per proteggere un comportamento, deve poter
+fallire se quel comportamento sparisce — e va provata sabotandolo.
+
 ### Riferimenti inerti — non sono guasti, non "ripararli" (verificato 21/08/2026)
 
 Un controllo su tutti gli `onclick` e su tutti i `getElementById` letterali ha dato:
