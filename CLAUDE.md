@@ -1617,6 +1617,39 @@ Il codice del Worker, i passaggi su Cloudflare, il servizio di invio e i record 
 
 **Due trappole trovate alla prima prova reale**: il display name in `PRESTAY_FROM` va **tra virgolette e senza caratteri non-ASCII** (un trattino lungo `—` faceva scartare il nome, e Gmail mostrava solo l'indirizzo); e le variabili nuove diventano attive **solo dopo un nuovo deploy** del Worker, non al salvataggio.
 
+### L'avviso "indirizzo Booking" diceva il falso — `caselle` buttate via (02/09/2026)
+
+**Sintomo**: una mail al Boutique **regolarmente recapitata**, visibile nel thread Booking
+con l'ospite, mostrava lo stesso sulla scheda `indirizzo Booking · non recapitabile con il
+mittente attuale`.
+
+**Causa**: `/prestay/stato` restituisce `caselle` — la casella dichiarata **per struttura**
+(`{bh:'booking@hotelpiazzacarita.com'}`) — e `_psMittenteAttuale(p)` la legge, ma
+`prestayVerificaMittente` **non la salvava**: costruiva `_psMitt` con tutti gli altri campi
+e lasciava fuori proprio quello. Senza, ogni struttura con casella propria ricadeva sulla
+principale, il confronto con il suo indirizzo Extranet falliva **sempre**, e nessun clic su
+"Verifica mittente" poteva sistemarlo. Il campo esisteva solo in `test/controlli.js`, dove
+veniva scritto a mano: i controlli passavano su un dato che in produzione non arrivava mai.
+
+L'invio invece era corretto da sempre: la casella la sceglie il Worker (`casellaPer`) dal
+campo `hotel` del payload. Era **solo il racconto** a essere sbagliato — il caso peggiore
+per un avviso, perché insegna a ignorarlo.
+
+**Corretto**, oltre alla causa:
+
+| Prima | Ora |
+|---|---|
+| Verifica solo a mano, una volta per postazione | `_psVerificaAuto()` la fa da sola all'apertura della sezione se l'invio diretto è configurato (stesse credenziali), in silenzio; TTL 6 ore, e una cache **senza `caselle`** viene dal difetto e si rifà |
+| L'avviso compariva anche su una mail **già partita** | Solo su ciò che deve ancora partire: a cose fatte era una smentita, e falsa se il messaggio era arrivato |
+| "non recapitabile" anche quando il mittente non era noto | Se noto: `parte da X, Booking accetta solo Y`. Se ignoto: `mittente non ancora verificato` — un'ipotesi non si scrive come un fatto |
+
+**Regola che ne esce**: un controllo che dichiara *non funzionerà* deve poggiare su un dato
+verificato, non su un'assunzione; e quando l'assunzione è pessimistica va detto che è tale.
+Il pulsante manuale resta in Impostazioni per rifare la verifica su richiesta.
+
+Corretto anche `PRESTAY_BOOKING_MITTENTE` concatenato nel testo del pannello (mappa dal
+31/08: si leggeva `[object Object]`).
+
 ### Struttura di PRENOTAZIONE ≠ struttura di ARRIVO — campo `mitt` (02/09/2026)
 
 Un ospite che prenota al **Boutique** e riceve un **upgrade** dorme al SoulArt, ma **non
