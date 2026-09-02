@@ -737,6 +737,20 @@ ok('e recapitabile scrivendo dal Boutique',
    _psBookingBloccato(UPG.email, _psHotelMitt(UPG)), false);
 _psMitt = _mittPrima;
 
+// Il Worker dichiara una casella per struttura; la verifica la buttava via, e ogni arrivo
+// Booking del Boutique risultava "non recapitabile" anche a mail regolarmente arrivata.
+var _RISP = { ok: true, mittente: 'booking@soularthotel.com', mittenteDa: 'SMTP_USER',
+              via: 'smtp', smtpHost: 'authsmtp.securemail.pro',
+              caselle: { bh: 'booking@hotelpiazzacarita.com' }, imap: 'qm@soularthotel.com' };
+ok('la verifica conserva le caselle per struttura', (_psMittDaRisposta(_RISP).caselle || {}).bh, 'booking@hotelpiazzacarita.com');
+_psMitt = _psMittDaRisposta(_RISP);
+ok('col Worker letto bene il Boutique non e bloccato', _psBookingBloccato('x@guest.booking.com', 'bh'), false);
+ok('e nemmeno le altre strutture',                    _psBookingBloccato('x@guest.booking.com', 'sa'), false);
+// Una casella davvero sbagliata deve continuare a essere segnalata: il controllo serve.
+_psMitt = _psMittDaRisposta({ ok: true, mittente: 'qm@soularthotel.com', caselle: {} });
+ok('mittente davvero sbagliato: ancora bloccato',     _psBookingBloccato('x@guest.booking.com', 'bh'), true);
+_psMitt = _mittPrima;
+
 // La scelta e' fatta a mano: ne' il cloud ne' una reimportazione la devono cancellare.
 var M = _psFondi({ 'g': { arrivi: [{ id: 'x', hotel: 'sa', mitt: 'bh', nome: 'Rossi Mario', email: 'r@esempio.it' }] } },
                  { 'g': { arrivi: [{ id: 'y', hotel: 'sa', nome: 'Rossi Mario', email: '', tel: '' }] } });
