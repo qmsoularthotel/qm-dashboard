@@ -2376,7 +2376,9 @@ Se qualcosa nel Pannello App, nel toggle on/off, nell'avviso Breakfast o in Spes
 | `08d9231` | Fix avviso Breakfast agganciato alla tab sbagliata (`report`, non un sub-tab di `orders`) |
 | `5afcd8f` | Icone card Pannello App uguali alla sidebar |
 
-Se il **Pannello App è vuoto o rotto**, verificare prima che questi ID esistano ancora in `index.html`: `miniapp-hk-status`, `miniapp-bkf-status`, `miniapp-cm-status`, `miniapp-inv-status`, `miniapp-dvr-status`, `miniapp-hk-toggle` (e gli altri 4 `-toggle`), `bkf-banner-msg`, `miniapp-bkf-banner-toggle`. Le funzioni JS corrispondenti sono tutte in `app.js` sotto il marker `// §§ MINI APP — PANNELLO DI CONTROLLO`.
+Se il **Pannello App è vuoto o rotto**, verificare prima che questi ID esistano ancora in `index.html`: `miniapp-hk-status`, `miniapp-bkf-status`, `miniapp-cm-status`, `miniapp-inv-status`, `miniapp-dvr-status`, `miniapp-hk-toggle` (e gli altri 4 `-toggle`), `miniapp-bkf-banner-tabs`, `miniapp-avvisi-corpo`, `miniapp-avvisi-tasto`, `miniapp-avvisi-conta`.
+
+**Struttura delle schede (02/09/2026)**: il markup ripetuto a mano dentro `index.html` è stato sostituito da classi in `style.css` (`.miniapp-card`, `.miniapp-card-top`, `.miniapp-btn`, `.miniapp-sw`…). Le schede hanno `min-height` e i pulsanti ancorati in fondo (`margin-top:auto`), così una riga di stato che va a capo — es. "Scorte da riordinare" — non alza solo quella scheda. **Gli avvisi Breakfast sono dentro la sua scheda ma chiusi** (`miniappToggleAvvisi()`): tenerli sempre aperti la faceva alta il doppio delle altre. A scheda chiusa un contatore dorato dice quanti avvisi sono accesi (`miniappRenderContaAvvisi()`) — serve a non lasciarne uno attivo per settimane senza accorgersene. L'interruttore resta 36×21 con la pallina a 2px/17px perché è il JS a spostarla: cambiare quelle misure nel CSS la lascerebbe fuori posto. Le funzioni JS corrispondenti sono tutte in `app.js` sotto il marker `// §§ MINI APP — PANNELLO DI CONTROLLO`.
 
 ### Deploy GitHub Pages bloccato — cosa fare
 

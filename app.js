@@ -2394,14 +2394,33 @@ function miniappRenderBkfBanner(){
   if(!wrap)return;
   wrap.innerHTML=BKF_BANNER_TABS.map(([k,lbl])=>{
     const st=_bkfBanner[k]||{enabled:false,message:''};
-    return`<div>
-      <div style="font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">${lbl}</div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input data-bkf-banner-tab="${k}" type="text" value="${(st.message||'').replace(/"/g,'&quot;')}" placeholder="es. Nuovo turno caricato, ricarica" style="flex:1;min-width:0;padding:7px 9px;font-size:13px;border:1px solid var(--border);border-radius:6px;background:var(--surface2);color:var(--text);">
-        <button onclick="miniappToggleBkfBanner('${k}')" title="Attiva/disattiva avviso su ${lbl}" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;background:${st.enabled?'var(--green)':'var(--border)'};"><span style="position:absolute;top:2px;left:${st.enabled?'17px':'2px'};width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;"></span></button>
-      </div>
+    return`<div class="miniapp-avviso-riga">
+      <div class="miniapp-sub">${lbl}</div>
+        <input data-bkf-banner-tab="${k}" type="text" value="${(st.message||'').replace(/"/g,'&quot;')}" placeholder="es. Nuovo turno caricato, ricarica" style="flex:1;min-width:0;padding:7px 9px;font-size:var(--fs-xs);border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-family:inherit;">
+        <button onclick="miniappToggleBkfBanner('${k}')" title="Attiva/disattiva avviso su ${lbl}" class="miniapp-sw" style="margin-left:0;background:${st.enabled?'var(--green)':'var(--border)'};"><span class="miniapp-toggle-knob" style="left:${st.enabled?'17px':'2px'};"></span></button>
     </div>`;
   }).join('');
+  miniappRenderContaAvvisi();
+}
+// La scheda Breakfast e' l'unica che ha qualcosa da scrivere, non solo da accendere: gli
+// avvisi stanno dentro di lei ma chiusi, altrimenti resta alta il doppio delle altre e la
+// fila di schede si sfilaccia. Aperto/chiuso non e' un dato da salvare, e' una tendina.
+function miniappToggleAvvisi(){
+  const corpo=document.getElementById('miniapp-avvisi-corpo');
+  const tasto=document.getElementById('miniapp-avvisi-tasto');
+  if(!corpo||!tasto)return;
+  const apri=corpo.hidden;
+  corpo.hidden=!apri;
+  tasto.setAttribute('aria-expanded',apri?'true':'false');
+}
+// Quanti avvisi sono accesi si deve vedere a scheda CHIUSA: altrimenti si dimentica di
+// averne lasciato uno attivo e chi apre l'app se lo ritrova davanti per giorni.
+function miniappRenderContaAvvisi(){
+  const el=document.getElementById('miniapp-avvisi-conta');
+  if(!el)return;
+  const n=BKF_BANNER_TABS.filter(function(x){return _bkfBanner[x[0]]&&_bkfBanner[x[0]].enabled;}).length;
+  el.textContent=n?(n+' attiv'+(n===1?'o':'i')):'';
+  el.style.display=n?'':'none';
 }
 function miniappSaveBkfBannerToKV(){
   const json=JSON.stringify(_bkfBanner);

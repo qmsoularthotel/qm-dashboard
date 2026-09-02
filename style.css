@@ -255,7 +255,42 @@ body.dark .panel{box-shadow:none;}
    su uno schermo da 375px. Portata in CSS per poterla stringere su mobile. */
 .inv-stock-row{display:grid;grid-template-columns:1fr 72px 52px 88px 44px;gap:6px;}
 .ov-bkf-grid-wide{grid-template-columns:1fr 3fr 0.8fr;}
-.miniapp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));}
+.miniapp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start;}
+/* Le schede del Pannello App: tutte uguali, coi pulsanti sulla stessa riga in fondo anche
+   quando lo stato sopra occupa una riga in piu' (es. "Scorte da riordinare" su due righe).
+   Prima erano stili scritti a mano dentro ogni scheda in index.html e bastava una parola in
+   piu' in un titolo per sfilacciare la fila. */
+.miniapp-card{display:flex;flex-direction:column;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);min-height:172px;}
+.miniapp-card-top{display:flex;align-items:center;gap:10px;margin-bottom:13px;}
+.miniapp-ico{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.miniapp-nome{min-width:0;flex:1;}
+.miniapp-titolo{font-size:var(--fs-sm);font-weight:700;line-height:1.25;color:var(--text);}
+.miniapp-sub{font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;letter-spacing:.05em;text-transform:uppercase;}
+.miniapp-stato{margin-bottom:14px;}
+.miniapp-azioni{display:flex;gap:8px;margin-top:auto;}
+.miniapp-btn{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:8px;border-radius:6px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;transition:border-color .12s,color .12s;}
+.miniapp-btn:hover{border-color:var(--accent);color:var(--accent);}
+.miniapp-btn-primario{background:var(--accent);border-color:var(--accent);color:#fff;}
+.miniapp-btn-primario:hover{background:var(--accent);border-color:var(--accent);color:#fff;filter:brightness(1.12);}
+/* L'interruttore: misure invariate (36x21, pallina a 2px/17px) perche' e' il codice JS che
+   la sposta — cambiarle qui la lascerebbe fuori posto. */
+.miniapp-sw{width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;margin-left:auto;background:var(--border);}
+.miniapp-toggle-knob{position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.25);}
+/* La casella degli avvisi non e' un'app: niente filo dorato in cima e fondo appena diverso,
+   cosi' si vede a colpo d'occhio che non ha un interruttore da cercare. */
+/* Gli avvisi vivono DENTRO la scheda Breakfast, ma chiusi: aperti sempre, la facevano alta
+   il doppio delle altre e la fila si sfilacciava. Si aprono quando servono — e' l'unica
+   scheda che ha qualcosa da scrivere, non un'app in piu'. */
+.miniapp-apri-avvisi{display:flex;align-items:center;gap:7px;width:100%;margin-top:10px;padding:7px 0 0;background:none;border:none;border-top:1px solid var(--border-light);color:var(--text-muted);font-size:var(--fs-xs);font-weight:600;font-family:inherit;cursor:pointer;}
+.miniapp-apri-avvisi:hover{color:var(--accent);}
+.miniapp-apri-avvisi svg:first-child{color:var(--gold);flex-shrink:0;}
+.miniapp-apri-avvisi .miniapp-chevron{margin-left:auto;transition:transform .15s;}
+.miniapp-apri-avvisi[aria-expanded="true"] .miniapp-chevron{transform:rotate(180deg);}
+.miniapp-avvisi-conta{font-size:var(--fs-xxs);font-weight:700;color:var(--gold);background:var(--gold-bg);border-radius:9px;padding:1px 7px;}
+.miniapp-avvisi-corpo{margin-top:12px;}
+.miniapp-avvisi-nota{font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:12px;}
+.miniapp-avviso-riga{display:flex;gap:8px;align-items:center;}
+.miniapp-avviso-riga .miniapp-sub{margin:0;width:62px;flex-shrink:0;font-weight:700;color:var(--text-muted);}
 /* Schema ricorrente "grafico a sinistra + riquadro dati a destra" (Overview: occupazione
    settimanale + bottiglia Culligan; Bilanciamento Camere: vista settimanale + totali).
    La colonna dati ha flex-shrink:0 e una min-width: su smartphone si prendeva ~180px dei
