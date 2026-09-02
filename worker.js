@@ -30,7 +30,7 @@ const ORIGINI = [
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /prestay/stato.
-const WORKER_VERSIONE = '2026-08-31.3';
+const WORKER_VERSIONE = '2026-09-02';
 
 // ── UNA CASELLA PER STRUTTURA ──
 // Booking recapita all'ospite solo se la mail parte dall'indirizzo registrato sull'Extranet
@@ -88,6 +88,50 @@ export default {
       status: status || 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
+
+    // ── ACCESSO: PASSWORD → LASCIAPASSARE ──
+    // /kv/* era completamente aperto: chiunque conoscesse l'indirizzo di questo Worker —
+    // scritto nel codice del sito, quindi pubblico — poteva LEGGERE tutti i dati di Compass
+    // (nomi, email e telefoni degli ospiti, cassa, DDT), MODIFICARLI e CANCELLARLI.
+    // Verificato il 02/09/2026 con tre richieste da riga di comando, senza credenziali.
+    //
+    // La chiusura avviene in tre tempi, per non lasciare fuori nessuno:
+    //   1. (adesso) il Worker rilascia lasciapassare, ma continua ad accettare tutto;
+    //      conta pero' quanti accessi arrivano senza, per sapere quando si puo' chiudere.
+    //   2. Compass e le app cominciano a usarlo: una password per dispositivo, una volta.
+    //   3. quando il contatore degli accessi anonimi resta a zero per un giorno intero,
+    //      si mette QM_AUTH_OBBLIGATORIA=si e la porta si chiude.
+    //
+    // Il lasciapassare e' firmato con QM_AUTH_SECRET e scade: non e' un segreto scritto nel
+    // sito, quindi leggerne il sorgente non serve a niente.
+    if (url.pathname === '/auth') {
+      let corpo; try { corpo = await request.json(); } catch (e) { corpo = {}; }
+      if (!env.QM_PASSWORD || !env.QM_AUTH_SECRET)
+        return json({ ok: false, error: 'Accesso non ancora configurato sul Worker' }, 501);
+      if (String(corpo.password || '') !== String(env.QM_PASSWORD))
+        return json({ ok: false, error: 'Password non valida' }, 401);
+      const scade = Date.now() + 180 * 86400000;      // sei mesi: si digita due volte l'anno
+      return json({ ok: true, pass: await firmaPass(env, scade), scade });
+    }
+
+    // Vale per tutti i percorsi /kv/*. Finche' QM_AUTH_OBBLIGATORIA non e' 'si' non blocca
+    // niente: si limita a contare chi passa senza lasciapassare, cosi' la decisione di
+    // chiudere si prende su un numero e non a sensazione.
+    if (url.pathname.startsWith('/kv/')) {
+      const pass = request.headers.get('X-QM-Pass') || url.searchParams.get('pass') || '';
+      const valido = await verificaPass(env, pass);
+      if (!valido) {
+        if (String(env.QM_AUTH_OBBLIGATORIA || '').toLowerCase() === 'si')
+          return json({ ok: false, error: 'Accesso non autorizzato' }, 401);
+        // Conteggio giornaliero degli accessi senza lasciapassare. Non blocca e non
+        // rallenta: se la scrittura fallisce si tira dritto.
+        try {
+          const g = 'qm_auth_anon_' + new Date().toISOString().slice(0, 10);
+          const n = parseInt(await env.QM_STORAGE.get(g) || '0', 10) || 0;
+          if (n < 5000) await env.QM_STORAGE.put(g, String(n + 1), { expirationTtl: 1209600 });
+        } catch (e) {}
+      }
+    }
 
     // ── ARCHIVIO KV ──
     if (url.pathname === '/kv/get') {
@@ -242,6 +286,34 @@ function b64(str) {
 function encHeader(s) {
   const v = String(s || '');
   return /^[\x20-\x7E]*$/.test(v) ? v : '=?UTF-8?B?' + b64(v) + '?=';
+}
+
+// Lasciapassare = scadenza + firma HMAC-SHA256 con QM_AUTH_SECRET. Non contiene dati e non
+// si puo' fabbricare senza il segreto, che vive solo qui sul Worker.
+async function chiaveHmac(env) {
+  return crypto.subtle.importKey('raw', new TextEncoder().encode(String(env.QM_AUTH_SECRET || '')),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+}
+function b64url(buf) {
+  let s = '';
+  const b = new Uint8Array(buf);
+  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function firmaPass(env, scade) {
+  const k = await chiaveHmac(env);
+  const f = await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(String(scade)));
+  return scade + '.' + b64url(f);
+}
+async function verificaPass(env, pass) {
+  try {
+    if (!env.QM_AUTH_SECRET || !pass) return false;
+    const i = String(pass).indexOf('.');
+    if (i < 1) return false;
+    const scade = Number(String(pass).slice(0, i));
+    if (!(scade > Date.now())) return false;              // scaduto
+    return (await firmaPass(env, scade)) === String(pass); // firma corrispondente
+  } catch (e) { return false; }
 }
 
 function soloIndirizzo(s) {
