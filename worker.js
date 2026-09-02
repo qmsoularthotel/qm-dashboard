@@ -79,7 +79,10 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-Prestay-Key',
+      // X-QM-Pass va dichiarata qui, altrimenti il browser rifiuta di inviarla e ogni
+      // richiesta arriverebbe senza lasciapassare — con la porta chiusa, tutto fermo.
+      'Access-Control-Allow-Headers': 'Content-Type, X-Prestay-Key, X-QM-Pass',
+      'Access-Control-Max-Age': '86400',
     };
     if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 

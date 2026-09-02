@@ -239,6 +239,56 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 <script>
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
 
+// ── LASCIAPASSARE DI ACCESSO ────────────────────────────────────────────────
+// /kv/* del Worker era aperto a chiunque: leggere, scrivere e cancellare tutti i dati di
+// Compass senza credenziali (verificato il 02/09/2026). Ora ogni richiesta porta con se' un
+// lasciapassare firmato dal Worker, valido sei mesi.
+//
+// NESSUNO DIGITA PASSWORD. Il dispositivo si abilita aprendo una volta un collegamento con
+// #attiva=<lasciapassare>, che si genera da Compass (Impostazioni → Dispositivi) e si manda
+// su WhatsApp. Il lasciapassare finisce in localStorage e il collegamento viene ripulito
+// dalla barra dell'indirizzo, cosi' non resta nella cronologia condivisa.
+//
+// Si aggancia a fetch invece di modificare le decine di chiamate esistenti: un punto solo,
+// nessuna possibilita' di dimenticarne una. Vale solo per gli indirizzi /kv/ di questo
+// Worker; tutto il resto passa intatto.
+const QM_PASS_KEY='qm_pass';
+let _qmPass='';
+try{_qmPass=localStorage.getItem(QM_PASS_KEY)||'';}catch(e){}
+// Estrae il lasciapassare da un indirizzo di attivazione. Funzione a se' per poterla
+// provare: il resto (localStorage, cronologia) dipende dal browser e non si presta.
+function qmEstraiAttiva(indirizzo){
+  const m=String(indirizzo||'').match(/[#?&]attiva=([^&#]+)/);
+  if(!m)return null;
+  try{return decodeURIComponent(m[1])||null;}catch(e){return null;}
+}
+(function(){
+  try{
+    const p=qmEstraiAttiva(location.hash+location.search);
+    if(!p)return;
+    _qmPass=p;
+    try{localStorage.setItem(QM_PASS_KEY,_qmPass);}catch(e){}
+    // Via dall'indirizzo: un collegamento con dentro il lasciapassare non deve restare
+    // nella cronologia ne' finire in uno screenshot.
+    try{history.replaceState(null,'',location.pathname);}catch(e){}
+  }catch(e){}
+})();
+(function(){
+  if(typeof window==='undefined'||!window.fetch||window._qmFetchAgganciata)return;
+  const vero=window.fetch.bind(window);
+  window._qmFetchAgganciata=true;
+  window.fetch=function(risorsa,opz){
+    try{
+      const u=typeof risorsa==='string'?risorsa:'';
+      if(_qmPass&&u&&u.indexOf('/kv/')>=0&&u.indexOf(PROXY)===0){
+        opz=Object.assign({},opz||{});
+        opz.headers=Object.assign({},opz.headers||{},{'X-QM-Pass':_qmPass});
+      }
+    }catch(e){}
+    return vero(risorsa,opz);
+  };
+})();
+
 // ── SCRITTURE SUL CLOUD ──────────────────────────────────────────────────────
 // Il piano gratuito di Cloudflare concede 1.000 scritture al giorno e l'01/09/2026 siamo
 // arrivati a 934. Il consumo non veniva da chi lavorava: quest'app riscriveva l'archivio
@@ -306,7 +356,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-02.1';
+const QM_APP_BUILD='2026-09-02.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'

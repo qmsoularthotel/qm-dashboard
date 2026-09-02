@@ -1926,7 +1926,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='hkpsheet')setTimeout(()=>hkpNRender('sa'),50);
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
-  if(id==='miniapp'){setTimeout(miniappRender,50);}
+  if(id==='miniapp'){try{qmRenderDispositivi();}catch(e){}setTimeout(miniappRender,50);}
   if(id==='dvr'){setTimeout(dvrRender,50);dvrMarkSeen();dvrBadgeUpdate();}
 }
 // §§ DVR — SCADENZE SICUREZZA & COMPLIANCE
@@ -3721,6 +3721,56 @@ function ucRefreshStaleTracking(){
 setInterval(ucRefreshStaleTracking,60000);
 // §§ STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud)
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
+// ── LASCIAPASSARE DI ACCESSO ────────────────────────────────────────────────
+// /kv/* del Worker era aperto a chiunque: leggere, scrivere e cancellare tutti i dati di
+// Compass senza credenziali (verificato il 02/09/2026). Ora ogni richiesta porta con se' un
+// lasciapassare firmato dal Worker, valido sei mesi.
+//
+// NESSUNO DIGITA PASSWORD. Il dispositivo si abilita aprendo una volta un collegamento con
+// #attiva=<lasciapassare>, che si genera da Compass (Impostazioni → Dispositivi) e si manda
+// su WhatsApp. Il lasciapassare finisce in localStorage e il collegamento viene ripulito
+// dalla barra dell'indirizzo, cosi' non resta nella cronologia condivisa.
+//
+// Si aggancia a fetch invece di modificare le decine di chiamate esistenti: un punto solo,
+// nessuna possibilita' di dimenticarne una. Vale solo per gli indirizzi /kv/ di questo
+// Worker; tutto il resto passa intatto.
+const QM_PASS_KEY='qm_pass';
+let _qmPass='';
+try{_qmPass=localStorage.getItem(QM_PASS_KEY)||'';}catch(e){}
+// Estrae il lasciapassare da un indirizzo di attivazione. Funzione a se' per poterla
+// provare: il resto (localStorage, cronologia) dipende dal browser e non si presta.
+function qmEstraiAttiva(indirizzo){
+  const m=String(indirizzo||'').match(/[#?&]attiva=([^&#]+)/);
+  if(!m)return null;
+  try{return decodeURIComponent(m[1])||null;}catch(e){return null;}
+}
+(function(){
+  try{
+    const p=qmEstraiAttiva(location.hash+location.search);
+    if(!p)return;
+    _qmPass=p;
+    try{localStorage.setItem(QM_PASS_KEY,_qmPass);}catch(e){}
+    // Via dall'indirizzo: un collegamento con dentro il lasciapassare non deve restare
+    // nella cronologia ne' finire in uno screenshot.
+    try{history.replaceState(null,'',location.pathname);}catch(e){}
+  }catch(e){}
+})();
+(function(){
+  if(typeof window==='undefined'||!window.fetch||window._qmFetchAgganciata)return;
+  const vero=window.fetch.bind(window);
+  window._qmFetchAgganciata=true;
+  window.fetch=function(risorsa,opz){
+    try{
+      const u=typeof risorsa==='string'?risorsa:'';
+      if(_qmPass&&u&&u.indexOf('/kv/')>=0&&u.indexOf(PROXY)===0){
+        opz=Object.assign({},opz||{});
+        opz.headers=Object.assign({},opz.headers||{},{'X-QM-Pass':_qmPass});
+      }
+    }catch(e){}
+    return vero(risorsa,opz);
+  };
+})();
+
 function setSyncStatus(state){
   // state: 'syncing' | 'ok' | 'error' | 'offline'
   const dot=document.getElementById('syncDot');
@@ -15470,3 +15520,73 @@ try{
   window.addEventListener('focus',()=>qmCheckVersione());
   setInterval(qmCheckVersione,600000);     // ogni 10 minuti
 }catch(e){}
+
+// §§ ACCESSO — ABILITAZIONE DEI DISPOSITIVI
+// Nessuno digita password. Il capo la digita QUI una volta, ottiene dal Worker un
+// lasciapassare firmato valido sei mesi, e genera un collegamento per ciascuna app: chi lo
+// riceve lo apre una volta e il suo telefono resta abilitato. Il lasciapassare non e' la
+// password: se un collegamento finisse in giro si puo' cambiare QM_AUTH_SECRET sul Worker e
+// tutti i lasciapassare emessi smettono di valere insieme.
+const QM_APP_LINK=[
+  {f:'index.html',            n:'Compass (dashboard)'},
+  {f:'housekeeper.html',      n:'Housekeeping'},
+  {f:'breakfast.html',        n:'Breakfast'},
+  {f:'controllo-mattino.html',n:'Distribuzione Culligan'},
+  {f:'inventory.html',        n:'Inventari detersivi'},
+  {f:'dvr.html',              n:'Fascicolo dipendenti'},
+  {f:'reception.html',        n:'Cassa reception'}
+];
+async function qmChiediPass(){
+  const pw=prompt('Password di Compass (quella impostata su Cloudflare come QM_PASSWORD):');
+  if(!pw)return;
+  const el=document.getElementById('qmDispositivi');
+  try{
+    const r=await fetch(PROXY+'/auth',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:pw})});
+    const j=await r.json();
+    if(!j||!j.ok){cqAvviso('Accesso non riuscito',(j&&j.error)||'Password non valida.');return;}
+    _qmPass=j.pass;
+    try{localStorage.setItem(QM_PASS_KEY,_qmPass);}catch(e){}
+    qmRenderDispositivi();
+    cqAvviso('Questo computer è abilitato','Ora puoi generare i collegamenti per gli altri dispositivi.');
+  }catch(e){cqAvviso('Accesso non riuscito',String(e&&e.message||e));}
+}
+function qmLinkAttiva(file){
+  const base=location.origin+location.pathname.replace(/[^/]*$/,'');
+  return base+file+'#attiva='+encodeURIComponent(_qmPass);
+}
+function qmCopiaLink(file,btn){
+  const t=qmLinkAttiva(file);
+  try{navigator.clipboard.writeText(t);}catch(e){}
+  if(btn){const v=btn.textContent;btn.textContent='✓ copiato';setTimeout(()=>{btn.textContent=v;},1500);}
+}
+function qmRenderDispositivi(){
+  const el=document.getElementById('qmDispositivi');if(!el)return;
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const bott='border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:7px;padding:5px 12px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;';
+  if(!_qmPass){
+    el.innerHTML=`<div class="panel" style="margin-bottom:14px;">
+      <div class="panel-header"><span class="panel-title">Dispositivi abilitati</span></div>
+      <div class="panel-body" style="padding:14px;font-size:var(--fs-xs);color:var(--text-dim);line-height:1.6;">
+        Questo computer non è ancora abilitato. Inserisci la password una volta: da qui potrai generare i collegamenti da mandare agli altri dispositivi, che non dovranno digitare nulla.
+        <div style="margin-top:10px;"><button onclick="qmChiediPass()" style="${bott}">Abilita questo computer</button></div>
+      </div></div>`;
+    return;
+  }
+  el.innerHTML=`<div class="panel" style="margin-bottom:14px;">
+    <div class="panel-header"><span class="panel-title">Dispositivi abilitati</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">questo computer è abilitato</span>
+    </div>
+    <div class="panel-body" style="padding:14px;">
+      <div style="font-size:var(--fs-xs);color:var(--text-dim);line-height:1.6;margin-bottom:12px;">
+        Manda il collegamento alla persona su WhatsApp: lo apre una volta e il suo telefono resta abilitato per sei mesi. Non deve digitare nessuna password.
+      </div>
+      ${QM_APP_LINK.map(a=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);">
+        <span style="flex:1;font-weight:600;">${esc(a.n)}</span>
+        <button onclick="qmCopiaLink('${a.f}',this)" style="${bott}">copia collegamento</button>
+      </div>`).join('')}
+      <div style="margin-top:11px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">
+        Se un collegamento finisse nelle mani sbagliate: cambia <strong>QM_AUTH_SECRET</strong> sul Worker e tutti i collegamenti generati finora smettono di funzionare insieme. Poi si rigenerano da qui.
+      </div>
+    </div></div>`;
+}

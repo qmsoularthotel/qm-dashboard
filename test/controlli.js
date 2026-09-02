@@ -1186,3 +1186,21 @@ ok('e finisce a oggi',
    /key\s*>\s*_oggi/.test(String(bkfSaveMonthlyHistory)), true);
 ok('il limite si calcola a -2 giorni',
    /setDate\(d\.getDate\(\)-2\)/.test(String(bkfSaveMonthlyHistory)), true);
+
+sez('Accesso: il lasciapassare viaggia con ogni richiesta');
+// /kv/* del Worker era aperto: leggere, scrivere e cancellare tutti i dati senza
+// credenziali (verificato il 02/09/2026). Il lasciapassare si aggancia a fetch in un punto
+// solo: se qualcuno tornasse a modificare le singole chiamate, se ne dimenticherebbe una.
+ok('la chiave del lasciapassare esiste', typeof QM_PASS_KEY === 'string' && QM_PASS_KEY.length > 0, true);
+ok('legge il lasciapassare dal frammento',
+   qmEstraiAttiva('https://compass-qm.com/breakfast.html#attiva=123.abc'), '123.abc');
+ok('lo legge anche dalla query',
+   qmEstraiAttiva('https://compass-qm.com/x.html?attiva=99.zz'), '99.zz');
+ok('scioglie i caratteri codificati',
+   qmEstraiAttiva('#attiva=1%2E2%2Fx'), '1.2/x');
+ok('un indirizzo normale non lo attiva',
+   qmEstraiAttiva('https://compass-qm.com/breakfast.html'), null);
+ok('e nemmeno una parola simile',
+   qmEstraiAttiva('https://compass-qm.com/x.html#attivazione=1'), null);
+ok('i collegamenti coprono tutte le app', QM_APP_LINK.length, 7);
+ok('e portano il lasciapassare nel frammento', /#attiva=/.test(String(qmLinkAttiva)), true);
