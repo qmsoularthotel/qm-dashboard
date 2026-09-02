@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='342-20260902';
+  const V='343-20260902';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1554,6 +1554,23 @@
               <button onclick="miniappOpen('dvr-url-input')" style="flex:1;background:var(--accent);border:none;color:#fff;padding:8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Apri</button>
             </div>
           </div>
+          <div class="panel" style="padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+            <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;">
+              <img src="img/icons/registration_cards.png" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'">
+              <div style="min-width:0;">
+                <div style="font-size:15px;font-weight:700;line-height:1.2;">Registration Cards</div>
+                <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Galleria — gestita dai colleghi</div>
+              </div>
+              <button id="miniapp-rc-toggle" onclick="miniappToggleApp('rc')" style="width:36px;height:21px;border-radius:11px;border:none;position:relative;cursor:pointer;padding:0;flex-shrink:0;margin-left:auto;background:var(--green);"><span style="position:absolute;top:2px;left:17px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s;" class="miniapp-toggle-knob"></span></button>
+            </div>
+            <div id="miniapp-rc-status" style="margin-bottom:14px;"></div>
+            <div style="font-size:11px;color:var(--text-dim);line-height:1.5;margin-bottom:10px;">Legge il PDF arrivi e stampa le schede nel browser: nomi ospiti e dati carta non passano dal cloud.</div>
+            <input id="rc-url-input" type="hidden" value="https://compass-qm.com/registration-galleria.html">
+            <div style="display:flex;gap:8px;">
+              <button onclick="miniappCopy('rc-url-input',this)" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:8px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;">Copia link</button>
+              <button onclick="miniappOpen('rc-url-input')" style="flex:1;background:var(--accent);border:none;color:#fff;padding:8px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Apri</button>
+            </div>
+          </div>
         </div>
       </div>
       <!-- ── INVENTARIO ── -->
@@ -1674,7 +1691,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=861-20260902"></script>
+<script src="app.js?v=862-20260902"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

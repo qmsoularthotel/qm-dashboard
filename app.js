@@ -2338,7 +2338,7 @@ function miniappRender(){
 // Interruttore acceso/spento per ciascuna app standalone (qm_app_status in KV,
 // letto da ogni app all'avvio: se il proprio flag è false mostra la schermata
 // "in aggiornamento" invece della UI normale).
-const MINIAPP_KEYS=['hk','bkf','cm','inv','dvr'];
+const MINIAPP_KEYS=['hk','bkf','cm','inv','dvr','rc'];
 let _appStatus={};
 async function miniappLoadAppStatus(){
   try{
@@ -2474,6 +2474,26 @@ function miniappDvrStatus(){
   if(inScadenza>0)return _miniappStatusHTML('amber','In scadenza ≤30gg',`${inScadenza} contratt${inScadenza===1?'o':'i'}`);
   return _miniappStatusHTML('green','Tutto in regola','');
 }
+// Registration Cards Galleria — app dei colleghi dell'altra struttura. Non manda dati sul
+// cloud (nomi ospiti e dati carta restano nel loro browser), quindi l'unica cosa che si
+// puo' mostrare qui e' QUANDO e' stata usata l'ultima volta: e' anche l'unica che serve,
+// perche' dice se stanno lavorando e se l'app risponde.
+async function miniappRcStatus(){
+  let ts=0;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key=qm_rc_last',{cache:'no-store'});
+    const j=await r.json();
+    const v=j&&j.value?JSON.parse(j.value):null;
+    ts=(v&&v.ts)||0;
+  }catch(e){}
+  if(!ts)return _miniappStatusHTML('amber','Mai usata','nessun accesso');
+  const d=new Date(ts),oggi=new Date();
+  const stessoGiorno=d.toDateString()===oggi.toDateString();
+  if(stessoGiorno)return _miniappStatusHTML('green','Usata oggi','ore '+_miniappFmtTime(ts));
+  const gg=Math.floor((oggi.setHours(0,0,0,0)-new Date(ts).setHours(0,0,0,0))/86400000);
+  const data=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+  return _miniappStatusHTML(gg<=7?'green':'amber','Ultimo utilizzo',data);
+}
 function miniappInvStatus(){
   let sottoSoglia=0;
   ['sa','ar'].forEach(wh=>{
@@ -2516,6 +2536,8 @@ function miniappRenderStatus(){
   const inv=document.getElementById('miniapp-inv-status');if(inv)inv.innerHTML=miniappInvStatus();
   const cmEl=document.getElementById('miniapp-cm-status');
   if(cmEl)miniappCmStatus().then(html=>{cmEl.innerHTML=html;});
+  const rcEl=document.getElementById('miniapp-rc-status');
+  if(rcEl)miniappRcStatus().then(html=>{rcEl.innerHTML=html;});
 }
 let pianoNavIdx=null; // indice giorno selezionato nel pannello overview
 let _cmPianoStats=null; // {prev,cur} sostituzioni bottiglia Art (eventi, non camere uniche) sett. scorsa/corrente

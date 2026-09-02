@@ -2190,6 +2190,46 @@ Conta le camere **effettivamente controllate** (condizione: `pronta===true`) per
 
 ---
 
+## Registration Cards Galleria — l'app di un'altra struttura, controllata ma non gestita
+
+`registration-galleria.html`. È il file HTML che i colleghi dell'altra struttura già usavano
+per generare le registration card: legge il PDF arrivi del PMS con pdf.js **dentro il
+browser** e stampa le schede A4 (dati carta di credito e firma inclusi, da compilare a
+mano). Il loro codice non è stato riscritto: è quello, con in più il solo blocco di
+controllo Compass.
+
+**Perché non è una vista dentro Compass**: i colleghi non hanno (e non devono avere) accesso
+a Compass, che resta il pannello del QM. Serviva una pagina loro, con un indirizzo loro.
+
+**Non manda NIENTE sul cloud, ed è una scelta, non una dimenticanza.** `/kv/get` sul Worker
+è senza autenticazione: qualunque cosa finisse su KV sarebbe leggibile da chiunque conosca
+l'indirizzo, che è pubblico nel sorgente. Su una scheda con nome dell'ospite e numero di
+carta di credito sarebbe inaccettabile. Se un domani si volesse sincronizzare qualcosa di
+questa app, prima va protetto l'archivio KV.
+
+Dal **Pannello App** si controllano quindi solo due cose:
+
+| Cosa | Come |
+|---|---|
+| Acceso / spento | chiave `rc` in `qm_app_status`, come le altre cinque app: mostra la schermata di manutenzione al posto dell'interfaccia |
+| Ultimo utilizzo | `qm_rc_last` = `{ts}`, **solo un orario**. Scritto al massimo ogni 30 minuti (il tetto stretto è quello delle scritture: 1.000 al giorno) |
+
+Ha anche l'aggiornamento automatico delle altre app (`QM_APP_BUILD` + confronto ETag), con
+una guardia in più: non si ricarica mentre è aperta l'anteprima di una scheda.
+
+**La sentinella di `test/esegui.sh` la include** nel giro delle app standalone, quindi vale
+anche qui il controllo che `qmKvSet` non chiami se stessa.
+
+Difetti noti del file originale, **non toccati** perché è la loro app e funziona sui loro
+export — da sistemare solo se lo chiedono:
+- il parser è una `RegExp` sul testo concatenato: un nome andato a capo nell'export lo
+  spezzerebbe (Compass per lo stesso motivo legge le colonne per posizione, vedi
+  `_psParsePdfArrivi`);
+- l'anno si prende dall'intestazione del PDF e vale per arrivo **e** partenza: un soggiorno
+  a cavallo di capodanno (30/12 → 02/01) darebbe notti negative, quindi `—`.
+
+---
+
 ## Pannello App — Centro Controllo App Standalone
 
 ### Scopo

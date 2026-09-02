@@ -89,7 +89,7 @@ BKF_KO=0
 # Aggiornamento automatico: senza, un'app rimasta aperta continua a girare col codice
 # vecchio a tempo indeterminato — ed e' cosi' che una correzione pubblicata resta inefficace
 # senza che nessuno se ne accorga (22/08/2026, archivio colazioni).
-for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.html dvr.html; do
+for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.html dvr.html registration-galleria.html; do
   # Le richieste devono avere la maschera di Compass, non quelle del browser: "compass-qm.com
   # dice" su un'azione che cancella dati non dice a nessuno chi sta chiedendo.
   case "$_app" in
