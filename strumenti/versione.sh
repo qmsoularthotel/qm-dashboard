@@ -52,12 +52,12 @@ if cambiato('style.css'):
 if s != orig:
     open('index.html', 'w', encoding='utf-8').write(s)
 
-# Le 5 app standalone portano dentro di sé la propria versione (QM_APP_BUILD): all'avvio
+# Le app standalone portano dentro di sé la propria versione (QM_APP_BUILD): all'avvio
 # la confrontano con quella pubblicata e, se non coincide, si ricaricano. Senza questo
 # aggiornamento automatico il numero resterebbe fermo e il controllo diventerebbe inutile:
 # l'app crederebbe di essere aggiornata qualunque cosa succeda.
 for app in ('housekeeper.html', 'breakfast.html', 'controllo-mattino.html',
-            'inventory.html', 'dvr.html'):
+            'inventory.html', 'dvr.html', 'registration-galleria.html'):
     if not cambiato(app):
         continue
     t = open(app, encoding='utf-8').read()

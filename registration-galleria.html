@@ -3,66 +3,83 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Registration Cards — Hotel</title>
+<title>Registration Cards — Compass QM</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a1a; background: #f5f5f3; }
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#eef1f5;--surface:#f8f9fb;--surface2:#e8ecf1;
+  --border:#cdd4de;--border-light:#dde2ea;
+  --text:#0c1f33;--text-dim:#4a5568;--text-muted:#888;
+  --accent:#1c3a5e;--accent-bg:#e3eaf4;--gold:#c9952f;
+  --green:#2e7d32;--green-bg:#e8f5e9;
+  --red:#c62828;--red-bg:#ffebee;
+  --shadow:0 1px 4px rgba(0,0,0,.08);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
 
-.shell { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
-h1 { font-size: 18px; font-weight: 600; margin-bottom: 1.5rem; color: #111; }
+/* TOPBAR — identica alle altre app Compass */
+.topbar{background:var(--accent);border-bottom:2px solid var(--gold);color:#fff;padding:14px 16px 12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:17px;font-weight:700;letter-spacing:-.01em;}
+.topbar-sub{font-size:11px;opacity:.65;margin-top:1px;}
 
-.upload-zone { border: 2px dashed #bbb; border-radius: 10px; padding: 2.5rem 2rem; text-align: center; cursor: pointer; background: #fff; transition: background 0.15s, border-color 0.15s; }
-.upload-zone:hover, .upload-zone.dragover { background: #f0f4ff; border-color: #4a7fd4; }
-.upload-icon { width: 48px; height: 48px; margin: 0 auto 1rem; background: #f0f0ee; border: 1px solid #ddd; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-.upload-icon svg { width: 22px; height: 22px; stroke: #666; fill: none; stroke-width: 1.5; }
-.upload-title { font-size: 15px; font-weight: 600; margin-bottom: 5px; }
-.upload-sub { font-size: 13px; color: #666; }
-.upload-badge { display: inline-block; margin-top: 12px; font-size: 11px; padding: 3px 10px; background: #e8f0fc; color: #2a5fc4; border-radius: 20px; }
-#fileInput { display: none; }
+.shell{max-width:900px;margin:0 auto;padding:16px 14px 40px;}
 
-.processing { display: none; align-items: center; gap: 12px; padding: 1rem 1.25rem; background: #fff; border-radius: 10px; border: 1px solid #e0e0e0; margin: 1rem 0; }
-.spinner { width: 18px; height: 18px; border: 2px solid #ddd; border-top-color: #4a7fd4; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.error-box { display: none; padding: 0.85rem 1.1rem; background: #fff0f0; border: 1px solid #ffc0c0; border-radius: 10px; color: #c00; font-size: 13px; margin: 1rem 0; }
+/* UPLOAD */
+.upload-zone{background:var(--surface);border:2px dashed var(--border);border-radius:14px;box-shadow:var(--shadow);padding:34px 22px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:var(--accent-bg);}
+.upload-icon{width:52px;height:52px;margin:0 auto 14px;background:var(--accent);border:2px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.upload-icon svg{width:23px;height:23px;stroke:#fff;fill:none;stroke-width:1.6;}
+.upload-title{font-size:15px;font-weight:700;margin-bottom:5px;}
+.upload-sub{font-size:13px;color:var(--text-dim);}
+.upload-badge{display:inline-block;margin-top:14px;font-size:11px;font-weight:600;padding:4px 11px;background:var(--accent-bg);color:var(--accent);border-radius:20px;}
+#fileInput{display:none;}
 
-.results { display: none; margin-top: 1.5rem; }
-.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
-.toolbar-left { display: flex; align-items: center; gap: 10px; }
-.toolbar-title { font-size: 15px; font-weight: 600; }
-.count-badge { font-size: 11px; padding: 3px 10px; background: #e8f0fc; color: #2a5fc4; border-radius: 20px; }
-.btn-primary { font-size: 13px; padding: 7px 18px; font-weight: 600; background: #111; color: #fff; border: none; border-radius: 7px; cursor: pointer; }
-.btn-primary:hover { background: #333; }
-.btn-secondary { font-size: 12px; padding: 6px 14px; background: transparent; color: #555; border: 1px solid #ccc; border-radius: 7px; cursor: pointer; }
-.btn-secondary:hover { background: #f5f5f3; }
+.processing{display:none;align-items:center;gap:12px;padding:14px 16px;background:var(--surface);border-radius:14px;box-shadow:var(--shadow);margin:14px 0;}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.error-box{display:none;background:var(--red-bg);border-left:4px solid var(--red);border-radius:10px;padding:12px 14px;color:var(--red);font-size:13px;font-weight:600;margin:14px 0;}
 
-.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.reg-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
-.reg-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
-.rc-top { background: #111; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; }
-.rc-hotel { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #aaa; }
-.rc-room { font-size: 13px; font-weight: 600; color: #fff; background: rgba(255,255,255,0.15); padding: 3px 10px; border-radius: 5px; }
-.rc-guest { padding: 10px 14px 0; font-size: 15px; font-weight: 600; }
-.rc-dates { display: grid; grid-template-columns: 1fr 1fr 1fr; margin: 8px 14px 0; border: 1px solid #e5e5e5; border-radius: 6px; overflow: hidden; }
-.rc-dc { padding: 6px 8px; border-right: 1px solid #e5e5e5; }
-.rc-dc:last-child { border-right: none; }
-.rc-dl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: #888; margin-bottom: 2px; }
-.rc-dv { font-size: 12px; font-weight: 600; }
-.rc-pills { margin: 8px 14px 0; display: flex; gap: 6px; flex-wrap: wrap; }
-.rc-pill { font-size: 10px; padding: 2px 8px; border-radius: 20px; border: 1px solid #ddd; color: #555; }
-.rc-footer { border-top: 1px solid #eee; padding: 7px 14px; background: #fafafa; display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
-.rc-hint { font-size: 10px; color: #aaa; }
-.btn-print-one { font-size: 11px; padding: 5px 14px; background: #111; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+/* RISULTATI */
+.results{display:none;margin-top:16px;}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+.toolbar-left{display:flex;align-items:center;gap:9px;}
+.toolbar-title{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;}
+.count-badge{font-size:11px;font-weight:600;padding:3px 10px;background:var(--accent-bg);color:var(--accent);border-radius:20px;}
+.btn-primary{font-size:13px;padding:9px 18px;font-weight:700;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;transition:transform .15s,box-shadow .15s;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(28,58,94,.28);}
+.btn-secondary{font-size:13px;padding:9px 16px;font-weight:600;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;cursor:pointer;}
+.btn-secondary:hover{background:var(--surface2);}
 
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1000; align-items: flex-start; justify-content: center; padding: 24px 16px; overflow-y: auto; }
-.modal-overlay.open { display: flex; }
-.modal-box { background: #fff; border-radius: 12px; width: 100%; max-width: 680px; overflow: hidden; margin: auto; }
-.modal-topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #f5f5f3; border-bottom: 1px solid #e5e5e5; }
-.modal-topbar-title { font-size: 13px; font-weight: 600; color: #333; }
-.modal-actions { display: flex; gap: 8px; }
-.modal-body { padding: 20px; max-height: 82vh; overflow-y: auto; }
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:700px){.card-grid{grid-template-columns:1fr;}}
+.reg-card{background:var(--surface);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;cursor:pointer;border-top:3px solid var(--gold);transition:transform .15s,box-shadow .15s;}
+.reg-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(12,31,51,.14);}
+.rc-top{background:var(--accent);padding:11px 15px;display:flex;align-items:center;justify-content:space-between;}
+.rc-hotel{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:rgba(255,255,255,.65);}
+.rc-room{font-size:13px;font-weight:700;color:#fff;background:rgba(201,149,47,.9);padding:3px 11px;border-radius:6px;}
+.rc-guest{padding:12px 15px 0;font-size:15px;font-weight:700;}
+.rc-dates{display:grid;grid-template-columns:1fr 1fr 1fr;margin:9px 15px 0;border:1px solid var(--border-light);border-radius:8px;overflow:hidden;}
+.rc-dc{padding:7px 9px;border-right:1px solid var(--border-light);}
+.rc-dc:last-child{border-right:none;}
+.rc-dl{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:2px;}
+.rc-dv{font-size:12px;font-weight:700;}
+.rc-pills{margin:9px 15px 0;display:flex;gap:6px;flex-wrap:wrap;}
+.rc-pill{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--surface2);color:var(--text-dim);}
+.rc-footer{border-top:1px solid var(--border-light);padding:9px 15px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;margin-top:11px;}
+.rc-hint{font-size:10px;color:var(--text-muted);}
+.btn-print-one{font-size:11px;font-weight:700;padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:7px;cursor:pointer;}
 
-#printArea { display: none; }
+/* MODALE */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(12,31,51,.55);z-index:1000;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface);border-radius:14px;width:100%;max-width:680px;overflow:hidden;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal-topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border);}
+.modal-topbar-title{font-size:13px;font-weight:700;color:var(--text);}
+.modal-actions{display:flex;gap:8px;}
+.modal-body{padding:20px;max-height:82vh;overflow-y:auto;background:var(--surface);}
+
+#printArea{display:none;}
 
 /* =====================
    PRINT — A4 full page
@@ -204,6 +221,37 @@ h1 { font-size: 18px; font-weight: 600; margin-bottom: 1.5rem; color: #111; }
 </head>
 <body>
 
+<div id="qm-splash" style="position:fixed;inset:0;z-index:99998;background:#1A2E55;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .5s ease;" onclick="this.style.opacity='0';setTimeout(()=>this.remove(),520);">
+  <div style="position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center;">
+    <div style="position:absolute;width:150px;height:150px;border-radius:50%;border:2.6px solid rgba(201,149,47,.55);animation:qmSplashRing 1.8s ease-out infinite;"></div>
+    <svg viewBox="0 0 36 36" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="18" cy="18" r="16.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.3"/>
+      <g style="animation:qmSplashNeedle 2.2s cubic-bezier(.6,0,.4,1) infinite;transform-origin:18px 18px;">
+        <polygon points="18,6 20,18 18,30 16,18" fill="#c9952f"/>
+      </g>
+      <circle cx="18" cy="18" r="2" fill="rgba(255,255,255,.9)"/>
+    </svg>
+  </div>
+  <div style="font-size:30px;font-weight:500;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
+  <div style="width:60px;border-top:1px solid rgba(255,255,255,.18);"></div>
+  <div style="font-size:22px;color:rgba(255,255,255,.7);">Registration Cards</div>
+</div>
+<style>
+@keyframes qmSplashRing{0%{transform:scale(.6);opacity:.8;}100%{transform:scale(2.4);opacity:0;}}
+@keyframes qmSplashNeedle{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+</style>
+<script>
+// Tre secondi, si salta al tocco, e NON riparte sui ricaricamenti: un aggiornamento
+// automatico dell'app non deve sembrare una riapertura.
+(function(){
+  var nav=performance.getEntriesByType('navigation')[0];
+  var s=document.getElementById('qm-splash');
+  if(!s) return;
+  if(nav && nav.type==='reload'){ s.remove(); return; }
+  setTimeout(function(){ s.style.opacity='0'; setTimeout(function(){ s.remove(); },520); },3000);
+})();
+</script>
+
 <div id="qm-maintenance-screen" style="display:none;position:fixed;inset:0;z-index:99999;background:#1A2E55;align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:20px;box-sizing:border-box;text-align:center;">
   <svg viewBox="0 0 36 36" width="62" height="62" xmlns="http://www.w3.org/2000/svg">
     <circle cx="18" cy="18" r="16.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.3"/>
@@ -295,7 +343,7 @@ qmPingUso();
 // confronta l'ETag del proprio file (cambia solo se cambia il contenuto: nessun numero di
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina — che risponde
 // alla domanda che l'ETag non sa porsi: sto gia' eseguendo una copia vecchia?
-const QM_APP_BUILD='2026-09-02.1';
+const QM_APP_BUILD='2026-09-02.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -334,8 +382,19 @@ setInterval(qmCheckVersione,600000);
 
 <div id="printArea"></div>
 
+<div class="topbar">
+  <svg viewBox="0 0 36 36" width="28" height="28" style="flex-shrink:0;" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="18,1 21,13 27,9 23,15 35,18 23,21 27,27 21,23 18,35 15,23 9,27 13,21 1,18 13,15 9,9 15,13" fill="#c9952f"/>
+    <polygon points="18,6 20,14 18,12 16,14" fill="rgba(255,255,255,.5)"/>
+    <polygon points="18,30 16,22 18,24 20,22" fill="rgba(255,255,255,.25)"/>
+  </svg>
+  <div>
+    <div class="topbar-title">Registration Cards</div>
+    <div class="topbar-sub">Galleria Umberto I</div>
+  </div>
+</div>
+
 <div class="shell">
-  <h1>Registration Cards — Hotel</h1>
 
   <div class="upload-zone" id="uploadZone">
     <input type="file" id="fileInput" accept="application/pdf">
@@ -382,7 +441,12 @@ setInterval(qmCheckVersione,600000);
 </div>
 
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+// pdf.js arriva da un CDN: se non si carica (rete assente, CDN bloccato) questa riga
+// lanciava un errore e portava giù TUTTO lo script — la pagina restava viva ma inerte, e
+// il riquadro di caricamento non rispondeva senza dire perché. Ora l'app parte comunque e
+// lo dice al momento del caricamento del file.
+const PDF_OK = (typeof pdfjsLib !== 'undefined');
+if (PDF_OK) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const ROOM_CODES = ['STD','SUP','DLX','DEL','JS','JR','SUITE','TRP','TPL','TRI','DBL','SGL','DUS','DEP','DP','PC','AS','BB','HB','FB','RO','AI','MP'];
 const tratMap = {
@@ -417,6 +481,7 @@ fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 async function handleFile(file) {
+  if (!PDF_OK) { showError('Il lettore PDF non si è caricato: controlla la connessione e ricarica la pagina.'); return; }
   showProc('Lettura del PDF...'); hideError();
   try {
     const ab = await file.arrayBuffer();

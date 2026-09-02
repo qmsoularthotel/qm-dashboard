@@ -2216,6 +2216,21 @@ Dal **Pannello App** si controllano quindi solo due cose:
 
 Ha anche l'aggiornamento automatico delle altre app (`QM_APP_BUILD` + confronto ETag), con
 una guardia in più: non si ricarica mentre è aperta l'anteprima di una scheda.
+`strumenti/versione.sh` la include nell'elenco delle app di cui aggiorna `QM_APP_BUILD`.
+
+**Veste grafica allineata a Compass** (02/09/2026): token `--accent` navy / `--gold`,
+topbar navy con filo oro e stella della bussola, card con bordo superiore oro e
+intestazione navy, e lo **splash** delle altre app (bussola con ago che ruota ed eco radar,
+"Compass QM" + nome dell'app) a ogni apertura — saltato sui ricaricamenti, altrimenti un
+aggiornamento automatico sembrerebbe una riapertura. **Il CSS di STAMPA e l'anteprima
+`.mp` non sono stati toccati**: quella è la scheda che si consegna all'ospite, non
+l'interfaccia.
+
+**pdf.js arriva da un CDN e la sua assenza non deve uccidere la pagina**: la riga
+`pdfjsLib.GlobalWorkerOptions.workerSrc = …` in cima allo script lanciava un errore che
+portava giù *tutto* il resto — la pagina restava a schermo ma inerte, e il riquadro di
+caricamento non rispondeva senza dire perché (visto dal vivo provando la pagina senza
+rete). Ora c'è `PDF_OK` e, al caricamento di un file, un messaggio esplicito.
 
 **La sentinella di `test/esegui.sh` la include** nel giro delle app standalone, quindi vale
 anche qui il controllo che `qmKvSet` non chiami se stessa.
