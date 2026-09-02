@@ -1174,3 +1174,15 @@ ok('due volte la stessa settimana: identiche', _uguale(_v1, _v2), true);
 ok('il segnatempo non le rende diverse',       _v1.ts !== _v2.ts || true, true);
 ok('un turno cambiato si riconosce',           _uguale(_v1, _v3), false);
 ok('il confronto e\' nel codice',              /_uguale\(arch\[chiave\],resto\)/.test(String(turniArchivia)), true);
+
+sez('Archivio colazioni: il passato lontano non si riscrive');
+// 02/09/2026: un dispositivo rimasto col codice vecchio, con in memoria una serie di inizio
+// agosto, ha riscritto i giorni 1-8 annullando la riconciliazione col PMS del 22/08 (43 al
+// posto di 41, 65 al posto di 63). Le giornate vecchie sono chiuse: si correggono dal PMS,
+// non da una cache che gira su un telefono.
+ok('la finestra scrivibile parte da ieri l\'altro',
+   /key\s*<\s*_daQuando/.test(String(bkfSaveMonthlyHistory)), true);
+ok('e finisce a oggi',
+   /key\s*>\s*_oggi/.test(String(bkfSaveMonthlyHistory)), true);
+ok('il limite si calcola a -2 giorni',
+   /setDate\(d\.getDate\(\)-2\)/.test(String(bkfSaveMonthlyHistory)), true);

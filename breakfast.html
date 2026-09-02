@@ -275,7 +275,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-02.1';
+const QM_APP_BUILD='2026-09-02.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -675,9 +675,14 @@ function bkfAggiornaHistoryInMemoria(){
   // Rimuovi vecchi record in formato YYYY-MM (aggregati mensili, formato obsoleto)
   Object.keys(_bkfHistory).forEach(k=>{if(k.length!==10)delete _bkfHistory[k];});
   const oggi=_bkfOggiKey();
+  // Finestra scrivibile: da ieri l'altro a oggi. Un dispositivo con una serie vecchia in
+  // memoria non deve poter riscrivere giornate di due settimane fa — il 02/09/2026 e'
+  // successo, e ha annullato la riconciliazione col PMS di inizio agosto.
+  const daQuando=(()=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-2);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
   (bkfData||[]).forEach(d=>{
     const key=_bkfChiaveGiorno(d);
-    if(!key||key>oggi)return;   // confronto fra stringhe ISO: l'ordine è quello giusto
+    if(!key||key>oggi||key<daQuando)return;   // confronto fra stringhe ISO: l'ordine è quello giusto
     _bkfHistory[key]={bb:(d.adulti||0)+(d.bambini||0),ro:(d.noCol||0),ts:Date.now()};
   });
 }

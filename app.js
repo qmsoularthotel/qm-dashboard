@@ -6862,9 +6862,19 @@ async function bkfSaveMonthlyHistory(){
   // Salva ogni giorno come YYYY-MM-DD → {bb, ro}, MA solo i giorni già trascorsi.
   // Vedi bkfHistOggi(): un giorno futuro è una previsione e non va archiviato.
   const _oggi=bkfHistOggi();
+  // Finestra scrivibile: da ieri l'altro a oggi. Il passato piu' lontano e' chiuso.
+  //
+  // Prima si poteva riscrivere QUALUNQUE giorno passato, e il 02/09/2026 e' successo: un
+  // dispositivo rimasto col codice vecchio, e con in memoria una serie di inizio agosto,
+  // ha riscritto i giorni 1-8 annullando la riconciliazione col PMS del 22/08 (43 al posto
+  // di 41, 65 al posto di 63). Una giornata di due settimane fa non ha nessun motivo di
+  // essere riscritta da un caricamento di oggi: se e' sbagliata si corregge dal PMS, non
+  // da una cache.
+  const _daQuando=(()=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-2);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');})();
   bkfData.forEach(d=>{
     const key=bkfHistChiave(d);
-    if(!key||key>_oggi)return;
+    if(!key||key>_oggi||key<_daQuando)return;
     hist[key]={bb:(d.adulti||0)+(d.bambini||0),ro:(d.noCol||0),ts:Date.now()};
   });
   // Ripulisce le previsioni archiviate dal comportamento precedente: senza questo, i giorni
