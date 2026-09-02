@@ -255,20 +255,29 @@ body.dark .panel{box-shadow:none;}
    su uno schermo da 375px. Portata in CSS per poterla stringere su mobile. */
 .inv-stock-row{display:grid;grid-template-columns:1fr 72px 52px 88px 44px;gap:6px;}
 .ov-bkf-grid-wide{grid-template-columns:1fr 3fr 0.8fr;}
-.miniapp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start;}
+/* Il numero di colonne CALA a finestra stretta invece di strizzare le schede: con tre
+   colonne imposte a ogni larghezza, sotto i ~950px ogni scheda scendeva a ~180px e andavano
+   a capo titoli, stato e persino "Copia link" su due righe. Soglie esplicite e non auto-fill:
+   con auto-fill uno schermo largo faceva quattro colonne, e le cinque schede si spezzavano
+   4+1.
+   L'altezza NON e' lasciata al contenuto: grid-auto-rows:1fr pareggia solo le righe fra
+   loro, quindi l'ultima fila restava piu' bassa. Con un'altezza minima uguale per tutte e
+   i pulsanti ancorati in fondo, i riquadri sono identici in ogni fila. */
+.miniapp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch;}
+@media(max-width:1080px){.miniapp-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 /* Le schede del Pannello App: tutte uguali, coi pulsanti sulla stessa riga in fondo anche
    quando lo stato sopra occupa una riga in piu' (es. "Scorte da riordinare" su due righe).
    Prima erano stili scritti a mano dentro ogni scheda in index.html e bastava una parola in
    piu' in un titolo per sfilacciare la fila. */
-.miniapp-card{display:flex;flex-direction:column;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);min-height:172px;}
+.miniapp-card{position:relative;height:100%;min-height:196px;display:flex;flex-direction:column;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
 .miniapp-card-top{display:flex;align-items:center;gap:10px;margin-bottom:13px;}
 .miniapp-ico{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
 .miniapp-nome{min-width:0;flex:1;}
 .miniapp-titolo{font-size:var(--fs-sm);font-weight:700;line-height:1.25;color:var(--text);}
-.miniapp-sub{font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;letter-spacing:.05em;text-transform:uppercase;}
+.miniapp-sub{font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .miniapp-stato{margin-bottom:14px;}
 .miniapp-azioni{display:flex;gap:8px;margin-top:auto;}
-.miniapp-btn{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:8px;border-radius:6px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;transition:border-color .12s,color .12s;}
+.miniapp-btn{flex:1;white-space:nowrap;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:8px;border-radius:6px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;transition:border-color .12s,color .12s;}
 .miniapp-btn:hover{border-color:var(--accent);color:var(--accent);}
 .miniapp-btn-primario{background:var(--accent);border-color:var(--accent);color:#fff;}
 .miniapp-btn-primario:hover{background:var(--accent);border-color:var(--accent);color:#fff;filter:brightness(1.12);}
@@ -287,7 +296,7 @@ body.dark .panel{box-shadow:none;}
 .miniapp-apri-avvisi .miniapp-chevron{margin-left:auto;transition:transform .15s;}
 .miniapp-apri-avvisi[aria-expanded="true"] .miniapp-chevron{transform:rotate(180deg);}
 .miniapp-avvisi-conta{font-size:var(--fs-xxs);font-weight:700;color:var(--gold);background:var(--gold-bg);border-radius:9px;padding:1px 7px;}
-.miniapp-avvisi-corpo{margin-top:12px;}
+.miniapp-avvisi-corpo{position:absolute;left:-1px;right:-1px;top:100%;z-index:20;margin-top:6px;background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:8px;padding:14px;box-shadow:0 8px 22px rgba(12,31,51,.16);}
 .miniapp-avvisi-nota{font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:12px;}
 .miniapp-avviso-riga{display:flex;gap:8px;align-items:center;}
 .miniapp-avviso-riga .miniapp-sub{margin:0;width:62px;flex-shrink:0;font-weight:700;color:var(--text-muted);}
@@ -682,6 +691,7 @@ select.form-input option{background:var(--surface2);color:var(--text);}
   /* Griglie ex-inline delle viste (vedi .grid-2-wide/.miniapp-grid sopra) */
   .grid-2-wide{grid-template-columns:1fr;}
   .miniapp-grid{grid-template-columns:1fr;}
+  .miniapp-card{min-height:0;}
   /* Grafico + riquadro dati: impilati, separatore da bordo sinistro a bordo superiore */
   .side-split{flex-direction:column;}
   .side-split-aside{border-left:none;padding-left:0;margin-left:0;min-width:0;
