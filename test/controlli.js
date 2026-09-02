@@ -1204,3 +1204,7 @@ ok('e nemmeno una parola simile',
    qmEstraiAttiva('https://compass-qm.com/x.html#attivazione=1'), null);
 ok('i collegamenti coprono tutte le app', QM_APP_LINK.length, 7);
 ok('e portano il lasciapassare nel frammento', /#attiva=/.test(String(qmLinkAttiva)), true);
+// Chi incolla dalla chat spesso porta con se' tutto il collegamento invece del solo codice:
+// pretendere la parte finale sarebbe un modo sicuro di far sbagliare le persone.
+ok('dal collegamento intero si ricava il codice',
+   qmEstraiAttiva('https://compass-qm.com/breakfast.html#attiva=1790000000000.AbC-_9'), '1790000000000.AbC-_9');

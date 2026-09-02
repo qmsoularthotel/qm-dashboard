@@ -15555,6 +15555,12 @@ function qmLinkAttiva(file){
   const base=location.origin+location.pathname.replace(/[^/]*$/,'');
   return base+file+'#attiva='+encodeURIComponent(_qmPass);
 }
+// Il codice nudo: e' quello che si incolla dentro un'app aggiunta alla schermata iniziale,
+// dove il collegamento non arriverebbe (memoria separata da Safari).
+function qmCopiaCodice(btn){
+  try{navigator.clipboard.writeText(_qmPass);}catch(e){}
+  if(btn){const v=btn.textContent;btn.textContent='✓ copiato';setTimeout(()=>{btn.textContent=v;},1500);}
+}
 function qmCopiaLink(file,btn){
   const t=qmLinkAttiva(file);
   try{navigator.clipboard.writeText(t);}catch(e){}
@@ -15581,9 +15587,19 @@ function qmRenderDispositivi(){
       <div style="font-size:var(--fs-xs);color:var(--text-dim);line-height:1.6;margin-bottom:12px;">
         Manda il collegamento alla persona su WhatsApp: lo apre una volta e il suo telefono resta abilitato per sei mesi. Non deve digitare nessuna password.
       </div>
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin-bottom:10px;background:var(--surface2);border-radius:7px;padding:9px 11px;">
+        <strong style="color:var(--text);">Sui telefoni serve il codice, non il collegamento.</strong>
+        Un'app aggiunta alla schermata iniziale ha una memoria separata da Safari: aprendo il collegamento dalla chat, il lasciapassare finirebbe in Safari e l'app con l'icona resterebbe fuori.
+        Manda il <strong>codice</strong>: chi lo riceve apre l'app, lo incolla nella finestra che compare, e ha finito.
+        Il collegamento serve invece per i computer, dove si apre nel browser di sempre.
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
+        <span style="flex:1;font-weight:700;">Codice unico (vale per tutte le app)</span>
+        <button onclick="qmCopiaCodice(this)" style="${bott}background:var(--accent);color:#fff;border-color:var(--accent);">copia codice</button>
+      </div>
       ${QM_APP_LINK.map(a=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);">
-        <span style="flex:1;font-weight:600;">${esc(a.n)}</span>
-        <button onclick="qmCopiaLink('${a.f}',this)" style="${bott}">copia collegamento</button>
+        <span style="flex:1;color:var(--text-dim);">${esc(a.n)}</span>
+        <button onclick="qmCopiaLink('${a.f}',this)" style="${bott}">collegamento</button>
       </div>`).join('')}
       <div style="margin-top:11px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">
         Se un collegamento finisse nelle mani sbagliate: cambia <strong>QM_AUTH_SECRET</strong> sul Worker e tutti i collegamenti generati finora smettono di funzionare insieme. Poi si rigenerano da qui.
