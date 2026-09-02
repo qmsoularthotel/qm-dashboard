@@ -105,6 +105,22 @@ for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.htm
   # arrivati a 934, quasi tutte ripetizioni identiche partite da sole. Senza il filtro si
   # torna a consumarle a vuoto, e quando il limite e' superato due postazioni smettono di
   # vedersi fino a mezzanotte.
+  # Da una macchina non abilitata non si deve intravedere niente: velo pieno, non
+  # trasparente, e invalicabile appena il Worker rifiuta (401). Se sparisse, i dati degli
+  # ospiti tornerebbero visibili a chiunque digiti l'indirizzo.
+  if ! grep -q 'qmMostraAttivazione' "$_app"; then
+    echo ""
+    echo "  ERRORE      $_app non mostra piu' la schermata di abilitazione."
+    echo "              Una macchina non abilitata vedrebbe i dati degli ospiti."
+    BKF_KO=1
+  fi
+  if ! grep -q 'res.status===401' "$_app"; then
+    echo ""
+    echo "  ERRORE      $_app non reagisce piu' al rifiuto del Worker (401)."
+    echo "              Chiudendo la porta mostrerebbe una pagina vuota invece della"
+    echo "              schermata di abilitazione: sembrerebbe un guasto."
+    BKF_KO=1
+  fi
   if ! grep -q 'function qmKvSet' "$_app"; then
     echo ""
     echo "  ERRORE      $_app non filtra piu' le scritture identiche sul cloud."

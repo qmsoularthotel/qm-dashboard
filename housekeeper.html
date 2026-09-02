@@ -284,17 +284,22 @@ function qmMostraAttivazione(bloccante){
   if(document.getElementById('qm-attiva-box'))return;
   const d=document.createElement('div');
   d.id='qm-attiva-box';
-  d.style.cssText='position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:18px;font-family:inherit;';
-  d.innerHTML='<div style="background:#fff;border-radius:12px;max-width:380px;width:100%;padding:22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">'
-    +'<div style="font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:6px;">Dispositivo da abilitare</div>'
-    +'<div style="font-size:13px;color:#6b6b70;line-height:1.5;margin-bottom:16px;">Incolla qui il codice che hai ricevuto. Si fa una volta sola: poi questa schermata non comparirà più.</div>'
+  // Velo PIENO, non trasparente: da una macchina non abilitata non si deve intravedere
+  // niente di quello che c'e' sotto — ne' nomi di ospiti ne' numeri. Stessi colori dello
+  // splash di Compass, cosi' chi arriva capisce dove si trova e che non e' un guasto.
+  d.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#1E3553;display:flex;align-items:center;justify-content:center;padding:18px;font-family:inherit;';
+  d.innerHTML='<div style="max-width:360px;width:100%;text-align:center;color:#fff;">'
+    +'<img src="img/compass-stella.png" alt="" style="width:74px;height:74px;object-fit:contain;opacity:.9;margin-bottom:14px;">'
+    +'<div style="font-size:19px;font-weight:600;letter-spacing:.02em;margin-bottom:2px;">Compass</div>'
+    +'<div style="font-size:14px;color:#9fb0cb;margin-bottom:16px;">Dispositivo da abilitare</div>'
+    +'<div style="font-size:13px;color:#c3cede;line-height:1.55;margin-bottom:16px;">Incolla qui il codice che hai ricevuto. Si fa una volta sola: poi questa schermata non comparirà più.</div>'
     +'<input id="qm-attiva-campo" type="text" inputmode="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="incolla il codice"'
-    +' style="width:100%;padding:10px;border:1px solid #d5d5da;border-radius:8px;font-size:14px;text-align:center;font-family:inherit;margin-bottom:12px;">'
+    +' style="width:100%;padding:10px;border:1px solid #4a5f80;background:#16283f;color:#fff;border-radius:8px;font-size:14px;text-align:center;font-family:inherit;margin-bottom:12px;">'
     +'<div style="display:flex;gap:9px;justify-content:center;">'
-    +'<button id="qm-attiva-ok" style="background:#1c3a5e;color:#fff;border:none;padding:9px 22px;border-radius:7px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;">Abilita</button>'
-    +(bloccante?'':'<button id="qm-attiva-no" style="background:transparent;color:#6b6b70;border:1px solid #d5d5da;padding:9px 16px;border-radius:7px;font-size:14px;cursor:pointer;font-family:inherit;">Più tardi</button>')
+    +'<button id="qm-attiva-ok" style="background:#C9952F;color:#20344f;border:none;padding:9px 22px;font-weight:700;border-radius:7px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;">Abilita</button>'
+    +(bloccante?'':'<button id="qm-attiva-no" style="background:transparent;color:#9fb0cb;border:1px solid #4a5f80;padding:9px 16px;border-radius:7px;font-size:14px;cursor:pointer;font-family:inherit;">Più tardi</button>')
     +'</div>'
-    +'<div id="qm-attiva-msg" style="font-size:12px;color:#C0352A;margin-top:10px;min-height:15px;"></div>'
+    +'<div id="qm-attiva-msg" style="font-size:12px;color:#ffb4ae;margin-top:10px;min-height:15px;"></div>'
     +'</div>';
   document.body.appendChild(d);
   const campo=document.getElementById('qm-attiva-campo');
@@ -339,7 +344,24 @@ function qmMostraAttivazione(bloccante){
         opz.headers=Object.assign({},opz.headers||{},{'X-QM-Pass':_qmPass});
       }
     }catch(e){}
-    return vero(risorsa,opz);
+    const r=vero(risorsa,opz);
+    // Se il Worker rifiuta (porta chiusa e lasciapassare assente o scaduto), il velo torna
+    // e diventa invalicabile: da quel momento l'app non potrebbe comunque lavorare, e
+    // lasciar navigare una pagina vuota farebbe solo pensare a un guasto. Succede da solo,
+    // senza ripubblicare niente: basta chiudere la porta su Cloudflare.
+    try{
+      const u2=typeof risorsa==='string'?risorsa:'';
+      if(u2&&u2.indexOf('/kv/')>=0&&u2.indexOf(PROXY)===0){
+        r.then(function(res){
+          if(res&&res.status===401){
+            try{localStorage.removeItem(QM_PASS_KEY);}catch(e){}
+            _qmPass='';
+            try{qmMostraAttivazione(true);}catch(e){}
+          }
+        }).catch(function(){});
+      }
+    }catch(e){}
+    return r;
   };
 })();
 
@@ -410,7 +432,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-02.3';
+const QM_APP_BUILD='2026-09-02.4';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
