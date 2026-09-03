@@ -3311,7 +3311,7 @@ function renderHkSuggestions(focusIdx){
   // inevitabile e nessuno lo percepisce, due e' uno squilibrio vero.
   const _oggiIdx=(()=>{try{return Math.max(0,pianoGetGiornoIdx());}catch(e){return 0;}})();
   const selGiorni=(pianoData&&pianoData.giorni&&pianoData.giorni.length)
-    ?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;">${pianoData.giorni.map((g,i)=>{
+    ?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;margin-left:auto;">${pianoData.giorni.map((g,i)=>{
         const att=i===pianoNavIdx;
         const d=(s.giorni||[])[i];
         const passato=i<_oggiIdx;
@@ -3322,7 +3322,7 @@ function renderHkSuggestions(focusIdx){
           numeri=`<div style="font-size:13px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums;color:${att?'#fff':col};display:flex;align-items:center;justify-content:center;gap:5px;">
             ${att?`<span style="width:7px;height:7px;border-radius:50%;background:${passato?'rgba(255,255,255,.45)':(pari?'#4CC38A':'#FF8B7E')};"></span>`:''}${d.pM} · ${d.pA}</div>`;
         }
-        return `<button onclick="pianoNavRender(${i})" title="partenze Matarese · Altre" style="background:${att?'var(--accent)':'var(--surface2)'};color:${att?'#fff':'var(--text-muted)'};border:1px solid ${att?'var(--accent)':'var(--border)'};border-radius:7px;padding:6px 12px;font-size:12.5px;font-weight:${att?'700':'600'};cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.25;text-align:center;${passato&&!att?'opacity:.55;':''}">${g.label||('g'+(i+1))}${numeri}</button>`;
+        return `<button onclick="pianoNavRender(${i})" style="background:${att?'var(--accent)':'var(--surface2)'};color:${att?'#fff':'var(--text-muted)'};border:1px solid ${att?'var(--accent)':'var(--border)'};border-radius:7px;padding:6px 10px;min-width:80px;font-size:12.5px;font-weight:${att?'700':'600'};cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.25;text-align:center;${passato&&!att?'opacity:.55;':''}">${g.label||('g'+(i+1))}${numeri}</button>`;
       }).join('')}</div>`
     :'';
   const box=(inner,tint)=>`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
