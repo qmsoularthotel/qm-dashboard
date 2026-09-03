@@ -3305,10 +3305,24 @@ function renderHkSuggestions(focusIdx){
   // Selettore dei giorni ANCHE qui: i suggerimenti stanno in fondo alla vista e per
   // cambiare giorno bisognava risalire fino al selettore in cima, per poi ridiscendere.
   // E' la stessa navigazione (pianoNavRender), non una seconda copia dello stato.
+  // Sotto ogni giorno le sue partenze (Matarese · Altre): rosso se il giorno e' da
+  // sistemare, verde se e' in pari. Cosi' si vede DOVE andare senza aprire i giorni uno
+  // per uno. La soglia e' la stessa del motore: uno di scarto con numeri dispari e'
+  // inevitabile e nessuno lo percepisce, due e' uno squilibrio vero.
+  const _oggiIdx=(()=>{try{return Math.max(0,pianoGetGiornoIdx());}catch(e){return 0;}})();
   const selGiorni=(pianoData&&pianoData.giorni&&pianoData.giorni.length)
     ?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-left:auto;">${pianoData.giorni.map((g,i)=>{
         const att=i===pianoNavIdx;
-        return `<button onclick="pianoNavRender(${i})" style="background:${att?'var(--accent)':'var(--surface2)'};color:${att?'#fff':'var(--text-muted)'};border:1px solid ${att?'var(--accent)':'var(--border)'};border-radius:5px;padding:3px 8px;font-size:11px;font-weight:${att?'700':'600'};cursor:pointer;font-family:inherit;white-space:nowrap;">${g.label||('g'+(i+1))}</button>`;
+        const d=(s.giorni||[])[i];
+        const passato=i<_oggiIdx;
+        let numeri='';
+        if(d){
+          const pari=Math.abs(d.pM-d.pA)<2;
+          const col=passato?'var(--text-dim)':(pari?'var(--green)':'var(--red)');
+          numeri=`<div style="font-size:10.5px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums;color:${att?'#fff':col};display:flex;align-items:center;justify-content:center;gap:4px;">
+            ${att?`<span style="width:6px;height:6px;border-radius:50%;background:${passato?'rgba(255,255,255,.45)':(pari?'#4CC38A':'#FF8B7E')};"></span>`:''}${d.pM} · ${d.pA}</div>`;
+        }
+        return `<button onclick="pianoNavRender(${i})" title="partenze Matarese · Altre" style="background:${att?'var(--accent)':'var(--surface2)'};color:${att?'#fff':'var(--text-muted)'};border:1px solid ${att?'var(--accent)':'var(--border)'};border-radius:6px;padding:4px 9px;font-size:11px;font-weight:${att?'700':'600'};cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.2;text-align:center;${passato&&!att?'opacity:.55;':''}">${g.label||('g'+(i+1))}${numeri}</button>`;
       }).join('')}</div>`
     :'';
   const box=(inner,tint)=>`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
