@@ -3395,21 +3395,26 @@ function renderHkSuggestions(focusIdx){
       :`<td style="padding:5px 10px 5px 0;"></td>`}
     <td style="padding:5px 0;white-space:nowrap;">${camDa(da)}<span style="color:var(--text-dim);padding:0 7px;font-size:15px;">→</span>${camA(a)}</td>
     <td style="padding:5px 0 5px 16px;font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;">${periodo}</td></tr>`;
-  // "Pareggia" da solo non dice cosa pareggia: la parola in mezzo alla riga nomina la cosa
-  // — CARICO (il lavoro pesato del giorno) o PARTENZE (le camere che lasciano) — perche'
-  // sono due grandezze diverse e sapere quale si muove cambia la decisione.
-  const _effCosa=e=>(e.daP[0]!==e.aP[0]||e.daP[1]!==e.aP[1])?'partenze':'carico';
-  const _effNum=(e,dopo)=>_effCosa(e)==='partenze'
-    ?(dopo?`${e.aP[0]} · ${e.aP[1]}`:`${e.daP[0]} · ${e.daP[1]}`)
-    :(dopo?`${_hkNum(e.aC[0])} · ${_hkNum(e.aC[1])}`:`${_hkNum(e.daC[0])} · ${_hkNum(e.daC[1])}`);
+  // Le PARTENZE sono l'obiettivo, e si mostrano per ogni giorno toccato. Sono anche
+  // l'unica cosa che le cameriere vedono davvero: quante camere lasciano a testa. Il
+  // carico (il lavoro pesato, con le fermate che valgono meno di una partenza) e' una
+  // grandezza interna: serve al motore per scegliere, non a chi esegue.
+  // Resta scritto in un solo caso — quando le partenze NON cambiano — perche' li' senza
+  // di esso la riga direbbe "4 · 4 → 4 · 4" e la mossa sembrerebbe inutile.
+  const _hkPar=(a,b)=>`${a} · ${b}`;
+  const _hkDist=(a,b)=>Math.abs(a-b);
   const effTr=(e,isF,peggio)=>{
+    const cambiaP=e.daP[0]!==e.aP[0]||e.daP[1]!==e.aP[1];
     const c=peggio?'var(--amber)':'var(--green)';
+    const solNum=cambiaP?c:'var(--text-dim)';
+    const nota=cambiaP?'':`<span style="color:var(--text-dim);">cambia solo il carico</span>`;
     return `<tr>
       <td style="padding:2px 12px 2px 0;font-size:12px;color:var(--text-muted);white-space:nowrap;${isF?'font-weight:700;':''}">${lbl(e.i)}</td>
-      <td style="padding:2px 10px 2px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:${c};white-space:nowrap;">${_effCosa(e)}</td>
-      <td style="padding:2px 0;font-size:12.5px;color:var(--text-dim);font-variant-numeric:tabular-nums;white-space:nowrap;">${_effNum(e,false)}</td>
+      <td style="padding:2px 10px 2px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:${cambiaP?c:'var(--text-dim)'};white-space:nowrap;">partenze</td>
+      <td style="padding:2px 0;font-size:12.5px;color:var(--text-dim);font-variant-numeric:tabular-nums;white-space:nowrap;">${_hkPar(e.daP[0],e.daP[1])}</td>
       <td style="padding:2px 6px;color:var(--text-dim);font-size:12px;">→</td>
-      <td style="padding:2px 0;font-size:12.5px;font-weight:700;color:${c};font-variant-numeric:tabular-nums;white-space:nowrap;">${_effNum(e,true)}</td></tr>`;
+      <td style="padding:2px 0;font-size:12.5px;font-weight:${cambiaP?'700':'400'};color:${solNum};font-variant-numeric:tabular-nums;white-space:nowrap;">${_hkPar(e.aP[0],e.aP[1])}</td>
+      <td style="padding:2px 0 2px 10px;font-size:11px;white-space:nowrap;">${nota}</td></tr>`;
   };
   const righe=s.mosse.map((m,i)=>{
     const periodo=(m.start===m.end?lbl(m.start):lbl(m.start)+' → '+lbl(m.end))+(m.xSpec?tagRip:'');
@@ -3448,13 +3453,25 @@ function renderHkSuggestions(focusIdx){
     // "pareggia", che lascia la domanda aperta.
     const pegg=(m.peggiori||[]);
     const primo=mostrati[0];
-    const esito=primo?`pareggia ${_effCosa(primo)==='partenze'?'le partenze':'il carico'} di ${lbl(primo.i)}`:'migliora il bilancio';
+    const toccaFocus=!s.focus||m.effetti.some(e=>e.i===s.focus.i);
+    // L'esito parla di partenze, ed e' costruito sui giorni in cui le partenze CAMBIANO
+    // davvero — non sul primo giorno dell'elenco. Prima diceva "partenze invariate,
+    // alleggerisce il carico" solo perche' il primo giorno mostrato non le toccava, e
+    // nascondeva il giorno che invece si pareggiava due righe piu' sotto.
+    const cambiano=m.effetti.filter(e=>e.daP[0]!==e.aP[0]||e.daP[1]!==e.aP[1]);
+    const migliorano=cambiano.filter(e=>_hkDist(e.aP[0],e.aP[1])<_hkDist(e.daP[0],e.daP[1]));
+    const _piuGiorni=n=>n>1?` e altri ${n-1}`:'';
+    let esito;
+    if(migliorano.length)esito=`pareggia le partenze di ${lbl(migliorano[0].i)}${_piuGiorni(migliorano.length)}`;
+    else if(cambiano.length)esito=`sposta una partenza di ${lbl(cambiano[0].i)}`;
+    else esito='non cambia le partenze, alleggerisce solo il carico';
     const colEsito=pegg.length?'var(--amber)':'var(--green)';
     return`<div style="padding:14px 0;${i>0?'border-top:1px solid var(--border-light);':''}">
       <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:7px;flex-wrap:wrap;">
         <span style="width:21px;height:21px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
         <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${_hkTipoLbl(m.cat)}</span>
         ${badge?`<span style="font-size:11px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:4px;padding:2px 7px;">${badge}</span>`:''}
+        ${toccaFocus?'':`<span style="font-size:11px;font-weight:600;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;">non tocca ${fLbl}</span>`}
         <span style="margin-left:auto;font-size:13px;font-weight:700;color:${colEsito};">${esito}${pegg.length?`, ma peggiora ${lbl(pegg[0].i)}`:''}</span>
       </div>
       <div style="display:flex;gap:26px;align-items:flex-start;margin-left:30px;flex-wrap:wrap;">
@@ -3474,9 +3491,9 @@ function renderHkSuggestions(focusIdx){
   }).join('');
   // La legenda sta PRIMA delle righe e in una riga sola: e' quella che toglie il dubbio
   // ricorrente su cosa siano i due numeri, e va letta prima, non dopo.
-  const legenda=`<div style="font-size:11.5px;color:var(--text-dim);line-height:1.5;padding-bottom:4px;">I numeri sono <strong style="color:var(--text-muted);">Matarese · Altre</strong> — <strong style="color:var(--text-muted);">carico</strong> = lavoro pesato del giorno, <strong style="color:var(--text-muted);">partenze</strong> = camere che lasciano. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
+  const legenda=`<div style="font-size:11.5px;color:var(--text-dim);line-height:1.5;padding-bottom:4px;"><strong style="color:var(--text-muted);">Partenze</strong> = camere che lasciano, <strong style="color:var(--text-muted);">Matarese · Altre</strong>. È il numero che le cameriere confrontano fra loro, ed è quello da pareggiare. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
   const haPegg=s.mosse.some(m=>(m.peggiori||[]).length);
-  const nota=`<div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.55;">${haPegg?`In <span style="color:var(--amber);font-weight:700;">ambra</span> i giorni che peggiorano: il bilancio complessivo resta comunque migliore. `:''}${s.focus?`Sono elencate solo le mosse che migliorano <strong style="color:var(--text);">${fLbl}</strong>: cambia giorno per vedere le sue.`:`L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana.`} Solo stessa tipologia e solo prenotazioni non ancora arrivate.</div>`;
+  const nota=`<div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.55;">${haPegg?`In <span style="color:var(--amber);font-weight:700;">ambra</span> i giorni che peggiorano: il bilancio complessivo resta comunque migliore. `:''}${s.focus?`Sono elencate le mosse che migliorano <strong style="color:var(--text);">${fLbl}</strong>, più gli scambi in blocco che migliorano la settimana anche senza toccarlo (segnalati come <em>non tocca ${fLbl}</em>). Cambia giorno per vedere le sue.`:`L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana.`} Solo stessa tipologia e solo prenotazioni non ancora arrivate.</div>`;
   // "Ci sono altre possibilità?" — mostra solo se esistono davvero altre alternative già
   // calcolate e tagliate dal limite mosse mostrate, non un pulsante sempre presente a vuoto.
   const altreN=s.totMosse-s.mosse.length;
