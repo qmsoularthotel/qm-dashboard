@@ -708,9 +708,12 @@ function turniRenderArchivio(){
       const cod=(g.shifts||{})[nome];
       const nrm=turniNormalizza(cod);
       let stile='color:var(--text);',testo=esc(cod||'');
+      // Riposi, ferie e malattie tutti in rosso: chi guarda una settimana passata cerca
+      // prima di tutto chi NON c'era. Il riposo non e' in grassetto solo perche' e' la
+      // casella piu' frequente e la tabella diventerebbe un muro rosso.
       if(!nrm){stile='color:var(--border);';testo='·';}
-      else if(nrm.tipo==='riposo')stile='color:var(--text-dim);';
-      else if(nrm.tipo==='ferie')stile='color:var(--amber);font-weight:600;';
+      else if(nrm.tipo==='riposo')stile='color:var(--red);';
+      else if(nrm.tipo==='ferie')stile='color:var(--red);font-weight:600;';
       else if(nrm.tipo==='malattia')stile='color:var(--red);font-weight:600;';
       else if(nrm.tipo==='altro')stile='color:var(--text-muted);';
       return `<td style="padding:6px 4px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;font-size:var(--fs-xs);${stile}white-space:nowrap;">${testo}</td>`;
