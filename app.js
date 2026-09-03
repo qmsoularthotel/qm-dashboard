@@ -3380,57 +3380,96 @@ function renderHkSuggestions(focusIdx){
     const n=ps.length,mostra=ps.slice(0,3).map(perTxt).join(', ');
     return`${n} prenotazion${n===1?'e':'i'} (${mostra}${n>3?`, +${n-3}`:''})`;
   };
+  // ── Come si legge un suggerimento ────────────────────────────────────────
+  // Ogni spostamento e' una RIGA a se', da eseguire dall'alto in basso. Prima erano
+  // descritti in una frase ("sposta prima X, poi Y") e l'ordine andava ricostruito ogni
+  // volta: e' un'operazione che si ripete molte volte al giorno, e il tempo se ne andava
+  // li'. Camera di partenza grigia, camera di arrivo blu piena: la direzione si vede
+  // senza leggere.
+  const camDa=c=>`<span style="display:inline-block;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:3px 10px;font-weight:600;font-size:14px;font-variant-numeric:tabular-nums;">${c}</span>`;
+  const camA=c=>`<span style="display:inline-block;background:var(--accent);color:#fff;border-radius:6px;padding:3px 10px;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;">${c}</span>`;
+  const passoTr=(n,da,a,periodo,quanti)=>`<tr>
+    ${quanti>1
+      ?`<td style="padding:5px 10px 5px 0;white-space:nowrap;"><span style="display:inline-flex;width:19px;height:19px;border-radius:50%;background:var(--accent);color:#fff;font-size:10.5px;font-weight:700;align-items:center;justify-content:center;">${n}</span></td>`
+      :`<td style="padding:5px 10px 5px 0;"></td>`}
+    <td style="padding:5px 0;white-space:nowrap;">${camDa(da)}<span style="color:var(--text-dim);padding:0 7px;font-size:15px;">→</span>${camA(a)}</td>
+    <td style="padding:5px 0 5px 16px;font-size:13px;color:var(--text-muted);white-space:nowrap;">${periodo}</td></tr>`;
+  // "Pareggia" da solo non dice cosa pareggia: la parola in mezzo alla riga nomina la cosa
+  // — CARICO (il lavoro pesato del giorno) o PARTENZE (le camere che lasciano) — perche'
+  // sono due grandezze diverse e sapere quale si muove cambia la decisione.
+  const _effCosa=e=>(e.daP[0]!==e.aP[0]||e.daP[1]!==e.aP[1])?'partenze':'carico';
+  const _effNum=(e,dopo)=>_effCosa(e)==='partenze'
+    ?(dopo?`${e.aP[0]} · ${e.aP[1]}`:`${e.daP[0]} · ${e.daP[1]}`)
+    :(dopo?`${_hkNum(e.aC[0])} · ${_hkNum(e.aC[1])}`:`${_hkNum(e.daC[0])} · ${_hkNum(e.daC[1])}`);
+  const effTr=(e,isF,peggio)=>{
+    const c=peggio?'var(--amber)':'var(--green)';
+    return `<tr>
+      <td style="padding:2px 12px 2px 0;font-size:12px;color:var(--text-muted);white-space:nowrap;${isF?'font-weight:700;':''}">${lbl(e.i)}</td>
+      <td style="padding:2px 10px 2px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:${c};white-space:nowrap;">${_effCosa(e)}</td>
+      <td style="padding:2px 0;font-size:12.5px;color:var(--text-dim);font-variant-numeric:tabular-nums;white-space:nowrap;">${_effNum(e,false)}</td>
+      <td style="padding:2px 6px;color:var(--text-dim);font-size:12px;">→</td>
+      <td style="padding:2px 0;font-size:12.5px;font-weight:700;color:${c};font-variant-numeric:tabular-nums;white-space:nowrap;">${_effNum(e,true)}</td></tr>`;
+  };
   const righe=s.mosse.map((m,i)=>{
     const periodo=(m.start===m.end?lbl(m.start):lbl(m.start)+' → '+lbl(m.end))+(m.xSpec?tagRip:'');
     const perY=m.yStart!=null?((m.yStart===m.yEnd?lbl(m.yStart):lbl(m.yStart)+' → '+lbl(m.yEnd))+(m.ySpec?tagRip:'')):'';
-    let titolo,dett;
+    const viaLbl=v=>(v.start===v.end?lbl(v.start):lbl(v.start)+' → '+lbl(v.end))+(v.speciale?tagRip:'');
+    let passi=[],badge='',sotto='';
     if(m.tipo==='scambia'){
-      titolo=`${m.from} ${frecciaB} ${m.to}`;
-      dett=`scambio col soggiorno ${perY} di ${m.to}`;
+      // Uno scambio sono due operazioni nel PMS, non una: si scrivono tutte e due.
+      passi=[[m.from,m.to,periodo],[m.to,m.from,perY]];
+      badge='scambio fra due soggiorni';
     }else if(m.tipo==='catena'){
-      // Due spostamenti in sequenza: va detto chiaramente, sono due operazioni nel PMS
-      titolo=`${m.from} ${frecciaG} ${m.to} ${frecciaG} ${m.via}`;
-      dett=`2 spostamenti: sposta prima ${perY} da ${m.to} a ${m.via}, poi ${periodo} da ${m.from} a ${m.to}`;
+      passi=[[m.to,m.via,perY],[m.from,m.to,periodo]];
     }else if(m.tipo==='catena-multi'){
-      // Più soggiorni sovrapposti in "to", ognuno ricollocato in una camera diversa
-      // della stessa tipologia — va detto quanti spostamenti servono davvero, non solo 2.
-      const viaLbl=v=>(v.start===v.end?lbl(v.start):lbl(v.start)+' → '+lbl(v.end))+(v.speciale?tagRip:'');
-      titolo=`${m.from} ${frecciaG} ${m.to} <span style="font-size:11px;color:var(--text-dim);font-weight:600;">(+${m.vias.length} camere)</span>`;
-      dett=`${1+m.vias.length} spostamenti: ${m.vias.map(v=>`${m.to}→${v.room} (${viaLbl(v)})`).join(', ')}, poi ${periodo} da ${m.from} a ${m.to}`;
+      passi=m.vias.map(v=>[m.to,v.room,viaLbl(v)]).concat([[m.from,m.to,periodo]]);
     }else if(m.tipo==='scambio-blocco'){
-      // Non un soggiorno alla volta: TUTTE le prenotazioni future delle due camere si
-      // scambiano in un colpo solo — chi è già in casa resta dov'è fisicamente.
-      titolo=`${m.from} ${frecciaB} ${m.to} <span style="font-size:11px;color:var(--text-dim);font-weight:600;">(tutta la settimana)</span>`;
-      dett=`scambio in blocco: ${m.from} cede ${elenco(m.perA)} · ${m.to} cede ${elenco(m.perB)} — chi è già in casa resta dov'è`;
+      passi=[[m.from,m.to,'tutte le prenotazioni future']];
+      badge='scambio in blocco';
+      sotto=`${m.from} cede ${elenco(m.perA)} · ${m.to} cede ${elenco(m.perB)} — chi è già in casa resta dov'è`;
     }else{
-      titolo=`${m.from} ${frecciaG} ${m.to}`;
-      dett=`${m.to} libera in quelle notti`;
+      passi=[[m.from,m.to,periodo]];
+      sotto=`${m.to} libera in quelle notti`;
     }
-    return`<div style="display:flex;align-items:center;gap:14px;padding:11px 0;${i>0?'border-top:1px solid var(--border-light);':''}">
-      <span style="width:22px;height:22px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:15px;font-weight:700;color:var(--text);">${titolo}</div>
-        <div style="font-size:12.5px;color:var(--text-muted);margin-top:3px;line-height:1.4;">${m.tipo==='scambio-blocco'?'':`soggiorno ${periodo} · `}${_hkTipoLbl(m.cat)} · ${dett}</div>
+    if(!badge&&passi.length>1)badge=`${passi.length} spostamenti, in quest'ordine`;
+    const effOrd=s.focus?[...m.effetti].sort((a,b)=>(a.i===s.focus.i?-1:0)-(b.i===s.focus.i?-1:0)):m.effetti;
+    const mostrati=effOrd.slice(0,3);
+    // L'esito nomina la cosa e il giorno: "pareggia il carico di Sab 5/9" dice piu' di
+    // "pareggia", che lascia la domanda aperta.
+    const pegg=(m.peggiori||[]);
+    const primo=mostrati[0];
+    const esito=primo?`pareggia ${_effCosa(primo)==='partenze'?'le partenze':'il carico'} di ${lbl(primo.i)}`:'migliora il bilancio';
+    const colEsito=pegg.length?'var(--amber)':'var(--green)';
+    return`<div style="padding:14px 0;${i>0?'border-top:1px solid var(--border-light);':''}">
+      <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:7px;flex-wrap:wrap;">
+        <span style="width:21px;height:21px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${_hkTipoLbl(m.cat)}</span>
+        ${badge?`<span style="font-size:11px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:4px;padding:2px 7px;">${badge}</span>`:''}
+        <span style="margin-left:auto;font-size:13px;font-weight:700;color:${colEsito};">${esito}${pegg.length?`, ma peggiora ${lbl(pegg[0].i)}`:''}</span>
       </div>
-      <div style="text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;">
-        ${(s.focus?[...m.effetti].sort((a,b)=>(a.i===s.focus.i?-1:0)-(b.i===s.focus.i?-1:0)):m.effetti).slice(0,3).map(e=>{
-          const isF=s.focus&&e.i===s.focus.i;   // il giorno che si sta guardando va in evidenza
-          return`<div style="font-size:11.5px;color:var(--green);font-weight:${isF?'800':'600'};white-space:nowrap;${isF?'':'opacity:.75;'}">${_hkEffTxt(lbl(e.i),e)}</div>`;
-        }).join('')}
-        ${m.effetti.length>3?`<div style="font-size:11px;color:var(--text-muted);">+${m.effetti.length-3} altri giorni</div>`:''}
-        ${(m.peggiori||[]).slice(0,2).map(e=>`<div style="font-size:11px;color:var(--amber);font-weight:600;white-space:nowrap;">${_hkEffTxt(lbl(e.i),e)}</div>`).join('')}
+      <div style="display:flex;gap:26px;align-items:flex-start;margin-left:30px;flex-wrap:wrap;">
+        <table style="border-collapse:collapse;">${passi.map((p,k)=>passoTr(k+1,p[0],p[1],p[2],passi.length)).join('')}</table>
+        <table style="border-collapse:collapse;margin-left:auto;">
+          ${mostrati.map(e=>effTr(e,s.focus&&e.i===s.focus.i,false)).join('')}
+          ${pegg.slice(0,2).map(e=>effTr(e,false,true)).join('')}
+          ${m.effetti.length>3?`<tr><td colspan="5" style="padding:2px 0;font-size:11px;color:var(--text-dim);">+${m.effetti.length-3} altri giorni</td></tr>`:''}
+        </table>
       </div>
+      ${sotto?`<div style="font-size:12.5px;color:var(--text-dim);margin:6px 0 0 30px;line-height:1.45;">${sotto}</div>`:''}
     </div>`;
   }).join('');
+  // La legenda sta PRIMA delle righe e in una riga sola: e' quella che toglie il dubbio
+  // ricorrente su cosa siano i due numeri, e va letta prima, non dopo.
+  const legenda=`<div style="font-size:11.5px;color:var(--text-dim);line-height:1.5;padding-bottom:4px;">I numeri sono <strong style="color:var(--text-muted);">Matarese · Altre</strong> — <strong style="color:var(--text-muted);">carico</strong> = lavoro pesato del giorno, <strong style="color:var(--text-muted);">partenze</strong> = camere che lasciano. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
   const haPegg=s.mosse.some(m=>(m.peggiori||[]).length);
-  const nota=`<div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.55;">I numeri a destra sono il prima e dopo di ogni giorno (Matarese-Altre): le <strong style="color:var(--text);">partenze</strong> se cambiano, il <strong style="color:var(--text);">carico</strong> se la mossa riequilibra solo quello${s.focus?`. <strong style="color:var(--text);">${fLbl}</strong> è in evidenza`:''}${haPegg?`; in <span style="color:var(--amber);font-weight:700;">ambra</span> i giorni che peggiorano — il bilancio complessivo resta comunque migliore`:''}. ${s.focus?`Sono elencate solo le mosse che migliorano <strong style="color:var(--text);">${fLbl}</strong>: cambia giorno per vedere le sue.`:`L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana.`} Solo stessa tipologia e solo prenotazioni non ancora arrivate. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
+  const nota=`<div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.55;">${haPegg?`In <span style="color:var(--amber);font-weight:700;">ambra</span> i giorni che peggiorano: il bilancio complessivo resta comunque migliore. `:''}${s.focus?`Sono elencate solo le mosse che migliorano <strong style="color:var(--text);">${fLbl}</strong>: cambia giorno per vedere le sue.`:`L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana.`} Solo stessa tipologia e solo prenotazioni non ancora arrivate.</div>`;
   // "Ci sono altre possibilità?" — mostra solo se esistono davvero altre alternative già
   // calcolate e tagliate dal limite mosse mostrate, non un pulsante sempre presente a vuoto.
   const altreN=s.totMosse-s.mosse.length;
   const altreBtn=altreN>0
     ?`<button onclick="hkSuggMore()" style="margin-top:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;">Ci sono altre possibilità? <span style="color:var(--text-dim);font-weight:400;">(+${Math.min(altreN,5)})</span></button>`
     :'';
-  return box(testa+righe+altreBtn+nota);
+  return box(testa+legenda+righe+altreBtn+nota);
 }
 // Contenitore per la vista settimanale — popolato via _bkfChartRender() (stesso motore
 // SVG di Breakfast/Occupazione: barra accent + linea rossa tratteggiata) subito dopo
