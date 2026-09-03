@@ -3325,9 +3325,27 @@ function renderHkSuggestions(focusIdx){
         return `<button onclick="pianoNavRender(${i})" style="background:${att?'var(--accent)':'var(--surface2)'};color:${att?'#fff':'var(--text-muted)'};border:1px solid ${att?'var(--accent)':'var(--border)'};border-radius:7px;padding:6px 10px;min-width:80px;font-size:12.5px;font-weight:${att?'700':'600'};cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.25;text-align:center;${passato&&!att?'opacity:.55;':''}">${g.label||('g'+(i+1))}${numeri}</button>`;
       }).join('')}</div>`
     :'';
+  // Titolo, stato del giorno selezionato e selettore stanno sulla STESSA riga. Prima
+  // erano tre righe sovrapposte, e le due sopra ripetevano quello che i pulsanti gia'
+  // dicono: le partenze del giorno sono scritte dentro il pulsante attivo.
+  const _statoFocus=(()=>{
+    if(!s.focus)return'';
+    const f=s.focus;
+    const c=f.passato?{t:'giorno passato',col:'var(--text-dim)',bg:'var(--surface2)'}
+      :(f.sbilanciato?{t:'da sistemare',col:'var(--amber)',bg:'var(--amber-bg)'}
+                     :{t:'in pari',col:'var(--green)',bg:'var(--green-bg)'});
+    return `<span style="font-size:11.5px;font-weight:700;color:${c.col};background:${c.bg};border-radius:5px;padding:3px 9px;white-space:nowrap;">${c.t}</span>`
+      +`<span style="font-size:11.5px;color:var(--text-dim);white-space:nowrap;font-variant-numeric:tabular-nums;">carico ${_hkNum(f.cM)} · ${_hkNum(f.cA)}</span>`;
+  })();
+  // Intestazione a due colonne: a sinistra il titolo e sotto lo stato del giorno, a destra
+  // i pulsanti dei giorni tutti sulla stessa riga.
   const box=(inner,tint)=>`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
-      <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${titolo}</div>${selGiorni}
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
+      <div style="min-width:0;">
+        <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${titolo}</div>
+        ${_statoFocus?`<div style="display:flex;align-items:center;gap:9px;margin-top:6px;">${_statoFocus}</div>`:''}
+      </div>
+      ${selGiorni}
     </div>${inner}</div>`;
   if(!s.ok){
     if(s.motivo==='tipi')return box(`<div style="background:var(--amber-bg);color:var(--amber);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">Ricarica il Piano Settimanale per attivare i suggerimenti — quello in memoria è stato caricato prima di questa funzione e non contiene le tipologie camera.</div>`);
@@ -3342,25 +3360,17 @@ function renderHkSuggestions(focusIdx){
     </span>`;
   // Con un giorno selezionato la testa parla di quel giorno; gli altri giorni squilibrati
   // restano come promemoria cliccabile ("cambia giorno per i suoi suggerimenti").
+  // Con un giorno selezionato la sua situazione e' gia' nell'intestazione (chip di stato,
+  // carico, e le partenze dentro il pulsante attivo): qui resta solo cio' che li' non
+  // c'entra — che il giorno e' passato, o quali altri giorni sono da sistemare.
   let testa;
   if(s.focus){
     const f=s.focus,altri=s.sbilanciati.filter(g=>g.i!==f.i);
-    const suo=f.passato
-      ?`<div style="font-size:12.5px;color:var(--text-dim);">${fLbl} è già passato: niente da riorganizzare.</div>`
-      :(f.sbilanciato
-        ?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            ${pill(fLbl,f.pM,f.pA,'amber')}
-            <span style="font-size:11.5px;color:var(--text-dim);font-variant-numeric:tabular-nums;">carico ${_hkNum(f.cM)} · ${_hkNum(f.cA)}</span>
-          </div>`
-        :`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            ${pill(fLbl,f.pM,f.pA,'green')}
-            <span style="font-size:12.5px;color:var(--green);font-weight:600;">✓ già equilibrato</span>
-          </div>`);
-    testa=`<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);">
-      <div style="font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;">Partenze del giorno selezionato</div>
-      ${suo}
-      ${altri.length?`<div style="font-size:12px;color:var(--text-muted);margin-top:9px;line-height:1.5;">Altri giorni da sistemare: ${altri.map(g=>`<strong style="color:var(--amber);">${lbl(g.i)}</strong> ${g.pM}-${g.pA}`).join(' · ')} — spostati su quel giorno con ‹ › per i suoi suggerimenti.</div>`:''}
-    </div>`;
+    testa=f.passato
+      ?`<div style="font-size:12.5px;color:var(--text-dim);margin-bottom:12px;">${fLbl} è già passato: niente da riorganizzare.</div>`
+      :(altri.length
+        ?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Altri giorni da sistemare: ${altri.map(g=>`<strong style="color:var(--amber);">${lbl(g.i)}</strong> (${g.pM}-${g.pA})`).join(', ')}</div>`
+        :'');
   }else{
     testa=s.sbilanciati.length
       ?`<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);">
