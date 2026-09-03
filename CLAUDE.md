@@ -2525,11 +2525,62 @@ Nella stessa correzione: l'avviso diceva *"mancano N pezzi"* anche quando ne rie
 `onfocus="this.select()"`: partendo da `0`, digitare senza cancellare dava `50` invece di
 `5`.
 
+### Lo storico è di ENTRAMBE le strutture, e dice con cosa confronta (fix 03/09/2026)
+
+**Sintomo**: la riga del 01/09 diceva `consegnati 436 · ricevuti 318` e accanto **in pari**.
+Chi legge fa `318 − 436 = −118` e conclude che il pannello mente.
+
+**Il conto era giusto**: 318 ricevuti contro **318 attesi**, cioè i sacchi usciti al giro
+precedente (29/08). A mancare era il termine di confronto, che non compariva da nessuna
+parte — e al suo posto c'era un numero, i 436 sacchi usciti *quel* giorno, che col
+confronto non c'entra nulla: quelli tornano al giro **dopo**. Stessa classe di difetto dei
+suggerimenti di bilanciamento: numeri giusti, racconto sbagliato.
+
+La riga ora dice: *"01/09/2026 · SoulArt · ha portato **318** su **318 attesi — i sacchi del
+29/08/2026** · in pari"*, con sotto, in grigio, *"sacchi dati a lui quel giorno: 436 —
+tornano al giro dopo, non contano in questa riga"*. Il linguaggio è lo stesso della tabella
+di lavoro (*Doveva portare / Ha portato*), che era già chiara: era solo lo storico a
+ricadere nel gergo ambiguo.
+
+**Lo storico copre tutte e due le strutture** (`_biaGiriTutti`), con la struttura in
+pastiglia su ogni riga: Raimondo è lo stesso fornitore per entrambe e va controllato
+insieme, non una linguetta alla volta. **I calcoli restano rigorosamente per struttura** —
+`_biaRigaGiro` passa sempre da `_biaGiroPrec(_biaH(g), …)`, mai dall'hotel selezionato a
+schermo. È l'errore facile ora che le due convivono nella stessa lista: col 01/09 presente
+su entrambe, pescare l'atteso dall'hotel sbagliato darebbe al Boutique un ammanco inventato
+di −228 (verificato sabotando).
+
+In testa al pannello, per ciascuna struttura: *"ha portato N pezzi su M attesi"* con il
+saldo. Somma **solo i giri con un termine di confronto**, gli stessi che conta `_biaSaldo`,
+così `portato − atteso` coincide sempre col saldo del pannello sopra invece di divergere di
+un giro senza che si capisca perché; il primo giro viene contato a parte e dichiarato.
+
+**Un rientro in più non è un ammanco**: il `+3` del 25/08 era dipinto di **rosso** come una
+perdita. `_biaColDelta`/`_biaTxtDelta` sono ora l'unica scala per tutti e tre i punti che
+mostrano una differenza (tabella del giro, storico, saldo cumulato): in pari verde,
+mancante rosso, rientro in più **ambra**. Un colore che grida anche sulle buone notizie è un
+colore che si impara a ignorare.
+
+**Attenzione al modello, non toccato qui**: `atteso(N) = consegnato(N−1)` assume che
+Raimondo riporti in **un solo giro**. Sui dati reali di SoulArt il saldo cumulato è −308
+pezzi su 6 giri: se la resa fosse in due giri, tutte quelle differenze sarebbero da
+ricalcolare. Ora che il confronto è visibile riga per riga, è verificabile guardando una
+distinta vera.
+
+Coperto da **23 controlli** in `test/controlli.js` ("Biancheria: lo storico dice CON COSA
+sta confrontando"), verificati con tre sabotaggi (atteso dall'hotel sbagliato, confronto
+sullo sporco uscito, rientro in più di nuovo rosso): 4, 8 e 1 falliscono.
+
 ### Funzioni
 
 | Funzione | Scopo |
 |----------|-------|
 | `biaLoad()` | Carica da KV con fallback localStorage, poi render |
+| `_biaGiroPrec(hotel,data)` | Il giro precedente della **stessa** struttura — dà anche la sua data, che lo storico mostra |
+| `_biaGiriTutti()` | Tutti i giri di **tutte** le strutture, dal più recente |
+| `_biaRigaGiro(g)` | Riga di storico già calcolata: portato, dovuto, data del confronto, differenza |
+| `_biaRiepilogoPortato(h)` | Totale portato vs atteso per struttura, sui soli giri confrontabili |
+| `_biaColDelta(d)` / `_biaTxtDelta(d)` | Unica scala di colore/testo di una differenza |
 | `biaAggiornaDelta()` | Aggiorna Δ e avviso mentre si digita, senza rigenerare l'HTML |
 | `_biaPeriodo(hotel,dataGiro)` | Intervallo dei consumi ritirati — vedi regola sopra |
 | `_biaSommaConsumi(hotel,dal,al)` | Somma per voce nell'intervallo, estremi inclusi |
@@ -3128,8 +3179,8 @@ guardando lo schermo, un errore nei numeri no — resta plausibile e può passar
 per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dall'alloggio,
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
-dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, cancello del polling a
-scheda nascosta. 416 controlli.
+dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto dello storico biancheria, cancello del polling a
+scheda nascosta. 439 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire

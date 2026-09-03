@@ -1287,3 +1287,78 @@ function riepilogo() {
     ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'
     : KO + ' CONTROLLI FALLITI su ' + (OK + KO));
 }
+
+sez('Biancheria: lo storico dice CON COSA sta confrontando');
+// 03/09/2026. La riga del 01/09 diceva "consegnati 436 · ricevuti 318 — in pari" e chi la
+// leggeva faceva 318-436 e trovava -118: sembrava una bugia. Il conto era giusto — 318
+// ricevuti contro 318 attesi, cioè i sacchi usciti il 29/08 — ma il termine di confronto
+// non era a schermo, e al suo posto c'era un numero (436, i sacchi usciti QUEL giorno) che
+// col confronto non c'entra: quello torna al giro dopo. Stessa classe di difetto dei
+// suggerimenti di bilanciamento: numeri giusti, racconto sbagliato.
+(function () {
+  var _prima = _bia, _prevHotel = _biaHotel;
+  function q(n) { var o = _biaVuote(); o['Federa'] = n; return o; }
+  // I giri veri di SoulArt letti dallo storico, piu' il Boutique per controllare che le
+  // due strutture non si contaminino.
+  var SA = [['20/08/2026', 442, 0], ['22/08/2026', 393, 311], ['25/08/2026', 457, 396],
+            ['27/08/2026', 328, 391], ['29/08/2026', 318, 280], ['01/09/2026', 436, 318],
+            ['03/09/2026', 207, 370]];
+  var BH = [['22/08/2026', 120, 0], ['27/08/2026', 95, 110], ['01/09/2026', 88, 90]];
+  _bia = { consumi: [], giri: [] };
+  SA.forEach(function (r, i) { _bia.giri.push({ id: 'sa' + i, hotel: 'sa', data: r[0], consegnato: q(r[1]), ricevuto: q(r[2]), ts: i }); });
+  BH.forEach(function (r, i) { _bia.giri.push({ id: 'bh' + i, hotel: 'bh', data: r[0], consegnato: q(r[1]), ricevuto: q(r[2]), ts: i }); });
+  _biaHotel = 'sa';
+
+  function riga(hotel, data) {
+    return _biaRigaGiro(_bia.giri.filter(function (g) { return g.hotel === hotel && g.data === data; })[0]);
+  }
+
+  // ── Il caso segnalato ──
+  var r0109 = riga('sa', '01/09/2026');
+  ok('01/09 SoulArt: ha portato 318',            r0109.portato, 318);
+  ok('attesi 318, non 436',                      r0109.dovuto, 318);
+  ok('e si dice da dove vengono: il giro del 29/08', r0109.dataPrec, '29/08/2026');
+  ok('quindi in pari e\' corretto',              _biaTxtDelta(r0109.delta), 'in pari');
+  // 436 non deve sparire, ma non e' il termine di confronto: sono i sacchi che escono quel
+  // giorno e che Raimondo riportera' al giro DOPO.
+  ok('436 e\' lo sporco uscito quel giorno',     r0109.uscito, 436);
+  ok('e non entra nella differenza',             r0109.portato - r0109.dovuto, 0);
+
+  // ── Le due strutture non si mescolano ──
+  // Il 01/09 esiste su tutte e due: se l'atteso pescasse dall'hotel sbagliato, il Boutique
+  // verrebbe confrontato con i 318 di SoulArt e mostrerebbe un ammanco inventato di -228.
+  var b0109 = riga('bh', '01/09/2026');
+  ok('01/09 Boutique guarda il suo 27/08',       b0109.dataPrec, '27/08/2026');
+  ok('attesi 95, non i 318 di SoulArt',          b0109.dovuto, 95);
+  ok('differenza -5',                            b0109.delta, -5);
+
+  // ── Il primo giro non ha con cosa confrontarsi, e lo dice ──
+  ok('20/08 SoulArt non ha un atteso',           riga('sa', '20/08/2026').dovuto, null);
+  ok('ne\' una data precedente',                 riga('sa', '20/08/2026').dataPrec, null);
+  ok('e nessuna differenza inventata',           riga('sa', '20/08/2026').delta, null);
+
+  // ── Lo storico copre entrambe le strutture ──
+  var tutti = _biaGiriTutti();
+  ok('l\'elenco le mostra insieme',              tutti.length, SA.length + BH.length);
+  ok('dalla piu\' recente',                      tutti[0].data, '03/09/2026');
+  ok('e contiene tutte e due',
+     [_biaH(tutti[0]), 'bh'].length && tutti.filter(function (g) { return _biaH(g) === 'bh'; }).length, BH.length);
+
+  // ── Il riepilogo non puo' divergere dal saldo mostrato sopra ──
+  Object.keys(BIA_HOTELS).forEach(function (k) {
+    var r = _biaRiepilogoPortato(k);
+    ok(k + ': portato - atteso coincide col saldo', r.portato - r.dovuto, _biaTot(_biaSaldo(k)));
+  });
+  ok('SoulArt: portato in tutto',                _biaRiepilogoPortato('sa').portato, 2066);
+  ok('su quanto era atteso',                     _biaRiepilogoPortato('sa').dovuto, 2374);
+  ok('il primo giro resta fuori dal confronto',  _biaRiepilogoPortato('sa').senzaConfronto, 1);
+
+  // ── Un rientro IN PIU' non e' un ammanco ──
+  // Il 25/08 mostrava "+3" in rosso, come una perdita: un colore che grida anche sulle
+  // buone notizie e' un colore che si impara a ignorare.
+  ok('+3 e\' ambra, non rosso',                  _biaColDelta(3), 'var(--amber)');
+  ok('un ammanco resta rosso',                   _biaColDelta(-66), 'var(--red)');
+  ok('in pari resta verde',                      _biaColDelta(0), 'var(--green)');
+
+  _bia = _prima; _biaHotel = _prevHotel;
+})();

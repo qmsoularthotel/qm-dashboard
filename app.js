@@ -14427,13 +14427,53 @@ function _biaSommaConsumi(hotel,dal,al){
   });
   return out;
 }
+// Il giro precedente della STESSA struttura. Estratto da _biaAtteso perché lo storico ha
+// bisogno anche della sua DATA: "attesi 318" da solo non si può verificare, "318 attesi,
+// consegnati il 29/08" sì.
+function _biaGiroPrec(hotel,dataGiro){
+  const d=_biaParse(dataGiro);if(!d)return null;
+  const prec=_biaGiri(hotel).filter(g=>{const gd=_biaParse(g.data);return gd&&gd<d;});
+  return prec.length?prec[prec.length-1]:null;
+}
 // Quanto Raimondo deve riportare a questo giro = lo sporco che gli è stato consegnato
 // al giro precedente. null quando non c'è un giro precedente con cui confrontarsi.
 function _biaAtteso(hotel,dataGiro){
-  const d=_biaParse(dataGiro);if(!d)return null;
-  const prec=_biaGiri(hotel).filter(g=>{const gd=_biaParse(g.data);return gd&&gd<d;});
-  if(!prec.length)return null;
-  return prec[prec.length-1].consegnato||null;
+  const p=_biaGiroPrec(hotel,dataGiro);
+  return p?(p.consegnato||null):null;
+}
+// Tutti i giri di TUTTE le strutture, dal più recente. I sacchi sono fisicamente separati
+// e i calcoli restano per struttura (_biaAtteso guarda sempre il giro precedente dello
+// stesso hotel), ma lo storico va letto insieme: quello che Raimondo riporta lo si
+// controlla su entrambe, non una linguetta alla volta.
+function _biaGiriTutti(){
+  return _bia.giri.slice().sort((a,b)=>(_biaParse(b.data)||0)-(_biaParse(a.data)||0));
+}
+// Riga di storico già calcolata. `att` e `prec` vengono SEMPRE dall'hotel del giro, mai
+// da quello selezionato a schermo: mescolare le due strutture qui produrrebbe ammanchi
+// inventati, ed è l'errore facile ora che l'elenco le mostra insieme.
+function _biaRigaGiro(g){
+  const hotel=_biaH(g);
+  const prec=_biaGiroPrec(hotel,g.data);
+  const att=prec?(prec.consegnato||null):null;
+  const portato=_biaTot(g.ricevuto);
+  const dovuto=att?_biaTot(att):null;
+  return{hotel:hotel,data:g.data,portato:portato,dovuto:dovuto,
+         uscito:_biaTot(g.consegnato),
+         dataPrec:prec?prec.data:null,
+         delta:dovuto===null?null:portato-dovuto};
+}
+// Riepilogo per struttura: quanto ha portato in tutto e quanto avrebbe dovuto. Somma
+// SOLO i giri che hanno un termine di confronto, gli stessi che _biaSaldo conta — così
+// portato − dovuto coincide sempre col saldo mostrato sopra, invece di divergere di un
+// giro senza che si capisca perché.
+function _biaRiepilogoPortato(hotel){
+  let portato=0,dovuto=0,confrontati=0,senzaConfronto=0;
+  _biaGiri(hotel).forEach(g=>{
+    const r=_biaRigaGiro(g);
+    if(r.dovuto===null){senzaConfronto++;return;}
+    portato+=r.portato;dovuto+=r.dovuto;confrontati++;
+  });
+  return{portato:portato,dovuto:dovuto,confrontati:confrontati,senzaConfronto:senzaConfronto,saldo:portato-dovuto};
 }
 // Saldo cumulato per voce: quanto manca sommando tutti i giri chiusi. Un singolo giro
 // può tornare in pari per caso; è la somma nel tempo che dice se c'è una perdita
@@ -14519,6 +14559,13 @@ async function biaEliminaGiro(id){
 // questo pannello: aggiornare i pezzi che cambiano, mai ridisegnare tutto sotto le dita.
 let _biaAttesoVis=null;   // atteso della tabella attualmente a schermo
 
+// Scala di colore di una differenza, UNA SOLA volta per tutti i punti che la mostrano
+// (tabella del giro, storico, saldo cumulato): in pari verde, mancante rosso, rientro in
+// più AMBRA. Il "+3" del 25/08 era dipinto di rosso come un ammanco: un colore che grida
+// anche quando la notizia è buona è un colore che si impara a ignorare.
+function _biaColDelta(d){return d===0?'var(--green)':(d<0?'var(--red)':'var(--amber)');}
+function _biaTxtDelta(d){return d===0?'in pari':(d>0?'+'+d:String(d));}
+
 function _biaMsgDiff(tot){
   if(!tot)return'';
   return tot<0
@@ -14536,7 +14583,7 @@ function biaAggiornaDelta(){
     const d=(Number(er.value)||0)-(Number(att[v])||0);
     tot+=d;
     cella.textContent=d>0?'+'+d:String(d);
-    cella.style.color=d===0?'var(--green)':'var(--red)';
+    cella.style.color=_biaColDelta(d);
     const tr=er.closest?er.closest('tr'):null;
     if(tr)tr.style.background=d===0?'':'rgba(192,53,42,.06)';
   });
@@ -14727,7 +14774,7 @@ function biaRender(){
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));">${esc(v)}</td>
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;color:var(--text-dim);">${att===null?'—':att}</td>
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-r-${i}" value="${ric}" oninput="biaAggiornaDelta()" onfocus="this.select()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
-      <td id="bia-d-${i}" style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;font-weight:700;color:${d===null?'var(--text-dim)':(d===0?'var(--green)':'var(--red)')};">${d===null?'—':(d>0?'+'+d:d)}</td>
+      <td id="bia-d-${i}" style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;font-weight:700;color:${d===null?'var(--text-dim)':_biaColDelta(d)};">${d===null?'—':(d>0?'+'+d:d)}</td>
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-s-${i}" value="${spo}" onfocus="this.select()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
     </tr>`;
   });
@@ -14764,24 +14811,50 @@ function biaRender(){
 
   // ── Storico ──
   // Chiuso di default: serve per controllare o ristampare, non nell'uso quotidiano.
-  if(giri.length||_biaConsumi().length){
+  if(_bia.giri.length||_biaConsumi().length){
     h+=`<div style="margin-bottom:${_biaStorico?'16px':'0'};">
       <button onclick="biaToggleStorico()" style="background:none;border:none;padding:0;font-size:var(--fs-xs);color:var(--accent);font-weight:600;cursor:pointer;">Storico e ristampe ${_biaStorico?'▴':'▾'}</button>
     </div>`;
   }
-  if(giri.length&&_biaStorico){
-    h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Giri registrati</span></div><div class="panel-body" style="padding:0;">`;
-    giri.slice().reverse().forEach(g=>{
-      const att=_biaAtteso(_biaHotel,g.data);
-      const d=att?BIA_VOCI.reduce((s,v)=>s+((Number(g.ricevuto[v])||0)-(Number(att[v])||0)),0):null;
-      h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
-        <span style="font-weight:700;">${esc(g.data)}</span>
-        <span style="color:var(--text-dim);">consegnati ${_biaTot(g.consegnato)} · ricevuti ${_biaTot(g.ricevuto)}</span>
-        ${d===null?'':`<span style="font-weight:700;color:${d===0?'var(--green)':'var(--red)'};">${d===0?'in pari':(d>0?'+'+d:d)}</span>`}
-        <span style="margin-left:auto;display:flex;gap:6px;">
-          <button onclick="biaPrintDistinta('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Distinta</button>
-          <button onclick="biaEliminaGiro('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
-        </span>
+  // Lo storico copre ENTRAMBE le strutture, non solo la linguetta aperta: è quello che
+  // serve per controllare Raimondo, che è lo stesso fornitore per tutte e due. I calcoli
+  // restano per struttura — ogni riga passa da _biaRigaGiro, che guarda sempre il giro
+  // precedente del PROPRIO hotel.
+  const tutti=_biaGiriTutti();
+  if(tutti.length&&_biaStorico){
+    h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Cosa ha portato Raimondo — tutte e due le strutture</span></div><div class="panel-body" style="padding:0;">`;
+    // Riepilogo in testa: il totale di quanto ha riportato contro quanto doveva, per
+    // struttura. È la domanda "quanto mi porta davvero", che riga per riga non si legge.
+    h+=`<div style="display:flex;gap:10px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface2,var(--surface));">`;
+    Object.keys(BIA_HOTELS).forEach(k=>{
+      const r=_biaRiepilogoPortato(k);
+      if(!r.confrontati&&!r.senzaConfronto)return;
+      h+=`<div style="flex:1;min-width:210px;">
+        <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;">${esc(BIA_HOTELS[k])}</div>
+        ${r.confrontati?`<div style="font-size:var(--fs-xs);margin-top:4px;line-height:1.5;">ha portato <strong>${r.portato}</strong> pezzi su <strong>${r.dovuto}</strong> attesi
+          <span style="font-weight:700;color:${_biaColDelta(r.saldo)};">· ${_biaTxtDelta(r.saldo)}</span></div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">su ${r.confrontati} giri confrontabili${r.senzaConfronto?` (${r.senzaConfronto} senza termine di confronto)`:''}</div>`
+        :`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;line-height:1.5;">nessun giro ancora confrontabile: serve un giro precedente da cui sapere cosa doveva riportare.</div>`}
+      </div>`;
+    });
+    h+=`</div>`;
+    tutti.forEach(g=>{
+      const r=_biaRigaGiro(g);
+      h+=`<div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-weight:700;">${esc(r.data)}</span>
+          <span style="background:var(--accent-bg);color:var(--accent);border-radius:5px;padding:2px 7px;font-size:var(--fs-xxs);font-weight:700;">${esc(BIA_HOTELS[r.hotel]||r.hotel)}</span>
+          <span>ha portato <strong>${r.portato}</strong></span>
+          ${r.dovuto===null
+            ?`<span style="color:var(--text-dim);">primo giro: niente con cui confrontarlo</span>`
+            :`<span style="color:var(--text-dim);">su ${r.dovuto} attesi — i sacchi del ${esc(r.dataPrec)}</span>
+              <span style="font-weight:700;color:${_biaColDelta(r.delta)};">${_biaTxtDelta(r.delta)}</span>`}
+          <span style="margin-left:auto;display:flex;gap:6px;">
+            <button onclick="biaPrintDistinta('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Distinta</button>
+            <button onclick="biaEliminaGiro('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
+          </span>
+        </div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">sacchi dati a lui quel giorno: ${r.uscito} — tornano al giro dopo, non contano in questa riga</div>
       </div>`;
     });
     h+=`</div></div>`;
@@ -14790,7 +14863,7 @@ function biaRender(){
   // ── Consumi registrati di recente ──
   const rec=_biaConsumi().slice().sort((a,b)=>(_biaParse(b.data)||0)-(_biaParse(a.data)||0)).slice(0,14);
   if(rec.length&&_biaStorico){
-    h+=`<div class="panel" style="margin-top:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti</span></div><div class="panel-body" style="padding:0;">`;
+    h+=`<div class="panel" style="margin-top:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti — ${esc(BIA_HOTELS[_biaHotel])}</span></div><div class="panel-body" style="padding:0;">`;
     rec.forEach(c=>{
       h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
         <span style="font-weight:600;">${esc(c.data)}</span>
