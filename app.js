@@ -702,7 +702,7 @@ function turniRenderArchivio(){
     const altri=Object.keys(tutti).filter(n=>fo.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
     const intesta=giorni.map(g=>{
       const d=new Date(g.data+'T12:00:00');
-      return `<th style="text-align:center;padding:6px 4px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;white-space:nowrap;">${GIORNI[d.getDay()]}<div style="font-weight:400;color:var(--text-dim);">${gg(g.data)}</div></th>`;
+      return `<th style="text-align:center;padding:6px 4px;border-bottom:1px solid var(--border);border-left:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;white-space:nowrap;">${GIORNI[d.getDay()]}<div style="font-weight:400;color:var(--text-dim);">${gg(g.data)}</div></th>`;
     }).join('');
     const cella=(nome,g)=>{
       const cod=(g.shifts||{})[nome];
@@ -716,13 +716,13 @@ function turniRenderArchivio(){
       else if(nrm.tipo==='ferie')stile='color:var(--red);font-weight:600;';
       else if(nrm.tipo==='malattia')stile='color:var(--red);font-weight:600;';
       else if(nrm.tipo==='altro')stile='color:var(--text-muted);';
-      return `<td style="padding:6px 4px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;font-size:var(--fs-xs);${stile}white-space:nowrap;">${testo}</td>`;
+      return `<td style="padding:6px 4px;border-bottom:1px solid var(--border-light,var(--border));border-left:1px solid var(--border);text-align:center;font-size:var(--fs-xs);${stile}white-space:nowrap;">${testo}</td>`;
     };
-    const riga=(n,grigia)=>`<tr${grigia?' style="background:var(--bg);"':''}><td style="padding:6px 9px;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);font-weight:600;white-space:nowrap;">${esc(n)}</td>${giorni.map(g=>cella(n,g)).join('')}</tr>`;
+    const riga=(n,grigia)=>`<tr${grigia?' style="background:var(--bg);"':''}><td style="padding:6px 9px;border-bottom:1px solid var(--border-light,var(--border));border-right:2px solid var(--border);font-size:var(--fs-xs);font-weight:600;white-space:nowrap;">${esc(n)}</td>${giorni.map(g=>cella(n,g)).join('')}</tr>`;
     const separa=l=>`<tr><td colspan="${giorni.length+1}" style="padding:6px 9px;background:var(--surface2);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:700;">${l}</td></tr>`;
     corpo=`<div style="overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;min-width:520px;">
-        <thead><tr><th style="text-align:left;padding:6px 9px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;">Persona</th>${intesta}</tr></thead>
+        <thead><tr><th style="text-align:left;padding:6px 9px;border-bottom:1px solid var(--border);border-right:2px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;">Persona</th>${intesta}</tr></thead>
         <tbody>
           ${turniOrdina(fo).map(n=>riga(n)).join('')}
           ${altri.length?separa('Housekeeping e altri')+altri.map(n=>riga(n,true)).join(''):''}
