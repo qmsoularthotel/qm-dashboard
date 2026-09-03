@@ -12635,6 +12635,20 @@ function prestaySetMailCfg(campo,val){
 // window.scrollY non ha effetto. Tutto ciò che tocca lo scorrimento in questa sezione deve
 // passare da qui.
 function _psScroller(){return document.querySelector('.content');}
+// Porta un elemento in cima alla vista. Il prefisso _ps di _psScroller è storico (nasce
+// col pre-stay) ma il contenitore che scorre è UNO SOLO per tutta la dashboard, quindi
+// questo helper è generico e lo usa anche la Biancheria. Il doppio giro non è di troppo:
+// aprendo un pannello il layout si assesta al frame successivo e la prima misura sarebbe
+// quella di prima dell'espansione.
+function _qmPortaInVista(id,margine){
+  const c=_psScroller();if(!c)return;
+  const porta=()=>{
+    const el=document.getElementById(id);
+    if(el)c.scrollTop=Math.max(0,el.offsetTop-c.offsetTop-(margine||8));
+  };
+  porta();
+  requestAnimationFrame(porta);
+}
 // Conserva la posizione: usato quando il ridisegno non deve spostare l'occhio.
 function _psSenzaSalto(fn){
   const c=_psScroller(),y=c?c.scrollTop:0;
@@ -14237,10 +14251,6 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 // consumate 26 federe, sono 26 le federe che escono.
 const BIA_KEY='qm_biancheria';
 const BIA_HOTELS={sa:'SoulArt Hotel',bh:'Boutique Hotel Piazza Carità'};
-// Nome corto per le pastiglie dello storico: per intero, "Boutique Hotel Piazza Carità"
-// mangiava la riga e mandava i pulsanti a capo da soli. Il nome completo resta ovunque
-// serva identificare la struttura senza ambiguità (intestazioni, riepilogo, stampa).
-const BIA_HOTEL_BREVE={sa:'SoulArt',bh:'Boutique'};
 // Le sette voci dei fogli camera, nell'ordine in cui le cameriere le trovano sul
 // cartaceo: inserire i numeri seguendo lo stesso ordine riduce gli errori di battitura.
 // L'ordine è solo di presentazione — i dati salvati sono indicizzati per NOME, quindi
@@ -14268,8 +14278,6 @@ let _biaGuida=false, _biaStorico=false;
 // È un insieme e non un id solo: due strutture nello stesso giorno si confrontano bene
 // solo tenendole aperte insieme.
 let _biaGiroAperto=new Set(), _biaVociAperte=false;
-function biaToggleGiro(id){_biaGiroAperto.has(id)?_biaGiroAperto.delete(id):_biaGiroAperto.add(id);biaRender();}
-function biaToggleVoci(){_biaVociAperte=!_biaVociAperte;biaRender();}
 function biaToggleGuida(){_biaGuida=!_biaGuida;biaRender();}
 // Promemoria in Overview: il pomeriggio prima di un ritiro, finché la distinta non è
 // stampata. Legge da localStorage e non dal cloud — deve poter girare a ogni render
@@ -14294,7 +14302,18 @@ function biaRenderPromemoria(){
     <button onclick="setView('biancheria')" style="background:var(--amber);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;">Prepara la distinta</button>
   </div>`;
 }
-function biaToggleStorico(){_biaStorico=!_biaStorico;biaRender();}
+// Aprendo lo storico la pagina si allungava ma il pannello restava sotto il bordo dello
+// schermo: bisognava scorrere a mano per vedere quello che si era appena chiesto. Ora si
+// porta in vista. Chiudendolo si resta dov'era il pulsante, senza salti.
+function biaToggleStorico(){
+  _biaStorico=!_biaStorico;
+  biaRender();
+  if(_biaStorico)_qmPortaInVista('bia-storico',12);
+}
+// Aprire il dettaglio di una riga (o quello per tipologia) NON deve spostare l'occhio:
+// si sta guardando quella riga, e un salto la porterebbe via proprio mentre la si legge.
+function biaToggleGiro(id){_biaGiroAperto.has(id)?_biaGiroAperto.delete(id):_biaGiroAperto.add(id);_psSenzaSalto(biaRender);}
+function biaToggleVoci(){_biaVociAperte=!_biaVociAperte;_psSenzaSalto(biaRender);}
 const _biaH=x=>x.hotel||'sa';
 
 function _biaUid(){return Date.now()+'_'+Math.random().toString(36).slice(2,8);}
@@ -14506,6 +14525,19 @@ function _biaTotPerVoce(hotel){
   });
   out.forEach(r=>r.delta=r.portato-r.dovuto);
   return out;
+}
+// La serie storica di una struttura, per il report alla direzione: un giro per riga, in
+// ordine cronologico, con la RESA (quanto è tornato in proporzione a quanto era uscito) e
+// il cumulato. La resa è la misura che rende confrontabili giri di dimensione diversa: un
+// −20 su 100 pezzi e un −20 su 500 non sono lo stesso fatto, e il solo saldo non lo dice.
+// Restano fuori i giri senza termine di confronto, come in _biaSaldo e _biaRiepilogoPortato.
+function _biaAndamento(hotel){
+  let cum=0;
+  return _biaGiri(hotel).map(g=>_biaRigaGiro(g)).filter(r=>r.dovuto!==null).map(r=>{
+    cum+=r.delta;
+    return{data:r.data,dataPrec:r.dataPrec,portato:r.portato,dovuto:r.dovuto,delta:r.delta,
+           resa:r.dovuto>0?r.portato/r.dovuto:null,cumulato:cum};
+  });
 }
 // Riepilogo per struttura: quanto ha portato in tutto e quanto avrebbe dovuto. Somma
 // SOLO i giri che hanno un termine di confronto, gli stessi che _biaSaldo conta — così
@@ -14883,75 +14915,64 @@ function biaRender(){
   // ── Storico ──
   // Chiuso di default: serve per controllare o ristampare, non nell'uso quotidiano.
   if(_bia.giri.length||_biaConsumi().length){
-    h+=`<div style="margin-bottom:${_biaStorico?'16px':'0'};">
+    h+=`<div id="bia-storico" style="margin-bottom:${_biaStorico?'16px':'0'};display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
       <button onclick="biaToggleStorico()" style="background:none;border:none;padding:0;font-size:var(--fs-xs);color:var(--accent);font-weight:600;cursor:pointer;">Storico e ristampe ${_biaStorico?'▴':'▾'}</button>
+      ${_bia.giri.length?`<button onclick="biaPrintAndamento()" style="background:var(--surface);color:var(--accent);border:1.5px solid var(--border);padding:6px 13px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">Report andamento per la direzione</button>`:''}
     </div>`;
   }
-  // Lo storico copre ENTRAMBE le strutture, non solo la linguetta aperta: è quello che
-  // serve per controllare Raimondo, che è lo stesso fornitore per tutte e due. I calcoli
-  // restano per struttura — ogni riga passa da _biaRigaGiro, che guarda sempre il giro
-  // precedente del PROPRIO hotel.
-  const tutti=_biaGiriTutti();
-  if(tutti.length&&_biaStorico){
-    h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Cosa ha portato Raimondo — tutte e due le strutture</span></div><div class="panel-body" style="padding:0;">`;
-    // Riepilogo in testa: il totale di quanto ha riportato contro quanto doveva, per
-    // struttura. È la domanda "quanto mi porta davvero", che riga per riga non si legge.
-    h+=`<div style="display:flex;gap:10px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface2,var(--surface));">`;
-    Object.keys(BIA_HOTELS).forEach(k=>{
+  // Lo storico copre ENTRAMBE le strutture, ma RAGGRUPPATE, non mescolate per data.
+  // Mescolarle sembrava dare più informazione e invece ne toglieva: la catena di confronto
+  // è per struttura (ogni giro si confronta col precedente del PROPRIO hotel), quindi due
+  // righe della stessa data — "03/09 SoulArt … i sacchi del 01/09" seguita da "03/09
+  // Boutique … i sacchi del 01/09" — si leggevano come la stessa cosa scritta due volte, e
+  // seguire la serie di una struttura sola voleva dire saltare una riga sì e una no.
+  if(_bia.giri.length&&_biaStorico){
+    h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Cosa ha portato Raimondo</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">le due strutture hanno sacchi e conti separati</span></div>
+      <div class="panel-body" style="padding:0;">`;
+    Object.keys(BIA_HOTELS).forEach((k,iH)=>{
+      const righe=_biaGiri(k).slice().reverse();
+      if(!righe.length)return;
       const r=_biaRiepilogoPortato(k);
-      if(!r.confrontati&&!r.senzaConfronto)return;
-      h+=`<div style="flex:1;min-width:210px;">
-        <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;">${esc(BIA_HOTELS[k])}</div>
-        ${r.confrontati?`<div style="font-size:var(--fs-xs);margin-top:4px;line-height:1.5;">ha portato <strong>${r.portato}</strong> pezzi su <strong>${r.dovuto}</strong> attesi
-          <span style="font-weight:700;color:${_biaColDelta(r.saldo)};">· ${_biaTxtDelta(r.saldo)}</span></div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;">su ${r.confrontati} giri confrontabili${r.senzaConfronto?` (${r.senzaConfronto} senza termine di confronto)`:''}</div>`
-        :`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;line-height:1.5;">nessun giro ancora confrontabile: serve un giro precedente da cui sapere cosa doveva riportare.</div>`}
+      // Intestazione della struttura: nome, totale e saldo. È il blocco che rende leggibile
+      // il raggruppamento — senza, due elenchi di seguito sembrerebbero uno solo.
+      h+=`<div style="padding:12px 14px;background:var(--surface2,var(--surface));border-bottom:1px solid var(--border);${iH?'border-top:2px solid var(--border);':''}">
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:var(--fs-sm);font-weight:700;">${esc(BIA_HOTELS[k])}</span>
+          ${r.confrontati
+            ?`<span style="font-size:var(--fs-xs);color:var(--text-dim);">ha portato <strong style="color:var(--text);">${r.portato}</strong> pezzi su <strong style="color:var(--text);">${r.dovuto}</strong> attesi</span>
+              <span style="font-size:var(--fs-sm);font-weight:700;color:${_biaColDelta(r.saldo)};">${_biaTxtDelta(r.saldo)}</span>`
+            :`<span style="font-size:var(--fs-xxs);color:var(--text-dim);">nessun giro ancora confrontabile</span>`}
+        </div>
+        ${r.confrontati?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">su ${r.confrontati} giri confrontabili${r.senzaConfronto?` (${r.senzaConfronto} senza termine di confronto)`:''}</div>
+        <button onclick="biaToggleVoci()" style="background:none;border:none;padding:0;margin-top:6px;font-size:var(--fs-xxs);color:var(--accent);font-weight:700;cursor:pointer;">${_biaVociAperte?'Nascondi il dettaglio per tipologia ▴':'Cosa porta, per tipologia ▾'}</button>
+        ${_biaVociAperte?_biaTabellaVoci(_biaTotPerVoce(k),true):''}`:''}
       </div>`;
-    });
-    h+=`</div>`;
-    // Il dettaglio aggregato sta SOTTO il suo pulsante, non sopra: un interruttore che
-    // compare dopo la cosa che apre non si capisce a cosa serva.
-    h+=`<div style="padding:0 14px 12px;border-bottom:1px solid var(--border);background:var(--surface2,var(--surface));">
-      <button onclick="biaToggleVoci()" style="background:none;border:none;padding:0;font-size:var(--fs-xxs);color:var(--accent);font-weight:700;cursor:pointer;">${_biaVociAperte?'Nascondi il dettaglio per tipologia ▴':'Cosa porta, per tipologia ▾'}</button>`;
-    if(_biaVociAperte){
-      h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.5;">Somma di tutti i giri confrontabili: dice su quali pezzi si concentra la differenza, che il totale da solo non può dire.</div>
-        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;">`;
-      Object.keys(BIA_HOTELS).forEach(k=>{
-        const r=_biaRiepilogoPortato(k);
-        if(!r.confrontati)return;
-        h+=`<div style="flex:1;min-width:250px;">
-          <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;">${esc(BIA_HOTELS[k])}</div>
-          ${_biaTabellaVoci(_biaTotPerVoce(k),true)}
+      righe.forEach(g=>{
+        const rg=_biaRigaGiro(g);
+        const aperto=_biaGiroAperto.has(g.id);
+        // Pulsanti FUORI dal flex che va a capo: dentro finivano su una riga tutta loro,
+        // staccati dalla riga che comandano.
+        h+=`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+              <span style="font-weight:700;">${esc(rg.data)}</span>
+              <span>ha portato <strong>${rg.portato}</strong></span>
+              ${rg.dovuto===null
+                ?`<span style="color:var(--text-dim);">primo giro: niente con cui confrontarlo</span>`
+                :`<span style="color:var(--text-dim);">su ${rg.dovuto} attesi — i sacchi del ${esc(rg.dataPrec)}</span>
+                  <span style="font-weight:700;color:${_biaColDelta(rg.delta)};">${_biaTxtDelta(rg.delta)}</span>`}
+            </div>
+            <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">sacchi dati a lui quel giorno: ${rg.uscito} — tornano al giro dopo, non contano in questa riga</div>
+            ${aperto?_biaTabellaVoci(_biaDettaglioGiro(g),rg.dovuto!==null):''}
+          </div>
+          <div style="flex-shrink:0;display:flex;gap:6px;">
+            <button onclick="biaToggleGiro('${g.id}')" style="background:${aperto?'var(--accent)':'none'};border:1px solid ${aperto?'var(--accent)':'var(--border)'};border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:${aperto?'#fff':'var(--accent)'};cursor:pointer;white-space:nowrap;">Cosa ha portato ${aperto?'▴':'▾'}</button>
+            <button onclick="biaPrintDistinta('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Distinta</button>
+            <button onclick="biaEliminaGiro('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
+          </div>
         </div>`;
       });
-      h+=`</div>`;
-    }
-    h+=`</div>`;
-    tutti.forEach(g=>{
-      const r=_biaRigaGiro(g);
-      const aperto=_biaGiroAperto.has(g.id);
-      // Pulsanti FUORI dal flex che va a capo: dentro, con la pastiglia lunga del
-      // Boutique finivano su una riga tutta loro, staccati dalla riga che comandano.
-      h+=`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
-            <span style="font-weight:700;">${esc(r.data)}</span>
-            <span style="background:var(--accent-bg);color:var(--accent);border-radius:5px;padding:2px 7px;font-size:var(--fs-xxs);font-weight:700;">${esc(BIA_HOTEL_BREVE[r.hotel]||r.hotel)}</span>
-            <span>ha portato <strong>${r.portato}</strong></span>
-            ${r.dovuto===null
-              ?`<span style="color:var(--text-dim);">primo giro: niente con cui confrontarlo</span>`
-              :`<span style="color:var(--text-dim);">su ${r.dovuto} attesi — i sacchi del ${esc(r.dataPrec)}</span>
-                <span style="font-weight:700;color:${_biaColDelta(r.delta)};">${_biaTxtDelta(r.delta)}</span>`}
-          </div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">sacchi dati a lui quel giorno: ${r.uscito} — tornano al giro dopo, non contano in questa riga</div>
-          ${aperto?_biaTabellaVoci(_biaDettaglioGiro(g),r.dovuto!==null):''}
-        </div>
-        <div style="flex-shrink:0;display:flex;gap:6px;">
-          <button onclick="biaToggleGiro('${g.id}')" style="background:${aperto?'var(--accent)':'none'};border:1px solid ${aperto?'var(--accent)':'var(--border)'};border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:${aperto?'#fff':'var(--accent)'};cursor:pointer;white-space:nowrap;">Cosa ha portato ${aperto?'▴':'▾'}</button>
-          <button onclick="biaPrintDistinta('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Distinta</button>
-          <button onclick="biaEliminaGiro('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
-        </div>
-      </div>`;
     });
     h+=`</div></div>`;
   }
@@ -14976,6 +14997,110 @@ function biaRender(){
 // Distinta di consegna A4 — il documento che oggi manca. Senza id stampa il giro
 // impostato nel form (anche non ancora registrato, così la si può portare già compilata
 // al momento del ritiro); con un id ristampa un giro dello storico.
+// ── Report andamento per la direzione ──
+// Diverso dalla distinta: quella è il documento che Raimondo firma, questo è il foglio da
+// portare in riunione. Racconta la SERIE, non il singolo giro — quanto è tornato nel tempo,
+// se la perdita è occasionale o continua, e su quali pezzi si concentra.
+// Sobrio di proposito, come la distinta: testo nero e filetti, nessun fondo pieno. Si
+// stampa a colori o in bianco e nero senza perdere niente, e non consuma toner.
+// Oltre una quindicina di barre su 470pt diventano stanghette illeggibili: il grafico
+// mostra gli ultimi giri e lo dichiara nel titolo, la tabella sotto li elenca comunque tutti.
+const BIA_GRAF_MAX=15;
+function _biaGraficoResa(serie,largh,alt){
+  if(!serie.length)return'';
+  // Un grafico a barre disegnato a mano: nessuna libreria, deve funzionare dentro un
+  // documento aperto con window.open. La linea al 100% è il riferimento — sopra è rientrato
+  // più di quanto era uscito, sotto manca qualcosa.
+  const max=Math.max(120,...serie.map(r=>Math.round((r.resa||0)*100)+5));
+  const y=v=>alt-(v/max)*alt;
+  const passo=largh/serie.length, w=Math.min(38,passo*0.6);
+  let g=`<svg width="${largh}" height="${alt+22}" style="display:block;">`;
+  [50,100].forEach(v=>{
+    g+=`<line x1="0" y1="${y(v)}" x2="${largh}" y2="${y(v)}" stroke="${v===100?'#111':'#ccc'}" stroke-width="${v===100?1:0.5}" ${v===100?'':'stroke-dasharray="3 3"'}/>`;
+    g+=`<text x="${largh-2}" y="${y(v)-3}" font-size="7" fill="#555" text-anchor="end">${v}%</text>`;
+  });
+  serie.forEach((r,i)=>{
+    const v=Math.round((r.resa||0)*100), x=i*passo+(passo-w)/2, yy=y(v);
+    g+=`<rect x="${x}" y="${yy}" width="${w}" height="${alt-yy}" fill="${v>=100?'#ddd':'#999'}" stroke="#111" stroke-width="0.5"/>`;
+    // Nessun numero sulla barra: la tabella qui sotto porta il valore esatto, e una barra
+    // etichettata "99%" accanto a un "98,5%" in tabella fa sembrare sbagliato il documento.
+    // Il grafico serve alla FORMA dell'andamento, i numeri li dà la tabella.
+    g+=`<text x="${x+w/2}" y="${alt+12}" font-size="7" fill="#555" text-anchor="middle">${r.data.slice(0,5)}</text>`;
+  });
+  return g+'</svg>';
+}
+function biaPrintAndamento(){
+  if(!_bia.giri.length){cqAvviso('Non c\'è ancora nessun giro registrato.');return;}
+  const esc=x=>String(x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const pc=v=>v===null?'—':(Math.round(v*1000)/10).toFixed(1).replace('.',',')+'%';
+  const sg=n=>n>0?'+'+n:String(n);
+  let corpo='',totP=0,totD=0,nConf=0;
+  Object.keys(BIA_HOTELS).forEach(k=>{
+    const serie=_biaAndamento(k), rp=_biaRiepilogoPortato(k);
+    if(!_biaGiri(k).length)return;
+    totP+=rp.portato;totD+=rp.dovuto;nConf+=rp.confrontati;
+    corpo+=`<div class="sez"><div class="sez-t">${esc(BIA_HOTELS[k])}</div>`;
+    if(!serie.length){
+      corpo+=`<p class="nota">Nessun giro confrontabile: serve almeno un giro precedente da cui sapere cosa doveva rientrare.</p></div>`;
+      return;
+    }
+    const resa=rp.dovuto>0?rp.portato/rp.dovuto:null;
+    corpo+=`<div class="kpi">
+      <div><div class="k-l">Giri considerati</div><div class="k-v">${rp.confrontati}</div></div>
+      <div><div class="k-l">Doveva riportare</div><div class="k-v">${rp.dovuto}</div></div>
+      <div><div class="k-l">Ha riportato</div><div class="k-v">${rp.portato}</div></div>
+      <div><div class="k-l">Differenza</div><div class="k-v">${sg(rp.saldo)}</div></div>
+      <div><div class="k-l">Resa</div><div class="k-v">${pc(resa)}</div></div>
+    </div>
+    <div class="g-t">Resa per giro — quanto è rientrato rispetto a quanto era uscito${serie.length>BIA_GRAF_MAX?` (ultimi ${BIA_GRAF_MAX} giri)`:''}</div>
+    <div class="graf">${_biaGraficoResa(serie.slice(-BIA_GRAF_MAX),470,86)}</div>
+    <table><thead><tr><th>Giro del</th><th class="r">Doveva riportare</th><th class="r">Ha riportato</th><th class="r">Differenza</th><th class="r">Resa</th><th class="r">Cumulato</th></tr></thead><tbody>
+      ${serie.map(r=>`<tr><td>${esc(r.data)}</td><td class="r">${r.dovuto}</td><td class="r">${r.portato}</td><td class="r">${sg(r.delta)}</td><td class="r">${pc(r.resa)}</td><td class="r">${sg(r.cumulato)}</td></tr>`).join('')}
+    </tbody></table>
+    <div class="g-t">Dove si concentra la differenza</div>
+    <table><thead><tr><th>Tipologia</th><th class="r">Doveva riportare</th><th class="r">Ha riportato</th><th class="r">Differenza</th><th class="r">Resa</th></tr></thead><tbody>
+      ${_biaTotPerVoce(k).filter(r=>r.dovuto||r.portato).map(r=>`<tr><td>${esc(r.voce)}</td><td class="r">${r.dovuto}</td><td class="r">${r.portato}</td><td class="r">${sg(r.delta)}</td><td class="r">${pc(r.dovuto>0?r.portato/r.dovuto:null)}</td></tr>`).join('')}
+    </tbody></table></div>`;
+  });
+  const resaTot=totD>0?totP/totD:null;
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Biancheria — andamento consegne</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;font-size:10pt;}
+@page{size:A4;margin:15mm;}
+.hdr{border-bottom:1.5px solid #111;padding-bottom:9px;margin-bottom:13px;display:flex;justify-content:space-between;align-items:baseline;}
+.title{font-size:14pt;font-weight:700;}
+.sub{font-size:8.5pt;color:#555;margin-top:2px;}
+.intro{border:1px solid #999;padding:8px 10px;margin-bottom:14px;font-size:8.5pt;line-height:1.6;color:#333;}
+.sez{margin-bottom:18px;}
+.kpi,.graf{page-break-inside:avoid;}
+tr{page-break-inside:avoid;}
+.sez-t{font-size:11.5pt;font-weight:700;border-bottom:1px solid #111;padding-bottom:4px;margin-bottom:9px;}
+.kpi{display:flex;gap:22px;margin-bottom:12px;}
+.k-l{font-size:7.5pt;text-transform:uppercase;letter-spacing:.04em;color:#555;}
+.k-v{font-size:13pt;font-weight:700;margin-top:1px;}
+.g-t{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;font-weight:700;margin:12px 0 6px;}
+table{width:100%;border-collapse:collapse;margin-bottom:4px;}
+th{text-align:left;font-size:7.5pt;text-transform:uppercase;letter-spacing:.03em;color:#555;border-bottom:1.2px solid #111;padding:5px 5px;font-weight:700;}
+td{padding:5px 5px;border-bottom:1px solid #ccc;font-size:9.5pt;}
+th.r,td.r{text-align:right;}
+.tot{border:1.5px solid #111;padding:9px 11px;margin-top:4px;}
+.nota{font-size:8pt;color:#555;line-height:1.6;margin-top:10px;}
+</style></head><body>
+  <div class="hdr">
+    <div><div class="title">Biancheria — andamento consegne</div><div class="sub">Fornitore Raimondo · ciclo pulito/sporco</div></div>
+    <div class="sub">Stampato il ${esc(_biaFmt(_biaOggi()))}</div>
+  </div>
+  <div class="intro"><strong>Come si legge.</strong> Raimondo ritira i sacchi dello sporco a ogni giro e riporta il pulito al giro successivo: quello che <em>doveva riportare</em> a un giro è quindi esattamente quanto gli era stato consegnato al giro precedente. La <strong>resa</strong> è il rapporto tra i pezzi rientrati e quelli usciti: 100% significa che è tornato tutto. Il <strong>cumulato</strong> somma le differenze nel tempo — è quello che distingue una perdita occasionale da una continua. Le due strutture hanno sacchi, distinte e conti separati.</div>
+  ${corpo}
+  <div class="tot"><strong>Totale gruppo</strong> — su ${nConf} giri confrontabili è rientrato <strong>${totP}</strong> di <strong>${totD}</strong> pezzi usciti: differenza <strong>${sg(totP-totD)}</strong>, resa <strong>${pc(resaTot)}</strong>.</div>
+  <div class="nota">I conteggi dello sporco in uscita sono la somma dei consumi dichiarati ogni giorno dalle cameriere sui fogli camera; quelli del pulito in entrata sono presi dalla distinta del fornitore. Il primo giro registrato di ogni struttura non compare in questo report: non avendo un giro precedente non ha un termine di confronto.</div>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w){cqAvviso('Il browser ha bloccato la finestra di stampa','Consenti le finestre pop-up per questo sito e riprova.');return;}
+  w.document.write(html);w.document.close();
+  setTimeout(()=>{try{w.print();}catch(e){}},400);
+}
 function biaPrintDistinta(giroId){
   const g=giroId?_bia.giri.find(x=>x.id===giroId):null;
   let hotel,data,q,per;

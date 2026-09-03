@@ -1451,3 +1451,88 @@ sez('Biancheria: non solo quanto porta Raimondo, ma COSA');
 
   _bia = _prima; _biaHotel = _prevHotel;
 })();
+
+sez('Biancheria: andamento per la direzione e strutture separate');
+// Lo storico mescolava i giri delle due strutture in ordine di data. Sembrava dare piu'
+// informazione e invece ne toglieva: la catena di confronto e' PER STRUTTURA, quindi due
+// righe della stessa data ("03/09 SoulArt … i sacchi del 01/09" seguita da "03/09 Boutique
+// … i sacchi del 01/09") si leggevano come la stessa cosa scritta due volte.
+(function () {
+  var _prima = _bia, _prevHotel = _biaHotel, _prevSt = _biaStorico;
+  function mk(a) { var o = _biaVuote(); BIA_VOCI_GIRO.forEach(function (v, i) { o[v] = a[i] || 0; }); return o; }
+  _bia = { consumi: [], giri: [
+    { id: 'a', hotel: 'sa', data: '22/08/2026', consegnato: mk([80, 30, 110, 90, 60, 28, 12]), ricevuto: mk([0, 0, 0, 0, 0, 0, 0]), ts: 1 },
+    { id: 'b', hotel: 'sa', data: '25/08/2026', consegnato: mk([75, 28, 105, 85, 58, 26, 11]), ricevuto: mk([78, 30, 108, 88, 60, 28, 12]), ts: 2 },
+    { id: 'c', hotel: 'sa', data: '29/08/2026', consegnato: mk([70, 25, 100, 80, 55, 25, 10]), ricevuto: mk([70, 26, 95, 80, 55, 25, 10]), ts: 3 },
+    { id: 'd', hotel: 'bh', data: '25/08/2026', consegnato: mk([25, 10, 35, 28, 20, 9, 5]), ricevuto: mk([0, 0, 0, 0, 0, 0, 0]), ts: 4 },
+    { id: 'e', hotel: 'bh', data: '29/08/2026', consegnato: mk([22, 9, 30, 25, 18, 8, 4]), ricevuto: mk([23, 10, 32, 26, 19, 9, 5]), ts: 5 }
+  ] };
+  _biaHotel = 'sa';
+
+  // ── La serie per il report ──
+  var serie = _biaAndamento('sa');
+  ok('il primo giro non entra nella serie',      serie.length, 2);
+  ok('parte dal 25/08',                          serie[0].data, '25/08/2026');
+  ok('doveva riportare i sacchi del 22/08',      serie[0].dovuto, 410);
+  ok('ne ha riportati 404',                      serie[0].portato, 404);
+  ok('resa poco sotto il 100%',                  Math.round(serie[0].resa * 1000) / 10, 98.5);
+  ok('il cumulato somma nel tempo',              serie[1].cumulato, serie[0].delta + serie[1].delta);
+  // Il cumulato dell'ultima riga DEVE essere il saldo del pannello: sono lo stesso numero
+  // detto in due posti, e se divergessero il report contraddirebbe la dashboard.
+  ok('e chiude sul saldo del pannello',          serie[serie.length - 1].cumulato, _biaTot(_biaSaldo('sa')));
+  ok('la resa e\' nulla se non era uscito niente',
+     _biaAndamento('sa').concat([{ resa: null }]).slice(-1)[0].resa, null);
+
+  // ── Ogni struttura ha la sua catena ──
+  var sB = _biaAndamento('bh');
+  ok('Boutique: un solo giro confrontabile',     sB.length, 1);
+  ok('confrontato coi SUOI sacchi del 25/08',    sB[0].dovuto, 132);
+  ok('non con i 410 di SoulArt',                 sB[0].dovuto === 410, false);
+  ok('e il suo cumulato e\' il suo saldo',       sB[0].cumulato, _biaTot(_biaSaldo('bh')));
+
+  // ── Il report non inventa e non perde giri ──
+  var somma = function (h, campo) {
+    return _biaAndamento(h).reduce(function (t, r) { return t + r[campo]; }, 0);
+  };
+  ok('SoulArt: portato della serie = riepilogo',  somma('sa', 'portato'), _biaRiepilogoPortato('sa').portato);
+  ok('SoulArt: dovuto della serie = riepilogo',   somma('sa', 'dovuto'), _biaRiepilogoPortato('sa').dovuto);
+  ok('Boutique: portato della serie = riepilogo', somma('bh', 'portato'), _biaRiepilogoPortato('bh').portato);
+
+  // ── Il grafico non etichetta le barre coi numeri ──
+  // Una barra "99%" accanto a un "98,5%" in tabella fa sembrare sbagliato il documento:
+  // il grafico da' la forma, i numeri li da' la tabella.
+  var svg = _biaGraficoResa(serie, 470, 86);
+  ok('il grafico esiste',                        /<rect/.test(svg), true);
+  ok('una barra per giro',                       (svg.match(/<rect/g) || []).length, serie.length);
+  ok('le date sono sotto le barre',              /25\/08/.test(svg), true);
+  // Restano solo le due etichette degli assi (50% e 100%), nessuna sopra le barre.
+  ok('nessuna percentuale sulle barre',          (svg.match(/>\d+%</g) || []).join(','), '>50%<,>100%<');
+
+  // ── Lo storico raggruppa invece di mescolare ──
+  _biaStorico = true; _biaGiroAperto = new Set(); _biaVociAperte = false;
+  var box = { innerHTML: '' }, vero = document.getElementById;
+  document.getElementById = function (id) { return id === 'bia-content' ? box : null; };
+  try { biaRender(); } finally { document.getElementById = vero; }
+  // Si guarda SOLO dentro il pannello dello storico: i nomi delle strutture compaiono gia'
+  // in cima alla pagina nel selettore a linguette, e cercarli nell'intero HTML trovava
+  // quelli invece delle intestazioni dei gruppi.
+  var tuttoIl = box.innerHTML.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+  var testo = tuttoIl.slice(tuttoIl.indexOf('Cosa ha portato Raimondo'));
+  ok('il pannello dello storico c\'e\'',          testo.length > 0, true);
+  var iSA = testo.indexOf('SoulArt Hotel'), iBH = testo.indexOf('Boutique Hotel Piazza Carit');
+  ok('compaiono tutte e due le strutture',       iSA >= 0 && iBH >= 0, true);
+  // Raggruppate: fra l'intestazione SoulArt e quella Boutique ci stanno TUTTI e SOLI i giri
+  // di SoulArt. Si contano le RIGHE (ognuna porta "sacchi dati a lui quel giorno"), non le
+  // date: le due strutture hanno giri negli stessi giorni, quindi una data non distingue
+  // niente — ed e' esattamente il motivo per cui mescolarle era illeggibile.
+  var righeIn = function (t) { return (t.match(/sacchi dati a lui quel giorno/g) || []).length; };
+  ok('prima del Boutique ci sono i 3 giri di SoulArt', righeIn(testo.slice(iSA, iBH)), 3);
+  ok('e dopo i 2 del Boutique',                        righeIn(testo.slice(iBH)), 2);
+  ok('in tutto sono cinque',                           righeIn(testo), 5);
+  ok('c\'e\' il pulsante del report',            /Report andamento per la direzione/.test(box.innerHTML), true);
+  ok('e l\'ancora per portarlo in vista',        /id="bia-storico"/.test(box.innerHTML), true);
+  ok('aprire lo storico porta in vista',         /_qmPortaInVista\('bia-storico'/.test(String(biaToggleStorico)), true);
+  ok('aprire una riga NON sposta l\'occhio',     /_psSenzaSalto/.test(String(biaToggleGiro)), true);
+
+  _bia = _prima; _biaHotel = _prevHotel; _biaStorico = _prevSt;
+})();

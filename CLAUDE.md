@@ -2603,6 +2603,68 @@ Coperto da **24 controlli** ("Biancheria: non solo quanto porta Raimondo, ma COS
 verificati con tre sabotaggi (dovuto dall'hotel sbagliato, primo giro confrontato con se
 stesso, filtro sul solo portato): 3, 6 e 5 falliscono.
 
+### Strutture RAGGRUPPATE, non mescolate per data (03/09/2026)
+
+Mostrare i giri delle due strutture in un unico elenco cronologico sembrava dare più
+informazione e invece ne toglieva: la catena di confronto è **per struttura**, quindi due
+righe della stessa data — *"03/09 SoulArt … i sacchi del 01/09"* seguita da *"03/09 Boutique
+… i sacchi del 01/09"* — si leggevano come la stessa cosa scritta due volte, e seguire la
+serie di una struttura sola voleva dire saltare una riga sì e una no.
+
+Ora il pannello ha **un blocco per struttura**, ciascuno con la sua intestazione, il suo
+totale (`ha portato N su M attesi`) e il suo dettaglio per tipologia. La pastiglia per riga
+è sparita insieme a `BIA_HOTEL_BREVE`: col raggruppamento non serviva più, e lasciarla
+sarebbe stato codice morto.
+
+Un controllo conta le **righe** (`sacchi dati a lui quel giorno`) fra un'intestazione e
+l'altra, non le date: le due strutture hanno giri negli stessi giorni, quindi una data non
+distingue niente — ed è esattamente il motivo per cui mescolarle era illeggibile.
+
+### Aprire un pannello deve portarlo in vista
+
+Cliccando *"Storico e ristampe"* la pagina si allungava ma il pannello restava sotto il
+bordo dello schermo: bisognava scorrere a mano per vedere quello che si era appena chiesto.
+
+**A scorrere non è la finestra ma `.content`** (vedi la regola generale nel pre-stay):
+`_qmPortaInVista(id,margine)` — accanto a `_psScroller`, prefisso `_ps` storico ma
+contenitore unico per tutta la dashboard — porta un elemento in cima alla vista, con il
+doppio giro via `requestAnimationFrame` perché aprendo un pannello il layout si assesta al
+frame successivo e la prima misura sarebbe quella di prima dell'espansione.
+
+Distinzione importante: **aprire lo storico porta in vista, aprire una riga NO**.
+`biaToggleGiro`/`biaToggleVoci` passano da `_psSenzaSalto`: si sta già guardando quella
+riga, e un salto la porterebbe via proprio mentre la si legge.
+
+### Report andamento per la direzione — `biaPrintAndamento()`
+
+Diverso dalla distinta: quella è il documento che Raimondo firma, questo è il foglio da
+portare in riunione. Racconta la **serie**, non il singolo giro.
+
+Per struttura: KPI (giri, dovuto, portato, differenza, **resa**), grafico a barre della resa
+per giro, tabella dei giri con cumulato, tabella per tipologia. In fondo il totale di gruppo.
+
+La **resa** (`portato/dovuto`) è ciò che rende confrontabili giri di dimensione diversa: un
+−20 su 100 pezzi e un −20 su 500 non sono lo stesso fatto, e il solo saldo non lo dice.
+`_biaAndamento(hotel)` produce la serie ed è testabile in isolamento; il suo **cumulato
+finale deve coincidere col saldo del pannello** — sono lo stesso numero detto in due posti,
+e un controllo lo verifica.
+
+Tre scelte da non ribaltare:
+
+- **Le barre non portano il numero.** Una barra etichettata `99%` accanto a un `98,5%` in
+  tabella fa sembrare sbagliato il documento: il grafico dà la **forma** dell'andamento, i
+  numeri li dà la tabella. Nessun arrotondamento può quindi contraddire nulla.
+- **`BIA_GRAF_MAX=15`**: oltre una quindicina di barre su 470pt diventano stanghette
+  illeggibili. Il grafico mostra gli ultimi giri e lo **dichiara nel titolo**; la tabella li
+  elenca comunque tutti.
+- **Nessun fondo pieno**, come la distinta: testo nero e filetti, si stampa in bianco e nero
+  senza perdere niente e non consuma toner. `page-break-inside:avoid` sta su KPI, grafico e
+  singole righe, **non** sull'intera sezione — lì lascerebbe mezza pagina bianca.
+
+Coperto da **28 controlli** ("Biancheria: andamento per la direzione e strutture separate"),
+verificati con quattro sabotaggi (storico rimescolato, cumulato azzerato a ogni giro, serie
+presa da tutte le strutture, scorrimento tolto): 3, 2, 5 e 1 falliscono.
+
 **Attenzione al modello, non toccato qui**: `atteso(N) = consegnato(N−1)` assume che
 Raimondo riporti in **un solo giro**. Sui dati reali di SoulArt il saldo cumulato è −308
 pezzi su 6 giri: se la resa fosse in due giri, tutte quelle differenze sarebbero da
@@ -2625,6 +2687,9 @@ sullo sporco uscito, rientro in più di nuovo rosso): 4, 8 e 1 falliscono.
 | `_biaDettaglioGiro(g)` | Cosa ha portato **voce per voce** in un singolo giro |
 | `_biaTotPerVoce(h)` | Lo stesso sommato sui giri confrontabili: dove si concentra l'ammanco |
 | `_biaTabellaVoci(righe,conf)` | L'unica funzione che disegna la tabella per tipologia |
+| `_biaAndamento(h)` | Serie storica con resa e cumulato, per il report alla direzione |
+| `_biaGraficoResa(serie,l,a)` | Barre della resa, SVG a mano (nessuna libreria nel documento stampato) |
+| `biaPrintAndamento()` | Il report A4 per la direzione |
 | `_biaColDelta(d)` / `_biaTxtDelta(d)` | Unica scala di colore/testo di una differenza |
 | `biaAggiornaDelta()` | Aggiorna Δ e avviso mentre si digita, senza rigenerare l'HTML |
 | `_biaPeriodo(hotel,dataGiro)` | Intervallo dei consumi ritirati — vedi regola sopra |
@@ -3224,8 +3289,8 @@ guardando lo schermo, un errore nei numeri no — resta plausibile e può passar
 per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dall'alloggio,
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
-dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto e dettaglio per tipologia dello storico biancheria, cancello del polling a
-scheda nascosta. 463 controlli.
+dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
+scheda nascosta. 491 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire
