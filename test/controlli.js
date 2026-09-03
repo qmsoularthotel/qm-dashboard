@@ -1311,9 +1311,16 @@ sez('Bilanciamento camere: lo scambio in blocco non inventa soggiorni');
   // E il testo reso non deve piu' annunciare un soggiorno unico su una riga di blocco.
   var riga = renderHkSuggestions(null).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
   ok('la riga non annuncia piu\' un soggiorno unico', /tutta la settimana\) soggiorno/.test(riga), false);
-  ok('dice quali soggiorni cede Art 12',              /Art 12 cede 1 prenotazione \(Mar 8\/9 in poi\)/.test(riga), true);
-  ok('e quali ne cede Art 14',                        /Art 14 cede 3 prenotazioni \(Sab 5\/9 → Dom 6\/9, Dom 6\/9 → Lun 7\/9, Mar 8\/9 in poi\)/.test(riga), true);
-  ok('non nomina il 5 settembre come soggiorno di Art 12', /Art 12 cede [^·]*Sab 5\/9/.test(riga), false);
+  // Ogni prenotazione da spostare e' una RIGA con le SUE date (03/09/2026): "tutte le
+  // prenotazioni future" costringeva a cercare le date nella nota in fondo, in grigio
+  // piccolo, e a ricordare a memoria l'ordine delle operazioni.
+  ok('ogni prenotazione da spostare ha le sue date', /Art 12 → Art 14 Mar 8\/9 in poi/.test(riga), true);
+  // Il viaggio di ritorno non e' un passo da eseguire: e' una conseguenza obbligata dello
+  // scambio. Elencarlo raddoppiava le righe senza aggiungere una decisione.
+  ok('il ritorno e\' detto una volta sola, non in elenco',
+     /Le 3 prenotazioni di Art 14 passano di conseguenza in Art 12/.test(riga), true);
+  ok('e non e\' un passo con le date',  /Art 14 → Art 12 Sab 5\/9/.test(riga), false);
+  ok('non nomina il 5 settembre come soggiorno di Art 12', /Art 12 → Art 14 Sab 5\/9/.test(riga), false);
 
   pianoData = _piano;
 })();

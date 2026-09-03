@@ -3386,6 +3386,7 @@ function renderHkSuggestions(focusIdx){
   // volta: e' un'operazione che si ripete molte volte al giorno, e il tempo se ne andava
   // li'. Camera di partenza grigia, camera di arrivo blu piena: la direzione si vede
   // senza leggere.
+  const _hkTh=`text-align:left;font-size:9.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;padding:0 0 4px;`;
   const camDa=c=>`<span style="display:inline-block;background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:3px 10px;font-weight:600;font-size:14px;font-variant-numeric:tabular-nums;">${c}</span>`;
   const camA=c=>`<span style="display:inline-block;background:var(--accent);color:#fff;border-radius:6px;padding:3px 10px;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums;">${c}</span>`;
   const passoTr=(n,da,a,periodo,quanti)=>`<tr>
@@ -3393,7 +3394,7 @@ function renderHkSuggestions(focusIdx){
       ?`<td style="padding:5px 10px 5px 0;white-space:nowrap;"><span style="display:inline-flex;width:19px;height:19px;border-radius:50%;background:var(--accent);color:#fff;font-size:10.5px;font-weight:700;align-items:center;justify-content:center;">${n}</span></td>`
       :`<td style="padding:5px 10px 5px 0;"></td>`}
     <td style="padding:5px 0;white-space:nowrap;">${camDa(da)}<span style="color:var(--text-dim);padding:0 7px;font-size:15px;">→</span>${camA(a)}</td>
-    <td style="padding:5px 0 5px 16px;font-size:13px;color:var(--text-muted);white-space:nowrap;">${periodo}</td></tr>`;
+    <td style="padding:5px 0 5px 16px;font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap;">${periodo}</td></tr>`;
   // "Pareggia" da solo non dice cosa pareggia: la parola in mezzo alla riga nomina la cosa
   // — CARICO (il lavoro pesato del giorno) o PARTENZE (le camere che lasciano) — perche'
   // sono due grandezze diverse e sapere quale si muove cambia la decisione.
@@ -3424,9 +3425,18 @@ function renderHkSuggestions(focusIdx){
     }else if(m.tipo==='catena-multi'){
       passi=m.vias.map(v=>[m.to,v.room,viaLbl(v)]).concat([[m.from,m.to,periodo]]);
     }else if(m.tipo==='scambio-blocco'){
-      passi=[[m.from,m.to,'tutte le prenotazioni future']];
+      // Una riga per prenotazione, con le SUE date: "tutte le prenotazioni future" non
+      // dice quando, e costringeva a cercare le date nella riga di nota sotto.
+      // Il viaggio di ritorno (le prenotazioni di `to` che vanno in `from`) NON e' un
+      // passo: e' una conseguenza obbligata dello scambio, e messo in elenco raddoppiava
+      // le righe da leggere senza aggiungere una decisione.
+      passi=(m.perA||[]).map(p=>[m.from,m.to,perTxt(p)]);
+      if(!passi.length)passi=[[m.from,m.to,'tutte le prenotazioni future']];
       badge='scambio in blocco';
-      sotto=`${m.from} cede ${elenco(m.perA)} · ${m.to} cede ${elenco(m.perB)} — chi è già in casa resta dov'è`;
+      const nB=(m.perB||[]).length;
+      sotto=(nB===1
+        ?`La prenotazione di ${m.to} passa di conseguenza in ${m.from}.`
+        :`Le ${nB} prenotazioni di ${m.to} passano di conseguenza in ${m.from}.`)+` Chi è già in casa resta dov'è.`;
     }else{
       passi=[[m.from,m.to,periodo]];
       sotto=`${m.to} libera in quelle notti`;
@@ -3448,8 +3458,12 @@ function renderHkSuggestions(focusIdx){
         <span style="margin-left:auto;font-size:13px;font-weight:700;color:${colEsito};">${esito}${pegg.length?`, ma peggiora ${lbl(pegg[0].i)}`:''}</span>
       </div>
       <div style="display:flex;gap:26px;align-items:flex-start;margin-left:30px;flex-wrap:wrap;">
-        <table style="border-collapse:collapse;">${passi.map((p,k)=>passoTr(k+1,p[0],p[1],p[2],passi.length)).join('')}</table>
+        <table style="border-collapse:collapse;">
+          <tr>${passi.length>1?'<th></th>':'<th></th>'}
+            <th style="${_hkTh}">Sposto</th><th style="${_hkTh}padding-left:16px;">Quando</th></tr>
+          ${passi.map((p,k)=>passoTr(k+1,p[0],p[1],p[2],passi.length)).join('')}</table>
         <table style="border-collapse:collapse;margin-left:auto;">
+          <tr><th colspan="5" style="${_hkTh}">Cosa cambia</th></tr>
           ${mostrati.map(e=>effTr(e,s.focus&&e.i===s.focus.i,false)).join('')}
           ${pegg.slice(0,2).map(e=>effTr(e,false,true)).join('')}
           ${m.effetti.length>3?`<tr><td colspan="5" style="padding:2px 0;font-size:11px;color:var(--text-dim);">+${m.effetti.length-3} altri giorni</td></tr>`:''}
