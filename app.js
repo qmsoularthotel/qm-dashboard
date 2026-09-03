@@ -523,6 +523,15 @@ function turniNormalizza(cod){
   if(!c||c==='-')return null;
   const exR=/\(EX R\)/.test(c);
   const base=c.replace(/\(EX R\)/,'').replace(/\s+/g,' ').trim();
+  // Una nota fra parentesi non fa un turno diverso: 'AC (CALL)' e' un AC, e va nei conteggi
+  // di Perez come tutti gli altri. Si prova prima il codice cosi' com'e' — perche' esistono
+  // sigle che le parentesi le usano davvero — e solo se non lo si riconosce si riprova
+  // senza la nota. Cosi' 'INT (GALL)' resta un intermedio Galleria e non diventa ignoto.
+  const senzaNota=base.replace(/\([^)]*\)/g,' ').replace(/\s+/g,' ').trim();
+  if(senzaNota&&senzaNota!==base){
+    const r=turniNormalizza(senzaNota);
+    if(r&&r.tipo!=='altro')return Object.assign(r,{exR:exR||r.exR});
+  }
   // Riposo in tutte le forme viste nei fogli reali: 'R', 'R RICHIESTO',
   // 'R RECUPERO 23/08', 'RIPOSO RICHIESTO', 'RECUPERO RIPOSO'.
   if(/^R\b/.test(base)||/^RIPOSO\b/.test(base)||/^RECUPERO RIPOSO\b/.test(base))return{tipo:'riposo',exR:false};

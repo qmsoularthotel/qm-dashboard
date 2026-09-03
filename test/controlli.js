@@ -318,6 +318,13 @@ ok('NG e\' una notte in Galleria',    turniNormalizza('NG').fascia, 'notte');
 ok('la casella vuota non conta',      turniNormalizza(''), null);
 ok('il trattino non conta',           turniNormalizza('-'), null);
 ok('un codice sconosciuto e\' "altro"', turniNormalizza('9-14').tipo, 'altro');
+// Una nota fra parentesi non fa un turno diverso: 'AC (CALL)' comparve nel turno del
+// 31/08 e finiva fra i codici non riconosciuti, cioe' fuori da tutti i conteggi di Perez.
+ok('AC (CALL) resta un AC',           turniNormalizza('AC (CALL)').codice, 'AC');
+ok('e va nella sua fascia',           turniNormalizza('AC (CALL)').sede + '/' + turniNormalizza('AC (CALL)').fascia,
+                                      turniNormalizza('AC').sede + '/' + turniNormalizza('AC').fascia);
+ok('la nota non cancella (EX R)',     turniNormalizza('P (EX R) (CALL)').tipo + '/' + turniNormalizza('P (EX R) (CALL)').exR, 'p/true');
+ok('un codice ignoto resta ignoto',   turniNormalizza('9-14 (CALL)').tipo, 'altro');
 // Intermedi, dal turno reale del 24-30/08. L'orario NON identifica la struttura: 10/18
 // compare sia come CAR sia come GALL, quindi si guarda solo la sigla della sede.
 ok('INT CAR e\' un intermedio a SoulArt',
