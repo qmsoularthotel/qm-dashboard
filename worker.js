@@ -30,7 +30,7 @@ const ORIGINI = [
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /prestay/stato.
-const WORKER_VERSIONE = '2026-09-02';
+const WORKER_VERSIONE = '2026-09-03';
 
 // ── UNA CASELLA PER STRUTTURA ──
 // Booking recapita all'ospite solo se la mail parte dall'indirizzo registrato sull'Extranet
@@ -126,12 +126,31 @@ export default {
       if (!valido) {
         if (String(env.QM_AUTH_OBBLIGATORIA || '').toLowerCase() === 'si')
           return json({ ok: false, error: 'Accesso non autorizzato' }, 401);
-        // Conteggio giornaliero degli accessi senza lasciapassare. Non blocca e non
-        // rallenta: se la scrittura fallisce si tira dritto.
+        // Traccia gli accessi senza lasciapassare SENZA bruciare le scritture.
+        //
+        // La prima versione di questo contatore (02/09/2026) ne consumava una per OGNI
+        // richiesta. Le letture sul piano gratuito sono 100.000 al giorno e non erano un
+        // problema; le scritture sono 1.000, e ogni interrogazione di ogni dispositivo —
+        // il giro di controllo ogni 30 secondi, moltiplicato per i PC e i telefoni — e'
+        // diventata una scrittura. Il 03/09/2026 il limite era esaurito nel pomeriggio, e
+        // da quel momento nessun dispositivo poteva piu' salvare niente.
+        //
+        // Ora si scrive al massimo una volta ogni 10 minuti (144 al giorno nel caso
+        // peggiore). Il numero non e' piu' il totale degli accessi anonimi ma quante
+        // finestre da dieci minuti hanno visto passare qualcuno senza lasciapassare: per
+        // decidere se chiudere la porta serve sapere se e' zero, non quanto vale.
         try {
           const g = 'qm_auth_anon_' + new Date().toISOString().slice(0, 10);
-          const n = parseInt(await env.QM_STORAGE.get(g) || '0', 10) || 0;
-          if (n < 5000) await env.QM_STORAGE.put(g, String(n + 1), { expirationTtl: 1209600 });
+          let st = {};
+          try { st = JSON.parse(await env.QM_STORAGE.get(g) || '{}') || {}; } catch (e) { st = {}; }
+          const ora = Date.now();
+          if (typeof st !== 'object' || !st.ultimo || ora - st.ultimo > 600000) {
+            await env.QM_STORAGE.put(g, JSON.stringify({
+              n: ((st && st.n) || 0) + 1,
+              ultimo: ora,
+              visto: new Date(ora).toISOString(),
+            }), { expirationTtl: 1209600 });
+          }
         } catch (e) {}
       }
     }
