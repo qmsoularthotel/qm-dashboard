@@ -2555,11 +2555,28 @@ saldo. Somma **solo i giri con un termine di confronto**, gli stessi che conta `
 così `portato − atteso` coincide sempre col saldo del pannello sopra invece di divergere di
 un giro senza che si capisca perché; il primo giro viene contato a parte e dichiarato.
 
-**Un rientro in più non è un ammanco**: il `+3` del 25/08 era dipinto di **rosso** come una
-perdita. `_biaColDelta`/`_biaTxtDelta` sono ora l'unica scala per tutti e tre i punti che
-mostrano una differenza (tabella del giro, storico, saldo cumulato): in pari verde,
-mancante rosso, rientro in più **ambra**. Un colore che grida anche sulle buone notizie è un
-colore che si impara a ignorare.
+**Un rientro in più non è un ammanco: è VERDE, numero e riga.** Il `+3` del 25/08 era
+dipinto di **rosso** come una perdita; una prima correzione lo portò ad **ambra** — meglio,
+ma pur sempre un colore d'allarme su una cosa che non è un problema. La regola definitiva è:
+**solo un ammanco è rosso**, in pari e rientro in più sono tutti e due verdi.
+
+Tre funzioni, una scala sola per tutti i punti che mostrano una differenza (tabella del
+giro, storico, saldo cumulato, avviso):
+
+| Funzione | Cosa colora |
+|---|---|
+| `_biaColDelta(d)` | il **numero** — `d<0` rosso, altrimenti verde |
+| `_biaBgDelta(d)` | la **riga** — rosso tenue se manca, verde tenue se è tornato di più, niente se in pari |
+| `_biaStileMsg(tot)` | l'**avviso** in cima alla tabella |
+
+**Il numero da solo non basta**: colorare di verde un `+8` lasciando la riga tinta di rosso
+è la stessa contraddizione di prima, spostata di due centimetri. Stesso discorso per
+l'avviso, che diceva *"sono rientrati 8 pezzi in più"* dentro un riquadro rosso d'allarme.
+Le tinte di riga sono `rgba` scritte a mano e non token: servono all'8-9% di opacità e
+devono restare leggibili anche in tema scuro, dove `--green` è molto più acceso.
+
+Vale per il render **e** per l'aggiornamento mentre si digita (`biaAggiornaDelta`), che
+tocca colore del numero, sfondo della riga e stile dell'avviso insieme.
 
 ### Non solo QUANTO porta, ma COSA (03/09/2026)
 
@@ -2690,7 +2707,9 @@ sullo sporco uscito, rientro in più di nuovo rosso): 4, 8 e 1 falliscono.
 | `_biaAndamento(h)` | Serie storica con resa e cumulato, per il report alla direzione |
 | `_biaGraficoResa(serie,l,a)` | Barre della resa, SVG a mano (nessuna libreria nel documento stampato) |
 | `biaPrintAndamento()` | Il report A4 per la direzione |
-| `_biaColDelta(d)` / `_biaTxtDelta(d)` | Unica scala di colore/testo di una differenza |
+| `_biaColDelta(d)` / `_biaTxtDelta(d)` | Unica scala di colore/testo del numero di una differenza |
+| `_biaBgDelta(d)` | Tinta della riga, coerente col numero |
+| `_biaStileMsg(tot)` | Stile dell'avviso in cima alla tabella del giro |
 | `biaAggiornaDelta()` | Aggiorna Δ e avviso mentre si digita, senza rigenerare l'HTML |
 | `_biaPeriodo(hotel,dataGiro)` | Intervallo dei consumi ritirati — vedi regola sopra |
 | `_biaSommaConsumi(hotel,dal,al)` | Somma per voce nell'intervallo, estremi inclusi |
@@ -3290,7 +3309,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta. 491 controlli.
+scheda nascosta. 500 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire

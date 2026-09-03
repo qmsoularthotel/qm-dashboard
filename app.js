@@ -14637,9 +14637,11 @@ async function biaEliminaGiro(id){
 let _biaAttesoVis=null;   // atteso della tabella attualmente a schermo
 
 // Scala di colore di una differenza, UNA SOLA volta per tutti i punti che la mostrano
-// (tabella del giro, storico, saldo cumulato): in pari verde, mancante rosso, rientro in
-// più AMBRA. Il "+3" del 25/08 era dipinto di rosso come un ammanco: un colore che grida
-// anche quando la notizia è buona è un colore che si impara a ignorare.
+// (tabella del giro, storico, saldo cumulato, avviso). Solo un AMMANCO è rosso: in pari e
+// rientro in più sono tutti e due notizie buone e vanno in VERDE. Prima il rientro in più
+// era rosso come una perdita, poi ambra: meglio, ma pur sempre un colore d'allarme su una
+// cosa che non è un problema. Vale per il NUMERO e per la RIGA insieme — colorare solo il
+// numero lasciava la riga tinta di rosso sotto un "+8" verde.
 // La tabella "cosa ha portato", voce per voce. Una sola funzione per i due punti che la
 // mostrano (la riga del singolo giro e il riepilogo per struttura): stessa forma, stessi
 // colori, nessuna copia da tenere allineata. `conf` dice se esiste un termine di
@@ -14666,8 +14668,17 @@ function _biaTabellaVoci(righe,conf){
   </div>`;
 }
 
-function _biaColDelta(d){return d===0?'var(--green)':(d<0?'var(--red)':'var(--amber)');}
+function _biaColDelta(d){return d<0?'var(--red)':'var(--green)';}
 function _biaTxtDelta(d){return d===0?'in pari':(d>0?'+'+d:String(d));}
+// Tinta della RIGA. rgba a mano e non token perché serve a ~8% di opacità e deve restare
+// leggibile anche in tema scuro, dove --green è molto più acceso.
+function _biaBgDelta(d){return d===null||d===0?'':(d<0?'rgba(192,53,42,.06)':'rgba(46,125,50,.09)');}
+// Stile dell'avviso in cima alla tabella: diceva "sono rientrati N pezzi in più" dentro un
+// riquadro rosso d'allarme — la stessa contraddizione, sul testo invece che sul numero.
+function _biaStileMsg(tot){
+  const c=_biaColDelta(tot);
+  return`background:${tot<0?'rgba(192,53,42,.08)':'rgba(46,125,50,.10)'};border-left:3px solid ${c};color:${c};`;
+}
 
 function _biaMsgDiff(tot){
   if(!tot)return'';
@@ -14688,13 +14699,17 @@ function biaAggiornaDelta(){
     cella.textContent=d>0?'+'+d:String(d);
     cella.style.color=_biaColDelta(d);
     const tr=er.closest?er.closest('tr'):null;
-    if(tr)tr.style.background=d===0?'':'rgba(192,53,42,.06)';
+    if(tr)tr.style.background=_biaBgDelta(d);
   });
   const avviso=document.getElementById('bia-diff-msg');
   if(avviso){
     const msg=att?_biaMsgDiff(tot):'';
     avviso.textContent=msg;
     avviso.style.display=msg?'':'none';
+    const c=_biaColDelta(tot);
+    avviso.style.background=tot<0?'rgba(192,53,42,.08)':'rgba(46,125,50,.10)';
+    avviso.style.borderLeftColor=c;
+    avviso.style.color=c;
   }
 }
 
@@ -14854,7 +14869,7 @@ function biaRender(){
     return s+(r-(Number(atteso[v])||0));
   },0);
   const msgDiff=atteso?_biaMsgDiff(diffTot):'';
-  h+=`<div id="bia-diff-msg" style="background:var(--red-bg,rgba(192,53,42,.08));border-left:3px solid var(--red);padding:9px 11px;font-size:var(--fs-xs);color:var(--red);line-height:1.45;margin-bottom:10px;${msgDiff?'':'display:none;'}">${esc(msgDiff)}</div>`;
+  h+=`<div id="bia-diff-msg" style="${_biaStileMsg(diffTot)}padding:9px 11px;font-size:var(--fs-xs);line-height:1.45;margin-bottom:10px;${msgDiff?'':'display:none;'}">${esc(msgDiff)}</div>`;
 
   h+=`<div style="overflow-x:auto;">
     <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
@@ -14873,7 +14888,7 @@ function biaRender(){
     const spo=giaReg?(Number(giaReg.consegnato[v])||0):(Number(sporco[v])||0);
     const d=att===null?null:(ric-att);
     const bad=d!==null&&d!==0;
-    h+=`<tr style="${bad?'background:rgba(192,53,42,.06);':''}">
+    h+=`<tr style="${bad?'background:'+_biaBgDelta(d)+';':''}">
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));">${esc(v)}</td>
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;color:var(--text-dim);">${att===null?'—':att}</td>
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-r-${i}" value="${ric}" oninput="biaAggiornaDelta()" onfocus="this.select()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
@@ -14906,7 +14921,7 @@ function biaRender(){
         <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${saldoTot<0?'var(--red)':'var(--green)'};">${saldoTot===0?'in pari':saldoTot}</span>
       </div>
       <div class="panel-body" style="padding:14px;">
-        ${BIA_VOCI.map(v=>{const n=saldo[v];return`<div style="display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${n<0?'var(--red)':(n>0?'var(--amber)':'var(--green)')};">${n===0?'in pari':n}</span></div>`;}).join('')}
+        ${BIA_VOCI.map(v=>{const n=saldo[v];return`<div style="display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_biaColDelta(n)};">${n===0?'in pari':n}</span></div>`;}).join('')}
         <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Un singolo giro può chiudere in pari per caso. È questo totale che dice se la perdita è occasionale o continua.</div>
       </div>
     </div>`;

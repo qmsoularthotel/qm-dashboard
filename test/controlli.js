@@ -1353,12 +1353,34 @@ sez('Biancheria: lo storico dice CON COSA sta confrontando');
   ok('su quanto era atteso',                     _biaRiepilogoPortato('sa').dovuto, 2374);
   ok('il primo giro resta fuori dal confronto',  _biaRiepilogoPortato('sa').senzaConfronto, 1);
 
-  // ── Un rientro IN PIU' non e' un ammanco ──
-  // Il 25/08 mostrava "+3" in rosso, come una perdita: un colore che grida anche sulle
-  // buone notizie e' un colore che si impara a ignorare.
-  ok('+3 e\' ambra, non rosso',                  _biaColDelta(3), 'var(--amber)');
+  // ── Un rientro IN PIU' non e' un ammanco: e' VERDE, numero e riga ──
+  // Il 25/08 mostrava "+3" in rosso come una perdita; una versione intermedia lo faceva
+  // ambra — meglio, ma pur sempre un colore d'allarme su una cosa che non e' un problema.
+  // Solo un ammanco e' rosso; in pari e rientro in piu' sono tutti e due verdi.
+  ok('+3 e\' verde',                             _biaColDelta(3), 'var(--green)');
   ok('un ammanco resta rosso',                   _biaColDelta(-66), 'var(--red)');
   ok('in pari resta verde',                      _biaColDelta(0), 'var(--green)');
+  ok('nessun ambra nella scala',
+     [-9, -1, 0, 1, 9].map(_biaColDelta).join(',').indexOf('amber'), -1);
+  // La RIGA deve dire la stessa cosa del numero: colorare solo il numero lasciava un "+8"
+  // verde sopra una riga tinta di rosso.
+  ok('riga di un ammanco: rossa',                _biaBgDelta(-11), 'rgba(192,53,42,.06)');
+  ok('riga di un rientro in piu\': verde',       _biaBgDelta(8), 'rgba(46,125,50,.09)');
+  ok('riga in pari: non tinta',                  _biaBgDelta(0), '');
+  ok('e senza confronto nemmeno',                _biaBgDelta(null), '');
+  ok('riga e numero concordano sempre',
+     [-19, -1, 0, 3, 8].every(function (d) {
+       var verde = _biaColDelta(d) === 'var(--green)';
+       var rigaVerde = _biaBgDelta(d) === 'rgba(46,125,50,.09)';
+       return d < 0 ? (!verde && _biaBgDelta(d) === 'rgba(192,53,42,.06)')
+            : d === 0 ? (verde && _biaBgDelta(d) === '')
+            : (verde && rigaVerde);
+     }), true);
+  // L'avviso in cima alla tabella diceva "sono rientrati N pezzi in piu'" dentro un
+  // riquadro rosso d'allarme: la stessa contraddizione, sul testo invece che sul numero.
+  ok('avviso di ammanco: rosso',                 /var\(--red\)/.test(_biaStileMsg(-66)), true);
+  ok('avviso di rientro in piu\': verde',        /var\(--green\)/.test(_biaStileMsg(8)), true);
+  ok('e non e\' rosso',                          /var\(--red\)/.test(_biaStileMsg(8)), false);
 
   _bia = _prima; _biaHotel = _prevHotel;
 })();
