@@ -2811,6 +2811,11 @@ function _hkNights(b,N){
   return out;
 }
 function _hkOverlap(a,b){for(const x of a)if(b.has(x))return true;return false;}
+// Il periodo di un soggiorno cosi' come va MOSTRATO. Serve allo scambio in blocco, che
+// muove piu' soggiorni insieme e quindi non ha un "inizio" unico da esibire: prima la
+// riga mostrava il primo giorno toccato dallo scambio come se fosse l'inizio di un
+// soggiorno, e per la camera che quel giorno e' vuota il testo diceva il falso.
+function _hkPeriodo(b){return{start:b.start,end:b.openEnd?null:b.end,speciale:!!b.speciale};}
 function _hkStatesFromBlocks(bs,N){
   const out=new Array(N).fill(null);
   for(let d=0;d<N;d++){
@@ -3016,7 +3021,12 @@ function hkSuggestMoves(maxN,focusIdx){
         const restB=(BL[B]||[]).filter(z=>!spostabile(z));
         if(!futureA.every(z=>_hkFits(z,restB,[],N)))return;
         if(!futureB.every(z=>_hkFits(z,restA,[],N)))return;
+        // `start` serve solo a ordinare e a distinguere le proposte fra loro: e' il primo
+        // giorno toccato dallo scambio, NON l'inizio di un soggiorno. I soggiorni veri
+        // delle due camere viaggiano in perA/perB, ed e' quello che va mostrato — vedi
+        // il commento in renderHkSuggestions.
         valuta({tipo:'scambio-blocco',from:A,to:B,cat:tipo,nA:futureA.length,nB:futureB.length,
+                perA:futureA.map(_hkPeriodo),perB:futureB.map(_hkPeriodo),
                 start:Math.min(...futureA.map(z=>z.start),...futureB.map(z=>z.start))},
                {[A]:restA.concat(futureB),[B]:restB.concat(futureA)});
       });
@@ -3236,6 +3246,17 @@ function renderHkSuggestions(focusIdx){
   // Una riprotezione si può spostare come una prenotazione, ma va detto: chi legge deve
   // sapere che sta muovendo un blocco camera e non un ospite.
   const tagRip=`<span style="background:var(--amber-bg);color:var(--amber);border-radius:4px;padding:1px 5px;font-size:9.5px;font-weight:700;margin-left:4px;">riprotezione</span>`;
+  // Un periodo di soggiorno scritto per esteso. `end:null` = soggiorno ancora aperto alla
+  // fine della settimana: si dice "in poi" invece di inventare una data di partenza.
+  const perTxt=p=>(p.end==null?lbl(p.start)+' in poi':p.start===p.end?lbl(p.start):lbl(p.start)+' → '+lbl(p.end))+(p.speciale?tagRip:'');
+  // Elenco dei soggiorni che una camera cede nello scambio in blocco. Il conteggio da solo
+  // ("1 prenotazione future") non permetteva di verificare la proposta sul Piano; le date
+  // sì, e sono le date VERE dei soggiorni, non il primo giorno toccato dallo scambio.
+  const elenco=ps=>{
+    if(!ps||!ps.length)return'niente';
+    const n=ps.length,mostra=ps.slice(0,3).map(perTxt).join(', ');
+    return`${n} prenotazion${n===1?'e':'i'} (${mostra}${n>3?`, +${n-3}`:''})`;
+  };
   const righe=s.mosse.map((m,i)=>{
     const periodo=(m.start===m.end?lbl(m.start):lbl(m.start)+' → '+lbl(m.end))+(m.xSpec?tagRip:'');
     const perY=m.yStart!=null?((m.yStart===m.yEnd?lbl(m.yStart):lbl(m.yStart)+' → '+lbl(m.yEnd))+(m.ySpec?tagRip:'')):'';
@@ -3257,7 +3278,7 @@ function renderHkSuggestions(focusIdx){
       // Non un soggiorno alla volta: TUTTE le prenotazioni future delle due camere si
       // scambiano in un colpo solo — chi è già in casa resta dov'è fisicamente.
       titolo=`${m.from} ${frecciaB} ${m.to} <span style="font-size:11px;color:var(--text-dim);font-weight:600;">(tutta la settimana)</span>`;
-      dett=`scambio in blocco: ${m.nA} prenotazion${m.nA===1?'e':'i'} future da ${m.from} a ${m.to}, ${m.nB} da ${m.to} a ${m.from} — chi è già in casa resta dov'è`;
+      dett=`scambio in blocco: ${m.from} cede ${elenco(m.perA)} · ${m.to} cede ${elenco(m.perB)} — chi è già in casa resta dov'è`;
     }else{
       titolo=`${m.from} ${frecciaG} ${m.to}`;
       dett=`${m.to} libera in quelle notti`;
@@ -3266,7 +3287,7 @@ function renderHkSuggestions(focusIdx){
       <span style="width:22px;height:22px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:15px;font-weight:700;color:var(--text);">${titolo}</div>
-        <div style="font-size:12.5px;color:var(--text-muted);margin-top:3px;line-height:1.4;">soggiorno ${periodo} · ${_hkTipoLbl(m.cat)} · ${dett}</div>
+        <div style="font-size:12.5px;color:var(--text-muted);margin-top:3px;line-height:1.4;">${m.tipo==='scambio-blocco'?'':`soggiorno ${periodo} · `}${_hkTipoLbl(m.cat)} · ${dett}</div>
       </div>
       <div style="text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;">
         ${(s.focus?[...m.effetti].sort((a,b)=>(a.i===s.focus.i?-1:0)-(b.i===s.focus.i?-1:0)):m.effetti).slice(0,3).map(e=>{

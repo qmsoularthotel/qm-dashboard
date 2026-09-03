@@ -88,3 +88,6 @@ ok('risposta che comincia con "Il"',
 ok('risposta senza citazione resta intera',
    soloRisposta('Buongiorno,' + CR + 'arriveremo alle 15.' + CR + 'Grazie'),
    'Buongiorno,\narriveremo alle 15.\nGrazie');
+
+// Ultimo file caricato da esegui.sh/node.js: tocca a lui chiudere il conto.
+riepilogo();

@@ -1061,12 +1061,6 @@ ok('senza traccia sarebbe tornata',       _senza.length, 2);
 ok('resiDelRow segna l id rimosso',       /_qmSegnaRimosso/.test(String(resiDelRow)), true);
 ok('resiDelRitiro pure',                  /_qmSegnaRimosso/.test(String(resiDelRitiro)), true);
 
-// ─────────────────────────────────────────────────────────────────────────────
-console.log('\n' + '─'.repeat(52));
-console.log(KO === 0
-  ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'
-  : KO + ' CONTROLLI FALLITI su ' + (OK + KO));
-
 sez('Calibrazione: quale osservazione non torna');
 // 01/09/2026: SoulArt dichiarato "fuori modello" e il messaggio accusava il CSV di oggi
 // ("contiene recensioni che Booking non conta piu'"), con una distanza assurda di -0.00.
@@ -1208,3 +1202,88 @@ ok('e portano il lasciapassare nel frammento', /#attiva=/.test(String(qmLinkAtti
 // pretendere la parte finale sarebbe un modo sicuro di far sbagliare le persone.
 ok('dal collegamento intero si ricava il codice',
    qmEstraiAttiva('https://compass-qm.com/breakfast.html#attiva=1790000000000.AbC-_9'), '1790000000000.AbC-_9');
+
+sez('Bilanciamento camere: lo scambio in blocco non inventa soggiorni');
+// 03/09/2026. La proposta "Art 12 ⇄ Art 14 (tutta la settimana)" era descritta come
+// "soggiorno Sab 5/9 → —", ma il 5 settembre Art 12 e' VUOTA: il suo unico soggiorno
+// futuro comincia martedi' 8. Lo scambio in blocco muove PIU' soggiorni insieme e non ha
+// un inizio unico da esibire: la riga mostrava `m.start`, che e' soltanto il primo giorno
+// toccato dallo scambio fra le DUE camere (li' veniva da Art 14), come se fosse l'inizio
+// di un soggiorno della camera di partenza. La mossa era giusta, il racconto no — ed e' il
+// caso peggiore, perche' chi verifica sul Piano trova la camera vuota e smette di fidarsi
+// dell'intero pannello.
+(function () {
+  var _piano = pianoData;
+  // Stessa forma del caso reale: Art 12 (Matarese) vuota da sabato a lunedi', Art 14
+  // (Altre) piena. Art 16 sta dall'altra parte solo per creare lo squilibrio che rende lo
+  // scambio conveniente. Date del 2027 cosi' nessun giorno e' "oggi" e todayIdx resta 0.
+  var NOMI = ['Gio 3/9', 'Ven 4/9', 'Sab 5/9', 'Dom 6/9', 'Lun 7/9', 'Mar 8/9', 'Mer 9/9'];
+  var G = NOMI.map(function (n, i) {
+    return { label: n, data: String(3 + i).padStart(2, '0') + '/09/2027',
+             soulart: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             boutique: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
+  });
+  //                 gio ven sab dom lun mar mer      F=fermata P=partenza C=cambio A=arrivo
+  var CELLE = { 'Art 12': ['F', 'P', '.', '.', '.', 'A', 'F'],
+                'Art 14': ['F', 'F', 'C', 'C', 'P', 'A', 'F'],
+                'Art 16': ['F', 'F', 'C', 'C', 'F', 'F', 'F'] };
+  var CHIAVE = { F: 'fermate', P: 'partenze', C: 'cambi', A: 'arrivi' };
+  Object.keys(CELLE).forEach(function (r) {
+    CELLE[r].forEach(function (c, i) { if (CHIAVE[c]) G[i].soulart[CHIAVE[c]].push(r); });
+  });
+  pianoData = { stampato: '03/09/2027', giorni: G, incArr: [], incPar: [],
+                tipi: { 'Art 12': 'AS DLX DP', 'Art 14': 'AS DLX DP', 'Art 16': 'AS SUP' } };
+
+  var BL = hkBuildBlocks();
+  var futuri12 = BL['Art 12'].filter(function (b) { return b.start > 0; });
+  ok('Art 12 ha un solo soggiorno futuro', futuri12.length, 1);
+  ok('e comincia martedi\' (indice 5)',    futuri12[0].start, 5);
+
+  var blocco = hkSuggestMoves(30, null).mosse.filter(function (m) {
+    return m.tipo === 'scambio-blocco' && m.from === 'Art 12' && m.to === 'Art 14';
+  })[0];
+  ok('lo scambio in blocco viene proposto', !!blocco, true);
+  ok('porta i soggiorni veri di Art 12',    JSON.stringify((blocco.perA || []).map(function (p) { return p.start; })), '[5]');
+  ok('e quelli veri di Art 14',             JSON.stringify((blocco.perB || []).map(function (p) { return p.start; })), '[2,3,5]');
+
+  // Il controllo che conta: nessun periodo annunciato puo' cominciare in un giorno in cui
+  // quella camera non ha ne' un arrivo ne' un cambio nel Piano.
+  function inizioReale(camera, i) {
+    var s = G[i].soulart;
+    return s.arrivi.indexOf(camera) >= 0 || s.cambi.indexOf(camera) >= 0;
+  }
+  function tuttiVeri(camera, periodi) {
+    return (periodi || []).every(function (p) { return inizioReale(camera, p.start); });
+  }
+  ok('nessun soggiorno annunciato per Art 12 parte da un giorno vuoto', tuttiVeri('Art 12', blocco.perA), true);
+  ok('idem per Art 14',                                                 tuttiVeri('Art 14', blocco.perB), true);
+  ok('il 5 settembre Art 12 e\' davvero vuota',                         inizioReale('Art 12', 2), false);
+  ok('mentre il primo giorno toccato dallo scambio e\' il 5',           blocco.start, 2);
+
+  // E il testo reso non deve piu' annunciare un soggiorno unico su una riga di blocco.
+  var riga = renderHkSuggestions(null).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+  ok('la riga non annuncia piu\' un soggiorno unico', /tutta la settimana\) soggiorno/.test(riga), false);
+  ok('dice quali soggiorni cede Art 12',              /Art 12 cede 1 prenotazione \(Mar 8\/9 in poi\)/.test(riga), true);
+  ok('e quali ne cede Art 14',                        /Art 14 cede 3 prenotazioni \(Sab 5\/9 → Dom 6\/9, Dom 6\/9 → Lun 7\/9, Mar 8\/9 in poi\)/.test(riga), true);
+  ok('non nomina il 5 settembre come soggiorno di Art 12', /Art 12 cede [^·]*Sab 5\/9/.test(riga), false);
+
+  pianoData = _piano;
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Il riepilogo NON si stampa qui: e' una funzione, chiamata dall'ultima riga dell'ultimo
+// file caricato (oggi test/mime.js). La stampa stava a meta' di questo file — dopo i
+// controlli sulle eliminazioni degli archivi — e tutto cio' che veniva aggiunto sotto
+// restava fuori dal conteggio: la riga diceva "TUTTI I CONTROLLI SUPERATI (351)" con oltre
+// duecento controlli non ancora eseguiti, e continuava a dirlo anche quando uno di quelli
+// falliva. L'esito vero (ESITO:OK/FALLITO, letto da esegui.sh) e' sempre stato corretto,
+// perche' e' calcolato alla fine: a mentire era solo la riga che legge una persona.
+// Aggiungendo un altro file di controlli, spostare la chiamata a riepilogo() in fondo a
+// quello.
+function riepilogo() {
+  console.log('\n' + '─'.repeat(52));
+  console.log(KO === 0
+    ? 'TUTTI I CONTROLLI SUPERATI  (' + OK + ')'
+    : KO + ' CONTROLLI FALLITI su ' + (OK + KO));
+}

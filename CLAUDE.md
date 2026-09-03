@@ -1065,6 +1065,18 @@ Nato da un caso reale: l'utente indicava una data (evidenziata come "oggi" nel P
 
 **Non filtrato sul singolo giorno in focus**: `valuta()` scarta le mosse su un singolo soggiorno se non migliorano proprio il giorno selezionato (`hasFocus`) — corretto per sposta/scambia/catena/catena-multi, che riguardano un giorno alla volta. Ma `scambio-blocco` riguarda **tutta la settimana** per costruzione: filtrarlo sul giorno in focus lo scartava ingiustamente anche quando migliorava tutti gli altri giorni della vista settimanale. Per questo tipo di mossa il filtro per-giorno è disattivato (basta il guadagno complessivo sulla settimana, già verificato); `gFocus` viene comunque calcolato per l'ordinamento (a parità di guadagno, si preferisce comunque la mossa che aiuta anche il giorno che si sta guardando), solo non usato per scartarla. La ricerca stessa non è mai stata limitata a coppie di camere specifiche — cicla già su tutte le camere `ART` della stessa tipologia.
 
+**`m.start` di uno scambio in blocco NON è l'inizio di un soggiorno** (fix 03/09/2026). È il primo giorno toccato dallo scambio, calcolato come minimo fra i soggiorni futuri di **entrambe** le camere — quindi può benissimo venire dall'altra. La riga del suggerimento lo mostrava però con la stessa formula degli altri tipi di mossa (`soggiorno ${lbl(m.start)} → ${lbl(m.end)}`), e siccome `end` non esiste per un blocco si leggeva:
+
+> `Art 12 ⇄ Art 14 (tutta la settimana)` — *soggiorno Sab 5/9 → —*
+
+mentre il 5 settembre **Art 12 era vuota**: il suo unico soggiorno futuro cominciava martedì 8, e il 5 veniva da Art 14. La mossa era corretta (proprio perché Art 12 è libera da sabato a lunedì può accogliere i soggiorni di Art 14), **a sbagliare era solo il racconto** — che è il caso peggiore: chi verifica sul Piano trova la camera vuota e smette di fidarsi dell'intero pannello.
+
+Ora la mossa porta i periodi veri di ciascuna camera (`perA`/`perB`, costruiti da `_hkPeriodo`) e la riga li elenca: *"Art 12 cede 1 prenotazione (Mar 8/9 in poi) · Art 14 cede 3 prenotazioni (Sab 5/9 → Dom 6/9, …)"*. Il prefisso `soggiorno …` non viene più stampato per questo tipo di mossa. `end:null` significa soggiorno ancora aperto a fine settimana e si scrive *"in poi"*, non una data di partenza inventata. `m.start` resta per l'ordinamento e per la chiave di deduplicazione.
+
+**Regola che ne esce**: una mossa che tocca più soggiorni non ha un "soggiorno" da esibire. Aggiungendo un nuovo tipo di mossa, se non riguarda un singolo soggiorno non riusare `periodo` — porta i suoi periodi veri.
+
+Coperto da **13 controlli** in `test/controlli.js` ("Bilanciamento camere: lo scambio in blocco non inventa soggiorni"), verificati sabotando sia la riga sia i periodi: 1 e 6 falliscono.
+
 ### "Ci sono altre possibilità?" — mostra alternative già calcolate, non ne cerca di nuove
 
 `hkSuggestMoves()` calcola sempre **tutte** le mosse valide e migliorative, poi le taglia a `maxN` (default 3) — `out.totMosse` tiene il conteggio prima del taglio, `out.mosse` è la lista tagliata. Il bottone "Ci sono altre possibilità?" (visibile solo se `totMosse>mosse.length`, altrimenti non c'è nulla in più da mostrare) chiama `hkSuggMore()`, che alza `_hkSuggMoreN` di 5 e rirenderizza — non ricalcola l'algoritmo da capo con criteri diversi, semplicemente alza il tetto e mostra alternative che esistevano già. `_hkSuggMoreN` si azzera in `pianoNavRender()` solo quando il giorno selezionato **cambia davvero** (non ad ogni refresh del polling sullo stesso giorno, altrimenti l'espansione sparirebbe da sola pochi secondi dopo averla aperta).
@@ -3116,8 +3128,8 @@ guardando lo schermo, un errore nei numeri no — resta plausibile e può passar
 per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dall'alloggio,
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
-dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, cancello del polling a
-scheda nascosta. 297 controlli.
+dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, cancello del polling a
+scheda nascosta. 416 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire
@@ -3141,6 +3153,18 @@ ok('descrizione leggibile', valoreOttenuto, valoreAtteso);
 
 Le funzioni di `app.js` sono già tutte disponibili. **Usare sempre nomi inventati**: nel
 repository non deve finire nessun dato di ospiti reali.
+
+### Il riepilogo finale va tenuto in fondo (fix 03/09/2026)
+
+La riga `TUTTI I CONTROLLI SUPERATI (N)` stava a **metà** di `controlli.js`: tutto ciò che
+veniva aggiunto sotto — e `test/mime.js`, caricato dopo — restava fuori dal conteggio.
+Diceva `(351)` con 65 controlli non ancora eseguiti, e continuava a dirlo anche quando uno
+di quelli falliva. L'**esito** (`ESITO:OK`/`FALLITO`, l'unica cosa che `esegui.sh` legge per
+il codice di uscita) è sempre stato corretto perché si calcola alla fine: a mentire era solo
+la riga che legge una persona.
+
+Ora è la funzione `riepilogo()`, chiamata dall'**ultima riga dell'ultimo file caricato**
+(oggi `test/mime.js`). Aggiungendo un altro file di controlli, spostare lì la chiamata.
 
 ### Verificata sabotando il codice
 
