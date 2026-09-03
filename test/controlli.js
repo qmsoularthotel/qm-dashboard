@@ -286,14 +286,25 @@ ok('senza dati precedenti funziona lo stesso',      _bkfFondi(null, [_gio(0, 55)
 sez('Archivio delle settimane di turno');
 // Finora caricare il turno nuovo cancellava quello vecchio: nessuna settimana passata
 // restava, e senza settimane passate non esistono statistiche.
+// Le date sono RELATIVE a oggi, non scritte a mano: turniVoceStorico corregge gli anni
+// sbagliati (vedi piu' sotto), e una settimana fissa nel 2026 fra un anno verrebbe spostata
+// dal correttore, facendo fallire questi controlli con un messaggio incomprensibile.
+function _giornoRelativo(scarto) {
+  var d = new Date(); d.setHours(10, 0, 0, 0); d.setDate(d.getDate() + scarto);
+  return d;
+}
+function _iso(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+var _g0 = _giornoRelativo(-7), _g1 = _giornoRelativo(-6), _g6 = _giornoRelativo(-1);
 var _sett = { giorni: [
-  { date: '2026-08-17T10:00:00.000Z', label: 'Lun 17/08', shifts: { 'Rossi M.': 'P', 'Bianchi A.': 'R' } },
-  { date: '2026-08-18T10:00:00.000Z', label: 'Mar 18/08', shifts: { 'Rossi M.': 'CG' } },
-  { date: '2026-08-23T10:00:00.000Z', label: 'Dom 23/08', shifts: { 'Rossi M.': 'R' } }
+  { date: _g0.toISOString(), label: 'primo', shifts: { 'Rossi M.': 'P', 'Bianchi A.': 'R' } },
+  { date: _g1.toISOString(), label: 'secondo', shifts: { 'Rossi M.': 'CG' } },
+  { date: _g6.toISOString(), label: 'ultimo', shifts: { 'Rossi M.': 'R' } }
 ] };
 var _voce = turniVoceStorico(_sett);
-ok('la settimana si archivia sotto il primo giorno', _voce.chiave, '2026-08-17');
-ok('conserva il primo e l\'ultimo giorno', _voce.dal + '→' + _voce.al, '2026-08-17→2026-08-23');
+ok('la settimana si archivia sotto il primo giorno', _voce.chiave, _iso(_g0));
+ok('conserva il primo e l\'ultimo giorno', _voce.dal + '→' + _voce.al, _iso(_g0) + '→' + _iso(_g6));
 ok('conserva tutti i giorni',              _voce.giorni.length, 3);
 ok('e i turni di ciascuno',                _voce.giorni[0].shifts['Rossi M.'], 'P');
 ok('anche i riposi, che servono a contarli', _voce.giorni[0].shifts['Bianchi A.'], 'R');
@@ -303,6 +314,35 @@ ok('settimana vuota: niente da archiviare',  turniVoceStorico({ giorni: [] }), n
 ok('dato assente: niente da archiviare',     turniVoceStorico(null), null);
 ok('giorni senza data valida vengono scartati',
    turniVoceStorico({ giorni: [{ date: 'boh', shifts: {} }] }), null);
+// Anno sbagliato nella foto del planning: il 24/08/2026 la settimana 17-23 agosto e' finita
+// in archivio due volte, una col 2025 e una col 2026, e le statistiche la contavano DUE
+// VOLTE — la prima con i dati vecchi. Si carica sempre la settimana in corso: se le date
+// cadono a un anno di distanza, l'anno e' sbagliato e va riportato a oggi.
+var _annoStorto = { giorni: [
+  { date: new Date(_g0.getFullYear() - 1, _g0.getMonth(), _g0.getDate(), 10).toISOString(), shifts: { 'Rossi M.': 'P' } },
+  { date: new Date(_g6.getFullYear() - 1, _g6.getMonth(), _g6.getDate(), 10).toISOString(), shifts: { 'Rossi M.': 'R' } }
+] };
+ok('un anno indietro viene riportato a oggi', turniVoceStorico(_annoStorto).chiave, _iso(_g0));
+ok('e finisce nella stessa voce del turno giusto',
+   turniVoceStorico(_annoStorto).chiave, turniVoceStorico(_sett).chiave);
+// I turni NON si toccano: si corregge la data, non quello che ha fatto la gente.
+ok('i turni restano quelli scritti', turniVoceStorico(_annoStorto).giorni[0].shifts['Rossi M.'], 'P');
+// Una settimana lontana ma non di un anno resta dov'e': spostarla sarebbe inventare.
+var _lontana = { giorni: [{ date: new Date(_g0.getFullYear(), _g0.getMonth() - 6, 12, 10).toISOString(), shifts: {} }] };
+ok('sei mesi fa non e\' un anno sbagliato: non si tocca',
+   turniVoceStorico(_lontana).chiave.slice(0, 4), String(_g0.getFullYear()));
+// L'archivio GIA' SCRITTO va ripulito in lettura: la correzione dell'anno vale da qui in
+// avanti, ma la settimana doppia era gia' dentro e falsava ogni conteggio.
+var _sporco = {};
+_sporco[_iso(_g0)] = { chiave: _iso(_g0), dal: _iso(_g0), al: _iso(_g6), ts: 2000,
+  giorni: [{ data: _iso(_g0), shifts: { 'Rossi M.': 'AC' } }] };
+_sporco['2000-01-03'] = { chiave: '2000-01-03', dal: '2000-01-03', al: '2000-01-09', ts: 1000,
+  giorni: [{ data: _iso(new Date(_g0.getFullYear() - 1, _g0.getMonth(), _g0.getDate())), shifts: { 'Rossi M.': 'CC' } }] };
+var _pulito = turniRipuliArchivio(_sporco);
+ok('la settimana doppia diventa una',   Object.keys(_pulito).length, 1);
+ok('e resta sotto la data giusta',      Object.keys(_pulito)[0], _iso(_g0));
+ok('vince la versione archiviata dopo', _pulito[_iso(_g0)].giorni[0].shifts['Rossi M.'], 'AC');
+ok('una voce senza giorni viene scartata', Object.keys(turniRipuliArchivio({ x: { giorni: [] } })).length, 0);
 
 sez('Statistiche turni ricevimento');
 // I codici sono scritti a mano e hanno varianti: senza normalizzazione ci si ritrova venti

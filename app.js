@@ -442,10 +442,26 @@ const _turnoIso=d=>{const x=d instanceof Date?d:new Date(d);return isNaN(x.getTi
 /** Voce d'archivio per una settimana. Pura: niente rete, niente localStorage. */
 function turniVoceStorico(data){
   if(!data||!Array.isArray(data.giorni)||!data.giorni.length)return null;
-  const giorni=data.giorni
+  let giorni=data.giorni
     .map(g=>({data:_turnoIso(g.date),shifts:g.shifts||{}}))
     .filter(g=>g.data);
   if(!giorni.length)return null;
+  // Anno sbagliato: il planning si carica da una FOTO, e l'anno spesso non e' scritto da
+  // nessuna parte. Il 24/08/2026 la settimana 17-23 agosto e' finita in archivio due volte,
+  // una col 2025 e una col 2026: le statistiche la contavano DUE VOLTE, la prima con i dati
+  // vecchi (De Masi ancora in servizio invece che in malattia, i riposi di Presta non ancora
+  // corretti). Nessun avviso: i numeri sembravano solo un po' alti.
+  //
+  // La correzione esiste gia' all'ingresso (_annoPlausibile, usata quando si legge il
+  // planning) e qui si riusa LA STESSA, non una seconda scritta apposta: due regole diverse
+  // sullo stesso problema finirebbero per divergere. Serve comunque anche qui, perche' in
+  // archivio arrivano anche settimane sincronizzate da altre postazioni, che possono aver
+  // caricato il turno con una versione precedente a quella correzione.
+  giorni=giorni.map(g=>{
+    const d=_annoPlausibile(new Date(g.data+'T12:00:00'));
+    return{data:_turnoIso(d)||g.data,shifts:g.shifts};
+  });
+
   return{chiave:giorni[0].data,dal:giorni[0].data,al:giorni[giorni.length-1].data,giorni,ts:Date.now()};
 }
 /** Fonde due archivi: per ogni settimana vince la voce archiviata più di recente. */
@@ -491,15 +507,20 @@ async function turniArchivia(data){
   if(_uguale(arch[chiave],resto)){
     try{localStorage.setItem(TURNI_STORICO_KEY,JSON.stringify(arch));}catch(e){}
     try{turniRenderStats();}catch(e){}
+    try{turniRenderArchivio();}catch(e){}
     return;
   }
   arch[chiave]=resto;
-  const json=JSON.stringify(arch);
+  // Si ripulisce anche cio' che si sta per scrivere: cosi' la settimana rimasta in archivio
+  // con l'anno sbagliato sparisce davvero al prossimo turno caricato, e non solo alla
+  // lettura. Nessuna scrittura in piu': e' la stessa che si stava gia' facendo.
+  const json=JSON.stringify(turniRipuliArchivio(arch));
   try{localStorage.setItem(TURNI_STORICO_KEY,json);}catch(e){}
   kvSet(TURNI_STORICO_KEY,json).catch(()=>{});
   // Il turno cambia più volte in settimana: chi sta guardando le statistiche deve vederle
   // aggiornate subito dopo il caricamento, non alla prossima apertura della vista.
   try{turniRenderStats();}catch(e){}
+  try{turniRenderArchivio();}catch(e){}
 }
 // ── STATISTICHE TURNI — SOLO RICEVIMENTO ────────────────────────────────────
 // Housekeeping, breakfast e manutenzione usano codici tutti loro ('9-14', 'SOUL N.',
@@ -596,8 +617,31 @@ function turniStatistiche(archivio,membri){
   return{per:out,settimane:sett.length,dal:sett[0]||null,al:sett.length?archivio[sett[sett.length-1]].al:null,
     ignoti:Object.keys(ignoti).sort().map(k=>({codice:k,volte:ignoti[k].volte,chi:Object.keys(ignoti[k].chi)}))};
 }
+/** Rimette a posto un archivio gia' scritto: anni sbagliati corretti e settimane doppie
+ *  fuse. Pura: riceve l'archivio e ne restituisce uno nuovo, non tocca niente.
+ *
+ *  Serve perche' la correzione dell'anno (turniVoceStorico) vale da qui in avanti, mentre
+ *  in archivio c'era gia' la settimana 17-23/08/2026 salvata DUE VOLTE, una col 2025:
+ *  le statistiche la contavano due volte, la prima con i dati vecchi. Si ripulisce in
+ *  LETTURA e non con una riscrittura perche' il tetto giornaliero delle scritture e' la
+ *  risorsa scarsa (1.000): cosi' i conteggi tornano giusti subito, e l'archivio corretto
+ *  si posa da solo al prossimo turno caricato.
+ *  Fra due voci della stessa settimana vince la piu' recente, come in turniFondiArchivi. */
+function turniRipuliArchivio(arch){
+  const out={};
+  Object.keys(arch||{}).forEach(k=>{
+    const v=arch[k];
+    if(!v||!Array.isArray(v.giorni)||!v.giorni.length)return;
+    const voce=turniVoceStorico({giorni:v.giorni.map(g=>({date:g.data,shifts:g.shifts}))});
+    if(!voce)return;
+    voce.ts=v.ts||voce.ts;
+    const prec=out[voce.chiave];
+    if(!prec||!(prec.ts>0)||(voce.ts>0&&voce.ts>=prec.ts))out[voce.chiave]=voce;
+  });
+  return out;
+}
 function turniStoricoLeggi(){
-  try{const s=localStorage.getItem(TURNI_STORICO_KEY);if(s)return JSON.parse(s)||{};}catch(e){}
+  try{const s=localStorage.getItem(TURNI_STORICO_KEY);if(s)return turniRipuliArchivio(JSON.parse(s)||{});}catch(e){}
   return{};
 }
 // Chi fa le notti di ruolo. È un ELENCO ESPLICITO, non una deduzione dai dati: nella
@@ -621,6 +665,73 @@ function turniOrdina(nomi){
   const notte=nomi.filter(n=>TURNI_NOTTURNI.indexOf(n)>=0).sort((a,b)=>a.localeCompare(b));
   const resto=nomi.filter(n=>testa.indexOf(n)<0&&notte.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
   return testa.concat(resto,notte);
+}
+// ── ARCHIVIO SETTIMANE — sfogliare un turno gia' passato ────────────────────
+// L'archivio conteneva da sempre i turni giorno per giorno, ma si vedevano solo i conteggi
+// aggregati: per sapere chi era di turno il 19 agosto non c'era modo, se non riaprire la
+// foto del planning. Qui si sfoglia la settimana com'era, con i codici originali.
+let _turniSettSel=null;   // chiave della settimana mostrata (dura quanto la visita)
+function turniArchivioSettimane(){
+  const arch=turniStoricoLeggi();
+  return Object.keys(arch).filter(k=>arch[k]&&Array.isArray(arch[k].giorni)&&arch[k].giorni.length).sort().reverse();
+}
+function turniMostraSettimana(k){
+  _turniSettSel=(_turniSettSel===k?null:k);
+  turniRenderArchivio();
+}
+function turniRenderArchivio(){
+  const el=document.getElementById('turniArchivioWrap');if(!el)return;
+  const arch=turniStoricoLeggi();
+  const chiavi=turniArchivioSettimane();
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if(!chiavi.length){el.innerHTML='';return;}
+  const gg=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]:'—';};
+  const GIORNI=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+  if(_turniSettSel&&chiavi.indexOf(_turniSettSel)<0)_turniSettSel=null;
+  const bottoni=chiavi.map(k=>{
+    const v=arch[k],sel=k===_turniSettSel;
+    return `<button onclick="turniMostraSettimana('${k}')" style="background:${sel?'var(--accent)':'var(--surface2)'};color:${sel?'#fff':'var(--text-muted)'};border:1px solid ${sel?'var(--accent)':'var(--border)'};border-radius:6px;padding:6px 11px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">${gg(v.dal)} – ${gg(v.al)}</button>`;
+  }).join('');
+  let corpo='';
+  if(_turniSettSel){
+    const v=arch[_turniSettSel],giorni=v.giorni;
+    // Chi compare nella settimana, non chi e' in organico oggi: un extra di tre settimane fa
+    // deve restare visibile, altrimenti il turno archiviato non e' piu' quello che era.
+    const tutti={};giorni.forEach(g=>Object.keys(g.shifts||{}).forEach(n=>{tutti[n]=1;}));
+    const fo=DEPTS.fo.members.filter(n=>tutti[n]);
+    const altri=Object.keys(tutti).filter(n=>fo.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
+    const intesta=giorni.map(g=>{
+      const d=new Date(g.data+'T12:00:00');
+      return `<th style="text-align:center;padding:6px 4px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;white-space:nowrap;">${GIORNI[d.getDay()]}<div style="font-weight:400;color:var(--text-dim);">${gg(g.data)}</div></th>`;
+    }).join('');
+    const cella=(nome,g)=>{
+      const cod=(g.shifts||{})[nome];
+      const nrm=turniNormalizza(cod);
+      let stile='color:var(--text);',testo=esc(cod||'');
+      if(!nrm){stile='color:var(--border);';testo='·';}
+      else if(nrm.tipo==='riposo')stile='color:var(--text-dim);';
+      else if(nrm.tipo==='ferie')stile='color:var(--amber);font-weight:600;';
+      else if(nrm.tipo==='malattia')stile='color:var(--red);font-weight:600;';
+      else if(nrm.tipo==='altro')stile='color:var(--text-muted);';
+      return `<td style="padding:6px 4px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;font-size:var(--fs-xs);${stile}white-space:nowrap;">${testo}</td>`;
+    };
+    const riga=(n,grigia)=>`<tr${grigia?' style="background:var(--bg);"':''}><td style="padding:6px 9px;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);font-weight:600;white-space:nowrap;">${esc(n)}</td>${giorni.map(g=>cella(n,g)).join('')}</tr>`;
+    const separa=l=>`<tr><td colspan="${giorni.length+1}" style="padding:6px 9px;background:var(--surface2);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:700;">${l}</td></tr>`;
+    corpo=`<div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;min-width:520px;">
+        <thead><tr><th style="text-align:left;padding:6px 9px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;">Persona</th>${intesta}</tr></thead>
+        <tbody>
+          ${turniOrdina(fo).map(n=>riga(n)).join('')}
+          ${altri.length?separa('Housekeeping e altri')+altri.map(n=>riga(n,true)).join(''):''}
+        </tbody>
+      </table></div>`;
+  }
+  el.innerHTML=`<div class="panel" style="margin-top:14px;">
+    <div class="panel-header"><span class="panel-title">Turni archiviati</span>
+      <span style="font-size:var(--fs-xxs);color:var(--text-dim);">${chiavi.length} settiman${chiavi.length===1?'a':'e'}</span></div>
+    <div style="padding:11px 13px;display:flex;gap:7px;flex-wrap:wrap;">${bottoni}</div>
+    ${corpo||'<div style="padding:0 13px 13px;font-size:var(--fs-xxs);color:var(--text-dim);">Scegli una settimana per rivedere il turno com\'era.</div>'}
+  </div>`;
 }
 function turniRenderStats(){
   const el=document.getElementById('turniStatsWrap');if(!el)return;
@@ -1925,7 +2036,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
   // .staff-area-mirror) — ririchiamato qui solo per popolare lo specchio se la vista
   // viene aperta prima che Overview l'abbia mai fatto in questa sessione.
-  if(id==='turnazione'){try{if(weekData)renderDay(activeDay);}catch(e){}try{turniRenderStats();}catch(e){}}
+  if(id==='turnazione'){try{if(weekData)renderDay(activeDay);}catch(e){}try{turniRenderStats();}catch(e){}try{turniRenderArchivio();}catch(e){}}
   if(id==='registrazione'){try{rcRefreshFromCloud();}catch(e){}}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='overview'&&weekData){

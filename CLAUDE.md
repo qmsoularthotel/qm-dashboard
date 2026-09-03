@@ -1213,6 +1213,12 @@ Cliccando il chip occupazione si apre `#occ-panel`. Barre orizzontali per strutt
 | `_tpFmtDate(s)` | Normalizza qualsiasi formato data → `dd/MM/yyyy` |
 | `turniPrefUpdateBadge()` | Aggiorna badge nav con richieste non lette |
 
+### Turni archiviati — sfogliare una settimana passata
+
+La vista **Turnazione Corrente** mostra, sotto le statistiche, il pannello **Turni archiviati**: un pulsante per settimana (`turniArchivioSettimane()`), e cliccandone uno la tabella persone × 7 giorni con i codici originali (`turniRenderArchivio()`). I dati erano in archivio da sempre — si vedevano solo i conteggi aggregati.
+
+Mostra **chi compare in quella settimana**, non chi è in organico oggi: un extra di tre settimane fa deve restare visibile, altrimenti il turno archiviato non è più quello che era. Ricevimento in alto nell'ordine di `turniOrdina()`, poi housekeeping e altri. Riposi in grigio, ferie in ambra, malattie in rosso.
+
 ---
 
 ## Periodic Timers
@@ -3490,6 +3496,7 @@ confrontarli con quelli presenti in `index.html`.
 | Banner Breakfast copriva i pulsanti della bottom-nav | Posizionato a `bottom:16px`, dentro l'area della nav fissa (~60px) | Spostato a `bottom:72px`, sopra la nav |
 | Deploy GitHub Pages bloccato per ~2 ore (2026-07-06) | Run "queued" incastrata dal 14/06, non cancellabile da UI/API | Risolta con cambio Source Settings→Pages avanti/indietro + retry — vedi sezione Recovery |
 | Un turno annotato fra parentesi restava fuori dalle statistiche | `AC (CALL)` non corrispondeva a nessuna sigla nota, quindi finiva fra i "codici non riconosciuti" e non entrava in nessun conteggio | `turniNormalizza` riprova senza la nota fra parentesi quando il codice intero non è riconosciuto (`AC (CALL)`→`AC`), lasciando intatti i codici che le parentesi le usano davvero |
+| La stessa settimana contata due volte nelle statistiche | Il planning si carica da una foto senza anno: il 24/08/2026 il primo caricamento è stato letto come 2025 e la correzione successiva come 2026, quindi due chiavi diverse per la stessa settimana. **Ricaricare la foto della settimana in corso è normale e non duplica nulla** — la voce ha la stessa chiave e vince la più recente | `turniVoceStorico` normalizza l'anno con `_annoPlausibile`; `turniRipuliArchivio` fonde in **lettura** le voci già scritte (nessuna scrittura KV) e ripulisce l'archivio al prossimo caricamento |
 | Inventario, filtro "7 giorni" mostrava metà del consumo reale | `effectiveDays` aveva un minimo di 14gg applicato anche ai periodi fissi scelti dall'utente, non solo a "Tutto" | `effectiveDays=_invPeriod>0?days:Math.max(14,days)` — il minimo 14 vale solo per "Tutto" |
 | Splash mini app a volte vecchio a volte nuovo, senza regola | 4 service worker sullo stesso scope radice si sostituivano a vicenda e si cancellavano le cache l'uno dell'altro | Un solo `sw.js` registrato da tutte le app — vedi [Service Worker](#service-worker-swjs) |
 | Splash saltato o tagliato a metà | `location.reload()` del service worker aggiornato è indistinguibile da un Cmd+R via `nav.type` | Flag `qm_sw_reload` in `sessionStorage` prima del reload automatico |

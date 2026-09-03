@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='357-20260903';
+  const V='358-20260903';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1649,6 +1649,7 @@
              Solo ricevimento: housekeeping, breakfast e manutenzione hanno codici e
              logiche loro, e mescolarli renderebbe i totali privi di significato. -->
         <div id="turniStatsWrap"></div>
+        <div id="turniArchivioWrap"></div>
       </div>
       <div class="view" id="view-biancheria">
         <div class="panel" style="background:none;border:none;box-shadow:none;padding:0;">
@@ -1685,7 +1686,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=876-20260903"></script>
+<script src="app.js?v=877-20260903"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
