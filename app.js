@@ -3302,8 +3302,19 @@ function renderHkSuggestions(focusIdx){
   // Il titolo dice di quale giorno si sta parlando: i suggerimenti seguono il giorno
   // selezionato nella suddivisione cameriere qui sopra, non la settimana intera.
   const titolo=s.focus&&fLbl?'💡 Come bilanciare '+fLbl:'💡 Come bilanciare la settimana';
+  // Selettore dei giorni ANCHE qui: i suggerimenti stanno in fondo alla vista e per
+  // cambiare giorno bisognava risalire fino al selettore in cima, per poi ridiscendere.
+  // E' la stessa navigazione (pianoNavRender), non una seconda copia dello stato.
+  const selGiorni=(pianoData&&pianoData.giorni&&pianoData.giorni.length)
+    ?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-left:auto;">${pianoData.giorni.map((g,i)=>{
+        const att=i===pianoNavIdx;
+        return `<button onclick="pianoNavRender(${i})" style="background:${att?'var(--accent)':'var(--surface2)'};color:${att?'#fff':'var(--text-muted)'};border:1px solid ${att?'var(--accent)':'var(--border)'};border-radius:5px;padding:3px 8px;font-size:11px;font-weight:${att?'700':'600'};cursor:pointer;font-family:inherit;white-space:nowrap;">${g.label||('g'+(i+1))}</button>`;
+      }).join('')}</div>`
+    :'';
   const box=(inner,tint)=>`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
-    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">${titolo}</div>${inner}</div>`;
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${titolo}</div>${selGiorni}
+    </div>${inner}</div>`;
   if(!s.ok){
     if(s.motivo==='tipi')return box(`<div style="background:var(--amber-bg);color:var(--amber);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">Ricarica il Piano Settimanale per attivare i suggerimenti — quello in memoria è stato caricato prima di questa funzione e non contiene le tipologie camera.</div>`);
     return'';
