@@ -1362,3 +1362,92 @@ sez('Biancheria: lo storico dice CON COSA sta confrontando');
 
   _bia = _prima; _biaHotel = _prevHotel;
 })();
+
+sez('Biancheria: non solo quanto porta Raimondo, ma COSA');
+// Il totale da solo non basta: "-66" non dice se mancano le federe o i teli doccia, che e'
+// la sola informazione con cui si puo' contestare qualcosa al fornitore o cercare i pezzi
+// in albergo. I dati per voce c'erano gia' (ricevuto/consegnato sono oggetti indicizzati
+// per tipologia): la vista li sommava e li buttava via.
+(function () {
+  var _prima = _bia, _prevHotel = _biaHotel;
+  function mk(a) { var o = _biaVuote(); BIA_VOCI_GIRO.forEach(function (v, i) { o[v] = a[i] || 0; }); return o; }
+  //                                    matr sing fed viso bidet telo scend
+  _bia = { consumi: [], giri: [
+    { id: 'sa0', hotel: 'sa', data: '29/08/2026', consegnato: mk([60, 20, 90, 70, 50, 20, 8]), ricevuto: mk([55, 18, 80, 66, 48, 18, 7]), ts: 1 },
+    { id: 'sa1', hotel: 'sa', data: '01/09/2026', consegnato: mk([70, 25, 100, 80, 55, 25, 10]), ricevuto: mk([60, 20, 90, 70, 50, 20, 8]), ts: 2 },
+    { id: 'sa2', hotel: 'sa', data: '03/09/2026', consegnato: mk([40, 15, 60, 45, 30, 15, 6]), ricevuto: mk([64, 25, 88, 74, 52, 25, 10]), ts: 3 },
+    { id: 'bh1', hotel: 'bh', data: '01/09/2026', consegnato: mk([20, 10, 30, 25, 18, 8, 4]), ricevuto: mk([0, 0, 0, 0, 0, 0, 0]), ts: 4 },
+    { id: 'bh2', hotel: 'bh', data: '03/09/2026', consegnato: mk([18, 8, 26, 22, 15, 7, 3]), ricevuto: mk([20, 10, 28, 25, 18, 8, 4]), ts: 5 }
+  ] };
+  _biaHotel = 'sa';
+  var giro = function (id) { return _bia.giri.filter(function (g) { return g.id === id; })[0]; };
+  // Se la voce non c'e' si torna un segnaposto invece di undefined: un controllo deve
+  // FALLIRE, non schiantare la suite nascondendo tutto quello che viene dopo.
+  var voce = function (righe, v) {
+    return righe.filter(function (r) { return r.voce === v; })[0] ||
+           { voce: '(mancante: ' + v + ')', portato: '(assente)', dovuto: '(assente)', delta: '(assente)' };
+  };
+
+  // ── Il dettaglio non puo' contraddire il totale della riga ──
+  var det = _biaDettaglioGiro(giro('sa2'));
+  var riga = _biaRigaGiro(giro('sa2'));
+  ok('la somma del dettaglio e\' il totale mostrato',
+     det.reduce(function (t, r) { return t + r.portato; }, 0), riga.portato);
+  ok('e lo stesso per il dovuto',
+     det.reduce(function (t, r) { return t + r.dovuto; }, 0), riga.dovuto);
+  ok('e per la differenza',
+     det.reduce(function (t, r) { return t + r.delta; }, 0), riga.delta);
+
+  // ── Il dovuto per voce viene dal giro precedente della STESSA struttura ──
+  ok('03/09: le federe attese sono le 100 uscite il 01/09', voce(det, 'Federa').dovuto, 100);
+  ok('ne sono tornate 88',                                  voce(det, 'Federa').portato, 88);
+  ok('quindi ne mancano 12',                                voce(det, 'Federa').delta, -12);
+  // Il Boutique ha un giro nello stesso giorno: se il dovuto pescasse dall'hotel sbagliato
+  // le sue federe verrebbero confrontate con le 100 di SoulArt invece che con le sue 30.
+  ok('Boutique 03/09: federe attese 30, non 100',
+     voce(_biaDettaglioGiro(giro('bh2')), 'Federa').dovuto, 30);
+
+  // ── Il primo giro non inventa un confronto ──
+  var primo = _biaDettaglioGiro(giro('bh1'));
+  ok('primo giro: nessun dovuto per voce',   voce(primo, 'Federa').dovuto, null);
+  ok('e nessuna differenza',                 voce(primo, 'Federa').delta, null);
+  ok('la tabella nasconde le colonne del confronto',
+     /Doveva portare/.test(_biaTabellaVoci(primo, false)), false);
+  ok('e le mostra quando il confronto c\'e\'',
+     /Doveva portare/.test(_biaTabellaVoci(det, true)), true);
+
+  // ── Le voci ferme non sporcano il dettaglio ──
+  // Senza un giro precedente non c'e' un dovuto, quindi restano solo le voci che si sono
+  // davvero mosse. (Con un dovuto la regola e' un'altra, vedi il controllo qui sotto.)
+  var soloFedere = _biaDettaglioGiro({ hotel: 'bh', data: '20/08/2026',
+    consegnato: _biaVuote(), ricevuto: mk([0, 0, 12, 0, 0, 0, 0]) });
+  ok('si mostrano solo le voci che si sono mosse', soloFedere.length, 1);
+  ok('ed e\' quella giusta',                       soloFedere[0].voce, 'Federa');
+  // Ma una voce ATTESA e non tornata non deve sparire: e' l'ammanco piu' grave, ed e'
+  // esattamente la riga che si va a cercare. Il filtro guarda anche il dovuto.
+  var nulla = _biaDettaglioGiro({ hotel: 'sa', data: '05/09/2026',
+    consegnato: _biaVuote(), ricevuto: _biaVuote() });
+  ok('una voce attesa e mai tornata resta in elenco', voce(nulla, 'Federa').portato, 0);
+  ok('col suo dovuto',                                voce(nulla, 'Federa').dovuto, 60);
+  ok('e l\'ammanco pieno',                            voce(nulla, 'Federa').delta, -60);
+
+  // ── L'aggregato non puo' contraddire il saldo del pannello sopra ──
+  var agg = _biaTotPerVoce('sa');
+  ok('somma delle differenze per voce = saldo',
+     agg.reduce(function (t, r) { return t + r.delta; }, 0), _biaTot(_biaSaldo('sa')));
+  ok('e il portato totale = quello del riepilogo',
+     agg.reduce(function (t, r) { return t + r.portato; }, 0), _biaRiepilogoPortato('sa').portato);
+  ok('come il dovuto',
+     agg.reduce(function (t, r) { return t + r.dovuto; }, 0), _biaRiepilogoPortato('sa').dovuto);
+  // 29/08 e' il primo giro di SoulArt: i suoi 80 federe rientrate non hanno un termine di
+  // confronto e restano fuori, esattamente come nel riepilogo e nel saldo.
+  ok('il primo giro resta fuori anche qui', voce(agg, 'Federa').portato, 90 + 88);
+  ok('l\'ammanco si concentra sulle federe',  voce(agg, 'Federa').delta, -12);
+  ok('i lenzuoli singoli sono in pari',       voce(agg, 'Lenzuolo singolo').delta, 0);
+
+  // ── L'ordine e' quello con cui si contano i pezzi, non quello del foglio camera ──
+  ok('prima voce del dettaglio', agg[0].voce, BIA_VOCI_GIRO[0]);
+  ok('e sono tutte e sette',     agg.length, BIA_VOCI_GIRO.length);
+
+  _bia = _prima; _biaHotel = _prevHotel;
+})();

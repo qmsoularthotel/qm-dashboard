@@ -14237,6 +14237,10 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 // consumate 26 federe, sono 26 le federe che escono.
 const BIA_KEY='qm_biancheria';
 const BIA_HOTELS={sa:'SoulArt Hotel',bh:'Boutique Hotel Piazza Carità'};
+// Nome corto per le pastiglie dello storico: per intero, "Boutique Hotel Piazza Carità"
+// mangiava la riga e mandava i pulsanti a capo da soli. Il nome completo resta ovunque
+// serva identificare la struttura senza ambiguità (intestazioni, riepilogo, stampa).
+const BIA_HOTEL_BREVE={sa:'SoulArt',bh:'Boutique'};
 // Le sette voci dei fogli camera, nell'ordine in cui le cameriere le trovano sul
 // cartaceo: inserire i numeri seguendo lo stesso ordine riduce gli errori di battitura.
 // L'ordine è solo di presentazione — i dati salvati sono indicizzati per NOME, quindi
@@ -14258,6 +14262,14 @@ let _biaHotel='sa';
 // Pannelli richiudibili: la spiegazione del ciclo e lo storico non servono ogni giorno,
 // ma tenerli sempre aperti rendeva la pagina un muro.
 let _biaGuida=false, _biaStorico=false;
+// Quali righe dello storico hanno il dettaglio per tipologia aperto, e se è aperto quello
+// del riepilogo. Stanno FUORI da biaRender, che rigenera tutto l'HTML: dentro, ogni
+// apertura si richiuderebbe da sola al primo ridisegno (stessa lezione di _speseCatOpen).
+// È un insieme e non un id solo: due strutture nello stesso giorno si confrontano bene
+// solo tenendole aperte insieme.
+let _biaGiroAperto=new Set(), _biaVociAperte=false;
+function biaToggleGiro(id){_biaGiroAperto.has(id)?_biaGiroAperto.delete(id):_biaGiroAperto.add(id);biaRender();}
+function biaToggleVoci(){_biaVociAperte=!_biaVociAperte;biaRender();}
 function biaToggleGuida(){_biaGuida=!_biaGuida;biaRender();}
 // Promemoria in Overview: il pomeriggio prima di un ritiro, finché la distinta non è
 // stampata. Legge da localStorage e non dal cloud — deve poter girare a ogni render
@@ -14462,6 +14474,39 @@ function _biaRigaGiro(g){
          dataPrec:prec?prec.data:null,
          delta:dovuto===null?null:portato-dovuto};
 }
+// Cosa ha portato, VOCE PER VOCE, in un singolo giro. Il totale da solo non basta: 370
+// pezzi mancanti di 66 non dicono se mancano le federe o i teli doccia, che è la sola
+// informazione con cui si può contestare qualcosa a Raimondo o cercarli in albergo.
+// Si tengono solo le voci che si sono mosse: una riga a zero da entrambe le parti è
+// rumore, e con sette voci per giro il dettaglio diventerebbe illeggibile.
+function _biaDettaglioGiro(g){
+  const att=_biaAtteso(_biaH(g),g.data);
+  return BIA_VOCI_GIRO.map(v=>{
+    const portato=Number(g.ricevuto&&g.ricevuto[v])||0;
+    const dovuto=att?(Number(att[v])||0):null;
+    return{voce:v,portato:portato,dovuto:dovuto,
+           delta:dovuto===null?null:portato-dovuto,
+           uscito:Number(g.consegnato&&g.consegnato[v])||0};
+  }).filter(r=>r.portato||r.dovuto||r.uscito);
+}
+// Lo stesso, sommato su tutti i giri confrontabili di una struttura: dove si concentra
+// l'ammanco. Stesso insieme di giri di _biaSaldo e _biaRiepilogoPortato, così le tre
+// letture non possono raccontare cose diverse.
+function _biaTotPerVoce(hotel){
+  const out=BIA_VOCI_GIRO.map(v=>({voce:v,portato:0,dovuto:0,delta:0}));
+  const idx={};out.forEach((r,i)=>idx[r.voce]=i);
+  _biaGiri(hotel).forEach(g=>{
+    const att=_biaAtteso(hotel,g.data);
+    if(!att)return;                       // primo giro: niente con cui confrontarlo
+    BIA_VOCI_GIRO.forEach(v=>{
+      const r=out[idx[v]];
+      r.portato+=Number(g.ricevuto&&g.ricevuto[v])||0;
+      r.dovuto+=Number(att[v])||0;
+    });
+  });
+  out.forEach(r=>r.delta=r.portato-r.dovuto);
+  return out;
+}
 // Riepilogo per struttura: quanto ha portato in tutto e quanto avrebbe dovuto. Somma
 // SOLO i giri che hanno un termine di confronto, gli stessi che _biaSaldo conta — così
 // portato − dovuto coincide sempre col saldo mostrato sopra, invece di divergere di un
@@ -14563,6 +14608,32 @@ let _biaAttesoVis=null;   // atteso della tabella attualmente a schermo
 // (tabella del giro, storico, saldo cumulato): in pari verde, mancante rosso, rientro in
 // più AMBRA. Il "+3" del 25/08 era dipinto di rosso come un ammanco: un colore che grida
 // anche quando la notizia è buona è un colore che si impara a ignorare.
+// La tabella "cosa ha portato", voce per voce. Una sola funzione per i due punti che la
+// mostrano (la riga del singolo giro e il riepilogo per struttura): stessa forma, stessi
+// colori, nessuna copia da tenere allineata. `conf` dice se esiste un termine di
+// confronto: al primo giro le colonne del dovuto e della differenza non hanno senso.
+function _biaTabellaVoci(righe,conf){
+  if(!righe||!righe.length)return'<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;">Nessuna quantità registrata per questo giro.</div>';
+  const th='text-align:right;padding:4px 6px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;border-bottom:1px solid var(--border);';
+  const td='padding:4px 6px;text-align:right;border-bottom:1px solid var(--border-light,var(--border));';
+  const esc=x=>String(x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return`<div style="margin-top:9px;overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+      <thead><tr>
+        <th style="${th}text-align:left;">Tipologia</th>
+        <th style="${th}">Ha portato</th>
+        ${conf?`<th style="${th}">Doveva portare</th><th style="${th}">Differenza</th>`:''}
+      </tr></thead>
+      <tbody>${righe.map(r=>`<tr>
+        <td style="${td}text-align:left;">${esc(r.voce)}</td>
+        <td style="${td}font-weight:700;">${r.portato}</td>
+        ${conf?`<td style="${td}color:var(--text-dim);">${r.dovuto}</td>
+          <td style="${td}font-weight:700;color:${_biaColDelta(r.delta)};">${r.delta===0?'—':(r.delta>0?'+'+r.delta:r.delta)}</td>`:''}
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+}
+
 function _biaColDelta(d){return d===0?'var(--green)':(d<0?'var(--red)':'var(--amber)');}
 function _biaTxtDelta(d){return d===0?'in pari':(d>0?'+'+d:String(d));}
 
@@ -14838,23 +14909,48 @@ function biaRender(){
       </div>`;
     });
     h+=`</div>`;
+    // Il dettaglio aggregato sta SOTTO il suo pulsante, non sopra: un interruttore che
+    // compare dopo la cosa che apre non si capisce a cosa serva.
+    h+=`<div style="padding:0 14px 12px;border-bottom:1px solid var(--border);background:var(--surface2,var(--surface));">
+      <button onclick="biaToggleVoci()" style="background:none;border:none;padding:0;font-size:var(--fs-xxs);color:var(--accent);font-weight:700;cursor:pointer;">${_biaVociAperte?'Nascondi il dettaglio per tipologia ▴':'Cosa porta, per tipologia ▾'}</button>`;
+    if(_biaVociAperte){
+      h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.5;">Somma di tutti i giri confrontabili: dice su quali pezzi si concentra la differenza, che il totale da solo non può dire.</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;">`;
+      Object.keys(BIA_HOTELS).forEach(k=>{
+        const r=_biaRiepilogoPortato(k);
+        if(!r.confrontati)return;
+        h+=`<div style="flex:1;min-width:250px;">
+          <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;">${esc(BIA_HOTELS[k])}</div>
+          ${_biaTabellaVoci(_biaTotPerVoce(k),true)}
+        </div>`;
+      });
+      h+=`</div>`;
+    }
+    h+=`</div>`;
     tutti.forEach(g=>{
       const r=_biaRigaGiro(g);
-      h+=`<div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <span style="font-weight:700;">${esc(r.data)}</span>
-          <span style="background:var(--accent-bg);color:var(--accent);border-radius:5px;padding:2px 7px;font-size:var(--fs-xxs);font-weight:700;">${esc(BIA_HOTELS[r.hotel]||r.hotel)}</span>
-          <span>ha portato <strong>${r.portato}</strong></span>
-          ${r.dovuto===null
-            ?`<span style="color:var(--text-dim);">primo giro: niente con cui confrontarlo</span>`
-            :`<span style="color:var(--text-dim);">su ${r.dovuto} attesi — i sacchi del ${esc(r.dataPrec)}</span>
-              <span style="font-weight:700;color:${_biaColDelta(r.delta)};">${_biaTxtDelta(r.delta)}</span>`}
-          <span style="margin-left:auto;display:flex;gap:6px;">
-            <button onclick="biaPrintDistinta('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Distinta</button>
-            <button onclick="biaEliminaGiro('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
-          </span>
+      const aperto=_biaGiroAperto.has(g.id);
+      // Pulsanti FUORI dal flex che va a capo: dentro, con la pastiglia lunga del
+      // Boutique finivano su una riga tutta loro, staccati dalla riga che comandano.
+      h+=`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+            <span style="font-weight:700;">${esc(r.data)}</span>
+            <span style="background:var(--accent-bg);color:var(--accent);border-radius:5px;padding:2px 7px;font-size:var(--fs-xxs);font-weight:700;">${esc(BIA_HOTEL_BREVE[r.hotel]||r.hotel)}</span>
+            <span>ha portato <strong>${r.portato}</strong></span>
+            ${r.dovuto===null
+              ?`<span style="color:var(--text-dim);">primo giro: niente con cui confrontarlo</span>`
+              :`<span style="color:var(--text-dim);">su ${r.dovuto} attesi — i sacchi del ${esc(r.dataPrec)}</span>
+                <span style="font-weight:700;color:${_biaColDelta(r.delta)};">${_biaTxtDelta(r.delta)}</span>`}
+          </div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">sacchi dati a lui quel giorno: ${r.uscito} — tornano al giro dopo, non contano in questa riga</div>
+          ${aperto?_biaTabellaVoci(_biaDettaglioGiro(g),r.dovuto!==null):''}
         </div>
-        <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">sacchi dati a lui quel giorno: ${r.uscito} — tornano al giro dopo, non contano in questa riga</div>
+        <div style="flex-shrink:0;display:flex;gap:6px;">
+          <button onclick="biaToggleGiro('${g.id}')" style="background:${aperto?'var(--accent)':'none'};border:1px solid ${aperto?'var(--accent)':'var(--border)'};border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:${aperto?'#fff':'var(--accent)'};cursor:pointer;white-space:nowrap;">Cosa ha portato ${aperto?'▴':'▾'}</button>
+          <button onclick="biaPrintDistinta('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Distinta</button>
+          <button onclick="biaEliminaGiro('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
+        </div>
       </div>`;
     });
     h+=`</div></div>`;

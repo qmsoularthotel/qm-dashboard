@@ -2561,6 +2561,48 @@ mostrano una differenza (tabella del giro, storico, saldo cumulato): in pari ver
 mancante rosso, rientro in più **ambra**. Un colore che grida anche sulle buone notizie è un
 colore che si impara a ignorare.
 
+### Non solo QUANTO porta, ma COSA (03/09/2026)
+
+Un totale non è azionabile: `−66` non dice se mancano le federe o i teli doccia, che è la
+sola informazione con cui si contesta qualcosa al fornitore o si cercano i pezzi in
+albergo. I dati per voce c'erano da sempre — `ricevuto`/`consegnato` sono oggetti
+indicizzati per tipologia — ma la vista li sommava e li buttava via.
+
+| Dove | Cosa mostra |
+|---|---|
+| **Ogni riga dello storico** | pulsante *"Cosa ha portato"* → tabella `Tipologia · Ha portato · Doveva portare · Differenza` per quel singolo giro |
+| **In testa al pannello** | *"Cosa porta, per tipologia"* → la stessa tabella sommata su tutti i giri confrontabili, per struttura: dice **dove si concentra** l'ammanco |
+
+`_biaTabellaVoci(righe,conf)` è l'**unica** funzione che disegna quella tabella: i due punti
+non possono divergere nel formato. `conf` dice se esiste un termine di confronto — al primo
+giro le colonne del dovuto e della differenza non vengono stampate invece di mostrare zeri
+inventati.
+
+**Il filtro tiene le voci che si sono mosse su UNA QUALSIASI delle tre colonne**
+(`portato || dovuto || uscito`), non solo sul portato. Una voce **attesa e mai tornata** è
+l'ammanco più grave e la riga che si va a cercare: filtrarla via perché `portato===0` è
+l'errore facile, coperto da tre controlli.
+
+`_biaTotPerVoce` somma **solo i giri con un termine di confronto**, lo stesso insieme di
+`_biaSaldo` e `_biaRiepilogoPortato`: le tre letture non possono raccontare cose diverse.
+Verificato in test che le somme del dettaglio coincidano sempre col totale della riga e col
+saldo del pannello.
+
+**Stato aperto fuori da `biaRender`** (`_biaGiroAperto`, un `Set`, e `_biaVociAperte`):
+`biaRender()` rigenera tutto l'HTML, quindi uno stato interno si richiuderebbe da solo al
+primo ridisegno — stessa lezione di `_speseCatOpen` in Spese Fornitori. È un insieme e non
+un id solo perché due strutture nello stesso giorno si confrontano solo tenendole aperte
+insieme.
+
+Nella stessa modifica, due correzioni di impaginazione: la pastiglia usa un **nome corto**
+(`BIA_HOTEL_BREVE`) — *"Boutique Hotel Piazza Carità"* per intero mandava i pulsanti a capo
+su una riga tutta loro — e i pulsanti stanno **fuori** dal flex che va a capo, così restano
+allineati alla riga che comandano.
+
+Coperto da **24 controlli** ("Biancheria: non solo quanto porta Raimondo, ma COSA"),
+verificati con tre sabotaggi (dovuto dall'hotel sbagliato, primo giro confrontato con se
+stesso, filtro sul solo portato): 3, 6 e 5 falliscono.
+
 **Attenzione al modello, non toccato qui**: `atteso(N) = consegnato(N−1)` assume che
 Raimondo riporti in **un solo giro**. Sui dati reali di SoulArt il saldo cumulato è −308
 pezzi su 6 giri: se la resa fosse in due giri, tutte quelle differenze sarebbero da
@@ -2580,6 +2622,9 @@ sullo sporco uscito, rientro in più di nuovo rosso): 4, 8 e 1 falliscono.
 | `_biaGiriTutti()` | Tutti i giri di **tutte** le strutture, dal più recente |
 | `_biaRigaGiro(g)` | Riga di storico già calcolata: portato, dovuto, data del confronto, differenza |
 | `_biaRiepilogoPortato(h)` | Totale portato vs atteso per struttura, sui soli giri confrontabili |
+| `_biaDettaglioGiro(g)` | Cosa ha portato **voce per voce** in un singolo giro |
+| `_biaTotPerVoce(h)` | Lo stesso sommato sui giri confrontabili: dove si concentra l'ammanco |
+| `_biaTabellaVoci(righe,conf)` | L'unica funzione che disegna la tabella per tipologia |
 | `_biaColDelta(d)` / `_biaTxtDelta(d)` | Unica scala di colore/testo di una differenza |
 | `biaAggiornaDelta()` | Aggiorna Δ e avviso mentre si digita, senza rigenerare l'HTML |
 | `_biaPeriodo(hotel,dataGiro)` | Intervallo dei consumi ritirati — vedi regola sopra |
@@ -3179,8 +3224,8 @@ guardando lo schermo, un errore nei numeri no — resta plausibile e può passar
 per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dall'alloggio,
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
-dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto dello storico biancheria, cancello del polling a
-scheda nascosta. 439 controlli.
+dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto e dettaglio per tipologia dello storico biancheria, cancello del polling a
+scheda nascosta. 463 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire
