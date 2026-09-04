@@ -7563,6 +7563,29 @@ function _hkpCountDay(g,keys){
   });
   return{arrivi,fermate,partenze};
 }
+// Salva un conteggio derivato dal Piano SOLO se i numeri sono cambiati davvero.
+//
+// Serviva perche' questi due blocchi portavano `caricato: new Date()`, cioe' un orario
+// nuovo a ogni derivazione: il filtro anti-ripetizioni di kvSet confronta il contenuto, lo
+// trovava sempre diverso e riscriveva. hkpDeriveFromPiano parte a ogni caricamento del
+// Piano — compreso quello del giro di aggiornamento — quindi erano DUE scritture ogni
+// ciclo con nessuno che toccava niente: fino a ~5.700 al giorno per una postazione lasciata
+// aperta, contro un tetto di 1.000 (misurato il 04/09/2026 con Compass fermo: le uniche due
+// chiavi che cambiavano da sole erano queste).
+//
+// Il confronto ignora di proposito `caricato` e `_ts`: sono segnatempo, non dati. Se i
+// conteggi dei giorni sono gli stessi si tiene la versione gia' salvata — col suo
+// segnatempo originale, che dice quando il dato e' nato e non quando lo si e' riletto.
+function _hkSalvaDerivato(chiave,nuovo){
+  const _soloDati=o=>{try{return JSON.stringify({s:o.struttura,g:o.giorni});}catch(e){return null;}};
+  let vecchio=null;
+  try{vecchio=JSON.parse(localStorage.getItem(chiave)||'null');}catch(e){}
+  if(vecchio&&_soloDati(vecchio)===_soloDati(nuovo))return vecchio;
+  const j=JSON.stringify(nuovo);
+  try{localStorage.setItem(chiave,j);}catch(e){}
+  try{kvSet(chiave,j).catch(()=>{});}catch(e){}
+  return nuovo;
+}
 function hkpDeriveFromPiano(){
   if(!HKP_DERIVE_FROM_PIANO)return;
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length)return;
@@ -7579,12 +7602,8 @@ function hkpDeriveFromPiano(){
   // Compass Housekeeper SoulArt / Boutique → KPI Overview + app housekeeper.html
   // (il bilanciamento cameriere e il dettaglio camere di quell'app leggono già il
   // Piano direttamente, qui si replicano solo i conteggi aggregati delle card KPI)
-  hkSoulData={struttura:'SoulArt Hotel',giorni:mk(['soulart']),caricato:new Date().toISOString(),_ts:ts};
-  hkBoutData={struttura:'Boutique Hotel',giorni:mk(['boutique']),caricato:new Date().toISOString(),_ts:ts};
-  try{localStorage.setItem('qm_hk_soul',JSON.stringify(hkSoulData));}catch(e){}
-  try{localStorage.setItem('qm_hk_bout',JSON.stringify(hkBoutData));}catch(e){}
-  kvSet('qm_hk_soul',JSON.stringify(hkSoulData)).catch(()=>{});
-  kvSet('qm_hk_bout',JSON.stringify(hkBoutData)).catch(()=>{});
+  hkSoulData=_hkSalvaDerivato('qm_hk_soul',{struttura:'SoulArt Hotel',giorni:mk(['soulart']),caricato:new Date(ts).toISOString(),_ts:ts});
+  hkBoutData=_hkSalvaDerivato('qm_hk_bout',{struttura:'Boutique Hotel',giorni:mk(['boutique']),caricato:new Date(ts).toISOString(),_ts:ts});
   try{hkSetLoaded('soul',true);hkSetLoaded('bout',true);}catch(e){}
 }
 function pianoSetLoaded(silent){

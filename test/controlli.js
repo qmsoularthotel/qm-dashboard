@@ -344,6 +344,32 @@ ok('e resta sotto la data giusta',      Object.keys(_pulito)[0], _iso(_g0));
 ok('vince la versione archiviata dopo', _pulito[_iso(_g0)].giorni[0].shifts['Rossi M.'], 'AC');
 ok('una voce senza giorni viene scartata', Object.keys(turniRipuliArchivio({ x: { giorni: [] } })).length, 0);
 
+// ── I conteggi derivati dal Piano non si riscrivono da soli ────────────────
+// Portavano `caricato: new Date()`, quindi ogni derivazione produceva un contenuto diverso
+// e kvSet non poteva riconoscerla come ripetizione: due scritture sul cloud a ogni giro di
+// aggiornamento, con nessuno che toccava niente. Il tetto giornaliero e' 1.000 ed era gia'
+// finito una volta (03/09/2026).
+(function () {
+  var _ls = localStorage.getItem('qm_hk_soul');
+  var scritte = 0;
+  var _kv = kvSet;
+  kvSet = function (k, v) { if (k === 'qm_hk_soul') scritte++; return _kv(k, v); };
+  localStorage.removeItem('qm_hk_soul');
+  var dato = { struttura: 'SoulArt Hotel', giorni: [{ label: 'Lun 1/9', partenze: 3 }], caricato: '2026-09-04T08:00:00.000Z', _ts: 1 };
+  _hkSalvaDerivato('qm_hk_soul', dato);
+  ok('la prima volta si scrive', scritte, 1);
+  // Stessi numeri, segnatempo diverso: e' lo stesso dato riletto, non un dato nuovo.
+  _hkSalvaDerivato('qm_hk_soul', { struttura: 'SoulArt Hotel', giorni: [{ label: 'Lun 1/9', partenze: 3 }], caricato: '2026-09-04T09:30:00.000Z', _ts: 2 });
+  ok('lo stesso conteggio non si riscrive', scritte, 1);
+  ok('e resta il segnatempo originale',
+     JSON.parse(localStorage.getItem('qm_hk_soul')).caricato, '2026-09-04T08:00:00.000Z');
+  // Numeri diversi: quello si', va salvato.
+  _hkSalvaDerivato('qm_hk_soul', { struttura: 'SoulArt Hotel', giorni: [{ label: 'Lun 1/9', partenze: 4 }], caricato: '2026-09-04T10:00:00.000Z', _ts: 3 });
+  ok('un conteggio cambiato si scrive', scritte, 2);
+  kvSet = _kv;
+  if (_ls === null) localStorage.removeItem('qm_hk_soul'); else localStorage.setItem('qm_hk_soul', _ls);
+})();
+
 sez('Statistiche turni ricevimento');
 // I codici sono scritti a mano e hanno varianti: senza normalizzazione ci si ritrova venti
 // categorie da una occorrenza sola, e i totali non dicono niente.
