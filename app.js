@@ -2639,6 +2639,9 @@ function miniappInvStatus(){
   if(sottoSoglia>0)return _miniappStatusHTML('amber','Alcune scorte basse',kpi);
   return _miniappStatusHTML('green','Scorte ok',kpi);
 }
+// Ora in cui si fa il giro di distribuzione (Art Resort). Serve solo a non colorare di
+// rosso la mattinata: prima di quest'ora il giro non e' in ritardo, non e' ancora l'ora.
+const CM_ORA_GIRO=12;
 async function miniappCmStatus(){
   const d=new Date();
   const key='qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -2648,7 +2651,13 @@ async function miniappCmStatus(){
     if(r.ok){const j=await r.json();if(j&&j.value)state=JSON.parse(j.value);}
   }catch(e){}
   if(!state){try{const r=localStorage.getItem(key);if(r)state=JSON.parse(r);}catch(e){}}
-  if(!state||!Object.keys(state).length)return _miniappStatusHTML('red','Nessun controllo oggi','');
+  // Il giro si fa alle 12: prima di quell'ora "nessun controllo" non e' un problema, e
+  // segnarlo in rosso ogni mattina insegna solo a non guardare piu' il colore. Diventa
+  // rosso solo se all'ora del giro non e' ancora partito niente.
+  if(!state||!Object.keys(state).length)
+    return d.getHours()<CM_ORA_GIRO
+      ?_miniappStatusHTML('green','Giro delle '+CM_ORA_GIRO+':00',"non ancora iniziato")
+      :_miniappStatusHTML('red','Nessun controllo oggi','');
   const lastTs=Math.max(0,...CM_ROOMS.map(r=>state[r]?.ts||0))||null;
   const pending=CM_ROOMS.filter(r=>!state[r]?.visited).length;
   if(pending>0)return _miniappStatusHTML('amber','Giro in corso',`ore ${_miniappFmtTime(lastTs)}`);
