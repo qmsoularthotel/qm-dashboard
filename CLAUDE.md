@@ -2323,7 +2323,7 @@ let _appStatus = {};  // qm_app_status: { hk:true, bkf:false, ... } — assente/
 
 **Ricontrollo mentre l'app resta aperta**: `qmCheckAppStatus()` gira al caricamento, su `visibilitychange` (quando l'app torna in primo piano) e ogni 60s via `setInterval`, **solo mentre l'app è a schermo** — necessario perché un'app rimasta aperta in background su uno smartphone (icona home screen mai chiusa) non rileggerebbe mai lo stato senza questo. Se il fetch fallisce (rete assente), l'app **resta utilizzabile** (fail-open) — non blocca mai per un problema di connessione.
 
-**Non implementato**: contatore accessi per dispositivo (rimosso su richiesta esplicita — "non si è rivelato utile"). Le funzioni `loadHkAccessStats`, `loadBkfAccessStats`, `loadDvrAccessStats` e il toggle "escludi questo dispositivo" sono stati eliminati insieme alle relative sezioni UI. Le app standalone continuano a scrivere silenziosamente `qm_hk_access` / `qm_bkf_access` / `qm_dvr_access` (codice non toccato), ma la dashboard non li legge/mostra più.
+**Non implementato**: contatore accessi per dispositivo (rimosso su richiesta esplicita — "non si è rivelato utile"). Le funzioni `loadHkAccessStats`, `loadBkfAccessStats`, `loadDvrAccessStats` e il toggle "escludi questo dispositivo" sono stati eliminati insieme alle relative sezioni UI. **Dal 04/09/2026 anche le app hanno smesso di scriverlo**: `qm_hk_access` / `qm_bkf_access` / `qm_dvr_access` costavano una lettura e una scrittura a ogni apertura per un dato che nessuno leggeva più, e le scritture sul piano gratuito sono 1.000 al giorno. Se un domani servisse contare gli accessi va ripensato: non un contatore riscritto da ogni dispositivo a ogni apertura.
 
 ### Avviso toast — solo Breakfast (`qm_bkf_banner`)
 

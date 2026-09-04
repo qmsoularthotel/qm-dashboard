@@ -447,7 +447,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-02.5';
+const QM_APP_BUILD='2026-09-04.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -749,30 +749,14 @@ dvrSyncCloud();
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
-// §§ ACCESS LOG (one-time write on open)
-(function(){
-  const devId=localStorage.getItem('qm_dvr_devid')||(()=>{const id=Math.random().toString(36).slice(2);localStorage.setItem('qm_dvr_devid',id);return id;})();
-  (async()=>{
-    if(localStorage.getItem('qm_no_track')==='1')return;
-    try{
-      const todayStr=new Date().toISOString().slice(0,10);
-      const nowIso=new Date().toISOString();
-      const res=await fetch(PROXY+'/kv/get?key=qm_dvr_access');
-      const json=await res.json();
-      const d=json.value?JSON.parse(json.value):{total:0,today:0,todayDate:'',last:null,devices:{}};
-      d.total=(d.total||0)+1;
-      d.today=d.todayDate===todayStr?(d.today||0)+1:1;
-      d.todayDate=todayStr;d.last=nowIso;
-      if(!d.devices)d.devices={};
-      const dev=d.devices[devId]||{firstSeen:nowIso,total:0,today:0,todayDate:'',last:null};
-      dev.total=(dev.total||0)+1;
-      dev.today=dev.todayDate===todayStr?(dev.today||0)+1:1;
-      dev.todayDate=todayStr;dev.last=nowIso;
-      d.devices[devId]=dev;
-      await qmKvSet('qm_dvr_access',JSON.stringify(d));
-    }catch(e){}
-  })();
-})();
+// Il registro degli accessi (qm_hk_access / qm_bkf_access / qm_dvr_access) e' stato
+// rimosso il 04/09/2026. Scriveva sul cloud a ogni apertura dell'app — una lettura e una
+// scrittura — un dato che la dashboard non legge piu' da luglio, quando la sezione
+// "accessi per dispositivo" fu tolta perche' non si era rivelata utile. Restava solo il
+// codice che scriveva, e consumava il tetto giornaliero delle scritture (1.000) senza che
+// nessuno guardasse mai il risultato. Se un domani servisse contare gli accessi, va
+// ripensato: non un contatore riscritto da ogni dispositivo a ogni apertura.
+
 </script>
 </body>
 </html>
