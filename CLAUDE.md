@@ -50,14 +50,22 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 **QM Dashboard** è una SPA vanilla JS per la gestione qualità di un gruppo alberghiero multi-struttura a Napoli. Il codice è diviso in:
 
 - **`index.html`** — Layout HTML, sidebar nav, tutte le view (div#view-*), CSS inline, tag `<script src="app.js?v=...">` in fondo
-- **`app.js`** — Tutta la logica JS (~6300 linee, ~33 sezioni §§)
+- **`app.js`** — Tutta la logica JS (~16.400 righe, 49 sezioni §§ — vedi la mappa più sotto)
 - **`housekeeper.html`** — App separata per la governante (HK checklist camere)
 - **`breakfast.html`** — App separata per il breakfast manager
 - **`inventory.html`** — App separata per l'inventario detersivi (mobile, scanner barcode)
 - **`controllo-mattino.html`** — App separata PWA per il giro distribuzione Culligan (mattino)
 - **`dvr.html`** — App separata per consultare/gestire il DVR (General Manager)
+- **`reception.html`** — Cassa di reception (fondo cassa, incasso contante) — vedi la sua sezione
+- **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
+- **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
+- **`sw.js`** — Service worker unico per tutto il sito
+- **`test/`** — 523 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
-Tutte e 5 le app standalone sopra sono controllabili on/off dalla dashboard — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
+Le **5 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr) sono
+accendibili e spegnibili da remoto — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
+`reception.html` e `registration-galleria.html` no: la prima non è mai stata inserita nel
+pannello, la seconda ne è stata tolta di proposito.
 
 Non esiste build system, package manager o step di compilazione.
 
@@ -372,41 +380,67 @@ L'algoritmo di Booking.com non è pubblico. Questo è un modello **calibrato** s
 
 ## §§ Section Map (app.js)
 
-| Linea approx. | Sezione | Contenuto |
-|--------------|---------|-----------|
-| 1 | COSTANTI & CONFIG | `DEPTS`, `IS_REST`, `IS_ABSENT`, costanti globali (WEEK rimosso) |
-| 15 | TURNO — ACCORDIONI UC & UPLOAD BOX | Toggle accordioni turni, upload box UI |
-| 87 | TURNO — PARSER TSV/PDF | `parseTurniTSV()`, `handleTurniFile()` |
-| 257 | TURNO — RENDER & NAVIGAZIONE | `renderDay()`, `buildWeekNav()`, `loadWeekData()` |
-| 349 | NAVIGAZIONE VISTE | `setView()`, `pageTitles`, toggle gruppi nav |
-| 357 | HKP OPERATIVE — Google Sheets | `hkpLoad()`, `hkpRenderAll()`, `hkpSave()`, `hkpRestore()` |
-| ~525 | MINI APP — PANNELLO DI CONTROLLO | `miniappRenderStatus()`, `miniapp{Hk,Bkf,Cm,Inv,Dvr}Status()`, `miniappToggleApp()`, `miniappLoadBkfBanner()` — vedi sezione dedicata [Pannello App](#pannello-app--centro-controllo-app-standalone) |
-| 540 | DVR — DOCUMENTO VALUTAZIONE RISCHI | `dvrRender()`, `dvrSave()`, `dvrRestore()`, `dvrRenderDipendenti()` |
-| 628 | UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP | `fmtNow()`, `fmtUploadTs()`, `setUploadTs()` |
-| 696 | STORAGE & SYNC KV | `kvSet()`, `kvGet()`, `syncFromCloud()`, `setSyncStatus()` |
-| 1127 | OVERVIEW — TOGGLE PREVIEW PANELS | Toggle pannelli occupancy/pulizie/breakfast |
-| 1219 | OVERVIEW — GRAFICI & METEO | `buildBarChart()`, `fetchMeteo()`, `toggleWeatherForecast()` |
-| 1299 | SIDEBAR — OROLOGIO & DATA | `updateSbClock()`, `toggleDatePopup()`, `saveDate()` |
-| 1351 | OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 60s | `refreshOverviewForDate()`, polling loop, `renderArriviData()` |
-| 1669 | RECENSIONI — SCORE TREND MODAL | Modal trend punteggi con media pesata |
-| 1756 | OVERVIEW — RECENSIONI NO-REPLY | Tracking recensioni senza risposta in overview |
-| 1828 | BKF SHEET — ANALISI AI | `bkfSheetAnalyze()`, `bkfSheetARAnalyze()` via Claude API |
-| 2041 | REPORT PULIZIE — PUL | `pulParseText()`, `renderPulData()`, `updateKpiFromPulizie()` |
-| 2204 | RECENSIONI — SCORING & INIT UPLOAD | Scoring recensioni, init upload per tutti gli hotel |
-| 2235 | RECENSIONI BOOKING — LOGICA | `revParseCsv()`, `revRenderList()`, `revGenerateReply()`, filtri |
-| ~2995 | REPORT PASTI — BKF | `bkfParseText()`, `renderBkfData()`, `updateKpiFromBkf()` |
-| ~3112 | HOUSEKEEPING — HKP UPLOAD & DATI | Upload HKP, parsing dati, reset slot |
-| ~3191 | PIANO SETTIMANA — UPLOAD & PARSER | `parsePianoItems()`, upload e parsing piano settimanale |
-| ~3350 | BKF — GRUPPI, NOTE & GRAFICI | Gruppi breakfast, note, grafici |
-| ~3603 | REGISTRATION CARDS — RC | `rcParseGuests()`, `rcRenderCards()`, stampa |
-| ~3668 | MODAL — CATEGORIE TREND | Modal trend categorie, calcolo score pesato |
-| ~3767 | ARRIVI GIORNALIERI — UPLOAD & RENDER | `handleArriviFile()`, `renderArriviModal()`, `fixArriviStruttura()` |
-| ~4634 | INVENTARIO DETERSIVI | `invCalcStock()`, `invRender()`, `invRenderStock()`, `invRenderMoves()`, `invRenderAnalysis()`, `invEditQty()`, `invPrintStock()`, `invOrdersMarkReceived()`, `invOrdersConfirmDDT()`, `invOrdersUndoReceived()` |
-| ~5090 | PREFERENZE TURNI | `turniPrefLoad()`, `turniPrefRender()`, `turniPrefMarkAllSeen()`, `_tpFmtDate()` |
-| ~5357 | CONTROLLO MATTINO | `cmLoad()`, `cmRender()`, `cmPrintBottle()`, `cmLoadWeeklyQC()`, `cmRenderWeeklyQC()` |
-| ~6300 | RECENSIONI EXPEDIA | `revExpGenerateReply()`, `REV_EXP_HOTELS`, upload/parse Expedia TSV |
+**Questa tabella si rigenera, non si aggiorna a mano** (le righe si spostano a ogni
+modifica):
 
----
+```bash
+grep -n "// §§" app.js | sed 's|// §§||'
+```
+
+Un controllo in `test/esegui.sh` verifica che **ogni** sezione `§§` presente in `app.js`
+compaia in questo file: è il modo per accorgersi che una parte nuova è stata scritta e mai
+documentata. Rigenerata il 05/09/2026 — 16418 righe, 48 sezioni.
+
+| Riga | Sezione |
+|------|---------|
+| 26 | DARK MODE |
+| 40 | COSTANTI & CONFIG (DEPTS, WEEK fallback, IS_REST) |
+| 60 | TURNO — ACCORDIONI UC & UPLOAD BOX |
+| 166 | TURNO — PARSER TSV/PDF (parseTurniTSV, handleTurniFile) |
+| 397 | TURNO — RENDER & NAVIGAZIONE (loadWeekData, renderDay, buildWeekNav) |
+| 1028 | NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup) |
+| 1031 | HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore) |
+| 1060 | HKP NATIVE — griglia nativa (Camere / Aree Comuni / Fondi & Lavaggi) |
+| 2055 | DVR — SCADENZE SICUREZZA & COMPLIANCE |
+| 2112 | MOBILE SIDEBAR |
+| 2455 | MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone, mosaico) |
+| 3676 | ROOM DIVISION — Suddivisione cameriere, vista settimanale carico pesato e |
+| 3939 | UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP (fmtNow, fmtUploadTs, setUploadTs) |
+| 3980 | BACKUP ARCHIVIO — l'unica copia che esiste fuori dal cloud |
+| 4073 | STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud) |
+| 4408 | OVERVIEW — TOGGLE PREVIEW PANELS (toggleOccupazionePreview, togglePulPreview, toggleBkfPreview) |
+| 4499 | OVERVIEW — GRAFICI & METEO (buildBarChart, fetchMeteo, toggleWeatherForecast) |
+| 4596 | SIDEBAR — OROLOGIO & DATA (updateSbClock, toggleDatePopup, saveDate, updateDateDisplay) |
+| 4649 | OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 30s (refreshOverviewForDate, renderArriviData, syncFromCloud) |
+| 5025 | RECENSIONI — SCORE TREND MODAL (openScoreTrend) |
+| 5103 | OVERVIEW — RECENSIONI NO-REPLY (ovUpdateRevNoreply) |
+| 5221 | BKF SHEET — ANALISI AI (bkfSheetAnalyze, bkfSheetSync, bkfSheetAR*) |
+| 5443 | REPORT PULIZIE — PUL (handlePulFile, pulParseText, renderPulData, renderPulDay, updateKpiFromPulizie) |
+| 5622 | RECENSIONI — SCORING & INIT UPLOAD (weightedAvgF1, revHandleFile init per tutti gli hotel) |
+| 5689 | RECENSIONI — LOGICA (revParseCsv, revRenderCatTrend, revRenderExpiring, revRenderStats, revRenderList, revGenerateReply) |
+| 6117 | RECENSIONI BOOKING — PUNTEGGIO A DECADIMENTO CONTINUO + CALIBRAZIONE |
+| 7239 | REPORT PASTI — BKF (handleBkfFile, bkfParseText, renderBkfData, renderBkfDay, renderOvBkfChart) |
+| 7481 | HOUSEKEEPING — HKP UPLOAD & DATI (handleHkFile, hkParseText, hkSetLoaded, resetSoulData/BoutData) |
+| 7560 | PIANO SETTIMANA — UPLOAD & PARSER (handlePianoFile, parsePianoItems, pianoSetLoaded) |
+| 7773 | BKF — GRUPPI, NOTE & GRAFICI (bkfLoadOps, bkfAddGroup, bkfRenderGroups, bkfRenderChart, updateKpiFromBkf) |
+| 8084 | REGISTRATION CARDS — RC (handleRCFile, rcParseGuests, rcRenderCards) |
+| 8256 | MODAL — CATEGORIE TREND (openCatModal, closeCatModal) |
+| 8355 | ARRIVI GIORNALIERI — UPLOAD & RENDER (handleArriviFile, resetArrivi, arriviUpdateKpi, detectStruttura, renderArriviModal) |
+| 8357 | COLAZIONE BOOKING.COM — snapshot ospiti per camera (nome/origine/trattamento/checkout) |
+| 8906 | INVENTARIO DETERSIVI |
+| 9501 | INVENTARIO — ORDINI |
+| 10004 | PREFERENZE TURNI |
+| 10213 | CONTROLLO MATTINO (cmLoad, cmRender) |
+| 10545 | RECENSIONI EXPEDIA (revExpParseTsv, revExpHandleFile, revExpRenderStats, revExpRenderList, revExpGenerateReply) |
+| 10827 | DDT FORNITORI — upload DDT, spese per fornitore/reparto, storico |
+| 12159 | PRE-STAY — MESSAGGI AGLI OSPITI IN ARRIVO FRA 2 GIORNI |
+| 13744 | RECEPTION — CASSA (fondo cassa, incasso contante) |
+| 14131 | RESI BIANCHERIA — Distinta reso biancheria inidonea (Fornitore Raimondo) |
+| 14642 | BIANCHERIA — Ciclo pulito/sporco (Fornitore Raimondo) |
+| 15613 | PRENOTAZIONI — file unico dal PMS (arrivi + colazioni + pre-stay) |
+| 15987 | CONFERME — finestra Compass al posto di confirm()/alert() del browser |
+| 16042 | SINCRONIZZAZIONE CONTINUA — ogni postazione si aggiorna da sola |
+| 16333 | ACCESSO — ABILITAZIONE DEI DISPOSITIVI |
 
 ## Global Variables & Constants
 
@@ -632,6 +666,79 @@ Voce di menu nella sezione **Reception**, non un pannello indipendente: mostra l
 - Stesso trattamento per gli altri due punti che scrivono nel pannello turno: `resetTurni()` (stato vuoto) e il fallback "turni settimana precedente" dentro `refreshOverviewForDate`. Se si aggiunge un quarto punto di scrittura in futuro, usare `_setStaffAreaHTML()` invece di `document.getElementById('staffArea').innerHTML=`, altrimenti quello specifico stato non comparirebbe nello specchio.
 - `setView('turnazione',...)` richiama `renderDay(activeDay)` solo per popolare lo specchio se la vista viene aperta prima che Overview l'abbia mai fatto in questa sessione (altrimenti resterebbe vuoto finché non cambia giorno).
 - I click sui pulsanti giorno dentro `renderDay()` (`wday-btn`, generati inline nell'HTML) funzionano identici in entrambe le copie: chiamano `renderDay(wi)` globale, non legato a un contenitore specifico.
+
+### Statistiche ricevimento e archivio dei turni
+
+Ogni turno caricato viene **conservato**: `turniVoceStorico()` ne ricava una voce per
+settimana (indicizzata sul lunedì) e `turniArchivia()` la fonde con quella già sul cloud
+(`qm_turni_storico`). Per la stessa settimana **vince la versione più recente**: il planning
+cambia più volte in settimana e si ricarica, e il ricaricamento è la via normale per
+correggerlo — non crea doppioni.
+
+**Il conteggio parte dal 17/08/2026**, la prima settimana archiviata: è scritto nell'intestazione
+del pannello perché nessuno legga i totali come se coprissero l'anno.
+
+#### Cosa si conta (`turniStatistiche()`) — solo `DEPTS.fo`
+
+Housekeeping, breakfast e manutenzione usano codici tutti loro (`9-17`, `SOUL N.`, `BKF GALL`):
+mescolarli renderebbe i totali privi di significato.
+
+| Colonna | Cosa contiene |
+|---|---|
+| P | turni `P` (Presta/Maddaloni, sede unica) |
+| Mattine | `AC` + `AG` |
+| Pomeriggi | `CC` + `CG` |
+| Intermedi | `INT CAR` + `INT GALL` |
+| Notti | `NC` + `NG`, col dettaglio `<n>AR-<n>SA` |
+| Domeniche | domeniche **di riposo** |
+| Art Resort / SoulArt | dove ha lavorato: `AG`/`CG`/`INT GALL` da un lato, `AC`/`CC`/`INT CAR` dall'altro |
+| Malattia / Ferie | assenze esplicite |
+
+#### Elenchi ESPLICITI, mai dedotti dai dati
+
+```js
+TURNI_NOTTURNI    = ["D'Andrea F.", 'Iannario R.', 'Grieco V.']
+TURNI_ORDINE_TESTA= ['Maddaloni M.', 'Presta P.']
+TURNI_SEDE_UNICA  = ['Presta P.', 'Maddaloni M.']
+```
+
+La prima versione **deduceva** chi fosse notturno da quante notti aveva fatto, e Vatiero —
+che le notti le ha fatte in emergenza — finiva fra i notturni. Un elenco scritto a mano è
+l'unica cosa che regge: chi fa le notti di ruolo lo si sa, non lo si calcola. Stessa cosa per
+chi lavora in una sede sola: a Presta e Maddaloni le colonne Art Resort/SoulArt non si
+compilano affatto, perché un `0` farebbe pensare che non abbiano lavorato.
+
+I notturni stanno **in fondo** alla tabella e per loro si mostrano solo notti, domeniche,
+ferie e malattie: mattine e pomeriggi non descrivono il loro lavoro.
+
+#### Codici scritti a mano — `turniNormalizza()`
+
+I turni arrivano da una foto del planning, scritti da persone diverse: `R`, `R RICHIESTO`,
+`R RECUPERO 23/08`, `P (EX R)`, `INT CAR 9/17`. Vengono ricondotti a categorie.
+
+**Una nota fra parentesi non fa un turno diverso**: `AC (CALL)` è un `AC`. Si prova prima il
+codice così com'è — esistono sigle che le parentesi le usano davvero, come `INT (GALL)` — e
+solo se non lo si riconosce si riprova senza la nota. Un codice davvero sconosciuto resta
+"non riconosciuto" ed è segnalato in un riquadro: **non entra in nessun conteggio**, ed è
+giusto che si veda.
+
+#### Turni archiviati — sfogliare una settimana passata
+
+Sotto le statistiche, il pannello **Turni archiviati**: un pulsante per settimana
+(`turniArchivioSettimane()`), e cliccandone uno la tabella persone × 7 giorni con i codici
+originali (`turniRenderArchivio()`). Mostra **chi compare in quella settimana**, non chi è in
+organico oggi: un extra di tre settimane fa deve restare visibile, altrimenti il turno
+archiviato non è più quello che era. Ricevimento in alto, poi housekeeping e altri; riposi,
+ferie e malattie **in rosso**, con filetto verticale fra i giorni.
+
+#### L'anno sbagliato e la settimana doppia
+
+Il planning è una foto e l'anno spesso non c'è. Il 24/08/2026 la settimana 17-23 agosto è
+finita in archivio **due volte**, una col 2025 e una col 2026: le statistiche la contavano
+due volte, la prima con i dati vecchi, e nessun avviso da nessuna parte — i numeri sembravano
+solo un po' alti. Ora `turniVoceStorico()` normalizza l'anno con `_annoPlausibile()`, e
+`turniRipuliArchivio()` fonde **in lettura** le voci già scritte (nessuna scrittura KV),
+ripulendo l'archivio vero al caricamento successivo.
 
 ### Riorganizzazione sezione "Reception" (menu)
 
@@ -1083,6 +1190,39 @@ Coperto da **13 controlli** in `test/controlli.js` ("Bilanciamento camere: lo sc
 
 ---
 
+### Come si legge un suggerimento (rifatto il 03/09/2026)
+
+Prima l'azione era una frase ("sposta prima X, poi Y") e a destra quattro numeri senza
+etichetta: l'ordine delle operazioni andava ricostruito ogni volta, **molte volte al giorno**.
+
+Ora ogni spostamento è una **riga a sé, da eseguire dall'alto in basso**, sotto intestazioni
+fisse `SPOSTO` / `QUANDO` / `COSA CAMBIA`. Camera di partenza grigia, camera di arrivo blu
+piena: la direzione si vede senza leggere. Quando i passi sono più d'uno compaiono numerati,
+con l'etichetta ambra "N spostamenti, in quest'ordine".
+
+**Le partenze sono l'obiettivo, il carico è un dettaglio.** Le cameriere confrontano fra loro
+le partenze pro capite: il carico (lavoro pesato, con le fermate che valgono meno di una
+partenza) è una grandezza interna al motore. Ogni giorno toccato mostra quindi sempre le
+**partenze** prima → dopo; il carico si nomina solo quando le partenze non cambiano ("cambia
+solo il carico"), altrimenti la riga sembrerebbe senza effetto. L'esito in alto a destra
+nomina la cosa e il giorno ("pareggia le partenze di Sab 5/9"), ed è costruito sui giorni in
+cui le partenze cambiano davvero, non sul primo dell'elenco.
+
+**Lo scambio in blocco** elenca una riga **per prenotazione**, ciascuna con le sue date. Il
+viaggio di ritorno (le prenotazioni dell'altra camera) non è un passo: è una conseguenza
+obbligata, detta una volta sola in una riga — elencarla raddoppiava le righe senza aggiungere
+una decisione.
+
+**Selettore dei giorni nell'intestazione**: gli stessi sette pulsanti del pannello in alto
+(chiamano `pianoNavRender()`, non un secondo stato), con sotto ciascuno le **partenze del
+giorno** `Matarese · Altre`, verdi se in pari e rosse se sbilanciate. Soglia identica a quella
+del motore (≥2 di scarto): uno di scarto con numeri dispari è inevitabile, segnarlo in rosso
+manderebbe a cercare una soluzione che non esiste. I giorni passati sono in grigio.
+
+**Mosse che non toccano il giorno selezionato**: per gli `scambio-blocco` il filtro sul giorno
+in focus è saltato di proposito (riguardano tutta la settimana), e la nota diceva il contrario.
+Ora quelle mosse portano il badge grigio **non tocca \<giorno\>**.
+
 ## DVR — Documento Valutazione Rischi
 
 ### Scopo
@@ -1212,26 +1352,6 @@ Cliccando il chip occupazione si apre `#occ-panel`. Barre orizzontali per strutt
 | `turniPrefMarkAllSeen()` | Segna tutte le richieste come lette |
 | `_tpFmtDate(s)` | Normalizza qualsiasi formato data → `dd/MM/yyyy` |
 | `turniPrefUpdateBadge()` | Aggiorna badge nav con richieste non lette |
-
-### Turni archiviati — sfogliare una settimana passata
-
-La vista **Turnazione Corrente** mostra, sotto le statistiche, il pannello **Turni archiviati**: un pulsante per settimana (`turniArchivioSettimane()`), e cliccandone uno la tabella persone × 7 giorni con i codici originali (`turniRenderArchivio()`). I dati erano in archivio da sempre — si vedevano solo i conteggi aggregati.
-
-Mostra **chi compare in quella settimana**, non chi è in organico oggi: un extra di tre settimane fa deve restare visibile, altrimenti il turno archiviato non è più quello che era. Ricevimento in alto nell'ordine di `turniOrdina()`, poi housekeeping e altri. Riposi in grigio, ferie in ambra, malattie in rosso.
-
----
-
-## Periodic Timers
-
-| Intervallo | Scopo |
-|-----------|-------|
-| 10 sec | `updateSbClock()` — **inerte**, vedi Funzioni Chiave: gli elementi che aggiornava non esistono più |
-| 10 min | `fetchMeteo()` — aggiorna previsioni meteo |
-| 60 sec | Polling overview + cloud sync + `turniPrefLoad()` + sync weekData da KV — **solo a scheda visibile**, vedi [Consumo KV](#consumo-kv--il-polling-si-ferma-a-scheda-nascosta) |
-
----
-
-## Splash — solo alla prima apertura, non a ogni aggiornamento
 
 ### Compass (`index.html`)
 

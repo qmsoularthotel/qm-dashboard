@@ -162,6 +162,31 @@ for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.htm
   fi
 done
 
+# Sezioni di app.js mai documentate. Il file e' passato da 6.300 a 16.400 righe e la mappa in
+# CLAUDE.md era ferma a mesi prima: dodici sezioni non erano citate da nessuna parte, e chi
+# apriva il progetto (o io stesso in una sessione nuova) non poteva sapere che esistevano.
+NONDOC=$(python3 - <<'PYDOC'
+import re
+app = open('app.js', encoding='utf-8').read()
+doc = open('CLAUDE.md', encoding='utf-8').read()
+nomi = [l.split('§§', 1)[1].strip() for l in app.split('\n') if '// §§' in l]
+fuori = []
+for n in nomi:
+    # si confronta la prima parte del nome, prima di trattino o parentesi
+    chiave = re.split(r'[—\-(]', n)[0].strip()
+    if len(chiave) > 3 and chiave.lower() not in doc.lower():
+        fuori.append(chiave)
+print(' | '.join(sorted(set(fuori))))
+PYDOC
+)
+if [ -n "$NONDOC" ]; then
+  echo ""
+  echo "  ATTENZIONE  sezioni di app.js non documentate in CLAUDE.md:"
+  echo "              $NONDOC"
+  echo "              Non blocca, ma e' cosi' che si perdono i pezzi: chi riapre il"
+  echo "              progetto fra sei mesi non sa nemmeno che esistono."
+fi
+
 # Backup dell'archivio: l'elenco delle chiavi da salvare e' scritto a mano (KV non sa
 # elencare le proprie chiavi). Una chiave nuova che nessuno aggiunge a QM_BACKUP_FISSE e'
 # una chiave che nel backup NON c'e', e non lo si scopre fino al giorno in cui serve —
