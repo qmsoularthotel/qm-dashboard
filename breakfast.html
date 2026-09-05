@@ -265,7 +265,6 @@ function qmMostraAttivazione(bloccante){
     +' style="width:100%;padding:10px;border:1px solid #4a5f80;background:#16283f;color:#fff;border-radius:8px;font-size:14px;text-align:center;font-family:inherit;margin-bottom:12px;">'
     +'<div style="display:flex;gap:9px;justify-content:center;">'
     +'<button id="qm-attiva-ok" style="background:#C9952F;color:#20344f;border:none;padding:9px 22px;font-weight:700;border-radius:7px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;">Abilita</button>'
-    +(bloccante?'':'<button id="qm-attiva-no" style="background:transparent;color:#9fb0cb;border:1px solid #4a5f80;padding:9px 16px;border-radius:7px;font-size:14px;cursor:pointer;font-family:inherit;">Più tardi</button>')
     +'</div>'
     +'<div id="qm-attiva-msg" style="font-size:12px;color:#ffb4ae;margin-top:10px;min-height:15px;"></div>'
     +'</div>';
@@ -285,12 +284,13 @@ function qmMostraAttivazione(bloccante){
     d.remove();
     location.reload();
   };
-  const no=document.getElementById('qm-attiva-no');
-  if(no)no.onclick=function(){d.remove();};
 }
-// All'avvio: se il dispositivo non e' abilitato lo si dice, senza bloccare. Diventera'
-// bloccante da solo quando il Worker comincera' a rifiutare (401), perche' a quel punto
-// l'app non potrebbe comunque lavorare.
+// All'avvio: se il dispositivo non e' abilitato, si chiede il codice e basta. Il "Più
+// tardi" c'era finche' la porta era aperta e si poteva rimandare; dal 05/09/2026 il Worker
+// rifiuta chi non ha il lasciapassare, quindi rimandare voleva dire entrare in una pagina
+// che non legge niente — e il velo tornava comunque alla prima richiesta rifiutata.
+// L'argomento `bloccante` resta: distingue l'avvio dal rifiuto 401, e serve se un domani
+// la porta venisse riaperta.
 (function(){
   if(_qmPass)return;
   try{
@@ -404,7 +404,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-05.1';
+const QM_APP_BUILD='2026-09-05.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
