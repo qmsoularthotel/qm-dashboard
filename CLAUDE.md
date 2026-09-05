@@ -3292,6 +3292,73 @@ altrove, vanno aggiunti.
 
 ---
 
+## Accesso al Worker — la porta è CHIUSA (dal 05/09/2026)
+
+`/kv/*` era completamente aperto: chiunque conoscesse l'indirizzo del Worker — scritto nel
+sorgente del sito, quindi pubblico — poteva **leggere, modificare e cancellare** tutto
+l'archivio: nomi degli ospiti con camera e date (`qm_rcGuests`, `qm_arriviData`), turni,
+fascicolo dipendenti, cassa. Verificato il 02/09/2026 da riga di comando, senza credenziali.
+
+Dal **05/09/2026** la variabile `QM_AUTH_OBBLIGATORIA=si` è attiva sul Worker: senza
+lasciapassare valido, lettura, scrittura e cancellazione rispondono **401**. Verificato su
+tutti e tre i percorsi.
+
+### Come funziona
+
+| Pezzo | Dove | Cosa fa |
+|---|---|---|
+| `QM_PASSWORD`, `QM_AUTH_SECRET` | variabili sul Worker | la password che genera i lasciapassare e la chiave con cui si firmano. **Non vanno mai chieste né scritte in chat**: le imposta il QM direttamente su Cloudflare |
+| `/auth` | Worker | password → lasciapassare firmato HMAC, valido **180 giorni** |
+| `X-QM-Pass` | header aggiunto da Compass e dalle app | il lasciapassare viaggia su ogni richiesta a `/kv/*` |
+| `qmMostraAttivazione()` | `app.js` + le 5 app | velo navy pieno con il campo "incolla il codice". Da una macchina non abilitata non si intravede nulla |
+
+### Abilitare un dispositivo — nessuno digita password
+
+Il vincolo esplicito è: **il personale non deve digitare password.** Si passa un **codice**
+(il lasciapassare già firmato), uno solo per tutti:
+
+1. Sul proprio computer: **Pannello App → Dispositivi abilitati → Copia codice**
+2. Si manda alla persona in chat privata (non in gruppo: chi è nel gruppo può abilitarsi)
+3. Sul suo dispositivo: **aprire l'app dall'icona** e incollare il codice nella schermata
+
+**Va incollato DENTRO l'app**, non aperto da WhatsApp: il link dalla chat si apre in Safari,
+che ha una memoria separata da quella dell'icona sulla schermata iniziale — il lasciapassare
+finirebbe in Safari e l'app resterebbe fuori.
+
+L'abilitazione **non passa dal server**: il codice viene riconosciuto e salvato in locale,
+quindi funziona anche a porta chiusa. Se il codice è sbagliato l'app lo accetta (controlla
+solo la forma), si ricarica, viene rifiutata e ripropone la schermata: si riparte senza
+danni, ma il messaggio non dirà "codice errato".
+
+### Se qualcuno resta fuori
+
+Non serve riaprire la porta: chi non ha il codice vede la schermata di abilitazione e lo
+chiede. **Riaprire** significa togliere `QM_AUTH_OBBLIGATORIA` (o metterla a un valore
+diverso da `si`) su Cloudflare e ridistribuire — da fare solo se l'attività si blocca
+davvero, perché rimette l'archivio in chiaro per chiunque.
+
+**Revocare un singolo dispositivo non si può**: il codice è uno solo per tutti. L'unico modo
+è cambiare `QM_AUTH_SECRET`, che rimette fuori *tutti* e obbliga a rifare il giro. I codici
+per persona sono stati discussi e rimandati.
+
+### Cosa resta fuori dalla porta
+
+- **`registration-galleria.html`** non usa il cloud in nessun modo (vedi la sua sezione): non
+  ha lasciapassare e non gli serve.
+- **Il proxy AI** (tutto ciò che non è `/kv/` né `/prestay/`) **non è protetto**: chiunque può
+  far girare richieste a carico della chiave API. Non è un rischio per i dati degli ospiti,
+  ma è una spesa. La chiusura è stata proposta il 03/09/2026 e non ancora fatta.
+- **`/prestay/*`** era già protetto da `PRESTAY_KEY` + lista di origini ammesse.
+
+### Il contatore degli accessi anonimi non serve più
+
+`qm_auth_anon_<data>` contava le finestre da dieci minuti in cui qualcuno passava senza
+lasciapassare, per decidere quando chiudere. A porta chiusa il gate risponde 401 **prima** di
+contare, quindi resta fermo: da ora il segnale che qualcuno è rimasto fuori è la persona che
+chiede il codice, non quel numero.
+
+---
+
 ## Rete di sicurezza — `bash test/esegui.sh`
 
 **Lanciarla prima di ogni pubblicazione.** Esce con codice 1 se qualcosa non torna.
