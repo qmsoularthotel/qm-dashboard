@@ -4078,7 +4078,11 @@ function qmMostraAttivazione(bloccante){
   window.fetch=function(risorsa,opz){
     try{
       const u=typeof risorsa==='string'?risorsa:'';
-      if(_qmPass&&u&&u.indexOf('/kv/')>=0&&u.indexOf(PROXY)===0){
+      // Il lasciapassare va su OGNI richiesta al Worker, non solo su /kv/: anche il proxy
+      // verso Claude parte da qui, e senza header chiunque conosca l'indirizzo puo' far
+      // girare richieste a carico della chiave API. Aggiungerlo dove non serve non fa danni,
+      // ometterlo dove serve spegne l'analisi dei PDF.
+      if(_qmPass&&u&&u.indexOf(PROXY)===0){
         opz=Object.assign({},opz||{});
         opz.headers=Object.assign({},opz.headers||{},{'X-QM-Pass':_qmPass});
       }

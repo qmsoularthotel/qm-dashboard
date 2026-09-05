@@ -3345,9 +3345,13 @@ per persona sono stati discussi e rimandati.
 
 - **`registration-galleria.html`** non usa il cloud in nessun modo (vedi la sua sezione): non
   ha lasciapassare e non gli serve.
-- **Il proxy AI** (tutto ciò che non è `/kv/` né `/prestay/`) **non è protetto**: chiunque può
-  far girare richieste a carico della chiave API. Non è un rischio per i dati degli ospiti,
-  ma è una spesa. La chiusura è stata proposta il 03/09/2026 e non ancora fatta.
+- **Il proxy AI** (tutto ciò che non è `/kv/` né `/prestay/`) è **chiuso dal 05/09/2026**,
+  con lo stesso interruttore `QM_AUTH_OBBLIGATORIA`. Non custodisce dati degli ospiti, ma gira
+  richieste a carico di `ANTHROPIC_API_KEY`: senza controllo chiunque conosca l'indirizzo può
+  spendere soldi altrui. Il gancio `fetch` di Compass e delle app aggiunge ora `X-QM-Pass` a
+  **ogni** richiesta al Worker, non solo a quelle `/kv/` — prima l'analisi dei PDF partiva
+  senza lasciapassare. **Ordine di pubblicazione**: prima il sito, poi il Worker; al
+  contrario, una pagina non ancora ricaricata perde l'analisi dei PDF finché non ricarica.
 - **`/prestay/*`** era già protetto da `PRESTAY_KEY` + lista di origini ammesse.
 
 ### Il contatore degli accessi anonimi non serve più

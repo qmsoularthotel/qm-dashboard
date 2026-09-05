@@ -30,7 +30,7 @@ const ORIGINI = [
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /prestay/stato.
-const WORKER_VERSIONE = '2026-09-03';
+const WORKER_VERSIONE = '2026-09-05';
 
 // ── UNA CASELLA PER STRUTTURA ──
 // Booking recapita all'ospite solo se la mail parte dall'indirizzo registrato sull'Extranet
@@ -279,6 +279,16 @@ export default {
     }
 
     // ── PROXY ANTHROPIC ──
+    // Anche questo vuole il lasciapassare. Non custodisce dati degli ospiti — quelli stanno
+    // in /kv/ — ma gira richieste a carico di ANTHROPIC_API_KEY: senza controllo, chiunque
+    // conosca l'indirizzo del Worker (che e' pubblico nel sorgente del sito) puo' spendere
+    // soldi altrui. Stesso interruttore di /kv/: finche' QM_AUTH_OBBLIGATORIA non e' 'si'
+    // non blocca niente, cosi' l'ordine di pubblicazione non puo' spegnere l'analisi dei PDF.
+    if (String(env.QM_AUTH_OBBLIGATORIA || '').toLowerCase() === 'si') {
+      const passAI = request.headers.get('X-QM-Pass') || url.searchParams.get('pass') || '';
+      if (!(await verificaPass(env, passAI)))
+        return json({ ok: false, error: 'Accesso non autorizzato' }, 401);
+    }
     const body = await request.json();
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

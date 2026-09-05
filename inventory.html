@@ -605,7 +605,11 @@ function qmMostraAttivazione(bloccante){
   window.fetch=function(risorsa,opz){
     try{
       const u=typeof risorsa==='string'?risorsa:'';
-      if(_qmPass&&u&&u.indexOf('/kv/')>=0&&u.indexOf(PROXY)===0){
+      // Il lasciapassare va su OGNI richiesta al Worker, non solo su /kv/: anche il proxy
+      // verso Claude parte da qui, e senza header chiunque conosca l'indirizzo puo' far
+      // girare richieste a carico della chiave API. Aggiungerlo dove non serve non fa danni,
+      // ometterlo dove serve spegne l'analisi dei PDF.
+      if(_qmPass&&u&&u.indexOf(PROXY)===0){
         opz=Object.assign({},opz||{});
         opz.headers=Object.assign({},opz.headers||{},{'X-QM-Pass':_qmPass});
       }
@@ -698,7 +702,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-02.5';
+const QM_APP_BUILD='2026-09-05.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
