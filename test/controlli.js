@@ -366,6 +366,31 @@ ok('una voce senza giorni viene scartata', Object.keys(turniRipuliArchivio({ x: 
   // Numeri diversi: quello si', va salvato.
   _hkSalvaDerivato('qm_hk_soul', { struttura: 'SoulArt Hotel', giorni: [{ label: 'Lun 1/9', partenze: 4 }], caricato: '2026-09-04T10:00:00.000Z', _ts: 3 });
   ok('un conteggio cambiato si scrive', scritte, 2);
+
+// ── Una scrittura non riuscita non deve restare muta ───────────────────────
+// kvSet torna false, ma quasi tutti i punti che la chiamano scartano il risultato: il dato
+// resta sul dispositivo e nessuno lo dice. E' successo il 03/09/2026 col tetto giornaliero
+// esaurito — Compass sembrava salvare e le altre postazioni non vedevano niente.
+// Si prova la parte sincrona (il conto e l'avviso): la banca di controlli non aspetta le
+// promesse, e un controllo asincrono qui non verrebbe eseguito affatto.
+(function () {
+  _kvFallite = {};
+  var vecchio = document.getElementById('qmAvvisoScritture');
+  if (vecchio && vecchio.remove) vecchio.remove();
+
+  _kvNonRiuscita('qm_prova');
+  ok('la scrittura non riuscita viene contata', Object.keys(_kvFallite).length, 1);
+  ok('e lo dice a schermo',        !!document.getElementById('qmAvvisoScritture'), true);
+  ok('e dice dove sono rimasti i dati', /resta solo su questo computer/.test(_kvTestoAvviso(1)), true);
+  ok('al singolare è scritto al singolare', /Un dato non è arrivato/.test(_kvTestoAvviso(1)), true);
+
+  _kvNonRiuscita('qm_prova2');
+  ok('due chiavi diverse, un avviso solo che le somma', /2 dati non sono arrivati/.test(_kvTestoAvviso(Object.keys(_kvFallite).length)), true);
+
+  _kvRiuscita('qm_prova');
+  _kvRiuscita('qm_prova2');
+  ok('quando le scritture riescono il conto si azzera', Object.keys(_kvFallite).length, 0);
+})();
   kvSet = _kv;
   if (_ls === null) localStorage.removeItem('qm_hk_soul'); else localStorage.setItem('qm_hk_soul', _ls);
 })();

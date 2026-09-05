@@ -4231,6 +4231,44 @@ document.head.appendChild(styleEl);
 // La memoria è di sessione: al primo salvataggio dopo un ricaricamento si scrive comunque
 // una volta, il che è giusto — non sappiamo cosa sia successo altrove nel frattempo.
 const _kvUltimo={};
+// Scritture non riuscite: kvSet restituisce false, ma la maggior parte dei punti che la
+// chiamano scarta il risultato con .catch(()=>{}) — il dato resta su questo dispositivo e
+// nessuno lo dice. E' successo davvero il 03/09/2026, quando il tetto giornaliero delle
+// scritture si e' esaurito nel pomeriggio: Compass sembrava salvare e le altre postazioni
+// non vedevano niente. Invece di correggere una ventina di punti di chiamata (e dimenticarne
+// uno domani), il conto lo tiene kvSet stessa e lo dice UNA volta, in cima alla pagina.
+let _kvFallite={};                      // chiave → quante volte non e' arrivata
+function _kvNonRiuscita(key){
+  _kvFallite[key]=(_kvFallite[key]||0)+1;
+  try{setSyncStatus('error');}catch(e){}
+  try{_kvRenderAvviso();}catch(e){}
+}
+function _kvRiuscita(key){
+  if(!_kvFallite[key])return;
+  delete _kvFallite[key];
+  try{_kvRenderAvviso();}catch(e){}
+}
+// L'avviso sparisce da solo quando la scrittura riesce. Non e' un modale da chiudere: il
+// rimedio spesso non e' immediato (limite giornaliero, rete assente) e sbarrare la strada
+// non aiuterebbe — ma non deve nemmeno restare silenzioso, che e' il difetto di prima.
+function _kvRenderAvviso(){
+  const n=Object.keys(_kvFallite).length;
+  let el=document.getElementById('qmAvvisoScritture');
+  if(!n){if(el)el.remove();return;}
+  if(!el){
+    el=document.createElement('div');
+    el.id='qmAvvisoScritture';
+    el.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#C0352A;color:#fff;padding:8px 14px;font-size:13px;font-weight:600;text-align:center;font-family:inherit;';
+    document.body.appendChild(el);
+  }
+  el.textContent=_kvTestoAvviso(n);
+}
+// Il testo sta in una funzione a parte perche' sia verificabile: nella banca di controlli il
+// DOM e' finto e non conserva quello che gli si scrive dentro.
+function _kvTestoAvviso(n){
+  return (n===1?'Un dato non è arrivato sul cloud':n+' dati non sono arrivati sul cloud')
+    +': '+(n===1?'resta':'restano')+' solo su questo computer, le altre postazioni non '+(n===1?'lo':'li')+' vedono.';
+}
 async function kvSet(key,value,retries=3){
   const v=typeof value==='string'?value:JSON.stringify(value);
   if(_kvUltimo[key]===v)return true;   // già scritto identico: non si consuma una scrittura
@@ -4238,12 +4276,16 @@ async function kvSet(key,value,retries=3){
   for(let i=0;i<retries;i++){
     try{
       const res=await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value})});
-      if(res.ok)return true;
+      if(res.ok){_kvRiuscita(key);return true;}
+      // 401 = porta chiusa e lasciapassare mancante o scaduto: il velo di abilitazione
+      // arriva gia' per conto suo, un secondo avviso rosso sarebbe solo rumore.
+      if(res.status===401)break;
     }catch(e){}
     if(i<retries-1)await new Promise(r=>setTimeout(r,1500*(i+1)));
   }
   // Non riuscita: si dimentica, altrimenti quel valore non verrebbe più ritentato.
   delete _kvUltimo[key];
+  _kvNonRiuscita(key);
   return false;
 }
 const LS={
