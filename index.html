@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='371-20260905';
+  const V='372-20260905';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1471,6 +1471,18 @@
         <!-- Abilitazione dei dispositivi: si genera un collegamento per volta e lo si manda
              alla persona. Nessuno digita password. Vedi §§ ACCESSO in app.js. -->
         <div id="qmDispositivi"></div>
+        <!-- Backup dell'archivio: e' l'unica copia che esiste fuori dal cloud. Vedi
+             §§ BACKUP ARCHIVIO in app.js. -->
+        <div class="panel" style="padding:16px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <div style="min-width:0;flex:1;">
+              <div style="font-size:15px;font-weight:700;color:var(--text);">Copia di sicurezza dell'archivio</div>
+              <div style="font-size:12.5px;color:var(--text-muted);margin-top:3px;line-height:1.5;">Scarica in un file tutto quello che sta sul cloud: turni, arrivi, inventario, cassa, biancheria, fascicolo dipendenti. Sul cloud non esiste nessun'altra copia.</div>
+              <div id="qmBackupStato" style="font-size:12.5px;margin-top:6px;"></div>
+            </div>
+            <button onclick="qmEsportaArchivio(this)" class="miniapp-btn miniapp-btn-primario" style="flex:0 0 auto;padding:10px 18px;">Scarica copia</button>
+          </div>
+        </div>
         <div class="miniapp-grid" id="miniappGrid">
           <div class="panel miniapp-card">
             <div class="miniapp-card-top">
@@ -1686,7 +1698,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=890-20260905"></script>
+<script src="app.js?v=891-20260905"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

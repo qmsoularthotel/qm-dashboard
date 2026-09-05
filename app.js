@@ -2049,7 +2049,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='hkpsheet')setTimeout(()=>hkpNRender('sa'),50);
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
-  if(id==='miniapp'){try{qmRenderDispositivi();}catch(e){}setTimeout(miniappRender,50);}
+  if(id==='miniapp'){try{qmRenderDispositivi();}catch(e){}try{qmRenderBackup();}catch(e){}setTimeout(miniappRender,50);}
   if(id==='dvr'){setTimeout(dvrRender,50);dvrMarkSeen();dvrBadgeUpdate();}
 }
 // §§ DVR — SCADENZE SICUREZZA & COMPLIANCE
@@ -3977,6 +3977,99 @@ function ucRefreshStaleTracking(){
   });
 }
 setInterval(ucRefreshStaleTracking,60000);
+// §§ BACKUP ARCHIVIO — l'unica copia che esiste fuori dal cloud
+//
+// Non c'e' nessun backup di KV: /kv/delete cancella qualunque chiave, e ora che la porta e'
+// chiusa a poterlo fare sono i dispositivi abilitati — cioe' i colleghi, per errore o per un
+// bug. Senza una copia, mesi di dati (turni, fascicolo dipendenti, inventario, cassa,
+// biancheria) si recupererebbero solo dal localStorage di una macchina che per fortuna li ha
+// ancora: fortuna, non un piano.
+//
+// L'esportazione e' di sola LETTURA: non consuma nessuna delle 1.000 scritture giornaliere.
+// Il file che scarica e' un JSON con dentro chiave → valore, ricaricabile a mano se serve.
+const QM_BACKUP_HOTEL=['sa','bh','sl','pr','ms','ar','sb'];
+const QM_BACKUP_MAGAZZINI=['sa','ar'];
+// Elenco esplicito, non dedotto: una chiave dimenticata qui e' una chiave che nel backup non
+// c'e', e non lo scopriresti fino al giorno in cui serve. Il controllo in test/esegui.sh
+// verifica che ogni chiave scritta da Compass compaia in questo elenco.
+const QM_BACKUP_FISSE=[
+  'qm_piano','qm_weekData','qm_turni_storico','qm_arriviData','qm_rcGuests',
+  'qm_pulData','qm_bkfData','qm_bkfGroups','qm_bkfNotes','qm_bkfChartData','qm_bkfARChartData',
+  'qm_bkfSheetARData','qm_bkf_monthly_history','qm_bkf_banner',
+  'qm_bkf_room_info','qm_bkf_room_info_date','qm_bkf_room_ambiguous',
+  'qm_hk_soul','qm_hk_bout','qm_hkp_config',
+  'qm_inv_orders','qm_ddt','qm_spese_cat_override',
+  'qm_dvr','qm_bia_distinte','qm_biancheria','qm_cassa_rimossi',
+  'qm_prestay','qm_prestay_tpl','qm_rev_sent','qm_rev_calib',
+  'qm_tp_seen_until','qm_app_status','qm_customDate',
+];
+/** Tutte le chiavi da salvare. `giorni` = quanti giorni indietro per gli archivi datati. */
+function qmBackupChiavi(giorni){
+  const out=QM_BACKUP_FISSE.slice();
+  QM_BACKUP_HOTEL.forEach(h=>{
+    out.push('qm_rev_'+h,'qm_ts_rev_'+h,'qm_rev_exp_'+h,'qm_ts_rev_exp_'+h);
+  });
+  QM_BACKUP_MAGAZZINI.forEach(w=>{
+    out.push('qm_inv_catalog_'+w,'qm_inv_moves_'+w);
+  });
+  // Il giro Culligan tiene una chiave per giorno: si prende l'ultimo semestre, che e'
+  // quanto serve a ricostruire le statistiche senza scaricare anni di storia.
+  const n=Math.max(1,giorni||180);
+  for(let i=0;i<n;i++){
+    const d=new Date();d.setDate(d.getDate()-i);
+    out.push('qm_cm_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+  }
+  return out;
+}
+async function qmEsportaArchivio(btn){
+  const testo=btn?btn.textContent:'';
+  const chiavi=qmBackupChiavi(180);
+  const dati={};
+  let letti=0,trovati=0;
+  // In blocchi da 12: tutte insieme sarebbero centinaia di richieste in parallelo, una in
+  // fila sarebbe lentissima.
+  for(let i=0;i<chiavi.length;i+=12){
+    await Promise.all(chiavi.slice(i,i+12).map(async k=>{
+      try{
+        const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(k),{cache:'no-store'});
+        if(r.ok){const j=await r.json();if(j&&j.value!==null&&j.value!==undefined){dati[k]=j.value;trovati++;}}
+      }catch(e){}
+      letti++;
+      if(btn)btn.textContent='Lettura '+letti+'/'+chiavi.length+'…';
+    }));
+  }
+  const oggi=new Date();
+  const iso=oggi.getFullYear()+'-'+String(oggi.getMonth()+1).padStart(2,'0')+'-'+String(oggi.getDate()).padStart(2,'0');
+  const file=JSON.stringify({archivio:'Compass QM',data:oggi.toISOString(),chiavi:trovati,dati},null,1);
+  try{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([file],{type:'application/json'}));
+    a.download='compass-archivio-'+iso+'.json';
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{try{URL.revokeObjectURL(a.href);a.remove();}catch(e){}},2000);
+  }catch(e){}
+  if(btn){
+    btn.textContent='✓ '+trovati+' chiavi salvate';
+    setTimeout(()=>{btn.textContent=testo;},4000);
+  }
+  try{localStorage.setItem('qm_backup_ultimo',String(Date.now()));}catch(e){}
+  try{qmRenderBackup();}catch(e){}
+  return trovati;
+}
+// Da quanto non si fa una copia. Vive solo in questo browser: e' un promemoria per chi
+// guarda, non un dato da sincronizzare — e serve appunto quando il cloud non c'e' piu'.
+function qmRenderBackup(){
+  const el=document.getElementById('qmBackupStato');
+  if(!el)return;
+  let ts=0;try{ts=parseInt(localStorage.getItem('qm_backup_ultimo')||'0')||0;}catch(e){}
+  if(!ts){el.innerHTML='<span style="color:var(--amber);font-weight:700;">Nessuna copia mai scaricata da questo computer.</span>';return;}
+  const gg=Math.floor((Date.now()-ts)/86400000);
+  const d=new Date(ts);
+  const quando=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' alle '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  el.innerHTML=gg>=30
+    ?`<span style="color:var(--amber);font-weight:700;">Ultima copia ${gg} giorni fa</span> <span style="color:var(--text-dim);">(${quando})</span>`
+    :`<span style="color:var(--green);font-weight:700;">Ultima copia ${gg===0?'oggi':gg===1?'ieri':gg+' giorni fa'}</span> <span style="color:var(--text-dim);">(${quando})</span>`;
+}
 // §§ STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud)
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';
 // ── LASCIAPASSARE DI ACCESSO ────────────────────────────────────────────────
@@ -7968,7 +8061,16 @@ const RC_HOTELS={
   AR:{name:'Art Resort'},
   SB:{name:'Santa Brigida'}
 };
-function rcCardHTML(g){const nights=rcCalcNights(g.checkin,g.checkout),trat=tratMap[g.trattamento]||g.trattamento;
+// I dati dell'ospite arrivano dal PDF del PMS e finiscono in pagina come HTML: un nome che
+// contenesse dei tag verrebbe interpretato invece che scritto. Perche' accada basta una
+// prenotazione fatta apposta, quindi non e' un caso di laboratorio — e metterlo al sicuro
+// costa due righe. Si ripulisce una COPIA appena entrati nella funzione, cosi' ogni campo
+// interpolato piu' sotto e' gia' innocuo e non serve ricordarsene uno per uno.
+// L'oggetto originale non si tocca: altrove (titolo del modal) finisce in textContent, dove
+// una ripulitura mostrerebbe "&amp;" al posto di "&".
+const _rcEsc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const _rcPulito=g=>{const o={};Object.keys(g||{}).forEach(k=>{o[k]=typeof g[k]==='string'?_rcEsc(g[k]):g[k];});return o;};
+function rcCardHTML(g0){const g=_rcPulito(g0);const nights=rcCalcNights(g.checkin,g.checkout),trat=tratMap[g.trattamento]||g.trattamento;
   const hotel=RC_HOTELS[(g.struttura||'').toUpperCase()]||{name:''};
   const logoImg=hotel.logo?`<img class="pc-logo" src="${hotel.logo}" alt="${hotel.name}">`:'';
   const roomType=rcRoomTypeLabel(g.tipoCamera);
@@ -8066,7 +8168,7 @@ function rcPrintSelected(){
   if(!idxs.length){cqAvviso('Nessuna card selezionata.');return;}
   preparePrintIdxs(idxs);
 }
-function rcBuildPreview(g,idx){const nights=rcCalcNights(g.checkin,g.checkout);
+function rcBuildPreview(g0,idx){const g=_rcPulito(g0);const nights=rcCalcNights(g.checkin,g.checkout);
   const normCam=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
   const arrivoMatch=arriviData&&arriviData.arrivi&&arriviData.arrivi.find(a=>normCam(a.camera)===normCam(g.camera));
   const origine=String(g.origine||(arrivoMatch&&arrivoMatch.origine)||'').trim();

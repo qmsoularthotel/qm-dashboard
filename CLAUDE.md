@@ -3354,6 +3354,37 @@ per persona sono stati discussi e rimandati.
   contrario, una pagina non ancora ricaricata perde l'analisi dei PDF finché non ricarica.
 - **`/prestay/*`** era già protetto da `PRESTAY_KEY` + lista di origini ammesse.
 
+### Copia di sicurezza dell'archivio — Pannello App → "Scarica copia"
+
+**Sul cloud non esiste nessun backup.** `/kv/delete` cancella qualunque chiave e, a porta
+chiusa, a poterlo fare sono i dispositivi abilitati — cioè i colleghi, per errore o per un
+bug. Senza copia, mesi di dati si recupererebbero solo dal `localStorage` di una macchina che
+per caso li ha ancora.
+
+`qmEsportaArchivio()` legge tutte le chiavi note e scarica un JSON `compass-archivio-<data>`.
+È **sola lettura**: non consuma nessuna delle 1.000 scritture giornaliere. Nel Pannello App
+una riga dice da quanto non si fa una copia (verde entro 30 giorni, ambra oltre) — il
+promemoria vive in `localStorage`, non su KV, perché serve proprio quando il cloud non c'è.
+
+**L'elenco delle chiavi è scritto a mano** (`QM_BACKUP_FISSE` + le famiglie espanse in
+`qmBackupChiavi()`): KV non sa elencare le proprie chiavi. Una chiave nuova dimenticata lì è
+una chiave che nel backup non c'è, e non lo si scopre fino al giorno in cui serve — per
+questo `test/esegui.sh` verifica che **ogni** chiave scritta da Compass sia coperta, seguendo
+tutte e quattro le strade (`kvSet`/`qmKvSet` con literal, `LS.set`, `_qmSalvaArchivio`, e
+`kvSet(COSTANTE)` risolvendo la costante). Il controllo è stato verificato togliendo `qm_dvr`
+di proposito: scatta.
+
+**Il ripristino non è automatico**: il file si ricarica a mano, chiave per chiave (sarebbero
+centinaia di scritture, da fare consapevolmente e non con un bottone).
+
+### Dati dell'ospite messi in pagina — `_rcPulito()`
+
+Nomi, camere e date arrivano dal PDF del PMS e finiscono in pagina come HTML: un nome
+contenente tag verrebbe interpretato invece che scritto. `rcCardHTML()` e `rcBuildPreview()`
+lavorano su una **copia ripulita** dell'ospite, così ogni campo interpolato più sotto è già
+innocuo. L'oggetto originale non si tocca: altrove finisce in `textContent`, dove la
+ripulitura mostrerebbe `&amp;` al posto di `&`.
+
 ### Il contatore degli accessi anonimi non serve più
 
 `qm_auth_anon_<data>` contava le finestre da dieci minuti in cui qualcuno passava senza

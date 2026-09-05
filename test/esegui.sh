@@ -162,6 +162,45 @@ for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.htm
   fi
 done
 
+# Backup dell'archivio: l'elenco delle chiavi da salvare e' scritto a mano (KV non sa
+# elencare le proprie chiavi). Una chiave nuova che nessuno aggiunge a QM_BACKUP_FISSE e'
+# una chiave che nel backup NON c'e', e non lo si scopre fino al giorno in cui serve —
+# cioe' quando l'originale non c'e' piu'.
+MANCANTI=$(python3 - <<'PYCHK'
+import re, glob
+app = open('app.js', encoding='utf-8').read()
+m = re.search(r"const QM_BACKUP_FISSE=\[(.*?)\];", app, re.S)
+elenco = set(re.findall(r"'(qm_[A-Za-z_0-9]+)'", m.group(1))) if m else set()
+prefissi = ['qm_rev_', 'qm_ts_rev_', 'qm_rev_exp_', 'qm_ts_rev_exp_',
+            'qm_inv_catalog_', 'qm_inv_moves_', 'qm_cm_']
+scritte = set()
+for f in ['app.js'] + glob.glob('*.html'):
+    s = open(f, encoding='utf-8').read()
+    # Le tre strade per cui un dato finisce sul cloud: kvSet/qmKvSet diretto, LS.set (che
+    # antepone 'qm_'), e _qmSalvaArchivio (gli archivi a elenchi: DVR, biancheria, resi).
+    scritte |= set(re.findall(r"(?:qmK|k)vSet\('(qm_[A-Za-z_0-9]+)'", s))
+    scritte |= set('qm_' + k for k in re.findall(r"LS\.set\('([A-Za-z_0-9]+)'", s))
+    scritte |= set(re.findall(r"_qmSalvaArchivio\('(qm_[A-Za-z_0-9]+)'", s))
+    # ...e le costanti: kvSet(NOME_KEY, ...) con 'const NOME_KEY = "qm_..."' altrove.
+    for cost in set(re.findall(r"(?:qmK|k)vSet\(([A-Z][A-Z_0-9]+)\s*,", s)):
+        for f2 in ['app.js'] + glob.glob('*.html'):
+            m2 = re.search(r"const %s\s*=\s*'(qm_[A-Za-z_0-9]+)'" % cost, open(f2, encoding='utf-8').read())
+            if m2:
+                scritte.add(m2.group(1)); break
+fuori = [k for k in sorted(scritte)
+         if k not in elenco and not any(k.startswith(p) for p in prefissi) and k not in ('qm_', 'qm_hk_')]
+print(' '.join(fuori))
+PYCHK
+)
+if [ -n "$MANCANTI" ]; then
+  echo ""
+  echo "  ERRORE      chiavi salvate sul cloud ma assenti dalla copia di sicurezza:"
+  echo "              $MANCANTI"
+  echo "              Aggiungerle a QM_BACKUP_FISSE in app.js, altrimenti quei dati non"
+  echo "              sono in nessun backup e non c'e' modo di accorgersene."
+  BKF_KO=1
+fi
+
 # registration-galleria.html e' un'app a se': dei colleghi della Galleria, fuori da Compass.
 # Il 02/09/2026 le e' stato tolto ogni contatto col cloud, ed e' questa la ragione per cui
 # non ha una schermata di abilitazione e non compare piu' nel Pannello App. Se qualcuno le

@@ -5,3 +5,9 @@
 # Mac e potevano generare conflitti su un file che non contiene nulla di utile.
 .DS_Store
 **/.DS_Store
+
+# Workflow di GitHub Pages: creato durante il troubleshooting del 06/07/2026 e poi scartato
+# perche' ridondante (la pipeline automatica di Pages basta da sola) — vedi CLAUDE.md,
+# sezione Recovery. Il file e' rimasto sul disco e a ogni "git add -A" tornava dentro il
+# commit, che veniva rifiutato dal server: il token non ha i permessi sui workflow.
+.github/workflows/deploy-pages.yml
