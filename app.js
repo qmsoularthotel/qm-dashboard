@@ -4105,19 +4105,36 @@ async function qmEsportaArchivio(btn){
   try{qmRenderBackup();}catch(e){}
   return trovati;
 }
-// Da quanto non si fa una copia. Vive solo in questo browser: e' un promemoria per chi
-// guarda, non un dato da sincronizzare — e serve appunto quando il cloud non c'e' piu'.
-function qmRenderBackup(){
-  const el=document.getElementById('qmBackupStato');
-  if(!el)return;
-  let ts=0;try{ts=parseInt(localStorage.getItem('qm_backup_ultimo')||'0')||0;}catch(e){}
-  if(!ts){el.innerHTML='<span style="color:var(--amber);font-weight:700;">Nessuna copia mai scaricata da questo computer.</span>';return;}
+// Da quanto non si fa una copia. Due fonti, e vanno tenute distinte:
+//   - il backup NOTTURNO su Drive (chiave `qm_backup_ultimo` sul cloud, scritta dallo script
+//     Apps Script): e' quello vero, gira da solo, ed e' il dato che conta;
+//   - lo scaricamento a mano da QUESTO browser (localStorage): resta perche' dice se su
+//     questa postazione esiste una copia raggiungibile anche a cloud spento.
+// Senza la prima, il pannello direbbe "nessuna copia" mentre sul Drive ce n'e' una fresca —
+// cioe' proprio la differenza che si vuole sapere.
+function _qmBackupRiga(etichetta,ts,extra){
   const gg=Math.floor((Date.now()-ts)/86400000);
   const d=new Date(ts);
   const quando=String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' alle '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-  el.innerHTML=gg>=30
-    ?`<span style="color:var(--amber);font-weight:700;">Ultima copia ${gg} giorni fa</span> <span style="color:var(--text-dim);">(${quando})</span>`
-    :`<span style="color:var(--green);font-weight:700;">Ultima copia ${gg===0?'oggi':gg===1?'ieri':gg+' giorni fa'}</span> <span style="color:var(--text-dim);">(${quando})</span>`;
+  const col=gg>=3?'var(--amber)':'var(--green)';
+  return`<div><span style="color:${col};font-weight:700;">${etichetta} ${gg===0?'oggi':gg===1?'ieri':gg+' giorni fa'}</span> <span style="color:var(--text-dim);">(${quando}${extra?' · '+extra:''})</span></div>`;
+}
+async function qmRenderBackup(){
+  const el=document.getElementById('qmBackupStato');
+  if(!el)return;
+  let manuale=0;try{manuale=parseInt(localStorage.getItem('qm_backup_ultimo')||'0')||0;}catch(e){}
+  let auto=null;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key=qm_backup_ultimo',{cache:'no-store'});
+    if(r.ok){const j=await r.json();if(j&&j.value)auto=JSON.parse(j.value);}
+  }catch(e){}
+  let html='';
+  if(auto&&auto.ts)html+=_qmBackupRiga('Copia automatica su Drive',auto.ts,(auto.chiavi||'?')+' chiavi');
+  else html+='<div><span style="color:var(--amber);font-weight:700;">Nessuna copia automatica registrata.</span> <span style="color:var(--text-dim);">Il backup notturno non ha ancora scritto niente.</span></div>';
+  html+=manuale
+    ?_qmBackupRiga('Scaricata a mano da questo computer',manuale,'')
+    :'<div style="color:var(--text-dim);">Da questo computer non ne hai mai scaricata una a mano.</div>';
+  el.innerHTML=html;
 }
 // §§ STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud)
 const PROXY='https://anthropic-proxy.qm-d82.workers.dev';

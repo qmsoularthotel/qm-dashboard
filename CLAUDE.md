@@ -3605,6 +3605,14 @@ peggio di non averlo, perché si crede di avere una copia.
 - Le letture vanno a blocchi di 20 con `fetchAll`: una per volta su qualche centinaio di
   chiavi sfiorerebbe il tempo massimo di esecuzione di Apps Script.
 - Installazione e prova: funzioni `installa` e `backupOra`, istruzioni in testa al file.
+- **Lascia una traccia dentro Compass** (`qm_backup_ultimo` su KV, `segnaSuCompass()`): è
+  l'unica scrittura di tutto lo script, una al giorno. Serve perché dal Pannello App non si
+  distingue *"il backup non c'è"* da *"il backup c'è ma sta su un Drive che questa schermata
+  non vede"* — ed è esattamente la differenza che si vuole sapere. Se quella scrittura
+  fallisce il backup resta salvato: si perde solo la riga nel pannello.
+- Il pannello mostra **due righe distinte**: la copia automatica su Drive (il dato che conta)
+  e l'ultimo scaricamento a mano da quel browser (dice se su quella postazione c'è una copia
+  raggiungibile anche a cloud spento). Ambra oltre i 3 giorni.
 
 ### Dati dell'ospite messi in pagina — `_rcPulito()`
 

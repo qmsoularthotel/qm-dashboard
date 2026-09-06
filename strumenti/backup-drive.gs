@@ -87,6 +87,7 @@ function backupOra() {
   cartella.createFile(nome, contenuto, 'application/json');
 
   potaVecchie(cartella, Number(prop.getProperty('QM_COPIE') || 30));
+  segnaSuCompass(pass, trovate, nome);
 
   var esito = trovate + ' chiavi salvate in ' + nome;
   Logger.log(esito);
@@ -150,6 +151,30 @@ function leggiTutto(chiavi, pass) {
     }
   }
   return dati;
+}
+
+// Lascia una traccia dentro Compass, cosi' il Pannello App puo' dire quando e' stata fatta
+// l'ultima copia automatica. Senza, da Compass non si distingue "il backup non c'e'" da
+// "il backup c'e' ma sta su un Drive che questa schermata non vede" — e la differenza fra le
+// due e' esattamente cio' che si vuole sapere.
+//
+// E' l'UNICA scrittura di tutto lo script: una al giorno su un tetto di 1.000. Se fallisce
+// non si tocca il backup, che a quel punto e' gia' salvato: si scrive solo nel registro.
+function segnaSuCompass(pass, chiavi, nomeFile) {
+  try {
+    UrlFetchApp.fetch(PROXY + '/kv/set', {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { 'X-QM-Pass': pass },
+      payload: JSON.stringify({
+        key: 'qm_backup_ultimo',
+        value: JSON.stringify({ ts: Date.now(), chiavi: chiavi, file: nomeFile, dove: 'drive' })
+      }),
+      muteHttpExceptions: true
+    });
+  } catch (e) {
+    Logger.log('Traccia su Compass non scritta: ' + e);
+  }
 }
 
 function cartellaBackup(prop) {
