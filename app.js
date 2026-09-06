@@ -2052,7 +2052,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='miniapp')setTimeout(miniappRender,50);
   // Dispositivi abilitati e copia di sicurezza vivono nella vista Sicurezza (06/09/2026):
   // si guardano di rado e per motivi diversi dall'accendere e spegnere le app.
-  if(id==='sicurezza'){try{qmRenderDispositivi();}catch(e){}try{qmRenderBackup();}catch(e){}}
+  if(id==='sicurezza'){try{qmRenderStatoSistema();}catch(e){}try{qmRenderDispositivi();}catch(e){}try{qmRenderBackup();}catch(e){}}
   if(id==='dvr'){setTimeout(dvrRender,50);dvrMarkSeen();dvrBadgeUpdate();}
 }
 // §§ DVR — SCADENZE SICUREZZA & COMPLIANCE
@@ -4108,6 +4108,53 @@ async function qmEsportaArchivio(btn){
   try{qmRenderBackup();}catch(e){}
   return trovati;
 }
+// Versione del Worker che questo codice si aspetta. Il Worker si pubblica a mano, quindi
+// codice e server possono divergere: fino a oggi se ne accorgeva solo test/esegui.sh, cioe'
+// nessuno mentre lavora. Un controllo in esegui.sh verifica che questa costante combaci con
+// WORKER_VERSIONE in worker.js, altrimenti direbbe "da ripubblicare" per sempre.
+const WORKER_VERSIONE_ATTESA='2026-09-06b';
+function _qmStatoRiga(colore,titolo,dettaglio){
+  return`<div style="display:flex;align-items:center;gap:9px;padding:6px 0;">
+    <span style="width:9px;height:9px;border-radius:50%;background:${colore};flex-shrink:0;"></span>
+    <span style="font-size:13px;font-weight:700;color:var(--text);">${titolo}</span>
+    <span style="font-size:12.5px;color:var(--text-dim);">${dettaglio||''}</span></div>`;
+}
+// Tre domande a cui da Compass non si poteva rispondere: il Worker risponde? e' la versione
+// che ho pubblicato? la porta e' davvero chiusa? Finora si scoprivano solo aprendo Cloudflare
+// o chiedendo a me.
+async function qmRenderStatoSistema(){
+  const el=document.getElementById('qmStatoSistema');
+  if(!el)return;
+  el.innerHTML='<div style="font-size:12.5px;color:var(--text-dim);">Controllo in corso…</div>';
+  let v=null,errore='';
+  try{
+    const r=await fetch(PROXY+'/versione',{cache:'no-store'});
+    if(r.ok)v=await r.json();else errore='ha risposto '+r.status;
+  }catch(e){errore='non raggiungibile';}
+
+  let html='';
+  if(!v){
+    html+=_qmStatoRiga('var(--red)','Worker non raggiungibile',errore+' — senza, Compass non salva e non legge niente');
+  }else{
+    const attesa=WORKER_VERSIONE_ATTESA;
+    html+=v.versione===attesa
+      ?_qmStatoRiga('var(--green)','Worker in linea','versione '+v.versione)
+      :_qmStatoRiga('var(--amber)','Worker da ripubblicare','in linea la '+(v.versione||'?')+', il codice si aspetta la '+attesa);
+    // La porta: se il Worker non la dichiara e' piu' vecchio di questa scheda, e non si puo'
+    // dedurre — un'assunzione scritta come un fatto e' proprio l'errore da non rifare.
+    if(typeof v.portaChiusa!=='boolean')
+      html+=_qmStatoRiga('var(--text-dim)','Accesso: non dichiarato','il Worker in linea è precedente a questo controllo');
+    else if(v.portaChiusa)
+      html+=_qmStatoRiga('var(--green)','Accesso riservato ai dispositivi abilitati','chi non ha il codice non legge né scrive');
+    else
+      html+=_qmStatoRiga('var(--red)','Accesso APERTO a chiunque','QM_AUTH_OBBLIGATORIA non è attiva su Cloudflare');
+  }
+  const f=_kvFalliteOggi();
+  html+=f
+    ?_qmStatoRiga('var(--amber)',f+(f===1?' scrittura non riuscita oggi':' scritture non riuscite oggi'),'quei dati sono rimasti su questo computer')
+    :_qmStatoRiga('var(--green)','Nessuna scrittura persa oggi','da questo computer');
+  el.innerHTML=html;
+}
 // Da quanto non si fa una copia. Due fonti, e vanno tenute distinte:
 //   - il backup NOTTURNO su Drive (chiave `qm_backup_ultimo` sul cloud, scritta dallo script
 //     Apps Script): e' quello vero, gira da solo, ed e' il dato che conta;
@@ -4307,8 +4354,27 @@ const _kvUltimo={};
 // non vedevano niente. Invece di correggere una ventina di punti di chiamata (e dimenticarne
 // uno domani), il conto lo tiene kvSet stessa e lo dice UNA volta, in cima alla pagina.
 let _kvFallite={};                      // chiave → quante volte non e' arrivata
+// Il conto del giorno resta in questo browser (nessuna scrittura sul cloud: sarebbe assurdo
+// consumarne una per dire che una scrittura non e' riuscita). Serve alla scheda "Stato del
+// sistema": la fascia rossa si vede solo mentre si e' sulla pagina e sparisce al
+// ricaricamento, quindi senza un conto restava un guaio senza traccia.
+function _kvChiaveFallite(){
+  const d=new Date();
+  return'qm_kv_fallite_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function _kvSegnaFallitaOggi(){
+  try{
+    const k=_kvChiaveFallite();
+    const n=(parseInt(localStorage.getItem(k)||'0')||0)+1;
+    localStorage.setItem(k,String(n));
+  }catch(e){}
+}
+function _kvFalliteOggi(){
+  try{return parseInt(localStorage.getItem(_kvChiaveFallite())||'0')||0;}catch(e){return 0;}
+}
 function _kvNonRiuscita(key){
   _kvFallite[key]=(_kvFallite[key]||0)+1;
+  _kvSegnaFallitaOggi();
   try{setSyncStatus('error');}catch(e){}
   try{_kvRenderAvviso();}catch(e){}
 }

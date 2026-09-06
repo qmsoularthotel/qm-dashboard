@@ -2492,7 +2492,7 @@ Dal **06/09/2026** la sezione di menu si chiama **Pannello di Controllo** e cont
 | Voce | Vista | Cosa c'è |
 |---|---|---|
 | **Applicazioni stand alone** | `view-miniapp` | le 5 schede con stato, interruttore on/off e link |
-| **Sicurezza** | `view-sicurezza` | dispositivi abilitati (`#qmDispositivi`) e copia di sicurezza dell'archivio |
+| **Sicurezza** | `view-sicurezza` | stato del sistema, copia di sicurezza dell'archivio, dispositivi abilitati (`#qmDispositivi`) |
 
 Prima stavano nella stessa vista, ma sono due mestieri diversi: le app si accendono e si
 spengono nell'operatività quotidiana, dispositivi e backup si toccano di rado e per motivi di
@@ -3568,7 +3568,33 @@ per persona sono stati discussi e rimandati.
   contrario, una pagina non ancora ricaricata perde l'analisi dei PDF finché non ricarica.
 - **`/prestay/*`** era già protetto da `PRESTAY_KEY` + lista di origini ammesse.
 
-### Copia di sicurezza dell'archivio — Pannello App → "Scarica copia"
+### Stato del sistema — `qmRenderStatoSistema()`
+
+In cima alla vista Sicurezza, tre righe che rispondono a domande a cui da Compass **non si
+poteva rispondere**: si scoprivano solo aprendo Cloudflare o chiedendo a Claude.
+
+| Riga | Da dove | Quando è rossa |
+|---|---|---|
+| Worker in linea, versione | `GET /versione` (pubblico, nessuna chiave) | non risponde |
+| Accesso riservato / **APERTO** | campo `portaChiusa` di `/versione` | `QM_AUTH_OBBLIGATORIA` non attiva |
+| Scritture non riuscite oggi | `localStorage`, contate da `_kvNonRiuscita` | ambra se ce n'è almeno una |
+
+**La versione attesa è una costante** (`WORKER_VERSIONE_ATTESA` in `app.js`): il Worker si
+pubblica a mano, quindi codice e server possono divergere. Un controllo in `test/esegui.sh`
+verifica che combaci con `WORKER_VERSIONE` in `worker.js` — se restasse indietro, la scheda
+direbbe "da ripubblicare" anche dopo una pubblicazione fatta, cioè un allarme che suona sempre
+e che si impara a ignorare. Verificato disallineandola di proposito: scatta.
+
+**Se il Worker non dichiara `portaChiusa`** (versione precedente al 06/09/2026) la riga dice
+*"non dichiarato"*, non *"aperto"*: un'assunzione scritta come un fatto è esattamente l'errore
+dell'avviso pre-stay sul mittente Booking.
+
+Il conto delle scritture non riuscite vive **in questo browser**, per giorno: consumare una
+scrittura sul cloud per dire che una scrittura non è riuscita sarebbe assurdo. Completa la
+fascia rossa di `_kvRenderAvviso()`, che si vede solo mentre si è sulla pagina e sparisce al
+ricaricamento.
+
+### Copia di sicurezza dell'archivio — Sicurezza → "Scarica copia"
 
 **Sul cloud non esiste nessun backup.** `/kv/delete` cancella qualunque chiave e, a porta
 chiusa, a poterlo fare sono i dispositivi abilitati — cioè i colleghi, per errore o per un

@@ -30,7 +30,7 @@ const ORIGINI = [
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /prestay/stato.
-const WORKER_VERSIONE = '2026-09-06';
+const WORKER_VERSIONE = '2026-09-06b';
 
 // ── UNA CASELLA PER STRUTTURA ──
 // Booking recapita all'ospite solo se la mail parte dall'indirizzo registrato sull'Extranet
@@ -242,7 +242,15 @@ export default {
     // Senza chiave di proposito: una stringa di versione non è un segreto, e un controllo
     // che richiede credenziali è un controllo che nessuno esegue.
     if (url.pathname === '/versione') {
-      return json({ ok: true, versione: WORKER_VERSIONE });
+      // `portaChiusa` serve alla scheda "Stato del sistema" di Compass: la variabile la
+      // imposta il QM su Cloudflare, e da Compass non c'era modo di sapere se avesse fatto
+      // presa. Non e' un segreto — dice solo se le richieste vengono filtrate, cosa che
+      // chiunque scopre in un secondo provando a fare una richiesta.
+      return json({
+        ok: true,
+        versione: WORKER_VERSIONE,
+        portaChiusa: String(env.QM_AUTH_OBBLIGATORIA || '').toLowerCase() === 'si',
+      });
     }
 
     // ── CHI SPEDISCE DAVVERO ──

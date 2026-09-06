@@ -187,6 +187,20 @@ if [ -n "$NONDOC" ]; then
   echo "              progetto fra sei mesi non sa nemmeno che esistono."
 fi
 
+# La scheda "Stato del sistema" confronta la versione del Worker in linea con quella che il
+# codice si aspetta (WORKER_VERSIONE_ATTESA in app.js). Se quella costante resta indietro
+# rispetto a worker.js, la scheda dice "da ripubblicare" anche dopo una pubblicazione fatta
+# — cioe' un allarme che suona sempre, che e' il modo piu' rapido per farlo ignorare.
+ATTESA=$(sed -n "s/^const WORKER_VERSIONE_ATTESA='\([^']*\)'.*/\1/p" app.js)
+LOCALE=$(sed -n "s/^const WORKER_VERSIONE = '\([^']*\)'.*/\1/p" worker.js)
+if [ -n "$ATTESA" ] && [ -n "$LOCALE" ] && [ "$ATTESA" != "$LOCALE" ]; then
+  echo ""
+  echo "  ERRORE      app.js si aspetta il Worker $ATTESA, worker.js e' la $LOCALE."
+  echo "              Allinea WORKER_VERSIONE_ATTESA in app.js, altrimenti la scheda"
+  echo "              Stato del sistema dira' 'da ripubblicare' anche quando e' a posto."
+  BKF_KO=1
+fi
+
 # Backup dell'archivio: l'elenco delle chiavi da salvare e' scritto a mano (KV non sa
 # elencare le proprie chiavi). Una chiave nuova che nessuno aggiunge a QM_BACKUP_FISSE e'
 # una chiave che nel backup NON c'e', e non lo si scopre fino al giorno in cui serve —

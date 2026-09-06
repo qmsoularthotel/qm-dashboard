@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='380-20260906';
+  const V='381-20260906';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1593,6 +1593,13 @@
       </div>
       <!-- ── SICUREZZA ── -->
       <div class="view" id="view-sicurezza">
+        <!-- Stato del sistema: le tre cose che da Compass non si potevano sapere — se il
+             Worker risponde, se e' la versione pubblicata, se la porta e' chiusa. Vedi
+             qmRenderStatoSistema() in app.js. -->
+        <div class="panel" style="padding:14px 16px;margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Stato del sistema</div>
+          <div id="qmStatoSistema"></div>
+        </div>
         <!-- Backup dell'archivio: e' l'unica copia che esiste fuori dal cloud. Vedi
              §§ BACKUP ARCHIVIO in app.js. -->
         <div class="panel" style="padding:16px;margin-bottom:14px;">
@@ -1702,7 +1709,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=899-20260906"></script>
+<script src="app.js?v=900-20260906"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
