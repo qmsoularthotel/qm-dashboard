@@ -20,7 +20,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **Struttura**: 3 paragrafi, 5-7 frasi totali. Non di più.
 - **Apertura**: ringrazia sempre della recensione.
 - **Booking.com**: usa sempre il nome dell'ospite nell'apertura; tono esclusivamente formale con il "Lei" (maiuscole di cortesia: La, Le, Suo, Sua), mai dare del tu.
-- **Expedia**: usa sempre "Dear Guest," / "Gentile ospite," (policy OTA: nomi non disponibili).
+- **Expedia**: usa sempre "Dear Guest," / "Gentile ospite,". **Il nome nell'export c'è** (`review_by`) ma non si usa: è una scelta confermata il 06/09/2026, non un dato mancante — vedi "Formato file Expedia".
 - **Recensioni Booking senza testo**: non generare risposta ("Nessun commento scritto — risposta non necessaria").
 - **Recensioni Expedia senza testo**: genera risposta breve (2 frasi concise, sempre diversa).
 - Non ripetere le parole esatte usate dal recensore.
@@ -878,9 +878,16 @@ Colonne reali dell'export: `review_date` · `brand_type` (Expedia / Hotels / Orb
 `review_by` · `review_rating` (`"10 out of 10"`) · `review_title` · `review_text` ·
 `review_response_date` · `review_response_by` · `review_response`.
 
-**Il nome dell'ospite c'è** (`review_by`, mostrato in lista): la regola di rispondere con
-"Dear Guest," / "Gentile ospite," resta una scelta di policy, non un ripiego per un dato
-mancante. Il vecchio testo di questa sezione diceva il contrario.
+**Il nome dell'ospite c'è, e si continua a NON usarlo** (deciso il 06/09/2026). L'export
+riporta `review_by` (mostrato in lista), quindi il nome sarebbe disponibile: le risposte
+Expedia devono comunque aprire **sempre** con "Dear Guest," / "Gentile ospite,". È una
+**scelta**, non un ripiego per un dato mancante — il vecchio testo di questa sezione
+diceva che il nome non c'era, e da lì nasce l'equivoco.
+
+**Non "correggerla" trovando `review_by` nei dati**: vedere il nome disponibile e passare
+a usarlo come su Booking è esattamente l'errore che questa nota esiste per prevenire. La
+regola vive nel prompt di `revExpGenerateReply` (regola 1: *mai il nome*) e va cambiata
+solo se lo chiede il QM.
 
 Coperto da **17 controlli** in `test/controlli.js` ("Recensioni Expedia: l'export si
 carica comunque sia separato"), verificati con due sabotaggi (si prova solo il TAB; il
