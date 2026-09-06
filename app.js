@@ -3318,20 +3318,50 @@ function renderHkSuggestions(focusIdx){
   // sistemare, verde se e' in pari. Cosi' si vede DOVE andare senza aprire i giorni uno
   // per uno. La soglia e' la stessa del motore: uno di scarto con numeri dispari e'
   // inevitabile e nessuno lo percepisce, due e' uno squilibrio vero.
+  //
+  // E in terza riga QUANTE mosse esistono per quel giorno. Le partenze dicono se il
+  // giorno e' storto, non se c'e' qualcosa da fare: sono due cose diverse e ci si
+  // accorge della differenza solo aprendo il giorno — un giorno rosso puo' non avere
+  // nessuna mossa possibile (tipologie tutte da un lato, camere occupate), e un giorno
+  // con le partenze in pari puo' averne, perche' il motore guarda anche il carico.
+  // Senza questa riga l'unico modo di saperlo era cliccare i giorni uno per uno.
   const _oggiIdx=(()=>{try{return Math.max(0,pianoGetGiornoIdx());}catch(e){return 0;}})();
+  // Costa poco: per un giorno passato o gia' in pari `hkSuggestMoves` esce subito, quindi
+  // il giro completo del motore lo pagano solo i giorni davvero sbilanciati (misurato:
+  // ~20ms per tutta la settimana su un piano da 20 camere). Il giorno aperto non si
+  // ricalcola: il suo conteggio e' gia' in `s`.
+  const _mossePerGiorno=(()=>{
+    const n=(pianoData&&pianoData.giorni&&pianoData.giorni.length)||0;
+    const out=new Array(n).fill(0);
+    if(!s.ok)return out;
+    for(let i=0;i<n;i++){
+      if(s.focus&&i===focusIdx){out[i]=s.totMosse||0;continue;}
+      try{out[i]=hkSuggestMoves(1,i).totMosse||0;}catch(e){out[i]=0;}
+    }
+    return out;
+  })();
   const selGiorni=(pianoData&&pianoData.giorni&&pianoData.giorni.length)
     ?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;margin-left:auto;">${pianoData.giorni.map((g,i)=>{
         const att=i===pianoNavIdx;
         const d=(s.giorni||[])[i];
         const passato=i<_oggiIdx;
-        let numeri='';
+        let numeri='',mosse='',tip=g.label||('g'+(i+1));
         if(d){
           const pari=Math.abs(d.pM-d.pA)<2;
           const col=passato?'var(--text-dim)':(pari?'var(--green)':'var(--red)');
           numeri=`<div style="font-size:13px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums;color:${att?'#fff':col};display:flex;align-items:center;justify-content:center;gap:5px;">
             ${att?`<span style="width:7px;height:7px;border-radius:50%;background:${passato?'rgba(255,255,255,.45)':(pari?'#4CC38A':'#FF8B7E')};"></span>`:''}${d.pM} · ${d.pA}</div>`;
+          // Il trattino si stampa sempre: se la riga comparisse solo dove c'e' qualcosa,
+          // un giorno senza mosse sarebbe indistinguibile da un giorno non ancora
+          // calcolato, e i pulsanti avrebbero altezze diverse. Detto esplicitamente:
+          // "qui non c'e' niente da proporre".
+          const nM=_mossePerGiorno[i]||0;
+          const cM=nM?(att?'#FFC96B':'var(--amber)'):(att?'rgba(255,255,255,.45)':'var(--text-dim)');
+          mosse=`<div style="font-size:10px;font-weight:${nM?'700':'400'};margin-top:2px;color:${cM};letter-spacing:.01em;">${nM?(nM===1?'1 mossa':nM+' mosse'):'—'}</div>`;
+          tip=nM?`${tip}: ${nM===1?'1 spostamento proposto':nM+' spostamenti proposti'}`
+                :`${tip}: nessuno spostamento da proporre`;
         }
-        return `<button onclick="pianoNavRender(${i})" style="background:${att?'var(--accent)':'var(--surface2)'};color:${att?'#fff':'var(--text-muted)'};border:1px solid ${att?'var(--accent)':'var(--border)'};border-radius:7px;padding:6px 10px;min-width:80px;font-size:12.5px;font-weight:${att?'700':'600'};cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.25;text-align:center;${passato&&!att?'opacity:.55;':''}">${g.label||('g'+(i+1))}${numeri}</button>`;
+        return `<button onclick="pianoNavRender(${i})" title="${tip}" style="background:${att?'var(--accent)':'var(--surface2)'};color:${att?'#fff':'var(--text-muted)'};border:1px solid ${att?'var(--accent)':'var(--border)'};border-radius:7px;padding:6px 10px;min-width:80px;font-size:12.5px;font-weight:${att?'700':'600'};cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.25;text-align:center;${passato&&!att?'opacity:.55;':''}">${g.label||('g'+(i+1))}${numeri}${mosse}</button>`;
       }).join('')}</div>`
     :'';
   // Titolo, stato del giorno selezionato e selettore stanno sulla STESSA riga. Prima

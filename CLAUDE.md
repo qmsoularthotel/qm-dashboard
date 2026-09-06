@@ -60,7 +60,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 540 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 553 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **5 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr) sono
 accendibili e spegnibili da remoto — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
@@ -1266,6 +1266,34 @@ una decisione.
 giorno** `Matarese · Altre`, verdi se in pari e rosse se sbilanciate. Soglia identica a quella
 del motore (≥2 di scarto): uno di scarto con numeri dispari è inevitabile, segnarlo in rosso
 manderebbe a cercare una soluzione che non esiste. I giorni passati sono in grigio.
+
+**Terza riga: quante mosse ci sono per quel giorno** (06/09/2026). Le partenze dicono se il
+giorno è **storto**, non se c'è **qualcosa da fare**, e sono due cose diverse: un giorno con
+le partenze in pari può avere mosse (il motore guarda anche il carico — è il caso della
+schermata che ha fatto nascere la riga: `8 · 8` verdi ma *da sistemare*, carico 17,5 · 20,5),
+e un giorno rosso può non averne nessuna (tipologie tutte da un lato, camere occupate).
+L'unico modo di saperlo era **aprire i giorni uno per uno**, ogni giorno.
+
+Ora ogni pulsante porta `2 mosse` in ambra, oppure **`—`** dove non c'è niente da proporre.
+Il trattino si stampa sempre: se la riga comparisse solo dove c'è qualcosa, un giorno senza
+mosse sarebbe indistinguibile da uno non ancora calcolato, e i pulsanti avrebbero altezze
+diverse fra loro. La didascalia (`title`) dice la stessa cosa a parole.
+
+**Costa poco, e per un motivo preciso**: `hkSuggestMoves` esce subito (`return out`) per un
+giorno passato o già in pari, quindi il giro completo del motore lo pagano **solo i giorni
+davvero sbilanciati** — misurato ~20 ms per tutta la settimana su un piano da 20 camere,
+contro i 2 ms di una chiamata sola. Il giorno aperto non si ricalcola: il suo conteggio è
+già in `s.totMosse`. Se un domani il motore perdesse quell'uscita anticipata, questa riga
+diventerebbe cara: è la condizione da non toccare.
+
+**Il numero non può mentire**: dev'essere quello che si trova aprendo quel giorno
+(`s.totMosse`, il conteggio *prima* del taglio a `maxN`). Una chip che promette suggerimenti
+e poi non ne mostra è peggio di nessuna chip — si smette di fidarsi del pannello e si torna
+ad aprirli tutti a mano. È l'invariante verificata dai controlli.
+
+Coperto da **13 controlli** in `test/controlli.js` ("Bilanciamento camere: le chip dicono
+dove ci sono suggerimenti"), verificati con tre sabotaggi (la chip non dichiara mai niente;
+conta il giorno sbagliato; riga vuota invece del trattino): 3, 4 e 1 falliscono.
 
 **Mosse che non toccano il giorno selezionato**: per gli `scambio-blocco` il filtro sul giorno
 in focus è saltato di proposito (riguardano tutta la settimana), e la nota diceva il contrario.
@@ -3585,7 +3613,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta, separatore dell'export Expedia. 540 controlli.
+scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip. 553 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire
@@ -3773,6 +3801,7 @@ confrontarli con quelli presenti in `index.html`.
 | Compass aperto e fermo consumava scritture KV | `hkpDeriveFromPiano()` scriveva `qm_hk_soul` e `qm_hk_bout` con `caricato: new Date()`: un orario nuovo a ogni derivazione, quindi il filtro di `kvSet` non riconosceva mai la ripetizione. Parte a ogni caricamento del Piano, **anche quello del giro di aggiornamento** → 2 scritture per ciclo, fino a ~5.700 al giorno per una postazione aperta (tetto: 1.000) | `_hkSalvaDerivato()` confronta i soli conteggi, ignorando `caricato` e `_ts`, e scrive solo se i numeri sono cambiati. Misurato il 04/09/2026: con Compass fermo erano le uniche due chiavi che cambiavano da sole |
 | Una scrittura sul cloud che falliva non lo diceva a nessuno | `kvSet` restituisce `false`, ma la maggior parte dei punti che la chiamano scarta il risultato con `.catch(()=>{})`: il dato restava sul dispositivo e Compass sembrava aver salvato. Successo il 03/09/2026 col tetto giornaliero esaurito — le altre postazioni non vedevano niente | Il conto lo tiene `kvSet` stessa (`_kvFallite`) e lo dice una volta sola con una fascia rossa in cima (`_kvRenderAvviso`), che sparisce da sola appena la scrittura riesce. Corretto lì e non nei ~20 punti di chiamata, che domani sarebbero di nuovo 21. Il 401 è escluso di proposito: quello lo racconta già il velo di abilitazione |
 | Le app scrivevano un registro accessi che nessuno leggeva | `qm_hk_access` / `qm_bkf_access` / `qm_dvr_access`: una lettura e una scrittura a ogni apertura, per una sezione della dashboard rimossa a luglio | Rimosso da `housekeeper.html`, `breakfast.html`, `dvr.html` il 04/09/2026 |
+| Per sapere se un giorno aveva suggerimenti bisognava aprirlo | Le chip mostravano solo le **partenze**, che dicono se il giorno è storto, non se c'è qualcosa da fare: un giorno in pari può avere mosse (il motore guarda anche il carico) e uno rosso può non averne. Si aprivano i sette giorni uno per uno, ogni giorno | Terza riga nella chip: `2 mosse` in ambra, `—` dove non c'è niente. Il conteggio è `s.totMosse`, lo stesso che si trova aprendo il giorno. Costa ~20 ms a settimana perché `hkSuggestMoves` esce subito sui giorni in pari o passati |
 | Suggerimenti che non toccano il giorno selezionato | Per gli `scambio-blocco` il filtro sul giorno in focus è saltato di proposito (riguardano tutta la settimana), ma la nota diceva "solo le mosse che migliorano X" | Badge grigio **non tocca \<giorno\>** sulla mossa, e nota corretta |
 | Per cambiare giorno bisognava risalire in cima alla vista | Il selettore dei giorni stava solo sopra la suddivisione cameriere, e i suggerimenti sono in fondo: si risaliva e si riscendeva a ogni giorno | Lo stesso selettore è ripetuto nell'intestazione dei suggerimenti, a destra del titolo. Chiama `pianoNavRender(i)`, la navigazione vera: non è una seconda copia dello stato |
 | Non si vedeva quale giorno avesse bisogno di attenzione | Il selettore mostrava solo le date: per sapere dove intervenire si aprivano i giorni uno per uno | Sotto ogni giorno le sue partenze `Matarese · Altre`, **verdi se in pari, rosse se sbilanciate**. La soglia è la stessa del motore (≥2 di scarto): uno di scarto con numeri dispari è inevitabile e nessuno lo percepisce. I giorni già passati sono in grigio |

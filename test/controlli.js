@@ -1719,3 +1719,84 @@ sez('Recensioni Expedia: l\'export si carica comunque sia separato');
   ok('e elenca quelle trovate',                    /ospite/.test(_revExpDiagnosi(altro)), true);
   ok('colonne giuste ma zero righe: lo distingue', /nessuna riga/.test(_revExpDiagnosi(COLONNE + '\n')), true);
 })();
+
+// ─────────────────────────────────────────────────────────────────────────────
+sez('Bilanciamento camere: le chip dicono dove ci sono suggerimenti');
+// Le partenze scritte nella chip dicono se il giorno e' STORTO, non se c'e' qualcosa da
+// fare: sono due cose diverse, e per sapere la seconda bisognava aprire i giorni uno per
+// uno. Un giorno con le partenze in pari puo' avere mosse (il motore guarda anche il
+// carico) e un giorno rosso puo' non averne nessuna. Camere inventate, date 2027 cosi'
+// nessun giorno e' "oggi".
+(function () {
+  var _piano = pianoData, _nav = pianoNavIdx;
+  var NOMI = ['Gio 3/9', 'Ven 4/9', 'Sab 5/9', 'Dom 6/9', 'Lun 7/9', 'Mar 8/9', 'Mer 9/9'];
+  var G = NOMI.map(function (n, i) {
+    return { label: n, data: String(3 + i).padStart(2, '0') + '/09/2027',
+             soulart: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             boutique: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
+  });
+  var CELLE = { 'Art 12': ['F', 'P', '.', '.', '.', 'A', 'F'],
+                'Art 14': ['F', 'F', 'C', 'C', 'P', 'A', 'F'],
+                'Art 16': ['F', 'F', 'C', 'C', 'F', 'F', 'F'] };
+  var CHIAVE = { F: 'fermate', P: 'partenze', C: 'cambi', A: 'arrivi' };
+  Object.keys(CELLE).forEach(function (r) {
+    CELLE[r].forEach(function (c, i) { if (CHIAVE[c]) G[i].soulart[CHIAVE[c]].push(r); });
+  });
+  pianoData = { stampato: '03/09/2027', giorni: G, incArr: [], incPar: [],
+                tipi: { 'Art 12': 'AS DLX DP', 'Art 14': 'AS DLX DP', 'Art 16': 'AS SUP' } };
+  pianoNavIdx = 0;
+
+  var html = renderHkSuggestions(0);
+  var chips = [], re = /<button onclick="pianoNavRender\((\d+)\)" title="([^"]*)"[^>]*>([\s\S]*?)<\/button>/g, m;
+  while ((m = re.exec(html))) chips.push({ i: +m[1], tip: m[2], txt: m[3].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() });
+  ok('c\'e\' una chip per ogni giorno', chips.length, 7);
+
+  // Quante mosse DICHIARA la chip.
+  function dichiarate(t) {
+    if (/\b1 mossa\b/.test(t)) return 1;
+    var mm = t.match(/\b(\d+) mosse\b/);
+    return mm ? +mm[1] : 0;
+  }
+  // L'INVARIANTE, il motivo per cui questi controlli esistono: il numero nella chip deve
+  // essere quello che si trova aprendo quel giorno. Una chip che promette suggerimenti e
+  // poi non ne mostra (o che tace dove invece ce ne sono) e' peggio di nessuna chip: si
+  // smette di fidarsi del pannello e si torna ad aprirli tutti a mano.
+  var buone = 0, conMosse = 0, senza = 0;
+  chips.forEach(function (c) {
+    var vero = hkSuggestMoves(1, c.i).totMosse || 0;
+    if (dichiarate(c.txt) === vero) buone++;
+    if (vero > 0) conMosse++; else senza++;
+  });
+  ok('ogni chip dichiara le mosse che il motore trova davvero', buone, 7);
+  // Senza questi due, l'invariante sopra passerebbe anche con sette chip tutte a zero.
+  ok('il caso di prova ha giorni con mosse',                    conMosse > 0, true);
+  ok('e giorni senza',                                          senza > 0, true);
+
+  // Il caso che ha fatto nascere la riga: partenze 0 · 1 (scarto 1 = in pari, numeri
+  // VERDI) e pero' una mossa esiste, perche' il carico e' 0 contro 3. Prima era invisibile.
+  var lun = chips.filter(function (c) { return c.i === 4; })[0];
+  var dLun = hkSuggestMoves(1, 4);
+  ok('lunedi\' ha le partenze in pari',        Math.abs(dLun.giorni[4].pM - dLun.giorni[4].pA) < 2, true);
+  ok('ma una mossa c\'e\'',                    dLun.totMosse, 1);
+  ok('e la chip la dichiara',                  /1 mossa/.test(lun.txt), true);
+  ok('col plurale dove sono piu\' d\'una',     /\d+ mosse|1 mossa/.test(chips.map(function (c) { return c.txt; }).join(' ')), true);
+
+  // Dove non c'e' niente si stampa un trattino, non il vuoto: una riga assente sarebbe
+  // indistinguibile da un giorno non ancora calcolato, e i pulsanti avrebbero altezze
+  // diverse fra loro.
+  var vuote = chips.filter(function (c) { return (hkSuggestMoves(1, c.i).totMosse || 0) === 0; });
+  ok('i giorni senza mosse lo dicono col trattino', vuote.every(function (c) { return /—/.test(c.txt); }), true);
+  ok('e nessuno di loro dichiara un numero',        vuote.every(function (c) { return dichiarate(c.txt) === 0; }), true);
+
+  // La didascalia al passaggio del mouse dice la stessa cosa a parole.
+  ok('la chip con mosse ha la sua didascalia',   /spostament/.test(lun.tip), true);
+  ok('e quella senza dice che non ce ne sono',   /nessuno spostamento/.test(vuote[0].tip), true);
+
+  // Il giorno aperto non si ricalcola due volte: il suo conteggio arriva da `s`, e deve
+  // combaciare lo stesso con quello degli altri.
+  var aperta = chips.filter(function (c) { return c.i === 0; })[0];
+  ok('anche il giorno aperto dichiara il suo numero', dichiarate(aperta.txt), hkSuggestMoves(1, 0).totMosse || 0);
+
+  pianoData = _piano; pianoNavIdx = _nav;
+})();
