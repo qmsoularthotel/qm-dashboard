@@ -471,13 +471,39 @@ function _qmKvScrivi(key,v){
   return fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({key:key,value:v})});
 }
+// Una scrittura che non arriva sul cloud DEVE dirlo a chi sta usando l'app: il dato resta
+// su questo dispositivo e nessun altro lo vede, ma l'app continua a funzionare e sembra che
+// abbia salvato. E' successo il 02/09/2026 (qmKvSet chiamava se stessa e la scrittura non
+// partiva mai) e il 03/09 (tetto giornaliero esaurito): in entrambi i casi il giro era stato
+// fatto davvero, e nessuno poteva sapere che non fosse arrivato.
+//
+// Il cloud non puo' essere avvisato dall'app: se le scritture non passano, non passa nemmeno
+// la scrittura che segnalerebbe il guasto. L'unico avviso possibile e' QUI, a chi ha il
+// dispositivo in mano. Dal Pannello App il sintomo si vede come dati che non arrivano.
+let _qmScrittureFallite=0;
+function qmAvvisoScrittura(){
+  let el=document.getElementById('qm-avviso-scrittura');
+  if(!_qmScrittureFallite){if(el)el.remove();return;}
+  if(!el){
+    el=document.createElement('div');
+    el.id='qm-avviso-scrittura';
+    el.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99998;background:#C0352A;color:#fff;padding:9px 14px;font-size:13px;font-weight:600;text-align:center;font-family:inherit;line-height:1.4;';
+    document.body.appendChild(el);
+  }
+  el.textContent=(_qmScrittureFallite===1?'Un dato non è arrivato sul cloud':_qmScrittureFallite+' dati non sono arrivati sul cloud')
+    +': restano su questo dispositivo, in albergo non li vedono. Riprova più tardi o avvisa il Quality Manager.';
+}
 function qmKvSet(key,value){
   const v=typeof value==='string'?value:JSON.stringify(value);
   if(_qmKvUltimo[key]===v)return Promise.resolve(true);
   _qmKvUltimo[key]=v;
   return _qmKvScrivi(key,v)
-    .then(r=>{if(!r.ok)delete _qmKvUltimo[key];return r.ok;})
-    .catch(e=>{delete _qmKvUltimo[key];throw e;});
+    .then(r=>{
+      if(!r.ok){delete _qmKvUltimo[key];_qmScrittureFallite++;qmAvvisoScrittura();}
+      else if(_qmScrittureFallite){_qmScrittureFallite=0;qmAvvisoScrittura();}
+      return r.ok;
+    })
+    .catch(e=>{delete _qmKvUltimo[key];_qmScrittureFallite++;qmAvvisoScrittura();throw e;});
 }
 
 const KEY_FONDO = 'qm_cassa_fondo';

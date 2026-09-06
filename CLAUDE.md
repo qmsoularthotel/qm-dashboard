@@ -3695,6 +3695,24 @@ lavorano su una **copia ripulita** dell'ospite, così ogni campo interpolato pi�
 innocuo. L'oggetto originale non si tocca: altrove finisce in `textContent`, dove la
 ripulitura mostrerebbe `&amp;` al posto di `&`.
 
+### Una scrittura persa lo dice a chi ha il dispositivo in mano
+
+Le sei app (`housekeeper`, `breakfast`, `controllo-mattino`, `inventory`, `dvr`,
+`reception`) mostrano una **fascia rossa in cima** quando una scrittura non arriva sul cloud:
+*"restano su questo dispositivo, in albergo non li vedono"*. Sparisce da sola alla prima
+scrittura riuscita. `qmAvvisoScrittura()` in ciascun file, sorvegliata da una sentinella in
+`test/esegui.sh` (verificata togliendola da `dvr.html`: scatta).
+
+**Compass non può essere avvisato dall'app, ed è un limite fisico, non una scelta**: se le
+scritture non passano, non passa nemmeno la scrittura che segnalerebbe il guasto. Dal lato
+Compass il sintomo si vede solo come **dati che non arrivano** — è quello che mostrano le
+schede in *Applicazioni stand alone* (l'orario dell'ultimo aggiornamento per app) e il rosso
+di Culligan dopo le 12.
+
+Nasce da due incidenti reali in cui il giro era stato fatto davvero e nessuno poteva saperlo:
+il 02/09/2026 (`qmKvSet` chiamava se stessa, la scrittura non partiva mai) e il 03/09/2026
+(tetto giornaliero delle scritture esaurito).
+
 ### Il contatore degli accessi anonimi non serve più
 
 `qm_auth_anon_<data>` contava le finestre da dieci minuti in cui qualcuno passava senza

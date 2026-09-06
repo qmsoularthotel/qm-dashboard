@@ -142,6 +142,16 @@ for _app in housekeeper.html breakfast.html controllo-mattino.html inventory.htm
     echo "              L'app sembra funzionare ma i dati restano solo su quel dispositivo."
     BKF_KO=1
   fi
+  # Una scrittura non arrivata deve dirlo a chi ha il dispositivo in mano: il cloud non puo'
+  # essere avvisato (se le scritture non passano, non passa nemmeno quella che segnala il
+  # guasto), quindi questo e' l'unico avviso possibile. Senza, si torna al 02/09/2026: giro
+  # Culligan fatto davvero, dati mai arrivati, e nessuno che potesse accorgersene.
+  if ! grep -q 'qmAvvisoScrittura' "$_app"; then
+    echo ""
+    echo "  ERRORE      $_app non avvisa piu' quando una scrittura non arriva sul cloud."
+    echo "              Chi la usa crederebbe di aver salvato, e i dati resterebbero li'."
+    BKF_KO=1
+  fi
   if ! grep -q "_qmKvScrivi" "$_app"; then
     echo ""
     echo "  ERRORE      $_app non ha piu' _qmKvScrivi: chi esegue davvero la scrittura?"
