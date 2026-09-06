@@ -3579,6 +3579,24 @@ di proposito: scatta.
 **Il ripristino non è automatico**: il file si ricarica a mano, chiave per chiave (sarebbero
 centinaia di scritture, da fare consapevolmente e non con un bottone).
 
+### Backup automatico notturno su Drive — `strumenti/backup-drive.gs`
+
+Il pulsante funziona solo se qualcuno se lo ricorda. Lo script Apps Script (nel Google del QM,
+non su Cloudflare) fa la stessa cosa **ogni notte alle 3**: chiede un lasciapassare a `/auth`,
+legge l'elenco da `/kv/chiavi`, scarica tutto e salva un JSON in una cartella del Drive,
+tenendo le ultime 30 copie. Se fallisce **manda una mail**: un backup che smette in silenzio è
+peggio di non averlo, perché si crede di avere una copia.
+
+- **Solo letture** + una operazione di elenco: non tocca il tetto delle 1.000 scritture.
+- **Il lasciapassare si rinnova a ogni giro** invece di essere salvato: dura 180 giorni, e uno
+  salvato scadrebbe un giorno senza che nessuno se ne accorga.
+- La password di Compass sta nelle **Proprietà script** del progetto Google del QM
+  (`QM_PASSWORD`), mai nel file — che infatti è nel repository. Facoltative: `QM_EMAIL`,
+  `QM_CARTELLA`, `QM_COPIE`.
+- Le letture vanno a blocchi di 20 con `fetchAll`: una per volta su qualche centinaio di
+  chiavi sfiorerebbe il tempo massimo di esecuzione di Apps Script.
+- Installazione e prova: funzioni `installa` e `backupOra`, istruzioni in testa al file.
+
 ### Dati dell'ospite messi in pagina — `_rcPulito()`
 
 Nomi, camere e date arrivano dal PDF del PMS e finiscono in pagina come HTML: un nome
