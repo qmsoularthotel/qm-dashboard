@@ -3591,8 +3591,15 @@ per persona sono stati discussi e rimandati.
 
 ### Stato del sistema — `qmRenderStatoSistema()`
 
-Nella vista **Sistema**, tre righe che rispondono a domande a cui da Compass **non si
-poteva rispondere**: si scoprivano solo aprendo Cloudflare o chiedendo a Claude.
+Nella vista **Stato del sistema**, impaginata per essere letta in due secondi: un **verdetto
+grande** in cima (verde *"Tutto in ordine"*, oppure rosso con elencato cosa non va), sotto il
+**consumo dell'archivio con una barra**, e in fondo, in piccolo, i dettagli — che si leggono
+solo quando qualcosa non torna.
+
+Prima erano sei righe con lo stesso peso: un elenco da leggere, non uno stato da guardare.
+Entrando lì la domanda è una sola — *va tutto bene?* — e la risposta deve arrivare prima dei
+dettagli. Le voci rispondono comunque a domande a cui da Compass **non si poteva rispondere**:
+si scoprivano solo aprendo Cloudflare o chiedendo a Claude.
 
 | Riga | Da dove | Quando è rossa |
 |---|---|---|
