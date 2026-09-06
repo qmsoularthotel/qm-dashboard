@@ -16509,58 +16509,14 @@ try{
 // riceve lo apre una volta e il suo telefono resta abilitato. Il lasciapassare non e' la
 // password: se un collegamento finisse in giro si puo' cambiare QM_AUTH_SECRET sul Worker e
 // tutti i lasciapassare emessi smettono di valere insieme.
-const QM_APP_LINK=[
-  {f:'index.html',            n:'Compass (dashboard)'},
-  {f:'housekeeper.html',      n:'Housekeeping'},
-  {f:'breakfast.html',        n:'Breakfast'},
-  {f:'controllo-mattino.html',n:'Distribuzione Culligan'},
-  {f:'inventory.html',        n:'Inventari detersivi'},
-  {f:'dvr.html',              n:'Fascicolo dipendenti'},
-  {f:'reception.html',        n:'Cassa reception'}
-];
-async function qmChiediPass(){
-  const pw=prompt('Password di Compass (quella impostata su Cloudflare come QM_PASSWORD):');
-  if(!pw)return;
-  const el=document.getElementById('qmDispositivi');
-  try{
-    const r=await fetch(PROXY+'/auth',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({password:pw})});
-    const j=await r.json();
-    if(!j||!j.ok){cqAvviso('Accesso non riuscito',(j&&j.error)||'Password non valida.');return;}
-    _qmPass=j.pass;
-    try{localStorage.setItem(QM_PASS_KEY,_qmPass);}catch(e){}
-    qmRenderDispositivi();
-    cqAvviso('Questo computer è abilitato','Ora puoi generare i collegamenti per gli altri dispositivi.');
-  }catch(e){cqAvviso('Accesso non riuscito',String(e&&e.message||e));}
-}
-function qmLinkAttiva(file){
-  const base=location.origin+location.pathname.replace(/[^/]*$/,'');
-  return base+file+'#attiva='+encodeURIComponent(_qmPass);
-}
-// Il codice nudo: e' quello che si incolla dentro un'app aggiunta alla schermata iniziale,
-// dove il collegamento non arriverebbe (memoria separata da Safari).
-function qmCopiaCodice(btn){
-  try{navigator.clipboard.writeText(_qmPass);}catch(e){}
-  if(btn){const v=btn.textContent;btn.textContent='✓ copiato';setTimeout(()=>{btn.textContent=v;},1500);}
-}
-function qmCopiaLink(file,btn){
-  const t=qmLinkAttiva(file);
-  try{navigator.clipboard.writeText(t);}catch(e){}
-  if(btn){const v=btn.textContent;btn.textContent='✓ copiato';setTimeout(()=>{btn.textContent=v;},1500);}
-}
-// Il pannello metteva sullo stesso piano due strade per la stessa cosa — il codice e i
-// collegamenti — e dava piu' spazio a quella secondaria: sette righe di collegamenti sotto
-// una riga sola per il codice. Chi lo apriva non capiva quale delle due usare (06/09/2026).
+// I collegamenti di abilitazione (un indirizzo con dentro il codice) sono stati TOLTI il
+// 06/09/2026: il QM manda il codice a mano a chi deve collegarsi, e avere due strade per la
+// stessa cosa rendeva il pannello incomprensibile. Erano `QM_APP_LINK`, `qmLinkAttiva` e
+// `qmCopiaLink`.
 //
-// Adesso c'e' UNA strada in evidenza, il codice, che funziona ovunque: telefoni, computer,
-// app aggiunte alla schermata iniziale. I collegamenti restano — sono comodi su un computer,
-// un clic invece di un incollaggio — ma chiusi, e dichiarati per quello che sono: una
-// scorciatoia, non l'alternativa da scegliere.
-let _qmLinkAperti=false;
-function qmToggleLink(){
-  _qmLinkAperti=!_qmLinkAperti;
-  try{qmRenderDispositivi();}catch(e){}
-}
+// Il LETTORE resta (`qmEstraiAttiva`, poco piu' su e in tutte le app): un collegamento
+// mandato prima di oggi continua quindi ad abilitare chi lo apre. Toglierlo avrebbe rotto
+// qualcosa che e' gia' in giro, senza guadagnarci niente.
 function qmRenderDispositivi(){
   const el=document.getElementById('qmDispositivi');if(!el)return;
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -16597,22 +16553,6 @@ function qmRenderDispositivi(){
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin-top:10px;background:var(--amber-bg);border-radius:7px;padding:9px 11px;">
         <strong style="color:var(--amber);">Il codice va incollato DENTRO l'app</strong>, aprendola dalla sua icona — non da un link ricevuto su WhatsApp.
         Un'app aggiunta alla schermata iniziale ha una memoria separata da Safari: aperto dalla chat, il codice finirebbe in Safari e l'app resterebbe fuori.
-      </div>
-
-      <div style="margin-top:14px;border-top:1px solid var(--border-light,var(--border));padding-top:10px;">
-        <button onclick="qmToggleLink()" style="background:none;border:none;padding:0;color:var(--text-muted);font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:7px;">
-          <span style="transform:rotate(${_qmLinkAperti?'180':'0'}deg);transition:transform .15s;">⌄</span>
-          Collegamenti già pronti — scorciatoia per i computer
-        </button>
-        ${_qmLinkAperti?`
-        <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin:9px 0 6px;">
-          Su un computer si può anche mandare un collegamento: si apre nel browser di sempre e abilita da solo, senza incollare niente.
-          Fa esattamente quello che fa il codice, in un clic. <strong style="color:var(--text);">Sui telefoni non usarli</strong>, per il motivo qui sopra.
-        </div>
-        ${QM_APP_LINK.map(a=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);">
-          <span style="flex:1;color:var(--text-dim);">${esc(a.n)}</span>
-          <button onclick="qmCopiaLink('${a.f}',this)" style="${bott}">copia collegamento</button>
-        </div>`).join('')}`:''}
       </div>
 
       <div style="margin-top:12px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">

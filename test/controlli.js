@@ -1294,8 +1294,10 @@ ok('un indirizzo normale non lo attiva',
    qmEstraiAttiva('https://compass-qm.com/breakfast.html'), null);
 ok('e nemmeno una parola simile',
    qmEstraiAttiva('https://compass-qm.com/x.html#attivazione=1'), null);
-ok('i collegamenti coprono tutte le app', QM_APP_LINK.length, 7);
-ok('e portano il lasciapassare nel frammento', /#attiva=/.test(String(qmLinkAttiva)), true);
+// I collegamenti non si generano piu' (06/09/2026: il codice si manda a mano), ma il LETTORE
+// resta e deve restare: un collegamento mandato prima di allora continua ad abilitare chi lo
+// apre. Se un giorno sparisse anche quello, quelle persone si troverebbero fuori senza che
+// nessuno abbia toccato niente di visibile.
 // Chi incolla dalla chat spesso porta con se' tutto il collegamento invece del solo codice:
 // pretendere la parte finale sarebbe un modo sicuro di far sbagliare le persone.
 ok('dal collegamento intero si ricava il codice',

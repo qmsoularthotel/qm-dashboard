@@ -3539,12 +3539,16 @@ tutti e tre i percorsi.
 Il vincolo esplicito è: **il personale non deve digitare password.** Si passa un **codice**
 (il lasciapassare già firmato), uno solo per tutti.
 
-**Il pannello ha UNA strada in evidenza, il codice** (rifatto il 06/09/2026). Prima metteva
-codice e collegamenti sullo stesso piano, con sette righe di collegamenti sotto una riga sola
-per il codice: chi lo apriva non capiva quale delle due usare. I collegamenti esistono ancora
-e funzionano (`#attiva=<pass>` letto all'avvio, `qmLinkAttiva`), ma stanno **chiusi** sotto
-*"Collegamenti già pronti — scorciatoia per i computer"* e sono dichiarati per quello che
-sono: un clic invece di un incollaggio, **mai da usare sui telefoni**.
+**C'è UNA strada sola: il codice** (06/09/2026). I collegamenti di abilitazione — un indirizzo
+con dentro il codice, uno per app — sono stati **rimossi**: il QM manda il codice a mano a chi
+si collega, e due strade per la stessa cosa rendevano il pannello incomprensibile. Tolti
+`QM_APP_LINK`, `qmLinkAttiva`, `qmCopiaLink`.
+
+**Il lettore invece resta** (`qmEstraiAttiva`, in `app.js` e in tutte le app): un collegamento
+mandato prima di quella data continua ad abilitare chi lo apre. Toglierlo avrebbe rotto
+qualcosa già in circolazione senza guadagnarci niente — ed è annotato anche in
+`test/controlli.js`, dove il controllo sui collegamenti generati è stato sostituito da questa
+spiegazione.
 
 I passaggi:
 
