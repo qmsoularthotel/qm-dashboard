@@ -16548,6 +16548,19 @@ function qmCopiaLink(file,btn){
   try{navigator.clipboard.writeText(t);}catch(e){}
   if(btn){const v=btn.textContent;btn.textContent='✓ copiato';setTimeout(()=>{btn.textContent=v;},1500);}
 }
+// Il pannello metteva sullo stesso piano due strade per la stessa cosa — il codice e i
+// collegamenti — e dava piu' spazio a quella secondaria: sette righe di collegamenti sotto
+// una riga sola per il codice. Chi lo apriva non capiva quale delle due usare (06/09/2026).
+//
+// Adesso c'e' UNA strada in evidenza, il codice, che funziona ovunque: telefoni, computer,
+// app aggiunte alla schermata iniziale. I collegamenti restano — sono comodi su un computer,
+// un clic invece di un incollaggio — ma chiusi, e dichiarati per quello che sono: una
+// scorciatoia, non l'alternativa da scegliere.
+let _qmLinkAperti=false;
+function qmToggleLink(){
+  _qmLinkAperti=!_qmLinkAperti;
+  try{qmRenderDispositivi();}catch(e){}
+}
 function qmRenderDispositivi(){
   const el=document.getElementById('qmDispositivi');if(!el)return;
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -16556,7 +16569,7 @@ function qmRenderDispositivi(){
     el.innerHTML=`<div class="panel" style="margin-bottom:14px;">
       <div class="panel-header"><span class="panel-title">Dispositivi abilitati</span></div>
       <div class="panel-body" style="padding:14px;font-size:var(--fs-xs);color:var(--text-dim);line-height:1.6;">
-        Questo computer non è ancora abilitato. Inserisci la password una volta: da qui potrai generare i collegamenti da mandare agli altri dispositivi, che non dovranno digitare nulla.
+        Questo computer non è ancora abilitato. Inserisci la password una volta: da qui potrai poi abilitare gli altri dispositivi senza far digitare la password a nessuno.
         <div style="margin-top:10px;"><button onclick="qmChiediPass()" style="${bott}">Abilita questo computer</button></div>
       </div></div>`;
     return;
@@ -16565,26 +16578,45 @@ function qmRenderDispositivi(){
     <div class="panel-header"><span class="panel-title">Dispositivi abilitati</span>
       <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">questo computer è abilitato</span>
     </div>
-    <div class="panel-body" style="padding:14px;">
-      <div style="font-size:var(--fs-xs);color:var(--text-dim);line-height:1.6;margin-bottom:12px;">
-        Manda il collegamento alla persona su WhatsApp: lo apre una volta e il suo telefono resta abilitato per sei mesi. Non deve digitare nessuna password.
+    <div class="panel-body" style="padding:16px;">
+
+      <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">Per abilitare una persona: mandale il codice</div>
+      <div style="font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;margin:5px 0 12px;">
+        Uno solo, uguale per tutte le app e per Compass. Lei apre l'app (o il sito), lo incolla nella finestra che compare, e ha finito:
+        <strong style="color:var(--text);">nessuno digita password</strong>. Vale sei mesi.
       </div>
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin-bottom:10px;background:var(--surface2);border-radius:7px;padding:9px 11px;">
-        <strong style="color:var(--text);">Sui telefoni serve il codice, non il collegamento.</strong>
-        Un'app aggiunta alla schermata iniziale ha una memoria separata da Safari: aprendo il collegamento dalla chat, il lasciapassare finirebbe in Safari e l'app con l'icona resterebbe fuori.
-        Manda il <strong>codice</strong>: chi lo riceve apre l'app, lo incolla nella finestra che compare, e ha finito.
-        Il collegamento serve invece per i computer, dove si apre nel browser di sempre.
+
+      <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;">
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);font-weight:700;">Codice di abilitazione</div>
+          <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">Mandalo in chat privata, non in un gruppo: chi è nel gruppo può abilitarsi.</div>
+        </div>
+        <button onclick="qmCopiaCodice(this)" style="${bott}background:var(--accent);color:#fff;border-color:var(--accent);padding:9px 18px;font-size:var(--fs-xs);">Copia codice</button>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
-        <span style="flex:1;font-weight:700;">Codice unico (vale per tutte le app)</span>
-        <button onclick="qmCopiaCodice(this)" style="${bott}background:var(--accent);color:#fff;border-color:var(--accent);">copia codice</button>
+
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin-top:10px;background:var(--amber-bg);border-radius:7px;padding:9px 11px;">
+        <strong style="color:var(--amber);">Il codice va incollato DENTRO l'app</strong>, aprendola dalla sua icona — non da un link ricevuto su WhatsApp.
+        Un'app aggiunta alla schermata iniziale ha una memoria separata da Safari: aperto dalla chat, il codice finirebbe in Safari e l'app resterebbe fuori.
       </div>
-      ${QM_APP_LINK.map(a=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);">
-        <span style="flex:1;color:var(--text-dim);">${esc(a.n)}</span>
-        <button onclick="qmCopiaLink('${a.f}',this)" style="${bott}">collegamento</button>
-      </div>`).join('')}
-      <div style="margin-top:11px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">
-        Se un collegamento finisse nelle mani sbagliate: cambia <strong>QM_AUTH_SECRET</strong> sul Worker e tutti i collegamenti generati finora smettono di funzionare insieme. Poi si rigenerano da qui.
+
+      <div style="margin-top:14px;border-top:1px solid var(--border-light,var(--border));padding-top:10px;">
+        <button onclick="qmToggleLink()" style="background:none;border:none;padding:0;color:var(--text-muted);font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:7px;">
+          <span style="transform:rotate(${_qmLinkAperti?'180':'0'}deg);transition:transform .15s;">⌄</span>
+          Collegamenti già pronti — scorciatoia per i computer
+        </button>
+        ${_qmLinkAperti?`
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin:9px 0 6px;">
+          Su un computer si può anche mandare un collegamento: si apre nel browser di sempre e abilita da solo, senza incollare niente.
+          Fa esattamente quello che fa il codice, in un clic. <strong style="color:var(--text);">Sui telefoni non usarli</strong>, per il motivo qui sopra.
+        </div>
+        ${QM_APP_LINK.map(a=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);">
+          <span style="flex:1;color:var(--text-dim);">${esc(a.n)}</span>
+          <button onclick="qmCopiaLink('${a.f}',this)" style="${bott}">copia collegamento</button>
+        </div>`).join('')}`:''}
+      </div>
+
+      <div style="margin-top:12px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">
+        Se il codice finisse nelle mani sbagliate: cambia <strong>QM_AUTH_SECRET</strong> sul Worker. Smettono di funzionare <strong>tutti</strong> i dispositivi, compresi i tuoi, e il giro va rifatto da capo — non si revoca una persona sola.
       </div>
     </div></div>`;
 }

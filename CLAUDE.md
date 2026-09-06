@@ -3537,7 +3537,16 @@ tutti e tre i percorsi.
 ### Abilitare un dispositivo — nessuno digita password
 
 Il vincolo esplicito è: **il personale non deve digitare password.** Si passa un **codice**
-(il lasciapassare già firmato), uno solo per tutti:
+(il lasciapassare già firmato), uno solo per tutti.
+
+**Il pannello ha UNA strada in evidenza, il codice** (rifatto il 06/09/2026). Prima metteva
+codice e collegamenti sullo stesso piano, con sette righe di collegamenti sotto una riga sola
+per il codice: chi lo apriva non capiva quale delle due usare. I collegamenti esistono ancora
+e funzionano (`#attiva=<pass>` letto all'avvio, `qmLinkAttiva`), ma stanno **chiusi** sotto
+*"Collegamenti già pronti — scorciatoia per i computer"* e sono dichiarati per quello che
+sono: un clic invece di un incollaggio, **mai da usare sui telefoni**.
+
+I passaggi:
 
 1. Sul proprio computer: **Pannello App → Dispositivi abilitati → Copia codice**
 2. Si manda alla persona in chat privata (non in gruppo: chi è nel gruppo può abilitarsi)
