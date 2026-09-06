@@ -2487,12 +2487,18 @@ export — da sistemare solo se lo chiedono:
 
 ## Pannello di Controllo — due voci: Applicazioni e Sicurezza
 
-Dal **06/09/2026** la sezione di menu si chiama **Pannello di Controllo** e contiene due voci:
+Dal **06/09/2026** la sezione di menu si chiama **Pannello di Controllo** e contiene tre voci:
 
-| Voce | Vista | Cosa c'è |
-|---|---|---|
-| **Applicazioni stand alone** | `view-miniapp` | le 5 schede con stato, interruttore on/off e link |
-| **Sicurezza** | `view-sicurezza` | stato del sistema, copia di sicurezza dell'archivio, dispositivi abilitati (`#qmDispositivi`) |
+| Voce | Vista | Cosa c'è | Risponde a |
+|---|---|---|---|
+| **Applicazioni stand alone** | `view-miniapp` | le 5 schede con stato, interruttore on/off e link | *le app sono accese e aggiornate?* |
+| **Sicurezza** | `view-sicurezza` | copia di sicurezza dell'archivio, dispositivi abilitati (`#qmDispositivi`) | *chi entra, e cosa c'è al sicuro* |
+| **Sistema** | `view-sistema` | scheda "Stato del sistema" (`qmRenderStatoSistema()`) | *le macchine funzionano* |
+
+Sistema oggi ha **una scheda sola**: è il posto dove finiranno le prossime diagnosi. Se fra
+qualche mese fosse ancora l'unica, tanto vale riunirla a Sicurezza — una vista con un solo
+riquadro non giustifica una voce di menu (stessa ragione per cui la sezione "Biancheria" è
+stata eliminata).
 
 Prima stavano nella stessa vista, ma sono due mestieri diversi: le app si accendono e si
 spengono nell'operatività quotidiana, dispositivi e backup si toccano di rado e per motivi di
@@ -3570,7 +3576,7 @@ per persona sono stati discussi e rimandati.
 
 ### Stato del sistema — `qmRenderStatoSistema()`
 
-In cima alla vista Sicurezza, tre righe che rispondono a domande a cui da Compass **non si
+Nella vista **Sistema**, tre righe che rispondono a domande a cui da Compass **non si
 poteva rispondere**: si scoprivano solo aprendo Cloudflare o chiedendo a Claude.
 
 | Riga | Da dove | Quando è rossa |
