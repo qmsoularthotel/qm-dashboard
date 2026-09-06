@@ -4141,15 +4141,39 @@ function _qmStatoRiga(colore,titolo,dettaglio){
 // Tre domande a cui da Compass non si poteva rispondere: il Worker risponde? e' la versione
 // che ho pubblicato? la porta e' davvero chiusa? Finora si scoprivano solo aprendo Cloudflare
 // o chiedendo a me.
-async function qmRenderStatoSistema(){
-  const el=document.getElementById('qmStatoSistema');
-  if(!el)return;
-  el.innerHTML='<div style="font-size:12.5px;color:var(--text-dim);">Controllo in corso…</div>';
+// Un solo posto che sa come sta il sistema: lo leggono la scheda in "Stato del sistema" e il
+// pallino accanto alla voce di menu. Se fossero due calcoli separati, prima o poi direbbero
+// cose diverse — e un pallino verde sopra una scheda rossa e' peggio di nessun pallino.
+async function _qmStatoSistema(){
   let v=null,errore='';
   try{
     const r=await fetch(PROXY+'/versione',{cache:'no-store'});
     if(r.ok)v=await r.json();else errore='ha risposto '+r.status;
   }catch(e){errore='non raggiungibile';}
+  const fallite=_kvFalliteOggi();
+  // Verde solo se TUTTO e' come deve essere. Il Worker piu' vecchio del codice, o che non sa
+  // dire se la porta e' chiusa, e' qualcosa da fare — quindi non e' verde.
+  const ok=!!v && v.versione===WORKER_VERSIONE_ATTESA && v.portaChiusa===true && !fallite;
+  return{v,errore,fallite,ok};
+}
+// Il pallino nel menu: si guarda senza entrare nella vista, ed e' l'unico posto dove un
+// guasto si nota anche mentre si sta facendo altro.
+async function qmAggiornaPallinoStato(){
+  const el=document.getElementById('navStatoDot');
+  if(!el)return;
+  try{
+    const s=await _qmStatoSistema();
+    el.style.background=s.ok?'var(--green)':'var(--red)';
+    el.title=s.ok?'Tutto in ordine':'C\'è qualcosa da guardare';
+  }catch(e){}
+}
+async function qmRenderStatoSistema(){
+  const el=document.getElementById('qmStatoSistema');
+  if(!el)return;
+  el.innerHTML='<div style="font-size:12.5px;color:var(--text-dim);">Controllo in corso…</div>';
+  const stato=await _qmStatoSistema();
+  const v=stato.v,errore=stato.errore;
+  try{qmAggiornaPallinoStato();}catch(e){}
 
   let html='';
   if(!v){
@@ -4175,7 +4199,7 @@ async function qmRenderStatoSistema(){
   // senza che nessuno se ne accorgesse), e poter dire a voce quale versione si sta usando
   // quando si lavora da due postazioni diverse.
   html+=_qmStatoRiga('var(--accent)','Compass '+_qmVersioneApp(),'aperto '+_qmDaQuandoAperto());
-  const f=_kvFalliteOggi();
+  const f=stato.fallite;
   html+=f
     ?_qmStatoRiga('var(--amber)',f+(f===1?' scrittura non riuscita oggi':' scritture non riuscite oggi'),'quei dati sono rimasti su questo computer')
     :_qmStatoRiga('var(--green)','Nessuna scrittura persa oggi','da questo computer');
@@ -16526,6 +16550,12 @@ try{
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckVersione();});
   window.addEventListener('focus',()=>qmCheckVersione());
   setInterval(qmCheckVersione,600000);     // ogni 10 minuti
+// Il pallino nel menu: all'avvio e ogni quarto d'ora, solo se qualcuno sta guardando.
+try{
+  setTimeout(()=>{try{qmAggiornaPallinoStato();}catch(e){}},1500);
+  setInterval(()=>{if(document.visibilityState==='visible')qmAggiornaPallinoStato();},900000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmAggiornaPallinoStato();});
+}catch(e){}
 }catch(e){}
 
 // §§ ACCESSO — ABILITAZIONE DEI DISPOSITIVI

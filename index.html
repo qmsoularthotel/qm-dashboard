@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='385-20260906';
+  const V='386-20260906';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -157,7 +157,7 @@
       <div class="nav-section">Pannello di Controllo</div>
       <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="#fff"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span></span>Applicazioni</div>
       <div class="nav-item" onclick="setView('sicurezza',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"></rect><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"></path><circle cx="12" cy="15.5" r="1.4" fill="#fff" stroke="none"></circle></svg></span></span>Sicurezza</div>
-      <div class="nav-item" onclick="setView('sistema',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="11" rx="2"></rect><path d="M8 20.5h8"></path><path d="M12 16.5v4"></path></svg></span></span>Sistema</div>
+      <div class="nav-item" onclick="setView('sistema',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="11" rx="2"></rect><path d="M8 20.5h8"></path><path d="M12 16.5v4"></path></svg></span></span>Stato del sistema<span id="navStatoDot" title="Controllo in corso" style="width:9px;height:9px;border-radius:50%;background:var(--border);margin-left:auto;flex-shrink:0;"></span></div>
       <div class="nav-section" style="display:flex;align-items:center;justify-content:space-between;">
         <span>Upload Center</span>
         <span id="ucProgressLabel" style="font-size:9px;color:var(--text-dim);font-weight:400;">0/6</span>
@@ -1713,7 +1713,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=904-20260906"></script>
+<script src="app.js?v=905-20260906"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

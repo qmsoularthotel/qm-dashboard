@@ -2493,7 +2493,7 @@ Dal **06/09/2026** la sezione di menu si chiama **Pannello di Controllo** e cont
 |---|---|---|---|
 | **Applicazioni stand alone** | `view-miniapp` | le 5 schede con stato, interruttore on/off e link | *le app sono accese e aggiornate?* |
 | **Sicurezza** | `view-sicurezza` | copia di sicurezza dell'archivio, dispositivi abilitati (`#qmDispositivi`) | *chi entra, e cosa c'è al sicuro* |
-| **Sistema** | `view-sistema` | scheda "Stato del sistema" (`qmRenderStatoSistema()`) | *le macchine funzionano* |
+| **Stato del sistema** | `view-sistema` | scheda di diagnosi (`qmRenderStatoSistema()`) + **pallino** nella voce di menu | *le macchine funzionano* |
 
 Sistema oggi ha **una scheda sola**: è il posto dove finiranno le prossime diagnosi. Se fra
 qualche mese fosse ancora l'unica, tanto vale riunirla a Sicurezza — una vista con un solo
@@ -3607,6 +3607,17 @@ appena pubblicata è arrivata **su quella macchina** (il 06/07/2026 GitHub Pages
 bloccato due ore senza che nessuno se ne accorgesse) e a poter dire a voce quale versione gira
 quando si lavora da due postazioni. Il "da quanto è aperta" oltre le 24 ore suggerisce di
 ricaricare: una scheda ferma da ieri è il punto di partenza di ogni sovrascrittura.
+
+**Il pallino accanto alla voce di menu** (`#navStatoDot`, `qmAggiornaPallinoStato()`) è verde
+solo se **tutto** è come deve essere: Worker raggiungibile, versione uguale a quella attesa,
+porta dichiarata chiusa, nessuna scrittura persa oggi. Rosso in ogni altro caso — anche per un
+Worker da ripubblicare, che è comunque qualcosa da fare. Serve a notare un guasto **mentre si
+sta facendo altro**: è l'unico punto fuori dalla vista che lo dice.
+
+Scheda e pallino leggono **la stessa funzione** (`_qmStatoSistema()`): due calcoli separati
+prima o poi direbbero cose diverse, e un pallino verde sopra una scheda rossa è peggio di
+nessun pallino. Il giro parte all'avvio, ogni 15 minuti e al ritorno in primo piano — è una
+richiesta al Worker, non una lettura KV, quindi non tocca i tetti dell'archivio.
 
 **La versione attesa è una costante** (`WORKER_VERSIONE_ATTESA` in `app.js`): il Worker si
 pubblica a mano, quindi codice e server possono divergere. Un controllo in `test/esegui.sh`
