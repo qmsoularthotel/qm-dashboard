@@ -272,6 +272,12 @@ body.dark .panel{box-shadow:none;}
 .miniapp-card{position:relative;height:100%;min-height:196px;display:flex;flex-direction:column;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
 .miniapp-card-top{display:flex;align-items:center;gap:10px;margin-bottom:13px;}
 .miniapp-ico{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+/* Le schede usavano ancora le foto PNG mentre tutto il resto di Compass e' passato al badge
+   navy con anello oro: stesso impianto di .nav-icon-badge, solo 36px invece di 38 per stare
+   nella riga della scheda. Le icone sono le STESSE della voce di menu corrispondente — se
+   se ne cambia una, cambiarla in tutti e due i posti. */
+.miniapp-ico-badge{display:flex;align-items:center;justify-content:center;background:var(--accent);border:2px solid var(--gold);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+.miniapp-ico-badge svg{width:17px;height:17px;}
 .miniapp-nome{min-width:0;flex:1;}
 .miniapp-titolo{font-size:var(--fs-sm);font-weight:700;line-height:1.25;color:var(--text);}
 .miniapp-sub{font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}

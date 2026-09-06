@@ -2516,7 +2516,9 @@ Vista `miniapp` — pannello di controllo per le 5 app standalone (Housekeeping,
 
 ### Layout
 
-Griglia mosaico a **3 colonne fisse** (`grid-template-columns:repeat(3,minmax(0,1fr))`) — non `auto-fit`, perché con 5 card l'ultima riga (2 card) andava a stiracchiarsi in modo disomogeneo rispetto alle 4 sopra. Icone delle card identiche a quelle della sidebar (`img/icons/housekeeping.png`, `breakfast_sheet.png`, `acqua_culligan.png`, `inventari_e_ordini.png`, `dvr.png`).
+Griglia mosaico a **3 colonne fisse** (`grid-template-columns:repeat(3,minmax(0,1fr))`) — non `auto-fit`, perché con 5 card l'ultima riga (2 card) andava a stiracchiarsi in modo disomogeneo rispetto alle 4 sopra.
+
+**Icone: badge navy/oro, non più le foto PNG** (06/09/2026). `.miniapp-ico-badge` in `style.css` ha lo stesso impianto di `.nav-icon-badge` (cerchio `--accent`, anello `--gold`, SVG bianco), 36px invece di 38 per stare nella riga della scheda. Gli SVG sono **gli stessi della voce di menu corrispondente**, copiati da lì: scopa (Operativa HKP), tazza (Breakfast Sheet), goccia (Distribuzione Culligan), scatola (Inventari), scudo (DVR). Non sono due varianti della stessa idea: sono lo stesso disegno in due posti, e **se se ne cambia uno va cambiato anche l'altro** — non c'è una fonte condivisa. I PNG in `img/icons/` restano nella cartella ma non sono più referenziati dalle schede.
 
 ### Stato colorato per card — `miniapp*Status()`
 
