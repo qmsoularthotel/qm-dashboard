@@ -3609,6 +3609,32 @@ bloccato due ore senza che nessuno se ne accorgesse) e a poter dire a voce quale
 quando si lavora da due postazioni. Il "da quanto è aperta" oltre le 24 ore suggerisce di
 ricaricare: una scheda ferma da ieri è il punto di partenza di ogni sovrascrittura.
 
+### Consumo dell'archivio — il contatore vero di Cloudflare
+
+Riga *"N scritture oggi su 1.000"* nello Stato del sistema: è il numero **complessivo di tutte
+le postazioni**, telefoni compresi, non una stima locale. Verde sotto 500, ambra fino a 800,
+rossa oltre.
+
+**Perché serviva il totale e non il conteggio per dispositivo**: il ciclo che il 03/09/2026 ha
+esaurito il tetto girava su una macchina sola, e da un'altra postazione sarebbe stato
+invisibile. Un contatore locale avrebbe detto "37" mentre altrove se ne facevano 5.700.
+
+`GET /consumo` sul Worker interroga l'**interfaccia statistiche di Cloudflare** (GraphQL,
+`kvOperationsAdaptiveGroups`) in sola lettura: nessuna scrittura, nessun dato di ospiti.
+Verificato funzionante sull'account del QM il 06/09/2026 (piano gratuito).
+
+Tre variabili sul Worker, tutte da impostare a mano su Cloudflare:
+
+| Variabile | Cos'è |
+|---|---|
+| `CF_API_TOKEN` | token con la sola autorizzazione `Account · Analytics · Read`, creato da Profilo → Token API. **Nessun filtro per IP**: a chiamare è il Worker dalla rete Cloudflare, non il QM |
+| `CF_ACCOUNT_ID` | la stringa nella barra degli indirizzi di `dash.cloudflare.com/<qui>/workers/…` |
+| `CF_KV_NAMESPACE` | l'ID di `QM_STORAGE` |
+
+Se una manca, o il piano non espone i dati, il Worker risponde `disponibile:false` e **la riga
+non compare affatto**: meglio nessun numero che uno inventato — su questa misura si erano già
+prese decisioni sbagliate.
+
 ### Errori del programma — `_qmSegnaErrore()`
 
 Quando qualcosa va storto nel codice il messaggio finisce **nella console del browser**, che
