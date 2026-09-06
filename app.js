@@ -4029,7 +4029,11 @@ const QM_BACKUP_FISSE=[
   'qm_bkf_room_info','qm_bkf_room_info_date','qm_bkf_room_ambiguous',
   'qm_hk_soul','qm_hk_bout','qm_hkp_config',
   'qm_inv_orders','qm_ddt','qm_spese_cat_override',
-  'qm_dvr','qm_bia_distinte','qm_biancheria','qm_cassa_rimossi',
+  'qm_dvr','qm_bia_distinte','qm_biancheria',
+  // La cassa di reception: i due registri veri, non solo la traccia delle eliminazioni.
+  // Mancavano fino al 06/09/2026 — reception.html li scrive con una funzione sua
+  // (kvSetLocal), che il controllo automatico non seguiva.
+  'qm_cassa_fondo','qm_cassa_incasso','qm_cassa_rimossi',
   'qm_prestay','qm_prestay_tpl','qm_rev_sent','qm_rev_calib',
   'qm_tp_seen_until','qm_app_status','qm_customDate',
 ];

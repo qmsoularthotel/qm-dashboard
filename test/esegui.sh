@@ -203,11 +203,11 @@ for f in ['app.js'] + glob.glob('*.html'):
     s = open(f, encoding='utf-8').read()
     # Le tre strade per cui un dato finisce sul cloud: kvSet/qmKvSet diretto, LS.set (che
     # antepone 'qm_'), e _qmSalvaArchivio (gli archivi a elenchi: DVR, biancheria, resi).
-    scritte |= set(re.findall(r"(?:qmK|k)vSet\('(qm_[A-Za-z_0-9]+)'", s))
+    scritte |= set(re.findall(r"(?:qmK|k)vSet(?:Local)?\('(qm_[A-Za-z_0-9]+)'", s))
     scritte |= set('qm_' + k for k in re.findall(r"LS\.set\('([A-Za-z_0-9]+)'", s))
     scritte |= set(re.findall(r"_qmSalvaArchivio\('(qm_[A-Za-z_0-9]+)'", s))
     # ...e le costanti: kvSet(NOME_KEY, ...) con 'const NOME_KEY = "qm_..."' altrove.
-    for cost in set(re.findall(r"(?:qmK|k)vSet\(([A-Z][A-Z_0-9]+)\s*,", s)):
+    for cost in set(re.findall(r"(?:qmK|k)vSet(?:Local)?\(([A-Z][A-Z_0-9]+)\s*,", s)):
         for f2 in ['app.js'] + glob.glob('*.html'):
             m2 = re.search(r"const %s\s*=\s*'(qm_[A-Za-z_0-9]+)'" % cost, open(f2, encoding='utf-8').read())
             if m2:

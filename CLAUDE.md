@@ -3572,9 +3572,15 @@ disponibile): non si deve restare senza copia proprio nel momento in cui la si s
 file salvato dichiara quale dei due elenchi ha usato (campo `fonte`). Una chiave nuova dimenticata lì è
 una chiave che nel backup non c'è, e non lo si scopre fino al giorno in cui serve — per
 questo `test/esegui.sh` verifica che **ogni** chiave scritta da Compass sia coperta, seguendo
-tutte e quattro le strade (`kvSet`/`qmKvSet` con literal, `LS.set`, `_qmSalvaArchivio`, e
-`kvSet(COSTANTE)` risolvendo la costante). Il controllo è stato verificato togliendo `qm_dvr`
-di proposito: scatta.
+tutte le strade con cui un dato finisce sul cloud: `kvSet`/`qmKvSet`/**`kvSetLocal`** con
+literal o con una costante da risolvere, `LS.set`, `_qmSalvaArchivio`. Verificato togliendo
+prima `qm_dvr` e poi `qm_cassa_fondo` di proposito: scatta.
+
+**Il 06/09/2026 questo controllo ha mancato due chiavi vere**, `qm_cassa_fondo` e
+`qm_cassa_incasso` — i due registri della cassa. `reception.html` li scrive con una funzione
+sua (`kvSetLocal`), che la scansione non seguiva: la copia manuale del 05/09 **non conteneva i
+movimenti di cassa**. Se ne è accorto solo il passaggio all'elenco del Worker (207 chiavi
+contro 175). È la ragione per cui l'elenco a mano resta un ripiego e non la fonte.
 
 **Il ripristino non è automatico**: il file si ricarica a mano, chiave per chiave (sarebbero
 centinaia di scritture, da fare consapevolmente e non con un bottone).
