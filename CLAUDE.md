@@ -542,7 +542,8 @@ grep -n 'id="view-' index.html
 | `view-bkfsheet` | Operativa Breakfast — SoulArt |
 | `view-bkfsheetar` | Operativa Breakfast — Art Resort |
 | `view-hkpsheet` | Operativa HKP (Housekeeping) — SoulArt Hotel |
-| `view-miniapp` | Pannello App — centro controllo delle 5 app standalone (ex "Mini App") |
+| `view-miniapp` | **Applicazioni stand alone** — accensione/spegnimento delle 5 app (ex "Pannello App", ex "Mini App") |
+| `view-sicurezza` | **Sicurezza** — dispositivi abilitati e copia di sicurezza dell'archivio |
 | `view-inventario` | Inventario detersivi (stock + movimenti + analisi + ordini) |
 | `view-turni-pref` | Preferenze turni staff (da Google Forms) |
 | `view-turnazione` | "Turnazione Corrente" — specchio del pannello turno di Overview (`.staff-area-mirror`) |
@@ -2484,11 +2485,28 @@ export — da sistemare solo se lo chiedono:
 
 ---
 
-## Pannello App — Centro Controllo App Standalone
+## Pannello di Controllo — due voci: Applicazioni e Sicurezza
 
-### Scopo
+Dal **06/09/2026** la sezione di menu si chiama **Pannello di Controllo** e contiene due voci:
 
-Vista `miniapp` (voce sidebar **"Pannello App"**, ex "Mini App") — pannello di controllo per le 5 app standalone (Housekeeping, Breakfast, Distribuzione Culligan, Inventari Detersivi, DVR). Non è più un semplice elenco di link con contatore accessi: mostra uno **stato colorato** con KPI operativo per ciascuna app, un **toggle on/off** che può disattivarle da remoto, e un **avviso toast** per Breakfast.
+| Voce | Vista | Cosa c'è |
+|---|---|---|
+| **Applicazioni stand alone** | `view-miniapp` | le 5 schede con stato, interruttore on/off e link |
+| **Sicurezza** | `view-sicurezza` | dispositivi abilitati (`#qmDispositivi`) e copia di sicurezza dell'archivio |
+
+Prima stavano nella stessa vista, ma sono due mestieri diversi: le app si accendono e si
+spengono nell'operatività quotidiana, dispositivi e backup si toccano di rado e per motivi di
+sicurezza. I ganci in `setView` seguono i pezzi: `qmRenderDispositivi()` e `qmRenderBackup()`
+girano su `sicurezza`, `miniappRender()` su `miniapp`.
+
+**Attenzione ai doppioni in `pageTitles`/`breadcrumbs`**: sono oggetti letterali su una riga
+sola e una chiave ripetuta **vince l'ultima**. Aggiungendo `miniapp:'Pannello di Controllo'`
+in testa restava attiva la vecchia `miniapp:'Strumenti'` più avanti, e la briciola non
+cambiava. Cercare sempre `grep -o "miniapp:'[^']*'"` dopo averle toccate.
+
+### Scopo (vista Applicazioni)
+
+Vista `miniapp` — pannello di controllo per le 5 app standalone (Housekeeping, Breakfast, Distribuzione Culligan, Inventari Detersivi, DVR). Non è più un semplice elenco di link con contatore accessi: mostra uno **stato colorato** con KPI operativo per ciascuna app, un **toggle on/off** che può disattivarle da remoto, e un **avviso toast** per Breakfast.
 
 ### Layout
 
