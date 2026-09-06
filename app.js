@@ -4114,6 +4114,24 @@ async function qmEsportaArchivio(btn){
 // nessuno mentre lavora. Un controllo in esegui.sh verifica che questa costante combaci con
 // WORKER_VERSIONE in worker.js, altrimenti direbbe "da ripubblicare" per sempre.
 const WORKER_VERSIONE_ATTESA='2026-09-06b';
+const _QM_APERTO_DA=Date.now();
+function _qmVersioneApp(){
+  try{
+    const s=document.querySelector('script[src*="app.js"]');
+    const m=s&&String(s.getAttribute('src')||'').match(/v=([\w-]+)/);
+    return m?'v'+m[1]:'versione ignota';
+  }catch(e){return'versione ignota';}
+}
+// Una scheda lasciata aperta da ieri e' il punto di partenza di ogni sovrascrittura (vedi
+// l'incidente pre-stay del 22/08/2026): saperlo a colpo d'occhio vale piu' di un orario.
+function _qmDaQuandoAperto(){
+  const min=Math.floor((Date.now()-_QM_APERTO_DA)/60000);
+  if(min<60)return min<=1?'ora':'da '+min+' minuti';
+  const ore=Math.floor(min/60);
+  if(ore<24)return'da '+ore+(ore===1?' ora':' ore');
+  const gg=Math.floor(ore/24);
+  return'da '+gg+(gg===1?' giorno — conviene ricaricare':' giorni — conviene ricaricare');
+}
 function _qmStatoRiga(colore,titolo,dettaglio){
   return`<div style="display:flex;align-items:center;gap:9px;padding:6px 0;">
     <span style="width:9px;height:9px;border-radius:50%;background:${colore};flex-shrink:0;"></span>
@@ -4150,6 +4168,13 @@ async function qmRenderStatoSistema(){
     else
       html+=_qmStatoRiga('var(--red)','Accesso APERTO a chiunque','QM_AUTH_OBBLIGATORIA non è attiva su Cloudflare');
   }
+  // Quale versione sta girando QUI. Non serve a scoprire se e' vecchia — a quello pensa
+  // qmCheckVersione, che si ricarica da sola entro dieci minuti — ma a due cose che finora
+  // richiedevano di chiedere a qualcun altro: sapere se una correzione appena pubblicata e'
+  // davvero arrivata su questa macchina (il 06/07/2026 GitHub e' rimasto bloccato due ore
+  // senza che nessuno se ne accorgesse), e poter dire a voce quale versione si sta usando
+  // quando si lavora da due postazioni diverse.
+  html+=_qmStatoRiga('var(--accent)','Compass '+_qmVersioneApp(),'aperto '+_qmDaQuandoAperto());
   const f=_kvFalliteOggi();
   html+=f
     ?_qmStatoRiga('var(--amber)',f+(f===1?' scrittura non riuscita oggi':' scritture non riuscite oggi'),'quei dati sono rimasti su questo computer')

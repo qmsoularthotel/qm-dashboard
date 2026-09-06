@@ -3598,7 +3598,15 @@ poteva rispondere**: si scoprivano solo aprendo Cloudflare o chiedendo a Claude.
 |---|---|---|
 | Worker in linea, versione | `GET /versione` (pubblico, nessuna chiave) | non risponde |
 | Accesso riservato / **APERTO** | campo `portaChiusa` di `/versione` | `QM_AUTH_OBBLIGATORIA` non attiva |
+| Compass v… · aperto da … | il `?v=` del tag `<script>` e `_QM_APERTO_DA` | mai — è informativa |
 | Scritture non riuscite oggi | `localStorage`, contate da `_kvNonRiuscita` | ambra se ce n'è almeno una |
+
+La riga della versione **non** serve a scoprire se la pagina è vecchia: a quello pensa
+`qmCheckVersione`, che ricarica da sola entro dieci minuti. Serve a sapere se una correzione
+appena pubblicata è arrivata **su quella macchina** (il 06/07/2026 GitHub Pages è rimasto
+bloccato due ore senza che nessuno se ne accorgesse) e a poter dire a voce quale versione gira
+quando si lavora da due postazioni. Il "da quanto è aperta" oltre le 24 ore suggerisce di
+ricaricare: una scheda ferma da ieri è il punto di partenza di ogni sovrascrittura.
 
 **La versione attesa è una costante** (`WORKER_VERSIONE_ATTESA` in `app.js`): il Worker si
 pubblica a mano, quindi codice e server possono divergere. Un controllo in `test/esegui.sh`
