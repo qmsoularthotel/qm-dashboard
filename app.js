@@ -4051,9 +4051,24 @@ function qmBackupChiavi(giorni){
   }
   return out;
 }
+// L'elenco vero lo sa il Worker (`/kv/chiavi`, dal 06/09/2026): cosi' il backup e' completo
+// per costruzione e non dipende piu' da un elenco scritto a mano. QM_BACKUP_FISSE resta come
+// ripiego — un Worker piu' vecchio, o l'elenco non disponibile, non devono lasciare senza
+// copia proprio nel momento in cui la si stava facendo.
+async function qmBackupChiaviDalCloud(){
+  try{
+    const r=await fetch(PROXY+'/kv/chiavi',{cache:'no-store'});
+    if(!r.ok)return null;
+    const j=await r.json();
+    if(!j||!Array.isArray(j.chiavi)||!j.chiavi.length)return null;
+    return{chiavi:j.chiavi,completo:j.complete!==false};
+  }catch(e){return null;}
+}
 async function qmEsportaArchivio(btn){
   const testo=btn?btn.textContent:'';
-  const chiavi=qmBackupChiavi(180);
+  const daCloud=await qmBackupChiaviDalCloud();
+  const chiavi=daCloud?daCloud.chiavi:qmBackupChiavi(180);
+  const fonte=daCloud?'elenco del cloud':'elenco interno (il Worker non lo fornisce)';
   const dati={};
   let letti=0,trovati=0;
   // In blocchi da 12: tutte insieme sarebbero centinaia di richieste in parallelo, una in
@@ -4070,7 +4085,7 @@ async function qmEsportaArchivio(btn){
   }
   const oggi=new Date();
   const iso=oggi.getFullYear()+'-'+String(oggi.getMonth()+1).padStart(2,'0')+'-'+String(oggi.getDate()).padStart(2,'0');
-  const file=JSON.stringify({archivio:'Compass QM',data:oggi.toISOString(),chiavi:trovati,dati},null,1);
+  const file=JSON.stringify({archivio:'Compass QM',data:oggi.toISOString(),chiavi:trovati,fonte,dati},null,1);
   try{
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([file],{type:'application/json'}));

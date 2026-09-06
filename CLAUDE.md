@@ -3562,8 +3562,14 @@ per caso li ha ancora.
 una riga dice da quanto non si fa una copia (verde entro 30 giorni, ambra oltre) — il
 promemoria vive in `localStorage`, non su KV, perché serve proprio quando il cloud non c'è.
 
-**L'elenco delle chiavi è scritto a mano** (`QM_BACKUP_FISSE` + le famiglie espanse in
-`qmBackupChiavi()`): KV non sa elencare le proprie chiavi. Una chiave nuova dimenticata lì è
+**L'elenco delle chiavi lo dà il Worker** (`GET /kv/chiavi`, dal 06/09/2026): `list()` di KV,
+paginato, sotto lo stesso cancello di `/kv/*` — a porta chiusa vuole il lasciapassare. Così il
+backup è completo **per costruzione**. Le operazioni di elenco hanno un tetto proprio (1.000 al
+giorno): è pensato per il backup notturno, non per essere chiamato di continuo.
+
+`QM_BACKUP_FISSE` + `qmBackupChiavi()` restano come **ripiego** (Worker più vecchio, elenco non
+disponibile): non si deve restare senza copia proprio nel momento in cui la si sta facendo. Il
+file salvato dichiara quale dei due elenchi ha usato (campo `fonte`). Una chiave nuova dimenticata lì è
 una chiave che nel backup non c'è, e non lo si scopre fino al giorno in cui serve — per
 questo `test/esegui.sh` verifica che **ogni** chiave scritta da Compass sia coperta, seguendo
 tutte e quattro le strade (`kvSet`/`qmKvSet` con literal, `LS.set`, `_qmSalvaArchivio`, e

@@ -30,7 +30,7 @@ const ORIGINI = [
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /prestay/stato.
-const WORKER_VERSIONE = '2026-09-05';
+const WORKER_VERSIONE = '2026-09-06';
 
 // ── UNA CASELLA PER STRUTTURA ──
 // Booking recapita all'ospite solo se la mail parte dall'indirizzo registrato sull'Extranet
@@ -156,6 +156,28 @@ export default {
     }
 
     // ── ARCHIVIO KV ──
+    // Elenco delle chiavi presenti nell'archivio. Serve al backup: KV non si racconta da
+    // solo, e finora l'elenco di cosa salvare era scritto a mano in app.js — una chiave
+    // nuova che nessuno aggiungeva restava fuori dal backup senza che si potesse
+    // accorgersene, fino al giorno in cui l'originale non c'e' piu'.
+    //
+    // Sta sotto /kv/, quindi passa dallo stesso cancello: a porta chiusa vuole il
+    // lasciapassare come tutto il resto. Le operazioni di elenco hanno un tetto proprio
+    // (1.000 al giorno sul piano gratuito) e ognuna di queste ne consuma una per pagina:
+    // e' pensato per il backup notturno, non per essere chiamato di continuo.
+    if (url.pathname === '/kv/chiavi') {
+      const chiavi = [];
+      let cursore = undefined;
+      // Tetto di sicurezza: 20 pagine da 1.000 = 20.000 chiavi. Oltre, meglio fermarsi e
+      // dirlo che restare in giro finche' il Worker non viene ucciso per tempo di CPU.
+      for (let i = 0; i < 20; i++) {
+        const p = await env.QM_STORAGE.list({ limit: 1000, cursor: cursore });
+        (p.keys || []).forEach(k => chiavi.push(k.name));
+        if (p.list_complete || !p.cursor) return json({ ok: true, chiavi, complete: true });
+        cursore = p.cursor;
+      }
+      return json({ ok: true, chiavi, complete: false });
+    }
     if (url.pathname === '/kv/get') {
       const key = url.searchParams.get('key');
       if (!key) return new Response('missing key', { status: 400, headers: corsHeaders });
