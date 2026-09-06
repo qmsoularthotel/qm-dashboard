@@ -1663,3 +1663,59 @@ sez('Biancheria: andamento per la direzione e strutture separate');
 
   _bia = _prima; _biaHotel = _prevHotel; _biaStorico = _prevSt;
 })();
+
+// ─────────────────────────────────────────────────────────────────────────────
+sez('Recensioni Expedia: l\'export si carica comunque sia separato');
+// Expedia Partner Central esportava separato da TAB e ora esporta separato da VIRGOLA,
+// coi campi fra virgolette. Il parser splittava solo sul TAB: un export CSV dava UNA
+// colonna sola, 'review_rating' non si trovava mai e la vista diceva "Nessuna recensione
+// trovata nel file" — un file valido rifiutato senza dire perche'. Nomi inventati.
+(function () {
+  var COLONNE = 'review_date,brand_type,review_by,review_rating,review_title,review_text,' +
+                'review_response_date,review_response_by,review_response';
+  // La terza recensione ha VIRGOLE nel testo: e' quella che smaschera uno split ingenuo.
+  var RIGHE = [
+    ['Aug 22, 2026', 'Hotels',  'Rossi Mario',  '10 out of 10', '', '',                                              '', '', ''],
+    ['Jul 14, 2026', 'Expedia', 'Bianchi Anna', '4 out of 10',  '', 'Camera piccola',                                 '', '', 'Gentile ospite, grazie.'],
+    ['Jun 5, 2026',  'Orbitz',  'Verdi Luca',   '8 out of 10',  '', 'Bella posizione, personale gentile, tornero\'.', '', '', '']
+  ];
+  function componi(sep, quote) {
+    var q = function (v) { return quote ? '"' + v + '"' : v; };
+    return [COLONNE.split(',').map(q).join(sep)]
+      .concat(RIGHE.map(function (r) { return r.map(q).join(sep); })).join('\n') + '\n';
+  }
+  var csv = componi(',', true), tsv = componi('\t', false), scv = componi(';', true);
+
+  var a = revExpParseTsv(csv);
+  ok('il CSV virgolettato viene letto',            a.length, 3);
+  ok('il TSV continua a funzionare',               revExpParseTsv(tsv).length, 3);
+  ok('e anche il punto e virgola (Excel it)',      revExpParseTsv(scv).length, 3);
+  // Senza un parser vero, il testo con le virgole finirebbe spezzato su piu' colonne
+  // e le colonne dopo slitterebbero: il voto non sarebbe piu' il voto.
+  // Letture difensive: se il parser torna a non leggere niente devono fallire TUTTI i
+  // controlli qui sotto, non fermarsi al primo con un'eccezione che si porta via il resto.
+  var campo = function (righe, chi, col) {
+    var r = righe.filter(function (x) { return x['review_by'] === chi; })[0];
+    return r ? r[col] : '(riga assente)';
+  };
+  ok('il testo con le virgole resta intero',       campo(a, 'Verdi Luca', 'review_text'), 'Bella posizione, personale gentile, tornero\'.');
+  ok('e il voto della stessa riga resta il suo',   campo(a, 'Verdi Luca', '_score'), 8);
+  ok('ordinate dalla piu\' recente',               (a[0] || {})['review_by'], 'Rossi Mario');
+  ok('il voto si legge da "N out of 10"',          (a[0] || {})._score, 10);
+  ok('le date sono tutte valide',                  a.every(function (r) { return r._dateTs > 0; }), true);
+  ok('chi ha gia\' una risposta e\' segnato',      a.filter(function (r) { return r._hasReply; }).length, 1);
+  ok('il canale arriva da brand_type',             (a[0] || {})._brand, 'Hotels');
+  // Le due forme devono dare lo STESSO risultato, non solo lo stesso numero di righe.
+  ok('CSV e TSV danno gli stessi voti',            revExpParseTsv(tsv).map(function (r) { return r._score; }).join(','),
+                                                   a.map(function (r) { return r._score; }).join(','));
+  ok('una riga vuota in fondo non conta',          revExpParseTsv(csv + '\n\n').length, 3);
+  ok('file vuoto: nessuna recensione, nessun errore', revExpParseTsv('').length, 0);
+
+  // Il messaggio deve dire COSA si e' trovato: e' la differenza fra "file sbagliato" e
+  // "il formato dell'export e' cambiato di nuovo", che hanno rimedi opposti.
+  ok('file vuoto lo dice',                         /vuoto/.test(_revExpDiagnosi('')), true);
+  var altro = 'data,ospite,voto\n"1 gen","Rossi","9"\n';
+  ok('colonne sbagliate: nomina quella che manca', /review_rating/.test(_revExpDiagnosi(altro)), true);
+  ok('e elenca quelle trovate',                    /ospite/.test(_revExpDiagnosi(altro)), true);
+  ok('colonne giuste ma zero righe: lo distingue', /nessuna riga/.test(_revExpDiagnosi(COLONNE + '\n')), true);
+})();

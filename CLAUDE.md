@@ -60,7 +60,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 523 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 540 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **5 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr) sono
 accendibili e spegnibili da remoto — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
@@ -842,9 +842,50 @@ REV_EXP_HOTELS = {
 }
 ```
 
-### Formato file Expedia
+### Formato file Expedia — TAB o VIRGOLA, si prova, non si indovina (06/09/2026)
 
-TSV (tab-separated). Colonne chiave: `review_text`, `rating`, `date`, `title`. Nessun nome ospite (policy Expedia).
+Expedia Partner Central esportava **separato da TAB** e ora esporta **separato da
+virgola**, coi campi fra virgolette. `revExpParseTsv` splittava solo sul TAB: un export
+CSV dava **una colonna sola**, `review_rating` non si trovava mai e la vista rispondeva
+*"Nessuna recensione trovata nel file"* — un file perfettamente valido rifiutato, con un
+messaggio che accusava il file invece del parser. Le recensioni Booking non ne
+risentivano: `revParseCsv` è un parser CSV vero da sempre.
+
+Il nome della funzione resta `revExpParseTsv` (è quello documentato e usato in due punti),
+ma ora accetta **TAB, virgola e punto e virgola** — l'ultimo è quello che si ottiene
+aprendo il CSV con Excel in italiano e risalvandolo.
+
+**Il separatore si sceglie provandolo**, non contando le occorrenze: un testo di
+recensione pieno di virgole ingannerebbe un conteggio, mentre le colonne attese le
+produce un separatore solo. Si tiene il primo che fa comparire `review_rating` fra le
+intestazioni.
+
+`_revRighe(str,sep)` è l'**unica** copia del parser a campi virgolettati (una virgola o un
+a capo *dentro* le virgolette non spezzano niente), condivisa da Booking ed Expedia: erano
+due copie, e infatti una delle due è rimasta indietro. Estratta da `revParseCsv`, che ora
+la chiama con `','` — comportamento identico a prima.
+
+**Compatibile all'indietro**: i file già salvati in TSV su `qm_rev_exp_<p>` (localStorage e
+KV) continuano a essere letti, quindi nessun reimport necessario.
+
+**Il messaggio d'errore ora dice cosa ha trovato** (`_revExpDiagnosi`): file vuoto,
+oppure le intestazioni realmente presenti quando manca `review_rating`. È la differenza
+fra *"ho scaricato il file sbagliato"* e *"il formato dell'export è cambiato di nuovo"*,
+due cause con rimedi opposti — e la seconda, senza questo, si scopre solo leggendo il
+codice.
+
+Colonne reali dell'export: `review_date` · `brand_type` (Expedia / Hotels / Orbitz) ·
+`review_by` · `review_rating` (`"10 out of 10"`) · `review_title` · `review_text` ·
+`review_response_date` · `review_response_by` · `review_response`.
+
+**Il nome dell'ospite c'è** (`review_by`, mostrato in lista): la regola di rispondere con
+"Dear Guest," / "Gentile ospite," resta una scelta di policy, non un ripiego per un dato
+mancante. Il vecchio testo di questa sezione diceva il contrario.
+
+Coperto da **17 controlli** in `test/controlli.js` ("Recensioni Expedia: l'export si
+carica comunque sia separato"), verificati con due sabotaggi (si prova solo il TAB; il
+separatore dentro le virgolette spezza il campo): 10 e 6 falliscono — il secondo mostra
+proprio lo slittamento delle colonne, con `brand_type` che legge `2026`.
 
 ### `revExpGenerateReply(r)` — regole specifiche
 
@@ -3537,7 +3578,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta. 500 controlli.
+scheda nascosta, separatore dell'export Expedia. 540 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire
@@ -3745,4 +3786,5 @@ confrontarli con quelli presenti in `index.html`.
 | Avviso Cloudflare: 50% del tetto giornaliero KV consumato senza che nessuno lavorasse | Il polling girava ogni 30s anche a scheda nascosta: 7 letture a giro su Compass, 20.160 al giorno per ogni pagina lasciata aperta | `_qmPolling` ferma il giro quando la scheda non è visibile e lo riprende al ritorno in primo piano; intervallo da 30 a 60 secondi. Vedi "Consumo KV" |
 | Resi biancheria già consegnati e firmati di nuovo in elenco come "non ancora consegnati" | `_qmUnisciRecord` faceva vincere il locale a parità di `id`: una postazione ferma a prima della consegna (o il suo solo `localStorage`, che `_qmLeggiArchivio` fonde uguale) rimetteva `ritiroId:null` sopra righe chiuse. Alla consegna dopo finivano in distinta due volte | `_QM_CHIUSURE`: sui campi di chiusura vince chi è chiuso, salvo ritiro annullato di proposito. Per le righe già tornate indietro, banner + `resiRiassegnaRiaperte()`, che le riconosce dalla data e chiede conferma |
 | Il cestino nei Resi Biancheria non cancellava la riga: spariva e tornava | `resiDelRow` non chiamava `_qmSegnaRimosso`, unica eliminazione degli archivi a elenchi a esserselo dimenticato. La riga restava sul cloud e `_qmUnisciRecord` la riportava dentro al primo salvataggio | Aggiunto `_qmSegnaRimosso(_resi,id)` **prima** di `_resiSave()`, più una sentinella nei controlli che verifica la chiamata in ogni funzione di eliminazione |
+| Recensioni Expedia: "Nessuna recensione trovata nel file" su un export valido (le Booking si caricavano) | Expedia Partner Central ha cambiato l'export da TAB a **virgola**, coi campi fra virgolette. `revExpParseTsv` splittava solo sul TAB: una colonna sola, `review_rating` mai trovata, zero righe. Booking non ne risentiva perché `revParseCsv` è un parser CSV vero | Il separatore si prova (TAB, virgola, punto e virgola) e si tiene quello che fa comparire `review_rating`; parser a campi virgolettati unico (`_revRighe`) condiviso con Booking. TSV già salvato su KV continua a leggersi. Il messaggio d'errore ora elenca le colonne trovate |
 | Camere Art marcate "Art Resort" nelle fermate | `fixArriviStruttura` applicata solo a `arrivi`, mai a `fermate`/`partenze` | Struttura dedotta in modo deterministico da `_prenStruttura` su tutte e tre le liste |

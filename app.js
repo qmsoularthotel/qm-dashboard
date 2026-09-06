@@ -5744,30 +5744,34 @@ function revHandleFile(p,file){
   };
   reader.readAsText(file,'UTF-8');
 }
-function revParseCsv(text){
-  // Parser CSV robusto: gestisce newline reali dentro campi quotati
-  function parseCSVFull(str){
-    const results=[];
-    let i=0, row=[], cur='', inQ=false;
-    while(i<str.length){
-      const c=str[i];
-      if(inQ){
-        if(c==='"'&&str[i+1]==='"'){cur+='"';i+=2;}       // "" → "
-        else if(c==='"'){inQ=false;i++;}                   // chiude quota
-        else{cur+=c;i++;}                                  // testo dentro quota (inclusi \n)
-      } else {
-        if(c==='"'){inQ=true;i++;}                         // apre quota
-        else if(c===','){row.push(cur);cur='';i++;}        // separatore
-        else if(c==='\r'&&str[i+1]==='\n'){row.push(cur);results.push(row);row=[];cur='';i+=2;}
-        else if(c==='\n'){row.push(cur);results.push(row);row=[];cur='';i++;}
-        else{cur+=c;i++;}
-      }
+// Righe di un file a colonne separate, con i campi fra virgolette gestiti davvero:
+// una virgola o un a capo DENTRO le virgolette non spezzano niente. Unica copia,
+// usata sia dalle recensioni Booking sia da quelle Expedia — due parser separati
+// diventerebbero due parser diversi alla prima correzione fatta su uno solo.
+function _revRighe(str,sep){
+  const results=[];
+  let i=0, row=[], cur='', inQ=false;
+  while(i<str.length){
+    const c=str[i];
+    if(inQ){
+      if(c==='"'&&str[i+1]==='"'){cur+='"';i+=2;}       // "" → "
+      else if(c==='"'){inQ=false;i++;}                   // chiude quota
+      else{cur+=c;i++;}                                  // testo dentro quota (inclusi \n)
+    } else {
+      if(c==='"'){inQ=true;i++;}                         // apre quota
+      else if(c===sep){row.push(cur);cur='';i++;}        // separatore
+      else if(c==='\r'&&str[i+1]==='\n'){row.push(cur);results.push(row);row=[];cur='';i+=2;}
+      else if(c==='\n'){row.push(cur);results.push(row);row=[];cur='';i++;}
+      else{cur+=c;i++;}
     }
-    if(cur||row.length)row.push(cur);
-    if(row.length>1||(row.length===1&&row[0]))results.push(row);
-    return results;
   }
-  const allRows=parseCSVFull(text);
+  if(cur||row.length)row.push(cur);
+  if(row.length>1||(row.length===1&&row[0]))results.push(row);
+  return results;
+}
+
+function revParseCsv(text){
+  const allRows=_revRighe(text,',');
   if(!allRows.length)return[];
   const headers=allRows[0].map(h=>h.trim());
   const rows=[];
@@ -10563,17 +10567,31 @@ const REV_EXP_REPLY_STORE={};
   inp.addEventListener('change',e=>{if(e.target.files[0])revExpHandleFile(p,e.target.files[0]);inp.value='';});
 });
 
+// Il nome dice TSV per ragioni storiche: Expedia Partner Central esportava separato
+// da TAB e ora esporta separato da VIRGOLA, con i campi fra virgolette. Accetta
+// entrambi — e anche il punto e virgola, che è quello che si ottiene aprendo il CSV
+// con Excel in italiano e risalvandolo.
+//
+// Il separatore si SCEGLIE PROVANDOLO, non contando le occorrenze: un testo di
+// recensione pieno di virgole ingannerebbe un conteggio, mentre le colonne attese
+// le produce un separatore solo. Senza questo, un export CSV dava una colonna sola,
+// 'review_rating' non si trovava mai e la vista diceva "Nessuna recensione trovata
+// nel file" — un file perfettamente valido rifiutato senza dire perché.
 function revExpParseTsv(text){
-  const lines=text.split('\n');
-  if(!lines.length)return[];
-  const headers=lines[0].split('\t').map(h=>h.trim().replace(/^"|"$/g,''));
+  if(!text)return[];
+  let allRows=null;
+  for(const sep of ['\t',',',';']){
+    const r=_revRighe(text,sep);
+    if(r.length&&r[0].map(h=>h.trim().replace(/^"|"$/g,'')).includes('review_rating')){allRows=r;break;}
+  }
+  if(!allRows)return[];
+  const headers=allRows[0].map(h=>h.trim().replace(/^"|"$/g,''));
   const rows=[];
-  for(let i=1;i<lines.length;i++){
-    const line=lines[i].trim();
-    if(!line)continue;
-    const vals=line.split('\t');
+  for(let i=1;i<allRows.length;i++){
+    const vals=allRows[i];
+    if(!vals.some(v=>(v||'').trim()))continue;
     const obj={};
-    headers.forEach((h,j)=>obj[h]=(vals[j]||'').trim().replace(/^"(.*)"$/,'$1'));
+    headers.forEach((h,j)=>obj[h]=(vals[j]||'').trim());
     if(!obj['review_rating'])continue;
     const m=obj['review_rating'].match(/^(\d+(?:\.\d+)?)/);
     obj._score=m?parseFloat(m[1]):0;
@@ -10588,6 +10606,22 @@ function revExpParseTsv(text){
   return rows.sort((a,b)=>b._dateTs-a._dateTs);
 }
 
+// Perché un file non ha prodotto nessuna recensione. La colonna che deve esserci è
+// 'review_rating': se manca, si mostrano le intestazioni davvero presenti.
+function _revExpDiagnosi(text){
+  const t=(text||'').trim();
+  if(!t)return'Il file è vuoto.';
+  let cols=null;
+  for(const sep of ['\t',',',';']){
+    const r=_revRighe(t,sep);
+    if(r.length&&r[0].length>(cols?cols.length:1))cols=r[0].map(h=>h.trim().replace(/^"|"$/g,''));
+  }
+  if(!cols||!cols.length)return'Nessuna recensione trovata nel file.';
+  if(!cols.includes('review_rating'))
+    return'Nessuna recensione trovata: manca la colonna "review_rating". Colonne trovate: '+cols.slice(0,9).join(', ')+'. Esporta da Expedia Partner Central → Reviews → Export.';
+  return'Il file ha le colonne giuste ma nessuna riga di recensione.';
+}
+
 function revExpHandleFile(p,file){
   document.getElementById('revExpProcessing-'+p).style.display='flex';
   document.getElementById('revExpUploadZone-'+p).style.display='none';
@@ -10600,7 +10634,10 @@ function revExpHandleFile(p,file){
         document.getElementById('revExpProcessing-'+p).style.display='none';
         document.getElementById('revExpUploadZone-'+p).style.display='flex';
         document.getElementById('revExpError-'+p).style.display='block';
-        document.getElementById('revExpError-'+p).textContent='Nessuna recensione trovata nel file.';
+        // Dire COSA si è trovato, non solo che non si è trovato niente: è la
+        // differenza fra "il file è quello sbagliato" e "il formato dell'export
+        // è cambiato di nuovo", due cause con rimedi opposti.
+        document.getElementById('revExpError-'+p).textContent=_revExpDiagnosi(e.target.result);
         return;
       }
       REV_EXP_HOTELS[p].data=rows;
