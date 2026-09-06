@@ -4234,7 +4234,9 @@ async function qmRenderStatoSistema(){
   try{qmAggiornaPallinoStato();}catch(e){}
 
   const problemi=[],dettagli=[];
-  const det=(t,d)=>dettagli.push(`<span style="color:var(--text-muted);">${t}</span>${d?` <span style="color:var(--text-dim);">${d}</span>`:''}`);
+  const det=(t,d)=>dettagli.push(`<div style="display:flex;align-items:baseline;gap:8px;padding:3px 0;">
+    <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;position:relative;top:-2px;"></span>
+    <span style="color:var(--text-muted);font-weight:600;">${t}</span>${d?`<span style="color:var(--text-dim);margin-left:auto;">${d}</span>`:''}</div>`);
 
   if(!v)problemi.push('Il Worker non risponde — Compass non salva e non legge niente');
   else{
@@ -4285,7 +4287,7 @@ async function qmRenderStatoSistema(){
     }
   }catch(e){}
 
-  html+=`<div style="margin-top:12px;padding-top:9px;border-top:1px solid var(--border-light,var(--border));font-size:11.5px;line-height:1.7;">${dettagli.join(' · ')}</div>`;
+  html+=`<div style="margin-top:12px;padding-top:6px;border-top:1px solid var(--border-light,var(--border));font-size:12px;">${dettagli.join('')}</div>`;
   el.innerHTML=html;
 }
 // Da quanto non si fa una copia. Due fonti, e vanno tenute distinte:
