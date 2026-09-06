@@ -4220,68 +4220,72 @@ async function qmAggiornaPallinoStato(){
     el.title=s.ok?'Tutto in ordine':'C\'è qualcosa da guardare';
   }catch(e){}
 }
+// Il riquadro rispondeva a sei domande con sei righe uguali: un elenco da leggere, non uno
+// stato da guardare. Entrando li' la domanda e' una sola — va tutto bene? — e la risposta
+// deve arrivare prima dei dettagli. Quindi: un verdetto grande, il consumo con una barra
+// (l'unico numero che vale la pena guardare ogni giorno) e il resto in piccolo, che si legge
+// solo quando qualcosa non torna.
 async function qmRenderStatoSistema(){
   const el=document.getElementById('qmStatoSistema');
   if(!el)return;
   el.innerHTML='<div style="font-size:12.5px;color:var(--text-dim);">Controllo in corso…</div>';
   const stato=await _qmStatoSistema();
-  const v=stato.v,errore=stato.errore;
+  const v=stato.v;
   try{qmAggiornaPallinoStato();}catch(e){}
 
-  let html='';
-  if(!v){
-    html+=_qmStatoRiga('var(--red)','Worker non raggiungibile',errore+' — senza, Compass non salva e non legge niente');
-  }else{
-    const attesa=WORKER_VERSIONE_ATTESA;
-    html+=v.versione===attesa
-      ?_qmStatoRiga('var(--green)','Worker in linea','versione '+v.versione)
-      :_qmStatoRiga('var(--amber)','Worker da ripubblicare','in linea la '+(v.versione||'?')+', il codice si aspetta la '+attesa);
-    // La porta: se il Worker non la dichiara e' piu' vecchio di questa scheda, e non si puo'
-    // dedurre — un'assunzione scritta come un fatto e' proprio l'errore da non rifare.
-    if(typeof v.portaChiusa!=='boolean')
-      html+=_qmStatoRiga('var(--text-dim)','Accesso: non dichiarato','il Worker in linea è precedente a questo controllo');
-    else if(v.portaChiusa)
-      html+=_qmStatoRiga('var(--green)','Accesso riservato ai dispositivi abilitati','chi non ha il codice non legge né scrive');
-    else
-      html+=_qmStatoRiga('var(--red)','Accesso APERTO a chiunque','QM_AUTH_OBBLIGATORIA non è attiva su Cloudflare');
+  const problemi=[],dettagli=[];
+  const det=(t,d)=>dettagli.push(`<span style="color:var(--text-muted);">${t}</span>${d?` <span style="color:var(--text-dim);">${d}</span>`:''}`);
+
+  if(!v)problemi.push('Il Worker non risponde — Compass non salva e non legge niente');
+  else{
+    if(v.versione!==WORKER_VERSIONE_ATTESA)problemi.push('Worker da ripubblicare: in linea la '+(v.versione||'?')+', serve la '+WORKER_VERSIONE_ATTESA);
+    else det('Worker in linea','versione '+v.versione);
+    if(v.portaChiusa===true)det('Accesso riservato ai dispositivi abilitati','');
+    else if(typeof v.portaChiusa!=='boolean')problemi.push('Il Worker non dice se l\'accesso è chiuso: pubblica la versione aggiornata');
+    else problemi.push('ACCESSO APERTO A CHIUNQUE — QM_AUTH_OBBLIGATORIA non è attiva su Cloudflare');
   }
-  // Quale versione sta girando QUI. Non serve a scoprire se e' vecchia — a quello pensa
-  // qmCheckVersione, che si ricarica da sola entro dieci minuti — ma a due cose che finora
-  // richiedevano di chiedere a qualcun altro: sapere se una correzione appena pubblicata e'
-  // davvero arrivata su questa macchina (il 06/07/2026 GitHub e' rimasto bloccato due ore
-  // senza che nessuno se ne accorgesse), e poter dire a voce quale versione si sta usando
-  // quando si lavora da due postazioni diverse.
-  html+=_qmStatoRiga('var(--accent)','Compass '+_qmVersioneApp(),'aperto '+_qmDaQuandoAperto());
-  // Il consumo vero di Cloudflare, se il Worker riesce a leggerlo. Se non e' disponibile la
-  // riga non compare affatto: un numero mancante e' meglio di un numero inventato, e questa
-  // e' una misura su cui abbiamo gia' preso decisioni sbagliate una volta.
+  const er=stato.errori||[];
+  if(er.length){
+    const tot=er.reduce((s,e)=>s+(e.n||1),0);
+    problemi.push(tot+(tot===1?' errore del programma oggi':' errori del programma oggi')+' — l\'ultimo: '+String(er[er.length-1].msg||'').slice(0,80));
+  }else det('Nessun errore del programma oggi','');
+  if(stato.fallite)problemi.push(stato.fallite+(stato.fallite===1?' dato non è arrivato':' dati non sono arrivati')+' sul cloud da questo computer');
+  else det('Nessuna scrittura persa oggi','');
+  det('Compass '+_qmVersioneApp(),'aperto '+_qmDaQuandoAperto());
+
+  const verde=!problemi.length;
+  let html=`<div style="display:flex;align-items:center;gap:12px;background:${verde?'var(--green-bg)':'var(--red-bg)'};border-radius:10px;padding:13px 15px;">
+      <span style="font-size:26px;line-height:1;color:${verde?'var(--green)':'var(--red)'};">${verde?'✓':'!'}</span>
+      <div style="min-width:0;">
+        <div style="font-size:16px;font-weight:700;color:${verde?'var(--green)':'var(--red)'};">${verde?'Tutto in ordine':(problemi.length===1?'C\'è una cosa da guardare':'Ci sono '+problemi.length+' cose da guardare')}</div>
+        ${verde?'<div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Worker, accesso e salvataggi: nessun problema.</div>'
+          :problemi.map(p=>`<div style="font-size:13px;color:var(--text);margin-top:4px;">${p}</div>`).join('')}
+      </div></div>`;
+  if(er.length)html+=`<div style="margin-top:8px;"><button onclick="qmCopiaErrori(this)" style="border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:7px;padding:5px 12px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">copia gli errori</button></div>`;
+
+  // Il consumo: una barra dice in un colpo d'occhio quanto margine resta, un numero no.
   try{
     const rc=await fetch(PROXY+'/consumo',{cache:'no-store'});
     if(rc.ok){
       const c=await rc.json();
       if(c&&c.disponibile&&c.operazioni){
         const w=c.operazioni.write||0,rd=c.operazioni.read||0;
-        const quota=Math.round(w/10);   // su 1.000 al giorno
+        const perc=Math.min(100,Math.round(w/10));
         const col=w>=800?'var(--red)':(w>=500?'var(--amber)':'var(--green)');
-        html+=_qmStatoRiga(col,w+' scritture oggi su 1.000',quota+'% del tetto · '+rd.toLocaleString('it-IT')+' letture · tutte le postazioni');
+        html+=`<div style="margin-top:12px;">
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <span style="font-size:20px;font-weight:700;color:${col};font-variant-numeric:tabular-nums;">${w}</span>
+            <span style="font-size:13px;color:var(--text-muted);">scritture oggi su 1.000</span>
+            <span style="margin-left:auto;font-size:12px;color:var(--text-dim);">${rd.toLocaleString('it-IT')} letture · tutte le postazioni</span>
+          </div>
+          <div style="height:7px;border-radius:4px;background:var(--surface2);overflow:hidden;margin-top:6px;">
+            <div style="height:100%;width:${perc}%;background:${col};border-radius:4px;"></div>
+          </div></div>`;
       }
     }
   }catch(e){}
-  const er=stato.errori||[];
-  if(er.length){
-    const ult=er[er.length-1];
-    const q=new Date(ult.ts);
-    const tot=er.reduce((s,e)=>s+(e.n||1),0);
-    html+=_qmStatoRiga('var(--red)',tot+(tot===1?' errore del programma oggi':' errori del programma oggi'),
-      'ultimo alle '+String(q.getHours()).padStart(2,'0')+':'+String(q.getMinutes()).padStart(2,'0')+' — '+String(ult.msg||'').slice(0,90))
-      +`<div style="margin:2px 0 6px 18px;"><button onclick="qmCopiaErrori(this)" style="border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:7px;padding:4px 11px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">copia gli errori</button></div>`;
-  }else{
-    html+=_qmStatoRiga('var(--green)','Nessun errore del programma oggi','su questo computer');
-  }
-  const f=stato.fallite;
-  html+=f
-    ?_qmStatoRiga('var(--amber)',f+(f===1?' scrittura non riuscita oggi':' scritture non riuscite oggi'),'quei dati sono rimasti su questo computer')
-    :_qmStatoRiga('var(--green)','Nessuna scrittura persa oggi','da questo computer');
+
+  html+=`<div style="margin-top:12px;padding-top:9px;border-top:1px solid var(--border-light,var(--border));font-size:11.5px;line-height:1.7;">${dettagli.join(' · ')}</div>`;
   el.innerHTML=html;
 }
 // Da quanto non si fa una copia. Due fonti, e vanno tenute distinte:
