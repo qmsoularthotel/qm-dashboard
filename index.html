@@ -1593,9 +1593,6 @@
       </div>
       <!-- ── SICUREZZA ── -->
       <div class="view" id="view-sicurezza">
-        <!-- Abilitazione dei dispositivi: si genera un collegamento per volta e lo si manda
-             alla persona. Nessuno digita password. Vedi §§ ACCESSO in app.js. -->
-        <div id="qmDispositivi"></div>
         <!-- Backup dell'archivio: e' l'unica copia che esiste fuori dal cloud. Vedi
              §§ BACKUP ARCHIVIO in app.js. -->
         <div class="panel" style="padding:16px;margin-bottom:14px;">
@@ -1608,6 +1605,9 @@
             <button onclick="qmEsportaArchivio(this)" class="miniapp-btn miniapp-btn-primario" style="flex:0 0 auto;padding:10px 18px;">Scarica copia</button>
           </div>
         </div>
+        <!-- Abilitazione dei dispositivi: si genera un collegamento per volta e lo si manda
+             alla persona. Nessuno digita password. Vedi §§ ACCESSO in app.js. -->
+        <div id="qmDispositivi"></div>
       </div>
       <div class="view" id="view-spese">
         <div id="inv-spese-view"></div>
