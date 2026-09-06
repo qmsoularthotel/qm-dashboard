@@ -4114,6 +4114,58 @@ async function qmEsportaArchivio(btn){
 // nessuno mentre lavora. Un controllo in esegui.sh verifica che questa costante combaci con
 // WORKER_VERSIONE in worker.js, altrimenti direbbe "da ripubblicare" per sempre.
 const WORKER_VERSIONE_ATTESA='2026-09-06b';
+// ── ERRORI DEL PROGRAMMA — raccolti qui, perche' la console non la apre nessuno ──────
+// Quando qualcosa va storto nel codice, il messaggio finisce nella console del browser: il
+// QM non la apre (giustamente) e quindi un guasto puo' restare invisibile finche' non si
+// rompe qualcosa di grosso. Si tengono gli ultimi errori del giorno in locale — nessuna
+// scrittura sul cloud — cosi' si vedono nello Stato del sistema e si possono girare a chi
+// deve correggerli.
+//
+// Il `catch(e){}` sparso per il codice non passa di qui: quelli sono errori gia' previsti e
+// gestiti. Qui arriva solo cio' che nessuno ha previsto, che e' esattamente cio' che serve.
+const QM_ERRORI_KEY='qm_errori_';
+const QM_ERRORI_MAX=20;
+function _qmErroriChiave(){
+  const d=new Date();
+  return QM_ERRORI_KEY+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function qmErroriOggi(){
+  try{return JSON.parse(localStorage.getItem(_qmErroriChiave())||'[]')||[];}catch(e){return[];}
+}
+function _qmSegnaErrore(msg,dove){
+  try{
+    const l=qmErroriOggi();
+    const testo=String(msg||'errore senza messaggio').slice(0,300);
+    // Lo stesso errore che si ripete non deve riempire l'elenco: si tiene il conto.
+    const ultimo=l.length?l[l.length-1]:null;
+    if(ultimo&&ultimo.msg===testo){ultimo.n=(ultimo.n||1)+1;ultimo.ts=Date.now();}
+    else l.push({ts:Date.now(),msg:testo,dove:String(dove||'').slice(0,120),n:1});
+    while(l.length>QM_ERRORI_MAX)l.shift();
+    localStorage.setItem(_qmErroriChiave(),JSON.stringify(l));
+  }catch(e){}
+  try{qmAggiornaPallinoStato();}catch(e){}
+}
+try{
+  window.addEventListener('error',ev=>{
+    _qmSegnaErrore((ev&&ev.message)||'errore',((ev&&ev.filename)||'').split('/').pop()+':'+((ev&&ev.lineno)||'?'));
+  });
+  // Una promessa che fallisce senza `catch` non passa da 'error': e' il caso piu' comune in
+  // Compass, dove quasi tutto e' asincrono.
+  window.addEventListener('unhandledrejection',ev=>{
+    const r=ev&&ev.reason;
+    _qmSegnaErrore((r&&(r.message||r))||'promessa rifiutata','asincrono');
+  });
+}catch(e){}
+function qmCopiaErrori(btn){
+  const l=qmErroriOggi();
+  const testo=l.map(e=>{
+    const d=new Date(e.ts);
+    return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+
+      ' — '+e.msg+(e.dove?' ('+e.dove+')':'')+(e.n>1?' ×'+e.n:'');
+  }).join('\n');
+  try{navigator.clipboard.writeText(testo||'nessun errore');}catch(e){}
+  if(btn){const v=btn.textContent;btn.textContent='✓ copiati';setTimeout(()=>{btn.textContent=v;},1500);}
+}
 const _QM_APERTO_DA=Date.now();
 function _qmVersioneApp(){
   try{
@@ -4153,8 +4205,9 @@ async function _qmStatoSistema(){
   const fallite=_kvFalliteOggi();
   // Verde solo se TUTTO e' come deve essere. Il Worker piu' vecchio del codice, o che non sa
   // dire se la porta e' chiusa, e' qualcosa da fare — quindi non e' verde.
-  const ok=!!v && v.versione===WORKER_VERSIONE_ATTESA && v.portaChiusa===true && !fallite;
-  return{v,errore,fallite,ok};
+  const errori=qmErroriOggi();
+  const ok=!!v && v.versione===WORKER_VERSIONE_ATTESA && v.portaChiusa===true && !fallite && !errori.length;
+  return{v,errore,fallite,errori,ok};
 }
 // Il pallino nel menu: si guarda senza entrare nella vista, ed e' l'unico posto dove un
 // guasto si nota anche mentre si sta facendo altro.
@@ -4199,6 +4252,17 @@ async function qmRenderStatoSistema(){
   // senza che nessuno se ne accorgesse), e poter dire a voce quale versione si sta usando
   // quando si lavora da due postazioni diverse.
   html+=_qmStatoRiga('var(--accent)','Compass '+_qmVersioneApp(),'aperto '+_qmDaQuandoAperto());
+  const er=stato.errori||[];
+  if(er.length){
+    const ult=er[er.length-1];
+    const q=new Date(ult.ts);
+    const tot=er.reduce((s,e)=>s+(e.n||1),0);
+    html+=_qmStatoRiga('var(--red)',tot+(tot===1?' errore del programma oggi':' errori del programma oggi'),
+      'ultimo alle '+String(q.getHours()).padStart(2,'0')+':'+String(q.getMinutes()).padStart(2,'0')+' — '+String(ult.msg||'').slice(0,90))
+      +`<div style="margin:2px 0 6px 18px;"><button onclick="qmCopiaErrori(this)" style="border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:7px;padding:4px 11px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">copia gli errori</button></div>`;
+  }else{
+    html+=_qmStatoRiga('var(--green)','Nessun errore del programma oggi','su questo computer');
+  }
   const f=stato.fallite;
   html+=f
     ?_qmStatoRiga('var(--amber)',f+(f===1?' scrittura non riuscita oggi':' scritture non riuscite oggi'),'quei dati sono rimasti su questo computer')

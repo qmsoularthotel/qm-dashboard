@@ -1294,6 +1294,28 @@ ok('un indirizzo normale non lo attiva',
    qmEstraiAttiva('https://compass-qm.com/breakfast.html'), null);
 ok('e nemmeno una parola simile',
    qmEstraiAttiva('https://compass-qm.com/x.html#attivazione=1'), null);
+// ── Gli errori del programma finiscono in un posto che si guarda ───────────
+// La console del browser non la apre nessuno: un guasto puo' restare invisibile finche' non
+// si rompe qualcosa di grosso. Qui si verifica che vengano registrati, contati e ripuliti.
+(function () {
+  var k = _qmErroriChiave();
+  localStorage.removeItem(k);
+  _qmSegnaErrore('Cannot read properties of undefined', 'app.js:120');
+  ok('l\'errore viene registrato',        qmErroriOggi().length, 1);
+  ok('con il suo messaggio',              qmErroriOggi()[0].msg, 'Cannot read properties of undefined');
+  // Lo stesso errore ripetuto non deve riempire l'elenco: si conta.
+  _qmSegnaErrore('Cannot read properties of undefined', 'app.js:120');
+  ok('lo stesso errore non si duplica',   qmErroriOggi().length, 1);
+  ok('ma si conta',                       qmErroriOggi()[0].n, 2);
+  _qmSegnaErrore('altro guasto', 'x.js:1');
+  ok('un errore diverso e\' una voce nuova', qmErroriOggi().length, 2);
+  // Il messaggio lunghissimo di uno stack non deve gonfiare il registro all'infinito.
+  _qmSegnaErrore(new Array(900).join('x'), 'y.js:2');
+  ok('i messaggi lunghi vengono tagliati', qmErroriOggi()[2].msg.length <= 300, true);
+  localStorage.removeItem(k);
+  ok('la chiave e\' del giorno', /^qm_errori_\d{4}-\d{2}-\d{2}$/.test(k), true);
+})();
+
 // I collegamenti non si generano piu' (06/09/2026: il codice si manda a mano), ma il LETTORE
 // resta e deve restare: un collegamento mandato prima di allora continua ad abilitare chi lo
 // apre. Se un giorno sparisse anche quello, quelle persone si troverebbero fuori senza che

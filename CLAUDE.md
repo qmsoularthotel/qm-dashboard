@@ -3599,6 +3599,7 @@ poteva rispondere**: si scoprivano solo aprendo Cloudflare o chiedendo a Claude.
 | Worker in linea, versione | `GET /versione` (pubblico, nessuna chiave) | non risponde |
 | Accesso riservato / **APERTO** | campo `portaChiusa` di `/versione` | `QM_AUTH_OBBLIGATORIA` non attiva |
 | Compass v… · aperto da … | il `?v=` del tag `<script>` e `_QM_APERTO_DA` | mai — è informativa |
+| Errori del programma oggi | `localStorage`, raccolti da `_qmSegnaErrore` | rossa se ce n'è almeno uno |
 | Scritture non riuscite oggi | `localStorage`, contate da `_kvNonRiuscita` | ambra se ce n'è almeno una |
 
 La riga della versione **non** serve a scoprire se la pagina è vecchia: a quello pensa
@@ -3608,9 +3609,25 @@ bloccato due ore senza che nessuno se ne accorgesse) e a poter dire a voce quale
 quando si lavora da due postazioni. Il "da quanto è aperta" oltre le 24 ore suggerisce di
 ricaricare: una scheda ferma da ieri è il punto di partenza di ogni sovrascrittura.
 
+### Errori del programma — `_qmSegnaErrore()`
+
+Quando qualcosa va storto nel codice il messaggio finisce **nella console del browser**, che
+il QM non apre (giustamente): un guasto può quindi restare invisibile finché non si rompe
+qualcosa di grosso, e chi lo corregge non lo vede mai. Un ascoltatore su `error` e su
+`unhandledrejection` — quest'ultimo è il caso più comune in Compass, dove quasi tutto è
+asincrono — tiene gli **ultimi 20 errori del giorno** in `localStorage` (nessuna scrittura sul
+cloud), mostrati nello Stato del sistema con un pulsante **"copia gli errori"** per girarli a
+chi deve guardarli.
+
+Lo stesso errore ripetuto non riempie l'elenco: si tiene il conto (`×N`). I messaggi sono
+tagliati a 300 caratteri — uno stack intero gonfierebbe il registro senza aggiungere nulla.
+
+**I `catch(e){}` sparsi nel codice non passano di qui**, ed è voluto: quelli sono errori
+previsti e gestiti. Qui arriva solo ciò che nessuno aveva previsto.
+
 **Il pallino accanto alla voce di menu** (`#navStatoDot`, `qmAggiornaPallinoStato()`) è verde
 solo se **tutto** è come deve essere: Worker raggiungibile, versione uguale a quella attesa,
-porta dichiarata chiusa, nessuna scrittura persa oggi. Rosso in ogni altro caso — anche per un
+porta dichiarata chiusa, nessuna scrittura persa e nessun errore del programma oggi. Rosso in ogni altro caso — anche per un
 Worker da ripubblicare, che è comunque qualcosa da fare. Serve a notare un guasto **mentre si
 sta facendo altro**: è l'unico punto fuori dalla vista che lo dice.
 
