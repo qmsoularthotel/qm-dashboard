@@ -4113,7 +4113,7 @@ async function qmEsportaArchivio(btn){
 // codice e server possono divergere: fino a oggi se ne accorgeva solo test/esegui.sh, cioe'
 // nessuno mentre lavora. Un controllo in esegui.sh verifica che questa costante combaci con
 // WORKER_VERSIONE in worker.js, altrimenti direbbe "da ripubblicare" per sempre.
-const WORKER_VERSIONE_ATTESA='2026-09-06b';
+const WORKER_VERSIONE_ATTESA='2026-09-06c';
 // ── ERRORI DEL PROGRAMMA — raccolti qui, perche' la console non la apre nessuno ──────
 // Quando qualcosa va storto nel codice, il messaggio finisce nella console del browser: il
 // QM non la apre (giustamente) e quindi un guasto puo' restare invisibile finche' non si
@@ -4252,6 +4252,21 @@ async function qmRenderStatoSistema(){
   // senza che nessuno se ne accorgesse), e poter dire a voce quale versione si sta usando
   // quando si lavora da due postazioni diverse.
   html+=_qmStatoRiga('var(--accent)','Compass '+_qmVersioneApp(),'aperto '+_qmDaQuandoAperto());
+  // Il consumo vero di Cloudflare, se il Worker riesce a leggerlo. Se non e' disponibile la
+  // riga non compare affatto: un numero mancante e' meglio di un numero inventato, e questa
+  // e' una misura su cui abbiamo gia' preso decisioni sbagliate una volta.
+  try{
+    const rc=await fetch(PROXY+'/consumo',{cache:'no-store'});
+    if(rc.ok){
+      const c=await rc.json();
+      if(c&&c.disponibile&&c.operazioni){
+        const w=c.operazioni.write||0,rd=c.operazioni.read||0;
+        const quota=Math.round(w/10);   // su 1.000 al giorno
+        const col=w>=800?'var(--red)':(w>=500?'var(--amber)':'var(--green)');
+        html+=_qmStatoRiga(col,w+' scritture oggi su 1.000',quota+'% del tetto · '+rd.toLocaleString('it-IT')+' letture · tutte le postazioni');
+      }
+    }
+  }catch(e){}
   const er=stato.errori||[];
   if(er.length){
     const ult=er[er.length-1];

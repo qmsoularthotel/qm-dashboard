@@ -30,7 +30,7 @@ const ORIGINI = [
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /prestay/stato.
-const WORKER_VERSIONE = '2026-09-06b';
+const WORKER_VERSIONE = '2026-09-06c';
 
 // ── UNA CASELLA PER STRUTTURA ──
 // Booking recapita all'ospite solo se la mail parte dall'indirizzo registrato sull'Extranet
@@ -305,6 +305,51 @@ export default {
         return json({ ok: true, risposte: await leggiRisposte(env, validi, giorni) });
       } catch (e) {
         return json({ ok: false, error: (e && e.message) || 'lettura non riuscita' }, 502);
+      }
+    }
+
+    // ── CONSUMO KV — il contatore vero di Cloudflare, tutte le postazioni ──────────
+    // Il tetto stretto e' 1.000 scritture al giorno e ci e' gia' costato una giornata di
+    // lavoro (03/09/2026). Ogni dispositivo puo' contare le proprie, ma il ciclo impazzito
+    // puo' stare su un'altra macchina: serve il numero complessivo, e l'unico che lo conosce
+    // e' Cloudflare stessa.
+    //
+    // Si interroga la sua interfaccia statistiche in sola lettura. Nessuna scrittura, nessun
+    // dato di ospiti: solo quanti sono stati gli accessi all'archivio. Se le variabili non ci
+    // sono, o il piano non espone quei dati, si risponde `disponibile:false` e Compass non
+    // mostra la riga — meglio niente che un numero inventato.
+    if (url.pathname === '/consumo') {
+      const passC = request.headers.get('X-QM-Pass') || url.searchParams.get('pass') || '';
+      if (String(env.QM_AUTH_OBBLIGATORIA || '').toLowerCase() === 'si' && !(await verificaPass(env, passC)))
+        return json({ ok: false, error: 'Accesso non autorizzato' }, 401);
+      if (!env.CF_API_TOKEN || !env.CF_ACCOUNT_ID || !env.CF_KV_NAMESPACE)
+        return json({ ok: true, disponibile: false, motivo: 'variabili non configurate sul Worker' });
+
+      const oggi = new Date().toISOString().slice(0, 10);
+      const q = `query($acct:String!,$ns:String!,$dal:Date!){
+        viewer{ accounts(filter:{accountTag:$acct}){
+          kvOperationsAdaptiveGroups(limit:1000, filter:{date_geq:$dal, namespaceId:$ns}){
+            sum{ requests } dimensions{ actionType }
+          } } } }`;
+      try {
+        const r = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + env.CF_API_TOKEN, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: q, variables: { acct: env.CF_ACCOUNT_ID, ns: env.CF_KV_NAMESPACE, dal: oggi } }),
+        });
+        const j = await r.json();
+        if (j.errors && j.errors.length)
+          return json({ ok: true, disponibile: false, motivo: (j.errors[0] && j.errors[0].message) || 'la statistica non risponde' });
+        const gruppi = (((j.data || {}).viewer || {}).accounts || [{}])[0];
+        const righe = (gruppi && gruppi.kvOperationsAdaptiveGroups) || [];
+        const per = {};
+        righe.forEach(x => {
+          const tipo = ((x.dimensions || {}).actionType) || 'altro';
+          per[tipo] = (per[tipo] || 0) + (((x.sum || {}).requests) || 0);
+        });
+        return json({ ok: true, disponibile: true, giorno: oggi, operazioni: per });
+      } catch (e) {
+        return json({ ok: true, disponibile: false, motivo: (e && e.message) || 'errore di rete' });
       }
     }
 
