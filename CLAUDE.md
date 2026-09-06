@@ -3596,6 +3596,9 @@ peggio di non averlo, perché si crede di avere una copia.
 - **Solo letture** + una operazione di elenco: non tocca il tetto delle 1.000 scritture.
 - **Il lasciapassare si rinnova a ogni giro** invece di essere salvato: dura 180 giorni, e uno
   salvato scadrebbe un giorno senza che nessuno se ne accorga.
+- La cartella predefinita è **`Back-Up Compass QM`**, quella creata dal QM. Se il nome non
+  combacia lo script **se ne crea una sua nella home** — ed è così che ci si ritrova due
+  cartelle di backup con dentro copie diverse. Si cambia con la proprietà `QM_CARTELLA`.
 - La password di Compass sta nelle **Proprietà script** del progetto Google del QM
   (`QM_PASSWORD`), mai nel file — che infatti è nel repository. Facoltative: `QM_EMAIL`,
   `QM_CARTELLA`, `QM_COPIE`.

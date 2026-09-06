@@ -21,7 +21,7 @@
  *        QM_PASSWORD   = la password di Compass (la stessa impostata su Cloudflare)
  *      facoltative:
  *        QM_EMAIL      = indirizzo per gli avvisi di errore (senza, usa quello del progetto)
- *        QM_CARTELLA   = nome della cartella su Drive (senza, "Compass QM — Backup")
+ *        QM_CARTELLA   = nome della cartella su Drive (senza, "Back-Up Compass QM")
  *        QM_COPIE      = quante copie tenere (senza, 30)
  *   3. Seleziona la funzione  installa  e premi Esegui: Google chiede l'autorizzazione
  *      (Drive + invio mail), la si concede una volta.
@@ -153,7 +153,10 @@ function leggiTutto(chiavi, pass) {
 }
 
 function cartellaBackup(prop) {
-  var nome = prop.getProperty('QM_CARTELLA') || 'Compass QM — Backup';
+  // Il nome predefinito e' quello della cartella che il QM ha creato a mano il 06/09/2026.
+  // Se non la trova se ne crea una sua nella home, ed e' esattamente cosi' che ci si ritrova
+  // due cartelle di backup con dentro copie diverse.
+  var nome = prop.getProperty('QM_CARTELLA') || 'Back-Up Compass QM';
   var trovate = DriveApp.getFoldersByName(nome);
   return trovate.hasNext() ? trovate.next() : DriveApp.createFolder(nome);
 }
