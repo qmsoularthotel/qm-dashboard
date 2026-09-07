@@ -60,7 +60,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 553 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 587 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **5 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr) sono
 accendibili e spegnibili da remoto — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
@@ -389,7 +389,7 @@ grep -n "// §§" app.js | sed 's|// §§||'
 
 Un controllo in `test/esegui.sh` verifica che **ogni** sezione `§§` presente in `app.js`
 compaia in questo file: è il modo per accorgersi che una parte nuova è stata scritta e mai
-documentata. Rigenerata il 05/09/2026 — 16418 righe, 48 sezioni.
+documentata. Rigenerata il 07/09/2026 — 17246 righe, 49 sezioni.
 
 | Riga | Sezione |
 |------|---------|
@@ -401,46 +401,47 @@ documentata. Rigenerata il 05/09/2026 — 16418 righe, 48 sezioni.
 | 1028 | NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup) |
 | 1031 | HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore) |
 | 1060 | HKP NATIVE — griglia nativa (Camere / Aree Comuni / Fondi & Lavaggi) |
-| 2055 | DVR — SCADENZE SICUREZZA & COMPLIANCE |
-| 2112 | MOBILE SIDEBAR |
-| 2455 | MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone, mosaico) |
-| 3676 | ROOM DIVISION — Suddivisione cameriere, vista settimanale carico pesato e |
-| 3939 | UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP (fmtNow, fmtUploadTs, setUploadTs) |
-| 3980 | BACKUP ARCHIVIO — l'unica copia che esiste fuori dal cloud |
-| 4073 | STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud) |
-| 4408 | OVERVIEW — TOGGLE PREVIEW PANELS (toggleOccupazionePreview, togglePulPreview, toggleBkfPreview) |
-| 4499 | OVERVIEW — GRAFICI & METEO (buildBarChart, fetchMeteo, toggleWeatherForecast) |
-| 4596 | SIDEBAR — OROLOGIO & DATA (updateSbClock, toggleDatePopup, saveDate, updateDateDisplay) |
-| 4649 | OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 30s (refreshOverviewForDate, renderArriviData, syncFromCloud) |
-| 5025 | RECENSIONI — SCORE TREND MODAL (openScoreTrend) |
-| 5103 | OVERVIEW — RECENSIONI NO-REPLY (ovUpdateRevNoreply) |
-| 5221 | BKF SHEET — ANALISI AI (bkfSheetAnalyze, bkfSheetSync, bkfSheetAR*) |
-| 5443 | REPORT PULIZIE — PUL (handlePulFile, pulParseText, renderPulData, renderPulDay, updateKpiFromPulizie) |
-| 5622 | RECENSIONI — SCORING & INIT UPLOAD (weightedAvgF1, revHandleFile init per tutti gli hotel) |
-| 5689 | RECENSIONI — LOGICA (revParseCsv, revRenderCatTrend, revRenderExpiring, revRenderStats, revRenderList, revGenerateReply) |
-| 6117 | RECENSIONI BOOKING — PUNTEGGIO A DECADIMENTO CONTINUO + CALIBRAZIONE |
-| 7239 | REPORT PASTI — BKF (handleBkfFile, bkfParseText, renderBkfData, renderBkfDay, renderOvBkfChart) |
-| 7481 | HOUSEKEEPING — HKP UPLOAD & DATI (handleHkFile, hkParseText, hkSetLoaded, resetSoulData/BoutData) |
-| 7560 | PIANO SETTIMANA — UPLOAD & PARSER (handlePianoFile, parsePianoItems, pianoSetLoaded) |
-| 7773 | BKF — GRUPPI, NOTE & GRAFICI (bkfLoadOps, bkfAddGroup, bkfRenderGroups, bkfRenderChart, updateKpiFromBkf) |
-| 8084 | REGISTRATION CARDS — RC (handleRCFile, rcParseGuests, rcRenderCards) |
-| 8256 | MODAL — CATEGORIE TREND (openCatModal, closeCatModal) |
-| 8355 | ARRIVI GIORNALIERI — UPLOAD & RENDER (handleArriviFile, resetArrivi, arriviUpdateKpi, detectStruttura, renderArriviModal) |
-| 8357 | COLAZIONE BOOKING.COM — snapshot ospiti per camera (nome/origine/trattamento/checkout) |
-| 8906 | INVENTARIO DETERSIVI |
-| 9501 | INVENTARIO — ORDINI |
-| 10004 | PREFERENZE TURNI |
-| 10213 | CONTROLLO MATTINO (cmLoad, cmRender) |
-| 10545 | RECENSIONI EXPEDIA (revExpParseTsv, revExpHandleFile, revExpRenderStats, revExpRenderList, revExpGenerateReply) |
-| 10827 | DDT FORNITORI — upload DDT, spese per fornitore/reparto, storico |
-| 12159 | PRE-STAY — MESSAGGI AGLI OSPITI IN ARRIVO FRA 2 GIORNI |
-| 13744 | RECEPTION — CASSA (fondo cassa, incasso contante) |
-| 14131 | RESI BIANCHERIA — Distinta reso biancheria inidonea (Fornitore Raimondo) |
-| 14642 | BIANCHERIA — Ciclo pulito/sporco (Fornitore Raimondo) |
-| 15613 | PRENOTAZIONI — file unico dal PMS (arrivi + colazioni + pre-stay) |
-| 15987 | CONFERME — finestra Compass al posto di confirm()/alert() del browser |
-| 16042 | SINCRONIZZAZIONE CONTINUA — ogni postazione si aggiorna da sola |
-| 16333 | ACCESSO — ABILITAZIONE DEI DISPOSITIVI |
+| 2060 | DVR — SCADENZE SICUREZZA & COMPLIANCE |
+| 2117 | MOBILE SIDEBAR |
+| 2460 | MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone, mosaico) |
+| 3711 | ROOM DIVISION — Suddivisione cameriere, vista settimanale carico pesato e |
+| 3974 | UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP (fmtNow, fmtUploadTs, setUploadTs) |
+| 4015 | BACKUP ARCHIVIO — l'unica copia che esiste fuori dal cloud |
+| 4328 | STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud) |
+| 4682 | OVERVIEW — TOGGLE PREVIEW PANELS (toggleOccupazionePreview, togglePulPreview, toggleBkfPreview) |
+| 4773 | OVERVIEW — GRAFICI & METEO (buildBarChart, fetchMeteo, toggleWeatherForecast) |
+| 4870 | SIDEBAR — OROLOGIO & DATA (updateSbClock, toggleDatePopup, saveDate, updateDateDisplay) |
+| 4923 | OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 30s (refreshOverviewForDate, renderArriviData, syncFromCloud) |
+| 5299 | RECENSIONI — SCORE TREND MODAL (openScoreTrend) |
+| 5377 | OVERVIEW — RECENSIONI NO-REPLY (ovUpdateRevNoreply) |
+| 5495 | BKF SHEET — ANALISI AI (bkfSheetAnalyze, bkfSheetSync, bkfSheetAR*) |
+| 5717 | REPORT PULIZIE — PUL (handlePulFile, pulParseText, renderPulData, renderPulDay, updateKpiFromPulizie) |
+| 5896 | RECENSIONI — SCORING & INIT UPLOAD (weightedAvgF1, revHandleFile init per tutti gli hotel) |
+| 5963 | RECENSIONI — LOGICA (revParseCsv, revRenderCatTrend, revRenderExpiring, revRenderStats, revRenderList, revGenerateReply) |
+| 6395 | RECENSIONI BOOKING — PUNTEGGIO A DECADIMENTO CONTINUO + CALIBRAZIONE |
+| 7517 | REPORT PASTI — BKF (handleBkfFile, bkfParseText, renderBkfData, renderBkfDay, renderOvBkfChart) |
+| 7759 | HOUSEKEEPING — HKP UPLOAD & DATI (handleHkFile, hkParseText, hkSetLoaded, resetSoulData/BoutData) |
+| 7838 | PIANO SETTIMANA — UPLOAD & PARSER (handlePianoFile, parsePianoItems, pianoSetLoaded) |
+| 8051 | BKF — GRUPPI, NOTE & GRAFICI (bkfLoadOps, bkfAddGroup, bkfRenderGroups, bkfRenderChart, updateKpiFromBkf) |
+| 8362 | REGISTRATION CARDS — RC (handleRCFile, rcParseGuests, rcRenderCards) |
+| 8534 | MODAL — CATEGORIE TREND (openCatModal, closeCatModal) |
+| 8633 | ARRIVI GIORNALIERI — UPLOAD & RENDER (handleArriviFile, resetArrivi, arriviUpdateKpi, detectStruttura, renderArriviModal) |
+| 8635 | COLAZIONE BOOKING.COM — snapshot ospiti per camera (nome/origine/trattamento/checkout) |
+| 9184 | INVENTARIO DETERSIVI |
+| 9779 | INVENTARIO — ORDINI |
+| 10282 | PREFERENZE TURNI |
+| 10491 | CONTROLLO MATTINO (cmLoad, cmRender) |
+| 10823 | RECENSIONI EXPEDIA (revExpParseTsv, revExpHandleFile, revExpRenderStats, revExpRenderList, revExpGenerateReply) |
+| 11138 | DDT FORNITORI — upload DDT, spese per fornitore/reparto, storico |
+| 12470 | PRE-STAY — MESSAGGI AGLI OSPITI IN ARRIVO FRA 2 GIORNI |
+| 14055 | RECEPTION — CASSA (fondo cassa, incasso contante) |
+| 14442 | RESI BIANCHERIA — Distinta reso biancheria inidonea (Fornitore Raimondo) |
+| 14953 | BIANCHERIA — Ciclo pulito/sporco (Fornitore Raimondo) |
+| 15924 | GIACENZA BIANCHERIA — magazzino e pezzi in mano alle cameriere |
+| 16462 | PRENOTAZIONI — file unico dal PMS (arrivi + colazioni + pre-stay) |
+| 16836 | CONFERME — finestra Compass al posto di confirm()/alert() del browser |
+| 16891 | SINCRONIZZAZIONE CONTINUA — ogni postazione si aggiorna da sola |
+| 17189 | ACCESSO — ABILITAZIONE DEI DISPOSITIVI |
 
 ## Global Variables & Constants
 
@@ -549,6 +550,7 @@ grep -n 'id="view-' index.html
 | `view-turnazione` | "Turnazione Corrente" — specchio del pannello turno di Overview (`.staff-area-mirror`) |
 | `view-controllo-mattino` | Dashboard distribuzione Culligan (stats + QC settimanale + Stampa A4) |
 | `view-reception` | Fondo Cassa & Incasso Contante — sola lettura + modifica per il QM |
+| `view-giacenza` | **Giacenza Biancheria** — magazzino e pezzi in mano alle cameriere |
 | `view-resi-biancheria` | Resi biancheria inidonea al fornitore Raimondo (solo SoulArt, solo QM) |
 | `view-prestay` | Pre-stay — messaggi agli ospiti in arrivo fra 2 giorni |
 
@@ -2949,6 +2951,157 @@ sullo sporco uscito, rientro in più di nuovo rosso): 4, 8 e 1 falliscono.
 
 ---
 
+## Giacenza Biancheria — magazzino e pezzi in mano alle cameriere (view `giacenza`)
+
+`§§ GIACENZA BIANCHERIA` in `app.js`, chiave KV `qm_giacenza`, voce di menu **Housekeeping →
+Giacenza Biancheria**.
+
+### Non confondere i tre moduli biancheria
+
+| Modulo | Vista | A cosa risponde |
+|---|---|---|
+| **Gestione Biancheria** | `biancheria` | il giro del fornitore: pulito che entra, sporco che esce |
+| **Resi Biancheria** | `resi-biancheria` | i pezzi inidonei (macchiati, strappati) resi a Raimondo a parte |
+| **Giacenza Biancheria** | `giacenza` | quanto c'è **nel magazzino dell'albergo** e **chi ne ha in mano** |
+
+Il problema che risolve: la biancheria si preleva dal magazzino a mani nude, senza che resti
+traccia di chi ha preso cosa. Quando i conti non tornano non c'è modo di dire se manca
+davvero qualcosa o se è semplicemente ancora su un carrello.
+
+### Modello dati
+
+```js
+qm_giacenza = {
+  movimenti: [{id, ts, hotel:'sa'|'bh', data:'dd/MM/yyyy',
+               tipo:'prelievo'|'restituzione'|'conteggio',
+               persona, q:{voce:qta}, atteso:{voce:qta}|null, nota, edits:[]}],
+  tipologie: null,   // null = GIAC_VOCI_DEFAULT
+  _rimossi: []
+}
+```
+
+**Un movimento porta più voci insieme**: una cameriera non prende una federa alla volta,
+carica il carrello. Stessa forma dei consumi giornalieri della biancheria.
+
+### Il magazzino si ANCORA all'ultimo conteggio, non è un numero che si digita
+
+Stesso schema del fondo cassa di reception: `_giacMagazzino(h)` riparte sempre
+dall'**ultimo conteggio fisico registrato** e applica i movimenti successivi. Il conteggio
+salva anche `atteso` (quanto ci si aspettava di trovare), così la differenza resta nello
+storico — spiegata o no — e il valore contato diventa la nuova base. Senza quell'ancoraggio
+il calcolo divergerebbe subito dallo scaffale.
+
+**Finché non si è mai contato il numero NON si mostra** (`contato:false`): sarebbe solo
+"restituito meno prelevato", cioè quasi sempre un negativo che sembra un guasto. La card
+dice *"da contare"* e il totale un trattino. *In mano alle cameriere* resta invece valido:
+non dipende dal conteggio dello scaffale.
+
+### Il segno del carico è ROVESCIATO rispetto a quello del magazzino
+
+`GIAC_TIPI[t].segno` è il segno del **magazzino** (un prelievo lo svuota, `-1`). Sul carico
+della persona vale l'opposto: quello che esce dallo scaffale finisce nelle sue mani, quindi
+`_giacCarico` usa `-segno`. **Non è un refuso** — è l'errore che i controlli hanno colto
+alla prima esecuzione, con tutti i carichi negativi.
+
+Per la stessa ragione **un conteggio del magazzino non azzera i carichi aperti**: contare
+lo scaffale dice quanti pezzi ci sono *lì*, non quanti ne ha ancora Anna sul carrello.
+Azzerarli a ogni inventario cancellerebbe proprio il dato che la pagina esiste per tenere.
+
+### `apertoDa` non è la data dell'ultimo prelievo
+
+È il giorno in cui il carico di quella persona è passato da zero a qualcosa e **non è più
+tornato a zero**; torna `null` appena riporta tutto. È l'unica cosa azionabile — *"in
+sospeso da N giorni"* — mentre la data dell'ultimo prelievo direbbe il contrario proprio
+quando serve di più (chi preleva ogni giorno sembrerebbe sempre a posto). Oltre
+`GIAC_GG_APERTO=3` giorni la riga è segnata in ambra.
+
+Un carico **negativo** (ha riportato più di quanto risulta preso, di solito un prelievo mai
+registrato) è verde e non rosso, e la riga lo dice a parole: non è un ammanco. Stessa scala
+del rientro in più nello storico della biancheria.
+
+### Le voci sono quelle dei fogli camera, e chi esce dall'elenco non perde i suoi pezzi
+
+`GIAC_VOCI_DEFAULT = BIA_VOCI` — le stesse sette: giacenza, consumi e giro devono parlare
+degli stessi pezzi, altrimenti i tre pannelli non si confrontano. **Non** è
+`RESI_TIPOLOGIE_DEFAULT`, che è più lungo di proposito. `GIAC_HOTELS = BIA_HOTELS` per la
+stessa ragione (Art Resort resta fuori: fa capo al Sig. Maddaloni e alla sua ditta esterna)
+— alias e non copia, perché due elenchi identici scritti due volte prima o poi divergono.
+
+L'elenco è modificabile dalla vista (il magazzino può contenere coprimaterassi o tappetini
+che sul foglio camera non compaiono) e finisce in `tipologie`. I movimenti sono indicizzati
+per **nome** della voce: riordinare è innocuo, **rinominare orfana** i pezzi salvati sotto
+il vecchio nome. `_giacVociUsate` rimette in fondo alla tabella, marcate `fuori elenco`, le
+voci uscite che hanno ancora pezzi da qualche parte: **escono dalla maschera, mai dai
+totali**. Salvando un elenco che ne toglie una con pezzi, la conferma lo dice prima.
+
+### Chi preleva: elenco aperto, non fisso
+
+`_giacPersone()` mette insieme tre fonti — organico `DEPTS.hk.members`, nomi del turno
+caricato, nomi già usati in questo registro — e il campo resta comunque a **testo libero**:
+il personale HK cambia ogni settimana (extra e interinali) e una cameriera nuova non deve
+poter bloccare un prelievo perché non è in nessun elenco. Dal turno si prendono solo i nomi
+che non appartengono a un altro reparto: il planning li contiene tutti, e ricevimento,
+colazioni e manutenzione non prelevano biancheria.
+
+### Cambiare persona NON ridisegna la maschera
+
+`giacSetPersona` aggiorna **solo** le caselle e i suggerimenti (`giacAggiornaCarico`).
+Rigenerare l'HTML mentre si compila fa perdere quel che si è digitato — stessa lezione della
+casella "Ricevuto" in Biancheria e della vista pre-stay. Per lo stesso motivo la data va
+riletta dal campo prima di ogni ridisegno, altrimenti qualunque giorno selezionato tornerebbe
+a oggi.
+
+In una **restituzione** le quantità si precompilano con quello che la persona ha in mano: il
+caso normale è che riporti tutto, e proporlo evita di ridigitare sette numeri. Resta
+correggibile — capita che ne riporti solo una parte.
+
+### Un prelievo che sfora il magazzino si AVVISA, non si blocca
+
+Il conteggio può essere vecchio e i pezzi sullo scaffale esserci davvero: impedire di
+registrare un prelievo reale vorrebbe dire perdere proprio il dato che la pagina raccoglie.
+La conferma dice voce per voce quanti ne risultano, e si registra lo stesso.
+
+### Correzioni ed eliminazioni
+
+`giacCorreggi(id,voce)` cambia una quantità e **aggiunge sempre una riga a `edits[]`** con
+vecchio, nuovo e motivo — mai una sovrascrittura silenziosa, come la cassa e i resi; lo
+storico mostra `corretto N×`. `giacEliminaMovimento` è invece una rimozione definitiva e
+chiama `_qmSegnaRimosso` **prima** di salvare: senza, la fusione col cloud rimetterebbe
+dentro il movimento al primo giro (è il difetto che `resiDelRow` si era dimenticato).
+
+### Funzioni
+
+| Funzione | Scopo |
+|---|---|
+| `giacLoad()` / `_giacSave()` | Fusione con il cloud via `_qmLeggiArchivio` / `_qmSalvaArchivio` |
+| `_giacMov(h)` | Movimenti della struttura in ordine di **registrazione** (`ts`), non di data |
+| `_giacMagazzino(h)` | `{q, contato, data}` — ancorato all'ultimo conteggio |
+| `_giacCarico(h)` | Per persona: `{q, tot, ultimo, apertoDa}` |
+| `_giacCaricoTot(h)` | Lo stesso sommato su tutte le persone |
+| `_giacVociUsate(h)` | Elenco corrente + le voci fuori elenco che hanno ancora pezzi |
+| `_giacPersone()` | Organico + turno + nomi già usati |
+| `giacSalvaMovimento()` | Legge la maschera, avvisa sugli sfori e sulle differenze, registra |
+| `giacAggiornaCarico(pre)` | Aggiorna suggerimenti e precompilazione **senza ridisegnare** |
+| `giacPreparaResa(p)` | Dalla tabella "chi ha in carico": prepara la restituzione già intestata |
+| `_giacJs(s)` | Nome dentro un `onclick`: neutralizza apice e barra rovescia **prima** dell'escape HTML — con dei `D'` in organico, senza questo il pulsante si rompe |
+
+Coperto da **29 controlli** in `test/controlli.js` ("Giacenza biancheria: il magazzino si
+ancora al conteggio, il carico no"), verificati con quattro sabotaggi (il conteggio non fa
+più da ancora; segno del carico rovesciato; voci fuori elenco buttate via; strutture
+mescolate): 10, 8, 1 e 3 falliscono.
+
+### Cosa NON fa, di proposito
+
+Nessuna app per le cameriere (come i resi: scrivono sul cartaceo, il QM trascrive), nessuna
+stampa A4, nessun promemoria in Overview, e **nessun aggancio automatico ai consumi
+giornalieri** della Gestione Biancheria. La tentazione è dedurre che *prelevato meno
+restituito = consumato*: è quasi sempre vero, ma sono due registri con due fonti diverse
+(qui il magazzino, là i fogli camera) e legarli vorrebbe dire far dipendere un numero
+dichiarato da uno calcolato. Se un domani serve un confronto, va **mostrato** come confronto,
+non usato per correggere l'uno con l'altro.
+
+---
+
 ## Sincronizzazione continua — ogni postazione si aggiorna da sola
 
 `§§ SINCRONIZZAZIONE CONTINUA` in `app.js`. Nato dalla richiesta: *"Compass deve dare risultati affidabili ed essere sempre aggiornato indipendentemente da quale postazione è accesa o spenta. Non posso chiedere ai collaboratori di uscire e rientrare."*
@@ -3806,7 +3959,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip. 553 controlli.
+scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio. 587 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire

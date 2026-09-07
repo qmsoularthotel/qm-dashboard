@@ -263,6 +263,14 @@ body.dark .panel{box-shadow:none;}
    L'altezza NON e' lasciata al contenuto: grid-auto-rows:1fr pareggia solo le righe fra
    loro, quindi l'ultima fila restava piu' bassa. Con un'altezza minima uguale per tutte e
    i pulsanti ancorati in fondo, i riquadri sono identici in ogni fila. */
+/* Giacenza Biancheria. Scritte qui e non inline per la regola d'oro: uno stile inline
+   vince sempre su una media query, quindi una griglia scritta nel JS resterebbe
+   multi-colonna sullo smartphone qualunque cosa dica il @media.
+   Le caselle delle quantita' restano a DUE colonne su telefono e non a una: sono sette
+   numeri da battere di seguito, e a colonna unica il modulo diventa lungo il doppio
+   dello schermo. Un campo numerico ci sta comodamente in meta' larghezza. */
+.giac-kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px;}
+.giac-voci-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;}
 .miniapp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch;}
 @media(max-width:1080px){.miniapp-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 /* Le schede del Pannello App: tutte uguali, coi pulsanti sulla stessa riga in fondo anche
@@ -640,6 +648,8 @@ select.form-input option{background:var(--surface2);color:var(--text);}
 @media(max-width:1200px){.ps-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:768px){
   .mobile-menu-btn{display:flex;}
+  .giac-kpi-grid{grid-template-columns:1fr;}
+  .giac-voci-grid{grid-template-columns:1fr 1fr;gap:8px;}
   /* Pre-stay su smartphone: una scheda per riga — a tre colonne i campi email diventano
      illeggibili, ed è proprio l'email il dato che si incolla e si rilegge. Lo stato e il
      gruppo di configurazione escono dall'allineamento a destra e vanno a capo a tutta

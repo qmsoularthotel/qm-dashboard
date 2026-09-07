@@ -1026,8 +1026,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{kvSet('qm_weekData',null).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={sistema:'Stato del sistema',sicurezza:'Sicurezza e copie',overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Applicazioni stand alone',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria',biancheria:'Gestione Biancheria',prestay:'Messaggi Pre-stay'};
-const breadcrumbs={sistema:'Pannello di Controllo',sicurezza:'Pannello di Controllo',miniapp:'Pannello di Controllo',overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',biancheria:'Housekeeping',prestay:'Operativo Quotidiano'};
+const pageTitles={sistema:'Stato del sistema',sicurezza:'Sicurezza e copie',overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Applicazioni stand alone',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Resi Biancheria',biancheria:'Gestione Biancheria',giacenza:'Giacenza Biancheria',prestay:'Messaggi Pre-stay'};
+const breadcrumbs={sistema:'Pannello di Controllo',sicurezza:'Pannello di Controllo',miniapp:'Pannello di Controllo',overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',biancheria:'Housekeeping',giacenza:'Housekeeping',prestay:'Operativo Quotidiano'};
 // §§ HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore)
 // Operativa HKP: solo SoulArt. Art Resort è stato rimosso (17/08/2026) — non più
 // necessario, quindi via anche la scelta della struttura dal menu.
@@ -2033,6 +2033,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='reception'){try{receptionLoad();}catch(e){}}
   if(id==='resi-biancheria'){try{resiLoad();}catch(e){}}
   if(id==='biancheria'){try{biaLoad();}catch(e){}}
+  if(id==='giacenza'){try{giacLoad();}catch(e){}}
   // Si mostra subito ciò che c'è, poi si rilegge il cloud: chi apre la vista deve vedere
   // anche quello che ha scritto un'altra postazione, senza aspettare e senza schermo vuoto.
   if(id==='prestay'){try{prestayRender();}catch(e){}try{_psSincronizza().then(ok=>{if(ok)prestayRender();});}catch(e){}}
@@ -4033,7 +4034,10 @@ const QM_BACKUP_FISSE=[
   'qm_bkf_room_info','qm_bkf_room_info_date','qm_bkf_room_ambiguous',
   'qm_hk_soul','qm_hk_bout','qm_hkp_config',
   'qm_inv_orders','qm_ddt','qm_spese_cat_override',
-  'qm_dvr','qm_bia_distinte','qm_biancheria',
+  'qm_dvr','qm_bia_distinte','qm_biancheria','qm_giacenza',
+  // 'qm_resi_biancheria' mancava: _resiSave passa da _qmSalvaArchivio(RESI_KEY,…) e la
+  // sentinella seguiva solo le chiavi scritte come stringa, non quelle in una costante.
+  'qm_resi_biancheria',
   // La cassa di reception: i due registri veri, non solo la traccia delle eliminazioni.
   // Mancavano fino al 06/09/2026 — reception.html li scrive con una funzione sua
   // (kvSetLocal), che il controllo automatico non seguiva.
@@ -15917,6 +15921,544 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
   setTimeout(()=>w.print(),400);
 }
 
+// §§ GIACENZA BIANCHERIA — magazzino e pezzi in mano alle cameriere
+// Terzo modulo biancheria, e i tre rispondono a domande diverse:
+//   §§ BIANCHERIA      — il giro del fornitore: pulito che entra, sporco che esce.
+//   §§ RESI BIANCHERIA — i pezzi inidonei (macchiati, strappati) resi a Raimondo a parte.
+//   questo             — quanto c'è NEL MAGAZZINO dell'albergo e quanto ne hanno in mano
+//                        le cameriere, cioè chi ha preso cosa e quando l'ha riportato.
+//
+// Il problema: la biancheria si preleva dal magazzino a mani nude, senza che resti
+// traccia di chi ha preso cosa. Quando i conti non tornano non c'è modo di dire se manca
+// davvero qualcosa o se è semplicemente ancora su un carrello.
+//
+// Un movimento porta PIÙ voci insieme: una cameriera non prende una federa alla volta,
+// carica il carrello. Stessa forma dei consumi giornalieri della biancheria.
+const GIAC_KEY='qm_giacenza';
+// Stesse due strutture del ciclo pulito/sporco e per la stessa ragione (Art Resort fa capo
+// al Sig. Maddaloni e alla sua ditta esterna). È un alias e non una copia: due elenchi
+// identici scritti due volte prima o poi divergono in silenzio.
+const GIAC_HOTELS=BIA_HOTELS;
+// Le voci di partenza sono le SETTE dei fogli camera (BIA_VOCI): giacenza, consumi e giro
+// devono parlare degli stessi pezzi, altrimenti i tre pannelli non si confrontano. NON è
+// l'elenco dei resi (RESI_TIPOLOGIE_DEFAULT), che è più lungo di proposito.
+// L'elenco è modificabile dalla vista — il magazzino può contenere coprimaterassi o
+// tappetini che sul foglio camera non compaiono — e finisce in `tipologie`.
+// ATTENZIONE: i movimenti sono indicizzati per NOME della voce, non per posizione.
+// Riordinare l'elenco è innocuo; RINOMINARE una voce orfana i pezzi già registrati sotto
+// il vecchio nome. Per questo _giacVociUsate rimette in fondo alla tabella le voci uscite
+// dall'elenco che hanno ancora pezzi in giro: escono dalla maschera, mai dai totali.
+const GIAC_VOCI_DEFAULT=BIA_VOCI;
+const GIAC_TIPI={
+  prelievo:    {lbl:'Prelievo',    col:'var(--red)',   segno:-1},
+  restituzione:{lbl:'Restituzione',col:'var(--green)', segno:+1},
+  conteggio:   {lbl:'Conteggio',   col:'var(--accent)',segno: 0}
+};
+// Oltre questi giorni un carico aperto viene segnalato in ambra: non è un furto, è che
+// nessuno ha registrato la restituzione — e più passa il tempo meno qualcuno se lo ricorda.
+const GIAC_GG_APERTO=3;
+
+let _giac={movimenti:[],tipologie:null};
+let _giacHotel='sa';
+let _giacTipo='prelievo';
+let _giacPersona='';
+// Pannelli richiudibili e righe aperte: stanno FUORI da giacRender, che rigenera tutto
+// l'HTML — dentro, ogni apertura si richiuderebbe da sola al primo ridisegno (stessa
+// lezione di _speseCatOpen in Spese Fornitori e di _biaGiroAperto).
+let _giacStorico=false;
+let _giacPersonaAperta=new Set(),_giacMovAperto=new Set();
+
+const _giacH=x=>x.hotel||'sa';
+function _giacUid(){return Date.now()+'_'+Math.random().toString(36).slice(2,8);}
+const _giacEsc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// Un nome dentro un onclick passa da due interpretazioni, HTML e poi JS: apice e barra
+// rovescia vanno neutralizzati PRIMA dell'escape HTML. Senza, una cameriera che si chiama
+// D'Angelo romperebbe il pulsante — e nell'organico ci sono già dei D'.
+const _giacJs=s=>_giacEsc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
+// Date: si riusano gli helper della biancheria invece di farne una quarta copia. Il
+// prefisso _bia è storico, la funzione è generica — stesso ragionamento di _qmPortaInVista,
+// che porta il prefisso _ps e vale per tutta la dashboard.
+function _giacVoci(){return (_giac.tipologie&&_giac.tipologie.length)?_giac.tipologie:GIAC_VOCI_DEFAULT;}
+function _giacTot(q){return Object.keys(q||{}).reduce((s,v)=>s+(Number(q[v])||0),0);}
+
+// Movimenti di una struttura in ordine di REGISTRAZIONE (ts), non di data: due movimenti
+// dello stesso giorno devono avere un ordine stabile, e il conteggio fa da ancora a tutti
+// quelli che arrivano dopo di lui — stesso schema del fondo cassa di reception.
+function _giacMov(h){
+  const hot=h||_giacHotel;
+  return (_giac.movimenti||[]).filter(m=>_giacH(m)===hot).slice().sort((a,b)=>(a.ts||0)-(b.ts||0));
+}
+
+// Quanto c'è sullo scaffale. NON è un campo modificabile a mano: si riparte sempre
+// dall'ultimo conteggio fisico registrato e si applicano i movimenti successivi. Finché un
+// conteggio non c'è, `contato` è false e il numero NON va mostrato: sarebbe solo
+// "restituito meno prelevato", cioè quasi sempre un negativo che sembra un guasto.
+function _giacMagazzino(h){
+  const mv=_giacMov(h);
+  let i=-1;
+  for(let k=mv.length-1;k>=0;k--){if(mv[k].tipo==='conteggio'){i=k;break;}}
+  const q=i>=0?Object.assign({},mv[i].q||{}):{};
+  for(let k=i+1;k<mv.length;k++){
+    const m=mv[k],sg=(GIAC_TIPI[m.tipo]||{}).segno||0;
+    if(!sg)continue;
+    Object.keys(m.q||{}).forEach(v=>{q[v]=(Number(q[v])||0)+sg*(Number(m.q[v])||0);});
+  }
+  return {q,contato:i>=0,data:i>=0?mv[i].data:null};
+}
+
+// Cosa ha in mano ogni cameriera: prelevato meno restituito, dal primo movimento a oggi.
+// Il conteggio del magazzino NON lo azzera, ed è voluto: contare lo scaffale dice quanti
+// pezzi ci sono lì, non quanti ne ha ancora Anna sul carrello.
+//
+// `apertoDa` è il giorno in cui il suo carico è passato da zero a qualcosa e non è più
+// tornato a zero — non la data dell'ultimo prelievo, che non direbbe da quanto tempo c'è
+// qualcosa in sospeso. Torna null appena riporta tutto.
+function _giacCarico(h){
+  const out={};
+  _giacMov(h).forEach(m=>{
+    // Il segno di GIAC_TIPI è quello del MAGAZZINO (un prelievo lo svuota, -1). Sul
+    // carico della persona vale l'opposto: quello che esce dallo scaffale finisce nelle
+    // sue mani. Va quindi rovesciato — non è un refuso, ed è l'errore che i controlli
+    // hanno colto alla prima esecuzione: i carichi risultavano tutti negativi.
+    const sg=-((GIAC_TIPI[m.tipo]||{}).segno||0);
+    if(!sg)return;
+    const p=String(m.persona||'').trim();if(!p)return;
+    const r=out[p]||(out[p]={q:{},tot:0,ultimo:null,apertoDa:null});
+    const prima=r.tot;
+    Object.keys(m.q||{}).forEach(v=>{
+      const n=Number(m.q[v])||0;if(!n)return;
+      r.q[v]=(Number(r.q[v])||0)+sg*n;r.tot+=sg*n;
+    });
+    r.ultimo=m.data;
+    if(prima<=0&&r.tot>0)r.apertoDa=m.data;
+    if(r.tot<=0)r.apertoDa=null;
+  });
+  return out;
+}
+function _giacCaricoTot(h){
+  const c=_giacCarico(h),q={};
+  Object.keys(c).forEach(p=>Object.keys(c[p].q).forEach(v=>{q[v]=(Number(q[v])||0)+(Number(c[p].q[v])||0);}));
+  return q;
+}
+// Le voci da mostrare nelle tabelle: l'elenco corrente, più in fondo quelle che ne sono
+// uscite ma hanno ancora pezzi da qualche parte. Una tipologia tolta dall'elenco non deve
+// portarsi via dai totali i pezzi che restano in giro.
+function _giacVociUsate(h){
+  const el=_giacVoci(),vis=new Set(el);
+  const mag=_giacMagazzino(h),car=_giacCaricoTot(h);
+  const extra=new Set();
+  Object.keys(mag.q).forEach(v=>{if(!vis.has(v)&&Number(mag.q[v]))extra.add(v);});
+  Object.keys(car).forEach(v=>{if(!vis.has(v)&&Number(car[v]))extra.add(v);});
+  return el.concat([...extra].sort());
+}
+// L'elenco delle cameriere non può essere fisso: il personale HK cambia ogni settimana
+// (extra e interinali), ed è la ragione per cui renderDay pesca i nomi dal turno e non
+// dai soli DEPTS. Si mettono insieme tre fonti — organico, turno caricato, nomi già usati
+// qui — e il campo resta comunque a testo libero: una cameriera nuova non deve poter
+// bloccare un prelievo perché non è ancora in nessun elenco.
+function _giacPersone(){
+  const s=new Set(DEPTS.hk.members);
+  (_giac.movimenti||[]).forEach(m=>{if(m.persona)s.add(m.persona);});
+  // Dal turno si prendono SOLO i nomi che non sono di un altro reparto: il planning li
+  // contiene tutti, e ricevimento, colazioni e manutenzione non prelevano biancheria.
+  const altri=new Set([].concat(DEPTS.fo.members,DEPTS.bkf.members,DEPTS.mt.members).map(x=>String(x).toLowerCase()));
+  try{((weekData&&weekData.giorni)||[]).forEach(g=>Object.keys(g.shifts||{}).forEach(n=>{if(n&&!altri.has(String(n).toLowerCase()))s.add(n);}));}catch(e){}
+  return [...s].filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b),'it'));
+}
+
+async function giacLoad(){
+  const el=document.getElementById('giac-content');if(!el)return;
+  el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Caricamento…</div>';
+  // Si FONDE cloud e copia locale invece di preferire l'uno all'altra: una registrazione
+  // che non era arrivata sul cloud non deve sparire riaprendo la pagina.
+  _giac=await _qmLeggiArchivio(GIAC_KEY,{movimenti:[],tipologie:null});
+  giacRender();
+}
+async function _giacSave(){
+  _giac=await _qmSalvaArchivio(GIAC_KEY,_giac);
+  return _giac;
+}
+
+function giacSetHotel(h){if(!GIAC_HOTELS[h])return;_giacHotel=h;giacRender();}
+function giacSetTipo(t){if(!GIAC_TIPI[t])return;_giacTipo=t;giacRender();}
+function giacToggleStorico(){_giacStorico=!_giacStorico;giacRender();if(_giacStorico)_qmPortaInVista('giac-storico',12);}
+// Aprire una riga NON deve spostare l'occhio: la si sta guardando, e un salto la
+// porterebbe via proprio mentre la si legge.
+function giacTogglePersona(p){_giacPersonaAperta.has(p)?_giacPersonaAperta.delete(p):_giacPersonaAperta.add(p);_psSenzaSalto(giacRender);}
+function giacToggleMov(id){_giacMovAperto.has(id)?_giacMovAperto.delete(id):_giacMovAperto.add(id);_psSenzaSalto(giacRender);}
+
+// Scorciatoia dalla tabella "chi ha in carico": prepara una restituzione già intestata a
+// quella persona e con le quantità proposte, e porta la maschera in vista.
+function giacPreparaResa(p){
+  _giacTipo='restituzione';_giacPersona=p;
+  giacRender();
+  _qmPortaInVista('giac-form',12);
+}
+
+// Cambiando persona NON si ridisegna: si aggiornano solo le caselle e i suggerimenti.
+// Rigenerare l'HTML mentre si sta compilando fa perdere quel che si è digitato ed è
+// esattamente il difetto che aveva la casella "Ricevuto" in Biancheria.
+function giacSetPersona(v){
+  _giacPersona=String(v||'').trim();
+  giacAggiornaCarico(_giacTipo==='restituzione');
+}
+// `precompila` vale solo quando la persona è appena cambiata: il caso normale è che
+// riporti tutto quello che ha in mano, e proporlo evita di ridigitare sette numeri.
+// Resta correggibile — capita che ne riporti solo una parte.
+function giacAggiornaCarico(precompila){
+  const voci=_giacVoci();
+  const car=(_giacCarico(_giacHotel)[_giacPersona]||{q:{}}).q;
+  voci.forEach((v,i)=>{
+    const hint=document.getElementById('giac-hint-'+i);
+    const inp=document.getElementById('giac-q-'+i);
+    const n=Number(car[v])||0;
+    if(hint)hint.textContent=_giacTipo==='restituzione'?(_giacPersona?(n>0?'ne ha '+n:'nessuno in mano'):''):'';
+    if(precompila&&inp)inp.value=n>0?n:0;
+  });
+}
+
+async function giacSalvaMovimento(){
+  const voci=_giacVoci(),tipo=_giacTipo;
+  const data=_biaFromIso((document.getElementById('giac-data')||{}).value||'');
+  if(!data){await cqAvviso('Manca la data','Indica il giorno del movimento.');return;}
+  const persona=String((document.getElementById('giac-persona')||{}).value||'').trim();
+  const nota=String((document.getElementById('giac-nota')||{}).value||'').trim();
+  const leggi=i=>Math.max(0,Math.round(Number((document.getElementById('giac-q-'+i)||{}).value)||0));
+  const q={};
+  // In un conteggio uno zero è un'informazione ("di scendibagni non ce n'è più nessuno"),
+  // in un prelievo è solo una casella lasciata a zero: per questo le due letture sono
+  // diverse e non una sola con un filtro.
+  if(tipo==='conteggio')voci.forEach((v,i)=>{q[v]=leggi(i);});
+  else voci.forEach((v,i)=>{const n=leggi(i);if(n)q[v]=n;});
+  const tot=_giacTot(q);
+
+  if(tipo!=='conteggio'){
+    if(!persona){await cqAvviso('Manca il nome','Scrivi chi preleva o chi restituisce: senza, il movimento non dice niente su chi ha i pezzi.');return;}
+    if(!tot){await cqAvviso('Nessuna quantità','Indica almeno un pezzo.');return;}
+  }
+
+  const mag=_giacMagazzino(_giacHotel);
+
+  // Prelievo che sfora il magazzino: si AVVISA, non si blocca. Il conteggio può essere
+  // vecchio, e i pezzi sullo scaffale ci sono davvero — impedire di registrare un
+  // prelievo reale vorrebbe dire perdere proprio il dato che questa pagina esiste per
+  // raccogliere. Ma se lo sforo è grosso, di solito è una cifra digitata male.
+  if(tipo==='prelievo'&&mag.contato){
+    const sfora=Object.keys(q).filter(v=>(Number(q[v])||0)>(Number(mag.q[v])||0));
+    if(sfora.length){
+      const el=sfora.map(v=>_giacEsc(v)+': ne prelevi '+q[v]+', in magazzino ne risultano '+(Number(mag.q[v])||0)).join('<br>');
+      if(!await cqConferma('Più di quanti ne risultano',el+'<br><br>Può essere giusto se il magazzino non è contato da un po\'. Registro lo stesso?',{ok:'Registra'}))return;
+    }
+  }
+
+  const m={id:_giacUid(),ts:Date.now(),hotel:_giacHotel,data,tipo,persona:tipo==='conteggio'?'':persona,q,nota,edits:[]};
+
+  if(tipo==='conteggio'){
+    // Come il fondo cassa: si registra anche quanto ci si aspettava di trovare, così la
+    // differenza resta nello storico — spiegata o no — e il valore contato diventa la
+    // nuova base su cui contare i movimenti successivi. Senza l'ancoraggio al conteggio
+    // reale il calcolo divergerebbe subito dallo scaffale.
+    m.atteso=mag.contato?Object.assign({},mag.q):null;
+    if(mag.contato){
+      const dif=voci.filter(v=>(Number(q[v])||0)!==(Number(mag.q[v])||0));
+      if(dif.length){
+        const el=dif.map(v=>{
+          const d=(Number(q[v])||0)-(Number(mag.q[v])||0);
+          return _giacEsc(v)+': contati '+(Number(q[v])||0)+', attesi '+(Number(mag.q[v])||0)+' ('+(d>0?'+':'')+d+')';
+        }).join('<br>');
+        if(!await cqConferma('Il conteggio non torna',el+'<br><br>La differenza resta segnata nello storico e il numero contato diventa la nuova base.',{ok:'Registra il conteggio'}))return;
+      }
+    }
+  }
+
+  _giac.movimenti=(_giac.movimenti||[]).concat([m]);
+  await _giacSave();
+  // La maschera si svuota solo DOPO il salvataggio riuscito: azzerarla prima farebbe
+  // perdere quel che si è digitato se la scrittura non parte.
+  _giacPersona=tipo==='conteggio'?_giacPersona:'';
+  giacRender();
+}
+
+async function giacEliminaMovimento(id){
+  const i=(_giac.movimenti||[]).findIndex(m=>m.id===id);if(i<0)return;
+  const m=_giac.movimenti[i];
+  const t=(GIAC_TIPI[m.tipo]||{}).lbl||m.tipo;
+  if(!await cqConferma('Eliminare questo movimento?','<strong>'+_giacEsc(t)+(m.persona?' · '+_giacEsc(m.persona):'')+'</strong><br>'+_giacEsc(m.data)+' · '+_giacTot(m.q)+' pezzi.<br>Non resta traccia: per correggere una quantità usa invece "correggi".',{ok:'Elimina'}))return;
+  _giac.movimenti.splice(i,1);
+  // L'id va segnato PRIMA di salvare, altrimenti la fusione lo rimette dentro: il
+  // movimento sta ancora sul cloud e _qmUnisciRecord riporta i record che il locale non
+  // ha più. È il difetto che resiDelRow si era dimenticato.
+  _qmSegnaRimosso(_giac,id);
+  await _giacSave();giacRender();
+}
+
+// Mai una sovrascrittura silenziosa: la correzione lascia una riga in `edits`, come la
+// cassa di reception e i resi.
+async function giacCorreggi(id,voce){
+  const m=(_giac.movimenti||[]).find(x=>x.id===id);if(!m)return;
+  const vecchio=Number((m.q||{})[voce])||0;
+  const s=prompt('Quantità di "'+voce+'" ('+m.data+') — era '+vecchio+':',String(vecchio));
+  if(s===null)return;
+  const nuovo=Math.max(0,Math.round(Number(s)||0));
+  if(nuovo===vecchio)return;
+  const motivo=String(prompt('Perché la correzione? (resta nello storico)','')||'').trim();
+  m.q=Object.assign({},m.q);m.q[voce]=nuovo;
+  m.edits=(m.edits||[]).concat([{ts:Date.now(),campo:voce,vecchio,nuovo,motivo}]);
+  await _giacSave();giacRender();
+}
+
+async function giacEditTipologie(){
+  const cur=_giacVoci().join('\n');
+  const v=prompt('Tipologie in magazzino (una per riga):',cur);
+  if(v===null)return;
+  const list=v.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!list.length){await cqAvviso('Elenco vuoto','Serve almeno una tipologia.');return;}
+  // Rinominare o togliere una voce che ha ancora pezzi in giro non li cancella (restano
+  // in fondo alla tabella, vedi _giacVociUsate) ma la fa sparire dalla maschera: lo si
+  // dice prima, invece di lasciarlo scoprire dopo.
+  const mag=_giacMagazzino(_giacHotel),car=_giacCaricoTot(_giacHotel);
+  const perse=_giacVoci().filter(x=>!list.includes(x)&&((Number(mag.q[x])||0)||(Number(car[x])||0)));
+  if(perse.length){
+    if(!await cqConferma('Voci con pezzi ancora registrati',perse.map(_giacEsc).join('<br>')+'<br><br>Escono dalla maschera ma restano in fondo alla tabella con i loro pezzi: nessun numero va perso.',{ok:'Salva l\'elenco'}))return;
+  }
+  _giac.tipologie=list;
+  await _giacSave();giacRender();
+}
+
+function giacRender(){
+  const el=document.getElementById('giac-content');if(!el)return;
+  const esc=_giacEsc,js=_giacJs;
+  const voci=_giacVoci();
+  const mag=_giacMagazzino(_giacHotel);
+  const car=_giacCarico(_giacHotel);
+  const carTot=_giacCaricoTot(_giacHotel);
+  const usate=_giacVociUsate(_giacHotel);
+  const totMag=_giacTot(mag.q),totCar=_giacTot(carTot);
+  const oggi=_biaOggi();
+  // La data va riletta dal campo PRIMA di rigenerare l'HTML: riscrivendo sempre quella di
+  // oggi, qualunque giorno selezionato tornerebbe indietro al primo ridisegno (è successo
+  // nella maschera dei consumi della biancheria, stesso schema).
+  const dataIso=(document.getElementById('giac-data')||{}).value||_biaToIso(_biaFmt(oggi));
+  const persone=Object.keys(car).filter(p=>car[p].tot!==0).sort((a,b)=>car[b].tot-car[a].tot);
+  const ggAperto=p=>{const d=_biaParse(car[p].apertoDa);return d?Math.round((oggi-d)/86400000):null;};
+  let h='';
+
+  // ── Struttura ──
+  h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+    <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      ${Object.keys(GIAC_HOTELS).map(k=>`<button onclick="giacSetHotel('${k}')" style="border:none;padding:7px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;background:${k===_giacHotel?'var(--accent)':'var(--surface)'};color:${k===_giacHotel?'#fff':'var(--text-dim)'};">${esc(GIAC_HOTELS[k])}</button>`).join('')}
+    </div>
+  </div>`;
+
+  // ── I tre numeri ──
+  // Finché non si è mai contato, "in magazzino" NON si scrive: sarebbe solo restituito
+  // meno prelevato, cioè un negativo che sembra un guasto. Si dice invece che manca il
+  // conteggio di partenza, che è la cosa da fare. "In carico" resta valido comunque —
+  // non dipende dal conteggio dello scaffale.
+  const cardMag=mag.contato
+    ? `<div class="kpi-value">${totMag}</div><div class="kpi-sub">contato il ${esc(mag.data)}</div>`
+    : `<div class="kpi-value" style="color:var(--amber);font-size:20px;">da contare</div><div class="kpi-sub">registra un conteggio per fissare la partenza</div>`;
+  h+=`<div class="giac-kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 7h18v13H3z"/><path d="M3 11h18"/><path d="M8 7V4h8v3"/></svg></div>
+      <div class="kpi-label">In magazzino</div>${cardMag}
+    </div>
+    <div class="kpi-card ${totCar>0?'amber':'green'}">
+      <div class="kpi-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="${totCar>0?'var(--amber)':'var(--green)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-5 7-5s7 1.5 7 5"/><path d="M17 9h5v5"/></svg></div>
+      <div class="kpi-label">In mano alle cameriere</div>
+      <div class="kpi-value">${totCar}</div>
+      <div class="kpi-sub">${persone.length?persone.length+(persone.length===1?' persona':' persone'):'nessun carico aperto'}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></div>
+      <div class="kpi-label">Giacenza totale</div>
+      <div class="kpi-value">${mag.contato?(totMag+totCar):'—'}</div>
+      <div class="kpi-sub">${mag.contato?'magazzino + pezzi in giro':'serve il conteggio del magazzino'}</div>
+    </div>
+  </div>`;
+
+  // ── Registra un movimento ──
+  const tipoCfg=GIAC_TIPI[_giacTipo];
+  const spiega={
+    prelievo:'Una cameriera porta via dei pezzi dal magazzino: restano a suo carico finché non li riporta.',
+    restituzione:'Riporta in magazzino dei pezzi che aveva preso e non ha usato.',
+    conteggio:'Conta fisicamente quello che c\'è sullo scaffale. Diventa la nuova base: i movimenti successivi si sommano a questo numero, non a quello calcolato prima.'
+  }[_giacTipo];
+  h+=`<div class="panel" id="giac-form" style="margin-bottom:16px;">
+    <div class="panel-header"><span class="panel-title">Registra un movimento</span></div>
+    <div class="panel-body" style="padding:14px;">
+      <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content;max-width:100%;flex-wrap:wrap;margin-bottom:10px;">
+        ${Object.keys(GIAC_TIPI).map(t=>`<button onclick="giacSetTipo('${t}')" style="border:none;padding:8px 16px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;background:${t===_giacTipo?GIAC_TIPI[t].col:'var(--surface)'};color:${t===_giacTipo?'#fff':'var(--text-dim)'};">${esc(GIAC_TIPI[t].lbl)}</button>`).join('')}
+      </div>
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:12px;">${esc(spiega)}</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">
+        <div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">Data</div>
+          <input type="date" id="giac-data" value="${dataIso}" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
+        </div>
+        ${_giacTipo!=='conteggio'?`<div style="flex:1;min-width:190px;">
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${_giacTipo==='prelievo'?'Chi preleva':'Chi restituisce'}</div>
+          <input id="giac-persona" list="giac-persone" value="${esc(_giacPersona)}" onchange="giacSetPersona(this.value)" placeholder="nome della cameriera" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);">
+          <datalist id="giac-persone">${_giacPersone().map(p=>`<option value="${esc(p)}"></option>`).join('')}</datalist>
+        </div>`:''}
+      </div>
+      <div class="giac-voci-grid">
+        ${voci.map((v,i)=>{
+          const inCarico=Number(((car[_giacPersona]||{q:{}}).q)[v])||0;
+          const inMag=Number(mag.q[v])||0;
+          const val=_giacTipo==='restituzione'?(inCarico>0?inCarico:0):(_giacTipo==='conteggio'?(mag.contato?inMag:0):0);
+          const hint=_giacTipo==='restituzione'?(_giacPersona?(inCarico>0?'ne ha '+inCarico:'nessuno in mano'):'')
+                    :(_giacTipo==='conteggio'?(mag.contato?'atteso '+inMag:'mai contato'):(mag.contato?'in magazzino '+inMag:''));
+          return `<div>
+            <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${esc(v)}</div>
+            <input type="number" min="0" step="1" id="giac-q-${i}" value="${val}" onfocus="this.select()" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);text-align:center;">
+            <div id="giac-hint-${i}" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;text-align:center;min-height:14px;">${esc(hint)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;">
+        <input id="giac-nota" placeholder="Nota (facoltativa)" style="flex:1;min-width:180px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);">
+        <button onclick="giacSalvaMovimento()" style="background:${tipoCfg.col};color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">Registra ${esc(tipoCfg.lbl.toLowerCase())}</button>
+      </div>
+      <div style="margin-top:10px;"><span onclick="giacEditTipologie()" style="font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Modifica elenco tipologie</span></div>
+    </div>
+  </div>`;
+
+  // ── Chi ha cosa ──
+  // È la risposta alla domanda per cui la pagina esiste. `apertoDa` non è la data
+  // dell'ultimo prelievo ma quella in cui il carico si è aperto e non si è più chiuso:
+  // dice da quanto tempo c'è qualcosa in sospeso, che è l'unica cosa azionabile.
+  h+=`<div class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><span class="panel-title">Chi ha pezzi in carico</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">prelevato e non ancora riportato</span>
+    </div>
+    <div class="panel-body" style="padding:0;">`;
+  if(!persone.length){
+    h+=`<div style="padding:16px;font-size:var(--fs-xs);color:var(--text-dim);">Nessun carico aperto: tutto quello che è uscito dal magazzino è rientrato.</div>`;
+  }else{
+    h+=`<table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+      <thead><tr style="background:var(--surface2);">
+        <th style="text-align:left;padding:9px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Persona</th>
+        <th style="text-align:right;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Pezzi</th>
+        <th style="text-align:left;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Aperto da</th>
+        <th style="padding:9px 14px;"></th>
+      </tr></thead><tbody>`;
+    persone.forEach((p,idx)=>{
+      const r=car[p],gg=ggAperto(p),aperta=_giacPersonaAperta.has(p);
+      // Un carico negativo non è un errore: ha riportato più di quanto risulta preso —
+      // di solito un prelievo mai registrato. Va detto, non colorato di rosso come un ammanco.
+      const neg=r.tot<0;
+      const ambra=!neg&&gg!==null&&gg>=GIAC_GG_APERTO;
+      h+=`<tr style="border-top:1px solid var(--border);${idx%2?'background:var(--surface2);':''}${ambra?'box-shadow:inset 3px 0 0 var(--amber);':''}">
+        <td style="padding:9px 14px;font-weight:600;">${esc(p)}</td>
+        <td style="padding:9px 10px;text-align:right;font-weight:700;color:${neg?'var(--green)':'var(--text)'};">${neg?'+'+(-r.tot):r.tot}</td>
+        <td style="padding:9px 10px;color:${ambra?'var(--amber)':'var(--text-dim)'};font-weight:${ambra?'700':'400'};">${neg?'riportati più del preso':(gg===null?'—':esc(r.apertoDa)+' · '+gg+(gg===1?' giorno':' giorni'))}</td>
+        <td style="padding:9px 14px;text-align:right;white-space:nowrap;">
+          <button onclick="giacTogglePersona('${js(p)}')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">${aperta?'chiudi':'cosa ha'} ${aperta?'▴':'▾'}</button>
+          ${neg?'':`<button onclick="giacPreparaResa('${js(p)}')" style="margin-left:8px;background:var(--green);color:#fff;border:none;padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">Restituisce</button>`}
+        </td>
+      </tr>`;
+      if(aperta){
+        const righe=Object.keys(r.q).filter(v=>Number(r.q[v]));
+        h+=`<tr style="${idx%2?'background:var(--surface2);':''}"><td colspan="4" style="padding:0 14px 12px;">
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);display:flex;flex-wrap:wrap;gap:6px;">
+            ${righe.map(v=>`<span style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 9px;">${esc(v)} <strong style="color:var(--text);">${r.q[v]}</strong></span>`).join('')||'<span>nessun pezzo</span>'}
+          </div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;">Ultimo movimento: ${esc(r.ultimo||'—')}</div>
+        </td></tr>`;
+      }
+    });
+    h+=`</tbody></table>`;
+  }
+  h+=`</div></div>`;
+
+  // ── Giacenza per tipologia ──
+  h+=`<div class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><span class="panel-title">Giacenza per tipologia</span></div>
+    <div class="panel-body" style="padding:0;">
+      <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+        <thead><tr style="background:var(--surface2);">
+          <th style="text-align:left;padding:9px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Tipologia</th>
+          <th style="text-align:right;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">In magazzino</th>
+          <th style="text-align:right;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">In mano</th>
+          <th style="text-align:right;padding:9px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Totale</th>
+        </tr></thead><tbody>`;
+  usate.forEach((v,i)=>{
+    const m=Number(mag.q[v])||0,c=Number(carTot[v])||0;
+    const fuoriElenco=!voci.includes(v);
+    h+=`<tr style="border-top:1px solid var(--border);${i%2?'background:var(--surface2);':''}">
+      <td style="padding:9px 14px;">${esc(v)}${fuoriElenco?' <span style="font-size:var(--fs-xxs);color:var(--amber);">fuori elenco</span>':''}</td>
+      <td style="padding:9px 10px;text-align:right;color:${mag.contato&&m<0?'var(--red)':'var(--text)'};">${mag.contato?m:'—'}</td>
+      <td style="padding:9px 10px;text-align:right;color:${c?'var(--text)':'var(--text-dim)'};">${c}</td>
+      <td style="padding:9px 14px;text-align:right;font-weight:700;">${mag.contato?(m+c):'—'}</td>
+    </tr>`;
+  });
+  h+=`<tr style="border-top:2px solid var(--border);font-weight:700;">
+      <td style="padding:9px 14px;">Totale</td>
+      <td style="padding:9px 10px;text-align:right;">${mag.contato?totMag:'—'}</td>
+      <td style="padding:9px 10px;text-align:right;">${totCar}</td>
+      <td style="padding:9px 14px;text-align:right;">${mag.contato?(totMag+totCar):'—'}</td>
+    </tr></tbody></table>`;
+  if(mag.contato&&usate.some(v=>(Number(mag.q[v])||0)<0)){
+    h+=`<div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--red);line-height:1.5;">Una tipologia è sotto zero: dal conteggio del ${esc(mag.data)} ne è uscita più di quanta ce ne fosse. O manca una restituzione, o il conteggio era incompleto — un nuovo conteggio rimette la base a posto.</div>`;
+  }
+  h+=`</div></div>`;
+
+  // ── Storico ──
+  h+=`<div id="giac-storico">
+    <button onclick="giacToggleStorico()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:var(--fs-xxs);font-weight:600;color:var(--accent);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">Storico dei movimenti ${_giacStorico?'▴':'▾'}</button>`;
+  if(_giacStorico){
+    const mv=_giacMov(_giacHotel).slice().reverse();
+    h+=`<div class="panel" style="margin-top:12px;"><div class="panel-body" style="padding:0;">`;
+    if(!mv.length)h+=`<div style="padding:16px;font-size:var(--fs-xs);color:var(--text-dim);">Nessun movimento registrato per questa struttura.</div>`;
+    else{
+      h+=`<table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+        <thead><tr style="background:var(--surface2);">
+          <th style="text-align:left;padding:9px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Data</th>
+          <th style="text-align:left;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Tipo</th>
+          <th style="text-align:left;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Persona</th>
+          <th style="text-align:right;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Pezzi</th>
+          <th style="padding:9px 14px;"></th>
+        </tr></thead><tbody>`;
+      mv.forEach((m,i)=>{
+        const cfg=GIAC_TIPI[m.tipo]||{lbl:m.tipo,col:'var(--text-dim)'};
+        const aperto=_giacMovAperto.has(m.id);
+        const nEd=(m.edits||[]).length;
+        // Il conteggio dichiara quanto ci si aspettava di trovare: senza, un "12" nello
+        // storico non dice se il magazzino tornava o no, ed è l'unica cosa che interessa.
+        let dif=null;
+        if(m.tipo==='conteggio'&&m.atteso)dif=_giacTot(m.q)-_giacTot(m.atteso);
+        h+=`<tr style="border-top:1px solid var(--border);${i%2?'background:var(--surface2);':''}">
+          <td style="padding:9px 14px;white-space:nowrap;">${esc(m.data)}</td>
+          <td style="padding:9px 10px;"><span style="background:var(--surface2);border:1px solid ${cfg.col};color:${cfg.col};border-radius:6px;padding:2px 8px;font-size:var(--fs-xxs);font-weight:700;">${esc(cfg.lbl)}</span></td>
+          <td style="padding:9px 10px;">${esc(m.persona||'—')}</td>
+          <td style="padding:9px 10px;text-align:right;font-weight:700;">${_giacTot(m.q)}${dif!==null?` <span style="font-weight:600;color:${dif===0?'var(--green)':(dif<0?'var(--red)':'var(--green)')};">${dif===0?'in pari':(dif>0?'+':'')+dif}</span>`:''}</td>
+          <td style="padding:9px 14px;text-align:right;white-space:nowrap;">
+            ${nEd?`<span style="font-size:var(--fs-xxs);color:var(--amber);margin-right:8px;">corretto ${nEd}×</span>`:''}
+            <button onclick="giacToggleMov('${m.id}')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">dettaglio ${aperto?'▴':'▾'}</button>
+            <button onclick="giacEliminaMovimento('${m.id}')" title="Elimina" style="margin-left:8px;background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">elimina</button>
+          </td>
+        </tr>`;
+        if(aperto){
+          const righe=Object.keys(m.q||{}).filter(v=>m.tipo==='conteggio'||Number(m.q[v]));
+          h+=`<tr style="${i%2?'background:var(--surface2);':''}"><td colspan="5" style="padding:0 14px 12px;">
+            <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:var(--fs-xxs);">
+              ${righe.map(v=>`<span style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 9px;">${esc(v)} <strong>${Number(m.q[v])||0}</strong>${m.atteso?` <span style="color:var(--text-dim);">/ ${Number(m.atteso[v])||0} attesi</span>`:''} <span onclick="giacCorreggi('${m.id}','${js(v)}')" style="color:var(--accent);cursor:pointer;margin-left:4px;">correggi</span></span>`).join('')}
+            </div>
+            ${m.nota?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;">Nota: ${esc(m.nota)}</div>`:''}
+            ${nEd?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.6;">${m.edits.map(e=>`${esc(e.campo)}: da ${e.vecchio} a ${e.nuovo}${e.motivo?' — '+esc(e.motivo):''}`).join('<br>')}</div>`:''}
+          </td></tr>`;
+        }
+      });
+      h+=`</tbody></table>`;
+    }
+    h+=`</div></div>`;
+  }
+  h+=`</div>`;
+
+  el.innerHTML=h;
+}
+
 // §§ PRENOTAZIONI — file unico dal PMS (arrivi + colazioni + pre-stay)
 //
 // Un solo export sostituisce tre upload: Riepilogo Reception, Arrivi Pre-stay e Report
@@ -16561,6 +17103,7 @@ function _qmRidisegnaVista(id){
     else if(id==='reception')receptionLoad();
     else if(id==='resi-biancheria')resiLoad();
     else if(id==='biancheria')biaLoad();
+    else if(id==='giacenza')giacLoad();
     else if(id==='prestay')prestayRender();
     else if(id==='turnazione'){if(weekData)renderDay(activeDay);}
     else if(id==='hkpsheet')hkpNRender('sa');
