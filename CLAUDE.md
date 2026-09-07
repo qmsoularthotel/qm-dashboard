@@ -3012,9 +3012,22 @@ storico — spiegata o no — e il valore contato diventa la nuova base. Senza q
 il calcolo divergerebbe subito dallo scaffale.
 
 **Finché non si è mai contato il numero NON si mostra** (`contato:false`): sarebbe solo
-"restituito meno prelevato", cioè quasi sempre un negativo che sembra un guasto. La card
-dice *"da contare"* e il totale un trattino. *In mano alle cameriere* resta invece valido:
-non dipende dal conteggio dello scaffale.
+"restituito meno prelevato", cioè quasi sempre un negativo che sembra un guasto. La colonna
+«In magazzino» resta a trattini e una riga sotto la tabella spiega perché — i trattini da
+soli sembrerebbero un guasto. *In mano alle cameriere* resta invece valido: non dipende dal
+conteggio dello scaffale.
+
+### Niente card in cima: ripetevano la tabella (07/09/2026)
+
+La vista apriva con tre `.kpi-card` — *In magazzino · In mano alle cameriere · Giacenza
+totale* — che mostravano **esattamente** i tre numeri della riga `Totale` della tabella
+*Giacenza per tipologia* poco più sotto: gli stessi tre valori due volte nella stessa
+schermata. Tolte su richiesta del QM.
+
+L'unica cosa che dicevano e la tabella no — che il magazzino **non è mai stato contato** —
+è ora una riga ambra sotto la tabella, cioè accanto ai trattini che ha il compito di
+spiegare. Se un domani si rimettono delle card in cima, **non ripetere quel totale**: se
+serve un riepilogo a colpo d'occhio, deve dire qualcosa che la tabella non dice già.
 
 ### Il segno del carico è ROVESCIATO rispetto a quello del magazzino
 

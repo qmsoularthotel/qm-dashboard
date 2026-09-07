@@ -16264,32 +16264,13 @@ function giacRender(){
     </div>
   </div>`;
 
-  // ── I tre numeri ──
-  // Finché non si è mai contato, "in magazzino" NON si scrive: sarebbe solo restituito
-  // meno prelevato, cioè un negativo che sembra un guasto. Si dice invece che manca il
-  // conteggio di partenza, che è la cosa da fare. "In carico" resta valido comunque —
-  // non dipende dal conteggio dello scaffale.
-  const cardMag=mag.contato
-    ? `<div class="kpi-value">${totMag}</div><div class="kpi-sub">contato il ${esc(mag.data)}</div>`
-    : `<div class="kpi-value" style="color:var(--amber);font-size:20px;">da contare</div><div class="kpi-sub">registra un conteggio per fissare la partenza</div>`;
-  h+=`<div class="giac-kpi-grid">
-    <div class="kpi-card blue">
-      <div class="kpi-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 7h18v13H3z"/><path d="M3 11h18"/><path d="M8 7V4h8v3"/></svg></div>
-      <div class="kpi-label">In magazzino</div>${cardMag}
-    </div>
-    <div class="kpi-card ${totCar>0?'amber':'green'}">
-      <div class="kpi-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="${totCar>0?'var(--amber)':'var(--green)'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-5 7-5s7 1.5 7 5"/><path d="M17 9h5v5"/></svg></div>
-      <div class="kpi-label">In mano alle cameriere</div>
-      <div class="kpi-value">${totCar}</div>
-      <div class="kpi-sub">${persone.length?persone.length+(persone.length===1?' persona':' persone'):'nessun carico aperto'}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></div>
-      <div class="kpi-label">Giacenza totale</div>
-      <div class="kpi-value">${mag.contato?(totMag+totCar):'—'}</div>
-      <div class="kpi-sub">${mag.contato?'magazzino + pezzi in giro':'serve il conteggio del magazzino'}</div>
-    </div>
-  </div>`;
+  // ── Niente card in cima ──
+  // C'erano tre card (In magazzino · In mano · Giacenza totale): ripetevano esattamente
+  // la riga "Totale" della tabella "Giacenza per tipologia" più sotto, cioè gli stessi
+  // tre numeri due volte nella stessa schermata. Tolte su richiesta del QM (07/09/2026).
+  // L'unica cosa che dicevano e la tabella no — che il magazzino non è mai stato contato —
+  // è ora una riga sotto la tabella, dove i trattini della colonna hanno bisogno di una
+  // spiegazione. Se un domani si rimettono delle card, non ripetere quel totale.
 
   // ── Registra un movimento ──
   const tipoCfg=GIAC_TIPI[_giacTipo];
@@ -16415,6 +16396,9 @@ function giacRender(){
       <td style="padding:9px 10px;text-align:right;">${totCar}</td>
       <td style="padding:9px 14px;text-align:right;">${mag.contato?(totMag+totCar):'—'}</td>
     </tr></tbody></table>`;
+  if(!mag.contato){
+    h+=`<div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--amber);line-height:1.5;">Il magazzino non è mai stato contato: la colonna «In magazzino» resta vuota finché non si registra il primo conteggio. Fino ad allora i pezzi in mano alle cameriere si contano lo stesso.</div>`;
+  }
   if(mag.contato&&usate.some(v=>(Number(mag.q[v])||0)<0)){
     h+=`<div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--red);line-height:1.5;">Una tipologia è sotto zero: dal conteggio del ${esc(mag.data)} ne è uscita più di quanta ce ne fosse. O manca una restituzione, o il conteggio era incompleto — un nuovo conteggio rimette la base a posto.</div>`;
   }
