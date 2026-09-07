@@ -1879,8 +1879,10 @@ sez('Giacenza biancheria: il magazzino si ancora al conteggio, il carico no');
   ok('e il carico non e\' piu\' aperto',    String(car3['Rossi A.'].apertoDa), 'null');
   ok('il magazzino se li riprende',         _giacMagazzino('sa').q.Federa, 88);
 
-  // Le strutture non si mescolano: un prelievo al Boutique non deve toccare il magazzino
-  // del SoulArt (sono due magazzini fisici distinti, come i due sacchi di Raimondo).
+  // Le strutture non si mescolano. Dal 07/09/2026 il magazzino e' uno solo (SoulArt) e
+  // nessuno scrive piu' movimenti col Boutique, ma il filtro per struttura deve reggere
+  // lo stesso: i movimenti gia' salvati con hotel:'bh' non vanno scartati ne' sommati al
+  // SoulArt, e se un domani il Boutique aprisse un suo magazzino il filtro e' gia' quello.
   _giac.movimenti.push(mov({ data: '05/09/2026', tipo: 'prelievo', hotel: 'bh', persona: 'Verdi M.', q: { Federa: 30 } }));
   ok('il Boutique non tocca il SoulArt',    _giacMagazzino('sa').q.Federa, 88);
   ok('e il carico e\' solo suo',            Object.keys(_giacCarico('bh')).join(','), 'Verdi M.');
@@ -1906,7 +1908,12 @@ sez('Giacenza biancheria: il magazzino si ancora al conteggio, il carico no');
   // Le due liste di partenza sono quelle dei fogli camera, non quelle dei resi: giacenza,
   // consumi e giro devono parlare degli stessi pezzi.
   ok('le voci di partenza sono BIA_VOCI',   GIAC_VOCI_DEFAULT.join('|'), BIA_VOCI.join('|'));
-  ok('le strutture sono quelle del giro',   Object.keys(GIAC_HOTELS).join(','), Object.keys(BIA_HOTELS).join(','));
+  // La giacenza ha UNA struttura sola, e non e' piu' un alias di BIA_HOTELS: il magazzino
+  // esiste solo al SoulArt. Il nome pero' deve restare quello del giro, altrimenti la
+  // stessa struttura si chiamerebbe in due modi in due pannelli.
+  ok('la giacenza ha una struttura sola',   Object.keys(GIAC_HOTELS).join(','), 'sa');
+  ok('e si chiama come nel giro',           GIAC_HOTELS.sa, BIA_HOTELS.sa);
+  ok('il Boutique non e\' una struttura',   GIAC_HOTELS.bh === undefined, true);
 
   // Un nome con l'apostrofo passa da due interpretazioni (HTML e poi JS) prima di
   // arrivare nell'onclick: senza neutralizzarlo, D'Angelo romperebbe il pulsante — e

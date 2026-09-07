@@ -60,7 +60,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 587 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 589 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **5 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr) sono
 accendibili e spegnibili da remoto — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
@@ -3029,6 +3029,11 @@ L'unica cosa che dicevano e la tabella no — che il magazzino **non è mai stat
 spiegare. Se un domani si rimettono delle card in cima, **non ripetere quel totale**: se
 serve un riepilogo a colpo d'occhio, deve dire qualcosa che la tabella non dice già.
 
+**Ordine dei pannelli** (07/09/2026): *Giacenza per tipologia* sta **sopra** *Chi ha pezzi
+in carico*. Tolte le card, la prima cosa a schermo era l'elenco delle cameriere con un
+carico aperto — un dettaglio — mentre la domanda con cui si apre la pagina è *quanto c'è*.
+Il carico resta subito sotto, dove risponde alla domanda successiva (*e dov'è il resto*).
+
 ### Il segno del carico è ROVESCIATO rispetto a quello del magazzino
 
 `GIAC_TIPI[t].segno` è il segno del **magazzino** (un prelievo lo svuota, `-1`). Sul carico
@@ -3052,13 +3057,31 @@ Un carico **negativo** (ha riportato più di quanto risulta preso, di solito un 
 registrato) è verde e non rosso, e la riga lo dice a parole: non è un ammanco. Stessa scala
 del rientro in più nello storico della biancheria.
 
+### UNA struttura sola — `GIAC_HOTELS` non è più un alias di `BIA_HOTELS` (07/09/2026)
+
+Il magazzino biancheria esiste **solo al SoulArt**: al Boutique non c'è, quindi la linguetta
+per sceglierlo mostrava una vista che non descriveva niente. Tolta su richiesta del QM,
+insieme al selettore di struttura in `giacRender()` e a `giacSetHotel()`.
+
+`const GIAC_HOTELS={sa:BIA_HOTELS.sa}` — il **nome** continua a venire da `BIA_HOTELS`,
+così la stessa struttura non si chiama in due modi in due pannelli, ma l'elenco no: consumi
+e resi restano su due strutture, la giacenza su una. Non "ripristinare l'alias" credendolo
+una svista.
+
+**I movimenti salvati con `hotel:'bh'` continuano a essere letti**, non scartati: `_giacH` e
+tutti i calcoli filtrano già per struttura, e nessuno ne scrive più. Se un domani il
+Boutique aprisse un suo magazzino, basta rimetterlo in `GIAC_HOTELS` e ricompare tutto —
+per questo i controlli sull'isolamento fra strutture (`hotel:'bh'` che non tocca il SoulArt)
+sono rimasti al loro posto.
+
+Il nome della struttura resta nell'intestazione della vista e **sul foglio stampato**, dove
+serve a chi lo tiene in mano.
+
 ### Le voci sono quelle dei fogli camera, e chi esce dall'elenco non perde i suoi pezzi
 
 `GIAC_VOCI_DEFAULT = BIA_VOCI` — le stesse sette: giacenza, consumi e giro devono parlare
 degli stessi pezzi, altrimenti i tre pannelli non si confrontano. **Non** è
-`RESI_TIPOLOGIE_DEFAULT`, che è più lungo di proposito. `GIAC_HOTELS = BIA_HOTELS` per la
-stessa ragione (Art Resort resta fuori: fa capo al Sig. Maddaloni e alla sua ditta esterna)
-— alias e non copia, perché due elenchi identici scritti due volte prima o poi divergono.
+`RESI_TIPOLOGIE_DEFAULT`, che è più lungo di proposito.
 
 L'elenco è modificabile dalla vista (il magazzino può contenere coprimaterassi o tappetini
 che sul foglio camera non compaiono) e finisce in `tipologie`. I movimenti sono indicizzati
@@ -3119,7 +3142,7 @@ dentro il movimento al primo giro (è il difetto che `resiDelRow` si era dimenti
 | `giacPrintGiacenza()` / `_giacStampa(h)` | Il foglio A4 per la governante — vedi sopra |
 | `_giacJs(s)` | Nome dentro un `onclick`: neutralizza apice e barra rovescia **prima** dell'escape HTML — con dei `D'` in organico, senza questo il pulsante si rompe |
 
-Coperto da **29 controlli** in `test/controlli.js` ("Giacenza biancheria: il magazzino si
+Coperto da **31 controlli** in `test/controlli.js` ("Giacenza biancheria: il magazzino si
 ancora al conteggio, il carico no"), verificati con quattro sabotaggi (il conteggio non fa
 più da ancora; segno del carico rovesciato; voci fuori elenco buttate via; strutture
 mescolate): 10, 8, 1 e 3 falliscono.
@@ -4042,7 +4065,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio. 587 controlli.
+scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio. 589 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire

@@ -15949,10 +15949,14 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 // Un movimento porta PIÙ voci insieme: una cameriera non prende una federa alla volta,
 // carica il carrello. Stessa forma dei consumi giornalieri della biancheria.
 const GIAC_KEY='qm_giacenza';
-// Stesse due strutture del ciclo pulito/sporco e per la stessa ragione (Art Resort fa capo
-// al Sig. Maddaloni e alla sua ditta esterna). È un alias e non una copia: due elenchi
-// identici scritti due volte prima o poi divergono in silenzio.
-const GIAC_HOTELS=BIA_HOTELS;
+// UNA SOLA STRUTTURA, e non è una dimenticanza: il magazzino biancheria esiste solo al
+// SoulArt (07/09/2026, deciso dal QM). Il Boutique non ne ha uno, quindi una linguetta per
+// sceglierlo avrebbe offerto una vista che non descrive niente. Per questo NON è più un
+// alias di BIA_HOTELS: consumi e resi restano su due strutture, la giacenza no.
+// Se un domani il Boutique aprisse un suo magazzino basta aggiungerlo qui: le funzioni
+// filtrano già per struttura (`_giacH`) e i movimenti salvati con hotel:'bh' continuano a
+// essere letti — non vengono scartati, semplicemente oggi nessuno li scrive.
+const GIAC_HOTELS={sa:BIA_HOTELS.sa};
 // Le voci di partenza sono le SETTE dei fogli camera (BIA_VOCI): giacenza, consumi e giro
 // devono parlare degli stessi pezzi, altrimenti i tre pannelli non si confrontano. NON è
 // l'elenco dei resi (RESI_TIPOLOGIE_DEFAULT), che è più lungo di proposito.
@@ -16093,7 +16097,6 @@ async function _giacSave(){
   return _giac;
 }
 
-function giacSetHotel(h){if(!GIAC_HOTELS[h])return;_giacHotel=h;giacRender();}
 function giacSetTipo(t){if(!GIAC_TIPI[t])return;_giacTipo=t;giacRender();}
 function giacToggleStorico(){_giacStorico=!_giacStorico;giacRender();if(_giacStorico)_qmPortaInVista('giac-storico',12);}
 // Aprire una riga NON deve spostare l'occhio: la si sta guardando, e un salto la
@@ -16257,12 +16260,10 @@ function giacRender(){
   const ggAperto=p=>{const d=_biaParse(car[p].apertoDa);return d?Math.round((oggi-d)/86400000):null;};
   let h='';
 
-  // ── Struttura ──
-  h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-    <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-      ${Object.keys(GIAC_HOTELS).map(k=>`<button onclick="giacSetHotel('${k}')" style="border:none;padding:7px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;background:${k===_giacHotel?'var(--accent)':'var(--surface)'};color:${k===_giacHotel?'#fff':'var(--text-dim)'};">${esc(GIAC_HOTELS[k])}</button>`).join('')}
-    </div>
-  </div>`;
+  // ── Nessun selettore di struttura ──
+  // Il magazzino è uno solo (SoulArt): una linguetta sola da cliccare non è una scelta,
+  // è un pulsante che non fa niente. Il nome della struttura è nell'intestazione della
+  // vista e sul foglio stampato, dove serve a chi lo tiene in mano.
 
   // ── Niente card in cima ──
   // C'erano tre card (In magazzino · In mano · Giacenza totale): ripetevano esattamente
@@ -16319,6 +16320,43 @@ function giacRender(){
     </div>
   </div>`;
 
+  // ── Giacenza per tipologia ──
+  h+=`<div class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><span class="panel-title">Giacenza per tipologia</span>
+      <button onclick="giacPrintGiacenza()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);color:var(--accent);padding:6px 13px;border-radius:8px;font-weight:600;font-size:var(--fs-xxs);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">&#128424;&#65039; Foglio per la governante</button>
+    </div>
+    <div class="panel-body" style="padding:0;">
+      <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+        <thead><tr style="background:var(--surface2);">
+          <th style="text-align:left;padding:9px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Tipologia</th>
+          <th style="text-align:right;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">In magazzino</th>
+          <th style="text-align:right;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">In mano</th>
+          <th style="text-align:right;padding:9px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Totale</th>
+        </tr></thead><tbody>`;
+  usate.forEach((v,i)=>{
+    const m=Number(mag.q[v])||0,c=Number(carTot[v])||0;
+    const fuoriElenco=!voci.includes(v);
+    h+=`<tr style="border-top:1px solid var(--border);${i%2?'background:var(--surface2);':''}">
+      <td style="padding:9px 14px;">${esc(v)}${fuoriElenco?' <span style="font-size:var(--fs-xxs);color:var(--amber);">fuori elenco</span>':''}</td>
+      <td style="padding:9px 10px;text-align:right;color:${mag.contato&&m<0?'var(--red)':'var(--text)'};">${mag.contato?m:'—'}</td>
+      <td style="padding:9px 10px;text-align:right;color:${c?'var(--text)':'var(--text-dim)'};">${c}</td>
+      <td style="padding:9px 14px;text-align:right;font-weight:700;">${mag.contato?(m+c):'—'}</td>
+    </tr>`;
+  });
+  h+=`<tr style="border-top:2px solid var(--border);font-weight:700;">
+      <td style="padding:9px 14px;">Totale</td>
+      <td style="padding:9px 10px;text-align:right;">${mag.contato?totMag:'—'}</td>
+      <td style="padding:9px 10px;text-align:right;">${totCar}</td>
+      <td style="padding:9px 14px;text-align:right;">${mag.contato?(totMag+totCar):'—'}</td>
+    </tr></tbody></table>`;
+  if(!mag.contato){
+    h+=`<div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--amber);line-height:1.5;">Il magazzino non è mai stato contato: la colonna «In magazzino» resta vuota finché non si registra il primo conteggio. Fino ad allora i pezzi in mano alle cameriere si contano lo stesso.</div>`;
+  }
+  if(mag.contato&&usate.some(v=>(Number(mag.q[v])||0)<0)){
+    h+=`<div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--red);line-height:1.5;">Una tipologia è sotto zero: dal conteggio del ${esc(mag.data)} ne è uscita più di quanta ce ne fosse. O manca una restituzione, o il conteggio era incompleto — un nuovo conteggio rimette la base a posto.</div>`;
+  }
+  h+=`</div></div>`;
+
   // ── Chi ha cosa ──
   // È la risposta alla domanda per cui la pagina esiste. `apertoDa` non è la data
   // dell'ultimo prelievo ma quella in cui il carico si è aperto e non si è più chiuso:
@@ -16364,43 +16402,6 @@ function giacRender(){
       }
     });
     h+=`</tbody></table>`;
-  }
-  h+=`</div></div>`;
-
-  // ── Giacenza per tipologia ──
-  h+=`<div class="panel" style="margin-bottom:16px;">
-    <div class="panel-header"><span class="panel-title">Giacenza per tipologia</span>
-      <button onclick="giacPrintGiacenza()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);color:var(--accent);padding:6px 13px;border-radius:8px;font-weight:600;font-size:var(--fs-xxs);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">&#128424;&#65039; Foglio per la governante</button>
-    </div>
-    <div class="panel-body" style="padding:0;">
-      <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
-        <thead><tr style="background:var(--surface2);">
-          <th style="text-align:left;padding:9px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Tipologia</th>
-          <th style="text-align:right;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">In magazzino</th>
-          <th style="text-align:right;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">In mano</th>
-          <th style="text-align:right;padding:9px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Totale</th>
-        </tr></thead><tbody>`;
-  usate.forEach((v,i)=>{
-    const m=Number(mag.q[v])||0,c=Number(carTot[v])||0;
-    const fuoriElenco=!voci.includes(v);
-    h+=`<tr style="border-top:1px solid var(--border);${i%2?'background:var(--surface2);':''}">
-      <td style="padding:9px 14px;">${esc(v)}${fuoriElenco?' <span style="font-size:var(--fs-xxs);color:var(--amber);">fuori elenco</span>':''}</td>
-      <td style="padding:9px 10px;text-align:right;color:${mag.contato&&m<0?'var(--red)':'var(--text)'};">${mag.contato?m:'—'}</td>
-      <td style="padding:9px 10px;text-align:right;color:${c?'var(--text)':'var(--text-dim)'};">${c}</td>
-      <td style="padding:9px 14px;text-align:right;font-weight:700;">${mag.contato?(m+c):'—'}</td>
-    </tr>`;
-  });
-  h+=`<tr style="border-top:2px solid var(--border);font-weight:700;">
-      <td style="padding:9px 14px;">Totale</td>
-      <td style="padding:9px 10px;text-align:right;">${mag.contato?totMag:'—'}</td>
-      <td style="padding:9px 10px;text-align:right;">${totCar}</td>
-      <td style="padding:9px 14px;text-align:right;">${mag.contato?(totMag+totCar):'—'}</td>
-    </tr></tbody></table>`;
-  if(!mag.contato){
-    h+=`<div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--amber);line-height:1.5;">Il magazzino non è mai stato contato: la colonna «In magazzino» resta vuota finché non si registra il primo conteggio. Fino ad allora i pezzi in mano alle cameriere si contano lo stesso.</div>`;
-  }
-  if(mag.contato&&usate.some(v=>(Number(mag.q[v])||0)<0)){
-    h+=`<div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--red);line-height:1.5;">Una tipologia è sotto zero: dal conteggio del ${esc(mag.data)} ne è uscita più di quanta ce ne fosse. O manca una restituzione, o il conteggio era incompleto — un nuovo conteggio rimette la base a posto.</div>`;
   }
   h+=`</div></div>`;
 
