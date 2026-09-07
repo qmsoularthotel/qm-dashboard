@@ -15681,7 +15681,7 @@ function biaRender(){
         <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Doveva portare</th>
         <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Ha portato</th>
         <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Differenza</th>
-        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Sacchi da dargli</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Tot pezzi da dargli</th>
       </tr></thead>
       <tbody>`;
   BIA_VOCI_GIRO.forEach(v=>{
@@ -15716,20 +15716,9 @@ function biaRender(){
     </div>
   </div>`;
 
-  // ── Saldo cumulato ──
-  const saldoTot=_biaTot(saldo);
-  if(giri.length){
-    h+=`<div class="panel" style="margin-bottom:16px;">
-      <div class="panel-header"><span class="panel-title">Pezzi non rientrati — totale da inizio registrazioni</span>
-        <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${saldoTot<0?'var(--red)':'var(--green)'};">${saldoTot===0?'in pari':saldoTot}</span>
-      </div>
-      <div class="panel-body" style="padding:14px;">
-        ${BIA_VOCI.map(v=>{const n=saldo[v];return`<div style="display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_biaColDelta(n)};">${n===0?'in pari':n}</span></div>`;}).join('')}
-        <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Una singola consegna può chiudere in pari per caso. È questo totale che dice se la perdita è occasionale o continua.</div>
-      </div>
-    </div>`;
-  }
-
+  // Le consegne stanno SOPRA il saldo: prima si guarda cosa e' successo consegna per
+  // consegna, poi il totale che ne deriva. Al contrario si legge un numero senza sapere da
+  // dove viene, e il numero e' quello che spinge a contestare qualcosa al fornitore.
   // ── Storico ──
   // Chiuso di default: serve per controllare o ristampare, non nell'uso quotidiano.
   if(_bia.giri.length||_biaConsumi().length){
@@ -15745,7 +15734,7 @@ function biaRender(){
   // Boutique … i tot pezzi del 01/09" — si leggevano come la stessa cosa scritta due volte, e
   // seguire la serie di una struttura sola voleva dire saltare una riga sì e una no.
   if(_bia.giri.length&&_biaStorico){
-    h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Cosa ha portato Raimondo</span>
+    h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Consegne di Raimondo</span>
       <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">le due strutture hanno pezzi e conti separati</span></div>
       <div class="panel-body" style="padding:0;">`;
     Object.keys(BIA_HOTELS).forEach((k,iH)=>{
@@ -15805,6 +15794,20 @@ function biaRender(){
       h+=`</tbody></table>`;
     });
     h+=`</div></div>`;
+  }
+
+  // ── Saldo cumulato ──
+  const saldoTot=_biaTot(saldo);
+  if(giri.length){
+    h+=`<div class="panel" style="margin-bottom:16px;">
+      <div class="panel-header"><span class="panel-title">Pezzi non rientrati — totale da inizio registrazioni</span>
+        <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${saldoTot<0?'var(--red)':'var(--green)'};">${saldoTot===0?'in pari':saldoTot}</span>
+      </div>
+      <div class="panel-body" style="padding:14px;">
+        ${BIA_VOCI.map(v=>{const n=saldo[v];return`<div style="display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_biaColDelta(n)};">${n===0?'in pari':n}</span></div>`;}).join('')}
+        <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Una singola consegna può chiudere in pari per caso. È questo totale che dice se la perdita è occasionale o continua.</div>
+      </div>
+    </div>`;
   }
 
   // ── Consumi registrati di recente ──

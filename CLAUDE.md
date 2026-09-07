@@ -2842,7 +2842,10 @@ ora che le funzioni di archivio esistano davvero (`typeof kvGet === 'function'`)
 
 Nei testi mostrati si dice **consegna**, non "giro", e **tot pezzi**, non "sacchi": il giro è
 quello del Culligan, e i sacchi non si contano — si contano i pezzi, ed è quello che finisce
-sulla distinta. I nomi nel codice (`_biaGiri`, `giri`, `biaToggleGiro`) **non** sono stati
+sulla distinta. Il pannello dello storico si chiama **"Consegne di Raimondo"** (era "Cosa ha
+portato Raimondo") e sta **sopra** "Pezzi non rientrati": prima si guarda cosa è successo
+consegna per consegna, poi il totale che ne deriva — al contrario si legge un numero senza
+sapere da dove viene, ed è il numero che spinge a contestare qualcosa al fornitore. I nomi nel codice (`_biaGiri`, `giri`, `biaToggleGiro`) **non** sono stati
 rinominati: cambiarli avrebbe toccato la forma dei dati salvati su KV per una questione di
 parole.
 

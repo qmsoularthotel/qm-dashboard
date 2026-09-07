@@ -1742,7 +1742,8 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   // in cima alla pagina nel selettore a linguette, e cercarli nell'intero HTML trovava
   // quelli invece delle intestazioni dei gruppi.
   var tuttoIl = box.innerHTML.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
-  var testo = tuttoIl.slice(tuttoIl.indexOf('Cosa ha portato Raimondo'));
+  // Il pannello si chiama "Consegne di Raimondo" dal 07/09/2026 (prima "Cosa ha portato").
+  var testo = tuttoIl.slice(tuttoIl.indexOf('Consegne di Raimondo'));
   ok('il pannello dello storico c\'e\'',          testo.length > 0, true);
   var iSA = testo.indexOf('SoulArt Hotel'), iBH = testo.indexOf('Boutique Hotel Piazza Carit');
   ok('compaiono tutte e due le strutture',       iSA >= 0 && iBH >= 0, true);
