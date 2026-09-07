@@ -2528,9 +2528,16 @@ Griglia mosaico a **3 colonne fisse** (`grid-template-columns:repeat(3,minmax(0,
 |-----|----------|-------|-------|-------|--------------|
 | Housekeeping | `miniappHkStatus()` | Piano caricato e aggiornato a oggi | Piano caricato ma non per oggi | Piano non caricato | `ore HH:MM` da `qm_ts_pianoTs` |
 | Breakfast | `miniappBkfStatus()` | Report presente per oggi | Report caricato ma non per oggi | Report non caricato | `ore HH:MM` da `qm_ts_bkfTs` |
-| Distribuzione Culligan | `miniappCmStatus()` (async) | Giro completato (0 camere pending) | Giro in corso | Nessun controllo oggi | `ore HH:MM` — max di `rs.ts` tra le camere di oggi |
+| Distribuzione Culligan | `miniappCmStatus()` (async) | Giro completato, **oppure** giro finito con qualche camera saltata | Giro in corso (ultima attività < 90 min) | Nessun controllo oggi dopo le 12 | `ore HH:MM` — max di `rs.ts` tra le camere di oggi |
 | Inventari Detersivi | `miniappInvStatus()` | 0 prodotti sotto soglia | 1-2 sotto soglia | ≥3 sotto soglia | `SA gg/mm · AR gg/mm` — data ultima consegna ricevuta per magazzino (`tsRicevuto` degli ordini `status:'ricevuto'`) |
 | DVR & Compliance | `miniappDvrStatus()` | Nessun contratto in scadenza | Contratti in scadenza ≤30gg | Contratti già scaduti | conteggio contratti interessati |
+
+**"Giro in corso" non dura più fino a mezzanotte** (07/09/2026): pretendeva che risultassero
+visitate **tutte e 22** le camere, ma qualcuna si salta di proposito — libera, o non c'era
+bisogno di entrarci — e la scheda restava arancione su un giro chiuso alle 14. Ora dopo
+`CM_FINE_GIRO_MS` (un'ora e mezza) di silenzio il giro è considerato finito e la scheda dice
+**quante camere sono state fatte** (`18 camere su 22`) invece di raccontare che è ancora in
+corso. Il giro dura una decina di minuti, quindi una pausa di un'ora e mezza non è una pausa.
 
 **Nota**: i KPI mostrano un **orario/data reale** (da timestamp di aggiornamento dati), non un conteggio — prima Housekeeping/Breakfast/Culligan mostravano "N cambi camera" / "N coperti" / "N camere da visitare", giudicati poco utili; ora mostrano quando il dato è stato aggiornato l'ultima volta, coerente con lo scopo "pannello di controllo".
 

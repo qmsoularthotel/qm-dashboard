@@ -2665,7 +2665,16 @@ async function miniappCmStatus(){
       :_miniappStatusHTML('red','Nessun controllo oggi','');
   const lastTs=Math.max(0,...CM_ROOMS.map(r=>state[r]?.ts||0))||null;
   const pending=CM_ROOMS.filter(r=>!state[r]?.visited).length;
-  if(pending>0)return _miniappStatusHTML('amber','Giro in corso',`ore ${_miniappFmtTime(lastTs)}`);
+  // "Giro in corso" finche' non erano visitate TUTTE e 22: ma qualche camera si salta di
+  // proposito — libera, o non c'era bisogno di entrarci — e la scheda restava arancione fino
+  // a mezzanotte su un giro finito da ore (visto il 07/09/2026 alle 19, giro chiuso alle 14).
+  // Se non si tocca piu' niente da un'ora e mezza il giro e' finito: si dice quante camere
+  // sono state fatte, invece di raccontare che e' ancora in corso.
+  const fermoDa=lastTs?Date.now()-lastTs:0;
+  if(pending>0&&fermoDa<CM_FINE_GIRO_MS)
+    return _miniappStatusHTML('amber','Giro in corso',`${CM_ROOMS.length-pending} su ${CM_ROOMS.length} · ore ${_miniappFmtTime(lastTs)}`);
+  if(pending>0)
+    return _miniappStatusHTML('green','Giro finito',`${CM_ROOMS.length-pending} camere su ${CM_ROOMS.length} · ore ${_miniappFmtTime(lastTs)}`);
   return _miniappStatusHTML('green','Giro completato',`ore ${_miniappFmtTime(lastTs)}`);
 }
 function miniappRenderStatus(){
@@ -10515,6 +10524,9 @@ const CM_LABELS={
   m1:'Body Lotion',m2:'Shoe Sponge',m3:'2× Sapone'
 };
 const CM_ROOMS=Array.from({length:22},(_,i)=>'Art '+(i+1));
+// Dopo quanto silenzio si considera chiuso un giro a cui manca qualche camera. Un'ora e
+// mezza: il giro dura una decina di minuti, quindi una pausa cosi' lunga non e' una pausa.
+const CM_FINE_GIRO_MS=90*60*1000;
 
 async function cmLoad(){
   const d=new Date();

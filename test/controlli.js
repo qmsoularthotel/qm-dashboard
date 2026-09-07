@@ -1294,6 +1294,13 @@ ok('un indirizzo normale non lo attiva',
    qmEstraiAttiva('https://compass-qm.com/breakfast.html'), null);
 ok('e nemmeno una parola simile',
    qmEstraiAttiva('https://compass-qm.com/x.html#attivazione=1'), null);
+// ── Il giro Culligan non resta "in corso" per sempre ───────────────────────
+// Qualche camera si salta di proposito (libera, o non c'era bisogno di entrarci): pretendere
+// tutte e 22 le visite teneva la scheda arancione fino a mezzanotte su un giro chiuso alle 14
+// (visto il 07/09/2026). Dopo un'ora e mezza di silenzio il giro e' finito.
+ok('un\'ora e mezza e\' la soglia', CM_FINE_GIRO_MS, 90 * 60 * 1000);
+ok('il giro dura molto meno della soglia', CM_FINE_GIRO_MS > 30 * 60 * 1000, true);
+
 // ── Gli errori del programma finiscono in un posto che si guarda ───────────
 // La console del browser non la apre nessuno: un guasto puo' restare invisibile finche' non
 // si rompe qualcosa di grosso. Qui si verifica che vengano registrati, contati e ripuliti.
