@@ -3083,6 +3083,7 @@ dentro il movimento al primo giro (è il difetto che `resiDelRow` si era dimenti
 | `giacSalvaMovimento()` | Legge la maschera, avvisa sugli sfori e sulle differenze, registra |
 | `giacAggiornaCarico(pre)` | Aggiorna suggerimenti e precompilazione **senza ridisegnare** |
 | `giacPreparaResa(p)` | Dalla tabella "chi ha in carico": prepara la restituzione già intestata |
+| `giacPrintGiacenza()` / `_giacStampa(h)` | Il foglio A4 per la governante — vedi sopra |
 | `_giacJs(s)` | Nome dentro un `onclick`: neutralizza apice e barra rovescia **prima** dell'escape HTML — con dei `D'` in organico, senza questo il pulsante si rompe |
 
 Coperto da **29 controlli** in `test/controlli.js` ("Giacenza biancheria: il magazzino si
@@ -3090,10 +3091,39 @@ ancora al conteggio, il carico no"), verificati con quattro sabotaggi (il conteg
 più da ancora; segno del carico rovesciato; voci fuori elenco buttate via; strutture
 mescolate): 10, 8, 1 e 3 falliscono.
 
+### Foglio A4 per la governante — `giacPrintGiacenza()` / `_giacStampa(hotel)`
+
+Pulsante **"🖨 Foglio per la governante"** nell'intestazione del pannello *Giacenza per
+tipologia* — cioè accanto alla tabella che stampa. Stampa la **struttura selezionata**:
+sono due magazzini distinti e un foglio con dentro tutte e due non si porta a nessuno
+scaffale.
+
+Contiene, in una pagina: intestazione con struttura e data di stampa; la riga che dice
+**quando è stato contato** il magazzino; la tabella per tipologia (`In magazzino · In mano ·
+Totale · **Contato**`); l'elenco di **chi ha pezzi in carico** con da quanti giorni e cosa
+ha, voce per voce; due righe di firma (*Contato da* / *Data del conteggio*).
+
+**La colonna «Contato» è vuota di proposito.** Il foglio non serve solo a leggere la
+situazione in ufficio: serve a portarla allo scaffale. Senza quella colonna la governante
+scriverebbe comunque i numeri a margine, e a quel punto il foglio è mezzo documento. Con
+essa la riga dice insieme *quanto risulta* e *quanto trovi*. Una nota sotto la tabella
+ricorda che **i pezzi sul carrello non vanno contati lì**: sono già nella colonna «In mano».
+
+**Magazzino mai contato**: la colonna mostra `—` e non `0`, e l'avviso in testa dice che il
+foglio serve proprio a fare il primo conteggio. Una colonna di trattini senza spiegazione
+sembrerebbe un guasto della stampa.
+
+**Nessun fondo pieno**, come la distinta resi e il report biancheria: testo nero e filetti.
+Si stampa ogni volta che si conta, in bianco e nero, e un blocco pieno consuma toner senza
+aggiungere niente. `page-break-inside:avoid` sulle righe.
+
+Verificato generando il PDF con Chromium in tutti e due gli stati — magazzino contato e mai
+contato: **una pagina sola** in entrambi, numeri e date corretti, nessun errore JS.
+
 ### Cosa NON fa, di proposito
 
-Nessuna app per le cameriere (come i resi: scrivono sul cartaceo, il QM trascrive), nessuna
-stampa A4, nessun promemoria in Overview, e **nessun aggancio automatico ai consumi
+Nessuna app per le cameriere (come i resi: scrivono sul cartaceo, il QM trascrive),
+nessun promemoria in Overview, e **nessun aggancio automatico ai consumi
 giornalieri** della Gestione Biancheria. La tentazione è dedurre che *prelevato meno
 restituito = consumato*: è quasi sempre vero, ma sono due registri con due fonti diverse
 (qui il magazzino, là i fogli camera) e legarli vorrebbe dire far dipendere un numero

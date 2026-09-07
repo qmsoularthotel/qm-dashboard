@@ -16388,7 +16388,9 @@ function giacRender(){
 
   // ── Giacenza per tipologia ──
   h+=`<div class="panel" style="margin-bottom:16px;">
-    <div class="panel-header"><span class="panel-title">Giacenza per tipologia</span></div>
+    <div class="panel-header"><span class="panel-title">Giacenza per tipologia</span>
+      <button onclick="giacPrintGiacenza()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);color:var(--accent);padding:6px 13px;border-radius:8px;font-weight:600;font-size:var(--fs-xxs);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">&#128424;&#65039; Foglio per la governante</button>
+    </div>
     <div class="panel-body" style="padding:0;">
       <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
         <thead><tr style="background:var(--surface2);">
@@ -16471,6 +16473,138 @@ function giacRender(){
   h+=`</div>`;
 
   el.innerHTML=h;
+}
+
+// Foglio A4 per la governante. Stesso impianto della distinta resi e del report
+// biancheria: testo nero e filetti, NESSUN fondo pieno — si stampa ogni volta che si
+// conta, in bianco e nero, e un blocco pieno consuma toner senza aggiungere niente.
+//
+// La colonna **Contato** è vuota di proposito: il foglio non serve solo a leggere la
+// situazione in ufficio, serve a portarla allo scaffale. Senza quella colonna la
+// governante scriverebbe comunque i numeri a margine, e a quel punto il foglio è mezzo
+// documento. Con essa la riga dice insieme "quanto risulta" e "quanto trovi".
+function giacPrintGiacenza(){_giacStampa(_giacHotel);}
+function _giacStampa(hotel){
+  const h=GIAC_HOTELS[hotel]?hotel:'sa';
+  const esc=_giacEsc;
+  const mag=_giacMagazzino(h),car=_giacCarico(h),carTot=_giacCaricoTot(h);
+  const voci=_giacVociUsate(h);
+  const oggi=_biaOggi();
+  const persone=Object.keys(car).filter(p=>car[p].tot!==0).sort((a,b)=>car[b].tot-car[a].tot);
+  const totMag=_giacTot(mag.q),totCar=_giacTot(carTot);
+  if(!voci.length){cqAvviso('Nessuna tipologia','Non c\'è niente da stampare: l\'elenco delle tipologie è vuoto.');return;}
+  const num=n=>String(Number(n)||0);
+
+  let righe='';
+  voci.forEach(v=>{
+    const m=Number(mag.q[v])||0,c=Number(carTot[v])||0;
+    const fuori=!_giacVoci().includes(v);
+    righe+=`<tr>
+      <td>${esc(v)}${fuori?' <span class="pic">fuori elenco</span>':''}</td>
+      <td class="r">${mag.contato?num(m):'—'}</td>
+      <td class="r">${num(c)}</td>
+      <td class="r b">${mag.contato?num(m+c):'—'}</td>
+      <td class="box"></td>
+    </tr>`;
+  });
+
+  let inCarico='';
+  if(!persone.length){
+    inCarico=`<div class="vuoto">Nessun carico aperto: tutto quello che è uscito dal magazzino è rientrato.</div>`;
+  }else{
+    inCarico=`<table><thead><tr>
+        <th style="width:34%;">Persona</th><th class="r" style="width:12%;">Pezzi</th>
+        <th style="width:20%;">Aperto da</th><th>Cosa ha</th>
+      </tr></thead><tbody>`;
+    persone.forEach(p=>{
+      const r=car[p];
+      const d=_biaParse(r.apertoDa);
+      const gg=d?Math.round((oggi-d)/86400000):null;
+      const neg=r.tot<0;
+      const quando=neg?'riportati più del preso':(gg===null?'—':esc(r.apertoDa)+' · '+gg+(gg===1?' giorno':' giorni'));
+      const dett=Object.keys(r.q).filter(v=>Number(r.q[v])).map(v=>esc(v)+' '+num(r.q[v])).join(' · ')||'—';
+      inCarico+=`<tr>
+        <td>${esc(p)}</td>
+        <td class="r b">${neg?'+'+num(-r.tot):num(r.tot)}</td>
+        <td>${quando}</td>
+        <td class="pic">${dett}</td>
+      </tr>`;
+    });
+    inCarico+='</tbody></table>';
+  }
+
+  // Mai contato: la colonna del magazzino non ha un numero da mostrare, e va detto qui —
+  // altrimenti una colonna di trattini sembra un guasto della stampa.
+  const avviso=mag.contato
+    ? `<div class="nota">Magazzino contato il <strong>${esc(mag.data)}</strong>. I movimenti registrati dopo quella data sono già compresi nella colonna «In magazzino».</div>`
+    : `<div class="nota"><strong>Il magazzino non è mai stato contato.</strong> La colonna «In magazzino» resta vuota finché non si registra il primo conteggio: usa questo foglio per contare, poi riporta i numeri su Compass (Giacenza Biancheria → Conteggio).</div>`;
+
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Giacenza Biancheria</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;font-size:10.5pt;}
+@page{size:A4;margin:16mm;}
+.hdr{border-bottom:1.5px solid #111;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;}
+.title{font-size:14pt;font-weight:700;letter-spacing:.01em;}
+.sub{font-size:9pt;color:#555;margin-top:2px;}
+.meta-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;}
+.meta-val{font-weight:700;margin-top:2px;}
+.nota{border:1px solid #999;padding:8px 10px;margin-bottom:14px;font-size:8.5pt;line-height:1.6;color:#333;}
+h2{font-size:9pt;text-transform:uppercase;letter-spacing:.05em;color:#333;margin:18px 0 8px;}
+table{width:100%;border-collapse:collapse;margin-bottom:8px;}
+th{text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:1.5px solid #111;padding:6px 6px;}
+th.r,td.r{text-align:right;}
+td{padding:7px 6px;border-bottom:1px solid #ccc;font-size:10pt;}
+td.b{font-weight:700;}
+td.box{border-bottom:1px solid #ccc;border-left:1px solid #ccc;width:22mm;}
+.pic{font-size:8.5pt;color:#555;}
+tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-top:8px;}
+.vuoto{font-size:9.5pt;color:#555;padding:8px 0 4px;}
+.firme{display:flex;gap:34px;margin-top:26px;}
+.f{flex:1;}
+.sign{border-bottom:1px solid #111;margin-top:26px;}
+.sign-c{font-size:8pt;color:#555;margin-top:4px;}
+tr,thead{page-break-inside:avoid;}
+</style></head><body>
+  <div class="hdr">
+    <div><div class="title">Giacenza Biancheria</div><div class="sub">Magazzino e pezzi in mano alle cameriere</div></div>
+    <div style="text-align:right;">
+      <div class="meta-lbl">Struttura</div><div class="meta-val">${esc(GIAC_HOTELS[h])}</div>
+      <div class="meta-lbl" style="margin-top:6px;">Stampato il</div><div class="meta-val">${esc(_biaFmt(oggi))}</div>
+    </div>
+  </div>
+  ${avviso}
+  <h2>Giacenza per tipologia</h2>
+  <table>
+    <thead><tr>
+      <th>Tipologia</th>
+      <th class="r" style="width:16%;">In magazzino</th>
+      <th class="r" style="width:16%;">In mano</th>
+      <th class="r" style="width:12%;">Totale</th>
+      <th style="width:22mm;">Contato</th>
+    </tr></thead>
+    <tbody>${righe}</tbody>
+    <tfoot><tr>
+      <td>Totale</td>
+      <td class="r">${mag.contato?num(totMag):'—'}</td>
+      <td class="r">${num(totCar)}</td>
+      <td class="r">${mag.contato?num(totMag+totCar):'—'}</td>
+      <td class="box"></td>
+    </tr></tfoot>
+  </table>
+  <div class="pic">La colonna «Contato» è da riempire a mano allo scaffale. I pezzi che le cameriere hanno sul carrello NON vanno contati qui: sono già nella colonna «In mano».</div>
+  <h2>Pezzi in mano alle cameriere</h2>
+  ${inCarico}
+  <div class="firme">
+    <div class="f"><div class="sign"></div><div class="sign-c">Contato da</div></div>
+    <div class="f"><div class="sign"></div><div class="sign-c">Data del conteggio</div></div>
+  </div>
+</body></html>`;
+
+  const w=window.open('','_blank');
+  if(!w){cqAvviso('Stampa bloccata','Il browser ha impedito l\'apertura della finestra di stampa: consenti le finestre pop-up per questo sito e riprova.');return;}
+  w.document.write(html);w.document.close();
+  setTimeout(()=>{try{w.print();}catch(e){}},400);
 }
 
 // §§ PRENOTAZIONI — file unico dal PMS (arrivi + colazioni + pre-stay)
