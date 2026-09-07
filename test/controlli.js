@@ -1294,6 +1294,15 @@ ok('un indirizzo normale non lo attiva',
    qmEstraiAttiva('https://compass-qm.com/breakfast.html'), null);
 ok('e nemmeno una parola simile',
    qmEstraiAttiva('https://compass-qm.com/x.html#attivazione=1'), null);
+// ── Le funzioni chiamate devono ESISTERE ───────────────────────────────────
+// kvGet era chiamata in tre punti (distinte biancheria, archivio colazioni) e non era mai
+// stata definita: ogni chiamata lanciava un ReferenceError che il try/catch attorno
+// inghiottiva, quindi quelle letture dal cloud non avvenivano e nessuno lo sapeva. Il
+// sintomo e' arrivato dopo mesi: una distinta stampata in hotel non arrivava a casa.
+ok('kvGet esiste',        typeof kvGet, 'function');
+ok('e anche kvSet',       typeof kvSet, 'function');
+ok('e _qmLeggiArchivio',  typeof _qmLeggiArchivio, 'function');
+
 // ── Le distinte segnate altrove non si cancellano a vicenda ────────────────
 // _biaDistSegna scriveva l'elenco che questa postazione si porta dietro: una distinta
 // stampata dal Mac dell'hotel spariva appena da casa se ne stampava un'altra, e il

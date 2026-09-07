@@ -2815,6 +2815,29 @@ devono restare leggibili anche in tema scuro, dove `--green` è molto più acces
 Vale per il render **e** per l'aggiornamento mentre si digita (`biaAggiornaDelta`), che
 tocca colore del numero, sfondo della riga e stile dell'avviso insieme.
 
+### `kvGet` era chiamata ma non esisteva (07/09/2026)
+
+**Il difetto più insidioso trovato finora.** `kvGet(key)` era usata in tre punti — le distinte
+biancheria (`_biaDistCarica`, `_biaDistSegna`) e l'archivio colazioni
+(`bkfSaveMonthlyHistory`) — ma **non era mai stata definita**. Ogni chiamata lanciava un
+`ReferenceError` che il `try/catch` attorno inghiottiva, quindi:
+
+- le distinte segnate su una postazione **non arrivavano mai** sulle altre — il sintomo che ha
+  fatto scoprire tutto: una distinta stampata dal Mac dell'hotel lasciava il promemoria acceso
+  a casa;
+- `bkfSaveMonthlyHistory` ricadeva ogni volta sul ramo `catch`, cioè leggeva l'archivio
+  colazioni **da localStorage invece che da KV**, esattamente il contrario di quanto dice il
+  suo commento (*"Sempre KV-first: evita di sovrascrivere history da altri dispositivi"*).
+
+Nessun errore a schermo, nessuna traccia: il `catch` che doveva proteggere da un problema di
+rete nascondeva un errore di programmazione. È la ragione per cui dal 06/09 gli errori non
+gestiti finiscono nello Stato del sistema — ma questo era *gestito*, e quindi invisibile
+anche a quello.
+
+**Regola che ne esce**: un `try/catch` attorno a una chiamata di rete deve avvolgere **solo**
+la chiamata, non anche il nome della funzione. E un controllo in `test/controlli.js` verifica
+ora che le funzioni di archivio esistano davvero (`typeof kvGet === 'function'`).
+
 ### Parole della vista Biancheria (07/09/2026)
 
 Nei testi mostrati si dice **consegna**, non "giro", e **tot pezzi**, non "sacchi": il giro è

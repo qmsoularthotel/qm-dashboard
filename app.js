@@ -4552,6 +4552,22 @@ function _kvTestoAvviso(n){
   return (n===1?'Un dato non è arrivato sul cloud':n+' dati non sono arrivati sul cloud')
     +': '+(n===1?'resta':'restano')+' solo su questo computer, le altre postazioni non '+(n===1?'lo':'li')+' vedono.';
 }
+// LEGGE una chiave dall'archivio. Era chiamata in tre punti — le distinte biancheria e
+// l'archivio colazioni — ma NON ESISTEVA: ogni chiamata lanciava un ReferenceError che il
+// try/catch attorno inghiottiva in silenzio, quindi quelle letture dal cloud non sono mai
+// avvenute. Il sintomo visibile (07/09/2026): una distinta stampata dal Mac dell'hotel non
+// arrivava a casa, e il promemoria restava acceso per sempre.
+//
+// Ritorna il valore come stringa, o null se la chiave non c'e' o la rete non risponde: chi
+// chiama distingue "non c'e'" da "c'e' ed e' vuoto" guardando il null.
+async function kvGet(key){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+    if(!r.ok)return null;
+    const j=await r.json();
+    return (j&&j.value!==undefined&&j.value!==null)?j.value:null;
+  }catch(e){return null;}
+}
 async function kvSet(key,value,retries=3){
   const v=typeof value==='string'?value:JSON.stringify(value);
   if(_kvUltimo[key]===v)return true;   // già scritto identico: non si consuma una scrittura
