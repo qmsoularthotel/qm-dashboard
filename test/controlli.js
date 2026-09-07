@@ -1683,7 +1683,10 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   // di SoulArt. Si contano le RIGHE (ognuna porta "sacchi dati a lui quel giorno"), non le
   // date: le due strutture hanno giri negli stessi giorni, quindi una data non distingue
   // niente — ed e' esattamente il motivo per cui mescolarle era illeggibile.
-  var righeIn = function (t) { return (t.match(/sacchi dati a lui quel giorno/g) || []).length; };
+  // Ogni riga della tabella porta il pulsante di ristampa: e' il segnalibro piu' stabile per
+  // contarle. Prima si contava la frase "sacchi dati a lui quel giorno", che dal 07/09/2026
+  // sta nel dettaglio che si apre e non piu' in ogni riga.
+  var righeIn = function (t) { return (t.match(/🖨/g) || []).length; };
   ok('prima del Boutique ci sono i 3 giri di SoulArt', righeIn(testo.slice(iSA, iBH)), 3);
   ok('e dopo i 2 del Boutique',                        righeIn(testo.slice(iBH)), 2);
   ok('in tutto sono cinque',                           righeIn(testo), 5);

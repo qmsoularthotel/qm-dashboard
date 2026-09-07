@@ -15454,6 +15454,8 @@ function biaAggiornaDelta(){
   }
 }
 
+const _biaTh='text-align:center;padding:7px 8px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;white-space:nowrap;';
+const _biaBtnIco='background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:var(--fs-xxs);color:var(--text-muted);cursor:pointer;font-family:inherit;margin-left:4px;';
 function biaRender(){
   const el=document.getElementById('bia-content');if(!el)return;
   const oggi=_biaOggi();
@@ -15704,31 +15706,43 @@ function biaRender(){
         <button onclick="biaToggleVoci()" style="background:none;border:none;padding:0;margin-top:6px;font-size:var(--fs-xxs);color:var(--accent);font-weight:700;cursor:pointer;">${_biaVociAperte?'Nascondi il dettaglio per tipologia ▴':'Cosa porta, per tipologia ▾'}</button>
         ${_biaVociAperte?_biaTabellaVoci(_biaTotPerVoce(k),true):''}`:''}
       </div>`;
+      // I giri erano otto righe di prosa con cinque numeri dentro ciascuna: un muro di
+      // testo. Ora sono una TABELLA — stessi numeri, incolonnati — e le azioni non gridano:
+      // il dettaglio si apre dalla freccia, la distinta e' un'icona, e "Elimina" sta dentro
+      // il dettaglio, non fra i pulsanti che si premono tutti i giorni.
+      h+=`<table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="${_biaTh}text-align:left;padding-left:14px;">Giro</th>
+          <th style="${_biaTh}">Ha portato</th>
+          <th style="${_biaTh}">Doveva</th>
+          <th style="${_biaTh}">Differenza</th>
+          <th style="${_biaTh}">Usciti quel giorno</th>
+          <th style="${_biaTh}padding-right:14px;"></th>
+        </tr></thead><tbody>`;
       righe.forEach(g=>{
         const rg=_biaRigaGiro(g);
         const aperto=_biaGiroAperto.has(g.id);
-        // Pulsanti FUORI dal flex che va a capo: dentro finivano su una riga tutta loro,
-        // staccati dalla riga che comandano.
-        h+=`<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
-              <span style="font-weight:700;">${esc(rg.data)}</span>
-              <span>ha portato <strong>${rg.portato}</strong></span>
-              ${rg.dovuto===null
-                ?`<span style="color:var(--text-dim);">primo giro: niente con cui confrontarlo</span>`
-                :`<span style="color:var(--text-dim);">su ${rg.dovuto} attesi — i sacchi del ${esc(rg.dataPrec)}</span>
-                  <span style="font-weight:700;color:${_biaColDelta(rg.delta)};">${_biaTxtDelta(rg.delta)}</span>`}
-            </div>
-            <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">sacchi dati a lui quel giorno: ${rg.uscito} — tornano al giro dopo, non contano in questa riga</div>
-            ${aperto?_biaTabellaVoci(_biaDettaglioGiro(g),rg.dovuto!==null):''}
-          </div>
-          <div style="flex-shrink:0;display:flex;gap:6px;">
-            <button onclick="biaToggleGiro('${g.id}')" style="background:${aperto?'var(--accent)':'none'};border:1px solid ${aperto?'var(--accent)':'var(--border)'};border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:${aperto?'#fff':'var(--accent)'};cursor:pointer;white-space:nowrap;">Cosa ha portato ${aperto?'▴':'▾'}</button>
-            <button onclick="biaPrintDistinta('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Distinta</button>
-            <button onclick="biaEliminaGiro('${g.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
-          </div>
-        </div>`;
+        const td='padding:9px 8px;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);text-align:center;font-variant-numeric:tabular-nums;';
+        h+=`<tr style="${_biaBgDelta(rg.dovuto===null?0:rg.delta)}">
+          <td style="${td}text-align:left;padding-left:14px;font-weight:700;white-space:nowrap;">${esc(rg.data)}</td>
+          <td style="${td}font-weight:700;">${rg.portato}</td>
+          <td style="${td}color:var(--text-muted);">${rg.dovuto===null?'—':rg.dovuto+`<div style="font-size:10px;color:var(--text-dim);font-weight:400;">sacchi del ${esc(rg.dataPrec)}</div>`}</td>
+          <td style="${td}font-weight:700;color:${rg.dovuto===null?'var(--text-dim)':_biaColDelta(rg.delta)};">${rg.dovuto===null?'primo giro':_biaTxtDelta(rg.delta)}</td>
+          <td style="${td}color:var(--text-dim);">${rg.uscito}</td>
+          <td style="${td}padding-right:14px;white-space:nowrap;text-align:right;">
+            <button onclick="biaToggleGiro('${g.id}')" title="Cosa ha portato, voce per voce" style="${_biaBtnIco}${aperto?'background:var(--accent);color:#fff;border-color:var(--accent);':''}">${aperto?'▴':'▾'}</button>
+            <button onclick="biaPrintDistinta('${g.id}')" title="Ristampa la distinta" style="${_biaBtnIco}">🖨</button>
+          </td></tr>`;
+        if(aperto){
+          h+=`<tr><td colspan="6" style="padding:0 14px 12px;background:var(--surface2,var(--surface));">
+            ${_biaTabellaVoci(_biaDettaglioGiro(g),rg.dovuto!==null)}
+            <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);">
+              I ${rg.uscito} sacchi dati a Raimondo il ${esc(rg.data)} tornano al giro dopo: non contano in questa riga.
+              <button onclick="biaEliminaGiro('${g.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;margin-left:8px;">elimina questo giro</button>
+            </div></td></tr>`;
+        }
       });
+      h+=`</tbody></table>`;
     });
     h+=`</div></div>`;
   }

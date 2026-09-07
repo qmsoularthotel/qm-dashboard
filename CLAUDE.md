@@ -2815,6 +2815,25 @@ devono restare leggibili anche in tema scuro, dove `--green` è molto più acces
 Vale per il render **e** per l'aggiornamento mentre si digita (`biaAggiornaDelta`), che
 tocca colore del numero, sfondo della riga e stile dell'avviso insieme.
 
+### Lo storico è una TABELLA, non un elenco di frasi (07/09/2026)
+
+Ogni giro era una riga di prosa con dentro cinque numeri — *"05/09/2026 ha portato 209 su 207
+attesi — i sacchi del 03/09/2026 +2"* più una seconda riga grigia e tre pulsanti: otto giri
+così sono un muro di testo, e i numeri non si confrontano fra loro perché non sono incolonnati.
+
+Ora è una tabella: `Giro · Ha portato · Doveva · Differenza · Usciti quel giorno`. Stessi dati,
+stessa logica, ma si leggono in colonna. Le azioni non gridano più: il dettaglio per tipologia
+si apre da una freccia, la ristampa è un'icona, e **"elimina" sta dentro il dettaglio aperto**,
+non fra i pulsanti che si premono tutti i giorni — un'azione irreversibile non va messa a un
+clic di distanza fra due che si usano di continuo.
+
+La frase *"i sacchi dati a lui quel giorno tornano al giro dopo"* è ora nel dettaglio: era
+ripetuta identica su ogni riga e occupava metà pannello per dire una cosa che si impara una
+volta sola.
+
+**Attenzione ai controlli**: contavano le righe cercando *"sacchi dati a lui quel giorno"*, che
+non compare più in ogni riga. Ora contano l'icona di ristampa (una per riga).
+
 ### Non solo QUANTO porta, ma COSA (03/09/2026)
 
 Un totale non è azionabile: `−66` non dice se mancano le federe o i teli doccia, che è la
