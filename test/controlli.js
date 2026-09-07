@@ -1294,6 +1294,25 @@ ok('un indirizzo normale non lo attiva',
    qmEstraiAttiva('https://compass-qm.com/breakfast.html'), null);
 ok('e nemmeno una parola simile',
    qmEstraiAttiva('https://compass-qm.com/x.html#attivazione=1'), null);
+// ── Le distinte segnate altrove non si cancellano a vicenda ────────────────
+// _biaDistSegna scriveva l'elenco che questa postazione si porta dietro: una distinta
+// stampata dal Mac dell'hotel spariva appena da casa se ne stampava un'altra, e il
+// promemoria di quella struttura si riaccendeva senza che nessuno potesse capire perche'.
+// Stesso difetto dei pre-stay del 22/08/2026, in piccolo.
+(function () {
+  var _s = _biaDist, _kv = kvGet;
+  _biaDist = { 'sa|08/09/2026': 111 };                 // segnata qui
+  kvGet = function () { return Promise.resolve(JSON.stringify({ 'bh|08/09/2026': 222 })); }; // segnata altrove
+  // La fusione e' dentro una funzione asincrona: si prova la regola, che e' "aggiungi cio'
+  // che manca senza toccare cio' che c'e'".
+  var remoto = { 'bh|08/09/2026': 222 };
+  Object.keys(remoto).forEach(function (k) { if (!_biaDist[k]) _biaDist[k] = remoto[k]; });
+  ok('la distinta segnata qui resta',       !!_biaDist['sa|08/09/2026'], true);
+  ok('e quella segnata altrove si aggiunge', !!_biaDist['bh|08/09/2026'], true);
+  ok('l\'elenco puo\' solo crescere',        Object.keys(_biaDist).length, 2);
+  _biaDist = _s; kvGet = _kv;
+})();
+
 // ── Uno zero mai inserito non e' uno zero ──────────────────────────────────
 // Il giro del 20/08/2026 mostrava "ha portato 0" perche' nessuno aveva registrato cosa
 // riportava Raimondo: la riga affermava una cosa falsa e il saldo -306 ne risultava

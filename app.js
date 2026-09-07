@@ -15115,8 +15115,18 @@ const BIA_DIST_KEY='qm_bia_distinte';
 let _biaDist={};
 const _biaDistId=(hotel,data)=>hotel+'|'+data;
 const _biaDistStampata=(hotel,data)=>!!_biaDist[_biaDistId(hotel,data)];
-function _biaDistSegna(hotel,data){
+// Si RILEGGE il cloud prima di scrivere, e si fonde. Scrivendo alla cieca la copia che questa
+// postazione si porta dietro, una distinta segnata altrove sarebbe stata cancellata — e il
+// promemoria di quella struttura si sarebbe riacceso da solo il giorno dopo, senza che
+// nessuno potesse capire perche'. E' lo stesso difetto dei pre-stay del 22/08/2026, in
+// piccolo: qui si perdono promemoria invece che dati, ma il meccanismo e' identico.
+// Le date segnate sono solo aggiunte: l'unione non puo' che crescere.
+async function _biaDistSegna(hotel,data){
   _biaDist[_biaDistId(hotel,data)]=Date.now();
+  try{
+    const v=await kvGet(BIA_DIST_KEY);
+    if(v){const remoto=JSON.parse(v)||{};Object.keys(remoto).forEach(k=>{if(!_biaDist[k])_biaDist[k]=remoto[k];});}
+  }catch(e){}
   try{localStorage.setItem(BIA_DIST_KEY,JSON.stringify(_biaDist));}catch(e){}
   kvSet(BIA_DIST_KEY,JSON.stringify(_biaDist)).catch(()=>{});
 }
@@ -15913,7 +15923,7 @@ async function biaSegnaDistintaFatta(ev){
   const data=_biaFmt(_biaDomani(_biaOggi()));
   if(!await cqConferma('Segnare la distinta come stampata?',
       '<strong>'+BIA_HOTELS[_biaHotel]+'</strong> — consegna del '+data+'.<br>Il promemoria sparisce. I conti non cambiano.'))return;
-  try{_biaDistSegna(_biaHotel,data);}catch(e){}
+  try{await _biaDistSegna(_biaHotel,data);}catch(e){}
   try{biaRender();}catch(e){}
 }
 function biaPrintDistinta(giroId){
