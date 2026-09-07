@@ -2815,6 +2815,28 @@ devono restare leggibili anche in tema scuro, dove `--green` è molto più acces
 Vale per il render **e** per l'aggiornamento mentre si digita (`biaAggiornaDelta`), che
 tocca colore del numero, sfondo della riga e stile dell'avviso insieme.
 
+### Uno zero mai inserito NON è uno zero (07/09/2026)
+
+Il giro del 20/08/2026 mostrava *"ha portato 0"* perché quel giorno nessuno aveva registrato
+cosa riportava Raimondo. La riga **affermava una cosa falsa** — che non avesse portato niente —
+e con essa cadeva la credibilità del saldo: *"se il primo dato è sbagliato, perché dovrei
+fidarmi del −306?"*.
+
+`_biaRegistrato(g)` distingue **dato assente** da **zero scritto davvero**: guarda se
+`ricevuto` esiste e ha almeno una voce. Uno zero digitato è un fatto e va contato; un campo mai
+compilato non è un numero.
+
+Un giro non registrato:
+- mostra **"non registrato"** in ambra al posto del totale, e *"fuori conteggio"* al posto della
+  differenza — la riga resta visibile, perché nasconderla sarebbe peggio;
+- **resta fuori** da `_biaRiepilogoPortato`, `_biaSaldo`, `_biaTotPerVoce` e `_biaAndamento`:
+  tutti e quattro, altrimenti i numeri del pannello divergerebbero fra loro;
+- viene **dichiarato** nell'intestazione della struttura (*"1 senza il dato di cosa ha
+  riportato, esclusi dal conto"*), così il saldo dice su cosa è calcolato.
+
+Coperto da 9 controlli, verificati sul caso reale: senza l'esclusione il saldo sarebbe −110
+invece di −10, cioè un ammanco inventato di cento pezzi.
+
 ### Lo storico è una TABELLA, non un elenco di frasi (07/09/2026)
 
 Ogni giro era una riga di prosa con dentro cinque numeri — *"05/09/2026 ha portato 209 su 207

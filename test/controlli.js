@@ -1294,6 +1294,37 @@ ok('un indirizzo normale non lo attiva',
    qmEstraiAttiva('https://compass-qm.com/breakfast.html'), null);
 ok('e nemmeno una parola simile',
    qmEstraiAttiva('https://compass-qm.com/x.html#attivazione=1'), null);
+// ── Uno zero mai inserito non e' uno zero ──────────────────────────────────
+// Il giro del 20/08/2026 mostrava "ha portato 0" perche' nessuno aveva registrato cosa
+// riportava Raimondo: la riga affermava una cosa falsa e il saldo -306 ne risultava
+// inaffidabile. Un dato mancante va detto, non convertito in un numero.
+(function () {
+  var _sal = _bia;
+  _bia = { consumi: [], giri: [
+    { id: 'g1', hotel: 'sa', data: '20/08/2026', consegnato: { Federa: 100 } },              // ricevuto mai inserito
+    { id: 'g2', hotel: 'sa', data: '22/08/2026', consegnato: { Federa: 80 }, ricevuto: { Federa: 90 } },
+    { id: 'g3', hotel: 'sa', data: '25/08/2026', consegnato: { Federa: 60 }, ricevuto: { Federa: 80 } },
+  ] };
+  ok('un giro senza il dato non e\' registrato', _biaRegistrato(_bia.giri[0]), false);
+  ok('uno con il dato lo e\'',                   _biaRegistrato(_bia.giri[1]), true);
+  // Zero scritto davvero e' un'altra cosa e va contato.
+  ok('uno zero scritto davvero conta', _biaRegistrato({ ricevuto: { Federa: 0 } }), true);
+
+  var r0 = _biaRigaGiro(_bia.giri[0]);
+  ok('la riga senza dato non calcola una differenza', r0.delta, null);
+
+  var rip = _biaRiepilogoPortato('sa');
+  ok('il giro senza dato resta fuori dal conto',  rip.nonRegistrati, 1);
+  // Restano i due giri con il dato: 90 su 100 attesi, 80 su 80 → saldo -10, non -110.
+  ok('e non porta con se\' un ammanco inventato', rip.saldo, -10);
+  ok('i giri confrontati sono due',               rip.confrontati, 2);
+
+  var and = _biaAndamento('sa');
+  ok('nemmeno l\'andamento lo conta',             and.length, 2);
+  ok('e il cumulato coincide col saldo',          and[and.length - 1].cumulato, rip.saldo);
+  _bia = _sal;
+})();
+
 // ── Il giro Culligan non resta "in corso" per sempre ───────────────────────
 // Qualche camera si salta di proposito (libera, o non c'era bisogno di entrarci): pretendere
 // tutte e 22 le visite teneva la scheda arancione fino a mezzanotte su un giro chiuso alle 14

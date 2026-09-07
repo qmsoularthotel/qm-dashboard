@@ -15223,16 +15223,31 @@ function _biaGiriTutti(){
 // Riga di storico già calcolata. `att` e `prec` vengono SEMPRE dall'hotel del giro, mai
 // da quello selezionato a schermo: mescolare le due strutture qui produrrebbe ammanchi
 // inventati, ed è l'errore facile ora che l'elenco le mostra insieme.
+// UNO ZERO MAI INSERITO NON E' UNO ZERO. Il giro del 20/08/2026 mostrava "ha portato 0"
+// perche' quel giorno nessuno aveva registrato cosa riportava Raimondo — e la riga affermava
+// una cosa falsa, trascinandosi dietro la credibilita' di tutto il pannello. Un dato mancante
+// va detto, non convertito in un numero.
+//
+// Si distingue guardando se `ricevuto` esiste ed ha almeno una voce: un giro in cui si e'
+// scritto davvero zero ovunque e' un'altra cosa (e' capitato, e va contato).
+function _biaRegistrato(g){
+  const r=g&&g.ricevuto;
+  if(!r||typeof r!=='object')return false;
+  return Object.keys(r).length>0;
+}
 function _biaRigaGiro(g){
   const hotel=_biaH(g);
   const prec=_biaGiroPrec(hotel,g.data);
   const att=prec?(prec.consegnato||null):null;
+  const registrato=_biaRegistrato(g);
   const portato=_biaTot(g.ricevuto);
   const dovuto=att?_biaTot(att):null;
-  return{hotel:hotel,data:g.data,portato:portato,dovuto:dovuto,
+  return{hotel:hotel,data:g.data,portato:portato,dovuto:dovuto,registrato:registrato,
          uscito:_biaTot(g.consegnato),
          dataPrec:prec?prec.data:null,
-         delta:dovuto===null?null:portato-dovuto};
+         // Senza il dato non c'e' differenza da calcolare: mettere `portato-dovuto` qui
+         // vorrebbe dire inventare un ammanco che nessuno ha misurato.
+         delta:(dovuto===null||!registrato)?null:portato-dovuto};
 }
 // Cosa ha portato, VOCE PER VOCE, in un singolo giro. Il totale da solo non basta: 370
 // pezzi mancanti di 66 non dicono se mancano le federe o i teli doccia, che è la sola
@@ -15258,6 +15273,7 @@ function _biaTotPerVoce(hotel){
   _biaGiri(hotel).forEach(g=>{
     const att=_biaAtteso(hotel,g.data);
     if(!att)return;                       // primo giro: niente con cui confrontarlo
+    if(!_biaRegistrato(g))return;         // dato mai inserito: non si conta come zero
     BIA_VOCI_GIRO.forEach(v=>{
       const r=out[idx[v]];
       r.portato+=Number(g.ricevuto&&g.ricevuto[v])||0;
@@ -15274,7 +15290,7 @@ function _biaTotPerVoce(hotel){
 // Restano fuori i giri senza termine di confronto, come in _biaSaldo e _biaRiepilogoPortato.
 function _biaAndamento(hotel){
   let cum=0;
-  return _biaGiri(hotel).map(g=>_biaRigaGiro(g)).filter(r=>r.dovuto!==null).map(r=>{
+  return _biaGiri(hotel).map(g=>_biaRigaGiro(g)).filter(r=>r.dovuto!==null&&r.registrato).map(r=>{
     cum+=r.delta;
     return{data:r.data,dataPrec:r.dataPrec,portato:r.portato,dovuto:r.dovuto,delta:r.delta,
            resa:r.dovuto>0?r.portato/r.dovuto:null,cumulato:cum};
@@ -15285,13 +15301,15 @@ function _biaAndamento(hotel){
 // portato − dovuto coincide sempre col saldo mostrato sopra, invece di divergere di un
 // giro senza che si capisca perché.
 function _biaRiepilogoPortato(hotel){
-  let portato=0,dovuto=0,confrontati=0,senzaConfronto=0;
+  let portato=0,dovuto=0,confrontati=0,senzaConfronto=0,nonRegistrati=0;
   _biaGiri(hotel).forEach(g=>{
     const r=_biaRigaGiro(g);
+    if(!r.registrato){nonRegistrati++;return;}      // dato mai inserito: fuori dai conti
     if(r.dovuto===null){senzaConfronto++;return;}
     portato+=r.portato;dovuto+=r.dovuto;confrontati++;
   });
-  return{portato:portato,dovuto:dovuto,confrontati:confrontati,senzaConfronto:senzaConfronto,saldo:portato-dovuto};
+  return{portato:portato,dovuto:dovuto,confrontati:confrontati,senzaConfronto:senzaConfronto,
+         nonRegistrati:nonRegistrati,saldo:portato-dovuto};
 }
 // Saldo cumulato per voce: quanto manca sommando tutti i giri chiusi. Un singolo giro
 // può tornare in pari per caso; è la somma nel tempo che dice se c'è una perdita
@@ -15301,7 +15319,7 @@ function _biaSaldo(hotel){
   const giri=_biaGiri(hotel);
   giri.forEach(g=>{
     const att=_biaAtteso(hotel,g.data);
-    if(!att||!g.ricevuto)return;
+    if(!att||!_biaRegistrato(g))return;   // dato mai inserito: non e' un ammanco
     BIA_VOCI.forEach(v=>out[v]+=((Number(g.ricevuto[v])||0)-(Number(att[v])||0)));
   });
   return out;
@@ -15702,7 +15720,7 @@ function biaRender(){
               <span style="font-size:var(--fs-sm);font-weight:700;color:${_biaColDelta(r.saldo)};">${_biaTxtDelta(r.saldo)}</span>`
             :`<span style="font-size:var(--fs-xxs);color:var(--text-dim);">nessun giro ancora confrontabile</span>`}
         </div>
-        ${r.confrontati?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">su ${r.confrontati} giri confrontabili${r.senzaConfronto?` (${r.senzaConfronto} senza termine di confronto)`:''}</div>
+        ${r.confrontati?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">su ${r.confrontati} giri confrontabili${r.senzaConfronto?` · ${r.senzaConfronto} senza termine di confronto`:''}${r.nonRegistrati?` · <strong style="color:var(--amber);">${r.nonRegistrati} senza il dato di cosa ha riportato</strong>, esclusi dal conto`:''}</div>
         <button onclick="biaToggleVoci()" style="background:none;border:none;padding:0;margin-top:6px;font-size:var(--fs-xxs);color:var(--accent);font-weight:700;cursor:pointer;">${_biaVociAperte?'Nascondi il dettaglio per tipologia ▴':'Cosa porta, per tipologia ▾'}</button>
         ${_biaVociAperte?_biaTabellaVoci(_biaTotPerVoce(k),true):''}`:''}
       </div>`;
@@ -15723,11 +15741,11 @@ function biaRender(){
         const rg=_biaRigaGiro(g);
         const aperto=_biaGiroAperto.has(g.id);
         const td='padding:9px 8px;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);text-align:center;font-variant-numeric:tabular-nums;';
-        h+=`<tr style="${_biaBgDelta(rg.dovuto===null?0:rg.delta)}">
+        h+=`<tr style="${rg.registrato?_biaBgDelta(rg.delta===null?0:rg.delta):'background:var(--surface2,var(--surface));'}">
           <td style="${td}text-align:left;padding-left:14px;font-weight:700;white-space:nowrap;">${esc(rg.data)}</td>
-          <td style="${td}font-weight:700;">${rg.portato}</td>
+          <td style="${td}font-weight:700;${rg.registrato?'':'color:var(--amber);font-weight:600;font-size:11.5px;'}">${rg.registrato?rg.portato:'non registrato'}</td>
           <td style="${td}color:var(--text-muted);">${rg.dovuto===null?'—':rg.dovuto+`<div style="font-size:10px;color:var(--text-dim);font-weight:400;">sacchi del ${esc(rg.dataPrec)}</div>`}</td>
-          <td style="${td}font-weight:700;color:${rg.dovuto===null?'var(--text-dim)':_biaColDelta(rg.delta)};">${rg.dovuto===null?'primo giro':_biaTxtDelta(rg.delta)}</td>
+          <td style="${td}font-weight:700;color:${rg.delta===null?'var(--text-dim)':_biaColDelta(rg.delta)};">${!rg.registrato?'fuori conteggio':(rg.dovuto===null?'primo giro':_biaTxtDelta(rg.delta))}</td>
           <td style="${td}color:var(--text-dim);">${rg.uscito}</td>
           <td style="${td}padding-right:14px;white-space:nowrap;text-align:right;">
             <button onclick="biaToggleGiro('${g.id}')" title="Cosa ha portato, voce per voce" style="${_biaBtnIco}${aperto?'background:var(--accent);color:#fff;border-color:var(--accent);':''}">${aperto?'▴':'▾'}</button>
