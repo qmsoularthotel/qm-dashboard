@@ -2960,11 +2960,17 @@ Coperto da **28 controlli** ("Biancheria: andamento per la direzione e strutture
 verificati con quattro sabotaggi (storico rimescolato, cumulato azzerato a ogni giro, serie
 presa da tutte le strutture, scorrimento tolto): 3, 2, 5 e 1 falliscono.
 
-**Attenzione al modello, non toccato qui**: `atteso(N) = consegnato(N−1)` assume che
-Raimondo riporti in **un solo giro**. Sui dati reali di SoulArt il saldo cumulato è −308
-pezzi su 6 giri: se la resa fosse in due giri, tutte quelle differenze sarebbero da
-ricalcolare. Ora che il confronto è visibile riga per riga, è verificabile guardando una
-distinta vera.
+**Il modello è CONFERMATO** (07/09/2026, dal QM): *"quello che prende deve riportare"* —
+Raimondo non riporta in due volte. Quindi `atteso(N) = consegnato(N−1)` è la regola giusta, e
+**il saldo negativo è merce che manca davvero**, non uno sfasamento fra un giro e l'altro.
+
+Era rimasto come dubbio aperto dal 03/09: se la resa fosse avvenuta in due passaggi, tutte le
+differenze sarebbero state da ricalcolare. Non è così — non riaprire la questione senza un
+fatto nuovo dal fornitore.
+
+Sui dati reali di SoulArt il cumulato è **−306 pezzi su 7 giri confrontabili**: è un ammanco
+da contestare, e il dettaglio *"Cosa porta, per tipologia"* dice su quali articoli si
+concentra — che è ciò che serve per farlo.
 
 Coperto da **23 controlli** in `test/controlli.js` ("Biancheria: lo storico dice CON COSA
 sta confrontando"), verificati con tre sabotaggi (atteso dall'hotel sbagliato, confronto
