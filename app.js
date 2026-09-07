@@ -15228,12 +15228,21 @@ function _biaGiriTutti(){
 // una cosa falsa, trascinandosi dietro la credibilita' di tutto il pannello. Un dato mancante
 // va detto, non convertito in un numero.
 //
-// Si distingue guardando se `ricevuto` esiste ed ha almeno una voce: un giro in cui si e'
-// scritto davvero zero ovunque e' un'altra cosa (e' capitato, e va contato).
+// Primo tentativo (07/09/2026): si guardava solo se `ricevuto` avesse delle voci. Non
+// bastava — il modulo salva tutte e sette le tipologie, quindi un giro mai compilato arriva
+// con sette zeri dentro ed era indistinguibile da uno zero vero.
+//
+// La regola giusta la da' la realta': **un giro in cui Raimondo non riporta NIENTE non
+// esiste**, perche' quello che prende deve riportarlo. Quindi un totale a zero significa
+// "nessuno ha scritto cosa ha riportato", non "non ha riportato nulla". Se un giorno
+// capitasse davvero, comparirebbe come non registrato e andrebbe annotato a parte: e' un
+// caso cosi' raro che vale la pena trattarlo a mano, invece di lasciare che sette zeri
+// silenziosi inventino un ammanco di centinaia di pezzi.
 function _biaRegistrato(g){
   const r=g&&g.ricevuto;
   if(!r||typeof r!=='object')return false;
-  return Object.keys(r).length>0;
+  if(!Object.keys(r).length)return false;
+  return _biaTot(r)>0;
 }
 function _biaRigaGiro(g){
   const hotel=_biaH(g);

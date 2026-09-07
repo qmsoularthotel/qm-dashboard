@@ -1307,8 +1307,11 @@ ok('e nemmeno una parola simile',
   ] };
   ok('un giro senza il dato non e\' registrato', _biaRegistrato(_bia.giri[0]), false);
   ok('uno con il dato lo e\'',                   _biaRegistrato(_bia.giri[1]), true);
-  // Zero scritto davvero e' un'altra cosa e va contato.
-  ok('uno zero scritto davvero conta', _biaRegistrato({ ricevuto: { Federa: 0 } }), true);
+  // Sette zeri sono il modulo mai compilato, non un giro a vuoto: quello che Raimondo prende
+  // deve riportarlo, quindi un giro in cui non riporta niente non esiste. Trattarli come
+  // dato vero inventava un ammanco di centinaia di pezzi.
+  ok('sette zeri sono un modulo mai compilato', _biaRegistrato({ ricevuto: { Federa: 0, 'Telo doccia': 0 } }), false);
+  ok('basta una voce valorizzata',              _biaRegistrato({ ricevuto: { Federa: 0, 'Telo doccia': 5 } }), true);
 
   var r0 = _biaRigaGiro(_bia.giri[0]);
   ok('la riga senza dato non calcola una differenza', r0.delta, null);
@@ -1518,7 +1521,12 @@ sez('Biancheria: lo storico dice CON COSA sta confrontando');
   });
   ok('SoulArt: portato in tutto',                _biaRiepilogoPortato('sa').portato, 2066);
   ok('su quanto era atteso',                     _biaRiepilogoPortato('sa').dovuto, 2374);
-  ok('il primo giro resta fuori dal confronto',  _biaRiepilogoPortato('sa').senzaConfronto, 1);
+  // Il primo giro dei dati di prova ha ricevuto 0, come quello vero del 20/08/2026: dal
+  // 07/09 e' classificato "non registrato" invece che "senza termine di confronto" — resta
+  // fuori dal conto per il motivo giusto, ed e' il motivo che il pannello dichiara.
+  var rSA = _biaRiepilogoPortato('sa');
+  ok('il primo giro resta fuori dal conto',      rSA.senzaConfronto + rSA.nonRegistrati, 1);
+  ok('e ne dice il motivo: dato mai inserito',   rSA.nonRegistrati, 1);
 
   // ── Un rientro IN PIU' non e' un ammanco: e' VERDE, numero e riga ──
   // Il 25/08 mostrava "+3" in rosso come una perdita; una versione intermedia lo faceva

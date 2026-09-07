@@ -2822,9 +2822,17 @@ cosa riportava Raimondo. La riga **affermava una cosa falsa** — che non avesse
 e con essa cadeva la credibilità del saldo: *"se il primo dato è sbagliato, perché dovrei
 fidarmi del −306?"*.
 
-`_biaRegistrato(g)` distingue **dato assente** da **zero scritto davvero**: guarda se
-`ricevuto` esiste e ha almeno una voce. Uno zero digitato è un fatto e va contato; un campo mai
-compilato non è un numero.
+`_biaRegistrato(g)` guarda se `ricevuto` esiste **e se il totale è maggiore di zero**.
+
+Il primo tentativo controllava solo che ci fossero delle voci, e **non bastava**: il modulo
+salva tutte e sette le tipologie, quindi un giro mai compilato arriva con sette zeri dentro,
+indistinguibile da uno zero vero. La regola giusta la dà la realtà del servizio: **un giro in
+cui Raimondo non riporta niente non esiste**, perché quello che prende deve riportarlo. Un
+totale a zero significa quindi *"nessuno ha scritto cosa ha riportato"*.
+
+Se un giorno capitasse davvero un giro a vuoto, comparirebbe come non registrato e andrebbe
+annotato a parte: è un caso così raro che conviene trattarlo a mano, invece di lasciare che
+sette zeri silenziosi inventino un ammanco di centinaia di pezzi.
 
 Un giro non registrato:
 - mostra **"non registrato"** in ambra al posto del totale, e *"fuori conteggio"* al posto della
