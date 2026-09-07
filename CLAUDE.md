@@ -2158,7 +2158,7 @@ Traccia digitale della **distinta cartacea** che le housekeeper compilano ogni g
 
 **Voce menu**: "Messaggi Pre-stay" vive in **Operativo Quotidiano**, subito dopo Registration Cards — è un'attività quotidiana di reception, non un'impostazione. `breadcrumbs.prestay` è `'Operativo Quotidiano'`.
 
-**Voce menu**: la voce sidebar "Resi Biancheria" vive dentro la sezione **Housekeeping** (insieme a "Operativa HKP" e "Bilanciamento Camere"), non più in una sezione "Biancheria" a sé — eliminata perché conteneva una sola voce. `breadcrumbs['resi-biancheria']` è `'Housekeeping'`.
+**Voce menu**: la voce sidebar **Reso Biancheria** vive dentro la sezione **Housekeeping** (insieme a "Operativa HKP" e "Bilanciamento Camere"), non più in una sezione "Biancheria" a sé — eliminata perché conteneva una sola voce. `breadcrumbs['resi-biancheria']` è `'Housekeeping'`.
 
 ### Modello dati (chiave KV `qm_resi_biancheria`)
 
@@ -2951,6 +2951,26 @@ sullo sporco uscito, rientro in più di nuovo rosso): 4, 8 e 1 falliscono.
 
 ---
 
+### Le etichette del menu sono cambiate, le chiavi NO (07/09/2026)
+
+| Voce di menu | Era | Vista (chiave) | Sezione in `app.js` |
+|---|---|---|---|
+| **Consumo Biancheria** | Gestione Biancheria | `biancheria` | `§§ BIANCHERIA` |
+| **Reso Biancheria** | Resi Biancheria | `resi-biancheria` | `§§ RESI BIANCHERIA` |
+| Giacenza Biancheria | — | `giacenza` | `§§ GIACENZA BIANCHERIA` |
+
+**Si è rinominata solo l'etichetta**: `pageTitles` in `app.js` e il testo della voce in
+`index.html`. Gli id delle viste, i `breadcrumbs`, i nomi delle sezioni `§§`, le chiavi KV
+(`qm_biancheria`, `qm_resi_biancheria`) e i prefissi delle funzioni (`bia*`, `resi*`)
+**restano quelli**. Non sono nomi, sono chiavi: `qm_last_view` in `localStorage` ricorda
+l'ultima vista aperta su ogni postazione, e rinominarla farebbe ripartire tutti da capo;
+`_qmRidisegnaVista` e `setView` le confrontano per stringa.
+
+Chi rinomina di nuovo deve toccare **due punti** e tenerli allineati a mano — non c'è una
+fonte unica: la voce in `index.html` e `pageTitles` in `app.js`.
+
+---
+
 ## Giacenza Biancheria — magazzino e pezzi in mano alle cameriere (view `giacenza`)
 
 `§§ GIACENZA BIANCHERIA` in `app.js`, chiave KV `qm_giacenza`, voce di menu **Housekeeping →
@@ -2960,8 +2980,8 @@ Giacenza Biancheria**.
 
 | Modulo | Vista | A cosa risponde |
 |---|---|---|
-| **Gestione Biancheria** | `biancheria` | il giro del fornitore: pulito che entra, sporco che esce |
-| **Resi Biancheria** | `resi-biancheria` | i pezzi inidonei (macchiati, strappati) resi a Raimondo a parte |
+| **Consumo Biancheria** | `biancheria` | il giro del fornitore: pulito che entra, sporco che esce |
+| **Reso Biancheria** | `resi-biancheria` | i pezzi inidonei (macchiati, strappati) resi a Raimondo a parte |
 | **Giacenza Biancheria** | `giacenza` | quanto c'è **nel magazzino dell'albergo** e **chi ne ha in mano** |
 
 Il problema che risolve: la biancheria si preleva dal magazzino a mani nude, senza che resti
@@ -3124,7 +3144,7 @@ contato: **una pagina sola** in entrambi, numeri e date corretti, nessun errore 
 
 Nessuna app per le cameriere (come i resi: scrivono sul cartaceo, il QM trascrive),
 nessun promemoria in Overview, e **nessun aggancio automatico ai consumi
-giornalieri** della Gestione Biancheria. La tentazione è dedurre che *prelevato meno
+giornalieri** del Consumo Biancheria. La tentazione è dedurre che *prelevato meno
 restituito = consumato*: è quasi sempre vero, ma sono due registri con due fonti diverse
 (qui il magazzino, là i fogli camera) e legarli vorrebbe dire far dipendere un numero
 dichiarato da uno calcolato. Se un domani serve un confronto, va **mostrato** come confronto,
