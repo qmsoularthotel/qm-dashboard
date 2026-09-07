@@ -2815,6 +2815,20 @@ devono restare leggibili anche in tema scuro, dove `--green` è molto più acces
 Vale per il render **e** per l'aggiornamento mentre si digita (`biaAggiornaDelta`), che
 tocca colore del numero, sfondo della riga e stile dell'avviso insieme.
 
+### Parole della vista Biancheria (07/09/2026)
+
+Nei testi mostrati si dice **consegna**, non "giro", e **tot pezzi**, non "sacchi": il giro è
+quello del Culligan, e i sacchi non si contano — si contano i pezzi, ed è quello che finisce
+sulla distinta. I nomi nel codice (`_biaGiri`, `giri`, `biaToggleGiro`) **non** sono stati
+rinominati: cambiarli avrebbe toccato la forma dei dati salvati su KV per una questione di
+parole.
+
+**Il promemoria "stampa la distinta" ora dice per chi e per quando** — struttura e data della
+consegna — e porta il collegamento *"L'ho già stampata"* (`biaSegnaDistintaFatta`). La stampa
+si segna per `hotel|data` (`qm_bia_distinte`): se la distinta è stata stampata da un'altra
+postazione, o su carta, il promemoria resterebbe acceso per sempre, e un avviso che non si
+spegne è un avviso che si impara a ignorare.
+
 ### Uno zero mai inserito NON è uno zero (07/09/2026)
 
 Il giro del 20/08/2026 mostrava *"ha portato 0"* perché quel giorno nessuno aveva registrato
