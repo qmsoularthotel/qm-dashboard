@@ -15080,7 +15080,7 @@ let _bia={consumi:[],giri:[]};
 let _biaHotel='sa';
 // Pannelli richiudibili: la spiegazione del ciclo e lo storico non servono ogni giorno,
 // ma tenerli sempre aperti rendeva la pagina un muro.
-let _biaGuida=false, _biaStorico=false;
+let _biaGuida=false;
 // Quali righe dello storico hanno il dettaglio per tipologia aperto, e se è aperto quello
 // del riepilogo. Stanno FUORI da biaRender, che rigenera tutto l'HTML: dentro, ogni
 // apertura si richiuderebbe da sola al primo ridisegno (stessa lezione di _speseCatOpen).
@@ -15114,11 +15114,6 @@ function biaRenderPromemoria(){
 // Aprendo lo storico la pagina si allungava ma il pannello restava sotto il bordo dello
 // schermo: bisognava scorrere a mano per vedere quello che si era appena chiesto. Ora si
 // porta in vista. Chiudendolo si resta dov'era il pulsante, senza salti.
-function biaToggleStorico(){
-  _biaStorico=!_biaStorico;
-  biaRender();
-  if(_biaStorico)_qmPortaInVista('bia-storico',12);
-}
 // Aprire il dettaglio di una riga (o quello per tipologia) NON deve spostare l'occhio:
 // si sta guardando quella riga, e un salto la porterebbe via proprio mentre la si legge.
 function biaToggleGiro(id){_biaGiroAperto.has(id)?_biaGiroAperto.delete(id):_biaGiroAperto.add(id);_psSenzaSalto(biaRender);}
@@ -15772,22 +15767,19 @@ function biaRender(){
   // consegna, poi il totale che ne deriva. Al contrario si legge un numero senza sapere da
   // dove viene, e il numero e' quello che spinge a contestare qualcosa al fornitore.
   // ── Storico ──
-  // Chiuso di default: serve per controllare o ristampare, non nell'uso quotidiano.
-  if(_bia.giri.length||_biaConsumi().length){
-    h+=`<div id="bia-storico" style="margin-bottom:${_biaStorico?'16px':'0'};display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-      <button onclick="biaToggleStorico()" style="background:none;border:none;padding:0;font-size:var(--fs-xs);color:var(--accent);font-weight:600;cursor:pointer;">Storico e ristampe ${_biaStorico?'▴':'▾'}</button>
-      ${_bia.giri.length?`<button onclick="biaPrintAndamento()" style="background:var(--surface);color:var(--accent);border:1.5px solid var(--border);padding:6px 13px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">Report andamento per la direzione</button>`:''}
-    </div>`;
-  }
+  // Le consegne NON stanno piu' dietro una fisarmonica (07/09/2026): erano la cosa che si
+  // apre ogni volta, e tenerle chiuse per difetto voleva dire due clic in piu' ogni giorno
+  // per arrivare al motivo per cui si e' entrati nella pagina.
   // Lo storico copre ENTRAMBE le strutture, ma RAGGRUPPATE, non mescolate per data.
   // Mescolarle sembrava dare più informazione e invece ne toglieva: la catena di confronto
   // è per struttura (ogni giro si confronta col precedente del PROPRIO hotel), quindi due
   // righe della stessa data — "03/09 SoulArt … i tot pezzi del 01/09" seguita da "03/09
   // Boutique … i tot pezzi del 01/09" — si leggevano come la stessa cosa scritta due volte, e
   // seguire la serie di una struttura sola voleva dire saltare una riga sì e una no.
-  if(_bia.giri.length&&_biaStorico){
+  if(_bia.giri.length){
     h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Consegne di Raimondo</span>
-      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">le due strutture hanno pezzi e conti separati</span></div>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);margin-right:10px;">le due strutture hanno pezzi e conti separati</span>
+      <button onclick="biaPrintAndamento()" style="background:var(--surface);color:var(--accent);border:1px solid var(--border);padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Report per la direzione</button></div>
       <div class="panel-body" style="padding:0;">`;
     Object.keys(BIA_HOTELS).forEach((k,iH)=>{
       const righe=_biaGiri(k).slice().reverse();
@@ -15864,7 +15856,7 @@ function biaRender(){
 
   // ── Consumi registrati di recente ──
   const rec=_biaConsumi().slice().sort((a,b)=>(_biaParse(b.data)||0)-(_biaParse(a.data)||0)).slice(0,14);
-  if(rec.length&&_biaStorico){
+  if(rec.length){
     h+=`<div class="panel" style="margin-top:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti — ${esc(BIA_HOTELS[_biaHotel])}</span></div><div class="panel-body" style="padding:0;">`;
     rec.forEach(c=>{
       h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">

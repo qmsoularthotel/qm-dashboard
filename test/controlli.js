@@ -1702,7 +1702,7 @@ sez('Biancheria: andamento per la direzione e strutture separate');
 // righe della stessa data ("03/09 SoulArt … i sacchi del 01/09" seguita da "03/09 Boutique
 // … i sacchi del 01/09") si leggevano come la stessa cosa scritta due volte.
 (function () {
-  var _prima = _bia, _prevHotel = _biaHotel, _prevSt = _biaStorico;
+  var _prima = _bia, _prevHotel = _biaHotel;
   function mk(a) { var o = _biaVuote(); BIA_VOCI_GIRO.forEach(function (v, i) { o[v] = a[i] || 0; }); return o; }
   _bia = { consumi: [], giri: [
     { id: 'a', hotel: 'sa', data: '22/08/2026', consegnato: mk([80, 30, 110, 90, 60, 28, 12]), ricevuto: mk([0, 0, 0, 0, 0, 0, 0]), ts: 1 },
@@ -1753,7 +1753,9 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   ok('nessuna percentuale sulle barre',          (svg.match(/>\d+%</g) || []).join(','), '>50%<,>100%<');
 
   // ── Lo storico raggruppa invece di mescolare ──
-  _biaStorico = true; _biaGiroAperto = new Set(); _biaVociAperte = false;
+  // Le consegne non stanno piu' dietro una fisarmonica (07/09/2026): il pannello si disegna
+  // sempre, quindi non c'e' piu' niente da aprire prima di controllarlo.
+  _biaGiroAperto = new Set(); _biaVociAperte = false;
   var box = { innerHTML: '' }, vero = document.getElementById;
   document.getElementById = function (id) { return id === 'bia-content' ? box : null; };
   try { biaRender(); } finally { document.getElementById = vero; }
@@ -1777,12 +1779,19 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   ok('prima del Boutique ci sono i 3 giri di SoulArt', righeIn(testo.slice(iSA, iBH)), 3);
   ok('e dopo i 2 del Boutique',                        righeIn(testo.slice(iBH)), 2);
   ok('in tutto sono cinque',                           righeIn(testo), 5);
-  ok('c\'e\' il pulsante del report',            /Report andamento per la direzione/.test(box.innerHTML), true);
-  ok('e l\'ancora per portarlo in vista',        /id="bia-storico"/.test(box.innerHTML), true);
-  ok('aprire lo storico porta in vista',         /_qmPortaInVista\('bia-storico'/.test(String(biaToggleStorico)), true);
+  // Il report sta ora nell'intestazione delle Consegne, dove e' in contesto: prima era sopra
+  // un titolo che non lo riguardava, insieme alla fisarmonica che non c'e' piu'.
+  ok('c\'e\' il pulsante del report',            /Report per la direzione/.test(box.innerHTML), true);
+  ok('ed e\' dentro il pannello delle consegne',
+     box.innerHTML.indexOf('Consegne di Raimondo') < box.innerHTML.indexOf('Report per la direzione'), true);
+  // La fisarmonica dello storico non esiste piu' (07/09/2026), quindi non c'e' piu' niente da
+  // portare in vista aprendola. La regola resta valida per gli altri pannelli che si aprono:
+  // il contenitore che scorre e' `.content`, non la finestra — vedi _qmPortaInVista.
+  ok('portare un pannello in vista usa il contenitore giusto',
+     /_psScroller|\.content/.test(String(_qmPortaInVista)), true);
   ok('aprire una riga NON sposta l\'occhio',     /_psSenzaSalto/.test(String(biaToggleGiro)), true);
 
-  _bia = _prima; _biaHotel = _prevHotel; _biaStorico = _prevSt;
+  _bia = _prima; _biaHotel = _prevHotel;
 })();
 
 // ─────────────────────────────────────────────────────────────────────────────

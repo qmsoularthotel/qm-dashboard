@@ -2904,6 +2904,15 @@ volta sola.
 **Attenzione ai controlli**: contavano le righe cercando *"sacchi dati a lui quel giorno"*, che
 non compare più in ogni riga. Ora contano l'icona di ristampa (una per riga).
 
+**Niente più fisarmonica** (07/09/2026): il pannello *Consegne di Raimondo* e quello dei consumi
+recenti sono **sempre visibili**. Erano chiusi per difetto "perché servono solo per controllare
+o ristampare", ma sono la cosa che si apre ogni volta: tenerli chiusi voleva dire due clic in
+più ogni giorno per arrivare al motivo per cui si è entrati nella pagina. Rimossi
+`_biaStorico` e `biaToggleStorico`.
+
+Il pulsante **"Report per la direzione"** è passato nell'intestazione delle Consegne, dove è in
+contesto: prima stava sopra un titolo che non lo riguardava, accanto alla fisarmonica.
+
 ### Non solo QUANTO porta, ma COSA (03/09/2026)
 
 Un totale non è azionabile: `−66` non dice se mancano le federe o i teli doccia, che è la
