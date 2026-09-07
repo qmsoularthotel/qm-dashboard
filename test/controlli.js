@@ -1294,6 +1294,25 @@ ok('un indirizzo normale non lo attiva',
    qmEstraiAttiva('https://compass-qm.com/breakfast.html'), null);
 ok('e nemmeno una parola simile',
    qmEstraiAttiva('https://compass-qm.com/x.html#attivazione=1'), null);
+// ── Il segnatempo "chi ha aggiornato" non deve costare scritture ───────────
+// Segue le scritture vere (lo chiama kvSet), ma al massimo una ogni mezz'ora: al ritmo di
+// una per salvataggio consumerebbe piu' tetto giornaliero di quanto valga.
+(function () {
+  ok('la finestra e\' mezz\'ora', QM_AGG_OGNI_MS, 30 * 60 * 1000);
+  var _u = _qmAggUltimo, _f = fetch, n = 0;
+  fetch = function () { n++; return Promise.resolve({ ok: true, json: function () { return Promise.resolve({}); } }); };
+  _qmAggUltimo = 0;
+  _qmSegnaAggiornamento('qm_piano');
+  ok('la prima volta si firma',            n, 1);
+  _qmSegnaAggiornamento('qm_piano');
+  ok('subito dopo no',                     n, 1);
+  // Non si firma il proprio segnatempo, o si rincorrerebbe da solo.
+  _qmAggUltimo = 0;
+  _qmSegnaAggiornamento(QM_AGG_KEY);
+  ok('il segnatempo non firma se stesso',  n, 1);
+  fetch = _f; _qmAggUltimo = _u;
+})();
+
 // ── Le funzioni chiamate devono ESISTERE ───────────────────────────────────
 // kvGet era chiamata in tre punti (distinte biancheria, archivio colazioni) e non era mai
 // stata definita: ogni chiamata lanciava un ReferenceError che il try/catch attorno

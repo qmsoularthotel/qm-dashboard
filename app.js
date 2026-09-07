@@ -4300,6 +4300,24 @@ async function qmRenderStatoSistema(){
     }
   }catch(e){}
 
+  // Chi ha aggiornato per ultimo, e da dove. E' la riga che risponde alla domanda "e' stato
+  // toccato qualcosa da quando non guardo?", che con due postazioni e' quella che si fa piu'
+  // spesso — prima si poteva solo indovinare.
+  try{
+    const va=await kvGet(QM_AGG_KEY);
+    if(va){
+      const a=JSON.parse(va);
+      if(a&&a.ts){
+        const d=new Date(a.ts),oggi=new Date();
+        const stessoGiorno=d.toDateString()===oggi.toDateString();
+        const ieri=new Date(oggi);ieri.setDate(oggi.getDate()-1);
+        const quando=(stessoGiorno?'oggi':(d.toDateString()===ieri.toDateString()?'ieri':String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')))
+          +' alle '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+        det('Ultimo aggiornamento','da '+(a.dispositivo||'postazione senza nome')+', '+quando);
+      }
+    }
+  }catch(e){}
+  det('Questo computer',(qmNomeDispositivo()||'senza nome')+' <a href="#" onclick="qmRinominaDispositivo();return false;" style="color:var(--accent);font-weight:700;">rinomina</a>');
   html+=`<div style="margin-top:12px;padding-top:6px;border-top:1px solid var(--border-light,var(--border));font-size:12px;">${dettagli.join('')}</div>`;
   el.innerHTML=html;
 }
@@ -4560,6 +4578,40 @@ function _kvTestoAvviso(n){
 //
 // Ritorna il valore come stringa, o null se la chiave non c'e' o la rete non risponde: chi
 // chiama distingue "non c'e'" da "c'e' ed e' vuoto" guardando il null.
+// ── CHI HA AGGIORNATO, E QUANDO ──────────────────────────────────────────────
+// Compass non sapeva da quale postazione arrivasse un dato: aprendo la dashboard a casa non
+// si distingueva "nessuno ha toccato niente" da "l'hanno aggiornato in hotel un'ora fa".
+// Il nome se lo da' l'utente una volta per computer (Casa, Hotel, Reception...): dedurlo dal
+// browser darebbe stringhe illeggibili e sbagliate.
+const QM_DISPOSITIVO_KEY='qm_dispositivo';
+const QM_AGG_KEY='qm_ultimo_agg';
+// Ogni mezz'ora al massimo: e' un segnatempo, non un registro. Al ritmo di una scrittura per
+// salvataggio consumerebbe piu' del tetto giornaliero di quanto valga.
+const QM_AGG_OGNI_MS=30*60*1000;
+let _qmAggUltimo=0;
+function qmNomeDispositivo(){
+  try{return localStorage.getItem(QM_DISPOSITIVO_KEY)||'';}catch(e){return'';}
+}
+async function qmRinominaDispositivo(){
+  const attuale=qmNomeDispositivo();
+  const n=prompt('Come si chiama questo computer? (es. Casa, Hotel, Reception)',attuale||'');
+  if(n===null)return;
+  try{localStorage.setItem(QM_DISPOSITIVO_KEY,String(n).trim().slice(0,24));}catch(e){}
+  try{qmRenderStatoSistema();}catch(e){}
+}
+// Chiamata da kvSet dopo una scrittura riuscita: cosi' il segnatempo segue i dati veri e non
+// serve ricordarsi di aggiornarlo in ogni punto che salva.
+function _qmSegnaAggiornamento(key){
+  if(key===QM_AGG_KEY)return;                       // non si firma il proprio segnatempo
+  const ora=Date.now();
+  if(ora-_qmAggUltimo<QM_AGG_OGNI_MS)return;
+  _qmAggUltimo=ora;
+  try{
+    const v=JSON.stringify({ts:ora,dispositivo:qmNomeDispositivo()||'postazione senza nome'});
+    fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({key:QM_AGG_KEY,value:v})}).catch(()=>{});
+  }catch(e){}
+}
 async function kvGet(key){
   try{
     const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
@@ -4575,7 +4627,7 @@ async function kvSet(key,value,retries=3){
   for(let i=0;i<retries;i++){
     try{
       const res=await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value})});
-      if(res.ok){_kvRiuscita(key);return true;}
+      if(res.ok){_kvRiuscita(key);try{_qmSegnaAggiornamento(key);}catch(e){}return true;}
       // 401 = porta chiusa e lasciapassare mancante o scaduto: il velo di abilitazione
       // arriva gia' per conto suo, un secondo avviso rosso sarebbe solo rumore.
       if(res.status===401)break;

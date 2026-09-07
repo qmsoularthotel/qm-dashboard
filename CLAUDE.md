@@ -3996,9 +3996,24 @@ si scoprivano solo aprendo Cloudflare o chiedendo a Claude.
 |---|---|---|
 | Worker in linea, versione | `GET /versione` (pubblico, nessuna chiave) | non risponde |
 | Accesso riservato / **APERTO** | campo `portaChiusa` di `/versione` | `QM_AUTH_OBBLIGATORIA` non attiva |
+| Ultimo aggiornamento · da dove | `qm_ultimo_agg` su KV, scritto da `_qmSegnaAggiornamento()` | mai — è informativa |
+| Questo computer · nome | `qm_dispositivo` in `localStorage` | mai |
 | Compass v… · aperto da … | il `?v=` del tag `<script>` e `_QM_APERTO_DA` | mai — è informativa |
 | Errori del programma oggi | `localStorage`, raccolti da `_qmSegnaErrore` | rossa se ce n'è almeno uno |
 | Scritture non riuscite oggi | `localStorage`, contate da `_kvNonRiuscita` | ambra se ce n'è almeno una |
+
+**"Ultimo aggiornamento — da Hotel, oggi alle 14:32"** risponde alla domanda che con due
+postazioni ci si fa più spesso: *è stato toccato qualcosa da quando non guardo?*. Prima si
+poteva solo indovinare.
+
+Il nome della postazione **lo dà l'utente** (`qmRinominaDispositivo()`, collegamento *rinomina*
+nella stessa riga): dedurlo dal browser darebbe stringhe illeggibili e per giunta sbagliate —
+due Mac uguali sarebbero indistinguibili. Vive in `localStorage`, quindi è per computer.
+
+Il segnatempo lo scrive **`kvSet` stessa** dopo una scrittura riuscita, così segue i dati veri
+senza doversene ricordare in ogni punto che salva — ma **al massimo una volta ogni mezz'ora**
+(`QM_AGG_OGNI_MS`): al ritmo di una per salvataggio consumerebbe più tetto giornaliero di
+quanto valga. E non firma se stessa, o si rincorrerebbe.
 
 La riga della versione **non** serve a scoprire se la pagina è vecchia: a quello pensa
 `qmCheckVersione`, che ricarica da sola entro dieci minuti. Serve a sapere se una correzione
