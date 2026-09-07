@@ -15967,10 +15967,21 @@ const GIAC_HOTELS={sa:BIA_HOTELS.sa};
 // il vecchio nome. Per questo _giacVociUsate rimette in fondo alla tabella le voci uscite
 // dall'elenco che hanno ancora pezzi in giro: escono dalla maschera, mai dai totali.
 const GIAC_VOCI_DEFAULT=BIA_VOCI;
+// `segno` è l'effetto sul MAGAZZINO. `persona` è l'etichetta del campo nome, e null vuol
+// dire che quel tipo non riguarda nessuno. `carico` dice se il movimento apre o chiude il
+// carico di una persona: è quello, non il segno, a decidere se _giacCarico lo guarda.
+//
+// AGGIUNTA e RESTITUZIONE fanno la stessa cosa al magazzino (+1) ma NON sono la stessa
+// cosa: la restituzione chiude il carico di chi aveva preso i pezzi, l'aggiunta è roba
+// nuova che non era di nessuno (acquisto, consegna del fornitore, materiale ritrovato).
+// Prima che esistesse, per registrare merce nuova si era costretti a usare una
+// restituzione intestata a qualcuno — e quel qualcuno si ritrovava un carico negativo,
+// cioè un ammanco inventato. È esattamente il motivo per cui questo tipo esiste.
 const GIAC_TIPI={
-  prelievo:    {lbl:'Prelievo',    col:'var(--red)',   segno:-1},
-  restituzione:{lbl:'Restituzione',col:'var(--green)', segno:+1},
-  conteggio:   {lbl:'Conteggio',   col:'var(--accent)',segno: 0}
+  prelievo:    {lbl:'Prelievo',    col:'var(--red)',   segno:-1, persona:'Chi preleva',     carico:true },
+  restituzione:{lbl:'Restituzione',col:'var(--green)', segno:+1, persona:'Chi restituisce', carico:true },
+  aggiunta:    {lbl:'Aggiunta',    col:'var(--blue)',  segno:+1, persona:null,              carico:false},
+  conteggio:   {lbl:'Conteggio',   col:'var(--accent)',segno: 0, persona:null,              carico:false}
 };
 // Oltre questi giorni un carico aperto viene segnalato in ambra: non è un furto, è che
 // nessuno ha registrato la restituzione — e più passa il tempo meno qualcuno se lo ricorda.
@@ -16034,11 +16045,16 @@ function _giacMagazzino(h){
 function _giacCarico(h){
   const out={};
   _giacMov(h).forEach(m=>{
+    // Si guarda `carico`, NON il segno: un'aggiunta ha lo stesso +1 di una restituzione
+    // ma non chiude il carico di nessuno, ed entrarci dentro darebbe a qualcuno pezzi che
+    // non ha mai preso. Il segno decide solo di quanto, non se.
+    const cfg=GIAC_TIPI[m.tipo]||{};
+    if(!cfg.carico)return;
     // Il segno di GIAC_TIPI è quello del MAGAZZINO (un prelievo lo svuota, -1). Sul
     // carico della persona vale l'opposto: quello che esce dallo scaffale finisce nelle
     // sue mani. Va quindi rovesciato — non è un refuso, ed è l'errore che i controlli
     // hanno colto alla prima esecuzione: i carichi risultavano tutti negativi.
-    const sg=-((GIAC_TIPI[m.tipo]||{}).segno||0);
+    const sg=-(cfg.segno||0);
     if(!sg)return;
     const p=String(m.persona||'').trim();if(!p)return;
     const r=out[p]||(out[p]={q:{},tot:0,ultimo:null,apertoDa:null});
@@ -16150,7 +16166,7 @@ async function giacSalvaMovimento(){
   const tot=_giacTot(q);
 
   if(tipo!=='conteggio'){
-    if(!persona){await cqAvviso('Manca il nome','Scrivi chi preleva o chi restituisce: senza, il movimento non dice niente su chi ha i pezzi.');return;}
+    if(GIAC_TIPI[tipo].persona&&!persona){await cqAvviso('Manca il nome','Scrivi chi preleva o chi restituisce: senza, il movimento non dice niente su chi ha i pezzi.');return;}
     if(!tot){await cqAvviso('Nessuna quantità','Indica almeno un pezzo.');return;}
   }
 
@@ -16168,7 +16184,9 @@ async function giacSalvaMovimento(){
     }
   }
 
-  const m={id:_giacUid(),ts:Date.now(),hotel:_giacHotel,data,tipo,persona:tipo==='conteggio'?'':persona,q,nota,edits:[]};
+  // Il nome si salva solo sui tipi che ne hanno uno: un'aggiunta con dentro una persona
+  // sarebbe un carico fantasma il giorno in cui qualcuno cambiasse la regola di _giacCarico.
+  const m={id:_giacUid(),ts:Date.now(),hotel:_giacHotel,data,tipo,persona:GIAC_TIPI[tipo].persona?persona:'',q,nota,edits:[]};
 
   if(tipo==='conteggio'){
     // Come il fondo cassa: si registra anche quanto ci si aspettava di trovare, così la
@@ -16192,7 +16210,7 @@ async function giacSalvaMovimento(){
   await _giacSave();
   // La maschera si svuota solo DOPO il salvataggio riuscito: azzerarla prima farebbe
   // perdere quel che si è digitato se la scrittura non parte.
-  _giacPersona=tipo==='conteggio'?_giacPersona:'';
+  _giacPersona=GIAC_TIPI[tipo].persona?'':_giacPersona;
   giacRender();
 }
 
@@ -16277,7 +16295,8 @@ function giacRender(){
   const tipoCfg=GIAC_TIPI[_giacTipo];
   const spiega={
     prelievo:'Una cameriera porta via dei pezzi dal magazzino: restano a suo carico finché non li riporta.',
-    restituzione:'Riporta in magazzino dei pezzi che aveva preso e non ha usato.',
+    restituzione:'Riporta in magazzino dei pezzi che aveva preso e non ha usato: il suo carico si chiude.',
+    aggiunta:'Pezzi nuovi che entrano in magazzino e non erano di nessuno: un acquisto, una consegna del fornitore, del materiale ritrovato. Non chiude il carico di nessuno — per quello c\'è Restituzione.',
     conteggio:'Conta fisicamente quello che c\'è sullo scaffale. Diventa la nuova base: i movimenti successivi si sommano a questo numero, non a quello calcolato prima.'
   }[_giacTipo];
   h+=`<div class="panel" id="giac-form" style="margin-bottom:16px;">
@@ -16292,8 +16311,8 @@ function giacRender(){
           <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">Data</div>
           <input type="date" id="giac-data" value="${dataIso}" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
         </div>
-        ${_giacTipo!=='conteggio'?`<div style="flex:1;min-width:190px;">
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${_giacTipo==='prelievo'?'Chi preleva':'Chi restituisce'}</div>
+        ${tipoCfg.persona?`<div style="flex:1;min-width:190px;">
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${esc(tipoCfg.persona)}</div>
           <input id="giac-persona" list="giac-persone" value="${esc(_giacPersona)}" onchange="giacSetPersona(this.value)" placeholder="nome della cameriera" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);">
           <datalist id="giac-persone">${_giacPersone().map(p=>`<option value="${esc(p)}"></option>`).join('')}</datalist>
         </div>`:''}

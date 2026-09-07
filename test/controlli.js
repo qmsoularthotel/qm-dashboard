@@ -1879,12 +1879,39 @@ sez('Giacenza biancheria: il magazzino si ancora al conteggio, il carico no');
   ok('e il carico non e\' piu\' aperto',    String(car3['Rossi A.'].apertoDa), 'null');
   ok('il magazzino se li riprende',         _giacMagazzino('sa').q.Federa, 88);
 
+  // AGGIUNTA — pezzi nuovi che entrano in magazzino e non erano di nessuno (un acquisto,
+  // una consegna del fornitore). Fa +1 sul magazzino come una restituzione, ma NON deve
+  // chiudere il carico di nessuno: prima che esistesse, per registrare merce nuova si era
+  // costretti a intestare una restituzione a qualcuno, e quel qualcuno si ritrovava un
+  // carico negativo — cioe' un ammanco inventato.
+  var _carPrima = _giacTot(_giacCaricoTot('sa'));
+  _giac.movimenti.push(mov({ data: '06/09/2026', tipo: 'aggiunta', q: { Federa: 20, Scendibagno: 5 } }));
+  ok('l\'aggiunta entra in magazzino',      _giacMagazzino('sa').q.Federa, 108);
+  ok('anche su una voce mai contata',       _giacMagazzino('sa').q.Scendibagno, 5);
+  ok('e non tocca nessun carico',           _giacTot(_giacCaricoTot('sa')), _carPrima);
+  ok('non inventa una persona',             Object.keys(_giacCarico('sa')).indexOf('') , -1);
+
+  // Il carico si decide su `carico`, NON sul segno: aggiunta e restituzione hanno lo
+  // stesso +1. Se un domani il controllo tornasse sul segno, una persona finita per
+  // sbaglio su un'aggiunta si vedrebbe accreditare pezzi che non ha mai preso.
+  _giac.movimenti.push(mov({ data: '06/09/2026', tipo: 'aggiunta', persona: 'Bianchi G.', q: { Federa: 7 } }));
+  ok('una persona su un\'aggiunta e ignorata', _giacCarico('sa')['Bianchi G.'].tot, 8);
+  ok('ma il magazzino la conta lo stesso',      _giacMagazzino('sa').q.Federa, 115);
+
+  ok('l\'aggiunta somma al magazzino',      (GIAC_TIPI.aggiunta || {}).segno, 1);
+  ok('e non e\' un movimento di carico',    (GIAC_TIPI.aggiunta || {}).carico, false);
+  ok('quindi non chiede un nome',           String((GIAC_TIPI.aggiunta || {}).persona), 'null');
+  ok('la restituzione un nome lo chiede',   !!GIAC_TIPI.restituzione.persona, true);
+  // L'ordine delle chiavi e' l'ordine dei pulsanti nella maschera: Aggiunta sta fra
+  // Restituzione e Conteggio, come chiesto dal QM.
+  ok('sta fra restituzione e conteggio',    Object.keys(GIAC_TIPI).join(','), 'prelievo,restituzione,aggiunta,conteggio');
+
   // Le strutture non si mescolano. Dal 07/09/2026 il magazzino e' uno solo (SoulArt) e
   // nessuno scrive piu' movimenti col Boutique, ma il filtro per struttura deve reggere
   // lo stesso: i movimenti gia' salvati con hotel:'bh' non vanno scartati ne' sommati al
   // SoulArt, e se un domani il Boutique aprisse un suo magazzino il filtro e' gia' quello.
   _giac.movimenti.push(mov({ data: '05/09/2026', tipo: 'prelievo', hotel: 'bh', persona: 'Verdi M.', q: { Federa: 30 } }));
-  ok('il Boutique non tocca il SoulArt',    _giacMagazzino('sa').q.Federa, 88);
+  ok('il Boutique non tocca il SoulArt',    _giacMagazzino('sa').q.Federa, 115);
   ok('e il carico e\' solo suo',            Object.keys(_giacCarico('bh')).join(','), 'Verdi M.');
   ok('SoulArt non vede Verdi',              _giacCarico('sa')['Verdi M.'] === undefined, true);
 

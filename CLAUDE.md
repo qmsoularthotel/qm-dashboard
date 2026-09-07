@@ -60,7 +60,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 589 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 600 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **5 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr) sono
 accendibili e spegnibili da remoto — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
@@ -3034,6 +3034,34 @@ in carico*. Tolte le card, la prima cosa a schermo era l'elenco delle cameriere 
 carico aperto — un dettaglio — mentre la domanda con cui si apre la pagina è *quanto c'è*.
 Il carico resta subito sotto, dove risponde alla domanda successiva (*e dov'è il resto*).
 
+### I quattro tipi di movimento — e perché «Aggiunta» non è una restituzione (07/09/2026)
+
+| Tipo | Magazzino | Carico di una persona | Quando |
+|---|---|---|---|
+| **Prelievo** | −1 | lo **apre** | una cameriera porta via dei pezzi |
+| **Restituzione** | +1 | lo **chiude** | riporta quelli che aveva preso |
+| **Aggiunta** | +1 | **nessuno** | pezzi nuovi: acquisto, consegna del fornitore, materiale ritrovato |
+| **Conteggio** | fa da **ancora** | nessuno | si conta lo scaffale |
+
+L'ordine delle chiavi di `GIAC_TIPI` **è** l'ordine dei pulsanti nella maschera: Aggiunta
+sta fra Restituzione e Conteggio.
+
+**Aggiunta e Restituzione fanno la stessa cosa al magazzino (+1) e non sono la stessa
+cosa.** Prima che Aggiunta esistesse, per registrare della merce nuova bisognava per forza
+intestare una restituzione a qualcuno — e quel qualcuno si ritrovava un **carico negativo**,
+cioè un ammanco inventato in una pagina che esiste proprio per stabilire se manca qualcosa.
+
+**Il carico si decide su `carico`, NON sul segno** (`_giacCarico`). Col segno, un'aggiunta
+sarebbe indistinguibile da una restituzione e accrediterebbe a una persona pezzi che non ha
+mai preso. Per la stessa ragione `persona` non viene nemmeno salvata sui tipi che non ne
+hanno una (`GIAC_TIPI[tipo].persona` decide insieme se il campo compare, come si chiama, e
+se il nome finisce nel movimento): un nome su un'aggiunta sarebbe un carico fantasma il
+giorno in cui qualcuno cambiasse quella regola.
+
+Aggiungendo un tipo nuovo, i tre campi da compilare sono quelli: `segno` (magazzino),
+`persona` (etichetta o `null`), `carico` (apre/chiude un carico). Nessun `if` sul nome del
+tipo sparso per la vista.
+
 ### Il segno del carico è ROVESCIATO rispetto a quello del magazzino
 
 `GIAC_TIPI[t].segno` è il segno del **magazzino** (un prelievo lo svuota, `-1`). Sul carico
@@ -3142,10 +3170,12 @@ dentro il movimento al primo giro (è il difetto che `resiDelRow` si era dimenti
 | `giacPrintGiacenza()` / `_giacStampa(h)` | Il foglio A4 per la governante — vedi sopra |
 | `_giacJs(s)` | Nome dentro un `onclick`: neutralizza apice e barra rovescia **prima** dell'escape HTML — con dei `D'` in organico, senza questo il pulsante si rompe |
 
-Coperto da **31 controlli** in `test/controlli.js` ("Giacenza biancheria: il magazzino si
+Coperto da **42 controlli** in `test/controlli.js` ("Giacenza biancheria: il magazzino si
 ancora al conteggio, il carico no"), verificati con quattro sabotaggi (il conteggio non fa
 più da ancora; segno del carico rovesciato; voci fuori elenco buttate via; strutture
-mescolate): 10, 8, 1 e 3 falliscono.
+mescolate): 10, 8, 1 e 3 falliscono. I due che tengono in piedi «Aggiunta» sono verificati
+allo stesso modo (il carico deciso di nuovo dal segno; il pulsante rimesso in fondo): 1 e 1
+falliscono.
 
 ### Foglio A4 per la governante — `giacPrintGiacenza()` / `_giacStampa(hotel)`
 
@@ -4065,7 +4095,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio. 589 controlli.
+scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio. 600 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire
