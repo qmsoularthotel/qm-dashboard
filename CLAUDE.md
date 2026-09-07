@@ -81,7 +81,7 @@ Ad ogni modifica ad `app.js`, **aggiornare il cache buster** altrimenti il brows
 
 ## Development
 
-**URL produzione**: `https://www.compass-qm.com`
+**URL produzione**: `https://www.compass-qm.com`  — servito da **`main`**: finché il lavoro non è su `main` non lo vede nessuno (vedi "SI PUBBLICA SU `main`").
 
 Aprire `index.html` direttamente nel browser. Nessun server necessario.
 
@@ -3612,6 +3612,26 @@ insieme — `V` è quella che forza il ricaricamento della pagina.
 `test/esegui.sh` **segnala** se `app.js` o `style.css` sono cambiati senza che `index.html`
 lo sia, ed esce con codice 1. Segnala invece di correggere da solo: uno strumento che
 modifica i file mentre stai controllando altro è peggio del problema che risolve.
+
+---
+
+## SI PUBBLICA SU `main`. SEMPRE.
+
+**GitHub Pages serve `main`.** Finché il lavoro resta su un branch, su
+`https://www.compass-qm.com` **non si vede niente** — il QM apre Compass e trova la
+versione di ieri, senza nessun indizio che altrove esista del codice nuovo.
+
+> Al termine di ogni modifica: `git push origin HEAD:main`.
+> Un branch di lavoro va bene per lavorarci, **non è una consegna.**
+
+Vale anche quando l'ambiente di sessione assegna un branch di sviluppo (le sessioni di
+Claude Code sul web ne creano uno per conto loro, tipo `claude/...`): quello serve al
+sistema, non al QM. La consegna è su `main`, e **non va richiesta ogni volta** — è già
+autorizzata qui, per iscritto, dal proprietario del repository.
+
+Ordine giusto quando si tocca anche il Worker: **prima il sito su `main`, poi il Worker**
+(vedi "Accesso al Worker"). Prima della pubblicazione: `bash test/esegui.sh` e
+`bash strumenti/versione.sh`, altrimenti i browser continuano a usare il file vecchio.
 
 ---
 
