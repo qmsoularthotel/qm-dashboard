@@ -250,6 +250,45 @@ if [ -n "$MANCANTI" ]; then
   BKF_KO=1
 fi
 
+# pdf.js arriva da un CDN. Una riga di primo livello che lo tocca senza guardia lancia a
+# caricamento quando il CDN non risponde, e porta giu' TUTTO il resto di app.js: le
+# costanti restano non inizializzate e ogni vista muore in "Cannot access ... before
+# initialization". La pagina resta a schermo, inerte, senza dire perche'. Non basta
+# controllare che PDF_OK esista: va verificato che NESSUNO tocchi pdfjsLib fuori dalla
+# guardia, che e' il comportamento vero.
+PDFKO=$(python3 - <<'PYPDF'
+import re
+brutte = []
+for f in ['app.js', 'registration-galleria.html']:
+    for n, l in enumerate(open(f, encoding='utf-8'), 1):
+        if 'pdfjsLib' not in l or l.lstrip().startswith('//'):
+            continue
+        s = l.strip()
+        # ammessi: la prova di esistenza, la riga guardata da PDF_OK, e l'unico punto che
+        # apre davvero un documento (dentro una funzione, quindi rientrato).
+        if re.match(r"(const|var)\s+PDF_OK\s*=", s): continue
+        if s.startswith('if(PDF_OK)') or s.startswith('if (PDF_OK)'): continue
+        if l[:1] in (' ', '\t'): continue      # dentro una funzione: non gira a caricamento
+        brutte.append('%s:%d' % (f, n))
+print(' '.join(brutte))
+PYPDF
+)
+if [ -n "$PDFKO" ]; then
+  echo ""
+  echo "  ERRORE      pdfjsLib toccato a primo livello senza guardia PDF_OK:"
+  echo "              $PDFKO"
+  echo "              Se il CDN non risponde quella riga lancia e porta giu' tutto il file:"
+  echo "              l'app resta a schermo ma inerte. Vedi 'PDF_OK' in app.js."
+  BKF_KO=1
+fi
+# E ogni apertura di PDF deve passare dall'unico punto che sa dirlo a parole quando il
+# lettore manca: altrimenti l'utente legge "pdfjsLib is not defined" e non sa cosa fare.
+if grep -n 'pdfjsLib.getDocument' app.js | grep -qv '_pdfApri\|return pdfjsLib.getDocument'; then
+  echo ""
+  echo "  ERRORE      un PDF viene aperto senza passare da _pdfApri() in app.js."
+  BKF_KO=1
+fi
+
 # registration-galleria.html e' un'app a se': dei colleghi della Galleria, fuori da Compass.
 # Il 02/09/2026 le e' stato tolto ogni contatto col cloud, ed e' questa la ragione per cui
 # non ha una schermata di abilitazione e non compare piu' nel Pannello App. Se qualcuno le

@@ -5728,7 +5728,7 @@ async function handlePulFile(file){
   ucSetState('pul','loading','Lettura PDF...');
   try{
     const ab=await file.arrayBuffer();
-    const pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(ab)}).promise;
+    const pdfDoc=await _pdfApri(ab);
     let text='';
     for(let i=1;i<=pdfDoc.numPages;i++){
       const page=await pdfDoc.getPage(i);
@@ -7527,7 +7527,7 @@ async function handleBkfFile(file){
   ucSetState('bkf','loading','Lettura PDF...');
   try{
     const ab=await file.arrayBuffer();
-    const pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(ab)}).promise;
+    const pdfDoc=await _pdfApri(ab);
     let text='';
     for(let i=1;i<=pdfDoc.numPages;i++){
       const page=await pdfDoc.getPage(i);
@@ -7779,7 +7779,7 @@ async function handleHkFile(key,file){
   ucSetState(key,'loading','Analisi in corso...');
   try{
     const ab=await file.arrayBuffer();
-    const pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(ab)}).promise;
+    const pdfDoc=await _pdfApri(ab);
     let text='';
     for(let i=1;i<=pdfDoc.numPages;i++){const page=await pdfDoc.getPage(i);const tc=await page.getTextContent();text+=tc.items.map(x=>x.str).join(' ')+'\n';}
     const data=hkParseText(text,key);
@@ -7849,7 +7849,7 @@ async function handlePianoFile(file){
   ucSetState('piano','loading','Lettura PDF...');
   try{
     const ab=await file.arrayBuffer();
-    const pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(ab)}).promise;
+    const pdfDoc=await _pdfApri(ab);
     const allItems=[];
     for(let p=1;p<=pdfDoc.numPages;p++){
       const page=await pdfDoc.getPage(p);
@@ -8261,7 +8261,21 @@ function bkfShowStatus(msg){
   if(msg)ucSetState('bkf','loading',msg);
   else ucSetState('bkf','','Non caricato');
 }
-pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+// pdf.js arriva da un CDN, e la sua assenza NON deve uccidere la pagina. Senza la
+// guardia, questa riga lancia a caricamento — CDN irraggiungibile, rete di albergo che
+// filtra, cdnjs giù — e porta giù con sé TUTTO il resto di app.js: le funzioni restano
+// (sono dichiarazioni, vengono issate) ma nessuna costante viene inizializzata, quindi
+// ogni vista muore in "Cannot access '...' before initialization" e Compass resta a
+// schermo, inerte, senza dire perché. Verificato dal vivo bloccando il CDN.
+// È lo stesso difetto già corretto in registration-galleria.html, mai riportato qui.
+const PDF_OK=(typeof pdfjsLib!=='undefined');
+if(PDF_OK)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+// Unico punto da cui si apre un PDF: se il lettore non c'è lo dice a parole, invece di
+// far comparire "pdfjsLib is not defined" sopra un riquadro di caricamento.
+function _pdfApri(ab){
+  if(!PDF_OK)throw new Error('Il lettore PDF non si è caricato (serve la connessione a cdnjs.cloudflare.com). Ricarica la pagina e riprova.');
+  return pdfjsLib.getDocument({data:ab instanceof Uint8Array?ab:new Uint8Array(ab)}).promise;
+}
 const ROOM_CODES=['STD','SUP','DLX','DEL','JS','JR','SUITE','TRP','TPL','TRI','DBL','SGL','DUS','DEP','DP','PC','AS','BB','HB','FB','RO','AI','MP'];
 const tratMap={BB:'BB',HB:'HB – Mezza pensione',FB:'FB – Pensione completa',RO:'RO – Solo pernottamento',AI:'AI – All inclusive',MP:'MP – Mezza pensione'};
 let guestsData=[];
@@ -8360,7 +8374,7 @@ function rcRiallineaConArrivi(){
 }
 
 // §§ REGISTRATION CARDS — RC (handleRCFile, rcParseGuests, rcRenderCards)
-async function handleRCFile(file){rcShowProc('Lettura del PDF...');rcHideError();try{const ab=await file.arrayBuffer();const pdfData=new Uint8Array(ab);rcShowProc('Estrazione testo...');const pdfDoc=await pdfjsLib.getDocument({data:pdfData}).promise;let fullText='';for(let i=1;i<=pdfDoc.numPages;i++){const page=await pdfDoc.getPage(i);const tc=await page.getTextContent();fullText+=tc.items.map(x=>x.str).join(' ')+'\n';}const guests=rcParseGuests(fullText);rcHideProc();if(!guests.length){rcShowProc('Analisi AI in corso...');try{await handleArriviFile(file);}finally{rcHideProc();}}else{rcRenderCards(guests);}}catch(err){rcHideProc();rcShowError('Errore: '+err.message);}}
+async function handleRCFile(file){rcShowProc('Lettura del PDF...');rcHideError();try{const ab=await file.arrayBuffer();const pdfData=new Uint8Array(ab);rcShowProc('Estrazione testo...');const pdfDoc=await _pdfApri(pdfData);let fullText='';for(let i=1;i<=pdfDoc.numPages;i++){const page=await pdfDoc.getPage(i);const tc=await page.getTextContent();fullText+=tc.items.map(x=>x.str).join(' ')+'\n';}const guests=rcParseGuests(fullText);rcHideProc();if(!guests.length){rcShowProc('Analisi AI in corso...');try{await handleArriviFile(file);}finally{rcHideProc();}}else{rcRenderCards(guests);}}catch(err){rcHideProc();rcShowError('Errore: '+err.message);}}
 function rcCleanName(raw){let name=raw.trim().replace(/\s*\([^)]+\)/g,'').trim();const cp=new RegExp('^('+ROOM_CODES.join('|')+')\\s+','i');let prev='';while(prev!==name){prev=name;name=name.replace(cp,'').trim();}return name;}
 function rcParseGuests(text){let year=new Date().getFullYear();const ym=text.match(/arrivi\s*[-–]\s*\d{1,2}\/\d{1,2}\/(\d{4})/i);if(ym)year=parseInt(ym[1]);const norm=text.replace(/\s+/g,' ').trim();const guests=[];const pat=/(\b(?:Art\s*\d+|\d{2,3}|AS_LIB|[A-Z]{2,8}_?[A-Z]*\d*)\b)\s*\/\s*(?:[A-Z_\s]{2,20}?)\s+([A-ZÀÈÉÌÒÙ][A-Za-zÀ-ÿ\s']+?(?:\s+\([^)]+\))?)\s+(\d)\s+(BB|HB|FB|RO|AI|MP)\s+(\d{1,2}\/\d{1,2})\s*[-–]\s*(\d{1,2}\/\d{1,2})/gi;let m;while((m=pat.exec(norm))!==null){const nome=rcCleanName(m[2]);if(!nome||nome.length<2)continue;guests.push({camera:m[1].trim(),nome,pax:parseInt(m[3]),trattamento:m[4].trim(),checkin:rcFmtDate(m[5],year),checkout:rcFmtDate(m[6],year)});}return guests;}
 function rcFmtDate(raw,year){const p=raw.split('/');return p.length===2?String(p[0]).padStart(2,'0')+'/'+String(p[1]).padStart(2,'0')+'/'+year:raw;}
@@ -13132,7 +13146,7 @@ async function prestayHandlePdf(file){
     msg('Lettura del PDF…');
     uc('loading','Lettura PDF...');
     const ab=await file.arrayBuffer();
-    const pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(ab)}).promise;
+    const pdfDoc=await _pdfApri(ab);
     const items=[];
     for(let p=1;p<=pdfDoc.numPages;p++){
       const page=await pdfDoc.getPage(p);
@@ -16695,7 +16709,7 @@ async function prenHandlePdf(file){
   try{
     msg('Lettura del PDF…'); uc('loading','Lettura PDF...');
     const ab=await file.arrayBuffer();
-    const pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(ab)}).promise;
+    const pdfDoc=await _pdfApri(ab);
     const items=[];
     for(let p=1;p<=pdfDoc.numPages;p++){
       const tc=await (await pdfDoc.getPage(p)).getTextContent();

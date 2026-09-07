@@ -4115,6 +4115,34 @@ Verificata rimettendo il difetto: la segnala.
 controlla niente. Quando la si aggiunge per proteggere un comportamento, deve poter
 fallire se quel comportamento sparisce — e va provata sabotandolo.
 
+### pdf.js viene da un CDN, e la sua assenza non deve uccidere Compass (07/09/2026)
+
+`pdfjsLib.GlobalWorkerOptions.workerSrc = …` stava **a primo livello** in `app.js`, senza
+guardia. Quando cdnjs non risponde — rete d'albergo che filtra, CDN giù, PC offline — quella
+riga lancia **a caricamento** e porta giù *tutto il resto del file*: le funzioni ci sono
+ancora (sono dichiarazioni, vengono issate), ma **nessuna costante viene inizializzata**.
+Ogni vista muore quindi in `Cannot access 'GIAC_KEY' before initialization`, e Compass resta
+a schermo **inerte, senza dire perché** — il sintomo peggiore, perché sembra un guasto di
+rete generico e non c'è niente da leggere.
+
+**È lo stesso difetto già corretto in `registration-galleria.html`** (vedi la sua sezione) e
+mai riportato qui: la correzione era stata fatta solo di là, dove era saltata fuori.
+
+| Pezzo | Ruolo |
+|---|---|
+| `PDF_OK` | `typeof pdfjsLib!=='undefined'` — la riga `workerSrc` è ora dietro questa guardia |
+| `_pdfApri(ab)` | **unico** punto da cui si apre un PDF (7 chiamanti). Senza lettore lancia una frase leggibile invece di `pdfjsLib is not defined` sopra un riquadro di caricamento |
+
+Verificato in un browser con **ogni indirizzo esterno bloccato**: costanti inizializzate,
+sei viste che si aprono (giacenza, biancheria, overview, reception, pre-stay, pannello app),
+nessun errore JS, e il messaggio giusto provando ad aprire un PDF. Prima della correzione, lo
+stesso giro dava tre `Cannot access … before initialization` e viste vuote.
+
+**Due sentinelle in `test/esegui.sh`**, entrambe provate sabotando: nessuna riga di primo
+livello può toccare `pdfjsLib` fuori dalla guardia, e nessun PDF può essere aperto
+scavalcando `_pdfApri`. Non controllano che `PDF_OK` *esista* — quello non controllerebbe
+niente (vedi la lezione di `qmKvSet`): controllano il comportamento.
+
 ### Riferimenti inerti — non sono guasti, non "ripararli" (verificato 21/08/2026)
 
 Un controllo su tutti gli `onclick` e su tutti i `getElementById` letterali ha dato:
@@ -4189,4 +4217,5 @@ confrontarli con quelli presenti in `index.html`.
 | Resi biancheria già consegnati e firmati di nuovo in elenco come "non ancora consegnati" | `_qmUnisciRecord` faceva vincere il locale a parità di `id`: una postazione ferma a prima della consegna (o il suo solo `localStorage`, che `_qmLeggiArchivio` fonde uguale) rimetteva `ritiroId:null` sopra righe chiuse. Alla consegna dopo finivano in distinta due volte | `_QM_CHIUSURE`: sui campi di chiusura vince chi è chiuso, salvo ritiro annullato di proposito. Per le righe già tornate indietro, banner + `resiRiassegnaRiaperte()`, che le riconosce dalla data e chiede conferma |
 | Il cestino nei Resi Biancheria non cancellava la riga: spariva e tornava | `resiDelRow` non chiamava `_qmSegnaRimosso`, unica eliminazione degli archivi a elenchi a esserselo dimenticato. La riga restava sul cloud e `_qmUnisciRecord` la riportava dentro al primo salvataggio | Aggiunto `_qmSegnaRimosso(_resi,id)` **prima** di `_resiSave()`, più una sentinella nei controlli che verifica la chiamata in ogni funzione di eliminazione |
 | Recensioni Expedia: "Nessuna recensione trovata nel file" su un export valido (le Booking si caricavano) | Expedia Partner Central ha cambiato l'export da TAB a **virgola**, coi campi fra virgolette. `revExpParseTsv` splittava solo sul TAB: una colonna sola, `review_rating` mai trovata, zero righe. Booking non ne risentiva perché `revParseCsv` è un parser CSV vero | Il separatore si prova (TAB, virgola, punto e virgola) e si tiene quello che fa comparire `review_rating`; parser a campi virgolettati unico (`_revRighe`) condiviso con Booking. TSV già salvato su KV continua a leggersi. Il messaggio d'errore ora elenca le colonne trovate |
+| Compass a schermo ma inerte, nessuna vista funziona | `pdfjsLib.GlobalWorkerOptions.workerSrc=…` a primo livello in `app.js`: col CDN irraggiungibile lancia a caricamento e porta giù tutto il file, lasciando ogni costante non inizializzata. Difetto presente dall'origine, già corretto solo in `registration-galleria.html` | `PDF_OK` + `_pdfApri()`, unico punto che apre un PDF e che sa dirlo a parole. Due sentinelle in `test/esegui.sh` |
 | Camere Art marcate "Art Resort" nelle fermate | `fixArriviStruttura` applicata solo a `arrivi`, mai a `fermate`/`partenze` | Struttura dedotta in modo deterministico da `_prenStruttura` su tutte e tre le liste |
