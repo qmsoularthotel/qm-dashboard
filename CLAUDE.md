@@ -60,7 +60,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 646 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 656 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **5 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr) sono
 accendibili e spegnibili da remoto — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
@@ -4005,13 +4005,13 @@ si scoprivano solo aprendo Cloudflare o chiedendo a Claude.
 |---|---|---|
 | Worker in linea, versione | `GET /versione` (pubblico, nessuna chiave) | non risponde |
 | Accesso riservato / **APERTO** | campo `portaChiusa` di `/versione` | `QM_AUTH_OBBLIGATORIA` non attiva |
-| Ultimo aggiornamento **altrove** | `qm_ultimo_agg` su KV, una riga per postazione | mai — è informativa |
+| Ultimo **salvataggio** altrove · e chi ha Compass aperto senza nessuno | `qm_ultimo_agg` su KV, una riga per postazione | mai — è informativa |
 | Questo computer · nome | `qm_dispositivo` in `localStorage` | mai |
 | Compass v… · aperto da … | il `?v=` del tag `<script>` e `_QM_APERTO_DA` | mai — è informativa |
 | Errori del programma oggi | `localStorage`, raccolti da `_qmSegnaErrore` | rossa se ce n'è almeno uno |
 | Scritture non ancora arrivate | `localStorage`, registro tenuto da `_kvNonRiuscita`/`_kvRiuscita` | rossa finché un dato resta fermo su questo computer |
 
-#### "Ultimo aggiornamento altrove" — le ALTRE postazioni, mai la propria (fix 09/09/2026)
+#### "Ultimo salvataggio altrove" — le ALTRE postazioni, mai la propria (fix 09/09/2026)
 
 La domanda che con due postazioni ci si fa più spesso è *è stato toccato qualcosa **da
 un'altra parte** da quando non guardo?*. La prima versione teneva un valore solo
@@ -4020,7 +4020,7 @@ si sta usando, a ogni salvataggio, la riga diceva sempre **"questo computer, poc
 cioè una cosa che chi legge sa già. *"Non è un dato molto utile, è ovvio"*, ed era vero.
 
 `qm_ultimo_agg` è ora un registro **con una riga per postazione**
-(`{postazioni:{Hotel:ts, Casa:ts, iPad:ts}}`), e la scheda mostra solo le **altre**
+(`{postazioni:{Hotel:{ts,dato,tocco}, …}}`), e la scheda mostra solo le **altre**
 (`_qmAltrePostazioni`), dalla più recente: *"Ultimo aggiornamento altrove — Hotel oggi alle
 14:32 · Casa ieri alle 21:10"*. Senza nessun'altra, lo dice (*"nessuna ha ancora scritto"*)
 invece di ripetere la propria.
@@ -4028,17 +4028,56 @@ invece di ripetere la propria.
 - **Si rilegge e si fonde prima di scrivere**, come ogni chiave toccata da più postazioni:
   mandare solo la propria riga cancellerebbe quelle delle altre, cioè esattamente il dato
   che serve.
-- **Il vecchio formato a valore singolo diventa la prima riga** (`_qmLeggiRegistroAgg`):
-  nessuna migrazione da lanciare, e chi aveva scritto per ultimo non sparisce.
+- **Si leggono tutte e tre le generazioni del registro** (`_qmVoceAgg`): il valore unico
+  originale `{ts,dispositivo}`, quello a una riga per postazione col solo segnatempo, e
+  quello attuale `{ts,dato,tocco}`. Nessuna migrazione da lanciare, e chi aveva scritto per
+  ultimo non sparisce.
 - `QM_AGG_POSTAZIONI_MAX=12`: browser diversi e nomi riscritti farebbero crescere il registro
   all'infinito; si tengono le più recenti.
 - Resta una scrittura ogni mezz'ora al massimo per postazione (`QM_AGG_OGNI_MS`), più una
   lettura per la fusione.
 
-Coperto da 12 controlli, verificati con tre sabotaggi (la propria postazione torna
-nell'elenco; il vecchio formato viene buttato; l'ordine di recenza sparisce): 4, 2 e 2
-falliscono. Il registro di prova ha di proposito l'ordine di inserimento **diverso** da
-quello di recenza, altrimenti il controllo sull'ordinamento non potrebbe fallire.
+##### "Aggiornamento" era la parola sbagliata, e la riga raccontava una cosa falsa
+
+Due difetti trovati insieme, subito dopo:
+
+- **"Aggiornamento" vuol dire anche il cambio di versione di Compass.** Qui è sempre stato
+  un'altra cosa: una postazione che ha **salvato un dato**. Si dice quindi *salvataggio*, e
+  si **nomina il dato** (`_kvNomeDato`, la stessa mappa delle scritture non arrivate) —
+  *"Hotel · Piano settimanale, oggi alle 14:32"*. Senza il nome del dato, "aggiornamento"
+  non vuol dire niente.
+- **A firmare il registro è OGNI scrittura riuscita, comprese quelle automatiche.** Una
+  postazione lasciata aperta rilegge il cloud, ricalcola i dati derivati e li risalva:
+  risultava quindi "aggiornata" con nessuno davanti. Visto il 09/09/2026 — la scheda diceva
+  che *Casa* aveva aggiornato mentre il QM era fuori Napoli e aveva solo lasciato la finestra
+  aperta. Una riga che fa pensare a un collega al lavoro dove non c'è nessuno è peggio di
+  nessuna riga.
+
+Il segnale che distingue i due casi è `_qmQualcunoAlComputer()`: qualcuno ha toccato **questa**
+pagina negli ultimi `QM_TOCCO_MS` (10 minuti)? Un tocco, un tasto, o il ritorno in primo piano.
+Non prova che quella scrittura l'abbia voluta lui, ma separa una postazione presidiata da una
+finestra dimenticata, che è la differenza che conta. Finisce in `tocco` sulla voce del
+registro, e la scheda mostra due righe distinte:
+
+| Riga | Quando compare |
+|---|---|
+| **Ultimo salvataggio altrove** | postazioni con `tocco!==false` — la più recente, col dato salvato |
+| **Compass aperto, ma senza nessuno** | postazioni con `tocco===false`, elencate |
+
+`tocco` **assente** (voci scritte da una versione precedente) resta fra le presidiate: è la
+lettura neutra: non si sa, e non si scrive come se si sapesse.
+
+`_qmVoceMia(key,ora)` costruisce la propria riga ed esiste **separata** apposta per essere
+verificabile: dentro `_qmSegnaAggiornamento` sta oltre una lettura di rete, che la banca di
+controlli non attraversa — un `tocco:true` scritto a mano lì non lo coglierebbe nessuno
+(provato: il sabotaggio non falliva finché la funzione non è stata estratta).
+
+Coperto da 22 controlli, verificati con sei sabotaggi (la propria postazione torna
+nell'elenco; il vecchio formato viene buttato; l'ordine di recenza sparisce; una finestra
+dimenticata si dichiara presidiata; `dato` e `tocco` buttati in lettura; il registro col solo
+segnatempo non si legge più): 4, 2, 2, 1, 2 e 1 falliscono. Il registro di prova ha di
+proposito l'ordine di inserimento **diverso** da quello di recenza, altrimenti il controllo
+sull'ordinamento non potrebbe fallire.
 
 Il nome della postazione **lo dà l'utente** (`qmRinominaDispositivo()`, collegamento *rinomina*
 nella stessa riga): dedurlo dal browser darebbe stringhe illeggibili e per giunta sbagliate —
@@ -4279,7 +4318,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto. 646 controlli.
+scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto. 656 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire
@@ -4496,6 +4535,7 @@ confrontarli con quelli presenti in `index.html`.
 | Una scrittura sul cloud che falliva non lo diceva a nessuno | `kvSet` restituisce `false`, ma la maggior parte dei punti che la chiamano scarta il risultato con `.catch(()=>{})`: il dato restava sul dispositivo e Compass sembrava aver salvato. Successo il 03/09/2026 col tetto giornaliero esaurito — le altre postazioni non vedevano niente | Il conto lo tiene `kvSet` stessa (`_kvFallite`) e lo dice una volta sola con una fascia rossa in cima (`_kvRenderAvviso`), che sparisce da sola appena la scrittura riesce. Corretto lì e non nei ~20 punti di chiamata, che domani sarebbero di nuovo 21. Il 401 è escluso di proposito: quello lo racconta già il velo di abilitazione |
 | "3 dati non sono arrivati sul cloud" fermo tutto il giorno, anche dopo aver ricaricato i dati | Il registro del giorno era un **numero che non tornava mai indietro**: `_kvRiuscita` ripuliva solo `_kvFallite` (memoria di sessione, vuota dopo un ricaricamento), quindi niente poteva spegnere l'avviso. In più il 401 delle scritture tentate prima di abilitare il dispositivo veniva contato come dato perso, benché il commento dicesse il contrario: `if(res.status===401)break;` salta i ritentativi, non `_kvNonRiuscita`. Visto su iPad il 09/09/2026 | Registro con i **nomi** delle chiavi diviso in `sospese`/`risolte`: si spegne da solo quando il dato arriva, anche in una sessione successiva, e la scheda dice **quale** dato è fermo. `_kvVaSegnalato(401)` è `false`. Vedi "Il registro delle scritture non arrivate" |
 | "Ultimo aggiornamento" diceva sempre questo computer, poco fa | `qm_ultimo_agg` era un valore solo, e a firmarlo è la postazione che si sta usando a ogni salvataggio: rispondeva a una domanda che non si fa nessuno, mentre quella vera è se abbia scritto **qualcun altro** | Registro con una riga per postazione, fuso a ogni scrittura; la scheda mostra solo le altre, dalla più recente. Vedi "Ultimo aggiornamento altrove" |
+| "Ultimo aggiornamento — da Casa" con nessuno a casa | A firmare il registro è **ogni** scrittura riuscita, comprese quelle automatiche: una postazione lasciata aperta rilegge il cloud, ricalcola i dati derivati e li risalva. E "aggiornamento" si confondeva col cambio di versione di Compass | Si dice **salvataggio** e si nomina il dato; `_qmQualcunoAlComputer()` separa le postazioni presidiate da quelle lasciate aperte, che finiscono in una riga a parte ("Compass aperto, ma senza nessuno") |
 | Le app scrivevano un registro accessi che nessuno leggeva | `qm_hk_access` / `qm_bkf_access` / `qm_dvr_access`: una lettura e una scrittura a ogni apertura, per una sezione della dashboard rimossa a luglio | Rimosso da `housekeeper.html`, `breakfast.html`, `dvr.html` il 04/09/2026 |
 | Per sapere se un giorno aveva suggerimenti bisognava aprirlo | Le chip mostravano solo le **partenze**, che dicono se il giorno è storto, non se c'è qualcosa da fare: un giorno in pari può avere mosse (il motore guarda anche il carico) e uno rosso può non averne. Si aprivano i sette giorni uno per uno, ogni giorno | Terza riga nella chip: `2 mosse` in ambra, `—` dove non c'è niente. Il conteggio è `s.totMosse`, lo stesso che si trova aprendo il giorno. Costa ~20 ms a settimana perché `hkSuggestMoves` esce subito sui giorni in pari o passati |
 | Suggerimenti che non toccano il giorno selezionato | Per gli `scambio-blocco` il filtro sul giorno in focus è saltato di proposito (riguardano tutta la settimana), ma la nota diceva "solo le mosse che migliorano X" | Badge grigio **non tocca \<giorno\>** sulla mossa, e nota corretta |

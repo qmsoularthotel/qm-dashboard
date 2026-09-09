@@ -447,7 +447,11 @@ ok('una voce senza giorni viene scartata', Object.keys(turniRipuliArchivio({ x: 
   // Casa e' scritta per prima ma e' la piu' vecchia: cosi' l'ordine di inserimento NON
   // coincide con quello di recenza, ed e' l'unico modo perche' il controllo sull'ordine
   // possa fallire davvero se l'ordinamento sparisce.
-  var reg = { postazioni: { Casa: ora - 30 * ORA, iPad: ora, Hotel: ora - 2 * ORA } };
+  var reg = { postazioni: {
+    Casa:  { ts: ora - 30 * ORA, dato: 'qm_rcGuests', tocco: false },
+    iPad:  { ts: ora,            dato: 'qm_piano',    tocco: true  },
+    Hotel: { ts: ora - 2 * ORA,  dato: 'qm_piano',    tocco: true  }
+  } };
 
   var post = _qmLeggiRegistroAgg(JSON.stringify(reg));
   ok('il registro tiene una riga per postazione', Object.keys(post).length, 3);
@@ -462,12 +466,32 @@ ok('una voce senza giorni viene scartata', Object.keys(turniRipuliArchivio({ x: 
 
   // Chi non ha mai dato un nome al computer non deve sparire dall'elenco.
   ok('una postazione senza nome resta contata',
-     _qmAltrePostazioni({ 'postazione senza nome': ora }, 'iPad')[0].nome, 'postazione senza nome');
+     _qmAltrePostazioni({ 'postazione senza nome': { ts: ora } }, 'iPad')[0].nome, 'postazione senza nome');
+
+  // Il punto vero: una finestra lasciata aperta salva lo stesso (rilegge il cloud, ricalcola
+  // i dati derivati e li risalva), e la scheda diceva "Casa ha aggiornato" mentre il QM era
+  // fuori Napoli. Presidiata e dimenticata vanno distinte, non sommate.
+  ok('una postazione senza nessuno davanti si riconosce', altre.filter(function (x) { return x.tocco === false; }).length, 1);
+  ok('e non e\' quella dove si stava lavorando',           altre.filter(function (x) { return x.tocco !== false; })[0].nome, 'Hotel');
+
+  // "Aggiornamento" voleva dire anche il cambio di versione di Compass: qui e' sempre stato
+  // il salvataggio di un dato, e il dato va nominato.
+  ok('il salvataggio dice quale dato e\' stato scritto', _kvNomeDato(altre[0].dato), 'Piano settimanale');
+
+  // tocco assente = generazione precedente del registro: non si sa, e non si scrive come se
+  // si sapesse. Resta fra le presidiate, che e' la lettura neutra.
+  ok('senza il dato sul tocco non si inventa niente',
+     _qmAltrePostazioni({ Hotel: { ts: ora } }, 'iPad')[0].tocco, undefined);
 
   // Vecchio formato: un solo {ts,dispositivo}. Diventa la prima riga, cosi' chi aveva scritto
   // per ultimo non sparisce e non serve lanciare nessuna migrazione.
   var vecchio = _qmLeggiRegistroAgg(JSON.stringify({ ts: ora - ORA, dispositivo: 'Hotel' }));
-  ok('il vecchio formato diventa la prima riga', vecchio.Hotel, ora - ORA);
+  ok('il vecchio formato diventa la prima riga', vecchio.Hotel.ts, ora - ORA);
+  // Generazione di mezzo (09/09/2026): una riga per postazione, ma il valore era il solo ts.
+  ok('e si legge anche il registro col solo segnatempo',
+     (_qmLeggiRegistroAgg(JSON.stringify({ postazioni: { Casa: ora - ORA } })).Casa || {}).ts, ora - ORA);
+  ok('una voce senza segnatempo viene scartata',
+     Object.keys(_qmLeggiRegistroAgg(JSON.stringify({ postazioni: { Casa: { dato: 'x' } } }))).length, 0);
   ok('e da li\' e\' gia\' un\'altra postazione', _qmAltrePostazioni(vecchio, 'iPad').length, 1);
 
   ok('registro assente: nessuna riga', Object.keys(_qmLeggiRegistroAgg(null)).length, 0);
@@ -477,6 +501,19 @@ ok('una voce senza giorni viene scartata', Object.keys(turniRipuliArchivio({ x: 
   // una sottrazione di 30 ore cade due giorni indietro, e il controllo fallirebbe a seconda
   // dell'ora in cui lo si esegue.
   var _ieri = new Date(); _ieri.setDate(_ieri.getDate() - 1); _ieri.setHours(12, 0, 0, 0);
+  // La propria riga: il tocco non si dichiara, si misura. Con QM_TOCCO_MS a 10 minuti, una
+  // finestra lasciata aperta da ore firma `tocco:false` e la scheda smette di raccontarla
+  // come lavoro di qualcuno.
+  var _t = _qmUltimoTocco;
+  _qmUltimoTocco = ora;
+  ok('chi sta lavorando firma il salvataggio come presidiato', _qmVoceMia('qm_piano', ora).tocco, true);
+  ok('e la riga porta il dato salvato',                        _qmVoceMia('qm_piano', ora).dato, 'qm_piano');
+  _qmUltimoTocco = ora - 2 * ORA;
+  ok('una finestra dimenticata da due ore firma senza nessuno', _qmVoceMia('qm_rcGuests', ora).tocco, false);
+  ok('e un tocco di un minuto fa conta ancora',
+     (_qmUltimoTocco = ora - 60000, _qmVoceMia('qm_piano', ora).tocco), true);
+  _qmUltimoTocco = _t;
+
   ok('la data recente si scrive "oggi alle"', /^oggi alle \d\d:\d\d$/.test(_qmQuandoAgg(ora)), true);
   ok('quella di ieri si scrive "ieri alle"',  _qmQuandoAgg(_ieri.getTime()), 'ieri alle 12:00');
 })();

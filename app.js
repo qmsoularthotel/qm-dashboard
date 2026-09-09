@@ -4326,10 +4326,22 @@ async function qmRenderStatoSistema(){
   // a ogni salvataggio, quindi non informava di niente.
   try{
     const altre=_qmAltrePostazioni(_qmLeggiRegistroAgg(await kvGet(QM_AGG_KEY)));
-    if(!altre.length)det('Altre postazioni','nessuna ha ancora scritto');
-    else det('Ultimo aggiornamento altrove',
-      altre.slice(0,2).map(x=>x.nome+' '+_qmQuandoAgg(x.ts)).join(' · ')
-      +(altre.length>2?' · +'+(altre.length-2):''));
+    // "Aggiornamento" voleva dire due cose diverse — la versione di Compass e il salvataggio
+    // di un dato — e qui e' sempre stata la seconda. Si dice "salvataggio", che e' quello che
+    // succede davvero, e si nomina IL DATO: senza, "aggiornamento" non vuol dire niente.
+    const presidiate=altre.filter(x=>x.tocco!==false);
+    const aperte=altre.filter(x=>x.tocco===false);
+    if(!altre.length)det('Altre postazioni','nessuna ha ancora salvato niente');
+    if(presidiate.length){
+      const x=presidiate[0];
+      det('Ultimo salvataggio altrove',x.nome+' · '+_kvNomeDato(x.dato||'')+', '+_qmQuandoAgg(x.ts)
+        +(presidiate.length>1?' · +'+(presidiate.length-1):''));
+    }
+    // Una postazione lasciata aperta salva lo stesso: rilegge il cloud, ricalcola i dati
+    // derivati e li risalva. Dirlo evita di leggere come lavoro di qualcuno una finestra
+    // dimenticata accesa.
+    if(aperte.length)det('Compass aperto, ma senza nessuno',
+      aperte.map(x=>x.nome).slice(0,2).join(', ')+' · ultimo salvataggio automatico '+_qmQuandoAgg(aperte[0].ts));
   }catch(e){}
   det('Questo computer',(qmNomeDispositivo()||'senza nome')+' <a href="#" onclick="qmRinominaDispositivo();return false;" style="color:var(--accent);font-weight:700;">rinomina</a>');
   html+=`<div style="margin-top:12px;padding-top:6px;border-top:1px solid var(--border-light,var(--border));font-size:12px;">${dettagli.join('')}</div>`;
@@ -4693,28 +4705,72 @@ async function qmRinominaDispositivo(){
   try{qmRenderStatoSistema();}catch(e){}
 }
 function _qmNomePostazione(){return qmNomeDispositivo()||'postazione senza nome';}
-// Legge il registro accettando anche il vecchio formato a valore singolo ({ts,dispositivo}),
-// che diventa la prima riga: nessuna migrazione da lanciare, e la postazione che aveva
-// scritto per ultima non sparisce dall'elenco.
+// ── C'ERA QUALCUNO, O E' SOLO UNA FINESTRA APERTA? ───────────────────────────
+// A firmare il registro e' OGNI scrittura riuscita, comprese quelle che Compass fa da solo:
+// una postazione lasciata aperta rilegge il cloud, ricalcola i dati derivati e li risalva,
+// quindi risultava "aggiornata" con nessuno davanti. Visto il 09/09/2026: la scheda diceva
+// che Casa aveva aggiornato, mentre il QM era fuori Napoli e aveva solo lasciato la finestra
+// aperta. Una riga che fa pensare a un collega al lavoro dove non c'e' nessuno e' peggio di
+// nessuna riga.
+//
+// Il segnale e' semplice: qualcuno ha toccato QUESTA pagina di recente? Un tocco, un tasto,
+// o il ritorno in primo piano (che vuol dire che qualcuno ci e' passato sopra). Non prova
+// che quella scrittura l'abbia voluta lui, ma distingue una postazione presidiata da una
+// finestra dimenticata, che e' la differenza che conta.
+const QM_TOCCO_MS=10*60*1000;
+let _qmUltimoTocco=0;
+(function(){
+  try{
+    if(typeof document==='undefined'||!document.addEventListener)return;
+    const t=function(){_qmUltimoTocco=Date.now();};
+    ['pointerdown','keydown','change'].forEach(function(e){document.addEventListener(e,t,true);});
+    document.addEventListener('visibilitychange',function(){
+      if(document.visibilityState==='visible')_qmUltimoTocco=Date.now();
+    });
+  }catch(e){}
+})();
+function _qmQualcunoAlComputer(ora){return (ora||Date.now())-_qmUltimoTocco<QM_TOCCO_MS;}
+// Una voce del registro. Ne esistono tre generazioni e si leggono tutte, senza migrazioni:
+//   {ts,dispositivo}   il valore unico originale        → diventa la prima riga
+//   {nome: ts}         una riga per postazione, 09/09   → numero nudo
+//   {nome:{ts,dato,tocco}}                              → quella attuale
+function _qmVoceAgg(v){
+  if(typeof v==='number'&&v>0)return{ts:v};
+  if(v&&typeof v==='object'&&v.ts)return{ts:v.ts,dato:v.dato,tocco:v.tocco};
+  return null;
+}
 function _qmLeggiRegistroAgg(txt){
+  const out={};
   try{
     const a=JSON.parse(txt||'null');
     if(a&&typeof a==='object'&&!Array.isArray(a)){
-      if(a.postazioni&&typeof a.postazioni==='object')return a.postazioni;
-      if(a.ts){const o={};o[a.dispositivo||'postazione senza nome']=a.ts;return o;}
+      if(a.postazioni&&typeof a.postazioni==='object'){
+        Object.keys(a.postazioni).forEach(function(n){
+          const v=_qmVoceAgg(a.postazioni[n]); if(v)out[n]=v;
+        });
+        return out;
+      }
+      if(a.ts){out[a.dispositivo||'postazione senza nome']={ts:a.ts};return out;}
     }
   }catch(e){}
-  return{};
+  return out;
 }
 // Le postazioni DIVERSE da questa, dalla piu' recente. E' l'unica parte informativa: la
 // propria riga dice quello che si sta gia' facendo.
 function _qmAltrePostazioni(post,io){
   const me=io||_qmNomePostazione();
-  return Object.keys(post||{}).filter(n=>n!==me)
-    .map(n=>({nome:n,ts:post[n]})).sort((a,b)=>b.ts-a.ts);
+  return Object.keys(post||{}).filter(function(n){return n!==me;})
+    .map(function(n){return{nome:n,ts:post[n].ts,dato:post[n].dato,tocco:post[n].tocco};})
+    .sort(function(a,b){return b.ts-a.ts;});
 }
 // Chiamata da kvSet dopo una scrittura riuscita: cosi' il segnatempo segue i dati veri e non
 // serve ricordarsi di aggiornarlo in ogni punto che salva.
+// La propria riga, in una funzione a parte perche' sia verificabile: dentro
+// `_qmSegnaAggiornamento` sta oltre una lettura di rete, che la banca di controlli non
+// attraversa — e un `tocco:true` scritto a mano li' non lo coglierebbe nessuno.
+function _qmVoceMia(key,ora){
+  return{ts:ora,dato:key,tocco:_qmQualcunoAlComputer(ora)};
+}
 async function _qmSegnaAggiornamento(key){
   if(key===QM_AGG_KEY)return;                       // non si firma il proprio segnatempo
   const ora=Date.now();
@@ -4724,10 +4780,10 @@ async function _qmSegnaAggiornamento(key){
     // Si rilegge e si fonde, come ogni chiave scritta da piu' postazioni: mandare solo la
     // propria riga cancellerebbe quelle delle altre, cioe' esattamente il dato che serve.
     const post=_qmLeggiRegistroAgg(await kvGet(QM_AGG_KEY));
-    post[_qmNomePostazione()]=ora;
+    post[_qmNomePostazione()]=_qmVoceMia(key,ora);
     const tenute={};
-    Object.keys(post).map(n=>({n:n,ts:post[n]})).sort((a,b)=>b.ts-a.ts)
-      .slice(0,QM_AGG_POSTAZIONI_MAX).forEach(x=>{tenute[x.n]=x.ts;});
+    Object.keys(post).map(function(n){return{n:n,v:post[n]};}).sort(function(a,b){return b.v.ts-a.v.ts;})
+      .slice(0,QM_AGG_POSTAZIONI_MAX).forEach(function(x){tenute[x.n]=x.v;});
     fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({key:QM_AGG_KEY,value:JSON.stringify({postazioni:tenute})})}).catch(()=>{});
   }catch(e){}
