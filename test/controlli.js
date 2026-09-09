@@ -437,6 +437,49 @@ ok('una voce senza giorni viene scartata', Object.keys(turniRipuliArchivio({ x: 
   localStorage.removeItem(_kvChiaveFallite());
   _kvFallite = {};
 })();
+
+// ── "Ultimo aggiornamento" deve parlare delle ALTRE postazioni ─────────────
+// Con un valore solo, la riga diceva sempre "questo computer, poco fa": e' la postazione che
+// si sta usando a firmarla, a ogni salvataggio. Rispondeva quindi a una domanda che non si
+// fa nessuno, mentre quella vera e' "e' stato toccato qualcosa da un'altra parte?".
+(function () {
+  var ora = Date.now(), ORA = 3600000;
+  // Casa e' scritta per prima ma e' la piu' vecchia: cosi' l'ordine di inserimento NON
+  // coincide con quello di recenza, ed e' l'unico modo perche' il controllo sull'ordine
+  // possa fallire davvero se l'ordinamento sparisce.
+  var reg = { postazioni: { Casa: ora - 30 * ORA, iPad: ora, Hotel: ora - 2 * ORA } };
+
+  var post = _qmLeggiRegistroAgg(JSON.stringify(reg));
+  ok('il registro tiene una riga per postazione', Object.keys(post).length, 3);
+
+  var altre = _qmAltrePostazioni(post, 'iPad');
+  ok('la propria postazione resta fuori: quella non informa di niente', altre.length, 2);
+  ok('e in cima c\'e\' la piu\' recente delle altre', altre[0].nome, 'Hotel');
+  ok('poi le altre in ordine',                          altre[1].nome, 'Casa');
+
+  ok('da sola, la propria postazione non ha niente da dire',
+     _qmAltrePostazioni({ iPad: ora }, 'iPad').length, 0);
+
+  // Chi non ha mai dato un nome al computer non deve sparire dall'elenco.
+  ok('una postazione senza nome resta contata',
+     _qmAltrePostazioni({ 'postazione senza nome': ora }, 'iPad')[0].nome, 'postazione senza nome');
+
+  // Vecchio formato: un solo {ts,dispositivo}. Diventa la prima riga, cosi' chi aveva scritto
+  // per ultimo non sparisce e non serve lanciare nessuna migrazione.
+  var vecchio = _qmLeggiRegistroAgg(JSON.stringify({ ts: ora - ORA, dispositivo: 'Hotel' }));
+  ok('il vecchio formato diventa la prima riga', vecchio.Hotel, ora - ORA);
+  ok('e da li\' e\' gia\' un\'altra postazione', _qmAltrePostazioni(vecchio, 'iPad').length, 1);
+
+  ok('registro assente: nessuna riga', Object.keys(_qmLeggiRegistroAgg(null)).length, 0);
+  ok('registro illeggibile: nessuna riga', Object.keys(_qmLeggiRegistroAgg('{rotto')).length, 0);
+
+  // "ieri" si costruisce con il calendario, non togliendo 24 ore: lanciata alle 5 del mattino
+  // una sottrazione di 30 ore cade due giorni indietro, e il controllo fallirebbe a seconda
+  // dell'ora in cui lo si esegue.
+  var _ieri = new Date(); _ieri.setDate(_ieri.getDate() - 1); _ieri.setHours(12, 0, 0, 0);
+  ok('la data recente si scrive "oggi alle"', /^oggi alle \d\d:\d\d$/.test(_qmQuandoAgg(ora)), true);
+  ok('quella di ieri si scrive "ieri alle"',  _qmQuandoAgg(_ieri.getTime()), 'ieri alle 12:00');
+})();
   kvSet = _kv;
   if (_ls === null) localStorage.removeItem('qm_hk_soul'); else localStorage.setItem('qm_hk_soul', _ls);
 })();

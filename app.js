@@ -4197,6 +4197,15 @@ function _qmDaQuandoAperto(){
   const gg=Math.floor(ore/24);
   return'da '+gg+(gg===1?' giorno — conviene ricaricare':' giorni — conviene ricaricare');
 }
+// "oggi alle 14:32" / "ieri alle 21:10" / "07/09 alle 09:12": una data piena per una cosa
+// successa un'ora fa si legge peggio.
+function _qmQuandoAgg(ts){
+  const d=new Date(ts),oggi=new Date(),ieri=new Date(oggi);ieri.setDate(oggi.getDate()-1);
+  const g=d.toDateString()===oggi.toDateString()?'oggi'
+    :(d.toDateString()===ieri.toDateString()?'ieri'
+    :String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'));
+  return g+' alle '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
 function _qmStatoRiga(colore,titolo,dettaglio){
   return`<div style="display:flex;align-items:center;gap:9px;padding:6px 0;">
     <span style="width:9px;height:9px;border-radius:50%;background:${colore};flex-shrink:0;"></span>
@@ -4311,22 +4320,16 @@ async function qmRenderStatoSistema(){
     }
   }catch(e){}
 
-  // Chi ha aggiornato per ultimo, e da dove. E' la riga che risponde alla domanda "e' stato
-  // toccato qualcosa da quando non guardo?", che con due postazioni e' quella che si fa piu'
-  // spesso — prima si poteva solo indovinare.
+  // "E' stato toccato qualcosa DA UN'ALTRA PARTE da quando non guardo?" — con due postazioni
+  // e' la domanda che si fa piu' spesso, e prima si poteva solo indovinare. Si nominano solo
+  // le ALTRE: la riga di questo computer diceva sempre "poco fa", perche' e' lui a firmarla
+  // a ogni salvataggio, quindi non informava di niente.
   try{
-    const va=await kvGet(QM_AGG_KEY);
-    if(va){
-      const a=JSON.parse(va);
-      if(a&&a.ts){
-        const d=new Date(a.ts),oggi=new Date();
-        const stessoGiorno=d.toDateString()===oggi.toDateString();
-        const ieri=new Date(oggi);ieri.setDate(oggi.getDate()-1);
-        const quando=(stessoGiorno?'oggi':(d.toDateString()===ieri.toDateString()?'ieri':String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')))
-          +' alle '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-        det('Ultimo aggiornamento','da '+(a.dispositivo||'postazione senza nome')+', '+quando);
-      }
-    }
+    const altre=_qmAltrePostazioni(_qmLeggiRegistroAgg(await kvGet(QM_AGG_KEY)));
+    if(!altre.length)det('Altre postazioni','nessuna ha ancora scritto');
+    else det('Ultimo aggiornamento altrove',
+      altre.slice(0,2).map(x=>x.nome+' '+_qmQuandoAgg(x.ts)).join(' · ')
+      +(altre.length>2?' · +'+(altre.length-2):''));
   }catch(e){}
   det('Questo computer',(qmNomeDispositivo()||'senza nome')+' <a href="#" onclick="qmRinominaDispositivo();return false;" style="color:var(--accent);font-weight:700;">rinomina</a>');
   html+=`<div style="margin-top:12px;padding-top:6px;border-top:1px solid var(--border-light,var(--border));font-size:12px;">${dettagli.join('')}</div>`;
@@ -4672,6 +4675,12 @@ const QM_AGG_KEY='qm_ultimo_agg';
 // Ogni mezz'ora al massimo: e' un segnatempo, non un registro. Al ritmo di una scrittura per
 // salvataggio consumerebbe piu' del tetto giornaliero di quanto valga.
 const QM_AGG_OGNI_MS=30*60*1000;
+// Il registro tiene UNA RIGA PER POSTAZIONE, non un segnatempo solo (rifatto il 09/09/2026).
+// Con un valore unico la riga diceva sempre "questo computer, poco fa": e' la postazione che
+// si sta usando a firmarla, a ogni salvataggio, quindi rispondeva a una domanda che non si
+// fa nessuno. Quella vera e' "e' stato toccato qualcosa DA UN'ALTRA PARTE da quando non
+// guardo?", e per rispondere serve sapere quando ha scritto ciascuna, non solo l'ultima.
+const QM_AGG_POSTAZIONI_MAX=12;   // browser diversi e nomi riscritti: non deve crescere all'infinito
 let _qmAggUltimo=0;
 function qmNomeDispositivo(){
   try{return localStorage.getItem(QM_DISPOSITIVO_KEY)||'';}catch(e){return'';}
@@ -4683,17 +4692,44 @@ async function qmRinominaDispositivo(){
   try{localStorage.setItem(QM_DISPOSITIVO_KEY,String(n).trim().slice(0,24));}catch(e){}
   try{qmRenderStatoSistema();}catch(e){}
 }
+function _qmNomePostazione(){return qmNomeDispositivo()||'postazione senza nome';}
+// Legge il registro accettando anche il vecchio formato a valore singolo ({ts,dispositivo}),
+// che diventa la prima riga: nessuna migrazione da lanciare, e la postazione che aveva
+// scritto per ultima non sparisce dall'elenco.
+function _qmLeggiRegistroAgg(txt){
+  try{
+    const a=JSON.parse(txt||'null');
+    if(a&&typeof a==='object'&&!Array.isArray(a)){
+      if(a.postazioni&&typeof a.postazioni==='object')return a.postazioni;
+      if(a.ts){const o={};o[a.dispositivo||'postazione senza nome']=a.ts;return o;}
+    }
+  }catch(e){}
+  return{};
+}
+// Le postazioni DIVERSE da questa, dalla piu' recente. E' l'unica parte informativa: la
+// propria riga dice quello che si sta gia' facendo.
+function _qmAltrePostazioni(post,io){
+  const me=io||_qmNomePostazione();
+  return Object.keys(post||{}).filter(n=>n!==me)
+    .map(n=>({nome:n,ts:post[n]})).sort((a,b)=>b.ts-a.ts);
+}
 // Chiamata da kvSet dopo una scrittura riuscita: cosi' il segnatempo segue i dati veri e non
 // serve ricordarsi di aggiornarlo in ogni punto che salva.
-function _qmSegnaAggiornamento(key){
+async function _qmSegnaAggiornamento(key){
   if(key===QM_AGG_KEY)return;                       // non si firma il proprio segnatempo
   const ora=Date.now();
   if(ora-_qmAggUltimo<QM_AGG_OGNI_MS)return;
-  _qmAggUltimo=ora;
+  _qmAggUltimo=ora;                                 // prima dell'attesa: due scritture vicine non partono in doppio
   try{
-    const v=JSON.stringify({ts:ora,dispositivo:qmNomeDispositivo()||'postazione senza nome'});
+    // Si rilegge e si fonde, come ogni chiave scritta da piu' postazioni: mandare solo la
+    // propria riga cancellerebbe quelle delle altre, cioe' esattamente il dato che serve.
+    const post=_qmLeggiRegistroAgg(await kvGet(QM_AGG_KEY));
+    post[_qmNomePostazione()]=ora;
+    const tenute={};
+    Object.keys(post).map(n=>({n:n,ts:post[n]})).sort((a,b)=>b.ts-a.ts)
+      .slice(0,QM_AGG_POSTAZIONI_MAX).forEach(x=>{tenute[x.n]=x.ts;});
     fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({key:QM_AGG_KEY,value:v})}).catch(()=>{});
+      body:JSON.stringify({key:QM_AGG_KEY,value:JSON.stringify({postazioni:tenute})})}).catch(()=>{});
   }catch(e){}
 }
 async function kvGet(key){
