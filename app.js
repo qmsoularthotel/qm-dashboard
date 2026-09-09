@@ -4718,18 +4718,31 @@ function _qmNomePostazione(){return qmNomeDispositivo()||'postazione senza nome'
 // che quella scrittura l'abbia voluta lui, ma distingue una postazione presidiata da una
 // finestra dimenticata, che e' la differenza che conta.
 const QM_TOCCO_MS=10*60*1000;
-let _qmUltimoTocco=0;
+// Due domande diverse, due variabili:
+//   _qmUltimoTocco  quando questa finestra ha visto qualcosa di umano — o e' stata APERTA.
+//                   Parte da adesso: aprire Compass e' di per se' un gesto, e una finestra
+//                   appena aperta deve aggiornarsi anche prima del primo clic.
+//   _qmToccata      qualcuno ha davvero toccato qualcosa. Serve a NON spacciare per
+//                   presidiata una pagina che si e' ricaricata da sola (qmCheckVersione lo
+//                   fa anche alle 3 di notte, e nessuna delle due cose e' una persona).
+let _qmUltimoTocco=Date.now();
+let _qmToccata=false;
 (function(){
   try{
     if(typeof document==='undefined'||!document.addEventListener)return;
-    const t=function(){_qmUltimoTocco=Date.now();};
+    const t=function(){_qmUltimoTocco=Date.now();_qmToccata=true;};
     ['pointerdown','keydown','change'].forEach(function(e){document.addEventListener(e,t,true);});
     document.addEventListener('visibilitychange',function(){
-      if(document.visibilityState==='visible')_qmUltimoTocco=Date.now();
+      if(document.visibilityState==='visible')t();
     });
   }catch(e){}
 })();
-function _qmQualcunoAlComputer(ora){return (ora||Date.now())-_qmUltimoTocco<QM_TOCCO_MS;}
+function _qmQualcunoAlComputer(ora){
+  return _qmToccata&&(ora||Date.now())-_qmUltimoTocco<QM_TOCCO_MS;
+}
+// Quanto e' passato dall'ultimo segno di vita: e' la domanda del risparmio, non quella di
+// "c'era qualcuno" — qui l'apertura della pagina conta.
+function _qmInattivaDa(ora){return (ora||Date.now())-_qmUltimoTocco;}
 // Una voce del registro. Ne esistono tre generazioni e si leggono tutte, senza migrazioni:
 //   {ts,dispositivo}   il valore unico originale        → diventa la prima riga
 //   {nome: ts}         una riga per postazione, 09/09   → numero nudo
@@ -17509,10 +17522,50 @@ async function _qmLeggiArchivio(key,vuoto){
 // ridotta a icona, NON quando la finestra perde semplicemente il fuoco restando a schermo:
 // una postazione con Compass affiancato a un altro programma continua quindi ad
 // aggiornarsi, ed è giusto così — lì il dato lo si sta guardando davvero.
+// ── LA FINESTRA DIMENTICATA APERTA SI ADDORMENTA DA SOLA ─────────────────────
+// Il cancello a scheda nascosta non basta: una finestra lasciata IN PRIMO PIANO con nessuno
+// davanti — a casa, in reception — continua a leggere il cloud ogni minuto, 7 chiavi a giro,
+// oltre 10.000 letture al giorno per postazione, più le riscritture dei dati derivati che ne
+// seguono, che pesano sul tetto stretto delle 1.000 scritture. E chi l'ha lasciata aperta
+// quasi mai è lì per chiuderla: il rimedio non può essere ricordarsene.
+//
+// Dopo QM_INATTIVO_MS senza un segno di vita il giro si ferma, e RIPARTE AL PRIMO TOCCO con
+// un giro immediato: chi torna davanti allo schermo ha i dati freschi prima di poter fare
+// qualunque cosa.
+//
+// LA PAUSA NON È SILENZIOSA, e non è un dettaglio estetico: una copia visibile e vecchia è
+// il punto di partenza di ogni sovrascrittura (incidente pre-stay del 22/08/2026). Se
+// Compass smette di aggiornarsi deve dirlo, altrimenti chi passa davanti legge numeri vecchi
+// credendoli freschi — che è peggio del consumo che si sta risparmiando.
+const QM_INATTIVO_MS=30*60*1000;
+let _qmInPausa=false;
+function _qmTestoPausa(){
+  return'Compass in pausa · i dati non si stanno aggiornando — tocca lo schermo per riprendere';
+}
+function _qmMostraPausa(si){
+  _qmInPausa=!!si;
+  let el=null;
+  try{el=document.getElementById('qmPausa');}catch(e){}
+  if(!si){if(el&&el.remove)el.remove();return;}
+  if(el)return;
+  try{
+    el=document.createElement('div');
+    el.id='qmPausa';
+    el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:9998;'
+      +'background:#A05A00;color:#fff;padding:9px 16px;border-radius:9px;font-size:12.5px;'
+      +'font-weight:600;font-family:inherit;text-align:center;max-width:92vw;'
+      +'box-shadow:0 4px 14px rgba(0,0,0,.25);';
+    el.textContent=_qmTestoPausa();
+    document.body.appendChild(el);
+  }catch(e){}
+}
 function _qmPolling(fn,ms){
   let inCorso=false,ultimo=0;
   const giro=async()=>{
     if(document.visibilityState!=='visible')return;  // nessuno sta guardando
+    // Aperta ma abbandonata: si ferma, e lo dichiara.
+    if(_qmInattivaDa()>=QM_INATTIVO_MS){_qmMostraPausa(true);return;}
+    _qmMostraPausa(false);
     if(inCorso)return;                               // il giro precedente non è finito
     // Tornando in primo piano subito dopo un giro non se ne fa un altro: senza questa
     // guardia, alternare due finestre a raffica moltiplicherebbe le letture invece di
@@ -17524,6 +17577,13 @@ function _qmPolling(fn,ms){
   };
   setInterval(giro,ms);
   try{document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')giro();});}catch(e){}
+  // Il risveglio: solo mentre si è in pausa, altrimenti ogni clic della giornata proverebbe
+  // a fare un giro. Il tempo dell'ultimo tocco lo aggiorna un ascoltatore registrato prima
+  // di questo, quindi qui `_qmInattivaDa()` è già azzerato.
+  try{
+    const sveglia=()=>{if(_qmInPausa){_qmMostraPausa(false);giro();}};
+    ['pointerdown','keydown'].forEach(e=>document.addEventListener(e,sveglia,true));
+  }catch(e){}
   return giro;
 }
 

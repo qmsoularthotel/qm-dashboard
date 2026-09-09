@@ -504,15 +504,20 @@ ok('una voce senza giorni viene scartata', Object.keys(turniRipuliArchivio({ x: 
   // La propria riga: il tocco non si dichiara, si misura. Con QM_TOCCO_MS a 10 minuti, una
   // finestra lasciata aperta da ore firma `tocco:false` e la scheda smette di raccontarla
   // come lavoro di qualcuno.
-  var _t = _qmUltimoTocco;
-  _qmUltimoTocco = ora;
+  var _t = _qmUltimoTocco, _tt = _qmToccata;
+  _qmUltimoTocco = ora; _qmToccata = true;
   ok('chi sta lavorando firma il salvataggio come presidiato', _qmVoceMia('qm_piano', ora).tocco, true);
   ok('e la riga porta il dato salvato',                        _qmVoceMia('qm_piano', ora).dato, 'qm_piano');
   _qmUltimoTocco = ora - 2 * ORA;
   ok('una finestra dimenticata da due ore firma senza nessuno', _qmVoceMia('qm_rcGuests', ora).tocco, false);
   ok('e un tocco di un minuto fa conta ancora',
      (_qmUltimoTocco = ora - 60000, _qmVoceMia('qm_piano', ora).tocco), true);
-  _qmUltimoTocco = _t;
+  // Una pagina che si e' ricaricata da sola (qmCheckVersione lo fa anche di notte) non ha
+  // visto nessuno: l'ora di apertura e' recente, ma nessuno l'ha toccata.
+  _qmToccata = false;
+  ok('una pagina ricaricata da sola non si spaccia per presidiata',
+     _qmVoceMia('qm_piano', ora).tocco, false);
+  _qmUltimoTocco = _t; _qmToccata = _tt;
 
   ok('la data recente si scrive "oggi alle"', /^oggi alle \d\d:\d\d$/.test(_qmQuandoAgg(ora)), true);
   ok('quella di ieri si scrive "ieri alle"',  _qmQuandoAgg(_ieri.getTime()), 'ieri alle 12:00');
@@ -1143,6 +1148,35 @@ document.visibilityState = 'hidden';
 _pTick();
 ok('di nuovo nascosta: resta ferma',          _pGiri, 1);
 document.visibilityState = 'visible';
+
+// ── La finestra dimenticata aperta si addormenta da sola ───────────────────
+// Il cancello a scheda nascosta non basta: una finestra lasciata IN PRIMO PIANO con nessuno
+// davanti legge il cloud ogni minuto tutto il giorno. Capita spesso, a casa e in albergo, e
+// chi l'ha lasciata aperta quasi mai e' li' per chiuderla.
+var _pTocco = _qmUltimoTocco;
+// Ogni prova parte da un contatore nuovo: la guardia anti-raffica di `_qmPolling` blocca i
+// giri troppo ravvicinati, e qui i controlli girano tutti dentro lo stesso millisecondo.
+function _pFresco() { _pGiri = 0; return _qmPolling(_pFn, 3); }
+
+_qmUltimoTocco = Date.now() - QM_INATTIVO_MS - 1000;   // nessun segno di vita da mezz'ora
+_pFresco()();
+ok('aperta ma abbandonata: il giro si ferma', _pGiri, 0);
+// Non in silenzio: una copia visibile e vecchia e' il punto di partenza di ogni
+// sovrascrittura, quindi chi passa davanti deve sapere che quei numeri sono fermi.
+ok('e lo dichiara a schermo',                 _qmInPausa, true);
+ok('con un testo che dice come riprendere',   /tocca lo schermo/.test(_qmTestoPausa()), true);
+ok('e che i dati sono fermi',                 /non si stanno aggiornando/.test(_qmTestoPausa()), true);
+
+_qmUltimoTocco = Date.now();                            // qualcuno torna e tocca
+_pFresco()();
+ok('al primo tocco riparte',                  _pGiri, 1);
+ok('e l\'avviso di pausa sparisce',            _qmInPausa, false);
+
+// Mezz'ora e' la soglia: un minuto prima si continua a lavorare normalmente.
+_qmUltimoTocco = Date.now() - QM_INATTIVO_MS + 60000;
+_pFresco()();
+ok('poco sotto la soglia non si mette in pausa', _pGiri, 1);
+_qmUltimoTocco = _pTocco;
 
 // ─────────────────────────────────────────────────────────────────────────────
 sez('Resi biancheria: il taglio del periodo alla consegna');

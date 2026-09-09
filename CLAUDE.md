@@ -60,7 +60,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 656 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 664 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **5 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr) sono
 accendibili e spegnibili da remoto — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
@@ -3406,6 +3406,48 @@ nascosta.
 schermo: una postazione con Compass affiancato a un altro programma continua ad
 aggiornarsi, ed è giusto — lì il dato lo si sta guardando davvero.
 
+#### La finestra dimenticata aperta si addormenta da sola (09/09/2026)
+
+Il cancello a scheda nascosta **non basta**: una finestra lasciata **in primo piano** con
+nessuno davanti continua a leggere il cloud ogni minuto — 7 chiavi a giro, oltre 10.000
+letture al giorno per postazione — e le riscritture dei dati derivati che ne seguono pesano
+sul tetto **stretto** delle 1.000 scritture. Capita spesso, a casa e in albergo, e chi l'ha
+lasciata aperta quasi mai è lì per chiuderla: *"sono alla Casa Moresca, non posso farci
+niente"*. Il rimedio non può essere ricordarsene.
+
+Dopo `QM_INATTIVO_MS` (30 minuti) senza un segno di vita il giro si ferma, e **riparte al
+primo tocco** con un giro immediato — chi torna davanti allo schermo ha i dati freschi prima
+di poter fare qualunque cosa. Il risveglio è registrato in `_qmPolling` e agisce **solo
+mentre si è in pausa**, altrimenti ogni clic della giornata proverebbe a fare un giro.
+
+**La pausa non è silenziosa**, e non è un dettaglio estetico: una copia visibile e vecchia è
+il punto di partenza di ogni sovrascrittura (incidente pre-stay del 22/08/2026). Compare una
+pastiglia ambra in basso — *"Compass in pausa · i dati non si stanno aggiornando — tocca lo
+schermo per riprendere"*. Un aggiornamento che si ferma senza dirlo è peggio del consumo che
+si sta risparmiando.
+
+**Due orologi diversi, e non vanno confusi:**
+
+| Variabile | Domanda | Parte da |
+|---|---|---|
+| `_qmUltimoTocco` | quando questa finestra ha visto qualcosa di umano, **o è stata aperta** | `Date.now()` — aprire Compass è di per sé un gesto, e una finestra appena aperta deve aggiornarsi anche prima del primo clic |
+| `_qmToccata` | qualcuno ha **davvero** toccato qualcosa | `false` — serve a non spacciare per presidiata una pagina che si è ricaricata da sola: `qmCheckVersione` lo fa anche di notte |
+
+`_qmInattivaDa()` (che decide la pausa) guarda il primo; `_qmQualcunoAlComputer()` (che decide
+il `tocco` nel registro delle postazioni) pretende anche il secondo.
+
+**Restano fuori, di proposito**: le 5 app standalone (`qmCheckAppStatus`, 1 lettura al minuto
+ciascuna, ~1.400 al giorno) e `reception.html` (3 letture al minuto, ~4.300 al giorno). La
+seconda soprattutto: è **pensata per restare aperta** su schermo a reception, e metterla in
+pausa contraddirebbe il suo scopo. Se un domani il consumo tornasse a stringere, è lì che
+vanno guardate — con l'avvertenza che su reception la pastiglia di pausa dovrebbe essere
+molto più evidente di così.
+
+Coperto da 7 controlli, verificati con tre sabotaggi (la finestra abbandonata continua a
+leggere; si ferma ma in silenzio; non si riprende più dopo la pausa): 2, 1 e 1 falliscono.
+Ogni prova parte da un contatore nuovo: la guardia anti-raffica di `_qmPolling` blocca i giri
+troppo ravvicinati, e i controlli girano tutti dentro lo stesso millisecondo.
+
 **Il tetto più stretto è quello delle scritture: 1.000 al giorno**, contro 100.000 letture.
 Il polling non scrive mai, quindi non c'è stato problema finora, ma un giro Culligan lungo
 (`_persist()` a ogni tocco) o una serata di pre-stay ci si avvicinano. Se un domani
@@ -4318,7 +4360,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto. 656 controlli.
+scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto, pausa della finestra abbandonata. 664 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire
@@ -4536,6 +4578,7 @@ confrontarli con quelli presenti in `index.html`.
 | "3 dati non sono arrivati sul cloud" fermo tutto il giorno, anche dopo aver ricaricato i dati | Il registro del giorno era un **numero che non tornava mai indietro**: `_kvRiuscita` ripuliva solo `_kvFallite` (memoria di sessione, vuota dopo un ricaricamento), quindi niente poteva spegnere l'avviso. In più il 401 delle scritture tentate prima di abilitare il dispositivo veniva contato come dato perso, benché il commento dicesse il contrario: `if(res.status===401)break;` salta i ritentativi, non `_kvNonRiuscita`. Visto su iPad il 09/09/2026 | Registro con i **nomi** delle chiavi diviso in `sospese`/`risolte`: si spegne da solo quando il dato arriva, anche in una sessione successiva, e la scheda dice **quale** dato è fermo. `_kvVaSegnalato(401)` è `false`. Vedi "Il registro delle scritture non arrivate" |
 | "Ultimo aggiornamento" diceva sempre questo computer, poco fa | `qm_ultimo_agg` era un valore solo, e a firmarlo è la postazione che si sta usando a ogni salvataggio: rispondeva a una domanda che non si fa nessuno, mentre quella vera è se abbia scritto **qualcun altro** | Registro con una riga per postazione, fuso a ogni scrittura; la scheda mostra solo le altre, dalla più recente. Vedi "Ultimo aggiornamento altrove" |
 | "Ultimo aggiornamento — da Casa" con nessuno a casa | A firmare il registro è **ogni** scrittura riuscita, comprese quelle automatiche: una postazione lasciata aperta rilegge il cloud, ricalcola i dati derivati e li risalva. E "aggiornamento" si confondeva col cambio di versione di Compass | Si dice **salvataggio** e si nomina il dato; `_qmQualcunoAlComputer()` separa le postazioni presidiate da quelle lasciate aperte, che finiscono in una riga a parte ("Compass aperto, ma senza nessuno") |
+| Una postazione lasciata aperta consuma tutto il giorno | Il cancello a scheda nascosta non copre la finestra lasciata **in primo piano** con nessuno davanti: 7 letture al minuto, oltre 10.000 al giorno, più le riscritture dei dati derivati sul tetto stretto delle 1.000 scritture. E chi l'ha lasciata aperta non è lì per chiuderla | Dopo 30 minuti senza un segno di vita il giro si ferma e riparte al primo tocco, dichiarandolo con una pastiglia in basso — una copia ferma che non lo dice è peggio del consumo risparmiato |
 | Le app scrivevano un registro accessi che nessuno leggeva | `qm_hk_access` / `qm_bkf_access` / `qm_dvr_access`: una lettura e una scrittura a ogni apertura, per una sezione della dashboard rimossa a luglio | Rimosso da `housekeeper.html`, `breakfast.html`, `dvr.html` il 04/09/2026 |
 | Per sapere se un giorno aveva suggerimenti bisognava aprirlo | Le chip mostravano solo le **partenze**, che dicono se il giorno è storto, non se c'è qualcosa da fare: un giorno in pari può avere mosse (il motore guarda anche il carico) e uno rosso può non averne. Si aprivano i sette giorni uno per uno, ogni giorno | Terza riga nella chip: `2 mosse` in ambra, `—` dove non c'è niente. Il conteggio è `s.totMosse`, lo stesso che si trova aprendo il giorno. Costa ~20 ms a settimana perché `hkSuggestMoves` esce subito sui giorni in pari o passati |
 | Suggerimenti che non toccano il giorno selezionato | Per gli `scambio-blocco` il filtro sul giorno in focus è saltato di proposito (riguardano tutta la settimana), ma la nota diceva "solo le mosse che migliorano X" | Badge grigio **non tocca \<giorno\>** sulla mossa, e nota corretta |
