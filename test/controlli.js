@@ -391,6 +391,52 @@ ok('una voce senza giorni viene scartata', Object.keys(turniRipuliArchivio({ x: 
   _kvRiuscita('qm_prova2');
   ok('quando le scritture riescono il conto si azzera', Object.keys(_kvFallite).length, 0);
 })();
+
+// ── ...e nemmeno deve restare accesa per sempre ────────────────────────────
+// Il registro del giorno era un numero solo che non tornava mai indietro: un intoppo alle 7
+// del mattino faceva dire "3 dati non sono arrivati sul cloud" fino a mezzanotte, anche dopo
+// che quei dati erano arrivati. Ricaricare i PDF non spegneva niente, perche' NIENTE lo
+// poteva spegnere (09/09/2026, visto su iPad). E non diceva quali dati fossero.
+(function () {
+  localStorage.removeItem(_kvChiaveFallite());
+  _kvFallite = {};
+
+  _kvNonRiuscita('qm_piano');
+  _kvNonRiuscita('qm_prestay');
+  ok('il registro del giorno tiene le chiavi rimaste indietro', _kvSospeseOggi().length, 2);
+  ok('e dice di che dato si tratta, non la chiave grezza',
+     _kvSospeseOggi().map(function (x) { return x.nome; }).sort().join(' · '),
+     'Messaggi pre-stay · Piano settimanale');
+
+  // Il caso che ha fatto scoprire tutto: la pagina viene ricaricata, quindi la memoria di
+  // sessione e' vuota, e POI la scrittura riesce. Prima di questa correzione la pulizia era
+  // legata a _kvFallite e quindi non avveniva mai.
+  _kvFallite = {};
+  _kvRiuscita('qm_piano');
+  ok('una scrittura riuscita spegne l\'avviso anche dopo un ricaricamento', _kvSospeseOggi().length, 1);
+  ok('e quello ancora fermo resta l\'altro', _kvSospeseOggi()[0].chiave, 'qm_prestay');
+  ok('quella arrivata resta contata a parte, come traccia', _kvRisolteOggi(), 1);
+
+  _kvRiuscita('qm_prestay');
+  ok('arrivate tutte, niente piu\' in sospeso', _kvSospeseOggi().length, 0);
+  ok('ma la traccia della giornata rimane', _kvRisolteOggi(), 2);
+
+  // Un 401 e' la porta chiusa, non un dato perso: il velo di abilitazione se ne occupa gia'.
+  // Contarlo voleva dire che ogni dispositivo nuovo apriva Compass con dei "dati non
+  // arrivati" mai esistiti — la spiegazione piu' probabile dei 3 visti sull'iPad.
+  ok('un 401 non e\' una scrittura persa', _kvVaSegnalato(401), false);
+  ok('un rifiuto qualsiasi invece lo e\'',  _kvVaSegnalato(429), true);
+  ok('e nemmeno partita lo e\'',            _kvVaSegnalato(0),   true);
+
+  // Il vecchio formato (un numero nudo) non dice quali chiavi ne' se siano arrivate: non
+  // c'e' niente da riportare avanti, e trascinarlo terrebbe acceso un allarme su cui non si
+  // puo' fare nulla.
+  localStorage.setItem(_kvChiaveFallite(), '7');
+  ok('il vecchio contatore non trascina un allarme muto', _kvSospeseOggi().length, 0);
+
+  localStorage.removeItem(_kvChiaveFallite());
+  _kvFallite = {};
+})();
   kvSet = _kv;
   if (_ls === null) localStorage.removeItem('qm_hk_soul'); else localStorage.setItem('qm_hk_soul', _ls);
 })();

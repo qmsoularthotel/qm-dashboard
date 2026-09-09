@@ -4215,12 +4215,16 @@ async function _qmStatoSistema(){
     const r=await fetch(PROXY+'/versione',{cache:'no-store'});
     if(r.ok)v=await r.json();else errore='ha risposto '+r.status;
   }catch(e){errore='non raggiungibile';}
-  const fallite=_kvFalliteOggi();
+  // `sospese` sono le scritture ANCORA ferme qui: solo quelle fanno rosso. Quelle non
+  // riuscite al primo colpo e poi arrivate restano contate a parte, come nota, non come
+  // problema — altrimenti un intoppo delle 7 del mattino tingerebbe di rosso tutta la
+  // giornata anche a cose sistemate.
+  const sospese=_kvSospeseOggi(),risolte=_kvRisolteOggi();
   // Verde solo se TUTTO e' come deve essere. Il Worker piu' vecchio del codice, o che non sa
   // dire se la porta e' chiusa, e' qualcosa da fare — quindi non e' verde.
   const errori=qmErroriOggi();
-  const ok=!!v && v.versione===WORKER_VERSIONE_ATTESA && v.portaChiusa===true && !fallite && !errori.length;
-  return{v,errore,fallite,errori,ok};
+  const ok=!!v && v.versione===WORKER_VERSIONE_ATTESA && v.portaChiusa===true && !sospese.length && !errori.length;
+  return{v,errore,sospese,risolte,errori,ok};
 }
 // Il pallino nel menu: si guarda senza entrare nella vista, ed e' l'unico posto dove un
 // guasto si nota anche mentre si sta facendo altro.
@@ -4264,8 +4268,15 @@ async function qmRenderStatoSistema(){
     const tot=er.reduce((s,e)=>s+(e.n||1),0);
     problemi.push(tot+(tot===1?' errore del programma oggi':' errori del programma oggi')+' — l\'ultimo: '+String(er[er.length-1].msg||'').slice(0,80));
   }else det('Nessun errore del programma oggi','');
-  if(stato.fallite)problemi.push(stato.fallite+(stato.fallite===1?' dato non è arrivato':' dati non sono arrivati')+' sul cloud da questo computer');
-  else det('Nessuna scrittura persa oggi','');
+  const sos=stato.sospese||[];
+  if(sos.length){
+    // Il numero da solo non e' azionabile: senza sapere QUALE dato e' rimasto indietro non si
+    // sa nemmeno cosa ricaricare per farlo partire.
+    const nomi=sos.slice(0,4).map(x=>x.nome).join(', ')+(sos.length>4?' e altri '+(sos.length-4):'');
+    problemi.push(sos.length+(sos.length===1?' dato non è ancora arrivato':' dati non sono ancora arrivati')
+      +' sul cloud da questo computer: '+nomi+' — le altre postazioni non '+(sos.length===1?'lo vedono':'li vedono'));
+  }
+  else det('Nessuna scrittura persa oggi',stato.risolte?stato.risolte+(stato.risolte===1?' non riuscita al primo colpo, poi arrivata':' non riuscite al primo colpo, poi arrivate'):'');
   det('Compass '+_qmVersioneApp(),'aperto '+_qmDaQuandoAperto());
 
   const verde=!problemi.length;
@@ -4519,32 +4530,105 @@ const _kvUltimo={};
 // scritture si e' esaurito nel pomeriggio: Compass sembrava salvare e le altre postazioni
 // non vedevano niente. Invece di correggere una ventina di punti di chiamata (e dimenticarne
 // uno domani), il conto lo tiene kvSet stessa e lo dice UNA volta, in cima alla pagina.
-let _kvFallite={};                      // chiave → quante volte non e' arrivata
-// Il conto del giorno resta in questo browser (nessuna scrittura sul cloud: sarebbe assurdo
+let _kvFallite={};                      // chiave → quante volte non e' arrivata (questa sessione)
+// Il registro del giorno resta in questo browser (nessuna scrittura sul cloud: sarebbe assurdo
 // consumarne una per dire che una scrittura non e' riuscita). Serve alla scheda "Stato del
 // sistema": la fascia rossa si vede solo mentre si e' sulla pagina e sparisce al
-// ricaricamento, quindi senza un conto restava un guaio senza traccia.
+// ricaricamento, quindi senza registro un guaio resterebbe senza traccia.
+//
+// PRIMA ERA UN NUMERO SOLO, CHE NON TORNAVA MAI INDIETRO (corretto il 09/09/2026). Bastava
+// un intoppo alle 7 del mattino perche' la scheda dicesse "3 dati non sono arrivati sul
+// cloud" per tutto il resto della giornata, anche quando quegli stessi dati erano poi
+// arrivati benissimo: ricaricare i PDF non spegneva l'avviso perche' NIENTE lo poteva
+// spegnere. Un allarme che non si spegne e' un allarme che si impara a ignorare — e questo
+// taceva pure sull'unica cosa azionabile, QUALI dati fossero rimasti indietro.
+//
+// Ora il registro tiene i NOMI delle chiavi, in due gruppi:
+//   sospese → non ancora arrivate: e' la cosa azionabile, ed e' l'unica che fa rosso
+//   risolte → non riuscite al primo colpo e poi arrivate: resta la traccia, senza allarme
+//
+// I nomi delle chiavi non si mostrano grezzi: `qm_prestay` non dice niente a chi legge, e
+// deve poter capire cosa ricaricare senza chiedere a nessuno.
+const KV_NOMI_DATI={
+  qm_arriviData:'Arrivi del giorno', qm_bkfData:'Colazioni', qm_piano:'Piano settimanale',
+  qm_weekData:'Turno', qm_rcGuests:'Registration card', qm_prestay:'Messaggi pre-stay',
+  qm_pulData:'Report pulizie', qm_hk_soul:'Housekeeping SoulArt', qm_hk_bout:'Housekeeping Boutique',
+  qm_biancheria:'Consumo biancheria', qm_resi_biancheria:'Reso biancheria',
+  qm_giacenza:'Giacenza biancheria', qm_cassa_fondo:'Cassa — fondo', qm_cassa_incasso:'Cassa — incasso',
+  qm_cassa_rimossi:'Cassa — voci eliminate', qm_dvr:'Fascicolo dipendenti', qm_ddt:'Spese fornitori',
+  qm_inv_orders:'Ordini inventario', qm_app_status:'Pannello applicazioni',
+  qm_rev_calib:'Calibrazione recensioni', qm_rev_sent:'Recensioni — risposte inviate',
+  qm_bkf_monthly_history:'Archivio colazioni', qm_bia_distinte:'Distinte biancheria stampate',
+  qm_turni_storico:'Archivio turni', qm_spese_cat_override:'Categorie spese'
+};
+function _kvNomeDato(key){
+  if(KV_NOMI_DATI[key])return KV_NOMI_DATI[key];
+  if(/^qm_rev_exp_/.test(key))return'Recensioni Expedia';
+  if(/^qm_rev_/.test(key))return'Recensioni Booking';
+  if(/^qm_inv_/.test(key))return'Inventario detersivi';
+  if(/^qm_cm_/.test(key))return'Distribuzione Culligan';
+  if(/^qm_hkp_/.test(key))return'Operativa HKP';
+  if(/^qm_ts_/.test(key))return'Data di caricamento';
+  return String(key||'').replace(/^qm_/,'');
+}
 function _kvChiaveFallite(){
   const d=new Date();
   return'qm_kv_fallite_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-function _kvSegnaFallitaOggi(){
+function _kvRegistroFallite(){
   try{
-    const k=_kvChiaveFallite();
-    const n=(parseInt(localStorage.getItem(k)||'0')||0)+1;
-    localStorage.setItem(k,String(n));
+    const g=JSON.parse(localStorage.getItem(_kvChiaveFallite())||'null');
+    // Il vecchio formato era un numero nudo. Non dice quali chiavi ne' se poi siano arrivate,
+    // quindi non c'e' niente da riportare avanti: si riparte da zero invece di trascinare un
+    // allarme su cui non si puo' fare nulla.
+    if(g&&typeof g==='object'&&!Array.isArray(g))return{sospese:g.sospese||{},risolte:g.risolte||{}};
   }catch(e){}
+  return{sospese:{},risolte:{}};
 }
-function _kvFalliteOggi(){
-  try{return parseInt(localStorage.getItem(_kvChiaveFallite())||'0')||0;}catch(e){return 0;}
+function _kvSalvaRegistroFallite(r){
+  try{localStorage.setItem(_kvChiaveFallite(),JSON.stringify(r));}catch(e){}
 }
+function _kvSegnaFallitaOggi(key){
+  const r=_kvRegistroFallite();
+  r.sospese[key]=(r.sospese[key]||0)+1;
+  delete r.risolte[key];
+  _kvSalvaRegistroFallite(r);
+}
+// Chiamata a OGNI scrittura riuscita, anche in una sessione diversa da quella che ha fallito:
+// il registro sta in localStorage e sopravvive al ricaricamento, `_kvFallite` no. Legare la
+// pulizia a `_kvFallite` (com'era) voleva dire che dopo un Cmd+R niente poteva piu' spegnere
+// l'avviso — che e' esattamente il difetto visto il 09/09/2026.
+function _kvSegnaArrivataOggi(key){
+  const r=_kvRegistroFallite();
+  if(!r.sospese[key])return false;
+  r.risolte[key]=(r.risolte[key]||0)+r.sospese[key];
+  delete r.sospese[key];
+  _kvSalvaRegistroFallite(r);
+  return true;
+}
+// Cosa e' ancora fermo su questo dispositivo, con il nome leggibile di ogni dato.
+function _kvSospeseOggi(){
+  const s=_kvRegistroFallite().sospese;
+  return Object.keys(s).map(k=>({chiave:k,nome:_kvNomeDato(k),n:s[k]}));
+}
+function _kvRisolteOggi(){
+  const r=_kvRegistroFallite().risolte;
+  return Object.keys(r).reduce((t,k)=>t+r[k],0);
+}
+// Un 401 NON e' una scrittura persa: e' la porta chiusa e il lasciapassare mancante o
+// scaduto. Il velo di abilitazione arriva gia' per conto suo, e il dato partira' appena il
+// dispositivo e' abilitato. Contarlo voleva dire che ogni apparecchio nuovo apriva Compass
+// con una manciata di "dati non arrivati" che non erano mai esistiti.
+function _kvVaSegnalato(stato){return stato!==401;}
 function _kvNonRiuscita(key){
   _kvFallite[key]=(_kvFallite[key]||0)+1;
-  _kvSegnaFallitaOggi();
+  _kvSegnaFallitaOggi(key);
   try{setSyncStatus('error');}catch(e){}
   try{_kvRenderAvviso();}catch(e){}
 }
 function _kvRiuscita(key){
+  const cambiato=_kvSegnaArrivataOggi(key);
+  if(cambiato)try{qmAggiornaPallinoStato();}catch(e){}   // raro: solo quando qualcosa si sblocca
   if(!_kvFallite[key])return;
   delete _kvFallite[key];
   try{_kvRenderAvviso();}catch(e){}
@@ -4624,19 +4708,21 @@ async function kvSet(key,value,retries=3){
   const v=typeof value==='string'?value:JSON.stringify(value);
   if(_kvUltimo[key]===v)return true;   // già scritto identico: non si consuma una scrittura
   _kvUltimo[key]=v;
+  let ultimoStato=0;                   // 0 = la richiesta non e' nemmeno partita
   for(let i=0;i<retries;i++){
     try{
       const res=await fetch(PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value})});
       if(res.ok){_kvRiuscita(key);try{_qmSegnaAggiornamento(key);}catch(e){}return true;}
-      // 401 = porta chiusa e lasciapassare mancante o scaduto: il velo di abilitazione
-      // arriva gia' per conto suo, un secondo avviso rosso sarebbe solo rumore.
-      if(res.status===401)break;
-    }catch(e){}
+      ultimoStato=res.status;
+    }catch(e){ultimoStato=0;}
+    // 401 = porta chiusa e lasciapassare mancante o scaduto: ritentare non serve, e il velo
+    // di abilitazione arriva gia' per conto suo.
+    if(ultimoStato===401)break;
     if(i<retries-1)await new Promise(r=>setTimeout(r,1500*(i+1)));
   }
   // Non riuscita: si dimentica, altrimenti quel valore non verrebbe più ritentato.
   delete _kvUltimo[key];
-  _kvNonRiuscita(key);
+  if(_kvVaSegnalato(ultimoStato))_kvNonRiuscita(key);
   return false;
 }
 const LS={

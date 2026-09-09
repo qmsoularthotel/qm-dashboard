@@ -60,7 +60,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 600 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 634 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **5 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr) sono
 accendibili e spegnibili da remoto — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
@@ -4009,7 +4009,7 @@ si scoprivano solo aprendo Cloudflare o chiedendo a Claude.
 | Questo computer · nome | `qm_dispositivo` in `localStorage` | mai |
 | Compass v… · aperto da … | il `?v=` del tag `<script>` e `_QM_APERTO_DA` | mai — è informativa |
 | Errori del programma oggi | `localStorage`, raccolti da `_qmSegnaErrore` | rossa se ce n'è almeno uno |
-| Scritture non riuscite oggi | `localStorage`, contate da `_kvNonRiuscita` | ambra se ce n'è almeno una |
+| Scritture non ancora arrivate | `localStorage`, registro tenuto da `_kvNonRiuscita`/`_kvRiuscita` | rossa finché un dato resta fermo su questo computer |
 
 **"Ultimo aggiornamento — da Hotel, oggi alle 14:32"** risponde alla domanda che con due
 postazioni ci si fa più spesso: *è stato toccato qualcosa da quando non guardo?*. Prima si
@@ -4094,10 +4094,43 @@ e che si impara a ignorare. Verificato disallineandola di proposito: scatta.
 *"non dichiarato"*, non *"aperto"*: un'assunzione scritta come un fatto è esattamente l'errore
 dell'avviso pre-stay sul mittente Booking.
 
-Il conto delle scritture non riuscite vive **in questo browser**, per giorno: consumare una
-scrittura sul cloud per dire che una scrittura non è riuscita sarebbe assurdo. Completa la
-fascia rossa di `_kvRenderAvviso()`, che si vede solo mentre si è sulla pagina e sparisce al
-ricaricamento.
+#### Il registro delle scritture non arrivate — sospese, non un contatore (fix 09/09/2026)
+
+Vive **in questo browser**, per giorno (`qm_kv_fallite_<data>`): consumare una scrittura sul
+cloud per dire che una scrittura non è riuscita sarebbe assurdo. Completa la fascia rossa di
+`_kvRenderAvviso()`, che si vede solo mentre si è sulla pagina e sparisce al ricaricamento.
+
+**Era un numero solo, e non tornava mai indietro.** Un intoppo alle 7 del mattino faceva dire
+alla scheda *"3 dati non sono arrivati sul cloud"* fino a mezzanotte, anche dopo che quei dati
+erano arrivati benissimo — e ricaricare i PDF non spegneva niente, perché **niente** lo poteva
+spegnere: `_kvRiuscita` ripuliva solo `_kvFallite`, che è memoria di sessione e dopo un
+ricaricamento è già vuota. Visto su iPad il 09/09/2026. Un allarme che non si spegne è un
+allarme che si impara a ignorare, e questo per giunta taceva sull'unica cosa azionabile:
+**quali** dati fossero rimasti indietro.
+
+Il registro tiene ora i **nomi delle chiavi**, in due gruppi:
+
+| Gruppo | Cosa contiene | Effetto |
+|---|---|---|
+| `sospese` | non ancora arrivate | è l'unica cosa che fa **rosso**, e la scheda le **elenca per nome** (`_kvNomeDato`, non la chiave grezza) |
+| `risolte` | non riuscite al primo colpo e poi arrivate | resta la traccia della giornata, come nota accanto al verde — non come problema |
+
+`_kvSegnaArrivataOggi(key)` sposta da un gruppo all'altro e viene chiamata a **ogni** scrittura
+riuscita, anche in una sessione diversa da quella che ha fallito: è questo che permette
+all'avviso di spegnersi ricaricando il dato. Non legarla di nuovo a `_kvFallite`.
+
+**Un 401 non è una scrittura persa** — `_kvVaSegnalato(stato)`. Il commento lo dichiarava già
+dal 03/09, ma il codice faceva `if(res.status===401)break;` e il `break` salta solo i
+ritentativi: `_kvNonRiuscita` veniva eseguita comunque. Ogni dispositivo nuovo apriva quindi
+Compass con una manciata di "dati non arrivati" prodotti dalle scritture tentate **prima**
+dell'abilitazione — cioè da un rifiuto di cui il velo di abilitazione si occupa già.
+
+**Il vecchio formato (un numero nudo) non viene trascinato**: non dice quali chiavi né se
+siano poi arrivate, quindi terrebbe acceso un allarme su cui non si può fare nulla.
+
+Coperto da 12 controlli, verificati con tre sabotaggi (la pulizia torna legata alla sola
+memoria di sessione; il 401 conta di nuovo; il vecchio contatore viene trascinato): 5, 1 e 1
+falliscono.
 
 ### Copia di sicurezza dell'archivio — Sicurezza → "Scarica copia"
 
@@ -4221,7 +4254,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio. 600 controlli.
+scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate. 634 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire
@@ -4436,6 +4469,7 @@ confrontarli con quelli presenti in `index.html`.
 | I suggerimenti mostravano il **carico** dove serviva il numero di **partenze** | Il carico (lavoro pesato, con le fermate che valgono meno di una partenza) è una grandezza interna al motore. Le cameriere confrontano fra loro le **partenze pro capite**: è quello l'obiettivo da pareggiare | Ogni giorno mostra sempre le partenze; il carico si nomina solo quando le partenze non cambiano ("cambia solo il carico"), altrimenti la riga sembrerebbe inutile. L'esito è costruito sui giorni in cui le partenze cambiano davvero, non sul primo dell'elenco |
 | Compass aperto e fermo consumava scritture KV | `hkpDeriveFromPiano()` scriveva `qm_hk_soul` e `qm_hk_bout` con `caricato: new Date()`: un orario nuovo a ogni derivazione, quindi il filtro di `kvSet` non riconosceva mai la ripetizione. Parte a ogni caricamento del Piano, **anche quello del giro di aggiornamento** → 2 scritture per ciclo, fino a ~5.700 al giorno per una postazione aperta (tetto: 1.000) | `_hkSalvaDerivato()` confronta i soli conteggi, ignorando `caricato` e `_ts`, e scrive solo se i numeri sono cambiati. Misurato il 04/09/2026: con Compass fermo erano le uniche due chiavi che cambiavano da sole |
 | Una scrittura sul cloud che falliva non lo diceva a nessuno | `kvSet` restituisce `false`, ma la maggior parte dei punti che la chiamano scarta il risultato con `.catch(()=>{})`: il dato restava sul dispositivo e Compass sembrava aver salvato. Successo il 03/09/2026 col tetto giornaliero esaurito — le altre postazioni non vedevano niente | Il conto lo tiene `kvSet` stessa (`_kvFallite`) e lo dice una volta sola con una fascia rossa in cima (`_kvRenderAvviso`), che sparisce da sola appena la scrittura riesce. Corretto lì e non nei ~20 punti di chiamata, che domani sarebbero di nuovo 21. Il 401 è escluso di proposito: quello lo racconta già il velo di abilitazione |
+| "3 dati non sono arrivati sul cloud" fermo tutto il giorno, anche dopo aver ricaricato i dati | Il registro del giorno era un **numero che non tornava mai indietro**: `_kvRiuscita` ripuliva solo `_kvFallite` (memoria di sessione, vuota dopo un ricaricamento), quindi niente poteva spegnere l'avviso. In più il 401 delle scritture tentate prima di abilitare il dispositivo veniva contato come dato perso, benché il commento dicesse il contrario: `if(res.status===401)break;` salta i ritentativi, non `_kvNonRiuscita`. Visto su iPad il 09/09/2026 | Registro con i **nomi** delle chiavi diviso in `sospese`/`risolte`: si spegne da solo quando il dato arriva, anche in una sessione successiva, e la scheda dice **quale** dato è fermo. `_kvVaSegnalato(401)` è `false`. Vedi "Il registro delle scritture non arrivate" |
 | Le app scrivevano un registro accessi che nessuno leggeva | `qm_hk_access` / `qm_bkf_access` / `qm_dvr_access`: una lettura e una scrittura a ogni apertura, per una sezione della dashboard rimossa a luglio | Rimosso da `housekeeper.html`, `breakfast.html`, `dvr.html` il 04/09/2026 |
 | Per sapere se un giorno aveva suggerimenti bisognava aprirlo | Le chip mostravano solo le **partenze**, che dicono se il giorno è storto, non se c'è qualcosa da fare: un giorno in pari può avere mosse (il motore guarda anche il carico) e uno rosso può non averne. Si aprivano i sette giorni uno per uno, ogni giorno | Terza riga nella chip: `2 mosse` in ambra, `—` dove non c'è niente. Il conteggio è `s.totMosse`, lo stesso che si trova aprendo il giorno. Costa ~20 ms a settimana perché `hkSuggestMoves` esce subito sui giorni in pari o passati |
 | Suggerimenti che non toccano il giorno selezionato | Per gli `scambio-blocco` il filtro sul giorno in focus è saltato di proposito (riguardano tutta la settimana), ma la nota diceva "solo le mosse che migliorano X" | Badge grigio **non tocca \<giorno\>** sulla mossa, e nota corretta |
