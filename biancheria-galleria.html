@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-11.15';
+const QM_APP_BUILD='2026-09-11.16';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -1016,10 +1016,9 @@ function _gbRenderCore(){
   // devono diventare impossibili — ma quello giusto si vede per primo.
   const bPrimario='background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
   const bSecondario='background:var(--surface);color:var(--accent);border:1.5px solid var(--border);padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
-  // Galleria: "Stampa la distinta" è SEMPRE il primo pulsante, blu (richiesta del QM, 11/09/2026).
-  const bStampa=`<button onclick="gbPrintDistinta()" style="${bPrimario}">${distPronta?'Ristampa la distinta':'Stampa la distinta'}</button>`;
-  const bRegistra=`<button onclick="gbRegistraGiro()" style="${bSecondario}">${giaReg?'Aggiorna giro':'Registra cosa ha portato'}</button>`;
-  h+=bStampa+bRegistra;
+  const bStampa=`<button onclick="gbPrintDistinta()" style="${vigilia&&!giaReg?bPrimario:bSecondario}">${distPronta?'Ristampa la distinta':'Stampa la distinta'}</button>`;
+  const bRegistra=`<button onclick="gbRegistraGiro()" style="${vigilia&&!giaReg?bSecondario:bPrimario}">${giaReg?'Aggiorna giro':'Registra cosa ha portato'}</button>`;
+  h+=(vigilia&&!giaReg)?(bStampa+bRegistra):(bRegistra+bStampa);
   h+=`</div>
       <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">${vigilia&&!giaReg
         ?'Oggi serve solo la <strong>stampa</strong>: i pezzi da dargli sono già calcolati dai consumi. Domattina, quando Raimondo arriva, si torna qui e si registra cosa ha portato.'
