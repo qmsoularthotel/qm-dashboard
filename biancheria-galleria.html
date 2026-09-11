@@ -144,10 +144,11 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-12.3';
+const QM_APP_BUILD='2026-09-12.4';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
+  try{ sessionStorage.setItem('bg_splash','salta'); }catch(e){}   // aggiornamento, non apertura
   location.replace(location.pathname+'?v='+Date.now());
 }
 async function qmCheckBuild(){
@@ -168,6 +169,7 @@ async function qmCheckVersione(){
     if(v===_qmVersioneFile)return;
     const a=document.activeElement;
     if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return;   // sta scrivendo: non ora
+    try{ sessionStorage.setItem('bg_splash','salta'); }catch(e){}
     location.reload();
   }catch(e){}
 }
@@ -200,21 +202,24 @@ setInterval(qmCheckVersione,600000);
 @keyframes qmSplashNeedle{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
 </style>
 <script>
-// Tre secondi, si salta al tocco, e NON riparte sui ricaricamenti: un aggiornamento
-// automatico dell'app non deve sembrare una riapertura.
+// Tre secondi, si salta al tocco. Parte OGNI VOLTA che si apre l'app — da un link, dai
+// preferiti, anche nella stessa scheda — e NON parte quando si ricarica la pagina col
+// pulsante del browser (richiesta del QM, 12/09/2026). La prima versione lo mostrava una
+// sola volta per scheda, e aprendo l'app dai preferiti in una scheda già usata non compariva.
 //
-// La decisione passa da sessionStorage, NON da performance.navigation.type: quando cambia
-// QM_APP_BUILD l'aggiornamento fa location.replace(...?v=...), che e' una navigazione di
-// tipo `navigate` e non `reload` — col solo nav.type lo splash ripartirebbe a ogni
-// pubblicazione. sessionStorage sopravvive sia al ricaricamento sia alla redirezione e si
-// azzera alla chiusura della scheda: e' esattamente "solo in apertura".
+// Un aggiornamento automatico dell'app non è un'apertura: prima di ricaricare segna
+// 'bg_splash'='salta' in sessionStorage, e qui lo si consuma. Serve perché la redirezione
+// location.replace(...?v=...) è una navigazione di tipo `navigate`, non `reload`: col solo
+// performance.navigation lo splash ripartirebbe a ogni pubblicazione.
 (function(){
   var s=document.getElementById('qm-splash');
   if(!s) return;
-  var gia=false;
-  try{ gia = sessionStorage.getItem('bg_splash')==='1'; }catch(e){}
-  if(gia){ s.remove(); return; }
-  try{ sessionStorage.setItem('bg_splash','1'); }catch(e){}
+  var salta=false;
+  try{ salta = sessionStorage.getItem('bg_splash')==='salta'; sessionStorage.removeItem('bg_splash'); }catch(e){}
+  var nav='';
+  try{ var n=performance.getEntriesByType('navigation')[0]; nav=n?n.type:''; }catch(e){}
+  if(!nav){ try{ nav=performance.navigation.type===1?'reload':''; }catch(e){} }
+  if(salta||nav==='reload'){ s.remove(); return; }
   setTimeout(function(){ s.style.opacity='0'; setTimeout(function(){ s.remove(); },520); },3000);
 })();
 </script>

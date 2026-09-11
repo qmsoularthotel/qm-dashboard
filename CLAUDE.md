@@ -2565,8 +2565,12 @@ sicurezza lo dice a chiare lettere. Se `localStorage` rifiuta la scrittura compa
 ### Veste
 
 Splash identico alle altre app (bussola, *Compass QM*, **Gestione Biancheria** e le due
-strutture), saltato con `sessionStorage` (`bg_splash`) e non con `nav.type` — la redirezione
-`?v=` dell'aggiornamento è una navigazione `navigate`. Riga di paternità in fondo alla pagina,
+strutture su una riga, separate da un trattino). **Parte a ogni apertura** — da un link o dai
+preferiti, anche nella stessa scheda — e **non** quando si ricarica col pulsante del browser
+(richiesta del QM, 12/09/2026; la prima versione lo mostrava una volta per scheda). Il
+ricaricamento si riconosce da `performance` (`type==='reload'`); l'aggiornamento automatico,
+che è una redirezione `?v=` e quindi una navigazione `navigate`, segna prima `bg_splash`=`salta`
+in `sessionStorage` e lo splash lo consuma. Riga di paternità in fondo alla pagina,
 non sul foglio stampato: la distinta va a Raimondo, che è esterno. Le variabili `--fs-xxs`,
 `--fs-xs`, `--fs-sm` e la classe `.panel-header` sono definite nel `<style>` della pagina perché
 il codice copiato da Compass le usa.

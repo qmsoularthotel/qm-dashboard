@@ -343,7 +343,7 @@ if grep -qE "localStorage\.(get|set|remove)Item\(.qm_" biancheria-galleria.html;
 fi
 # L'aggiornamento automatico invece deve restarci: guarda solo il proprio file, non serve
 # nessun server, ed e' l'unico modo perche' una correzione arrivi a chi la tiene aperta.
-# Lo splash si salta con sessionStorage, NON con performance.navigation.type: quando cambia
+# Lo splash parte a ogni apertura e si salta sul ricaricamento; l'aggiornamento automatico lo segna in sessionStorage, NON basta performance.navigation.type: quando cambia
 # QM_APP_BUILD l'aggiornamento fa location.replace(...?v=...), che e' una navigazione di tipo
 # `navigate` e non `reload` — col solo nav.type ripartirebbe a ogni pubblicazione. E' lo
 # stesso difetto gia' corretto su index.html, vedi CLAUDE.md "Compass (index.html)".
