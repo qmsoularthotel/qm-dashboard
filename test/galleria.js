@@ -235,3 +235,17 @@ ok('resi: quello del giorno stesso resta',          _rs.indexOf('r2') >= 0, fals
 ok('resi: l\'altra struttura non entra',            _rs.indexOf('r3') >= 0, false);
 ok('resi: uno già uscito non esce due volte',       _rs.indexOf('r4') >= 0, false);
 _bgReset();
+
+// ── Un giorno futuro non è un consumo mancante (11/09/2026) ──
+//    Il venerdì, la maschera della consegna di lunedì diceva "non sono stati registrati
+//    i consumi di venerdì, sabato e domenica": sabato e domenica non erano ancora
+//    arrivati. Una dimenticanza vera (un giorno passato) deve distinguersi da una attesa.
+_bgReset();
+_bg.consumi.push({ id: 'k1', hotel: 'ar', data: '10/09/2026', q: _bgQ({ Federa: 4 }) });
+var _st = _bgGiorniStato('ar', { dal: new Date(2026, 8, 9), al: new Date(2026, 8, 13), vuoto: false }, new Date(2026, 8, 11));
+ok('giorno passato senza consumi: da inserire',   _st[0].stato, 'manca');
+ok('giorno con consumi: fatto, col totale',       _st[1].stato + ' ' + _st[1].tot, 'ok 4');
+ok('oggi senza consumi: da inserire',             _st[2].stato, 'manca');
+ok('domani: non ancora',                          _st[3].stato, 'futuro');
+ok('dopodomani: non ancora',                      _st[4].stato, 'futuro');
+_bgReset();

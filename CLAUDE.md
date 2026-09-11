@@ -2583,6 +2583,17 @@ Ora:
 | Maschera con data **futura** | diventa *"Prepara la distinta"*: solo la colonna di ciò che esce e il pulsante di stampa. Il pulito si registra il giorno della consegna |
 | Maschera con data di oggi/passata e distinta già stampata | il pulsante principale diventa *"Registra cosa ha portato"* |
 
+**Un giorno futuro non è un consumo mancante.** La prima versione della maschera *"Prepara la
+distinta"* diceva, il venerdì, *"non sono stati registrati i consumi di venerdì, sabato e
+domenica"* per la consegna di lunedì — sabato e domenica non erano ancora arrivati. Ora
+`_bgGiorniStato(h,per,oggi)` dà a ogni giorno del periodo uno stato — **fatto** (verde, col
+totale), **da inserire** (ambra: già passato, o oggi), **non ancora** (tratteggiato: futuro) —
+e la maschera li mostra come caselle, una per giorno, sotto una frase che dice **quando** si
+stampa (*"Raimondo passa lunedì 14/09 alle 8. La distinta si stampa domenica 13 pomeriggio"*).
+Finché manca un giorno il pulsante è *"Stampa adesso (incompleta)"*, non primario, e la stampa
+chiede conferma: una distinta incompleta fa firmare a Raimondo meno pezzi di quelli che porta
+via. 5 controlli.
+
 **Le linguette non sono un dettaglio**: coi due calendari sfalsati (lun/mer/ven e mar/gio/sab)
 quasi ogni giorno è la vigilia di **una** delle due strutture, e un promemoria visibile solo su
 quella selezionata lascerebbe l'altra dimenticata.
