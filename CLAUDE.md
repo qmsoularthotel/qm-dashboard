@@ -2606,6 +2606,36 @@ mancano giorni, il passo lo dice in ambra.
 prima non ha il campo e si legge lo stesso. Coperto da 12 controlli in `test/galleria.js`,
 verificati sabotando la vigilia (`_bgGiornoGiro(h,oggi)` invece di domani): 5 falliscono.
 
+### Il pulito consegnato ha un riquadro SUO, per tipologia (11/09/2026)
+
+*"Dove inserisco quello che mi consegna Raimondo?"* — la colonna *"Ha portato"* stava dentro la
+maschera della consegna, che si apriva quasi sempre sulla **prossima** consegna, cioè futura, e
+lì la colonna non c'era. Due mestieri diversi stavano nello stesso riquadro:
+
+| Riquadro | Quando | Cosa si fa |
+|---|---|---|
+| **Consumi del giorno** | ogni giorno | una data, sette caselle, Salva |
+| **Pulito consegnato da Raimondo** (`vPulito`) | il giorno del giro, dopo il passaggio | **stessa forma dei consumi**: data, sette caselle per tipologia, Salva |
+| **Distinta dello sporco** (`vConsegna`) | la vigilia | solo il foglio da stampare: nessuna colonna del pulito |
+
+- La data del pulito è il **giro più recente** (`_bgGiroRecente`: oggi se Raimondo passa oggi),
+  mai futura — `bgSalvaPulito` rifiuta una data che non è ancora arrivata. Stato in
+  `_bgDataPulito`, azzerato cambiando linguetta, come `_bgDataConsegna`.
+- **Salvare il pulito crea la consegna se non esiste** (`_bgSalvaPulito`, pura e testata),
+  congelando lo sporco uscito: quello della **distinta stampata** se c'è — `_bg.distinte` ora
+  ricorda anche le quantità (`{ts,q}`), perché sono quelle che Raimondo ha firmato — altrimenti
+  la somma dei consumi del periodo. Lega a quella consegna gli inidonei aperti datati prima,
+  come faceva la vecchia registrazione.
+- Tutto a zero **non si salva**: una consegna in cui Raimondo non riporta niente non esiste.
+- Dopo il salvataggio il riquadro dice subito l'esito (*"ne mancano N rispetto ai M dello
+  sporco del …"*), verde se torna o ne porta di più, rosso solo se ne mancano.
+- La **Distinta dello sporco** propone la prossima consegna (`_bgProssimoGiro`). Su una data già
+  passata diventa una ristampa e mostra lo sporco **congelato** di quella consegna, non un
+  ricalcolo.
+
+Rimossi `bgRegistra`, `bgAggiornaDelta`, `_bgAttesoVis` e `bgVaiConsegna` (il passo di *Cosa fare
+oggi* porta ora a `bgVaiPulito`). 10 controlli in `test/galleria.js`.
+
 ### Distinta dei resi — lo stesso foglio di Compass (11/09/2026)
 
 I pezzi inidonei hanno ora una **loro distinta**, identica a quella che Compass stampa per

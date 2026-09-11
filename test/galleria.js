@@ -249,3 +249,31 @@ ok('oggi senza consumi: da inserire',             _st[2].stato, 'manca');
 ok('domani: non ancora',                          _st[3].stato, 'futuro');
 ok('dopodomani: non ancora',                      _st[4].stato, 'futuro');
 _bgReset();
+
+// ── Il pulito si inserisce in un riquadro suo, per tipologia (11/09/2026) ──
+//    Prima stava in una colonna "Ha portato" della maschera della consegna, che si apriva
+//    sulla consegna FUTURA — dove la colonna non c'era. Chi cercava dove scriverlo non lo
+//    trovava.
+_bgReset();
+// La data proposta è il giro più recente, mai una data futura: il pulito arriva dopo.
+ok('pulito: il venerdì AR propone il venerdì',     _bgFmt(_bgGiroRecente('ar', new Date(2026, 8, 11))), '11/09/2026');
+ok('pulito: il sabato AR propone il venerdì',      _bgFmt(_bgGiroRecente('ar', new Date(2026, 8, 12))), '11/09/2026');
+ok('pulito: il venerdì SB propone il giovedì',     _bgFmt(_bgGiroRecente('sb', new Date(2026, 8, 11))), '10/09/2026');
+// Senza una consegna registrata, salvare il pulito la crea congelando lo sporco uscito.
+_bg.consumi.push({ id: 'p1', hotel: 'ar', data: '07/09/2026', q: _bgQ({ Federa: 6 }) });
+_bg.consumi.push({ id: 'p2', hotel: 'ar', data: '08/09/2026', q: _bgQ({ Federa: 4 }) });
+_bg.consegne.push({ id: 'prima', hotel: 'ar', data: '07/09/2026', consegnato: _bgQ({ Federa: 3 }), ricevuto: _bgQ({ Federa: 1 }), ts: 1 });
+var _gp = _bgSalvaPulito('ar', '09/09/2026', _bgQ({ Federa: 2 }));
+ok('pulito: crea la consegna del giorno',          _bgConsegne('ar').length, 2);
+ok('pulito: sporco congelato dai consumi del periodo', _gp.consegnato.Federa, 10);
+ok('pulito: il ricevuto è quello inserito',        _gp.ricevuto.Federa, 2);
+ok('pulito: il confronto usa lo sporco della volta prima', _bgRiga(_gp).delta, -1);
+// Se la distinta è stata stampata, lo sporco congelato è QUELLO stampato (firmato).
+_bgSegnaDistinta('ar', '11/09/2026', _bgQ({ Federa: 7 }));
+var _gs = _bgSalvaPulito('ar', '11/09/2026', _bgQ({ Federa: 9 }));
+ok('pulito: vince lo sporco della distinta stampata', _gs.consegnato.Federa, 7);
+// Reinserendo lo stesso giorno si aggiorna, non si duplica.
+_bgSalvaPulito('ar', '11/09/2026', _bgQ({ Federa: 10 }));
+ok('pulito: stesso giorno, nessun doppione',       _bgConsegne('ar').filter(function (g) { return g.data === '11/09/2026'; }).length, 1);
+ok('pulito: e il valore è il nuovo',               _bgConsegne('ar').filter(function (g) { return g.data === '11/09/2026'; })[0].ricevuto.Federa, 10);
+_bgReset();
