@@ -56,16 +56,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .passo-a{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;}
 .tab-s .da-fare{color:var(--amber);font-weight:700;}
 
-/* GIORNI DEL PERIODO — uno per giorno, col suo stato */
-.gg-lista{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px;}
-.gg{border:1px solid var(--border);border-radius:9px;padding:7px 12px;min-width:112px;background:var(--bg);}
-.gg-n{font-size:12px;font-weight:700;color:var(--text);}
-.gg-s{font-size:11px;margin-top:2px;color:var(--text-dim);}
-.gg.ok{border-color:var(--green);background:var(--green-bg);}
-.gg.ok .gg-s{color:var(--green);font-weight:700;}
-.gg.manca{border-color:var(--amber);background:var(--amber-bg);}
-.gg.manca .gg-s{color:var(--amber);font-weight:700;}
-.gg.futuro{border-style:dashed;}
 .quando{font-size:14px;line-height:1.55;color:var(--text);margin-bottom:14px;}
 
 /* STATO IN TESTA */
@@ -147,7 +137,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-11.9';
+const QM_APP_BUILD='2026-09-11.10';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -437,11 +427,6 @@ function _bgGiorniStato(h,per,oggi){
     return{d:d,stato:d>o?'futuro':'manca',tot:0};
   });
 }
-function _bgGiorniHtml(stati){
-  return '<div class="gg-lista">'+stati.map(s=>
-    '<div class="gg '+s.stato+'"><div class="gg-n">'+BG_GG[s.d.getDay()]+' '+String(s.d.getDate()).padStart(2,'0')+'</div>'+
-    '<div class="gg-s">'+(s.stato==='ok'?'✓ '+s.tot+' pezzi':(s.stato==='manca'?'da inserire':'non ancora'))+'</div></div>').join('')+'</div>';
-}
 // Fino a quattro giorni si scrivono coi NOMI ("di lunedì 14 e martedì 15"): un
 // intervallo di date non dice a colpo d'occhio se sono i giorni giusti.
 function _bgPeriodoTxt(per){
@@ -546,10 +531,16 @@ function bgToggleSaldo(){_bgSaldoAperto=!_bgSaldoAperto;render();}
 // I consumi stanno SOPRA la consegna: si inseriscono ogni giorno, la consegna tre volte a
 // settimana. La cosa che si fa più spesso non va cercata scorrendo sotto quella che si fa di
 // rado — e la consegna li legge, quindi vengono prima anche nell'ordine del lavoro.
+// La distinta dello sporco compare SOLO la vigilia del ritiro: si prepara quel giorno e
+// basta. Mostrarla ogni giorno, con i giorni futuri del periodo ancora vuoti, la faceva
+// sembrare un lavoro quotidiano e rendeva tutto più difficile da capire. Gli altri giorni
+// "Cosa fare oggi" dice quando toccherà; le ristampe stanno nello storico.
+// Il riquadro con nome della struttura, ultima consegna e saldo è stato tolto (11/09/2026):
+// ripeteva cose che dicono già le linguette e lo storico delle consegne.
 function render(){
   const h=_bgHotel;
   document.getElementById('app').innerHTML=
-    vTabs()+vOggi(h)+vStato(h)+vConsumi(h)+vConsegna(h)+vPulito(h)+vResi(h)+vStorico(h)+vBackup();
+    vTabs()+vOggi(h)+vConsumi(h)+(_bgCompiti(h).vigilia?vConsegna(h):'')+vPulito(h)+vResi(h)+vStorico(h)+vBackup();
 }
 
 /* ── cosa fare oggi ───────────────────────────────────────────────────── */
@@ -616,39 +607,6 @@ function vTabs(){
 }
 
 /* ── stato in testa ───────────────────────────────────────────────────── */
-function vStato(h){
-  const cons=_bgConsegne(h);
-  const ultima=cons.length?cons[cons.length-1]:null;
-  const prox=_bgCalProx(h);
-  const s=_bgSaldo(h),rip=_bgRiepilogo(h);
-  const ap=_bgResiAperti(h);
-  const apPezzi=ap.reduce((x,r)=>x+(Number(r.qta)||0),0);
-
-  let vUlt='—',sUlt='Nessuna consegna registrata.';
-  if(ultima){
-    const r=_bgRiga(ultima);
-    vUlt=r.uscito+' pezzi';
-    sUlt='usciti il '+esc(ultima.data)+' — deve riportarli';
-  }
-  const saldoTxt=rip.n?_bgTxt(s.tot):'—';
-  const saldoSub=rip.n
-    ? 'su '+rip.n+' consegn'+(rip.n===1?'a':'e')+' confrontabil'+(rip.n===1?'e':'i')+
-      (rip.esclusi?' · '+rip.esclusi+' senza il dato di cosa ha riportato, escluse dal conto':'')
-    : 'serve almeno una consegna con una precedente da confrontare';
-
-  return '<div class="panel"><div class="panel-head"><div class="panel-title">'+esc(BG_HOTELS[h])+'</div>'+
-    '<div class="nota">Prossima consegna da registrare: <b>'+BG_GG[prox.getDay()]+' '+esc(_bgFmt(prox))+'</b></div></div>'+
-    '<div class="panel-body"><div class="stato">'+
-      '<div class="stato-box"><div class="stato-l">Ultima consegna</div><div class="stato-v">'+vUlt+'</div><div class="stato-s">'+sUlt+'</div></div>'+
-      '<div class="stato-box"><div class="stato-l">Pezzi non rientrati</div>'+
-        '<div class="stato-v" style="color:'+(rip.n?_bgCol(s.tot):'var(--text-dim)')+';">'+saldoTxt+'</div>'+
-        '<div class="stato-s">'+saldoSub+'</div></div>'+
-      '<div class="stato-box"><div class="stato-l">Pezzi inidonei in attesa</div><div class="stato-v">'+apPezzi+'</div>'+
-        '<div class="stato-s">'+(apPezzi?'escono con la prossima consegna':'niente da rendere')+'</div></div>'+
-    '</div>'+
-    (rip.n?'<div class="nota" style="margin-top:12px;">Ha portato <b>'+rip.portato+'</b> pezzi su <b>'+rip.dovuto+'</b> attesi.</div>':'')+
-    '</div></div>';
-}
 
 /* ── pulito consegnato da Raimondo ──────────────────────────────────────
    Il pulito che Raimondo porta si inserisce come i consumi: una data, una casella per
@@ -774,7 +732,7 @@ function vConsegna(h){
   const passata=d<=oggi;
   const vigTxt=vig.getTime()===oggi.getTime()?'<b>oggi pomeriggio</b>':'<b>'+BG_GG[vig.getDay()]+' '+String(vig.getDate()).padStart(2,'0')+' pomeriggio</b>';
   const stati=g?[]:_bgGiorniStato(h,per,oggi);
-  const mancano=stati.filter(s=>s.stato==='manca'),futuri=stati.filter(s=>s.stato==='futuro');
+  const mancano=stati.filter(s=>s.stato==='manca');
   const nomi=a=>a.map(s=>BG_GG[s.d.getDay()]+' '+String(s.d.getDate()).padStart(2,'0')).join(', ');
   let av='';
   if(!g&&per&&per.fonte==='calendario')
@@ -783,17 +741,15 @@ function vConsegna(h){
     av+='<div class="avviso">Il '+esc(data)+' è un <b>'+BG_GG[d.getDay()]+'</b>: di norma qui il giro passa '+BG_GIORNI_TXT[h]+'. Se è una consegna straordinaria va bene, altrimenti controlla la data.</div>';
   const rows=BG_VOCI.map((v,i)=>'<tr><td>'+esc(v)+'</td>'+
     '<td class="r"><input type="number" min="0" id="bg-s-'+i+'" value="'+(Number(somma[v])||0)+'" onfocus="this.select()"></td></tr>').join('');
-  const incompleta=mancano.length||futuri.length;
+  const incompleta=mancano.length>0;
   return '<div class="panel" id="bg-consegna"><div class="panel-head">'+
       '<div class="panel-title">Distinta dello sporco da consegnare a Raimondo</div>'+
       '<div class="nota">Consegna di '+(d?BG_GG[d.getDay()]:'')+' '+esc(data)+(stampata?' · <b style="color:var(--green);">distinta già stampata</b>':'')+'</div>'+
     '</div><div class="panel-body">'+
     '<div class="quando">'+(passata
       ? 'Consegna '+(g?'già registrata':'del '+esc(data))+': da qui si può '+(stampata?'ristampare':'stampare')+' la distinta dello sporco uscito.'
-      : 'Raimondo passa <b>'+BG_GG[d.getDay()]+' '+esc(data)+' alle 8</b>. La distinta si stampa '+vigTxt+', quando ci sono i consumi di tutti i giorni qui sotto.')+'</div>'+
-    (stati.length?'<label class="f">Consumi che finiscono in questo sacco</label>'+_bgGiorniHtml(stati):'')+
-    (mancano.length?'<div class="avviso" style="margin-top:10px;">Mancano i consumi di <b>'+nomi(mancano)+'</b>: inseriscili nel riquadro <b>Consumi del giorno</b> qui sopra.</div>':'')+
-    (futuri.length?'<div class="nota" style="margin:8px 0 4px;">'+nomi(futuri)+': '+(futuri.length===1?'il giorno non è':'i giorni non sono')+' ancora arrivat'+(futuri.length===1?'o':'i')+', i consumi si inseriscono giorno per giorno.</div>':'')+
+      : 'Raimondo passa <b>'+BG_GG[d.getDay()]+' '+esc(data)+' alle 8</b>. La distinta si stampa '+vigTxt+' e si lascia in reception.')+'</div>'+
+    (mancano.length?'<div class="avviso" style="margin-top:10px;">Mancano i consumi di <b>'+nomi(mancano)+'</b>: inseriscili nel riquadro <b>Consumi del giorno</b> qui sopra, altrimenti la distinta esce incompleta.</div>':'')+
     '<div class="row" style="margin:14px 0;">'+
       '<div><label class="f">Data della consegna</label>'+
         '<input type="date" id="bg-g-data" value="'+_bgToIso(data)+'" onchange="bgSetDataConsegna(this.value)"></div>'+

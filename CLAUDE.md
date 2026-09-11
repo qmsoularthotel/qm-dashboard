@@ -2621,6 +2621,19 @@ lì la colonna non c'era. Due mestieri diversi stavano nello stesso riquadro:
 L'ordine dei riquadri segue quello del lavoro (11/09/2026, su richiesta del QM): consumi, poi la
 distinta che esce la vigilia, poi il pulito che rientra il giorno dopo.
 
+**La distinta compare SOLO la vigilia del ritiro** (`render()`: `_bgCompiti(h).vigilia`). Si
+prepara quel giorno e basta: mostrarla ogni giorno, con i giorni futuri del periodo ancora vuoti,
+la faceva sembrare un lavoro quotidiano. Gli altri giorni *Cosa fare oggi* dice quando toccherà,
+e le ristampe si fanno dallo storico.
+
+**Tolte le caselle giorno per giorno** (*"venerdì 11 · da inserire · sabato 12 · non ancora"*):
+secondo il QM rendevano tutto più incomprensibile. Resta solo l'avviso ambra quando mancano i
+consumi di un giorno già passato. `_bgGiorniStato` resta (lo usa la conferma di stampa
+incompleta), `_bgGiorniHtml` e le classi `.gg*` sono state rimosse.
+
+**Tolto il riquadro della struttura** (`vStato`: ultima consegna, pezzi non rientrati, inidonei
+in attesa): ripeteva le linguette e lo storico delle consegne.
+
 - La data del pulito è il **giro più recente** (`_bgGiroRecente`: oggi se Raimondo passa oggi),
   mai futura — `bgSalvaPulito` rifiuta una data che non è ancora arrivata. Stato in
   `_bgDataPulito`, azzerato cambiando linguetta, come `_bgDataConsegna`.
@@ -2664,8 +2677,8 @@ niente: gli inidonei si legano alla consegna quando la si registra. 4 controlli 
 
 ### Ordine dei pannelli: i consumi SOPRA la consegna (11/09/2026)
 
-Linguette · Cosa fare oggi · situazione della struttura · **Consumi del giorno** · Distinta dello
-sporco da consegnare a Raimondo · Pulito consegnato da Raimondo · Pezzi inidonei · Consegne di
+Linguette · Cosa fare oggi · **Consumi del giorno** · Distinta dello
+sporco da consegnare a Raimondo (solo la vigilia) · Pulito consegnato da Raimondo · Pezzi inidonei · Consegne di
 Raimondo · Copia di sicurezza. I consumi si inseriscono **ogni
 giorno**, la consegna tre volte a settimana: la cosa che si fa più spesso non va cercata
 scorrendo sotto quella che si fa di rado. Ed è anche l'ordine del lavoro — la consegna legge i
