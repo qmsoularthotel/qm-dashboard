@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-12.5';
+const QM_APP_BUILD='2026-09-12.6';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -1488,57 +1488,11 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 function gbRender(){
   _gbRenderCore();
   const x=document.getElementById('gb-extra');
-  if(x)x.innerHTML=vBackup();
+  if(x)x.innerHTML='';
 }
 
-/* ── copia di sicurezza ───────────────────────────────────────────────────
-   Qui non c'è cloud e non c'è backup notturno: mesi di consegne vivono nella
-   cache di questo browser. Cancellarla, o cambiare computer, li porta via
-   senza preavviso. Questo pulsante è l'unica rete.                          */
-function vBackup(){
-  const n=_gb.giri.length,c=_gb.consumi.length;
-  return '<div class="panel"><div class="panel-head"><div class="panel-title">Copia di sicurezza</div>'+
-    '<div class="nota">'+n+' consegne · '+c+' giornate di consumi</div></div>'+
-    '<div class="panel-body">'+
-    '<div class="nota" style="margin-bottom:13px;">I dati stanno <b>solo in questo browser, su questo computer</b>. Non c\'è nessuna copia altrove: svuotare la cronologia, cambiare computer o reinstallare il browser li cancella. <b>Scarica una copia ogni tanto</b> e tienila in una cartella — con quella si riparte da dove si era.</div>'+
-    '<div class="row">'+
-      '<button class="btn btn-primary" onclick="bgScarica()">Scarica copia</button>'+
-      '<button class="btn" onclick="document.getElementById(\'bg-file\').click()">Ricarica da una copia</button>'+
-      '<input type="file" id="bg-file" accept="application/json,.json" style="display:none;" onchange="bgRicarica(this)">'+
-    '</div></div></div>';
-}
-function bgScarica(){
-  const blob=new Blob([JSON.stringify({_app:'biancheria-galleria',_ver:2,_ts:Date.now(),dati:_gb,distinte:_gbDist},null,1)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='biancheria-galleria-'+_gbFmt(new Date()).replace(/\//g,'-')+'.json';
-  document.body.appendChild(a);a.click();
-  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
-  _gbHint('copia scaricata');
-}
-function bgRicarica(input){
-  const f=input.files&&input.files[0];input.value='';
-  if(!f)return;
-  const fr=new FileReader();
-  fr.onload=()=>{
-    let o;
-    try{o=JSON.parse(fr.result);}catch(e){alert('Il file non è una copia valida: non si riesce a leggerlo.');return;}
-    const d=o&&o.dati?o.dati:o;
-    // Si accettano le copie di entrambe le versioni: quella semplificata chiamava i giri
-    // "consegne", questa li chiama come Compass.
-    if(!d||!Array.isArray(d.consumi)||!(Array.isArray(d.giri)||Array.isArray(d.consegne))){alert('Il file non sembra una copia di questa app.');return;}
-    const nuovo=_gbMigra(d);
-    // Col cloud il ripristino UNISCE la copia a quello che c'è (stessa fusione di ogni
-    // salvataggio): rimette dentro ciò che manca, non cancella ciò che è stato aggiunto dopo.
-    if(!confirm('La copia contiene '+nuovo.giri.length+' consegne e '+nuovo.consumi.length+' giornate di consumi.\n\nVerranno UNITE a quelle attuali ('+_gb.giri.length+' consegne, '+_gb.consumi.length+' giornate): si recupera ciò che manca, non si cancella niente.\n\nProcedere?'))return;
-    _gb=nuovo;
-    if(o&&o.distinte&&typeof o.distinte==='object'){_gbDist={};Object.keys(o.distinte).forEach(k=>{const v=o.distinte[k];_gbDist[k]=(v&&v.ts)||v||Date.now();});try{localStorage.setItem(GB_DIST_KEY,JSON.stringify(_gbDist));}catch(e){}}
-    _gbSave();gbRender();
-    _gbHint('copia ricaricata');
-  };
-  fr.readAsText(f);
-}
-
+/* La "Copia di sicurezza" (scarica/ricarica un file) è stata tolta il 12/09/2026: coi dati
+   sul cloud di Compass c'è il backup notturno su Drive, e il file non serve più. */
 
 /* ── avvio ────────────────────────────────────────────────────────────── */
 try{const hs=localStorage.getItem('bg_hotel');if(hs&&GB_HOTELS[hs])_gbHotel=hs;}catch(e){}

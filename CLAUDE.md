@@ -2540,10 +2540,8 @@ invece di ritoccarla a mano.
 
 ### Cosa c'è in più rispetto a Compass — e cosa NO
 
-- **Copia di sicurezza** (`vBackup`, `bgScarica`/`bgRicarica`): unica rete, perché non c'è
-  backup notturno. Il file porta anche `distinte`.
 - `gbRender()` è un involucro: chiama `_gbRenderCore()` (il `biaRender` di Compass, che riempie
-  `#gb-content`) e poi disegna la copia di sicurezza in `#gb-extra`.
+  `#gb-content`); `#gb-extra` è vuoto dal 12/09/2026.
 - **Niente pezzi inidonei** (tolti l'11/09/2026 su richiesta del QM): in Galleria la procedura
   di reso si fa **a mano, su carta**. Non reintrodurre il riquadro né la loro distinta. I resi
   eventualmente salvati dalla versione precedente vengono lasciati cadere alla lettura.
@@ -2585,8 +2583,9 @@ elenco né cancellazioni né chiavi `qm_`, e `worker.js` contiene ancora `permes
 sua espressione. `bg_biancheria` e `bg_distinte` entrano nel **backup notturno su Drive** senza
 toccare niente, perché il backup prende l'elenco completo da `/kv/chiavi`.
 
-**La copia di sicurezza** resta, ma col cloud **unisce** invece di sostituire: ripristinare
-recupera ciò che manca, non cancella ciò che è stato aggiunto dopo.
+**La copia di sicurezza (scarica/ricarica un file) è stata tolta** il 12/09/2026, su richiesta
+del QM: coi dati sul cloud la rete è il backup notturno su Drive. `vBackup`, `bgScarica` e
+`bgRicarica` non esistono più; `#gb-extra` resta vuoto, pronto per eventuali riquadri propri.
 
 ### Veste
 
