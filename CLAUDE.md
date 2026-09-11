@@ -2615,8 +2615,11 @@ lì la colonna non c'era. Due mestieri diversi stavano nello stesso riquadro:
 | Riquadro | Quando | Cosa si fa |
 |---|---|---|
 | **Consumi del giorno** | ogni giorno | una data, sette caselle, Salva |
+| **Distinta dello sporco da consegnare a Raimondo** (`vConsegna`) | la vigilia | solo il foglio da stampare: nessuna colonna del pulito |
 | **Pulito consegnato da Raimondo** (`vPulito`) | il giorno del giro, dopo il passaggio | **stessa forma dei consumi**: data, sette caselle per tipologia, Salva |
-| **Distinta dello sporco** (`vConsegna`) | la vigilia | solo il foglio da stampare: nessuna colonna del pulito |
+
+L'ordine dei riquadri segue quello del lavoro (11/09/2026, su richiesta del QM): consumi, poi la
+distinta che esce la vigilia, poi il pulito che rientra il giorno dopo.
 
 - La data del pulito è il **giro più recente** (`_bgGiroRecente`: oggi se Raimondo passa oggi),
   mai futura — `bgSalvaPulito` rifiuta una data che non è ancora arrivata. Stato in
@@ -2661,8 +2664,9 @@ niente: gli inidonei si legano alla consegna quando la si registra. 4 controlli 
 
 ### Ordine dei pannelli: i consumi SOPRA la consegna (11/09/2026)
 
-Linguette · situazione della struttura · **Consumi del giorno** · Registra la consegna ·
-Pezzi inidonei · Consegne di Raimondo · Copia di sicurezza. I consumi si inseriscono **ogni
+Linguette · Cosa fare oggi · situazione della struttura · **Consumi del giorno** · Distinta dello
+sporco da consegnare a Raimondo · Pulito consegnato da Raimondo · Pezzi inidonei · Consegne di
+Raimondo · Copia di sicurezza. I consumi si inseriscono **ogni
 giorno**, la consegna tre volte a settimana: la cosa che si fa più spesso non va cercata
 scorrendo sotto quella che si fa di rado. Ed è anche l'ordine del lavoro — la consegna legge i
 consumi del periodo, quindi vengono prima. L'ordine sta tutto in `render()`.
