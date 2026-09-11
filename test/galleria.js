@@ -219,3 +219,19 @@ ok('consegna registrata: il passo sparisce',        _bgCompiti('sb', _mar).passi
 _bg = { consumi: [], consegne: [], resi: [] };
 ok('archivio vecchio senza distinte: si legge',     _bgDistStampata('sb', '15/09/2026'), false);
 _bgReset();
+
+// ── Distinta dei resi: escono quelli datati PRIMA della consegna (11/09/2026) ──
+//    Stesso taglio dello sporco: i pezzi trovati il giorno stesso non sono nel sacco
+//    delle 8. Stampare quelli sbagliati darebbe a Raimondo un foglio che non combacia
+//    col sacco che ha in mano.
+_bgReset();
+_bg.resi.push({ id: 'r1', hotel: 'sb', data: '14/09/2026', tipologia: 'Federa', qta: 2, motivo: 'Macchiata', consegnaId: null });
+_bg.resi.push({ id: 'r2', hotel: 'sb', data: '15/09/2026', tipologia: 'Telo doccia', qta: 1, motivo: 'Strappata', consegnaId: null });
+_bg.resi.push({ id: 'r3', hotel: 'ar', data: '14/09/2026', tipologia: 'Federa', qta: 5, motivo: 'Usurata', consegnaId: null });
+_bg.resi.push({ id: 'r4', hotel: 'sb', data: '13/09/2026', tipologia: 'Federa', qta: 9, motivo: 'Usurata', consegnaId: 'vecchia' });
+var _rs = _bgResiDaConsegnare('sb', '15/09/2026').map(function (r) { return r.id; }).join(',');
+ok('resi: esce quello del giorno prima',           _rs.indexOf('r1') >= 0, true);
+ok('resi: quello del giorno stesso resta',          _rs.indexOf('r2') >= 0, false);
+ok('resi: l\'altra struttura non entra',            _rs.indexOf('r3') >= 0, false);
+ok('resi: uno già uscito non esce due volte',       _rs.indexOf('r4') >= 0, false);
+_bgReset();

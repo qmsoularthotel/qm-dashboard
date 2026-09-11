@@ -2595,6 +2595,29 @@ mancano giorni, il passo lo dice in ambra.
 prima non ha il campo e si legge lo stesso. Coperto da 12 controlli in `test/galleria.js`,
 verificati sabotando la vigilia (`_bgGiornoGiro(h,oggi)` invece di domani): 5 falliscono.
 
+### Distinta dei resi — lo stesso foglio di Compass (11/09/2026)
+
+I pezzi inidonei hanno ora una **loro distinta**, identica a quella che Compass stampa per
+SoulArt e Boutique (`_resiStampa` in `app.js`): *"Distinta Reso Biancheria Inidonea"*, stesse
+tre avvertenze, tabella `Data · Tipologia · Quantità · Motivo · Firma HK`, riquadro di ritiro
+firmato da Raimondo e riquadro di consegna della distinta firmata. Raimondo è lo stesso
+fornitore per tutte le strutture e deve ritrovarsi davanti lo stesso foglio.
+
+Cambia solo ciò che qui è diverso: la lista si consegna al **Resident Manager** (non al Sig.
+Presta), e il riquadro di ritiro non dice *"ogni 15 giorni"* perché qui gli inidonei escono a
+ogni consegna. La colonna *Firma HK* resta vuota: quest'app non registra chi ha trovato il pezzo.
+
+**Il copione è duplicato, non condiviso**: l'app vive fuori da Compass e non carica `app.js`.
+Cambiando uno dei due fogli, va cambiato anche l'altro.
+
+Escono i resi aperti **datati prima** della consegna (`_bgResiDaConsegnare`) — stesso taglio
+dello sporco e della registrazione: quelli trovati il giorno stesso non sono nel sacco delle 8.
+Tre punti da cui si stampa: l'intestazione del pannello inidonei (per la prossima consegna), il
+passo *"Prepara la distinta di domani"* del riquadro *Cosa fare oggi* quando ci sono inidonei, e
+il collegamento *resi* sulle consegne passate nello storico (ristampa). Stampare **non** chiude
+niente: gli inidonei si legano alla consegna quando la si registra. 4 controlli in
+`test/galleria.js`.
+
 ### Ordine dei pannelli: i consumi SOPRA la consegna (11/09/2026)
 
 Linguette · situazione della struttura · **Consumi del giorno** · Registra la consegna ·

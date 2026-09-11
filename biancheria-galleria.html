@@ -130,7 +130,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-11.4';
+const QM_APP_BUILD='2026-09-11.5';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -543,7 +543,10 @@ function vOggi(h){
         '<br>Escono <b>'+_bgTot(q)+' pezzi</b>, i consumi '+esc(_bgPeriodoTxt(per))+'.'+
         (senza.length?'<br><span style="color:var(--amber);font-weight:700;">Mancano i consumi di '+
           senza.map(x=>BG_GG[x.getDay()]+' '+String(x.getDate()).padStart(2,'0')).join(', ')+': inseriscili prima, o la distinta sarà incompleta.</span>':'');
+      const nResi=_bgResiDaConsegnare(h,p.data);
+      if(nResi.length)d+='<br>Escono anche <b>'+nResi.reduce((x,r)=>x+(Number(r.qta)||0),0)+' pezzi inidonei</b>, in sacco separato con la loro distinta.';
       a='<button class="btn btn-primary" onclick="bgStampaDistinta(\''+h+'\',\''+p.data+'\')">Stampa la distinta di domani</button>'+
+        (nResi.length?'<button class="btn" onclick="bgStampaResi(\''+h+'\',\''+p.data+'\')">Stampa distinta resi</button>':'')+
         '<button class="btn-link" onclick="bgSegnaFatta(\''+h+'\',\''+p.data+'\')">L\'ho già stampata</button>';
     }else{
       t='Registra cosa ha portato Raimondo stamattina';
@@ -853,9 +856,14 @@ function vResi(h){
     '<td class="r"><button class="btn-link danger" onclick="bgEliminaReso(\''+r.id+'\')">elimina</button></td></tr>'
   ).join(''):'<tr><td colspan="6" class="vuoto">Nessun pezzo inidoneo in attesa.</td></tr>';
 
+  const dataProx=_bgDataConsegnaCorrente(h);
+  const escono=_bgResiDaConsegnare(h,dataProx);
   return '<div class="panel"><div class="panel-head">'+
-      '<div class="panel-title">Pezzi inidonei da rendere</div>'+
-      '<div class="nota">Sacco separato, stessa distinta. Escono con la prima consegna successiva alla loro data.</div>'+
+      '<div><div class="panel-title">Pezzi inidonei da rendere</div>'+
+      '<div class="nota" style="margin-top:3px;">Sacco separato. Escono con la prima consegna successiva alla loro data.</div></div>'+
+      (escono.length
+        ? '<button class="btn btn-sm" onclick="bgStampaResi(\''+h+'\',\''+dataProx+'\')">Stampa distinta resi · consegna del '+esc(dataProx)+'</button>'
+        : '')+
     '</div><div class="panel-body">'+
     '<div class="row" style="margin-bottom:16px;">'+
       '<div><label class="f">Data</label><input type="date" id="bg-res-data" value="'+_bgToIso(_bgFmt(_bgOggi()))+'"></div>'+
@@ -889,6 +897,106 @@ function bgEliminaReso(id){
   bgSalva();render();
 }
 
+/* ── distinta dei resi ─────────────────────────────────────────────────────
+   Stesso documento che Compass stampa per SoulArt e Boutique (_resiStampa in
+   app.js): stessa intestazione, stesse tre avvertenze, stessa tabella, stessi due
+   riquadri di firma — Raimondo è lo stesso fornitore per tutte le strutture e
+   deve ritrovarsi davanti lo stesso foglio. Cambiano solo le cose che qui sono
+   diverse: la distinta firmata va al Resident Manager (non al Sig. Presta), e i
+   resi escono a ogni consegna invece che ogni 15 giorni.
+   Il copione è duplicato e non condiviso di proposito: quest'app vive fuori da
+   Compass e non carica app.js. Se si cambia uno dei due fogli, va cambiato
+   anche l'altro.                                                              */
+function _bgResiDaConsegnare(h,data){
+  const d=_bgParse(data);
+  return _bgResiAperti(h).filter(r=>{const rd=_bgParse(r.data);return rd&&d&&rd<d;});
+}
+function bgStampaResi(h,data){
+  const righe=_bgResiDaConsegnare(h,data);
+  if(!righe.length){alert('Nessun pezzo inidoneo esce con la consegna del '+data+'.');return;}
+  _bgApriResi(h,righe,data);
+}
+function bgStampaResiConsegna(id){
+  const g=_bg.consegne.find(x=>x.id===id);if(!g)return;
+  const righe=_bg.resi.filter(x=>x.consegnaId===id);
+  if(!righe.length){alert('Con questa consegna non sono usciti pezzi inidonei.');return;}
+  _bgApriResi(_bgH(g),righe,g.data);
+}
+function _bgApriResi(h,righe,dataRitiro){
+  const ord=righe.slice().sort((a,b)=>(_bgParse(a.data)||0)-(_bgParse(b.data)||0));
+  const dal=ord[0].data,al=ord[ord.length-1].data;
+  const tot=ord.reduce((s,r)=>s+(Number(r.qta)||0),0);
+  const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Distinta Reso Biancheria</title><style>'+
+'*{box-sizing:border-box;margin:0;padding:0;}'+
+'body{font-family:\'Helvetica Neue\',Arial,sans-serif;color:#111;font-size:10.5pt;}'+
+'@page{size:A4;margin:16mm;}'+
+'.hdr{border-bottom:1.5px solid #111;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;}'+
+'.title{font-size:14pt;font-weight:700;letter-spacing:.01em;}'+
+'.sub{font-size:9pt;color:#555;margin-top:2px;}'+
+'.meta{display:flex;gap:34px;margin-bottom:14px;font-size:10pt;}'+
+'.meta-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;}'+
+'.meta-val{font-weight:700;margin-top:2px;}'+
+'.warn{border:1px solid #999;padding:8px 10px;margin-bottom:14px;font-size:8.5pt;line-height:1.6;color:#333;}'+
+'table{width:100%;border-collapse:collapse;margin-bottom:16px;}'+
+'th{text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:1.5px solid #111;padding:6px 6px;}'+
+'td{padding:7px 6px;border-bottom:1px solid #ccc;font-size:10pt;}'+
+'td.r{text-align:right;}'+
+'tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-top:8px;}'+
+'.blk{border:1px solid #999;padding:10px 12px;margin-bottom:12px;}'+
+'.blk-t{font-size:8.5pt;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:#333;margin-bottom:10px;}'+
+'.row{display:flex;gap:26px;margin-bottom:12px;}'+
+'.f{flex:1;}'+
+'.f-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;margin-bottom:3px;}'+
+'.f-val{font-size:11pt;border-bottom:1px solid #999;padding-bottom:4px;min-height:17px;}'+
+'.sign{border-bottom:1px solid #111;margin-top:34px;}'+
+'.sign-c{font-size:8pt;color:#555;margin-top:4px;}'+
+'</style></head><body>'+
+  '<div class="hdr">'+
+    '<div><div class="title">Distinta Reso Biancheria Inidonea</div><div class="sub">Fornitore Raimondo</div></div>'+
+    '<div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">'+esc(BG_HOTELS[h])+'</div></div>'+
+  '</div>'+
+  '<div class="meta">'+
+    '<div><div class="meta-lbl">Periodo dal</div><div class="meta-val">'+esc(dal)+'</div></div>'+
+    '<div><div class="meta-lbl">al</div><div class="meta-val">'+esc(al)+'</div></div>'+
+    '<div><div class="meta-lbl">Totale pezzi</div><div class="meta-val">'+tot+'</div></div>'+
+  '</div>'+
+  '<div class="warn">'+
+    '&bull; Mettere la biancheria macchiata / difettata in un sacco distinto, dedicato esclusivamente a Raimondo.<br>'+
+    '&bull; NON conteggiarla come normale biancheria sporca nei dati giornalieri.<br>'+
+    '&bull; A fine servizio, consegnare la lista al Resident Manager.'+
+  '</div>'+
+  '<table>'+
+    '<thead><tr><th style="width:70px;">Data</th><th>Tipologia pezzo</th><th style="width:60px;text-align:right;">Quantità</th><th style="width:110px;">Motivo reso</th><th style="width:120px;">Firma HK</th></tr></thead>'+
+    '<tbody>'+ord.map(r=>'<tr><td>'+esc(r.data)+'</td><td>'+esc(r.tipologia)+'</td><td class="r">'+(Number(r.qta)||0)+'</td><td>'+esc(r.motivo||'')+'</td><td></td></tr>').join('')+'</tbody>'+
+    '<tfoot><tr><td colspan="2">Totale pezzi</td><td class="r">'+tot+'</td><td colspan="2"></td></tr></tfoot>'+
+  '</table>'+
+  '<div class="blk">'+
+    '<div class="blk-t">Ritiro Fornitore Raimondo</div>'+
+    '<div class="row">'+
+      '<div class="f"><div class="f-lbl">Sacchi ritirati n&deg;</div><div class="f-val">&nbsp;</div></div>'+
+      '<div class="f"><div class="f-lbl">Totale pezzi</div><div class="f-val">'+tot+'</div></div>'+
+      '<div class="f"><div class="f-lbl">Data</div><div class="f-val">'+esc(dataRitiro)+'</div></div>'+
+    '</div>'+
+    '<div class="sign"></div>'+
+    '<div class="sign-c">Firma per ricevuta &mdash; Fornitore Raimondo</div>'+
+  '</div>'+
+  '<div class="blk">'+
+    '<div class="blk-t">Consegna distinta firmata</div>'+
+    '<div class="row">'+
+      '<div class="f"><div class="f-lbl">Consegnata a</div><div class="f-val">Resident Manager</div></div>'+
+      '<div class="f"><div class="f-lbl">Data</div><div class="f-val">&nbsp;</div></div>'+
+    '</div>'+
+    '<div class="sign"></div>'+
+    '<div class="sign-c">Firma Responsabile / Management</div>'+
+  '</div>'+
+'</body></html>';
+  const w=window.open('','_blank');
+  if(!w){alert('Il browser ha bloccato la finestra di stampa. Consenti le finestre pop-up per questo sito.');return false;}
+  w.document.write(html);w.document.close();
+  setTimeout(()=>w.print(),400);
+  return true;
+}
+
 /* ── storico ──────────────────────────────────────────────────────────── */
 function vStorico(h){
   const cons=_bgConsegne(h).slice().reverse();
@@ -909,6 +1017,7 @@ function vStorico(h){
       '<td class="r">'+
         '<button class="btn-link" onclick="bgToggleStorico(\''+g.id+'\')">'+(ap?'▾ chiudi':'▸ dettaglio')+'</button>'+
         '<button class="btn-link" onclick="bgStampa(\''+g.id+'\')">ristampa</button>'+
+        (_bg.resi.some(x=>x.consegnaId===g.id)?'<button class="btn-link" onclick="bgStampaResiConsegna(\''+g.id+'\')">resi</button>':'')+
       '</td></tr>';
     if(ap){
       const det=_bgDettaglio(g);
