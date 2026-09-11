@@ -61,10 +61,12 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`biancheria-galleria.html`** — **Gestione Biancheria**, l'app del Resident Manager per il ciclo biancheria di Art Resort Galleria Umberto e Art Suite Santa Brigida. Copia del Consumo Biancheria di Compass; dati sul cloud di Compass con un **codice che apre solo le chiavi `bg_*`** — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 720 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 701 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
-Le **5 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr) sono
-accendibili e spegnibili da remoto — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
+Le **6 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr e, dal
+12/09/2026, **biancheria-galleria**) sono accendibili e spegnibili da remoto — vedi
+[Pannello App](#pannello-app--centro-controllo-app-standalone). La Galleria usa una chiave sua,
+`bg_app_status`, perché il suo codice legge solo chiavi `bg_*`.
 `reception.html` e `registration-galleria.html` no: la prima non è mai stata inserita nel
 pannello, la seconda ne è stata tolta di proposito.
 
@@ -390,7 +392,7 @@ grep -n "// §§" app.js | sed 's|// §§||'
 
 Un controllo in `test/esegui.sh` verifica che **ogni** sezione `§§` presente in `app.js`
 compaia in questo file: è il modo per accorgersi che una parte nuova è stata scritta e mai
-documentata. Rigenerata il 07/09/2026 — 17246 righe, 49 sezioni.
+documentata. Rigenerata il 12/09/2026 — 17855 righe, 49 sezioni.
 
 | Riga | Sezione |
 |------|---------|
@@ -405,44 +407,44 @@ documentata. Rigenerata il 07/09/2026 — 17246 righe, 49 sezioni.
 | 2060 | DVR — SCADENZE SICUREZZA & COMPLIANCE |
 | 2117 | MOBILE SIDEBAR |
 | 2460 | MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone, mosaico) |
-| 3711 | ROOM DIVISION — Suddivisione cameriere, vista settimanale carico pesato e |
-| 3974 | UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP (fmtNow, fmtUploadTs, setUploadTs) |
-| 4015 | BACKUP ARCHIVIO — l'unica copia che esiste fuori dal cloud |
-| 4328 | STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud) |
-| 4682 | OVERVIEW — TOGGLE PREVIEW PANELS (toggleOccupazionePreview, togglePulPreview, toggleBkfPreview) |
-| 4773 | OVERVIEW — GRAFICI & METEO (buildBarChart, fetchMeteo, toggleWeatherForecast) |
-| 4870 | SIDEBAR — OROLOGIO & DATA (updateSbClock, toggleDatePopup, saveDate, updateDateDisplay) |
-| 4923 | OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 30s (refreshOverviewForDate, renderArriviData, syncFromCloud) |
-| 5299 | RECENSIONI — SCORE TREND MODAL (openScoreTrend) |
-| 5377 | OVERVIEW — RECENSIONI NO-REPLY (ovUpdateRevNoreply) |
-| 5495 | BKF SHEET — ANALISI AI (bkfSheetAnalyze, bkfSheetSync, bkfSheetAR*) |
-| 5717 | REPORT PULIZIE — PUL (handlePulFile, pulParseText, renderPulData, renderPulDay, updateKpiFromPulizie) |
-| 5896 | RECENSIONI — SCORING & INIT UPLOAD (weightedAvgF1, revHandleFile init per tutti gli hotel) |
-| 5963 | RECENSIONI — LOGICA (revParseCsv, revRenderCatTrend, revRenderExpiring, revRenderStats, revRenderList, revGenerateReply) |
-| 6395 | RECENSIONI BOOKING — PUNTEGGIO A DECADIMENTO CONTINUO + CALIBRAZIONE |
-| 7517 | REPORT PASTI — BKF (handleBkfFile, bkfParseText, renderBkfData, renderBkfDay, renderOvBkfChart) |
-| 7759 | HOUSEKEEPING — HKP UPLOAD & DATI (handleHkFile, hkParseText, hkSetLoaded, resetSoulData/BoutData) |
-| 7838 | PIANO SETTIMANA — UPLOAD & PARSER (handlePianoFile, parsePianoItems, pianoSetLoaded) |
-| 8051 | BKF — GRUPPI, NOTE & GRAFICI (bkfLoadOps, bkfAddGroup, bkfRenderGroups, bkfRenderChart, updateKpiFromBkf) |
-| 8362 | REGISTRATION CARDS — RC (handleRCFile, rcParseGuests, rcRenderCards) |
-| 8534 | MODAL — CATEGORIE TREND (openCatModal, closeCatModal) |
-| 8633 | ARRIVI GIORNALIERI — UPLOAD & RENDER (handleArriviFile, resetArrivi, arriviUpdateKpi, detectStruttura, renderArriviModal) |
-| 8635 | COLAZIONE BOOKING.COM — snapshot ospiti per camera (nome/origine/trattamento/checkout) |
-| 9184 | INVENTARIO DETERSIVI |
-| 9779 | INVENTARIO — ORDINI |
-| 10282 | PREFERENZE TURNI |
-| 10491 | CONTROLLO MATTINO (cmLoad, cmRender) |
-| 10823 | RECENSIONI EXPEDIA (revExpParseTsv, revExpHandleFile, revExpRenderStats, revExpRenderList, revExpGenerateReply) |
-| 11138 | DDT FORNITORI — upload DDT, spese per fornitore/reparto, storico |
-| 12470 | PRE-STAY — MESSAGGI AGLI OSPITI IN ARRIVO FRA 2 GIORNI |
-| 14055 | RECEPTION — CASSA (fondo cassa, incasso contante) |
-| 14442 | RESI BIANCHERIA — Distinta reso biancheria inidonea (Fornitore Raimondo) |
-| 14953 | BIANCHERIA — Ciclo pulito/sporco (Fornitore Raimondo) |
-| 15924 | GIACENZA BIANCHERIA — magazzino e pezzi in mano alle cameriere |
-| 16462 | PRENOTAZIONI — file unico dal PMS (arrivi + colazioni + pre-stay) |
-| 16836 | CONFERME — finestra Compass al posto di confirm()/alert() del browser |
-| 16891 | SINCRONIZZAZIONE CONTINUA — ogni postazione si aggiorna da sola |
-| 17189 | ACCESSO — ABILITAZIONE DEI DISPOSITIVI |
+| 3767 | ROOM DIVISION — Suddivisione cameriere, vista settimanale carico pesato e |
+| 4030 | UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP (fmtNow, fmtUploadTs, setUploadTs) |
+| 4071 | BACKUP ARCHIVIO — l'unica copia che esiste fuori dal cloud |
+| 4428 | STORAGE & SYNC KV (setSyncStatus, kvSet, kvGet, LS, syncFromCloud) |
+| 4997 | OVERVIEW — TOGGLE PREVIEW PANELS (toggleOccupazionePreview, togglePulPreview, toggleBkfPreview) |
+| 5088 | OVERVIEW — GRAFICI & METEO (buildBarChart, fetchMeteo, toggleWeatherForecast) |
+| 5185 | SIDEBAR — OROLOGIO & DATA (updateSbClock, toggleDatePopup, saveDate, updateDateDisplay) |
+| 5238 | OVERVIEW — RENDER PRINCIPALE + INIT + POLLING 30s (refreshOverviewForDate, renderArriviData, syncFromCloud) |
+| 5614 | RECENSIONI — SCORE TREND MODAL (openScoreTrend) |
+| 5692 | OVERVIEW — RECENSIONI NO-REPLY (ovUpdateRevNoreply) |
+| 5810 | BKF SHEET — ANALISI AI (bkfSheetAnalyze, bkfSheetSync, bkfSheetAR*) |
+| 6032 | REPORT PULIZIE — PUL (handlePulFile, pulParseText, renderPulData, renderPulDay, updateKpiFromPulizie) |
+| 6211 | RECENSIONI — SCORING & INIT UPLOAD (weightedAvgF1, revHandleFile init per tutti gli hotel) |
+| 6278 | RECENSIONI — LOGICA (revParseCsv, revRenderCatTrend, revRenderExpiring, revRenderStats, revRenderList, revGenerateReply) |
+| 6710 | RECENSIONI BOOKING — PUNTEGGIO A DECADIMENTO CONTINUO + CALIBRAZIONE |
+| 7832 | REPORT PASTI — BKF (handleBkfFile, bkfParseText, renderBkfData, renderBkfDay, renderOvBkfChart) |
+| 8074 | HOUSEKEEPING — HKP UPLOAD & DATI (handleHkFile, hkParseText, hkSetLoaded, resetSoulData/BoutData) |
+| 8153 | PIANO SETTIMANA — UPLOAD & PARSER (handlePianoFile, parsePianoItems, pianoSetLoaded) |
+| 8366 | BKF — GRUPPI, NOTE & GRAFICI (bkfLoadOps, bkfAddGroup, bkfRenderGroups, bkfRenderChart, updateKpiFromBkf) |
+| 8691 | REGISTRATION CARDS — RC (handleRCFile, rcParseGuests, rcRenderCards) |
+| 8863 | MODAL — CATEGORIE TREND (openCatModal, closeCatModal) |
+| 8962 | ARRIVI GIORNALIERI — UPLOAD & RENDER (handleArriviFile, resetArrivi, arriviUpdateKpi, detectStruttura, renderArriviModal) |
+| 8964 | COLAZIONE BOOKING.COM — snapshot ospiti per camera (nome/origine/trattamento/checkout) |
+| 9513 | INVENTARIO DETERSIVI |
+| 10108 | INVENTARIO — ORDINI |
+| 10611 | PREFERENZE TURNI |
+| 10820 | CONTROLLO MATTINO (cmLoad, cmRender) |
+| 11155 | RECENSIONI EXPEDIA (revExpParseTsv, revExpHandleFile, revExpRenderStats, revExpRenderList, revExpGenerateReply) |
+| 11470 | DDT FORNITORI — upload DDT, spese per fornitore/reparto, storico |
+| 12802 | PRE-STAY — MESSAGGI AGLI OSPITI IN ARRIVO FRA 2 GIORNI |
+| 14387 | RECEPTION — CASSA (fondo cassa, incasso contante) |
+| 14774 | RESI BIANCHERIA — Distinta reso biancheria inidonea (Fornitore Raimondo) |
+| 15285 | BIANCHERIA — Ciclo pulito/sporco (Fornitore Raimondo) |
+| 16322 | GIACENZA BIANCHERIA — magazzino e pezzi in mano alle cameriere |
+| 16998 | PRENOTAZIONI — file unico dal PMS (arrivi + colazioni + pre-stay) |
+| 17372 | CONFERME — finestra Compass al posto di confirm()/alert() del browser |
+| 17427 | SINCRONIZZAZIONE CONTINUA — ogni postazione si aggiorna da sola |
+| 17772 | ACCESSO — ABILITAZIONE DEI DISPOSITIVI |
 
 ## Global Variables & Constants
 
@@ -2617,12 +2619,14 @@ il codice copiato da Compass le usa.
 
 ### Controlli
 
-`test/galleria.js` (≈35): nomi distinti da Compass, due calendari, periodo col calendario
+`test/galleria.js` (≈40): nomi distinti da Compass, due calendari, periodo col calendario
 della struttura giusta, zero mai inserito, atteso e saldo, lettura della versione semplificata,
-inidonei legati al giro, prossima consegna. Il resto del comportamento è quello di Compass ed
-è coperto dai suoi controlli in `test/controlli.js`. Le sentinelle in `test/esegui.sh`
-(nessuna chiamata al Worker, nessuna chiave `qm_*`, splash da `sessionStorage`, aggiornamento
-automatico) restano quelle di prima.
+**`permessoGalleria`** (cosa apre il codice della Galleria) e **fusione fra i due PC**
+(`_gbFondi`, `_gbSegnaRimosso`). Il resto del comportamento è quello di Compass ed è coperto dai
+suoi controlli in `test/controlli.js`. Sentinelle in `test/esegui.sh`: la pagina non chiede
+elenco né cancellazioni né chiavi `qm_*`, non **scrive** chiavi `qm_*` in `localStorage` (leggere
+`qm_pass` è ammesso), `worker.js` contiene ancora `permessoGalleria`, splash deciso da
+`sessionStorage`, aggiornamento automatico al suo posto.
 
 ## Pannello di Controllo — due voci: Applicazioni e Sicurezza
 
@@ -2630,7 +2634,7 @@ Dal **06/09/2026** la sezione di menu si chiama **Pannello di Controllo** e cont
 
 | Voce | Vista | Cosa c'è | Risponde a |
 |---|---|---|---|
-| **Applicazioni stand alone** | `view-miniapp` | le 5 schede con stato, interruttore on/off e link | *le app sono accese e aggiornate?* |
+| **Applicazioni stand alone** | `view-miniapp` | le 6 schede con stato, interruttore on/off e link (5 app di Compass + Gestione Biancheria della Galleria) | *le app sono accese e aggiornate?* |
 | **Sicurezza** | `view-sicurezza` | copia di sicurezza dell'archivio, dispositivi abilitati (`#qmDispositivi`) | *chi entra, e cosa c'è al sicuro* |
 | **Stato del sistema** | `view-sistema` | scheda di diagnosi (`qmRenderStatoSistema()`) + **pallino** nella voce di menu | *le macchine funzionano* |
 
@@ -4499,7 +4503,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto, pausa della finestra abbandonata, calendari e periodo dell'app biancheria della Galleria. 720 controlli.
+scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto, pausa della finestra abbandonata, calendari e periodo dell'app biancheria della Galleria, codice della Galleria limitato alle chiavi `bg_*`, fusione fra i due PC della Galleria. 701 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire
