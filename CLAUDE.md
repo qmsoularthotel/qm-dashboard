@@ -2587,7 +2587,11 @@ Compass (`qm_pass`, stesso sito e quindi stesso `localStorage`), che apre tutto 
 per controlli e supporto. La pagina lo **legge** soltanto; la sentinella in `esegui.sh` vieta di
 scrivere chiavi `qm_*`, non di leggere questa. Scheda **Gestione Biancheria** in *Applicazioni
 stand alone* (`miniappBgStatus`): data degli ultimi consumi per struttura, ambra se una delle due è
-ferma da più di due giorni. Niente interruttore acceso/spento: l'app non legge `qm_app_status`.
+ferma da più di due giorni. La scheda è identica alle altre (classe `panel miniapp-card`) e ha
+**l'interruttore acceso/spento**, che però scrive **`bg_app_status`** (`{attiva:false}`) e non
+`qm_app_status`: col suo codice la Galleria non può leggere chiavi `qm_*`. L'app lo controlla
+all'avvio e a ogni giro (`_gbControllaStato`) e mostra la stessa schermata di manutenzione delle
+altre app; se la rete manca resta utilizzabile.
 
 Le chiavi restano `bg_*`, mai `qm_*`. Due sentinelle in `test/esegui.sh`: la pagina non chiede
 elenco né cancellazioni né chiavi `qm_`, e `worker.js` contiene ancora `permessoGalleria` con la

@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='415-20260912';
+  const V='416-20260912';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1565,16 +1565,17 @@
               <button onclick="miniappOpen('dvr-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
             </div>
           </div>
-          <!-- Gestione Biancheria della Galleria: app del Resident Manager. Non ha l'interruttore
-               acceso/spento delle altre (non legge qm_app_status); da qui il QM la apre per
-               controllare o dare supporto: col lasciapassare di Compass entra senza codice. -->
-          <div class="miniapp-card">
+          <!-- Gestione Biancheria della Galleria: app del Resident Manager. Il suo interruttore
+               scrive bg_app_status e non qm_app_status: il codice della Galleria apre solo le
+               chiavi bg_*. Il QM la apre da qui senza codice, col lasciapassare di Compass. -->
+          <div class="panel miniapp-card">
             <div class="miniapp-card-top">
               <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span>
               <div class="miniapp-nome">
                 <div class="miniapp-titolo">Gestione Biancheria</div>
                 <div class="miniapp-sub">Galleria · Resident Manager</div>
               </div>
+              <button id="miniapp-bg-toggle" onclick="miniappToggleGalleria()" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button>
             </div>
             <div id="miniapp-bg-status" class="miniapp-stato"></div>
             <input id="bg-url-input" type="hidden" value="https://compass-qm.com/biancheria-galleria.html">
@@ -1737,7 +1738,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=934-20260912"></script>
+<script src="app.js?v=935-20260912"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

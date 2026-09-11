@@ -2461,6 +2461,7 @@ function miniappOpen(inputId){
 function miniappRender(){
   miniappRenderStatus();
   miniappLoadAppStatus();
+  miniappLoadGalleria();
   miniappLoadBkfBanner();
 }
 // Interruttore acceso/spento per ciascuna app standalone (qm_app_status in KV,
@@ -2487,6 +2488,29 @@ function miniappRenderToggles(){
     const knob=btn.querySelector('.miniapp-toggle-knob');
     if(knob)knob.style.left=on?'17px':'2px';
   });
+}
+// Interruttore della Galleria: stessa idea di qm_app_status, ma su una chiave bg_*, perché
+// l'app della Galleria col suo codice non può leggere le chiavi qm_* (permessoGalleria).
+let _bgAppAttiva=true;
+async function miniappLoadGalleria(){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key=bg_app_status',{cache:'no-store'});
+    const j=await r.json();
+    const v=j&&j.value?JSON.parse(j.value):{};
+    _bgAppAttiva=v.attiva!==false;
+  }catch(e){}
+  miniappRenderGalleria();
+}
+function miniappRenderGalleria(){
+  const btn=document.getElementById('miniapp-bg-toggle');if(!btn)return;
+  btn.style.background=_bgAppAttiva?'var(--green)':'var(--border)';
+  const knob=btn.querySelector('.miniapp-toggle-knob');
+  if(knob)knob.style.left=_bgAppAttiva?'17px':'2px';
+}
+function miniappToggleGalleria(){
+  _bgAppAttiva=!_bgAppAttiva;
+  kvSet('bg_app_status',JSON.stringify({attiva:_bgAppAttiva})).catch(()=>{});
+  miniappRenderGalleria();
 }
 function miniappToggleApp(key){
   const on=_appStatus[key]!==false;

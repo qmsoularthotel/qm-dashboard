@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-12.9';
+const QM_APP_BUILD='2026-09-12.10';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -223,6 +223,32 @@ setInterval(qmCheckVersione,600000);
   setTimeout(function(){ s.style.opacity='0'; setTimeout(function(){ s.remove(); },520); },3000);
 })();
 </script>
+
+<!-- Stessa schermata di manutenzione delle altre app: la accende l'interruttore della
+     scheda nel Pannello di Controllo di Compass (chiave bg_app_status). -->
+<div id="qm-maintenance-screen" style="display:none;position:fixed;inset:0;z-index:99999;background:#1A2E55;align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:20px;box-sizing:border-box;text-align:center;">
+  <svg viewBox="0 0 36 36" width="62" height="62" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="18" cy="18" r="16.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.3"/>
+    <polygon points="18,2 20.68,11.53 18,18 15.32,11.53" fill="#c9952f"/>
+    <polygon points="34,18 24.47,15.32 18,18 24.47,20.68" fill="#c9952f"/>
+    <polygon points="18,34 15.32,24.47 18,18 20.68,24.47" fill="#c9952f"/>
+    <polygon points="2,18 11.53,20.68 18,18 11.53,15.32" fill="#c9952f"/>
+    <polygon points="29.31,6.69 20.68,11.53 18,18 24.47,15.32" fill="rgba(255,255,255,.8)"/>
+    <polygon points="29.31,29.31 24.47,20.68 18,18 20.68,24.47" fill="rgba(255,255,255,.8)"/>
+    <polygon points="6.69,29.31 15.32,24.47 18,18 11.53,20.68" fill="rgba(255,255,255,.8)"/>
+    <polygon points="6.69,6.69 11.53,15.32 18,18 15.32,11.53" fill="rgba(255,255,255,.8)"/>
+    <circle cx="18" cy="18" r="2" fill="rgba(255,255,255,.9)"/>
+  </svg>
+  <div>
+    <div style="font-size:23px;font-weight:700;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
+    <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:5px;white-space:nowrap;">Connected · Automated · Precise</div>
+  </div>
+  <div style="width:70px;border-top:1px solid rgba(255,255,255,.15);margin:8px 0;"></div>
+  <div>
+    <div style="font-size:19px;font-weight:600;color:#fff;">Applicazione in aggiornamento</div>
+    <div style="font-size:14px;color:rgba(255,255,255,.6);margin-top:18px;line-height:1.6;">Torna operativa a breve.<br>Contatta il Quality Manager per info.</div>
+  </div>
+</div>
 
 <div class="topbar">
   <svg viewBox="0 0 36 36" width="28" height="28" style="flex-shrink:0;" xmlns="http://www.w3.org/2000/svg">
@@ -432,8 +458,19 @@ async function _gbRinnova(){
 }
 // I due PC si aggiornano a vicenda: ogni minuto, solo a scheda visibile e mai mentre si
 // sta scrivendo in una casella (ridisegnare sotto le dita fa perdere quello che si digita).
+// Acceso/spento dal Pannello di Controllo, come le altre app (chiave bg_app_status: il
+// codice della Galleria non può leggere qm_app_status). Se la rete manca l'app resta
+// utilizzabile: non si blocca mai per un problema di connessione.
+async function _gbControllaStato(){
+  const v=await _gbKvGet('bg_app_status');
+  let spenta=false;
+  try{spenta=!!(v&&JSON.parse(v).attiva===false);}catch(e){}
+  const s=document.getElementById('qm-maintenance-screen');
+  if(s)s.style.display=spenta?'flex':'none';
+}
 async function _gbGiro(){
   if(document.visibilityState!=='visible')return;
+  _gbControllaStato();
   const a=document.activeElement;
   if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return;
   try{
@@ -1511,6 +1548,7 @@ if(!_gbPass()){
   gbMostraAttivazione('Questo computer non è ancora abilitato.');
 }else{
   gbLoad();
+  _gbControllaStato();
   _gbRinnova();
   setInterval(_gbGiro,60000);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')_gbGiro();});
