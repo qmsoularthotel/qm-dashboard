@@ -143,7 +143,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-11.13';
+const QM_APP_BUILD='2026-09-11.14';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -395,7 +395,17 @@ function _gbGiri(h){
   return _gb.giri.filter(g=>_gbH(g)===hot)
     .sort((a,b)=>(_gbParse(a.data)||0)-(_gbParse(b.data)||0));
 }
-function gbSetHotel(h){if(!GB_HOTELS[h])return;_gbHotel=h;gbRender();}
+// Unica aggiunta rispetto a Compass: cambiando struttura si svuota la data della consegna.
+// Il modulo di Compass la rilegge dal campo, che sopravvive al ridisegno — lì va bene
+// perché le due strutture hanno lo stesso calendario. Qui no: passando da Art Resort (giro
+// oggi) a Santa Brigida (giro domani) restava la data di Art Resort, e invece di "Prepara
+// il ritiro di domani" compariva il giro sbagliato.
+function gbSetHotel(h){
+  if(!GB_HOTELS[h])return;
+  _gbHotel=h;
+  const f=document.getElementById('gb-giro-data');if(f)f.value='';
+  gbRender();
+}
 
 // Calendario reale del giro: Raimondo passa martedì, giovedì e sabato (0=domenica).
 // Serve SOLO come ripiego quando non c'è ancora nessun giro registrato: il "dal" continua

@@ -2515,6 +2515,11 @@ introdotta:
 
 Tolto il promemoria dell'Overview (`biaRenderPromemoria`), che qui non ha dove stare.
 
+**`gbSetHotel` svuota la data della consegna**, unica riga in più rispetto a `biaSetHotel`. Il
+modulo di Compass rilegge la data dal campo, che sopravvive al ridisegno: con un calendario solo
+va bene, con due no — passando da Art Resort (giro oggi) a Santa Brigida (giro domani) restava la
+data di Art Resort, e al posto di *"Prepara il ritiro di domani"* compariva il giro sbagliato.
+
 **Anche l'aspetto è quello di Compass.** I token di `:root` (colori, `--fs-*`, `--text-dim` e
 `--text-muted` — che nella prima versione erano **invertiti** rispetto a Compass) e le regole
 `.panel`/`.panel-header`/`.panel-title`/`.panel-body` sono copiati da `style.css`. Le regole
