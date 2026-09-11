@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-12.7';
+const QM_APP_BUILD='2026-09-12.8';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -978,6 +978,9 @@ function _gbRenderCore(){
   const distPronta=_gbDistStampata(_gbHotel,vigilia?dataDomani:_gbFmt(oggi));
   const giroOggiReg=_gb.giri.find(x=>_gbH(x)===_gbHotel&&x.data===_gbFmt(oggi));
   const passi=[];
+  // Prima il ritiro: Raimondo passa alle 8, i consumi del giorno si inseriscono nel
+  // pomeriggio (richiesta del QM, 12/09/2026). I passi seguono l'ordine della giornata.
+  if(giornoGiro&&!giroOggiReg)passi.push({t:'Registra cosa ha portato Raimondo',d:'Scrivi le quantità della sua distinta e controlla che corrispondano a quelle attese.'});
   if(!consOggi)passi.push({t:'Inserisci i consumi di oggi',d:'Somma i fogli camera delle cameriere e riporta i totali qui sotto.'});
   // Il promemoria diceva solo "stampa la distinta per domani": se restava acceso dopo averla
   // stampata non c'era modo di capire perche' — le strutture sono due e la stampa si segna
@@ -987,7 +990,6 @@ function _gbRenderCore(){
     t:'Prepara e stampa la distinta di domani — '+GB_HOTELS[_gbHotel]+', consegna del '+dataDomani,
     d:'Domani alle 8 passa Raimondo: la distinta va stampata oggi pomeriggio e lasciata in reception. Domattina non ci sarà tempo.'
       +' <a href="#" onclick="gbSegnaDistintaFatta(event)" style="color:var(--accent);font-weight:700;">L\'ho già stampata</a>'});
-  if(giornoGiro&&!giroOggiReg)passi.push({t:'Registra cosa ha portato Raimondo',d:'Scrivi le quantità della sua distinta e controlla che corrispondano a quelle attese.'});
   const nomeOggi=GB_GG_NOMI[oggi.getDay()];
   h+=`<div style="border:1.5px solid ${passi.length?'var(--accent)':'var(--green)'};border-radius:12px;padding:14px 16px;margin-bottom:16px;background:var(--surface);">
     <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);font-weight:700;margin-bottom:8px;">Cosa fare oggi · ${esc(nomeOggi)} ${esc(_gbFmt(oggi))}</div>`;

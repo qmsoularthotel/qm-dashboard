@@ -15781,6 +15781,9 @@ function biaRender(){
   const distPronta=_biaDistStampata(_biaHotel,vigilia?dataDomani:_biaFmt(oggi));
   const giroOggiReg=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===_biaFmt(oggi));
   const passi=[];
+  // Prima il ritiro: Raimondo passa alle 8, i consumi del giorno si inseriscono nel
+  // pomeriggio (richiesta del QM, 12/09/2026). I passi seguono l'ordine della giornata.
+  if(giornoGiro&&!giroOggiReg)passi.push({t:'Registra cosa ha portato Raimondo',d:'Scrivi le quantità della sua distinta e controlla che corrispondano a quelle attese.'});
   if(!consOggi)passi.push({t:'Inserisci i consumi di oggi',d:'Somma i fogli camera delle cameriere e riporta i totali qui sotto.'});
   // Il promemoria diceva solo "stampa la distinta per domani": se restava acceso dopo averla
   // stampata non c'era modo di capire perche' — le strutture sono due e la stampa si segna
@@ -15790,7 +15793,6 @@ function biaRender(){
     t:'Prepara e stampa la distinta di domani — '+BIA_HOTELS[_biaHotel]+', consegna del '+dataDomani,
     d:'Domani alle 8 passa Raimondo: la distinta va stampata oggi pomeriggio e lasciata in reception. Domattina non ci sarà tempo.'
       +' <a href="#" onclick="biaSegnaDistintaFatta(event)" style="color:var(--accent);font-weight:700;">L\'ho già stampata</a>'});
-  if(giornoGiro&&!giroOggiReg)passi.push({t:'Registra cosa ha portato Raimondo',d:'Scrivi le quantità della sua distinta e controlla che corrispondano a quelle attese.'});
   const nomeOggi=BIA_GG_NOMI[oggi.getDay()];
   h+=`<div style="border:1.5px solid ${passi.length?'var(--accent)':'var(--green)'};border-radius:12px;padding:14px 16px;margin-bottom:16px;background:var(--surface);">
     <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);font-weight:700;margin-bottom:8px;">Cosa fare oggi · ${esc(nomeOggi)} ${esc(_biaFmt(oggi))}</div>`;
