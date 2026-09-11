@@ -189,3 +189,33 @@ ok('e la nuova proposta è del calendario di Santa Brigida',
 _bgHotel = 'ar';
 _bgDataConsegna = null;
 _bgReset();
+
+// ── La distinta si prepara la VIGILIA, e il promemoria lo dice (11/09/2026) ──
+//    Raimondo passa alle 8: il foglio va stampato il pomeriggio prima. Con due calendari
+//    sfalsati quasi ogni giorno è la vigilia di una delle due strutture, e sbagliare
+//    struttura vorrebbe dire far trovare Raimondo senza distinta.
+//    2026-09-14 è un lunedì: vigilia di Santa Brigida (mar), non di Art Resort (mer).
+_bgReset();
+var _lun = new Date(2026, 8, 14), _mar = new Date(2026, 8, 15);
+var _cSb = _bgCompiti('sb', _lun), _cAr = _bgCompiti('ar', _lun);
+ok('lunedì è la vigilia di Santa Brigida',          _cSb.vigilia, true);
+ok('ma non di Art Resort',                          _cAr.vigilia, false);
+ok('Santa Brigida: c\'è la distinta di domani',     _cSb.passi.some(function (p) { return p.tipo === 'distinta' && p.data === '15/09/2026'; }), true);
+ok('Art Resort: nessuna distinta da stampare',      _cAr.passi.some(function (p) { return p.tipo === 'distinta'; }), false);
+ok('Art Resort: lunedì passa, va registrata',       _cAr.passi.some(function (p) { return p.tipo === 'registra'; }), true);
+ok('Art Resort: la prossima distinta è martedì',    _cAr.vigiliaProssimo, '15/09/2026');
+// I consumi di oggi vengono PRIMA della distinta: finiscono nel sacco di domani.
+ok('prima i consumi, poi la distinta',              _cSb.passi.map(function (p) { return p.tipo; }).join(','), 'consumi,distinta');
+// Stampata la distinta, il promemoria si spegne — e solo per quella struttura e data.
+_bgSegnaDistinta('sb', '15/09/2026');
+ok('stampata, il promemoria si spegne',             _bgCompiti('sb', _lun).passi.some(function (p) { return p.tipo === 'distinta'; }), false);
+ok('non spegne l\'altra struttura',                 _bgDistStampata('ar', '15/09/2026'), false);
+// Una consegna registrata con sette zeri non è "fatta": è un modulo mai compilato.
+_bg.consegne.push({ id: 'z', hotel: 'sb', data: '15/09/2026', consegnato: _bgQ({ Federa: 5 }), ricevuto: _bgQ({}), ts: 1 });
+ok('consegna a zero: resta da registrare',          _bgCompiti('sb', _mar).passi.some(function (p) { return p.tipo === 'registra'; }), true);
+_bg.consegne[0].ricevuto = _bgQ({ Federa: 5 });
+ok('consegna registrata: il passo sparisce',        _bgCompiti('sb', _mar).passi.some(function (p) { return p.tipo === 'registra'; }), false);
+// Un archivio salvato prima delle distinte non ha il campo: non deve rompersi.
+_bg = { consumi: [], consegne: [], resi: [] };
+ok('archivio vecchio senza distinte: si legge',     _bgDistStampata('sb', '15/09/2026'), false);
+_bgReset();

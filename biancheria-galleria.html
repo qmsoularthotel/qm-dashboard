@@ -41,6 +41,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:13px 18px;border-bottom:1px solid var(--border-light);background:var(--surface);}
 .panel-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);}
 .panel-body{padding:16px 18px 18px;}
+.panel{scroll-margin-top:74px;}
+
+/* COSA FARE OGGI */
+.oggi{border:1.5px solid var(--accent);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);padding:15px 18px;margin-bottom:16px;}
+.oggi.fatto{border-color:var(--green);}
+.oggi-t{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:700;margin-bottom:10px;}
+.passo{display:flex;gap:12px;align-items:flex-start;padding:10px 0;}
+.passo+.passo{border-top:1px solid var(--border-light);}
+.passo-n{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.passo-c{flex:1;min-width:0;}
+.passo-t{font-size:15px;font-weight:700;color:var(--text);line-height:1.35;}
+.passo-d{font-size:12px;color:var(--text-dim);line-height:1.55;margin-top:3px;}
+.passo-a{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;}
+.tab-s .da-fare{color:var(--amber);font-weight:700;}
 
 /* STATO IN TESTA */
 .stato{display:flex;gap:14px;flex-wrap:wrap;}
@@ -116,7 +130,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-11.3';
+const QM_APP_BUILD='2026-09-11.4';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -258,7 +272,7 @@ const BG_VOCI=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Telo doccia'
 const BG_RESI_TIP=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Copripiumino matrimoniale','Copripiumino singolo','Coprimaterasso','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno','Accappatoio','Tovaglia','Tovagliolo'];
 const BG_RESI_MOTIVI=['Macchiata','Strappata','Usurata','Ingiallita','Bruciata','Scolorita','Altro'];
 
-let _bg={consumi:[],consegne:[],resi:[]};
+let _bg={consumi:[],consegne:[],resi:[],distinte:{}};
 let _bgHotel='ar';
 let _bgStoricoAperto=new Set();   // fuori da render(): dentro si richiuderebbe da solo
 let _bgSaldoAperto=false;
@@ -280,7 +294,7 @@ function _bgNum(id){const e=document.getElementById(id);return Math.max(0,Number
 function bgCarica(){
   try{
     const s=localStorage.getItem(BG_KEY);
-    if(s){const o=JSON.parse(s)||{};_bg={consumi:o.consumi||[],consegne:o.consegne||[],resi:o.resi||[]};}
+    if(s){const o=JSON.parse(s)||{};_bg={consumi:o.consumi||[],consegne:o.consegne||[],resi:o.resi||[],distinte:o.distinte||{}};}
   }catch(e){}
 }
 function bgSalva(){
@@ -324,6 +338,40 @@ function _bgCalProx(h){
   }else x=_bgOggi();
   for(let i=0;i<8;i++){if(_bgGiornoGiro(h,x))return x;x.setDate(x.getDate()+1);}
   return x;
+}
+
+/* ── la vigilia: la distinta si prepara il giorno PRIMA ─────────────────────
+   Raimondo passa alle 8, prima che chiunque possa sedersi a preparare un foglio:
+   la distinta va stampata il pomeriggio prima e lasciata in reception. Per questo
+   la stampa è un passo a sé, separato dalla registrazione della consegna — che si
+   fa DOPO il suo passaggio, quando si sa cosa ha riportato. Tenerle insieme in un
+   solo pulsante obbligava a "registrare" la vigilia un pulito che non era ancora
+   arrivato.
+   Con due calendari sfalsati (lun/mer/ven e mar/gio/sab) quasi ogni giorno è la
+   vigilia di una delle due strutture: il promemoria sta anche sulle linguette,
+   altrimenti quella non selezionata resterebbe dimenticata.                   */
+function _bgDomani(d){const x=new Date(d.getTime());x.setDate(x.getDate()+1);return x;}
+const _bgDistId=(h,data)=>h+'|'+data;
+function _bgDistStampata(h,data){return !!((_bg.distinte||{})[_bgDistId(h,data)]);}
+function _bgSegnaDistinta(h,data){if(!_bg.distinte)_bg.distinte={};_bg.distinte[_bgDistId(h,data)]=Date.now();}
+// Il prossimo giorno di calendario DOPO oggi in cui Raimondo passa.
+function _bgProssimoGiro(h,oggi){
+  const x=_bgDomani(oggi||_bgOggi());
+  for(let i=0;i<8;i++){if(_bgGiornoGiro(h,x))return x;x.setDate(x.getDate()+1);}
+  return x;
+}
+function _bgCompiti(h,oggi){
+  const o=oggi||_bgOggi(),oggiTxt=_bgFmt(o),dom=_bgDomani(o),domTxt=_bgFmt(dom);
+  const vigilia=_bgGiornoGiro(h,dom),giro=_bgGiornoGiro(h,o);
+  const consOggi=_bgConsumi(h).some(c=>c.data===oggiTxt);
+  const regOggi=_bgConsegne(h).find(g=>g.data===oggiTxt);
+  const passi=[];
+  if(!consOggi)passi.push({tipo:'consumi'});
+  if(vigilia&&!_bgDistStampata(h,domTxt))passi.push({tipo:'distinta',data:domTxt});
+  if(giro&&!(regOggi&&_bgRegistrata(regOggi)))passi.push({tipo:'registra',data:oggiTxt});
+  const prox=_bgProssimoGiro(h,o);
+  return{passi:passi,vigilia:vigilia,giro:giro,oggi:oggiTxt,domani:domTxt,
+         prossimo:_bgFmt(prox),vigiliaProssimo:_bgFmt(new Date(prox.getTime()-86400000))};
 }
 
 /* ── periodo ritirato ─────────────────────────────────────────────────────
@@ -464,16 +512,65 @@ function bgToggleSaldo(){_bgSaldoAperto=!_bgSaldoAperto;render();}
 function render(){
   const h=_bgHotel;
   document.getElementById('app').innerHTML=
-    vTabs()+vStato(h)+vConsumi(h)+vConsegna(h)+vResi(h)+vStorico(h)+vBackup();
+    vTabs()+vOggi(h)+vStato(h)+vConsumi(h)+vConsegna(h)+vResi(h)+vStorico(h)+vBackup();
+}
+
+/* ── cosa fare oggi ───────────────────────────────────────────────────── */
+function vOggi(h){
+  const c=_bgCompiti(h);
+  const oggiD=_bgOggi();
+  const titolo='Cosa fare oggi · '+BG_GG[oggiD.getDay()]+' '+esc(c.oggi)+' · '+esc(BG_HOTELS[h]);
+  const ggTxt=s=>{const d=_bgParse(s);return d?BG_GG[d.getDay()]+' '+esc(s):esc(s);};
+  if(!c.passi.length){
+    return '<div class="oggi fatto"><div class="oggi-t">'+titolo+'</div>'+
+      '<div class="passo-t" style="color:var(--green);">Tutto fatto per oggi.</div>'+
+      '<div class="passo-d">'+(c.vigilia?'La distinta di domani è stampata.':
+        'Prossima distinta da preparare: <b>'+ggTxt(c.vigiliaProssimo)+'</b>, per la consegna di '+ggTxt(c.prossimo)+'.')+'</div></div>';
+  }
+  const passi=c.passi.map((p,i)=>{
+    let t='',d='',a='';
+    if(p.tipo==='consumi'){
+      t='Inserisci i consumi di oggi';
+      d=c.vigilia?'Vanno inseriti <b>prima di stampare la distinta</b>: i pezzi usati oggi escono con il sacco di domani.'
+                 :'Si ricopiano dai fogli camera delle cameriere.';
+      a='<button class="btn" onclick="_bgVai(\'bg-consumi\')">Vai ai consumi</button>';
+    }else if(p.tipo==='distinta'){
+      const per=_bgPeriodo(h,p.data);
+      const q=per&&!per.vuoto?_bgSomma(h,per.dal,per.al):_bgVuote();
+      const senza=per?_bgGiorniSenza(h,per):[];
+      t='Prepara e stampa la distinta di domani — consegna di '+ggTxt(p.data);
+      d='Domani alle 8 passa Raimondo: la distinta va <b>stampata oggi</b> e lasciata in reception. Domattina non ci sarà tempo.'+
+        '<br>Escono <b>'+_bgTot(q)+' pezzi</b>, i consumi '+esc(_bgPeriodoTxt(per))+'.'+
+        (senza.length?'<br><span style="color:var(--amber);font-weight:700;">Mancano i consumi di '+
+          senza.map(x=>BG_GG[x.getDay()]+' '+String(x.getDate()).padStart(2,'0')).join(', ')+': inseriscili prima, o la distinta sarà incompleta.</span>':'');
+      a='<button class="btn btn-primary" onclick="bgStampaDistinta(\''+h+'\',\''+p.data+'\')">Stampa la distinta di domani</button>'+
+        '<button class="btn-link" onclick="bgSegnaFatta(\''+h+'\',\''+p.data+'\')">L\'ho già stampata</button>';
+    }else{
+      t='Registra cosa ha portato Raimondo stamattina';
+      d='Copia le quantità dalla distinta del pulito che ha lasciato: servono per sapere se manca qualcosa.';
+      a='<button class="btn" onclick="bgVaiConsegna(\''+p.data+'\')">Vai alla consegna di oggi</button>';
+    }
+    return '<div class="passo"><div class="passo-n">'+(i+1)+'</div><div class="passo-c">'+
+      '<div class="passo-t">'+t+'</div><div class="passo-d">'+d+'</div><div class="passo-a">'+a+'</div></div></div>';
+  }).join('');
+  return '<div class="oggi"><div class="oggi-t">'+titolo+'</div>'+passi+'</div>';
+}
+function _bgVai(id){const e=document.getElementById(id);if(e&&e.scrollIntoView)e.scrollIntoView({behavior:'smooth',block:'start'});}
+function bgVaiConsegna(data){_bgDataConsegna=data;render();setTimeout(()=>_bgVai('bg-consegna'),0);}
+function bgSegnaFatta(h,data){
+  if(!confirm('Segnare come già stampata la distinta di '+BG_HOTELS[h]+' per la consegna del '+data+'?\n\nIl promemoria sparisce. I conti non cambiano.'))return;
+  _bgSegnaDistinta(h,data);bgSalva();render();
 }
 
 /* ── linguette ────────────────────────────────────────────────────────── */
 function vTabs(){
   return '<div class="tabs">'+Object.keys(BG_HOTELS).map(k=>{
     const ap=_bgResiAperti(k).length;
+    const daStampare=_bgCompiti(k).passi.some(p=>p.tipo==='distinta');
     return '<button class="tab'+(k===_bgHotel?' on':'')+'" onclick="bgSetHotel(\''+k+'\')">'+
       '<div class="tab-n">'+esc(BG_HOTELS[k])+'</div>'+
-      '<div class="tab-s">Raimondo passa '+BG_GIORNI_TXT[k]+(ap?' · '+ap+' inidonei in attesa':'')+'</div>'+
+      '<div class="tab-s">'+(daStampare?'<span class="da-fare">Distinta di domani da stampare oggi</span> · ':'')+
+        'Raimondo passa '+BG_GIORNI_TXT[k]+(ap?' · '+ap+' inidonei in attesa':'')+'</div>'+
     '</button>';
   }).join('')+'</div>';
 }
@@ -564,8 +661,34 @@ function vConsegna(h){
   }).join('');
 
   const totS=_bgTot(somma),totA=att?_bgTot(att):null;
+  // Una consegna FUTURA non si registra: il pulito non è ancora arrivato, e
+  // registrarla adesso metterebbe nel conto un "ha portato" inventato. Si prepara
+  // soltanto la distinta, e la maschera lo dice.
+  const futura=!!(d&&d>_bgOggi());
+  const stampata=_bgDistStampata(h,data);
+  if(futura){
+    const rowsF=BG_VOCI.map((v,i)=>'<tr><td>'+esc(v)+'</td>'+
+      '<td class="r"><input type="number" min="0" id="bg-s-'+i+'" value="'+(Number(somma[v])||0)+'" onfocus="this.select()"></td></tr>').join('');
+    return '<div class="panel" id="bg-consegna"><div class="panel-head">'+
+        '<div class="panel-title">Prepara la distinta</div>'+
+        '<div class="nota">Consegna di '+(d?BG_GG[d.getDay()]:'')+' '+esc(data)+(stampata?' · <b style="color:var(--green);">distinta già stampata</b>':'')+'</div>'+
+      '</div><div class="panel-body">'+
+      '<div class="row" style="margin-bottom:14px;">'+
+        '<div><label class="f">Data della consegna</label>'+
+          '<input type="date" id="bg-g-data" value="'+_bgToIso(data)+'" onchange="bgSetDataConsegna(this.value)"></div>'+
+        '<div style="flex:1;min-width:240px;"><label class="f">Sporco che esce</label>'+
+          '<div class="nota" style="padding-top:7px;">Consumi '+esc(_bgPeriodoTxt(per))+' — <b>'+totS+' pezzi</b></div></div>'+
+      '</div>'+av+
+      '<div class="tbl-wrap" style="max-width:420px;"><table><thead><tr><th>Tipologia</th><th class="r" style="width:110px;">Esce</th></tr></thead>'+
+        '<tbody>'+rowsF+'</tbody><tfoot><tr><td>Totale</td><td class="r">'+totS+'</td></tr></tfoot></table></div>'+
+      (resiFuori.length?'<div class="avviso" style="margin-top:13px;">Escono anche <b>'+resiPezzi+' pezzi inidonei</b>, in sacco separato e sulla stessa distinta.</div>':'')+
+      '<div class="nota" style="margin-top:13px;">Quello che Raimondo riporta si registra <b>il giorno della consegna</b>, dopo il suo passaggio: qui si prepara soltanto il foglio.</div>'+
+      '<div class="row" style="margin-top:15px;">'+
+        '<button class="btn btn-primary" onclick="bgStampaDistinta(\''+h+'\',\''+data+'\',true)">'+(stampata?'Ristampa la distinta':'Stampa la distinta')+'</button>'+
+      '</div></div></div>';
+  }
 
-  return '<div class="panel"><div class="panel-head">'+
+  return '<div class="panel" id="bg-consegna"><div class="panel-head">'+
       '<div class="panel-title">Registra la consegna</div>'+
       '<div class="nota">'+(prec?'Confronto con la consegna del <b>'+esc(prec.data)+'</b>':'Prima consegna: niente con cui confrontare cosa riporta')+'</div>'+
     '</div><div class="panel-body">'+
@@ -590,8 +713,11 @@ function vConsegna(h){
         (resiRestano?' I '+resiRestano+' registrati oggi restano in attesa: non sono nel sacco delle 8.':'')+'</div>'
       : (resiRestano?'<div class="nota" style="margin-top:13px;">'+resiRestano+' pezzi inidonei registrati oggi restano in attesa: escono con la consegna successiva.</div>':''))+
     '<div class="row" style="margin-top:15px;">'+
-      '<button class="btn btn-primary" onclick="bgRegistra(true)">Registra e stampa la distinta</button>'+
-      '<button class="btn" onclick="bgRegistra(false)">Registra soltanto</button>'+
+      (stampata
+        ? '<button class="btn btn-primary" onclick="bgRegistra(false)">Registra cosa ha portato</button>'+
+          '<button class="btn" onclick="bgRegistra(true)">Registra e ristampa la distinta</button>'
+        : '<button class="btn btn-primary" onclick="bgRegistra(true)">Registra e stampa la distinta</button>'+
+          '<button class="btn" onclick="bgRegistra(false)">Registra soltanto</button>')+
     '</div>'+
     '</div></div>';
 }
@@ -684,7 +810,7 @@ function vConsumi(h){
     '<td class="r"><button class="btn-link danger" onclick="bgEliminaConsumo(\''+c.id+'\')">elimina</button></td></tr>'
   ).join(''):'<tr><td colspan="'+(BG_VOCI.length+3)+'" class="vuoto">Nessun consumo registrato per questa struttura.</td></tr>';
 
-  return '<div class="panel"><div class="panel-head">'+
+  return '<div class="panel" id="bg-consumi"><div class="panel-head">'+
       '<div class="panel-title">Consumi del giorno</div>'+
       '<div class="nota">Si ricopiano dai fogli camera. La somma dei giorni del periodo <b>è</b> lo sporco che esce.</div>'+
     '</div><div class="panel-body">'+
@@ -863,7 +989,7 @@ function bgRicarica(input){
     const d=o&&o.dati?o.dati:o;
     if(!d||!Array.isArray(d.consegne)||!Array.isArray(d.consumi)){alert('Il file non sembra una copia di questa app.');return;}
     if(!confirm('La copia contiene '+d.consegne.length+' consegne e '+d.consumi.length+' giornate di consumi.\n\nSOSTITUISCE tutto quello che c\'è adesso ('+_bg.consegne.length+' consegne, '+_bg.consumi.length+' giornate). L\'operazione non si annulla.\n\nProcedere?'))return;
-    _bg={consumi:d.consumi||[],consegne:d.consegne||[],resi:d.resi||[]};
+    _bg={consumi:d.consumi||[],consegne:d.consegne||[],resi:d.resi||[],distinte:d.distinte||{}};
     bgSalva();render();
     _bgHint('copia ricaricata');
   };
@@ -878,10 +1004,27 @@ function bgStampa(id){
   const g=_bg.consegne.find(x=>x.id===id);
   if(!g){alert('Consegna non trovata.');return;}
   const h=_bgH(g);
-  const q=g.consegnato||_bgVuote();
+  if(_bgApriDistinta(h,g.data,g.consegnato||_bgVuote(),_bg.resi.filter(x=>x.consegnaId===g.id))){
+    _bgSegnaDistinta(h,g.data);bgSalva();render();
+  }
+}
+// La distinta della VIGILIA: si stampa senza registrare niente. Le quantità sono i
+// consumi del periodo (o quelle corrette nella maschera, se si parte da lì) e i pezzi
+// inidonei aperti datati prima del giorno della consegna — gli stessi che la
+// registrazione, domani, legherà a questo sacco.
+function bgStampaDistinta(h,data,daMaschera){
+  const d=_bgParse(data);
+  const per=_bgPeriodo(h,data);
+  let q=per&&!per.vuoto?_bgSomma(h,per.dal,per.al):_bgVuote();
+  if(daMaschera){q=_bgVuote();BG_VOCI.forEach((v,i)=>q[v]=_bgNum('bg-s-'+i));}
+  if(!_bgTot(q)){alert('Non esce nessun pezzo: tutte le quantità sono a zero.\n\nInserisci prima i consumi del periodo.');return;}
+  const resi=_bgResiAperti(h).filter(r=>{const rd=_bgParse(r.data);return rd&&d&&rd<d;});
+  if(_bgApriDistinta(h,data,q,resi)){_bgSegnaDistinta(h,data);bgSalva();render();}
+}
+function _bgApriDistinta(h,data,q,resi){
+  const g={data:data};
   const tot=_bgTot(q);
-  const per=_bgPeriodo(h,g.data);
-  const resi=_bg.resi.filter(x=>x.consegnaId===g.id);
+  const per=_bgPeriodo(h,data);
   const totResi=resi.reduce((a,b)=>a+(Number(b.qta)||0),0);
   const periodo=per&&!per.vuoto?(_bgFmt(per.dal)+' — '+_bgFmt(per.al)):'—';
 
@@ -949,9 +1092,10 @@ function bgStampa(id){
 '</body></html>';
 
   const w=window.open('','_blank');
-  if(!w){alert('Il browser ha bloccato la finestra di stampa. Consenti le finestre pop-up per questo sito.');return;}
+  if(!w){alert('Il browser ha bloccato la finestra di stampa. Consenti le finestre pop-up per questo sito.');return false;}
   w.document.write(html);w.document.close();
   setTimeout(()=>w.print(),400);
+  return true;
 }
 
 /* ── avvio ────────────────────────────────────────────────────────────── */

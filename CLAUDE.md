@@ -2564,6 +2564,37 @@ campo `<input type="date">` sopravvive al ridisegno: leggendola da lì, cambiand
 **Santa Brigida si apriva sulla data di Art Resort**, con l'avviso *"di norma qui il giro
 passa martedì, giovedì e sabato"* — cioè l'app accusava l'utente di un errore fatto da sé.
 
+### La distinta si prepara la VIGILIA — riquadro "Cosa fare oggi" (11/09/2026)
+
+Raimondo passa alle 8: la distinta va stampata il pomeriggio prima e lasciata in reception.
+L'app però aveva **un solo pulsante**, *"Registra e stampa la distinta"*: per stampare la
+vigilia bisognava registrare una consegna il cui pulito non era ancora arrivato, cioè
+mettere nel conto un *"ha portato"* inventato. E niente diceva **quando** farlo.
+
+Ora:
+
+| Pezzo | Cosa fa |
+|---|---|
+| `vOggi(h)` — riquadro in cima | passi numerati del giorno: consumi di oggi → **stampa la distinta di domani** (solo la vigilia) → registra cosa ha portato (solo il giorno del giro). A lavoro finito dice quando è la prossima distinta |
+| `_bgCompiti(h,oggi)` | calcola quei passi. Pura, testata |
+| `bgStampaDistinta(h,data)` | stampa **senza registrare**: consumi del periodo + inidonei aperti datati prima della consegna, gli stessi che la registrazione legherà a quel sacco |
+| `_bg.distinte` | `{'ar|12/09/2026': ts}` — le distinte stampate, per spegnere il promemoria. Anche *"L'ho già stampata"* (`bgSegnaFatta`) |
+| Linguette | *"Distinta di domani da stampare oggi"* in ambra anche sulla struttura **non** selezionata |
+| Maschera con data **futura** | diventa *"Prepara la distinta"*: solo la colonna di ciò che esce e il pulsante di stampa. Il pulito si registra il giorno della consegna |
+| Maschera con data di oggi/passata e distinta già stampata | il pulsante principale diventa *"Registra cosa ha portato"* |
+
+**Le linguette non sono un dettaglio**: coi due calendari sfalsati (lun/mer/ven e mar/gio/sab)
+quasi ogni giorno è la vigilia di **una** delle due strutture, e un promemoria visibile solo su
+quella selezionata lascerebbe l'altra dimenticata.
+
+I consumi di oggi vengono **prima** della distinta nei passi: il periodo arriva fino al giorno
+prima della consegna, quindi quelli di oggi escono con il sacco di domani. Se nel periodo
+mancano giorni, il passo lo dice in ambra.
+
+`_bg.distinte` è dentro l'archivio, quindi viaggia con la copia di sicurezza; un archivio salvato
+prima non ha il campo e si legge lo stesso. Coperto da 12 controlli in `test/galleria.js`,
+verificati sabotando la vigilia (`_bgGiornoGiro(h,oggi)` invece di domani): 5 falliscono.
+
 ### Ordine dei pannelli: i consumi SOPRA la consegna (11/09/2026)
 
 Linguette · situazione della struttura · **Consumi del giorno** · Registra la consegna ·
