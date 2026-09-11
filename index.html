@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='414-20260912';
+  const V='415-20260912';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1565,6 +1565,24 @@
               <button onclick="miniappOpen('dvr-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
             </div>
           </div>
+          <!-- Gestione Biancheria della Galleria: app del Resident Manager. Non ha l'interruttore
+               acceso/spento delle altre (non legge qm_app_status); da qui il QM la apre per
+               controllare o dare supporto: col lasciapassare di Compass entra senza codice. -->
+          <div class="miniapp-card">
+            <div class="miniapp-card-top">
+              <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span>
+              <div class="miniapp-nome">
+                <div class="miniapp-titolo">Gestione Biancheria</div>
+                <div class="miniapp-sub">Galleria · Resident Manager</div>
+              </div>
+            </div>
+            <div id="miniapp-bg-status" class="miniapp-stato"></div>
+            <input id="bg-url-input" type="hidden" value="https://compass-qm.com/biancheria-galleria.html">
+            <div class="miniapp-azioni">
+              <button onclick="miniappCopy('bg-url-input',this)" class="miniapp-btn">Copia link</button>
+              <button onclick="miniappOpen('bg-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
+            </div>
+          </div>
         </div>
       </div>
       <!-- ── INVENTARIO ── -->
@@ -1719,7 +1737,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=933-20260912"></script>
+<script src="app.js?v=934-20260912"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

@@ -338,7 +338,8 @@ if ! grep -qF "function permessoGalleria(" worker.js || ! grep -qF "/^bg_[A-Za-z
   echo "  ERRORE      worker.js non limita piu' il codice della Galleria alle chiavi bg_*."
   BKF_KO=1
 fi
-if grep -qE "localStorage\.(get|set|remove)Item\(.qm_" biancheria-galleria.html; then
+# Leggere il lasciapassare di Compass (qm_pass) e' ammesso; scrivere una qm_* no.
+if grep -qE "localStorage\.(set|remove)Item\(.qm_" biancheria-galleria.html; then
   echo ""
   echo "  ERRORE      biancheria-galleria.html scrive su una chiave qm_*."
   echo "              Le sue chiavi devono restare sotto bg_: una qm_ entrerebbe nel giro"

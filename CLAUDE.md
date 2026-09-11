@@ -2582,6 +2582,13 @@ in rosso. **Revoca**: come per Compass, cambiando `QM_AUTH_SECRET` (fuori tutti)
 `_gbGiro()` rilegge ogni minuto, a scheda visibile e mai mentre si scrive in una casella: è così
 che i due PC si vedono a vicenda. Le distinte stampate (`bg_distinte`) viaggiano allo stesso modo.
 
+**Il QM entra senza codice della Galleria** (12/09/2026): `_gbPass()` ripiega sul lasciapassare di
+Compass (`qm_pass`, stesso sito e quindi stesso `localStorage`), che apre tutto l'archivio. Serve
+per controlli e supporto. La pagina lo **legge** soltanto; la sentinella in `esegui.sh` vieta di
+scrivere chiavi `qm_*`, non di leggere questa. Scheda **Gestione Biancheria** in *Applicazioni
+stand alone* (`miniappBgStatus`): data degli ultimi consumi per struttura, ambra se una delle due è
+ferma da più di due giorni. Niente interruttore acceso/spento: l'app non legge `qm_app_status`.
+
 Le chiavi restano `bg_*`, mai `qm_*`. Due sentinelle in `test/esegui.sh`: la pagina non chiede
 elenco né cancellazioni né chiavi `qm_`, e `worker.js` contiene ancora `permessoGalleria` con la
 sua espressione. `bg_biancheria` e `bg_distinte` entrano nel **backup notturno su Drive** senza

@@ -2684,6 +2684,29 @@ function miniappRenderStatus(){
   const inv=document.getElementById('miniapp-inv-status');if(inv)inv.innerHTML=miniappInvStatus();
   const cmEl=document.getElementById('miniapp-cm-status');
   if(cmEl)miniappCmStatus().then(html=>{cmEl.innerHTML=html;});
+  const bgEl=document.getElementById('miniapp-bg-status');
+  if(bgEl)miniappBgStatus().then(html=>{bgEl.innerHTML=html;});
+}
+// Gestione Biancheria della Galleria: quando sono stati inseriti gli ultimi consumi, per
+// struttura. Legge bg_biancheria col lasciapassare di Compass, che apre tutte le chiavi.
+// I consumi si inseriscono ogni pomeriggio: se l'ultimo è di più di due giorni fa qualcosa
+// si è fermato, ed è quello che il QM vuole vedere senza aprire l'app.
+async function miniappBgStatus(){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key=bg_biancheria',{cache:'no-store'});
+    const j=await r.json();
+    const a=j&&j.value?JSON.parse(j.value):{};
+    const cons=Array.isArray(a.consumi)?a.consumi:[];
+    if(!cons.length)return _miniappStatusHTML('amber','Nessun consumo inserito','');
+    const p=s=>{const m=String(s||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;};
+    const ult={};
+    cons.forEach(c=>{const h=c.hotel||'ar',d=p(c.data);if(d&&(!ult[h]||d>ult[h]))ult[h]=d;});
+    const oggi=new Date();oggi.setHours(0,0,0,0);
+    const fermi=['ar','sb'].filter(h=>!ult[h]||(oggi-ult[h])/86400000>2);
+    const fmt=d=>d?String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'):'—';
+    const kpi='AR '+fmt(ult.ar)+' · SB '+fmt(ult.sb);
+    return fermi.length?_miniappStatusHTML('amber','Consumi fermi',kpi):_miniappStatusHTML('green','Consumi aggiornati',kpi);
+  }catch(e){return _miniappStatusHTML('amber','Dati non raggiungibili','');}
 }
 let pianoNavIdx=null; // indice giorno selezionato nel pannello overview
 let _cmPianoStats=null; // {prev,cur} sostituzioni bottiglia Art (eventi, non camere uniche) sett. scorsa/corrente
