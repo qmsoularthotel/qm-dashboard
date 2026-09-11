@@ -58,7 +58,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`dvr.html`** — App separata per consultare/gestire il DVR (General Manager)
 - **`reception.html`** — Cassa di reception (fondo cassa, incasso contante) — vedi la sua sezione
 - **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
-- **`biancheria-galleria.html`** — App del Resident Manager per il ciclo biancheria di Art Resort e Art Suite Santa Brigida. **Anche questa sta fuori da Compass**: nessun cloud, dati solo nel browser — vedi la sua sezione
+- **`biancheria-galleria.html`** — **Gestione Biancheria**, l'app del Resident Manager per il ciclo biancheria di Art Resort Galleria Umberto e Art Suite Santa Brigida. **Anche questa sta fuori da Compass**: nessun cloud, dati solo nel browser — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
 - **`test/`** — 720 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
@@ -2490,11 +2490,16 @@ export — da sistemare solo se lo chiedono:
 
 ---
 
-## Biancheria Galleria — l'app del Resident Manager, fuori da Compass
+## Gestione Biancheria — l'app del Resident Manager, fuori da Compass
 
-`biancheria-galleria.html`. Versione **semplificata** del ciclo pulito/sporco e dei resi per
-le due strutture che fanno capo al **Resident Manager**: **Art Resort** e **Art Suite Santa
-Brigida**. Sono esattamente le due che i moduli di Compass (`§§ BIANCHERIA`, `§§ RESI
+`biancheria-galleria.html`, intitolata **Gestione Biancheria**. Versione **semplificata**
+del ciclo pulito/sporco e dei resi per le due strutture che fanno capo al **Resident
+Manager**: **Art Resort Galleria Umberto** e **Art Suite Santa Brigida**.
+
+**Il nome non collide con Compass**, ma ci va vicino: *Gestione Biancheria* era il vecchio
+nome della vista `biancheria` di Compass, rinominata **Consumo Biancheria** il 07/09/2026
+(vedi "Le etichette del menu sono cambiate, le chiavi NO"). Sono due cose diverse — questa
+è l'app del Resident, quella è la vista del QM. Sono esattamente le due che i moduli di Compass (`§§ BIANCHERIA`, `§§ RESI
 BIANCHERIA`) lasciano fuori di proposito, perché fanno capo al Sig. Maddaloni e non al QM.
 
 **Non si tocca CLAUDE.md di Compass per sbaglio**: questo file non condivide una riga di
@@ -2592,6 +2597,26 @@ dice a chiare lettere invece di lasciarlo scoprire il giorno in cui serve. Se `l
 rifiuta la scrittura (quota piena, navigazione privata) compare un avviso esplicito: è
 l'unico modo in cui l'app perde dati.
 
+### Veste: splash delle altre app e riga di paternità
+
+**Splash identico alle altre app** — sfondo navy, bussola con ago che ruota ed eco radar,
+`Compass QM`, poi **Gestione Biancheria** e sotto *Art Resort Galleria Umberto, Art Suite
+Santa Brigida*. Tre secondi, si salta al tocco.
+
+**Si salta con `sessionStorage` (`bg_splash`), NON con `performance.navigation.type`.**
+Quando cambia `QM_APP_BUILD` l'aggiornamento automatico fa `location.replace(...?v=…)`, che
+è una navigazione di tipo `navigate` e **non** `reload`: col solo `nav.type` lo splash
+ripartirebbe a ogni pubblicazione. È lo stesso difetto già corretto su `index.html` (vedi
+"Compass (`index.html`)"), e `registration-galleria.html` lo ha ancora. Verificato dal vivo:
+prima apertura sì, ricaricamento no, redirezione `?v=` no, scheda nuova sì. Una sentinella in
+`test/esegui.sh` lo sorveglia, provata sabotandola.
+
+**La riga di paternità sta in fondo alla pagina, non sul foglio stampato**: *"Gestione
+Biancheria fa parte della Suite Compass QM, interamente ideata e creata dal Quality Manager
+Pierpaolo Presta. Per esclusivo uso interno."* La distinta si consegna a **Raimondo, che è
+esterno**, e "per esclusivo uso interno" su un documento che esce dall'albergo direbbe il
+contrario di sé. Classe `.firma` nel `<style>` della pagina.
+
 ### I controlli
 
 **56 controlli** in `test/galleria.js`, caricati da `test/esegui.sh` come `app.js` — lo
@@ -2606,8 +2631,9 @@ Verificati sabotando il codice: giorno del giro incluso nel periodo (5 falliscon
 pescato dall'altra struttura (1), rientro in più di nuovo rosso (1), sette zeri contati come
 uno zero vero (5), data proposta di nuovo da oggi (4), linguetta che non azzera la data (2).
 
-Tre sentinelle in `test/esegui.sh`, anch'esse provate sabotandole: nessuna fetch verso il
-Worker, nessuna chiave `qm_*`, aggiornamento automatico ancora al suo posto. L'ultima cerca
+Quattro sentinelle in `test/esegui.sh`, tutte provate sabotandole: nessuna fetch verso il
+Worker, nessuna chiave `qm_*`, splash ancora deciso da `sessionStorage`, aggiornamento
+automatico ancora al suo posto. L'ultima cerca
 la **dichiarazione** (`function qmCheckVersione(`) e non la stringa: un `grep -q
 qmCheckVersione` passa anche su una funzione rinominata, cioè mai più chiamata.
 
