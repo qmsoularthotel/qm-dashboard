@@ -2515,6 +2515,19 @@ introdotta:
 
 Tolto il promemoria dell'Overview (`biaRenderPromemoria`), che qui non ha dove stare.
 
+**Anche l'aspetto è quello di Compass.** I token di `:root` (colori, `--fs-*`, `--text-dim` e
+`--text-muted` — che nella prima versione erano **invertiti** rispetto a Compass) e le regole
+`.panel`/`.panel-header`/`.panel-title`/`.panel-body` sono copiati da `style.css`. Le regole
+generiche della vecchia versione (`table`, `th`, `td`, `input`, `label.f`, `.row`, `.btn`,
+`.avviso`, `.nota`…) valevano per tutta la pagina e deformavano le tabelle copiate da Compass,
+che lì sono stilate in linea: ora sono limitate a `#gb-extra` (la copia di sicurezza).
+
+**Due scostamenti voluti, per lo stesso motivo**: *Consegne di Raimondo*, *Pezzi non rientrati* e
+*Ultimi consumi inseriti* in Compass compaiono solo quando ci sono dati — e lì ci sono sempre,
+perché SoulArt li ha. Qui l'app parte vuota, e un riquadro assente è un riquadro che chi arriva
+da Compass cerca e non trova (*"manca questo"*, 11/09/2026). Si mostrano quindi anche vuoti,
+con una riga che dice perché.
+
 **Correggendo una delle due copie, va corretta anche l'altra.** Il modo più sicuro è rigenerare
 la copia dallo stesso rinomino (sostituzioni `\b_bia`→`_gb`, `\bbia(?=[A-Z])`→`gb`,
 `\bBIA_`→`GB_`, `\bbia-`→`gb-`, più i servizi elencati sopra e le righe dei calendari),
