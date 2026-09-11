@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-11.16';
+const QM_APP_BUILD='2026-09-12.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -404,6 +404,10 @@ function _gbGiri(h){
 function gbSetHotel(h){
   if(!GB_HOTELS[h])return;
   _gbHotel=h;
+  // Si ricorda la struttura scelta: ricaricando la pagina si ripartiva sempre da Art
+  // Resort, e chi aveva inserito i consumi di Santa Brigida non li ritrovava più e li
+  // credeva persi (12/09/2026). In Compass il problema non si vede perché lo usa il QM.
+  try{localStorage.setItem('bg_hotel',h);}catch(e){}
   const f=document.getElementById('gb-giro-data');if(f)f.value='';
   gbRender();
 }
@@ -1413,6 +1417,7 @@ function bgRicarica(input){
 
 
 /* ── avvio ────────────────────────────────────────────────────────────── */
+try{const hs=localStorage.getItem('bg_hotel');if(hs&&GB_HOTELS[hs])_gbHotel=hs;}catch(e){}
 gbLoad();
 </script>
 </body>
