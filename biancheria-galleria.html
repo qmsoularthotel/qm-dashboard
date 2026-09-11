@@ -90,6 +90,11 @@ input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 
 label.f{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:700;margin-bottom:4px;}
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
 .row>div{min-width:0;}
+/* Campo con l'etichetta sopra e la casella CENTRATA sotto: nella riga dei consumi le
+   etichette hanno lunghezze diverse ("Lenz. matrimoniale", "Federa") e con la casella
+   allineata a sinistra le sette colonne sembravano storte. */
+.campo-c{display:flex;flex-direction:column;align-items:center;}
+.campo-c label.f{text-align:center;}
 
 /* BOTTONI */
 .btn{font-family:inherit;font-size:13px;font-weight:600;padding:9px 17px;border-radius:7px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);}
@@ -142,7 +147,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-11.6';
+const QM_APP_BUILD='2026-09-11.7';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -846,7 +851,7 @@ function vConsumi(h){
   const cons=_bgConsumi(h).slice().reverse().slice(0,14);
   const oggiIso=_bgToIso(_bgFmt(_bgOggi()));
   const campi=BG_VOCI.map((v,i)=>
-    '<div><label class="f" title="'+esc(v)+'">'+esc(v.replace('Lenzuolo ','Lenz. ').replace('Asciugamano ','Asc. '))+'</label>'+
+    '<div class="campo-c"><label class="f" title="'+esc(v)+'">'+esc(v.replace('Lenzuolo ','Lenz. ').replace('Asciugamano ','Asc. '))+'</label>'+
     '<input type="number" min="0" id="bg-c-'+i+'" value="0" onfocus="this.select()"></div>').join('');
 
   const righe=cons.length?cons.map(c=>
