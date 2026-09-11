@@ -2492,286 +2492,78 @@ export — da sistemare solo se lo chiedono:
 
 ## Gestione Biancheria — l'app del Resident Manager, fuori da Compass
 
-`biancheria-galleria.html`, intitolata **Gestione Biancheria**. Versione **semplificata**
-del ciclo pulito/sporco e dei resi per le due strutture che fanno capo al **Resident
-Manager**: **Art Resort Galleria Umberto** e **Art Suite Santa Brigida**.
+`biancheria-galleria.html`, intitolata **Gestione Biancheria**: ciclo pulito/sporco e resi per
+le due strutture che fanno capo al **Resident Manager** — **Art Resort Galleria Umberto** e
+**Art Suite Santa Brigida** — cioè quelle che i moduli biancheria di Compass lasciano fuori.
 
-**Il nome non collide con Compass**, ma ci va vicino: *Gestione Biancheria* era il vecchio
-nome della vista `biancheria` di Compass, rinominata **Consumo Biancheria** il 07/09/2026
-(vedi "Le etichette del menu sono cambiate, le chiavi NO"). Sono due cose diverse — questa
-è l'app del Resident, quella è la vista del QM. Sono esattamente le due che i moduli di Compass (`§§ BIANCHERIA`, `§§ RESI
-BIANCHERIA`) lasciano fuori di proposito, perché fanno capo al Sig. Maddaloni e non al QM.
+### È una COPIA del modulo "Consumo Biancheria" di Compass (11/09/2026)
 
-**Non si tocca CLAUDE.md di Compass per sbaglio**: questo file non condivide una riga di
-codice con `app.js`. È un'app a sé, come `registration-galleria.html`.
+La prima versione era una riscrittura *semplificata*, rifatta più volte nella stessa giornata
+(riquadro "Cosa fare oggi" diverso, pulito in un riquadro a parte, caselle giorno per giorno,
+distinta solo la vigilia…). Il QM l'ha fermata: *"perché non fai esattamente come Compass? È più
+semplice e i receptionist già conoscono il metodo. Fallo identico."*
 
-### Cosa fa e cosa NON fa
+Ora il codice della sezione `§§ BIANCHERIA` di `app.js` è **copiato così com'è** dentro la
+pagina, generato con un rinomino meccanico. **Tre sole differenze**, e nessun'altra va
+introdotta:
 
-Il modello è quello confermato dal QM il 07/09/2026, stesso fornitore: *quello che Raimondo
-prende deve riportarlo*, quindi **atteso a questa consegna = sporco consegnato alla consegna
-precedente**, e il cumulato è merce che manca davvero.
-
-| C'è | Non c'è |
+| Differenza | Perché |
 |---|---|
-| consumi giornalieri, sette voci, ricopiati dai fogli camera | giacenza di magazzino, chi ha i pezzi in mano |
-| registrazione della consegna con confronto su cosa ha riportato | report andamento e grafici di resa per la direzione |
-| pezzi inidonei, in sacco separato ma **sulla stessa distinta** | firma sullo schermo (si stampa e si fa firmare su carta) |
-| storico, dettaglio per tipologia, cumulato per voce | qualunque contatto col cloud |
-| distinta A4 da far firmare a Raimondo | app per le cameriere |
+| Prefissi `gb`/`_gb`/`GB_` al posto di `bia`/`_bia`/`BIA_` (id HTML `gb-…`) | `test/esegui.sh` carica `app.js` e questa pagina **nello stesso spazio**: due `biaRender` si sovrascriverebbero e i controlli di Compass girerebbero sulla copia senza accorgersene. Un controllo verifica che `BIA_HOTELS` e `GB_HOTELS` restino distinti |
+| **Due calendari**: `GB_GIORNI_H={ar:[1,3,5],sb:[2,4,6]}` | In Compass SoulArt e Boutique passano insieme (mar/gio/sab). Qui Art Resort lun/mer/ven, Santa Brigida mar/gio/sab. `_gbGiornoGiro(d,h)`, `_gbVigiliaGiro(d,h)`, `_gbGiroCalPrec(d,h)` prendono la struttura (senza, vale quella selezionata); `_gbPeriodo` passa la sua |
+| **Niente cloud**: `_gbLeggi`/`_gbScrivi`/`_gbKvGet`/`_gbKvSet` al posto di `_qmLeggiArchivio`/`_qmSalvaArchivio`/`kvGet`/`kvSet` | Solo `localStorage` (`bg_biancheria`, `bg_distinte`). Anche `cqConferma`/`cqAvviso` e `_psSenzaSalto` hanno una versione locale (`confirm`/`alert`, scorrimento della finestra) |
 
-Chiesto così dal QM (11/09/2026): desktop, perché la gestisce il Resident dal PC; consumi
-giornalieri e non conta al sacco; niente cloud; distinta su carta.
+Tolto il promemoria dell'Overview (`biaRenderPromemoria`), che qui non ha dove stare.
 
-### DUE CALENDARI DIVERSI — è la ragione per cui non si poteva riusare il modulo di Compass
+**Correggendo una delle due copie, va corretta anche l'altra.** Il modo più sicuro è rigenerare
+la copia dallo stesso rinomino (sostituzioni `\b_bia`→`_gb`, `\bbia(?=[A-Z])`→`gb`,
+`\bBIA_`→`GB_`, `\bbia-`→`gb-`, più i servizi elencati sopra e le righe dei calendari),
+invece di ritoccarla a mano.
 
-```js
-const BG_GIORNI={ar:[1,3,5],sb:[2,4,6]};   // 0=domenica
-```
+### Cosa c'è in più rispetto a Compass
 
-**Art Resort: lunedì, mercoledì, venerdì. Santa Brigida: martedì, giovedì, sabato.** Compass
-ha un calendario solo (`BIA_GIORNI_GIRO`) perché SoulArt e Boutique passano insieme. Pescare
-il calendario dell'altra struttura sposta il periodo di un giorno, cioè fa uscire o entrare
-**una giornata intera di consumi** — e non lo si vede guardando: i numeri restano plausibili.
-Tre controlli lo sorvegliano.
+- **Pezzi inidonei** (riquadro in fondo, `vResi`): in Compass sono una vista a sé con ritiro ogni
+  15 giorni; qui escono **con il sacco di ogni consegna**. Registrando il giro,
+  `_gbLegaResi(h,data)` lega a quella consegna gli inidonei aperti **datati prima** (stesso
+  taglio delle 8:00). La loro distinta è **lo stesso foglio** di `_resiStampa` di Compass, con
+  la lista consegnata al Resident Manager e senza "ogni 15 giorni" (`_bgApriResi`). Si stampa
+  dal pulsante del riquadro, per la prossima consegna (`_gbProssimaConsegna`).
+- **Copia di sicurezza** (`vBackup`, `bgScarica`/`bgRicarica`): unica rete, perché non c'è
+  backup notturno. Il file porta anche `distinte`.
+- `gbRender()` è un involucro: chiama `_gbRenderCore()` (il `biaRender` di Compass, che riempie
+  `#gb-content`) e poi disegna i due riquadri propri in `#gb-extra`.
 
-### Il periodo ritirato — stessa regola di Compass, stesso motivo
+### I dati della versione semplificata si leggono ancora
 
-> La consegna del giorno D ritira i consumi **dalla consegna precedente (inclusa) al giorno
-> prima di D (incluso)**. Il consumo del giorno stesso esce la volta dopo.
-
-Raimondo passa alle **8:00**, prima che le camere si facciano. **Se cambia il suo orario, qui
-va cambiata anche la regola dei pezzi inidonei**, che segue lo stesso taglio: quelli trovati
-il giorno del giro non sono nel sacco.
-
-Il `dal` viene dalle **consegne realmente registrate**, non dal calendario: se una salta, la
-successiva copre da sola il buco. Il calendario serve **solo alla primissima consegna**, e i
-consumi più vecchi restano fuori — sono già usciti con i giri fatti prima che l'app esistesse.
-`_bgPeriodo` restituisce anche `fonte` (`consegna` · `calendario`), **sempre mostrata**: un
-intervallo di date senza spiegazione non permette di accorgersi che è sbagliato.
-
-### La data proposta è la prossima consegna DA REGISTRARE, non il prossimo giorno
-
-`_bgCalProx` parte dal **giorno dopo l'ultima consegna registrata**, non da oggi. Chi è
-rimasto indietro si vede quindi proporre la **più vecchia che manca**, che è l'ordine giusto
-in cui inserirle: ognuna ha bisogno della precedente per sapere cosa era uscito. Partendo da
-oggi, la maschera si apriva su una data già registrata e mostrava l'avviso *"esiste già"*
-tutte le volte.
-
-### La data scelta è uno STATO, non un valore riletto dal campo
-
-`_bgDataConsegna` (azzerata da `bgSetHotel`, da una registrazione e da un'eliminazione). Il
-campo `<input type="date">` sopravvive al ridisegno: leggendola da lì, cambiando linguetta
-**Santa Brigida si apriva sulla data di Art Resort**, con l'avviso *"di norma qui il giro
-passa martedì, giovedì e sabato"* — cioè l'app accusava l'utente di un errore fatto da sé.
-
-### La distinta si prepara la VIGILIA — riquadro "Cosa fare oggi" (11/09/2026)
-
-Raimondo passa alle 8: la distinta va stampata il pomeriggio prima e lasciata in reception.
-L'app però aveva **un solo pulsante**, *"Registra e stampa la distinta"*: per stampare la
-vigilia bisognava registrare una consegna il cui pulito non era ancora arrivato, cioè
-mettere nel conto un *"ha portato"* inventato. E niente diceva **quando** farlo.
-
-Ora:
-
-| Pezzo | Cosa fa |
-|---|---|
-| `vOggi(h)` — riquadro in cima | passi numerati del giorno: consumi di oggi → **stampa la distinta di domani** (solo la vigilia) → registra cosa ha portato (solo il giorno del giro). A lavoro finito dice quando è la prossima distinta |
-| `_bgCompiti(h,oggi)` | calcola quei passi. Pura, testata |
-| `bgStampaDistinta(h,data)` | stampa **senza registrare**: consumi del periodo + inidonei aperti datati prima della consegna, gli stessi che la registrazione legherà a quel sacco |
-| `_bg.distinte` | `{'ar|12/09/2026': ts}` — le distinte stampate, per spegnere il promemoria. Anche *"L'ho già stampata"* (`bgSegnaFatta`) |
-| Linguette | *"Distinta di domani da stampare oggi"* in ambra anche sulla struttura **non** selezionata |
-| Maschera con data **futura** | diventa *"Prepara la distinta"*: solo la colonna di ciò che esce e il pulsante di stampa. Il pulito si registra il giorno della consegna |
-| Maschera con data di oggi/passata e distinta già stampata | il pulsante principale diventa *"Registra cosa ha portato"* |
-
-**Un giorno futuro non è un consumo mancante.** La prima versione della maschera *"Prepara la
-distinta"* diceva, il venerdì, *"non sono stati registrati i consumi di venerdì, sabato e
-domenica"* per la consegna di lunedì — sabato e domenica non erano ancora arrivati. Ora
-`_bgGiorniStato(h,per,oggi)` dà a ogni giorno del periodo uno stato — **fatto** (verde, col
-totale), **da inserire** (ambra: già passato, o oggi), **non ancora** (tratteggiato: futuro) —
-e la maschera li mostra come caselle, una per giorno, sotto una frase che dice **quando** si
-stampa (*"Raimondo passa lunedì 14/09 alle 8. La distinta si stampa domenica 13 pomeriggio"*).
-Finché manca un giorno il pulsante è *"Stampa adesso (incompleta)"*, non primario, e la stampa
-chiede conferma: una distinta incompleta fa firmare a Raimondo meno pezzi di quelli che porta
-via. 5 controlli.
-
-**Le linguette non sono un dettaglio**: coi due calendari sfalsati (lun/mer/ven e mar/gio/sab)
-quasi ogni giorno è la vigilia di **una** delle due strutture, e un promemoria visibile solo su
-quella selezionata lascerebbe l'altra dimenticata.
-
-I consumi di oggi vengono **prima** della distinta nei passi: il periodo arriva fino al giorno
-prima della consegna, quindi quelli di oggi escono con il sacco di domani. Se nel periodo
-mancano giorni, il passo lo dice in ambra.
-
-`_bg.distinte` è dentro l'archivio, quindi viaggia con la copia di sicurezza; un archivio salvato
-prima non ha il campo e si legge lo stesso. Coperto da 12 controlli in `test/galleria.js`,
-verificati sabotando la vigilia (`_bgGiornoGiro(h,oggi)` invece di domani): 5 falliscono.
-
-### Il pulito consegnato ha un riquadro SUO, per tipologia (11/09/2026)
-
-*"Dove inserisco quello che mi consegna Raimondo?"* — la colonna *"Ha portato"* stava dentro la
-maschera della consegna, che si apriva quasi sempre sulla **prossima** consegna, cioè futura, e
-lì la colonna non c'era. Due mestieri diversi stavano nello stesso riquadro:
-
-| Riquadro | Quando | Cosa si fa |
-|---|---|---|
-| **Consumi del giorno** | ogni giorno | una data, sette caselle, Salva |
-| **Distinta dello sporco da consegnare a Raimondo** (`vConsegna`) | la vigilia | solo il foglio da stampare: nessuna colonna del pulito |
-| **Pulito consegnato da Raimondo** (`vPulito`) | il giorno del giro, dopo il passaggio | **stessa forma dei consumi**: data, sette caselle per tipologia, Salva |
-
-L'ordine dei riquadri segue quello del lavoro (11/09/2026, su richiesta del QM): consumi, poi la
-distinta che esce la vigilia, poi il pulito che rientra il giorno dopo.
-
-**La distinta compare SOLO la vigilia del ritiro** (`render()`: `_bgCompiti(h).vigilia`). Si
-prepara quel giorno e basta: mostrarla ogni giorno, con i giorni futuri del periodo ancora vuoti,
-la faceva sembrare un lavoro quotidiano. Gli altri giorni *Cosa fare oggi* dice quando toccherà,
-e le ristampe si fanno dallo storico.
-
-**Tolte le caselle giorno per giorno** (*"venerdì 11 · da inserire · sabato 12 · non ancora"*):
-secondo il QM rendevano tutto più incomprensibile. Resta solo l'avviso ambra quando mancano i
-consumi di un giorno già passato. `_bgGiorniStato` resta (lo usa la conferma di stampa
-incompleta), `_bgGiorniHtml` e le classi `.gg*` sono state rimosse.
-
-**Tolto il riquadro della struttura** (`vStato`: ultima consegna, pezzi non rientrati, inidonei
-in attesa): ripeteva le linguette e lo storico delle consegne.
-
-- La data del pulito è il **giro più recente** (`_bgGiroRecente`: oggi se Raimondo passa oggi),
-  mai futura — `bgSalvaPulito` rifiuta una data che non è ancora arrivata. Stato in
-  `_bgDataPulito`, azzerato cambiando linguetta, come `_bgDataConsegna`.
-- **Salvare il pulito crea la consegna se non esiste** (`_bgSalvaPulito`, pura e testata),
-  congelando lo sporco uscito: quello della **distinta stampata** se c'è — `_bg.distinte` ora
-  ricorda anche le quantità (`{ts,q}`), perché sono quelle che Raimondo ha firmato — altrimenti
-  la somma dei consumi del periodo. Lega a quella consegna gli inidonei aperti datati prima,
-  come faceva la vecchia registrazione.
-- Tutto a zero **non si salva**: una consegna in cui Raimondo non riporta niente non esiste.
-- Dopo il salvataggio il riquadro dice subito l'esito (*"ne mancano N rispetto ai M dello
-  sporco del …"*), verde se torna o ne porta di più, rosso solo se ne mancano.
-- La **Distinta dello sporco** propone la prossima consegna (`_bgProssimoGiro`). Su una data già
-  passata diventa una ristampa e mostra lo sporco **congelato** di quella consegna, non un
-  ricalcolo.
-
-Rimossi `bgRegistra`, `bgAggiornaDelta`, `_bgAttesoVis` e `bgVaiConsegna` (il passo di *Cosa fare
-oggi* porta ora a `bgVaiPulito`). 10 controlli in `test/galleria.js`.
-
-### Distinta dei resi — lo stesso foglio di Compass (11/09/2026)
-
-I pezzi inidonei hanno ora una **loro distinta**, identica a quella che Compass stampa per
-SoulArt e Boutique (`_resiStampa` in `app.js`): *"Distinta Reso Biancheria Inidonea"*, stesse
-tre avvertenze, tabella `Data · Tipologia · Quantità · Motivo · Firma HK`, riquadro di ritiro
-firmato da Raimondo e riquadro di consegna della distinta firmata. Raimondo è lo stesso
-fornitore per tutte le strutture e deve ritrovarsi davanti lo stesso foglio.
-
-Cambia solo ciò che qui è diverso: la lista si consegna al **Resident Manager** (non al Sig.
-Presta), e il riquadro di ritiro non dice *"ogni 15 giorni"* perché qui gli inidonei escono a
-ogni consegna. La colonna *Firma HK* resta vuota: quest'app non registra chi ha trovato il pezzo.
-
-**Il copione è duplicato, non condiviso**: l'app vive fuori da Compass e non carica `app.js`.
-Cambiando uno dei due fogli, va cambiato anche l'altro.
-
-Escono i resi aperti **datati prima** della consegna (`_bgResiDaConsegnare`) — stesso taglio
-dello sporco e della registrazione: quelli trovati il giorno stesso non sono nel sacco delle 8.
-Tre punti da cui si stampa: l'intestazione del pannello inidonei (per la prossima consegna), il
-passo *"Prepara la distinta di domani"* del riquadro *Cosa fare oggi* quando ci sono inidonei, e
-il collegamento *resi* sulle consegne passate nello storico (ristampa). Stampare **non** chiude
-niente: gli inidonei si legano alla consegna quando la si registra. 4 controlli in
-`test/galleria.js`.
-
-### Ordine dei pannelli: i consumi SOPRA la consegna (11/09/2026)
-
-Linguette · Cosa fare oggi · **Consumi del giorno** · Distinta dello
-sporco da consegnare a Raimondo (solo la vigilia) · Pulito consegnato da Raimondo · Pezzi inidonei · Consegne di
-Raimondo · Copia di sicurezza. I consumi si inseriscono **ogni
-giorno**, la consegna tre volte a settimana: la cosa che si fa più spesso non va cercata
-scorrendo sotto quella che si fa di rado. Ed è anche l'ordine del lavoro — la consegna legge i
-consumi del periodo, quindi vengono prima. L'ordine sta tutto in `render()`.
-
-### Uno zero mai inserito non è uno zero
-
-`_bgRegistrata(g)` pretende `_bgTot(ricevuto) > 0`. L'app salva **sempre tutte e sette** le
-voci, quindi una consegna mai compilata arriva con sette zeri dentro: guardare solo se
-l'oggetto ha delle chiavi non basta. Una consegna in cui Raimondo non riporta niente non
-esiste — quello che prende deve riportarlo — quindi un totale a zero significa *"nessuno ha
-scritto cosa ha riportato"*. Senza questa regola quelle righe inventano un ammanco pari a
-tutto ciò che era uscito. Le consegne non registrate restano **visibili** ma fuori da saldo,
-riepilogo e dettaglio, e lo dichiarano (`non registrato` · `fuori conteggio`).
-
-### Solo un ammanco è rosso
-
-`_bgCol` / `_bgCls` / `_bgTxt`: `d<0` rosso, tutto il resto **verde**, numero e riga insieme.
-In pari e rientro in più sono due notizie buone; un `+8` dipinto di rosso si legge come una
-perdita. È lo stesso errore già corretto due volte in Compass — non reintrodurlo colorando
-solo il numero e lasciando la riga tinta.
+`_gbMigra`: quella versione chiamava i giri `consegne` e teneva le distinte stampate dentro
+l'archivio (`distinte:{…:{ts,q}}`). Alla lettura le consegne diventano `giri` e le distinte
+passano in `bg_distinte`; anche una copia di sicurezza di quella versione si ricarica.
 
 ### I dati stanno SOLO nel browser del Resident
 
-Chiave `bg_biancheria` in `localStorage`. **Il prefisso `bg_` non è decorativo**: una chiave
-`qm_` entrerebbe nel giro di sincronizzazione di Compass e le due app si sovrascriverebbero.
+Prefisso `bg_`, **mai** `qm_`: una chiave `qm_` entrerebbe nel giro di sincronizzazione di
+Compass. Nessuna chiamata al Worker e nessuna schermata di abilitazione: il Resident non ha il
+lasciapassare, e darglielo vorrebbe dire aprirgli l'archivio di Compass. **Il prezzo,
+accettato**: nessuna sincronizzazione fra dispositivi e nessun backup notturno — la copia di
+sicurezza lo dice a chiare lettere. Se `localStorage` rifiuta la scrittura compare un avviso.
 
-Nessuna fetch verso il Worker, e nessuna schermata di abilitazione: il Resident non ha il
-lasciapassare, e darglielo per questo vorrebbe dire dargli accesso all'archivio di Compass.
-Le uniche due `fetch` del file puntano al **proprio file**, per l'aggiornamento automatico.
+### Veste
 
-**Il prezzo, accettato consapevolmente**: nessuna sincronizzazione fra dispositivi, nessun
-backup notturno su Drive, e svuotare la cronologia cancella tutto. Per questo c'è **Copia di
-sicurezza** (scarica/ricarica un JSON) ed è l'unica rete che questa app ha — il pannello lo
-dice a chiare lettere invece di lasciarlo scoprire il giorno in cui serve. Se `localStorage`
-rifiuta la scrittura (quota piena, navigazione privata) compare un avviso esplicito: è
-l'unico modo in cui l'app perde dati.
+Splash identico alle altre app (bussola, *Compass QM*, **Gestione Biancheria** e le due
+strutture), saltato con `sessionStorage` (`bg_splash`) e non con `nav.type` — la redirezione
+`?v=` dell'aggiornamento è una navigazione `navigate`. Riga di paternità in fondo alla pagina,
+non sul foglio stampato: la distinta va a Raimondo, che è esterno. Le variabili `--fs-xxs`,
+`--fs-xs`, `--fs-sm` e la classe `.panel-header` sono definite nel `<style>` della pagina perché
+il codice copiato da Compass le usa.
 
-### Veste: splash delle altre app e riga di paternità
+### Controlli
 
-**Splash identico alle altre app** — sfondo navy, bussola con ago che ruota ed eco radar,
-`Compass QM`, poi **Gestione Biancheria** e sotto *Art Resort Galleria Umberto, Art Suite
-Santa Brigida*. Tre secondi, si salta al tocco.
-
-**Si salta con `sessionStorage` (`bg_splash`), NON con `performance.navigation.type`.**
-Quando cambia `QM_APP_BUILD` l'aggiornamento automatico fa `location.replace(...?v=…)`, che
-è una navigazione di tipo `navigate` e **non** `reload`: col solo `nav.type` lo splash
-ripartirebbe a ogni pubblicazione. È lo stesso difetto già corretto su `index.html` (vedi
-"Compass (`index.html`)"), e `registration-galleria.html` lo ha ancora. Verificato dal vivo:
-prima apertura sì, ricaricamento no, redirezione `?v=` no, scheda nuova sì. Una sentinella in
-`test/esegui.sh` lo sorveglia, provata sabotandola.
-
-**La riga di paternità sta in fondo alla pagina, non sul foglio stampato**: *"Gestione
-Biancheria fa parte della Suite Compass QM, interamente ideata e creata dal Quality Manager
-Pierpaolo Presta. Per esclusivo uso interno."* La distinta si consegna a **Raimondo, che è
-esterno**, e "per esclusivo uso interno" su un documento che esce dall'albergo direbbe il
-contrario di sé. Classe `.firma` nel `<style>` della pagina.
-
-### I controlli
-
-**56 controlli** in `test/galleria.js`, caricati da `test/esegui.sh` come `app.js` — lo
-script principale della pagina viene estratto dall'HTML (l'**ultimo** blocco `<script>`) e la
-direttiva `'use strict'` tolta, altrimenti in eval stretto le `var` resterebbero chiuse
-dentro e le funzioni non sarebbero raggiungibili. Le due strade (Node e `osascript`) fanno la
-stessa cosa: **toccandone una, aggiornare anche l'altra**.
-
-`riepilogo()` resta nell'ultima riga di `test/mime.js`: `galleria.js` si carica **prima**.
-
-Verificati sabotando il codice: giorno del giro incluso nel periodo (5 falliscono), atteso
-pescato dall'altra struttura (1), rientro in più di nuovo rosso (1), sette zeri contati come
-uno zero vero (5), data proposta di nuovo da oggi (4), linguetta che non azzera la data (2).
-
-Quattro sentinelle in `test/esegui.sh`, tutte provate sabotandole: nessuna fetch verso il
-Worker, nessuna chiave `qm_*`, splash ancora deciso da `sessionStorage`, aggiornamento
-automatico ancora al suo posto. L'ultima cerca
-la **dichiarazione** (`function qmCheckVersione(`) e non la stringa: un `grep -q
-qmCheckVersione` passa anche su una funzione rinominata, cioè mai più chiamata.
-
-### Verificato in browser
-
-Chromium, con dati sintetici: nessun errore JS, la distinta sta in **una pagina sola** (resi
-compresi), nessuno scorrimento orizzontale a 760px, e il ciclo completo fatto dall'interfaccia
-— due giornate di consumi, un reso, registrazione — produce i totali attesi e li salva.
-
-### Se un domani serve
-
-- **Una terza struttura**: una riga in `BG_HOTELS` e una in `BG_GIORNI`/`BG_GIORNI_TXT`.
-- **Portarla sul cloud**: servirebbe dare il lasciapassare al Resident, quindi l'accesso
-  all'archivio di Compass. Vanno prima separate le chiavi lato Worker — non basta cambiare
-  `bg_` in `qm_`, e la sentinella lo impedisce apposta.
-- **Due distinte separate** (sporco e inidonei su fogli diversi): oggi è **una sola con due
-  sezioni**, perché è un passaggio solo e una firma sola. Se il fornitore ne vuole due,
-  `bgStampa` va spezzata — i dati ci sono già tutti.
+`test/galleria.js` (≈35): nomi distinti da Compass, due calendari, periodo col calendario
+della struttura giusta, zero mai inserito, atteso e saldo, lettura della versione semplificata,
+inidonei legati al giro, prossima consegna. Il resto del comportamento è quello di Compass ed
+è coperto dai suoi controlli in `test/controlli.js`. Le sentinelle in `test/esegui.sh`
+(nessuna chiamata al Worker, nessuna chiave `qm_*`, splash da `sessionStorage`, aggiornamento
+automatico) restano quelle di prima.
 
 ## Pannello di Controllo — due voci: Applicazioni e Sicurezza
 

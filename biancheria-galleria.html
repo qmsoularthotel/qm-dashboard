@@ -9,6 +9,7 @@
 :root{
   --bg:#eef1f5;--surface:#f8f9fb;--surface2:#e8ecf1;
   --border:#cdd4de;--border-light:#dde2ea;
+  --fs-xxs:11px;--fs-xs:13px;--fs-sm:14px;
   --text:#0c1f33;--text-dim:#4a5568;--text-muted:#888;
   --accent:#1c3a5e;--accent-bg:#e3eaf4;--gold:#c9952f;
   --green:#2e7d32;--green-bg:#e8f5e9;
@@ -39,6 +40,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* PANNELLI */
 .panel{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;}
 .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:13px 18px;border-bottom:1px solid var(--border-light);background:var(--surface);}
+.panel-header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:13px 18px;border-bottom:1px solid var(--border-light);background:var(--surface);}
 .panel-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);}
 .panel-body{padding:16px 18px 18px;}
 .panel{scroll-margin-top:74px;}
@@ -137,7 +139,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-11.10';
+const QM_APP_BUILD='2026-09-11.11';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -227,7 +229,8 @@ setInterval(qmCheckVersione,600000);
 </div>
 
 <div class="shell">
-  <div id="app"></div>
+  <div id="gb-content"></div>
+  <div id="gb-extra"></div>
   <div class="firma">
     <span class="firma-marchio">Compass <span>QM</span></span>
     Gestione Biancheria fa parte della Suite Compass QM, interamente ideata e creata dal
@@ -238,594 +241,1123 @@ setInterval(qmCheckVersione,600000);
 <script>
 'use strict';
 /* ===========================================================================
-   BIANCHERIA GALLERIA — app a sé, FUORI da Compass
+   GESTIONE BIANCHERIA — app a sé, FUORI da Compass
    ---------------------------------------------------------------------------
-   Versione semplificata del ciclo pulito/sporco + resi per le due strutture che
-   fanno capo al Resident Manager: Art Resort e Art Suite Santa Brigida.
+   Ciclo pulito/sporco + resi per le due strutture che fanno capo al Resident
+   Manager: Art Resort Galleria Umberto e Art Suite Santa Brigida.
 
-   NON PARLA MAI COL CLOUD DI COMPASS, ed è una scelta, non una dimenticanza:
-   il Resident non ha (e non deve avere) il lasciapassare del Worker. Tutto vive
-   nel localStorage di questo browser, sotto il prefisso `bg_` — mai `qm_`, così
-   non può collidere con nessuna chiave che Compass sincronizza. Il prezzo è che
-   i dati stanno su un computer solo: per questo c'è "Copia di sicurezza", ed è
-   l'unico punto in cui questa scelta può fare male.
-   Un controllo in test/esegui.sh verifica che non ricompaia una fetch verso il
-   Worker: succederebbe in silenzio e l'app smetterebbe di funzionare qui.
+   È IDENTICA al modulo "Consumo Biancheria" di Compass (11/09/2026, su richiesta
+   del QM: "i receptionist conoscono già il metodo"). Il codice di quel modulo è
+   copiato qui così com'è, con tre sole differenze:
+     - i nomi cominciano per gb/_gb/GB_ invece che bia/_bia/BIA_: i controlli
+       caricano app.js e questa pagina nello stesso spazio, e due funzioni con lo
+       stesso nome si sovrascriverebbero;
+     - i calendari sono DUE (Art Resort lun/mer/ven, Santa Brigida mar/gio/sab);
+     - niente cloud: i salvataggi passano da _gbLeggi/_gbScrivi, che usano solo
+       il localStorage di questo browser.
+   Correggendo una delle due copie, va corretta anche l'altra.
 
-   IL MODELLO (confermato dal QM il 07/09/2026, stesso fornitore):
-     quello che Raimondo prende deve riportarlo
-     → atteso a questa consegna = sporco consegnato alla consegna PRECEDENTE
-     → il cumulato delle differenze è merce che manca davvero, non uno
-       sfasamento fra un giro e l'altro.
+   NON PARLA MAI COL CLOUD DI COMPASS, ed è una scelta, non una dimenticanza: il
+   Resident non ha (e non deve avere) il lasciapassare del Worker. Tutto vive nel
+   localStorage sotto il prefisso `bg_` — mai `qm_`. Un controllo in
+   test/esegui.sh verifica che non ricompaia una chiamata al Worker.
    =========================================================================== */
 
-const BG_KEY='bg_biancheria';
-const BG_HOTELS={ar:'Art Resort',sb:'Art Suite Santa Brigida'};
-// Calendario di Raimondo, DIVERSO per struttura (0=domenica):
-//   Art Resort      → lunedì, mercoledì, venerdì
-//   Santa Brigida   → martedì, giovedì, sabato
-// Serve in due punti soltanto: a proporre la data della prossima consegna, e a
-// dare un "dal" alla PRIMA consegna in assoluto, quando non c'è ancora una
-// consegna precedente da cui partire. Tutte le altre volte comanda lo storico.
-const BG_GIORNI={ar:[1,3,5],sb:[2,4,6]};
-const BG_GIORNI_TXT={ar:'lunedì, mercoledì e venerdì',sb:'martedì, giovedì e sabato'};
-const BG_GG=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
-
-// Le sette voci del foglio camera. I dati salvati sono indicizzati per NOME:
-// riordinare non sposta nessun numero, RINOMINARE orfana i valori già salvati.
-const BG_VOCI=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno'];
-// Pezzi inidonei: tipologie più larghe (qui rientra anche ciò che non è sul
-// foglio camera — accappatoi, tovaglie) e motivo della resa.
-const BG_RESI_TIP=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Copripiumino matrimoniale','Copripiumino singolo','Coprimaterasso','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno','Accappatoio','Tovaglia','Tovagliolo'];
-const BG_RESI_MOTIVI=['Macchiata','Strappata','Usurata','Ingiallita','Bruciata','Scolorita','Altro'];
-
-let _bg={consumi:[],consegne:[],resi:[],distinte:{}};
-let _bgHotel='ar';
-let _bgStoricoAperto=new Set();   // fuori da render(): dentro si richiuderebbe da solo
-let _bgSaldoAperto=false;
-
-/* ── utilità ──────────────────────────────────────────────────────────── */
+// Pezzi inidonei: tipologie più larghe del foglio camera e motivo della resa.
+const GB_RESI_TIP=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Copripiumino matrimoniale','Copripiumino singolo','Coprimaterasso','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno','Accappatoio','Tovaglia','Tovagliolo'];
+const GB_RESI_MOTIVI=['Macchiata','Strappata','Usurata','Ingiallita','Bruciata','Scolorita','Altro'];
 const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const _bgUid=()=>Date.now()+'_'+Math.random().toString(36).slice(2,8);
-const _bgH=x=>x.hotel||'ar';
-function _bgFmt(d){const x=d instanceof Date?d:new Date(d);return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear();}
-function _bgParse(s){const m=String(s||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;}
-function _bgToIso(s){const d=_bgParse(s);return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):'';}
-function _bgFromIso(s){const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:'';}
-function _bgOggi(){const d=new Date();d.setHours(0,0,0,0);return d;}
-function _bgVuote(){const o={};BG_VOCI.forEach(v=>o[v]=0);return o;}
-function _bgTot(q){return BG_VOCI.reduce((s,v)=>s+(Number(q&&q[v])||0),0);}
-function _bgNum(id){const e=document.getElementById(id);return Math.max(0,Number(e&&e.value)||0);}
+function _gbNum(id){const e=document.getElementById(id);return Math.max(0,Number(e&&e.value)||0);}
+function _gbHint(t){const e=document.getElementById('salvatoHint');if(e)e.textContent=t;}
 
-/* ── archivio (solo localStorage) ─────────────────────────────────────── */
-function bgCarica(){
-  try{
-    const s=localStorage.getItem(BG_KEY);
-    if(s){const o=JSON.parse(s)||{};_bg={consumi:o.consumi||[],consegne:o.consegne||[],resi:o.resi||[],distinte:o.distinte||{}};}
-  }catch(e){}
+/* ── al posto dei servizi di Compass: solo questo browser ─────────────────── */
+// La versione semplificata di questa app (fino all'11/09/2026) chiamava i giri
+// "consegne" e teneva le distinte stampate dentro l'archivio: si leggono entrambe.
+function _gbMigra(o){
+  o=o&&typeof o==='object'?o:{};
+  return{consumi:Array.isArray(o.consumi)?o.consumi:[],giri:Array.isArray(o.giri)?o.giri:(Array.isArray(o.consegne)?o.consegne:[]),resi:Array.isArray(o.resi)?o.resi:[]};
 }
-function bgSalva(){
+async function _gbLeggi(key,def){
   try{
-    localStorage.setItem(BG_KEY,JSON.stringify(_bg));
-    _bgHint('salvato '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
+    const s=localStorage.getItem(key);
+    if(s){
+      const o=JSON.parse(s)||{};
+      if(o.distinte&&typeof o.distinte==='object'){
+        try{
+          const d=JSON.parse(localStorage.getItem(GB_DIST_KEY)||'{}')||{};
+          Object.keys(o.distinte).forEach(k=>{if(!d[k]){const v=o.distinte[k];d[k]=(v&&v.ts)||v||Date.now();}});
+          localStorage.setItem(GB_DIST_KEY,JSON.stringify(d));
+        }catch(e){}
+      }
+      return _gbMigra(o);
+    }
+  }catch(e){}
+  return _gbMigra(def);
+}
+async function _gbScrivi(key,obj){
+  try{
+    localStorage.setItem(key,JSON.stringify(obj));
+    _gbHint('salvato '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
   }catch(e){
-    // Quota piena o navigazione privata: è l'unico modo in cui questa app perde
-    // dati, e va detto — non si scopre da soli che un salvataggio non è passato.
+    // Quota piena o navigazione privata: è l'unico modo in cui questa app perde dati.
     alert('ATTENZIONE: non è stato possibile salvare.\n\nI dati inseriti ora NON sono al sicuro. Scarica subito una copia di sicurezza e avvisa il Quality Manager.');
   }
+  return obj;
 }
-function _bgHint(t){const e=document.getElementById('salvatoHint');if(e)e.textContent=t;}
+// Qui non c'è fusione col cloud: eliminare è eliminare, non serve lasciare traccia.
+function _gbSegnaRimosso(arch,id){}
+function _gbKvGet(k){try{return Promise.resolve(localStorage.getItem(k));}catch(e){return Promise.resolve(null);}}
+function _gbKvSet(k,v){try{localStorage.setItem(k,v);}catch(e){}return Promise.resolve(true);}
+function _gbTesto(h){return String(h||'').replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&');}
+function _gbConferma(t,m){return Promise.resolve(confirm(_gbTesto(t)+(m?'\n\n'+_gbTesto(m):'')));}
+function _gbAvviso(t,m){alert(_gbTesto(t)+(m?'\n\n'+_gbTesto(m):''));}
+// Qui a scorrere è la finestra (in Compass è .content).
+function _gbSenzaSalto(fn){const y=window.scrollY;fn();window.scrollTo(0,y);requestAnimationFrame(()=>window.scrollTo(0,y));}
 
-/* ── selezioni per struttura ──────────────────────────────────────────── */
-function _bgConsumi(h){const x=h||_bgHotel;return _bg.consumi.filter(c=>_bgH(c)===x).sort((a,b)=>(_bgParse(a.data)||0)-(_bgParse(b.data)||0));}
-function _bgConsegne(h){const x=h||_bgHotel;return _bg.consegne.filter(g=>_bgH(g)===x).sort((a,b)=>(_bgParse(a.data)||0)-(_bgParse(b.data)||0));}
-function _bgResi(h){const x=h||_bgHotel;return _bg.resi.filter(r=>_bgH(r)===x).sort((a,b)=>(_bgParse(a.data)||0)-(_bgParse(b.data)||0));}
-function _bgResiAperti(h){return _bgResi(h).filter(r=>!r.consegnaId);}
+// ── BIANCHERIA — copia del modulo "Consumo Biancheria" di Compass (app.js, sezione BIANCHERIA)
+// Modulo distinto da RESI BIANCHERIA: quello tratta i pezzi inidonei (macchiati,
+// strappati) che viaggiano in un sacco a parte; questo tratta il giro normale del
+// pulito e dello sporco.
+//
+// Il problema che risolve: Raimondo consegna il pulito lasciando la SUA distinta, ma
+// ritira lo sporco senza che nessuno lo conti e senza firmare niente. Mancando quel
+// documento, quando salta fuori del materiale mancante non c'è modo di sapere se è
+// sparito dentro l'albergo o se non è tornato dalla lavanderia. Qui si genera la
+// distinta di consegna che oggi non esiste.
+//
+// Il conteggio dello sporco NON si conta a parte: è la somma dei consumi che le
+// cameriere dichiarano ogni giorno sui fogli camera. Se dal giro scorso sono state
+// consumate 26 federe, sono 26 le federe che escono.
+const GB_KEY='bg_biancheria';
+const GB_HOTELS={ar:'Art Resort Galleria Umberto',sb:'Art Suite Santa Brigida'};
+// Le sette voci dei fogli camera, nell'ordine in cui le cameriere le trovano sul
+// cartaceo: inserire i numeri seguendo lo stesso ordine riduce gli errori di battitura.
+// L'ordine è solo di presentazione — i dati salvati sono indicizzati per NOME, quindi
+// riordinare non sposta nessun numero già registrato. Rinominare una voce sì: quella
+// orfanerebbe i valori salvati sotto il vecchio nome.
+const GB_VOCI=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno'];
+// Nella tabella del giro le voci si leggono in un ordine diverso: prima la biancheria da
+// letto, poi gli asciugamani, infine telo doccia e scendibagno. È l'ordine in cui si
+// contano i pezzi preparando il sacco, e NON è quello del foglio camera — che invece
+// resta identico nel riquadro dei consumi giornalieri, dove si ricopia dal cartaceo.
+//
+// Le due liste contengono le stesse sette voci: GB_VOCI resta l'elenco canonico, e gli
+// id delle caselle (gb-r-N / gb-s-N / gb-d-N) seguono SEMPRE la sua posizione. Così
+// chi rilegge i campi — gbRegistraGiro, gbPrintDistinta, gbAggiornaDelta — continua a
+// scorrere GB_VOCI e non può disallinearsi con l'ordine mostrato a schermo.
+const GB_VOCI_GIRO=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Asciugamano viso','Asciugamano bidet','Telo doccia','Scendibagno'];
+let _gb={consumi:[],giri:[]};
+let _gbHotel='ar';
+// Pannelli richiudibili: la spiegazione del ciclo e lo storico non servono ogni giorno,
+// ma tenerli sempre aperti rendeva la pagina un muro.
+let _gbGuida=false;
+// Quali righe dello storico hanno il dettaglio per tipologia aperto, e se è aperto quello
+// del riepilogo. Stanno FUORI da gbRender, che rigenera tutto l'HTML: dentro, ogni
+// apertura si richiuderebbe da sola al primo ridisegno (stessa lezione di _speseCatOpen).
+// È un insieme e non un id solo: due strutture nello stesso giorno si confrontano bene
+// solo tenendole aperte insieme.
+let _gbGiroAperto=new Set(), _gbVociAperte=false;
+function gbToggleGuida(){_gbGuida=!_gbGuida;gbRender();}
+function gbToggleGiro(id){_gbGiroAperto.has(id)?_gbGiroAperto.delete(id):_gbGiroAperto.add(id);_gbSenzaSalto(gbRender);}
+function gbToggleVoci(){_gbVociAperte=!_gbVociAperte;_gbSenzaSalto(gbRender);}
+const _gbH=x=>x.hotel||'ar';
 
-/* ── calendario ───────────────────────────────────────────────────────── */
-function _bgGiornoGiro(h,d){return BG_GIORNI[h].includes(d.getDay());}
+function _gbUid(){return Date.now()+'_'+Math.random().toString(36).slice(2,8);}
+function _gbFmt(d){const x=d instanceof Date?d:new Date(d);return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear();}
+function _gbParse(s){const m=String(s||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;}
+// dd/MM/yyyy <-> yyyy-MM-dd, per i campi <input type="date">
+function _gbToIso(s){const d=_gbParse(s);return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):'';}
+function _gbFromIso(s){const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:'';}
+function _gbOggi(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function _gbVuote(){const o={};GB_VOCI.forEach(v=>o[v]=0);return o;}
+function _gbTot(q){return GB_VOCI.reduce((s,v)=>s+(Number(q&&q[v])||0),0);}
+
+async function gbLoad(){
+  const el=document.getElementById('gb-content');if(!el)return;
+  el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Caricamento…</div>';
+  // Si FONDE cloud e copia locale invece di preferire l'uno all'altra: una registrazione
+  // che non era arrivata sul cloud non deve sparire riaprendo la pagina.
+  _gb=await _gbLeggi(GB_KEY,{consumi:[],giri:[]});
+  try{await _gbDistCarica();}catch(e){}
+  gbRender();
+}
+async function _gbSave(){
+  _gb=await _gbScrivi(GB_KEY,_gb);
+  return _gb;
+}
+
+function _gbConsumi(h){const hot=h||_gbHotel;return _gb.consumi.filter(c=>_gbH(c)===hot);}
+function _gbGiri(h){
+  const hot=h||_gbHotel;
+  return _gb.giri.filter(g=>_gbH(g)===hot)
+    .sort((a,b)=>(_gbParse(a.data)||0)-(_gbParse(b.data)||0));
+}
+function gbSetHotel(h){if(!GB_HOTELS[h])return;_gbHotel=h;gbRender();}
+
+// Calendario reale del giro: Raimondo passa martedì, giovedì e sabato (0=domenica).
+// Serve SOLO come ripiego quando non c'è ancora nessun giro registrato: il "dal" continua
+// a prendersi dai giri realmente registrati, così un giro saltato viene assorbito dal
+// successivo. Il calendario non deve mai scavalcare un giro registrato.
+// Qui i calendari sono DUE, ed è l'unica differenza vera rispetto a Compass (dove SoulArt
+// e Boutique passano insieme): Art Resort lunedì/mercoledì/venerdì, Santa Brigida
+// martedì/giovedì/sabato. Ogni funzione di calendario prende la struttura; senza, vale
+// quella selezionata.
+const GB_GIORNI_H={ar:[1,3,5],sb:[2,4,6]};
+const GB_GIORNI_TXT_H={ar:'lunedì, mercoledì e venerdì',sb:'martedì, giovedì e sabato'};
+function _gbCal(h){return GB_GIORNI_H[h||_gbHotel]||GB_GIORNI_H.ar;}
+function _gbCalTxt(h){return GB_GIORNI_TXT_H[h||_gbHotel]||'';}
+const GB_GG_NOMI=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+
+
+// ── I DUE MOMENTI DEL GIRO ──
+// Il giro è un momento solo per il fornitore, ma due per noi, in due giorni diversi:
+//   VIGILIA (lunedì, mercoledì, venerdì, di pomeriggio) — si preparano i sacchi e si
+//     STAMPA la distinta. I numeri sono già definitivi: il giro del martedì ritira
+//     sabato, domenica e lunedì, tutti giorni chiusi entro lunedì pomeriggio.
+//   GIORNO DEL GIRO (martedì, giovedì, sabato, alle 8) — Raimondo arriva, si registra
+//     cosa ha portato. La distinta è già sul bancone.
+// Prepararla la mattina stessa non funziona: alle 8 la reception è nel pieno dei
+// check-out e nessuno stampa niente. È il motivo per cui i dati si perdevano.
+function _gbDomani(d){const x=new Date(d.getTime());x.setDate(x.getDate()+1);x.setHours(0,0,0,0);return x;}
+function _gbVigiliaGiro(d,h){return _gbGiornoGiro(_gbDomani(d),h);}
+
+// Distinte già stampate. Sta in una chiave SUA: l'archivio dei consumi e dei giri
+// (bg_biancheria) non va toccato per una cosa che riguarda solo i promemoria.
+const GB_DIST_KEY='bg_distinte';
+let _gbDist={};
+const _gbDistId=(hotel,data)=>hotel+'|'+data;
+const _gbDistStampata=(hotel,data)=>!!_gbDist[_gbDistId(hotel,data)];
+// Si RILEGGE il cloud prima di scrivere, e si fonde. Scrivendo alla cieca la copia che questa
+// postazione si porta dietro, una distinta segnata altrove sarebbe stata cancellata — e il
+// promemoria di quella struttura si sarebbe riacceso da solo il giorno dopo, senza che
+// nessuno potesse capire perche'. E' lo stesso difetto dei pre-stay del 22/08/2026, in
+// piccolo: qui si perdono promemoria invece che dati, ma il meccanismo e' identico.
+// Le date segnate sono solo aggiunte: l'unione non puo' che crescere.
+async function _gbDistSegna(hotel,data){
+  _gbDist[_gbDistId(hotel,data)]=Date.now();
+  try{
+    const v=await _gbKvGet(GB_DIST_KEY);
+    if(v){const remoto=JSON.parse(v)||{};Object.keys(remoto).forEach(k=>{if(!_gbDist[k])_gbDist[k]=remoto[k];});}
+  }catch(e){}
+  try{localStorage.setItem(GB_DIST_KEY,JSON.stringify(_gbDist));}catch(e){}
+  _gbKvSet(GB_DIST_KEY,JSON.stringify(_gbDist)).catch(()=>{});
+}
+async function _gbDistCarica(){
+  try{const s=localStorage.getItem(GB_DIST_KEY);if(s)_gbDist=JSON.parse(s)||{};}catch(e){}
+  try{const v=await _gbKvGet(GB_DIST_KEY);if(v){_gbDist=JSON.parse(v)||{};localStorage.setItem(GB_DIST_KEY,v);}}catch(e){}
+}
+
 // Ultimo giorno di calendario in cui Raimondo sarebbe passato PRIMA di d.
-function _bgCalPrec(h,d){
+function _gbGiroCalPrec(d,h){
   const x=new Date(d.getTime());
-  for(let i=0;i<7;i++){x.setDate(x.getDate()-1);if(_bgGiornoGiro(h,x))return x;}
+  for(let i=0;i<7;i++){
+    x.setDate(x.getDate()-1);
+    if(_gbCal(h).includes(x.getDay()))return x;
+  }
   return new Date(d.getTime()-86400000);
 }
-// La prossima consegna DA REGISTRARE, che non è semplicemente "il prossimo giorno di
-// calendario": si parte dal giorno dopo l'ultima consegna registrata, così se si è
-// rimasti indietro viene proposta la più VECCHIA che manca — ed è l'ordine giusto in cui
-// inserirle, perché ognuna ha bisogno della precedente per sapere cosa Raimondo doveva
-// riportare. Proponendo sempre oggi, invece, la maschera si apriva su una data già
-// registrata e mostrava l'avviso "esiste già" a ogni apertura.
-function _bgCalProx(h){
-  const cons=_bgConsegne(h);
-  let x;
-  if(cons.length){
-    const ultima=_bgParse(cons[cons.length-1].data);
-    x=ultima?new Date(ultima.getTime()+86400000):_bgOggi();
-  }else x=_bgOggi();
-  for(let i=0;i<8;i++){if(_bgGiornoGiro(h,x))return x;x.setDate(x.getDate()+1);}
-  return x;
-}
-
-/* ── la vigilia: la distinta si prepara il giorno PRIMA ─────────────────────
-   Raimondo passa alle 8, prima che chiunque possa sedersi a preparare un foglio:
-   la distinta va stampata il pomeriggio prima e lasciata in reception. Per questo
-   la stampa è un passo a sé, separato dalla registrazione della consegna — che si
-   fa DOPO il suo passaggio, quando si sa cosa ha riportato. Tenerle insieme in un
-   solo pulsante obbligava a "registrare" la vigilia un pulito che non era ancora
-   arrivato.
-   Con due calendari sfalsati (lun/mer/ven e mar/gio/sab) quasi ogni giorno è la
-   vigilia di una delle due strutture: il promemoria sta anche sulle linguette,
-   altrimenti quella non selezionata resterebbe dimenticata.                   */
-function _bgDomani(d){const x=new Date(d.getTime());x.setDate(x.getDate()+1);return x;}
-const _bgDistId=(h,data)=>h+'|'+data;
-function _bgDistStampata(h,data){return !!((_bg.distinte||{})[_bgDistId(h,data)]);}
-// Si ricordano anche le quantità stampate: sono quelle che Raimondo ha firmato, e quando
-// il giorno dopo si inserisce il pulito è QUELLO lo sporco uscito da congelare — non un
-// ricalcolo dai consumi, che nel frattempo qualcuno potrebbe aver corretto.
-function _bgSegnaDistinta(h,data,q){if(!_bg.distinte)_bg.distinte={};_bg.distinte[_bgDistId(h,data)]={ts:Date.now(),q:q||null};}
-// Il prossimo giorno di calendario DOPO oggi in cui Raimondo passa.
-function _bgProssimoGiro(h,oggi){
-  const x=_bgDomani(oggi||_bgOggi());
-  for(let i=0;i<8;i++){if(_bgGiornoGiro(h,x))return x;x.setDate(x.getDate()+1);}
-  return x;
-}
-function _bgCompiti(h,oggi){
-  const o=oggi||_bgOggi(),oggiTxt=_bgFmt(o),dom=_bgDomani(o),domTxt=_bgFmt(dom);
-  const vigilia=_bgGiornoGiro(h,dom),giro=_bgGiornoGiro(h,o);
-  const consOggi=_bgConsumi(h).some(c=>c.data===oggiTxt);
-  const regOggi=_bgConsegne(h).find(g=>g.data===oggiTxt);
-  const passi=[];
-  if(!consOggi)passi.push({tipo:'consumi'});
-  if(vigilia&&!_bgDistStampata(h,domTxt))passi.push({tipo:'distinta',data:domTxt});
-  if(giro&&!(regOggi&&_bgRegistrata(regOggi)))passi.push({tipo:'registra',data:oggiTxt});
-  const prox=_bgProssimoGiro(h,o);
-  return{passi:passi,vigilia:vigilia,giro:giro,oggi:oggiTxt,domani:domTxt,
-         prossimo:_bgFmt(prox),vigiliaProssimo:_bgFmt(new Date(prox.getTime()-86400000))};
-}
-
-/* ── periodo ritirato ─────────────────────────────────────────────────────
-   La consegna del giorno D ritira i consumi dalla consegna precedente
-   (INCLUSA) al giorno prima di D (incluso). Il consumo del giorno stesso resta
-   FUORI: Raimondo passa alle 8 del mattino, prima che le camere si facciano,
-   quindi quello sporco lo ritira la volta dopo.
-   Il "dal" viene dalle consegne REALMENTE registrate, non dal calendario: se
-   una consegna salta, la successiva copre da sola il buco. Il calendario serve
-   solo alla primissima consegna, quando non c'è nulla prima — e serve perché i
-   giri avvengono comunque, registrati qui o no: i consumi più vecchi sono già
-   usciti e non vanno rimessi in questo sacco.                                */
-function _bgPeriodo(h,dataConsegna){
-  const d=_bgParse(dataConsegna);if(!d)return null;
-  const al=new Date(d.getTime()-86400000);
-  const prec=_bgConsegne(h).filter(g=>{const gd=_bgParse(g.data);return gd&&gd<d;});
-  let dal,fonte;
-  if(prec.length){dal=_bgParse(prec[prec.length-1].data);fonte='consegna';}
-  else{dal=_bgCalPrec(h,d);fonte='calendario';}
-  if(dal>al)return{dal:dal,al:al,vuoto:true,fonte:fonte};
-  return{dal:dal,al:al,vuoto:false,fonte:fonte};
-}
-function _bgGiorniPeriodo(per){
-  const out=[];if(!per||per.vuoto)return out;
+function _gbGiornoGiro(d,h){return _gbCal(h).includes(d.getDay());}
+function _gbGiorniPeriodo(per){
+  const out=[];
+  if(!per||per.vuoto)return out;
   for(let x=new Date(per.dal.getTime());x<=per.al;x.setDate(x.getDate()+1))out.push(new Date(x.getTime()));
   return out;
 }
-// I giorni del periodo senza consumi registrati: sono ciò che rende incompleto
-// lo sporco che esce, ed è la dimenticanza più facile.
-function _bgGiorniSenza(h,per){
-  const avuti=new Set(_bgConsumi(h).map(c=>c.data));
-  return _bgGiorniPeriodo(per).filter(d=>!avuti.has(_bgFmt(d)));
+// I giorni del periodo per cui non è stato registrato nessun consumo: senza questi lo
+// sporco che esce è incompleto, ed è la cosa che si dimentica più facilmente.
+function _gbGiorniSenzaConsumi(hotel,per){
+  const avuti=new Set(_gbConsumi(hotel).map(c=>c.data));
+  return _gbGiorniPeriodo(per).filter(d=>!avuti.has(_gbFmt(d)));
 }
-// Lo stato di OGNI giorno del periodo. Un giorno futuro non è un consumo
-// "mancante": non è ancora successo. Dire "non sono stati registrati i consumi di
-// sabato e domenica" il venerdì fa pensare a una dimenticanza che non c'è, e
-// nasconde quella vera — il giorno già passato che nessuno ha inserito.
-function _bgGiorniStato(h,per,oggi){
-  const o=oggi||_bgOggi();
-  return _bgGiorniPeriodo(per).map(d=>{
-    const c=_bgConsumi(h).find(x=>x.data===_bgFmt(d));
-    if(c)return{d:d,stato:'ok',tot:_bgTot(c.q)};
-    return{d:d,stato:d>o?'futuro':'manca',tot:0};
-  });
-}
-// Fino a quattro giorni si scrivono coi NOMI ("di lunedì 14 e martedì 15"): un
-// intervallo di date non dice a colpo d'occhio se sono i giorni giusti.
-function _bgPeriodoTxt(per){
+function _gbGgEtichetta(d){return GB_GG_NOMI[d.getDay()]+' '+String(d.getDate()).padStart(2,'0');}
+// Fino a quattro giorni si scrivono per esteso ("giovedì 20 e venerdì 21"): un intervallo
+// di date non dice a colpo d'occhio se sono i giorni giusti, i nomi dei giorni sì.
+function _gbPeriodoTxt(per){
   if(!per)return'—';
   if(per.vuoto)return'nessun giorno da ritirare';
-  const gg=_bgGiorniPeriodo(per).map(d=>BG_GG[d.getDay()]+' '+String(d.getDate()).padStart(2,'0'));
+  const gg=_gbGiorniPeriodo(per).map(_gbGgEtichetta);
   if(gg.length===1)return'di '+gg[0];
   if(gg.length<=4)return'di '+gg.slice(0,-1).join(', ')+' e '+gg[gg.length-1];
-  return'dal '+_bgFmt(per.dal)+' al '+_bgFmt(per.al)+' ('+gg.length+' giorni)';
+  return'dal '+_gbFmt(per.dal)+' al '+_gbFmt(per.al)+' ('+gg.length+' giorni)';
 }
-function _bgSomma(h,dal,al){
-  const out=_bgVuote();
-  _bgConsumi(h).forEach(c=>{
-    const d=_bgParse(c.data);if(!d||d<dal||d>al)return;
-    BG_VOCI.forEach(v=>out[v]+=(Number(c.q&&c.q[v])||0));
+
+// Il giro del giorno D ritira i consumi dal giro precedente (incluso) al giorno prima
+// di D (incluso). Il consumo del giorno stesso del giro resta fuori: Raimondo passa
+// alle 8:00, prima che le cameriere lavorino, quindi quello sporco lo ritira il giro
+// successivo. Il "dal" si prende dai giri realmente registrati, non dal calendario
+// martedì/giovedì/sabato: se un giro salta, il successivo copre da solo il buco.
+function _gbPeriodo(hotel,dataGiro){
+  const d=_gbParse(dataGiro);if(!d)return null;
+  const al=new Date(d.getTime()-86400000);
+  const prec=_gbGiri(hotel).filter(g=>{const gd=_gbParse(g.data);return gd&&gd<d;});
+  let dal,fonte;
+  if(prec.length){
+    dal=_gbParse(prec[prec.length-1].data);
+    fonte='giro';
+  }else{
+    // Primo giro in assoluto: comanda il CALENDARIO, cioè il giorno in cui Raimondo
+    // sarebbe passato la volta prima (sabato → giovedì, martedì → sabato, giovedì →
+    // martedì).
+    //
+    // I giri avvengono comunque, che siano registrati qui o no: i consumi più vecchi del
+    // calendario sono già usciti con i giri precedenti, quindi NON vanno rimessi in
+    // questo sacco. Un primo tentativo li faceva uscire tutti ("escono anche i consumi
+    // più vecchi mai consegnati") e per un giro di sabato mostrava da martedì a venerdì
+    // invece di giovedì e venerdì. Restano fuori, ma il pannello li nomina: sparire in
+    // silenzio è peggio che restare fuori con una spiegazione.
+    dal=_gbGiroCalPrec(d,hotel);
+    fonte='calendario';
+  }
+  if(dal>al)return{dal:dal,al:al,vuoto:true,fonte:fonte};
+  return{dal:dal,al:al,vuoto:false,fonte:fonte};
+}
+// Somma dei consumi giornalieri nell'intervallo, estremi inclusi.
+function _gbSommaConsumi(hotel,dal,al){
+  const out=_gbVuote();
+  _gbConsumi(hotel).forEach(c=>{
+    const d=_gbParse(c.data);
+    if(!d||d<dal||d>al)return;
+    GB_VOCI.forEach(v=>out[v]+=(Number(c.q&&c.q[v])||0));
+  });
+  return out;
+}
+// Il giro precedente della STESSA struttura. Estratto da _gbAtteso perché lo storico ha
+// bisogno anche della sua DATA: "attesi 318" da solo non si può verificare, "318 attesi,
+// consegnati il 29/08" sì.
+function _gbGiroPrec(hotel,dataGiro){
+  const d=_gbParse(dataGiro);if(!d)return null;
+  const prec=_gbGiri(hotel).filter(g=>{const gd=_gbParse(g.data);return gd&&gd<d;});
+  return prec.length?prec[prec.length-1]:null;
+}
+// Quanto Raimondo deve riportare a questo giro = lo sporco che gli è stato consegnato
+// al giro precedente. null quando non c'è un giro precedente con cui confrontarsi.
+function _gbAtteso(hotel,dataGiro){
+  const p=_gbGiroPrec(hotel,dataGiro);
+  return p?(p.consegnato||null):null;
+}
+// Tutti i giri di TUTTE le strutture, dal più recente. I sacchi sono fisicamente separati
+// e i calcoli restano per struttura (_gbAtteso guarda sempre il giro precedente dello
+// stesso hotel), ma lo storico va letto insieme: quello che Raimondo riporta lo si
+// controlla su entrambe, non una linguetta alla volta.
+function _gbGiriTutti(){
+  return _gb.giri.slice().sort((a,b)=>(_gbParse(b.data)||0)-(_gbParse(a.data)||0));
+}
+// Riga di storico già calcolata. `att` e `prec` vengono SEMPRE dall'hotel del giro, mai
+// da quello selezionato a schermo: mescolare le due strutture qui produrrebbe ammanchi
+// inventati, ed è l'errore facile ora che l'elenco le mostra insieme.
+// UNO ZERO MAI INSERITO NON E' UNO ZERO. Il giro del 20/08/2026 mostrava "ha portato 0"
+// perche' quel giorno nessuno aveva registrato cosa riportava Raimondo — e la riga affermava
+// una cosa falsa, trascinandosi dietro la credibilita' di tutto il pannello. Un dato mancante
+// va detto, non convertito in un numero.
+//
+// Primo tentativo (07/09/2026): si guardava solo se `ricevuto` avesse delle voci. Non
+// bastava — il modulo salva tutte e sette le tipologie, quindi un giro mai compilato arriva
+// con sette zeri dentro ed era indistinguibile da uno zero vero.
+//
+// La regola giusta la da' la realta': **un giro in cui Raimondo non riporta NIENTE non
+// esiste**, perche' quello che prende deve riportarlo. Quindi un totale a zero significa
+// "nessuno ha scritto cosa ha riportato", non "non ha riportato nulla". Se un giorno
+// capitasse davvero, comparirebbe come non registrato e andrebbe annotato a parte: e' un
+// caso cosi' raro che vale la pena trattarlo a mano, invece di lasciare che sette zeri
+// silenziosi inventino un ammanco di centinaia di pezzi.
+function _gbRegistrato(g){
+  const r=g&&g.ricevuto;
+  if(!r||typeof r!=='object')return false;
+  if(!Object.keys(r).length)return false;
+  return _gbTot(r)>0;
+}
+function _gbRigaGiro(g){
+  const hotel=_gbH(g);
+  const prec=_gbGiroPrec(hotel,g.data);
+  const att=prec?(prec.consegnato||null):null;
+  const registrato=_gbRegistrato(g);
+  const portato=_gbTot(g.ricevuto);
+  const dovuto=att?_gbTot(att):null;
+  return{hotel:hotel,data:g.data,portato:portato,dovuto:dovuto,registrato:registrato,
+         uscito:_gbTot(g.consegnato),
+         dataPrec:prec?prec.data:null,
+         // Senza il dato non c'e' differenza da calcolare: mettere `portato-dovuto` qui
+         // vorrebbe dire inventare un ammanco che nessuno ha misurato.
+         delta:(dovuto===null||!registrato)?null:portato-dovuto};
+}
+// Cosa ha portato, VOCE PER VOCE, in un singolo giro. Il totale da solo non basta: 370
+// pezzi mancanti di 66 non dicono se mancano le federe o i teli doccia, che è la sola
+// informazione con cui si può contestare qualcosa a Raimondo o cercarli in albergo.
+// Si tengono solo le voci che si sono mosse: una riga a zero da entrambe le parti è
+// rumore, e con sette voci per giro il dettaglio diventerebbe illeggibile.
+function _gbDettaglioGiro(g){
+  const att=_gbAtteso(_gbH(g),g.data);
+  return GB_VOCI_GIRO.map(v=>{
+    const portato=Number(g.ricevuto&&g.ricevuto[v])||0;
+    const dovuto=att?(Number(att[v])||0):null;
+    return{voce:v,portato:portato,dovuto:dovuto,
+           delta:dovuto===null?null:portato-dovuto,
+           uscito:Number(g.consegnato&&g.consegnato[v])||0};
+  }).filter(r=>r.portato||r.dovuto||r.uscito);
+}
+// Lo stesso, sommato su tutti i giri confrontabili di una struttura: dove si concentra
+// l'ammanco. Stesso insieme di giri di _gbSaldo e _gbRiepilogoPortato, così le tre
+// letture non possono raccontare cose diverse.
+function _gbTotPerVoce(hotel){
+  const out=GB_VOCI_GIRO.map(v=>({voce:v,portato:0,dovuto:0,delta:0}));
+  const idx={};out.forEach((r,i)=>idx[r.voce]=i);
+  _gbGiri(hotel).forEach(g=>{
+    const att=_gbAtteso(hotel,g.data);
+    if(!att)return;                       // primo giro: niente con cui confrontarlo
+    if(!_gbRegistrato(g))return;         // dato mai inserito: non si conta come zero
+    GB_VOCI_GIRO.forEach(v=>{
+      const r=out[idx[v]];
+      r.portato+=Number(g.ricevuto&&g.ricevuto[v])||0;
+      r.dovuto+=Number(att[v])||0;
+    });
+  });
+  out.forEach(r=>r.delta=r.portato-r.dovuto);
+  return out;
+}
+// La serie storica di una struttura, per il report alla direzione: un giro per riga, in
+// ordine cronologico, con la RESA (quanto è tornato in proporzione a quanto era uscito) e
+// il cumulato. La resa è la misura che rende confrontabili giri di dimensione diversa: un
+// −20 su 100 pezzi e un −20 su 500 non sono lo stesso fatto, e il solo saldo non lo dice.
+// Restano fuori i giri senza termine di confronto, come in _gbSaldo e _gbRiepilogoPortato.
+function _gbAndamento(hotel){
+  let cum=0;
+  return _gbGiri(hotel).map(g=>_gbRigaGiro(g)).filter(r=>r.dovuto!==null&&r.registrato).map(r=>{
+    cum+=r.delta;
+    return{data:r.data,dataPrec:r.dataPrec,portato:r.portato,dovuto:r.dovuto,delta:r.delta,
+           resa:r.dovuto>0?r.portato/r.dovuto:null,cumulato:cum};
+  });
+}
+// Riepilogo per struttura: quanto ha portato in tutto e quanto avrebbe dovuto. Somma
+// SOLO i giri che hanno un termine di confronto, gli stessi che _gbSaldo conta — così
+// portato − dovuto coincide sempre col saldo mostrato sopra, invece di divergere di un
+// giro senza che si capisca perché.
+function _gbRiepilogoPortato(hotel){
+  let portato=0,dovuto=0,confrontati=0,senzaConfronto=0,nonRegistrati=0;
+  _gbGiri(hotel).forEach(g=>{
+    const r=_gbRigaGiro(g);
+    if(!r.registrato){nonRegistrati++;return;}      // dato mai inserito: fuori dai conti
+    if(r.dovuto===null){senzaConfronto++;return;}
+    portato+=r.portato;dovuto+=r.dovuto;confrontati++;
+  });
+  return{portato:portato,dovuto:dovuto,confrontati:confrontati,senzaConfronto:senzaConfronto,
+         nonRegistrati:nonRegistrati,saldo:portato-dovuto};
+}
+// Saldo cumulato per voce: quanto manca sommando tutti i giri chiusi. Un singolo giro
+// può tornare in pari per caso; è la somma nel tempo che dice se c'è una perdita
+// sistematica. Negativo = pezzi non rientrati.
+function _gbSaldo(hotel){
+  const out=_gbVuote();
+  const giri=_gbGiri(hotel);
+  giri.forEach(g=>{
+    const att=_gbAtteso(hotel,g.data);
+    if(!att||!_gbRegistrato(g))return;   // dato mai inserito: non e' un ammanco
+    GB_VOCI.forEach(v=>out[v]+=((Number(g.ricevuto[v])||0)-(Number(att[v])||0)));
   });
   return out;
 }
 
-/* ── confronto ────────────────────────────────────────────────────────── */
-function _bgPrec(h,dataConsegna){
-  const d=_bgParse(dataConsegna);if(!d)return null;
-  const prec=_bgConsegne(h).filter(g=>{const gd=_bgParse(g.data);return gd&&gd<d;});
-  return prec.length?prec[prec.length-1]:null;
-}
-function _bgAtteso(h,dataConsegna){const p=_bgPrec(h,dataConsegna);return p?(p.consegnato||null):null;}
-
-/* UNO ZERO MAI INSERITO NON È UNO ZERO.
-   Una consegna in cui Raimondo non riporta NIENTE non esiste — quello che
-   prende deve riportarlo. Un totale a zero significa quindi "nessuno ha scritto
-   cosa ha riportato", non "non ha riportato nulla". Guardare solo se l'oggetto
-   `ricevuto` ha delle voci non basta: si salvano sempre tutte e sette, quindi
-   una consegna mai compilata arriva con sette zeri dentro. Senza questa regola
-   quelle righe inventano un ammanco di centinaia di pezzi.                   */
-function _bgRegistrata(g){
-  const r=g&&g.ricevuto;
-  if(!r||typeof r!=='object'||!Object.keys(r).length)return false;
-  return _bgTot(r)>0;
-}
-// Riga di storico già calcolata. `att` viene SEMPRE dall'hotel della consegna.
-function _bgRiga(g){
-  const h=_bgH(g);
-  const prec=_bgPrec(h,g.data);
-  const att=prec?(prec.consegnato||null):null;
-  const reg=_bgRegistrata(g);
-  const portato=_bgTot(g.ricevuto);
-  const dovuto=att?_bgTot(att):null;
-  return{hotel:h,data:g.data,portato:portato,dovuto:dovuto,registrata:reg,
-         uscito:_bgTot(g.consegnato),dataPrec:prec?prec.data:null,
-         delta:(dovuto===null||!reg)?null:portato-dovuto};
-}
-// Cosa ha portato VOCE PER VOCE: un −40 non dice se mancano le federe o i teli
-// doccia, ed è quella la sola informazione con cui si contesta qualcosa.
-function _bgDettaglio(g){
-  const att=_bgAtteso(_bgH(g),g.data);
-  return BG_VOCI.map(v=>{
-    const p=Number(g.ricevuto&&g.ricevuto[v])||0;
-    const d=att?(Number(att[v])||0):null;
-    const u=Number(g.consegnato&&g.consegnato[v])||0;
-    return{voce:v,portato:p,dovuto:d,uscito:u,delta:d===null?null:p-d};
-  }).filter(r=>r.portato||r.dovuto||r.uscito);
-}
-// Cumulato per voce, sulle SOLE consegne registrate e confrontabili: le tre
-// letture del pannello (saldo, riepilogo, dettaglio) devono usare lo stesso
-// insieme, altrimenti raccontano cose diverse.
-function _bgSaldo(h){
-  const out=_bgVuote();let n=0;
-  _bgConsegne(h).forEach(g=>{
-    const att=_bgAtteso(h,g.data);
-    if(!att||!_bgRegistrata(g))return;
-    n++;
-    BG_VOCI.forEach(v=>out[v]+=(Number(g.ricevuto&&g.ricevuto[v])||0)-(Number(att[v])||0));
+// ── Inserimento consumi giornalieri ──
+// Un totale al giorno per struttura: il QM somma i fogli delle cameriere e riporta qui
+// le sette voci. Reinserendo una data già presente si sovrascrive quella riga invece di
+// crearne una seconda, così una correzione non raddoppia i numeri.
+async function gbSalvaConsumi(){
+  const iso=(document.getElementById('gb-cons-data')||{}).value||'';
+  const data=_gbFromIso(iso);
+  if(!data){_gbAvviso('Indica la data dei consumi.');return;}
+  const q=_gbVuote();
+  GB_VOCI.forEach((v,i)=>{
+    const el=document.getElementById('gb-c-'+i);
+    q[v]=Math.max(0,Number(el&&el.value)||0);
   });
-  return{q:out,tot:_bgTot(out),n:n};
+  if(_gbTot(q)===0&&!await _gbConferma('Tutti i valori sono a zero','Salvare comunque i consumi di questa giornata?',{ok:'Salva'}))return;
+  const esistente=_gb.consumi.find(c=>_gbH(c)===_gbHotel&&c.data===data);
+  if(esistente){esistente.q=q;}
+  else{_gb.consumi.push({id:_gbUid(),hotel:_gbHotel,data:data,q:q});}
+  _gbSave();gbRender();
 }
-function _bgRiepilogo(h){
-  let portato=0,dovuto=0,n=0,esclusi=0;
-  _bgConsegne(h).forEach(g=>{
-    const att=_bgAtteso(h,g.data);
-    if(!att){return;}
-    if(!_bgRegistrata(g)){esclusi++;return;}
-    n++;portato+=_bgTot(g.ricevuto);dovuto+=_bgTot(att);
+async function gbEliminaConsumo(id){
+  const c=_gb.consumi.find(x=>x.id===id);
+  if(!c)return;
+  if(!await _gbConferma('Eliminare questi consumi?','<strong>'+c.data+'</strong><br>Le consegne già registrate non cambiano.',{ok:'Elimina'}))return;
+  _gb.consumi=_gb.consumi.filter(x=>x.id!==id);
+  _gbSegnaRimosso(_gb,id);
+  await _gbSave();gbRender();
+}
+
+// ── Registrazione del giro ──
+// Lo sporco consegnato viene congelato al momento della registrazione: se più avanti si
+// corregge un consumo giornaliero, i giri già chiusi (e le distinte già firmate) non
+// devono cambiare sotto i piedi.
+async function gbRegistraGiro(){
+  const iso=(document.getElementById('gb-giro-data')||{}).value||'';
+  const data=_gbFromIso(iso);
+  if(!data){_gbAvviso('Indica la data della consegna.');return;}
+  const consegnato=_gbVuote(),ricevuto=_gbVuote();
+  GB_VOCI.forEach((v,i)=>{
+    const es=document.getElementById('gb-s-'+i),er=document.getElementById('gb-r-'+i);
+    consegnato[v]=Math.max(0,Number(es&&es.value)||0);
+    ricevuto[v]=Math.max(0,Number(er&&er.value)||0);
   });
-  return{portato:portato,dovuto:dovuto,n:n,esclusi:esclusi};
-}
-
-/* ── colori: SOLO un ammanco è rosso ──────────────────────────────────────
-   In pari e rientro in più sono tutte e due notizie buone e vanno in verde. Un
-   "+8" dipinto di rosso (o di ambra) si legge come una perdita e fa perdere
-   fiducia in tutto il pannello.                                              */
-const _bgCol=d=>d==null?'var(--text-dim)':(d<0?'var(--red)':'var(--green)');
-const _bgTxt=d=>d==null?'—':(d===0?'in pari':(d>0?'+'+d:String(d)));
-const _bgCls=d=>d==null||d===0?'':(d<0?'bg-neg':'bg-pos');
-
-/* =========================================================================
-   RENDER
-   ========================================================================= */
-function bgSetHotel(h){if(!BG_HOTELS[h])return;_bgHotel=h;_bgStoricoAperto.clear();_bgDataConsegna=null;_bgDataPulito=null;render();}
-function bgToggleStorico(id){_bgStoricoAperto.has(id)?_bgStoricoAperto.delete(id):_bgStoricoAperto.add(id);render();}
-function bgToggleSaldo(){_bgSaldoAperto=!_bgSaldoAperto;render();}
-
-// I consumi stanno SOPRA la consegna: si inseriscono ogni giorno, la consegna tre volte a
-// settimana. La cosa che si fa più spesso non va cercata scorrendo sotto quella che si fa di
-// rado — e la consegna li legge, quindi vengono prima anche nell'ordine del lavoro.
-// La distinta dello sporco compare SOLO la vigilia del ritiro: si prepara quel giorno e
-// basta. Mostrarla ogni giorno, con i giorni futuri del periodo ancora vuoti, la faceva
-// sembrare un lavoro quotidiano e rendeva tutto più difficile da capire. Gli altri giorni
-// "Cosa fare oggi" dice quando toccherà; le ristampe stanno nello storico.
-// Il riquadro con nome della struttura, ultima consegna e saldo è stato tolto (11/09/2026):
-// ripeteva cose che dicono già le linguette e lo storico delle consegne.
-function render(){
-  const h=_bgHotel;
-  document.getElementById('app').innerHTML=
-    vTabs()+vOggi(h)+vConsumi(h)+(_bgCompiti(h).vigilia?vConsegna(h):'')+vPulito(h)+vResi(h)+vStorico(h)+vBackup();
-}
-
-/* ── cosa fare oggi ───────────────────────────────────────────────────── */
-function vOggi(h){
-  const c=_bgCompiti(h);
-  const oggiD=_bgOggi();
-  const titolo='Cosa fare oggi · '+BG_GG[oggiD.getDay()]+' '+esc(c.oggi)+' · '+esc(BG_HOTELS[h]);
-  const ggTxt=s=>{const d=_bgParse(s);return d?BG_GG[d.getDay()]+' '+esc(s):esc(s);};
-  if(!c.passi.length){
-    return '<div class="oggi fatto"><div class="oggi-t">'+titolo+'</div>'+
-      '<div class="passo-t" style="color:var(--green);">Tutto fatto per oggi.</div>'+
-      '<div class="passo-d">'+(c.vigilia?'La distinta di domani è stampata.':
-        'Prossima distinta da preparare: <b>'+ggTxt(c.vigiliaProssimo)+'</b>, per la consegna di '+ggTxt(c.prossimo)+'.')+'</div></div>';
+  const g=_gb.giri.find(x=>_gbH(x)===_gbHotel&&x.data===data);
+  if(g){
+    if(!await _gbConferma('Esiste già una consegna per questa data','<strong>'+data+'</strong><br>Sovrascriverlo con i valori attuali?',{ok:'Sovrascrivi'}))return;
+    g.consegnato=consegnato;g.ricevuto=ricevuto;g.ts=Date.now();
+  }else{
+    _gb.giri.push({id:_gbUid(),hotel:_gbHotel,data:data,consegnato:consegnato,ricevuto:ricevuto,ts:Date.now()});
   }
-  const passi=c.passi.map((p,i)=>{
-    let t='',d='',a='';
-    if(p.tipo==='consumi'){
-      t='Inserisci i consumi di oggi';
-      d=c.vigilia?'Vanno inseriti <b>prima di stampare la distinta</b>: i pezzi usati oggi escono con il sacco di domani.'
-                 :'Si ricopiano dai fogli camera delle cameriere.';
-      a='<button class="btn" onclick="_bgVai(\'bg-consumi\')">Vai ai consumi</button>';
-    }else if(p.tipo==='distinta'){
-      const per=_bgPeriodo(h,p.data);
-      const q=per&&!per.vuoto?_bgSomma(h,per.dal,per.al):_bgVuote();
-      const senza=per?_bgGiorniSenza(h,per):[];
-      t='Prepara e stampa la distinta di domani — consegna di '+ggTxt(p.data);
-      d='Domani alle 8 passa Raimondo: la distinta va <b>stampata oggi</b> e lasciata in reception. Domattina non ci sarà tempo.'+
-        '<br>Escono <b>'+_bgTot(q)+' pezzi</b>, i consumi '+esc(_bgPeriodoTxt(per))+'.'+
-        (senza.length?'<br><span style="color:var(--amber);font-weight:700;">Mancano i consumi di '+
-          senza.map(x=>BG_GG[x.getDay()]+' '+String(x.getDate()).padStart(2,'0')).join(', ')+': inseriscili prima, o la distinta sarà incompleta.</span>':'');
-      const nResi=_bgResiDaConsegnare(h,p.data);
-      if(nResi.length)d+='<br>Escono anche <b>'+nResi.reduce((x,r)=>x+(Number(r.qta)||0),0)+' pezzi inidonei</b>, in sacco separato con la loro distinta.';
-      a='<button class="btn btn-primary" onclick="bgStampaDistinta(\''+h+'\',\''+p.data+'\')">Stampa la distinta di domani</button>'+
-        (nResi.length?'<button class="btn" onclick="bgStampaResi(\''+h+'\',\''+p.data+'\')">Stampa distinta resi</button>':'')+
-        '<button class="btn-link" onclick="bgSegnaFatta(\''+h+'\',\''+p.data+'\')">L\'ho già stampata</button>';
-    }else{
-      t='Inserisci il pulito che Raimondo ha consegnato stamattina';
-      d='Ricopia i pezzi per tipologia dalla distinta che ha lasciato: servono per sapere se manca qualcosa.';
-      a='<button class="btn" onclick="bgVaiPulito(\''+p.data+'\')">Vai al pulito consegnato</button>';
+  _gbLegaResi(_gbHotel,data);
+  _gbSave();gbRender();
+}
+async function gbEliminaGiro(id){
+  const g=_gb.giri.find(x=>x.id===id);
+  if(!g)return;
+  if(!await _gbConferma('Eliminare questa consegna?','<strong>'+g.data+'</strong><br>I giri successivi useranno un periodo diverso.',{ok:'Elimina'}))return;
+  _gb.giri=_gb.giri.filter(x=>x.id!==id);
+  (_gb.resi||[]).forEach(r=>{if(r.consegnaId===id)r.consegnaId=null;});
+  _gbSegnaRimosso(_gb,id);
+  await _gbSave();gbRender();
+}
+
+// La colonna Δ e l'avviso di ammanco si aggiornano MENTRE si digita, ma senza rigenerare
+// l'HTML del pannello: la casella "Ricevuto" chiamava gbRender() a ogni tasto, che la
+// ridisegnava da capo con il valore calcolato (l'atteso, o 0 al primo giro). La cifra
+// appena digitata veniva quindi buttata via a ogni battuta e il campo perdeva il fuoco:
+// da fuori sembrava semplicemente che il numero non si potesse inserire.
+//
+// Qui si toccano solo le celle interessate. Stessa regola per qualunque casella futura in
+// questo pannello: aggiornare i pezzi che cambiano, mai ridisegnare tutto sotto le dita.
+let _gbAttesoVis=null;   // atteso della tabella attualmente a schermo
+
+// Scala di colore di una differenza, UNA SOLA volta per tutti i punti che la mostrano
+// (tabella del giro, storico, saldo cumulato, avviso). Solo un AMMANCO è rosso: in pari e
+// rientro in più sono tutti e due notizie buone e vanno in VERDE. Prima il rientro in più
+// era rosso come una perdita, poi ambra: meglio, ma pur sempre un colore d'allarme su una
+// cosa che non è un problema. Vale per il NUMERO e per la RIGA insieme — colorare solo il
+// numero lasciava la riga tinta di rosso sotto un "+8" verde.
+// La tabella "cosa ha portato", voce per voce. Una sola funzione per i due punti che la
+// mostrano (la riga del singolo giro e il riepilogo per struttura): stessa forma, stessi
+// colori, nessuna copia da tenere allineata. `conf` dice se esiste un termine di
+// confronto: al primo giro le colonne del dovuto e della differenza non hanno senso.
+function _gbTabellaVoci(righe,conf){
+  if(!righe||!righe.length)return'<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;">Nessuna quantità registrata per questa consegna.</div>';
+  const th='text-align:right;padding:4px 6px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;border-bottom:1px solid var(--border);';
+  const td='padding:4px 6px;text-align:right;border-bottom:1px solid var(--border-light,var(--border));';
+  const esc=x=>String(x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return`<div style="margin-top:9px;overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+      <thead><tr>
+        <th style="${th}text-align:left;">Tipologia</th>
+        <th style="${th}">Ha portato</th>
+        ${conf?`<th style="${th}">Doveva portare</th><th style="${th}">Differenza</th>`:''}
+      </tr></thead>
+      <tbody>${righe.map(r=>`<tr>
+        <td style="${td}text-align:left;">${esc(r.voce)}</td>
+        <td style="${td}font-weight:700;">${r.portato}</td>
+        ${conf?`<td style="${td}color:var(--text-dim);">${r.dovuto}</td>
+          <td style="${td}font-weight:700;color:${_gbColDelta(r.delta)};">${r.delta===0?'—':(r.delta>0?'+'+r.delta:r.delta)}</td>`:''}
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+}
+
+function _gbColDelta(d){return d<0?'var(--red)':'var(--green)';}
+function _gbTxtDelta(d){return d===0?'in pari':(d>0?'+'+d:String(d));}
+// Tinta della RIGA. rgba a mano e non token perché serve a ~8% di opacità e deve restare
+// leggibile anche in tema scuro, dove --green è molto più acceso.
+function _gbBgDelta(d){return d===null||d===0?'':(d<0?'rgba(192,53,42,.06)':'rgba(46,125,50,.09)');}
+// Stile dell'avviso in cima alla tabella: diceva "sono rientrati N pezzi in più" dentro un
+// riquadro rosso d'allarme — la stessa contraddizione, sul testo invece che sul numero.
+function _gbStileMsg(tot){
+  const c=_gbColDelta(tot);
+  return`background:${tot<0?'rgba(192,53,42,.08)':'rgba(46,125,50,.10)'};border-left:3px solid ${c};color:${c};`;
+}
+
+function _gbMsgDiff(tot){
+  if(!tot)return'';
+  return tot<0
+    ?'Rispetto a quanto consegnato il giro scorso mancano '+Math.abs(tot)+' pezzi.'
+    :'Sono rientrati '+tot+' pezzi in più di quanti ne erano stati consegnati il giro scorso.';
+}
+
+function gbAggiornaDelta(){
+  const att=_gbAttesoVis;
+  let tot=0;
+  GB_VOCI.forEach((v,i)=>{
+    const er=document.getElementById('gb-r-'+i), cella=document.getElementById('gb-d-'+i);
+    if(!er||!cella)return;
+    if(!att){cella.textContent='—';return;}
+    const d=(Number(er.value)||0)-(Number(att[v])||0);
+    tot+=d;
+    cella.textContent=d>0?'+'+d:String(d);
+    cella.style.color=_gbColDelta(d);
+    const tr=er.closest?er.closest('tr'):null;
+    if(tr)tr.style.background=_gbBgDelta(d);
+  });
+  const avviso=document.getElementById('gb-diff-msg');
+  if(avviso){
+    const msg=att?_gbMsgDiff(tot):'';
+    avviso.textContent=msg;
+    avviso.style.display=msg?'':'none';
+    const c=_gbColDelta(tot);
+    avviso.style.background=tot<0?'rgba(192,53,42,.08)':'rgba(46,125,50,.10)';
+    avviso.style.borderLeftColor=c;
+    avviso.style.color=c;
+  }
+}
+
+const _gbTh='text-align:center;padding:7px 8px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;white-space:nowrap;';
+const _gbBtnIco='background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:var(--fs-xxs);color:var(--text-muted);cursor:pointer;font-family:inherit;margin-left:4px;';
+function _gbRenderCore(){
+  const el=document.getElementById('gb-content');if(!el)return;
+  const oggi=_gbOggi();
+  const giri=_gbGiri();
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Data della consegna proposta. Nei giorni che precedono un giro si propone DOMANI, perché è
+  // il pomeriggio prima che la distinta va preparata e stampata: lasciando "oggi" chi non
+  // conosce il meccanismo calcolerebbe il periodo sbagliato senza accorgersene.
+  // È solo il valore suggerito nel campo: resta modificabile e nessun calcolo cambia.
+  const vigilia=_gbVigiliaGiro(oggi);
+  const propostaGiro=vigilia?_gbDomani(oggi):oggi;
+  const giroIso=(document.getElementById('gb-giro-data')||{}).value||_gbToIso(_gbFmt(propostaGiro));
+  const giroData=_gbFromIso(giroIso)||_gbFmt(oggi);
+  const per=_gbPeriodo(_gbHotel,giroData);
+  const sporco=per&&!per.vuoto?_gbSommaConsumi(_gbHotel,per.dal,per.al):_gbVuote();
+  const atteso=_gbAtteso(_gbHotel,giroData);
+  const saldo=_gbSaldo();
+  const giaReg=_gb.giri.find(x=>_gbH(x)===_gbHotel&&x.data===giroData);
+  _gbAttesoVis=atteso;   // la tabella disegnata sotto si riferisce a questo atteso
+
+  let h='';
+
+  // ── COSA FARE OGGI ──
+  // Il motivo per cui questa pagina era difficile da usare non era il calcolo: era che
+  // mostrava tutto insieme senza mai dire cosa tocca fare adesso. I compiti sono due e
+  // non capitano lo stesso giorno — i consumi ogni giorno, la distinta la vigilia, il
+  // controllo di cosa ha portato il giorno del giro. Qui si dice quello e basta.
+  const consOggi=_gb.consumi.find(c=>_gbH(c)===_gbHotel&&c.data===_gbFmt(oggi));
+  const giornoGiro=_gbGiornoGiro(oggi);
+  const dataDomani=_gbFmt(_gbDomani(oggi));
+  const distPronta=_gbDistStampata(_gbHotel,vigilia?dataDomani:_gbFmt(oggi));
+  const giroOggiReg=_gb.giri.find(x=>_gbH(x)===_gbHotel&&x.data===_gbFmt(oggi));
+  const passi=[];
+  if(!consOggi)passi.push({t:'Inserisci i consumi di oggi',d:'Somma i fogli camera delle cameriere e riporta i totali qui sotto.'});
+  // Il promemoria diceva solo "stampa la distinta per domani": se restava acceso dopo averla
+  // stampata non c'era modo di capire perche' — le strutture sono due e la stampa si segna
+  // per struttura e per data. Ora dice per chi e per quando, e offre una via d'uscita:
+  // stampata da un'altra postazione, o su carta la settimana scorsa, si segna e basta.
+  if(vigilia&&!distPronta)passi.push({
+    t:'Prepara e stampa la distinta di domani — '+GB_HOTELS[_gbHotel]+', consegna del '+dataDomani,
+    d:'Domani alle 8 passa Raimondo: la distinta va stampata oggi pomeriggio e lasciata in reception. Domattina non ci sarà tempo.'
+      +' <a href="#" onclick="gbSegnaDistintaFatta(event)" style="color:var(--accent);font-weight:700;">L\'ho già stampata</a>'});
+  if(giornoGiro&&!giroOggiReg)passi.push({t:'Registra cosa ha portato Raimondo',d:'Scrivi le quantità della sua distinta e controlla che corrispondano a quelle attese.'});
+  const nomeOggi=GB_GG_NOMI[oggi.getDay()];
+  h+=`<div style="border:1.5px solid ${passi.length?'var(--accent)':'var(--green)'};border-radius:12px;padding:14px 16px;margin-bottom:16px;background:var(--surface);">
+    <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);font-weight:700;margin-bottom:8px;">Cosa fare oggi · ${esc(nomeOggi)} ${esc(_gbFmt(oggi))}</div>`;
+  if(!passi.length){
+    h+=`<div style="font-size:var(--fs-sm);font-weight:700;color:var(--green);">Tutto fatto per oggi.</div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;line-height:1.5;">${giornoGiro?'Il giro di oggi è registrato.':(vigilia?'La distinta per domani è stampata.':'Oggi Raimondo non passa e non c\'è distinta da preparare.')}</div>`;
+  }else{
+    passi.forEach((p,i)=>{
+      h+=`<div style="display:flex;gap:10px;align-items:flex-start;${i?'margin-top:10px;':''}">
+        <span style="flex:0 0 22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:var(--fs-xxs);font-weight:700;display:flex;align-items:center;justify-content:center;">${i+1}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:var(--fs-sm);font-weight:700;">${esc(p.t)}</div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-top:2px;">${esc(p.d)}</div>
+        </div>
+      </div>`;
+    });
+  }
+  h+=`<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px;">
+      <button onclick="gbToggleGuida()" style="background:none;border:none;padding:0;font-size:var(--fs-xxs);color:var(--accent);font-weight:600;cursor:pointer;">Come funziona il ciclo ${_gbGuida?'▴':'▾'}</button>
+      <div style="${_gbGuida?'':'display:none;'}font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.7;margin-top:6px;">
+        <strong>1.</strong> Ogni giorno le cameriere consegnano i fogli camera: i totali si inseriscono qui.<br>
+        <strong>2.</strong> Il pomeriggio prima del passaggio — ${esc(GB_GG_NOMI[1])}, ${esc(GB_GG_NOMI[3])} e ${esc(GB_GG_NOMI[5])} — si stampa la distinta dei sacchi che escono e si lascia in reception.<br>
+        <strong>3.</strong> ${_gbCalTxt().charAt(0).toUpperCase()+_gbCalTxt().slice(1)} alle 8 Raimondo ritira i sacchi e consegna il pulito: si registra quanto ha portato.<br>
+        <strong>4.</strong> Se ha portato meno del dovuto la differenza resta segnata, e il totale in fondo dice se la perdita è occasionale o continua.
+      </div>
+    </div>
+  </div>`;
+
+  // Selettore struttura
+  h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+    <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      ${Object.keys(GB_HOTELS).map(k=>`<button onclick="gbSetHotel('${k}')" style="border:none;padding:7px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;background:${k===_gbHotel?'var(--accent)':'var(--surface)'};color:${k===_gbHotel?'#fff':'var(--text-dim)'};">${esc(GB_HOTELS[k])}</button>`).join('')}
+    </div>
+  </div>`;
+
+  // ── Consumi del giorno ──
+  // La data scelta va riletta dal campo prima di rigenerare l'HTML: riscrivendo sempre
+  // la data di oggi, qualunque giorno selezionato tornava indietro subito. I sette
+  // valori mostrati sono quelli della data selezionata, non quelli di oggi, così si
+  // possono correggere anche i giorni passati.
+  const consIso=(document.getElementById('gb-cons-data')||{}).value||_gbToIso(_gbFmt(oggi));
+  const consData=_gbFromIso(consIso)||_gbFmt(oggi);
+  const consSel=_gb.consumi.find(c=>_gbH(c)===_gbHotel&&c.data===consData);
+  h+=`<div class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><span class="panel-title">Consumi giornalieri dai fogli camera</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">somma i fogli delle cameriere e riporta i totali</span>
+    </div>
+    <div class="panel-body" style="padding:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data</label>
+        <input type="date" id="gb-cons-data" value="${consIso}" onchange="gbRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
+        ${GB_VOCI.map((v,i)=>`<div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${esc(v)}</div>
+          <input type="number" min="0" id="gb-c-${i}" value="${consSel?(Number(consSel.q[v])||0):0}" onfocus="this.select()" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);text-align:center;">
+        </div>`).join('')}
+      </div>
+      <div style="margin-top:12px;">
+        <button onclick="gbSalvaConsumi()" style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">Salva consumi</button>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Il giro ──
+  // Il periodo si scrive con i nomi dei giorni e si dice SEMPRE da dove nasce il "dal":
+  // un intervallo di date senza spiegazione non permette di accorgersi che è sbagliato.
+  const periodoTxt=_gbPeriodoTxt(per);
+  const giroDate=_gbParse(giroData);
+  const mancanti=per?_gbGiorniSenzaConsumi(_gbHotel,per):[];
+  const fonteTxt=!per?'':
+      per.fonte==='giro'?'Il periodo parte dal giro precedente registrato.':
+      'Nessun giro registrato prima: il periodo parte dal giorno di calendario precedente (il giro passa '+_gbCalTxt()+').';
+  // Consumi registrati PRIMA del periodo, quando non c'è ancora nessun giro in archivio:
+  // sono usciti con i giri fatti prima di iniziare a registrarli qui. Restano fuori dal
+  // sacco, ma vanno nominati, altrimenti sembrano spariti.
+  const fuori=(per&&per.fonte==='calendario')
+    ?_gbConsumi(_gbHotel).map(c=>_gbParse(c.data)).filter(x=>x&&x<per.dal).sort((a,b)=>a-b)
+    :[];
+  h+=`<div class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><span class="panel-title">${vigilia&&!giaReg?'Prepara il ritiro di domani':'Giro di Raimondo'}</span>
+      ${giaReg?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">consegna già registrata</span>'
+        :(vigilia&&distPronta?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">distinta stampata</span>':'')}
+    </div>
+    <div class="panel-body" style="padding:14px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+        <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data della consegna</label>
+        <input type="date" id="gb-giro-data" value="${giroIso}" onchange="gbRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
+        <span style="font-size:var(--fs-xxs);color:var(--text-dim);">ritira i consumi ${esc(periodoTxt)}</span>
+      </div>
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:8px;">${esc(fonteTxt)}</div>`;
+
+  // Data fuori calendario: non è un errore (un giro straordinario è legittimo), ma se è
+  // una svista è meglio accorgersene prima di stampare la distinta.
+  if(giroDate&&!_gbGiornoGiro(giroDate)){
+    h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:8px;">Il ${esc(_gbFmt(giroDate))} è un ${esc(GB_GG_NOMI[giroDate.getDay()])}: di norma il giro passa ${_gbCalTxt()}.</div>`;
+  }
+
+  if(fuori.length){
+    h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:8px;">I consumi ${esc(fuori.length===1?'del':'dal')} ${esc(_gbFmt(fuori[0]))}${fuori.length>1?' al '+esc(_gbFmt(fuori[fuori.length-1])):''} restano fuori: sono usciti con i giri precedenti. Se invece non sono mai stati consegnati, registra quel giro con la sua data.</div>`;
+  }
+
+  // Giorni del periodo senza consumi registrati: è quello che rende incompleto lo sporco
+  // che esce, ed è la dimenticanza più facile da fare.
+  if(mancanti.length){
+    h+=`<div style="background:rgba(160,90,0,.08);border-left:3px solid var(--amber);padding:9px 11px;font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:10px;">Nessun consumo registrato per ${esc(mancanti.map(_gbGgEtichetta).join(', '))}. Finché mancano, lo sporco che esce è incompleto: inseriscili nel riquadro qui sopra cambiando la data.</div>`;
+  }
+
+  if(per&&per.vuoto){
+    h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:10px;">Non ci sono giorni da ritirare per questa data: c'è già una consegna registrata lo stesso giorno o successivo.</div>`;
+  }
+
+  // Righe: atteso (dal giro prima) / ricevuto (dalla distinta di Raimondo) / sporco che esce
+  const diffTot=GB_VOCI.reduce((s,v)=>{
+    if(!atteso)return s;
+    const r=giaReg?(Number(giaReg.ricevuto[v])||0):(Number(atteso[v])||0);
+    return s+(r-(Number(atteso[v])||0));
+  },0);
+  const msgDiff=atteso?_gbMsgDiff(diffTot):'';
+  h+=`<div id="gb-diff-msg" style="${_gbStileMsg(diffTot)}padding:9px 11px;font-size:var(--fs-xs);line-height:1.45;margin-bottom:10px;${msgDiff?'':'display:none;'}">${esc(msgDiff)}</div>`;
+
+  h+=`<div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+      <thead><tr>
+        <th style="text-align:left;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Tipologia</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Doveva portare</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Ha portato</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Differenza</th>
+        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Tot pezzi da dargli</th>
+      </tr></thead>
+      <tbody>`;
+  GB_VOCI_GIRO.forEach(v=>{
+    const i=GB_VOCI.indexOf(v);          // id canonico: vedi la nota su GB_VOCI_GIRO
+    const att=atteso?(Number(atteso[v])||0):null;
+    const ric=giaReg?(Number(giaReg.ricevuto[v])||0):(att===null?0:att);
+    const spo=giaReg?(Number(giaReg.consegnato[v])||0):(Number(sporco[v])||0);
+    const d=att===null?null:(ric-att);
+    const bad=d!==null&&d!==0;
+    h+=`<tr style="${bad?'background:'+_gbBgDelta(d)+';':''}">
+      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));">${esc(v)}</td>
+      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;color:var(--text-dim);">${att===null?'—':att}</td>
+      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="gb-r-${i}" value="${ric}" oninput="gbAggiornaDelta()" onfocus="this.select()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
+      <td id="gb-d-${i}" style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;font-weight:700;color:${d===null?'var(--text-dim)':_gbColDelta(d)};">${d===null?'—':(d>0?'+'+d:d)}</td>
+      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="gb-s-${i}" value="${spo}" onfocus="this.select()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
+    </tr>`;
+  });
+  h+=`</tbody></table></div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">`;
+  // Il pulsante in evidenza è quello del momento: la vigilia si stampa, il giorno del giro
+  // si registra. Restano entrambi disponibili — un giro straordinario o una ristampa non
+  // devono diventare impossibili — ma quello giusto si vede per primo.
+  const bPrimario='background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
+  const bSecondario='background:var(--surface);color:var(--accent);border:1.5px solid var(--border);padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
+  const bStampa=`<button onclick="gbPrintDistinta()" style="${vigilia&&!giaReg?bPrimario:bSecondario}">${distPronta?'Ristampa la distinta':'Stampa la distinta'}</button>`;
+  const bRegistra=`<button onclick="gbRegistraGiro()" style="${vigilia&&!giaReg?bSecondario:bPrimario}">${giaReg?'Aggiorna giro':'Registra cosa ha portato'}</button>`;
+  h+=(vigilia&&!giaReg)?(bStampa+bRegistra):(bRegistra+bStampa);
+  h+=`</div>
+      <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">${vigilia&&!giaReg
+        ?'Oggi serve solo la <strong>stampa</strong>: i pezzi da dargli sono già calcolati dai consumi. Domattina, quando Raimondo arriva, si torna qui e si registra cosa ha portato.'
+        :'I <strong>tot pezzi da dargli</strong> sono la somma dei consumi del periodo: è già il numero giusto, correggilo solo se il sacco contiene qualcosa di diverso. <strong>Ha portato</strong> parte uguale a quanto doveva — toccalo solo se la distinta di Raimondo dice altro.'}</div>
+    </div>
+  </div>`;
+
+  // Le consegne stanno SOPRA il saldo: prima si guarda cosa e' successo consegna per
+  // consegna, poi il totale che ne deriva. Al contrario si legge un numero senza sapere da
+  // dove viene, e il numero e' quello che spinge a contestare qualcosa al fornitore.
+  // ── Storico ──
+  // Le consegne NON stanno piu' dietro una fisarmonica (07/09/2026): erano la cosa che si
+  // apre ogni volta, e tenerle chiuse per difetto voleva dire due clic in piu' ogni giorno
+  // per arrivare al motivo per cui si e' entrati nella pagina.
+  // Lo storico copre ENTRAMBE le strutture, ma RAGGRUPPATE, non mescolate per data.
+  // Mescolarle sembrava dare più informazione e invece ne toglieva: la catena di confronto
+  // è per struttura (ogni giro si confronta col precedente del PROPRIO hotel), quindi due
+  // righe della stessa data — "03/09 SoulArt … i tot pezzi del 01/09" seguita da "03/09
+  // Boutique … i tot pezzi del 01/09" — si leggevano come la stessa cosa scritta due volte, e
+  // seguire la serie di una struttura sola voleva dire saltare una riga sì e una no.
+  if(_gb.giri.length){
+    h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Consegne di Raimondo</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);margin-right:10px;">le due strutture hanno pezzi e conti separati</span>
+      <button onclick="gbPrintAndamento()" style="background:var(--surface);color:var(--accent);border:1px solid var(--border);padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Report per la direzione</button></div>
+      <div class="panel-body" style="padding:0;">`;
+    Object.keys(GB_HOTELS).forEach((k,iH)=>{
+      const righe=_gbGiri(k).slice().reverse();
+      if(!righe.length)return;
+      const r=_gbRiepilogoPortato(k);
+      // Intestazione della struttura: nome, totale e saldo. È il blocco che rende leggibile
+      // il raggruppamento — senza, due elenchi di seguito sembrerebbero uno solo.
+      h+=`<div style="padding:12px 14px;background:var(--surface2,var(--surface));border-bottom:1px solid var(--border);${iH?'border-top:2px solid var(--border);':''}">
+        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:var(--fs-sm);font-weight:700;">${esc(GB_HOTELS[k])}</span>
+          ${r.confrontati
+            ?`<span style="font-size:var(--fs-xs);color:var(--text-dim);">ha portato <strong style="color:var(--text);">${r.portato}</strong> pezzi su <strong style="color:var(--text);">${r.dovuto}</strong> attesi</span>
+              <span style="font-size:var(--fs-sm);font-weight:700;color:${_gbColDelta(r.saldo)};">${_gbTxtDelta(r.saldo)}</span>`
+            :`<span style="font-size:var(--fs-xxs);color:var(--text-dim);">nessuna consegna ancora confrontabile</span>`}
+        </div>
+        ${r.confrontati?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">su ${r.confrontati} consegne confrontabili${r.senzaConfronto?` · ${r.senzaConfronto} senza termine di confronto`:''}${r.nonRegistrati?` · <strong style="color:var(--amber);">${r.nonRegistrati} senza il dato di cosa ha riportato</strong>, esclusi dal conto`:''}</div>
+        <button onclick="gbToggleVoci()" style="background:none;border:none;padding:0;margin-top:6px;font-size:var(--fs-xxs);color:var(--accent);font-weight:700;cursor:pointer;">${_gbVociAperte?'Nascondi il dettaglio per tipologia ▴':'Cosa porta, per tipologia ▾'}</button>
+        ${_gbVociAperte?_gbTabellaVoci(_gbTotPerVoce(k),true):''}`:''}
+      </div>`;
+      // I giri erano otto righe di prosa con cinque numeri dentro ciascuna: un muro di
+      // testo. Ora sono una TABELLA — stessi numeri, incolonnati — e le azioni non gridano:
+      // il dettaglio si apre dalla freccia, la distinta e' un'icona, e "Elimina" sta dentro
+      // il dettaglio, non fra i pulsanti che si premono tutti i giorni.
+      h+=`<table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="${_gbTh}text-align:left;padding-left:14px;">Consegna</th>
+          <th style="${_gbTh}">Ha portato</th>
+          <th style="${_gbTh}">Doveva</th>
+          <th style="${_gbTh}">Differenza</th>
+          <th style="${_gbTh}">Usciti quel giorno</th>
+          <th style="${_gbTh}padding-right:14px;"></th>
+        </tr></thead><tbody>`;
+      righe.forEach(g=>{
+        const rg=_gbRigaGiro(g);
+        const aperto=_gbGiroAperto.has(g.id);
+        const td='padding:9px 8px;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);text-align:center;font-variant-numeric:tabular-nums;';
+        h+=`<tr style="${rg.registrato?_gbBgDelta(rg.delta===null?0:rg.delta):'background:var(--surface2,var(--surface));'}">
+          <td style="${td}text-align:left;padding-left:14px;font-weight:700;white-space:nowrap;">${esc(rg.data)}</td>
+          <td style="${td}font-weight:700;${rg.registrato?'':'color:var(--amber);font-weight:600;font-size:11.5px;'}">${rg.registrato?rg.portato:'non registrato'}</td>
+          <td style="${td}color:var(--text-muted);">${rg.dovuto===null?'—':rg.dovuto+`<div style="font-size:10px;color:var(--text-dim);font-weight:400;">tot pezzi del ${esc(rg.dataPrec)}</div>`}</td>
+          <td style="${td}font-weight:700;color:${rg.delta===null?'var(--text-dim)':_gbColDelta(rg.delta)};">${!rg.registrato?'fuori conteggio':(rg.dovuto===null?'primo giro':_gbTxtDelta(rg.delta))}</td>
+          <td style="${td}color:var(--text-dim);">${rg.uscito}</td>
+          <td style="${td}padding-right:14px;white-space:nowrap;text-align:right;">
+            <button onclick="gbToggleGiro('${g.id}')" title="Cosa ha portato, voce per voce" style="${_gbBtnIco}${aperto?'background:var(--accent);color:#fff;border-color:var(--accent);':''}">${aperto?'▴':'▾'}</button>
+            <button onclick="gbPrintDistinta('${g.id}')" title="Ristampa la distinta" style="${_gbBtnIco}">🖨</button>
+          </td></tr>`;
+        if(aperto){
+          h+=`<tr><td colspan="6" style="padding:0 14px 12px;background:var(--surface2,var(--surface));">
+            ${_gbTabellaVoci(_gbDettaglioGiro(g),rg.dovuto!==null)}
+            <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);">
+              I ${rg.uscito} sacchi dati a Raimondo il ${esc(rg.data)} tornano al giro dopo: non contano in questa riga.
+              <button onclick="gbEliminaGiro('${g.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;margin-left:8px;">elimina questa consegna</button>
+            </div></td></tr>`;
+        }
+      });
+      h+=`</tbody></table>`;
+    });
+    h+=`</div></div>`;
+  }
+
+  // ── Saldo cumulato ──
+  const saldoTot=_gbTot(saldo);
+  if(giri.length){
+    h+=`<div class="panel" style="margin-bottom:16px;">
+      <div class="panel-header"><span class="panel-title">Pezzi non rientrati — totale da inizio registrazioni</span>
+        <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${saldoTot<0?'var(--red)':'var(--green)'};">${saldoTot===0?'in pari':saldoTot}</span>
+      </div>
+      <div class="panel-body" style="padding:14px;">
+        ${GB_VOCI.map(v=>{const n=saldo[v];return`<div style="display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_gbColDelta(n)};">${n===0?'in pari':n}</span></div>`;}).join('')}
+        <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Una singola consegna può chiudere in pari per caso. È questo totale che dice se la perdita è occasionale o continua.</div>
+      </div>
+    </div>`;
+  }
+
+  // ── Consumi registrati di recente ──
+  const rec=_gbConsumi().slice().sort((a,b)=>(_gbParse(b.data)||0)-(_gbParse(a.data)||0)).slice(0,14);
+  if(rec.length){
+    h+=`<div class="panel" style="margin-top:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti — ${esc(GB_HOTELS[_gbHotel])}</span></div><div class="panel-body" style="padding:0;">`;
+    rec.forEach(c=>{
+      h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
+        <span style="font-weight:600;">${esc(c.data)}</span>
+        <span style="color:var(--text-dim);">${_gbTot(c.q)} pezzi</span>
+        <button onclick="gbEliminaConsumo('${c.id}')" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  }
+
+  el.innerHTML=h;
+}
+
+// Distinta di consegna A4 — il documento che oggi manca. Senza id stampa il giro
+// impostato nel form (anche non ancora registrato, così la si può portare già compilata
+// al momento del ritiro); con un id ristampa un giro dello storico.
+// ── Report andamento per la direzione ──
+// Diverso dalla distinta: quella è il documento che Raimondo firma, questo è il foglio da
+// portare in riunione. Racconta la SERIE, non il singolo giro — quanto è tornato nel tempo,
+// se la perdita è occasionale o continua, e su quali pezzi si concentra.
+// Sobrio di proposito, come la distinta: testo nero e filetti, nessun fondo pieno. Si
+// stampa a colori o in bianco e nero senza perdere niente, e non consuma toner.
+// Oltre una quindicina di barre su 470pt diventano stanghette illeggibili: il grafico
+// mostra gli ultimi giri e lo dichiara nel titolo, la tabella sotto li elenca comunque tutti.
+const GB_GRAF_MAX=15;
+function _gbGraficoResa(serie,largh,alt){
+  if(!serie.length)return'';
+  // Un grafico a barre disegnato a mano: nessuna libreria, deve funzionare dentro un
+  // documento aperto con window.open. La linea al 100% è il riferimento — sopra è rientrato
+  // più di quanto era uscito, sotto manca qualcosa.
+  const max=Math.max(120,...serie.map(r=>Math.round((r.resa||0)*100)+5));
+  const y=v=>alt-(v/max)*alt;
+  const passo=largh/serie.length, w=Math.min(38,passo*0.6);
+  let g=`<svg width="${largh}" height="${alt+22}" style="display:block;">`;
+  [50,100].forEach(v=>{
+    g+=`<line x1="0" y1="${y(v)}" x2="${largh}" y2="${y(v)}" stroke="${v===100?'#111':'#ccc'}" stroke-width="${v===100?1:0.5}" ${v===100?'':'stroke-dasharray="3 3"'}/>`;
+    g+=`<text x="${largh-2}" y="${y(v)-3}" font-size="7" fill="#555" text-anchor="end">${v}%</text>`;
+  });
+  serie.forEach((r,i)=>{
+    const v=Math.round((r.resa||0)*100), x=i*passo+(passo-w)/2, yy=y(v);
+    g+=`<rect x="${x}" y="${yy}" width="${w}" height="${alt-yy}" fill="${v>=100?'#ddd':'#999'}" stroke="#111" stroke-width="0.5"/>`;
+    // Nessun numero sulla barra: la tabella qui sotto porta il valore esatto, e una barra
+    // etichettata "99%" accanto a un "98,5%" in tabella fa sembrare sbagliato il documento.
+    // Il grafico serve alla FORMA dell'andamento, i numeri li dà la tabella.
+    g+=`<text x="${x+w/2}" y="${alt+12}" font-size="7" fill="#555" text-anchor="middle">${r.data.slice(0,5)}</text>`;
+  });
+  return g+'</svg>';
+}
+function gbPrintAndamento(){
+  if(!_gb.giri.length){_gbAvviso('Non c\'è ancora nessun giro registrato.');return;}
+  const esc=x=>String(x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const pc=v=>v===null?'—':(Math.round(v*1000)/10).toFixed(1).replace('.',',')+'%';
+  const sg=n=>n>0?'+'+n:String(n);
+  let corpo='',totP=0,totD=0,nConf=0;
+  Object.keys(GB_HOTELS).forEach(k=>{
+    const serie=_gbAndamento(k), rp=_gbRiepilogoPortato(k);
+    if(!_gbGiri(k).length)return;
+    totP+=rp.portato;totD+=rp.dovuto;nConf+=rp.confrontati;
+    corpo+=`<div class="sez"><div class="sez-t">${esc(GB_HOTELS[k])}</div>`;
+    if(!serie.length){
+      corpo+=`<p class="nota">Nessuna consegna confrontabile: serve almeno una consegna precedente da cui sapere cosa doveva rientrare.</p></div>`;
+      return;
     }
-    return '<div class="passo"><div class="passo-n">'+(i+1)+'</div><div class="passo-c">'+
-      '<div class="passo-t">'+t+'</div><div class="passo-d">'+d+'</div><div class="passo-a">'+a+'</div></div></div>';
-  }).join('');
-  return '<div class="oggi"><div class="oggi-t">'+titolo+'</div>'+passi+'</div>';
+    const resa=rp.dovuto>0?rp.portato/rp.dovuto:null;
+    corpo+=`<div class="kpi">
+      <div><div class="k-l">Giri considerati</div><div class="k-v">${rp.confrontati}</div></div>
+      <div><div class="k-l">Doveva riportare</div><div class="k-v">${rp.dovuto}</div></div>
+      <div><div class="k-l">Ha riportato</div><div class="k-v">${rp.portato}</div></div>
+      <div><div class="k-l">Differenza</div><div class="k-v">${sg(rp.saldo)}</div></div>
+      <div><div class="k-l">Resa</div><div class="k-v">${pc(resa)}</div></div>
+    </div>
+    <div class="g-t">Resa per giro — quanto è rientrato rispetto a quanto era uscito${serie.length>GB_GRAF_MAX?` (ultimi ${GB_GRAF_MAX} giri)`:''}</div>
+    <div class="graf">${_gbGraficoResa(serie.slice(-GB_GRAF_MAX),470,86)}</div>
+    <table><thead><tr><th>Giro del</th><th class="r">Doveva riportare</th><th class="r">Ha riportato</th><th class="r">Differenza</th><th class="r">Resa</th><th class="r">Cumulato</th></tr></thead><tbody>
+      ${serie.map(r=>`<tr><td>${esc(r.data)}</td><td class="r">${r.dovuto}</td><td class="r">${r.portato}</td><td class="r">${sg(r.delta)}</td><td class="r">${pc(r.resa)}</td><td class="r">${sg(r.cumulato)}</td></tr>`).join('')}
+    </tbody></table>
+    <div class="g-t">Dove si concentra la differenza</div>
+    <table><thead><tr><th>Tipologia</th><th class="r">Doveva riportare</th><th class="r">Ha riportato</th><th class="r">Differenza</th><th class="r">Resa</th></tr></thead><tbody>
+      ${_gbTotPerVoce(k).filter(r=>r.dovuto||r.portato).map(r=>`<tr><td>${esc(r.voce)}</td><td class="r">${r.dovuto}</td><td class="r">${r.portato}</td><td class="r">${sg(r.delta)}</td><td class="r">${pc(r.dovuto>0?r.portato/r.dovuto:null)}</td></tr>`).join('')}
+    </tbody></table></div>`;
+  });
+  const resaTot=totD>0?totP/totD:null;
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Biancheria — andamento consegne</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;font-size:10pt;}
+@page{size:A4;margin:15mm;}
+.hdr{border-bottom:1.5px solid #111;padding-bottom:9px;margin-bottom:13px;display:flex;justify-content:space-between;align-items:baseline;}
+.title{font-size:14pt;font-weight:700;}
+.sub{font-size:8.5pt;color:#555;margin-top:2px;}
+.intro{border:1px solid #999;padding:8px 10px;margin-bottom:14px;font-size:8.5pt;line-height:1.6;color:#333;}
+.sez{margin-bottom:18px;}
+.kpi,.graf{page-break-inside:avoid;}
+tr{page-break-inside:avoid;}
+.sez-t{font-size:11.5pt;font-weight:700;border-bottom:1px solid #111;padding-bottom:4px;margin-bottom:9px;}
+.kpi{display:flex;gap:22px;margin-bottom:12px;}
+.k-l{font-size:7.5pt;text-transform:uppercase;letter-spacing:.04em;color:#555;}
+.k-v{font-size:13pt;font-weight:700;margin-top:1px;}
+.g-t{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;font-weight:700;margin:12px 0 6px;}
+table{width:100%;border-collapse:collapse;margin-bottom:4px;}
+th{text-align:left;font-size:7.5pt;text-transform:uppercase;letter-spacing:.03em;color:#555;border-bottom:1.2px solid #111;padding:5px 5px;font-weight:700;}
+td{padding:5px 5px;border-bottom:1px solid #ccc;font-size:9.5pt;}
+th.r,td.r{text-align:right;}
+.tot{border:1.5px solid #111;padding:9px 11px;margin-top:4px;}
+.nota{font-size:8pt;color:#555;line-height:1.6;margin-top:10px;}
+</style></head><body>
+  <div class="hdr">
+    <div><div class="title">Biancheria — andamento consegne</div><div class="sub">Fornitore Raimondo · ciclo pulito/sporco</div></div>
+    <div class="sub">Stampato il ${esc(_gbFmt(_gbOggi()))}</div>
+  </div>
+  <div class="intro"><strong>Come si legge.</strong> Raimondo ritira lo sporco a ogni consegna e riporta il pulito alla consegna successiva: quello che <em>doveva riportare</em> a una consegna è quindi esattamente quanto gli era stato dato alla consegna precedente. La <strong>resa</strong> è il rapporto tra i pezzi rientrati e quelli usciti: 100% significa che è tornato tutto. Il <strong>cumulato</strong> somma le differenze nel tempo — è quello che distingue una perdita occasionale da una continua. Le due strutture hanno sacchi, distinte e conti separati.</div>
+  ${corpo}
+  <div class="tot"><strong>Totale gruppo</strong> — su ${nConf} giri confrontabili è rientrato <strong>${totP}</strong> di <strong>${totD}</strong> pezzi usciti: differenza <strong>${sg(totP-totD)}</strong>, resa <strong>${pc(resaTot)}</strong>.</div>
+  <div class="nota">I conteggi dello sporco in uscita sono la somma dei consumi dichiarati ogni giorno dalle cameriere sui fogli camera; quelli del pulito in entrata sono presi dalla distinta del fornitore. Il primo giro registrato di ogni struttura non compare in questo report: non avendo un giro precedente non ha un termine di confronto.</div>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w){_gbAvviso('Il browser ha bloccato la finestra di stampa','Consenti le finestre pop-up per questo sito e riprova.');return;}
+  w.document.write(html);w.document.close();
+  setTimeout(()=>{try{w.print();}catch(e){}},400);
 }
-function _bgVai(id){const e=document.getElementById(id);if(e&&e.scrollIntoView)e.scrollIntoView({behavior:'smooth',block:'start'});}
-function bgVaiPulito(data){_bgDataPulito=data;render();setTimeout(()=>_bgVai('bg-pulito'),0);}
-function bgSegnaFatta(h,data){
-  if(!confirm('Segnare come già stampata la distinta di '+BG_HOTELS[h]+' per la consegna del '+data+'?\n\nIl promemoria sparisce. I conti non cambiano.'))return;
-  _bgSegnaDistinta(h,data);bgSalva();render();
+// Quando la distinta e' gia' stata stampata altrove (un'altra postazione, o la settimana
+// scorsa su carta) il promemoria resterebbe acceso per sempre: un avviso che non si spegne
+// diventa uno che si ignora.
+async function gbSegnaDistintaFatta(ev){
+  try{ev&&ev.preventDefault&&ev.preventDefault();}catch(e){}
+  const data=_gbFmt(_gbDomani(_gbOggi()));
+  if(!await _gbConferma('Segnare la distinta come stampata?',
+      '<strong>'+GB_HOTELS[_gbHotel]+'</strong> — consegna del '+data+'.<br>Il promemoria sparisce. I conti non cambiano.'))return;
+  try{await _gbDistSegna(_gbHotel,data);}catch(e){}
+  try{gbRender();}catch(e){}
 }
-
-/* ── linguette ────────────────────────────────────────────────────────── */
-function vTabs(){
-  return '<div class="tabs">'+Object.keys(BG_HOTELS).map(k=>{
-    const ap=_bgResiAperti(k).length;
-    const daStampare=_bgCompiti(k).passi.some(p=>p.tipo==='distinta');
-    return '<button class="tab'+(k===_bgHotel?' on':'')+'" onclick="bgSetHotel(\''+k+'\')">'+
-      '<div class="tab-n">'+esc(BG_HOTELS[k])+'</div>'+
-      '<div class="tab-s">'+(daStampare?'<span class="da-fare">Distinta di domani da stampare oggi</span> · ':'')+
-        'Raimondo passa '+BG_GIORNI_TXT[k]+(ap?' · '+ap+' inidonei in attesa':'')+'</div>'+
-    '</button>';
-  }).join('')+'</div>';
-}
-
-/* ── stato in testa ───────────────────────────────────────────────────── */
-
-/* ── pulito consegnato da Raimondo ──────────────────────────────────────
-   Il pulito che Raimondo porta si inserisce come i consumi: una data, una casella per
-   tipologia, Salva. Prima stava in una colonna "Ha portato" dentro la maschera della
-   consegna, che però si apriva quasi sempre sulla PROSSIMA consegna — futura — e lì la
-   colonna non c'era: chi cercava dove scrivere il pulito non la trovava. Due mestieri
-   diversi (preparare la distinta dello sporco la vigilia, ricopiare il pulito il giorno
-   del giro) stanno ora in due riquadri diversi.                                  */
-
-// La data proposta è il giorno di giro più recente (oggi, se Raimondo passa oggi): il
-// pulito si registra DOPO il suo passaggio, quindi mai una data futura.
-function _bgGiroRecente(h,oggi){
-  const x=new Date((oggi||_bgOggi()).getTime());
-  for(let i=0;i<8;i++){if(_bgGiornoGiro(h,x))return x;x.setDate(x.getDate()-1);}
-  return x;
-}
-// Stato del modulo, non riletto dal campo — vedi _bgDataConsegna.
-let _bgDataPulito=null;
-function _bgDataPulitoCorrente(h){return _bgDataPulito||_bgFmt(_bgGiroRecente(h));}
-function bgSetDataPulito(iso){_bgDataPulito=_bgFromIso(iso)||null;render();}
-
-// Registra il pulito sulla consegna di quella data. Se la consegna non esiste ancora la
-// crea, congelando lo sporco uscito: quello della distinta STAMPATA se c'è (è ciò che
-// Raimondo ha firmato), altrimenti la somma dei consumi del periodo. I pezzi inidonei
-// aperti datati prima di quel giorno si legano a questo sacco, come prima.
-function _bgSalvaPulito(h,data,ricevuto){
-  const d=_bgParse(data);
-  let g=_bgConsegne(h).find(x=>x.data===data);
-  if(g){g.ricevuto=ricevuto;g.ts=Date.now();}
-  else{
-    const st=(_bg.distinte||{})[_bgDistId(h,data)];
-    let consegnato;
-    if(st&&st.q)consegnato=Object.assign(_bgVuote(),st.q);
-    else{const per=_bgPeriodo(h,data);consegnato=per&&!per.vuoto?_bgSomma(h,per.dal,per.al):_bgVuote();}
-    g={id:_bgUid(),hotel:h,data:data,consegnato:consegnato,ricevuto:ricevuto,ts:Date.now()};
-    _bg.consegne.push(g);
-    _bgResiAperti(h).forEach(r=>{const rd=_bgParse(r.data);if(rd&&d&&rd<d)r.consegnaId=g.id;});
+function gbPrintDistinta(giroId){
+  const g=giroId?_gb.giri.find(x=>x.id===giroId):null;
+  let hotel,data,q,per;
+  if(g){
+    hotel=_gbH(g);data=g.data;q=g.consegnato;per=_gbPeriodo(hotel,data);
+  }else{
+    hotel=_gbHotel;
+    const iso=(document.getElementById('gb-giro-data')||{}).value||'';
+    data=_gbFromIso(iso)||_gbFmt(_gbOggi());
+    q=_gbVuote();
+    GB_VOCI.forEach((v,i)=>{const e=document.getElementById('gb-s-'+i);q[v]=Math.max(0,Number(e&&e.value)||0);});
+    per=_gbPeriodo(hotel,data);
   }
-  return g;
-}
-function bgSalvaPulito(){
-  const h=_bgHotel;
-  const data=_bgFromIso((document.getElementById('bg-p-data')||{}).value||'');
-  if(!data){alert('Indica la data in cui Raimondo ha portato il pulito.');return;}
-  if(_bgParse(data)>_bgOggi()){alert('Il '+data+' non è ancora arrivato.\n\nIl pulito si inserisce dopo il passaggio di Raimondo, ricopiandolo dalla sua distinta.');return;}
-  const ricevuto=_bgVuote();
-  BG_VOCI.forEach((v,i)=>{ricevuto[v]=_bgNum('bg-p-'+i);});
-  // Quello che Raimondo prende lo riporta: una consegna a zero pezzi non esiste, sono
-  // caselle mai compilate. Salvarla inventerebbe un ammanco pari a tutto lo sporco uscito.
-  if(!_bgTot(ricevuto)){alert('Tutte le quantità sono a zero.\n\nRicopia i pezzi dalla distinta del pulito che Raimondo ha lasciato.');return;}
-  const g=_bgConsegne(h).find(x=>x.data===data);
-  if(g&&_bgRegistrata(g)&&!confirm('Il pulito del '+data+' è già stato inserito.\n\nSostituirlo con questi numeri?'))return;
-  _bgSalvaPulito(h,data,ricevuto);
-  _bgDataPulito=null;
-  bgSalva();render();
-  _bgHint('pulito del '+data+' salvato');
-}
-function vPulito(h){
-  const data=_bgDataPulitoCorrente(h),d=_bgParse(data);
-  const g=_bgConsegne(h).find(x=>x.data===data);
-  const reg=!!(g&&_bgRegistrata(g));
-  const prec=_bgPrec(h,data),att=prec?prec.consegnato:null;
-  const campi=BG_VOCI.map((v,i)=>{
-    const val=reg?(Number(g.ricevuto[v])||0):0;
-    return '<div class="campo-c"><label class="f" title="'+esc(v)+'">'+esc(v.replace('Lenzuolo ','Lenz. ').replace('Asciugamano ','Asc. '))+'</label>'+
-      '<input type="number" min="0" id="bg-p-'+i+'" value="'+val+'" onfocus="this.select()"></div>';
-  }).join('');
-  let esito='';
-  if(reg){
-    const r=_bgRiga(g);
-    esito='<div class="avviso '+(r.delta==null||r.delta>=0?'ok':'ko')+'" style="margin:12px 0 0;">'+
-      '<b>Inserito:</b> ha portato '+r.portato+' pezzi'+
-      (r.delta==null?' — prima consegna, niente con cui confrontare.'
-        :(r.delta===0?', esattamente quanti ne doveva.'
-          :(r.delta<0?' — <b>ne mancano '+Math.abs(r.delta)+'</b> rispetto ai '+r.dovuto+' dello sporco del '+esc(r.dataPrec)+'.'
-            :', '+r.delta+' in più dei '+r.dovuto+' attesi.')))+
-      ' Il dettaglio per tipologia è nelle Consegne di Raimondo, qui sotto.</div>';
-  }
-  return '<div class="panel" id="bg-pulito"><div class="panel-head">'+
-      '<div class="panel-title">Pulito consegnato da Raimondo</div>'+
-      '<div class="nota">Si ricopia dalla distinta che Raimondo lascia quando passa.</div>'+
-    '</div><div class="panel-body">'+
-    '<div class="row" style="margin-bottom:6px;">'+
-      '<div><label class="f">Data</label><input type="date" id="bg-p-data" value="'+_bgToIso(data)+'" onchange="bgSetDataPulito(this.value)"></div>'+
-      campi+
-      '<div><button class="btn btn-primary" onclick="bgSalvaPulito()">Salva</button></div>'+
-    '</div>'+
-    '<div class="nota">'+
-      (d&&!_bgGiornoGiro(h,d)?'<b style="color:var(--amber);">Il '+esc(data)+' è un '+BG_GG[d.getDay()]+': di norma Raimondo passa '+BG_GIORNI_TXT[h]+'.</b> ':'')+
-      (att?'Doveva riportare <b>'+_bgTot(att)+' pezzi</b>: lo sporco uscito il '+esc(prec.data)+'.'
-          :'Prima consegna registrata: non c\'è ancora nulla con cui confrontare quello che porta.')+
-    '</div>'+esito+
-    '</div></div>';
-}
-
-/* ── distinta dello sporco ────────────────────────────────────────────────
-   Qui si prepara SOLTANTO il foglio dello sporco che esce: il pulito ha il suo riquadro.
-   La data scelta è uno STATO del modulo, non un valore riletto dal campo: il campo
-   sopravvive al ridisegno, quindi cambiando linguetta portava con sé la data dell'altra
-   struttura — Santa Brigida si apriva su un venerdì, con l'avviso "di norma passa
-   martedì, giovedì e sabato" che accusava l'utente di un errore fatto dall'app.
-   La data proposta è la PROSSIMA consegna: domani se oggi è la vigilia, altrimenti il
-   primo giorno di giro dopo oggi.                                                */
-let _bgDataConsegna=null;
-function _bgDataConsegnaCorrente(h){
-  if(_bgDataConsegna)return _bgDataConsegna;
-  return _bgFmt(_bgProssimoGiro(h));
-}
-function bgSetDataConsegna(iso){_bgDataConsegna=_bgFromIso(iso)||null;render();}
-function vConsegna(h){
-  const data=_bgDataConsegnaCorrente(h);
-  const d=_bgParse(data);
-  const per=_bgPeriodo(h,data);
-  const g=_bgConsegne(h).find(x=>x.data===data);
-  // Una consegna già avvenuta mostra lo sporco CONGELATO (quello firmato), non un
-  // ricalcolo dai consumi che nel frattempo potrebbero essere stati corretti.
-  const somma=g?Object.assign(_bgVuote(),g.consegnato):(per&&!per.vuoto?_bgSomma(h,per.dal,per.al):_bgVuote());
-  const totS=_bgTot(somma);
-  const resiFuori=g?_bg.resi.filter(r=>r.consegnaId===g.id):_bgResiDaConsegnare(h,data);
-  const resiPezzi=resiFuori.reduce((x,r)=>x+(Number(r.qta)||0),0);
-  const stampata=_bgDistStampata(h,data);
-  const oggi=_bgOggi(),vig=new Date(d.getTime()-86400000);
-  const passata=d<=oggi;
-  const vigTxt=vig.getTime()===oggi.getTime()?'<b>oggi pomeriggio</b>':'<b>'+BG_GG[vig.getDay()]+' '+String(vig.getDate()).padStart(2,'0')+' pomeriggio</b>';
-  const stati=g?[]:_bgGiorniStato(h,per,oggi);
-  const mancano=stati.filter(s=>s.stato==='manca');
-  const nomi=a=>a.map(s=>BG_GG[s.d.getDay()]+' '+String(s.d.getDate()).padStart(2,'0')).join(', ');
-  let av='';
-  if(!g&&per&&per.fonte==='calendario')
-    av+='<div class="avviso">Nessuna consegna registrata prima di questa: il periodo parte dal giorno di calendario precedente (Raimondo passa '+BG_GIORNI_TXT[h]+'). I consumi più vecchi sono già usciti con i giri fatti prima di usare questa app e restano fuori.</div>';
-  if(d&&!_bgGiornoGiro(h,d))
-    av+='<div class="avviso">Il '+esc(data)+' è un <b>'+BG_GG[d.getDay()]+'</b>: di norma qui il giro passa '+BG_GIORNI_TXT[h]+'. Se è una consegna straordinaria va bene, altrimenti controlla la data.</div>';
-  const rows=BG_VOCI.map((v,i)=>'<tr><td>'+esc(v)+'</td>'+
-    '<td class="r"><input type="number" min="0" id="bg-s-'+i+'" value="'+(Number(somma[v])||0)+'" onfocus="this.select()"></td></tr>').join('');
-  const incompleta=mancano.length>0;
-  return '<div class="panel" id="bg-consegna"><div class="panel-head">'+
-      '<div class="panel-title">Distinta dello sporco da consegnare a Raimondo</div>'+
-      '<div class="nota">Consegna di '+(d?BG_GG[d.getDay()]:'')+' '+esc(data)+(stampata?' · <b style="color:var(--green);">distinta già stampata</b>':'')+'</div>'+
-    '</div><div class="panel-body">'+
-    '<div class="quando">'+(passata
-      ? 'Consegna '+(g?'già registrata':'del '+esc(data))+': da qui si può '+(stampata?'ristampare':'stampare')+' la distinta dello sporco uscito.'
-      : 'Raimondo passa <b>'+BG_GG[d.getDay()]+' '+esc(data)+' alle 8</b>. La distinta si stampa '+vigTxt+' e si lascia in reception.')+'</div>'+
-    (mancano.length?'<div class="avviso" style="margin-top:10px;">Mancano i consumi di <b>'+nomi(mancano)+'</b>: inseriscili nel riquadro <b>Consumi del giorno</b> qui sopra, altrimenti la distinta esce incompleta.</div>':'')+
-    '<div class="row" style="margin:14px 0;">'+
-      '<div><label class="f">Data della consegna</label>'+
-        '<input type="date" id="bg-g-data" value="'+_bgToIso(data)+'" onchange="bgSetDataConsegna(this.value)"></div>'+
-      '<div style="flex:1;min-width:240px;"><label class="f">'+(incompleta?'Finora escono':'Escono')+'</label>'+
-        '<div style="padding-top:5px;font-size:15px;"><b>'+totS+' pezzi</b></div></div>'+
-    '</div>'+av+
-    '<div class="tbl-wrap" style="max-width:420px;"><table><thead><tr><th>Tipologia</th><th class="r" style="width:110px;">Esce</th></tr></thead>'+
-      '<tbody>'+rows+'</tbody><tfoot><tr><td>Totale</td><td class="r">'+totS+'</td></tr></tfoot></table></div>'+
-    (resiFuori.length?'<div class="avviso" style="margin-top:13px;">Escono anche <b>'+resiPezzi+' pezzi inidonei</b>, in sacco separato con la loro distinta.</div>':'')+
-    '<div class="row" style="margin-top:15px;">'+
-      (incompleta
-        ? '<button class="btn" onclick="bgStampaDistinta(\''+h+'\',\''+data+'\',true)">Stampa adesso (incompleta)</button>'
-        : '<button class="btn btn-primary" onclick="bgStampaDistinta(\''+h+'\',\''+data+'\',true)">'+(stampata?'Ristampa la distinta':'Stampa la distinta')+'</button>')+
-    '</div></div></div>';
+  const tot=_gbTot(q);
+  if(!tot){_gbAvviso('Non c\'è niente da consegnare: tutte le quantità sono a zero.');return;}
+  // Serve al promemoria in Overview, che deve sparire una volta stampata.
+  try{_gbDistSegna(hotel,data);}catch(e){}
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const periodo=per&&!per.vuoto?(_gbFmt(per.dal)+' — '+_gbFmt(per.al)):'—';
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Distinta di Consegna Biancheria</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;font-size:10.5pt;}
+@page{size:A4;margin:16mm;}
+.hdr{border-bottom:1.5px solid #111;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;}
+.title{font-size:14pt;font-weight:700;letter-spacing:.01em;}
+.sub{font-size:9pt;color:#555;margin-top:2px;}
+.meta{display:flex;gap:34px;margin-bottom:14px;font-size:10pt;}
+.meta-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;}
+.meta-val{font-weight:700;margin-top:2px;}
+.warn{border:1px solid #999;padding:8px 10px;margin-bottom:14px;font-size:8.5pt;line-height:1.6;color:#333;}
+table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+th{text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:1.5px solid #111;padding:6px 6px;}
+td{padding:7px 6px;border-bottom:1px solid #ccc;font-size:10pt;}
+td.r{text-align:right;}
+tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-top:8px;}
+.blk{border:1px solid #999;padding:10px 12px;margin-bottom:12px;}
+.blk-t{font-size:8.5pt;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:#333;margin-bottom:10px;}
+.row{display:flex;gap:26px;margin-bottom:12px;}
+.f{flex:1;}
+.f-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;margin-bottom:3px;}
+.f-val{font-size:11pt;border-bottom:1px solid #999;padding-bottom:4px;min-height:17px;}
+.sign{border-bottom:1px solid #111;margin-top:34px;}
+.sign-c{font-size:8pt;color:#555;margin-top:4px;}
+</style></head><body>
+  <div class="hdr">
+    <div><div class="title">Distinta di Consegna Biancheria Sporca</div><div class="sub">Fornitore Raimondo</div></div>
+    <div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">${esc(GB_HOTELS[hotel]||'')}</div></div>
+  </div>
+  <div class="meta">
+    <div><div class="meta-lbl">Data ritiro</div><div class="meta-val">${esc(data)}</div></div>
+    <div><div class="meta-lbl">Consumi del periodo</div><div class="meta-val">${esc(periodo)}</div></div>
+    <div><div class="meta-lbl">Totale pezzi</div><div class="meta-val">${tot}</div></div>
+  </div>
+  <div class="warn">
+    • Le quantità sotto indicate corrispondono ai consumi rilevati sui fogli camera del periodo.<br>
+    • La biancheria inidonea (macchiata / difettata) viaggia in un sacco separato, con distinta propria, e NON è conteggiata qui.<br>
+    • Il rientro del pulito corrispondente è atteso alla consegna successiva.
+  </div>
+  <table>
+    <thead><tr><th>Tipologia pezzo</th><th style="width:90px;text-align:right;">Quantità</th></tr></thead>
+    <tbody>${GB_VOCI.map(v=>`<tr><td>${esc(v)}</td><td class="r">${Number(q[v])||0}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td>Totale pezzi consegnati</td><td class="r">${tot}</td></tr></tfoot>
+  </table>
+  <div class="blk">
+    <div class="blk-t">Ritiro Fornitore Raimondo</div>
+    <div class="row">
+      <div class="f"><div class="f-lbl">Data ritiro</div><div class="f-val">${esc(data)}</div></div>
+      <div class="f"><div class="f-lbl">Totale pezzi</div><div class="f-val">${tot}</div></div>
+      <div class="f"><div class="f-lbl">Sacchi n°</div><div class="f-val">&nbsp;</div></div>
+    </div>
+    <div class="sign"></div>
+    <div class="sign-c">Firma per ricevuta — Fornitore Raimondo</div>
+  </div>
+  <div class="blk">
+    <div class="blk-t">Consegna a cura di</div>
+    <div class="row">
+      <div class="f"><div class="f-lbl">Nome</div><div class="f-val">&nbsp;</div></div>
+      <div class="f"><div class="f-lbl">Data</div><div class="f-val">&nbsp;</div></div>
+    </div>
+    <div class="sign"></div>
+    <div class="sign-c">Firma Responsabile / Management</div>
+  </div>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w){_gbAvviso('Il browser ha bloccato la finestra di stampa.');return;}
+  w.document.write(html);w.document.close();
+  setTimeout(()=>w.print(),400);
 }
 
-async function bgEliminaConsegna(id){
-  const g=_bg.consegne.find(x=>x.id===id);if(!g)return;
-  if(!confirm('Eliminare la consegna del '+g.data+'?\n\nLe consegne successive useranno un periodo diverso, e i pezzi inidonei che erano usciti con questa tornano in attesa.'))return;
-  _bg.consegne=_bg.consegne.filter(x=>x.id!==id);
-  _bg.resi.forEach(r=>{if(r.consegnaId===id)r.consegnaId=null;});
-  _bgDataConsegna=null;_bgDataPulito=null;
-  bgSalva();render();
-}
 
-/* ── consumi giornalieri ──────────────────────────────────────────────── */
-function vConsumi(h){
-  const cons=_bgConsumi(h).slice().reverse().slice(0,14);
-  const oggiIso=_bgToIso(_bgFmt(_bgOggi()));
-  const campi=BG_VOCI.map((v,i)=>
-    '<div class="campo-c"><label class="f" title="'+esc(v)+'">'+esc(v.replace('Lenzuolo ','Lenz. ').replace('Asciugamano ','Asc. '))+'</label>'+
-    '<input type="number" min="0" id="bg-c-'+i+'" value="0" onfocus="this.select()"></div>').join('');
-
-  const righe=cons.length?cons.map(c=>
-    '<tr><td>'+esc(c.data)+' <span class="nota">'+BG_GG[(_bgParse(c.data)||new Date()).getDay()]+'</span></td>'+
-    BG_VOCI.map(v=>'<td class="r">'+(Number(c.q&&c.q[v])||0)+'</td>').join('')+
-    '<td class="r" style="font-weight:700;">'+_bgTot(c.q)+'</td>'+
-    '<td class="r"><button class="btn-link danger" onclick="bgEliminaConsumo(\''+c.id+'\')">elimina</button></td></tr>'
-  ).join(''):'<tr><td colspan="'+(BG_VOCI.length+3)+'" class="vuoto">Nessun consumo registrato per questa struttura.</td></tr>';
-
-  return '<div class="panel" id="bg-consumi"><div class="panel-head">'+
-      '<div class="panel-title">Consumi del giorno</div>'+
-      '<div class="nota">Si ricopiano dai fogli camera. La somma dei giorni del periodo <b>è</b> lo sporco che esce.</div>'+
-    '</div><div class="panel-body">'+
-    '<div class="row" style="margin-bottom:6px;">'+
-      '<div><label class="f">Data</label><input type="date" id="bg-cons-data" value="'+oggiIso+'"></div>'+
-      campi+
-      '<div><button class="btn btn-primary" onclick="bgSalvaConsumi()">Salva</button></div>'+
-    '</div>'+
-    '<div class="nota" style="margin-bottom:14px;">Salvando una data già presente se ne sostituiscono i valori.</div>'+
-    '<div class="tbl-wrap"><table><thead><tr><th>Giorno</th>'+
-      BG_VOCI.map(v=>'<th class="r" title="'+esc(v)+'">'+esc(v.split(' ')[0])+'<br>'+esc(v.split(' ').slice(1).join(' '))+'</th>').join('')+
-      '<th class="r">Totale</th><th></th></tr></thead><tbody>'+righe+'</tbody></table></div>'+
-    (_bgConsumi(h).length>14?'<div class="nota" style="margin-top:9px;">Mostrati gli ultimi 14 giorni.</div>':'')+
-    '</div></div>';
+/* ── pezzi inidonei: escono con il sacco della consegna ───────────────────── */
+function _gbResiAperti(h){const x=h||_gbHotel;return (_gb.resi||[]).filter(r=>_gbH(r)===x&&!r.consegnaId).sort((a,b)=>(_gbParse(a.data)||0)-(_gbParse(b.data)||0));}
+// Stesso taglio dello sporco: quelli trovati il giorno stesso non sono nel sacco delle 8.
+function _gbResiDaConsegnare(h,data){const d=_gbParse(data);return _gbResiAperti(h).filter(r=>{const rd=_gbParse(r.data);return rd&&d&&rd<d;});}
+function _gbLegaResi(h,data){
+  const g=_gb.giri.find(x=>_gbH(x)===h&&x.data===data);if(!g)return;
+  _gbResiDaConsegnare(h,data).forEach(r=>{r.consegnaId=g.id;});
 }
-function bgSalvaConsumi(){
-  const data=_bgFromIso((document.getElementById('bg-cons-data')||{}).value||'');
-  if(!data){alert('Indica la data dei consumi.');return;}
-  const q=_bgVuote();
-  BG_VOCI.forEach((v,i)=>q[v]=_bgNum('bg-c-'+i));
-  if(_bgTot(q)===0&&!confirm('Tutti i valori sono a zero.\n\nSalvare comunque i consumi del '+data+'?'))return;
-  const e=_bg.consumi.find(c=>_bgH(c)===_bgHotel&&c.data===data);
-  if(e)e.q=q; else _bg.consumi.push({id:_bgUid(),hotel:_bgHotel,data:data,q:q});
-  bgSalva();render();
+// La prossima consegna: oggi se Raimondo passa oggi e non è ancora registrata, altrimenti
+// il primo giorno di giro dopo oggi.
+function _gbProssimaConsegna(h,oggi){
+  const o=oggi||_gbOggi();
+  if(_gbGiornoGiro(o,h)&&!_gb.giri.find(x=>_gbH(x)===h&&x.data===_gbFmt(o)))return _gbFmt(o);
+  const x=_gbDomani(o);
+  for(let i=0;i<8;i++){if(_gbGiornoGiro(x,h))return _gbFmt(x);x.setDate(x.getDate()+1);}
+  return _gbFmt(x);
 }
-function bgEliminaConsumo(id){
-  const c=_bg.consumi.find(x=>x.id===id);if(!c)return;
-  if(!confirm('Eliminare i consumi del '+c.data+'?\n\nLe consegne già registrate non cambiano: lo sporco uscito resta congelato su ciascuna.'))return;
-  _bg.consumi=_bg.consumi.filter(x=>x.id!==id);
-  bgSalva();render();
+// Il ridisegno completo: il modulo di Compass, poi i riquadri propri della Galleria.
+function gbRender(){
+  _gbRenderCore();
+  const x=document.getElementById('gb-extra');
+  if(x)x.innerHTML=vResi(_gbHotel)+vBackup();
 }
 
 /* ── pezzi inidonei ───────────────────────────────────────────────────── */
 function vResi(h){
-  const ap=_bgResiAperti(h);
+  const ap=_gbResiAperti(h);
   const tot=ap.reduce((x,r)=>x+(Number(r.qta)||0),0);
   const righe=ap.length?ap.map(r=>
     '<tr><td>'+esc(r.data)+'</td><td>'+esc(r.tipologia)+'</td><td class="r" style="font-weight:700;">'+(Number(r.qta)||0)+'</td>'+
@@ -833,8 +1365,8 @@ function vResi(h){
     '<td class="r"><button class="btn-link danger" onclick="bgEliminaReso(\''+r.id+'\')">elimina</button></td></tr>'
   ).join(''):'<tr><td colspan="6" class="vuoto">Nessun pezzo inidoneo in attesa.</td></tr>';
 
-  const dataProx=_bgDataConsegnaCorrente(h);
-  const escono=_bgResiDaConsegnare(h,dataProx);
+  const dataProx=_gbProssimaConsegna(h);
+  const escono=_gbResiDaConsegnare(h,dataProx);
   return '<div class="panel"><div class="panel-head">'+
       '<div><div class="panel-title">Pezzi inidonei da rendere</div>'+
       '<div class="nota" style="margin-top:3px;">Sacco separato. Escono con la prima consegna successiva alla loro data.</div></div>'+
@@ -843,10 +1375,10 @@ function vResi(h){
         : '')+
     '</div><div class="panel-body">'+
     '<div class="row" style="margin-bottom:16px;">'+
-      '<div><label class="f">Data</label><input type="date" id="bg-res-data" value="'+_bgToIso(_bgFmt(_bgOggi()))+'"></div>'+
-      '<div><label class="f">Tipologia</label><select id="bg-res-tip">'+BG_RESI_TIP.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></div>'+
+      '<div><label class="f">Data</label><input type="date" id="bg-res-data" value="'+_gbToIso(_gbFmt(_gbOggi()))+'"></div>'+
+      '<div><label class="f">Tipologia</label><select id="bg-res-tip">'+GB_RESI_TIP.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></div>'+
       '<div><label class="f">Quantità</label><input type="number" min="1" id="bg-res-qta" value="1" onfocus="this.select()"></div>'+
-      '<div><label class="f">Motivo</label><select id="bg-res-mot">'+BG_RESI_MOTIVI.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></div>'+
+      '<div><label class="f">Motivo</label><select id="bg-res-mot">'+GB_RESI_MOTIVI.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></div>'+
       '<div style="flex:1;min-width:150px;"><label class="f">Nota (facoltativa)</label><input type="text" id="bg-res-nota" style="width:100%;" placeholder="camera, chi l\'ha trovato…"></div>'+
       '<div><button class="btn btn-primary" onclick="bgAggiungiReso()">Aggiungi</button></div>'+
     '</div>'+
@@ -856,7 +1388,7 @@ function vResi(h){
     '</table></div></div></div>';
 }
 function bgAggiungiReso(){
-  const data=_bgFromIso((document.getElementById('bg-res-data')||{}).value||'');
+  const data=_gbFromIso((document.getElementById('bg-res-data')||{}).value||'');
   const tip=(document.getElementById('bg-res-tip')||{}).value||'';
   const qta=parseInt((document.getElementById('bg-res-qta')||{}).value,10);
   const mot=(document.getElementById('bg-res-mot')||{}).value||'';
@@ -864,14 +1396,14 @@ function bgAggiungiReso(){
   if(!data){alert('Indica la data.');return;}
   if(!tip){alert('Scegli la tipologia del pezzo.');return;}
   if(isNaN(qta)||qta<=0){alert('Indica una quantità valida.');return;}
-  _bg.resi.push({id:_bgUid(),hotel:_bgHotel,data:data,tipologia:tip,qta:qta,motivo:mot,nota:nota,consegnaId:null});
-  bgSalva();render();
+  _gb.resi.push({id:_gbUid(),hotel:_gbHotel,data:data,tipologia:tip,qta:qta,motivo:mot,nota:nota,consegnaId:null});
+  _gbSave();gbRender();
 }
 function bgEliminaReso(id){
-  const r=_bg.resi.find(x=>x.id===id);if(!r)return;
+  const r=_gb.resi.find(x=>x.id===id);if(!r)return;
   if(!confirm('Eliminare questo reso?\n\n'+r.tipologia+' ×'+r.qta+', del '+r.data+'.'))return;
-  _bg.resi=_bg.resi.filter(x=>x.id!==id);
-  bgSalva();render();
+  _gb.resi=_gb.resi.filter(x=>x.id!==id);
+  _gbSave();gbRender();
 }
 
 /* ── distinta dei resi ─────────────────────────────────────────────────────
@@ -884,23 +1416,13 @@ function bgEliminaReso(id){
    Il copione è duplicato e non condiviso di proposito: quest'app vive fuori da
    Compass e non carica app.js. Se si cambia uno dei due fogli, va cambiato
    anche l'altro.                                                              */
-function _bgResiDaConsegnare(h,data){
-  const d=_bgParse(data);
-  return _bgResiAperti(h).filter(r=>{const rd=_bgParse(r.data);return rd&&d&&rd<d;});
-}
 function bgStampaResi(h,data){
-  const righe=_bgResiDaConsegnare(h,data);
+  const righe=_gbResiDaConsegnare(h,data);
   if(!righe.length){alert('Nessun pezzo inidoneo esce con la consegna del '+data+'.');return;}
   _bgApriResi(h,righe,data);
 }
-function bgStampaResiConsegna(id){
-  const g=_bg.consegne.find(x=>x.id===id);if(!g)return;
-  const righe=_bg.resi.filter(x=>x.consegnaId===id);
-  if(!righe.length){alert('Con questa consegna non sono usciti pezzi inidonei.');return;}
-  _bgApriResi(_bgH(g),righe,g.data);
-}
 function _bgApriResi(h,righe,dataRitiro){
-  const ord=righe.slice().sort((a,b)=>(_bgParse(a.data)||0)-(_bgParse(b.data)||0));
+  const ord=righe.slice().sort((a,b)=>(_gbParse(a.data)||0)-(_gbParse(b.data)||0));
   const dal=ord[0].data,al=ord[ord.length-1].data;
   const tot=ord.reduce((s,r)=>s+(Number(r.qta)||0),0);
   const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Distinta Reso Biancheria</title><style>'+
@@ -930,7 +1452,7 @@ function _bgApriResi(h,righe,dataRitiro){
 '</style></head><body>'+
   '<div class="hdr">'+
     '<div><div class="title">Distinta Reso Biancheria Inidonea</div><div class="sub">Fornitore Raimondo</div></div>'+
-    '<div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">'+esc(BG_HOTELS[h])+'</div></div>'+
+    '<div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">'+esc(GB_HOTELS[h])+'</div></div>'+
   '</div>'+
   '<div class="meta">'+
     '<div><div class="meta-lbl">Periodo dal</div><div class="meta-val">'+esc(dal)+'</div></div>'+
@@ -974,78 +1496,12 @@ function _bgApriResi(h,righe,dataRitiro){
   return true;
 }
 
-/* ── storico ──────────────────────────────────────────────────────────── */
-function vStorico(h){
-  const cons=_bgConsegne(h).slice().reverse();
-  const s=_bgSaldo(h);
-  if(!cons.length)
-    return '<div class="panel"><div class="panel-head"><div class="panel-title">Consegne di Raimondo</div></div>'+
-      '<div class="panel-body"><div class="vuoto">Nessuna consegna registrata per questa struttura.</div></div></div>';
-
-  const righe=cons.map(g=>{
-    const r=_bgRiga(g);
-    const ap=_bgStoricoAperto.has(g.id);
-    let out='<tr class="'+_bgCls(r.delta)+'">'+
-      '<td><b>'+esc(g.data)+'</b> <span class="nota">'+BG_GG[(_bgParse(g.data)||new Date()).getDay()]+'</span></td>'+
-      '<td class="r">'+(r.registrata?'<b>'+r.portato+'</b>':'<span class="pill amber">non registrato</span>')+'</td>'+
-      '<td class="r" style="color:var(--text-dim);">'+(r.dovuto==null?'—':r.dovuto)+'</td>'+
-      '<td class="r" style="color:'+_bgCol(r.delta)+';font-weight:700;">'+(r.registrata?_bgTxt(r.delta):'fuori conteggio')+'</td>'+
-      '<td class="r" style="color:var(--text-dim);">'+r.uscito+'</td>'+
-      '<td class="r">'+
-        '<button class="btn-link" onclick="bgToggleStorico(\''+g.id+'\')">'+(ap?'▾ chiudi':'▸ dettaglio')+'</button>'+
-        '<button class="btn-link" onclick="bgStampa(\''+g.id+'\')">ristampa</button>'+
-        (_bg.resi.some(x=>x.consegnaId===g.id)?'<button class="btn-link" onclick="bgStampaResiConsegna(\''+g.id+'\')">resi</button>':'')+
-      '</td></tr>';
-    if(ap){
-      const det=_bgDettaglio(g);
-      const conf=r.dovuto!=null;
-      const resi=_bg.resi.filter(x=>x.consegnaId===g.id);
-      out+='<tr><td colspan="6" style="background:var(--bg);padding:14px 16px;">'+
-        '<div class="nota" style="margin-bottom:9px;">'+
-          (r.dataPrec?'Doveva riportare i pezzi usciti il <b>'+esc(r.dataPrec)+'</b>. ':'Prima consegna: non c\'è nulla con cui confrontare quello che ha riportato. ')+
-          'I <b>'+r.uscito+'</b> pezzi usciti il '+esc(g.data)+' tornano alla consegna successiva e non contano in questa riga.'+
-        '</div>'+
-        (det.length?'<div class="tbl-wrap"><table><thead><tr><th>Tipologia</th><th class="r">Ha portato</th>'+
-          (conf?'<th class="r">Doveva</th><th class="r">Differenza</th>':'')+'<th class="r">Uscito quel giorno</th></tr></thead><tbody>'+
-          det.map(x=>'<tr><td>'+esc(x.voce)+'</td><td class="r"><b>'+x.portato+'</b></td>'+
-            (conf?'<td class="r" style="color:var(--text-dim);">'+x.dovuto+'</td><td class="r" style="color:'+_bgCol(x.delta)+';font-weight:700;">'+_bgTxt(x.delta)+'</td>':'')+
-            '<td class="r" style="color:var(--text-dim);">'+x.uscito+'</td></tr>').join('')+
-          '</tbody></table></div>':'<div class="vuoto">Nessuna quantità registrata.</div>')+
-        (resi.length?'<div class="nota" style="margin-top:10px;">Usciti con questa consegna anche <b>'+resi.reduce((a,b)=>a+(Number(b.qta)||0),0)+'</b> pezzi inidonei: '+esc(resi.map(x=>x.tipologia+' ×'+x.qta).join(', '))+'.</div>':'')+
-        '<div style="margin-top:12px;"><button class="btn-link danger" onclick="bgEliminaConsegna(\''+g.id+'\')">Elimina questa consegna</button></div>'+
-      '</td></tr>';
-    }
-    return out;
-  }).join('');
-
-  const vociSaldo=BG_VOCI.map(v=>({voce:v,d:Number(s.q[v])||0})).filter(x=>x.d!==0);
-
-  return '<div class="panel"><div class="panel-head">'+
-      '<div class="panel-title">Consegne di Raimondo</div>'+
-      '<div class="nota">Ha portato <b>'+_bgRiepilogo(h).portato+'</b> su <b>'+_bgRiepilogo(h).dovuto+'</b> attesi · saldo <b style="color:'+_bgCol(s.tot)+';">'+_bgTxt(s.tot)+'</b></div>'+
-    '</div><div class="panel-body">'+
-    '<div class="tbl-wrap"><table><thead><tr>'+
-      '<th>Consegna</th><th class="r">Ha portato</th><th class="r">Doveva</th><th class="r">Differenza</th><th class="r">Usciti quel giorno</th><th></th>'+
-    '</tr></thead><tbody>'+righe+'</tbody></table></div>'+
-    '<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:12px;">'+
-      '<button class="btn btn-sm" onclick="bgToggleSaldo()">'+(_bgSaldoAperto?'▾':'▸')+' Pezzi non rientrati, per tipologia</button>'+
-      (_bgSaldoAperto
-        ? (vociSaldo.length
-            ? '<div class="tbl-wrap" style="margin-top:11px;"><table><thead><tr><th>Tipologia</th><th class="r">Differenza cumulata</th></tr></thead><tbody>'+
-              vociSaldo.map(x=>'<tr class="'+_bgCls(x.d)+'"><td>'+esc(x.voce)+'</td><td class="r" style="color:'+_bgCol(x.d)+';font-weight:700;">'+_bgTxt(x.d)+'</td></tr>').join('')+
-              '</tbody><tfoot><tr><td>Totale</td><td class="r" style="color:'+_bgCol(s.tot)+';">'+_bgTxt(s.tot)+'</td></tr></tfoot></table></div>'+
-              '<div class="nota" style="margin-top:8px;">Calcolato su '+s.n+' consegn'+(s.n===1?'a registrata e confrontabile':'e registrate e confrontabili')+'. È il numero con cui si contesta qualcosa al fornitore: dice su quali articoli si concentra.</div>'
-            : '<div class="nota" style="margin-top:11px;">Tutto in pari: nessuna tipologia si scosta.</div>')
-        : '')+
-    '</div></div></div>';
-}
-
 /* ── copia di sicurezza ───────────────────────────────────────────────────
    Qui non c'è cloud e non c'è backup notturno: mesi di consegne vivono nella
    cache di questo browser. Cancellarla, o cambiare computer, li porta via
    senza preavviso. Questo pulsante è l'unica rete.                          */
 function vBackup(){
-  const n=_bg.consegne.length,c=_bg.consumi.length,r=_bg.resi.length;
+  const n=_gb.giri.length,c=_gb.consumi.length,r=(_gb.resi||[]).length;
   return '<div class="panel"><div class="panel-head"><div class="panel-title">Copia di sicurezza</div>'+
     '<div class="nota">'+n+' consegne · '+c+' giornate di consumi · '+r+' pezzi inidonei</div></div>'+
     '<div class="panel-body">'+
@@ -1057,13 +1513,13 @@ function vBackup(){
     '</div></div></div>';
 }
 function bgScarica(){
-  const blob=new Blob([JSON.stringify({_app:'biancheria-galleria',_ver:1,_ts:Date.now(),dati:_bg},null,1)],{type:'application/json'});
+  const blob=new Blob([JSON.stringify({_app:'biancheria-galleria',_ver:2,_ts:Date.now(),dati:_gb,distinte:_gbDist},null,1)],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download='biancheria-galleria-'+_bgFmt(new Date()).replace(/\//g,'-')+'.json';
+  a.download='biancheria-galleria-'+_gbFmt(new Date()).replace(/\//g,'-')+'.json';
   document.body.appendChild(a);a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
-  _bgHint('copia scaricata');
+  _gbHint('copia scaricata');
 }
 function bgRicarica(input){
   const f=input.files&&input.files[0];input.value='';
@@ -1073,122 +1529,22 @@ function bgRicarica(input){
     let o;
     try{o=JSON.parse(fr.result);}catch(e){alert('Il file non è una copia valida: non si riesce a leggerlo.');return;}
     const d=o&&o.dati?o.dati:o;
-    if(!d||!Array.isArray(d.consegne)||!Array.isArray(d.consumi)){alert('Il file non sembra una copia di questa app.');return;}
-    if(!confirm('La copia contiene '+d.consegne.length+' consegne e '+d.consumi.length+' giornate di consumi.\n\nSOSTITUISCE tutto quello che c\'è adesso ('+_bg.consegne.length+' consegne, '+_bg.consumi.length+' giornate). L\'operazione non si annulla.\n\nProcedere?'))return;
-    _bg={consumi:d.consumi||[],consegne:d.consegne||[],resi:d.resi||[],distinte:d.distinte||{}};
-    bgSalva();render();
-    _bgHint('copia ricaricata');
+    // Si accettano le copie di entrambe le versioni: quella semplificata chiamava i giri
+    // "consegne", questa li chiama come Compass.
+    if(!d||!Array.isArray(d.consumi)||!(Array.isArray(d.giri)||Array.isArray(d.consegne))){alert('Il file non sembra una copia di questa app.');return;}
+    const nuovo=_gbMigra(d);
+    if(!confirm('La copia contiene '+nuovo.giri.length+' consegne e '+nuovo.consumi.length+' giornate di consumi.\n\nSOSTITUISCE tutto quello che c\'è adesso ('+_gb.giri.length+' consegne, '+_gb.consumi.length+' giornate). L\'operazione non si annulla.\n\nProcedere?'))return;
+    _gb=nuovo;
+    if(o&&o.distinte&&typeof o.distinte==='object'){_gbDist={};Object.keys(o.distinte).forEach(k=>{const v=o.distinte[k];_gbDist[k]=(v&&v.ts)||v||Date.now();});try{localStorage.setItem(GB_DIST_KEY,JSON.stringify(_gbDist));}catch(e){}}
+    _gbSave();gbRender();
+    _gbHint('copia ricaricata');
   };
   fr.readAsText(f);
 }
 
-/* ── distinta A4 ──────────────────────────────────────────────────────────
-   Deliberatamente sobria: testo nero e filetti, nessun fondo pieno. Si stampa
-   tre volte a settimana per struttura — un blocco pieno consuma toner senza
-   aggiungere niente, e in bianco e nero non si perde nessuna informazione.   */
-function bgStampa(id){
-  const g=_bg.consegne.find(x=>x.id===id);
-  if(!g){alert('Consegna non trovata.');return;}
-  const h=_bgH(g);
-  if(_bgApriDistinta(h,g.data,g.consegnato||_bgVuote(),_bg.resi.filter(x=>x.consegnaId===g.id))){
-    _bgSegnaDistinta(h,g.data,g.consegnato);bgSalva();render();
-  }
-}
-// La distinta della VIGILIA: si stampa senza registrare niente. Le quantità sono i
-// consumi del periodo (o quelle corrette nella maschera, se si parte da lì) e i pezzi
-// inidonei aperti datati prima del giorno della consegna — gli stessi che la
-// registrazione, domani, legherà a questo sacco.
-function bgStampaDistinta(h,data,daMaschera){
-  const d=_bgParse(data);
-  const per=_bgPeriodo(h,data);
-  let q=per&&!per.vuoto?_bgSomma(h,per.dal,per.al):_bgVuote();
-  if(daMaschera){q=_bgVuote();BG_VOCI.forEach((v,i)=>q[v]=_bgNum('bg-s-'+i));}
-  if(!_bgTot(q)){alert('Non esce nessun pezzo: tutte le quantità sono a zero.\n\nInserisci prima i consumi del periodo.');return;}
-  const incompleti=_bgGiorniStato(h,per).filter(s=>s.stato!=='ok');
-  if(incompleti.length&&!confirm('Mancano ancora i consumi di '+incompleti.map(s=>BG_GG[s.d.getDay()]+' '+String(s.d.getDate()).padStart(2,'0')).join(', ')+'.\n\nLa distinta uscirebbe INCOMPLETA: Raimondo firmerebbe per meno pezzi di quelli che porta via.\n\nStampare lo stesso?'))return;
-  const resi=_bgResiAperti(h).filter(r=>{const rd=_bgParse(r.data);return rd&&d&&rd<d;});
-  if(_bgApriDistinta(h,data,q,resi)){_bgSegnaDistinta(h,data,q);bgSalva();render();}
-}
-function _bgApriDistinta(h,data,q,resi){
-  const g={data:data};
-  const tot=_bgTot(q);
-  const per=_bgPeriodo(h,data);
-  const totResi=resi.reduce((a,b)=>a+(Number(b.qta)||0),0);
-  const periodo=per&&!per.vuoto?(_bgFmt(per.dal)+' — '+_bgFmt(per.al)):'—';
-
-  const rowsSporco=BG_VOCI.map(v=>'<tr><td>'+esc(v)+'</td><td class="r">'+(Number(q[v])||0)+'</td></tr>').join('');
-  const bloccoResi=resi.length?
-    '<div class="sec">Pezzi inidonei resi — sacco separato</div>'+
-    '<table><thead><tr><th>Data</th><th>Tipologia</th><th style="width:80px;text-align:right;">Q.tà</th><th>Motivo</th></tr></thead><tbody>'+
-    resi.map(r=>'<tr><td>'+esc(r.data)+'</td><td>'+esc(r.tipologia)+'</td><td class="r">'+(Number(r.qta)||0)+'</td><td>'+esc(r.motivo||'')+'</td></tr>').join('')+
-    '</tbody><tfoot><tr><td colspan="2">Totale pezzi inidonei</td><td class="r">'+totResi+'</td><td></td></tr></tfoot></table>':'';
-
-  const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Distinta di Consegna Biancheria</title><style>'+
-'*{box-sizing:border-box;margin:0;padding:0;}'+
-'body{font-family:\'Helvetica Neue\',Arial,sans-serif;color:#111;font-size:10.5pt;}'+
-'@page{size:A4;margin:16mm;}'+
-'.hdr{border-bottom:1.5px solid #111;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;}'+
-'.title{font-size:14pt;font-weight:700;}'+
-'.sub{font-size:9pt;color:#555;margin-top:2px;}'+
-'.meta{display:flex;gap:30px;margin-bottom:14px;}'+
-'.meta-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;}'+
-'.meta-val{font-weight:700;margin-top:2px;}'+
-'.warn{border:1px solid #999;padding:8px 10px;margin-bottom:14px;font-size:8.5pt;line-height:1.6;color:#333;}'+
-'.sec{font-size:8.5pt;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:#333;margin:16px 0 7px;}'+
-'table{width:100%;border-collapse:collapse;margin-bottom:14px;}'+
-'th{text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:1.5px solid #111;padding:6px;}'+
-'td{padding:6px;border-bottom:1px solid #ccc;font-size:10pt;}'+
-'td.r,th.r{text-align:right;}'+
-'tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-top:8px;}'+
-'.blk{border:1px solid #999;padding:10px 12px;margin-bottom:12px;page-break-inside:avoid;}'+
-'.blk-t{font-size:8.5pt;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:#333;margin-bottom:10px;}'+
-'.row{display:flex;gap:26px;margin-bottom:12px;}'+
-'.f{flex:1;}'+
-'.f-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;margin-bottom:3px;}'+
-'.f-val{font-size:11pt;border-bottom:1px solid #999;padding-bottom:4px;min-height:17px;}'+
-'.sign{border-bottom:1px solid #111;margin-top:32px;}'+
-'.sign-c{font-size:8pt;color:#555;margin-top:4px;}'+
-'</style></head><body>'+
-  '<div class="hdr"><div><div class="title">Distinta di Consegna Biancheria Sporca</div>'+
-    '<div class="sub">Fornitore Raimondo</div></div>'+
-    '<div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">'+esc(BG_HOTELS[h])+'</div></div></div>'+
-  '<div class="meta">'+
-    '<div><div class="meta-lbl">Data ritiro</div><div class="meta-val">'+esc(g.data)+'</div></div>'+
-    '<div><div class="meta-lbl">Consumi del periodo</div><div class="meta-val">'+esc(periodo)+'</div></div>'+
-    '<div><div class="meta-lbl">Totale pezzi</div><div class="meta-val">'+tot+(totResi?' + '+totResi+' inidonei':'')+'</div></div>'+
-  '</div>'+
-  '<div class="warn">'+
-    '&bull; Le quantità indicate corrispondono ai consumi rilevati sui fogli camera del periodo.<br>'+
-    '&bull; I pezzi inidonei viaggiano in un <b>sacco separato</b> e non rientrano nel conteggio della biancheria sporca.<br>'+
-    '&bull; Il rientro del pulito corrispondente è atteso alla consegna successiva.'+
-  '</div>'+
-  '<table><thead><tr><th>Tipologia pezzo</th><th class="r" style="width:90px;">Quantità</th></tr></thead>'+
-    '<tbody>'+rowsSporco+'</tbody>'+
-    '<tfoot><tr><td>Totale pezzi consegnati</td><td class="r">'+tot+'</td></tr></tfoot></table>'+
-  bloccoResi+
-  '<div class="blk"><div class="blk-t">Ritiro Fornitore Raimondo</div>'+
-    '<div class="row">'+
-      '<div class="f"><div class="f-lbl">Data ritiro</div><div class="f-val">'+esc(g.data)+'</div></div>'+
-      '<div class="f"><div class="f-lbl">Totale pezzi</div><div class="f-val">'+(tot+totResi)+'</div></div>'+
-      '<div class="f"><div class="f-lbl">Sacchi n&deg;</div><div class="f-val">&nbsp;</div></div>'+
-    '</div><div class="sign"></div><div class="sign-c">Firma per ricevuta &mdash; Fornitore Raimondo</div></div>'+
-  '<div class="blk"><div class="blk-t">Consegna a cura di</div>'+
-    '<div class="row">'+
-      '<div class="f"><div class="f-lbl">Nome</div><div class="f-val">&nbsp;</div></div>'+
-      '<div class="f"><div class="f-lbl">Data</div><div class="f-val">&nbsp;</div></div>'+
-    '</div><div class="sign"></div><div class="sign-c">Firma Resident Manager</div></div>'+
-'</body></html>';
-
-  const w=window.open('','_blank');
-  if(!w){alert('Il browser ha bloccato la finestra di stampa. Consenti le finestre pop-up per questo sito.');return false;}
-  w.document.write(html);w.document.close();
-  setTimeout(()=>w.print(),400);
-  return true;
-}
 
 /* ── avvio ────────────────────────────────────────────────────────────── */
-bgCarica();
-render();
+gbLoad();
 </script>
 </body>
 </html>
