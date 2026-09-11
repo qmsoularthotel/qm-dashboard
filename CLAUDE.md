@@ -58,9 +58,10 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`dvr.html`** — App separata per consultare/gestire il DVR (General Manager)
 - **`reception.html`** — Cassa di reception (fondo cassa, incasso contante) — vedi la sua sezione
 - **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
+- **`biancheria-galleria.html`** — App del Resident Manager per il ciclo biancheria di Art Resort e Art Suite Santa Brigida. **Anche questa sta fuori da Compass**: nessun cloud, dati solo nel browser — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 664 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 720 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **5 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr) sono
 accendibili e spegnibili da remoto — vedi [Pannello App](#pannello-app--centro-controllo-app-standalone).
@@ -2487,6 +2488,145 @@ export — da sistemare solo se lo chiedono:
 
 ---
 
+---
+
+## Biancheria Galleria — l'app del Resident Manager, fuori da Compass
+
+`biancheria-galleria.html`. Versione **semplificata** del ciclo pulito/sporco e dei resi per
+le due strutture che fanno capo al **Resident Manager**: **Art Resort** e **Art Suite Santa
+Brigida**. Sono esattamente le due che i moduli di Compass (`§§ BIANCHERIA`, `§§ RESI
+BIANCHERIA`) lasciano fuori di proposito, perché fanno capo al Sig. Maddaloni e non al QM.
+
+**Non si tocca CLAUDE.md di Compass per sbaglio**: questo file non condivide una riga di
+codice con `app.js`. È un'app a sé, come `registration-galleria.html`.
+
+### Cosa fa e cosa NON fa
+
+Il modello è quello confermato dal QM il 07/09/2026, stesso fornitore: *quello che Raimondo
+prende deve riportarlo*, quindi **atteso a questa consegna = sporco consegnato alla consegna
+precedente**, e il cumulato è merce che manca davvero.
+
+| C'è | Non c'è |
+|---|---|
+| consumi giornalieri, sette voci, ricopiati dai fogli camera | giacenza di magazzino, chi ha i pezzi in mano |
+| registrazione della consegna con confronto su cosa ha riportato | report andamento e grafici di resa per la direzione |
+| pezzi inidonei, in sacco separato ma **sulla stessa distinta** | firma sullo schermo (si stampa e si fa firmare su carta) |
+| storico, dettaglio per tipologia, cumulato per voce | qualunque contatto col cloud |
+| distinta A4 da far firmare a Raimondo | app per le cameriere |
+
+Chiesto così dal QM (11/09/2026): desktop, perché la gestisce il Resident dal PC; consumi
+giornalieri e non conta al sacco; niente cloud; distinta su carta.
+
+### DUE CALENDARI DIVERSI — è la ragione per cui non si poteva riusare il modulo di Compass
+
+```js
+const BG_GIORNI={ar:[1,3,5],sb:[2,4,6]};   // 0=domenica
+```
+
+**Art Resort: lunedì, mercoledì, venerdì. Santa Brigida: martedì, giovedì, sabato.** Compass
+ha un calendario solo (`BIA_GIORNI_GIRO`) perché SoulArt e Boutique passano insieme. Pescare
+il calendario dell'altra struttura sposta il periodo di un giorno, cioè fa uscire o entrare
+**una giornata intera di consumi** — e non lo si vede guardando: i numeri restano plausibili.
+Tre controlli lo sorvegliano.
+
+### Il periodo ritirato — stessa regola di Compass, stesso motivo
+
+> La consegna del giorno D ritira i consumi **dalla consegna precedente (inclusa) al giorno
+> prima di D (incluso)**. Il consumo del giorno stesso esce la volta dopo.
+
+Raimondo passa alle **8:00**, prima che le camere si facciano. **Se cambia il suo orario, qui
+va cambiata anche la regola dei pezzi inidonei**, che segue lo stesso taglio: quelli trovati
+il giorno del giro non sono nel sacco.
+
+Il `dal` viene dalle **consegne realmente registrate**, non dal calendario: se una salta, la
+successiva copre da sola il buco. Il calendario serve **solo alla primissima consegna**, e i
+consumi più vecchi restano fuori — sono già usciti con i giri fatti prima che l'app esistesse.
+`_bgPeriodo` restituisce anche `fonte` (`consegna` · `calendario`), **sempre mostrata**: un
+intervallo di date senza spiegazione non permette di accorgersi che è sbagliato.
+
+### La data proposta è la prossima consegna DA REGISTRARE, non il prossimo giorno
+
+`_bgCalProx` parte dal **giorno dopo l'ultima consegna registrata**, non da oggi. Chi è
+rimasto indietro si vede quindi proporre la **più vecchia che manca**, che è l'ordine giusto
+in cui inserirle: ognuna ha bisogno della precedente per sapere cosa era uscito. Partendo da
+oggi, la maschera si apriva su una data già registrata e mostrava l'avviso *"esiste già"*
+tutte le volte.
+
+### La data scelta è uno STATO, non un valore riletto dal campo
+
+`_bgDataConsegna` (azzerata da `bgSetHotel`, da una registrazione e da un'eliminazione). Il
+campo `<input type="date">` sopravvive al ridisegno: leggendola da lì, cambiando linguetta
+**Santa Brigida si apriva sulla data di Art Resort**, con l'avviso *"di norma qui il giro
+passa martedì, giovedì e sabato"* — cioè l'app accusava l'utente di un errore fatto da sé.
+
+### Uno zero mai inserito non è uno zero
+
+`_bgRegistrata(g)` pretende `_bgTot(ricevuto) > 0`. L'app salva **sempre tutte e sette** le
+voci, quindi una consegna mai compilata arriva con sette zeri dentro: guardare solo se
+l'oggetto ha delle chiavi non basta. Una consegna in cui Raimondo non riporta niente non
+esiste — quello che prende deve riportarlo — quindi un totale a zero significa *"nessuno ha
+scritto cosa ha riportato"*. Senza questa regola quelle righe inventano un ammanco pari a
+tutto ciò che era uscito. Le consegne non registrate restano **visibili** ma fuori da saldo,
+riepilogo e dettaglio, e lo dichiarano (`non registrato` · `fuori conteggio`).
+
+### Solo un ammanco è rosso
+
+`_bgCol` / `_bgCls` / `_bgTxt`: `d<0` rosso, tutto il resto **verde**, numero e riga insieme.
+In pari e rientro in più sono due notizie buone; un `+8` dipinto di rosso si legge come una
+perdita. È lo stesso errore già corretto due volte in Compass — non reintrodurlo colorando
+solo il numero e lasciando la riga tinta.
+
+### I dati stanno SOLO nel browser del Resident
+
+Chiave `bg_biancheria` in `localStorage`. **Il prefisso `bg_` non è decorativo**: una chiave
+`qm_` entrerebbe nel giro di sincronizzazione di Compass e le due app si sovrascriverebbero.
+
+Nessuna fetch verso il Worker, e nessuna schermata di abilitazione: il Resident non ha il
+lasciapassare, e darglielo per questo vorrebbe dire dargli accesso all'archivio di Compass.
+Le uniche due `fetch` del file puntano al **proprio file**, per l'aggiornamento automatico.
+
+**Il prezzo, accettato consapevolmente**: nessuna sincronizzazione fra dispositivi, nessun
+backup notturno su Drive, e svuotare la cronologia cancella tutto. Per questo c'è **Copia di
+sicurezza** (scarica/ricarica un JSON) ed è l'unica rete che questa app ha — il pannello lo
+dice a chiare lettere invece di lasciarlo scoprire il giorno in cui serve. Se `localStorage`
+rifiuta la scrittura (quota piena, navigazione privata) compare un avviso esplicito: è
+l'unico modo in cui l'app perde dati.
+
+### I controlli
+
+**56 controlli** in `test/galleria.js`, caricati da `test/esegui.sh` come `app.js` — lo
+script principale della pagina viene estratto dall'HTML (l'**ultimo** blocco `<script>`) e la
+direttiva `'use strict'` tolta, altrimenti in eval stretto le `var` resterebbero chiuse
+dentro e le funzioni non sarebbero raggiungibili. Le due strade (Node e `osascript`) fanno la
+stessa cosa: **toccandone una, aggiornare anche l'altra**.
+
+`riepilogo()` resta nell'ultima riga di `test/mime.js`: `galleria.js` si carica **prima**.
+
+Verificati sabotando il codice: giorno del giro incluso nel periodo (5 falliscono), atteso
+pescato dall'altra struttura (1), rientro in più di nuovo rosso (1), sette zeri contati come
+uno zero vero (5), data proposta di nuovo da oggi (4), linguetta che non azzera la data (2).
+
+Tre sentinelle in `test/esegui.sh`, anch'esse provate sabotandole: nessuna fetch verso il
+Worker, nessuna chiave `qm_*`, aggiornamento automatico ancora al suo posto. L'ultima cerca
+la **dichiarazione** (`function qmCheckVersione(`) e non la stringa: un `grep -q
+qmCheckVersione` passa anche su una funzione rinominata, cioè mai più chiamata.
+
+### Verificato in browser
+
+Chromium, con dati sintetici: nessun errore JS, la distinta sta in **una pagina sola** (resi
+compresi), nessuno scorrimento orizzontale a 760px, e il ciclo completo fatto dall'interfaccia
+— due giornate di consumi, un reso, registrazione — produce i totali attesi e li salva.
+
+### Se un domani serve
+
+- **Una terza struttura**: una riga in `BG_HOTELS` e una in `BG_GIORNI`/`BG_GIORNI_TXT`.
+- **Portarla sul cloud**: servirebbe dare il lasciapassare al Resident, quindi l'accesso
+  all'archivio di Compass. Vanno prima separate le chiavi lato Worker — non basta cambiare
+  `bg_` in `qm_`, e la sentinella lo impedisce apposta.
+- **Due distinte separate** (sporco e inidonei su fogli diversi): oggi è **una sola con due
+  sezioni**, perché è un passaggio solo e una firma sola. Se il fornitore ne vuole due,
+  `bgStampa` va spezzata — i dati ci sono già tutti.
+
 ## Pannello di Controllo — due voci: Applicazioni e Sicurezza
 
 Dal **06/09/2026** la sezione di menu si chiama **Pannello di Controllo** e contiene tre voci:
@@ -4360,7 +4500,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto, pausa della finestra abbandonata. 664 controlli.
+scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto, pausa della finestra abbandonata, calendari e periodo dell'app biancheria della Galleria. 720 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire

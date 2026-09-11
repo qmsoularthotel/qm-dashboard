@@ -27,12 +27,22 @@ const worker   = leggi('worker.js')
   .replace("import { connect } from 'cloudflare:sockets';", 'var connect=function(){};')
   .replace('export default {', 'var _workerFetch = {')
   .replace(/^(\s*)(const|let)\s/gm, '$1var ');
-const casi     = leggi('test/controlli.js') + '\n' + leggi('test/mime.js');
+// biancheria-galleria.html e' un'app a se', fuori da Compass e fuori dal cloud: non ha
+// nessun'altra rete sotto. Si estrae il suo script principale (l'ULTIMO blocco <script>
+// del file) e lo si carica come app.js. La direttiva 'use strict' va tolta: in eval
+// stretto le var resterebbero chiuse dentro e le funzioni non sarebbero raggiungibili.
+const galleriaHtml = leggi('biancheria-galleria.html');
+const gFine   = galleriaHtml.lastIndexOf('</script>');
+const gInizio = galleriaHtml.lastIndexOf('<script>', gFine);
+const galleria = galleriaHtml.slice(gInizio + 8, gFine)
+  .replace(/\x27use strict\x27;/, '')
+  .replace(/^(\s*)(const|let)\s/gm, '$1var ');
+const casi     = leggi('test/controlli.js') + '\n' + leggi('test/galleria.js') + '\n' + leggi('test/mime.js');
 
 try {
   // indirect eval: esegue nello scope globale, così le funzioni restano raggiungibili
   const globalEval = eval;
-  globalEval(ambiente + '\n' + app + '\n' + worker + '\n' + casi);
+  globalEval(ambiente + '\n' + app + '\n' + worker + '\n' + galleria + '\n' + casi);
   console.log(typeof KO !== 'undefined' && KO > 0 ? 'ESITO:FALLITO' : 'ESITO:OK');
 } catch (e) {
   console.log('\nERRORE DURANTE I CONTROLLI: ' + (e && e.message ? e.message : e));

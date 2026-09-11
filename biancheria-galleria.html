@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biancheria Galleria — Compass QM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#eef1f5;--surface:#f8f9fb;--surface2:#e8ecf1;
+  --border:#cdd4de;--border-light:#dde2ea;
+  --text:#0c1f33;--text-dim:#4a5568;--text-muted:#888;
+  --accent:#1c3a5e;--accent-bg:#e3eaf4;--gold:#c9952f;
+  --green:#2e7d32;--green-bg:#e8f5e9;
+  --red:#c62828;--red-bg:#ffebee;
+  --amber:#a05a00;--amber-bg:#fdf3e3;
+  --shadow:0 1px 4px rgba(0,0,0,.08);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
+
+/* TOPBAR — stesso linguaggio delle altre app Compass */
+.topbar{background:var(--accent);border-bottom:2px solid var(--gold);color:#fff;padding:14px 20px 12px;display:flex;align-items:center;gap:11px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:17px;font-weight:700;letter-spacing:-.01em;}
+.topbar-sub{font-size:11px;opacity:.65;margin-top:1px;}
+.topbar-sp{flex:1;}
+.topbar-hint{font-size:11px;opacity:.6;}
+
+.shell{max-width:1120px;margin:0 auto;padding:18px 18px 60px;}
+
+/* LINGUETTE STRUTTURA */
+.tabs{display:flex;gap:8px;margin-bottom:16px;}
+.tab{flex:1;background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:10px;padding:11px 16px;cursor:pointer;text-align:left;font-family:inherit;}
+.tab:hover{background:var(--surface2);}
+.tab.on{border-top-color:var(--gold);background:var(--surface);box-shadow:var(--shadow);}
+.tab-n{font-size:14px;font-weight:700;color:var(--text-dim);}
+.tab.on .tab-n{color:var(--text);}
+.tab-s{font-size:11px;color:var(--text-muted);margin-top:2px;}
+
+/* PANNELLI */
+.panel{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:12px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:13px 18px;border-bottom:1px solid var(--border-light);background:var(--surface);}
+.panel-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);}
+.panel-body{padding:16px 18px 18px;}
+
+/* STATO IN TESTA */
+.stato{display:flex;gap:14px;flex-wrap:wrap;}
+.stato-box{flex:1;min-width:190px;border:1px solid var(--border-light);border-radius:10px;padding:12px 14px;background:var(--bg);}
+.stato-l{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:4px;}
+.stato-v{font-size:19px;font-weight:300;line-height:1.2;}
+.stato-s{font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.5;}
+
+/* TABELLE */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:700;padding:7px 8px;border-bottom:1.5px solid var(--border);white-space:nowrap;}
+td{padding:7px 8px;border-bottom:1px solid var(--border-light);vertical-align:middle;}
+th.r,td.r{text-align:right;}
+tfoot td{border-top:1.5px solid var(--border);border-bottom:none;font-weight:700;}
+.tbl-wrap{overflow-x:auto;}
+
+/* CAMPI */
+input[type=number],input[type=text],input[type=date],select{font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);}
+input[type=number]{width:78px;text-align:right;}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg);}
+label.f{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:700;margin-bottom:4px;}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;}
+.row>div{min-width:0;}
+
+/* BOTTONI */
+.btn{font-family:inherit;font-size:13px;font-weight:600;padding:9px 17px;border-radius:7px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);}
+.btn:hover{background:var(--surface2);}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;}
+.btn-primary:hover{background:#16304e;transform:translateY(-1px);box-shadow:0 3px 10px rgba(28,58,94,.28);}
+.btn-sm{font-size:11px;padding:5px 11px;}
+.btn-link{background:none;border:none;color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;padding:3px 5px;}
+.btn-link:hover{text-decoration:underline;}
+.btn-link.danger{color:var(--red);}
+
+/* AVVISI */
+.avviso{border:1px solid var(--amber);border-left-width:4px;border-radius:9px;background:var(--amber-bg);padding:10px 13px;font-size:12px;line-height:1.55;color:var(--text);margin-bottom:13px;}
+.avviso.ok{border-color:var(--green);background:var(--green-bg);}
+.avviso.ko{border-color:var(--red);background:var(--red-bg);}
+.avviso b{font-weight:700;}
+.nota{font-size:11px;color:var(--text-dim);line-height:1.6;}
+.vuoto{font-size:12px;color:var(--text-muted);padding:6px 0;}
+
+.pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--surface2);color:var(--text-dim);}
+.pill.amber{background:var(--amber-bg);color:var(--amber);}
+.pill.green{background:var(--green-bg);color:var(--green);}
+.pill.red{background:var(--red-bg);color:var(--red);}
+
+.r-neg{color:var(--red);font-weight:700;}
+.r-pos{color:var(--green);font-weight:700;}
+tr.bg-neg{background:rgba(198,40,40,.06);}
+tr.bg-pos{background:rgba(46,125,50,.06);}
+
+@media(max-width:760px){
+  .shell{padding:14px 12px 40px;}
+  .tabs{flex-direction:column;}
+  .stato-box{min-width:100%;}
+}
+</style>
+</head>
+<body>
+
+<script>
+// ── AGGIORNAMENTO AUTOMATICO ──
+// Un'app aperta e mai chiusa continua a usare il codice con cui e' stata caricata. Si
+// confronta l'ETag del proprio file (cambia solo se cambia il contenuto: nessun numero di
+// versione da ricordare) e, in piu', la versione scritta dentro la pagina.
+// NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
+// testa allo script principale: qui non si parla mai col Worker di Compass.
+const QM_APP_BUILD='2026-09-11.1';
+let _qmVersioneFile=null,_qmVersioneTs=0;
+function _qmRicarica(){
+  try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
+  location.replace(location.pathname+'?v='+Date.now());
+}
+async function qmCheckBuild(){
+  try{
+    const r=await fetch(location.pathname+'?c='+Date.now(),{cache:'no-store'});
+    const t=await r.text();
+    const m=t.match(/QM_APP_BUILD='([^']+)'/);
+    if(m&&m[1]&&m[1]!==QM_APP_BUILD)_qmRicarica();
+  }catch(e){}
+}
+async function qmCheckVersione(){
+  const ora=Date.now(); if(ora-_qmVersioneTs<20000)return; _qmVersioneTs=ora;
+  try{
+    const r=await fetch(location.pathname,{method:'HEAD',cache:'no-store'});
+    const v=r.headers.get('ETag')||r.headers.get('Last-Modified')||'';
+    if(!v)return;
+    if(_qmVersioneFile===null){_qmVersioneFile=v;return;}
+    if(v===_qmVersioneFile)return;
+    const a=document.activeElement;
+    if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return;   // sta scrivendo: non ora
+    location.reload();
+  }catch(e){}
+}
+qmCheckBuild();
+qmCheckVersione();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckVersione();});
+window.addEventListener('pageshow',e=>{if(e&&e.persisted)qmCheckVersione();});
+window.addEventListener('focus',()=>qmCheckVersione());
+setInterval(qmCheckVersione,600000);
+</script>
+
+<div class="topbar">
+  <svg viewBox="0 0 36 36" width="28" height="28" style="flex-shrink:0;" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="18,1 21,13 27,9 23,15 35,18 23,21 27,27 21,23 18,35 15,23 9,27 13,21 1,18 13,15 9,9 15,13" fill="#c9952f"/>
+    <polygon points="18,6 20,14 18,12 16,14" fill="rgba(255,255,255,.5)"/>
+    <polygon points="18,30 16,22 18,24 20,22" fill="rgba(255,255,255,.25)"/>
+  </svg>
+  <div>
+    <div class="topbar-title">Biancheria — Fornitore Raimondo</div>
+    <div class="topbar-sub">Galleria Umberto I · Art Resort e Art Suite Santa Brigida</div>
+  </div>
+  <div class="topbar-sp"></div>
+  <div class="topbar-hint" id="salvatoHint"></div>
+</div>
+
+<div class="shell"><div id="app"></div></div>
+
+<script>
+'use strict';
+/* ===========================================================================
+   BIANCHERIA GALLERIA — app a sé, FUORI da Compass
+   ---------------------------------------------------------------------------
+   Versione semplificata del ciclo pulito/sporco + resi per le due strutture che
+   fanno capo al Resident Manager: Art Resort e Art Suite Santa Brigida.
+
+   NON PARLA MAI COL CLOUD DI COMPASS, ed è una scelta, non una dimenticanza:
+   il Resident non ha (e non deve avere) il lasciapassare del Worker. Tutto vive
+   nel localStorage di questo browser, sotto il prefisso `bg_` — mai `qm_`, così
+   non può collidere con nessuna chiave che Compass sincronizza. Il prezzo è che
+   i dati stanno su un computer solo: per questo c'è "Copia di sicurezza", ed è
+   l'unico punto in cui questa scelta può fare male.
+   Un controllo in test/esegui.sh verifica che non ricompaia una fetch verso il
+   Worker: succederebbe in silenzio e l'app smetterebbe di funzionare qui.
+
+   IL MODELLO (confermato dal QM il 07/09/2026, stesso fornitore):
+     quello che Raimondo prende deve riportarlo
+     → atteso a questa consegna = sporco consegnato alla consegna PRECEDENTE
+     → il cumulato delle differenze è merce che manca davvero, non uno
+       sfasamento fra un giro e l'altro.
+   =========================================================================== */
+
+const BG_KEY='bg_biancheria';
+const BG_HOTELS={ar:'Art Resort',sb:'Art Suite Santa Brigida'};
+// Calendario di Raimondo, DIVERSO per struttura (0=domenica):
+//   Art Resort      → lunedì, mercoledì, venerdì
+//   Santa Brigida   → martedì, giovedì, sabato
+// Serve in due punti soltanto: a proporre la data della prossima consegna, e a
+// dare un "dal" alla PRIMA consegna in assoluto, quando non c'è ancora una
+// consegna precedente da cui partire. Tutte le altre volte comanda lo storico.
+const BG_GIORNI={ar:[1,3,5],sb:[2,4,6]};
+const BG_GIORNI_TXT={ar:'lunedì, mercoledì e venerdì',sb:'martedì, giovedì e sabato'};
+const BG_GG=['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+
+// Le sette voci del foglio camera. I dati salvati sono indicizzati per NOME:
+// riordinare non sposta nessun numero, RINOMINARE orfana i valori già salvati.
+const BG_VOCI=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno'];
+// Pezzi inidonei: tipologie più larghe (qui rientra anche ciò che non è sul
+// foglio camera — accappatoi, tovaglie) e motivo della resa.
+const BG_RESI_TIP=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Copripiumino matrimoniale','Copripiumino singolo','Coprimaterasso','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno','Accappatoio','Tovaglia','Tovagliolo'];
+const BG_RESI_MOTIVI=['Macchiata','Strappata','Usurata','Ingiallita','Bruciata','Scolorita','Altro'];
+
+let _bg={consumi:[],consegne:[],resi:[]};
+let _bgHotel='ar';
+let _bgStoricoAperto=new Set();   // fuori da render(): dentro si richiuderebbe da solo
+let _bgSaldoAperto=false;
+
+/* ── utilità ──────────────────────────────────────────────────────────── */
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const _bgUid=()=>Date.now()+'_'+Math.random().toString(36).slice(2,8);
+const _bgH=x=>x.hotel||'ar';
+function _bgFmt(d){const x=d instanceof Date?d:new Date(d);return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear();}
+function _bgParse(s){const m=String(s||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;}
+function _bgToIso(s){const d=_bgParse(s);return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'):'';}
+function _bgFromIso(s){const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:'';}
+function _bgOggi(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function _bgVuote(){const o={};BG_VOCI.forEach(v=>o[v]=0);return o;}
+function _bgTot(q){return BG_VOCI.reduce((s,v)=>s+(Number(q&&q[v])||0),0);}
+function _bgNum(id){const e=document.getElementById(id);return Math.max(0,Number(e&&e.value)||0);}
+
+/* ── archivio (solo localStorage) ─────────────────────────────────────── */
+function bgCarica(){
+  try{
+    const s=localStorage.getItem(BG_KEY);
+    if(s){const o=JSON.parse(s)||{};_bg={consumi:o.consumi||[],consegne:o.consegne||[],resi:o.resi||[]};}
+  }catch(e){}
+}
+function bgSalva(){
+  try{
+    localStorage.setItem(BG_KEY,JSON.stringify(_bg));
+    _bgHint('salvato '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){
+    // Quota piena o navigazione privata: è l'unico modo in cui questa app perde
+    // dati, e va detto — non si scopre da soli che un salvataggio non è passato.
+    alert('ATTENZIONE: non è stato possibile salvare.\n\nI dati inseriti ora NON sono al sicuro. Scarica subito una copia di sicurezza e avvisa il Quality Manager.');
+  }
+}
+function _bgHint(t){const e=document.getElementById('salvatoHint');if(e)e.textContent=t;}
+
+/* ── selezioni per struttura ──────────────────────────────────────────── */
+function _bgConsumi(h){const x=h||_bgHotel;return _bg.consumi.filter(c=>_bgH(c)===x).sort((a,b)=>(_bgParse(a.data)||0)-(_bgParse(b.data)||0));}
+function _bgConsegne(h){const x=h||_bgHotel;return _bg.consegne.filter(g=>_bgH(g)===x).sort((a,b)=>(_bgParse(a.data)||0)-(_bgParse(b.data)||0));}
+function _bgResi(h){const x=h||_bgHotel;return _bg.resi.filter(r=>_bgH(r)===x).sort((a,b)=>(_bgParse(a.data)||0)-(_bgParse(b.data)||0));}
+function _bgResiAperti(h){return _bgResi(h).filter(r=>!r.consegnaId);}
+
+/* ── calendario ───────────────────────────────────────────────────────── */
+function _bgGiornoGiro(h,d){return BG_GIORNI[h].includes(d.getDay());}
+// Ultimo giorno di calendario in cui Raimondo sarebbe passato PRIMA di d.
+function _bgCalPrec(h,d){
+  const x=new Date(d.getTime());
+  for(let i=0;i<7;i++){x.setDate(x.getDate()-1);if(_bgGiornoGiro(h,x))return x;}
+  return new Date(d.getTime()-86400000);
+}
+// La prossima consegna DA REGISTRARE, che non è semplicemente "il prossimo giorno di
+// calendario": si parte dal giorno dopo l'ultima consegna registrata, così se si è
+// rimasti indietro viene proposta la più VECCHIA che manca — ed è l'ordine giusto in cui
+// inserirle, perché ognuna ha bisogno della precedente per sapere cosa Raimondo doveva
+// riportare. Proponendo sempre oggi, invece, la maschera si apriva su una data già
+// registrata e mostrava l'avviso "esiste già" a ogni apertura.
+function _bgCalProx(h){
+  const cons=_bgConsegne(h);
+  let x;
+  if(cons.length){
+    const ultima=_bgParse(cons[cons.length-1].data);
+    x=ultima?new Date(ultima.getTime()+86400000):_bgOggi();
+  }else x=_bgOggi();
+  for(let i=0;i<8;i++){if(_bgGiornoGiro(h,x))return x;x.setDate(x.getDate()+1);}
+  return x;
+}
+
+/* ── periodo ritirato ─────────────────────────────────────────────────────
+   La consegna del giorno D ritira i consumi dalla consegna precedente
+   (INCLUSA) al giorno prima di D (incluso). Il consumo del giorno stesso resta
+   FUORI: Raimondo passa alle 8 del mattino, prima che le camere si facciano,
+   quindi quello sporco lo ritira la volta dopo.
+   Il "dal" viene dalle consegne REALMENTE registrate, non dal calendario: se
+   una consegna salta, la successiva copre da sola il buco. Il calendario serve
+   solo alla primissima consegna, quando non c'è nulla prima — e serve perché i
+   giri avvengono comunque, registrati qui o no: i consumi più vecchi sono già
+   usciti e non vanno rimessi in questo sacco.                                */
+function _bgPeriodo(h,dataConsegna){
+  const d=_bgParse(dataConsegna);if(!d)return null;
+  const al=new Date(d.getTime()-86400000);
+  const prec=_bgConsegne(h).filter(g=>{const gd=_bgParse(g.data);return gd&&gd<d;});
+  let dal,fonte;
+  if(prec.length){dal=_bgParse(prec[prec.length-1].data);fonte='consegna';}
+  else{dal=_bgCalPrec(h,d);fonte='calendario';}
+  if(dal>al)return{dal:dal,al:al,vuoto:true,fonte:fonte};
+  return{dal:dal,al:al,vuoto:false,fonte:fonte};
+}
+function _bgGiorniPeriodo(per){
+  const out=[];if(!per||per.vuoto)return out;
+  for(let x=new Date(per.dal.getTime());x<=per.al;x.setDate(x.getDate()+1))out.push(new Date(x.getTime()));
+  return out;
+}
+// I giorni del periodo senza consumi registrati: sono ciò che rende incompleto
+// lo sporco che esce, ed è la dimenticanza più facile.
+function _bgGiorniSenza(h,per){
+  const avuti=new Set(_bgConsumi(h).map(c=>c.data));
+  return _bgGiorniPeriodo(per).filter(d=>!avuti.has(_bgFmt(d)));
+}
+// Fino a quattro giorni si scrivono coi NOMI ("di lunedì 14 e martedì 15"): un
+// intervallo di date non dice a colpo d'occhio se sono i giorni giusti.
+function _bgPeriodoTxt(per){
+  if(!per)return'—';
+  if(per.vuoto)return'nessun giorno da ritirare';
+  const gg=_bgGiorniPeriodo(per).map(d=>BG_GG[d.getDay()]+' '+String(d.getDate()).padStart(2,'0'));
+  if(gg.length===1)return'di '+gg[0];
+  if(gg.length<=4)return'di '+gg.slice(0,-1).join(', ')+' e '+gg[gg.length-1];
+  return'dal '+_bgFmt(per.dal)+' al '+_bgFmt(per.al)+' ('+gg.length+' giorni)';
+}
+function _bgSomma(h,dal,al){
+  const out=_bgVuote();
+  _bgConsumi(h).forEach(c=>{
+    const d=_bgParse(c.data);if(!d||d<dal||d>al)return;
+    BG_VOCI.forEach(v=>out[v]+=(Number(c.q&&c.q[v])||0));
+  });
+  return out;
+}
+
+/* ── confronto ────────────────────────────────────────────────────────── */
+function _bgPrec(h,dataConsegna){
+  const d=_bgParse(dataConsegna);if(!d)return null;
+  const prec=_bgConsegne(h).filter(g=>{const gd=_bgParse(g.data);return gd&&gd<d;});
+  return prec.length?prec[prec.length-1]:null;
+}
+function _bgAtteso(h,dataConsegna){const p=_bgPrec(h,dataConsegna);return p?(p.consegnato||null):null;}
+
+/* UNO ZERO MAI INSERITO NON È UNO ZERO.
+   Una consegna in cui Raimondo non riporta NIENTE non esiste — quello che
+   prende deve riportarlo. Un totale a zero significa quindi "nessuno ha scritto
+   cosa ha riportato", non "non ha riportato nulla". Guardare solo se l'oggetto
+   `ricevuto` ha delle voci non basta: si salvano sempre tutte e sette, quindi
+   una consegna mai compilata arriva con sette zeri dentro. Senza questa regola
+   quelle righe inventano un ammanco di centinaia di pezzi.                   */
+function _bgRegistrata(g){
+  const r=g&&g.ricevuto;
+  if(!r||typeof r!=='object'||!Object.keys(r).length)return false;
+  return _bgTot(r)>0;
+}
+// Riga di storico già calcolata. `att` viene SEMPRE dall'hotel della consegna.
+function _bgRiga(g){
+  const h=_bgH(g);
+  const prec=_bgPrec(h,g.data);
+  const att=prec?(prec.consegnato||null):null;
+  const reg=_bgRegistrata(g);
+  const portato=_bgTot(g.ricevuto);
+  const dovuto=att?_bgTot(att):null;
+  return{hotel:h,data:g.data,portato:portato,dovuto:dovuto,registrata:reg,
+         uscito:_bgTot(g.consegnato),dataPrec:prec?prec.data:null,
+         delta:(dovuto===null||!reg)?null:portato-dovuto};
+}
+// Cosa ha portato VOCE PER VOCE: un −40 non dice se mancano le federe o i teli
+// doccia, ed è quella la sola informazione con cui si contesta qualcosa.
+function _bgDettaglio(g){
+  const att=_bgAtteso(_bgH(g),g.data);
+  return BG_VOCI.map(v=>{
+    const p=Number(g.ricevuto&&g.ricevuto[v])||0;
+    const d=att?(Number(att[v])||0):null;
+    const u=Number(g.consegnato&&g.consegnato[v])||0;
+    return{voce:v,portato:p,dovuto:d,uscito:u,delta:d===null?null:p-d};
+  }).filter(r=>r.portato||r.dovuto||r.uscito);
+}
+// Cumulato per voce, sulle SOLE consegne registrate e confrontabili: le tre
+// letture del pannello (saldo, riepilogo, dettaglio) devono usare lo stesso
+// insieme, altrimenti raccontano cose diverse.
+function _bgSaldo(h){
+  const out=_bgVuote();let n=0;
+  _bgConsegne(h).forEach(g=>{
+    const att=_bgAtteso(h,g.data);
+    if(!att||!_bgRegistrata(g))return;
+    n++;
+    BG_VOCI.forEach(v=>out[v]+=(Number(g.ricevuto&&g.ricevuto[v])||0)-(Number(att[v])||0));
+  });
+  return{q:out,tot:_bgTot(out),n:n};
+}
+function _bgRiepilogo(h){
+  let portato=0,dovuto=0,n=0,esclusi=0;
+  _bgConsegne(h).forEach(g=>{
+    const att=_bgAtteso(h,g.data);
+    if(!att){return;}
+    if(!_bgRegistrata(g)){esclusi++;return;}
+    n++;portato+=_bgTot(g.ricevuto);dovuto+=_bgTot(att);
+  });
+  return{portato:portato,dovuto:dovuto,n:n,esclusi:esclusi};
+}
+
+/* ── colori: SOLO un ammanco è rosso ──────────────────────────────────────
+   In pari e rientro in più sono tutte e due notizie buone e vanno in verde. Un
+   "+8" dipinto di rosso (o di ambra) si legge come una perdita e fa perdere
+   fiducia in tutto il pannello.                                              */
+const _bgCol=d=>d==null?'var(--text-dim)':(d<0?'var(--red)':'var(--green)');
+const _bgTxt=d=>d==null?'—':(d===0?'in pari':(d>0?'+'+d:String(d)));
+const _bgCls=d=>d==null||d===0?'':(d<0?'bg-neg':'bg-pos');
+
+/* =========================================================================
+   RENDER
+   ========================================================================= */
+function bgSetHotel(h){if(!BG_HOTELS[h])return;_bgHotel=h;_bgStoricoAperto.clear();_bgDataConsegna=null;render();}
+function bgToggleStorico(id){_bgStoricoAperto.has(id)?_bgStoricoAperto.delete(id):_bgStoricoAperto.add(id);render();}
+function bgToggleSaldo(){_bgSaldoAperto=!_bgSaldoAperto;render();}
+
+function render(){
+  const h=_bgHotel;
+  document.getElementById('app').innerHTML=
+    vTabs()+vStato(h)+vConsegna(h)+vConsumi(h)+vResi(h)+vStorico(h)+vBackup();
+}
+
+/* ── linguette ────────────────────────────────────────────────────────── */
+function vTabs(){
+  return '<div class="tabs">'+Object.keys(BG_HOTELS).map(k=>{
+    const ap=_bgResiAperti(k).length;
+    return '<button class="tab'+(k===_bgHotel?' on':'')+'" onclick="bgSetHotel(\''+k+'\')">'+
+      '<div class="tab-n">'+esc(BG_HOTELS[k])+'</div>'+
+      '<div class="tab-s">Raimondo passa '+BG_GIORNI_TXT[k]+(ap?' · '+ap+' inidonei in attesa':'')+'</div>'+
+    '</button>';
+  }).join('')+'</div>';
+}
+
+/* ── stato in testa ───────────────────────────────────────────────────── */
+function vStato(h){
+  const cons=_bgConsegne(h);
+  const ultima=cons.length?cons[cons.length-1]:null;
+  const prox=_bgCalProx(h);
+  const s=_bgSaldo(h),rip=_bgRiepilogo(h);
+  const ap=_bgResiAperti(h);
+  const apPezzi=ap.reduce((x,r)=>x+(Number(r.qta)||0),0);
+
+  let vUlt='—',sUlt='Nessuna consegna registrata.';
+  if(ultima){
+    const r=_bgRiga(ultima);
+    vUlt=r.uscito+' pezzi';
+    sUlt='usciti il '+esc(ultima.data)+' — deve riportarli';
+  }
+  const saldoTxt=rip.n?_bgTxt(s.tot):'—';
+  const saldoSub=rip.n
+    ? 'su '+rip.n+' consegn'+(rip.n===1?'a':'e')+' confrontabil'+(rip.n===1?'e':'i')+
+      (rip.esclusi?' · '+rip.esclusi+' senza il dato di cosa ha riportato, escluse dal conto':'')
+    : 'serve almeno una consegna con una precedente da confrontare';
+
+  return '<div class="panel"><div class="panel-head"><div class="panel-title">'+esc(BG_HOTELS[h])+'</div>'+
+    '<div class="nota">Prossima consegna da registrare: <b>'+BG_GG[prox.getDay()]+' '+esc(_bgFmt(prox))+'</b></div></div>'+
+    '<div class="panel-body"><div class="stato">'+
+      '<div class="stato-box"><div class="stato-l">Ultima consegna</div><div class="stato-v">'+vUlt+'</div><div class="stato-s">'+sUlt+'</div></div>'+
+      '<div class="stato-box"><div class="stato-l">Pezzi non rientrati</div>'+
+        '<div class="stato-v" style="color:'+(rip.n?_bgCol(s.tot):'var(--text-dim)')+';">'+saldoTxt+'</div>'+
+        '<div class="stato-s">'+saldoSub+'</div></div>'+
+      '<div class="stato-box"><div class="stato-l">Pezzi inidonei in attesa</div><div class="stato-v">'+apPezzi+'</div>'+
+        '<div class="stato-s">'+(apPezzi?'escono con la prossima consegna':'niente da rendere')+'</div></div>'+
+    '</div>'+
+    (rip.n?'<div class="nota" style="margin-top:12px;">Ha portato <b>'+rip.portato+'</b> pezzi su <b>'+rip.dovuto+'</b> attesi.</div>':'')+
+    '</div></div>';
+}
+
+/* ── registra consegna ────────────────────────────────────────────────── */
+let _bgAttesoVis=null;   // atteso della tabella attualmente a schermo
+
+// La data scelta è uno STATO del modulo, non un valore riletto dal campo: il campo
+// sopravvive al ridisegno, quindi cambiando linguetta portava con sé la data dell'altra
+// struttura — Santa Brigida si apriva su un venerdì, con l'avviso "di norma passa
+// martedì, giovedì e sabato" che accusava l'utente di un errore fatto dall'app.
+let _bgDataConsegna=null;
+function _bgDataConsegnaCorrente(h){
+  return _bgDataConsegna||_bgFmt(_bgCalProx(h));
+}
+function bgSetDataConsegna(iso){_bgDataConsegna=_bgFromIso(iso)||null;render();}
+function vConsegna(h){
+  const data=_bgDataConsegnaCorrente(h);
+  const d=_bgParse(data);
+  const per=_bgPeriodo(h,data);
+  const somma=per&&!per.vuoto?_bgSomma(h,per.dal,per.al):_bgVuote();
+  const att=_bgAtteso(h,data);
+  const prec=_bgPrec(h,data);
+  _bgAttesoVis=att;
+  const senza=per?_bgGiorniSenza(h,per):[];
+  const esiste=_bgConsegne(h).find(g=>g.data===data);
+  // Taglio identico a quello dei consumi: i pezzi inidonei trovati OGGI non
+  // sono nel sacco che Raimondo porta via alle 8.
+  const resiFuori=_bgResiAperti(h).filter(r=>{const rd=_bgParse(r.data);return rd&&d&&rd<d;});
+  const resiRestano=_bgResiAperti(h).length-resiFuori.length;
+  const resiPezzi=resiFuori.reduce((x,r)=>x+(Number(r.qta)||0),0);
+
+  let av='';
+  if(per&&per.fonte==='calendario')
+    av+='<div class="avviso">Nessuna consegna registrata prima di questa: il periodo parte dal giorno di calendario precedente (Raimondo passa '+BG_GIORNI_TXT[h]+'). I consumi più vecchi sono già usciti con i giri fatti prima di usare questa app e restano fuori.</div>';
+  if(d&&!_bgGiornoGiro(h,d))
+    av+='<div class="avviso">Il '+esc(data)+' è un <b>'+BG_GG[d.getDay()]+'</b>: di norma qui il giro passa '+BG_GIORNI_TXT[h]+'. Se è una consegna straordinaria va bene, altrimenti controlla la data.</div>';
+  if(senza.length)
+    av+='<div class="avviso">Non sono stati registrati i consumi di <b>'+senza.map(x=>BG_GG[x.getDay()]+' '+String(x.getDate()).padStart(2,'0')).join(', ')+'</b>: lo sporco che esce è incompleto finché non li inserisci qui sotto.</div>';
+  if(esiste)
+    av+='<div class="avviso">Esiste già una consegna registrata per il '+esc(data)+'. Registrandola di nuovo la sovrascrivi.</div>';
+
+  const rows=BG_VOCI.map((v,i)=>{
+    const s=Number(somma[v])||0;
+    const a=att?(Number(att[v])||0):null;
+    return '<tr>'+
+      '<td>'+esc(v)+'</td>'+
+      '<td class="r"><input type="number" min="0" id="bg-s-'+i+'" value="'+s+'" onfocus="this.select()"></td>'+
+      '<td class="r"><input type="number" min="0" id="bg-r-'+i+'" value="'+(a==null?0:a)+'" onfocus="this.select()" oninput="bgAggiornaDelta()"></td>'+
+      '<td class="r" style="color:var(--text-dim);">'+(a==null?'—':a)+'</td>'+
+      '<td class="r" id="bg-d-'+i+'" style="font-weight:700;">'+(a==null?'—':'in pari')+'</td>'+
+    '</tr>';
+  }).join('');
+
+  const totS=_bgTot(somma),totA=att?_bgTot(att):null;
+
+  return '<div class="panel"><div class="panel-head">'+
+      '<div class="panel-title">Registra la consegna</div>'+
+      '<div class="nota">'+(prec?'Confronto con la consegna del <b>'+esc(prec.data)+'</b>':'Prima consegna: niente con cui confrontare cosa riporta')+'</div>'+
+    '</div><div class="panel-body">'+
+    '<div class="row" style="margin-bottom:14px;">'+
+      '<div><label class="f">Data della consegna</label>'+
+        '<input type="date" id="bg-g-data" value="'+_bgToIso(data)+'" onchange="bgSetDataConsegna(this.value)"></div>'+
+      '<div style="flex:1;min-width:240px;"><label class="f">Sporco che esce</label>'+
+        '<div class="nota" style="padding-top:7px;">Consumi '+esc(_bgPeriodoTxt(per))+' — <b>'+totS+' pezzi</b></div></div>'+
+    '</div>'+
+    av+
+    '<div class="tbl-wrap"><table><thead><tr>'+
+      '<th>Tipologia</th><th class="r" style="width:110px;">Esce oggi</th>'+
+      '<th class="r" style="width:110px;">Ha portato</th><th class="r" style="width:100px;">Doveva</th><th class="r" style="width:100px;">Differenza</th>'+
+    '</tr></thead><tbody>'+rows+'</tbody>'+
+    '<tfoot><tr><td>Totale</td><td class="r">'+totS+'</td>'+
+      '<td class="r" id="bg-r-tot">'+(totA==null?0:totA)+'</td>'+
+      '<td class="r" style="color:var(--text-dim);">'+(totA==null?'—':totA)+'</td>'+
+      '<td class="r" id="bg-d-tot">'+(totA==null?'—':'in pari')+'</td></tr></tfoot></table></div>'+
+    '<div id="bg-msg" class="nota" style="margin-top:10px;"></div>'+
+    (resiFuori.length
+      ? '<div class="avviso" style="margin-top:13px;">Escono anche <b>'+resiPezzi+' pezzi inidonei</b> ('+resiFuori.length+' voc'+(resiFuori.length===1?'e':'i')+'), in sacco separato e sulla stessa distinta.'+
+        (resiRestano?' I '+resiRestano+' registrati oggi restano in attesa: non sono nel sacco delle 8.':'')+'</div>'
+      : (resiRestano?'<div class="nota" style="margin-top:13px;">'+resiRestano+' pezzi inidonei registrati oggi restano in attesa: escono con la consegna successiva.</div>':''))+
+    '<div class="row" style="margin-top:15px;">'+
+      '<button class="btn btn-primary" onclick="bgRegistra(true)">Registra e stampa la distinta</button>'+
+      '<button class="btn" onclick="bgRegistra(false)">Registra soltanto</button>'+
+    '</div>'+
+    '</div></div>';
+}
+
+/* La differenza si aggiorna MENTRE si digita, ma senza rigenerare l'HTML: un
+   render() a ogni tasto rimetterebbe il valore calcolato al posto della cifra
+   appena battuta e farebbe perdere il fuoco al campo — da fuori sembra che il
+   numero non si possa proprio inserire. Si toccano solo le celle interessate.
+   Vale per qualunque casella futura di questo pannello.                      */
+function bgAggiornaDelta(){
+  const att=_bgAttesoVis;
+  let tot=0,totD=0,hanno=false;
+  BG_VOCI.forEach((v,i)=>{
+    const r=_bgNum('bg-r-'+i);tot+=r;
+    const cell=document.getElementById('bg-d-'+i);
+    const row=cell?cell.parentElement:null;
+    if(!att){if(cell)cell.textContent='—';return;}
+    hanno=true;
+    const a=Number(att[v])||0,d=r-a;totD+=d;
+    if(cell){cell.textContent=_bgTxt(d);cell.style.color=_bgCol(d);}
+    if(row){row.className=_bgCls(d);}
+  });
+  const tEl=document.getElementById('bg-r-tot');if(tEl)tEl.textContent=tot;
+  const dEl=document.getElementById('bg-d-tot');
+  if(dEl){dEl.textContent=hanno?_bgTxt(totD):'—';dEl.style.color=hanno?_bgCol(totD):'var(--text-dim)';}
+  const msg=document.getElementById('bg-msg');
+  if(msg){
+    if(!hanno){msg.className='nota';msg.innerHTML='Prima consegna registrata: non c\'è una precedente con cui confrontare quello che riporta.';}
+    else if(totD===0){msg.className='avviso ok';msg.innerHTML='<b>Torna tutto:</b> ha riportato esattamente i '+_bgTot(att)+' pezzi che gli erano stati dati.';}
+    else if(totD<0){msg.className='avviso ko';msg.innerHTML='<b>Mancano '+Math.abs(totD)+' pezzi</b> rispetto a quelli consegnati la volta scorsa. Controlla riga per riga prima di registrare: la differenza finisce nel cumulato.';}
+    else{msg.className='avviso ok';msg.innerHTML='<b>Sono rientrati '+totD+' pezzi in più</b> di quelli consegnati la volta scorsa. Non è un ammanco — di solito è una consegna precedente contata per difetto.';}
+  }
+}
+
+async function bgRegistra(stampa){
+  const h=_bgHotel;
+  const data=_bgFromIso((document.getElementById('bg-g-data')||{}).value||'');
+  if(!data){alert('Indica la data della consegna.');return;}
+  const d=_bgParse(data);
+  const consegnato=_bgVuote(),ricevuto=_bgVuote();
+  BG_VOCI.forEach((v,i)=>{consegnato[v]=_bgNum('bg-s-'+i);ricevuto[v]=_bgNum('bg-r-'+i);});
+  if(_bgTot(consegnato)===0&&!confirm('Non esce nessun pezzo: tutte le quantità sono a zero.\n\nRegistrare comunque la consegna?'))return;
+
+  // I pezzi inidonei aperti e datati PRIMA di oggi escono con questo sacco.
+  const resiFuori=_bgResiAperti(h).filter(r=>{const rd=_bgParse(r.data);return rd&&d&&rd<d;});
+
+  const g=_bgConsegne(h).find(x=>x.data===data);
+  let id;
+  if(g){
+    if(!confirm('Esiste già una consegna del '+data+'.\n\nSovrascriverla con i valori attuali?'))return;
+    // Le righe inidonee già legate a questa consegna vanno liberate prima di
+    // riassegnarle, altrimenti una ri-registrazione ne perde il conto.
+    _bg.resi.forEach(r=>{if(r.consegnaId===g.id)r.consegnaId=null;});
+    g.consegnato=consegnato;g.ricevuto=ricevuto;g.ts=Date.now();id=g.id;
+  }else{
+    id=_bgUid();
+    _bg.consegne.push({id:id,hotel:h,data:data,consegnato:consegnato,ricevuto:ricevuto,ts:Date.now()});
+  }
+  // Lo sporco consegnato resta CONGELATO su questa consegna: correggere più
+  // avanti un consumo giornaliero non deve cambiare le consegne già chiuse né
+  // le distinte già firmate da Raimondo.
+  _bgResiAperti(h).forEach(r=>{const rd=_bgParse(r.data);if(rd&&d&&rd<d)r.consegnaId=id;});
+  _bgDataConsegna=null;   // la prossima proposta la ricalcola _bgCalProx
+  bgSalva();render();
+  if(stampa)bgStampa(id);
+  else _bgHint('consegna del '+data+' registrata');
+}
+
+async function bgEliminaConsegna(id){
+  const g=_bg.consegne.find(x=>x.id===id);if(!g)return;
+  if(!confirm('Eliminare la consegna del '+g.data+'?\n\nLe consegne successive useranno un periodo diverso, e i pezzi inidonei che erano usciti con questa tornano in attesa.'))return;
+  _bg.consegne=_bg.consegne.filter(x=>x.id!==id);
+  _bg.resi.forEach(r=>{if(r.consegnaId===id)r.consegnaId=null;});
+  _bgDataConsegna=null;
+  bgSalva();render();
+}
+
+/* ── consumi giornalieri ──────────────────────────────────────────────── */
+function vConsumi(h){
+  const cons=_bgConsumi(h).slice().reverse().slice(0,14);
+  const oggiIso=_bgToIso(_bgFmt(_bgOggi()));
+  const campi=BG_VOCI.map((v,i)=>
+    '<div><label class="f" title="'+esc(v)+'">'+esc(v.replace('Lenzuolo ','Lenz. ').replace('Asciugamano ','Asc. '))+'</label>'+
+    '<input type="number" min="0" id="bg-c-'+i+'" value="0" onfocus="this.select()"></div>').join('');
+
+  const righe=cons.length?cons.map(c=>
+    '<tr><td>'+esc(c.data)+' <span class="nota">'+BG_GG[(_bgParse(c.data)||new Date()).getDay()]+'</span></td>'+
+    BG_VOCI.map(v=>'<td class="r">'+(Number(c.q&&c.q[v])||0)+'</td>').join('')+
+    '<td class="r" style="font-weight:700;">'+_bgTot(c.q)+'</td>'+
+    '<td class="r"><button class="btn-link danger" onclick="bgEliminaConsumo(\''+c.id+'\')">elimina</button></td></tr>'
+  ).join(''):'<tr><td colspan="'+(BG_VOCI.length+3)+'" class="vuoto">Nessun consumo registrato per questa struttura.</td></tr>';
+
+  return '<div class="panel"><div class="panel-head">'+
+      '<div class="panel-title">Consumi del giorno</div>'+
+      '<div class="nota">Si ricopiano dai fogli camera. La somma dei giorni del periodo <b>è</b> lo sporco che esce.</div>'+
+    '</div><div class="panel-body">'+
+    '<div class="row" style="margin-bottom:6px;">'+
+      '<div><label class="f">Data</label><input type="date" id="bg-cons-data" value="'+oggiIso+'"></div>'+
+      campi+
+      '<div><button class="btn btn-primary" onclick="bgSalvaConsumi()">Salva</button></div>'+
+    '</div>'+
+    '<div class="nota" style="margin-bottom:14px;">Salvando una data già presente se ne sostituiscono i valori.</div>'+
+    '<div class="tbl-wrap"><table><thead><tr><th>Giorno</th>'+
+      BG_VOCI.map(v=>'<th class="r" title="'+esc(v)+'">'+esc(v.split(' ')[0])+'<br>'+esc(v.split(' ').slice(1).join(' '))+'</th>').join('')+
+      '<th class="r">Totale</th><th></th></tr></thead><tbody>'+righe+'</tbody></table></div>'+
+    (_bgConsumi(h).length>14?'<div class="nota" style="margin-top:9px;">Mostrati gli ultimi 14 giorni.</div>':'')+
+    '</div></div>';
+}
+function bgSalvaConsumi(){
+  const data=_bgFromIso((document.getElementById('bg-cons-data')||{}).value||'');
+  if(!data){alert('Indica la data dei consumi.');return;}
+  const q=_bgVuote();
+  BG_VOCI.forEach((v,i)=>q[v]=_bgNum('bg-c-'+i));
+  if(_bgTot(q)===0&&!confirm('Tutti i valori sono a zero.\n\nSalvare comunque i consumi del '+data+'?'))return;
+  const e=_bg.consumi.find(c=>_bgH(c)===_bgHotel&&c.data===data);
+  if(e)e.q=q; else _bg.consumi.push({id:_bgUid(),hotel:_bgHotel,data:data,q:q});
+  bgSalva();render();
+}
+function bgEliminaConsumo(id){
+  const c=_bg.consumi.find(x=>x.id===id);if(!c)return;
+  if(!confirm('Eliminare i consumi del '+c.data+'?\n\nLe consegne già registrate non cambiano: lo sporco uscito resta congelato su ciascuna.'))return;
+  _bg.consumi=_bg.consumi.filter(x=>x.id!==id);
+  bgSalva();render();
+}
+
+/* ── pezzi inidonei ───────────────────────────────────────────────────── */
+function vResi(h){
+  const ap=_bgResiAperti(h);
+  const tot=ap.reduce((x,r)=>x+(Number(r.qta)||0),0);
+  const righe=ap.length?ap.map(r=>
+    '<tr><td>'+esc(r.data)+'</td><td>'+esc(r.tipologia)+'</td><td class="r" style="font-weight:700;">'+(Number(r.qta)||0)+'</td>'+
+    '<td>'+esc(r.motivo||'—')+'</td><td>'+esc(r.nota||'')+'</td>'+
+    '<td class="r"><button class="btn-link danger" onclick="bgEliminaReso(\''+r.id+'\')">elimina</button></td></tr>'
+  ).join(''):'<tr><td colspan="6" class="vuoto">Nessun pezzo inidoneo in attesa.</td></tr>';
+
+  return '<div class="panel"><div class="panel-head">'+
+      '<div class="panel-title">Pezzi inidonei da rendere</div>'+
+      '<div class="nota">Sacco separato, stessa distinta. Escono con la prima consegna successiva alla loro data.</div>'+
+    '</div><div class="panel-body">'+
+    '<div class="row" style="margin-bottom:16px;">'+
+      '<div><label class="f">Data</label><input type="date" id="bg-res-data" value="'+_bgToIso(_bgFmt(_bgOggi()))+'"></div>'+
+      '<div><label class="f">Tipologia</label><select id="bg-res-tip">'+BG_RESI_TIP.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></div>'+
+      '<div><label class="f">Quantità</label><input type="number" min="1" id="bg-res-qta" value="1" onfocus="this.select()"></div>'+
+      '<div><label class="f">Motivo</label><select id="bg-res-mot">'+BG_RESI_MOTIVI.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></div>'+
+      '<div style="flex:1;min-width:150px;"><label class="f">Nota (facoltativa)</label><input type="text" id="bg-res-nota" style="width:100%;" placeholder="camera, chi l\'ha trovato…"></div>'+
+      '<div><button class="btn btn-primary" onclick="bgAggiungiReso()">Aggiungi</button></div>'+
+    '</div>'+
+    '<div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Tipologia</th><th class="r" style="width:90px;">Q.tà</th><th>Motivo</th><th>Nota</th><th></th></tr></thead>'+
+    '<tbody>'+righe+'</tbody>'+
+    (ap.length?'<tfoot><tr><td colspan="2">Totale in attesa</td><td class="r">'+tot+'</td><td colspan="3"></td></tr></tfoot>':'')+
+    '</table></div></div></div>';
+}
+function bgAggiungiReso(){
+  const data=_bgFromIso((document.getElementById('bg-res-data')||{}).value||'');
+  const tip=(document.getElementById('bg-res-tip')||{}).value||'';
+  const qta=parseInt((document.getElementById('bg-res-qta')||{}).value,10);
+  const mot=(document.getElementById('bg-res-mot')||{}).value||'';
+  const nota=((document.getElementById('bg-res-nota')||{}).value||'').trim();
+  if(!data){alert('Indica la data.');return;}
+  if(!tip){alert('Scegli la tipologia del pezzo.');return;}
+  if(isNaN(qta)||qta<=0){alert('Indica una quantità valida.');return;}
+  _bg.resi.push({id:_bgUid(),hotel:_bgHotel,data:data,tipologia:tip,qta:qta,motivo:mot,nota:nota,consegnaId:null});
+  bgSalva();render();
+}
+function bgEliminaReso(id){
+  const r=_bg.resi.find(x=>x.id===id);if(!r)return;
+  if(!confirm('Eliminare questo reso?\n\n'+r.tipologia+' ×'+r.qta+', del '+r.data+'.'))return;
+  _bg.resi=_bg.resi.filter(x=>x.id!==id);
+  bgSalva();render();
+}
+
+/* ── storico ──────────────────────────────────────────────────────────── */
+function vStorico(h){
+  const cons=_bgConsegne(h).slice().reverse();
+  const s=_bgSaldo(h);
+  if(!cons.length)
+    return '<div class="panel"><div class="panel-head"><div class="panel-title">Consegne di Raimondo</div></div>'+
+      '<div class="panel-body"><div class="vuoto">Nessuna consegna registrata per questa struttura.</div></div></div>';
+
+  const righe=cons.map(g=>{
+    const r=_bgRiga(g);
+    const ap=_bgStoricoAperto.has(g.id);
+    let out='<tr class="'+_bgCls(r.delta)+'">'+
+      '<td><b>'+esc(g.data)+'</b> <span class="nota">'+BG_GG[(_bgParse(g.data)||new Date()).getDay()]+'</span></td>'+
+      '<td class="r">'+(r.registrata?'<b>'+r.portato+'</b>':'<span class="pill amber">non registrato</span>')+'</td>'+
+      '<td class="r" style="color:var(--text-dim);">'+(r.dovuto==null?'—':r.dovuto)+'</td>'+
+      '<td class="r" style="color:'+_bgCol(r.delta)+';font-weight:700;">'+(r.registrata?_bgTxt(r.delta):'fuori conteggio')+'</td>'+
+      '<td class="r" style="color:var(--text-dim);">'+r.uscito+'</td>'+
+      '<td class="r">'+
+        '<button class="btn-link" onclick="bgToggleStorico(\''+g.id+'\')">'+(ap?'▾ chiudi':'▸ dettaglio')+'</button>'+
+        '<button class="btn-link" onclick="bgStampa(\''+g.id+'\')">ristampa</button>'+
+      '</td></tr>';
+    if(ap){
+      const det=_bgDettaglio(g);
+      const conf=r.dovuto!=null;
+      const resi=_bg.resi.filter(x=>x.consegnaId===g.id);
+      out+='<tr><td colspan="6" style="background:var(--bg);padding:14px 16px;">'+
+        '<div class="nota" style="margin-bottom:9px;">'+
+          (r.dataPrec?'Doveva riportare i pezzi usciti il <b>'+esc(r.dataPrec)+'</b>. ':'Prima consegna: non c\'è nulla con cui confrontare quello che ha riportato. ')+
+          'I <b>'+r.uscito+'</b> pezzi usciti il '+esc(g.data)+' tornano alla consegna successiva e non contano in questa riga.'+
+        '</div>'+
+        (det.length?'<div class="tbl-wrap"><table><thead><tr><th>Tipologia</th><th class="r">Ha portato</th>'+
+          (conf?'<th class="r">Doveva</th><th class="r">Differenza</th>':'')+'<th class="r">Uscito quel giorno</th></tr></thead><tbody>'+
+          det.map(x=>'<tr><td>'+esc(x.voce)+'</td><td class="r"><b>'+x.portato+'</b></td>'+
+            (conf?'<td class="r" style="color:var(--text-dim);">'+x.dovuto+'</td><td class="r" style="color:'+_bgCol(x.delta)+';font-weight:700;">'+_bgTxt(x.delta)+'</td>':'')+
+            '<td class="r" style="color:var(--text-dim);">'+x.uscito+'</td></tr>').join('')+
+          '</tbody></table></div>':'<div class="vuoto">Nessuna quantità registrata.</div>')+
+        (resi.length?'<div class="nota" style="margin-top:10px;">Usciti con questa consegna anche <b>'+resi.reduce((a,b)=>a+(Number(b.qta)||0),0)+'</b> pezzi inidonei: '+esc(resi.map(x=>x.tipologia+' ×'+x.qta).join(', '))+'.</div>':'')+
+        '<div style="margin-top:12px;"><button class="btn-link danger" onclick="bgEliminaConsegna(\''+g.id+'\')">Elimina questa consegna</button></div>'+
+      '</td></tr>';
+    }
+    return out;
+  }).join('');
+
+  const vociSaldo=BG_VOCI.map(v=>({voce:v,d:Number(s.q[v])||0})).filter(x=>x.d!==0);
+
+  return '<div class="panel"><div class="panel-head">'+
+      '<div class="panel-title">Consegne di Raimondo</div>'+
+      '<div class="nota">Ha portato <b>'+_bgRiepilogo(h).portato+'</b> su <b>'+_bgRiepilogo(h).dovuto+'</b> attesi · saldo <b style="color:'+_bgCol(s.tot)+';">'+_bgTxt(s.tot)+'</b></div>'+
+    '</div><div class="panel-body">'+
+    '<div class="tbl-wrap"><table><thead><tr>'+
+      '<th>Consegna</th><th class="r">Ha portato</th><th class="r">Doveva</th><th class="r">Differenza</th><th class="r">Usciti quel giorno</th><th></th>'+
+    '</tr></thead><tbody>'+righe+'</tbody></table></div>'+
+    '<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:12px;">'+
+      '<button class="btn btn-sm" onclick="bgToggleSaldo()">'+(_bgSaldoAperto?'▾':'▸')+' Pezzi non rientrati, per tipologia</button>'+
+      (_bgSaldoAperto
+        ? (vociSaldo.length
+            ? '<div class="tbl-wrap" style="margin-top:11px;"><table><thead><tr><th>Tipologia</th><th class="r">Differenza cumulata</th></tr></thead><tbody>'+
+              vociSaldo.map(x=>'<tr class="'+_bgCls(x.d)+'"><td>'+esc(x.voce)+'</td><td class="r" style="color:'+_bgCol(x.d)+';font-weight:700;">'+_bgTxt(x.d)+'</td></tr>').join('')+
+              '</tbody><tfoot><tr><td>Totale</td><td class="r" style="color:'+_bgCol(s.tot)+';">'+_bgTxt(s.tot)+'</td></tr></tfoot></table></div>'+
+              '<div class="nota" style="margin-top:8px;">Calcolato su '+s.n+' consegn'+(s.n===1?'a registrata e confrontabile':'e registrate e confrontabili')+'. È il numero con cui si contesta qualcosa al fornitore: dice su quali articoli si concentra.</div>'
+            : '<div class="nota" style="margin-top:11px;">Tutto in pari: nessuna tipologia si scosta.</div>')
+        : '')+
+    '</div></div></div>';
+}
+
+/* ── copia di sicurezza ───────────────────────────────────────────────────
+   Qui non c'è cloud e non c'è backup notturno: mesi di consegne vivono nella
+   cache di questo browser. Cancellarla, o cambiare computer, li porta via
+   senza preavviso. Questo pulsante è l'unica rete.                          */
+function vBackup(){
+  const n=_bg.consegne.length,c=_bg.consumi.length,r=_bg.resi.length;
+  return '<div class="panel"><div class="panel-head"><div class="panel-title">Copia di sicurezza</div>'+
+    '<div class="nota">'+n+' consegne · '+c+' giornate di consumi · '+r+' pezzi inidonei</div></div>'+
+    '<div class="panel-body">'+
+    '<div class="nota" style="margin-bottom:13px;">I dati stanno <b>solo in questo browser, su questo computer</b>. Non c\'è nessuna copia altrove: svuotare la cronologia, cambiare computer o reinstallare il browser li cancella. <b>Scarica una copia ogni tanto</b> e tienila in una cartella — con quella si riparte da dove si era.</div>'+
+    '<div class="row">'+
+      '<button class="btn btn-primary" onclick="bgScarica()">Scarica copia</button>'+
+      '<button class="btn" onclick="document.getElementById(\'bg-file\').click()">Ricarica da una copia</button>'+
+      '<input type="file" id="bg-file" accept="application/json,.json" style="display:none;" onchange="bgRicarica(this)">'+
+    '</div></div></div>';
+}
+function bgScarica(){
+  const blob=new Blob([JSON.stringify({_app:'biancheria-galleria',_ver:1,_ts:Date.now(),dati:_bg},null,1)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='biancheria-galleria-'+_bgFmt(new Date()).replace(/\//g,'-')+'.json';
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
+  _bgHint('copia scaricata');
+}
+function bgRicarica(input){
+  const f=input.files&&input.files[0];input.value='';
+  if(!f)return;
+  const fr=new FileReader();
+  fr.onload=()=>{
+    let o;
+    try{o=JSON.parse(fr.result);}catch(e){alert('Il file non è una copia valida: non si riesce a leggerlo.');return;}
+    const d=o&&o.dati?o.dati:o;
+    if(!d||!Array.isArray(d.consegne)||!Array.isArray(d.consumi)){alert('Il file non sembra una copia di questa app.');return;}
+    if(!confirm('La copia contiene '+d.consegne.length+' consegne e '+d.consumi.length+' giornate di consumi.\n\nSOSTITUISCE tutto quello che c\'è adesso ('+_bg.consegne.length+' consegne, '+_bg.consumi.length+' giornate). L\'operazione non si annulla.\n\nProcedere?'))return;
+    _bg={consumi:d.consumi||[],consegne:d.consegne||[],resi:d.resi||[]};
+    bgSalva();render();
+    _bgHint('copia ricaricata');
+  };
+  fr.readAsText(f);
+}
+
+/* ── distinta A4 ──────────────────────────────────────────────────────────
+   Deliberatamente sobria: testo nero e filetti, nessun fondo pieno. Si stampa
+   tre volte a settimana per struttura — un blocco pieno consuma toner senza
+   aggiungere niente, e in bianco e nero non si perde nessuna informazione.   */
+function bgStampa(id){
+  const g=_bg.consegne.find(x=>x.id===id);
+  if(!g){alert('Consegna non trovata.');return;}
+  const h=_bgH(g);
+  const q=g.consegnato||_bgVuote();
+  const tot=_bgTot(q);
+  const per=_bgPeriodo(h,g.data);
+  const resi=_bg.resi.filter(x=>x.consegnaId===g.id);
+  const totResi=resi.reduce((a,b)=>a+(Number(b.qta)||0),0);
+  const periodo=per&&!per.vuoto?(_bgFmt(per.dal)+' — '+_bgFmt(per.al)):'—';
+
+  const rowsSporco=BG_VOCI.map(v=>'<tr><td>'+esc(v)+'</td><td class="r">'+(Number(q[v])||0)+'</td></tr>').join('');
+  const bloccoResi=resi.length?
+    '<div class="sec">Pezzi inidonei resi — sacco separato</div>'+
+    '<table><thead><tr><th>Data</th><th>Tipologia</th><th style="width:80px;text-align:right;">Q.tà</th><th>Motivo</th></tr></thead><tbody>'+
+    resi.map(r=>'<tr><td>'+esc(r.data)+'</td><td>'+esc(r.tipologia)+'</td><td class="r">'+(Number(r.qta)||0)+'</td><td>'+esc(r.motivo||'')+'</td></tr>').join('')+
+    '</tbody><tfoot><tr><td colspan="2">Totale pezzi inidonei</td><td class="r">'+totResi+'</td><td></td></tr></tfoot></table>':'';
+
+  const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Distinta di Consegna Biancheria</title><style>'+
+'*{box-sizing:border-box;margin:0;padding:0;}'+
+'body{font-family:\'Helvetica Neue\',Arial,sans-serif;color:#111;font-size:10.5pt;}'+
+'@page{size:A4;margin:16mm;}'+
+'.hdr{border-bottom:1.5px solid #111;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;}'+
+'.title{font-size:14pt;font-weight:700;}'+
+'.sub{font-size:9pt;color:#555;margin-top:2px;}'+
+'.meta{display:flex;gap:30px;margin-bottom:14px;}'+
+'.meta-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;}'+
+'.meta-val{font-weight:700;margin-top:2px;}'+
+'.warn{border:1px solid #999;padding:8px 10px;margin-bottom:14px;font-size:8.5pt;line-height:1.6;color:#333;}'+
+'.sec{font-size:8.5pt;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:#333;margin:16px 0 7px;}'+
+'table{width:100%;border-collapse:collapse;margin-bottom:14px;}'+
+'th{text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:1.5px solid #111;padding:6px;}'+
+'td{padding:6px;border-bottom:1px solid #ccc;font-size:10pt;}'+
+'td.r,th.r{text-align:right;}'+
+'tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-top:8px;}'+
+'.blk{border:1px solid #999;padding:10px 12px;margin-bottom:12px;page-break-inside:avoid;}'+
+'.blk-t{font-size:8.5pt;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:#333;margin-bottom:10px;}'+
+'.row{display:flex;gap:26px;margin-bottom:12px;}'+
+'.f{flex:1;}'+
+'.f-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;margin-bottom:3px;}'+
+'.f-val{font-size:11pt;border-bottom:1px solid #999;padding-bottom:4px;min-height:17px;}'+
+'.sign{border-bottom:1px solid #111;margin-top:32px;}'+
+'.sign-c{font-size:8pt;color:#555;margin-top:4px;}'+
+'</style></head><body>'+
+  '<div class="hdr"><div><div class="title">Distinta di Consegna Biancheria Sporca</div>'+
+    '<div class="sub">Fornitore Raimondo</div></div>'+
+    '<div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">'+esc(BG_HOTELS[h])+'</div></div></div>'+
+  '<div class="meta">'+
+    '<div><div class="meta-lbl">Data ritiro</div><div class="meta-val">'+esc(g.data)+'</div></div>'+
+    '<div><div class="meta-lbl">Consumi del periodo</div><div class="meta-val">'+esc(periodo)+'</div></div>'+
+    '<div><div class="meta-lbl">Totale pezzi</div><div class="meta-val">'+tot+(totResi?' + '+totResi+' inidonei':'')+'</div></div>'+
+  '</div>'+
+  '<div class="warn">'+
+    '&bull; Le quantità indicate corrispondono ai consumi rilevati sui fogli camera del periodo.<br>'+
+    '&bull; I pezzi inidonei viaggiano in un <b>sacco separato</b> e non rientrano nel conteggio della biancheria sporca.<br>'+
+    '&bull; Il rientro del pulito corrispondente è atteso alla consegna successiva.'+
+  '</div>'+
+  '<table><thead><tr><th>Tipologia pezzo</th><th class="r" style="width:90px;">Quantità</th></tr></thead>'+
+    '<tbody>'+rowsSporco+'</tbody>'+
+    '<tfoot><tr><td>Totale pezzi consegnati</td><td class="r">'+tot+'</td></tr></tfoot></table>'+
+  bloccoResi+
+  '<div class="blk"><div class="blk-t">Ritiro Fornitore Raimondo</div>'+
+    '<div class="row">'+
+      '<div class="f"><div class="f-lbl">Data ritiro</div><div class="f-val">'+esc(g.data)+'</div></div>'+
+      '<div class="f"><div class="f-lbl">Totale pezzi</div><div class="f-val">'+(tot+totResi)+'</div></div>'+
+      '<div class="f"><div class="f-lbl">Sacchi n&deg;</div><div class="f-val">&nbsp;</div></div>'+
+    '</div><div class="sign"></div><div class="sign-c">Firma per ricevuta &mdash; Fornitore Raimondo</div></div>'+
+  '<div class="blk"><div class="blk-t">Consegna a cura di</div>'+
+    '<div class="row">'+
+      '<div class="f"><div class="f-lbl">Nome</div><div class="f-val">&nbsp;</div></div>'+
+      '<div class="f"><div class="f-lbl">Data</div><div class="f-val">&nbsp;</div></div>'+
+    '</div><div class="sign"></div><div class="sign-c">Firma Resident Manager</div></div>'+
+'</body></html>';
+
+  const w=window.open('','_blank');
+  if(!w){alert('Il browser ha bloccato la finestra di stampa. Consenti le finestre pop-up per questo sito.');return;}
+  w.document.write(html);w.document.close();
+  setTimeout(()=>w.print(),400);
+}
+
+/* ── avvio ────────────────────────────────────────────────────────────── */
+bgCarica();
+render();
+</script>
+</body>
+</html>

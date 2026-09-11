@@ -36,9 +36,19 @@ var worker   = leggi("worker.js")
   .replace("import { connect } from '"'"'cloudflare:sockets'"'"';", "var connect=function(){};")
   .replace("export default {", "var _workerFetch = {")
   .replace(/^(\s*)(const|let)\s/gm, "$1var ");
-var casi     = leggi("test/controlli.js") + "\n" + leggi("test/mime.js");
+// biancheria-galleria.html e'"'"' un'"'"'app a se, fuori da Compass e fuori dal cloud: non ha
+// nessun'"'"'altra rete sotto. Si estrae il suo script principale (l'"'"'ULTIMO blocco <script>
+// del file) e lo si carica come app.js. La direttiva "use strict" va tolta: in eval
+// stretto le var resterebbero chiuse dentro e le funzioni non sarebbero raggiungibili.
+var gHtml    = leggi("biancheria-galleria.html");
+var gFine    = gHtml.lastIndexOf("</script>");
+var gInizio  = gHtml.lastIndexOf("<script>", gFine);
+var galleria = gHtml.slice(gInizio + 8, gFine)
+  .replace(/\x27use strict\x27;/, "")
+  .replace(/^(\s*)(const|let)\s/gm, "$1var ");
+var casi     = leggi("test/controlli.js") + "\n" + leggi("test/galleria.js") + "\n" + leggi("test/mime.js");
 try {
-  eval(ambiente + "\n" + app + "\n" + worker + "\n" + casi);
+  eval(ambiente + "\n" + app + "\n" + worker + "\n" + galleria + "\n" + casi);
   console.log(KO > 0 ? "ESITO:FALLITO" : "ESITO:OK");
 } catch (e) {
   console.log("\nERRORE DURANTE I CONTROLLI: " + e);
@@ -312,6 +322,37 @@ for _c in QM_APP_BUILD qmCheckVersione; do
     BKF_KO=1
   fi
 done
+# biancheria-galleria.html e' l'app del Resident Manager per Art Resort e Santa Brigida.
+# Stessa ragione di registration-galleria: chi la usa non ha il lasciapassare del Worker,
+# quindi una fetch verso il cloud di Compass la farebbe smettere di funzionare in silenzio.
+# I suoi dati vivono nel localStorage sotto il prefisso `bg_`, MAI `qm_`: una chiave `qm_`
+# finirebbe nel giro di sincronizzazione di Compass e le due app si sovrascriverebbero.
+if grep -qE "anthropic-proxy|/kv/|qmKvSet" biancheria-galleria.html; then
+  echo ""
+  echo "  ERRORE      biancheria-galleria.html e' tornata a usare il cloud di Compass."
+  echo "              Deve restare indipendente: il Resident non ha il lasciapassare e"
+  echo "              il Worker la rifiuterebbe, senza dire perche'."
+  BKF_KO=1
+fi
+if grep -qE "localStorage\.(get|set|remove)Item\(.qm_" biancheria-galleria.html; then
+  echo ""
+  echo "  ERRORE      biancheria-galleria.html scrive su una chiave qm_*."
+  echo "              Le sue chiavi devono restare sotto bg_: una qm_ entrerebbe nel giro"
+  echo "              di sincronizzazione di Compass e le due app si sovrascriverebbero."
+  BKF_KO=1
+fi
+# L'aggiornamento automatico invece deve restarci: guarda solo il proprio file, non serve
+# nessun server, ed e' l'unico modo perche' una correzione arrivi a chi la tiene aperta.
+for _c in "QM_APP_BUILD=" "function qmCheckVersione(" "setInterval(qmCheckVersione"; do
+  if ! grep -qF "$_c" biancheria-galleria.html; then
+    echo ""
+    echo "  ERRORE      biancheria-galleria.html non si aggiorna piu' da sola ($_c)."
+    echo "              Resta aperta per giorni sul PC del Resident: senza questo"
+    echo "              continuerebbe a girare col codice con cui e' stata caricata."
+    BKF_KO=1
+  fi
+done
+
 # Compass e la cassa restano aperte tutto il giorno sui PC: senza il controllo sull'ETag
 # continuerebbero a girare col codice con cui sono state caricate, anche per settimane.
 # Per Compass il controllo vive in app.js (index.html non ha JS proprio oltre a splash e
