@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-12.2';
+const QM_APP_BUILD='2026-09-12.3';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -193,7 +193,7 @@ setInterval(qmCheckVersione,600000);
   <div style="font-size:30px;font-weight:500;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
   <div style="width:60px;border-top:1px solid rgba(255,255,255,.18);"></div>
   <div style="font-size:22px;color:rgba(255,255,255,.7);">Gestione Biancheria</div>
-  <div style="font-size:13px;color:rgba(255,255,255,.42);line-height:1.5;max-width:340px;padding:0 18px;box-sizing:border-box;text-align:center;">Art Resort Galleria Umberto, Art Suite Santa Brigida</div>
+  <div style="font-size:13px;color:rgba(255,255,255,.42);line-height:1.5;white-space:nowrap;padding:0 18px;box-sizing:border-box;text-align:center;">Art Resort Galleria Umberto – Art Suite Santa Brigida</div>
 </div>
 <style>
 @keyframes qmSplashRing{0%{transform:scale(.6);opacity:.8;}100%{transform:scale(2.4);opacity:0;}}
