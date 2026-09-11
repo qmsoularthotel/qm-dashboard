@@ -2515,6 +2515,10 @@ introdotta:
 
 Tolto il promemoria dell'Overview (`biaRenderPromemoria`), che qui non ha dove stare.
 
+**"Ultimi consumi inseriti" sta subito sotto "Consumi giornalieri dai fogli camera"** (richiesta
+del QM, 12/09/2026): in Compass è in fondo alla pagina. È uno spostamento del blocco dentro
+`_gbRenderCore`, il contenuto è identico.
+
 **`gbSetHotel` svuota la data della consegna**, unica riga in più rispetto a `biaSetHotel`. Il
 modulo di Compass rilegge la data dal campo, che sopravvive al ridisegno: con un calendario solo
 va bene, con due no — passando da Art Resort (giro oggi) a Santa Brigida (giro domani) restava la

@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-12.6';
+const QM_APP_BUILD='2026-09-12.7';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -1052,6 +1052,24 @@ function _gbRenderCore(){
     </div>
   </div>`;
 
+  // Galleria: gli ultimi consumi stanno SUBITO SOTTO il riquadro in cui si inseriscono
+  // (richiesta del QM, 12/09/2026); in Compass sono in fondo alla pagina.
+  // ── Consumi registrati di recente ──
+  const rec=_gbConsumi().slice().sort((a,b)=>(_gbParse(b.data)||0)-(_gbParse(a.data)||0)).slice(0,14);
+  {
+    h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti — ${esc(GB_HOTELS[_gbHotel])}</span></div><div class="panel-body" style="padding:0;">`;
+    if(!rec.length)h+=`<div style="padding:12px 14px;font-size:var(--fs-xs);color:var(--text-dim);">Nessun consumo inserito per questa struttura.</div>`;
+    rec.forEach(c=>{
+      h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
+        <span style="font-weight:600;">${esc(c.data)}</span>
+        <span style="color:var(--text-dim);">${_gbTot(c.q)} pezzi</span>
+        <button onclick="gbEliminaConsumo('${c.id}')" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  }
+
+
   // ── Il giro ──
   // Il periodo si scrive con i nomi dei giorni e si dice SEMPRE da dove nasce il "dal":
   // un intervallo di date senza spiegazione non permette di accorgersi che è sbagliato.
@@ -1253,21 +1271,6 @@ function _gbRenderCore(){
         <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Una singola consegna può chiudere in pari per caso. È questo totale che dice se la perdita è occasionale o continua.</div>
       </div>
     </div>`;
-  }
-
-  // ── Consumi registrati di recente ──
-  const rec=_gbConsumi().slice().sort((a,b)=>(_gbParse(b.data)||0)-(_gbParse(a.data)||0)).slice(0,14);
-  {
-    h+=`<div class="panel" style="margin-top:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti — ${esc(GB_HOTELS[_gbHotel])}</span></div><div class="panel-body" style="padding:0;">`;
-    if(!rec.length)h+=`<div style="padding:12px 14px;font-size:var(--fs-xs);color:var(--text-dim);">Nessun consumo inserito per questa struttura.</div>`;
-    rec.forEach(c=>{
-      h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
-        <span style="font-weight:600;">${esc(c.data)}</span>
-        <span style="color:var(--text-dim);">${_gbTot(c.q)} pezzi</span>
-        <button onclick="gbEliminaConsumo('${c.id}')" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
-      </div>`;
-    });
-    h+=`</div></div>`;
   }
 
   el.innerHTML=h;
