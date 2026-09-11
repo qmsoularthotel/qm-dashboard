@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-12.1';
+const QM_APP_BUILD='2026-09-12.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -1048,7 +1048,6 @@ function _gbRenderCore(){
   {
     h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Consegne di Raimondo</span>
       <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);margin-right:10px;">le due strutture hanno pezzi e conti separati</span>
-      <button onclick="gbPrintAndamento()" style="background:var(--surface);color:var(--accent);border:1px solid var(--border);padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Report per la direzione</button></div>
       <div class="panel-body" style="padding:0;">`;
     Object.keys(GB_HOTELS).forEach((k,iH)=>{
       const righe=_gbGiri(k).slice().reverse();
@@ -1188,6 +1187,8 @@ function _gbGraficoResa(serie,largh,alt){
   });
   return g+'</svg>';
 }
+// Il pulsante "Report per la direzione" è stato tolto dalla Galleria (richiesta del QM,
+// 12/09/2026). La funzione resta per non allontanare la copia dall'originale di Compass.
 function gbPrintAndamento(){
   if(!_gb.giri.length){_gbAvviso('Non c\'è ancora nessun giro registrato.');return;}
   const esc=x=>String(x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
