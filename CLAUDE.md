@@ -2564,6 +2564,14 @@ campo `<input type="date">` sopravvive al ridisegno: leggendola da lì, cambiand
 **Santa Brigida si apriva sulla data di Art Resort**, con l'avviso *"di norma qui il giro
 passa martedì, giovedì e sabato"* — cioè l'app accusava l'utente di un errore fatto da sé.
 
+### Ordine dei pannelli: i consumi SOPRA la consegna (11/09/2026)
+
+Linguette · situazione della struttura · **Consumi del giorno** · Registra la consegna ·
+Pezzi inidonei · Consegne di Raimondo · Copia di sicurezza. I consumi si inseriscono **ogni
+giorno**, la consegna tre volte a settimana: la cosa che si fa più spesso non va cercata
+scorrendo sotto quella che si fa di rado. Ed è anche l'ordine del lavoro — la consegna legge i
+consumi del periodo, quindi vengono prima. L'ordine sta tutto in `render()`.
+
 ### Uno zero mai inserito non è uno zero
 
 `_bgRegistrata(g)` pretende `_bgTot(ricevuto) > 0`. L'app salva **sempre tutte e sette** le

@@ -116,7 +116,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-11.2';
+const QM_APP_BUILD='2026-09-11.3';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -458,10 +458,13 @@ function bgSetHotel(h){if(!BG_HOTELS[h])return;_bgHotel=h;_bgStoricoAperto.clear
 function bgToggleStorico(id){_bgStoricoAperto.has(id)?_bgStoricoAperto.delete(id):_bgStoricoAperto.add(id);render();}
 function bgToggleSaldo(){_bgSaldoAperto=!_bgSaldoAperto;render();}
 
+// I consumi stanno SOPRA la consegna: si inseriscono ogni giorno, la consegna tre volte a
+// settimana. La cosa che si fa più spesso non va cercata scorrendo sotto quella che si fa di
+// rado — e la consegna li legge, quindi vengono prima anche nell'ordine del lavoro.
 function render(){
   const h=_bgHotel;
   document.getElementById('app').innerHTML=
-    vTabs()+vStato(h)+vConsegna(h)+vConsumi(h)+vResi(h)+vStorico(h)+vBackup();
+    vTabs()+vStato(h)+vConsumi(h)+vConsegna(h)+vResi(h)+vStorico(h)+vBackup();
 }
 
 /* ── linguette ────────────────────────────────────────────────────────── */
