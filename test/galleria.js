@@ -5,7 +5,7 @@
 // sono le stesse, col prefisso gb/_gb/GB_ invece di bia/_bia/BIA_). Il modulo di Compass
 // ha già i suoi controlli in test/controlli.js: qui si controlla ciò che nella copia è
 // DIVERSO — i due calendari, il salvataggio solo locale, la lettura dei dati della
-// versione semplificata, i pezzi inidonei che escono col sacco — più le regole che
+// versione semplificata — più le regole che
 // devono restare identiche fra le due copie.
 //
 // Lo script della pagina viene caricato da test/node.js (e dal ramo osascript di
@@ -14,7 +14,7 @@
 sez('Gestione Biancheria (Galleria): copia di Compass, con due calendari');
 
 function _gbQ(o) { var q = _gbVuote(); Object.keys(o || {}).forEach(function (k) { q[k] = o[k]; }); return q; }
-function _gbReset() { _gb = { consumi: [], giri: [], resi: [] }; _gbDist = {}; }
+function _gbReset() { _gb = { consumi: [], giri: [] }; _gbDist = {}; }
 
 // ── Nessun nome in comune con Compass: le due copie vivono nello stesso spazio ──
 //    Se la copia si chiamasse ancora biaRender, i controlli di Compass girerebbero sulla
@@ -63,27 +63,7 @@ ok('saldo: ha riportato 7 su 10',              _gbTot(_gbSaldo('ar')), -3);
 var _mig = _gbMigra({ consumi: [{ id: 'x' }], consegne: [{ id: 'g' }], resi: [{ id: 'r' }] });
 ok('vecchio formato: le consegne diventano giri', _mig.giri.length, 1);
 ok('i consumi restano',                        _mig.consumi.length, 1);
-ok('i resi restano',                           _mig.resi.length, 1);
 ok('formato nuovo: si legge com\'è',           _gbMigra({ consumi: [], giri: [{ id: 'a' }, { id: 'b' }] }).giri.length, 2);
 ok('niente: archivio vuoto',                   _gbMigra(null).giri.length, 0);
 
-// ── Pezzi inidonei: escono col sacco della consegna, datati PRIMA ──
-_gbReset();
-_gb.resi.push({ id: 'r1', hotel: 'sb', data: '14/09/2026', tipologia: 'Federa', qta: 2, motivo: 'Macchiata', consegnaId: null });
-_gb.resi.push({ id: 'r2', hotel: 'sb', data: '15/09/2026', tipologia: 'Telo doccia', qta: 1, motivo: 'Strappata', consegnaId: null });
-_gb.resi.push({ id: 'r3', hotel: 'ar', data: '14/09/2026', tipologia: 'Federa', qta: 5, motivo: 'Usurata', consegnaId: null });
-var _rs = _gbResiDaConsegnare('sb', '15/09/2026').map(function (r) { return r.id; }).join(',');
-ok('resi: esce quello del giorno prima',       _rs, 'r1');
-_gb.giri.push({ id: 'g15', hotel: 'sb', data: '15/09/2026', consegnato: _gbQ({ Federa: 4 }), ricevuto: _gbQ({ Federa: 4 }), ts: 1 });
-_gbLegaResi('sb', '15/09/2026');
-ok('registrando il giro, esce col sacco',      _gb.resi[0].consegnaId, 'g15');
-ok('quello del giorno stesso resta in attesa', _gb.resi[1].consegnaId, null);
-ok('l\'altra struttura non viene toccata',     _gb.resi[2].consegnaId, null);
-
-// ── Prossima consegna (per i resi): oggi se Raimondo passa oggi e manca ancora ──
-_gbReset();
-ok('venerdì AR, non registrata: oggi',         _gbProssimaConsegna('ar', new Date(2026, 8, 11)), '11/09/2026');
-_gb.giri.push({ id: 'o', hotel: 'ar', data: '11/09/2026', consegnato: _gbQ({}), ricevuto: _gbQ({ Federa: 1 }), ts: 1 });
-ok('venerdì AR, registrata: lunedì',           _gbProssimaConsegna('ar', new Date(2026, 8, 11)), '14/09/2026');
-ok('venerdì SB: sabato',                       _gbProssimaConsegna('sb', new Date(2026, 8, 11)), '12/09/2026');
 _gbReset();

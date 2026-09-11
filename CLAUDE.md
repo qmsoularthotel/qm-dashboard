@@ -2520,18 +2520,15 @@ la copia dallo stesso rinomino (sostituzioni `\b_bia`→`_gb`, `\bbia(?=[A-Z])`�
 `\bBIA_`→`GB_`, `\bbia-`→`gb-`, più i servizi elencati sopra e le righe dei calendari),
 invece di ritoccarla a mano.
 
-### Cosa c'è in più rispetto a Compass
+### Cosa c'è in più rispetto a Compass — e cosa NO
 
-- **Pezzi inidonei** (riquadro in fondo, `vResi`): in Compass sono una vista a sé con ritiro ogni
-  15 giorni; qui escono **con il sacco di ogni consegna**. Registrando il giro,
-  `_gbLegaResi(h,data)` lega a quella consegna gli inidonei aperti **datati prima** (stesso
-  taglio delle 8:00). La loro distinta è **lo stesso foglio** di `_resiStampa` di Compass, con
-  la lista consegnata al Resident Manager e senza "ogni 15 giorni" (`_bgApriResi`). Si stampa
-  dal pulsante del riquadro, per la prossima consegna (`_gbProssimaConsegna`).
 - **Copia di sicurezza** (`vBackup`, `bgScarica`/`bgRicarica`): unica rete, perché non c'è
   backup notturno. Il file porta anche `distinte`.
 - `gbRender()` è un involucro: chiama `_gbRenderCore()` (il `biaRender` di Compass, che riempie
-  `#gb-content`) e poi disegna i due riquadri propri in `#gb-extra`.
+  `#gb-content`) e poi disegna la copia di sicurezza in `#gb-extra`.
+- **Niente pezzi inidonei** (tolti l'11/09/2026 su richiesta del QM): in Galleria la procedura
+  di reso si fa **a mano, su carta**. Non reintrodurre il riquadro né la loro distinta. I resi
+  eventualmente salvati dalla versione precedente vengono lasciati cadere alla lettura.
 
 ### I dati della versione semplificata si leggono ancora
 

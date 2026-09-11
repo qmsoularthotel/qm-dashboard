@@ -139,7 +139,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-11.11';
+const QM_APP_BUILD='2026-09-11.12';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -243,7 +243,7 @@ setInterval(qmCheckVersione,600000);
 /* ===========================================================================
    GESTIONE BIANCHERIA — app a sé, FUORI da Compass
    ---------------------------------------------------------------------------
-   Ciclo pulito/sporco + resi per le due strutture che fanno capo al Resident
+   Ciclo pulito/sporco per le due strutture che fanno capo al Resident
    Manager: Art Resort Galleria Umberto e Art Suite Santa Brigida.
 
    È IDENTICA al modulo "Consumo Biancheria" di Compass (11/09/2026, su richiesta
@@ -263,9 +263,8 @@ setInterval(qmCheckVersione,600000);
    test/esegui.sh verifica che non ricompaia una chiamata al Worker.
    =========================================================================== */
 
-// Pezzi inidonei: tipologie più larghe del foglio camera e motivo della resa.
-const GB_RESI_TIP=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Copripiumino matrimoniale','Copripiumino singolo','Coprimaterasso','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno','Accappatoio','Tovaglia','Tovagliolo'];
-const GB_RESI_MOTIVI=['Macchiata','Strappata','Usurata','Ingiallita','Bruciata','Scolorita','Altro'];
+// I pezzi inidonei (resi) NON sono qui, di proposito (11/09/2026): in Galleria la
+// procedura di reso si fa a mano, su carta.
 const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function _gbNum(id){const e=document.getElementById(id);return Math.max(0,Number(e&&e.value)||0);}
 function _gbHint(t){const e=document.getElementById('salvatoHint');if(e)e.textContent=t;}
@@ -275,7 +274,7 @@ function _gbHint(t){const e=document.getElementById('salvatoHint');if(e)e.textCo
 // "consegne" e teneva le distinte stampate dentro l'archivio: si leggono entrambe.
 function _gbMigra(o){
   o=o&&typeof o==='object'?o:{};
-  return{consumi:Array.isArray(o.consumi)?o.consumi:[],giri:Array.isArray(o.giri)?o.giri:(Array.isArray(o.consegne)?o.consegne:[]),resi:Array.isArray(o.resi)?o.resi:[]};
+  return{consumi:Array.isArray(o.consumi)?o.consumi:[],giri:Array.isArray(o.giri)?o.giri:(Array.isArray(o.consegne)?o.consegne:[])};
 }
 async function _gbLeggi(key,def){
   try{
@@ -705,7 +704,6 @@ async function gbRegistraGiro(){
   }else{
     _gb.giri.push({id:_gbUid(),hotel:_gbHotel,data:data,consegnato:consegnato,ricevuto:ricevuto,ts:Date.now()});
   }
-  _gbLegaResi(_gbHotel,data);
   _gbSave();gbRender();
 }
 async function gbEliminaGiro(id){
@@ -713,7 +711,6 @@ async function gbEliminaGiro(id){
   if(!g)return;
   if(!await _gbConferma('Eliminare questa consegna?','<strong>'+g.data+'</strong><br>I giri successivi useranno un periodo diverso.',{ok:'Elimina'}))return;
   _gb.giri=_gb.giri.filter(x=>x.id!==id);
-  (_gb.resi||[]).forEach(r=>{if(r.consegnaId===id)r.consegnaId=null;});
   _gbSegnaRimosso(_gb,id);
   await _gbSave();gbRender();
 }
@@ -1331,169 +1328,11 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 }
 
 
-/* ── pezzi inidonei: escono con il sacco della consegna ───────────────────── */
-function _gbResiAperti(h){const x=h||_gbHotel;return (_gb.resi||[]).filter(r=>_gbH(r)===x&&!r.consegnaId).sort((a,b)=>(_gbParse(a.data)||0)-(_gbParse(b.data)||0));}
-// Stesso taglio dello sporco: quelli trovati il giorno stesso non sono nel sacco delle 8.
-function _gbResiDaConsegnare(h,data){const d=_gbParse(data);return _gbResiAperti(h).filter(r=>{const rd=_gbParse(r.data);return rd&&d&&rd<d;});}
-function _gbLegaResi(h,data){
-  const g=_gb.giri.find(x=>_gbH(x)===h&&x.data===data);if(!g)return;
-  _gbResiDaConsegnare(h,data).forEach(r=>{r.consegnaId=g.id;});
-}
-// La prossima consegna: oggi se Raimondo passa oggi e non è ancora registrata, altrimenti
-// il primo giorno di giro dopo oggi.
-function _gbProssimaConsegna(h,oggi){
-  const o=oggi||_gbOggi();
-  if(_gbGiornoGiro(o,h)&&!_gb.giri.find(x=>_gbH(x)===h&&x.data===_gbFmt(o)))return _gbFmt(o);
-  const x=_gbDomani(o);
-  for(let i=0;i<8;i++){if(_gbGiornoGiro(x,h))return _gbFmt(x);x.setDate(x.getDate()+1);}
-  return _gbFmt(x);
-}
 // Il ridisegno completo: il modulo di Compass, poi i riquadri propri della Galleria.
 function gbRender(){
   _gbRenderCore();
   const x=document.getElementById('gb-extra');
-  if(x)x.innerHTML=vResi(_gbHotel)+vBackup();
-}
-
-/* ── pezzi inidonei ───────────────────────────────────────────────────── */
-function vResi(h){
-  const ap=_gbResiAperti(h);
-  const tot=ap.reduce((x,r)=>x+(Number(r.qta)||0),0);
-  const righe=ap.length?ap.map(r=>
-    '<tr><td>'+esc(r.data)+'</td><td>'+esc(r.tipologia)+'</td><td class="r" style="font-weight:700;">'+(Number(r.qta)||0)+'</td>'+
-    '<td>'+esc(r.motivo||'—')+'</td><td>'+esc(r.nota||'')+'</td>'+
-    '<td class="r"><button class="btn-link danger" onclick="bgEliminaReso(\''+r.id+'\')">elimina</button></td></tr>'
-  ).join(''):'<tr><td colspan="6" class="vuoto">Nessun pezzo inidoneo in attesa.</td></tr>';
-
-  const dataProx=_gbProssimaConsegna(h);
-  const escono=_gbResiDaConsegnare(h,dataProx);
-  return '<div class="panel"><div class="panel-head">'+
-      '<div><div class="panel-title">Pezzi inidonei da rendere</div>'+
-      '<div class="nota" style="margin-top:3px;">Sacco separato. Escono con la prima consegna successiva alla loro data.</div></div>'+
-      (escono.length
-        ? '<button class="btn btn-sm" onclick="bgStampaResi(\''+h+'\',\''+dataProx+'\')">Stampa distinta resi · consegna del '+esc(dataProx)+'</button>'
-        : '')+
-    '</div><div class="panel-body">'+
-    '<div class="row" style="margin-bottom:16px;">'+
-      '<div><label class="f">Data</label><input type="date" id="bg-res-data" value="'+_gbToIso(_gbFmt(_gbOggi()))+'"></div>'+
-      '<div><label class="f">Tipologia</label><select id="bg-res-tip">'+GB_RESI_TIP.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></div>'+
-      '<div><label class="f">Quantità</label><input type="number" min="1" id="bg-res-qta" value="1" onfocus="this.select()"></div>'+
-      '<div><label class="f">Motivo</label><select id="bg-res-mot">'+GB_RESI_MOTIVI.map(t=>'<option>'+esc(t)+'</option>').join('')+'</select></div>'+
-      '<div style="flex:1;min-width:150px;"><label class="f">Nota (facoltativa)</label><input type="text" id="bg-res-nota" style="width:100%;" placeholder="camera, chi l\'ha trovato…"></div>'+
-      '<div><button class="btn btn-primary" onclick="bgAggiungiReso()">Aggiungi</button></div>'+
-    '</div>'+
-    '<div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Tipologia</th><th class="r" style="width:90px;">Q.tà</th><th>Motivo</th><th>Nota</th><th></th></tr></thead>'+
-    '<tbody>'+righe+'</tbody>'+
-    (ap.length?'<tfoot><tr><td colspan="2">Totale in attesa</td><td class="r">'+tot+'</td><td colspan="3"></td></tr></tfoot>':'')+
-    '</table></div></div></div>';
-}
-function bgAggiungiReso(){
-  const data=_gbFromIso((document.getElementById('bg-res-data')||{}).value||'');
-  const tip=(document.getElementById('bg-res-tip')||{}).value||'';
-  const qta=parseInt((document.getElementById('bg-res-qta')||{}).value,10);
-  const mot=(document.getElementById('bg-res-mot')||{}).value||'';
-  const nota=((document.getElementById('bg-res-nota')||{}).value||'').trim();
-  if(!data){alert('Indica la data.');return;}
-  if(!tip){alert('Scegli la tipologia del pezzo.');return;}
-  if(isNaN(qta)||qta<=0){alert('Indica una quantità valida.');return;}
-  _gb.resi.push({id:_gbUid(),hotel:_gbHotel,data:data,tipologia:tip,qta:qta,motivo:mot,nota:nota,consegnaId:null});
-  _gbSave();gbRender();
-}
-function bgEliminaReso(id){
-  const r=_gb.resi.find(x=>x.id===id);if(!r)return;
-  if(!confirm('Eliminare questo reso?\n\n'+r.tipologia+' ×'+r.qta+', del '+r.data+'.'))return;
-  _gb.resi=_gb.resi.filter(x=>x.id!==id);
-  _gbSave();gbRender();
-}
-
-/* ── distinta dei resi ─────────────────────────────────────────────────────
-   Stesso documento che Compass stampa per SoulArt e Boutique (_resiStampa in
-   app.js): stessa intestazione, stesse tre avvertenze, stessa tabella, stessi due
-   riquadri di firma — Raimondo è lo stesso fornitore per tutte le strutture e
-   deve ritrovarsi davanti lo stesso foglio. Cambiano solo le cose che qui sono
-   diverse: la distinta firmata va al Resident Manager (non al Sig. Presta), e i
-   resi escono a ogni consegna invece che ogni 15 giorni.
-   Il copione è duplicato e non condiviso di proposito: quest'app vive fuori da
-   Compass e non carica app.js. Se si cambia uno dei due fogli, va cambiato
-   anche l'altro.                                                              */
-function bgStampaResi(h,data){
-  const righe=_gbResiDaConsegnare(h,data);
-  if(!righe.length){alert('Nessun pezzo inidoneo esce con la consegna del '+data+'.');return;}
-  _bgApriResi(h,righe,data);
-}
-function _bgApriResi(h,righe,dataRitiro){
-  const ord=righe.slice().sort((a,b)=>(_gbParse(a.data)||0)-(_gbParse(b.data)||0));
-  const dal=ord[0].data,al=ord[ord.length-1].data;
-  const tot=ord.reduce((s,r)=>s+(Number(r.qta)||0),0);
-  const html='<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Distinta Reso Biancheria</title><style>'+
-'*{box-sizing:border-box;margin:0;padding:0;}'+
-'body{font-family:\'Helvetica Neue\',Arial,sans-serif;color:#111;font-size:10.5pt;}'+
-'@page{size:A4;margin:16mm;}'+
-'.hdr{border-bottom:1.5px solid #111;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;}'+
-'.title{font-size:14pt;font-weight:700;letter-spacing:.01em;}'+
-'.sub{font-size:9pt;color:#555;margin-top:2px;}'+
-'.meta{display:flex;gap:34px;margin-bottom:14px;font-size:10pt;}'+
-'.meta-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;}'+
-'.meta-val{font-weight:700;margin-top:2px;}'+
-'.warn{border:1px solid #999;padding:8px 10px;margin-bottom:14px;font-size:8.5pt;line-height:1.6;color:#333;}'+
-'table{width:100%;border-collapse:collapse;margin-bottom:16px;}'+
-'th{text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:1.5px solid #111;padding:6px 6px;}'+
-'td{padding:7px 6px;border-bottom:1px solid #ccc;font-size:10pt;}'+
-'td.r{text-align:right;}'+
-'tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-top:8px;}'+
-'.blk{border:1px solid #999;padding:10px 12px;margin-bottom:12px;}'+
-'.blk-t{font-size:8.5pt;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:#333;margin-bottom:10px;}'+
-'.row{display:flex;gap:26px;margin-bottom:12px;}'+
-'.f{flex:1;}'+
-'.f-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;margin-bottom:3px;}'+
-'.f-val{font-size:11pt;border-bottom:1px solid #999;padding-bottom:4px;min-height:17px;}'+
-'.sign{border-bottom:1px solid #111;margin-top:34px;}'+
-'.sign-c{font-size:8pt;color:#555;margin-top:4px;}'+
-'</style></head><body>'+
-  '<div class="hdr">'+
-    '<div><div class="title">Distinta Reso Biancheria Inidonea</div><div class="sub">Fornitore Raimondo</div></div>'+
-    '<div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">'+esc(GB_HOTELS[h])+'</div></div>'+
-  '</div>'+
-  '<div class="meta">'+
-    '<div><div class="meta-lbl">Periodo dal</div><div class="meta-val">'+esc(dal)+'</div></div>'+
-    '<div><div class="meta-lbl">al</div><div class="meta-val">'+esc(al)+'</div></div>'+
-    '<div><div class="meta-lbl">Totale pezzi</div><div class="meta-val">'+tot+'</div></div>'+
-  '</div>'+
-  '<div class="warn">'+
-    '&bull; Mettere la biancheria macchiata / difettata in un sacco distinto, dedicato esclusivamente a Raimondo.<br>'+
-    '&bull; NON conteggiarla come normale biancheria sporca nei dati giornalieri.<br>'+
-    '&bull; A fine servizio, consegnare la lista al Resident Manager.'+
-  '</div>'+
-  '<table>'+
-    '<thead><tr><th style="width:70px;">Data</th><th>Tipologia pezzo</th><th style="width:60px;text-align:right;">Quantità</th><th style="width:110px;">Motivo reso</th><th style="width:120px;">Firma HK</th></tr></thead>'+
-    '<tbody>'+ord.map(r=>'<tr><td>'+esc(r.data)+'</td><td>'+esc(r.tipologia)+'</td><td class="r">'+(Number(r.qta)||0)+'</td><td>'+esc(r.motivo||'')+'</td><td></td></tr>').join('')+'</tbody>'+
-    '<tfoot><tr><td colspan="2">Totale pezzi</td><td class="r">'+tot+'</td><td colspan="2"></td></tr></tfoot>'+
-  '</table>'+
-  '<div class="blk">'+
-    '<div class="blk-t">Ritiro Fornitore Raimondo</div>'+
-    '<div class="row">'+
-      '<div class="f"><div class="f-lbl">Sacchi ritirati n&deg;</div><div class="f-val">&nbsp;</div></div>'+
-      '<div class="f"><div class="f-lbl">Totale pezzi</div><div class="f-val">'+tot+'</div></div>'+
-      '<div class="f"><div class="f-lbl">Data</div><div class="f-val">'+esc(dataRitiro)+'</div></div>'+
-    '</div>'+
-    '<div class="sign"></div>'+
-    '<div class="sign-c">Firma per ricevuta &mdash; Fornitore Raimondo</div>'+
-  '</div>'+
-  '<div class="blk">'+
-    '<div class="blk-t">Consegna distinta firmata</div>'+
-    '<div class="row">'+
-      '<div class="f"><div class="f-lbl">Consegnata a</div><div class="f-val">Resident Manager</div></div>'+
-      '<div class="f"><div class="f-lbl">Data</div><div class="f-val">&nbsp;</div></div>'+
-    '</div>'+
-    '<div class="sign"></div>'+
-    '<div class="sign-c">Firma Responsabile / Management</div>'+
-  '</div>'+
-'</body></html>';
-  const w=window.open('','_blank');
-  if(!w){alert('Il browser ha bloccato la finestra di stampa. Consenti le finestre pop-up per questo sito.');return false;}
-  w.document.write(html);w.document.close();
-  setTimeout(()=>w.print(),400);
-  return true;
+  if(x)x.innerHTML=vBackup();
 }
 
 /* ── copia di sicurezza ───────────────────────────────────────────────────
@@ -1501,9 +1340,9 @@ function _bgApriResi(h,righe,dataRitiro){
    cache di questo browser. Cancellarla, o cambiare computer, li porta via
    senza preavviso. Questo pulsante è l'unica rete.                          */
 function vBackup(){
-  const n=_gb.giri.length,c=_gb.consumi.length,r=(_gb.resi||[]).length;
+  const n=_gb.giri.length,c=_gb.consumi.length;
   return '<div class="panel"><div class="panel-head"><div class="panel-title">Copia di sicurezza</div>'+
-    '<div class="nota">'+n+' consegne · '+c+' giornate di consumi · '+r+' pezzi inidonei</div></div>'+
+    '<div class="nota">'+n+' consegne · '+c+' giornate di consumi</div></div>'+
     '<div class="panel-body">'+
     '<div class="nota" style="margin-bottom:13px;">I dati stanno <b>solo in questo browser, su questo computer</b>. Non c\'è nessuna copia altrove: svuotare la cronologia, cambiare computer o reinstallare il browser li cancella. <b>Scarica una copia ogni tanto</b> e tienila in una cartella — con quella si riparte da dove si era.</div>'+
     '<div class="row">'+
