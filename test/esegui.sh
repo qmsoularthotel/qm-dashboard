@@ -323,15 +323,19 @@ for _c in QM_APP_BUILD qmCheckVersione; do
   fi
 done
 # biancheria-galleria.html e' l'app del Resident Manager per Art Resort e Santa Brigida.
-# Stessa ragione di registration-galleria: chi la usa non ha il lasciapassare del Worker,
-# quindi una fetch verso il cloud di Compass la farebbe smettere di funzionare in silenzio.
-# I suoi dati vivono nel localStorage sotto il prefisso `bg_`, MAI `qm_`: una chiave `qm_`
-# finirebbe nel giro di sincronizzazione di Compass e le due app si sovrascriverebbero.
-if grep -qE "anthropic-proxy|/kv/|qmKvSet" biancheria-galleria.html; then
+# Dal 12/09/2026 usa il cloud di Compass, ma con un codice che il Worker limita a leggere e
+# scrivere chiavi bg_* (permessoGalleria in worker.js). La pagina non deve quindi mai
+# chiedere l'elenco delle chiavi, cancellare, o toccare una chiave qm_*: il Worker lo
+# rifiuterebbe comunque, ma una pagina che ci prova e' una pagina che si e' persa la regola.
+if grep -qE "/kv/delete|/kv/chiavi|qmKvSet|_gbKv(Get|Set)\('qm_" biancheria-galleria.html; then
   echo ""
-  echo "  ERRORE      biancheria-galleria.html e' tornata a usare il cloud di Compass."
-  echo "              Deve restare indipendente: il Resident non ha il lasciapassare e"
-  echo "              il Worker la rifiuterebbe, senza dire perche'."
+  echo "  ERRORE      biancheria-galleria.html chiede al Worker piu' di quanto il suo codice apre."
+  echo "              Il codice della Galleria vale solo per /kv/get e /kv/set su chiavi bg_*."
+  BKF_KO=1
+fi
+if ! grep -qF "function permessoGalleria(" worker.js || ! grep -qF "/^bg_[A-Za-z0-9_]+\$/" worker.js; then
+  echo ""
+  echo "  ERRORE      worker.js non limita piu' il codice della Galleria alle chiavi bg_*."
   BKF_KO=1
 fi
 if grep -qE "localStorage\.(get|set|remove)Item\(.qm_" biancheria-galleria.html; then

@@ -4126,7 +4126,7 @@ async function qmEsportaArchivio(btn){
 // codice e server possono divergere: fino a oggi se ne accorgeva solo test/esegui.sh, cioe'
 // nessuno mentre lavora. Un controllo in esegui.sh verifica che questa costante combaci con
 // WORKER_VERSIONE in worker.js, altrimenti direbbe "da ripubblicare" per sempre.
-const WORKER_VERSIONE_ATTESA='2026-09-06c';
+const WORKER_VERSIONE_ATTESA='2026-09-12a';
 // ── ERRORI DEL PROGRAMMA — raccolti qui, perche' la console non la apre nessuno ──────
 // Quando qualcosa va storto nel codice, il messaggio finisce nella console del browser: il
 // QM non la apre (giustamente) e quindi un guasto puo' restare invisibile finche' non si
@@ -17775,5 +17775,32 @@ function qmRenderDispositivi(){
       <div style="margin-top:12px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">
         Se il codice finisse nelle mani sbagliate: cambia <strong>QM_AUTH_SECRET</strong> sul Worker. Smettono di funzionare <strong>tutti</strong> i dispositivi, compresi i tuoi, e il giro va rifatto da capo — non si revoca una persona sola.
       </div>
+    </div></div>
+  <div class="panel" style="margin-bottom:14px;">
+    <div class="panel-header"><span class="panel-title">Codice per la Galleria — Gestione Biancheria</span></div>
+    <div class="panel-body" style="padding:16px;">
+      <div style="font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;margin-bottom:12px;">
+        Per i PC del Resident Manager (Art Resort Galleria Umberto, Art Suite Santa Brigida). È un codice <strong style="color:var(--text);">diverso</strong> da quello qui sopra:
+        apre <strong style="color:var(--text);">solo i dati della biancheria della Galleria</strong> — non ospiti, turni, cassa o dipendenti. Vale un anno e l'app lo rinnova da sola.
+        Si incolla una volta nell'app della Galleria, su ciascun PC.
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button onclick="qmCodiceGalleria(this)" style="${bott}background:var(--accent);color:#fff;border-color:var(--accent);padding:9px 18px;font-size:var(--fs-xs);">Copia codice Galleria</button>
+        <span id="qmCodiceGalleriaEsito" style="font-size:var(--fs-xxs);color:var(--text-dim);"></span>
+      </div>
     </div></div>`;
+}
+// Chiede al Worker un codice della Galleria e lo copia. Serve il lasciapassare di Compass:
+// il fetch verso il Worker lo aggiunge da sé (vedi il gancio in ACCESSO).
+async function qmCodiceGalleria(btn){
+  const es=document.getElementById('qmCodiceGalleriaEsito');
+  const dì=t=>{if(es)es.textContent=t;};
+  dì('richiesta in corso…');
+  try{
+    const r=await fetch(PROXY+'/auth/galleria',{method:'POST',cache:'no-store'});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.pass){dì(r.status===404||r.status===405?'Il Worker va ripubblicato: questo codice lo rilascia la versione del 12/09/2026.':'Non rilasciato: '+(j.error||('errore '+r.status)));return;}
+    try{await navigator.clipboard.writeText(j.pass);dì('Codice copiato. Incollalo nell\'app della Galleria, su ciascun PC.');}
+    catch(e){prompt('Copia il codice della Galleria:',j.pass);dì('');}
+  }catch(e){dì('Worker non raggiungibile.');}
 }

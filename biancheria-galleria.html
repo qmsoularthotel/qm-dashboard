@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-12.4';
+const QM_APP_BUILD='2026-09-12.5';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -263,14 +263,13 @@ setInterval(qmCheckVersione,600000);
        caricano app.js e questa pagina nello stesso spazio, e due funzioni con lo
        stesso nome si sovrascriverebbero;
      - i calendari sono DUE (Art Resort lun/mer/ven, Santa Brigida mar/gio/sab);
-     - niente cloud: i salvataggi passano da _gbLeggi/_gbScrivi, che usano solo
-       il localStorage di questo browser.
+     - i salvataggi passano da _gbLeggi/_gbScrivi: stesso cloud di Compass, ma
+       con un codice che apre SOLO le chiavi bg_* (vedi sotto).
    Correggendo una delle due copie, va corretta anche l'altra.
 
-   NON PARLA MAI COL CLOUD DI COMPASS, ed è una scelta, non una dimenticanza: il
-   Resident non ha (e non deve avere) il lasciapassare del Worker. Tutto vive nel
-   localStorage sotto il prefisso `bg_` — mai `qm_`. Un controllo in
-   test/esegui.sh verifica che non ricompaia una chiamata al Worker.
+   Il Resident NON ha (e non deve avere) il lasciapassare di Compass: ha un codice
+   della Galleria che il Worker limita alle chiavi bg_*. Le chiavi restano bg_,
+   mai qm_ — un controllo in test/esegui.sh lo verifica.
    =========================================================================== */
 
 // I pezzi inidonei (resi) NON sono qui, di proposito (11/09/2026): in Galleria la
@@ -279,49 +278,166 @@ const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function _gbNum(id){const e=document.getElementById(id);return Math.max(0,Number(e&&e.value)||0);}
 function _gbHint(t){const e=document.getElementById('salvatoHint');if(e)e.textContent=t;}
 
-/* ── al posto dei servizi di Compass: solo questo browser ─────────────────── */
-// La versione semplificata di questa app (fino all'11/09/2026) chiamava i giri
-// "consegne" e teneva le distinte stampate dentro l'archivio: si leggono entrambe.
+/* ── archivio sul cloud di Compass, con un codice che apre SOLO la Galleria ──
+   Dal 12/09/2026 i dati stanno nell'archivio di Compass (chiavi bg_*), così i due PC della
+   Galleria vedono le stesse cose, il backup notturno su Drive li copia, e il QM li vede.
+   Il codice di questi PC ("bg.<scadenza>.<firma>") lo rilascia il QM dal Pannello di
+   Controllo: il Worker gli permette SOLO di leggere e scrivere chiavi bg_* — non ospiti,
+   turni, cassa o dipendenti (permessoGalleria in worker.js). Dura un anno e si rinnova da sé.
+   Il salvataggio è quello di Compass (_qmSalvaArchivio): si rilegge, si fonde per id e poi
+   si scrive, così due PC che salvano insieme non si cancellano il lavoro a vicenda. Il
+   localStorage resta come copia di questo browser: se la rete manca non si perde niente. */
+const GB_PROXY='https://anthropic-proxy.qm-d82.workers.dev';
+const GB_PASS_KEY='bg_pass';
+function _gbPass(){try{return localStorage.getItem(GB_PASS_KEY)||'';}catch(e){return'';}}
+function _gbFetch(percorso,opz){
+  const o=Object.assign({cache:'no-store'},opz||{});
+  o.headers=Object.assign({},o.headers||{},{'X-QM-Pass':_gbPass()});
+  return fetch(GB_PROXY+percorso,o).then(r=>{if(r.status===401)gbMostraAttivazione('Il codice di questo computer non è più valido.');return r;});
+}
+async function _gbKvGet(k){
+  try{const r=await _gbFetch('/kv/get?key='+encodeURIComponent(k));if(r.ok){const j=await r.json();return j&&j.value!=null?j.value:null;}}catch(e){}
+  return null;
+}
+async function _gbKvSet(k,v){
+  try{const r=await _gbFetch('/kv/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:k,value:v})});return r.ok;}
+  catch(e){return false;}
+}
+
+// La versione precedente di questa app (fino all'11/09/2026) chiamava i giri "consegne" e
+// teneva le distinte stampate dentro l'archivio: si leggono entrambe.
 function _gbMigra(o){
   o=o&&typeof o==='object'?o:{};
-  return{consumi:Array.isArray(o.consumi)?o.consumi:[],giri:Array.isArray(o.giri)?o.giri:(Array.isArray(o.consegne)?o.consegne:[])};
+  const out={consumi:Array.isArray(o.consumi)?o.consumi:[],giri:Array.isArray(o.giri)?o.giri:(Array.isArray(o.consegne)?o.consegne:[])};
+  if(Array.isArray(o._rimossi))out._rimossi=o._rimossi;
+  return out;
 }
-async function _gbLeggi(key,def){
+// Fusione come in Compass (_qmUnisciRecord / _qmFondiElenchi): elenchi uniti per id, a
+// parità di id vince questa postazione; un id eliminato di proposito non torna dentro.
+function _gbUnisci(remoto,locale,rimossi){
+  const out=[],pos={};
+  [].concat(remoto||[],locale||[]).forEach(m=>{
+    if(!m||!m.id||(rimossi&&rimossi.has(m.id)))return;
+    if(!(m.id in pos)){pos[m.id]=out.length;out.push(m);return;}
+    out[pos[m.id]]=m;
+  });
+  return out;
+}
+function _gbFondi(remoto,locale){
+  const R=_gbMigra(remoto),L=_gbMigra(locale);
+  const rim=[...new Set([].concat(R._rimossi||[],L._rimossi||[]))];
+  const s=new Set(rim);
+  const out={consumi:_gbUnisci(R.consumi,L.consumi,s),giri:_gbUnisci(R.giri,L.giri,s)};
+  if(rim.length)out._rimossi=rim.slice(-300);
+  return out;
+}
+function _gbSegnaRimosso(arch,id){
+  if(!arch||!id)return arch;
+  arch._rimossi=[...new Set([].concat(arch._rimossi||[],[id]))].slice(-300);
+  return arch;
+}
+let _gbCloudLetto=false;
+function _gbDistVecchie(o){
+  // distinte stampate salvate dentro l'archivio dalla versione precedente
+  if(!o||!o.distinte||typeof o.distinte!=='object')return;
   try{
-    const s=localStorage.getItem(key);
-    if(s){
-      const o=JSON.parse(s)||{};
-      if(o.distinte&&typeof o.distinte==='object'){
-        try{
-          const d=JSON.parse(localStorage.getItem(GB_DIST_KEY)||'{}')||{};
-          Object.keys(o.distinte).forEach(k=>{if(!d[k]){const v=o.distinte[k];d[k]=(v&&v.ts)||v||Date.now();}});
-          localStorage.setItem(GB_DIST_KEY,JSON.stringify(d));
-        }catch(e){}
-      }
-      return _gbMigra(o);
-    }
+    const d=JSON.parse(localStorage.getItem(GB_DIST_KEY)||'{}')||{};
+    Object.keys(o.distinte).forEach(k=>{if(!d[k]){const v=o.distinte[k];d[k]=(v&&v.ts)||v||Date.now();}});
+    localStorage.setItem(GB_DIST_KEY,JSON.stringify(d));
   }catch(e){}
-  return _gbMigra(def);
 }
-async function _gbScrivi(key,obj){
+// Lettura con fusione: la copia di questo browser può contenere qualcosa che il cloud non
+// ha ancora (inserito prima del cloud, o con la rete assente). Se è così, la si rimanda su.
+async function _gbLeggi(key,vuoto){
+  let remoto=null,locale=null,letto=false;
   try{
-    localStorage.setItem(key,JSON.stringify(obj));
-    _gbHint('salvato '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
-  }catch(e){
-    // Quota piena o navigazione privata: è l'unico modo in cui questa app perde dati.
-    alert('ATTENZIONE: non è stato possibile salvare.\n\nI dati inseriti ora NON sono al sicuro. Scarica subito una copia di sicurezza e avvisa il Quality Manager.');
+    const r=await _gbFetch('/kv/get?key='+encodeURIComponent(key));
+    if(r.ok){const j=await r.json();letto=true;_gbCloudLetto=true;if(j&&j.value)remoto=JSON.parse(j.value);}
+  }catch(e){}
+  try{const l=localStorage.getItem(key);if(l){locale=JSON.parse(l);_gbDistVecchie(locale);}}catch(e){}
+  const fuso=_gbFondi(remoto||vuoto,locale||{});
+  try{localStorage.setItem(key,JSON.stringify(fuso));}catch(e){}
+  if(letto&&JSON.stringify(fuso)!==JSON.stringify(_gbMigra(remoto||{}))){
+    _gbKvSet(key,JSON.stringify(fuso)).then(ok=>_gbEsito(ok));
   }
-  return obj;
+  if(!letto)_gbEsito(false,'cloud non raggiungibile: si lavora sulla copia di questo computer');
+  return fuso;
 }
-// Qui non c'è fusione col cloud: eliminare è eliminare, non serve lasciare traccia.
-function _gbSegnaRimosso(arch,id){}
-function _gbKvGet(k){try{return Promise.resolve(localStorage.getItem(k));}catch(e){return Promise.resolve(null);}}
-function _gbKvSet(k,v){try{localStorage.setItem(k,v);}catch(e){}return Promise.resolve(true);}
+// Rilegge, fonde e scrive. Senza aver mai letto il cloud in questa sessione non si scrive:
+// sarebbe sovrascrivere alla cieca, che è come sono spariti i pre-stay del 24/08/2026.
+async function _gbScrivi(key,locale){
+  try{localStorage.setItem(key,JSON.stringify(locale));}catch(e){}
+  let finale=locale,letto=false;
+  try{
+    const r=await _gbFetch('/kv/get?key='+encodeURIComponent(key));
+    if(r.ok){const j=await r.json();finale=_gbFondi(j&&j.value?JSON.parse(j.value):{},locale);letto=_gbCloudLetto=true;}
+  }catch(e){}
+  if(!letto&&!_gbCloudLetto){_gbEsito(false);return locale;}
+  try{localStorage.setItem(key,JSON.stringify(finale));}catch(e){}
+  _gbEsito(await _gbKvSet(key,JSON.stringify(finale)));
+  return finale;
+}
+// L'esito del salvataggio si vede sempre, in alto: un salvataggio che non arriva sul
+// cloud senza dirlo è peggio di uno che fallisce ad alta voce.
+function _gbEsito(ok,testo){
+  const e=document.getElementById('salvatoHint');if(!e)return;
+  if(ok){e.textContent='salvato '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});e.style.color='';e.style.opacity='';}
+  else{e.textContent=testo||'NON salvato sul cloud: resta su questo computer, riprova';e.style.color='#ffb4a8';e.style.opacity='1';}
+}
 function _gbTesto(h){return String(h||'').replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&');}
 function _gbConferma(t,m){return Promise.resolve(confirm(_gbTesto(t)+(m?'\n\n'+_gbTesto(m):'')));}
 function _gbAvviso(t,m){alert(_gbTesto(t)+(m?'\n\n'+_gbTesto(m):''));}
 // Qui a scorrere è la finestra (in Compass è .content).
 function _gbSenzaSalto(fn){const y=window.scrollY;fn();window.scrollTo(0,y);requestAnimationFrame(()=>window.scrollTo(0,y));}
+
+/* ── abilitazione del computer: si incolla il codice, nessuno digita password ── */
+function gbMostraAttivazione(msg){
+  if(document.getElementById('gb-velo'))return;
+  const v=document.createElement('div');
+  v.id='gb-velo';
+  v.style.cssText='position:fixed;inset:0;z-index:99990;background:#1A2E55;display:flex;align-items:center;justify-content:center;padding:20px;';
+  v.innerHTML='<div style="max-width:420px;width:100%;text-align:center;color:#fff;font-family:inherit;">'+
+    '<div style="font-size:28px;font-weight:500;">Compass <span style="color:#c9952f;">QM</span></div>'+
+    '<div style="font-size:18px;color:rgba(255,255,255,.75);margin:6px 0 22px;">Gestione Biancheria</div>'+
+    '<div style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.6;margin-bottom:14px;">'+(msg?esc(msg)+'<br>':'')+'Incolla il codice ricevuto dal Quality Manager.</div>'+
+    '<input id="gb-velo-codice" type="text" autocomplete="off" spellcheck="false" placeholder="codice" style="width:100%;padding:11px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-family:inherit;">'+
+    '<button onclick="gbAbilita()" style="margin-top:12px;width:100%;padding:11px;border:none;border-radius:8px;background:#c9952f;color:#1A2E55;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;">Abilita questo computer</button>'+
+    '<div id="gb-velo-err" style="font-size:12px;color:#ffb4a8;margin-top:10px;min-height:16px;"></div></div>';
+  document.body.appendChild(v);
+}
+function gbAbilita(){
+  const c=((document.getElementById('gb-velo-codice')||{}).value||'').trim();
+  if(!/^bg\.\d+\.[A-Za-z0-9_-]+$/.test(c)){
+    const e=document.getElementById('gb-velo-err');if(e)e.textContent='Non è un codice della Galleria. Chiedilo al Quality Manager.';return;
+  }
+  try{localStorage.setItem(GB_PASS_KEY,c);}catch(e){}
+  location.reload();
+}
+// Il codice dura un anno: a meno di tre mesi dalla scadenza l'app ne chiede uno nuovo da
+// sola, così nessuno si ritrova chiuso fuori un mattino qualsiasi.
+async function _gbRinnova(){
+  const m=_gbPass().match(/^bg\.(\d+)\./);
+  if(!m||Number(m[1])-Date.now()>90*86400000)return;
+  try{
+    const r=await _gbFetch('/auth/galleria/rinnova',{method:'POST'});
+    const j=await r.json();
+    if(r.ok&&j&&j.pass)localStorage.setItem(GB_PASS_KEY,j.pass);
+  }catch(e){}
+}
+// I due PC si aggiornano a vicenda: ogni minuto, solo a scheda visibile e mai mentre si
+// sta scrivendo in una casella (ridisegnare sotto le dita fa perdere quello che si digita).
+async function _gbGiro(){
+  if(document.visibilityState!=='visible')return;
+  const a=document.activeElement;
+  if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return;
+  try{
+    const nuovo=await _gbLeggi(GB_KEY,{consumi:[],giri:[]});
+    let cambiato=JSON.stringify(nuovo)!==JSON.stringify(_gb);
+    const d=await _gbKvGet(GB_DIST_KEY);
+    if(d&&d!==JSON.stringify(_gbDist)){try{_gbDist=JSON.parse(d)||{};localStorage.setItem(GB_DIST_KEY,d);cambiato=true;}catch(e){}}
+    if(cambiato){_gb=nuovo;_gbSenzaSalto(gbRender);}
+  }catch(e){}
+}
 
 // ── BIANCHERIA — copia del modulo "Consumo Biancheria" di Compass (app.js, sezione BIANCHERIA)
 // Modulo distinto da RESI BIANCHERIA: quello tratta i pezzi inidonei (macchiati,
@@ -1412,7 +1528,9 @@ function bgRicarica(input){
     // "consegne", questa li chiama come Compass.
     if(!d||!Array.isArray(d.consumi)||!(Array.isArray(d.giri)||Array.isArray(d.consegne))){alert('Il file non sembra una copia di questa app.');return;}
     const nuovo=_gbMigra(d);
-    if(!confirm('La copia contiene '+nuovo.giri.length+' consegne e '+nuovo.consumi.length+' giornate di consumi.\n\nSOSTITUISCE tutto quello che c\'è adesso ('+_gb.giri.length+' consegne, '+_gb.consumi.length+' giornate). L\'operazione non si annulla.\n\nProcedere?'))return;
+    // Col cloud il ripristino UNISCE la copia a quello che c'è (stessa fusione di ogni
+    // salvataggio): rimette dentro ciò che manca, non cancella ciò che è stato aggiunto dopo.
+    if(!confirm('La copia contiene '+nuovo.giri.length+' consegne e '+nuovo.consumi.length+' giornate di consumi.\n\nVerranno UNITE a quelle attuali ('+_gb.giri.length+' consegne, '+_gb.consumi.length+' giornate): si recupera ciò che manca, non si cancella niente.\n\nProcedere?'))return;
     _gb=nuovo;
     if(o&&o.distinte&&typeof o.distinte==='object'){_gbDist={};Object.keys(o.distinte).forEach(k=>{const v=o.distinte[k];_gbDist[k]=(v&&v.ts)||v||Date.now();});try{localStorage.setItem(GB_DIST_KEY,JSON.stringify(_gbDist));}catch(e){}}
     _gbSave();gbRender();
@@ -1424,7 +1542,14 @@ function bgRicarica(input){
 
 /* ── avvio ────────────────────────────────────────────────────────────── */
 try{const hs=localStorage.getItem('bg_hotel');if(hs&&GB_HOTELS[hs])_gbHotel=hs;}catch(e){}
-gbLoad();
+if(!_gbPass()){
+  gbMostraAttivazione('Questo computer non è ancora abilitato.');
+}else{
+  gbLoad();
+  _gbRinnova();
+  setInterval(_gbGiro,60000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')_gbGiro();});
+}
 </script>
 </body>
 </html>

@@ -67,3 +67,29 @@ ok('formato nuovo: si legge com\'è',           _gbMigra({ consumi: [], giri: [{
 ok('niente: archivio vuoto',                   _gbMigra(null).giri.length, 0);
 
 _gbReset();
+
+// ── Il codice della Galleria apre SOLO le chiavi bg_* (worker.js) ──
+//    È la ragione per cui i PC del Resident possono stare sul cloud di Compass senza vederne
+//    l'archivio: ospiti, turni, cassa, dipendenti restano chiusi.
+ok('Galleria: può leggere bg_biancheria',          permessoGalleria('/kv/get', 'bg_biancheria'), true);
+ok('Galleria: può scrivere bg_distinte',           permessoGalleria('/kv/set', 'bg_distinte'), true);
+ok('Galleria: NON legge gli ospiti',               permessoGalleria('/kv/get', 'qm_rcGuests'), false);
+ok('Galleria: NON scrive la cassa',                permessoGalleria('/kv/set', 'qm_cassa_fondo'), false);
+ok('Galleria: NON cancella, nemmeno le sue',       permessoGalleria('/kv/delete', 'bg_biancheria'), false);
+ok('Galleria: NON elenca le chiavi',               permessoGalleria('/kv/chiavi', ''), false);
+ok('Galleria: niente trucchi col prefisso',        permessoGalleria('/kv/get', 'bg_../qm_dvr'), false);
+ok('Galleria: chiave vuota rifiutata',             permessoGalleria('/kv/get', ''), false);
+
+// ── Due PC che salvano insieme non si cancellano il lavoro (fusione come in Compass) ──
+var _fA = { consumi: [{ id: 'c1', data: '10/09/2026' }], giri: [] };              // PC 1
+var _fB = { consumi: [{ id: 'c2', data: '11/09/2026' }], giri: [{ id: 'g1' }] };  // PC 2
+var _f = _gbFondi(_fA, _fB);
+ok('fusione: i consumi dei due PC ci sono entrambi', _f.consumi.map(function (x) { return x.id; }).sort().join(','), 'c1,c2');
+ok('fusione: il giro del secondo PC resta',          _f.giri.length, 1);
+// A parità di id vince questa postazione: è la correzione appena fatta a mano.
+ok('fusione: vince la modifica di questo PC',        _gbFondi({ consumi: [{ id: 'x', v: 1 }], giri: [] }, { consumi: [{ id: 'x', v: 2 }], giri: [] }).consumi[0].v, 2);
+// Un eliminato di proposito non torna dentro dalla copia dell'altro PC.
+var _loc = _gbSegnaRimosso({ consumi: [], giri: [] }, 'c1');
+ok('fusione: l\'eliminato non ritorna',              _gbFondi(_fA, _loc).consumi.length, 0);
+// La versione precedente (consegne) si fonde come giri.
+ok('fusione: legge anche il vecchio formato',        _gbFondi({ consumi: [], consegne: [{ id: 'v' }] }, { consumi: [], giri: [] }).giri.length, 1);

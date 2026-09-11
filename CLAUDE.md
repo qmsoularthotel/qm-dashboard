@@ -58,7 +58,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`dvr.html`** — App separata per consultare/gestire il DVR (General Manager)
 - **`reception.html`** — Cassa di reception (fondo cassa, incasso contante) — vedi la sua sezione
 - **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
-- **`biancheria-galleria.html`** — **Gestione Biancheria**, l'app del Resident Manager per il ciclo biancheria di Art Resort Galleria Umberto e Art Suite Santa Brigida. **Anche questa sta fuori da Compass**: nessun cloud, dati solo nel browser — vedi la sua sezione
+- **`biancheria-galleria.html`** — **Gestione Biancheria**, l'app del Resident Manager per il ciclo biancheria di Art Resort Galleria Umberto e Art Suite Santa Brigida. Copia del Consumo Biancheria di Compass; dati sul cloud di Compass con un **codice che apre solo le chiavi `bg_*`** — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
 - **`test/`** — 720 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
@@ -2554,13 +2554,39 @@ invece di ritoccarla a mano.
 l'archivio (`distinte:{…:{ts,q}}`). Alla lettura le consegne diventano `giri` e le distinte
 passano in `bg_distinte`; anche una copia di sicurezza di quella versione si ricarica.
 
-### I dati stanno SOLO nel browser del Resident
+### I dati stanno sul cloud di Compass, con un codice che apre SOLO la Galleria (12/09/2026)
 
-Prefisso `bg_`, **mai** `qm_`: una chiave `qm_` entrerebbe nel giro di sincronizzazione di
-Compass. Nessuna chiamata al Worker e nessuna schermata di abilitazione: il Resident non ha il
-lasciapassare, e darglielo vorrebbe dire aprirgli l'archivio di Compass. **Il prezzo,
-accettato**: nessuna sincronizzazione fra dispositivi e nessun backup notturno — la copia di
-sicurezza lo dice a chiare lettere. Se `localStorage` rifiuta la scrittura compare un avviso.
+Fino all'11/09/2026 i dati stavano solo nel `localStorage` del browser. Il QM ha deciso di no:
+in Galleria l'app deve girare su **due PC**, e dati locali vogliono dire due archivi che non si
+parlano, nessun backup notturno, e niente di visibile da Compass.
+
+| Pezzo | Dove | Cosa fa |
+|---|---|---|
+| Codice `bg.<scadenza>.<firma>` | `firmaPassBg`/`verificaPassBg` in `worker.js` | firmato con `QM_AUTH_SECRET` come il lasciapassare di Compass, ma su `"bg."+scadenza`: uno non si spaccia per l'altro. Dura un anno |
+| `permessoGalleria(percorso,chiave)` | `worker.js`, nel cancello di `/kv/` | il codice della Galleria apre **solo** `/kv/get` e `/kv/set` su chiavi `^bg_[A-Za-z0-9_]+$`. Niente elenco, niente cancellazioni, niente proxy AI, niente `qm_*` (ospiti, turni, cassa, dipendenti). Vale anche a porta aperta |
+| `POST /auth/galleria` | Worker | rilascia un codice della Galleria a chi ha il lasciapassare di Compass |
+| `POST /auth/galleria/rinnova` | Worker | rinnova un codice della Galleria valido; l'app lo chiama da sola a meno di 90 giorni dalla scadenza (`_gbRinnova`) |
+| **Copia codice Galleria** | Compass → Pannello di Controllo → Sicurezza (`qmCodiceGalleria`) | chiede il codice al Worker e lo copia. Ogni pressione ne genera uno nuovo, tutti validi |
+| Schermata di abilitazione | `gbMostraAttivazione`/`gbAbilita` | velo navy come nelle app di Compass: si incolla il codice una volta per PC, nessuno digita password. Ricompare se il Worker risponde 401 |
+
+**Salvataggio come in Compass**: `_gbScrivi` rilegge, fonde (`_gbFondi`/`_gbUnisci`: unione per
+`id`, a parità vince questa postazione, gli id in `_rimossi` non tornano) e scrive; senza aver mai
+letto il cloud nella sessione **non scrive**. `_gbLeggi` fonde cloud e copia locale, e se la copia
+locale ha qualcosa che il cloud non ha lo rimanda su — è così che i dati inseriti col vecchio
+salvataggio locale arrivano sul cloud alla prima apertura. Il `localStorage` resta come copia di
+questo browser. L'esito di ogni salvataggio sta in alto a destra; se non arriva sul cloud lo dice
+in rosso. **Revoca**: come per Compass, cambiando `QM_AUTH_SECRET` (fuori tutti).
+
+`_gbGiro()` rilegge ogni minuto, a scheda visibile e mai mentre si scrive in una casella: è così
+che i due PC si vedono a vicenda. Le distinte stampate (`bg_distinte`) viaggiano allo stesso modo.
+
+Le chiavi restano `bg_*`, mai `qm_*`. Due sentinelle in `test/esegui.sh`: la pagina non chiede
+elenco né cancellazioni né chiavi `qm_`, e `worker.js` contiene ancora `permessoGalleria` con la
+sua espressione. `bg_biancheria` e `bg_distinte` entrano nel **backup notturno su Drive** senza
+toccare niente, perché il backup prende l'elenco completo da `/kv/chiavi`.
+
+**La copia di sicurezza** resta, ma col cloud **unisce** invece di sostituire: ripristinare
+recupera ciò che manca, non cancella ciò che è stato aggiunto dopo.
 
 ### Veste
 
@@ -4127,6 +4153,8 @@ per persona sono stati discussi e rimandati.
   senza lasciapassare. **Ordine di pubblicazione**: prima il sito, poi il Worker; al
   contrario, una pagina non ancora ricaricata perde l'analisi dei PDF finché non ricarica.
 - **`/prestay/*`** era già protetto da `PRESTAY_KEY` + lista di origini ammesse.
+- **Il codice della Galleria** (`bg.…`, dal 12/09/2026) passa dal cancello di `/kv/` ma apre
+  **solo** `/kv/get`/`/kv/set` su chiavi `bg_*` (`permessoGalleria`). Vedi "Gestione Biancheria".
 
 ### Stato del sistema — `qmRenderStatoSistema()`
 

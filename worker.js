@@ -30,7 +30,7 @@ const ORIGINI = [
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /prestay/stato.
-const WORKER_VERSIONE = '2026-09-06c';
+const WORKER_VERSIONE = '2026-09-12a';
 
 // ── UNA CASELLA PER STRUTTURA ──
 // Booking recapita all'ospite solo se la mail parte dall'indirizzo registrato sull'Extranet
@@ -117,12 +117,38 @@ export default {
       return json({ ok: true, pass: await firmaPass(env, scade), scade });
     }
 
+    // ── CODICE DELLA GALLERIA (12/09/2026) ──
+    // Gestione Biancheria (biancheria-galleria.html) gira sui PC del Resident Manager, che
+    // NON devono vedere l'archivio di Compass: ospiti, turni, cassa, fascicolo dipendenti.
+    // Ricevono quindi un lasciapassare DIVERSO, "bg.<scadenza>.<firma>", che apre soltanto
+    // la lettura e la scrittura delle chiavi bg_* (vedi permessoGalleria). Lo rilascia chi
+    // ha già il lasciapassare di Compass, cioè il QM dal Pannello di Controllo; dura un anno
+    // e l'app lo rinnova da sola. Si revoca come l'altro: cambiando QM_AUTH_SECRET.
+    if (url.pathname === '/auth/galleria' || url.pathname === '/auth/galleria/rinnova') {
+      const pass = request.headers.get('X-QM-Pass') || '';
+      const ok = url.pathname === '/auth/galleria' ? await verificaPass(env, pass) : await verificaPassBg(env, pass);
+      if (!ok) return json({ ok: false, error: 'Accesso non autorizzato' }, 401);
+      const scade = Date.now() + 365 * 86400000;
+      return json({ ok: true, pass: await firmaPassBg(env, scade), scade });
+    }
+
     // Vale per tutti i percorsi /kv/*. Finche' QM_AUTH_OBBLIGATORIA non e' 'si' non blocca
     // niente: si limita a contare chi passa senza lasciapassare, cosi' la decisione di
     // chiudere si prende su un numero e non a sensazione.
     if (url.pathname.startsWith('/kv/')) {
       const pass = request.headers.get('X-QM-Pass') || url.searchParams.get('pass') || '';
-      const valido = await verificaPass(env, pass);
+      let valido = await verificaPass(env, pass);
+      // Codice della Galleria: vale solo per leggere e scrivere chiavi bg_*, anche a porta
+      // aperta — altrimenti un codice limitato aprirebbe più di quanto dichiara.
+      if (!valido && String(pass).startsWith('bg.')) {
+        if (!(await verificaPassBg(env, pass))) return json({ ok: false, error: 'Accesso non autorizzato' }, 401);
+        let chiave = '';
+        if (url.pathname === '/kv/get') chiave = url.searchParams.get('key') || '';
+        else if (url.pathname === '/kv/set') { try { chiave = String((await request.clone().json()).key || ''); } catch (e) {} }
+        if (!permessoGalleria(url.pathname, chiave))
+          return json({ ok: false, error: 'Questo codice apre solo i dati della Galleria' }, 403);
+        valido = true;
+      }
       if (!valido) {
         if (String(env.QM_AUTH_OBBLIGATORIA || '').toLowerCase() === 'si')
           return json({ ok: false, error: 'Accesso non autorizzato' }, 401);
@@ -421,6 +447,30 @@ async function verificaPass(env, pass) {
     if (!(scade > Date.now())) return false;              // scaduto
     return (await firmaPass(env, scade)) === String(pass); // firma corrispondente
   } catch (e) { return false; }
+}
+
+// Il lasciapassare della Galleria: stessa firma, ma su "bg.<scadenza>", così uno non si
+// può spacciare per l'altro.
+async function firmaPassBg(env, scade) {
+  const k = await chiaveHmac(env);
+  const f = await crypto.subtle.sign('HMAC', k, new TextEncoder().encode('bg.' + scade));
+  return 'bg.' + scade + '.' + b64url(f);
+}
+async function verificaPassBg(env, pass) {
+  try {
+    if (!env.QM_AUTH_SECRET || !pass) return false;
+    const m = String(pass).match(/^bg\.(\d+)\./);
+    if (!m) return false;
+    const scade = Number(m[1]);
+    if (!(scade > Date.now())) return false;
+    return (await firmaPassBg(env, scade)) === String(pass);
+  } catch (e) { return false; }
+}
+// Cosa apre il codice della Galleria: SOLO /kv/get e /kv/set, SOLO chiavi bg_*. Niente
+// elenco delle chiavi, niente cancellazioni, niente proxy AI.
+function permessoGalleria(percorso, chiave) {
+  if (percorso !== '/kv/get' && percorso !== '/kv/set') return false;
+  return /^bg_[A-Za-z0-9_]+$/.test(String(chiave || ''));
 }
 
 function soloIndirizzo(s) {
