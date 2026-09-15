@@ -386,6 +386,55 @@ La **media di ogni fascia è colorata rispetto alla soglia obiettivo** (verde so
 
 Riga di sintesi sotto la tabella: *"le recensioni degli ultimi N giorni valgono da sole metà del punteggio"*, con N ricavato **cumulando le quote reali** fino a superare 0.5, non assunto uguale all'emivita (che lo approssima soltanto).
 
+### La card mostra il punteggio DI BOOKING, la stima sta sotto (15/09/2026)
+
+Il modello è una **previsione di ciò che Booking pubblicherà**, non la cifra pubblicata: i
+due divergono per qualche giorno ogni volta che arrivano recensioni che Booking non ha
+ancora recepito. Finché la card "Punteggio medio" mostrava la stima come titolo, quella
+divergenza arrivava al QM come *due verità in disaccordo* — `8.5` su Compass, `8.6`
+sull'Extranet — senza niente che dicesse a chi credere. Ed è il modo più rapido per far
+smettere di fidarsi dell'intera sezione.
+
+| | Prima | Ora |
+|---|---|---|
+| Titolo della card | la stima del modello | la cifra **letta su Booking** (ultima osservazione del registro), con la sua data |
+| Sotto | emivita e media semplice | `su Booking · letto il 14/9 · stima Compass 8.5 (scesa il 12/9) — Booking pubblica con qualche giorno di ritardo` |
+| Senza lettura recente | identico | si ricade sulla stima, **detta stima**, con `punteggio Booking non registrato da N giorni` |
+
+`REV_OSS_FRESCA_GG=30`: oltre un mese la lettura non fa più da titolo. Un numero digitato
+settimane fa e mai più toccato mentirebbe con l'aria di un fatto — ed è il rischio vero di
+questo schema, non un dettaglio.
+
+`revStimaDaQuando(scored,hl,now,display)` dice **da quando** la stima ha smesso di mostrare
+quella cifra (all'indietro, al massimo 90 giorni). Serve a raccontare lo scarto come una
+transizione datata invece che come un guasto; restituisce `null` quando le cifre coincidono
+o quando quella cifra non è mai stata mostrata nell'orizzonte, perché annunciare un cambio
+che non c'è stato è peggio che tacere.
+
+**Conseguenza sugli altri due punti**: il grafico dell'andamento e "Recensioni in scadenza"
+continuano a mostrare il modello — è giusto, sono la dinamica della stima — ma ora si
+chiamano **stima** (`Stima attuale`, non `Score attuale`). Con la card che porta la cifra di
+Booking, un secondo numero senza etichetta sarebbe di nuovo un punteggio ufficiale in
+disaccordo col primo, cioè il problema appena risolto spostato di dieci centimetri.
+
+Nel riquadro obiettivo il verbo segue la cifra letta: se il target coincide con quella già
+pubblicata si dice **tornare a 8.6**, non *raggiungere 8.6* sotto una card che mostra 8.6.
+
+Coperto da **17 controlli** ("Card «Punteggio medio»: non deve contraddire Booking" e "Da
+quando la stima ha smesso di mostrare quella cifra"), verificati con tre sabotaggi (la card
+torna sempre alla stima; una lettura vecchia fa da titolo; si annuncia un cambio su una
+cifra ferma): 6, 3 e 1 falliscono.
+
+**Cosa NON si è fatto, e perché**: non si è toccato il modello per far combaciare gli 8
+centesimi mancanti. Su Art Resort nessuna emivita fra 20 e 1200 giorni produce 8.6, ma il
+modello ha mostrato 8.6 per tutto agosto e fino all'11/09: non c'è uno scostamento
+sistematico da correggere, c'è una transizione di tre giorni che Booking non aveva ancora
+pubblicato. Accorciare la finestra, escludere le recensioni senza sottopunteggi o senza
+testo — tutte cose che *farebbero tornare* il numero — è la scorciatoia già rimossa il
+01/09/2026: con abbastanza gradi di libertà si spiega qualunque cifra. Il segnale che
+imporrebbe di rivedere il modello è diverso: **più strutture fuori modello nella stessa
+direzione**, o Art Resort ancora a 8.6 dopo due settimane e un CSV riesportato.
+
 ### Tutti i punti che mostrano IL punteggio devono usare `punteggioBooking` + `revHl(p)`
 
 Sono **tre** e vanno tenuti allineati, altrimenti la stessa struttura mostra numeri diversi nella stessa pagina:
