@@ -6913,19 +6913,28 @@ function calibraDaOsservazioni(recensioni,osservazioni,importTs){
     // parlare di conflitto manderebbe a cercare un colpevole fra le altre, che non c'è.
     // Con una sola osservazione non può esserci contraddizione per definizione.
     // Il secondo giro costa quanto il primo, ma si paga solo quando qualcosa non torna.
+    // Si scorrono TUTTE le emivite anche quando una combacia subito: serve anche il
+    // `range`, cioe' i punteggi che il modello puo' produrre con quelle recensioni. Senza,
+    // si sa che l'osservazione non torna ma non DA CHE PARTE — e le due direzioni hanno
+    // rimedi opposti (vedi il ramo `fuori-modello` di revRenderCalib). Costa un giro in
+    // piu' per osservazione, e si paga solo quando la calibrazione d'insieme e' fallita.
     const daSola=c=>{
+      let ok=false,mn=null,mx=null;
       for(let hl=20;hl<=1200;hl++){
         const s=punteggioBooking(c.sub,hl,c.ts).score;
-        if(s!==null&&s>=c.display-0.05&&s<c.display+0.05)return true;
+        if(s===null)continue;
+        if(mn===null||s<mn)mn=s;
+        if(mx===null||s>mx)mx=s;
+        if(s>=c.display-0.05&&s<c.display+0.05)ok=true;
       }
-      return false;
+      return{ok,range:mn===null?null:[mn,mx]};
     };
     // Quali non tornano, non solo quante: senza il nome e la data, la scheda finisce per
     // accusare il CSV di oggi per colpa di una lettura di dieci giorni fa (01/09/2026:
     // SoulArt dichiarato fuori modello per l'8.9 annotato il 23/08, mentre le altre tre
     // osservazioni e il CSV attuale erano perfettamente coerenti).
-    const incoerenti=ctx.filter(c=>!daSola(c))
-      .map(c=>({ts:c.ts,display:c.display,nRec:c.sub.length}));
+    const incoerenti=ctx.map(c=>({c,d:daSola(c)})).filter(x=>!x.d.ok)
+      .map(x=>({ts:x.c.ts,display:x.c.display,nRec:x.c.sub.length,range:x.d.range}));
     const tutteRiproducibili=!incoerenti.length;
     return{hl:null,fascia:null,
            contraddittorio:ctx.length>1&&tutteRiproducibili,
@@ -6990,7 +6999,7 @@ function revCalibRicalcola(p){
   // a meno che accorciando la finestra il punteggio sia tornato riproducibile.
   if(multi.fuoriModello)c.fuoriModello=true;
   // Le osservazioni che il modello non riesce a riprodurre, per poterle nominare.
-  c.incoerenti=(multi.incoerenti||[]).map(x=>({ts:x.ts,display:x.display,nRec:x.nRec}));
+  c.incoerenti=(multi.incoerenti||[]).map(x=>({ts:x.ts,display:x.display,nRec:x.nRec,range:x.range||null}));
   c.contraddittorio=!!multi.contraddittorio;
   c.nUsate=multi.nUsate;c.nAttesa=nAttesa;
   if(c.fuoriModello){
@@ -7181,16 +7190,35 @@ function revRenderCalib(p,pb,hl){
       // Non chiamarla `el`: e' il nome dell'elemento della pagina qualche riga sopra, e
       // riusarlo qui lo nasconde. Nel browser sarebbe innocuo (blocco separato), ma la rete
       // di sicurezza converte le dichiarazioni e il riquadro smetteva di disegnarsi.
+      // DA CHE PARTE non torna, osservazione per osservazione: sopra il massimo e sotto
+      // il minimo hanno rimedi OPPOSTI, e prima qui si stampava sempre la spiegazione del
+      // "sotto" ("mancavano recensioni recenti, riesporta il CSV"). Su Art Resort, che sta
+      // sopra il massimo, mandava a riesportare un CSV gia' aggiornato: un rimedio che non
+      // poteva funzionare (15/09/2026).
+      let nSopra=0,nSotto=0;
       const elenco=cs.incoerenti.map(x=>{
         const d=new Date(x.ts);
-        return '<strong>'+esc(Number(x.display).toFixed(1))+'</strong> del '
+        const rg=x.range;
+        const letto=Number(x.display);
+        let coda='';
+        if(rg){
+          const sotto=letto<rg[0];
+          if(sotto)nSotto++;else nSopra++;
+          coda=', il modello si fermava a '+(sotto?rg[0].toFixed(2):rg[1].toFixed(2))
+            +' — '+(sotto?'sopra':'sotto')+' di '+(sotto?rg[0]-letto:letto-rg[1]).toFixed(2);
+        }
+        return '<strong>'+esc(letto.toFixed(1))+'</strong> del '
           +String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')
-          +' (su '+x.nRec+' recensioni note allora)';
+          +' (su '+x.nRec+' recensioni note allora'+coda+')';
       }).join(', ');
+      const causa=nSopra&&!nSotto
+        ? 'Il valore letto sta <strong>sopra</strong> quello che quelle recensioni possono produrre: Booking mostrava ancora una cifra che non tengono piu\' su. Di solito vuol dire che Booking non aveva ancora conteggiato le ultime recensioni arrivate — aggiorna con ritardo o a lotti — e nei giorni successivi scende da solo. L\'altra causa possibile e\' che il CSV contenga recensioni che Booking non conta piu\' (rimosse per moderazione).'
+        : nSotto&&!nSopra
+        ? 'Il valore letto sta <strong>sotto</strong> quello che quelle recensioni possono produrre: di solito significa che allora mancavano recensioni recenti, arrivate nell\'export successivo.'
+        : 'Alcune stanno sopra e altre sotto quello che il modello puo\' produrre: guarda prima quelle piu\' lontane dalla fascia.';
       diagnosi='Non e\' il punteggio di oggi a non tornare, ma '
         +(cs.incoerenti.length===1?'un\'osservazione registrata prima':'alcune osservazioni registrate prima')+': '+elenco+'. '
-        +'Con le recensioni presenti nel CSV a quel momento il modello non poteva arrivarci: '
-        +'di solito significa che allora mancavano recensioni recenti, arrivate nell\'export successivo. '
+        +causa
         +'<span style="display:block;margin-top:4px;">Togli quella riga dal registro con la ✕ qui sotto: le altre osservazioni restano e la calibrazione si stringe di nuovo.</span>';
     }else if(rg){
       const sotto=letto<rg[0],dist=sotto?rg[0]-letto:letto-rg[1];

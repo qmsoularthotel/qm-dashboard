@@ -1348,6 +1348,61 @@ ok('osservazioni coerenti: emivita trovata', _ok2.hl > 0, true);
 ok('nessuna accusata',                       (_ok2.incoerenti || []).length, 0);
 ok('e nessun conflitto dichiarato',          !!_ok2.contraddittorio, false);
 
+sez('Calibrazione: un\'osservazione che non torna dice DA CHE PARTE');
+// 15/09/2026 — Art Resort: Booking mostrava 8.6, Compass 8.5. Con quelle 888 recensioni
+// il modello non arriva oltre 8.52 con NESSUNA emivita, cioe' il valore letto sta SOPRA
+// il massimo: Booking non aveva ancora conteggiato le recensioni di inizio settembre (17,
+// media 7.1), che nel modello avevano gia' fatto scendere la cifra. Il riquadro pero'
+// stampava sempre la spiegazione del caso opposto — "mancavano recensioni recenti,
+// arrivate nell'export successivo" — mandando a riesportare un CSV gia' aggiornato.
+// Numeri giusti, racconto sbagliato: il rimedio suggerito non poteva funzionare.
+var _SOPRA = calibraDaOsservazioni(_REC, [
+  { ts: new Date(_ORA - 1 * _GG2).toISOString(), display: 10 }
+], _ORA);
+ok('fuori modello riconosciuto',            _SOPRA.fuoriModello, true);
+ok('l\'osservazione porta la sua fascia',    !!(_SOPRA.incoerenti[0] && _SOPRA.incoerenti[0].range), true);
+ok('e il letto sta SOPRA il massimo',       10 > _SOPRA.incoerenti[0].range[1], true);
+var _SOTTO = calibraDaOsservazioni(_REC, [
+  { ts: new Date(_ORA - 1 * _GG2).toISOString(), display: 5 }
+], _ORA);
+ok('nell\'altro caso il letto sta SOTTO il minimo', 5 < _SOTTO.incoerenti[0].range[0], true);
+// Il ricalcolo deve consegnare la fascia al riquadro, altrimenti la direzione si perde
+// per strada e si torna al messaggio unico.
+(function () {
+  var _vero = REV_CALIB, _hot = REV_HOTELS.sa;
+  REV_HOTELS.sa = { data: _REC };
+  REV_CALIB = { sa: { osservazioni: [{ ts: new Date(_ORA - 1 * _GG2).toISOString(), display: 10 }] } };
+  try { revCalibRicalcola('sa'); } catch (e) {}
+  ok('il ricalcolo conserva la fascia dell\'incoerente',
+     !!(REV_CALIB.sa.incoerenti[0] && REV_CALIB.sa.incoerenti[0].range), true);
+  REV_CALIB = _vero; REV_HOTELS.sa = _hot;
+})();
+// E il riquadro deve dire due cose diverse nei due casi.
+(function () {
+  var elFinto = { innerHTML: '' };
+  var _getEl = document.getElementById;
+  document.getElementById = function (id) { return /^rev-calib-/.test(id) ? elFinto : _getEl.call(document, id); };
+  var _vero = REV_CALIB, ORA = Date.now(), GG = 86400000;
+  function disegna(range, display) {
+    REV_CALIB = { sa: { osservazioni: [{ ts: new Date(ORA - GG).toISOString(), display: display }],
+      fonte: 'default', fuoriModello: true, range: range, nRec: 888,
+      incoerenti: [{ ts: ORA - GG, display: display, nRec: 888, range: range }] } };
+    elFinto.innerHTML = '';
+    try { revRenderCalib('sa', { pesoEff: 206, nInFinestra: 887 }, 136); } catch (e) { return 'ERRORE'; }
+    return elFinto.innerHTML;
+  }
+  var hSopra = disegna([8.06, 8.52], 8.6);
+  ok('sopra il massimo: lo dice',            /sta <strong>sopra<\/strong>/.test(hSopra), true);
+  ok('e nomina il ritardo di Booking',       /ritardo o a lotti/.test(hSopra), true);
+  ok('senza mandare a riesportare il CSV',   /mancavano recensioni recenti/.test(hSopra), false);
+  ok('e mostra dove si fermava il modello',  /8\.52/.test(hSopra), true);
+  var hSotto = disegna([8.60, 8.90], 8.5);
+  ok('sotto il minimo: spiegazione opposta', /mancavano recensioni recenti/.test(hSotto), true);
+  ok('e non parla di ritardo di Booking',    /ritardo o a lotti/.test(hSotto), false);
+  REV_CALIB = _vero;
+  document.getElementById = _getEl;
+})();
+
 sez('Riquadro "Punteggio Booking reale": deve disegnarsi sempre');
 // 01/09/2026: il riquadro e' sparito del tutto perche' un ramo nuovo usava `esc`, che in
 // quella funzione non esisteva. Un errore in un caso raro cancellava un pannello intero,

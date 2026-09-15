@@ -275,6 +275,49 @@ Il valore è memorizzato in `REV_CALIB[p].range` insieme a `nRec`, così il pann
 
 **Le osservazioni che catturano un cambio di cifra valgono molto più di quelle che ripetono lo stesso valore** — verificato in test: aggiungendo una terza osservazione che ripete `8.8` la fascia non si stringe affatto, mentre le due che catturano il cambio la portano da 161 a 143 gg. Se il registro contiene solo valori identici il pannello lo segnala esplicitamente (`tuttiUguali`).
 
+### Anche l'osservazione incoerente deve dire DA CHE PARTE (fix 15/09/2026)
+
+La sezione sopra vale per *il punteggio di oggi*. Quando invece a non tornare è
+un'**osservazione registrata prima** (ramo `cs.incoerenti` di `revRenderCalib`), il
+riquadro stampava sempre e solo la spiegazione del caso «sotto il minimo» — *"allora
+mancavano recensioni recenti, arrivate nell'export successivo"* — qualunque fosse la
+direzione.
+
+**Caso reale, Art Resort**: Booking mostrava **8.6**, Compass **8.5**. Con le 888
+recensioni dell'export (fino al 13/09) il modello non supera **8.523** con *nessuna*
+emivita fra 20 e 1200 giorni: il valore letto sta **sopra il massimo di 0.08**. Il
+riquadro mandava quindi a riesportare un CSV che era già dell'ultimo minuto — un rimedio
+che non poteva funzionare, e la solita categoria di difetto: numeri giusti, racconto
+sbagliato.
+
+La causa vera era il **ritardo di Booking**: le 17 recensioni di settembre (media **7,1**
+contro 8,70 di agosto) avevano già fatto scendere il modello sotto 8.55 il **12/09**,
+mentre la cifra sull'Extranet era ancora quella di prima. Due giorni dopo Compass mostrava
+8.5 e Booking ancora 8.6.
+
+`calibraDaOsservazioni` porta ora un `range` **su ogni osservazione incoerente** (il
+secondo giro `daSola` non esce più appena trova un'emivita compatibile: serve anche il
+minimo e il massimo producibili), `revCalibRicalcola` lo conserva, e il messaggio si
+sdoppia:
+
+| Direzione | Cosa dice |
+|---|---|
+| letto **sopra** il massimo | Booking non ha ancora conteggiato le ultime recensioni (aggiorna con ritardo o a lotti) e scende da solo nei giorni successivi; in alternativa il CSV contiene recensioni che Booking non conta più |
+| letto **sotto** il minimo | mancavano recensioni recenti, arrivate nell'export successivo |
+| miste | lo dice, e indirizza su quelle più lontane dalla fascia |
+
+L'elenco mostra anche **dove si fermava il modello** (`il modello si fermava a 8.52 —
+sotto di 0.08`): senza il numero, «non riproducibile» resta una constatazione muta.
+
+Coperto da **11 controlli** ("Calibrazione: un'osservazione che non torna dice DA CHE
+PARTE"), verificati con due sabotaggi (messaggio unico di nuovo; fascia non trasportata
+dal ricalcolo): 2 e 1 falliscono.
+
+**Non è un caso da "sistemare" nel modello**: un'osservazione letta mentre Booking era in
+ritardo si toglie dal registro con la ✕ e si riregistra quando la cifra sull'Extranet si
+allinea. Accorciare la finestra o inventare un'esclusione per farla tornare è esattamente
+la scorciatoia già rimossa il 01/09/2026.
+
 ### Migrazione
 
 `revCalibMigra()` converte il vecchio formato a valore singolo (`{scoreReale, ts, hl, fascia}`) nella prima riga del registro. Gira a ogni `revCalibLoad()`, è idempotente (salta i record che hanno già `osservazioni`).
