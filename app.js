@@ -6647,11 +6647,11 @@ function revRenderExpiring(p){
       <span style="margin-left:auto;background:var(--amber-bg);color:#A05A00;border-radius:10px;padding:2px 10px;font-size:var(--fs-xxs);font-weight:600;">${allExpiring.length} questa/prossima settimana</span>
     </div>
     <div class="panel-body" style="padding:12px 14px;">`;
-  // Stima attuale vs proiezione post-scadenza
+  // Score attuale vs proiezione post-scadenza
   if(scoreAttuale!==null){
     html+=`<div style="display:flex;align-items:center;gap:16px;background:var(--surface2);border-radius:8px;padding:12px 16px;margin-bottom:14px;flex-wrap:wrap;">
       <div style="text-align:center;">
-        <div style="font-size:var(--fs-xxs);color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Stima attuale</div>
+        <div style="font-size:var(--fs-xxs);color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;">Score attuale</div>
         <div style="font-size:24px;font-weight:700;color:var(--accent);">${(Math.round(scoreAttuale*10)/10).toFixed(1)}</div>
       </div>
       ${hasExp?`<div style="font-size:20px;color:var(--text-dim);">→</div>
@@ -6727,28 +6727,6 @@ const REV_HL_DEFAULT=136;
 const REV_FINESTRA_GG=1095;        // 36 mesi: finestra di validità delle recensioni Booking
 const REV_CALIB_KEY='qm_rev_calib';
 const REV_CALIB_STALE_GG=90;       // oltre questo, la calibrazione va rinfrescata
-// Oltre questi giorni l'ultima lettura dell'Extranet non fa piu' da titolo alla card: un
-// numero digitato settimane fa e mai piu' toccato mentirebbe con l'aria di un fatto.
-const REV_OSS_FRESCA_GG=30;
-
-/**
- * Da quando la stima ha smesso di mostrare la cifra `display`.
- * Serve a raccontare uno scarto fra Compass e Booking senza farlo sembrare un guasto:
- * "la stima e' scesa a 8.5 il 12/09" dice che la cifra su Booking e' semplicemente
- * quella di prima. Si guarda indietro al massimo `maxGg` giorni.
- * @returns {number|null} timestamp del primo giorno in cui la cifra non coincide piu'
- */
-function revStimaDaQuando(scored,hl,now,display,maxGg=90){
-  const GG=86400000;
-  const cifra=t=>{const s=punteggioBooking(scored,hl,t).score;return s===null?null:Math.round(s*10)/10;};
-  if(cifra(now)===display)return null;             // coincidono: niente da raccontare
-  let ultimoUguale=null;
-  for(let d=1;d<=maxGg;d++){
-    if(cifra(now-d*GG)===display){ultimoUguale=d;break;}
-  }
-  if(ultimoUguale===null)return null;              // mai uguale nell'orizzonte: non e' un cambio recente
-  return now-(ultimoUguale-1)*GG;                  // il primo giorno in cui e' cambiata
-}
 let REV_CALIB={};
 
 // Le recensioni interne hanno {_dateTs,_score}; la firma pubblica documentata è
@@ -6935,28 +6913,19 @@ function calibraDaOsservazioni(recensioni,osservazioni,importTs){
     // parlare di conflitto manderebbe a cercare un colpevole fra le altre, che non c'è.
     // Con una sola osservazione non può esserci contraddizione per definizione.
     // Il secondo giro costa quanto il primo, ma si paga solo quando qualcosa non torna.
-    // Si scorrono TUTTE le emivite anche quando una combacia subito: serve anche il
-    // `range`, cioe' i punteggi che il modello puo' produrre con quelle recensioni. Senza,
-    // si sa che l'osservazione non torna ma non DA CHE PARTE — e le due direzioni hanno
-    // rimedi opposti (vedi il ramo `fuori-modello` di revRenderCalib). Costa un giro in
-    // piu' per osservazione, e si paga solo quando la calibrazione d'insieme e' fallita.
     const daSola=c=>{
-      let ok=false,mn=null,mx=null;
       for(let hl=20;hl<=1200;hl++){
         const s=punteggioBooking(c.sub,hl,c.ts).score;
-        if(s===null)continue;
-        if(mn===null||s<mn)mn=s;
-        if(mx===null||s>mx)mx=s;
-        if(s>=c.display-0.05&&s<c.display+0.05)ok=true;
+        if(s!==null&&s>=c.display-0.05&&s<c.display+0.05)return true;
       }
-      return{ok,range:mn===null?null:[mn,mx]};
+      return false;
     };
     // Quali non tornano, non solo quante: senza il nome e la data, la scheda finisce per
     // accusare il CSV di oggi per colpa di una lettura di dieci giorni fa (01/09/2026:
     // SoulArt dichiarato fuori modello per l'8.9 annotato il 23/08, mentre le altre tre
     // osservazioni e il CSV attuale erano perfettamente coerenti).
-    const incoerenti=ctx.map(c=>({c,d:daSola(c)})).filter(x=>!x.d.ok)
-      .map(x=>({ts:x.c.ts,display:x.c.display,nRec:x.c.sub.length,range:x.d.range}));
+    const incoerenti=ctx.filter(c=>!daSola(c))
+      .map(c=>({ts:c.ts,display:c.display,nRec:c.sub.length}));
     const tutteRiproducibili=!incoerenti.length;
     return{hl:null,fascia:null,
            contraddittorio:ctx.length>1&&tutteRiproducibili,
@@ -7021,7 +6990,7 @@ function revCalibRicalcola(p){
   // a meno che accorciando la finestra il punteggio sia tornato riproducibile.
   if(multi.fuoriModello)c.fuoriModello=true;
   // Le osservazioni che il modello non riesce a riprodurre, per poterle nominare.
-  c.incoerenti=(multi.incoerenti||[]).map(x=>({ts:x.ts,display:x.display,nRec:x.nRec,range:x.range||null}));
+  c.incoerenti=(multi.incoerenti||[]).map(x=>({ts:x.ts,display:x.display,nRec:x.nRec}));
   c.contraddittorio=!!multi.contraddittorio;
   c.nUsate=multi.nUsate;c.nAttesa=nAttesa;
   if(c.fuoriModello){
@@ -7212,35 +7181,16 @@ function revRenderCalib(p,pb,hl){
       // Non chiamarla `el`: e' il nome dell'elemento della pagina qualche riga sopra, e
       // riusarlo qui lo nasconde. Nel browser sarebbe innocuo (blocco separato), ma la rete
       // di sicurezza converte le dichiarazioni e il riquadro smetteva di disegnarsi.
-      // DA CHE PARTE non torna, osservazione per osservazione: sopra il massimo e sotto
-      // il minimo hanno rimedi OPPOSTI, e prima qui si stampava sempre la spiegazione del
-      // "sotto" ("mancavano recensioni recenti, riesporta il CSV"). Su Art Resort, che sta
-      // sopra il massimo, mandava a riesportare un CSV gia' aggiornato: un rimedio che non
-      // poteva funzionare (15/09/2026).
-      let nSopra=0,nSotto=0;
       const elenco=cs.incoerenti.map(x=>{
         const d=new Date(x.ts);
-        const rg=x.range;
-        const letto=Number(x.display);
-        let coda='';
-        if(rg){
-          const sotto=letto<rg[0];
-          if(sotto)nSotto++;else nSopra++;
-          coda=', il modello si fermava a '+(sotto?rg[0].toFixed(2):rg[1].toFixed(2))
-            +' — '+(sotto?'sopra':'sotto')+' di '+(sotto?rg[0]-letto:letto-rg[1]).toFixed(2);
-        }
-        return '<strong>'+esc(letto.toFixed(1))+'</strong> del '
+        return '<strong>'+esc(Number(x.display).toFixed(1))+'</strong> del '
           +String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')
-          +' (su '+x.nRec+' recensioni note allora'+coda+')';
+          +' (su '+x.nRec+' recensioni note allora)';
       }).join(', ');
-      const causa=nSopra&&!nSotto
-        ? 'Il valore letto sta <strong>sopra</strong> quello che quelle recensioni possono produrre: Booking mostrava ancora una cifra che non tengono piu\' su. Di solito vuol dire che Booking non aveva ancora conteggiato le ultime recensioni arrivate — aggiorna con ritardo o a lotti — e nei giorni successivi scende da solo. L\'altra causa possibile e\' che il CSV contenga recensioni che Booking non conta piu\' (rimosse per moderazione).'
-        : nSotto&&!nSopra
-        ? 'Il valore letto sta <strong>sotto</strong> quello che quelle recensioni possono produrre: di solito significa che allora mancavano recensioni recenti, arrivate nell\'export successivo.'
-        : 'Alcune stanno sopra e altre sotto quello che il modello puo\' produrre: guarda prima quelle piu\' lontane dalla fascia.';
       diagnosi='Non e\' il punteggio di oggi a non tornare, ma '
         +(cs.incoerenti.length===1?'un\'osservazione registrata prima':'alcune osservazioni registrate prima')+': '+elenco+'. '
-        +causa
+        +'Con le recensioni presenti nel CSV a quel momento il modello non poteva arrivarci: '
+        +'di solito significa che allora mancavano recensioni recenti, arrivate nell\'export successivo. '
         +'<span style="display:block;margin-top:4px;">Togli quella riga dal registro con la ✕ qui sotto: le altre osservazioni restano e la calibrazione si stringe di nuovo.</span>';
     }else if(rg){
       const sotto=letto<rg[0],dist=sotto?rg[0]-letto:letto-rg[1];
@@ -7497,38 +7447,10 @@ function revRenderStats(p){
     nrBtn.style.color=noReply>0&&!nrBtn.classList.contains('active')?'var(--amber)':'';
   }
   const g=id=>document.getElementById(id+'-'+p);
-  // LA CARD NON DEVE CONTRADDIRE BOOKING (15/09/2026).
-  // Mostrava la stima del modello come se fosse IL punteggio: quando i due divergono —
-  // ed e' normale che divergano per qualche giorno, perche' Booking pubblica in ritardo —
-  // il QM leggeva 8.5 su Compass e 8.6 sull'Extranet senza sapere a chi credere.
-  // Il titolo e' ora la cifra REALMENTE letta su Booking (il registro osservazioni), con
-  // la sua data; la stima resta sotto, dichiarata come tale, con la direzione. Se non c'e'
-  // una lettura recente si ricade sulla stima, detta stima.
-  const _cst=revCalibStato(p);
-  const stima=Math.round(avgWeighted*10)/10;
-  const letto=(_cst.scoreReale!=null&&_cst.gg<=REV_OSS_FRESCA_GG)?Number(_cst.scoreReale):null;
-  const calibrata=(_cst.stato==='ok'||_cst.stato==='da-aggiornare')?'calibrata ':'';
-  const fmtGG=t=>{const d=new Date(t);return d.getDate()+'/'+(d.getMonth()+1);};
-  if(letto!==null){
-    g('rev-avg').textContent=letto.toFixed(1);
-    if(letto===stima){
-      g('rev-avg-sub').textContent='su Booking · letto il '+fmtGG(_cst.ts)+' · la stima coincide · media semplice '+avgSimple.toFixed(1);
-    }else{
-      const cambio=revStimaDaQuando(scored,hl,now,letto);
-      const verso=stima<letto?'scesa':'salita';
-      g('rev-avg-sub').textContent='su Booking · letto il '+fmtGG(_cst.ts)
-        +' · stima Compass '+stima.toFixed(1)+' ('+verso+(cambio?' il '+fmtGG(cambio):'')+')'
-        +' — Booking pubblica con qualche giorno di ritardo';
-    }
-  }else{
-    g('rev-avg').textContent=stima.toFixed(1);
-    g('rev-avg-sub').textContent='stima · decadimento continuo, emivita '+calibrata+hl+'gg · media semplice '+avgSimple.toFixed(1)
-      +(_cst.scoreReale!=null?' · punteggio Booking non registrato da '+_cst.gg+' giorni':'');
-  }
+  g('rev-avg').textContent=(Math.round(avgWeighted*10)/10).toFixed(1);
+  g('rev-avg-sub').textContent='decadimento continuo, emivita '+(revCalibStato(p).stato==='ok'||revCalibStato(p).stato==='da-aggiornare'?'calibrata ':'')+hl+'gg · media semplice '+avgSimple.toFixed(1);
   const avgCard=g('rev-avg');
-  if(avgCard&&avgCard.closest('.kpi-card'))avgCard.closest('.kpi-card').title=letto!==null
-    ?'Punteggio letto sull\u2019Extranet il '+fmtGG(_cst.ts)+'. Sotto, la stima del modello: quando divergono, Booking deve ancora recepire le ultime recensioni. Clicca per vedere l\u2019andamento.'
-    :'Stima calibrata sul punteggio reale inserito — non è il calcolo ufficiale di Booking. Clicca per vedere l\u2019andamento.';
+  if(avgCard&&avgCard.closest('.kpi-card'))avgCard.closest('.kpi-card').title='Stima calibrata sul punteggio reale inserito — non è il calcolo ufficiale di Booking. Clicca per vedere l\u2019andamento.';
   g('rev-count').textContent=data.length;
   // Il peso effettivo è il denominatore reale dei calcoli previsionali: spiega perché
   // poche recensioni recenti muovono il punteggio più di tante vecchie.
@@ -7591,16 +7513,12 @@ function revRenderStats(p){
     const mesi=g_=>g_<30?`${g_} giorni`:(g_<365?`~${Math.round(g_/30)} mesi`:`~${(g_/365).toFixed(1)} anni`);
     targetEl.style.display='flex';
     if(sim10.raggiungibile&&sim10.nRec===0){
-      targetTitle.textContent=`Stima già a ${displayScore.toFixed(1)} — ottimo!`;
+      targetTitle.textContent=`Score già a ${displayScore.toFixed(1)} — ottimo!`;
       targetDetail.textContent=expiringNote||'';
     }else if(sim10.raggiungibile){
-      // "raggiungere 8.6" mentre la card mostra 8.6 (la cifra letta su Booking) sembra una
-      // contraddizione: se il target coincide con la cifra gia' pubblicata, il verbo e'
-      // TORNARE — la stima e' scesa sotto e deve risalire perche' Booking non cali.
-      const verbo=(letto!==null&&target===letto)?'tornare a':'raggiungere';
       targetTitle.textContent=sim10.nRec===1
-        ?`1 recensione con 10 per ${verbo} ${target.toFixed(1)}`
-        :`${sim10.nRec} recensioni con 10 per ${verbo} ${target.toFixed(1)}`;
+        ?`1 recensione con 10 per raggiungere ${target.toFixed(1)}`
+        :`${sim10.nRec} recensioni con 10 per raggiungere ${target.toFixed(1)}`;
       // Intervallo temporale sugli estremi della fascia di emivite compatibili: fuori da
       // quella fascia la previsione non è distinguibile, va letta come ordine di grandezza.
       const cs=revCalibStato(p);
@@ -7612,7 +7530,7 @@ function revRenderStats(p){
         if(gg.length===2&&Math.min(...gg)!==Math.max(...gg))range=` (fascia ${mesi(Math.min(...gg))}–${mesi(Math.max(...gg))})`;
       }
       const d9=sim9.raggiungibile&&sim9.nRec?` · con 9: ${sim9.nRec} rec`:'';
-      targetDetail.textContent=`Stima attuale ${displayScore.toFixed(1)} → obiettivo ${target.toFixed(1)} (serve superare ${soglia.toFixed(2)}) · stimati ${mesi(sim10.giorni)}${range}${d9}${expiringNote}`;
+      targetDetail.textContent=`Score attuale ${displayScore.toFixed(1)} → obiettivo ${target.toFixed(1)} (serve superare ${soglia.toFixed(2)}) · stimati ${mesi(sim10.giorni)}${range}${d9}${expiringNote}`;
     }else if(sim10.motivo==='flusso'){
       targetTitle.textContent=`${target.toFixed(1)} non raggiungibile al ritmo qualitativo attuale`;
       targetDetail.textContent=`Con una media ponderata il punteggio converge alla media delle recensioni in arrivo: serve superare ${soglia.toFixed(2)}, quindi finché la qualità media non sale il target resta fuori portata a prescindere dal tempo.${expiringNote}`;
