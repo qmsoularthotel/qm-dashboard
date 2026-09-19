@@ -2526,6 +2526,9 @@ function miniappToggleApp(key){
 const BKF_BANNER_KEY='qm_bkf_banner';
 const BKF_BANNER_TABS=[['day','Servizio'],['orders','Acquisti'],['report','Analisi']];
 let _bkfBanner={day:{enabled:false,message:''},orders:{enabled:false,message:''},report:{enabled:false,message:''}};
+function _bkfBannerTesto(v){
+  return String(v==null?'':v).replace(/\r\n?/g,'\n').replace(/[ \t]+$/gm,'').trim();
+}
 function _bkfBannerNorm(v){
   const out={};
   BKF_BANNER_TABS.forEach(([k])=>{out[k]=(v&&v[k])?{enabled:!!v[k].enabled,message:v[k].message||''}:{enabled:false,message:''};});
@@ -2541,18 +2544,37 @@ async function miniappLoadBkfBanner(){
   }
   miniappRenderBkfBanner();
 }
+// Il messaggio si scrive su PIU' RIGHE: un avviso di due frasi in una casella a riga
+// singola si legge solo scorrendo con le frecce, e gli a capo sono l'unico modo di
+// separare "cosa e' successo" da "cosa devo fare". Casella di testo, non <input>: il
+// valore sta fra i tag, quindi va protetto da & e < (un <input> lo proteggeva con le
+// sole virgolette) e gli a capo dentro non vanno toccati.
 function miniappRenderBkfBanner(){
   const wrap=document.getElementById('miniapp-bkf-banner-tabs');
   if(!wrap)return;
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   wrap.innerHTML=BKF_BANNER_TABS.map(([k,lbl])=>{
     const st=_bkfBanner[k]||{enabled:false,message:''};
     return`<div class="miniapp-avviso-riga">
       <div class="miniapp-sub">${lbl}</div>
-        <input data-bkf-banner-tab="${k}" type="text" value="${(st.message||'').replace(/"/g,'&quot;')}" placeholder="es. Nuovo turno caricato, ricarica" style="flex:1;min-width:0;padding:7px 9px;font-size:var(--fs-xs);border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-family:inherit;">
+        <textarea data-bkf-banner-tab="${k}" rows="2" placeholder="es. Nuovo turno caricato,&#10;ricarica la pagina" class="miniapp-avviso-testo" oninput="_bkfBannerAltezza(this)">${esc(st.message)}</textarea>
         <button onclick="miniappToggleBkfBanner('${k}')" title="Attiva/disattiva avviso su ${lbl}" class="miniapp-sw" style="margin-left:0;background:${st.enabled?'var(--green)':'var(--border)'};"><span class="miniapp-toggle-knob" style="left:${st.enabled?'17px':'2px'};"></span></button>
     </div>`;
   }).join('');
+  _bkfBannerAltezzaTutte();
   miniappRenderContaAvvisi();
+}
+// La casella cresce con il testo invece di far scorrere: un avviso di tre righe scritto
+// dentro una finestra da due si rilegge solo scorrendo, ed e' proprio rileggendolo che ci
+// si accorge di un refuso. Per questo non c'e' l'angolo da trascinare (resize:none): una
+// misura scelta a mano verrebbe comunque sovrascritta al tasto successivo.
+function _bkfBannerAltezza(ta){
+  if(!ta)return;
+  ta.style.height='auto';
+  if(ta.scrollHeight)ta.style.height=ta.scrollHeight+'px';   // dentro la tendina chiusa vale 0: si riadatta all'apertura
+}
+function _bkfBannerAltezzaTutte(){
+  document.querySelectorAll('[data-bkf-banner-tab]').forEach(_bkfBannerAltezza);
 }
 // La scheda Breakfast e' l'unica che ha qualcosa da scrivere, non solo da accendere: gli
 // avvisi stanno dentro di lei ma chiusi, altrimenti resta alta il doppio delle altre e la
@@ -2564,6 +2586,7 @@ function miniappToggleAvvisi(){
   const apri=corpo.hidden;
   corpo.hidden=!apri;
   tasto.setAttribute('aria-expanded',apri?'true':'false');
+  if(apri)_bkfBannerAltezzaTutte();   // a tendina chiusa scrollHeight e' 0: l'altezza si puo' misurare solo ora
 }
 // Quanti avvisi sono accesi si deve vedere a scheda CHIUSA: altrimenti si dimentica di
 // averne lasciato uno attivo e chi apre l'app se lo ritrova davanti per giorni.
@@ -2587,7 +2610,10 @@ function miniappToggleBkfBanner(tab){
 function miniappSaveBkfBanner(btn){
   document.querySelectorAll('[data-bkf-banner-tab]').forEach(inp=>{
     const tab=inp.dataset.bkfBannerTab;
-    if(_bkfBanner[tab])_bkfBanner[tab].message=(inp.value||'').trim();
+    // Gli a capo si conservano (sono il senso della casella a piu' righe); si
+    // normalizzano solo i CRLF di Windows e si tolgono gli spazi ai bordi, che
+    // sull'avviso diventerebbero una riga vuota in cima o in fondo.
+    if(_bkfBanner[tab])_bkfBanner[tab].message=_bkfBannerTesto(inp.value);
   });
   miniappSaveBkfBannerToKV();
   if(btn){const orig=btn.textContent;btn.textContent='✓ Salvato';setTimeout(()=>{btn.textContent=orig;},1500);}

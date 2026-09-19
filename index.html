@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css?v=267">
+<link rel="stylesheet" href="style.css?v=269">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='417-20260919';
+  const V='419-20260919';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1512,7 +1512,7 @@
               <svg class="miniapp-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
             </button>
             <div id="miniapp-avvisi-corpo" class="miniapp-avvisi-corpo" hidden>
-              <div class="miniapp-avvisi-nota">Un messaggio diverso per ogni schermata dell'app: compare a chi la apre e sparisce dopo 7 secondi.</div>
+              <div class="miniapp-avvisi-nota">Un messaggio diverso per ogni schermata dell'app: compare a chi la apre e sparisce dopo 7 secondi. Si può andare a capo: gli a capo restano anche sul telefono.</div>
               <div id="miniapp-bkf-banner-tabs" style="display:flex;flex-direction:column;gap:10px;"></div>
               <button onclick="miniappSaveBkfBanner(this)" class="miniapp-btn miniapp-btn-primario" style="width:100%;margin-top:12px;">Salva avvisi</button>
             </div>
@@ -1738,7 +1738,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=936-20260919"></script>
+<script src="app.js?v=938-20260919"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

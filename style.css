@@ -311,8 +311,17 @@ body.dark .panel{box-shadow:none;}
 .miniapp-avvisi-conta{font-size:var(--fs-xxs);font-weight:700;color:var(--gold);background:var(--gold-bg);border-radius:9px;padding:1px 7px;}
 .miniapp-avvisi-corpo{position:absolute;left:-1px;right:-1px;top:100%;z-index:20;margin-top:6px;background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:8px;padding:14px;box-shadow:0 8px 22px rgba(12,31,51,.16);}
 .miniapp-avvisi-nota{font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:12px;}
-.miniapp-avviso-riga{display:flex;gap:8px;align-items:center;}
-.miniapp-avviso-riga .miniapp-sub{margin:0;width:62px;flex-shrink:0;font-weight:700;color:var(--text-muted);}
+.miniapp-avviso-riga{display:flex;gap:8px;align-items:flex-start;}
+.miniapp-avviso-riga .miniapp-sub{margin:0;width:62px;flex-shrink:0;font-weight:700;color:var(--text-muted);padding-top:8px;}
+/* Il messaggio dell'avviso e' una casella a piu' righe: l'etichetta e l'interruttore si
+   allineano alla PRIMA riga (align-items:flex-start sopra), altrimenti scendono a meta'
+   della casella man mano che si scrive. Cresce in verticale trascinando l'angolo, mai in
+   orizzontale: allargandola uscirebbe dalla scheda, che e' a larghezza fissa. L'altezza la
+   regola _bkfBannerAltezza() sul contenuto, quindi niente angolo da trascinare. */
+.miniapp-avviso-testo{flex:1;min-width:0;padding:7px 9px;font-size:var(--fs-xs);line-height:1.45;
+  border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);
+  font-family:inherit;resize:none;overflow:hidden;min-height:58px;}
+.miniapp-avviso-riga .miniapp-sw{margin-top:9px;}
 /* Schema ricorrente "grafico a sinistra + riquadro dati a destra" (Overview: occupazione
    settimanale + bottiglia Culligan; Bilanciamento Camere: vista settimanale + totali).
    La colonna dati ha flex-shrink:0 e una min-width: su smartphone si prendeva ~180px dei
