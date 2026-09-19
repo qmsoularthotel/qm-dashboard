@@ -61,7 +61,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`biancheria-galleria.html`** — **Gestione Biancheria**, l'app del Resident Manager per il ciclo biancheria di Art Resort Galleria Umberto e Art Suite Santa Brigida. Copia del Consumo Biancheria di Compass; dati sul cloud di Compass con un **codice che apre solo le chiavi `bg_*`** — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 701 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 722 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **6 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr e, dal
 12/09/2026, **biancheria-galleria**) sono accendibili e spegnibili da remoto — vedi
@@ -2864,6 +2864,72 @@ sono i giorni giusti, `martedì 18 … venerdì 21` sì.
 volo. Correggere più tardi un consumo giornaliero non deve cambiare i giri già chiusi né
 le distinte già firmate da Raimondo.
 
+### Ma un totale congelato SBAGLIATO va potuto correggere (19/09/2026)
+
+Il congelamento è giusto, e non si tocca. Il problema è cosa succede quando il numero
+congelato nasce da un **refuso**: resta il *doveva portare* di tutte le consegne
+successive, e inventa un ammanco che nessuno riesce a spiegare.
+
+Caso reale, Boutique: la consegna del 17/09 era stata registrata con **123** asciugamani
+bidet invece di **24**. Il QM ha rifatto i consumi del 15 e del 16 — e il 123 è rimasto lì.
+Giustamente, per la regola sopra. **Ma dalla maschera non c'era nessun modo di
+correggerlo**: selezionando la data di un giro già registrato, la casella *tot pezzi da
+dargli* mostra il valore **congelato** e non quello ricalcolato, quindi «Aggiorna giro»
+risalvava lo stesso numero sbagliato. Un vicolo cieco.
+
+**Non si riallinea da solo**, e non è pigrizia: il totale può legittimamente differire dai
+consumi — la maschera stessa dice *"correggilo solo se il sacco contiene qualcosa di
+diverso"*. Si **segnala** e si riallinea su richiesta.
+
+| Pezzo | Ruolo |
+|---|---|
+| `daiConsumi` | la somma calcolata **al momento della registrazione**, salvata accanto a `consegnato`. Non entra in nessun conto: serve solo a distinguere un refuso da una scelta |
+| `_biaSommaDelGiro(g)` | la somma che quel periodo dà **oggi** |
+| `_biaScostamento(g)` | `null` se allineato o se non c'è niente da dire, altrimenti le voci che non tornano |
+| `_biaApplicaRiallineo(g,sc)` | `consegnato` ← i consumi correnti, con traccia in `edits` |
+| `_biaApplicaConferma(g,sc)` | *"va bene così"*: **non** tocca `consegnato`, registra solo contro quali consumi è stato verificato |
+| `_biaBoxScostamento(g,sc,titolo)` | l'unico riquadro d'avviso, per tutti i punti che lo mostrano |
+
+**Quando si segnala** — `consegnato` diverso dalla somma di oggi **e** (`daiConsumi`
+assente **oppure** uguale a `consegnato`):
+
+| `daiConsumi` | Significa | Avviso |
+|---|---|---|
+| uguale a `consegnato` | registrato col valore calcolato → **i consumi sono stati corretti dopo** | sì, e lo dice come un fatto |
+| diverso da `consegnato` | qualcuno l'ha scritto a mano di proposito | **no**: non c'è niente da segnalare |
+| assente (giri registrati prima del 19/09/2026) | non si sa | sì, ma **senza dichiarare quale delle due cose sia** — un'ipotesi non si scrive come un fatto |
+
+**«Va bene così» esiste perché l'avviso deve potersi spegnere.** Scrive `daiConsumi` = la
+somma attuale, che per costruzione è diversa da `consegnato`: da lì in poi quel giro ricade
+nella riga "scritto a mano". Senza, un totale legittimamente diverso resterebbe segnalato
+per sempre — e un avviso che non si spegne è un avviso che si impara a ignorare.
+
+**Si segnala in tre punti, perché il difetto si manifesta in due colonne diverse:**
+
+1. sulla consegna aperta nella maschera (colonna *tot pezzi da dargli*);
+2. sulla consegna **precedente**, che è quella che riempie il *doveva portare* — ed è lì
+   che il numero sbagliato si **nota**, mentre la causa sta nel giro prima. È il punto che
+   risolve il caso reale: il QM guardava il 19/09 e non aveva modo di sapere che il colpevole
+   era il 17;
+3. nello storico: una **`!`** ambra accanto a *usciti quel giorno*, anche a riga chiusa —
+   un totale che non torna sta in fondo all'elenco e nessuno aprirebbe sette righe per
+   cercarlo. Il dettaglio e i due pulsanti restano dentro, dove c'è lo spazio per spiegare.
+
+Il riallineo **chiede sempre conferma** mostrando voce per voce cosa cambia (un giro chiuso
+può essere stato firmato) e lascia una riga in `edits`, come la cassa e i resi: mai una
+sovrascrittura muta.
+
+**Le due mutazioni stanno fuori** dalle funzioni che chiedono conferma e salvano
+(`biaRiallineaGiro` / `biaConfermaGiro`): là dentro, oltre a una finestra e a una chiamata
+di rete, i controlli non arrivano — e un riallineo che smettesse di toccare `consegnato`,
+limitandosi a spegnere l'avviso, passerebbe inosservato. Stessa ragione per cui esiste
+`_qmVoceMia`.
+
+Coperto da **21 controlli** in `test/controlli.js` ("Biancheria: un totale congelato
+sbagliato si può riallineare"), verificati con cinque sabotaggi (`daiConsumi` ignorato;
+scostamento mai visto; il giorno del giro rientra nel periodo; il riallineo non tocca
+`consegnato`; «va bene così» lo tocca): 2, 5, 6, 2 e 1 falliscono.
+
 ### Confronto e saldo
 
 - **Atteso** al giro N = `consegnato` del giro N-1 (stessa struttura). Al primo giro è
@@ -3198,7 +3264,10 @@ sullo sporco uscito, rientro in più di nuovo rosso): 4, 8 e 1 falliscono.
 | `_biaAtteso(hotel,dataGiro)` | Sporco consegnato al giro precedente |
 | `_biaSaldo(hotel)` | Cumulato dei pezzi non rientrati per voce |
 | `biaSalvaConsumi()` | Salva i 7 totali del giorno (sovrascrive se la data esiste già) |
-| `biaRegistraGiro()` | Registra/aggiorna il giro congelando `consegnato` |
+| `biaRegistraGiro()` | Registra/aggiorna il giro congelando `consegnato` (e salvando `daiConsumi`) |
+| `_biaSommaDelGiro(g)` | Quanto darebbero **oggi** i consumi di quel periodo |
+| `_biaScostamento(g)` | Le voci in cui il totale congelato non corrisponde più — vedi sopra |
+| `biaRiallineaGiro(id)` / `biaConfermaGiro(id)` | Riallinea ai consumi, oppure tiene il totale e spegne l'avviso |
 | `biaPrintDistinta(giroId)` | Distinta A4 di consegna; senza id usa il form corrente |
 
 ---
@@ -4503,7 +4572,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto, pausa della finestra abbandonata, calendari e periodo dell'app biancheria della Galleria, codice della Galleria limitato alle chiavi `bg_*`, fusione fra i due PC della Galleria. 701 controlli.
+scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto, pausa della finestra abbandonata, calendari e periodo dell'app biancheria della Galleria, codice della Galleria limitato alle chiavi `bg_*`, fusione fra i due PC della Galleria, riallineamento di un totale congelato sbagliato. 722 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire

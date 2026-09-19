@@ -2221,3 +2221,85 @@ sez('Giacenza biancheria: il magazzino si ancora al conteggio, il carico no');
 
   _giac = _g; _giacHotel = _h;
 })();
+
+sez('Biancheria: un totale congelato sbagliato si può riallineare');
+// Caso reale del 19/09/2026 (Boutique): la consegna del 17 era stata registrata con 123
+// asciugamani bidet invece di 24, i consumi del 15 e del 16 sono stati rifatti a mano, e
+// il 123 restava il "doveva portare" del 19 — inventando un ammanco di un centinaio di
+// pezzi. Dalla maschera non si poteva correggere: selezionando la data del giro gia'
+// registrato, la casella mostra il valore CONGELATO e non quello ricalcolato, quindi
+// "Aggiorna giro" risalvava lo stesso numero sbagliato.
+(function () {
+  var _prima = _bia, _prevHotel = _biaHotel;
+  function cons(data, bidet) { return { id: 'c' + data, hotel: 'bh', data: data, q: { 'Asciugamano bidet': bidet } }; }
+  function scena(extra) {
+    // Il consumo del 17 e' quello del giorno del giro: Raimondo passa alle 8, quindi esce
+    // con la consegna DOPO e non deve entrare in questo periodo.
+    _bia = { consumi: [cons('15/09/2026', 14), cons('16/09/2026', 10), cons('17/09/2026', 99)],
+             giri: [ { id: 'g0', hotel: 'bh', data: '15/09/2026', consegnato: { 'Asciugamano bidet': 20 }, ricevuto: { 'Asciugamano bidet': 20 } },
+                     Object.assign({ id: 'g1', hotel: 'bh', data: '17/09/2026',
+                                     consegnato: { 'Asciugamano bidet': 123 },
+                                     ricevuto: { 'Asciugamano bidet': 20 } }, extra || {}) ] };
+    _biaHotel = 'bh';
+    return _bia.giri[1];
+  }
+
+  // Il periodo della consegna del 17 e' il 15 e il 16: 14+10 = 24, non 123.
+  var g = scena();
+  ok('il periodo della consegna e\' quello giusto', _biaTot(_biaSommaDelGiro(g)), 24);
+
+  var sc = _biaScostamento(g);
+  ok('lo scostamento viene visto',            !!sc, true);
+  // Guardie su `sc`: senza, una regressione che lo azzera farebbe esplodere il file di
+  // controlli invece di stampare le righe che non tornano.
+  ok('nomina la voce che non torna',          sc && sc.voci.length && sc.voci[0].voce, 'Asciugamano bidet');
+  ok('dice il valore congelato',              sc && sc.voci[0].congelato, 123);
+  ok('e quello che dicono i consumi',         sc && sc.voci[0].consumi, 24);
+  // Senza `daiConsumi` non si puo' sapere se il 123 fosse un refuso o un sacco davvero
+  // diverso: l'avviso lo dice, non lo afferma.
+  ok('non sa da dove venisse il numero',      sc && sc.noto, false);
+
+  // Il "doveva portare" della consegna successiva e' proprio quel totale congelato: e' li'
+  // che il numero sbagliato si vede, mentre la causa sta nel giro prima.
+  ok('il 19 si aspetta il numero sbagliato',  _biaAtteso('bh', '19/09/2026')['Asciugamano bidet'], 123);
+
+  // Riallineare: il totale congelato torna quello dei consumi, e con esso il "doveva
+  // portare" del giro dopo.
+  _biaApplicaRiallineo(g, sc);
+  ok('riallineato, il congelato e\' 24',      g.consegnato['Asciugamano bidet'], 24);
+  ok('e il 19 si aspetta 24',                 _biaAtteso('bh', '19/09/2026')['Asciugamano bidet'], 24);
+  ok('e l\'avviso si spegne',                 _biaScostamento(g), null);
+  ok('la correzione lascia traccia',          g.edits && g.edits.length, 1);
+  ok('e dice da che valore veniva',           g.edits[0].vecchio['Asciugamano bidet'], 123);
+
+  // Un totale scritto a mano di proposito NON e' un disallineamento: alla registrazione i
+  // consumi dicevano 24 e chi contava il sacco ha messo 30 lo stesso. Segnalarlo per
+  // sempre sarebbe un avviso che si impara a ignorare.
+  var m = scena({ consegnato: { 'Asciugamano bidet': 30 }, daiConsumi: { 'Asciugamano bidet': 24 } });
+  ok('il totale scritto a mano non si segnala', _biaScostamento(m), null);
+
+  // Registrato col valore calcolato e consumi corretti DOPO: qui si sa cosa e' successo.
+  var d = scena({ daiConsumi: { 'Asciugamano bidet': 123 } });
+  var scD = _biaScostamento(d);
+  ok('consumi corretti dopo: segnalato',      !!scD, true);
+  ok('e qui si sa da dove veniva il numero',  scD && scD.noto, true);
+
+  // "Va bene cosi'": si registra che e' stato verificato contro QUESTI consumi, e l'avviso
+  // si spegne senza toccare il totale congelato.
+  _biaApplicaConferma(d, scD);
+  ok('confermato, l\'avviso si spegne',       _biaScostamento(d), null);
+  ok('e il totale congelato non e\' cambiato', d.consegnato['Asciugamano bidet'], 123);
+
+  // Un giro allineato non deve mai comparire come da correggere.
+  var pari = scena({ consegnato: { 'Asciugamano bidet': 24 } });
+  ok('un giro allineato non si segnala',      _biaScostamento(pari), null);
+
+  // La registrazione salva la somma calcolata accanto al totale congelato: senza, la
+  // distinzione fra refuso e scelta non si potrebbe piu' fare per i giri futuri.
+  ok('biaRegistraGiro salva daiConsumi',      /daiConsumi:daiConsumi|g\.daiConsumi=daiConsumi/.test(String(biaRegistraGiro)), true);
+  // Chiede sempre conferma: un giro gia' chiuso puo' essere stato firmato da Raimondo.
+  ok('il riallineo chiede conferma',          /cqConferma/.test(String(biaRiallineaGiro)), true);
+  ok('e passa dalla funzione verificata',     /_biaApplicaRiallineo/.test(String(biaRiallineaGiro)), true);
+
+  _bia = _prima; _biaHotel = _prevHotel;
+})();

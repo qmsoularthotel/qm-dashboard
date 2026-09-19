@@ -15524,6 +15524,103 @@ function _biaAtteso(hotel,dataGiro){
   const p=_biaGiroPrec(hotel,dataGiro);
   return p?(p.consegnato||null):null;
 }
+// ── QUANDO UN TOTALE CONGELATO NON CORRISPONDE PIÙ AI CONSUMI ──
+// Lo sporco che esce viene congelato alla registrazione, ed è la regola giusta: una
+// distinta già firmata non deve cambiare sotto i piedi. Ma quando il numero congelato
+// nasce da un refuso, correggere i consumi giornalieri non lo tocca — e quel numero resta
+// il "doveva portare" di TUTTE le consegne successive. Caso reale (19/09/2026, Boutique):
+// 123 asciugamani bidet congelati al posto di 24, i consumi del 15 e del 16 rifatti a
+// mano, e il 123 fermo lì a inventare un ammanco di un centinaio di pezzi che nessuno
+// riusciva a spiegare. Dalla maschera non c'era modo di riallinearlo: selezionando la data
+// del giro già registrato, la casella mostra il valore CONGELATO e non quello ricalcolato,
+// quindi "Aggiorna giro" risalvava lo stesso numero sbagliato.
+//
+// Non si riallinea da solo. Il totale può legittimamente differire dai consumi — la
+// maschera stessa dice "correggilo solo se il sacco contiene qualcosa di diverso" — quindi
+// si SEGNALA e si riallinea su richiesta.
+//
+// `daiConsumi` è la somma calcolata al momento della registrazione, e serve solo a
+// distinguere i due casi: se combacia con `consegnato`, il totale era quello calcolato e
+// uno scostamento di oggi vuol dire che i consumi sono stati corretti dopo; se non
+// combacia, qualcuno l'ha scritto a mano di proposito e non c'è niente da segnalare. I
+// giri registrati prima che il campo esistesse non ce l'hanno: lì si segnala lo stesso, ma
+// senza dichiarare quale delle due cose sia — un'ipotesi non si scrive come un fatto.
+function _biaSommaDelGiro(g){
+  const per=_biaPeriodo(_biaH(g),g.data);
+  return per&&!per.vuoto?_biaSommaConsumi(_biaH(g),per.dal,per.al):null;
+}
+function _biaUguali(a,b){return !!a&&!!b&&BIA_VOCI.every(v=>(Number(a[v])||0)===(Number(b[v])||0));}
+function _biaScostamento(g){
+  if(!g||!g.consegnato)return null;
+  const somma=_biaSommaDelGiro(g);
+  if(!somma)return null;                                  // nessun periodo da confrontare
+  if(_biaUguali(g.consegnato,somma))return null;          // allineato
+  if(g.daiConsumi&&!_biaUguali(g.consegnato,g.daiConsumi))return null;  // scritto a mano
+  return{voci:BIA_VOCI.map(v=>({voce:v,congelato:Number(g.consegnato[v])||0,consumi:Number(somma[v])||0}))
+                      .filter(r=>r.congelato!==r.consumi),
+         somma:somma,totCongelato:_biaTot(g.consegnato),totConsumi:_biaTot(somma),
+         noto:!!g.daiConsumi};
+}
+// Riallinea il totale congelato ai consumi correnti. MAI in automatico: si mostra voce per
+// voce cosa cambia e lo conferma chi guarda, perché un giro già chiuso può essere stato
+// firmato. La correzione lascia traccia in `edits`, come la cassa e i resi.
+async function biaRiallineaGiro(id){
+  const g=_bia.giri.find(x=>x.id===id);if(!g)return;
+  const sc=_biaScostamento(g);
+  if(!sc){cqAvviso('Niente da riallineare','I tot pezzi di questa consegna corrispondono già ai consumi del periodo.');return;}
+  const elenco=sc.voci.map(r=>'<strong>'+r.voce+'</strong>: '+r.congelato+' → '+r.consumi).join('<br>');
+  if(!await cqConferma('Riallineare i tot pezzi del '+g.data+'?',
+      elenco+'<br><br>Totale: <strong>'+sc.totCongelato+'</strong> → <strong>'+sc.totConsumi+'</strong> pezzi.'+
+      '<br>Cambia anche il «doveva portare» delle consegne successive, e una ristampa della distinta riporterà i nuovi numeri.',
+      {ok:'Riallinea'}))return;
+  // Tutto PRIMA dell'await: _biaSave() riassegna _bia con l'archivio fuso, e dopo
+  // l'attesa questo oggetto non è più quello dentro _bia.
+  _biaApplicaRiallineo(g,sc);
+  await _biaSave();biaRender();
+}
+// "Va bene così": il totale congelato è diverso dai consumi ma è quello giusto — il sacco
+// conteneva davvero altro. Si registra che è stato verificato contro QUESTI consumi, così
+// l'avviso si spegne: un avviso che non si spegne è un avviso che si impara a ignorare.
+async function biaConfermaGiro(id){
+  const g=_bia.giri.find(x=>x.id===id);if(!g)return;
+  const sc=_biaScostamento(g);if(!sc)return;
+  if(!await cqConferma('Tenere i tot pezzi del '+g.data+'?',
+      'Restano <strong>'+sc.totCongelato+'</strong> pezzi, anche se i consumi del periodo ne fanno '+sc.totConsumi+'.<br><br>L\'avviso non ricomparirà per questa consegna.',
+      {ok:'Tienili'}))return;
+  _biaApplicaConferma(g,sc);
+  await _biaSave();biaRender();
+}
+// Le due mutazioni stanno FUORI dalle funzioni che chiedono conferma e salvano, perché là
+// dentro — oltre a una finestra e a una chiamata di rete — la banca di controlli non
+// arriva: un riallineo che smettesse di toccare `consegnato`, limitandosi a spegnere
+// l'avviso, passerebbe inosservato. Qui si possono eseguire per davvero.
+function _biaApplicaRiallineo(g,sc){
+  // La correzione lascia traccia, come la cassa e i resi: mai una sovrascrittura muta.
+  (g.edits=g.edits||[]).push({ts:Date.now(),campo:'consegnato',vecchio:g.consegnato,nuovo:sc.somma,motivo:'riallineato ai consumi del periodo'});
+  g.consegnato=sc.somma;g.daiConsumi=sc.somma;
+  return g;
+}
+// "Va bene così" NON tocca il totale congelato: registra solo contro quali consumi è
+// stato verificato. Cambiarlo qui vorrebbe dire correggere di nascosto proprio il numero
+// che si è appena dichiarato giusto.
+function _biaApplicaConferma(g,sc){g.daiConsumi=sc.somma;return g;}
+// Il riquadro d'avviso, uno solo per tutti i punti che lo mostrano (la consegna aperta nella
+// maschera, quella che le sta dando il "doveva portare", e ogni riga dello storico).
+function _biaBoxScostamento(g,sc,titolo){
+  const e=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const righe=sc.voci.map(r=>e(r.voce)+': <strong>'+r.congelato+'</strong> congelati, '+r.consumi+' dai consumi').join(' · ');
+  return `<div style="background:rgba(160,90,0,.08);border-left:3px solid var(--amber);padding:10px 12px;font-size:var(--fs-xs);line-height:1.5;margin-bottom:10px;">
+    <div style="font-weight:700;color:var(--amber);">${e(titolo)}</div>
+    <div style="margin-top:4px;color:var(--text-dim);">${righe}</div>
+    <div style="margin-top:4px;color:var(--text-dim);font-size:var(--fs-xxs);">${sc.noto
+      ?'Alla registrazione il totale era quello calcolato: i consumi di quel periodo sono stati corretti dopo.'
+      :'O i consumi di quel periodo sono stati corretti dopo la registrazione, o il sacco conteneva davvero altro — dai dati non si distingue.'}</div>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="biaRiallineaGiro('${g.id}')" style="background:var(--amber);color:#fff;border:none;padding:6px 13px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">Riallinea ai consumi (${sc.totConsumi} pezzi)</button>
+      <button onclick="biaConfermaGiro('${g.id}')" style="background:var(--surface);color:var(--text-dim);border:1px solid var(--border);padding:6px 13px;border-radius:7px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">Va bene così</button>
+    </div></div>`;
+}
+
 // Tutti i giri di TUTTE le strutture, dal più recente. I sacchi sono fisicamente separati
 // e i calcoli restano per struttura (_biaAtteso guarda sempre il giro precedente dello
 // stesso hotel), ma lo storico va letto insieme: quello che Raimondo riporta lo si
@@ -15687,12 +15784,17 @@ async function biaRegistraGiro(){
     consegnato[v]=Math.max(0,Number(es&&es.value)||0);
     ricevuto[v]=Math.max(0,Number(er&&er.value)||0);
   });
+  // La somma calcolata dai consumi in questo momento. Si salva accanto al totale congelato
+  // per poter dire, più avanti, se quel totale era quello calcolato o uno scritto a mano —
+  // vedi _biaScostamento. Non entra in nessun conto: serve solo a quella distinzione.
+  const perReg=_biaPeriodo(_biaHotel,data);
+  const daiConsumi=perReg&&!perReg.vuoto?_biaSommaConsumi(_biaHotel,perReg.dal,perReg.al):_biaVuote();
   const g=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===data);
   if(g){
     if(!await cqConferma('Esiste già una consegna per questa data','<strong>'+data+'</strong><br>Sovrascriverlo con i valori attuali?',{ok:'Sovrascrivi'}))return;
-    g.consegnato=consegnato;g.ricevuto=ricevuto;g.ts=Date.now();
+    g.consegnato=consegnato;g.ricevuto=ricevuto;g.daiConsumi=daiConsumi;g.ts=Date.now();
   }else{
-    _bia.giri.push({id:_biaUid(),hotel:_biaHotel,data:data,consegnato:consegnato,ricevuto:ricevuto,ts:Date.now()});
+    _bia.giri.push({id:_biaUid(),hotel:_biaHotel,data:data,consegnato:consegnato,ricevuto:ricevuto,daiConsumi:daiConsumi,ts:Date.now()});
   }
   _biaSave();biaRender();
 }
@@ -15814,6 +15916,13 @@ function biaRender(){
   const saldo=_biaSaldo();
   const giaReg=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===giroData);
   _biaAttesoVis=atteso;   // la tabella disegnata sotto si riferisce a questo atteso
+  // Un totale congelato che non corrisponde più ai consumi va detto in DUE punti, perché
+  // si manifesta in due colonne diverse: su questa consegna ("tot pezzi da dargli") e su
+  // quella precedente, che è quella che riempie il "doveva portare" — ed è lì che il
+  // numero sbagliato si nota, mentre la causa sta nel giro prima.
+  const precGiro=_biaGiroPrec(_biaHotel,giroData);
+  const scReg=giaReg?_biaScostamento(giaReg):null;
+  const scPrec=precGiro?_biaScostamento(precGiro):null;
 
   let h='';
 
@@ -15952,6 +16061,13 @@ function biaRender(){
     h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:10px;">Non ci sono giorni da ritirare per questa data: c'è già una consegna registrata lo stesso giorno o successivo.</div>`;
   }
 
+  if(scPrec){
+    h+=_biaBoxScostamento(precGiro,scPrec,'Il «doveva portare» arriva dalla consegna del '+precGiro.data+', e quel totale non corrisponde ai consumi di quel periodo');
+  }
+  if(scReg){
+    h+=_biaBoxScostamento(giaReg,scReg,'I tot pezzi di questa consegna sono già registrati e non corrispondono ai consumi del periodo');
+  }
+
   // Righe: atteso (dal giro prima) / ricevuto (dalla distinta di Raimondo) / sporco che esce
   const diffTot=BIA_VOCI.reduce((s,v)=>{
     if(!atteso)return s;
@@ -16055,19 +16171,24 @@ function biaRender(){
       righe.forEach(g=>{
         const rg=_biaRigaGiro(g);
         const aperto=_biaGiroAperto.has(g.id);
+        // Segnalato anche a riga chiusa: un totale congelato che non torna sta in fondo
+        // allo storico e nessuno aprirebbe sette righe per cercarlo. Il dettaglio e i due
+        // pulsanti restano dentro, dove c'è lo spazio per spiegare.
+        const scG=_biaScostamento(g);
         const td='padding:9px 8px;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);text-align:center;font-variant-numeric:tabular-nums;';
         h+=`<tr style="${rg.registrato?_biaBgDelta(rg.delta===null?0:rg.delta):'background:var(--surface2,var(--surface));'}">
           <td style="${td}text-align:left;padding-left:14px;font-weight:700;white-space:nowrap;">${esc(rg.data)}</td>
           <td style="${td}font-weight:700;${rg.registrato?'':'color:var(--amber);font-weight:600;font-size:11.5px;'}">${rg.registrato?rg.portato:'non registrato'}</td>
           <td style="${td}color:var(--text-muted);">${rg.dovuto===null?'—':rg.dovuto+`<div style="font-size:10px;color:var(--text-dim);font-weight:400;">tot pezzi del ${esc(rg.dataPrec)}</div>`}</td>
           <td style="${td}font-weight:700;color:${rg.delta===null?'var(--text-dim)':_biaColDelta(rg.delta)};">${!rg.registrato?'fuori conteggio':(rg.dovuto===null?'primo giro':_biaTxtDelta(rg.delta))}</td>
-          <td style="${td}color:var(--text-dim);">${rg.uscito}</td>
+          <td style="${td}color:var(--text-dim);">${rg.uscito}${scG?` <span title="Non corrisponde ai consumi del periodo: aprine il dettaglio" style="color:var(--amber);font-weight:700;">!</span>`:''}</td>
           <td style="${td}padding-right:14px;white-space:nowrap;text-align:right;">
             <button onclick="biaToggleGiro('${g.id}')" title="Cosa ha portato, voce per voce" style="${_biaBtnIco}${aperto?'background:var(--accent);color:#fff;border-color:var(--accent);':''}">${aperto?'▴':'▾'}</button>
             <button onclick="biaPrintDistinta('${g.id}')" title="Ristampa la distinta" style="${_biaBtnIco}">🖨</button>
           </td></tr>`;
         if(aperto){
           h+=`<tr><td colspan="6" style="padding:0 14px 12px;background:var(--surface2,var(--surface));">
+            ${scG?_biaBoxScostamento(g,scG,'I tot pezzi usciti quel giorno non corrispondono ai consumi del periodo'):''}
             ${_biaTabellaVoci(_biaDettaglioGiro(g),rg.dovuto!==null)}
             <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);">
               I ${rg.uscito} sacchi dati a Raimondo il ${esc(rg.data)} tornano al giro dopo: non contano in questa riga.
