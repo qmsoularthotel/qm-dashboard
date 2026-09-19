@@ -433,7 +433,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-19.2';
+const QM_APP_BUILD='2026-09-19.3';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -482,7 +482,58 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('pageshow',e=>{if(e&&e.persisted)qmCheckVersione();});
 window.addEventListener('focus',()=>qmCheckVersione());
 setInterval(qmCheckVersione,600000);   // ogni 10 minuti
+// AVVISO A SCHERMO — 10 secondi, oppure finche' non si tocca lo schermo.
+// Chi lo legge sta in cucina col telefono in mano: se resta li' impalato dopo che l'ha
+// letto diventa un ostacolo, quindi il primo tocco lo chiude. E il tempo si azzera solo
+// qui: prima il setTimeout non veniva mai annullato, quindi un avviso mostrato subito
+// dopo un altro se lo vedeva spegnere dal timer del precedente.
+const QM_BANNER_MS=10000;
+const QM_BANNER_GRAZIA_MS=400;   // il tocco che l'ha fatto comparire non lo chiude
+let _bannerTimer=null,_bannerGrazia=null,_bannerChiudi=null;
+const QM_BANNER_EVENTI=['pointerdown','touchstart'];
+function qmBannerNascondi(){
+  const box=document.getElementById('qm-banner-toast');
+  if(box)box.style.display='none';
+  if(_bannerTimer){clearTimeout(_bannerTimer);_bannerTimer=null;}
+  if(_bannerGrazia){clearTimeout(_bannerGrazia);_bannerGrazia=null;}
+  if(_bannerChiudi){
+    QM_BANNER_EVENTI.forEach(ev=>document.removeEventListener(ev,_bannerChiudi,true));
+    _bannerChiudi=null;
+  }
+}
+function qmBannerMostra(testo){
+  const box=document.getElementById('qm-banner-toast');
+  const txt=document.getElementById('qm-banner-toast-text');
+  if(!box||!txt)return;
+  qmBannerNascondi();               // azzera timer e ascoltatori di un avviso precedente
+  txt.textContent=testo;
+  box.style.display='flex';
+  _bannerTimer=setTimeout(qmBannerNascondi,QM_BANNER_MS);
+  // In ascolto solo dopo la grazia: l'avviso compare spesso PER un tocco (il pulsante di
+  // una schermata, lo splash saltato), e quel tocco arriva fin qui risalendo il documento
+  // — lo chiuderebbe prima che compaia. In cattura, cosi' lo si chiude anche toccando
+  // qualcosa che ferma la propagazione.
+  _bannerGrazia=setTimeout(()=>{
+    _bannerGrazia=null;
+    if(box.style.display==='none')return;
+    _bannerChiudi=()=>qmBannerNascondi();
+    QM_BANNER_EVENTI.forEach(ev=>document.addEventListener(ev,_bannerChiudi,true));
+  },QM_BANNER_GRAZIA_MS);
+}
+// Lo splash copre tutto per 3 secondi e sta piu' in alto dell'avviso (99998 contro 9998):
+// mostrarlo all'apertura voleva dire bruciarne la meta' dietro un velo, ed e' il motivo
+// per cui all'apertura sembrava non comparire affatto. Si aspetta che se ne vada.
+let _bannerAttesaSplash=false;
 async function qmCheckBanner(){
+  if(document.getElementById('qm-splash')){
+    if(_bannerAttesaSplash)return;   // una sola attesa, non una per chiamata
+    _bannerAttesaSplash=true;
+    const att=setInterval(()=>{
+      if(document.getElementById('qm-splash'))return;
+      clearInterval(att);_bannerAttesaSplash=false;qmCheckBanner();
+    },150);
+    return;
+  }
   try{
     const tab=typeof _activeTab!=='undefined'?_activeTab:'day';
     const r=await fetch(PROXY+'/kv/get?key=qm_bkf_banner',{cache:'no-store'});
@@ -490,15 +541,16 @@ async function qmCheckBanner(){
     const all=j&&j.value?JSON.parse(j.value):{};
     const b=all[tab]||{};
     if(!b.enabled||!b.message)return;
-    const box=document.getElementById('qm-banner-toast');
-    const txt=document.getElementById('qm-banner-toast-text');
-    if(!box||!txt)return;
-    txt.textContent=b.message;
-    box.style.display='flex';
-    setTimeout(()=>{box.style.display='none';},7000);
+    qmBannerMostra(b.message);
   }catch(e){}
 }
-qmCheckBanner();
+// A documento pronto, non qui: piu' sotto c'e' `let _activeTab`, e in questo punto e'
+// ancora in zona morta — `typeof _activeTab` LANCIA (non vale 'undefined' come per una
+// variabile mai dichiarata), il try/catch se lo mangiava, e all'apertura senza splash
+// (cioe' a ogni ricaricamento, compreso quello dell'aggiornamento automatico) l'avviso
+// non compariva affatto. Qui la scheda attiva e' anche gia' ripristinata, quindi
+// l'avviso e' quello della schermata che si apre davvero.
+document.addEventListener('DOMContentLoaded',qmCheckBanner);
 const GIORNI=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
 const GIORNI_S=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
 const MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
@@ -928,7 +980,7 @@ function switchTab(tab){
   document.getElementById('bnv-report').classList.toggle('active',tab==='report');
   if(tab==='orders'){ddtBkfRenderSpese();ddtBkfRenderList();}
   if(tab==='report'){ddtBkfRenderReport();}
-  const box=document.getElementById('qm-banner-toast');if(box)box.style.display='none';
+  qmBannerNascondi();   // non basta nasconderlo: il timer e l'ascoltatore del tocco vanno spenti
   qmCheckBanner();
 }
 function ddtBkfRenderReport(){

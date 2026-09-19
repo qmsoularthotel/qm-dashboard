@@ -2699,7 +2699,7 @@ let _appStatus = {};  // qm_app_status: { hk:true, bkf:false, ... } — assente/
 
 ### Avviso toast — solo Breakfast (`qm_bkf_banner`)
 
-Messaggio scritto dalla dashboard, mostrato come toast temporaneo (7s) su `breakfast.html`, **solo quando si è sulla tab "Analisi"** (attenzione: nel codice quella tab è `switchTab('report')` — non un sub-tab `_ddtBkfTab==='analisi'` dentro Ordini/Acquisti, che esiste ma non è mai raggiungibile da nessun bottone della UI. Il bottom-nav di `breakfast.html` è: Servizio→`day`, Acquisti→`orders`, **Analisi→`report`**).
+Messaggio scritto dalla dashboard, mostrato come toast temporaneo (10s) su `breakfast.html`, **solo quando si è sulla tab "Analisi"** (attenzione: nel codice quella tab è `switchTab('report')` — non un sub-tab `_ddtBkfTab==='analisi'` dentro Ordini/Acquisti, che esiste ma non è mai raggiungibile da nessun bottone della UI. Il bottom-nav di `breakfast.html` è: Servizio→`day`, Acquisti→`orders`, **Analisi→`report`**).
 
 ```js
 const BKF_BANNER_KEY = 'qm_bkf_banner';
@@ -2714,6 +2714,11 @@ let _bkfBanner = { enabled: false, message: '' };
   - **sul telefono serve `white-space:pre-line`** su `#qm-banner-toast-text` (`breakfast.html`): `textContent` conserva gli a capo nel dato, ma senza quella regola il browser li rende come semplici spazi e le righe tornano una sola — l'avviso sembrerebbe salvato male, mentre il difetto è nella resa.
 - **La casella cresce con il testo** (`_bkfBannerAltezza`/`_bkfBannerAltezzaTutte`), e non ha l'angolo da trascinare (`resize:none`): un'altezza scelta a mano verrebbe sovrascritta al tasto successivo. `_bkfBannerAltezzaTutte()` va richiamata **anche all'apertura della tendina** (`miniappToggleAvvisi`): a pannello chiuso `scrollHeight` vale 0, quindi l'altezza si può misurare solo quando è a schermo.
 - In `breakfast.html`: `qmCheckBanner()` viene chiamata su `visibilitychange`→visible e dentro `switchTab()` quando `tab==='report'`; si nasconde subito se si esce da quella tab. Non è nel polling periodico (quello è solo per il check on/off dell'app).
+- **Compare a ogni apertura, dura 10 secondi, si chiude al primo tocco** (19/09/2026). Tre cose che vanno tenute insieme, tutte verificate guidando l'app con Playwright:
+  - **All'apertura aspetta lo splash.** Lo splash copre tutto per 3 secondi e sta a `z-index:99998` contro i 9998 del toast: l'avviso partiva sotto il velo e ne bruciava metà. `qmCheckBanner` rimanda quando trova `#qm-splash` (un'attesa sola, non una per chiamata — `_bannerAttesaSplash`).
+  - **La chiamata iniziale è su `DOMContentLoaded`, non a metà script.** Più sotto c'è `let _activeTab` **nella stessa `<script>`**: in quel punto è in zona morta e `typeof _activeTab` **lancia** (non vale `'undefined'` come per una variabile mai dichiarata), il `try/catch` se lo mangiava, e **a ogni ricaricamento — compreso quello dell'aggiornamento automatico — l'avviso non compariva affatto**. Stessa famiglia del difetto `kvGet`: un `catch` attorno a una chiamata di rete che nascondeva un errore di programmazione.
+  - **Il tocco che lo fa comparire non lo chiude**: gli ascoltatori (`pointerdown`/`touchstart`, in **cattura**, così vale anche toccando qualcosa che ferma la propagazione) si attaccano dopo `QM_BANNER_GRAZIA_MS=400`. Senza, il clic su una voce del menu in basso — che è ciò che fa comparire l'avviso di quella schermata — risaliva fino a `document` e lo spegneva all'istante.
+  - `qmBannerNascondi()` spegne **timer e ascoltatori**, non solo `display:none`: `switchTab` faceva il solo `display:none` e il timer del vecchio avviso restava vivo, pronto a spegnere quello nuovo prima del tempo.
 - Toast: icona SVG bell (non emoji — sostituita due volte su richiesta, prima 📢 poi 🔔, ora SVG outline oro senza sfondo), testo centrato, posizionato `bottom:72px` (sopra la bottom-nav fissa, non sopra di essa — la prima versione a `bottom:16px` copriva i pulsanti Servizio/Acquisti/Analisi).
 
 ### Didascalie toggle
