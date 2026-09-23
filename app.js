@@ -2026,8 +2026,12 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id.startsWith('recensioni-')&&!id.startsWith('recensioni-exp-')){if(!recGroupOpen){recGroupOpen=true;document.getElementById('recGroupToggle').classList.add('open');document.getElementById('recGroupItems').classList.add('open');}}
   if(id.startsWith('recensioni-exp-')){if(!expGroupOpen){expGroupOpen=true;document.getElementById('expGroupToggle').classList.add('open');document.getElementById('expGroupItems').classList.add('open');}}
   try{localStorage.setItem('qm_last_view',id);}catch(e){}
-  if(id==='inventario'){try{invRender();}catch(e){}}
-  if(id==='spese'){try{ddtRenderSpese();if(_ddtTab==='spese')ddtRenderList();}catch(e){}}
+  // Aprendo la vista si riallinea al cloud: il telefono puo' aver aggiunto movimenti o DDT
+  // da quando questa pagina e' stata aperta (23/09/2026).
+  if(id==='inventario'){try{invRender();}catch(e){}
+    ['qm_inv_moves_sa','qm_inv_moves_ar','qm_inv_catalog_sa','qm_inv_catalog_ar','qm_inv_orders'].forEach(k=>_qmElencoAggiorna(k,QM_ELENCHI_CONDIVISI[k],_invRidisegna));}
+  if(id==='spese'){try{ddtRenderSpese();if(_ddtTab==='spese')ddtRenderList();}catch(e){}
+    _qmElencoAggiorna(DDT_KEY,[],()=>{try{ddtRenderSpese();if(_ddtTab==='spese')ddtRenderList();}catch(e){}});}
   if(id==='turni-pref'){try{turniPrefRender();turniPrefMarkAllSeen();}catch(e){}}
   if(id==='controllo-mattino'){try{cmLoad();}catch(e){}}
   if(id==='reception'){try{receptionLoad();}catch(e){}}
@@ -4952,7 +4956,14 @@ const LS={
               }
             }catch(e){}
           }
-          localStorage.setItem('qm_'+k,json.value);
+          // Gli elenchi condivisi con le app del telefono si FONDONO: sostituirli buttava via
+          // cio' che questa postazione non era ancora riuscita a mandare su.
+          if(QM_ELENCHI_CONDIVISI.hasOwnProperty('qm_'+k)){
+            const vuoto=QM_ELENCHI_CONDIVISI['qm_'+k];
+            let cv=null;try{cv=JSON.parse(json.value);}catch(e){}
+            const r=_qmElencoAssorbi('qm_'+k,cv,vuoto,k==='rev_sent'?(f=>{REV_SENT=f;}):null);
+            if(r.diverso&&cv!=null)_qmElencoSalva('qm_'+k,vuoto,k==='rev_sent'?(f=>{REV_SENT=f;}):null);
+          }else localStorage.setItem('qm_'+k,json.value);
           // Per weekData/arriviData: aggiorna timestamp visivo se cloud ha _ts
           if(k==='weekData'||k==='arriviData'){
             try{
@@ -6318,7 +6329,7 @@ function revAutoMarkNoComment(p,rows){
   });
   if(changed){
     try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
-    try{kvSet('qm_rev_sent',JSON.stringify(REV_SENT)).catch(()=>{});}catch(e){}
+    _qmElencoSalva('qm_rev_sent',{},f=>{REV_SENT=f;});
   }
 }
 function revHandleFile(p,file){
@@ -7742,7 +7753,7 @@ function revMarkSent(p,gi){
   const key=revUniqueKey(p,r);
   REV_SENT[key]=!REV_SENT[key];
   try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
-  try{kvSet('qm_rev_sent',JSON.stringify(REV_SENT)).catch(()=>{});}catch(e){}
+  _qmElencoSalva('qm_rev_sent',{},f=>{REV_SENT=f;});
   revRenderList(p);
   revRenderStats(p);
   revRenderExpiring(p);
@@ -7823,7 +7834,7 @@ function revUndoNotNeeded(p,gi){
   const key=revUniqueKey(p,r);
   delete REV_SENT[key];
   try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
-  try{kvSet('qm_rev_sent',JSON.stringify(REV_SENT)).catch(()=>{});}catch(e){}
+  _qmElencoSalva('qm_rev_sent',{},f=>{REV_SENT=f;});
   revApplyFilters(p);revRenderStats(p);
 }
 function revMarkNotNeeded(p,gi){
@@ -7831,7 +7842,7 @@ function revMarkNotNeeded(p,gi){
   const key=revUniqueKey(p,r);
   REV_SENT[key]='not_needed';
   try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
-  try{kvSet('qm_rev_sent',JSON.stringify(REV_SENT)).catch(()=>{});}catch(e){}
+  _qmElencoSalva('qm_rev_sent',{},f=>{REV_SENT=f;});
   revApplyFilters(p);revRenderStats(p);
 }
 function revShowTs(p,ts){
@@ -9757,7 +9768,7 @@ async function invDeleteMove(id){
   try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
   const filtered=moves.filter(m=>m.id!==id);
   try{localStorage.setItem('qm_inv_moves_'+_invWh,JSON.stringify(filtered));}catch(e){}
-  kvSet('qm_inv_moves_'+_invWh,JSON.stringify(filtered)).catch(()=>{});
+  _qmElencoSalva('qm_inv_moves_'+_invWh,[],_invRidisegna);
   invRender();
 }
 function invEditQty(bc,currentQty){
@@ -9772,7 +9783,7 @@ function invEditQty(bc,currentQty){
   try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
   moves.push({id:Date.now()+'_'+Math.random().toString(36).slice(2),barcode:bc,type:'init',qty:n,ts:Date.now(),note:'Rettifica da dashboard'});
   try{localStorage.setItem('qm_inv_moves_'+_invWh,JSON.stringify(moves));}catch(e){}
-  kvSet('qm_inv_moves_'+_invWh,JSON.stringify(moves)).catch(()=>{});
+  _qmElencoSalva('qm_inv_moves_'+_invWh,[],_invRidisegna);
   invRender();
 }
 function invEditSoglia(bc){
@@ -9784,7 +9795,7 @@ function invEditSoglia(bc){
   const n=parseFloat(val);
   catalog[bc].soglia=(val.trim()===''||isNaN(n))?null:n;
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
-  kvSet('qm_inv_catalog_'+_invWh,JSON.stringify(catalog)).catch(()=>{});
+  _qmElencoSalva('qm_inv_catalog_'+_invWh,{},_invRidisegna);
   invRender();
 }
 async function invDeleteProduct(bc){
@@ -9798,8 +9809,8 @@ async function invDeleteProduct(bc){
   try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
   const filtered=moves.filter(m=>m.barcode!==bc);
   try{localStorage.setItem('qm_inv_moves_'+_invWh,JSON.stringify(filtered));}catch(e){}
-  kvSet('qm_inv_moves_'+_invWh,JSON.stringify(filtered)).catch(()=>{});
-  kvSet('qm_inv_catalog_'+_invWh,JSON.stringify(catalog)).catch(()=>{});
+  _qmElencoSalva('qm_inv_moves_'+_invWh,[],_invRidisegna);
+  _qmElencoSalva('qm_inv_catalog_'+_invWh,{},_invRidisegna);
   invRender();
 }
 function invQuickRestock(bc){
@@ -10064,7 +10075,7 @@ function invEditProduct(bc){
   const n=parseFloat(sogliaRaw);
   catalog[bc]={...p,name:newName.trim(),unit:newUnit.trim(),soglia:(sogliaRaw.trim()===''||isNaN(n))?null:n};
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
-  kvSet('qm_inv_catalog_'+_invWh,JSON.stringify(catalog)).catch(()=>{});
+  _qmElencoSalva('qm_inv_catalog_'+_invWh,{},_invRidisegna);
   invRender();
 }
 function invAddProduct(){
@@ -10084,7 +10095,7 @@ function invAddProduct(){
   const n=parseFloat(sogliaRaw);
   catalog[bc]={name:name.trim(),unit:(unit||'').trim(),soglia:(sogliaRaw.trim()===''||isNaN(n))?null:n};
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
-  kvSet('qm_inv_catalog_'+_invWh,JSON.stringify(catalog)).catch(()=>{});
+  _qmElencoSalva('qm_inv_catalog_'+_invWh,{},_invRidisegna);
   invRender();
 }
 function invRenderCatalog(){
@@ -10138,11 +10149,13 @@ let _invOrdersStatus='tutti'; // tutti | ordinato | ricevuto | annullato
 let _invOrdersDraft=[];      // items correnti nel modal di creazione
 
 const ORD_KEY='qm_inv_orders';
+// Ridisegno dopo che la fusione col cloud ha portato dentro righe arrivate da altrove.
+function _invRidisegna(){try{if(document.getElementById('view-inventario')?.classList.contains('active'))invRender();}catch(e){}}
 function invOrdersGet(){try{return JSON.parse(localStorage.getItem(ORD_KEY)||'[]');}catch(e){return[];}}
 function invOrdersSave(orders){
   const json=JSON.stringify(orders);
   try{localStorage.setItem(ORD_KEY,json);}catch(e){}
-  kvSet(ORD_KEY,json).catch(()=>{});
+  _qmElencoSalva(ORD_KEY,[],()=>{try{invRenderOrders();}catch(e){}});
 }
 const _ordFmtDate=ts=>{const d=new Date(ts);return String(d.getDate()).padStart(2,'0')+'/'+(String(d.getMonth()+1).padStart(2,'0'))+'/'+d.getFullYear();};
 const _ordWhlabel=wh=>wh==='sa'?'SoulArt':'Art Resort';
@@ -10458,7 +10471,7 @@ function invOrdersConfirmDDT(id){
     });
     const json=JSON.stringify(moves);
     localStorage.setItem(movKey,json);
-    kvSet(movKey,json).catch(()=>{});
+    _qmElencoSalva(movKey,[],_invRidisegna);
   }catch(e){}
   o.status='ricevuto';
   o.tsRicevuto=Date.now();
@@ -10488,7 +10501,7 @@ async function invOrdersUndoReceived(id){
       const moves=JSON.parse(localStorage.getItem(movKey)||'[]').filter(m=>!ids.has(m.id));
       const json=JSON.stringify(moves);
       localStorage.setItem(movKey,json);
-      kvSet(movKey,json).catch(()=>{});
+      _qmElencoSalva(movKey,[],_invRidisegna);
     }catch(e){}
   }
   o.status='ordinato';
@@ -11480,7 +11493,7 @@ function revExpMarkSent(p,gi){
   const key=revExpUniqueKey(p,r);
   REV_SENT[key]=!REV_SENT[key];
   try{localStorage.setItem('qm_rev_sent',JSON.stringify(REV_SENT));}catch(e){}
-  try{kvSet('qm_rev_sent',JSON.stringify(REV_SENT)).catch(()=>{});}catch(e){}
+  _qmElencoSalva('qm_rev_sent',{},f=>{REV_SENT=f;});
   revExpRenderList(p);revExpRenderStats(p);
 }
 
@@ -12159,7 +12172,7 @@ function ddtNormForn(s){return ddtNormFornGeneric(s,DDT_FORNITORI);}
 function ddtSave(arr){
   const json=JSON.stringify(arr);
   try{localStorage.setItem(DDT_KEY,json);}catch(e){}
-  kvSet(DDT_KEY,json).catch(()=>{});
+  _qmElencoSalva(DDT_KEY,[],()=>{try{if(document.getElementById('view-spese')?.classList.contains('active')){ddtRenderSpese();ddtRenderList();}}catch(e){}});
 }
 function ddtCurMonth(){
   if(!_ddtMonth){const n=new Date();_ddtMonth=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
@@ -17585,6 +17598,106 @@ function cqAvviso(titolo,testo,opz){
 //     rilette a ogni giro;
 //  3. la VISTA ATTIVA si ridisegna: Overview sempre — è il cruscotto, deve essere vivo —
 //     le altre quando qualcosa è davvero cambiato.
+
+// ── Elenchi condivisi con le app del telefono: fusione a tre (23/09/2026) ────
+// DDT (Compass + app Breakfast), movimenti e catalogo dell'Inventario (Compass + app
+// Inventario), ordini e spunte "risposta inviata" delle recensioni (due Mac) si
+// scrivevano PER INTERO con la copia della postazione, che Compass rileggeva solo
+// all'apertura: un DDT inserito dal telefono alle 10 spariva se alle 15 si correggeva un
+// altro DDT su un Compass aperto dalla mattina. Nessun avviso, come per i pre-stay del 22/08.
+//
+// Qui non servono tracce delle eliminazioni: ogni postazione ricorda la BASE, l'ultima
+// copia vista sul cloud, e dal confronto a tre sa chi ha fatto cosa.
+//   - in locale e non nella base      → aggiunto qui, si tiene
+//   - nel cloud e non nella base      → aggiunto altrove, si tiene
+//   - nella base e sparito in locale  → cancellato qui, si toglie
+//   - nella base e sparito dal cloud  → cancellato altrove, si toglie (salvo modifica qui)
+//   - in entrambi                     → vince chi l'ha cambiato rispetto alla base; se
+//                                       l'hanno cambiato tutti e due, questa postazione
+// Senza base (prima volta dopo l'aggiornamento) si uniscono le due copie: nel peggio
+// un'eliminazione fatta altrove ricompare una volta.
+// La STESSA funzione è copiata in breakfast.html e inventory.html: se si cambia qui, si
+// cambia anche là (test/esegui.sh verifica che siano identiche).
+function _qmTre(base,loc,cloud){
+  const isArr=Array.isArray(loc)||Array.isArray(cloud)||Array.isArray(base);
+  const chiave=(r,i)=>(r&&typeof r==='object'&&r.id!=null)?'i:'+r.id:'j:'+JSON.stringify(r);
+  const mappa=x=>{const m=new Map();if(x==null)return m;
+    if(isArr)(Array.isArray(x)?x:[]).forEach(r=>m.set(chiave(r),r));
+    else if(typeof x==='object')Object.keys(x).forEach(k=>m.set(k,x[k]));return m;};
+  const B=mappa(base),L=mappa(loc),C=mappa(cloud),senzaBase=base==null;
+  const ug=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+  const out=new Map();
+  const tutte=new Set([...L.keys(),...C.keys()]);
+  tutte.forEach(k=>{
+    const inB=B.has(k),inL=L.has(k),inC=C.has(k);
+    if(inL&&inC){
+      const cambL=!inB||!ug(L.get(k),B.get(k)),cambC=inB&&!ug(C.get(k),B.get(k));
+      out.set(k,(cambC&&!cambL)?C.get(k):L.get(k));
+    }else if(inL){                                     // manca nel cloud
+      if(senzaBase||!inB||!ug(L.get(k),B.get(k)))out.set(k,L.get(k));
+    }else{                                             // manca in locale
+      if(senzaBase||!inB)out.set(k,C.get(k));
+    }
+  });
+  if(isArr){                                          // ordine: quello locale, poi i nuovi
+    const r=[];const visti=new Set();
+    (Array.isArray(loc)?loc:[]).forEach(x=>{const k=chiave(x);if(out.has(k)&&!visti.has(k)){visti.add(k);r.push(out.get(k));}});
+    (Array.isArray(cloud)?cloud:[]).forEach(x=>{const k=chiave(x);if(out.has(k)&&!visti.has(k)){visti.add(k);r.push(out.get(k));}});
+    return r;
+  }
+  const o={};out.forEach((v,k)=>{o[k]=v;});return o;
+}
+const _QM_BASE='qmbase:';   // non 'qm_': e' una memoria di questo browser, non un dato
+function _qmBaseLeggi(key){try{const s=localStorage.getItem(_QM_BASE+key);return s==null?null:JSON.parse(s);}catch(e){return null;}}
+function _qmBaseScrivi(key,v){try{localStorage.setItem(_QM_BASE+key,JSON.stringify(v));}catch(e){}}
+function _qmLocale(key,vuoto){try{const s=localStorage.getItem(key);return s?JSON.parse(s):vuoto;}catch(e){return vuoto;}}
+// Fonde il valore del cloud nella copia locale e aggiorna la base. SINCRONA dal momento in
+// cui il valore del cloud e' arrivato: niente puo' infilarsi fra lettura e scrittura della
+// copia locale. `dopo(fuso)` serve a chi tiene l'elenco anche in memoria.
+// Cloud vuoto non vuol dire "tutto cancellato" (potrebbe essere una lettura andata male):
+// si tiene il locale e la base non si tocca.
+function _qmElencoAssorbi(key,cloudVal,vuoto,dopo){
+  const loc=_qmLocale(key,vuoto);
+  if(cloudVal==null)return{fuso:loc,cambiato:false,diverso:true};
+  const fuso=_qmTre(_qmBaseLeggi(key),loc,cloudVal);
+  _qmBaseScrivi(key,cloudVal);
+  const js=JSON.stringify(fuso),cambiato=js!==JSON.stringify(loc);
+  if(cambiato){try{localStorage.setItem(key,js);}catch(e){}if(typeof dopo==='function')try{dopo(fuso);}catch(e){}}
+  return{fuso,cambiato,diverso:js!==JSON.stringify(cloudVal)};
+}
+async function _qmCloudLeggi(key){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+    if(!r.ok)return{ok:false};
+    const j=await r.json();
+    return{ok:true,val:(j&&j.value!=null)?JSON.parse(j.value):null};
+  }catch(e){return{ok:false};}
+}
+// Salva: rilegge, fonde, scrive. Una scrittura per volta per chiave. Senza aver letto il
+// cloud NON scrive: il dato resta qui e lo dice la fascia rossa, come ogni scrittura persa.
+const _qmElencoCoda={};
+function _qmElencoSalva(key,vuoto,dopo){
+  const p=(_qmElencoCoda[key]||Promise.resolve()).then(async()=>{
+    const c=await _qmCloudLeggi(key);
+    if(!c.ok){_kvNonRiuscita(key);return false;}
+    const r=_qmElencoAssorbi(key,c.val,vuoto,dopo);
+    if(!r.diverso)return true;                    // il cloud ha gia' esattamente questo
+    const ok=await kvSet(key,JSON.stringify(r.fuso));
+    if(ok)_qmBaseScrivi(key,r.fuso);
+    return ok;
+  });
+  _qmElencoCoda[key]=p.catch(()=>{});
+  return p;
+}
+// Rilettura (apertura di una vista, avvio): fonde e, se qui c'era qualcosa che il cloud non
+// ha — una scrittura non andata a buon fine — lo rimanda su.
+async function _qmElencoAggiorna(key,vuoto,dopo){
+  const c=await _qmCloudLeggi(key);if(!c.ok)return false;
+  const r=_qmElencoAssorbi(key,c.val,vuoto,dopo);
+  if(r.diverso&&c.val!=null)_qmElencoSalva(key,vuoto,dopo);
+  return r.cambiato;
+}
+const QM_ELENCHI_CONDIVISI={qm_ddt:[],qm_inv_moves_sa:[],qm_inv_moves_ar:[],qm_inv_catalog_sa:{},qm_inv_catalog_ar:{},qm_inv_orders:[],qm_rev_sent:{}};
 
 // ── Salvataggio sicuro degli archivi a elenchi ──────────────────────────────
 // DVR, Consumo Biancheria e Reso Biancheria hanno tutti la stessa forma: un oggetto le cui

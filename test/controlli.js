@@ -2303,3 +2303,52 @@ sez('Biancheria: un totale congelato sbagliato si può riallineare');
 
   _bia = _prima; _biaHotel = _prevHotel;
 })();
+
+sez('Elenchi condivisi col telefono: la fusione a tre non perde niente');
+// Scenario del difetto (23/09/2026): Compass aperto dalla mattina con la copia delle 8, il
+// telefono aggiunge un DDT alle 10, Compass ne corregge un altro alle 15. Prima vinceva la
+// copia di Compass e il DDT del telefono spariva.
+(function () {
+  var ids = function (a) { return a.map(function (x) { return x.id; }).sort().join(','); };
+  var base = [{ id: 'a', t: 1 }, { id: 'b', t: 1 }];
+  var cloud = [{ id: 'a', t: 1 }, { id: 'b', t: 1 }, { id: 'tel', t: 1 }];      // aggiunto dal telefono
+  var loc = [{ id: 'a', t: 2 }, { id: 'b', t: 1 }];                            // corretto su Compass
+  var f = _qmTre(base, loc, cloud);
+  ok('il DDT del telefono resta',                   ids(f), 'a,b,tel');
+  ok('e la correzione di Compass pure',             f.filter(function (x) { return x.id === 'a'; })[0].t, 2);
+  // Cancellato qui: sparisce anche se il cloud lo ha ancora.
+  ok('cancellato qui: si toglie',                   ids(_qmTre(base, [{ id: 'a', t: 1 }], cloud)), 'a,tel');
+  // Cancellato altrove: non torna dentro da questa copia vecchia.
+  ok('cancellato altrove: non ritorna',             ids(_qmTre(base, base, [{ id: 'a', t: 1 }])), 'a');
+  // ...salvo che qui sia stato modificato nel frattempo: la modifica non si butta.
+  ok('cancellato altrove ma corretto qui: resta',   ids(_qmTre(base, [{ id: 'a', t: 1 }, { id: 'b', t: 9 }], [{ id: 'a', t: 1 }])), 'a,b');
+  // Modificato solo altrove: vince l'altra postazione, non la copia vecchia di questa.
+  ok('modificato solo altrove: vince il cloud',     _qmTre(base, base, [{ id: 'a', t: 5 }, { id: 'b', t: 1 }])[0].t, 5);
+  // Senza base (prima volta dopo l'aggiornamento): si uniscono, niente sparisce.
+  ok('senza base: si uniscono le due copie',        ids(_qmTre(null, [{ id: 'x' }], [{ id: 'y' }])), 'x,y');
+  // Oggetti (catalogo per codice a barre, spunte delle recensioni).
+  var cb = { p1: { n: 'Sapone' } };
+  var fo = _qmTre(cb, { p1: { n: 'Sapone' }, p2: { n: 'Nuovo da Compass' } }, { p1: { n: 'Sapone' }, p3: { n: 'Nuovo dal telefono' } });
+  ok('catalogo: i due prodotti nuovi ci sono',      Object.keys(fo).sort().join(','), 'p1,p2,p3');
+  ok('catalogo: prodotto cancellato qui sparisce',  Object.keys(_qmTre(cb, {}, cb)).length, 0);
+  ok('spunte recensioni: due Mac, due spunte',      Object.keys(_qmTre({}, { r1: true }, { r2: true })).sort().join(','), 'r1,r2');
+  ok('spunta tolta qui: non torna',                 Object.keys(_qmTre({ r1: true }, {}, { r1: true })).length, 0);
+  // Righe senza id (vecchi record): si confrontano per contenuto, non si perdono.
+  ok('righe senza id: restano',                     _qmTre(null, [{ n: 1 }], [{ n: 1 }, { n: 2 }]).length, 2);
+
+  // Cloud illeggibile: non si scrive alla cieca. Cloud vuoto: si tiene il locale.
+  localStorage.setItem('qm_prova_elenco', JSON.stringify([{ id: 'l' }]));
+  var r = _qmElencoAssorbi('qm_prova_elenco', null, []);
+  ok('cloud vuoto: il locale non si svuota',        ids(r.fuso), 'l');
+  var visto = null;
+  _qmElencoAssorbi('qm_prova_elenco', [{ id: 'c' }], [], function (f) { visto = ids(f); });
+  ok('chi tiene l\'elenco in memoria viene avvisato', visto, 'c,l');
+  ok('e la base diventa la copia del cloud',        ids(_qmBaseLeggi('qm_prova_elenco')), 'c');
+  localStorage.removeItem('qm_prova_elenco'); localStorage.removeItem('qmbase:qm_prova_elenco');
+
+  // I salvataggi di Compass passano tutti dalla fusione.
+  ok('DDT: fusione',                                /_qmElencoSalva\(DDT_KEY/.test(String(ddtSave)), true);
+  ok('ordini: fusione',                             /_qmElencoSalva\(ORD_KEY/.test(String(invOrdersSave)), true);
+  ok('rettifica inventario: fusione',               /_qmElencoSalva\('qm_inv_moves_'/.test(String(invEditQty)), true);
+  ok('spunta recensione: fusione',                  /_qmElencoSalva\('qm_rev_sent'/.test(String(revMarkSent)), true);
+})();

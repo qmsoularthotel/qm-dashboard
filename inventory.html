@@ -728,7 +728,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-06.1';
+const QM_APP_BUILD='2026-09-23.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -821,21 +821,113 @@ async function kvSet(key, value) {
   return qmKvSet(key, value);
 }
 
+// ── Elenchi condivisi con le app del telefono: fusione a tre (23/09/2026) ────
+// DDT (Compass + app Breakfast), movimenti e catalogo dell'Inventario (Compass + app
+// Inventario), ordini e spunte "risposta inviata" delle recensioni (due Mac) si
+// scrivevano PER INTERO con la copia della postazione, che Compass rileggeva solo
+// all'apertura: un DDT inserito dal telefono alle 10 spariva se alle 15 si correggeva un
+// altro DDT su un Compass aperto dalla mattina. Nessun avviso, come per i pre-stay del 22/08.
+//
+// Qui non servono tracce delle eliminazioni: ogni postazione ricorda la BASE, l'ultima
+// copia vista sul cloud, e dal confronto a tre sa chi ha fatto cosa.
+//   - in locale e non nella base      → aggiunto qui, si tiene
+//   - nel cloud e non nella base      → aggiunto altrove, si tiene
+//   - nella base e sparito in locale  → cancellato qui, si toglie
+//   - nella base e sparito dal cloud  → cancellato altrove, si toglie (salvo modifica qui)
+//   - in entrambi                     → vince chi l'ha cambiato rispetto alla base; se
+//                                       l'hanno cambiato tutti e due, questa postazione
+// Senza base (prima volta dopo l'aggiornamento) si uniscono le due copie: nel peggio
+// un'eliminazione fatta altrove ricompare una volta.
+// La STESSA funzione è copiata in breakfast.html e inventory.html: se si cambia qui, si
+// cambia anche là (test/esegui.sh verifica che siano identiche).
+function _qmTre(base,loc,cloud){
+  const isArr=Array.isArray(loc)||Array.isArray(cloud)||Array.isArray(base);
+  const chiave=(r,i)=>(r&&typeof r==='object'&&r.id!=null)?'i:'+r.id:'j:'+JSON.stringify(r);
+  const mappa=x=>{const m=new Map();if(x==null)return m;
+    if(isArr)(Array.isArray(x)?x:[]).forEach(r=>m.set(chiave(r),r));
+    else if(typeof x==='object')Object.keys(x).forEach(k=>m.set(k,x[k]));return m;};
+  const B=mappa(base),L=mappa(loc),C=mappa(cloud),senzaBase=base==null;
+  const ug=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+  const out=new Map();
+  const tutte=new Set([...L.keys(),...C.keys()]);
+  tutte.forEach(k=>{
+    const inB=B.has(k),inL=L.has(k),inC=C.has(k);
+    if(inL&&inC){
+      const cambL=!inB||!ug(L.get(k),B.get(k)),cambC=inB&&!ug(C.get(k),B.get(k));
+      out.set(k,(cambC&&!cambL)?C.get(k):L.get(k));
+    }else if(inL){                                     // manca nel cloud
+      if(senzaBase||!inB||!ug(L.get(k),B.get(k)))out.set(k,L.get(k));
+    }else{                                             // manca in locale
+      if(senzaBase||!inB)out.set(k,C.get(k));
+    }
+  });
+  if(isArr){                                          // ordine: quello locale, poi i nuovi
+    const r=[];const visti=new Set();
+    (Array.isArray(loc)?loc:[]).forEach(x=>{const k=chiave(x);if(out.has(k)&&!visti.has(k)){visti.add(k);r.push(out.get(k));}});
+    (Array.isArray(cloud)?cloud:[]).forEach(x=>{const k=chiave(x);if(out.has(k)&&!visti.has(k)){visti.add(k);r.push(out.get(k));}});
+    return r;
+  }
+  const o={};out.forEach((v,k)=>{o[k]=v;});return o;
+}
+const _QM_BASE='qmbase:';
+function _qmBaseLeggi(key){try{const s=localStorage.getItem(_QM_BASE+key);return s==null?null:JSON.parse(s);}catch(e){return null;}}
+function _qmBaseScrivi(key,v){try{localStorage.setItem(_QM_BASE+key,JSON.stringify(v));}catch(e){}}
+function _qmLocale(key,vuoto){try{const s=localStorage.getItem(key);return s?JSON.parse(s):vuoto;}catch(e){return vuoto;}}
+function _qmElencoAssorbi(key,cloudVal,vuoto,dopo){
+  const loc=_qmLocale(key,vuoto);
+  if(cloudVal==null)return{fuso:loc,cambiato:false,diverso:true};
+  const fuso=_qmTre(_qmBaseLeggi(key),loc,cloudVal);
+  _qmBaseScrivi(key,cloudVal);
+  const js=JSON.stringify(fuso),cambiato=js!==JSON.stringify(loc);
+  if(cambiato){try{localStorage.setItem(key,js);}catch(e){}if(typeof dopo==='function')try{dopo(fuso);}catch(e){}}
+  return{fuso,cambiato,diverso:js!==JSON.stringify(cloudVal)};
+}
+async function _qmCloudLeggi(key){
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(key),{cache:'no-store'});
+    if(!r.ok)return{ok:false};
+    const j=await r.json();
+    return{ok:true,val:(j&&j.value!=null)?JSON.parse(j.value):null};
+  }catch(e){return{ok:false};}
+}
+const _qmElencoCoda={};
+function _qmElencoSalva(key,vuoto,dopo){
+  const p=(_qmElencoCoda[key]||Promise.resolve()).then(async()=>{
+    const c=await _qmCloudLeggi(key);
+    if(!c.ok){_qmScrittureFallite++;qmAvvisoScrittura();return false;}
+    const r=_qmElencoAssorbi(key,c.val,vuoto,dopo);
+    if(!r.diverso)return true;
+    const ok=await qmKvSet(key,JSON.stringify(r.fuso)).catch(()=>false);
+    if(ok)_qmBaseScrivi(key,r.fuso);
+    return ok;
+  });
+  _qmElencoCoda[key]=p.catch(()=>{});
+  return p;
+}
+async function _qmElencoAggiorna(key,vuoto,dopo){
+  const c=await _qmCloudLeggi(key);if(!c.ok)return false;
+  const r=_qmElencoAssorbi(key,c.val,vuoto,dopo);
+  if(r.diverso&&c.val!=null)_qmElencoSalva(key,vuoto,dopo);
+  return r.cambiato;
+}
+
+// Movimenti e catalogo si FONDONO col cloud (23/09/2026): prima la copia del cloud
+// sostituiva quella del telefono e viceversa, e una rettifica fatta da Compass cancellava
+// i movimenti scansionati qui nel frattempo (o il contrario).
+function _invDopo(key){
+  return f=>{
+    if(key==='qm_inv_moves_sa')moves.sa=f;
+    else if(key==='qm_inv_moves_ar')moves.ar=f;
+    else if(key==='qm_inv_catalog_'+currentWH)catalog=f;
+    try{renderAll();}catch(e){}
+  };
+}
 async function loadFromCloud() {
   setSyncStatus('syncing');
   try {
-    const [catSaRaw, catArRaw, saRaw, arRaw] = await Promise.all([
-      kvGet('qm_inv_catalog_sa'),
-      kvGet('qm_inv_catalog_ar'),
-      kvGet('qm_inv_moves_sa'),
-      kvGet('qm_inv_moves_ar'),
-    ]);
-    let changed = false;
-    if (catSaRaw) { try { const c=JSON.parse(catSaRaw); lsSet('qm_inv_catalog_sa', c); changed=true; } catch(e){} }
-    if (catArRaw) { try { const c=JSON.parse(catArRaw); lsSet('qm_inv_catalog_ar', c); changed=true; } catch(e){} }
-    if (saRaw)    { try { moves.sa=JSON.parse(saRaw);   lsSet('qm_inv_moves_sa', moves.sa); changed=true; } catch(e){} }
-    if (arRaw)    { try { moves.ar=JSON.parse(arRaw);   lsSet('qm_inv_moves_ar', moves.ar); changed=true; } catch(e){} }
-    if (changed) { catalog = lsGet('qm_inv_catalog_' + currentWH, {}); renderAll(); }
+    const chiavi=[['qm_inv_catalog_sa',{}],['qm_inv_catalog_ar',{}],['qm_inv_moves_sa',[]],['qm_inv_moves_ar',[]]];
+    await Promise.all(chiavi.map(([k,v])=>_qmElencoAggiorna(k,v,_invDopo(k))));
+    catalog = lsGet('qm_inv_catalog_' + currentWH, {});
     setSyncStatus('ok');
   } catch(e) {
     setSyncStatus('error');
@@ -855,10 +947,11 @@ async function pushToCloud() {
   }
   setSyncStatus('syncing');
   try {
+    const kc='qm_inv_catalog_' + currentWH;
     const results = await Promise.all([
-      kvSet('qm_inv_catalog_' + currentWH, JSON.stringify(catalog)),
-      kvSet('qm_inv_moves_sa', JSON.stringify(moves.sa)),
-      kvSet('qm_inv_moves_ar', JSON.stringify(moves.ar)),
+      _qmElencoSalva(kc, {}, _invDopo(kc)),
+      _qmElencoSalva('qm_inv_moves_sa', [], _invDopo('qm_inv_moves_sa')),
+      _qmElencoSalva('qm_inv_moves_ar', [], _invDopo('qm_inv_moves_ar')),
     ]);
     _pendingSync = false;
     setSyncStatus(results.every(Boolean) ? 'ok' : 'error');

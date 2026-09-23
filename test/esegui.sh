@@ -358,6 +358,27 @@ _senza_funzione breakfast.html breakfast.html ddt-shared.js
 for _f in housekeeper.html inventory.html controllo-mattino.html dvr.html reception.html biancheria-galleria.html registration-galleria.html; do
   _senza_funzione "$_f" "$_f"
 done
+# La fusione a tre degli elenchi condivisi (_qmTre) e' copiata in breakfast.html e
+# inventory.html: se una delle tre copie cambia da sola, telefono e Compass fondono in
+# modo diverso e un DDT o un movimento puo' sparire di nuovo.
+_tre(){ sed -n '/^function _qmTre(/,/^}/p' "$1"; }
+for _f in breakfast.html inventory.html; do
+  if [ "$(_tre app.js)" != "$(_tre $_f)" ] || [ -z "$(_tre $_f)" ]; then
+    echo ""
+    echo "  ERRORE      _qmTre in $_f non e' identica a quella di app.js."
+    BKF_KO=1
+  fi
+  if grep -qE "qmKvSet\((DDT_KEY|'qm_inv_(moves|catalog)_)" "$_f" || grep -qE "kvSet\('qm_inv_(moves|catalog)_" "$_f"; then
+    echo ""
+    echo "  ERRORE      $_f scrive DDT o inventario senza fondere col cloud (_qmElencoSalva)."
+    BKF_KO=1
+  fi
+done
+if grep -qE "kvSet\((DDT_KEY|ORD_KEY|movKey|'qm_inv_(moves|catalog)_|'qm_rev_sent')" app.js; then
+  echo ""
+  echo "  ERRORE      app.js scrive un elenco condiviso senza fondere col cloud (_qmElencoSalva)."
+  BKF_KO=1
+fi
 # Leggere il lasciapassare di Compass (qm_pass) e' ammesso; scrivere una qm_* no.
 if grep -qE "localStorage\.(set|remove)Item\(.qm_" biancheria-galleria.html; then
   echo ""

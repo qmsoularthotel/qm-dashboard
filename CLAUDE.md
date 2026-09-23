@@ -61,7 +61,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`biancheria-galleria.html`** — **Gestione Biancheria**, l'app del Resident Manager per il ciclo biancheria di Art Resort Galleria Umberto e Art Suite Santa Brigida. Copia del Consumo Biancheria di Compass; dati sul cloud di Compass con un **codice che apre solo le chiavi `bg_*`** — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 732 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 751 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **6 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr e, dal
 12/09/2026, **biancheria-galleria**) sono accendibili e spegnibili da remoto — vedi
@@ -3589,6 +3589,33 @@ Qui non è mai successo perché li tocca praticamente solo il QM da una postazio
 **`qm_dvr` è letto anche da `dvr.html`**, che però non lo scrive mai (scrive solo `qm_dvr_access`): la chiave `_rimossi` aggiunta in cima all'oggetto non lo disturba, perché itera `DVR_SOC_KEYS`. `qm_biancheria` e `qm_resi_biancheria` sono solo di Compass.
 
 **`dvrSave`, `_biaSave` e `_resiSave` sono ora `async`** e **riassegnano** la loro variabile (`DVR_DATA`, `_bia`, `_resi`) con l'archivio fuso. Chi tiene un riferimento a un elenco *attraverso* l'attesa (`const items=DVR_DATA[soc].dipendenti`) modificherebbe l'oggetto vecchio: verificato che nessun chiamante lo faccia, ma è la trappola da ricordare aggiungendone di nuovi.
+
+### Elenchi condivisi col telefono — fusione a tre (23/09/2026)
+
+DDT (`qm_ddt`: Compass + `breakfast.html`), movimenti e catalogo dell'Inventario
+(`qm_inv_moves_*`, `qm_inv_catalog_*`: Compass + `inventory.html`), ordini (`qm_inv_orders`) e
+spunte "risposta inviata" delle recensioni (`qm_rev_sent`, i due Mac) si scrivevano **per
+intero** con la copia della postazione. Compass le rileggeva **solo all'apertura**: un DDT
+inserito dal telefono alle 10 spariva se alle 15 si correggeva un altro DDT su un Compass
+aperto dalla mattina; una rettifica di giacenza cancellava i movimenti scansionati nel
+frattempo. In più il telefono **sostituiva** la propria copia con quella del cloud a ogni giro,
+buttando ciò che non era riuscito a mandare su.
+
+`_qmTre(base,locale,cloud)` fonde senza tracce delle eliminazioni: ogni postazione ricorda la
+**base** (`qmbase:<chiave>` in `localStorage`, l'ultima copia vista sul cloud) e dal confronto
+sa chi ha aggiunto, cancellato o modificato cosa. Senza base si uniscono le due copie. Un cloud
+vuoto non vale come "tutto cancellato". Record per `id`, oggetti per chiave, righe senza `id`
+per contenuto.
+
+| Funzione | Ruolo |
+|---|---|
+| `_qmElencoSalva(key,vuoto,dopo)` | rilegge, fonde, scrive; una per volta per chiave; cloud illeggibile → non scrive e lo segnala |
+| `_qmElencoAggiorna(key,vuoto,dopo)` | rilettura (apertura di Spese e Inventario, avvio, giro del telefono); rimanda su ciò che c'è solo qui |
+| `_qmElencoAssorbi` | la fusione vera, **sincrona** dopo l'arrivo del cloud: niente si infila fra lettura e scrittura. `dopo(fuso)` aggiorna chi tiene l'elenco in memoria (`REV_SENT`, `moves`/`catalog` di `inventory.html`) — senza, una scrittura successiva ripartirebbe dalla memoria vecchia e scambierebbe per cancellato ciò che era appena arrivato |
+
+**`_qmTre` è copiata identica in `breakfast.html` e `inventory.html`**, e `test/esegui.sh`
+verifica che le tre copie coincidano e che nessuno dei tre file scriva questi elenchi con
+`kvSet`/`qmKvSet` diretto. 20 controlli in `test/controlli.js`, verificati con tre sabotaggi.
 
 ### Consumo KV — il polling si ferma a scheda nascosta
 
