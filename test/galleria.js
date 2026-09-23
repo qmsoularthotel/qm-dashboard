@@ -93,3 +93,34 @@ var _loc = _gbSegnaRimosso({ consumi: [], giri: [] }, 'c1');
 ok('fusione: l\'eliminato non ritorna',              _gbFondi(_fA, _loc).consumi.length, 0);
 // La versione precedente (consegne) si fonde come giri.
 ok('fusione: legge anche il vecchio formato',        _gbFondi({ consumi: [], consegne: [{ id: 'v' }] }, { consumi: [], giri: [] }).giri.length, 1);
+
+// ── Un totale congelato sbagliato si può riallineare (portato da Compass il 23/09/2026) ──
+//    La correzione del 19/09 era entrata solo in Compass: qui mancava del tutto.
+_gbReset();
+_gb.consumi.push({ id: 'k1', hotel: 'ar', data: '14/09/2026', q: _gbQ({ Federa: 6 }) });
+_gb.consumi.push({ id: 'k2', hotel: 'ar', data: '15/09/2026', q: _gbQ({ Federa: 4 }) });
+_gb.giri.push({ id: 'r1', hotel: 'ar', data: '14/09/2026', consegnato: _gbQ({ Federa: 1 }), ricevuto: _gbQ({ Federa: 1 }), ts: 1 });
+// Mercoledì 16: ritira lunedì 14 e martedì 15 = 10 federe. Registrato per sbaglio con 99.
+var _gr = { id: 'r2', hotel: 'ar', data: '16/09/2026', consegnato: _gbQ({ Federa: 99 }), ricevuto: _gbQ({ Federa: 1 }), daiConsumi: _gbQ({ Federa: 99 }), ts: 2 };
+_gb.giri.push(_gr);
+ok('Galleria: somma del periodo col calendario AR',  _gbTot(_gbSommaDelGiro(_gr)), 10);
+var _gsc = _gbScostamento(_gr);
+ok('Galleria: il totale sbagliato si segnala',       !!_gsc, true);
+ok('Galleria: dice di quanto',                       _gsc && _gsc.totCongelato + '→' + _gsc.totConsumi, '99→10');
+_gbApplicaRiallineo(_gr, _gsc);
+ok('Galleria: riallineato ai consumi',               _gbTot(_gr.consegnato), 10);
+ok('Galleria: e ne resta traccia',                   (_gr.edits || []).length, 1);
+ok('Galleria: poi l\'avviso si spegne',              _gbScostamento(_gr), null);
+var _gm = { id: 'r3', hotel: 'ar', data: '16/09/2026', consegnato: _gbQ({ Federa: 50 }), ricevuto: _gbQ({}), daiConsumi: _gbQ({ Federa: 10 }) };
+ok('Galleria: un totale scritto a mano non si segnala', _gbScostamento(_gm), null);
+// La pagina si disegna con l'avviso e i due pulsanti (il codice nuovo passa di li').
+_gr.consegnato = _gbQ({ Federa: 99 }); _gr.daiConsumi = _gbQ({ Federa: 99 }); _gr.edits = [];
+_gbHotel = 'ar'; _gbGiroAperto = new Set([_gr.id]);
+var _gbox = { innerHTML: '' }, _gvero = document.getElementById, _gerr = '';
+document.getElementById = function (id) { return id === 'gb-content' ? _gbox : null; };
+try { _gbRenderCore(); } catch (e) { _gerr = String(e); } finally { document.getElementById = _gvero; }
+ok('Galleria: la pagina si disegna',                _gerr, '');
+ok('Galleria: con il pulsante Riallinea',           /gbRiallineaGiro\('r2'\)/.test(_gbox.innerHTML), true);
+ok('Galleria: e con Va bene così',                  /gbConfermaGiro\('r2'\)/.test(_gbox.innerHTML), true);
+_gbGiroAperto = new Set();
+_gbReset();

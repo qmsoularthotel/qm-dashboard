@@ -338,6 +338,26 @@ if ! grep -qF "function permessoGalleria(" worker.js || ! grep -qF "/^bg_[A-Za-z
   echo "  ERRORE      worker.js non limita piu' il codice della Galleria alle chiavi bg_*."
   BKF_KO=1
 fi
+# Ogni pulsante deve chiamare una funzione che esiste. Il 06/09/2026 togliendo i collegamenti
+# di abilitazione sono sparite anche qmChiediPass e qmCopiaCodice: "Copia codice" in
+# Sicurezza non ha fatto niente per diciassette giorni, senza un errore a schermo.
+_senza_funzione(){  # $1 = pagina, altri = file che ne compongono il codice
+  local _p="$1"; shift
+  for _n in $(cat "$@" | grep -oE "on(click|change|input|keydown|keyup|blur|focus)=\\\\?[\"'](return )?(await )?[A-Za-z_\$][A-Za-z0-9_\$]*\(" \
+              | sed -E "s/.*[\"'](return )?(await )?//; s/\($//" | sort -u); do
+    case "$_n" in if|event|this|document|window|setTimeout|alert|confirm|location|history) continue;; esac
+    if ! cat "$@" | grep -qE "function[[:space:]]+$_n[[:space:]]*\(|(const|let|var)[[:space:]]+$_n[[:space:]]*="; then
+      echo ""
+      echo "  ERRORE      $_p: un pulsante chiama $_n(), che non esiste. Il clic non fa niente."
+      BKF_KO=1
+    fi
+  done
+}
+_senza_funzione index.html index.html app.js ddt-shared.js
+_senza_funzione breakfast.html breakfast.html ddt-shared.js
+for _f in housekeeper.html inventory.html controllo-mattino.html dvr.html reception.html biancheria-galleria.html registration-galleria.html; do
+  _senza_funzione "$_f" "$_f"
+done
 # Leggere il lasciapassare di Compass (qm_pass) e' ammesso; scrivere una qm_* no.
 if grep -qE "localStorage\.(set|remove)Item\(.qm_" biancheria-galleria.html; then
   echo ""

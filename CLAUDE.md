@@ -61,7 +61,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`biancheria-galleria.html`** — **Gestione Biancheria**, l'app del Resident Manager per il ciclo biancheria di Art Resort Galleria Umberto e Art Suite Santa Brigida. Copia del Consumo Biancheria di Compass; dati sul cloud di Compass con un **codice che apre solo le chiavi `bg_*`** — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 722 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 732 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **6 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr e, dal
 12/09/2026, **biancheria-galleria**) sono accendibili e spegnibili da remoto — vedi
@@ -2539,7 +2539,10 @@ perché SoulArt li ha. Qui l'app parte vuota, e un riquadro assente è un riquad
 da Compass cerca e non trova (*"manca questo"*, 11/09/2026). Si mostrano quindi anche vuoti,
 con una riga che dice perché.
 
-**Correggendo una delle due copie, va corretta anche l'altra.** Il modo più sicuro è rigenerare
+**Correggendo una delle due copie, va corretta anche l'altra.** È già successo di dimenticarlo:
+il riallineo dei totali congelati (*Riallinea ai consumi* / *Va bene così*, 19/09/2026) era
+entrato solo in Compass ed è stato portato nella Galleria il 23/09/2026, con lo stesso rinomino
+meccanico applicato al diff del commit. Il modo più sicuro è rigenerare
 la copia dallo stesso rinomino (sostituzioni `\b_bia`→`_gb`, `\bbia(?=[A-Z])`→`gb`,
 `\bBIA_`→`GB_`, `\bbia-`→`gb-`, più i servizi elencati sopra e le righe dei calendari),
 invece di ritoccarla a mano.
@@ -4065,6 +4068,15 @@ Il guadagno sarebbe risparmiare un copia-incolla che capita circa una volta al m
 variabili e il binding presenti nel pannello Cloudflare, e provare su un Worker di prova
 prima di toccare quello vivo. Non improvvisare.
 
+### "Copia codice" non faceva niente dal 06/09 al 23/09/2026
+
+Togliendo i collegamenti di abilitazione erano state cancellate anche `qmChiediPass` e
+`qmCopiaCodice`, che il pannello *Dispositivi abilitati* usa ancora: i due pulsanti
+(*Abilita questo computer*, *Copia codice*) chiamavano funzioni inesistenti e il clic non
+faceva niente, senza nessun errore a schermo. Rimesse; `test/esegui.sh` controlla ora che
+**ogni** `onclick`/`onchange`/`oninput` di ogni pagina punti a una funzione che esiste
+(`_senza_funzione`), verificato sulla versione rotta: scatta.
+
 ### Il problema che restava aperto — risolto il 21/08/2026
 
 Una correzione a `worker.js` poteva essere scritta, versionata e **non attiva**, senza che
@@ -4582,7 +4594,7 @@ per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dal
 arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
 prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
 dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
-scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto, pausa della finestra abbandonata, calendari e periodo dell'app biancheria della Galleria, codice della Galleria limitato alle chiavi `bg_*`, fusione fra i due PC della Galleria, riallineamento di un totale congelato sbagliato. 722 controlli.
+scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto, pausa della finestra abbandonata, calendari e periodo dell'app biancheria della Galleria, codice della Galleria limitato alle chiavi `bg_*`, fusione fra i due PC della Galleria, riallineamento di un totale congelato sbagliato. 732 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
 guasto che si manifesterebbe con una postazione che smette di aggiornarsi **senza dire

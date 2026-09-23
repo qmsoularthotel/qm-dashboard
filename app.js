@@ -17930,6 +17930,29 @@ try{
 // Il LETTORE resta (`qmEstraiAttiva`, poco piu' su e in tutte le app): un collegamento
 // mandato prima di oggi continua quindi ad abilitare chi lo apre. Toglierlo avrebbe rotto
 // qualcosa che e' gia' in giro, senza guadagnarci niente.
+//
+// ATTENZIONE: togliendo i collegamenti il 06/09 erano sparite anche qmChiediPass e
+// qmCopiaCodice, che servono al pannello qui sotto: "Copia codice" e "Abilita questo
+// computer" non facevano piu' niente, senza nessun errore a schermo. Rimesse il 23/09/2026;
+// una sentinella in test/esegui.sh verifica ora che ogni onclick punti a una funzione vera.
+async function qmChiediPass(){
+  const pw=prompt('Password di Compass (quella impostata su Cloudflare come QM_PASSWORD):');
+  if(!pw)return;
+  try{
+    const r=await fetch(PROXY+'/auth',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({password:pw})});
+    const j=await r.json();
+    if(!j||!j.ok){cqAvviso('Accesso non riuscito',(j&&j.error)||'Password non valida.');return;}
+    _qmPass=j.pass;
+    try{localStorage.setItem(QM_PASS_KEY,_qmPass);}catch(e){}
+    qmRenderDispositivi();
+    cqAvviso('Questo computer è abilitato','Ora puoi copiare il codice per abilitare gli altri dispositivi.');
+  }catch(e){cqAvviso('Accesso non riuscito',String(e&&e.message||e));}
+}
+function qmCopiaCodice(btn){
+  try{navigator.clipboard.writeText(_qmPass);}catch(e){}
+  if(btn){const v=btn.textContent;btn.textContent='✓ copiato';setTimeout(()=>{btn.textContent=v;},1500);}
+}
 function qmRenderDispositivi(){
   const el=document.getElementById('qmDispositivi');if(!el)return;
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
