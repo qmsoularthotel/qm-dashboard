@@ -2352,3 +2352,11 @@ sez('Elenchi condivisi col telefono: la fusione a tre non perde niente');
   ok('rettifica inventario: fusione',               /_qmElencoSalva\('qm_inv_moves_'/.test(String(invEditQty)), true);
   ok('spunta recensione: fusione',                  /_qmElencoSalva\('qm_rev_sent'/.test(String(revMarkSent)), true);
 })();
+
+sez('Overview: dopo un caricamento si ridisegna tutta, senza Cmd+R');
+ok('ogni caricamento avvisa l\'Overview',          /_ovDopoUpload\(\)/.test(String(setUploadTs)), true);
+ok('ridisegna anche il giorno del Piano',           /pianoNavRender\(/.test(String(ovAggiornaTutto)), true);
+ok('e il riquadro Booking',                         /bkfBookingRender\(\)/.test(String(ovAggiornaTutto)), true);
+ok('senza riportare il turno a oggi',               /loadWeekData/.test(String(ovAggiornaTutto)), false);
+ok('il giro automatico usa lo stesso ridisegno',    /ovAggiornaTutto\(\)/.test(String(_qmRidisegnaVista)), true);
+ok('il campo file non blocca il ridisegno',         /type!=='file'/.test(String(_ovDopoUpload)), true);

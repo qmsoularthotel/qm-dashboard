@@ -61,7 +61,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`biancheria-galleria.html`** — **Gestione Biancheria**, l'app del Resident Manager per il ciclo biancheria di Art Resort Galleria Umberto e Art Suite Santa Brigida. Copia del Consumo Biancheria di Compass; dati sul cloud di Compass con un **codice che apre solo le chiavi `bg_*`** — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 751 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 757 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **6 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr e, dal
 12/09/2026, **biancheria-galleria**) sono accendibili e spegnibili da remoto — vedi
@@ -3726,6 +3726,20 @@ const prima=activeDay;
 refreshOverviewForDate(customDate||new Date());
 if(nG&&prima!==activeDay&&prima>=0&&prima<nG){activeDay=prima;renderDay(activeDay);updateWeekNavActive();}
 ```
+
+### Dopo un caricamento l'Overview si ridisegna TUTTA — `ovAggiornaTutto()` (23/09/2026)
+
+Dopo ogni upload serviva Cmd+R: `refreshOverviewForDate` aggiorna turno, pulizie e colazioni ma
+lascia fermi il giorno del Piano (camere, box Culligan, stato preparazione — tutto dentro
+`pianoNavRender`, che ridisegnava solo `pianoOvInit` al primo giro), il riquadro Booking e il
+contatore recensioni. `ovAggiornaTutto()` fa tutto questo **mantenendo** il giorno scelto nella
+striscia del turno e quello del Piano.
+
+Il gancio è **`setUploadTs`**, per cui passano tutti i caricamenti andati a buon fine: nessun
+handler da ricordare. Parte dopo 400 ms (Prenotazioni scrive più dati di fila) e **non usa
+`_qmOccupato`**: dopo aver scelto un file il fuoco resta sul campo file, che bloccherebbe il
+ridisegno per sempre — si aspetta solo chi sta davvero scrivendo. Lo usano anche il giro
+automatico (`_qmRidisegnaVista('overview')`) e il ritorno in Overview da un'altra vista.
 
 ### `_qmRidisegnaVista` è separato dai ganci di `setView` — di proposito
 

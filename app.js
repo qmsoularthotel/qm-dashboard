@@ -2051,6 +2051,8 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
     try{loadWeekData(weekData);}catch(e){}
     try{refreshOverviewForDate(new Date());}catch(e){}
   }
+  // Tornando in Overview dopo un caricamento fatto da un'altra vista: tutto, non solo il turno.
+  if(id==='overview'){try{ovAggiornaTutto();}catch(e){}}
   if(id==='hkpsheet')setTimeout(()=>hkpNRender('sa'),50);
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
@@ -4082,7 +4084,7 @@ function _setUcTs(elId,ts){
   if(subId){const slot=document.getElementById(subId.replace('-sub',''));
     _ucStaleClasses(slot,ts);}
 }
-function setUploadTs(elId,ts){const t=ts||Date.now();_setUcTs(elId,t);try{localStorage.setItem('qm_ts_'+elId,String(t));}catch(e){}}
+function setUploadTs(elId,ts){const t=ts||Date.now();_setUcTs(elId,t);try{localStorage.setItem('qm_ts_'+elId,String(t));}catch(e){}try{_ovDopoUpload();}catch(e){}}
 function restoreUploadTs(elId,ts){if(!ts)return;try{const existing=parseInt(localStorage.getItem('qm_ts_'+elId)||'0');if(existing>ts){_setUcTs(elId,existing);return;}_setUcTs(elId,ts);localStorage.setItem('qm_ts_'+elId,String(ts));}catch(e){_setUcTs(elId,ts);}}
 function loadStoredTs(elId){try{const t=localStorage.getItem('qm_ts_'+elId);if(t)_setUcTs(elId,parseInt(t));}catch(e){}}
 // Ricalcola i pallini ambra/rosso lampeggianti anche senza nuovi upload (il tempo passa da solo)
@@ -17918,6 +17920,43 @@ function _qmVistaAttiva(){
   const v=document.querySelector('.view.active');
   return v?String(v.id||'').replace(/^view-/,''):'';
 }
+// Overview COMPLETA, senza ricaricare la pagina (23/09/2026). refreshOverviewForDate da
+// sola lascia fermi il giorno del Piano (camere, box Culligan, stato preparazione), il
+// riquadro Booking e il contatore recensioni: dopo ogni caricamento serviva Cmd+R.
+// NON chiama loadWeekData: rimette activeDay a oggi, e in un aggiornamento in sottofondo
+// vorrebbe dire strappare via il giorno che si sta guardando nella striscia del turno. Per
+// lo stesso motivo si rimette il giorno scelto dopo il ridisegno, che invece lo riporta a
+// oggi da sé (refreshOverviewForDate, punto 2). Idem per il giorno del Piano.
+function ovAggiornaTutto(){
+  const prima=activeDay,primaPiano=pianoNavIdx;
+  try{refreshOverviewForDate(customDate||new Date());}catch(e){}
+  const nG=(weekData&&weekData.giorni)?weekData.giorni.length:0;
+  if(nG&&prima!==activeDay&&prima>=0&&prima<nG){
+    activeDay=prima;
+    try{renderDay(activeDay);updateWeekNavActive();updateSidebarInfo();}catch(e){}
+  }
+  try{
+    const nP=(pianoData&&pianoData.giorni)?pianoData.giorni.length:0;
+    if(nP)pianoNavRender(primaPiano!==null&&primaPiano<nP?primaPiano:(pianoNavIdx!==null&&pianoNavIdx<nP?pianoNavIdx:0));
+  }catch(e){}
+  try{if(Object.keys(BKF_ROOM_INFO).length)bkfBookingRender();else bkfRoomInfoBuild();}catch(e){}
+  try{arriviUpdateKpi();}catch(e){}
+  try{ovUpdateRevNoreply();ovUpdateRevImport();}catch(e){}
+}
+// Ogni caricamento andato a buon fine passa da setUploadTs: e' il gancio unico. Si aspetta un
+// attimo perche' alcuni caricamenti (Prenotazioni) scrivono piu' dati di fila.
+let _ovDopoUploadT=null;
+// Non _qmOccupato: dopo aver scelto il file il fuoco resta spesso sul campo file, che
+// bloccherebbe il ridisegno per sempre. Si aspetta solo chi sta davvero scrivendo.
+function _ovDopoUpload(n){
+  clearTimeout(_ovDopoUploadT);
+  _ovDopoUploadT=setTimeout(()=>{
+    const a=document.activeElement;
+    const scrive=a&&((/^(TEXTAREA|SELECT)$/.test(a.tagName||''))||(a.tagName==='INPUT'&&a.type!=='file')||a.isContentEditable);
+    if(scrive&&(n||0)<10){_ovDopoUpload((n||0)+1);return;}
+    ovAggiornaTutto();
+  },400);
+}
 // Ridisegno della sola vista attiva. DELIBERATAMENTE separato dai ganci di setView, che
 // oltre a ridisegnare fanno cose che qui NON devono succedere: aprire i gruppi del menu,
 // riportare lo scorrimento in cima, e soprattutto marcare come lette le Preferenze Turni
@@ -17926,19 +17965,7 @@ function _qmVistaAttiva(){
 // aggiunta in tutte e due i posti.
 function _qmRidisegnaVista(id){
   try{
-    if(id==='overview'){
-      // NON si chiama loadWeekData qui: rimette activeDay a oggi, e in un aggiornamento
-      // in sottofondo vorrebbe dire strappare via il giorno che si sta guardando nella
-      // striscia del turno. Per lo stesso motivo si rimette il giorno scelto dopo il
-      // ridisegno, che invece lo riporta a oggi da sé (refreshOverviewForDate, punto 2).
-      const prima=activeDay;
-      refreshOverviewForDate(customDate||new Date());
-      const nG=(weekData&&weekData.giorni)?weekData.giorni.length:0;
-      if(nG&&prima!==activeDay&&prima>=0&&prima<nG){
-        activeDay=prima;
-        try{renderDay(activeDay);updateWeekNavActive();}catch(e){}
-      }
-    }
+    if(id==='overview')ovAggiornaTutto();
     else if(id==='inventario')invRender();
     else if(id==='spese'){ddtRenderSpese();if(_ddtTab==='spese')ddtRenderList();}
     else if(id==='turni-pref')turniPrefRender();
