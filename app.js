@@ -1104,7 +1104,7 @@ let _hkpNdebounce={};
 let _hkpNsel={drag:false,cells:new Set()};
 const HKP_SYM={RP:'hkp-ripasso',ND:'hkp-nd',LIB:'open-sign',NE:'non-eseguito'};
 // Mappatura sigla in griglia → nome esteso cameriera (da completare con l'elenco fornito dall'utente)
-const HKP_HW_NAMES={AM:'Matarese',IA:'Acunzo',CD:'De Masi',LC:'Cavaliere',ANU:'Anushka'};
+const HKP_HW_NAMES={AM:'Matarese',IA:'Acunzo',CD:'De Masi',LC:'Cavaliere',ANU:'Anushka',RO:'Roberta',DA:'Daniela',DI:'Ditta Boutique'};
 // Aree comuni escluse dal conteggio "chi fa cosa" — non richiedono un controllo puntuale
 const HKP_AREE_ESCLUSE=new Set(['Corridoio S.Art Vecchie','Corridoio S.Art Nuovo','Corridoio','Terrazzo Sinistro','Terrazzo Destro','Aree Esterne']);
 const HKP_SYM_EXT='png';
