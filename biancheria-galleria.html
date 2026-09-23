@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-23.1';
+const QM_APP_BUILD='2026-09-23.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -526,6 +526,13 @@ let _gbGuida=false;
 // solo tenendole aperte insieme.
 let _gbGiroAperto=new Set(), _gbVociAperte=false;
 function gbToggleGuida(){_gbGuida=!_gbGuida;gbRender();}
+// "Ultimi consumi inseriti" mostra gli ultimi 14; col pulsante li mostra tutti, divisi per
+// mese (23/09/2026: servivano i consumi di piu' di due settimane fa). Stato fuori dal
+// render, che rigenera tutto l'HTML.
+const GB_CONSUMI_VISTI=14;
+const GB_MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+let _gbConsumiTutti=false;
+function gbToggleConsumiTutti(){_gbConsumiTutti=!_gbConsumiTutti;_gbSenzaSalto(gbRender);}
 function gbToggleGiro(id){_gbGiroAperto.has(id)?_gbGiroAperto.delete(id):_gbGiroAperto.add(id);_gbSenzaSalto(gbRender);}
 function gbToggleVoci(){_gbVociAperte=!_gbVociAperte;_gbSenzaSalto(gbRender);}
 const _gbH=x=>x.hotel||'ar';
@@ -1209,11 +1216,15 @@ function _gbRenderCore(){
   // Galleria: gli ultimi consumi stanno SUBITO SOTTO il riquadro in cui si inseriscono
   // (richiesta del QM, 12/09/2026); in Compass sono in fondo alla pagina.
   // ── Consumi registrati di recente ──
-  const rec=_gbConsumi().slice().sort((a,b)=>(_gbParse(b.data)||0)-(_gbParse(a.data)||0)).slice(0,14);
+  const tuttiC=_gbConsumi().slice().sort((a,b)=>(_gbParse(b.data)||0)-(_gbParse(a.data)||0));
+  const rec=_gbConsumiTutti?tuttiC:tuttiC.slice(0,GB_CONSUMI_VISTI);
   {
-    h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti — ${esc(GB_HOTELS[_gbHotel])}</span></div><div class="panel-body" style="padding:0;">`;
+    h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti — ${esc(GB_HOTELS[_gbHotel])}</span>${tuttiC.length>GB_CONSUMI_VISTI?`<button onclick="gbToggleConsumiTutti()" style="margin-left:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">${_gbConsumiTutti?'Solo gli ultimi '+GB_CONSUMI_VISTI:'Mostra tutti ('+tuttiC.length+')'}</button>`:''}</div><div class="panel-body" style="padding:0;">`;
     if(!rec.length)h+=`<div style="padding:12px 14px;font-size:var(--fs-xs);color:var(--text-dim);">Nessun consumo inserito per questa struttura.</div>`;
+    let meseVisto='';
     rec.forEach(c=>{
+      const dd=_gbParse(c.data),mm=dd?GB_MESI[dd.getMonth()]+' '+dd.getFullYear():'';
+      if(_gbConsumiTutti&&mm&&mm!==meseVisto){meseVisto=mm;h+=`<div style="padding:7px 14px;background:var(--surface2,var(--surface));font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);border-bottom:1px solid var(--border);">${mm}</div>`;}
       h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
         <span style="font-weight:600;">${esc(c.data)}</span>
         <span style="color:var(--text-dim);">${_gbTot(c.q)} pezzi</span>

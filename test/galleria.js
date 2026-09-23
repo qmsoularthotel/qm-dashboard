@@ -124,3 +124,4 @@ ok('Galleria: con il pulsante Riallinea',           /gbRiallineaGiro\('r2'\)/.te
 ok('Galleria: e con Va bene così',                  /gbConfermaGiro\('r2'\)/.test(_gbox.innerHTML), true);
 _gbGiroAperto = new Set();
 _gbReset();
+ok('Galleria: anche qui si vedono tutti i consumi', typeof gbToggleConsumiTutti, 'function');

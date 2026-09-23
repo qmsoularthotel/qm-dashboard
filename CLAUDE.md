@@ -61,7 +61,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`biancheria-galleria.html`** — **Gestione Biancheria**, l'app del Resident Manager per il ciclo biancheria di Art Resort Galleria Umberto e Art Suite Santa Brigida. Copia del Consumo Biancheria di Compass; dati sul cloud di Compass con un **codice che apre solo le chiavi `bg_*`** — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 757 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 762 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **6 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr e, dal
 12/09/2026, **biancheria-galleria**) sono accendibili e spegnibili da remoto — vedi
@@ -3132,6 +3132,12 @@ più ogni giorno per arrivare al motivo per cui si è entrati nella pagina. Rimo
 
 Il pulsante **"Report per la direzione"** è passato nell'intestazione delle Consegne, dove è in
 contesto: prima stava sopra un titolo che non lo riguardava, accanto alla fisarmonica.
+
+### "Ultimi consumi inseriti": gli ultimi 14, oppure tutti (23/09/2026)
+
+Il riquadro mostra i 14 consumi più recenti della struttura; **"Mostra tutti (N)"** li apre
+tutti, divisi per mese (`_biaConsumiTutti`, `biaToggleConsumiTutti`, `BIA_CONSUMI_VISTI`). Serviva
+per ritrovare e correggere consumi di più di due settimane prima. Stessa cosa nella Galleria.
 
 ### Non solo QUANTO porta, ma COSA (03/09/2026)
 

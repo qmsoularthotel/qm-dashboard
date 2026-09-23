@@ -15395,6 +15395,13 @@ function biaRenderPromemoria(){
 // porta in vista. Chiudendolo si resta dov'era il pulsante, senza salti.
 // Aprire il dettaglio di una riga (o quello per tipologia) NON deve spostare l'occhio:
 // si sta guardando quella riga, e un salto la porterebbe via proprio mentre la si legge.
+// "Ultimi consumi inseriti" mostra gli ultimi 14; col pulsante li mostra tutti, divisi per
+// mese (23/09/2026: servivano i consumi di piu' di due settimane fa). Stato fuori dal
+// render, che rigenera tutto l'HTML.
+const BIA_CONSUMI_VISTI=14;
+const BIA_MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+let _biaConsumiTutti=false;
+function biaToggleConsumiTutti(){_biaConsumiTutti=!_biaConsumiTutti;_psSenzaSalto(biaRender);}
 function biaToggleGiro(id){_biaGiroAperto.has(id)?_biaGiroAperto.delete(id):_biaGiroAperto.add(id);_psSenzaSalto(biaRender);}
 function biaToggleVoci(){_biaVociAperte=!_biaVociAperte;_psSenzaSalto(biaRender);}
 const _biaH=x=>x.hotel||'sa';
@@ -16257,10 +16264,14 @@ function biaRender(){
   }
 
   // ── Consumi registrati di recente ──
-  const rec=_biaConsumi().slice().sort((a,b)=>(_biaParse(b.data)||0)-(_biaParse(a.data)||0)).slice(0,14);
+  const tuttiC=_biaConsumi().slice().sort((a,b)=>(_biaParse(b.data)||0)-(_biaParse(a.data)||0));
+  const rec=_biaConsumiTutti?tuttiC:tuttiC.slice(0,BIA_CONSUMI_VISTI);
   if(rec.length){
-    h+=`<div class="panel" style="margin-top:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti — ${esc(BIA_HOTELS[_biaHotel])}</span></div><div class="panel-body" style="padding:0;">`;
+    h+=`<div class="panel" style="margin-top:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti — ${esc(BIA_HOTELS[_biaHotel])}</span>${tuttiC.length>BIA_CONSUMI_VISTI?`<button onclick="biaToggleConsumiTutti()" style="margin-left:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">${_biaConsumiTutti?'Solo gli ultimi '+BIA_CONSUMI_VISTI:'Mostra tutti ('+tuttiC.length+')'}</button>`:''}</div><div class="panel-body" style="padding:0;">`;
+    let meseVisto='';
     rec.forEach(c=>{
+      const dd=_biaParse(c.data),mm=dd?BIA_MESI[dd.getMonth()]+' '+dd.getFullYear():'';
+      if(_biaConsumiTutti&&mm&&mm!==meseVisto){meseVisto=mm;h+=`<div style="padding:7px 14px;background:var(--surface2,var(--surface));font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);border-bottom:1px solid var(--border);">${mm}</div>`;}
       h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
         <span style="font-weight:600;">${esc(c.data)}</span>
         <span style="color:var(--text-dim);">${_biaTot(c.q)} pezzi</span>

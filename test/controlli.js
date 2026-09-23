@@ -2360,3 +2360,21 @@ ok('e il riquadro Booking',                         /bkfBookingRender\(\)/.test(
 ok('senza riportare il turno a oggi',               /loadWeekData/.test(String(ovAggiornaTutto)), false);
 ok('il giro automatico usa lo stesso ridisegno',    /ovAggiornaTutto\(\)/.test(String(_qmRidisegnaVista)), true);
 ok('il campo file non blocca il ridisegno',         /type!=='file'/.test(String(_ovDopoUpload)), true);
+
+sez('Consumo Biancheria: si vedono anche i consumi di piu\' di due settimane fa');
+(function(){
+  var prima=_bia,ph=_biaHotel,pt=_biaConsumiTutti;
+  _bia={consumi:[],giri:[]};_biaHotel='sa';
+  for(var i=1;i<=20;i++)_bia.consumi.push({id:'c'+i,hotel:'sa',data:(i<10?'0':'')+i+'/08/2026',q:_biaVuote()});
+  var box={innerHTML:''},vero=document.getElementById;
+  document.getElementById=function(id){return id==='bia-content'?box:null;};
+  var conta=function(){return (box.innerHTML.match(/biaEliminaConsumo\(/g)||[]).length;};
+  try{
+    _biaConsumiTutti=false;biaRender();
+    ok('di norma gli ultimi 14',                     conta(),14);
+    ok('e il pulsante per vederli tutti',            /Mostra tutti \(20\)/.test(box.innerHTML),true);
+    _biaConsumiTutti=true;biaRender();
+    ok('col pulsante: tutti e 20',                   conta(),20);
+    ok('divisi per mese',                            /Agosto 2026/.test(box.innerHTML),true);
+  }finally{document.getElementById=vero;_bia=prima;_biaHotel=ph;_biaConsumiTutti=pt;}
+})();
