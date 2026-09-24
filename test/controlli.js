@@ -2378,3 +2378,35 @@ sez('Consumo Biancheria: si vedono anche i consumi di piu\' di due settimane fa'
     ok('divisi per mese',                            /Agosto 2026/.test(box.innerHTML),true);
   }finally{document.getElementById=vero;_bia=prima;_biaHotel=ph;_biaConsumiTutti=pt;}
 })();
+
+sez('Prenotazioni: un caricamento dopo i check-out non perde le partenze di oggi');
+(function(){
+  var R=function(cod,osp,cam,arr,par){return{codice:cod,ospite:osp,camera:cam,arrivo:arr,partenza:par,pax:2,tratt:'BB',struttura:'SA',alloggio:cam,stato:'Confermata',origine:'Booking.com'};};
+  var oggi='2026-09-24';
+  var mattina=[R('A1','Rossi Anna','Art 5','2026-09-21',oggi),R('B2','Neri Luca','Art 7','2026-09-22','2026-09-26'),R('C3','Blu Sara','Art 9',oggi,'2026-09-27')];
+  // Pomeriggio: Rossi ha fatto check-out e non e' piu' nel PDF "Presenti".
+  var pomeriggio=[mattina[1],mattina[2]];
+  var r=_prenRecuperaPartenze(pomeriggio,{righe:mattina},oggi);
+  ok('la partenza in check-out torna dentro',       r.recuperate.length,1);
+  var ad=_prenArriviData(r.pren,oggi);
+  ok('e compare fra le partenze di oggi',           ad.partenze.map(function(x){return x.ospite;}).join(','),'Rossi Anna');
+  var bd=_prenBkfData(r.pren);
+  var g=bd.data.filter(function(d){return d.data==='24/09/2026';})[0];
+  ok('le colazioni di oggi la contano ancora',      g&&g.colTot,4);
+  // Un solo caricamento, fatto ieri sera: le partenze di oggi c'erano come fermate.
+  var ieri=[R('A1','Rossi Anna','Art 5','2026-09-21',oggi)];
+  ok('basta anche il caricamento di ieri',          _prenRecuperaPartenze(pomeriggio,{righe:ieri},oggi).recuperate.length,1);
+  // Chi e' ancora nel PDF non si duplica, anche spostato di camera.
+  var spostata=[R('A1','Rossi Anna','Art 6','2026-09-21',oggi),mattina[1],mattina[2]];
+  ok('nessun doppione se la prenotazione c\'e\'',   _prenRecuperaPartenze(spostata,{righe:mattina},oggi).recuperate.length,0);
+  // Soggiorno prolungato: stesso codice, nuova partenza. Non e' una partenza di oggi.
+  var prolungata=[R('A1','Rossi Anna','Art 5','2026-09-21','2026-09-25'),mattina[1],mattina[2]];
+  ok('prolungamento: non si reinventa la partenza', _prenRecuperaPartenze(prolungata,{righe:mattina},oggi).recuperate.length,0);
+  // Senza codice si riconosce da nome, camera e arrivo.
+  var senza=[R('','Rossi Anna','Art 5','2026-09-21',oggi)];
+  ok('senza codice: riconosciuta da nome e camera', _prenRecuperaPartenze([R('','Rossi Anna','Art 5','2026-09-21',oggi)],{righe:senza},oggi).recuperate.length,0);
+  // Un file che non riguarda oggi (export della settimana prossima) non tocca niente.
+  var futuro=[R('Z9','Gialli Po','Art 2','2026-10-01','2026-10-03')];
+  ok('file di altri giorni: nessun recupero',       _prenRecuperaPartenze(futuro,{righe:mattina},oggi).recuperate.length,0);
+  ok('senza caricamento precedente: nessun errore', _prenRecuperaPartenze(pomeriggio,null,oggi).recuperate.length,0);
+})();

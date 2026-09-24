@@ -61,7 +61,7 @@ Codici hotel: `sa` (SoulArt), `bh` (Boutique), `sl` (San Liborio), `pr` (Princip
 - **`biancheria-galleria.html`** — **Gestione Biancheria**, l'app del Resident Manager per il ciclo biancheria di Art Resort Galleria Umberto e Art Suite Santa Brigida. Copia del Consumo Biancheria di Compass; dati sul cloud di Compass con un **codice che apre solo le chiavi `bg_*`** — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, invio e lettura mail pre-stay, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
 - **`sw.js`** — Service worker unico per tutto il sito
-- **`test/`** — 762 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
+- **`test/`** — 771 controlli automatici (`bash test/esegui.sh`), `strumenti/` — script di versionamento
 
 Le **6 app del Pannello App** (housekeeper, breakfast, controllo-mattino, inventory, dvr e, dal
 12/09/2026, **biancheria-galleria**) sono accendibili e spegnibili da remoto — vedi
@@ -4011,6 +4011,25 @@ i casi non coperti, ma non è più l'unico modo.
 Attenzione a `Booking.co`: il PDF manda a capo `Booking.com` e nella colonna resta troncato.
 Le espressioni di `PS_CANALI` cercano sottostringhe (`/booking/i`), non uguaglianze, proprio
 per questo.
+
+### Partenze di oggi già in check-out — l'ordine dei caricamenti non conta più (24/09/2026)
+
+Con il filtro "Presenti" il PMS toglie dal PDF chi ha già fatto il check-out, e ogni
+caricamento **sostituisce** i dati di oggi: un caricamento fatto dopo i check-out perdeva le
+partenze di oggi (Overview, Housekeeper, Culligan) e abbassava le colazioni di oggi, che
+finivano così anche nell'archivio mensile. Per questo il primo caricamento della giornata
+andava fatto prima dei check-out.
+
+Ora l'ultimo caricamento resta in `qm_pren_ultimo` (solo le prenotazioni che partono da oggi
+in poi). `_prenRecuperaPartenze` rimette dentro ogni prenotazione che **parte oggi**, era **già
+in casa** e nel nuovo PDF non c'è più — né col suo codice né con nome, camera e arrivo
+(`_prenStessa`). Le annullate restano nel PDF con lo stato, quindi una prenotazione sparita è
+uscita per il check-out. Basta anche il caricamento di ieri sera, dove le partenze di oggi
+c'erano come fermate. Il messaggio dello slot dice quante ne ha riprese.
+
+"Il file riguarda oggi" si decide da **chi è in casa oggi**, non da `_prenIntervallo`: la prima
+partenza del file è proprio quella che manca dopo i check-out (errore commesso e colto dai
+controlli). 9 controlli.
 
 ### Tornare indietro
 

@@ -4121,7 +4121,7 @@ const QM_BACKUP_FISSE=[
   'qm_bkfSheetARData','qm_bkf_monthly_history','qm_bkf_banner',
   'qm_bkf_room_info','qm_bkf_room_info_date','qm_bkf_room_ambiguous',
   'qm_hk_soul','qm_hk_bout','qm_hkp_config',
-  'qm_inv_orders','qm_ddt','qm_spese_cat_override',
+  'qm_pren_ultimo','qm_inv_orders','qm_ddt','qm_spese_cat_override',
   'qm_dvr','qm_bia_distinte','qm_biancheria','qm_giacenza',
   // 'qm_resi_biancheria' mancava: _resiSave passa da _qmSalvaArchivio(RESI_KEY,…) e la
   // sentinella seguiva solo le chiavi scritte come stringa, non quelle in una costante.
@@ -17397,6 +17397,44 @@ function _prenOggiIso(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
+// ── Partenze di oggi già in check-out (24/09/2026) ──
+// Con il filtro "Presenti" il PMS toglie dal PDF chi ha già fatto il check-out. Ogni
+// caricamento SOSTITUISCE i dati di oggi, quindi un caricamento fatto dopo i check-out
+// perdeva le partenze di oggi (Overview, Housekeeper, Culligan) e abbassava le colazioni di
+// oggi, che finivano cosi' anche nell'archivio mensile. Per questo il primo caricamento
+// della giornata andava fatto prima dei check-out.
+// Ora si tiene da parte l'ultimo caricamento (qm_pren_ultimo): una prenotazione che oggi
+// PARTE, che era gia' in casa e che nel nuovo PDF non c'e' piu' — ne' col suo codice ne'
+// col suo nome e camera — e' uscita per il check-out, non e' stata annullata (le annullate
+// restano nel PDF con lo stato), e si rimette dentro. Basta anche il caricamento di ieri
+// sera: li' le partenze di oggi c'erano ancora come fermate.
+const PREN_ULTIMO_KEY='qm_pren_ultimo';
+function _prenStessa(a,b){
+  if(a.codice&&b.codice)return a.codice===b.codice;
+  return _psNomeChiave(a.ospite)===_psNomeChiave(b.ospite)&&a.camera===b.camera&&a.arrivo===b.arrivo;
+}
+function _prenRecuperaPartenze(pren,prec,iso){
+  // Il file riguarda oggi se c'e' qualcuno in casa oggi. NON si usa _prenIntervallo: la
+  // prima partenza del file e' proprio quella che manca dopo i check-out.
+  if(!pren.some(p=>p.arrivo<=iso&&iso<=p.partenza))return{pren:pren,recuperate:[]};
+  const recuperate=((prec&&prec.righe)||[]).filter(r=>
+    r&&r.partenza===iso&&r.arrivo<iso&&!pren.some(p=>_prenStessa(p,r)));
+  return{pren:pren.concat(recuperate.map(r=>({...r,recuperata:true}))),recuperate:recuperate};
+}
+async function _prenLeggiUltimo(){
+  let v=null;
+  try{const c=await kvGet(PREN_ULTIMO_KEY);if(c)v=JSON.parse(c);}catch(e){}
+  if(!v){try{v=JSON.parse(localStorage.getItem(PREN_ULTIMO_KEY)||'null');}catch(e){}}
+  return v;
+}
+function _prenSalvaUltimo(pren,iso){
+  // Servono solo le prenotazioni che partono da oggi in poi: le altre non torneranno utili.
+  const righe=pren.filter(p=>p.partenza>=iso).map(p=>{const{recuperata,...r}=p;return r;});
+  const v=JSON.stringify({ts:Date.now(),righe:righe});
+  try{localStorage.setItem(PREN_ULTIMO_KEY,v);}catch(e){}
+  kvSet(PREN_ULTIMO_KEY,v).catch(()=>{});
+}
+
 async function prenHandlePdf(file){
   const uc=(stato,sub)=>{try{ucSetState('pren',stato,sub,true);}catch(e){}};
   const box=document.getElementById('prenStatus');
@@ -17411,13 +17449,16 @@ async function prenHandlePdf(file){
       // Le pagine successive ripartono dall'alto: si sfalsa la y per non mescolare le righe.
       tc.items.forEach(it=>{const s=(it.str||'').trim();if(s)items.push({s,x:it.transform[4],y:it.transform[5]-(p-1)*10000});});
     }
-    const pren=_prenParse(items);
-    if(!pren.length){
+    const letti=_prenParse(items);
+    if(!letti.length){
       msg('Nessuna prenotazione riconosciuta. Controlla di aver esportato con filtro "Presenti" e tutte le strutture.');
       uc('error','Nessuna prenotazione'); return;
     }
-    const per=_prenIntervallo(pren);
     const iso=_prenOggiIso();
+    const _rec=_prenRecuperaPartenze(letti,await _prenLeggiUltimo(),iso);
+    const pren=_rec.pren;
+    _prenSalvaUltimo(pren,iso);
+    const per=_prenIntervallo(pren);
 
     // 1. Arrivi del giorno corrente (ex Riepilogo Reception)
     // Lo stesso giorno del caricamento precedente? Serve a rcAggiornaDaArrivi per
@@ -17478,7 +17519,8 @@ async function prenHandlePdf(file){
     const rcNota=_rcEsito==='ok'?'registration card aggiornate'
       :_rcEsito==='nessuna'?'nessuna registration card (solo Principe/Mastrangelo)'
       :'⚠️ registration card NON aggiornate: nessun arrivo valido per oggi';
-    msg('Caricato: '+ad.arrivi.length+' arrivi oggi, '+(bd?bd.data.length:0)+' giorni di colazioni, '+schedePs+' schede pre-stay su '+giorniPs+' giorni. '+rcNota+'.');
+    msg('Caricato: '+ad.arrivi.length+' arrivi oggi, '+(bd?bd.data.length:0)+' giorni di colazioni, '+schedePs+' schede pre-stay su '+giorniPs+' giorni. '+rcNota+'.'
+      +(_rec.recuperate.length?' '+_rec.recuperate.length+' partenze di oggi già in check-out riprese dal caricamento precedente.':''));
     uc('loaded',riass);
     setUploadTs('prenTs');
     // Senza questa riga, dopo un Cmd+R la tessera torna a "Non caricato" pur essendo stati
