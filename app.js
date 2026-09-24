@@ -15601,7 +15601,7 @@ async function biaRegistraGiro(){
 async function biaEliminaGiro(id){
   const g=_bia.giri.find(x=>x.id===id);
   if(!g)return;
-  if(!await cqConferma('Eliminare questa consegna?','<strong>'+g.data+'</strong><br>I giri successivi useranno un periodo diverso.',{ok:'Elimina'}))return;
+  if(!await cqConferma('Eliminare questa consegna?','<strong>'+g.data+'</strong><br>Le consegne successive useranno un periodo diverso.',{ok:'Elimina'}))return;
   _bia.giri=_bia.giri.filter(x=>x.id!==id);
   _qmSegnaRimosso(_bia,id);
   await _biaSave();biaRender();
@@ -15664,8 +15664,8 @@ function _biaStileMsg(tot){
 function _biaMsgDiff(tot){
   if(!tot)return'';
   return tot<0
-    ?'Rispetto a quanto consegnato il giro scorso mancano '+Math.abs(tot)+' pezzi.'
-    :'Sono rientrati '+tot+' pezzi in più di quanti ne erano stati consegnati il giro scorso.';
+    ?'Rispetto a quanto consegnato alla consegna precedente mancano '+Math.abs(tot)+' pezzi.'
+    :'Sono rientrati '+tot+' pezzi in più di quanti ne erano stati dati alla consegna precedente.';
 }
 
 function biaAggiornaDelta(){
@@ -15754,7 +15754,7 @@ function biaRender(){
     <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);font-weight:700;margin-bottom:8px;">Cosa fare oggi · ${esc(nomeOggi)} ${esc(_biaFmt(oggi))}</div>`;
   if(!passi.length){
     h+=`<div style="font-size:var(--fs-sm);font-weight:700;color:var(--green);">Tutto fatto per oggi.</div>
-        <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;line-height:1.5;">${giornoGiro?'Il giro di oggi è registrato.':(vigilia?'La distinta per domani è stampata.':'Oggi Raimondo non passa e non c\'è distinta da preparare.')}</div>`;
+        <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;line-height:1.5;">${giornoGiro?'La consegna di oggi è registrata.':(vigilia?'La distinta per domani è stampata.':'Oggi Raimondo non passa e non c\'è distinta da preparare.')}</div>`;
   }else{
     passi.forEach((p,i)=>{
       h+=`<div style="display:flex;gap:10px;align-items:flex-start;${i?'margin-top:10px;':''}">
@@ -15820,8 +15820,8 @@ function biaRender(){
   const giroDate=_biaParse(giroData);
   const mancanti=per?_biaGiorniSenzaConsumi(_biaHotel,per):[];
   const fonteTxt=!per?'':
-      per.fonte==='giro'?'Il periodo parte dal giro precedente registrato.':
-      'Nessun giro registrato prima: il periodo parte dal giorno di calendario precedente (il giro passa '+BIA_GIORNI_GIRO_TXT+').';
+      per.fonte==='giro'?'Il periodo parte dalla consegna precedente registrata.':
+      'Nessuna consegna registrata prima: il periodo parte dal giorno di calendario precedente (Raimondo passa '+BIA_GIORNI_GIRO_TXT+').';
   // Consumi registrati PRIMA del periodo, quando non c'è ancora nessun giro in archivio:
   // sono usciti con i giri fatti prima di iniziare a registrarli qui. Restano fuori dal
   // sacco, ma vanno nominati, altrimenti sembrano spariti.
@@ -15829,7 +15829,7 @@ function biaRender(){
     ?_biaConsumi(_biaHotel).map(c=>_biaParse(c.data)).filter(x=>x&&x<per.dal).sort((a,b)=>a-b)
     :[];
   h+=`<div class="panel" style="margin-bottom:16px;">
-    <div class="panel-header"><span class="panel-title">${vigilia&&!giaReg?'Prepara il ritiro di domani':'Giro di Raimondo'}</span>
+    <div class="panel-header"><span class="panel-title">${vigilia&&!giaReg?'Prepara il ritiro di domani':('Consegna di Raimondo'+(giroDate?' · '+BIA_GG_NOMI[giroDate.getDay()]+' '+_biaFmt(giroDate).slice(0,5):''))}</span>
       ${giaReg?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">consegna già registrata</span>'
         :(vigilia&&distPronta?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">distinta stampata</span>':'')}
     </div>
@@ -15844,7 +15844,7 @@ function biaRender(){
   // Data fuori calendario: non è un errore (un giro straordinario è legittimo), ma se è
   // una svista è meglio accorgersene prima di stampare la distinta.
   if(giroDate&&!_biaGiornoGiro(giroDate)){
-    h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:8px;">Il ${esc(_biaFmt(giroDate))} è un ${esc(BIA_GG_NOMI[giroDate.getDay()])}: di norma il giro passa ${BIA_GIORNI_GIRO_TXT}.</div>`;
+    h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:8px;">Il ${esc(_biaFmt(giroDate))} è un ${esc(BIA_GG_NOMI[giroDate.getDay()])}: di norma Raimondo passa ${BIA_GIORNI_GIRO_TXT}.</div>`;
   }
 
   if(fuori.length){
@@ -15910,7 +15910,7 @@ function biaRender(){
   const bPrimario='background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
   const bSecondario='background:var(--surface);color:var(--accent);border:1.5px solid var(--border);padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
   const bStampa=`<button onclick="biaPrintDistinta()" style="${vigilia&&!giaReg?bPrimario:bSecondario}">${distPronta?'Ristampa la distinta':'Stampa la distinta'}</button>`;
-  const bRegistra=`<button onclick="biaRegistraGiro()" style="${vigilia&&!giaReg?bSecondario:bPrimario}">${giaReg?'Aggiorna giro':'Registra cosa ha portato'}</button>`;
+  const bRegistra=`<button onclick="biaRegistraGiro()" style="${vigilia&&!giaReg?bSecondario:bPrimario}">${giaReg?'Aggiorna consegna':'Registra cosa ha portato'}</button>`;
   h+=(vigilia&&!giaReg)?(bStampa+bRegistra):(bRegistra+bStampa);
   h+=`</div>
       <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">${vigilia&&!giaReg
@@ -15980,7 +15980,7 @@ function biaRender(){
           <td style="${td}text-align:left;padding-left:14px;font-weight:700;white-space:nowrap;">${esc(rg.data)}</td>
           <td style="${td}font-weight:700;${rg.registrato?'':'color:var(--amber);font-weight:600;font-size:11.5px;'}">${rg.registrato?rg.portato:'non registrato'}</td>
           <td style="${td}color:var(--text-muted);">${rg.dovuto===null?'—':rg.dovuto+`<div style="font-size:10px;color:var(--text-dim);font-weight:400;">tot pezzi del ${esc(rg.dataPrec)}</div>`}</td>
-          <td style="${td}font-weight:700;color:${rg.delta===null?'var(--text-dim)':_biaColDelta(rg.delta)};">${!rg.registrato?'fuori conteggio':(rg.dovuto===null?'primo giro':_biaTxtDelta(rg.delta))}</td>
+          <td style="${td}font-weight:700;color:${rg.delta===null?'var(--text-dim)':_biaColDelta(rg.delta)};">${!rg.registrato?'fuori conteggio':(rg.dovuto===null?'prima consegna':_biaTxtDelta(rg.delta))}</td>
           <td style="${td}color:var(--text-dim);">${rg.uscito}${scG?` <span title="Non corrisponde ai consumi del periodo: aprine il dettaglio" style="color:var(--amber);font-weight:700;">!</span>`:''}</td>
           <td style="${td}padding-right:14px;white-space:nowrap;text-align:right;">
             <button onclick="biaToggleGiro('${g.id}')" title="Cosa ha portato, voce per voce" style="${_biaBtnIco}${aperto?'background:var(--accent);color:#fff;border-color:var(--accent);':''}">${aperto?'▴':'▾'}</button>
@@ -16087,7 +16087,7 @@ function _biaGraficoResa(serie,largh,alt){
   return g+'</svg>';
 }
 function biaPrintAndamento(){
-  if(!_bia.giri.length){cqAvviso('Non c\'è ancora nessun giro registrato.');return;}
+  if(!_bia.giri.length){cqAvviso('Non c\'è ancora nessuna consegna registrata.');return;}
   const esc=x=>String(x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const pc=v=>v===null?'—':(Math.round(v*1000)/10).toFixed(1).replace('.',',')+'%';
   const sg=n=>n>0?'+'+n:String(n);
@@ -16103,15 +16103,15 @@ function biaPrintAndamento(){
     }
     const resa=rp.dovuto>0?rp.portato/rp.dovuto:null;
     corpo+=`<div class="kpi">
-      <div><div class="k-l">Giri considerati</div><div class="k-v">${rp.confrontati}</div></div>
+      <div><div class="k-l">Consegne considerate</div><div class="k-v">${rp.confrontati}</div></div>
       <div><div class="k-l">Doveva riportare</div><div class="k-v">${rp.dovuto}</div></div>
       <div><div class="k-l">Ha riportato</div><div class="k-v">${rp.portato}</div></div>
       <div><div class="k-l">Differenza</div><div class="k-v">${sg(rp.saldo)}</div></div>
       <div><div class="k-l">Resa</div><div class="k-v">${pc(resa)}</div></div>
     </div>
-    <div class="g-t">Resa per giro — quanto è rientrato rispetto a quanto era uscito${serie.length>BIA_GRAF_MAX?` (ultimi ${BIA_GRAF_MAX} giri)`:''}</div>
+    <div class="g-t">Resa per consegna — quanto è rientrato rispetto a quanto era uscito${serie.length>BIA_GRAF_MAX?` (ultime ${BIA_GRAF_MAX} consegne)`:''}</div>
     <div class="graf">${_biaGraficoResa(serie.slice(-BIA_GRAF_MAX),470,86)}</div>
-    <table><thead><tr><th>Giro del</th><th class="r">Doveva riportare</th><th class="r">Ha riportato</th><th class="r">Differenza</th><th class="r">Resa</th><th class="r">Cumulato</th></tr></thead><tbody>
+    <table><thead><tr><th>Consegna del</th><th class="r">Doveva riportare</th><th class="r">Ha riportato</th><th class="r">Differenza</th><th class="r">Resa</th><th class="r">Cumulato</th></tr></thead><tbody>
       ${serie.map(r=>`<tr><td>${esc(r.data)}</td><td class="r">${r.dovuto}</td><td class="r">${r.portato}</td><td class="r">${sg(r.delta)}</td><td class="r">${pc(r.resa)}</td><td class="r">${sg(r.cumulato)}</td></tr>`).join('')}
     </tbody></table>
     <div class="g-t">Dove si concentra la differenza</div>
@@ -16150,7 +16150,7 @@ th.r,td.r{text-align:right;}
   </div>
   <div class="intro"><strong>Come si legge.</strong> Raimondo ritira lo sporco a ogni consegna e riporta il pulito alla consegna successiva: quello che <em>doveva riportare</em> a una consegna è quindi esattamente quanto gli era stato dato alla consegna precedente. La <strong>resa</strong> è il rapporto tra i pezzi rientrati e quelli usciti: 100% significa che è tornato tutto. Il <strong>cumulato</strong> somma le differenze nel tempo — è quello che distingue una perdita occasionale da una continua. Le due strutture hanno sacchi, distinte e conti separati.</div>
   ${corpo}
-  <div class="tot"><strong>Totale gruppo</strong> — su ${nConf} giri confrontabili è rientrato <strong>${totP}</strong> di <strong>${totD}</strong> pezzi usciti: differenza <strong>${sg(totP-totD)}</strong>, resa <strong>${pc(resaTot)}</strong>.</div>
+  <div class="tot"><strong>Totale gruppo</strong> — su ${nConf} consegne confrontabili è rientrato <strong>${totP}</strong> di <strong>${totD}</strong> pezzi usciti: differenza <strong>${sg(totP-totD)}</strong>, resa <strong>${pc(resaTot)}</strong>.</div>
   <div class="nota">I conteggi dello sporco in uscita sono la somma dei consumi dichiarati ogni giorno dalle cameriere sui fogli camera; quelli del pulito in entrata sono presi dalla distinta del fornitore. Il primo giro registrato di ogni struttura non compare in questo report: non avendo un giro precedente non ha un termine di confronto.</div>
 </body></html>`;
   const w=window.open('','_blank');
