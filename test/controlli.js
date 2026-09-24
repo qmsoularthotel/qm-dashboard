@@ -1921,11 +1921,11 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   var ridisegna = function () { try { biaRender(); } finally { document.getElementById = vero; } document.getElementById = function (id) { return id === 'bia-content' ? box : null; }; };
   var righeIn = function () { return (box.innerHTML.match(/onclick="biaToggleGiro\(/g) || []).length; };
   var meseSA = _biaYm(_biaGiri('sa')[0].data);
-  _biaStoHotel = 'sa'; _biaStoMese = meseSA; _biaStoTutte = false;
+  _biaHotel = 'sa'; _biaStoHotel = 'sa'; _biaStoMese = meseSA; _biaStoTutte = false;
   ridisegna();
   ok('il pannello si chiama Storico consegne del pulito', /Storico consegne del pulito/.test(box.innerHTML), true);
   ok('SoulArt: le sue 3 consegne, non quelle del Boutique', righeIn(), 3);
-  _biaStoHotel = 'bh'; ridisegna();
+  _biaHotel = 'bh'; ridisegna();
   ok('Boutique: le sue 2 consegne',                    righeIn(), 2);
   // Il conto del mese sta sulle sole consegne confrontabili, come il saldo del pannello.
   var stB = _biaStorico('bh', meseSA);
@@ -2520,4 +2520,15 @@ sez('Fusione: vince la versione modificata piu\' di recente, non sempre la propr
   // Le chiusure (ritiroId) restano: una consegna chiusa non si riapre perche' l'altra copia e' piu' recente.
   ok('la chiusura resta anche se vince il remoto',  _qmUnisciRecord([{id:'r',ts:9}],[{id:'r',ritiroId:'R1',ts:1}])[0].ritiroId, 'R1');
   ok('salvare i consumi aggiorna l\'orario',        /esistente\.ts=Date\.now\(\)/.test(String(biaSalvaConsumi)), true);
+})();
+sez('Biancheria: lo storico segue la struttura della pagina');
+(function(){
+  var ph=_biaHotel,vero=document.getElementById,box={innerHTML:''};
+  document.getElementById=function(id){return id==='bia-content'?box:null;};
+  try{_biaHotel='sa';_biaStoHotel='bh';biaRender();}finally{document.getElementById=vero;}
+  ok('lo storico mostra la struttura scelta in alto', _biaStoHotel, 'sa');
+  document.getElementById=function(id){return id==='bia-content'?box:null;};
+  try{biaStoSetHotel('bh');}finally{document.getElementById=vero;}
+  ok('e cambiarla dallo storico cambia la pagina',    _biaHotel, 'bh');
+  _biaHotel=ph;
 })();

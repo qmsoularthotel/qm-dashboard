@@ -15190,7 +15190,10 @@ function _biaEsito(r){
   if(r.delta>0)return{txt:'Tutto riportato · '+r.delta+' in più',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
   return{txt:'Tutto riportato',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
 }
-function biaStoSetHotel(h){if(!BIA_HOTELS[h])return;_biaStoHotel=h;_biaStoTutte=false;_psSenzaSalto(biaRender);}
+// La struttura dello storico E' quella della pagina (24/09/2026): con due selettori
+// indipendenti si lavorava su Art Resort e lo storico mostrava Santa Brigida. Cambiarla da
+// qui cambia tutta la pagina, come le linguette in alto.
+function biaStoSetHotel(h){if(!BIA_HOTELS[h])return;_biaStoTutte=false;_psSenzaSalto(()=>biaSetHotel(h));}
 function biaStoSetMese(ym){_biaStoMese=ym;_biaStoTutte=false;_psSenzaSalto(biaRender);}
 function biaStoToggleTutte(){_biaStoTutte=!_biaStoTutte;_psSenzaSalto(biaRender);}
 // "Ultimi consumi inseriti" si apre dal pulsante nel riquadro dei consumi giornalieri, e
@@ -16003,7 +16006,7 @@ function biaRender(){
 
   // ── Storico consegne del pulito ── (vedi _biaStorico)
   if(_bia.giri.length){
-    if(!BIA_HOTELS[_biaStoHotel])_biaStoHotel=_biaHotel;
+    _biaStoHotel=_biaHotel;
     const hS=_biaStoHotel,mesiS=_biaStoMesi(hS);
     if(!mesiS.includes(_biaStoMese))_biaStoMese=_biaYmOggi();
     const st=_biaStorico(hS,_biaStoMese);

@@ -1098,3 +1098,4 @@ correggere la consegna di sabato 12/09.
 - Nella Galleria `_gbMigra`/`_gbFondi` conservano `inizio` (per struttura, vince questa postazione).
 
 Non è impostata nessuna data d'ufficio: la sceglie il QM per struttura.
+- Lo storico non ha piu' una struttura sua: segue quella della pagina, e cambiarla dal suo selettore cambia tutta la pagina (24/09/2026).

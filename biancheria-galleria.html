@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-24.11';
+const QM_APP_BUILD='2026-09-24.12';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -585,7 +585,10 @@ function _gbEsito(r){
   if(r.delta>0)return{txt:'Tutto riportato · '+r.delta+' in più',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
   return{txt:'Tutto riportato',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
 }
-function gbStoSetHotel(h){if(!GB_HOTELS[h])return;_gbStoHotel=h;_gbStoTutte=false;_gbSenzaSalto(gbRender);}
+// La struttura dello storico E' quella della pagina (24/09/2026): con due selettori
+// indipendenti si lavorava su Art Resort e lo storico mostrava Santa Brigida. Cambiarla da
+// qui cambia tutta la pagina, come le linguette in alto.
+function gbStoSetHotel(h){if(!GB_HOTELS[h])return;_gbStoTutte=false;_gbSenzaSalto(()=>gbSetHotel(h));}
 function gbStoSetMese(ym){_gbStoMese=ym;_gbStoTutte=false;_gbSenzaSalto(gbRender);}
 function gbStoToggleTutte(){_gbStoTutte=!_gbStoTutte;_gbSenzaSalto(gbRender);}
 // "Ultimi consumi inseriti" si apre dal pulsante nel riquadro dei consumi giornalieri, e
@@ -1422,7 +1425,7 @@ function _gbRenderCore(){
 
   // ── Storico consegne del pulito ── (vedi _gbStorico)
   if(_gb.giri.length){
-    if(!GB_HOTELS[_gbStoHotel])_gbStoHotel=_gbHotel;
+    _gbStoHotel=_gbHotel;
     const hS=_gbStoHotel,mesiS=_gbStoMesi(hS);
     if(!mesiS.includes(_gbStoMese))_gbStoMese=_gbYmOggi();
     const st=_gbStorico(hS,_gbStoMese);
