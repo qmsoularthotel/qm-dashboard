@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-24.4';
+const QM_APP_BUILD='2026-09-24.5';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -989,10 +989,9 @@ async function gbRegistraGiro(){
   const iso=(document.getElementById('gb-giro-data')||{}).value||'';
   const data=_gbFromIso(iso);
   if(!data){_gbAvviso('Indica la data della consegna.');return;}
-  const consegnato=_gbVuote(),ricevuto=_gbVuote();
+  const ricevuto=_gbVuote();
   GB_VOCI.forEach((v,i)=>{
-    const es=document.getElementById('gb-s-'+i),er=document.getElementById('gb-r-'+i);
-    consegnato[v]=Math.max(0,Number(es&&es.value)||0);
+    const er=document.getElementById('gb-r-'+i);
     ricevuto[v]=Math.max(0,Number(er&&er.value)||0);
   });
   // La somma calcolata dai consumi in questo momento. Si salva accanto al totale congelato
@@ -1001,6 +1000,11 @@ async function gbRegistraGiro(){
   const perReg=_gbPeriodo(_gbHotel,data);
   const daiConsumi=perReg&&!perReg.vuoto?_gbSommaConsumi(_gbHotel,perReg.dal,perReg.al):_gbVuote();
   const g=_gb.giri.find(x=>_gbH(x)===_gbHotel&&x.data===data);
+  // Lo sporco che esce NON si scrive piu' a mano (24/09/2026): la colonna "Tot pezzi da
+  // dargli" sembrava da compilare e ha prodotto refusi (123 asciugamani invece di 24). E' la
+  // somma dei consumi del periodo, congelata alla prima registrazione; aggiornando una
+  // consegna resta quella gia' congelata — per correggerla c'e' "Riallinea ai consumi".
+  const consegnato=g&&g.consegnato?g.consegnato:daiConsumi;
   if(g){
     if(!await _gbConferma('Esiste già una consegna per questa data','<strong>'+data+'</strong><br>Sovrascriverlo con i valori attuali?',{ok:'Sovrascrivi'}))return;
     g.consegnato=consegnato;g.ricevuto=ricevuto;g.daiConsumi=daiConsumi;g.ts=Date.now();
@@ -1317,7 +1321,6 @@ function _gbRenderCore(){
         <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Doveva portare</th>
         <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Ha portato</th>
         <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Differenza</th>
-        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Tot pezzi da dargli</th>
       </tr></thead>
       <tbody>`;
   GB_VOCI_GIRO.forEach(v=>{
@@ -1332,7 +1335,6 @@ function _gbRenderCore(){
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;color:var(--text-dim);">${att===null?'—':att}</td>
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="gb-r-${i}" value="${ric}" oninput="gbAggiornaDelta()" onfocus="this.select()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
       <td id="gb-d-${i}" style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;font-weight:700;color:${d===null?'var(--text-dim)':_gbColDelta(d)};">${d===null?'—':(d>0?'+'+d:d)}</td>
-      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="gb-s-${i}" value="${spo}" onfocus="this.select()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
     </tr>`;
   });
   h+=`</tbody></table></div>
@@ -1719,9 +1721,11 @@ function gbPrintDistinta(giroId){
     hotel=_gbHotel;
     const iso=(document.getElementById('gb-giro-data')||{}).value||'';
     data=_gbFromIso(iso)||_gbFmt(_gbOggi());
-    q=_gbVuote();
-    GB_VOCI.forEach((v,i)=>{const e=document.getElementById('gb-s-'+i);q[v]=Math.max(0,Number(e&&e.value)||0);});
     per=_gbPeriodo(hotel,data);
+    // Niente piu' caselle: se la consegna e' gia' registrata vale il suo totale congelato,
+    // altrimenti la somma dei consumi del periodo.
+    const reg=_gb.giri.find(x=>_gbH(x)===hotel&&x.data===data);
+    q=reg&&reg.consegnato?reg.consegnato:(per&&!per.vuoto?_gbSommaConsumi(hotel,per.dal,per.al):_gbVuote());
   }
   const tot=_gbTot(q);
   if(!tot){_gbAvviso('Non c\'è niente da consegnare: tutte le quantità sono a zero.');return;}

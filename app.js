@@ -15578,10 +15578,9 @@ async function biaRegistraGiro(){
   const iso=(document.getElementById('bia-giro-data')||{}).value||'';
   const data=_biaFromIso(iso);
   if(!data){cqAvviso('Indica la data della consegna.');return;}
-  const consegnato=_biaVuote(),ricevuto=_biaVuote();
+  const ricevuto=_biaVuote();
   BIA_VOCI.forEach((v,i)=>{
-    const es=document.getElementById('bia-s-'+i),er=document.getElementById('bia-r-'+i);
-    consegnato[v]=Math.max(0,Number(es&&es.value)||0);
+    const er=document.getElementById('bia-r-'+i);
     ricevuto[v]=Math.max(0,Number(er&&er.value)||0);
   });
   // La somma calcolata dai consumi in questo momento. Si salva accanto al totale congelato
@@ -15590,6 +15589,11 @@ async function biaRegistraGiro(){
   const perReg=_biaPeriodo(_biaHotel,data);
   const daiConsumi=perReg&&!perReg.vuoto?_biaSommaConsumi(_biaHotel,perReg.dal,perReg.al):_biaVuote();
   const g=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===data);
+  // Lo sporco che esce NON si scrive piu' a mano (24/09/2026): la colonna "Tot pezzi da
+  // dargli" sembrava da compilare e ha prodotto refusi (123 asciugamani invece di 24). E' la
+  // somma dei consumi del periodo, congelata alla prima registrazione; aggiornando una
+  // consegna resta quella gia' congelata — per correggerla c'e' "Riallinea ai consumi".
+  const consegnato=g&&g.consegnato?g.consegnato:daiConsumi;
   if(g){
     if(!await cqConferma('Esiste già una consegna per questa data','<strong>'+data+'</strong><br>Sovrascriverlo con i valori attuali?',{ok:'Sovrascrivi'}))return;
     g.consegnato=consegnato;g.ricevuto=ricevuto;g.daiConsumi=daiConsumi;g.ts=Date.now();
@@ -15884,7 +15888,6 @@ function biaRender(){
         <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Doveva portare</th>
         <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Ha portato</th>
         <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Differenza</th>
-        <th style="text-align:center;padding:6px 5px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Tot pezzi da dargli</th>
       </tr></thead>
       <tbody>`;
   BIA_VOCI_GIRO.forEach(v=>{
@@ -15899,7 +15902,6 @@ function biaRender(){
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;color:var(--text-dim);">${att===null?'—':att}</td>
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-r-${i}" value="${ric}" oninput="biaAggiornaDelta()" onfocus="this.select()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
       <td id="bia-d-${i}" style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;font-weight:700;color:${d===null?'var(--text-dim)':_biaColDelta(d)};">${d===null?'—':(d>0?'+'+d:d)}</td>
-      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-s-${i}" value="${spo}" onfocus="this.select()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
     </tr>`;
   });
   h+=`</tbody></table></div>
@@ -16289,9 +16291,11 @@ function biaPrintDistinta(giroId){
     hotel=_biaHotel;
     const iso=(document.getElementById('bia-giro-data')||{}).value||'';
     data=_biaFromIso(iso)||_biaFmt(_biaOggi());
-    q=_biaVuote();
-    BIA_VOCI.forEach((v,i)=>{const e=document.getElementById('bia-s-'+i);q[v]=Math.max(0,Number(e&&e.value)||0);});
     per=_biaPeriodo(hotel,data);
+    // Niente piu' caselle: se la consegna e' gia' registrata vale il suo totale congelato,
+    // altrimenti la somma dei consumi del periodo.
+    const reg=_bia.giri.find(x=>_biaH(x)===hotel&&x.data===data);
+    q=reg&&reg.consegnato?reg.consegnato:(per&&!per.vuoto?_biaSommaConsumi(hotel,per.dal,per.al):_biaVuote());
   }
   const tot=_biaTot(q);
   if(!tot){cqAvviso('Non c\'è niente da consegnare: tutte le quantità sono a zero.');return;}

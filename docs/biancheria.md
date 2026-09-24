@@ -1027,3 +1027,13 @@ pulita · giovedì 24/09"** (nome scelto dal QM), con giorno e data della conseg
 resta "Prepara il ritiro di domani"). Sistemati anche "Aggiorna giro" → "Aggiorna consegna",
 "primo giro" → "prima consegna", le frasi sul periodo e il report per la direzione. I nomi nel
 codice (`giri`, `biaRegistraGiro`, `bia-giro-data`) restano: sono chiavi, non parole.
+
+### Via la colonna "Tot pezzi da dargli" (24/09/2026)
+
+Nella tabella della consegna c'era una casella per voce con lo sporco che esce. Il valore era
+già calcolato dai consumi, ma la casella lo faceva sembrare da compilare ed era la strada dei
+refusi (i 123 asciugamani bidet del Boutique). Tolta su richiesta del QM: **"inutile e
+fuorviante"**. Ora `biaRegistraGiro` congela la somma dei consumi del periodo (`daiConsumi`) e,
+aggiornando una consegna già registrata, tiene il totale già congelato; `biaPrintDistinta`
+senza id usa il totale della consegna registrata o la somma dei consumi. Per cambiare quanto
+esce si correggono i consumi dei giorni e poi "Riallinea ai consumi". Stessa cosa nella Galleria.

@@ -2453,3 +2453,23 @@ sez('Consumo Biancheria: totali del mese per incrociare la fattura');
   ok('niente piu\' colonna consumi',              /Consumi fogli camera/.test(_biaTabellaMese(m,false,'sa')),false);
   _bia=prima;_biaHotel=ph;_biaMeseSel=pm;
 })();
+
+sez('Biancheria: lo sporco che esce non si scrive piu\' a mano');
+(function(){
+  var prima=_bia,ph=_biaHotel,vero=document.getElementById;
+  var Q=function(o){var q=_biaVuote();for(var k in o)q[k]=o[k];return q;};
+  _biaHotel='sa';
+  _bia={consumi:[{id:'c1',hotel:'sa',data:'22/09/2026',q:Q({Federa:30})},{id:'c2',hotel:'sa',data:'23/09/2026',q:Q({Federa:12})}],
+        giri:[{id:'g0',hotel:'sa',data:'22/09/2026',consegnato:Q({Federa:9}),ricevuto:Q({Federa:9})}]};
+  document.getElementById=function(id){
+    if(id==='bia-giro-data')return{value:'2026-09-24'};
+    if(/^bia-r-/.test(id))return{value:'5'};
+    return null;
+  };
+  try{biaRegistraGiro();}finally{document.getElementById=vero;}
+  var g=_bia.giri.filter(function(x){return x.data==='24/09/2026';})[0];
+  ok('registrando, lo sporco e\' la somma dei consumi', g&&g.consegnato.Federa, 42);
+  ok('e combacia con daiConsumi (niente avviso)',       g&&_biaScostamento(g), null);
+  ok('la tabella non ha piu\' la colonna',              /Tot pezzi da dargli/.test(String(biaRender)), false);
+  _bia=prima;_biaHotel=ph;
+})();
