@@ -15161,7 +15161,7 @@ function biaToggleConsumiTutti(){_biaConsumiTutti=!_biaConsumiTutti;_psSenzaSalt
 // consegne del mese corrente.
 const BIA_STO_VISTE=4;
 const BIA_STO_NOMI={sa:'SoulArt',bh:'Boutique'};   // nomi corti per il selettore
-let _biaStoHotel='',_biaStoMese='',_biaStoTutte=false,_biaGiroVoci=new Set();
+let _biaStoHotel='',_biaStoMese='',_biaStoTutte=false;
 function _biaYmOggi(){const d=_biaOggi();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function _biaStoMesi(h){
   const s=new Set([_biaYmOggi()]);
@@ -15188,14 +15188,9 @@ function _biaEsito(r){
   if(r.delta>0)return{txt:'Tutto riportato · '+r.delta+' in più',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
   return{txt:'Tutto riportato',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
 }
-// Le tipologie che mancano di piu', per la riga "Mancano soprattutto".
-function _biaPeggiori(g,n){
-  return _biaDettaglioGiro(g).filter(x=>x.delta!==null&&x.delta<0).sort((a,b)=>a.delta-b.delta).slice(0,n||3);
-}
 function biaStoSetHotel(h){if(!BIA_HOTELS[h])return;_biaStoHotel=h;_biaStoTutte=false;_psSenzaSalto(biaRender);}
 function biaStoSetMese(ym){_biaStoMese=ym;_biaStoTutte=false;_psSenzaSalto(biaRender);}
 function biaStoToggleTutte(){_biaStoTutte=!_biaStoTutte;_psSenzaSalto(biaRender);}
-function biaToggleGiroVoci(id){_biaGiroVoci.has(id)?_biaGiroVoci.delete(id):_biaGiroVoci.add(id);_psSenzaSalto(biaRender);}
 // "Ultimi consumi inseriti" si apre dal pulsante nel riquadro dei consumi giornalieri, e
 // "Pezzi non rientrati" dal riquadro dello storico (24/09/2026): stanno dove servono.
 let _biaUltimiAperti=false,_biaStoSaldo=false;
@@ -16026,15 +16021,11 @@ function biaRender(){
         <span style="margin-left:auto;color:var(--text-dim);font-size:var(--fs-xs);">${aperto?'▴':'▾'}</span>
       </div>`;
       if(aperto){
-        const pg=_biaPeggiori(g,3);
         h+=`<div style="padding:0 16px 14px 124px;background:var(--surface2,var(--surface));font-size:var(--fs-xs);color:var(--text-dim);line-height:1.8;">
           ${scG?_biaBoxScostamento(g,scG,'I pezzi dati quel giorno non corrispondono ai consumi del periodo'):''}
-          ${rg.registrato?`Ha portato <strong style="color:var(--text);">${rg.portato}</strong>`:'<span style="color:var(--amber);">Non è stato inserito cosa ha portato.</span>'}${rg.dovuto!==null?` · doveva portare <strong style="color:var(--text);">${rg.dovuto}</strong> (i pezzi dati il ${esc(rg.dataPrec.slice(0,5))})`:' · prima consegna registrata, niente da confrontare'}<br>
-          ${rg.registrato&&rg.dovuto!==null?(pg.length?`Mancano soprattutto: ${pg.map(x=>`${esc(x.voce)} <strong style="color:var(--red);">${x.delta}</strong>`).join(' · ')}<br>`:'Nessuna tipologia sotto quanto doveva portare.<br>'):''}
-          Quel giorno gli sono stati dati <strong style="color:var(--text);">${rg.uscito}</strong> pezzi: tornano con la consegna successiva.
-          ${_biaGiroVoci.has(g.id)?_biaTabellaVoci(_biaDettaglioGiro(g),rg.dovuto!==null):''}
+          ${rg.registrato?'':'<div style="color:var(--amber);">Non è stato inserito cosa ha portato.</div>'}
+          ${_biaTabellaVoci(_biaDettaglioGiro(g),rg.dovuto!==null)}
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <button onclick="event.stopPropagation();biaToggleGiroVoci('${g.id}')" style="${bSec}">${_biaGiroVoci.has(g.id)?'Nascondi le tipologie':'Tutte le tipologie'}</button>
             <button onclick="event.stopPropagation();biaPrintDistinta('${g.id}')" style="${bSec}">Ristampa distinta</button>
             <button onclick="event.stopPropagation();biaEliminaGiro('${g.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;margin-left:auto;">elimina questa consegna</button>
           </div></div>`;

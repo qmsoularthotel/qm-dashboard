@@ -1075,3 +1075,4 @@ codifica, e va svuotata la cache del service worker se la prima prova l'ha già 
   rientrati ▾* in fondo allo **Storico consegne del pulito** e vale per la struttura scelta lì
   (`_biaStoSaldo`, `biaToggleStoSaldo`).
 - **"Totali del mese — …"** si chiama **"Riscontro fatturazioni — …"**.
+- Nel dettaglio della consegna la tabella per tipologia è sempre aperta; tolte le righe riassuntive e il pulsante 'Tutte le tipologie' (24/09/2026, richiesta del QM).

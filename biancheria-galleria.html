@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-24.8';
+const QM_APP_BUILD='2026-09-24.9';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -551,7 +551,7 @@ function gbToggleConsumiTutti(){_gbConsumiTutti=!_gbConsumiTutti;_gbSenzaSalto(g
 // consegne del mese corrente.
 const GB_STO_VISTE=4;
 const GB_STO_NOMI={ar:'Art Resort',sb:'Santa Brigida'};   // nomi corti per il selettore
-let _gbStoHotel='',_gbStoMese='',_gbStoTutte=false,_gbGiroVoci=new Set();
+let _gbStoHotel='',_gbStoMese='',_gbStoTutte=false;
 function _gbYmOggi(){const d=_gbOggi();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function _gbStoMesi(h){
   const s=new Set([_gbYmOggi()]);
@@ -578,14 +578,9 @@ function _gbEsito(r){
   if(r.delta>0)return{txt:'Tutto riportato · '+r.delta+' in più',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
   return{txt:'Tutto riportato',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
 }
-// Le tipologie che mancano di piu', per la riga "Mancano soprattutto".
-function _gbPeggiori(g,n){
-  return _gbDettaglioGiro(g).filter(x=>x.delta!==null&&x.delta<0).sort((a,b)=>a.delta-b.delta).slice(0,n||3);
-}
 function gbStoSetHotel(h){if(!GB_HOTELS[h])return;_gbStoHotel=h;_gbStoTutte=false;_gbSenzaSalto(gbRender);}
 function gbStoSetMese(ym){_gbStoMese=ym;_gbStoTutte=false;_gbSenzaSalto(gbRender);}
 function gbStoToggleTutte(){_gbStoTutte=!_gbStoTutte;_gbSenzaSalto(gbRender);}
-function gbToggleGiroVoci(id){_gbGiroVoci.has(id)?_gbGiroVoci.delete(id):_gbGiroVoci.add(id);_gbSenzaSalto(gbRender);}
 // "Ultimi consumi inseriti" si apre dal pulsante nel riquadro dei consumi giornalieri, e
 // "Pezzi non rientrati" dal riquadro dello storico (24/09/2026): stanno dove servono.
 let _gbUltimiAperti=false,_gbStoSaldo=false;
@@ -1440,15 +1435,11 @@ function _gbRenderCore(){
         <span style="margin-left:auto;color:var(--text-dim);font-size:var(--fs-xs);">${aperto?'▴':'▾'}</span>
       </div>`;
       if(aperto){
-        const pg=_gbPeggiori(g,3);
         h+=`<div style="padding:0 16px 14px 124px;background:var(--surface2,var(--surface));font-size:var(--fs-xs);color:var(--text-dim);line-height:1.8;">
           ${scG?_gbBoxScostamento(g,scG,'I pezzi dati quel giorno non corrispondono ai consumi del periodo'):''}
-          ${rg.registrato?`Ha portato <strong style="color:var(--text);">${rg.portato}</strong>`:'<span style="color:var(--amber);">Non è stato inserito cosa ha portato.</span>'}${rg.dovuto!==null?` · doveva portare <strong style="color:var(--text);">${rg.dovuto}</strong> (i pezzi dati il ${esc(rg.dataPrec.slice(0,5))})`:' · prima consegna registrata, niente da confrontare'}<br>
-          ${rg.registrato&&rg.dovuto!==null?(pg.length?`Mancano soprattutto: ${pg.map(x=>`${esc(x.voce)} <strong style="color:var(--red);">${x.delta}</strong>`).join(' · ')}<br>`:'Nessuna tipologia sotto quanto doveva portare.<br>'):''}
-          Quel giorno gli sono stati dati <strong style="color:var(--text);">${rg.uscito}</strong> pezzi: tornano con la consegna successiva.
-          ${_gbGiroVoci.has(g.id)?_gbTabellaVoci(_gbDettaglioGiro(g),rg.dovuto!==null):''}
+          ${rg.registrato?'':'<div style="color:var(--amber);">Non è stato inserito cosa ha portato.</div>'}
+          ${_gbTabellaVoci(_gbDettaglioGiro(g),rg.dovuto!==null)}
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <button onclick="event.stopPropagation();gbToggleGiroVoci('${g.id}')" style="${bSec}">${_gbGiroVoci.has(g.id)?'Nascondi le tipologie':'Tutte le tipologie'}</button>
             <button onclick="event.stopPropagation();gbPrintDistinta('${g.id}')" style="${bSec}">Ristampa distinta</button>
             <button onclick="event.stopPropagation();gbEliminaGiro('${g.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;margin-left:auto;">elimina questa consegna</button>
           </div></div>`;
