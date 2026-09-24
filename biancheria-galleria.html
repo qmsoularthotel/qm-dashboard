@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-24.9';
+const QM_APP_BUILD='2026-09-24.10';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -343,6 +343,7 @@ function _gbMigra(o){
   const out={consumi:Array.isArray(o.consumi)?o.consumi:[],giri:Array.isArray(o.giri)?o.giri:(Array.isArray(o.consegne)?o.consegne:[])};
   if(Array.isArray(o._rimossi))out._rimossi=o._rimossi;
   if(o.fatture&&typeof o.fatture==='object')out.fatture=o.fatture;   // quantita' in fattura (24/09/2026)
+  if(o.inizio&&typeof o.inizio==='object')out.inizio=o.inizio;      // data di inizio del conteggio (24/09/2026)
   return out;
 }
 // Fusione come in Compass (_qmUnisciRecord / _qmFondiElenchi): elenchi uniti per id, a
@@ -372,6 +373,7 @@ function _gbFondi(remoto,locale){
     });
     out.fatture=f;
   }
+  if(R.inizio||L.inizio)out.inizio=Object.assign({},R.inizio||{},L.inizio||{});   // per struttura, vince questa postazione
   return out;
 }
 function _gbSegnaRimosso(arch,id){
@@ -562,16 +564,18 @@ function _gbStoMesi(h){
 // confrontabili (registrate e con una consegna precedente), come _gbSaldo.
 function _gbStorico(h,ym){
   const righe=_gbGiri(h).filter(g=>_gbYm(g.data)===ym).reverse().map(_gbRigaGiro);
-  let portato=0,dovuto=0,conf=0,nonReg=0;
+  let portato=0,dovuto=0,conf=0,nonReg=0,primaInizio=0;
   righe.forEach(r=>{
+    if(r.primaInizio){primaInizio++;return;}
     if(!r.registrato){nonReg++;return;}
     if(r.dovuto===null)return;
     portato+=r.portato;dovuto+=r.dovuto;conf++;
   });
-  return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg};
+  return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg,primaInizio};
 }
 // Esito di una consegna, in parole: e' quello che si legge senza aprire niente.
 function _gbEsito(r){
+  if(r.primaInizio)return{txt:'Prima dell\'inizio del conteggio',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
   if(!r.registrato)return{txt:'Manca cosa ha portato',col:'var(--amber)',bg:'rgba(160,90,0,.10)'};
   if(r.dovuto===null)return{txt:'Prima consegna',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
   if(r.delta<0)return{txt:'Mancano '+(-r.delta)+' pezzi',col:'var(--red)',bg:'rgba(192,53,42,.10)'};
@@ -905,6 +909,20 @@ function _gbRegistrato(g){
   if(!Object.keys(r).length)return false;
   return _gbTot(r)>0;
 }
+// Data di inizio del conteggio, per struttura (24/09/2026). Le prime consegne dopo l'avvio
+// delle registrazioni riportano anche biancheria ritirata PRIMA, che il conto non conosce:
+// risultano "in più" e falsano il saldo (Galleria: +241, quasi tutto dalle prime due). Le
+// consegne prima di questa data restano visibili ma fuori da ogni conto: _gbRigaGiro le
+// marca `primaInizio`, e tutti i totali passano da li' o da _gbNelConto.
+function _gbInizio(h){const s=_gb.inizio&&_gb.inizio[h];return s?_gbParse(s):null;}
+function _gbNelConto(g){const i=_gbInizio(_gbH(g)),d=_gbParse(g.data);return !i||!d||d>=i;}
+async function gbSetInizio(iso){
+  const h=_gbStoHotel||_gbHotel;
+  _gb.inizio=_gb.inizio||{};
+  _gb.inizio[h]=iso?(_gbFromIso(iso)||''):'';   // '' e non delete: la fusione col cloud lo rimetterebbe
+  _gbSenzaSalto(gbRender);
+  await _gbSave();
+}
 function _gbRigaGiro(g){
   const hotel=_gbH(g);
   const prec=_gbGiroPrec(hotel,g.data);
@@ -917,7 +935,8 @@ function _gbRigaGiro(g){
          dataPrec:prec?prec.data:null,
          // Senza il dato non c'e' differenza da calcolare: mettere `portato-dovuto` qui
          // vorrebbe dire inventare un ammanco che nessuno ha misurato.
-         delta:(dovuto===null||!registrato)?null:portato-dovuto};
+         primaInizio:!_gbNelConto(g),
+         delta:(dovuto===null||!registrato||!_gbNelConto(g))?null:portato-dovuto};
 }
 // Cosa ha portato, VOCE PER VOCE, in un singolo giro. Il totale da solo non basta: 370
 // pezzi mancanti di 66 non dicono se mancano le federe o i teli doccia, che è la sola
@@ -944,6 +963,7 @@ function _gbTotPerVoce(hotel){
     const att=_gbAtteso(hotel,g.data);
     if(!att)return;                       // primo giro: niente con cui confrontarlo
     if(!_gbRegistrato(g))return;         // dato mai inserito: non si conta come zero
+    if(!_gbNelConto(g))return;           // prima dell'inizio del conteggio
     GB_VOCI_GIRO.forEach(v=>{
       const r=out[idx[v]];
       r.portato+=Number(g.ricevuto&&g.ricevuto[v])||0;
@@ -960,7 +980,7 @@ function _gbTotPerVoce(hotel){
 // Restano fuori i giri senza termine di confronto, come in _gbSaldo e _gbRiepilogoPortato.
 function _gbAndamento(hotel){
   let cum=0;
-  return _gbGiri(hotel).map(g=>_gbRigaGiro(g)).filter(r=>r.dovuto!==null&&r.registrato).map(r=>{
+  return _gbGiri(hotel).map(g=>_gbRigaGiro(g)).filter(r=>r.dovuto!==null&&r.registrato&&!r.primaInizio).map(r=>{
     cum+=r.delta;
     return{data:r.data,dataPrec:r.dataPrec,portato:r.portato,dovuto:r.dovuto,delta:r.delta,
            resa:r.dovuto>0?r.portato/r.dovuto:null,cumulato:cum};
@@ -971,15 +991,16 @@ function _gbAndamento(hotel){
 // portato − dovuto coincide sempre col saldo mostrato sopra, invece di divergere di un
 // giro senza che si capisca perché.
 function _gbRiepilogoPortato(hotel){
-  let portato=0,dovuto=0,confrontati=0,senzaConfronto=0,nonRegistrati=0;
+  let portato=0,dovuto=0,confrontati=0,senzaConfronto=0,nonRegistrati=0,primaInizio=0;
   _gbGiri(hotel).forEach(g=>{
     const r=_gbRigaGiro(g);
+    if(r.primaInizio){primaInizio++;return;}       // prima dell'inizio del conteggio
     if(!r.registrato){nonRegistrati++;return;}      // dato mai inserito: fuori dai conti
     if(r.dovuto===null){senzaConfronto++;return;}
     portato+=r.portato;dovuto+=r.dovuto;confrontati++;
   });
   return{portato:portato,dovuto:dovuto,confrontati:confrontati,senzaConfronto:senzaConfronto,
-         nonRegistrati:nonRegistrati,saldo:portato-dovuto};
+         nonRegistrati:nonRegistrati,primaInizio:primaInizio,saldo:portato-dovuto};
 }
 // Saldo cumulato per voce: quanto manca sommando tutti i giri chiusi. Un singolo giro
 // può tornare in pari per caso; è la somma nel tempo che dice se c'è una perdita
@@ -989,7 +1010,7 @@ function _gbSaldo(hotel){
   const giri=_gbGiri(hotel);
   giri.forEach(g=>{
     const att=_gbAtteso(hotel,g.data);
-    if(!att||!_gbRegistrato(g))return;   // dato mai inserito: non e' un ammanco
+    if(!att||!_gbRegistrato(g)||!_gbNelConto(g))return;   // mai inserito o prima dell'inizio del conteggio
     GB_VOCI.forEach(v=>out[v]+=((Number(g.ricevuto[v])||0)-(Number(att[v])||0)));
   });
   return out;
@@ -1420,6 +1441,7 @@ function _gbRenderCore(){
       h+=`<div style="font-size:var(--fs-base);font-weight:700;">A ${esc(nomeMese)} ${st.saldo<0?`mancano <span style="color:${col};">${-st.saldo} pezzi</span>`:st.saldo>0?`<span style="color:${col};">tutto riportato</span>, ${st.saldo} pezzi in più`:`<span style="color:${col};">tutto riportato</span>`}</div>
         <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">Raimondo ha riportato <strong style="color:var(--text);">${st.portato}</strong> pezzi su <strong style="color:var(--text);">${st.dovuto}</strong> in ${st.confrontate} consegn${st.confrontate===1?'a':'e'}</div>`;
     }
+    if(st.primaInizio)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${st.primaInizio} consegn${st.primaInizio===1?'a':'e'} prima dell'inizio del conteggio (${esc(_gb.inizio[hS])}): fuori dal conto.</div>`;
     if(st.nonReg)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">${st.nonReg} consegn${st.nonReg===1?'a':'e'} senza il dato di cosa ha riportato: fuori dal conto.</div>`;
     h+=`</div>`;
     const viste=_gbStoTutte?st.righe:st.righe.slice(0,GB_STO_VISTE);
@@ -1449,9 +1471,15 @@ function _gbRenderCore(){
     if(_gbStoSaldo){
       const sal=_gbSaldo(hS),salT=_gbTot(sal);
       h+=`<div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--surface2,var(--surface));">
-        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;"><span style="font-size:var(--fs-xs);font-weight:700;">Pezzi non rientrati — da inizio registrazioni</span>
-          <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${salT<0?'var(--red)':'var(--green)'};">${salT===0?'in pari':salT}</span></div>
-        ${GB_VOCI.map(v=>{const n=sal[v];return`<div style="display:flex;justify-content:space-between;padding:4px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_gbColDelta(n)};">${n===0?'—':n}</span></div>`;}).join('')}
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;"><span style="font-size:var(--fs-xs);font-weight:700;">${salT<0?'Pezzi non rientrati':salT>0?'Rientrati in più':'In pari'} — ${_gbInizio(hS)?'dal '+esc(_gb.inizio[hS]):'da inizio registrazioni'}</span>
+          <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${salT<0?'var(--red)':'var(--green)'};">${salT===0?'0':salT<0?-salT+' mancano':salT+' in più'}</span></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:var(--fs-xxs);color:var(--text-dim);">
+          <label>Conteggio dal</label>
+          <input type="date" value="${_gbInizio(hS)?_gbToIso(_gb.inizio[hS]):''}" onchange="gbSetInizio(this.value)" onclick="event.stopPropagation()" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xxs);font-family:inherit;background:var(--surface);color:var(--text);">
+          ${_gbInizio(hS)?`<button onclick="gbSetInizio('')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">conta tutto</button>`:''}
+          <span>le consegne prima di questa data restano visibili ma fuori dal conto: servono a escludere l'avvio delle registrazioni.</span>
+        </div>
+        ${GB_VOCI.map(v=>{const n=sal[v];return`<div style="display:flex;justify-content:space-between;padding:4px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_gbColDelta(n)};">${n===0?'—':n>0?'+'+n:n}</span></div>`;}).join('')}
         <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Una singola consegna può chiudere in pari per caso. È questo totale che dice se la perdita è occasionale o continua.</div>
       </div>`;
     }

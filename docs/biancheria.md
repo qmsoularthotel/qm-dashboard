@@ -1076,3 +1076,25 @@ codifica, e va svuotata la cache del service worker se la prima prova l'ha già 
   (`_biaStoSaldo`, `biaToggleStoSaldo`).
 - **"Totali del mese — …"** si chiama **"Riscontro fatturazioni — …"**.
 - Nel dettaglio della consegna la tabella per tipologia è sempre aperta; tolte le righe riassuntive e il pulsante 'Tutte le tipologie' (24/09/2026, richiesta del QM).
+
+### Data di inizio del conteggio, e il saldo dice da che parte sta (24/09/2026)
+
+Caso che l'ha fatta nascere: Galleria, Art Resort, "Pezzi non rientrati **+241**" in verde. Le
+prime consegne dopo l'avvio (10/09) riportavano anche biancheria ritirata **prima** delle
+registrazioni — il passaggio del 9/09 nessuno l'aveva registrato — e risultavano "in più"
+(+130, +114); a regime la differenza torna negativa come al SoulArt. Il QM ha escluso di
+correggere la consegna di sabato 12/09.
+
+- **`_bia.inizio[struttura]`** (`dd/mm/yyyy`), impostabile dal campo **"Conteggio dal"** dentro
+  "Pezzi non rientrati" nello storico; "conta tutto" lo svuota (`''`, non `delete`: la fusione
+  lo rimetterebbe). Le consegne prima della data restano visibili con la pastiglia grigia
+  "Prima dell'inizio del conteggio" e sono fuori da **tutti** i conti.
+- Il filtro sta in un punto: `_biaNelConto(g)`, usato da `_biaRigaGiro` (campo `primaInizio`,
+  `delta:null`) e da `_biaSaldo`/`_biaTotPerVoce`. Riepilogo, report per la direzione, storico
+  del mese passano da `_biaRigaGiro`: i numeri non possono divergere (controllo che li
+  confronta tutti).
+- Il titolo del saldo segue il segno: **"Pezzi non rientrati"** se manca biancheria, **"Rientrati
+  in più"** se ne torna di più, "In pari" a zero; il numero dice "N mancano" / "N in più".
+- Nella Galleria `_gbMigra`/`_gbFondi` conservano `inizio` (per struttura, vince questa postazione).
+
+Non è impostata nessuna data d'ufficio: la sceglie il QM per struttura.

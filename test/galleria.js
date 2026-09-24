@@ -129,3 +129,5 @@ ok('Galleria: totali del mese',                typeof gbPrintMese+typeof _gbMese
 var _ff = _gbFondi({ consumi: [], giri: [], fatture: { 'ar|2026-09': { q: { Federa: 5 } } } }, { consumi: [], giri: [], fatture: { 'ar|2026-09': { q: { Federa: '' , 'Telo doccia': 3 } } } });
 ok('Galleria: la fattura sopravvive alla fusione',  _ff.fatture['ar|2026-09'].q['Telo doccia'], 3);
 ok('Galleria: una casella svuotata resta vuota',    _ff.fatture['ar|2026-09'].q.Federa, '');
+var _fi = _gbFondi({ consumi: [], giri: [], inizio: { ar: '18/09/2026' } }, { consumi: [], giri: [], inizio: { sb: '' } });
+ok('Galleria: la data di inizio sopravvive alla fusione', _fi.inizio.ar + '|' + _fi.inizio.sb, '18/09/2026|');

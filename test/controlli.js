@@ -2475,3 +2475,36 @@ sez('Biancheria: lo sporco che esce non si scrive piu\' a mano');
   ok('la tabella non ha piu\' la colonna',              /Tot pezzi da dargli/.test(String(biaRender)), false);
   _bia=prima;_biaHotel=ph;
 })();
+
+sez('Biancheria: data di inizio del conteggio, e il saldo dice da che parte sta');
+(function(){
+  var prima=_bia,ph=_biaHotel,ps=_biaStoHotel;
+  var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};
+  _biaHotel='sa';_biaStoHotel='sa';
+  // Avvio: la prima consegna confrontabile risulta +100 (biancheria ritirata prima delle
+  // registrazioni), poi il ritmo vero: -5 e -3.
+  _bia={consumi:[],giri:[
+    {id:'a',hotel:'sa',data:'01/09/2026',consegnato:Q(50),ricevuto:Q(10)},
+    {id:'b',hotel:'sa',data:'03/09/2026',consegnato:Q(60),ricevuto:Q(150)},
+    {id:'c',hotel:'sa',data:'05/09/2026',consegnato:Q(40),ricevuto:Q(55)},
+    {id:'d',hotel:'sa',data:'08/09/2026',consegnato:Q(30),ricevuto:Q(37)}]};
+  ok('senza data di inizio conta tutto',            _biaTot(_biaSaldo('sa')), 100-5-3);
+  _bia.inizio={sa:'05/09/2026'};
+  ok('dal 05/09: resta il ritmo vero',              _biaTot(_biaSaldo('sa')), -8);
+  ok('il riepilogo dice lo stesso',                 _biaRiepilogoPortato('sa').saldo, -8);
+  ok('e dichiara quante sono fuori',                _biaRiepilogoPortato('sa').primaInizio, 2);
+  ok('il report per la direzione pure',             _biaAndamento('sa').slice(-1)[0].cumulato, -8);
+  ok('il dettaglio per tipologia pure',             _biaTotPerVoce('sa').filter(function(r){return r.voce==='Federa';})[0].delta, -8);
+  ok('lo storico del mese pure',                    _biaStorico('sa','2026-09').saldo, -8);
+  ok('la consegna esclusa lo dice',                 _biaEsito(_biaRigaGiro(_bia.giri[1])).txt, "Prima dell'inizio del conteggio");
+  ok('un\'altra struttura non e\' toccata',         _biaInizio('bh'), null);
+  _bia.inizio={sa:''};
+  ok('svuotata: si torna a contare tutto',          _biaTot(_biaSaldo('sa')), 92);
+  // Il saldo dice da che parte sta: in piu' non e' "non rientrati".
+  _bia.inizio={};
+  var box={innerHTML:''},vero=document.getElementById;
+  document.getElementById=function(id){return id==='bia-content'?box:null;};
+  try{_biaStoSaldo=true;_biaStoMese='2026-09';biaRender();}finally{document.getElementById=vero;_biaStoSaldo=false;}
+  ok('saldo positivo: "Rientrati in più"',          /Rientrati in più/.test(box.innerHTML)&&!/Pezzi non rientrati —/.test(box.innerHTML), true);
+  _bia=prima;_biaHotel=ph;_biaStoHotel=ps;_biaStoMese='';
+})();

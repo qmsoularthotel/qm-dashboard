@@ -15172,16 +15172,18 @@ function _biaStoMesi(h){
 // confrontabili (registrate e con una consegna precedente), come _biaSaldo.
 function _biaStorico(h,ym){
   const righe=_biaGiri(h).filter(g=>_biaYm(g.data)===ym).reverse().map(_biaRigaGiro);
-  let portato=0,dovuto=0,conf=0,nonReg=0;
+  let portato=0,dovuto=0,conf=0,nonReg=0,primaInizio=0;
   righe.forEach(r=>{
+    if(r.primaInizio){primaInizio++;return;}
     if(!r.registrato){nonReg++;return;}
     if(r.dovuto===null)return;
     portato+=r.portato;dovuto+=r.dovuto;conf++;
   });
-  return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg};
+  return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg,primaInizio};
 }
 // Esito di una consegna, in parole: e' quello che si legge senza aprire niente.
 function _biaEsito(r){
+  if(r.primaInizio)return{txt:'Prima dell\'inizio del conteggio',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
   if(!r.registrato)return{txt:'Manca cosa ha portato',col:'var(--amber)',bg:'rgba(160,90,0,.10)'};
   if(r.dovuto===null)return{txt:'Prima consegna',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
   if(r.delta<0)return{txt:'Mancano '+(-r.delta)+' pezzi',col:'var(--red)',bg:'rgba(192,53,42,.10)'};
@@ -15494,6 +15496,20 @@ function _biaRegistrato(g){
   if(!Object.keys(r).length)return false;
   return _biaTot(r)>0;
 }
+// Data di inizio del conteggio, per struttura (24/09/2026). Le prime consegne dopo l'avvio
+// delle registrazioni riportano anche biancheria ritirata PRIMA, che il conto non conosce:
+// risultano "in più" e falsano il saldo (Galleria: +241, quasi tutto dalle prime due). Le
+// consegne prima di questa data restano visibili ma fuori da ogni conto: _biaRigaGiro le
+// marca `primaInizio`, e tutti i totali passano da li' o da _biaNelConto.
+function _biaInizio(h){const s=_bia.inizio&&_bia.inizio[h];return s?_biaParse(s):null;}
+function _biaNelConto(g){const i=_biaInizio(_biaH(g)),d=_biaParse(g.data);return !i||!d||d>=i;}
+async function biaSetInizio(iso){
+  const h=_biaStoHotel||_biaHotel;
+  _bia.inizio=_bia.inizio||{};
+  _bia.inizio[h]=iso?(_biaFromIso(iso)||''):'';   // '' e non delete: la fusione col cloud lo rimetterebbe
+  _psSenzaSalto(biaRender);
+  await _biaSave();
+}
 function _biaRigaGiro(g){
   const hotel=_biaH(g);
   const prec=_biaGiroPrec(hotel,g.data);
@@ -15506,7 +15522,8 @@ function _biaRigaGiro(g){
          dataPrec:prec?prec.data:null,
          // Senza il dato non c'e' differenza da calcolare: mettere `portato-dovuto` qui
          // vorrebbe dire inventare un ammanco che nessuno ha misurato.
-         delta:(dovuto===null||!registrato)?null:portato-dovuto};
+         primaInizio:!_biaNelConto(g),
+         delta:(dovuto===null||!registrato||!_biaNelConto(g))?null:portato-dovuto};
 }
 // Cosa ha portato, VOCE PER VOCE, in un singolo giro. Il totale da solo non basta: 370
 // pezzi mancanti di 66 non dicono se mancano le federe o i teli doccia, che è la sola
@@ -15533,6 +15550,7 @@ function _biaTotPerVoce(hotel){
     const att=_biaAtteso(hotel,g.data);
     if(!att)return;                       // primo giro: niente con cui confrontarlo
     if(!_biaRegistrato(g))return;         // dato mai inserito: non si conta come zero
+    if(!_biaNelConto(g))return;           // prima dell'inizio del conteggio
     BIA_VOCI_GIRO.forEach(v=>{
       const r=out[idx[v]];
       r.portato+=Number(g.ricevuto&&g.ricevuto[v])||0;
@@ -15549,7 +15567,7 @@ function _biaTotPerVoce(hotel){
 // Restano fuori i giri senza termine di confronto, come in _biaSaldo e _biaRiepilogoPortato.
 function _biaAndamento(hotel){
   let cum=0;
-  return _biaGiri(hotel).map(g=>_biaRigaGiro(g)).filter(r=>r.dovuto!==null&&r.registrato).map(r=>{
+  return _biaGiri(hotel).map(g=>_biaRigaGiro(g)).filter(r=>r.dovuto!==null&&r.registrato&&!r.primaInizio).map(r=>{
     cum+=r.delta;
     return{data:r.data,dataPrec:r.dataPrec,portato:r.portato,dovuto:r.dovuto,delta:r.delta,
            resa:r.dovuto>0?r.portato/r.dovuto:null,cumulato:cum};
@@ -15560,15 +15578,16 @@ function _biaAndamento(hotel){
 // portato − dovuto coincide sempre col saldo mostrato sopra, invece di divergere di un
 // giro senza che si capisca perché.
 function _biaRiepilogoPortato(hotel){
-  let portato=0,dovuto=0,confrontati=0,senzaConfronto=0,nonRegistrati=0;
+  let portato=0,dovuto=0,confrontati=0,senzaConfronto=0,nonRegistrati=0,primaInizio=0;
   _biaGiri(hotel).forEach(g=>{
     const r=_biaRigaGiro(g);
+    if(r.primaInizio){primaInizio++;return;}       // prima dell'inizio del conteggio
     if(!r.registrato){nonRegistrati++;return;}      // dato mai inserito: fuori dai conti
     if(r.dovuto===null){senzaConfronto++;return;}
     portato+=r.portato;dovuto+=r.dovuto;confrontati++;
   });
   return{portato:portato,dovuto:dovuto,confrontati:confrontati,senzaConfronto:senzaConfronto,
-         nonRegistrati:nonRegistrati,saldo:portato-dovuto};
+         nonRegistrati:nonRegistrati,primaInizio:primaInizio,saldo:portato-dovuto};
 }
 // Saldo cumulato per voce: quanto manca sommando tutti i giri chiusi. Un singolo giro
 // può tornare in pari per caso; è la somma nel tempo che dice se c'è una perdita
@@ -15578,7 +15597,7 @@ function _biaSaldo(hotel){
   const giri=_biaGiri(hotel);
   giri.forEach(g=>{
     const att=_biaAtteso(hotel,g.data);
-    if(!att||!_biaRegistrato(g))return;   // dato mai inserito: non e' un ammanco
+    if(!att||!_biaRegistrato(g)||!_biaNelConto(g))return;   // mai inserito o prima dell'inizio del conteggio
     BIA_VOCI.forEach(v=>out[v]+=((Number(g.ricevuto[v])||0)-(Number(att[v])||0)));
   });
   return out;
@@ -16006,6 +16025,7 @@ function biaRender(){
       h+=`<div style="font-size:var(--fs-base);font-weight:700;">A ${esc(nomeMese)} ${st.saldo<0?`mancano <span style="color:${col};">${-st.saldo} pezzi</span>`:st.saldo>0?`<span style="color:${col};">tutto riportato</span>, ${st.saldo} pezzi in più`:`<span style="color:${col};">tutto riportato</span>`}</div>
         <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">Raimondo ha riportato <strong style="color:var(--text);">${st.portato}</strong> pezzi su <strong style="color:var(--text);">${st.dovuto}</strong> in ${st.confrontate} consegn${st.confrontate===1?'a':'e'}</div>`;
     }
+    if(st.primaInizio)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${st.primaInizio} consegn${st.primaInizio===1?'a':'e'} prima dell'inizio del conteggio (${esc(_bia.inizio[hS])}): fuori dal conto.</div>`;
     if(st.nonReg)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">${st.nonReg} consegn${st.nonReg===1?'a':'e'} senza il dato di cosa ha riportato: fuori dal conto.</div>`;
     h+=`</div>`;
     const viste=_biaStoTutte?st.righe:st.righe.slice(0,BIA_STO_VISTE);
@@ -16035,9 +16055,15 @@ function biaRender(){
     if(_biaStoSaldo){
       const sal=_biaSaldo(hS),salT=_biaTot(sal);
       h+=`<div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--surface2,var(--surface));">
-        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;"><span style="font-size:var(--fs-xs);font-weight:700;">Pezzi non rientrati — da inizio registrazioni</span>
-          <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${salT<0?'var(--red)':'var(--green)'};">${salT===0?'in pari':salT}</span></div>
-        ${BIA_VOCI.map(v=>{const n=sal[v];return`<div style="display:flex;justify-content:space-between;padding:4px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_biaColDelta(n)};">${n===0?'—':n}</span></div>`;}).join('')}
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;"><span style="font-size:var(--fs-xs);font-weight:700;">${salT<0?'Pezzi non rientrati':salT>0?'Rientrati in più':'In pari'} — ${_biaInizio(hS)?'dal '+esc(_bia.inizio[hS]):'da inizio registrazioni'}</span>
+          <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${salT<0?'var(--red)':'var(--green)'};">${salT===0?'0':salT<0?-salT+' mancano':salT+' in più'}</span></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:var(--fs-xxs);color:var(--text-dim);">
+          <label>Conteggio dal</label>
+          <input type="date" value="${_biaInizio(hS)?_biaToIso(_bia.inizio[hS]):''}" onchange="biaSetInizio(this.value)" onclick="event.stopPropagation()" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xxs);font-family:inherit;background:var(--surface);color:var(--text);">
+          ${_biaInizio(hS)?`<button onclick="biaSetInizio('')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">conta tutto</button>`:''}
+          <span>le consegne prima di questa data restano visibili ma fuori dal conto: servono a escludere l'avvio delle registrazioni.</span>
+        </div>
+        ${BIA_VOCI.map(v=>{const n=sal[v];return`<div style="display:flex;justify-content:space-between;padding:4px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_biaColDelta(n)};">${n===0?'—':n>0?'+'+n:n}</span></div>`;}).join('')}
         <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Una singola consegna può chiudere in pari per caso. È questo totale che dice se la perdita è occasionale o continua.</div>
       </div>`;
     }
