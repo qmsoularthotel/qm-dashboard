@@ -1064,3 +1064,14 @@ con `GB_STO_NOMI` sulle sue strutture.
 `rcParseGuests` ("Range out of order"): tutto `app.js` non si carica. Sul sito vero non
 succede (GitHub Pages dichiara UTF-8). Per provare in locale serve un server che dichiari la
 codifica, e va svuotata la cache del service worker se la prima prova l'ha già salvata rotta.
+
+### Riquadri spostati dove servono (24/09/2026, richiesta del QM)
+
+- **"Ultimi consumi inseriti"** non è più sempre a schermo: si apre dal pulsante
+  *Ultimi consumi inseriti ▾* nell'intestazione di "Consumi giornalieri dai fogli camera" e
+  compare subito sotto (`_biaUltimiAperti`, `biaToggleUltimi`). In Compass stava in fondo alla
+  pagina, ora è nella stessa posizione della Galleria.
+- **"Pezzi non rientrati"** non è più un riquadro a sé: si apre dal pulsante *Pezzi non
+  rientrati ▾* in fondo allo **Storico consegne del pulito** e vale per la struttura scelta lì
+  (`_biaStoSaldo`, `biaToggleStoSaldo`).
+- **"Totali del mese — …"** si chiama **"Riscontro fatturazioni — …"**.

@@ -1941,6 +1941,8 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   document.getElementById = vero;
   _biaStoHotel = ''; _biaStoMese = '';
   ok('c\'e\' il pulsante del report',                   /Report per la direzione/.test(box.innerHTML), true);
+  ok('Pezzi non rientrati si apre dallo storico',      /biaToggleStoSaldo\(\)/.test(box.innerHTML), true);
+  ok('e non e\' piu\' un riquadro a se\'',              /Pezzi non rientrati — totale da inizio/.test(box.innerHTML), false);
   // La fisarmonica dello storico non esiste piu' (07/09/2026), quindi non c'e' piu' niente da
   // portare in vista aprendola. La regola resta valida per gli altri pannelli che si aprono:
   // il contenitore che scorre e' `.content`, non la finestra — vedi _qmPortaInVista.
@@ -2367,13 +2369,16 @@ sez('Consumo Biancheria: si vedono anche i consumi di piu\' di due settimane fa'
   document.getElementById=function(id){return id==='bia-content'?box:null;};
   var conta=function(){return (box.innerHTML.match(/biaEliminaConsumo\(/g)||[]).length;};
   try{
-    _biaConsumiTutti=false;biaRender();
+    _biaUltimiAperti=false;_biaConsumiTutti=false;biaRender();
+    ok('di norma il riquadro e\' chiuso',            conta(),0);
+    ok('e si apre dal pulsante nei consumi giornalieri', /biaToggleUltimi\(\)/.test(box.innerHTML),true);
+    _biaUltimiAperti=true;biaRender();
     ok('di norma gli ultimi 14',                     conta(),14);
     ok('e il pulsante per vederli tutti',            /Mostra tutti \(20\)/.test(box.innerHTML),true);
     _biaConsumiTutti=true;biaRender();
     ok('col pulsante: tutti e 20',                   conta(),20);
     ok('divisi per mese',                            /Agosto 2026/.test(box.innerHTML),true);
-  }finally{document.getElementById=vero;_bia=prima;_biaHotel=ph;_biaConsumiTutti=pt;}
+  }finally{document.getElementById=vero;_bia=prima;_biaHotel=ph;_biaConsumiTutti=pt;_biaUltimiAperti=false;}
 })();
 
 sez('Prenotazioni: un caricamento dopo i check-out non perde le partenze di oggi');
@@ -2439,7 +2444,7 @@ sez('Consumo Biancheria: totali del mese per incrociare la fattura');
   var box={innerHTML:''},vero=document.getElementById;
   document.getElementById=function(id){return id==='bia-content'?box:null;};
   try{_biaHotel='sa';_biaMeseSel='';biaRender();}finally{document.getElementById=vero;}
-  ok('il riquadro compare, sul mese piu\' recente', /Totali del mese/.test(box.innerHTML)&&/<option value="2026-09" selected>/.test(box.innerHTML),true);
+  ok('il riquadro compare, sul mese piu\' recente', /Riscontro fatturazioni/.test(box.innerHTML)&&/<option value="2026-09" selected>/.test(box.innerHTML),true);
   // Fattura LANA.POLI inserita a mano: differenze e importo.
   _bia.fatture={'sa|2026-09':{q:{Federa:20,'Telo doccia':''}}};
   ok('nomi della fattura accanto ai nostri',      /Ospiti Spugna/.test(_biaTabellaMese(m,true,'sa')),true);

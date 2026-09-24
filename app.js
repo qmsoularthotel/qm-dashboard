@@ -15196,6 +15196,11 @@ function biaStoSetHotel(h){if(!BIA_HOTELS[h])return;_biaStoHotel=h;_biaStoTutte=
 function biaStoSetMese(ym){_biaStoMese=ym;_biaStoTutte=false;_psSenzaSalto(biaRender);}
 function biaStoToggleTutte(){_biaStoTutte=!_biaStoTutte;_psSenzaSalto(biaRender);}
 function biaToggleGiroVoci(id){_biaGiroVoci.has(id)?_biaGiroVoci.delete(id):_biaGiroVoci.add(id);_psSenzaSalto(biaRender);}
+// "Ultimi consumi inseriti" si apre dal pulsante nel riquadro dei consumi giornalieri, e
+// "Pezzi non rientrati" dal riquadro dello storico (24/09/2026): stanno dove servono.
+let _biaUltimiAperti=false,_biaStoSaldo=false;
+function biaToggleUltimi(){_biaUltimiAperti=!_biaUltimiAperti;_psSenzaSalto(biaRender);}
+function biaToggleStoSaldo(){_biaStoSaldo=!_biaStoSaldo;_psSenzaSalto(biaRender);}
 function biaToggleGiro(id){_biaGiroAperto.has(id)?_biaGiroAperto.delete(id):_biaGiroAperto.add(id);_psSenzaSalto(biaRender);}
 function biaToggleVoci(){_biaVociAperte=!_biaVociAperte;_psSenzaSalto(biaRender);}
 const _biaH=x=>x.hotel||'sa';
@@ -15840,7 +15845,7 @@ function biaRender(){
   const consSel=_bia.consumi.find(c=>_biaH(c)===_biaHotel&&c.data===consData);
   h+=`<div class="panel" style="margin-bottom:16px;">
     <div class="panel-header"><span class="panel-title">Consumi giornalieri dai fogli camera</span>
-      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">somma i fogli delle cameriere e riporta i totali</span>
+      <button onclick="biaToggleUltimi()" style="margin-left:auto;background:${_biaUltimiAperti?'var(--accent)':'var(--surface)'};color:${_biaUltimiAperti?'#fff':'var(--accent)'};border:1px solid ${_biaUltimiAperti?'var(--accent)':'var(--border)'};padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">Ultimi consumi inseriti ${_biaUltimiAperti?'▴':'▾'}</button>
     </div>
     <div class="panel-body" style="padding:14px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
@@ -15858,6 +15863,25 @@ function biaRender(){
       </div>
     </div>
   </div>`;
+
+  // ── Consumi registrati di recente ──
+  const tuttiC=_biaConsumi().slice().sort((a,b)=>(_biaParse(b.data)||0)-(_biaParse(a.data)||0));
+  const rec=_biaConsumiTutti?tuttiC:tuttiC.slice(0,BIA_CONSUMI_VISTI);
+  if(_biaUltimiAperti){
+    h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti — ${esc(BIA_HOTELS[_biaHotel])}</span>${tuttiC.length>BIA_CONSUMI_VISTI?`<button onclick="biaToggleConsumiTutti()" style="margin-left:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">${_biaConsumiTutti?'Solo gli ultimi '+BIA_CONSUMI_VISTI:'Mostra tutti ('+tuttiC.length+')'}</button>`:''}</div><div class="panel-body" style="padding:0;">`;
+    if(!rec.length)h+=`<div style="padding:12px 14px;font-size:var(--fs-xs);color:var(--text-dim);">Nessun consumo inserito per questa struttura.</div>`;
+    let meseVisto='';
+    rec.forEach(c=>{
+      const dd=_biaParse(c.data),mm=dd?BIA_MESI[dd.getMonth()]+' '+dd.getFullYear():'';
+      if(_biaConsumiTutti&&mm&&mm!==meseVisto){meseVisto=mm;h+=`<div style="padding:7px 14px;background:var(--surface2,var(--surface));font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);border-bottom:1px solid var(--border);">${mm}</div>`;}
+      h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
+        <span style="font-weight:600;">${esc(c.data)}</span>
+        <span style="color:var(--text-dim);">${_biaTot(c.q)} pezzi</span>
+        <button onclick="biaEliminaConsumo('${c.id}')" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  }
 
   // ── Il giro ──
   // Il periodo si scrive con i nomi dei giorni e si dice SEMPRE da dove nasce il "dal":
@@ -16016,8 +16040,19 @@ function biaRender(){
           </div></div>`;
       }
     });
+    // Pezzi non rientrati da inizio registrazioni, della struttura scelta qui sopra.
+    if(_biaStoSaldo){
+      const sal=_biaSaldo(hS),salT=_biaTot(sal);
+      h+=`<div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--surface2,var(--surface));">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;"><span style="font-size:var(--fs-xs);font-weight:700;">Pezzi non rientrati — da inizio registrazioni</span>
+          <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${salT<0?'var(--red)':'var(--green)'};">${salT===0?'in pari':salT}</span></div>
+        ${BIA_VOCI.map(v=>{const n=sal[v];return`<div style="display:flex;justify-content:space-between;padding:4px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_biaColDelta(n)};">${n===0?'—':n}</span></div>`;}).join('')}
+        <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Una singola consegna può chiudere in pari per caso. È questo totale che dice se la perdita è occasionale o continua.</div>
+      </div>`;
+    }
     h+=`<div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       ${st.righe.length>BIA_STO_VISTE?`<button onclick="biaStoToggleTutte()" style="${bSec}">${_biaStoTutte?'Solo le ultime '+BIA_STO_VISTE:'Mostra tutte le '+st.righe.length+' consegne di '+esc(nomeMese)}</button>`:''}
+      <button onclick="biaToggleStoSaldo()" style="${bSec}">Pezzi non rientrati ${_biaStoSaldo?'▴':'▾'}</button>
       <button onclick="biaPrintAndamento()" style="${bSec}">Report per la direzione</button>
     </div></div></div>`;
   }
@@ -16028,7 +16063,7 @@ function biaRender(){
     if(mesi.length){
       if(!mesi.includes(_biaMeseSel))_biaMeseSel=mesi[0];
       const m=_biaMese(_biaHotel,_biaMeseSel);
-      h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Totali del mese — ${esc(BIA_HOTELS[_biaHotel])}</span>
+      h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Riscontro fatturazioni — ${esc(BIA_HOTELS[_biaHotel])}</span>
         <select onchange="biaSetMese(this.value)" style="margin-left:auto;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesi.map(y=>`<option value="${y}"${y===_biaMeseSel?' selected':''}>${_biaMeseNome(y)}</option>`).join('')}</select>
         <button onclick="biaPrintMese()" title="Stampa i totali del mese" style="margin-left:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">Stampa</button>
       </div><div class="panel-body" style="padding:0;overflow-x:auto;">${_biaTabellaMese(m,false,_biaHotel)}
@@ -16037,37 +16072,6 @@ function biaRender(){
     }
   }
 
-  // ── Saldo cumulato ──
-  const saldoTot=_biaTot(saldo);
-  if(giri.length){
-    h+=`<div class="panel" style="margin-bottom:16px;">
-      <div class="panel-header"><span class="panel-title">Pezzi non rientrati — totale da inizio registrazioni</span>
-        <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${saldoTot<0?'var(--red)':'var(--green)'};">${saldoTot===0?'in pari':saldoTot}</span>
-      </div>
-      <div class="panel-body" style="padding:14px;">
-        ${BIA_VOCI.map(v=>{const n=saldo[v];return`<div style="display:flex;justify-content:space-between;padding:5px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_biaColDelta(n)};">${n===0?'in pari':n}</span></div>`;}).join('')}
-        <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Una singola consegna può chiudere in pari per caso. È questo totale che dice se la perdita è occasionale o continua.</div>
-      </div>
-    </div>`;
-  }
-
-  // ── Consumi registrati di recente ──
-  const tuttiC=_biaConsumi().slice().sort((a,b)=>(_biaParse(b.data)||0)-(_biaParse(a.data)||0));
-  const rec=_biaConsumiTutti?tuttiC:tuttiC.slice(0,BIA_CONSUMI_VISTI);
-  if(rec.length){
-    h+=`<div class="panel" style="margin-top:16px;"><div class="panel-header"><span class="panel-title">Ultimi consumi inseriti — ${esc(BIA_HOTELS[_biaHotel])}</span>${tuttiC.length>BIA_CONSUMI_VISTI?`<button onclick="biaToggleConsumiTutti()" style="margin-left:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">${_biaConsumiTutti?'Solo gli ultimi '+BIA_CONSUMI_VISTI:'Mostra tutti ('+tuttiC.length+')'}</button>`:''}</div><div class="panel-body" style="padding:0;">`;
-    let meseVisto='';
-    rec.forEach(c=>{
-      const dd=_biaParse(c.data),mm=dd?BIA_MESI[dd.getMonth()]+' '+dd.getFullYear():'';
-      if(_biaConsumiTutti&&mm&&mm!==meseVisto){meseVisto=mm;h+=`<div style="padding:7px 14px;background:var(--surface2,var(--surface));font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);border-bottom:1px solid var(--border);">${mm}</div>`;}
-      h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);">
-        <span style="font-weight:600;">${esc(c.data)}</span>
-        <span style="color:var(--text-dim);">${_biaTot(c.q)} pezzi</span>
-        <button onclick="biaEliminaConsumo('${c.id}')" style="margin-left:auto;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;">Elimina</button>
-      </div>`;
-    });
-    h+=`</div></div>`;
-  }
 
   el.innerHTML=h;
 }
