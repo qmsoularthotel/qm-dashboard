@@ -125,3 +125,4 @@ ok('Galleria: e con Va bene così',                  /gbConfermaGiro\('r2'\)/.te
 _gbGiroAperto = new Set();
 _gbReset();
 ok('Galleria: anche qui si vedono tutti i consumi', typeof gbToggleConsumiTutti, 'function');
+ok('Galleria: totali del mese',                typeof gbPrintMese+typeof _gbMese, 'functionfunction');

@@ -2417,3 +2417,31 @@ ok('non le caselle nascoste Arrivi e Report pasti', _ucVisibile('arrivi')||_ucVi
 ok('ne' + "'" + ' i report pulizie ricavati dal Piano',  _ucVisibile('pul'), false);
 ok('Turno e Piano restano',                        _ucVisibile('turno')&&_ucVisibile('piano'), true);
 ok('Prenotazioni diventa ambra/rossa quando e\' vecchia', TS_TO_UC.prenTs, 'uc-pren-sub');
+
+sez('Consumo Biancheria: totali del mese per incrociare la fattura');
+(function(){
+  var prima=_bia,ph=_biaHotel,pm=_biaMeseSel;
+  var Q=function(o){var q=_biaVuote();for(var k in o)q[k]=o[k];return q;};
+  _bia={consumi:[
+    {id:'k1',hotel:'sa',data:'29/08/2026',q:Q({Federa:5})},
+    {id:'k2',hotel:'sa',data:'01/09/2026',q:Q({Federa:7,'Telo doccia':3})},
+    {id:'k3',hotel:'bh',data:'01/09/2026',q:Q({Federa:99})}],
+    giri:[
+    {id:'g1',hotel:'sa',data:'29/08/2026',consegnato:Q({Federa:10}),ricevuto:Q({Federa:9})},
+    {id:'g2',hotel:'sa',data:'01/09/2026',consegnato:Q({Federa:5}),ricevuto:Q({Federa:10})},
+    {id:'g3',hotel:'sa',data:'03/09/2026',consegnato:Q({Federa:7,'Telo doccia':3}),ricevuto:_biaVuote()},
+    {id:'g4',hotel:'bh',data:'03/09/2026',consegnato:Q({Federa:50}),ricevuto:Q({Federa:40})}]};
+  var m=_biaMese('sa','2026-09');
+  ok('settembre: dati a Raimondo, per tipologia',   m.dati.Federa+'/'+m.dati['Telo doccia'],'12/3');
+  ok('portati: solo le consegne registrate',        m.portati.Federa,10);
+  ok('la consegna senza dato e\' dichiarata',       m.nonReg.join(','),'03/09/2026');
+  ok('consumi del mese dai fogli camera',           m.consumi.Federa,7);
+  ok('agosto resta separato',                       _biaMese('sa','2026-08').dati.Federa,10);
+  ok('il Boutique non entra nel SoulArt',           _biaMese('bh','2026-09').dati.Federa,50);
+  ok('mesi disponibili, dal piu\' recente',         _biaMesiDisponibili('sa').join(','),'2026-09,2026-08');
+  var box={innerHTML:''},vero=document.getElementById;
+  document.getElementById=function(id){return id==='bia-content'?box:null;};
+  try{_biaHotel='sa';_biaMeseSel='';biaRender();}finally{document.getElementById=vero;}
+  ok('il riquadro compare, sul mese piu\' recente', /Totali del mese/.test(box.innerHTML)&&/<option value="2026-09" selected>/.test(box.innerHTML),true);
+  _bia=prima;_biaHotel=ph;_biaMeseSel=pm;
+})();

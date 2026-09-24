@@ -988,3 +988,19 @@ dichiarato da uno calcolato. Se un domani serve un confronto, va **mostrato** co
 non usato per correggere l'uno con l'altro.
 
 ---
+
+### Totali del mese, per incrociare la fattura (24/09/2026)
+
+Riquadro **"Totali del mese"** (sopra "Pezzi non rientrati"), con un menu dei mesi che hanno
+dati e il pulsante **Stampa** (A4 senza fondi pieni). Per ogni tipologia, nella struttura
+scelta: **Dati a Raimondo** (sporco delle consegne del mese), **Portati da Raimondo** (solo
+le consegne registrate: quelle senza il dato sono elencate a parte) e **Consumi fogli camera**.
+
+Le consegne contano nel mese della **loro data**, i consumi nel mese del giorno a cui si
+riferiscono: una consegna del 2 ottobre porta via consumi di fine settembre e sta in ottobre,
+perché è lì che la fattura la conta. Per questo le colonne "dati" e "consumi" dello stesso mese
+non coincidono esattamente, e ad agosto 2026 i consumi sono molto più alti: le consegne si
+registrano dal 20/08, i consumi da prima.
+
+`_biaMese(h,ym)`, `_biaMesiDisponibili`, `_biaTabellaMese` (unica tabella per schermo e
+stampa), `biaPrintMese`. Stessa cosa nella Galleria (`gb…`). 9 controlli.

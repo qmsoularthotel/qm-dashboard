@@ -15996,6 +15996,21 @@ function biaRender(){
     h+=`</div></div>`;
   }
 
+  // ── Totali del mese, per incrociare la fattura ──
+  {
+    const mesi=_biaMesiDisponibili(_biaHotel);
+    if(mesi.length){
+      if(!mesi.includes(_biaMeseSel))_biaMeseSel=mesi[0];
+      const m=_biaMese(_biaHotel,_biaMeseSel);
+      h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Totali del mese — ${esc(BIA_HOTELS[_biaHotel])}</span>
+        <select onchange="biaSetMese(this.value)" style="margin-left:auto;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesi.map(y=>`<option value="${y}"${y===_biaMeseSel?' selected':''}>${_biaMeseNome(y)}</option>`).join('')}</select>
+        <button onclick="biaPrintMese()" title="Stampa i totali del mese" style="margin-left:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">Stampa</button>
+      </div><div class="panel-body" style="padding:0;">${_biaTabellaMese(m,false)}
+        <div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">${_biaNoteMese(m).map(x=>esc(x)).join('<br>')}<br>Le consegne contano nel mese della loro data; i consumi nel mese del giorno a cui si riferiscono.</div>
+      </div></div>`;
+    }
+  }
+
   // ── Saldo cumulato ──
   const saldoTot=_biaTot(saldo);
   if(giri.length){
@@ -16148,6 +16163,72 @@ async function biaSegnaDistintaFatta(ev){
       '<strong>'+BIA_HOTELS[_biaHotel]+'</strong> — consegna del '+data+'.<br>Il promemoria sparisce. I conti non cambiano.'))return;
   try{await _biaDistSegna(_biaHotel,data);}catch(e){}
   try{biaRender();}catch(e){}
+}
+// ── Totali del mese, per tipologia (24/09/2026) ──
+// Servono a incrociare la fattura di Raimondo: per ogni voce, nel mese scelto, quanti pezzi
+// gli sono stati dati (sporco delle consegne), quanti ne ha riportati (pulito) e quanti ne
+// dicono i fogli camera. Le consegne contano nel mese della LORO data, i consumi nel mese
+// del giorno a cui si riferiscono: una consegna del 2 ottobre porta via consumi di
+// settembre, ed e' giusto che stia in ottobre, perche' e' li' che la fattura la conta.
+const BIA_MESI_LUNGHI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+let _biaMeseSel='';
+function _biaYm(s){const d=_biaParse(s);return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'):'';}
+function _biaMeseNome(ym){const[a,m]=String(ym).split('-');return BIA_MESI_LUNGHI[(+m||1)-1]+' '+a;}
+function _biaMesiDisponibili(h){
+  const s=new Set();
+  _biaGiri(h).forEach(g=>{const y=_biaYm(g.data);if(y)s.add(y);});
+  _biaConsumi(h).forEach(c=>{const y=_biaYm(c.data);if(y)s.add(y);});
+  return[...s].sort().reverse();
+}
+function _biaMese(h,ym){
+  const dati=_biaVuote(),portati=_biaVuote(),consumi=_biaVuote();
+  const giri=_biaGiri(h).filter(g=>_biaYm(g.data)===ym);
+  const nonReg=giri.filter(g=>!_biaRegistrato(g));
+  giri.forEach(g=>{
+    BIA_VOCI.forEach(v=>{dati[v]+=Number(g.consegnato&&g.consegnato[v])||0;});
+    if(_biaRegistrato(g))BIA_VOCI.forEach(v=>{portati[v]+=Number(g.ricevuto&&g.ricevuto[v])||0;});
+  });
+  const cons=_biaConsumi(h).filter(c=>_biaYm(c.data)===ym);
+  cons.forEach(c=>BIA_VOCI.forEach(v=>{consumi[v]+=Number(c.q&&c.q[v])||0;}));
+  return{ym,dati,portati,consumi,giri:giri.map(g=>g.data),nonReg:nonReg.map(g=>g.data),giorniConsumi:cons.length};
+}
+function biaSetMese(ym){_biaMeseSel=ym;_psSenzaSalto(biaRender);}
+function _biaTabellaMese(m,stampa){
+  const e=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const th=stampa?'style="text-align:right;padding:6px 8px;border-bottom:1.5px solid #111;"'
+    :'style="text-align:right;padding:8px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);border-bottom:1px solid var(--border);"';
+  const td=(n,b)=>stampa?`<td style="text-align:right;padding:6px 8px;border-bottom:1px solid #ccc;${b?'font-weight:700;':''}">${n}</td>`
+    :`<td style="text-align:right;padding:8px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums;${b?'font-weight:700;':''}">${n}</td>`;
+  const tdL=(s,b)=>stampa?`<td style="padding:6px 8px;border-bottom:1px solid #ccc;${b?'font-weight:700;':''}">${s}</td>`
+    :`<td style="padding:8px 8px 8px 14px;border-bottom:1px solid var(--border);${b?'font-weight:700;':''}">${s}</td>`;
+  let t=`<table style="width:100%;border-collapse:collapse;${stampa?'font-size:10.5pt;':'font-size:var(--fs-xs);'}"><thead><tr>
+    <th ${th.replace('text-align:right','text-align:left')}>Tipologia</th><th ${th}>Dati a Raimondo</th><th ${th}>Portati da Raimondo</th><th ${th}>Consumi fogli camera</th></tr></thead><tbody>`;
+  BIA_VOCI.forEach(v=>{t+=`<tr>${tdL(e(v))}${td(m.dati[v])}${td(m.portati[v])}${td(m.consumi[v])}</tr>`;});
+  t+=`<tr>${tdL('Totale',1)}${td(_biaTot(m.dati),1)}${td(_biaTot(m.portati),1)}${td(_biaTot(m.consumi),1)}</tr></tbody></table>`;
+  return t;
+}
+function _biaNoteMese(m){
+  const n=[];
+  n.push(m.giri.length?`${m.giri.length} consegne nel mese: ${m.giri.map(d=>d.slice(0,5)).join(', ')}.`:'Nessuna consegna registrata nel mese.');
+  if(m.nonReg.length)n.push(`Senza il dato di cosa ha riportato: ${m.nonReg.map(d=>d.slice(0,5)).join(', ')} — «Portati» non le comprende.`);
+  n.push(`Consumi: ${m.giorniConsumi} giorni inseriti.`);
+  return n;
+}
+function biaPrintMese(){
+  const h=_biaHotel,ym=_biaMeseSel||(_biaMesiDisponibili(h)[0]||'');
+  if(!ym){cqAvviso('Non ci sono dati da stampare per questa struttura.');return;}
+  const m=_biaMese(h,ym);
+  const e=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Biancheria ${e(_biaMeseNome(ym))}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;font-size:10.5pt;}@page{size:A4;margin:16mm;}
+h1{font-size:15pt;margin-bottom:2px;}.sub{color:#444;margin-bottom:14px;}.note{margin-top:12px;font-size:9.5pt;color:#333;line-height:1.5;}</style></head><body>
+<h1>Biancheria — totali di ${e(_biaMeseNome(ym))}</h1>
+<div class="sub">${e(BIA_HOTELS[h])} · fornitore Raimondo · stampato il ${_biaFmt(new Date())}</div>
+${_biaTabellaMese(m,true)}
+<div class="note">${_biaNoteMese(m).map(e).join('<br>')}<br>Le consegne contano nel mese della loro data; i consumi nel mese del giorno a cui si riferiscono.</div>
+</body></html>`;
+  const w=window.open('','_blank');if(!w)return;
+  w.document.write(html);w.document.close();setTimeout(()=>{try{w.print();}catch(e){}},400);
 }
 function biaPrintDistinta(giroId){
   const g=giroId?_bia.giri.find(x=>x.id===giroId):null;
