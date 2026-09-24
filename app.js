@@ -15154,6 +15154,48 @@ const BIA_CONSUMI_VISTI=14;
 const BIA_MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 let _biaConsumiTutti=false;
 function biaToggleConsumiTutti(){_biaConsumiTutti=!_biaConsumiTutti;_psSenzaSalto(biaRender);}
+// ── Storico consegne del pulito (24/09/2026) ──
+// Prima era una tabella per struttura con cinque colonne di numeri: si capiva solo leggendo.
+// Ora una struttura e un mese alla volta, una frase per il mese e, per ogni consegna, una
+// pastiglia con l'esito; i numeri stanno nel dettaglio che si apre. Di norma le ultime 4
+// consegne del mese corrente.
+const BIA_STO_VISTE=4;
+const BIA_STO_NOMI={sa:'SoulArt',bh:'Boutique'};   // nomi corti per il selettore
+let _biaStoHotel='',_biaStoMese='',_biaStoTutte=false,_biaGiroVoci=new Set();
+function _biaYmOggi(){const d=_biaOggi();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function _biaStoMesi(h){
+  const s=new Set([_biaYmOggi()]);
+  _biaGiri(h).forEach(g=>{const y=_biaYm(g.data);if(y)s.add(y);});
+  return[...s].sort().reverse();
+}
+// Il mese di una struttura: righe dalla piu' recente, e il conto sulle SOLE consegne
+// confrontabili (registrate e con una consegna precedente), come _biaSaldo.
+function _biaStorico(h,ym){
+  const righe=_biaGiri(h).filter(g=>_biaYm(g.data)===ym).reverse().map(_biaRigaGiro);
+  let portato=0,dovuto=0,conf=0,nonReg=0;
+  righe.forEach(r=>{
+    if(!r.registrato){nonReg++;return;}
+    if(r.dovuto===null)return;
+    portato+=r.portato;dovuto+=r.dovuto;conf++;
+  });
+  return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg};
+}
+// Esito di una consegna, in parole: e' quello che si legge senza aprire niente.
+function _biaEsito(r){
+  if(!r.registrato)return{txt:'Manca cosa ha portato',col:'var(--amber)',bg:'rgba(160,90,0,.10)'};
+  if(r.dovuto===null)return{txt:'Prima consegna',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
+  if(r.delta<0)return{txt:'Mancano '+(-r.delta)+' pezzi',col:'var(--red)',bg:'rgba(192,53,42,.10)'};
+  if(r.delta>0)return{txt:'Tutto riportato · '+r.delta+' in più',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
+  return{txt:'Tutto riportato',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
+}
+// Le tipologie che mancano di piu', per la riga "Mancano soprattutto".
+function _biaPeggiori(g,n){
+  return _biaDettaglioGiro(g).filter(x=>x.delta!==null&&x.delta<0).sort((a,b)=>a.delta-b.delta).slice(0,n||3);
+}
+function biaStoSetHotel(h){if(!BIA_HOTELS[h])return;_biaStoHotel=h;_biaStoTutte=false;_psSenzaSalto(biaRender);}
+function biaStoSetMese(ym){_biaStoMese=ym;_biaStoTutte=false;_psSenzaSalto(biaRender);}
+function biaStoToggleTutte(){_biaStoTutte=!_biaStoTutte;_psSenzaSalto(biaRender);}
+function biaToggleGiroVoci(id){_biaGiroVoci.has(id)?_biaGiroVoci.delete(id):_biaGiroVoci.add(id);_psSenzaSalto(biaRender);}
 function biaToggleGiro(id){_biaGiroAperto.has(id)?_biaGiroAperto.delete(id):_biaGiroAperto.add(id);_psSenzaSalto(biaRender);}
 function biaToggleVoci(){_biaVociAperte=!_biaVociAperte;_psSenzaSalto(biaRender);}
 const _biaH=x=>x.hotel||'sa';
@@ -15459,7 +15501,7 @@ function _biaRigaGiro(g){
   const registrato=_biaRegistrato(g);
   const portato=_biaTot(g.ricevuto);
   const dovuto=att?_biaTot(att):null;
-  return{hotel:hotel,data:g.data,portato:portato,dovuto:dovuto,registrato:registrato,
+  return{id:g.id,hotel:hotel,data:g.data,portato:portato,dovuto:dovuto,registrato:registrato,
          uscito:_biaTot(g.consegnato),
          dataPrec:prec?prec.data:null,
          // Senza il dato non c'e' differenza da calcolare: mettere `portato-dovuto` qui
@@ -15917,90 +15959,67 @@ function biaRender(){
   h+=`</div>
       <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">${vigilia&&!giaReg
         ?'Oggi serve solo la <strong>stampa</strong>: i pezzi da dargli sono già calcolati dai consumi. Domattina, quando Raimondo arriva, si torna qui e si registra cosa ha portato.'
-        :'I <strong>tot pezzi da dargli</strong> sono la somma dei consumi del periodo: è già il numero giusto, correggilo solo se il sacco contiene qualcosa di diverso. <strong>Ha portato</strong> parte uguale a quanto doveva — toccalo solo se la distinta di Raimondo dice altro.'}</div>
+        :'I pezzi da dare a Raimondo si calcolano da soli dai consumi del periodo e finiscono sulla distinta. <strong>Ha portato</strong> parte uguale a quanto doveva — toccalo solo se la distinta di Raimondo dice altro.'}</div>
     </div>
   </div>`;
 
-  // Le consegne stanno SOPRA il saldo: prima si guarda cosa e' successo consegna per
-  // consegna, poi il totale che ne deriva. Al contrario si legge un numero senza sapere da
-  // dove viene, e il numero e' quello che spinge a contestare qualcosa al fornitore.
-  // ── Storico ──
-  // Le consegne NON stanno piu' dietro una fisarmonica (07/09/2026): erano la cosa che si
-  // apre ogni volta, e tenerle chiuse per difetto voleva dire due clic in piu' ogni giorno
-  // per arrivare al motivo per cui si e' entrati nella pagina.
-  // Lo storico copre ENTRAMBE le strutture, ma RAGGRUPPATE, non mescolate per data.
-  // Mescolarle sembrava dare più informazione e invece ne toglieva: la catena di confronto
-  // è per struttura (ogni giro si confronta col precedente del PROPRIO hotel), quindi due
-  // righe della stessa data — "03/09 SoulArt … i tot pezzi del 01/09" seguita da "03/09
-  // Boutique … i tot pezzi del 01/09" — si leggevano come la stessa cosa scritta due volte, e
-  // seguire la serie di una struttura sola voleva dire saltare una riga sì e una no.
+  // ── Storico consegne del pulito ── (vedi _biaStorico)
   if(_bia.giri.length){
-    h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Consegne di Raimondo</span>
-      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);margin-right:10px;">le due strutture hanno pezzi e conti separati</span>
-      <button onclick="biaPrintAndamento()" style="background:var(--surface);color:var(--accent);border:1px solid var(--border);padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Report per la direzione</button></div>
-      <div class="panel-body" style="padding:0;">`;
-    Object.keys(BIA_HOTELS).forEach((k,iH)=>{
-      const righe=_biaGiri(k).slice().reverse();
-      if(!righe.length)return;
-      const r=_biaRiepilogoPortato(k);
-      // Intestazione della struttura: nome, totale e saldo. È il blocco che rende leggibile
-      // il raggruppamento — senza, due elenchi di seguito sembrerebbero uno solo.
-      h+=`<div style="padding:12px 14px;background:var(--surface2,var(--surface));border-bottom:1px solid var(--border);${iH?'border-top:2px solid var(--border);':''}">
-        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
-          <span style="font-size:var(--fs-sm);font-weight:700;">${esc(BIA_HOTELS[k])}</span>
-          ${r.confrontati
-            ?`<span style="font-size:var(--fs-xs);color:var(--text-dim);">ha portato <strong style="color:var(--text);">${r.portato}</strong> pezzi su <strong style="color:var(--text);">${r.dovuto}</strong> attesi</span>
-              <span style="font-size:var(--fs-sm);font-weight:700;color:${_biaColDelta(r.saldo)};">${_biaTxtDelta(r.saldo)}</span>`
-            :`<span style="font-size:var(--fs-xxs);color:var(--text-dim);">nessuna consegna ancora confrontabile</span>`}
-        </div>
-        ${r.confrontati?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">su ${r.confrontati} consegne confrontabili${r.senzaConfronto?` · ${r.senzaConfronto} senza termine di confronto`:''}${r.nonRegistrati?` · <strong style="color:var(--amber);">${r.nonRegistrati} senza il dato di cosa ha riportato</strong>, esclusi dal conto`:''}</div>
-        <button onclick="biaToggleVoci()" style="background:none;border:none;padding:0;margin-top:6px;font-size:var(--fs-xxs);color:var(--accent);font-weight:700;cursor:pointer;">${_biaVociAperte?'Nascondi il dettaglio per tipologia ▴':'Cosa porta, per tipologia ▾'}</button>
-        ${_biaVociAperte?_biaTabellaVoci(_biaTotPerVoce(k),true):''}`:''}
+    if(!BIA_HOTELS[_biaStoHotel])_biaStoHotel=_biaHotel;
+    const hS=_biaStoHotel,mesiS=_biaStoMesi(hS);
+    if(!mesiS.includes(_biaStoMese))_biaStoMese=_biaYmOggi();
+    const st=_biaStorico(hS,_biaStoMese);
+    const nomeMese=_biaMeseNome(_biaStoMese).split(' ')[0].toLowerCase();
+    const bTab=on=>`padding:6px 13px;border:1px solid ${on?'var(--accent)':'var(--border)'};background:${on?'var(--accent)':'var(--surface)'};color:${on?'#fff':'var(--text-dim)'};font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;`;
+    const bSec='background:var(--surface);color:var(--accent);border:1px solid var(--border);padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;';
+    h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header" style="flex-wrap:wrap;gap:8px;"><span class="panel-title">Storico consegne del pulito</span>
+      <span style="margin-left:auto;display:inline-flex;">${Object.keys(BIA_HOTELS).map((k,i,a)=>`<button onclick="biaStoSetHotel('${k}')" style="${bTab(k===hS)}border-radius:${i===0?'7px 0 0 7px':i===a.length-1?'0 7px 7px 0':'0'};${i?'margin-left:-1px;':''}">${esc(BIA_STO_NOMI[k]||BIA_HOTELS[k])}</button>`).join('')}</span>
+      <select onchange="biaStoSetMese(this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesiS.map(y=>`<option value="${y}"${y===_biaStoMese?' selected':''}>${_biaMeseNome(y)}</option>`).join('')}</select>
+    </div><div class="panel-body" style="padding:0;">`;
+    // La frase del mese: e' la prima cosa che si legge.
+    const col=st.saldo<0?'var(--red)':'var(--green)';
+    h+=`<div style="padding:14px 16px;border-bottom:1px solid var(--border);">`;
+    if(!st.righe.length){
+      h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">Nessuna consegna registrata a ${esc(nomeMese)}.</div>`;
+    }else if(!st.confrontate){
+      h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">A ${esc(nomeMese)} nessuna consegna ancora confrontabile.</div>`;
+    }else{
+      h+=`<div style="font-size:var(--fs-base);font-weight:700;">A ${esc(nomeMese)} ${st.saldo<0?`mancano <span style="color:${col};">${-st.saldo} pezzi</span>`:st.saldo>0?`<span style="color:${col};">tutto riportato</span>, ${st.saldo} pezzi in più`:`<span style="color:${col};">tutto riportato</span>`}</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">Raimondo ha riportato <strong style="color:var(--text);">${st.portato}</strong> pezzi su <strong style="color:var(--text);">${st.dovuto}</strong> in ${st.confrontate} consegn${st.confrontate===1?'a':'e'}</div>`;
+    }
+    if(st.nonReg)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">${st.nonReg} consegn${st.nonReg===1?'a':'e'} senza il dato di cosa ha riportato: fuori dal conto.</div>`;
+    h+=`</div>`;
+    const viste=_biaStoTutte?st.righe:st.righe.slice(0,BIA_STO_VISTE);
+    if(st.righe.length>BIA_STO_VISTE&&!_biaStoTutte)h+=`<div style="padding:8px 16px 2px;font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;font-weight:600;">Ultime ${BIA_STO_VISTE} consegne</div>`;
+    viste.forEach(rg=>{
+      const g=_bia.giri.find(x=>x.id===rg.id)||_bia.giri.find(x=>_biaH(x)===hS&&x.data===rg.data);if(!g)return;
+      const aperto=_biaGiroAperto.has(g.id),es=_biaEsito(rg),scG=_biaScostamento(g);
+      const dd=_biaParse(rg.data);
+      h+=`<div onclick="biaToggleGiro('${g.id}')" style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--border);cursor:pointer;${aperto?'background:var(--surface2,var(--surface));':''}">
+        <span style="min-width:96px;font-size:var(--fs-xs);font-weight:700;">${dd?BIA_GG_NOMI[dd.getDay()].slice(0,3)+' '+rg.data.slice(0,5):esc(rg.data)}</span>
+        <span style="background:${es.bg};color:${es.col};padding:4px 10px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;">${es.txt}</span>
+        ${scG?`<span title="Il totale dato quel giorno non corrisponde ai consumi: apri per vedere" style="font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">totale da verificare</span>`:''}
+        <span style="margin-left:auto;color:var(--text-dim);font-size:var(--fs-xs);">${aperto?'▴':'▾'}</span>
       </div>`;
-      // I giri erano otto righe di prosa con cinque numeri dentro ciascuna: un muro di
-      // testo. Ora sono una TABELLA — stessi numeri, incolonnati — e le azioni non gridano:
-      // il dettaglio si apre dalla freccia, la distinta e' un'icona, e "Elimina" sta dentro
-      // il dettaglio, non fra i pulsanti che si premono tutti i giorni.
-      h+=`<table style="width:100%;border-collapse:collapse;">
-        <thead><tr>
-          <th style="${_biaTh}text-align:left;padding-left:14px;">Consegna</th>
-          <th style="${_biaTh}">Ha portato</th>
-          <th style="${_biaTh}">Doveva</th>
-          <th style="${_biaTh}">Differenza</th>
-          <th style="${_biaTh}">Usciti quel giorno</th>
-          <th style="${_biaTh}padding-right:14px;"></th>
-        </tr></thead><tbody>`;
-      righe.forEach(g=>{
-        const rg=_biaRigaGiro(g);
-        const aperto=_biaGiroAperto.has(g.id);
-        // Segnalato anche a riga chiusa: un totale congelato che non torna sta in fondo
-        // allo storico e nessuno aprirebbe sette righe per cercarlo. Il dettaglio e i due
-        // pulsanti restano dentro, dove c'è lo spazio per spiegare.
-        const scG=_biaScostamento(g);
-        const td='padding:9px 8px;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);text-align:center;font-variant-numeric:tabular-nums;';
-        h+=`<tr style="${rg.registrato?_biaBgDelta(rg.delta===null?0:rg.delta):'background:var(--surface2,var(--surface));'}">
-          <td style="${td}text-align:left;padding-left:14px;font-weight:700;white-space:nowrap;">${esc(rg.data)}</td>
-          <td style="${td}font-weight:700;${rg.registrato?'':'color:var(--amber);font-weight:600;font-size:11.5px;'}">${rg.registrato?rg.portato:'non registrato'}</td>
-          <td style="${td}color:var(--text-muted);">${rg.dovuto===null?'—':rg.dovuto+`<div style="font-size:10px;color:var(--text-dim);font-weight:400;">tot pezzi del ${esc(rg.dataPrec)}</div>`}</td>
-          <td style="${td}font-weight:700;color:${rg.delta===null?'var(--text-dim)':_biaColDelta(rg.delta)};">${!rg.registrato?'fuori conteggio':(rg.dovuto===null?'prima consegna':_biaTxtDelta(rg.delta))}</td>
-          <td style="${td}color:var(--text-dim);">${rg.uscito}${scG?` <span title="Non corrisponde ai consumi del periodo: aprine il dettaglio" style="color:var(--amber);font-weight:700;">!</span>`:''}</td>
-          <td style="${td}padding-right:14px;white-space:nowrap;text-align:right;">
-            <button onclick="biaToggleGiro('${g.id}')" title="Cosa ha portato, voce per voce" style="${_biaBtnIco}${aperto?'background:var(--accent);color:#fff;border-color:var(--accent);':''}">${aperto?'▴':'▾'}</button>
-            <button onclick="biaPrintDistinta('${g.id}')" title="Ristampa la distinta" style="${_biaBtnIco}">🖨</button>
-          </td></tr>`;
-        if(aperto){
-          h+=`<tr><td colspan="6" style="padding:0 14px 12px;background:var(--surface2,var(--surface));">
-            ${scG?_biaBoxScostamento(g,scG,'I tot pezzi usciti quel giorno non corrispondono ai consumi del periodo'):''}
-            ${_biaTabellaVoci(_biaDettaglioGiro(g),rg.dovuto!==null)}
-            <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);">
-              I ${rg.uscito} sacchi dati a Raimondo il ${esc(rg.data)} tornano al giro dopo: non contano in questa riga.
-              <button onclick="biaEliminaGiro('${g.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;margin-left:8px;">elimina questa consegna</button>
-            </div></td></tr>`;
-        }
-      });
-      h+=`</tbody></table>`;
+      if(aperto){
+        const pg=_biaPeggiori(g,3);
+        h+=`<div style="padding:0 16px 14px 124px;background:var(--surface2,var(--surface));font-size:var(--fs-xs);color:var(--text-dim);line-height:1.8;">
+          ${scG?_biaBoxScostamento(g,scG,'I pezzi dati quel giorno non corrispondono ai consumi del periodo'):''}
+          ${rg.registrato?`Ha portato <strong style="color:var(--text);">${rg.portato}</strong>`:'<span style="color:var(--amber);">Non è stato inserito cosa ha portato.</span>'}${rg.dovuto!==null?` · doveva portare <strong style="color:var(--text);">${rg.dovuto}</strong> (i pezzi dati il ${esc(rg.dataPrec.slice(0,5))})`:' · prima consegna registrata, niente da confrontare'}<br>
+          ${rg.registrato&&rg.dovuto!==null?(pg.length?`Mancano soprattutto: ${pg.map(x=>`${esc(x.voce)} <strong style="color:var(--red);">${x.delta}</strong>`).join(' · ')}<br>`:'Nessuna tipologia sotto quanto doveva portare.<br>'):''}
+          Quel giorno gli sono stati dati <strong style="color:var(--text);">${rg.uscito}</strong> pezzi: tornano con la consegna successiva.
+          ${_biaGiroVoci.has(g.id)?_biaTabellaVoci(_biaDettaglioGiro(g),rg.dovuto!==null):''}
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button onclick="event.stopPropagation();biaToggleGiroVoci('${g.id}')" style="${bSec}">${_biaGiroVoci.has(g.id)?'Nascondi le tipologie':'Tutte le tipologie'}</button>
+            <button onclick="event.stopPropagation();biaPrintDistinta('${g.id}')" style="${bSec}">Ristampa distinta</button>
+            <button onclick="event.stopPropagation();biaEliminaGiro('${g.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;margin-left:auto;">elimina questa consegna</button>
+          </div></div>`;
+      }
     });
-    h+=`</div></div>`;
+    h+=`<div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      ${st.righe.length>BIA_STO_VISTE?`<button onclick="biaStoToggleTutte()" style="${bSec}">${_biaStoTutte?'Solo le ultime '+BIA_STO_VISTE:'Mostra tutte le '+st.righe.length+' consegne di '+esc(nomeMese)}</button>`:''}
+      <button onclick="biaPrintAndamento()" style="${bSec}">Report per la direzione</button>
+    </div></div></div>`;
   }
 
   // ── Totali del mese, per incrociare la fattura ──

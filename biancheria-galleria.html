@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-24.5';
+const QM_APP_BUILD='2026-09-24.7';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -544,6 +544,48 @@ const GB_CONSUMI_VISTI=14;
 const GB_MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 let _gbConsumiTutti=false;
 function gbToggleConsumiTutti(){_gbConsumiTutti=!_gbConsumiTutti;_gbSenzaSalto(gbRender);}
+// ── Storico consegne del pulito (24/09/2026) ──
+// Prima era una tabella per struttura con cinque colonne di numeri: si capiva solo leggendo.
+// Ora una struttura e un mese alla volta, una frase per il mese e, per ogni consegna, una
+// pastiglia con l'esito; i numeri stanno nel dettaglio che si apre. Di norma le ultime 4
+// consegne del mese corrente.
+const GB_STO_VISTE=4;
+const GB_STO_NOMI={ar:'Art Resort',sb:'Santa Brigida'};   // nomi corti per il selettore
+let _gbStoHotel='',_gbStoMese='',_gbStoTutte=false,_gbGiroVoci=new Set();
+function _gbYmOggi(){const d=_gbOggi();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function _gbStoMesi(h){
+  const s=new Set([_gbYmOggi()]);
+  _gbGiri(h).forEach(g=>{const y=_gbYm(g.data);if(y)s.add(y);});
+  return[...s].sort().reverse();
+}
+// Il mese di una struttura: righe dalla piu' recente, e il conto sulle SOLE consegne
+// confrontabili (registrate e con una consegna precedente), come _gbSaldo.
+function _gbStorico(h,ym){
+  const righe=_gbGiri(h).filter(g=>_gbYm(g.data)===ym).reverse().map(_gbRigaGiro);
+  let portato=0,dovuto=0,conf=0,nonReg=0;
+  righe.forEach(r=>{
+    if(!r.registrato){nonReg++;return;}
+    if(r.dovuto===null)return;
+    portato+=r.portato;dovuto+=r.dovuto;conf++;
+  });
+  return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg};
+}
+// Esito di una consegna, in parole: e' quello che si legge senza aprire niente.
+function _gbEsito(r){
+  if(!r.registrato)return{txt:'Manca cosa ha portato',col:'var(--amber)',bg:'rgba(160,90,0,.10)'};
+  if(r.dovuto===null)return{txt:'Prima consegna',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
+  if(r.delta<0)return{txt:'Mancano '+(-r.delta)+' pezzi',col:'var(--red)',bg:'rgba(192,53,42,.10)'};
+  if(r.delta>0)return{txt:'Tutto riportato · '+r.delta+' in più',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
+  return{txt:'Tutto riportato',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
+}
+// Le tipologie che mancano di piu', per la riga "Mancano soprattutto".
+function _gbPeggiori(g,n){
+  return _gbDettaglioGiro(g).filter(x=>x.delta!==null&&x.delta<0).sort((a,b)=>a.delta-b.delta).slice(0,n||3);
+}
+function gbStoSetHotel(h){if(!GB_HOTELS[h])return;_gbStoHotel=h;_gbStoTutte=false;_gbSenzaSalto(gbRender);}
+function gbStoSetMese(ym){_gbStoMese=ym;_gbStoTutte=false;_gbSenzaSalto(gbRender);}
+function gbStoToggleTutte(){_gbStoTutte=!_gbStoTutte;_gbSenzaSalto(gbRender);}
+function gbToggleGiroVoci(id){_gbGiroVoci.has(id)?_gbGiroVoci.delete(id):_gbGiroVoci.add(id);_gbSenzaSalto(gbRender);}
 function gbToggleGiro(id){_gbGiroAperto.has(id)?_gbGiroAperto.delete(id):_gbGiroAperto.add(id);_gbSenzaSalto(gbRender);}
 function gbToggleVoci(){_gbVociAperte=!_gbVociAperte;_gbSenzaSalto(gbRender);}
 const _gbH=x=>x.hotel||'ar';
@@ -870,7 +912,7 @@ function _gbRigaGiro(g){
   const registrato=_gbRegistrato(g);
   const portato=_gbTot(g.ricevuto);
   const dovuto=att?_gbTot(att):null;
-  return{hotel:hotel,data:g.data,portato:portato,dovuto:dovuto,registrato:registrato,
+  return{id:g.id,hotel:hotel,data:g.data,portato:portato,dovuto:dovuto,registrato:registrato,
          uscito:_gbTot(g.consegnato),
          dataPrec:prec?prec.data:null,
          // Senza il dato non c'e' differenza da calcolare: mettere `portato-dovuto` qui
@@ -1350,96 +1392,67 @@ function _gbRenderCore(){
   h+=`</div>
       <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">${vigilia&&!giaReg
         ?'Oggi serve solo la <strong>stampa</strong>: i pezzi da dargli sono già calcolati dai consumi. Domattina, quando Raimondo arriva, si torna qui e si registra cosa ha portato.'
-        :'I <strong>tot pezzi da dargli</strong> sono la somma dei consumi del periodo: è già il numero giusto, correggilo solo se il sacco contiene qualcosa di diverso. <strong>Ha portato</strong> parte uguale a quanto doveva — toccalo solo se la distinta di Raimondo dice altro.'}</div>
+        :'I pezzi da dare a Raimondo si calcolano da soli dai consumi del periodo e finiscono sulla distinta. <strong>Ha portato</strong> parte uguale a quanto doveva — toccalo solo se la distinta di Raimondo dice altro.'}</div>
     </div>
   </div>`;
 
-  // Le consegne stanno SOPRA il saldo: prima si guarda cosa e' successo consegna per
-  // consegna, poi il totale che ne deriva. Al contrario si legge un numero senza sapere da
-  // dove viene, e il numero e' quello che spinge a contestare qualcosa al fornitore.
-  // ── Storico ──
-  // Le consegne NON stanno piu' dietro una fisarmonica (07/09/2026): erano la cosa che si
-  // apre ogni volta, e tenerle chiuse per difetto voleva dire due clic in piu' ogni giorno
-  // per arrivare al motivo per cui si e' entrati nella pagina.
-  // Lo storico copre ENTRAMBE le strutture, ma RAGGRUPPATE, non mescolate per data.
-  // Mescolarle sembrava dare più informazione e invece ne toglieva: la catena di confronto
-  // è per struttura (ogni giro si confronta col precedente del PROPRIO hotel), quindi due
-  // righe della stessa data — "03/09 SoulArt … i tot pezzi del 01/09" seguita da "03/09
-  // Boutique … i tot pezzi del 01/09" — si leggevano come la stessa cosa scritta due volte, e
-  // seguire la serie di una struttura sola voleva dire saltare una riga sì e una no.
-  // In Compass il riquadro compare solo con dei giri registrati; qui parte vuoto e va
-  // mostrato lo stesso, altrimenti chi arriva da Compass lo cerca e non lo trova.
-  {
-    h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Consegne di Raimondo</span>
-      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);margin-right:10px;">le due strutture hanno pezzi e conti separati</span>
-      <div class="panel-body" style="padding:0;">`;
-    Object.keys(GB_HOTELS).forEach((k,iH)=>{
-      const righe=_gbGiri(k).slice().reverse();
-      if(!righe.length){
-        h+=`<div style="padding:12px 14px;background:var(--surface2,var(--surface));border-bottom:1px solid var(--border);${iH?'border-top:2px solid var(--border);':''}">
-          <span style="font-size:var(--fs-sm);font-weight:700;">${esc(GB_HOTELS[k])}</span>
-          <span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:10px;">nessuna consegna registrata</span></div>`;
-        return;
-      }
-      const r=_gbRiepilogoPortato(k);
-      // Intestazione della struttura: nome, totale e saldo. È il blocco che rende leggibile
-      // il raggruppamento — senza, due elenchi di seguito sembrerebbero uno solo.
-      h+=`<div style="padding:12px 14px;background:var(--surface2,var(--surface));border-bottom:1px solid var(--border);${iH?'border-top:2px solid var(--border);':''}">
-        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
-          <span style="font-size:var(--fs-sm);font-weight:700;">${esc(GB_HOTELS[k])}</span>
-          ${r.confrontati
-            ?`<span style="font-size:var(--fs-xs);color:var(--text-dim);">ha portato <strong style="color:var(--text);">${r.portato}</strong> pezzi su <strong style="color:var(--text);">${r.dovuto}</strong> attesi</span>
-              <span style="font-size:var(--fs-sm);font-weight:700;color:${_gbColDelta(r.saldo)};">${_gbTxtDelta(r.saldo)}</span>`
-            :`<span style="font-size:var(--fs-xxs);color:var(--text-dim);">nessuna consegna ancora confrontabile</span>`}
-        </div>
-        ${r.confrontati?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:3px;">su ${r.confrontati} consegne confrontabili${r.senzaConfronto?` · ${r.senzaConfronto} senza termine di confronto`:''}${r.nonRegistrati?` · <strong style="color:var(--amber);">${r.nonRegistrati} senza il dato di cosa ha riportato</strong>, esclusi dal conto`:''}</div>
-        <button onclick="gbToggleVoci()" style="background:none;border:none;padding:0;margin-top:6px;font-size:var(--fs-xxs);color:var(--accent);font-weight:700;cursor:pointer;">${_gbVociAperte?'Nascondi il dettaglio per tipologia ▴':'Cosa porta, per tipologia ▾'}</button>
-        ${_gbVociAperte?_gbTabellaVoci(_gbTotPerVoce(k),true):''}`:''}
+  // ── Storico consegne del pulito ── (vedi _gbStorico)
+  if(_gb.giri.length){
+    if(!GB_HOTELS[_gbStoHotel])_gbStoHotel=_gbHotel;
+    const hS=_gbStoHotel,mesiS=_gbStoMesi(hS);
+    if(!mesiS.includes(_gbStoMese))_gbStoMese=_gbYmOggi();
+    const st=_gbStorico(hS,_gbStoMese);
+    const nomeMese=_gbMeseNome(_gbStoMese).split(' ')[0].toLowerCase();
+    const bTab=on=>`padding:6px 13px;border:1px solid ${on?'var(--accent)':'var(--border)'};background:${on?'var(--accent)':'var(--surface)'};color:${on?'#fff':'var(--text-dim)'};font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;`;
+    const bSec='background:var(--surface);color:var(--accent);border:1px solid var(--border);padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;';
+    h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header" style="flex-wrap:wrap;gap:8px;"><span class="panel-title">Storico consegne del pulito</span>
+      <span style="margin-left:auto;display:inline-flex;">${Object.keys(GB_HOTELS).map((k,i,a)=>`<button onclick="gbStoSetHotel('${k}')" style="${bTab(k===hS)}border-radius:${i===0?'7px 0 0 7px':i===a.length-1?'0 7px 7px 0':'0'};${i?'margin-left:-1px;':''}">${esc(GB_STO_NOMI[k]||GB_HOTELS[k])}</button>`).join('')}</span>
+      <select onchange="gbStoSetMese(this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesiS.map(y=>`<option value="${y}"${y===_gbStoMese?' selected':''}>${_gbMeseNome(y)}</option>`).join('')}</select>
+    </div><div class="panel-body" style="padding:0;">`;
+    // La frase del mese: e' la prima cosa che si legge.
+    const col=st.saldo<0?'var(--red)':'var(--green)';
+    h+=`<div style="padding:14px 16px;border-bottom:1px solid var(--border);">`;
+    if(!st.righe.length){
+      h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">Nessuna consegna registrata a ${esc(nomeMese)}.</div>`;
+    }else if(!st.confrontate){
+      h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">A ${esc(nomeMese)} nessuna consegna ancora confrontabile.</div>`;
+    }else{
+      h+=`<div style="font-size:var(--fs-base);font-weight:700;">A ${esc(nomeMese)} ${st.saldo<0?`mancano <span style="color:${col};">${-st.saldo} pezzi</span>`:st.saldo>0?`<span style="color:${col};">tutto riportato</span>, ${st.saldo} pezzi in più`:`<span style="color:${col};">tutto riportato</span>`}</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">Raimondo ha riportato <strong style="color:var(--text);">${st.portato}</strong> pezzi su <strong style="color:var(--text);">${st.dovuto}</strong> in ${st.confrontate} consegn${st.confrontate===1?'a':'e'}</div>`;
+    }
+    if(st.nonReg)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">${st.nonReg} consegn${st.nonReg===1?'a':'e'} senza il dato di cosa ha riportato: fuori dal conto.</div>`;
+    h+=`</div>`;
+    const viste=_gbStoTutte?st.righe:st.righe.slice(0,GB_STO_VISTE);
+    if(st.righe.length>GB_STO_VISTE&&!_gbStoTutte)h+=`<div style="padding:8px 16px 2px;font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;font-weight:600;">Ultime ${GB_STO_VISTE} consegne</div>`;
+    viste.forEach(rg=>{
+      const g=_gb.giri.find(x=>x.id===rg.id)||_gb.giri.find(x=>_gbH(x)===hS&&x.data===rg.data);if(!g)return;
+      const aperto=_gbGiroAperto.has(g.id),es=_gbEsito(rg),scG=_gbScostamento(g);
+      const dd=_gbParse(rg.data);
+      h+=`<div onclick="gbToggleGiro('${g.id}')" style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--border);cursor:pointer;${aperto?'background:var(--surface2,var(--surface));':''}">
+        <span style="min-width:96px;font-size:var(--fs-xs);font-weight:700;">${dd?GB_GG_NOMI[dd.getDay()].slice(0,3)+' '+rg.data.slice(0,5):esc(rg.data)}</span>
+        <span style="background:${es.bg};color:${es.col};padding:4px 10px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;">${es.txt}</span>
+        ${scG?`<span title="Il totale dato quel giorno non corrisponde ai consumi: apri per vedere" style="font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">totale da verificare</span>`:''}
+        <span style="margin-left:auto;color:var(--text-dim);font-size:var(--fs-xs);">${aperto?'▴':'▾'}</span>
       </div>`;
-      // I giri erano otto righe di prosa con cinque numeri dentro ciascuna: un muro di
-      // testo. Ora sono una TABELLA — stessi numeri, incolonnati — e le azioni non gridano:
-      // il dettaglio si apre dalla freccia, la distinta e' un'icona, e "Elimina" sta dentro
-      // il dettaglio, non fra i pulsanti che si premono tutti i giorni.
-      h+=`<table style="width:100%;border-collapse:collapse;">
-        <thead><tr>
-          <th style="${_gbTh}text-align:left;padding-left:14px;">Consegna</th>
-          <th style="${_gbTh}">Ha portato</th>
-          <th style="${_gbTh}">Doveva</th>
-          <th style="${_gbTh}">Differenza</th>
-          <th style="${_gbTh}">Usciti quel giorno</th>
-          <th style="${_gbTh}padding-right:14px;"></th>
-        </tr></thead><tbody>`;
-      righe.forEach(g=>{
-        const rg=_gbRigaGiro(g);
-        const aperto=_gbGiroAperto.has(g.id);
-        // Segnalato anche a riga chiusa: un totale congelato che non torna sta in fondo
-        // allo storico e nessuno aprirebbe sette righe per cercarlo. Il dettaglio e i due
-        // pulsanti restano dentro, dove c'è lo spazio per spiegare.
-        const scG=_gbScostamento(g);
-        const td='padding:9px 8px;border-bottom:1px solid var(--border-light,var(--border));font-size:var(--fs-xs);text-align:center;font-variant-numeric:tabular-nums;';
-        h+=`<tr style="${rg.registrato?_gbBgDelta(rg.delta===null?0:rg.delta):'background:var(--surface2,var(--surface));'}">
-          <td style="${td}text-align:left;padding-left:14px;font-weight:700;white-space:nowrap;">${esc(rg.data)}</td>
-          <td style="${td}font-weight:700;${rg.registrato?'':'color:var(--amber);font-weight:600;font-size:11.5px;'}">${rg.registrato?rg.portato:'non registrato'}</td>
-          <td style="${td}color:var(--text-muted);">${rg.dovuto===null?'—':rg.dovuto+`<div style="font-size:10px;color:var(--text-dim);font-weight:400;">tot pezzi del ${esc(rg.dataPrec)}</div>`}</td>
-          <td style="${td}font-weight:700;color:${rg.delta===null?'var(--text-dim)':_gbColDelta(rg.delta)};">${!rg.registrato?'fuori conteggio':(rg.dovuto===null?'prima consegna':_gbTxtDelta(rg.delta))}</td>
-          <td style="${td}color:var(--text-dim);">${rg.uscito}${scG?` <span title="Non corrisponde ai consumi del periodo: aprine il dettaglio" style="color:var(--amber);font-weight:700;">!</span>`:''}</td>
-          <td style="${td}padding-right:14px;white-space:nowrap;text-align:right;">
-            <button onclick="gbToggleGiro('${g.id}')" title="Cosa ha portato, voce per voce" style="${_gbBtnIco}${aperto?'background:var(--accent);color:#fff;border-color:var(--accent);':''}">${aperto?'▴':'▾'}</button>
-            <button onclick="gbPrintDistinta('${g.id}')" title="Ristampa la distinta" style="${_gbBtnIco}">🖨</button>
-          </td></tr>`;
-        if(aperto){
-          h+=`<tr><td colspan="6" style="padding:0 14px 12px;background:var(--surface2,var(--surface));">
-            ${scG?_gbBoxScostamento(g,scG,'I tot pezzi usciti quel giorno non corrispondono ai consumi del periodo'):''}
-            ${_gbTabellaVoci(_gbDettaglioGiro(g),rg.dovuto!==null)}
-            <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);">
-              I ${rg.uscito} sacchi dati a Raimondo il ${esc(rg.data)} tornano al giro dopo: non contano in questa riga.
-              <button onclick="gbEliminaGiro('${g.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;margin-left:8px;">elimina questa consegna</button>
-            </div></td></tr>`;
-        }
-      });
-      h+=`</tbody></table>`;
+      if(aperto){
+        const pg=_gbPeggiori(g,3);
+        h+=`<div style="padding:0 16px 14px 124px;background:var(--surface2,var(--surface));font-size:var(--fs-xs);color:var(--text-dim);line-height:1.8;">
+          ${scG?_gbBoxScostamento(g,scG,'I pezzi dati quel giorno non corrispondono ai consumi del periodo'):''}
+          ${rg.registrato?`Ha portato <strong style="color:var(--text);">${rg.portato}</strong>`:'<span style="color:var(--amber);">Non è stato inserito cosa ha portato.</span>'}${rg.dovuto!==null?` · doveva portare <strong style="color:var(--text);">${rg.dovuto}</strong> (i pezzi dati il ${esc(rg.dataPrec.slice(0,5))})`:' · prima consegna registrata, niente da confrontare'}<br>
+          ${rg.registrato&&rg.dovuto!==null?(pg.length?`Mancano soprattutto: ${pg.map(x=>`${esc(x.voce)} <strong style="color:var(--red);">${x.delta}</strong>`).join(' · ')}<br>`:'Nessuna tipologia sotto quanto doveva portare.<br>'):''}
+          Quel giorno gli sono stati dati <strong style="color:var(--text);">${rg.uscito}</strong> pezzi: tornano con la consegna successiva.
+          ${_gbGiroVoci.has(g.id)?_gbTabellaVoci(_gbDettaglioGiro(g),rg.dovuto!==null):''}
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button onclick="event.stopPropagation();gbToggleGiroVoci('${g.id}')" style="${bSec}">${_gbGiroVoci.has(g.id)?'Nascondi le tipologie':'Tutte le tipologie'}</button>
+            <button onclick="event.stopPropagation();gbPrintDistinta('${g.id}')" style="${bSec}">Ristampa distinta</button>
+            <button onclick="event.stopPropagation();gbEliminaGiro('${g.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;margin-left:auto;">elimina questa consegna</button>
+          </div></div>`;
+      }
     });
-    h+=`</div></div>`;
+    h+=`<div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+      ${st.righe.length>GB_STO_VISTE?`<button onclick="gbStoToggleTutte()" style="${bSec}">${_gbStoTutte?'Solo le ultime '+GB_STO_VISTE:'Mostra tutte le '+st.righe.length+' consegne di '+esc(nomeMese)}</button>`:''}
+      <button onclick="gbPrintAndamento()" style="${bSec}">Report per la direzione</button>
+    </div></div></div>`;
   }
 
   // ── Totali del mese, per incrociare la fattura ──

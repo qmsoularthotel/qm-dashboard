@@ -1912,38 +1912,35 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   // Restano solo le due etichette degli assi (50% e 100%), nessuna sopra le barre.
   ok('nessuna percentuale sulle barre',          (svg.match(/>\d+%</g) || []).join(','), '>50%<,>100%<');
 
-  // ── Lo storico raggruppa invece di mescolare ──
-  // Le consegne non stanno piu' dietro una fisarmonica (07/09/2026): il pannello si disegna
-  // sempre, quindi non c'e' piu' niente da aprire prima di controllarlo.
+  // ── Storico consegne del pulito: una struttura e un mese alla volta (24/09/2026) ──
+  // Prima le due strutture stavano una sotto l'altra in tabelle da cinque colonne. Ora si
+  // sceglie la struttura e il mese; per ogni consegna una pastiglia con l'esito.
   _biaGiroAperto = new Set(); _biaVociAperte = false;
   var box = { innerHTML: '' }, vero = document.getElementById;
   document.getElementById = function (id) { return id === 'bia-content' ? box : null; };
-  try { biaRender(); } finally { document.getElementById = vero; }
-  // Si guarda SOLO dentro il pannello dello storico: i nomi delle strutture compaiono gia'
-  // in cima alla pagina nel selettore a linguette, e cercarli nell'intero HTML trovava
-  // quelli invece delle intestazioni dei gruppi.
-  var tuttoIl = box.innerHTML.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
-  // Il pannello si chiama "Consegne di Raimondo" dal 07/09/2026 (prima "Cosa ha portato").
-  var testo = tuttoIl.slice(tuttoIl.indexOf('Consegne di Raimondo'));
-  ok('il pannello dello storico c\'e\'',          testo.length > 0, true);
-  var iSA = testo.indexOf('SoulArt Hotel'), iBH = testo.indexOf('Boutique Hotel Piazza Carit');
-  ok('compaiono tutte e due le strutture',       iSA >= 0 && iBH >= 0, true);
-  // Raggruppate: fra l'intestazione SoulArt e quella Boutique ci stanno TUTTI e SOLI i giri
-  // di SoulArt. Si contano le RIGHE (ognuna porta "sacchi dati a lui quel giorno"), non le
-  // date: le due strutture hanno giri negli stessi giorni, quindi una data non distingue
-  // niente — ed e' esattamente il motivo per cui mescolarle era illeggibile.
-  // Ogni riga della tabella porta il pulsante di ristampa: e' il segnalibro piu' stabile per
-  // contarle. Prima si contava la frase "sacchi dati a lui quel giorno", che dal 07/09/2026
-  // sta nel dettaglio che si apre e non piu' in ogni riga.
-  var righeIn = function (t) { return (t.match(/🖨/g) || []).length; };
-  ok('prima del Boutique ci sono i 3 giri di SoulArt', righeIn(testo.slice(iSA, iBH)), 3);
-  ok('e dopo i 2 del Boutique',                        righeIn(testo.slice(iBH)), 2);
-  ok('in tutto sono cinque',                           righeIn(testo), 5);
-  // Il report sta ora nell'intestazione delle Consegne, dove e' in contesto: prima era sopra
-  // un titolo che non lo riguardava, insieme alla fisarmonica che non c'e' piu'.
-  ok('c\'e\' il pulsante del report',            /Report per la direzione/.test(box.innerHTML), true);
-  ok('ed e\' dentro il pannello delle consegne',
-     box.innerHTML.indexOf('Consegne di Raimondo') < box.innerHTML.indexOf('Report per la direzione'), true);
+  var ridisegna = function () { try { biaRender(); } finally { document.getElementById = vero; } document.getElementById = function (id) { return id === 'bia-content' ? box : null; }; };
+  var righeIn = function () { return (box.innerHTML.match(/onclick="biaToggleGiro\(/g) || []).length; };
+  var meseSA = _biaYm(_biaGiri('sa')[0].data);
+  _biaStoHotel = 'sa'; _biaStoMese = meseSA; _biaStoTutte = false;
+  ridisegna();
+  ok('il pannello si chiama Storico consegne del pulito', /Storico consegne del pulito/.test(box.innerHTML), true);
+  ok('SoulArt: le sue 3 consegne, non quelle del Boutique', righeIn(), 3);
+  _biaStoHotel = 'bh'; ridisegna();
+  ok('Boutique: le sue 2 consegne',                    righeIn(), 2);
+  // Il conto del mese sta sulle sole consegne confrontabili, come il saldo del pannello.
+  var stB = _biaStorico('bh', meseSA);
+  ok('il mese del Boutique torna col suo riepilogo',   stB.saldo, _biaRiepilogoPortato('bh').saldo);
+  // Esiti in parole.
+  ok('esito: mancano',        _biaEsito({ registrato: true, dovuto: 10, delta: -3 }).txt, 'Mancano 3 pezzi');
+  ok('esito: in piu\'',       _biaEsito({ registrato: true, dovuto: 10, delta: 2 }).txt, 'Tutto riportato · 2 in più');
+  ok('esito: non registrata', _biaEsito({ registrato: false }).txt, 'Manca cosa ha portato');
+  ok('esito: prima consegna', _biaEsito({ registrato: true, dovuto: null }).txt, 'Prima consegna');
+  // Di norma si vedono solo le ultime 4 consegne del mese.
+  ok('mostra le ultime 4',                             BIA_STO_VISTE, 4);
+  ok('il mese di partenza e\' quello corrente',        _biaStoMesi('sa')[0] >= _biaYmOggi(), true);
+  document.getElementById = vero;
+  _biaStoHotel = ''; _biaStoMese = '';
+  ok('c\'e\' il pulsante del report',                   /Report per la direzione/.test(box.innerHTML), true);
   // La fisarmonica dello storico non esiste piu' (07/09/2026), quindi non c'e' piu' niente da
   // portare in vista aprendola. La regola resta valida per gli altri pannelli che si aprono:
   // il contenitore che scorre e' `.content`, non la finestra — vedi _qmPortaInVista.

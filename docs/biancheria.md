@@ -1037,3 +1037,30 @@ fuorviante"**. Ora `biaRegistraGiro` congela la somma dei consumi del periodo (`
 aggiornando una consegna già registrata, tiene il totale già congelato; `biaPrintDistinta`
 senza id usa il totale della consegna registrata o la somma dei consumi. Per cambiare quanto
 esce si correggono i consumi dei giorni e poi "Riallinea ai consumi". Stessa cosa nella Galleria.
+
+### "Storico consegne del pulito" — una struttura e un mese alla volta (24/09/2026)
+
+Il vecchio pannello "Consegne di Raimondo" (le due strutture una sotto l'altra, cinque
+colonne di numeri per riga) era da leggere, non da guardare. Rifatto su bozza approvata dal QM
+(*"deve essere più intuitivo e di lettura immediata; i dettagli si vedono aprendo"*):
+
+- intestazione con **SoulArt | Boutique** (`_biaStoHotel`, `biaStoSetHotel`) e **mese**
+  (`_biaStoMese`, di norma il mese corrente, `_biaStoMesi`);
+- **una frase per il mese**: "A settembre mancano N pezzi" / "tutto riportato", con sotto
+  portati su attesi — conto sulle sole consegne confrontabili (`_biaStorico`);
+- **una riga per consegna**: giorno e una pastiglia con l'esito in parole (`_biaEsito`); di
+  norma le **ultime 4** (`BIA_STO_VISTE`), "Mostra tutte" per il resto (`_biaStoTutte`);
+- **il dettaglio si apre cliccando la riga**: portato/dovuto, "Mancano soprattutto" (le 3 voci
+  peggiori, `_biaPeggiori`), i pezzi dati quel giorno, "Tutte le tipologie" (`_biaGiroVoci`),
+  ristampa, elimina, e l'avviso del totale congelato che non torna;
+- "Report per la direzione" in fondo.
+
+Tolto dal pannello il "Cosa porta, per tipologia" cumulato (la stessa informazione per mese
+sta in "Totali del mese"). `_biaRigaGiro` porta ora anche `id`. Stessa cosa nella Galleria,
+con `GB_STO_NOMI` sulle sue strutture.
+
+**Prova nel browser (da ricordare):** `python3 -m http.server` manda `app.js` senza
+`charset=utf-8`, le lettere accentate si rompono e Chrome rifiuta una regex di
+`rcParseGuests` ("Range out of order"): tutto `app.js` non si carica. Sul sito vero non
+succede (GitHub Pages dichiara UTF-8). Per provare in locale serve un server che dichiari la
+codifica, e va svuotata la cache del service worker se la prima prova l'ha già salvata rotta.
