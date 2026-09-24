@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-24.3';
+const QM_APP_BUILD='2026-09-24.4';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -1262,7 +1262,7 @@ function _gbRenderCore(){
     ?_gbConsumi(_gbHotel).map(c=>_gbParse(c.data)).filter(x=>x&&x<per.dal).sort((a,b)=>a-b)
     :[];
   h+=`<div class="panel" style="margin-bottom:16px;">
-    <div class="panel-header"><span class="panel-title">${vigilia&&!giaReg?'Prepara il ritiro di domani':('Consegna di Raimondo'+(giroDate?' · '+GB_GG_NOMI[giroDate.getDay()]+' '+_gbFmt(giroDate).slice(0,5):''))}</span>
+    <div class="panel-header"><span class="panel-title">${vigilia&&!giaReg?'Prepara il ritiro di domani':('Consegna biancheria pulita'+(giroDate?' · '+GB_GG_NOMI[giroDate.getDay()]+' '+_gbFmt(giroDate).slice(0,5):''))}</span>
       ${giaReg?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">consegna già registrata</span>'
         :(vigilia&&distPronta?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">distinta stampata</span>':'')}
     </div>

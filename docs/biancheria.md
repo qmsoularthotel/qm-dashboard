@@ -1022,8 +1022,8 @@ via tutto ciò che non era consumi o consegne. Agosto 2026 non è confrontabile 
 
 ### "Giro" sparito anche dagli ultimi testi (24/09/2026)
 
-Il riquadro di registrazione si chiamava ancora **"Giro di Raimondo"**. Ora è **"Consegna di
-Raimondo · giovedì 24/09"**, con giorno e data della consegna che si sta registrando (la vigilia
+Il riquadro di registrazione si chiamava ancora **"Giro di Raimondo"**. Ora è **"Consegna biancheria
+pulita · giovedì 24/09"** (nome scelto dal QM), con giorno e data della consegna che si sta registrando (la vigilia
 resta "Prepara il ritiro di domani"). Sistemati anche "Aggiorna giro" → "Aggiorna consegna",
 "primo giro" → "prima consegna", le frasi sul periodo e il report per la direzione. I nomi nel
 codice (`giri`, `biaRegistraGiro`, `bia-giro-data`) restano: sono chiavi, non parole.

@@ -15829,7 +15829,7 @@ function biaRender(){
     ?_biaConsumi(_biaHotel).map(c=>_biaParse(c.data)).filter(x=>x&&x<per.dal).sort((a,b)=>a-b)
     :[];
   h+=`<div class="panel" style="margin-bottom:16px;">
-    <div class="panel-header"><span class="panel-title">${vigilia&&!giaReg?'Prepara il ritiro di domani':('Consegna di Raimondo'+(giroDate?' · '+BIA_GG_NOMI[giroDate.getDay()]+' '+_biaFmt(giroDate).slice(0,5):''))}</span>
+    <div class="panel-header"><span class="panel-title">${vigilia&&!giaReg?'Prepara il ritiro di domani':('Consegna biancheria pulita'+(giroDate?' · '+BIA_GG_NOMI[giroDate.getDay()]+' '+_biaFmt(giroDate).slice(0,5):''))}</span>
       ${giaReg?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">consegna già registrata</span>'
         :(vigilia&&distPronta?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">distinta stampata</span>':'')}
     </div>
