@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-24.10';
+const QM_APP_BUILD='2026-09-24.11';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -353,7 +353,10 @@ function _gbUnisci(remoto,locale,rimossi){
   [].concat(remoto||[],locale||[]).forEach(m=>{
     if(!m||!m.id||(rimossi&&rimossi.has(m.id)))return;
     if(!(m.id in pos)){pos[m.id]=out.length;out.push(m);return;}
-    out[pos[m.id]]=m;
+    // Vince la versione modificata piu' di recente (`ts`), non sempre questa postazione: una
+    // correzione fatta sull'altro PC deve arrivare qui (24/09/2026, 620 → 20 asciugamani).
+    const prec=out[pos[m.id]];
+    if(!(prec&&typeof prec.ts==='number'&&typeof m.ts==='number'&&prec.ts>m.ts))out[pos[m.id]]=m;
   });
   return out;
 }
@@ -854,13 +857,13 @@ async function gbConfermaGiro(id){
 function _gbApplicaRiallineo(g,sc){
   // La correzione lascia traccia, come la cassa e i resi: mai una sovrascrittura muta.
   (g.edits=g.edits||[]).push({ts:Date.now(),campo:'consegnato',vecchio:g.consegnato,nuovo:sc.somma,motivo:'riallineato ai consumi del periodo'});
-  g.consegnato=sc.somma;g.daiConsumi=sc.somma;
+  g.consegnato=sc.somma;g.daiConsumi=sc.somma;g.ts=Date.now();
   return g;
 }
 // "Va bene così" NON tocca il totale congelato: registra solo contro quali consumi è
 // stato verificato. Cambiarlo qui vorrebbe dire correggere di nascosto proprio il numero
 // che si è appena dichiarato giusto.
-function _gbApplicaConferma(g,sc){g.daiConsumi=sc.somma;return g;}
+function _gbApplicaConferma(g,sc){g.daiConsumi=sc.somma;g.ts=Date.now();return g;}
 // Il riquadro d'avviso, uno solo per tutti i punti che lo mostrano (la consegna aperta nella
 // maschera, quella che le sta dando il "doveva portare", e ogni riga dello storico).
 function _gbBoxScostamento(g,sc,titolo){
@@ -1031,8 +1034,8 @@ async function gbSalvaConsumi(){
   });
   if(_gbTot(q)===0&&!await _gbConferma('Tutti i valori sono a zero','Salvare comunque i consumi di questa giornata?',{ok:'Salva'}))return;
   const esistente=_gb.consumi.find(c=>_gbH(c)===_gbHotel&&c.data===data);
-  if(esistente){esistente.q=q;}
-  else{_gb.consumi.push({id:_gbUid(),hotel:_gbHotel,data:data,q:q});}
+  if(esistente){esistente.q=q;esistente.ts=Date.now();}
+  else{_gb.consumi.push({id:_gbUid(),hotel:_gbHotel,data:data,q:q,ts:Date.now()});}
   _gbSave();gbRender();
 }
 async function gbEliminaConsumo(id){

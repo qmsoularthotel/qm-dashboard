@@ -15441,13 +15441,13 @@ async function biaConfermaGiro(id){
 function _biaApplicaRiallineo(g,sc){
   // La correzione lascia traccia, come la cassa e i resi: mai una sovrascrittura muta.
   (g.edits=g.edits||[]).push({ts:Date.now(),campo:'consegnato',vecchio:g.consegnato,nuovo:sc.somma,motivo:'riallineato ai consumi del periodo'});
-  g.consegnato=sc.somma;g.daiConsumi=sc.somma;
+  g.consegnato=sc.somma;g.daiConsumi=sc.somma;g.ts=Date.now();
   return g;
 }
 // "Va bene così" NON tocca il totale congelato: registra solo contro quali consumi è
 // stato verificato. Cambiarlo qui vorrebbe dire correggere di nascosto proprio il numero
 // che si è appena dichiarato giusto.
-function _biaApplicaConferma(g,sc){g.daiConsumi=sc.somma;return g;}
+function _biaApplicaConferma(g,sc){g.daiConsumi=sc.somma;g.ts=Date.now();return g;}
 // Il riquadro d'avviso, uno solo per tutti i punti che lo mostrano (la consegna aperta nella
 // maschera, quella che le sta dando il "doveva portare", e ogni riga dello storico).
 function _biaBoxScostamento(g,sc,titolo){
@@ -15618,8 +15618,8 @@ async function biaSalvaConsumi(){
   });
   if(_biaTot(q)===0&&!await cqConferma('Tutti i valori sono a zero','Salvare comunque i consumi di questa giornata?',{ok:'Salva'}))return;
   const esistente=_bia.consumi.find(c=>_biaH(c)===_biaHotel&&c.data===data);
-  if(esistente){esistente.q=q;}
-  else{_bia.consumi.push({id:_biaUid(),hotel:_biaHotel,data:data,q:q});}
+  if(esistente){esistente.q=q;esistente.ts=Date.now();}
+  else{_bia.consumi.push({id:_biaUid(),hotel:_biaHotel,data:data,q:q,ts:Date.now()});}
   _biaSave();biaRender();
 }
 async function biaEliminaConsumo(id){
@@ -17713,13 +17713,20 @@ function _qmTieniChiusure(prec,m,rimossi){
 // Unione di due elenchi per `id`. Il locale viene per ultimo: a parità di id vince la
 // versione di questa postazione, che è quella appena modificata a mano — tranne per i
 // campi di chiusura, dove vince chi è chiuso (vedi sopra).
+// VINCE LA VERSIONE MODIFICATA PIU' DI RECENTE (24/09/2026). Prima vinceva sempre il locale:
+// una consegna corretta in Galleria (620 → 20 asciugamani) non arrivava mai su un PC che
+// aveva gia' la versione vecchia, e anzi quel PC la rimandava sul cloud cancellando la
+// correzione. Ora si guarda `ts` (l'ultima modifica): se il remoto e' piu' recente vince il
+// remoto. Senza `ts` su entrambi, o a parita', vince il locale come prima.
+function _qmPiuRecente(r,l){return(r&&l&&typeof r.ts==='number'&&typeof l.ts==='number'&&r.ts>l.ts)?'r':'l';}
 function _qmUnisciRecord(remoto,locale,rimossi){
   const out=[],pos={};
   [].concat(remoto||[],locale||[]).forEach(m=>{
     if(!m||!m.id)return;
     if(rimossi&&rimossi.has(m.id))return;
     if(!(m.id in pos)){pos[m.id]=out.length;out.push(_qmTieniChiusure(null,m,rimossi));return;}
-    out[pos[m.id]]=_qmTieniChiusure(out[pos[m.id]],m,rimossi);
+    const prec=out[pos[m.id]];
+    out[pos[m.id]]=_qmPiuRecente(prec,m)==='r'?_qmTieniChiusure(m,prec,rimossi):_qmTieniChiusure(prec,m,rimossi);
   });
   return out;
 }

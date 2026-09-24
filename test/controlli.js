@@ -2508,3 +2508,16 @@ sez('Biancheria: data di inizio del conteggio, e il saldo dice da che parte sta'
   ok('saldo positivo: "Rientrati in più"',          /Rientrati in più/.test(box.innerHTML)&&!/Pezzi non rientrati —/.test(box.innerHTML), true);
   _bia=prima;_biaHotel=ph;_biaStoHotel=ps;_biaStoMese='';
 })();
+
+sez('Fusione: vince la versione modificata piu\' di recente, non sempre la propria');
+(function(){
+  // Caso reale 24/09/2026: la Galleria corregge 620 → 20, il PC di casa ha la copia vecchia.
+  var vecchia={id:'g1',ricevuto:{viso:620},ts:1000}, corretta={id:'g1',ricevuto:{viso:20},ts:2000};
+  ok('la correzione fatta altrove arriva',          _qmUnisciRecord([corretta],[vecchia])[0].ricevuto.viso, 20);
+  ok('la correzione fatta qui resta',               _qmUnisciRecord([vecchia],[corretta])[0].ricevuto.viso, 20);
+  ok('senza orario vince ancora il locale',         _qmUnisciRecord([{id:'x',v:1}],[{id:'x',v:2}])[0].v, 2);
+  ok('a parita\' di orario vince il locale',        _qmUnisciRecord([{id:'x',v:1,ts:5}],[{id:'x',v:2,ts:5}])[0].v, 2);
+  // Le chiusure (ritiroId) restano: una consegna chiusa non si riapre perche' l'altra copia e' piu' recente.
+  ok('la chiusura resta anche se vince il remoto',  _qmUnisciRecord([{id:'r',ts:9}],[{id:'r',ritiroId:'R1',ts:1}])[0].ritiroId, 'R1');
+  ok('salvare i consumi aggiorna l\'orario',        /esistente\.ts=Date\.now\(\)/.test(String(biaSalvaConsumi)), true);
+})();

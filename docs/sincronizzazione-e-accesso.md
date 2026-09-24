@@ -684,3 +684,16 @@ contare, quindi resta fermo: da ora il segnale che qualcuno è rimasto fuori è 
 chiede il codice, non quel numero.
 
 ---
+
+### Vince la versione modificata più di recente (24/09/2026)
+
+`_qmUnisciRecord` (Compass) e `_gbUnisci` (Galleria) facevano vincere **sempre** la copia della
+postazione che fonde. Caso reale: in Galleria una consegna è stata corretta (asciugamani viso
+620 → 20); il PC di casa del QM aveva la versione con 620, la teneva e, leggendo, la
+**rimandava sul cloud**, cancellando la correzione. Ora a parità di `id` si confronta `ts`
+(ultima modifica): se la copia remota è più recente vince quella (`_qmPiuRecente`); senza `ts`
+su entrambe, o a parità, vince il locale come prima. Le chiusure (`_QM_CHIUSURE`) restano
+comunque. Perché funzioni, **chi modifica un record deve aggiornarne `ts`**: fatto per consegne
+(già), consumi, riallineo e "Va bene così" della biancheria. Altri moduli che correggono record
+senza toccare `ts` restano col comportamento vecchio (non peggio di prima): aggiungendo una
+correzione, aggiornare `ts`.

@@ -131,3 +131,5 @@ ok('Galleria: la fattura sopravvive alla fusione',  _ff.fatture['ar|2026-09'].q[
 ok('Galleria: una casella svuotata resta vuota',    _ff.fatture['ar|2026-09'].q.Federa, '');
 var _fi = _gbFondi({ consumi: [], giri: [], inizio: { ar: '18/09/2026' } }, { consumi: [], giri: [], inizio: { sb: '' } });
 ok('Galleria: la data di inizio sopravvive alla fusione', _fi.inizio.ar + '|' + _fi.inizio.sb, '18/09/2026|');
+ok('Galleria: la correzione dall\'altro PC arriva', _gbFondi({ consumi: [], giri: [{ id: 'g', ricevuto: { v: 20 }, ts: 2000 }] }, { consumi: [], giri: [{ id: 'g', ricevuto: { v: 620 }, ts: 1000 }] }).giri[0].ricevuto.v, 20);
+ok('Galleria: senza orario vince questo PC',       _gbFondi({ consumi: [], giri: [{ id: 'g', v: 1 }] }, { consumi: [], giri: [{ id: 'g', v: 2 }] }).giri[0].v, 2);
