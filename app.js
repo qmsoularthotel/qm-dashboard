@@ -24,12 +24,6 @@ const HKP_DERIVED_SLOTS=['pul','soul','bout'];
 const BK_ICON=`<svg width="13" height="13" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:2px;flex-shrink:0;"><rect width="24" height="24" rx="4" fill="#003580"/><text x="5" y="18" font-family="Arial,sans-serif" font-size="17" font-weight="bold" fill="white">B</text></svg>`;
 
 // §§ DARK MODE
-function toggleDarkMode(){
-  const dark=document.body.classList.toggle('dark');
-  try{localStorage.setItem('qm_dark',dark?'1':'0');}catch(e){}
-  const btn=document.getElementById('darkToggle');
-  if(btn)btn.textContent=dark?'☀️':'🌙';
-}
 (function(){
   if(localStorage.getItem('qm_dark')==='1'){
     document.body.classList.add('dark');
@@ -59,7 +53,6 @@ const IS_DASH=v=>{
 };
 // §§ TURNO — ACCORDIONI UC & UPLOAD BOX
 let turnoOpen=false;
-function toggleTurnoAccordion(){}
 function ucToggle(key){
   const slot=document.getElementById('uc-'+key);
   const panel=document.getElementById('uc-'+key+'-panel');
@@ -126,15 +119,26 @@ function ucSetState(key,state,sub,silent){
 const UC_SOURCES=[
   {key:'turno',label:'Turno'},
   {key:'piano',label:'Piano camere'},
+  {key:'pren',label:'Prenotazioni'},
   {key:'arrivi',label:'Arrivi'},
   {key:'bkf',label:'Report pasti'},
   {key:'pul',label:'Report pulizie'},
   {key:'soul',label:'Soul HKP'},
   {key:'bout',label:'Boutique HKP'}
 ].filter(s=>!(HKP_DERIVE_FROM_PIANO&&HKP_DERIVED_SLOTS.includes(s.key)));
+// Col file unico (PREN_UNICO) Arrivi e Report pasti sono caselle NASCOSTE: contarle faceva
+// dire "Mancano: Arrivi" a chi aveva appena caricato le Prenotazioni, e la casella che si
+// usa davvero non entrava nel conto (24/09/2026). try: PREN_UNICO e' dichiarata molto piu'
+// giu' nel file, e questa funzione puo' girare prima che lo sia.
+function _ucFonteUnica(){try{return PREN_UNICO;}catch(e){return true;}}
+function _ucVisibile(k){
+  if(HKP_DERIVE_FROM_PIANO&&HKP_DERIVED_SLOTS.includes(k))return false;
+  if(k==='pren')return _ucFonteUnica();
+  if(k==='arrivi'||k==='bkf')return !_ucFonteUnica();
+  return true;
+}
 function ucUpdateProgress(){
-  const slots=['turno','arrivi','pul','bkf','soul','bout']
-    .filter(k=>!(HKP_DERIVE_FROM_PIANO&&HKP_DERIVED_SLOTS.includes(k)));
+  const slots=['turno','pren','arrivi','pul','bkf','soul','bout'].filter(_ucVisibile);
   const tot=slots.length;
   const loaded=slots.filter(k=>{
     const el=document.getElementById('uc-'+k);
@@ -144,7 +148,7 @@ function ucUpdateProgress(){
   const label=document.getElementById('ucProgressLabel');
   if(bar)bar.style.width=(tot?loaded/tot*100:0)+'%';
   if(label)label.textContent=loaded+'/'+tot;
-  const missing=UC_SOURCES.filter(({key})=>{
+  const missing=UC_SOURCES.filter(({key})=>_ucVisibile(key)).filter(({key})=>{
     const el=document.getElementById('uc-'+key);
     if(!el)return false;
     return !el.classList.contains('loaded')||el.classList.contains('stale');
@@ -164,85 +168,6 @@ const turniBox={classList:{add:()=>{},remove:()=>{}}};
   turniInput.addEventListener('change',e=>{if(e.target.files[0])handleTurniFile(e.target.files[0]);});
 })();
 // §§ TURNO — PARSER TSV/PDF (parseTurniTSV, handleTurniFile)
-function parseTurniTSV(text){
-  const rows=text.trim().split(/\r?\n/).map(r=>r.split('\t'));
-  if(rows.length<2)return null;
-  const MESI={gennaio:1,febbraio:2,marzo:3,aprile:4,maggio:5,giugno:6,luglio:7,agosto:8,settembre:9,ottobre:10,novembre:11,dicembre:12};
-  const GIORNI_IT={lunedì:'Lun',martedì:'Mar',mercoledì:'Mer',giovedì:'Gio',venerdì:'Ven',sabato:'Sab',domenica:'Dom',lun:'Lun',mar:'Mar',mer:'Mer',gio:'Gio',ven:'Ven',sab:'Sab',dom:'Dom'};
-  const year=new Date().getFullYear();
-  // Cerca le date nelle prime 3 righe (row 0 o row 1 o row 2 come header)
-  let cols=[],headerRow=0;
-  const tryParseDate=(h,i)=>{
-    const s=h.trim().toLowerCase();
-    if(!s)return;
-    // "lunedì 30 marzo" o "sab 04 aprile 2026"
-    let m=s.match(/(\w+)\s+(\d{1,2})\s+(\w+)(?:\s+(\d{4}))?/);
-    if(m){
-      const gg=GIORNI_IT[m[1]];const d=parseInt(m[2]);const mo=MESI[m[3]];const y=m[4]?parseInt(m[4]):year;
-      if(gg&&d&&mo){cols.push({i,label:gg+' '+String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0'),date:y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0')});return;}
-    }
-    // "30/03", "30/03/2026", "30-03", "30.03"
-    m=s.match(/(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{4}))?/);
-    if(m){
-      const d=parseInt(m[1]),mo=parseInt(m[2]),y=m[3]?parseInt(m[3]):year;
-      if(d>=1&&d<=31&&mo>=1&&mo<=12){
-        const wd=new Date(y,mo-1,d).getDay();
-        const gg=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'][wd];
-        cols.push({i,label:gg+' '+String(d).padStart(2,'0')+'/'+String(mo).padStart(2,'0'),date:y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0')});
-      }
-    }
-  };
-  for(let hr=0;hr<Math.min(3,rows.length)&&!cols.length;hr++){
-    rows[hr].forEach((h,i)=>{if(i>0)tryParseDate(h,i);});
-    if(cols.length)headerRow=hr;
-  }
-  if(!cols.length)return null;
-  console.log('[Turno] headerRow='+headerRow+' cols trovate:',cols.map(c=>c.label+'(col'+c.i+')').join(', '));
-
-  // Settimana corrente: lun precedente → dom successiva
-  const today=new Date();today.setHours(0,0,0,0);
-  const todayDow=today.getDay();
-  const diffToMon=todayDow===0?-6:1-todayDow;
-  const monday=new Date(today);monday.setDate(today.getDate()+diffToMon);
-  const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);sunday.setHours(23,59,59,999);
-  console.log('[Turno] settimana:',monday.toLocaleDateString('it'),'–',sunday.toLocaleDateString('it'));
-
-  let pool=cols.filter(c=>{const d=new Date(c.date+'T12:00:00');return d>=monday&&d<=sunday;}).sort((a,b)=>a.i-b.i);
-  console.log('[Turno] in settimana:',pool.map(c=>c.label).join(', ')||'NESSUNO');
-  // Fallback solo se non trovato nessun giorno nella settimana corrente
-  if(pool.length<1){
-    const scored=cols.map(c=>{const d=new Date(c.date+'T12:00:00');return{...c,diff:Math.abs(d-today)};});
-    scored.sort((a,b)=>a.diff-b.diff);
-    pool=scored.slice(0,7).sort((a,b)=>a.i-b.i);
-    console.log('[Turno] FALLBACK 7 più vicini:',pool.map(c=>c.label).join(', '));
-  }
-  const giorni7=pool.map(c=>({label:c.label,date:c.date,shifts:{}}));
-
-  // Alias nomi foglio → nome canonico DEPTS
-  const NAME_ALIAS={'extra i.':'Iannario R.','extra bkf sau':'Panagodage S.'};
-  // Righe dati — filtra staff noto (exact o prefix) o Extra*
-  for(let ri=headerRow+1;ri<rows.length;ri++){
-    const row=rows[ri];
-    let nome=(row[0]||'').trim();
-    if(!nome)continue;
-    // 0) alias: mappa vecchi nomi foglio → nome canonico
-    if(NAME_ALIAS[nome.toLowerCase()])nome=NAME_ALIAS[nome.toLowerCase()];
-    const nomeLow=nome.toLowerCase();
-    // 1) match esatto
-    let canonical=ALL_STAFF.find(s=>s.toLowerCase()===nomeLow);
-    // 2) match per prefisso: "Perez" → "Perez L."
-    if(!canonical)canonical=ALL_STAFF.find(s=>s.toLowerCase().startsWith(nomeLow+' ')||s.toLowerCase().startsWith(nomeLow+'.'));
-    const isExtra=/^extra/i.test(nome);
-    if(!canonical&&!isExtra){console.log('[Turno] skip:',nome);continue;}
-    canonical=canonical||nome;
-    pool.forEach((c,ci)=>{
-      const val=(row[c.i]||'').trim();
-      giorni7[ci].shifts[canonical]=val===''||val==='-'||val==='.'?'R':val;
-    });
-  }
-  console.log('[Turno] risultato:',giorni7.map(g=>g.label+':'+Object.keys(g.shifts).length+'staff').join(', '));
-  return{giorni:giorni7};
-}
 async function handleTurniFile(file){
   ucSetState('turno','loading','Analisi in corso...');
   try{
@@ -1043,19 +968,6 @@ function hkpSaveConfig(){
 function hkpRestoreConfig(){
   try{const s=localStorage.getItem('qm_hkp_config');if(s){const p=JSON.parse(s);['sa'].forEach(k=>{if(p[k]?.foglio)HKP_CONFIG[k].foglio=p[k].foglio;if(p[k]?.script)HKP_CONFIG[k].script=p[k].script;});}}catch(e){}
   ['sa'].forEach(k=>{const link=document.getElementById('hkp-'+k+'-link');if(link)link.href=HKP_CONFIG[k].foglio;});
-}
-function hkpEditUrl(p){
-  const nome='SoulArt';
-  const curFoglio=HKP_CONFIG[p].foglio;
-  const curScript=HKP_CONFIG[p].script;
-  const newFoglio=(prompt(`[${nome}] URL Google Sheets (Apri foglio):\n\nIncolla il nuovo URL del foglio mensile:`,curFoglio)||'').trim();
-  if(!newFoglio||newFoglio===curFoglio){return;}
-  HKP_CONFIG[p].foglio=newFoglio;
-  const newScript=(prompt(`[${nome}] URL Apps Script (Aggiorna dati):\n\nIncolla il nuovo URL del deploy Apps Script (.../exec):`,curScript)||'').trim();
-  if(newScript&&newScript!==curScript)HKP_CONFIG[p].script=newScript;
-  hkpSaveConfig();
-  const link=document.getElementById('hkp-'+p+'-link');if(link)link.href=HKP_CONFIG[p].foglio;
-  cqAvviso(`URL ${nome} aggiornati. Clicca Aggiorna per ricaricare i dati.`);
 }
 // §§ HKP NATIVE — griglia nativa (Camere / Aree Comuni / Fondi & Lavaggi)
 // Storage: una chiave per hotel/mese → qm_hkpN_{p}_{yyyy-mm}
@@ -2001,8 +1913,6 @@ document.addEventListener('keydown',e=>{
   hkpNRender(p);
 });
 // stub for old references still in syncFromCloud
-function hkpSave(p){}
-function hkpRestore(){}
 let recGroupOpen=false;
 function toggleRecGroup(){
   recGroupOpen=!recGroupOpen;
@@ -3387,13 +3297,6 @@ function hkSuggestMoves(maxN,focusIdx){
 function _hkNum(n){return n.toLocaleString('it-IT',{minimumFractionDigits:n%1?1:0,maximumFractionDigits:1});}
 // Prima/dopo di un giorno: mostra le partenze se cambiano, altrimenti il carico — così una
 // riga non sembra mai un "2-4 → 2-4" senza effetto quando il guadagno è sul solo carico.
-function _hkEffTxt(l,e){
-  const cambiaP=e.daP[0]!==e.aP[0]||e.daP[1]!==e.aP[1];
-  return cambiaP
-    ?`${l}: ${e.daP[0]}-${e.daP[1]} → ${e.aP[0]}-${e.aP[1]}`
-    :`${l}: carico ${_hkNum(e.daC[0])}-${_hkNum(e.daC[1])} → ${_hkNum(e.aC[0])}-${_hkNum(e.aC[1])}`;
-}
-function _hkSgn(n){return(n>0?'+':'')+_hkNum(n);}
 // Quante mosse mostrare oltre le prime 3 — "Ci sono altre possibilità?" alza il tetto,
 // invece di rigenerare da capo: le alternative in più esistevano già, erano solo tagliate.
 let _hkSuggMoreN=0;
@@ -4060,9 +3963,8 @@ function pianoOvInit(){
 }
 
 // §§ UTILITÀ — FORMATTAZIONE DATE & TIMESTAMP (fmtNow, fmtUploadTs, setUploadTs)
-function fmtNow(){const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
 function fmtUploadTs(ts){const n=ts?new Date(ts):new Date();const ms=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];return'↑ '+n.getDate()+' '+ms[n.getMonth()]+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');}
-const TS_TO_UC={turnoTs:'uc-turno-sub',arriviTs:'uc-arrivi-sub',pulTs:'uc-pul-sub',bkfTs:'uc-bkf-sub',soulTs:'uc-soul-sub',boutTs:'uc-bout-sub',pianoTs:'uc-piano-sub'};
+const TS_TO_UC={prenTs:'uc-pren-sub',turnoTs:'uc-turno-sub',arriviTs:'uc-arrivi-sub',pulTs:'uc-pul-sub',bkfTs:'uc-bkf-sub',soulTs:'uc-soul-sub',boutTs:'uc-bout-sub',pianoTs:'uc-piano-sub'};
 // Soglie pallino tile Upload Center: >12h non aggiornato -> ambra lampeggiante,
 // >24h -> rosso lampeggiante (quest'ultima soglia è anche quella storica di 'stale'
 // usata da ucUpdateProgress per il conteggio X/6 — non cambiare il nome della classe).
@@ -4284,12 +4186,6 @@ function _qmQuandoAgg(ts){
     :(d.toDateString()===ieri.toDateString()?'ieri'
     :String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'));
   return g+' alle '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-}
-function _qmStatoRiga(colore,titolo,dettaglio){
-  return`<div style="display:flex;align-items:center;gap:9px;padding:6px 0;">
-    <span style="width:9px;height:9px;border-radius:50%;background:${colore};flex-shrink:0;"></span>
-    <span style="font-size:13px;font-weight:700;color:var(--text);">${titolo}</span>
-    <span style="font-size:12.5px;color:var(--text-dim);">${dettaglio||''}</span></div>`;
 }
 // Tre domande a cui da Compass non si poteva rispondere: il Worker risponde? e' la versione
 // che ho pubblicato? la porta e' davvero chiusa? Finora si scoprivano solo aprendo Cloudflare
@@ -5064,91 +4960,7 @@ function toggleOccupazionePreview(e){
   body.innerHTML=`<div style="max-width:640px;">${rows}</div>`;
   panel.style.display='block';
 }
-function togglePulPreview(){
-  const el=document.getElementById('kpi-pul-preview');
-  if(!el)return;
-  if(el.style.display==='block'){el.style.display='none';return;}
-  if(!pulData||!pulData.length){return;}
-  const pts=pulData.map(d=>({label:d.label,arrivi:d.arrivi,fermate:d.fermatePulizia||d.fermate||0,partenze:d.partenze}));
-  const W=600,H=200,PL=32,PR=12,PT=16,PB=30;
-  const plotW=W-PL-PR,plotH=H-PT-PB;
-  const YMAX=Math.max(20,...pts.map(p=>Math.max(p.arrivi,p.fermate,p.partenze)))+5;
-  const sx=i=>PL+i/(pts.length-1||1)*plotW;
-  const sy=v=>PT+plotH-(v/YMAX)*plotH;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
-  for(let v=0;v<=YMAX;v+=5){const y=sy(v);svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="${v===0?1.5:1}"/><text x="${PL-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;}
-  pts.forEach((p,i)=>{svg+=`<text x="${sx(i)}" y="${H-6}" font-size="11" fill="var(--text-dim)" text-anchor="middle">${p.label.split(' ')[0]}</text>`;});
-  const colors={arrivi:'var(--green)',fermate:'var(--accent)',partenze:'var(--red)'};
-  ['arrivi','fermate','partenze'].forEach(k=>{
-    const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p[k])}`).join('L');
-    svg+=`<path d="${linePath}" fill="none" stroke="${colors[k]}" stroke-width="1.5"/>`;
-    pts.forEach((p,i)=>{svg+=`<circle cx="${sx(i)}" cy="${sy(p[k])}" r="3" fill="${colors[k]}" stroke="white" stroke-width="1.5"/>`;});
-  });
-  svg+=`<text x="${W-PR}" y="${PT}" font-size="10" fill="var(--green)" text-anchor="end">● Arrivi</text>`;
-  svg+=`<text x="${W-PR}" y="${PT+14}" font-size="10" fill="var(--accent)" text-anchor="end">● Fermate</text>`;
-  svg+=`<text x="${W-PR}" y="${PT+28}" font-size="10" fill="var(--red)" text-anchor="end">● Partenze</text>`;
-  svg+='</svg>';
-  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Report pulizie — andamento settimanale</div>`+svg;
-  el.style.display='block';
-}
-function toggleBkfPreview(){
-  const el=document.getElementById('kpi-bkf-preview');
-  if(!el)return;
-  if(el.style.display==='block'){el.style.display='none';return;}
-  if(!bkfData||!bkfData.length){return;}
-  const pts=bkfData.map(d=>({label:d.label,v:d.adulti+d.bambini}));
-  const W=600,H=200,PL=32,PR=12,PT=16,PB=30;
-  const plotW=W-PL-PR,plotH=H-PT-PB;
-  const YMAX=Math.max(70,...pts.map(p=>p.v))+10;
-  const sx=i=>PL+i/(pts.length-1||1)*plotW;
-  const sy=v=>PT+plotH-(v/YMAX)*plotH;
-  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">`;
-  for(let v=0;v<=YMAX;v+=10){
-    const y=sy(v);
-    svg+=`<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="var(--border-light)" stroke-width="${v===0?1.5:1}"/>`;
-    svg+=`<text x="${PL-4}" y="${y+4}" font-size="11" fill="var(--text-dim)" text-anchor="end">${v}</text>`;
-  }
-  pts.forEach((p,i)=>{
-    svg+=`<text x="${sx(i)}" y="${H-6}" font-size="11" fill="var(--text-dim)" text-anchor="middle">${p.label.split(' ')[0]}</text>`;
-  });
-  const linePath='M'+pts.map((p,i)=>`${sx(i)},${sy(p.v)}`).join('L');
-  const areaPath=linePath+`L${sx(pts.length-1)},${sy(0)} L${sx(0)},${sy(0)} Z`;
-  svg+=`<path d="${areaPath}" fill="var(--accent)" opacity="0.1"/>`;
-  svg+=`<path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="1.5"/>`;
-  pts.forEach((p,i)=>{
-    const x=sx(i),y=sy(p.v);
-    svg+=`<circle cx="${x}" cy="${y}" r="3" fill="var(--accent)" stroke="white" stroke-width="1.5"/>`;
-    svg+=`<text x="${x}" y="${y-9}" font-size="11" fill="var(--accent)" text-anchor="middle" font-weight="600">${p.v}</text>`;
-  });
-  svg+='</svg>';
-  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">📊 Report pasti SoulArt — coperti settimanali</div>`+svg;
-  el.style.display='block';
-}
-// §§ OVERVIEW — GRAFICI & METEO (buildBarChart, fetchMeteo, toggleWeatherForecast)
-function buildBarChart(){
-  const data=[{l:'Lun 10',v:91},{l:'Mar 11',v:89},{l:'Mer 12',v:92},{l:'Gio 13',v:90},{l:'Ven 14',v:93},{l:'Sab 15',v:92},{l:'Oggi',v:94}];
-  const max=100,target=90,H=96;
-  const wrap=document.getElementById('qualityBarChart');
-  if(!wrap)return;
-  const targetY=H-Math.round((target/max)*H);
-  wrap.style.position='relative';
-  // target dashed line
-  const tLine=`<div style="position:absolute;left:0;right:0;top:${targetY}px;border-top:1.5px dashed var(--amber);opacity:.6;pointer-events:none;z-index:1;"><span style="position:absolute;right:0;top:-9px;font-size:8px;color:var(--amber);background:var(--surface);padding:0 3px;opacity:.9;">target ${target}</span></div>`;
-  const bars=data.map((d,i)=>{
-    const isToday=d.l==='Oggi';
-    const color=isToday?'var(--accent)':d.v>=target?'var(--green)':'var(--amber)';
-    const h=Math.round((d.v/max)*H);
-    const label=isToday?`<strong>${d.l}</strong>`:d.l;
-    return`<div class="bar-col">
-      <div class="bar-val" style="font-size:10px;font-weight:700;color:${color};margin-bottom:2px;">${d.v}</div>
-      <div class="bar-wrap" style="height:${H}px;position:relative;">
-        <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:72%;height:${h}px;background:${color};border-radius:4px 4px 2px 2px;opacity:${isToday?1:.85};transition:height .3s;"></div>
-      </div>
-      <div class="bar-label" style="margin-top:4px;">${label}</div>
-    </div>`;
-  }).join('');
-  wrap.innerHTML=`<div style="position:relative;display:flex;gap:0;align-items:flex-end;width:100%;">${tLine}${bars.replace(/<div class="bar-col">/g,'<div class="bar-col" style="flex:1;display:flex;flex-direction:column;align-items:center;">')}</div>`;
-}
+// §§ OVERVIEW — GRAFICI & METEO (fetchMeteo, toggleWeatherForecast)
 const WC_ICONS={
   clear:'<circle cx="12" cy="12" r="4" fill="none" stroke="var(--amber)" stroke-width="1.5"/><line x1="12" y1="2" x2="12" y2="5" stroke="var(--amber)" stroke-width="1.5"/><line x1="12" y1="19" x2="12" y2="22" stroke="var(--amber)" stroke-width="1.5"/><line x1="2" y1="12" x2="5" y2="12" stroke="var(--amber)" stroke-width="1.5"/><line x1="19" y1="12" x2="22" y2="12" stroke="var(--amber)" stroke-width="1.5"/>',
   cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" fill="none" stroke="var(--text-dim)" stroke-width="1.5"/>',
@@ -5221,23 +5033,7 @@ setInterval(fetchMeteo,10*60*1000);
 (function(){const k=document.getElementById('topbar-kpis');if(k)k.style.display='flex';})();
 try{updateStaffPanelHeader();}catch(e){}
 try{cmLoadPianoStats();}catch(e){}
-// §§ SIDEBAR — OROLOGIO & DATA (updateSbClock, toggleDatePopup, saveDate, updateDateDisplay)
-function updateSbClock(){
-  const n=new Date();
-  const hh=String(n.getHours()).padStart(2,'0');
-  const mm=String(n.getMinutes()).padStart(2,'0');
-  const el=document.getElementById('sbClock');
-  if(el)el.textContent=hh+':'+mm;
-  const h=n.getHours();
-  const shiftEl=document.getElementById('sbShift');
-  if(shiftEl){
-    if(h>=7&&h<15)       shiftEl.textContent='🌅 Turno di apertura  7:00–15:00';
-    else if(h>=15&&h<23) shiftEl.textContent='🌇 Turno di chiusura  15:00–23:00';
-    else                  shiftEl.textContent='🌙 Turno notturno  23:00–7:00';
-  }
-}
-updateSbClock();
-setInterval(updateSbClock,10000);
+// §§ SIDEBAR — OROLOGIO & DATA (toggleDatePopup, saveDate, updateDateDisplay)
 // Data
 let customDate=null;
 function toggleDatePopup(e){
@@ -5431,8 +5227,6 @@ document.querySelector('.content').addEventListener('scroll',function(){
       if(_qmCambiato&&!_qmOccupato())_qmRidisegnaVista(_qmVistaAttiva());
     }catch(e){}
   },60000);
-  const alertTimeEl=document.getElementById('alertTime');if(alertTimeEl)alertTimeEl.textContent='Aggiornato '+String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');
-  buildBarChart();
   // Sync dal cloud poi ripristina TUTTI i dati
   (async()=>{
     setSyncStatus('syncing');
@@ -6071,7 +5865,6 @@ const CAP_CAMERE=33;
 // §§ REPORT PULIZIE — PUL (handlePulFile, pulParseText, renderPulData, renderPulDay, updateKpiFromPulizie)
 let pulData=null,pulActiveDay=0;
 let pulOpen=false;
-function togglePulAccordion(){}
 (function initPulUpload(){
   const box=document.getElementById('pulUploadBox');
   const inp=document.getElementById('pulFileInput');
@@ -7870,7 +7663,6 @@ function revShowError(p,msg){
 }
 // §§ REPORT PASTI — BKF (handleBkfFile, bkfParseText, renderBkfData, renderBkfDay, renderOvBkfChart)
 let bkfData=null,bkfActiveDay=0,bkfOpen=false;
-function toggleBkfAccordion(){}
 (function initBkfUpload(){
   const box=document.getElementById('bkfUploadBox');
   const inp=document.getElementById('bkfFileInput');
@@ -9184,7 +8976,6 @@ function bkfBookingRender(){
     }).join('')}</div>`:`<div style="color:var(--text-dim);font-size:12.5px;">Nessun ospite Booking.com a colazione ${isToday?'oggi':'quel giorno'}.</div>`}
   </div>`;
 }
-function toggleArriviAccordion(){}
 const arriviBox={classList:{add:()=>{},remove:()=>{}}};
 const arriviInput=document.getElementById('arriviFileInput');
 (function(){
@@ -9443,24 +9234,6 @@ function arriviUpdateKpi(){
   // Aggiorna la previsione Culligan nel pannello Piano camere (dipende da arriviData)
   try{if(pianoNavIdx!==null&&pianoNavIdx!==undefined)pianoNavRender(pianoNavIdx);}catch(e){}
 }
-function detectStruttura(camera){
-  if(!camera)return'NA';
-  const c=camera.trim().toUpperCase();
-  // Art Resort: prefisso "ART" seguito da numero (Art 2, Art 5, Art 10...)
-  if(/^ART\s*\d+/.test(c)||/^AS\s/.test(c))return'AR';
-  // SoulArt: puramente numeriche 100-199 o 200-299 senza prefisso "Art"
-  // Boutique: serie 200 (201-299) — distingui: SoulArt ha 203, 206, 208
-  // In realtà SoulArt = camere numeriche 100-999 SENZA prefisso
-  if(/^(ART|LIB|CAPRI|NAPOLI|PROCIDA|ISCHIA|POSITANO|R[123]$)/.test(c)){}
-  if(/^(CAPRI|NAPOLI|PROCIDA|ISCHIA|POSITANO)/.test(c))return'PR';
-  if(/^LIB/.test(c))return'SL';
-  if(/^R[123]$/.test(c))return'MS';
-  // Boutique serie 200 (es. 200, 201...299) - ma SoulArt può avere 203
-  // Usa prefisso dal PDF: "PC" = SoulArt, "AS" = Art Resort, "200" = Boutique
-  // Camere numeriche: dipende dal documento — lascia all'AI
-  if(/^\d+$/.test(c))return'SA'; // numeriche pure → SoulArt (default)
-  return'NA';
-}
 function fixArriviStruttura(arrivi){
   return arrivi.map(a=>{
     const camera=a.camera||'';
@@ -9475,7 +9248,6 @@ function fixArriviStruttura(arrivi){
   });
 }
 function strutLabel(s){return({SA:'SoulArt',AR:'Art Resort',BH:'Boutique',SL:'San Liborio',PR:'Principe',MS:'Mastrangelo',SB:'S.Brigida',NA:'Napoli'})[s]||s;}
-function strutStyle(s){const styles={SA:'background:#e8eef8;color:#003580',AR:'background:#e8f5e9;color:#1b5e20',BH:'background:#fff3e0;color:#e65100',SL:'background:#f3e5f5;color:#6a1b9a',PR:'background:#fce4ec;color:#880e4f',MS:'background:#e8f5e9;color:#2e7d32',SB:'background:#e3f2fd;color:#0d47a1',NA:'background:var(--surface2);color:var(--text-dim)'};return styles[s]||'background:var(--surface2);color:var(--text-dim)';}
 function openArriviModal(filtOrigine='all'){
   const modal=document.getElementById('arriviModal');
   if(!modal)return;
@@ -10124,25 +9896,6 @@ function invRenderCatalog(){
   </div></div>`;
 }
 
-function invUpdateNavBadge(){
-  let total=0;
-  for(const wh of['sa','ar']){
-    let catalog={},wMoves=[];
-    try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+wh)||'{}');}catch(e){}
-    try{wMoves=JSON.parse(localStorage.getItem('qm_inv_moves_'+wh)||'[]');}catch(e){}
-    const stock=invCalcStock(catalog,wMoves);
-    for(const[bc,qty]of Object.entries(stock)){
-      const p=catalog[bc];if(!p)continue;
-      if(invItemStatus(qty,p.soglia??null)!=='ok')total++;
-    }
-  }
-  const navEl=document.querySelector('[onclick*="inventario"]');
-  if(!navEl)return;
-  let badge=navEl.querySelector('.nav-badge');
-  if(!badge){badge=document.createElement('span');badge.className='nav-badge';navEl.appendChild(badge);}
-  if(total>0){badge.style.background='var(--amber)';badge.textContent=total;badge.style.display='';}
-  else{badge.style.display='none';}
-}
 
 // §§ INVENTARIO — ORDINI
 // Struttura ordine: { id, wh, date (DD/MM/YYYY), ts, fornitore, note, status, tsRicevuto, items:[{barcode,name,unit,qty}] }
@@ -12179,12 +11932,6 @@ function ddtSave(arr){
 function ddtCurMonth(){
   if(!_ddtMonth){const n=new Date();_ddtMonth=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
   return _ddtMonth;
-}
-function ddtNavMonth(dir){
-  const[y,m]=ddtCurMonth().split('-').map(Number);
-  const d=new Date(y,m-1+dir,1);
-  _ddtMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-  ddtRenderSpese();ddtRenderList();
 }
 function ddtSetMonth(ym){
   _ddtMonth=ym;
@@ -17202,7 +16949,6 @@ const PREN_RE_DATA=/^(\d{2})\/(\d{2})\/(\d{4})$/;
 
 function _prenCella(ws,r){return ws.filter(w=>w.x>=r[0]&&w.x<r[1]).map(w=>w.s).join(' ').trim();}
 function _prenData(s){const m=String(s||'').trim().match(PREN_RE_DATA);return m?m[3]+'-'+m[2]+'-'+m[1]:null;}
-function _prenGiorniTra(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);}
 
 // "2" -> {a:2,b:0} · "2 + 1" -> {a:2,b:1}. L'export non riporta sempre la suddivisione
 // (una prenotazione che il PMS conta 1 adulto + 1 bambino qui può comparire come "2"):

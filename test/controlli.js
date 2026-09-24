@@ -2410,3 +2410,10 @@ sez('Prenotazioni: un caricamento dopo i check-out non perde le partenze di oggi
   ok('file di altri giorni: nessun recupero',       _prenRecuperaPartenze(futuro,{righe:mattina},oggi).recuperate.length,0);
   ok('senza caricamento precedente: nessun errore', _prenRecuperaPartenze(pomeriggio,null,oggi).recuperate.length,0);
 })();
+
+sez('Upload Center: il contatore conta le caselle che si usano davvero');
+ok('conta la casella Prenotazioni',               _ucVisibile('pren'), true);
+ok('non le caselle nascoste Arrivi e Report pasti', _ucVisibile('arrivi')||_ucVisibile('bkf'), false);
+ok('ne' + "'" + ' i report pulizie ricavati dal Piano',  _ucVisibile('pul'), false);
+ok('Turno e Piano restano',                        _ucVisibile('turno')&&_ucVisibile('piano'), true);
+ok('Prenotazioni diventa ambra/rossa quando e\' vecchia', TS_TO_UC.prenTs, 'uc-pren-sub');
