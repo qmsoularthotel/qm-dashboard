@@ -4014,7 +4014,8 @@ per questo.
 
 ### Partenze di oggi già in check-out — l'ordine dei caricamenti non conta più (24/09/2026)
 
-Con il filtro "Presenti" il PMS toglie dal PDF chi ha già fatto il check-out, e ogni
+Con il filtro "Presenti" il PMS toglie dal PDF chi ha già fatto il check-out (confermato dal QM
+il 24/09/2026: le camere in check-out spariscono, non restano con un altro stato), e ogni
 caricamento **sostituisce** i dati di oggi: un caricamento fatto dopo i check-out perdeva le
 partenze di oggi (Overview, Housekeeper, Culligan) e abbassava le colazioni di oggi, che
 finivano così anche nell'archivio mensile. Per questo il primo caricamento della giornata
