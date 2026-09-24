@@ -34,7 +34,6 @@ grep -n 'id="view-' index.html
 |---------|-------------|
 | `view-overview` | Dashboard principale con KPI, turni, meteo |
 | `view-registrazione` | Registration cards ospiti |
-| `view-reclami` | Gestione reclami |
 | `view-recensioni-sa` | Recensioni SoulArt |
 | `view-recensioni-bh` | Recensioni Boutique |
 | `view-recensioni-sl` | Recensioni San Liborio |
@@ -42,7 +41,6 @@ grep -n 'id="view-' index.html
 | `view-recensioni-ms` | Recensioni Mastrangelo |
 | `view-recensioni-ar` | Recensioni Art Resort |
 | `view-recensioni-sb` | Recensioni Santa Brigida |
-| `view-audit` | Audit qualità |
 | `view-bkfsheet` | Operativa Breakfast — SoulArt |
 | `view-bkfsheetar` | Operativa Breakfast — Art Resort |
 | `view-hkpsheet` | Operativa HKP (Housekeeping) — SoulArt Hotel |

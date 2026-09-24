@@ -22,7 +22,7 @@ Claude API chiamata via proxy Cloudflare:
 1. Imposta data corrente
 2. Costruisce KPI bar chart
 3. Pull async da Cloudflare KV (cloud sync)
-4. Ripristina stato localStorage: reclami, audit, turni settimanali, arrivi, recensioni, dati HKP, pulizie, pasti, DVR, preferenze turni
+4. Ripristina stato localStorage: turni settimanali, arrivi, recensioni, dati HKP, pulizie, pasti, DVR, preferenze turni
 5. Avvia timer: clock (10s), meteo (10min), polling overview (60s, **fermo a scheda nascosta**) — il polling chiama anche `turniPrefLoad()`
 6. IIFE mostra `topbar-kpis` (display:flex) all'avvio
 
