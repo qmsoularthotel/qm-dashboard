@@ -212,3 +212,12 @@ Nel pannello "📈 Trend prezzi" (tab Insights Breakfast di Spese Fornitori, `dd
 Aprire il DDT da qui usa la stessa maschera di modifica di Compass: si corregge il prezzo lì, si salva, e `ddtConfirmSave()` richiama `ddtRenderSpese()` che ridisegna subito il pannello Trend prezzi con il valore corretto — nessun passaggio aggiuntivo per tornare alla lista DDT.
 
 ---
+
+### LANA.POLI — lavanderia (24/09/2026)
+
+Nuovo fornitore in `DDT_FORNITORI`: `'LANA.POLI'`, reparto Housekeeping, stessa card e stessi
+criteri degli altri, senza logo (come Cozzolino). È la lavanderia di Raimondo: fattura una volta
+al mese per struttura, SoulArt e Boutique separate. Nel caricamento si sceglie dal menu
+fornitore, e l'hotel ora comprende anche **Boutique** (prima solo SoulArt e Art Resort). Il nome
+sul documento "LANA.POLI SRL" si riconosce da solo (`ddtNormFornGeneric` ignora punti e spazi).
+Le quantità della fattura si incrociano in Consumo Biancheria → Totali del mese.

@@ -2443,5 +2443,13 @@ sez('Consumo Biancheria: totali del mese per incrociare la fattura');
   document.getElementById=function(id){return id==='bia-content'?box:null;};
   try{_biaHotel='sa';_biaMeseSel='';biaRender();}finally{document.getElementById=vero;}
   ok('il riquadro compare, sul mese piu\' recente', /Totali del mese/.test(box.innerHTML)&&/<option value="2026-09" selected>/.test(box.innerHTML),true);
+  // Fattura LANA.POLI inserita a mano: differenze e importo.
+  _bia.fatture={'sa|2026-09':{q:{Federa:20,'Telo doccia':''}}};
+  ok('nomi della fattura accanto ai nostri',      /Ospiti Spugna/.test(_biaTabellaMese(m,true,'sa')),true);
+  ok('fattura − portati: +10 federe',             _biaDiffFatt(20,m.portati.Federa),'+10');
+  ok('casella vuota: nessuna differenza',          _biaDiffFatt('',3),'');
+  ok('importo: 20 federe a 0,32',                 _biaEuro(_biaImporto(_biaFatturaDi('sa','2026-09'))),'€ 6,40');
+  ok('la fattura del SoulArt non vale per il Boutique', _biaFatturaDi('bh','2026-09'),null);
+  ok('niente piu\' colonna consumi',              /Consumi fogli camera/.test(_biaTabellaMese(m,false,'sa')),false);
   _bia=prima;_biaHotel=ph;_biaMeseSel=pm;
 })();

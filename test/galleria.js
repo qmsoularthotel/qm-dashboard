@@ -126,3 +126,6 @@ _gbGiroAperto = new Set();
 _gbReset();
 ok('Galleria: anche qui si vedono tutti i consumi', typeof gbToggleConsumiTutti, 'function');
 ok('Galleria: totali del mese',                typeof gbPrintMese+typeof _gbMese, 'functionfunction');
+var _ff = _gbFondi({ consumi: [], giri: [], fatture: { 'ar|2026-09': { q: { Federa: 5 } } } }, { consumi: [], giri: [], fatture: { 'ar|2026-09': { q: { Federa: '' , 'Telo doccia': 3 } } } });
+ok('Galleria: la fattura sopravvive alla fusione',  _ff.fatture['ar|2026-09'].q['Telo doccia'], 3);
+ok('Galleria: una casella svuotata resta vuota',    _ff.fatture['ar|2026-09'].q.Federa, '');

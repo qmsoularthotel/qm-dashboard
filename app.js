@@ -11265,6 +11265,9 @@ function revExpReset(p){
 const DDT_KEY='qm_ddt';
 const DDT_FORNITORI={
   DECA:      {reparto:'hk',  rLabel:'Housekeeping', color:'#eceef0', fg:'#4a4a4a', accent:'#6b6b6b', logo:'deca.png'},
+  // Lavanderia (biancheria a noleggio): Raimondo. Fattura una volta al mese per struttura,
+  // SoulArt e Boutique separate. Il nome sul documento e' "LANA.POLI SRL" (24/09/2026).
+  'LANA.POLI':{reparto:'hk', rLabel:'Housekeeping', color:'#e4edf6', fg:'#1f4e79', accent:'#2f6fb0'},
   Amonn:     {reparto:'altro', rLabel:'Altro',       color:'#fde8e9', fg:'#d90e13', accent:'#d90e13', logo:'amonn.png'},
   Vistaprint:{reparto:'altro', rLabel:'Altro',       color:'#e3f2fb', fg:'#006196', accent:'#006196', logo:'vistaprint.png'},
   SDM:       {reparto:'bkf', rLabel:'Breakfast',    color:'#e0e1f5', fg:'#292b82', accent:'#292b82', logo:'sdm2.png'},
@@ -12105,7 +12108,7 @@ function ddtRenderList(){
     const nf=ddtNormForn(d.fornitore)||d.fornitore||'—';
     const conf=DDT_FORNITORI[nf]||{};
     const repLabel=conf.rLabel||(d.reparto==='hk'?'HK':'BKF');
-    const hotelLabel=d.hotel==='ar'?'Art Resort':'SoulArt';
+    const hotelLabel=d.hotel==='ar'?'Art Resort':d.hotel==='bh'?'Boutique':'SoulArt';
     const zebra=i%2===1?'background:var(--surface);':'';
     const artRows=(d.articoli||[]).map(a=>`<tr style="border-bottom:1px solid var(--border-light);">
       <td style="padding:6px 12px;font-size:var(--fs-xs);color:var(--text);">${a.descrizione||''}</td>
@@ -12168,6 +12171,7 @@ function ddtOpenUploadModal(){
           <option value="">Seleziona…</option>
           <option value="DECA">DECA (Housekeeping)</option>
           <option value="Amonn">Amonn (Housekeeping)</option>
+          <option value="LANA.POLI">LANA.POLI — lavanderia (Housekeeping)</option>
           <option value="SDM">SDM (Breakfast)</option>
           <option value="MARR">MARR (Breakfast)</option>
           <option value="SAIMA">SAIMA (Breakfast)</option>
@@ -12179,6 +12183,7 @@ function ddtOpenUploadModal(){
         <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">HOTEL</label>
         <select id="ddt-sel-hotel" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);background:var(--surface);" onchange="_ddtUploadHotel=this.value">
           <option value="sa">SoulArt Hotel</option>
+          <option value="bh">Boutique Hotel</option>
           <option value="ar">Art Resort</option>
         </select>
       </div>
@@ -16005,8 +16010,8 @@ function biaRender(){
       h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Totali del mese — ${esc(BIA_HOTELS[_biaHotel])}</span>
         <select onchange="biaSetMese(this.value)" style="margin-left:auto;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesi.map(y=>`<option value="${y}"${y===_biaMeseSel?' selected':''}>${_biaMeseNome(y)}</option>`).join('')}</select>
         <button onclick="biaPrintMese()" title="Stampa i totali del mese" style="margin-left:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">Stampa</button>
-      </div><div class="panel-body" style="padding:0;">${_biaTabellaMese(m,false)}
-        <div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">${_biaNoteMese(m).map(x=>esc(x)).join('<br>')}<br>Le consegne contano nel mese della loro data; i consumi nel mese del giorno a cui si riferiscono.</div>
+      </div><div class="panel-body" style="padding:0;overflow-x:auto;">${_biaTabellaMese(m,false,_biaHotel)}
+        <div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">${_biaNoteMese(m).map(x=>esc(x)).join('<br>')}<br>Le consegne contano nel mese della loro data. «In fattura»: le quantità della fattura LANA.POLI di quel mese, da inserire a mano. In rosso le voci fatturate più di quanto risulta.</div>
       </div></div>`;
     }
   }
@@ -16193,25 +16198,70 @@ function _biaMese(h,ym){
   return{ym,dati,portati,consumi,giri:giri.map(g=>g.data),nonReg:nonReg.map(g=>g.data),giorniConsumi:cons.length};
 }
 function biaSetMese(ym){_biaMeseSel=ym;_psSenzaSalto(biaRender);}
-function _biaTabellaMese(m,stampa){
+// Voci e prezzi come stanno sulla fattura LANA.POLI (n. 730 del 01/09/2026, SoulArt). Il
+// Boutique ha una fattura sua: se i prezzi fossero diversi, vanno messi per struttura.
+const BIA_FATTURA={
+  'Lenzuolo matrimoniale':{nome:'Lenzuola Matrimoniali',prezzo:0.70},
+  'Lenzuolo singolo':     {nome:'Lenzuola Singole',prezzo:0.55},
+  'Federa':               {nome:'Federe',prezzo:0.32},
+  'Telo doccia':          {nome:'Teli bagno Spugna',prezzo:0.58},
+  'Asciugamano viso':     {nome:'Asciugamani Viso Spugna',prezzo:0.32},
+  'Asciugamano bidet':    {nome:'Ospiti Spugna',prezzo:0.26},
+  'Scendibagno':          {nome:'Scendi Bagno',prezzo:0.36}
+};
+// Le quantita' della fattura si inseriscono a mano, per struttura e mese: _bia.fatture['sa|2026-09'].
+function _biaFatturaDi(h,ym){const f=_bia.fatture&&_bia.fatture[h+'|'+ym];return f&&f.q?f.q:null;}
+function _biaEuro(n){return '€ '+(Math.round(n*100)/100).toFixed(2).replace('.',',');}
+function _biaImporto(q){return BIA_VOCI.reduce((s,v)=>s+(Number(q&&q[v])||0)*((BIA_FATTURA[v]||{}).prezzo||0),0);}
+function _biaDiffFatt(f,n){if(f===null||f===undefined||f==='')return'';const d=Number(f)-n;return d===0?'=':(d>0?'+'+d:String(d));}
+function _biaColFatt(f,n){if(f===null||f===undefined||f==='')return'var(--text-dim)';const d=Number(f)-n;return d>0?'var(--red)':d<0?'var(--amber)':'var(--green)';}
+function _biaTabellaMese(m,stampa,h){
   const e=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const th=stampa?'style="text-align:right;padding:6px 8px;border-bottom:1.5px solid #111;"'
-    :'style="text-align:right;padding:8px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);border-bottom:1px solid var(--border);"';
-  const td=(n,b)=>stampa?`<td style="text-align:right;padding:6px 8px;border-bottom:1px solid #ccc;${b?'font-weight:700;':''}">${n}</td>`
-    :`<td style="text-align:right;padding:8px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums;${b?'font-weight:700;':''}">${n}</td>`;
-  const tdL=(s,b)=>stampa?`<td style="padding:6px 8px;border-bottom:1px solid #ccc;${b?'font-weight:700;':''}">${s}</td>`
-    :`<td style="padding:8px 8px 8px 14px;border-bottom:1px solid var(--border);${b?'font-weight:700;':''}">${s}</td>`;
-  let t=`<table style="width:100%;border-collapse:collapse;${stampa?'font-size:10.5pt;':'font-size:var(--fs-xs);'}"><thead><tr>
-    <th ${th.replace('text-align:right','text-align:left')}>Tipologia</th><th ${th}>Dati a Raimondo</th><th ${th}>Portati da Raimondo</th><th ${th}>Consumi fogli camera</th></tr></thead><tbody>`;
-  BIA_VOCI.forEach(v=>{t+=`<tr>${tdL(e(v))}${td(m.dati[v])}${td(m.portati[v])}${td(m.consumi[v])}</tr>`;});
-  t+=`<tr>${tdL('Totale',1)}${td(_biaTot(m.dati),1)}${td(_biaTot(m.portati),1)}${td(_biaTot(m.consumi),1)}</tr></tbody></table>`;
-  return t;
+  const fq=_biaFatturaDi(h||_biaHotel,m.ym)||{};
+  const bordo=stampa?'border-bottom:1px solid #ccc;':'border-bottom:1px solid var(--border);';
+  const th=(t,l)=>stampa?`<th style="text-align:${l?'left':'right'};padding:6px 8px;border-bottom:1.5px solid #111;">${t}</th>`
+    :`<th style="text-align:${l?'left':'right'};padding:8px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);border-bottom:1px solid var(--border);">${t}</th>`;
+  const td=(x,st)=>`<td style="text-align:right;padding:${stampa?'6px 8px':'8px'};${bordo}font-variant-numeric:tabular-nums;${st||''}">${x}</td>`;
+  let t=`<table style="width:100%;border-collapse:collapse;${stampa?'font-size:10pt;':'font-size:var(--fs-xs);'}"><thead><tr>
+    ${th('Tipologia',1)}${th('Dati a Raimondo')}${th('Portati da Raimondo')}${th('In fattura')}${th('Fattura − portati')}${th('Fattura − dati')}</tr></thead><tbody>`;
+  BIA_VOCI.forEach((v,i)=>{
+    const f=fq[v];const has=f!==undefined&&f!==null&&f!=='';
+    const cella=stampa?(has?f:'')
+      :`<input type="number" min="0" inputmode="numeric" value="${has?f:''}" onfocus="this.select()" onchange="biaSetFattura(${i},this.value)" style="width:78px;text-align:right;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">`;
+    t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};${bordo}">${e(v)}<div style="font-size:${stampa?'8.5pt':'var(--fs-xxs)'};color:${stampa?'#555':'var(--text-dim)'};">${e((BIA_FATTURA[v]||{}).nome||'')}</div></td>
+      ${td(m.dati[v])}${td(m.portati[v])}${td(cella)}
+      ${td(`<span id="bia-fp-${i}">${_biaDiffFatt(f,m.portati[v])}</span>`,stampa?'':`font-weight:700;color:${_biaColFatt(f,m.portati[v])};`)}
+      ${td(`<span id="bia-fd-${i}">${_biaDiffFatt(f,m.dati[v])}</span>`,stampa?'':`color:${_biaColFatt(f,m.dati[v])};`)}</tr>`;
+  });
+  const fTot=BIA_VOCI.some(v=>fq[v]!==undefined&&fq[v]!=='')?_biaTot(fq):'';
+  t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};${bordo}font-weight:700;">Totale pezzi</td>${td(_biaTot(m.dati),'font-weight:700;')}${td(_biaTot(m.portati),'font-weight:700;')}${td(`<span id="bia-ft">${fTot}</span>`,'font-weight:700;')}${td(`<span id="bia-fpt">${_biaDiffFatt(fTot,_biaTot(m.portati))}</span>`,'font-weight:700;')}${td(`<span id="bia-fdt">${_biaDiffFatt(fTot,_biaTot(m.dati))}</span>`,'font-weight:700;')}</tr>`;
+  t+=`<tr><td style="padding:${stampa?'6px 8px':'8px 8px 8px 14px'};font-weight:700;">Importo (senza IVA)</td>${td(_biaEuro(_biaImporto(m.dati)))}${td(_biaEuro(_biaImporto(m.portati)))}${td(`<span id="bia-fe">${fTot===''?'':_biaEuro(_biaImporto(fq))}</span>`,'font-weight:700;')}<td></td><td></td></tr>`;
+  return t+`</tbody></table>`;
+}
+// Salva la quantita' in fattura SENZA ridisegnare: col Tab si passa alla casella dopo, e un
+// ridisegno le toglierebbe il fuoco. Si aggiornano solo differenze e totali.
+async function biaSetFattura(i,val){
+  const v=BIA_VOCI[i];if(!v)return;
+  const h=_biaHotel,ym=_biaMeseSel;if(!ym)return;
+  const k=h+'|'+ym;
+  _bia.fatture=_bia.fatture||{};
+  const f=_bia.fatture[k]=_bia.fatture[k]||{q:{}};
+  // Svuotata: '' e non delete, altrimenti la fusione col cloud rimetterebbe il valore vecchio.
+  if(String(val).trim()==='')f.q[v]='';else f.q[v]=Math.max(0,Math.round(Number(val)||0));
+  f.ts=Date.now();
+  const m=_biaMese(h,ym),fq=f.q;
+  const put=(id,txt,col)=>{const el=document.getElementById(id);if(el){el.textContent=txt;if(col)el.parentNode.style.color=col;}};
+  put('bia-fp-'+i,_biaDiffFatt(fq[v],m.portati[v]),_biaColFatt(fq[v],m.portati[v]));
+  put('bia-fd-'+i,_biaDiffFatt(fq[v],m.dati[v]),_biaColFatt(fq[v],m.dati[v]));
+  const ft=BIA_VOCI.some(x=>fq[x]!==undefined&&fq[x]!=='')?_biaTot(fq):'';
+  put('bia-ft',String(ft));put('bia-fpt',_biaDiffFatt(ft,_biaTot(m.portati)));put('bia-fdt',_biaDiffFatt(ft,_biaTot(m.dati)));
+  put('bia-fe',ft===''?'':_biaEuro(_biaImporto(fq)));
+  await _biaSave();
 }
 function _biaNoteMese(m){
   const n=[];
   n.push(m.giri.length?`${m.giri.length} consegne nel mese: ${m.giri.map(d=>d.slice(0,5)).join(', ')}.`:'Nessuna consegna registrata nel mese.');
   if(m.nonReg.length)n.push(`Senza il dato di cosa ha riportato: ${m.nonReg.map(d=>d.slice(0,5)).join(', ')} — «Portati» non le comprende.`);
-  n.push(`Consumi: ${m.giorniConsumi} giorni inseriti.`);
   return n;
 }
 function biaPrintMese(){
@@ -16224,8 +16274,8 @@ function biaPrintMese(){
 h1{font-size:15pt;margin-bottom:2px;}.sub{color:#444;margin-bottom:14px;}.note{margin-top:12px;font-size:9.5pt;color:#333;line-height:1.5;}</style></head><body>
 <h1>Biancheria — totali di ${e(_biaMeseNome(ym))}</h1>
 <div class="sub">${e(BIA_HOTELS[h])} · fornitore Raimondo · stampato il ${_biaFmt(new Date())}</div>
-${_biaTabellaMese(m,true)}
-<div class="note">${_biaNoteMese(m).map(e).join('<br>')}<br>Le consegne contano nel mese della loro data; i consumi nel mese del giorno a cui si riferiscono.</div>
+${_biaTabellaMese(m,true,h)}
+<div class="note">${_biaNoteMese(m).map(e).join('<br>')}<br>Le consegne contano nel mese della loro data. «In fattura»: quantità della fattura LANA.POLI inserite a mano.</div>
 </body></html>`;
   const w=window.open('','_blank');if(!w)return;
   w.document.write(html);w.document.close();setTimeout(()=>{try{w.print();}catch(e){}},400);

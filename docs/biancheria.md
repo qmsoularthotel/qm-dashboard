@@ -1004,3 +1004,18 @@ registrano dal 20/08, i consumi da prima.
 
 `_biaMese(h,ym)`, `_biaMesiDisponibili`, `_biaTabellaMese` (unica tabella per schermo e
 stampa), `biaPrintMese`. Stessa cosa nella Galleria (`gb…`). 9 controlli.
+
+**Rifatto per la fattura il 24/09/2026.** Colonne: *Dati a Raimondo*, *Portati da Raimondo*,
+**In fattura** (quantità della fattura LANA.POLI, inserite a mano, per struttura e mese in
+`_bia.fatture['sa|2026-09'].q`), **Fattura − portati**, **Fattura − dati** (rosso se si fattura
+più di quanto risulta), **Importo** senza IVA con i prezzi della fattura n. 730 del 01/09/2026
+(`BIA_FATTURA`: nomi e prezzi per voce; il Boutique ha fattura separata — se i prezzi fossero
+diversi, `BIA_FATTURA` va fatta per struttura). Tolta la colonna "Consumi fogli camera": sono
+gli stessi pezzi contati per giorno d'uso, e affiancati al mese di consegna sembravano un
+errore (29–31 agosto escono con la consegna del 1° settembre).
+
+`biaSetFattura` salva **senza ridisegnare** (col Tab si passa alla casella dopo) e scrive `''`
+per una casella svuotata: con `delete` la fusione col cloud rimetterebbe il valore vecchio.
+Nella Galleria `_gbMigra`/`_gbFondi` sono stati estesi a `fatture`: prima avrebbero buttato
+via tutto ciò che non era consumi o consegne. Agosto 2026 non è confrontabile (Compass parte dal
+18–20/08); il primo mese completo è settembre.
