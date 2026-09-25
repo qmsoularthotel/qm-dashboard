@@ -379,6 +379,17 @@ if grep -qE "kvSet\((DDT_KEY|ORD_KEY|movKey|'qm_inv_(moves|catalog)_|'qm_rev_sen
   echo "  ERRORE      app.js scrive un elenco condiviso senza fondere col cloud (_qmElencoSalva)."
   BKF_KO=1
 fi
+# Due funzioni con lo stesso nome nella stessa pagina: vince l'ultima, in silenzio. Il
+# 24/09/2026 la copia di _biaEsito nella Galleria si chiamava _gbEsito come la funzione che
+# scrive "salvato / NON salvato sul cloud", e l'avviso di salvataggio e' sparito.
+for _f in app.js housekeeper.html breakfast.html inventory.html controllo-mattino.html dvr.html reception.html biancheria-galleria.html registration-galleria.html; do
+  _dup=$(grep -oE "^(async )?function [A-Za-z_\$][A-Za-z0-9_\$]*" "$_f" | awk '{print $NF}' | sort | uniq -d | tr '\n' ' ')
+  if [ -n "$_dup" ]; then
+    echo ""
+    echo "  ERRORE      $_f: funzioni definite due volte ($_dup) — vale solo l'ultima."
+    BKF_KO=1
+  fi
+done
 # Leggere il lasciapassare di Compass (qm_pass) e' ammesso; scrivere una qm_* no.
 if grep -qE "localStorage\.(set|remove)Item\(.qm_" biancheria-galleria.html; then
   echo ""

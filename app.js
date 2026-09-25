@@ -15182,7 +15182,7 @@ function _biaStorico(h,ym){
   return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg,primaInizio};
 }
 // Esito di una consegna, in parole: e' quello che si legge senza aprire niente.
-function _biaEsito(r){
+function _biaEsitoConsegna(r){
   if(r.primaInizio)return{txt:'Prima dell\'inizio del conteggio',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
   if(!r.registrato)return{txt:'Manca cosa ha portato',col:'var(--amber)',bg:'rgba(160,90,0,.10)'};
   if(r.dovuto===null)return{txt:'Prima consegna',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
@@ -16035,7 +16035,7 @@ function biaRender(){
     if(st.righe.length>BIA_STO_VISTE&&!_biaStoTutte)h+=`<div style="padding:8px 16px 2px;font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;font-weight:600;">Ultime ${BIA_STO_VISTE} consegne</div>`;
     viste.forEach(rg=>{
       const g=_bia.giri.find(x=>x.id===rg.id)||_bia.giri.find(x=>_biaH(x)===hS&&x.data===rg.data);if(!g)return;
-      const aperto=_biaGiroAperto.has(g.id),es=_biaEsito(rg),scG=_biaScostamento(g);
+      const aperto=_biaGiroAperto.has(g.id),es=_biaEsitoConsegna(rg),scG=_biaScostamento(g);
       const dd=_biaParse(rg.data);
       h+=`<div onclick="biaToggleGiro('${g.id}')" style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--border);cursor:pointer;${aperto?'background:var(--surface2,var(--surface));':''}">
         <span style="min-width:96px;font-size:var(--fs-xs);font-weight:700;">${dd?BIA_GG_NOMI[dd.getDay()].slice(0,3)+' '+rg.data.slice(0,5):esc(rg.data)}</span>

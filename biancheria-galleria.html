@@ -144,7 +144,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-24.12';
+const QM_APP_BUILD='2026-09-25.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -577,7 +577,7 @@ function _gbStorico(h,ym){
   return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg,primaInizio};
 }
 // Esito di una consegna, in parole: e' quello che si legge senza aprire niente.
-function _gbEsito(r){
+function _gbEsitoConsegna(r){
   if(r.primaInizio)return{txt:'Prima dell\'inizio del conteggio',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
   if(!r.registrato)return{txt:'Manca cosa ha portato',col:'var(--amber)',bg:'rgba(160,90,0,.10)'};
   if(r.dovuto===null)return{txt:'Prima consegna',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
@@ -1454,7 +1454,7 @@ function _gbRenderCore(){
     if(st.righe.length>GB_STO_VISTE&&!_gbStoTutte)h+=`<div style="padding:8px 16px 2px;font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;font-weight:600;">Ultime ${GB_STO_VISTE} consegne</div>`;
     viste.forEach(rg=>{
       const g=_gb.giri.find(x=>x.id===rg.id)||_gb.giri.find(x=>_gbH(x)===hS&&x.data===rg.data);if(!g)return;
-      const aperto=_gbGiroAperto.has(g.id),es=_gbEsito(rg),scG=_gbScostamento(g);
+      const aperto=_gbGiroAperto.has(g.id),es=_gbEsitoConsegna(rg),scG=_gbScostamento(g);
       const dd=_gbParse(rg.data);
       h+=`<div onclick="gbToggleGiro('${g.id}')" style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--border);cursor:pointer;${aperto?'background:var(--surface2,var(--surface));':''}">
         <span style="min-width:96px;font-size:var(--fs-xs);font-weight:700;">${dd?GB_GG_NOMI[dd.getDay()].slice(0,3)+' '+rg.data.slice(0,5):esc(rg.data)}</span>

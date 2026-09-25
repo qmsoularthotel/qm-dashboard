@@ -1931,10 +1931,10 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   var stB = _biaStorico('bh', meseSA);
   ok('il mese del Boutique torna col suo riepilogo',   stB.saldo, _biaRiepilogoPortato('bh').saldo);
   // Esiti in parole.
-  ok('esito: mancano',        _biaEsito({ registrato: true, dovuto: 10, delta: -3 }).txt, 'Mancano 3 pezzi');
-  ok('esito: in piu\'',       _biaEsito({ registrato: true, dovuto: 10, delta: 2 }).txt, 'Tutto riportato · 2 in più');
-  ok('esito: non registrata', _biaEsito({ registrato: false }).txt, 'Manca cosa ha portato');
-  ok('esito: prima consegna', _biaEsito({ registrato: true, dovuto: null }).txt, 'Prima consegna');
+  ok('esito: mancano',        _biaEsitoConsegna({ registrato: true, dovuto: 10, delta: -3 }).txt, 'Mancano 3 pezzi');
+  ok('esito: in piu\'',       _biaEsitoConsegna({ registrato: true, dovuto: 10, delta: 2 }).txt, 'Tutto riportato · 2 in più');
+  ok('esito: non registrata', _biaEsitoConsegna({ registrato: false }).txt, 'Manca cosa ha portato');
+  ok('esito: prima consegna', _biaEsitoConsegna({ registrato: true, dovuto: null }).txt, 'Prima consegna');
   // Di norma si vedono solo le ultime 4 consegne del mese.
   ok('mostra le ultime 4',                             BIA_STO_VISTE, 4);
   ok('il mese di partenza e\' quello corrente',        _biaStoMesi('sa')[0] >= _biaYmOggi(), true);
@@ -2496,7 +2496,7 @@ sez('Biancheria: data di inizio del conteggio, e il saldo dice da che parte sta'
   ok('il report per la direzione pure',             _biaAndamento('sa').slice(-1)[0].cumulato, -8);
   ok('il dettaglio per tipologia pure',             _biaTotPerVoce('sa').filter(function(r){return r.voce==='Federa';})[0].delta, -8);
   ok('lo storico del mese pure',                    _biaStorico('sa','2026-09').saldo, -8);
-  ok('la consegna esclusa lo dice',                 _biaEsito(_biaRigaGiro(_bia.giri[1])).txt, "Prima dell'inizio del conteggio");
+  ok('la consegna esclusa lo dice',                 _biaEsitoConsegna(_biaRigaGiro(_bia.giri[1])).txt, "Prima dell'inizio del conteggio");
   ok('un\'altra struttura non e\' toccata',         _biaInizio('bh'), null);
   _bia.inizio={sa:''};
   ok('svuotata: si torna a contare tutto',          _biaTot(_biaSaldo('sa')), 92);
