@@ -131,7 +131,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-25.10';
+const QM_APP_BUILD='2026-09-25.11';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -519,7 +519,7 @@ async function _gbGiro(){
     const nuovo=await _gbLeggi(GB_KEY,{consumi:[],giri:[]});
     let cambiato=JSON.stringify(nuovo)!==JSON.stringify(_gb);
     const d=await _gbKvGet(GB_DIST_KEY);
-    if(d&&d!==JSON.stringify(_gbDist)){try{_gbDist=JSON.parse(d)||{};localStorage.setItem(GB_DIST_KEY,d);cambiato=true;}catch(e){}}
+    if(d&&d!==JSON.stringify(_gbDist)){try{const u=Object.assign({},_gbDist,JSON.parse(d)||{});if(JSON.stringify(u)!==JSON.stringify(_gbDist)){_gbDist=u;localStorage.setItem(GB_DIST_KEY,JSON.stringify(u));cambiato=true;}}catch(e){}}
     if(cambiato){_gb=nuovo;_gbSenzaSalto(gbRender);}
     if(_bgSezione==='reso'){const nr=await _grLeggiArchivio(GR_KEY,{righe:[],ritiri:[],tipologie:null});if(JSON.stringify(nr)!==JSON.stringify(_gr)){_gr=nr;_gbSenzaSalto(grRender);}}
   }catch(e){}
@@ -723,7 +723,8 @@ async function _gbDistSegna(hotel,data){
 }
 async function _gbDistCarica(){
   try{const s=localStorage.getItem(GB_DIST_KEY);if(s)_gbDist=JSON.parse(s)||{};}catch(e){}
-  try{const v=await _gbKvGet(GB_DIST_KEY);if(v){_gbDist=JSON.parse(v)||{};localStorage.setItem(GB_DIST_KEY,v);}}catch(e){}
+  // Si UNISCONO: una distinta segnata qui ma non ancora arrivata sul cloud non deve sparire.
+  try{const v=await _gbKvGet(GB_DIST_KEY);if(v){_gbDist=Object.assign({},_gbDist,JSON.parse(v)||{});localStorage.setItem(GB_DIST_KEY,JSON.stringify(_gbDist));}}catch(e){}
 }
 
 // Ultimo giorno di calendario in cui Raimondo sarebbe passato PRIMA di d.

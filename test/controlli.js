@@ -2532,3 +2532,8 @@ sez('Biancheria: lo storico segue la struttura della pagina');
   ok('e cambiarla dallo storico cambia la pagina',    _biaHotel, 'bh');
   _biaHotel=ph;
 })();
+
+sez('Biancheria: il promemoria della distinta legge il cloud');
+ok('il promemoria chiede le distinte al cloud',      /_biaPromemoriaDalCloud\(\)/.test(String(biaRenderPromemoria)), true);
+ok('al massimo ogni 5 minuti, e solo la vigilia',    /300000/.test(String(_biaPromemoriaDalCloud))&&/_biaVigiliaGiro/.test(String(_biaPromemoriaDalCloud)), true);
+ok('cloud e memoria locale si uniscono',             /Object\.assign\(\{\},_biaDist,/.test(String(_biaDistCarica)), true);

@@ -15122,10 +15122,23 @@ function biaToggleGuida(){_biaGuida=!_biaGuida;biaRender();}
 // Promemoria in Overview: il pomeriggio prima di un ritiro, finché la distinta non è
 // stampata. Legge da localStorage e non dal cloud — deve poter girare a ogni render
 // dell'Overview senza chiamate di rete, e i dati arrivano comunque dalla sincronizzazione.
-function biaRenderPromemoria(){
+// Le distinte stampate si leggono DAL CLOUD, non solo dalla memoria di questo computer
+// (25/09/2026). Prima il promemoria guardava solo il localStorage e prendeva la versione del
+// cloud unicamente aprendo Consumo Biancheria: stampata la distinta su un altro PC, o
+// riaprendo Compass, il promemoria ricompariva. Una lettura al massimo ogni 5 minuti, e solo
+// la vigilia di un ritiro, quando il promemoria puo' comparire.
+let _biaDistLettaTs=0;
+function _biaPromemoriaDalCloud(){
+  if(!_biaVigiliaGiro(_biaOggi()))return;
+  if(Date.now()-_biaDistLettaTs<300000)return;
+  _biaDistLettaTs=Date.now();
+  _biaDistCarica().then(()=>{try{biaRenderPromemoria(true);}catch(e){}}).catch(()=>{});
+}
+function biaRenderPromemoria(dalCloud){
   const el=document.getElementById('bia-promemoria');if(!el)return;
   const oggi=_biaOggi();
   if(!_biaVigiliaGiro(oggi)){el.style.display='none';return;}
+  if(!dalCloud)_biaPromemoriaDalCloud();
   if(!Object.keys(_biaDist).length){
     try{const s=localStorage.getItem(BIA_DIST_KEY);if(s)_biaDist=JSON.parse(s)||{};}catch(e){}
   }
@@ -15280,7 +15293,8 @@ async function _biaDistSegna(hotel,data){
 }
 async function _biaDistCarica(){
   try{const s=localStorage.getItem(BIA_DIST_KEY);if(s)_biaDist=JSON.parse(s)||{};}catch(e){}
-  try{const v=await kvGet(BIA_DIST_KEY);if(v){_biaDist=JSON.parse(v)||{};localStorage.setItem(BIA_DIST_KEY,v);}}catch(e){}
+  // Si UNISCONO: una distinta segnata qui ma non ancora arrivata sul cloud non deve sparire.
+  try{const v=await kvGet(BIA_DIST_KEY);if(v){_biaDist=Object.assign({},_biaDist,JSON.parse(v)||{});localStorage.setItem(BIA_DIST_KEY,JSON.stringify(_biaDist));}}catch(e){}
 }
 
 // Ultimo giorno di calendario in cui Raimondo sarebbe passato PRIMA di d.
