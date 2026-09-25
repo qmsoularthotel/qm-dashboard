@@ -116,3 +116,4 @@ logo del menu di Compass e della Gestione Biancheria, intestazione di `reception
 non si leggeva (linee scure): si usa **`img/compass-stella-chiara.png`**, la stessa immagine con
 le linee schiarite e l'oro invariato, senza alone. Misura: 1,45 volte il vecchio SVG (36 → 52).
 **Restano gli splash** delle app, che hanno un'altra bussola con l'ago animato.
+- Anche la stellina della barra in alto (`.topbar-spark`, accanto alla freccia) è ora la rosa dei venti `img/compass-stella.png` inclinata di 22° (fondo bianco: immagine originale), in Compass e nella Galleria (25/09/2026).

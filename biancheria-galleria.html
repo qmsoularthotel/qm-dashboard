@@ -131,7 +131,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-25.9';
+const QM_APP_BUILD='2026-09-25.10';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -261,8 +261,8 @@ setInterval(qmCheckVersione,600000);
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <svg class="topbar-spark" viewBox="0 0 72 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <!-- stella gold -->
-        <polygon points="16,2 18.3,9.4 22.6,5.4 20.5,10.5 28,10.7 22.1,14.2 24.6,21.5 18.5,17.5 16,24.5 13.5,17.5 7.4,21.5 9.9,14.2 4,10.7 11.5,10.5 9.4,5.4 13.7,9.4" fill="#c9952f"/>
+        <!-- rosa dei venti di Compass, inclinata di 22 gradi come nelle conferme (25/09/2026) -->
+        <image href="img/compass-stella.png" x="1" y="-1" width="30" height="30" transform="rotate(22 16 14)"/>
         <!-- linea + freccia navy -->
         <line x1="30" y1="14" x2="66" y2="14" stroke="#1c3a5e" stroke-width="1.8" stroke-linecap="round"/>
         <polyline points="60,9 67,14 60,19" fill="none" stroke="#1c3a5e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
