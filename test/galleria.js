@@ -133,3 +133,23 @@ var _fi = _gbFondi({ consumi: [], giri: [], inizio: { ar: '18/09/2026' } }, { co
 ok('Galleria: la data di inizio sopravvive alla fusione', _fi.inizio.ar + '|' + _fi.inizio.sb, '18/09/2026|');
 ok('Galleria: la correzione dall\'altro PC arriva', _gbFondi({ consumi: [], giri: [{ id: 'g', ricevuto: { v: 20 }, ts: 2000 }] }, { consumi: [], giri: [{ id: 'g', ricevuto: { v: 620 }, ts: 1000 }] }).giri[0].ricevuto.v, 20);
 ok('Galleria: senza orario vince questo PC',       _gbFondi({ consumi: [], giri: [{ id: 'g', v: 1 }] }, { consumi: [], giri: [{ id: 'g', v: 2 }] }).giri[0].v, 2);
+
+// ── Reso Biancheria nella Galleria (25/09/2026): copia del modulo resi di Compass ──
+ok('Reso Galleria: strutture proprie',             Object.keys(GR_HOTELS).join(','), 'ar,sb');
+ok('Reso Galleria: chiave bg_',                    GR_KEY, 'bg_resi');
+ok('Reso Galleria: Compass ha ancora le sue',      Object.keys(RESI_HOTELS).join(','), 'sa,bh');
+ok('Reso Galleria: la chiave e\' ammessa dal Worker', permessoGalleria('/kv/set', GR_KEY), true);
+(function () {
+  var prima = _gr;
+  _gr = { righe: [
+    { id: 'r1', hotel: 'ar', data: '20/09/2026', tipologia: 'Federa', qta: 2, ritiroId: null },
+    { id: 'r2', hotel: 'ar', data: '25/09/2026', tipologia: 'Federa', qta: 1, ritiroId: null },
+    { id: 'r3', hotel: 'sb', data: '20/09/2026', tipologia: 'Federa', qta: 5, ritiroId: null }], ritiri: [], tipologie: null };
+  // Stessa regola di Compass: al ritiro escono solo le righe PRIMA del giorno del ritiro.
+  ok('Reso Galleria: al ritiro del 25/09 esce il 20/09', _grDaConsegnare('25/09/2026', 'ar').map(function (r) { return r.id; }).join(','), 'r1');
+  _gr = prima;
+})();
+// Una consegna chiusa non torna aperta da una copia vecchia dell'altro PC (come in Compass).
+ok('Reso Galleria: la chiusura resta',            _grUnisciRecord([{ id: 'x', ritiroId: null }], [{ id: 'x', ritiroId: 'R1' }])[0].ritiroId, 'R1');
+ok('Reso Galleria: anche nell\'altro verso',       _grUnisciRecord([{ id: 'x', ritiroId: 'R1' }], [{ id: 'x', ritiroId: null }])[0].ritiroId, 'R1');
+ok('Reso Galleria: la distinta va al Resident Manager', /Resident Manager/.test(String(_grStampa)) && !/Presta/.test(String(_grStampa)), true);

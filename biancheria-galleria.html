@@ -133,6 +133,31 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
   .tabs{flex-direction:column;}
   .stato-box{min-width:100%;}
 }
+
+/* Schede numeriche del Reso: le stesse di Compass (style.css, .kpi-card) */
+.kpi-card{background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:20px 20px 14px;border-top:4px solid var(--gold);cursor:default;transition:box-shadow .18s,transform .18s;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+.kpi-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.09);transform:translateY(-1px);}
+.kpi-card-hint{font-size:var(--fs-xxs);color:var(--text-dim);margin-top:auto;padding:2px 6px;border-radius:4px;display:inline-block;align-self:flex-start;transition:background .15s,color .15s;}
+.kpi-clickable:hover .kpi-card-hint{background:var(--accent-bg);color:var(--accent);}
+.kpi-card.blue{border-top-color:var(--accent);}.kpi-card.green{border-top-color:var(--green);}.kpi-card.red{border-top-color:var(--red);}.kpi-card.amber{border-top-color:var(--amber);}
+.kpi-card-icon{position:absolute;right:14px;top:14px;width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.kpi-card.blue .kpi-card-icon{background:var(--accent-bg);}.kpi-card.green .kpi-card-icon{background:var(--green-bg);}.kpi-card.red .kpi-card-icon{background:var(--red-bg);}.kpi-card.amber .kpi-card-icon{background:var(--amber-bg);}
+.kpi-label{font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
+.kpi-value{font-size:30px;font-weight:300;color:var(--text);letter-spacing:-.02em;line-height:1;}
+.kpi-delta{font-size:var(--fs-xxs);margin-top:6px;}.kpi-delta.up{color:var(--green);}.kpi-delta.down{color:var(--red);}
+.kpi-sub{font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;}
+.kpi-card{box-shadow:0 2px 8px rgba(0,0,0,.08);border:1px solid var(--border-light);}
+.kpi-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.13);transform:translateY(-2px);}
+.kpi-card.blue{border-top-color:var(--accent);}
+.kpi-card.green{border-top-color:var(--green);}
+.kpi-card.red{border-top-color:var(--red);}
+.kpi-card.amber{border-top-color:var(--gold);}
+/* Pulsanti azione della distinta resi: stessi di Compass (style.css, .rc-act-btn) */
+.rc-act-btn{position:relative;width:26px;height:26px;border-radius:50%;background:var(--accent-bg);
+.rc-act-btn::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;
+.rc-act-btn::before{content:'';position:absolute;bottom:calc(100% + 3px);left:50%;
+.rc-act-btn:hover::after,.rc-act-btn:hover::before{opacity:1;transform:translateX(-50%) translateY(0);}
+.rc-act-btn:hover{background:var(--accent);color:#fff;}
 </style>
 </head>
 <body>
@@ -144,7 +169,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-25.1';
+const QM_APP_BUILD='2026-09-25.3';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -265,8 +290,23 @@ setInterval(qmCheckVersione,600000);
 </div>
 
 <div class="shell">
+  <div style="display:inline-flex;margin-bottom:14px;">
+    <button id="bg-tab-consumo" onclick="bgSezione('consumo')" style="padding:8px 18px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;border-radius:8px 0 0 8px;">Consumo biancheria</button>
+    <button id="bg-tab-reso" onclick="bgSezione('reso')" style="padding:8px 18px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;border-radius:0 8px 8px 0;margin-left:-1px;">Reso biancheria</button>
+  </div>
+  <div id="bg-sez-consumo">
   <div id="gb-content"></div>
   <div id="gb-extra"></div>
+  </div>
+  <div id="bg-sez-reso" style="display:none;">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Reso Biancheria Inidonea — Fornitore Raimondo</span>
+        <button onclick="grAddRow()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;border:none;padding:7px 14px;border-radius:9px;font-weight:600;font-size:var(--fs-xxs);cursor:pointer;font-family:inherit;">+ Nuovo reso</button>
+      </div>
+      <div class="panel-body" id="gr-content"></div>
+    </div>
+  </div>
   <div class="firma">
     <span class="firma-marchio">Compass <span>QM</span></span>
     Gestione Biancheria fa parte della Suite Compass QM, interamente ideata e creata dal
@@ -495,6 +535,7 @@ async function _gbGiro(){
     const d=await _gbKvGet(GB_DIST_KEY);
     if(d&&d!==JSON.stringify(_gbDist)){try{_gbDist=JSON.parse(d)||{};localStorage.setItem(GB_DIST_KEY,d);cambiato=true;}catch(e){}}
     if(cambiato){_gb=nuovo;_gbSenzaSalto(gbRender);}
+    if(_bgSezione==='reso'){const nr=await _grLeggiArchivio(GR_KEY,{righe:[],ritiri:[],tipologie:null});if(JSON.stringify(nr)!==JSON.stringify(_gr)){_gr=nr;_gbSenzaSalto(grRender);}}
   }catch(e){}
 }
 
@@ -1840,6 +1881,625 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 
 
 // Il ridisegno completo: il modulo di Compass, poi i riquadri propri della Galleria.
+
+const _grElencoRecord=a=>Array.isArray(a)&&a.every(x=>x&&typeof x==='object'&&!Array.isArray(x)&&x.id);
+const _GR_CHIUSURE=['ritiroId'];
+function _grTieniChiusure(prec,m,rimossi){
+  let out=m;
+  _GR_CHIUSURE.forEach(campo=>{
+    if(!(campo in m)&&!(campo in (prec||{})))return;
+    const viva=x=>(x&&x[campo]&&!(rimossi&&rimossi.has(x[campo])))?x[campo]:null;
+    const val=viva(m)||viva(prec)||null;
+    if(out[campo]!==val){if(out===m)out=Object.assign({},m);out[campo]=val;}
+  });
+  return out;
+}
+function _grPiuRecente(r,l){return(r&&l&&typeof r.ts==='number'&&typeof l.ts==='number'&&r.ts>l.ts)?'r':'l';}
+function _grUnisciRecord(remoto,locale,rimossi){
+  const out=[],pos={};
+  [].concat(remoto||[],locale||[]).forEach(m=>{
+    if(!m||!m.id)return;
+    if(rimossi&&rimossi.has(m.id))return;
+    if(!(m.id in pos)){pos[m.id]=out.length;out.push(_grTieniChiusure(null,m,rimossi));return;}
+    const prec=out[pos[m.id]];
+    out[pos[m.id]]=_grPiuRecente(prec,m)==='r'?_grTieniChiusure(m,prec,rimossi):_grTieniChiusure(prec,m,rimossi);
+  });
+  return out;
+}
+function _grFondiElenchi(remoto,locale,rimossi){
+  const ogg=v=>v&&typeof v==='object'&&!Array.isArray(v);
+  const R=ogg(remoto)?remoto:{},L=ogg(locale)?locale:{};
+  const out={};
+  [...new Set([...Object.keys(R),...Object.keys(L)])].forEach(k=>{
+    const r=R[k],l=L[k];
+    if(_grElencoRecord(r)&&_grElencoRecord(l))out[k]=_grUnisciRecord(r,l,rimossi);
+    else if(_grElencoRecord(r)&&(l===undefined||l===null))out[k]=r;
+    else if(_grElencoRecord(l)&&(r===undefined||r===null))out[k]=l;
+    else if(ogg(r)&&ogg(l))out[k]=_grFondiElenchi(r,l,rimossi);
+    else out[k]=(l!==undefined&&l!==null)?l:r;
+  });
+  return out;
+}
+let _grArchivioLetto={};      // chiave -> il cloud è stato letto almeno una volta qui
+async function _grSalvaArchivio(key,locale){
+  const json=JSON.stringify(locale);
+  try{localStorage.setItem(key,json);}catch(e){}
+  let finale=locale,letto=false;
+  try{
+    const r=await _gbFetch('/kv/get?key='+encodeURIComponent(key));
+    if(r.ok){
+      const j=await r.json();
+      const remoto=j&&j.value?JSON.parse(j.value):{};
+      const rim=[...new Set([].concat((remoto&&remoto._rimossi)||[],(locale&&locale._rimossi)||[]))];
+      finale=_grFondiElenchi(remoto,locale,new Set(rim));
+      if(rim.length)finale._rimossi=rim.slice(-300);
+      letto=_grArchivioLetto[key]=true;
+    }
+  }catch(e){}
+  // Senza aver mai letto il cloud in questa sessione non si scrive: sarebbe sovrascrivere
+  // alla cieca, che è esattamente come sono spariti i pre-stay del 24 agosto.
+  if(!letto&&!_grArchivioLetto[key]){_gbEsito(false);return locale;}
+  try{localStorage.setItem(key,JSON.stringify(finale));}catch(e){}
+  const ok=await _gbKvSet(key,JSON.stringify(finale));
+  _gbEsito(ok);
+  return finale;
+}
+function _grSegnaRimosso(archivio,id){
+  if(!archivio||!id)return archivio;
+  archivio._rimossi=[...new Set([].concat(archivio._rimossi||[],[id]))].slice(-300);
+  return archivio;
+}
+async function _grLeggiArchivio(key,vuoto){
+  let remoto=null,locale=null;
+  try{
+    const r=await _gbFetch('/kv/get?key='+encodeURIComponent(key));
+    if(r.ok){const j=await r.json();if(j&&j.value){remoto=JSON.parse(j.value);_grArchivioLetto[key]=true;}}
+  }catch(e){}
+  try{const l=localStorage.getItem(key);if(l)locale=JSON.parse(l);}catch(e){}
+  if(remoto===null&&locale===null)return Object.assign({},vuoto);
+  if(remoto===null)return Object.assign({},vuoto,locale);
+  if(locale===null)return Object.assign({},vuoto,remoto);
+  const rim=[...new Set([].concat(remoto._rimossi||[],locale._rimossi||[]))];
+  return Object.assign({},vuoto,_grFondiElenchi(remoto,locale,new Set(rim)));
+}
+
+const GR_ICON_STAMPA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1"/><path d="M6 17v4h12v-4"/></svg>';
+const GR_ICON_CORREGGI='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>';
+const GR_ICON_CANCELLA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/><path d="M10 11v6M14 11v6"/></svg>';
+function _grActBtn(icon,tip,onclick){
+  return `<button onclick="${onclick}" class="rc-act-btn" data-tip="${tip}">${icon}</button>`;
+}
+
+// ── RESO BIANCHERIA (copia del §§ RESI BIANCHERIA di Compass, 25/09/2026) — Distinta reso biancheria inidonea (Fornitore Raimondo)
+// Traccia digitale della distinta cartacea che le housekeeper compilano ogni giorno
+// (data / tipologia / quantità / motivo / firma HK). Le HKP continuano a scrivere sul
+// cartaceo — questa vista è solo per il QM, che trascrive qui i dati e da qui genera la
+// distinta riepilogativa A4 da far firmare a Raimondo ogni 15 giorni.
+// Le due strutture che fanno capo al QM: Art Resort resta fuori di proposito (fa capo al
+// Sig. Maddaloni, non al QM, e la sua ditta di pulizie è esterna). NELLA GALLERIA le strutture
+// sono proprio Art Resort e Santa Brigida: il Resident Manager chiede la stessa procedura di
+// SoulArt e Boutique (25/09/2026).
+const GR_KEY='bg_resi';
+const GR_HOTELS={ar:'Art Resort Galleria Umberto',sb:'Art Suite Santa Brigida'};
+// Struttura selezionata nella vista. Righe/ritiri salvati prima di questa aggiunta non
+// hanno il campo `hotel`: valgono come SoulArt (era l'unica struttura gestita), così i
+// dati già inseriti restano dove sono invece di sparire dal filtro.
+let _grHotel='ar';
+const _grH=x=>x.hotel||'ar';
+// Ogni quanti giorni va consegnato il sacco a Raimondo — oltre questa soglia la vista
+// segnala che il periodo aperto è da chiudere.
+const GR_GIORNI_RITIRO=15;
+// Tipologie e motivi predefiniti — modificabili dall'interfaccia (salvati nella stessa
+// chiave KV), così i totali per tipologia restano coerenti invece di dipendere da come
+// ognuno scrive la stessa cosa.
+const GR_TIPOLOGIE_DEFAULT=['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Copripiumino matrimoniale','Copripiumino singolo','Coprimaterasso','Asciugamano viso','Asciugamano corpo','Asciugamano bidet','Tappetino bagno','Accappatoio','Tovaglia','Tovagliolo'];
+const GR_MOTIVI=['Macchiata','Strappata','Usurata','Ingiallita','Bruciata','Scolorita','Altro'];
+let _gr={righe:[],ritiri:[],tipologie:null};
+
+function _grUid(){return Date.now()+'_'+Math.random().toString(36).slice(2,8);}
+function _grTipologie(){return (_gr.tipologie&&_gr.tipologie.length)?_gr.tipologie:GR_TIPOLOGIE_DEFAULT;}
+function _grFmtData(d){const x=d instanceof Date?d:new Date(d);return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0')+'/'+x.getFullYear();}
+// dd/MM/yyyy -> Date, per ordinare e trovare il periodo (min/max) di un gruppo di righe
+function _grParseData(s){const m=String(s||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;}
+
+async function grLoad(){
+  const el=document.getElementById('gr-content');if(!el)return;
+  el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Caricamento…</div>';
+  _gr=await _grLeggiArchivio(GR_KEY,{righe:[],ritiri:[],tipologie:null});
+  grRender();
+}
+async function _grSave(){
+  _gr=await _grSalvaArchivio(GR_KEY,_gr);
+  return _gr;
+}
+
+// Righe non ancora consegnate a Raimondo = periodo aperto in corso. Registrando un
+// ritiro vengono "chiuse" (ritiroId valorizzato) e non compaiono più nel periodo aperto.
+// Sempre filtrate per struttura: i due sacchi sono distinti e vanno consegnati separati.
+function _grAperte(h){const hot=h||_grHotel;return _gr.righe.filter(r=>!r.ritiroId&&_grH(r)===hot);}
+function _grRitiri(h){const hot=h||_grHotel;return _gr.ritiri.filter(r=>_grH(r)===hot);}
+function grSetHotel(h){if(!GR_HOTELS[h])return;_grHotel=h;grRender();}
+// Da quanti giorni non si consegna: dall'ultimo ritiro della struttura, o — se non ce n'è
+// mai stato uno — dal reso più vecchio ancora aperto. null quando non c'è nulla da
+// consegnare (niente righe aperte = nessun sacco in attesa, nessun avviso da dare).
+function _grGiorniDaUltimoRitiro(h){
+  const aperte=_grAperte(h);
+  if(!aperte.length)return null;
+  const rit=_grRitiri(h).map(r=>_grParseData(r.dataRitiro)).filter(Boolean).sort((a,b)=>b-a);
+  const date=aperte.map(r=>_grParseData(r.data)).filter(Boolean).sort((a,b)=>a-b);
+  const rif=rit.length?rit[0]:(date.length?date[0]:null);
+  if(!rif)return null;
+  const oggi=new Date();oggi.setHours(0,0,0,0);
+  return Math.floor((oggi-rif)/86400000);
+}
+
+// Il form di inserimento è sempre visibile in cima alla vista: il bottone "+ Nuovo reso"
+// nell'intestazione del pannello serve solo a portarci il focus quando si è più in basso
+// nella pagina, non ad aprire/chiudere nulla.
+function grAddRow(){
+  const f=document.getElementById('gr-form');
+  if(!f)return;
+  f.scrollIntoView({behavior:'smooth',block:'center'});
+  const q=document.getElementById('gr-f-qta');
+  if(q)setTimeout(()=>q.focus(),300);
+}
+function grSubmit(){
+  const data=(document.getElementById('gr-f-data')||{}).value||'';
+  const tipologia=(document.getElementById('gr-f-tipologia')||{}).value||'';
+  const qta=parseInt((document.getElementById('gr-f-qta')||{}).value,10);
+  const motivo=(document.getElementById('gr-f-motivo')||{}).value||'';
+  const hk=((document.getElementById('gr-f-hk')||{}).value||'').trim();
+  if(!data){_gbAvviso('Inserisci la data.');return;}
+  if(!tipologia){_gbAvviso('Seleziona la tipologia del pezzo.');return;}
+  if(isNaN(qta)||qta<=0){_gbAvviso('Inserisci una quantità valida.');return;}
+  // input type=date restituisce yyyy-MM-dd: si normalizza a dd/MM/yyyy come nel cartaceo
+  const iso=data.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const dataIt=iso?`${iso[3]}/${iso[2]}/${iso[1]}`:data;
+  _gr.righe.push({id:_grUid(),ts:Date.now(),hotel:_grHotel,data:dataIt,tipologia,qta,motivo,hk,ritiroId:null,edits:[]});
+  _grSave();
+  const q=document.getElementById('gr-f-qta');if(q)q.value='';
+  grRender();
+}
+async function grDelRow(id){
+  const i=_gr.righe.findIndex(r=>r.id===id);if(i<0)return;
+  const r=_gr.righe[i];
+  if(!await _gbConferma('Eliminare questo reso?',`<strong>${r.tipologia} ×${r.qta}</strong><br>Reso del ${r.data}.`,{ok:'Elimina'}))return;
+  _gr.righe.splice(i,1);
+  // L'id va segnato PRIMA di salvare, altrimenti la fusione lo rimette dentro: la riga
+  // sta ancora sul cloud, e _qmUnisciRecord riporta i record che il locale non ha piu'.
+  // Senza questa riga il cestino non cancellava niente — la riga spariva per un istante
+  // e tornava al primo giro. E' l'unica eliminazione degli archivi a elenchi che se ne
+  // era dimenticata: dvrEmpDelete, dvrDelete, grDelRitiro e le due della biancheria
+  // chiamano tutte _grSegnaRimosso.
+  _grSegnaRimosso(_gr,id);
+  await _grSave();grRender();
+}
+// Correzione con storico, mai sovrascrittura silenziosa — stesso principio della cassa.
+function grEditQta(id){
+  const r=_gr.righe.find(x=>x.id===id);if(!r)return;
+  const v=prompt(`Nuova quantità per "${r.tipologia}" del ${r.data} (attuale: ${r.qta}):`,r.qta);
+  if(v===null)return;
+  const n=parseInt(v,10);if(isNaN(n)||n<=0){_gbAvviso('Quantità non valida.');return;}
+  const motivo=prompt('Motivo della correzione:','');
+  if(!motivo)return;
+  r.edits=r.edits||[];
+  r.edits.push({ts:Date.now(),persona:'Quality Manager',campo:'qta',vecchio:r.qta,nuovo:n,motivo});
+  r.qta=n;
+  _grSave();grRender();
+}
+// IL TAGLIO DEL PERIODO — Raimondo passa alle 8:00, prima che le cameriere lavorino:
+// i resi trovati nella giornata STESSA del ritiro non sono nel sacco che porta via,
+// appartengono gia' al periodo successivo. E' la stessa regola del giro pulito/sporco
+// (§§ BIANCHERIA, "il consumo del giorno del giro finisce nel giro successivo"): prima
+// qui si chiudevano tutte le righe aperte, quelle di oggi comprese, e i pezzi raccolti
+// dopo il passaggio sparivano dentro una distinta gia' consegnata.
+// Una riga con data illeggibile si consegna invece di restare aperta per sempre: meglio
+// in distinta che dimenticata.
+function _grDaConsegnare(dataRitiro,h){
+  const lim=_grParseData(dataRitiro);
+  if(!lim)return [];
+  return _grAperte(h).filter(r=>{const d=_grParseData(r.data);return !d||d<lim;});
+}
+
+// RIGHE TORNATE INDIETRO — riparazione dei dati gia' danneggiati.
+// Il difetto di fusione qui sopra (_QM_CHIUSURE) e' chiuso da oggi, ma le righe che erano
+// gia' rientrate nel periodo aperto restano dove sono: nessuno sa piu' a quale ritiro
+// appartenessero, perche' `ritiroId` era stato azzerato.
+// Si riconoscono dalla data: una riga aperta che cade DENTRO il periodo di un ritiro gia'
+// consegnato e' per forza una riga che quel ritiro aveva chiuso — `dal`/`al` sono per
+// costruzione il minimo e il massimo delle righe che ha portato via.
+// Resta un caso in cui l'accostamento sbaglia: un reso trascritto in ritardo, datato
+// dentro un periodo gia' consegnato ma mai finito nel sacco. Per questo la riassegnazione
+// NON e' automatica: si mostra cosa si sta per fare e decide l'utente, come per le
+// osservazioni in conflitto della calibrazione.
+function _grRiaperte(h){
+  const hot=h||_grHotel;
+  const rit=_grRitiri(hot);
+  const out=[];
+  _grAperte(hot).forEach(r=>{
+    const d=_grParseData(r.data);if(!d)return;
+    const q=rit.find(t=>{const a=_grParseData(t.dal),b=_grParseData(t.al);return a&&b&&d>=a&&d<=b;});
+    if(q)out.push({riga:r,rit:q});
+  });
+  return out;
+}
+async function grRiassegnaRiaperte(){
+  const casi=_grRiaperte();
+  if(!casi.length){_gbAvviso('Niente da riassegnare','Nessun reso in elenco cade dentro un periodo gia\' consegnato.');return;}
+  const conta={};
+  casi.forEach(c=>{conta[c.rit.id]=conta[c.rit.id]||{rit:c.rit,n:0,pezzi:0};conta[c.rit.id].n++;conta[c.rit.id].pezzi+=c.riga.qta;});
+  const elenco=Object.keys(conta).map(id=>{const x=conta[id];
+    return '&bull; ritiro del <strong>'+x.rit.dataRitiro+'</strong> ('+x.rit.dal+' &rarr; '+x.rit.al+'): '+x.n+' righe, '+x.pezzi+' pezzi';}).join('<br>');
+  if(!await _gbConferma('Rimettere '+casi.length+' resi nella distinta a cui appartengono?',
+      'Cadono dentro un periodo gia\' consegnato a Raimondo:<br><br>'+elenco+
+      '<br><br>Spariscono dal periodo aperto e tornano nel loro ritiro, che e\' dove erano prima di tornare indietro.<br><br>Se invece sono resi veri, trascritti in ritardo e mai messi nel sacco, annulla: vanno consegnati col prossimo ritiro.',
+      {ok:'Riassegna'}))return;
+  casi.forEach(c=>{c.riga.ritiroId=c.rit.id;});
+  await _grSave();
+  grRender();
+}
+
+// Chiude il periodo aperto e registra il ritiro. E' l'UNICO punto che crea un ritiro: ci
+// passano sia "Registra ritiro" sia la stampa della distinta, che consegna e chiude nello
+// stesso gesto. Prima la stampa non toccava i dati, quindi chi stampava e consegnava si
+// ritrovava l'elenco "resi non ancora consegnati" pieno di pezzi gia' dati a Raimondo.
+// Restituisce {rit,consegnate,restano}, oppure null se non c'e' nulla da consegnare o si annulla.
+async function _grChiudiPeriodo(){
+  const aperte=_grAperte();
+  if(!aperte.length){_gbAvviso('Niente da consegnare','Il periodo aperto e\' vuoto: non c\'e\' nessun reso da mettere nel sacco.');return null;}
+  const dataRitiro=prompt('Data del ritiro (gg/mm/aaaa):',_grFmtData(new Date()));
+  if(!dataRitiro)return null;
+  if(!_grParseData(dataRitiro)){_gbAvviso('Data non valida','Scrivi la data come gg/mm/aaaa, per esempio '+_grFmtData(new Date())+'.');return null;}
+  const consegnate=_grDaConsegnare(dataRitiro);
+  const restano=aperte.length-consegnate.length;
+  // Tutto quello che c'e' in elenco e' del giorno del ritiro o dopo: il sacco e' vuoto.
+  // Si dice perche', invece di lasciar credere a un guasto.
+  if(!consegnate.length){
+    _gbAvviso('Nessun reso da consegnare il '+dataRitiro,
+      'Tutti i '+aperte.length+' resi in elenco sono datati '+dataRitiro+' o dopo. Raimondo passa alle 8:00, prima che le cameriere lavorino: quei pezzi vanno nel sacco del ritiro successivo.');
+    return null;
+  }
+  const totPezzi=consegnate.reduce((s,r)=>s+r.qta,0);
+  const date=consegnate.map(r=>_grParseData(r.data)).filter(Boolean).sort((a,b)=>a-b);
+  const dal=date.length?_grFmtData(date[0]):dataRitiro;
+  const al=date.length?_grFmtData(date[date.length-1]):dataRitiro;
+  if(!await _gbConferma('Consegnare '+totPezzi+' pezzi a Raimondo?',
+      GR_HOTELS[_grHotel]+' &middot; '+consegnate.length+' righe dal <strong>'+dal+'</strong> al <strong>'+al+'</strong>.'
+      +(restano?'<br><br>I '+restano+' resi dal '+dataRitiro+' in poi <strong>restano nel periodo aperto</strong>: Raimondo passa alle 8:00, quei pezzi vanno nel sacco del prossimo ritiro.':''),
+      {ok:'Consegna e chiudi'}))return null;
+  const sacchi=prompt(`Sacchi ritirati da Raimondo (totale pezzi: ${totPezzi}):`,'1');
+  if(sacchi===null)return null;
+  const nSacchi=parseInt(sacchi,10);
+  if(isNaN(nSacchi)||nSacchi<=0){_gbAvviso('Numero sacchi non valido.');return null;}
+  const rit={id:_grUid(),ts:Date.now(),hotel:_grHotel,
+    dal,al,sacchi:nSacchi,totPezzi,dataRitiro,firmato:false};
+  _gr.ritiri.push(rit);
+  // ritiroId e push PRIMA dell'await: _grSave() riassegna _gr con l'archivio fuso,
+  // e dopo l'attesa questi oggetti non sono piu' quelli dentro _gr.
+  consegnate.forEach(r=>{r.ritiroId=rit.id;});
+  await _grSave();
+  return {rit,consegnate,restano};
+}
+
+async function grRegistraRitiro(){
+  const esito=await _grChiudiPeriodo();
+  if(!esito)return;
+  grRender();
+}
+// La distinta cartacea torna firmata da Raimondo: si spunta qui, così si vede subito
+// quali periodi sono chiusi davvero e quali sono ancora in attesa della ricevuta.
+function grToggleFirmato(id){
+  const r=_gr.ritiri.find(x=>x.id===id);if(!r)return;
+  r.firmato=!r.firmato;
+  _grSave();grRender();
+}
+async function grDelRitiro(id){
+  const i=_gr.ritiri.findIndex(x=>x.id===id);if(i<0)return;
+  if(!await _gbConferma('Annullare questo ritiro?','I resi torneranno nel periodo aperto, pronti per una nuova distinta.',{ok:'Annulla ritiro'}))return;
+  _gr.righe.forEach(r=>{if(r.ritiroId===id)r.ritiroId=null;});
+  _gr.ritiri.splice(i,1);
+  _grSegnaRimosso(_gr,id);
+  await _grSave();grRender();
+}
+function grEditTipologie(){
+  const cur=_grTipologie().join('\n');
+  const v=prompt('Tipologie di pezzo (una per riga):',cur);
+  if(v===null)return;
+  const list=v.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!list.length){_gbAvviso('Serve almeno una tipologia.');return;}
+  _gr.tipologie=list;
+  _grSave();grRender();
+}
+
+function grRender(){
+  const el=document.getElementById('gr-content');if(!el)return;
+  const aperte=_grAperte().slice().sort((a,b)=>{
+    const da=_grParseData(a.data),db=_grParseData(b.data);
+    return (db?db.getTime():0)-(da?da.getTime():0)||b.ts-a.ts;
+  });
+  const totPezzi=aperte.reduce((s,r)=>s+r.qta,0);
+  const oggiIso=new Date().toISOString().slice(0,10);
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Selettore struttura: i due sacchi sono distinti e si consegnano separatamente, quindi
+  // periodo aperto, totali, avviso e distinta sono sempre di una struttura sola. Il badge
+  // sulla linguetta non attiva segnala se anche lì c'è un periodo da chiudere, altrimenti
+  // un ritardo sull'altra struttura resterebbe invisibile finché non ci si passa sopra.
+  const tabs=Object.entries(GR_HOTELS).map(([k,nome])=>{
+    const att=k===_grHotel;
+    const gg=_grGiorniDaUltimoRitiro(k);
+    const late=gg!==null&&gg>=GR_GIORNI_RITIRO;
+    return`<button onclick="grSetHotel('${k}')" style="padding:9px 18px;border:1px solid var(--border);border-bottom:none;border-radius:6px 6px 0 0;background:${att?'#fff':'var(--surface2)'};color:${att?'var(--accent)':'var(--text-dim)'};font-weight:600;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:7px;">
+      ${esc(nome)}${!att&&late?`<span style="width:7px;height:7px;border-radius:50%;background:var(--amber);"></span>`:''}
+    </button>`;
+  }).join('');
+  let h=`<div style="display:flex;gap:6px;border-bottom:1px solid var(--border);margin-bottom:18px;">${tabs}</div>`;
+
+  // Righe tornate indietro da una postazione ferma: si segnalano invece di lasciarle
+  // confuse con i resi da consegnare — sono gia' state date a Raimondo, e riconsegnarle
+  // significa contarle due volte. Il pannello compare solo quando ce ne sono davvero.
+  const riap=_grRiaperte();
+  if(riap.length){
+    const pz=riap.reduce((s,c)=>s+c.riga.qta,0);
+    const rits=[...new Set(riap.map(c=>c.rit.dataRitiro))].join(', ');
+    h+=`<div style="background:var(--amber-bg);border:1.5px solid var(--amber);border-radius:8px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:18px;">↩️</span>
+      <div style="flex:1;min-width:220px;">
+        <div style="font-size:var(--fs-sm);font-weight:700;color:#7a3a00;">${riap.length} resi in elenco risultano già consegnati</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:2px;">${pz} pezzi che cadono dentro il ritiro del ${esc(rits)}. Erano chiusi e sono tornati indietro da una postazione rimasta ferma: se li riconsegni li conti due volte.</div>
+      </div>
+      <button onclick="grRiassegnaRiaperte()" style="background:var(--amber);color:#fff;border:none;border-radius:7px;padding:8px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">Rimettili nella loro distinta</button>
+    </div>`;
+  }
+
+  // Avviso ritiro: il sacco va consegnato ogni 15 giorni. Compare solo se c'è davvero
+  // qualcosa da consegnare (righe aperte) — senza resi in attesa non c'è nulla da
+  // sollecitare, e un avviso perenne diventerebbe rumore da ignorare.
+  const gg=_grGiorniDaUltimoRitiro();
+  if(gg!==null&&gg>=GR_GIORNI_RITIRO){
+    h+=`<div style="background:var(--amber-bg);border:1.5px solid var(--amber);border-radius:8px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:18px;">⚠️</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:var(--fs-sm);font-weight:700;color:#7a3a00;">Sacco da consegnare a Raimondo — ${gg} giorni dall'ultimo ritiro</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:2px;">${totPezzi} pezzi in attesa per ${esc(GR_HOTELS[_grHotel])}. Stampando la distinta il periodo si chiude: i resi di oggi restano in elenco per il prossimo sacco.</div>
+      </div>
+    </div>`;
+  }
+
+  // Form di inserimento — sempre visibile, è l'azione principale di questa vista
+  h+=`<div id="gr-form" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:14px 16px;margin-bottom:18px;">
+    <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Nuovo reso — ${esc(GR_HOTELS[_grHotel])}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:0 0 140px;">
+        <label style="display:block;font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:4px;">Data</label>
+        <input type="date" id="gr-f-data" value="${oggiIso}" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:#fff;color:var(--text);">
+      </div>
+      <div style="flex:1 1 200px;min-width:160px;">
+        <label style="display:block;font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:4px;">Tipologia pezzo</label>
+        <select id="gr-f-tipologia" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:#fff;color:var(--text);">
+          ${_grTipologie().map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('')}
+        </select>
+      </div>
+      <div style="flex:0 0 90px;">
+        <label style="display:block;font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:4px;">Quantità</label>
+        <input type="number" id="gr-f-qta" min="1" step="1" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:#fff;color:var(--text);">
+      </div>
+      <div style="flex:0 0 140px;">
+        <label style="display:block;font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:4px;">Motivo reso</label>
+        <select id="gr-f-motivo" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:#fff;color:var(--text);">
+          ${GR_MOTIVI.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('')}
+        </select>
+      </div>
+      <div style="flex:0 0 140px;">
+        <label style="display:block;font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:4px;">Housekeeper</label>
+        <input type="text" id="gr-f-hk" placeholder="chi ha firmato" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:#fff;color:var(--text);">
+      </div>
+      <button onclick="grSubmit()" style="background:var(--accent);color:#fff;border:none;padding:9px 18px;border-radius:6px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;">Aggiungi</button>
+    </div>
+    <div style="margin-top:8px;"><span onclick="grEditTipologie()" style="font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Modifica elenco tipologie</span></div>
+  </div>`;
+
+  // Riepilogo del periodo aperto: totale + dettaglio per tipologia (è il numero che
+  // finisce sulla distinta e che Raimondo controlla al ritiro)
+  const perTip={};
+  aperte.forEach(r=>{perTip[r.tipologia]=(perTip[r.tipologia]||0)+r.qta;});
+  const tipRows=Object.entries(perTip).sort((a,b)=>b[1]-a[1]);
+  h+=`<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;margin-bottom:18px;align-items:stretch;max-width:720px;">
+    <div class="kpi-card blue">
+      <div class="kpi-card-icon" style="background:var(--accent-bg);color:var(--accent);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/></svg></div>
+      <div class="kpi-label">Pezzi da consegnare</div>
+      <div class="kpi-value">${totPezzi}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-icon" style="background:var(--gold-bg);color:var(--gold);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg></div>
+      <div class="kpi-label">Righe in distinta</div>
+      <div class="kpi-value">${aperte.length}</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:16px 20px;display:flex;flex-direction:column;justify-content:center;gap:8px;min-width:180px;">
+      <button onclick="grPrintDistinta()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:9px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">🖨️ Stampa distinta e consegna</button>
+      <button onclick="grRegistraRitiro()" style="background:#fff;color:var(--accent);border:1.5px solid var(--border);border-radius:7px;padding:9px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">✓ Registra ritiro senza stampa</button>
+      <span onclick="grPrintBozza()" style="font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;text-align:center;">Anteprima — non chiude il periodo</span>
+    </div>
+  </div>`;
+
+  if(tipRows.length){
+    h+=`<div style="font-size:var(--fs-sm);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:0 0 10px;">Totale per tipologia</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">${tipRows.map(([t,n])=>`<span style="background:var(--surface2);border:1px solid var(--border-light);border-radius:20px;padding:5px 13px;font-size:var(--fs-xs);color:var(--text);">${esc(t)} <b>${n}</b></span>`).join('')}</div>`;
+  }
+
+  // Elenco righe del periodo aperto
+  h+=`<div style="font-size:var(--fs-sm);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:0 0 10px;">Periodo aperto — resi non ancora consegnati</div>`;
+  h+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+    <thead><tr style="background:var(--surface2);">
+      <th style="text-align:left;padding:8px 10px;">Data</th>
+      <th style="text-align:left;padding:8px 10px;">Tipologia pezzo</th>
+      <th style="text-align:right;padding:8px 10px;">Quantità</th>
+      <th style="text-align:left;padding:8px 10px;">Motivo reso</th>
+      <th style="text-align:left;padding:8px 10px;">Housekeeper</th>
+      <th></th>
+    </tr></thead>
+    <tbody>${aperte.length?aperte.map(r=>{
+      const editedTag=r.edits&&r.edits.length?` <span style="font-size:10px;color:var(--text-dim);font-style:italic;">(corretto ${r.edits.length}×)</span>`:'';
+      return`<tr style="border-bottom:1px solid var(--border-light);">
+        <td style="padding:8px 10px;white-space:nowrap;">${esc(r.data)}</td>
+        <td style="padding:8px 10px;">${esc(r.tipologia)}</td>
+        <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${r.qta}${editedTag}</td>
+        <td style="padding:8px 10px;color:var(--text-dim);">${esc(r.motivo)}</td>
+        <td style="padding:8px 10px;color:var(--text-dim);">${esc(r.hk)||'—'}</td>
+        <td style="padding:8px 10px;white-space:nowrap;">${_grActBtn(GR_ICON_CORREGGI,'Correggi quantità',`grEditQta('${r.id}')`)}${_grActBtn(GR_ICON_CANCELLA,'Elimina',`grDelRow('${r.id}')`)}</td>
+      </tr>`;
+    }).join(''):'<tr><td colspan="6" style="padding:16px;text-align:center;color:var(--text-dim);font-style:italic;">Nessun reso registrato in questo periodo.</td></tr>'}</tbody>
+  </table></div>`;
+
+  // Storico ritiri già consegnati a Raimondo
+  const ritiri=_grRitiri().slice().sort((a,b)=>b.ts-a.ts);
+  if(ritiri.length){
+    h+=`<div style="font-size:var(--fs-sm);font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:26px 0 10px;">Ritiri consegnati a Raimondo</div>`;
+    h+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+      <thead><tr style="background:var(--surface2);">
+        <th style="text-align:left;padding:8px 10px;">Periodo</th>
+        <th style="text-align:left;padding:8px 10px;">Data ritiro</th>
+        <th style="text-align:right;padding:8px 10px;">Sacchi</th>
+        <th style="text-align:right;padding:8px 10px;">Pezzi</th>
+        <th style="text-align:left;padding:8px 10px;">Ricevuta firmata</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${ritiri.map(rt=>`<tr style="border-bottom:1px solid var(--border-light);">
+        <td style="padding:8px 10px;white-space:nowrap;">${esc(rt.dal)} → ${esc(rt.al)}</td>
+        <td style="padding:8px 10px;white-space:nowrap;">${esc(rt.dataRitiro)}</td>
+        <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${rt.sacchi}</td>
+        <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums;">${rt.totPezzi}</td>
+        <td style="padding:8px 10px;"><span onclick="grToggleFirmato('${rt.id}')" style="cursor:pointer;font-size:var(--fs-xxs);font-weight:600;padding:4px 11px;border-radius:20px;background:${rt.firmato?'var(--green-bg)':'var(--amber-bg)'};color:${rt.firmato?'var(--green)':'var(--amber)'};">${rt.firmato?'✓ firmata':'in attesa'}</span></td>
+        <td style="padding:8px 10px;white-space:nowrap;">${_grActBtn(GR_ICON_STAMPA,'Ristampa distinta',`grPrintDistinta('${rt.id}')`)}${_grActBtn(GR_ICON_CANCELLA,'Annulla ritiro',`grDelRitiro('${rt.id}')`)}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+
+  el.innerHTML=h;
+}
+
+// Stampare la distinta E' la consegna: chiude il periodo aperto nello stesso gesto, con
+// il taglio al giorno del ritiro (vedi _grDaConsegnare). Con un ritiroId ristampa un
+// periodo gia' consegnato e non tocca nulla. Per una copia di lavoro c'e' grPrintBozza().
+async function grPrintDistinta(ritiroId){
+  if(ritiroId){_grStampa(ritiroId);return;}
+  const esito=await _grChiudiPeriodo();
+  if(!esito)return;
+  grRender();
+  _grStampa(esito.rit.id);
+}
+// Copia di lavoro del periodo aperto: nessun ritiro registrato, sacchi e data in bianco,
+// l'elenco resta dov'e'. Serve per il controllo con le housekeeper prima della consegna.
+function grPrintBozza(){_grStampa(null,true);}
+
+// Stampa A4 della distinta — stesso impianto del modulo cartaceo (intestazione struttura
+// e periodo, tabella data/tipologia/quantità/motivo/firma HK, blocco ritiro con firma di
+// Raimondo e blocco consegna al Resident Manager). Senza id stampa il periodo aperto in bozza.
+function _grStampa(ritiroId,bozza){
+  const righe=ritiroId?_gr.righe.filter(r=>r.ritiroId===ritiroId):_grAperte();
+  if(!righe.length){_gbAvviso('Nessun reso da stampare per questo periodo.');return;}
+  const rit=ritiroId?_gr.ritiri.find(x=>x.id===ritiroId):null;
+  // La struttura è quella del ritiro che si sta ristampando, non quella selezionata ora
+  // nella vista: ristampando un vecchio periodo l'intestazione deve restare la sua.
+  const hotelNome=GR_HOTELS[rit?_grH(rit):_grHotel]||GR_HOTELS.sa;
+  const ord=righe.slice().sort((a,b)=>{
+    const da=_grParseData(a.data),db=_grParseData(b.data);
+    return (da?da.getTime():0)-(db?db.getTime():0);
+  });
+  const date=ord.map(r=>_grParseData(r.data)).filter(Boolean);
+  const dal=rit?rit.dal:(date.length?_grFmtData(date[0]):'___/___/____');
+  const al=rit?rit.al:(date.length?_grFmtData(date[date.length-1]):'___/___/____');
+  const totPezzi=ord.reduce((s,r)=>s+r.qta,0);
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Distinta Reso Biancheria</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;font-size:10.5pt;}
+@page{size:A4;margin:16mm;}
+.hdr{border-bottom:1.5px solid #111;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;}
+.title{font-size:14pt;font-weight:700;letter-spacing:.01em;}
+.sub{font-size:9pt;color:#555;margin-top:2px;}
+.meta{display:flex;gap:34px;margin-bottom:14px;font-size:10pt;}
+.meta-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;}
+.meta-val{font-weight:700;margin-top:2px;}
+.warn{border:1px solid #999;padding:8px 10px;margin-bottom:14px;font-size:8.5pt;line-height:1.6;color:#333;}
+table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+th{text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:1.5px solid #111;padding:6px 6px;}
+td{padding:7px 6px;border-bottom:1px solid #ccc;font-size:10pt;}
+td.r{text-align:right;}
+tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-top:8px;}
+.blk{border:1px solid #999;padding:10px 12px;margin-bottom:12px;}
+.blk-t{font-size:8.5pt;text-transform:uppercase;letter-spacing:.05em;font-weight:700;color:#333;margin-bottom:10px;}
+.row{display:flex;gap:26px;margin-bottom:12px;}
+.f{flex:1;}
+.f-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;margin-bottom:3px;}
+.f-val{font-size:11pt;border-bottom:1px solid #999;padding-bottom:4px;min-height:17px;}
+.sign{border-bottom:1px solid #111;margin-top:34px;}
+.sign-c{font-size:8pt;color:#555;margin-top:4px;}
+</style></head><body>
+  <div class="hdr">
+    <div><div class="title">Distinta Reso Biancheria Inidonea</div><div class="sub">Fornitore Raimondo</div></div>
+    <div style="text-align:right;"><div class="meta-lbl">Struttura</div><div class="meta-val">${esc(hotelNome)}</div></div>
+  </div>
+  ${bozza?'<div class="warn" style="border-width:1.5px;font-weight:700;color:#111;">BOZZA — copia di lavoro. Il periodo non e\' ancora chiuso e questi resi restano in elenco. La distinta da far firmare a Raimondo si stampa da &laquo;Stampa distinta e consegna&raquo;.</div>':''}
+  <div class="meta">
+    <div><div class="meta-lbl">Periodo dal</div><div class="meta-val">${esc(dal)}</div></div>
+    <div><div class="meta-lbl">al</div><div class="meta-val">${esc(al)}</div></div>
+    <div><div class="meta-lbl">Totale pezzi</div><div class="meta-val">${totPezzi}</div></div>
+  </div>
+  <div class="warn">
+    • Mettere la biancheria macchiata / difettata in un sacco distinto, dedicato esclusivamente a Raimondo.<br>
+    • NON conteggiarla come normale biancheria sporca nei dati giornalieri.<br>
+    • A fine servizio, consegnare la lista al Resident Manager.
+  </div>
+  <table>
+    <thead><tr><th style="width:70px;">Data</th><th>Tipologia pezzo</th><th style="width:60px;text-align:right;">Quantità</th><th style="width:110px;">Motivo reso</th><th style="width:120px;">Firma HK</th></tr></thead>
+    <tbody>${ord.map(r=>`<tr><td>${esc(r.data)}</td><td>${esc(r.tipologia)}</td><td class="r">${r.qta}</td><td>${esc(r.motivo)}</td><td>${esc(r.hk)}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="2">Totale pezzi</td><td class="r">${totPezzi}</td><td colspan="2"></td></tr></tfoot>
+  </table>
+  <div class="blk">
+    <div class="blk-t">Ritiro Fornitore Raimondo (ogni 15 giorni)</div>
+    <div class="row">
+      <div class="f"><div class="f-lbl">Sacchi ritirati n°</div><div class="f-val">${rit?esc(String(rit.sacchi)):'&nbsp;'}</div></div>
+      <div class="f"><div class="f-lbl">Totale pezzi</div><div class="f-val">${totPezzi}</div></div>
+      <div class="f"><div class="f-lbl">Data</div><div class="f-val">${rit?esc(rit.dataRitiro):'&nbsp;'}</div></div>
+    </div>
+    <div class="sign"></div>
+    <div class="sign-c">Firma per ricevuta — Fornitore Raimondo</div>
+  </div>
+  <div class="blk">
+    <div class="blk-t">Consegna distinta firmata</div>
+    <div class="row">
+      <div class="f"><div class="f-lbl">Consegnata a</div><div class="f-val">Resident Manager</div></div>
+      <div class="f"><div class="f-lbl">Data</div><div class="f-val">&nbsp;</div></div>
+    </div>
+    <div class="sign"></div>
+    <div class="sign-c">Firma Responsabile / Management</div>
+  </div>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(!w){_gbAvviso('Abilita i popup per stampare.');return;}
+  w.document.write(html);w.document.close();
+  setTimeout(()=>w.print(),400);
+}
+
+
+// ── Due sezioni: Consumo e Reso (25/09/2026) ──
+// In Compass sono due voci di menu; qui una pagina sola con due linguette. La scelta resta
+// su questo computer, cosi' ricaricando si torna dove si era.
+let _bgSezione='consumo';
+try{const s=localStorage.getItem('bg_sezione');if(s==='reso'||s==='consumo')_bgSezione=s;}catch(e){}
+function bgSezione(s){
+  _bgSezione=s==='reso'?'reso':'consumo';
+  try{localStorage.setItem('bg_sezione',_bgSezione);}catch(e){}
+  const c=document.getElementById('bg-sez-consumo'),r=document.getElementById('bg-sez-reso');
+  if(c)c.style.display=_bgSezione==='consumo'?'':'none';
+  if(r)r.style.display=_bgSezione==='reso'?'':'none';
+  ['consumo','reso'].forEach(k=>{const b=document.getElementById('bg-tab-'+k);if(!b)return;const on=k===_bgSezione;
+    b.style.background=on?'var(--accent)':'var(--surface)';b.style.color=on?'#fff':'var(--text-dim)';b.style.borderColor=on?'var(--accent)':'var(--border)';});
+  if(_bgSezione==='reso')grLoad();
+}
+
 function gbRender(){
   _gbRenderCore();
   const x=document.getElementById('gb-extra');
@@ -1855,6 +2515,7 @@ if(!_gbPass()){
   gbMostraAttivazione('Questo computer non è ancora abilitato.');
 }else{
   gbLoad();
+  bgSezione(_bgSezione);
   _gbControllaStato();
   _gbRinnova();
   setInterval(_gbGiro,60000);

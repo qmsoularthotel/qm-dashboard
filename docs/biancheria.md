@@ -148,9 +148,8 @@ invece di ritoccarla a mano.
 
 - `gbRender()` è un involucro: chiama `_gbRenderCore()` (il `biaRender` di Compass, che riempie
   `#gb-content`); `#gb-extra` è vuoto dal 12/09/2026.
-- **Niente pezzi inidonei** (tolti l'11/09/2026 su richiesta del QM): in Galleria la procedura
-  di reso si fa **a mano, su carta**. Non reintrodurre il riquadro né la loro distinta. I resi
-  eventualmente salvati dalla versione precedente vengono lasciati cadere alla lettura.
+- **Reso Biancheria** — tolto l'11/09/2026 ("i resi li faranno a mano") e **rimesso il
+  25/09/2026** su richiesta del QM, con le stesse modalità di SoulArt e Boutique (vedi sotto).
 
 ### I dati della versione semplificata si leggono ancora
 
@@ -1099,3 +1098,28 @@ correggere la consegna di sabato 12/09.
 
 Non è impostata nessuna data d'ufficio: la sceglie il QM per struttura.
 - Lo storico non ha piu' una struttura sua: segue quella della pagina, e cambiarla dal suo selettore cambia tutta la pagina (24/09/2026).
+
+
+### Reso Biancheria nella Galleria (25/09/2026)
+
+Richiesta del QM: *"aggiungi reso biancheria all'app della galleria, stesse modalità del
+SoulArt e Boutique"*. È la **copia identica** del `§§ RESI BIANCHERIA` di Compass, con rinomino
+meccanico `_resi`→`_gr`, `resi…`→`gr…`, `RESI_`→`GR_`, `resi-`→`gr-`. Differenze, e solo queste:
+
+| | Compass | Galleria |
+|---|---|---|
+| strutture | `sa`, `bh` | `GR_HOTELS={ar,sb}`, predefinita `ar` |
+| chiave | `qm_resi_biancheria` | **`bg_resi`** (ammessa dal codice della Galleria) |
+| distinta firmata consegnata a | Sig. Presta | **Resident Manager** |
+| fusione col cloud | `_qmLeggiArchivio`/`_qmSalvaArchivio` | copie `_grLeggiArchivio`/`_grSalvaArchivio`/`_grUnisciRecord`/`_GR_CHIUSURE` (una consegna chiusa non torna aperta; vince la versione più recente), con `_gbFetch`/`_gbKvSet`/`_gbEsito` |
+| icone e schede | `RECEPTION_ICON_*`, `_receptionActBtn`, `.rc-act-btn`, `.kpi-card` | copie `GR_ICON_*`, `_grActBtn`, e le stesse regole CSS copiate nel `<style>` |
+
+La pagina ha ora due **linguette** in alto, *Consumo biancheria* e *Reso biancheria*
+(`bgSezione`, scelta ricordata in `localStorage` `bg_sezione`); il giro di ogni minuto rilegge
+anche i resi quando quella linguetta è aperta. Correggendo il modulo resi di Compass, va
+rigenerata anche questa copia. 9 controlli in `test/galleria.js`.
+
+Trovato nello stesso lavoro: la copia di `_biaEsito` si chiamava `_gbEsito`, come la funzione
+dell'avviso "salvato / NON salvato sul cloud", e l'aveva sostituita (24–25/09). Rinominata
+`_biaEsitoConsegna`/`_gbEsitoConsegna`; `test/esegui.sh` ora rifiuta le funzioni definite due
+volte nella stessa pagina.
