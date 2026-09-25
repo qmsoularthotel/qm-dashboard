@@ -4,31 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestione Biancheria — Compass QM</title>
+<!-- Stesso foglio di stile di Compass: menu, barra in alto, pannelli e schede sono quelli
+     (25/09/2026). Il numero si allinea da solo con strumenti/versione.sh. -->
+<link rel="stylesheet" href="style.css?v=269">
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  /* Stessi valori di :root in style.css di Compass: il modulo biancheria qui sotto è una
-     copia di quello di Compass e deve apparire identico. */
-  --bg:#eef1f5;--surface:#f8f9fb;--surface2:#e8ecf1;--border:#cdd4de;--border-light:#dde2ea;
-  --text:#0c1f33;--text-muted:#4a5568;--text-dim:#888880;
-  --accent:#1c3a5e;--accent-bg:#e8f0f8;
-  --gold:#c9952f;--gold-bg:#fef5e7;
-  --green:#2e7d32;--green-bg:#e8f5e9;
-  --red:#c62828;--red-bg:#ffebee;
-  --amber:#e65100;--amber-bg:#fff3e0;
-  --fs-base:16px;--fs-sm:14px;--fs-xs:13px;--fs-xxs:11px;
-  --shadow:0 1px 4px rgba(0,0,0,.08);
-}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--text);font-size:var(--fs-base);line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased;}
+/* Solo cio' che style.css di Compass non ha: il resto viene da li'. */
+:root{--shadow:0 1px 4px rgba(0,0,0,.08);}
 
-/* TOPBAR — stesso linguaggio delle altre app Compass */
-.topbar{background:var(--accent);border-bottom:2px solid var(--gold);color:#fff;padding:14px 20px 12px;display:flex;align-items:center;gap:11px;position:sticky;top:0;z-index:50;}
-.topbar-title{font-size:17px;font-weight:700;letter-spacing:-.01em;}
-.topbar-sub{font-size:11px;opacity:.65;margin-top:1px;}
-.topbar-sp{flex:1;}
-.topbar-hint{font-size:11px;opacity:.6;}
 
-.shell{max-width:1120px;margin:0 auto;padding:18px 18px 60px;}
 
 /* LINGUETTE STRUTTURA */
 .tabs{display:flex;gap:8px;margin-bottom:16px;}
@@ -40,12 +23,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica N
 .tab-s{font-size:11px;color:var(--text-muted);margin-top:2px;}
 
 /* PANNELLI */
-.panel{background:var(--surface);border:1px solid var(--border-light);border-radius:8px;border-top:4px solid var(--gold);box-shadow:0 2px 8px rgba(0,0,0,.07);}
 #gb-extra .panel{margin-top:16px;overflow:hidden;}
 .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:13px 18px;border-bottom:1px solid var(--border-light);background:var(--surface);}
-.panel-header{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-light);gap:8px;background:var(--surface2);}
-.panel-title{font-size:var(--fs-xxs);color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;flex:1;font-weight:600;}
-.panel-body{padding:16px 20px;}
 .panel-head .panel-title{flex:none;}
 #gb-content button,#gb-content input,#gb-content select,#gb-content textarea{font-family:inherit;}
 .panel{scroll-margin-top:74px;}
@@ -129,35 +108,10 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 .firma-marchio span{color:var(--gold);}
 
 @media(max-width:760px){
-  .shell{padding:14px 12px 40px;}
   .tabs{flex-direction:column;}
   .stato-box{min-width:100%;}
 }
 
-/* Schede numeriche del Reso: le stesse di Compass (style.css, .kpi-card) */
-.kpi-card{background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:20px 20px 14px;border-top:4px solid var(--gold);cursor:default;transition:box-shadow .18s,transform .18s;position:relative;overflow:hidden;display:flex;flex-direction:column;}
-.kpi-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.09);transform:translateY(-1px);}
-.kpi-card-hint{font-size:var(--fs-xxs);color:var(--text-dim);margin-top:auto;padding:2px 6px;border-radius:4px;display:inline-block;align-self:flex-start;transition:background .15s,color .15s;}
-.kpi-clickable:hover .kpi-card-hint{background:var(--accent-bg);color:var(--accent);}
-.kpi-card.blue{border-top-color:var(--accent);}.kpi-card.green{border-top-color:var(--green);}.kpi-card.red{border-top-color:var(--red);}.kpi-card.amber{border-top-color:var(--amber);}
-.kpi-card-icon{position:absolute;right:14px;top:14px;width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;}
-.kpi-card.blue .kpi-card-icon{background:var(--accent-bg);}.kpi-card.green .kpi-card-icon{background:var(--green-bg);}.kpi-card.red .kpi-card-icon{background:var(--red-bg);}.kpi-card.amber .kpi-card-icon{background:var(--amber-bg);}
-.kpi-label{font-size:var(--fs-xxs);color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
-.kpi-value{font-size:30px;font-weight:300;color:var(--text);letter-spacing:-.02em;line-height:1;}
-.kpi-delta{font-size:var(--fs-xxs);margin-top:6px;}.kpi-delta.up{color:var(--green);}.kpi-delta.down{color:var(--red);}
-.kpi-sub{font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;}
-.kpi-card{box-shadow:0 2px 8px rgba(0,0,0,.08);border:1px solid var(--border-light);}
-.kpi-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.13);transform:translateY(-2px);}
-.kpi-card.blue{border-top-color:var(--accent);}
-.kpi-card.green{border-top-color:var(--green);}
-.kpi-card.red{border-top-color:var(--red);}
-.kpi-card.amber{border-top-color:var(--gold);}
-/* Pulsanti azione della distinta resi: stessi di Compass (style.css, .rc-act-btn) */
-.rc-act-btn{position:relative;width:26px;height:26px;border-radius:50%;background:var(--accent-bg);
-.rc-act-btn::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;
-.rc-act-btn::before{content:'';position:absolute;bottom:calc(100% + 3px);left:50%;
-.rc-act-btn:hover::after,.rc-act-btn:hover::before{opacity:1;transform:translateX(-50%) translateY(0);}
-.rc-act-btn:hover{background:var(--accent);color:#fff;}
 </style>
 </head>
 <body>
@@ -169,7 +123,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-25.3';
+const QM_APP_BUILD='2026-09-25.4';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -275,29 +229,68 @@ setInterval(qmCheckVersione,600000);
   </div>
 </div>
 
-<div class="topbar">
-  <svg viewBox="0 0 36 36" width="28" height="28" style="flex-shrink:0;" xmlns="http://www.w3.org/2000/svg">
-    <polygon points="18,1 21,13 27,9 23,15 35,18 23,21 27,27 21,23 18,35 15,23 9,27 13,21 1,18 13,15 9,9 15,13" fill="#c9952f"/>
-    <polygon points="18,6 20,14 18,12 16,14" fill="rgba(255,255,255,.5)"/>
-    <polygon points="18,30 16,22 18,24 20,22" fill="rgba(255,255,255,.25)"/>
-  </svg>
-  <div>
-    <div class="topbar-title">Gestione Biancheria</div>
-    <div class="topbar-sub">Art Resort Galleria Umberto · Art Suite Santa Brigida · Fornitore Raimondo</div>
-  </div>
-  <div class="topbar-sp"></div>
-  <div class="topbar-hint" id="salvatoHint"></div>
-</div>
-
-<div class="shell">
-  <div style="display:inline-flex;margin-bottom:14px;">
-    <button id="bg-tab-consumo" onclick="bgSezione('consumo')" style="padding:8px 18px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;border-radius:8px 0 0 8px;">Consumo biancheria</button>
-    <button id="bg-tab-reso" onclick="bgSezione('reso')" style="padding:8px 18px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;border-radius:0 8px 8px 0;margin-left:-1px;">Reso biancheria</button>
-  </div>
-  <div id="bg-sez-consumo">
-  <div id="gb-content"></div>
-  <div id="gb-extra"></div>
-  </div>
+<div class="mobile-overlay" id="mobileOverlay" onclick="gbChiudiMenu()"></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo" style="display:flex;align-items:center;gap:10px;padding:14px 16px;">
+      <svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" width="36" height="36" style="flex-shrink:0;">
+        <circle cx="18" cy="18" r="16.5" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="1.3"/>
+        <polygon points="18,2 20.68,11.53 18,18 15.32,11.53" fill="#c9952f"/>
+        <polygon points="34,18 24.47,15.32 18,18 24.47,20.68" fill="#c9952f"/>
+        <polygon points="18,34 15.32,24.47 18,18 20.68,24.47" fill="#c9952f"/>
+        <polygon points="2,18 11.53,20.68 18,18 11.53,15.32" fill="#c9952f"/>
+        <polygon points="29.31,6.69 20.68,11.53 18,18 24.47,15.32" fill="rgba(255,255,255,.8)"/>
+        <polygon points="29.31,29.31 24.47,20.68 18,18 20.68,24.47" fill="rgba(255,255,255,.8)"/>
+        <polygon points="6.69,29.31 15.32,24.47 18,18 11.53,20.68" fill="rgba(255,255,255,.8)"/>
+        <polygon points="6.69,6.69 11.53,15.32 18,18 15.32,11.53" fill="rgba(255,255,255,.8)"/>
+        <circle cx="18" cy="18" r="2" fill="rgba(255,255,255,.9)"/>
+      </svg>
+      <div style="text-align:center;">
+        <div class="logo-title">Compass <span>QM</span></div>
+        <div class="logo-tagline">Connected · Automated · Precise</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Biancheria</div>
+      <div class="nav-item" id="gb-nav-consumo" onclick="bgSezione('consumo')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span></span>Consumo Biancheria</div>
+      <div class="nav-item" id="gb-nav-reso" onclick="bgSezione('reso')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.3 10.2a2 2 0 0 1-2 1.8H7.3a2 2 0 0 1-2-1.8z"/><path d="M3.5 9c.6-2.4 4-4.2 8.5-4.2S19.9 6.6 20.5 9"/><path d="M10 13v4M14 13v4"/></svg></span></span>Reso Biancheria</div>
+      <div class="nav-item" id="gb-nav-fattura" onclick="bgSezione('fattura')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h3"/></svg></span></span>Controllo fatturazione</div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="user-row">
+        <div class="avatar">RM</div>
+        <div style="flex:1;">
+          <div class="user-name">Resident Manager</div>
+          <div class="user-role">Art Resort · Santa Brigida</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:10px;padding:6px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border-light);">
+        <div style="font-size:9px;color:var(--text-dim);" id="salvatoHint">In attesa…</div>
+      </div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <button class="mobile-menu-btn" onclick="gbApriMenu()" aria-label="Menu">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <svg class="topbar-spark" viewBox="0 0 72 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- stella gold -->
+        <polygon points="16,2 18.3,9.4 22.6,5.4 20.5,10.5 28,10.7 22.1,14.2 24.6,21.5 18.5,17.5 16,24.5 13.5,17.5 7.4,21.5 9.9,14.2 4,10.7 11.5,10.5 9.4,5.4 13.7,9.4" fill="#c9952f"/>
+        <!-- linea + freccia navy -->
+        <line x1="30" y1="14" x2="66" y2="14" stroke="#1c3a5e" stroke-width="1.8" stroke-linecap="round"/>
+        <polyline points="60,9 67,14 60,19" fill="none" stroke="#1c3a5e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="topbar-title-wrap">
+        <span class="page-title" id="pageTitle">Consumo Biancheria</span>
+        <span class="breadcrumb" id="breadcrumb">Art Resort Galleria Umberto · Art Suite Santa Brigida · Fornitore Raimondo</span>
+      </div>
+    </div>
+    <div class="content">
+      <div id="bg-sez-consumo">
+        <div id="gb-content"></div>
+        <div id="gb-extra"></div>
+      </div>
   <div id="bg-sez-reso" style="display:none;">
     <div class="panel">
       <div class="panel-header">
@@ -307,11 +300,17 @@ setInterval(qmCheckVersione,600000);
       <div class="panel-body" id="gr-content"></div>
     </div>
   </div>
+      <div id="bg-sez-fattura" style="display:none;">
+        <div id="gb-fattura"></div>
+      </div>
   <div class="firma">
     <span class="firma-marchio">Compass <span>QM</span></span>
     Gestione Biancheria fa parte della Suite Compass QM, interamente ideata e creata dal
     Quality Manager Pierpaolo Presta. Per esclusivo uso interno.
   </div>
+
+    </div>
+  </main>
 </div>
 
 <script>
@@ -469,14 +468,15 @@ async function _gbScrivi(key,locale){
 // cloud senza dirlo è peggio di uno che fallisce ad alta voce.
 function _gbEsito(ok,testo){
   const e=document.getElementById('salvatoHint');if(!e)return;
-  if(ok){e.textContent='salvato '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});e.style.color='';e.style.opacity='';}
-  else{e.textContent=testo||'NON salvato sul cloud: resta su questo computer, riprova';e.style.color='#ffb4a8';e.style.opacity='1';}
+  if(ok){e.textContent='salvato '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});e.style.color='';e.style.opacity='';e.style.fontWeight='';}
+  else{e.textContent=testo||'NON salvato sul cloud: resta su questo computer, riprova';e.style.color='var(--red)';e.style.opacity='1';e.style.fontWeight='700';}
 }
 function _gbTesto(h){return String(h||'').replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&');}
 function _gbConferma(t,m){return Promise.resolve(confirm(_gbTesto(t)+(m?'\n\n'+_gbTesto(m):'')));}
 function _gbAvviso(t,m){alert(_gbTesto(t)+(m?'\n\n'+_gbTesto(m):''));}
 // Qui a scorrere è la finestra (in Compass è .content).
-function _gbSenzaSalto(fn){const y=window.scrollY;fn();window.scrollTo(0,y);requestAnimationFrame(()=>window.scrollTo(0,y));}
+// Con il layout di Compass a scorrere e' .content, non la finestra (come _psSenzaSalto).
+function _gbSenzaSalto(fn){const c=document.querySelector('.content');if(!c){fn();return;}const y=c.scrollTop;fn();c.scrollTop=y;requestAnimationFrame(()=>{c.scrollTop=y;});}
 
 /* ── abilitazione del computer: si incolla il codice, nessuno digita password ── */
 function gbMostraAttivazione(msg){
@@ -1537,21 +1537,6 @@ function _gbRenderCore(){
     </div></div></div>`;
   }
 
-  // ── Totali del mese, per incrociare la fattura ──
-  {
-    const mesi=_gbMesiDisponibili(_gbHotel);
-    if(mesi.length){
-      if(!mesi.includes(_gbMeseSel))_gbMeseSel=mesi[0];
-      const m=_gbMese(_gbHotel,_gbMeseSel);
-      h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Riscontro fatturazioni — ${esc(GB_HOTELS[_gbHotel])}</span>
-        <select onchange="gbSetMese(this.value)" style="margin-left:auto;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesi.map(y=>`<option value="${y}"${y===_gbMeseSel?' selected':''}>${_gbMeseNome(y)}</option>`).join('')}</select>
-        <button onclick="gbPrintMese()" title="Stampa i totali del mese" style="margin-left:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">Stampa</button>
-      </div><div class="panel-body" style="padding:0;overflow-x:auto;">${_gbTabellaMese(m,false,_gbHotel)}
-        <div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">${_gbNoteMese(m).map(x=>esc(x)).join('<br>')}<br>Le consegne contano nel mese della loro data. «In fattura»: le quantità della fattura LANA.POLI di quel mese, da inserire a mano. In rosso le voci fatturate più di quanto risulta.</div>
-      </div></div>`;
-    }
-  }
-
 
   el.innerHTML=h;
 }
@@ -2484,24 +2469,72 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 }
 
 
-// ── Due sezioni: Consumo e Reso (25/09/2026) ──
-// In Compass sono due voci di menu; qui una pagina sola con due linguette. La scelta resta
-// su questo computer, cosi' ricaricando si torna dove si era.
+// ── Menu laterale come Compass: Consumo, Reso, Controllo fatturazione (25/09/2026) ──
+// Stesso markup e stesso style.css del menu di Compass (voci copiate da index.html). La voce
+// scelta resta su questo computer, cosi' ricaricando si torna dove si era.
+const BG_SEZIONI={consumo:'Consumo Biancheria',reso:'Reso Biancheria',fattura:'Controllo fatturazione'};
 let _bgSezione='consumo';
-try{const s=localStorage.getItem('bg_sezione');if(s==='reso'||s==='consumo')_bgSezione=s;}catch(e){}
+try{const s=localStorage.getItem('bg_sezione');if(BG_SEZIONI[s])_bgSezione=s;}catch(e){}
 function bgSezione(s){
-  _bgSezione=s==='reso'?'reso':'consumo';
+  _bgSezione=BG_SEZIONI[s]?s:'consumo';
   try{localStorage.setItem('bg_sezione',_bgSezione);}catch(e){}
-  const c=document.getElementById('bg-sez-consumo'),r=document.getElementById('bg-sez-reso');
-  if(c)c.style.display=_bgSezione==='consumo'?'':'none';
-  if(r)r.style.display=_bgSezione==='reso'?'':'none';
-  ['consumo','reso'].forEach(k=>{const b=document.getElementById('bg-tab-'+k);if(!b)return;const on=k===_bgSezione;
-    b.style.background=on?'var(--accent)':'var(--surface)';b.style.color=on?'#fff':'var(--text-dim)';b.style.borderColor=on?'var(--accent)':'var(--border)';});
+  Object.keys(BG_SEZIONI).forEach(k=>{
+    const sez=document.getElementById('bg-sez-'+k);if(sez)sez.style.display=k===_bgSezione?'':'none';
+    const n=document.getElementById('gb-nav-'+k);if(n)n.classList.toggle('active',k===_bgSezione);
+  });
+  const t=document.getElementById('pageTitle');if(t)t.textContent=BG_SEZIONI[_bgSezione];
+  const c=document.querySelector('.content');if(c)c.scrollTop=0;
+  gbChiudiMenu();
   if(_bgSezione==='reso')grLoad();
+  else if(_bgSezione==='fattura')_gbRenderFattura();
+}
+// Menu su smartphone: stesse classi di Compass (toggleMobileSidebar/closeMobileSidebar).
+function gbApriMenu(){
+  const sb=document.querySelector('.sidebar'),ov=document.getElementById('mobileOverlay');
+  if(sb&&sb.classList.contains('mobile-open')){gbChiudiMenu();return;}
+  if(sb)sb.classList.add('mobile-open');if(ov)ov.classList.add('open');
+}
+function gbChiudiMenu(){
+  const sb=document.querySelector('.sidebar'),ov=document.getElementById('mobileOverlay');
+  if(sb)sb.classList.remove('mobile-open');if(ov)ov.classList.remove('open');
 }
 
+// ── Controllo fatturazione: voce di menu propria (25/09/2026) ──
+// E' il riquadro "Riscontro fatturazioni", spostato qui dalla pagina dei consumi. Stesso
+// selettore di struttura della pagina dei consumi: la struttura e' una sola per tutta l'app.
+function _gbRenderFattura(){
+  const el=document.getElementById('gb-fattura');if(!el)return;
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let h='';
+  // Selettore struttura
+  h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+    <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      ${Object.keys(GB_HOTELS).map(k=>`<button onclick="gbSetHotel('${k}')" style="border:none;padding:7px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;background:${k===_gbHotel?'var(--accent)':'var(--surface)'};color:${k===_gbHotel?'#fff':'var(--text-dim)'};">${esc(GB_HOTELS[k])}</button>`).join('')}
+    </div>
+  </div>`;
+
+  // ── Totali del mese, per incrociare la fattura ──
+  {
+    const mesi=_gbMesiDisponibili(_gbHotel);
+    if(mesi.length){
+      if(!mesi.includes(_gbMeseSel))_gbMeseSel=mesi[0];
+      const m=_gbMese(_gbHotel,_gbMeseSel);
+      h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Riscontro fatturazioni — ${esc(GB_HOTELS[_gbHotel])}</span>
+        <select onchange="gbSetMese(this.value)" style="margin-left:auto;padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesi.map(y=>`<option value="${y}"${y===_gbMeseSel?' selected':''}>${_gbMeseNome(y)}</option>`).join('')}</select>
+        <button onclick="gbPrintMese()" title="Stampa i totali del mese" style="margin-left:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:700;color:var(--accent);cursor:pointer;font-family:inherit;">Stampa</button>
+      </div><div class="panel-body" style="padding:0;overflow-x:auto;">${_gbTabellaMese(m,false,_gbHotel)}
+        <div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">${_gbNoteMese(m).map(x=>esc(x)).join('<br>')}<br>Le consegne contano nel mese della loro data. «In fattura»: le quantità della fattura LANA.POLI di quel mese, da inserire a mano. In rosso le voci fatturate più di quanto risulta.</div>
+      </div></div>`;
+    }
+  }
+
+
+  if(!_gbMesiDisponibili(_gbHotel).length)h+=`<div class="panel"><div class="panel-body" style="font-size:var(--fs-xs);color:var(--text-dim);">Nessun dato ancora per ${esc(GB_HOTELS[_gbHotel])}.</div></div>`;
+  el.innerHTML=h;
+}
 function gbRender(){
   _gbRenderCore();
+  _gbRenderFattura();
   const x=document.getElementById('gb-extra');
   if(x)x.innerHTML='';
 }

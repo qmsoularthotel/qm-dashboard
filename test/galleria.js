@@ -153,3 +153,14 @@ ok('Reso Galleria: la chiave e\' ammessa dal Worker', permessoGalleria('/kv/set'
 ok('Reso Galleria: la chiusura resta',            _grUnisciRecord([{ id: 'x', ritiroId: null }], [{ id: 'x', ritiroId: 'R1' }])[0].ritiroId, 'R1');
 ok('Reso Galleria: anche nell\'altro verso',       _grUnisciRecord([{ id: 'x', ritiroId: 'R1' }], [{ id: 'x', ritiroId: null }])[0].ritiroId, 'R1');
 ok('Reso Galleria: la distinta va al Resident Manager', /Resident Manager/.test(String(_grStampa)) && !/Presta/.test(String(_grStampa)), true);
+
+// ── Menu laterale come Compass, con la voce Controllo fatturazione (25/09/2026) ──
+ok('Galleria: tre voci di menu',                    Object.keys(BG_SEZIONI).join(','), 'consumo,reso,fattura');
+(function () {
+  var box = { innerHTML: '' }, fat = { innerHTML: '' }, vero = document.getElementById, prima = _gb;
+  _gb = { consumi: [], giri: [{ id: 'g', hotel: 'ar', data: '21/09/2026', consegnato: _gbVuote(), ricevuto: _gbVuote(), ts: 1 }] };
+  document.getElementById = function (id) { return id === 'gb-content' ? box : id === 'gb-fattura' ? fat : null; };
+  try { gbRender(); } finally { document.getElementById = vero; _gb = prima; }
+  ok('Galleria: il riscontro non sta piu\' nei consumi', /Riscontro fatturazioni/.test(box.innerHTML), false);
+  ok('Galleria: sta in Controllo fatturazione',       /Riscontro fatturazioni/.test(fat.innerHTML), true);
+})();

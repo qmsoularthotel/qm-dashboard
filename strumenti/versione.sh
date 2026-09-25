@@ -48,6 +48,13 @@ if cambiato('style.css'):
         n = int(m.group(1)) + 1
         s = re.sub(r"style\.css\?v=\d+", f"style.css?v={n}", s)
         fatto.append(f"style.css -> v{n}")
+        # La Gestione Biancheria della Galleria usa lo stesso style.css (25/09/2026).
+        gp = 'biancheria-galleria.html'
+        g = open(gp, encoding='utf-8').read()
+        g2 = re.sub(r"style\.css\?v=\d+", f"style.css?v={n}", g)
+        if g2 != g:
+            open(gp, 'w', encoding='utf-8').write(g2)
+            fatto.append(f"biancheria-galleria.html: style.css -> v{n}")
 
 if s != orig:
     open('index.html', 'w', encoding='utf-8').write(s)

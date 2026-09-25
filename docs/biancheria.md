@@ -1123,3 +1123,23 @@ Trovato nello stesso lavoro: la copia di `_biaEsito` si chiamava `_gbEsito`, com
 dell'avviso "salvato / NON salvato sul cloud", e l'aveva sostituita (24–25/09). Rinominata
 `_biaEsitoConsegna`/`_gbEsitoConsegna`; `test/esegui.sh` ora rifiuta le funzioni definite due
 volte nella stessa pagina.
+
+
+### Menu laterale come Compass, e "Controllo fatturazione" (25/09/2026)
+
+Richiesta del QM: *"menu laterale identico a quello di Compass, con le sole voci Consumo
+biancheria e Reso biancheria; una voce Controllo fatturazione con la scheda fatturazione"*.
+
+- La pagina carica **`style.css` di Compass** (`<link rel="stylesheet" href="style.css?v=…">`,
+  il numero lo allinea `strumenti/versione.sh` insieme a `index.html`) e usa la stessa struttura
+  `.app` / `aside.sidebar` / `main.main` / `.topbar` / `.content`. Logo, voci Consumo e Reso e
+  pulsante menu su smartphone sono **copiati riga per riga da `index.html`**; la voce nuova ha
+  un'icona nello stesso stile. Tolte dal `<style>` della pagina le regole che `style.css` ha già
+  (`:root`, `body`, `.topbar`, `.panel*`, `.kpi-card`, `.rc-act-btn`): restano solo quelle proprie.
+- Voci: `BG_SEZIONI={consumo,reso,fattura}`, `bgSezione(s)` (titolo in alto, voce attiva, scelta
+  ricordata in `bg_sezione`), `gbApriMenu`/`gbChiudiMenu` come `toggleMobileSidebar`.
+- **"Riscontro fatturazioni" esce dalla pagina dei consumi** e va in *Controllo fatturazione*
+  (`_gbRenderFattura`, col selettore di struttura della pagina). **Solo nella Galleria**: in
+  Compass il riquadro resta in Consumo Biancheria.
+- A scorrere ora è `.content`: `_gbSenzaSalto` lavora lì, come `_psSenzaSalto`. L'avviso
+  "salvato / NON salvato" sta nel riquadro in basso nel menu, in rosso quando non arriva.
