@@ -1143,3 +1143,4 @@ biancheria e Reso biancheria; una voce Controllo fatturazione con la scheda fatt
   Compass il riquadro resta in Consumo Biancheria.
 - A scorrere ora è `.content`: `_gbSenzaSalto` lavora lì, come `_psSenzaSalto`. L'avviso
   "salvato / NON salvato" sta nel riquadro in basso nel menu, in rosso quando non arriva.
+- Nello spazio vuoto del menu della Galleria c'e' la rosa dei venti delle finestre di conferma di Compass (stessa immagine, rotate 22deg, opacita' 13%), al centro, intera, 265px (25/09/2026).

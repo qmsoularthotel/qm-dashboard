@@ -10,6 +10,14 @@
 <style>
 /* Solo cio' che style.css di Compass non ha: il resto viene da li'. */
 :root{--shadow:0 1px 4px rgba(0,0,0,.08);}
+/* Rosa dei venti nello spazio vuoto del menu: stessa immagine, inclinazione (22°) e
+   trasparenza (13%) della finestra di conferma di Compass (.cq-box::before in style.css),
+   al centro dello spazio vuoto sotto le voci, intera (25/09/2026). */
+.sidebar .nav{position:relative;overflow-x:hidden;}
+.sidebar .nav>*{position:relative;z-index:1;}
+.sidebar .nav::after{content:'';position:absolute;left:50%;top:calc(50% + 70px);width:265px;height:265px;
+  background:url('img/compass-stella.png') no-repeat center/contain;
+  opacity:.13;transform:translate(-50%,-50%) rotate(22deg);pointer-events:none;z-index:0;}
 
 
 
@@ -123,7 +131,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-25.5';
+const QM_APP_BUILD='2026-09-25.6';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
