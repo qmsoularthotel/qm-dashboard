@@ -106,3 +106,13 @@ Se si aggiunge altrove una scelta di layout basata su `innerWidth`, serve lo ste
 accorgimento.
 
 ---
+
+### Emblema del logo: la rosa dei venti inclinata (25/09/2026)
+
+Su richiesta del QM il simbolo del logo (la bussola disegnata in SVG, 36×36, con 8 punte) è
+stato sostituito **ovunque** dalla rosa dei venti delle finestre di conferma, inclinata di 22°:
+logo del menu di Compass e della Gestione Biancheria, intestazione di `reception.html`, schermata
+"Applicazione in aggiornamento" di tutte le app. Sul fondo blu la `compass-stella.png` originale
+non si leggeva (linee scure): si usa **`img/compass-stella-chiara.png`**, la stessa immagine con
+le linee schiarite e l'oro invariato, senza alone. Misura: 1,45 volte il vecchio SVG (36 → 52).
+**Restano gli splash** delle app, che hanno un'altra bussola con l'ago animato.
