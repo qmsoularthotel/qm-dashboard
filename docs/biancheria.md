@@ -1145,3 +1145,12 @@ biancheria e Reso biancheria; una voce Controllo fatturazione con la scheda fatt
   "salvato / NON salvato" sta nel riquadro in basso nel menu, in rosso quando non arriva.
 - Nello spazio vuoto del menu della Galleria c'e' la rosa dei venti delle finestre di conferma di Compass (stessa immagine, rotate 22deg, opacita' 13%), al centro, intera, 265px (25/09/2026).
 - Il promemoria della distinta in Overview legge le distinte stampate dal cloud (all'apertura e al massimo ogni 5 minuti, solo la vigilia): prima guardava solo il localStorage e ricompariva riaprendo Compass o dopo una stampa fatta su un altro PC. Distinte locali e del cloud si uniscono, in Compass e nella Galleria (25/09/2026).
+
+### "Cosa fare oggi" per tutte e due le strutture (Galleria, 25/09/2026)
+
+Il riquadro in cima a Consumo elenca le cose da fare di **Art Resort e Santa Brigida** insieme
+(`_gbPassiOggi(h)`, con il calendario di ciascuna): numerazione unica, cose fatte spuntate in
+verde, e per l'altra struttura "Passa a … ›" (`gbSetHotel`). Prima mostrava solo la struttura
+selezionata e la distinta dell'altra poteva sfuggire. Corretto anche "L'ho già stampata", che
+per l'escape del testo compariva come testo e non come collegamento. **Solo nella Galleria.**
+I segnali nel menu (pallino, numero dei resi) sono stati provati e **scartati dal QM**.

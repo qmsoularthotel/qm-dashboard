@@ -164,3 +164,25 @@ ok('Galleria: tre voci di menu',                    Object.keys(BG_SEZIONI).join
   ok('Galleria: il riscontro non sta piu\' nei consumi', /Riscontro fatturazioni/.test(box.innerHTML), false);
   ok('Galleria: sta in Controllo fatturazione',       /Riscontro fatturazioni/.test(fat.innerHTML), true);
 })();
+
+// ── Cosa fare oggi per tutte e due le strutture, e segnali nel menu (25/09/2026) ──
+(function () {
+  var veroOggi = _gbOggi, prima = _gb, ph = _gbHotel;
+  _gbOggi = function () { return new Date(2026, 8, 21); };   // lunedi': AR passa, SB e' alla vigilia
+  _gb = { consumi: [], giri: [] }; _gbDist = {};
+  var ar = _gbPassiOggi('ar'), sb = _gbPassiOggi('sb');
+  ok('AR lunedi\': registrare cosa ha portato',      ar.passi.map(function (p) { return p.t; }).join('|').indexOf('Registra cosa ha portato') >= 0, true);
+  ok('SB lunedi\': stampare la distinta',            sb.passi.some(function (p) { return p.dist; }), true);
+  ok('AR lunedi\': nessuna distinta (non e\' vigilia)', ar.passi.some(function (p) { return p.dist; }), false);
+  _gb.consumi.push({ id: 'k', hotel: 'sb', data: '21/09/2026', q: _gbVuote() });
+  ok('SB con i consumi inseriti: spuntati',          _gbPassiOggi('sb').fatti.indexOf('Consumi di oggi inseriti') >= 0, true);
+  var box = { innerHTML: '' }, vero = document.getElementById;
+  document.getElementById = function (id) { return id === 'gb-content' ? box : null; };
+  try { _gbHotel = 'ar'; _gbRenderCore(); } finally { document.getElementById = vero; }
+  ok('il riquadro mostra tutte e due le strutture',  /Art Resort Galleria Umberto/.test(box.innerHTML) && /Art Suite Santa Brigida/.test(box.innerHTML), true);
+  ok('e porta all\'altra struttura',                 /gbSetHotel\('sb'\)/.test(box.innerHTML) && /Passa a Santa Brigida/.test(box.innerHTML), true);
+  document.getElementById = function (id) { return id === 'gb-content' ? box : null; };
+  try { _gbHotel = 'sb'; _gbRenderCore(); } finally { document.getElementById = vero; }
+  ok('"L\'ho già stampata" e\' un collegamento vero', /<a href="#" onclick="gbSegnaDistintaFatta\(event\)"/.test(box.innerHTML), true);
+  _gbOggi = veroOggi; _gb = prima; _gbHotel = ph; _gbDist = {};
+})();
