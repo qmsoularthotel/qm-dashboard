@@ -123,7 +123,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-25.4';
+const QM_APP_BUILD='2026-09-25.5';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -258,10 +258,10 @@ setInterval(qmCheckVersione,600000);
     </nav>
     <div class="sidebar-bottom">
       <div class="user-row">
-        <div class="avatar">RM</div>
+        <div class="avatar">PP</div>
         <div style="flex:1;">
-          <div class="user-name">Resident Manager</div>
-          <div class="user-role">Art Resort · Santa Brigida</div>
+          <div class="user-name">Quality Manager</div>
+          <div class="user-role">Quality Manager</div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;margin-top:10px;padding:6px 8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border-light);">
