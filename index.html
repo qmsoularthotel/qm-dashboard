@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<link rel="stylesheet" href="style.css?v=270">
+<link rel="stylesheet" href="style.css?v=271">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='451-20260926';
+  const V='452-20260926';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -506,7 +506,7 @@
         <div id="bia-promemoria" style="display:none;"></div>
         <div class="panel" style="margin-bottom:14px;">
           <div class="panel-header" style="cursor:pointer;" onclick="toggleStaffPanel()">
-            <img src="img/icons/turni.png" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-5 7-5s7 1.5 7 5"/><circle cx="17" cy="8" r="2.5"/><path d="M17 13c2.5 0 4.5 1.3 4.5 4"/></svg></span>
             <div style="flex:1;">
               <span class="panel-title" id="staffPanelTitle">Turno di oggi</span>
               <span id="staffPanelUpdated" style="display:block;font-size:10px;color:var(--text-muted);text-transform:none;letter-spacing:0;font-weight:500;margin-top:2px;"></span>
@@ -523,7 +523,7 @@
         </div>
         <div class="panel" style="margin-bottom:14px;position:relative;" id="ov-situazione-panel">
           <div class="panel-header">
-            <img src="img/icons/piano_settimanale.png" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v4M16 4v4"/><path d="M7 14h4M7 17h7"/></svg></span>
             <span class="panel-title">Piano del giorno</span>
             <span id="ov-piano-scadenza" style="display:none;margin-left:8px;background:var(--amber);color:#fff;border-radius:4px;padding:1px 7px;font-size:var(--fs-xxs);font-weight:600;"></span>
             <div style="display:flex;align-items:center;gap:4px;margin-left:auto;">
@@ -552,14 +552,14 @@
         </div>
         <div class="panel" style="margin-bottom:14px;position:relative;" id="ov-piano-panel">
           <div class="panel-header">
-            <span style="font-size:14px;">🧹</span>
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h15"/><path d="M4 12h10"/><path d="M4 17.5h6"/></svg></span>
             <span class="panel-title">Housekeeping</span>
           </div>
           <div class="panel-body" id="ov-piano-preview"><div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere i cambi camera</div></div>
         </div>
         <div class="panel" style="margin-bottom:14px;">
           <div class="panel-header">
-            <span style="font-size:14px;">☕</span>
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H8a4 4 0 0 1-4-4z"/><path d="M17 9h2a2 2 0 0 1 0 4h-2"/><path d="M6 5c0-.8.5-1 1-2M10 5c0-.8.5-1 1-2"/></svg></span>
             <span class="panel-title">Breakfast</span>
           </div>
           <div class="panel-body">
@@ -593,7 +593,8 @@
         <div id="kpi-bkf-preview" style="display:none;margin-bottom:14px;"></div>
         <div class="panel" id="ov-rev-import-panel" style="margin-bottom:14px;">
             <div class="panel-header">
-              <span class="panel-title">⭐ Recensioni</span>
+              <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2l2.9 6.3 6.9.7-5.2 4.6 1.6 6.8L12 16.9 5.8 20.4l1.6-6.8-5.2-4.6 6.9-.7z"/></svg></span>
+              <span class="panel-title">Recensioni</span>
               <span id="ov-rev-import-badge" style="margin-left:4px;display:none;background:var(--amber);color:#fff;border-radius:10px;padding:1px 8px;font-size:var(--fs-xxs);font-weight:600;"></span>
               <span id="ov-rev-badge" style="margin-left:4px;display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 8px;font-size:var(--fs-xxs);font-weight:600;"></span>
             </div>
@@ -1676,7 +1677,7 @@
       <div class="view" id="view-turnazione">
         <div class="panel">
           <div class="panel-header">
-            <img src="img/icons/turni.png" style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-5 7-5s7 1.5 7 5"/><circle cx="17" cy="8" r="2.5"/><path d="M17 13c2.5 0 4.5 1.3 4.5 4"/></svg></span>
             <span class="panel-title">Turnazione Corrente</span>
           </div>
           <div class="panel-body staff-area-mirror" id="staffAreaMirror"></div>
@@ -1727,7 +1728,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=970-20260926"></script>
+<script src="app.js?v=971-20260926"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

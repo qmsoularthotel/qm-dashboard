@@ -3928,7 +3928,7 @@ async function renderOvRoomReadiness(giorno,statoNoto){
       <div style="font-size:13px;font-weight:700;color:${cfg.fg};">${cfg.lbl}</div>
     </div>`;
   };
-  el.innerHTML=`<div class="kpi-label" style="border-top:1px solid var(--border-light);padding-top:12px;margin-bottom:8px;">🔑 Camere con check-in oggi — stato preparazione</div>
+  el.innerHTML=`<div class="kpi-label" style="border-top:1px solid var(--border-light);padding-top:12px;margin-bottom:8px;display:flex;align-items:center;gap:8px;"><span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2"/><path d="M16 7l3 3"/><path d="M18.5 4.5l2 2"/></svg></span>Camere con check-in oggi — stato preparazione</div>
     <div class="ov-room-grid">${rooms.map(roomCard).join('')}</div>`;
 }
 // Segna una camera "pronta" direttamente da Overview — scrive sulla STESSA chiave KV

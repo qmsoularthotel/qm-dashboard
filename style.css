@@ -902,3 +902,8 @@ body.dark .panel{box-shadow:0 2px 8px rgba(0,0,0,.22);}
    quello di Compass. Stessa scelta già fatta da .btn-primary / .btn-ghost. */
 #view-biancheria button,#view-biancheria input,#view-biancheria select,#view-biancheria textarea,
 #view-resi-biancheria button,#view-resi-biancheria input,#view-resi-biancheria select,#view-resi-biancheria textarea{font-family:inherit;}
+/* Badge navy/oro delle intestazioni dei pannelli dell'Overview (26/09/2026): stesso
+   linguaggio di .nav-icon-badge e .uc-icon-badge, al posto delle emoji. */
+.ov-icon-badge{width:24px;height:24px;border-radius:50%;background:var(--accent);border:1.5px solid var(--gold);
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;box-sizing:border-box;}
+.ov-icon-badge svg{width:12px;height:12px;}

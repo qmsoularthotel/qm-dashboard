@@ -117,3 +117,10 @@ non si leggeva (linee scure): si usa **`img/compass-stella-chiara.png`**, la ste
 le linee schiarite e l'oro invariato, senza alone. Misura: 1,45 volte il vecchio SVG (36 → 52).
 **Restano gli splash** delle app, che hanno un'altra bussola con l'ago animato.
 - Anche la stellina della barra in alto (`.topbar-spark`, accanto alla freccia) è ora la rosa dei venti `img/compass-stella.png` inclinata di 22° (fondo bianco: immagine originale), in Compass e nella Galleria (25/09/2026).
+
+### Icone dei pannelli dell'Overview — `.ov-icon-badge` (26/09/2026)
+
+Le emoji e le foto PNG nelle intestazioni dell'Overview (Turno di oggi, Piano del giorno,
+Camere con check-in oggi, Housekeeping, Breakfast, Recensioni) e di Turnazione Corrente sono
+diventate badge navy/oro come il menu: classe `.ov-icon-badge` (24px, SVG bianco 12px), stesse
+icone delle voci corrispondenti del menu (persone, calendario, chiave, righe HKP, tazza, stella).
