@@ -11290,7 +11290,7 @@ const DDT_FORNITORI={
   SAIMA:     {reparto:'bkf', rLabel:'Breakfast',    color:'#f5efe9', fg:'#2d1c12', accent:'#6b4a2f', logo:'saima.png'},
   MARR:      {reparto:'bkf', rLabel:'Breakfast',    color:'#fbdadc', fg:'#db0d15', accent:'#db0d15', logo:'marr.png'},
   Cozzolino: {reparto:'bkf', rLabel:'Breakfast',    color:'#dcebe0', fg:'#1e5631', accent:'#1e5631'},
-  Valgarda:  {reparto:'bkf', rLabel:'Breakfast',    color:'#f2eee2', fg:'#8a7643', accent:'#b99e5d', logo:'valgarda.png'},
+  Valgarda:  {reparto:'bkf', rLabel:'Breakfast',    color:'#f2eee2', fg:'#8a7643', accent:'#b99e5d', logo:'valgarda.png', logoH:46},
 };
 // Riassegnazione manuale categoria prodotto (solo Spese Fornitori): una volta spostato un
 // prodotto in una categoria, resta lì per sempre — in tutti i mesi già caricati e in quelli
@@ -12034,7 +12034,7 @@ function ddtRenderSpese(){
     const fDdt=monDdt.filter(d=>_nf(d)===nome);
     const fTot=fDdt.reduce((s,d)=>s+(d.totale_ordine||0),0);
     const active=_ddtFilter===nome;
-    const logoHtml=conf.logo?`<img src="${conf.logo}?v=6" alt="${nome}" style="height:56px;max-width:100%;object-fit:contain;display:block;margin:0 auto 10px;">`:`<div style="height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:10px;">
+    const logoHtml=conf.logo?`<img src="${conf.logo}?v=6" alt="${nome}" style="height:${conf.logoH||56}px;max-width:100%;object-fit:contain;display:block;margin:${(56-(conf.logoH||56))/2}px auto ${10+(56-(conf.logoH||56))/2}px;">`:`<div style="height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:10px;">
       <div style="width:36px;height:3px;background:${conf.accent};border-radius:2px;margin-bottom:8px;"></div>
       <div style="font-size:${nome.length>8?14:16}px;font-weight:800;letter-spacing:.04em;color:var(--text);text-transform:uppercase;">${nome}</div>
     </div>`;
