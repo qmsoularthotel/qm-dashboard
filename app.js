@@ -293,7 +293,7 @@ async function _turnoClaudeParse(contentBlock,prompt){
   const data=await response.json();
   if(!data.content||!data.content[0])throw new Error('Risposta vuota');
   let jsonText=data.content[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
-  const parsed=JSON.parse(jsonText);
+  const parsed=_qmPulisciTesti(JSON.parse(jsonText));
   if(!parsed.giorni||!Array.isArray(parsed.giorni)||!parsed.giorni.length){
     throw new Error('Struttura JSON non valida');
   }
@@ -5697,7 +5697,7 @@ REGOLE OBBLIGATORIE:
     // estrai solo la parte JSON se ci sono testi aggiuntivi
     const match=jsonText.match(/\[[\s\S]*\]/);
     if(match)jsonText=match[0];
-    bkfSheetData=JSON.parse(jsonText);
+    bkfSheetData=_qmPulisciTesti(JSON.parse(jsonText));
     if(!Array.isArray(bkfSheetData)||!bkfSheetData.length)throw new Error('Nessun dato estratto dal PDF.');
     // Rimuovi anno se l'AI lo ha aggiunto (es. "dom 14/03/2004" → "dom 14/03")
     bkfSheetData=bkfSheetData.map(r=>({...r,d:r.d?r.d.replace(/(\d{2}\/\d{2})\/\d{4}/,'$1'):r.d}));
@@ -5814,7 +5814,7 @@ REGOLE OBBLIGATORIE:
     let jsonText=data.content[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
     const match=jsonText.match(/\[[\s\S]*\]/);
     if(match)jsonText=match[0];
-    bkfSheetARData=JSON.parse(jsonText);
+    bkfSheetARData=_qmPulisciTesti(JSON.parse(jsonText));
     if(!Array.isArray(bkfSheetARData)||!bkfSheetARData.length)throw new Error('Nessun dato estratto dal PDF.');
     // Rimuovi anno se l'AI lo ha aggiunto (es. "dom 14/03/2004" → "dom 14/03")
     bkfSheetARData=bkfSheetARData.map(r=>({...r,d:r.d?r.d.replace(/(\d{2}\/\d{2})\/\d{4}/,'$1'):r.d}));
@@ -6449,7 +6449,7 @@ function revRenderExpiring(p){
         </div>
         <div style="display:flex;flex-direction:column;gap:3px;">
           ${group.map(r=>`<div style="font-size:var(--fs-xxs);color:var(--text-dim);display:flex;justify-content:space-between;gap:4px;">
-            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r["Nome dell'ospite"]||'—'}</span>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(r["Nome dell'ospite"])||'—'}</span>
             <span style="flex-shrink:0;color:var(--text-muted);">${fmt(r._expDate)}</span>
           </div>`).join('')}
         </div>
@@ -7422,16 +7422,16 @@ function revRenderList(p){
     const d=r._date;
     const dateStr=isNaN(d)?'—':(d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear());
     const bookingNum=r['Numero di prenotazione']||r['Reservation number']||'';
-    const bookingBadge=bookingNum?`<span style="font-size:var(--fs-xs);color:var(--text-muted);margin-left:8px;letter-spacing:.01em;font-weight:500;"># ${bookingNum}</span>`:'';
-    const pos=r['Recensione positiva']?`<div class="rev-pos">+ ${r['Recensione positiva']}</div>`:'';
-    const neg=r['Recensione negativa']?`<div class="rev-neg">− ${r['Recensione negativa']}</div>`:'';
+    const bookingBadge=bookingNum?`<span style="font-size:var(--fs-xs);color:var(--text-muted);margin-left:8px;letter-spacing:.01em;font-weight:500;"># ${_esc(bookingNum)}</span>`:'';
+    const pos=r['Recensione positiva']?`<div class="rev-pos">+ ${_esc(r['Recensione positiva'])}</div>`:'';
+    const neg=r['Recensione negativa']?`<div class="rev-neg">− ${_esc(r['Recensione negativa'])}</div>`:'';
     const italian=revIsItalian(r);
     const langBadge=!italian?`<span class="rev-lang-badge">🌐 Non italiano</span>`:'';
     const translateBtn=!italian?`<button class="rev-btn-translate" id="rtb-${uid}" onclick="revTranslate('${p}',${gi})">🌐 Traduci in italiano</button>`:'';
     const replyText=r['Risposta della struttura']||'';
     const replyShort=replyText.length>300;
     REV_REPLY_STORE[uid]=replyText;
-    const replyHtmlShort=replyText.substring(0,300).replace(/\n/g,'<br>')+(replyShort?'…':'');
+    const replyHtmlShort=_esc(replyText.substring(0,300)).replace(/\n/g,'<br>')+(replyShort?'…':'');
     const reply=r._hasReply?`<div class="rev-reply" style="margin-top:8px;">
       <span style="font-size:9px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;">Risposta struttura</span>
       <div id="rev-reply-text-${uid}" style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:4px;line-height:1.6;">${replyHtmlShort}</div>
@@ -7459,8 +7459,8 @@ function revRenderList(p){
         </div>
       </div>`:(isSent||isNotNeeded)?`<div style="margin-top:6px;">${sentBadge}</div>`:'';
     return`<div class="rev-card">
-      <div class="rev-card-header">${scoreSvg}<span class="rev-guest">${r["Nome dell'ospite"]||'Ospite anonimo'}</span>${noReplyBadge}${sentBadge}${langBadge}<span class="rev-date">${dateStr}</span>${bookingBadge}</div>
-      ${r['Titolo della recensione']?`<div class="rev-title"><span id="revTitleTxt-${uid}">${r['Titolo della recensione']}</span></div>`:''}
+      <div class="rev-card-header">${scoreSvg}<span class="rev-guest">${_esc(r["Nome dell'ospite"])||'Ospite anonimo'}</span>${noReplyBadge}${sentBadge}${langBadge}<span class="rev-date">${dateStr}</span>${bookingBadge}</div>
+      ${r['Titolo della recensione']?`<div class="rev-title"><span id="revTitleTxt-${uid}">${_esc(r['Titolo della recensione'])}</span></div>`:''}
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">${catMini}</div>
       <div class="rev-body" id="revBody-${uid}">${pos}${neg}</div>${translateBtn}${reply}${replyPanel}
     </div>`;
@@ -7500,8 +7500,8 @@ async function revTranslate(p,gi){
       const negM=t.match(/Negativo:\s*([\s\S]+?)$/);
       const titM=t.match(/Titolo:\s*(.+)/);
       let html='';
-      if(posM)html+=`<div class="rev-pos">+ ${posM[1].trim()}</div>`;
-      if(negM)html+=`<div class="rev-neg">− ${negM[1].trim()}</div>`;
+      if(posM)html+=`<div class="rev-pos">+ ${_esc(posM[1].trim())}</div>`;
+      if(negM)html+=`<div class="rev-neg">− ${_esc(negM[1].trim())}</div>`;
       if(html)body.innerHTML=html;
       if(titM&&titleEl)titleEl.textContent=titM[1].trim();
       btn.textContent='✓ Tradotto';btn.style.opacity='.5';
@@ -7578,11 +7578,11 @@ function revToggleReply(uid){
   const fullText=REV_REPLY_STORE[uid]||'';
   const isExpanded=el.dataset.expanded==='1';
   if(!isExpanded){
-    el.innerHTML=fullText.replace(/\n/g,'<br>');
+    el.innerHTML=_esc(fullText).replace(/\n/g,'<br>');
     el.dataset.expanded='1';
     if(toggle)toggle.textContent='▴ Nascondi';
   } else {
-    el.innerHTML=fullText.substring(0,300).replace(/\n/g,'<br>')+'…';
+    el.innerHTML=_esc(fullText.substring(0,300)).replace(/\n/g,'<br>')+'…';
     el.dataset.expanded='0';
     if(toggle)toggle.textContent='▾ Mostra tutto';
   }
@@ -8436,7 +8436,29 @@ if(PDF_OK)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/a
 // far comparire "pdfjsLib is not defined" sopra un riquadro di caricamento.
 function _pdfApri(ab){
   if(!PDF_OK)throw new Error('Il lettore PDF non si è caricato (serve la connessione a cdnjs.cloudflare.com). Ricarica la pagina e riprova.');
-  return pdfjsLib.getDocument({data:ab instanceof Uint8Array?ab:new Uint8Array(ab)}).promise;
+  return pdfjsLib.getDocument({data:ab instanceof Uint8Array?ab:new Uint8Array(ab)}).promise.then(_pdfSenzaCodice);
+}
+// Sicurezza (26/09/2026). Nei PDF del PMS ci sono testi scritti da fuori — il nome con cui
+// un ospite prenota, le sue richieste — che finiscono poi sulle pagine di tutte le postazioni.
+// Un nome come <img onerror=…> verrebbe eseguito con il lasciapassare della postazione. Ogni
+// PDF passa da qui: dal testo estratto spariscono < > " ` , che in un documento vero non
+// servono a niente.
+function _qmSenzaTag(s){return String(s).replace(/[<>"`]/g,'');}
+function _pdfSenzaCodice(doc){
+  const pagina=doc.getPage.bind(doc);
+  doc.getPage=n=>pagina(n).then(pg=>{
+    const testo=pg.getTextContent.bind(pg);
+    pg.getTextContent=o=>testo(o).then(tc=>{(tc.items||[]).forEach(it=>{if(typeof it.str==='string')it.str=_qmSenzaTag(it.str);});return tc;});
+    return pg;
+  });
+  return doc;
+}
+// Lo stesso filtro sui dati letti dall'AI (che legge il PDF da sé, non il nostro testo).
+function _qmPulisciTesti(o){
+  if(typeof o==='string')return _qmSenzaTag(o);
+  if(Array.isArray(o))return o.map(_qmPulisciTesti);
+  if(o&&typeof o==='object'){const r={};Object.keys(o).forEach(k=>{r[k]=_qmPulisciTesti(o[k]);});return r;}
+  return o;
 }
 const ROOM_CODES=['STD','SUP','DLX','DEL','JS','JR','SUITE','TRP','TPL','TRI','DBL','SGL','DUS','DEP','DP','PC','AS','BB','HB','FB','RO','AI','MP'];
 const tratMap={BB:'BB',HB:'HB – Mezza pensione',FB:'FB – Pensione completa',RO:'RO – Solo pernottamento',AI:'AI – All inclusive',MP:'MP – Mezza pensione'};
@@ -8985,8 +9007,8 @@ function bkfBookingRender(){
       const isRO=/^ro$/i.test((r.trattamento||'').trim());
       return`<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;padding:9px 0;${idx>0?'border-top:1px solid var(--border-light);':''}">
         <span style="font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;">${r.camera}</span>
-        <span style="flex:1;min-width:120px;font-size:13px;color:var(--text);word-break:break-word;">${r.nome||'—'}</span>
-        ${r.trattamento?`<span style="font-size:10px;font-weight:800;padding:3px 7px;border-radius:5px;letter-spacing:.02em;flex-shrink:0;background:${isRO?'var(--surface2)':'var(--green-bg)'};color:${isRO?'var(--text-dim)':'var(--green)'};">${r.trattamento}</span>`:''}
+        <span style="flex:1;min-width:120px;font-size:13px;color:var(--text);word-break:break-word;">${_esc(r.nome)||'—'}</span>
+        ${r.trattamento?`<span style="font-size:10px;font-weight:800;padding:3px 7px;border-radius:5px;letter-spacing:.02em;flex-shrink:0;background:${isRO?'var(--surface2)':'var(--green-bg)'};color:${isRO?'var(--text-dim)':'var(--green)'};">${_esc(r.trattamento)}</span>`:''}
         <span style="font-size:11px;color:var(--text-dim);flex-shrink:0;">out ${r.checkout||'—'}</span>
       </div>`;
     }).join('')}</div>`:`<div style="color:var(--text-dim);font-size:12.5px;">Nessun ospite Booking.com a colazione ${isToday?'oggi':'quel giorno'}.</div>`}
@@ -9079,7 +9101,7 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     const data=await response.json();
     if(!data.content||!data.content[0]){console.error('[Arrivi] risposta API:',JSON.stringify(data));throw new Error(data.error?.message||'Risposta vuota');}
     let jsonText=data.content[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
-    const newData=JSON.parse(jsonText);
+    const newData=_qmPulisciTesti(JSON.parse(jsonText));
     newData.arrivi=fixArriviStruttura(newData.arrivi||[]);
     newData.partenze=newData.partenze||[];
     newData.fermate=newData.fermate||[];
@@ -9128,7 +9150,7 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
     // Serve dopo per capire se confrontare le RC col caricamento precedente ha senso
     // (solo se era lo stesso giorno — altrimenti confronteremmo con gli ospiti di ieri)
     const _rcSameDayAsPrev=!!(arriviData&&arriviData.data===newData.data);
-    arriviData=newData;
+    arriviData=_qmPulisciTesti(newData);
     // Salva locale + cloud
     arriviData._ts=Date.now();
     try{localStorage.setItem('qm_arriviData',JSON.stringify(arriviData));}catch(e){}
@@ -9228,15 +9250,15 @@ function arriviUpdateKpi(){
         </div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;">`;
       if(bkArrivi.length>0){
-        const chips=bkArrivi.map(a=>`<span style="padding:3px 10px;border-radius:10px;background:var(--accent-bg);color:var(--accent);font-size:var(--fs-xxs);font-weight:600;border:1px solid #B8CEEE;">↓ ${a.camera}${a.ospite?' · '+a.ospite.split(' ')[0]:''}</span>`).join('');
+        const chips=bkArrivi.map(a=>`<span style="padding:3px 10px;border-radius:10px;background:var(--accent-bg);color:var(--accent);font-size:var(--fs-xxs);font-weight:600;border:1px solid #B8CEEE;">↓ ${_esc(a.camera)}${a.ospite?' · '+_esc(a.ospite.split(' ')[0]):''}</span>`).join('');
         html+=`<div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Check-in <span style="background:var(--accent);color:#fff;border-radius:6px;padding:0 6px;">${bkArrivi.length}</span></div><div class="bk-chip-grid">${chips}</div></div>`;
       }
       if(bkFermate.length>0){
-        const chips=bkFermate.map(f=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;background:var(--accent-bg);color:var(--accent);font-size:var(--fs-xxs);font-weight:600;border:1px solid #B8CEEE;"><img src="img/icons/fermata.png" class="ov-icon" style="width:16px;height:16px;object-fit:contain;">${f.camera}${f.ospite?' · '+f.ospite.split(' ')[0]:''}</span>`).join('');
+        const chips=bkFermate.map(f=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:10px;background:var(--accent-bg);color:var(--accent);font-size:var(--fs-xxs);font-weight:600;border:1px solid #B8CEEE;"><img src="img/icons/fermata.png" class="ov-icon" style="width:16px;height:16px;object-fit:contain;">${_esc(f.camera)}${f.ospite?' · '+_esc(f.ospite.split(' ')[0]):''}</span>`).join('');
         html+=`<div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">In fermata <span style="background:var(--accent);color:#fff;border-radius:6px;padding:0 6px;">${bkFermate.length}</span></div><div class="bk-chip-grid">${chips}</div></div>`;
       }
       if(bkPartenze.length>0){
-        const chips=bkPartenze.map(p=>`<span style="padding:3px 10px;border-radius:10px;background:var(--accent-bg);color:var(--accent);font-size:var(--fs-xxs);font-weight:600;border:1px solid #B8CEEE;">↑ ${p.camera}${p.ospite?' · '+p.ospite.split(' ')[0]:''}</span>`).join('');
+        const chips=bkPartenze.map(p=>`<span style="padding:3px 10px;border-radius:10px;background:var(--accent-bg);color:var(--accent);font-size:var(--fs-xxs);font-weight:600;border:1px solid #B8CEEE;">↑ ${_esc(p.camera)}${p.ospite?' · '+_esc(p.ospite.split(' ')[0]):''}</span>`).join('');
         html+=`<div style="flex:1;min-width:160px;"><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;">Check-out — recensioni attese <span style="background:var(--accent);color:#fff;border-radius:6px;padding:0 6px;">${bkPartenze.length}</span></div><div class="bk-chip-grid">${chips}</div></div>`;
       }
       html+=`</div></div>`;
@@ -9315,9 +9337,9 @@ function renderArriviModal(filtStruttura='all', filtTratt='all', filtOrigine='al
         <div class="rc-date-cell"><div class="rc-date-label">Pax</div><div class="rc-date-val">${a.pax}</div></div>
       </div>
       <div class="rc-pills">
-        <span class="rc-pill">${a.trattamento}</span>
+        <span class="rc-pill">${_esc(a.trattamento)}</span>
         ${a.tipo_camera?`<span class="rc-pill">${a.tipo_camera}</span>`:''}
-        ${a.origine?`<span class="rc-pill" style="background:${/booking/i.test(a.origine)?'var(--accent-bg)':'var(--surface2)'};color:${/booking/i.test(a.origine)?'var(--accent)':'var(--text-dim)'};font-weight:${/booking/i.test(a.origine)?'700':'400'};">${/booking/i.test(a.origine)?BK_ICON:''}${a.origine}</span>`:''}
+        ${a.origine?`<span class="rc-pill" style="background:${/booking/i.test(a.origine)?'var(--accent-bg)':'var(--surface2)'};color:${/booking/i.test(a.origine)?'var(--accent)':'var(--text-dim)'};font-weight:${/booking/i.test(a.origine)?'700':'400'};">${/booking/i.test(a.origine)?BK_ICON:''}${_esc(a.origine)}</span>`:''}
       </div>
       ${a.note?`<div style="font-size:var(--fs-xxs);color:${a.alert?'var(--red)':'var(--text-muted)'};background:${a.alert?'rgba(220,53,69,.06)':'var(--surface2)'};border-radius:0 0 7px 7px;padding:6px 12px;border-top:1px solid var(--border-light);line-height:1.5;">${_esc(a.note)}</div>`:''}
     </div>`;
@@ -11194,9 +11216,9 @@ function revExpRenderList(p){
     const isNotNeeded=sentVal==='not_needed';
     const sentBadge=isSent?`<span style="font-size:9px;padding:2px 8px;border-radius:10px;background:#d4edda;color:#1a7a3a;font-weight:600;">✓ Risposta inviata</span>`:isNotNeeded?`<span style="font-size:9px;padding:2px 8px;border-radius:10px;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);font-weight:600;">— Non necessaria</span>`:'';
     const reviewTxt=r['review_text']||'';
-    const reviewHtml=reviewTxt?`<div style="font-size:var(--fs-xs);color:var(--text);line-height:1.6;margin-bottom:8px;">${reviewTxt.replace(/</g,'&lt;')}</div>`:'';
+    const reviewHtml=reviewTxt?`<div style="font-size:var(--fs-xs);color:var(--text);line-height:1.6;margin-bottom:8px;">${_esc(reviewTxt)}</div>`:'';
     REV_EXP_REPLY_STORE[uid]=r._hasReply?(r['review_response']||'').replace(/^"|"$/g,'').trim():'';
-    const replyHtml=r._hasReply&&REV_EXP_REPLY_STORE[uid]?`<div class="rev-reply" style="margin-top:8px;"><span style="font-size:9px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;">Risposta struttura</span><div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:4px;line-height:1.6;">${REV_EXP_REPLY_STORE[uid].replace(/\n/g,'<br>').replace(/</g,'&lt;')}</div></div>`:'';
+    const replyHtml=r._hasReply&&REV_EXP_REPLY_STORE[uid]?`<div class="rev-reply" style="margin-top:8px;"><span style="font-size:9px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;">Risposta struttura</span><div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:4px;line-height:1.6;">${_esc(REV_EXP_REPLY_STORE[uid]).replace(/\n/g,'<br>')}</div></div>`:'';
     const _tone=h.tone||'bilanciato';
     const replyPanel=(!r._hasReply&&!isNotNeeded&&!isSent)?`
       <div class="rev-reply-panel" id="rep-${uid}">
@@ -11215,8 +11237,8 @@ function revExpRenderList(p){
         </div>
       </div>`:(isSent||isNotNeeded)?`<div style="margin-top:6px;">${sentBadge}</div>`:'';
     return`<div class="rev-card">
-      <div class="rev-card-header">${scoreSvg}<span class="rev-guest">${r['review_by']||'Ospite anonimo'}</span>${brandBadge}${noReplyBadge}${sentBadge}${langBadge}<span class="rev-date">${dateStr}</span></div>
-      ${r['review_title']?`<div class="rev-title">${r['review_title'].replace(/</g,'&lt;')}</div>`:''}
+      <div class="rev-card-header">${scoreSvg}<span class="rev-guest">${_esc(r['review_by'])||'Ospite anonimo'}</span>${brandBadge}${noReplyBadge}${sentBadge}${langBadge}<span class="rev-date">${dateStr}</span></div>
+      ${r['review_title']?`<div class="rev-title">${_esc(r['review_title'])}</div>`:''}
       ${reviewHtml}${replyHtml}${replyPanel}
     </div>`;
   }).join('')+(totalPages>1?`<div class="rev-pagination"><button class="rev-pg-btn" onclick="revExpSetPage('${p}',${page-1})" ${page===0?'disabled':''}>← Prec</button><span class="rev-pg-info">Pagina ${page+1} di ${totalPages} · ${filtered.length} recensioni</span><button class="rev-pg-btn" onclick="revExpSetPage('${p}',${page+1})" ${page>=totalPages-1?'disabled':''}>Succ →</button></div>`:'');
@@ -12262,7 +12284,7 @@ async function ddtHandleFileSelect(input){
     const data=await resp.json();
     const text=data.content?.[0]?.text||'';
     let parsed={};
-    try{const m=text.match(/\{[\s\S]*\}/);if(m)parsed=JSON.parse(m[0]);}catch(e){throw new Error('JSON non valido');}
+    try{const m=text.match(/\{[\s\S]*\}/);if(m)parsed=_qmPulisciTesti(JSON.parse(m[0]));}catch(e){throw new Error('JSON non valido');}
     if(forn)parsed.fornitore=forn;
     const reparto=DDT_FORNITORI[forn]?.reparto||DDT_FORNITORI[parsed.fornitore]?.reparto||'bkf';
     _ddtParsedData={...parsed,hotel,reparto};
@@ -14122,7 +14144,7 @@ function prestayRender(){
             const rid='psRisp_'+String(a.id).replace(/[^a-zA-Z0-9_]/g,'');
             const lungo=testo.length>200||testo.split('\n').length>4;
             return`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--accent-bg);border-left:3px solid var(--accent);">
-              <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--accent);margin-bottom:4px;">Ha risposto${rp.data?' · '+String(rp.data).replace(/\s*\+\d{4}.*$/,'').trim():''}</div>
+              <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--accent);margin-bottom:4px;">Ha risposto${rp.data?' · '+_esc(String(rp.data).replace(/\s*\+\d{4}.*$/,'').trim()):''}</div>
               <div id="${rid}" style="font-size:var(--fs-xs);color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word;${lungo?'max-height:4.5em;overflow:hidden;':''}">${testoEsc}</div>
               ${lungo?`<div style="text-align:right;margin-top:2px;"><button type="button" onclick="_psRispToggle('${rid}',this)" style="border:none;background:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;padding:2px 0;">Mostra tutto ▾</button></div>`:''}
             </div>`;})()}

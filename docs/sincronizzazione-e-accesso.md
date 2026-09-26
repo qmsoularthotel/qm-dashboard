@@ -718,6 +718,16 @@ Corretto:
   lasciapassare completo. Ora **ogni** lettura della pagina passa da `_gbJson`: toglie
   `< > " \`` dai testi e dalle chiavi, riduce `id`/`…Id` a `[\w.:-]`. Controlli in
   `test/galleria.js` ("sicurezza: …"). Compass legge da `bg_biancheria` solo le date.
+- **Testi scritti da fuori → codice sulla pagina (seconda passata, 26/09).** Recensioni
+  Booking (nome, titolo, positivo, negativo, risposta, traduzione) e Expedia (nome) finivano
+  in `innerHTML` senza `_esc`: un ospite poteva scrivere nella recensione un `<img onerror>`
+  che, al caricamento del CSV, girava su tutte le postazioni col lasciapassare. Stessa cosa
+  per la data della mail di risposta pre-stay (intestazione scelta da chi scrive) e per i
+  nomi degli ospiti dai PDF del PMS (colazioni, arrivi). Ora: `_esc` su quei campi;
+  **ogni PDF** passa da `_pdfApri` → `_pdfSenzaCodice`, che toglie `< > " \`` dal testo
+  estratto; i JSON letti dall'AI (arrivi, turni, colazioni, DDT) passano da
+  `_qmPulisciTesti`. Controlli "Sicurezza: testi esterni senza codice" in `test/controlli.js`.
+  Regola: **un testo che non abbiamo scritto noi non entra in `innerHTML` senza `_esc`.**
 - **pdf.js con `integrity`** (SRI) in `index.html`: se il CDN servisse un file alterato, il
   browser non lo esegue (e `PDF_OK` resta falso). `registration-galleria.html` non toccata.
 
