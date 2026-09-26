@@ -704,3 +704,28 @@ toccare perché è l'ordine di registrazione (Giacenza: `giacCorreggi` scrive `m
 `mod` anche la correzione di quantità dei resi e la spunta "firmato" di un ritiro. Una
 correzione nuova deve aggiornare `mod` (o `ts`, se `ts` non è un ordine), altrimenti un'altra
 postazione con la copia vecchia la cancella.
+
+## Verifica di sicurezza (26/09/2026)
+
+Stato trovato: porta chiusa (`/versione` → `portaChiusa:true`), lasciapassare firmato HMAC
+con scadenza, codice `bg.` limitato alle chiavi `bg_*`, nessun segreto nel repository né
+nella sua storia, `/prestay/*` dietro origine + `PRESTAY_KEY`, proxy AI dietro lasciapassare.
+
+Corretto:
+- **Galleria → lasciapassare del QM.** `biancheria-galleria.html` sul PC del QM usa `qm_pass`
+  (stesso sito, stesso localStorage). Un dato scritto col codice limitato che contenesse
+  codice (tag, o un apice in un id finito dentro un `onclick`) poteva leggere il
+  lasciapassare completo. Ora **ogni** lettura della pagina passa da `_gbJson`: toglie
+  `< > " \`` dai testi e dalle chiavi, riduce `id`/`…Id` a `[\w.:-]`. Controlli in
+  `test/galleria.js` ("sicurezza: …"). Compass legge da `bg_biancheria` solo le date.
+- **pdf.js con `integrity`** (SRI) in `index.html`: se il CDN servisse un file alterato, il
+  browser non lo esegue (e `PDF_OK` resta falso). `registration-galleria.html` non toccata.
+
+Rimasto aperto, scelte da fare col QM:
+- `/auth` non ha limite ai tentativi: la password va tenuta lunga (≥ 16 caratteri).
+  Un limite per IP richiederebbe una modifica al Worker (pubblicazione a mano).
+- I link `#attiva=` delle app del personale danno il lasciapassare **completo**: un telefono
+  del personale può leggere tutto l'archivio. Un codice limitato per app (come `bg.`) è
+  possibile ma è un cambio di Worker.
+- Nessuna Content-Security-Policy: con gli `onclick` in linea ovunque non darebbe protezione
+  reale senza riscrivere l'interfaccia.
