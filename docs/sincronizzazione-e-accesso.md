@@ -697,3 +697,10 @@ comunque. Perché funzioni, **chi modifica un record deve aggiornarne `ts`**: fa
 (già), consumi, riallineo e "Va bene così" della biancheria. Altri moduli che correggono record
 senza toccare `ts` restano col comportamento vecchio (non peggio di prima): aggiungendo una
 correzione, aggiornare `ts`.
+
+**`mod` — ultima correzione (26/09/2026).** Il confronto guarda `mod` se c'è, poi `ts`
+(`_qmQuando`, e le copie `_grQuando` e `_gbUnisci` nella Galleria). Serve dove `ts` non si può
+toccare perché è l'ordine di registrazione (Giacenza: `giacCorreggi` scrive `mod`). Scrivono
+`mod` anche la correzione di quantità dei resi e la spunta "firmato" di un ritiro. Una
+correzione nuova deve aggiornare `mod` (o `ts`, se `ts` non è un ordine), altrimenti un'altra
+postazione con la copia vecchia la cancella.

@@ -2597,3 +2597,21 @@ sez('Storico del pulito: i pezzi in piu\' compensano quelli mancanti');
   ok('senza pezzi in piu\' niente riga', _biaStoCompensa({ meno: 5, piu: 0, saldo: -5 }), '');
   ok('saldo positivo: dice "in piu\'"', _biaStoCompensa({ meno: 5, piu: 8, saldo: 3 }).replace(/<[^>]+>/g, ''), 'Nelle consegne: 5 pezzi mancanti − 8 in più = 3 in più');
 })();
+
+sez('Biancheria: "L\'ho già stampata" e\' un collegamento, non testo');
+(function(){
+  var vero=_biaOggi,prima=_bia,ph=_biaHotel,pd=_biaDist;
+  _biaOggi=function(){return new Date(2026,8,21);};   // lunedi': vigilia del martedi'
+  _bia={consumi:[],giri:[]};_biaDist={};_biaHotel='sa';
+  var box={innerHTML:''},vg=document.getElementById;
+  document.getElementById=function(id){return id==='bia-content'?box:null;};
+  try{biaRender();}finally{document.getElementById=vg;_biaOggi=vero;_bia=prima;_biaHotel=ph;_biaDist=pd;}
+  ok('il collegamento e\' vero HTML',   /<a href="#" onclick="biaSegnaDistintaFatta\(event\)"/.test(box.innerHTML), true);
+  ok('e non compare come testo',       /&lt;a href/.test(box.innerHTML), false);
+})();
+
+sez('Fusione: una correzione senza cambiare l\'ordine (mod) arriva lo stesso');
+ok('vince la copia corretta altrove (mod piu\' recente)', _qmUnisciRecord([{id:'m',q:5,ts:100,mod:900}],[{id:'m',q:9,ts:100}])[0].q, 5);
+ok('senza mod si guarda ts come prima',                   _qmUnisciRecord([{id:'m',q:5,ts:100}],[{id:'m',q:9,ts:100}])[0].q, 9);
+ok('la correzione di giacenza non tocca l\'ordine (ts)',  /m\.mod=Date\.now\(\)/.test(String(giacCorreggi))&&!/m\.ts=Date\.now\(\)/.test(String(giacCorreggi)), true);
+ok('correggere un reso segna la modifica',                /r\.mod=Date\.now\(\)/.test(String(resiEditQta)), true);

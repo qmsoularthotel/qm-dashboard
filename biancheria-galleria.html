@@ -131,7 +131,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-26.1';
+const QM_APP_BUILD='2026-09-26.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -381,7 +381,8 @@ function _gbUnisci(remoto,locale,rimossi){
     // Vince la versione modificata piu' di recente (`ts`), non sempre questa postazione: una
     // correzione fatta sull'altro PC deve arrivare qui (24/09/2026, 620 → 20 asciugamani).
     const prec=out[pos[m.id]];
-    if(!(prec&&typeof prec.ts==='number'&&typeof m.ts==='number'&&prec.ts>m.ts))out[pos[m.id]]=m;
+    const q=x=>typeof x.mod==='number'?x.mod:x.ts;
+    if(!(prec&&typeof q(prec)==='number'&&typeof q(m)==='number'&&q(prec)>q(m)))out[pos[m.id]]=m;
   });
   return out;
 }
@@ -1873,7 +1874,8 @@ function _grTieniChiusure(prec,m,rimossi){
   });
   return out;
 }
-function _grPiuRecente(r,l){return(r&&l&&typeof r.ts==='number'&&typeof l.ts==='number'&&r.ts>l.ts)?'r':'l';}
+const _grQuando=x=>typeof x.mod==='number'?x.mod:x.ts;
+function _grPiuRecente(r,l){const a=r&&_grQuando(r),b=l&&_grQuando(l);return(typeof a==='number'&&typeof b==='number'&&a>b)?'r':'l';}
 function _grUnisciRecord(remoto,locale,rimossi){
   const out=[],pos={};
   [].concat(remoto||[],locale||[]).forEach(m=>{
@@ -2063,6 +2065,7 @@ function grEditQta(id){
   if(!motivo)return;
   r.edits=r.edits||[];
   r.edits.push({ts:Date.now(),persona:'Quality Manager',campo:'qta',vecchio:r.qta,nuovo:n,motivo});
+  r.mod=Date.now();
   r.qta=n;
   _grSave();grRender();
 }
@@ -2169,7 +2172,7 @@ async function grRegistraRitiro(){
 // quali periodi sono chiusi davvero e quali sono ancora in attesa della ricevuta.
 function grToggleFirmato(id){
   const r=_gr.ritiri.find(x=>x.id===id);if(!r)return;
-  r.firmato=!r.firmato;
+  r.firmato=!r.firmato;r.mod=Date.now();
   _grSave();grRender();
 }
 async function grDelRitiro(id){
@@ -2197,7 +2200,7 @@ function grRender(){
     return (db?db.getTime():0)-(da?da.getTime():0)||b.ts-a.ts;
   });
   const totPezzi=aperte.reduce((s,r)=>s+r.qta,0);
-  const oggiIso=new Date().toISOString().slice(0,10);
+  const oggiIso=(d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'))(new Date());   // data LOCALE: toISOString e' in UTC e fra mezzanotte e le 2 dava ieri
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
   // Selettore struttura: i due sacchi sono distinti e si consegnano separatamente, quindi

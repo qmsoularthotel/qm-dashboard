@@ -8285,7 +8285,7 @@ function bkfRenderGroups(){
     html+=`<div style="display:flex;align-items:start;gap:10px;padding:10px 14px;${i>0?'border-top:1px solid var(--border-light);':''}${opacity}">
       <div style="flex:1;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
-          <span style="font-size:var(--fs-sm);font-weight:600;color:var(--text);">${g.nome}</span>
+          <span style="font-size:var(--fs-sm);font-weight:600;color:var(--text);">${_esc(g.nome)}</span>
           ${statusBadge}
         </div>
         <div style="display:flex;gap:12px;font-size:var(--fs-xxs);color:var(--text-dim);flex-wrap:wrap;margin-bottom:3px;">
@@ -8293,7 +8293,7 @@ function bkfRenderGroups(){
           <span style="font-weight:600;color:var(--text);">👥 ${g.pax} persone</span>
           ${g.orario?`<span>🕐 ${g.orario}</span>`:''}
         </div>
-        ${g.note?`<div style="font-size:var(--fs-xxs);color:var(--text-muted);font-style:italic;">${g.note}</div>`:''}
+        ${g.note?`<div style="font-size:var(--fs-xxs);color:var(--text-muted);font-style:italic;">${_esc(g.note)}</div>`:''}
       </div>
       <button onclick="bkfDeleteGroup(${g.id})" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:2px 4px;flex-shrink:0;">✕</button>
     </div>`;
@@ -8678,7 +8678,7 @@ function rcBuildPreview(g0,idx){const g=_rcPulito(g0);const nights=rcCalcNights(
   const hiBand=hiLabel?`<div class="rc-gcard-hi-band">${hiIcon} ${hiText}</div>`:'';
   const card=document.createElement('div');card.className='rc-gcard'+(hiLabel?' hi':'');card.id='rc-card-'+idx;
   const checkbox=`<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:10px;color:var(--text-dim);flex-shrink:0;"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)" style="cursor:pointer;">Seleziona</label>`;
-  card.innerHTML=`<div class="rc-gcard-top"><span class="rc-gcard-label">Registration Card</span><span class="rc-gcard-room">Camera ${g.camera}</span></div>${hiBand}<div class="rc-gcard-guest">${g.nome}</div><div class="rc-gcard-dates"><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Arrivo</div><div class="rc-gdate-val">${g.checkin||'—'}</div></div><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Partenza</div><div class="rc-gdate-val">${g.checkout||'—'}</div></div><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Notti</div><div class="rc-gdate-val">${nights}</div></div></div><div class="rc-gcard-pills"><span class="rc-gcard-pill">${g.pax} ${g.pax===1?'ospite':'ospiti'}</span><span class="rc-gcard-pill">${tratMap[g.trattamento]||g.trattamento}</span>${origBadge}</div><div class="rc-gcard-footer"><span class="rc-gcard-hint">Clicca per anteprima</span><div style="display:flex;align-items:center;gap:8px;">${checkbox}<button class="btn-print-one" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
+  card.innerHTML=`<div class="rc-gcard-top"><span class="rc-gcard-label">Registration Card</span><span class="rc-gcard-room">Camera ${_esc(g.camera)}</span></div>${hiBand}<div class="rc-gcard-guest">${_esc(g.nome)}</div><div class="rc-gcard-dates"><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Arrivo</div><div class="rc-gdate-val">${g.checkin||'—'}</div></div><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Partenza</div><div class="rc-gdate-val">${g.checkout||'—'}</div></div><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Notti</div><div class="rc-gdate-val">${nights}</div></div></div><div class="rc-gcard-pills"><span class="rc-gcard-pill">${g.pax} ${g.pax===1?'ospite':'ospiti'}</span><span class="rc-gcard-pill">${tratMap[g.trattamento]||g.trattamento}</span>${origBadge}</div><div class="rc-gcard-footer"><span class="rc-gcard-hint">Clicca per anteprima</span><div style="display:flex;align-items:center;gap:8px;">${checkbox}<button class="btn-print-one" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
 function rcOpenModal(idx){const g=guestsData[idx];document.getElementById('rcModalTitle').textContent=g.nome+' — Camera '+g.camera;document.getElementById('rcModalBody').innerHTML=`<div class="mp" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:9pt;color:#1A1916;">${rcCardHTML(g)}</div>`;document.getElementById('rcModalPrintBtn').onclick=()=>{rcCloseModal();setTimeout(()=>preparePrint(idx),150);};document.getElementById('rcModalOverlay').classList.add('open');}
 function rcCloseModal(){document.getElementById('rcModalOverlay').classList.remove('open');}
 function rcCloseModalOutside(e){if(e.target===document.getElementById('rcModalOverlay'))rcCloseModal();}
@@ -9308,7 +9308,7 @@ function renderArriviModal(filtStruttura='all', filtTratt='all', filtOrigine='al
         <span class="rc-card-label">${strutLabel(a.struttura)}${a.alert?' ⚠️':''}</span>
         <span class="rc-card-room">Cam. ${a.camera}</span>
       </div>
-      <div class="rc-card-guest">${a.ospite}</div>
+      <div class="rc-card-guest">${_esc(a.ospite)}</div>
       <div class="rc-card-dates">
         <div class="rc-date-cell"><div class="rc-date-label">Arrivo</div><div class="rc-date-val">${a.arrivo||'—'}</div></div>
         <div class="rc-date-cell"><div class="rc-date-label">Partenza</div><div class="rc-date-val">${a.partenza||'—'}</div></div>
@@ -9319,7 +9319,7 @@ function renderArriviModal(filtStruttura='all', filtTratt='all', filtOrigine='al
         ${a.tipo_camera?`<span class="rc-pill">${a.tipo_camera}</span>`:''}
         ${a.origine?`<span class="rc-pill" style="background:${/booking/i.test(a.origine)?'var(--accent-bg)':'var(--surface2)'};color:${/booking/i.test(a.origine)?'var(--accent)':'var(--text-dim)'};font-weight:${/booking/i.test(a.origine)?'700':'400'};">${/booking/i.test(a.origine)?BK_ICON:''}${a.origine}</span>`:''}
       </div>
-      ${a.note?`<div style="font-size:var(--fs-xxs);color:${a.alert?'var(--red)':'var(--text-muted)'};background:${a.alert?'rgba(220,53,69,.06)':'var(--surface2)'};border-radius:0 0 7px 7px;padding:6px 12px;border-top:1px solid var(--border-light);line-height:1.5;">${a.note}</div>`:''}
+      ${a.note?`<div style="font-size:var(--fs-xxs);color:${a.alert?'var(--red)':'var(--text-muted)'};background:${a.alert?'rgba(220,53,69,.06)':'var(--surface2)'};border-radius:0 0 7px 7px;padding:6px 12px;border-top:1px solid var(--border-light);line-height:1.5;">${_esc(a.note)}</div>`:''}
     </div>`;
   }).join('');
   const summary=`<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
@@ -14692,6 +14692,7 @@ function resiEditQta(id){
   if(!motivo)return;
   r.edits=r.edits||[];
   r.edits.push({ts:Date.now(),persona:'Quality Manager',campo:'qta',vecchio:r.qta,nuovo:n,motivo});
+  r.mod=Date.now();
   r.qta=n;
   _resiSave();resiRender();
 }
@@ -14798,7 +14799,7 @@ async function resiRegistraRitiro(){
 // quali periodi sono chiusi davvero e quali sono ancora in attesa della ricevuta.
 function resiToggleFirmato(id){
   const r=_resi.ritiri.find(x=>x.id===id);if(!r)return;
-  r.firmato=!r.firmato;
+  r.firmato=!r.firmato;r.mod=Date.now();
   _resiSave();resiRender();
 }
 async function resiDelRitiro(id){
@@ -14826,7 +14827,7 @@ function resiRender(){
     return (db?db.getTime():0)-(da?da.getTime():0)||b.ts-a.ts;
   });
   const totPezzi=aperte.reduce((s,r)=>s+r.qta,0);
-  const oggiIso=new Date().toISOString().slice(0,10);
+  const oggiIso=(d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'))(new Date());   // data LOCALE: toISOString e' in UTC e fra mezzanotte e le 2 dava ieri
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
   // Selettore struttura: i due sacchi sono distinti e si consegnano separatamente, quindi
@@ -15853,6 +15854,8 @@ function biaRender(){
   // stampata non c'era modo di capire perche' — le strutture sono due e la stampa si segna
   // per struttura e per data. Ora dice per chi e per quando, e offre una via d'uscita:
   // stampata da un'altra postazione, o su carta la settimana scorsa, si segna e basta.
+  // p.d NON passa da esc(): contiene il collegamento "L'ho gia' stampata" ed e' testo
+  // scritto qui, senza dati inseriti da nessuno (escapato si leggeva come codice, 26/09/2026).
   if(vigilia&&!distPronta)passi.push({
     t:'Prepara e stampa la distinta di domani — '+BIA_HOTELS[_biaHotel]+', consegna del '+dataDomani,
     d:'Domani alle 8 passa Raimondo: la distinta va stampata oggi pomeriggio e lasciata in reception. Domattina non ci sarà tempo.'
@@ -15869,7 +15872,7 @@ function biaRender(){
         <span style="flex:0 0 22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:var(--fs-xxs);font-weight:700;display:flex;align-items:center;justify-content:center;">${i+1}</span>
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--fs-sm);font-weight:700;">${esc(p.t)}</div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-top:2px;">${esc(p.d)}</div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-top:2px;">${p.d}</div>
         </div>
       </div>`;
     });
@@ -16762,6 +16765,7 @@ async function giacCorreggi(id,voce){
   const motivo=String(prompt('Perché la correzione? (resta nello storico)','')||'').trim();
   m.q=Object.assign({},m.q);m.q[voce]=nuovo;
   m.edits=(m.edits||[]).concat([{ts:Date.now(),campo:voce,vecchio,nuovo,motivo}]);
+  m.mod=Date.now();   // non ts: in Giacenza ts e' l'ordine dei movimenti
   await _giacSave();giacRender();
 }
 
@@ -17762,7 +17766,10 @@ function _qmTieniChiusure(prec,m,rimossi){
 // aveva gia' la versione vecchia, e anzi quel PC la rimandava sul cloud cancellando la
 // correzione. Ora si guarda `ts` (l'ultima modifica): se il remoto e' piu' recente vince il
 // remoto. Senza `ts` su entrambi, o a parita', vince il locale come prima.
-function _qmPiuRecente(r,l){return(r&&l&&typeof r.ts==='number'&&typeof l.ts==='number'&&r.ts>l.ts)?'r':'l';}
+// `mod` = ultima correzione (26/09/2026): dove `ts` e' l'ordine di registrazione e non si
+// puo' toccare (Giacenza), una correzione scrive `mod`. Si guarda mod, se c'e', poi ts.
+const _qmQuando=x=>typeof x.mod==='number'?x.mod:x.ts;
+function _qmPiuRecente(r,l){const a=r&&_qmQuando(r),b=l&&_qmQuando(l);return(typeof a==='number'&&typeof b==='number'&&a>b)?'r':'l';}
 function _qmUnisciRecord(remoto,locale,rimossi){
   const out=[],pos={};
   [].concat(remoto||[],locale||[]).forEach(m=>{
