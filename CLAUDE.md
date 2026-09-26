@@ -131,6 +131,9 @@ Ognuna è nata da un incidente vero; il racconto completo è nel file indicato.
   tutta la pagina.
 - Un `try/catch` avvolge **solo** la chiamata di rete, mai il nome della funzione (il caso
   `kvGet` inesistente, inghiottito per settimane).
+- Un testo che non abbiamo scritto noi (recensioni, PDF, AI, mail, dati della Galleria)
+  non entra in `innerHTML` senza `_esc`; i PDF passano già da `_pdfSenzaCodice`.
+  → `docs/sincronizzazione-e-accesso.md`
 - Una `const` dichiarata più in basso nel file non si legge a caricamento (TDZ): usare `try`.
 - Nelle app, `qmKvSet` chiama `_qmKvScrivi`, **mai se stessa** (02/09/2026: nessuna app
   scriveva più).
