@@ -2091,6 +2091,47 @@ sez('Bilanciamento camere: le chip dicono dove ci sono suggerimenti');
 })();
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Bilanciamento camere: oggi non si propone, si parte da domani');
+// Nessuna mossa puo' cambiare oggi (si spostano solo soggiorni che arrivano DOPO oggi),
+// eppure il pannello apriva proprio oggi, col suo "5 · 2" rosso e niente da fare.
+// Qui il Piano contiene davvero la data di oggi (indice 2), costruita a runtime.
+(function () {
+  var _piano = pianoData, _nav = pianoNavIdx;
+  var base = new Date(); base.setHours(12, 0, 0, 0); base.setDate(base.getDate() - 2);
+  var G = [0, 1, 2, 3, 4, 5, 6].map(function (i) {
+    var d = new Date(base); d.setDate(base.getDate() + i);
+    return { label: 'G' + i, data: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(),
+             soulart: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             boutique: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
+  });
+  var CELLE = { 'Art 12': ['F', 'P', '.', '.', '.', 'A', 'F'],
+                'Art 14': ['F', 'F', 'C', 'C', 'P', 'A', 'F'],
+                'Art 16': ['F', 'F', 'C', 'C', 'F', 'F', 'F'] };
+  var CHIAVE = { F: 'fermate', P: 'partenze', C: 'cambi', A: 'arrivi' };
+  Object.keys(CELLE).forEach(function (r) {
+    CELLE[r].forEach(function (c, i) { if (CHIAVE[c]) G[i].soulart[CHIAVE[c]].push(r); });
+  });
+  pianoData = { stampato: G[0].data, giorni: G, incArr: [], incPar: [],
+                tipi: { 'Art 12': 'AS DLX DP', 'Art 14': 'AS DLX DP', 'Art 16': 'AS SUP' } };
+  pianoNavIdx = 2;
+  ok('oggi e\' nel Piano (indice 2)',        pianoGetGiornoIdx(), 2);
+  ok('le proposte partono da domani',       _hkPrimoGiorno(), 3);
+  ok('oggi non conta fra gli sbilanciati',  hkSuggestMoves(30, null).sbilanciati.every(function (g) { return g.i > 2; }), true);
+  ok('oggi non ha mosse da proporre',       hkSuggestMoves(1, 2).totMosse || 0, 0);
+
+  var html = renderHkSuggestions(2);
+  var chips = [], re = /<button onclick="pianoNavRender\((\d+)\)"[^>]*background:([^;]*);/g, m;
+  while ((m = re.exec(html))) chips.push({ i: +m[1], att: m[2] === 'var(--accent)' });
+  ok('niente pulsanti per oggi e per i giorni passati', chips.every(function (c) { return c.i > 2; }), true);
+  ok('restano domani e i giorni dopo',                  chips.length, 4);
+  ok('col giorno di oggi selezionato si apre domani',   chips.filter(function (c) { return c.att; }).map(function (c) { return c.i; }).join(), '3');
+  ok('il titolo parla di domani',                       /Come bilanciare G3/.test(html), true);
+
+  pianoData = _piano; pianoNavIdx = _nav;
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
 sez('Giacenza biancheria: il magazzino si ancora al conteggio, il carico no');
 // Il magazzino NON e' un numero che si digita: riparte sempre dall'ultimo conteggio
 // fisico registrato e applica i movimenti successivi (stesso schema del fondo cassa).

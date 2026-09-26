@@ -3066,12 +3066,21 @@ function _hkEffetto(days,stato,changes,todayIdx,N){
 // resta comunque su tutta la settimana (una mossa tocca più giorni e il bilancio
 // complessivo non deve peggiorare), ma vengono proposte solo le mosse che migliorano
 // QUEL giorno, ordinate per quanto lo migliorano. Senza focus vale il criterio globale.
+// Primo giorno su cui ha senso proporre scambi. Oggi è sempre escluso: i soggiorni
+// spostabili arrivano DOPO oggi (`spostabile`), quindi nessuna mossa può cambiare le
+// partenze o il carico di oggi — proporlo mostrava un giorno "da sistemare" senza
+// rimedio. Se oggi non è nel Piano (settimana futura) si parte dal primo giorno, come prima.
+function _hkPrimoGiorno(){
+  let t=-1;try{t=pianoGetGiornoIdx();}catch(e){}
+  return t>=0?t+1:0;
+}
 function hkSuggestMoves(maxN,focusIdx){
   const out={ok:false,motivo:'',giorni:[],sbilanciati:[],mosse:[],ostacoli:[],focus:null};
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){out.motivo='piano';return out;}
   if(!pianoData.tipi||!Object.keys(pianoData.tipi).length){out.motivo='tipi';return out;}
   const giorni=pianoData.giorni,N=giorni.length;
   const todayIdx=Math.max(0,pianoGetGiornoIdx());
+  const primoIdx=_hkPrimoGiorno();
   const ART=Object.keys(pianoData.tipi).filter(r=>/^art\s/i.test(r));
   const BL=hkBuildBlocks();
   const stato={};
@@ -3082,7 +3091,7 @@ function hkSuggestMoves(maxN,focusIdx){
   // Diagnosi: i giorni da qui in avanti con partenze non pari (≥2 di differenza:
   // con numeri dispari uno di scarto è inevitabile e nessuno lo percepisce come ingiusto)
   days.forEach((d,i)=>{
-    if(i<todayIdx)return;
+    if(i<primoIdx)return;
     const dp=d.pM-d.pA;
     if(Math.abs(dp)>=2)out.sbilanciati.push({i,pM:d.pM,pA:d.pA,dp});
   });
@@ -3093,13 +3102,13 @@ function hkSuggestMoves(maxN,focusIdx){
   if(hasFocus){
     const f=days[focusIdx];
     out.focus={i:focusIdx,pM:f.pM,pA:f.pA,cM:f.cM,cA:f.cA,
-      passato:focusIdx<todayIdx,
+      passato:focusIdx<primoIdx,
       // Vale la pena parlarne solo se lo scarto si nota: 2 partenze (con numeri dispari
       // una di scarto è inevitabile e nessuno la percepisce) o 2 di carico, che è quanto
       // pesa una camera intera. Sotto, il giorno è di fatto in pari e segnalarlo è rumore.
       sbilanciato:Math.abs(f.pM-f.pA)>=2||Math.abs(f.cM-f.cA)>=2};
   }
-  const scoreCur=days.reduce((t,d,i)=>t+(i<todayIdx?0:_hkDayScore(d)),0);
+  const scoreCur=days.reduce((t,d,i)=>t+(i<primoIdx?0:_hkDayScore(d)),0);
   if(scoreCur<0.01)return out;
   if(hasFocus&&(out.focus.passato||!out.focus.sbilanciato))return out;
   // Spostabile = soggiorno che arriva DOPO oggi, riprotezioni comprese (si possono
@@ -3302,6 +3311,11 @@ function _hkNum(n){return n.toLocaleString('it-IT',{minimumFractionDigits:n%1?1:
 let _hkSuggMoreN=0;
 function hkSuggMore(){_hkSuggMoreN+=5;try{renderRoomDivision(pianoNavIdx);}catch(e){}}
 function renderHkSuggestions(focusIdx){
+  // Oggi e i giorni passati non si propongono: con il giorno di oggi selezionato (è
+  // quello di partenza della vista) i suggerimenti aprono direttamente domani.
+  const _primo=_hkPrimoGiorno();
+  const _nG=(pianoData&&pianoData.giorni&&pianoData.giorni.length)||0;
+  if(typeof focusIdx==='number'&&focusIdx<_primo&&_primo<_nG)focusIdx=_primo;
   const s=hkSuggestMoves(3+_hkSuggMoreN,focusIdx);
   const fLbl=(pianoData&&pianoData.giorni&&pianoData.giorni[focusIdx]&&pianoData.giorni[focusIdx].label)||'';
   // Il titolo dice di quale giorno si sta parlando: i suggerimenti seguono il giorno
@@ -3338,7 +3352,9 @@ function renderHkSuggestions(focusIdx){
   })();
   const selGiorni=(pianoData&&pianoData.giorni&&pianoData.giorni.length)
     ?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;margin-left:auto;">${pianoData.giorni.map((g,i)=>{
-        const att=i===pianoNavIdx;
+        // Oggi e i giorni passati non hanno pulsante: non c'è niente da proporre lì.
+        if(i<_primo)return'';
+        const att=i===(typeof focusIdx==='number'?focusIdx:pianoNavIdx);
         const d=(s.giorni||[])[i];
         const passato=i<_oggiIdx;
         let numeri='',mosse='',tip=g.label||('g'+(i+1));
@@ -3402,7 +3418,7 @@ function renderHkSuggestions(focusIdx){
   if(s.focus){
     const f=s.focus,altri=s.sbilanciati.filter(g=>g.i!==f.i);
     testa=f.passato
-      ?`<div style="font-size:12.5px;color:var(--text-dim);margin-bottom:12px;">${fLbl} è già passato: niente da riorganizzare.</div>`
+      ?`<div style="font-size:12.5px;color:var(--text-dim);margin-bottom:12px;">${_primo>=_nG?'Il Piano non ha giorni da domani in avanti: carica quello nuovo per avere proposte.':fLbl+' è già passato: niente da riorganizzare.'}</div>`
       :(altri.length
         ?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Altri giorni da sistemare: ${altri.map(g=>`<strong style="color:var(--amber);">${lbl(g.i)}</strong> (${g.pM}-${g.pA})`).join(', ')}</div>`
         :'');
@@ -3412,7 +3428,7 @@ function renderHkSuggestions(focusIdx){
           <div style="font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px;">Giorni con partenze sbilanciate</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">${s.sbilanciati.map(g=>pill(lbl(g.i),g.pM,g.pA,'amber')).join('')}</div>
         </div>`
-      :`<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);font-size:12.5px;color:var(--green);font-weight:600;">✓ Nessun giorno con partenze sbilanciate da oggi in avanti.</div>`;
+      :`<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);font-size:12.5px;color:var(--green);font-weight:600;">✓ Nessun giorno con partenze sbilanciate ${_primo>0?'da domani':'da oggi'} in avanti.</div>`;
   }
   if(!s.mosse.length){
     // Giorno passato o già in pari: la testa ha già detto tutto, non serve un secondo box.
