@@ -9378,6 +9378,28 @@ function renderArriviModal(filtStruttura='all', filtTratt='all', filtOrigine='al
 }
 
 // §§ INVENTARIO DETERSIVI
+// Icone a linea dell'Inventario (26/09/2026): stesso disegno delle icone di Compass
+// (PS_ICON_*, RECEPTION_ICON_*), colore dal testo intorno, al posto delle emoji.
+function _invIco(n,px){
+  const z=px||14;
+  const P={
+    allerta:'<path d="M12 3 2 20h20z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>',
+    attesa:'<path d="M6 2h12M6 22h12"/><path d="M7 2v4a5 5 0 0 0 10 0V2"/><path d="M7 22v-4a5 5 0 0 1 10 0v4"/>',
+    ok:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+    no:'<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>',
+    matita:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+    cestino:'<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v5M14 11v5"/>',
+    su:'<path d="M12 19V5"/><path d="m6 11 6-6 6 6"/>',
+    giu:'<path d="M12 5v14"/><path d="m6 13 6 6 6-6"/>',
+    note:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.5h6V4"/><path d="M9 10h6M9 14h6M9 18h3"/>',
+    scatola:'<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>',
+    idea:'<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
+    stampa:'<path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/>',
+    salva:'<path d="M5 3h11l5 5v13H3V3z"/><path d="M7 3v6h8V3"/><rect x="7" y="13" width="10" height="8"/>',
+    indietro:'<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>'
+  };
+  return '<svg viewBox="0 0 24 24" width="'+z+'" height="'+z+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0;">'+(P[n]||'')+'</svg>';
+}
 let _invWh=localStorage.getItem('qm_inv_wh')||'sa';
 let _invTab='stock';
 let _invFilter='all'; // 'all' | 'alert' | 'ok'
@@ -9511,15 +9533,15 @@ function invRenderStock(catalog,moves){
       <span style="font-size:var(--fs-xxs);color:var(--text-dim);">prodotti</span>
     </div>
     ${nOut?`<div style="background:var(--red-bg);border:1px solid #e8b0ac;border-radius:8px;padding:7px 13px;display:flex;align-items:center;gap:6px;">
-      <span style="font-size:16px;font-weight:700;color:var(--red);">⚠️ ${nOut}</span>
+      <span style="font-size:16px;font-weight:700;color:var(--red);display:inline-flex;align-items:center;gap:5px;">${_invIco('allerta',16)}${nOut}</span>
       <span style="font-size:var(--fs-xxs);color:var(--red);">esauriti</span>
     </div>`:''}
     ${nLow?`<div style="background:var(--amber-bg);border:1px solid #d4aa70;border-radius:8px;padding:7px 13px;display:flex;align-items:center;gap:6px;">
-      <span style="font-size:16px;font-weight:700;color:var(--amber);">⏳ ${nLow}</span>
+      <span style="font-size:16px;font-weight:700;color:var(--amber);display:inline-flex;align-items:center;gap:5px;">${_invIco('attesa',16)}${nLow}</span>
       <span style="font-size:var(--fs-xxs);color:var(--amber);">in allerta</span>
     </div>`:''}
     ${nAlert===0?`<div style="background:var(--green-bg);border:1px solid #90cca8;border-radius:8px;padding:7px 13px;display:flex;align-items:center;gap:6px;">
-      <span style="font-size:16px;font-weight:700;color:var(--green);">✅ ${nOk}</span>
+      <span style="font-size:16px;font-weight:700;color:var(--green);display:inline-flex;align-items:center;gap:5px;">${_invIco('ok',16)}${nOk}</span>
       <span style="font-size:var(--fs-xxs);color:var(--green);">tutto ok</span>
     </div>`:''}
   </div>`;
@@ -9527,8 +9549,8 @@ function invRenderStock(catalog,moves){
   const fBtn=(f,label,count)=>`<button onclick="invSetFilter('${f}')" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;font-weight:600;transition:all .12s;${_invFilter===f?'background:var(--accent);color:#fff;border-color:var(--accent);':'background:var(--surface);color:var(--text-muted);'}">${label} (${count})</button>`;
   const filterHtml=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
     ${fBtn('all','Tutti',tot)}
-    ${nAlert?fBtn('alert','⚠️ Allerta',nAlert):''}
-    ${fBtn('ok','✅ OK',nOk)}
+    ${nAlert?fBtn('alert',_invIco('allerta',12)+' Allerta',nAlert):''}
+    ${fBtn('ok',_invIco('ok',12)+' OK',nOk)}
   </div>`;
   // Apply filter
   const items=_invFilter==='alert'?allItems.filter(i=>i.status!=='ok'):_invFilter==='ok'?allItems.filter(i=>i.status==='ok'):allItems;
@@ -9547,14 +9569,14 @@ function invRenderStock(catalog,moves){
       <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;">${lastStr}</div>
       <div style="font-size:var(--fs-xs);text-align:center;">${sogliaStr}</div>
-      <div style="font-size:var(--fs-md);font-weight:700;color:${qtyColor};text-align:right;cursor:pointer;" onclick="invEditQty('${it.bc}',${it.qty})" title="Modifica quantità">${it.qty}${unit} <span style="font-size:10px;opacity:.4;">✏️</span></div>
+      <div style="font-size:var(--fs-md);font-weight:700;color:${qtyColor};text-align:right;cursor:pointer;" onclick="invEditQty('${it.bc}',${it.qty})" title="Modifica quantità">${it.qty}${unit} <span style="opacity:.4;">${_invIco('matita',11)}</span></div>
       <div style="display:flex;gap:3px;justify-content:center;">
-        <button onclick="invQuickRestock('${it.bc}')" style="background:var(--green-bg);border:1px solid #90cca8;border-radius:5px;cursor:pointer;font-size:12px;padding:2px 4px;color:var(--green);" title="Rifornimento rapido">⬆️</button>
-        <button onclick="invDeleteProduct('${it.bc}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px;line-height:1;" title="Elimina prodotto">🗑</button>
+        <button onclick="invQuickRestock('${it.bc}')" style="background:var(--green-bg);border:1px solid #90cca8;border-radius:5px;cursor:pointer;font-size:12px;padding:2px 4px;color:var(--green);" title="Rifornimento rapido">${_invIco('su',13)}</button>
+        <button onclick="invDeleteProduct('${it.bc}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px;line-height:1;" title="Elimina prodotto">${_invIco('cestino')}</button>
       </div>
     </div>`;
   }).join('');
-  const hint='<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;">💡 Clicca sulla soglia per impostarla — quando lo stock scende sotto viene evidenziato in arancione</div>';
+  const hint='<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;">Clicca sulla soglia per impostarla — quando lo stock scende sotto viene evidenziato in arancione</div>';
   el.innerHTML=`<div style="max-width:560px;">${kpiHtml+filterHtml+hdrs+rows+(allItems.every(i=>i.soglia==null)?hint:'')}</div>`;
 }
 function invRenderMoves(catalog,moves){
@@ -9565,7 +9587,7 @@ function invRenderMoves(catalog,moves){
     el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun movimento registrato</div>';
     return;
   }
-  const icons={init:'📋',in:'⬆️',out:'⬇️'};
+  const icons={init:_invIco('note',15),in:_invIco('su',15),out:_invIco('giu',15)};
   const signs={init:'',in:'+',out:'−'};
   const colors={init:'var(--accent)',in:'var(--green)',out:'var(--red)'};
   let html='',lastDay='';
@@ -9587,7 +9609,7 @@ function invRenderMoves(catalog,moves){
         <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${ts}${note}</div>
       </div>
       <div style="font-size:var(--fs-sm);font-weight:700;color:${colors[m.type]};flex-shrink:0;">${signs[m.type]}${m.qty}${unit}</div>
-      <button onclick="invDeleteMove('${m.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px 0 2px 6px;flex-shrink:0;" title="Elimina movimento">🗑</button>
+      <button onclick="invDeleteMove('${m.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px 0 2px 6px;flex-shrink:0;" title="Elimina movimento">${_invIco('cestino')}</button>
     </div>`;
   }
   el.innerHTML=`<div style="max-width:560px;">${html}</div>`;
@@ -9730,7 +9752,7 @@ function invRenderAnalysis(catalog,moves){
   // Sezione riordino urgente
   const urgenti=[...critici,...preavviso].sort((a,b)=>(a.autonomia??999)-(b.autonomia??999));
   const urgBlock=urgenti.length?`<div style="margin-bottom:16px;">
-    <div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:7px;">⚠️ Da riordinare</div>
+    <div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:7px;display:flex;align-items:center;gap:6px;">${_invIco('allerta',12)}Da riordinare</div>
     ${urgenti.map(it=>{
       const isRed=it.autonomia!==null&&it.autonomia<=7;
       const col=isRed?'var(--red)':'var(--amber)';
@@ -9808,7 +9830,7 @@ function invRenderAnalysis(catalog,moves){
   </div>`;
 
   el.innerHTML=periodHtml+kpi+urgBlock+`<div>
-    <div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:2px;">📋 Dettaglio prodotti</div>
+    <div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:2px;display:flex;align-items:center;gap:6px;">${_invIco('note',12)}Dettaglio prodotti</div>
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:7px;">Media = tutto lo storico. Tocca un prodotto per il consumo reale (ultimi 7gg / da inizio mese), indipendente dal periodo selezionato sopra, che riguarda solo i totali e "Da riordinare".</div>
   `+tableHtml+`</div>`;
 }
@@ -9866,7 +9888,7 @@ function invPrintStock(){
   </head><body>
   <div class="header">
     <div>
-      <h1>📦 Giacenza Magazzino — ${whName}</h1>
+      <h1>Giacenza Magazzino — ${whName}</h1>
       <div class="sub">Stampato il ${new Date().toLocaleString('it-IT')}</div>
     </div>
     <div class="date-badge">
@@ -9946,8 +9968,8 @@ function invRenderCatalog(){
           ${p.soglia!=null?`<span style="font-size:var(--fs-xxs);color:var(--amber);">soglia: ${p.soglia}</span>`:''}
         </div>
       </div>
-      <button onclick="invEditProduct('${bc}')" style="border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:13px;padding:4px 8px;border-radius:6px;color:var(--text-muted);" title="Modifica">✏️</button>
-      <button onclick="invDeleteProduct('${bc}')" style="border:none;background:none;cursor:pointer;color:var(--red);font-size:16px;padding:4px 6px;" title="Elimina">🗑️</button>
+      <button onclick="invEditProduct('${bc}')" style="border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:13px;padding:4px 8px;border-radius:6px;color:var(--text-muted);" title="Modifica">${_invIco('matita')}</button>
+      <button onclick="invDeleteProduct('${bc}')" style="border:none;background:none;cursor:pointer;color:var(--red);font-size:16px;padding:4px 6px;" title="Elimina">${_invIco('cestino',16)}</button>
     </div>`).join('')}
   </div></div>`;
 }
@@ -10012,10 +10034,10 @@ function invRenderOrders(){
   );
 
   const sBadge=s=>s==='ordinato'
-    ?`<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;">⏳ In attesa</span>`
+    ?`<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;display:inline-flex;align-items:center;gap:4px;">${_invIco('attesa',11)}In attesa</span>`
     :s==='ricevuto'
-    ?`<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;">✅ Ricevuto</span>`
-    :`<span style="background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;">✗ Annullato</span>`;
+    ?`<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;display:inline-flex;align-items:center;gap:4px;">${_invIco('ok',11)}Ricevuto</span>`
+    :`<span style="background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;display:inline-flex;align-items:center;gap:4px;">${_invIco('no',11)}Annullato</span>`;
   const whBadge=wh=>`<span style="background:var(--accent-bg);color:var(--accent);padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:700;">${_ordWhlabel(wh)}</span>`;
 
   const filterBtn=(val,cur,label,fn)=>`<button onclick="${fn}('${val}')" style="font-size:var(--fs-xxs);padding:4px 12px;border-radius:20px;border:1px solid ${cur===val?'var(--accent)':'var(--border)'};background:${cur===val?'var(--accent-bg)':'var(--surface)'};color:${cur===val?'var(--accent)':'var(--text-dim)'};cursor:pointer;font-weight:${cur===val?'700':'400'};">${label}</button>`;
@@ -10027,15 +10049,15 @@ function invRenderOrders(){
       ${filterBtn('ar',_invOrdersWh,'Art Resort','invOrdersSetWh')}
     </div>
     <div style="display:flex;gap:6px;">
-      <button onclick="invOrdersPrint()" style="font-size:var(--fs-xxs);padding:5px 12px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">🖨️ Stampa lista</button>
+      <button onclick="invOrdersPrint()" style="font-size:var(--fs-xxs);padding:5px 12px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">${_invIco('stampa',12)} Stampa lista</button>
       <button onclick="invOrdersOpenModal()" style="font-size:var(--fs-xxs);padding:5px 14px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:600;">+ Nuovo ordine</button>
     </div>
   </div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
     ${filterBtn('tutti',_invOrdersStatus,'Tutti','invOrdersSetStatus')}
-    ${filterBtn('ordinato',_invOrdersStatus,'⏳ In attesa','invOrdersSetStatus')}
-    ${filterBtn('ricevuto',_invOrdersStatus,'✅ Ricevuti','invOrdersSetStatus')}
-    ${filterBtn('annullato',_invOrdersStatus,'✗ Annullati','invOrdersSetStatus')}
+    ${filterBtn('ordinato',_invOrdersStatus,_invIco('attesa',12)+' In attesa','invOrdersSetStatus')}
+    ${filterBtn('ricevuto',_invOrdersStatus,_invIco('ok',12)+' Ricevuti','invOrdersSetStatus')}
+    ${filterBtn('annullato',_invOrdersStatus,_invIco('no',12)+' Annullati','invOrdersSetStatus')}
   </div>`;
 
   if(!filtered.length){
@@ -10057,18 +10079,18 @@ function invRenderOrders(){
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.122 1.528 5.857L.057 23.882a.5.5 0 0 0 .607.65l6.277-1.638A11.944 11.944 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.956 9.956 0 0 1-5.13-1.418l-.36-.214-3.733.974.998-3.647-.236-.374A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
         Invia</a>`;
       const actions=o.status==='ordinato'
-        ?`<button onclick="invOrdersMarkReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;cursor:pointer;font-weight:600;">✅ Ricevuto</button>
-           <button onclick="invOrdersEditOrder('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">✏️ Modifica</button>
+        ?`<button onclick="invOrdersMarkReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;cursor:pointer;font-weight:600;">${_invIco('ok',12)} Ricevuto</button>
+           <button onclick="invOrdersEditOrder('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">${_invIco('matita',12)} Modifica</button>
            <button onclick="invOrdersCancel('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">Annulla</button>`
         :o.status==='ricevuto'
-        ?`<button onclick="invOrdersUndoReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;cursor:pointer;">↩ Annulla ricezione</button>
-           <button onclick="invOrdersDelete('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;" title="Elimina">🗑</button>`
-        :`<button onclick="invOrdersDelete('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;" title="Elimina">🗑</button>`;
+        ?`<button onclick="invOrdersUndoReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;cursor:pointer;">${_invIco('indietro',12)} Annulla ricezione</button>
+           <button onclick="invOrdersDelete('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;" title="Elimina">${_invIco('cestino',13)}</button>`
+        :`<button onclick="invOrdersDelete('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;" title="Elimina">${_invIco('cestino',13)}</button>`;
       h+=`<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border-light);overflow:hidden;">
         <div style="padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">
           <div style="flex:1;min-width:160px;">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
-              <span style="font-weight:700;font-size:var(--fs-sm);">📋 ${o.date}</span>
+              <span style="font-weight:700;font-size:var(--fs-sm);display:inline-flex;align-items:center;gap:6px;">${_invIco('note')}${o.date}</span>
               ${whBadge(o.wh)}
               ${sBadge(o.status)}
             </div>
@@ -10094,7 +10116,7 @@ function _invOrdersModalHTML(cat){
     .map(([bc,p])=>`<option value="${bc}">${p.name} (${p.unit})</option>`).join('');
   return`<div id="invOrderModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center;">
   <div style="background:var(--bg);border-radius:16px;padding:24px;width:min(520px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25);">
-    <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:16px;">📋 Nuovo ordine</div>
+    <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:16px;display:flex;align-items:center;gap:8px;">${_invIco('note',16)}Nuovo ordine</div>
     <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
       <div style="flex:1;min-width:120px;">
         <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">DATA ORDINE</label>
@@ -10213,7 +10235,7 @@ function invOrdersMarkReceived(id){
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   modal.innerHTML=`
     <div style="background:var(--surface);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.25);">
-      <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:4px;">📦 Ricevimento merce</div>
+      <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:4px;display:flex;align-items:center;gap:8px;">${_invIco('scatola',16)}Ricevimento merce</div>
       <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:14px;">Ordine ${o.date}${o.fornitore?' · '+o.fornitore:''}</div>
       <div style="margin-bottom:14px;">
         <label style="font-size:var(--fs-xs);font-weight:600;display:block;margin-bottom:4px;">N° DDT / documento di trasporto</label>
@@ -10232,7 +10254,7 @@ function invOrdersMarkReceived(id){
       <button onclick="invDDTAddRow()" style="width:100%;padding:7px;border-radius:8px;border:1px dashed var(--border);background:transparent;font-size:var(--fs-xs);color:var(--accent);cursor:pointer;margin-bottom:16px;">+ Aggiungi prodotto non ordinato</button>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button onclick="document.getElementById('ddt-modal').remove()" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:var(--fs-xs);cursor:pointer;">Annulla</button>
-        <button onclick="invOrdersConfirmDDT('${id}')" style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:var(--fs-xs);font-weight:600;cursor:pointer;">✅ Conferma ricezione</button>
+        <button onclick="invOrdersConfirmDDT('${id}')" style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:var(--fs-xs);font-weight:600;cursor:pointer;">${_invIco('ok',13)} Conferma ricezione</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -10350,7 +10372,7 @@ function invOrdersEditOrder(id){
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   modal.innerHTML=`
     <div style="background:var(--surface);border-radius:16px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;padding:20px;box-shadow:0 8px 32px rgba(0,0,0,.25);">
-      <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:4px;">✏️ Modifica ordine</div>
+      <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:4px;display:flex;align-items:center;gap:8px;">${_invIco('matita',16)}Modifica ordine</div>
       <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:14px;">${o.date}${o.fornitore?' · '+o.fornitore:''}</div>
       <div id="inv-edit-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--border-light);margin-bottom:16px;">
@@ -10362,7 +10384,7 @@ function invOrdersEditOrder(id){
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button onclick="document.getElementById('inv-edit-modal').remove()" style="padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:var(--fs-xs);cursor:pointer;">Annulla</button>
-        <button onclick="invOrdersEditSave()" style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:var(--fs-xs);font-weight:600;cursor:pointer;">💾 Salva</button>
+        <button onclick="invOrdersEditSave()" style="padding:7px 16px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:var(--fs-xs);font-weight:600;cursor:pointer;">${_invIco('salva',13)} Salva</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -10431,7 +10453,7 @@ function invOrdersPrint(){
     const rcv=o.tsRicevuto?` → Ricevuto ${_ordFmtDate(o.tsRicevuto)}`:'';
     return`<div style="border:1px solid #ddd;border-radius:8px;margin-bottom:12px;overflow:hidden;break-inside:avoid;">
       <div style="background:#f5f5f5;padding:8px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #ddd;">
-        <span style="font-weight:700;font-size:13px;">📋 ${o.date}</span>
+        <span style="font-weight:700;font-size:13px;">${o.date}</span>
         <span style="background:#1E4080;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">${_ordWhlabel(o.wh)}</span>
         <span style="font-size:11px;color:#555;">${o.fornitore||'—'}${rcv}</span>
         <span style="margin-left:auto;font-size:11px;font-weight:600;color:${o.status==='ricevuto'?'#065F46':o.status==='ordinato'?'#92400E':'#991B1B'};">${sBadgeTxt(o.status)}</span>

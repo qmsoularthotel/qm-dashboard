@@ -134,3 +134,11 @@ persone, Note operative = blocco note), Occupazione giornaliera (grafico), Bilan
 Housekeepers (righe HKP), Reso Biancheria (cesto), Reception (€), obiettivo recensioni delle 7
 strutture (bersaglio), Recensioni in scadenza (clessidra), Preferenze turni "Per il" (calendario
 piccolo, `_ovIcona(n,1)` → `.ov-icon-mini` 18px). Le ⚠️ di avviso restano: sono segnali, non icone.
+
+### Inventario e Ordini — icone a linea `_invIco` (26/09/2026)
+
+Tutte le emoji della vista (schede, contatori esauriti/allerta/ok, filtri, matita, rifornimento,
+cestino, movimenti, ordini, modali, Stampa A4, Apri scanner) sono icone SVG a linea col colore
+del testo (`_invIco(nome,px)` in testa alla sezione §§ INVENTARIO), stesso disegno di
+`PS_ICON_*`. Restano le emoji solo nel testo del messaggio WhatsApp al fornitore.
+

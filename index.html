@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='454-20260926';
+  const V='456-20260926';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1584,17 +1584,17 @@
             <button class="rev-filter-btn inv-wh-btn" id="invWh-ar" onclick="invSetWh('ar',this)">Art Resort</button>
           </div>
           <div style="display:flex;gap:6px;">
-            <button onclick="invPrintStock()" style="font-size:var(--fs-xxs);padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;white-space:nowrap;">🖨️ Stampa A4</button>
-            <a href="inventory.html" target="_blank" class="btn-primary" style="font-size:var(--fs-xxs);padding:5px 12px;text-decoration:none;border-radius:6px;white-space:nowrap;">📱 Apri scanner</a>
+            <button onclick="invPrintStock()" style="font-size:var(--fs-xxs);padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;white-space:nowrap;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg> Stampa A4</button>
+            <a href="inventory.html" target="_blank" class="btn-primary" style="font-size:var(--fs-xxs);padding:5px 12px;text-decoration:none;border-radius:6px;white-space:nowrap;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M3 7V4h3M18 4h3v3M21 17v3h-3M6 20H3v-3"/><path d="M7 8v8M10 8v8M13 8v8M17 8v8"/></svg> Apri scanner</a>
           </div>
         </div>
         <!-- Tabs: stock / movimenti / analisi -->
         <div style="display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid var(--border-light);">
           <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--accent);" id="invTab-stock" onclick="invSetTab('stock')">Stock</div>
           <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-moves" onclick="invSetTab('moves')">Movimenti</div>
-          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-analysis" onclick="invSetTab('analysis')">📊 Analisi</div>
-          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-catalog" onclick="invSetTab('catalog')">🗂 Catalogo</div>
-          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-orders" onclick="invSetTab('orders')">📋 Ordini</div>
+          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-analysis" onclick="invSetTab('analysis')">Analisi</div>
+          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-catalog" onclick="invSetTab('catalog')">Catalogo</div>
+          <div style="padding:7px 14px;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-dim);" id="invTab-orders" onclick="invSetTab('orders')">Ordini</div>
         </div>
         <div id="inv-stock-view"></div>
         <div id="inv-moves-view" style="display:none;"></div>
@@ -1728,7 +1728,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=973-20260926"></script>
+<script src="app.js?v=975-20260926"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
