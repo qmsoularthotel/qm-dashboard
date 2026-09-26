@@ -1159,3 +1159,19 @@ verde, e per l'altra struttura "Passa a … ›" (`gbSetHotel`). Prima mostrava 
 selezionata e la distinta dell'altra poteva sfuggire. Corretto anche "L'ho già stampata", che
 per l'escape del testo compariva come testo e non come collegamento. **Solo nella Galleria.**
 I segnali nel menu (pallino, numero dei resi) sono stati provati e **scartati dal QM**.
+
+### Da riprendere: saldo di Raimondo voce per voce, SoulArt (26/09/2026)
+
+Analisi fatta sul backup del 26/09 (consegne dal 20/08 al 24/09), da riprendere col QM:
+
+- Dotazione di una camera SoulArt: 2 lenzuola matrimoniali (sempre matrimoniali), 4 federe,
+  2 teli doccia, 2 asciugamani viso, 2 asciugamani bidet, 1 scendibagno (13 pezzi).
+  22 camere = 286 pezzi; una consegna media ne porta circa 340: il volume non è per meno camere.
+- Saldo agosto+settembre: lenzuola +16, federe −90 (a settembre +6), teli −61.
+  Settembre: teli −39, viso −13, bidet −71, scendibagno −64.
+- Raimondo usa pacchi (federe da 20, teli da 10, lenzuola da 10), ma le bolle hanno anche
+  numeri non tondi: porta pezzi sfusi. **Deciso: i pacchi NON entrano in Compass**, si
+  inseriscono i totali delle bolle.
+- Nei consumi le federe sono circa 1,6 volte le lenzuola, non 2 come da dotazione.
+- Da verificare sulla bolla: il **01/09** il ricevuto è identico, voce per voce, al
+  consegnato del 29/08 (probabile conferma dell'atteso senza contare).
