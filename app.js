@@ -12040,7 +12040,7 @@ function ddtRenderSpese(){
     </div>`;
     h+=`<div id="ddt-chip-${nome}" onclick="ddtSelectForn('${nome}')" style="background:${active?conf.color:'#fff'};border:1px solid ${active?conf.accent:'var(--border-light)'};border-top:3px solid ${conf.accent};border-radius:12px;padding:18px 14px;cursor:pointer;text-align:center;transition:background .15s,border-color .15s,box-shadow .15s;box-shadow:${active?'0 4px 14px rgba(0,0,0,.08)':'none'};">
       ${logoHtml}
-      <div style="font-size:22px;font-weight:600;color:${fTot?'var(--text)':'var(--text-dim)'};">${fTot?ddtFmt(fTot):'—'}</div>
+      <div class="kpi-value" style="font-size:24px;white-space:nowrap;color:${fTot?'var(--text)':'var(--text-dim)'};">${fTot?ddtFmt(fTot):'—'}</div>
       <div style="font-size:var(--fs-xxs);color:${active?conf.fg:'var(--text-dim)'};margin-top:4px;opacity:.8;">${fDdt.length} DDT · ${conf.rLabel}${active?' ▲':' ▼'}</div>
       ${_mesiPills(nome,conf,active)}
     </div>`;
