@@ -422,7 +422,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-26.1';
+const QM_APP_BUILD='2026-09-26.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -1196,7 +1196,7 @@ function ddtBkfRenderSpese(){
         <div style="font-size:15px;font-weight:800;color:${fTot?conf.fg:'var(--text-dim)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${fTot?ddtBkfFmt(fTot):'—'}</div>
         <div style="font-size:10px;color:${active?conf.fg:'var(--text-dim)'};margin-top:2px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${fDdt.length} DDT${active?' ▲':' ▼'}</div>
       </div>
-      ${conf.logo?`<div style="flex-shrink:0;margin-left:auto;display:flex;flex-direction:${conf.iconOnly?'column':'row'};align-items:center;gap:${conf.iconOnly?'2px':'6px'};background:transparent;">${conf.iconOnly?`<img src="${conf.logo}" style="height:44px;max-width:70px;object-fit:contain;background:transparent;"><span style="font-size:11px;font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;">${nome}</span>`:`<img src="${conf.logo}" style="height:${conf.logoH||52}px;max-width:70px;object-fit:contain;background:transparent;">`}</div>`:''}
+      ${conf.logo?`<div style="flex-shrink:0;margin-left:auto;display:flex;flex-direction:${conf.iconOnly?'column':'row'};align-items:center;gap:${conf.iconOnly?'2px':'6px'};background:transparent;">${conf.iconOnly?`<img src="${conf.logo}?v=2" style="height:44px;max-width:70px;object-fit:contain;background:transparent;"><span style="font-size:11px;font-weight:700;color:${active?conf.fg:'var(--text-dim)'};text-transform:uppercase;letter-spacing:.04em;">${nome}</span>`:`<img src="${conf.logo}?v=2" style="height:${conf.logoH||52}px;max-width:70px;object-fit:contain;background:transparent;">`}</div>`:''}
     </div>`;
   });
   h+=`</div>`;
