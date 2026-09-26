@@ -124,3 +124,7 @@ Le emoji e le foto PNG nelle intestazioni dell'Overview (Turno di oggi, Piano de
 Camere con check-in oggi, Housekeeping, Breakfast, Recensioni) e di Turnazione Corrente sono
 diventate badge navy/oro come il menu: classe `.ov-icon-badge` (24px, SVG bianco 12px), stesse
 icone delle voci corrispondenti del menu (persone, calendario, chiave, righe HKP, tazza, stella).
+Estesa lo stesso giorno a Registration Cards (passaporto), Distribuzione Culligan (goccia),
+Messaggi Pre-stay (busta), riga "Prenotazioni (PMS) caricato" (documento) e, nel Culligan,
+"Portare bottiglia riempita" (goccia), "Non ancora visitate" (orologio), "Camere controllate
+nella settimana" (grafico). Per i titoli costruiti in JavaScript c'è `_ovIcona(nome)` in app.js.

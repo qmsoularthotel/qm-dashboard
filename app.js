@@ -8434,6 +8434,18 @@ const PDF_OK=(typeof pdfjsLib!=='undefined');
 if(PDF_OK)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 // Unico punto da cui si apre un PDF: se il lettore non c'è lo dice a parole, invece di
 // far comparire "pdfjsLib is not defined" sopra un riquadro di caricamento.
+// Badge navy/oro delle intestazioni (stile del menu) per i titoli costruiti in JavaScript:
+// le stesse icone delle voci del menu, al posto delle emoji (26/09/2026).
+function _ovIcona(n){
+  const S='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+  const I={
+    doc:S+'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>',
+    goccia:'<svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C9 7 5 11.5 5 15.5A7 7 0 0 0 19 15.5C19 11.5 15 7 12 2z"/></svg>',
+    attesa:S+'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    grafico:S+'<path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>'
+  };
+  return '<span class="ov-icon-badge">'+(I[n]||'')+'</span>';
+}
 function _pdfApri(ab){
   if(!PDF_OK)throw new Error('Il lettore PDF non si è caricato (serve la connessione a cdnjs.cloudflare.com). Ricarica la pagina e riprova.');
   return pdfjsLib.getDocument({data:ab instanceof Uint8Array?ab:new Uint8Array(ab)}).promise.then(_pdfSenzaCodice);
@@ -8654,7 +8666,7 @@ function rcRenderSourceLine(){
   try{ts=parseInt(localStorage.getItem('qm_ts_'+(unico?'prenTs':'arriviTs'))||'0')||null;}catch(e){}
   const tsStr=ts?fmtUploadTs(ts).replace('↑ ',''):'';
   el.style.display='flex';
-  el.innerHTML=`<span>📄 ${doc} caricato${tsStr?' · '+tsStr:''} · ${arriviData.arrivi.length} arrivi rilevati</span><span onclick="document.getElementById('${inputId}')?.click();" style="margin-left:auto;color:var(--accent);cursor:pointer;font-weight:600;">Aggiorna file</span>`;
+  el.innerHTML=`${_ovIcona('doc')}<span>${doc} caricato${tsStr?' · '+tsStr:''} · ${arriviData.arrivi.length} arrivi rilevati</span><span onclick="document.getElementById('${inputId}')?.click();" style="margin-left:auto;color:var(--accent);cursor:pointer;font-weight:600;">Aggiorna file</span>`;
 }
 function rcPrintHighlighted(){
   const idxs=guestsData.map((g,i)=>g.isNew||g.roomChanged?i:-1).filter(i=>i>=0);
@@ -10785,10 +10797,10 @@ function cmRender(state,key){
       </div>
     </div>
   </div>`;
-  const groupLbl=(t,tint)=>`<div style="font-size:12px;font-weight:700;color:${tint||'var(--text-muted)'};text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">${t}</div>`;
+  const groupLbl=(t,tint,ic)=>`<div style="font-size:12px;font-weight:700;color:${tint||'var(--text-muted)'};text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:flex;align-items:center;gap:8px;">${ic?_ovIcona(ic):''}${t}</div>`;
   h+=`<div style="border-top:1px solid var(--border-light);margin-top:2px;padding-top:14px;margin-bottom:14px;">`;
   if(btl.length>0){
-    h+=groupLbl(`💧 Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}`,'var(--amber)');
+    h+=groupLbl(`Portare bottiglia riempita — ${btl.length} ${btl.length===1?'camera':'camere'}`,'var(--amber)','goccia');
     h+=`<div style="display:flex;flex-wrap:wrap;gap:8px;">${btl.map(r=>`<span style="padding:6px 15px;border-radius:20px;font-size:var(--fs-xs);font-weight:600;background:var(--accent-bg);color:var(--accent);border:1px solid #B8CEEE;">${r}</span>`).join('')}</div>`;
   }else{
     h+=`<div style="font-size:var(--fs-xs);font-weight:600;color:var(--green);">💧 Nessuna bottiglia consumata — niente da portare ✅</div>`;
@@ -10796,7 +10808,7 @@ function cmRender(state,key){
   h+=`</div>`;
   if(pnd.length>0){
     h+=`<div style="border-top:1px solid var(--border-light);padding-top:14px;">`;
-    h+=groupLbl(`⭕ Non ancora visitate — ${pnd.length} ${pnd.length===1?'camera':'camere'}`);
+    h+=groupLbl(`Non ancora visitate — ${pnd.length} ${pnd.length===1?'camera':'camere'}`,'','attesa');
     h+=`<div style="display:flex;flex-wrap:wrap;gap:8px;">${pnd.map(r=>`<span style="padding:6px 15px;border-radius:20px;font-size:var(--fs-xs);font-weight:600;background:var(--surface2);color:var(--text-dim);border:1px solid var(--border-light);">${r}</span>`).join('')}</div>`;
     h+=`</div>`;
   }
@@ -10881,7 +10893,7 @@ function cmRenderWeeklyQC(perRoom,totalChecks,weekFrom,weekTo,days){
   section.innerHTML=`
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
         <div>
-          <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">📊 Camere controllate nella settimana</div>
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:8px;">${_ovIcona('grafico')}Camere controllate nella settimana</div>
           <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">${weekFrom} → ${weekTo}</div>
         </div>
         <div style="text-align:right;">
