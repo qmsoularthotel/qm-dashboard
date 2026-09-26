@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<link rel="stylesheet" href="style.css?v=271">
+<link rel="stylesheet" href="style.css?v=272">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='453-20260926';
+  const V='454-20260926';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -493,7 +493,7 @@
     <!-- Pannello occupazione espandibile sotto topbar -->
     <div id="occ-panel" style="display:none;background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;">📊 Occupazione giornaliera</span>
+        <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;display:flex;align-items:center;gap:8px;"><span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg></span>Occupazione giornaliera</span>
         <button onclick="toggleOccupazionePreview()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-dim);padding:0 4px;">✕</button>
       </div>
       <div id="occ-chart-body"></div>
@@ -673,7 +673,7 @@
           </div>
           <div id="rev-calib-sa"></div>
           <div id="rev-target-sa" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div style="font-size:18px;">🎯</div>
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
             <div style="flex:1;">
               <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-sa">—</div>
               <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-sa">—</div>
@@ -732,7 +732,7 @@
           </div>
           <div id="rev-calib-bh"></div>
           <div id="rev-target-bh" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div style="font-size:18px;">🎯</div>
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
             <div style="flex:1;">
               <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-bh">—</div>
               <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-bh">—</div>
@@ -791,7 +791,7 @@
           </div>
           <div id="rev-calib-sl"></div>
           <div id="rev-target-sl" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div style="font-size:18px;">🎯</div>
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
             <div style="flex:1;">
               <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-sl">—</div>
               <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-sl">—</div>
@@ -850,7 +850,7 @@
           </div>
           <div id="rev-calib-pr"></div>
           <div id="rev-target-pr" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div style="font-size:18px;">🎯</div>
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
             <div style="flex:1;">
               <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-pr">—</div>
               <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-pr">—</div>
@@ -909,7 +909,7 @@
           </div>
           <div id="rev-calib-ms"></div>
           <div id="rev-target-ms" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div style="font-size:18px;">🎯</div>
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
             <div style="flex:1;">
               <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-ms">—</div>
               <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-ms">—</div>
@@ -968,7 +968,7 @@
           </div>
           <div id="rev-calib-ar"></div>
           <div id="rev-target-ar" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div style="font-size:18px;">🎯</div>
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
             <div style="flex:1;">
               <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-ar">—</div>
               <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-ar">—</div>
@@ -1027,7 +1027,7 @@
           </div>
           <div id="rev-calib-sb"></div>
           <div id="rev-target-sb" style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:12px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div style="font-size:18px;">🎯</div>
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg></span>
             <div style="flex:1;">
               <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);" id="rev-target-title-sb">—</div>
               <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;" id="rev-target-detail-sb">—</div>
@@ -1225,7 +1225,7 @@
         <div class="grid-2-wide" style="gap:14px;align-items:stretch;margin-bottom:14px;">
           <div class="panel">
             <div class="panel-header">
-              <span class="panel-title">☕ Aggiornamento giornaliero</span>
+              <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H8a4 4 0 0 1-4-4z"/><path d="M17 9h2a2 2 0 0 1 0 4h-2"/><path d="M6 5c0-.8.5-1 1-2M10 5c0-.8.5-1 1-2"/></svg></span><span class="panel-title">Aggiornamento giornaliero</span>
             </div>
             <div class="panel-body" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:10px;">Carica BKF OGGI per sincronizzare il foglio Google</div>
             <div class="panel-body">
@@ -1278,7 +1278,7 @@
         <div class="grid-2" style="gap:14px;margin-bottom:0;align-items:start;">
           <div class="panel">
             <div class="panel-header">
-              <span class="panel-title">👥 Gruppi colazione</span>
+              <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-5 7-5s7 1.5 7 5"/><circle cx="17" cy="8" r="2.5"/><path d="M17 13c2.5 0 4.5 1.3 4.5 4"/></svg></span><span class="panel-title">Gruppi colazione</span>
               <button onclick="bkfAddGroup()" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:var(--fs-xxs);cursor:pointer;">+ Aggiungi</button>
             </div>
             <div class="panel-body" style="padding:0;" id="bkfGroupsList">
@@ -1287,7 +1287,7 @@
           </div>
           <div class="panel">
             <div class="panel-header">
-              <span class="panel-title">📋 Note operative</span>
+              <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.5h6V4"/><path d="M9 10h6M9 14h6M9 18h3"/></svg></span><span class="panel-title">Note operative</span>
               <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Visibili alla responsabile</span>
             </div>
             <div class="panel-body" style="padding:10px 14px;" id="bkfNotesList">
@@ -1300,7 +1300,7 @@
         <div class="grid-2-wide" style="gap:14px;align-items:stretch;margin-bottom:14px;">
           <div class="panel">
             <div class="panel-header">
-              <span class="panel-title">☕ Aggiornamento giornaliero</span>
+              <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H8a4 4 0 0 1-4-4z"/><path d="M17 9h2a2 2 0 0 1 0 4h-2"/><path d="M6 5c0-.8.5-1 1-2M10 5c0-.8.5-1 1-2"/></svg></span><span class="panel-title">Aggiornamento giornaliero</span>
             </div>
             <div class="panel-body" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:10px;">Carica BKF OGGI per sincronizzare il foglio Google</div>
             <div class="panel-body">
@@ -1353,7 +1353,7 @@
         <div class="grid-2" style="gap:14px;margin-bottom:0;align-items:start;">
           <div class="panel">
             <div class="panel-header">
-              <span class="panel-title">👥 Gruppi colazione</span>
+              <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-5 7-5s7 1.5 7 5"/><circle cx="17" cy="8" r="2.5"/><path d="M17 13c2.5 0 4.5 1.3 4.5 4"/></svg></span><span class="panel-title">Gruppi colazione</span>
               <button onclick="bkfAddGroup()" style="background:var(--accent);color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:var(--fs-xxs);cursor:pointer;">+ Aggiungi</button>
             </div>
             <div class="panel-body" style="padding:0;" id="bkfGroupsListAR">
@@ -1362,7 +1362,7 @@
           </div>
           <div class="panel">
             <div class="panel-header">
-              <span class="panel-title">📋 Note operative</span>
+              <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.5h6V4"/><path d="M9 10h6M9 14h6M9 18h3"/></svg></span><span class="panel-title">Note operative</span>
               <span style="font-size:var(--fs-xxs);color:var(--text-dim);">Visibili alla responsabile</span>
             </div>
             <div class="panel-body" style="padding:10px 14px;" id="bkfNotesListAR">
@@ -1640,7 +1640,7 @@
       <div class="view" id="view-room-division">
         <div class="panel">
           <div class="panel-header">
-            <img src="img/icons/piano_settimanale.png" style="width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16"/><path d="M7 20h10"/><path d="M4 8h16"/><path d="M1.5 14 4 8l2.5 6a3.5 3.5 0 0 1-5 0Z"/><path d="M17.5 14 20 8l2.5 6a3.5 3.5 0 0 1-5 0Z"/></svg></span>
             <span class="panel-title">Bilanciamento Camere</span>
           </div>
           <div class="panel-body" id="rd-content"></div>
@@ -1658,7 +1658,7 @@
       <div class="view" id="view-reception">
         <div class="panel">
           <div class="panel-header">
-            <span style="font-size:18px;">💶</span>
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M13.5 3.5C9 3.5 5.3 6.7 4.3 11H2v2h2c0 .3 0 .7.1 1H2v2h2.6c1.2 4 4.8 6.5 9 6.5 1.9 0 3.7-.6 5.1-1.6l-1.3-1.7c-1.1.7-2.4 1.1-3.8 1.1-3 0-5.5-1.7-6.6-4.3h6.4v-2H6.5a7 7 0 0 1 0-1H15v-2H6.7c1.1-2.6 3.6-4.4 6.6-4.4 1.4 0 2.7.4 3.8 1.1l1.3-1.7c-1.4-1-3.2-1.6-5-1.6z"/></svg></span>
             <span class="panel-title">Reception — Fondo Cassa &amp; Incasso Contante</span>
             <a href="reception.html" target="_blank" style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;background:var(--accent);color:#fff;padding:7px 14px;border-radius:9px;font-weight:700;font-size:var(--fs-xxs);text-decoration:none;">🖥️ Apri app reception</a>
           </div>
@@ -1701,7 +1701,7 @@
       <div class="view" id="view-resi-biancheria">
         <div class="panel">
           <div class="panel-header">
-            <span style="font-size:18px;">🧺</span>
+            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.3 10.2a2 2 0 0 1-2 1.8H7.3a2 2 0 0 1-2-1.8z"/><path d="M3.5 9c.6-2.4 4-4.2 8.5-4.2S19.9 6.6 20.5 9"/><path d="M10 13v4M14 13v4"/></svg></span>
             <span class="panel-title">Reso Biancheria Inidonea — Fornitore Raimondo</span>
             <button onclick="resiAddRow()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;border:none;padding:7px 14px;border-radius:9px;font-weight:600;font-size:var(--fs-xxs);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">+ Nuovo reso</button>
           </div>
@@ -1728,7 +1728,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=972-20260926"></script>
+<script src="app.js?v=973-20260926"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

@@ -128,3 +128,9 @@ Estesa lo stesso giorno a Registration Cards (passaporto), Distribuzione Culliga
 Messaggi Pre-stay (busta), riga "Prenotazioni (PMS) caricato" (documento) e, nel Culligan,
 "Portare bottiglia riempita" (goccia), "Non ancora visitate" (orologio), "Camere controllate
 nella settimana" (grafico). Per i titoli costruiti in JavaScript c'è `_ovIcona(nome)` in app.js.
+Terzo giro (26/09): Breakfast Sheet (Aggiornamento giornaliero = tazza, Gruppi colazione =
+persone, Note operative = blocco note), Occupazione giornaliera (grafico), Bilanciamento Camere
+(bilancia), Suddivisione cameriere (persone), Come bilanciare (lampadina), Riepilogo
+Housekeepers (righe HKP), Reso Biancheria (cesto), Reception (€), obiettivo recensioni delle 7
+strutture (bersaglio), Recensioni in scadenza (clessidra), Preferenze turni "Per il" (calendario
+piccolo, `_ovIcona(n,1)` → `.ov-icon-mini` 18px). Le ⚠️ di avviso restano: sono segnali, non icone.

@@ -3320,7 +3320,7 @@ function renderHkSuggestions(focusIdx){
   const fLbl=(pianoData&&pianoData.giorni&&pianoData.giorni[focusIdx]&&pianoData.giorni[focusIdx].label)||'';
   // Il titolo dice di quale giorno si sta parlando: i suggerimenti seguono il giorno
   // selezionato nella suddivisione cameriere qui sopra, non la settimana intera.
-  const titolo=s.focus&&fLbl?'💡 Come bilanciare '+fLbl:'💡 Come bilanciare la settimana';
+  const titolo=_ovIcona('idea')+(s.focus&&fLbl?'Come bilanciare '+fLbl:'Come bilanciare la settimana');
   // Selettore dei giorni ANCHE qui: i suggerimenti stanno in fondo alla vista e per
   // cambiare giorno bisognava risalire fino al selettore in cima, per poi ridiscendere.
   // E' la stessa navigazione (pianoNavRender), non una seconda copia dello stato.
@@ -3393,7 +3393,7 @@ function renderHkSuggestions(focusIdx){
   const box=(inner,tint)=>`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
     <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
       <div style="min-width:0;">
-        <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">${titolo}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:8px;">${titolo}</div>
         ${_statoFocus?`<div style="display:flex;align-items:center;gap:9px;margin-top:6px;">${_statoFocus}</div>`:''}
       </div>
       ${selGiorni}
@@ -3763,7 +3763,7 @@ function renderRoomDivision(idx){
   if(mCard||aCard){
     mHtml=`<div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">👥 Suddivisione cameriere — SoulArt</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:8px;">${_ovIcona('persone')}Suddivisione cameriere — SoulArt</span>
         <div style="display:flex;align-items:center;gap:4px;margin-left:auto;">
           <button onclick="pianoPrevDay()" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 8px;cursor:pointer;font-size:14px;color:var(--text-dim);">‹</button>
           <span style="font-size:var(--fs-xxs);color:var(--text-dim);min-width:60px;text-align:center;">${giorno.label||'—'}</span>
@@ -3788,7 +3788,7 @@ function renderRoomDivision(idx){
   const monthlyCardsSa=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'),'al SoulArt',22);
   const monthlyCardsBh=hkpMonthlyCameriereHtml('sa',row=>!row.name.toUpperCase().startsWith('ART'),'al Boutique',11);
   const _hkTile=(key,label,sub)=>`<div onclick="hkMonthlyToggle('${key}')" style="flex:1;background:#fff;border:1px solid var(--border-light);border-radius:9px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;">
-    <span style="font-size:18px;">🧹</span>
+    ${_ovIcona('hkp')}
     <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--text);">${label}</div><div style="font-size:10.5px;color:var(--text-dim);">${sub}</div></div>
     <span id="hk-monthly-chev-${key}" style="font-size:11px;color:var(--text-dim);transition:transform .2s;${_hkMonthlyOpen[key]?'transform:rotate(180deg);':''}">▾</span>
   </div>`;
@@ -6481,7 +6481,7 @@ function revRenderExpiring(p){
   const _expInvisibile=scoreAttuale===null||(_expDelta<0.01&&Math.round(scoreAttuale*10)===Math.round(scoreAfterBoth*10));
   if(_expInvisibile){
     el.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.5;">
-      <span style="font-size:15px;">⏳</span>
+      ${_ovIcona('clessidra')}
       <span style="flex:1;min-width:220px;">${allExpiring.length===0
         ?`<strong style="color:var(--text);">Nessuna recensione in scadenza</strong> questa o la prossima settimana.`
         :`<strong style="color:var(--text);">${allExpiring.length} recension${allExpiring.length===1?'e in scadenza':'i in scadenza'}</strong> questa/prossima settimana, ma pesano solo il <strong style="color:var(--text);">${(_expQuota*100).toFixed(2)}%</strong> del punteggio: uscendo lo sposterebbero di ${_expDelta<0.005?'meno di 0,01':_expDelta.toFixed(3)}, invisibile sul valore mostrato da Booking.`}
@@ -6491,7 +6491,7 @@ function revRenderExpiring(p){
   }
   let html=`<div class="panel">
     <div class="panel-header">
-      <span class="panel-title">⏳ Recensioni in scadenza</span>
+      ${_ovIcona('clessidra')}<span class="panel-title">Recensioni in scadenza</span>
       <span style="margin-left:auto;background:var(--amber-bg);color:#A05A00;border-radius:10px;padding:2px 10px;font-size:var(--fs-xxs);font-weight:600;">${allExpiring.length} questa/prossima settimana</span>
     </div>
     <div class="panel-body" style="padding:12px 14px;">`;
@@ -6543,7 +6543,7 @@ function revRenderExpiring(p){
     // ── Simulatore compensazione ──
     if(needed10!==null||needed9!==null){
       html+=`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:8px;padding:12px 16px;margin-top:4px;">
-        <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">🎯 Per mantenere lo score ${scoreAttuale!==null?(Math.round(scoreAttuale*10)/10).toFixed(1):''} dopo le scadenze</div>
+        <div style="font-size:var(--fs-xxs);font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;display:flex;align-items:center;gap:8px;">${_ovIcona('obiettivo')}Per mantenere lo score ${scoreAttuale!==null?(Math.round(scoreAttuale*10)/10).toFixed(1):''} dopo le scadenze</div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;">
           ${needed10!==null?`<div style="font-size:var(--fs-sm);"><span style="font-size:22px;font-weight:700;color:var(--accent);">${needed10===300?'300+':needed10}</span> <span style="color:var(--text-dim);">recensioni con <strong>10</strong></span></div>`:''}
           ${needed9!==null?`<div style="font-size:var(--fs-sm);"><span style="font-size:22px;font-weight:700;color:var(--text-muted);">${needed9===300?'300+':needed9}</span> <span style="color:var(--text-dim);">recensioni con <strong>9</strong></span></div>`:''}
@@ -8436,15 +8436,21 @@ if(PDF_OK)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/a
 // far comparire "pdfjsLib is not defined" sopra un riquadro di caricamento.
 // Badge navy/oro delle intestazioni (stile del menu) per i titoli costruiti in JavaScript:
 // le stesse icone delle voci del menu, al posto delle emoji (26/09/2026).
-function _ovIcona(n){
+function _ovIcona(n,mini){
   const S='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
   const I={
     doc:S+'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>',
     goccia:'<svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C9 7 5 11.5 5 15.5A7 7 0 0 0 19 15.5C19 11.5 15 7 12 2z"/></svg>',
     attesa:S+'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
-    grafico:S+'<path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>'
+    grafico:S+'<path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>',
+    persone:S+'<circle cx="9" cy="7" r="3"/><path d="M2 20c0-3.5 3-5 7-5s7 1.5 7 5"/><circle cx="17" cy="8" r="2.5"/><path d="M17 13c2.5 0 4.5 1.3 4.5 4"/></svg>',
+    idea:S+'<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>',
+    hkp:S+'<path d="M4 6.5h15"/><path d="M4 12h10"/><path d="M4 17.5h6"/></svg>',
+    clessidra:S+'<path d="M6 2h12M6 22h12"/><path d="M7 2v4a5 5 0 0 0 10 0V2"/><path d="M7 22v-4a5 5 0 0 1 10 0v4"/></svg>',
+    obiettivo:S+'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="#fff"/></svg>',
+    calendario:S+'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v4M16 4v4"/></svg>'
   };
-  return '<span class="ov-icon-badge">'+(I[n]||'')+'</span>';
+  return '<span class="ov-icon-badge'+(mini?' ov-icon-mini':'')+'">'+(I[n]||'')+'</span>';
 }
 function _pdfApri(ab){
   if(!PDF_OK)throw new Error('Il lettore PDF non si è caricato (serve la connessione a cdnjs.cloudflare.com). Ricarica la pagina e riprova.');
@@ -10626,7 +10632,7 @@ function turniPrefRender(){
         </div>
         <div style="font-size:var(--fs-xs);font-weight:700;color:${prefColor(r.preferenza)};margin-bottom:3px;">${_esc(r.preferenza)}</div>
         <div style="display:flex;gap:12px;font-size:var(--fs-xxs);color:var(--text-muted);">
-          <span>📅 Per il <b>${_esc(_tpFmtDate(r.giornoRichiesto))}</b></span>
+          <span style="display:inline-flex;align-items:center;gap:5px;">${_ovIcona('calendario',1)}Per il <b>${_esc(_tpFmtDate(r.giornoRichiesto))}</b></span>
           <span>Richiesta: ${_esc(_tpFmtDate(r.dataRichiesta))}</span>
         </div>
         ${r.motivazione?`<div style="margin-top:4px;font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;">${_esc(r.motivazione)}</div>`:''}
