@@ -64,7 +64,8 @@ if s != orig:
 # aggiornamento automatico il numero resterebbe fermo e il controllo diventerebbe inutile:
 # l'app crederebbe di essere aggiornata qualunque cosa succeda.
 for app in ('housekeeper.html', 'breakfast.html', 'controllo-mattino.html',
-            'inventory.html', 'dvr.html', 'registration-galleria.html'):
+            'inventory.html', 'dvr.html', 'registration-galleria.html',
+            'biancheria-galleria.html'):
     if not cambiato(app):
         continue
     t = open(app, encoding='utf-8').read()

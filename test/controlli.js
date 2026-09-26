@@ -2578,3 +2578,22 @@ sez('Biancheria: il promemoria della distinta legge il cloud');
 ok('il promemoria chiede le distinte al cloud',      /_biaPromemoriaDalCloud\(\)/.test(String(biaRenderPromemoria)), true);
 ok('al massimo ogni 5 minuti, e solo la vigilia',    /300000/.test(String(_biaPromemoriaDalCloud))&&/_biaVigiliaGiro/.test(String(_biaPromemoriaDalCloud)), true);
 ok('cloud e memoria locale si uniscono',             /Object\.assign\(\{\},_biaDist,/.test(String(_biaDistCarica)), true);
+
+sez('Storico del pulito: i pezzi in piu\' compensano quelli mancanti');
+// 26/09/2026: "mancano 185 pezzi, ma hai considerato i pezzi in piu'?". Il conto era gia'
+// al netto; ora il riquadro mostra anche il passaggio (mancanti − in piu' = saldo).
+(function () {
+  var vG = _biaGiri, vR = _biaRigaGiro;
+  _biaGiri = function () { return [{ data: '01/09/2026' }, { data: '03/09/2026' }, { data: '05/09/2026' }]; };
+  var val = { '01/09/2026': [100, 100], '03/09/2026': [66, 0], '05/09/2026': [0, 20] };
+  _biaRigaGiro = function (g) { var v = val[g.data]; return { data: g.data, registrato: true, dovuto: 200 + v[0], portato: 200 + v[1] }; };
+  try {
+    var st = _biaStorico('sa', '2026-09');
+    ok('storico: pezzi mancanti sommati',  st.meno, 66);
+    ok('storico: pezzi in piu\' sommati',  st.piu, 20);
+    ok('storico: saldo al netto',          st.saldo, -46);
+    ok('la riga mostra il passaggio', _biaStoCompensa(st).replace(/<[^>]+>/g, ''), 'Nelle consegne: 66 pezzi mancanti − 20 in più = 46 mancanti');
+  } finally { _biaGiri = vG; _biaRigaGiro = vR; }
+  ok('senza pezzi in piu\' niente riga', _biaStoCompensa({ meno: 5, piu: 0, saldo: -5 }), '');
+  ok('saldo positivo: dice "in piu\'"', _biaStoCompensa({ meno: 5, piu: 8, saldo: 3 }).replace(/<[^>]+>/g, ''), 'Nelle consegne: 5 pezzi mancanti − 8 in più = 3 in più');
+})();

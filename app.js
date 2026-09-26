@@ -15199,16 +15199,26 @@ function _biaStoMesi(h){
 }
 // Il mese di una struttura: righe dalla piu' recente, e il conto sulle SOLE consegne
 // confrontabili (registrate e con una consegna precedente), come _biaSaldo.
+// I pezzi in piu' di una consegna compensano quelli mancanti di un'altra: il conto del
+// mese e' gia' al netto, e questa riga lo fa vedere (26/09/2026: "hai considerato i pezzi
+// in piu'?"). Solo se ci sono entrambi, altrimenti non c'e' niente da compensare.
+function _biaStoCompensa(st){
+  if(!st.meno||!st.piu)return'';
+  const b=n=>`<strong style="color:var(--text);">${n}</strong>`;
+  const fine=st.saldo<0?b(-st.saldo)+' mancanti':st.saldo>0?b(st.saldo)+' in più':b(0);
+  return`<div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">Nelle consegne: ${b(st.meno)} pezzi mancanti − ${b(st.piu)} in più = ${fine}</div>`;
+}
 function _biaStorico(h,ym){
   const righe=_biaGiri(h).filter(g=>_biaYm(g.data)===ym).reverse().map(_biaRigaGiro);
-  let portato=0,dovuto=0,conf=0,nonReg=0,primaInizio=0;
+  let portato=0,dovuto=0,conf=0,nonReg=0,primaInizio=0,meno=0,piu=0;
   righe.forEach(r=>{
     if(r.primaInizio){primaInizio++;return;}
     if(!r.registrato){nonReg++;return;}
     if(r.dovuto===null)return;
     portato+=r.portato;dovuto+=r.dovuto;conf++;
+    const d=r.portato-r.dovuto;if(d<0)meno-=d;else piu+=d;
   });
-  return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg,primaInizio};
+  return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg,primaInizio,meno,piu};
 }
 // Esito di una consegna, in parole: e' quello che si legge senza aprire niente.
 function _biaEsitoConsegna(r){
@@ -16057,6 +16067,7 @@ function biaRender(){
     }else{
       h+=`<div style="font-size:var(--fs-base);font-weight:700;">A ${esc(nomeMese)} ${st.saldo<0?`mancano <span style="color:${col};">${-st.saldo} pezzi</span>`:st.saldo>0?`<span style="color:${col};">tutto riportato</span>, ${st.saldo} pezzi in più`:`<span style="color:${col};">tutto riportato</span>`}</div>
         <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">Raimondo ha riportato <strong style="color:var(--text);">${st.portato}</strong> pezzi su <strong style="color:var(--text);">${st.dovuto}</strong> in ${st.confrontate} consegn${st.confrontate===1?'a':'e'}</div>`;
+      h+=_biaStoCompensa(st);
     }
     if(st.primaInizio)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${st.primaInizio} consegn${st.primaInizio===1?'a':'e'} prima dell'inizio del conteggio (${esc(_bia.inizio[hS])}): fuori dal conto.</div>`;
     if(st.nonReg)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">${st.nonReg} consegn${st.nonReg===1?'a':'e'} senza il dato di cosa ha riportato: fuori dal conto.</div>`;

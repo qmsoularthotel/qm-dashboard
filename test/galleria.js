@@ -186,3 +186,16 @@ ok('Galleria: tre voci di menu',                    Object.keys(BG_SEZIONI).join
   ok('"L\'ho già stampata" e\' un collegamento vero', /<a href="#" onclick="gbSegnaDistintaFatta\(event\)"/.test(box.innerHTML), true);
   _gbOggi = veroOggi; _gb = prima; _gbHotel = ph; _gbDist = {};
 })();
+
+// ── Storico del pulito: il passaggio mancanti − in piu' c'e' anche qui (26/09/2026) ──
+(function () {
+  var vG = _gbGiri, vR = _gbRigaGiro;
+  _gbGiri = function () { return [{ data: '03/09/2026' }, { data: '05/09/2026' }]; };
+  var val = { '03/09/2026': [66, 0], '05/09/2026': [0, 20] };
+  _gbRigaGiro = function (g) { var v = val[g.data]; return { data: g.data, registrato: true, dovuto: 200 + v[0], portato: 200 + v[1] }; };
+  try {
+    var st = _gbStorico('ar', '2026-09');
+    ok('Galleria storico: mancanti e in piu\'', st.meno + '/' + st.piu + '/' + st.saldo, '66/20/-46');
+    ok('Galleria: la riga mostra il passaggio', _gbStoCompensa(st).replace(/<[^>]+>/g, ''), 'Nelle consegne: 66 pezzi mancanti − 20 in più = 46 mancanti');
+  } finally { _gbGiri = vG; _gbRigaGiro = vR; }
+})();

@@ -131,7 +131,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-09-25.13';
+const QM_APP_BUILD='2026-09-26.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -592,16 +592,26 @@ function _gbStoMesi(h){
 }
 // Il mese di una struttura: righe dalla piu' recente, e il conto sulle SOLE consegne
 // confrontabili (registrate e con una consegna precedente), come _gbSaldo.
+// I pezzi in piu' di una consegna compensano quelli mancanti di un'altra: il conto del
+// mese e' gia' al netto, e questa riga lo fa vedere (26/09/2026: "hai considerato i pezzi
+// in piu'?"). Solo se ci sono entrambi, altrimenti non c'e' niente da compensare.
+function _gbStoCompensa(st){
+  if(!st.meno||!st.piu)return'';
+  const b=n=>`<strong style="color:var(--text);">${n}</strong>`;
+  const fine=st.saldo<0?b(-st.saldo)+' mancanti':st.saldo>0?b(st.saldo)+' in più':b(0);
+  return`<div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">Nelle consegne: ${b(st.meno)} pezzi mancanti − ${b(st.piu)} in più = ${fine}</div>`;
+}
 function _gbStorico(h,ym){
   const righe=_gbGiri(h).filter(g=>_gbYm(g.data)===ym).reverse().map(_gbRigaGiro);
-  let portato=0,dovuto=0,conf=0,nonReg=0,primaInizio=0;
+  let portato=0,dovuto=0,conf=0,nonReg=0,primaInizio=0,meno=0,piu=0;
   righe.forEach(r=>{
     if(r.primaInizio){primaInizio++;return;}
     if(!r.registrato){nonReg++;return;}
     if(r.dovuto===null)return;
     portato+=r.portato;dovuto+=r.dovuto;conf++;
+    const d=r.portato-r.dovuto;if(d<0)meno-=d;else piu+=d;
   });
-  return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg,primaInizio};
+  return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg,primaInizio,meno,piu};
 }
 // Esito di una consegna, in parole: e' quello che si legge senza aprire niente.
 function _gbEsitoConsegna(r){
@@ -1470,6 +1480,7 @@ function _gbRenderCore(){
     }else{
       h+=`<div style="font-size:var(--fs-base);font-weight:700;">A ${esc(nomeMese)} ${st.saldo<0?`mancano <span style="color:${col};">${-st.saldo} pezzi</span>`:st.saldo>0?`<span style="color:${col};">tutto riportato</span>, ${st.saldo} pezzi in più`:`<span style="color:${col};">tutto riportato</span>`}</div>
         <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">Raimondo ha riportato <strong style="color:var(--text);">${st.portato}</strong> pezzi su <strong style="color:var(--text);">${st.dovuto}</strong> in ${st.confrontate} consegn${st.confrontate===1?'a':'e'}</div>`;
+      h+=_gbStoCompensa(st);
     }
     if(st.primaInizio)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${st.primaInizio} consegn${st.primaInizio===1?'a':'e'} prima dell'inizio del conteggio (${esc(_gb.inizio[hS])}): fuori dal conto.</div>`;
     if(st.nonReg)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">${st.nonReg} consegn${st.nonReg===1?'a':'e'} senza il dato di cosa ha riportato: fuori dal conto.</div>`;

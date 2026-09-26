@@ -1047,6 +1047,11 @@ colonne di numeri per riga) era da leggere, non da guardare. Rifatto su bozza ap
   (`_biaStoMese`, di norma il mese corrente, `_biaStoMesi`);
 - **una frase per il mese**: "A settembre mancano N pezzi" / "tutto riportato", con sotto
   portati su attesi — conto sulle sole consegne confrontabili (`_biaStorico`);
+  se nel mese ci sono sia consegne con pezzi mancanti sia con pezzi in più, una terza riga
+  mostra la compensazione: "Nelle consegne: 297 pezzi mancanti − 112 in più = 185 mancanti"
+  (`_biaStoCompensa`, campi `meno`/`piu` di `_biaStorico`; 26/09/2026, il QM chiedeva se i
+  pezzi in più fossero considerati — lo erano già, il saldo è al netto). Uguale nella
+  Galleria (`_gbStoCompensa`);
 - **una riga per consegna**: giorno e una pastiglia con l'esito in parole (`_biaEsito`); di
   norma le **ultime 4** (`BIA_STO_VISTE`), "Mostra tutte" per il resto (`_biaStoTutte`);
 - **il dettaglio si apre cliccando la riga**: portato/dovuto, "Mancano soprattutto" (le 3 voci
