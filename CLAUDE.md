@@ -77,6 +77,8 @@ L'utente è il Quality Manager: scrive in italiano, non legge il codice, lavora 
 2. Prima di pubblicare: **`bash test/esegui.sh`** (esce con 1 se qualcosa non torna) e
    **`bash strumenti/versione.sh`** (aggiorna i `?v=` di `index.html` e i `QM_APP_BUILD`
    delle app). Senza, i browser tengono il file vecchio.
+   `esegui.sh` apre anche **tutte le pagine in Chrome senza finestra** (`test/pagine.py`) e
+   si ferma se una ha errori JavaScript: circa un minuto; senza Chrome si salta.
 3. Ogni correzione con un difetto dietro ha **i suoi controlli** in `test/controlli.js`
    (o `test/galleria.js`), **provati rompendo il codice di proposito**: un controllo che non
    può fallire non controlla niente. Nomi inventati, mai dati di ospiti veri.

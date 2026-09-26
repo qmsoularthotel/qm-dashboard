@@ -390,6 +390,14 @@ for _f in app.js housekeeper.html breakfast.html inventory.html controllo-mattin
     BKF_KO=1
   fi
 done
+# Le pagine si APRONO davvero in Chrome senza finestra (26/09/2026): i controlli qui sopra
+# provano i calcoli, questa prova che Compass e le app partano senza errori JavaScript.
+# Senza Chrome (sessioni sul web) si salta e lo dice. Vedi test/pagine.py.
+echo ""
+echo "── Pagine nel browser ─────────────────────────────"
+if ! python3 test/pagine.py; then
+  BKF_KO=1
+fi
 # Leggere il lasciapassare di Compass (qm_pass) e' ammesso; scrivere una qm_* no.
 if grep -qE "localStorage\.(set|remove)Item\(.qm_" biancheria-galleria.html; then
   echo ""

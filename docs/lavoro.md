@@ -190,3 +190,19 @@ sono stati riportati a "da ricalcolare".
 **Se un punteggio non è riproducibile con 36 mesi la causa è nei dati**, tipicamente
 recensioni recenti non ancora presenti nell'export: si riesporta il CSV dall'Extranet.
 Tre controlli in `test/controlli.js` impediscono di reintrodurre la scorciatoia.
+
+### Prova delle pagine nel browser — `test/pagine.py` (26/09/2026)
+
+I controlli di `controlli.js` provano i calcoli ma non aprono le pagine: un errore che blocca il
+caricamento (funzione definita due volte, parentesi mancante, testo con caratteri rotti)
+arrivava online e lo si scopriva aprendo l'app. `test/pagine.py`, chiamato da `esegui.sh`, avvia
+un piccolo server locale (con `charset=utf-8`, senza il quale una regex di `app.js` diventa
+invalida) e apre Compass e le 8 app in **Chrome senza finestra**, tre per volta; ogni errore
+JavaScript non gestito ferma la pubblicazione, con file e riga. Ignora gli errori di rete: il
+browser di prova non è abilitato, ogni richiesta al cloud è rifiutata (401) e non si scrive niente.
+
+Due scelte da non cambiare: **`--incognito`** e non `--user-data-dir` (un profilo nuovo sul Mac
+resta in attesa del portachiavi e non finisce mai); e un **secondo tentativo** solo quando il
+browser non risponde, perché capita senza che la pagina c'entri. Senza Chrome (sessioni sul web)
+la prova si salta e lo dice. Verificata con due sabotaggi: errore di sintassi nella Galleria ed
+errore all'avvio in `app.js`, entrambi colti.
