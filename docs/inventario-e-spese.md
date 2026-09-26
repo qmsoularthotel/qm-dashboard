@@ -216,7 +216,7 @@ Aprire il DDT da qui usa la stessa maschera di modifica di Compass: si corregge 
 ### LANA.POLI — lavanderia (24/09/2026)
 
 Nuovo fornitore in `DDT_FORNITORI`: `'LANA.POLI'`, reparto Housekeeping, stessa card e stessi
-criteri degli altri, senza logo (come Cozzolino). È la lavanderia di Raimondo: fattura una volta
+criteri degli altri; logo `lanapoli.png` (dal file del QM, sfondo reso trasparente, 26/09/2026). È la lavanderia di Raimondo: fattura una volta
 al mese per struttura, SoulArt e Boutique separate. Nel caricamento si sceglie dal menu
 fornitore, e l'hotel ora comprende anche **Boutique** (prima solo SoulArt e Art Resort). Il nome
 sul documento "LANA.POLI SRL" si riconosce da solo (`ddtNormFornGeneric` ignora punti e spazi).
