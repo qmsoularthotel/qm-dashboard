@@ -766,3 +766,8 @@ Nello Stato del sistema compaiono solo le postazioni il cui ultimo salvataggio a
 l'ultimo salvataggio automatico, di qualunque ora, con l'orario della prima: lo smartphone del QM,
 chiuso, risultava aperto alle 21:54 di Reception QM.
 
+I dati che Compass ricava da solo (`QM_AGG_DERIVATE`: Report pulizie, HK SoulArt/Boutique ricavati dal Piano,
+partenze del mese) non firmano il registro "Ultimo salvataggio altrove": comparivano come azioni di una
+postazione ("Reception Colleghi · Report pulizie") mentre erano solo il ricalcolo dopo un Piano arrivato.
+`hkpDeriveFromPiano` riscrive `qm_pulData` solo se cambia (prima: una scrittura a ogni apertura, su ogni postazione).
+

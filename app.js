@@ -5173,8 +5173,14 @@ function _qmAltrePostazioni(post,io){
 function _qmVoceMia(key,ora){
   return{ts:ora,dato:key,tocco:_qmQualcunoAlComputer(ora)};
 }
+// Dati che Compass RICAVA da solo (dal Piano, dal calendario): scriverli non e' un'azione di
+// qualcuno. Firmati, facevano leggere "Reception Colleghi · Report pulizie, 19:38" — un
+// report che nessuno carica piu' (lo ricava il Piano, HKP_DERIVE_FROM_PIANO) — al posto di
+// cio' che era stato fatto davvero (28/09/2026).
+const QM_AGG_DERIVATE=new Set(['qm_pulData','qm_hk_soul','qm_hk_bout','qm_hk_mese']);
 async function _qmSegnaAggiornamento(key){
   if(key===QM_AGG_KEY)return;                       // non si firma il proprio segnatempo
+  if(QM_AGG_DERIVATE.has(key))return;               // conseguenze, non azioni
   const ora=Date.now();
   if(ora-_qmAggUltimo<QM_AGG_OGNI_MS)return;
   _qmAggUltimo=ora;                                 // prima dell'attesa: due scritture vicine non partono in doppio
@@ -8577,7 +8583,9 @@ function hkpDeriveFromPiano(){
   pulData=mk(['soulart','boutique','liborio']);
   pulActiveDay=0;
   try{renderPulData(true);}catch(e){}
-  try{LS.set('pulData',{data:pulData,activeDay:pulActiveDay,ts});}catch(e){}
+  // Si scrive solo se cambia: ogni postazione rifà questo conto a ogni apertura e a ogni
+  // Piano arrivato dal cloud, e scriveva ogni volta lo stesso identico dato.
+  try{const nuovo={data:pulData,activeDay:pulActiveDay,ts};if(localStorage.getItem('qm_pulData')!==JSON.stringify(nuovo))LS.set('pulData',nuovo);}catch(e){}
   // Compass Housekeeper SoulArt / Boutique → KPI Overview + app housekeeper.html
   // (il bilanciamento cameriere e il dettaglio camere di quell'app leggono già il
   // Piano direttamente, qui si replicano solo i conteggi aggregati delle card KPI)

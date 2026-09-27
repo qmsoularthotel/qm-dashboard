@@ -2834,3 +2834,10 @@ sez('Stato del sistema: postazioni aperte senza nessuno');
   ok('solo chi ha salvato da solo di recente', _qmAperteOra(altre, ora).map(function (x) { return x.nome; }).join(), 'Reception QM');
   ok('lo Stato del sistema usa il filtro', /_qmAperteOra\(altre,Date\.now\(\)\)/.test(String(qmRenderStatoSistema)), true);
 })();
+
+// ── Stato del sistema: i dati ricavati da soli non contano come "salvataggio altrove" (28/09/2026) ──
+sez('Stato del sistema: i dati ricavati non firmano il registro');
+ok('Report pulizie (ricavato dal Piano) non firma', QM_AGG_DERIVATE.has('qm_pulData') && QM_AGG_DERIVATE.has('qm_hk_soul') && QM_AGG_DERIVATE.has('qm_hk_mese'), true);
+ok('il Piano invece si', QM_AGG_DERIVATE.has('qm_piano'), false);
+ok('la firma salta i dati ricavati', /QM_AGG_DERIVATE\.has\(key\)\)return/.test(String(_qmSegnaAggiornamento)), true);
+ok('il Report pulizie si riscrive solo se cambia', /getItem\('qm_pulData'\)!==JSON\.stringify\(nuovo\)/.test(String(hkpDeriveFromPiano)), true);
