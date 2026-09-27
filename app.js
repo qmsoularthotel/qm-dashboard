@@ -3234,15 +3234,16 @@ function _hkMeseTotali(oggi,piano){
   Object.keys(mese).filter(k=>k.startsWith(pref)).sort().forEach(k=>{
     if(new Date(k+'T12:00:00')>ref)return;              // un giorno futuro registrato per sbaglio
     M+=+mese[k].m||0;A+=+mese[k].a||0;n++;if(!dal)dal=k;al=k;});
+  const Mp=M,Ap=A,alPass=al;let dalPrev=null;
   const P=piano||pianoData;
   ((P&&P.giorni)||[]).forEach(g=>{
     const iso=_hkIso(g.data);if(!iso||!iso.startsWith(pref))return;
     if(new Date(iso+'T12:00:00')<=ref)return;           // già contato fra i passati
     const{m,a}=splitSoulart(g.soulart||{});
     M+=(m.partenze||[]).length+(m.cambi||[]).length;A+=(a.partenze||[]).length+(a.cambi||[]).length;
-    prev++;if(!dal||iso<dal)dal=iso;if(!al||iso>al)al=iso;
+    prev++;if(!dal||iso<dal)dal=iso;if(!al||iso>al)al=iso;if(!dalPrev||iso<dalPrev)dalPrev=iso;
   });
-  return{M,A,n,prev,dal,al,nome:_HK_MESI[ref.getMonth()]};
+  return{M,A,Mp,Ap,n,prev,dal,al,alPass,dalPrev,nome:_HK_MESI[ref.getMonth()]};
 }
 function hkSuggestMoves(maxN,focusIdx){
   const out={ok:false,motivo:'',giorni:[],sbilanciati:[],mosse:[],ostacoli:[],focus:null};
@@ -3853,7 +3854,9 @@ function renderHkWeekViewContainer(){
         <div><span style="font-size:22px;font-weight:300;line-height:1;color:#5b7ca3;">${vA}</span><div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Altre</div></div>
       </div>
     </div>`;
-  // Partenze del mese: dal primo giorno registrato a oggi (vedi _hkMeseRegistra).
+  // Partenze del mese: giorni passati registrati + giorni ancora in programma nel Piano.
+  // Il testo sta in un contenitore largo 0 e minimo 100%: va a capo dentro la colonna invece
+  // di allargarla (la prima versione, con una riga lunga, schiacciava il grafico).
   let meseHtml='';
   try{
     const t=_hkMeseTotali();
@@ -3861,11 +3864,15 @@ function renderHkWeekViewContainer(){
       const sc=t.M-t.A;
       const scTxt=sc===0?'In pari nel mese':(sc>0?`Matarese +${sc} nel mese`:`Altre +${-sc} nel mese`);
       const scCol=Math.abs(sc)<=2?'var(--green)':'var(--amber)';
-      const dal=t.dal.split('-'),al=t.al.split('-');
+      const dm=iso=>{const p=iso.split('-');return(+p[2])+'/'+(+p[1]);};
+      const riga=(etich,m,a)=>`<div style="display:flex;gap:8px;font-size:11px;color:var(--text-dim);line-height:1.5;"><span style="flex:1;">${etich}</span><span style="font-variant-numeric:tabular-nums;color:var(--text-muted);">${m} · ${a}</span></div>`;
       meseHtml=`<div style="border-top:1px solid var(--border-light);padding-top:8px;margin-bottom:10px;">
         ${row('Partenze di '+t.nome,t.M,t.A)}
-        <div style="font-size:14px;font-weight:700;color:${scCol};margin-top:-2px;">${scTxt}</div>
-        <div style="font-size:11px;color:var(--text-dim);line-height:1.45;margin-top:3px;">dal ${+dal[2]}/${+dal[1]} al ${+al[2]}/${+al[1]}${t.prev?` · ${t.n===1?'1 giorno passato':t.n+' giorni passati'} e ${t.prev===1?'1 previsto':t.prev+' previsti'} nel Piano`:''}${sc?` · a parità, le mosse fanno pendere verso ${sc>0?'Altre':'Matarese'}`:''}</div>
+        <div style="width:0;min-width:100%;">
+          <div style="font-size:14px;font-weight:700;color:${scCol};margin:-2px 0 4px;">${scTxt}</div>
+          ${t.n?riga(t.n===1?'passato: '+dm(t.dal):'passati: '+dm(t.dal)+'–'+dm(t.alPass),t.Mp,t.Ap):''}
+          ${t.prev?riga('previsti nel Piano: '+dm(t.dalPrev)+'–'+dm(t.al),t.M-t.Mp,t.A-t.Ap):''}
+        </div>
       </div>`;
     }
   }catch(e){}
