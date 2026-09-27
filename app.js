@@ -5174,6 +5174,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
           arriviUpdateKpi();ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi',true);
           try{document.getElementById('arriviLoadedDate').textContent=arriviData.data;}catch(e){}
           restoreUploadTs('arriviTs',obj._ts);
+          try{_prenTesseraDaCloud(obj);}catch(e){}
           bkfRoomInfoBuild();
           _qmCambiato=true;
         }
@@ -5287,6 +5288,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
         ucSetState('arrivi','loaded',arriviData.data+' · '+arriviData.arrivi.length+' arrivi',true);
         document.getElementById('arriviLoadedDate').textContent=arriviData.data;
         if(arriviData._ts)restoreUploadTs('arriviTs',arriviData._ts);else loadStoredTs('arriviTs');
+        try{_prenTesseraDaCloud(arriviData);}catch(e){}
         // Se BKF_ROOM_INFO è ancora vuoto (es. subito dopo il deploy di questa funzione,
         // prima di qualsiasi nuovo caricamento) popolalo subito dal Riepilogo Reception
         // già presente, invece di aspettare il prossimo upload per mostrare qualcosa.
@@ -17490,11 +17492,16 @@ async function prenHandlePdf(file){
     const pren=_rec.pren;
     _prenSalvaUltimo(pren,iso);
     const per=_prenIntervallo(pren);
+    const dmy=s=>{const[a,m,g]=s.split('-');return g+'/'+m;};
+    const riass=pren.length+' prenotazioni · '+dmy(per.dal)+'–'+dmy(per.al);
 
     // 1. Arrivi del giorno corrente (ex Riepilogo Reception)
     // Lo stesso giorno del caricamento precedente? Serve a rcAggiornaDaArrivi per
     // evidenziare nuove prenotazioni e camere spostate invece di segnare tutto come nuovo.
     const ad=_prenArriviData(pren,iso);
+    // Il riepilogo della tessera viaggia DENTRO gli arrivi, che tutte le postazioni gia'
+    // rileggono a ogni giro: vedi _prenTesseraDaCloud.
+    ad._pren={riass:riass,ts:ad._ts};
     const _rcStessoGiorno=!!(arriviData&&arriviData.data===ad.data);
     arriviData=ad;
     try{localStorage.setItem('qm_arriviData',JSON.stringify(ad));}catch(e){}
@@ -17543,8 +17550,6 @@ async function prenHandlePdf(file){
       try{_psImportaArrivi(g,lista); giorniPs++; schedePs+=lista.length;}catch(e){}
     });
 
-    const dmy=s=>{const[a,m,g]=s.split('-');return g+'/'+m;};
-    const riass=pren.length+' prenotazioni · '+dmy(per.dal)+'–'+dmy(per.al);
     // L'esito delle registration card va detto: se restano quelle vecchie deve saperlo chi
     // carica, non scoprirlo stampando la card di un ospite partito ieri.
     const rcNota=_rcEsito==='ok'?'registration card aggiornate'
@@ -17556,7 +17561,7 @@ async function prenHandlePdf(file){
     setUploadTs('prenTs');
     // Senza questa riga, dopo un Cmd+R la tessera torna a "Non caricato" pur essendo stati
     // aggiornati arrivi, colazioni e pre-stay: identica a un caricamento mai avvenuto.
-    try{localStorage.setItem(PREN_RIASS_KEY,JSON.stringify({riass:riass,ts:Date.now()}));}catch(e){}
+    try{localStorage.setItem(PREN_RIASS_KEY,JSON.stringify({riass:riass,ts:ad._ts}));}catch(e){}
     try{refreshOverviewForDate(customDate||new Date());}catch(e){}
     try{prestayRender();}catch(e){}
   }catch(err){
@@ -17586,6 +17591,23 @@ function prenRestoreSlot(){
   ucSetState('pren','loaded',s.riass,true);
   const li=document.getElementById('prenLoadedInfo');if(li)li.classList.add('visible');
   if(s.ts){try{restoreUploadTs('prenTs',s.ts);}catch(e){}}
+}
+
+// La tessera sulle ALTRE postazioni (27/09/2026). Il riepilogo e l'ora del caricamento
+// stavano solo nel localStorage di chi aveva caricato: arrivi, colazioni e pre-stay
+// arrivavano a tutti, ma sugli altri Mac la tessera restava all'ultimo caricamento fatto
+// LI', e dopo 24 ore il suo pallino diventava rosso. Chi la vedeva ricaricava il PDF da
+// capo. Ora il riepilogo viaggia dentro qm_arriviData (campo _pren): nessuna chiave e
+// nessuna lettura in piu'. Vince il piu' recente, come per gli altri segnatempo.
+function _prenTesseraDaCloud(ad){
+  const p=ad&&ad._pren;
+  if(!p||!p.riass||!p.ts)return false;
+  let loc=null;
+  try{loc=JSON.parse(localStorage.getItem(PREN_RIASS_KEY)||'null');}catch(e){}
+  if(loc&&loc.ts&&loc.ts>=p.ts)return false;
+  try{localStorage.setItem(PREN_RIASS_KEY,JSON.stringify({riass:p.riass,ts:p.ts}));}catch(e){}
+  try{prenRestoreSlot();}catch(e){}
+  return true;
 }
 
 // Collegamento dello slot Upload Center (click, drag&drop, input file) — stesso schema

@@ -57,6 +57,26 @@ ok('la tessera Prenotazioni si ricostruisce dopo un Cmd+R',
 ok('il caricamento Prenotazioni scrive qm_ts_bkfTs',
    /qm_ts_bkfTs/.test(String(prenHandlePdf)) && /setUploadTs\(\s*['"]bkfTs['"]/.test(String(prenHandlePdf)), true);
 
+sez('Tessera Prenotazioni sulle altre postazioni');
+// 27/09/2026: caricato dal Mac del lavoro, arrivi e colazioni arrivavano agli altri Mac ma
+// la tessera restava all'ultimo caricamento fatto li' — pallino rosso dopo 24 ore, e la
+// collega ricaricava il PDF da capo. Il riepilogo ora viaggia dentro qm_arriviData.
+(function(){
+  var prima = localStorage.getItem(PREN_RIASS_KEY);
+  function tessera(){ return JSON.parse(localStorage.getItem(PREN_RIASS_KEY) || 'null'); }
+  localStorage.setItem(PREN_RIASS_KEY, JSON.stringify({ riass: '90 prenotazioni · 24/09–30/09', ts: 1000 }));
+  var arr = { arrivi: [], _ts: 5000, _pren: { riass: '120 prenotazioni · 27/09–03/10', ts: 5000 } };
+  ok('un caricamento piu\' recente da un altro Mac aggiorna la tessera', _prenTesseraDaCloud(arr), true);
+  ok('col suo riepilogo',  tessera().riass, '120 prenotazioni · 27/09–03/10');
+  ok('e con la sua ora',   tessera().ts, 5000);
+  var vecchio = { arrivi: [], _ts: 3000, _pren: { riass: 'vecchio', ts: 3000 } };
+  ok('uno piu\' vecchio non la tocca', _prenTesseraDaCloud(vecchio), false);
+  ok('riepilogo invariato', tessera().riass, '120 prenotazioni · 27/09–03/10');
+  ok('arrivi di prima, senza riepilogo: nessun effetto', _prenTesseraDaCloud({ arrivi: [], _ts: 9000 }), false);
+  ok('il caricamento mette il riepilogo dentro gli arrivi', /ad\._pren\s*=/.test(String(prenHandlePdf)), true);
+  if (prima === null) localStorage.removeItem(PREN_RIASS_KEY); else localStorage.setItem(PREN_RIASS_KEY, prima);
+})();
+
 sez('Archivio mensile colazioni: solo giorni gia\' trascorsi');
 // Il totale del mese serve per confrontare mesi diversi: deve essere vero, non plausibile.
 // Archiviare un giorno futuro significa congelare una previsione — il 22/08/2026 agosto

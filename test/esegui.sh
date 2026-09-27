@@ -379,6 +379,14 @@ if grep -qE "kvSet\((DDT_KEY|ORD_KEY|movKey|'qm_inv_(moves|catalog)_|'qm_rev_sen
   echo "  ERRORE      app.js scrive un elenco condiviso senza fondere col cloud (_qmElencoSalva)."
   BKF_KO=1
 fi
+# La tessera Prenotazioni delle altre postazioni si aggiorna solo se il giro e l'avvio
+# passano gli arrivi letti dal cloud a _prenTesseraDaCloud (27/09/2026: pallino rosso sul
+# Mac della collega, PDF ricaricato da capo). Due chiamate: giro e avvio.
+if [ "$(grep -c '_prenTesseraDaCloud(\(obj\|arriviData\))' app.js)" -lt 2 ]; then
+  echo ""
+  echo "  ERRORE      il giro o l'avvio non aggiornano piu' la tessera Prenotazioni dal cloud."
+  BKF_KO=1
+fi
 # Due funzioni con lo stesso nome nella stessa pagina: vince l'ultima, in silenzio. Il
 # 24/09/2026 la copia di _biaEsito nella Galleria si chiamava _gbEsito come la funzione che
 # scrive "salvato / NON salvato sul cloud", e l'avviso di salvataggio e' sparito.

@@ -279,6 +279,19 @@ c'erano come fermate. Il messaggio dello slot dice quante ne ha riprese.
 partenza del file è proprio quella che manca dopo i check-out (errore commesso e colto dai
 controlli). 9 controlli.
 
+### La tessera Prenotazioni sulle altre postazioni (27/09/2026)
+
+Caricato il file dal Mac del lavoro, arrivi, colazioni e pre-stay arrivavano a tutti, ma la
+**tessera** dell'Upload Center (riepilogo *"120 prenotazioni · 27/09–03/10"* e ora) stava solo
+nel `localStorage` di chi aveva caricato (`qm_pren_riass`, `qm_ts_prenTs`). Sugli altri Mac
+restava all'ultimo caricamento fatto lì e dopo 24 ore il suo pallino diventava **rosso**: la
+collega, vedendolo, ricaricava il PDF da capo.
+
+Ora il riepilogo viaggia **dentro `qm_arriviData`** (campo `_pren:{riass,ts}`), che il giro di
+ogni postazione rilegge già: nessuna chiave e nessuna lettura in più. `_prenTesseraDaCloud`
+lo applica al giro e all'avvio, e vince il più recente. Coperto da 7 controlli in
+`test/controlli.js` e da una sentinella in `test/esegui.sh`, verificati con tre sabotaggi.
+
 ### Tornare indietro
 
 `PREN_UNICO=false` in cima alla sezione: riappaiono i tre slot e tornano attivi i loro
