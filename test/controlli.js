@@ -2786,6 +2786,8 @@ sez('Operativa HKP: card separate SoulArt / Boutique ditta esterna');
   var gi = bou.indexOf('Interne che a settembre hanno lavorato nelle 200');
   ok('le interne stanno tutte insieme, sotto la ditta', gi > 0 && bou.indexOf('De Masi') > gi && bou.indexOf('Betty') < gi && bou.indexOf('Rita') < gi, true);
   ok('MA e\' Martina, della ditta', HKP_HW_NAMES.MA + ' ' + HKP_DITTA_ESTERNA.has('MA'), 'Martina true');
+  ok('simboli separati per struttura', /symArt:symBou/.test(String(hkpNRenderGrid)) && /sub\('SoulArt'\)/.test(String(hkpNRenderGrid)), true);
+  ok('Bilanciamento: interne nelle 200 evidenziate come in Operativa', /HKP_DITTA_ESTERNA\.has\(c\)/.test(String(_renderRoomDivision)), true);
   ok('la vista SoulArt si divide in due sezioni', /Boutique · ditta esterna/.test(String(hkpNRenderGrid)) && /HKP_MESE_PASSAGGIO/.test(String(hkpNRenderGrid)), true);
   _hkpNdata[ck] = prima;
 })();

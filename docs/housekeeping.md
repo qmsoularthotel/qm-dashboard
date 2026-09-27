@@ -240,3 +240,6 @@ compaiono nelle 200 hanno bordo e sigla ambra e l'etichetta "interna", e stanno 
 (DA) escono dall'azienda dopo settembre: restano nei nomi per i mesi passati.
 Le card dei simboli (camere libere, ripassi, non disturbare) hanno una sezione loro, "Camere libere,
 ripassi e non disturbare", sotto quelle delle cameriere.
+Nel tab Camere della SoulArt quella sezione è divisa per struttura (SoulArt / Boutique · ditta esterna,
+`symArt`/`symBou`). In Bilanciamento Camere il "Riepilogo Housekeepers Boutique" evidenzia e raggruppa
+le interne nelle 200 nel mese del passaggio, come Operativa HKP.

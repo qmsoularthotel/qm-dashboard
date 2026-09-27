@@ -1468,7 +1468,7 @@ function hkpNRenderGrid(p,tab){
   const monLabel=MON_IT[mo-1]+' '+yr;
   const rows=[];
   conf.forEach(grp=>grp.list.forEach((name,idx)=>rows.push({name,grp:grp.g,isFirst:idx===0,grpSize:grp.list.length})));
-  const dayTotals={};const rowTotals={};const hwCounts={};const symCounts={};const hwDays={};
+  const dayTotals={};const rowTotals={};const hwCounts={};const symCounts={};const hwDays={};const symArt={},symBou={};
   rows.forEach((row,ri)=>{
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
@@ -1476,7 +1476,7 @@ function hkpNRenderGrid(p,tab){
       let hasStaff=false;
       v.split('/').forEach(k=>{
         const t=k.trim();if(!t)return;
-        if(HKP_SYM[t]){symCounts[t]=(symCounts[t]||0)+1;}
+        if(HKP_SYM[t]){symCounts[t]=(symCounts[t]||0)+1;const sm=row.name.toUpperCase().startsWith('ART')?symArt:symBou;sm[t]=(sm[t]||0)+1;}
         else{hwCounts[t]=(hwCounts[t]||0)+1;hasStaff=true;(hwDays[t]=hwDays[t]||new Set()).add(d);}
       });
       // Il totale camere conta solo le assegnazioni a una cameriera, non ripasso/non disturbare/camera libera
@@ -1658,20 +1658,27 @@ function hkpNRenderGrid(p,tab){
       if(cardsHtml)h+='<div style="margin-top:12px;">'+cardsHtml+'</div>';
     }
   }
-  const sortedSym=Object.entries(symCounts).sort((a,b)=>b[1]-a[1]);
-  if(sortedSym.length){
-    // Sezione a sé (28/09/2026): prima le card dei simboli stavano attaccate a quelle delle
-    // cameriere e sembravano altre persone.
-    h+='<div style="margin-top:16px;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Camere libere, ripassi e non disturbare</div>';
-    h+='<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-    sortedSym.forEach(([code,cnt])=>{
+  // Camere libere, ripassi, non disturbare: sezione a sé (28/09/2026) e, per la SoulArt
+  // nel tab Camere, separati per struttura come le card delle cameriere.
+  const labels={RP:'Ripasso',ND:'Non disturbare',LIB:'Camera libera',NE:'Non eseguito'};
+  const symCards=obj=>{
+    const lista=Object.entries(obj).sort((a,b)=>b[1]-a[1]);
+    if(!lista.length)return'';
+    return'<div style="display:flex;flex-wrap:wrap;gap:8px;">'+lista.map(([code,cnt])=>{
       const symFile=HKP_SYM[code];
-      const labels={RP:'Ripasso',ND:'Non disturbare',LIB:'Camera libera',NE:'Non eseguito'};
-      h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid var(--border-light,#dde2ea);display:flex;align-items:center;gap:10px;">';
-      h+='<img src="img/'+symFile+'.'+HKP_SYM_EXT+'" style="width:32px;height:32px;object-fit:contain;mix-blend-mode:multiply;">';
-      h+='<div><div style="font-size:21px;font-weight:400;line-height:1.1;color:var(--text,#0c1f33);">'+cnt+'</div><div style="font-size:11.5px;color:var(--text-dim,#888880);margin-top:1px;">'+(labels[code]||code)+'</div></div></div>';
-    });
-    h+='</div>';
+      return'<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid var(--border-light,#dde2ea);display:flex;align-items:center;gap:10px;">'
+        +'<img src="img/'+symFile+'.'+HKP_SYM_EXT+'" style="width:32px;height:32px;object-fit:contain;mix-blend-mode:multiply;">'
+        +'<div><div style="font-size:21px;font-weight:400;line-height:1.1;color:var(--text,#0c1f33);">'+cnt+'</div><div style="font-size:11.5px;color:var(--text-dim,#888880);margin-top:1px;">'+(labels[code]||code)+'</div></div></div>';
+    }).join('')+'</div>';
+  };
+  if(Object.keys(symCounts).length){
+    h+='<div style="margin-top:16px;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Camere libere, ripassi e non disturbare</div>';
+    if(p==='sa'&&tab==='camere'){
+      const sub=t=>'<div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px;">'+t+'</div>';
+      const a1=symCards(symArt),b1=symCards(symBou);
+      if(a1)h+=sub('SoulArt')+a1;
+      if(b1)h+=sub('Boutique · ditta esterna')+b1;
+    }else h+=symCards(symCounts);
   }
   el.innerHTML=h;
   // Sincronizza altezze righe dopo il render (rowspan nella tabella sinistra può sfasarle)
@@ -4113,7 +4120,10 @@ function _renderRoomDivision(idx){
   // stato ricordato in _hkMonthlyOpen) invece che sempre aperte — "Suddivisione
   // cameriere" sopra resta invece sempre visibile perché usata di continuo.
   const monthlyCardsSa=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'),'al SoulArt',22);
-  const monthlyCardsBh=hkpMonthlyCameriereHtml('sa',row=>!row.name.toUpperCase().startsWith('ART'),'al Boutique',11);
+  // Come in Operativa HKP: nel mese del passaggio alla ditta esterna le interne che hanno
+  // lavorato nelle 200 stanno in evidenza, in un gruppo a parte.
+  const _passaggio=hkpNCurMon('sa')===HKP_MESE_PASSAGGIO;
+  const monthlyCardsBh=hkpMonthlyCameriereHtml('sa',row=>!row.name.toUpperCase().startsWith('ART'),'al Boutique',11,_passaggio?(c=>!HKP_DITTA_ESTERNA.has(c)):null);
   const _hkTile=(key,label,sub)=>`<div onclick="hkMonthlyToggle('${key}')" style="flex:1;background:#fff;border:1px solid var(--border-light);border-radius:9px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;">
     ${_ovIcona('hkp')}
     <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--text);">${label}</div><div style="font-size:10.5px;color:var(--text-dim);">${sub}</div></div>
