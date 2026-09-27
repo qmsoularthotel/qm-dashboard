@@ -758,3 +758,11 @@ Rimasto aperto, scelte da fare col QM:
   possibile ma è un cambio di Worker.
 - Nessuna Content-Security-Policy: con gli `onclick` in linea ovunque non darebbe protezione
   reale senza riscrivere l'interfaccia.
+
+### "Compass aperto, ma senza nessuno" (28/09/2026)
+
+Nello Stato del sistema compaiono solo le postazioni il cui ultimo salvataggio automatico è di meno di
+35 minuti fa (`_qmAperteOra`, `QM_APERTA_MS`), ognuna col suo orario. Prima comparivano tutte quelle con
+l'ultimo salvataggio automatico, di qualunque ora, con l'orario della prima: lo smartphone del QM,
+chiuso, risultava aperto alle 21:54 di Reception QM.
+

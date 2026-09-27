@@ -2823,3 +2823,14 @@ sez('Operativa HKP: card separate SoulArt / Boutique ditta esterna');
   ok('la vista SoulArt si divide in due sezioni', /Boutique 200 · ditta esterna/.test(String(hkpNRenderGrid)) && /HKP_MESE_PASSAGGIO/.test(String(hkpNRenderGrid)), true);
   _hkpNdata[ck] = prima;
 })();
+
+// ── Stato del sistema: "Compass aperto, ma senza nessuno" solo se il salvataggio automatico e' recente (28/09/2026) ──
+sez('Stato del sistema: postazioni aperte senza nessuno');
+(function () {
+  var ora = 1e12, altre = [
+    { nome: 'Reception QM', ts: ora - 5 * 60000, tocco: false },
+    { nome: 'Mio Smartphone', ts: ora - 5 * 3600000, tocco: false },
+    { nome: 'Reception Colleghi', ts: ora - 60000, tocco: true }];
+  ok('solo chi ha salvato da solo di recente', _qmAperteOra(altre, ora).map(function (x) { return x.nome; }).join(), 'Reception QM');
+  ok('lo Stato del sistema usa il filtro', /_qmAperteOra\(altre,Date\.now\(\)\)/.test(String(qmRenderStatoSistema)), true);
+})();

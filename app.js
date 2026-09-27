@@ -4701,7 +4701,11 @@ async function qmRenderStatoSistema(){
     // di un dato — e qui e' sempre stata la seconda. Si dice "salvataggio", che e' quello che
     // succede davvero, e si nomina IL DATO: senza, "aggiornamento" non vuol dire niente.
     const presidiate=altre.filter(x=>x.tocco!==false);
-    const aperte=altre.filter(x=>x.tocco===false);
+    // "Aperto" solo se il salvataggio automatico e' recente: una postazione il cui ultimo
+    // salvataggio (magari di stamattina) era automatico non e' per questo aperta adesso — lo
+    // smartphone del QM compariva cosi', con l'orario di un'altra postazione (28/09/2026).
+    // Il polling si ferma dopo 30 minuti senza nessuno: oltre, "aperto" non si puo' dire.
+    const aperte=_qmAperteOra(altre,Date.now());
     if(!altre.length)det('Altre postazioni','nessuna ha ancora salvato niente');
     if(presidiate.length){
       const x=presidiate[0];
@@ -4712,12 +4716,14 @@ async function qmRenderStatoSistema(){
     // derivati e li risalva. Dirlo evita di leggere come lavoro di qualcuno una finestra
     // dimenticata accesa.
     if(aperte.length)det('Compass aperto, ma senza nessuno',
-      aperte.map(x=>x.nome).slice(0,2).join(', ')+' · ultimo salvataggio automatico '+_qmQuandoAgg(aperte[0].ts));
+      aperte.slice(0,3).map(x=>x.nome+' · salvataggio automatico '+_qmQuandoAgg(x.ts)).join('<br>'));
   }catch(e){}
   det('Questo computer',(qmNomeDispositivo()||'senza nome')+' <a href="#" onclick="qmRinominaDispositivo();return false;" style="color:var(--accent);font-weight:700;">rinomina</a>');
   html+=`<div style="margin-top:12px;padding-top:6px;border-top:1px solid var(--border-light,var(--border));font-size:12px;">${dettagli.join('')}</div>`;
   el.innerHTML=html;
 }
+const QM_APERTA_MS=35*60000;
+function _qmAperteOra(altre,ora){return(altre||[]).filter(x=>x&&x.tocco===false&&x.ts&&ora-x.ts<QM_APERTA_MS);}
 // Da quanto non si fa una copia. Due fonti, e vanno tenute distinte:
 //   - il backup NOTTURNO su Drive (chiave `qm_backup_ultimo` sul cloud, scritta dallo script
 //     Apps Script): e' quello vero, gira da solo, ed e' il dato che conta;
