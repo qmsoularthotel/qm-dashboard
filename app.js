@@ -1665,7 +1665,10 @@ function hkpNRenderGrid(p,tab){
     if(p==='sa'){
       const art=(row,d)=>_hkpAreaSoulArt(p,row,d);
       const passaggio=hkpNCurMon(p)===HKP_MESE_PASSAGGIO;
-      const sez=(tit,nota,html)=>html?'<div style="margin-top:16px;"><div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+tit+'</div>'+(nota?'<div style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:8px;">'+nota+'</div>':'')+html+'</div>':'';
+      // Una linea sottile fra una sezione e l'altra (non sopra la prima).
+      let _primaSez=true;
+      const sez=(tit,nota,html)=>{if(!html)return'';const linea=_primaSez?'':'border-top:1px solid var(--border-light);padding-top:14px;';_primaSez=false;return _sezHtml(tit,nota,html,linea);};
+      const _sezHtml=(tit,nota,html,linea)=>'<div style="margin-top:16px;'+linea+'"><div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+tit+'</div>'+(nota?'<div style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:8px;">'+nota+'</div>':'')+html+'</div>';
       h+=sez('SoulArt · San Liborio','',hkpMonthlyCameriereHtml(p,art,'al SoulArt',_hkpCapienza(p,true)));
       const evid=passaggio?(code=>!HKP_DITTA_ESTERNA.has(code)):null;
       const bou=hkpMonthlyCameriereHtml(p,(row,d)=>!art(row,d),'al Boutique',_hkpCapienza(p,false),evid);
@@ -1689,7 +1692,7 @@ function hkpNRenderGrid(p,tab){
     }).join('')+'</div>';
   };
   if(Object.keys(symCounts).length){
-    h+='<div style="margin-top:16px;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Camere libere, ripassi e non disturbare</div>';
+    h+='<div style="margin-top:16px;border-top:1px solid var(--border-light);padding-top:14px;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Camere libere, ripassi e non disturbare</div>';
     if(p==='sa'&&tab==='camere'){
       const sub=t=>'<div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px;">'+t+'</div>';
       const a1=symCards(symArt),b1=symCards(symBou);
