@@ -238,3 +238,5 @@ Bilanciamento). Nel mese del passaggio (`HKP_MESE_PASSAGGIO='2026-09'`) le inter
 compaiono nelle 200 hanno bordo e sigla ambra e l'etichetta "interna", e stanno tutte insieme in un gruppo a parte
 ("Interne che a settembre hanno lavorato nelle 200") sotto le card della ditta. De Masi (CD) e Daniela
 (DA) escono dall'azienda dopo settembre: restano nei nomi per i mesi passati.
+Le card dei simboli (camere libere, ripassi, non disturbare) hanno una sezione loro, "Camere libere,
+ripassi e non disturbare", sotto quelle delle cameriere.

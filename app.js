@@ -1660,7 +1660,10 @@ function hkpNRenderGrid(p,tab){
   }
   const sortedSym=Object.entries(symCounts).sort((a,b)=>b[1]-a[1]);
   if(sortedSym.length){
-    h+='<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;">';
+    // Sezione a sé (28/09/2026): prima le card dei simboli stavano attaccate a quelle delle
+    // cameriere e sembravano altre persone.
+    h+='<div style="margin-top:16px;font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Camere libere, ripassi e non disturbare</div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:8px;">';
     sortedSym.forEach(([code,cnt])=>{
       const symFile=HKP_SYM[code];
       const labels={RP:'Ripasso',ND:'Non disturbare',LIB:'Camera libera',NE:'Non eseguito'};
