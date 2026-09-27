@@ -3224,12 +3224,25 @@ function _hkMeseRegistra(piano,oggi){
   return true;
 }
 const _HK_MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
-function _hkMeseTotali(oggi){
-  const ref=oggi?new Date(oggi):new Date();
+// Il mese intero: i giorni già passati (registrati) più quelli ancora in programma nel Piano
+// fino a fine mese. Solo i passati davano un numero che nessuno riconosceva: il 28/9 diceva
+// "Matarese 5 a settembre" mentre il Piano ne mostrava 17 da lì al 30.
+function _hkMeseTotali(oggi,piano){
+  const ref=oggi?new Date(oggi):new Date();ref.setHours(12,0,0,0);
   const pref=ref.getFullYear()+'-'+String(ref.getMonth()+1).padStart(2,'0');
-  const mese=_hkMese();let M=0,A=0,dal=null,n=0;
-  Object.keys(mese).filter(k=>k.startsWith(pref)).sort().forEach(k=>{M+=+mese[k].m||0;A+=+mese[k].a||0;n++;if(!dal)dal=k;});
-  return{M,A,n,dal,nome:_HK_MESI[ref.getMonth()]};
+  const mese=_hkMese();let M=0,A=0,dal=null,al=null,n=0,prev=0;
+  Object.keys(mese).filter(k=>k.startsWith(pref)).sort().forEach(k=>{
+    if(new Date(k+'T12:00:00')>ref)return;              // un giorno futuro registrato per sbaglio
+    M+=+mese[k].m||0;A+=+mese[k].a||0;n++;if(!dal)dal=k;al=k;});
+  const P=piano||pianoData;
+  ((P&&P.giorni)||[]).forEach(g=>{
+    const iso=_hkIso(g.data);if(!iso||!iso.startsWith(pref))return;
+    if(new Date(iso+'T12:00:00')<=ref)return;           // già contato fra i passati
+    const{m,a}=splitSoulart(g.soulart||{});
+    M+=(m.partenze||[]).length+(m.cambi||[]).length;A+=(a.partenze||[]).length+(a.cambi||[]).length;
+    prev++;if(!dal||iso<dal)dal=iso;if(!al||iso>al)al=iso;
+  });
+  return{M,A,n,prev,dal,al,nome:_HK_MESI[ref.getMonth()]};
 }
 function hkSuggestMoves(maxN,focusIdx){
   const out={ok:false,motivo:'',giorni:[],sbilanciati:[],mosse:[],ostacoli:[],focus:null};
@@ -3844,15 +3857,15 @@ function renderHkWeekViewContainer(){
   let meseHtml='';
   try{
     const t=_hkMeseTotali();
-    if(t.n){
+    if(t.n||t.prev){
       const sc=t.M-t.A;
       const scTxt=sc===0?'In pari nel mese':(sc>0?`Matarese +${sc} nel mese`:`Altre +${-sc} nel mese`);
       const scCol=Math.abs(sc)<=2?'var(--green)':'var(--amber)';
-      const dal=t.dal.split('-');
+      const dal=t.dal.split('-'),al=t.al.split('-');
       meseHtml=`<div style="border-top:1px solid var(--border-light);padding-top:8px;margin-bottom:10px;">
         ${row('Partenze di '+t.nome,t.M,t.A)}
         <div style="font-size:14px;font-weight:700;color:${scCol};margin-top:-2px;">${scTxt}</div>
-        <div style="font-size:11px;color:var(--text-dim);line-height:1.45;margin-top:3px;">dal ${+dal[2]}/${+dal[1]} a oggi${sc?` · a parità, le mosse fanno pendere verso ${sc>0?'Altre':'Matarese'}`:''}</div>
+        <div style="font-size:11px;color:var(--text-dim);line-height:1.45;margin-top:3px;">dal ${+dal[2]}/${+dal[1]} al ${+al[2]}/${+al[1]}${t.prev?` · ${t.n===1?'1 giorno passato':t.n+' giorni passati'} e ${t.prev===1?'1 previsto':t.prev+' previsti'} nel Piano`:''}${sc?` · a parità, le mosse fanno pendere verso ${sc>0?'Altre':'Matarese'}`:''}</div>
       </div>`;
     }
   }catch(e){}

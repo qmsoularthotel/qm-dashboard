@@ -2751,8 +2751,15 @@ sez('Bilanciamento: mosse fatte nel PMS, piano della settimana, mese');
   var n = salvate.length; _hkMeseRegistra(pianoData);
   ok('mese: niente scrittura se non cambia nulla', salvate.length, n);
   localStorage.setItem(HK_MESE_KEY, JSON.stringify({ '2031-05-01': { m: 5, a: 2 }, '2031-05-02': { m: 3, a: 3 }, '2031-04-30': { m: 9, a: 0 } }));
-  var t = _hkMeseTotali(new Date(2031, 4, 15, 12));
+  var t = _hkMeseTotali(new Date(2031, 4, 15, 12), { giorni: [] });
   ok('mese: somma solo il mese in corso', t.M + '-' + t.A + ' dal ' + t.dal, '8-5 dal 2031-05-01');
+  // Il mese intero: ai giorni passati si aggiungono quelli ancora in programma nel Piano.
+  var fut = { giorni: [
+    { data: '14/05/2031', soulart: { partenze: ['Art 10'], cambi: [], fermate: [], arrivi: [] } },  // passato: gia' registrato, non si ricontano
+    { data: '16/05/2031', soulart: { partenze: ['Art 10', 'Art 11'], cambi: ['Art 14'], fermate: [], arrivi: [] } },
+    { data: '01/06/2031', soulart: { partenze: ['Art 12'], cambi: [], fermate: [], arrivi: [] } } ] };  // mese dopo
+  var t2 = _hkMeseTotali(new Date(2031, 4, 15, 12), fut);
+  ok('mese: passati + previsti nel Piano', t2.M + '-' + t2.A + ' · ' + t2.n + ' passati, ' + t2.prev + ' previsti · al ' + t2.al, '10-6 · 2 passati, 1 previsti · al 2031-05-16');
   localStorage.removeItem(HK_MESE_KEY);
   // A parita' di beneficio, chi e' in credito nel mese riceve meno partenze.
   ok('lo spareggio col mese c\'e\'', /_scMese>0\?x\.dM-y\.dM:y\.dM-x\.dM/.test(String(hkSuggestMoves)), true);

@@ -213,7 +213,10 @@ migliore sul Piano con quella mossa, fino a 8 passi o finché non migliora più.
 
 **Partenze del mese** (`qm_hk_mese`, `{ 'YYYY-MM-DD': {m,a} }`, elenco condiviso): a ogni
 disegno si registrano i giorni del Piano effettivo fino a oggi (partenze + cambi, come
-"Totale settimana"); si scrive solo se cambia qualcosa. Il conto è partito col Piano del
+"Totale settimana"); si scrive solo se cambia qualcosa. Il riquadro mostra il **mese intero**: i
+giorni passati registrati più quelli ancora in programma nel Piano fino a fine mese
+(`_hkMeseTotali(oggi,piano)`) — solo i passati davano "Matarese 5" quando il Piano ne
+mostrava 17 da domani al 30 (28/09/2026). Il conto è partito col Piano del
 23/09/2026: prima non esiste. Spareggio nel motore: a parità di beneficio, se Matarese è in
 credito nel mese vince la mossa che le toglie più partenze (`dM`), e viceversa.
 
