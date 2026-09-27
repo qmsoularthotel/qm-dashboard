@@ -227,3 +227,13 @@ in modalità giorno per giorno e scorre ai suggerimenti (`hkVaiAlGiorno`).
 I pulsanti dei giorni chiamano `hkGiorno(i)` (torna a "giorno per giorno"), non più
 `pianoNavRender(i)` direttamente. Controlli: "Bilanciamento: mosse fatte nel PMS, piano della
 settimana, mese" in `test/controlli.js`.
+
+### Operativa HKP: SoulArt e Boutique (ditta esterna) — 28/09/2026
+
+Da settembre 2026 le camere del Boutique (200) le pulisce una ditta esterna: Betty (BE), Rita
+(RI), Tiziana (TI) in `HKP_HW_NAMES`, sigle della ditta in `HKP_DITTA_ESTERNA` (con DI).
+Nel tab Camere della SoulArt le card del periodo sono divise **per area**: "SoulArt" (camere
+Art) e "Boutique · ditta esterna" (camere 200 e San Liborio — Liborio sta col Boutique come nel
+Bilanciamento). Nel mese del passaggio (`HKP_MESE_PASSAGGIO='2026-09'`) le interne che
+compaiono nelle 200 hanno bordo e sigla ambra e l'etichetta "interna". De Masi (CD) e Daniela
+(DA) escono dall'azienda dopo settembre: restano nei nomi per i mesi passati.

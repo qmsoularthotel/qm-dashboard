@@ -2770,3 +2770,19 @@ sez('Bilanciamento: mosse fatte nel PMS, piano della settimana, mese');
   ok('le mosse fatte arrivano dagli altri computer', /HK_FATTE_KEY/.test(String(_qmSyncGiro)) && QM_ELENCHI_CONDIVISI.hasOwnProperty('qm_hk_fatte'), true);
   _qmElencoSalva = _salva; pianoData = _piano; pianoNavIdx = _nav;
 })();
+
+// ── Operativa HKP: SoulArt e Boutique (ditta esterna) separati (28/09/2026) ──
+sez('Operativa HKP: card separate SoulArt / Boutique ditta esterna');
+(function () {
+  var ck = hkpNCacheKey('sa'), prima = _hkpNdata[ck];
+  _hkpNdata[ck] = { 'camere:0_1': 'AM', 'camere:1_1': 'AM', 'camere:22_1': 'BE', 'camere:23_1': 'CD', 'camere:24_2': 'RI/TI' };
+  var art = function (row) { return row.name.toUpperCase().startsWith('ART'); };
+  var sa = hkpMonthlyCameriereHtml('sa', art, 'al SoulArt', 22);
+  var bou = hkpMonthlyCameriereHtml('sa', function (r) { return !art(r); }, 'al Boutique', 11, function (c) { return !HKP_DITTA_ESTERNA.has(c); });
+  ok('SoulArt: solo chi ha lavorato nelle Art', /Matarese/.test(sa) && !/Betty|De Masi/.test(sa), true);
+  ok('Boutique: la ditta esterna col suo nome', /Betty/.test(bou) && /Rita/.test(bou) && /Tiziana/.test(bou), true);
+  ok('Boutique: l\'interna che ha lavorato nelle 200 e\' evidenziata', /De Masi <span[^>]*>interna/.test(bou), true);
+  ok('Boutique: la ditta non e\' evidenziata', /Betty <span[^>]*>interna/.test(bou), false);
+  ok('la vista SoulArt si divide in due sezioni', /Boutique · ditta esterna/.test(String(hkpNRenderGrid)) && /HKP_MESE_PASSAGGIO/.test(String(hkpNRenderGrid)), true);
+  _hkpNdata[ck] = prima;
+})();
