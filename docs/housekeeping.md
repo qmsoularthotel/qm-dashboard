@@ -189,3 +189,38 @@ conta il giorno sbagliato; riga vuota invece del trattino): 3, 4 e 1 falliscono.
 **Mosse che non toccano il giorno selezionato**: per gli `scambio-blocco` il filtro sul giorno
 in focus è saltato di proposito (riguardano tutta la settimana), e la nota diceva il contrario.
 Ora quelle mosse portano il badge grigio **non tocca \<giorno\>**.
+
+---
+
+## "Fatto nel PMS", Piano della settimana, partenze del mese, avviso (27/09/2026)
+
+**Fatto nel PMS** (`hkSegnaFatto`, chiave condivisa `qm_hk_fatte`, fusione a tre come gli
+altri elenchi condivisi, riletta a ogni giro da `_qmSyncGiro`). Una mossa fatta diventa
+`{id,ts,cat,righe:[{da,a,s,e}]}`: ogni soggiorno spostato, riconosciuto da camera + data
+d'arrivo (`s`, dd/mm/yyyy — non l'indice: il Piano nuovo può partire da un altro giorno).
+`renderRoomDivision` disegna sul **Piano effettivo** (`_hkPianoEffettivo`): il Piano caricato
+con quegli spostamenti applicati; per la durata del disegno `pianoData` è quello effettivo e
+`_hkPianoVero` il caricato. Il resto di Compass vede il Piano caricato. Esiti per mossa:
+`attesa` (ancora dov'era: si applica), `nelPiano` (il Piano nuovo lo contiene: esce
+dall'elenco), `sparito` (né dov'era né dove doveva andare: riga ambra "Non trovato", pulsante
+Togli), `fuori` (date fuori dal Piano: esce). In uno scambio i soggiorni si tolgono tutti
+prima di rimetterli, perché possono arrivare lo stesso giorno.
+
+**Piano della settimana** (`hkPianoSettimana`, selettore "Giorno per giorno / Piano della
+settimana", preferenza del browser `hkModo`): la mossa migliore sull'intera settimana, poi la
+migliore sul Piano con quella mossa, fino a 8 passi o finché non migliora più. Il pulsante
+"Fatto nel PMS" c'è solo sul primo passo: gli altri sono calcolati sul Piano dopo i precedenti.
+
+**Partenze del mese** (`qm_hk_mese`, `{ 'YYYY-MM-DD': {m,a} }`, elenco condiviso): a ogni
+disegno si registrano i giorni del Piano effettivo fino a oggi (partenze + cambi, come
+"Totale settimana"); si scrive solo se cambia qualcosa. Il conto è partito col Piano del
+23/09/2026: prima non esiste. Spareggio nel motore: a parità di beneficio, se Matarese è in
+credito nel mese vince la mossa che le toglie più partenze (`dM`), e viceversa.
+
+**Avviso** (`_hkAvvisoHtml`): in cima alla vista, solo se nei prossimi tre giorni c'è uno
+squilibrio di almeno 2 partenze **e** ci sono mosse possibili. "Vedi le mosse" apre il giorno
+in modalità giorno per giorno e scorre ai suggerimenti (`hkVaiAlGiorno`).
+
+I pulsanti dei giorni chiamano `hkGiorno(i)` (torna a "giorno per giorno"), non più
+`pianoNavRender(i)` direttamente. Controlli: "Bilanciamento: mosse fatte nel PMS, piano della
+settimana, mese" in `test/controlli.js`.

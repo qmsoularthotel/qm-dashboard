@@ -2077,7 +2077,7 @@ sez('Bilanciamento camere: le chip dicono dove ci sono suggerimenti');
   pianoNavIdx = 0;
 
   var html = renderHkSuggestions(0);
-  var chips = [], re = /<button onclick="pianoNavRender\((\d+)\)" title="([^"]*)"[^>]*>([\s\S]*?)<\/button>/g, m;
+  var chips = [], re = /<button onclick="hkGiorno\((\d+)\)" title="([^"]*)"[^>]*>([\s\S]*?)<\/button>/g, m;
   while ((m = re.exec(html))) chips.push({ i: +m[1], tip: m[2], txt: m[3].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() });
   ok('c\'e\' una chip per ogni giorno', chips.length, 7);
 
@@ -2161,7 +2161,7 @@ sez('Bilanciamento camere: oggi non si propone, si parte da domani');
   ok('oggi non ha mosse da proporre',       hkSuggestMoves(1, 2).totMosse || 0, 0);
 
   var html = renderHkSuggestions(2);
-  var chips = [], re = /<button onclick="pianoNavRender\((\d+)\)"[^>]*background:([^;]*);/g, m;
+  var chips = [], re = /<button onclick="hkGiorno\((\d+)\)"[^>]*background:([^;]*);/g, m;
   while ((m = re.exec(html))) chips.push({ i: +m[1], att: m[2] === 'var(--accent)' });
   ok('niente pulsanti per oggi e per i giorni passati', chips.every(function (c) { return c.i > 2; }), true);
   ok('restano domani e i giorni dopo',                  chips.length, 4);
@@ -2690,3 +2690,73 @@ ok('le card nuove/spostate partono selezionate', /_rcSelected=new Set\(sorted\.m
 ok('la spunta rispecchia la selezione',          /_rcSelected\.has\(idx\)\?' checked'/.test(String(rcBuildPreview)), true);
 ok('il pulsante in alto stampa le selezionate',  /rcPrintSelBtn/.test(String(rcUpdateSelectedBtn)) && /Stampa selezionate \('\+_rcSelected\.size/.test(String(rcUpdateSelectedBtn)), true);
 ok('"Stampa evidenziate" non esiste più',        typeof rcPrintHighlighted, 'undefined');
+
+// ── Bilanciamento: "Fatto nel PMS", Piano della settimana, partenze del mese (27/09/2026) ──
+//    Tre camere di Matarese che partono tutte lo stesso giorno (G4: 3 contro 0), tre camere
+//    delle Altre vuote, stessa tipologia. Oggi e' G2: i soggiorni arrivano G3, spostabili.
+sez('Bilanciamento: mosse fatte nel PMS, piano della settimana, mese');
+(function () {
+  var _piano = pianoData, _nav = pianoNavIdx, _salva = _qmElencoSalva, salvate = [];
+  _qmElencoSalva = function (k) { salvate.push(k); return Promise.resolve(true); };
+  var base = new Date(); base.setHours(12, 0, 0, 0); base.setDate(base.getDate() - 2);
+  var G = [0, 1, 2, 3, 4, 5, 6].map(function (i) {
+    var d = new Date(base); d.setDate(base.getDate() + i);
+    return { label: 'G' + i, data: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(),
+             soulart: { partenze: [], fermate: [], cambi: [], arrivi: [] }, boutique: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
+  });
+  ['Art 10', 'Art 11', 'Art 12'].forEach(function (r) { G[3].soulart.arrivi.push(r); G[4].soulart.partenze.push(r); });
+  pianoData = { stampato: G[0].data, giorni: G, incArr: [], incPar: [],
+                tipi: { 'Art 10': 'AS SUP', 'Art 11': 'AS SUP', 'Art 12': 'AS SUP', 'Art 14': 'AS SUP', 'Art 15': 'AS SUP', 'Art 16': 'AS SUP' } };
+  pianoNavIdx = 4;
+  localStorage.removeItem(HK_FATTE_KEY); localStorage.removeItem(HK_MESE_KEY);
+  var part = function (p, i) { var x = splitSoulart(p.giorni[i].soulart); return (x.m.partenze.length + x.m.cambi.length) + '-' + (x.a.partenze.length + x.a.cambi.length); };
+  ok('il caso di prova: G4 e\' 3 contro 0', part(pianoData, 4), '3-0');
+  var s = hkSuggestMoves(3, 4), m = s.mosse[0];
+  ok('il motore propone uno spostamento', !!m && m.tipo, 'sposta');
+  var righe = _hkRigheDaMossa(m, pianoData);
+  ok('la mossa diventa una riga con le date vere', righe.length + ' ' + righe[0].da + '>' + righe[0].a + ' ' + righe[0].s, '1 ' + m.from + '>' + m.to + ' ' + G[3].data);
+  var f = { id: 'f1', righe: righe };
+  var eff = _hkPianoEffettivo(pianoData, [f]);
+  ok('segnata come fatta: in attesa del Piano nuovo', eff.esiti.f1, 'attesa');
+  ok('i numeri contano gia\' lo spostamento', part(eff.piano, 4), '2-1');
+  ok('il Piano caricato non viene toccato', part(pianoData, 4), '3-0');
+  var salva = pianoData; pianoData = eff.piano;
+  var ancora = hkSuggestMoves(30, null).mosse.filter(function (x) { return x.from === m.from && x.start === m.start; });
+  pianoData = salva;
+  ok('la stessa mossa non viene riproposta', ancora.length, 0);
+  ok('Piano nuovo con lo spostamento: ritrovato', _hkPianoEffettivo(eff.piano, [f]).esiti.f1, 'nelPiano');
+  var senza = JSON.parse(JSON.stringify(pianoData));
+  [3, 4].forEach(function (i) { ['arrivi', 'partenze'].forEach(function (k) { senza.giorni[i].soulart[k] = senza.giorni[i].soulart[k].filter(function (r) { return r !== m.from; }); }); });
+  ok('soggiorno cancellato: lo dice', _hkPianoEffettivo(senza, [f]).esiti.f1, 'sparito');
+  ok('soggiorno fuori dalla settimana: scade', _hkPianoEffettivo(pianoData, [{ id: 'f2', righe: [{ da: m.from, a: m.to, s: '01/01/2020', e: null }] }]).esiti.f2, 'fuori');
+  // Uno scambio: i due soggiorni partono lo stesso giorno e non vanno confusi.
+  var sc = _hkPianoEffettivo(pianoData, [{ id: 'f3', righe: [{ da: 'Art 10', a: 'Art 14', s: G[3].data }, { da: 'Art 11', a: 'Art 15', s: G[3].data }] }]);
+  ok('due spostamenti nella stessa mossa', part(sc.piano, 4), '1-2');
+  // Pulizia: ritrovate e scadute escono dall'elenco, quelle in attesa restano.
+  localStorage.setItem(HK_FATTE_KEY, JSON.stringify([{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }]));
+  _hkFattePulisci({ a: 'attesa', b: 'nelPiano', c: 'fuori', d: 'sparito' });
+  ok('restano solo quelle da ritrovare', _hkFatte().map(function (x) { return x.id; }).join(), 'a,d');
+  localStorage.removeItem(HK_FATTE_KEY);
+  // Piano della settimana: una sequenza che porta G4 in pari.
+  var ps = hkPianoSettimana(8);
+  ok('piano della settimana: almeno un passo', ps.passi.length >= 1, true);
+  ok('dopo i passi nessun giorno resta storto', ps.fine.sbilanciati.length, 0);
+  ok('il piano non cambia il Piano caricato', part(pianoData, 4), '3-0');
+  // Partenze del mese: si registrano i giorni fino a oggi, non quelli dopo.
+  _hkMeseRegistra(pianoData);
+  var reg = Object.keys(_hkMese());
+  ok('mese: registrati i giorni fino a oggi', reg.length, 3);
+  ok('mese: e salvati sul cloud', salvate.indexOf(HK_MESE_KEY) >= 0, true);
+  var n = salvate.length; _hkMeseRegistra(pianoData);
+  ok('mese: niente scrittura se non cambia nulla', salvate.length, n);
+  localStorage.setItem(HK_MESE_KEY, JSON.stringify({ '2031-05-01': { m: 5, a: 2 }, '2031-05-02': { m: 3, a: 3 }, '2031-04-30': { m: 9, a: 0 } }));
+  var t = _hkMeseTotali(new Date(2031, 4, 15, 12));
+  ok('mese: somma solo il mese in corso', t.M + '-' + t.A + ' dal ' + t.dal, '8-5 dal 2031-05-01');
+  localStorage.removeItem(HK_MESE_KEY);
+  // A parita' di beneficio, chi e' in credito nel mese riceve meno partenze.
+  ok('lo spareggio col mese c\'e\'', /_scMese>0\?x\.dM-y\.dM:y\.dM-x\.dM/.test(String(hkSuggestMoves)), true);
+  ok('la vista lavora sul Piano con le mosse fatte', /_hkPianoEffettivo\(vero,_hkFatte\(\)\)/.test(String(renderRoomDivision)), true);
+  ok('le mosse fatte arrivano dagli altri computer', /HK_FATTE_KEY/.test(String(_qmSyncGiro)) && QM_ELENCHI_CONDIVISI.hasOwnProperty('qm_hk_fatte'), true);
+  _qmElencoSalva = _salva; pianoData = _piano; pianoNavIdx = _nav;
+})();

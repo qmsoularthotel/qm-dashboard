@@ -3074,6 +3074,163 @@ function _hkPrimoGiorno(){
   let t=-1;try{t=pianoGetGiornoIdx();}catch(e){}
   return t>=0?t+1:0;
 }
+// ── Bilanciamento: "Fatto nel PMS", Piano della settimana, partenze del mese (27/09/2026) ──
+// Prima: si spostava una prenotazione nel PMS, e Compass continuava a mostrare il Piano
+// vecchio — stessa mossa riproposta, stessi numeri — finché non si ricaricava il file.
+// Ora una mossa si segna come fatta: da quel momento la pagina ragiona sul Piano CON lo
+// spostamento (_hkPianoEffettivo), su tutti i computer (qm_hk_fatte, elenco condiviso).
+// Quando arriva un Piano nuovo ogni spostamento segnato si ritrova da solo: se c'è, sparisce
+// dall'elenco; se non c'è né dove era né dove doveva andare, lo si dice.
+// Un soggiorno si riconosce da camera + giorno d'arrivo (una camera non ha due arrivi nello
+// stesso giorno), scritto come data e non come indice: il Piano nuovo può partire da un
+// altro giorno.
+const HK_FATTE_KEY='qm_hk_fatte';
+const HK_MESE_KEY='qm_hk_mese';
+let _hkPianoVero=null;      // il Piano caricato, mentre la vista lavora su quello effettivo
+let _hkEsiti={};            // id della mossa fatta → 'attesa' | 'sparito' | 'nelPiano' | 'fuori'
+let _hkMosseVisibili=[];    // mosse sullo schermo, per il pulsante "Fatto nel PMS"
+let _hkModo=(()=>{try{return localStorage.getItem('hkModo')==='settimana'?'settimana':'giorno';}catch(e){return'giorno';}})();
+function _hkFatte(){try{const v=JSON.parse(localStorage.getItem(HK_FATTE_KEY)||'[]');return Array.isArray(v)?v:[];}catch(e){return[];}}
+function _hkNormData(s){return String(s||'').split('/').map((p,i)=>i<2?p.padStart(2,'0'):p).join('/');}
+function _hkDataIdx(piano,d){const n=_hkNormData(d);return((piano&&piano.giorni)||[]).findIndex(g=>_hkNormData(g.data)===n);}
+// Ogni soggiorno che una mossa fa cambiare di camera, nell'ordine in cui va eseguito.
+function _hkRigheDaMossa(m,piano){
+  const D=i=>(i==null||i<0||!piano.giorni[i])?null:_hkNormData(piano.giorni[i].data);
+  const r=(da,a,s,e)=>({da,a,s:D(s),e:D(e)});
+  if(m.tipo==='sposta')return[r(m.from,m.to,m.start,m.end)];
+  if(m.tipo==='scambia')return[r(m.from,m.to,m.start,m.end),r(m.to,m.from,m.yStart,m.yEnd)];
+  if(m.tipo==='catena')return[r(m.to,m.via,m.yStart,m.yEnd),r(m.from,m.to,m.start,m.end)];
+  if(m.tipo==='catena-multi')return(m.vias||[]).map(v=>r(m.to,v.room,v.start,v.end)).concat([r(m.from,m.to,m.start,m.end)]);
+  if(m.tipo==='scambio-blocco')return(m.perA||[]).map(p=>r(m.from,m.to,p.start,p.end)).concat((m.perB||[]).map(p=>r(m.to,m.from,p.start,p.end)));
+  return[];
+}
+// Il Piano con gli spostamenti segnati come fatti. Non tocca `base`: ne restituisce una copia
+// in cui cambiano solo le camere toccate, ricostruite dai soggiorni.
+function _hkPianoEffettivo(base,fatte){
+  const esiti={};
+  if(!base||!base.giorni||!base.giorni.length||!(fatte||[]).length)return{piano:base,esiti};
+  const N=base.giorni.length;
+  const salva=pianoData;let BL;
+  try{pianoData=base;BL=hkBuildBlocks();}finally{pianoData=salva;}
+  const incA=new Set(base.incArr||[]),incP=new Set(base.incPar||[]);
+  const toccate=new Set();
+  const trova=(room,i)=>(BL[room]||[]).find(b=>b.start===i);
+  fatte.forEach(f=>{
+    const st=(f.righe||[]).map(r=>{
+      const i=_hkDataIdx(base,r.s);
+      if(i<0)return{r,k:'fuori'};                        // soggiorno fuori da questo Piano
+      const x=trova(r.da,i);if(x)return{r,k:'attesa',x};  // ancora dov'era: il Piano è vecchio
+      if(trova(r.a,i))return{r,k:'nelPiano'};             // già dove doveva andare
+      return{r,k:'sparito'};
+    });
+    const ks=st.map(z=>z.k);
+    esiti[f.id]=ks.includes('sparito')?'sparito':ks.includes('attesa')?'attesa':ks.every(k=>k==='fuori')?'fuori':'nelPiano';
+    if(esiti[f.id]!=='attesa')return;
+    // Prima si tolgono tutti, poi si rimettono: in uno scambio due soggiorni possono
+    // arrivare lo stesso giorno, e cercarli uno alla volta li confonderebbe.
+    const muovi=st.filter(z=>z.k==='attesa');
+    muovi.forEach(z=>{BL[z.r.da]=(BL[z.r.da]||[]).filter(b=>b!==z.x);});
+    muovi.forEach(z=>{
+      BL[z.r.a]=(BL[z.r.a]||[]).concat([z.x]);
+      toccate.add(z.r.da);toccate.add(z.r.a);
+      const s=z.x.start,e=z.x.openEnd?null:z.x.end;
+      if(incA.delete(z.r.da+'|'+s))incA.add(z.r.a+'|'+s);
+      if(e!=null&&incP.delete(z.r.da+'|'+e))incP.add(z.r.a+'|'+e);
+    });
+  });
+  if(!toccate.size)return{piano:base,esiti};
+  const piano=JSON.parse(JSON.stringify(base));
+  piano.incArr=[...incA];piano.incPar=[...incP];
+  const LISTA={partenza:'partenze',cambio:'cambi',fermata:'fermate',arrivo:'arrivi'};
+  toccate.forEach(room=>{
+    const st=_hkStatesFromBlocks(BL[room]||[],N);
+    piano.giorni.forEach((g,d)=>{
+      const sa=g.soulart||(g.soulart={partenze:[],fermate:[],cambi:[],arrivi:[]});
+      ['partenze','fermate','cambi','arrivi'].forEach(k=>{sa[k]=(sa[k]||[]).filter(x=>x!==room);});
+      if(LISTA[st[d]])sa[LISTA[st[d]]].push(room);
+    });
+  });
+  return{piano,esiti};
+}
+function _hkFatteSalva(l){
+  try{localStorage.setItem(HK_FATTE_KEY,JSON.stringify(l));}catch(e){}
+  _qmElencoSalva(HK_FATTE_KEY,[],()=>_hkRidisegna());
+}
+function _hkRidisegna(){try{if(pianoNavIdx!==null)renderRoomDivision(pianoNavIdx);}catch(e){}}
+function hkSegnaFatto(k){
+  const v=_hkMosseVisibili[k];if(!v||!v.righe.length)return;
+  const l=_hkFatte();
+  l.push({id:'hf'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),ts:Date.now(),cat:v.cat,righe:v.righe});
+  _hkFatteSalva(l);_hkRidisegna();
+}
+function hkAnnullaFatto(id){_hkFatteSalva(_hkFatte().filter(f=>f.id!==id));_hkRidisegna();}
+// Ritrovate nel Piano nuovo (o uscite dalla settimana): non servono più.
+function _hkFattePulisci(esiti){
+  const l=_hkFatte();
+  const resta=l.filter(f=>!(esiti[f.id]==='nelPiano'||esiti[f.id]==='fuori'));
+  if(resta.length!==l.length)_hkFatteSalva(resta);
+}
+function hkSetModo(m){_hkModo=m==='settimana'?'settimana':'giorno';try{localStorage.setItem('hkModo',_hkModo);}catch(e){}_hkRidisegna();}
+function hkGiorno(i){if(_hkModo!=='giorno'){_hkModo='giorno';try{localStorage.setItem('hkModo','giorno');}catch(e){}}pianoNavRender(i);}
+function hkVaiAlGiorno(i){
+  hkGiorno(i);
+  setTimeout(()=>{const e=document.getElementById('hk-sugg');if(e)e.scrollIntoView({behavior:'smooth',block:'start'});},60);
+}
+// Piano della settimana: la mossa migliore, poi la migliore sul Piano CON quella mossa, e
+// così via. Le alternative del "giorno per giorno" partono tutte dalla stessa situazione e
+// insieme possono pestarsi i piedi (la stessa camera usata due volte); questi passi no.
+function hkPianoSettimana(maxPassi){
+  const max=maxPassi||8;
+  const base=_hkPianoVero||pianoData;
+  const fatte=_hkFatte();
+  const salva=pianoData;const passi=[],extra=[];
+  let inizio=null,fine=null;
+  try{
+    for(let k=0;k<=max;k++){
+      pianoData=_hkPianoEffettivo(base,fatte.concat(extra)).piano;
+      const s=hkSuggestMoves(1);
+      if(k===0)inizio=s;
+      fine=s;
+      if(k===max||!s.ok||!s.mosse.length)break;
+      const m=s.mosse[0];
+      const righe=_hkRigheDaMossa(m,pianoData);
+      if(!righe.length||righe.some(r=>!r.s))break;
+      passi.push({m,righe});
+      extra.push({id:'passo'+k,righe});
+    }
+  }finally{pianoData=salva;}
+  return{passi,inizio,fine};
+}
+// Partenze del mese, Matarese e Altre. Compass tiene solo il Piano della settimana: il mese
+// si costruisce giorno per giorno, registrando ogni giorno fino a oggi (le partenze di oggi
+// non cambiano più: si spostano solo prenotazioni che arrivano da domani).
+function _hkMese(){try{const v=JSON.parse(localStorage.getItem(HK_MESE_KEY)||'{}');return(v&&typeof v==='object'&&!Array.isArray(v))?v:{};}catch(e){return{};}}
+function _hkIso(d){const p=_hkNormData(d).split('/');return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:'';}
+function _hkMeseRegistra(piano,oggi){
+  if(!piano||!piano.giorni)return false;
+  const ref=oggi?new Date(oggi):new Date();ref.setHours(12,0,0,0);
+  const mese=_hkMese();let cambiato=false;
+  piano.giorni.forEach(g=>{
+    const iso=_hkIso(g.data);if(!iso)return;
+    const d=new Date(iso+'T12:00:00');if(isNaN(d)||d>ref)return;
+    const{m,a}=splitSoulart(g.soulart||{});
+    const v={m:(m.partenze||[]).length+(m.cambi||[]).length,a:(a.partenze||[]).length+(a.cambi||[]).length};
+    const o=mese[iso];if(o&&o.m===v.m&&o.a===v.a)return;
+    mese[iso]=v;cambiato=true;
+  });
+  if(!cambiato)return false;
+  try{localStorage.setItem(HK_MESE_KEY,JSON.stringify(mese));}catch(e){}
+  _qmElencoSalva(HK_MESE_KEY,{},null);
+  return true;
+}
+const _HK_MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+function _hkMeseTotali(oggi){
+  const ref=oggi?new Date(oggi):new Date();
+  const pref=ref.getFullYear()+'-'+String(ref.getMonth()+1).padStart(2,'0');
+  const mese=_hkMese();let M=0,A=0,dal=null,n=0;
+  Object.keys(mese).filter(k=>k.startsWith(pref)).sort().forEach(k=>{M+=+mese[k].m||0;A+=+mese[k].a||0;n++;if(!dal)dal=k;});
+  return{M,A,n,dal,nome:_HK_MESI[ref.getMonth()]};
+}
 function hkSuggestMoves(maxN,focusIdx){
   const out={ok:false,motivo:'',giorni:[],sbilanciati:[],mosse:[],ostacoli:[],focus:null};
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){out.motivo='piano';return out;}
@@ -3139,7 +3296,9 @@ function hkSuggestMoves(maxN,focusIdx){
         gFocus=f.so-f.sn;
       }
     }
-    mosse.push(Object.assign({guadagno,gFocus,effetti,peggiori,giorni},cand));
+    // Quanto cambia la settimana di Matarese in partenze: serve a spareggiare col mese.
+    let dM=0;Object.keys(giorni).forEach(d=>{dM+=giorni[d].aP[0]-giorni[d].daP[0];});
+    mosse.push(Object.assign({guadagno,gFocus,dM,effetti,peggiori,giorni,_ch:changes},cand));
   };
   ART.forEach(A=>{
     if(!MATARESE.has(A))return;                          // A sempre lato Matarese
@@ -3239,12 +3398,16 @@ function hkSuggestMoves(maxN,focusIdx){
   });
   // A parità di beneficio preferisci la mossa più semplice da eseguire nel PMS
   const costo={sposta:0,scambia:1,catena:2,'scambio-blocco':2,'catena-multi':3};
+  const _scMese=(()=>{try{const t=_hkMeseTotali();return t.M-t.A;}catch(e){return 0;}})();
   mosse.sort((x,y)=>{
     // Con un giorno selezionato vince chi migliora di più QUEL giorno; il beneficio sulla
     // settimana resta come secondo criterio, così tra due mosse equivalenti sul giorno
     // si preferisce quella che aiuta anche il resto.
     if(hasFocus&&Math.abs(y.gFocus-x.gFocus)>0.01)return y.gFocus-x.gFocus;
     if(Math.abs(y.guadagno-x.guadagno)>0.01)return y.guadagno-x.guadagno;
+    // A parità, chi è in credito nel mese riceve meno partenze: se Matarese ne ha avute di
+    // più, vince la mossa che gliene toglie di più (e viceversa).
+    if(_scMese&&x.dM!==y.dM)return _scMese>0?x.dM-y.dM:y.dM-x.dM;
     return costo[x.tipo]-costo[y.tipo];
   });
   // Una sola proposta per coppia di camere coinvolte, per non ripetere varianti simili
@@ -3317,10 +3480,12 @@ function renderHkSuggestions(focusIdx){
   const _nG=(pianoData&&pianoData.giorni&&pianoData.giorni.length)||0;
   if(typeof focusIdx==='number'&&focusIdx<_primo&&_primo<_nG)focusIdx=_primo;
   const s=hkSuggestMoves(3+_hkSuggMoreN,focusIdx);
+  const _sett=_hkModo==='settimana';
+  _hkMosseVisibili=[];
   const fLbl=(pianoData&&pianoData.giorni&&pianoData.giorni[focusIdx]&&pianoData.giorni[focusIdx].label)||'';
   // Il titolo dice di quale giorno si sta parlando: i suggerimenti seguono il giorno
   // selezionato nella suddivisione cameriere qui sopra, non la settimana intera.
-  const titolo=_ovIcona('idea')+(s.focus&&fLbl?'Come bilanciare '+fLbl:'Come bilanciare la settimana');
+  const titolo=_ovIcona('idea')+(!_sett&&s.focus&&fLbl?'Come bilanciare '+fLbl:'Come bilanciare la settimana');
   // Selettore dei giorni ANCHE qui: i suggerimenti stanno in fondo alla vista e per
   // cambiare giorno bisognava risalire fino al selettore in cima, per poi ridiscendere.
   // E' la stessa navigazione (pianoNavRender), non una seconda copia dello stato.
@@ -3354,7 +3519,7 @@ function renderHkSuggestions(focusIdx){
     ?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;margin-left:auto;">${pianoData.giorni.map((g,i)=>{
         // Oggi e i giorni passati non hanno pulsante: non c'è niente da proporre lì.
         if(i<_primo)return'';
-        const att=i===(typeof focusIdx==='number'?focusIdx:pianoNavIdx);
+        const att=!_sett&&i===(typeof focusIdx==='number'?focusIdx:pianoNavIdx);
         const d=(s.giorni||[])[i];
         const passato=i<_oggiIdx;
         let numeri='',mosse='',tip=g.label||('g'+(i+1));
@@ -3373,14 +3538,14 @@ function renderHkSuggestions(focusIdx){
           tip=nM?`${tip}: ${nM===1?'1 spostamento proposto':nM+' spostamenti proposti'}`
                 :`${tip}: nessuno spostamento da proporre`;
         }
-        return `<button onclick="pianoNavRender(${i})" title="${tip}" style="background:${att?'var(--accent)':'var(--surface2)'};color:${att?'#fff':'var(--text-muted)'};border:1px solid ${att?'var(--accent)':'var(--border)'};border-radius:7px;padding:6px 10px;min-width:80px;font-size:12.5px;font-weight:${att?'700':'600'};cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.25;text-align:center;${passato&&!att?'opacity:.55;':''}">${g.label||('g'+(i+1))}${numeri}${mosse}</button>`;
+        return `<button onclick="hkGiorno(${i})" title="${tip}" style="background:${att?'var(--accent)':'var(--surface2)'};color:${att?'#fff':'var(--text-muted)'};border:1px solid ${att?'var(--accent)':'var(--border)'};border-radius:7px;padding:6px 10px;min-width:80px;font-size:12.5px;font-weight:${att?'700':'600'};cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.25;text-align:center;${passato&&!att?'opacity:.55;':''}">${g.label||('g'+(i+1))}${numeri}${mosse}</button>`;
       }).join('')}</div>`
     :'';
   // Titolo, stato del giorno selezionato e selettore stanno sulla STESSA riga. Prima
   // erano tre righe sovrapposte, e le due sopra ripetevano quello che i pulsanti gia'
   // dicono: le partenze del giorno sono scritte dentro il pulsante attivo.
   const _statoFocus=(()=>{
-    if(!s.focus)return'';
+    if(!s.focus||_sett)return'';
     const f=s.focus;
     const c=f.passato?{t:'giorno passato',col:'var(--text-dim)',bg:'var(--surface2)'}
       :(f.sbilanciato?{t:'da sistemare',col:'var(--amber)',bg:'var(--amber-bg)'}
@@ -3390,14 +3555,20 @@ function renderHkSuggestions(focusIdx){
   })();
   // Intestazione a due colonne: a sinistra il titolo e sotto lo stato del giorno, a destra
   // i pulsanti dei giorni tutti sulla stessa riga.
-  const box=(inner,tint)=>`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
+  // Giorno per giorno (le alternative per il giorno aperto) o Piano della settimana (una
+  // sequenza sola, passo dopo passo).
+  const _modoBtn=(m,t)=>`<button onclick="hkSetModo('${m}')" style="padding:5px 12px;font-size:12px;font-weight:${_hkModo===m?'700':'600'};border:none;cursor:pointer;font-family:inherit;background:${_hkModo===m?'var(--accent)':'var(--surface)'};color:${_hkModo===m?'#fff':'var(--text-muted)'};">${t}</button>`;
+  const selModo=`<div style="display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;">${_modoBtn('giorno','Giorno per giorno')}${_modoBtn('settimana','Piano della settimana')}</div>`;
+  const fatteHtml=_hkFatteHtml();
+  const box=(inner,tint)=>`<div id="hk-sugg" style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
     <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px;">
       <div style="min-width:0;">
         <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:8px;">${titolo}</div>
+        <div style="margin-top:8px;">${selModo}</div>
         ${_statoFocus?`<div style="display:flex;align-items:center;gap:9px;margin-top:6px;">${_statoFocus}</div>`:''}
       </div>
       ${selGiorni}
-    </div>${inner}</div>`;
+    </div>${fatteHtml}${inner}</div>`;
   if(!s.ok){
     if(s.motivo==='tipi')return box(`<div style="background:var(--amber-bg);color:var(--amber);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">Ricarica il Piano Settimanale per attivare i suggerimenti — quello in memoria è stato caricato prima di questa funzione e non contiene le tipologie camera.</div>`);
     return'';
@@ -3415,7 +3586,8 @@ function renderHkSuggestions(focusIdx){
   // carico, e le partenze dentro il pulsante attivo): qui resta solo cio' che li' non
   // c'entra — che il giorno e' passato, o quali altri giorni sono da sistemare.
   let testa;
-  if(s.focus){
+  if(_sett)testa='';
+  else if(s.focus){
     const f=s.focus,altri=s.sbilanciati.filter(g=>g.i!==f.i);
     testa=f.passato
       ?`<div style="font-size:12.5px;color:var(--text-dim);margin-bottom:12px;">${_primo>=_nG?'Il Piano non ha giorni da domani in avanti: carica quello nuovo per avere proposte.':fLbl+' è già passato: niente da riorganizzare.'}</div>`
@@ -3430,7 +3602,7 @@ function renderHkSuggestions(focusIdx){
         </div>`
       :`<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);font-size:12.5px;color:var(--green);font-weight:600;">✓ Nessun giorno con partenze sbilanciate ${_primo>0?'da domani':'da oggi'} in avanti.</div>`;
   }
-  if(!s.mosse.length){
+  if(!_sett&&!s.mosse.length){
     // Giorno passato o già in pari: la testa ha già detto tutto, non serve un secondo box.
     if(s.focus&&(s.focus.passato||!s.focus.sbilanciato))return box(testa);
     if(!s.focus&&!s.sbilanciati.length)return box(testa+`<div style="background:var(--green-bg);color:var(--green);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">✓ Nessuno scambio necessario.</div>`);
@@ -3502,7 +3674,7 @@ function renderHkSuggestions(focusIdx){
       <td style="padding:2px 0;font-size:12.5px;font-weight:${cambiaP?'700':'400'};color:${solNum};font-variant-numeric:tabular-nums;white-space:nowrap;">${_hkPar(e.aP[0],e.aP[1])}</td>
       <td style="padding:2px 0 2px 10px;font-size:11px;white-space:nowrap;">${nota}</td></tr>`;
   };
-  const righe=s.mosse.map((m,i)=>{
+  const rigaMossa=(m,i,foc,conBottone)=>{
     const periodo=(m.start===m.end?lbl(m.start):lbl(m.start)+' → '+lbl(m.end))+(m.xSpec?tagRip:'');
     const perY=m.yStart!=null?((m.yStart===m.yEnd?lbl(m.yStart):lbl(m.yStart)+' → '+lbl(m.yEnd))+(m.ySpec?tagRip:'')):'';
     const viaLbl=v=>(v.start===v.end?lbl(v.start):lbl(v.start)+' → '+lbl(v.end))+(v.speciale?tagRip:'');
@@ -3533,13 +3705,13 @@ function renderHkSuggestions(focusIdx){
       sotto=`${m.to} libera in quelle notti`;
     }
     if(!badge&&passi.length>1)badge=`${passi.length} spostamenti, in quest'ordine`;
-    const effOrd=s.focus?[...m.effetti].sort((a,b)=>(a.i===s.focus.i?-1:0)-(b.i===s.focus.i?-1:0)):m.effetti;
+    const effOrd=foc?[...m.effetti].sort((a,b)=>(a.i===foc.i?-1:0)-(b.i===foc.i?-1:0)):m.effetti;
     const mostrati=effOrd.slice(0,3);
     // L'esito nomina la cosa e il giorno: "pareggia il carico di Sab 5/9" dice piu' di
     // "pareggia", che lascia la domanda aperta.
     const pegg=(m.peggiori||[]);
     const primo=mostrati[0];
-    const toccaFocus=!s.focus||m.effetti.some(e=>e.i===s.focus.i);
+    const toccaFocus=!foc||m.effetti.some(e=>e.i===foc.i);
     // L'esito parla di partenze, ed e' costruito sui giorni in cui le partenze CAMBIANO
     // davvero — non sul primo giorno dell'elenco. Prima diceva "partenze invariate,
     // alleggerisce il carico" solo perche' il primo giorno mostrato non le toccava, e
@@ -3559,6 +3731,8 @@ function renderHkSuggestions(focusIdx){
         ${badge?`<span style="font-size:11px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:4px;padding:2px 7px;">${badge}</span>`:''}
         ${toccaFocus?'':`<span style="font-size:11px;font-weight:600;color:var(--text-muted);background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;">non tocca ${fLbl}</span>`}
         <span style="margin-left:auto;font-size:13px;font-weight:700;color:${colEsito};">${esito}${pegg.length?`, ma peggiora ${lbl(pegg[0].i)}`:''}</span>
+        ${conBottone?(()=>{const k=_hkMosseVisibili.push({righe:_hkRigheDaMossa(m,pianoData),cat:m.cat})-1;
+          return`<button onclick="hkSegnaFatto(${k})" title="Segna lo spostamento come già fatto nel PMS: da ora la pagina ne tiene conto" style="display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--accent);color:var(--accent);border-radius:6px;padding:4px 10px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">${_invIco('ok',12)} Fatto nel PMS</button>`;})():''}
       </div>
       <div style="display:flex;gap:26px;align-items:flex-start;margin-left:30px;flex-wrap:wrap;">
         <table style="border-collapse:collapse;">
@@ -3567,14 +3741,16 @@ function renderHkSuggestions(focusIdx){
           ${passi.map((p,k)=>passoTr(k+1,p[0],p[1],p[2],passi.length)).join('')}</table>
         <table style="border-collapse:collapse;margin-left:auto;">
           <tr><th colspan="5" style="${_hkTh}">Cosa cambia</th></tr>
-          ${mostrati.map(e=>effTr(e,s.focus&&e.i===s.focus.i,false)).join('')}
+          ${mostrati.map(e=>effTr(e,foc&&e.i===foc.i,false)).join('')}
           ${pegg.slice(0,2).map(e=>effTr(e,false,true)).join('')}
           ${m.effetti.length>3?`<tr><td colspan="5" style="padding:2px 0;font-size:11px;color:var(--text-dim);">+${m.effetti.length-3} altri giorni</td></tr>`:''}
         </table>
       </div>
       ${sotto?`<div style="font-size:12.5px;color:var(--text-dim);margin:6px 0 0 30px;line-height:1.45;">${sotto}</div>`:''}
     </div>`;
-  }).join('');
+  };
+  if(_sett)return box(_hkPianoHtml(rigaMossa,lbl));
+  const righe=s.mosse.map((m,i)=>rigaMossa(m,i,s.focus,true)).join('');
   // La legenda sta PRIMA delle righe e in una riga sola: e' quella che toglie il dubbio
   // ricorrente su cosa siano i due numeri, e va letta prima, non dopo.
   const legenda=`<div style="font-size:11.5px;color:var(--text-dim);line-height:1.5;padding-bottom:4px;"><strong style="color:var(--text-muted);">Partenze</strong> = camere che lasciano, <strong style="color:var(--text-muted);">Matarese · Altre</strong>. È il numero che le cameriere confrontano fra loro, ed è quello da pareggiare. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
@@ -3587,6 +3763,56 @@ function renderHkSuggestions(focusIdx){
     ?`<button onclick="hkSuggMore()" style="margin-top:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;">Ci sono altre possibilità? <span style="color:var(--text-dim);font-weight:400;">(+${Math.min(altreN,5)})</span></button>`
     :'';
   return box(testa+legenda+righe+altreBtn+nota);
+}
+// Le mosse segnate come fatte e non ancora ritrovate in un Piano caricato.
+function _hkFatteHtml(){
+  const l=_hkFatte().filter(f=>_hkEsiti[f.id]==='attesa'||_hkEsiti[f.id]==='sparito');
+  if(!l.length)return'';
+  const g=(pianoData&&pianoData.giorni)||[];
+  const lbl=d=>{const i=_hkDataIdx(pianoData,d);if(i>=0&&g[i].label)return g[i].label;const p=_hkNormData(d).split('/');return p.length===3?(+p[0])+'/'+(+p[1]):'—';};
+  const cam=(c,piena)=>`<span style="display:inline-block;${piena?'background:var(--accent);color:#fff;':'background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);'}border-radius:6px;padding:2px 9px;font-weight:${piena?'700':'600'};font-size:13px;">${_esc(c)}</span>`;
+  const righe=l.map(f=>{
+    const sparito=_hkEsiti[f.id]==='sparito';
+    const passi=(f.righe||[]).map(r=>`<div style="display:flex;align-items:center;gap:7px;padding:2px 0;">${cam(r.da,false)}<span style="color:var(--text-dim);">→</span>${cam(r.a,true)}<span style="font-size:13px;font-weight:600;color:var(--text);margin-left:8px;">${lbl(r.s)}${r.e&&r.e!==r.s?' → '+lbl(r.e):''}</span></div>`).join('');
+    const stato=sparito
+      ?`<span style="font-size:11.5px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:5px;padding:3px 9px;white-space:nowrap;">Non trovato nel nuovo Piano</span>`
+      :`<span style="font-size:11.5px;font-weight:700;color:var(--green);background:var(--green-bg);border-radius:5px;padding:3px 9px;white-space:nowrap;">Fatto · aspetta il nuovo Piano</span>`;
+    return`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--border-light);">
+      <span style="width:21px;height:21px;border-radius:50%;background:${sparito?'var(--amber)':'var(--green)'};color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">${_invIco(sparito?'allerta':'ok',12)}</span>
+      <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;min-width:70px;margin-top:4px;">${_esc(_hkTipoLbl(f.cat||''))}</span>
+      <div style="flex:1;min-width:0;">${passi}${sparito?`<div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.45;">Il soggiorno non è più né nella camera di prima né in quella nuova: forse è stato cancellato o spostato altrove. Controlla nel PMS, poi toglilo da qui.</div>`:''}</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">${stato}<button onclick="hkAnnullaFatto('${_esc(f.id)}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11.5px;color:var(--text-muted);cursor:pointer;font-family:inherit;">${sparito?'Togli':'Annulla'}</button></div>
+    </div>`;
+  }).join('');
+  return`<div style="margin-bottom:14px;">
+    <div style="font-size:9.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">Già fatti nel PMS — i numeri della pagina li contano</div>
+    ${righe}
+  </div>`;
+}
+// Il Piano della settimana: la sequenza di hkPianoSettimana, ogni passo con le sue righe.
+function _hkPianoHtml(rigaMossa,lbl){
+  const p=hkPianoSettimana(8);
+  const primo=_hkPrimoGiorno();
+  const ini=p.inizio,fin=p.fine;
+  if(!ini||!ini.ok)return'';
+  const restano=(fin&&fin.sbilanciati)||[];
+  if(!p.passi.length){
+    return restano.length
+      ?`<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--text);line-height:1.55;">Nessuno spostamento possibile con le regole attuali. Da sistemare: ${restano.map(g=>`<strong>${lbl(g.i)}</strong> (${g.pM}-${g.pA})`).join(', ')}. Apri il giorno con "Giorno per giorno" per vedere perché.</div>`
+      :`<div style="background:var(--green-bg);color:var(--green);border-radius:8px;padding:10px 14px;font-size:12.5px;font-weight:600;">${_invIco('ok',13)} La settimana è già in pari${primo>0?' da domani':''} in avanti.</div>`;
+  }
+  const n=p.passi.length;
+  const testa=restano.length
+    ?`<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text);margin-bottom:6px;line-height:1.5;"><strong style="color:var(--amber);">${n===1?'1 spostamento':n+' spostamenti'} migliorano la settimana</strong>, ma restano da sistemare ${restano.map(g=>`<strong>${lbl(g.i)}</strong> (${g.pM}-${g.pA})`).join(', ')}. Da fare in quest'ordine: ognuno tiene già conto dei precedenti.</div>`
+    :`<div style="background:var(--green-bg);border:1px solid var(--green);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text);margin-bottom:6px;line-height:1.5;"><strong style="color:var(--green);">${n===1?'1 spostamento':n+' spostamenti'} e la settimana è in pari.</strong> Da fare in quest'ordine: ognuno tiene già conto dei precedenti.</div>`;
+  // Prima → dopo, solo nei giorni in cui le partenze cambiano.
+  const dopo=(ini.giorni||[]).map((d,i)=>({i,d,f:fin.giorni[i]})).filter(x=>x.i>=primo&&x.f&&(x.d.pM!==x.f.pM||x.d.pA!==x.f.pA))
+    .map(x=>`<strong>${lbl(x.i)}</strong> ${x.d.pM} · ${x.d.pA} → <strong style="color:${Math.abs(x.f.pM-x.f.pA)<2?'var(--green)':'var(--amber)'};">${x.f.pM} · ${x.f.pA}</strong>`).join(' &nbsp;·&nbsp; ');
+  // Il pulsante "Fatto nel PMS" c'è solo sul primo passo: il secondo è calcolato sul Piano
+  // DOPO il primo, e segnarlo da solo descriverebbe una situazione che non esiste.
+  const righe=p.passi.map((x,k)=>rigaMossa(x.m,k,null,k===0)).join('');
+  return testa+(dopo?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Dopo: ${dopo}</div>`:'')+righe
+    +`<div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.55;">Segnato il primo come fatto, il piano si ricalcola e il passo successivo diventa il primo. Solo stessa tipologia e solo prenotazioni non ancora arrivate. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
 }
 // Contenitore per la vista settimanale — popolato via _bkfChartRender() (stesso motore
 // SVG di Breakfast/Occupazione: barra accent + linea rossa tratteggiata) subito dopo
@@ -3614,6 +3840,22 @@ function renderHkWeekViewContainer(){
         <div><span style="font-size:22px;font-weight:300;line-height:1;color:#5b7ca3;">${vA}</span><div style="font-size:11px;color:var(--text-dim);margin-top:2px;">Altre</div></div>
       </div>
     </div>`;
+  // Partenze del mese: dal primo giorno registrato a oggi (vedi _hkMeseRegistra).
+  let meseHtml='';
+  try{
+    const t=_hkMeseTotali();
+    if(t.n){
+      const sc=t.M-t.A;
+      const scTxt=sc===0?'In pari nel mese':(sc>0?`Matarese +${sc} nel mese`:`Altre +${-sc} nel mese`);
+      const scCol=Math.abs(sc)<=2?'var(--green)':'var(--amber)';
+      const dal=t.dal.split('-');
+      meseHtml=`<div style="border-top:1px solid var(--border-light);padding-top:8px;margin-bottom:10px;">
+        ${row('Partenze di '+t.nome,t.M,t.A)}
+        <div style="font-size:14px;font-weight:700;color:${scCol};margin-top:-2px;">${scTxt}</div>
+        <div style="font-size:11px;color:var(--text-dim);line-height:1.45;margin-top:3px;">dal ${+dal[2]}/${+dal[1]} a oggi${sc?` · a parità, le mosse fanno pendere verso ${sc>0?'Altre':'Matarese'}`:''}</div>
+      </div>`;
+    }
+  }catch(e){}
   return`<div class="side-split" style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:14px;">
     <div class="side-split-main">
       <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">Vista settimanale (carico pesato)</div>
@@ -3626,6 +3868,7 @@ function renderHkWeekViewContainer(){
       ${row('Fermate',totFermM,totFermA)}
       <div style="border-top:1px solid var(--border-light);padding-top:8px;margin-bottom:8px;">${row('Totali',totM,totA)}</div>
       <div style="border-top:1px solid var(--border-light);padding-top:8px;margin-bottom:10px;"><div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;">Bilanciamento</div><div style="font-size:16px;font-weight:700;color:${diffColor};margin-top:6px;">${diffTxt}</div></div>
+      ${meseHtml}
       <button onclick="setView('hkpsheet')" style="font-size:var(--fs-xs);padding:9px 16px;border:1px solid var(--accent);border-radius:7px;background:var(--accent-bg);color:var(--accent);cursor:pointer;font-weight:600;white-space:nowrap;">Operativa HKP SoulArt</button>
     </div>
   </div>`;
@@ -3720,7 +3963,41 @@ function renderPianoGiorno(elId,refDate,forceIdx){
 // dell'Overview in una view dedicata del menu laterale (stesso pianoNavIdx/giorno
 // condiviso con "Piano del giorno" — cambiare giorno da un pannello aggiorna anche
 // l'altro).
+// La vista lavora sul Piano EFFETTIVO: quello caricato più gli spostamenti segnati come
+// fatti nel PMS. Tutto ciò che disegna — suddivisione, grafico, totali, suggerimenti —
+// legge `pianoData`, quindi per la durata del disegno `pianoData` è quello effettivo; il
+// resto di Compass (Overview, Culligan…) continua a vedere il Piano caricato.
 function renderRoomDivision(idx){
+  if(_hkPianoVero)return _renderRoomDivision(idx);
+  const vero=pianoData;
+  if(!vero||!vero.giorni)return _renderRoomDivision(idx);
+  let eff;
+  try{eff=_hkPianoEffettivo(vero,_hkFatte());}catch(e){eff={piano:vero,esiti:{}};}
+  _hkEsiti=eff.esiti;
+  _hkPianoVero=vero;pianoData=eff.piano;
+  try{_renderRoomDivision(idx);}finally{pianoData=vero;_hkPianoVero=null;}
+  try{_hkFattePulisci(eff.esiti);}catch(e){}
+  try{_hkMeseRegistra(eff.piano);}catch(e){}
+}
+// Avviso in cima: nei prossimi tre giorni c'è uno squilibrio che si può ancora sistemare.
+// Solo se c'è davvero qualcosa da fare: un giorno storto senza mosse possibili è già
+// spiegato più giù, qui sarebbe rumore.
+function _hkAvvisoHtml(){
+  const s=hkSuggestMoves(1);if(!s.ok||!s.sbilanciati.length)return'';
+  const primo=_hkPrimoGiorno();
+  const giorni=s.sbilanciati.filter(g=>g.i<=primo+2).sort((a,b)=>a.i-b.i)
+    .map(g=>{let n=0;try{n=hkSuggestMoves(1,g.i).totMosse||0;}catch(e){}return Object.assign({n},g);})
+    .filter(g=>g.n>0);
+  if(!giorni.length)return'';
+  const lbl=i=>(pianoData.giorni[i]&&pianoData.giorni[i].label)||'—';
+  const testo=giorni.map(g=>`<strong>${lbl(g.i)}</strong> partenze ${g.pM} · ${g.pA} <span style="color:var(--text-dim);">(${g.n===1?'1 mossa':g.n+' mosse'})</span>`).join(', ');
+  return`<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:10px 14px;margin-bottom:14px;">
+    <span style="color:var(--amber);display:inline-flex;">${_invIco('allerta',18)}</span>
+    <span style="font-size:13px;color:var(--text);flex:1;min-width:220px;line-height:1.5;">${testo}: si sistemano ancora.</span>
+    <button onclick="hkVaiAlGiorno(${giorni[0].i})" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Vedi le mosse</button>
+  </div>`;
+}
+function _renderRoomDivision(idx){
   const el=document.getElementById('rd-content');if(!el)return;
   if(!pianoData||!pianoData.giorni||!pianoData.giorni.length){
     el.innerHTML=`<div style="color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere la suddivisione cameriere</div>`;return;
@@ -3811,7 +4088,8 @@ function renderRoomDivision(idx){
   // I suggerimenti seguono il giorno selezionato con ‹ › qui sopra: chi guarda mercoledì
   // vuole sapere come sistemare mercoledì, non la settimana in generale.
   try{sugg=renderHkSuggestions(idx);}catch(e){sugg='';}
-  el.innerHTML=`${mHtml}${sugg}${monthlyHtml}`;
+  let avviso='';try{avviso=_hkAvvisoHtml();}catch(e){}
+  el.innerHTML=`${avviso}${mHtml}${sugg}${monthlyHtml}`;
   if(mCard||aCard)renderHkWeekChart(idx);
 }
 
@@ -4050,6 +4328,8 @@ const QM_BACKUP_FISSE=[
   'qm_cassa_fondo','qm_cassa_incasso','qm_cassa_rimossi',
   'qm_prestay','qm_prestay_tpl','qm_rev_sent','qm_rev_calib',
   'qm_tp_seen_until','qm_app_status','qm_customDate',
+  // Bilanciamento: spostamenti segnati come fatti nel PMS e partenze del mese (27/09/2026).
+  'qm_hk_fatte','qm_hk_mese',
 ];
 /** Tutte le chiavi da salvare. `giorni` = quanti giorni indietro per gli archivi datati. */
 function qmBackupChiavi(giorni){
@@ -4860,7 +5140,7 @@ const LS={
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','bkfARChartData','bkfChartData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr',
       'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar','inv_orders',
-      'tp_seen_until','hkp_config','ddt','spese_cat_override'];
+      'tp_seen_until','hkp_config','ddt','spese_cat_override','hk_fatte','hk_mese'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
       try{
@@ -17808,7 +18088,7 @@ async function _qmElencoAggiorna(key,vuoto,dopo){
   if(r.diverso&&c.val!=null)_qmElencoSalva(key,vuoto,dopo);
   return r.cambiato;
 }
-const QM_ELENCHI_CONDIVISI={qm_ddt:[],qm_inv_moves_sa:[],qm_inv_moves_ar:[],qm_inv_catalog_sa:{},qm_inv_catalog_ar:{},qm_inv_orders:[],qm_rev_sent:{}};
+const QM_ELENCHI_CONDIVISI={qm_ddt:[],qm_inv_moves_sa:[],qm_inv_moves_ar:[],qm_inv_catalog_sa:{},qm_inv_catalog_ar:{},qm_inv_orders:[],qm_rev_sent:{},qm_hk_fatte:[],qm_hk_mese:{}};
 
 // ── Salvataggio sicuro degli archivi a elenchi ──────────────────────────────
 // DVR, Consumo Biancheria e Reso Biancheria hanno tutti la stessa forma: un oggetto le cui
@@ -18102,6 +18382,7 @@ function _qmRidisegnaVista(id){
     else if(id==='bkfsheet')bkfRenderChart();
     else if(id==='bkfsheetar')bkfRenderChartAR();
     else if(id==='miniapp')miniappRender();
+    else if(id==='room-division'){if(pianoNavIdx!==null)pianoNavRender(pianoNavIdx);}
   }catch(e){}
 }
 // Chiavi che il polling storico non guardava. Il Piano è la più importante: da lì vengono
@@ -18130,6 +18411,9 @@ async function _qmSyncGiro(){
   // Registration card: rcRefreshFromCloud sa già confrontarsi col cloud e riallinearsi
   // agli arrivi del giorno, quindi qui basta richiamarla.
   try{await rcRefreshFromCloud();}catch(e){}
+  // Bilanciamento: uno spostamento segnato come fatto su un altro computer cambia i numeri qui.
+  try{if(await _qmElencoAggiorna(HK_FATTE_KEY,[],null))cambiato=true;}catch(e){}
+  try{await _qmElencoAggiorna(HK_MESE_KEY,{},null);}catch(e){}
   return cambiato;
 }
 
