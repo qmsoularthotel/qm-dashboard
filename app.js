@@ -1031,7 +1031,7 @@ function _hkpCapienza(p,soulart){
   const ym=hkpNCurMon(p),pm=HKP_DATA_PASSAGGIO.slice(0,7);
   if(ym<pm)return soulart?22:11;
   if(ym>pm)return soulart?23:10;
-  return soulart?'22 (23 dal 21/9)':'11 (10 dal 21/9)';
+  return soulart?'22 camere, 23 dal 21/9':'11 camere, 10 dal 21/9';
 }
 function _hkpAreaSoulArt(p,row,d){
   const n=String(row.name||'').toUpperCase();
@@ -1453,7 +1453,7 @@ function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel,capacity,evidenzia){
   if(capacity){
     const totRoomDays=libCount+occCount;
     const occPct=totRoomDays?Math.round(occCount/totRoomDays*100):null;
-    if(occPct!==null)occHtml=` · <strong style="color:var(--accent);font-weight:700;">${occPct}%</strong> <span style="color:var(--text-dim);">riempimento (su ${capacity} camere)</span>`;
+    if(occPct!==null)occHtml=` · <strong style="color:var(--accent);font-weight:700;">${occPct}%</strong> <span style="color:var(--text-dim);">riempimento (su ${typeof capacity==='string'?capacity:capacity+' camere'})</span>`;
   }
   let h=`<div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">Periodo: <strong style="color:var(--text);font-weight:700;">1 – ${lastDayWithData} ${MON_IT_FULL[mo-1]} ${yr}</strong>${occHtml}</div>`;
   // Con `evidenzia` le card evidenziate (le interne nelle 200 nel mese del passaggio) non si
@@ -1666,10 +1666,10 @@ function hkpNRenderGrid(p,tab){
       const art=(row,d)=>_hkpAreaSoulArt(p,row,d);
       const passaggio=hkpNCurMon(p)===HKP_MESE_PASSAGGIO;
       const sez=(tit,nota,html)=>html?'<div style="margin-top:16px;"><div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+tit+'</div>'+(nota?'<div style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:8px;">'+nota+'</div>':'')+html+'</div>':'';
-      h+=sez('SoulArt','',hkpMonthlyCameriereHtml(p,art,'al SoulArt',_hkpCapienza(p,true)));
+      h+=sez('SoulArt · San Liborio','',hkpMonthlyCameriereHtml(p,art,'al SoulArt',_hkpCapienza(p,true)));
       const evid=passaggio?(code=>!HKP_DITTA_ESTERNA.has(code)):null;
       const bou=hkpMonthlyCameriereHtml(p,(row,d)=>!art(row,d),'al Boutique',_hkpCapienza(p,false),evid);
-      h+=sez('Boutique · ditta esterna','',bou);
+      h+=sez('Boutique 200 · ditta esterna','',bou);
     }else{
       const cardsHtml=hkpMonthlyCameriereHtml(p);
       if(cardsHtml)h+='<div style="margin-top:12px;">'+cardsHtml+'</div>';
@@ -1693,8 +1693,8 @@ function hkpNRenderGrid(p,tab){
     if(p==='sa'&&tab==='camere'){
       const sub=t=>'<div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px;">'+t+'</div>';
       const a1=symCards(symArt),b1=symCards(symBou);
-      if(a1)h+=sub('SoulArt')+a1;
-      if(b1)h+=sub('Boutique · ditta esterna')+b1;
+      if(a1)h+=sub('SoulArt · San Liborio')+a1;
+      if(b1)h+=sub('Boutique 200 · ditta esterna')+b1;
     }else h+=symCards(symCounts);
   }
   el.innerHTML=h;
@@ -4149,8 +4149,8 @@ function _renderRoomDivision(idx){
   const monthlyHtml=(monthlyCardsSa||monthlyCardsBh)?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
     <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Riepiloghi mensili</div>
     <div style="display:flex;gap:10px;">
-      ${monthlyCardsSa?_hkTile('sa','Riepilogo Housekeepers SoulArt','Camere Art e San Liborio · mese in corso'):''}
-      ${monthlyCardsBh?_hkTile('bh','Riepilogo Housekeepers Boutique · ditta esterna','Camere 200 · mese in corso'):''}
+      ${monthlyCardsSa?_hkTile('sa','Riepilogo Housekeepers SoulArt · San Liborio','Camere Art e San Liborio · mese in corso'):''}
+      ${monthlyCardsBh?_hkTile('bh','Riepilogo Housekeepers Boutique 200 · ditta esterna','Camere 200 · mese in corso'):''}
     </div>
     ${monthlyCardsSa?`<div id="hk-monthly-sa" style="display:${_hkMonthlyOpen.sa?'block':'none'};margin-top:12px;">
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Camere SoulArt (Art) e, dal 21/09/2026, San Liborio: resta alle cameriere interne.<br>Per il totale con anche il Boutique: vedi Operativa HKP.</div>
