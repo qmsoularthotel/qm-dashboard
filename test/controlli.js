@@ -2788,6 +2788,15 @@ sez('Operativa HKP: card separate SoulArt / Boutique ditta esterna');
   ok('MA e\' Martina, della ditta', HKP_HW_NAMES.MA + ' ' + HKP_DITTA_ESTERNA.has('MA'), 'Martina true');
   ok('simboli separati per struttura', /symArt:symBou/.test(String(hkpNRenderGrid)) && /sub\('SoulArt'\)/.test(String(hkpNRenderGrid)), true);
   ok('Bilanciamento: interne nelle 200 evidenziate come in Operativa', /HKP_DITTA_ESTERNA\.has\(c\)/.test(String(_renderRoomDivision)), true);
+  // San Liborio: interne. Dal 21/09/2026 conta con la SoulArt, prima col Boutique.
+  var lib = { name: 'LIBORIO' }, mese = hkpNCurMon, vero = hkpNCurMon;
+  hkpNCurMon = function () { return '2026-09'; };
+  ok('Liborio il 20/09: ancora Boutique', _hkpAreaSoulArt('sa', lib, 20), false);
+  ok('Liborio dal 21/09: SoulArt', _hkpAreaSoulArt('sa', lib, 21), true);
+  hkpNCurMon = function () { return '2026-10'; };
+  ok('Liborio a ottobre: SoulArt', _hkpAreaSoulArt('sa', lib, 1), true);
+  ok('le 200 restano Boutique', _hkpAreaSoulArt('sa', { name: '204' }, 15), false);
+  hkpNCurMon = vero;
   ok('la vista SoulArt si divide in due sezioni', /Boutique · ditta esterna/.test(String(hkpNRenderGrid)) && /HKP_MESE_PASSAGGIO/.test(String(hkpNRenderGrid)), true);
   _hkpNdata[ck] = prima;
 })();

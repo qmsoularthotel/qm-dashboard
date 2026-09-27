@@ -243,3 +243,6 @@ ripassi e non disturbare", sotto quelle delle cameriere.
 Nel tab Camere della SoulArt quella sezione è divisa per struttura (SoulArt / Boutique · ditta esterna,
 `symArt`/`symBou`). In Bilanciamento Camere il "Riepilogo Housekeepers Boutique" evidenzia e raggruppa
 le interne nelle 200 nel mese del passaggio, come Operativa HKP.
+**San Liborio resta alle interne** (28/09/2026): dal 21/09/2026 (`HKP_DATA_PASSAGGIO`) la riga LIBORIO conta
+con la SoulArt — card delle cameriere e LIB/ND/RP — prima col Boutique (`_hkpAreaSoulArt(p,row,giorno)`,
+usata da Operativa HKP e dai riepiloghi del Bilanciamento).

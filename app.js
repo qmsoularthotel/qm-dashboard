@@ -1022,6 +1022,15 @@ const HKP_HW_NAMES={AM:'Matarese',IA:'Acunzo',CD:'De Masi',LC:'Cavaliere',ANU:'A
 // Boutique); nel mese del passaggio si evidenzia chi, fra le interne, ha lavorato nelle 200.
 const HKP_DITTA_ESTERNA=new Set(['BE','RI','TI','MA','DI']);
 const HKP_MESE_PASSAGGIO='2026-09';
+// San Liborio resta alle cameriere interne: dal giorno del passaggio (21/09/2026) conta con
+// la SoulArt, prima stava col Boutique come le 200. `d` = giorno del mese mostrato.
+const HKP_DATA_PASSAGGIO='2026-09-21';
+function _hkpAreaSoulArt(p,row,d){
+  const n=String(row.name||'').toUpperCase();
+  if(n.startsWith('ART'))return true;
+  if(n!=='LIBORIO')return false;
+  return hkpNCurMon(p)+'-'+String(d).padStart(2,'0')>=HKP_DATA_PASSAGGIO;
+}
 // Aree comuni escluse dal conteggio "chi fa cosa" — non richiedono un controllo puntuale
 const HKP_AREE_ESCLUSE=new Set(['Corridoio S.Art Vecchie','Corridoio S.Art Nuovo','Corridoio','Terrazzo Sinistro','Terrazzo Destro','Aree Esterne']);
 const HKP_SYM_EXT='png';
@@ -1415,8 +1424,8 @@ function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel,capacity,evidenzia){
   const hwCounts={},hwDays={};
   let lastDayWithData=0,libCount=0,occCount=0;
   rows.forEach((row,ri)=>{
-    if(roomFilter&&!roomFilter(row))return;
     days.forEach(d=>{
+      if(roomFilter&&!roomFilter(row,d))return;
       const v=hkpNGetCell(p,tab,ri,d);
       if(!v)return;
       if(d>lastDayWithData)lastDayWithData=d;
@@ -1476,7 +1485,7 @@ function hkpNRenderGrid(p,tab){
       let hasStaff=false;
       v.split('/').forEach(k=>{
         const t=k.trim();if(!t)return;
-        if(HKP_SYM[t]){symCounts[t]=(symCounts[t]||0)+1;const sm=row.name.toUpperCase().startsWith('ART')?symArt:symBou;sm[t]=(sm[t]||0)+1;}
+        if(HKP_SYM[t]){symCounts[t]=(symCounts[t]||0)+1;const sm=_hkpAreaSoulArt(p,row,d)?symArt:symBou;sm[t]=(sm[t]||0)+1;}
         else{hwCounts[t]=(hwCounts[t]||0)+1;hasStaff=true;(hwDays[t]=hwDays[t]||new Set()).add(d);}
       });
       // Il totale camere conta solo le assegnazioni a una cameriera, non ripasso/non disturbare/camera libera
@@ -1646,12 +1655,12 @@ function hkpNRenderGrid(p,tab){
     // che hanno lavorato nelle 200 restano in evidenza, perché lì le due gestioni si sono
     // sovrapposte.
     if(p==='sa'){
-      const art=row=>row.name.toUpperCase().startsWith('ART');
+      const art=(row,d)=>_hkpAreaSoulArt(p,row,d);
       const passaggio=hkpNCurMon(p)===HKP_MESE_PASSAGGIO;
       const sez=(tit,nota,html)=>html?'<div style="margin-top:16px;"><div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+tit+'</div>'+(nota?'<div style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:8px;">'+nota+'</div>':'')+html+'</div>':'';
       h+=sez('SoulArt','',hkpMonthlyCameriereHtml(p,art,'al SoulArt',22));
       const evid=passaggio?(code=>!HKP_DITTA_ESTERNA.has(code)):null;
-      const bou=hkpMonthlyCameriereHtml(p,row=>!art(row),'al Boutique',11,evid);
+      const bou=hkpMonthlyCameriereHtml(p,(row,d)=>!art(row,d),'al Boutique',11,evid);
       h+=sez('Boutique · ditta esterna','',bou);
     }else{
       const cardsHtml=hkpMonthlyCameriereHtml(p);
@@ -4119,11 +4128,11 @@ function _renderRoomDivision(idx){
   // dover aprire quella vista. Mostrate come due card cliccabili (chiuse di default,
   // stato ricordato in _hkMonthlyOpen) invece che sempre aperte — "Suddivisione
   // cameriere" sopra resta invece sempre visibile perché usata di continuo.
-  const monthlyCardsSa=hkpMonthlyCameriereHtml('sa',row=>row.name.toUpperCase().startsWith('ART'),'al SoulArt',22);
+  const monthlyCardsSa=hkpMonthlyCameriereHtml('sa',(row,d)=>_hkpAreaSoulArt('sa',row,d),'al SoulArt',22);
   // Come in Operativa HKP: nel mese del passaggio alla ditta esterna le interne che hanno
   // lavorato nelle 200 stanno in evidenza, in un gruppo a parte.
   const _passaggio=hkpNCurMon('sa')===HKP_MESE_PASSAGGIO;
-  const monthlyCardsBh=hkpMonthlyCameriereHtml('sa',row=>!row.name.toUpperCase().startsWith('ART'),'al Boutique',11,_passaggio?(c=>!HKP_DITTA_ESTERNA.has(c)):null);
+  const monthlyCardsBh=hkpMonthlyCameriereHtml('sa',(row,d)=>!_hkpAreaSoulArt('sa',row,d),'al Boutique',11,_passaggio?(c=>!HKP_DITTA_ESTERNA.has(c)):null);
   const _hkTile=(key,label,sub)=>`<div onclick="hkMonthlyToggle('${key}')" style="flex:1;background:#fff;border:1px solid var(--border-light);border-radius:9px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;">
     ${_ovIcona('hkp')}
     <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--text);">${label}</div><div style="font-size:10.5px;color:var(--text-dim);">${sub}</div></div>
@@ -4132,15 +4141,15 @@ function _renderRoomDivision(idx){
   const monthlyHtml=(monthlyCardsSa||monthlyCardsBh)?`<div style="border-top:1px solid var(--border-light);margin-top:14px;padding-top:14px;">
     <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;">Riepiloghi mensili</div>
     <div style="display:flex;gap:10px;">
-      ${monthlyCardsSa?_hkTile('sa','Riepilogo Housekeepers SoulArt','Camere Art · mese in corso'):''}
-      ${monthlyCardsBh?_hkTile('bh','Riepilogo Housekeepers Boutique · ditta esterna','Camere 200 + Liborio · mese in corso'):''}
+      ${monthlyCardsSa?_hkTile('sa','Riepilogo Housekeepers SoulArt','Camere Art e San Liborio · mese in corso'):''}
+      ${monthlyCardsBh?_hkTile('bh','Riepilogo Housekeepers Boutique · ditta esterna','Camere 200 · mese in corso'):''}
     </div>
     ${monthlyCardsSa?`<div id="hk-monthly-sa" style="display:${_hkMonthlyOpen.sa?'block':'none'};margin-top:12px;">
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Solo camere SoulArt (Art).<br>Per il totale con anche il Boutique: vedi Operativa HKP.</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Camere SoulArt (Art) e, dal 21/09/2026, San Liborio: resta alle cameriere interne.<br>Per il totale con anche il Boutique: vedi Operativa HKP.</div>
       ${monthlyCardsSa}
     </div>`:''}
     ${monthlyCardsBh?`<div id="hk-monthly-bh" style="display:${_hkMonthlyOpen.bh?'block':'none'};margin-top:12px;">
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Solo camere Boutique (200) e San Liborio.<br>Per il totale con anche il SoulArt: vedi Operativa HKP.</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">Camere Boutique (200), pulite dalla ditta esterna. San Liborio conta qui solo fino al 20/09/2026.<br>Per il totale con anche il SoulArt: vedi Operativa HKP.</div>
       ${monthlyCardsBh}
     </div>`:''}
   </div>`:'';
