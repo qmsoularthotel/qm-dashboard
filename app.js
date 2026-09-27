@@ -1975,16 +1975,16 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
 }
 // §§ DVR — SCADENZE SICUREZZA & COMPLIANCE
 const DVR_CATS={
-  visite:       {label:'💉 Visite Mediche',      nomeLbl:'Nome',              extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Receptionist'},      dataLbl:'Data visita'},
-  art37:        {label:'📋 Formazione Art. 37',  nomeLbl:'Nome',              extra:{key:'ruolo',     lbl:'Ruolo / figura',      ph:'es. Dirigente'},          dataLbl:'Data formazione'},
-  antincendio:  {label:'🔥 Attestati Antincendio',nomeLbl:'Nome',             extra:{key:'livello',   lbl:'Livello rischio',     ph:'Basso / Medio / Alto'},   dataLbl:'Data attestato'},
-  primosoccorso:{label:'🚑 Primo Soccorso',       nomeLbl:'Nome',             extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Receptionist'},       dataLbl:'Data attestato'},
-  estintori:    {label:'🧯 Estintori',            nomeLbl:'Posizione / ID',   extra:{key:'tipo',      lbl:'Tipo',                ph:'Polvere / CO₂ / Acqua'}, dataLbl:'Ultima verifica'},
-  legionella:   {label:'🦠 Legionella',           nomeLbl:'Punto campion.',   extra:{key:'metodo',    lbl:'Metodo analisi',      ph:'es. Colturale'},          dataLbl:'Data analisi'},
-  rspp:         {label:'🛡️ RSPP',                 nomeLbl:'Nome',             extra:{key:'tipo',      lbl:'Tipo nomina',         ph:'Interno / Esterno'},      dataLbl:'Data incarico'},
-  rls:          {label:'👷 RLS',                  nomeLbl:'Nome',             extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Receptionist'},       dataLbl:'Data elezione'},
-  preposto:     {label:'🔑 Preposto',             nomeLbl:'Nome',             extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Capo Ricevimento'},   dataLbl:'Data nomina'},
-  dvrdoc:       {label:'📄 Documento DVR',        nomeLbl:'Versione / Rev.',  extra:{key:'motivo',    lbl:'Motivo revisione',    ph:'es. Modifica organiz.'},  dataLbl:'Data redazione'}
+  visite:       {label:'Visite Mediche',      nomeLbl:'Nome',              extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Receptionist'},      dataLbl:'Data visita'},
+  art37:        {label:'Formazione Art. 37',  nomeLbl:'Nome',              extra:{key:'ruolo',     lbl:'Ruolo / figura',      ph:'es. Dirigente'},          dataLbl:'Data formazione'},
+  antincendio:  {label:'Attestati Antincendio',nomeLbl:'Nome',             extra:{key:'livello',   lbl:'Livello rischio',     ph:'Basso / Medio / Alto'},   dataLbl:'Data attestato'},
+  primosoccorso:{label:'Primo Soccorso',       nomeLbl:'Nome',             extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Receptionist'},       dataLbl:'Data attestato'},
+  estintori:    {label:'Estintori',            nomeLbl:'Posizione / ID',   extra:{key:'tipo',      lbl:'Tipo',                ph:'Polvere / CO₂ / Acqua'}, dataLbl:'Ultima verifica'},
+  legionella:   {label:'Legionella',           nomeLbl:'Punto campion.',   extra:{key:'metodo',    lbl:'Metodo analisi',      ph:'es. Colturale'},          dataLbl:'Data analisi'},
+  rspp:         {label:'RSPP',                 nomeLbl:'Nome',             extra:{key:'tipo',      lbl:'Tipo nomina',         ph:'Interno / Esterno'},      dataLbl:'Data incarico'},
+  rls:          {label:'RLS',                  nomeLbl:'Nome',             extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Receptionist'},       dataLbl:'Data elezione'},
+  preposto:     {label:'Preposto',             nomeLbl:'Nome',             extra:{key:'mansione',  lbl:'Mansione',            ph:'es. Capo Ricevimento'},   dataLbl:'Data nomina'},
+  dvrdoc:       {label:'Documento DVR',        nomeLbl:'Versione / Rev.',  extra:{key:'motivo',    lbl:'Motivo revisione',    ph:'es. Modifica organiz.'},  dataLbl:'Data redazione'}
 };
 const DVR_KEYS=Object.keys(DVR_CATS);
 const DVR_SOCS={geriart:'GE.RI.ART SRL',bookingelite:'BOOKING ELITE'};
@@ -2181,8 +2181,8 @@ function dvrRenderDipendenti(){
         ${datesLine?`<div style="font-size:var(--fs-xs);color:var(--text-dim);margin-bottom:4px;">📅 ${datesLine}</div>`:''}
         ${it.note?`<div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:6px;white-space:pre-line;">📝 ${it.note}</div>`:''}
         <div style="display:flex;gap:6px;margin-top:4px;">
-          <button onclick="dvrEmpOpenModal('${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">✏️ Modifica</button>
-          <button onclick="dvrEmpDelete('${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--red);">🗑 Elimina</button>
+          <button onclick="dvrEmpOpenModal('${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">${_invIco('matita',12)} Modifica</button>
+          <button onclick="dvrEmpDelete('${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;color:var(--red);display:inline-flex;align-items:center;gap:4px;">${_invIco('cestino',12)} Elimina</button>
         </div>
       </div>`:'';
     const scadInline=(needsScad&&scadContrFmt)?`<div style="font-size:11px;color:${scadColor};font-weight:${scadSoon||scadExpired?'600':'400'};margin-top:1px;">${scadLabel}</div>`:'';
@@ -2205,7 +2205,7 @@ function dvrEmpOpenModal(id){
   _dvrEmpId=id||null;
   const it=id?(DVR_DATA[_dvrSoc]?.dipendenti||[]).find(x=>x.id===id):null;
   const modal=document.getElementById('dvrModal');
-  document.getElementById('dvrModalTitle').textContent='👤 Dipendente'+(id?' — Modifica':' — Aggiungi');
+  document.getElementById('dvrModalTitle').textContent='Dipendente'+(id?' — Modifica':' — Aggiungi');
   const inp='width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-sm);background:var(--bg);color:var(--text);';
   const lbl='font-size:var(--fs-xs);color:var(--text-dim);display:block;margin-bottom:4px;';
   const contrTypes=['Tempo indeterminato','Tempo determinato','Tempo determinato part-time','Part-time','Tirocinio','Apprendistato'];
@@ -2282,8 +2282,8 @@ function dvrRenderPanel(type){
         <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${daysLbl}</div>
       </div>
       <div style="display:flex;gap:4px;flex-shrink:0;">
-        <button onclick="dvrOpenModal('${type}','${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;">✏️</button>
-        <button onclick="dvrDelete('${type}','${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;">🗑</button>
+        <button onclick="dvrOpenModal('${type}','${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;color:var(--text-muted);">${_invIco('matita',12)}</button>
+        <button onclick="dvrDelete('${type}','${it.id}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;color:var(--red);">${_invIco('cestino',12)}</button>
       </div>
     </div>`;
   }).join('');

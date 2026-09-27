@@ -142,3 +142,11 @@ cestino, movimenti, ordini, modali, Stampa A4, Apri scanner) sono icone SVG a li
 del testo (`_invIco(nome,px)` in testa alla sezione §§ INVENTARIO), stesso disegno di
 `PS_ICON_*`. Restano le emoji solo nel testo del messaggio WhatsApp al fornitore.
 
+
+### DVR — icone stile Compass (27/09/2026)
+
+Pannelli con badge navy/oro `.ov-icon-badge` (Dipendenti persona, Visite cuore, Art. 37 tocco,
+Antincendio fiamma, Primo Soccorso croce, Estintori, Legionella goccia, RLS elmetto, Preposto
+chiave, Documento DVR documento). Etichette di gruppo, pulsanti delle società e titoli delle
+finestre senza emoji (`DVR_CATS[].label` è testo puro). Modifica/Elimina con `_invIco`.
+L'app `dvr.html` non è stata toccata.
