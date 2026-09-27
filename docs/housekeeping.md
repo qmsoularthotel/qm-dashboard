@@ -216,8 +216,8 @@ disegno si registrano i giorni del Piano effettivo fino a oggi (partenze + cambi
 "Totale settimana"); si scrive solo se cambia qualcosa. Il riquadro mostra il **mese intero**: i
 giorni passati registrati più quelli ancora in programma nel Piano fino a fine mese
 (`_hkMeseTotali(oggi,piano)`) — solo i passati davano "Matarese 5" quando il Piano ne
-mostrava 17 da domani al 30 (28/09/2026). Il conto è partito col Piano del
-23/09/2026: prima non esiste. Spareggio nel motore: a parità di beneficio, se Matarese è in
+mostrava 17 da domani al 30 (28/09/2026). Il conto parte dal **28/09/2026**
+(`HK_MESE_DAL`, scelta del QM): prima non esiste. Spareggio nel motore: a parità di beneficio, se Matarese è in
 credito nel mese vince la mossa che le toglie più partenze (`dM`), e viceversa.
 
 **Avviso** (`_hkAvvisoHtml`): in cima alla vista, solo se nei prossimi tre giorni c'è uno

@@ -2760,6 +2760,9 @@ sez('Bilanciamento: mosse fatte nel PMS, piano della settimana, mese');
     { data: '01/06/2031', soulart: { partenze: ['Art 12'], cambi: [], fermate: [], arrivi: [] } } ] };  // mese dopo
   var t2 = _hkMeseTotali(new Date(2031, 4, 15, 12), fut);
   ok('mese: passati + previsti nel Piano', t2.M + '-' + t2.A + ' · ' + t2.n + ' passati, ' + t2.prev + ' previsti · al ' + t2.al, '10-6 · 2 passati, 1 previsti · al 2031-05-16');
+  localStorage.setItem(HK_MESE_KEY, JSON.stringify({ '2026-09-27': { m: 5, a: 7 }, '2026-09-28': { m: 5, a: 8 } }));
+  var t3 = _hkMeseTotali(new Date(2026, 8, 28, 12), { giorni: [{ data: '29/09/2026', soulart: { partenze: ['Art 10'], cambi: [], fermate: [], arrivi: [] } }] });
+  ok('mese: il 27/09/2026 non si conta (si parte dal 28)', t3.M + '-' + t3.A + ' dal ' + t3.dal, '6-8 dal 2026-09-28');
   localStorage.removeItem(HK_MESE_KEY);
   // A parita' di beneficio, chi e' in credito nel mese riceve meno partenze.
   ok('lo spareggio col mese c\'e\'', /_scMese>0\?x\.dM-y\.dM:y\.dM-x\.dM/.test(String(hkSuggestMoves)), true);

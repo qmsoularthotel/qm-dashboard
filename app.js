@@ -3223,6 +3223,8 @@ function _hkMeseRegistra(piano,oggi){
   _qmElencoSalva(HK_MESE_KEY,{},null);
   return true;
 }
+// Il conto parte dal 28/09/2026 (scelta del QM): il 27, giorno in cui è nato, non si conta.
+const HK_MESE_DAL='2026-09-28';
 const _HK_MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 // Il mese intero: i giorni già passati (registrati) più quelli ancora in programma nel Piano
 // fino a fine mese. Solo i passati davano un numero che nessuno riconosceva: il 28/9 diceva
@@ -3232,12 +3234,12 @@ function _hkMeseTotali(oggi,piano){
   const pref=ref.getFullYear()+'-'+String(ref.getMonth()+1).padStart(2,'0');
   const mese=_hkMese();let M=0,A=0,dal=null,al=null,n=0,prev=0;
   Object.keys(mese).filter(k=>k.startsWith(pref)).sort().forEach(k=>{
-    if(new Date(k+'T12:00:00')>ref)return;              // un giorno futuro registrato per sbaglio
+    if(k<HK_MESE_DAL||new Date(k+'T12:00:00')>ref)return;   // prima dell'inizio del conto, o futuro
     M+=+mese[k].m||0;A+=+mese[k].a||0;n++;if(!dal)dal=k;al=k;});
   const Mp=M,Ap=A,alPass=al;let dalPrev=null;
   const P=piano||pianoData;
   ((P&&P.giorni)||[]).forEach(g=>{
-    const iso=_hkIso(g.data);if(!iso||!iso.startsWith(pref))return;
+    const iso=_hkIso(g.data);if(!iso||!iso.startsWith(pref)||iso<HK_MESE_DAL)return;
     if(new Date(iso+'T12:00:00')<=ref)return;           // già contato fra i passati
     const{m,a}=splitSoulart(g.soulart||{});
     M+=(m.partenze||[]).length+(m.cambi||[]).length;A+=(a.partenze||[]).length+(a.cambi||[]).length;
