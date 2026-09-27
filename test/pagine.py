@@ -62,8 +62,11 @@ def main():
     def apri(p):
         # Un secondo tentativo solo se il browser di prova non risponde: capita, senza che la
         # pagina c'entri, e non deve diventare un falso allarme che si impara a ignorare.
+        # Tre tentativi: il 27-28/09/2026 inventory.html e' scaduta due volte di fila per
+        # lentezza del browser di prova, e al giro dopo si apriva senza errori.
         righe = prova(p)
-        if len(righe) == 1 and 'non ha finito' in righe[0]:
+        for _ in range(2):
+            if not (len(righe) == 1 and 'non ha finito' in righe[0]): break
             righe = prova(p)
         return righe
     # Tre pagine per volta: una per volta la prova durava fino a due minuti.
