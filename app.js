@@ -1016,11 +1016,11 @@ let _hkpNdebounce={};
 let _hkpNsel={drag:false,cells:new Set()};
 const HKP_SYM={RP:'hkp-ripasso',ND:'hkp-nd',LIB:'open-sign',NE:'non-eseguito'};
 // Mappatura sigla in griglia → nome esteso cameriera (da completare con l'elenco fornito dall'utente)
-const HKP_HW_NAMES={AM:'Matarese',IA:'Acunzo',CD:'De Masi',LC:'Cavaliere',ANU:'Anushka',RO:'Roberta',DA:'Daniela',DI:'Ditta Boutique',BE:'Betty',RI:'Rita',TI:'Tiziana'};
+const HKP_HW_NAMES={AM:'Matarese',IA:'Acunzo',CD:'De Masi',LC:'Cavaliere',ANU:'Anushka',RO:'Roberta',DA:'Daniela',DI:'Ditta Boutique',BE:'Betty',RI:'Rita',TI:'Tiziana',MA:'Martina'};
 // Da settembre 2026 le camere del Boutique (200) le pulisce una ditta esterna: queste sigle
 // sono sue. In Operativa HKP le card si dividono per AREA (camere Art = SoulArt, le altre =
 // Boutique); nel mese del passaggio si evidenzia chi, fra le interne, ha lavorato nelle 200.
-const HKP_DITTA_ESTERNA=new Set(['BE','RI','TI','DI']);
+const HKP_DITTA_ESTERNA=new Set(['BE','RI','TI','MA','DI']);
 const HKP_MESE_PASSAGGIO='2026-09';
 // Aree comuni escluse dal conteggio "chi fa cosa" — non richiedono un controllo puntuale
 const HKP_AREE_ESCLUSE=new Set(['Corridoio S.Art Vecchie','Corridoio S.Art Nuovo','Corridoio','Terrazzo Sinistro','Terrazzo Destro','Aree Esterne']);
@@ -1439,7 +1439,9 @@ function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel,capacity,evidenzia){
     if(occPct!==null)occHtml=` · <strong style="color:var(--accent);font-weight:700;">${occPct}%</strong> <span style="color:var(--text-dim);">riempimento (su ${capacity} camere)</span>`;
   }
   let h=`<div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">Periodo: <strong style="color:var(--text);font-weight:700;">1 – ${lastDayWithData} ${MON_IT_FULL[mo-1]} ${yr}</strong>${occHtml}</div>`;
-  h+='<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+  // Con `evidenzia` le card evidenziate (le interne nelle 200 nel mese del passaggio) non si
+  // mescolano alle altre: stanno tutte insieme, in un gruppo a parte sotto.
+  let hEv='',hNorm='';const hBase=h;h='';
   sortedHw.forEach(([init,cnt])=>{
     const fullName=HKP_HW_NAMES[init.toUpperCase()]||init;
     const gg=hwDays[init]?hwDays[init].size:0;
@@ -1448,8 +1450,11 @@ function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel,capacity,evidenzia){
     h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:'+(ev?'2px solid var(--amber)':'1px solid var(--border-light,#dde2ea)')+';display:flex;align-items:center;gap:10px;">';
     h+='<span style="display:inline-flex;width:34px;height:34px;border-radius:50%;background:'+(ev?'var(--amber-bg)':'var(--accent-bg,#e8f0f8)')+';color:'+(ev?'var(--amber)':'var(--accent,#1c3a5e)')+';font-size:11px;font-weight:500;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
     h+='<div><div style="font-size:21px;font-weight:400;line-height:1.1;color:var(--text,#0c1f33);">'+cnt+'</div><div style="font-size:11.5px;color:var(--text-dim,#888880);margin-top:1px;">'+fullName+(ev?' <span style="font-size:10px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:4px;padding:1px 5px;">interna</span>':'')+'</div><div style="font-size:10.5px;color:var(--green,#2e7d32);font-weight:500;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' '+presenceLabel+'</div><div style="font-size:10.5px;color:var(--accent,#1c3a5e);font-weight:500;margin-top:1px;">'+media+' camere/giorno</div></div></div>';
+    if(ev){hEv+=h;}else{hNorm+=h;}h='';
   });
-  h+='</div>';
+  h=hBase;
+  if(hNorm)h+='<div style="display:flex;flex-wrap:wrap;gap:8px;">'+hNorm+'</div>';
+  if(hEv)h+='<div style="font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px;">Interne che a settembre hanno lavorato nelle 200</div><div style="display:flex;flex-wrap:wrap;gap:8px;">'+hEv+'</div>';
   return h;
 }
 function hkpNRenderGrid(p,tab){
@@ -1647,8 +1652,7 @@ function hkpNRenderGrid(p,tab){
       h+=sez('SoulArt','',hkpMonthlyCameriereHtml(p,art,'al SoulArt',22));
       const evid=passaggio?(code=>!HKP_DITTA_ESTERNA.has(code)):null;
       const bou=hkpMonthlyCameriereHtml(p,row=>!art(row),'al Boutique',11,evid);
-      const interne=passaggio&&/interna<\/span>/.test(bou);
-      h+=sez('Boutique · ditta esterna',interne?'In evidenza le cameriere interne che questo mese hanno lavorato nelle camere 200, prima del passaggio alla ditta esterna.':'',bou);
+      h+=sez('Boutique · ditta esterna','',bou);
     }else{
       const cardsHtml=hkpMonthlyCameriereHtml(p);
       if(cardsHtml)h+='<div style="margin-top:12px;">'+cardsHtml+'</div>';
