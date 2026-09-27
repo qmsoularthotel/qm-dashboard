@@ -2733,6 +2733,23 @@ sez('Bilanciamento: mosse fatte nel PMS, piano della settimana, mese');
   // Uno scambio: i due soggiorni partono lo stesso giorno e non vanno confusi.
   var sc = _hkPianoEffettivo(pianoData, [{ id: 'f3', righe: [{ da: 'Art 10', a: 'Art 14', s: G[3].data }, { da: 'Art 11', a: 'Art 15', s: G[3].data }] }]);
   ok('due spostamenti nella stessa mossa', part(sc.piano, 4), '1-2');
+  // Scambio fra due soggiorni che arrivano lo stesso giorno (G3) ma partono in giorni
+  // diversi: a Piano nuovo caricato, nella camera di partenza c'e' l'ALTRO soggiorno con la
+  // stessa data d'arrivo. Deve risultare fatto, non ancora da fare (e applicato al contrario).
+  var P2 = JSON.parse(JSON.stringify(pianoData));
+  P2.giorni.forEach(function (g) { ['arrivi', 'partenze', 'fermate', 'cambi'].forEach(function (k) { g.soulart[k] = []; }); });
+  P2.giorni[3].soulart.arrivi.push('Art 10', 'Art 14'); P2.giorni[4].soulart.partenze.push('Art 10'); P2.giorni[4].soulart.fermate.push('Art 14'); P2.giorni[5].soulart.partenze.push('Art 14');
+  var fs = { id: 'sw', righe: [{ da: 'Art 10', a: 'Art 14', s: G[3].data, e: G[4].data }, { da: 'Art 14', a: 'Art 10', s: G[3].data, e: G[5].data }] };
+  var dopoSw = _hkPianoEffettivo(P2, [fs]);
+  ok('scambio stesso arrivo: prima del Piano nuovo e\' da contare', dopoSw.esiti.sw, 'attesa');
+  ok('scambio stesso arrivo: col Piano nuovo risulta fatto', _hkPianoEffettivo(dopoSw.piano, [fs]).esiti.sw, 'nelPiano');
+  // Camera d'arrivo occupata nel frattempo: non si conta, si segnala.
+  var P3 = JSON.parse(JSON.stringify(pianoData));
+  P3.giorni[3].soulart.arrivi.push('Art 14'); P3.giorni[5].soulart.partenze.push('Art 14'); P3.giorni[4].soulart.fermate.push('Art 14');
+  var fc = { id: 'cf', righe: [{ da: 'Art 10', a: 'Art 14', s: G[3].data, e: G[4].data }] };
+  var rc = _hkPianoEffettivo(P3, [fc]);
+  ok('camera d\'arrivo occupata: segnalato', rc.esiti.cf, 'conflitto');
+  ok('e i numeri non lo contano', part(rc.piano, 4), part(P3, 4));
   // Pulizia: ritrovate e scadute escono dall'elenco, quelle in attesa restano.
   localStorage.setItem(HK_FATTE_KEY, JSON.stringify([{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }]));
   _hkFattePulisci({ a: 'attesa', b: 'nelPiano', c: 'fuori', d: 'sparito' });
@@ -2766,6 +2783,7 @@ sez('Bilanciamento: mosse fatte nel PMS, piano della settimana, mese');
   localStorage.removeItem(HK_MESE_KEY);
   // A parita' di beneficio, chi e' in credito nel mese riceve meno partenze.
   ok('lo spareggio col mese c\'e\'', /_scMese>0\?x\.dM-y\.dM:y\.dM-x\.dM/.test(String(hkSuggestMoves)), true);
+  ok('a vista nascosta non si ridisegna', /nascosta/.test(String(renderRoomDivision)) && /id==='room-division'/.test(String(setView)), true);
   ok('la vista lavora sul Piano con le mosse fatte', /_hkPianoEffettivo\(vero,_hkFatte\(\)\)/.test(String(renderRoomDivision)), true);
   ok('le mosse fatte arrivano dagli altri computer', /HK_FATTE_KEY/.test(String(_qmSyncGiro)) && QM_ELENCHI_CONDIVISI.hasOwnProperty('qm_hk_fatte'), true);
   _qmElencoSalva = _salva; pianoData = _piano; pianoNavIdx = _nav;

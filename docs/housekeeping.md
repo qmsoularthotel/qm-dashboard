@@ -249,3 +249,21 @@ usata da Operativa HKP e dai riepiloghi del Bilanciamento).
 La scritta del riempimento segue lo spostamento (`_hkpCapienza`): 22/11 camere fino ad agosto, "22 camere, 23 dal 21/9"
 e "11 camere, 10 dal 21/9" a settembre, 23/10 da ottobre.
 Titoli: "SoulArt · San Liborio" e "Boutique 200 · ditta esterna" (la ditta ha solo le 200).
+
+### Revisione del 28/09/2026 — difetti trovati e chiusi
+
+- **Scambio fra soggiorni con lo stesso giorno d'arrivo.** Il soggiorno si riconosceva solo
+  da camera + arrivo: caricato il Piano nuovo, nella camera di partenza c'era l'ALTRO
+  soggiorno con la stessa data, la mossa risultava "ancora da fare" e veniva applicata al
+  contrario (i numeri disfacevano lo scambio vero). Ora conta anche la partenza (`r.e`),
+  quando è nota: non lo è sull'ultimo giorno del Piano, dove non si distingue una partenza
+  da un soggiorno che continua.
+- **Camera d'arrivo occupata nel frattempo** (nuova prenotazione nel PMS): applicare la mossa
+  metteva due ospiti nella stessa camera. Ora l'esito è `conflitto` — riga ambra "Camera ora
+  occupata", i numeri non la contano, pulsante Togli.
+- **Ridisegno a vista nascosta.** Il polling richiama `pianoNavRender` ogni minuto, e con lui
+  il Bilanciamento: Piano della settimana, conteggio mosse per giorno e avviso giravano anche
+  con la vista chiusa, su ogni postazione. Ora `renderRoomDivision` disegna solo se la vista è
+  aperta (registra comunque le partenze del mese) e `setView('room-division')` la ridisegna
+  all'apertura.
+

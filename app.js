@@ -1987,6 +1987,7 @@ function toggleBkfGroup(){
   document.getElementById('bkfGroupItems').classList.toggle('open',bkfGroupOpen);
 }
 function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.getElementById('pageTitle').textContent=pageTitles[id]||id;const bc=document.getElementById('breadcrumb');if(bc)bc.textContent=breadcrumbs[id]||'';const kpis=document.getElementById('topbar-kpis');if(kpis)kpis.style.display=id==='overview'?'flex':'none';if(navEl){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));navEl.classList.add('active');}
+  if(id==='room-division'&&pianoData&&pianoData.giorni){try{renderRoomDivision(pianoNavIdx!==null?pianoNavIdx:Math.max(0,pianoGetGiornoIdx()));}catch(e){}}
   if(id==='bkfsheet'||id==='bkfsheetar'){if(!bkfGroupOpen){bkfGroupOpen=true;document.getElementById('bkfGroupToggle').classList.add('open');document.getElementById('bkfGroupItems').classList.add('open');}}
   if(id.startsWith('recensioni-')&&!id.startsWith('recensioni-exp-')){if(!recGroupOpen){recGroupOpen=true;document.getElementById('recGroupToggle').classList.add('open');document.getElementById('recGroupItems').classList.add('open');}}
   if(id.startsWith('recensioni-exp-')){if(!expGroupOpen){expGroupOpen=true;document.getElementById('expGroupToggle').classList.add('open');document.getElementById('expGroupItems').classList.add('open');}}
@@ -3151,7 +3152,10 @@ function _hkDataIdx(piano,d){const n=_hkNormData(d);return((piano&&piano.giorni)
 // Ogni soggiorno che una mossa fa cambiare di camera, nell'ordine in cui va eseguito.
 function _hkRigheDaMossa(m,piano){
   const D=i=>(i==null||i<0||!piano.giorni[i])?null:_hkNormData(piano.giorni[i].data);
-  const r=(da,a,s,e)=>({da,a,s:D(s),e:D(e)});
+  // La partenza serve a riconoscere il soggiorno (vedi _hkPianoEffettivo). Sull'ultimo
+  // giorno del Piano non si sa se è una partenza vera o un soggiorno che continua: niente.
+  const ult=piano.giorni.length-1;
+  const r=(da,a,s,e)=>({da,a,s:D(s),e:(e==null||e>=ult)?null:D(e)});
   if(m.tipo==='sposta')return[r(m.from,m.to,m.start,m.end)];
   if(m.tipo==='scambia')return[r(m.from,m.to,m.start,m.end),r(m.to,m.from,m.yStart,m.yEnd)];
   if(m.tipo==='catena')return[r(m.to,m.via,m.yStart,m.yEnd),r(m.from,m.to,m.start,m.end)];
@@ -3169,13 +3173,18 @@ function _hkPianoEffettivo(base,fatte){
   try{pianoData=base;BL=hkBuildBlocks();}finally{pianoData=salva;}
   const incA=new Set(base.incArr||[]),incP=new Set(base.incPar||[]);
   const toccate=new Set();
-  const trova=(room,i)=>(BL[room]||[]).find(b=>b.start===i);
+  // Un soggiorno si riconosce dall'arrivo E, se nota, dalla partenza. Solo l'arrivo non
+  // basta: in uno scambio fra due soggiorni che arrivano lo stesso giorno, a Piano nuovo
+  // caricato nella camera di partenza c'è l'ALTRO soggiorno con la stessa data d'arrivo —
+  // e la mossa risultava ancora da fare, e veniva applicata al contrario.
+  const fine=b=>(b.openEnd||b.end>=N-1)?null:_hkNormData(base.giorni[b.end].data);
+  const trova=(room,i,e)=>(BL[room]||[]).find(b=>b.start===i&&(e==null||fine(b)==null||fine(b)===e));
   fatte.forEach(f=>{
     const st=(f.righe||[]).map(r=>{
       const i=_hkDataIdx(base,r.s);
       if(i<0)return{r,k:'fuori'};                        // soggiorno fuori da questo Piano
-      const x=trova(r.da,i);if(x)return{r,k:'attesa',x};  // ancora dov'era: il Piano è vecchio
-      if(trova(r.a,i))return{r,k:'nelPiano'};             // già dove doveva andare
+      const x=trova(r.da,i,r.e);if(x)return{r,k:'attesa',x};  // ancora dov'era: il Piano è vecchio
+      if(trova(r.a,i,r.e))return{r,k:'nelPiano'};         // già dove doveva andare
       return{r,k:'sparito'};
     });
     const ks=st.map(z=>z.k);
@@ -3184,6 +3193,11 @@ function _hkPianoEffettivo(base,fatte){
     // Prima si tolgono tutti, poi si rimettono: in uno scambio due soggiorni possono
     // arrivare lo stesso giorno, e cercarli uno alla volta li confonderebbe.
     const muovi=st.filter(z=>z.k==='attesa');
+    // Se nel frattempo la camera d'arrivo si è occupata (un'altra prenotazione nel PMS),
+    // applicarla creerebbe una camera con due ospiti: si segnala invece di contarla.
+    const dopo={};muovi.forEach(z=>{dopo[z.r.da]=(dopo[z.r.da]||BL[z.r.da]||[]).filter(b=>b!==z.x);});
+    const entra=muovi.every(z=>{const dest=(dopo[z.r.a]||BL[z.r.a]||[]);const ok=_hkFits(z.x,dest,[],N);dopo[z.r.a]=dest.concat([z.x]);return ok;});
+    if(!entra){esiti[f.id]='conflitto';return;}
     muovi.forEach(z=>{BL[z.r.da]=(BL[z.r.da]||[]).filter(b=>b!==z.x);});
     muovi.forEach(z=>{
       BL[z.r.a]=(BL[z.r.a]||[]).concat([z.x]);
@@ -3837,21 +3851,21 @@ function renderHkSuggestions(focusIdx){
 }
 // Le mosse segnate come fatte e non ancora ritrovate in un Piano caricato.
 function _hkFatteHtml(){
-  const l=_hkFatte().filter(f=>_hkEsiti[f.id]==='attesa'||_hkEsiti[f.id]==='sparito');
+  const l=_hkFatte().filter(f=>_hkEsiti[f.id]==='attesa'||_hkEsiti[f.id]==='sparito'||_hkEsiti[f.id]==='conflitto');
   if(!l.length)return'';
   const g=(pianoData&&pianoData.giorni)||[];
   const lbl=d=>{const i=_hkDataIdx(pianoData,d);if(i>=0&&g[i].label)return g[i].label;const p=_hkNormData(d).split('/');return p.length===3?(+p[0])+'/'+(+p[1]):'—';};
   const cam=(c,piena)=>`<span style="display:inline-block;${piena?'background:var(--accent);color:#fff;':'background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);'}border-radius:6px;padding:2px 9px;font-weight:${piena?'700':'600'};font-size:13px;">${_esc(c)}</span>`;
   const righe=l.map(f=>{
-    const sparito=_hkEsiti[f.id]==='sparito';
+    const conflitto=_hkEsiti[f.id]==='conflitto',sparito=_hkEsiti[f.id]==='sparito'||conflitto;
     const passi=(f.righe||[]).map(r=>`<div style="display:flex;align-items:center;gap:7px;padding:2px 0;">${cam(r.da,false)}<span style="color:var(--text-dim);">→</span>${cam(r.a,true)}<span style="font-size:13px;font-weight:600;color:var(--text);margin-left:8px;">${lbl(r.s)}${r.e&&r.e!==r.s?' → '+lbl(r.e):''}</span></div>`).join('');
     const stato=sparito
-      ?`<span style="font-size:11.5px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:5px;padding:3px 9px;white-space:nowrap;">Non trovato nel nuovo Piano</span>`
+      ?`<span style="font-size:11.5px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:5px;padding:3px 9px;white-space:nowrap;">${conflitto?'Camera ora occupata':'Non trovato nel nuovo Piano'}</span>`
       :`<span style="font-size:11.5px;font-weight:700;color:var(--green);background:var(--green-bg);border-radius:5px;padding:3px 9px;white-space:nowrap;">Fatto · aspetta il nuovo Piano</span>`;
     return`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--border-light);">
       <span style="width:21px;height:21px;border-radius:50%;background:${sparito?'var(--amber)':'var(--green)'};color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">${_invIco(sparito?'allerta':'ok',12)}</span>
       <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;min-width:70px;margin-top:4px;">${_esc(_hkTipoLbl(f.cat||''))}</span>
-      <div style="flex:1;min-width:0;">${passi}${sparito?`<div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.45;">Il soggiorno non è più né nella camera di prima né in quella nuova: forse è stato cancellato o spostato altrove. Controlla nel PMS, poi toglilo da qui.</div>`:''}</div>
+      <div style="flex:1;min-width:0;">${passi}${sparito?`<div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.45;">${conflitto?'Nel Piano caricato la camera d\'arrivo risulta occupata in quelle notti da un\'altra prenotazione: i numeri non contano questo spostamento. Controlla nel PMS, poi toglilo da qui.':'Il soggiorno non è più né nella camera di prima né in quella nuova: forse è stato cancellato o spostato altrove. Controlla nel PMS, poi toglilo da qui.'}</div>`:''}</div>
       <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">${stato}<button onclick="hkAnnullaFatto('${_esc(f.id)}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11.5px;color:var(--text-muted);cursor:pointer;font-family:inherit;">${sparito?'Togli':'Annulla'}</button></div>
     </div>`;
   }).join('');
@@ -4051,8 +4065,14 @@ function renderRoomDivision(idx){
   let eff;
   try{eff=_hkPianoEffettivo(vero,_hkFatte());}catch(e){eff={piano:vero,esiti:{}};}
   _hkEsiti=eff.esiti;
-  _hkPianoVero=vero;pianoData=eff.piano;
-  try{_renderRoomDivision(idx);}finally{pianoData=vero;_hkPianoVero=null;}
+  // A vista nascosta non si disegna: il polling passa di qui ogni minuto, e il Piano della
+  // settimana e i conteggi delle mosse costano. Si ridisegna aprendo la vista (setView).
+  const vista=document.getElementById('view-room-division');
+  const nascosta=!!(vista&&vista.classList&&typeof vista.classList.contains==='function'&&!vista.classList.contains('active'));
+  if(!nascosta){
+    _hkPianoVero=vero;pianoData=eff.piano;
+    try{_renderRoomDivision(idx);}finally{pianoData=vero;_hkPianoVero=null;}
+  }
   try{_hkFattePulisci(eff.esiti);}catch(e){}
   try{_hkMeseRegistra(eff.piano);}catch(e){}
 }

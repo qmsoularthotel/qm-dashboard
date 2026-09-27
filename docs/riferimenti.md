@@ -179,6 +179,18 @@ verrebbe saltato o troncato a metà.
 
 ---
 
+### Bilanciamento e Operativa HKP (27–28/09/2026)
+| Funzione | Cosa fa |
+|---|---|
+| `_hkPianoEffettivo(base,fatte)` | Piano caricato + spostamenti "fatti nel PMS"; esiti attesa/nelPiano/sparito/conflitto/fuori |
+| `_hkRigheDaMossa(m,piano)` | una mossa → soggiorni che cambiano camera, con date |
+| `hkPianoSettimana(max)` | sequenza di mosse, ognuna sul Piano dopo le precedenti |
+| `_hkMeseRegistra` / `_hkMeseTotali` | partenze del mese (`qm_hk_mese`), passati + previsti, dal 28/09/2026 |
+| `_hkAvvisoHtml` | avviso squilibri dei prossimi 3 giorni con mosse possibili |
+| `_hkpAreaSoulArt(p,row,giorno)` | camera Art o San Liborio dal 21/09/2026 → SoulArt, altrimenti Boutique 200 |
+| `_hkpCapienza(p,soulart)` | camere per la scritta del riempimento |
+| `_gbJson` (Galleria), `_pdfSenzaCodice`, `_qmPulisciTesti` | filtri di sicurezza sui testi esterni |
+
 ## Recovery — Recupero Codice Perso
 
 ```bash
