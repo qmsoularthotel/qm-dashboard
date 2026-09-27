@@ -241,3 +241,9 @@ let _bkfBanner = { enabled: false, message: '' };
 Ogni toggle ha una didascalia breve **accanto** ("Attiva/disattiva app"), non più una frase lunga su una riga a parte sopra il link — cambiato dopo feedback che il testo grigio a 9-10px era illeggibile (portato a `--fs-xs`, 13px).
 
 ---
+
+### Registration Cards — "Stampa selezionate" (27/09/2026)
+
+In alto, accanto a "Stampa tutte", "Stampa selezionate (N)" ha preso il posto di "Stampa
+evidenziate" (e della barra in fondo alla griglia). Le card nuove o con camera spostata partono
+già spuntate, quindi un clic fa quello che faceva prima; le spunte si tolgono o aggiungono a mano.

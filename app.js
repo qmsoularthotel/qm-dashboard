@@ -8652,19 +8652,14 @@ function rcRenderCards(guests){
     return fa-fb||a.i-b.i;
   }).map(o=>o.g);
   guestsData=sorted;
-  _rcSelected=new Set();
+  // Le card nuove o con camera spostata partono già selezionate: "Stampa selezionate" fa
+  // subito quello che faceva "Stampa evidenziate", e si può togliere o aggiungere una spunta.
+  _rcSelected=new Set(sorted.map((g,i)=>g.isNew||g.roomChanged?i:-1).filter(i=>i>=0));
   document.getElementById('rcCountBadge').textContent=sorted.length+(sorted.length===1?' ospite':' ospiti');
   const grid=document.getElementById('rcCardGrid');
   grid.innerHTML='';
   sorted.forEach((g,i)=>grid.appendChild(rcBuildPreview(g,i)));
   document.getElementById('rcResults').style.display='block';
-  // Bottone "stampa solo evidenziate" — visibile solo se ci sono nuove prenotazioni o camere spostate
-  const hiCount=sorted.filter(g=>g.isNew||g.roomChanged).length;
-  const hiBtn=document.getElementById('rcPrintHighlightBtn');
-  if(hiBtn){
-    hiBtn.style.display=hiCount?'inline-flex':'none';
-    hiBtn.textContent='🔴 Stampa evidenziate ('+hiCount+')';
-  }
   rcRenderSourceLine();
   rcUpdateSelectedBtn();
   // Salva per ripristino
@@ -8688,11 +8683,6 @@ function rcRenderSourceLine(){
   el.style.display='flex';
   el.innerHTML=`${_ovIcona('doc')}<span>${doc} caricato${tsStr?' · '+tsStr:''} · ${arriviData.arrivi.length} arrivi rilevati</span><span onclick="document.getElementById('${inputId}')?.click();" style="margin-left:auto;color:var(--accent);cursor:pointer;font-weight:600;">Aggiorna file</span>`;
 }
-function rcPrintHighlighted(){
-  const idxs=guestsData.map((g,i)=>g.isNew||g.roomChanged?i:-1).filter(i=>i>=0);
-  if(!idxs.length){cqAvviso('Nessuna card nuova o con camera spostata da stampare.');return;}
-  preparePrintIdxs(idxs);
-}
 function rcToggleSelect(idx,checked){
   if(checked)_rcSelected.add(idx);else _rcSelected.delete(idx);
   const card=document.getElementById('rc-card-'+idx);
@@ -8700,11 +8690,12 @@ function rcToggleSelect(idx,checked){
   rcUpdateSelectedBtn();
 }
 function rcUpdateSelectedBtn(){
-  const bar=document.getElementById('rcSelectionBar');
-  const barText=document.getElementById('rcSelectionBarText');
-  if(bar){
-    bar.style.display=_rcSelected.size?'flex':'none';
-    if(barText)barText.textContent=_rcSelected.size+(_rcSelected.size===1?' card selezionata per la stampa':' card selezionate per la stampa');
+  // "Stampa selezionate (N)" in alto accanto a "Stampa tutte", al posto di "Stampa
+  // evidenziate" (27/09/2026): compare appena c'è almeno una spunta.
+  const btn=document.getElementById('rcPrintSelBtn');
+  if(btn){
+    btn.style.display=_rcSelected.size?'inline-flex':'none';
+    btn.textContent='Stampa selezionate ('+_rcSelected.size+')';
   }
   const summaryEl=document.getElementById('rcSummaryLine');
   if(summaryEl&&Array.isArray(guestsData)){
@@ -8730,8 +8721,8 @@ function rcBuildPreview(g0,idx){const g=_rcPulito(g0);const nights=rcCalcNights(
   const hiText=g.isNew?'Nuova prenotazione':(g.roomChanged?'Camera spostata — era '+g.prevCamera:'');
   const hiLabel=hiText;
   const hiBand=hiLabel?`<div class="rc-gcard-hi-band">${hiIcon} ${hiText}</div>`:'';
-  const card=document.createElement('div');card.className='rc-gcard'+(hiLabel?' hi':'');card.id='rc-card-'+idx;
-  const checkbox=`<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:10px;color:var(--text-dim);flex-shrink:0;"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)" style="cursor:pointer;">Seleziona</label>`;
+  const card=document.createElement('div');card.className='rc-gcard'+(hiLabel?' hi':'')+(_rcSelected.has(idx)?' rc-card-selected':'');card.id='rc-card-'+idx;
+  const checkbox=`<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:10px;color:var(--text-dim);flex-shrink:0;"><input type="checkbox" onchange="rcToggleSelect(${idx},this.checked)" style="cursor:pointer;"${_rcSelected.has(idx)?' checked':''}>Seleziona</label>`;
   card.innerHTML=`<div class="rc-gcard-top"><span class="rc-gcard-label">Registration Card</span><span class="rc-gcard-room">Camera ${_esc(g.camera)}</span></div>${hiBand}<div class="rc-gcard-guest">${_esc(g.nome)}</div><div class="rc-gcard-dates"><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Arrivo</div><div class="rc-gdate-val">${g.checkin||'—'}</div></div><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Partenza</div><div class="rc-gdate-val">${g.checkout||'—'}</div></div><div class="rc-gdate-cell"><div class="rc-gdate-lbl">Notti</div><div class="rc-gdate-val">${nights}</div></div></div><div class="rc-gcard-pills"><span class="rc-gcard-pill">${g.pax} ${g.pax===1?'ospite':'ospiti'}</span><span class="rc-gcard-pill">${tratMap[g.trattamento]||g.trattamento}</span>${origBadge}</div><div class="rc-gcard-footer"><span class="rc-gcard-hint">Clicca per anteprima</span><div style="display:flex;align-items:center;gap:8px;">${checkbox}<button class="btn-print-one" onclick="event.stopPropagation();preparePrint(${idx})">Stampa</button></div></div>`;card.addEventListener('click',()=>rcOpenModal(idx));return card;}
 function rcOpenModal(idx){const g=guestsData[idx];document.getElementById('rcModalTitle').textContent=g.nome+' — Camera '+g.camera;document.getElementById('rcModalBody').innerHTML=`<div class="mp" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:9pt;color:#1A1916;">${rcCardHTML(g)}</div>`;document.getElementById('rcModalPrintBtn').onclick=()=>{rcCloseModal();setTimeout(()=>preparePrint(idx),150);};document.getElementById('rcModalOverlay').classList.add('open');}
 function rcCloseModal(){document.getElementById('rcModalOverlay').classList.remove('open');}

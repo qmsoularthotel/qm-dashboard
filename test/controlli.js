@@ -2683,3 +2683,10 @@ ok('Booking: nome e titolo protetti',           /_esc\(r\["Nome dell'ospite"\]\)
 ok('Booking: risposta della struttura protetta', /_esc\(replyText/.test(String(revRenderList)) && /_esc\(fullText\)/.test(String(revToggleReply)), true);
 ok('Booking: traduzione protetta',              /_esc\(posM\[1\]/.test(String(revTranslate)) && /_esc\(negM\[1\]/.test(String(revTranslate)), true);
 ok('Expedia: nome, titolo, testo protetti',     /_esc\(r\['review_by'\]\)/.test(String(revExpRenderList)) && /_esc\(reviewTxt\)/.test(String(revExpRenderList)) && /_esc\(r\['review_title'\]\)/.test(String(revExpRenderList)), true);
+
+// ── Registration Cards: "Stampa selezionate" al posto di "Stampa evidenziate" (27/09/2026) ──
+sez('Registration Cards: stampa delle selezionate');
+ok('le card nuove/spostate partono selezionate', /_rcSelected=new Set\(sorted\.map\(\(g,i\)=>g\.isNew\|\|g\.roomChanged\?i:-1\)/.test(String(rcRenderCards)), true);
+ok('la spunta rispecchia la selezione',          /_rcSelected\.has\(idx\)\?' checked'/.test(String(rcBuildPreview)), true);
+ok('il pulsante in alto stampa le selezionate',  /rcPrintSelBtn/.test(String(rcUpdateSelectedBtn)) && /Stampa selezionate \('\+_rcSelected\.size/.test(String(rcUpdateSelectedBtn)), true);
+ok('"Stampa evidenziate" non esiste più',        typeof rcPrintHighlighted, 'undefined');
