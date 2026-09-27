@@ -409,6 +409,13 @@ function qmMostraAttivazione(bloccante){
         opz=Object.assign({},opz||{});
         opz.headers=Object.assign({},opz.headers||{},{'X-QM-Pass':_qmPass});
       }
+      // Come in app.js (27/09/2026): una lettura rimasta appesa non blocca per sempre il
+      // giro dei registri. Solo /kv/get: le scritture ritentano da sole.
+      if(u&&u.indexOf(PROXY)===0&&/\/kv\/get(\?|$)/.test(u)&&!(opz&&opz.signal)&&typeof AbortController!=='undefined'){
+        const ac=new AbortController();
+        setTimeout(function(){try{ac.abort();}catch(e){}},20000);
+        opz=Object.assign({},opz||{},{signal:ac.signal});
+      }
     }catch(e){}
     const r=vero(risorsa,opz);
     // Se il Worker rifiuta (porta chiusa e lasciapassare assente o scaduto), il velo torna
@@ -1033,13 +1040,14 @@ ricaricaRegistri();
 // riapparire per un giro un movimento eliminato altrove raddoppia, ma resta il male
 // minore rispetto a perdere un movimento appena registrato (vedi `_cassaUnisci`).
 (function(){
-  let inCorso=false,ultimo=0;
+  let inCorso=false,ultimo=0,iniziato=0;
   const giro=async()=>{
     if(document.visibilityState!=='visible')return;
-    if(inCorso||Date.now()-ultimo<20000)return;
-    inCorso=true;
+    // Un giro fermo da piu' di due minuti non finira' piu': non lo si aspetta (27/09/2026).
+    if((inCorso&&Date.now()-iniziato<120000)||Date.now()-ultimo<20000)return;
+    inCorso=true;const mio=iniziato=Date.now();
     try{await ricaricaRegistri();}catch(e){}
-    inCorso=false;ultimo=Date.now();
+    if(iniziato===mio){inCorso=false;ultimo=Date.now();}
   };
   setInterval(giro,60000);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')giro();});

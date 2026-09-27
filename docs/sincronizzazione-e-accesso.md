@@ -159,6 +159,25 @@ portando il giro di Compass da 7 letture a 1. Richiede però di toccare `worker.
 **ripubblicarlo a mano** (vedi "Pubblicazione del Worker"), quindi non è stato fatto
 insieme a queste due misure, che non richiedono nulla.
 
+### Un giro appeso non ferma la postazione per sempre (27/09/2026)
+
+Caricati Piano e Prenotazioni dal Mac del lavoro, il Mac della collega non riceveva **niente**:
+né arrivi, né registration card, né Piano. Lo Stato del sistema era verde. Sono tutti letti dallo stesso giro, e
+`_qmPolling` saltava ogni giro finché il precedente era "in corso": bastava **una** lettura
+rimasta senza risposta né errore (Mac tornato dallo stop, cambio di rete) per tenerlo in corso
+per sempre. Riprodotto nel browser prima di correggere: una lettura appesa, poi dati nuovi sul
+cloud, e la postazione non li riceveva più.
+
+Due reti:
+- **Tempo massimo sulle letture** (`QM_LETTURA_MAX_MS`, 20 s) nel gancio di `fetch`, solo per
+  `/kv/get` e `/versione` (`_qmLetturaBreve`). Scritture e chiamate all'AI non si toccano: le
+  prime ritentano da sole, le seconde durano anche un minuto.
+- **Giro scavalcato**: fermo da più di due intervalli, il giro successivo parte lo stesso; il
+  giro vecchio, se mai finisse, non libera quello nuovo.
+
+Stessa correzione in `reception.html` (`ricaricaRegistri`). Coperto da 8 controlli, verificati
+con due sabotaggi.
+
 ### Non si ridisegna mai a vuoto — `_qmCambiato`
 
 Il polling segna `_qmCambiato=true` solo nei rami che hanno davvero applicato un dato nuovo (arrivi, turno, pulizie, colazioni, Piano). Senza quel flag si ridisegnerebbe a ogni giro anche quando non è cambiato niente: accordion che si richiudono da soli, pannelli che sfarfallano, e il giorno del turno che torna a oggi mentre lo stai leggendo.

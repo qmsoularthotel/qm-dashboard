@@ -4463,6 +4463,8 @@ function qmMostraAttivazione(bloccante){
   }catch(e){}
 })();
 
+const QM_LETTURA_MAX_MS=20000;
+function _qmLetturaBreve(u){return /\/(kv\/get|versione)(\?|$)/.test(String(u||''));}
 (function(){
   if(typeof window==='undefined'||!window.fetch||window._qmFetchAgganciata)return;
   const vero=window.fetch.bind(window);
@@ -4477,6 +4479,16 @@ function qmMostraAttivazione(bloccante){
       if(_qmPass&&u&&u.indexOf(PROXY)===0){
         opz=Object.assign({},opz||{});
         opz.headers=Object.assign({},opz.headers||{},{'X-QM-Pass':_qmPass});
+      }
+      // Una lettura non resta appesa per sempre (27/09/2026). Un Mac che torna dallo stop
+      // o cambia rete puo' lasciare una richiesta senza risposta ne' errore: il giro che la
+      // aspettava non finiva mai, e quella postazione smetteva di ricevere QUALUNQUE dato,
+      // in silenzio e con lo Stato del sistema verde. Solo le letture brevi: le scritture e
+      // le chiamate all'AI (che durano anche un minuto) non si toccano.
+      if(u&&u.indexOf(PROXY)===0&&_qmLetturaBreve(u)&&!(opz&&opz.signal)&&typeof AbortController!=='undefined'){
+        const ac=new AbortController();
+        setTimeout(function(){try{ac.abort();}catch(e){}},QM_LETTURA_MAX_MS);
+        opz=Object.assign({},opz||{},{signal:ac.signal});
       }
     }catch(e){}
     const r=vero(risorsa,opz);
@@ -17987,20 +17999,23 @@ function _qmMostraPausa(si){
   }catch(e){}
 }
 function _qmPolling(fn,ms){
-  let inCorso=false,ultimo=0;
+  let inCorso=false,ultimo=0,iniziato=0;
   const giro=async()=>{
     if(document.visibilityState!=='visible')return;  // nessuno sta guardando
     // Aperta ma abbandonata: si ferma, e lo dichiara.
     if(_qmInattivaDa()>=QM_INATTIVO_MS){_qmMostraPausa(true);return;}
     _qmMostraPausa(false);
-    if(inCorso)return;                               // il giro precedente non è finito
+    // Il giro precedente non è finito. Ma un giro fermo da piu' di due intervalli non
+    // finira' piu' (una promessa rimasta appesa): aspettarlo voleva dire smettere di
+    // aggiornarsi per sempre. Seconda rete sotto il limite di tempo sulle letture.
+    if(inCorso&&Date.now()-iniziato<ms*2)return;
     // Tornando in primo piano subito dopo un giro non se ne fa un altro: senza questa
     // guardia, alternare due finestre a raffica moltiplicherebbe le letture invece di
     // ridurle, che è l'opposto di quello che serve.
     if(Date.now()-ultimo<ms/3)return;
-    inCorso=true;
+    inCorso=true;const mio=iniziato=Date.now();
     try{await fn();}catch(e){}
-    inCorso=false;ultimo=Date.now();
+    if(iniziato===mio){inCorso=false;ultimo=Date.now();}   // un giro scavalcato non libera quello nuovo
   };
   setInterval(giro,ms);
   try{document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')giro();});}catch(e){}

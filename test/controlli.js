@@ -1198,6 +1198,26 @@ _pFresco()();
 ok('poco sotto la soglia non si mette in pausa', _pGiri, 1);
 _qmUltimoTocco = _pTocco;
 
+// 27/09/2026: una sola lettura rimasta appesa (Mac tornato dallo stop) teneva il giro "in
+// corso" per sempre: quella postazione non riceveva piu' arrivi, registration card e Piano,
+// e lo Stato del sistema restava verde. Riprodotto nel browser prima di correggere.
+(function(){
+  var giri = 0;
+  var tick = _qmPolling(function () { giri++; return new Promise(function () {}); }, 3);  // non finisce mai
+  tick();
+  ok('giro appeso: parte una volta', giri, 1);
+  tick();
+  ok('subito dopo si aspetta ancora', giri, 1);
+  var t = Date.now(); while (Date.now() - t < 10) {}                 // piu' di due intervalli
+  tick();
+  ok('fermo da troppo: il giro riparte lo stesso', giri, 2);
+})();
+ok('le letture dal cloud hanno un tempo massimo', _qmLetturaBreve(PROXY + '/kv/get?key=qm_piano'), true);
+ok('anche il controllo del Worker',              _qmLetturaBreve(PROXY + '/versione'), true);
+ok('le scritture no (ritentano da sole)',        _qmLetturaBreve(PROXY + '/kv/set'), false);
+ok('le chiamate all\'AI no (durano a lungo)',    _qmLetturaBreve(PROXY + '/v1/messages'), false);
+ok('il tempo massimo sta sotto un giro',         QM_LETTURA_MAX_MS < 60000 && QM_LETTURA_MAX_MS >= 10000, true);
+
 // ─────────────────────────────────────────────────────────────────────────────
 sez('Resi biancheria: il taglio del periodo alla consegna');
 // Raimondo passa alle 8:00, prima che le cameriere lavorino: i resi trovati nella
