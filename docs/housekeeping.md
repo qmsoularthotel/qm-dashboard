@@ -246,3 +246,5 @@ le interne nelle 200 nel mese del passaggio, come Operativa HKP.
 **San Liborio resta alle interne** (28/09/2026): dal 21/09/2026 (`HKP_DATA_PASSAGGIO`) la riga LIBORIO conta
 con la SoulArt — card delle cameriere e LIB/ND/RP — prima col Boutique (`_hkpAreaSoulArt(p,row,giorno)`,
 usata da Operativa HKP e dai riepiloghi del Bilanciamento).
+La scritta del riempimento segue lo spostamento (`_hkpCapienza`): 22/11 camere fino ad agosto, "22 (23 dal 21/9)"
+e "11 (10 dal 21/9)" a settembre, 23/10 da ottobre.

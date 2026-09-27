@@ -1025,6 +1025,14 @@ const HKP_MESE_PASSAGGIO='2026-09';
 // San Liborio resta alle cameriere interne: dal giorno del passaggio (21/09/2026) conta con
 // la SoulArt, prima stava col Boutique come le 200. `d` = giorno del mese mostrato.
 const HKP_DATA_PASSAGGIO='2026-09-21';
+// Quante camere per struttura, per la scritta del riempimento: San Liborio passa dal
+// Boutique alla SoulArt il 21/09/2026, quindi nel mese del passaggio si dicono tutte e due.
+function _hkpCapienza(p,soulart){
+  const ym=hkpNCurMon(p),pm=HKP_DATA_PASSAGGIO.slice(0,7);
+  if(ym<pm)return soulart?22:11;
+  if(ym>pm)return soulart?23:10;
+  return soulart?'22 (23 dal 21/9)':'11 (10 dal 21/9)';
+}
 function _hkpAreaSoulArt(p,row,d){
   const n=String(row.name||'').toUpperCase();
   if(n.startsWith('ART'))return true;
@@ -1658,9 +1666,9 @@ function hkpNRenderGrid(p,tab){
       const art=(row,d)=>_hkpAreaSoulArt(p,row,d);
       const passaggio=hkpNCurMon(p)===HKP_MESE_PASSAGGIO;
       const sez=(tit,nota,html)=>html?'<div style="margin-top:16px;"><div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+tit+'</div>'+(nota?'<div style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:8px;">'+nota+'</div>':'')+html+'</div>':'';
-      h+=sez('SoulArt','',hkpMonthlyCameriereHtml(p,art,'al SoulArt',22));
+      h+=sez('SoulArt','',hkpMonthlyCameriereHtml(p,art,'al SoulArt',_hkpCapienza(p,true)));
       const evid=passaggio?(code=>!HKP_DITTA_ESTERNA.has(code)):null;
-      const bou=hkpMonthlyCameriereHtml(p,(row,d)=>!art(row,d),'al Boutique',11,evid);
+      const bou=hkpMonthlyCameriereHtml(p,(row,d)=>!art(row,d),'al Boutique',_hkpCapienza(p,false),evid);
       h+=sez('Boutique · ditta esterna','',bou);
     }else{
       const cardsHtml=hkpMonthlyCameriereHtml(p);
@@ -4128,11 +4136,11 @@ function _renderRoomDivision(idx){
   // dover aprire quella vista. Mostrate come due card cliccabili (chiuse di default,
   // stato ricordato in _hkMonthlyOpen) invece che sempre aperte — "Suddivisione
   // cameriere" sopra resta invece sempre visibile perché usata di continuo.
-  const monthlyCardsSa=hkpMonthlyCameriereHtml('sa',(row,d)=>_hkpAreaSoulArt('sa',row,d),'al SoulArt',22);
+  const monthlyCardsSa=hkpMonthlyCameriereHtml('sa',(row,d)=>_hkpAreaSoulArt('sa',row,d),'al SoulArt',_hkpCapienza('sa',true));
   // Come in Operativa HKP: nel mese del passaggio alla ditta esterna le interne che hanno
   // lavorato nelle 200 stanno in evidenza, in un gruppo a parte.
   const _passaggio=hkpNCurMon('sa')===HKP_MESE_PASSAGGIO;
-  const monthlyCardsBh=hkpMonthlyCameriereHtml('sa',(row,d)=>!_hkpAreaSoulArt('sa',row,d),'al Boutique',11,_passaggio?(c=>!HKP_DITTA_ESTERNA.has(c)):null);
+  const monthlyCardsBh=hkpMonthlyCameriereHtml('sa',(row,d)=>!_hkpAreaSoulArt('sa',row,d),'al Boutique',_hkpCapienza('sa',false),_passaggio?(c=>!HKP_DITTA_ESTERNA.has(c)):null);
   const _hkTile=(key,label,sub)=>`<div onclick="hkMonthlyToggle('${key}')" style="flex:1;background:#fff;border:1px solid var(--border-light);border-radius:9px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:10px;">
     ${_ovIcona('hkp')}
     <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--text);">${label}</div><div style="font-size:10.5px;color:var(--text-dim);">${sub}</div></div>
