@@ -247,3 +247,13 @@ Ogni toggle ha una didascalia breve **accanto** ("Attiva/disattiva app"), non pi
 In alto, accanto a "Stampa tutte", "Stampa selezionate (N)" ha preso il posto di "Stampa
 evidenziate" (e della barra in fondo alla griglia). Le card nuove o con camera spostata partono
 già spuntate, quindi un clic fa quello che faceva prima; le spunte si tolgono o aggiungono a mano.
+
+### App Housekeeping — didascalia "Aggiornato" (28/09/2026)
+
+La riga sotto l'intestazione di `housekeeper.html` mostra **"Aggiornato <giorno · ora>"**,
+calcolato da `hkUltimoAggiornamento()`: il segnatempo **più recente** fra Piano
+(`qm_piano._ts`), Prenotazioni (`qm_arriviData._ts`) e conteggi SA/BH (`qm_hk_soul/bout._ts`).
+Prima mostrava solo "SA: … · BH: …" dai conteggi, che `_hkSalvaDerivato` in `app.js`
+**di proposito** non riscrive se i numeri non cambiano (risparmio scritture): la data restava
+ferma al primo caricamento e le cameriere credevano l'app non aggiornata. Non si "risolve"
+facendo riscrivere i conteggi: si guarda il dato più fresco. Controllo in `test/esegui.sh`.

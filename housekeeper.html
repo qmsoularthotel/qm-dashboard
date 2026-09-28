@@ -450,7 +450,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-25.1';
+const QM_APP_BUILD='2026-09-28.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -517,6 +517,18 @@ function fmtDataTs(ts){
   return GG_SHORT[d.getDay()]+' '+d.getDate()+' '+MM_SHORT[d.getMonth()]+' · '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
 
+// Quando e' arrivato l'ultimo dato: il PIU' RECENTE fra Piano, Prenotazioni e conteggi.
+// Prima la didascalia mostrava il segnatempo dei conteggi SA/BH (qm_hk_soul/bout), che
+// Compass di proposito NON riscrive se i numeri non cambiano (_hkSalvaDerivato, per non
+// consumare scritture): restava fermo al primo caricamento e le cameriere credevano che
+// l'app non si aggiornasse, anche se Piano e Prenotazioni erano freschi (28/09/2026).
+function hkUltimoAggiornamento(){
+  const t=[pianoData&&pianoData._ts,_arriviTs,soulData&&soulData._ts,boutData&&boutData._ts]
+    .map(x=>+x||0);
+  const m=Math.max.apply(null,t);
+  return m>0?m:null;
+}
+
 // Clock
 function tick(){
   const n=new Date();
@@ -546,6 +558,7 @@ function sameDate(d1,d2){
 }
 const MATARESE=new Set(['Art 1','Art 2','Art 3','Art 4','Art 5','Art 6','Art 7','Art 10','Art 11','Art 12','Art 22']);
 let _arriviBooking = new Set(); // camere Booking.com oggi (arrivi + fermate + partenze)
+let _arriviTs = null;            // quando sono stati caricati gli arrivi (file Prenotazioni)
 
 async function _loadArriviBooking(){
   try{
@@ -555,6 +568,7 @@ async function _loadArriviBooking(){
     if(!j||!j.value)return;
     const ad=JSON.parse(j.value);
     if(!ad)return;
+    _arriviTs=ad._ts||null;
     const norm=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
     const isBooking=x=>/booking/i.test(x.origine||'');
     (ad.arrivi||[]).forEach(a=>{ if(isBooking(a)) _arriviBooking.add(norm(a.camera)); });
@@ -648,14 +662,10 @@ function renderDay(){
   document.getElementById('navDaySub').textContent=isToday?'Oggi':isPast?'Passato':'Prossimo';
 
   // Timestamp nell'header
-  const sTs=fmtDataTs(soulData&&soulData._ts);
-  const bTs=fmtDataTs(boutData&&boutData._ts);
   const tsEl=document.getElementById('hDataTs');
   if(tsEl){
-    const parts=[];
-    if(sTs)parts.push('SA: '+sTs);
-    if(bTs)parts.push('BH: '+bTs);
-    tsEl.textContent=parts.length?'↑ '+parts.join(' · '):'';
+    const t=fmtDataTs(hkUltimoAggiornamento());
+    tsEl.textContent=t?'Aggiornato '+t:'';
   }
   let html='';
   if(isToday)html+=`<div class="today-badge">📅 OGGI</div>`;

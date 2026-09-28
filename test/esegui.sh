@@ -469,6 +469,18 @@ if ! grep -q 'key>oggi' breakfast.html; then
   BKF_KO=1
 fi
 
+# Didascalia "Aggiornato" dell'app Housekeeping: deve prendere il dato PIU' RECENTE (Piano,
+# Prenotazioni), non il segnatempo dei conteggi SA/BH, che Compass di proposito non
+# riscrive se i numeri non cambiano. Restava fermo al primo caricamento e le cameriere
+# credevano che l'app non si aggiornasse (28/09/2026).
+if ! grep -q 'pianoData&&pianoData._ts' housekeeper.html || ! grep -q '_arriviTs=ad._ts' housekeeper.html \
+   || ! grep -q 'fmtDataTs(hkUltimoAggiornamento())' housekeeper.html; then
+  echo ""
+  echo "  ERRORE      housekeeper.html: la didascalia \"Aggiornato\" non guarda piu' l'ultimo"
+  echo "              caricamento (Piano/Prenotazioni). Mostrerebbe di nuovo una data vecchia."
+  BKF_KO=1
+fi
+
 # Worker non pubblicato: worker.js si pubblica a mano su Cloudflare (vedi CLAUDE.md, la
 # pubblicazione automatica è stata valutata e scartata). Una correzione può quindi essere
 # scritta, versionata e non attiva — successo il 21/08/2026, per ore, senza alcun segnale.
