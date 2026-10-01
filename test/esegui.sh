@@ -33,7 +33,6 @@ console.log("sintassi di app.js: ok");
 var ambiente = leggi("test/ambiente.js");
 var app      = leggi("app.js").replace(/^(\s*)(const|let)\s/gm, "$1var ");
 var worker   = leggi("worker.js")
-  .replace("import { connect } from '"'"'cloudflare:sockets'"'"';", "var connect=function(){};")
   .replace("export default {", "var _workerFetch = {")
   .replace(/^(\s*)(const|let)\s/gm, "$1var ");
 // biancheria-galleria.html e'"'"' un'"'"'app a se, fuori da Compass e fuori dal cloud: non ha
@@ -46,7 +45,7 @@ var gInizio  = gHtml.lastIndexOf("<script>", gFine);
 var galleria = gHtml.slice(gInizio + 8, gFine)
   .replace(/\x27use strict\x27;/, "")
   .replace(/^(\s*)(const|let)\s/gm, "$1var ");
-var casi     = leggi("test/controlli.js") + "\n" + leggi("test/galleria.js") + "\n" + leggi("test/mime.js");
+var casi     = leggi("test/controlli.js") + "\n" + leggi("test/galleria.js");
 try {
   eval(ambiente + "\n" + app + "\n" + worker + "\n" + galleria + "\n" + casi);
   console.log(KO > 0 ? "ESITO:FALLITO" : "ESITO:OK");

@@ -6,7 +6,7 @@
 
 `§§ SINCRONIZZAZIONE CONTINUA` in `app.js`. Nato dalla richiesta: *"Compass deve dare risultati affidabili ed essere sempre aggiornato indipendentemente da quale postazione è accesa o spenta. Non posso chiedere ai collaboratori di uscire e rientrare."*
 
-Prima Compass restava fermo a quello che aveva letto **all'avvio**: chi caricava un PDF su un PC lo vedeva, su tutti gli altri la pagina mostrava i dati vecchi finché qualcuno non premeva Cmd+R. E una copia ferma da ore non è solo scomoda: è **il punto di partenza di ogni sovrascrittura** (vedi l'incidente pre-stay del 22/08/2026). Tenere le postazioni fresche è una misura di sicurezza, non una comodità.
+Prima Compass restava fermo a quello che aveva letto **all'avvio**: chi caricava un PDF su un PC lo vedeva, su tutti gli altri la pagina mostrava i dati vecchi finché qualcuno non premeva Cmd+R. E una copia ferma da ore non è solo scomoda: è **il punto di partenza di ogni sovrascrittura** (vedi l'incidente del 22/08/2026). Tenere le postazioni fresche è una misura di sicurezza, non una comodità.
 
 ### Tre livelli
 
@@ -20,7 +20,7 @@ Prima Compass restava fermo a quello che aveva letto **all'avvio**: chi caricava
 
 ### Salvataggio sicuro degli archivi a elenchi — DVR, Biancheria, Resi
 
-`_qmSalvaArchivio` / `_qmLeggiArchivio` / `_qmFondiElenchi` nella stessa sezione. I tre archivi hanno la **stessa forma**: un oggetto le cui proprietà sono elenchi di record con `id` — `{righe:[…],ritiri:[…]}`, `{consumi:[…],giri:[…]}`, `{geriart:{visite:[…],dipendenti:[…]}}` — più qualche campo che elenco non è (`tipologie` dei resi). E avevano tutti lo stesso difetto dei pre-stay: si scriveva l'oggetto **intero** con la copia che quella postazione si portava dietro.
+`_qmSalvaArchivio` / `_qmLeggiArchivio` / `_qmFondiElenchi` nella stessa sezione. I tre archivi hanno la **stessa forma**: un oggetto le cui proprietà sono elenchi di record con `id` — `{righe:[…],ritiri:[…]}`, `{consumi:[…],giri:[…]}`, `{geriart:{visite:[…],dipendenti:[…]}}` — più qualche campo che elenco non è (`tipologie` dei resi). E avevano tutti lo stesso difetto: si scriveva l'oggetto **intero** con la copia che quella postazione si portava dietro.
 
 Qui non è mai successo perché li tocca praticamente solo il QM da una postazione, ma la forma del difetto era identica.
 
@@ -98,7 +98,7 @@ Due misure, entrambe solo lato client (nessuna modifica al Worker):
 Insieme portano il consumo a vuoto sotto il 10% di prima.
 
 **Perché non contraddice la regola per cui una copia ferma è pericolosa** (incidente
-pre-stay del 22/08/2026): una scheda nascosta non la sta usando nessuno, e il giro riparte
+del 22/08/2026): una scheda nascosta non la sta usando nessuno, e il giro riparte
 prima che torni utilizzabile. Il rischio è una copia *visibile* e vecchia, non una copia
 nascosta.
 
@@ -121,7 +121,7 @@ di poter fare qualunque cosa. Il risveglio è registrato in `_qmPolling` e agisc
 mentre si è in pausa**, altrimenti ogni clic della giornata proverebbe a fare un giro.
 
 **La pausa non è silenziosa**, e non è un dettaglio estetico: una copia visibile e vecchia è
-il punto di partenza di ogni sovrascrittura (incidente pre-stay del 22/08/2026). Compare una
+il punto di partenza di ogni sovrascrittura (incidente del 22/08/2026). Compare una
 pastiglia ambra in basso — *"Compass in pausa · i dati non si stanno aggiornando — tocca lo
 schermo per riprendere"*. Un aggiornamento che si ferma senza dirlo è peggio del consumo che
 si sta risparmiando.
@@ -150,7 +150,7 @@ troppo ravvicinati, e i controlli girano tutti dentro lo stesso millisecondo.
 
 **Il tetto più stretto è quello delle scritture: 1.000 al giorno**, contro 100.000 letture.
 Il polling non scrive mai, quindi non c'è stato problema finora, ma un giro Culligan lungo
-(`_persist()` a ogni tocco) o una serata di pre-stay ci si avvicinano. Se un domani
+(`_persist()` a ogni tocco) ci si avvicina. Se un domani
 l'avviso riguardasse le scritture, è lì che va guardato — non nel polling.
 
 **Se non bastasse**, il passo successivo è una chiave **manifest** con i timestamp di tutte
@@ -276,10 +276,10 @@ Cmd+A → incolla → Deploy.
 è il rapporto fra rischio e guadagno.
 
 Il Worker non è solo codice. Ha collegato il binding KV `QM_STORAGE` — cioè la
-sincronizzazione fra dispositivi, su cui poggia **tutto** Compass — e circa quattordici
-variabili d'ambiente impostate dal pannello (`SMTP_*`, `IMAP_*`, `PRESTAY_KEY`,
-`ANTHROPIC_API_KEY`, `RESEND_KEY`…). Pubblicando con `wrangler` quella configurazione va
-ridichiarata in un `wrangler.toml`: un errore lì non rompe le mail, rompe la
+sincronizzazione fra dispositivi, su cui poggia **tutto** Compass — e diverse
+variabili d'ambiente impostate dal pannello (`ANTHROPIC_API_KEY`, `QM_AUTH_SECRET`…).
+Pubblicando con `wrangler` quella configurazione va ridichiarata in un `wrangler.toml`: un
+errore lì rompe la
 sincronizzazione, e con essa l'intera applicazione.
 
 Il guadagno sarebbe risparmiare un copia-incolla che capita circa una volta al mese.
@@ -387,14 +387,13 @@ per persona sono stati discussi e rimandati.
 
 - **`registration-galleria.html`** non usa il cloud in nessun modo (vedi la sua sezione): non
   ha lasciapassare e non gli serve.
-- **Il proxy AI** (tutto ciò che non è `/kv/` né `/prestay/`) è **chiuso dal 05/09/2026**,
+- **Il proxy AI** (tutto ciò che non è `/kv/`) è **chiuso dal 05/09/2026**,
   con lo stesso interruttore `QM_AUTH_OBBLIGATORIA`. Non custodisce dati degli ospiti, ma gira
   richieste a carico di `ANTHROPIC_API_KEY`: senza controllo chiunque conosca l'indirizzo può
   spendere soldi altrui. Il gancio `fetch` di Compass e delle app aggiunge ora `X-QM-Pass` a
   **ogni** richiesta al Worker, non solo a quelle `/kv/` — prima l'analisi dei PDF partiva
   senza lasciapassare. **Ordine di pubblicazione**: prima il sito, poi il Worker; al
   contrario, una pagina non ancora ricaricata perde l'analisi dei PDF finché non ricarica.
-- **`/prestay/*`** era già protetto da `PRESTAY_KEY` + lista di origini ammesse.
 - **Il codice della Galleria** (`bg.…`, dal 12/09/2026) passa dal cancello di `/kv/` ma apre
   **solo** `/kv/get`/`/kv/set` su chiavi `bg_*` (`permessoGalleria`). Vedi "Gestione Biancheria".
 
@@ -564,8 +563,8 @@ direbbe "da ripubblicare" anche dopo una pubblicazione fatta, cioè un allarme c
 e che si impara a ignorare. Verificato disallineandola di proposito: scatta.
 
 **Se il Worker non dichiara `portaChiusa`** (versione precedente al 06/09/2026) la riga dice
-*"non dichiarato"*, non *"aperto"*: un'assunzione scritta come un fatto è esattamente l'errore
-dell'avviso pre-stay sul mittente Booking.
+*"non dichiarato"*, non *"aperto"*: un'assunzione scritta come un fatto è un errore già fatto
+in passato.
 
 #### Il registro delle scritture non arrivate — sospese, non un contatore (fix 09/09/2026)
 
@@ -728,7 +727,7 @@ postazione con la copia vecchia la cancella.
 
 Stato trovato: porta chiusa (`/versione` → `portaChiusa:true`), lasciapassare firmato HMAC
 con scadenza, codice `bg.` limitato alle chiavi `bg_*`, nessun segreto nel repository né
-nella sua storia, `/prestay/*` dietro origine + `PRESTAY_KEY`, proxy AI dietro lasciapassare.
+nella sua storia proxy AI dietro lasciapassare.
 
 Corretto:
 - **Galleria → lasciapassare del QM.** `biancheria-galleria.html` sul PC del QM usa `qm_pass`
@@ -741,8 +740,7 @@ Corretto:
   Booking (nome, titolo, positivo, negativo, risposta, traduzione) e Expedia (nome) finivano
   in `innerHTML` senza `_esc`: un ospite poteva scrivere nella recensione un `<img onerror>`
   che, al caricamento del CSV, girava su tutte le postazioni col lasciapassare. Stessa cosa
-  per la data della mail di risposta pre-stay (intestazione scelta da chi scrive) e per i
-  nomi degli ospiti dai PDF del PMS (colazioni, arrivi). Ora: `_esc` su quei campi;
+  per i nomi degli ospiti dai PDF del PMS (colazioni, arrivi). Ora: `_esc` su quei campi;
   **ogni PDF** passa da `_pdfApri` → `_pdfSenzaCodice`, che toglie `< > " \`` dal testo
   estratto; i JSON letti dall'AI (arrivi, turni, colazioni, DDT) passano da
   `_qmPulisciTesti`. Controlli "Sicurezza: testi esterni senza codice" in `test/controlli.js`.

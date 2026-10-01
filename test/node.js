@@ -21,10 +21,8 @@ console.log('sintassi di app.js: ok');
 //    non sarebbero raggiungibili dai controlli: si convertono in var.
 const ambiente = leggi('test/ambiente.js');
 const app      = leggi('app.js').replace(/^(\s*)(const|let)\s/gm, '$1var ');
-// worker.js e' un modulo (import/export): si neutralizzano le due righe e si carica come
-// gli altri. Serve per i controlli sulla lettura delle risposte (test/mime.js).
+// worker.js e' un modulo (export): si neutralizza la riga e si carica come gli altri.
 const worker   = leggi('worker.js')
-  .replace("import { connect } from 'cloudflare:sockets';", 'var connect=function(){};')
   .replace('export default {', 'var _workerFetch = {')
   .replace(/^(\s*)(const|let)\s/gm, '$1var ');
 // biancheria-galleria.html e' un'app a se', fuori da Compass e fuori dal cloud: non ha
@@ -37,7 +35,7 @@ const gInizio = galleriaHtml.lastIndexOf('<script>', gFine);
 const galleria = galleriaHtml.slice(gInizio + 8, gFine)
   .replace(/\x27use strict\x27;/, '')
   .replace(/^(\s*)(const|let)\s/gm, '$1var ');
-const casi     = leggi('test/controlli.js') + '\n' + leggi('test/galleria.js') + '\n' + leggi('test/mime.js');
+const casi     = leggi('test/controlli.js') + '\n' + leggi('test/galleria.js');
 
 try {
   // indirect eval: esegue nello scope globale, così le funzioni restano raggiungibili

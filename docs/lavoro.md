@@ -126,9 +126,7 @@ controlli: se se ne modifica una, aggiornare anche l'altra.
 Solo i **calcoli**, non l'aspetto. Il criterio è: un errore di impaginazione si vede subito
 guardando lo schermo, un errore nei numeri no — resta plausibile e può passare inosservato
 per mesi. Coperti quindi: colazioni e periodo dell'export, struttura dedotta dall'alloggio,
-arrivi/partenze/fermate, multicamera, abbinamento delle schede al reimport, canale della
-prenotazione, periodo della biancheria, anno del turno, nomi del turno, mittente ammesso
-dal relay Booking, fusione dei pre-stay col cloud, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
+arrivi/partenze/fermate, periodo della biancheria, anno del turno, nomi del turno, unione dei registri di cassa, fusione degli archivi a elenchi, diagnosi della calibrazione, periodi annunciati dai suggerimenti di bilanciamento, confronto, dettaglio per tipologia e andamento dello storico biancheria, cancello del polling a
 scheda nascosta, separatore dell'export Expedia, conteggio delle mosse annunciato dalle chip, ancoraggio della giacenza biancheria al conteggio, registro delle scritture non arrivate, elenco delle postazioni che hanno scritto, pausa della finestra abbandonata, calendari e periodo dell'app biancheria della Galleria, codice della Galleria limitato alle chiavi `bg_*`, fusione fra i due PC della Galleria, riallineamento di un totale congelato sbagliato. 732 controlli.
 
 Il cancello del polling è l'unica eccezione al "solo i calcoli": non è un numero, ma un
@@ -157,14 +155,14 @@ repository non deve finire nessun dato di ospiti reali.
 ### Il riepilogo finale va tenuto in fondo (fix 03/09/2026)
 
 La riga `TUTTI I CONTROLLI SUPERATI (N)` stava a **metà** di `controlli.js`: tutto ciò che
-veniva aggiunto sotto — e `test/mime.js`, caricato dopo — restava fuori dal conteggio.
+veniva aggiunto sotto — e i file caricati dopo — restava fuori dal conteggio.
 Diceva `(351)` con 65 controlli non ancora eseguiti, e continuava a dirlo anche quando uno
 di quelli falliva. L'**esito** (`ESITO:OK`/`FALLITO`, l'unica cosa che `esegui.sh` legge per
 il codice di uscita) è sempre stato corretto perché si calcola alla fine: a mentire era solo
 la riga che legge una persona.
 
 Ora è la funzione `riepilogo()`, chiamata dall'**ultima riga dell'ultimo file caricato**
-(oggi `test/mime.js`). Aggiungendo un altro file di controlli, spostare lì la chiamata.
+(oggi `test/galleria.js`). Aggiungendo un altro file di controlli, spostare lì la chiamata.
 
 ### Verificata sabotando il codice
 

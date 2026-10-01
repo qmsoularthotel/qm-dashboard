@@ -135,7 +135,7 @@ Difetti noti del file originale, **non toccati** perché è la loro app e funzio
 export — da sistemare solo se lo chiedono:
 - il parser è una `RegExp` sul testo concatenato: un nome andato a capo nell'export lo
   spezzerebbe (Compass per lo stesso motivo legge le colonne per posizione, vedi
-  `_psParsePdfArrivi`);
+  `_prenParse`);
 - l'anno si prende dall'intestazione del PDF e vale per arrivo **e** partenza: un soggiorno
   a cavallo di capodanno (30/12 → 02/01) darebbe notti negative, quindi `—`.
 

@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<link rel="stylesheet" href="style.css?v=272">
+<link rel="stylesheet" href="style.css?v=274">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='475-20260927';
+  const V='477-20261001';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -87,7 +87,6 @@
 
       <div class="nav-section">Operativo Quotidiano</div>
       <div class="nav-item" onclick="setView('registrazione',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="9" r="2.5"/><path d="M8 17c0-2 2-3 4-3s4 1 4 3"/></svg></span></span>Registration Cards</div>
-      <div class="nav-item" onclick="setView('prestay',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span></span>Messaggi Pre-stay</div>
       <div class="nav-item" onclick="setView('controllo-mattino',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C9 7 5 11.5 5 15.5A7 7 0 0 0 19 15.5C19 11.5 15 7 12 2z"/></svg></span></span>Distribuzione Culligan</div>
       <div class="nav-group-header" id="bkfGroupToggle" onclick="toggleBkfGroup()">
         <span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H8a4 4 0 0 1-4-4z"/><path d="M17 9h2a2 2 0 0 1 0 4h-2"/><path d="M6 5c0-.8.5-1 1-2M10 5c0-.8.5-1 1-2"/></svg></span></span>
@@ -175,7 +174,7 @@
               <div class="uc-sub" id="uc-arrivi-sub">Non caricato</div>
               <span class="uc-badge" id="uc-arrivi-badge" style="display:none;">▾</span>
             </div>
-            <div class="uc-slot" id="uc-pren" onclick="ucToggle('pren')" title="Export Prenotazioni del PMS: arrivi, colazioni e pre-stay in un file solo">
+            <div class="uc-slot" id="uc-pren" onclick="ucToggle('pren')" title="Export Prenotazioni del PMS: arrivi e colazioni in un file solo">
               <input type="file" id="prenFileInput" accept="application/pdf,.pdf" style="display:none">
               <span class="uc-dot" id="uc-pren-dot"></span>
               <span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v4M16 4v4"/><path d="M7 14h4M7 17h7"/></svg></span></span>
@@ -217,7 +216,7 @@
             <div class="upload-ts" id="arriviTs"></div>
           </div>
           <div class="uc-panel" id="uc-pren-panel">
-            <div class="uc-feeds-line">→ Arrivi · Colazioni · Messaggi Pre-stay</div>
+            <div class="uc-feeds-line">→ Arrivi · Colazioni</div>
             <div class="upload-box" id="prenUploadBox">
               <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
               <div class="ub-title">Prenotazioni</div>
@@ -230,14 +229,6 @@
         </div>
         <div class="uc-row">
           <div class="uc-row-cards">
-            <div class="uc-slot" id="uc-prestay" onclick="ucToggle('prestay')" title="Lista arrivi per i messaggi pre-stay">
-              <input type="file" id="prestayFileInput" accept="application/pdf,.pdf" style="display:none">
-              <span class="uc-dot" id="uc-prestay-dot"></span>
-              <span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span></span>
-              <div class="uc-label">Arrivi<br>Pre-stay</div>
-              <div class="uc-sub" id="uc-prestay-sub">Non caricato</div>
-              <span class="uc-badge" id="uc-prestay-badge" style="display:none;">▾</span>
-            </div>
             <div class="uc-slot" id="uc-piano" onclick="ucToggle('piano')" title="Piano Settimanale">
               <input type="file" id="pianoFileInput" accept="application/pdf" style="display:none">
               <span class="uc-dot" id="uc-piano-dot"></span>
@@ -249,17 +240,6 @@
             <div class="uc-slot uc-slot-brand">
               <img src="img/compass-stella.png" class="uc-brand-img" alt="Compass">
             </div>
-          </div>
-          <div class="uc-panel" id="uc-prestay-panel">
-            <div class="uc-feeds-line">→ Messaggi Pre-stay (nomi e strutture)</div>
-            <div class="upload-box" id="prestayUploadBox">
-              <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-              <div class="ub-title">Arrivi Pre-stay</div>
-              <div class="ub-sub">Lista arrivi del PMS, di norma fra 2 giorni</div>
-              <span class="ub-formats">.pdf</span>
-            </div>
-            <div class="turni-status" id="prestayStatus"></div>
-            <div class="upload-ts" id="prestayTs"></div>
           </div>
           <div class="uc-panel" id="uc-piano-panel">
             <div class="uc-feeds-line">→ Culligan · Compass Housekeeper (smistamento camere)</div>
@@ -1661,15 +1641,6 @@
           <div class="panel-body" id="reception-content"></div>
         </div>
       </div>
-      <div class="view" id="view-prestay">
-        <div class="panel">
-          <div class="panel-header">
-            <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
-            <span class="panel-title">Messaggi Pre-stay — ospiti in arrivo</span>
-          </div>
-          <div class="panel-body" id="prestay-content"></div>
-        </div>
-      </div>
       <div class="view" id="view-turnazione">
         <div class="panel">
           <div class="panel-header">
@@ -1724,7 +1695,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=994-20260927"></script>
+<script src="app.js?v=996-20261001"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

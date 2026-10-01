@@ -59,7 +59,7 @@ function ucToggle(key){
   if(!panel)return;
   const isOpen=panel.classList.contains('open');
   // Chiudi tutti gli altri
-  ['turno','pren','arrivi','prestay','pul','bkf','soul','bout','piano'].forEach(k=>{
+  ['turno','pren','arrivi','pul','bkf','soul','bout','piano'].forEach(k=>{
     if(k===key)return;
     const p=document.getElementById('uc-'+k+'-panel');
     const s=document.getElementById('uc-'+k);
@@ -86,7 +86,7 @@ function ucSetState(key,state,sub,silent){
     slot.classList.add('loaded');
     if(!silent){
       // Fisarmonica: chiudi tutti, apri questo
-      ['turno','pren','arrivi','prestay','pul','bkf','soul','bout','piano'].forEach(k=>{
+      ['turno','pren','arrivi','pul','bkf','soul','bout','piano'].forEach(k=>{
         const p=document.getElementById('uc-'+k+'-panel');
         const s=document.getElementById('uc-'+k);
         if(p){p.classList.remove('open');}
@@ -951,8 +951,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{kvSet('qm_weekData',null).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={sistema:'Stato del sistema',sicurezza:'Sicurezza e copie',overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Applicazioni stand alone',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Reso Biancheria',biancheria:'Consumo Biancheria',giacenza:'Giacenza Biancheria',prestay:'Messaggi Pre-stay'};
-const breadcrumbs={sistema:'Pannello di Controllo',sicurezza:'Pannello di Controllo',miniapp:'Pannello di Controllo',overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',biancheria:'Housekeeping',giacenza:'Housekeeping',prestay:'Operativo Quotidiano'};
+const pageTitles={sistema:'Stato del sistema',sicurezza:'Sicurezza e copie',overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Applicazioni stand alone',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Reso Biancheria',biancheria:'Consumo Biancheria',giacenza:'Giacenza Biancheria'};
+const breadcrumbs={sistema:'Pannello di Controllo',sicurezza:'Pannello di Controllo',miniapp:'Pannello di Controllo',overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',biancheria:'Housekeeping',giacenza:'Housekeeping'};
 // §§ HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore)
 // Operativa HKP: solo SoulArt. Art Resort è stato rimosso (17/08/2026) — non più
 // necessario, quindi via anche la scelta della struttura dal menu.
@@ -2004,9 +2004,6 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='resi-biancheria'){try{resiLoad();}catch(e){}}
   if(id==='biancheria'){try{biaLoad();}catch(e){}}
   if(id==='giacenza'){try{giacLoad();}catch(e){}}
-  // Si mostra subito ciò che c'è, poi si rilegge il cloud: chi apre la vista deve vedere
-  // anche quello che ha scritto un'altra postazione, senza aspettare e senza schermo vuoto.
-  if(id==='prestay'){try{prestayRender();}catch(e){}try{_psSincronizza().then(ok=>{if(ok)prestayRender();});}catch(e){}}
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
   // .staff-area-mirror) — ririchiamato qui solo per popolare lo specchio se la vista
   // viene aperta prima che Overview l'abbia mai fatto in questa sessione.
@@ -4426,7 +4423,7 @@ const QM_BACKUP_FISSE=[
   // Mancavano fino al 06/09/2026 — reception.html li scrive con una funzione sua
   // (kvSetLocal), che il controllo automatico non seguiva.
   'qm_cassa_fondo','qm_cassa_incasso','qm_cassa_rimossi',
-  'qm_prestay','qm_prestay_tpl','qm_rev_sent','qm_rev_calib',
+  'qm_rev_sent','qm_rev_calib',
   'qm_tp_seen_until','qm_app_status','qm_customDate',
   // Bilanciamento: spostamenti segnati come fatti nel PMS e partenze del mese (27/09/2026).
   'qm_hk_fatte','qm_hk_mese',
@@ -4503,7 +4500,7 @@ async function qmEsportaArchivio(btn){
 // codice e server possono divergere: fino a oggi se ne accorgeva solo test/esegui.sh, cioe'
 // nessuno mentre lavora. Un controllo in esegui.sh verifica che questa costante combaci con
 // WORKER_VERSIONE in worker.js, altrimenti direbbe "da ripubblicare" per sempre.
-const WORKER_VERSIONE_ATTESA='2026-09-12a';
+const WORKER_VERSIONE_ATTESA='2026-10-01a';
 // ── ERRORI DEL PROGRAMMA — raccolti qui, perche' la console non la apre nessuno ──────
 // Quando qualcosa va storto nel codice, il messaggio finisce nella console del browser: il
 // QM non la apre (giustamente) e quindi un guasto puo' restare invisibile finche' non si
@@ -4565,7 +4562,7 @@ function _qmVersioneApp(){
   }catch(e){return'versione ignota';}
 }
 // Una scheda lasciata aperta da ieri e' il punto di partenza di ogni sovrascrittura (vedi
-// l'incidente pre-stay del 22/08/2026): saperlo a colpo d'occhio vale piu' di un orario.
+// l'incidente del 22/08/2026): saperlo a colpo d'occhio vale piu' di un orario.
 function _qmDaQuandoAperto(){
   const min=Math.floor((Date.now()-_QM_APERTO_DA)/60000);
   if(min<60)return min<=1?'ora':'da '+min+' minuti';
@@ -4951,11 +4948,11 @@ let _kvFallite={};                      // chiave → quante volte non e' arriva
 //   sospese → non ancora arrivate: e' la cosa azionabile, ed e' l'unica che fa rosso
 //   risolte → non riuscite al primo colpo e poi arrivate: resta la traccia, senza allarme
 //
-// I nomi delle chiavi non si mostrano grezzi: `qm_prestay` non dice niente a chi legge, e
+// I nomi delle chiavi non si mostrano grezzi: `qm_pulData` non dice niente a chi legge, e
 // deve poter capire cosa ricaricare senza chiedere a nessuno.
 const KV_NOMI_DATI={
   qm_arriviData:'Arrivi del giorno', qm_bkfData:'Colazioni', qm_piano:'Piano settimanale',
-  qm_weekData:'Turno', qm_rcGuests:'Registration card', qm_prestay:'Messaggi pre-stay',
+  qm_weekData:'Turno', qm_rcGuests:'Registration card',
   qm_pulData:'Report pulizie', qm_hk_soul:'Housekeeping SoulArt', qm_hk_bout:'Housekeeping Boutique',
   qm_biancheria:'Consumo biancheria', qm_resi_biancheria:'Reso biancheria',
   qm_giacenza:'Giacenza biancheria', qm_cassa_fondo:'Cassa — fondo', qm_cassa_incasso:'Cassa — incasso',
@@ -5763,7 +5760,7 @@ document.querySelector('.content').addEventListener('scroll',function(){
       // Si FONDE, non si sostituisce: se il cloud è già stato impoverito da un'altra
       // postazione, sostituire cancellerebbe anche l'ultima copia buona rimasta qui —
       // ed è esattamente così che il 23/08/2026 sono sparite le osservazioni di tutte le
-      // strutture. Vale la stessa cautela già adottata per le schede pre-stay.
+      // strutture.
       try{
         const rc=await fetch(PROXY+'/kv/get?key='+REV_CALIB_KEY,{cache:'no-store'});
         const rj=await rc.json();
@@ -5782,23 +5779,6 @@ document.querySelector('.content').addEventListener('scroll',function(){
             kvSet(REV_CALIB_KEY,fuso).catch(()=>{});
         }
       }catch(e){}
-      // Pre-stay: contatti ospiti e stato invii, più i testi dei messaggi. Il cloud è la
-      // fonte così chi scrive dalla reception e chi controlla dall'ufficio vedono lo stesso
-      // stato e non si mandano doppioni.
-      // Le schede si FONDONO, non si sostituiscono. Sostituire ha un costo nascosto
-      // scoperto il 22/08/2026: se il cloud è già stato impoverito, l'avvio riscrive anche
-      // il localStorage e cancella l'ultima copia buona rimasta su quella postazione —
-      // che è esattamente come è andata persa la prova di quanto era stato inviato.
-      try{await _psSincronizza();}catch(e){}
-      try{
-        const r=await fetch(PROXY+'/kv/get?key='+PRESTAY_TPL_KEY,{cache:'no-store'});
-        const j=await r.json();
-        if(j.value){_prestayTpl=JSON.parse(j.value)||{};localStorage.setItem(PRESTAY_TPL_KEY,j.value);}
-      }catch(e){}
-      try{if(document.getElementById('prestay-content'))prestayRender();}catch(e){}
-      // Gli arrivi possono arrivare dal cloud (importati su un altro PC): anche in quel
-      // caso lo slot dell'Upload Center deve risultare caricato.
-      try{prestaySetLoaded(true);}catch(e){}
       for(const p of ['sa','bh','sl','pr','ms','ar','sb']){
         try{
           let csvText=localStorage.getItem('qm_rev_'+p);
@@ -8916,7 +8896,7 @@ function rcAggiornaDaArrivi(sameDayAsPrev){
     const year=arriviData.data?parseInt(arriviData.data.split('/').pop())||new Date().getFullYear():new Date().getFullYear();
     const toGuest=a=>({
       camera:a.camera,
-      nome:_psNomeUmano(a.ospite||''),
+      nome:_qmNomeUmano(a.ospite||''),
       pax:parseInt(a.pax)||1,
       trattamento:a.trattamento||'BB',
       checkin:a.arrivo?rcFmtDate(a.arrivo,year):'',
@@ -9778,7 +9758,7 @@ function renderArriviModal(filtStruttura='all', filtTratt='all', filtOrigine='al
 
 // §§ INVENTARIO DETERSIVI
 // Icone a linea dell'Inventario (26/09/2026): stesso disegno delle icone di Compass
-// (PS_ICON_*, RECEPTION_ICON_*), colore dal testo intorno, al posto delle emoji.
+// (RECEPTION_ICON_*), colore dal testo intorno, al posto delle emoji.
 function _invIco(n,px){
   const z=px||14;
   const P={
@@ -13069,163 +13049,12 @@ function ddtPrintMonthReport(ym){
   w.document.close();
   w.onload=()=>w.print();
 }
-// §§ PRE-STAY — MESSAGGI AGLI OSPITI IN ARRIVO FRA 2 GIORNI
-// Ogni giorno si scrive agli ospiti che arrivano fra due giorni. I contatti (mail,
-// telefono) stanno sul PMS e NON sono esportabili: si inseriscono a mano.
-//
-// GLI OSPITI NON SONO LEGATI AL NUMERO DI CAMERA. Il Piano Settimanale viene usato solo
-// per sapere QUANTI arrivi ci sono per struttura in quel giorno — il conteggio è la rete
-// di sicurezza contro il dimenticarne uno. Le schede sono "Arrivo 1, 2, 3…" dentro il
-// gruppo della struttura.
-//
-// Perché non si indicizza per camera (lo si è fatto e si è dovuto disfare): la reception
-// sposta gli ospiti di stanza di continuo. Con i dati agganciati alla camera, a ogni
-// spostamento i contatti restavano orfani sulla vecchia riga e la nuova andava
-// ricompilata. Nessun automatismo può rimediare in modo affidabile, perché il Piano
-// contiene solo data/struttura/camera: "203 sparita, 204 comparsa" è indistinguibile da
-// "una prenotazione cancellata più una nuova", e indovinare vorrebbe dire prima o poi
-// attribuire i contatti di un ospite a un altro. Slegando l'ospite dalla camera il
-// problema non esiste più: non c'è nessun aggancio da mantenere. Il numero di camera non
-// serve a nulla qui — non compare nel messaggio e non determina il testo, che dipende
-// dalla struttura. NON reintrodurlo come chiave.
-//
-// Compass è un sito statico e non può spedire da sé: la mail parte dal Worker (invio
-// diretto, vedi worker-prestay-mail.md) oppure apre il client di posta; WhatsApp usa wa.me.
-// La copia aperta da localhost o da file:// parla con lo STESSO Worker della produzione.
-// Il 22/08/2026 è bastato quello: un caricamento di prova ha riscritto la chiave condivisa
-// e i pre-stay del 24 agosto, già inviati, sono spariti. La copia di sviluppo scrive quindi
-// su una chiave sua, e lo dichiara in console per non far cercare dati che non vedrà.
-function _psChiave(){
-  const h=(typeof location!=='undefined'&&location.hostname)||'';
-  const pr=(typeof location!=='undefined'&&location.protocol)||'';
-  if(pr==='file:'||/^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(h)){
-    try{console.warn('Compass: copia di sviluppo — i pre-stay usano qm_prestay_dev, non i dati di produzione.');}catch(e){}
-    return 'qm_prestay_dev';
-  }
-  return 'qm_prestay';
-}
-const PRESTAY_KEY=_psChiave();
-const PRESTAY_TPL_KEY='qm_prestay_tpl';
-const PRESTAY_GG=2;                 // quanti giorni prima dell'arrivo si scrive
-let _prestay={};                    // { 'YYYY-MM-DD': { arrivi:[{id,hotel,nome,email,tel,lang,mailTs,waTs}] } }
-let _prestayTpl={};                 // { sa:{it:{ogg,corpo}, en:{...}}, ... }
-let _prestayData=null;              // data selezionata 'YYYY-MM-DD' (null = oggi+2)
-let _prestayTplOpen=false;
-let _psAvviso=null;                 // messaggio informativo mostrato una volta sola
-
-// Icone busta/nuvoletta/occhio — stesso stile outline (stroke, non emoji) dell'icona
-// "Messaggi Pre-stay" nella sidebar, per coerenza visiva nei pulsanti della riga.
-const PS_ICON_EYE='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>';
-const PS_ICON_MAIL='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
-const PS_ICON_WA='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
-const PS_ICON_LOAD='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"/></svg>';
-
-// Strutture. `piano` è la chiave usata dal Piano Settimanale: null = struttura non coperta
-// dal Piano, i cui arrivi vanno aggiunti a mano.
-// L'ORDINE DELLE CHIAVI È L'ORDINE DEI GRUPPI nella pagina: Boutique per prima, poi
-// SoulArt, San Liborio, Principe, Mastrangelo. Art Resort è escluso di proposito dal
-// pre-stay (non lo si contatta da qui). Cambiando l'ordine qui cambia la pagina.
-const PRESTAY_HOTELS={
-  bh:{name:'Boutique Hotel',piano:'boutique'},
-  sa:{name:'SoulArt Hotel',piano:'soulart'},
-  sl:{name:'San Liborio',piano:'liborio'},
-  pr:{name:'Principe',piano:null},
-  ms:{name:'Mastrangelo',piano:null}
-};
-// Nome mostrato come MITTENTE della mail (invio diretto via Worker) — separato da
-// PRESTAY_HOTELS[].name perché quello alimenta anche {struttura} nel corpo del messaggio.
-// Qui serve il nome completo che l'ospite deve riconoscere nella casella di posta.
-// ── Vincolo Booking.com ─────────────────────────────────────────────────────
-// Gli ospiti che prenotano su Booking hanno un indirizzo mascherato @guest.booking.com,
-// che è un relay: Booking inoltra alla casella vera dell'ospite SOLO le mail spedite
-// dall'indirizzo registrato sull'Extranet della struttura (booking@soularthotel.com).
-// Da qualunque altro mittente le rifiuta: a volte le SCARTA IN SILENZIO — nessun rimbalzo,
-// nessun errore, per noi l'invio risulta riuscito e la spunta verde direbbe una cosa falsa
-// — a volte le RIMANDA INDIETRO, con un rimbalzo che arriva nella casella del mittente
-// (agosto 2026, dopo che il blocco era stato tolto senza cambiare mittente sul Worker).
-// In entrambi i casi l'ospite non riceve niente: è il motivo per cui queste righe vanno
-// riconosciute e trattate a parte.
-//
-// COME SI TOGLIE QUESTO BLOCCO: si mettono `SMTP_USER` e `SMTP_PASS` della casella
-// booking@soularthotel.com sul Worker, si ripubblica, poi si preme "Verifica mittente" in
-// Impostazioni. Non c'è più una costante da cambiare a mano: il blocco cade da solo
-// quando il Worker dichiara di spedire da quell'indirizzo (vedi worker-prestay-mail.md).
-// ATTENZIONE alla svista che ha fatto ripartire i rimbalzi: se sul Worker è rimasta
-// impostata `SMTP_FROM`, quella vince su `SMTP_USER` e il mittente non cambia.
-// L'indirizzo registrato sull'Extranet Booking della struttura: è l'UNICO da cui il relay
-// @guest.booking.com accetta posta. Averlo "ok su Extranet" non basta — deve essere anche
-// quello da cui Compass spedisce davvero, cioè SMTP_USER sul Worker.
-// Indirizzo che Booking ha registrato come mittente autorizzato, STRUTTURA PER STRUTTURA:
-// le liste degli indirizzi approvati sull'Extranet sono separate per struttura, e il
-// Boutique spedisce da un dominio tutto suo. Con un indirizzo solo il controllo direbbe il
-// falso su tutte le strutture tranne una.
-const PRESTAY_BOOKING_MITTENTE={
-  _default:'booking@soularthotel.com',
-  bh:'booking@hotelpiazzacarita.com'
-};
-const _psMittAtteso=p=>(PRESTAY_BOOKING_MITTENTE[p]||PRESTAY_BOOKING_MITTENTE._default).toLowerCase();
-// Assunzione usata SOLO finché il mittente reale non è stato verificato (vedi
-// prestayVerificaMittente): fino ad allora si dà per scontato che non sia quello giusto,
-// perché è lo stato in cui il sistema è nato e perché una spunta verde sbagliata è peggio
-// di un invio in meno. Una costante scritta a mano qui non può sapere cosa c'è su
-// Cloudflare: è esattamente così che le mail hanno ripreso a rimbalzare senza avvisi.
-const PRESTAY_MITTENTE_BOOKING_OK=false;
-const PS_MITT_KEY='qm_prestay_mittente';
-// Ultima verifica del mittente reale, chiesta al Worker: {mittente,mittenteDa,via,smtpHost,
-// replyTo,imap,versione,ts}. Sta in localStorage come la configurazione di invio — è una
-// diagnosi di questa postazione, si rifà con un clic.
-let _psMitt=null;
-try{const s=localStorage.getItem(PS_MITT_KEY);if(s)_psMitt=JSON.parse(s)||null;}catch(e){}
-// Mittente reale per una struttura: quello dichiarato dal Worker per la sua casella
-// propria, altrimenti quello principale. Senza struttura si intende il principale.
-function _psMittenteAttuale(p){
-  if(p&&_psMitt&&_psMitt.caselle&&_psMitt.caselle[p])return String(_psMitt.caselle[p]).trim();
-  return _psMitt&&_psMitt.mittente?String(_psMitt.mittente).trim():'';
-}
-// Il mittente reale coincide con quello registrato su Booking? Se non è mai stato
-// verificato si ricade sull'assunzione qui sopra.
-function _psMittenteOkBooking(p){
-  const m=_psMittenteAttuale(p);
-  return m?m.toLowerCase()===_psMittAtteso(p):PRESTAY_MITTENTE_BOOKING_OK;
-}
-const _psAliasBooking=e=>/@(guest\.)?booking\.com$/i.test(String(e||'').trim());
-// true quando la mail a quell'indirizzo NON verrebbe recapitata con il mittente attuale
-const _psBookingBloccato=(e,p)=>!_psMittenteOkBooking(p)&&_psAliasBooking(e);
-
-// ── Struttura di PRENOTAZIONE ≠ struttura di ARRIVO ─────────────────────────
-// Un ospite che ha prenotato al Boutique e riceve un upgrade viene spostato al SoulArt, ma
-// lo scopre solo quando arriva: il pre-stay deve partire dalla struttura in cui HA
-// PRENOTATO — quel nome mittente, quel testo e soprattutto QUELLA casella di posta.
-// Mandarlo dall'altra significa scrivere all'ospite da un albergo che non conosce, e con
-// un alias @guest.booking.com la mail non arriva nemmeno: le liste dei mittenti
-// autorizzati sull'Extranet sono separate per struttura.
-//
-// NON è deducibile dall'export: il PMS riporta la camera ASSEGNATA, che dopo l'upgrade è
-// già quella nuova, e non esiste una colonna con la struttura di prenotazione. `mitt` è
-// quindi una scelta fatta a mano sulla scheda; vuoto (il caso normale) vuol dire "la
-// stessa in cui arriva". La scheda resta comunque nel gruppo della struttura di ARRIVO:
-// i conteggi per struttura devono continuare a combaciare con la lista arrivi del PMS,
-// che è la rete di sicurezza contro il dimenticarne uno.
-function _psHotelMitt(a){
-  const m=a&&a.mitt;
-  return (m&&PRESTAY_HOTELS[m])?m:((a&&a.hotel)||'');
-}
-const _psMittDiverso=a=>!!(a&&a.mitt&&PRESTAY_HOTELS[a.mitt]&&a.mitt!==a.hotel);
-
-const PRESTAY_FROM_NAME={
-  bh:'Boutique Hotel Piazza Carità',
-  sa:'SoulArt Hotel | Design Experience',
-  sl:'Art Suite San Liborio',
-  pr:'Art Suite Principe Umberto',
-  ms:'Rooms Mastrangelo'
-};
-// I nomi dal PMS arrivano spesso tutti in maiuscolo ("SALADINI LAURA"): in un messaggio a
-// un ospite si leggono come se gli si stesse gridando addosso. Si normalizzano SOLO se non
-// contengono già minuscole — così un nome scritto a mano correttamente ("Chacon Oviedo
-// Karina") o con maiuscole interne volute ("McDonald", "D'Angelo") non viene toccato.
-// Le particelle nobiliari e i prefissi restano minuscoli, come si scrivono in italiano.
-const PS_PARTICELLE=new Set(['de','di','da','del','della','dei','degli','dal','dalla','van','von','der','den','la','le','lo','di\'','y','e']);
-function _psNomeUmano(s){
+// ── UTILITÀ CONDIVISE — nomi degli ospiti e scorrimento della pagina ──
+// I nomi dal PMS arrivano spesso tutti in maiuscolo ("SALADINI LAURA"): si normalizzano
+// parola per parola SOLO se non contengono già minuscole, così un nome scritto bene
+// ("McDonald", "D'Angelo") non viene toccato. Particelle e prefissi restano minuscoli.
+const QM_PARTICELLE=new Set(['de','di','da','del','della','dei','degli','dal','dalla','van','von','der','den','la','le','lo','di\'','y','e']);
+function _qmNomeUmano(s){
   const t=String(s||'').trim();
   if(!t)return'';
   // Parola per parola, non sull'intera stringa: negli export capita il solo cognome in
@@ -13234,731 +13063,25 @@ function _psNomeUmano(s){
   return t.split(/\s+/).map((p,i)=>{
     if(!/^[A-ZÀ-Ý][A-ZÀ-Ý'’\-]*$/.test(p)||p.length<2)return p;   // non tutta maiuscola
     const b=p.toLowerCase();
-    if(i>0&&PS_PARTICELLE.has(b))return b;
+    if(i>0&&QM_PARTICELLE.has(b))return b;
     // Tratta anche i composti con apostrofo o trattino: d'angelo -> D'Angelo
     return b.replace(/(^|['’-])([a-zà-ÿ])/g,(m,sep,c)=>sep+c.toUpperCase());
   }).join(' ');
 }
-// Testi di partenza: sono segnaposto da riscrivere dalla schermata (Modifica testi).
-// I placeholder {nome} {struttura} {data} vengono sostituiti all'invio.
-const PRESTAY_TPL_DEFAULT={
-  it:{ogg:'Il suo arrivo al {struttura}',corpo:'Gentile {nome},\n\nmanca poco al suo arrivo previsto per il {data} presso {struttura}.\n\n[SCRIVI QUI IL TESTO DEL PRE-STAY]\n\nRestiamo a disposizione per qualsiasi necessità.\n\nCordiali saluti,\n{struttura}'},
-  en:{ogg:'Your upcoming stay at {struttura}',corpo:'Dear {nome},\n\nyour arrival at {struttura} on {data} is approaching.\n\n[WRITE THE PRE-STAY TEXT HERE]\n\nWe remain at your disposal for anything you may need.\n\nBest regards,\n{struttura}'}
-};
-
-function _psFmtISO(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function _psFmtIT(iso){const[y,m,d]=iso.split('-');return d+'/'+m+'/'+y;}
-function _psTargetISO(){
-  if(_prestayData)return _prestayData;
-  const d=new Date();d.setDate(d.getDate()+PRESTAY_GG);return _psFmtISO(d);
-}
-function _psLoad(){
-  try{const s=localStorage.getItem(PRESTAY_KEY);_prestay=s?JSON.parse(s):{};}catch(e){_prestay={};}
-  try{const s=localStorage.getItem(PRESTAY_TPL_KEY);_prestayTpl=s?JSON.parse(s):{};}catch(e){_prestayTpl={};}
-}
-// ── Il cloud è condiviso: un salvataggio non deve mai poter cancellare ──────
-// COSA È SUCCESSO (22/08/2026, da non ripetere). _psSave() scriveva su KV l'INTERO oggetto
-// di tutti i giorni, senza rileggere e senza guardie. È bastata una copia partita con il
-// localStorage vuoto — un altro profilo del browser, o la copia di sviluppo, che punta allo
-// stesso Worker — perché un caricamento del PDF Prenotazioni riscrivesse la chiave con
-// schede nuove: nomi presenti, email e telefono vuoti, spunte di invio perse. I pre-stay del
-// 24 agosto, già inviati, sono spariti. E siccome all'avvio il ripristino dal cloud
-// SOVRASCRIVE il localStorage, riaprendo Compass è sparita anche l'ultima copia locale:
-// nessuno se n'è accorto finché la giornata non è stata riaperta a mano.
-//
-// Tre regole, in ordine di importanza:
-//  1. non si scrive MAI alla cieca: prima si rilegge il cloud, e se non risponde la
-//     scrittura non parte — senza sapere cosa c'è di là non si può sovrascriverlo;
-//  2. si FONDE invece di sostituire: una scheda compilata che sta sul cloud e non nella
-//     copia in memoria viene rimessa dentro. La corrispondenza è per codice prenotazione,
-//     poi per nome+struttura — non per `id`, che una reimportazione rigenera;
-//  3. l'esito è visibile: pallino di sincronizzazione e avviso nella vista, invece di
-//     lasciar credere che sia salvato quando è solo su questo computer.
-let _psCloudOk=false;      // true dopo una lettura riuscita del cloud in questa sessione
-let _psCloudErr='';        // ultimo errore di scrittura, mostrato nella vista
-let _psInFlight=null;      // scrittura in corso: le altre si accodano, non si accavallano
-let _psDaSalvare=false;    // è arrivata una modifica mentre si scriveva
-
-const _psCodiciDi=a=>(a&&a.codici&&a.codici.length)?a.codici:(a&&a.codice?[a.codice]:[]);
-// "Compilata" = c'è qualcosa che si perderebbe. Il solo nome non basta: quello lo
-// rigenera l'importazione, mentre email, telefono e spunte di invio si digitano a mano.
-const _psCompilata=a=>!!(a&&(a.email||a.tel||a.mailTs||a.waTs));
-// Stessa prenotazione? Il codice non cambia mai, il nome sì (al check-in si registra il
-// documento di chi si presenta) e l'`id` men che meno: una reimportazione ne crea di nuovi
-// per le stesse persone — ed è esattamente così che le schede si sono duplicate a vuoto.
-function _psStessaScheda(a,b){
-  if(!a||!b)return false;
-  const ca=_psCodiciDi(a),cb=_psCodiciDi(b);
-  if(ca.length&&cb.length&&ca.some(c=>cb.includes(c)))return true;
-  if(a.id&&b.id&&a.id===b.id)return true;
-  const na=_psNomeChiave(a.nome);
-  return !!na&&na===_psNomeChiave(b.nome)&&a.hotel===b.hotel;
-}
-// Campo per campo: la copia in memoria può essere più VECCHIA di quella sul cloud, quindi
-// un valore che qui manca e là c'è va ripreso. Non si sovrascrive mai un valore già
-// presente in locale: quello lo si sta digitando adesso.
-function _psAssorbi(a,r){
-  ['nome','email','tel','origine','codice'].forEach(k=>{if(!a[k]&&r[k])a[k]=r[k];});
-  if(!(a.codici&&a.codici.length)&&r.codici&&r.codici.length)a.codici=r.codici;
-  if(!(a.camere&&a.camere.length)&&r.camere&&r.camere.length)a.camere=r.camere;
-  // Un invio non si perde mai: se risulta contattato da una parte, è contattato.
-  if(r.mailTs&&(!a.mailTs||r.mailTs<a.mailTs))a.mailTs=r.mailTs;
-  if(r.waTs&&(!a.waTs||r.waTs<a.waTs))a.waTs=r.waTs;
-  // Spunta Italcamel e lingua: le si riprende solo se qui nessuno ha ancora toccato la
-  // scheda (`ts`), altrimenti togliere la spunta non avrebbe effetto — tornerebbe da sola.
-  if(!a.ts){
-    if(r.italcamel)a.italcamel=true;
-    if(r.mitt&&!a.mitt)a.mitt=r.mitt;   // scelta a mano, come la spunta Italcamel
-    if(r.lang&&r.lang!==a.lang)a.lang=r.lang;
-  }
-}
-/**
- * Fusione conservativa fra la copia sul cloud e quella in memoria.
- * Non perde mai una scheda compilata; un giorno che sta solo sul cloud si tiene intero
- * (una copia stale semplicemente non ce l'ha). Le schede eliminate di proposito non
- * tornano: `prestayDelScheda` ne lascia traccia in `rimossi`.
- */
-function _psFondi(remoto,locale){
-  const out={};
-  Object.keys(remoto||{}).forEach(iso=>{out[iso]=remoto[iso];});
-  Object.keys(locale||{}).forEach(iso=>{
-    const L=locale[iso]||{},R=(remoto||{})[iso];
-    if(!R||!Array.isArray(R.arrivi)){out[iso]=L;return;}
-    // Giornata locale ancora nel vecchio formato indicizzato per camera: tenerla com'è
-    // scarterebbe la versione già migrata sul cloud, migrarla e basta scarterebbe quella
-    // locale. Si convertono le voci al volo (come fa _psGiorno) e si fondono le due.
-    const arrivi=Array.isArray(L.arrivi)?L.arrivi.slice():Object.keys(L).map(k=>L[k])
-      .filter(r=>r&&typeof r==='object'&&!Array.isArray(r))
-      .map(r=>({id:_psNuovoId(),hotel:r.hotel||'sa',nome:r.nome||'',email:r.email||'',tel:r.tel||'',
-                lang:r.lang||'it',italcamel:!!r.italcamel,mailTs:r.mailTs||null,waTs:r.waTs||null}));
-    const rimossi=new Set([].concat(L.rimossi||[],R.rimossi||[]));
-    R.arrivi.forEach(r=>{
-      if(!_psCompilata(r))return;              // vuota: non c'è niente da salvare
-      if(r.id&&rimossi.has(r.id))return;       // eliminata di proposito
-      const gemella=arrivi.find(a=>_psStessaScheda(a,r));
-      if(gemella)_psAssorbi(gemella,r);
-      else arrivi.push(r);
-    });
-    out[iso]=Object.assign({},L,{arrivi:arrivi});
-    if(rimossi.size)out[iso].rimossi=[...rimossi].slice(-100);
-  });
-  return out;
-}
-// Lettura del cloud. Distingue "non risponde" (null: non si scrive) da "chiave mai
-// scritta" ({}: si può scrivere) — confonderli vorrebbe dire o non salvare mai il primo
-// giorno, o sovrascrivere tutto al primo errore di rete.
-async function _psLeggiCloud(){
-  try{
-    const r=await fetch(PROXY+'/kv/get?key='+PRESTAY_KEY,{cache:'no-store'});
-    if(!r.ok)return null;
-    const j=await r.json();
-    if(j.value===null||j.value===undefined)return{};
-    const o=JSON.parse(j.value);
-    return(o&&typeof o==='object'&&!Array.isArray(o))?o:{};
-  }catch(e){return null;}
-}
-// Riallineamento al cloud senza scrivere: si usa all'apertura della vista, prima di una
-// reimportazione in blocco e a intervalli mentre la pagina resta aperta. Importare
-// partendo da una copia vecchia è ciò che ha cancellato i pre-stay del 24 agosto.
-async function _psSincronizza(){
-  const remoto=await _psLeggiCloud();
-  if(remoto===null)return false;
-  _psCloudOk=true;
-  _prestay=_psFondi(remoto,_prestay);
-  try{localStorage.setItem(PRESTAY_KEY,JSON.stringify(_prestay));}catch(e){}
-  return true;
-}
-function _psSave(){
-  // Il locale è immediato: qualunque cosa succeda al cloud, quello che si è appena
-  // digitato non deve dipendere dalla rete.
-  try{localStorage.setItem(PRESTAY_KEY,JSON.stringify(_prestay));}catch(e){}
-  return _psSalvaCloud();
-}
-// Una scrittura per volta. Le modifiche che arrivano mentre è in corso non lanciano una
-// seconda rilettura-scrittura in parallelo (si sovrascriverebbero a vicenda): si accodano.
-function _psSalvaCloud(){
-  if(_psInFlight){_psDaSalvare=true;return _psInFlight;}
-  _psInFlight=(async()=>{
-    try{return await _psScriviCloud();}
-    catch(e){
-      // Nessuna promessa respinta a vuoto: l'errore si mostra, non finisce in console.
-      _psCloudErr='Salvataggio non riuscito ('+(e&&e.message||e)+'): le modifiche sono solo su questo computer.';
-      try{setSyncStatus('error');}catch(_){}
-      _psSegnalaCloud();
-      return false;
-    }
-    finally{
-      _psInFlight=null;
-      if(_psDaSalvare){_psDaSalvare=false;_psSalvaCloud();}
-    }
-  })();
-  return _psInFlight;
-}
-async function _psScriviCloud(){
-  const remoto=await _psLeggiCloud();
-  if(remoto===null){
-    _psCloudErr='Il cloud non risponde: le modifiche sono salvate solo su questo computer. Non chiudere la pagina finché il pallino non torna verde.';
-    try{setSyncStatus('error');}catch(e){}
-    _psSegnalaCloud();
-    return false;
-  }
-  _psCloudOk=true;
-  _prestay=_psFondi(remoto,_prestay);
-  try{localStorage.setItem(PRESTAY_KEY,JSON.stringify(_prestay));}catch(e){}
-  try{setSyncStatus('syncing');}catch(e){}
-  const ok=await kvSet(PRESTAY_KEY,JSON.stringify(_prestay));
-  _psCloudErr=ok?'':'Il cloud non ha accettato il salvataggio: le modifiche sono solo su questo computer.';
-  try{setSyncStatus(ok?'ok':'error');}catch(e){}
-  _psSegnalaCloud();
-  return ok;
-}
-// L'avviso si scrive DIRETTAMENTE nel suo elemento, senza passare da prestayRender():
-// un ridisegno mentre si compila un campo farebbe perdere il fuoco e il testo in corso.
-function _psSegnalaCloud(){
-  const el=document.getElementById('psCloudErr');
-  if(!el)return;
-  el.textContent=_psCloudErr||'';
-  el.style.display=_psCloudErr?'block':'none';
-}
-// Il cloud si rilegge anche mentre la pagina resta aperta. Due postazioni che lavorano
-// sulla stessa giornata devono vedersi — e una copia ferma da ore è il punto di partenza di
-// ogni sovrascrittura. NON si ridisegna mentre qualcuno sta scrivendo dentro la vista:
-// rigenerare l'HTML sotto le dita fa perdere il fuoco e il testo in corso (stessa lezione
-// della casella "Ricevuto" in Biancheria).
-setInterval(async()=>{
-  if(document.visibilityState!=='visible')return;   // scheda nascosta: nessuno la legge
-  const v=document.getElementById('view-prestay');
-  if(!v||!v.classList.contains('active'))return;
-  const f=document.activeElement;
-  if(f&&v.contains&&v.contains(f)&&/^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName||''))return;
-  const iso=_psTargetISO();
-  const prima=JSON.stringify(_prestay[iso]||{});
-  const ok=await _psSincronizza();
-  if(ok&&JSON.stringify(_prestay[iso]||{})!==prima){try{prestayRender();}catch(e){}}
-},60000);
-function _psSaveTpl(){
-  try{localStorage.setItem(PRESTAY_TPL_KEY,JSON.stringify(_prestayTpl));}catch(e){}
-  try{kvSet(PRESTAY_TPL_KEY,JSON.stringify(_prestayTpl));}catch(e){}
-}
-_psLoad();
-// Dopo un refresh lo slot dell'Upload Center ripartiva da "Non caricato" anche con gli
-// arrivi già importati: lo stato del riquadro vive nel DOM, i dati invece in localStorage/KV.
-// Va quindi ricostruito al caricamento, come fanno gli altri slot (vedi pianoSetLoaded).
-function prestaySetLoaded(silent){
-  const iso=_psTargetISO();
-  const g=_prestay[iso];
-  const n=(g&&Array.isArray(g.arrivi))?g.arrivi.length:0;
-  if(!n)return;
-  try{ucSetState('prestay','loaded',n+' arriv'+(n===1?'o':'i')+' · '+_psFmtIT(iso).slice(0,5),silent!==false);}catch(e){}
-  try{loadStoredTs('prestayTs');}catch(e){}
-}
-setTimeout(()=>{try{prestaySetLoaded(true);}catch(e){}},250);
-function _psTpl(hotel,lang){
-  const h=_prestayTpl[hotel]||{};
-  const t=h[lang];
-  if(t&&(t.ogg||t.corpo))return t;
-  return PRESTAY_TPL_DEFAULT[lang]||PRESTAY_TPL_DEFAULT.it;
-}
-
-// ── Lettura del PDF "Arrivi" del PMS ────────────────────────────────────────
-// Il pre-stay NON dipende più dal Piano Settimanale: la fonte è il PDF Arrivi del PMS, che
-// elenca le prenotazioni reali del giorno con il nome dell'ospite. Il Piano dava solo un
-// conteggio di camere; questo dà i nomi, quindi è insieme più completo e più attendibile.
-//
-// Il PDF NON contiene email né telefono (verificato sull'export reale): quelli restano da
-// inserire a mano dal PMS. L'importazione serve a fissare QUANTI arrivi ci sono, CHI sono
-// e a quale struttura appartengono — cioè la parte che non si può controllare a memoria.
-//
-// La camera viene usata SOLO qui, per dedurre la struttura (204 → Boutique, Art 5 →
-// SoulArt), e poi buttata via: le schede restano "Arrivo 1, 2, 3…" senza camera, così uno
-// spostamento di stanza continua a non avere alcun effetto. Non salvarla nelle schede.
-//
-// Parsing deterministico sulle COLONNE (coordinate x), non sul testo concatenato: nomi e
-// tipi camera vanno a capo ("Chacon Oviedo / Karina", "AS / SUP") e un parser a stringa li
-// spezzerebbe o li mescolerebbe. Verificato sull'export reale del 17/08/2026.
-const PS_COL_OSPITE_DA=90;    // x minima della colonna "Ospite (Prenotante)"
-const PS_COL_OSPITE_A=177;    // x della colonna "Pax": fine della colonna ospite
-// ── Colore del bordo della scheda in base al canale di provenienza ──────────
-// L'indirizzo email dice da dove arriva la prenotazione, e riconoscerlo a colpo d'occhio
-// conta: il tono del messaggio e i vincoli di recapito cambiano per canale.
-// I colori sono scelti per DISTINGUERSI FRA LORO, non per fedelta al marchio: il blu
-// istituzionale di Booking (#003580) e talmente scuro da confondersi col nero delle dirette
-// e col marrone di G2, quindi si usa il loro blu chiaro.
-const PS_BORDI=[
-  {re:/@guest\.booking\.com$/i,        col:'#0071C2'},   // blu Booking, tono chiaro
-  {re:/expediapartnercentral\.com/i,    col:'#FFB300'},   // giallo Expedia piu carico
-  {re:/g2-travel\.com/i,                col:'#76573A'}    // marrone G2 Travel
-];
-const PS_BORDO_ALTRI='#111111';        // qualunque altro indirizzo
-function _psBordoPerEmail(email){
-  const e=String(email||'').trim();
-  for(const b of PS_BORDI)if(b.re.test(e))return b.col;
-  return PS_BORDO_ALTRI;
-}
-// Canale di provenienza dichiarato dal PMS (colonna Origine dell'export Prenotazioni).
-// Ha la precedenza sull'email: l'email la digiti tu dopo, quindi all'import la scheda
-// sarebbe grigia e prenderebbe colore solo a compilazione avvenuta — invece il canale si
-// sa gia' dal file. Restano le regole sull'email come ripiego per le schede vecchie o
-// aggiunte a mano.
-const PS_CANALI=[
-  {re:/booking/i,        col:'#0071C2'},
-  {re:/expedia/i,        col:'#FFB300'},
-  {re:/g2[\s-]*travel/i, col:'#76573A'},
-  {re:/italcamel/i,      col:'#7B5EA7'}
-];
-// Colore dovuto al canale dichiarato dal PMS, o stringa vuota se il file non lo portava.
-// Serve al render per marcare la scheda (data-canale) e a _psAggiornaBordo per non
-// sovrascriverlo mentre si digita l'email.
-// Etichetta leggibile del canale, per mostrarlo sulla scheda. "CRSVertical" e' il motore
-// di prenotazione del sito: quelle sono prenotazioni dirette, e chiamarle col nome del
-// fornitore non direbbe niente a chi legge.
-const PS_CANALI_NOME=[
-  {re:/booking/i,        txt:'Booking'},
-  {re:/expedia/i,        txt:'Expedia'},
-  {re:/italcamel/i,      txt:'Italcamel'},
-  {re:/g2[\s-]*travel/i, txt:'G2 Travel'},
-  {re:/crs|vertical/i,   txt:'Diretta'}
-];
-function _psCanaleNome(a){
-  const o=String(a&&a.origine||'').trim();
-  if(!o)return'';
-  for(const c of PS_CANALI_NOME)if(c.re.test(o))return c.txt;
-  return o.length>14?o.slice(0,14):o;      // origine sconosciuta: si mostra com'e'
-}
-function _psCanaleCol(a){
-  const o=String(a&&a.origine||'').trim();
-  if(o)for(const c of PS_CANALI)if(c.re.test(o))return c.col;
-  return '';
-}
-function _psBordo(a){
-  return _psCanaleCol(a)||_psBordoPerEmail(a&&a.email);
-}
-// Il bordo deve cambiare mentre si digita, non al termine: un re-render a ogni tasto
-// farebbe perdere il fuoco al campo, quindi si tocca solo lo stile della scheda.
-// Le schede già inviate restano verdi: `data-fatto` le esclude.
-function _psAggiornaBordo(id,email){
-  const c=document.getElementById('psCard-'+id);
-  if(!c||c.dataset.fatto==='1')return;
-  // Se il canale arriva dal PMS resta quello: digitare un indirizzo privato non deve
-  // cambiare il colore di una prenotazione che sappiamo essere Booking o Expedia.
-  if(c.dataset.canale){c.style.borderColor=c.dataset.canale;return;}
-  c.style.borderColor=_psBordoPerEmail(email);
-}
-// Italcamel si segna A MANO: il PMS non popola la colonna Azienda del PDF, quindi non c'e
-// modo di dedurlo dal documento. Spuntandolo la scheda si spegne — quegli arrivi non hanno
-// contatti dell'ospite e non devono sembrare "da compilare".
-const _psItalcamel=a=>!!(a&&a.italcamel);
-function prestayToggleItalcamel(id){
-  const iso=_psTargetISO(),a=_psScheda(iso,id);
-  if(!a)return;
-  a.italcamel=!a.italcamel;
-  a.ts=Date.now();
-  _psSave();prestayRender();
-}
-// Riconosce l'inizio di una prenotazione nella colonna "Numero/Tipo" (es. "204 / PC STD",
-// "Art 10 / AS"). Esclude l'intestazione "Numero/", che pure contiene una barra.
-const PS_RE_CAMERA=/^(\d{1,4}|Art\s*\d+|LIB\s*\w*|R\s*\d|CAPRI|NAPOLI|PROCIDA|ISCHIA|POSITANO)\b/i;
-// Struttura dalla camera: stesse regole di fixArriviStruttura, in minuscolo per PRESTAY_HOTELS.
-function _psStrutturaDaCamera(camera){
-  const c=String(camera||'').trim().toUpperCase();
-  if(/^(CAPRI|NAPOLI|PROCIDA|ISCHIA|POSITANO)/.test(c))return'pr';
-  if(/^LIB/.test(c))return'sl';
-  if(/^R\s*[123]$/.test(c))return'ms';
-  if(/^\d+$/.test(c)&&+c>=200&&+c<=299)return'bh';
-  return'sa';                                   // Art XX e altre numeriche → SoulArt
-}
-/**
- * @param {Array<{s:string,x:number,y:number}>} items testo con coordinate (da pdf.js)
- * @returns {{iso:string|null, arrivi:Array<{camera,nome,hotel}>}}
- */
-function _psParsePdfArrivi(items){
-  const righe=new Map();
-  (items||[]).forEach(it=>{
-    const s=String(it.s||'').trim();if(!s)return;
-    const y=Math.round(it.y);
-    if(!righe.has(y))righe.set(y,[]);
-    righe.get(y).push({s,x:it.x});
-  });
-  const ordinate=[...righe.entries()].sort((a,b)=>b[0]-a[0]).map(e=>e[1]);
-  const col=(r,da,a)=>r.filter(i=>i.x>=da&&i.x<a).sort((p,q)=>p.x-q.x).map(i=>i.s).join(' ').trim();
-  // Data dall'intestazione "Arrivi - 17/08/2026": importare nel giorno sbagliato sarebbe
-  // peggio che non importare, quindi la si legge dal documento invece di assumerla.
-  let iso=null;
-  for(const r of ordinate){
-    const m=r.map(i=>i.s).join(' ').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if(m){iso=m[3]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');break;}
-  }
-  const arrivi=[];
-  ordinate.forEach(r=>{
-    const sinistra=col(r,0,PS_COL_OSPITE_DA);
-    const ospite=col(r,PS_COL_OSPITE_DA,PS_COL_OSPITE_A);
-    const barra=sinistra.indexOf('/');
-    if(barra>0){
-      const camera=sinistra.slice(0,barra).trim();
-      if(PS_RE_CAMERA.test(camera)){
-        arrivi.push({camera,nome:ospite,hotel:_psStrutturaDaCamera(camera)});
-        return;
-      }
-    }
-    // Riga di continuazione: nome andato a capo. Si accoda solo se una prenotazione è aperta.
-    if(ospite&&arrivi.length)arrivi[arrivi.length-1].nome=(arrivi[arrivi.length-1].nome+' '+ospite).trim();
-  });
-  arrivi.forEach(a=>{a.nome=_psNomeUmano(a.nome.replace(/\s+/g,' ').trim());});
-  return{iso,arrivi};
-}
-
-let _psSeq=0;
-function _psNuovoId(){return 'a'+Date.now().toString(36)+(_psSeq++).toString(36);}
-function _psNuovaScheda(hotel){
-  return{id:_psNuovoId(),hotel:hotel,mitt:'',nome:'',email:'',tel:'',lang:'it',origine:'',codice:'',codici:[],camere:[],italcamel:false,mailTs:null,waTs:null,mailErr:null};
-}
-// Accesso al giorno, con migrazione dal vecchio formato indicizzato per camera
-// (`{'203':{...}}`) al nuovo (`{arrivi:[…]}`). La migrazione è pigra — avviene alla prima
-// apertura di quella data — così il numero di camera già digitato non viene perso: diventa
-// una scheda normale, semplicemente senza più la camera come chiave.
-function _psGiorno(iso){
-  if(!_prestay[iso])_prestay[iso]={arrivi:[]};
-  const g=_prestay[iso];
-  if(Array.isArray(g.arrivi)){
-    // Normalizzazione anche dei nomi GIÀ salvati: applicarla solo all'import lasciava in
-    // maiuscolo tutto ciò che era stato caricato prima della modifica, ed è esattamente il
-    // caso normale (i dati stanno su KV e sopravvivono agli aggiornamenti dell'app).
-    let tocc=false;
-    g.arrivi.forEach(a=>{
-      const n=_psNomeUmano(a.nome);
-      if(n!==a.nome){a.nome=n;tocc=true;}
-    });
-    if(tocc)_psSave();
-  }
-  if(!Array.isArray(g.arrivi)){
-    const arrivi=[];
-    Object.keys(g).forEach(k=>{
-      const r=g[k];
-      if(!r||typeof r!=='object'||Array.isArray(r))return;
-      arrivi.push({id:_psNuovoId(),hotel:r.hotel||'sa',nome:_psNomeUmano(r.nome||''),email:r.email||'',
-                   tel:r.tel||'',lang:r.lang||'it',italcamel:!!r.italcamel,mailTs:r.mailTs||null,
-                   waTs:r.waTs||null,mailErr:r.mailErr||null});
-      delete g[k];
-    });
-    g.arrivi=arrivi;
-    _psSave();
-  }
-  return g;
-}
-// Importa gli arrivi letti dal PDF nella giornata, SENZA perdere ciò che è già stato
-// digitato: ricaricare una lista aggiornata è un'operazione normale (le prenotazioni
-// cambiano fino all'ultimo) e non deve costare la ridigitazione delle email.
-//
-// Regole, in ordine:
-//  1. stesso nome nella stessa struttura → si tiene la scheda esistente (email e telefono
-//     già inseriti restano, insieme allo stato di invio);
-//  2. nome nuovo → riempie una scheda vuota della struttura, altrimenti ne crea una;
-//  3. scheda con dati che non è più nella lista → NON si cancella, si marca `fuoriLista`
-//     (prenotazione cancellata o nome cambiato: lo decide l'utente, non il codice);
-//  4. scheda vuota non più nella lista → si rimuove, non serviva a nulla.
-function _psNomeChiave(s){
+// Chiave di confronto di un nome: minuscole, senza punteggiatura, ordine delle parole
+// indifferente ("Rossi Mario" = "Mario Rossi").
+function _qmNomeChiave(s){
   return String(s||'').toLowerCase().replace(/[^a-zà-ÿ\s]/gi,' ').replace(/\s+/g,' ').trim()
     .split(' ').sort().join(' ');   // ordine indifferente: "Rossi Mario" = "Mario Rossi"
 }
-function _psImportaArrivi(iso,lista){
-  const g=_psGiorno(iso);
-  const esistenti=g.arrivi||[];
-  const usate=new Set();
-  const risultato=[];
-  let nuovi=0,ritrovati=0;
-  (lista||[]).forEach(a=>{
-    const chiave=_psNomeChiave(a.nome);
-    // 1) Codice della prenotazione: è l'unico riferimento che NON cambia. Il nome sì —
-    //    al check-in viene registrato il documento di chi si presenta, che può essere
-    //    l'accompagnatore. Senza questo abbinamento la stessa prenotazione tornava come
-    //    un secondo arrivo, con il pre-stay già inviato rimasto sulla scheda vecchia.
-    // Una multicamera ha un codice per camera: basta che UNO combaci per riconoscere la
-    // scheda. `codici` è la lista completa; `codice` resta come primo elemento per le
-    // schede salvate prima che esistesse la lista.
-    const cod=a.codici&&a.codici.length?a.codici:(a.codice?[a.codice]:[]);
-    const suoi=e=>(e.codici&&e.codici.length?e.codici:(e.codice?[e.codice]:[]));
-    let s=cod.length?esistenti.find(e=>!usate.has(e.id)&&suoi(e).some(c=>cod.includes(c))):null;
-    if(s){ritrovati++;s.nome=a.nome;}     // il nome segue quello del PMS
-    else{
-      // 2) Nome, per le schede importate prima che ci fosse il codice
-      s=chiave?esistenti.find(e=>!usate.has(e.id)&&e.hotel===a.hotel&&_psNomeChiave(e.nome)===chiave):null;
-      if(s){ritrovati++;}
-      else{
-        s=esistenti.find(e=>!usate.has(e.id)&&e.hotel===a.hotel&&_psVuota(e));
-        if(s)s.nome=a.nome;
-        else{s=_psNuovaScheda(a.hotel);s.nome=a.nome;nuovi++;}
-      }
-    }
-    if(cod.length){s.codici=cod;s.codice=cod[0];}
-    if(a.camere)s.camere=a.camere;        // camere della prenotazione, per mostrarne il numero
-    // Una prenotazione che cambia struttura fra due caricamenti è quasi sempre un upgrade:
-    // proprio il caso in cui il messaggio deve continuare a partire dalla struttura di
-    // prenotazione. Non si decide da soli — potrebbe anche essere la correzione di una
-    // camera sbagliata — ma si ricorda quella di prima e la scheda propone di usarla come
-    // mittente. `mitt`, se già scelto a mano, non viene mai toccato dall'importazione.
-    if(s.hotel&&a.hotel&&s.hotel!==a.hotel)s.hotelPrec=s.hotel;
-    s.hotel=a.hotel;                      // una prenotazione può cambiare struttura
-    if(s.hotelPrec===a.hotel)delete s.hotelPrec;
-    s.fuoriLista=false;
-    // Canale di provenienza dal PMS, quando il file lo porta (export "Prenotazioni").
-    // Colora il bordo della scheda già all'import, senza aspettare che si digiti l'email,
-    // e accende da sé la spunta Italcamel — che prima si metteva a mano perché il vecchio
-    // PDF arrivi non aveva l'informazione. Il vecchio import non passa `origine` e qui non
-    // tocca nulla, quindi le schede esistenti restano come sono.
-    if(a.origine){
-      s.origine=a.origine;
-      if(/italcamel/i.test(a.origine))s.italcamel=true;
-    }
-    usate.add(s.id);
-    risultato.push(s);
-  });
-  // Schede rimaste fuori dalla lista importata
-  let fuori=0;
-  esistenti.forEach(e=>{
-    if(usate.has(e.id))return;
-    if(_psVuota(e))return;              // scheda vuota inutile: si lascia cadere
-    e.fuoriLista=true;fuori++;
-    risultato.push(e);
-  });
-  g.arrivi=risultato;
-  _psSave();
-  return{totale:(lista||[]).length,nuovi,ritrovati,fuori};
-}
-// Caricabile da due punti — dall'Upload Center (slot "Arrivi Pre-stay") e dal pulsante
-// dentro la vista — che chiamano la stessa funzione: lo stato viene riportato in entrambi.
-async function prestayHandlePdf(file){
-  const box=document.getElementById('psUploadStato');
-  const msg=t=>{if(box)box.textContent=t;};
-  const uc=(stato,sub)=>{try{ucSetState('prestay',stato,sub,true);}catch(e){}};
-  try{
-    msg('Lettura del PDF…');
-    uc('loading','Lettura PDF...');
-    const ab=await file.arrayBuffer();
-    const pdfDoc=await _pdfApri(ab);
-    const items=[];
-    for(let p=1;p<=pdfDoc.numPages;p++){
-      const page=await pdfDoc.getPage(p);
-      const tc=await page.getTextContent();
-      // Le pagine successive ripartono dall'alto: si sfalsa la y per non mescolare le righe.
-      tc.items.forEach(it=>{
-        const s=(it.str||'').trim();
-        if(s)items.push({s,x:it.transform[4],y:it.transform[5]-(p-1)*10000});
-      });
-    }
-    const{iso,arrivi}=_psParsePdfArrivi(items);
-    if(!arrivi.length){
-      msg('Nessun arrivo riconosciuto in questo PDF. Controlla di aver esportato la lista "Arrivi" dal PMS.');
-      uc('error','Nessun arrivo riconosciuto');
-      return;
-    }
-    // La data si prende dal documento: importare nel giorno sbagliato sarebbe peggio che
-    // non importare. Se manca, si usa il giorno mostrato.
-    const target=iso||_psTargetISO();
-    // Riallineamento PRIMA di importare: importare partendo da una copia vecchia è ciò che
-    // il 22/08/2026 ha cancellato i pre-stay del 24 già inviati.
-    await _psSincronizza();
-    const r=_psImportaArrivi(target,arrivi);
-    _prestayData=target;
-    _psAvviso='Importati '+r.totale+' arrivi del '+_psFmtIT(target)+
-      (r.ritrovati?' · '+r.ritrovati+' già presenti, contatti conservati':'')+
-      (r.nuovi?' · '+r.nuovi+' nuovi':'')+
-      (r.fuori?' · '+r.fuori+' non più in lista, segnalati in ambra':'');
-    msg('');
-    uc('loaded',r.totale+' arriv'+(r.totale===1?'o':'i')+' · '+_psFmtIT(target).slice(0,5));
-    try{setUploadTs('prestayTs');}catch(e){}
-    prestayRender();
-  }catch(e){
-    msg('Errore nella lettura: '+(e&&e.message||e));
-    uc('error','Errore nella lettura');
-  }
-}
-// Collegamento dello slot Upload Center (click sul riquadro, drag&drop, input file).
-(function(){
-  const box=document.getElementById('prestayUploadBox');
-  const inp=document.getElementById('prestayFileInput');
-  if(!inp)return;
-  if(box){
-    box.addEventListener('click',()=>inp.click());
-    box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});
-    box.addEventListener('dragleave',()=>box.classList.remove('dragover'));
-    box.addEventListener('drop',e=>{
-      e.preventDefault();box.classList.remove('dragover');
-      const f=e.dataTransfer.files[0];
-      if(f&&/pdf$/i.test(f.type||f.name))prestayHandlePdf(f);
-      else ucSetState('prestay','error','Carica un PDF.');
-    });
-  }
-  inp.addEventListener('change',e=>{if(e.target.files[0]){prestayHandlePdf(e.target.files[0]);e.target.value='';}});
-})();
-function _psScheda(iso,id){return (_psGiorno(iso).arrivi||[]).find(a=>a.id===id)||null;}
-function _psVuota(a){return !(a.nome||a.email||a.tel);}
-
-function prestaySetScheda(id,campo,val){
-  const iso=_psTargetISO();
-  const a=_psScheda(iso,id);
-  if(!a)return;
-  // Anche digitando (o incollando dal PMS) un nome tutto maiuscolo va ammorbidito: finisce
-  // nel messaggio all'ospite. Chi scrive in maiuscolo/minuscolo normale non viene toccato.
-  a[campo]=campo==='nome'?_psNomeUmano(val):val;
-  a.ts=Date.now();          // toccata a mano: la fusione non deve rimettere i valori vecchi
-  _psSave();
-  if(campo==='nome'&&a[campo]!==val)prestayRender();
-  else if(campo==='lang'||campo==='hotel'||campo==='mitt')prestayRender();
-}
-function prestayNavDay(delta){
-  const d=new Date(_psTargetISO()+'T12:00:00');
-  d.setDate(d.getDate()+delta);
-  _prestayData=_psFmtISO(d);
-  prestayRender();
-}
-function prestayOggi(){_prestayData=null;prestayRender();}
-// Aggiunge un arrivo non presente nell'export: serve per Principe e Mastrangelo (che nel
-// PDF possono mancare) e per una prenotazione arrivata dopo l'ultimo caricamento.
-function prestayAddArrivo(){
-  const codici=Object.keys(PRESTAY_HOTELS);
-  const elenco=codici.map((k,i)=>(i+1)+') '+PRESTAY_HOTELS[k].name).join('\n');
-  const scelta=prompt('Struttura del nuovo arrivo:\n\n'+elenco+'\n\nScrivi il numero:','1');
-  if(scelta===null)return;
-  const idx=parseInt(scelta,10)-1;
-  if(!(idx>=0&&idx<codici.length)){cqAvviso('Struttura non valida: riprova scrivendo un numero da 1 a '+codici.length+'.');return;}
-  const iso=_psTargetISO();
-  _psGiorno(iso).arrivi.push(_psNuovaScheda(codici[idx]));
-  _psSave();prestayRender();
-}
-async function prestayDelScheda(id){
-  const iso=_psTargetISO();
-  const g=_psGiorno(iso);
-  const a=(g.arrivi||[]).find(x=>x.id===id);
-  if(!a)return;
-  if(!_psVuota(a)&&!await cqConferma('Eliminare questo arrivo?',(a.nome?'<strong>'+a.nome+'</strong><br>':'')+'I dati inseriti andranno persi.',{ok:'Elimina'}))return;
-  g.arrivi=g.arrivi.filter(x=>x.id!==id);
-  // Traccia dell'eliminazione: senza, la fusione col cloud rimetterebbe dentro la scheda
-  // ogni volta, e cancellarla diventerebbe impossibile. Si tengono le ultime 100.
-  g.rimossi=[...new Set([].concat(g.rimossi||[],[id]))].slice(-100);
-  _psSave();prestayRender();
-}
-
-// ── Formattazione leggera nei template ──────────────────────────────────────
-// Sintassi nativa WhatsApp (*grassetto*, _corsivo_, righe "- voce" per elenchi): il canale
-// WhatsApp non ha bisogno di alcuna conversione, la riceve così com'è. Solo la mail va
-// tradotta in HTML (Resend accetta un campo html oltre a text) e il testo semplice del
-// mailto: (che non sa mostrare HTML) va ripulito dai marcatori.
-function _psMdInline(s){
-  return s.replace(/\*([^*\n]+)\*/g,'<strong>$1</strong>').replace(/_([^_\n]+)_/g,'<em>$1</em>');
-}
-// Riga per riga, non a blocchi separati da riga vuota: un elenco che segue subito una riga
-// di testo introduttiva (caso reale comune, "Ecco alcune info:\n- Check-in\n- Wifi", senza
-// riga vuota in mezzo) va comunque riconosciuto come elenco, non trascinato nel paragrafo.
-function _psMdToHtml(txt){
-  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const righe=String(txt||'').split('\n');
-  let out='',buf=[],modo=null;
-  const flush=()=>{
-    if(buf.length){
-      out+=modo==='ul'
-        ?'<ul style="margin:0 0 12px;padding-left:20px;">'+buf.map(r=>'<li>'+_psMdInline(esc(r))+'</li>').join('')+'</ul>'
-        :'<p style="margin:0 0 12px;">'+buf.map(r=>_psMdInline(esc(r))).join('<br>')+'</p>';
-    }
-    buf=[];modo=null;
-  };
-  for(const riga of righe){
-    if(!riga.trim()){flush();continue;}
-    const m=riga.match(/^\s*-\s+(.*)$/);
-    if(m){if(modo==='p')flush();modo='ul';buf.push(m[1]);}
-    else{if(modo==='ul')flush();modo='p';buf.push(riga);}
-  }
-  flush();
-  // Stesso font usato negli input di Compass: senza specificarlo la mail arriverebbe col
-  // font di default del client dell'ospite e l'anteprima non rispecchierebbe il risultato.
-  return '<div style="font-family:\'Helvetica Neue\',Arial,sans-serif;font-size:13px;line-height:1.5;color:#1a1a1a;">'+out+'</div>';
-}
-// Marcatori tolti, righe elenco convertite in punto elenco leggibile: per il mailto: (il
-// client di posta apre un body testo semplice, non HTML) e come fallback generico.
-function _psMdStrip(txt){
-  return String(txt||'').split('\n').map(r=>r.replace(/^\s*-\s+/,'• ')).join('\n')
-    .replace(/\*([^*\n]+)\*/g,'$1').replace(/_([^_\n]+)_/g,'$1');
-}
-// Toolbar B/I/• sopra le textarea dei template: avvolge la selezione (o inserisce un
-// segnaposto se non c'è selezione) e simula il change così il salvataggio (onchange) parte
-// subito, anche se il valore è stato scritto via JS e non digitato.
-// focus() su una textarea fuori dalla viewport la scrolla in vista: su un editor con 12
-// textarea questo faceva "saltare" la pagina in fondo a ogni click. Si salva e ripristina
-// la posizione di scroll — il cursore resta dove serve, solo la pagina non si muove.
-function _psWrapSel(taId,before,after){
-  const ta=document.getElementById(taId);
-  if(!ta)return;
-  const cont=_psScroller(),scrollY=cont?cont.scrollTop:0;
-  const s=ta.selectionStart,e=ta.selectionEnd,val=ta.value;
-  const sel=val.slice(s,e)||'testo';
-  ta.value=val.slice(0,s)+before+sel+after+val.slice(e);
-  ta.focus();ta.setSelectionRange(s+before.length,s+before.length+sel.length);
-  ta.dispatchEvent(new Event('change'));
-  if(cont)cont.scrollTop=scrollY;
-}
-function _psBulletSel(taId){
-  const ta=document.getElementById(taId);
-  if(!ta)return;
-  const cont=_psScroller(),scrollY=cont?cont.scrollTop:0;
-  const s=ta.selectionStart,e=ta.selectionEnd,val=ta.value;
-  let sel=val.slice(s,e)||'voce elenco';
-  sel=sel.split('\n').map(r=>r.trim()?('- '+r.replace(/^\s*-\s+/,'')):r).join('\n');
-  ta.value=val.slice(0,s)+sel+val.slice(e);
-  ta.focus();ta.setSelectionRange(s,s+sel.length);
-  ta.dispatchEvent(new Event('change'));
-  if(cont)cont.scrollTop=scrollY;
-}
-const PS_TOOLBAR_STYLE='padding:3px 8px;border:1px solid var(--border);background:var(--surface);border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;color:var(--text-dim);';
-const psToolbar=taId=>`<div style="display:flex;gap:4px;margin-bottom:4px;">
-  <button type="button" title="Grassetto: *testo*" onclick="_psWrapSel('${taId}','*','*')" style="${PS_TOOLBAR_STYLE}">B</button>
-  <button type="button" title="Corsivo: _testo_" onclick="_psWrapSel('${taId}','_','_')" style="${PS_TOOLBAR_STYLE}font-style:italic;">I</button>
-  <button type="button" title="Elenco puntato: righe che iniziano con &quot;- &quot;" onclick="_psBulletSel('${taId}')" style="${PS_TOOLBAR_STYLE}">•</button>
-</div>`;
-
-// Sostituzione segnaposto: fatta al momento dell'invio, non salvata — così se cambi il
-// template i messaggi non ancora inviati usano subito la versione nuova.
-// NON esiste {camera}: gli ospiti non sono legati a una stanza (vedi nota in cima).
-function _psCompila(txt,a,iso){
-  // {struttura} è la struttura che SCRIVE, cioè quella di prenotazione: un ospite del
-  // Boutique spostato al SoulArt per un upgrade non sa ancora nulla del SoulArt.
-  const hn=(PRESTAY_HOTELS[_psHotelMitt(a)]||{}).name||'';
-  return String(txt||'')
-    .replace(/\{nome\}/g,(a.nome||'').trim()||'Ospite')
-    .replace(/\{struttura\}/g,hn)
-    .replace(/\{data\}/g,_psFmtIT(iso));
-}
-
-// Configurazione invio diretto. Endpoint e chiave stanno SOLO in questo browser
-// (localStorage, non KV): la chiave non deve finire su GitHub né essere sincronizzata su
-// altri dispositivi insieme al resto dei dati. Vedi worker-prestay-mail.md.
-const PRESTAY_MAIL_CFG_KEY='qm_prestay_mailcfg';
-let _psMailCfg={endpoint:'',key:''};
-try{const c=localStorage.getItem(PRESTAY_MAIL_CFG_KEY);if(c)_psMailCfg=JSON.parse(c)||_psMailCfg;}catch(e){}
-// L'ENDPOINT NON È UN SEGRETO — è lo stesso Worker che tutta l'app già usa, scritto in
-// chiaro nel sorgente. Farlo digitare a mano su ogni postazione era metà della
-// configurazione per niente. Resta sovrascrivibile (un Worker di prova, un trasloco), ma
-// se il campo è vuoto vale questo. Il SEGRETO è solo la chiave, e quella non può essere
-// distribuita dall'app: /kv/get del Worker è senza autenticazione, quindi qualunque cosa
-// finisse su KV sarebbe leggibile da chiunque conosca l'indirizzo — e una chiave di invio
-// pubblica è un relay per spam a nome dell'albergo.
-const PRESTAY_ENDPOINT_DEF=PROXY+'/prestay/send';
-function _psEndpoint(){return String(_psMailCfg.endpoint||'').trim()||PRESTAY_ENDPOINT_DEF;}
-function _psMailPronto(){return!!String(_psMailCfg.key||'').trim();}
-function prestaySetMailCfg(campo,val){
-  _psMailCfg[campo]=String(val||'').trim();
-  try{localStorage.setItem(PRESTAY_MAIL_CFG_KEY,JSON.stringify(_psMailCfg));}catch(e){}
-  prestayRender();
-}
 // A scorrere NON è la finestra ma il contenitore `.content` (overflow-y:auto): agire su
-// window.scrollY non ha effetto. Tutto ciò che tocca lo scorrimento in questa sezione deve
-// passare da qui.
-function _psScroller(){return document.querySelector('.content');}
-// Porta un elemento in cima alla vista. Il prefisso _ps di _psScroller è storico (nasce
-// col pre-stay) ma il contenitore che scorre è UNO SOLO per tutta la dashboard, quindi
-// questo helper è generico e lo usa anche la Biancheria. Il doppio giro non è di troppo:
-// aprendo un pannello il layout si assesta al frame successivo e la prima misura sarebbe
-// quella di prima dell'espansione.
+// window.scrollY non ha effetto. Tutto ciò che tocca lo scorrimento passa da qui.
+function _qmScroller(){return document.querySelector('.content');}
+// Porta un elemento in cima alla vista. Il doppio giro non è di troppo: aprendo un
+// pannello il layout si assesta al frame successivo e la prima misura sarebbe quella di
+// prima dell'espansione.
 function _qmPortaInVista(id,margine){
-  const c=_psScroller();if(!c)return;
+  const c=_qmScroller();if(!c)return;
   const porta=()=>{
     const el=document.getElementById(id);
     if(el)c.scrollTop=Math.max(0,el.offsetTop-c.offsetTop-(margine||8));
@@ -13967,8 +13090,8 @@ function _qmPortaInVista(id,margine){
   requestAnimationFrame(porta);
 }
 // Conserva la posizione: usato quando il ridisegno non deve spostare l'occhio.
-function _psSenzaSalto(fn){
-  const c=_psScroller(),y=c?c.scrollTop:0;
+function _qmSenzaSalto(fn){
+  const c=_qmScroller(),y=c?c.scrollTop:0;
   fn();
   if(c){
     c.scrollTop=y;
@@ -13976,684 +13099,33 @@ function _psSenzaSalto(fn){
     requestAnimationFrame(()=>{c.scrollTop=y;});
   }
 }
-// ── Risposte degli ospiti ───────────────────────────────────────────────────
-// Nel pre-stay si chiedono orario di arrivo, preferenza sul letto e allergie: le risposte
-// servono a chi prepara la camera, ma andarle a cercare nella webmail è un lavoro a parte.
-// Il Worker le legge in IMAP cercando SOLO gli indirizzi degli arrivi del giorno, quindi
-// l'endpoint non può restituire il resto della casella (vedi worker.js).
-//
-// Restano SOLO in questo browser: sono messaggi di ospiti, e tenerli fuori da KV evita di
-// spargere corrispondenza su tutti i dispositivi per una comodità di lettura.
-const PRESTAY_RISP_KEY='qm_prestay_risposte';
-let _psRisposte={};            // { iso: { 'email': {data,oggetto,testo} } }
-try{const r=localStorage.getItem(PRESTAY_RISP_KEY);if(r)_psRisposte=JSON.parse(r)||{};}catch(e){}
-let _psRispInCorso=false;
-function _psRisposta(iso,email){
-  const e=String(email||'').trim().toLowerCase();
-  return (e&&_psRisposte[iso]&&_psRisposte[iso][e])||null;
+// ── Pulizia una tantum di una funzione dismessa (01/10/2026) ──
+// La funzione è stata tolta da Compass e dal Worker; qui si cancellano i suoi dati, nel
+// cloud e nel browser. Una volta per postazione: si segna fatta solo se il cloud ha
+// confermato ogni cancellazione, altrimenti ci si riprova al prossimo avvio. La copia di
+// sviluppo non tocca il cloud di produzione.
+const QM_DISMESSI_KV=['qm_prestay','qm_prestay_tpl','qm_prestay_dev'];
+const QM_DISMESSI_LOCALI=['qm_prestay','qm_prestay_tpl','qm_prestay_dev','qm_prestay_mailcfg','qm_prestay_mittente','qm_prestay_risposte','qm_ts_prestayTs'];
+// Le chiavi da cancellare nel cloud: nessuna dalla copia di sviluppo o se già fatto.
+function _qmDismessiDaCancellare(){
+  const h=location.hostname||'';
+  if(location.protocol==='file:'||/^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(h))return[];
+  try{if(localStorage.getItem('qm_dismessi_ok'))return[];}catch(e){}
+  return QM_DISMESSI_KV.slice();
 }
-function _psRispToggle(id,btn){
-  const el=document.getElementById(id);
-  if(!el)return;
-  const espanso=el.style.maxHeight==='none';
-  if(espanso){el.style.maxHeight='4.5em';el.style.overflow='hidden';if(btn)btn.textContent='Mostra tutto ▾';}
-  else{el.style.maxHeight='none';el.style.overflow='visible';if(btn)btn.textContent='Mostra meno ▴';}
-}
-// L'endpoint delle risposte sta accanto a quello di invio: si ricava dallo stesso indirizzo
-// configurato, senza chiedere all'utente una seconda impostazione da tenere allineata.
-function _psEndpointRisposte(){
-  const e=String(_psMailCfg.endpoint||'').trim();
-  if(!e)return'';
-  return e.replace(/\/prestay\/send\/?$/,'/prestay/risposte');
-}
-async function prestayControllaRisposte(){
-  if(_psRispInCorso)return;
-  const iso=_psTargetISO();
-  const ep=_psEndpointRisposte();
-  if(!ep||!_psMailCfg.key){
-    cqAvviso('Per leggere le risposte serve la configurazione in "Impostazioni": è la stessa di quella usata per inviare.');
-    return;
+async function _qmPulisciDismessi(){
+  QM_DISMESSI_LOCALI.forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+  const daCancellare=_qmDismessiDaCancellare();
+  if(!daCancellare.length)return;
+  let tutti=true;
+  for(const k of daCancellare){
+    try{const r=await fetch(PROXY+'/kv/delete?key='+encodeURIComponent(k));if(!r.ok)tutti=false;}
+    catch(e){tutti=false;}
   }
-  const indirizzi=[...new Set((_psGiorno(iso).arrivi||[])
-    .map(a=>String(a.email||'').trim().toLowerCase()).filter(Boolean))];
-  if(!indirizzi.length){cqAvviso('Nessun indirizzo email inserito in questa data: non c\'è nulla da cercare.');return;}
-  _psRispInCorso=true;prestayRender();
-  try{
-    const r=await fetch(ep,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-Prestay-Key':_psMailCfg.key},
-      body:JSON.stringify({indirizzi,giorni:14})
-    });
-    const j=await r.json().catch(()=>({ok:false,error:'risposta non leggibile'}));
-    if(!j||!j.ok)throw new Error((j&&j.error)||'lettura non riuscita');
-    _psRisposte[iso]=j.risposte||{};
-    try{localStorage.setItem(PRESTAY_RISP_KEY,JSON.stringify(_psRisposte));}catch(e){}
-    const n=Object.keys(_psRisposte[iso]).length;
-    _psAvviso=n?n+' rispost'+(n===1?'a':'e')+' trovat'+(n===1?'a':'e')+' e mostrat'+(n===1?'a':'e')+' sulle schede.'
-              :'Nessuna risposta dagli ospiti di questa data. Chi ha scritto dentro la messaggistica di Booking non compare qui: quelle si leggono solo nell\'Extranet.';
-  }catch(e){
-    cqAvviso('Non è stato possibile leggere le risposte: '+(e&&e.message||e));
-  }finally{
-    _psRispInCorso=false;prestayRender();
-  }
+  if(tutti){try{localStorage.setItem('qm_dismessi_ok','1');}catch(e){}}
 }
-// Chiede al Worker da quale casella parte davvero la posta. È l'unica risposta possibile
-// alla domanda "perché le mail agli indirizzi Booking tornano indietro se sull'Extranet
-// l'indirizzo è quello giusto?": l'Extranet dice quale mittente è autorizzato, questo dice
-// quale mittente stiamo usando. Finché i due non coincidono, il relay rifiuta.
-function _psEndpointStato(){
-  return _psEndpoint().replace(/\/prestay\/send\/?$/,'/prestay/stato');
-}
-let _psMittInCorso=false;
-// La risposta del Worker, messa in forma. `caselle` è il campo che conta e che PRIMA
-// VENIVA BUTTATO VIA: senza, _psMittenteAttuale('bh') ricadeva sulla casella principale e
-// il confronto con l'indirizzo registrato sull'Extranet del Boutique falliva sempre. Ogni
-// arrivo Booking del Boutique risultava quindi "non recapitabile" anche quando la mail era
-// partita dalla casella giusta ed era arrivata: il Worker sceglie la casella da sé
-// (casellaPer), Compass si limitava a raccontare male ciò che era già successo bene.
-function _psMittDaRisposta(j){
-  return{mittente:j.mittente||'',mittenteDa:j.mittenteDa||'',via:j.via||'',smtpHost:j.smtpHost||'',
-         caselle:j.caselle||{},replyTo:j.replyTo||'',imap:j.imap||'',versione:j.versione||'',ts:Date.now()};
-}
-function _psMittSalva(m){
-  _psMitt=m;
-  try{localStorage.setItem(PS_MITT_KEY,JSON.stringify(_psMitt));}catch(e){}
-}
-// La verifica si faceva SOLO a mano, una volta per postazione: chi non la premeva vedeva
-// ogni indirizzo Booking marcato come non recapitabile, e l'invio in blocco li saltava,
-// anche con tutto configurato bene. Ma le credenziali per chiederlo sono le stesse
-// dell'invio: se l'invio è configurato, si chiede da soli. In silenzio, senza finestre:
-// è una diagnosi, non un'operazione dell'utente, e non deve interrompere chi sta
-// compilando i contatti. Il pulsante in Impostazioni resta per rifarla su richiesta.
-const PS_MITT_TTL=6*3600*1000;
-let _psMittAuto=false;
-function _psVerificaAuto(){
-  if(_psMittAuto||_psMittInCorso||!_psMailPronto())return;
-  // Una verifica vecchia va rifatta, e una senza `caselle` viene dalla versione con il
-  // difetto qui sopra: va rifatta comunque, altrimenti l'errore resterebbe in cache.
-  if(_psMitt&&_psMitt.caselle&&(Date.now()-(_psMitt.ts||0))<PS_MITT_TTL)return;
-  const ep=_psEndpointStato();
-  if(!ep)return;
-  _psMittAuto=true;
-  fetch(ep,{method:'GET',headers:{'X-Prestay-Key':_psMailCfg.key}})
-    .then(r=>r.ok?r.json():null)
-    .then(j=>{if(!j||!j.ok)return;_psMittSalva(_psMittDaRisposta(j));prestayRender();})
-    .catch(()=>{});
-}
-async function prestayVerificaMittente(){
-  if(_psMittInCorso)return;
-  const ep=_psEndpointStato();
-  if(!ep||!_psMailCfg.key){
-    cqAvviso('Serve prima la configurazione qui sotto','Endpoint e chiave sono gli stessi usati per inviare.');
-    return;
-  }
-  _psMittInCorso=true;prestayRender();
-  try{
-    const r=await fetch(ep,{method:'GET',headers:{'X-Prestay-Key':_psMailCfg.key}});
-    // 404 = il Worker in produzione è più vecchio di questo file. Si pubblica a mano, quindi
-    // è un caso normale, non un guasto: va detto con le istruzioni invece che come errore.
-    if(r.status===404)throw new Error('Il Worker pubblicato non conosce ancora questa verifica: va ripubblicato worker.js su Cloudflare (Workers → anthropic-proxy → Modifica codice → Deploy).');
-    const j=await r.json().catch(()=>null);
-    if(!j||!j.ok)throw new Error((j&&j.error)||'risposta non leggibile');
-    _psMittSalva(_psMittDaRisposta(j));
-  }catch(e){
-    cqAvviso('Verifica non riuscita',(e&&e.message)||String(e));
-  }finally{
-    _psMittInCorso=false;prestayRender();
-  }
-}
-// Esito della verifica, dentro il pannello Impostazioni. Mostra sempre e comunque i due
-// indirizzi affiancati — quello registrato su Booking e quello da cui spediamo — perché è
-// il confronto, non il singolo valore, a spiegare i rimbalzi.
-function _psMittRiquadro(){
-  const esc=t=>String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const bott='padding:6px 12px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:7px;font-size:var(--fs-xxs);font-weight:700;font-family:inherit;cursor:'+(_psMittInCorso?'wait':'pointer')+';opacity:'+(_psMittInCorso?'.6':'1')+';';
-  let h='<div style="margin-top:14px;border-top:1px solid var(--border-light);padding-top:12px;">'
-    +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'
-    +'<button onclick="prestayVerificaMittente()" '+(_psMittInCorso?'disabled':'')+' style="'+bott+'">'+(_psMittInCorso?'Verifica…':'Verifica mittente')+'</button>'
-    +'<span style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;flex:1;min-width:220px;">Chiede al Worker da quale casella parte davvero la posta. Sull\'Extranet Booking è registrato un indirizzo per struttura ('+esc(Object.keys(PRESTAY_FROM_NAME).map(k=>_psMittAtteso(k)).filter((v,i,z)=>z.indexOf(v)===i).join(', '))+'), e gli indirizzi <strong>@guest.booking.com</strong> accettano posta solo da lì: da qualunque altro mittente la rimandano indietro.</span>'
-    +'</div>';
-  if(!_psMitt){
-    return h+'<div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">'
-      +(_psMailPronto()
-        ? 'Non ancora riuscita su questa postazione: viene tentata da sola all\'apertura della sezione, quindi se resta vuota il Worker non risponde o la chiave non è quella giusta.'
-        : 'Con l\'invio diretto configurato la verifica si fa da sola. Senza, la mail parte dal client di posta e Compass non può sapere da quale indirizzo.')
-      +'</div></div>';
-  }
-  // Ogni struttura ha la sua riga: da quando il Boutique spedisce da un dominio suo, un
-  // semaforo unico non basta piu' — puo' essere a posto una struttura e non un'altra.
-  const strutture=Object.keys(PRESTAY_FROM_NAME);
-  const stato=strutture.map(k=>({k,nome:PRESTAY_FROM_NAME[k],
-    mitt:_psMittenteAttuale(k),atteso:_psMittAtteso(k),ok:_psMittenteOkBooking(k)}));
-  const m=_psMittenteAttuale(),okB=stato.every(s=>s.ok);
-  const col=okB?'var(--green)':'var(--red)',bg=okB?'var(--green-bg)':'var(--red-bg)';
-  const quando=new Date(_psMitt.ts||Date.now());
-  const hhmm=String(quando.getHours()).padStart(2,'0')+':'+String(quando.getMinutes()).padStart(2,'0');
-  h+='<div style="margin-top:10px;border:1px solid '+col+';background:'+bg+';border-radius:8px;padding:10px 12px;">'
-    +'<div style="font-size:var(--fs-xs);font-weight:700;color:'+col+';margin-bottom:6px;">'
-    +(okB?'Spediamo dall\'indirizzo registrato su Booking':'Spediamo da un indirizzo diverso da quello registrato su Booking')+'</div>'
-    +'<div style="font-size:var(--fs-xxs);color:var(--text);line-height:1.7;">'
-    +'mittente reale: <strong>'+esc(m||'(nessuno)')+'</strong>'+(_psMitt.mittenteDa?' <span style="color:var(--text-dim);">(variabile '+esc(_psMitt.mittenteDa)+')</span>':'')+'<br>'
-    +'invio: '+esc(_psMitt.via||'?')+(_psMitt.smtpHost?' · '+esc(_psMitt.smtpHost):'')
-    +(_psMitt.replyTo?' · risposte a '+esc(_psMitt.replyTo):'')
-    +'</div>'
-    +'<div style="margin-top:8px;border-top:1px solid var(--border-light);padding-top:7px;font-size:var(--fs-xxs);line-height:1.7;">'
-    +stato.map(s=>'<div style="display:flex;gap:6px;align-items:baseline;">'
-        +'<span style="color:'+(s.ok?'var(--green)':'var(--red)')+';font-weight:700;">'+(s.ok?'✓':'✕')+'</span>'
-        +'<span style="min-width:120px;color:var(--text-dim);">'+esc(s.nome)+'</span>'
-        +'<span style="color:var(--text);">'+esc(s.mitt||'(non verificato)')+'</span>'
-        +(s.ok?'':'<span style="color:var(--red);"> — Booking attende '+esc(s.atteso)+'</span>')
-      +'</div>').join('')
-    +'</div>';
-  if(!okB){
-    h+='<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text);line-height:1.6;">'
-      +'È questo il motivo dei rimbalzi: sull\'Extranet l\'indirizzo può essere giusto, ma la mail non parte da lì. '
-      +'Su Cloudflare (Workers → anthropic-proxy → Impostazioni) serve la casella giusta per ogni struttura: <strong>SMTP_USER</strong>/<strong>SMTP_PASS</strong> per quella principale, e <strong>SMTP_USER_&lt;COD&gt;</strong>/<strong>SMTP_PASS_&lt;COD&gt;</strong> per chi ne ha una sua (per esempio SMTP_USER_BH per il Boutique), '
-      +'e va <strong>cancellata SMTP_FROM</strong> se presente: resta lei a decidere il mittente'+(_psMitt.mittenteDa==='SMTP_FROM'?' — ed è proprio il caso attuale':'')+'. '
-      +'Poi si ripubblica il Worker e si preme di nuovo questo pulsante.</div>';
-  }
-  // La casella letta in IMAP è quella dove finiscono le risposte degli ospiti: cambiando
-  // casella di invio, le risposte cambiano posto e "Controlla risposte" smetterebbe di
-  // trovarle senza dire perché.
-  if(_psMitt.imap&&m&&_psMitt.imap.toLowerCase()!==m.toLowerCase()){
-    h+='<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-muted);line-height:1.6;">"Controlla risposte" legge <strong>'+esc(_psMitt.imap)+'</strong>, che non è la casella da cui si spedisce: le risposte degli ospiti arrivano dove torna il messaggio, quindi se non compaiono vanno allineate anche <strong>IMAP_USER</strong>/<strong>IMAP_PASS</strong>.</div>';
-  }
-  h+='<div style="margin-top:8px;font-size:9px;color:var(--text-dim);">verificato alle '+hhmm+' · Worker versione '+esc(_psMitt.versione||'sconosciuta')+'</div>'
-    +'</div></div>';
-  return h;
-}
-function prestayToggleMailCfg(){_prestayMailCfgOpen=!_prestayMailCfgOpen;_psSenzaSalto(prestayRender);}
-// La chiave si deve poter RILEGGERE, non solo scrivere: è così che si porta su una
-// postazione nuova senza andarla a ripescare su Cloudflare. Sta comunque solo in questo
-// browser, e il pannello si apre di proposito (non è a schermo mentre passa qualcuno).
-let _psChiaveVisibile=false;
-function prestayToggleChiave(){_psChiaveVisibile=!_psChiaveVisibile;_psSenzaSalto(prestayRender);}
-function prestayCopiaChiave(btn){
-  const k=String(_psMailCfg.key||'');
-  if(!k)return;
-  const fatto=()=>{const t=btn.textContent;btn.textContent='Copiata';setTimeout(()=>{btn.textContent=t;},1500);};
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(k).then(fatto).catch(()=>{_psChiaveVisibile=true;prestayRender();});
-  else{_psChiaveVisibile=true;prestayRender();}
-}
-let _prestayMailCfgOpen=false;
-let _psMailInFlight={};
+setTimeout(()=>{_qmPulisciDismessi().catch(()=>{});},8000);
 
-// Spedizione vera e propria — chiamata dall'anteprima, non direttamente dal pulsante.
-// Nucleo dell'invio: restituisce una Promise così può essere usato sia da un singolo
-// pulsante sia dall'invio di gruppo, che deve aspettare una mail prima di partire con la
-// successiva. Non apre mai alert: chi chiama decide come segnalare.
-function _psInviaMail(a,ogg,corpo){
-  const hm=_psHotelMitt(a);
-  const fromName=PRESTAY_FROM_NAME[hm]||'';
-  return fetch(_psEndpoint(),{
-    method:'POST',
-    headers:{'Content-Type':'application/json','X-Prestay-Key':_psMailCfg.key},
-    // La struttura decide da quale casella parte: il Boutique ha la sua (vedi casellaPer nel
-    // Worker). Senza questo campo tutte le mail partirebbero dalla casella principale.
-    body:JSON.stringify({to:a.email,subject:ogg,text:_psMdStrip(corpo),html:_psMdToHtml(corpo),fromName,hotel:hm})
-  }).then(res=>res.json().catch(()=>({ok:false,error:'risposta non leggibile'})))
-   .then(j=>{
-    if(j&&j.ok){a.mailTs=Date.now();a.mailErr=null;return true;}
-    a.mailErr=(j&&j.error)||'invio fallito';return false;
-  }).catch(e=>{a.mailErr=e.message||'rete non raggiungibile';return false;});
-}
-function _psSpedisciMail(id,ogg,corpo){
-  const iso=_psTargetISO(),a=_psScheda(iso,id);
-  if(!a)return;
-  if(!_psMailPronto()){
-    // Il client di posta apre un body testo semplice: niente HTML, quindi i marcatori
-    // *grassetto*/_corsivo_ vanno tolti invece di lasciarli visibili come asterischi.
-    window.location.href='mailto:'+encodeURIComponent(a.email)+'?subject='+encodeURIComponent(ogg)+'&body='+encodeURIComponent(_psMdStrip(corpo));
-    a.mailTs=Date.now();_psSave();
-    setTimeout(prestayRender,300);
-    return;
-  }
-  _psMailInFlight[id]=true;prestayRender();
-  _psInviaMail(a,ogg,corpo).then(ok=>{
-    delete _psMailInFlight[id];
-    _psSave();prestayRender();
-    if(!ok)cqAvviso('Invio non riuscito: '+a.mailErr+'\n\nL\'arrivo resta da contattare. Se il problema persiste puoi usare WhatsApp o togliere la configurazione per tornare al client di posta.');
-  });
-}
-// Invio in blocco di una struttura. Le mail partono UNA ALLA VOLTA, aspettando l'esito
-// della precedente: l'SMTP condiviso di Register e il tetto giornaliero del Worker non
-// gradiscono raffiche, e in caso di errore si sa esattamente dove ci si è fermati.
-// Si salta chi non ha email e chi è già stato contattato — così ripremere il pulsante
-// dopo aver aggiunto un ospite manda solo la mail mancante, non di nuovo tutte.
-async function prestayInviaGruppo(hotel){
-  const iso=_psTargetISO();
-  const nome=(PRESTAY_HOTELS[hotel]||{}).name||hotel;
-  if(!_psMailPronto()){
-    cqAvviso('L\'invio diretto non è configurato su questo browser, quindi l\'invio in blocco non è disponibile: aprirebbe una finestra del client di posta per ogni ospite.\n\nConfiguralo da "Impostazioni", oppure manda i messaggi uno alla volta.');
-    return;
-  }
-  const tutti=(_psGiorno(iso).arrivi||[]).filter(a=>a.hotel===hotel);
-  // Gli indirizzi Booking vengono ESCLUSI, non spediti: Booking li scarterebbe in silenzio
-  // e resterebbero segnati come inviati pur non essendo arrivati a nessuno. Meglio un
-  // conteggio che resta incompleto — è la verità — di una spunta verde che mente.
-  const bloccati=tutti.filter(a=>a.email&&!a.mailTs&&_psBookingBloccato(a.email,_psHotelMitt(a))).length;
-  const daFare=tutti.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email,_psHotelMitt(a)));
-  const senzaMail=tutti.filter(a=>!a.email).length;
-  // Gli indirizzi ammessi dal relay dipendono dalla struttura che SCRIVE, che su una scheda
-  // con mittente cambiato non è quella del gruppo: si elencano quelli davvero in gioco.
-  const attesi=[...new Set(tutti.filter(a=>a.email&&!a.mailTs&&_psBookingBloccato(a.email,_psHotelMitt(a)))
-                                .map(a=>_psMittAtteso(_psHotelMitt(a))))].join(' o ');
-  if(!daFare.length){
-    cqAvviso(senzaMail||bloccati
-      ? 'Nessuna mail da inviare per '+nome+'.'
-        +(senzaMail?'\n\n· '+senzaMail+' arriv'+(senzaMail===1?'o è':'i sono')+' senza indirizzo email.':'')
-        +(bloccati?'\n\n· '+bloccati+' ha'+(bloccati===1?'':'nno')+' un indirizzo Booking, recapitabile solo spedendo da '+attesi+'. Controlla da quale casella parte la posta con Impostazioni → Verifica mittente. Nel frattempo contattali su WhatsApp, se hai il numero.':'')
-      : 'Per '+nome+' le mail sono già state inviate tutte.');
-    return;
-  }
-  const avvisoVuoti=senzaMail?'<br><br>'+senzaMail+' arriv'+(senzaMail===1?'o verrà saltato perché non ha':'i verranno saltati perché non hanno')+' email.':'';
-  const avvisoBooking=bloccati?'<br><br>'+bloccati+' indirizz'+(bloccati===1?'o Booking verrà saltato':'i Booking verranno saltati')+': Booking li rimanda indietro se la mail non parte da '+attesi+'.':'';
-  if(!await cqConferma('Inviare '+daFare.length+' '+(daFare.length===1?'messaggio':'messaggi')+'?',
-      '<strong>'+nome+'</strong>'+avvisoVuoti+avvisoBooking
-      +'<br><br>Partono uno alla volta, col testo del template. Non c\'è anteprima: per rileggere prima di mandare usa il pulsante su una singola scheda.',
-      {ok:'Invia'}))return;
-  let ok=0,ko=0;
-  for(const a of daFare){
-    _psMailInFlight[a.id]=true;prestayRender();
-    const t=_psTpl(_psHotelMitt(a),a.lang||'it');
-    const riuscito=await _psInviaMail(a,_psCompila(t.ogg,a,iso),_psCompila(t.corpo,a,iso));
-    delete _psMailInFlight[a.id];
-    riuscito?ok++:ko++;
-    _psSave();prestayRender();
-  }
-  _psAvviso=nome+': '+ok+' mail inviat'+(ok===1?'a':'e')+(ko?' · '+ko+' non riuscit'+(ko===1?'a':'e')+', l\'errore è indicato sulla riga':'');
-  prestayRender();
-}
-function _psSpedisciWa(id,corpo){
-  const iso=_psTargetISO(),a=_psScheda(iso,id);
-  if(!a)return;
-  const tel=(a.tel||'').replace(/[^\d+]/g,'');
-  if(!tel){cqAvviso('Inserisci prima il numero di telefono di questo ospite.');return;}
-  // *grassetto* e _corsivo_ sono già la sintassi nativa di WhatsApp: nessuna conversione.
-  // Le righe "- voce" (WhatsApp non ha un vero elenco puntato) diventano "• voce".
-  const testoWa=String(corpo||'').split('\n').map(r=>r.replace(/^\s*-\s+/,'• ')).join('\n');
-  window.open('https://wa.me/'+tel.replace(/^\+/,'')+'?text='+encodeURIComponent(testoWa),'_blank');
-  a.waTs=Date.now();_psSave();
-  setTimeout(prestayRender,300);
-}
-
-// ── Anteprima prima dell'invio ──────────────────────────────────────────────
-// I pulsanti non spediscono al volo: aprono il messaggio già compilato e modificabile.
-// Con nome e contatti copiati a mano dal PMS, un refuso o un segnaposto rimasto vuoto si
-// vedono solo rileggendo — e una mail sbagliata a un ospite non si richiama indietro. Le
-// correzioni valgono per QUESTO invio soltanto: il template resta com'è.
-// Aprendo l'anteprima si vuole vedere IL MESSAGGIO, non il testo sorgente con gli
-// asterischi: si mostra quindi il risultato finito, come lo leggerà l'ospite. La modifica
-// resta a un clic sulla matita, ma non è più la modalità predefinita — nella maggior parte
-// dei casi si apre solo per rileggere prima di premere invio.
-let _psAnteprima=null;   // {id,canale,ogg,corpo,modifica}
-function prestayAnteprima(id,canale){
-  const iso=_psTargetISO(),a=_psScheda(iso,id);
-  if(!a)return;
-  const haMail=!!a.email,haTel=!!(a.tel||'').replace(/[^\d+]/g,'');
-  if(canale==='mail'&&!haMail){cqAvviso('Inserisci prima l\'indirizzo email di questo ospite.');return;}
-  if(canale==='wa'&&!haTel){cqAvviso('Inserisci prima il numero di telefono di questo ospite.');return;}
-  if(canale==='both'&&!haMail&&!haTel){cqAvviso('Inserisci prima almeno un contatto (email o telefono) per vedere l\'anteprima.');return;}
-  const t=_psTpl(_psHotelMitt(a),a.lang||'it');
-  _psAnteprima={id,canale,ogg:_psCompila(t.ogg,a,iso),corpo:_psCompila(t.corpo,a,iso),modifica:false};
-  const m=document.createElement('div');
-  m.id='psAnteprimaModal';
-  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
-  m.onclick=e=>{if(e.target===m)prestayChiudiAnteprima();};
-  m.innerHTML='<div id="psAntBox" onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:22px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);margin:auto;"></div>';
-  document.body.appendChild(m);
-  _psAntRendi();
-}
-// Passa da lettura a modifica e viceversa, conservando ciò che è stato scritto.
-function prestayAntModifica(){
-  if(!_psAnteprima)return;
-  if(_psAnteprima.modifica)_psAntLeggiCampi();
-  _psAnteprima.modifica=!_psAnteprima.modifica;
-  _psAntRendi();
-}
-// Travasa il contenuto dei campi nello stato: va fatto PRIMA di ridisegnare o di inviare,
-// altrimenti una correzione appena digitata andrebbe persa.
-function _psAntLeggiCampi(){
-  if(!_psAnteprima)return;
-  const o=document.getElementById('psAntOgg'),c=document.getElementById('psAntCorpo');
-  if(o)_psAnteprima.ogg=o.value;
-  if(c)_psAnteprima.corpo=c.value;
-}
-function _psAntRendi(){
-  const box=document.getElementById('psAntBox');
-  if(!box||!_psAnteprima)return;
-  const {id,canale,ogg,corpo,modifica}=_psAnteprima;
-  const iso=_psTargetISO(),a=_psScheda(iso,id);
-  if(!a)return;
-  const haMail=!!a.email,haTel=!!(a.tel||'').replace(/[^\d+]/g,'');
-  const dest=canale==='mail'?a.email:canale==='wa'?(a.tel||''):[a.email,a.tel].filter(Boolean).join(' · ')||'nessun contatto';
-  const hm=_psHotelMitt(a),altraStruttura=_psMittDiverso(a);
-  const nomeH=(PRESTAY_HOTELS[hm]||{}).name||'';
-  const avvisi=[];
-  if(/\[SCRIVI QUI|\[WRITE THE/i.test(corpo))avvisi.push('Il testo contiene ancora il segnaposto da riscrivere: personalizzalo in "Modifica testi", oppure correggilo qui con la matita solo per questo invio.');
-  if(!(a.nome||'').trim())avvisi.push('Nome ospite vuoto: il messaggio dirà genericamente "Gentile Ospite".');
-  if(/\{[a-z]+\}/i.test(corpo)||/\{[a-z]+\}/i.test(ogg))avvisi.push('C\'è un segnaposto tra graffe non sostituito: controlla che sia scritto esattamente {nome}, {struttura} o {data}.');
-  if(canale!=='wa'&&_psBookingBloccato(a.email,hm)){
-    const mitt=_psMittenteAttuale(hm);
-    avvisi.push('<strong>Questo è un indirizzo Booking</strong>: viene recapitato solo se la mail parte da '+_psMittAtteso(hm)+'. '
-      +(mitt?'Compass spedisce da <strong>'+mitt+'</strong>, quindi Booking la rimanda indietro.'
-            :'Il mittente da cui Compass spedisce non è stato verificato (Impostazioni → Verifica mittente): se non è quello, Booking la rimanda indietro o la scarta senza avvisare.')
-      +' Risulterebbe inviata senza esserlo.');
-  }
-  const esc=v=>String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const matita='<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>';
-
-  box.innerHTML=`
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;">
-      <span style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-sm);font-weight:700;">${canale==='mail'?PS_ICON_MAIL+' Anteprima mail':canale==='wa'?PS_ICON_WA+' Anteprima WhatsApp':PS_ICON_EYE+' Anteprima messaggio'}</span>
-      <span style="font-size:var(--fs-xs);color:var(--text-muted);">${nomeH} · ${(a.lang||'it').toUpperCase()}</span>
-      <button onclick="prestayAntModifica()" title="${modifica?'Torna a vedere il messaggio finito':'Modifica il testo solo per questo invio'}" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid ${modifica?'var(--accent)':'var(--border)'};background:${modifica?'var(--accent-bg)':'var(--surface)'};color:${modifica?'var(--accent)':'var(--text-dim)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">${matita}${modifica?'Fine':'Modifica'}</button>
-    </div>
-    <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:${altraStruttura?'8':'12'}px;">A: <strong style="color:var(--text);">${esc(dest)}</strong>${canale==='mail'&&_psMailPronto()?' · parte davvero da qui':canale==='mail'?' · si aprirà il client di posta':''}</div>
-    ${altraStruttura?`<div style="background:var(--accent-bg);color:var(--accent);border-radius:7px;padding:8px 12px;font-size:var(--fs-xs);line-height:1.55;margin-bottom:12px;">Parte da <strong>${esc(PRESTAY_FROM_NAME[hm]||nomeH)}</strong>${canale==='wa'?', col testo di quella struttura':', casella e testo di quella struttura'} — l'ospite arriva al <strong>${esc((PRESTAY_HOTELS[a.hotel]||{}).name||'')}</strong> ma ha prenotato altrove.</div>`:''}
-    ${avvisi.length?`<div style="background:var(--amber-bg);color:var(--amber);border-radius:7px;padding:9px 12px;font-size:var(--fs-xs);line-height:1.55;margin-bottom:12px;">${avvisi.map(v=>'• '+v).join('<br>')}</div>`:''}
-    ${modifica?`
-      ${canale!=='wa'?`<label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:3px;">OGGETTO${canale==='both'?' <span style="font-weight:400;text-transform:none;">(solo per la mail)</span>':''}</label>
-      <input id="psAntOgg" value="${String(ogg).replace(/"/g,'&quot;')}" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:'Helvetica Neue',Arial,sans-serif;margin-bottom:10px;">`:''}
-      ${psToolbar('psAntCorpo')}
-      <textarea id="psAntCorpo" rows="14" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:'Helvetica Neue',Arial,sans-serif;line-height:1.6;resize:vertical;">${esc(corpo)}</textarea>
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.5;"><code style="background:var(--surface2);padding:0 4px;border-radius:3px;">*grassetto*</code> · <code style="background:var(--surface2);padding:0 4px;border-radius:3px;">_corsivo_</code> · righe con "- " per gli elenchi. Le modifiche valgono solo per questo invio: per cambiare il testo di tutti usa "✏️ Modifica testi".</div>
-    `:`
-      ${canale!=='wa'?`<div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border-light);">${esc(ogg)}</div>`:''}
-      <div style="border:1px solid var(--border-light);border-radius:8px;padding:14px 16px;background:var(--surface2);font-size:var(--fs-xs);color:var(--text);line-height:1.55;max-height:420px;overflow-y:auto;">${_psMdToHtml(corpo)}</div>
-    `}
-    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-      <button onclick="prestayChiudiAnteprima()" style="flex:1;min-width:90px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-weight:600;font-size:var(--fs-xs);cursor:pointer;">${canale==='both'?'Chiudi':'Annulla'}</button>
-      ${canale!=='wa'&&haMail?`<button onclick="prestayInviaDaAnteprima('mail')" style="flex:2;min-width:150px;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;">${PS_ICON_MAIL}${_psMailPronto()?'Invia la mail':'Apri il client di posta'}</button>`:''}
-      ${canale!=='mail'&&haTel?`<button onclick="prestayInviaDaAnteprima('wa')" style="flex:2;min-width:130px;padding:10px;background:${canale==='both'?'#e9faf0':'#25D366'};color:${canale==='both'?'#1a9f4f':'#fff'};border:${canale==='both'?'1px solid #25D366':'none'};border-radius:8px;font-weight:700;font-size:var(--fs-xs);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;">${PS_ICON_WA}Apri WhatsApp</button>`:''}
-    </div>`;
-}
-function prestayChiudiAnteprima(){
-  const m=document.getElementById('psAnteprimaModal');
-  if(m)m.remove();
-  _psAnteprima=null;
-}
-function prestayInviaDaAnteprima(canaleScelto){
-  if(!_psAnteprima)return;
-  _psAntLeggiCampi();                       // eventuali correzioni non ancora confermate
-  const {id,ogg,corpo}=_psAnteprima;
-  const canale=canaleScelto||_psAnteprima.canale;
-  if(!String(corpo||'').trim()){cqAvviso('Il messaggio è vuoto.');return;}
-  prestayChiudiAnteprima();
-  if(canale==='mail')_psSpedisciMail(id,ogg,corpo);
-  else _psSpedisciWa(id,corpo);
-}
-
-// Lo stato "inviato" nasce dal click sul pulsante, ma è una spunta come le altre: se il
-// client di posta non si apre, o si annulla, va poterla togliere a mano.
-function prestayToggleInviato(id,canale){
-  const iso=_psTargetISO(),a=_psScheda(iso,id);
-  if(!a)return;
-  const k=canale==='wa'?'waTs':'mailTs';
-  a[k]=a[k]?null:Date.now();
-  _psSave();prestayRender();
-}
-// L'editor dei testi si costruisce in fondo alla vista: aprendolo senza spostare la pagina
-// sembrava non succedere nulla. Lo si porta IN VISTA (non "in cima": in cima ci sono gli
-// arrivi, l'editor resterebbe comunque fuori schermo).
-function prestayToggleTpl(){
-  _prestayTplOpen=!_prestayTplOpen;
-  prestayRender();
-  const c=_psScroller();
-  if(!c)return;
-  if(!_prestayTplOpen){c.scrollTop=0;return;}     // chiudendo si torna all'elenco
-  const porta=()=>{
-    const p=document.getElementById('psTplPanel');
-    if(p)c.scrollTop=Math.max(0,p.offsetTop-c.offsetTop-8);
-  };
-  porta();
-  requestAnimationFrame(porta);                   // il layout può assestarsi dopo
-}
-function prestaySetTpl(hotel,lang,campo,val){
-  if(!_prestayTpl[hotel])_prestayTpl[hotel]={};
-  if(!_prestayTpl[hotel][lang])_prestayTpl[hotel][lang]={...(PRESTAY_TPL_DEFAULT[lang]||{})};
-  _prestayTpl[hotel][lang][campo]=val;
-  _psSaveTpl();
-}
-
-function prestayRender(){
-  const el=document.getElementById('prestay-content');
-  if(!el)return;
-  _psVerificaAuto();          // da sola, in sottofondo: vedi _psVerificaAuto
-  const iso=_psTargetISO();
-  const dt=new Date(iso+'T12:00:00');
-  const GIORNI=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
-  const MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
-  const oggiIso=_psFmtISO(new Date());
-  const ggDa=Math.round((dt-new Date(oggiIso+'T12:00:00'))/86400000);
-
-  const arrivi=_psGiorno(iso).arrivi||[];
-  // Gli arrivi Italcamel restano visibili ma FUORI DAI CONTEGGI: non sono contattabili per
-  // definizione, quindi tenerli nel denominatore terrebbe i gruppi eternamente incompleti e
-  // l'avviso ambra accesso anche a lavoro finito.
-  const contattabili=arrivi.filter(a=>!_psItalcamel(a));
-  const inviati=contattabili.filter(a=>a.mailTs||a.waTs).length;
-
-  // Barra su DUE piani: sopra dove sei e come stai andando, sotto cosa puoi fare.
-  // Prima erano tutti sulla stessa riga, con due contatori quasi identici affiancati
-  // ("9/14 con contatto" e "9/14 contattati") che si leggevano come una ripetizione.
-  // Ora un numero solo più la barra di avanzamento; "da fare" resta esplicito.
-  const tuttoFatto=contattabili.length>0&&inviati===contattabili.length;
-  const pct=contattabili.length?Math.round(inviati/contattabili.length*100):0;
-  const bott='padding:6px 12px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;';
-  let h=`<div id="psCloudErr" style="display:none;margin-bottom:12px;padding:10px 13px;border:1px solid var(--red);background:#fdecea;color:var(--red);border-radius:8px;font-size:var(--fs-xxs);font-weight:600;line-height:1.45;"></div>
-  <div style="border:1px solid var(--border-light);border-radius:10px;margin-bottom:14px;overflow:hidden;">
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 13px;">
-      <button onclick="prestayNavDay(-1)" title="Giorno precedente" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;">‹</button>
-      <div style="min-width:190px;">
-        <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">${GIORNI[dt.getDay()]} ${dt.getDate()} ${MESI[dt.getMonth()]}</div>
-        <div style="font-size:var(--fs-xxs);color:${ggDa===PRESTAY_GG?'var(--accent)':'var(--text-dim)'};font-weight:${ggDa===PRESTAY_GG?700:400};">${ggDa===0?'oggi':ggDa===1?'domani':ggDa>0?'fra '+ggDa+' giorni':'passato'}${ggDa===PRESTAY_GG?' · da contattare oggi':''}</div>
-      </div>
-      <button onclick="prestayNavDay(1)" title="Giorno successivo" style="width:30px;height:30px;border:1px solid var(--border);background:var(--surface);border-radius:7px;cursor:pointer;font-size:16px;line-height:1;">›</button>
-      ${ggDa!==PRESTAY_GG?`<button onclick="prestayOggi()" style="padding:5px 11px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">Torna a fra ${PRESTAY_GG} giorni</button>`:''}
-      <div class="ps-bar-stato">
-        <div style="font-size:var(--fs-sm);font-weight:700;color:${tuttoFatto?'var(--green)':'var(--text)'};white-space:nowrap;">
-          ${tuttoFatto?'✓ ':''}${inviati} <span style="font-size:var(--fs-xs);font-weight:400;color:var(--text-muted);">di ${contattabili.length} contattati</span>
-        </div>
-        <div class="ps-bar-prog">
-          ${contattabili.length-inviati>0?`<span style="font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">${contattabili.length-inviati} da fare</span>`:''}
-          <div style="width:150px;height:5px;background:var(--border-light);border-radius:3px;overflow:hidden;">
-            <div style="width:${pct}%;height:5px;background:${tuttoFatto?'var(--green)':'var(--accent)'};transition:width .2s;"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 13px;border-top:1px solid var(--border-light);background:var(--bg);">
-      <button onclick="prestayControllaRisposte()" ${_psRispInCorso?'disabled':''} title="Cerca nella casella del Quality Manager le risposte degli ospiti di questa data" style="${bott}cursor:${_psRispInCorso?'wait':'pointer'};opacity:${_psRispInCorso?'.6':'1'};">${_psRispInCorso?'Lettura…':'↓ Controlla risposte'}</button>
-      <button onclick="prestayAddArrivo()" style="${bott}">+ Aggiungi arrivo</button>
-      <div class="ps-bar-cfg">
-        <button onclick="prestayToggleTpl()" style="${bott}">✏️ Modifica testi</button>
-        <button onclick="prestayToggleMailCfg()" title="${_psMailPronto()?'Invio diretto attivo su questo browser':'Non configurato: il pulsante mail apre il client di posta'}" style="padding:6px 12px;border:1px solid ${_psMailPronto()?'var(--green)':'var(--border)'};background:${_psMailPronto()?'var(--green-bg)':'var(--surface)'};color:${_psMailPronto()?'var(--green)':'var(--text)'};border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:600;">⚙️ Impostazioni${_psMailPronto()?' ✓':''}</button>
-      </div>
-    </div>
-  </div>`;
-
-  h+=`<div id="psUploadStato" style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:10px;"></div>`;
-
-  if(_psAvviso){
-    h+=`<div style="background:var(--green-bg);border:1px solid var(--green);border-radius:8px;padding:9px 13px;margin-bottom:12px;font-size:var(--fs-xs);color:var(--green);line-height:1.5;">${_psAvviso}</div>`;
-    _psAvviso=null;
-  }
-
-  if(!arrivi.length){
-    h+=`<div style="background:var(--surface2);border:1px solid var(--border-light);border-radius:9px;padding:18px;text-align:center;color:var(--text-muted);font-size:var(--fs-xs);line-height:1.6;">
-      Nessun arrivo per questa data.<br>Esporta la lista <strong>Arrivi</strong> dal PMS in PDF e caricala dall'Upload Center, riquadro <strong>"Arrivi Pre-stay"</strong>: nomi e strutture si compilano da soli, restano da inserire solo email e telefono.<br>Per un arrivo isolato puoi anche usare "+ Aggiungi arrivo".
-    </div>`;
-  }else{
-    const inpS='padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:\'Helvetica Neue\',Arial,sans-serif;width:100%;box-sizing:border-box;';
-    const esc=s=>String(s||'').replace(/"/g,'&quot;');
-    // Un gruppo per struttura, nell'ordine di PRESTAY_HOTELS: dentro, "Arrivo 1, 2, 3…".
-    Object.keys(PRESTAY_HOTELS).forEach(hc=>{
-      const gruppo=arrivi.filter(a=>a.hotel===hc);
-      if(!gruppo.length)return;
-      const gContattabili=gruppo.filter(a=>!_psItalcamel(a));
-      const nItal=gruppo.length-gContattabili.length;
-      const daInviare=gContattabili.filter(a=>a.email&&!a.mailTs&&!_psBookingBloccato(a.email,_psHotelMitt(a))).length;
-      const bloccatiGruppo=gContattabili.filter(a=>_psBookingBloccato(a.email,_psHotelMitt(a))&&!a.mailTs).length;
-      const contattati=gContattabili.filter(a=>a.mailTs||a.waTs).length;
-      const tuttiFatti=gContattabili.length>0&&contattati===gContattabili.length;
-      h+=`<div style="margin-bottom:16px;border:1px solid ${tuttiFatti?'var(--green)':'var(--border-light)'};border-radius:10px;overflow:hidden;">
-        <div style="background:${tuttiFatti?'var(--green-bg)':'var(--bg)'};padding:8px 13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${PRESTAY_HOTELS[hc].name}</span>
-          <span style="font-size:var(--fs-xxs);font-weight:700;color:${tuttiFatti?'var(--green)':'var(--text-dim)'};">${contattati}/${gContattabili.length} contattati</span>
-          ${nItal?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);">+ ${nItal} Italcamel</span>`:''}
-          ${daInviare?`<button onclick="prestayInviaGruppo('${hc}')" title="Invia il messaggio a tutti gli arrivi di questa struttura che hanno un'email e non sono ancora stati contattati" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">${PS_ICON_MAIL}Invia tutte (${daInviare})</button>`
-            :tuttiFatti?`<span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">✓ tutti contattati</span>`
-            :`<span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">${bloccatiGruppo?bloccatiGruppo+' con indirizzo Booking':(gContattabili.length-contattati)+' senza contatto inserito'}</span>`}
-        </div>
-        <div class="ps-grid">`;
-      gruppo.forEach((a,i)=>{
-        const mailOk=!!a.mailTs,waOk=!!a.waTs;
-        const inFlight=!!_psMailInFlight[a.id];
-        // Una scheda già contattata si riconosce senza leggere: fondo e bordo verdi. Il
-        // pulsante resta, ma diventa "Rinvia" e perde il pieno — non è più l'azione attesa.
-        const fatto=mailOk||waOk;
-        const ora=ts=>{const d=new Date(ts);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');};
-        const chip=(ok,ts,lbl,fn)=>`<span onclick="prestayToggleInviato('${a.id}','${fn}')" title="${ok?'Inviato il '+new Date(ts).toLocaleString('it-IT')+' — clicca per annullare':'Non ancora inviato — clicca per segnarlo come inviato a mano'}" style="cursor:pointer;font-size:var(--fs-xxs);font-weight:700;padding:2px 8px;border-radius:10px;background:${ok?'var(--green)':'var(--surface2)'};color:${ok?'#fff':'var(--text-dim)'};border:1px solid ${ok?'var(--green)':'var(--border-light)'};">${ok?'✓ '+lbl+' '+ora(ts):'○ '+lbl}</span>`;
-        // Bordo: verde se già contattato, altrimenti il colore del canale di provenienza
-        // dedotto dall'indirizzo. Italcamel non ha contatti, quindi la scheda resta sfocata
-        // e marcata: non c'è nulla da compilare né da inviare.
-        const ital=_psItalcamel(a);
-        const bordo=fatto?'var(--green)':_psBordo(a);
-        h+=`<div id="psCard-${a.id}" data-fatto="${fatto?'1':'0'}" data-canale="${_psCanaleCol(a)||''}" style="position:relative;background:${fatto?'var(--green-bg)':'var(--surface)'};border:1px solid ${bordo};border-radius:10px;padding:11px 13px;">
-          ${ital?`<div style="position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;border-radius:8px;background:rgba(244,244,246,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);pointer-events:none;">
-            <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:26px;font-weight:700;letter-spacing:-.01em;color:var(--text);opacity:.62;text-shadow:0 1px 0 #fff;white-space:nowrap;">Italcamel</span>
-          </div>`:''}
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
-            <span style="padding:2px 9px;border-radius:12px;background:${fatto?'var(--green-bg)':'var(--surface2)'};color:${fatto?'var(--green)':'var(--text-muted)'};border:1px solid ${fatto?'var(--green)':'var(--border-light)'};font-size:var(--fs-xxs);font-weight:700;line-height:1.5;white-space:nowrap;">Arrivo ${i+1}</span>
-            ${a.fuoriLista?`<span title="Non compare nell'ultima lista arrivi importata: la prenotazione potrebbe essere stata cancellata o il nome corretto. Non elimino nulla da solo." style="font-size:9px;font-weight:700;color:var(--amber);">non più in lista</span>`:''}
-            ${(()=>{const nc=(a.camere||[]).length;if(nc<2)return'';
-              return`<span title="Prenotazione multicamera: ${a.camere.join(', ')} — un solo messaggio, l'email è la stessa" style="padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;border:1px solid var(--amber);color:var(--amber);background:#fff;white-space:nowrap;">${nc} camere</span>`;})()}
-            ${(()=>{const n=_psCanaleNome(a);if(!n)return'';const col=_psCanaleCol(a)||'var(--text-dim)';
-              return`<span title="Provenienza della prenotazione, dal PMS" style="padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;border:1px solid ${col};color:${col};background:#fff;white-space:nowrap;">${n}</span>`;})()}
-            <select onchange="prestaySetScheda('${a.id}','lang',this.value)" title="Lingua del messaggio" style="${inpS}width:auto;min-width:52px;margin-left:auto;padding:3px 6px;">
-              <option value="it" ${(a.lang||'it')==='it'?'selected':''}>IT</option>
-              <option value="en" ${a.lang==='en'?'selected':''}>EN</option>
-            </select>
-            <button onclick="prestayDelScheda('${a.id}')" title="Elimina questo arrivo" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:13px;line-height:1;padding:0 2px;">✕</button>
-          </div>
-          <input value="${esc(a.nome)}" placeholder="Cognome Nome" onchange="prestaySetScheda('${a.id}','nome',this.value)" style="${inpS}font-weight:700;font-size:var(--fs-sm);margin-bottom:5px;">
-          <input type="email" value="${esc(a.email)}" placeholder="email@…" oninput="_psAggiornaBordo('${a.id}',this.value)" onchange="prestaySetScheda('${a.id}','email',this.value)" title="${esc(a.email)}" style="${inpS}margin-bottom:5px;${(!a.mailTs&&_psBookingBloccato(a.email,_psHotelMitt(a)))?'border-color:var(--amber);':''}">
-          ${(()=>{
-            // L'avviso riguarda una mail DA MANDARE: su una già partita sarebbe una smentita
-            // a cose fatte, per giunta falsa se il messaggio è arrivato.
-            if(a.mailTs||!_psBookingBloccato(a.email,_psHotelMitt(a)))return'';
-            const hm=_psHotelMitt(a),reale=_psMittenteAttuale(hm);
-            // Due situazioni diverse, che vanno dette in modo diverso: sappiamo che il
-            // mittente è sbagliato, oppure non lo sappiamo ancora. La seconda è un'ipotesi
-            // e non va scritta come un fatto.
-            return reale
-              ? `<div style="font-size:9px;font-weight:700;color:var(--amber);line-height:1.35;margin:-2px 0 5px;" title="${esc('Compass spedisce da '+reale+', Booking accetta solo '+_psMittAtteso(hm))}">indirizzo Booking · parte da ${esc(reale)}, Booking accetta solo ${esc(_psMittAtteso(hm))}</div>`
-              : `<div style="font-size:9px;font-weight:700;color:var(--text-dim);line-height:1.35;margin:-2px 0 5px;" title="Compass non ha ancora saputo dal Worker da quale casella parte la posta: Impostazioni → Verifica mittente">indirizzo Booking · mittente non ancora verificato</div>`;})()}
-          <input value="${esc(a.tel)}" placeholder="+39…" onchange="prestaySetScheda('${a.id}','tel',this.value)" style="${inpS}margin-bottom:6px;">
-          ${(()=>{
-            // Da quale struttura parte il messaggio. Normalmente quella d'arrivo; si cambia
-            // quando l'ospite ha prenotato altrove ed è qui per un upgrade, perché la
-            // struttura in cui si ritrova non la conosce ancora.
-            const hm=_psHotelMitt(a),alt=_psMittDiverso(a);
-            const opz=Object.keys(PRESTAY_HOTELS).map(k=>
-              `<option value="${k===a.hotel?'':k}" ${k===hm?'selected':''}>${PRESTAY_HOTELS[k].name}${k===a.hotel?' · arrivo':''}</option>`).join('');
-            const sugg=(!a.mitt&&a.hotelPrec&&PRESTAY_HOTELS[a.hotelPrec]&&a.hotelPrec!==a.hotel)?a.hotelPrec:'';
-            return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:${alt||sugg?'4':'9'}px;">
-              <span title="Struttura da cui parte il messaggio: casella di posta, nome del mittente e testo del pre-stay" style="font-size:9px;font-weight:700;color:${alt?'var(--accent)':'var(--text-dim)'};letter-spacing:.03em;white-space:nowrap;">SCRIVE</span>
-              <select onchange="prestaySetScheda('${a.id}','mitt',this.value)" title="Da quale struttura parte il messaggio. Cambiala se l'ospite ha prenotato altrove ed è qui per un upgrade: riceverebbe una mail da un albergo che non conosce, e se l'indirizzo è un alias Booking non gli arriverebbe affatto." style="${inpS}padding:3px 6px;${alt?'border-color:var(--accent);background:var(--accent-bg);color:var(--accent);font-weight:700;':''}">${opz}</select>
-            </div>
-            ${alt?`<div style="font-size:9px;font-weight:700;color:var(--accent);line-height:1.35;margin-bottom:8px;">prenotato al ${PRESTAY_HOTELS[hm].name} · arriva al ${PRESTAY_HOTELS[a.hotel].name}</div>`:''}
-            ${sugg?`<div style="font-size:9px;color:var(--amber);line-height:1.4;margin-bottom:8px;">Nell'ultimo caricamento è passato dal ${PRESTAY_HOTELS[sugg].name} a questa struttura: se è un upgrade, il messaggio deve partire ancora dal ${PRESTAY_HOTELS[sugg].name}. <button type="button" onclick="prestaySetScheda('${a.id}','mitt','${sugg}')" style="border:none;background:none;padding:0;color:var(--accent);font-size:9px;font-weight:700;cursor:pointer;text-decoration:underline;">scrivi da lì</button></div>`:''}`;})()}
-          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
-            <button onclick="prestayAnteprima('${a.id}','both')" title="Vedi e correggi il messaggio prima di mandarlo" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:7px;cursor:pointer;">${PS_ICON_EYE}</button>
-            <button onclick="prestayAnteprima('${a.id}','mail')" ${inFlight?'disabled':''} title="Anteprima del messaggio prima di inviare" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;height:28px;border:1px solid var(--accent);background:${fatto?'var(--surface)':'var(--accent)'};color:${fatto?'var(--accent)':'#fff'};border-radius:7px;cursor:${inFlight?'wait':'pointer'};opacity:${inFlight?'.5':'1'};font-size:var(--fs-xxs);font-weight:700;">${inFlight?PS_ICON_LOAD:PS_ICON_MAIL}${fatto?'Rinvia':'Invia'}</button>
-            <button onclick="prestayAnteprima('${a.id}','wa')" title="Anteprima, poi apre WhatsApp" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:1px solid #25D366;background:#e9faf0;color:#1a9f4f;border-radius:7px;cursor:pointer;">${PS_ICON_WA}</button>
-            <span style="margin-left:auto;display:flex;gap:4px;">${chip(mailOk,a.mailTs,'mail','mail')}${chip(waOk,a.waTs,'wa','wa')}</span>
-          </div>
-          ${a.mailErr&&!mailOk?`<div style="margin-top:6px;font-size:9px;color:var(--red);line-height:1.35;">${String(a.mailErr).substring(0,80)}</div>`:''}
-          <div style="position:relative;z-index:3;display:flex;justify-content:flex-end;margin-top:8px;">
-            <label title="Arrivo di gruppo Italcamel: nessun contatto dell'ospite, la scheda si spegne" style="display:inline-flex;align-items:center;gap:6px;font-size:var(--fs-xxs);font-weight:700;color:${ital?'var(--text)':'var(--text-dim)'};cursor:pointer;user-select:none;">
-              <input type="checkbox" ${ital?'checked':''} onchange="prestayToggleItalcamel('${a.id}')" style="width:15px;height:15px;margin:0;cursor:pointer;accent-color:var(--accent);">Italcamel
-            </label>
-          </div>
-          ${(()=>{const rp=_psRisposta(iso,a.email);if(!rp)return'';
-            const testo=String(rp.testo||'');
-            const testoEsc=testo.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            const rid='psRisp_'+String(a.id).replace(/[^a-zA-Z0-9_]/g,'');
-            const lungo=testo.length>200||testo.split('\n').length>4;
-            return`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--accent-bg);border-left:3px solid var(--accent);">
-              <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--accent);margin-bottom:4px;">Ha risposto${rp.data?' · '+_esc(String(rp.data).replace(/\s*\+\d{4}.*$/,'').trim()):''}</div>
-              <div id="${rid}" style="font-size:var(--fs-xs);color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word;${lungo?'max-height:4.5em;overflow:hidden;':''}">${testoEsc}</div>
-              ${lungo?`<div style="text-align:right;margin-top:2px;"><button type="button" onclick="_psRispToggle('${rid}',this)" style="border:none;background:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;padding:2px 0;">Mostra tutto ▾</button></div>`:''}
-            </div>`;})()}
-        </div>`;
-      });
-      h+=`</div></div>`;
-    });
-    h+=`<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Il numero di arrivi per struttura viene dal Piano Settimanale (i cambi contano: partenza e arrivo lo stesso giorno significa comunque un ospite nuovo). Gli ospiti <strong>non sono legati alla camera</strong>: se la reception li sposta di stanza qui non cambia nulla. Nome e contatti vanno letti dal PMS. I pulsanti aprono il messaggio già compilato: l'invio lo confermi tu, e la spunta si può correggere cliccandola. Il campo <strong>SCRIVE</strong> di ogni scheda dice da quale struttura parte il messaggio: cambialo per chi ha prenotato altrove ed è qui per un upgrade — non conosce ancora questa struttura, e con un indirizzo Booking la mail non gli arriverebbe nemmeno.</div>`;
-  }
-
-  // Configurazione invio diretto — chiave salvata solo in questo browser
-  if(_prestayMailCfgOpen){
-    const escv=v=>String(v||'').replace(/"/g,'&quot;');
-    h+=`<div class="panel" style="margin-top:16px;">
-      <div class="panel-header"><span class="panel-title">Invio mail diretto</span><span style="font-size:var(--fs-xxs);color:${_psMailPronto()?'var(--green)':'var(--text-dim)'};font-weight:700;">${_psMailPronto()?'attivo su questo browser':'non configurato'}</span></div>
-      <div class="panel-body" style="padding:14px;">
-        <div style="font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;margin-bottom:12px;">
-          Senza configurazione il pulsante mail apre il client di posta. Configurandolo, la mail parte davvero con un clic.
-          <strong style="color:var(--text);">Endpoint e chiave restano solo in questo browser</strong> — non vengono sincronizzati sugli altri PC né salvati sul cloud, quindi vanno reinseriti su ogni postazione da cui vuoi spedire.
-          Il codice del Worker e i passaggi su Cloudflare e DNS sono in <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;">worker-prestay-mail.md</code> nel repository.
-        </div>
-        <div>
-          <label style="display:block;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">CHIAVE (PRESTAY_KEY) — l'unica cosa da inserire</label>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <input id="psCfgKey" type="${_psChiaveVisibile?'text':'password'}" value="${escv(_psMailCfg.key)}" placeholder="la password scelta sul Worker" onchange="prestaySetMailCfg('key',this.value)" style="flex:1;min-width:0;box-sizing:border-box;padding:7px 9px;border:1px solid ${_psMailPronto()?'var(--green)':'var(--amber)'};border-radius:7px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:inherit;">
-            <button onclick="prestayToggleChiave()" title="${_psChiaveVisibile?'Nascondi':'Mostra la chiave, per copiarla su un altro computer'}" style="padding:7px 11px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">${_psChiaveVisibile?'Nascondi':'Mostra'}</button>
-            ${_psMailCfg.key?`<button onclick="prestayCopiaChiave(this)" title="Copia la chiave negli appunti per incollarla sull'altro computer" style="padding:7px 11px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:7px;cursor:pointer;font-size:var(--fs-xxs);font-weight:700;">Copia</button>`:''}
-          </div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-top:6px;">
-            L'indirizzo del Worker non serve più inserirlo: è quello che Compass usa già per tutto il resto (<code style="background:var(--surface2);padding:1px 5px;border-radius:4px;">${escv(PRESTAY_ENDPOINT_DEF)}</code>)${_psMailCfg.endpoint&&_psMailCfg.endpoint.trim()&&_psMailCfg.endpoint.trim()!==PRESTAY_ENDPOINT_DEF?` — su questa postazione ne è impostato un altro: <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;">${escv(_psMailCfg.endpoint)}</code>, <button onclick="prestaySetMailCfg('endpoint','')" style="border:none;background:none;padding:0;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;text-decoration:underline;">torna a quello normale</button>`:''}.
-            Per attivare l'invio su un computer nuovo: <strong>Mostra</strong> e <strong>Copia</strong> la chiave da una postazione che già funziona, e incollala qui.
-          </div>
-        </div>
-        ${_psMittRiquadro()}
-      </div>
-    </div>`;
-  }
-
-  // Editor testi — un template per struttura e lingua, con segnaposto
-  if(_prestayTplOpen){
-    const hotels=Object.keys(PRESTAY_HOTELS);
-    h+=`<div class="panel" id="psTplPanel" style="margin-top:16px;">
-      <div class="panel-header"><span class="panel-title">Testi pre-stay</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);">segnaposto: {nome} {struttura} {data}</span></div>
-      <div class="panel-body" style="padding:14px;">
-        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-bottom:12px;line-height:1.55;">Un testo per struttura e lingua. I segnaposto vengono sostituiti al momento dell'invio, quindi modificando un testo cambiano subito anche i messaggi non ancora inviati. L'oggetto vale solo per la mail; WhatsApp usa il solo corpo. Nel corpo puoi usare <code style="background:var(--surface2);padding:0 4px;border-radius:3px;">*grassetto*</code>, <code style="background:var(--surface2);padding:0 4px;border-radius:3px;">_corsivo_</code> e righe che iniziano con "- " per un elenco puntato.</div>
-        ${hotels.map(hc=>{
-          const conf=PRESTAY_HOTELS[hc];
-          return`<div style="margin-bottom:14px;border:1px solid var(--border-light);border-radius:9px;overflow:hidden;">
-            <div style="background:var(--bg);padding:7px 12px;font-size:var(--fs-xs);font-weight:700;color:var(--text);">${conf.name}</div>
-            <div style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              ${['it','en'].map(lg=>{
-                const t=_psTpl(hc,lg);
-                const taId='ps-tpl-'+hc+'-'+lg;
-                return`<div>
-                  <div style="font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);margin-bottom:4px;">${lg.toUpperCase()}</div>
-                  <input value="${String(t.ogg||'').replace(/"/g,'&quot;')}" placeholder="Oggetto" onchange="prestaySetTpl('${hc}','${lg}','ogg',this.value)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:'Helvetica Neue',Arial,sans-serif;margin-bottom:5px;">
-                  ${psToolbar(taId)}
-                  <textarea id="${taId}" rows="7" placeholder="Corpo del messaggio" onchange="prestaySetTpl('${hc}','${lg}','corpo',this.value)" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:var(--fs-xs);font-family:'Helvetica Neue',Arial,sans-serif;line-height:1.5;resize:vertical;">${String(t.corpo||'')}</textarea>
-                </div>`;
-              }).join('')}
-            </div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }
-
-  el.innerHTML=h;
-  _psSegnalaCloud();          // il riquadro è appena stato rigenerato: va ripopolato
-}
 // §§ RECEPTION — CASSA (fondo cassa, incasso contante)
 // Sola lettura + modifica libera per il QM. I receptionist operano sull'app dedicata
 // (reception.html, aperta sui PC di reception): qui si legge lo stesso KV per avere il
@@ -14682,7 +13154,7 @@ async function receptionLoad(){
   receptionRender();
 }
 // ── Scrittura sicura dei registri di cassa ──────────────────────────────────
-// Stessa classe di problema dei pre-stay (22/08/2026): si scriveva l'elenco INTERO con la
+// Stessa classe di problema del 22/08/2026: si scriveva l'elenco INTERO con la
 // copia che questa postazione si portava dietro. Due receptionist che registrano nello
 // stesso momento da due PC si cancellavano un movimento a testa, in silenzio — e qui si
 // tratta di denaro contato. Ora si rilegge e si UNISCE per id.
@@ -14726,7 +13198,7 @@ async function _receptionSave(key,list){
   // Se non si è potuto rileggere, si scrive solo se il cloud era già stato letto in questa
   // sessione: allora la copia locale contiene tutto ciò che c'era, e il rischio è al più
   // perdere un movimento registrato altrove negli ultimi secondi. Senza mai aver letto,
-  // scrivere vorrebbe dire sovrascrivere alla cieca — è così che sono spariti i pre-stay.
+  // scrivere vorrebbe dire sovrascrivere alla cieca — è così che sono spariti dati il 22/08/2026.
   if(!letto&&!_receptionLetto[key]){setSyncStatus('error');return list;}
   if(key==='qm_cassa_fondo')_receptionFondo=finale;else _receptionIncasso=finale;
   try{localStorage.setItem(key,JSON.stringify(finale));}catch(e){}
@@ -15644,7 +14116,7 @@ function biaRenderPromemoria(dalCloud){
 const BIA_CONSUMI_VISTI=14;
 const BIA_MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 let _biaConsumiTutti=false;
-function biaToggleConsumiTutti(){_biaConsumiTutti=!_biaConsumiTutti;_psSenzaSalto(biaRender);}
+function biaToggleConsumiTutti(){_biaConsumiTutti=!_biaConsumiTutti;_qmSenzaSalto(biaRender);}
 // ── Storico consegne del pulito (24/09/2026) ──
 // Prima era una tabella per struttura con cinque colonne di numeri: si capiva solo leggendo.
 // Ora una struttura e un mese alla volta, una frase per il mese e, per ogni consegna, una
@@ -15694,16 +14166,16 @@ function _biaEsitoConsegna(r){
 // La struttura dello storico E' quella della pagina (24/09/2026): con due selettori
 // indipendenti si lavorava su Art Resort e lo storico mostrava Santa Brigida. Cambiarla da
 // qui cambia tutta la pagina, come le linguette in alto.
-function biaStoSetHotel(h){if(!BIA_HOTELS[h])return;_biaStoTutte=false;_psSenzaSalto(()=>biaSetHotel(h));}
-function biaStoSetMese(ym){_biaStoMese=ym;_biaStoTutte=false;_psSenzaSalto(biaRender);}
-function biaStoToggleTutte(){_biaStoTutte=!_biaStoTutte;_psSenzaSalto(biaRender);}
+function biaStoSetHotel(h){if(!BIA_HOTELS[h])return;_biaStoTutte=false;_qmSenzaSalto(()=>biaSetHotel(h));}
+function biaStoSetMese(ym){_biaStoMese=ym;_biaStoTutte=false;_qmSenzaSalto(biaRender);}
+function biaStoToggleTutte(){_biaStoTutte=!_biaStoTutte;_qmSenzaSalto(biaRender);}
 // "Ultimi consumi inseriti" si apre dal pulsante nel riquadro dei consumi giornalieri, e
 // "Pezzi non rientrati" dal riquadro dello storico (24/09/2026): stanno dove servono.
 let _biaUltimiAperti=false,_biaStoSaldo=false;
-function biaToggleUltimi(){_biaUltimiAperti=!_biaUltimiAperti;_psSenzaSalto(biaRender);}
-function biaToggleStoSaldo(){_biaStoSaldo=!_biaStoSaldo;_psSenzaSalto(biaRender);}
-function biaToggleGiro(id){_biaGiroAperto.has(id)?_biaGiroAperto.delete(id):_biaGiroAperto.add(id);_psSenzaSalto(biaRender);}
-function biaToggleVoci(){_biaVociAperte=!_biaVociAperte;_psSenzaSalto(biaRender);}
+function biaToggleUltimi(){_biaUltimiAperti=!_biaUltimiAperti;_qmSenzaSalto(biaRender);}
+function biaToggleStoSaldo(){_biaStoSaldo=!_biaStoSaldo;_qmSenzaSalto(biaRender);}
+function biaToggleGiro(id){_biaGiroAperto.has(id)?_biaGiroAperto.delete(id):_biaGiroAperto.add(id);_qmSenzaSalto(biaRender);}
+function biaToggleVoci(){_biaVociAperte=!_biaVociAperte;_qmSenzaSalto(biaRender);}
 const _biaH=x=>x.hotel||'sa';
 
 function _biaUid(){return Date.now()+'_'+Math.random().toString(36).slice(2,8);}
@@ -15767,7 +14239,7 @@ const _biaDistStampata=(hotel,data)=>!!_biaDist[_biaDistId(hotel,data)];
 // Si RILEGGE il cloud prima di scrivere, e si fonde. Scrivendo alla cieca la copia che questa
 // postazione si porta dietro, una distinta segnata altrove sarebbe stata cancellata — e il
 // promemoria di quella struttura si sarebbe riacceso da solo il giorno dopo, senza che
-// nessuno potesse capire perche'. E' lo stesso difetto dei pre-stay del 22/08/2026, in
+// nessuno potesse capire perche'. E' lo stesso difetto del 22/08/2026, in
 // piccolo: qui si perdono promemoria invece che dati, ma il meccanismo e' identico.
 // Le date segnate sono solo aggiunte: l'unione non puo' che crescere.
 async function _biaDistSegna(hotel,data){
@@ -16012,7 +14484,7 @@ async function biaSetInizio(iso){
   const h=_biaStoHotel||_biaHotel;
   _bia.inizio=_bia.inizio||{};
   _bia.inizio[h]=iso?(_biaFromIso(iso)||''):'';   // '' e non delete: la fusione col cloud lo rimetterebbe
-  _psSenzaSalto(biaRender);
+  _qmSenzaSalto(biaRender);
   await _biaSave();
 }
 function _biaRigaGiro(g){
@@ -16747,7 +15219,7 @@ function _biaMese(h,ym){
   cons.forEach(c=>BIA_VOCI.forEach(v=>{consumi[v]+=Number(c.q&&c.q[v])||0;}));
   return{ym,dati,portati,consumi,giri:giri.map(g=>g.data),nonReg:nonReg.map(g=>g.data),giorniConsumi:cons.length};
 }
-function biaSetMese(ym){_biaMeseSel=ym;_psSenzaSalto(biaRender);}
+function biaSetMese(ym){_biaMeseSel=ym;_qmSenzaSalto(biaRender);}
 // Voci e prezzi come stanno sulla fattura LANA.POLI (n. 730 del 01/09/2026, SoulArt). Il
 // Boutique ha una fattura sua: se i prezzi fossero diversi, vanno messi per struttura.
 const BIA_FATTURA={
@@ -17104,8 +15576,8 @@ function giacSetTipo(t){if(!GIAC_TIPI[t])return;_giacTipo=t;giacRender();}
 function giacToggleStorico(){_giacStorico=!_giacStorico;giacRender();if(_giacStorico)_qmPortaInVista('giac-storico',12);}
 // Aprire una riga NON deve spostare l'occhio: la si sta guardando, e un salto la
 // porterebbe via proprio mentre la si legge.
-function giacTogglePersona(p){_giacPersonaAperta.has(p)?_giacPersonaAperta.delete(p):_giacPersonaAperta.add(p);_psSenzaSalto(giacRender);}
-function giacToggleMov(id){_giacMovAperto.has(id)?_giacMovAperto.delete(id):_giacMovAperto.add(id);_psSenzaSalto(giacRender);}
+function giacTogglePersona(p){_giacPersonaAperta.has(p)?_giacPersonaAperta.delete(p):_giacPersonaAperta.add(p);_qmSenzaSalto(giacRender);}
+function giacToggleMov(id){_giacMovAperto.has(id)?_giacMovAperto.delete(id):_giacMovAperto.add(id);_qmSenzaSalto(giacRender);}
 
 // Scorciatoia dalla tabella "chi ha in carico": prepara una restituzione già intestata a
 // quella persona e con le quantità proposte, e porta la maschera in vista.
@@ -17599,10 +16071,9 @@ tr,thead{page-break-inside:avoid;}
   setTimeout(()=>{try{w.print();}catch(e){}},400);
 }
 
-// §§ PRENOTAZIONI — file unico dal PMS (arrivi + colazioni + pre-stay)
+// §§ PRENOTAZIONI — file unico dal PMS (arrivi + colazioni)
 //
-// Un solo export sostituisce tre upload: Riepilogo Reception, Arrivi Pre-stay e Report
-// pasti. Nel PMS (Hotel in Cloud): Prenotazioni → filtro **Presenti** → intervallo di
+// Un solo export sostituisce due upload: Riepilogo Reception e Report pasti. Nel PMS (Hotel in Cloud): Prenotazioni → filtro **Presenti** → intervallo di
 // date → tutte le strutture → Esporta.
 //
 // Perché "Presenti" e non "Arrivi": ogni riga porta con sé sia `Arrivo` sia `Partenza`,
@@ -17610,15 +16081,15 @@ tr,thead{page-break-inside:avoid;}
 // parte e chi resta. Con il filtro "Arrivi" servirebbero tre export separati (il PMS
 // permette un filtro per volta) — vedi la nota in CLAUDE.md.
 //
-// Il parsing è deterministico sulle posizioni x delle colonne, senza AI: stesso approccio
-// di _psParsePdfArrivi, stesso motivo (i nomi e i tipi camera vanno a capo).
+// Il parsing è deterministico sulle posizioni x delle colonne, senza AI: i nomi e i tipi
+// camera vanno a capo, e un parser sul testo concatenato li spezzerebbe.
 //
-// PREN_UNICO=false → tutto torna esattamente com'era: riappaiono i tre slot separati e i
+// PREN_UNICO=false → tutto torna esattamente com'era: riappaiono gli slot separati e i
 // loro handler, che NON vengono rimossi. Stesso schema di HKP_DERIVE_FROM_PIANO.
 const PREN_UNICO=true;
 // Riepilogo dell'ultimo caricamento ("147 prenotazioni · 21/08–28/08"), per ricostruire la
 // tessera dell'Upload Center dopo un ricaricamento della pagina. Del PDF non si conserva
-// altro: arrivi, colazioni e pre-stay hanno già ciascuno il proprio archivio.
+// altro: arrivi e colazioni hanno già ciascuno il proprio archivio.
 const PREN_RIASS_KEY='qm_pren_riass';
 
 // Posizioni x delle colonne nell'export reale (pagina orizzontale, larghezza 842pt).
@@ -17680,7 +16151,7 @@ function _prenStruttura(alloggio){
  * @param {Array<{s:string,x:number,y:number}>} items testo con coordinate (da pdf.js)
  */
 function _prenParse(items){
-  // Raggruppa per riga: stessa tolleranza usata dal parser pre-stay.
+  // Raggruppa per riga (tolleranza di 3 punti sull'altezza).
   const perRiga=new Map();
   items.forEach(it=>{
     const k=Math.round(it.y/3);
@@ -17789,36 +16260,6 @@ function _prenBkfData(pren){
   return{data:giorni, activeDay:0, ts:Date.now()};
 }
 
-// ── Derivazione 3: schede pre-stay (sostituisce Arrivi Pre-stay) ──
-// Stessa forma attesa da _psImportaArrivi: {camera, nome, hotel}. La camera serve solo a
-// dedurre la struttura e viene poi scartata (le schede non hanno campo camera).
-// `origine` è la novità: il canale arriva dal PMS invece di essere indovinato dall'email,
-// e Italcamel si riconosce da sé senza la spunta manuale.
-// Una prenotazione multicamera compare come UNA RIGA PER CAMERA. Il codice però è diverso
-// per ogni camera — verificato sul file reale: fra 158 prenotazioni non ce ne sono due
-// uguali, nemmeno nei gruppi. Quello che coincide sono nome, arrivo, partenza e canale.
-// Si raggruppa su quelli: è una sola prenotazione con una sola email, quindi una sola
-// scheda. Nel file di prova ne emergono 9, da 2 a 4 camere ciascuna.
-//
-// I codici di TUTTE le camere del gruppo restano sulla scheda: servono all'abbinamento al
-// reimport, e basta che uno solo combaci.
-function _prenPrestay(pren,iso){
-  const gruppi=new Map();
-  pren.filter(p=>p.arrivo===iso).forEach(p=>{
-    const k=[_psNomeChiave(p.ospite),p.arrivo,p.partenza,p.origine].join('|');
-    let g=gruppi.get(k);
-    if(!g){
-      g={camera:p.camera, nome:p.ospite, codici:[],
-         hotel:_prenStruttura(p.alloggio||p.camera).toLowerCase(),
-         origine:p.origine, camere:[]};
-      gruppi.set(k,g);
-    }
-    if(p.codice)g.codici.push(p.codice);
-    if(p.camera)g.camere.push(p.camera);
-  });
-  return[...gruppi.values()].map(g=>({...g,codice:g.codici[0]||''}));
-}
-
 // ── Upload e applicazione ──
 // Scrive le stesse chiavi che scrivevano i tre upload separati, nella stessa forma:
 // nulla a valle (Culligan, housekeeper.html, breakfast.html) si accorge del cambio.
@@ -17841,7 +16282,7 @@ function _prenOggiIso(){
 const PREN_ULTIMO_KEY='qm_pren_ultimo';
 function _prenStessa(a,b){
   if(a.codice&&b.codice)return a.codice===b.codice;
-  return _psNomeChiave(a.ospite)===_psNomeChiave(b.ospite)&&a.camera===b.camera&&a.arrivo===b.arrivo;
+  return _qmNomeChiave(a.ospite)===_qmNomeChiave(b.ospite)&&a.camera===b.camera&&a.arrivo===b.arrivo;
 }
 function _prenRecuperaPartenze(pren,prec,iso){
   // Il file riguarda oggi se c'e' qualcuno in casa oggi. NON si usa _prenIntervallo: la
@@ -17932,35 +16373,19 @@ async function prenHandlePdf(file){
       try{renderBkfData();}catch(e){}
     }
 
-    // 3. Schede pre-stay: si importano TUTTI i giorni dell'intervallo, non solo oggi.
-    //    _psImportaArrivi conserva email/telefono già inseriti (confronto per nome), quindi
-    //    ricaricare il file dopo nuove prenotazioni non fa perdere il lavoro fatto.
-    let giorniPs=0, schedePs=0;
-    // Come sopra: si riparte dalla copia del cloud, non da quella che questa scheda del
-    // browser si porta dietro da chissà quando.
-    await _psSincronizza();
-    const viste=new Set(pren.map(p=>p.arrivo));
-    viste.forEach(g=>{
-      if(g<iso)return;                                  // il passato non serve ai pre-stay
-      const lista=_prenPrestay(pren,g);
-      if(!lista.length)return;
-      try{_psImportaArrivi(g,lista); giorniPs++; schedePs+=lista.length;}catch(e){}
-    });
-
     // L'esito delle registration card va detto: se restano quelle vecchie deve saperlo chi
     // carica, non scoprirlo stampando la card di un ospite partito ieri.
     const rcNota=_rcEsito==='ok'?'registration card aggiornate'
       :_rcEsito==='nessuna'?'nessuna registration card (solo Principe/Mastrangelo)'
       :'⚠️ registration card NON aggiornate: nessun arrivo valido per oggi';
-    msg('Caricato: '+ad.arrivi.length+' arrivi oggi, '+(bd?bd.data.length:0)+' giorni di colazioni, '+schedePs+' schede pre-stay su '+giorniPs+' giorni. '+rcNota+'.'
+    msg('Caricato: '+ad.arrivi.length+' arrivi oggi, '+(bd?bd.data.length:0)+' giorni di colazioni. '+rcNota+'.'
       +(_rec.recuperate.length?' '+_rec.recuperate.length+' partenze di oggi già in check-out riprese dal caricamento precedente.':''));
     uc('loaded',riass);
     setUploadTs('prenTs');
     // Senza questa riga, dopo un Cmd+R la tessera torna a "Non caricato" pur essendo stati
-    // aggiornati arrivi, colazioni e pre-stay: identica a un caricamento mai avvenuto.
+    // aggiornati arrivi e colazioni: identica a un caricamento mai avvenuto.
     try{localStorage.setItem(PREN_RIASS_KEY,JSON.stringify({riass:riass,ts:ad._ts}));}catch(e){}
     try{refreshOverviewForDate(customDate||new Date());}catch(e){}
-    try{prestayRender();}catch(e){}
   }catch(err){
     msg('Errore nella lettura del PDF: '+(err&&err.message?err.message:err));
     uc('error','Errore caricamento');
@@ -17971,7 +16396,7 @@ async function prenHandlePdf(file){
 // loro handler restano nel codice: PREN_UNICO=false li fa riapparire identici a prima.
 function prenApplicaVisibilitaSlot(){
   const mostra=(id,vis)=>{const e=document.getElementById(id);if(e)e.style.display=vis?'':'none';};
-  ['uc-arrivi','uc-prestay','uc-bkf'].forEach(id=>mostra(id,!PREN_UNICO));
+  ['uc-arrivi','uc-bkf'].forEach(id=>mostra(id,!PREN_UNICO));
   mostra('uc-pren',PREN_UNICO);
   // Con il file unico, "Report pasti" è l'unica tessera della sua riga: la riga vuota
   // resterebbe a occupare lo spazio fra le altre (uc-grid ha gap, non margini sulle card).
@@ -17991,7 +16416,7 @@ function prenRestoreSlot(){
 }
 
 // La tessera sulle ALTRE postazioni (27/09/2026). Il riepilogo e l'ora del caricamento
-// stavano solo nel localStorage di chi aveva caricato: arrivi, colazioni e pre-stay
+// stavano solo nel localStorage di chi aveva caricato: arrivi e colazioni
 // arrivavano a tutti, ma sugli altri Mac la tessera restava all'ultimo caricamento fatto
 // LI', e dopo 24 ore il suo pallino diventava rosso. Chi la vedeva ricaricava il PDF da
 // capo. Ora il riepilogo viaggia dentro qm_arriviData (campo _pren): nessuna chiave e
@@ -18094,7 +16519,7 @@ function cqAvviso(titolo,testo,opz){
 // Chi caricava un PDF su un PC lo vedeva; su tutti gli altri la pagina continuava a
 // mostrare i dati vecchi finché qualcuno non premeva Cmd+R — e non si può chiedere ai
 // collaboratori di uscire e rientrare per vedere il dato giusto. Peggio: una copia ferma
-// da ore è anche il punto di partenza di ogni sovrascrittura (vedi l'incidente pre-stay
+// da ore è anche il punto di partenza di ogni sovrascrittura (vedi l'incidente
 // del 22/08/2026), quindi tenere le postazioni fresche non è comodità, è sicurezza.
 //
 // Tre cose, tutte automatiche:
@@ -18109,7 +16534,7 @@ function cqAvviso(titolo,testo,opz){
 // Inventario), ordini e spunte "risposta inviata" delle recensioni (due Mac) si
 // scrivevano PER INTERO con la copia della postazione, che Compass rileggeva solo
 // all'apertura: un DDT inserito dal telefono alle 10 spariva se alle 15 si correggeva un
-// altro DDT su un Compass aperto dalla mattina. Nessun avviso, come per i pre-stay del 22/08.
+// altro DDT su un Compass aperto dalla mattina. Nessun avviso, come il 22/08.
 //
 // Qui non servono tracce delle eliminazioni: ogni postazione ricorda la BASE, l'ultima
 // copia vista sul cloud, e dal confronto a tre sa chi ha fatto cosa.
@@ -18208,7 +16633,7 @@ const QM_ELENCHI_CONDIVISI={qm_ddt:[],qm_inv_moves_sa:[],qm_inv_moves_ar:[],qm_i
 // DVR, Consumo Biancheria e Reso Biancheria hanno tutti la stessa forma: un oggetto le cui
 // proprietà sono elenchi di record con `id` — `{righe:[…],ritiri:[…]}`,
 // `{consumi:[…],giri:[…]}`, `{geriart:{visite:[…],…}}` — più qualche campo che elenco non
-// è (le `tipologie` dei resi). E avevano tutti lo stesso difetto dei pre-stay: si scriveva
+// è (le `tipologie` dei resi). E avevano tutti lo stesso difetto: si scriveva
 // l'oggetto INTERO con la copia che quella postazione si portava dietro, quindi una copia
 // vecchia poteva cancellare quello che era stato aggiunto altrove, in silenzio.
 // Qui non è mai successo perché li tocca praticamente solo il QM da una postazione, ma la
@@ -18297,7 +16722,7 @@ async function _qmSalvaArchivio(key,locale){
     }
   }catch(e){}
   // Senza aver mai letto il cloud in questa sessione non si scrive: sarebbe sovrascrivere
-  // alla cieca, che è esattamente come sono spariti i pre-stay del 24 agosto.
+  // alla cieca, che è esattamente come sono spariti dati il 24 agosto.
   if(!letto&&!_qmArchivioLetto[key]){try{setSyncStatus('error');}catch(e){}return locale;}
   try{localStorage.setItem(key,JSON.stringify(finale));}catch(e){}
   try{setSyncStatus('syncing');}catch(e){}
@@ -18337,7 +16762,7 @@ async function _qmLeggiArchivio(key,vuoto){
 // tre postazioni aperte e nessuno che stava lavorando.
 //
 // Questo NON indebolisce la regola per cui una copia ferma da ore è il punto di partenza
-// di ogni sovrascrittura (incidente pre-stay del 22/08/2026): una scheda nascosta non la
+// di ogni sovrascrittura (incidente del 22/08/2026): una scheda nascosta non la
 // sta usando nessuno, e il giro riparte SUBITO al ritorno in primo piano — cioè prima che
 // qualcuno possa scriverci sopra. È la stessa tecnica con cui `qmCheckVersione` aggiorna
 // il codice della pagina.
@@ -18358,7 +16783,7 @@ async function _qmLeggiArchivio(key,vuoto){
 // qualunque cosa.
 //
 // LA PAUSA NON È SILENZIOSA, e non è un dettaglio estetico: una copia visibile e vecchia è
-// il punto di partenza di ogni sovrascrittura (incidente pre-stay del 22/08/2026). Se
+// il punto di partenza di ogni sovrascrittura (incidente del 22/08/2026). Se
 // Compass smette di aggiornarsi deve dirlo, altrimenti chi passa davanti legge numeri vecchi
 // credendoli freschi — che è peggio del consumo che si sta risparmiando.
 const QM_INATTIVO_MS=30*60*1000;
@@ -18490,7 +16915,6 @@ function _qmRidisegnaVista(id){
     else if(id==='resi-biancheria')resiLoad();
     else if(id==='biancheria')biaLoad();
     else if(id==='giacenza')giacLoad();
-    else if(id==='prestay')prestayRender();
     else if(id==='turnazione'){if(weekData)renderDay(activeDay);}
     else if(id==='hkpsheet')hkpNRender('sa');
     else if(id==='bkfsheet')bkfRenderChart();

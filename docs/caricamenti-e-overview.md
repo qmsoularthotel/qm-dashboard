@@ -48,7 +48,7 @@ Cliccando il chip occupazione si apre `#occ-panel`. Barre orizzontali per strutt
 
 ---
 
-## Prenotazioni — il file unico che sostituisce tre upload (2026-08-20)
+## Prenotazioni — il file unico che sostituisce due upload (2026-08-20)
 
 Vista: nessuna (è solo uno slot di Upload Center). Codice: `§§ PRENOTAZIONI` in `app.js`.
 Interruttore: **`PREN_UNICO`** in cima alla sezione.
@@ -69,10 +69,9 @@ tre export separati.
 |---|---|---|
 | Riepilogo Reception | `qm_arriviData` | arrivi = `Arrivo`=giorno · partenze = `Partenza`=giorno · fermate = `Arrivo` < giorno < `Partenza` |
 | Report pasti | `qm_bkfData` | colazioni e no-colazione per ogni giorno dell'intervallo |
-| Arrivi Pre-stay | schede `_prestay` | un import per ogni giorno futuro presente nel file |
 | (nessuno: derivato) | `qm_rcGuests` | registration card del giorno, da `qm_arriviData` — vedi sotto |
 
-Da 3 caricamenti al giorno a **1**. Turno e Piano Settimanale restano invariati.
+Da 2 caricamenti al giorno a **1**. Turno e Piano Settimanale restano invariati.
 
 ### Le registration card sono una derivazione, non un effetto collaterale
 
@@ -80,7 +79,7 @@ Scrivere `qm_arriviData` **non** aggiorna le registration card: la vista Registr
 legge `qm_rcGuests`, che va riscritto a parte. Nella prima versione `prenHandlePdf` non lo
 faceva, quindi caricando il PDF Prenotazioni le card restavano quelle dell'ultimo
 Riepilogo Reception caricato a mano — con l'aggravante che tutto il resto (arrivi,
-colazioni, pre-stay) si aggiornava regolarmente, per cui sembrava un problema della sola
+colazioni) si aggiornava regolarmente, per cui sembrava un problema della sola
 vista Registrazione e non del caricamento.
 
 La derivazione vive in **`rcAggiornaDaArrivi(sameDayAsPrev)`**, estratta dall'IIFE che
@@ -97,8 +96,8 @@ L'esito finisce nel messaggio dello slot: *"… registration card aggiornate"* o
 l'avviso che non lo sono. Card ferme senza dirlo sono peggio di un errore, perché si
 stampa la scheda di un ospite partito ieri.
 
-I nomi passano da `_psNomeUmano`: l'export del PMS è in maiuscolo (`BIANCHI ANNA`) e sulla
-card stampata, a 24pt, si legge come una sgridata. Stessa regola già in uso nel pre-stay.
+I nomi passano da `_qmNomeUmano`: l'export del PMS è in maiuscolo (`BIANCHI ANNA`) e sulla
+card stampata, a 24pt, si legge come una sgridata.
 
 `rcRenderSourceLine` (la riga "documento caricato" sopra la coda di stampa) segue
 `PREN_UNICO`: con il file unico nomina *Prenotazioni (PMS)*, legge `qm_ts_prenTs` e
@@ -183,82 +182,6 @@ tornavano — errore trovato proprio così.
 arrivi**, mai a fermate e partenze, per cui alcune camere Art risultavano `AR` (Art Resort)
 invece di `SA`. Qui la struttura è assegnata in modo deterministico a tutte e tre le liste.
 
-### Multicamera: una sola scheda, non una per camera
-
-Una prenotazione su più camere compare nell'export come **una riga per camera**. È una sola
-prenotazione con una sola email, quindi deve produrre **una sola scheda**.
-
-**Il codice NON è condiviso fra le camere del gruppo** — verificato sul file reale: fra 158
-prenotazioni non ce ne sono due uguali, nemmeno all'interno dei gruppi (e nemmeno spezzando
-il codice nei suoi due token). Quello che coincide sono **nome, arrivo, partenza e canale**:
-è su quelli che `_prenPrestay` raggruppa. Nel file di prova emergono 9 gruppi, da 2 a 4
-camere (Olimpio Michele ne ha 4, Talhami Alla 3).
-
-La scheda conserva `codici[]` con i codici di **tutte** le camere: al reimport basta che
-**uno** combaci, così il gruppo si riconosce anche se una camera viene tolta o cambiata.
-`codice` resta valorizzato col primo, per le schede salvate prima che la lista esistesse.
-
-Sulla card compare una pastiglia ambra **"N camere"** con l'elenco nel tooltip: senza,
-il raggruppamento sarebbe invisibile e sembrerebbe che manchino degli arrivi.
-
-**Attenzione**: due ospiti diversi con lo stesso nome, stesso arrivo e stessa partenza
-verrebbero uniti. È il compromesso accettato — la pastiglia "N camere" lo rende però
-visibile a colpo d'occhio.
-
-### L'abbinamento delle schede va sul CODICE, non sul nome
-
-Il nome dell'ospite **cambia**: al check-in viene registrato il documento di chi si
-presenta, che può essere l'accompagnatore. Caso reale (20/08/2026): pre-stay inviato a
-"Marino Ilenia", al banco registrata "Della Sala Maria Concetta", e al reimport la stessa
-prenotazione tornava come un secondo arrivo — con l'invio già fatto rimasto sulla scheda
-vecchia e una scheda nuova apparentemente da compilare.
-
-`_psImportaArrivi` abbina in quest'ordine:
-
-1. **`codice`** della prenotazione (colonna `Codice`, x 470–519) — non cambia mai. Presente
-   e univoco su tutte le prenotazioni dell'export (verificato: 158 su 158, zero duplicati).
-   Quando combacia, **il nome viene aggiornato** con quello del PMS.
-2. **nome**, per le schede importate prima che il codice esistesse
-3. prima scheda vuota della stessa struttura
-4. scheda nuova
-
-Il codice va a capo nell'export (`7BK7M6L` + `7MXYPP`): va accodato come il nome, altrimenti
-resta troncato e non abbina più.
-
-Abbinando per codice si aggiorna anche `hotel`: una prenotazione può essere spostata di
-struttura senza per questo diventare un secondo arrivo.
-
-### Il canale colora la scheda pre-stay all'import
-
-La colonna `Origine` viene salvata sulla scheda (`a.origine`) e decide il colore del bordo
-tramite `PS_CANALI`, **prima** che si digiti l'email:
-
-`booking` blu · `expedia` giallo · `g2 travel` marrone · `italcamel` viola · altri neutro
-
-Prima il canale si deduceva dall'indirizzo email (`PS_BORDI`), che però si inserisce a
-mano: all'import le schede restavano neutre e prendevano colore solo a compilazione fatta.
-Quella regola resta come **ripiego** per le schede vecchie o aggiunte a mano, e per le
-prenotazioni la cui origine non è fra quelle mappate.
-
-Il canale **vince sull'email**: un ospite Booking che lascia un indirizzo privato resta
-blu. Per questo `_psAggiornaBordo` legge `data-canale` sulla card e, se c'è, non tocca il
-colore mentre si digita.
-
-Sulla scheda compare anche una **pastiglia col nome del canale** (`_psCanaleNome`), dello
-stesso colore del bordo:
-
-`Booking` · `Expedia` · `Italcamel` · `G2 Travel` · **`Diretta`** per CRSVertical, che è il
-motore di prenotazione del sito — chiamarla col nome del fornitore non direbbe niente a chi
-legge. Un'origine non prevista viene mostrata com'è (accorciata a 14 caratteri); senza
-origine non compare nessuna pastiglia.
-
-**Italcamel si accende da sola** quando l'origine lo dichiara: la spunta manuale resta per
-i casi non coperti, ma non è più l'unico modo.
-
-Attenzione a `Booking.co`: il PDF manda a capo `Booking.com` e nella colonna resta troncato.
-Le espressioni di `PS_CANALI` cercano sottostringhe (`/booking/i`), non uguaglianze, proprio
-per questo.
-
 ### Partenze di oggi già in check-out — l'ordine dei caricamenti non conta più (24/09/2026)
 
 Con il filtro "Presenti" il PMS toglie dal PDF chi ha già fatto il check-out (confermato dal QM
@@ -281,7 +204,7 @@ controlli). 9 controlli.
 
 ### La tessera Prenotazioni sulle altre postazioni (27/09/2026)
 
-Caricato il file dal Mac del lavoro, arrivi, colazioni e pre-stay arrivavano a tutti, ma la
+Caricato il file dal Mac del lavoro, arrivi e colazioni arrivavano a tutti, ma la
 **tessera** dell'Upload Center (riepilogo *"120 prenotazioni · 27/09–03/10"* e ora) stava solo
 nel `localStorage` di chi aveva caricato (`qm_pren_riass`, `qm_ts_prenTs`). Sugli altri Mac
 restava all'ultimo caricamento fatto lì e dopo 24 ore il suo pallino diventava **rosso**: la
@@ -294,14 +217,14 @@ lo applica al giro e all'avvio, e vince il più recente. Coperto da 7 controlli 
 
 ### Tornare indietro
 
-`PREN_UNICO=false` in cima alla sezione: riappaiono i tre slot e tornano attivi i loro
-handler, **mai rimossi** (`handleArriviFile`, `prestayHandlePdf`, `handleBkfFile`). Stesso
+`PREN_UNICO=false` in cima alla sezione: riappaiono gli slot separati e tornano attivi i
+loro handler, **mai rimossi** (`handleArriviFile`, `handleBkfFile`). Stesso
 schema di `HKP_DERIVE_FROM_PIANO`. Punto di ritorno completo: tag git
 **`pre-prenotazioni-unico`**.
 
 ### Perché il parsing è deterministico e non AI
 
-Colonne a posizione x fissa, come `_psParsePdfArrivi`: nomi e tipi camera vanno a capo
+Colonne a posizione x fissa: nomi e tipi camera vanno a capo
 nell'export reale, e un parser sul testo concatenato li spezzerebbe. Niente chiamata AI
 significa anche nessun costo e nessuna variabilità fra un caricamento e l'altro.
 

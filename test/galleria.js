@@ -214,3 +214,6 @@ ok('Galleria: tre voci di menu',                    Object.keys(BG_SEZIONI).join
   ok('sicurezza: i numeri restano numeri',        o.fatture['ar|2026-09b'].q, 3);
   ok('sicurezza: id normale intatto',             _gbJson('{"id":"1758800000000_ab12cd"}').id, '1758800000000_ab12cd');
 })();
+
+// Ultimo file caricato da esegui.sh/node.js: tocca a lui chiudere il conto.
+riepilogo();

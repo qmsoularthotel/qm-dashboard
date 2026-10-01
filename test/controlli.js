@@ -114,42 +114,6 @@ ok('forma attesa dalle app: .camera',   ad.fermate.every(function (x) { return '
 ok('forma attesa dalle app: .origine',  ad.fermate.every(function (x) { return 'origine' in x; }), true);
 ok('data nel formato del PMS',          ad.data, '10/05/2026');
 
-sez('Multicamera: una prenotazione, una scheda');
-var MULTI = [
-  { ospite: 'Neri Paolo', arrivo: '2026-05-20', partenza: '2026-05-22', alloggio: 'Art 3 / AS', camera: 'Art 3', pax: 2, tratt: 'BB', origine: 'Booking.com', codice: 'XXX 1' },
-  { ospite: 'Neri Paolo', arrivo: '2026-05-20', partenza: '2026-05-22', alloggio: 'Art 4 / AS', camera: 'Art 4', pax: 2, tratt: 'BB', origine: 'Booking.com', codice: 'XXX 2' },
-  { ospite: 'Gialli Sara', arrivo: '2026-05-20', partenza: '2026-05-21', alloggio: 'Art 9 / AS', camera: 'Art 9', pax: 1, tratt: 'BB', origine: 'Expedia', codice: 'YYY 1' }
-];
-var ps = _prenPrestay(MULTI, '2026-05-20');
-ok('3 righe diventano 2 schede', ps.length, 2);
-var neri = ps.filter(function (x) { return x.nome === 'Neri Paolo'; })[0];
-ok('Neri copre 2 camere', neri.camere.length, 2);
-ok('Neri conserva 2 codici', neri.codici.length, 2);
-
-sez('Abbinamento delle schede al reimport');
-var _giorni = {};
-_psGiorno = function (iso) { if (!_giorni[iso]) _giorni[iso] = { arrivi: [] }; return _giorni[iso]; };
-_psSave = function () {};
-prestayRender = function () {};
-var G = '2026-05-20';
-_psImportaArrivi(G, [{ nome: 'Neri Paolo', hotel: 'sa', origine: 'Booking.com', codici: ['XXX 1', 'XXX 2'], camere: ['Art 3', 'Art 4'] }]);
-_psGiorno(G).arrivi[0].email = 'neri@esempio.it';
-_psGiorno(G).arrivi[0].mailTs = 999;
-// stessa prenotazione, ma al check-in e' stato registrato un altro nome
-_psImportaArrivi(G, [{ nome: 'Neri Giulia', hotel: 'sa', origine: 'Booking.com', codici: ['XXX 1', 'XXX 2'], camere: ['Art 3', 'Art 4'] }]);
-ok('cambio nome: nessun doppione',   _psGiorno(G).arrivi.length, 1);
-ok('cambio nome: il nome si aggiorna', _psGiorno(G).arrivi[0].nome, 'Neri Giulia');
-ok('cambio nome: email conservata',  _psGiorno(G).arrivi[0].email, 'neri@esempio.it');
-ok('cambio nome: invio conservato',  _psGiorno(G).arrivi[0].mailTs, 999);
-
-sez('Canale della prenotazione');
-ok('Booking -> blu',        _psBordo({ origine: 'Booking.com', email: '' }), '#0071C2');
-ok('Booking troncato',      _psBordo({ origine: 'Booking.co',  email: '' }), '#0071C2');
-ok('Expedia -> giallo',     _psBordo({ origine: 'Expedia',     email: '' }), '#FFB300');
-ok('il canale vince sull\'email privata', _psBordo({ origine: 'Booking.com', email: 'tizio@gmail.com' }), '#0071C2');
-ok('senza canale: decide l\'email',       _psBordo({ email: 'x@guest.booking.com' }), '#0071C2');
-ok('CRSVertical si chiama Diretta',       _psCanaleNome({ origine: 'CRSVErtical' }), 'Diretta');
-
 sez('Registration card ricavate dagli arrivi');
 // Il PDF unico Prenotazioni scrive qm_arriviData: da li' devono nascere anche le card,
 // altrimenti restano quelle dell'ultimo Riepilogo Reception caricato a mano.
@@ -422,11 +386,11 @@ ok('una voce senza giorni viene scartata', Object.keys(turniRipuliArchivio({ x: 
   _kvFallite = {};
 
   _kvNonRiuscita('qm_piano');
-  _kvNonRiuscita('qm_prestay');
+  _kvNonRiuscita('qm_pulData');
   ok('il registro del giorno tiene le chiavi rimaste indietro', _kvSospeseOggi().length, 2);
   ok('e dice di che dato si tratta, non la chiave grezza',
      _kvSospeseOggi().map(function (x) { return x.nome; }).sort().join(' · '),
-     'Messaggi pre-stay · Piano settimanale');
+     'Piano settimanale · Report pulizie');
 
   // Il caso che ha fatto scoprire tutto: la pagina viene ricaricata, quindi la memoria di
   // sessione e' vuota, e POI la scrittura riesce. Prima di questa correzione la pulizia era
@@ -434,10 +398,10 @@ ok('una voce senza giorni viene scartata', Object.keys(turniRipuliArchivio({ x: 
   _kvFallite = {};
   _kvRiuscita('qm_piano');
   ok('una scrittura riuscita spegne l\'avviso anche dopo un ricaricamento', _kvSospeseOggi().length, 1);
-  ok('e quello ancora fermo resta l\'altro', _kvSospeseOggi()[0].chiave, 'qm_prestay');
+  ok('e quello ancora fermo resta l\'altro', _kvSospeseOggi()[0].chiave, 'qm_pulData');
   ok('quella arrivata resta contata a parte, come traccia', _kvRisolteOggi(), 1);
 
-  _kvRiuscita('qm_prestay');
+  _kvRiuscita('qm_pulData');
   ok('arrivate tutte, niente piu\' in sospeso', _kvSospeseOggi().length, 0);
   ok('ma la traccia della giornata rimane', _kvRisolteOggi(), 2);
 
@@ -812,207 +776,24 @@ ok('nessun a capo grezzo nel titolo', /\n/.test(_vistoAvviso.titolo), false);
 _cqApri = _cqApriVero;
 
 // ─────────────────────────────────────────────────────────────────────────────
-sez('Mittente delle mail pre-stay (indirizzi Booking)');
-// Gli indirizzi @guest.booking.com accettano posta SOLO dall'indirizzo registrato
-// sull'Extranet. Il blocco non deve dipendere da una costante scritta a mano — che non
-// sa cosa c'è sul Worker — ma dal mittente che il Worker dichiara.
-var _mittVero = _psMitt;
-_psMitt = null;                       // mai verificato
-ok('alias riconosciuto: guest.booking.com', _psAliasBooking('abc.123@guest.booking.com'), true);
-ok('alias riconosciuto: booking.com',       _psAliasBooking('  X@Booking.com '),          true);
-ok('non e un alias: booking.com nel nome',  _psAliasBooking('booking.com@gmail.com'),     false);
-ok('non e un alias: dominio simile',        _psAliasBooking('tizio@guest.booking.com.co'), false);
-ok('senza verifica: indirizzo Booking bloccato', _psBookingBloccato('abc@guest.booking.com'), true);
-ok('senza verifica: indirizzo normale libero',   _psBookingBloccato('mario@gmail.com'),       false);
-
-_psMitt = { mittente: 'qm@soularthotel.com' };   // il mittente di sempre
-ok('mittente sbagliato: Booking bloccato',  _psBookingBloccato('abc@guest.booking.com'), true);
-ok('mittente sbagliato: non e quello Booking', _psMittenteOkBooking(), false);
-
-_psMitt = { mittente: 'BOOKING@SoulArtHotel.com' };  // quello registrato, con altre maiuscole
-ok('mittente giusto: riconosciuto',          _psMittenteOkBooking(), true);
-ok('mittente giusto: Booking non bloccato',  _psBookingBloccato('abc@guest.booking.com'), false);
-ok('mittente giusto: indirizzo normale libero', _psBookingBloccato('mario@gmail.com'),    false);
-
-// Una casella per struttura. Il Boutique spedisce da booking@hotelpiazzacarita.com, che sta
-// su un dominio suo: le liste degli indirizzi approvati su Booking sono separate per
-// struttura, quindi un mittente solo direbbe il falso su tutte tranne una.
-ok('il Boutique attende il suo indirizzo', _psMittAtteso('bh'), 'booking@hotelpiazzacarita.com');
-ok('le altre strutture quello principale', _psMittAtteso('sa'), 'booking@soularthotel.com');
-ok('una struttura sconosciuta usa il principale', _psMittAtteso('xx'), 'booking@soularthotel.com');
-_psMitt = { mittente: 'booking@soularthotel.com', caselle: { bh: 'booking@hotelpiazzacarita.com' } };
-ok('SoulArt a posto',                _psMittenteOkBooking('sa'), true);
-ok('Boutique a posto con la sua',    _psMittenteOkBooking('bh'), true);
-ok('Boutique non bloccato',          _psBookingBloccato('abc@guest.booking.com', 'bh'), false);
-ok('SoulArt non bloccato',           _psBookingBloccato('abc@guest.booking.com', 'sa'), false);
-// Se la casella del Boutique non e' configurata sul Worker, le sue mail partirebbero da
-// quella principale: Booking le rifiuterebbe, e va bloccato solo il Boutique.
-_psMitt = { mittente: 'booking@soularthotel.com', caselle: {} };
-ok('senza casella propria il Boutique e bloccato', _psBookingBloccato('abc@guest.booking.com', 'bh'), true);
-ok('ma le altre strutture restano libere',         _psBookingBloccato('abc@guest.booking.com', 'sa'), false);
-_psMitt = _mittVero;
-
-// L'endpoint della verifica si ricava da quello dell'invio: una sola impostazione.
-var _cfgVero = _psMailCfg;
-_psMailCfg = { endpoint: 'https://esempio.workers.dev/prestay/send', key: 'x' };
-ok('endpoint stato ricavato da send', _psEndpointStato(), 'https://esempio.workers.dev/prestay/stato');
-// L'indirizzo del Worker non e' un segreto e non si inserisce piu' a mano: senza
-// configurazione resta noto, quello che manca e' la chiave.
-_psMailCfg = { endpoint: '', key: '' };
-ok('endpoint noto anche senza configurazione', _psEndpointStato(), PROXY + '/prestay/stato');
-ok('senza chiave l\'invio diretto non e pronto', _psMailPronto(), false);
-_psMailCfg = { endpoint: '', key: 'k' };
-ok('con la sola chiave l\'invio e pronto',       _psMailPronto(), true);
-ok('e usa il Worker di sempre',                  _psEndpoint(), PROXY + '/prestay/send');
-_psMailCfg = _cfgVero;
-
-// ─────────────────────────────────────────────────────────────────────────────
-sez('Pre-stay: la fusione col cloud non perde niente');
-// Il 22/08/2026 una copia partita con il localStorage vuoto ha riscritto la chiave
-// condivisa e ha cancellato i pre-stay del 24 gia' inviati. Questi controlli descrivono
-// esattamente quella situazione: cloud pieno, copia in memoria appena reimportata.
-
-// Cloud: due schede compilate, una gia' contattata via WhatsApp.
-var CLOUD = { '2026-08-24': { arrivi: [
-  { id: 'v1', hotel: 'bh', nome: 'Brunetaud Mathilde', email: 'm@esempio.it', tel: '+39333111',
-    codici: ['AAA 111'], codice: 'AAA 111', lang: 'it', waTs: 1000, mailTs: null },
-  { id: 'v2', hotel: 'bh', nome: 'De Toro Rebeca', email: 'r@esempio.it', tel: '',
-    codici: ['BBB 222'], codice: 'BBB 222', lang: 'en', mailTs: 2000, waTs: null }
-] } };
-// In memoria: le stesse due persone appena reimportate dal PDF — id nuovi, contatti vuoti.
-var LOCALE = { '2026-08-24': { arrivi: [
-  { id: 'n1', hotel: 'bh', nome: 'Brunetaud Mathilde', email: '', tel: '',
-    codici: ['AAA 111'], codice: 'AAA 111', lang: 'it', mailTs: null, waTs: null },
-  { id: 'n2', hotel: 'bh', nome: 'De Toro Rebeca', email: '', tel: '',
-    codici: ['BBB 222'], codice: 'BBB 222', lang: 'it', mailTs: null, waTs: null }
-] } };
-var F = _psFondi(CLOUD, LOCALE);
-var f24 = F['2026-08-24'].arrivi;
-ok('reimportazione: nessuna scheda duplicata',   f24.length, 2);
-ok('reimportazione: email recuperata',           f24[0].email, 'm@esempio.it');
-ok('reimportazione: telefono recuperato',        f24[0].tel, '+39333111');
-ok('reimportazione: WhatsApp inviato conservato', f24[0].waTs, 1000);
-ok('reimportazione: mail inviata conservata',    f24[1].mailTs, 2000);
-ok('reimportazione: lingua ripresa dal cloud',   f24[1].lang, 'en');
-
-// Il caso che ha fatto il danno: copia in memoria completamente vuota.
-var V = _psFondi(CLOUD, {});
-ok('copia vuota: la giornata resta',             V['2026-08-24'].arrivi.length, 2);
-ok('copia vuota: i contatti restano',            V['2026-08-24'].arrivi[0].email, 'm@esempio.it');
-
-// Una giornata che sta solo sul cloud non deve sparire perche' qui non c'e'.
-var G = _psFondi({ '2026-08-25': { arrivi: [{ id: 'z', hotel: 'sa', nome: 'Verdi Ugo', email: 'u@esempio.it' }] } },
-                 { '2026-08-24': { arrivi: [] } });
-ok('giorno solo sul cloud: conservato',          Object.keys(G).sort().join(','), '2026-08-24,2026-08-25');
-
-// Chi digita adesso vince su chi ha letto prima: il valore locale non si sovrascrive.
-var D = _psFondi({ 'g': { arrivi: [{ id: 'x', hotel: 'sa', nome: 'Neri Ada', email: 'vecchia@esempio.it', tel: '+39000' }] } },
-                 { 'g': { arrivi: [{ id: 'x', hotel: 'sa', nome: 'Neri Ada', email: 'nuova@esempio.it', tel: '' }] } });
-ok('valore appena digitato non sovrascritto',    D.g.arrivi[0].email, 'nuova@esempio.it');
-ok('valore mancante ripreso dal cloud',          D.g.arrivi[0].tel, '+39000');
-
-// Eliminare deve restare possibile: senza traccia la fusione la rimetterebbe dentro.
-var E = _psFondi({ 'g': { arrivi: [{ id: 'x', hotel: 'sa', nome: 'Neri Ada', email: 'a@esempio.it' }] } },
-                 { 'g': { arrivi: [], rimossi: ['x'] } });
-ok('scheda eliminata non torna',                 E.g.arrivi.length, 0);
-
-// Giornata locale ancora nel vecchio formato (indicizzata per camera): non deve far
-// scartare ne' la versione migrata sul cloud ne' quella locale.
-var VF = _psFondi({ 'g': { arrivi: [{ id: 'r1', hotel: 'sa', nome: 'Verdi Ugo', email: 'u@esempio.it' }] } },
-                  { 'g': { '203': { hotel: 'bh', nome: 'Neri Ada', email: 'a@esempio.it', tel: '+39222' } } });
-ok('vecchio formato: scheda locale migrata',  VF.g.arrivi.length, 2);
-ok('vecchio formato: cloud non scartato',
-   VF.g.arrivi.filter(function (a) { return a.email === 'u@esempio.it'; }).length, 1);
-ok('vecchio formato: locale non scartato',
-   VF.g.arrivi.filter(function (a) { return a.email === 'a@esempio.it'; }).length, 1);
-
-// Una scheda vuota sul cloud non ha niente da salvare: non deve tornare a ingombrare.
-var Z = _psFondi({ 'g': { arrivi: [{ id: 'x', hotel: 'sa', nome: 'Boh', email: '', tel: '' }] } },
-                 { 'g': { arrivi: [] } });
-ok('scheda vuota sul cloud non torna',           Z.g.arrivi.length, 0);
-
-// Riconoscimento della stessa prenotazione: il codice conta piu' del nome, che al
-// check-in puo' cambiare (si registra il documento di chi si presenta).
-ok('stesso codice, nome diverso: stessa scheda',
-   _psStessaScheda({ id: 'a', codici: ['AAA 111'], nome: 'Marino Ilenia', hotel: 'sa' },
-                   { id: 'b', codici: ['AAA 111'], nome: 'Della Sala Maria', hotel: 'sa' }), true);
-ok('stesso nome, struttura diversa: schede diverse',
-   _psStessaScheda({ id: 'a', nome: 'Rossi Mario', hotel: 'sa' },
-                   { id: 'b', nome: 'Rossi Mario', hotel: 'bh' }), false);
-ok('nome invertito: stessa scheda',
-   _psStessaScheda({ id: 'a', nome: 'Rossi Mario', hotel: 'sa' },
-                   { id: 'b', nome: 'MARIO ROSSI', hotel: 'sa' }), true);
-
-// "Compilata" = c'e' qualcosa che si perderebbe. Il solo nome lo rigenera l'importazione.
-ok('solo il nome non e compilata',   _psCompilata({ nome: 'Rossi Mario' }), false);
-ok('con il telefono e compilata',    _psCompilata({ tel: '+39333' }), true);
-ok('gia contattata e compilata',     _psCompilata({ waTs: 1 }), true);
-
-// La produzione scrive sulla chiave condivisa; la copia di sviluppo su una sua.
-ok('chiave di produzione',           PRESTAY_KEY, 'qm_prestay');
-location.hostname = 'localhost';
-ok('copia di sviluppo separata',     _psChiave(), 'qm_prestay_dev');
-location.hostname = 'compass-qm.com';
-location.protocol = 'file:';
-ok('copia aperta da file:// separata', _psChiave(), 'qm_prestay_dev');
-location.protocol = 'https:';
-ok('tornati in produzione',          _psChiave(), 'qm_prestay');
-
-// ─────────────────────────────────────────────────────────────────────────────
-sez('Pre-stay: chi ha prenotato altrove riceve dalla sua struttura');
-// Un ospite del Boutique con upgrade dorme al SoulArt ma non lo sa fino all'arrivo: il
-// messaggio deve partire dal Boutique — nome mittente, testo e casella di posta — mentre
-// la scheda resta nel gruppo della struttura in cui arriva, perche' i conteggi per
-// struttura devono continuare a combaciare con la lista arrivi del PMS.
-
-var UPG = { id: 'u1', hotel: 'sa', mitt: 'bh', nome: 'Rossi Mario', email: 'x@guest.booking.com' };
-var NORM = { id: 'n1', hotel: 'sa', nome: 'Verdi Ada', email: 'a@esempio.it' };
-ok('senza scelta scrive la struttura di arrivo', _psHotelMitt(NORM), 'sa');
-ok('con la scelta scrive quella di prenotazione', _psHotelMitt(UPG), 'bh');
-ok('struttura inesistente: si ricade sull arrivo', _psHotelMitt({ hotel: 'sa', mitt: 'zz' }), 'sa');
-ok('la struttura di arrivo non cambia mai',      UPG.hotel, 'sa');
-ok('scheda normale non e marcata',               _psMittDiverso(NORM), false);
-ok('scheda con upgrade e marcata',               _psMittDiverso(UPG), true);
-ok('mitt uguale all arrivo non e una differenza', _psMittDiverso({ hotel: 'sa', mitt: 'sa' }), false);
-
-// {struttura} nel testo: l'ospite deve leggere l'albergo che ha prenotato.
-ok('nel messaggio compare la struttura prenotata',
-   _psCompila('Il suo arrivo al {struttura}', UPG, '2026-09-04'), 'Il suo arrivo al Boutique Hotel');
-ok('senza upgrade compare quella di arrivo',
-   _psCompila('Il suo arrivo al {struttura}', NORM, '2026-09-04'), 'Il suo arrivo al SoulArt Hotel');
-
-// Il relay Booking accetta solo il mittente registrato sull'Extranet DI QUELLA STRUTTURA:
-// e' il motivo per cui la scelta deve seguire anche il controllo, non solo il testo.
-// Qui la casella principale (SoulArt) e' quella sbagliata, quella del Boutique e' giusta.
-var _mittPrima = _psMitt;
-_psMitt = { mittente: 'qm@soularthotel.com', caselle: { bh: 'booking@hotelpiazzacarita.com' } };
-ok('alias Booking bloccato con la casella dell arrivo',
-   _psBookingBloccato(UPG.email, _psHotelMitt({ id: 'u1', hotel: 'sa', email: UPG.email })), true);
-ok('e recapitabile scrivendo dal Boutique',
-   _psBookingBloccato(UPG.email, _psHotelMitt(UPG)), false);
-_psMitt = _mittPrima;
-
-// Il Worker dichiara una casella per struttura; la verifica la buttava via, e ogni arrivo
-// Booking del Boutique risultava "non recapitabile" anche a mail regolarmente arrivata.
-var _RISP = { ok: true, mittente: 'booking@soularthotel.com', mittenteDa: 'SMTP_USER',
-              via: 'smtp', smtpHost: 'authsmtp.securemail.pro',
-              caselle: { bh: 'booking@hotelpiazzacarita.com' }, imap: 'qm@soularthotel.com' };
-ok('la verifica conserva le caselle per struttura', (_psMittDaRisposta(_RISP).caselle || {}).bh, 'booking@hotelpiazzacarita.com');
-_psMitt = _psMittDaRisposta(_RISP);
-ok('col Worker letto bene il Boutique non e bloccato', _psBookingBloccato('x@guest.booking.com', 'bh'), false);
-ok('e nemmeno le altre strutture',                    _psBookingBloccato('x@guest.booking.com', 'sa'), false);
-// Una casella davvero sbagliata deve continuare a essere segnalata: il controllo serve.
-_psMitt = _psMittDaRisposta({ ok: true, mittente: 'qm@soularthotel.com', caselle: {} });
-ok('mittente davvero sbagliato: ancora bloccato',     _psBookingBloccato('x@guest.booking.com', 'bh'), true);
-_psMitt = _mittPrima;
-
-// La scelta e' fatta a mano: ne' il cloud ne' una reimportazione la devono cancellare.
-var M = _psFondi({ 'g': { arrivi: [{ id: 'x', hotel: 'sa', mitt: 'bh', nome: 'Rossi Mario', email: 'r@esempio.it' }] } },
-                 { 'g': { arrivi: [{ id: 'y', hotel: 'sa', nome: 'Rossi Mario', email: '', tel: '' }] } });
-ok('mittente scelto ripreso dal cloud',          M.g.arrivi[0].mitt, 'bh');
-var M2 = _psFondi({ 'g': { arrivi: [{ id: 'x', hotel: 'sa', mitt: 'bh', nome: 'Rossi Mario', email: 'r@esempio.it' }] } },
-                  { 'g': { arrivi: [{ id: 'x', hotel: 'sa', mitt: '', ts: 9, nome: 'Rossi Mario', email: 'r@esempio.it' }] } });
-ok('tolto a mano qui, non torna dal cloud',      M2.g.arrivi[0].mitt || '(vuoto)', '(vuoto)');
+sez('Pulizia dei dati di una funzione dismessa');
+// Cancella le chiavi nel browser e, solo in produzione e una volta sola, nel cloud. Dalla
+// copia di sviluppo il cloud di produzione non si tocca.
+(function () {
+  localStorage.setItem('qm_prestay', '{"x":1}');
+  localStorage.setItem('qm_prestay_mailcfg', '{}');
+  localStorage.removeItem('qm_dismessi_ok');
+  _qmPulisciDismessi();
+  ok('dismessi: tolti dal browser', localStorage.getItem('qm_prestay'), null);
+  ok('dismessi: anche le impostazioni', localStorage.getItem('qm_prestay_mailcfg'), null);
+  ok('dismessi: in produzione si cancellano le tre chiavi del cloud', _qmDismessiDaCancellare().length, 3);
+  location.hostname = 'localhost';
+  ok('dismessi: la copia di sviluppo non tocca il cloud', _qmDismessiDaCancellare().length, 0);
+  location.hostname = 'compass-qm.com';
+  localStorage.setItem('qm_dismessi_ok', '1');
+  ok('dismessi: una volta fatta non si ripete', _qmDismessiDaCancellare().length, 0);
+  localStorage.removeItem('qm_dismessi_ok');
+})();
 
 // ─────────────────────────────────────────────────────────────────────────────
 sez('Cassa: due postazioni non si cancellano i movimenti');
@@ -1096,7 +877,7 @@ var B = _qmFondiElenchi(
 ok('biancheria: consumo solo sul cloud conservato', B.consumi.length, 1);
 ok('biancheria: giro solo sul cloud conservato',    B.giri.length, 1);
 
-// Copia locale completamente vuota: e' il caso che ha fatto il danno sui pre-stay.
+// Copia locale completamente vuota: e' il caso che ha fatto il danno il 22/08/2026.
 var V2 = _qmFondiElenchi({ righe: [{ id: 'r1' }, { id: 'r2' }] }, {}, new Set());
 ok('copia vuota non cancella l archivio', V2.righe.length, 2);
 
@@ -1526,7 +1307,7 @@ ok('e _qmLeggiArchivio',  typeof _qmLeggiArchivio, 'function');
 // _biaDistSegna scriveva l'elenco che questa postazione si porta dietro: una distinta
 // stampata dal Mac dell'hotel spariva appena da casa se ne stampava un'altra, e il
 // promemoria di quella struttura si riaccendeva senza che nessuno potesse capire perche'.
-// Stesso difetto dei pre-stay del 22/08/2026, in piccolo.
+// Stesso difetto del 22/08/2026, in piccolo.
 (function () {
   var _s = _biaDist, _kv = kvGet;
   _biaDist = { 'sa|08/09/2026': 111 };                 // segnata qui
@@ -1690,7 +1471,7 @@ sez('Bilanciamento camere: lo scambio in blocco non inventa soggiorni');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Il riepilogo NON si stampa qui: e' una funzione, chiamata dall'ultima riga dell'ultimo
-// file caricato (oggi test/mime.js). La stampa stava a meta' di questo file — dopo i
+// file caricato (oggi test/galleria.js). La stampa stava a meta' di questo file — dopo i
 // controlli sulle eliminazioni degli archivi — e tutto cio' che veniva aggiunto sotto
 // restava fuori dal conteggio: la riga diceva "TUTTI I CONTROLLI SUPERATI (351)" con oltre
 // duecento controlli non ancora eseguiti, e continuava a dirlo anche quando uno di quelli
@@ -1987,8 +1768,8 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   // portare in vista aprendola. La regola resta valida per gli altri pannelli che si aprono:
   // il contenitore che scorre e' `.content`, non la finestra — vedi _qmPortaInVista.
   ok('portare un pannello in vista usa il contenitore giusto',
-     /_psScroller|\.content/.test(String(_qmPortaInVista)), true);
-  ok('aprire una riga NON sposta l\'occhio',     /_psSenzaSalto/.test(String(biaToggleGiro)), true);
+     /_qmScroller|\.content/.test(String(_qmPortaInVista)), true);
+  ok('aprire una riga NON sposta l\'occhio',     /_qmSenzaSalto/.test(String(biaToggleGiro)), true);
 
   _bia = _prima; _biaHotel = _prevHotel;
 })();

@@ -10,8 +10,6 @@ Traccia digitale della **distinta cartacea** che le housekeeper compilano ogni g
 
 **Due strutture** (`RESI_HOTELS`): SoulArt Hotel (`sa`) e Boutique Hotel Piazza Carità (`bh`), selezionabili a linguette. **Art Resort resta fuori di proposito** — fa capo al Sig. Maddaloni, non al QM, e la sua ditta di pulizie è esterna. I due sacchi sono fisicamente distinti e si consegnano separatamente, quindi periodo aperto, totali, avviso e distinta sono **sempre di una struttura sola**.
 
-**Voce menu**: "Messaggi Pre-stay" vive in **Operativo Quotidiano**, subito dopo Registration Cards — è un'attività quotidiana di reception, non un'impostazione. `breadcrumbs.prestay` è `'Operativo Quotidiano'`.
-
 **Voce menu**: la voce sidebar **Reso Biancheria** vive dentro la sezione **Housekeeping** (insieme a "Operativa HKP" e "Bilanciamento Camere"), non più in una sezione "Biancheria" a sé — eliminata perché conteneva una sola voce. `breadcrumbs['resi-biancheria']` è `'Housekeeping'`.
 
 ### Modello dati (chiave KV `qm_resi_biancheria`)
@@ -110,7 +108,7 @@ introdotta:
 |---|---|
 | Prefissi `gb`/`_gb`/`GB_` al posto di `bia`/`_bia`/`BIA_` (id HTML `gb-…`) | `test/esegui.sh` carica `app.js` e questa pagina **nello stesso spazio**: due `biaRender` si sovrascriverebbero e i controlli di Compass girerebbero sulla copia senza accorgersene. Un controllo verifica che `BIA_HOTELS` e `GB_HOTELS` restino distinti |
 | **Due calendari**: `GB_GIORNI_H={ar:[1,3,5],sb:[2,4,6]}` | In Compass SoulArt e Boutique passano insieme (mar/gio/sab). Qui Art Resort lun/mer/ven, Santa Brigida mar/gio/sab. `_gbGiornoGiro(d,h)`, `_gbVigiliaGiro(d,h)`, `_gbGiroCalPrec(d,h)` prendono la struttura (senza, vale quella selezionata); `_gbPeriodo` passa la sua |
-| **Niente cloud**: `_gbLeggi`/`_gbScrivi`/`_gbKvGet`/`_gbKvSet` al posto di `_qmLeggiArchivio`/`_qmSalvaArchivio`/`kvGet`/`kvSet` | Solo `localStorage` (`bg_biancheria`, `bg_distinte`). Anche `cqConferma`/`cqAvviso` e `_psSenzaSalto` hanno una versione locale (`confirm`/`alert`, scorrimento della finestra) |
+| **Niente cloud**: `_gbLeggi`/`_gbScrivi`/`_gbKvGet`/`_gbKvSet` al posto di `_qmLeggiArchivio`/`_qmSalvaArchivio`/`kvGet`/`kvSet` | Solo `localStorage` (`bg_biancheria`, `bg_distinte`). Anche `cqConferma`/`cqAvviso` e `_qmSenzaSalto` hanno una versione locale (`confirm`/`alert`, scorrimento della finestra) |
 
 Tolto il promemoria dell'Overview (`biaRenderPromemoria`), che qui non ha dove stare.
 
@@ -633,14 +631,14 @@ distingue niente — ed è esattamente il motivo per cui mescolarle era illeggib
 Cliccando *"Storico e ristampe"* la pagina si allungava ma il pannello restava sotto il
 bordo dello schermo: bisognava scorrere a mano per vedere quello che si era appena chiesto.
 
-**A scorrere non è la finestra ma `.content`** (vedi la regola generale nel pre-stay):
-`_qmPortaInVista(id,margine)` — accanto a `_psScroller`, prefisso `_ps` storico ma
-contenitore unico per tutta la dashboard — porta un elemento in cima alla vista, con il
+**A scorrere non è la finestra ma `.content`** (regola generale di Compass):
+`_qmPortaInVista(id,margine)` — accanto a `_qmScroller`, contenitore unico per tutta la
+dashboard — porta un elemento in cima alla vista, con il
 doppio giro via `requestAnimationFrame` perché aprendo un pannello il layout si assesta al
 frame successivo e la prima misura sarebbe quella di prima dell'espansione.
 
 Distinzione importante: **aprire lo storico porta in vista, aprire una riga NO**.
-`biaToggleGiro`/`biaToggleVoci` passano da `_psSenzaSalto`: si sta già guardando quella
+`biaToggleGiro`/`biaToggleVoci` passano da `_qmSenzaSalto`: si sta già guardando quella
 riga, e un salto la porterebbe via proprio mentre la si legge.
 
 ### Report andamento per la direzione — `biaPrintAndamento()`
@@ -901,7 +899,7 @@ colazioni e manutenzione non prelevano biancheria.
 
 `giacSetPersona` aggiorna **solo** le caselle e i suggerimenti (`giacAggiornaCarico`).
 Rigenerare l'HTML mentre si compila fa perdere quel che si è digitato — stessa lezione della
-casella "Ricevuto" in Biancheria e della vista pre-stay. Per lo stesso motivo la data va
+casella "Ricevuto" in Biancheria. Per lo stesso motivo la data va
 riletta dal campo prima di ogni ridisegno, altrimenti qualunque giorno selezionato tornerebbe
 a oggi.
 
@@ -1146,7 +1144,7 @@ biancheria e Reso biancheria; una voce Controllo fatturazione con la scheda fatt
 - **"Riscontro fatturazioni" esce dalla pagina dei consumi** e va in *Controllo fatturazione*
   (`_gbRenderFattura`, col selettore di struttura della pagina). **Solo nella Galleria**: in
   Compass il riquadro resta in Consumo Biancheria.
-- A scorrere ora è `.content`: `_gbSenzaSalto` lavora lì, come `_psSenzaSalto`. L'avviso
+- A scorrere ora è `.content`: `_gbSenzaSalto` lavora lì, come `_qmSenzaSalto`. L'avviso
   "salvato / NON salvato" sta nel riquadro in basso nel menu, in rosso quando non arriva.
 - Nello spazio vuoto del menu della Galleria c'e' la rosa dei venti delle finestre di conferma di Compass (stessa immagine, rotate 22deg, opacita' 13%), al centro, intera, 265px (25/09/2026).
 - Il promemoria della distinta in Overview legge le distinte stampate dal cloud (all'apertura e al massimo ogni 5 minuti, solo la vigilia): prima guardava solo il localStorage e ricompariva riaprendo Compass o dopo una stampa fatta su un altro PC. Distinte locali e del cloud si uniscono, in Compass e nella Galleria (25/09/2026).

@@ -54,7 +54,7 @@ Caso frequente: un buono già registrato a carico del fondo cassa viene in un se
 
 ### Scrittura sicura dei registri — due postazioni non si cancellano i movimenti
 
-Stessa classe di problema dei pre-stay (22/08/2026), su denaro contato: `kvSetLocal` (`reception.html`) e `_receptionSave` (`app.js`) scrivevano **l'elenco intero** con la copia che quella postazione si portava dietro. Due receptionist che registravano nello stesso momento da due PC si cancellavano un movimento a testa, in silenzio — e il polling a 30s che *sostituiva* `_fondo` con la copia del cloud faceva sparire anche in locale un movimento la cui scrittura non era andata a buon fine.
+Stessa classe di problema del 22/08/2026, su denaro contato: `kvSetLocal` (`reception.html`) e `_receptionSave` (`app.js`) scrivevano **l'elenco intero** con la copia che quella postazione si portava dietro. Due receptionist che registravano nello stesso momento da due PC si cancellavano un movimento a testa, in silenzio — e il polling a 30s che *sostituiva* `_fondo` con la copia del cloud faceva sparire anche in locale un movimento la cui scrittura non era andata a buon fine.
 
 Ora si rilegge e si **unisce per `id`** (`_cassaUnisci`, stessa funzione duplicata nei due file — `test/esegui.sh` controlla che ci sia in entrambi):
 

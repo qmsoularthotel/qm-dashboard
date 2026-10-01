@@ -53,7 +53,6 @@ grep -n 'id="view-' index.html
 | `view-reception` | Fondo Cassa & Incasso Contante — sola lettura + modifica per il QM |
 | `view-giacenza` | **Giacenza Biancheria** — magazzino e pezzi in mano alle cameriere |
 | `view-resi-biancheria` | Resi biancheria inidonea al fornitore Raimondo (solo SoulArt, solo QM) |
-| `view-prestay` | Pre-stay — messaggi agli ospiti in arrivo fra 2 giorni |
 
 ---
 
@@ -66,7 +65,6 @@ davvero dinamico (colori calcolati, stati). Le classi nate così:
 
 | Classe | Dove | Perché esiste |
 |---|---|---|
-| `.ps-grid`, `.ps-bar-*` | Messaggi Pre-stay | Schede a 3/2/1 colonne; barra di stato che va a capo |
 | `.ov-pad` | Blocchi del Piano del giorno | 20px per lato mangiavano un sesto della larghezza su 375px |
 | `.ov-bkf-mid`, `.ov-bkf-right` | Pannello Breakfast | Impilandosi, i bordi **verticali** fra le tre celle restavano ai lati come linee nel nulla: diventano sopra/sotto |
 | `.ov-week-wrap` | Striscia 7 giorni | Margine ridotto per lasciare larghezza alle schede |
@@ -125,7 +123,7 @@ Camere con check-in oggi, Housekeeping, Breakfast, Recensioni) e di Turnazione C
 diventate badge navy/oro come il menu: classe `.ov-icon-badge` (24px, SVG bianco 12px), stesse
 icone delle voci corrispondenti del menu (persone, calendario, chiave, righe HKP, tazza, stella).
 Estesa lo stesso giorno a Registration Cards (passaporto), Distribuzione Culligan (goccia),
-Messaggi Pre-stay (busta), riga "Prenotazioni (PMS) caricato" (documento) e, nel Culligan,
+riga "Prenotazioni (PMS) caricato" (documento) e, nel Culligan,
 "Portare bottiglia riempita" (goccia), "Non ancora visitate" (orologio), "Camere controllate
 nella settimana" (grafico). Per i titoli costruiti in JavaScript c'è `_ovIcona(nome)` in app.js.
 Terzo giro (26/09): Breakfast Sheet (Aggiornamento giornaliero = tazza, Gruppi colazione =
@@ -140,7 +138,7 @@ piccolo, `_ovIcona(n,1)` → `.ov-icon-mini` 18px). Le ⚠️ di avviso restano:
 Tutte le emoji della vista (schede, contatori esauriti/allerta/ok, filtri, matita, rifornimento,
 cestino, movimenti, ordini, modali, Stampa A4, Apri scanner) sono icone SVG a linea col colore
 del testo (`_invIco(nome,px)` in testa alla sezione §§ INVENTARIO), stesso disegno di
-`PS_ICON_*`. Restano le emoji solo nel testo del messaggio WhatsApp al fornitore.
+`RECEPTION_ICON_*`. Restano le emoji solo nel testo del messaggio WhatsApp al fornitore.
 
 
 ### DVR — icone stile Compass (27/09/2026)

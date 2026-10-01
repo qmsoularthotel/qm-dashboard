@@ -422,7 +422,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-26.2';
+const QM_APP_BUILD='2026-10-01.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -1017,7 +1017,7 @@ function ddtBkfGet(){try{return JSON.parse(localStorage.getItem(DDT_KEY)||'[]');
 // Inventario), ordini e spunte "risposta inviata" delle recensioni (due Mac) si
 // scrivevano PER INTERO con la copia della postazione, che Compass rileggeva solo
 // all'apertura: un DDT inserito dal telefono alle 10 spariva se alle 15 si correggeva un
-// altro DDT su un Compass aperto dalla mattina. Nessun avviso, come per i pre-stay del 22/08.
+// altro DDT su un Compass aperto dalla mattina. Nessun avviso, come il 22/08.
 //
 // Qui non servono tracce delle eliminazioni: ogni postazione ricorda la BASE, l'ultima
 // copia vista sul cloud, e dal confronto a tre sa chi ha fatto cosa.
