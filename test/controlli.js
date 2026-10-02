@@ -2632,3 +2632,16 @@ ok('nessun altro escluso per sbaglio', ['Grassi M.', 'Ingrasso L.', 'Matarese A.
   ok('tolta dai turni caricati, gli altri restano', Object.keys(d.giorni[0].shifts).join(), 'Maddaloni M.');
 })();
 ok('ogni caricamento passa dal filtro', /_turniSenzaEsclusi\(data\)/.test(String(loadWeekData)), true);
+
+// ── Turno Housekeeping: "Extra" della ditta → "Ditta", Rob e Anu interne (02/10/2026) ──
+sez('Turno: Extra → Ditta, Roberta e Anushka');
+ok('Extra Rob diventa Roberta', _turnoNomeHK('Extra Rob') + ' / ' + _turnoNomeHK('EXTRA ROBERTA'), 'Roberta / Roberta');
+ok('Extra Anu diventa Anushka', _turnoNomeHK('Extra Anu') + ' / ' + _turnoNomeHK('extra anushka'), 'Anushka / Anushka');
+ok('le altre extra HK sono della ditta', _turnoNomeHK('Extra Maria'), 'Ditta Maria');
+ok('gli extra della reception restano', _turnoNomeHK('Extra Night') + ' / ' + _turnoNomeHK('Extra Angelica'), 'Extra Night / Extra Angelica');
+ok('i nomi normali restano', _turnoNomeHK('Matarese A.'), 'Matarese A.');
+(function () {
+  var d = _turniSenzaEsclusi({ giorni: [{ shifts: { 'Extra Rob': 'P', 'Extra Maria': 'P', 'Extra Night': 'NC' } }] });
+  ok('applicato ai turni caricati', Object.keys(d.giorni[0].shifts).sort().join(), 'Ditta Maria,Extra Night,Roberta');
+})();
+ok('organico HK con i nomi nuovi', DEPTS.hk.members.indexOf('Roberta') >= 0 && DEPTS.hk.members.indexOf('Anushka') >= 0 && DEPTS.hk.members.indexOf('Extra Roberta') < 0, true);

@@ -32,7 +32,7 @@ const BK_ICON=`<svg width="13" height="13" viewBox="0 0 24 24" xmlns="http://www
   }
 })();
 // §§ COSTANTI & CONFIG (DEPTS, WEEK fallback, IS_REST)
-const DEPTS={fo:{label:'Ricevimento',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Iannario R.','Extra Angelica','Extra Benedetta','Raucci A.','Ruggiero B.']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Extra Antonella','Extra Anushka','Extra Giuditta','Extra Nunzia','Extra Roberta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
+const DEPTS={fo:{label:'Ricevimento',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Iannario R.','Extra Angelica','Extra Benedetta','Raucci A.','Ruggiero B.']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Ditta Antonella','Anushka','Ditta Giuditta','Ditta Nunzia','Roberta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
 let weekData=null,activeDay=0;
 const IS_REST=v=>{
@@ -737,10 +737,30 @@ function _turnoEscluso(nome){
   const n=String(nome||'').toLowerCase();
   return TURNI_ESCLUSI.some(c=>new RegExp('(^|[^a-zà-ÿ])'+c+'([^a-zà-ÿ]|$)').test(n));
 }
+// Housekeeping (02/10/2026): le camere 200 le pulisce la ditta esterna, quindi chi nel
+// planning è scritto "Extra …" è della ditta e si chiama "Ditta …". Fanno eccezione Roberta
+// e Anushka, interne: "Extra Rob…" e "Extra Anu…" diventano sempre "Roberta" e "Anushka".
+// Gli "Extra" della reception (Extra Night, Extra Angelica…) non si toccano.
+function _turnoNomeHK(nome){
+  const n=String(nome||'').trim();
+  if(!/^extra\b/i.test(n))return n;
+  const nonHK=[...DEPTS.fo.members,...DEPTS.bkf.members,...DEPTS.mt.members].map(x=>x.toLowerCase());
+  if(nonHK.includes(n.toLowerCase()))return n;
+  if(/^extra\s+rob/i.test(n))return'Roberta';
+  if(/^extra\s+anu/i.test(n))return'Anushka';
+  return n.replace(/^extra\b/i,'Ditta');
+}
 function _turniSenzaEsclusi(data){
   ((data&&data.giorni)||[]).forEach(g=>{
     if(!g||!g.shifts)return;
-    Object.keys(g.shifts).forEach(k=>{if(_turnoEscluso(k))delete g.shifts[k];});
+    Object.keys(g.shifts).forEach(k=>{
+      if(_turnoEscluso(k)){delete g.shifts[k];return;}
+      const nuovo=_turnoNomeHK(k);
+      if(nuovo===k)return;
+      // Se il nome nuovo c'è già (planning misto), vince il turno non vuoto.
+      const v=g.shifts[k];delete g.shifts[k];
+      if(!g.shifts[nuovo]||!String(g.shifts[nuovo]).trim())g.shifts[nuovo]=v;
+    });
   });
   return data;
 }

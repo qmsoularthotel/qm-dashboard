@@ -185,7 +185,7 @@ Membri attuali (aggiornare in `app.js` sezione `§§ COSTANTI & CONFIG`):
 
 Il personale HK **cambia ogni settimana** (tante extra/interinali). I membri fissi in DEPTS sono quelli stabili; gli extra settimanali vengono mostrati dinamicamente da `renderDay` leggendo i nomi direttamente dai dati di turno caricati.
 
-Membri fissi: `Matarese A., Nacci M., De Masi C., Chiantese M., Extra Antonella, Extra Anushka, Extra Giuditta, Extra Nunzia, Extra Roberta, Scognamillo E., Esposito M., Branno M., Sarnataro A.`
+Membri fissi: `Matarese A., Nacci M., De Masi C., Chiantese M., Ditta Antonella, Anushka, Ditta Giuditta, Ditta Nunzia, Roberta, Scognamillo E., Esposito M., Branno M., Sarnataro A.`
 
 ### Conteggio "non in servizio" — IS_ABSENT
 
@@ -253,4 +253,11 @@ Usa `typeof v.getTime === 'function'` invece di `instanceof Date` per evitare bu
 `TURNI_ESCLUSI` (cognomi, minuscolo): chi compare nel planning ma non va in Compass. Oggi **Grasso E.**
 (Amministrazione), che senza reparto finiva fra gli extra Housekeeping. Si toglie a ogni caricamento
 (`loadWeekData` → `_turniSenzaEsclusi`, quindi anche dai turni già salvati) e il prompt dell'AI la esclude.
+
+## Housekeeping: "Extra" → "Ditta" (02/10/2026)
+
+Le camere 200 le pulisce la ditta esterna: nel turno chi è scritto "Extra …" in Housekeeping diventa
+"Ditta …" (`_turnoNomeHK`, applicata a ogni caricamento da `_turniSenzaEsclusi`). Eccezioni interne:
+"Extra Rob…" → **Roberta**, "Extra Anu…" → **Anushka**. Gli Extra della reception (Extra Night, Extra
+Angelica, Extra Benedetta) restano come sono. In `DEPTS.hk` i nomi sono aggiornati di conseguenza.
 
