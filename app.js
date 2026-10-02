@@ -210,7 +210,7 @@ ${foStaff.join(', ')}
 REGOLE:
 1. Per i dipendenti fissi: abbina il nome del planning al più simile in lista (es. "MADDALONI" → "Maddaloni M.", "De Rosa" → "De Rosa T.") e usa il nome della lista come chiave.
 2. Per l'Housekeeping: il personale cambia ogni settimana. Usa il nome ESATTAMENTE come scritto nel planning (es. "Extra Maria", "Rossi A."). Non tentare di abbinarlo a nessuna lista.
-3. Includi TUTTE le persone visibili nel planning senza saltarne nessuna.
+3. Includi TUTTE le persone visibili nel planning senza saltarne nessuna, TRANNE Grasso (Amministrazione): non va mai inclusa.
 4. Celle con solo un trattino ("-") → metti esattamente "-" nel JSON, NON convertirlo in "R": il trattino indica una persona non pertinente quel giorno (es. non ancora in servizio quella settimana), diverso da un riposo vero. Celle con solo "." o completamente vuote → metti "R".
 5. "R" da solo → "R" (riposo). "P" è turno valido (presenza), NON è riposo.
 6. Qualsiasi altro valore ("P", "AC", "CG", "AG", "CC", "NC", "NG", "FERIE", "9-17", ecc.) → valore ESATTO della cella.
@@ -729,7 +729,23 @@ function turniRenderStats(){
     </div>
   </div>`;
 }
+// Persone che compaiono nel planning ma non vanno elaborate in Compass (02/10/2026): Grasso E.
+// è dell'Amministrazione, non di un reparto operativo, e finiva fra gli extra Housekeeping.
+// Si riconosce dal cognome, comunque l'AI lo scriva ("GRASSO", "Grasso E.", "Grasso Elena").
+const TURNI_ESCLUSI=['grasso'];
+function _turnoEscluso(nome){
+  const n=String(nome||'').toLowerCase();
+  return TURNI_ESCLUSI.some(c=>new RegExp('(^|[^a-zà-ÿ])'+c+'([^a-zà-ÿ]|$)').test(n));
+}
+function _turniSenzaEsclusi(data){
+  ((data&&data.giorni)||[]).forEach(g=>{
+    if(!g||!g.shifts)return;
+    Object.keys(g.shifts).forEach(k=>{if(_turnoEscluso(k))delete g.shifts[k];});
+  });
+  return data;
+}
 function loadWeekData(data){
+  _turniSenzaEsclusi(data);
   weekData=data;
   try{turniArchivia(data);}catch(e){}
   const today=new Date();

@@ -2622,3 +2622,13 @@ ok('Report pulizie (ricavato dal Piano) non firma', QM_AGG_DERIVATE.has('qm_pulD
 ok('il Piano invece si', QM_AGG_DERIVATE.has('qm_piano'), false);
 ok('la firma salta i dati ricavati', /QM_AGG_DERIVATE\.has\(key\)\)return/.test(String(_qmSegnaAggiornamento)), true);
 ok('il Report pulizie si riscrive solo se cambia', /getItem\('qm_pulData'\)!==JSON\.stringify\(nuovo\)/.test(String(hkpDeriveFromPiano)), true);
+
+// ── Turno: Grasso E. (Amministrazione) non si elabora (02/10/2026) ──
+sez('Turno: persone escluse dall\'elaborazione');
+ok('Grasso esclusa in ogni forma', ['Grasso E.', 'GRASSO', 'Grasso Elena', 'grasso e'].every(_turnoEscluso), true);
+ok('nessun altro escluso per sbaglio', ['Grassi M.', 'Ingrasso L.', 'Matarese A.', 'Extra Grassa'].some(_turnoEscluso), false);
+(function () {
+  var d = _turniSenzaEsclusi({ giorni: [{ shifts: { 'Grasso E.': '9-17', 'Maddaloni M.': 'AC' } }] });
+  ok('tolta dai turni caricati, gli altri restano', Object.keys(d.giorni[0].shifts).join(), 'Maddaloni M.');
+})();
+ok('ogni caricamento passa dal filtro', /_turniSenzaEsclusi\(data\)/.test(String(loadWeekData)), true);
