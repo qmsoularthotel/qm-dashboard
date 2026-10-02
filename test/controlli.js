@@ -2645,3 +2645,18 @@ ok('i nomi normali restano', _turnoNomeHK('Matarese A.'), 'Matarese A.');
   ok('applicato ai turni caricati', Object.keys(d.giorni[0].shifts).sort().join(), 'Ditta Maria,Extra Night,Roberta');
 })();
 ok('organico HK con i nomi nuovi', DEPTS.hk.members.indexOf('Roberta') >= 0 && DEPTS.hk.members.indexOf('Anushka') >= 0 && DEPTS.hk.members.indexOf('Extra Roberta') < 0, true);
+
+// ── Turno: "200" solo alla ditta (02/10/2026: Roberta letta con 200 il giorno del trattino) ──
+sez('Turno: le camere 200 sono solo della ditta');
+(function () {
+  var d = _turniSenzaEsclusi({ giorni: [
+    { shifts: { 'EXTRA ROB': '200', 'EXTRA': '200', 'Matarese A.': 'SOUL' } },
+    { shifts: { 'EXTRA ROB': '200', 'Matarese A.': 'SOUL' } },
+    { shifts: { 'EXTRA': '200', 'EXTRA ROB': 'SOUL' } }] });
+  var g = d.giorni;
+  ok('Roberta con 200 (letto dalla riga sotto): fuori servizio', g[0].shifts.Roberta, '-');
+  ok('e la ditta resta con le sue 200', g[0].shifts.Ditta, '200');
+  ok('se la riga ditta manca, le 200 tornano alla ditta', g[1].shifts.Ditta + ' / ' + g[1].shifts.Roberta, '200 / -');
+  ok('un turno vero di Roberta non si tocca', g[2].shifts.Roberta, 'SOUL');
+  ok('gli altri non si toccano', g[0].shifts['Matarese A.'], 'SOUL');
+})();

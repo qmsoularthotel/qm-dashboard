@@ -211,6 +211,7 @@ REGOLE:
 1. Per i dipendenti fissi: abbina il nome del planning al più simile in lista (es. "MADDALONI" → "Maddaloni M.", "De Rosa" → "De Rosa T.") e usa il nome della lista come chiave.
 2. Per l'Housekeeping: il personale cambia ogni settimana. Usa il nome ESATTAMENTE come scritto nel planning (es. "Extra Maria", "Rossi A."). Non tentare di abbinarlo a nessuna lista.
 3. Includi TUTTE le persone visibili nel planning senza saltarne nessuna, TRANNE Grasso (Amministrazione): non va mai inclusa.
+4bis. Ogni riga è una persona: leggi i valori di una riga SOLO nella sua riga. Se una cella ha il trattino, scrivi "-" per QUELLA persona e non spostare i valori delle righe sotto o sopra. La riga "EXTRA" senza nome è la ditta esterna (camere 200): il valore "200" appartiene solo a lei.
 4. Celle con solo un trattino ("-") → metti esattamente "-" nel JSON, NON convertirlo in "R": il trattino indica una persona non pertinente quel giorno (es. non ancora in servizio quella settimana), diverso da un riposo vero. Celle con solo "." o completamente vuote → metti "R".
 5. "R" da solo → "R" (riposo). "P" è turno valido (presenza), NON è riposo.
 6. Qualsiasi altro valore ("P", "AC", "CG", "AG", "CC", "NC", "NG", "FERIE", "9-17", ecc.) → valore ESATTO della cella.
@@ -760,6 +761,17 @@ function _turniSenzaEsclusi(data){
       // Se il nome nuovo c'è già (planning misto), vince il turno non vuoto.
       const v=g.shifts[k];delete g.shifts[k];
       if(!g.shifts[nuovo]||!String(g.shifts[nuovo]).trim())g.shifts[nuovo]=v;
+    });
+    // Le camere 200 le fa SOLO la ditta. Il 02/10/2026 l'AI ha letto "200" (il turno della
+    // riga EXTRA, sotto) nella riga di Roberta, che quel giorno aveva il trattino: due righe
+    // vicine con "-" e la lettura scivola di una riga. Un "200" su chi non è della ditta è
+    // quindi un errore di lettura: torna alla ditta, e la persona resta fuori servizio.
+    const e200=v=>/^200\b/.test(String(v||'').trim());
+    const ditta=Object.keys(g.shifts).filter(n=>/^ditta\b/i.test(n));
+    Object.keys(g.shifts).forEach(n=>{
+      if(/^ditta\b/i.test(n)||!e200(g.shifts[n]))return;
+      if(!ditta.some(d=>e200(g.shifts[d]))){g.shifts.Ditta=g.shifts[n];ditta.push('Ditta');}
+      g.shifts[n]='-';
     });
   });
   return data;

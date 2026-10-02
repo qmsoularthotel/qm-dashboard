@@ -261,3 +261,7 @@ Le camere 200 le pulisce la ditta esterna: nel turno chi è scritto "Extra …" 
 "Extra Rob…" → **Roberta**, "Extra Anu…" → **Anushka**. Gli Extra della reception (Extra Night, Extra
 Angelica, Extra Benedetta) restano come sono. In `DEPTS.hk` i nomi sono aggiornati di conseguenza.
 
+**Le camere 200 sono solo della ditta** (02/10/2026): un "200" su chi non è "Ditta …" è un errore di
+lettura (l'AI scivola di una riga quando due righe vicine hanno il trattino: Roberta il 2/10). Torna alla
+ditta e la persona va a "-". Anche il prompt ora chiede di non spostare i valori fra le righe.
+
