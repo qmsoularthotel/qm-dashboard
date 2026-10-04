@@ -1072,11 +1072,11 @@ let _hkpNdebounce={};
 let _hkpNsel={drag:false,cells:new Set()};
 const HKP_SYM={RP:'hkp-ripasso',ND:'hkp-nd',LIB:'open-sign',NE:'non-eseguito'};
 // Mappatura sigla in griglia → nome esteso cameriera (da completare con l'elenco fornito dall'utente)
-const HKP_HW_NAMES={AM:'Matarese',IA:'Acunzo',CD:'De Masi',LC:'Cavaliere',ANU:'Anushka',RO:'Roberta',DA:'Daniela',DI:'Ditta Boutique',BE:'Betty',RI:'Rita',TI:'Tiziana',MA:'Martina'};
+const HKP_HW_NAMES={AM:'Matarese',IA:'Acunzo',CD:'De Masi',LC:'Cavaliere',ANU:'Anushka',RO:'Roberta',DA:'Daniela',DI:'Ditta Boutique',BE:'Betty',RI:'Rita',TI:'Tiziana',MA:'Martina',PI:'Pina'};
 // Da settembre 2026 le camere del Boutique (200) le pulisce una ditta esterna: queste sigle
 // sono sue. In Operativa HKP le card si dividono per AREA (camere Art = SoulArt, le altre =
 // Boutique); nel mese del passaggio si evidenzia chi, fra le interne, ha lavorato nelle 200.
-const HKP_DITTA_ESTERNA=new Set(['BE','RI','TI','MA','DI']);
+const HKP_DITTA_ESTERNA=new Set(['BE','RI','TI','MA','PI','DI']);
 const HKP_MESE_PASSAGGIO='2026-09';
 // San Liborio resta alle cameriere interne: dal giorno del passaggio (21/09/2026) conta con
 // la SoulArt, prima stava col Boutique come le 200. `d` = giorno del mese mostrato.
