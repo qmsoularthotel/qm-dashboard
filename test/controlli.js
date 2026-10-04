@@ -2596,6 +2596,11 @@ sez('Operativa HKP: card separate SoulArt / Boutique ditta esterna');
   ok('Liborio dal 21/09: SoulArt', _hkpAreaSoulArt('sa', lib, 21), true);
   hkpNCurMon = function () { return '2026-10'; };
   ok('Liborio a ottobre: SoulArt', _hkpAreaSoulArt('sa', lib, 1), true);
+  // Clic sulla card → caselle della cameriera nella griglia (04/10/2026)
+  ok('card di Operativa cliccabili', /data-hkpev="sa\|art\|AM"/.test(sa) || /data-hkpev/.test(hkpMonthlyCameriereHtml('sa', art, 'al SoulArt', 22, null, 'art')), true);
+  ok('card del Bilanciamento NON cliccabili', /data-hkpev/.test(hkpMonthlyCameriereHtml('sa', art, 'al SoulArt', 22)), false);
+  ok('evidenza = solo colore, mai la selezione (Canc non cancella)', /_hkpNsel/.test(String(_hkpNEvidApplica)) || /_hkpNsel/.test(String(hkpNEvidenzia)), false);
+  ok('evidenza rimessa dopo il ridisegno', /_hkpNEvidApplica\(p,tab/.test(String(hkpNRenderGrid)), true);
   ok('le 200 restano Boutique', _hkpAreaSoulArt('sa', { name: '204' }, 15), false);
   ok('capienza a ottobre: 23 e 10', _hkpCapienza('sa', true) + '/' + _hkpCapienza('sa', false), '23/10');
   hkpNCurMon = function () { return '2026-09'; };

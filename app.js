@@ -1487,7 +1487,9 @@ function hkMonthlyToggle(key){
   if(body)body.style.display=_hkMonthlyOpen[key]?'block':'none';
   if(chev)chev.style.transform=_hkMonthlyOpen[key]?'rotate(180deg)':'';
 }
-function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel,capacity,evidenzia){
+// `area` (solo da Operativa HKP: 'art' | 'bou' | 'tutte'): la card diventa cliccabile e
+// mostra nella griglia le caselle di quella cameriera (hkpNEvidenzia).
+function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel,capacity,evidenzia,area){
   presenceLabel=presenceLabel||'presenza';
   const tab='camere';
   const conf=HKP_ROOMS[p][tab];
@@ -1535,7 +1537,8 @@ function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel,capacity,evidenzia){
     const gg=hwDays[init]?hwDays[init].size:0;
     const media=gg?(cnt/gg).toLocaleString('it-IT',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
     const ev=typeof evidenzia==='function'&&evidenzia(init.toUpperCase());
-    h+='<div style="background:#fff;border-radius:8px;padding:10px 14px;border:'+(ev?'2px solid var(--amber)':'1px solid var(--border-light,#dde2ea)')+';display:flex;align-items:center;gap:10px;">';
+    const clic=area?' class="hkp-card-clic" data-hkpev="'+p+'|'+area+'|'+_esc(init.toUpperCase())+'" onclick="hkpNEvidenzia(\''+p+'\',\''+area+'\',this.dataset.hkpev.split(\'|\')[2])" title="Mostra le sue camere nella griglia"':'';
+    h+='<div'+clic+' style="background:#fff;border-radius:8px;padding:10px 14px;border:'+(ev?'2px solid var(--amber)':'1px solid var(--border-light,#dde2ea)')+';display:flex;align-items:center;gap:10px;">';
     h+='<span style="display:inline-flex;width:34px;height:34px;border-radius:50%;background:'+(ev?'var(--amber-bg)':'var(--accent-bg,#e8f0f8)')+';color:'+(ev?'var(--amber)':'var(--accent,#1c3a5e)')+';font-size:11px;font-weight:500;align-items:center;justify-content:center;">'+init.substring(0,3)+'</span>';
     h+='<div><div style="font-size:21px;font-weight:400;line-height:1.1;color:var(--text,#0c1f33);">'+cnt+'</div><div style="font-size:11.5px;color:var(--text-dim,#888880);margin-top:1px;">'+fullName+(ev?' <span style="font-size:10px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:4px;padding:1px 5px;">interna</span>':'')+'</div><div style="font-size:10.5px;color:var(--green,#2e7d32);font-weight:500;margin-top:1px;">'+gg+' '+(gg===1?'giorno':'giorni')+' '+presenceLabel+'</div><div style="font-size:10.5px;color:var(--accent,#1c3a5e);font-weight:500;margin-top:1px;">'+media+' camere/giorno</div></div></div>';
     if(ev){hEv+=h;}else{hNorm+=h;}h='';
@@ -1741,12 +1744,12 @@ function hkpNRenderGrid(p,tab){
       let _primaSez=true;
       const sez=(tit,nota,html)=>{if(!html)return'';const linea=_primaSez?'':'border-top:1px solid var(--border-light);padding-top:14px;';_primaSez=false;return _sezHtml(tit,nota,html,linea);};
       const _sezHtml=(tit,nota,html,linea)=>'<div style="margin-top:16px;'+linea+'"><div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">'+tit+'</div>'+(nota?'<div style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:8px;">'+nota+'</div>':'')+html+'</div>';
-      h+=sez('SoulArt · San Liborio','',hkpMonthlyCameriereHtml(p,art,'al SoulArt',_hkpCapienza(p,true)));
+      h+=sez('SoulArt · San Liborio','',hkpMonthlyCameriereHtml(p,art,'al SoulArt',_hkpCapienza(p,true),null,'art'));
       const evid=passaggio?(code=>!HKP_DITTA_ESTERNA.has(code)):null;
-      const bou=hkpMonthlyCameriereHtml(p,(row,d)=>!art(row,d),'al Boutique',_hkpCapienza(p,false),evid);
+      const bou=hkpMonthlyCameriereHtml(p,(row,d)=>!art(row,d),'al Boutique',_hkpCapienza(p,false),evid,'bou');
       h+=sez('Boutique 200 · ditta esterna','',bou);
     }else{
-      const cardsHtml=hkpMonthlyCameriereHtml(p);
+      const cardsHtml=hkpMonthlyCameriereHtml(p,null,null,null,null,'tutte');
       if(cardsHtml)h+='<div style="margin-top:12px;">'+cardsHtml+'</div>';
     }
   }
@@ -1775,7 +1778,38 @@ function hkpNRenderGrid(p,tab){
   el.innerHTML=h;
   // Sincronizza altezze righe dopo il render (rowspan nella tabella sinistra può sfasarle)
   requestAnimationFrame(()=>hkpNSyncRowHeights(p));
-  setTimeout(()=>hkpNUpdateAllSymbols(p),60);
+  setTimeout(()=>{hkpNUpdateAllSymbols(p);_hkpNEvidApplica(p,tab,false);},60);
+}
+// Clic su una card cameriera (04/10/2026): le sue caselle nella griglia si colorano. Solo
+// colore (classe hkp-evid), NON la selezione: con la selezione un Canc per sbaglio
+// cancellerebbe tutte le sue camere del mese. Secondo clic sulla stessa card = spegne.
+// L'area della card conta: dalla card Boutique si vedono solo le sue camere al Boutique.
+let _hkpNEvid={};
+function hkpNEvidenzia(p,area,code){
+  const cur=_hkpNEvid[p];
+  if(cur&&cur.area===area&&cur.code===code)delete _hkpNEvid[p];
+  else _hkpNEvid[p]={area,code,tab:HKP_NTAB[p]};
+  _hkpNEvidApplica(p,HKP_NTAB[p],true);
+}
+function _hkpNEvidApplica(p,tab,scorri){
+  const el=document.getElementById('hkpN-'+p+'-body');
+  if(!el)return;
+  el.querySelectorAll('.hkp-evid').forEach(td=>td.classList.remove('hkp-evid'));
+  el.querySelectorAll('.hkp-card-on').forEach(c=>c.classList.remove('hkp-card-on'));
+  const ev=_hkpNEvid[p];
+  if(!ev||ev.tab!==tab)return;
+  el.querySelectorAll('[data-hkpev]').forEach(c=>{if(c.dataset.hkpev===p+'|'+ev.area+'|'+ev.code)c.classList.add('hkp-card-on');});
+  const nomi={};hkpNRigheVista(p,tab).forEach(r=>{nomi[r.ri]=r.name;});
+  let primo=null;
+  el.querySelectorAll('input[data-p="'+p+'"][data-tab="'+tab+'"]').forEach(inp=>{
+    const d=parseInt(inp.dataset.col);
+    if(ev.area!=='tutte'&&_hkpAreaSoulArt(p,{name:nomi[inp.dataset.ri]},d)!==(ev.area==='art'))return;
+    const tok=(inp.value||'').split('/').map(t=>t.trim().toUpperCase());
+    if(tok.indexOf(ev.code)<0)return;
+    inp.parentElement.classList.add('hkp-evid');
+    if(!primo)primo=inp.parentElement;
+  });
+  if(scorri&&primo)primo.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
 }
 function _hkpNUpdateCellDisplay(input){
   const td=input.parentElement;

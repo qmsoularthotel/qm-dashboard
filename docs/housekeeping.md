@@ -254,6 +254,13 @@ Titoli: "SoulArt · San Liborio" e "Boutique 200 · ditta esterna" (la ditta ha 
 nella lista `camere` (`camere:{ri}_{giorno}`, LIBORIO = riga 32), che **non va riordinata** — spostare
 LIBORIO lì sposterebbe di una riga i dati di tutte le 200 in tutti i mesi. Griglia e stampa usano la
 vista; le frecce/Invio si muovono per posizione a schermo (`data-vi`), non per `data-ri`.
+**Clic su una card cameriera** (04/10/2026): le sue caselle nella griglia si colorano d'arancio
+(`hkpNEvidenzia` → `_hkpNEvidApplica`, classe `td.hkp-evid`); secondo clic sulla stessa card spegne.
+Conta l'area della card: dalla card SoulArt solo camere ART e San Liborio (dal 21/09), dalla card
+Boutique solo le 200. È **solo colore, non selezione**: con `_hkpNsel` un Canc per sbaglio
+cancellerebbe tutte le sue camere del mese. Si rimette dopo ogni ridisegno. Le card del
+Bilanciamento Camere non sono cliccabili (lì non c'è la griglia): il 6° parametro `area` di
+`hkpMonthlyCameriereHtml` lo passa solo Operativa HKP.
 
 ### Revisione del 28/09/2026 — difetti trovati e chiusi
 

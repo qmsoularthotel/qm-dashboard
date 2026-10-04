@@ -889,3 +889,9 @@ body.dark .panel{box-shadow:0 2px 8px rgba(0,0,0,.22);}
 .ov-icon-badge svg{width:12px;height:12px;}
 .ov-icon-badge.ov-icon-mini{width:18px;height:18px;border-width:1px;}
 .ov-icon-badge.ov-icon-mini svg{width:10px;height:10px;}
+
+/* Operativa HKP: clic su una card cameriera → le sue caselle nella griglia (04/10/2026) */
+.hkp-card-clic{cursor:pointer;}
+.hkp-card-clic:hover{border-color:var(--accent)!important;}
+.hkp-card-on{outline:2px solid var(--amber);outline-offset:1px;}
+td.hkp-evid{background:var(--amber-bg)!important;box-shadow:inset 0 0 0 2px var(--amber)!important;}
