@@ -2,206 +2,121 @@
 
 > Dettaglio spostato da CLAUDE.md il 24/09/2026. Si legge quando si lavora su questa parte.
 
-## Punteggio Booking — decadimento continuo e calibrazione
+## Punteggio Booking — fasce annuali (dal 04/10/2026)
 
-### Perché è cambiato
+### Come calcola Booking
 
-Il modello precedente usava tre bucket annuali con pesi fissi: F1 ultimi 12 mesi 85%, F2 12–24 mesi 10%, F3 24–36 mesi 5%. Due difetti strutturali:
+Dal gennaio 2025 Booking fa la **media dei voti di ciascun anno** (ultimi 12 mesi, 12–24 mesi,
+24–36 mesi) e poi pesa le tre medie. Dopo 36 mesi la recensione esce. Uno studio universitario
+ha ricostruito i pesi su 100 hotel e 74.882 recensioni: **85% / 10% / 5%** (Mellinas, Di
+Nolfo-Aiassa, Martin-Fuentes, *The weight of a review: Assessing Booking.com's new scoring
+system*, Tourism and Hospitality Research, settembre 2025). Un anno senza recensioni non conta e
+il suo peso va agli altri. La cifra mostrata è **arrotondata** a un decimale (8.85 → 8.9).
 
-1. Dentro F1 una recensione di ieri e una di 11 mesi fa pesavano **identicamente** (85% entrambe).
-2. Al 366° giorno il peso crollava da 85% a 10% — una funzione a gradini che produce salti artificiali del punteggio quando una recensione attraversa un confine di bucket, senza che sia successo nulla in hotel.
+Compass usa **90% / 6% / 4%** (`REV_PESI_ANNI`), uguali per tutte le strutture.
 
-Verificato su SoulArt (652 rec, 24/08/2023 → 07/08/2026): il modello dava 8.8429 → mostrava **8.8**, mentre Booking mostra **8.9**. Sottostima di ~0.06 che tarava male tutti i calcoli previsionali.
+### Perché è cambiato (04/10/2026) — e cosa NON rifare
 
-### Le funzioni (sezione `§§ RECENSIONI BOOKING — PUNTEGGIO A DECADIMENTO CONTINUO` in `app.js`)
+Dal 12/08 al 04/10/2026 Compass usava un **decadimento esponenziale** con un'emivita
+"calibrata" per ogni struttura sulle letture del QM. Messo alla prova sulle **34 letture vere**
+registrate in `qm_rev_calib` (backup del 04/10/2026):
+
+| Modello | Letture riprodotte | Ultima lettura sbagliata in |
+|---|---|---|
+| Emivita (come era in uso) | 13 / 34 | SoulArt 8.8 invece di 8.9, Principe 6.8 invece di 6.6, Art Resort 8.5 invece di 8.6 |
+| Media semplice 36 mesi | 6 / 34 | quasi tutte |
+| Fasce annuali 85/10/5 (studio) | 23 / 34 | — |
+| **Fasce annuali 90/6/4** | **28 / 34** | — |
+
+E intanto la calibrazione dava emivite assurde (21 giorni a SoulArt, "osservazioni in
+conflitto"), Principe e Art Resort "fuori modello", e **decine di letture giuste erano state
+cancellate** perché "non tornavano". La lezione: con una sola cifra decimale da rispettare, un
+parametro libero per struttura spiega qualunque lettura e non prevede niente. **Non
+reintrodurre un parametro per struttura**: le letture servono a verificare la formula, non a
+piegarla.
+
+**Perché 90/6/4 e non 85/10/5.** Per non scambiare il rumore per un segnale: pesi stimati su 6
+strutture, provati sulla settima, a turno. In 6 casi su 7 la stima è ricaduta su 90/6/4, e fuori
+campione ha indovinato **27 letture contro 23** (il Boutique, mai visto dalla stima, 9 su 9).
+Con 85/10/5 il Boutique stava sistematicamente a 8.24 contro l'8.3 di Booking.
+
+Provati e scartati: ritardo di aggiornamento di Booking (da 12 ore a 7 giorni: peggiora),
+confini delle fasce spostati di qualche giorno (nessun guadagno stabile), peso fisso per
+singola recensione invece che per media dell'anno (24/34).
+
+### Le 6 letture che non tornano (al 04/10/2026)
+
+SoulArt 11 e 13/08 (Booking 8.9, Compass 8.83–8.84), Principe 26/09 (6.7 contro 6.54, e la
+settimana dopo 6.6 torna), Mastrangelo 17/09 (7.4 contro 7.347: tre millesimi), Santa Brigida
+12/09 (8.6 contro 8.55, e il 19/09 di nuovo 8.5), San Liborio 01/09. Nessuno spostamento dei
+pesi le fa tornare senza romperne altre: sono più probabilmente recensioni che nel CSV non
+c'erano ancora o che Booking ha tolto/aggiunto in ritardo.
+
+### Come rifare la prova (quando la verifica comincia a sbagliare su più strutture)
+
+1. Scaricare l'ultimo backup (Drive, *Back-Up Compass QM*, `compass-archivio-*.json`): le chiavi
+   `qm_rev_<p>` (CSV), `qm_ts_rev_<p>` (ultimo caricamento), `qm_rev_calib` (letture).
+2. Caricare `app.js` come fa `test/node.js` e chiamare `revVerifica(revParseCsv(csv), letture,
+   ts)` per ogni struttura: dà ✓/✗ e la stima di ogni lettura.
+3. Per cambiare i pesi: provarli **fuori campione** (stimare su 6 strutture, provare sulla
+   settima) e cambiarli solo se migliorano in modo netto. Mai dati veri nei controlli.
+
+### Le funzioni (sezione `§§ RECENSIONI BOOKING — PUNTEGGIO A FASCE ANNUALI` in `app.js`)
 
 | Funzione | Scopo |
-|----------|-------|
-| `punteggioBooking(rec, hl, oggi)` | `{score, pesoEff, nInFinestra}`. Peso di ogni recensione = `0.5^(giorni/hl)`, finestra `REV_FINESTRA_GG=1095` (36 mesi) |
-| `calibraHalfLife(rec, scoreReale, oggi)` | Scansiona hl da 20 a 1200 gg e restituisce `{hl, fascia:[min,max], fuoriModello}` — le emivite che riproducono il punteggio dichiarato |
-| `revSoglia(target)` | `target - 0.05`: Booking arrotonda a una cifra, per **vedere** 8.9 basta superare 8.85 |
-| `revHl(p)` / `revCalibStato(p)` | Emivita in uso per la struttura e stato calibrazione |
-| `revCalibApply(p, score)` / `revCalibInput(p, val)` | Ricalcolo e persistenza della calibrazione |
-| `revRitmoAlGiorno(scored, oggiTs)` | Recensioni/giorno degli ultimi 12 mesi |
-| `revSimulaTarget(...)` | Simulazione giorno per giorno, vedi sotto |
-| `revRenderCalib(p, pb, hl)` / `revRenderImpact(p, pb)` | I due pannelli nuovi |
-
-Le funzioni accettano sia la forma interna `{_dateTs,_score}` sia quella documentata `{data,voto}` (helper `_revTs`/`_revVoto`), così restano testabili in isolamento.
-
-### Calibrazione sul punteggio reale
-
-Ogni struttura ha una calibrazione **indipendente**. L'utente inserisce il punteggio che Booking mostra in cima a *Extranet → Recensioni* (una cifra decimale) e da lì si ricava l'emivita.
-
-- Chiave KV **`qm_rev_calib`**: `{ sa:{scoreReale, ts, hl, fascia, fuoriModello}, ... }`, letta dal cloud in `restoreReviews()` così il valore inserito su un PC vale su tutti.
-- **Non bloccante**: senza valore si usa `REV_HL_DEFAULT=136` e si mostra il badge `non calibrato`. **136 non deriva dalla sola calibrazione sul punteggio** (che da sola dà una fascia larga 62–285 gg, troppo per un default): è il centro della fascia ristretta osservando **tre transizioni reali del display** su SoulArt (8.9 → un voto 5 → 8.8 → un voto 10 → 8.9), che restringe a 121–151 gg. Un'osservazione empirica vale più di una calibrazione su un solo numero.
-- Oltre `REV_CALIB_STALE_GG=90` giorni dall'inserimento → badge `calibrazione da aggiornare`.
-- Se nessuna emivita riproduce il valore → `fuoriModello`, avviso rosso esplicito e `console.warn`. **Non fallisce in silenzio**: o il numero è digitato male, o il CSV non è aggiornato.
-
-### Registro osservazioni — calibrazione per intersezione di vincoli
-
-Un singolo punteggio arrotondato a una cifra è un vincolo **debole**: su SoulArt dà una fascia larga 155 gg (78–233). Ma ogni lettura fatta in un momento diverso è un vincolo **indipendente**, e intersecandoli la fascia crolla — tre osservazioni attorno a due transizioni reali (8.9 → rec. da 5 → 8.8 → rec. da 10 → 8.9) la portano a 121–151 gg.
-
-Per questo il campo "Punteggio Booking reale" **non sovrascrive più**: appende al registro `osservazioni:[{ts,display}]` della struttura. Prima ogni inserimento buttava via l'informazione precedente.
-
-`calibraDaOsservazioni(recensioni, osservazioni)` valuta ogni osservazione **sul sottoinsieme di recensioni antecedenti al suo timestamp** — è questo che rende informativa una transizione (prima/dopo una singola recensione) — e tiene le emivite che soddisfano *tutte* le osservazioni.
-
-**Il timestamp delle recensioni deve includere l'ora.** `revParseCsv` faceva `.split(' ')[0]` scartandola: più recensioni possono arrivare lo stesso giorno e senza l'ora l'ordine fra recensione e lettura del punteggio si perde, cioè sparisce proprio ciò che rende informativa la transizione. Ora parsa `YYYY-MM-DDTHH:MM:SS` (lo spazio va convertito in `T`, Safari non parsa la forma con lo spazio), con fallback alla sola data.
-
-### Gerarchia delle fonti — `revCalibRicalcola(p)`
-
-| Priorità | Fonte | Condizione |
-|----------|-------|------------|
-| 1 | `osservazioni` | ≥ 2 osservazioni usabili e non contraddittorie |
-| 2 | `singolo` | fallback: calibrazione sull'osservazione più recente usabile |
-| 3 | `default` | registro vuoto, o punteggio fuori modello → `REV_HL_DEFAULT` (136) |
-
-La fonte in uso è **sempre mostrata** nel pannello (`emivita 136gg · da 3 osservazioni (fascia 121–151)`), non solo il numero.
-
-**Il ricalcolo è O(emivite × osservazioni × recensioni)** (~1200 × 10 × 657): si esegue **solo** aggiungendo/rimuovendo un'osservazione o reimportando un CSV — mai a ogni render — e il risultato è memorizzato su KV. I sottoinsiemi di recensioni sono precalcolati fuori dal ciclo sulle emivite.
-
-### Osservazioni "in attesa" — limite = ultimo IMPORT, non ultima recensione (fix 12/08/2026)
-
-Un'osservazione è "usabile" solo fino a un limite temporale, altrimenti resta marcata `in attesa` nel registro ed esclusa dal calcolo (non ignorata in silenzio). **Il limite è il timestamp dell'ultimo import del CSV per quella struttura** (`localStorage['qm_ts_rev_'+p]`), calcolato in `revCalibRicalcola(p)` e passato a `calibraDaOsservazioni(recensioni, osservazioni, importTs)`.
-
-**Versione originale (bug)**: il limite era la data dell'ultima recensione *contenuta* nel CSV, non la data dell'import. Caso reale che l'ha scoperto: recensioni ferme al 10/08, osservazione "8.2" registrata il 12/08, poi CSV **ri-esportato e ricaricato lo stesso 12/08** (confermando che non c'erano recensioni nuove) — restava comunque `in attesa` per sempre, perché l'ultima recensione nel CSV era e restava il 10/08. La card "Punteggio medio" continuava quindi a mostrare la stima calibrata sull'osservazione precedente (8.3), disallineata dal valore reale appena letto (8.2), e il target "recensioni per raggiungere X" veniva calcolato su quella base sbagliata.
-
-**Perché il fix è corretto**: un import fresco del CSV, anche se non porta recensioni nuove, **è di per sé la prova** che a quel momento non ce n'erano — non serve aspettare una recensione futura per "sbloccare" l'osservazione. Restava solo da spostare il limite dalla data-recensione alla data-import. Attenzione all'ordine in `revHandleFile`: `localStorage['qm_ts_rev_'+p]` va scritto **prima** di chiamare `revCalibRicalcola(p)` nello stesso handler — altrimenti il ricalcolo legge ancora il timestamp dell'import precedente.
-
-**Caso d'uso resta**: il pannello incoraggia a registrare il punteggio *appena cambia, senza dover ricaricare il CSV* — è il dato più prezioso — ma quelle osservazioni restano `in attesa` finché non arriva un import (nuovo o di conferma) con timestamp successivo alla loro registrazione. Se le osservazioni sembrano "non fare effetto" anche dopo un reimport, verificare che l'import sia avvenuto **dopo** l'orario dell'osservazione, non solo lo stesso giorno.
-
-### Contraddizioni e qualità
-
-Se **nessuna** emivita soddisfa tutte le osservazioni, si mostra un avviso che **elenca le osservazioni e chiede quale rimuovere** — non si scarta niente automaticamente: l'utente sa quale è sbagliata, il dashboard no. Cause riportate nell'avviso: valore digitato male; Booking aggiorna con ritardo o a lotti; recensioni rimosse per moderazione che restano nel CSV; modello inadatto a quella struttura. Nel frattempo si ricade sulla fonte 2.
-
-### "Conflitto" e "fuori modello" sono due diagnosi diverse (fix 23/08/2026)
-
-`calibraDaOsservazioni` segnalava `contraddittorio` ogni volta che nessuna emivita soddisfaceva tutte le osservazioni — **anche quando l'osservazione era una sola**. Su Principe (371 recensioni, registrato 6.6) il pannello diceva quindi *"osservazioni in conflitto — rimuovi quella sbagliata"*, con una sola riga nel registro: niente da rimuovere, e la diagnosi vera taciuta. `revCalibStato` per giunta dà a `contraddittorio` la precedenza su `fuori-modello`, quindi il messaggio corretto non compariva mai.
-
-La distinzione ora è quella giusta:
-
-| Caso | Condizione | Messaggio |
-|---|---|---|
-| **Conflitto** | ≥ 2 osservazioni, **ognuna riproducibile da sola**, ma nessuna emivita le soddisfa insieme | elenca e chiede quale togliere |
-| **Fuori modello** | almeno una osservazione non è riproducibile **nemmeno da sola** | dice di quanto e da che parte |
-
-Il secondo giro (`daSola`) costa quanto il primo, ma si paga **solo quando qualcosa non torna**, mai nel caso normale.
-
-### `range` — di quanto si sbaglia, non solo che si sbaglia
-
-`calibraHalfLife` restituisce anche `range:[min,max]`: i punteggi producibili con quelle recensioni facendo variare l'emivita in tutto l'intervallo esplorato (20–1200 gg). Senza, *"punteggio non riproducibile"* era una constatazione muta — un valore fuori di due centesimi e uno fuori di mezzo punto hanno cause opposte:
-
-- **sotto il minimo** → Booking sta contando qualcosa di peggiore di quanto c'è nel CSV, tipicamente recensioni recenti non ancora nell'export: **riesportare il CSV** è il rimedio;
-- **sopra il massimo** → il CSV contiene recensioni che Booking non conta più (moderazione, fuori finestra), oppure il numero è digitato male.
-
-Il valore è memorizzato in `REV_CALIB[p].range` insieme a `nRec`, così il pannello lo mostra senza ricalcolare.
-
-**Ampiezza della fascia = affidabilità** (`revCalibQualita`): > 100 gg `calibrazione debole` · 30–100 gg `discreta` · < 30 gg `solida`. Quando è debole compare il suggerimento attivo *"registra il punteggio ogni volta che cambia cifra: bastano 3–4 osservazioni per dimezzare l'incertezza"*.
-
-**Le osservazioni che catturano un cambio di cifra valgono molto più di quelle che ripetono lo stesso valore** — verificato in test: aggiungendo una terza osservazione che ripete `8.8` la fascia non si stringe affatto, mentre le due che catturano il cambio la portano da 161 a 143 gg. Se il registro contiene solo valori identici il pannello lo segnala esplicitamente (`tuttiUguali`).
-
-### Migrazione
-
-`revCalibMigra()` converte il vecchio formato a valore singolo (`{scoreReale, ts, hl, fascia}`) nella prima riga del registro. Gira a ogni `revCalibLoad()`, è idempotente (salta i record che hanno già `osservazioni`).
-
-### Regola di arrotondamento — e come monitorarla
-
-Si assume che Booking **arrotondi**: `soglia = targetVisualizzato - 0.05`. Verificato sui dati SoulArt: se troncasse servirebbe 8.90 pieno per vedere 8.9, ma il massimo ottenibile con qualsiasi emivita è 8.8765 — sotto 8.90 — mentre Booking mostra 8.9. Quindi l'arrotondamento è l'ipotesi corretta.
-
-**Segnale di allarme**: se in futuro la calibrazione restituisse `fuoriModello` in modo sistematico su più strutture, è il sintomo che la regola di arrotondamento (o il modello) va rivista. I casi sono loggati in console da `revCalibApply`.
-
-### Simulazione previsionale
-
-Il vecchio calcolo teneva i pesi **congelati** e sovrastimava molto lo sforzo (per SoulArt ~74 recensioni contro le ~10 reali). `revSimulaTarget` simula giorno per giorno: le recensioni esistenti **invecchiano** (e possono uscire dalla finestra 36 mesi) mentre le nuove arrivano al ritmo storico della struttura, distribuite uniformemente. Restituisce il primo giorno in cui si supera la soglia, esposto sia in **numero di recensioni** sia in **tempo stimato**, con un intervallo calcolato sugli estremi della fascia di emivite compatibili.
-
-**Caso "non raggiungibile"**: con una media ponderata il punteggio converge alla media delle recensioni in arrivo. Se il voto del flusso è ≤ soglia il target è irraggiungibile **a prescindere dal tempo**, e viene detto esplicitamente invece di restituire un numero. Per SoulArt la media reale degli ultimi 12 mesi è 8.86, sotto la soglia 8.95 dell'obiettivo 9.0.
-
-### Peso delle recensioni in scadenza — `revEffettoScadenze()`
-
-Quanto conta l'uscita dalla finestra dei 36 mesi **dipende tutto dall'emivita calibrata**, quindi va misurato per struttura invece di assumerlo. Peso di una recensione al 1094° giorno rispetto a una di oggi:
-
-| Emivita | Peso residuo | Serve per valerne una di oggi |
-|---------|--------------|-------------------------------|
-| 64 gg | 0,001% | ~140.000 |
-| 173 gg | 1,2% | 80 |
-| 285 gg | 7,0% | 14 |
-| 500 gg | 21,9% | 5 |
-| 800 gg | 38,8% | 3 |
-
-Nel vecchio modello a bucket la fascia 24–36 mesi pesava un **5% fisso** a prescindere dall'età: sovrastimava le scadenze delle strutture grandi (emivita corta) e sottostimava quelle delle strutture piccole con storico lungo, dove l'emivita calibrata è molto più alta e una singola uscita sposta il punteggio di centesimi.
-
-`revEffettoScadenze(scored, hl, oggiTs, orizzonteGg)` restituisce `{nUscita, pesoUscita, quotaPeso, mediaUscita, scoreOra, scoreFut, deriva, pesoEffOra, pesoEffFut}`. La **deriva** è dove va il punteggio fra N giorni senza nuove recensioni: somma invecchiamento e uscite.
-
-Usata in due punti:
-- **Riquadro obiettivo**: la nota scadenze è quantificata (`N rec = X% del peso`) invece del generico `⚠️ N recensioni in scadenza`, e sotto lo 0,5% dice esplicitamente *ininfluenti*.
-- **Pannello impatto**: riga "fra 90 giorni" con recensioni in uscita, quota di peso, deriva e nuovo peso effettivo.
-
-**Attenzione a non confondere due cose diverse**: il calo del peso effettivo su 90 giorni è quasi tutto **invecchiamento** dello storico, non scadenze. Su una struttura grande con emivita ~136-173 gg il peso passa da ~147 a ~102 (−30%) mentre le uscite valgono lo 0,55%. Il testo della UI lo dice esplicitamente, perché attribuire il calo alle scadenze porterebbe a decisioni sbagliate.
-
-La **simulazione previsionale tiene già conto delle uscite**: `revSimulaTarget` scorre il tempo su tutto lo storico e salta le recensioni oltre `REV_FINESTRA_GG`, quindi non serve correggerla a valle.
-
-### Pannello "Impatto della prossima recensione"
-
-Prima mostrava solo `delta(voto) = (voto - score) / (pesoEff + 1)` come griglia di sei numeri colorati. **Riprogettato attorno alla domanda operativa vera**: non "di quanto scende il decimale interno" ma **quale voto fa cambiare la cifra che Booking mostra**. Il delta da solo non lo dice — serve ricalcolare `score + delta` e riarrotondare a una cifra:
-
-```
-delta(voto)  = (voto - score) / (pesoEff + 1)
-nuovoScore   = score + delta(voto)
-nuovoDisplay = Math.round(nuovoScore * 10) / 10
-```
-
-Tabella per voto (10, 9, 8, 7, 5, 3) con quattro colonne: Voto, Delta, Nuovo score, **Mostrato**. Le righe sono evidenziate **solo dove il display cambia davvero** (rosso se scende, verde se sale) — se metà delle righe è colorata il colore smette di significare qualcosa, come già successo nella tabella Inventari.
-
-In testa al pannello:
-- **Margine dalla soglia** (`score - soglia`, es. `+0.097 sopra 8.75`). Sotto `0.010` diventa **stato di allerta** rosso: basta una recensione mediocre per cambiare cifra.
-- **Voto più basso che non fa scendere la cifra**, ricalcolato ciclando `v` da 1 a 10 e prendendo il primo il cui display resta ≥ a quello attuale ("fino a un 7 resti a 8.9; da 6 in giù scende"). È la soglia operativa comunicabile in hotel.
-
-**È un pannello aggiuntivo**: "Recensioni in scadenza" (`revRenderExpiring`) resta dov'è e invariato, non è stato sostituito.
-
-### Pannello "Distribuzione del peso nel tempo" — `revRenderDistrib()`
-
-Rende visibile perché poche recensioni recenti spostano il punteggio mentre centinaia di vecchie non contano quasi nulla — la domanda che nasce naturalmente vedendo `652 importate · peso effettivo ≈ 119`.
-
-Fasce di ampiezza pari a **un'emivita** (`0–hl`, `hl–2hl`, `2hl–3hl`, `3hl–5hl`, `oltre 5hl`): per costruzione del decadimento esponenziale la prima vale circa il **50%** del peso, la seconda circa il 25%, e così via. Per ciascuna: numero recensioni, quota % del peso (con barra orizzontale proporzionale) e media dei voti.
-
-La **media di ogni fascia è colorata rispetto alla soglia obiettivo** (verde sopra, rossa sotto): si legge a colpo d'occhio se il periodo che sta *guadagnando* peso è migliore o peggiore di quello che lo sta *perdendo* — cioè se il punteggio sta peggiorando prima che il numero mostrato cambi.
-
-Riga di sintesi sotto la tabella: *"le recensioni degli ultimi N giorni valgono da sole metà del punteggio"*, con N ricavato **cumulando le quote reali** fino a superare 0.5, non assunto uguale all'emivita (che lo approssima soltanto).
-
-### Tutti i punti che mostrano IL punteggio devono usare `punteggioBooking` + `revHl(p)`
-
-Sono **tre** e vanno tenuti allineati, altrimenti la stessa struttura mostra numeri diversi nella stessa pagina:
-
-| Punto | Funzione |
-|-------|----------|
-| Card "Punteggio medio" | `revRenderStats` → `punteggioBooking(scored, hl, now)` |
-| Grafico "Andamento score" (icona ⤢) | `openScoreTrend` → `_trendHl` |
-| "Score attuale" nel pannello Recensioni in scadenza | `revRenderExpiring` → `_expHl` |
-
-Il pannello **Recensioni in scadenza** aveva una sua `calcScore` interna a 85/10/5: la struttura del pannello non andava toccata, ma continuava a mostrare `8.8` mentre la card sopra mostrava `8.9`. Ora usa `punteggioBooking`. Nello stesso pannello i chip `BUCKET: F1 (85%) · F2 (10%) · F3 (5%)` non avevano più senso e sono diventati **"Peso per età"**: quanta parte del peso effettivo porta ogni fascia d'età, calcolata sui pesi reali (es. con emivita 64 gg: 0–6 mesi 86%, 6–12 mesi 12%, 1–2 anni 2%, 2–3 anni 0%). Molto più informativo delle percentuali fisse, e mostra a colpo d'occhio perché le recensioni vecchie non spostano il punteggio.
-
-### Pannello "Recensioni in scadenza" — adattivo
-
-Col decadimento calibrato le recensioni in uscita sono la **coda più leggera** dello storico, quindi il pannello quasi sempre non dice nulla di azionabile. Misurato su SoulArt (652 rec, emivita 174 gg): le ~8 recensioni che scadono questa/prossima settimana pesano lo **0,075%** del totale — per spostare il punteggio visualizzato di 0,1 dovrebbero avere una media che si scosta di **134 punti** su una scala 1–10, impossibile per costruzione. Col vecchio modello a bucket la fascia 24–36 mesi valeva un 5% fisso e una scadenza si vedeva davvero: è da lì che nasceva il pannello.
-
-Resta invece rilevante sulle **strutture piccole con storico lungo**, dove l'emivita calibrata è molto più alta e poche uscite valgono punti percentuali veri.
-
-Quindi il pannello si **auto-riduce**: `revRenderExpiring` calcola lo scostamento realmente prodotto dalle uscite (`scoreAfterBoth` vs `scoreAttuale`) e se è sotto 0,01 **e** non cambia il punteggio arrotondato, rende una riga sola ("N in scadenza, pesano X%, effetto invisibile") invece del pannello esteso. Il criterio usa la differenza **calcolata**, non una stima sul numero di recensioni.
-
-Comportamento verificato:
-
-| Scenario | Emivita | Peso in uscita | Δ punteggio | Modalità |
-|----------|---------|----------------|-------------|----------|
-| Struttura grande | 174 gg | 0,06% | 0,0001 | compatta |
-| Struttura media | 350 gg | 0,44% | 0,0025 | compatta |
-| Struttura piccola, storico lungo | 600 gg | 1,25% | 0,0206 | **completa** |
+|---|---|
+| `punteggioBooking(rec, pesi, oggi)` | `{score, anni:[{n,somma,media,quota,pesoUna}], pesoEff, nInFinestra}`. `quota` = parte del punteggio portata dall'anno, `pesoUna` = da una sua recensione, `pesoEff` = recensioni "equivalenti" |
+| `revConNuove(pb, voto, n)` | punteggio esatto se arrivassero oggi n recensioni con quel voto (spostano la media dell'ultimo anno) |
+| `revPesoDi(pb, gg)` | parte del punteggio portata da una recensione di quell'età |
+| `revDisplay(s)` / `revSoglia(t)` | cifra mostrata da Booking (arrotondata) / soglia per mostrare t (t − 0.05) |
+| `revVerifica(rec, letture, importTs)` / `revVerificaStruttura(p)` | ogni lettura confrontata con il calcolo **di quel momento**, con le sole recensioni arrivate fino ad allora |
+| `revSimulaTarget(...)` | giorno per giorno: le recensioni invecchiano, passano d'anno ed escono, le nuove arrivano al ritmo storico |
+| `revEffettoScadenze(...)` | cosa cambia da solo: `nCambio`/`mediaCambio` (compiono un anno: dal 90% al 6%), `nUscita` (escono dai 36 mesi), `deriva` |
+| `revRenderCalib` / `revRenderImpact` / `revRenderDistrib` | i pannelli Verifica, Impatto della prossima recensione, Distribuzione del peso |
+
+**Tutti i punti che mostrano il punteggio usano `punteggioBooking` + `REV_PESI_ANNI`**: card
+"Punteggio medio" (`revRenderStats`), grafico "Andamento score" (`openScoreTrend`), "Score
+attuale" del pannello Recensioni in scadenza (`revRenderExpiring`). Un modello diverso in uno
+solo dei tre mostra numeri diversi per lo stesso giorno (è già successo).
+
+### Pannello "Punteggio Booking reale" — ora è una verifica
+
+Il QM registra il punteggio dell'extranet ogni volta che cambia (registro `qm_rev_calib`:
+`{ sa:{ osservazioni:[{ts,display}], rimosse:[ts] } }`). Per ogni lettura il pannello mostra
+✓ / ✗ e, fra parentesi, cosa calcolava Compass **in quel momento**; in testa "Compass = Booking
+in X letture su Y". Se l'ultima non torna dice di quanto e da che parte, con il rimedio
+(riesportare il CSV). La ✕ toglie una lettura **solo se digitata male**: una lettura giusta che
+non torna è proprio l'informazione per migliorare la formula.
+
+Regole rimaste valide dal vecchio pannello:
+- **"In attesa" fino all'ultimo IMPORT** del CSV (`qm_ts_rev_<p>`), non fino all'ultima
+  recensione che contiene (fix 12/08/2026): un import fresco prova che a quel momento non
+  c'erano recensioni nuove.
+- **Il timestamp delle recensioni include l'ora** (`revParseCsv` converte lo spazio in `T`,
+  per Safari): più recensioni lo stesso giorno, e l'ordine rispetto a una lettura conta.
+- **Il registro si FONDE col cloud** (`revCalibFondi`), con le lapidi `rimosse`: il 23/08/2026
+  un salvataggio a sovrascrittura aveva azzerato il registro di tutte le strutture.
+- I campi della vecchia calibrazione (`hl`, `fascia`, `contraddittorio`, `fuoriModello`…) li
+  toglie `revCalibRicalcola` una volta sola, poi non riscrive più.
+
+### Pannelli previsionali
+
+- **Impatto della prossima recensione**: margine dalla soglia, tabella voto → nuovo punteggio
+  → cifra mostrata (colorate solo le righe dove la cifra cambia), voto più basso che non fa
+  scendere la cifra, "un 5 pesa X volte un 10". Riga **fra 90 giorni**: quante recensioni
+  **compiono un anno** (la leva vera: dal 90% al 6%) e quante escono dai 36 mesi (quasi niente).
+- **Distribuzione del peso**: le tre fasce con recensioni, quota, "1 rec. vale" (rispetto a una
+  dell'ultimo anno) e media colorata rispetto alla soglia.
+- **Obiettivo** (+0.1): `revSimulaTarget`; "non raggiungibile" se il voto delle nuove è sotto la
+  soglia (il punteggio converge alla media del flusso).
+- **Recensioni in scadenza** (`revRenderExpiring`): si riduce a una riga quando le uscite non
+  spostano la cifra — con le fasce annuali il terzo anno vale il 4% in tutto.
 
 ### Cosa NON è stato toccato
 
-Import CSV, conteggio "senza risposta", **score per categoria** e **andamento categorie** (restano a 85/10/5 per scelta: sono metriche per categoria, non IL punteggio della struttura), filtri e ordinamenti della lista, la logica di scadenza settimanale del pannello Recensioni in scadenza, tutta la sezione **Recensioni Expedia** (modello di punteggio diverso).
-
-### Nota metodologica (riportata anche nella UI)
-
-L'algoritmo di Booking.com non è pubblico. Questo è un modello **calibrato** sul punteggio reale della struttura, non una replica. Anche dopo la calibrazione resta una fascia di emivite compatibili (per SoulArt 62–285 giorni), quindi le previsioni vanno lette come **ordini di grandezza**.
+Import CSV, conteggio "senza risposta", **score per categoria** e **andamento categorie**
+(restano a 85/10/5: sono le sotto-voci, non IL punteggio), filtri e ordinamenti della lista,
+tutta la sezione **Recensioni Expedia** (modello diverso, `weightedAvgF1`).
 
 ---
 

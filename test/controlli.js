@@ -655,13 +655,13 @@ var GG = 86400000, ORA = new Date('2026-08-23T12:00:00Z').getTime();
 function _rec(giorniFa, voto) { return { _dateTs: ORA - giorniFa * GG, _score: voto }; }
 var _set = [_rec(10, 10), _rec(20, 10), _rec(700, 4), _rec(800, 4)];
 ok('finestra piena: entrano tutte',
-   punteggioBooking(_set, 1200, ORA, 1095).nInFinestra, 4);
+   punteggioBooking(_set, REV_PESI_ANNI, ORA, 1095).nInFinestra, 4);
 ok('finestra corta: le vecchie restano fuori',
-   punteggioBooking(_set, 1200, ORA, 365).nInFinestra, 2);
+   punteggioBooking(_set, REV_PESI_ANNI, ORA, 365).nInFinestra, 2);
 ok('e il punteggio cambia di conseguenza',
-   Math.round(punteggioBooking(_set, 1200, ORA, 365).score * 100) / 100, 10);
+   Math.round(punteggioBooking(_set, REV_PESI_ANNI, ORA, 365).score * 100) / 100, 10);
 ok('fuori finestra non pesa nemmeno un poco',
-   punteggioBooking([_rec(2000, 1)], 1200, ORA, 1095).score, null);
+   punteggioBooking([_rec(2000, 1)], REV_PESI_ANNI, ORA, 1095).score, null);
 // La finestra NON e' un parametro: l'01/09/2026 e' stato confermato che Booking toglie le
 // recensioni dopo 36 mesi. La calibraFinestra() che l'accorciava e' stata rimossa —
 // accorciarla non spiegava il punteggio, lo fabbricava guardando meno recensioni.
@@ -882,46 +882,48 @@ var V2 = _qmFondiElenchi({ righe: [{ id: 'r1' }, { id: 'r2' }] }, {}, new Set())
 ok('copia vuota non cancella l archivio', V2.righe.length, 2);
 
 // ─────────────────────────────────────────────────────────────────────────────
-sez('Calibrazione: conflitto e "fuori modello" sono cose diverse');
-// Caso reale (Principe, 23/08/2026): registrato 6.6 con una sola osservazione, il
-// pannello diceva "osservazioni in conflitto" e chiedeva quale rimuovere — con una sola
-// osservazione non c'e' niente da rimuovere, e la diagnosi giusta e' un'altra.
-
+sez('Punteggio Booking: fasce annuali, come Booking (04/10/2026)');
+// Fino al 04/10/2026 Compass usava un'emivita calibrata per struttura: sulle 34 letture
+// vere ne riproduceva 13, e sull'ultima sbagliava la cifra a SoulArt, Principe e Art
+// Resort. Booking fa la MEDIA di ogni anno e pesa le tre medie (studio 2025: 85/10/5;
+// sui nostri dati 90/6/4). Qui solo voti inventati.
 var GG = 86400000;
-var OGGI = new Date('2026-08-23T11:00:00').getTime();
-// Storico tutto attorno a 9: nessuna emivita puo' produrre 6.6.
-var REC9 = [];
-for (var i = 0; i < 40; i++) REC9.push({ _dateTs: OGGI - (i * 10 + 1) * GG, _score: 9 });
-
-var UNA = calibraDaOsservazioni(REC9, [{ ts: OGGI - GG, display: 6.6 }], OGGI);
-ok('una sola osservazione: nessun conflitto',  UNA.contraddittorio, false);
-ok('una sola osservazione: fuori modello',     UNA.fuoriModello, true);
-
-// Due osservazioni entrambe irriproducibili non sono un conflitto fra loro.
-var DUE_FUORI = calibraDaOsservazioni(REC9,
-  [{ ts: OGGI - 2 * GG, display: 6.6 }, { ts: OGGI - GG, display: 6.5 }], OGGI);
-ok('due valori irriproducibili: non e conflitto', DUE_FUORI.contraddittorio, false);
-ok('due valori irriproducibili: fuori modello',   DUE_FUORI.fuoriModello, true);
-
-// Conflitto vero: due letture entrambe riproducibili da sole, ma non insieme.
-// Storico che cambia nel tempo, cosi' emivite diverse danno punteggi diversi.
-var RECMIX = [];
-for (var j = 0; j < 30; j++) RECMIX.push({ _dateTs: OGGI - (200 + j * 10) * GG, _score: 10 });
-for (var k = 0; k < 30; k++) RECMIX.push({ _dateTs: OGGI - (1 + k * 3) * GG, _score: 6 });
-var vicino = punteggioBooking(RECMIX, 20, new Date(OGGI)).score;
-var lontano = punteggioBooking(RECMIX, 1200, new Date(OGGI)).score;
-var CONF = calibraDaOsservazioni(RECMIX,
-  [{ ts: OGGI - GG, display: Math.round(vicino * 10) / 10 },
-   { ts: OGGI - GG, display: Math.round(lontano * 10) / 10 }], OGGI);
-ok('due letture inconciliabili: conflitto',    CONF.contraddittorio, true);
-ok('due letture inconciliabili: non fuori modello', CONF.fuoriModello, false);
-
-// L'intervallo producibile serve a dire DI QUANTO si sbaglia, non solo che si sbaglia.
-var CH = calibraHalfLife(REC9, 6.6, new Date(OGGI));
-ok('fuori modello riconosciuto',               CH.fuoriModello, true);
-ok('intervallo producibile presente',          Array.isArray(CH.range), true);
-ok('6.6 sta sotto il minimo producibile',      CH.range[0] > 6.65, true);
-ok('minimo non maggiore del massimo',          CH.range[0] <= CH.range[1], true);
+var OGGI = new Date('2026-10-04T12:00:00').getTime();
+function _r(giorniFa, voto) { return { _dateTs: OGGI - giorniFa * GG, _score: voto }; }
+var A = [_r(10, 10), _r(100, 10), _r(200, 10)];                 // ultimo anno: tutti 10
+var B = []; for (var i = 0; i < 50; i++) B.push(_r(400 + i, 6)); // secondo anno: 50 da 6
+var C3 = [_r(800, 2)];                                           // terzo anno: un 2
+var PB = punteggioBooking(A.concat(B, C3), REV_PESI_ANNI, OGGI);
+ok('pesi in uso 90/6/4', REV_PESI_ANNI.join('/'), '0.9/0.06/0.04');
+ok('media per anno pesata: 0.9*10 + 0.06*6 + 0.04*2', Math.round(PB.score * 1000) / 1000, 9.44);
+ok('50 recensioni del secondo anno non pesano piu\' di 3 dell\'ultimo', PB.anni[0].quota > PB.anni[1].quota * 10, true);
+ok('un anno vuoto non conta: il suo peso va agli altri',
+   Math.round(punteggioBooking(A.concat(C3), REV_PESI_ANNI, OGGI).score * 1000) / 1000,
+   Math.round((0.9 * 10 + 0.04 * 2) / 0.94 * 1000) / 1000);
+ok('a 36 mesi esce', punteggioBooking([_r(1095, 1), _r(5, 9)], REV_PESI_ANNI, OGGI).score, 9);
+ok('a 364 giorni e\' ancora ultimo anno, a 365 no', _revAnno(364.9) + '/' + _revAnno(365), '0/1');
+// La nuova recensione sposta la media dell'ULTIMO anno: calcolo esatto, non approssimato.
+var dopo = punteggioBooking(A.concat(B, C3, [_r(0, 5)]), REV_PESI_ANNI, OGGI).score;
+ok('impatto di un 5 calcolato esatto', Math.round(revConNuove(PB, 5) * 1e6), Math.round(dopo * 1e6));
+ok('peso di una recensione: quota dell\'anno divisa per quante sono', Math.round(revPesoDi(PB, 420) * 1e6), Math.round(PB.anni[1].quota / 50 * 1e6));
+// Booking arrotonda (8.85 -> 8.9), senza farsi ingannare dalla virgola mobile.
+ok('8.85 si mostra 8.9', revDisplay(8.85), 8.9);
+ok('8.8499 si mostra 8.8', revDisplay(8.8499), 8.8);
+ok('soglia per vedere 8.9', Math.round(revSoglia(8.9) * 100) / 100, 8.85);
+// Nessun parametro per struttura: un parametro libero spiega qualunque lettura e non
+// prevede niente (e' quello che e' successo con l'emivita).
+ok('niente emivita', typeof revHl === 'undefined' && typeof REV_HL_DEFAULT === 'undefined', true);
+ok('niente calibrazione a emivita', typeof calibraHalfLife === 'undefined' && typeof calibraDaOsservazioni === 'undefined', true);
+ok('grafico e scadenze usano la stessa formula della card',
+   /REV_PESI_ANNI/.test(String(openScoreTrend)) && /REV_PESI_ANNI/.test(String(revRenderExpiring)), true);
+// Previsioni
+var SIM = A.concat(B);
+ok('obiettivo raggiungibile con dei 10', revSimulaTarget(SIM, REV_PESI_ANNI, 9.9, 10, 3 / 365, OGGI).raggiungibile, true);
+ok('con voti sotto la soglia non si arriva mai', revSimulaTarget(SIM, REV_PESI_ANNI, 9.9, 9, 3 / 365, OGGI).motivo, 'flusso');
+// La leva vera: le recensioni che compiono un anno passano dal 90% al 6%.
+var EF = revEffettoScadenze([_r(300, 10), _r(30, 6), _r(400, 6)], REV_PESI_ANNI, OGGI, 90);
+ok('si vede chi compie un anno nei prossimi 90 giorni', EF.nCambio, 1);
+ok('e il punteggio scende da solo se era un 10', EF.deriva < 0, true);
 
 // ─────────────────────────────────────────────────────────────────────────────
 sez('Polling: si ferma a scheda nascosta, riparte quando torna');
@@ -1140,34 +1142,24 @@ ok('senza traccia sarebbe tornata',       _senza.length, 2);
 ok('resiDelRow segna l id rimosso',       /_qmSegnaRimosso/.test(String(resiDelRow)), true);
 ok('resiDelRitiro pure',                  /_qmSegnaRimosso/.test(String(resiDelRitiro)), true);
 
-sez('Calibrazione: quale osservazione non torna');
-// 01/09/2026: SoulArt dichiarato "fuori modello" e il messaggio accusava il CSV di oggi
-// ("contiene recensioni che Booking non conta piu'"), con una distanza assurda di -0.00.
-// La causa era un'osservazione di dieci giorni prima: l'8.9 del 23/08, che con le
-// recensioni note allora il modello non poteva produrre. Le altre tre erano coerenti.
+sez('Punteggio Booking: le letture verificano la formula');
+// Ogni lettura registrata si confronta con cio' che Compass calcolava IN QUEL MOMENTO, con
+// le sole recensioni arrivate fino ad allora. Quelle prese dopo l'ultimo caricamento del
+// CSV restano in attesa: Booking potrebbe gia' contare recensioni che il CSV non ha.
 var _ORA = new Date('2026-09-01T10:00:00Z').getTime();
 var _GG2 = 86400000;
 function _rc(giorniFa, voto) { return { _dateTs: _ORA - giorniFa * _GG2, _score: voto }; }
-// Recensioni tutte da 9: nessuna emivita puo' produrre 10, nessuna puo' produrre 5.
-var _REC = [_rc(1, 9), _rc(5, 9), _rc(30, 9), _rc(200, 9)];
-var _multi = calibraDaOsservazioni(_REC, [
-  { ts: new Date(_ORA - 2 * _GG2).toISOString(), display: 9 },    // riproducibile
-  { ts: new Date(_ORA - 1 * _GG2).toISOString(), display: 5 }     // impossibile
+var _REC = [_rc(1, 9), _rc(5, 9), _rc(30, 9), _rc(200, 9), _rc(0.5, 1)];
+var _V = revVerifica(_REC, [
+  { ts: new Date(_ORA - 2 * _GG2).toISOString(), display: 9 },    // prima dell'1: torna
+  { ts: new Date(_ORA - 0.1 * _GG2).toISOString(), display: 9 },  // dopo l'1: non torna
+  { ts: new Date(_ORA + 2 * _GG2).toISOString(), display: 8.5 }   // dopo l'import: attesa
 ], _ORA);
-ok('il caso e\' fuori modello, non un conflitto', _multi.fuoriModello, true);
-ok('e non viene chiamato conflitto',              _multi.contraddittorio, false);
-ok('si sa quante osservazioni non tornano',       _multi.incoerenti.length, 1);
-ok('e qual e\'',                                  _multi.incoerenti[0].display, 5);
-ok('con quante recensioni note allora',           _multi.incoerenti[0].nRec > 0, true);
-// Quando le osservazioni tornano, non si accusa nessuno: il risultato porta un'emivita e
-// l'elenco delle incoerenti resta vuoto.
-var _ok2 = calibraDaOsservazioni(_REC, [
-  { ts: new Date(_ORA - 3 * _GG2).toISOString(), display: 9 },
-  { ts: new Date(_ORA - 1 * _GG2).toISOString(), display: 9 }
-], _ORA);
-ok('osservazioni coerenti: emivita trovata', _ok2.hl > 0, true);
-ok('nessuna accusata',                       (_ok2.incoerenti || []).length, 0);
-ok('e nessun conflitto dichiarato',          !!_ok2.contraddittorio, false);
+ok('valutate solo quelle prima dell\'import', _V.nTot + '/' + _V.nAttesa, '2/1');
+ok('quella giusta torna', _V.righe.filter(function (r) { return r.ok; }).length, 1);
+ok('la lettura vecchia usa le recensioni di allora', _V.righe[2].nRec, 3);
+ok('quella sbagliata dice cosa calcolava Compass', _V.righe[1].ok === false && _V.righe[1].stima < 8.95, true);
+ok('in attesa non e\' ne\' giusta ne\' sbagliata', _V.righe[0].attesa && _V.righe[0].ok === null, true);
 
 sez('Riquadro "Punteggio Booking reale": deve disegnarsi sempre');
 // 01/09/2026: il riquadro e' sparito del tutto perche' un ramo nuovo usava `esc`, che in
@@ -1180,49 +1172,46 @@ sez('Riquadro "Punteggio Booking reale": deve disegnarsi sempre');
   document.getElementById = function (id) { return /^rev-calib-/.test(id) ? elFinto : _getEl.call(document, id); };
   var _calibVero = REV_CALIB, _hotelVeri = REV_HOTELS.sa;
   var ORA = Date.now(), GG = 86400000;
+  var rec = [];
+  for (var i = 1; i <= 40; i++) rec.push({ _dateTs: ORA - i * 9 * GG, _score: 9 });
+  REV_HOTELS.sa = { data: rec };
+  var PBF = punteggioBooking(rec, REV_PESI_ANNI, ORA);
   var casi = {
-    'mai calibrato':   { osservazioni: [] },
-    'una osservazione':{ osservazioni: [{ ts: new Date(ORA - GG).toISOString(), display: 8.9 }], hl: 156, fascia: [78, 234], fonte: 'singolo', nUsate: 1 },
-    'fuori modello':   { osservazioni: [{ ts: new Date(ORA - GG).toISOString(), display: 8.9 }], fonte: 'default', fuoriModello: true, range: [8.4, 8.8], nRec: 677,
-                         incoerenti: [{ ts: ORA - 9 * GG, display: 8.9, nRec: 663 }] },
-    'senza incoerenti':{ osservazioni: [{ ts: new Date(ORA - GG).toISOString(), display: 8.9 }], fonte: 'default', fuoriModello: true, range: [8.4, 8.8], nRec: 677, incoerenti: [] },
-    'contraddittorio': { osservazioni: [{ ts: new Date(ORA - GG).toISOString(), display: 8.9 }], contraddittorio: true, nUsate: 2 },
-    'da aggiornare':   { osservazioni: [{ ts: new Date(ORA - 90 * GG).toISOString(), display: 8.9 }], hl: 156, fascia: [78, 234], fonte: 'singolo', nUsate: 1 }
+    'nessuna lettura':  { osservazioni: [] },
+    'lettura giusta':   { osservazioni: [{ ts: new Date(ORA - 10 * GG).toISOString(), display: 9 }] },
+    'lettura sbagliata':{ osservazioni: [{ ts: new Date(ORA - 10 * GG).toISOString(), display: 8.4 }] },
+    'lettura in attesa':{ osservazioni: [{ ts: new Date(ORA + GG).toISOString(), display: 9 }] },
+    'campi vecchi':     { osservazioni: [{ ts: new Date(ORA - 2 * GG).toISOString(), display: 9 }], hl: 156, fascia: [78, 234], contraddittorio: true, fuoriModello: true, range: [8.4, 8.8] },
+    'da aggiornare':    { osservazioni: [{ ts: new Date(ORA - 120 * GG).toISOString(), display: 9 }] }
   };
   Object.keys(casi).forEach(function (nome) {
     REV_CALIB = { sa: casi[nome] };
     var esploso = false, vuoto = true;
-    try { elFinto.innerHTML = ''; revRenderCalib('sa', { pesoEff: 404, nInFinestra: 677 }, 156); vuoto = !elFinto.innerHTML; }
+    try { elFinto.innerHTML = ''; revRenderCalib('sa', PBF); vuoto = !elFinto.innerHTML; }
     catch (e) { esploso = true; }
     ok('si disegna: ' + nome, !esploso && !vuoto, true);
+    if (nome === 'lettura sbagliata') ok('e dice che l\'ultima lettura non torna', /non torna/.test(elFinto.innerHTML), true);
+    if (nome === 'lettura giusta') ok('e mostra la verifica 1 su 1', /in 1 letture su 1/.test(elFinto.innerHTML), true);
   });
   REV_CALIB = _calibVero; REV_HOTELS.sa = _hotelVeri;
   document.getElementById = _getEl;
 })();
 
-sez('Calibrazione: i verdetti vecchi non sopravvivono al ricalcolo');
-// 01/09/2026: tolta l'osservazione incoerente la calibrazione riusciva, ma la scheda
-// continuava a dire "fuori modello" — la bandierina del giro precedente restava accesa
-// perche' il ramo che riesce esce prima di azzerarla. Un dato corretto mostrato come
-// guasto e' peggio di un errore visibile: non si capisce cosa fare.
+sez('Letture Booking: i campi della vecchia calibrazione si tolgono');
+// La calibrazione a emivita lasciava nel registro hl, fascia, "fuori modello"... Non
+// servono piu': si tolgono una volta, le letture restano tutte.
 (function () {
-  var _vero = REV_CALIB, _hot = REV_HOTELS.sa;
-  var ORA = Date.now(), GG = 86400000;
-  var rec = [];
-  for (var i = 1; i <= 40; i++) rec.push({ _dateTs: ORA - i * 3 * GG, _score: 9 });
-  REV_HOTELS.sa = { data: rec };
-  // Si parte da uno stato "sporco": verdetti di un giro precedente ancora appiccicati.
-  REV_CALIB = { sa: { osservazioni: [
-      { ts: new Date(ORA - 5 * GG).toISOString(), display: 9 },
-      { ts: new Date(ORA - 2 * GG).toISOString(), display: 9 }
-    ], fuoriModello: true, incoerenti: [{ ts: ORA - 9 * GG, display: 8.9, nRec: 663 }],
-       range: [8.4, 8.8] } };
-  try { revCalibRicalcola('sa'); } catch (e) {}
+  var _vero = REV_CALIB, _salva = revCalibSave, salvato = 0;
+  revCalibSave = function () { salvato++; };
+  REV_CALIB = { sa: { osservazioni: [{ ts: '2026-09-01T08:00:00.000Z', display: 8.8 }], rimosse: ['x'], hl: 21, fascia: [20, 22], contraddittorio: true, fuoriModello: true } };
+  revCalibRicalcola('sa');
   var c = REV_CALIB.sa;
-  ok('la calibrazione riesce',            c.hl > 0, true);
-  ok('e "fuori modello" viene spento',    !!c.fuoriModello, false);
-  ok('l\'elenco delle incoerenti si svuota', (c.incoerenti || []).length, 0);
-  REV_CALIB = _vero; REV_HOTELS.sa = _hot;
+  ok('via i campi vecchi', 'hl' in c || 'fascia' in c || 'contraddittorio' in c, false);
+  ok('le letture e le lapidi restano', c.osservazioni.length + '/' + c.rimosse.length, '1/1');
+  ok('salvato una volta', salvato, 1);
+  revCalibRicalcola('sa');
+  ok('e la volta dopo non riscrive', salvato, 1);
+  REV_CALIB = _vero; revCalibSave = _salva;
 })();
 
 sez('Archivio turni: non si riscrive se identico');
