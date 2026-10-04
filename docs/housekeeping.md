@@ -231,7 +231,7 @@ settimana, mese" in `test/controlli.js`.
 ### Operativa HKP: SoulArt e Boutique (ditta esterna) — 28/09/2026
 
 Da settembre 2026 le camere del Boutique (200) le pulisce una ditta esterna: Betty (BE), Rita
-(RI), Tiziana (TI), Martina (MA), Pina (PI, aggiunta il 04/10/2026) in `HKP_HW_NAMES`, sigle della ditta in `HKP_DITTA_ESTERNA` (con DI).
+(RI), Tiziana (TI), Martina (MA), Pina (PI, aggiunta il 04/10/2026) in `HKP_HW_NAMES`, sigle della ditta in `HKP_DITTA_ESTERNA` (con DI). Arabella (AR, 04/10/2026) è solo un nome in `HKP_HW_NAMES`: conta come interna.
 Nel tab Camere della SoulArt le card del periodo sono divise **per area**: "SoulArt" (camere
 Art) e "Boutique · ditta esterna" (camere 200 e San Liborio — Liborio sta col Boutique come nel
 Bilanciamento). Nel mese del passaggio (`HKP_MESE_PASSAGGIO='2026-09'`) le interne che

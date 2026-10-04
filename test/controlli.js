@@ -2586,6 +2586,7 @@ sez('Operativa HKP: card separate SoulArt / Boutique ditta esterna');
   ok('le interne stanno tutte insieme, sotto la ditta', gi > 0 && bou.indexOf('De Masi') > gi && bou.indexOf('Betty') < gi && bou.indexOf('Rita') < gi, true);
   ok('MA e\' Martina, della ditta', HKP_HW_NAMES.MA + ' ' + HKP_DITTA_ESTERNA.has('MA'), 'Martina true');
   ok('PI e\' Pina, della ditta (non interna nelle 200)', HKP_HW_NAMES.PI + ' ' + HKP_DITTA_ESTERNA.has('PI'), 'Pina true');
+  ok('AR e\' Arabella', HKP_HW_NAMES.AR, 'Arabella');
   ok('simboli separati per struttura', /symArt:symBou/.test(String(hkpNRenderGrid)) && /sub\('SoulArt · San Liborio'\)/.test(String(hkpNRenderGrid)), true);
   ok('Bilanciamento: interne nelle 200 evidenziate come in Operativa', /HKP_DITTA_ESTERNA\.has\(c\)/.test(String(_renderRoomDivision)), true);
   // San Liborio: interne. Dal 21/09/2026 conta con la SoulArt, prima col Boutique.

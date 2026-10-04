@@ -1072,7 +1072,7 @@ let _hkpNdebounce={};
 let _hkpNsel={drag:false,cells:new Set()};
 const HKP_SYM={RP:'hkp-ripasso',ND:'hkp-nd',LIB:'open-sign',NE:'non-eseguito'};
 // Mappatura sigla in griglia → nome esteso cameriera (da completare con l'elenco fornito dall'utente)
-const HKP_HW_NAMES={AM:'Matarese',IA:'Acunzo',CD:'De Masi',LC:'Cavaliere',ANU:'Anushka',RO:'Roberta',DA:'Daniela',DI:'Ditta Boutique',BE:'Betty',RI:'Rita',TI:'Tiziana',MA:'Martina',PI:'Pina'};
+const HKP_HW_NAMES={AM:'Matarese',IA:'Acunzo',CD:'De Masi',LC:'Cavaliere',ANU:'Anushka',RO:'Roberta',DA:'Daniela',DI:'Ditta Boutique',BE:'Betty',RI:'Rita',TI:'Tiziana',MA:'Martina',PI:'Pina',AR:'Arabella'};
 // Da settembre 2026 le camere del Boutique (200) le pulisce una ditta esterna: queste sigle
 // sono sue. In Operativa HKP le card si dividono per AREA (camere Art = SoulArt, le altre =
 // Boutique); nel mese del passaggio si evidenzia chi, fra le interne, ha lavorato nelle 200.
