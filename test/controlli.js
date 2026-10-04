@@ -914,6 +914,8 @@ ok('soglia per vedere 8.9', Math.round(revSoglia(8.9) * 100) / 100, 8.85);
 // prevede niente (e' quello che e' successo con l'emivita).
 ok('niente emivita', typeof revHl === 'undefined' && typeof REV_HL_DEFAULT === 'undefined', true);
 ok('niente calibrazione a emivita', typeof calibraHalfLife === 'undefined' && typeof calibraDaOsservazioni === 'undefined', true);
+ok('l\'ultimo punto dell\'andamento non guarda nel futuro', /Math\.min\(refDate\.getTime\(\)\+30\*24\*60\*60\*1000,Date\.now\(\)\)/.test(String(openScoreTrend)), true);
+ok('andamento score con due decimali', /pt\.v\.toFixed\(2\)/.test(String(openScoreTrend)) && !/pt\.v\.toFixed\(1\)/.test(String(openScoreTrend)), true);
 ok('grafico e scadenze usano la stessa formula della card',
    /REV_PESI_ANNI/.test(String(openScoreTrend)) && /REV_PESI_ANNI/.test(String(revRenderExpiring)), true);
 // Previsioni

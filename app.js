@@ -5978,7 +5978,9 @@ function openScoreTrend(p){
   // Stesso calcolo della card Punteggio medio: un modello diverso qui mostrerebbe un
   // valore diverso dalla card per lo stesso giorno.
   function calcWeightedAt(refDate){
-    const refTs=refDate.getTime()+30*24*60*60*1000; // fine del mese
+    // Fine del mese, ma mai oltre oggi: per il mese in corso la "fine del mese" sta nel
+    // futuro e l'ultimo punto non coincideva con la card (8.94 contro 8.916, 04/10/2026).
+    const refTs=Math.min(refDate.getTime()+30*24*60*60*1000,Date.now());
     return punteggioBooking(scored,REV_PESI_ANNI,refTs).score;
   }
   const vals=months.map(m=>calcWeightedAt(m));
@@ -6022,11 +6024,13 @@ function openScoreTrend(p){
   svg+=`<path d="${path} ${areaClose}" fill="#003580" opacity="0.08"/>`;
   svg+=`<path d="${path}" fill="none" stroke="#003580" stroke-width="1.5"/>`;
   points.forEach((pt,i)=>{
-    svg+=`<circle cx="${pt.x}" cy="${pt.y}" r="2.5" fill="#003580" stroke="white" stroke-width="1.5"/>`;
+    // Due decimali (04/10/2026): con uno solo 8.85 e 8.94 sembrano uguali e il trend si
+    // perde. Passandoci sopra si legge il valore di ogni mese, anche di quelli senza etichetta.
+    svg+=`<circle cx="${pt.x}" cy="${pt.y}" r="2.5" fill="#003580" stroke="white" stroke-width="1.5"><title>${pt.v.toFixed(2)}</title></circle>`;
     if(i%2===0||i===points.length-1){
       const above=i%4<2;
       const ty=above?pt.y-10:pt.y+16;
-      svg+=`<text x="${pt.x}" y="${ty}" font-size="9.5" fill="#003580" text-anchor="middle" font-weight="600">${pt.v.toFixed(1)}</text>`;
+      svg+=`<text x="${pt.x}" y="${ty}" font-size="9.5" fill="#003580" text-anchor="middle" font-weight="600">${pt.v.toFixed(2)}</text>`;
     }
   });
   svg+='</svg>';

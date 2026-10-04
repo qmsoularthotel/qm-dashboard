@@ -79,6 +79,11 @@ c'erano ancora o che Booking ha tolto/aggiunto in ritardo.
 attuale" del pannello Recensioni in scadenza (`revRenderExpiring`). Un modello diverso in uno
 solo dei tre mostra numeri diversi per lo stesso giorno (è già successo).
 
+Il grafico **Andamento score** mostra **due decimali** (04/10/2026: con uno solo 8.85 e 8.94
+sembravano uguali) e, passandoci sopra, il valore di ogni mese. Ogni punto è calcolato a fine
+mese **ma mai oltre oggi**: per il mese in corso la fine del mese sta nel futuro e l'ultimo punto
+non coincideva con la card (8.94 contro 8.916).
+
 ### Pannello "Punteggio Booking reale" — ora è una verifica
 
 Il QM registra il punteggio dell'extranet ogni volta che cambia (registro `qm_rev_calib`:
