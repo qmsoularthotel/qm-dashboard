@@ -2602,6 +2602,17 @@ sez('Operativa HKP: card separate SoulArt / Boutique ditta esterna');
   ok('capienza ad agosto: 22 e 11', _hkpCapienza('sa', true) + '/' + _hkpCapienza('sa', false), '22/11');
   hkpNCurMon = vero;
   ok('la vista SoulArt si divide in due sezioni', /Boutique 200 · ditta esterna/.test(String(hkpNRenderGrid)) && /HKP_MESE_PASSAGGIO/.test(String(hkpNRenderGrid)), true);
+  // San Liborio mostrato nel riquadro ART 8–9 / 13–21 (04/10/2026), ma salvato sempre in riga 32
+  var vis = hkpNRigheVista('sa', 'camere'), nomi = vis.map(function (r) { return r.name; });
+  var lv = vis.filter(function (r) { return r.name === 'LIBORIO'; })[0];
+  ok('Liborio subito dopo ART 21', nomi[nomi.indexOf('ART 21') + 1], 'LIBORIO');
+  ok('Liborio nel riquadro delle ART 8-9', /ART 8–9/.test(lv.grp) && /San Liborio/.test(lv.grp), true);
+  ok('Liborio salvato sempre in riga 32', lv.ri, 32);
+  ok('le 200 tengono le loro righe', vis.filter(function (r) { return r.name === '201'; })[0].ri + '/' + vis.filter(function (r) { return r.name === '211'; })[0].ri, '22/31');
+  ok('nessuna camera persa o doppia', vis.map(function (r) { return r.ri; }).sort(function (a, b) { return a - b; }).join(','), hkpNGetRows('sa', 'camere').map(function (_, i) { return i; }).join(','));
+  ok('il primo riquadro Boutique e\' il 201', vis.filter(function (r) { return r.isFirst; }).map(function (r) { return r.name; }).join(','), 'ART 01,ART 08,201');
+  ok('aree comuni: ordine invariato', hkpNRigheVista('sa', 'aree').every(function (r, k) { return r.ri === k; }), true);
+  ok('griglia e stampa usano la vista', /hkpNRigheVista/.test(String(hkpNRenderGrid)) && /hkpNRigheVista/.test(String(hkpNPrint)) && /data-vi/.test(String(hkpNKey)), true);
   _hkpNdata[ck] = prima;
 })();
 

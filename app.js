@@ -1027,6 +1027,14 @@ const HKP_ROOMS={
       {g:'ART 8–9\n13–21',list:['ART 08','ART 09','ART 13','ART 14','ART 15','ART 16','ART 17','ART 18','ART 19','ART 20','ART 21']},
       {g:'Boutique\nSan Liborio',list:['201','203','204','205','206','207','208','209','210','211','LIBORIO']},
     ],
+    // Come si MOSTRA la griglia Camere (04/10/2026): San Liborio sta nel riquadro ART 8–9 /
+    // 13–21. `camere` qui sopra non si tocca: le celle sono salvate per posizione in quella
+    // lista (LIBORIO = riga 32), spostarla lì sposterebbe i dati di tutte le 200.
+    vistaCamere:[
+      {g:'ART 1–7\n10–12 · 22',list:['ART 01','ART 02','ART 03','ART 04','ART 05','ART 06','ART 07','ART 10','ART 11','ART 12','ART 22']},
+      {g:'ART 8–9\n13–21\nSan Liborio',list:['ART 08','ART 09','ART 13','ART 14','ART 15','ART 16','ART 17','ART 18','ART 19','ART 20','ART 21','LIBORIO']},
+      {g:'Boutique',list:['201','203','204','205','206','207','208','209','210','211']},
+    ],
     aree:[
       {g:'A — Interni',list:['Corridoio S.Art Vecchie','Corridoio S.Art Nuovo','Hall Reception','Sala Colazioni','Direzione']},
       {g:'B — Servizi',list:['Bagni Piano (inizio)','Bagni Piano (fine)','Spogliatoi']},
@@ -1130,6 +1138,20 @@ function hkpNSaveAll(p){
   hkpNSave(p);
   const btn=document.getElementById('hkpN-'+p+'-savebtn');
   if(btn){btn.textContent='✓ Salvato';setTimeout(()=>{btn.textContent='Salva';},1800);}
+}
+// Righe nell'ordine in cui si MOSTRANO, ognuna col suo `ri` = posizione di salvataggio.
+// Senza una vista (`vista`+tab con il nome del tab) l'ordine è quello salvato.
+function hkpNRigheVista(p,tab){
+  const conf=HKP_ROOMS[p][tab];
+  const pos={};let n=0;
+  conf.forEach(grp=>grp.list.forEach(name=>{pos[name]=n++;}));
+  const vista=HKP_ROOMS[p]['vista'+tab.charAt(0).toUpperCase()+tab.slice(1)]||conf;
+  const rows=[];
+  vista.forEach(grp=>grp.list.forEach((name,idx)=>{
+    if(pos[name]==null)return;
+    rows.push({name,grp:grp.g,isFirst:idx===0,grpSize:grp.list.length,ri:pos[name]});
+  }));
+  return rows;
 }
 function hkpNGetRows(p,tab){
   const conf=HKP_ROOMS[p]&&HKP_ROOMS[p][tab];
@@ -1284,14 +1306,15 @@ function hkpNPrint(p){
   let groups=[];
   const conf=HKP_ROOMS[p]&&HKP_ROOMS[p][tab];
   if(Array.isArray(conf)){
-    conf.forEach(grp=>grp.list.forEach((name,idx)=>groups.push({group:idx===0?grp.g:'',room:name})));
+    hkpNRigheVista(p,tab).forEach(r=>groups.push({group:r.isFirst?r.grp:'',room:r.name,ri:r.ri}));
   } else {
-    rows.forEach(r=>groups.push({group:'',room:r}));
+    rows.forEach((r,ri)=>groups.push({group:'',room:r,ri}));
   }
 
   let tbody='';
   let lastGrp='';
-  groups.forEach((g,ri)=>{
+  groups.forEach(g=>{
+    const ri=g.ri;
     const isNewGroup=g.group!==lastGrp;
     lastGrp=g.group;
     const rTot=rowTotals[ri]||0;
@@ -1531,10 +1554,10 @@ function hkpNRenderGrid(p,tab){
   const days=[];for(let d=1;d<=daysInMonth;d++)days.push(d);
   const MON_IT=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
   const monLabel=MON_IT[mo-1]+' '+yr;
-  const rows=[];
-  conf.forEach(grp=>grp.list.forEach((name,idx)=>rows.push({name,grp:grp.g,isFirst:idx===0,grpSize:grp.list.length})));
+  const rows=hkpNRigheVista(p,tab);
   const dayTotals={};const rowTotals={};const hwCounts={};const symCounts={};const hwDays={};const symArt={},symBou={};
-  rows.forEach((row,ri)=>{
+  rows.forEach(row=>{
+    const ri=row.ri;
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
       if(!v)return;
@@ -1550,7 +1573,7 @@ function hkpNRenderGrid(p,tab){
   });
   const maxCam=Math.max(...rows.map(r=>r.name.length));
   const RW=Math.max(70,maxCam*9+20);
-  const maxGrp=Math.max(...conf.map(g=>Math.max(...g.g.split('\n').map(l=>l.length))));
+  const maxGrp=Math.max(...rows.filter(r=>r.isFirst).map(g=>Math.max(...g.grp.split('\n').map(l=>l.length))));
   const GW=Math.max(70,Math.min(110,maxGrp*7+14));
   const DW=46;const TOTW=46;
   const RH=36; // altezza riga fissa per allineamento tra le due tabelle
@@ -1565,11 +1588,11 @@ function hkpNRenderGrid(p,tab){
   L+='<th style="background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);'+B+'padding:6px 4px;font-size:11px;font-weight:600;text-align:center;text-transform:uppercase;letter-spacing:.04em;height:'+RH+'px;">Gruppo</th>';
   L+='<th style="background:var(--surface,#f8f9fb);color:var(--text-dim,#888880);'+B+'padding:6px 10px;font-size:12px;font-weight:600;text-align:left;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;height:'+RH+'px;"></th>';
   L+='</tr></thead><tbody>';
-  rows.forEach((row,ri)=>{
-    const grpBorder=(row.isFirst&&ri>0)?'border-top:2px solid var(--border,#cdd4de);':'';
+  rows.forEach((row,vi)=>{
+    const grpBorder=(row.isFirst&&vi>0)?'border-top:2px solid var(--border,#cdd4de);':'';
     L+='<tr style="height:'+RH+'px;'+grpBorder+'">';
     if(row.isFirst){
-      const grpBorderBlue=(ri>0)?'border-top:2px solid #fff;':'';
+      const grpBorderBlue=(vi>0)?'border-top:2px solid #fff;':'';
       L+='<td rowspan="'+row.grpSize+'" style="background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);'+B
         +'padding:4px 5px;font-size:12px;font-weight:500;text-align:center;vertical-align:middle;'
         +'overflow:hidden;line-height:1.5;max-width:'+GW+'px;'+grpBorderBlue+'">'+row.grp.replace(/\n/g,'<br>')+'</td>';
@@ -1586,7 +1609,7 @@ function hkpNRenderGrid(p,tab){
   const colW={};
   days.forEach(d=>{
     let mx=1;
-    rows.forEach((_,ri)=>{const v=hkpNGetCell(p,tab,ri,d);if(v.length>mx)mx=v.length;});
+    rows.forEach(r=>{const v=hkpNGetCell(p,tab,r.ri,d);if(v.length>mx)mx=v.length;});
     colW[d]=Math.max(38,mx*CW+16);
   });
 
@@ -1601,15 +1624,16 @@ function hkpNRenderGrid(p,tab){
     R+='<th style="background:var(--surface,#f8f9fb);'+B+'padding:6px 2px;font-size:12px;font-weight:'+(isToday?'600':'400')+';text-align:center;color:'+(isToday?'var(--accent,#1c3a5e)':'var(--text-dim,#888880)')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1c3a5e);':'')+'">'+d+'</th>';
   });
   R+='</tr></thead><tbody>';
-  rows.forEach((row,ri)=>{
-    const grpBorder=(row.isFirst&&ri>0)?'border-top:2px solid var(--border,#cdd4de);':'';
+  rows.forEach((row,vi)=>{
+    const ri=row.ri;
+    const grpBorder=(row.isFirst&&vi>0)?'border-top:2px solid var(--border,#cdd4de);':'';
     R+='<tr style="height:'+RH+'px;">';
     days.forEach(d=>{
       const v=hkpNGetCell(p,tab,ri,d);
       const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
       const iw=colW[d]-2;
       R+='<td style="'+B+'padding:1px;background:'+(isToday&&!v?'var(--accent-bg,#e8f0f8)':'#fff')+';height:'+RH+'px;overflow:hidden;'+grpBorder+'">'
-        +'<input type="text" maxlength="10" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-col="'+d+'" '
+        +'<input type="text" maxlength="10" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-vi="'+vi+'" data-col="'+d+'" '
         +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
         +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
         +'style="width:'+iw+'px;height:'+(RH-2)+'px;border:none;background:transparent;text-align:center;font-size:14px;'
@@ -1645,7 +1669,7 @@ function hkpNRenderGrid(p,tab){
     // Aree comuni: conteggio "chi fa cosa e quante volte", non il totale grezzo — escluse
     // le aree che non richiedono un controllo puntuale (corridoi, terrazzi, aree esterne)
     const staffAreaCounts={};
-    rows.forEach((row,ri)=>{
+    rows.forEach(row=>{const ri=row.ri;
       if(HKP_AREE_ESCLUSE.has(row.name))return;
       days.forEach(d=>{
         const v=hkpNGetCell(p,tab,ri,d);
@@ -1964,7 +1988,7 @@ function hkpNBlur(input){
   }
 }
 function hkpNKey(input,e){
-  const ri=parseInt(input.dataset.ri);
+  const riSalv=parseInt(input.dataset.ri);
   const col=input.dataset.col;
   const tab=input.dataset.tab;
   const table=input.closest('table');
@@ -1975,8 +1999,12 @@ function hkpNKey(input,e){
     e.preventDefault();
     return;
   }
+  // Si muove per posizione a schermo (data-vi), non di salvataggio: San Liborio è mostrato
+  // fra le ART ma salvato in fondo. Senza data-vi (altre griglie) le due coincidono.
+  const ri=input.dataset.vi!=null?parseInt(input.dataset.vi):riSalv;
+  const attr=input.dataset.vi!=null?'data-vi':'data-ri';
   const go=(newRi,newCol)=>{
-    const next=table.querySelector('input[data-ri="'+newRi+'"][data-tab="'+tab+'"][data-col="'+newCol+'"]');
+    const next=table.querySelector('input['+attr+'="'+newRi+'"][data-tab="'+tab+'"][data-col="'+newCol+'"]');
     if(next){e.preventDefault();next.focus();next.select();return true;}
     return false;
   };

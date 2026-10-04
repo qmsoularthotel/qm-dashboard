@@ -249,6 +249,11 @@ usata da Operativa HKP e dai riepiloghi del Bilanciamento).
 La scritta del riempimento segue lo spostamento (`_hkpCapienza`): 22/11 camere fino ad agosto, "22 camere, 23 dal 21/9"
 e "11 camere, 10 dal 21/9" a settembre, 23/10 da ottobre.
 Titoli: "SoulArt · San Liborio" e "Boutique 200 · ditta esterna" (la ditta ha solo le 200).
+**Griglia Camere: San Liborio nel riquadro ART 8–9 / 13–21** (04/10/2026). Si cambia solo come si
+**mostra** (`HKP_ROOMS.sa.vistaCamere`, letta da `hkpNRigheVista`): le celle sono salvate per posizione
+nella lista `camere` (`camere:{ri}_{giorno}`, LIBORIO = riga 32), che **non va riordinata** — spostare
+LIBORIO lì sposterebbe di una riga i dati di tutte le 200 in tutti i mesi. Griglia e stampa usano la
+vista; le frecce/Invio si muovono per posizione a schermo (`data-vi`), non per `data-ri`.
 
 ### Revisione del 28/09/2026 — difetti trovati e chiusi
 
