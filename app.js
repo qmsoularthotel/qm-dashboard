@@ -2794,7 +2794,7 @@ function _bkfBannerLeggi(){
 function _bkfBannerErrore(b,oggi){
   for(const [k,lbl] of BKF_BANNER_TABS){
     const x=b[k],p=x&&x.prossimo;
-    if(false)return lbl+': l\'avviso attuale finisce prima di cominciare.';
+    if(x&&x.dal&&x.al&&x.al<x.dal)return lbl+': l\'avviso attuale finisce prima di cominciare.';
     if(!p)continue;
     if(p.message&&!p.dal)return lbl+': manca la data di inizio del nuovo avviso.';
     if(!p.message&&p.dal)return lbl+': il nuovo avviso programmato non ha testo.';
