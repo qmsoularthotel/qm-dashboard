@@ -2599,19 +2599,63 @@ function miniappToggleApp(key){
   kvSet('qm_app_status',json).catch(()=>{});
   miniappRenderToggles();
 }
+// QUALE AVVISO VA A SCHERMO OGGI — copiata identica in breakfast.html (esegui.sh lo
+// verifica): Compass la usa per dire "oggi sul telefono", l'app per mostrarlo davvero.
+// Se le due copie divergono, il QM vede un avviso e la cucina ne legge un altro.
+// Il programmato vince nei suoi giorni; fuori da quelli vale l'attuale, se acceso e non
+// scaduto. Le date sono 'AAAA-MM-GG' (le caselle data), quindi si confrontano come testo.
+function _bkfAvvisoDiOggi(b,oggi){
+  if(!b)return'';
+  const p=b.prossimo;
+  if(p&&p.message&&p.dal&&p.dal<=oggi&&(!p.al||oggi<=p.al))return p.message;
+  if(b.enabled&&b.message&&(!b.dal||b.dal<=oggi)&&(!b.al||oggi<=b.al))return b.message;
+  return'';
+}
+function _bkfOggi(){
+  const n=new Date();
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+}
 // Avviso temporaneo (toast) solo per breakfast.html — un messaggio (e uno stato
 // attivo/disattivo) indipendente per ciascuna delle 3 tab dell'app (Servizio/
-// Acquisti/Analisi), mostrato sul telefono per 7s quando si è su quella tab.
+// Acquisti/Analisi), mostrato sul telefono per 10s quando si è su quella tab.
+// Ogni tab ha l'avviso ATTUALE (acceso/spento, "fino al" facoltativo) e un PROSSIMO
+// programmato "dal … al …" (05/10/2026): programmarlo basta, non va acceso a mano.
 const BKF_BANNER_KEY='qm_bkf_banner';
 const BKF_BANNER_TABS=[['day','Servizio'],['orders','Acquisti'],['report','Analisi']];
 let _bkfBanner={day:{enabled:false,message:''},orders:{enabled:false,message:''},report:{enabled:false,message:''}};
+let _bkfProgAperto={};   // tendina "programma" aperta senza ancora un testo: non e' un dato
 function _bkfBannerTesto(v){
   return String(v==null?'':v).replace(/\r\n?/g,'\n').replace(/[ \t]+$/gm,'').trim();
 }
+const _bkfData=v=>/^\d{4}-\d{2}-\d{2}$/.test(String(v||''))?String(v):'';
 function _bkfBannerNorm(v){
   const out={};
-  BKF_BANNER_TABS.forEach(([k])=>{out[k]=(v&&v[k])?{enabled:!!v[k].enabled,message:v[k].message||''}:{enabled:false,message:''};});
+  BKF_BANNER_TABS.forEach(([k])=>{
+    const x=(v&&v[k])||{};
+    const o={enabled:!!x.enabled,message:x.message||''};
+    if(_bkfData(x.dal))o.dal=x.dal;
+    if(_bkfData(x.al))o.al=x.al;
+    const p=x.prossimo;
+    if(p&&(p.message||_bkfData(p.dal)))o.prossimo={message:p.message||'',dal:_bkfData(p.dal),al:_bkfData(p.al)};
+    out[k]=o;
+  });
   return out;
+}
+// Arrivato il giorno d'inizio, il programmato diventa l'attuale: cosi' nella scheda si
+// legge quello che c'e' davvero sul telefono e si puo' programmare il successivo. Sul
+// telefono non cambia niente (stesso testo, stessi giorni): per questo si fa solo in
+// memoria e arriva sul cloud col primo salvataggio, senza una scrittura in piu'.
+function _bkfBannerPromuovi(b,oggi){
+  BKF_BANNER_TABS.forEach(([k])=>{
+    const x=b[k],p=x&&x.prossimo;
+    if(!p||!p.dal||p.dal>oggi)return;
+    delete x.prossimo;
+    if(p.al&&p.al<oggi)return;   // passato del tutto mentre nessuno guardava
+    if(!p.message)return;
+    b[k]={enabled:true,message:p.message,dal:p.dal};
+    if(p.al)b[k].al=p.al;
+  });
+  return b;
 }
 async function miniappLoadBkfBanner(){
   try{
@@ -2621,7 +2665,23 @@ async function miniappLoadBkfBanner(){
   }catch(e){
     try{_bkfBanner=_bkfBannerNorm(JSON.parse(localStorage.getItem(BKF_BANNER_KEY)||'null'));}catch(e2){_bkfBanner=_bkfBannerNorm(null);}
   }
+  _bkfBannerPromuovi(_bkfBanner,_bkfOggi());
   miniappRenderBkfBanner();
+}
+function _bkfFmtData(d){
+  const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d||'');
+  return m?m[3]+'/'+m[2]:'';
+}
+// Una riga che dice cosa vede OGGI chi apre quella schermata: con due avvisi e quattro
+// date non si deve fare il conto a mente.
+function _bkfBannerStato(x,oggi){
+  const msg=_bkfAvvisoDiOggi(x,oggi);
+  const p=x.prossimo;
+  if(msg&&p&&msg===p.message&&p.dal&&p.dal<=oggi)return'Oggi: il programmato'+(p.al?' (fino al '+_bkfFmtData(p.al)+')':'');
+  if(msg)return'Oggi: l\'attuale'+(x.al?' (fino al '+_bkfFmtData(x.al)+')':'');
+  if(x.enabled&&x.message&&x.al&&x.al<oggi)return'Oggi: niente — l\'attuale è scaduto il '+_bkfFmtData(x.al);
+  if(x.enabled&&x.message&&x.dal&&x.dal>oggi)return'Oggi: niente — l\'attuale parte il '+_bkfFmtData(x.dal);
+  return'Oggi: niente';
 }
 // Il messaggio si scrive su PIU' RIGHE: un avviso di due frasi in una casella a riga
 // singola si legge solo scorrendo con le frecce, e gli a capo sono l'unico modo di
@@ -2631,13 +2691,33 @@ async function miniappLoadBkfBanner(){
 function miniappRenderBkfBanner(){
   const wrap=document.getElementById('miniapp-bkf-banner-tabs');
   if(!wrap)return;
-  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const oggi=_bkfOggi();
   wrap.innerHTML=BKF_BANNER_TABS.map(([k,lbl])=>{
     const st=_bkfBanner[k]||{enabled:false,message:''};
-    return`<div class="miniapp-avviso-riga">
+    const p=st.prossimo;
+    const prog=!!p||!!_bkfProgAperto[k];
+    const pp=p||{message:'',dal:'',al:''};
+    return`<div class="miniapp-avviso-blocco">
+      <div class="miniapp-avviso-riga">
       <div class="miniapp-sub">${lbl}</div>
         <textarea data-bkf-banner-tab="${k}" rows="2" placeholder="es. Nuovo turno caricato,&#10;ricarica la pagina" class="miniapp-avviso-testo" oninput="_bkfBannerAltezza(this)">${esc(st.message)}</textarea>
         <button onclick="miniappToggleBkfBanner('${k}')" title="Attiva/disattiva avviso su ${lbl}" class="miniapp-sw" style="margin-left:0;background:${st.enabled?'var(--green)':'var(--border)'};"><span class="miniapp-toggle-knob" style="left:${st.enabled?'17px':'2px'};"></span></button>
+      </div>
+      <div class="miniapp-avviso-date">
+        <label>fino al <input type="date" data-bkf-al="${k}" value="${esc(st.al||'')}" class="miniapp-avviso-data"></label>
+        <span class="miniapp-avviso-nota-data">vuoto = finché non lo spegni</span>
+      </div>
+      ${prog?`<div class="miniapp-avviso-prog">
+        <div class="miniapp-avviso-prog-tit">Nuovo avviso programmato</div>
+        <textarea data-bkf-p-msg="${k}" rows="2" placeholder="Testo del nuovo avviso" class="miniapp-avviso-testo" oninput="_bkfBannerAltezza(this)">${esc(pp.message)}</textarea>
+        <div class="miniapp-avviso-date miniapp-avviso-date-prog">
+          <label>dal <input type="date" data-bkf-p-dal="${k}" value="${esc(pp.dal)}" class="miniapp-avviso-data"></label>
+          <label>al <input type="date" data-bkf-p-al="${k}" value="${esc(pp.al)}" class="miniapp-avviso-data"></label>
+          <button onclick="miniappTogliProgBkfBanner('${k}')" class="miniapp-avviso-link">Togli</button>
+        </div>
+      </div>`:`<div class="miniapp-avviso-date"><button onclick="miniappApriProgBkfBanner('${k}')" class="miniapp-avviso-link">+ Programma un nuovo avviso</button></div>`}
+      <div class="miniapp-avviso-stato">${esc(_bkfBannerStato(st,oggi))}</div>
     </div>`;
   }).join('');
   _bkfBannerAltezzaTutte();
@@ -2653,7 +2733,7 @@ function _bkfBannerAltezza(ta){
   if(ta.scrollHeight)ta.style.height=ta.scrollHeight+'px';   // dentro la tendina chiusa vale 0: si riadatta all'apertura
 }
 function _bkfBannerAltezzaTutte(){
-  document.querySelectorAll('[data-bkf-banner-tab]').forEach(_bkfBannerAltezza);
+  document.querySelectorAll('[data-bkf-banner-tab],[data-bkf-p-msg]').forEach(_bkfBannerAltezza);
 }
 // La scheda Breakfast e' l'unica che ha qualcosa da scrivere, non solo da accendere: gli
 // avvisi stanno dentro di lei ma chiusi, altrimenti resta alta il doppio delle altre e la
@@ -2668,33 +2748,84 @@ function miniappToggleAvvisi(){
   if(apri)_bkfBannerAltezzaTutte();   // a tendina chiusa scrollHeight e' 0: l'altezza si puo' misurare solo ora
 }
 // Quanti avvisi sono accesi si deve vedere a scheda CHIUSA: altrimenti si dimentica di
-// averne lasciato uno attivo e chi apre l'app se lo ritrova davanti per giorni.
+// averne lasciato uno attivo e chi apre l'app se lo ritrova davanti per giorni. Conta
+// quelli che OGGI vanno a schermo, piu' quelli programmati per i prossimi giorni.
 function miniappRenderContaAvvisi(){
   const el=document.getElementById('miniapp-avvisi-conta');
   if(!el)return;
-  const n=BKF_BANNER_TABS.filter(function(x){return _bkfBanner[x[0]]&&_bkfBanner[x[0]].enabled;}).length;
-  el.textContent=n?(n+' attiv'+(n===1?'o':'i')):'';
-  el.style.display=n?'':'none';
+  const oggi=_bkfOggi();
+  const n=BKF_BANNER_TABS.filter(function(x){return !!_bkfAvvisoDiOggi(_bkfBanner[x[0]],oggi);}).length;
+  const m=BKF_BANNER_TABS.filter(function(x){const p=_bkfBanner[x[0]]&&_bkfBanner[x[0]].prossimo;return p&&p.message&&p.dal&&p.dal>oggi;}).length;
+  const parti=[];
+  if(n)parti.push(n+' attiv'+(n===1?'o':'i'));
+  if(m)parti.push(m+' programmat'+(m===1?'o':'i'));
+  el.textContent=parti.join(' · ');
+  el.style.display=parti.length?'':'none';
 }
 function miniappSaveBkfBannerToKV(){
   const json=JSON.stringify(_bkfBanner);
   try{localStorage.setItem(BKF_BANNER_KEY,json);}catch(e){}
   kvSet(BKF_BANNER_KEY,json).catch(()=>{});
 }
+// Le caselle a schermo nello stato: prima di ogni ridisegno, altrimenti un testo o una
+// data scritti e non ancora salvati sparirebbero accendendo un interruttore.
+function _bkfBannerLeggi(){
+  BKF_BANNER_TABS.forEach(([k])=>{
+    const x=_bkfBanner[k];if(!x)return;
+    const q=a=>document.querySelector('['+a+'="'+k+'"]');
+    const ta=q('data-bkf-banner-tab');
+    // Gli a capo si conservano (sono il senso della casella a piu' righe); si
+    // normalizzano solo i CRLF di Windows e si tolgono gli spazi ai bordi, che
+    // sull'avviso diventerebbero una riga vuota in cima o in fondo.
+    if(ta)x.message=_bkfBannerTesto(ta.value);
+    const al=q('data-bkf-al');
+    if(al){if(_bkfData(al.value))x.al=al.value;else delete x.al;}
+    const pm=q('data-bkf-p-msg');
+    if(pm){
+      const p={message:_bkfBannerTesto(pm.value),dal:_bkfData((q('data-bkf-p-dal')||{}).value),al:_bkfData((q('data-bkf-p-al')||{}).value)};
+      if(p.message||p.dal||p.al)x.prossimo=p;else delete x.prossimo;
+    }
+  });
+}
+// Cosa non torna nelle date: un testo, perche' lo dica cqAvviso; vuoto se va bene.
+function _bkfBannerErrore(b,oggi){
+  for(const [k,lbl] of BKF_BANNER_TABS){
+    const x=b[k],p=x&&x.prossimo;
+    if(!p)continue;
+    if(p.message&&!p.dal)return lbl+': manca il giorno da cui parte il nuovo avviso.';
+    if(!p.message&&p.dal)return lbl+': il nuovo avviso programmato non ha testo.';
+    if(p.al&&p.dal&&p.al<p.dal)return lbl+': il nuovo avviso finisce prima di cominciare.';
+    if(p.al&&p.al<oggi)return lbl+': il nuovo avviso finisce in un giorno già passato.';
+  }
+  return'';
+}
 function miniappToggleBkfBanner(tab){
+  _bkfBannerLeggi();
   _bkfBanner[tab].enabled=!_bkfBanner[tab].enabled;
   miniappSaveBkfBannerToKV();
   miniappRenderBkfBanner();
 }
+function miniappApriProgBkfBanner(tab){
+  _bkfBannerLeggi();
+  _bkfProgAperto[tab]=true;
+  miniappRenderBkfBanner();
+}
+function miniappTogliProgBkfBanner(tab){
+  _bkfBannerLeggi();
+  const avevaProg=!!(_bkfBanner[tab]&&_bkfBanner[tab].prossimo);
+  if(_bkfBanner[tab])delete _bkfBanner[tab].prossimo;
+  _bkfProgAperto[tab]=false;
+  if(avevaProg)miniappSaveBkfBannerToKV();
+  miniappRenderBkfBanner();
+}
 function miniappSaveBkfBanner(btn){
-  document.querySelectorAll('[data-bkf-banner-tab]').forEach(inp=>{
-    const tab=inp.dataset.bkfBannerTab;
-    // Gli a capo si conservano (sono il senso della casella a piu' righe); si
-    // normalizzano solo i CRLF di Windows e si tolgono gli spazi ai bordi, che
-    // sull'avviso diventerebbero una riga vuota in cima o in fondo.
-    if(_bkfBanner[tab])_bkfBanner[tab].message=_bkfBannerTesto(inp.value);
-  });
+  _bkfBannerLeggi();
+  const oggi=_bkfOggi();
+  const err=_bkfBannerErrore(_bkfBanner,oggi);
+  if(err){cqAvviso('Avviso non salvato',err);return;}
+  _bkfBannerPromuovi(_bkfBanner,oggi);   // un programmato che parte oggi diventa subito l'attuale
   miniappSaveBkfBannerToKV();
+  miniappRenderBkfBanner();
   if(btn){const orig=btn.textContent;btn.textContent='✓ Salvato';setTimeout(()=>{btn.textContent=orig;},1500);}
 }
 // Pannello di controllo — stato colorato per ciascuna app standalone,

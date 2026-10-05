@@ -422,7 +422,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-10-01.2';
+const QM_APP_BUILD='2026-10-05.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -509,6 +509,22 @@ function qmBannerMostra(testo){
     QM_BANNER_EVENTI.forEach(ev=>document.addEventListener(ev,_bannerChiudi,true));
   },QM_BANNER_GRAZIA_MS);
 }
+// QUALE AVVISO VA A SCHERMO OGGI — copiata identica in breakfast.html (esegui.sh lo
+// verifica): Compass la usa per dire "oggi sul telefono", l'app per mostrarlo davvero.
+// Se le due copie divergono, il QM vede un avviso e la cucina ne legge un altro.
+// Il programmato vince nei suoi giorni; fuori da quelli vale l'attuale, se acceso e non
+// scaduto. Le date sono 'AAAA-MM-GG' (le caselle data), quindi si confrontano come testo.
+function _bkfAvvisoDiOggi(b,oggi){
+  if(!b)return'';
+  const p=b.prossimo;
+  if(p&&p.message&&p.dal&&p.dal<=oggi&&(!p.al||oggi<=p.al))return p.message;
+  if(b.enabled&&b.message&&(!b.dal||b.dal<=oggi)&&(!b.al||oggi<=b.al))return b.message;
+  return'';
+}
+function _bkfOggi(){
+  const n=new Date();
+  return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');
+}
 // Lo splash copre tutto per 3 secondi e sta piu' in alto dell'avviso (99998 contro 9998):
 // mostrarlo all'apertura voleva dire bruciarne la meta' dietro un velo, ed e' il motivo
 // per cui all'apertura sembrava non comparire affatto. Si aspetta che se ne vada.
@@ -528,9 +544,9 @@ async function qmCheckBanner(){
     const r=await fetch(PROXY+'/kv/get?key=qm_bkf_banner',{cache:'no-store'});
     const j=await r.json();
     const all=j&&j.value?JSON.parse(j.value):{};
-    const b=all[tab]||{};
-    if(!b.enabled||!b.message)return;
-    qmBannerMostra(b.message);
+    const msg=_bkfAvvisoDiOggi(all[tab],_bkfOggi());
+    if(!msg)return;
+    qmBannerMostra(msg);
   }catch(e){}
 }
 // A documento pronto, non qui: piu' sotto c'e' `let _activeTab`, e in questo punto e'

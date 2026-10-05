@@ -760,6 +760,43 @@ ok('su smartphone resta il cognome', soloCognome('Maddaloni M.'), 'Maddaloni');
 ok('cognome composto',               soloCognome('De Rosa T.'),   'De Rosa');
 ok('nome senza iniziale intatto',    soloCognome('Extra Night'),  'Extra Night');
 
+sez('Avvisi Breakfast programmati');
+// Avviso attuale "fino al", nuovo avviso "dal … al …" (05/10/2026). Il programmato vince
+// nei suoi giorni e parte da solo; fuori da quelli vale l'attuale, se acceso e non scaduto.
+(function(){
+  var b = { enabled: true, message: 'Vecchio', al: '2026-10-10',
+            prossimo: { message: 'Nuovo', dal: '2026-10-11', al: '2026-10-20' } };
+  ok('prima del via: l\'attuale',                 _bkfAvvisoDiOggi(b, '2026-10-05'), 'Vecchio');
+  ok('l\'ultimo giorno dell\'attuale: ancora lui', _bkfAvvisoDiOggi(b, '2026-10-10'), 'Vecchio');
+  ok('dal primo giorno: il programmato',          _bkfAvvisoDiOggi(b, '2026-10-11'), 'Nuovo');
+  ok('l\'ultimo giorno del programmato',          _bkfAvvisoDiOggi(b, '2026-10-20'), 'Nuovo');
+  ok('dopo: niente',                              _bkfAvvisoDiOggi(b, '2026-10-21'), '');
+  ok('spento: niente, anche col testo',           _bkfAvvisoDiOggi({ enabled: false, message: 'X' }, '2026-10-05'), '');
+  ok('senza "fino al": resta acceso',             _bkfAvvisoDiOggi({ enabled: true, message: 'X' }, '2030-01-01'), 'X');
+  ok('il programmato parte anche a interruttore spento',
+     _bkfAvvisoDiOggi({ enabled: false, message: '', prossimo: { message: 'P', dal: '2026-10-01', al: '' } }, '2026-10-05'), 'P');
+  ok('programmato senza giorno d\'inizio: non parte',
+     _bkfAvvisoDiOggi({ enabled: false, message: '', prossimo: { message: 'P', dal: '', al: '' } }, '2026-10-05'), '');
+  // Arrivato il giorno, Compass lo fa diventare l'attuale: il telefono deve vedere lo stesso.
+  var c = _bkfBannerNorm({ day: JSON.parse(JSON.stringify(b)) });
+  _bkfBannerPromuovi(c, '2026-10-12');
+  ok('promosso: e\' l\'attuale',                  c.day.message, 'Nuovo');
+  ok('promosso: niente piu\' programmato',        !!c.day.prossimo, false);
+  ok('promosso: il telefono vede lo stesso',      _bkfAvvisoDiOggi(c.day, '2026-10-12'), 'Nuovo');
+  ok('promosso: e si spegne alla stessa data',    _bkfAvvisoDiOggi(c.day, '2026-10-21'), '');
+  var d = _bkfBannerNorm({ day: JSON.parse(JSON.stringify(b)) });
+  _bkfBannerPromuovi(d, '2026-10-08');
+  ok('non ancora il giorno: resta programmato',   d.day.message + '|' + d.day.prossimo.message, 'Vecchio|Nuovo');
+  ok('i vecchi avvisi senza date si leggono come prima',
+     JSON.stringify(_bkfBannerNorm({ day: { enabled: true, message: 'A' } }).day), '{"enabled":true,"message":"A"}');
+  ok('salvataggio: manca il giorno d\'inizio',
+     /manca il giorno/.test(_bkfBannerErrore({ day: { prossimo: { message: 'P', dal: '', al: '' } } }, '2026-10-05')), true);
+  ok('salvataggio: finisce prima di cominciare',
+     /prima di cominciare/.test(_bkfBannerErrore({ day: { prossimo: { message: 'P', dal: '2026-10-09', al: '2026-10-08' } } }, '2026-10-05')), true);
+  ok('salvataggio: date giuste, nessun errore',
+     _bkfBannerErrore({ day: { prossimo: { message: 'P', dal: '2026-10-09', al: '2026-10-12' } } }, '2026-10-05'), '');
+})();
+
 sez('Finestre di avviso');
 // I vecchi messaggi contenevano a capo scritti con \n, che in HTML non mandano a capo:
 // cqAvviso deve dividerli in titolo + spiegazione e convertire gli a capo.

@@ -324,6 +324,22 @@ body.dark .panel{box-shadow:none;}
   border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);
   font-family:inherit;resize:none;overflow:hidden;min-height:58px;}
 .miniapp-avviso-riga .miniapp-sw{margin-top:9px;}
+/* Programmazione degli avvisi (05/10/2026): date e stato stanno sotto la casella, rientrati
+   quanto l'etichetta della schermata (62px + 8 di spazio), cosi' si leggono come parte
+   dell'avviso di quella riga e non della successiva. */
+.miniapp-avviso-blocco{display:flex;flex-direction:column;gap:6px;padding-bottom:10px;border-bottom:1px solid var(--border-light);}
+.miniapp-avviso-blocco:last-child{border-bottom:none;padding-bottom:0;}
+.miniapp-avviso-date{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-left:70px;font-size:var(--fs-xxs);color:var(--text-muted);}
+.miniapp-avviso-date label{display:flex;align-items:center;gap:5px;}
+.miniapp-avviso-date-prog{margin-left:0;}
+.miniapp-avviso-data{padding:3px 6px;font-size:var(--fs-xxs);font-family:inherit;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);}
+.miniapp-avviso-nota-data{color:var(--text-dim);}
+.miniapp-avviso-link{background:none;border:none;padding:0;font-family:inherit;font-size:var(--fs-xxs);font-weight:600;color:var(--accent);cursor:pointer;}
+.miniapp-avviso-link:hover{text-decoration:underline;}
+.miniapp-avviso-prog{margin-left:70px;display:flex;flex-direction:column;gap:6px;padding:8px;border:1px dashed var(--gold);border-radius:6px;background:var(--gold-bg);}
+.miniapp-avviso-prog-tit{font-size:var(--fs-xxs);font-weight:700;color:var(--text-muted);}
+.miniapp-avviso-prog .miniapp-avviso-testo{min-height:46px;}
+.miniapp-avviso-stato{margin-left:70px;font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;}
 /* Schema ricorrente "grafico a sinistra + riquadro dati a destra" (Overview: occupazione
    settimanale + bottiglia Culligan; Bilanciamento Camere: vista settimanale + totali).
    La colonna dati ha flex-shrink:0 e una min-width: su smartphone si prendeva ~180px dei

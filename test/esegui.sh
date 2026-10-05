@@ -357,6 +357,14 @@ _senza_funzione breakfast.html breakfast.html ddt-shared.js
 for _f in housekeeper.html inventory.html controllo-mattino.html dvr.html reception.html biancheria-galleria.html registration-galleria.html; do
   _senza_funzione "$_f" "$_f"
 done
+# Quale avviso va a schermo oggi: Compass lo dice al QM, l'app lo mostra in cucina. Se le
+# due copie divergono, i due vedono avvisi diversi (05/10/2026).
+_avv(){ sed -n '/^function _bkfAvvisoDiOggi(/,/^}/p' "$1"; }
+if [ "$(_avv app.js)" != "$(_avv breakfast.html)" ] || [ -z "$(_avv breakfast.html)" ]; then
+  echo ""
+  echo "  ERRORE      _bkfAvvisoDiOggi in breakfast.html non e' identica a quella di app.js."
+  BKF_KO=1
+fi
 # La fusione a tre degli elenchi condivisi (_qmTre) e' copiata in breakfast.html e
 # inventory.html: se una delle tre copie cambia da sola, telefono e Compass fondono in
 # modo diverso e un DDT o un movimento puo' sparire di nuovo.
