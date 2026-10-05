@@ -338,7 +338,10 @@ body.dark .panel{box-shadow:none;}
 .miniapp-avviso-link:hover{text-decoration:underline;}
 .miniapp-avviso-prog{margin-left:70px;display:flex;flex-direction:column;gap:6px;padding:8px;border:1px dashed var(--gold);border-radius:6px;background:var(--gold-bg);}
 .miniapp-avviso-prog-tit{font-size:var(--fs-xxs);font-weight:700;color:var(--text-muted);}
-.miniapp-avviso-prog .miniapp-avviso-testo{min-height:46px;}
+/* flex:none: la casella eredita flex:1, che in una colonna vuol dire "altezza di partenza
+   zero" — l'altezza calcolata da _bkfBannerAltezza veniva ignorata e il testo lungo
+   scorreva dentro una finestra da due righe (05/10/2026). */
+.miniapp-avviso-prog .miniapp-avviso-testo{flex:none;min-height:46px;}
 .miniapp-avviso-stato{margin-left:70px;font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;}
 /* Schema ricorrente "grafico a sinistra + riquadro dati a destra" (Overview: occupazione
    settimanale + bottiglia Culligan; Bilanciamento Camere: vista settimanale + totali).

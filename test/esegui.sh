@@ -365,6 +365,13 @@ if [ "$(_avv app.js)" != "$(_avv breakfast.html)" ] || [ -z "$(_avv breakfast.ht
   echo "  ERRORE      _bkfAvvisoDiOggi in breakfast.html non e' identica a quella di app.js."
   BKF_KO=1
 fi
+# La casella del nuovo avviso sta in una colonna: senza flex:none il suo flex:1 la schiaccia
+# a due righe e il testo lungo scorre dentro invece di farla crescere (05/10/2026).
+if ! grep -qE '^\.miniapp-avviso-prog \.miniapp-avviso-testo\{flex:none' style.css; then
+  echo ""
+  echo "  ERRORE      la casella del nuovo avviso Breakfast non cresce piu' col testo (manca flex:none)."
+  BKF_KO=1
+fi
 # La fusione a tre degli elenchi condivisi (_qmTre) e' copiata in breakfast.html e
 # inventory.html: se una delle tre copie cambia da sola, telefono e Compass fondono in
 # modo diverso e un DDT o un movimento puo' sparire di nuovo.

@@ -238,6 +238,7 @@ let _bkfBanner = { enabled: false, message: '' };
   - Quale avviso va a schermo lo decide **`_bkfAvvisoDiOggi(b,oggi)`, copiata identica** in `app.js` e `breakfast.html` (`esegui.sh` lo verifica): il programmato vince nei suoi giorni, fuori da quelli vale l'attuale se acceso e non scaduto.
   - Arrivato il giorno d'inizio, Compass **promuove** il programmato ad attuale (`_bkfBannerPromuovi`) solo in memoria: sul telefono non cambia niente, e arriva sul cloud col primo salvataggio — nessuna scrittura in più.
   - Sotto ogni schermata una riga «Oggi: …» dice cosa vede la cucina; il contatore a tendina chiusa conta «N attivi · M programmati».
+  - La casella del nuovo avviso cresce col testo come quella dell'attuale: nel riquadro a colonna le serve `flex:none`, altrimenti il `flex:1` ereditato la schiaccia a due righe (controllo in `esegui.sh`).
   - Salvando, `_bkfBannerErrore` ferma le date incoerenti (manca il «dal», fine prima dell'inizio, fine già passata). Interruttori e «Programma/Togli» rileggono prima le caselle (`_bkfBannerLeggi`), così un testo non salvato non sparisce al ridisegno.
 - Toast: icona SVG bell (non emoji — sostituita due volte su richiesta, prima 📢 poi 🔔, ora SVG outline oro senza sfondo), testo centrato, posizionato `bottom:72px` (sopra la bottom-nav fissa, non sopra di essa — la prima versione a `bottom:16px` copriva i pulsanti Servizio/Acquisti/Analisi).
 
