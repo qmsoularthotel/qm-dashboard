@@ -790,9 +790,13 @@ sez('Avvisi Breakfast programmati');
   ok('i vecchi avvisi senza date si leggono come prima',
      JSON.stringify(_bkfBannerNorm({ day: { enabled: true, message: 'A' } }).day), '{"enabled":true,"message":"A"}');
   ok('salvataggio: manca il giorno d\'inizio',
-     /manca il giorno/.test(_bkfBannerErrore({ day: { prossimo: { message: 'P', dal: '', al: '' } } }, '2026-10-05')), true);
+     /manca la data di inizio/.test(_bkfBannerErrore({ day: { prossimo: { message: 'P', dal: '', al: '' } } }, '2026-10-05')), true);
   ok('salvataggio: finisce prima di cominciare',
      /prima di cominciare/.test(_bkfBannerErrore({ day: { prossimo: { message: 'P', dal: '2026-10-09', al: '2026-10-08' } } }, '2026-10-05')), true);
+  ok('salvataggio: attuale che finisce prima di cominciare',
+     /attuale finisce prima/.test(_bkfBannerErrore({ day: { enabled: true, message: 'A', dal: '2026-10-09', al: '2026-10-08' } }, '2026-10-05')), true);
+  ok('attuale con data di inizio: prima non si vede',  _bkfAvvisoDiOggi({ enabled: true, message: 'A', dal: '2026-10-09' }, '2026-10-08'), '');
+  ok('attuale con data di inizio: dal giorno sì',      _bkfAvvisoDiOggi({ enabled: true, message: 'A', dal: '2026-10-09' }, '2026-10-09'), 'A');
   ok('salvataggio: date giuste, nessun errore',
      _bkfBannerErrore({ day: { prossimo: { message: 'P', dal: '2026-10-09', al: '2026-10-12' } } }, '2026-10-05'), '');
 })();

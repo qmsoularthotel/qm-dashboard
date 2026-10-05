@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='488-20261005';
+  const V='489-20261005';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1478,7 +1478,7 @@
               <svg class="miniapp-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
             </button>
             <div id="miniapp-avvisi-corpo" class="miniapp-avvisi-corpo" hidden>
-              <div class="miniapp-avvisi-nota">Un messaggio diverso per ogni schermata dell'app: compare a ogni apertura e a ogni cambio di schermata, resta 10 secondi e sparisce al primo tocco. Si può andare a capo: gli a capo restano anche sul telefono. Con «fino al» l'avviso si spegne da solo; con «Programma un nuovo avviso» se ne prepara un altro che parte da solo nel giorno scelto.</div>
+              <div class="miniapp-avvisi-nota">Un messaggio diverso per ogni schermata dell'app: compare a ogni apertura e a ogni cambio di schermata, resta 10 secondi e sparisce al primo tocco. Si può andare a capo: gli a capo restano anche sul telefono. Con «Inizio» e «Fine» l'avviso si accende e si spegne da solo; con «Programma un nuovo avviso» se ne prepara un altro che parte da solo nel giorno scelto.</div>
               <div id="miniapp-bkf-banner-tabs" style="display:flex;flex-direction:column;gap:10px;"></div>
               <button onclick="miniappSaveBkfBanner(this)" class="miniapp-btn miniapp-btn-primario" style="width:100%;margin-top:12px;">Salva avvisi</button>
             </div>
@@ -1695,7 +1695,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1007-20261005"></script>
+<script src="app.js?v=1008-20261005"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

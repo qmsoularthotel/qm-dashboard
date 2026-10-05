@@ -2705,15 +2705,16 @@ function miniappRenderBkfBanner(){
         <button onclick="miniappToggleBkfBanner('${k}')" title="Attiva/disattiva avviso su ${lbl}" class="miniapp-sw" style="margin-left:0;background:${st.enabled?'var(--green)':'var(--border)'};"><span class="miniapp-toggle-knob" style="left:${st.enabled?'17px':'2px'};"></span></button>
       </div>
       <div class="miniapp-avviso-date">
-        <label>fino al <input type="date" data-bkf-al="${k}" value="${esc(st.al||'')}" class="miniapp-avviso-data"></label>
-        <span class="miniapp-avviso-nota-data">vuoto = finché non lo spegni</span>
+        <label>Inizio <input type="date" data-bkf-dal="${k}" value="${esc(st.dal||'')}" class="miniapp-avviso-data"></label>
+        <label>Fine <input type="date" data-bkf-al="${k}" value="${esc(st.al||'')}" class="miniapp-avviso-data"></label>
+        <span class="miniapp-avviso-nota-data">vuote = da subito, finché non lo spegni</span>
       </div>
       ${prog?`<div class="miniapp-avviso-prog">
         <div class="miniapp-avviso-prog-tit">Nuovo avviso programmato</div>
         <textarea data-bkf-p-msg="${k}" rows="2" placeholder="Testo del nuovo avviso" class="miniapp-avviso-testo" oninput="_bkfBannerAltezza(this)">${esc(pp.message)}</textarea>
         <div class="miniapp-avviso-date miniapp-avviso-date-prog">
-          <label>dal <input type="date" data-bkf-p-dal="${k}" value="${esc(pp.dal)}" class="miniapp-avviso-data"></label>
-          <label>al <input type="date" data-bkf-p-al="${k}" value="${esc(pp.al)}" class="miniapp-avviso-data"></label>
+          <label>Inizio <input type="date" data-bkf-p-dal="${k}" value="${esc(pp.dal)}" class="miniapp-avviso-data"></label>
+          <label>Fine <input type="date" data-bkf-p-al="${k}" value="${esc(pp.al)}" class="miniapp-avviso-data"></label>
           <button onclick="miniappTogliProgBkfBanner('${k}')" class="miniapp-avviso-link">Togli</button>
         </div>
       </div>`:`<div class="miniapp-avviso-date"><button onclick="miniappApriProgBkfBanner('${k}')" class="miniapp-avviso-link">+ Programma un nuovo avviso</button></div>`}
@@ -2778,6 +2779,8 @@ function _bkfBannerLeggi(){
     // normalizzano solo i CRLF di Windows e si tolgono gli spazi ai bordi, che
     // sull'avviso diventerebbero una riga vuota in cima o in fondo.
     if(ta)x.message=_bkfBannerTesto(ta.value);
+    const dal=q('data-bkf-dal');
+    if(dal){if(_bkfData(dal.value))x.dal=dal.value;else delete x.dal;}
     const al=q('data-bkf-al');
     if(al){if(_bkfData(al.value))x.al=al.value;else delete x.al;}
     const pm=q('data-bkf-p-msg');
@@ -2791,8 +2794,9 @@ function _bkfBannerLeggi(){
 function _bkfBannerErrore(b,oggi){
   for(const [k,lbl] of BKF_BANNER_TABS){
     const x=b[k],p=x&&x.prossimo;
+    if(false)return lbl+': l\'avviso attuale finisce prima di cominciare.';
     if(!p)continue;
-    if(p.message&&!p.dal)return lbl+': manca il giorno da cui parte il nuovo avviso.';
+    if(p.message&&!p.dal)return lbl+': manca la data di inizio del nuovo avviso.';
     if(!p.message&&p.dal)return lbl+': il nuovo avviso programmato non ha testo.';
     if(p.al&&p.dal&&p.al<p.dal)return lbl+': il nuovo avviso finisce prima di cominciare.';
     if(p.al&&p.al<oggi)return lbl+': il nuovo avviso finisce in un giorno già passato.';
