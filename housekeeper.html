@@ -478,7 +478,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-10-06.2';
+const QM_APP_BUILD='2026-10-06.3';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -667,9 +667,6 @@ function hkScheda(nome,rooms){
     </div>
   </div>`;
 }
-function hkLegenda(){
-  return`<div class="hk-legenda"><span>${hkIco('partenza',12,'var(--hk-part)')}partenza</span><span>${hkIco('cambio',12,'var(--hk-part)')}partenza con arrivo</span><span>${hkIco('fermata',12)}fermata</span><span>${HK_BK}Booking</span><span>${hkIco('carico',12,'var(--accent)')}carico: partenza 2, fermata 1 (Art 1-2-3-8-9-13: 2,5 e 1,5)</span></div>`;
-}
 
 function parseDate(str){
   // "23/03/2026" → Date
@@ -776,24 +773,6 @@ function renderDay(){
   }
   if(pianoDay){
     html+=hkScheda('Ditta esterna',{cambi:[...(pianoDay.boutique?.cambi||[])],partenze:[...(pianoDay.boutique?.partenze||[])],fermate:[...(pianoDay.boutique?.fermate||[])]});
-  }
-  if(pianoDay)html+=hkLegenda();
-
-  // Totale giorno se entrambe le strutture hanno dati
-  if(soulDay&&boutDay){
-    html+=`<div class="day-total">
-      <div class="day-total-title">Totale giorno — entrambe le strutture</div>
-      <div class="day-total-grid" style="grid-template-columns:1fr 1fr;">
-        <div class="day-total-item">
-          <div class="day-total-val" style="color:var(--accent);">${totFermate}</div>
-          <div class="day-total-lbl" style="display:flex;align-items:center;justify-content:center;gap:4px;">${hkIco('fermata',12)}Fermate</div>
-        </div>
-        <div class="day-total-item">
-          <div class="day-total-val" style="color:var(--accent);">${totPartenze}</div>
-          <div class="day-total-lbl" style="display:flex;align-items:center;justify-content:center;gap:4px;">${hkIco('partenza',12,'var(--hk-part)')}Partenze</div>
-        </div>
-      </div>
-    </div>`;
   }
 
   // Preview prossimi 2 giorni

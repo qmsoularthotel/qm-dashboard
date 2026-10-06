@@ -296,4 +296,5 @@ due gruppi, "Partenze" (⇄ = con arrivo) e "Fermate". Camere SoulArt sempre "Ar
 Icone (`hkIco`) al posto delle emoji, "B" di Booking come in Compass (`HK_BK`), legenda in fondo. Tolte
 `renderRoomDetail` e `renderKpi` (vecchio disegno). Il riquadro di confronto del carico in alto è stato provato
 e scartato dal QM.
+Tolti su richiesta del QM (06/10/2026) la legenda in fondo e il riquadro "Totale giorno — entrambe le strutture".
 
