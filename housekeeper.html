@@ -56,25 +56,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 :root{--hk-part:#c2410c;--hk-part-bg:#fdecdf;--hk-part-br:#f3c2a3;}
 .hk-ico{flex-shrink:0;vertical-align:middle;}
 .hk-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;}
-.hk-tile{background:var(--surface);border:1px solid var(--border-light);border-radius:10px;padding:9px 6px;text-align:center;box-shadow:var(--shadow-sm);}
-.hk-tile-n{display:flex;align-items:center;justify-content:center;gap:5px;font-size:21px;font-weight:600;line-height:1.1;}
-.hk-tile-l{font-size:10px;color:var(--text-dim);margin-top:2px;}
+.hk-tile{background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:12px 6px;text-align:center;box-shadow:var(--shadow-sm);}
+.hk-tile-n{display:flex;align-items:center;justify-content:center;gap:6px;font-size:30px;font-weight:700;line-height:1.1;}
+.hk-tile-l{font-size:12px;color:var(--text-dim);margin-top:2px;}
 .hk-scheda{background:var(--surface);border:1px solid var(--border-light);border-radius:14px;overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow-sm);}
 .hk-scheda-top{display:flex;align-items:stretch;border-bottom:1px solid var(--border-light);}
 .hk-scheda-nome{flex:1;padding:12px 14px;min-width:0;}
-.hk-scheda-nome b{font-size:15px;color:var(--text);}
+.hk-scheda-nome b{font-size:17px;color:var(--text);}
 .hk-scheda-info{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:5px;}
-.hk-info-ferm{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-dim);}
-.hk-info-carico{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-bg,#e8f0f8);border-radius:6px;padding:2px 7px;}
+.hk-info-ferm{display:inline-flex;align-items:center;gap:5px;font-size:14px;color:var(--text-dim);}
+.hk-info-carico{display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:700;color:var(--accent);background:var(--accent-bg,#e8f0f8);border-radius:6px;padding:2px 7px;}
 .hk-scheda-part{background:var(--hk-part-bg);border-left:1px solid var(--hk-part-br);padding:8px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:88px;color:var(--hk-part);}
-.hk-scheda-part-n{display:flex;align-items:center;gap:6px;font-size:30px;font-weight:700;line-height:1;}
-.hk-scheda-part-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:3px;}
+.hk-scheda-part-n{display:flex;align-items:center;gap:6px;font-size:40px;font-weight:700;line-height:1;}
+.hk-scheda-part-l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:3px;}
 .hk-scheda-body{padding:11px 14px 13px;}
-.hk-sez{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.hk-sez{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
 .hk-sez.part{color:var(--hk-part);}
 .hk-sez.ferm{color:var(--text-dim);margin-top:11px;}
-.hk-chips{display:flex;flex-wrap:wrap;gap:5px;}
-.hk-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:8px;font-weight:700;font-size:13px;}
+.hk-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.hk-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:9px;font-weight:700;font-size:17px;}
 .hk-chip.part{background:var(--hk-part-bg);border:1px solid var(--hk-part-br);color:var(--hk-part);}
 .hk-chip.ferm{background:var(--surface2);border:1px solid var(--border);color:var(--text);}
 .hk-legenda{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:10.5px;color:var(--text-dim);margin:12px 2px 4px;}
@@ -130,8 +130,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .preview-row .val{font-weight:700;}
 .preview-row-3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
 .preview-item{background:var(--surface2);border-radius:8px;padding:8px 6px;text-align:center;border:1px solid var(--border-light);}
-.preview-val{font-size:20px;font-weight:700;line-height:1;margin-bottom:2px;}
-.preview-lbl{font-size:10px;color:var(--text-dim);}
+.preview-val{font-size:26px;font-weight:700;line-height:1;margin-bottom:2px;}
+.preview-lbl{font-size:12px;color:var(--text-dim);}
 
 /* Timestamp */
 .update-ts{background:var(--surface2);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;margin-top:12px;font-size:11px;color:var(--text-dim);}
@@ -478,7 +478,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-10-06.3';
+const QM_APP_BUILD='2026-10-06.4';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -639,9 +639,9 @@ function hkCarico(rooms){
 const hkNum=n=>String(n).replace('.',',');
 function hkTiles(part,ferm){
   return`<div class="hk-tiles">
-    <div class="hk-tile"><div class="hk-tile-n" style="color:var(--hk-part);">${hkIco('partenza',16)}${part}</div><div class="hk-tile-l">partenze</div></div>
-    <div class="hk-tile"><div class="hk-tile-n">${hkIco('fermata',16)}${ferm}</div><div class="hk-tile-l">fermate</div></div>
-    <div class="hk-tile"><div class="hk-tile-n" style="color:var(--accent);">${hkIco('camere',16)}${part+ferm}</div><div class="hk-tile-l">camere</div></div>
+    <div class="hk-tile"><div class="hk-tile-n" style="color:var(--hk-part);">${hkIco('partenza',22)}${part}</div><div class="hk-tile-l">partenze</div></div>
+    <div class="hk-tile"><div class="hk-tile-n">${hkIco('fermata',22)}${ferm}</div><div class="hk-tile-l">fermate</div></div>
+    <div class="hk-tile"><div class="hk-tile-n" style="color:var(--accent);">${hkIco('camere',22)}${part+ferm}</div><div class="hk-tile-l">camere</div></div>
   </div>`;
 }
 function hkScheda(nome,rooms){
@@ -650,15 +650,15 @@ function hkScheda(nome,rooms){
   if(!nP&&!nF)return'';
   const normCam=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
   const bk=r=>_arriviBooking.has(normCam(r))?HK_BK:'';
-  const chipP=[...roomSort(cambi).map(r=>`<span class="hk-chip part">${hkNomeCamera(r)}${hkIco('cambio',13)}${bk(r)}</span>`),
-               ...roomSort(partenze).map(r=>`<span class="hk-chip part">${hkNomeCamera(r)}${hkIco('partenza',13)}${bk(r)}</span>`)].join('');
+  const chipP=[...roomSort(cambi).map(r=>`<span class="hk-chip part">${hkNomeCamera(r)}${hkIco('cambio',16)}${bk(r)}</span>`),
+               ...roomSort(partenze).map(r=>`<span class="hk-chip part">${hkNomeCamera(r)}${hkIco('partenza',16)}${bk(r)}</span>`)].join('');
   const chipF=roomSort(fermate).map(r=>`<span class="hk-chip ferm">${hkNomeCamera(r)}${bk(r)}</span>`).join('');
   return`<div class="hk-scheda">
     <div class="hk-scheda-top">
       <div class="hk-scheda-nome"><b>${nome}</b>
         <div class="hk-scheda-info"><span class="hk-info-ferm">${hkIco('fermata',13)}${nF} ${nF===1?'fermata':'fermate'}</span><span class="hk-info-carico">${hkIco('carico',13)}carico ${hkNum(hkCarico(rooms))}</span></div>
       </div>
-      <div class="hk-scheda-part"><div class="hk-scheda-part-n">${hkIco('partenza',18)}${nP}</div><div class="hk-scheda-part-l">${nP===1?'partenza':'partenze'}</div></div>
+      <div class="hk-scheda-part"><div class="hk-scheda-part-n">${hkIco('partenza',24)}${nP}</div><div class="hk-scheda-part-l">${nP===1?'partenza':'partenze'}</div></div>
     </div>
     <div class="hk-scheda-body">
       <div class="hk-sez part">${hkIco('partenza',12)}Partenze</div>
