@@ -450,7 +450,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-28.1';
+const QM_APP_BUILD='2026-10-06.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -673,17 +673,23 @@ function renderDay(){
   let totArrivi=0,totFermate=0,totPartenze=0;
   const pianoDay=pianoData&&pianoData.giorni?pianoData.giorni.find(g=>sameDate(g.data,day.data)):null;
 
+  // San Liborio (06/10/2026): resta alle cameriere interne, quindi sta con la SoulArt,
+  // fra le camere delle "Altre housekeeper". Prima stava col Boutique, che ora fa la ditta.
+  const libPiano=pianoDay?(pianoDay.liborio||{partenze:[],fermate:[],cambi:[]}):{partenze:[],fermate:[],cambi:[]};
+  const libPartenze=(libPiano.partenze||[]).length+(libPiano.cambi||[]).length,libFermate=(libPiano.fermate||[]).length;
   // SoulArt
   const soulDay=soulData?.giorni?.find(g=>sameDate(g.data,day.data));
-  html+=`<div class="struttura-title"><img src="img/logo-soulart.png" class="brand-logo" alt="SoulArt">SoulArt Hotel</div>`;
+  html+=`<div class="struttura-title"><img src="img/logo-soulart.png" class="brand-logo" alt="SoulArt">SoulArt Hotel - San Liborio</div>`;
   if(soulDay){
-    totArrivi+=soulDay.arrivi;totFermate+=soulDay.fermate;totPartenze+=soulDay.partenze;
-    html+=renderKpi(soulDay);
+    const soulAdj={fermate:soulDay.fermate+libFermate,partenze:soulDay.partenze+libPartenze,arrivi:soulDay.arrivi};
+    totArrivi+=soulDay.arrivi;totFermate+=soulAdj.fermate;totPartenze+=soulAdj.partenze;
+    html+=renderKpi(soulAdj);
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
   if(pianoDay){
     const{m,a}=splitSoulart(pianoDay.soulart);
+    ['cambi','partenze','fermate'].forEach(k=>{a[k]=[...(a[k]||[]),...(libPiano[k]||[])];});
     const mPart=(m.cambi||[]).length+(m.partenze||[]).length,mFerm=(m.fermate||[]).length;
     const aPart=(a.cambi||[]).length+(a.partenze||[]).length,aFerm=(a.fermate||[]).length;
     if(mPart+mFerm+aPart+aFerm>0){
@@ -698,23 +704,20 @@ function renderDay(){
 
   // Boutique
   const boutDay=boutData?.giorni?.find(g=>sameDate(g.data,day.data));
-  const libPiano=pianoDay?(pianoDay.liborio||{partenze:[],fermate:[],cambi:[]}):{partenze:[],fermate:[],cambi:[]};
-  const libPartenze=libPiano.partenze.length+libPiano.cambi.length,libFermate=libPiano.fermate.length;
-  html+=`<div class="struttura-title"><img src="img/logo-boutique.png" class="brand-logo" alt="Boutique">Boutique Hotel - San Liborio</div>`;
+  html+=`<div class="struttura-title"><img src="img/logo-boutique.png" class="brand-logo" alt="Boutique">Boutique Hotel</div>`;
   if(boutDay){
-    const boutAdj={fermate:boutDay.fermate+libFermate,partenze:boutDay.partenze+libPartenze,arrivi:boutDay.arrivi};
-    totArrivi+=boutDay.arrivi;totFermate+=boutAdj.fermate;totPartenze+=boutAdj.partenze;
-    html+=renderKpi(boutAdj);
+    totArrivi+=boutDay.arrivi;totFermate+=boutDay.fermate;totPartenze+=boutDay.partenze;
+    html+=renderKpi(boutDay);
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
   if(pianoDay){
-    const boutC=[...(pianoDay.boutique?.cambi||[]),...libPiano.cambi];
-    const boutP=[...(pianoDay.boutique?.partenze||[]),...libPiano.partenze];
-    const boutF=[...(pianoDay.boutique?.fermate||[]),...libPiano.fermate];
+    const boutC=[...(pianoDay.boutique?.cambi||[])];
+    const boutP=[...(pianoDay.boutique?.partenze||[])];
+    const boutF=[...(pianoDay.boutique?.fermate||[])];
     const bPart=boutC.length+boutP.length,bFerm=boutF.length;
     if(bPart+bFerm>0){
-      html+=`<div class="hk-stats-box"><div class="hk-stat-row"><span class="hk-stat-name">Boutique · San Liborio</span><span class="hk-stat-chip part">🛫 ${bPart} partenze</span><span class="hk-stat-chip ferm">🛏 ${bFerm} fermate</span></div></div>`;
+      html+=`<div class="hk-stats-box"><div class="hk-stat-row"><span class="hk-stat-name">Boutique</span><span class="hk-stat-chip part">🛫 ${bPart} partenze</span><span class="hk-stat-chip ferm">🛏 ${bFerm} fermate</span></div></div>`;
     }
     const boutMerged={partenze:boutP,fermate:boutF,cambi:boutC};
     const rdB=renderRoomDetail(boutMerged,'');
@@ -743,11 +746,15 @@ function renderDay(){
   if(nextDays.length){
     html+=`<div class="preview-title">Prossimi giorni</div>`;
     nextDays.forEach(nd=>{
-      const sd=soulData&&soulData.giorni?soulData.giorni.find(g=>g.data===nd.data):null;
+      // San Liborio con la SoulArt anche nell'anteprima (i conteggi SoulArt non lo includono).
+      const ndP=pianoData&&pianoData.giorni?pianoData.giorni.find(g=>sameDate(g.data,nd.data)):null;
+      const ndL=(ndP&&ndP.liborio)||{};
+      const sd0=soulData&&soulData.giorni?soulData.giorni.find(g=>g.data===nd.data):null;
+      const sd=sd0?{fermate:sd0.fermate+(ndL.fermate||[]).length,partenze:sd0.partenze+(ndL.partenze||[]).length+(ndL.cambi||[]).length}:null;
       const bd=boutData&&boutData.giorni?boutData.giorni.find(g=>g.data===nd.data):null;
       html+=`<div class="preview-card"><div class="preview-day">${nd.label}</div>`;
       // SoulArt
-      html+=`<div class="preview-struttura"><img src="img/logo-soulart.png" class="brand-logo" alt="SoulArt">SoulArt Hotel</div>`;
+      html+=`<div class="preview-struttura"><img src="img/logo-soulart.png" class="brand-logo" alt="SoulArt">SoulArt Hotel - San Liborio</div>`;
       if(sd){
         const t=sd.fermate+sd.partenze;
         html+=`<div class="preview-row-3">
@@ -759,7 +766,7 @@ function renderDay(){
         html+=`<div style="font-size:12px;color:var(--text-dim);padding:4px 0 6px;">Nessun dato</div>`;
       }
       // Boutique
-      html+=`<div class="preview-struttura" style="margin-top:8px;"><img src="img/logo-boutique.png" class="brand-logo" alt="Boutique">Boutique Hotel - San Liborio</div>`;
+      html+=`<div class="preview-struttura" style="margin-top:8px;"><img src="img/logo-boutique.png" class="brand-logo" alt="Boutique">Boutique Hotel</div>`;
       if(bd){
         const t=bd.fermate+bd.partenze;
         html+=`<div class="preview-row-3">

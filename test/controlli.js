@@ -2735,3 +2735,7 @@ sez('Inventario: rettifiche nell\'analisi');
   ok('nessuna rettifica se lo stock torna', _invRettifiche([{ type: 'init', qty: 4, ts: 1 }, { type: 'out', qty: 1, ts: 2 }, { type: 'init', qty: 3, ts: 3 }]).length, 0);
 })();
 ok('l\'analisi conta i non scansionati nel consumo', /\+ammPeriodo/.test(String(invRenderAnalysis)) && /\+ammTotale/.test(String(invRenderAnalysis)), true);
+
+// ── San Liborio con la SoulArt nel riquadro Housekeeping dell'Overview (06/10/2026) ──
+sez('Overview Housekeeping: San Liborio con la SoulArt');
+ok('San Liborio unito alla SoulArt, il Boutique da solo', /renderHotel\('SoulArt - San Liborio',sMerged\)/.test(String(renderPianoGiorno)) && /renderHotel\('Boutique',giorno\.boutique/.test(String(renderPianoGiorno)), true);

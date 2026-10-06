@@ -4283,9 +4283,12 @@ function renderPianoGiorno(elId,refDate,forceIdx){
     if(fermate.length)h+=`<div>${groupLbl('Fermata')}<div class="room-chip-grid">${fermate.map(r=>`<span style="background:var(--green-bg);border:1px solid var(--green);color:var(--green);font-size:11px;font-weight:600;padding:4px 10px;border-radius:7px;">${r}</span>`).join('')}</div></div>`;
     h+=`</div>`;return h;
   }
+  // San Liborio resta alle cameriere interne (06/10/2026): sta con la SoulArt, come
+  // nell'app Housekeeping; il Boutique (200) lo fa la ditta esterna.
   const lib=giorno.liborio||{partenze:[],fermate:[],cambi:[]};
-  const bMerged={partenze:[...(giorno.boutique?.partenze||[]),...lib.partenze],fermate:[...(giorno.boutique?.fermate||[]),...lib.fermate],cambi:[...(giorno.boutique?.cambi||[]),...lib.cambi]};
-  const sHtml=renderHotel('SoulArt',giorno.soulart||{}),bHtml=renderHotel('Boutique - San Liborio',bMerged);
+  const sa=giorno.soulart||{};
+  const sMerged={partenze:[...(sa.partenze||[]),...(lib.partenze||[])],fermate:[...(sa.fermate||[]),...(lib.fermate||[])],cambi:[...(sa.cambi||[]),...(lib.cambi||[])]};
+  const sHtml=renderHotel('SoulArt - San Liborio',sMerged),bHtml=renderHotel('Boutique',giorno.boutique||{});
   if(!sHtml&&!bHtml){el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Nessuna camera nel piano per questo giorno</div>';return;}
   const cols=sHtml&&bHtml
     ?`<div class="piano-cols">

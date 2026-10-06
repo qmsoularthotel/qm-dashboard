@@ -279,3 +279,10 @@ Bilanciamento Camere non sono cliccabili (lì non c'è la griglia): il 6° param
   aperta (registra comunque le partenze del mese) e `setView('room-division')` la ridisegna
   all'apertura.
 
+### San Liborio con la SoulArt nell'app Housekeeping e nell'Overview (06/10/2026)
+
+Nell'app `housekeeper.html` San Liborio sta sotto "SoulArt Hotel - San Liborio": le sue camere vanno fra le
+"Altre housekeeper" e nei conteggi SoulArt (anche nell'anteprima dei giorni successivi); il Boutique resta da
+solo ("Boutique Hotel", ditta esterna). Stessa cosa nel riquadro Housekeeping dell'Overview di Compass
+(`renderPianoGiorno`: "SoulArt - San Liborio" e "Boutique").
+
