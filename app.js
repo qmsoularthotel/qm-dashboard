@@ -32,7 +32,7 @@ const BK_ICON=`<svg width="13" height="13" viewBox="0 0 24 24" xmlns="http://www
   }
 })();
 // §§ COSTANTI & CONFIG (DEPTS, WEEK fallback, IS_REST)
-const DEPTS={fo:{label:'Ricevimento',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Iannario R.','Extra Angelica','Extra Benedetta','Raucci A.','Ruggiero B.']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Ditta Antonella','Anushka','Ditta Giuditta','Ditta Nunzia','Roberta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
+const DEPTS={fo:{label:'Ricevimento',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Iannario R.','Extra Angelica','Extra Benedetta','Raucci A.','Ruggiero B.','Abdalla']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Ditta Antonella','Anushka','Ditta Giuditta','Ditta Nunzia','Roberta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.','Extra BKF']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
 let weekData=null,activeDay=0;
 const IS_REST=v=>{
@@ -745,8 +745,14 @@ function _turnoEscluso(nome){
 function _turnoNomeHK(nome){
   const n=String(nome||'').trim();
   if(!/^extra\b/i.test(n))return n;
-  const nonHK=[...DEPTS.fo.members,...DEPTS.bkf.members,...DEPTS.mt.members].map(x=>x.toLowerCase());
-  if(nonHK.includes(n.toLowerCase()))return n;
+  // Un nome della reception, colazione o manutenzione si riporta alla grafia dell'elenco.
+  const nonHK=[...DEPTS.fo.members,...DEPTS.bkf.members,...DEPTS.mt.members];
+  const canonico=nonHK.find(x=>x.toLowerCase()===n.toLowerCase());
+  if(canonico)return canonico;
+  // Non tutti gli "Extra" sono Housekeeping (06/10/2026): "Extra ABD" è Abdalla, della
+  // reception; "Extra BKF" resta "Extra BKF", della colazione (anche scritto "EXTRA BKF").
+  if(/^extra\s+abd/i.test(n))return'Abdalla';
+  if(/^extra\s+bkf\b/i.test(n))return'Extra BKF';
   if(/^extra\s+rob/i.test(n))return'Roberta';
   if(/^extra\s+anu/i.test(n))return'Anushka';
   return n.replace(/^extra\b/i,'Ditta');

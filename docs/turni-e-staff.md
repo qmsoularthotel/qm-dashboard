@@ -265,3 +265,6 @@ Angelica, Extra Benedetta) restano come sono. In `DEPTS.hk` i nomi sono aggiorna
 lettura (l'AI scivola di una riga quando due righe vicine hanno il trattino: Roberta il 2/10). Torna alla
 ditta e la persona va a "-". Anche il prompt ora chiede di non spostare i valori fra le righe.
 
+**Non tutti gli Extra sono Housekeeping** (06/10/2026): "Extra ABD" → **Abdalla** (Ricevimento, in `DEPTS.fo`);
+"Extra BKF" resta **Extra BKF** (Breakfast, in `DEPTS.bkf`), mai "Ditta BKF".
+

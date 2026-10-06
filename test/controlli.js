@@ -2710,3 +2710,11 @@ sez('Turno: le camere 200 sono solo della ditta');
   ok('un turno vero di Roberta non si tocca', g[2].shifts.Roberta, 'SOUL');
   ok('gli altri non si toccano', g[0].shifts['Matarese A.'], 'SOUL');
 })();
+
+// ── Turno: Extra ABD = Abdalla (reception), Extra BKF resta Extra BKF (colazione) — 06/10/2026 ──
+sez('Turno: Abdalla e Extra BKF');
+ok('Extra ABD diventa Abdalla', _turnoNomeHK('EXTRA ABD') + ' / ' + _turnoNomeHK('Extra Abdalla'), 'Abdalla / Abdalla');
+ok('Abdalla e\' della reception', DEPTS.fo.members.indexOf('Abdalla') >= 0, true);
+ok('Extra BKF resta Extra BKF, non Ditta', _turnoNomeHK('EXTRA BKF') + ' / ' + _turnoNomeHK('Extra BKF'), 'Extra BKF / Extra BKF');
+ok('Extra BKF e\' della colazione', DEPTS.bkf.members.indexOf('Extra BKF') >= 0, true);
+ok('le altre extra restano della ditta', _turnoNomeHK('Extra Maria'), 'Ditta Maria');
