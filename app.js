@@ -10083,6 +10083,25 @@ function invQuickRestock(bc){
   // Apre inventory.html in nuova tab con il barcode pre-selezionato (via hash)
   window.open('inventory.html#restock='+encodeURIComponent(bc),'_blank');
 }
+// Le rettifiche di stock (06/10/2026). Una rettifica è un "nuovo punto di partenza" (type
+// 'init'): prima l'analisi la ignorava, quindi il prodotto sparito senza scansione non
+// risultava consumato da nessuna parte — media più bassa del vero, autonomia più lunga, e
+// l'avviso "da riordinare" arrivava tardi. Qui ogni rettifica diventa la sua differenza
+// rispetto allo stock calcolato in quel momento: in meno = consumo non scansionato, in più
+// = carico non registrato. Il primo 'init' di un prodotto è l'inventario iniziale: non conta.
+function _invRettifiche(bm){
+  const out=[];let qty=0,visto=false;
+  bm.forEach(m=>{
+    const q=+m.qty||0;
+    if(m.type==='init'){
+      if(visto){const d=Math.round((q-qty)*1000)/1000;if(d)out.push({ts:m.ts,delta:d});}
+      qty=q;
+    }else if(m.type==='in')qty+=q;
+    else if(m.type==='out')qty-=q;
+    visto=true;
+  });
+  return out;
+}
 function invRenderAnalysis(catalog,moves){
   const el=document.getElementById('inv-analysis-view');
   if(!el)return;
@@ -10093,8 +10112,11 @@ function invRenderAnalysis(catalog,moves){
     const bm=moves.filter(m=>m.barcode===bc);
     const periodOuts=bm.filter(m=>m.type==='out'&&m.ts>=cutoff);
     const periodIns=bm.filter(m=>m.type==='in'&&m.ts>=cutoff);
-    const consumo=periodOuts.reduce((s,m)=>s+m.qty,0);
-    const rifornimento=periodIns.reduce((s,m)=>s+m.qty,0);
+    const rett=_invRettifiche(bm);
+    const ammanco=r=>r.delta<0?-r.delta:0,eccesso=r=>r.delta>0?r.delta:0;
+    const ammPeriodo=rett.filter(r=>r.ts>=cutoff).reduce((s,r)=>s+ammanco(r),0);
+    const consumo=periodOuts.reduce((s,m)=>s+m.qty,0)+ammPeriodo;
+    const rifornimento=periodIns.reduce((s,m)=>s+m.qty,0)+rett.filter(r=>r.ts>=cutoff).reduce((s,r)=>s+eccesso(r),0);
     const days=_invPeriod>0?_invPeriod:(bm.length?Math.max(1,Math.ceil((now-Math.min(...bm.map(m=>m.ts)))/86400000)):1);
     // Consumo settimanale: basato su scarichi (out). Il minimo 14gg per smorzare picchi
     // da pochi dati vale SOLO per "Tutto" (days ricavato dallo storico reale, che per un
@@ -10111,7 +10133,8 @@ function invRenderAnalysis(catalog,moves){
     // seconda di cosa hai cliccato, altrimenti non è più una media ma un dato del periodo.
     // Stesso smorzamento minimo 14gg di "Tutto" (un prodotto con 2 soli giorni di storico
     // darebbe una media falsata).
-    const allOuts=bm.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0);
+    const ammTotale=rett.reduce((s,r)=>s+ammanco(r),0);
+    const allOuts=bm.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0)+ammTotale;
     const storicoDays=bm.length?Math.max(1,Math.ceil((now-Math.min(...bm.map(m=>m.ts)))/86400000)):1;
     const mediaDays=Math.max(14,storicoDays);
     const mediaSett=allOuts>0?Math.round((allOuts/mediaDays)*7*10)/10:0;
@@ -10120,10 +10143,12 @@ function invRenderAnalysis(catalog,moves){
     // delle medie storiche, per vedere se il ritmo recente si scosta da quello abituale.
     // Fissi, indipendenti dal filtro periodo sopra: "ultimi 7gg" è sempre gli ultimi 7gg
     // da adesso, non il consumo del periodo selezionato con quei bottoni.
-    const cons7gg=bm.filter(m=>m.type==='out'&&m.ts>=now-7*86400000).reduce((s,m)=>s+m.qty,0);
+    const cons7gg=bm.filter(m=>m.type==='out'&&m.ts>=now-7*86400000).reduce((s,m)=>s+m.qty,0)
+      +rett.filter(r=>r.ts>=now-7*86400000).reduce((s,r)=>s+ammanco(r),0);
     const meseStart=new Date();meseStart.setDate(1);meseStart.setHours(0,0,0,0);
-    const consMeseCorr=bm.filter(m=>m.type==='out'&&m.ts>=meseStart.getTime()).reduce((s,m)=>s+m.qty,0);
-    return{bc,name:p.name,unit:p.unit||'',qty:stock[bc]??0,consumo,rifornimento,consumoSett,mediaSett,mediaMese,cons7gg,consMeseCorr,autonomia,hasMoves:bm.length>0};
+    const consMeseCorr=bm.filter(m=>m.type==='out'&&m.ts>=meseStart.getTime()).reduce((s,m)=>s+m.qty,0)
+      +rett.filter(r=>r.ts>=meseStart.getTime()).reduce((s,r)=>s+ammanco(r),0);
+    return{bc,name:p.name,unit:p.unit||'',qty:stock[bc]??0,consumo,rifornimento,ammPeriodo,ammTotale,consumoSett,mediaSett,mediaMese,cons7gg,consMeseCorr,autonomia,hasMoves:bm.length>0};
   }).filter(it=>it.hasMoves);
 
   if(!items.length){
@@ -10133,6 +10158,7 @@ function invRenderAnalysis(catalog,moves){
 
   const totConsumo=items.reduce((s,i)=>s+i.consumo,0);
   const totRiforn=items.reduce((s,i)=>s+i.rifornimento,0);
+  const totAmm=items.reduce((s,i)=>s+i.ammPeriodo,0);
   const critici=items.filter(i=>i.autonomia!==null&&i.autonomia>=0&&i.autonomia<=7);
   const preavviso=items.filter(i=>i.autonomia!==null&&i.autonomia>7&&i.autonomia<=14);
 
@@ -10146,6 +10172,7 @@ function invRenderAnalysis(catalog,moves){
     <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:9px;padding:10px 13px;">
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">Totale scaricato</div>
       <div style="font-size:20px;font-weight:700;">${Math.round(totConsumo*10)/10}</div>
+      ${totAmm>0?`<div style="font-size:var(--fs-xxs);color:var(--amber);font-weight:600;" title="Differenze trovate con le rettifiche di stock: prodotto uscito senza essere scansionato">di cui ${Math.round(totAmm*10)/10} non scansionati</div>`:''}
     </div>
     <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:9px;padding:10px 13px;">
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">Totale caricato</div>
@@ -10226,6 +10253,7 @@ function invRenderAnalysis(catalog,moves){
       <td colspan="6" style="padding:0 10px 10px;font-size:var(--fs-xs);">
         ${detCell('Settimana',it.mediaSett,it.cons7gg)}
         ${detCell('Mese',it.mediaMese,it.consMeseCorr)}
+        ${it.ammTotale>0?`<div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0;"><span style="color:var(--amber);">Non scansionato (dalle rettifiche)</span><b style="color:var(--amber);">${Math.round(it.ammTotale*10)/10}${it.unit?' '+_esc(it.unit):''}</b></div>`:''}
       </td>
     </tr>`;
   }).join('');

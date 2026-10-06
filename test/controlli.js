@@ -2718,3 +2718,20 @@ ok('Abdalla e\' della reception', DEPTS.fo.members.indexOf('Abdalla') >= 0, true
 ok('Extra BKF resta Extra BKF, non Ditta', _turnoNomeHK('EXTRA BKF') + ' / ' + _turnoNomeHK('Extra BKF'), 'Extra BKF / Extra BKF');
 ok('Extra BKF e\' della colazione', DEPTS.bkf.members.indexOf('Extra BKF') >= 0, true);
 ok('le altre extra restano della ditta', _turnoNomeHK('Extra Maria'), 'Ditta Maria');
+
+// ── Inventario: le rettifiche di stock entrano nell'analisi (06/10/2026) ──
+sez('Inventario: rettifiche nell\'analisi');
+(function () {
+  var bm = [
+    { type: 'init', qty: 10, ts: 1 },   // inventario iniziale: non conta
+    { type: 'out', qty: 2, ts: 2 },     // 8
+    { type: 'init', qty: 5, ts: 3 },    // rettifica: 3 spariti senza scansione
+    { type: 'in', qty: 4, ts: 4 },      // 9
+    { type: 'init', qty: 11, ts: 5 }];  // rettifica: 2 caricati senza registrarli
+  var r = _invRettifiche(bm);
+  ok('l\'inventario iniziale non e\' una rettifica', r.length, 2);
+  ok('rettifica in meno = consumo non scansionato', r[0].delta, -3);
+  ok('rettifica in piu\' = carico non registrato', r[1].delta, 2);
+  ok('nessuna rettifica se lo stock torna', _invRettifiche([{ type: 'init', qty: 4, ts: 1 }, { type: 'out', qty: 1, ts: 2 }, { type: 'init', qty: 3, ts: 3 }]).length, 0);
+})();
+ok('l\'analisi conta i non scansionati nel consumo', /\+ammPeriodo/.test(String(invRenderAnalysis)) && /\+ammTotale/.test(String(invRenderAnalysis)), true);

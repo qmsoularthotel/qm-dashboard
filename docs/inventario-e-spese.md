@@ -221,3 +221,14 @@ al mese per struttura, SoulArt e Boutique separate. Nel caricamento si sceglie d
 fornitore, e l'hotel ora comprende anche **Boutique** (prima solo SoulArt e Art Resort). Il nome
 sul documento "LANA.POLI SRL" si riconosce da solo (`ddtNormFornGeneric` ignora punti e spazi).
 Le quantità della fattura si incrociano in Consumo Biancheria → Totali del mese.
+
+## Analisi: le rettifiche di stock contano (06/10/2026)
+
+Una rettifica dalla matita (`invEditQty`, move `type:'init'`) era ignorata dall'analisi: il prodotto uscito
+senza scansione non risultava consumato (media più bassa, autonomia più lunga, "da riordinare" tardi).
+Ora `_invRettifiche` calcola per ogni rettifica la differenza rispetto allo stock di quel momento: in meno =
+**consumo non scansionato** (entra in consumo del periodo, medie, ultimi 7gg, mese, quindi anche in autonomia),
+in più = carico non registrato (entra in "Totale caricato"). Il primo `init` (inventario iniziale) non conta.
+Si vede in "Totale scaricato · di cui N non scansionati" e nel dettaglio di ogni prodotto. L'app Inventario
+del telefono non ha l'analisi: non cambia.
+
