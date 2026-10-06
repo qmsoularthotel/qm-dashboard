@@ -304,4 +304,6 @@ Numeri ingranditi (06/10/2026): tessere 30px, partenze della scheda 30px (40 pro
 (`hkSettimana`), Altre con San Liborio. In Compass "Totale settimana" e il grafico del carico usano ora
 `_hkSplitConLiborio` (San Liborio fra le Altre), così app e Compass danno gli stessi numeri; il motore dei
 suggerimenti resta sulle sole camere Art.
+Testata della scheda (06/10/2026): "INDICE DI CARICO OGGI" con la pillola azzurra (bilancia + numero), poi "CARICO
+SETTIMANA" con partenze · fermate · totale della settimana. Le fermate del giorno non sono più nella testata.
 
