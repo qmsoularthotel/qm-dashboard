@@ -67,8 +67,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .hk-info-ferm{display:inline-flex;align-items:center;gap:5px;font-size:14px;color:var(--text-dim);}
 .hk-info-carico{display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:700;color:var(--accent);background:var(--accent-bg,#e8f0f8);border-radius:6px;padding:2px 7px;}
 .hk-scheda-part{background:var(--hk-part-bg);border-left:1px solid var(--hk-part-br);padding:8px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:88px;color:var(--hk-part);}
-.hk-scheda-part-n{display:flex;align-items:center;gap:6px;font-size:40px;font-weight:700;line-height:1;}
-.hk-scheda-part-l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:3px;}
+.hk-scheda-part-n{display:flex;align-items:center;gap:6px;font-size:30px;font-weight:700;line-height:1;}
+.hk-scheda-part-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:3px;}
 .hk-scheda-body{padding:11px 14px 13px;}
 .hk-sez{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
 .hk-sez.part{color:var(--hk-part);}
@@ -478,7 +478,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-10-06.4';
+const QM_APP_BUILD='2026-10-06.5';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -658,7 +658,7 @@ function hkScheda(nome,rooms){
       <div class="hk-scheda-nome"><b>${nome}</b>
         <div class="hk-scheda-info"><span class="hk-info-ferm">${hkIco('fermata',13)}${nF} ${nF===1?'fermata':'fermate'}</span><span class="hk-info-carico">${hkIco('carico',13)}carico ${hkNum(hkCarico(rooms))}</span></div>
       </div>
-      <div class="hk-scheda-part"><div class="hk-scheda-part-n">${hkIco('partenza',24)}${nP}</div><div class="hk-scheda-part-l">${nP===1?'partenza':'partenze'}</div></div>
+      <div class="hk-scheda-part"><div class="hk-scheda-part-n">${hkIco('partenza',18)}${nP}</div><div class="hk-scheda-part-l">${nP===1?'partenza':'partenze'}</div></div>
     </div>
     <div class="hk-scheda-body">
       <div class="hk-sez part">${hkIco('partenza',12)}Partenze</div>

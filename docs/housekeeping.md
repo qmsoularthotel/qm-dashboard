@@ -298,4 +298,4 @@ Icone (`hkIco`) al posto delle emoji, "B" di Booking come in Compass (`HK_BK`), 
 e scartato dal QM.
 Tolti su richiesta del QM (06/10/2026) la legenda in fondo e il riquadro "Totale giorno — entrambe le strutture".
 
-Numeri ingranditi (06/10/2026): tessere 30px, partenze della scheda 40px, camere 17px, anteprime 26px.
+Numeri ingranditi (06/10/2026): tessere 30px, partenze della scheda 30px (40 provato e scartato), camere 17px, anteprime 26px.
