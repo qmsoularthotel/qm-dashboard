@@ -51,6 +51,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 /* Content */
 .content{padding:14px;}
 
+
+/* Schede per cameriera (06/10/2026) — idea A approvata dal QM */
+:root{--hk-part:#c2410c;--hk-part-bg:#fdecdf;--hk-part-br:#f3c2a3;}
+.hk-ico{flex-shrink:0;vertical-align:middle;}
+.hk-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;}
+.hk-tile{background:var(--surface);border:1px solid var(--border-light);border-radius:10px;padding:9px 6px;text-align:center;box-shadow:var(--shadow-sm);}
+.hk-tile-n{display:flex;align-items:center;justify-content:center;gap:5px;font-size:21px;font-weight:600;line-height:1.1;}
+.hk-tile-l{font-size:10px;color:var(--text-dim);margin-top:2px;}
+.hk-scheda{background:var(--surface);border:1px solid var(--border-light);border-radius:14px;overflow:hidden;margin-bottom:12px;box-shadow:var(--shadow-sm);}
+.hk-scheda-top{display:flex;align-items:stretch;border-bottom:1px solid var(--border-light);}
+.hk-scheda-nome{flex:1;padding:12px 14px;min-width:0;}
+.hk-scheda-nome b{font-size:15px;color:var(--text);}
+.hk-scheda-info{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:5px;}
+.hk-info-ferm{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-dim);}
+.hk-info-carico{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-bg,#e8f0f8);border-radius:6px;padding:2px 7px;}
+.hk-scheda-part{background:var(--hk-part-bg);border-left:1px solid var(--hk-part-br);padding:8px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:88px;color:var(--hk-part);}
+.hk-scheda-part-n{display:flex;align-items:center;gap:6px;font-size:30px;font-weight:700;line-height:1;}
+.hk-scheda-part-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:3px;}
+.hk-scheda-body{padding:11px 14px 13px;}
+.hk-sez{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.hk-sez.part{color:var(--hk-part);}
+.hk-sez.ferm{color:var(--text-dim);margin-top:11px;}
+.hk-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.hk-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:8px;font-weight:700;font-size:13px;}
+.hk-chip.part{background:var(--hk-part-bg);border:1px solid var(--hk-part-br);color:var(--hk-part);}
+.hk-chip.ferm{background:var(--surface2);border:1px solid var(--border);color:var(--text);}
+.hk-legenda{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:10.5px;color:var(--text-dim);margin:12px 2px 4px;}
+.hk-legenda span{display:inline-flex;align-items:center;gap:4px;}
 /* Today badge */
 .today-badge{background:#1c3a5e;color:#fff;font-size:10px;font-weight:700;border-radius:6px;padding:3px 9px;display:inline-block;margin-bottom:10px;letter-spacing:.06em;box-shadow:var(--shadow-sm);border-left:3px solid #c9952f;}
 
@@ -450,7 +478,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-10-06.1';
+const QM_APP_BUILD='2026-10-06.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -585,17 +613,62 @@ function splitSoulart(rooms){
   return{m,a};
 }
 function roomSort(arr){return[...arr].sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''))||0,nb=parseInt(b.replace(/\D/g,''))||0;return na-nb;});}
-function renderRoomDetail(rooms,label){
-  if(!rooms)return'';
+// ── Schede per cameriera (06/10/2026) ────────────────────────────────────
+// Icone a linea come in Compass, al posto delle emoji. Il "carico" è quello di Compass:
+// partenza 2, fermata 1; le camere grandi (Art 1, 2, 3, 8, 9, 13) 2,5 e 1,5.
+const HK_GRANDI=new Set(['Art 1','Art 2','Art 3','Art 8','Art 9','Art 13']);
+const _HK_I={
+  partenza:'<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4"/><path d="M6 12h10"/>',
+  cambio:'<path d="M7 7h11l-3-3"/><path d="M17 17H6l3 3"/>',
+  fermata:'<path d="M3 18V8"/><path d="M3 13h18v5"/><path d="M21 13v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="10.5" r="1.6"/>',
+  camere:'<path d="M3 21V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v16"/><path d="M9 21v-6h6v6"/>',
+  carico:'<path d="M12 4v16"/><path d="M7 20h10"/><path d="M4 8h16"/><path d="M1.5 14 4 8l2.5 6a3.5 3.5 0 0 1-5 0Z"/><path d="M17.5 14 20 8l2.5 6a3.5 3.5 0 0 1-5 0Z"/>',
+  oggi:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>'
+};
+function hkIco(n,z,c){return`<svg class="hk-ico" viewBox="0 0 24 24" width="${z||14}" height="${z||14}" fill="none" stroke="${c||'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${_HK_I[n]||''}</svg>`;}
+const HK_BK=`<svg class="hk-ico" width="14" height="14" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#003580"/><text x="6" y="18" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="white">B</text></svg>`;
+// Il nome come si legge: le camere SoulArt sono già "Art N"; San Liborio per esteso.
+function hkNomeCamera(r){return /^lib/i.test(String(r))?'San Liborio':String(r);}
+function hkCarico(rooms){
+  const w=(r,part)=>HK_GRANDI.has(r)?(part?2.5:1.5):(part?2:1);
+  let t=0;
+  [...(rooms.cambi||[]),...(rooms.partenze||[])].forEach(r=>{t+=w(r,true);});
+  (rooms.fermate||[]).forEach(r=>{t+=w(r,false);});
+  return t;
+}
+const hkNum=n=>String(n).replace('.',',');
+function hkTiles(part,ferm){
+  return`<div class="hk-tiles">
+    <div class="hk-tile"><div class="hk-tile-n" style="color:var(--hk-part);">${hkIco('partenza',16)}${part}</div><div class="hk-tile-l">partenze</div></div>
+    <div class="hk-tile"><div class="hk-tile-n">${hkIco('fermata',16)}${ferm}</div><div class="hk-tile-l">fermate</div></div>
+    <div class="hk-tile"><div class="hk-tile-n" style="color:var(--accent);">${hkIco('camere',16)}${part+ferm}</div><div class="hk-tile-l">camere</div></div>
+  </div>`;
+}
+function hkScheda(nome,rooms){
   const cambi=rooms.cambi||[],partenze=rooms.partenze||[],fermate=rooms.fermate||[];
-  const tuttePartenze=[...cambi,...partenze];
-  const hasData=tuttePartenze.length||fermate.length;
-  if(!hasData)return'';
-  let h=label?`<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px;padding-top:6px;border-top:1px solid var(--border);">🧹 ${label}</div>`:'';
+  const nP=cambi.length+partenze.length,nF=fermate.length;
+  if(!nP&&!nF)return'';
   const normCam=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
-  if(tuttePartenze.length)h+=`<div class="room-section"><div class="room-section-title partenza" style="display:flex;align-items:center;gap:6px;">🛫 Partenze${cambi.length?`<span style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:none;letter-spacing:0;"><span style="font-weight:800;color:var(--red);">⇄</span> = partenza con arrivo</span>`:''}</div><div class="room-chips">${roomSort(tuttePartenze).map(r=>{const isCambio=cambi.includes(r);const isBk=_arriviBooking.has(normCam(r));return`<span class="chip ${isCambio?'doppio':'partenza'}">${r}${isCambio?` <span style="font-weight:800;font-size:1.1em;color:var(--red);">⇄</span>`:''}${isBk?' <span style="font-size:9px;background:#2563EB;color:#fff;border-radius:4px;padding:1px 4px;font-weight:700;">B</span>':''}</span>`;}).join('')}</div></div>`;
-  if(fermate.length)h+=`<div class="room-section"><div class="room-section-title fermata">🛏 Fermate</div><div class="room-chips">${roomSort(fermate).map(r=>{const isBk=_arriviBooking.has(normCam(r));return`<span class="chip fermata">${r}${isBk?' <span style="font-size:9px;background:#2563EB;color:#fff;border-radius:4px;padding:1px 4px;font-weight:700;">B</span>':''}</span>`;}).join('')}</div></div>`;
-  return h;
+  const bk=r=>_arriviBooking.has(normCam(r))?HK_BK:'';
+  const chipP=[...roomSort(cambi).map(r=>`<span class="hk-chip part">${hkNomeCamera(r)}${hkIco('cambio',13)}${bk(r)}</span>`),
+               ...roomSort(partenze).map(r=>`<span class="hk-chip part">${hkNomeCamera(r)}${hkIco('partenza',13)}${bk(r)}</span>`)].join('');
+  const chipF=roomSort(fermate).map(r=>`<span class="hk-chip ferm">${hkNomeCamera(r)}${bk(r)}</span>`).join('');
+  return`<div class="hk-scheda">
+    <div class="hk-scheda-top">
+      <div class="hk-scheda-nome"><b>${nome}</b>
+        <div class="hk-scheda-info"><span class="hk-info-ferm">${hkIco('fermata',13)}${nF} ${nF===1?'fermata':'fermate'}</span><span class="hk-info-carico">${hkIco('carico',13)}carico ${hkNum(hkCarico(rooms))}</span></div>
+      </div>
+      <div class="hk-scheda-part"><div class="hk-scheda-part-n">${hkIco('partenza',18)}${nP}</div><div class="hk-scheda-part-l">${nP===1?'partenza':'partenze'}</div></div>
+    </div>
+    <div class="hk-scheda-body">
+      <div class="hk-sez part">${hkIco('partenza',12)}Partenze</div>
+      <div class="hk-chips">${chipP||'<span style="font-size:12px;color:var(--text-dim);">nessuna</span>'}</div>
+      ${chipF?`<div class="hk-sez ferm">${hkIco('fermata',12)}Fermate</div><div class="hk-chips">${chipF}</div>`:''}
+    </div>
+  </div>`;
+}
+function hkLegenda(){
+  return`<div class="hk-legenda"><span>${hkIco('partenza',12,'var(--hk-part)')}partenza</span><span>${hkIco('cambio',12,'var(--hk-part)')}partenza con arrivo</span><span>${hkIco('fermata',12)}fermata</span><span>${HK_BK}Booking</span><span>${hkIco('carico',12,'var(--accent)')}carico: partenza 2, fermata 1 (Art 1-2-3-8-9-13: 2,5 e 1,5)</span></div>`;
 }
 
 function parseDate(str){
@@ -668,11 +741,10 @@ function renderDay(){
     tsEl.textContent=t?'Aggiornato '+t:'';
   }
   let html='';
-  if(isToday)html+=`<div class="today-badge">📅 OGGI</div>`;
+  if(isToday)html+=`<div class="today-badge" style="display:inline-flex;align-items:center;gap:5px;">${hkIco('oggi',12,'#fff')}OGGI</div>`;
 
   let totArrivi=0,totFermate=0,totPartenze=0;
   const pianoDay=pianoData&&pianoData.giorni?pianoData.giorni.find(g=>sameDate(g.data,day.data)):null;
-
   // San Liborio (06/10/2026): resta alle cameriere interne, quindi sta con la SoulArt,
   // fra le camere delle "Altre housekeeper". Prima stava col Boutique, che ora fa la ditta.
   const libPiano=pianoDay?(pianoDay.liborio||{partenze:[],fermate:[],cambi:[]}):{partenze:[],fermate:[],cambi:[]};
@@ -681,48 +753,31 @@ function renderDay(){
   const soulDay=soulData?.giorni?.find(g=>sameDate(g.data,day.data));
   html+=`<div class="struttura-title"><img src="img/logo-soulart.png" class="brand-logo" alt="SoulArt">SoulArt Hotel - San Liborio</div>`;
   if(soulDay){
-    const soulAdj={fermate:soulDay.fermate+libFermate,partenze:soulDay.partenze+libPartenze,arrivi:soulDay.arrivi};
-    totArrivi+=soulDay.arrivi;totFermate+=soulAdj.fermate;totPartenze+=soulAdj.partenze;
-    html+=renderKpi(soulAdj);
+    const sP=soulDay.partenze+libPartenze,sF=soulDay.fermate+libFermate;
+    totArrivi+=soulDay.arrivi;totFermate+=sF;totPartenze+=sP;
+    html+=hkTiles(sP,sF);
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
   if(pianoDay){
     const{m,a}=splitSoulart(pianoDay.soulart);
     ['cambi','partenze','fermate'].forEach(k=>{a[k]=[...(a[k]||[]),...(libPiano[k]||[])];});
-    const mPart=(m.cambi||[]).length+(m.partenze||[]).length,mFerm=(m.fermate||[]).length;
-    const aPart=(a.cambi||[]).length+(a.partenze||[]).length,aFerm=(a.fermate||[]).length;
-    if(mPart+mFerm+aPart+aFerm>0){
-      html+=`<div class="hk-stats-box">`;
-      if(mPart+mFerm>0)html+=`<div class="hk-stat-row"><span class="hk-stat-name">Matarese</span><span class="hk-stat-chip part">🛫 ${mPart} partenze</span><span class="hk-stat-chip ferm">🛏 ${mFerm} fermate</span></div>`;
-      if(aPart+aFerm>0)html+=`<div class="hk-stat-row"><span class="hk-stat-name">Altre housekeeper</span><span class="hk-stat-chip part">🛫 ${aPart} partenze</span><span class="hk-stat-chip ferm">🛏 ${aFerm} fermate</span></div>`;
-      html+=`</div>`;
-    }
-    const rd=renderRoomDetail(m,'Matarese')+renderRoomDetail(a,'Altre housekeeper');
-    if(rd)html+=`<div class="room-detail-card">${rd}</div>`;
+    html+=hkScheda('Matarese',m)+hkScheda('Altre housekeeper',a);
   }
 
-  // Boutique
+  // Boutique: camere 200, della ditta esterna
   const boutDay=boutData?.giorni?.find(g=>sameDate(g.data,day.data));
   html+=`<div class="struttura-title"><img src="img/logo-boutique.png" class="brand-logo" alt="Boutique">Boutique Hotel</div>`;
   if(boutDay){
     totArrivi+=boutDay.arrivi;totFermate+=boutDay.fermate;totPartenze+=boutDay.partenze;
-    html+=renderKpi(boutDay);
+    html+=hkTiles(boutDay.partenze,boutDay.fermate);
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
   if(pianoDay){
-    const boutC=[...(pianoDay.boutique?.cambi||[])];
-    const boutP=[...(pianoDay.boutique?.partenze||[])];
-    const boutF=[...(pianoDay.boutique?.fermate||[])];
-    const bPart=boutC.length+boutP.length,bFerm=boutF.length;
-    if(bPart+bFerm>0){
-      html+=`<div class="hk-stats-box"><div class="hk-stat-row"><span class="hk-stat-name">Boutique</span><span class="hk-stat-chip part">🛫 ${bPart} partenze</span><span class="hk-stat-chip ferm">🛏 ${bFerm} fermate</span></div></div>`;
-    }
-    const boutMerged={partenze:boutP,fermate:boutF,cambi:boutC};
-    const rdB=renderRoomDetail(boutMerged,'');
-    if(rdB)html+=`<div class="room-detail-card">${rdB}</div>`;
+    html+=hkScheda('Ditta esterna',{cambi:[...(pianoDay.boutique?.cambi||[])],partenze:[...(pianoDay.boutique?.partenze||[])],fermate:[...(pianoDay.boutique?.fermate||[])]});
   }
+  if(pianoDay)html+=hkLegenda();
 
   // Totale giorno se entrambe le strutture hanno dati
   if(soulDay&&boutDay){
@@ -731,11 +786,11 @@ function renderDay(){
       <div class="day-total-grid" style="grid-template-columns:1fr 1fr;">
         <div class="day-total-item">
           <div class="day-total-val" style="color:var(--accent);">${totFermate}</div>
-          <div class="day-total-lbl">🛏 Fermate</div>
+          <div class="day-total-lbl" style="display:flex;align-items:center;justify-content:center;gap:4px;">${hkIco('fermata',12)}Fermate</div>
         </div>
         <div class="day-total-item">
           <div class="day-total-val" style="color:var(--accent);">${totPartenze}</div>
-          <div class="day-total-lbl">🛫 Partenze</div>
+          <div class="day-total-lbl" style="display:flex;align-items:center;justify-content:center;gap:4px;">${hkIco('partenza',12,'var(--hk-part)')}Partenze</div>
         </div>
       </div>
     </div>`;
@@ -758,8 +813,8 @@ function renderDay(){
       if(sd){
         const t=sd.fermate+sd.partenze;
         html+=`<div class="preview-row-3">
-          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${sd.fermate}</div><div class="preview-lbl">🛏 Fermate</div></div>
-          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${sd.partenze}</div><div class="preview-lbl">🛫 Partenze</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${sd.fermate}</div><div class="preview-lbl" style="display:flex;align-items:center;justify-content:center;gap:4px;">${hkIco('fermata',11)}Fermate</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${sd.partenze}</div><div class="preview-lbl" style="display:flex;align-items:center;justify-content:center;gap:4px;">${hkIco('partenza',11,'var(--hk-part)')}Partenze</div></div>
           <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${t}</div><div class="preview-lbl">Totale</div></div>
         </div>`;
       } else {
@@ -770,8 +825,8 @@ function renderDay(){
       if(bd){
         const t=bd.fermate+bd.partenze;
         html+=`<div class="preview-row-3">
-          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${bd.fermate}</div><div class="preview-lbl">🛏 Fermate</div></div>
-          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${bd.partenze}</div><div class="preview-lbl">🛫 Partenze</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${bd.fermate}</div><div class="preview-lbl" style="display:flex;align-items:center;justify-content:center;gap:4px;">${hkIco('fermata',11)}Fermate</div></div>
+          <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${bd.partenze}</div><div class="preview-lbl" style="display:flex;align-items:center;justify-content:center;gap:4px;">${hkIco('partenza',11,'var(--hk-part)')}Partenze</div></div>
           <div class="preview-item"><div class="preview-val" style="color:var(--accent);">${t}</div><div class="preview-lbl">Totale</div></div>
         </div>`;
       } else {
@@ -786,20 +841,6 @@ function renderDay(){
   document.getElementById('mainContent').innerHTML=html;
 }
 
-function renderKpi(d){
-  return`<div class="kpi-grid" style="grid-template-columns:1fr 1fr;">
-    <div class="kpi-card fermate">
-      <div class="kpi-icon">🛏</div>
-      <div class="kpi-val fermate">${d.fermate}</div>
-      <div class="kpi-lbl">Fermate</div>
-    </div>
-    <div class="kpi-card partenze">
-      <div class="kpi-icon">🛫</div>
-      <div class="kpi-val partenze">${d.partenze}</div>
-      <div class="kpi-lbl">Partenze</div>
-    </div>
-  </div>`;
-}
 
 async function loadAll(){
   document.getElementById('mainContent').innerHTML=`<div class="loading"><div class="spinner"></div>Caricamento...</div>`;

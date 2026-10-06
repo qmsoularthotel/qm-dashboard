@@ -286,3 +286,14 @@ Nell'app `housekeeper.html` San Liborio sta sotto "SoulArt Hotel - San Liborio":
 solo ("Boutique Hotel", ditta esterna). Stessa cosa nel riquadro Housekeeping dell'Overview di Compass
 (`renderPianoGiorno`: "SoulArt - San Liborio" e "Boutique").
 
+### App Housekeeping: schede per cameriera (06/10/2026)
+
+Disegno "idea A" approvato dal QM. Per ogni struttura: tre numeri (partenze, fermate, camere) con icone a linea,
+poi una **scheda per cameriera** — "Matarese", "Altre housekeeper" (SoulArt + San Liborio), "Ditta esterna"
+(Boutique 200) — con a destra il riquadro arancione delle **partenze** (numero grande), sotto il nome le fermate
+e il **carico** (`hkCarico`: partenza 2, fermata 1; Art 1-2-3-8-9-13 2,5 e 1,5, come Compass), e le camere in
+due gruppi, "Partenze" (⇄ = con arrivo) e "Fermate". Camere SoulArt sempre "Art N", Liborio "San Liborio".
+Icone (`hkIco`) al posto delle emoji, "B" di Booking come in Compass (`HK_BK`), legenda in fondo. Tolte
+`renderRoomDetail` e `renderKpi` (vecchio disegno). Il riquadro di confronto del carico in alto è stato provato
+e scartato dal QM.
+
