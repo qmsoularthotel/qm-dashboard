@@ -299,3 +299,9 @@ e scartato dal QM.
 Tolti su richiesta del QM (06/10/2026) la legenda in fondo e il riquadro "Totale giorno — entrambe le strutture".
 
 Numeri ingranditi (06/10/2026): tessere 30px, partenze della scheda 30px (40 provato e scartato), camere 17px, anteprime 26px.
+
+**Settimana nella scheda** (06/10/2026, variante B): sotto fermate e carico, "Settimana: N partenze · N fermate · N totale"
+(`hkSettimana`), Altre con San Liborio. In Compass "Totale settimana" e il grafico del carico usano ora
+`_hkSplitConLiborio` (San Liborio fra le Altre), così app e Compass danno gli stessi numeri; il motore dei
+suggerimenti resta sulle sole camere Art.
+

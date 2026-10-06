@@ -4153,10 +4153,19 @@ function _hkPianoHtml(rigaMossa,lbl){
 // identico in tutta la dashboard invece di reinventarlo con div colorati ad-hoc.
 // Stesso schema di "Andamento occupazione settimanale": grafico a sinistra, dati a
 // destra separati da un bordo, stessa altezza (240px).
+// Matarese / Altre della settimana con San Liborio fra le Altre (06/10/2026): lo puliscono
+// le cameriere interne, come nell'app Housekeeping. Il motore dei suggerimenti resta sulle
+// sole camere Art (San Liborio non si scambia con nessuna).
+function _hkSplitConLiborio(g){
+  const{m,a}=splitSoulart(g.soulart||{});
+  const l=g.liborio||{};
+  ['partenze','fermate','cambi'].forEach(k=>{a[k]=[...(a[k]||[]),...(l[k]||[])];});
+  return{m,a};
+}
 function renderHkWeekViewContainer(){
   let totPartM=0,totFermM=0,totPartA=0,totFermA=0;
   pianoData.giorni.forEach(g=>{
-    const{m,a}=splitSoulart(g.soulart||{});
+    const{m,a}=_hkSplitConLiborio(g);
     totPartM+=(m.partenze?.length||0)+(m.cambi?.length||0);
     totFermM+=(m.fermate?.length||0);
     totPartA+=(a.partenze?.length||0)+(a.cambi?.length||0);
@@ -4219,7 +4228,7 @@ function renderHkWeekViewContainer(){
 function renderHkWeekChart(activeIdx){
   const el=document.getElementById('hk-week-chart');if(!el)return;
   const pts=pianoData.giorni.map(g=>{
-    const{m,a}=splitSoulart(g.soulart||{});
+    const{m,a}=_hkSplitConLiborio(g);
     return{label:(g.label?g.label.split(' ')[0]:'?').substring(0,3),cm:hkCarico(m),ca:hkCarico(a)};
   });
   if(!pts.length){el.innerHTML='<div style="margin:auto;color:var(--text-dim);font-size:var(--fs-xs);">Carica il piano settimana per vedere il grafico</div>';return;}

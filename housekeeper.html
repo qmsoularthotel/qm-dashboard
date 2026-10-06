@@ -478,7 +478,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-10-06.5';
+const QM_APP_BUILD='2026-10-06.6';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -644,7 +644,17 @@ function hkTiles(part,ferm){
     <div class="hk-tile"><div class="hk-tile-n" style="color:var(--accent);">${hkIco('camere',22)}${part+ferm}</div><div class="hk-tile-l">camere</div></div>
   </div>`;
 }
-function hkScheda(nome,rooms){
+// Totale della settimana del Piano per una scheda (come "Totale settimana" del Bilanciamento
+// in Compass): partenze (con i cambi), fermate e totale. `chi` sceglie le camere di ogni giorno.
+function hkSettimana(chi){
+  let p=0,f=0;
+  ((pianoData&&pianoData.giorni)||[]).forEach(g=>{
+    const r=chi(g);if(!r)return;
+    p+=(r.partenze||[]).length+(r.cambi||[]).length;f+=(r.fermate||[]).length;
+  });
+  return{p,f};
+}
+function hkScheda(nome,rooms,sett){
   const cambi=rooms.cambi||[],partenze=rooms.partenze||[],fermate=rooms.fermate||[];
   const nP=cambi.length+partenze.length,nF=fermate.length;
   if(!nP&&!nF)return'';
@@ -656,7 +666,7 @@ function hkScheda(nome,rooms){
   return`<div class="hk-scheda">
     <div class="hk-scheda-top">
       <div class="hk-scheda-nome"><b>${nome}</b>
-        <div class="hk-scheda-info"><span class="hk-info-ferm">${hkIco('fermata',13)}${nF} ${nF===1?'fermata':'fermate'}</span><span class="hk-info-carico">${hkIco('carico',13)}carico ${hkNum(hkCarico(rooms))}</span></div>
+        <div class="hk-scheda-info"><span class="hk-info-ferm">${hkIco('fermata',13)}${nF} ${nF===1?'fermata':'fermate'}</span><span class="hk-info-carico">${hkIco('carico',13)}carico ${hkNum(hkCarico(rooms))}</span></div>${sett?`<div style="margin-top:7px;font-size:13px;color:var(--text-dim);">Settimana: <b style="color:var(--hk-part);">${sett.p}</b> partenze · <b style="color:var(--text);">${sett.f}</b> fermate · <b style="color:var(--accent);">${sett.p+sett.f}</b> totale</div>`:''}
       </div>
       <div class="hk-scheda-part"><div class="hk-scheda-part-n">${hkIco('partenza',18)}${nP}</div><div class="hk-scheda-part-l">${nP===1?'partenza':'partenze'}</div></div>
     </div>
@@ -759,7 +769,10 @@ function renderDay(){
   if(pianoDay){
     const{m,a}=splitSoulart(pianoDay.soulart);
     ['cambi','partenze','fermate'].forEach(k=>{a[k]=[...(a[k]||[]),...(libPiano[k]||[])];});
-    html+=hkScheda('Matarese',m)+hkScheda('Altre housekeeper',a);
+    const _libDi=g=>g.liborio||{};
+    const settM=hkSettimana(g=>splitSoulart(g.soulart).m);
+    const settA=hkSettimana(g=>{const x=splitSoulart(g.soulart).a,l=_libDi(g);return{partenze:[...x.partenze,...(l.partenze||[])],cambi:[...x.cambi,...(l.cambi||[])],fermate:[...x.fermate,...(l.fermate||[])]};});
+    html+=hkScheda('Matarese',m,settM)+hkScheda('Altre housekeeper',a,settA);
   }
 
   // Boutique: camere 200, della ditta esterna
@@ -772,7 +785,7 @@ function renderDay(){
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
   if(pianoDay){
-    html+=hkScheda('Ditta esterna',{cambi:[...(pianoDay.boutique?.cambi||[])],partenze:[...(pianoDay.boutique?.partenze||[])],fermate:[...(pianoDay.boutique?.fermate||[])]});
+    html+=hkScheda('Ditta esterna',{cambi:[...(pianoDay.boutique?.cambi||[])],partenze:[...(pianoDay.boutique?.partenze||[])],fermate:[...(pianoDay.boutique?.fermate||[])]},hkSettimana(g=>g.boutique));
   }
 
   // Preview prossimi 2 giorni

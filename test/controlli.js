@@ -2739,3 +2739,11 @@ ok('l\'analisi conta i non scansionati nel consumo', /\+ammPeriodo/.test(String(
 // ── San Liborio con la SoulArt nel riquadro Housekeeping dell'Overview (06/10/2026) ──
 sez('Overview Housekeeping: San Liborio con la SoulArt');
 ok('San Liborio unito alla SoulArt, il Boutique da solo', /renderHotel\('SoulArt - San Liborio',sMerged\)/.test(String(renderPianoGiorno)) && /renderHotel\('Boutique',giorno\.boutique/.test(String(renderPianoGiorno)), true);
+
+// ── Totale settimana e grafico: San Liborio fra le Altre, come nell'app (06/10/2026) ──
+sez('Bilanciamento: San Liborio nei totali della settimana');
+(function () {
+  var x = _hkSplitConLiborio({ soulart: { partenze: ['Art 5', 'Art 14'], fermate: [], cambi: [] }, liborio: { partenze: ['Liborio'], fermate: [], cambi: [] } });
+  ok('San Liborio va con le Altre', x.a.partenze.join() + ' / ' + x.m.partenze.join(), 'Art 14,Liborio / Art 5');
+})();
+ok('totale settimana e grafico lo usano', /_hkSplitConLiborio\(g\)/.test(String(renderHkWeekViewContainer)) && /_hkSplitConLiborio\(g\)/.test(String(renderHkWeekChart)), true);
