@@ -478,7 +478,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-10-06.6';
+const QM_APP_BUILD='2026-10-06.7';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -666,7 +666,7 @@ function hkScheda(nome,rooms,sett){
   return`<div class="hk-scheda">
     <div class="hk-scheda-top">
       <div class="hk-scheda-nome"><b>${nome}</b>
-        <div class="hk-scheda-info"><span class="hk-info-ferm">${hkIco('fermata',13)}${nF} ${nF===1?'fermata':'fermate'}</span><span class="hk-info-carico">${hkIco('carico',13)}carico ${hkNum(hkCarico(rooms))}</span></div>${sett?`<div style="margin-top:7px;font-size:13px;color:var(--text-dim);">Settimana: <b style="color:var(--hk-part);">${sett.p}</b> partenze · <b style="color:var(--text);">${sett.f}</b> fermate · <b style="color:var(--accent);">${sett.p+sett.f}</b> totale</div>`:''}
+        <div class="hk-scheda-info"><span class="hk-info-ferm">${hkIco('fermata',13)}${nF} ${nF===1?'fermata':'fermate'}</span><span class="hk-info-carico">${hkIco('carico',13)}carico ${hkNum(hkCarico(rooms))}</span></div>${sett?`<div style="margin-top:7px;font-size:13px;color:var(--text-dim);"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;">Settimana</div><b style="color:var(--hk-part);">${sett.p}</b> partenze · <b style="color:var(--text);">${sett.f}</b> fermate · <b style="color:var(--accent);">${sett.p+sett.f}</b> totale</div>`:''}
       </div>
       <div class="hk-scheda-part"><div class="hk-scheda-part-n">${hkIco('partenza',18)}${nP}</div><div class="hk-scheda-part-l">${nP===1?'partenza':'partenze'}</div></div>
     </div>
