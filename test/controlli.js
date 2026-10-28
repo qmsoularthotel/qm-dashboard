@@ -2066,6 +2066,29 @@ sez('Bilanciamento camere: mai uno scambio fra prenotazioni identiche');
 })();
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('DDT: la descrizione si legge per intero nella maschera');
+// 28/10/2026. In "Modifica DDT" la descrizione stava in una casella da 130px: "White, igiene
+// intima" e basta. Ora e' una casella che va a capo, su una riga sua, e passa da _esc.
+(function () {
+  var _d = _ddtParsedData, box = document.getElementById('ddt-parsed-result');
+  var lunga = 'Window, set igiene orale in bustina termosaldata, confezione da 250 pz "Tipo A"';
+  var html = '';
+  var finto = { style: {}, set innerHTML(v) { html = v; }, get innerHTML() { return html; } };
+  var _get = document.getElementById;
+  document.getElementById = function (id) { return id === 'ddt-parsed-result' ? finto : _get.call(document, id); };
+  try {
+    _ddtParsedData = { data: '01/01/2027', numero_ddt: 'PROVA-1', totale_ordine: 10,
+                       articoli: [{ descrizione: lunga, qta: 1200, unita: 'PZ', prezzo_unit: 0.08, totale: 96 }] };
+    ddtShowParsedResult(_ddtParsedData);
+  } finally { document.getElementById = _get; _ddtParsedData = _d; }
+  var m = html.match(/<textarea[^>]*>([^<]*)<\/textarea>/);
+  ok('la descrizione e\' in una casella che va a capo', !!m, true);
+  ok('c\'e\' tutta, virgolette comprese',              m && m[1].replace(/&quot;/g, '"'), lunga);
+  ok('ha abbastanza righe per leggerla',               /<textarea rows="2"/.test(html), true);
+  ok('nessuna colonna stretta da 130px',               /130px/.test(html), false);
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
 sez('Bilanciamento camere: oggi non si propone, si parte da domani');
 // Nessuna mossa puo' cambiare oggi (si spostano solo soggiorni che arrivano DOPO oggi),
 // eppure il pannello apriva proprio oggi, col suo "5 · 2" rosso e niente da fare.

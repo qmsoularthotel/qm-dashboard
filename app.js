@@ -12727,7 +12727,7 @@ function ddtOpenUploadModal(){
   m.id='ddtModal';
   m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
   m.onclick=e=>{if(e.target===m)ddtCloseModal();};
-  m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:24px;max-width:500px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;margin:auto;">
+  m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:24px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;margin:auto;">
     <button onclick="ddtCloseModal()" style="position:absolute;top:14px;right:14px;background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;">✕</button>
     <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:16px;">📷 Carica DDT</div>
     <div style="display:flex;gap:10px;margin-bottom:12px;">
@@ -12778,7 +12778,7 @@ function ddtOpenEditModal(id){
   m.id='ddtModal';
   m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
   m.onclick=e=>{if(e.target===m)ddtCloseModal();};
-  m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:24px;max-width:500px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;margin:auto;">
+  m.innerHTML=`<div onclick="event.stopPropagation()" style="background:var(--surface);border-radius:14px;padding:24px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative;margin:auto;">
     <button onclick="ddtCloseModal()" style="position:absolute;top:14px;right:14px;background:var(--surface2);border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:14px;">✕</button>
     <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:16px;">✏️ Modifica DDT</div>
     <div id="ddt-parsed-result"></div>
@@ -12825,17 +12825,26 @@ async function ddtHandleFileSelect(input){
 
 function ddtShowParsedResult(d){
   const result=document.getElementById('ddt-parsed-result');if(!result)return;
-  const inp=(val,cb,w,type,step)=>`<input ${type?'type="'+type+'"':''} ${step?'step="'+step+'"':''} value="${val!=null?val:''}" onchange="${cb}" style="width:${w||'100%'};padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);background:var(--surface);${type==='number'?'text-align:right;':''}">`;
+  // Il valore viene dall'AI o dal PDF del fornitore: passa da _esc (una virgoletta nella
+  // descrizione rompeva la casella).
+  const inp=(val,cb,w,type,step)=>`<input ${type?'type="'+type+'"':''} ${step?'step="'+step+'"':''} value="${val!=null?_esc(String(val)):''}" onchange="${cb}" style="width:${w||'100%'};padding:5px ${type==='number'?'4px':'8px'};border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);background:var(--surface);${type==='number'?'text-align:right;':''}">`;
+  // La descrizione sta su una riga tutta sua, in una casella che va a capo: in colonna
+  // (130px) se ne leggevano le prime parole e basta (28/10/2026). Così anche i numeri
+  // sotto hanno spazio, e "1200" o "133,06" non si tagliano più.
+  const desc=(val,i)=>{const t=val!=null?String(val):'';
+    return`<textarea rows="${Math.max(1,Math.ceil(t.length/60))}" onchange="_ddtParsedData.articoli[${i}].descrizione=this.value" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);background:var(--surface);font-family:inherit;line-height:1.35;resize:vertical;display:block;">${_esc(t)}</textarea>`;};
   // Qtà e prezzo unitario ricalcolano da soli il totale della riga (qta*prezzo); il
   // totale riga (anche se digitato a mano) ricalcola sempre il totale del DDT — vedi
   // ddtRecalcRowTotale/ddtRecalcTotaleOrdine in ddt-shared.js, condivise con breakfast.html.
   const artRows=(d.articoli||[]).map((a,i)=>`<tr>
-    <td style="padding:3px 4px;">${inp(a.descrizione,'_ddtParsedData.articoli['+i+'].descrizione=this.value','130px','','')}</td>
-    <td style="padding:3px 4px;">${inp(a.qta,'_ddtParsedData.articoli['+i+'].qta=parseFloat(this.value)||0;ddtRecalcRowTotale(_ddtParsedData.articoli,'+i+');ddtRecalcTotaleOrdine(_ddtParsedData);ddtShowParsedResult(_ddtParsedData)','55px','number','0.001')}</td>
-    <td style="padding:3px 4px;">${inp(a.unita,'_ddtParsedData.articoli['+i+'].unita=this.value','40px','','')}</td>
-    <td style="padding:3px 4px;">${inp(a.prezzo_unit,'_ddtParsedData.articoli['+i+'].prezzo_unit=parseFloat(this.value)||0;ddtRecalcRowTotale(_ddtParsedData.articoli,'+i+');ddtRecalcTotaleOrdine(_ddtParsedData);ddtShowParsedResult(_ddtParsedData)','65px','number','0.01')}</td>
-    <td style="padding:3px 4px;">${inp(a.totale,'_ddtParsedData.articoli['+i+'].totale=parseFloat(this.value)||0;ddtRecalcTotaleOrdine(_ddtParsedData);ddtShowParsedResult(_ddtParsedData)','65px','number','0.01')}</td>
-    <td style="padding:3px 4px;"><button onclick="ddtRemoveArticolo(${i})" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--surface);">✕</button></td>
+    <td colspan="4" style="padding:8px 4px 3px;${i>0?'border-top:1px solid var(--border-light);':''}">${desc(a.descrizione,i)}</td>
+    <td style="padding:8px 4px 3px;vertical-align:top;${i>0?'border-top:1px solid var(--border-light);':''}"><button onclick="ddtRemoveArticolo(${i})" title="Togli la riga" style="font-size:11px;padding:4px 7px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--surface);">✕</button></td>
+  </tr><tr>
+    <td style="padding:3px 4px 8px;">${inp(a.qta,'_ddtParsedData.articoli['+i+'].qta=parseFloat(this.value)||0;ddtRecalcRowTotale(_ddtParsedData.articoli,'+i+');ddtRecalcTotaleOrdine(_ddtParsedData);ddtShowParsedResult(_ddtParsedData)','100%','number','0.001')}</td>
+    <td style="padding:3px 4px 8px;">${inp(a.unita,'_ddtParsedData.articoli['+i+'].unita=this.value','100%','','')}</td>
+    <td style="padding:3px 4px 8px;">${inp(a.prezzo_unit,'_ddtParsedData.articoli['+i+'].prezzo_unit=parseFloat(this.value)||0;ddtRecalcRowTotale(_ddtParsedData.articoli,'+i+');ddtRecalcTotaleOrdine(_ddtParsedData);ddtShowParsedResult(_ddtParsedData)','100%','number','0.01')}</td>
+    <td style="padding:3px 4px 8px;">${inp(a.totale,'_ddtParsedData.articoli['+i+'].totale=parseFloat(this.value)||0;ddtRecalcTotaleOrdine(_ddtParsedData);ddtShowParsedResult(_ddtParsedData)','100%','number','0.01')}</td>
+    <td></td>
   </tr>`).join('');
   result.style.display='';
   result.innerHTML=`<div style="border-top:1px solid var(--border-light);padding-top:14px;">
@@ -12852,13 +12861,15 @@ function ddtShowParsedResult(d){
       </div>
     </div>
     <div style="overflow-x:auto;margin-bottom:10px;">
-      <table style="border-collapse:collapse;font-size:var(--fs-xs);">
+      <table style="border-collapse:collapse;font-size:var(--fs-xs);width:100%;table-layout:fixed;">
+        <colgroup><col style="width:24%"><col style="width:16%"><col style="width:26%"><col style="width:26%"><col style="width:40px"></colgroup>
         <thead><tr style="background:var(--surface2);">
-          <th style="padding:5px 4px;text-align:left;font-size:var(--fs-xxs);color:var(--text-dim);min-width:130px;">Descrizione</th>
-          <th style="padding:5px 4px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);">Qtà</th>
-          <th style="padding:5px 4px;text-align:center;font-size:var(--fs-xxs);color:var(--text-dim);">UM</th>
-          <th style="padding:5px 4px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);">P.Unit</th>
-          <th style="padding:5px 4px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);">Totale</th>
+          <th colspan="5" style="padding:5px 4px 0;text-align:left;font-size:var(--fs-xxs);color:var(--text-dim);">Descrizione</th>
+        </tr><tr style="background:var(--surface2);">
+          <th style="padding:2px 4px 5px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);">Qtà</th>
+          <th style="padding:2px 4px 5px;text-align:center;font-size:var(--fs-xxs);color:var(--text-dim);">UM</th>
+          <th style="padding:2px 4px 5px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);">P.Unit</th>
+          <th style="padding:2px 4px 5px;text-align:right;font-size:var(--fs-xxs);color:var(--text-dim);">Totale</th>
           <th></th>
         </tr></thead>
         <tbody>${artRows}</tbody>

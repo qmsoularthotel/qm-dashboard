@@ -156,6 +156,14 @@ Aggiunto `ddtOpenEditModal(id)` in `app.js`, speculare a quella di `breakfast.ht
 
 **Nota**: in modalità modifica su Compass, fornitore e hotel restano quelli originali (non c'è un campo per cambiarli nella maschera — a differenza di `data`/`numero_ddt`/`totale`/articoli, che sono tutti editabili). Se in futuro serve poterli correggere, va aggiunto un campo fornitore/hotel dentro `ddtShowParsedResult` come già fa `ddtBkfShowParsed` su `breakfast.html`.
 
+**Descrizione per intero** (28/10/2026): nella maschera (inserimento e modifica, Compass) ogni
+articolo occupa due righe — sopra la descrizione in una casella che va a capo (`textarea`,
+righe in base alla lunghezza), sotto Qtà/UM/P.Unit/Totale a tutta larghezza. Prima la
+descrizione stava in 130px e se ne leggevano due parole; anche "1200" e "133,06" si
+tagliavano. Maschera larga 640px. I valori passano da `_esc` (testo dell'AI/PDF). La maschera
+di `breakfast.html` (`ddtBkfShowParsed`) non è stata toccata. Controlli: "DDT: la descrizione
+si legge per intero nella maschera".
+
 ### Ricalcolo automatico dei totali — `ddtRecalcRowTotale()` / `ddtRecalcTotaleOrdine()` (`ddt-shared.js`)
 
 Prima modificare qtà o prezzo unitario di una riga (in inserimento o in modifica, su entrambi i file) non toccava il campo Totale della riga né il Totale del DDT: bisognava ricalcolarli e digitarli a mano. Due funzioni pure in `ddt-shared.js` (nessun accesso al DOM, quindi utilizzabili identiche da entrambi i file):
