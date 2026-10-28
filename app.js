@@ -3254,6 +3254,9 @@ function _hkOverlap(a,b){for(const x of a)if(b.has(x))return true;return false;}
 // muove piu' soggiorni insieme e quindi non ha un "inizio" unico da esibire: prima la
 // riga mostrava il primo giorno toccato dallo scambio come se fosse l'inizio di un
 // soggiorno, e per la camera che quel giorno e' vuota il testo diceva il falso.
+// Due soggiorni con le stesse date sono intercambiabili: farli passare l'uno al posto
+// dell'altro non cambia niente per nessuno, è solo un passaggio in più nel PMS.
+function _hkStessoPeriodo(a,b){return a.start===b.start&&a.end===b.end&&!!a.openEnd===!!b.openEnd;}
 function _hkPeriodo(b){return{start:b.start,end:b.openEnd?null:b.end,speciale:!!b.speciale};}
 function _hkStatesFromBlocks(bs,N){
   const out=new Array(N).fill(null);
@@ -3647,14 +3650,20 @@ function hkSuggestMoves(maxN,focusIdx){
     // fisicamente; si scambiano solo le prenotazioni non ancora arrivate. Sempre valido
     // strutturalmente (stessa tipologia) A PATTO che i soggiorni futuri di A entrino tra
     // gli ospiti già in casa di B e viceversa — per questo serve comunque _hkFits.
-    const futureA=(BL[A]||[]).filter(spostabile);
-    if(futureA.length){
-      const restA=(BL[A]||[]).filter(z=>!spostabile(z));
+    const futureA0=(BL[A]||[]).filter(spostabile);
+    if(futureA0.length){
       stessoTipo.forEach(B=>{
         if(B===A||MATARESE.has(B))return;
-        const futureB=(BL[B]||[]).filter(spostabile);
-        if(!futureB.length)return;
-        const restB=(BL[B]||[]).filter(z=>!spostabile(z));
+        // Le coppie di soggiorni con le stesse date restano dove sono: scambiarle non
+        // cambia niente e allungava l'elenco con passi inutili (28/10/2026).
+        const futureB0=(BL[B]||[]).filter(spostabile),gemB=new Set();
+        const futureA=futureA0.filter(x=>{const y=futureB0.find(z=>!gemB.has(z)&&_hkStessoPeriodo(x,z));if(y){gemB.add(y);return false;}return true;});
+        const futureB=futureB0.filter(z=>!gemB.has(z));
+        // Se dopo aver tolto le gemelle resta un lato solo, il blocco è uno spostamento in
+        // una direzione: ha senso solo con più di un soggiorno (uno solo è già "sposta").
+        if(futureA.length+futureB.length<2)return;
+        const restA=(BL[A]||[]).filter(z=>!futureA.includes(z));
+        const restB=(BL[B]||[]).filter(z=>!futureB.includes(z));
         if(!futureA.every(z=>_hkFits(z,restB,[],N)))return;
         if(!futureB.every(z=>_hkFits(z,restA,[],N)))return;
         // `start` serve solo a ordinare e a distinguere le proposte fra loro: e' il primo
@@ -3662,7 +3671,7 @@ function hkSuggestMoves(maxN,focusIdx){
         // delle due camere viaggiano in perA/perB, ed e' quello che va mostrato — vedi
         // il commento in renderHkSuggestions.
         valuta({tipo:'scambio-blocco',from:A,to:B,cat:tipo,nA:futureA.length,nB:futureB.length,
-                perA:futureA.map(_hkPeriodo),perB:futureB.map(_hkPeriodo),
+                perA:futureA.map(_hkPeriodo),perB:futureB.map(_hkPeriodo),gemelle:gemB.size,
                 start:Math.min(...futureA.map(z=>z.start),...futureB.map(z=>z.start))},
                {[A]:restA.concat(futureB),[B]:restB.concat(futureA)});
       });
@@ -3682,6 +3691,9 @@ function hkSuggestMoves(maxN,focusIdx){
         if(intralcio.length===1){
           const Y=intralcio[0];
           if(!spostabile(Y))return;                       // ospite già in casa: non si tocca
+          // Y con le stesse date di X: scambiarli non cambia niente, e la catena
+          // "Y in C, poi X in B" è solo un giro lungo per "X in C" (28/10/2026).
+          if(_hkStessoPeriodo(X,Y))return;
           // 2) scambio: Y va in A al posto di X
           if(_hkFits(Y,BL[A],[X],N)){
             valuta({tipo:'scambia',from:A,to:B,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end,xOpen:!!X.openEnd,yOpen:!!Y.openEnd,xSpec:!!X.speciale,ySpec:!!Y.speciale},
@@ -3708,6 +3720,7 @@ function hkSuggestMoves(maxN,focusIdx){
         // a priori scartava soluzioni valide (es. A libera solo in parte delle notti di X,
         // ma abbastanza per uno dei soggiorni sovrapposti in B).
         if(intralcio.some(z=>!spostabile(z)))return;        // un ospite già in casa: blocco reale, non risolvibile
+        if(intralcio.some(z=>_hkStessoPeriodo(X,z)))return;  // stesso giro lungo della catena: vedi sopra
         const candidatiMulti=[A,...stessoTipo.filter(c=>c!==A&&c!==B)];
         const fitsInCandidato=(Z,C)=>C===A?_hkFits(Z,BL[A],[X],N):_hkFits(Z,BL[C],[],N);
         const usate=new Set([B]);
@@ -4043,13 +4056,16 @@ function renderHkSuggestions(focusIdx){
       // Il viaggio di ritorno (le prenotazioni di `to` che vanno in `from`) NON e' un
       // passo: e' una conseguenza obbligata dello scambio, e messo in elenco raddoppiava
       // le righe da leggere senza aggiungere una decisione.
-      passi=(m.perA||[]).map(p=>[m.from,m.to,perTxt(p)]);
-      if(!passi.length)passi=[[m.from,m.to,'tutte le prenotazioni future']];
-      badge='scambio in blocco';
+      // Se A non cede niente (le sue prenotazioni erano gemelle di quelle di B e restano
+      // dove sono) i passi sono le prenotazioni di B che vanno in A.
+      const soloB=!(m.perA||[]).length;
+      passi=soloB?(m.perB||[]).map(p=>[m.to,m.from,perTxt(p)]):(m.perA||[]).map(p=>[m.from,m.to,perTxt(p)]);
+      badge=soloB||!(m.perB||[]).length?'spostamento in blocco':'scambio in blocco';
       const nB=(m.perB||[]).length;
-      sotto=(nB===1
-        ?`La prenotazione di ${m.to} passa di conseguenza in ${m.from}.`
-        :`Le ${nB} prenotazioni di ${m.to} passano di conseguenza in ${m.from}.`)+` Chi è già in casa resta dov'è.`;
+      sotto=(soloB||!nB?'':nB===1
+        ?`La prenotazione di ${m.to} passa di conseguenza in ${m.from}. `
+        :`Le ${nB} prenotazioni di ${m.to} passano di conseguenza in ${m.from}. `)+`Chi è già in casa resta dov'è.`
+        +(m.gemelle?` Le prenotazioni con le stesse date nelle due camere restano dove sono.`:'');
     }else{
       passi=[[m.from,m.to,periodo]];
       sotto=m.xOpen?`${m.to} libera fino a ${lbl(pianoData.giorni.length-1)}: ${avvOltre}`:`${m.to} libera in quelle notti`;

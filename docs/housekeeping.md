@@ -296,12 +296,19 @@ Bilanciamento Camere non sono cliccabili (lì non c'è la griglia): il 6° param
 Controlli: "Bilanciamento camere: chi resta oltre il Piano non parte l'ultimo giorno",
 provati sabotando la riga (2 falliscono) e la firma (1 fallisce).
 
-**"Scambia Art 12 con Art 14" fra prenotazioni identiche**: con le stesse date lo scambio non
-cambia niente e il motore non lo propone (guadagno zero). Quelle viste erano due prenotazioni
-con lo stesso arrivo, una che partiva l'ultimo giorno del Piano e una che continuava: scritte
-entrambe "Dom 1/11 → Mar 3/11", sembravano uguali. Ora la seconda dice "in poi". Controlli:
-"Bilanciamento camere: mai uno scambio fra prenotazioni identiche" (sabotando la soglia di
-guadagno, il primo fallisce).
+**Prenotazioni gemelle (stesse date in due camere)** — `_hkStessoPeriodo`. Esempio del QM:
+Art 12 e Art 14 dal 2/11 al 3/11, e la proposta "1) Art 14 → Art 16, 2) Art 12 → Art 14",
+cioè un giro lungo per "Art 12 → Art 16". Ora:
+- **catena** e **catena-multi**: se il soggiorno che sta in mezzo ha le stesse date di quello
+  da spostare, la mossa non si propone (resta lo spostamento diretto);
+- **scambio** fra gemelle: già escluso (non cambia niente, guadagno zero), ora anche esplicito;
+- **scambio in blocco**: le coppie gemelle restano dove sono (`m.gemelle`, detto nella riga);
+  se resta un lato solo diventa "spostamento in blocco" (passi = prenotazioni di B che vanno
+  in A), purché i soggiorni siano almeno due (uno solo è già uno spostamento).
+Il controllo dello scambio in blocco del 03/09 usava proprio due gemelle (Art 12 e Art 14 da
+Mar 8/9 in poi): il caso è stato cambiato (Art 14 arriva mercoledì).
+Controlli: "Bilanciamento camere: mai uno scambio fra prenotazioni identiche" (sabotando la
+catena 1 fallisce, sabotando il blocco 4).
 
 ### San Liborio con la SoulArt nell'app Housekeeping e nell'Overview (06/10/2026)
 

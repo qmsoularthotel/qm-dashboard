@@ -1448,8 +1448,10 @@ sez('Bilanciamento camere: lo scambio in blocco non inventa soggiorni');
              liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
   });
   //                 gio ven sab dom lun mar mer      F=fermata P=partenza C=cambio A=arrivo
+  // L'ultimo soggiorno di Art 14 arriva mercoledi', non martedi' come quello di Art 12: due
+  // soggiorni con le stesse date restano dove sono (28/10/2026), vedi la sezione apposita.
   var CELLE = { 'Art 12': ['F', 'P', '.', '.', '.', 'A', 'F'],
-                'Art 14': ['F', 'F', 'C', 'C', 'P', 'A', 'F'],
+                'Art 14': ['F', 'F', 'C', 'C', 'P', '.', 'A'],
                 'Art 16': ['F', 'F', 'C', 'C', 'F', 'F', 'F'] };
   var CHIAVE = { F: 'fermate', P: 'partenze', C: 'cambi', A: 'arrivi' };
   Object.keys(CELLE).forEach(function (r) {
@@ -1468,7 +1470,7 @@ sez('Bilanciamento camere: lo scambio in blocco non inventa soggiorni');
   })[0];
   ok('lo scambio in blocco viene proposto', !!blocco, true);
   ok('porta i soggiorni veri di Art 12',    JSON.stringify((blocco.perA || []).map(function (p) { return p.start; })), '[5]');
-  ok('e quelli veri di Art 14',             JSON.stringify((blocco.perB || []).map(function (p) { return p.start; })), '[2,3,5]');
+  ok('e quelli veri di Art 14',             JSON.stringify((blocco.perB || []).map(function (p) { return p.start; })), '[2,3,6]');
 
   // Il controllo che conta: nessun periodo annunciato puo' cominciare in un giorno in cui
   // quella camera non ha ne' un arrivo ne' un cambio nel Piano.
@@ -2034,6 +2036,31 @@ sez('Bilanciamento camere: mai uno scambio fra prenotazioni identiche');
   var riga = renderHkSuggestions(null).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
   ok('le due prenotazioni non sono piu\' scritte uguali', /Art 14 → Art 12 Dom 1\/11 → Mar 3\/11/.test(riga), false);
   ok('quella che continua dice "in poi"',                  /Art 14 → Art 12 Dom 1\/11 in poi/.test(riga), true);
+
+  // L'esempio del QM: Art 12 e Art 14 arrivano lunedi' 2/11 e partono martedi' 3/11. La
+  // proposta era "1) Art 14 → Art 16, 2) Art 12 → Art 14": un giro lungo per "Art 12 → Art 16".
+  piano({ 'Art 12': ['.', '.', '.', '.', '.', 'A', 'P'],
+          'Art 14': ['.', '.', '.', '.', '.', 'A', 'P'],
+          'Art 16': ['.', '.', '.', '.', '.', '.', '.'],
+          'Art 4':  ['.', '.', '.', '.', '.', '.', 'P'],
+          'Art 5':  ['.', '.', '.', '.', '.', '.', 'P'] });
+  var tutte = hkSuggestMoves(30, null).mosse;
+  ok('niente catena che passa per una prenotazione gemella', tutte.filter(function (m) { return m.tipo === 'catena' || m.tipo === 'catena-multi'; }).length, 0);
+  ok('resta lo spostamento diretto Art 12 → Art 16',        tutte.some(function (m) { return m.tipo === 'sposta' && m.from === 'Art 12' && m.to === 'Art 16'; }), true);
+
+  // Scambio in blocco: le gemelle restano dove sono, si muove solo il resto.
+  piano({ 'Art 12': ['.', '.', '.', '.', '.', 'A', 'P'],
+          'Art 14': ['.', 'A', 'P', 'A', 'P', 'A', 'P'],
+          'Art 16': ['F', 'F', 'P', 'F', 'P', '.', '.'],
+          'Art 18': ['F', 'F', 'P', 'F', 'P', '.', '.'] });
+  var blocchi = hkSuggestMoves(30, null).mosse.filter(function (m) { return m.tipo === 'scambio-blocco' && m.from === 'Art 12' && m.to === 'Art 14'; });
+  ok('il blocco fra Art 12 e Art 14 c\'e\'',        blocchi.length, 1);
+  var bl = blocchi[0] || {};
+  ok('Art 12 non cede la prenotazione gemella',     JSON.stringify((bl.perA || []).map(function (p) { return p.start; })), '[]');
+  ok('Art 14 cede solo le altre due',               JSON.stringify((bl.perB || []).map(function (p) { return p.start; })), '[1,3]');
+  var rb = renderHkSuggestions(null).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+  ok('nessun passo con la prenotazione gemella',    /Art 1[24] → Art 1[24] Lun 2\/11 → Mar 3\/11/.test(rb), false);
+  ok('lo dice in chiaro',                           /Le prenotazioni con le stesse date nelle due camere restano dove sono/.test(rb), true);
 
   pianoData = _piano;
 })();
