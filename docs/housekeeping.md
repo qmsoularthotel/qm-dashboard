@@ -296,6 +296,13 @@ Bilanciamento Camere non sono cliccabili (lì non c'è la griglia): il 6° param
 Controlli: "Bilanciamento camere: chi resta oltre il Piano non parte l'ultimo giorno",
 provati sabotando la riga (2 falliscono) e la firma (1 fallisce).
 
+**"Scambia Art 12 con Art 14" fra prenotazioni identiche**: con le stesse date lo scambio non
+cambia niente e il motore non lo propone (guadagno zero). Quelle viste erano due prenotazioni
+con lo stesso arrivo, una che partiva l'ultimo giorno del Piano e una che continuava: scritte
+entrambe "Dom 1/11 → Mar 3/11", sembravano uguali. Ora la seconda dice "in poi". Controlli:
+"Bilanciamento camere: mai uno scambio fra prenotazioni identiche" (sabotando la soglia di
+guadagno, il primo fallisce).
+
 ### San Liborio con la SoulArt nell'app Housekeeping e nell'Overview (06/10/2026)
 
 Nell'app `housekeeper.html` San Liborio sta sotto "SoulArt Hotel - San Liborio": le sue camere vanno fra le

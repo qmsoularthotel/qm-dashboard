@@ -1992,6 +1992,53 @@ sez('Bilanciamento camere: chi resta oltre il Piano non parte l\'ultimo giorno')
 })();
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Bilanciamento camere: mai uno scambio fra prenotazioni identiche');
+// 28/10/2026. "Scambia Art 12 con Art 14" quando le due prenotazioni hanno le stesse date
+// non cambia niente per nessuno. Il caso visto in Compass era un altro: una partiva l'ultimo
+// giorno del Piano, l'altra continuava oltre, ed entrambe erano scritte "Dom 1/11 → Mar 3/11".
+(function () {
+  var _piano = pianoData;
+  function piano(CELLE) {
+    var NOMI = ['Mer 28/10', 'Gio 29/10', 'Ven 30/10', 'Sab 31/10', 'Dom 1/11', 'Lun 2/11', 'Mar 3/11'];
+    var G = NOMI.map(function (n, i) {
+      var d = new Date(2027, 9, 28 + i, 12);
+      return { label: n, data: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/2027',
+               soulart: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+               boutique: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+               liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
+    });
+    var CHIAVE = { F: 'fermate', P: 'partenze', C: 'cambi', A: 'arrivi' }, tipi = {};
+    Object.keys(CELLE).forEach(function (r) {
+      tipi[r] = 'AS DLX DP';
+      CELLE[r].forEach(function (c, i) { if (CHIAVE[c]) G[i].soulart[CHIAVE[c]].push(r); });
+    });
+    pianoData = { stampato: G[0].data, giorni: G, incArr: [], incPar: [], tipi: tipi };
+  }
+  function fra12e14() {
+    return hkSuggestMoves(30, null).mosse.filter(function (m) {
+      return (m.from === 'Art 12' && m.to === 'Art 14') || (m.from === 'Art 14' && m.to === 'Art 12');
+    });
+  }
+  // Matarese (Art 4, 5, 12) ha piu' partenze: uno scambio converrebbe, se cambiasse qualcosa.
+  piano({ 'Art 12': ['.', 'A', 'F', 'P', 'A', 'F', 'F'],
+          'Art 14': ['.', 'A', 'F', 'P', 'A', 'F', 'F'],
+          'Art 4':  ['F', 'F', 'F', 'P', '.', 'A', 'F'],
+          'Art 5':  ['F', 'F', 'F', 'P', 'A', 'F', 'P'] });
+  ok('prenotazioni con le stesse date: nessuno scambio fra le due camere', fra12e14().length, 0);
+
+  // Stesso arrivo, ma Art 12 parte martedi' (ultimo giorno del Piano) e Art 14 continua.
+  piano({ 'Art 12': ['.', '.', '.', '.', 'A', 'F', 'P'],
+          'Art 14': ['.', '.', '.', '.', 'A', 'F', 'F'],
+          'Art 4':  ['F', 'F', 'F', 'F', 'F', 'F', 'P'],
+          'Art 5':  ['F', 'F', 'F', 'F', 'F', 'F', 'P'] });
+  var riga = renderHkSuggestions(null).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+  ok('le due prenotazioni non sono piu\' scritte uguali', /Art 14 → Art 12 Dom 1\/11 → Mar 3\/11/.test(riga), false);
+  ok('quella che continua dice "in poi"',                  /Art 14 → Art 12 Dom 1\/11 in poi/.test(riga), true);
+
+  pianoData = _piano;
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
 sez('Bilanciamento camere: oggi non si propone, si parte da domani');
 // Nessuna mossa puo' cambiare oggi (si spostano solo soggiorni che arrivano DOPO oggi),
 // eppure il pannello apriva proprio oggi, col suo "5 · 2" rosso e niente da fare.
