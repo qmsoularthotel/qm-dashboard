@@ -77,7 +77,7 @@ Alzare ulteriormente `HK_PESO_PARTENZE` rende il bilanciamento delle partenze an
 ### Soglie di "sbilanciato" (non toccate da questo cambio)
 
 - Un giorno entra tra i `sbilanciati` solo se `|pM-pA|>=2` (uno scarto di 1 è inevitabile con un totale dispari e nessuno lo percepisce come ingiusto).
-- Col focus su un giorno specifico, è "sbilanciato" se `|pM-pA|>=2` **oppure** `|cM-cA|>=2` (2 di carico = il peso di una camera intera).
+- Col focus su un giorno specifico, è "sbilanciato" solo se `|pM-pA|>=2`. Fino al 28/10/2026 bastava anche `|cM-cA|>=2`: vedi "Solo le partenze" più sotto.
 
 ### Vincoli strutturali
 
@@ -363,3 +363,22 @@ annullare uno spostamento fatto). La memoria la scrive `_hkPianoEffettivo` in
 `piano._hkMossi` (`entrate`/`uscite` per camera); col Piano nuovo caricato gli spostamenti
 fatti escono dall'elenco e la memoria si azzera. Controlli in `test/controlli.js`
 ("niente giri a vuoto fra camere").
+
+### Solo le partenze (28/10/2026)
+
+Caso reale, Piano del 28/10: Mar 3/11 con le partenze **1 · 1** ma il carico 7 · 4 era
+*da sistemare*. Proponeva uno scambio Art 5 ⇄ Art 15 e uno scambio in blocco Art 5 ⇄ Art 17,
+tutti e due *non cambia le partenze, alleggerisce solo il carico*. Il QM: "non hai risolto".
+Ora il motore propone una mossa **solo se migliora le partenze**: sulla settimana (somma
+degli scarti `|pM-pA|` dai giorni proponibili) e, in "Giorno per giorno", proprio del giorno
+scelto. Un giorno è da sistemare solo per le partenze (scarto ≥2); se nessun giorno lo è,
+`hkSuggestMoves` esce subito. Il carico resta solo come spareggio nell'ordinamento
+(`guadagno`). Questo supera la riga "carico" del 06/09 (8 · 8 verdi ma *da sistemare*): quel
+caso oggi non propone niente, **di proposito**.
+
+Conseguenza: spostare da solo un soggiorno che continua oltre il Piano non cambia nessuna
+partenza, quindi compare solo dentro uno scambio.
+
+Provato sul PDF vero (`parsePianoItems` sulle parole di `pdftotext -bbox-layout`): prima
+2 mosse su Mar 3/11 e 1 passo nel Piano della settimana, dopo nessuna; Gio 29/10 dice che le
+partenze (Art 14, 16, 18, 21) sono tutte di ospiti già in casa.

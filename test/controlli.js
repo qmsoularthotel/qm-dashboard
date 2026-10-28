@@ -1917,13 +1917,13 @@ sez('Bilanciamento camere: le chip dicono dove ci sono suggerimenti');
   ok('il caso di prova ha giorni con mosse',                    conMosse > 0, true);
   ok('e giorni senza',                                          senza > 0, true);
 
-  // Il caso che ha fatto nascere la riga: partenze 0 · 1 (scarto 1 = in pari, numeri
-  // VERDI) e pero' una mossa esiste, perche' il carico e' 0 contro 3. Prima era invisibile.
+  // Partenze 0 · 1 (scarto 1 = in pari) col carico a 0 contro 3: fino al 28/10/2026 qui
+  // usciva una mossa "cambia solo il carico". Il QM: tempo perso. Ora niente.
   var lun = chips.filter(function (c) { return c.i === 4; })[0];
   var dLun = hkSuggestMoves(1, 4);
   ok('lunedi\' ha le partenze in pari',        Math.abs(dLun.giorni[4].pM - dLun.giorni[4].pA) < 2, true);
-  ok('ma una mossa c\'e\'',                    dLun.totMosse, 1);
-  ok('e la chip la dichiara',                  /1 mossa/.test(lun.txt), true);
+  ok('e nessuna mossa per il solo carico',     dLun.totMosse || 0, 0);
+  ok('e la chip lo dice col trattino',         /—/.test(lun.txt), true);
   ok('col plurale dove sono piu\' d\'una',     /\d+ mosse|1 mossa/.test(chips.map(function (c) { return c.txt; }).join(' ')), true);
 
   // Dove non c'e' niente si stampa un trattino, non il vuoto: una riga assente sarebbe
@@ -1934,7 +1934,8 @@ sez('Bilanciamento camere: le chip dicono dove ci sono suggerimenti');
   ok('e nessuno di loro dichiara un numero',        vuote.every(function (c) { return dichiarate(c.txt) === 0; }), true);
 
   // La didascalia al passaggio del mouse dice la stessa cosa a parole.
-  ok('la chip con mosse ha la sua didascalia',   /spostament/.test(lun.tip), true);
+  var conM = chips.filter(function (c) { return dichiarate(c.txt) > 0; })[0];
+  ok('la chip con mosse ha la sua didascalia',   !!conM && /spostament/.test(conM.tip), true);
   ok('e quella senza dice che non ce ne sono',   /nessuno spostamento/.test(vuote[0].tip), true);
 
   // Il giorno aperto non si ricalcola due volte: il suo conteggio arriva da `s`, e deve
@@ -1962,13 +1963,15 @@ sez('Bilanciamento camere: chi resta oltre il Piano non parte l\'ultimo giorno')
              boutique: { partenze: [], fermate: [], cambi: [], arrivi: [] },
              liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
   });
+  // Dal 28/10/2026 si propongono solo mosse che migliorano le partenze, e spostare da solo
+  // un soggiorno che continua oltre il Piano non ne cambia nessuna: il soggiorno aperto
+  // viaggia qui dentro uno scambio. Lunedi' 2-0 (Art 4, Art 5); Art 5 si scambia con
+  // il soggiorno aperto di Art 14 o, identico, di Art 16.
   //                 mer gio ven sab dom lun mar
-  var CELLE = { 'Art 12': ['.', '.', '.', '.', 'A', 'F', 'F'],
-                'Art 6':  ['.', '.', '.', '.', 'A', 'F', 'F'],
-                'Art 4':  ['F', 'F', 'F', 'F', 'F', 'P', 'A'],
-                'Art 5':  ['F', 'F', 'F', 'F', 'F', 'P', '.'],
-                'Art 14': ['.', '.', '.', '.', '.', '.', '.'],
-                'Art 16': ['.', '.', '.', '.', '.', '.', '.'] };
+  var CELLE = { 'Art 4':  ['F', 'F', 'F', 'F', 'F', 'P', 'A'],
+                'Art 5':  ['.', '.', 'A', 'F', 'F', 'P', '.'],
+                'Art 14': ['.', '.', '.', 'A', 'F', 'F', 'F'],
+                'Art 16': ['.', '.', '.', 'A', 'F', 'F', 'F'] };
   var CHIAVE = { F: 'fermate', P: 'partenze', C: 'cambi', A: 'arrivi' };
   Object.keys(CELLE).forEach(function (r) {
     CELLE[r].forEach(function (c, i) { if (CHIAVE[c]) G[i].soulart[CHIAVE[c]].push(r); });
@@ -1978,16 +1981,16 @@ sez('Bilanciamento camere: chi resta oltre il Piano non parte l\'ultimo giorno')
   pianoData = { stampato: G[0].data, giorni: G, incArr: [], incPar: [], tipi: tipi };
 
   var s = hkSuggestMoves(30, null);
-  var sposta = s.mosse.filter(function (m) { return m.tipo === 'sposta' && m.start === 4; });
-  ok('c\'e\' una proposta per i soggiorni di domenica', sposta.length > 0, true);
-  ok('il soggiorno e\' segnato come aperto oltre il Piano', !!(sposta[0] && sposta[0].xOpen), true);
-  // Art 12 e Art 6 hanno lo stesso soggiorno e stanno dalla stessa parte: spostare l'uno o
-  // l'altro in Art 14 (o in Art 16) e' la stessa cosa. Una proposta sola.
+  var sposta = s.mosse.filter(function (m) { return m.tipo === 'scambia' && m.from === 'Art 5' && m.yStart === 3; });
+  ok('c\'e\' una proposta col soggiorno di sabato', sposta.length > 0, true);
+  ok('il soggiorno e\' segnato come aperto oltre il Piano', !!(sposta[0] && sposta[0].yOpen), true);
+  // Art 14 e Art 16 hanno lo stesso soggiorno e stanno dalla stessa parte: scambiare con
+  // l'una o con l'altra e' la stessa cosa. Una proposta sola.
   ok('soggiorni identici: una proposta sola', sposta.length, 1);
 
   var riga = renderHkSuggestions(null).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
-  ok('non scrive una partenza che il Piano non conosce', /Dom 1\/11 → Mar 3\/11/.test(riga), false);
-  ok('dice che il soggiorno continua',                  /Dom 1\/11 in poi/.test(riga), true);
+  ok('non scrive una partenza che il Piano non conosce', /Sab 31\/10 → Mar 3\/11/.test(riga), false);
+  ok('dice che il soggiorno continua',                  /Sab 31\/10 in poi/.test(riga), true);
   ok('e avvisa di controllare le notti dopo nel PMS',   /le notti dopo vanno controllate nel PMS/.test(riga), true);
 
   pianoData = _piano;

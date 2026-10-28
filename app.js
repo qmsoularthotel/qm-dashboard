@@ -3610,11 +3610,15 @@ function hkSuggestMoves(maxN,focusIdx){
       // Vale la pena parlarne solo se lo scarto si nota: 2 partenze (con numeri dispari
       // una di scarto è inevitabile e nessuno la percepisce) o 2 di carico, che è quanto
       // pesa una camera intera. Sotto, il giorno è di fatto in pari e segnalarlo è rumore.
-      sbilanciato:Math.abs(f.pM-f.pA)>=2||Math.abs(f.cM-f.cA)>=2};
+      // 28/10/2026: solo le partenze. Mar 3/11 a 1 · 1 col carico 7 · 4 era "da sistemare"
+      // e proponeva due mosse "cambia solo il carico": per il QM tempo perso. Il carico
+      // resta solo come spareggio fra mosse che migliorano le partenze.
+      sbilanciato:Math.abs(f.pM-f.pA)>=2};
   }
   const scoreCur=days.reduce((t,d,i)=>t+(i<primoIdx?0:_hkDayScore(d)),0);
   if(scoreCur<0.01)return out;
   if(hasFocus&&(out.focus.passato||!out.focus.sbilanciato))return out;
+  if(!out.sbilanciati.length)return out;                 // partenze in pari ovunque: niente da proporre
   // Spostabile = soggiorno che arriva DOPO oggi, riprotezioni comprese (si possono
   // riassegnare a un'altra camera come una prenotazione). Restano fuori sia gli ospiti
   // già in casa SIA gli arrivi previsti proprio oggi (start===todayIdx) anche se non
@@ -3642,6 +3646,12 @@ function hkSuggestMoves(maxN,focusIdx){
     if(_hkGiroAVuoto(changes))return;
     const{guadagno,effetti,peggiori,giorni}=_hkEffetto(days,stato,changes,todayIdx,N);
     if(guadagno<=0.01)return;                              // mai peggiorare la settimana
+    // Deve migliorare le PARTENZE (sulla settimana, e del giorno scelto se c'è): una
+    // mossa che sposta solo il carico non si propone.
+    const _dP=g=>Math.abs(g[0]-g[1]);
+    let depGain=0;Object.keys(giorni).forEach(d=>{if(+d>=primoIdx)depGain+=_dP(giorni[d].daP)-_dP(giorni[d].aP);});
+    if(depGain<=0)return;
+    if(hasFocus){const f=giorni[focusIdx];if(!f||_dP(f.aP)>=_dP(f.daP))return;}
     // Con un giorno selezionato conta solo se aiuta QUEL giorno: una mossa che pareggia
     // il venerdì non è una risposta utile a chi sta guardando il mercoledì. Eccezione:
     // lo scambio in blocco (scambio-blocco) riguarda TUTTA la settimana per costruzione,
