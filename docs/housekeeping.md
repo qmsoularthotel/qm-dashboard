@@ -349,3 +349,17 @@ suggerimenti resta sulle sole camere Art.
 Testata della scheda (06/10/2026): "INDICE DI CARICO OGGI" con la pillola azzurra (bilancia + numero), poi "CARICO
 SETTIMANA" con partenze · fermate · totale della settimana. Le fermate del giorno non sono più nella testata.
 
+
+### Niente giri a vuoto fra camere (28/10/2026)
+
+Caso reale: il pannello faceva spostare una prenotazione da Art 15 ad Art 5 e un'altra con
+**le stesse date** da Art 5 ad Art 17. Art 5 resta com'era, 15 e 17 sono dallo stesso lato:
+due passaggi nel PMS che non cambiano niente. `_hkGiroAVuoto` in `hkSuggestMoves` scarta ogni
+mossa che fa uscire da una camera un soggiorno con le stesse date di uno che ci entra, sia
+dentro la mossa stessa sia rispetto agli spostamenti già segnati **Fatto nel PMS** e ai passi
+precedenti del **Piano della settimana**. Vale anche al contrario: non rientra in una camera un
+soggiorno con le stesse date di uno appena uscito (così il motore non propone nemmeno di
+annullare uno spostamento fatto). La memoria la scrive `_hkPianoEffettivo` in
+`piano._hkMossi` (`entrate`/`uscite` per camera); col Piano nuovo caricato gli spostamenti
+fatti escono dall'elenco e la memoria si azzera. Controlli in `test/controlli.js`
+("niente giri a vuoto fra camere").

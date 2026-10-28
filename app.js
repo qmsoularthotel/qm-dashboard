@@ -3461,6 +3461,17 @@ function _hkPianoEffettivo(base,fatte){
   if(!toccate.size)return{piano:base,esiti};
   const piano=JSON.parse(JSON.stringify(base));
   piano.incArr=[...incA];piano.incPar=[...incP];
+  // Quali soggiorni sono entrati e usciti da ogni camera con le mosse applicate: il motore
+  // non propone di far uscire da una camera un soggiorno con le stesse date di uno appena
+  // entrato (o viceversa) — vedi `_hkGiroAVuoto`.
+  const mossi={entrate:{},uscite:{}};
+  fatte.forEach(f=>{if(esiti[f.id]!=='attesa')return;(f.righe||[]).forEach(r=>{
+    const i=_hkDataIdx(base,r.s);if(i<0)return;
+    const x=(BL[r.a]||[]).find(b=>b.start===i&&(r.e==null||fine(b)==null||fine(b)===r.e));if(!x)return;
+    (mossi.uscite[r.da]=mossi.uscite[r.da]||[]).push(_hkPeriodo(x));
+    (mossi.entrate[r.a]=mossi.entrate[r.a]||[]).push(_hkPeriodo(x));
+  });});
+  piano._hkMossi=mossi;
   const LISTA={partenza:'partenze',cambio:'cambi',fermata:'fermate',arrivo:'arrivi'};
   toccate.forEach(room=>{
     const st=_hkStatesFromBlocks(BL[room]||[],N);
@@ -3613,7 +3624,22 @@ function hkSuggestMoves(maxN,focusIdx){
   // passare per prenotazioni normali.
   const spostabile=b=>b.start>todayIdx;
   const mosse=[];
+  // Giro a vuoto (28/10/2026): una prenotazione entra in Art 5 da Art 15 e un'altra con le
+  // STESSE date esce da Art 5 verso Art 17. Art 5 resta com'era, e 15 e 17 sono dallo
+  // stesso lato: due passaggi nel PMS per niente. Vale dentro la mossa e rispetto a quelle
+  // gia' segnate come fatte o ai passi precedenti del Piano della settimana (_hkMossi).
+  const MOSSI=pianoData._hkMossi||{entrate:{},uscite:{}};
+  const _per=b=>_hkPeriodo(b);
+  const _ugualeP=(p,q)=>p.start===q.start&&p.end===q.end;
+  const _hkGiroAVuoto=changes=>Object.keys(changes).some(R=>{
+    const prima=BL[R]||[],dopo=changes[R];
+    const esce=prima.filter(b=>dopo.indexOf(b)<0).map(_per);
+    const entra=dopo.filter(b=>prima.indexOf(b)<0).map(_per);
+    const giaEntrate=(MOSSI.entrate[R]||[]).concat(entra),giaUscite=MOSSI.uscite[R]||[];
+    return esce.some(p=>giaEntrate.some(q=>_ugualeP(p,q)))||entra.some(p=>giaUscite.some(q=>_ugualeP(p,q)));
+  });
   const valuta=(cand,changes)=>{
+    if(_hkGiroAVuoto(changes))return;
     const{guadagno,effetti,peggiori,giorni}=_hkEffetto(days,stato,changes,todayIdx,N);
     if(guadagno<=0.01)return;                              // mai peggiorare la settimana
     // Con un giorno selezionato conta solo se aiuta QUEL giorno: una mossa che pareggia

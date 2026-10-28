@@ -2956,3 +2956,49 @@ sez('Bilanciamento: giorno per giorno solo mosse che aiutano quel giorno');
 
   pianoData = _piano; pianoNavIdx = _nav;
 })();
+
+// ─────────────────────────────────────────────────────────────────────────────
+sez('Bilanciamento: niente giri a vuoto fra camere');
+// 28/10/2026. "Mi fai spostare da 15 a 5 una prenotazione identica per lunghezza a quella
+// che mi fai spostare da 5 a 17": Art 5 resta com'era, 15 e 17 stanno dallo stesso lato,
+// tempo perso. Nessuna mossa fa uscire da una camera un soggiorno con le stesse date di uno
+// appena entrato (con "Fatto nel PMS" o in un passo precedente), ne' il contrario.
+(function () {
+  var _piano = pianoData;
+  var G = [0, 1, 2, 3, 4, 5, 6].map(function (i) {
+    var d = new Date(2027, 8, 3 + i, 12);
+    return { label: 'G' + i, data: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/2027',
+             soulart: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             boutique: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
+  });
+  var CHIAVE = { F: 'fermate', P: 'partenze', C: 'cambi', A: 'arrivi' };
+  var CELLE = { 'Art 5':  ['.', '.', '.', '.', '.', '.', '.'],
+                'Art 6':  ['.', 'A', 'F', 'F', 'F', 'P', '.'],
+                'Art 15': ['.', '.', '.', 'A', 'F', 'P', '.'],
+                'Art 17': ['.', '.', '.', '.', '.', '.', '.'] };
+  Object.keys(CELLE).forEach(function (r) {
+    CELLE[r].forEach(function (c, i) { if (CHIAVE[c]) G[i].soulart[CHIAVE[c]].push(r); });
+  });
+  var base = { stampato: G[0].data, giorni: G, incArr: [], incPar: [],
+               tipi: { 'Art 5': 'AS DLX DP', 'Art 6': 'AS DLX DP', 'Art 15': 'AS DLX DP', 'Art 17': 'AS DLX DP' } };
+  // Fatto nel PMS: la prenotazione G3 → G5 passa da Art 15 ad Art 5.
+  var fatte = [{ id: 'x1', righe: [{ da: 'Art 15', a: 'Art 5', s: G[3].data, e: G[5].data }] }];
+  var eff = _hkPianoEffettivo(base, fatte);
+  pianoData = eff.piano;
+  ok('lo spostamento fatto e\' applicato',  eff.esiti.x1, 'attesa');
+  function daCinque(mosse) {
+    return mosse.filter(function (m) {
+      return (_hkRigheDaMossa(m, pianoData) || []).some(function (r) { return r.da === 'Art 5' && r.s === G[3].data; });
+    });
+  }
+  var s = hkSuggestMoves(30, null);
+  ok('G5 e\' sbilanciato (2 a 0)',          s.giorni[5].pM + '-' + s.giorni[5].pA, '2-0');
+  ok('nessuna mossa rimanda fuori da Art 5 la stessa prenotazione', daCinque(s.mosse).length, 0);
+  ok('ma una mossa per pareggiare c\'e\' (Art 6)', s.mosse.some(function (m) { return m.from === 'Art 6'; }), true);
+  // Prova che il controllo sopra puo' fallire: senza la memoria degli spostamenti fatti
+  // il motore la proporrebbe.
+  delete pianoData._hkMossi;
+  ok('senza memoria la proporrebbe',        daCinque(hkSuggestMoves(30, null).mosse).length > 0, true);
+  pianoData = _piano;
+})();
