@@ -3672,7 +3672,7 @@ function hkSuggestMoves(maxN,focusIdx){
         if(B===A||MATARESE.has(B))return;                // B sempre lato Altre
         // 1) spostamento semplice: X entra in B così com'è
         if(_hkFits(X,BL[B],[],N)){
-          valuta({tipo:'sposta',from:A,to:B,cat:tipo,start:X.start,end:X.end,xSpec:!!X.speciale},
+          valuta({tipo:'sposta',from:A,to:B,cat:tipo,start:X.start,end:X.end,xOpen:!!X.openEnd,xSpec:!!X.speciale},
                  {[A]:(BL[A]||[]).filter(z=>z!==X),[B]:(BL[B]||[]).concat([X])});
           return;                                        // se entra già, niente scambi o catene
         }
@@ -3684,14 +3684,14 @@ function hkSuggestMoves(maxN,focusIdx){
           if(!spostabile(Y))return;                       // ospite già in casa: non si tocca
           // 2) scambio: Y va in A al posto di X
           if(_hkFits(Y,BL[A],[X],N)){
-            valuta({tipo:'scambia',from:A,to:B,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end,xSpec:!!X.speciale,ySpec:!!Y.speciale},
+            valuta({tipo:'scambia',from:A,to:B,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end,xOpen:!!X.openEnd,yOpen:!!Y.openEnd,xSpec:!!X.speciale,ySpec:!!Y.speciale},
                    {[A]:(BL[A]||[]).filter(z=>z!==X).concat([Y]),[B]:(BL[B]||[]).filter(z=>z!==Y).concat([X])});
           }
           // 3) catena a tre: Y si sposta in una terza camera C, liberando B per X
           stessoTipo.forEach(C=>{
             if(C===A||C===B)return;
             if(!_hkFits(Y,BL[C],[],N))return;
-            valuta({tipo:'catena',from:A,to:B,via:C,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end,xSpec:!!X.speciale,ySpec:!!Y.speciale},
+            valuta({tipo:'catena',from:A,to:B,via:C,cat:tipo,start:X.start,end:X.end,yStart:Y.start,yEnd:Y.end,xOpen:!!X.openEnd,yOpen:!!Y.openEnd,xSpec:!!X.speciale,ySpec:!!Y.speciale},
                    {[A]:(BL[A]||[]).filter(z=>z!==X),
                     [B]:(BL[B]||[]).filter(z=>z!==Y).concat([X]),
                     [C]:(BL[C]||[]).concat([Y])});
@@ -3723,8 +3723,8 @@ function hkSuggestMoves(maxN,focusIdx){
         const changesMulti={[A]:(BL[A]||[]).filter(z=>z!==X),
           [B]:(BL[B]||[]).filter(z=>intralcio.indexOf(z)<0).concat([X])};
         assegnazioni.forEach(({Z,C})=>{changesMulti[C]=(changesMulti[C]||BL[C]||[]).concat([Z]);});
-        valuta({tipo:'catena-multi',from:A,to:B,cat:tipo,start:X.start,end:X.end,xSpec:!!X.speciale,
-                vias:assegnazioni.map(a=>({room:a.C,start:a.Z.start,end:a.Z.end,speciale:!!a.Z.speciale}))},
+        valuta({tipo:'catena-multi',from:A,to:B,cat:tipo,start:X.start,end:X.end,xOpen:!!X.openEnd,xSpec:!!X.speciale,
+                vias:assegnazioni.map(a=>({room:a.C,start:a.Z.start,end:a.Z.end,open:!!a.Z.openEnd,speciale:!!a.Z.speciale}))},
                changesMulti);
       });
     });
@@ -3745,7 +3745,18 @@ function hkSuggestMoves(maxN,focusIdx){
   });
   // Una sola proposta per coppia di camere coinvolte, per non ripetere varianti simili
   const visti=new Set();
-  const dedup=mosse.filter(m=>{const k=m.from+'>'+m.to+'>'+m.start;if(visti.has(k))return false;visti.add(k);return true;});
+  // Due mosse che spostano soggiorni con le STESSE date e cambiano i numeri della settimana
+  // allo stesso modo sono la stessa proposta per chi la esegue (28/10/2026: "Art 12 → Art 14"
+  // e "Art 6 → Art 14", stesse date, stesso effetto, una sotto l'altra). Se ne tiene una,
+  // la migliore: eseguita quella, l'altra non avrebbe più posto né motivo.
+  const _firma=m=>m.tipo==='scambio-blocco'?null:[m.tipo,m.start,m.end,m.xOpen,m.yStart,m.yEnd,m.yOpen,
+    (m.vias||[]).map(v=>v.start+'-'+v.end+(v.open?'+':'')).join(','),
+    Object.keys(m.giorni).map(d=>d+':'+m.giorni[d].aP+'/'+m.giorni[d].aC).join(';')].join('|');
+  const dedup=mosse.filter(m=>{
+    const k=m.from+'>'+m.to+'>'+m.start,f=_firma(m);
+    if(visti.has(k)||(f&&visti.has(f)))return false;
+    visti.add(k);if(f)visti.add(f);return true;
+  });
   out.totMosse=dedup.length;              // quante alternative esistono davvero, prima del taglio
   out.mosse=dedup.slice(0,maxN||3);
   // Se un giorno resta sbilanciato e non c'è mossa che lo migliori, spiega il perché
@@ -4008,9 +4019,15 @@ function renderHkSuggestions(focusIdx){
       <td style="padding:2px 0 2px 10px;font-size:11px;white-space:nowrap;">${nota}</td></tr>`;
   };
   const rigaMossa=(m,i,foc,conBottone)=>{
-    const periodo=(m.start===m.end?lbl(m.start):lbl(m.start)+' → '+lbl(m.end))+(m.xSpec?tagRip:'');
-    const perY=m.yStart!=null?((m.yStart===m.yEnd?lbl(m.yStart):lbl(m.yStart)+' → '+lbl(m.yEnd))+(m.ySpec?tagRip:'')):'';
-    const viaLbl=v=>(v.start===v.end?lbl(v.start):lbl(v.start)+' → '+lbl(v.end))+(v.speciale?tagRip:'');
+    // Un soggiorno che continua oltre l'ultimo giorno del Piano NON parte quel giorno: la
+    // sua partenza il Piano non la conosce (28/10/2026: "Dom 1/11 → Mar 3/11" per chi
+    // partiva il 5/11). Si scrive "in poi", come nello scambio in blocco.
+    const periodo=perTxt({start:m.start,end:m.xOpen?null:m.end,speciale:m.xSpec});
+    const perY=m.yStart!=null?perTxt({start:m.yStart,end:m.yOpen?null:m.yEnd,speciale:m.ySpec}):'';
+    const viaLbl=v=>perTxt({start:v.start,end:v.open?null:v.end,speciale:v.speciale});
+    // Oltre la fine del Piano Compass non sa se la camera d'arrivo è libera: va detto.
+    const oltre=m.xOpen||m.yOpen||(m.vias||[]).some(v=>v.open);
+    const avvOltre='il Piano finisce lì, le notti dopo vanno controllate nel PMS';
     let passi=[],badge='',sotto='';
     if(m.tipo==='scambia'){
       // Uno scambio sono due operazioni nel PMS, non una: si scrivono tutte e due.
@@ -4035,8 +4052,9 @@ function renderHkSuggestions(focusIdx){
         :`Le ${nB} prenotazioni di ${m.to} passano di conseguenza in ${m.from}.`)+` Chi è già in casa resta dov'è.`;
     }else{
       passi=[[m.from,m.to,periodo]];
-      sotto=`${m.to} libera in quelle notti`;
+      sotto=m.xOpen?`${m.to} libera fino a ${lbl(pianoData.giorni.length-1)}: ${avvOltre}`:`${m.to} libera in quelle notti`;
     }
+    if(oltre&&m.tipo!=='sposta'&&m.tipo!=='scambio-blocco')sotto=(sotto?sotto+' · ':'')+'Il Piano finisce '+lbl(pianoData.giorni.length-1)+': le notti dopo vanno controllate nel PMS';
     if(!badge&&passi.length>1)badge=`${passi.length} spostamenti, in quest'ordine`;
     const effOrd=foc?[...m.effetti].sort((a,b)=>(a.i===foc.i?-1:0)-(b.i===foc.i?-1:0)):m.effetti;
     const mostrati=effOrd.slice(0,3);

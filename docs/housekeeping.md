@@ -279,6 +279,23 @@ Bilanciamento Camere non sono cliccabili (lì non c'è la griglia): il 6° param
   aperta (registra comunque le partenze del mese) e `setView('room-division')` la ridisegna
   all'apertura.
 
+### Soggiorni oltre il Piano e proposte doppie (28/10/2026)
+
+- **Partenza inventata.** Un soggiorno ancora in corso all'ultimo giorno del Piano (`openEnd`)
+  veniva scritto "Dom 1/11 → Mar 3/11" anche se l'ospite partiva il 5/11: `m.end` di un
+  soggiorno aperto è l'ultimo giorno del Piano, non una partenza. Ora le mosse portano
+  `xOpen`/`yOpen` (e `open` nei `vias`) e la riga dice **"Dom 1/11 in poi"** (`perTxt`, come lo
+  scambio in blocco), con l'avviso "il Piano finisce lì, le notti dopo vanno controllate nel
+  PMS": oltre il Piano Compass non sa se la camera d'arrivo è libera.
+- **Proposte identiche.** "Art 12 → Art 14" e "Art 6 → Art 14", stesse date e stesso effetto,
+  comparivano una sotto l'altra (e così le varianti verso Art 16). La deduplicazione guardava
+  solo `from>to>start`; ora tiene una sola mossa per **firma** (`_firma`: tipo, date dei
+  soggiorni, aperto/chiuso, e partenze/carico di ogni giorno dopo la mossa). Lo scambio in
+  blocco resta fuori dalla firma.
+
+Controlli: "Bilanciamento camere: chi resta oltre il Piano non parte l'ultimo giorno",
+provati sabotando la riga (2 falliscono) e la firma (1 fallisce).
+
 ### San Liborio con la SoulArt nell'app Housekeeping e nell'Overview (06/10/2026)
 
 Nell'app `housekeeper.html` San Liborio sta sotto "SoulArt Hotel - San Liborio": le sue camere vanno fra le

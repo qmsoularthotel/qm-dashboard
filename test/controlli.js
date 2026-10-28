@@ -1944,6 +1944,54 @@ sez('Bilanciamento camere: le chip dicono dove ci sono suggerimenti');
 })();
 
 // ─────────────────────────────────────────────────────────────────────────────
+sez('Bilanciamento camere: chi resta oltre il Piano non parte l\'ultimo giorno');
+// 28/10/2026. Due proposte "Art 12 → Art 14, Dom 1/11 → Mar 3/11" e "Art 6 → Art 14, Dom
+// 1/11 → Mar 3/11", una sotto l'altra. Il Piano finiva martedi' 3/11 e i due ospiti
+// partivano il 5/11: un soggiorno ancora aperto all'ultimo giorno veniva scritto come se
+// partisse quel giorno. E le due proposte erano la stessa mossa (stesse date, stesso
+// effetto): eseguita una, l'altra non ha piu' posto.
+(function () {
+  var _piano = pianoData;
+  var NOMI = ['Mer 28/10', 'Gio 29/10', 'Ven 30/10', 'Sab 31/10', 'Dom 1/11', 'Lun 2/11', 'Mar 3/11'];
+  var G = NOMI.map(function (n, i) {
+    var d = new Date(2027, 9, 28 + i, 12);
+    return { label: n, data: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/2027',
+             soulart: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             boutique: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
+  });
+  //                 mer gio ven sab dom lun mar
+  var CELLE = { 'Art 12': ['.', '.', '.', '.', 'A', 'F', 'F'],
+                'Art 6':  ['.', '.', '.', '.', 'A', 'F', 'F'],
+                'Art 4':  ['F', 'F', 'F', 'F', 'F', 'P', 'A'],
+                'Art 5':  ['F', 'F', 'F', 'F', 'F', 'P', '.'],
+                'Art 14': ['.', '.', '.', '.', '.', '.', '.'],
+                'Art 16': ['.', '.', '.', '.', '.', '.', '.'] };
+  var CHIAVE = { F: 'fermate', P: 'partenze', C: 'cambi', A: 'arrivi' };
+  Object.keys(CELLE).forEach(function (r) {
+    CELLE[r].forEach(function (c, i) { if (CHIAVE[c]) G[i].soulart[CHIAVE[c]].push(r); });
+  });
+  var tipi = {};
+  Object.keys(CELLE).forEach(function (r) { tipi[r] = 'AS DLX DP'; });
+  pianoData = { stampato: G[0].data, giorni: G, incArr: [], incPar: [], tipi: tipi };
+
+  var s = hkSuggestMoves(30, null);
+  var sposta = s.mosse.filter(function (m) { return m.tipo === 'sposta' && m.start === 4; });
+  ok('c\'e\' una proposta per i soggiorni di domenica', sposta.length > 0, true);
+  ok('il soggiorno e\' segnato come aperto oltre il Piano', !!(sposta[0] && sposta[0].xOpen), true);
+  // Art 12 e Art 6 hanno lo stesso soggiorno e stanno dalla stessa parte: spostare l'uno o
+  // l'altro in Art 14 (o in Art 16) e' la stessa cosa. Una proposta sola.
+  ok('soggiorni identici: una proposta sola', sposta.length, 1);
+
+  var riga = renderHkSuggestions(null).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+  ok('non scrive una partenza che il Piano non conosce', /Dom 1\/11 → Mar 3\/11/.test(riga), false);
+  ok('dice che il soggiorno continua',                  /Dom 1\/11 in poi/.test(riga), true);
+  ok('e avvisa di controllare le notti dopo nel PMS',   /le notti dopo vanno controllate nel PMS/.test(riga), true);
+
+  pianoData = _piano;
+})();
+
+// ─────────────────────────────────────────────────────────────────────────────
 sez('Bilanciamento camere: oggi non si propone, si parte da domani');
 // Nessuna mossa puo' cambiare oggi (si spostano solo soggiorni che arrivano DOPO oggi),
 // eppure il pannello apriva proprio oggi, col suo "5 · 2" rosso e niente da fare.
