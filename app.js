@@ -3622,15 +3622,15 @@ function hkSuggestMoves(maxN,focusIdx){
     // non un giorno solo — filtrarlo sul singolo giorno in focus lo scartava ingiustamente
     // anche quando migliorava tutti gli altri giorni della vista settimanale. Per quello
     // basta il guadagno complessivo già verificato sopra.
+    // 28/10/2026: l'eccezione per lo scambio in blocco e' stata tolta. Con Gio 29/10 a 1-4
+    // il pannello elencava due scambi in blocco "non tocca Gio 29/10 — cambia solo il
+    // carico" di martedi': tempo perso a leggerli. Le mosse sulla settimana intera stanno
+    // nel "Piano della settimana" (che non passa un giorno in focus).
     let gFocus=0;
     if(hasFocus){
       const f=giorni[focusIdx];
-      if(cand.tipo==='scambio-blocco'){
-        gFocus=f?f.so-f.sn:0;                             // usato solo per l'ordinamento, non filtra
-      }else{
-        if(!f||f.sn>=f.so-0.01)return;
-        gFocus=f.so-f.sn;
-      }
+      if(!f||f.sn>=f.so-0.01)return;
+      gFocus=f.so-f.sn;
     }
     // Quanto cambia la settimana di Matarese in partenze: serve a spareggiare col mese.
     let dM=0;Object.keys(giorni).forEach(d=>{dM+=giorni[d].aP[0]-giorni[d].daP[0];});
@@ -3793,7 +3793,8 @@ function hkSuggestMoves(maxN,focusIdx){
       const X=(BL[r]||[]).find(b=>b.end===g.i&&!b.openEnd);
       let perche;
       if(!X)perche='soggiorno non ricostruibile dal Piano';
-      else if(X.start<todayIdx)perche='ospite già in casa da prima';
+      // Arrivato oggi conta come già in casa: il motore non lo sposta (spostabile).
+      else if(!spostabile(X))perche='ospite già in casa: la sua partenza non si sposta';
       else{
         const contro=ART.filter(o=>MATARESE.has(o)!==inMat&&pianoData.tipi[o]===tipo);
         if(!contro.length)perche='nessuna camera '+_hkTipoLbl(tipo)+' dall\'altro lato';
@@ -3968,6 +3969,10 @@ function renderHkSuggestions(focusIdx){
     // camera cosa blocca il giorno peggiore. Serve a capire se il vincolo è strutturale
     // (una tipologia che sta tutta da un lato) o solo di disponibilità in quelle notti.
     const g=s.diag;
+    // Tutte partenze di ospiti già in casa (il caso di domani): una frase sola, non un
+    // elenco di camere che dice la stessa cosa riga per riga.
+    if(s.ostacoli.length&&s.ostacoli.every(o=>/^ospite già in casa/.test(o.perche)))
+      return box(testa+`<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--text);line-height:1.55;">Nessuno spostamento possibile: le partenze di <strong>${lbl(g.i)}</strong> sono tutte di ospiti già in casa (${s.ostacoli.map(o=>o.camera).join(', ')}), e chi è già in casa non si sposta. ${lbl(g.i)} resta ${g.pM}-${g.pA}.</div>`);
     const righe=s.ostacoli.map(o=>`<div style="display:flex;gap:10px;padding:7px 0;font-size:12.5px;">
         <span style="font-weight:700;color:var(--text);min-width:52px;">${o.camera}</span>
         <span style="color:var(--text-muted);min-width:62px;">${o.tipo}</span>
@@ -3976,7 +3981,7 @@ function renderHkSuggestions(focusIdx){
     return box(testa+`<div style="background:var(--surface2);border-radius:8px;padding:12px 14px;">
       <div style="font-size:13px;color:var(--text);line-height:1.55;margin-bottom:${righe?'8px':'0'};">Nessuno scambio possibile con le regole attuali. Perché <strong style="color:var(--text);">${lbl(g.i)}</strong> resta ${g.dp!==0?`${g.pM}-${g.pA}`:`con il carico a ${_hkNum(s.giorni[g.i].cM)}-${_hkNum(s.giorni[g.i].cA)}`}${righe?':':' non ci sono camere riassegnabili in quel giorno.'}</div>
       ${righe}
-      ${righe?`<div style="font-size:12px;color:var(--text-muted);margin-top:8px;line-height:1.5;">Se il blocco è la tipologia, l'unico modo per sbloccarlo è consentire scambi tra tipologie diverse (es. a parità di capienza).</div>`:''}
+      ${s.ostacoli.some(o=>/^nessuna camera/.test(o.perche))?`<div style="font-size:12px;color:var(--text-muted);margin-top:8px;line-height:1.5;">Se il blocco è la tipologia, l'unico modo per sbloccarlo è consentire scambi tra tipologie diverse (es. a parità di capienza).</div>`:''}
     </div>`);
   }
   const frecciaG=`<span style="color:var(--text-dim);font-weight:400;">→</span>`;
@@ -4122,7 +4127,7 @@ function renderHkSuggestions(focusIdx){
   // ricorrente su cosa siano i due numeri, e va letta prima, non dopo.
   const legenda=`<div style="font-size:11.5px;color:var(--text-dim);line-height:1.5;padding-bottom:4px;"><strong style="color:var(--text-muted);">Partenze</strong> = camere che lasciano, <strong style="color:var(--text-muted);">Matarese · Altre</strong>. È il numero che le cameriere confrontano fra loro, ed è quello da pareggiare. Da applicare a mano nel PMS: Compass non modifica nulla.</div>`;
   const haPegg=s.mosse.some(m=>(m.peggiori||[]).length);
-  const nota=`<div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.55;">${haPegg?`In <span style="color:var(--amber);font-weight:700;">ambra</span> i giorni che peggiorano: il bilancio complessivo resta comunque migliore. `:''}${s.focus?`Sono elencate le mosse che migliorano <strong style="color:var(--text);">${fLbl}</strong>, più gli scambi in blocco che migliorano la settimana anche senza toccarlo (segnalati come <em>non tocca ${fLbl}</em>). Cambia giorno per vedere le sue.`:`L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana.`} Solo stessa tipologia e solo prenotazioni non ancora arrivate.</div>`;
+  const nota=`<div style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.55;">${haPegg?`In <span style="color:var(--amber);font-weight:700;">ambra</span> i giorni che peggiorano: il bilancio complessivo resta comunque migliore. `:''}${s.focus?`Sono elencate solo le mosse che migliorano <strong style="color:var(--text);">${fLbl}</strong>. Cambia giorno per vedere le sue, o apri il Piano della settimana.`:`L'obiettivo è pareggiare ogni singolo giorno, non solo il totale della settimana.`} Solo stessa tipologia e solo prenotazioni non ancora arrivate.</div>`;
   // "Ci sono altre possibilità?" — mostra solo se esistono davvero altre alternative già
   // calcolate e tagliate dal limite mosse mostrate, non un pulsante sempre presente a vuoto.
   const altreN=s.totMosse-s.mosse.length;

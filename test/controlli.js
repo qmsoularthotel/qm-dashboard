@@ -2892,3 +2892,67 @@ sez('Bilanciamento: San Liborio nei totali della settimana');
   ok('San Liborio va con le Altre', x.a.partenze.join() + ' / ' + x.m.partenze.join(), 'Art 14,Liborio / Art 5');
 })();
 ok('totale settimana e grafico lo usano', /_hkSplitConLiborio\(g\)/.test(String(renderHkWeekViewContainer)) && /_hkSplitConLiborio\(g\)/.test(String(renderHkWeekChart)), true);
+
+// ─────────────────────────────────────────────────────────────────────────────
+sez('Bilanciamento: giorno per giorno solo mosse che aiutano quel giorno');
+// 28/10/2026. Con Gio 29/10 a 1-4 il pannello elencava due scambi in blocco "non tocca
+// Gio 29/10 — cambia solo il carico" di martedi', e nessuna parola sul perche' giovedi'
+// restava 1-4: le sue partenze erano tutte di ospiti gia' in casa. "Cosi' mi fai perdere
+// solo tempo." Ora giorno per giorno escono solo le mosse che migliorano quel giorno, e un
+// giorno bloccato dagli ospiti in casa lo dice in una frase.
+(function () {
+  var _piano = pianoData, _nav = pianoNavIdx;
+  function giorni(base) {
+    return [0, 1, 2, 3, 4, 5, 6].map(function (i) {
+      var d = new Date(base); d.setDate(base.getDate() + i);
+      return { label: 'G' + i, data: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(),
+               soulart: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+               boutique: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+               liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
+    });
+  }
+  var CHIAVE = { F: 'fermate', P: 'partenze', C: 'cambi', A: 'arrivi' };
+  function riempi(G, CELLE) {
+    Object.keys(CELLE).forEach(function (r) {
+      CELLE[r].forEach(function (c, i) { if (CHIAVE[c]) G[i].soulart[CHIAVE[c]].push(r); });
+    });
+  }
+  // 1) Piano del 2027: nessun giorno e' oggi. Lo scambio in blocco Art 12 ⇄ Art 14 esiste
+  //    sulla settimana, ma non migliora tutti i giorni.
+  var G = giorni(new Date(2027, 8, 3, 12));
+  riempi(G, { 'Art 12': ['F', 'P', '.', '.', '.', 'A', 'F'],
+              'Art 14': ['F', 'F', 'C', 'C', 'P', '.', 'A'],
+              'Art 16': ['F', 'F', 'C', 'C', 'F', 'F', 'F'] });
+  pianoData = { stampato: G[0].data, giorni: G, incArr: [], incPar: [],
+                tipi: { 'Art 12': 'AS DLX DP', 'Art 14': 'AS DLX DP', 'Art 16': 'AS SUP' } };
+  ok('lo scambio in blocco c\'e\' sulla settimana', hkSuggestMoves(30, null).mosse.some(function (m) { return m.tipo === 'scambio-blocco'; }), true);
+  var fuori = 0, giorniSenzaBlocco = 0;
+  for (var i = 0; i < 7; i++) {
+    var s = hkSuggestMoves(30, i);
+    (s.mosse || []).forEach(function (m) { var f = m.giorni[i]; if (!f || f.sn >= f.so - 0.01) fuori++; });
+    var sett = hkSuggestMoves(30, null).mosse.filter(function (m) { return m.tipo === 'scambio-blocco'; });
+    if (sett.length && !(s.mosse || []).some(function (m) { return m.tipo === 'scambio-blocco'; })) giorniSenzaBlocco++;
+  }
+  ok('nessuna mossa che non migliora il giorno scelto', fuori, 0);
+  ok('e lo scambio in blocco non compare dove non serve', giorniSenzaBlocco > 0, true);
+  ok('la nota non parla piu\' di mosse che non toccano il giorno', /non tocca/.test(renderHkSuggestions(1)), false);
+
+  // 2) Oggi e' G2; domani (G3) partono Art 5 e Art 6, arrivati ieri: 2-0, niente da fare.
+  var base = new Date(); base.setHours(12, 0, 0, 0); base.setDate(base.getDate() - 2);
+  G = giorni(base);
+  riempi(G, { 'Art 5':  ['.', 'A', 'F', 'P', '.', '.', '.'],
+              'Art 6':  ['.', 'A', 'F', 'P', '.', '.', '.'],
+              'Art 14': ['.', '.', '.', '.', '.', '.', '.'] });
+  pianoData = { stampato: G[0].data, giorni: G, incArr: [], incPar: [],
+                tipi: { 'Art 5': 'AS DLX DP', 'Art 6': 'AS DLX DP', 'Art 14': 'AS DLX DP' } };
+  pianoNavIdx = 3;
+  var d = hkSuggestMoves(30, 3);
+  ok('domani e\' 2-0',                      d.giorni[3].pM + '-' + d.giorni[3].pA, '2-0');
+  ok('nessuna mossa per domani',            d.totMosse || 0, 0);
+  ok('ogni camera e\' un ospite gia\' in casa', d.ostacoli.length === 2 && d.ostacoli.every(function (o) { return /^ospite già in casa/.test(o.perche); }), true);
+  var txt = renderHkSuggestions(3).replace(/<[^>]*>/g, '');
+  ok('il pannello lo dice in una frase',    /sono tutte di ospiti già in casa \(Art 5, Art 6\)/.test(txt), true);
+  ok('senza il consiglio sulle tipologie',  /tipologie diverse/.test(txt), false);
+
+  pianoData = _piano; pianoNavIdx = _nav;
+})();

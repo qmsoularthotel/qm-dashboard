@@ -186,9 +186,20 @@ Coperto da **13 controlli** in `test/controlli.js` ("Bilanciamento camere: le ch
 dove ci sono suggerimenti"), verificati con tre sabotaggi (la chip non dichiara mai niente;
 conta il giorno sbagliato; riga vuota invece del trattino): 3, 4 e 1 falliscono.
 
-**Mosse che non toccano il giorno selezionato**: per gli `scambio-blocco` il filtro sul giorno
-in focus è saltato di proposito (riguardano tutta la settimana), e la nota diceva il contrario.
-Ora quelle mosse portano il badge grigio **non tocca \<giorno\>**.
+**Giorno per giorno = solo mosse che migliorano quel giorno** (28/10/2026). Prima gli
+`scambio-blocco` saltavano il filtro sul giorno in focus e comparivano col badge grigio
+*non tocca \<giorno\>*. Caso reale: Gio 29/10 a 1-4, e il pannello elencava due scambi in
+blocco *non tocca Gio 29/10 — cambia solo il carico* di martedì. Il QM: "così mi fai perdere
+solo tempo". L'eccezione è tolta: le mosse sulla settimana intera stanno nel **Piano della
+settimana**. **Non reintrodurla.**
+
+Lo stesso giorno: se le partenze del giorno sono **tutte di ospiti già in casa** (sempre il
+caso di domani: chi parte domani è già arrivato), il pannello lo dice in una frase
+("Nessuno spostamento possibile: le partenze di … sono tutte di ospiti già in casa") invece
+dell'elenco camera per camera. Il motivo per camera usa `spostabile` (arrivato oggi = in
+casa), non più `start<oggi`, che mandava gli arrivi di oggi nella diagnosi sbagliata. Il
+consiglio "scambi tra tipologie diverse" compare solo se il blocco è davvero la tipologia.
+Controlli in `test/controlli.js` ("giorno per giorno solo mosse che aiutano quel giorno").
 
 ---
 
