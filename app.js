@@ -40,7 +40,7 @@ const IS_REST=v=>{
   const u=v.trim().toUpperCase();
   if(['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO','MALATTIA','FERIE','OFF','—','-','–',''].includes(u))return true;
   // Match anche su etichette composte tipo "R Recupero", "R Richiesto", "Recupero straordinario" ecc.
-  return u.includes('RECUPER')||u.includes('RIPOSO')||u.includes('MALATTIA')||u.includes('FERIE')||u.includes('RICHIEST');
+  return u.includes('RECUPER')||u.includes('RIPOSO')||u.includes('MALATTIA')||u.includes('FERIE')||/^R\b.*RICHIEST/.test(u)||/^REC\.?\s*RIP/.test(u);
 };
 // Un trattino nella cella del turno non è un riposo vero e proprio (nessuno lo ha deciso/
 // richiesto), è un valore "non pertinente" — la persona non deve comparire né come in
@@ -466,7 +466,9 @@ const TURNI_CODICI={
 };
 /** Riduce un codice scritto a mano alla sua categoria. Puro. */
 function turniNormalizza(cod){
-  const c=String(cod||'').toUpperCase().replace(/\s+/g,' ').trim();
+  // Via anche i caratteri invisibili (spazio a larghezza zero) che arrivano incollando dal
+  // foglio: 'INT GALL 10/18' con uno di questi in mezzo finiva fra i codici ignoti.
+  const c=String(cod||'').replace(/[\u200B-\u200D\u2060\uFEFF]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
   if(!c||c==='-')return null;
   const exR=/\(EX R\)/.test(c);
   const base=c.replace(/\(EX R\)/,'').replace(/\s+/g,' ').trim();
@@ -480,21 +482,34 @@ function turniNormalizza(cod){
     if(r&&r.tipo!=='altro')return Object.assign(r,{exR:exR||r.exR});
   }
   // Riposo in tutte le forme viste nei fogli reali: 'R', 'R RICHIESTO',
-  // 'R RECUPERO 23/08', 'RIPOSO RICHIESTO', 'RECUPERO RIPOSO'.
-  if(/^R\b/.test(base)||/^RIPOSO\b/.test(base)||/^RECUPERO RIPOSO\b/.test(base))return{tipo:'riposo',exR:false};
-  if(base==='FERIE')return{tipo:'ferie',exR:false};
-  if(base==='MALATTIA')return{tipo:'malattia',exR:false};
-  // Intermedi: 'INT CAR 9/17', 'INT CAR 10/18', 'INT GALL 10/18'.
+  // 'R RECUPERO 23/08', 'RIPOSO RICHIESTO', 'RECUPERO RIPOSO', 'REC RIP'.
+  if(/^R\b/.test(base)||/^RIPOSO\b/.test(base)||/^RECUPERO RIPOSO\b/.test(base)||/^REC\.?\s*RIP/.test(base))return{tipo:'riposo',exR:false};
+  // 'FERIE RICHIESTE' sono ferie come 'FERIE'.
+  if(/^FERIE\b/.test(base))return{tipo:'ferie',exR:false};
+  if(/^MALATTIA\b/.test(base))return{tipo:'malattia',exR:false};
+  // Intermedi: 'INT CAR 9/17', 'INT CAR 10/18', 'INT GALL 10/18' (anche 'INT. GALL',
+  // 'INT/GALL', 'INTGALL').
   // L'orario NON identifica la struttura — nel turno del 24-30/08 lo stesso 10/18 compare
   // sia come CAR sia come GALL. Si guarda solo la sigla della sede e si ignora l'orario,
   // altrimenti un cambio d'orario farebbe sparire il turno dai conteggi.
-  const mInt=base.match(/^INT\s+(CAR|GALL)\b/);
-  if(mInt)return{tipo:'turno',codice:'INT '+mInt[1],exR,
-    sede:mInt[1]==='GALL'?'galleria':'soulart',fascia:'intermedio',
-    label:'Intermedio '+(mInt[1]==='GALL'?'Art Resort':'SoulArt')};
+  const mInt=base.match(/^INT(?:ERMEDIO)?\s*[.\/-]?\s*(CAR|GALL?)/);
+  if(mInt){const g=mInt[1]!=='CAR';return{tipo:'turno',codice:'INT '+(g?'GALL':'CAR'),exR,
+    sede:g?'galleria':'soulart',fascia:'intermedio',
+    label:'Intermedio '+(g?'Art Resort':'SoulArt')};}
+  // 'GALL/CAR 12-20': intermedio a cavallo delle due sedi. Conta fra gli intermedi ma in
+  // nessuna delle due sedi: assegnarlo a una sola falserebbe il confronto Art Resort/SoulArt.
+  if(/^(GALL?\s*\/\s*CAR|CAR\s*\/\s*GALL?)\b/.test(base))
+    return{tipo:'turno',codice:'GALL/CAR',exR,sede:null,fascia:'intermedio',label:'Intermedio Galleria/SoulArt'};
   if(base==='PGALL')return{tipo:'pgall',exR};
   if(base==='P')return{tipo:'p',exR};
   if(TURNI_CODICI[base])return Object.assign({tipo:'turno',codice:base,exR},TURNI_CODICI[base]);
+  // 'AC RICHIESTO': turno chiesto dalla persona, resta quel turno. Si toglie la parola e si
+  // riprova (il riposo richiesto e' gia' preso sopra).
+  const senzaRich=base.replace(/\s*\bRICHIEST[OAIE]\b\s*/g,' ').trim();
+  if(senzaRich&&senzaRich!==base){
+    const r=turniNormalizza(senzaRich);
+    if(r&&r.tipo!=='altro')return Object.assign(r,{exR:exR||r.exR});
+  }
   return{tipo:'altro',codice:base,exR};
 }
 /**
@@ -536,7 +551,7 @@ function turniStatistiche(archivio,membri){
         else if(n.fascia==='pomeriggio'){s.pomeriggio++;}
         else if(n.fascia==='intermedio'){s.intermedi++;}
         else if(n.fascia==='notte'){s.notti++;if(n.sede==='galleria')s.nottiG++;else s.nottiC++;}
-        if(n.fascia!=='notte'){ if(n.sede==='galleria')s.galleria++; else s.soulart++; }
+        if(n.fascia!=='notte'){ if(n.sede==='galleria')s.galleria++; else if(n.sede==='soulart')s.soulart++; }
       });
     });
   });
@@ -723,8 +738,8 @@ function turniRenderStats(){
         </table>
       </div>
       <div style="padding:11px 13px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;border-top:1px solid var(--border);">
-        <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. L'orario degli intermedi non conta: la sede la dice la sigla. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (AR = Art Resort, SA = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
-        Riposo, riposo richiesto e recupero contano come riposo.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
+        <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. L'orario degli intermedi non conta: la sede la dice la sigla; GALL/CAR conta fra gli intermedi ma in nessuna delle due sedi. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (AR = Art Resort, SA = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
+        Riposo, riposo richiesto, recupero e REC RIP contano come riposo; ferie richieste come ferie; un turno "richiesto" (AC RICHIESTO) come quel turno.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
 
       </div>
     </div>
@@ -814,7 +829,7 @@ const IS_ABSENT=v=>{
   // Il trattino resta fuori di proposito: non è un'assenza reale (R/RIPOSO/FERIE/...),
   // è un valore "non pertinente" che non deve contare né come in turno né come assente.
   if(['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO','MALATTIA','OFF','FERIE'].includes(u))return true;
-  return u.includes('RECUPER')||u.includes('RIPOSO')||u.includes('MALATTIA')||u.includes('FERIE')||u.includes('RICHIEST');
+  return u.includes('RECUPER')||u.includes('RIPOSO')||u.includes('MALATTIA')||u.includes('FERIE')||/^R\b.*RICHIEST/.test(u)||/^REC\.?\s*RIP/.test(u);
 };
 function updateSidebarInfo(){if(!weekData)return;const g=weekData.giorni[activeDay];document.getElementById('loadedDate').textContent=g.label;document.getElementById('loadedActive').textContent=ALL_STAFF.filter(n=>!IS_REST(getShift(g.shifts,n))).length+' in turno';document.getElementById('loadedAbsent').textContent=ALL_STAFF.filter(n=>IS_ABSENT(getShift(g.shifts,n))).length+' non in servizio';}
 // Cerca lo shift di un membro DEPTS in modo case-insensitive
@@ -918,7 +933,7 @@ function renderDay(idx){
   // (grigio), ferie è pianificato (ambra), malattia è l'unico che merita davvero attenzione (rosso)
   function _absenceReason(v){
     const u=String(v||'').trim().toUpperCase();
-    if(['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO'].includes(u)||u.includes('RECUPER')||u.includes('RIPOSO')||u.includes('RICHIEST'))return{label:'Riposo',bg:'var(--surface2)',fg:'var(--text-dim)',ord:0};
+    if(['R','RIPOSO','RIPOSO RICHIESTO','R RICHIESTO','RECUPERO'].includes(u)||u.includes('RECUPER')||u.includes('RIPOSO')||/^R\b.*RICHIEST/.test(u)||/^REC\.?\s*RIP/.test(u))return{label:'Riposo',bg:'var(--surface2)',fg:'var(--text-dim)',ord:0};
     if(u==='MALATTIA'||u.includes('MALATTIA'))return{label:'Malattia',bg:'var(--red-bg)',fg:'var(--red)',ord:1};
     if(u==='FERIE'||u.includes('FERIE'))return{label:'Ferie',bg:'var(--amber-bg)',fg:'var(--amber)',ord:2};
     return{label:'',bg:'var(--surface2)',fg:'var(--text-dim)',ord:3};

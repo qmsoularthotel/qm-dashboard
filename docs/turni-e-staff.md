@@ -137,7 +137,13 @@ I turni arrivano da una foto del planning, scritti da persone diverse: `R`, `R R
 
 **Una nota fra parentesi non fa un turno diverso**: `AC (CALL)` è un `AC`. Si prova prima il
 codice così com'è — esistono sigle che le parentesi le usano davvero, come `INT (GALL)` — e
-solo se non lo si riconosce si riprova senza la nota. Un codice davvero sconosciuto resta
+solo se non lo si riconosce si riprova senza la nota. Allo stesso modo un turno **richiesto**
+(`AC RICHIESTO`) è quel turno, mentre `FERIE RICHIESTE` sono ferie e `REC RIP` è riposo
+(31/10/2026). Nel turno del giorno (`IS_REST`/`IS_ABSENT`) "RICHIESTO" vuol dire riposo solo
+dopo una `R`: prima anche `AC RICHIESTO` finiva fra chi non è in servizio.
+`GALL/CAR 12-20` è un intermedio a cavallo delle due sedi: conta fra gli **intermedi** ma in
+**nessuna** delle due colonne Art Resort/SoulArt. Gli intermedi si leggono anche scritti
+`INT. GALL`, `INT/GALL`, `INTGALL`, e i caratteri invisibili incollati dal foglio si tolgono. Un codice davvero sconosciuto resta
 "non riconosciuto" ed è segnalato in un riquadro: **non entra in nessun conteggio**, ed è
 giusto che si veda.
 

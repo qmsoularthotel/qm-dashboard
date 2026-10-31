@@ -543,6 +543,28 @@ ok('un intermedio senza orario regge lo stesso', turniNormalizza('INT GALL').sed
 ok('RIPOSO RICHIESTO e\' riposo',     turniNormalizza('RIPOSO RICHIESTO').tipo, 'riposo');
 ok('RECUPERO RIPOSO e\' riposo',      turniNormalizza('RECUPERO RIPOSO').tipo, 'riposo');
 ok('R RECUPERO con la data e\' riposo', turniNormalizza('R RECUPERO 23/08').tipo, 'riposo');
+// Varianti del ricevimento (31/10/2026): finivano fra i codici non riconosciuti.
+ok('AC RICHIESTO e\' una mattina',     turniNormalizza('AC RICHIESTO').fascia + '/' + turniNormalizza('AC RICHIESTO').sede, 'mattina/soulart');
+ok('FERIE RICHIESTE sono ferie',       turniNormalizza('FERIE RICHIESTE').tipo, 'ferie');
+ok('REC RIP e\' riposo',               turniNormalizza('REC RIP').tipo, 'riposo');
+ok('GALL/CAR 12-20 e\' un intermedio', turniNormalizza('GALL/CAR 12-20').fascia, 'intermedio');
+ok('ma di nessuna delle due sedi',     turniNormalizza('GALL/CAR 12-20').sede, null);
+ok('INT GALL 10/18 con un carattere invisibile', turniNormalizza('INT\u200B GALL 10/18').sede, 'galleria');
+ok('INT. GALL 10/18 e\' intermedio Galleria', turniNormalizza('INT. GALL 10/18').sede + '/' + turniNormalizza('INT. GALL 10/18').fascia, 'galleria/intermedio');
+ok('INTGALL 10/18 pure',               turniNormalizza('INTGALL 10/18').sede, 'galleria');
+{ const _st = turniStatistiche({ '2026-10-26': { al: '2026-11-01', giorni: [
+    { data: '2026-10-26', shifts: { 'Rossi T.': 'GALL/CAR 12-20' } },
+    { data: '2026-10-27', shifts: { 'Rossi T.': 'AC RICHIESTO' } },
+    { data: '2026-10-28', shifts: { 'Rossi T.': 'REC RIP' } },
+    { data: '2026-10-29', shifts: { 'Rossi T.': 'FERIE RICHIESTE' } } ] } }, ['Rossi T.']);
+  const _p = _st.per['Rossi T.'];
+  ok('statistiche: intermedi/mattine/riposi/ferie', [_p.intermedi, _p.mattina, _p.riposi, _p.ferie].join(','), '1,1,1,1');
+  ok('GALL/CAR non va a SoulArt ne\' a Galleria', _p.soulart + '/' + _p.galleria, '1/0');
+  ok('nessun codice ignoto', _st.ignoti.length, 0); }
+if (typeof IS_REST === 'function') {
+  ok('AC RICHIESTO non e\' un riposo nel turno', IS_REST('AC RICHIESTO'), false);
+  ok('REC RIP e\' un riposo nel turno', IS_REST('REC RIP'), true);
+}
 
 // 17/08/2026 e' un lunedi', quindi il 23 e' domenica: il riposo di domenica va distinto.
 var _arch = { '2026-08-17': { dal:'2026-08-17', al:'2026-08-23', giorni: [
