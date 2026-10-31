@@ -33,6 +33,11 @@ const BK_ICON=`<svg width="13" height="13" viewBox="0 0 24 24" xmlns="http://www
 })();
 // §§ COSTANTI & CONFIG (DEPTS, WEEK fallback, IS_REST)
 const DEPTS={fo:{label:'Ricevimento',cls:'fo',members:['Maddaloni M.','Presta P.','De Rosa T.','Pennacchio V.','Perez L.','Imparato G.','Vatiero R.','Barbosa D.','D\'Andrea F.','Grieco V.','Extra Night','Iannario R.','Extra Angelica','Extra Benedetta','Raucci A.','Ruggiero B.','Abdalla']},hk:{label:'Housekeeping',cls:'hk',members:['Matarese A.','Nacci M.','De Masi C.','Chiantese M.','Ditta Antonella','Anushka','Ditta Giuditta','Ditta Nunzia','Roberta','Scognamillo E.','Esposito M.','Branno M.','Sarnataro A.']},bkf:{label:'Breakfast',cls:'bkf',members:['Amorese S.','Albano D.','Ferace C.','Panagodage S.','Extra BKF']},mt:{label:'Manutenzione',cls:'mt',members:['Basile G.']}};
+// Chi non lavora piu' con noi, con il primo giorno di assenza. RESTA in DEPTS di proposito:
+// le settimane archiviate e le statistiche lo devono ancora riconoscere (31/10/2026: Iannario,
+// "tienilo in archivio"). Esce solo dall'elenco dei nomi dato all'AI per leggere i turni
+// nuovi e, nelle statistiche, va in fondo con la data di uscita.
+const STAFF_CESSATI={'Iannario R.':'2026-10-01'};
 const ALL_STAFF=Object.values(DEPTS).flatMap(d=>d.members);
 let weekData=null,activeDay=0;
 const IS_REST=v=>{
@@ -180,8 +185,9 @@ async function handleTurniFile(file){
     });
     const isPDF=file.type==='application/pdf';
     const mediaType=isPDF?'application/pdf':file.type||'image/jpeg';
-    const staff=ALL_STAFF;
-    const foStaff=Object.values(DEPTS).filter((_,i)=>i!==1).flatMap(d=>d.members);
+    const _attivo=n=>!STAFF_CESSATI[n];
+    const staff=ALL_STAFF.filter(_attivo);
+    const foStaff=Object.values(DEPTS).filter((_,i)=>i!==1).flatMap(d=>d.members).filter(_attivo);
     const _oggi=new Date();
     const _annoOggi=_oggi.getFullYear();
     const _oggiIso=_annoOggi+'-'+String(_oggi.getMonth()+1).padStart(2,'0')+'-'+String(_oggi.getDate()).padStart(2,'0');
@@ -496,10 +502,10 @@ function turniNormalizza(cod){
   if(mInt){const g=mInt[1]!=='CAR';return{tipo:'turno',codice:'INT '+(g?'GALL':'CAR'),exR,
     sede:g?'galleria':'soulart',fascia:'intermedio',
     label:'Intermedio '+(g?'Art Resort':'SoulArt')};}
-  // 'GALL/CAR 12-20': intermedio a cavallo delle due sedi. Conta fra gli intermedi ma in
-  // nessuna delle due sedi: assegnarlo a una sola falserebbe il confronto Art Resort/SoulArt.
+  // 'GALL/CAR 12-20': intermedio a cavallo delle due sedi, conta con l'Art Resort
+  // (deciso dal QM il 31/10/2026).
   if(/^(GALL?\s*\/\s*CAR|CAR\s*\/\s*GALL?)\b/.test(base))
-    return{tipo:'turno',codice:'GALL/CAR',exR,sede:null,fascia:'intermedio',label:'Intermedio Galleria/SoulArt'};
+    return{tipo:'turno',codice:'GALL/CAR',exR,sede:'galleria',fascia:'intermedio',label:'Intermedio Art Resort'};
   if(base==='PGALL')return{tipo:'pgall',exR};
   if(base==='P')return{tipo:'p',exR};
   if(TURNI_CODICI[base])return Object.assign({tipo:'turno',codice:base,exR},TURNI_CODICI[base]);
@@ -592,7 +598,8 @@ function turniStoricoLeggi(){
 // Grieco e' un notturno che fa una o due CC a settimana: per questo le colonne diurne dei
 // notturni si riempiono quando c'e' un numero e restano vuote solo quando e' zero.
 // Svuotarle sempre nasconderebbe proprio il dato che distingue il suo turno dagli altri.
-const TURNI_NOTTURNI=["D'Andrea F.",'Iannario R.','Grieco V.'];
+// Abdalla notturno dal 31/10/2026.
+const TURNI_NOTTURNI=["D'Andrea F.",'Iannario R.','Grieco V.','Abdalla'];
 // Ordine di reception: i due riferimenti in cima, poi gli altri in ordine alfabetico,
 // i notturni in fondo (fra loro alfabetici).
 const TURNI_ORDINE_TESTA=['Maddaloni M.','Presta P.'];
@@ -603,9 +610,11 @@ const TURNI_ORDINE_TESTA=['Maddaloni M.','Presta P.'];
 const TURNI_SEDE_UNICA=['Presta P.','Maddaloni M.'];
 function turniOrdina(nomi){
   const testa=TURNI_ORDINE_TESTA.filter(n=>nomi.indexOf(n)>=0);
-  const notte=nomi.filter(n=>TURNI_NOTTURNI.indexOf(n)>=0).sort((a,b)=>a.localeCompare(b));
-  const resto=nomi.filter(n=>testa.indexOf(n)<0&&notte.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
-  return testa.concat(resto,notte);
+  // Chi non lavora piu' con noi chiude la tabella, dopo i notturni.
+  const usciti=nomi.filter(n=>STAFF_CESSATI[n]&&testa.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
+  const notte=nomi.filter(n=>TURNI_NOTTURNI.indexOf(n)>=0&&usciti.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
+  const resto=nomi.filter(n=>testa.indexOf(n)<0&&notte.indexOf(n)<0&&usciti.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
+  return testa.concat(resto,notte,usciti);
 }
 // ── ARCHIVIO SETTIMANE — sfogliare un turno gia' passato ────────────────────
 // L'archivio conteneva da sempre i turni giorno per giorno, ma si vedevano solo i conteggi
@@ -690,7 +699,9 @@ function turniRenderStats(){
   const gg=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]:'—';};
   const presenti=DEPTS.fo.members.filter(n=>st.per[n]&&st.per[n].giorni>0);
   const righe=turniOrdina(presenti).map(n=>({n,s:st.per[n],notte:TURNI_NOTTURNI.indexOf(n)>=0,
-    sedeUnica:TURNI_SEDE_UNICA.indexOf(n)>=0}));
+    sedeUnica:TURNI_SEDE_UNICA.indexOf(n)>=0,uscito:STAFF_CESSATI[n]||null}));
+  // Ultimo giorno di lavoro = il giorno prima dell'uscita, scritto gg/mm.
+  const finoAl=d=>{const x=new Date(d+'T12:00:00');x.setDate(x.getDate()-1);return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0');};
   // Il secondo argomento apre un gruppo: filetto verticale a sinistra. I gruppi sono
   // "cosa ha fatto" | "dove" | "assenze", e senza separatore la riga e' un muro di numeri.
   const sep='border-left:2px solid var(--border);';
@@ -719,10 +730,11 @@ function turniRenderStats(){
             ${th('P')}${th('Mattine')}${th('Pomeriggi')}${th('Intermedi')}${th('Notti')}${th('Domeniche')}${th('Art Resort',true)}${th('SoulArt')}${th('Malattia',true)}${th('Ferie')}
           </tr></thead>
           <tbody>
-            ${righe.map(({n,s,notte,sedeUnica},i)=>{
-              const primoNotte=notte&&(i===0||!righe[i-1].notte);
-              return `<tr${primoNotte?' style="border-top:2px solid var(--border);"':''}>
-              <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}</td>
+            ${righe.map(({n,s,notte,sedeUnica,uscito},i)=>{
+              const primoNotte=notte&&!uscito&&(i===0||!righe[i-1].notte);
+              const primoUscito=uscito&&(i===0||!righe[i-1].uscito);
+              return `<tr${primoNotte||primoUscito?' style="border-top:2px solid var(--border);'+(uscito?'opacity:.6;':'')+'"':(uscito?' style="opacity:.6;"':'')}>
+              <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}${uscito?`<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · fino al ${finoAl(uscito)}</span>`:''}</td>
               ${notte?cellaN(s.p+s.pgall):td((s.p+s.pgall)||'—')}
               ${notte?cellaN(s.mattina):td(s.mattina||'—')}
               ${notte?cellaN(s.pomeriggio):td(s.pomeriggio||'—')}
@@ -738,7 +750,7 @@ function turniRenderStats(){
         </table>
       </div>
       <div style="padding:11px 13px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;border-top:1px solid var(--border);">
-        <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. L'orario degli intermedi non conta: la sede la dice la sigla; GALL/CAR conta fra gli intermedi ma in nessuna delle due sedi. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (AR = Art Resort, SA = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
+        <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL + GALL/CAR, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. L'orario degli intermedi non conta: la sede la dice la sigla; GALL/CAR conta come intermedio Art Resort. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (AR = Art Resort, SA = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
         Riposo, riposo richiesto, recupero e REC RIP contano come riposo; ferie richieste come ferie; un turno "richiesto" (AC RICHIESTO) come quel turno.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
 
       </div>

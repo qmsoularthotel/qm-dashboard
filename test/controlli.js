@@ -548,7 +548,7 @@ ok('AC RICHIESTO e\' una mattina',     turniNormalizza('AC RICHIESTO').fascia + 
 ok('FERIE RICHIESTE sono ferie',       turniNormalizza('FERIE RICHIESTE').tipo, 'ferie');
 ok('REC RIP e\' riposo',               turniNormalizza('REC RIP').tipo, 'riposo');
 ok('GALL/CAR 12-20 e\' un intermedio', turniNormalizza('GALL/CAR 12-20').fascia, 'intermedio');
-ok('ma di nessuna delle due sedi',     turniNormalizza('GALL/CAR 12-20').sede, null);
+ok('e conta con l\'Art Resort',        turniNormalizza('GALL/CAR 12-20').sede, 'galleria');
 ok('INT GALL 10/18 con un carattere invisibile', turniNormalizza('INT\u200B GALL 10/18').sede, 'galleria');
 ok('INT. GALL 10/18 e\' intermedio Galleria', turniNormalizza('INT. GALL 10/18').sede + '/' + turniNormalizza('INT. GALL 10/18').fascia, 'galleria/intermedio');
 ok('INTGALL 10/18 pure',               turniNormalizza('INTGALL 10/18').sede, 'galleria');
@@ -559,8 +559,14 @@ ok('INTGALL 10/18 pure',               turniNormalizza('INTGALL 10/18').sede, 'g
     { data: '2026-10-29', shifts: { 'Rossi T.': 'FERIE RICHIESTE' } } ] } }, ['Rossi T.']);
   const _p = _st.per['Rossi T.'];
   ok('statistiche: intermedi/mattine/riposi/ferie', [_p.intermedi, _p.mattina, _p.riposi, _p.ferie].join(','), '1,1,1,1');
-  ok('GALL/CAR non va a SoulArt ne\' a Galleria', _p.soulart + '/' + _p.galleria, '1/0');
+  ok('GALL/CAR va all\'Art Resort', _p.soulart + '/' + _p.galleria, '1/1');
   ok('nessun codice ignoto', _st.ignoti.length, 0); }
+ok('Abdalla e\' un notturno', TURNI_NOTTURNI.indexOf('Abdalla') >= 0, true);
+ok('Iannario resta nel ricevimento (archivio)', DEPTS.fo.members.indexOf('Iannario R.') >= 0, true);
+ok('Iannario e\' segnato come uscito', !!STAFF_CESSATI['Iannario R.'], true);
+ok('chi e\' uscito chiude la tabella, dopo i notturni',
+   turniOrdina(['Iannario R.', 'Grieco V.', 'Abdalla', 'Perez L.', 'Presta P.']).join('|'),
+   'Presta P.|Perez L.|Abdalla|Grieco V.|Iannario R.');
 if (typeof IS_REST === 'function') {
   ok('AC RICHIESTO non e\' un riposo nel turno', IS_REST('AC RICHIESTO'), false);
   ok('REC RIP e\' un riposo nel turno', IS_REST('REC RIP'), true);

@@ -130,6 +130,14 @@ compilano affatto, perché un `0` farebbe pensare che non abbiano lavorato.
 I notturni stanno **in fondo** alla tabella e per loro si mostrano solo notti, domeniche,
 ferie e malattie: mattine e pomeriggi non descrivono il loro lavoro.
 
+#### Notturni e personale uscito
+
+`TURNI_NOTTURNI` è un elenco esplicito: D'Andrea, Grieco, Iannario e, dal 31/10/2026,
+**Abdalla**. Chi non lavora più con noi sta in `STAFF_CESSATI` con il primo giorno di assenza
+(Iannario dal 01/10/2026): **resta in `DEPTS`** perché archivio e statistiche lo devono
+riconoscere, ma esce dall'elenco dei nomi dato all'AI per i turni nuovi, e nelle statistiche
+chiude la tabella, sbiadito, con "fino al 30/09".
+
 #### Codici scritti a mano — `turniNormalizza()`
 
 I turni arrivano da una foto del planning, scritti da persone diverse: `R`, `R RICHIESTO`,
@@ -141,8 +149,7 @@ solo se non lo si riconosce si riprova senza la nota. Allo stesso modo un turno 
 (`AC RICHIESTO`) è quel turno, mentre `FERIE RICHIESTE` sono ferie e `REC RIP` è riposo
 (31/10/2026). Nel turno del giorno (`IS_REST`/`IS_ABSENT`) "RICHIESTO" vuol dire riposo solo
 dopo una `R`: prima anche `AC RICHIESTO` finiva fra chi non è in servizio.
-`GALL/CAR 12-20` è un intermedio a cavallo delle due sedi: conta fra gli **intermedi** ma in
-**nessuna** delle due colonne Art Resort/SoulArt. Gli intermedi si leggono anche scritti
+`GALL/CAR 12-20` è un intermedio e conta con l'**Art Resort** (scelta del QM, 31/10/2026). Gli intermedi si leggono anche scritti
 `INT. GALL`, `INT/GALL`, `INTGALL`, e i caratteri invisibili incollati dal foglio si tolgono. Un codice davvero sconosciuto resta
 "non riconosciuto" ed è segnalato in un riquadro: **non entra in nessun conteggio**, ed è
 giusto che si veda.
