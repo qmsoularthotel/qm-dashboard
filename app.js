@@ -727,7 +727,7 @@ function turniRenderStats(){
         <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
           <thead><tr>
             <th style="text-align:left;padding:7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Persona</th>
-            ${th('P')}${th('Mattine')}${th('Pomeriggi')}${th('Intermedi')}${th('Notti')}${th('Domeniche')}${th('Art Resort',true)}${th('SoulArt')}${th('Malattia',true)}${th('Ferie')}
+            ${th('P')}${th('Mattine')}${th('Pomeriggi')}${th('Intermedi')}${th('Notti')}${th('Riposo domenicale')}${th('Art Resort',true)}${th('SoulArt')}${th('Malattia',true)}${th('Ferie')}
           </tr></thead>
           <tbody>
             ${righe.map(({n,s,notte,sedeUnica,uscito},i)=>{
@@ -750,7 +750,7 @@ function turniRenderStats(){
         </table>
       </div>
       <div style="padding:11px 13px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;border-top:1px solid var(--border);">
-        <strong>Domeniche</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL + GALL/CAR, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. L'orario degli intermedi non conta: la sede la dice la sigla; GALL/CAR conta come intermedio Art Resort. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (AR = Art Resort, SA = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
+        <strong>Riposo domenicale</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL + GALL/CAR, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. L'orario degli intermedi non conta: la sede la dice la sigla; GALL/CAR conta come intermedio Art Resort. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (AR = Art Resort, SA = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
         Riposo, riposo richiesto, recupero e REC RIP contano come riposo; ferie richieste come ferie; un turno "richiesto" (AC RICHIESTO) come quel turno.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
 
       </div>

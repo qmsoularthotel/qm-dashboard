@@ -109,7 +109,7 @@ mescolarli renderebbe i totali privi di significato.
 | Pomeriggi | `CC` + `CG` |
 | Intermedi | `INT CAR` + `INT GALL` |
 | Notti | `NC` + `NG`, col dettaglio `<n>AR-<n>SA` |
-| Domeniche | domeniche **di riposo** |
+| Riposo domenicale | domeniche **di riposo** |
 | Art Resort / SoulArt | dove ha lavorato: `AG`/`CG`/`INT GALL` da un lato, `AC`/`CC`/`INT CAR` dall'altro |
 | Malattia / Ferie | assenze esplicite |
 
