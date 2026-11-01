@@ -2739,6 +2739,22 @@ sez('Bilanciamento: mosse fatte nel PMS, piano della settimana, mese');
   var rc = _hkPianoEffettivo(P3, [fc]);
   ok('camera d\'arrivo occupata: segnalato', rc.esiti.cf, 'conflitto');
   ok('e i numeri non lo contano', part(rc.piano, 4), part(P3, 4));
+  // Mossa gia' fatta nel PMS, con una partenza sull'ultimo giorno del Piano (01/11/2026):
+  // quella partenza non ha data e "andava bene" per qualunque riga. Art 7 -> Art 15 (G4-G5)
+  // e' gia' in Art 15, ma in Art 7 c'e' un altro soggiorno G4-G6: risultava ancora da fare e
+  // si applicava una seconda volta, spostando le partenze di G5 e G6.
+  var P4 = JSON.parse(JSON.stringify(pianoData));
+  P4.giorni.forEach(function (g) { ['arrivi', 'partenze', 'fermate', 'cambi'].forEach(function (k) { g.soulart[k] = []; }); });
+  P4.tipi['Art 7'] = 'AS DLX DP'; P4.tipi['Art 15'] = 'AS DLX DP';
+  P4.giorni[3].soulart.arrivi.push('Art 7'); P4.giorni[4].soulart.cambi.push('Art 7'); P4.giorni[5].soulart.fermate.push('Art 7'); P4.giorni[6].soulart.partenze.push('Art 7');
+  P4.giorni[4].soulart.arrivi.push('Art 15'); P4.giorni[5].soulart.partenze.push('Art 15');
+  var fu = { id: 'fu', righe: [{ da: 'Art 7', a: 'Art 15', s: G[4].data, e: G[5].data },
+                               { da: 'Art 15', a: 'Art 7', s: G[3].data, e: G[4].data },
+                               { da: 'Art 15', a: 'Art 7', s: G[4].data, e: null }] };
+  var ru = _hkPianoEffettivo(P4, [fu]);
+  ok('partenza sull\'ultimo giorno: la mossa fatta risulta nel Piano', ru.esiti.fu, 'nelPiano');
+  ok('e non si applica una seconda volta (G5)', part(ru.piano, 5), part(P4, 5));
+  ok('e non si applica una seconda volta (G6)', part(ru.piano, 6), part(P4, 6));
   // Pulizia: ritrovate e scadute escono dall'elenco, quelle in attesa restano.
   localStorage.setItem(HK_FATTE_KEY, JSON.stringify([{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }]));
   _hkFattePulisci({ a: 'attesa', b: 'nelPiano', c: 'fuori', d: 'sparito' });
@@ -2804,12 +2820,15 @@ sez('Operativa HKP: card separate SoulArt / Boutique ditta esterna');
   ok('Liborio dal 21/09: SoulArt', _hkpAreaSoulArt('sa', lib, 21), true);
   hkpNCurMon = function () { return '2026-10'; };
   ok('Liborio a ottobre: SoulArt', _hkpAreaSoulArt('sa', lib, 1), true);
-  // Clic sulla card → caselle della cameriera nella griglia (04/10/2026)
+  // Clic sulla card → caselle della cameriera nella griglia (04/10/2026). Le caselle di prova
+  // stanno nel mese vero (ck): col mese finto di ottobre il controllo passava solo a ottobre.
+  hkpNCurMon = vero;
   ok('card di Operativa cliccabili', /data-hkpev="sa\|art\|AM"/.test(sa) || /data-hkpev/.test(hkpMonthlyCameriereHtml('sa', art, 'al SoulArt', 22, null, 'art')), true);
   ok('card del Bilanciamento NON cliccabili', /data-hkpev/.test(hkpMonthlyCameriereHtml('sa', art, 'al SoulArt', 22)), false);
   ok('evidenza = solo colore, mai la selezione (Canc non cancella)', /_hkpNsel/.test(String(_hkpNEvidApplica)) || /_hkpNsel/.test(String(hkpNEvidenzia)), false);
   ok('evidenza rimessa dopo il ridisegno', /_hkpNEvidApplica\(p,tab/.test(String(hkpNRenderGrid)), true);
   ok('le 200 restano Boutique', _hkpAreaSoulArt('sa', { name: '204' }, 15), false);
+  hkpNCurMon = function () { return '2026-10'; };
   ok('capienza a ottobre: 23 e 10', _hkpCapienza('sa', true) + '/' + _hkpCapienza('sa', false), '23/10');
   hkpNCurMon = function () { return '2026-09'; };
   ok('capienza a settembre: tutte e due', _hkpCapienza('sa', true), '22 camere, 23 dal 21/9');

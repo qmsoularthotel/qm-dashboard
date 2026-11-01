@@ -3457,14 +3457,29 @@ function _hkPianoEffettivo(base,fatte){
   // e la mossa risultava ancora da fare, e veniva applicata al contrario.
   const fine=b=>(b.openEnd||b.end>=N-1)?null:_hkNormData(base.giorni[b.end].data);
   const trova=(room,i,e)=>(BL[room]||[]).find(b=>b.start===i&&(e==null||fine(b)==null||fine(b)===e));
+  // Riconoscimento in due giri (01/11/2026). Una partenza sull'ultimo giorno del Piano non
+  // ha data (`fine` = null) e quindi "va bene" per qualunque partenza: da sola faceva
+  // credere ancora da fare una mossa gia' fatta nel PMS, che veniva applicata una seconda
+  // volta. Caso vero: Art 7 → Art 15 (Gio→Ven) gia' nel Piano, ma in Art 7 c'era un altro
+  // soggiorno Gio→Sab; risultava "ancora dov'era" e Sab 7/11 passava da 4·4 a 3·5.
+  // Primo giro: solo corrispondenze con la data di partenza uguale, prima nella camera di
+  // partenza e poi in quella d'arrivo. Secondo giro: le righe rimaste, con la tolleranza.
+  // Un soggiorno riconosciuto da una riga non si riusa per un'altra della stessa mossa.
+  const trovaIn=(room,i,e,esatto,presi)=>(BL[room]||[]).find(b=>!presi.has(b)&&b.start===i&&(esatto?(e!=null&&fine(b)===e):(e==null||fine(b)==null||fine(b)===e)));
   fatte.forEach(f=>{
+    const presi=new Set();
     const st=(f.righe||[]).map(r=>{
       const i=_hkDataIdx(base,r.s);
-      if(i<0)return{r,k:'fuori'};                        // soggiorno fuori da questo Piano
-      const x=trova(r.da,i,r.e);if(x)return{r,k:'attesa',x};  // ancora dov'era: il Piano è vecchio
-      if(trova(r.a,i,r.e))return{r,k:'nelPiano'};         // già dove doveva andare
-      return{r,k:'sparito'};
+      return i<0?{r,k:'fuori'}:{r,i,k:null};               // fuori: soggiorno fuori da questo Piano
     });
+    [true,false].forEach(esatto=>st.forEach(z=>{
+      if(z.k)return;
+      let x=trovaIn(z.r.da,z.i,z.r.e,esatto,presi);
+      if(x){presi.add(x);z.k='attesa';z.x=x;return;}         // ancora dov'era: il Piano è vecchio
+      x=trovaIn(z.r.a,z.i,z.r.e,esatto,presi);
+      if(x){presi.add(x);z.k='nelPiano';}                   // già dove doveva andare
+    }));
+    st.forEach(z=>{if(!z.k)z.k='sparito';});
     const ks=st.map(z=>z.k);
     esiti[f.id]=ks.includes('sparito')?'sparito':ks.includes('attesa')?'attesa':ks.every(k=>k==='fuori')?'fuori':'nelPiano';
     if(esiti[f.id]!=='attesa')return;

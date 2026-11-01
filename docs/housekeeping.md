@@ -217,6 +217,16 @@ dall'elenco), `sparito` (né dov'era né dove doveva andare: riga ambra "Non tro
 Togli), `fuori` (date fuori dal Piano: esce). In uno scambio i soggiorni si tolgono tutti
 prima di rimetterli, perché possono arrivare lo stesso giorno.
 
+**Una mossa fatta non si applica due volte** (01/11/2026). Una partenza sull'ultimo giorno del
+Piano non ha data (`fine`=null, e `_hkRigheDaMossa` scrive `e:null`) e quindi "andava bene" per
+qualunque riga. Caso vero: Art 7 → Art 15 (Gio 5 → Ven 6/11) già nel Piano nuovo, ma in Art 7
+c'era un altro soggiorno Gio → Sab: la riga lo prendeva per "ancora dov'era", la mossa restava
+`attesa` e veniva applicata una seconda volta (Sab 7/11 3·5 invece di 4·4, Ven 3·4 invece di
+2·5). Ora `_hkPianoEffettivo` riconosce in **due giri**: prima solo le corrispondenze con la
+data di partenza uguale (camera di partenza, poi camera d'arrivo), poi le righe rimaste con la
+tolleranza; un soggiorno già riconosciuto da una riga non si riusa per un'altra della stessa
+mossa. Controlli: "partenza sull'ultimo giorno" in `test/controlli.js`.
+
 **Piano della settimana** (`hkPianoSettimana`, selettore "Giorno per giorno / Piano della
 settimana", preferenza del browser `hkModo`): la mossa migliore sull'intera settimana, poi la
 migliore sul Piano con quella mossa, fino a 8 passi o finché non migliora più. Il pulsante
