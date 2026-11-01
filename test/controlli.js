@@ -1525,7 +1525,10 @@ sez('Bilanciamento camere: lo scambio in blocco non inventa soggiorni');
   // scambio. Elencarlo raddoppiava le righe senza aggiungere una decisione.
   ok('il ritorno e\' detto una volta sola, non in elenco',
      /Le 3 prenotazioni di Art 14 passano di conseguenza in Art 12/.test(riga), true);
-  ok('e non e\' un passo con le date',  /Art 14 → Art 12 Sab 5\/9/.test(riga), false);
+  // Solo dentro la proposta di blocco: dal 01/11/2026 il motore propone anche, a parte,
+  // "Art 14 → Art 12" come spostamento semplice (Art 12 e' libera), ed e' giusto.
+  var rigaBlocco = riga.slice(riga.indexOf('Art 12 → Art 14 Mar 8/9 in poi'), riga.indexOf('passano di conseguenza in Art 12'));
+  ok('e non e\' un passo con le date',  rigaBlocco.length > 0 && !/Art 14 → Art 12 Sab 5\/9/.test(rigaBlocco), true);
   ok('non nomina il 5 settembre come soggiorno di Art 12', /Art 12 → Art 14 Sab 5\/9/.test(riga), false);
 
   pianoData = _piano;
@@ -2792,6 +2795,36 @@ sez('Bilanciamento: mosse fatte nel PMS, piano della settimana, mese');
   ok('la vista lavora sul Piano con le mosse fatte', /_hkPianoEffettivo\(vero,_hkFatte\(\)\)/.test(String(renderRoomDivision)), true);
   ok('le mosse fatte arrivano dagli altri computer', /HK_FATTE_KEY/.test(String(_qmSyncGiro)) && QM_ELENCHI_CONDIVISI.hasOwnProperty('qm_hk_fatte'), true);
   _qmElencoSalva = _salva; pianoData = _piano; pianoNavIdx = _nav;
+})();
+
+// ── Bilanciamento: dalle Altre a una camera di Matarese libera (01/11/2026) ──
+// Ven 6/11 a 2 · 5 con Art 5 vuota tutta la settimana: nessuna proposta, perche' il motore
+// partiva solo dalle camere di Matarese e un soggiorno delle Altre arrivava da lei solo
+// dentro uno scambio.
+sez('Bilanciamento: dalle Altre a una camera di Matarese libera');
+(function () {
+  var _piano = pianoData, _oggi = pianoGetGiornoIdx;
+  var base = new Date(); base.setHours(12, 0, 0, 0);
+  var G = [0, 1, 2, 3, 4, 5, 6].map(function (i) {
+    var d = new Date(base); d.setDate(base.getDate() + i);
+    return { label: 'G' + i, data: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(),
+             soulart: { partenze: [], fermate: [], cambi: [], arrivi: [] }, boutique: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
+  });
+  // Altre: Art 14, 15, 17 arrivano G4 e partono G5. Matarese: Art 5 vuota.
+  ['Art 14', 'Art 15', 'Art 17'].forEach(function (r) { G[4].soulart.arrivi.push(r); G[5].soulart.partenze.push(r); });
+  pianoData = { stampato: G[0].data, giorni: G, incArr: [], incPar: [],
+                tipi: { 'Art 5': 'AS DLX DP', 'Art 14': 'AS DLX DP', 'Art 15': 'AS DLX DP', 'Art 17': 'AS DLX DP' } };
+  pianoGetGiornoIdx = function () { return 0; };
+  var s = hkSuggestMoves(3, 5), m = s.mosse[0];
+  ok('il caso di prova: G5 e\' 0 contro 3', s.giorni[5].pM + '-' + s.giorni[5].pA, '0-3');
+  ok('propone di portare un soggiorno delle Altre in Art 5', !!m && m.tipo + ' ' + m.to + ' ' + (MATARESE.has(m.from) ? 'M' : 'A'), 'sposta Art 5 A');
+  ok('e la chip lo dice', s.totMosse > 0, true);
+  ok('la riga per il PMS va dalle Altre ad Art 5', !!m && new RegExp('^Art 1[457]>Art 5 ' + G[4].data + '$').test(_hkRigheDaMossa(m, pianoData).map(function (r) { return r.da + '>' + r.a + ' ' + r.s; }).join()), true);
+  // Mai verso una Junior Suite o una Suite, anche se libera
+  pianoData.tipi = { 'Art 1': 'AS DLX DP', 'Art 14': 'AS DLX DP', 'Art 15': 'AS DLX DP', 'Art 17': 'AS DLX DP' };
+  ok('mai dentro una camera fissa', hkSuggestMoves(3, 5).totMosse || 0, 0);
+  pianoData = _piano; pianoGetGiornoIdx = _oggi;
 })();
 
 // ── Operativa HKP: SoulArt e Boutique (ditta esterna) separati (28/09/2026) ──

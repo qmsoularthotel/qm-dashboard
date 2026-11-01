@@ -87,6 +87,8 @@ Alzare ulteriormente `HK_PESO_PARTENZE` rende il bilanciamento delle partenze an
 
 - **Oggi non si propone mai** (26/09/2026): siccome si spostano solo soggiorni che arrivano dopo oggi, nessuna mossa può cambiare le partenze o il carico di oggi. `_hkPrimoGiorno()` = indice di oggi + 1 (0 se oggi non è nel Piano): da lì partono `sbilanciati`, il punteggio della settimana e i pulsanti dei giorni del pannello "Come bilanciare". Oggi e i giorni passati non hanno pulsante, e se il giorno selezionato in cima è oggi (quello con cui si apre la vista) i suggerimenti aprono direttamente domani. La "Suddivisione cameriere" in cima resta invece su oggi.
 
+- **Anche dalle Altre a una camera di Matarese libera** (01/11/2026): il giro di `hkSuggestMoves` parte dalle camere di Matarese (A sempre lato Matarese), quindi un soggiorno delle Altre arrivava da lei solo come contropartita di uno scambio. Ven 6/11 a 2 · 5, con Art 5 vuota tutta la settimana e Art 6 libera, non proponeva niente. Ora c'è anche lo `sposta` inverso (camera delle Altre → camera di Matarese libera, stessa tipologia, mai JS/SUI, solo soggiorni `spostabile`): `m.from` è la camera delle Altre, il resto (righe, "Fatto nel PMS", resa) è uguale. Controlli: "Bilanciamento: dalle Altre a una camera di Matarese libera".
+
 Se non c'è nessuna mossa possibile, `out.ostacoli` spiega camera per camera perché (tipologia senza corrispettivo dall'altro lato, oppure occupata in quelle notti).
 
 ### "Occupata" non vuol dire bloccata — anche con più di un occupante

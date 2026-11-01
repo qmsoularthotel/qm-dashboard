@@ -3820,6 +3820,23 @@ function hkSuggestMoves(maxN,focusIdx){
       });
     });
   });
+  // 5) spostamento semplice dalle Altre a una camera di Matarese LIBERA (01/11/2026). Tutto
+  // il giro qui sopra parte dalle camere di Matarese: un soggiorno delle Altre arrivava da
+  // Matarese solo come contropartita di uno scambio. Ven 6/11 a 2 · 5, con Art 5 vuota tutta
+  // la settimana e Art 6 libera da martedi', non proponeva niente: Matarese non aveva nessun
+  // soggiorno da dare in cambio. Stessa tipologia, stesse regole (spostabile, mai JS/SUI).
+  ART.forEach(B=>{
+    if(MATARESE.has(B)||_hkFissa(B))return;
+    const tipo=pianoData.tipi[B];if(!tipo)return;
+    (BL[B]||[]).filter(spostabile).forEach(Y=>{
+      ART.forEach(A=>{
+        if(!MATARESE.has(A)||_hkFissa(A)||pianoData.tipi[A]!==tipo)return;
+        if(!_hkFits(Y,BL[A]||[],[],N))return;
+        valuta({tipo:'sposta',from:B,to:A,cat:tipo,start:Y.start,end:Y.end,xOpen:!!Y.openEnd,xSpec:!!Y.speciale},
+               {[B]:(BL[B]||[]).filter(z=>z!==Y),[A]:(BL[A]||[]).concat([Y])});
+      });
+    });
+  });
   // A parità di beneficio preferisci la mossa più semplice da eseguire nel PMS
   const costo={sposta:0,scambia:1,catena:2,'scambio-blocco':2,'catena-multi':3};
   const _scMese=(()=>{try{const t=_hkMeseTotali();return t.M-t.A;}catch(e){return 0;}})();
