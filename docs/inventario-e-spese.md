@@ -51,6 +51,15 @@ Il badge guarda **lo scarto più marcato tra settimana e mese** (non due giudizi
 
 Righe dispari e "Da riordinare" (bordo sinistro rosso/ambra su autonomia critica) restano come prima; solo la presentazione dei dati di consumo è cambiata.
 
+### Maschera "Nuovo ordine" — catalogo del solo hotel scelto (02/11/2026)
+
+La lista prodotti di "Nuovo ordine" (e di "Modifica ordine") univa i cataloghi di SoulArt e Art Resort
+(`{...catSA,...catAR}`) e veniva costruita una volta sola al disegno della vista: un prodotto rinominato
+nel catalogo SoulArt restava col nome vecchio se lo stesso codice esisteva in Art Resort, e comparivano
+doppioni (es. "Guanti L (Conf.)" e "Guanti L (conf)"). Ora `_invOrdOpzioni(wh)` legge **solo il catalogo
+dell'hotel scelto** nella maschera; `invOrdersRefreshProd()` la rilegge all'apertura e al cambio hotel.
+La modifica di un ordine usa il catalogo di `o.wh`. Controlli in `test/controlli.js`.
+
 ### Flusso ricezione merce (DDT modal)
 
 Quando si clicca **✅ Ricevuto** su un ordine in stato `ordinato`, si apre un modal DDT invece di caricare automaticamente le quantità:

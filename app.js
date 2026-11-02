@@ -10698,10 +10698,25 @@ function invRenderOrders(){
   view.insertAdjacentHTML('beforeend',_invOrdersModalHTML(cat));
 }
 
+// Catalogo del SOLO hotel scelto nella maschera, riletto ogni volta (02/11/2026):
+// prima la lista mescolava i due cataloghi ed era costruita una volta sola, così un
+// prodotto rinominato/tolto nel catalogo restava (o compariva doppio) nella maschera.
+function _invOrdCatalogo(wh){
+  let c={};try{c=JSON.parse(localStorage.getItem('qm_inv_catalog_'+(wh||'sa'))||'{}');}catch(e){}
+  return c;
+}
+function _invOrdOpzioni(wh){
+  return Object.entries(_invOrdCatalogo(wh)).sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||''))
+    .map(([bc,p])=>`<option value="${_esc(bc)}">${_esc(p.name||bc)} (${_esc(p.unit||'pz')})</option>`).join('');
+}
+function invOrdersRefreshProd(){
+  const sel=document.getElementById('invOrdProd');if(!sel)return;
+  const wh=document.getElementById('invOrdWh')?.value||'sa';
+  sel.innerHTML=`<option value="">— Seleziona prodotto —</option>`+_invOrdOpzioni(wh);
+}
 function _invOrdersModalHTML(cat){
   const today=(()=>{const n=new Date();return String(n.getDate()).padStart(2,'0')+'/'+(String(n.getMonth()+1).padStart(2,'0'))+'/'+n.getFullYear();})();
-  const opts=Object.entries(cat).sort((a,b)=>a[1].name.localeCompare(b[1].name))
-    .map(([bc,p])=>`<option value="${bc}">${p.name} (${p.unit})</option>`).join('');
+  const opts=_invOrdOpzioni('sa');
   return`<div id="invOrderModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center;">
   <div style="background:var(--bg);border-radius:16px;padding:24px;width:min(520px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.25);">
     <div style="font-weight:700;font-size:var(--fs-md);margin-bottom:16px;display:flex;align-items:center;gap:8px;">${_invIco('note',16)}Nuovo ordine</div>
@@ -10712,7 +10727,7 @@ function _invOrdersModalHTML(cat){
       </div>
       <div style="flex:1;min-width:120px;">
         <label style="font-size:var(--fs-xxs);font-weight:600;color:var(--text-dim);display:block;margin-bottom:4px;">HOTEL</label>
-        <select id="invOrdWh" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
+        <select id="invOrdWh" onchange="invOrdersRefreshProd()" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-sm);">
           <option value="sa">SoulArt Hotel</option>
           <option value="ar">Art Resort</option>
         </select>
@@ -10747,7 +10762,7 @@ function invOrdersSetStatus(s){_invOrdersStatus=s;invRenderOrders();}
 function invOrdersOpenModal(){
   _invOrdersDraft=[];
   const m=document.getElementById('invOrderModal');
-  if(m){m.style.display='flex';_invOrdersDraftRender();}
+  if(m){m.style.display='flex';invOrdersRefreshProd();_invOrdersDraftRender();}
 }
 
 function invOrdersAddItem(){
@@ -10755,11 +10770,7 @@ function invOrdersAddItem(){
   if(!bc){cqAvviso('Seleziona un prodotto.');return;}
   const qtyRaw=parseInt(document.getElementById('invOrdQty')?.value)||0;
   const qty=qtyRaw>0?qtyRaw:null;
-  let catSA={},catAR={};
-  try{catSA=JSON.parse(localStorage.getItem('qm_inv_catalog_sa')||'{}');}catch(e){}
-  try{catAR=JSON.parse(localStorage.getItem('qm_inv_catalog_ar')||'{}');}catch(e){}
-  const cat={...catSA,...catAR};
-  const prod=cat[bc]||{};
+  const prod=_invOrdCatalogo(document.getElementById('invOrdWh')?.value||'sa')[bc]||{};
   const existing=_invOrdersDraft.find(i=>i.barcode===bc);
   if(existing){if(qty)existing.qty=(existing.qty||0)+qty;}
   else{_invOrdersDraft.push({barcode:bc,name:prod.name||bc,unit:prod.unit||'pz',qty});}
@@ -10949,12 +10960,8 @@ function invOrdersEditOrder(id){
   if(!o)return;
   _invEditId=id;
   _invEditDraft=o.items.map(it=>({...it}));
-  let catSA={},catAR={};
-  try{catSA=JSON.parse(localStorage.getItem('qm_inv_catalog_sa')||'{}');}catch(e){}
-  try{catAR=JSON.parse(localStorage.getItem('qm_inv_catalog_ar')||'{}');}catch(e){}
-  const cat={...catSA,...catAR};
-  const opts=Object.entries(cat).sort((a,b)=>a[1].name.localeCompare(b[1].name))
-    .map(([bc,p])=>`<option value="${bc}">${p.name} (${p.unit||'pz'})</option>`).join('');
+  const cat=_invOrdCatalogo(o.wh);
+  const opts=_invOrdOpzioni(o.wh);
   const modal=document.createElement('div');
   modal.id='inv-edit-modal';
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
@@ -10998,11 +11005,7 @@ function invOrdersEditAddItem(){
   if(!bc)return;
   const qtyRaw=parseInt(document.getElementById('inv-edit-qty')?.value)||0;
   const qty=qtyRaw>0?qtyRaw:null;
-  let catSA={},catAR={};
-  try{catSA=JSON.parse(localStorage.getItem('qm_inv_catalog_sa')||'{}');}catch(e){}
-  try{catAR=JSON.parse(localStorage.getItem('qm_inv_catalog_ar')||'{}');}catch(e){}
-  const cat={...catSA,...catAR};
-  const prod=cat[bc]||{};
+  const prod=_invOrdCatalogo((invOrdersGet().find(x=>x.id===_invEditId)||{}).wh)[bc]||{};
   const existing=_invEditDraft.find(i=>i.barcode===bc);
   if(existing){if(qty)existing.qty=(existing.qty||0)+qty;}
   else{_invEditDraft.push({barcode:bc,name:prod.name||bc,unit:prod.unit||'pz',qty});}

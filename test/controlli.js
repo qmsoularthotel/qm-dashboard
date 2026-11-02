@@ -2425,6 +2425,24 @@ sez('Elenchi condivisi col telefono: la fusione a tre non perde niente');
   ok('spunta recensione: fusione',                  /_qmElencoSalva\('qm_rev_sent'/.test(String(revMarkSent)), true);
 })();
 
+sez('Ordini: la maschera mostra il catalogo aggiornato del solo hotel scelto');
+(function () {
+  var pSA = localStorage.getItem('qm_inv_catalog_sa'), pAR = localStorage.getItem('qm_inv_catalog_ar');
+  try {
+    localStorage.setItem('qm_inv_catalog_sa', JSON.stringify({ x1: { name: 'Sapone Prova Nuovo', unit: 'flacone' } }));
+    localStorage.setItem('qm_inv_catalog_ar', JSON.stringify({ x1: { name: 'Sapone Prova Vecchio', unit: 'Flacone' }, x2: { name: 'Solo Galleria', unit: 'pz' } }));
+    var sa = _invOrdOpzioni('sa'), ar = _invOrdOpzioni('ar');
+    ok('SoulArt: nome aggiornato',                   /Sapone Prova Nuovo/.test(sa), true);
+    ok('SoulArt: niente prodotti dell\'altro hotel', /Vecchio|Solo Galleria/.test(sa), false);
+    ok('Art Resort: il suo catalogo',                /Solo Galleria/.test(ar), true);
+    ok('si rilegge all\'apertura',                   /invOrdersRefreshProd\(/.test(String(invOrdersOpenModal)), true);
+    ok('cambiando hotel si rilegge',                 /invOrdWh" onchange="invOrdersRefreshProd\(\)/.test(_invOrdersModalHTML({})), true);
+  } finally {
+    if (pSA === null) localStorage.removeItem('qm_inv_catalog_sa'); else localStorage.setItem('qm_inv_catalog_sa', pSA);
+    if (pAR === null) localStorage.removeItem('qm_inv_catalog_ar'); else localStorage.setItem('qm_inv_catalog_ar', pAR);
+  }
+})();
+
 sez('Overview: dopo un caricamento si ridisegna tutta, senza Cmd+R');
 ok('ogni caricamento avvisa l\'Overview',          /_ovDopoUpload\(\)/.test(String(setUploadTs)), true);
 ok('ridisegna anche il giorno del Piano',           /pianoNavRender\(/.test(String(ovAggiornaTutto)), true);
