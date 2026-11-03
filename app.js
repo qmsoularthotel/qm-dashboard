@@ -3422,6 +3422,7 @@ const HK_FATTE_KEY='qm_hk_fatte';
 const HK_MESE_KEY='qm_hk_mese';
 let _hkPianoVero=null;      // il Piano caricato, mentre la vista lavora su quello effettivo
 let _hkEsiti={};            // id della mossa fatta → 'attesa' | 'sparito' | 'nelPiano' | 'fuori'
+let _hkEsitiRighe={};       // id → esito di ogni riga ('attesa' | 'nelPiano' | 'sparito' | 'fuori')
 let _hkMosseVisibili=[];    // mosse sullo schermo, per il pulsante "Fatto nel PMS"
 let _hkModo=(()=>{try{return localStorage.getItem('hkModo')==='settimana'?'settimana':'giorno';}catch(e){return'giorno';}})();
 function _hkFatte(){try{const v=JSON.parse(localStorage.getItem(HK_FATTE_KEY)||'[]');return Array.isArray(v)?v:[];}catch(e){return[];}}
@@ -3444,8 +3445,8 @@ function _hkRigheDaMossa(m,piano){
 // Il Piano con gli spostamenti segnati come fatti. Non tocca `base`: ne restituisce una copia
 // in cui cambiano solo le camere toccate, ricostruite dai soggiorni.
 function _hkPianoEffettivo(base,fatte){
-  const esiti={};
-  if(!base||!base.giorni||!base.giorni.length||!(fatte||[]).length)return{piano:base,esiti};
+  const esiti={},righe={};
+  if(!base||!base.giorni||!base.giorni.length||!(fatte||[]).length)return{piano:base,esiti,righe};
   const N=base.giorni.length;
   const salva=pianoData;let BL;
   try{pianoData=base;BL=hkBuildBlocks();}finally{pianoData=salva;}
@@ -3481,6 +3482,7 @@ function _hkPianoEffettivo(base,fatte){
     }));
     st.forEach(z=>{if(!z.k)z.k='sparito';});
     const ks=st.map(z=>z.k);
+    righe[f.id]=ks;
     esiti[f.id]=ks.includes('sparito')?'sparito':ks.includes('attesa')?'attesa':ks.every(k=>k==='fuori')?'fuori':'nelPiano';
     if(esiti[f.id]!=='attesa')return;
     // Prima si tolgono tutti, poi si rimettono: in uno scambio due soggiorni possono
@@ -3500,7 +3502,7 @@ function _hkPianoEffettivo(base,fatte){
       if(e!=null&&incP.delete(z.r.da+'|'+e))incP.add(z.r.a+'|'+e);
     });
   });
-  if(!toccate.size)return{piano:base,esiti};
+  if(!toccate.size)return{piano:base,esiti,righe};
   const piano=JSON.parse(JSON.stringify(base));
   piano.incArr=[...incA];piano.incPar=[...incP];
   // Quali soggiorni sono entrati e usciti da ogni camera con le mosse applicate: il motore
@@ -3523,7 +3525,7 @@ function _hkPianoEffettivo(base,fatte){
       if(LISTA[st[d]])sa[LISTA[st[d]]].push(room);
     });
   });
-  return{piano,esiti};
+  return{piano,esiti,righe};
 }
 function _hkFatteSalva(l){
   try{localStorage.setItem(HK_FATTE_KEY,JSON.stringify(l));}catch(e){}
@@ -4231,6 +4233,14 @@ function renderHkSuggestions(focusIdx){
     :'';
   return box(testa+legenda+righe+altreBtn+nota);
 }
+// Una mossa segnata come fatta e ancora "dov'era" in un Piano caricato DOPO la spunta: il
+// Piano nuovo c'è già, e non la contiene (03/11/2026). Prima diceva comunque "aspetta il
+// nuovo Piano" — anche a Piano nuovo caricato, se uno solo dei passi non risultava fatto.
+function _hkNonNelPianoNuovo(f){
+  if(_hkEsiti[f.id]!=='attesa')return false;
+  const p=_hkPianoVero||pianoData;
+  return!!(p&&p._ts&&f.ts&&p._ts>f.ts);
+}
 // Le mosse segnate come fatte e non ancora ritrovate in un Piano caricato.
 function _hkFatteHtml(){
   const l=_hkFatte().filter(f=>_hkEsiti[f.id]==='attesa'||_hkEsiti[f.id]==='sparito'||_hkEsiti[f.id]==='conflitto');
@@ -4239,15 +4249,25 @@ function _hkFatteHtml(){
   const lbl=d=>{const i=_hkDataIdx(pianoData,d);if(i>=0&&g[i].label)return g[i].label;const p=_hkNormData(d).split('/');return p.length===3?(+p[0])+'/'+(+p[1]):'—';};
   const cam=(c,piena)=>`<span style="display:inline-block;${piena?'background:var(--accent);color:#fff;':'background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);'}border-radius:6px;padding:2px 9px;font-weight:${piena?'700':'600'};font-size:13px;">${_esc(c)}</span>`;
   const righe=l.map(f=>{
-    const conflitto=_hkEsiti[f.id]==='conflitto',sparito=_hkEsiti[f.id]==='sparito'||conflitto;
-    const passi=(f.righe||[]).map(r=>`<div style="display:flex;align-items:center;gap:7px;padding:2px 0;">${cam(r.da,false)}<span style="color:var(--text-dim);">→</span>${cam(r.a,true)}<span style="font-size:13px;font-weight:600;color:var(--text);margin-left:8px;">${lbl(r.s)}${r.e&&r.e!==r.s?' → '+lbl(r.e):''}</span></div>`).join('');
+    const nonNuovo=_hkNonNelPianoNuovo(f);
+    const conflitto=_hkEsiti[f.id]==='conflitto',sparito=_hkEsiti[f.id]==='sparito'||conflitto||nonNuovo;
+    const ks=_hkEsitiRighe[f.id]||[];
+    // Col Piano nuovo già caricato si dice passo per passo cosa c'è e cosa manca.
+    const segno=k=>!nonNuovo?'':ks[k]==='nelPiano'
+      ?`<span style="font-size:11.5px;font-weight:600;color:var(--green);margin-left:8px;">già nel Piano</span>`
+      :ks[k]==='attesa'?`<span style="font-size:11.5px;font-weight:600;color:var(--amber);margin-left:8px;">ancora in ${_esc((f.righe[k]||{}).da||'')}</span>`:'';
+    const passi=(f.righe||[]).map((r,k)=>`<div style="display:flex;align-items:center;gap:7px;padding:2px 0;flex-wrap:wrap;">${cam(r.da,false)}<span style="color:var(--text-dim);">→</span>${cam(r.a,true)}<span style="font-size:13px;font-weight:600;color:var(--text);margin-left:8px;">${lbl(r.s)}${r.e&&r.e!==r.s?' → '+lbl(r.e):''}</span>${segno(k)}</div>`).join('');
+    const nMancano=ks.filter(k=>k==='attesa').length;
+    const spiega=conflitto?'Nel Piano caricato la camera d\'arrivo risulta occupata in quelle notti da un\'altra prenotazione: i numeri non contano questo spostamento. Controlla nel PMS, poi toglilo da qui.'
+      :nonNuovo?`Il Piano caricato dopo che l'hai segnato ${nMancano===ks.length?'non contiene questo spostamento':'contiene solo una parte di questo spostamento'}: forse nel PMS non è stato fatto o salvato del tutto. I numeri della pagina lo contano ancora come fatto. Controlla nel PMS: se è a posto ricarica il Piano, altrimenti toglilo da qui.`
+      :'Il soggiorno non è più né nella camera di prima né in quella nuova: forse è stato cancellato o spostato altrove. Controlla nel PMS, poi toglilo da qui.';
     const stato=sparito
-      ?`<span style="font-size:11.5px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:5px;padding:3px 9px;white-space:nowrap;">${conflitto?'Camera ora occupata':'Non trovato nel nuovo Piano'}</span>`
+      ?`<span style="font-size:11.5px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:5px;padding:3px 9px;white-space:nowrap;">${conflitto?'Camera ora occupata':nonNuovo?'Non risulta nel nuovo Piano':'Non trovato nel nuovo Piano'}</span>`
       :`<span style="font-size:11.5px;font-weight:700;color:var(--green);background:var(--green-bg);border-radius:5px;padding:3px 9px;white-space:nowrap;">Fatto · aspetta il nuovo Piano</span>`;
     return`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--border-light);">
       <span style="width:21px;height:21px;border-radius:50%;background:${sparito?'var(--amber)':'var(--green)'};color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">${_invIco(sparito?'allerta':'ok',12)}</span>
       <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;min-width:70px;margin-top:4px;">${_esc(_hkTipoLbl(f.cat||''))}</span>
-      <div style="flex:1;min-width:0;">${passi}${sparito?`<div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.45;">${conflitto?'Nel Piano caricato la camera d\'arrivo risulta occupata in quelle notti da un\'altra prenotazione: i numeri non contano questo spostamento. Controlla nel PMS, poi toglilo da qui.':'Il soggiorno non è più né nella camera di prima né in quella nuova: forse è stato cancellato o spostato altrove. Controlla nel PMS, poi toglilo da qui.'}</div>`:''}</div>
+      <div style="flex:1;min-width:0;">${passi}${sparito?`<div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.45;">${spiega}</div>`:''}</div>
       <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">${stato}<button onclick="hkAnnullaFatto('${_esc(f.id)}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11.5px;color:var(--text-muted);cursor:pointer;font-family:inherit;">${sparito?'Togli':'Annulla'}</button></div>
     </div>`;
   }).join('');
@@ -4457,8 +4477,8 @@ function renderRoomDivision(idx){
   const vero=pianoData;
   if(!vero||!vero.giorni)return _renderRoomDivision(idx);
   let eff;
-  try{eff=_hkPianoEffettivo(vero,_hkFatte());}catch(e){eff={piano:vero,esiti:{}};}
-  _hkEsiti=eff.esiti;
+  try{eff=_hkPianoEffettivo(vero,_hkFatte());}catch(e){eff={piano:vero,esiti:{},righe:{}};}
+  _hkEsiti=eff.esiti;_hkEsitiRighe=eff.righe||{};
   // A vista nascosta non si disegna: il polling passa di qui ogni minuto, e il Piano della
   // settimana e i conteggi delle mosse costano. Si ridisegna aprendo la vista (setView).
   const vista=document.getElementById('view-room-division');

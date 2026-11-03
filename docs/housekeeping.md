@@ -229,6 +229,15 @@ data di partenza uguale (camera di partenza, poi camera d'arrivo), poi le righe 
 tolleranza; un soggiorno già riconosciuto da una riga non si riusa per un'altra della stessa
 mossa. Controlli: "partenza sull'ultimo giorno" in `test/controlli.js`.
 
+**Piano nuovo caricato, mossa ancora "dov'era"** (03/11/2026). La riga diceva "Fatto · aspetta
+il nuovo Piano" anche col Piano nuovo già caricato, quando anche uno solo dei passi risultava
+ancora nella camera di prima (mossa fatta a metà nel PMS, o non salvata). Ora
+`_hkPianoEffettivo` restituisce anche l'esito di ogni riga (`righe`, in `_hkEsitiRighe`) e
+`_hkNonNelPianoNuovo` confronta `_ts` del Piano con `ts` della spunta: se il Piano è stato
+caricato dopo, la riga è ambra "Non risulta nel nuovo Piano", passo per passo "già nel Piano" /
+"ancora in Art N", pulsante Togli. I numeri continuano a contare i passi mancanti come fatti
+finché non si toglie. Controlli: "fatta a meta'" in `test/controlli.js`.
+
 **Piano della settimana** (`hkPianoSettimana`, selettore "Giorno per giorno / Piano della
 settimana", preferenza del browser `hkModo`): la mossa migliore sull'intera settimana, poi la
 migliore sul Piano con quella mossa, fino a 8 passi o finché non migliora più. Il pulsante
