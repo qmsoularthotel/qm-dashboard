@@ -495,6 +495,25 @@ if ! grep -q 'pianoData&&pianoData._ts' housekeeper.html || ! grep -q '_arriviTs
   BKF_KO=1
 fi
 
+# Numeri in alto dell'app Housekeeping (partenze, fermate, camere): si contano dal Piano,
+# come le schede delle cameriere, non dalla copia qm_hk_soul/bout che puo' restare indietro
+# (05/11/2026: SoulArt 12 camere in alto, 14 nelle schede). Anche nell'anteprima dei giorni.
+# Il conto stesso: 2 partenze + 1 cambio + 3 fermate SoulArt e 1 fermata Liborio = 3 · 4.
+_HK_CONTA=$(sed -n '/^function hkContaPiano/,/^}/p' housekeeper.html)
+_HK_RIS=$(osascript -l JavaScript -e "$_HK_CONTA
+const r=hkContaPiano({partenze:['Art 1','Art 2'],cambi:['Art 3'],fermate:['Art 4','Art 5','Art 6']},{fermate:['Liborio']},null);
+r.partenze+'·'+r.fermate" 2>&1)
+for _hk in 'hkContaPiano(pianoDay.soulart,libPiano)' 'hkContaPiano(pianoDay.boutique)' \
+           'hkContaPiano(ndP.soulart,ndL)' 'hkContaPiano(ndP.boutique)'; do
+  grep -qF "$_hk" housekeeper.html || _HK_RIS="manca $_hk"
+done
+if [ "$_HK_RIS" != "3·4" ]; then
+  echo ""
+  echo "  ERRORE      housekeeper.html: i numeri in alto non si contano piu' dal Piano ($_HK_RIS)."
+  echo "              Tornerebbero a non coincidere con le schede delle cameriere."
+  BKF_KO=1
+fi
+
 # Worker non pubblicato: worker.js si pubblica a mano su Cloudflare (vedi CLAUDE.md, la
 # pubblicazione automatica è stata valutata e scartata). Una correzione può quindi essere
 # scritta, versionata e non attiva — successo il 21/08/2026, per ore, senza alcun segnale.

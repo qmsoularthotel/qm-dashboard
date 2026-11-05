@@ -478,7 +478,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-10-06.8';
+const QM_APP_BUILD='2026-11-05.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -611,6 +611,15 @@ function splitSoulart(rooms){
   (rooms.partenze||[]).forEach(r=>(MATARESE.has(r)?m:a).partenze.push(r));
   (rooms.fermate||[]).forEach(r=>(MATARESE.has(r)?m:a).fermate.push(r));
   return{m,a};
+}
+// Conteggi del giorno letti DIRETTAMENTE dal Piano (05/11/2026), come le schede delle
+// cameriere: prima le tessere in alto leggevano qm_hk_soul/qm_hk_bout, una copia che Compass
+// ricava dal Piano e che puo' restare indietro (SoulArt: 12 camere in alto, 14 nelle schede).
+// I conteggi salvati restano solo se del giorno manca il Piano. Cambio = partenza.
+function hkContaPiano(...sez){
+  let p=0,f=0;
+  sez.forEach(s=>{if(!s)return;p+=(s.partenze||[]).length+(s.cambi||[]).length;f+=(s.fermate||[]).length;});
+  return{partenze:p,fermate:f};
 }
 function roomSort(arr){return[...arr].sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''))||0,nb=parseInt(b.replace(/\D/g,''))||0;return na-nb;});}
 // ── Schede per cameriera (06/10/2026) ────────────────────────────────────
@@ -760,9 +769,10 @@ function renderDay(){
   // SoulArt
   const soulDay=soulData?.giorni?.find(g=>sameDate(g.data,day.data));
   html+=`<div class="struttura-title"><img src="img/logo-soulart.png" class="brand-logo" alt="SoulArt">SoulArt Hotel - San Liborio</div>`;
-  if(soulDay){
-    const sP=soulDay.partenze+libPartenze,sF=soulDay.fermate+libFermate;
-    totArrivi+=soulDay.arrivi;totFermate+=sF;totPartenze+=sP;
+  if(pianoDay||soulDay){
+    const cP=pianoDay?hkContaPiano(pianoDay.soulart,libPiano):null;
+    const sP=cP?cP.partenze:soulDay.partenze+libPartenze,sF=cP?cP.fermate:soulDay.fermate+libFermate;
+    totArrivi+=soulDay?soulDay.arrivi:0;totFermate+=sF;totPartenze+=sP;
     html+=hkTiles(sP,sF);
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
@@ -779,9 +789,10 @@ function renderDay(){
   // Boutique: camere 200, della ditta esterna
   const boutDay=boutData?.giorni?.find(g=>sameDate(g.data,day.data));
   html+=`<div class="struttura-title"><img src="img/logo-boutique.png" class="brand-logo" alt="Boutique">Boutique Hotel</div>`;
-  if(boutDay){
-    totArrivi+=boutDay.arrivi;totFermate+=boutDay.fermate;totPartenze+=boutDay.partenze;
-    html+=hkTiles(boutDay.partenze,boutDay.fermate);
+  if(pianoDay||boutDay){
+    const cB=pianoDay?hkContaPiano(pianoDay.boutique):boutDay;
+    totArrivi+=boutDay?boutDay.arrivi:0;totFermate+=cB.fermate;totPartenze+=cB.partenze;
+    html+=hkTiles(cB.partenze,cB.fermate);
   } else {
     html+=`<div class="no-data" style="padding:16px;font-size:13px;">Nessun dato per questo giorno</div>`;
   }
@@ -798,8 +809,8 @@ function renderDay(){
       const ndP=pianoData&&pianoData.giorni?pianoData.giorni.find(g=>sameDate(g.data,nd.data)):null;
       const ndL=(ndP&&ndP.liborio)||{};
       const sd0=soulData&&soulData.giorni?soulData.giorni.find(g=>g.data===nd.data):null;
-      const sd=sd0?{fermate:sd0.fermate+(ndL.fermate||[]).length,partenze:sd0.partenze+(ndL.partenze||[]).length+(ndL.cambi||[]).length}:null;
-      const bd=boutData&&boutData.giorni?boutData.giorni.find(g=>g.data===nd.data):null;
+      const sd=ndP?hkContaPiano(ndP.soulart,ndL):sd0?{fermate:sd0.fermate+(ndL.fermate||[]).length,partenze:sd0.partenze+(ndL.partenze||[]).length+(ndL.cambi||[]).length}:null;
+      const bd=ndP?hkContaPiano(ndP.boutique):(boutData&&boutData.giorni?boutData.giorni.find(g=>g.data===nd.data):null);
       html+=`<div class="preview-card"><div class="preview-day">${nd.label}</div>`;
       // SoulArt
       html+=`<div class="preview-struttura"><img src="img/logo-soulart.png" class="brand-logo" alt="SoulArt">SoulArt Hotel - San Liborio</div>`;

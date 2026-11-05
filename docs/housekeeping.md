@@ -403,3 +403,12 @@ partenza, quindi compare solo dentro uno scambio.
 Provato sul PDF vero (`parsePianoItems` sulle parole di `pdftotext -bbox-layout`): prima
 2 mosse su Mar 3/11 e 1 passo nel Piano della settimana, dopo nessuna; Gio 29/10 dice che le
 partenze (Art 14, 16, 18, 21) sono tutte di ospiti già in casa.
+
+### Numeri in alto dal Piano (05/11/2026)
+
+Caso reale: SoulArt **12 camere** nelle tessere in alto, **14** nelle schede delle cameriere. Le schede
+leggevano già il Piano (`qm_piano`), le tessere e l'anteprima dei prossimi giorni invece `qm_hk_soul`/`qm_hk_bout`,
+la copia dei conteggi che `hkpDeriveFromPiano` in Compass ricava dal Piano e che può restare indietro (scritta solo
+se cambia, confrontando con la copia locale di quella postazione). Ora `hkContaPiano` conta dal Piano anche le
+tessere e l'anteprima (cambio = partenza, San Liborio con la SoulArt); i conteggi salvati servono solo per un giorno
+che il Piano non ha. Controllo in `test/esegui.sh` ("numeri in alto … dal Piano").
