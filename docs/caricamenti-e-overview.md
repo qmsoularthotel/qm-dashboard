@@ -266,3 +266,10 @@ privacy" (scelta del QM). Circa -68% di inchiostro misurato sulla pagina. Contro
 Tipologia sulla card col solo nome (06/11/2026): `rcRoomTypeLabel` riduce i nomi del PMS ("AS Deluxe Doppia",
 "AS Junior Suite Depandance", "PC Superior"…) a **Superior, Deluxe, Junior Suite, Suite** (e Standard per il
 Boutique). Junior Suite si cerca prima di Suite; un nome sconosciuto perde solo il prefisso AS/PC.
+
+Riga delle date sulla card (06/11/2026): le sei caselle (Arrivo, Partenza, Notti, Ospiti, Tipologia, Trattamento)
+stanno su **una riga sola** (`.pc-dates` in flex, scelta del QM: la versione su due righe è stata scartata), col
+valore accanto alla didascalia separato da una barretta verticale più bassa della casella. Anno a due cifre su
+tutta la card (`_rcAnno2`, solo sulla carta), trattamento in sola sigla (BB, HB…): "HB – Mezza pensione" non
+entrava. Il caso più lungo (Junior Suite, 11 notti, HB) ci sta senza molto margine: aggiungendo testo alla riga
+va riprovato. Controlli in `test/controlli.js` ("riga delle date").

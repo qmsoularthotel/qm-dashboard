@@ -218,6 +218,17 @@ ok('PC Superior (Boutique)',     rcRoomTypeLabel('PC Superior'), 'Superior');
 ok('codice corto del Piano',     rcRoomTypeLabel('AS DLX DP'), 'Deluxe');
 ok('PC Standard',                rcRoomTypeLabel('PC Standard'), 'Standard');
 
+sez('Registration card: riga delle date');
+// 06/11/2026: valori accanto alle didascalie, tutte e sei le caselle su una riga, anno a due cifre.
+ok('anno a due cifre',            _rcAnno2('06/11/2026'), '06/11/26');
+ok('data vuota resta vuota',      _rcAnno2(''), '');
+ok('le sei caselle su una riga',  /\.pc-dates\{display:flex;/.test(PRINT_CSS), true);
+ok('barretta fra didascalia e valore', /\.pc-dl\{[^}]*border-right:1px/.test(PRINT_CSS), true);
+ok('il valore non va a capo',     /\.pc-dv\{[^}]*white-space:nowrap/.test(PRINT_CSS), true);
+var _rcCard = rcCardHTML({ camera: 'Art 13', nome: 'Rossi Giulia', pax: 2, trattamento: 'HB', checkin: '06/11/2026', checkout: '17/11/2026', struttura: 'SA', tipoCamera: 'AS Suite' });
+ok('trattamento in sigla',        /Mezza pensione/.test(_rcCard), false);
+ok('date stampate a due cifre',   /17\/11\/26</.test(_rcCard) && !/2026</.test(_rcCard), true);
+
 sez('Biancheria: periodo ritirato da Raimondo');
 // Il giro del giorno D ritira dal giro precedente (incluso) al giorno prima di D.
 _bia = { consumi: [
