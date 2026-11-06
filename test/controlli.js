@@ -201,6 +201,13 @@ ok('il Piano caricato sblocca',     /rcApplicaScadenza/.test(String(pianoSetLoad
 ok('le Prenotazioni caricate sbloccano', /rcApplicaScadenza/.test(String(prenHandlePdf)), true);
 arriviData = _rcAd; pianoData = _rcPd; guestsData = _rcGd;
 
+sez('Registration card: stampa a basso consumo di toner');
+// 06/11/2026: tolta la fascia nera piena in testa; il grigio resta solo su Dati carta e Privacy.
+ok('niente fascia nera in testa', /\.pc-header\{[^}]*background:#1A1916/.test(PRINT_CSS), false);
+ok('nessun testo bianco (stava sul nero)', /color:#fff/.test(PRINT_CSS), false);
+ok('logo SoulArt senza disco nero', /\.pc-logo\{[^}]*invert\(1\)/.test(PRINT_CSS), true);
+ok('grigio solo su Dati carta e Privacy', (PRINT_CSS.match(/\.[a-z-]+\{[^}]*background:#F0EFEC/g) || []).map(function (x) { return x.split('{')[0]; }).join(' '), '.pc-cc-head .pc-privacy-head');
+
 sez('Biancheria: periodo ritirato da Raimondo');
 // Il giro del giorno D ritira dal giro precedente (incluso) al giorno prima di D.
 _bia = { consumi: [

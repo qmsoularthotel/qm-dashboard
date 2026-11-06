@@ -254,3 +254,11 @@ dentro `arriviData` e `pianoData` (vale il caricamento fatto da qualunque postaz
 aggiornamento, quindi anche passata la mezzanotte con la pagina aperta), `pianoSetLoaded` e `prenHandlePdf`;
 `rcOpenPrintDialog` ricontrolla prima di stampare. I dati non si cancellano. Controlli in `test/controlli.js`
 ("visibili solo dopo i caricamenti di oggi").
+
+### Stampa delle registration card a basso consumo di toner (06/11/2026)
+
+`PRINT_CSS`: tolta la fascia nera in testa (hotel e camera in nero su bianco con una riga), logo SoulArt con
+`filter:invert(1)` (resta la scritta, sparisce il disco nero), nome dell'ospite e camera a tratto sottile,
+etichette IT/EN senza fondo. **Il grigio resta di proposito** sulle intestazioni "Dati carta" e "Informativa
+privacy" (scelta del QM). Circa -68% di inchiostro misurato sulla pagina. Controllo in `test/controlli.js`
+("stampa a basso consumo di toner").
