@@ -267,6 +267,36 @@ ok('martedi\': tre giorni',            _biaPeriodoTxt(g), 'di sabato 22, domenic
 g = _giro(['25/08/2026'], [], '27/08/2026');            // giovedi'
 ok('giovedi\': parte da martedi\'',    _biaFmt(g.dal), '25/08/2026');
 
+sez('Biancheria: distinta solo con i consumi salvati');
+// 06/11/2026: la distinta non si stampa se i consumi del periodo non sono tutti salvati.
+(function () {
+  var veroEl = document.getElementById, veroAv = cqAvviso, avvisi = [], campi = {};
+  cqAvviso = function (t) { avvisi.push(t); };
+  document.getElementById = function (id) { return campi[id] || null; };
+  function giro(consumi, dataGiro) {
+    _bia = { consumi: consumi.map(function (d) { return { id: d, hotel: 'sa', data: d, q: { Federa: 5 } }; }), giri: [] };
+    _biaHotel = 'sa'; avvisi = [];
+    campi['bia-giro-data'] = { value: dataGiro };
+    campi['bia-cons-data'] = { value: '' };
+  }
+  try {
+    // giro con due giorni nel periodo: manca il primo
+    var dG = new Date(); dG.setDate(dG.getDate() + 30);
+    while (!_biaPeriodo('sa', _biaFmt(dG)) || _biaGiorniPeriodo(_biaPeriodo('sa', _biaFmt(dG))).length < 2) dG.setDate(dG.getDate() + 1);
+    var dataG = _biaFmt(dG), per = _biaPeriodo('sa', dataG), gg = _biaGiorniPeriodo(per).map(_biaFmt);
+    giro(gg.slice(1), _biaToIso(dataG));
+    biaPrintDistinta();
+    ok('bia: giorno senza consumi, distinta bloccata', avvisi[0], 'Mancano dei consumi');
+    giro(gg, _biaToIso(dataG));
+    campi['bia-cons-data'] = { value: _biaToIso(gg[0]) };
+    campi['bia-c-' + BIA_VOCI.indexOf('Federa')] = { value: '9' };
+    biaPrintDistinta();
+    ok('bia: numeri scritti e non salvati, distinta bloccata', avvisi[0], 'Consumi non salvati');
+    giro(gg, _biaToIso(dataG));
+    ok('bia: tutto salvato, niente da salvare', JSON.stringify(_biaConsumiDaSalvare('sa', per)), '{"mancanti":[],"nonSalvato":null}');
+  } finally { document.getElementById = veroEl; cqAvviso = veroAv; }
+})();
+
 sez('Colazioni: un caricamento stretto non cancella la previsione');
 // Il grafico della previsione e' lo strumento su cui la responsabile organizza il
 // servizio. Un export del PMS filtrato su un giorno solo sostituiva l'intera serie e lo

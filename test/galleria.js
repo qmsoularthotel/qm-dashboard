@@ -217,3 +217,33 @@ ok('Galleria: tre voci di menu',                    Object.keys(BG_SEZIONI).join
 
 // Ultimo file caricato da esegui.sh/node.js: tocca a lui chiudere il conto.
 riepilogo();
+
+sez('Gestione Biancheria (Galleria): distinta solo con i consumi salvati');
+// 06/11/2026: la distinta non si stampa se i consumi del periodo non sono tutti salvati.
+(function () {
+  var veroEl = document.getElementById, veroAv = _gbAvviso, avvisi = [], campi = {};
+  _gbAvviso = function (t) { avvisi.push(t); };
+  document.getElementById = function (id) { return campi[id] || null; };
+  function giro(consumi, dataGiro) {
+    _gb = { consumi: consumi.map(function (d) { return { id: d, hotel: 'ar', data: d, q: { Federa: 5 } }; }), giri: [] };
+    _gbHotel = 'ar'; avvisi = [];
+    campi['gb-giro-data'] = { value: dataGiro };
+    campi['gb-cons-data'] = { value: '' };
+  }
+  try {
+    // giro con due giorni nel periodo: manca il primo
+    var dG = new Date(); dG.setDate(dG.getDate() + 30);
+    while (!_gbPeriodo('ar', _gbFmt(dG)) || _gbGiorniPeriodo(_gbPeriodo('ar', _gbFmt(dG))).length < 2) dG.setDate(dG.getDate() + 1);
+    var dataG = _gbFmt(dG), per = _gbPeriodo('ar', dataG), gg = _gbGiorniPeriodo(per).map(_gbFmt);
+    giro(gg.slice(1), _gbToIso(dataG));
+    gbPrintDistinta();
+    ok('gb: giorno senza consumi, distinta bloccata', avvisi[0], 'Mancano dei consumi');
+    giro(gg, _gbToIso(dataG));
+    campi['gb-cons-data'] = { value: _gbToIso(gg[0]) };
+    campi['gb-c-' + GB_VOCI.indexOf('Federa')] = { value: '9' };
+    gbPrintDistinta();
+    ok('gb: numeri scritti e non salvati, distinta bloccata', avvisi[0], 'Consumi non salvati');
+    giro(gg, _gbToIso(dataG));
+    ok('gb: tutto salvato, niente da salvare', JSON.stringify(_gbConsumiDaSalvare('ar', per)), '{"mancanti":[],"nonSalvato":null}');
+  } finally { document.getElementById = veroEl; _gbAvviso = veroAv; }
+})();

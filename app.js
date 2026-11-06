@@ -15586,6 +15586,30 @@ ${_biaTabellaMese(m,true,h)}
   const w=window.open('','_blank');if(!w)return;
   w.document.write(html);w.document.close();setTimeout(()=>{try{w.print();}catch(e){}},400);
 }
+// La distinta non si stampa se i consumi del periodo non sono tutti salvati (richiesta del QM,
+// 06/11/2026): lo sporco che esce è la somma dei consumi, e una distinta con un giorno mancante
+// o con numeri scritti ma non salvati va a Raimondo con un totale sbagliato. Due casi:
+//  1. giorni del periodo senza consumi registrati (_biaGiorniSenzaConsumi);
+//  2. nel riquadro dei consumi c'è una data del periodo con numeri diversi da quelli salvati.
+// Vale solo per la distinta nuova: la ristampa di una consegna registrata usa il totale congelato.
+function _biaConsumiDaSalvare(hotel,per){
+  const out={mancanti:[],nonSalvato:null};
+  if(!per||per.vuoto)return out;
+  out.mancanti=_biaGiorniSenzaConsumi(hotel,per);
+  const data=_biaFromIso((document.getElementById('bia-cons-data')||{}).value||'');
+  if(data&&hotel===_biaHotel){
+    const d=_biaParse(data);
+    if(d&&d>=per.dal&&d<=per.al){
+      const salvato=_bia.consumi.find(c=>_biaH(c)===hotel&&c.data===data);
+      const diverso=BIA_VOCI.some((v,i)=>{
+        const el=document.getElementById('bia-c-'+i);if(!el)return false;
+        return Math.max(0,Number(el.value)||0)!==(salvato?(Number(salvato.q[v])||0):0);
+      });
+      if(diverso)out.nonSalvato=data;
+    }
+  }
+  return out;
+}
 function biaPrintDistinta(giroId){
   const g=giroId?_bia.giri.find(x=>x.id===giroId):null;
   let hotel,data,q,per;
@@ -15600,6 +15624,11 @@ function biaPrintDistinta(giroId){
     // altrimenti la somma dei consumi del periodo.
     const reg=_bia.giri.find(x=>_biaH(x)===hotel&&x.data===data);
     q=reg&&reg.consegnato?reg.consegnato:(per&&!per.vuoto?_biaSommaConsumi(hotel,per.dal,per.al):_biaVuote());
+    if(!reg){
+      const ds=_biaConsumiDaSalvare(hotel,per);
+      if(ds.nonSalvato){cqAvviso('Consumi non salvati','I consumi del '+ds.nonSalvato+' sono scritti ma non salvati. Premi «Salva consumi», poi stampa la distinta.');return;}
+      if(ds.mancanti.length){cqAvviso('Mancano dei consumi','Nessun consumo salvato per '+ds.mancanti.map(_biaGgEtichetta).join(', ')+'. La distinta si stampa quando tutti i giorni del periodo sono salvati.');return;}
+    }
   }
   const tot=_biaTot(q);
   if(!tot){cqAvviso('Non c\'è niente da consegnare: tutte le quantità sono a zero.');return;}

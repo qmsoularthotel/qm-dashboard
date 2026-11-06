@@ -1173,3 +1173,13 @@ Analisi fatta sul backup del 26/09 (consegne dal 20/08 al 24/09), da riprendere 
 - Nei consumi le federe sono circa 1,6 volte le lenzuola, non 2 come da dotazione.
 - Da verificare sulla bolla: il **01/09** il ricevuto è identico, voce per voce, al
   consegnato del 29/08 (probabile conferma dell'atteso senza contare).
+
+### La distinta non si stampa senza i consumi salvati (06/11/2026)
+
+Richiesta del QM, per tutte e due le strutture (e identica nella copia della Galleria). Lo sporco che esce è la somma
+dei consumi: una distinta stampata con un giorno mancante o con numeri scritti nel riquadro ma non salvati arriva a
+Raimondo con un totale sbagliato. `_biaConsumiDaSalvare(hotel,per)` (`_gbConsumiDaSalvare` nella Galleria) dà i
+giorni del periodo senza consumi e la data del riquadro, se è nel periodo e i numeri sono diversi da quelli salvati.
+`biaPrintDistinta()` senza id si ferma con un avviso in tutti e due i casi. **La ristampa di una consegna già
+registrata non è bloccata**: usa il totale congelato. Controlli in `test/controlli.js` e `test/galleria.js`
+("distinta solo con i consumi salvati").
