@@ -243,3 +243,14 @@ Le prenotazioni annullate vengono scartate (`stato`). `origine` arriva dal PMS: 
 (Booking, Expedia, Italcamel, CRSVertical), che prima si indovinava dall'email.
 
 ---
+
+### Registration card bloccate fino ai caricamenti del giorno (06/11/2026)
+
+La mattina i colleghi aprivano la vista Registrazione senza caricare niente e stampavano comunque le card.
+Ora la griglia (`#rcPanel`) è nascosta, e al suo posto c'è l'avviso `#rcScadute`, finché **oggi** non sono
+stati caricati **sia** le Prenotazioni **sia** il Piano Settimanale: `rcFileMancanti()` guarda il `_ts`
+dentro `arriviData` e `pianoData` (vale il caricamento fatto da qualunque postazione, perché viaggia col cloud).
+`rcApplicaScadenza()` si rifà in `rcRenderCards`, `rcRefreshFromCloud` (apertura vista e giro di
+aggiornamento, quindi anche passata la mezzanotte con la pagina aperta), `pianoSetLoaded` e `prenHandlePdf`;
+`rcOpenPrintDialog` ricontrolla prima di stampare. I dati non si cancellano. Controlli in `test/controlli.js`
+("visibili solo dopo i caricamenti di oggi").

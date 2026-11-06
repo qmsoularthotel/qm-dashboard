@@ -8784,6 +8784,8 @@ function pianoSetLoaded(silent){
   const li=document.getElementById('pianoLoadedInfo');if(li)li.classList.add('visible');
   // Conteggi pulizie/HKP derivati dal Piano (sostituiscono 3 upload PDF)
   try{hkpDeriveFromPiano();}catch(e){}
+  // Registration card: il Piano di oggi è uno dei due file che le sbloccano.
+  try{rcApplicaScadenza();}catch(e){}
   // Se si sta già guardando un giorno specifico (pianoNavIdx già impostato), resta lì
   // dopo il nuovo caricamento invece di tornare a oggi — coerente col comportamento
   // già usato altrove (vedi il polling overview) quando il piano si ricarica.
@@ -9170,6 +9172,39 @@ function rcCleanName(raw){let name=raw.trim().replace(/\s*\([^)]+\)/g,'').trim()
 function rcParseGuests(text){let year=new Date().getFullYear();const ym=text.match(/arrivi\s*[-–]\s*\d{1,2}\/\d{1,2}\/(\d{4})/i);if(ym)year=parseInt(ym[1]);const norm=text.replace(/\s+/g,' ').trim();const guests=[];const pat=/(\b(?:Art\s*\d+|\d{2,3}|AS_LIB|[A-Z]{2,8}_?[A-Z]*\d*)\b)\s*\/\s*(?:[A-Z_\s]{2,20}?)\s+([A-ZÀÈÉÌÒÙ][A-Za-zÀ-ÿ\s']+?(?:\s+\([^)]+\))?)\s+(\d)\s+(BB|HB|FB|RO|AI|MP)\s+(\d{1,2}\/\d{1,2})\s*[-–]\s*(\d{1,2}\/\d{1,2})/gi;let m;while((m=pat.exec(norm))!==null){const nome=rcCleanName(m[2]);if(!nome||nome.length<2)continue;guests.push({camera:m[1].trim(),nome,pax:parseInt(m[3]),trattamento:m[4].trim(),checkin:rcFmtDate(m[5],year),checkout:rcFmtDate(m[6],year)});}return guests;}
 function rcFmtDate(raw,year){const p=raw.split('/');return p.length===2?String(p[0]).padStart(2,'0')+'/'+String(p[1]).padStart(2,'0')+'/'+year:raw;}
 function rcCalcNights(ci,co){try{const[di,mi,yi]=ci.split('/').map(Number),[d2,m2,y2]=co.split('/').map(Number);const n=Math.round((new Date(y2,m2-1,d2)-new Date(yi,mi-1,di))/86400000);return n>0?n:'—';}catch{return '—';}}
+// Le card si vedono e si stampano solo dopo che OGGI sono stati caricati nell'Upload Center
+// sia le Prenotazioni sia il Piano Settimanale (richiesta del QM, 06/11/2026): la mattina i
+// colleghi aprivano la vista senza caricare niente e stampavano comunque. Vale il caricamento
+// fatto da qualunque postazione: si guarda il segnatempo dentro i dati (`_ts`), che viaggia
+// col cloud. I dati restano: si nasconde solo la griglia, che torna da sola col secondo file.
+function _rcDiOggi(ts){
+  if(!ts)return false;
+  const d=new Date(ts),o=new Date();
+  return d.getFullYear()===o.getFullYear()&&d.getMonth()===o.getMonth()&&d.getDate()===o.getDate();
+}
+function rcFileMancanti(){
+  const m=[];
+  // try e non typeof: una `let` dichiarata più in basso fa lanciare anche typeof (TDZ).
+  let a=false,p=false;
+  try{a=!!(arriviData&&_rcDiOggi(arriviData._ts));}catch(e){}
+  try{p=!!(pianoData&&_rcDiOggi(pianoData._ts));}catch(e){}
+  if(!a)m.push('Prenotazioni');
+  if(!p)m.push('Piano Settimanale');
+  return m;
+}
+function rcApplicaScadenza(){
+  const manca=rcFileMancanti(),blocca=manca.length>0;
+  const panel=document.getElementById('rcPanel'),box=document.getElementById('rcScadute');
+  if(panel)panel.style.display=blocca?'none':'';
+  if(box){
+    box.style.display=blocca?'':'none';
+    if(blocca){
+      const cosa=manca.map(x=>'<b>'+x+'</b>').join(' e ');
+      document.getElementById('rcScaduteTesto').innerHTML=`<b style="color:var(--text);">Registration card non ancora disponibili.</b><br>Si vedono e si stampano dopo il primo caricamento di oggi di Prenotazioni e Piano Settimanale nell'Upload Center. Manca${manca.length>1?'no':''}: ${cosa}.`;
+    }
+  }
+  return blocca;
+}
 function rcTodayStr(){const d=new Date();return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
 function ccNumberHTML(){const g=[0,1,2,3].map(()=>`<div class="cc-group">${[0,1,2,3].map(()=>`<span class="cc-digit"></span>`).join('')}</div>`);return`<div class="cc-num-wrap">${g[0]}<span class="cc-dash">–</span>${g[1]}<span class="cc-dash">–</span>${g[2]}<span class="cc-dash">–</span>${g[3]}</div>`;}
 function ccExpiryHTML(){return`<div class="cc-exp-wrap"><span class="cc-exp-digit"></span><span class="cc-exp-digit"></span><span class="cc-slash">/</span><span class="cc-exp-digit"></span><span class="cc-exp-digit"></span></div>`;}
@@ -9209,6 +9244,9 @@ function preparePrintIdxs(idxs){const cards=idxs.map(i=>guestsData[i]);rcOpenPri
 // che chiede qualcosa deve avere sempre lo stesso aspetto, altrimenti chi la usa si chiede
 // se sia la stessa applicazione.
 async function rcOpenPrintDialog(cards){
+  // La pagina può essere rimasta aperta da ieri: si ricontrolla qui.
+  const _manca=rcFileMancanti();
+  if(_manca.length){rcApplicaScadenza();cqAvviso('Registration card non disponibili','Si stampano dopo il primo caricamento di oggi nell\'Upload Center. Manca'+(_manca.length>1?'no':'')+': '+_manca.join(' e ')+'.');return;}
   const pages=cards.map(g=>`<div class="page">${rcCardHTML(g)}</div>`).join('');
   const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>${PRINT_CSS}</style></head><body>${pages}</body></html>`;
   document.getElementById('printIframe').srcdoc=html;
@@ -9237,6 +9275,7 @@ function rcRenderCards(guests){
   document.getElementById('rcResults').style.display='block';
   rcRenderSourceLine();
   rcUpdateSelectedBtn();
+  try{rcApplicaScadenza();}catch(e){}
   // Salva per ripristino
   try{localStorage.setItem('qm_rcGuests',JSON.stringify(sorted));}catch(e){}
   try{kvSet('qm_rcGuests',JSON.stringify(sorted)).catch(()=>{});}catch(e){}
@@ -9322,6 +9361,8 @@ async function rcRefreshFromCloud(){
   }catch(e){}
   // Allineare le card al cloud non basta: su KV possono essere vecchie quanto quelle locali.
   try{rcRiallineaConArrivi();}catch(e){}
+  // Passata la mezzanotte con la pagina aperta le card spariscono, e tornano col file di oggi.
+  try{rcApplicaScadenza();}catch(e){}
 }
 function rcShowProc(msg){document.getElementById('rcProcText').textContent=msg;document.getElementById('rcProcessing').style.display='flex';document.getElementById('rcUploadZone').style.display='none';}
 function rcHideProc(){document.getElementById('rcProcessing').style.display='none';}
@@ -16595,6 +16636,7 @@ async function prenHandlePdf(file){
     //     ma nessuno ridisegnava la vista Registrazione.
     let _rcEsito='vuoto';
     try{_rcEsito=rcAggiornaDaArrivi(_rcStessoGiorno);}catch(e){console.error('[Prenotazioni] registration card:',e);}
+    try{rcApplicaScadenza();}catch(e){}
 
     // 2. Colazioni per tutto l'intervallo (ex Report pasti)
     const bd=_prenBkfData(pren);

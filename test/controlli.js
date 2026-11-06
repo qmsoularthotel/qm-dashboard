@@ -177,6 +177,30 @@ rcTodayStr = _rcOggiVero;
 // la chiama all'apertura della vista.
 ok('la vista Registrazione riallinea all\'apertura', /rcRiallineaConArrivi/.test(String(rcRefreshFromCloud)), true);
 
+sez('Registration card: visibili solo dopo i caricamenti di oggi');
+// 06/11/2026: la mattina i colleghi stampavano le card senza aver caricato niente.
+// Si vedono solo dopo il primo caricamento di OGGI di Prenotazioni e Piano Settimanale.
+var _rcAd = arriviData, _rcPd = pianoData, _rcGd = guestsData;
+var _ieri = Date.now() - 86400000 * 1.5;
+guestsData = [{ camera: '204', nome: 'Bianchi Anna', checkin: rcTodayStr(), checkout: '', pax: 1, trattamento: 'BB' }];
+arriviData = { arrivi: [], _ts: _ieri }; pianoData = { giorni: [], _ts: _ieri };
+ok('nessun file di oggi: mancano tutti e due', rcFileMancanti().join('+'), 'Prenotazioni+Piano Settimanale');
+arriviData._ts = Date.now();
+ok('solo Prenotazioni di oggi: manca il Piano', rcFileMancanti().join('+'), 'Piano Settimanale');
+arriviData._ts = _ieri; pianoData._ts = Date.now();
+ok('solo Piano di oggi: mancano le Prenotazioni', rcFileMancanti().join('+'), 'Prenotazioni');
+arriviData._ts = Date.now();
+ok('tutti e due di oggi: card sbloccate', rcFileMancanti().length, 0);
+pianoData = null;
+ok('Piano mai caricato: bloccate', rcFileMancanti().join('+'), 'Piano Settimanale');
+// Il blocco deve stare sia sul disegno sia sulla stampa (pagina aperta da ieri).
+ok('la griglia applica il blocco',  /rcApplicaScadenza/.test(String(rcRenderCards)), true);
+ok('la stampa applica il blocco',   /rcFileMancanti/.test(String(rcOpenPrintDialog)), true);
+ok('il giro di aggiornamento lo rifà', /rcApplicaScadenza/.test(String(rcRefreshFromCloud)), true);
+ok('il Piano caricato sblocca',     /rcApplicaScadenza/.test(String(pianoSetLoaded)), true);
+ok('le Prenotazioni caricate sbloccano', /rcApplicaScadenza/.test(String(prenHandlePdf)), true);
+arriviData = _rcAd; pianoData = _rcPd; guestsData = _rcGd;
+
 sez('Biancheria: periodo ritirato da Raimondo');
 // Il giro del giorno D ritira dal giro precedente (incluso) al giorno prima di D.
 _bia = { consumi: [

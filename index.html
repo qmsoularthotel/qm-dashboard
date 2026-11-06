@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='507-20261103';
+  const V='508-20261106';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -606,7 +606,8 @@
         <div class="rc-error" id="rcError"></div>
         <div id="rcResults" style="display:none;margin-top:.9rem;">
           <div id="rcSourceLine" style="display:none;align-items:center;gap:8px;font-size:var(--fs-xxs);color:var(--text-dim);background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:7px 12px;margin-bottom:10px;"></div>
-          <div class="panel">
+          <div id="rcScadute" class="panel" style="display:none;"><div class="panel-body" id="rcScaduteTesto" style="font-size:var(--fs-xs);color:var(--text-dim);line-height:1.5;"></div></div>
+          <div class="panel" id="rcPanel">
             <div class="panel-header">
               <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="9" r="2.5"/><path d="M8 17c0-2 2-3 4-3s4 1 4 3"/></svg></span>
               <span class="panel-title">Registration Cards</span>
@@ -1695,7 +1696,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1026-20261103"></script>
+<script src="app.js?v=1027-20261106"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
