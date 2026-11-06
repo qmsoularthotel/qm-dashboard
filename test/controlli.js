@@ -208,6 +208,16 @@ ok('nessun testo bianco (stava sul nero)', /color:#fff/.test(PRINT_CSS), false);
 ok('logo SoulArt senza disco nero', /\.pc-logo\{[^}]*invert\(1\)/.test(PRINT_CSS), true);
 ok('grigio solo su Dati carta e Privacy', (PRINT_CSS.match(/\.[a-z-]+\{[^}]*background:#F0EFEC/g) || []).map(function (x) { return x.split('{')[0]; }).join(' '), '.pc-cc-head .pc-privacy-head');
 
+sez('Registration card: tipologia col solo nome');
+// 06/11/2026: sulla card Superior, Deluxe, Junior Suite, Suite, non il nome lungo del PMS.
+ok('AS Superior',                rcRoomTypeLabel('AS Superior'), 'Superior');
+ok('AS Deluxe Doppia',           rcRoomTypeLabel('AS Deluxe Doppia'), 'Deluxe');
+ok('AS Junior Suite Depandance', rcRoomTypeLabel('AS Junior Suite Depandance'), 'Junior Suite');
+ok('AS Suite',                   rcRoomTypeLabel('AS Suite'), 'Suite');
+ok('PC Superior (Boutique)',     rcRoomTypeLabel('PC Superior'), 'Superior');
+ok('codice corto del Piano',     rcRoomTypeLabel('AS DLX DP'), 'Deluxe');
+ok('PC Standard',                rcRoomTypeLabel('PC Standard'), 'Standard');
+
 sez('Biancheria: periodo ritirato da Raimondo');
 // Il giro del giorno D ritira dal giro precedente (incluso) al giorno prima di D.
 _bia = { consumi: [

@@ -9209,10 +9209,19 @@ function rcTodayStr(){const d=new Date();return String(d.getDate()).padStart(2,'
 function ccNumberHTML(){const g=[0,1,2,3].map(()=>`<div class="cc-group">${[0,1,2,3].map(()=>`<span class="cc-digit"></span>`).join('')}</div>`);return`<div class="cc-num-wrap">${g[0]}<span class="cc-dash">–</span>${g[1]}<span class="cc-dash">–</span>${g[2]}<span class="cc-dash">–</span>${g[3]}</div>`;}
 function ccExpiryHTML(){return`<div class="cc-exp-wrap"><span class="cc-exp-digit"></span><span class="cc-exp-digit"></span><span class="cc-slash">/</span><span class="cc-exp-digit"></span><span class="cc-exp-digit"></span></div>`;}
 const RC_ROOM_TYPES={STD:'Standard',SUP:'Superior',DLX:'Deluxe',JS:'Junior Suite',SUI:'Suite',TRP:'Triple','DLX TP':'Triple Deluxe','TP DLX':'Triple Deluxe','TRP DLX':'Triple Deluxe'};
+// Sulla card la tipologia si scrive col solo nome (richiesta del QM, 06/11/2026): il PMS manda
+// "AS Superior", "AS Deluxe Doppia", "AS Junior Suite Depandance", "AS Suite", "PC Superior"…
+// e sulla card diventano Superior, Deluxe, Junior Suite, Suite. Junior Suite va cercata prima
+// di Suite. Un nome che non si riconosce perde solo il prefisso della struttura (AS/PC).
 function rcRoomTypeLabel(code){
   if(!code)return'';
   const c=String(code).trim().toUpperCase().replace(/\s+/g,' ');
-  return RC_ROOM_TYPES[c]||code;
+  if(/\bJ(UNIOR)?\.? ?S(UITE)?\b|\bJS\b/.test(c))return'Junior Suite';
+  if(/\bSUITE\b|\bSUI\b/.test(c))return'Suite';
+  if(/\bDELUXE\b|\bDLX\b/.test(c))return'Deluxe';
+  if(/\bSUPERIOR\b|\bSUP\b/.test(c))return'Superior';
+  if(/\bSTANDARD\b|\bSTD\b/.test(c))return'Standard';
+  return RC_ROOM_TYPES[c]||String(code).trim().replace(/^(AS|PC)\s+/i,'');
 }
 const RC_HOTELS={
   SA:{name:'SoulArt Hotel',logo:'img/logo-soulart-round.png'},

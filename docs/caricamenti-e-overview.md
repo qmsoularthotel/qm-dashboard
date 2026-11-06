@@ -262,3 +262,7 @@ aggiornamento, quindi anche passata la mezzanotte con la pagina aperta), `pianoS
 etichette IT/EN senza fondo. **Il grigio resta di proposito** sulle intestazioni "Dati carta" e "Informativa
 privacy" (scelta del QM). Circa -68% di inchiostro misurato sulla pagina. Controllo in `test/controlli.js`
 ("stampa a basso consumo di toner").
+
+Tipologia sulla card col solo nome (06/11/2026): `rcRoomTypeLabel` riduce i nomi del PMS ("AS Deluxe Doppia",
+"AS Junior Suite Depandance", "PC Superior"…) a **Superior, Deluxe, Junior Suite, Suite** (e Standard per il
+Boutique). Junior Suite si cerca prima di Suite; un nome sconosciuto perde solo il prefisso AS/PC.
