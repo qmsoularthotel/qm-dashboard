@@ -131,7 +131,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-06.1';
+const QM_APP_BUILD='2026-11-07.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -966,6 +966,80 @@ function _gbRegistrato(g){
   if(!Object.keys(r).length)return false;
   return _gbTot(r)>0;
 }
+// ── BUCHI NELL'ARCHIVIO: giorni senza consumi, consegne mai registrate (07/11/2026) ──
+// Caso reale: la consegna SoulArt di giovedì 05/11 non era stata registrata. Il calcolo
+// non sbagliava — "se un giro salta, il successivo copre da solo il buco" — ma il sabato
+// dopo confrontava col sacco del martedì (108 federe attese invece di 35) e nessuno capiva
+// perché. Il buco si vedeva solo leggendo il periodo riga per riga. Ora si dice sempre, in
+// cima alla pagina, per tutte le strutture.
+//
+// Fino a IERI: oggi è già in "Cosa fare oggi". Si parte dal primo consumo (per i consumi) e
+// dal giorno dopo la prima consegna registrata (per le consegne), mai prima dell'inizio del
+// conteggio: prima di allora non c'era niente da registrare. Un giorno di calendario
+// (il calendario della struttura) è coperto da una consegna datata fra il giorno di calendario precedente
+// (escluso) e quel giorno (incluso): una consegna straordinaria o segnata il giorno prima
+// non fa scattare l'avviso.
+function _gbBuchi(hotel,oggi){
+  const out={consumi:[],consegne:[],senzaPortato:[]};
+  const fine=new Date((oggi||_gbOggi()).getTime());fine.setHours(0,0,0,0);
+  const ini=_gbInizio(hotel);
+  const dc=_gbConsumi(hotel).map(c=>_gbParse(c.data)).filter(Boolean).sort((a,b)=>a-b);
+  if(dc.length){
+    const avuti=new Set(_gbConsumi(hotel).map(c=>c.data));
+    const x=new Date(Math.max(dc[0].getTime(),ini?ini.getTime():0));
+    for(;x<fine;x.setDate(x.getDate()+1))if(!avuti.has(_gbFmt(x)))out.consumi.push(_gbFmt(x));
+  }
+  const giri=_gbGiri(hotel);
+  const gd=giri.map(g=>_gbParse(g.data)).filter(Boolean);
+  if(gd.length){
+    const x=new Date(gd[0].getTime());x.setDate(x.getDate()+1);
+    if(ini&&ini>x)x.setTime(ini.getTime());
+    for(;x<fine;x.setDate(x.getDate()+1)){
+      if(!_gbGiornoGiro(x,hotel))continue;
+      const p=_gbGiroCalPrec(x,hotel);
+      if(!gd.some(d=>d>p&&d<=x))out.consegne.push(_gbFmt(x));
+    }
+  }
+  // Consegna registrata ma "Ha portato" mai scritto: un giro a zero non esiste (vedi sopra).
+  giri.forEach(g=>{const d=_gbParse(g.data);if(d&&d<fine&&_gbNelConto(g)&&!_gbRegistrato(g))out.senzaPortato.push(g.data);});
+  return out;
+}
+const _gbNBuchi=b=>b.consumi.length+b.consegne.length+b.senzaPortato.length;
+// Porta la pagina sulla data da sistemare: struttura, campo data, ridisegno, e la casella in vista.
+function gbVaiA(h,tipo,data){
+  if(!GB_HOTELS[h])return;
+  _gbHotel=h;
+  try{localStorage.setItem('bg_hotel',h);}catch(e){}
+  const id=tipo==='consumi'?'gb-cons-data':'gb-giro-data';
+  const f=document.getElementById(id);if(f)f.value=_gbToIso(data);
+  gbRender();
+  const g=document.getElementById(id);
+  if(g){try{g.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}try{g.focus();}catch(e){}}
+}
+function _gbBoxBuchi(oggi){
+  const MAX=8;
+  const date=(h,tipo,arr)=>{
+    const vis=arr.slice(-MAX).map(s=>{const d=_gbParse(s);
+      return`<a href="#" onclick="event.preventDefault();gbVaiA('${h}','${tipo}','${s}')" style="color:var(--red);font-weight:700;white-space:nowrap;">${d?GB_GG_NOMI[d.getDay()]+' ':''}${s.slice(0,5)}</a>`;});
+    return(arr.length>MAX?'… ('+(arr.length-MAX)+' più vecchi) ':'')+vis.join(', ');
+  };
+  let righe='',tot=0;
+  Object.keys(GB_HOTELS).forEach(h=>{
+    const b=_gbBuchi(h,oggi),n=_gbNBuchi(b);tot+=n;
+    if(!n)return;
+    righe+=`<div style="margin-top:8px;"><div style="font-weight:700;">${GB_HOTELS[h]}</div>`;
+    if(b.consumi.length)righe+=`<div style="margin-top:2px;">Consumi non inseriti: ${date(h,'consumi',b.consumi)}</div>`;
+    if(b.consegne.length)righe+=`<div style="margin-top:2px;">Consegne di Raimondo non registrate: ${date(h,'consegna',b.consegne)}</div>`;
+    if(b.senzaPortato.length)righe+=`<div style="margin-top:2px;">Consegne senza «Ha portato»: ${date(h,'consegna',b.senzaPortato)}</div>`;
+    righe+=`</div>`;
+  });
+  if(!tot)return`<div id="gb-buchi" style="border-left:3px solid var(--green);background:rgba(46,125,50,.10);color:var(--green);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:var(--fs-xxs);font-weight:700;">Archivio completo: nessun giorno senza consumi e nessuna consegna da registrare fino a ieri.</div>`;
+  return`<div id="gb-buchi" style="border-left:3px solid var(--red);background:rgba(192,53,42,.08);color:var(--red);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:var(--fs-xs);line-height:1.5;">
+    <div style="font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:var(--fs-xxs);">Dati mancanti</div>
+    ${righe}
+    <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);">Finché mancano, il «doveva portare» delle consegne successive confronta col sacco sbagliato. Tocca una data per aprirla.</div>
+  </div>`;
+}
 // Data di inizio del conteggio, per struttura (24/09/2026). Le prime consegne dopo l'avvio
 // delle registrazioni riportano anche biancheria ritirata PRIMA, che il conto non conosce:
 // risultano "in più" e falsano il saldo (Galleria: +241, quasi tutto dalle prime due). Le
@@ -1260,6 +1334,9 @@ function _gbRenderCore(){
   const scPrec=precGiro?_gbScostamento(precGiro):null;
 
   let h='';
+
+  // ── DATI MANCANTI ── sempre in vista, per tutte le strutture (07/11/2026)
+  h+=_gbBoxBuchi(oggi);
 
   // ── COSA FARE OGGI ──
   // Il motivo per cui questa pagina era difficile da usare non era il calcolo: era che

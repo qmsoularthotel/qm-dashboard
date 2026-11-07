@@ -14776,6 +14776,79 @@ function _biaRegistrato(g){
   if(!Object.keys(r).length)return false;
   return _biaTot(r)>0;
 }
+// ── BUCHI NELL'ARCHIVIO: giorni senza consumi, consegne mai registrate (07/11/2026) ──
+// Caso reale: la consegna SoulArt di giovedì 05/11 non era stata registrata. Il calcolo
+// non sbagliava — "se un giro salta, il successivo copre da solo il buco" — ma il sabato
+// dopo confrontava col sacco del martedì (108 federe attese invece di 35) e nessuno capiva
+// perché. Il buco si vedeva solo leggendo il periodo riga per riga. Ora si dice sempre, in
+// cima alla pagina, per tutte le strutture.
+//
+// Fino a IERI: oggi è già in "Cosa fare oggi". Si parte dal primo consumo (per i consumi) e
+// dal giorno dopo la prima consegna registrata (per le consegne), mai prima dell'inizio del
+// conteggio: prima di allora non c'era niente da registrare. Un giorno di calendario
+// (mar/gio/sab) è coperto da una consegna datata fra il giorno di calendario precedente
+// (escluso) e quel giorno (incluso): una consegna straordinaria o segnata il giorno prima
+// non fa scattare l'avviso.
+function _biaBuchi(hotel,oggi){
+  const out={consumi:[],consegne:[],senzaPortato:[]};
+  const fine=new Date((oggi||_biaOggi()).getTime());fine.setHours(0,0,0,0);
+  const ini=_biaInizio(hotel);
+  const dc=_biaConsumi(hotel).map(c=>_biaParse(c.data)).filter(Boolean).sort((a,b)=>a-b);
+  if(dc.length){
+    const avuti=new Set(_biaConsumi(hotel).map(c=>c.data));
+    const x=new Date(Math.max(dc[0].getTime(),ini?ini.getTime():0));
+    for(;x<fine;x.setDate(x.getDate()+1))if(!avuti.has(_biaFmt(x)))out.consumi.push(_biaFmt(x));
+  }
+  const giri=_biaGiri(hotel);
+  const gd=giri.map(g=>_biaParse(g.data)).filter(Boolean);
+  if(gd.length){
+    const x=new Date(gd[0].getTime());x.setDate(x.getDate()+1);
+    if(ini&&ini>x)x.setTime(ini.getTime());
+    for(;x<fine;x.setDate(x.getDate()+1)){
+      if(!_biaGiornoGiro(x))continue;
+      const p=_biaGiroCalPrec(x);
+      if(!gd.some(d=>d>p&&d<=x))out.consegne.push(_biaFmt(x));
+    }
+  }
+  // Consegna registrata ma "Ha portato" mai scritto: un giro a zero non esiste (vedi sopra).
+  giri.forEach(g=>{const d=_biaParse(g.data);if(d&&d<fine&&_biaNelConto(g)&&!_biaRegistrato(g))out.senzaPortato.push(g.data);});
+  return out;
+}
+const _biaNBuchi=b=>b.consumi.length+b.consegne.length+b.senzaPortato.length;
+// Porta la pagina sulla data da sistemare: struttura, campo data, ridisegno, e la casella in vista.
+function biaVaiA(h,tipo,data){
+  if(!BIA_HOTELS[h])return;
+  _biaHotel=h;
+  const id=tipo==='consumi'?'bia-cons-data':'bia-giro-data';
+  const f=document.getElementById(id);if(f)f.value=_biaToIso(data);
+  biaRender();
+  const g=document.getElementById(id);
+  if(g){try{g.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}try{g.focus();}catch(e){}}
+}
+function _biaBoxBuchi(oggi){
+  const MAX=8;
+  const date=(h,tipo,arr)=>{
+    const vis=arr.slice(-MAX).map(s=>{const d=_biaParse(s);
+      return`<a href="#" onclick="event.preventDefault();biaVaiA('${h}','${tipo}','${s}')" style="color:var(--red);font-weight:700;white-space:nowrap;">${d?BIA_GG_NOMI[d.getDay()]+' ':''}${s.slice(0,5)}</a>`;});
+    return(arr.length>MAX?'… ('+(arr.length-MAX)+' più vecchi) ':'')+vis.join(', ');
+  };
+  let righe='',tot=0;
+  Object.keys(BIA_HOTELS).forEach(h=>{
+    const b=_biaBuchi(h,oggi),n=_biaNBuchi(b);tot+=n;
+    if(!n)return;
+    righe+=`<div style="margin-top:8px;"><div style="font-weight:700;">${BIA_HOTELS[h]}</div>`;
+    if(b.consumi.length)righe+=`<div style="margin-top:2px;">Consumi non inseriti: ${date(h,'consumi',b.consumi)}</div>`;
+    if(b.consegne.length)righe+=`<div style="margin-top:2px;">Consegne di Raimondo non registrate: ${date(h,'consegna',b.consegne)}</div>`;
+    if(b.senzaPortato.length)righe+=`<div style="margin-top:2px;">Consegne senza «Ha portato»: ${date(h,'consegna',b.senzaPortato)}</div>`;
+    righe+=`</div>`;
+  });
+  if(!tot)return`<div id="bia-buchi" style="border-left:3px solid var(--green);background:rgba(46,125,50,.10);color:var(--green);border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:var(--fs-xxs);font-weight:700;">Archivio completo: nessun giorno senza consumi e nessuna consegna da registrare fino a ieri.</div>`;
+  return`<div id="bia-buchi" style="border-left:3px solid var(--red);background:rgba(192,53,42,.08);color:var(--red);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:var(--fs-xs);line-height:1.5;">
+    <div style="font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:var(--fs-xxs);">Dati mancanti</div>
+    ${righe}
+    <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);">Finché mancano, il «doveva portare» delle consegne successive confronta col sacco sbagliato. Tocca una data per aprirla.</div>
+  </div>`;
+}
 // Data di inizio del conteggio, per struttura (24/09/2026). Le prime consegne dopo l'avvio
 // delle registrazioni riportano anche biancheria ritirata PRIMA, che il conto non conosce:
 // risultano "in più" e falsano il saldo (Galleria: +241, quasi tutto dalle prime due). Le
@@ -15070,6 +15143,9 @@ function biaRender(){
   const scPrec=precGiro?_biaScostamento(precGiro):null;
 
   let h='';
+
+  // ── DATI MANCANTI ── sempre in vista, per tutte le strutture (07/11/2026)
+  h+=_biaBoxBuchi(oggi);
 
   // ── COSA FARE OGGI ──
   // Il motivo per cui questa pagina era difficile da usare non era il calcolo: era che

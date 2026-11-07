@@ -3203,3 +3203,49 @@ sez('Bilanciamento: niente giri a vuoto fra camere');
   ok('senza memoria la proporrebbe',        daCinque(hkSuggestMoves(30, null).mosse).length > 0, true);
   pianoData = _piano;
 })();
+
+sez('Consumo Biancheria: l\'avviso dei dati mancanti (07/11/2026)');
+(function(){
+  // Caso reale: la consegna di giovedi' 05/11 non registrata, e il sabato confrontava col
+  // sacco del martedi'. 2026-11-07 e' un sabato.
+  var prima=_bia,ph=_biaHotel;
+  var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};
+  var oggi=new Date(2026,10,7);
+  var cons=function(h,dd){return dd.map(function(d,i){return{id:h+'c'+i,hotel:h,data:d,q:Q(5)};});};
+  var tutti=['31/10/2026','01/11/2026','02/11/2026','03/11/2026','04/11/2026','05/11/2026','06/11/2026'];
+  _bia={consumi:cons('sa',tutti).concat(cons('bh',tutti)),giri:[
+    {id:'s1',hotel:'sa',data:'31/10/2026',consegnato:Q(9),ricevuto:Q(9)},
+    {id:'s2',hotel:'sa',data:'03/11/2026',consegnato:Q(9),ricevuto:Q(9)},
+    {id:'b1',hotel:'bh',data:'31/10/2026',consegnato:Q(9),ricevuto:Q(9)},
+    {id:'b2',hotel:'bh',data:'03/11/2026',consegnato:Q(9),ricevuto:Q(9)},
+    {id:'b3',hotel:'bh',data:'05/11/2026',consegnato:Q(9),ricevuto:Q(9)}]};
+  var b=_biaBuchi('sa',oggi);
+  ok('la consegna di giovedi\' mancante si vede',   b.consegne.join(','), '05/11/2026');
+  ok('oggi non conta (e\' in "Cosa fare oggi")',     b.consegne.indexOf('07/11/2026'), -1);
+  ok('consumi completi: niente da dire',            b.consumi.length, 0);
+  ok('l\'altra struttura e\' a posto',              _biaNBuchi(_biaBuchi('bh',oggi)), 0);
+  // Un giorno di consumi che manca, e una consegna con "Ha portato" mai scritto.
+  _bia.consumi=_bia.consumi.filter(function(c){return !(c.hotel==='bh'&&c.data==='02/11/2026');});
+  _bia.giri[4].ricevuto=_biaVuote();
+  var bb=_biaBuchi('bh',oggi);
+  ok('il giorno senza consumi si vede',             bb.consumi.join(','), '02/11/2026');
+  ok('la consegna senza "Ha portato" si vede',      bb.senzaPortato.join(','), '05/11/2026');
+  ok('ma non e\' contata come non registrata',      bb.consegne.length, 0);
+  // Una consegna segnata il giorno prima del calendario copre quel giorno.
+  _bia.giri.push({id:'s3',hotel:'sa',data:'04/11/2026',consegnato:Q(9),ricevuto:Q(9)});
+  ok('consegna di mercoledi\' copre il giovedi\'',  _biaBuchi('sa',oggi).consegne.length, 0);
+  // Prima della prima consegna e dell'inizio del conteggio non si segnala nulla.
+  ok('prima della prima consegna: niente',          _biaBuchi('sa',oggi).consegne.indexOf('31/10/2026'), -1);
+  // L'avviso sta in cima alla pagina, per tutte e due le strutture, anche guardandone una.
+  _bia.giri.pop();
+  var box={innerHTML:''},vero=document.getElementById;
+  document.getElementById=function(id){return id==='bia-content'?box:null;};
+  try{_biaHotel='bh';biaRender();}finally{document.getElementById=vero;}
+  var hh=box.innerHTML,i=hh.indexOf('id="bia-buchi"');
+  ok('l\'avviso c\'e\'',                            i>=0, true);
+  ok('ed e\' prima di "Cosa fare oggi"',            i>=0&&i<hh.indexOf('Cosa fare oggi'), true);
+  ok('nomina la consegna SoulArt anche dal Boutique',/biaVaiA\('sa','consegna','05\/11\/2026'\)/.test(hh), true);
+  _bia={consumi:[],giri:[]};
+  ok('archivio vuoto: avviso verde',                /Archivio completo/.test(_biaBoxBuchi(oggi)), true);
+  _bia=prima;_biaHotel=ph;
+})();

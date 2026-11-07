@@ -1183,3 +1183,28 @@ giorni del periodo senza consumi e la data del riquadro, se è nel periodo e i n
 `biaPrintDistinta()` senza id si ferma con un avviso in tutti e due i casi. **La ristampa di una consegna già
 registrata non è bloccata**: usa il totale congelato. Controlli in `test/controlli.js` e `test/galleria.js`
 ("distinta solo con i consumi salvati").
+
+### Avviso "Dati mancanti" — sempre in cima alla pagina (07/11/2026)
+
+**Caso reale**: la consegna SoulArt di giovedì 05/11 non era stata registrata. Il calcolo
+era corretto ("se un giro salta, il successivo copre il buco"), ma il sabato 07/11 confrontava
+col sacco del martedì 03/11 (108 federe attese invece di 35) e il QM non capiva perché: il buco
+si vedeva solo leggendo il periodo. Richiesta: *"mettere sempre in evidenza un avviso se in
+qualche data non sono stati inseriti i consumi o non è stata aggiornata la consegna"*.
+
+| Funzione | Ruolo |
+|---|---|
+| `_biaBuchi(h,oggi)` | `{consumi, consegne, senzaPortato}`: giorni senza consumi, giorni di calendario senza consegna, consegne con «Ha portato» mai scritto |
+| `_biaBoxBuchi(oggi)` | il riquadro, **per tutte le strutture** (un buco dell'altra resterebbe invisibile), rosso se manca qualcosa, riga verde se tutto è a posto |
+| `biaVaiA(h,tipo,data)` | tocca una data → struttura, campo data e casella in vista |
+
+Regole: si controlla **fino a ieri** (oggi è già in "Cosa fare oggi"); i consumi dal primo
+consumo inserito, le consegne dal giorno dopo la prima consegna registrata, mai prima
+dell'inizio del conteggio. Un giorno di calendario è coperto da una consegna datata fra il
+giorno di calendario precedente (escluso) e quel giorno (incluso): una consegna segnata il
+giorno prima non fa scattare l'avviso. Nella Galleria la copia (`_gbBuchi`, `gbVaiA`) usa il
+calendario della struttura (`_gbGiornoGiro(x,h)`).
+
+Coperto da **13 controlli** in `test/controlli.js` e 2 in `test/galleria.js`, verificati con
+cinque sabotaggi (consegne mai segnalate, consumi mai segnalati, copertura solo al giorno
+esatto, oggi incluso, avviso tolto): 2, 1, 1, 5 e 3 falliscono.

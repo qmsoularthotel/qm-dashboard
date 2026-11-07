@@ -247,3 +247,15 @@ sez('Gestione Biancheria (Galleria): distinta solo con i consumi salvati');
     ok('gb: tutto salvato, niente da salvare', JSON.stringify(_gbConsumiDaSalvare('ar', per)), '{"mancanti":[],"nonSalvato":null}');
   } finally { document.getElementById = veroEl; _gbAvviso = veroAv; }
 })();
+
+sez('Gestione Biancheria (Galleria): l\'avviso dei dati mancanti segue il calendario della struttura');
+(function () {
+  var prima = _gb;
+  // 2026-11-07 e' un sabato. Art Resort passa lun/mer/ven, Santa Brigida mar/gio/sab.
+  var oggi = new Date(2026, 10, 7);
+  var g = function (h, d) { return { id: h + d, hotel: h, data: d, consegnato: _gbQ({ Federa: 3 }), ricevuto: _gbQ({ Federa: 3 }) }; };
+  _gb = { consumi: [], giri: [g('ar', '02/11/2026'), g('ar', '06/11/2026'), g('sb', '03/11/2026'), g('sb', '05/11/2026')] };
+  ok('Art Resort: manca mercoledi\' 04',     _gbBuchi('ar', oggi).consegne.join(','), '04/11/2026');
+  ok('Santa Brigida: nessuna mancante',      _gbBuchi('sb', oggi).consegne.length, 0);
+  _gb = prima;
+})();
