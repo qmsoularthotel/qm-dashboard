@@ -3249,3 +3249,42 @@ sez('Consumo Biancheria: l\'avviso dei dati mancanti (07/11/2026)');
   ok('archivio vuoto: avviso verde',                /Archivio completo/.test(_biaBoxBuchi(oggi)), true);
   _bia=prima;_biaHotel=ph;
 })();
+
+// ─────────────────────────────────────────────────────────────────────────────
+sez('Agenda della settimana');
+(function(){
+  // La settimana parte di lunedi' anche quando oggi e' domenica, e non salta col cambio d'ora.
+  ok('domenica 08/11: lunedi\' e\' il 02/11',      _agLunediDi('2026-11-08'), '2026-11-02');
+  ok('lunedi\' resta se stesso',                   _agLunediDi('2026-11-02'), '2026-11-02');
+  ok('7 giorni, da lunedi\' a domenica',           _agSettimana('2026-10-19').join(','), '2026-10-19,2026-10-20,2026-10-21,2026-10-22,2026-10-23,2026-10-24,2026-10-25');
+  ok('dopo il cambio d\'ora del 25/10 si va avanti',_agPiuGiorni('2026-10-25',1), '2026-10-26');
+  ok('fine mese',                                  _agPiuGiorni('2026-11-30',1), '2026-12-01');
+  var L=[
+    {id:'a',giorno:'2026-11-03',testo:'Chiamare il fornitore',fatto:false,ts:1},
+    {id:'b',giorno:'2026-11-03',testo:'Gia\' fatto',fatto:true,ts:2},
+    {id:'c',giorno:'2026-11-08',testo:'Oggi',fatto:false,ts:3},
+    {id:'d',giorno:'2026-10-30',testo:'Vecchio',fatto:false,ts:4}
+  ];
+  // Rimasti indietro: solo i non fatti di prima di oggi, dal piu' vecchio.
+  ok('rimasti indietro: non fatti e passati',      _agArretrati(L,'2026-11-08').map(function(t){return t.id;}).join(','), 'd,a');
+  var G=[{id:'x',giorno:'g',testo:'tardi',ora:'18:00',fatto:false,ts:1},{id:'y',giorno:'g',testo:'fatto',ora:'08:00',fatto:true,ts:2},
+         {id:'z',giorno:'g',testo:'senza ora',ora:'',fatto:false,ts:3},{id:'w',giorno:'g',testo:'presto',ora:'09:00',fatto:false,ts:4}];
+  ok('nel giorno: prima con l\'ora, poi senza, i fatti in fondo', _agDelGiorno(G,'g').map(function(t){return t.id;}).join(','), 'w,x,z,y');
+  // L'elenco si scrive da piu' postazioni: deve passare dalla fusione a tre, mai da kvSet.
+  ok('si salva con la fusione a tre',              /_qmElencoSalva\(\s*AG_KEY/.test(String(_agScrivi)), true);
+  ok('nessun kvSet diretto sull\'agenda',          /kvSet\(/.test(String(_agScrivi)+String(agLoad)), false);
+  ok('e\' fra gli elenchi condivisi',              QM_ELENCHI_CONDIVISI.hasOwnProperty('qm_agenda'), true);
+  ok('entra nel backup',                           qmBackupChiavi(1).indexOf('qm_agenda')>=0, true);
+  ok('aprendo la vista si rilegge il cloud',       /_qmElencoAggiorna\(\s*AG_KEY/.test(String(agLoad)), true);
+  // Un aggiornamento arrivato da un'altra postazione non ridisegna mentre si scrive.
+  ok('niente ridisegno sotto le dita',             /_qmOccupato\(\)/.test(String(_agDopoFusione)), true);
+  // Il testo e' scritto da noi, ma passa comunque da _esc: si incolla di tutto.
+  var vero=localStorage.getItem('qm_agenda');
+  localStorage.setItem('qm_agenda',JSON.stringify([{id:'q',giorno:_agOggi(),testo:'<img src=x onerror=alert(1)>',fatto:false,ts:1}]));
+  var box={innerHTML:''},ge=document.getElementById;
+  document.getElementById=function(id){return id==='agenda-content'?box:null;};
+  try{_agLunedi=null;agRender();}finally{document.getElementById=ge;}
+  ok('il testo dell\'impegno e\' protetto',         box.innerHTML.indexOf('<img src=x')<0 && box.innerHTML.indexOf('&lt;img src=x')>=0, true);
+  ok('l\'impegno di oggi compare nella settimana',  /ag-oggi/.test(box.innerHTML), true);
+  if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
+})();

@@ -1032,8 +1032,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{kvSet('qm_weekData',null).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={sistema:'Stato del sistema',sicurezza:'Sicurezza e copie',overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Applicazioni stand alone',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Reso Biancheria',biancheria:'Consumo Biancheria',giacenza:'Giacenza Biancheria'};
-const breadcrumbs={sistema:'Pannello di Controllo',sicurezza:'Pannello di Controllo',miniapp:'Pannello di Controllo',overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',biancheria:'Housekeeping',giacenza:'Housekeeping'};
+const pageTitles={agenda:'Agenda della settimana',sistema:'Stato del sistema',sicurezza:'Sicurezza e copie',overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Applicazioni stand alone',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',reception:'Passaggi di Cassa',turnazione:'Turnazione Corrente','resi-biancheria':'Reso Biancheria',biancheria:'Consumo Biancheria',giacenza:'Giacenza Biancheria'};
+const breadcrumbs={agenda:'Agenda personale',sistema:'Pannello di Controllo',sicurezza:'Pannello di Controllo',miniapp:'Pannello di Controllo',overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti','turni-pref':'Reception',reception:'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',biancheria:'Housekeeping',giacenza:'Housekeeping'};
 // §§ HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore)
 // Operativa HKP: solo SoulArt. Art Resort è stato rimosso (17/08/2026) — non più
 // necessario, quindi via anche la scelta della struttura dal menu.
@@ -2147,6 +2147,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='resi-biancheria'){try{resiLoad();}catch(e){}}
   if(id==='biancheria'){try{biaLoad();}catch(e){}}
   if(id==='giacenza'){try{giacLoad();}catch(e){}}
+  if(id==='agenda'){try{agLoad();}catch(e){}}
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
   // .staff-area-mirror) — ririchiamato qui solo per popolare lo specchio se la vista
   // viene aperta prima che Overview l'abbia mai fatto in questa sessione.
@@ -4843,7 +4844,7 @@ const QM_BACKUP_FISSE=[
   'qm_rev_sent','qm_rev_calib',
   'qm_tp_seen_until','qm_app_status','qm_customDate',
   // Bilanciamento: spostamenti segnati come fatti nel PMS e partenze del mese (27/09/2026).
-  'qm_hk_fatte','qm_hk_mese',
+  'qm_hk_fatte','qm_hk_mese','qm_agenda',
 ];
 /** Tutte le chiavi da salvare. `giorni` = quanti giorni indietro per gli archivi datati. */
 function qmBackupChiavi(giorni){
@@ -17036,7 +17037,7 @@ async function _qmElencoAggiorna(key,vuoto,dopo){
   if(r.diverso&&c.val!=null)_qmElencoSalva(key,vuoto,dopo);
   return r.cambiato;
 }
-const QM_ELENCHI_CONDIVISI={qm_ddt:[],qm_inv_moves_sa:[],qm_inv_moves_ar:[],qm_inv_catalog_sa:{},qm_inv_catalog_ar:{},qm_inv_orders:[],qm_rev_sent:{},qm_hk_fatte:[],qm_hk_mese:{}};
+const QM_ELENCHI_CONDIVISI={qm_ddt:[],qm_inv_moves_sa:[],qm_inv_moves_ar:[],qm_inv_catalog_sa:{},qm_inv_catalog_ar:{},qm_inv_orders:[],qm_rev_sent:{},qm_hk_fatte:[],qm_hk_mese:{},qm_agenda:[]};
 
 // ── Salvataggio sicuro degli archivi a elenchi ──────────────────────────────
 // DVR, Consumo Biancheria e Reso Biancheria hanno tutti la stessa forma: un oggetto le cui
@@ -17324,6 +17325,7 @@ function _qmRidisegnaVista(id){
     else if(id==='resi-biancheria')resiLoad();
     else if(id==='biancheria')biaLoad();
     else if(id==='giacenza')giacLoad();
+    else if(id==='agenda')agRender();
     else if(id==='turnazione'){if(weekData)renderDay(activeDay);}
     else if(id==='hkpsheet')hkpNRender('sa');
     else if(id==='bkfsheet')bkfRenderChart();
@@ -17516,3 +17518,194 @@ async function qmCodiceGalleria(btn){
     catch(e){prompt('Copia il codice della Galleria:',j.pass);dì('');}
   }catch(e){dì('Worker non raggiungibile.');}
 }
+
+// §§ AGENDA — to-do personale della settimana (aggiungi, spunta, sposta, elimina)
+// Un'agendina del QM, non un calendario fisso: ogni impegno sta su un giorno, si spunta
+// quando è fatto, si trascina (o si manda a domani) su un altro giorno, si elimina.
+// Quello che resta indietro non sparisce: compare in "Rimasti indietro" finché non lo si
+// fa o lo si sposta. Si usa dai due Mac e dal telefono: l'elenco `qm_agenda` è scritto da
+// più postazioni, quindi passa SEMPRE dalla fusione a tre (_qmElencoSalva), mai da kvSet.
+// Forma: [{id, giorno:'AAAA-MM-GG', testo, ora:'HH:MM'|'', fatto:bool, ts}]
+const AG_KEY='qm_agenda';
+let _agLunedi=null;            // ISO del lunedì della settimana mostrata (null = questa)
+let _agModifica=null;          // id dell'impegno che si sta correggendo
+function _agIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _agDaIso(s){const p=String(s||'').split('-').map(Number);return new Date(p[0],(p[1]||1)-1,p[2]||1,12,0,0);}   // mezzogiorno: niente scherzi dell'ora legale
+function _agOggi(){return _agIso(new Date());}
+function _agPiuGiorni(iso,n){const d=_agDaIso(iso);d.setDate(d.getDate()+n);return _agIso(d);}
+// Lunedì della settimana che contiene `iso`, e i 7 giorni da lunedì a domenica.
+function _agLunediDi(iso){const d=_agDaIso(iso);const g=(d.getDay()+6)%7;d.setDate(d.getDate()-g);return _agIso(d);}
+function _agSettimana(lunedi){const out=[];for(let i=0;i<7;i++)out.push(_agPiuGiorni(lunedi,i));return out;}
+function _agLeggi(){const v=_qmLocale(AG_KEY,[]);return Array.isArray(v)?v.filter(x=>x&&x.id&&x.giorno):[];}
+// Non fatti di un giorno precedente a oggi: ordinati dal più vecchio.
+function _agArretrati(lista,oggi){return lista.filter(t=>!t.fatto&&t.giorno<oggi).sort((a,b)=>a.giorno<b.giorno?-1:a.giorno>b.giorno?1:0);}
+// Ordine dentro il giorno: prima da fare (con l'ora per prima, in ordine), poi i fatti.
+function _agOrdina(a,b){
+  if(!!a.fatto!==!!b.fatto)return a.fatto?1:-1;
+  const oa=a.ora||'99:99',ob=b.ora||'99:99';
+  if(oa!==ob)return oa<ob?-1:1;
+  return (a.ts||0)-(b.ts||0);
+}
+function _agDelGiorno(lista,iso){return lista.filter(t=>t.giorno===iso).sort(_agOrdina);}
+function _agNuovoId(){return 'ag'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+// Scrive in locale e fa partire la fusione col cloud. Il ridisegno lo fa chi chiama.
+function _agScrivi(lista){
+  try{localStorage.setItem(AG_KEY,JSON.stringify(lista));}catch(e){}
+  _agBadge();
+  _qmElencoSalva(AG_KEY,[],()=>_agDopoFusione());
+}
+// Arrivato qualcosa da un'altra postazione: si ridisegna, ma non sotto le dita.
+function _agDopoFusione(){
+  _agBadge();
+  if(_qmVistaAttiva()==='agenda'&&!_qmOccupato())agRender();
+}
+function _agCambia(id,fn){
+  const l=_agLeggi();const t=l.find(x=>x.id===id);if(!t)return;
+  fn(t);t.ts=t.ts||Date.now();_agScrivi(l);agRender();
+}
+// Badge nel menu: impegni di oggi ancora da fare + rimasti indietro.
+function _agBadge(){
+  try{
+    const b=document.getElementById('agendaBadge');if(!b)return;
+    const l=_agLeggi(),oggi=_agOggi();
+    const n=l.filter(t=>!t.fatto&&t.giorno<=oggi).length;
+    b.textContent=n;b.style.display=n?'':'none';
+  }catch(e){}
+}
+const _AG_GIORNI=['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato','Domenica'];
+const _AG_MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+function _agEtichetta(iso){const d=_agDaIso(iso);return d.getDate()+' '+_AG_MESI[d.getMonth()];}
+function _agIcoX(){return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';}
+function _agIcoAvanti(){return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';}
+function _agRiga(t,conGiorno){
+  const id=_esc(t.id);
+  if(_agModifica===t.id){
+    return `<div class="ag-task ag-task-edit">
+      <input type="time" class="ag-ora-in" id="agEditOra" value="${_esc(t.ora||'')}">
+      <input type="text" class="ag-testo-in" id="agEditTesto" value="${_esc(t.testo)}" maxlength="300"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();agSalvaModifica('${id}');}else if(event.key==='Escape'){agAnnullaModifica();}">
+      <button class="ag-btn ag-btn-ok" onclick="agSalvaModifica('${id}')">Salva</button>
+      <button class="ag-btn" onclick="agAnnullaModifica()">Annulla</button>
+    </div>`;
+  }
+  return `<div class="ag-task${t.fatto?' ag-fatto':''}" draggable="true" ondragstart="agTrascina(event,'${id}')">
+    <input type="checkbox" class="ag-check" ${t.fatto?'checked':''} onchange="agSpunta('${id}')" title="Fatto">
+    <div class="ag-testo" onclick="agModifica('${id}')" title="Tocca per correggere">
+      ${t.ora?`<span class="ag-ora">${_esc(t.ora)}</span>`:''}${conGiorno?`<span class="ag-quando">${_esc(_agEtichetta(t.giorno))}</span>`:''}${_esc(t.testo)}
+    </div>
+    ${t.fatto?'':`<button class="ag-ico" onclick="agDomani('${id}')" title="${conGiorno?'Sposta a oggi':'Sposta al giorno dopo'}">${_agIcoAvanti()}</button>`}
+    <button class="ag-ico ag-ico-del" onclick="agElimina('${id}')" title="Elimina">${_agIcoX()}</button>
+  </div>`;
+}
+function agRender(){
+  const box=document.getElementById('agenda-content');if(!box)return;
+  const oggi=_agOggi();
+  const lun=_agLunedi||_agLunediDi(oggi);
+  const giorni=_agSettimana(lun);
+  const lista=_agLeggi();
+  const sett=lista.filter(t=>t.giorno>=giorni[0]&&t.giorno<=giorni[6]);
+  const fatti=sett.filter(t=>t.fatto).length;
+  const arr=_agArretrati(lista,oggi);
+  const questa=lun===_agLunediDi(oggi);
+  const titoloSett=_agEtichetta(giorni[0])+' – '+_agEtichetta(giorni[6])+' '+_agDaIso(giorni[6]).getFullYear();
+  let h=`<div class="panel ag-testa">
+    <div class="panel-header">${_ovIcona('calendario')}<span class="panel-title">Settimana ${_esc(titoloSett)}</span>
+      <span class="ag-conta">${fatti}/${sett.length} fatti</span></div>
+    <div class="ag-nav">
+      <button class="ag-btn" onclick="agSettimana(-1)">‹ Precedente</button>
+      <button class="ag-btn${questa?' ag-btn-on':''}" onclick="agSettimana(0)">Questa settimana</button>
+      <button class="ag-btn" onclick="agSettimana(1)">Successiva ›</button>
+      ${fatti?`<button class="ag-btn ag-btn-lieve" onclick="agTogliFatti()">Togli i fatti della settimana</button>`:''}
+    </div>
+  </div>`;
+  if(arr.length){
+    h+=`<div class="panel ag-arretrati">
+      <div class="panel-header">${_ovIcona('clessidra')}<span class="panel-title">Rimasti indietro</span>
+        <span class="ag-conta ag-conta-red">${arr.length}</span>
+        <button class="ag-btn ag-btn-lieve" onclick="agTuttiAOggi()">Porta tutti a oggi</button></div>
+      <div class="ag-lista">${arr.map(t=>_agRiga(t,true)).join('')}</div>
+    </div>`;
+  }
+  h+='<div class="ag-week">';
+  giorni.forEach((iso,i)=>{
+    const del=_agDelGiorno(lista,iso);
+    const daFare=del.filter(t=>!t.fatto).length;
+    const cls=iso===oggi?' ag-oggi':(iso<oggi?' ag-passato':'');
+    h+=`<div class="ag-day${cls}" ondragover="agSopra(event)" ondragleave="this.classList.remove('ag-drop')" ondrop="agLascia(event,'${iso}')">
+      <div class="ag-day-head"><span class="ag-day-nome">${_AG_GIORNI[i]}</span><span class="ag-day-data">${_esc(_agEtichetta(iso))}</span>
+        ${iso===oggi?'<span class="ag-pill">oggi</span>':''}${daFare?`<span class="ag-day-n">${daFare}</span>`:''}</div>
+      <div class="ag-lista">${del.map(t=>_agRiga(t,false)).join('')||'<div class="ag-vuoto">Niente in programma</div>'}</div>
+      <div class="ag-add">
+        <input type="time" class="ag-ora-in" id="agOra-${iso}" title="Ora (facoltativa)">
+        <input type="text" class="ag-testo-in" id="agNuovo-${iso}" placeholder="Aggiungi…" maxlength="300"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();agAggiungi('${iso}');}">
+        <button class="ag-btn ag-btn-ok" onclick="agAggiungi('${iso}')" title="Aggiungi">+</button>
+      </div>
+    </div>`;
+  });
+  h+='</div>';
+  box.innerHTML=h;
+  _agBadge();
+  if(_agModifica){const el=document.getElementById('agEditTesto');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}}
+}
+function agSettimana(n){
+  const oggi=_agOggi();
+  _agLunedi=n===0?null:_agPiuGiorni(_agLunedi||_agLunediDi(oggi),7*n);
+  _agModifica=null;agRender();
+}
+function agAggiungi(iso){
+  const inp=document.getElementById('agNuovo-'+iso);if(!inp)return;
+  const testo=inp.value.trim();if(!testo){inp.focus();return;}
+  const oraEl=document.getElementById('agOra-'+iso);
+  const l=_agLeggi();
+  l.push({id:_agNuovoId(),giorno:iso,testo:testo.slice(0,300),ora:(oraEl&&oraEl.value)||'',fatto:false,ts:Date.now()});
+  _agScrivi(l);agRender();
+  const nuovo=document.getElementById('agNuovo-'+iso);if(nuovo)nuovo.focus();   // si continua a scrivere il prossimo
+}
+function agSpunta(id){_agCambia(id,t=>{t.fatto=!t.fatto;});}
+function agElimina(id){
+  if(_agModifica===id)_agModifica=null;
+  const l=_agLeggi().filter(x=>x.id!==id);_agScrivi(l);agRender();
+}
+// Dagli arretrati porta a oggi; dalla settimana, al giorno dopo.
+function agDomani(id){
+  const oggi=_agOggi();
+  _agCambia(id,t=>{t.giorno=t.giorno<oggi?oggi:_agPiuGiorni(t.giorno,1);});
+}
+function agModifica(id){_agModifica=id;agRender();}
+function agAnnullaModifica(){_agModifica=null;agRender();}
+function agSalvaModifica(id){
+  const te=document.getElementById('agEditTesto'),or=document.getElementById('agEditOra');
+  const testo=te?te.value.trim():'';
+  _agModifica=null;
+  if(!testo){agRender();return;}
+  _agCambia(id,t=>{t.testo=testo.slice(0,300);t.ora=(or&&or.value)||'';});
+}
+async function agTuttiAOggi(){
+  const oggi=_agOggi();const l=_agLeggi();let n=0;
+  l.forEach(t=>{if(!t.fatto&&t.giorno<oggi){t.giorno=oggi;n++;}});
+  if(n){_agScrivi(l);agRender();}
+}
+async function agTogliFatti(){
+  const lun=_agLunedi||_agLunediDi(_agOggi());const g=_agSettimana(lun);
+  const l=_agLeggi();const via=l.filter(t=>t.fatto&&t.giorno>=g[0]&&t.giorno<=g[6]);
+  if(!via.length)return;
+  if(!await cqConferma('Togliere gli impegni fatti?',`<strong>${via.length}</strong> ${via.length===1?'impegno spuntato sparirà':'impegni spuntati spariranno'} da questa settimana.`,{ok:'Togli'}))return;
+  const ids=new Set(via.map(t=>t.id));_agScrivi(l.filter(t=>!ids.has(t.id)));agRender();
+}
+// Trascinare un impegno su un altro giorno (computer).
+function agTrascina(ev,id){try{ev.dataTransfer.setData('text/plain',id);ev.dataTransfer.effectAllowed='move';}catch(e){}}
+function agSopra(ev){ev.preventDefault();try{ev.currentTarget.classList.add('ag-drop');}catch(e){}}
+function agLascia(ev,iso){
+  ev.preventDefault();try{ev.currentTarget.classList.remove('ag-drop');}catch(e){}
+  let id='';try{id=ev.dataTransfer.getData('text/plain');}catch(e){}
+  if(id)_agCambia(id,t=>{t.giorno=iso;});
+}
+// Aprendo la vista (o tornando sulla scheda) si rilegge il cloud: il telefono o l'altro
+// Mac possono aver aggiunto qualcosa.
+function agLoad(){
+  _agModifica=null;agRender();
+  _qmElencoAggiorna(AG_KEY,[],()=>_agDopoFusione());
+}
+try{document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&_qmVistaAttiva()==='agenda')_qmElencoAggiorna(AG_KEY,[],()=>_agDopoFusione());});}catch(e){}
+try{setTimeout(_agBadge,0);}catch(e){}

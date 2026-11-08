@@ -33,6 +33,7 @@ grep -n 'id="view-' index.html
 | View ID | Descrizione |
 |---------|-------------|
 | `view-overview` | Dashboard principale con KPI, turni, meteo |
+| `view-agenda` | **Agenda** — to-do personale della settimana del QM (vedi sotto) |
 | `view-registrazione` | Registration cards ospiti |
 | `view-recensioni-sa` | Recensioni SoulArt |
 | `view-recensioni-bh` | Recensioni Boutique |
@@ -148,3 +149,26 @@ Antincendio fiamma, Primo Soccorso croce, Estintori, Legionella goccia, RLS elme
 chiave, Documento DVR documento). Etichette di gruppo, pulsanti delle società e titoli delle
 finestre senza emoji (`DVR_CATS[].label` è testo puro). Modifica/Elimina con `_invIco`.
 L'app `dvr.html` non è stata toccata.
+
+---
+
+## Agenda personale della settimana (08/11/2026)
+
+Voce **Agenda** subito sotto Overview, `§§ AGENDA` in app.js, stile `.ag-*` in style.css.
+Un'agendina, non un calendario fisso: sette schede da lunedì a domenica, si va avanti e
+indietro di settimana. In ogni giorno si **aggiunge** (Invio o "+", ora facoltativa), si
+**spunta**, si **corregge** toccando il testo, si **sposta** al giorno dopo (freccia) o
+trascinando su un altro giorno (computer), si **elimina** (×, senza conferma: è un appunto).
+"Togli i fatti della settimana" chiede conferma con `cqConferma`.
+
+- **Rimasti indietro**: gli impegni non spuntati di un giorno passato stanno in un riquadro
+  rosso in cima, con la data d'origine, finché non si fanno o si portano a oggi (uno per
+  uno con la freccia, o tutti con "Porta tutti a oggi"). Niente sparisce da solo.
+- **Badge del menu**: impegni da fare di oggi + rimasti indietro.
+- **Dati**: `qm_agenda`, elenco `[{id, giorno:'AAAA-MM-GG', testo, ora, fatto, ts}]`, scritto
+  dai due Mac e dal telefono: passa **solo** da `_qmElencoSalva` (fusione a tre), è in
+  `QM_ELENCHI_CONDIVISI` e nel backup. Si rilegge il cloud aprendo la vista e tornando sulla
+  scheda; **non** è nel polling dei 30 secondi (nessuna lettura in più a pagina aperta).
+- Date ISO costruite a mezzogiorno (`_agDaIso`): il cambio d'ora non sposta i giorni.
+- 15 controlli in `test/controlli.js` ("Agenda della settimana"), verificati con quattro
+  sabotaggi (lunedì sbagliato, `kvSet` diretto, ridisegno sotto le dita, testo senza `_esc`).

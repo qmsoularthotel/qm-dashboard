@@ -44,7 +44,8 @@ Qui non è mai successo perché li tocca praticamente solo il QM da una postazio
 
 DDT (`qm_ddt`: Compass + `breakfast.html`), movimenti e catalogo dell'Inventario
 (`qm_inv_moves_*`, `qm_inv_catalog_*`: Compass + `inventory.html`), ordini (`qm_inv_orders`) e
-spunte "risposta inviata" delle recensioni (`qm_rev_sent`, i due Mac) si scrivevano **per
+spunte "risposta inviata" delle recensioni (`qm_rev_sent`, i due Mac) — e dal 08/11/2026
+l'Agenda del QM (`qm_agenda`) — si scrivevano **per
 intero** con la copia della postazione. Compass le rileggeva **solo all'apertura**: un DDT
 inserito dal telefono alle 10 spariva se alle 15 si correggeva un altro DDT su un Compass
 aperto dalla mattina; una rettifica di giacenza cancellava i movimenti scansionati nel
