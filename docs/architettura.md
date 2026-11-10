@@ -92,7 +92,6 @@ Classi disponibili (definite sopra il blocco `@media`, collassate dentro):
 - **`inventory.html`** — App separata per l'inventario detersivi (mobile, scanner barcode)
 - **`controllo-mattino.html`** — App separata PWA per il giro distribuzione Culligan (mattino)
 - **`dvr.html`** — App separata per consultare/gestire il DVR (General Manager)
-- **`reception.html`** — Cassa di reception (fondo cassa, incasso contante) — vedi la sua sezione
 - **`registration-galleria.html`** — App dei colleghi dell'Art Resort/Galleria. **Sta fuori da Compass**: dal 02/09/2026 non usa il cloud in nessun modo e non compare nel Pannello App — vedi la sua sezione
 - **`biancheria-galleria.html`** — **Gestione Biancheria**, l'app del Resident Manager per il ciclo biancheria di Art Resort Galleria Umberto e Art Suite Santa Brigida. Copia del Consumo Biancheria di Compass; dati sul cloud di Compass con un **codice che apre solo le chiavi `bg_*`** — vedi la sua sezione
 - **`worker.js`** — Il Cloudflare Worker: archivio KV, proxy AI, lasciapassare. **Si pubblica a mano**, vedi la sezione dedicata
@@ -103,8 +102,8 @@ Le **6 app del Pannello App** (housekeeper, breakfast, controllo-mattino, invent
 12/09/2026, **biancheria-galleria**) sono accendibili e spegnibili da remoto — vedi
 [Pannello App](#pannello-app--centro-controllo-app-standalone). La Galleria usa una chiave sua,
 `bg_app_status`, perché il suo codice legge solo chiavi `bg_*`.
-`reception.html` e `registration-galleria.html` no: la prima non è mai stata inserita nel
-pannello, la seconda ne è stata tolta di proposito.
+`registration-galleria.html` no: ne è stata tolta di proposito. (La cassa di reception,
+`reception.html`, è stata tolta da Compass il 10/11/2026 — vedi `docs/reception-cassa.md`.)
 
 Non esiste build system, package manager o step di compilazione.
 

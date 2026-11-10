@@ -77,7 +77,6 @@ nessuno stesse lavorando. Il conto tornava fin troppo bene:
 | Pagina | Chiavi lette per giro | Ogni | Letture/giorno a pagina aperta |
 |---|---|---|---|
 | Compass | `arriviData`, `weekData`, `pulData`, `bkfData`, `hkp_n_sa`, `piano`, `rcGuests` = **7** | 30s | **20.160** |
-| `reception.html` (`ricaricaRegistri`) | 3 | 30s | 8.640 |
 | Le 5 app standalone (`qmCheckAppStatus`) | 1 ciascuna | 30s | 2.880 ciascuna |
 | `breakfast.html` (`ddtBkfSyncFromCloud`) | 2 | 60s | 2.880 |
 

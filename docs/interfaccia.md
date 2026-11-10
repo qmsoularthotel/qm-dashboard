@@ -51,7 +51,6 @@ grep -n 'id="view-' index.html
 | `view-turni-pref` | Preferenze turni staff (da Google Forms) |
 | `view-turnazione` | "Turnazione Corrente" — specchio del pannello turno di Overview (`.staff-area-mirror`) |
 | `view-controllo-mattino` | Dashboard distribuzione Culligan (stats + QC settimanale + Stampa A4) |
-| `view-reception` | Fondo Cassa & Incasso Contante — sola lettura + modifica per il QM |
 | `view-giacenza` | **Giacenza Biancheria** — magazzino e pezzi in mano alle cameriere |
 | `view-resi-biancheria` | Resi biancheria inidonea al fornitore Raimondo (solo SoulArt, solo QM) |
 

@@ -16,7 +16,7 @@ import http.server, functools, threading, subprocess, tempfile, shutil, os, re, 
 
 CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 PAGINE = ['index.html', 'housekeeper.html', 'breakfast.html', 'inventory.html',
-          'controllo-mattino.html', 'dvr.html', 'reception.html',
+          'controllo-mattino.html', 'dvr.html',
           'registration-galleria.html', 'biancheria-galleria.html']
 # Errori che non dipendono dal nostro codice: rete assente o rifiutata (il browser di prova
 # non e' abilitato) e risorse esterne. Tutto il resto e' un difetto.

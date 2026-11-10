@@ -174,7 +174,7 @@ ripulendo l'archivio vero al caricamento successivo.
 
 ### Riorganizzazione sezione "Reception" (menu)
 
-La sezione menu **Staff** è stata eliminata: "Preferenze Turni" si è spostata dentro **Reception**, insieme a "Passaggi di Cassa" e "Turnazione Corrente". `breadcrumbs['turni-pref']` e `breadcrumbs['turnazione']` sono ora `'Reception'` (prima `'turni-pref'` era `'Operativo Quotidiano'`).
+La sezione menu **Staff** è stata eliminata: "Preferenze Turni" si è spostata dentro **Reception**, insieme a "Turnazione Corrente" (e a "Passaggi di Cassa", tolta il 10/11/2026). `breadcrumbs['turni-pref']` e `breadcrumbs['turnazione']` sono ora `'Reception'` (prima `'turni-pref'` era `'Operativo Quotidiano'`).
 
 ### Nuova sezione "Housekeeping" (menu)
 
