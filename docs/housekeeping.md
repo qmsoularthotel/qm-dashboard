@@ -216,7 +216,7 @@ con quegli spostamenti applicati; per la durata del disegno `pianoData` è quell
 `_hkPianoVero` il caricato. Il resto di Compass vede il Piano caricato. Esiti per mossa:
 `attesa` (ancora dov'era: si applica), `nelPiano` (il Piano nuovo lo contiene: esce
 dall'elenco), `sparito` (né dov'era né dove doveva andare: riga ambra "Non trovato", pulsante
-Togli), `fuori` (date fuori dal Piano: esce). In uno scambio i soggiorni si tolgono tutti
+Togli; solo col Piano di prima della spunta), `fuori` (date fuori dal Piano: esce). In uno scambio i soggiorni si tolgono tutti
 prima di rimetterli, perché possono arrivare lo stesso giorno.
 
 **Una mossa fatta non si applica due volte** (01/11/2026). Una partenza sull'ultimo giorno del
@@ -229,14 +229,17 @@ data di partenza uguale (camera di partenza, poi camera d'arrivo), poi le righe 
 tolleranza; un soggiorno già riconosciuto da una riga non si riusa per un'altra della stessa
 mossa. Controlli: "partenza sull'ultimo giorno" in `test/controlli.js`.
 
-**Piano nuovo caricato, mossa ancora "dov'era"** (03/11/2026). La riga diceva "Fatto · aspetta
-il nuovo Piano" anche col Piano nuovo già caricato, quando anche uno solo dei passi risultava
-ancora nella camera di prima (mossa fatta a metà nel PMS, o non salvata). Ora
-`_hkPianoEffettivo` restituisce anche l'esito di ogni riga (`righe`, in `_hkEsitiRighe`) e
-`_hkNonNelPianoNuovo` confronta `_ts` del Piano con `ts` della spunta: se il Piano è stato
-caricato dopo, la riga è ambra "Non risulta nel nuovo Piano", passo per passo "già nel Piano" /
-"ancora in Art N", pulsante Togli. I numeri continuano a contare i passi mancanti come fatti
-finché non si toglie. Controlli: "fatta a meta'" in `test/controlli.js`.
+**Piano caricato dopo la spunta: la spunta è superata** (10/11/2026, sostituisce la regola del
+03/11). Il 03/11 una mossa fatta solo in parte restava in elenco col Piano nuovo già caricato,
+in ambra "Non risulta nel nuovo Piano" passo per passo ("già nel Piano" / "ancora in Art N"),
+e una non ritrovata diceva "Non trovato nel nuovo Piano". Il QM, dopo aver fatto le modifiche
+nel PMS e ricaricato il Piano, la trovava un'informazione che non serve. Ora in
+`_hkPianoEffettivo`, se `_ts` del Piano è **dopo** `ts` della spunta, l'esito è `superata`:
+la spunta non si applica, non si mostra e `_hkFattePulisci` la toglie. Il Piano nuovo è la
+verità: se lo spostamento non risulta fatto, il motore lo ripropone da solo. Le mosse virtuali
+del Piano della settimana non hanno `ts` e non sono toccate. "Non trovato nel Piano" e "Camera
+ora occupata" restano solo col Piano di prima della spunta. Controlli: "Piano caricato dopo la
+spunta" in `test/controlli.js`. **Non reintrodurre** l'avviso "Non risulta nel nuovo Piano".
 
 **Piano della settimana** (`hkPianoSettimana`, selettore "Giorno per giorno / Piano della
 settimana", preferenza del browser `hkModo`): la mossa migliore sull'intera settimana, poi la

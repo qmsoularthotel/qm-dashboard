@@ -2858,27 +2858,29 @@ sez('Bilanciamento: mosse fatte nel PMS, piano della settimana, mese');
   ok('partenza sull\'ultimo giorno: la mossa fatta risulta nel Piano', ru.esiti.fu, 'nelPiano');
   ok('e non si applica una seconda volta (G5)', part(ru.piano, 5), part(P4, 5));
   ok('e non si applica una seconda volta (G6)', part(ru.piano, 6), part(P4, 6));
-  // Piano nuovo caricato DOPO la spunta, ma con solo una parte dello spostamento (03/11/2026):
-  // prima la riga diceva comunque "Fatto · aspetta il nuovo Piano". Ora dice cosa manca.
+  // Piano nuovo caricato DOPO la spunta (10/11/2026, era 03/11): il Piano nuovo è la verità.
+  // La spunta non si applica più e non si mostra, anche se lo spostamento c'è solo a metà
+  // o non si ritrova: niente riquadro "Non risulta / Non trovato nel nuovo Piano".
   var P5 = JSON.parse(JSON.stringify(P2));
   var fp = { id: 'fp', ts: 1000, righe: [{ da: 'Art 10', a: 'Art 15', s: G[3].data, e: G[4].data }, { da: 'Art 14', a: 'Art 16', s: G[3].data, e: G[5].data }] };
   P5.giorni[3].soulart.arrivi = ['Art 15', 'Art 14']; P5.giorni[4].soulart.partenze = ['Art 15'];
-  var rp = _hkPianoEffettivo(P5, [fp]);
-  ok('fatta a meta\': esito di ogni passo', rp.esiti.fp + ' ' + rp.righe.fp.join(), 'attesa nelPiano,attesa');
-  var _es = _hkEsiti, _er = _hkEsitiRighe, _pv = pianoData;
-  _hkEsiti = rp.esiti; _hkEsitiRighe = rp.righe;
+  ok('Piano di prima della spunta: fatta a metà si conta ancora', _hkPianoEffettivo(Object.assign({}, P5, { _ts: 500 }), [fp]).esiti.fp, 'attesa');
+  var P5n = Object.assign({}, P5, { _ts: 2000 });
+  var rp = _hkPianoEffettivo(P5n, [fp]);
+  ok('Piano caricato dopo la spunta: la spunta è superata', rp.esiti.fp, 'superata');
+  ok('e non si applica (i numeri sono quelli del Piano)', part(rp.piano, 4) + ' ' + part(rp.piano, 5), part(P5, 4) + ' ' + part(P5, 5));
+  var Ps = JSON.parse(JSON.stringify(senza)); Ps._ts = 2000;
+  ok('anche se il soggiorno non si ritrova', _hkPianoEffettivo(Ps, [Object.assign({ ts: 1000 }, f)]).esiti.f1, 'superata');
+  var _es = _hkEsiti, _pv = pianoData;
+  _hkEsiti = rp.esiti; pianoData = P5n;
   localStorage.setItem(HK_FATTE_KEY, JSON.stringify([fp]));
-  pianoData = Object.assign({}, P5, { _ts: 500 });
-  ok('Piano di prima della spunta: aspetta il nuovo Piano', /aspetta il nuovo Piano/.test(_hkFatteHtml()), true);
-  pianoData = Object.assign({}, P5, { _ts: 2000 });
-  var hp = _hkFatteHtml();
-  ok('Piano caricato dopo la spunta: non dice piu\' "aspetta"', /aspetta il nuovo Piano/.test(hp), false);
-  ok('e dice che non risulta nel nuovo Piano', /Non risulta nel nuovo Piano/.test(hp), true);
-  ok('e quale passo c\'e\' e quale manca', /già nel Piano/.test(hp) && /ancora in Art 14/.test(hp), true);
-  _hkEsiti = _es; _hkEsitiRighe = _er; pianoData = _pv; localStorage.removeItem(HK_FATTE_KEY);
+  ok('e il riquadro "Già fatti nel PMS" non compare', _hkFatteHtml(), '');
+  _hkEsiti = _es; pianoData = _pv; localStorage.removeItem(HK_FATTE_KEY);
+  ok('nessuna frase "nel nuovo Piano" rimasta', /nel nuovo Piano/.test(String(_hkFatteHtml)), false);
   // Pulizia: ritrovate e scadute escono dall'elenco, quelle in attesa restano.
   localStorage.setItem(HK_FATTE_KEY, JSON.stringify([{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }]));
-  _hkFattePulisci({ a: 'attesa', b: 'nelPiano', c: 'fuori', d: 'sparito' });
+  localStorage.setItem(HK_FATTE_KEY, JSON.stringify([{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }, { id: 'e' }]));
+  _hkFattePulisci({ a: 'attesa', b: 'nelPiano', c: 'fuori', d: 'sparito', e: 'superata' });
   ok('restano solo quelle da ritrovare', _hkFatte().map(function (x) { return x.id; }).join(), 'a,d');
   localStorage.removeItem(HK_FATTE_KEY);
   // Piano della settimana: una sequenza che porta G4 in pari.

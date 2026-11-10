@@ -3422,7 +3422,7 @@ function _hkPrimoGiorno(){
 const HK_FATTE_KEY='qm_hk_fatte';
 const HK_MESE_KEY='qm_hk_mese';
 let _hkPianoVero=null;      // il Piano caricato, mentre la vista lavora su quello effettivo
-let _hkEsiti={};            // id della mossa fatta → 'attesa' | 'sparito' | 'nelPiano' | 'fuori'
+let _hkEsiti={};            // id della mossa fatta → 'attesa' | 'sparito' | 'conflitto' | 'nelPiano' | 'fuori' | 'superata'
 let _hkEsitiRighe={};       // id → esito di ogni riga ('attesa' | 'nelPiano' | 'sparito' | 'fuori')
 let _hkMosseVisibili=[];    // mosse sullo schermo, per il pulsante "Fatto nel PMS"
 let _hkModo=(()=>{try{return localStorage.getItem('hkModo')==='settimana'?'settimana':'giorno';}catch(e){return'giorno';}})();
@@ -3469,6 +3469,13 @@ function _hkPianoEffettivo(base,fatte){
   // Un soggiorno riconosciuto da una riga non si riusa per un'altra della stessa mossa.
   const trovaIn=(room,i,e,esatto,presi)=>(BL[room]||[]).find(b=>!presi.has(b)&&b.start===i&&(esatto?(e!=null&&fine(b)===e):(e==null||fine(b)==null||fine(b)===e)));
   fatte.forEach(f=>{
+    // Piano caricato DOPO la spunta (10/11/2026): il Piano nuovo è la verità e la spunta ha
+    // finito il suo lavoro. Non si applica e non si mostra: se lo spostamento non risulta
+    // fatto, il motore lo ripropone da solo. Prima restava un riquadro ambra "Non risulta /
+    // Non trovato nel nuovo Piano" anche a modifiche fatte e Piano ricaricato — scelta del
+    // QM: un'informazione che non serve. Le mosse virtuali del Piano della settimana non
+    // hanno `ts` e non sono toccate.
+    if(base._ts&&f.ts&&base._ts>f.ts){esiti[f.id]='superata';righe[f.id]=[];return;}
     const presi=new Set();
     const st=(f.righe||[]).map(r=>{
       const i=_hkDataIdx(base,r.s);
@@ -3543,7 +3550,7 @@ function hkAnnullaFatto(id){_hkFatteSalva(_hkFatte().filter(f=>f.id!==id));_hkRi
 // Ritrovate nel Piano nuovo (o uscite dalla settimana): non servono più.
 function _hkFattePulisci(esiti){
   const l=_hkFatte();
-  const resta=l.filter(f=>!(esiti[f.id]==='nelPiano'||esiti[f.id]==='fuori'));
+  const resta=l.filter(f=>!(esiti[f.id]==='nelPiano'||esiti[f.id]==='fuori'||esiti[f.id]==='superata'));
   if(resta.length!==l.length)_hkFatteSalva(resta);
 }
 function hkSetModo(m){_hkModo=m==='settimana'?'settimana':'giorno';try{localStorage.setItem('hkModo',_hkModo);}catch(e){}_hkRidisegna();}
@@ -4234,14 +4241,6 @@ function renderHkSuggestions(focusIdx){
     :'';
   return box(testa+legenda+righe+altreBtn+nota);
 }
-// Una mossa segnata come fatta e ancora "dov'era" in un Piano caricato DOPO la spunta: il
-// Piano nuovo c'è già, e non la contiene (03/11/2026). Prima diceva comunque "aspetta il
-// nuovo Piano" — anche a Piano nuovo caricato, se uno solo dei passi non risultava fatto.
-function _hkNonNelPianoNuovo(f){
-  if(_hkEsiti[f.id]!=='attesa')return false;
-  const p=_hkPianoVero||pianoData;
-  return!!(p&&p._ts&&f.ts&&p._ts>f.ts);
-}
 // Le mosse segnate come fatte e non ancora ritrovate in un Piano caricato.
 function _hkFatteHtml(){
   const l=_hkFatte().filter(f=>_hkEsiti[f.id]==='attesa'||_hkEsiti[f.id]==='sparito'||_hkEsiti[f.id]==='conflitto');
@@ -4250,20 +4249,12 @@ function _hkFatteHtml(){
   const lbl=d=>{const i=_hkDataIdx(pianoData,d);if(i>=0&&g[i].label)return g[i].label;const p=_hkNormData(d).split('/');return p.length===3?(+p[0])+'/'+(+p[1]):'—';};
   const cam=(c,piena)=>`<span style="display:inline-block;${piena?'background:var(--accent);color:#fff;':'background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);'}border-radius:6px;padding:2px 9px;font-weight:${piena?'700':'600'};font-size:13px;">${_esc(c)}</span>`;
   const righe=l.map(f=>{
-    const nonNuovo=_hkNonNelPianoNuovo(f);
-    const conflitto=_hkEsiti[f.id]==='conflitto',sparito=_hkEsiti[f.id]==='sparito'||conflitto||nonNuovo;
-    const ks=_hkEsitiRighe[f.id]||[];
-    // Col Piano nuovo già caricato si dice passo per passo cosa c'è e cosa manca.
-    const segno=k=>!nonNuovo?'':ks[k]==='nelPiano'
-      ?`<span style="font-size:11.5px;font-weight:600;color:var(--green);margin-left:8px;">già nel Piano</span>`
-      :ks[k]==='attesa'?`<span style="font-size:11.5px;font-weight:600;color:var(--amber);margin-left:8px;">ancora in ${_esc((f.righe[k]||{}).da||'')}</span>`:'';
-    const passi=(f.righe||[]).map((r,k)=>`<div style="display:flex;align-items:center;gap:7px;padding:2px 0;flex-wrap:wrap;">${cam(r.da,false)}<span style="color:var(--text-dim);">→</span>${cam(r.a,true)}<span style="font-size:13px;font-weight:600;color:var(--text);margin-left:8px;">${lbl(r.s)}${r.e&&r.e!==r.s?' → '+lbl(r.e):''}</span>${segno(k)}</div>`).join('');
-    const nMancano=ks.filter(k=>k==='attesa').length;
+    const conflitto=_hkEsiti[f.id]==='conflitto',sparito=_hkEsiti[f.id]==='sparito'||conflitto;
+    const passi=(f.righe||[]).map(r=>`<div style="display:flex;align-items:center;gap:7px;padding:2px 0;flex-wrap:wrap;">${cam(r.da,false)}<span style="color:var(--text-dim);">→</span>${cam(r.a,true)}<span style="font-size:13px;font-weight:600;color:var(--text);margin-left:8px;">${lbl(r.s)}${r.e&&r.e!==r.s?' → '+lbl(r.e):''}</span></div>`).join('');
     const spiega=conflitto?'Nel Piano caricato la camera d\'arrivo risulta occupata in quelle notti da un\'altra prenotazione: i numeri non contano questo spostamento. Controlla nel PMS, poi toglilo da qui.'
-      :nonNuovo?`Il Piano caricato dopo che l'hai segnato ${nMancano===ks.length?'non contiene questo spostamento':'contiene solo una parte di questo spostamento'}: forse nel PMS non è stato fatto o salvato del tutto. I numeri della pagina lo contano ancora come fatto. Controlla nel PMS: se è a posto ricarica il Piano, altrimenti toglilo da qui.`
       :'Il soggiorno non è più né nella camera di prima né in quella nuova: forse è stato cancellato o spostato altrove. Controlla nel PMS, poi toglilo da qui.';
     const stato=sparito
-      ?`<span style="font-size:11.5px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:5px;padding:3px 9px;white-space:nowrap;">${conflitto?'Camera ora occupata':nonNuovo?'Non risulta nel nuovo Piano':'Non trovato nel nuovo Piano'}</span>`
+      ?`<span style="font-size:11.5px;font-weight:700;color:var(--amber);background:var(--amber-bg);border-radius:5px;padding:3px 9px;white-space:nowrap;">${conflitto?'Camera ora occupata':'Non trovato nel Piano'}</span>`
       :`<span style="font-size:11.5px;font-weight:700;color:var(--green);background:var(--green-bg);border-radius:5px;padding:3px 9px;white-space:nowrap;">Fatto · aspetta il nuovo Piano</span>`;
     return`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--border-light);">
       <span style="width:21px;height:21px;border-radius:50%;background:${sparito?'var(--amber)':'var(--green)'};color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">${_invIco(sparito?'allerta':'ok',12)}</span>
