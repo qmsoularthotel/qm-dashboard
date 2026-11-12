@@ -14993,7 +14993,7 @@ function biaRender(){
   const bStampa=`<button onclick="biaPrintDistinta()" style="${vigilia&&!giaReg?bPrimario:bSecondario}">${distPronta?'Ristampa la distinta':'Stampa la distinta'}</button>`;
   const bRegistra=`<button id="bia-registra" onclick="biaRegistraGiro()" ${regOn?'':'disabled'} title="${giaReg?'Si accende quando cambi un numero di «Ha portato»':'Si accende quando correggi «Ha portato» o confermi che corrisponde alla distinta'}" style="${vigilia&&!giaReg?bSecondario:bPrimario}${regOn?'':'opacity:.45;cursor:not-allowed;'}">${giaReg?'Aggiorna consegna':'Registra cosa ha portato'}</button>`;
   if(!giaReg){
-    h+=`<label style="flex-basis:100BIA;display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);color:var(--text);cursor:pointer;margin-bottom:2px;"><input type="checkbox" id="bia-conferma" ${_biaConf.ok?'checked':''} onchange="biaConfermaPortato(this)">I numeri di «Ha portato» corrispondono alla distinta di Raimondo</label>`;
+    h+=`<label style="flex-basis:100%;display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);color:var(--text);cursor:pointer;margin-bottom:2px;"><input type="checkbox" id="bia-conferma" ${_biaConf.ok?'checked':''} onchange="biaConfermaPortato(this)">I numeri di «Ha portato» corrispondono alla distinta di Raimondo</label>`;
   }
   h+=(vigilia&&!giaReg)?(bStampa+bRegistra):(bRegistra+bStampa);
   h+=`</div>
