@@ -3269,3 +3269,57 @@ sez('Consumo Biancheria: il pulsante della consegna resta spento finche\' «Ha p
   ok('la casella aggiorna lo stato del pulsante',           /_biaStatoRegistra\(\)/.test(String(biaAggiornaDelta)), true);
   ok('registrata la consegna, la spunta si azzera',         /_biaConf=\{k:'',ok:false\}/.test(String(biaRegistraGiro)), true);
 })();
+
+sez('Consumo Biancheria: dotazione da contratto, quanti pezzi nostri restano a Raimondo (12/11/2026)');
+(function(){
+  var prima=_bia,ph=_biaHotel,pg=_giac;
+  var V='Lenzuolo matrimoniale';
+  var Q=function(n){var q=_biaVuote();q[V]=n;return q;};
+  _biaHotel='sa';
+  // Numeri della consegna reale del 26/09 (SoulArt): doveva 42, ha portato 30, dato 49.
+  _bia={consumi:[],giri:[
+    {id:'a',hotel:'sa',data:'24/09/2026',consegnato:Q(42),ricevuto:Q(60)},
+    {id:'b',hotel:'sa',data:'26/09/2026',consegnato:Q(49),ricevuto:Q(30)},
+    {id:'c',hotel:'sa',data:'29/09/2026',consegnato:Q(65),ricevuto:Q(60)},
+    {id:'d',hotel:'sa',data:'01/10/2026',consegnato:Q(70),ricevuto:Q(60)}]};
+  var dot={contratto:200,letti:44,armadio:30};
+  var c=_biaDotConto(_bia.giri[1],V,dot);
+  ok('26/09: in giro 44+30+30+49',                c.inGiro, 153);
+  ok('26/09: restano a Raimondo 47',              c.riserva, 47);
+  ok('26/09: 12 in meno con pezzi da lui = suo',  c.delta+' '+c.esito, '-12 suo');
+  var c2=_biaDotConto(_bia.giri[2],V,dot);
+  ok('29/09: 199 su 200, ha portato piu\' del dovuto', c2.riserva+' '+c2.esito, '1 ok');
+  // 01/10: doveva 65, ha portato 60, e in giro 44+30+60+70=204: oltre il contratto.
+  ok('01/10: oltre il contratto',                 _biaDotConto(_bia.giri[3],V,dot).esito, 'oltre');
+  ok('a zero e con ammanco: dotazione esaurita',  _biaDotConto(_bia.giri[3],V,{contratto:204,letti:44,armadio:30}).esito, 'esaurita');
+  ok('prima consegna: niente dovuto, niente ammanco', _biaDotConto(_bia.giri[0],V,dot).esito, 'ok');
+  ok('senza «Ha portato» non si fa il conto',     _biaDotConto({id:'x',hotel:'sa',data:'03/10/2026',consegnato:Q(5),ricevuto:_biaVuote()},V,dot).esito, 'nodati');
+  // I numeri del contratto: SoulArt parte da 200 e 44, Boutique da niente.
+  ok('SoulArt: 200 da contratto di partenza',     _biaDotCampo('sa',V,'contratto'), 200);
+  ok('Boutique: nessun numero inventato',         _biaDotCampo('bh',V,'contratto'), null);
+  _bia.dotazione={sa:{}};_bia.dotazione.sa[V]={contratto:''};
+  ok('svuotato a mano non torna al valore di partenza', _biaDotCampo('sa',V,'contratto'), null);
+  // L'armadio del SoulArt viene dalla Giacenza; senza conteggio il conto non si fa.
+  _giac={movimenti:[],tipologie:null};
+  ok('Giacenza mai contata: armadio sconosciuto', _biaDotArmadio('sa',V).n, null);
+  ok('e il conto non e\' pronto',                 _biaDotPronta('sa',V), false);
+  _giac={movimenti:[{id:'m',hotel:'sa',data:'06/09/2026',tipo:'conteggio',q:(function(){var o={};o[V]=30;return o;})()}],tipologie:null};
+  ok('Giacenza contata: armadio 30',              _biaDotArmadio('sa',V).n, 30);
+  ok('Boutique: armadio a mano, vuoto = 0',       _biaDotArmadio('bh',V).n+' '+_biaDotArmadio('bh',V).da, '0 manuale');
+  _bia=prima;_biaHotel=ph;_giac=pg;
+})();
+(function(){
+  // Il pannello si disegna davvero (12/11/2026: usava `esc`, che esiste solo dentro biaRender).
+  var prima=_bia,pg=_giac,V='Lenzuolo matrimoniale',Q=function(n){var q=_biaVuote();q[V]=n;return q;},sm=_biaStoMese;
+  _bia={consumi:[],giri:[{id:'a',hotel:'sa',data:'24/09/2026',consegnato:Q(42),ricevuto:Q(60)},{id:'b',hotel:'sa',data:'26/09/2026',consegnato:Q(49),ricevuto:Q(30)}]};
+  _giac={movimenti:[{id:'m',hotel:'sa',data:'06/09/2026',tipo:'conteggio',q:(function(){var o={};o[V]=30;return o;})()}],tipologie:null};
+  _biaStoMese='2026-09';
+  var html='';try{html=_biaDotPannello('sa');}catch(e){html='ERRORE '+e.message;}
+  ok('il pannello della dotazione si disegna',    /ammanco suo/.test(html), true);
+  var hb='';try{hb=_biaDotPannello('bh');}catch(e){hb='ERRORE '+e.message;}
+  ok('Boutique senza numeri: chiede di inserirli', /Inserisci i pezzi da contratto/.test(hb), true);
+  _bia=prima;_giac=pg;_biaStoMese=sm;
+})();
+// Nei controlli `esc` esiste comunque (la copia della Galleria ne dichiara una globale):
+// la prova del pannello qui sopra non puo' accorgersi se manca. Si guarda il codice.
+ok('il pannello della dotazione dichiara il suo esc', /(const|var) esc=_esc/.test(String(_biaDotPannello)), true);

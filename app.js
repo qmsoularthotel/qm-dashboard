@@ -14108,6 +14108,8 @@ async function biaLoad(){
   // che non era arrivata sul cloud non deve sparire riaprendo la pagina.
   _bia=await _qmLeggiArchivio(BIA_KEY,{consumi:[],giri:[]});
   try{await _biaDistCarica();}catch(e){}
+  // L'armadio di scorta della Dotazione da contratto sta nella Giacenza: solo lettura.
+  try{_giac=await _qmLeggiArchivio(GIAC_KEY,{movimenti:[],tipologie:null});}catch(e){}
   biaRender();
 }
 async function _biaSave(){
@@ -14473,6 +14475,115 @@ async function biaSetInizio(iso){
   _qmSenzaSalto(biaRender);
   await _biaSave();
 }
+// ── DOTAZIONE DA CONTRATTO (12/11/2026) ──
+// Il contratto con Raimondo è "a totale pezzi": per i lenzuola matrimoniali del SoulArt
+// sono 200, NOSTRI, che girano fra albergo e lavanderia. La mattina di una consegna ogni
+// pezzo sta in uno di cinque posti: sui letti, nell'armadio di scorta (che non si tocca),
+// pulito appena portato, sporco appena dato, e — tutto il resto — pulito da Raimondo:
+//     restano a Raimondo = contratto − letti − armadio − ha portato − sporco dato
+// Serve a rispondere alla sola domanda utile davanti a un ammanco: Raimondo ne aveva di
+// nostri? Se sì l'ammanco è suo; se era a zero, sono i pezzi del contratto a non bastare.
+// È una DEDUZIONE, non un conteggio nel suo magazzino: regge solo se i pezzi del contratto
+// sono davvero stati messi in giro e se le consegne sono registrate bene.
+//
+// Per ora una voce sola e due strutture (richiesta del QM): gli altri numeri del contratto
+// non ci sono ancora. I numeri si inseriscono dalla pagina (_bia.dotazione), non stanno
+// nel codice; l'unico già noto è il valore di partenza del SoulArt.
+const BIA_DOT_VOCI=['Lenzuolo matrimoniale'];
+const BIA_DOT_DEFAULT={sa:{'Lenzuolo matrimoniale':{contratto:200,letti:44}}};  // 22 camere × 2
+// Un campo svuotato vale '' (non delete: la fusione col cloud lo rimetterebbe) e NON torna
+// al valore di partenza: "non lo so" è una risposta, non una dimenticanza.
+function _biaDotCampo(h,v,c){
+  const s=_bia.dotazione&&_bia.dotazione[h]&&_bia.dotazione[h][v];
+  const x=s&&s[c]!==undefined?s[c]:((BIA_DOT_DEFAULT[h]||{})[v]||{})[c];
+  return x===undefined||x===''||x===null?null:Number(x);
+}
+// L'armadio: dove c'è la Giacenza (solo SoulArt) viene dal suo ultimo conteggio, che
+// non si scrive due volte; altrove si inserisce a mano, e vuoto vale "nessuna scorta".
+function _biaDotArmadio(h,v){
+  try{
+    if(typeof GIAC_HOTELS!=='undefined'&&GIAC_HOTELS[h]){
+      const m=_giacMagazzino(h);
+      if(m&&m.contato)return{n:Math.max(0,Number(m.q[v])||0),da:'giacenza',data:m.data};
+      return{n:null,da:'giacenza',data:null};
+    }
+  }catch(e){}
+  const n=_biaDotCampo(h,v,'armadio');
+  return{n:n===null?0:n,da:'manuale',data:null};
+}
+function _biaDotPronta(h,v){
+  return _biaDotCampo(h,v,'contratto')!==null&&_biaDotCampo(h,v,'letti')!==null&&_biaDotArmadio(h,v).n!==null;
+}
+// Il conto di UNA consegna per UNA voce. Puro: niente pagina, niente data di oggi.
+function _biaDotConto(g,v,dot){
+  const prec=_biaGiroPrec(_biaH(g),g.data);
+  const dovuto=prec&&prec.consegnato?(Number(prec.consegnato[v])||0):null;
+  const reg=_biaRegistrato(g);
+  const portato=reg?(Number(g.ricevuto&&g.ricevuto[v])||0):null;
+  const dato=Number(g.consegnato&&g.consegnato[v])||0;
+  const delta=(dovuto===null||portato===null)?null:portato-dovuto;
+  if(!dot||portato===null)return{data:g.data,dovuto,portato,dato,delta,inGiro:null,riserva:null,esito:'nodati'};
+  const inGiro=dot.letti+dot.armadio+portato+dato;
+  const riserva=dot.contratto-inGiro;
+  let esito;
+  if(riserva<0)esito='oltre';                         // in giro più del contratto
+  else if(delta===null||delta>=0)esito='ok';
+  else esito=riserva>0?'suo':'esaurita';
+  return{data:g.data,dovuto,portato,dato,delta,inGiro,riserva,esito};
+}
+async function biaSetDot(v,campo,val){
+  const h=_biaHotel;
+  _bia.dotazione=_bia.dotazione||{};
+  _bia.dotazione[h]=_bia.dotazione[h]||{};
+  const d=_bia.dotazione[h][v]=_bia.dotazione[h][v]||{};
+  d[campo]=String(val).trim()===''?'':Math.max(0,Math.round(Number(val)||0));
+  d.ts=Date.now();
+  _qmSenzaSalto(biaRender);
+  await _biaSave();
+}
+function _biaDotPannello(h){
+  const esc=_esc;
+  const v=BIA_DOT_VOCI[0];
+  const contr=_biaDotCampo(h,v,'contratto'),letti=_biaDotCampo(h,v,'letti'),arm=_biaDotArmadio(h,v);
+  const inp=(campo,val)=>`<input type="number" min="0" value="${val===null?'':val}" onchange="biaSetDot('${v}','${campo}',this.value)" onfocus="this.select()" style="width:64px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;">`;
+  const lab='font-size:var(--fs-xxs);color:var(--text-dim);';
+  let h2=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Dotazione da contratto — ${esc(v)} · ${esc(BIA_HOTELS[h])}</span></div>
+    <div class="panel-body" style="padding:14px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
+      <label style="${lab}display:flex;align-items:center;gap:6px;">Pezzi da contratto ${inp('contratto',contr)}</label>
+      <label style="${lab}display:flex;align-items:center;gap:6px;">Sui letti ${inp('letti',letti)}</label>
+      ${arm.da==='giacenza'
+        ?`<span style="${lab}">Armadio di scorta <strong style="color:var(--text);">${arm.n===null?'—':arm.n}</strong> ${arm.n===null?'(la Giacenza non è mai stata contata)':'(Giacenza, conteggio del '+esc(arm.data)+')'}</span>`
+        :`<label style="${lab}display:flex;align-items:center;gap:6px;">Armadio di scorta ${inp('armadio',_biaDotCampo(h,v,'armadio'))}</label>`}
+    </div>
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:10px;">La mattina di ogni consegna: <strong>restano a Raimondo</strong> = pezzi da contratto − sui letti − armadio − ha portato − sporco dato. Se porta meno del dovuto mentre gliene restano di nostri, l'ammanco è suo; se è a zero, sono i pezzi del contratto a non bastare. È un conto, non un conteggio nel suo magazzino.</div>`;
+  if(!_biaDotPronta(h,v)){
+    h2+=`<div style="background:rgba(160,90,0,.08);border-left:3px solid var(--amber);padding:9px 11px;font-size:var(--fs-xs);color:var(--amber);line-height:1.5;">${arm.n===null?'Manca il conteggio della Giacenza: senza l\'armadio di scorta il conto non si può fare.':'Inserisci i pezzi da contratto e quelli sui letti: finché mancano, il conto non si fa.'}</div></div></div>`;
+    return h2;
+  }
+  const dot={contratto:contr,letti:letti,armadio:arm.n};
+  const giri=_biaGiri(h).filter(g=>_biaNelConto(g)&&(g.data||'').slice(3)===_biaStoMese.slice(5)+'/'+_biaStoMese.slice(0,4)).reverse();
+  if(!giri.length){h2+=`<div style="font-size:var(--fs-xs);color:var(--text-dim);">Nessuna consegna a ${esc(_biaMeseNome(_biaStoMese).toLowerCase())}.</div></div></div>`;return h2;}
+  const ES={ok:['in regola','var(--green)'],suo:['ammanco suo','var(--red)'],esaurita:['dotazione esaurita','var(--amber)'],oltre:['oltre il contratto','var(--amber)'],nodati:['manca «Ha portato»','var(--text-dim)']};
+  const th=_biaTh,td='padding:7px 8px;border-bottom:1px solid var(--border);text-align:center;';
+  h2+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr>
+    <th style="${th}text-align:left;">Consegna</th><th style="${th}">Doveva portare</th><th style="${th}">Ha portato</th><th style="${th}">Differenza</th><th style="${th}">Sporco dato</th><th style="${th}">In giro</th><th style="${th}">Restano a Raimondo</th><th style="${th}text-align:left;">Esito</th></tr></thead><tbody>`;
+  giri.forEach(g=>{
+    const c=_biaDotConto(g,v,dot),e=ES[c.esito],dd=_biaParse(c.data);
+    const n=x=>x===null?'—':x;
+    h2+=`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${dd?BIA_GG_NOMI[dd.getDay()].slice(0,3)+' '+esc(c.data.slice(0,5)):esc(c.data)}</td>
+      <td style="${td}">${n(c.dovuto)}</td><td style="${td}">${n(c.portato)}</td>
+      <td style="${td}font-weight:700;color:${c.delta===null?'var(--text-dim)':_biaColDelta(c.delta)};">${c.delta===null?'—':c.delta>0?'+'+c.delta:c.delta}</td>
+      <td style="${td}">${c.dato}</td><td style="${td}">${n(c.inGiro)}</td>
+      <td style="${td}font-weight:700;">${n(c.riserva)}</td>
+      <td style="${td}text-align:left;font-weight:700;color:${e[1]};white-space:nowrap;">${e[0]}</td></tr>`;
+  });
+  h2+=`</tbody></table></div>
+    <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Mese dello «Storico consegne del pulito». <strong>Ammanco suo</strong>: ha portato meno del dovuto e gliene restavano di nostri. <strong>Dotazione esaurita</strong>: ha portato meno ma non ne aveva altri. <strong>Oltre il contratto</strong>: in giro risultano più pezzi di quelli del contratto — un numero da ricontrollare.</div>
+  </div></div>`;
+  return h2;
+}
+
 function _biaRigaGiro(g){
   const hotel=_biaH(g);
   const prec=_biaGiroPrec(hotel,g.data);
@@ -15076,6 +15187,9 @@ function biaRender(){
       <button onclick="biaPrintAndamento()" style="${bSec}">Report per la direzione</button>
     </div></div></div>`;
   }
+
+  // ── Dotazione da contratto ── (vedi _biaDotConto)
+  if(_bia.giri.length)h+=_biaDotPannello(_biaHotel);
 
   // ── Totali del mese, per incrociare la fattura ──
   {
