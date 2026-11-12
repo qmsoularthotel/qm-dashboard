@@ -14624,6 +14624,7 @@ async function biaRegistraGiro(){
   }else{
     _bia.giri.push({id:_biaUid(),hotel:_biaHotel,data:data,consegnato:consegnato,ricevuto:ricevuto,daiConsumi:daiConsumi,ts:Date.now()});
   }
+  _biaConf={k:'',ok:false};
   _biaSave();biaRender();
 }
 async function biaEliminaGiro(id){
@@ -14696,6 +14697,30 @@ function _biaMsgDiff(tot){
     :'Sono rientrati '+tot+' pezzi in più di quanti ne erano stati dati alla consegna precedente.';
 }
 
+// Il pulsante della consegna resta SPENTO finché «Ha portato» non è stato guardato
+// (12/11/2026). La colonna parte già piena (uguale a «Doveva portare», o ai numeri già
+// registrati), e capitava che un collega premesse "Aggiorna consegna"/"Registra cosa ha
+// portato" senza confrontarla con la distinta di Raimondo: la consegna risultava
+// registrata con numeri mai controllati. Si accende quando:
+//  - si cambia almeno un numero rispetto a quello di partenza, oppure
+//  - (solo per una consegna nuova) si spunta "corrisponde alla distinta di Raimondo".
+// Una consegna già registrata si aggiorna solo se qualcosa è cambiato: riscriverla
+// uguale non serve a niente.
+let _biaConf={k:'',ok:false};      // spunta di conferma, valida per una struttura+data
+let _biaBaseVis=null,_biaGiaRegVis=false;  // valori di partenza della tabella a schermo
+function _biaPuoRegistrare(giaReg,base,valori,confermato){
+  const cambiato=BIA_VOCI.some((v,i)=>(Number(valori[i])||0)!==(Number(base&&base[v])||0));
+  return cambiato||(!giaReg&&!!confermato);
+}
+function _biaStatoRegistra(){
+  const btn=document.getElementById('bia-registra');
+  if(!btn||!_biaBaseVis)return;
+  const valori=BIA_VOCI.map((v,i)=>{const er=document.getElementById('bia-r-'+i);return er?er.value:(_biaBaseVis[v]||0);});
+  const on=_biaPuoRegistrare(_biaGiaRegVis,_biaBaseVis,valori,_biaConf.ok);
+  btn.disabled=!on;btn.style.opacity=on?'':'.45';btn.style.cursor=on?'pointer':'not-allowed';
+}
+function biaConfermaPortato(el){_biaConf.ok=!!(el&&el.checked);_biaStatoRegistra();}
+
 function biaAggiornaDelta(){
   const att=_biaAttesoVis;
   let tot=0;
@@ -14720,6 +14745,7 @@ function biaAggiornaDelta(){
     avviso.style.borderLeftColor=c;
     avviso.style.color=c;
   }
+  _biaStatoRegistra();
 }
 
 const _biaTh='text-align:center;padding:7px 8px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;white-space:nowrap;';
@@ -14744,6 +14770,11 @@ function biaRender(){
   const saldo=_biaSaldo();
   const giaReg=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===giroData);
   _biaAttesoVis=atteso;   // la tabella disegnata sotto si riferisce a questo atteso
+  // Valori di partenza di «Ha portato» (stessa regola delle caselle qui sotto): vedi _biaStatoRegistra.
+  _biaGiaRegVis=!!giaReg;
+  _biaBaseVis=giaReg?giaReg.ricevuto:(atteso||_biaVuote());
+  {const k=_biaHotel+'|'+giroData;if(_biaConf.k!==k)_biaConf={k:k,ok:false};}
+  const regOn=!giaReg&&_biaConf.ok;
   // Un totale congelato che non corrisponde più ai consumi va detto in DUE punti, perché
   // si manifesta in due colonne diverse: su questa consegna ("tot pezzi da dargli") e su
   // quella precedente, che è quella che riempie il "doveva portare" — ed è lì che il
@@ -14960,7 +14991,10 @@ function biaRender(){
   const bPrimario='background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
   const bSecondario='background:var(--surface);color:var(--accent);border:1.5px solid var(--border);padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
   const bStampa=`<button onclick="biaPrintDistinta()" style="${vigilia&&!giaReg?bPrimario:bSecondario}">${distPronta?'Ristampa la distinta':'Stampa la distinta'}</button>`;
-  const bRegistra=`<button onclick="biaRegistraGiro()" style="${vigilia&&!giaReg?bSecondario:bPrimario}">${giaReg?'Aggiorna consegna':'Registra cosa ha portato'}</button>`;
+  const bRegistra=`<button id="bia-registra" onclick="biaRegistraGiro()" ${regOn?'':'disabled'} title="${giaReg?'Si accende quando cambi un numero di «Ha portato»':'Si accende quando correggi «Ha portato» o confermi che corrisponde alla distinta'}" style="${vigilia&&!giaReg?bSecondario:bPrimario}${regOn?'':'opacity:.45;cursor:not-allowed;'}">${giaReg?'Aggiorna consegna':'Registra cosa ha portato'}</button>`;
+  if(!giaReg){
+    h+=`<label style="flex-basis:100BIA;display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);color:var(--text);cursor:pointer;margin-bottom:2px;"><input type="checkbox" id="bia-conferma" ${_biaConf.ok?'checked':''} onchange="biaConfermaPortato(this)">I numeri di «Ha portato» corrispondono alla distinta di Raimondo</label>`;
+  }
   h+=(vigilia&&!giaReg)?(bStampa+bRegistra):(bRegistra+bStampa);
   h+=`</div>
       <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">${vigilia&&!giaReg

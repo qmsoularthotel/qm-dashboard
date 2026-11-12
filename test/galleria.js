@@ -259,3 +259,16 @@ sez('Gestione Biancheria (Galleria): l\'avviso dei dati mancanti segue il calend
   ok('Santa Brigida: nessuna mancante',      _gbBuchi('sb', oggi).consegne.length, 0);
   _gb = prima;
 })();
+
+// ── Pulsante della consegna spento finché «Ha portato» non è guardato (12/11/2026) ──
+(function () {
+  var Q = function (n) { var q = _gbVuote(); q.Federa = n; return q; };
+  var i = GB_VOCI.indexOf('Federa');
+  var val = function (n) { return GB_VOCI.map(function (v, j) { return j === i ? String(n) : '0'; }); };
+  ok('Galleria: consegna nuova non confermata spenta',  _gbPuoRegistrare(false, Q(20), val(20), false), false);
+  ok('Galleria: confermata con la spunta accesa',       _gbPuoRegistrare(false, Q(20), val(20), true), true);
+  ok('Galleria: già registrata invariata spenta',       _gbPuoRegistrare(true, Q(20), val(20), true), false);
+  ok('Galleria: già registrata cambiata accesa',        _gbPuoRegistrare(true, Q(20), val(25), false), true);
+  ok('Galleria: il pulsante nasce spento',              /id="gb-registra"[^>]*\$\{regOn\?'':'disabled'\}/.test(String(_gbRenderCore)), true);
+  ok('Galleria: la casella aggiorna lo stato',          /_gbStatoRegistra\(\)/.test(String(gbAggiornaDelta)), true);
+})();

@@ -1208,3 +1208,20 @@ calendario della struttura (`_gbGiornoGiro(x,h)`).
 Coperto da **13 controlli** in `test/controlli.js` e 2 in `test/galleria.js`, verificati con
 cinque sabotaggi (consegne mai segnalate, consumi mai segnalati, copertura solo al giorno
 esatto, oggi incluso, avviso tolto): 2, 1, 1, 5 e 3 falliscono.
+
+### Il pulsante della consegna è spento finché «Ha portato» non è guardato (12/11/2026)
+
+La colonna **Ha portato** parte già piena (uguale a *Doveva portare*, o ai numeri già
+registrati). Capitava che un collega premesse *Registra cosa ha portato* / *Aggiorna
+consegna* senza confrontarla con la distinta di Raimondo, e la consegna risultava
+registrata con numeri mai controllati.
+
+| Caso | Il pulsante si accende quando |
+|---|---|
+| consegna nuova | si cambia almeno un numero, **oppure** si spunta *«I numeri di Ha portato corrispondono alla distinta di Raimondo»* |
+| consegna già registrata | si cambia almeno un numero (la spunta non c'è: riscriverla uguale non serve) |
+
+Regola in `_biaPuoRegistrare`, stato del pulsante in `_biaStatoRegistra` (chiamato da
+`biaAggiornaDelta` a ogni cifra), spunta in `_biaConf` valida per struttura+data e azzerata
+dopo la registrazione. Copiata identica nella Galleria (`_gbPuoRegistrare`…). Coperto da
+controlli in `test/controlli.js` e `test/galleria.js`, verificati sabotando la regola.

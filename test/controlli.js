@@ -3253,3 +3253,19 @@ sez('Agenda della settimana');
   ok('l\'impegno di oggi compare nella settimana',  /ag-oggi/.test(box.innerHTML), true);
   if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
 })();
+
+sez('Consumo Biancheria: il pulsante della consegna resta spento finche\' «Ha portato» non e\' guardato (12/11/2026)');
+(function(){
+  var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};
+  var i=BIA_VOCI.indexOf('Federa');
+  var val=function(n){return BIA_VOCI.map(function(v,j){return j===i?String(n):'0';});};
+  ok('consegna nuova, numeri gia\' pieni: spento',          _biaPuoRegistrare(false,Q(20),val(20),false), false);
+  ok('consegna nuova, confermata con la spunta: acceso',    _biaPuoRegistrare(false,Q(20),val(20),true),  true);
+  ok('consegna nuova, un numero corretto: acceso',          _biaPuoRegistrare(false,Q(20),val(18),false), true);
+  ok('gia\' registrata, niente cambiato: spento',           _biaPuoRegistrare(true,Q(20),val(20),false),  false);
+  ok('gia\' registrata, la spunta non basta',               _biaPuoRegistrare(true,Q(20),val(20),true),   false);
+  ok('gia\' registrata, un numero cambiato: acceso',        _biaPuoRegistrare(true,Q(20),val(25),false),  true);
+  ok('il pulsante nasce spento se non confermato',          /id="bia-registra"[^>]*\$\{regOn\?'':'disabled'\}/.test(String(biaRender)), true);
+  ok('la casella aggiorna lo stato del pulsante',           /_biaStatoRegistra\(\)/.test(String(biaAggiornaDelta)), true);
+  ok('registrata la consegna, la spunta si azzera',         /_biaConf=\{k:'',ok:false\}/.test(String(biaRegistraGiro)), true);
+})();
