@@ -14802,15 +14802,96 @@ function _biaSaldo(hotel){
 // Un totale al giorno per struttura: il QM somma i fogli delle cameriere e riporta qui
 // le sette voci. Reinserendo una data già presente si sovrascrive quella riga invece di
 // crearne una seconda, così una correzione non raddoppia i numeri.
+// ── NUMERI FUORI DAL NORMALE: si riscrivono (12/11/2026) ──
+// Chiedere conferma per ogni numero non funziona: dopo due giorni si preme OK senza
+// leggere. Si ferma SOLO il numero fuori dal normale, e non si chiede un clic: la casella
+// si svuota, diventa rossa, sotto c'è il motivo, e finché il numero non viene RISCRITTO
+// non si salva. Riscritto uguale = confermato; corretto = ricontrollato.
+// Soglie provate sui dati veri (12/11/2026: 174 giorni di consumi, 73 consegne): si
+// ferma solo il Boutique del 27/08 (24 federe con 8 lenzuola, primi giorni di registrazione).
+// Le lenzuola singole hanno numeri piccoli e salti veri (24 in un giorno su un massimo di
+// 12): per questo il margine minimo è +15, non solo +50%. Una casella in attesa NON vale zero: vuota, blocca il salvataggio.
+const BIA_ANOM_GG=60;            // finestra dello storico
+const BIA_ANOM_MIN_GG=10;        // sotto questi giorni di storico non si giudica
+const BIA_ANOM_FEDERE=2.3;       // federe per lenzuolo (matrimoniali + singole); dati veri: max 2,2
+let _biaRiscrivi={k:'',voci:{},msg:[]};   // consumi in attesa di essere riscritti
+let _biaRiscriviR={k:'',voci:{},msg:[]};  // "Ha portato" in attesa di essere riscritto
+const _biaNomeV=v=>(BIA_DOT_PLURALE[v]||v).toLowerCase();
+// Il massimo di una voce negli ultimi BIA_ANOM_GG giorni prima di `data` (giorno escluso).
+function _biaMaxStorico(elenco,data,leggi){
+  const d=_biaParse(data);if(!d)return null;
+  const da=new Date(d);da.setDate(da.getDate()-BIA_ANOM_GG);
+  const xs=elenco.filter(x=>{const t=_biaParse(x.data);return t&&t<d&&t>=da;}).map(leggi);
+  return xs.length>=BIA_ANOM_MIN_GG?Math.max(...xs):null;
+}
+function _biaAnomalieConsumi(h,data,q){
+  const out=[];
+  const altri=_bia.consumi.filter(c=>_biaH(c)===h&&c.data!==data);
+  BIA_VOCI.forEach(v=>{
+    const val=Number(q[v])||0;if(!val)return;
+    const m=_biaMaxStorico(altri,data,c=>Number(c.q&&c.q[v])||0);
+    // Niente limite "sui letti": nei dati veri ci sono giorni con 47 teli e 45 asciugamani
+    // viso su 44 posti letto (ospiti in più in camera). Lo storico basta per i refusi grossi.
+    if(m!==null&&val>Math.max(Math.ceil(m*1.5),m+15))out.push({v:v,val:val,msg:`${val} ${_biaNomeV(v)} in un giorno: negli ultimi due mesi il massimo è stato ${m}.`});
+  });
+  const len=(Number(q['Lenzuolo matrimoniale'])||0)+(Number(q['Lenzuolo singolo'])||0);
+  const fed=Number(q['Federa'])||0;
+  if(fed>10&&fed>BIA_ANOM_FEDERE*len&&!out.some(a=>a.v==='Federa'))
+    out.push({v:'Federa',val:fed,msg:`${fed} federe con ${len} lenzuola (matrimoniali + singole): di solito non più di 2 federe per lenzuolo. Controlla anche le lenzuola.`});
+  return out;
+}
+function _biaAnomaliePortato(h,data,ric){
+  const out=[];
+  const att=_biaAtteso(h,data);
+  const altri=_bia.giri.filter(g=>_biaH(g)===h&&g.data!==data&&_biaRegistrato(g));
+  BIA_VOCI.forEach(v=>{
+    const val=Number(ric[v])||0;
+    const a=att?(Number(att[v])||0):null;
+    if(a){
+      if(val>Math.max(2*a,a+20))out.push({v:v,val:val,msg:`Ha portato ${val} ${_biaNomeV(v)}: ne doveva portare ${a}.`});
+      else if(a-val>30&&val<a/3)out.push({v:v,val:val,msg:`Ha portato ${val} ${_biaNomeV(v)}: ne doveva portare ${a}.`});
+      return;
+    }
+    if(!val)return;
+    const m=_biaMaxStorico(altri,data,g=>Number(g.ricevuto&&g.ricevuto[v])||0);
+    if(m!==null&&val>Math.max(Math.ceil(m*1.5),m+15))out.push({v:v,val:val,msg:`Ha portato ${val} ${_biaNomeV(v)}: negli ultimi due mesi al massimo ${m}.`});
+  });
+  return out;
+}
+// Il cuore comune ai due moduli. `valori[v]` è null se la casella è vuota. Restituisce
+// lo stato nuovo dell'attesa e se si può salvare.
+function _biaVerificaRiscrittura(stato,k,valori,anomalie){
+  const att=stato.k===k?stato.voci:{};
+  const vuote=Object.keys(att).filter(v=>valori[v]===null);
+  if(vuote.length)return{ok:false,stato:{k:k,voci:att,msg:stato.msg}};
+  const resta=anomalie.filter(a=>att[a.v]!==a.val);   // riscritto uguale = confermato
+  if(resta.length){
+    const voci={};resta.forEach(a=>voci[a.v]=a.val);
+    return{ok:false,stato:{k:k,voci:voci,msg:resta.map(a=>a.msg)}};
+  }
+  return{ok:true,stato:{k:'',voci:{},msg:[]}};
+}
+function _biaBoxRiscrivi(stato){
+  if(!stato.msg.length)return'';
+  return`<div style="background:rgba(192,53,42,.08);border-left:3px solid var(--red);padding:9px 11px;font-size:var(--fs-xs);color:var(--red);line-height:1.5;margin-top:10px;"><strong>Numero fuori dal normale: ricontrolla il foglio e riscrivilo nella casella rossa.</strong> Se è giusto, riscrivi lo stesso numero.<br>${stato.msg.map(m=>_esc(m)).join('<br>')}</div>`;
+}
+
 async function biaSalvaConsumi(){
   const iso=(document.getElementById('bia-cons-data')||{}).value||'';
   const data=_biaFromIso(iso);
   if(!data){cqAvviso('Indica la data dei consumi.');return;}
-  const q=_biaVuote();
+  const q=_biaVuote(),val={};
   BIA_VOCI.forEach((v,i)=>{
     const el=document.getElementById('bia-c-'+i);
-    q[v]=Math.max(0,Number(el&&el.value)||0);
+    const t=el?String(el.value).trim():'0';
+    val[v]=t===''?null:Math.max(0,Number(t)||0);
+    q[v]=val[v]||0;
   });
+  {
+    const r=_biaVerificaRiscrittura(_biaRiscrivi,_biaHotel+'|'+data,val,_biaAnomalieConsumi(_biaHotel,data,q));
+    _biaRiscrivi=r.stato;
+    if(!r.ok){biaRender();return;}
+  }
   if(_biaTot(q)===0&&!await cqConferma('Tutti i valori sono a zero','Salvare comunque i consumi di questa giornata?',{ok:'Salva'}))return;
   const esistente=_bia.consumi.find(c=>_biaH(c)===_biaHotel&&c.data===data);
   if(esistente){esistente.q=q;esistente.ts=Date.now();}
@@ -14834,11 +14915,18 @@ async function biaRegistraGiro(){
   const iso=(document.getElementById('bia-giro-data')||{}).value||'';
   const data=_biaFromIso(iso);
   if(!data){cqAvviso('Indica la data della consegna.');return;}
-  const ricevuto=_biaVuote();
+  const ricevuto=_biaVuote(),valR={};
   BIA_VOCI.forEach((v,i)=>{
     const er=document.getElementById('bia-r-'+i);
-    ricevuto[v]=Math.max(0,Number(er&&er.value)||0);
+    const t=er?String(er.value).trim():'0';
+    valR[v]=t===''?null:Math.max(0,Number(t)||0);
+    ricevuto[v]=valR[v]||0;
   });
+  {
+    const r=_biaVerificaRiscrittura(_biaRiscriviR,_biaHotel+'|'+data,valR,_biaAnomaliePortato(_biaHotel,data,ricevuto));
+    _biaRiscriviR=r.stato;
+    if(!r.ok){biaRender();return;}
+  }
   // La somma calcolata dai consumi in questo momento. Si salva accanto al totale congelato
   // per poter dire, più avanti, se quel totale era quello calcolato o uno scritto a mano —
   // vedi _biaScostamento. Non entra in nessun conto: serve solo a quella distinzione.
@@ -15001,6 +15089,8 @@ function biaRender(){
   const atteso=_biaAtteso(_biaHotel,giroData);
   const saldo=_biaSaldo();
   const giaReg=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===giroData);
+  if(_biaRiscriviR.k&&_biaRiscriviR.k!==_biaHotel+'|'+giroData)_biaRiscriviR={k:'',voci:{},msg:[]};
+  const rscR=_biaRiscriviR.voci;
   _biaAttesoVis=atteso;   // la tabella disegnata sotto si riferisce a questo atteso
   // Valori di partenza di «Ha portato» (stessa regola delle caselle qui sotto): vedi _biaStatoRegistra.
   _biaGiaRegVis=!!giaReg;
@@ -15088,6 +15178,8 @@ function biaRender(){
   const consIso=(document.getElementById('bia-cons-data')||{}).value||_biaToIso(_biaFmt(oggi));
   const consData=_biaFromIso(consIso)||_biaFmt(oggi);
   const consSel=_bia.consumi.find(c=>_biaH(c)===_biaHotel&&c.data===consData);
+  if(_biaRiscrivi.k&&_biaRiscrivi.k!==_biaHotel+'|'+consData)_biaRiscrivi={k:'',voci:{},msg:[]};
+  const rsc=_biaRiscrivi.voci;
   h+=`<div class="panel" style="margin-bottom:16px;">
     <div class="panel-header"><span class="panel-title">Consumi giornalieri dai fogli camera</span>
       <button onclick="biaToggleUltimi()" style="margin-left:auto;background:${_biaUltimiAperti?'var(--accent)':'var(--surface)'};color:${_biaUltimiAperti?'#fff':'var(--accent)'};border:1px solid ${_biaUltimiAperti?'var(--accent)':'var(--border)'};padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">Ultimi consumi inseriti ${_biaUltimiAperti?'▴':'▾'}</button>
@@ -15100,12 +15192,13 @@ function biaRender(){
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
         ${BIA_VOCI.map((v,i)=>`<div>
           <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${esc(v)}</div>
-          <input type="number" min="0" id="bia-c-${i}" value="${consSel?(Number(consSel.q[v])||0):0}" onfocus="this.select()" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);text-align:center;">
+          <input type="number" min="0" id="bia-c-${i}" value="${v in rsc?'':(consSel?(Number(consSel.q[v])||0):0)}" ${v in rsc?'placeholder="riscrivi"':''} onfocus="this.select()" style="width:100%;padding:7px 9px;border:${v in rsc?'2px solid var(--red)':'1px solid var(--border)'};border-radius:6px;font-size:var(--fs-sm);text-align:center;">
         </div>`).join('')}
       </div>
       <div style="margin-top:12px;">
         <button onclick="biaSalvaConsumi()" style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">Salva consumi</button>
       </div>
+      ${_biaBoxRiscrivi(_biaRiscrivi)}
     </div>
   </div>`;
 
@@ -15211,7 +15304,7 @@ function biaRender(){
     h+=`<tr style="${bad?'background:'+_biaBgDelta(d)+';':''}">
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));">${esc(v)}</td>
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;color:var(--text-dim);">${att===null?'—':att}</td>
-      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-r-${i}" value="${ric}" oninput="biaAggiornaDelta()" onfocus="this.select()" style="width:56px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
+      <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;"><input type="number" min="0" id="bia-r-${i}" value="${v in rscR?'':ric}" ${v in rscR?'placeholder="riscrivi"':''} oninput="biaAggiornaDelta()" onfocus="this.select()" style="width:56px;padding:5px;border:${v in rscR?'2px solid var(--red)':'1px solid var(--border)'};border-radius:5px;font-size:var(--fs-xs);text-align:center;"></td>
       <td id="bia-d-${i}" style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));text-align:center;font-weight:700;color:${d===null?'var(--text-dim)':_biaColDelta(d)};">${d===null?'—':(d>0?'+'+d:d)}</td>
     </tr>`;
   });
@@ -15228,7 +15321,7 @@ function biaRender(){
     h+=`<label style="flex-basis:100%;display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);color:var(--text);cursor:pointer;margin-bottom:2px;"><input type="checkbox" id="bia-conferma" ${_biaConf.ok?'checked':''} onchange="biaConfermaPortato(this)">I numeri di «Ha portato» corrispondono alla distinta di Raimondo</label>`;
   }
   h+=(vigilia&&!giaReg)?(bStampa+bRegistra):(bRegistra+bStampa);
-  h+=`</div>
+  h+=`</div>${_biaBoxRiscrivi(_biaRiscriviR)}
       <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">${vigilia&&!giaReg
         ?'Oggi serve solo la <strong>stampa</strong>: i pezzi da dargli sono già calcolati dai consumi. Domattina, quando Raimondo arriva, si torna qui e si registra cosa ha portato.'
         :'I pezzi da dare a Raimondo si calcolano da soli dai consumi del periodo e finiscono sulla distinta. <strong>Ha portato</strong> parte uguale a quanto doveva — toccalo solo se la distinta di Raimondo dice altro.'}</div>

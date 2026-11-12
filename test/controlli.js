@@ -3373,3 +3373,58 @@ ok('il pannello della dotazione dichiara il suo esc', /(const|var) esc=_esc/.tes
   ok('entrando nella pagina si richiude',         /_biaDotSblocco=false/.test(String(biaLoad)), true);
   _bia=prima;_giac=pg;_biaStoMese=sm;_biaDotSblocco=ps;
 })();
+
+sez('Consumo Biancheria: i numeri fuori dal normale si riscrivono (12/11/2026)');
+(function(){
+  var prima=_bia,ph=_biaHotel,vero=document.getElementById,pr=_biaRiscrivi,prR=_biaRiscriviR;
+  var Q=function(o){var q=_biaVuote();for(var k in o)q[k]=o[k];return q;};
+  var pad=function(n){return(n<10?'0':'')+n;};
+  // 20 giorni normali a ottobre: 15 matrimoniali, 2 singole, 30 federe, 25 teli.
+  var cons=[];for(var d=1;d<=20;d++)cons.push({id:'c'+d,hotel:'sa',data:pad(d)+'/10/2026',q:Q({'Lenzuolo matrimoniale':15,'Lenzuolo singolo':d===5?12:2,'Federa':30,'Telo doccia':25})});
+  _biaHotel='sa';
+  _bia={consumi:cons,giri:[{id:'g1',hotel:'sa',data:'20/10/2026',consegnato:Q({'Telo doccia':80,'Federa':134}),ricevuto:Q({'Telo doccia':80,'Federa':130})}]};
+  var A=function(o){return _biaAnomalieConsumi('sa','21/10/2026',Q(o)).map(function(a){return a.v;}).join(',');};
+  var norm={'Lenzuolo matrimoniale':15,'Lenzuolo singolo':2,'Federa':30,'Telo doccia':25};
+  ok('un giorno normale passa',                  A(norm), '');
+  ok('140 federe (max 30) si ferma',             A({'Lenzuolo matrimoniale':15,'Federa':140}), 'Federa');
+  ok('40 federe con 20 lenzuola passa',          A({'Lenzuolo matrimoniale':20,'Federa':40}), '');
+  ok('federe fuori proporzione si ferma',        A({'Lenzuolo matrimoniale':10,'Federa':40}), 'Federa');
+  ok('24 singole (max 12) passa: margine +15',   A({'Lenzuolo matrimoniale':15,'Lenzuolo singolo':24,'Federa':30}), '');
+  ok('con poco storico non si giudica lo storico', _biaAnomalieConsumi('bh','21/10/2026',Q({'Telo doccia':900})).length, 0);
+  var P=function(o){return _biaAnomaliePortato('sa','22/10/2026',Q(o)).map(function(a){return a.v;}).join(',');};
+  ok('portato 500 teli (doveva 80) si ferma',    P({'Telo doccia':500,'Federa':134}), 'Telo doccia');
+  ok('portato 90 teli passa',                    P({'Telo doccia':90,'Federa':134}), '');
+  ok('portato 5 federe (doveva 134) si ferma',   P({'Telo doccia':80,'Federa':5}), 'Federa');
+  ok('portato 100 federe passa',                 P({'Telo doccia':80,'Federa':100}), '');
+  // La riscrittura.
+  var an=[{v:'Federa',val:140,msg:'x'}];
+  var r1=_biaVerificaRiscrittura({k:'',voci:{},msg:[]},'sa|21/10/2026',{'Federa':140},an);
+  ok('prima volta: non si salva',                r1.ok+' '+r1.stato.voci.Federa, 'false 140');
+  var r2=_biaVerificaRiscrittura(r1.stato,'sa|21/10/2026',{'Federa':null},an);
+  ok('casella lasciata vuota: non si salva',     r2.ok, false);
+  var r3=_biaVerificaRiscrittura(r1.stato,'sa|21/10/2026',{'Federa':140},an);
+  ok('riscritto uguale: si salva',               r3.ok, true);
+  var r4=_biaVerificaRiscrittura(r1.stato,'sa|22/10/2026',{'Federa':140},an);
+  ok('la conferma non vale per un altro giorno', r4.ok, false);
+  var r5=_biaVerificaRiscrittura(r1.stato,'sa|21/10/2026',{'Federa':14},[]);
+  ok('corretto in un numero normale: si salva',  r5.ok, true);
+  // Il giro completo, con la pagina finta.
+  var campi={'bia-cons-data':'2026-10-21'};
+  BIA_VOCI.forEach(function(v,i){campi['bia-c-'+i]=String(norm[v]||0);});
+  var iF=BIA_VOCI.indexOf('Federa');campi['bia-c-'+iF]='140';
+  document.getElementById=function(id){return id in campi?{value:campi[id]}:null;};
+  _biaRiscrivi={k:'',voci:{},msg:[]};
+  var trova=function(){return _bia.consumi.filter(function(c){return c.data==='21/10/2026';})[0];};
+  try{biaSalvaConsumi();}catch(e){}
+  ok('140 federe: non salvato',                  !!trova(), false);
+  campi['bia-c-'+iF]='';
+  try{biaSalvaConsumi();}catch(e){}
+  ok('casella vuota non vale zero: non salvato', !!trova(), false);
+  campi['bia-c-'+iF]='140';
+  try{biaSalvaConsumi();}catch(e){}
+  ok('riscritto: salvato con 140',               trova()&&trova().q.Federa, 140);
+  document.getElementById=vero;
+  ok('la casella in attesa nasce vuota e rossa', /v in rsc\?'':/.test(String(biaRender))&&/v in rsc\?'2px solid var\(--red\)'/.test(String(biaRender)), true);
+  ok('lo stesso per Ha portato',                 /v in rscR\?'':ric/.test(String(biaRender)), true);
+  _bia=prima;_biaHotel=ph;_biaRiscrivi=pr;_biaRiscriviR=prR;
+})();

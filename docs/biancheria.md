@@ -1293,3 +1293,35 @@ davvero stati messi in giro, se le consegne sono registrate bene e se l'armadio 
 - **Lucchetto**: caselle bloccate (si vedono solo i numeri), *🔒 Modifica* → conferma →
   caselle; *Fine* le richiude, e si richiudono comunque rientrando nella pagina (`biaLoad`).
   `biaSetDot` rifiuta di scrivere col lucchetto chiuso.
+
+### Numeri fuori dal normale: si riscrivono (12/11/2026)
+
+Richiesta del QM: *"ridurre a zero gli errori di inserimento, a prova di idiota"*. Chiedere
+conferma per **ogni** numero è stato scartato: dopo due giorni si preme OK senza leggere. Si
+ferma **solo** il numero fuori dal normale e non si chiede un clic: la casella si **svuota**,
+diventa rossa (`placeholder="riscrivi"`), sotto c'è il motivo, e finché il numero non viene
+**riscritto** non si salva. Riscritto uguale = confermato; corretto = ricontrollato. Una casella
+in attesa lasciata vuota **non vale zero**: blocca il salvataggio.
+
+| Dove | Regola | Funzione |
+|---|---|---|
+| Consumi | più di max(+50%, +15) del massimo degli ultimi 60 giorni (servono ≥ 10 giorni di storico) | `_biaAnomalieConsumi` |
+| Consumi | più di 2,3 federe per lenzuolo (matrimoniali **+ singole**), oltre 10 federe | idem |
+| Ha portato | più di max(2×, +20) del "doveva portare", o meno di un terzo con oltre 30 di scarto | `_biaAnomaliePortato` |
+| Ha portato, senza dovuto | come lo storico dei consumi, sui portati | idem |
+
+Stato dell'attesa in `_biaRiscrivi` / `_biaRiscriviR` (`{k:'struttura|data', voci, msg}`),
+logica comune in `_biaVerificaRiscrittura`; cambiando data o struttura l'attesa si azzera.
+
+**Soglie provate sui dati veri** (copia del 12/11: 174 giorni di consumi, 73 consegne): si
+ferma solo il **Boutique del 27/08** (24 federe con 8 lenzuola, primi giorni di registrazione,
+quasi certamente un errore). Una prima versione con margine +5 ne fermava 5, quasi tutti
+**lenzuola singole** (numeri piccoli, salti veri: 24 in un giorno su un massimo di 12); un
+limite "non più dei pezzi sui letti" è stato scartato perché al SoulArt ci sono giorni veri
+con 47 teli e 45 asciugamani viso su 44 posti.
+
+**Errore di analisi da non ripetere**: le federe vanno confrontate con le lenzuola
+**matrimoniali + singole**. Confrontate con le sole matrimoniali, giorni normali come il
+31/10 al SoulArt (20 matrimoniali, 30 singole, 71 federe) sembrano refusi.
+
+Solo Compass: la copia della Galleria non ha ancora questi controlli (scelta del QM).
