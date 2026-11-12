@@ -131,7 +131,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-12.4';
+const QM_APP_BUILD='2026-11-12.6';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -1050,8 +1050,16 @@ function _gbBoxBuchi(oggi){
 // data più vecchia rimessa per sbaglio ("conta tutto") riporterebbe dentro consegne senza
 // «Ha portato». La data scelta nella pagina vale solo se è più recente.
 const GB_INIZIO_MINIMO='01/09/2026';
+// Per struttura, quando i dati di inizio settembre non sono buoni. SoulArt dal 05/09
+// (12/11/2026): azzerando agosto è stato azzerato anche lo sporco dato il 01/09, e il 01/09
+// e il 03/09 risultavano «tutto in più» (+87 lenzuola finte). Dal 05/09 i dati sono intatti.
+const GB_INIZIO_MINIMO_H={};
+function _gbInizioMin(h){
+  const m=_gbParse(GB_INIZIO_MINIMO),mh=GB_INIZIO_MINIMO_H[h]?_gbParse(GB_INIZIO_MINIMO_H[h]):null;
+  return mh&&mh>m?mh:m;
+}
 function _gbInizio(h){
-  const s=_gb.inizio&&_gb.inizio[h],d=s?_gbParse(s):null,m=_gbParse(GB_INIZIO_MINIMO);
+  const s=_gb.inizio&&_gb.inizio[h],d=s?_gbParse(s):null,m=_gbInizioMin(h);
   return d&&d>m?d:m;
 }
 function _gbInizioTxt(h){return _gbFmt(_gbInizio(h));}
@@ -1744,8 +1752,8 @@ function _gbRenderCore(){
           <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${salT<0?'var(--red)':'var(--green)'};">${salT===0?'0':salT<0?-salT+' mancano':salT+' in più'}</span></div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:var(--fs-xxs);color:var(--text-dim);">
           <label>Conteggio dal</label>
-          <input type="date" value="${_gbInizio(hS)?_gbToIso(_gbInizioTxt(hS)):''}" min="${_gbToIso(GB_INIZIO_MINIMO)}" onchange="gbSetInizio(this.value)" onclick="event.stopPropagation()" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xxs);font-family:inherit;background:var(--surface);color:var(--text);">
-          ${_gbInizio(hS)>_gbParse(GB_INIZIO_MINIMO)?`<button onclick="gbSetInizio('')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">dal ${GB_INIZIO_MINIMO}</button>`:''}
+          <input type="date" value="${_gbInizio(hS)?_gbToIso(_gbInizioTxt(hS)):''}" min="${_gbToIso(_gbFmt(_gbInizioMin(hS)))}" onchange="gbSetInizio(this.value)" onclick="event.stopPropagation()" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xxs);font-family:inherit;background:var(--surface);color:var(--text);">
+          ${_gbInizio(hS)>_gbInizioMin(hS)?`<button onclick="gbSetInizio('')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">dal ${_gbFmt(_gbInizioMin(hS))}</button>`:''}
           <span>le consegne prima di questa data restano visibili ma fuori dal conto: servono a escludere l'avvio delle registrazioni.</span>
         </div>
         ${GB_VOCI.map(v=>{const n=sal[v];return`<div style="display:flex;justify-content:space-between;padding:4px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_gbColDelta(n)};">${n===0?'—':n>0?'+'+n:n}</span></div>`;}).join('')}

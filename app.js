@@ -14472,8 +14472,16 @@ function _biaBoxBuchi(oggi){
 // data più vecchia rimessa per sbaglio ("conta tutto") riporterebbe dentro consegne senza
 // «Ha portato». La data scelta nella pagina vale solo se è più recente.
 const BIA_INIZIO_MINIMO='01/09/2026';
+// Per struttura, quando i dati di inizio settembre non sono buoni. SoulArt dal 05/09
+// (12/11/2026): azzerando agosto è stato azzerato anche lo sporco dato il 01/09, e il 01/09
+// e il 03/09 risultavano «tutto in più» (+87 lenzuola finte). Dal 05/09 i dati sono intatti.
+const BIA_INIZIO_MINIMO_H={sa:'05/09/2026'};
+function _biaInizioMin(h){
+  const m=_biaParse(BIA_INIZIO_MINIMO),mh=BIA_INIZIO_MINIMO_H[h]?_biaParse(BIA_INIZIO_MINIMO_H[h]):null;
+  return mh&&mh>m?mh:m;
+}
 function _biaInizio(h){
-  const s=_bia.inizio&&_bia.inizio[h],d=s?_biaParse(s):null,m=_biaParse(BIA_INIZIO_MINIMO);
+  const s=_bia.inizio&&_bia.inizio[h],d=s?_biaParse(s):null,m=_biaInizioMin(h);
   return d&&d>m?d:m;
 }
 function _biaInizioTxt(h){return _biaFmt(_biaInizio(h));}
@@ -15396,8 +15404,8 @@ function biaRender(){
           <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${salT<0?'var(--red)':'var(--green)'};">${salT===0?'0':salT<0?-salT+' mancano':salT+' in più'}</span></div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:var(--fs-xxs);color:var(--text-dim);">
           <label>Conteggio dal</label>
-          <input type="date" value="${_biaInizio(hS)?_biaToIso(_biaInizioTxt(hS)):''}" min="${_biaToIso(BIA_INIZIO_MINIMO)}" onchange="biaSetInizio(this.value)" onclick="event.stopPropagation()" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xxs);font-family:inherit;background:var(--surface);color:var(--text);">
-          ${_biaInizio(hS)>_biaParse(BIA_INIZIO_MINIMO)?`<button onclick="biaSetInizio('')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">dal ${BIA_INIZIO_MINIMO}</button>`:''}
+          <input type="date" value="${_biaInizio(hS)?_biaToIso(_biaInizioTxt(hS)):''}" min="${_biaToIso(_biaFmt(_biaInizioMin(hS)))}" onchange="biaSetInizio(this.value)" onclick="event.stopPropagation()" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xxs);font-family:inherit;background:var(--surface);color:var(--text);">
+          ${_biaInizio(hS)>_biaInizioMin(hS)?`<button onclick="biaSetInizio('')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">dal ${_biaFmt(_biaInizioMin(hS))}</button>`:''}
           <span>le consegne prima di questa data restano visibili ma fuori dal conto: servono a escludere l'avvio delle registrazioni.</span>
         </div>
         ${BIA_VOCI.map(v=>{const n=sal[v];return`<div style="display:flex;justify-content:space-between;padding:4px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_biaColDelta(n)};">${n===0?'—':n>0?'+'+n:n}</span></div>`;}).join('')}

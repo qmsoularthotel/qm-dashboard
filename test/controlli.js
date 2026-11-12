@@ -14,8 +14,8 @@ var KO = 0, OK = 0;
 // (BIA_INIZIO_MINIMO). Molti controlli qui sotto ricostruiscono casi veri di AGOSTO e
 // verificano una logica che non dipende da quella data: girano con il limite spento.
 // Il limite ha la sua sezione in fondo, che lo riaccende. (Nei controlli le const sono var.)
-var _BIA_MIN_VERO = BIA_INIZIO_MINIMO, _GB_MIN_VERO = GB_INIZIO_MINIMO;
-BIA_INIZIO_MINIMO = '01/01/2000'; GB_INIZIO_MINIMO = '01/01/2000';
+var _BIA_MIN_VERO = BIA_INIZIO_MINIMO, _GB_MIN_VERO = GB_INIZIO_MINIMO, _BIA_MIN_H_VERO = BIA_INIZIO_MINIMO_H;
+BIA_INIZIO_MINIMO = '01/01/2000'; GB_INIZIO_MINIMO = '01/01/2000'; BIA_INIZIO_MINIMO_H = {};
 function sez(t) { console.log('\n' + t); }
 function ok(nome, ottenuto, atteso) {
   var buono = String(ottenuto) === String(atteso);
@@ -3438,8 +3438,8 @@ sez('Consumo Biancheria: i numeri fuori dal normale si riscrivono (12/11/2026)')
 
 sez('Biancheria: nessun conteggio prima del 01/09/2026 (12/11/2026)');
 (function(){
-  var prima=_bia,spento=BIA_INIZIO_MINIMO;
-  BIA_INIZIO_MINIMO=_BIA_MIN_VERO;            // il limite vero, solo qui
+  var prima=_bia,spento=BIA_INIZIO_MINIMO,spentoH=BIA_INIZIO_MINIMO_H;
+  BIA_INIZIO_MINIMO=_BIA_MIN_VERO;BIA_INIZIO_MINIMO_H=_BIA_MIN_H_VERO;   // i limiti veri, solo qui
   var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};
   ok('il limite e\' il 01/09/2026',              BIA_INIZIO_MINIMO, '01/09/2026');
   // Caso vero: consegne di agosto rimaste senza «Ha portato», data d'inizio 01/08.
@@ -3448,15 +3448,13 @@ sez('Biancheria: nessun conteggio prima del 01/09/2026 (12/11/2026)');
     {id:'a2',hotel:'sa',data:'29/08/2026',consegnato:Q(40),ricevuto:_biaVuote()},
     {id:'s1',hotel:'sa',data:'01/09/2026',consegnato:Q(30),ricevuto:Q(35)},
     {id:'s2',hotel:'sa',data:'03/09/2026',consegnato:Q(20),ricevuto:Q(25)}]};
-  ok('01/08 scritto nella pagina vale 01/09',     _biaInizioTxt('sa'), '01/09/2026');
-  ok('anche senza data scritta parte dal 01/09',  _biaInizioTxt('bh'), '01/09/2026');
+  ok('SoulArt: 01/08 scritto vale 05/09',         _biaInizioTxt('sa'), '05/09/2026');
+  ok('Boutique: senza data scritta dal 01/09',     _biaInizioTxt('bh'), '01/09/2026');
   var b=_biaBuchi('sa',new Date(2026,8,4));
   ok('l\'avviso non elenca piu\' agosto',         b.senzaPortato.join(','), '');
-  ok('le consegne di agosto sono fuori dal conto', _biaNelConto(_bia.giri[0])+' '+_biaNelConto(_bia.giri[2]), 'false true');
-  // Il 01/09 si confronta ancora col sacco del 29/08 (40): e' quello che riporta.
-  ok('saldo da settembre: (35-40)+(25-30)',       _biaSaldo('sa').Federa, -10);
-  _bia.inizio.sa='03/09/2026';
-  ok('una data piu\' recente vale',               _biaInizioTxt('sa'), '03/09/2026');
-  ok('e il saldo parte da li\'',                  _biaSaldo('sa').Federa, -5);
-  _bia=prima;BIA_INIZIO_MINIMO=spento;
+  ok('agosto e 01-03/09 fuori dal conto al SoulArt', [0,2,3].map(function(i){return _biaNelConto(_bia.giri[i]);}).join(' '), 'false false false');
+  ok('al Boutique il 01/09 conta',                _biaNelConto({hotel:'bh',data:'01/09/2026'}), true);
+  ok('il SoulArt non scende sotto il 05/09',      (_bia.inizio.sa='03/09/2026', _biaInizioTxt('sa')), '05/09/2026');
+  ok('una data piu\' recente vale',               (_bia.inizio.sa='08/09/2026', _biaInizioTxt('sa')), '08/09/2026');
+  _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
 })();

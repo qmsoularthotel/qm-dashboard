@@ -1347,3 +1347,12 @@ confronta ancora col sacco dell'ultima di agosto, se esiste: è quello che Raimo
 
 **Nei controlli il limite è spento** in testa a `test/controlli.js` (molti casi veri di agosto
 verificano logiche che non c'entrano) e riacceso nella sua sezione in fondo.
+
+**SoulArt dal 05/09** (stesso giorno): azzerando agosto (le consegne e i consumi di agosto sono
+stati messi a zero, non cancellati) è stato azzerato anche lo sporco dato **il 01/09** (i
+consumi del 29-31/08). Così il 01/09 e il 03/09 risultavano «doveva portare 0» e quindi tutto
+in più: +87 lenzuola matrimoniali finte (saldo da +62 a +149). `BIA_INIZIO_MINIMO_H={sa:'05/09/2026'}`
+alza il minimo per struttura; `_biaInizioMin(h)` è il minimo effettivo. Verificato sulla copia
+del 12/11 ore 21:07: SoulArt dal 05/09 matrimoniali +62, singole +1, federe −353, viso −121,
+bidet −316, teli −201, scendibagno −222; Boutique dal 01/09 +20, −26, −124, −139, −50, −60, −59;
+nessun dato mancante in tutte e due. Nella Galleria `GB_INIZIO_MINIMO_H={}` (copia identica).
