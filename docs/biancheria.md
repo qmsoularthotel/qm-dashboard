@@ -1228,34 +1228,46 @@ controlli in `test/controlli.js` e `test/galleria.js`, verificati sabotando la r
 
 ### Dotazione da contratto — quanti pezzi nostri restano a Raimondo (12/11/2026, NON pubblicato)
 
-Il contratto con Raimondo è **a totale pezzi**: per i lenzuola matrimoniali del SoulArt sono
-**200**, nostri, che girano fra albergo e lavanderia. La mattina di una consegna ogni pezzo sta
-in uno di cinque posti: sui letti (22 camere × 2 = 44), nell'**armadio di scorta** (la Giacenza,
-che non si tocca se non in emergenza — i suoi pezzi **sono di Raimondo**), pulito appena portato
-(«Ha portato»), sporco appena dato, e il resto, pulito, da Raimondo:
+Il contratto con Raimondo è **a totale pezzi, tipologia per tipologia**: per le lenzuola
+matrimoniali del SoulArt sono **200** (è l'unico numero noto: **non** vale per le altre voci).
+La mattina di una consegna ogni pezzo di una tipologia sta in uno di cinque posti: sui letti,
+nell'**armadio di scorta** (la Giacenza, che non si tocca se non in emergenza — i suoi pezzi
+**sono di Raimondo**), pulito appena portato («Ha portato»), sporco appena dato, e il resto,
+pulito, da Raimondo:
 
-    restano a Raimondo = contratto − sui letti − armadio − ha portato − sporco dato
+    restano a Raimondo = da contratto − sui letti − armadio − ha portato − sporco dato
 
 | Esito | Quando | Cosa vuol dire |
 |---|---|---|
 | in regola | ha portato quanto doveva o di più | — |
 | **ammanco suo** | ha portato meno **e** gliene restavano di nostri | i pezzi li aveva |
-| dotazione esaurita | ha portato meno e gliene restavano 0 | sono i 200 a non bastare |
+| dotazione esaurita | ha portato meno e gliene restavano 0 | sono i pezzi del contratto a non bastare |
 | oltre il contratto | in giro più pezzi del contratto | numero da ricontrollare |
 
 È una **deduzione**, non un conteggio nel suo magazzino: regge se i pezzi del contratto sono
 davvero stati messi in giro, se le consegne sono registrate bene e se l'armadio è contato.
 
-- Pannello **"Dotazione da contratto"** in Consumo Biancheria, sotto lo storico, stesso mese.
-- Per ora **una voce** (`BIA_DOT_VOCI`) e le due strutture di Compass. I numeri si inseriscono
-  dalla pagina (`_bia.dotazione[h][voce] = {contratto, letti, armadio}`); il codice conosce solo
-  la partenza del SoulArt (`BIA_DOT_DEFAULT`: 200 e 44). Svuotare un campo vale `''` e **non**
-  torna al valore di partenza.
-- L'armadio del SoulArt viene dall'**ultimo conteggio della Giacenza** (`_biaDotArmadio`; per
-  questo `biaLoad` legge anche `qm_giacenza`), per il Boutique si scrive a mano.
+**Un pannello solo** in Consumo Biancheria, sotto lo storico, stesso mese
+(`_biaDotPannello`). Una scheda per tipologia era stata scartata: sette pannelli illeggibili.
+
+- **In alto, una riga per tipologia**: per camera, sui letti, armadio, da contratto, quanti ne
+  restano a Raimondo dopo l'ultima consegna registrata, ammanchi suoi nel mese
+  (`_biaDotRiepilogo`). Senza contratto la riga dice *manca il contratto*. Cliccando una riga si
+  apre il suo dettaglio.
+- **Sotto, il dettaglio** consegna per consegna di **una** tipologia, a linguette (`_biaDotVoce`).
+- Numeri inseriti dalla pagina: `_bia.dotazione[h] = {camere, [voce]:{contratto, perCamera,
+  armadio}}`. **Sui letti = camere × pezzi per camera** (`_biaDotLetti`). Il codice conosce solo
+  la partenza del SoulArt (`BIA_DOT_DEFAULT`: 22 camere, pezzi per camera come detti dal QM il
+  26/09, 200 matrimoniali). Svuotare un campo vale `''` e **non** torna al valore di partenza.
+- L'armadio del SoulArt viene dall'**ultimo conteggio della Giacenza**, voce per voce
+  (`_biaDotArmadio`; per questo `biaLoad` legge anche `qm_giacenza`). Per il Boutique si scrive a mano.
 - Il conto è in `_biaDotConto(g,voce,dot)`, puro. Controlli in `test/controlli.js`, verificati
-  sabotando la formula e l'esito.
+  sabotando formula, sui letti, valore svuotato e riepilogo (una «dotazione esaurita» contata
+  come ammanco suo).
 - **Trappola dei controlli**: `biancheria-galleria.html` dichiara un `esc` globale, quindi nei
   controlli una funzione di Compass che usa `esc` senza dichiararlo **non fallisce** — nel
   browser sì. Il pannello aveva proprio questo difetto: c'è un controllo sul codice apposta.
-- **Non ancora nella Galleria** (Art Resort, Santa Brigida): mancano i numeri del contratto.
+- **Non ancora nella Galleria** (Art Resort, Santa Brigida): per scelta del QM, finché non ci
+  sono i numeri.
+- **Da fare prima di pubblicare**: impedire che i colleghi cambino per sbaglio i numeri del
+  contratto, e decidere se le scritte su Raimondo devono essere visibili a tutti.

@@ -3272,7 +3272,7 @@ sez('Consumo Biancheria: il pulsante della consegna resta spento finche\' «Ha p
 
 sez('Consumo Biancheria: dotazione da contratto, quanti pezzi nostri restano a Raimondo (12/11/2026)');
 (function(){
-  var prima=_bia,ph=_biaHotel,pg=_giac;
+  var prima=_bia,ph=_biaHotel,pg=_giac,sm=_biaStoMese;
   var V='Lenzuolo matrimoniale';
   var Q=function(n){var q=_biaVuote();q[V]=n;return q;};
   _biaHotel='sa';
@@ -3289,38 +3289,50 @@ sez('Consumo Biancheria: dotazione da contratto, quanti pezzi nostri restano a R
   ok('26/09: 12 in meno con pezzi da lui = suo',  c.delta+' '+c.esito, '-12 suo');
   var c2=_biaDotConto(_bia.giri[2],V,dot);
   ok('29/09: 199 su 200, ha portato piu\' del dovuto', c2.riserva+' '+c2.esito, '1 ok');
-  // 01/10: doveva 65, ha portato 60, e in giro 44+30+60+70=204: oltre il contratto.
   ok('01/10: oltre il contratto',                 _biaDotConto(_bia.giri[3],V,dot).esito, 'oltre');
   ok('a zero e con ammanco: dotazione esaurita',  _biaDotConto(_bia.giri[3],V,{contratto:204,letti:44,armadio:30}).esito, 'esaurita');
   ok('prima consegna: niente dovuto, niente ammanco', _biaDotConto(_bia.giri[0],V,dot).esito, 'ok');
   ok('senza «Ha portato» non si fa il conto',     _biaDotConto({id:'x',hotel:'sa',data:'03/10/2026',consegnato:Q(5),ricevuto:_biaVuote()},V,dot).esito, 'nodati');
-  // I numeri del contratto: SoulArt parte da 200 e 44, Boutique da niente.
-  ok('SoulArt: 200 da contratto di partenza',     _biaDotCampo('sa',V,'contratto'), 200);
+  // Ogni tipologia ha il SUO contratto: il 200 e' delle sole matrimoniali.
+  ok('SoulArt: 200 matrimoniali da contratto',    _biaDotCampo('sa',V,'contratto'), 200);
+  ok('le federe non ereditano il 200',            _biaDotCampo('sa','Federa','contratto'), null);
   ok('Boutique: nessun numero inventato',         _biaDotCampo('bh',V,'contratto'), null);
-  _bia.dotazione={sa:{}};_bia.dotazione.sa[V]={contratto:''};
+  ok('sui letti = camere x pezzi per camera',     _biaDotLetti('sa',V)+' '+_biaDotLetti('sa','Federa'), '44 88');
+  ok('Boutique: senza camere niente letti',       _biaDotLetti('bh',V), null);
+  _bia.dotazione={sa:{camere:20}};_bia.dotazione.sa[V]={contratto:''};
+  ok('le camere si cambiano dalla pagina',        _biaDotLetti('sa',V), 40);
   ok('svuotato a mano non torna al valore di partenza', _biaDotCampo('sa',V,'contratto'), null);
+  delete _bia.dotazione;
   // L'armadio del SoulArt viene dalla Giacenza; senza conteggio il conto non si fa.
   _giac={movimenti:[],tipologie:null};
   ok('Giacenza mai contata: armadio sconosciuto', _biaDotArmadio('sa',V).n, null);
   ok('e il conto non e\' pronto',                 _biaDotPronta('sa',V), false);
-  _giac={movimenti:[{id:'m',hotel:'sa',data:'06/09/2026',tipo:'conteggio',q:(function(){var o={};o[V]=30;return o;})()}],tipologie:null};
+  _giac={movimenti:[{id:'m',hotel:'sa',data:'06/09/2026',tipo:'conteggio',q:(function(){var o={};o[V]=30;o.Federa=60;return o;})()}],tipologie:null};
   ok('Giacenza contata: armadio 30',              _biaDotArmadio('sa',V).n, 30);
+  ok('ogni tipologia ha il suo armadio',          _biaDotArmadio('sa','Federa').n, 60);
   ok('Boutique: armadio a mano, vuoto = 0',       _biaDotArmadio('bh',V).n+' '+_biaDotArmadio('bh',V).da, '0 manuale');
-  _bia=prima;_biaHotel=ph;_giac=pg;
-})();
-(function(){
-  // Il pannello si disegna davvero (12/11/2026: usava `esc`, che esiste solo dentro biaRender).
-  var prima=_bia,pg=_giac,V='Lenzuolo matrimoniale',Q=function(n){var q=_biaVuote();q[V]=n;return q;},sm=_biaStoMese;
-  _bia={consumi:[],giri:[{id:'a',hotel:'sa',data:'24/09/2026',consegnato:Q(42),ricevuto:Q(60)},{id:'b',hotel:'sa',data:'26/09/2026',consegnato:Q(49),ricevuto:Q(30)}]};
-  _giac={movimenti:[{id:'m',hotel:'sa',data:'06/09/2026',tipo:'conteggio',q:(function(){var o={};o[V]=30;return o;})()}],tipologie:null};
-  _biaStoMese='2026-09';
+  ok('conto pronto: i tre numeri',                JSON.stringify(_biaDotDi('sa',V)), '{"contratto":200,"letti":44,"armadio":30}');
+  ok('federe senza contratto: niente conto',      _biaDotDi('sa','Federa'), null);
+  // Il riepilogo del mese: settembre ha un solo ammanco suo (26/09, 12 lenzuola).
+  var r=_biaDotRiepilogo('sa',V,'2026-09');
+  ok('riepilogo: ammanchi suoi del mese',         r.suoi+' '+r.pezzi, '1 12');
+  ok('riepilogo: restano dopo l\'ultima consegna', r.ultima&&r.ultima.data, '01/10/2026');
+  // 01/10 con 204 da contratto: a zero e 5 in meno = dotazione esaurita, NON un ammanco suo.
+  _bia.dotazione={sa:{}};_bia.dotazione.sa[V]={contratto:204};
+  ok('dotazione esaurita non conta come ammanco suo', _biaDotRiepilogo('sa',V,'2026-10').suoi, 0);
+  delete _bia.dotazione;
+  // Il pannello si disegna davvero, con una riga per tipologia.
+  _biaStoMese='2026-09';_biaDotVoce=V;
   var html='';try{html=_biaDotPannello('sa');}catch(e){html='ERRORE '+e.message;}
-  ok('il pannello della dotazione si disegna',    /ammanco suo/.test(html), true);
-  var hb='';try{hb=_biaDotPannello('bh');}catch(e){hb='ERRORE '+e.message;}
-  ok('Boutique senza numeri: chiede di inserirli', /Inserisci le lenzuola matrimoniali da contratto/.test(hb), true);
-  _bia=prima;_giac=pg;_biaStoMese=sm;
+  ok('il pannello si disegna',                    /ammanco suo/.test(html), true);
+  ok('una riga per ogni tipologia',               BIA_VOCI_GIRO.every(function(v){return html.indexOf(BIA_DOT_PLURALE[v])>=0;}), true);
+  ok('le tipologie senza contratto lo dicono',    /manca il contratto/.test(html), true);
+  _biaDotVoce='Federa';
+  var hf='';try{hf=_biaDotPannello('sa');}catch(e){hf='ERRORE '+e.message;}
+  ok('dettaglio federe: manca il numero da contratto', /Federe: manca il numero da contratto/.test(hf), true);
+  _biaDotVoce=V;
+  _bia=prima;_biaHotel=ph;_giac=pg;_biaStoMese=sm;
 })();
 // Nei controlli `esc` esiste comunque (la copia della Galleria ne dichiara una globale):
 // la prova del pannello qui sopra non puo' accorgersi se manca. Si guarda il codice.
 ok('il pannello della dotazione dichiara il suo esc', /(const|var) esc=_esc/.test(String(_biaDotPannello)), true);
-ok('il titolo dice di quale voce e\' il contratto', /Lenzuola matrimoniali da contratto/.test(_biaDotPannello('bh')), true);
