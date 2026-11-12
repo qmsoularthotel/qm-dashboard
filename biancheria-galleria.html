@@ -131,7 +131,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-12.3';
+const QM_APP_BUILD='2026-11-12.4';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -1045,7 +1045,16 @@ function _gbBoxBuchi(oggi){
 // risultano "in più" e falsano il saldo (Galleria: +241, quasi tutto dalle prime due). Le
 // consegne prima di questa data restano visibili ma fuori da ogni conto: _gbRigaGiro le
 // marca `primaInizio`, e tutti i totali passano da li' o da _gbNelConto.
-function _gbInizio(h){const s=_gb.inizio&&_gb.inizio[h];return s?_gbParse(s):null;}
+// Nessun conteggio parte prima del 01/09/2026 (decisione del QM, 12/11/2026): agosto erano
+// le prime settimane di registrazione, consumi e consegne di allora sono stati tolti, e una
+// data più vecchia rimessa per sbaglio ("conta tutto") riporterebbe dentro consegne senza
+// «Ha portato». La data scelta nella pagina vale solo se è più recente.
+const GB_INIZIO_MINIMO='01/09/2026';
+function _gbInizio(h){
+  const s=_gb.inizio&&_gb.inizio[h],d=s?_gbParse(s):null,m=_gbParse(GB_INIZIO_MINIMO);
+  return d&&d>m?d:m;
+}
+function _gbInizioTxt(h){return _gbFmt(_gbInizio(h));}
 function _gbNelConto(g){const i=_gbInizio(_gbH(g)),d=_gbParse(g.data);return !i||!d||d>=i;}
 async function gbSetInizio(iso){
   const h=_gbStoHotel||_gbHotel;
@@ -1701,7 +1710,7 @@ function _gbRenderCore(){
         <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">Raimondo ha riportato <strong style="color:var(--text);">${st.portato}</strong> pezzi su <strong style="color:var(--text);">${st.dovuto}</strong> in ${st.confrontate} consegn${st.confrontate===1?'a':'e'}</div>`;
       h+=_gbStoCompensa(st);
     }
-    if(st.primaInizio)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${st.primaInizio} consegn${st.primaInizio===1?'a':'e'} prima dell'inizio del conteggio (${esc(_gb.inizio[hS])}): fuori dal conto.</div>`;
+    if(st.primaInizio)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${st.primaInizio} consegn${st.primaInizio===1?'a':'e'} prima dell'inizio del conteggio (${esc(_gbInizioTxt(hS))}): fuori dal conto.</div>`;
     if(st.nonReg)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">${st.nonReg} consegn${st.nonReg===1?'a':'e'} senza il dato di cosa ha riportato: fuori dal conto.</div>`;
     h+=`</div>`;
     const viste=_gbStoTutte?st.righe:st.righe.slice(0,GB_STO_VISTE);
@@ -1731,12 +1740,12 @@ function _gbRenderCore(){
     if(_gbStoSaldo){
       const sal=_gbSaldo(hS),salT=_gbTot(sal);
       h+=`<div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--surface2,var(--surface));">
-        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;"><span style="font-size:var(--fs-xs);font-weight:700;">${salT<0?'Pezzi non rientrati':salT>0?'Rientrati in più':'In pari'} — ${_gbInizio(hS)?'dal '+esc(_gb.inizio[hS]):'da inizio registrazioni'}</span>
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;"><span style="font-size:var(--fs-xs);font-weight:700;">${salT<0?'Pezzi non rientrati':salT>0?'Rientrati in più':'In pari'} — ${_gbInizio(hS)?'dal '+esc(_gbInizioTxt(hS)):'da inizio registrazioni'}</span>
           <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${salT<0?'var(--red)':'var(--green)'};">${salT===0?'0':salT<0?-salT+' mancano':salT+' in più'}</span></div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:var(--fs-xxs);color:var(--text-dim);">
           <label>Conteggio dal</label>
-          <input type="date" value="${_gbInizio(hS)?_gbToIso(_gb.inizio[hS]):''}" onchange="gbSetInizio(this.value)" onclick="event.stopPropagation()" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xxs);font-family:inherit;background:var(--surface);color:var(--text);">
-          ${_gbInizio(hS)?`<button onclick="gbSetInizio('')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">conta tutto</button>`:''}
+          <input type="date" value="${_gbInizio(hS)?_gbToIso(_gbInizioTxt(hS)):''}" min="${_gbToIso(GB_INIZIO_MINIMO)}" onchange="gbSetInizio(this.value)" onclick="event.stopPropagation()" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xxs);font-family:inherit;background:var(--surface);color:var(--text);">
+          ${_gbInizio(hS)>_gbParse(GB_INIZIO_MINIMO)?`<button onclick="gbSetInizio('')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">dal ${GB_INIZIO_MINIMO}</button>`:''}
           <span>le consegne prima di questa data restano visibili ma fuori dal conto: servono a escludere l'avvio delle registrazioni.</span>
         </div>
         ${GB_VOCI.map(v=>{const n=sal[v];return`<div style="display:flex;justify-content:space-between;padding:4px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_gbColDelta(n)};">${n===0?'—':n>0?'+'+n:n}</span></div>`;}).join('')}

@@ -1331,3 +1331,19 @@ giorni, 44 consegne) chiederebbe di riscrivere 7 volte, tutte irregolarità vere
 e quella del 28/10 ha raccolto una settimana), e due giorni all'Art Resort con più di 2,3
 federe per lenzuolo (05/10: 40 con 10; 10/11: 11 con 4) — da chiarire col QM se lì i letti
 hanno più cuscini. Controlli in `test/galleria.js`.
+
+### Nessun conteggio prima del 01/09/2026 (12/11/2026)
+
+Decisione del QM: agosto erano le prime settimane di registrazione; consumi e consegne di
+agosto sono stati tolti dalla pagina, ma al SoulArt la data d'inizio era ancora 01/08 e
+l'avviso "Dati mancanti" elencava le consegne di agosto rimaste senza «Ha portato».
+
+`BIA_INIZIO_MINIMO='01/09/2026'` (e `GB_INIZIO_MINIMO` nella Galleria, identico): `_biaInizio(h)`
+restituisce la data scelta nella pagina **solo se è più recente**, altrimenti il minimo — non è
+più mai `null`. Per mostrarla si usa `_biaInizioTxt(h)`, non `_bia.inizio[h]` (che può dire
+01/08). Il campo "Conteggio dal" ha `min` al 01/09 e il vecchio "conta tutto" è diventato
+"dal 01/09/2026" (compare solo se c'è una data più recente). La prima consegna di settembre si
+confronta ancora col sacco dell'ultima di agosto, se esiste: è quello che Raimondo riporta.
+
+**Nei controlli il limite è spento** in testa a `test/controlli.js` (molti casi veri di agosto
+verificano logiche che non c'entrano) e riacceso nella sua sezione in fondo.

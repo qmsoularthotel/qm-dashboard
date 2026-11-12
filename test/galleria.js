@@ -303,3 +303,14 @@ sez('Gestione Biancheria (Galleria): l\'avviso dei dati mancanti segue il calend
   ok('Galleria: Ha portato in attesa nasce vuoto',  /v in rscR\?'':ric/.test(String(_gbRenderCore)), true);
   _gb = prima; _gbHotel = ph; _gbRiscrivi = pr;
 })();
+
+// ── Nessun conteggio prima del 01/09/2026, come in Compass (12/11/2026) ──
+(function () {
+  var prima = _gb, spento = GB_INIZIO_MINIMO;
+  GB_INIZIO_MINIMO = _GB_MIN_VERO;
+  ok('Galleria: stesso limite di Compass',        GB_INIZIO_MINIMO, _BIA_MIN_VERO);
+  _gb = { consumi: [], giri: [], inizio: { ar: '01/08/2026' } };
+  ok('Galleria: 01/08 scritto vale 01/09',        _gbInizioTxt('ar'), '01/09/2026');
+  ok('Galleria: una data piu\' recente vale',     (_gb.inizio.ar = '10/09/2026', _gbInizioTxt('ar')), '10/09/2026');
+  _gb = prima; GB_INIZIO_MINIMO = spento;
+})();

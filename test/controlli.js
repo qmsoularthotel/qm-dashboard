@@ -10,6 +10,12 @@
 // Tutti i nomi sono inventati: nessun dato di ospiti reali sta nel repository.
 
 var KO = 0, OK = 0;
+// Dal 12/11/2026 nessun conteggio della biancheria parte prima del 01/09/2026
+// (BIA_INIZIO_MINIMO). Molti controlli qui sotto ricostruiscono casi veri di AGOSTO e
+// verificano una logica che non dipende da quella data: girano con il limite spento.
+// Il limite ha la sua sezione in fondo, che lo riaccende. (Nei controlli le const sono var.)
+var _BIA_MIN_VERO = BIA_INIZIO_MINIMO, _GB_MIN_VERO = GB_INIZIO_MINIMO;
+BIA_INIZIO_MINIMO = '01/01/2000'; GB_INIZIO_MINIMO = '01/01/2000';
 function sez(t) { console.log('\n' + t); }
 function ok(nome, ottenuto, atteso) {
   var buono = String(ottenuto) === String(atteso);
@@ -1434,9 +1440,10 @@ ok('e _qmLeggiArchivio',  typeof _qmLeggiArchivio, 'function');
 (function () {
   var _sal = _bia;
   _bia = { consumi: [], giri: [
-    { id: 'g1', hotel: 'sa', data: '20/08/2026', consegnato: { Federa: 100 } },              // ricevuto mai inserito
-    { id: 'g2', hotel: 'sa', data: '22/08/2026', consegnato: { Federa: 80 }, ricevuto: { Federa: 90 } },
-    { id: 'g3', hotel: 'sa', data: '25/08/2026', consegnato: { Federa: 60 }, ricevuto: { Federa: 80 } },
+    // Date spostate a settembre il 12/11/2026: prima del 01/09 nessuna consegna conta piu'.
+    { id: 'g1', hotel: 'sa', data: '15/09/2026', consegnato: { Federa: 100 } },              // ricevuto mai inserito
+    { id: 'g2', hotel: 'sa', data: '17/09/2026', consegnato: { Federa: 80 }, ricevuto: { Federa: 90 } },
+    { id: 'g3', hotel: 'sa', data: '19/09/2026', consegnato: { Federa: 60 }, ricevuto: { Federa: 80 } },
   ] };
   ok('un giro senza il dato non e\' registrato', _biaRegistrato(_bia.giri[0]), false);
   ok('uno con il dato lo e\'',                   _biaRegistrato(_bia.giri[1]), true);
@@ -2633,7 +2640,7 @@ sez('Biancheria: data di inizio del conteggio, e il saldo dice da che parte sta'
   ok('il dettaglio per tipologia pure',             _biaTotPerVoce('sa').filter(function(r){return r.voce==='Federa';})[0].delta, -8);
   ok('lo storico del mese pure',                    _biaStorico('sa','2026-09').saldo, -8);
   ok('la consegna esclusa lo dice',                 _biaEsitoConsegna(_biaRigaGiro(_bia.giri[1])).txt, "Prima dell'inizio del conteggio");
-  ok('un\'altra struttura non e\' toccata',         _biaInizio('bh'), null);
+  ok('un\'altra struttura non e\' toccata',         _biaInizioTxt('bh'), BIA_INIZIO_MINIMO);   // dal 12/11/2026 il minimo, non null
   _bia.inizio={sa:''};
   ok('svuotata: si torna a contare tutto',          _biaTot(_biaSaldo('sa')), 92);
   // Il saldo dice da che parte sta: in piu' non e' "non rientrati".
@@ -3427,4 +3434,29 @@ sez('Consumo Biancheria: i numeri fuori dal normale si riscrivono (12/11/2026)')
   ok('la casella in attesa nasce vuota e rossa', /v in rsc\?'':/.test(String(biaRender))&&/v in rsc\?'2px solid var\(--red\)'/.test(String(biaRender)), true);
   ok('lo stesso per Ha portato',                 /v in rscR\?'':ric/.test(String(biaRender)), true);
   _bia=prima;_biaHotel=ph;_biaRiscrivi=pr;_biaRiscriviR=prR;
+})();
+
+sez('Biancheria: nessun conteggio prima del 01/09/2026 (12/11/2026)');
+(function(){
+  var prima=_bia,spento=BIA_INIZIO_MINIMO;
+  BIA_INIZIO_MINIMO=_BIA_MIN_VERO;            // il limite vero, solo qui
+  var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};
+  ok('il limite e\' il 01/09/2026',              BIA_INIZIO_MINIMO, '01/09/2026');
+  // Caso vero: consegne di agosto rimaste senza «Ha portato», data d'inizio 01/08.
+  _bia={consumi:[],inizio:{sa:'01/08/2026'},giri:[
+    {id:'a1',hotel:'sa',data:'20/08/2026',consegnato:Q(50),ricevuto:_biaVuote()},
+    {id:'a2',hotel:'sa',data:'29/08/2026',consegnato:Q(40),ricevuto:_biaVuote()},
+    {id:'s1',hotel:'sa',data:'01/09/2026',consegnato:Q(30),ricevuto:Q(35)},
+    {id:'s2',hotel:'sa',data:'03/09/2026',consegnato:Q(20),ricevuto:Q(25)}]};
+  ok('01/08 scritto nella pagina vale 01/09',     _biaInizioTxt('sa'), '01/09/2026');
+  ok('anche senza data scritta parte dal 01/09',  _biaInizioTxt('bh'), '01/09/2026');
+  var b=_biaBuchi('sa',new Date(2026,8,4));
+  ok('l\'avviso non elenca piu\' agosto',         b.senzaPortato.join(','), '');
+  ok('le consegne di agosto sono fuori dal conto', _biaNelConto(_bia.giri[0])+' '+_biaNelConto(_bia.giri[2]), 'false true');
+  // Il 01/09 si confronta ancora col sacco del 29/08 (40): e' quello che riporta.
+  ok('saldo da settembre: (35-40)+(25-30)',       _biaSaldo('sa').Federa, -10);
+  _bia.inizio.sa='03/09/2026';
+  ok('una data piu\' recente vale',               _biaInizioTxt('sa'), '03/09/2026');
+  ok('e il saldo parte da li\'',                  _biaSaldo('sa').Federa, -5);
+  _bia=prima;BIA_INIZIO_MINIMO=spento;
 })();

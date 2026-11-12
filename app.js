@@ -14467,7 +14467,16 @@ function _biaBoxBuchi(oggi){
 // risultano "in più" e falsano il saldo (Galleria: +241, quasi tutto dalle prime due). Le
 // consegne prima di questa data restano visibili ma fuori da ogni conto: _biaRigaGiro le
 // marca `primaInizio`, e tutti i totali passano da li' o da _biaNelConto.
-function _biaInizio(h){const s=_bia.inizio&&_bia.inizio[h];return s?_biaParse(s):null;}
+// Nessun conteggio parte prima del 01/09/2026 (decisione del QM, 12/11/2026): agosto erano
+// le prime settimane di registrazione, consumi e consegne di allora sono stati tolti, e una
+// data più vecchia rimessa per sbaglio ("conta tutto") riporterebbe dentro consegne senza
+// «Ha portato». La data scelta nella pagina vale solo se è più recente.
+const BIA_INIZIO_MINIMO='01/09/2026';
+function _biaInizio(h){
+  const s=_bia.inizio&&_bia.inizio[h],d=s?_biaParse(s):null,m=_biaParse(BIA_INIZIO_MINIMO);
+  return d&&d>m?d:m;
+}
+function _biaInizioTxt(h){return _biaFmt(_biaInizio(h));}
 function _biaNelConto(g){const i=_biaInizio(_biaH(g)),d=_biaParse(g.data);return !i||!d||d>=i;}
 async function biaSetInizio(iso){
   const h=_biaStoHotel||_biaHotel;
@@ -14647,7 +14656,7 @@ function _biaDotPannello(h){
       <span>Ogni tipologia ha il suo numero di contratto. <strong>Sui letti</strong> = camere × pezzi per camera. ${giac?'L\'<strong>armadio</strong> viene dall\'ultimo conteggio della Giacenza.':'L\'<strong>armadio</strong> di scorta si scrive a mano (vuoto = nessuno).'}</span>
     </div>
     <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr>
-      <th style="${th}text-align:left;">Tipologia</th><th style="${th}">Per camera</th><th style="${th}">Sui letti</th><th style="${th}">Armadio</th><th style="${th}">Da contratto</th><th style="${th}">Saldo di Raimondo<br><span style="font-weight:400;text-transform:none;">${_biaInizio(h)?'dal '+esc(_bia.inizio[h]):'da inizio registrazioni'}</span></th><th style="${th}">Restano a Raimondo<br><span style="font-weight:400;text-transform:none;">ultima consegna</span></th><th style="${th}">Esito<br><span style="font-weight:400;text-transform:none;">ultima consegna</span></th></tr></thead><tbody>`;
+      <th style="${th}text-align:left;">Tipologia</th><th style="${th}">Per camera</th><th style="${th}">Sui letti</th><th style="${th}">Armadio</th><th style="${th}">Da contratto</th><th style="${th}">Saldo di Raimondo<br><span style="font-weight:400;text-transform:none;">${_biaInizio(h)?'dal '+esc(_biaInizioTxt(h)):'da inizio registrazioni'}</span></th><th style="${th}">Restano a Raimondo<br><span style="font-weight:400;text-transform:none;">ultima consegna</span></th><th style="${th}">Esito<br><span style="font-weight:400;text-transform:none;">ultima consegna</span></th></tr></thead><tbody>`;
   BIA_VOCI_GIRO.forEach(v=>{
     const r=_biaDotRiepilogo(h,v),arm=_biaDotArmadio(h,v),letti=_biaDotLetti(h,v),sel=v===_biaDotVoce;
     const contr=_biaDotCampo(h,v,'contratto');
@@ -15353,7 +15362,7 @@ function biaRender(){
         <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">Raimondo ha riportato <strong style="color:var(--text);">${st.portato}</strong> pezzi su <strong style="color:var(--text);">${st.dovuto}</strong> in ${st.confrontate} consegn${st.confrontate===1?'a':'e'}</div>`;
       h+=_biaStoCompensa(st);
     }
-    if(st.primaInizio)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${st.primaInizio} consegn${st.primaInizio===1?'a':'e'} prima dell'inizio del conteggio (${esc(_bia.inizio[hS])}): fuori dal conto.</div>`;
+    if(st.primaInizio)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${st.primaInizio} consegn${st.primaInizio===1?'a':'e'} prima dell'inizio del conteggio (${esc(_biaInizioTxt(hS))}): fuori dal conto.</div>`;
     if(st.nonReg)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">${st.nonReg} consegn${st.nonReg===1?'a':'e'} senza il dato di cosa ha riportato: fuori dal conto.</div>`;
     h+=`</div>`;
     const viste=_biaStoTutte?st.righe:st.righe.slice(0,BIA_STO_VISTE);
@@ -15383,12 +15392,12 @@ function biaRender(){
     if(_biaStoSaldo){
       const sal=_biaSaldo(hS),salT=_biaTot(sal);
       h+=`<div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--surface2,var(--surface));">
-        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;"><span style="font-size:var(--fs-xs);font-weight:700;">${salT<0?'Pezzi non rientrati':salT>0?'Rientrati in più':'In pari'} — ${_biaInizio(hS)?'dal '+esc(_bia.inizio[hS]):'da inizio registrazioni'}</span>
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;"><span style="font-size:var(--fs-xs);font-weight:700;">${salT<0?'Pezzi non rientrati':salT>0?'Rientrati in più':'In pari'} — ${_biaInizio(hS)?'dal '+esc(_biaInizioTxt(hS)):'da inizio registrazioni'}</span>
           <span style="margin-left:auto;font-size:var(--fs-sm);font-weight:700;color:${salT<0?'var(--red)':'var(--green)'};">${salT===0?'0':salT<0?-salT+' mancano':salT+' in più'}</span></div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:var(--fs-xxs);color:var(--text-dim);">
           <label>Conteggio dal</label>
-          <input type="date" value="${_biaInizio(hS)?_biaToIso(_bia.inizio[hS]):''}" onchange="biaSetInizio(this.value)" onclick="event.stopPropagation()" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xxs);font-family:inherit;background:var(--surface);color:var(--text);">
-          ${_biaInizio(hS)?`<button onclick="biaSetInizio('')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">conta tutto</button>`:''}
+          <input type="date" value="${_biaInizio(hS)?_biaToIso(_biaInizioTxt(hS)):''}" min="${_biaToIso(BIA_INIZIO_MINIMO)}" onchange="biaSetInizio(this.value)" onclick="event.stopPropagation()" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xxs);font-family:inherit;background:var(--surface);color:var(--text);">
+          ${_biaInizio(hS)>_biaParse(BIA_INIZIO_MINIMO)?`<button onclick="biaSetInizio('')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">dal ${BIA_INIZIO_MINIMO}</button>`:''}
           <span>le consegne prima di questa data restano visibili ma fuori dal conto: servono a escludere l'avvio delle registrazioni.</span>
         </div>
         ${BIA_VOCI.map(v=>{const n=sal[v];return`<div style="display:flex;justify-content:space-between;padding:4px 2px;border-bottom:1px solid var(--border);font-size:var(--fs-xs);"><span>${esc(v)}</span><span style="font-weight:600;color:${_biaColDelta(n)};">${n===0?'—':n>0?'+'+n:n}</span></div>`;}).join('')}
