@@ -1269,5 +1269,12 @@ davvero stati messi in giro, se le consegne sono registrate bene e se l'armadio 
   browser sì. Il pannello aveva proprio questo difetto: c'è un controllo sul codice apposta.
 - **Non ancora nella Galleria** (Art Resort, Santa Brigida): per scelta del QM, finché non ci
   sono i numeri.
-- **Da fare prima di pubblicare**: impedire che i colleghi cambino per sbaglio i numeri del
-  contratto, e decidere se le scritte su Raimondo devono essere visibili a tutti.
+- **Nascosto ai colleghi**: il pannello compare solo sui dispositivi dove è acceso da
+  *Pannello di Controllo → Sicurezza* (riquadro "Dotazione da contratto su questo
+  dispositivo", `biaRenderDotVede`, segno `qm_vede_dotazione` in `localStorage`). Compass non
+  distingue le persone (il codice di accesso è uno solo): è **nascosto, non protetto** — chi
+  cerca l'interruttore lo trova. Su un dispositivo nuovo, o dopo aver cancellato i dati del
+  browser, va riacceso.
+- **Lucchetto**: caselle bloccate (si vedono solo i numeri), *🔒 Modifica* → conferma →
+  caselle; *Fine* le richiude, e si richiudono comunque rientrando nella pagina (`biaLoad`).
+  `biaSetDot` rifiuta di scrivere col lucchetto chiuso.

@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='521-20261112';
+  const V='523-20261112';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1596,6 +1596,8 @@
         <!-- Abilitazione dei dispositivi: si genera un collegamento per volta e lo si manda
              alla persona. Nessuno digita password. Vedi §§ ACCESSO in app.js. -->
         <div id="qmDispositivi"></div>
+        <!-- Dotazione da contratto: si accende dispositivo per dispositivo. Vedi BIA_DOT_VEDE_KEY in app.js. -->
+        <div id="qmDotVede"></div>
       </div>
       <!-- ── SISTEMA ── -->
       <div class="view" id="view-sistema">
@@ -1689,7 +1691,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1040-20261112"></script>
+<script src="app.js?v=1042-20261112"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

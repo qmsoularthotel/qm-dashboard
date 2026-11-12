@@ -2165,7 +2165,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='miniapp')setTimeout(miniappRender,50);
   // Dispositivi abilitati e copia di sicurezza vivono nella vista Sicurezza (06/09/2026):
   // si guardano di rado e per motivi diversi dall'accendere e spegnere le app.
-  if(id==='sicurezza'){try{qmRenderDispositivi();}catch(e){}try{qmRenderBackup();}catch(e){}}
+  if(id==='sicurezza'){try{qmRenderDispositivi();}catch(e){}try{qmRenderBackup();}catch(e){}try{biaRenderDotVede();}catch(e){}}
   if(id==='sistema')try{qmRenderStatoSistema();}catch(e){}
   if(id==='dvr'){setTimeout(dvrRender,50);dvrMarkSeen();dvrBadgeUpdate();}
 }
@@ -14107,6 +14107,7 @@ async function biaLoad(){
   // Si FONDE cloud e copia locale invece di preferire l'uno all'altra: una registrazione
   // che non era arrivata sul cloud non deve sparire riaprendo la pagina.
   _bia=await _qmLeggiArchivio(BIA_KEY,{consumi:[],giri:[]});
+  _biaDotSblocco=false;
   try{await _biaDistCarica();}catch(e){}
   // L'armadio di scorta della Dotazione da contratto sta nella Giacenza: solo lettura.
   try{_giac=await _qmLeggiArchivio(GIAC_KEY,{movimenti:[],tipologie:null});}catch(e){}
@@ -14500,6 +14501,38 @@ const BIA_DOT_DEFAULT={sa:{camere:22,
   'Federa':{perCamera:4},'Telo doccia':{perCamera:2},'Asciugamano viso':{perCamera:2},
   'Asciugamano bidet':{perCamera:2},'Scendibagno':{perCamera:1}}};
 let _biaDotVoce='Lenzuolo matrimoniale';   // la tipologia del dettaglio
+// NASCOSTO AI COLLEGHI (12/11/2026). Compass non distingue le persone — il codice di
+// accesso è uno solo — quindi il pannello si accende DISPOSITIVO per dispositivo, da
+// Pannello di Controllo → Sicurezza, e il segno resta in localStorage. È nascosto, non
+// protetto: chi va a cercare l'interruttore lo trova. Basta a non mostrare a chi registra
+// le consegne un "ammanco suo" accanto al nome del fornitore.
+const BIA_DOT_VEDE_KEY='qm_vede_dotazione';
+function _biaDotVisibile(){try{return localStorage.getItem(BIA_DOT_VEDE_KEY)==='1';}catch(e){return false;}}
+function biaDotSetVisibile(on){
+  try{if(on)localStorage.setItem(BIA_DOT_VEDE_KEY,'1');else localStorage.removeItem(BIA_DOT_VEDE_KEY);}catch(e){}
+  biaRenderDotVede();
+}
+function biaRenderDotVede(){
+  const el=document.getElementById('qmDotVede');if(!el)return;
+  const on=_biaDotVisibile();
+  el.innerHTML=`<div class="panel" style="padding:16px;margin-bottom:14px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div style="min-width:0;flex:1;">
+        <div style="font-size:var(--fs-base);font-weight:700;color:var(--text);">Dotazione da contratto su questo dispositivo</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;line-height:1.5;">Il pannello in Consumo Biancheria che dice quanti pezzi nostri restano a Raimondo. Si vede solo sui dispositivi dove è acceso qui: ${on?'<strong style="color:var(--green);">su questo è acceso</strong>.':'<strong>su questo è spento</strong>.'}</div>
+      </div>
+      <button onclick="biaDotSetVisibile(${on?'false':'true'})" class="miniapp-btn${on?'':' miniapp-btn-primario'}" style="flex:0 0 auto;padding:10px 18px;">${on?'Spegni':'Accendi'}</button>
+    </div></div>`;
+}
+// LUCCHETTO (12/11/2026): i numeri del contratto cambiano il conto per tutte le
+// postazioni, e una cifra battuta per sbaglio non si nota. Le caselle nascono bloccate e
+// si sbloccano con "Modifica" e una conferma; si richiudono con "Fine" o lasciando la pagina.
+let _biaDotSblocco=false;
+async function biaDotSblocca(on){
+  if(on&&!await cqConferma('Modificare la dotazione da contratto?','Camere, pezzi per camera, armadio e numeri del contratto cambiano il conto su <strong>tutte le postazioni</strong>. Cambiali solo con il contratto davanti.',{ok:'Modifica'}))return;
+  _biaDotSblocco=!!on;
+  _qmSenzaSalto(biaRender);
+}
 const _biaDotNum=x=>x===undefined||x===''||x===null?null:Number(x);
 // Un campo svuotato vale '' (non delete: la fusione col cloud lo rimetterebbe) e NON torna
 // al valore di partenza: "non lo so" è una risposta, non una dimenticanza.
@@ -14568,6 +14601,7 @@ function _biaDotRiepilogo(h,v,ym){
   return{dot:dot,ultima:ultima,suoi:suoi,pezzi:pezzi};
 }
 async function biaSetDot(v,campo,val){
+  if(!_biaDotSblocco){_qmSenzaSalto(biaRender);return;}   // lucchetto: nessuna scrittura
   const h=_biaHotel;
   _bia.dotazione=_bia.dotazione||{};
   const s=_bia.dotazione[h]=_bia.dotazione[h]||{};
@@ -14584,9 +14618,13 @@ function _biaDotPannello(h){
   const ym=_biaStoMese||_biaYmOggi();
   const camere=_biaDotCamere(h);
   const th=_biaTh,td='padding:7px 8px;border-bottom:1px solid var(--border);text-align:center;';
-  const inp=(v,campo,val)=>`<input type="number" min="0" value="${val===null?'':val}" onchange="biaSetDot(${v===null?'null':"'"+v+"'"},'${campo}',this.value)" onclick="event.stopPropagation()" onfocus="this.select()" style="width:58px;padding:4px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;">`;
+  const lk=!_biaDotSblocco;
+  const inp=(v,campo,val)=>lk
+    ?`<span style="display:inline-block;min-width:58px;font-weight:600;color:var(--text);">${val===null?'—':val}</span>`
+    :`<input type="number" min="0" value="${val===null?'':val}" onchange="biaSetDot(${v===null?'null':"'"+v+"'"},'${campo}',this.value)" onclick="event.stopPropagation()" onfocus="this.select()" style="width:58px;padding:4px;border:1px solid var(--accent);border-radius:5px;font-size:var(--fs-xs);text-align:center;">`;
   const giac=typeof GIAC_HOTELS!=='undefined'&&!!GIAC_HOTELS[h];
-  let o=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Dotazione da contratto · ${esc(BIA_HOTELS[h])}</span></div>
+  let o=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Dotazione da contratto · ${esc(BIA_HOTELS[h])}</span>
+      <button onclick="biaDotSblocca(${lk?'true':'false'})" style="margin-left:auto;${lk?'background:var(--surface);color:var(--accent);border:1px solid var(--border);':'background:var(--accent);color:#fff;border:1px solid var(--accent);'}border-radius:7px;padding:5px 12px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">${lk?'🔒 Modifica':'Fine'}</button></div>
     <div class="panel-body" style="padding:14px;">
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:var(--fs-xxs);color:var(--text-dim);">
       <label style="display:flex;align-items:center;gap:6px;">Camere ${inp(null,'camere',camere)}</label>
@@ -15251,7 +15289,7 @@ function biaRender(){
   }
 
   // ── Dotazione da contratto ── (vedi _biaDotConto)
-  if(_bia.giri.length)h+=_biaDotPannello(_biaHotel);
+  if(_bia.giri.length&&_biaDotVisibile())h+=_biaDotPannello(_biaHotel);
 
   // ── Totali del mese, per incrociare la fattura ──
   {

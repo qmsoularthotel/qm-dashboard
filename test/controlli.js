@@ -3336,3 +3336,28 @@ sez('Consumo Biancheria: dotazione da contratto, quanti pezzi nostri restano a R
 // Nei controlli `esc` esiste comunque (la copia della Galleria ne dichiara una globale):
 // la prova del pannello qui sopra non puo' accorgersi se manca. Si guarda il codice.
 ok('il pannello della dotazione dichiara il suo esc', /(const|var) esc=_esc/.test(String(_biaDotPannello)), true);
+(function(){
+  // Nascosto ai colleghi e col lucchetto (12/11/2026).
+  var prima=_bia,pg=_giac,sm=_biaStoMese,ps=_biaDotSblocco,V='Lenzuolo matrimoniale';
+  var Q=function(n){var q=_biaVuote();q[V]=n;return q;};
+  _bia={consumi:[],giri:[{id:'a',hotel:'sa',data:'24/09/2026',consegnato:Q(42),ricevuto:Q(60)},{id:'b',hotel:'sa',data:'26/09/2026',consegnato:Q(49),ricevuto:Q(30)}]};
+  _giac={movimenti:[{id:'m',hotel:'sa',data:'06/09/2026',tipo:'conteggio',q:(function(){var o={};o[V]=30;return o;})()}],tipologie:null};
+  _biaStoMese='2026-09';
+  ok('il pannello entra nella pagina solo se acceso', /_bia\.giri\.length&&_biaDotVisibile\(\)\)h\+=_biaDotPannello/.test(String(biaRender)), true);
+  try{localStorage.removeItem(BIA_DOT_VEDE_KEY);}catch(e){}
+  ok('di partenza e\' spento',                    _biaDotVisibile(), false);
+  try{localStorage.setItem(BIA_DOT_VEDE_KEY,'1');}catch(e){}
+  ok('acceso su questo dispositivo',              _biaDotVisibile(), true);
+  try{localStorage.removeItem(BIA_DOT_VEDE_KEY);}catch(e){}
+  _biaDotSblocco=false;
+  var chiuso='';try{chiuso=_biaDotPannello('sa');}catch(e){chiuso='ERRORE '+e.message;}
+  ok('col lucchetto niente caselle',              /<input type="number"/.test(chiuso), false);
+  ok('col lucchetto c\'e\' "Modifica"',           /🔒 Modifica/.test(chiuso), true);
+  biaSetDot(V,'contratto','5');
+  ok('col lucchetto non si scrive niente',        _bia.dotazione===undefined&&_biaDotCampo('sa',V,'contratto')===200, true);
+  _biaDotSblocco=true;
+  var aperto='';try{aperto=_biaDotPannello('sa');}catch(e){aperto='ERRORE '+e.message;}
+  ok('sbloccato: le caselle ci sono',             /<input type="number"/.test(aperto), true);
+  ok('entrando nella pagina si richiude',         /_biaDotSblocco=false/.test(String(biaLoad)), true);
+  _bia=prima;_giac=pg;_biaStoMese=sm;_biaDotSblocco=ps;
+})();
