@@ -3317,9 +3317,10 @@ sez('Consumo Biancheria: dotazione da contratto, quanti pezzi nostri restano a R
   var html='';try{html=_biaDotPannello('sa');}catch(e){html='ERRORE '+e.message;}
   ok('il pannello della dotazione si disegna',    /ammanco suo/.test(html), true);
   var hb='';try{hb=_biaDotPannello('bh');}catch(e){hb='ERRORE '+e.message;}
-  ok('Boutique senza numeri: chiede di inserirli', /Inserisci i pezzi da contratto/.test(hb), true);
+  ok('Boutique senza numeri: chiede di inserirli', /Inserisci le lenzuola matrimoniali da contratto/.test(hb), true);
   _bia=prima;_giac=pg;_biaStoMese=sm;
 })();
 // Nei controlli `esc` esiste comunque (la copia della Galleria ne dichiara una globale):
 // la prova del pannello qui sopra non puo' accorgersi se manca. Si guarda il codice.
 ok('il pannello della dotazione dichiara il suo esc', /(const|var) esc=_esc/.test(String(_biaDotPannello)), true);
+ok('il titolo dice di quale voce e\' il contratto', /Lenzuola matrimoniali da contratto/.test(_biaDotPannello('bh')), true);

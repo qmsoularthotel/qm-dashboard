@@ -14490,6 +14490,8 @@ async function biaSetInizio(iso){
 // non ci sono ancora. I numeri si inseriscono dalla pagina (_bia.dotazione), non stanno
 // nel codice; l'unico già noto è il valore di partenza del SoulArt.
 const BIA_DOT_VOCI=['Lenzuolo matrimoniale'];
+// Il nome nel titolo: «200 pezzi da contratto» si leggeva come l'intera dotazione (12/11/2026).
+const BIA_DOT_PLURALE={'Lenzuolo matrimoniale':'Lenzuola matrimoniali'};
 const BIA_DOT_DEFAULT={sa:{'Lenzuolo matrimoniale':{contratto:200,letti:44}}};  // 22 camere × 2
 // Un campo svuotato vale '' (non delete: la fusione col cloud lo rimetterebbe) e NON torna
 // al valore di partenza: "non lo so" è una risposta, non una dimenticanza.
@@ -14547,18 +14549,18 @@ function _biaDotPannello(h){
   const contr=_biaDotCampo(h,v,'contratto'),letti=_biaDotCampo(h,v,'letti'),arm=_biaDotArmadio(h,v);
   const inp=(campo,val)=>`<input type="number" min="0" value="${val===null?'':val}" onchange="biaSetDot('${v}','${campo}',this.value)" onfocus="this.select()" style="width:64px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;">`;
   const lab='font-size:var(--fs-xxs);color:var(--text-dim);';
-  let h2=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Dotazione da contratto — ${esc(v)} · ${esc(BIA_HOTELS[h])}</span></div>
+  let h2=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">${esc(BIA_DOT_PLURALE[v]||v)} da contratto · ${esc(BIA_HOTELS[h])}</span></div>
     <div class="panel-body" style="padding:14px;">
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
-      <label style="${lab}display:flex;align-items:center;gap:6px;">Pezzi da contratto ${inp('contratto',contr)}</label>
-      <label style="${lab}display:flex;align-items:center;gap:6px;">Sui letti ${inp('letti',letti)}</label>
+      <label style="${lab}display:flex;align-items:center;gap:6px;">${esc(BIA_DOT_PLURALE[v]||v)} da contratto ${inp('contratto',contr)}</label>
+      <label style="${lab}display:flex;align-items:center;gap:6px;">sui letti ${inp('letti',letti)}</label>
       ${arm.da==='giacenza'
         ?`<span style="${lab}">Armadio di scorta <strong style="color:var(--text);">${arm.n===null?'—':arm.n}</strong> ${arm.n===null?'(la Giacenza non è mai stata contata)':'(Giacenza, conteggio del '+esc(arm.data)+')'}</span>`
         :`<label style="${lab}display:flex;align-items:center;gap:6px;">Armadio di scorta ${inp('armadio',_biaDotCampo(h,v,'armadio'))}</label>`}
     </div>
-    <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:10px;">La mattina di ogni consegna: <strong>restano a Raimondo</strong> = pezzi da contratto − sui letti − armadio − ha portato − sporco dato. Se porta meno del dovuto mentre gliene restano di nostri, l'ammanco è suo; se è a zero, sono i pezzi del contratto a non bastare. È un conto, non un conteggio nel suo magazzino.</div>`;
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:10px;">Il conto riguarda <strong>solo le ${esc((BIA_DOT_PLURALE[v]||v).toLowerCase())}</strong>: le altre voci della dotazione hanno numeri di contratto loro, da aggiungere quando ci sono. La mattina di ogni consegna: <strong>restano a Raimondo</strong> = da contratto − sui letti − armadio − ha portato − sporco dato. Se porta meno del dovuto mentre gliene restano di nostri, l'ammanco è suo; se è a zero, sono i pezzi del contratto a non bastare. È un conto, non un conteggio nel suo magazzino.</div>`;
   if(!_biaDotPronta(h,v)){
-    h2+=`<div style="background:rgba(160,90,0,.08);border-left:3px solid var(--amber);padding:9px 11px;font-size:var(--fs-xs);color:var(--amber);line-height:1.5;">${arm.n===null?'Manca il conteggio della Giacenza: senza l\'armadio di scorta il conto non si può fare.':'Inserisci i pezzi da contratto e quelli sui letti: finché mancano, il conto non si fa.'}</div></div></div>`;
+    h2+=`<div style="background:rgba(160,90,0,.08);border-left:3px solid var(--amber);padding:9px 11px;font-size:var(--fs-xs);color:var(--amber);line-height:1.5;">${arm.n===null?'Manca il conteggio della Giacenza: senza l\'armadio di scorta il conto non si può fare.':'Inserisci le '+esc((BIA_DOT_PLURALE[v]||v).toLowerCase())+' da contratto e quelle sui letti: finché mancano, il conto non si fa.'}</div></div></div>`;
     return h2;
   }
   const dot={contratto:contr,letti:letti,armadio:arm.n};
