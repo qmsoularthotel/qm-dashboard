@@ -1226,7 +1226,7 @@ Regola in `_biaPuoRegistrare`, stato del pulsante in `_biaStatoRegistra` (chiama
 dopo la registrazione. Copiata identica nella Galleria (`_gbPuoRegistrare`…). Coperto da
 controlli in `test/controlli.js` e `test/galleria.js`, verificati sabotando la regola.
 
-### Dotazione da contratto — quanti pezzi nostri restano a Raimondo (12/11/2026, NON pubblicato)
+### Dotazione da contratto — quanti pezzi nostri restano a Raimondo (pubblicata il 12/11/2026)
 
 Il contratto con Raimondo è **a totale pezzi, tipologia per tipologia**: per le lenzuola
 matrimoniali del SoulArt sono **200** (è l'unico numero noto: **non** vale per le altre voci).
