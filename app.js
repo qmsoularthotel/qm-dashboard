@@ -14568,37 +14568,53 @@ function _biaDotDi(h,v){
   return{contratto:contratto,letti:letti,armadio:arm.n};
 }
 function _biaDotPronta(h,v){return !!_biaDotDi(h,v);}
+// SALDO PROGRESSIVO (12/11/2026). Il primo giudizio era consegna per consegna, e sui dati
+// veri sbagliava: sulle matrimoniali del SoulArt diceva "ammanco suo" su 15 consegne (100
+// lenzuola) mentre nelle altre ne aveva portate 156 in più — saldo +56. Raimondo porta
+// numeri tondi (pacchi) e recupera alla consegna dopo: un −3 seguito da un +10 non è un
+// ammanco. Si giudica quindi il saldo SOMMATO fino a quella consegna, con le stesse regole
+// di _biaSaldo (stesse consegne nel conto): all'ultima consegna i due numeri coincidono.
+function _biaDotSaldi(h,v){
+  const out={};let s=0;
+  _biaGiri(h).forEach(g=>{
+    const att=_biaAtteso(h,g.data);
+    if(att&&_biaRegistrato(g)&&_biaNelConto(g))s+=(Number(g.ricevuto[v])||0)-(Number(att[v])||0);
+    out[g.data]=s;
+  });
+  return out;
+}
 // Il conto di UNA consegna per UNA tipologia. Puro: niente pagina, niente data di oggi.
-function _biaDotConto(g,v,dot){
+// `saldo` è il saldo progressivo dopo questa consegna (se manca si calcola).
+function _biaDotConto(g,v,dot,saldo){
   const prec=_biaGiroPrec(_biaH(g),g.data);
   const dovuto=prec&&prec.consegnato?(Number(prec.consegnato[v])||0):null;
   const reg=_biaRegistrato(g);
   const portato=reg?(Number(g.ricevuto&&g.ricevuto[v])||0):null;
   const dato=Number(g.consegnato&&g.consegnato[v])||0;
   const delta=(dovuto===null||portato===null)?null:portato-dovuto;
-  if(!dot||portato===null)return{data:g.data,dovuto,portato,dato,delta,inGiro:null,riserva:null,esito:'nodati'};
+  if(saldo===undefined)saldo=_biaDotSaldi(_biaH(g),v)[g.data];
+  if(saldo===undefined)saldo=null;
+  if(!dot||portato===null)return{data:g.data,dovuto,portato,dato,delta,saldo,inGiro:null,riserva:null,esito:'nodati'};
   const inGiro=dot.letti+dot.armadio+portato+dato;
   const riserva=dot.contratto-inGiro;
   let esito;
   if(riserva<0)esito='oltre';                         // in giro più del contratto
-  else if(delta===null||delta>=0)esito='ok';
-  else esito=riserva>0?'suo':'esaurita';
-  return{data:g.data,dovuto,portato,dato,delta,inGiro,riserva,esito};
+  else if(saldo===null||saldo>=0)esito='ok';          // in pari o avanti, anche se oggi ne ha portati meno
+  else esito=riserva>0?'suo':'esaurita';              // indietro: li aveva o no?
+  return{data:g.data,dovuto,portato,dato,delta,saldo,inGiro,riserva,esito};
 }
 function _biaDotGiriMese(h,ym){
   const mm=String(ym).slice(5)+'/'+String(ym).slice(0,4);
   return _biaGiri(h).filter(g=>_biaNelConto(g)&&(g.data||'').slice(3)===mm);
 }
-// Una riga del riepilogo: l'ultima consegna registrata (quanti gliene restano oggi) e gli
-// ammanchi suoi nel mese mostrato.
-function _biaDotRiepilogo(h,v,ym){
+// Una riga del riepilogo: il saldo di Raimondo su quella tipologia (si vede anche senza
+// contratto: non ne ha bisogno) e, col contratto, l'ultima consegna registrata.
+function _biaDotRiepilogo(h,v){
+  const saldo=Number(_biaSaldo(h)[v])||0;
   const dot=_biaDotDi(h,v);
-  if(!dot)return{dot:null,ultima:null,suoi:0,pezzi:0};
   const reg=_biaGiri(h).filter(g=>_biaNelConto(g)&&_biaRegistrato(g));
-  const ultima=reg.length?_biaDotConto(reg[reg.length-1],v,dot):null;
-  let suoi=0,pezzi=0;
-  _biaDotGiriMese(h,ym).forEach(g=>{const c=_biaDotConto(g,v,dot);if(c.esito==='suo'){suoi++;pezzi+=-c.delta;}});
-  return{dot:dot,ultima:ultima,suoi:suoi,pezzi:pezzi};
+  const ultima=dot&&reg.length?_biaDotConto(reg[reg.length-1],v,dot):null;
+  return{dot:dot,ultima:ultima,saldo:saldo};
 }
 async function biaSetDot(v,campo,val){
   if(!_biaDotSblocco){_qmSenzaSalto(biaRender);return;}   // lucchetto: nessuna scrittura
@@ -14631,15 +14647,17 @@ function _biaDotPannello(h){
       <span>Ogni tipologia ha il suo numero di contratto. <strong>Sui letti</strong> = camere × pezzi per camera. ${giac?'L\'<strong>armadio</strong> viene dall\'ultimo conteggio della Giacenza.':'L\'<strong>armadio</strong> di scorta si scrive a mano (vuoto = nessuno).'}</span>
     </div>
     <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr>
-      <th style="${th}text-align:left;">Tipologia</th><th style="${th}">Per camera</th><th style="${th}">Sui letti</th><th style="${th}">Armadio</th><th style="${th}">Da contratto</th><th style="${th}">Restano a Raimondo<br><span style="font-weight:400;text-transform:none;">ultima consegna</span></th><th style="${th}">Ammanchi suoi<br><span style="font-weight:400;text-transform:none;">${esc(_biaMeseNome(ym).toLowerCase())}</span></th></tr></thead><tbody>`;
+      <th style="${th}text-align:left;">Tipologia</th><th style="${th}">Per camera</th><th style="${th}">Sui letti</th><th style="${th}">Armadio</th><th style="${th}">Da contratto</th><th style="${th}">Saldo di Raimondo<br><span style="font-weight:400;text-transform:none;">${_biaInizio(h)?'dal '+esc(_bia.inizio[h]):'da inizio registrazioni'}</span></th><th style="${th}">Restano a Raimondo<br><span style="font-weight:400;text-transform:none;">ultima consegna</span></th><th style="${th}">Esito<br><span style="font-weight:400;text-transform:none;">ultima consegna</span></th></tr></thead><tbody>`;
   BIA_VOCI_GIRO.forEach(v=>{
-    const r=_biaDotRiepilogo(h,v,ym),arm=_biaDotArmadio(h,v),letti=_biaDotLetti(h,v),sel=v===_biaDotVoce;
+    const r=_biaDotRiepilogo(h,v),arm=_biaDotArmadio(h,v),letti=_biaDotLetti(h,v),sel=v===_biaDotVoce;
     const contr=_biaDotCampo(h,v,'contratto');
-    let rest,amm;
-    if(!r.dot){rest=`<span style="color:var(--text-dim);font-weight:400;">${contr===null?'manca il contratto':'—'}</span>`;amm='<span style="color:var(--text-dim);">—</span>';}
+    const sal=`<span style="color:${_biaColDelta(r.saldo)};">${r.saldo>0?'+'+r.saldo+' avanti':r.saldo<0?r.saldo+' indietro':'in pari'}</span>`;
+    let rest,es;
+    if(!r.dot){rest=`<span style="color:var(--text-dim);font-weight:400;">${contr===null?'manca il contratto':'—'}</span>`;es='<span style="color:var(--text-dim);">—</span>';}
     else{
       rest=r.ultima&&r.ultima.riserva!==null?`<span style="color:${r.ultima.riserva<0?'var(--amber)':'var(--text)'};">${r.ultima.riserva}</span>`:'—';
-      amm=r.suoi?`<span style="color:var(--red);">${r.suoi} consegn${r.suoi===1?'a':'e'} · −${r.pezzi}</span>`:'<span style="color:var(--green);">nessuno</span>';
+      const e=BIA_DOT_ESITI[r.ultima?r.ultima.esito:'nodati'];
+      es=`<span style="color:${e[1]};">${e[0]}</span>`;
     }
     o+=`<tr onclick="biaDotSetVoce('${v}')" style="cursor:pointer;${sel?'background:var(--surface2,var(--surface));':''}">
       <td style="${td}text-align:left;font-weight:700;white-space:nowrap;${sel?'color:var(--accent);':''}">${esc(BIA_DOT_PLURALE[v]||v)}</td>
@@ -14647,8 +14665,9 @@ function _biaDotPannello(h){
       <td style="${td}color:var(--text-dim);">${letti===null?'—':letti}</td>
       <td style="${td}">${arm.da==='giacenza'?`<span style="color:var(--text-dim);">${arm.n===null?'—':arm.n}</span>`:inp(v,'armadio',_biaDotCampo(h,v,'armadio'))}</td>
       <td style="${td}">${inp(v,'contratto',contr)}</td>
+      <td style="${td}font-weight:700;white-space:nowrap;">${sal}</td>
       <td style="${td}font-weight:700;">${rest}</td>
-      <td style="${td}font-weight:700;white-space:nowrap;">${amm}</td></tr>`;
+      <td style="${td}font-weight:700;white-space:nowrap;">${es}</td></tr>`;
   });
   o+=`</tbody></table></div>`;
   if(giac&&_biaDotArmadio(h,BIA_VOCI_GIRO[0]).n===null)o+=`<div style="margin-top:8px;font-size:var(--fs-xs);color:var(--amber);">La Giacenza non è mai stata contata: senza l'armadio di scorta il conto non si fa.</div>`;
@@ -14667,19 +14686,21 @@ function _biaDotPannello(h){
   const giri=_biaDotGiriMese(h,ym).reverse();
   if(!giri.length){o+=`<div style="font-size:var(--fs-xs);color:var(--text-dim);">Nessuna consegna a ${esc(_biaMeseNome(ym).toLowerCase())}.</div></div></div></div>`;return o;}
   o+=`<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr>
-    <th style="${th}text-align:left;">Consegna</th><th style="${th}">Doveva portare</th><th style="${th}">Ha portato</th><th style="${th}">Differenza</th><th style="${th}">Sporco dato</th><th style="${th}">In giro</th><th style="${th}">Restano a Raimondo</th><th style="${th}text-align:left;">Esito</th></tr></thead><tbody>`;
+    <th style="${th}text-align:left;">Consegna</th><th style="${th}">Doveva portare</th><th style="${th}">Ha portato</th><th style="${th}">Differenza</th><th style="${th}">Saldo</th><th style="${th}">Sporco dato</th><th style="${th}">In giro</th><th style="${th}">Restano a Raimondo</th><th style="${th}text-align:left;">Esito</th></tr></thead><tbody>`;
+  const saldi=_biaDotSaldi(h,v);
   giri.forEach(g=>{
-    const c=_biaDotConto(g,v,dot),e=BIA_DOT_ESITI[c.esito],dd=_biaParse(c.data);
+    const c=_biaDotConto(g,v,dot,saldi[g.data]),e=BIA_DOT_ESITI[c.esito],dd=_biaParse(c.data);
     const n=x=>x===null?'—':x;
     o+=`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${dd?BIA_GG_NOMI[dd.getDay()].slice(0,3)+' '+esc(c.data.slice(0,5)):esc(c.data)}</td>
       <td style="${td}">${n(c.dovuto)}</td><td style="${td}">${n(c.portato)}</td>
       <td style="${td}font-weight:700;color:${c.delta===null?'var(--text-dim)':_biaColDelta(c.delta)};">${c.delta===null?'—':c.delta>0?'+'+c.delta:c.delta}</td>
+      <td style="${td}font-weight:700;color:${c.saldo===null?'var(--text-dim)':_biaColDelta(c.saldo)};">${c.saldo===null?'—':c.saldo>0?'+'+c.saldo:c.saldo}</td>
       <td style="${td}">${c.dato}</td><td style="${td}">${n(c.inGiro)}</td>
       <td style="${td}font-weight:700;">${n(c.riserva)}</td>
       <td style="${td}text-align:left;font-weight:700;color:${e[1]};white-space:nowrap;">${e[0]}</td></tr>`;
   });
   o+=`</tbody></table></div>
-    <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Mese dello «Storico consegne del pulito». <strong>Ammanco suo</strong>: ha portato meno del dovuto e gliene restavano di nostri. <strong>Dotazione esaurita</strong>: ha portato meno ma non ne aveva altri. <strong>Oltre il contratto</strong>: in giro risultano più pezzi di quelli del contratto — un numero da ricontrollare. È un conto, non un conteggio nel suo magazzino.</div>
+    <div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Mese dello «Storico consegne del pulito». <strong>Saldo</strong>: pezzi portati meno pezzi dovuti, sommati consegna dopo consegna — Raimondo porta numeri tondi e recupera la volta dopo, quindi conta il saldo, non la singola differenza. <strong>Ammanco suo</strong>: saldo sotto zero e gliene restavano di nostri. <strong>Dotazione esaurita</strong>: saldo sotto zero ma non ne aveva altri. <strong>Oltre il contratto</strong>: in giro risultano più pezzi di quelli del contratto — un numero da ricontrollare. È un conto, non un conteggio nel suo magazzino.</div>
   </div></div></div>`;
   return o;
 }

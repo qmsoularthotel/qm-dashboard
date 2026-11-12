@@ -3288,10 +3288,24 @@ sez('Consumo Biancheria: dotazione da contratto, quanti pezzi nostri restano a R
   ok('26/09: restano a Raimondo 47',              c.riserva, 47);
   ok('26/09: 12 in meno con pezzi da lui = suo',  c.delta+' '+c.esito, '-12 suo');
   var c2=_biaDotConto(_bia.giri[2],V,dot);
-  ok('29/09: 199 su 200, ha portato piu\' del dovuto', c2.riserva+' '+c2.esito, '1 ok');
+  ok('29/09: +11 ma il saldo e\' ancora -1, e gliene resta 1', c2.saldo+' '+c2.riserva+' '+c2.esito, '-1 1 suo');
   ok('01/10: oltre il contratto',                 _biaDotConto(_bia.giri[3],V,dot).esito, 'oltre');
   ok('a zero e con ammanco: dotazione esaurita',  _biaDotConto(_bia.giri[3],V,{contratto:204,letti:44,armadio:30}).esito, 'esaurita');
   ok('prima consegna: niente dovuto, niente ammanco', _biaDotConto(_bia.giri[0],V,dot).esito, 'ok');
+  // Il caso vero che ha corretto il giudizio (12/11/2026): Raimondo porta numeri tondi e
+  // recupera. +10 e poi -3: il saldo e' +7, non e' un ammanco.
+  var pb=_bia;
+  _bia={consumi:[],giri:[
+    {id:'p',hotel:'sa',data:'03/11/2026',consegnato:Q(20),ricevuto:Q(30)},
+    {id:'q',hotel:'sa',data:'05/11/2026',consegnato:Q(40),ricevuto:Q(30)},
+    {id:'r',hotel:'sa',data:'07/11/2026',consegnato:Q(25),ricevuto:Q(37)}]};
+  var cr=_biaDotConto(_bia.giri[2],V,dot);
+  ok('-3 con saldo positivo: in regola',          cr.delta+' '+cr.saldo+' '+cr.esito, '-3 7 ok');
+  ok('il saldo si somma consegna dopo consegna',  JSON.stringify(_biaDotSaldi('sa',V)), '{"03/11/2026":0,"05/11/2026":10,"07/11/2026":7}');
+  _bia.inizio={sa:'07/11/2026'};
+  ok('prima della data di inizio non conta',      _biaDotSaldi('sa',V)['07/11/2026'], -3);
+  ok('e torna con "Pezzi non rientrati"',         _biaDotSaldi('sa',V)['07/11/2026'], _biaSaldo('sa')[V]);
+  _bia=pb;
   ok('senza «Ha portato» non si fa il conto',     _biaDotConto({id:'x',hotel:'sa',data:'03/10/2026',consegnato:Q(5),ricevuto:_biaVuote()},V,dot).esito, 'nodati');
   // Ogni tipologia ha il SUO contratto: il 200 e' delle sole matrimoniali.
   ok('SoulArt: 200 matrimoniali da contratto',    _biaDotCampo('sa',V,'contratto'), 200);
@@ -3313,14 +3327,12 @@ sez('Consumo Biancheria: dotazione da contratto, quanti pezzi nostri restano a R
   ok('Boutique: armadio a mano, vuoto = 0',       _biaDotArmadio('bh',V).n+' '+_biaDotArmadio('bh',V).da, '0 manuale');
   ok('conto pronto: i tre numeri',                JSON.stringify(_biaDotDi('sa',V)), '{"contratto":200,"letti":44,"armadio":30}');
   ok('federe senza contratto: niente conto',      _biaDotDi('sa','Federa'), null);
-  // Il riepilogo del mese: settembre ha un solo ammanco suo (26/09, 12 lenzuola).
-  var r=_biaDotRiepilogo('sa',V,'2026-09');
-  ok('riepilogo: ammanchi suoi del mese',         r.suoi+' '+r.pezzi, '1 12');
-  ok('riepilogo: restano dopo l\'ultima consegna', r.ultima&&r.ultima.data, '01/10/2026');
-  // 01/10 con 204 da contratto: a zero e 5 in meno = dotazione esaurita, NON un ammanco suo.
-  _bia.dotazione={sa:{}};_bia.dotazione.sa[V]={contratto:204};
-  ok('dotazione esaurita non conta come ammanco suo', _biaDotRiepilogo('sa',V,'2026-10').suoi, 0);
-  delete _bia.dotazione;
+  // Il riepilogo: saldo di Raimondo (-12+11-5 = -6) e l'ultima consegna.
+  var r=_biaDotRiepilogo('sa',V);
+  ok('riepilogo: saldo progressivo',              r.saldo, -6);
+  ok('riepilogo: e\' lo stesso di "Pezzi non rientrati"', r.saldo, _biaSaldo('sa')[V]);
+  ok('riepilogo: esito dell\'ultima consegna',     r.ultima&&(r.ultima.data+' '+r.ultima.esito), '01/10/2026 oltre');
+  ok('riepilogo: il saldo c\'e\' anche senza contratto', _biaDotRiepilogo('sa','Federa').saldo+' '+_biaDotRiepilogo('sa','Federa').dot, '0 null');
   // Il pannello si disegna davvero, con una riga per tipologia.
   _biaStoMese='2026-09';_biaDotVoce=V;
   var html='';try{html=_biaDotPannello('sa');}catch(e){html='ERRORE '+e.message;}

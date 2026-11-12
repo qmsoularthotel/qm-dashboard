@@ -1239,9 +1239,24 @@ pulito, da Raimondo:
 
 | Esito | Quando | Cosa vuol dire |
 |---|---|---|
-| in regola | ha portato quanto doveva o di più | — |
-| **ammanco suo** | ha portato meno **e** gliene restavano di nostri | i pezzi li aveva |
-| dotazione esaurita | ha portato meno e gliene restavano 0 | sono i pezzi del contratto a non bastare |
+| in regola | **saldo progressivo** ≥ 0 (anche se quel giorno ne ha portati meno) | — |
+| **ammanco suo** | saldo sotto zero **e** gliene restavano di nostri | i pezzi li aveva |
+| dotazione esaurita | saldo sotto zero e gliene restavano 0 | sono i pezzi del contratto a non bastare |
+
+**Si giudica il saldo, non la singola consegna** (corretto lo stesso 12/11/2026, dopo la
+prima pubblicazione). Il primo giudizio era consegna per consegna e sui dati veri sbagliava:
+sulle matrimoniali del SoulArt diceva "ammanco suo" su 15 consegne (100 lenzuola), mentre
+nelle altre ne aveva portate 156 in più — saldo **+56**. Raimondo porta numeri tondi (30 volte
+su 36 un multiplo di 5) e recupera alla consegna dopo. `_biaDotSaldi(h,voce)` somma
+portato − dovuto consegna dopo consegna con le regole di `_biaSaldo` (stesse consegne, data di
+inizio compresa): all'ultima consegna coincide con "Pezzi non rientrati" (c'è un controllo).
+Il riepilogo ha la colonna **Saldo di Raimondo** per ogni tipologia, anche senza contratto.
+
+Sulla copia del 12/11 il saldo è: SoulArt matrimoniali +56, singole +9, federe −468, viso −178,
+bidet −398, teli −235, scendibagno −244; Boutique +12, −30, −174, −163, −64, −87, −67. I
+negativi sulle voci diverse dalle matrimoniali sono troppo grandi per essere pezzi davvero
+spariti (468 federe con 88 sui letti): più probabilmente qualcosa non torna nella
+registrazione — da chiarire col QM.
 | oltre il contratto | in giro più pezzi del contratto | numero da ricontrollare |
 
 È una **deduzione**, non un conteggio nel suo magazzino: regge se i pezzi del contratto sono
