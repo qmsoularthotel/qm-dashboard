@@ -1324,4 +1324,10 @@ con 47 teli e 45 asciugamani viso su 44 posti.
 **matrimoniali + singole**. Confrontate con le sole matrimoniali, giorni normali come il
 31/10 al SoulArt (20 matrimoniali, 30 singole, 71 federe) sembrano refusi.
 
-Solo Compass: la copia della Galleria non ha ancora questi controlli (scelta del QM).
+**Copiato identico nella Galleria** lo stesso giorno (`_gbAnomalieConsumi`, `_gbAnomaliePortato`,
+`_gbVerificaRiscrittura`, più `GB_DOT_PLURALE` per i nomi). Sui dati veri della Galleria (126
+giorni, 44 consegne) chiederebbe di riscrivere 7 volte, tutte irregolarità vere: "Ha portato" a
+0, Art Resort 30/10 (doveva 146 lenzuola perché **mancano le consegne del 23/10 e del 26/10**,
+e quella del 28/10 ha raccolto una settimana), e due giorni all'Art Resort con più di 2,3
+federe per lenzuolo (05/10: 40 con 10; 10/11: 11 con 4) — da chiarire col QM se lì i letti
+hanno più cuscini. Controlli in `test/galleria.js`.

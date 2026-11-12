@@ -272,3 +272,34 @@ sez('Gestione Biancheria (Galleria): l\'avviso dei dati mancanti segue il calend
   ok('Galleria: il pulsante nasce spento',              /id="gb-registra"[^>]*\$\{regOn\?'':'disabled'\}/.test(String(_gbRenderCore)), true);
   ok('Galleria: la casella aggiorna lo stato',          /_gbStatoRegistra\(\)/.test(String(gbAggiornaDelta)), true);
 })();
+
+// ── Numeri fuori dal normale: si riscrivono (12/11/2026). Copia identica di Compass. ──
+(function () {
+  var prima = _gb, ph = _gbHotel, vero = document.getElementById, pr = _gbRiscrivi;
+  var Q = function (o) { var q = _gbVuote(); for (var k in o) q[k] = o[k]; return q; };
+  var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+  var cons = []; for (var d = 1; d <= 20; d++) cons.push({ id: 'c' + d, hotel: 'ar', data: pad(d) + '/10/2026', q: Q({ 'Lenzuolo matrimoniale': 15, 'Federa': 30 }) });
+  _gb = { consumi: cons, giri: [{ id: 'g1', hotel: 'ar', data: '20/10/2026', consegnato: Q({ 'Federa': 134 }), ricevuto: Q({ 'Federa': 130 }) }] };
+  _gbHotel = 'ar';
+  ok('Galleria: stesse soglie di Compass',         [GB_ANOM_GG, GB_ANOM_MIN_GG, GB_ANOM_FEDERE].join(' '), [BIA_ANOM_GG, BIA_ANOM_MIN_GG, BIA_ANOM_FEDERE].join(' '));
+  ok('Galleria: 140 federe si ferma',              _gbAnomalieConsumi('ar', '21/10/2026', Q({ 'Lenzuolo matrimoniale': 15, 'Federa': 140 })).length, 1);
+  ok('Galleria: un giorno normale passa',          _gbAnomalieConsumi('ar', '21/10/2026', Q({ 'Lenzuolo matrimoniale': 15, 'Federa': 30 })).length, 0);
+  ok('Galleria: portato 5 federe (doveva 134)',    _gbAnomaliePortato('ar', '22/10/2026', Q({ 'Federa': 5 })).length, 1);
+  var campi = { 'gb-cons-data': '2026-10-21' };
+  GB_VOCI.forEach(function (v, i) { campi['gb-c-' + i] = v === 'Lenzuolo matrimoniale' ? '15' : '0'; });
+  var iF = GB_VOCI.indexOf('Federa'); campi['gb-c-' + iF] = '140';
+  document.getElementById = function (id) { return id in campi ? { value: campi[id] } : null; };
+  _gbRiscrivi = { k: '', voci: {}, msg: [] };
+  var trova = function () { return _gb.consumi.filter(function (c) { return c.data === '21/10/2026'; })[0]; };
+  try { gbSalvaConsumi(); } catch (e) {}
+  ok('Galleria: 140 federe non salvato',            !!trova(), false);
+  campi['gb-c-' + iF] = '';
+  try { gbSalvaConsumi(); } catch (e) {}
+  ok('Galleria: casella vuota non vale zero',       !!trova(), false);
+  campi['gb-c-' + iF] = '140';
+  try { gbSalvaConsumi(); } catch (e) {}
+  ok('Galleria: riscritto, salvato',                trova() && trova().q.Federa, 140);
+  document.getElementById = vero;
+  ok('Galleria: Ha portato in attesa nasce vuoto',  /v in rscR\?'':ric/.test(String(_gbRenderCore)), true);
+  _gb = prima; _gbHotel = ph; _gbRiscrivi = pr;
+})();
