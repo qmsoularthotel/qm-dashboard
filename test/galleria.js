@@ -314,3 +314,26 @@ sez('Gestione Biancheria (Galleria): l\'avviso dei dati mancanti segue il calend
   ok('Galleria: una data piu\' recente vale',     (_gb.inizio.ar = '10/09/2026', _gbInizioTxt('ar')), '10/09/2026');
   _gb = prima; GB_INIZIO_MINIMO = spento;
 })();
+
+// ── Frecce ‹ › sulle date (14/11/2026): la consegna segue il calendario della struttura
+//    selezionata — Art Resort lun/mer/ven, Santa Brigida mar/gio/sab. 09/11/2026 e' lunedi'.
+sez('Gestione Biancheria (Galleria): frecce sulle date');
+(function () {
+  var campi = { 'gb-cons-data': { value: '' }, 'gb-giro-data': { value: '' } }, vero = document.getElementById, ren = gbRender, h0 = _gbHotel;
+  document.getElementById = function (id) { return campi[id] || null; };
+  gbRender = function () {};
+  try {
+    _gbHotel = 'ar';
+    campi['gb-giro-data'].value = '2026-11-09'; gbSpostaData('giro', 1);
+    ok('Art Resort: da lunedi\' a mercoledi\'',     campi['gb-giro-data'].value, '2026-11-11');
+    campi['gb-giro-data'].value = '2026-11-09'; gbSpostaData('giro', -1);
+    ok('Art Resort: indietro al venerdi\'',         campi['gb-giro-data'].value, '2026-11-06');
+    _gbHotel = 'sb';
+    campi['gb-giro-data'].value = '2026-11-10'; gbSpostaData('giro', 1);
+    ok('Santa Brigida: da martedi\' a giovedi\'',   campi['gb-giro-data'].value, '2026-11-12');
+    campi['gb-giro-data'].value = '2026-11-09'; gbSpostaData('giro', 1);
+    ok('Santa Brigida: dal lunedi\' al martedi\'',  campi['gb-giro-data'].value, '2026-11-10');
+    campi['gb-cons-data'].value = '2026-11-10'; gbSpostaData('consumi', 1);
+    ok('Galleria: consumi il giorno dopo',          campi['gb-cons-data'].value, '2026-11-11');
+  } finally { document.getElementById = vero; gbRender = ren; _gbHotel = h0; }
+})();

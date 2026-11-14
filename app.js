@@ -14423,6 +14423,23 @@ function _biaBuchi(hotel,oggi){
 }
 const _biaNBuchi=b=>b.consumi.length+b.consegne.length+b.senzaPortato.length;
 // Porta la pagina sulla data da sistemare: struttura, campo data, ridisegno, e la casella in vista.
+// Frecce ‹ › accanto alle due date (14/11/2026): i consumi vanno di un giorno alla volta,
+// la consegna salta solo fra i giorni in cui Raimondo passa (_biaGiornoGiro), cosi' non
+// serve aprire il calendario ne' ricordarsi i giorni del giro. I consumi non vanno oltre oggi.
+function biaSpostaData(tipo,passo){
+  const id=tipo==='consumi'?'bia-cons-data':'bia-giro-data';
+  const f=document.getElementById(id);if(!f)return;
+  const oggi=new Date();oggi.setHours(0,0,0,0);
+  const d=_biaParse(_biaFromIso(f.value))||new Date(oggi.getTime());
+  for(let i=0;i<7;i++){d.setDate(d.getDate()+passo);if(tipo==='consumi'||_biaGiornoGiro(d))break;}
+  if(tipo==='consumi'&&d>oggi)return;
+  f.value=_biaToIso(_biaFmt(d));
+  biaRender();
+}
+function _biaFreccia(tipo,passo,spenta){
+  const t=passo<0?(tipo==='consumi'?'Giorno prima':'Consegna precedente'):(tipo==='consumi'?'Giorno dopo':'Consegna successiva');
+  return`<button onclick="biaSpostaData('${tipo}',${passo})" ${spenta?'disabled':''} title="${t}" aria-label="${t}" style="width:28px;height:28px;border:1px solid var(--border-light);background:var(--surface);border-radius:7px;cursor:${spenta?'default':'pointer'};font-size:16px;line-height:1;flex-shrink:0;color:var(--accent);${spenta?'opacity:.35;':''}">${passo<0?'‹':'›'}</button>`;
+}
 function biaVaiA(h,tipo,data){
   if(!BIA_HOTELS[h])return;
   _biaHotel=h;
@@ -15198,7 +15215,7 @@ function biaRender(){
     <div class="panel-body" style="padding:14px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
         <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data</label>
-        <input type="date" id="bia-cons-data" value="${consIso}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
+        ${_biaFreccia('consumi',-1)}<input type="date" id="bia-cons-data" value="${consIso}" max="${_biaToIso(_biaFmt(oggi))}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">${_biaFreccia('consumi',1,consIso>=_biaToIso(_biaFmt(oggi)))}
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
         ${BIA_VOCI.map((v,i)=>`<div>
@@ -15255,7 +15272,7 @@ function biaRender(){
     <div class="panel-body" style="padding:14px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
         <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data della consegna</label>
-        <input type="date" id="bia-giro-data" value="${giroIso}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
+        <span style="display:inline-flex;align-items:center;gap:6px;">${_biaFreccia('giro',-1)}<input type="date" id="bia-giro-data" value="${giroIso}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">${_biaFreccia('giro',1)}</span>
         <span style="font-size:var(--fs-xxs);color:var(--text-dim);">ritira i consumi ${esc(periodoTxt)}</span>
       </div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:8px;">${esc(fonteTxt)}</div>`;

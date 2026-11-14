@@ -131,7 +131,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-12.6';
+const QM_APP_BUILD='2026-11-14.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -1006,6 +1006,23 @@ function _gbBuchi(hotel,oggi){
 }
 const _gbNBuchi=b=>b.consumi.length+b.consegne.length+b.senzaPortato.length;
 // Porta la pagina sulla data da sistemare: struttura, campo data, ridisegno, e la casella in vista.
+// Frecce ‹ › accanto alle due date (14/11/2026): i consumi vanno di un giorno alla volta,
+// la consegna salta solo fra i giorni in cui Raimondo passa (_gbGiornoGiro), cosi' non
+// serve aprire il calendario ne' ricordarsi i giorni del giro. I consumi non vanno oltre oggi.
+function gbSpostaData(tipo,passo){
+  const id=tipo==='consumi'?'gb-cons-data':'gb-giro-data';
+  const f=document.getElementById(id);if(!f)return;
+  const oggi=new Date();oggi.setHours(0,0,0,0);
+  const d=_gbParse(_gbFromIso(f.value))||new Date(oggi.getTime());
+  for(let i=0;i<7;i++){d.setDate(d.getDate()+passo);if(tipo==='consumi'||_gbGiornoGiro(d))break;}
+  if(tipo==='consumi'&&d>oggi)return;
+  f.value=_gbToIso(_gbFmt(d));
+  gbRender();
+}
+function _gbFreccia(tipo,passo,spenta){
+  const t=passo<0?(tipo==='consumi'?'Giorno prima':'Consegna precedente'):(tipo==='consumi'?'Giorno dopo':'Consegna successiva');
+  return`<button onclick="gbSpostaData('${tipo}',${passo})" ${spenta?'disabled':''} title="${t}" aria-label="${t}" style="width:28px;height:28px;border:1px solid var(--border-light);background:var(--surface);border-radius:7px;cursor:${spenta?'default':'pointer'};font-size:16px;line-height:1;flex-shrink:0;color:var(--accent);${spenta?'opacity:.35;':''}">${passo<0?'‹':'›'}</button>`;
+}
 function gbVaiA(h,tipo,data){
   if(!GB_HOTELS[h])return;
   _gbHotel=h;
@@ -1549,7 +1566,7 @@ function _gbRenderCore(){
     <div class="panel-body" style="padding:14px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
         <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data</label>
-        <input type="date" id="gb-cons-data" value="${consIso}" onchange="gbRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
+        ${_gbFreccia('consumi',-1)}<input type="date" id="gb-cons-data" value="${consIso}" max="${_gbToIso(_gbFmt(oggi))}" onchange="gbRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">${_gbFreccia('consumi',1,consIso>=_gbToIso(_gbFmt(oggi)))}
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
         ${GB_VOCI.map((v,i)=>`<div>
@@ -1609,7 +1626,7 @@ function _gbRenderCore(){
     <div class="panel-body" style="padding:14px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
         <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data della consegna</label>
-        <input type="date" id="gb-giro-data" value="${giroIso}" onchange="gbRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
+        <span style="display:inline-flex;align-items:center;gap:6px;">${_gbFreccia('giro',-1)}<input type="date" id="gb-giro-data" value="${giroIso}" onchange="gbRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">${_gbFreccia('giro',1)}</span>
         <span style="font-size:var(--fs-xxs);color:var(--text-dim);">ritira i consumi ${esc(periodoTxt)}</span>
       </div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:8px;">${esc(fonteTxt)}</div>`;

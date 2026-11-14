@@ -299,6 +299,18 @@ Il periodo si scrive con i **nomi dei giorni** fino a quattro giorni (*"di giove
 venerdì 21"*), non come intervallo di date: `18/08 → 21/08` non dice a colpo d'occhio se
 sono i giorni giusti, `martedì 18 … venerdì 21` sì.
 
+#### Frecce ‹ › sulle due date (14/11/2026)
+
+Accanto a *Data* (Consumi giornalieri dai fogli camera) e *Data della consegna* (Consegna
+biancheria pulita) ci sono due frecce (`biaSpostaData(tipo,passo)`, pulsanti `_biaFreccia`):
+- **consumi**: un giorno alla volta, **mai oltre oggi** (la freccia avanti si spegne, il campo ha `max`);
+- **consegna**: salta **solo fra i giorni del giro** (`_biaGiornoGiro`, mar/gio/sab); partendo da un
+  giorno fuori calendario va al giro più vicino in quella direzione.
+
+Nella Galleria è la stessa copia col rinomino (`gbSpostaData`, `_gbFreccia`): `_gbGiornoGiro(d)`
+usa il calendario della **struttura selezionata**, quindi Art Resort salta lun/mer/ven e Santa
+Brigida mar/gio/sab. Controlli in `test/controlli.js` e `test/galleria.js` ("frecce sulle date").
+
 ### Congelamento dello sporco consegnato
 
 `consegnato` viene salvato sul giro al momento della registrazione, non ricalcolato al

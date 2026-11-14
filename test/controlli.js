@@ -3458,3 +3458,38 @@ sez('Biancheria: nessun conteggio prima del 01/09/2026 (12/11/2026)');
   ok('una data piu\' recente vale',               (_bia.inizio.sa='08/09/2026', _biaInizioTxt('sa')), '08/09/2026');
   _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
 })();
+
+// ── Frecce ‹ › sulle date del Consumo Biancheria (14/11/2026) ──
+//    I consumi vanno un giorno alla volta e non oltre oggi; la consegna salta solo fra i
+//    giorni del giro (mar/gio/sab). 10/11/2026 e' un martedi'.
+sez('Consumo Biancheria: frecce sulle date');
+(function(){
+  var campi={'bia-cons-data':{value:''},'bia-giro-data':{value:''}},vero=document.getElementById,ren=biaRender,disegni=0;
+  document.getElementById=function(id){return campi[id]||null;};
+  biaRender=function(){disegni++;};
+  try{
+    campi['bia-giro-data'].value='2026-11-10';biaSpostaData('giro',1);
+    ok('consegna: da martedi\' a giovedi\'',        campi['bia-giro-data'].value, '2026-11-12');
+    biaSpostaData('giro',1);
+    ok('consegna: da giovedi\' a sabato',           campi['bia-giro-data'].value, '2026-11-14');
+    biaSpostaData('giro',1);
+    ok('consegna: da sabato a martedi\'',           campi['bia-giro-data'].value, '2026-11-17');
+    campi['bia-giro-data'].value='2026-11-10';biaSpostaData('giro',-1);
+    ok('consegna indietro: da martedi\' a sabato',  campi['bia-giro-data'].value, '2026-11-07');
+    campi['bia-giro-data'].value='2026-11-08';biaSpostaData('giro',1);
+    ok('da una domenica: al martedi\'',             campi['bia-giro-data'].value, '2026-11-10');
+    campi['bia-cons-data'].value='2026-11-10';biaSpostaData('consumi',1);
+    ok('consumi: il giorno dopo',                   campi['bia-cons-data'].value, '2026-11-11');
+    biaSpostaData('consumi',-1);biaSpostaData('consumi',-1);
+    ok('consumi: anche il lunedi\'',                campi['bia-cons-data'].value, '2026-11-09');
+    var oggi=new Date(),oi=_biaToIso(_biaFmt(oggi));
+    campi['bia-cons-data'].value=oi;var prima=disegni;biaSpostaData('consumi',1);
+    ok('consumi: non oltre oggi',                   campi['bia-cons-data'].value, oi);
+    ok('e non ridisegna',                           disegni, prima);
+  }finally{document.getElementById=vero;biaRender=ren;}
+  var box={innerHTML:''};
+  document.getElementById=function(id){return id==='bia-content'?box:null;};
+  try{_biaHotel='sa';biaRender();}finally{document.getElementById=vero;}
+  ok('le frecce dei consumi ci sono',               /biaSpostaData\('consumi',-1\)/.test(box.innerHTML)&&/biaSpostaData\('consumi',1\)/.test(box.innerHTML), true);
+  ok('le frecce della consegna ci sono',            /biaSpostaData\('giro',-1\)/.test(box.innerHTML)&&/biaSpostaData\('giro',1\)/.test(box.innerHTML), true);
+})();
