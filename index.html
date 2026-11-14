@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='532-20261112';
+  const V='533-20261114';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -595,12 +595,12 @@
           </div>
       </div>
       <div class="view" id="view-registrazione">
-        <div class="rc-upload-zone" id="rcUploadZone">
-          <input type="file" id="rcFileInput" accept="application/pdf" style="display:none">
-          <div class="rc-upload-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
-          <div class="rc-upload-title">Carica il report arrivi dal PMS</div>
-          <div class="rc-upload-sub">Trascina il file PDF o clicca per selezionarlo</div>
-          <span class="rc-upload-badge">Formato: Numero camera / Tipo / Ospite / Periodo</span>
+        <!-- Registration Cards (14/11/2026): il file qui NON si carica. Le card nascono dal file
+             Prenotazioni caricato nei Caricamenti dell'Overview. Se non c'e' resta solo questo avviso. -->
+        <div class="ov-empty" id="rcUploadZone">
+          <div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="ov-empty-text">Nessun arrivo disponibile</div>
+          <div class="ov-empty-sub">Le registration card si creano dal file Prenotazioni caricato nell'Overview.</div>
         </div>
         <div class="rc-processing" id="rcProcessing"><div class="rc-spinner"></div><span id="rcProcText" style="font-size:13px;color:var(--text-muted)">Lettura in corso...</span></div>
         <div class="rc-error" id="rcError"></div>
@@ -614,7 +614,6 @@
               <span class="rc-count-badge" id="rcCountBadge">—</span>
               <span id="rcSummaryLine" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:8px;"></span>
               <div style="margin-left:auto;display:flex;gap:8px;">
-                <button onclick="rcResetApp()" style="background:transparent;color:var(--accent);border:1px solid var(--border);padding:5px 14px;border-radius:6px;font-size:var(--fs-xs);font-weight:400;cursor:pointer;font-family:inherit;">Carica altro</button>
                 <button id="rcPrintSelBtn" onclick="rcPrintSelected()" style="display:none;background:transparent;color:var(--accent);border:1px solid var(--accent);padding:5px 14px;border-radius:6px;font-size:var(--fs-xs);font-weight:400;cursor:pointer;font-family:inherit;align-items:center;"></button>
                 <button onclick="preparePrint(null)" style="background:var(--accent);color:#fff;border:none;padding:5px 16px;border-radius:6px;font-size:var(--fs-xs);font-weight:400;cursor:pointer;font-family:inherit;">Stampa tutte</button>
               </div>
@@ -1691,7 +1690,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1051-20261112"></script>
+<script src="app.js?v=1052-20261114"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

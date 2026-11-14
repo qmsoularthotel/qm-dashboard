@@ -255,6 +255,14 @@ aggiornamento, quindi anche passata la mezzanotte con la pagina aperta), `pianoS
 `rcOpenPrintDialog` ricontrolla prima di stampare. I dati non si cancellano. Controlli in `test/controlli.js`
 ("visibili solo dopo i caricamenti di oggi").
 
+### Nessun caricamento dalla vista Registrazione (14/11/2026)
+
+Il file si carica **solo** dai Caricamenti dell'Overview. Dalla vista Registrazione sono stati tolti
+"Aggiorna file" nella riga `#rcSourceLine` (resta solo l'informazione: documento, ora, arrivi), la
+zona di trascinamento `#rcUploadZone` con `#rcFileInput` e il pulsante "Carica altro" (`rcResetApp`).
+`#rcUploadZone` è rimasto come avviso `.ov-empty` ("Nessun arrivo disponibile") perché il codice lo
+nasconde/mostra già per id. Controllo in `test/esegui.sh`.
+
 ### Stampa delle registration card a basso consumo di toner (06/11/2026)
 
 `PRINT_CSS`: tolta la fascia nera in testa (hotel e camera in nero su bianco con una riga), logo SoulArt con

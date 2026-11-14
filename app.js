@@ -9059,12 +9059,8 @@ function _qmPulisciTesti(o){
 const ROOM_CODES=['STD','SUP','DLX','DEL','JS','JR','SUITE','TRP','TPL','TRI','DBL','SGL','DUS','DEP','DP','PC','AS','BB','HB','FB','RO','AI','MP'];
 const tratMap={BB:'BB',HB:'HB – Mezza pensione',FB:'FB – Pensione completa',RO:'RO – Solo pernottamento',AI:'AI – All inclusive',MP:'MP – Mezza pensione'};
 let guestsData=[];
-const rcUploadZone=document.getElementById('rcUploadZone'),rcFileInput=document.getElementById('rcFileInput');
-rcUploadZone.addEventListener('click',()=>rcFileInput.click());
-rcUploadZone.addEventListener('dragover',e=>{e.preventDefault();rcUploadZone.classList.add('dragover');});
-rcUploadZone.addEventListener('dragleave',()=>rcUploadZone.classList.remove('dragover'));
-rcUploadZone.addEventListener('drop',e=>{e.preventDefault();rcUploadZone.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')handleRCFile(f);else rcShowError('Carica un file PDF.');});
-rcFileInput.addEventListener('change',e=>{if(e.target.files[0])handleRCFile(e.target.files[0]);});
+// Registration Cards: niente caricamento dalla pagina (14/11/2026), le card vengono dal file
+// Prenotazioni dei Caricamenti. Tolti zona di trascinamento, input e "Carica altro".
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){rcCloseModal();closePrintDialog();}});
 // Deriva le registration card dagli arrivi correnti (arriviData) — arrivi con check-in
 // oggi, esclusi Principe e Mastrangelo che non ne hanno bisogno.
@@ -9296,12 +9292,11 @@ function rcRenderSourceLine(){
   // nome, timestamp e slot da riaprire cambiano di conseguenza (vedi PREN_UNICO).
   const unico=(typeof PREN_UNICO!=='undefined'&&PREN_UNICO);
   const doc=unico?'Prenotazioni (PMS)':'Riepilogo Reception';
-  const inputId=unico?'prenFileInput':'arriviFileInput';
   let ts=null;
   try{ts=parseInt(localStorage.getItem('qm_ts_'+(unico?'prenTs':'arriviTs'))||'0')||null;}catch(e){}
   const tsStr=ts?fmtUploadTs(ts).replace('↑ ',''):'';
   el.style.display='flex';
-  el.innerHTML=`${_ovIcona('doc')}<span>${doc} caricato${tsStr?' · '+tsStr:''} · ${arriviData.arrivi.length} arrivi rilevati</span><span onclick="document.getElementById('${inputId}')?.click();" style="margin-left:auto;color:var(--accent);cursor:pointer;font-weight:600;">Aggiorna file</span>`;
+  el.innerHTML=`${_ovIcona('doc')}<span>${doc} caricato${tsStr?' · '+tsStr:''} · ${arriviData.arrivi.length} arrivi rilevati</span>`;
 }
 function rcToggleSelect(idx,checked){
   if(checked)_rcSelected.add(idx);else _rcSelected.delete(idx);
@@ -9347,7 +9342,6 @@ function rcBuildPreview(g0,idx){const g=_rcPulito(g0);const nights=rcCalcNights(
 function rcOpenModal(idx){const g=guestsData[idx];document.getElementById('rcModalTitle').textContent=g.nome+' — Camera '+g.camera;document.getElementById('rcModalBody').innerHTML=`<div class="mp" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:9pt;color:#1A1916;">${rcCardHTML(g)}</div>`;document.getElementById('rcModalPrintBtn').onclick=()=>{rcCloseModal();setTimeout(()=>preparePrint(idx),150);};document.getElementById('rcModalOverlay').classList.add('open');}
 function rcCloseModal(){document.getElementById('rcModalOverlay').classList.remove('open');}
 function rcCloseModalOutside(e){if(e.target===document.getElementById('rcModalOverlay'))rcCloseModal();}
-function rcResetApp(){document.getElementById('rcResults').style.display='none';document.getElementById('rcUploadZone').style.display='block';document.getElementById('rcFileInput').value='';guestsData=[];try{localStorage.removeItem('qm_rcGuests');}catch(e){}}
 // Forza allineamento con la fonte dati (KV) ogni volta che si apre la view Registrazione,
 // indipendentemente dal polling in background: previene card bloccate su una vecchia sessione/tab.
 async function rcRefreshFromCloud(){

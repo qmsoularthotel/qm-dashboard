@@ -470,6 +470,14 @@ if ! grep -q 'key>oggi' breakfast.html; then
   BKF_KO=1
 fi
 
+# Registration Cards: il file non si carica dalla pagina, solo dai Caricamenti (14/11/2026).
+if grep -q 'id="rcFileInput"' index.html || grep -q 'rcResetApp()' index.html \
+   || awk '/^function rcRenderSourceLine/,/^}/' app.js | grep -q 'Aggiorna file'; then
+  echo ""
+  echo "  ERRORE      Registration Cards: e' tornata la possibilita' di caricare il file dalla pagina."
+  BKF_KO=1
+fi
+
 # Didascalia "Aggiornato" dell'app Housekeeping: deve prendere il dato PIU' RECENTE (Piano,
 # Prenotazioni), non il segnatempo dei conteggi SA/BH, che Compass di proposito non
 # riscrive se i numeri non cambiano. Restava fermo al primo caricamento e le cameriere
