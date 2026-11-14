@@ -17604,7 +17604,7 @@ function _agRiga(t,conGiorno){
     <div class="ag-testo" onclick="agModifica('${id}')" title="Tocca per correggere">
       ${t.ora?`<span class="ag-ora">${_esc(t.ora)}</span>`:''}${conGiorno?`<span class="ag-quando">previsto ${_esc(_agEtichettaLunga(t.giorno))}</span>`:''}${!conGiorno&&ritardo?'<span class="ag-quando">in ritardo</span>':''}${t.previsto&&!conGiorno?`<span class="ag-da">previsto ${_esc(_agEtichettaLunga(t.previsto))}</span>`:''}${_esc(t.testo)}
     </div>
-    ${t.fatto?'':`<button class="ag-ico" onclick="agDomani('${id}')" title="${conGiorno||ritardo?'Sposta a oggi':'Sposta al giorno dopo'}">${_agIcoAvanti()}</button>`}
+    ${t.fatto?'':`<button class="ag-ico" onclick="agScegliGiorno('${id}')" title="Sposta a un altro giorno">${_agIcoAvanti()}</button>`}
     <button class="ag-ico ag-ico-del" onclick="agElimina('${id}')" title="Elimina">${_agIcoX()}</button>
   </div>`;
 }
@@ -17678,10 +17678,31 @@ function agElimina(id){
   if(_agModifica===id)_agModifica=null;
   const l=_agLeggi().filter(x=>x.id!==id);_agScrivi(l);agRender();
 }
-// Dagli arretrati porta a oggi; dalla settimana, al giorno dopo.
-function agDomani(id){
+// La freccia chiede DOVE spostare (14/11/2026): "a oggi" / "al giorno dopo" non andava bene.
+// Si sceglie fra i giorni di questa settimana e della prossima; se l'impegno era previsto
+// prima, c'e' anche il ritorno al suo giorno, dove torna in ritardo (rosso), non evaso.
+function _agScelta(t,oggi){
+  const lun=_agLunediDi(oggi),giorni=_agSettimana(lun).concat(_agSettimana(_agPiuGiorni(lun,7)));
+  const btn=iso=>{
+    const qui=iso===t.giorno,cls='ag-btn ag-scegli-g'+(iso===oggi?' ag-scegli-oggi':'')+(iso===t.previsto?' ag-scegli-prev':'');
+    const d=_agDaIso(iso);
+    return `<button class="${cls}" ${qui?'disabled':''} onclick="agSpostaA('${_esc(t.id)}','${iso}')">
+      <span class="ag-scegli-nome">${iso===oggi?'oggi':_AG_GIORNI[(d.getDay()+6)%7].slice(0,3)}</span><b>${d.getDate()}</b><span class="ag-scegli-mese">${_AG_MESI[d.getMonth()]}</span></button>`;
+  };
+  let h=`<div class="ag-scegli-tit">Questa settimana</div><div class="ag-scegli">${giorni.slice(0,7).map(btn).join('')}</div>
+    <div class="ag-scegli-tit">Settimana prossima</div><div class="ag-scegli">${giorni.slice(7).map(btn).join('')}</div>`;
+  if(t.previsto&&t.previsto<giorni[0])
+    h+=`<button class="ag-btn ag-scegli-torna" onclick="agSpostaA('${_esc(t.id)}','${t.previsto}')">Riporta al giorno previsto · ${_esc(_agEtichettaLunga(t.previsto))}</button>`;
+  return h;
+}
+function agScegliGiorno(id){
+  const t=_agLeggi().find(x=>x.id===id);if(!t)return;
+  cqAvviso('Spostare a quale giorno?',_agScelta(t,_agOggi()),{ok:'Annulla'});
+}
+function agSpostaA(id,iso){
+  try{if(_cqChiudi)_cqChiudi(false);}catch(e){}
   const oggi=_agOggi();
-  _agCambia(id,t=>{_agSposta(t,t.giorno<oggi?oggi:_agPiuGiorni(t.giorno,1),oggi);});
+  _agCambia(id,t=>{_agSposta(t,iso,oggi);});
 }
 function agModifica(id){_agModifica=id;agRender();}
 function agAnnullaModifica(){_agModifica=null;agRender();}

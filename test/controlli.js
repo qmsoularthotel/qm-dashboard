@@ -3286,6 +3286,23 @@ sez('Agenda: chi resta indietro lascia la traccia nel suo giorno');
   ok('oggi dice da quando era previsto',            /ag-da">previsto mar 3 nov/.test(sett), true);
   ok('il rimasto indietro resta nel suo giorno',    /ag-ritardo[\s\S]*in ritardo[\s\S]*Firmare DDT/.test(sett), true);
   ok('niente piu\' riquadro "Rimasti indietro"',  /Rimasti indietro|agTuttiAOggi/.test(h), false);
+  // La freccia chiede il giorno: 14 giorni (questa settimana e la prossima), e il ritorno al previsto.
+  var sc=_agScelta({id:'p',giorno:oggi,previsto:'2026-11-03',fatto:false},oggi);
+  ok('la freccia offre 14 giorni',                  (sc.match(/agSpostaA\('p','\d{4}-\d\d-\d\d'\)/g)||[]).length, 15);
+  ok('fino alla domenica della settimana prossima', sc.indexOf("'"+_agPiuGiorni(_agLunediDi(oggi),13)+"'")>=0, true);
+  ok('e il ritorno al giorno previsto',             /Riporta al giorno previsto/.test(sc), true);
+  ok('il giorno dov\'e\' adesso non si sceglie',   /disabled onclick="agSpostaA\('p','/.test(sc.replace(/\s+/g,' ').replace(/" disabled/g,'" disabled')), true);
+  ok('la freccia non sposta piu\' da sola',         /agScegliGiorno\(/.test(String(_agRiga))&&!/agDomani/.test(String(_agRiga)), true);
+  // Riportato al suo giorno torna in ritardo, non evaso.
+  localStorage.setItem('qm_agenda',JSON.stringify([{id:'v',giorno:oggi,previsto:'2026-11-03',testo:'Torna indietro',fatto:false,ts:1}]));
+  var ar=agRender;agRender=function(){};
+  try{agSpostaA('v','2026-11-03');}finally{agRender=ar;}
+  var v=_agLeggi()[0];
+  ok('riportato: di nuovo nel giorno previsto',     v.giorno, '2026-11-03');
+  ok('e di nuovo non evaso',                        !v.fatto&&!('previsto' in v)&&v.giorno<_agOggi(), true);
+  document.getElementById=function(id){return id==='agenda-content'?box:null;};
+  try{_agLunedi='2026-11-02';agRender();}finally{document.getElementById=ge;_agLunedi=lu;}
+  ok('e torna rosso, in ritardo',                   /ag-ritardo[\s\S]*in ritardo[\s\S]*Torna indietro/.test(box.innerHTML), true);
   if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
 })();
 

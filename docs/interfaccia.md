@@ -162,11 +162,17 @@ trascinando su un altro giorno (computer), si **elimina** (×, senza conferma: �
 
 - **Rimasti indietro**: dal 14/11/2026 **non c'è più il riquadro in cima** (né "Porta tutti a
   oggi"): il QM l'ha giudicato inutile. Gli impegni non spuntati di un giorno passato restano nel
-  loro giorno, in rosso; la freccia li porta a oggi. Niente sparisce da solo.
+  loro giorno, in rosso. Niente sparisce da solo.
+- **La freccia chiede il giorno** (14/11/2026): *"a oggi"* / *"al giorno dopo"* non andava bene.
+  `agScegliGiorno` apre la finestra Compass (`cqAvviso`, pulsante Annulla) con i 14 giorni di
+  questa settimana e della prossima (`_agScelta`, griglia `.ag-scegli`, 4 colonne su telefono):
+  oggi in oro, il giorno previsto in rosso, quello attuale spento. Se il giorno previsto è prima
+  di questa settimana c'è *"Riporta al giorno previsto"*. `agSpostaA` sposta con `_agSposta`:
+  riportato al giorno previsto l'impegno **torna in ritardo** (rosso), non evaso.
 - **Il giorno previsto non si perde** (14/11/2026). Il QM: *"i task rimasti indietro non devono
   essere tolti dai riquadri… non so in che giorno era previsto (la pill rossa non basta)"*.
   Un impegno non fatto resta nel riquadro del suo giorno, in rosso con *in ritardo* (`.ag-ritardo`).
-  Portato avanti da un giorno passato (freccia o trascinamento) prende
+  Spostato da un giorno passato (freccia o trascinamento) prende
   `previsto` = il giorno d'origine (`_agSposta`, solo la prima volta): quel riquadro tiene una
   traccia tratteggiata *"spostato a oggi / al gio 5 nov"* (o *fatto il …*), e la riga nel nuovo
   giorno porta *"previsto mar 3 nov"* (`.ag-da`). Riportato al suo giorno, `previsto` si toglie. Controlli in
