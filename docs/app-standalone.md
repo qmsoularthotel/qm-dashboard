@@ -270,3 +270,6 @@ facendo riscrivere i conteggi: si guarda il dato più fresco. Controllo in `test
 ogni dato nuovo **lampeggia in oro 10 volte** (`.lampo`, ~9 s; 4 erano troppo poche, 14/11) e poi resta ferma: solo
 quando il testo cambia, non a ogni ridisegno. Niente pallino colorato: il QM l'ha scartato
 perché sembrava un allarme. Con "riduci animazioni" del telefono non lampeggia.
+**Stessa cosa nell'app Breakfast** (14/11/2026): `breakfast.html` ha la stessa pillola e lo
+stesso lampeggio (CSS copiato identico, `bkAggTesto()` = `hkAggTesto()`), sul segnatempo
+`bkfData._ts`. Controllo in `test/esegui.sh` su entrambe le app.

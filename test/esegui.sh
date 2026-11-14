@@ -482,6 +482,15 @@ if ! grep -q 'pianoData&&pianoData._ts' housekeeper.html || ! grep -q '_arriviTs
   BKF_KO=1
 fi
 
+# "Aggiornato" di Housekeeping e Breakfast: pillola leggibile che lampeggia (14/11/2026).
+for f in housekeeper.html breakfast.html; do
+  if ! grep -q 'id="hDataTs" class="h-agg"' $f || ! grep -q 'h-agg.lampo{animation:hAggLampo' $f; then
+    echo ""
+    echo "  ERRORE      $f: la scritta \"Aggiornato\" non e' piu' la pillola che lampeggia."
+    BKF_KO=1
+  fi
+done
+
 # Numeri in alto dell'app Housekeeping (partenze, fermate, camere): si contano dal Piano,
 # come le schede delle cameriere, non dalla copia qm_hk_soul/bout che puo' restare indietro
 # (05/11/2026: SoulArt 12 camere in alto, 14 nelle schede). Anche nell'anteprima dei giorni.
