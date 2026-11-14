@@ -267,6 +267,6 @@ facendo riscrivere i conteggi: si guarda il dato più fresco. Controllo in `test
 **Leggibilità (14/11/2026)**: era una riga da 10px al 55% di bianco. Ora è una pillola
 (`.h-agg`, 12px grassetto bianco) che dice il momento a parole con `hkAggTesto()`:
 "Aggiornato oggi alle 08:12" / "ieri alle 18:30" / "gio 12 nov alle 09:05". All'apertura e a
-ogni dato nuovo **lampeggia in oro 4 volte** (`.lampo`, ~3,5 s) e poi resta ferma: solo
+ogni dato nuovo **lampeggia in oro 10 volte** (`.lampo`, ~9 s; 4 erano troppo poche, 14/11) e poi resta ferma: solo
 quando il testo cambia, non a ogni ridisegno. Niente pallino colorato: il QM l'ha scartato
 perché sembrava un allarme. Con "riduci animazioni" del telefono non lampeggia.

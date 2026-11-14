@@ -42,7 +42,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .h-agg{display:none;align-items:center;margin-top:6px;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.12);font-size:12px;font-weight:600;color:#fff;line-height:1.3;}
 .h-agg.on{display:inline-flex;}
 /* Lampeggia all'apertura e a ogni dato nuovo, poi resta ferma (non tutto il tempo: distrae) */
-.h-agg.lampo{animation:hAggLampo .9s ease-in-out 4;}
+.h-agg.lampo{animation:hAggLampo .9s ease-in-out 10;}
 @keyframes hAggLampo{0%,100%{background:rgba(255,255,255,.12);}50%{background:#c9952f;color:#1c3a5e;}}
 @media (prefers-reduced-motion:reduce){.h-agg.lampo{animation:none;}}
 .header-date{font-size:11px;color:rgba(255,255,255,.7);text-align:right;margin-top:1px;}
@@ -485,7 +485,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-14.1';
+const QM_APP_BUILD='2026-11-14.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
