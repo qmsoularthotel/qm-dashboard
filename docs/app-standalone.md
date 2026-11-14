@@ -273,3 +273,10 @@ perché sembrava un allarme. Con "riduci animazioni" del telefono non lampeggia.
 **Stessa cosa nell'app Breakfast** (14/11/2026): `breakfast.html` ha la stessa pillola e lo
 stesso lampeggio (CSS copiato identico, `bkAggTesto()` = `hkAggTesto()`), sul segnatempo
 `bkfData._ts`. Controllo in `test/esegui.sh` su entrambe le app.
+
+### App Housekeeping — card più definite (14/11/2026)
+
+Tutte le card (`.hk-tile`, `.hk-scheda`, `.kpi-card`, `.no-data`, `.preview-card`,
+`.room-detail-card`, e ai lati `.day-total`/`.hk-stats-box` che tengono il filo oro in alto)
+hanno un filo un po' più scuro (`--card-br` #d3dae4) e un'ombra a due strati tinta
+`--accent` (`--card-shadow`). Blocco unico in fondo al primo `<style>` di `housekeeper.html`.
