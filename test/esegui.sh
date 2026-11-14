@@ -475,7 +475,7 @@ fi
 # riscrive se i numeri non cambiano. Restava fermo al primo caricamento e le cameriere
 # credevano che l'app non si aggiornasse (28/09/2026).
 if ! grep -q 'pianoData&&pianoData._ts' housekeeper.html || ! grep -q '_arriviTs=ad._ts' housekeeper.html \
-   || ! grep -q 'fmtDataTs(hkUltimoAggiornamento())' housekeeper.html; then
+   || ! grep -q 'hkAggTesto(hkUltimoAggiornamento())' housekeeper.html; then
   echo ""
   echo "  ERRORE      housekeeper.html: la didascalia \"Aggiornato\" non guarda piu' l'ultimo"
   echo "              caricamento (Piano/Prenotazioni). Mostrerebbe di nuovo una data vecchia."
