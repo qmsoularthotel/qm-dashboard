@@ -163,8 +163,17 @@ trascinando su un altro giorno (computer), si **elimina** (×, senza conferma: �
 - **Rimasti indietro**: gli impegni non spuntati di un giorno passato stanno in un riquadro
   rosso in cima, con la data d'origine, finché non si fanno o si portano a oggi (uno per
   uno con la freccia, o tutti con "Porta tutti a oggi"). Niente sparisce da solo.
+- **Il giorno previsto non si perde** (14/11/2026). Il QM: *"i task rimasti indietro non devono
+  essere tolti dai riquadri… non so in che giorno era previsto (la pill rossa non basta)"*.
+  Un impegno non fatto resta nel riquadro del suo giorno, in rosso con *in ritardo* (`.ag-ritardo`).
+  Portato avanti da un giorno passato (freccia, "Porta tutti a oggi", trascinamento) prende
+  `previsto` = il giorno d'origine (`_agSposta`, solo la prima volta): quel riquadro tiene una
+  traccia tratteggiata *"spostato a oggi / al gio 5 nov"* (o *fatto il …*), e la riga nel nuovo
+  giorno porta *"previsto mar 3 nov"* (`.ag-da`). In "Rimasti indietro" la data dice anche il
+  giorno della settimana. Riportato al suo giorno, `previsto` si toglie. Controlli in
+  `test/controlli.js` ("lascia la traccia nel suo giorno").
 - **Badge del menu**: impegni da fare di oggi + rimasti indietro.
-- **Dati**: `qm_agenda`, elenco `[{id, giorno:'AAAA-MM-GG', testo, ora, fatto, ts}]`, scritto
+- **Dati**: `qm_agenda`, elenco `[{id, giorno:'AAAA-MM-GG', testo, ora, fatto, ts, previsto?}]`, scritto
   dai due Mac e dal telefono: passa **solo** da `_qmElencoSalva` (fusione a tre), è in
   `QM_ELENCHI_CONDIVISI` e nel backup. Si rilegge il cloud aprendo la vista e tornando sulla
   scheda; **non** è nel polling dei 30 secondi (nessuna lettura in più a pagina aperta).

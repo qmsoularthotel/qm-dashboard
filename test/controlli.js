@@ -3261,6 +3261,34 @@ sez('Agenda della settimana');
   if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
 })();
 
+// Rimasti indietro e portati avanti: il giorno in cui erano previsti non si perde (14/11/2026).
+sez('Agenda: chi resta indietro lascia la traccia nel suo giorno');
+(function(){
+  var oggi=_agOggi(),ieri=_agPiuGiorni(oggi,-1),avant=_agPiuGiorni(oggi,-2),dom=_agPiuGiorni(oggi,1);
+  var t={id:'r',giorno:avant,testo:'Ordine detersivi',fatto:false};
+  _agSposta(t,oggi,oggi);
+  ok('portato a oggi: ricorda il giorno previsto',  t.previsto, avant);
+  _agSposta(t,dom,oggi);
+  ok('spostato ancora: resta il primo giorno',      t.previsto, avant);
+  var u={id:'u',giorno:avant,testo:'x',fatto:false};_agSposta(u,ieri,oggi);_agSposta(u,avant,oggi);
+  ok('riportato al suo giorno: niente traccia',     'previsto' in u, false);
+  var f={id:'f',giorno:dom,testo:'futuro',fatto:false};_agSposta(f,_agPiuGiorni(dom,1),oggi);
+  ok('un impegno futuro spostato: nessuna traccia', 'previsto' in f, false);
+  var vero=localStorage.getItem('qm_agenda');
+  localStorage.setItem('qm_agenda',JSON.stringify([
+    {id:'p',giorno:'2026-11-05',previsto:'2026-11-03',testo:'Chiamare Raimondo',fatto:false,ts:1},
+    {id:'q',giorno:'2026-11-04',testo:'Firmare DDT',fatto:false,ts:2}]));
+  var box={innerHTML:''},ge=document.getElementById,lu=_agLunedi;
+  document.getElementById=function(id){return id==='agenda-content'?box:null;};
+  try{_agLunedi='2026-11-02';agRender();}finally{document.getElementById=ge;_agLunedi=lu;}
+  var h=box.innerHTML,i=h.indexOf('class="ag-week"'),sett=h.slice(i);
+  ok('il giorno previsto mostra dove e\' andato',   /ag-spostato[\s\S]*spostato al gio 5 nov[\s\S]*Chiamare Raimondo/.test(sett), true);
+  ok('oggi dice da quando era previsto',            /ag-da">previsto mar 3 nov/.test(sett), true);
+  ok('il rimasto indietro resta nel suo giorno',    /ag-ritardo[\s\S]*in ritardo[\s\S]*Firmare DDT/.test(sett), true);
+  ok('e nel riquadro rosso col giorno previsto',    /Rimasti indietro[\s\S]*previsto [a-z]{3} \d+ [a-z]{3}[\s\S]*Firmare DDT/.test(h.slice(0,i)), true);
+  if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
+})();
+
 sez('Consumo Biancheria: il pulsante della consegna resta spento finche\' «Ha portato» non e\' guardato (12/11/2026)');
 (function(){
   var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};

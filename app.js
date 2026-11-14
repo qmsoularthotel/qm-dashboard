@@ -17523,7 +17523,10 @@ async function qmCodiceGalleria(btn){
 // Quello che resta indietro non sparisce: compare in "Rimasti indietro" finché non lo si
 // fa o lo si sposta. Si usa dai due Mac e dal telefono: l'elenco `qm_agenda` è scritto da
 // più postazioni, quindi passa SEMPRE dalla fusione a tre (_qmElencoSalva), mai da kvSet.
-// Forma: [{id, giorno:'AAAA-MM-GG', testo, ora:'HH:MM'|'', fatto:bool, ts}]
+// Forma: [{id, giorno:'AAAA-MM-GG', testo, ora:'HH:MM'|'', fatto:bool, ts, previsto?:'AAAA-MM-GG'}]
+// `previsto` (14/11/2026): il giorno in cui l'impegno era in programma prima di essere
+// portato avanti da un giorno passato. Il riquadro di quel giorno ne tiene la traccia
+// ("spostato a …"), cosi' si sa sempre quando era previsto: la sola data rossa non bastava.
 const AG_KEY='qm_agenda';
 let _agLunedi=null;            // ISO del lunedì della settimana mostrata (null = questa)
 let _agModifica=null;          // id dell'impegno che si sta correggendo
@@ -17545,6 +17548,15 @@ function _agOrdina(a,b){
   return (a.ts||0)-(b.ts||0);
 }
 function _agDelGiorno(lista,iso){return lista.filter(t=>t.giorno===iso).sort(_agOrdina);}
+// Sposta un impegno su `nuovo`. Se lascia un giorno gia' passato senza essere fatto, quel
+// giorno resta segnato in `previsto` (solo la prima volta: conta il giorno d'origine).
+// Riportato sul giorno previsto, la traccia non serve piu'.
+function _agSposta(t,nuovo,oggi){
+  if(!t.fatto&&t.giorno<oggi&&!t.previsto)t.previsto=t.giorno;
+  t.giorno=nuovo;
+  if(t.previsto===t.giorno)delete t.previsto;
+}
+function _agEtichettaLunga(iso){const d=_agDaIso(iso);return _AG_GIORNI[(d.getDay()+6)%7].slice(0,3).toLowerCase()+' '+d.getDate()+' '+_AG_MESI[d.getMonth()];}
 function _agNuovoId(){return 'ag'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 // Scrive in locale e fa partire la fusione col cloud. Il ridisegno lo fa chi chiama.
 function _agScrivi(lista){
@@ -17586,13 +17598,23 @@ function _agRiga(t,conGiorno){
       <button class="ag-btn" onclick="agAnnullaModifica()">Annulla</button>
     </div>`;
   }
-  return `<div class="ag-task${t.fatto?' ag-fatto':''}" draggable="true" ondragstart="agTrascina(event,'${id}')">
+  const ritardo=!t.fatto&&t.giorno<_agOggi();
+  return `<div class="ag-task${t.fatto?' ag-fatto':''}${ritardo&&!conGiorno?' ag-ritardo':''}" draggable="true" ondragstart="agTrascina(event,'${id}')">
     <input type="checkbox" class="ag-check" ${t.fatto?'checked':''} onchange="agSpunta('${id}')" title="Fatto">
     <div class="ag-testo" onclick="agModifica('${id}')" title="Tocca per correggere">
-      ${t.ora?`<span class="ag-ora">${_esc(t.ora)}</span>`:''}${conGiorno?`<span class="ag-quando">${_esc(_agEtichetta(t.giorno))}</span>`:''}${_esc(t.testo)}
+      ${t.ora?`<span class="ag-ora">${_esc(t.ora)}</span>`:''}${conGiorno?`<span class="ag-quando">previsto ${_esc(_agEtichettaLunga(t.giorno))}</span>`:''}${!conGiorno&&ritardo?'<span class="ag-quando">in ritardo</span>':''}${t.previsto&&!conGiorno?`<span class="ag-da">previsto ${_esc(_agEtichettaLunga(t.previsto))}</span>`:''}${_esc(t.testo)}
     </div>
     ${t.fatto?'':`<button class="ag-ico" onclick="agDomani('${id}')" title="${conGiorno?'Sposta a oggi':'Sposta al giorno dopo'}">${_agIcoAvanti()}</button>`}
     <button class="ag-ico ag-ico-del" onclick="agElimina('${id}')" title="Elimina">${_agIcoX()}</button>
+  </div>`;
+}
+// Traccia nel riquadro del giorno in cui l'impegno era previsto: non si tocca, dice dove e' andato.
+function _agTraccia(t){
+  const oggi=_agOggi();
+  const dove=t.giorno===oggi?'oggi':_agEtichettaLunga(t.giorno);
+  return `<div class="ag-task ag-spostato" title="Era in programma qui">
+    <span class="ag-spostato-ico">${_agIcoAvanti()}</span>
+    <div class="ag-testo"><span class="ag-quando ag-quando-lieve">${t.fatto?(t.giorno===oggi?'fatto oggi':'fatto il '+_esc(dove)):(t.giorno===oggi?'spostato a oggi':'spostato al '+_esc(dove))}</span>${_esc(t.testo)}</div>
   </div>`;
 }
 function agRender(){
@@ -17632,7 +17654,7 @@ function agRender(){
     h+=`<div class="ag-day${cls}" ondragover="agSopra(event)" ondragleave="this.classList.remove('ag-drop')" ondrop="agLascia(event,'${iso}')">
       <div class="ag-day-head"><span class="ag-day-nome">${_AG_GIORNI[i]}</span><span class="ag-day-data">${_esc(_agEtichetta(iso))}</span>
         ${iso===oggi?'<span class="ag-pill">oggi</span>':''}${daFare?`<span class="ag-day-n">${daFare}</span>`:''}</div>
-      <div class="ag-lista">${del.map(t=>_agRiga(t,false)).join('')||'<div class="ag-vuoto">Niente in programma</div>'}</div>
+      <div class="ag-lista">${(del.map(t=>_agRiga(t,false)).join('')+lista.filter(t=>t.previsto===iso&&t.giorno!==iso).map(_agTraccia).join(''))||'<div class="ag-vuoto">Niente in programma</div>'}</div>
       <div class="ag-add">
         <input type="time" class="ag-ora-in" id="agOra-${iso}" title="Ora (facoltativa)">
         <input type="text" class="ag-testo-in" id="agNuovo-${iso}" placeholder="Aggiungi…" maxlength="300"
@@ -17668,7 +17690,7 @@ function agElimina(id){
 // Dagli arretrati porta a oggi; dalla settimana, al giorno dopo.
 function agDomani(id){
   const oggi=_agOggi();
-  _agCambia(id,t=>{t.giorno=t.giorno<oggi?oggi:_agPiuGiorni(t.giorno,1);});
+  _agCambia(id,t=>{_agSposta(t,t.giorno<oggi?oggi:_agPiuGiorni(t.giorno,1),oggi);});
 }
 function agModifica(id){_agModifica=id;agRender();}
 function agAnnullaModifica(){_agModifica=null;agRender();}
@@ -17681,7 +17703,7 @@ function agSalvaModifica(id){
 }
 async function agTuttiAOggi(){
   const oggi=_agOggi();const l=_agLeggi();let n=0;
-  l.forEach(t=>{if(!t.fatto&&t.giorno<oggi){t.giorno=oggi;n++;}});
+  l.forEach(t=>{if(!t.fatto&&t.giorno<oggi){_agSposta(t,oggi,oggi);n++;}});
   if(n){_agScrivi(l);agRender();}
 }
 async function agTogliFatti(){
@@ -17697,7 +17719,7 @@ function agSopra(ev){ev.preventDefault();try{ev.currentTarget.classList.add('ag-
 function agLascia(ev,iso){
   ev.preventDefault();try{ev.currentTarget.classList.remove('ag-drop');}catch(e){}
   let id='';try{id=ev.dataTransfer.getData('text/plain');}catch(e){}
-  if(id)_agCambia(id,t=>{t.giorno=iso;});
+  if(id)_agCambia(id,t=>{_agSposta(t,iso,_agOggi());});
 }
 // Aprendo la vista (o tornando sulla scheda) si rilegge il cloud: il telefono o l'altro
 // Mac possono aver aggiunto qualcosa.
