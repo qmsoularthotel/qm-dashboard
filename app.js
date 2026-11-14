@@ -17520,8 +17520,8 @@ async function qmCodiceGalleria(btn){
 // §§ AGENDA — to-do personale della settimana (aggiungi, spunta, sposta, elimina)
 // Un'agendina del QM, non un calendario fisso: ogni impegno sta su un giorno, si spunta
 // quando è fatto, si trascina (o si manda a domani) su un altro giorno, si elimina.
-// Quello che resta indietro non sparisce: compare in "Rimasti indietro" finché non lo si
-// fa o lo si sposta. Si usa dai due Mac e dal telefono: l'elenco `qm_agenda` è scritto da
+// Quello che resta indietro non sparisce: resta nel suo giorno, in rosso, finché non lo si
+// fa o lo si sposta (il riquadro "Rimasti indietro" in cima e' stato tolto il 14/11/2026). Si usa dai due Mac e dal telefono: l'elenco `qm_agenda` è scritto da
 // più postazioni, quindi passa SEMPRE dalla fusione a tre (_qmElencoSalva), mai da kvSet.
 // Forma: [{id, giorno:'AAAA-MM-GG', testo, ora:'HH:MM'|'', fatto:bool, ts, previsto?:'AAAA-MM-GG'}]
 // `previsto` (14/11/2026): il giorno in cui l'impegno era in programma prima di essere
@@ -17604,7 +17604,7 @@ function _agRiga(t,conGiorno){
     <div class="ag-testo" onclick="agModifica('${id}')" title="Tocca per correggere">
       ${t.ora?`<span class="ag-ora">${_esc(t.ora)}</span>`:''}${conGiorno?`<span class="ag-quando">previsto ${_esc(_agEtichettaLunga(t.giorno))}</span>`:''}${!conGiorno&&ritardo?'<span class="ag-quando">in ritardo</span>':''}${t.previsto&&!conGiorno?`<span class="ag-da">previsto ${_esc(_agEtichettaLunga(t.previsto))}</span>`:''}${_esc(t.testo)}
     </div>
-    ${t.fatto?'':`<button class="ag-ico" onclick="agDomani('${id}')" title="${conGiorno?'Sposta a oggi':'Sposta al giorno dopo'}">${_agIcoAvanti()}</button>`}
+    ${t.fatto?'':`<button class="ag-ico" onclick="agDomani('${id}')" title="${conGiorno||ritardo?'Sposta a oggi':'Sposta al giorno dopo'}">${_agIcoAvanti()}</button>`}
     <button class="ag-ico ag-ico-del" onclick="agElimina('${id}')" title="Elimina">${_agIcoX()}</button>
   </div>`;
 }
@@ -17625,7 +17625,6 @@ function agRender(){
   const lista=_agLeggi();
   const sett=lista.filter(t=>t.giorno>=giorni[0]&&t.giorno<=giorni[6]);
   const fatti=sett.filter(t=>t.fatto).length;
-  const arr=_agArretrati(lista,oggi);
   const questa=lun===_agLunediDi(oggi);
   const titoloSett=_agEtichetta(giorni[0])+' – '+_agEtichetta(giorni[6])+' '+_agDaIso(giorni[6]).getFullYear();
   let h=`<div class="panel ag-testa">
@@ -17638,14 +17637,6 @@ function agRender(){
       ${fatti?`<button class="ag-btn ag-btn-lieve" onclick="agTogliFatti()">Togli i fatti della settimana</button>`:''}
     </div>
   </div>`;
-  if(arr.length){
-    h+=`<div class="panel ag-arretrati">
-      <div class="panel-header">${_ovIcona('clessidra')}<span class="panel-title">Rimasti indietro</span>
-        <span class="ag-conta ag-conta-red">${arr.length}</span>
-        <button class="ag-btn ag-btn-lieve" onclick="agTuttiAOggi()">Porta tutti a oggi</button></div>
-      <div class="ag-lista">${arr.map(t=>_agRiga(t,true)).join('')}</div>
-    </div>`;
-  }
   h+='<div class="ag-week">';
   giorni.forEach((iso,i)=>{
     const del=_agDelGiorno(lista,iso);
@@ -17700,11 +17691,6 @@ function agSalvaModifica(id){
   _agModifica=null;
   if(!testo){agRender();return;}
   _agCambia(id,t=>{t.testo=testo.slice(0,300);t.ora=(or&&or.value)||'';});
-}
-async function agTuttiAOggi(){
-  const oggi=_agOggi();const l=_agLeggi();let n=0;
-  l.forEach(t=>{if(!t.fatto&&t.giorno<oggi){_agSposta(t,oggi,oggi);n++;}});
-  if(n){_agScrivi(l);agRender();}
 }
 async function agTogliFatti(){
   const lun=_agLunedi||_agLunediDi(_agOggi());const g=_agSettimana(lun);

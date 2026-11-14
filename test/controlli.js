@@ -3285,7 +3285,7 @@ sez('Agenda: chi resta indietro lascia la traccia nel suo giorno');
   ok('il giorno previsto mostra dove e\' andato',   /ag-spostato[\s\S]*spostato al gio 5 nov[\s\S]*Chiamare Raimondo/.test(sett), true);
   ok('oggi dice da quando era previsto',            /ag-da">previsto mar 3 nov/.test(sett), true);
   ok('il rimasto indietro resta nel suo giorno',    /ag-ritardo[\s\S]*in ritardo[\s\S]*Firmare DDT/.test(sett), true);
-  ok('e nel riquadro rosso col giorno previsto',    /Rimasti indietro[\s\S]*previsto [a-z]{3} \d+ [a-z]{3}[\s\S]*Firmare DDT/.test(h.slice(0,i)), true);
+  ok('niente piu\' riquadro "Rimasti indietro"',  /Rimasti indietro|agTuttiAOggi/.test(h), false);
   if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
 })();
 
