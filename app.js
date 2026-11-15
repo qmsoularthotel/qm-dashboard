@@ -14913,10 +14913,12 @@ function _biaContaAppello(h,c){
   });
   return o;
 }
-// Lo stato di un "da Raimondo": sotto zero o oltre il contratto è impossibile.
+// Lo stato di un "da Raimondo": oltre il contratto è impossibile (in albergo meno di zero).
+// Sotto zero NO (15/11/2026, il QM): in albergo ci sono solo pezzi di Raimondo, ma possono
+// essere PIU' del contratto (reintegri extra, es. scendibagno). Pezzi in piu' non sono un
+// problema; conta solo che non siano meno del contratto.
 function _biaContaAvviso(r,contratto){
   if(r===null||r===undefined)return null;
-  if(r<0)return 'sotto zero: impossibile, una registrazione è sbagliata';
   if(contratto!==null&&r>contratto)return 'oltre il contratto: impossibile, una registrazione è sbagliata';
   return null;
 }
@@ -14997,11 +14999,12 @@ function _biaContaPannello(h){
       const ap=_biaContaAppello(h,r.conta),av=ap&&ap.voci[v];
       if(av){
         alla=`${av.dist} <span style="color:var(--text-dim);font-weight:400;font-size:var(--fs-xxs);">(${esc(ap.distinta?ap.distinta.slice(0,5):'—')})</span>`;
-        app=av.diff===0?'<span style="color:var(--green);">tutti</span>':av.diff>0?`<span style="color:var(--amber);">${av.diff} da ritrovare</span>`:`<span style="color:var(--accent);">${-av.diff} oltre il contratto</span>`;
+        app=av.diff===0?'<span style="color:var(--green);">tutti</span>':av.diff>0?`<span style="color:var(--amber);">${av.diff} da ritrovare</span>`:`<span style="color:var(--green);">tutti · ${-av.diff} in più</span>`;
       }
       const dato=s.passi.reduce((a,p)=>a+p.dato,0),port=s.passi.reduce((a,p)=>a+p.portato,0);
       mov=s.passi.length?`${dato} / ${port} <span style="color:var(--text-dim);font-weight:400;font-size:var(--fs-xxs);">(${s.passi.length} consegne)</span>`:'<span style="color:var(--text-dim);font-weight:400;">nessuna consegna</span>';
       if(s.ferma)oggi=`<span style="color:var(--amber);">fermo al ${esc(s.ferma.slice(0,5))}: manca «Ha portato»</span>`;
+      else if(s.daRaimondo<0)oggi=`<span style="color:var(--text-dim);">${s.daRaimondo}</span><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:400;">pezzi in più del contratto: va bene</div>`;
       else{const av=_biaContaAvviso(s.daRaimondo,contr);oggi=av?`<span style="color:var(--red);">${s.daRaimondo}</span><div style="font-size:var(--fs-xxs);color:var(--red);font-weight:400;">${av}</div>`:s.daRaimondo;}
     }
     o+=`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(BIA_DOT_PLURALE[v]||v)}</td>
@@ -15712,13 +15715,17 @@ function biaRender(){
       if(!ap||!ap.n){
         h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">Manca una conta: registrala nel <strong>Conteggio a scorrere</strong> per sapere dove sta la biancheria.</div>`;
       }else{
-        const t=ap.tot,trov=t.alb+t.dist;
-        h+=`<div style="font-size:var(--fs-base);font-weight:700;">In albergo ${t.alb} · in lavanderia ${t.dist} · trovati ${trov} su ${t.contr}</div>
+        const t=ap.tot;
+        h+=`<div style="font-size:var(--fs-base);font-weight:700;">In albergo ${t.alb} · in lavanderia ${t.dist}</div>
           <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;line-height:1.55;">In albergo: conta del ${esc(ap.conta.slice(0,5))}. In lavanderia: distinta ${ap.distinta?'del '+esc(ap.distinta.slice(0,5)):'—'}. ${t.contr}: pezzi del contratto.</div>`;
-        const fuori=BIA_VOCI_GIRO.filter(v=>ap.voci[v]&&ap.voci[v].diff!==0);
-        if(!fuori.length)h+=`<div style="font-size:var(--fs-xs);margin-top:6px;font-weight:700;color:var(--green);">Tutti i pezzi del contratto ritrovati.</div>`;
-        else h+=`<div style="font-size:var(--fs-xs);margin-top:6px;line-height:1.7;">${fuori.map(v=>{const r=ap.voci[v];return`<span style="white-space:nowrap;margin-right:12px;"><strong>${esc(BIA_DOT_PLURALE[v]||v)}</strong> <span style="color:${r.diff>0?'var(--amber)':'var(--accent)'};font-weight:700;">${r.diff>0?r.diff+' da ritrovare':(-r.diff)+' oltre il contratto'}</span></span>`;}).join(' ')}</div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;line-height:1.5;"><strong>Da ritrovare</strong>: non sono né in albergo né nella distinta, quindi arretrati ancora da Raimondo oppure persi. <strong>Oltre il contratto</strong>: ci sono più pezzi di quelli a contratto, va verificato il numero del contratto o la conta.</div>`;
+        // Conta solo quello che manca: i pezzi in piu' del contratto vanno bene (reintegri extra).
+        const manca=BIA_VOCI_GIRO.filter(v=>ap.voci[v]&&ap.voci[v].diff>0);
+        const piu=BIA_VOCI_GIRO.filter(v=>ap.voci[v]&&ap.voci[v].diff<0);
+        const nome=v=>esc(BIA_DOT_PLURALE[v]||v);
+        if(!manca.length)h+=`<div style="font-size:var(--fs-xs);margin-top:6px;font-weight:700;color:var(--green);">Nessun pezzo da ritrovare: ci sono tutti i pezzi del contratto.</div>`;
+        else h+=`<div style="font-size:var(--fs-xs);margin-top:6px;line-height:1.7;"><strong>Da ritrovare ${manca.reduce((a,v)=>a+ap.voci[v].diff,0)} pezzi:</strong> ${manca.map(v=>`<span style="white-space:nowrap;margin-right:10px;">${nome(v)} <span style="color:var(--amber);font-weight:700;">${ap.voci[v].diff}</span></span>`).join(' ')}</div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;line-height:1.5;">Non sono né in albergo né nella distinta: arretrati ancora da Raimondo, oppure persi. La prossima conta dirà quale.</div>`;
+        if(piu.length)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">In più del contratto (va bene): ${piu.map(v=>nome(v)+' '+(-ap.voci[v].diff)).join(', ')}.</div>`;
       }
       if(!st.righe.length)h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);margin-top:8px;">Nessuna consegna registrata a ${esc(nomeMese)}.</div>`;
       h+=`</div>`;

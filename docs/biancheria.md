@@ -1097,7 +1097,13 @@ ogni consegna mostra *"in lavanderia (distinta): N"* = lo sporco dato quel giorn
 Conteggio a scorrere le colonne *In lavanderia (distinta)* e *All'appello* prendono il posto di *Da
 Raimondo alla conta*. Sul backup del 15/11: matrimoniali 108 da ritrovare, singole 33, viso 11, bidet 40,
 teli 42; **federe 44 e scendibagno 52 oltre il contratto** (contati in albergo 201 federe e 110
-scendibagno, più della dotazione: contratto da verificare).
+scendibagno, più della dotazione).
+**Pezzi in più non sono un problema** (stesso giorno, il QM): in albergo ci sono solo pezzi di
+Raimondo, le conte sono esatte (rifatte dal 01/09), gli scendibagno in più sono noti (reintegri extra).
+Conta solo che non siano **meno** del contratto. Quindi: in alto solo *"Da ritrovare N pezzi:"* per
+tipologia (ambra) e una riga grigia *"In più del contratto (va bene): …"*; tolto *"trovati X su Y"*, che
+sommava i pezzi in più e nascondeva quelli da ritrovare; nel Conteggio *"tutti · N in più"* in verde;
+`_biaContaAvviso` non segnala più "sotto zero" (da Raimondo negativo = pezzi in più, *"va bene"*).
 
 
 
