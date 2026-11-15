@@ -14113,6 +14113,8 @@ async function biaLoad(){
   try{await _biaDistCarica();}catch(e){}
   // L'armadio di scorta della Dotazione da contratto sta nella Giacenza: solo lettura.
   try{_giac=await _qmLeggiArchivio(GIAC_KEY,{movimenti:[],tipologie:null});}catch(e){}
+  // I resi (biancheria inidonea) entrano nel conto all'appello del SoulArt: solo lettura.
+  try{_resi=await _qmLeggiArchivio(RESI_KEY,{righe:[],ritiri:[],tipologie:null});}catch(e){}
   biaRender();
   // Una volta sola: dopo, non c'è più niente prima del 01/09 e non scrive niente.
   if(_biaTogliConsumiPrimaInizio()){await _biaSave();biaRender();}
@@ -14897,6 +14899,23 @@ function _biaContaDopo(h,data){
 // dopo il passaggio). Contati in albergo + distinta = pezzi trovati; contratto − trovati:
 //   > 0  pezzi da ritrovare (arretrati ancora da Raimondo, oppure persi)
 //   < 0  piu' pezzi del contratto: il contratto (o la conta) va verificato.
+// Resi biancheria (inidonea) di una tipologia fino al giorno `fino` (15/11/2026, il QM):
+// `aperto` = nel sacco del reso, ancora in albergo; `dato` = gia' ritirati da Raimondo come
+// inidonei. Né l'uno né l'altro sono nella conta o nella distinta: senza contarli sembrano persi.
+// I nomi del Reso che non coincidono con quelli del giro si traducono.
+const BIA_RESO_VOCE={'Asciugamano corpo':'Telo doccia','Tappetino bagno':'Scendibagno'};
+function _biaResiVoce(h,v,fino){
+  const o={aperto:0,dato:0};
+  let righe=[];try{righe=(_resi&&_resi.righe)||[];}catch(e){}
+  righe.forEach(x=>{
+    if(_biaH(x)!==h)return;
+    if((BIA_RESO_VOCE[x.tipologia]||x.tipologia)!==v)return;
+    const d=_biaParse(x.data);if(!d||(fino&&d>fino))return;
+    const q=Number(x.qta)||0;
+    if(x.ritiroId)o.dato+=q;else o.aperto+=q;
+  });
+  return o;
+}
 function _biaContaAppello(h,c){
   if(!c)return null;
   const d=_biaParse(c.data);
@@ -14909,7 +14928,7 @@ function _biaContaAppello(h,c){
   const giorni=[],senza=[];
   if(g){for(const x=new Date(_biaParse(g.data).getTime());x<=d;x.setDate(x.getDate()+1))giorni.push(_biaFmt(x));}
   const cons=giorni.map(ds=>{const k=_biaConsumi(h).find(z=>z.data===ds);if(!k)senza.push(ds);return k;}).filter(Boolean);
-  const o={conta:c.data,distinta:g?g.data:null,giorni:giorni,senzaConsumi:senza,voci:{},tot:{alb:0,pulito:0,sporco:0,dist:0,contr:0,diff:0},n:0};
+  const o={conta:c.data,distinta:g?g.data:null,giorni:giorni,senzaConsumi:senza,voci:{},tot:{alb:0,pulito:0,sporco:0,dist:0,resoAperto:0,resoDato:0,contr:0,diff:0},n:0};
   BIA_VOCI_GIRO.forEach(v=>{
     const tutto=_biaContaInAlbergo(c,v),contr=_biaDotCampo(h,v,'contratto');
     if(tutto===null||contr===null)return;
@@ -14918,9 +14937,11 @@ function _biaContaAppello(h,c){
     const sporco=g?cons.reduce((a,z)=>a+(Number(z.q&&z.q[v])||0),0):(Number(c.q[v].sporco)||0);
     const alb=pulito+sporco;
     const dist=g?(Number(g.consegnato&&g.consegnato[v])||0):0;
-    const r={alb:alb,pulito:pulito,sporco:sporco,dist:dist,contr:contr,diff:contr-alb-dist};
+    const rs=_biaResiVoce(h,v,d);
+    const r={alb:alb,pulito:pulito,sporco:sporco,dist:dist,resoAperto:rs.aperto,resoDato:rs.dato,contr:contr,
+             diff:contr-alb-dist-rs.aperto-rs.dato};
     o.voci[v]=r;o.n++;
-    ['alb','pulito','sporco','dist','contr','diff'].forEach(k=>{o.tot[k]+=r[k];});
+    ['alb','pulito','sporco','dist','resoAperto','resoDato','contr','diff'].forEach(k=>{o.tot[k]+=r[k];});
   });
   return o;
 }
@@ -15050,7 +15071,9 @@ function _biaContaPannello(h){
       o+=`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(c.data)}</td>${BIA_VOCI_GIRO.map(v=>{
         const t=_biaContaInAlbergo(c,v);if(t===null)return`<td style="${td}color:var(--text-dim);">—</td>`;
         const ver=prec?_biaContaVerifica(h,v,prec,c):null;
-        return`<td style="${td}"><strong>${t}</strong>${ver?`<div style="font-size:var(--fs-xxs);color:${ver.differenza===0?'var(--green)':ver.differenza<0?'var(--red)':'var(--amber)'};">previsti ${ver.previsti} · ${ver.differenza===0?'tornano':ver.differenza>0?'+'+ver.differenza:ver.differenza}</div>`:''}</td>`;
+        // Dove stanno i pezzi contati (15/11/2026, il QM): sempre, posto per posto.
+        const dove=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.45;margin-top:2px;white-space:nowrap;">${BIA_CONTA_POSTI.map(([k,tt])=>`${esc(tt.replace(/^Sui |^In |^Sporco in albergo$/,m=>m==='Sporco in albergo'?'sporchi':''))} <strong style="color:var(--text);">${Number(c.q[v][k])||0}</strong>`).join('<br>')}</div>`;
+        return`<td style="${td}vertical-align:top;"><strong>${t}</strong>${dove}${ver?`<div style="font-size:var(--fs-xxs);color:${ver.differenza===0?'var(--green)':ver.differenza<0?'var(--red)':'var(--amber)'};">previsti ${ver.previsti} · ${ver.differenza===0?'tornano':ver.differenza>0?'+'+ver.differenza:ver.differenza}</div>`:''}</td>`;
       }).join('')}<td style="${td}"><button onclick="biaContaElimina('${c.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">elimina</button></td></tr>`;
     });
     o+=`</tbody></table></div></div>`;
@@ -15727,8 +15750,8 @@ function biaRender(){
         h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">Manca una conta: registrala nel <strong>Conteggio a scorrere</strong> per sapere dove sta la biancheria.</div>`;
       }else{
         const t=ap.tot;
-        h+=`<div style="font-size:var(--fs-base);font-weight:700;">In albergo ${t.alb} · in lavanderia ${t.dist}</div>
-          <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;line-height:1.55;">In albergo: ${t.pulito} puliti (conta del ${esc(ap.conta.slice(0,5))}) + ${t.sporco} sporchi (consumi ${ap.giorni.length?(ap.giorni.length===1?'del '+esc(ap.giorni[0].slice(0,5)):'dal '+esc(ap.giorni[0].slice(0,5))+' al '+esc(ap.giorni[ap.giorni.length-1].slice(0,5))):'—'}). In lavanderia: distinta ${ap.distinta?'del '+esc(ap.distinta.slice(0,5)):'—'}. Contratto: ${t.contr} pezzi.</div>
+        h+=`<div style="font-size:var(--fs-base);font-weight:700;">In albergo ${t.alb} · in lavanderia ${t.dist}${t.resoAperto+t.resoDato?' · resi '+(t.resoAperto+t.resoDato):''}</div>
+          <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;line-height:1.55;">In albergo: ${t.pulito} puliti (conta del ${esc(ap.conta.slice(0,5))}) + ${t.sporco} sporchi (consumi ${ap.giorni.length?(ap.giorni.length===1?'del '+esc(ap.giorni[0].slice(0,5)):'dal '+esc(ap.giorni[0].slice(0,5))+' al '+esc(ap.giorni[ap.giorni.length-1].slice(0,5))):'—'}). In lavanderia: distinta ${ap.distinta?'del '+esc(ap.distinta.slice(0,5)):'—'}.${t.resoAperto||t.resoDato?` Resi come inidonei: ${t.resoDato} già ritirati da Raimondo${t.resoAperto?' + '+t.resoAperto+' nel sacco del reso':''}.`:''} Contratto: ${t.contr} pezzi.</div>
           ${ap.senzaConsumi.length?`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:3px;">Consumi non inseriti: ${ap.senzaConsumi.map(x=>esc(x.slice(0,5))).join(', ')}. Lo sporco di quei giorni manca dal conto.</div>`:''}`;
         // Conta solo quello che manca: i pezzi in piu' del contratto vanno bene (reintegri extra).
         const manca=BIA_VOCI_GIRO.filter(v=>ap.voci[v]&&ap.voci[v].diff>0);
@@ -15736,7 +15759,7 @@ function biaRender(){
         const nome=v=>esc(BIA_DOT_PLURALE[v]||v);
         if(!manca.length)h+=`<div style="font-size:var(--fs-xs);margin-top:6px;font-weight:700;color:var(--green);">Nessun pezzo da ritrovare: ci sono tutti i pezzi del contratto.</div>`;
         else h+=`<div style="font-size:var(--fs-xs);margin-top:6px;line-height:1.7;"><strong>Da ritrovare ${manca.reduce((a,v)=>a+ap.voci[v].diff,0)} pezzi:</strong> ${manca.map(v=>`<span style="white-space:nowrap;margin-right:10px;">${nome(v)} <span style="color:var(--amber);font-weight:700;">${ap.voci[v].diff}</span></span>`).join(' ')}</div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;line-height:1.5;">Non sono né in albergo né nella distinta: arretrati ancora da Raimondo, oppure persi. La prossima conta dirà quale.</div>`;
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;line-height:1.5;">Non sono né in albergo, né nella distinta, né nei resi: arretrati ancora da Raimondo, oppure persi. La prossima conta dirà quale. I resi già ritirati contano come trovati: se Raimondo non li ha reintegrati, mancano dal giro ma non sono persi.</div>`;
         if(piu.length)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">In più del contratto (va bene): ${piu.map(v=>nome(v)+' '+(-ap.voci[v].diff)).join(', ')}.</div>`;
       }
       if(!st.righe.length)h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);margin-top:8px;">Nessuna consegna registrata a ${esc(nomeMese)}.</div>`;

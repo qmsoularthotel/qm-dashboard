@@ -3556,6 +3556,7 @@ sez('Biancheria: consumi di agosto tolti, consegne e saldo intatti (15/11/2026)'
 //    consegna DOPO la conta; alla conta seguente: contati contro previsti.
 sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
 (function(){
+  var resiPrima=_resi;_resi={righe:[],ritiri:[],tipologie:null};   // i resi di altri controlli non entrano qui
   var prima=_bia,spento=BIA_INIZIO_MINIMO,spentoH=BIA_INIZIO_MINIMO_H;
   BIA_INIZIO_MINIMO=_BIA_MIN_VERO;BIA_INIZIO_MINIMO_H=_BIA_MIN_H_VERO;
   var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};
@@ -3595,6 +3596,7 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   ok('il riepilogo parte dall\'ultima conta',    _biaContaRiepilogo('sa','Federa').conta.data, '15/11/2026');
   var html=''; try{html=_biaContaPannello('sa');}catch(e){html='ERRORE '+e.message;}
   ok('il pannello si disegna',                    /Conteggio a scorrere/.test(html), true);
+  ok('conte registrate: dove stanno i pezzi',    /letti <strong[^>]*>81<\/strong><br>carrelli <strong[^>]*>5<\/strong><br>deposito <strong[^>]*>60<\/strong><br>sporchi <strong[^>]*>20</.test(html), true);
   ok('SoulArt: conteggio al posto della Dotazione', /_biaContaSi\(_biaHotel\)\?_biaContaPannello\(_biaHotel\):_biaDotPannello\(_biaHotel\)/.test(String(biaRender)), true);
   ok('SoulArt: niente piu\' «Pezzi non rientrati»', /_biaStoSaldo&&!_biaContaSi\(hS\)/.test(String(biaRender)), true);
   ok('report: niente «Cumulato» al SoulArt',      /_biaContaSi\(k\)\?'':'<th class="r">Cumulato<\/th>'/.test(String(biaPrintAndamento)), true);
@@ -3651,6 +3653,17 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   var c3={id:'k6',hotel:'sa',data:'15/11/2026',q:{Federa:P(80,10,52,20)}};
   ok('8 in meno: da ritrovare',                   _biaContaAppello('sa',c3).voci.Federa.diff, 8);
   ok('il giorno senza consumi si nomina',         _biaContaAppello('sa',c3).senzaConsumi.join(','), '15/11/2026');
+  // Resi come inidonei: nel sacco (aperti) o gia' ritirati da Raimondo. Contano come trovati.
+  _resi={righe:[{id:'r1',hotel:'sa',data:'02/11/2026',tipologia:'Federa',qta:5,ritiroId:'x'},
+                {id:'r2',hotel:'sa',data:'13/11/2026',tipologia:'Federa',qta:3,ritiroId:null},
+                {id:'r3',hotel:'bh',data:'13/11/2026',tipologia:'Federa',qta:9,ritiroId:null},
+                {id:'r4',hotel:'sa',data:'16/11/2026',tipologia:'Federa',qta:7,ritiroId:null},
+                {id:'r5',hotel:'sa',data:'13/11/2026',tipologia:'Asciugamano corpo',qta:2,ritiroId:null}],ritiri:[],tipologie:null};
+  var rv=_biaResiVoce('sa','Federa',_biaParse('15/11/2026'));
+  ok('resi: ritirati e nel sacco, solo SoulArt, fino alla conta', [rv.dato,rv.aperto].join(' '), '5 3');
+  ok('resi: «Asciugamano corpo» e\' il telo doccia', _biaResiVoce('sa','Telo doccia',null).aperto, 2);
+  ok('8 da ritrovare, ma 8 erano resi: tutti',     _biaContaAppello('sa',c3).voci.Federa.diff, 0);
+  _resi=resiPrima;
   _bia.conte.pop();
   _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
 })();

@@ -1112,6 +1112,16 @@ usa (il 15/11 conteneva solo i consumi del giorno: 24 matrimoniali invece di 16 
 consumi inseriti si nomina in ambra (`senzaConsumi`), non vale zero. Senza una consegna prima della
 conta resta lo sporco contato. Sul backup del 15/11: matrimoniali 92 da ritrovare (erano 108), singole
 33, bidet 27, teli 27; in più federe 66, viso 10, scendibagno 64.
+**Anche i resi** (stesso giorno, il QM: *"ci sono altri dati in reso biancheria"*). `_biaResiVoce(h,v,fino)`
+legge `qm_resi_biancheria` (caricato in sola lettura da `biaLoad`): righe della struttura fino al giorno
+della conta, **nel sacco** (`ritiroId` vuoto, ancora in albergo) o **già ritirate** da Raimondo come
+inidonee. Contano come trovati: all'appello = contratto − (albergo + distinta + resi). Se Raimondo non li
+ha reintegrati mancano dal giro ma non sono persi. Nomi tradotti con `BIA_RESO_VOCE` (*Asciugamano
+corpo* → Telo doccia, *Tappetino bagno* → Scendibagno). Sul backup del 15/11 le matrimoniali da ritrovare
+scendono da 92 a **25** (52 resi ritirati + 15 nel sacco); singole 21, bidet 26, teli 23.
+
+**Conte registrate: dove stanno i pezzi** (stesso giorno): sotto il totale di ogni tipologia, sempre,
+*letti · carrelli · deposito · sporchi* con i numeri scritti nella conta.
 
 
 
