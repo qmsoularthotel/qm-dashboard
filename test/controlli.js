@@ -3598,6 +3598,30 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   ok('SoulArt: conteggio al posto della Dotazione', /_biaContaSi\(_biaHotel\)\?_biaContaPannello\(_biaHotel\):_biaDotPannello\(_biaHotel\)/.test(String(biaRender)), true);
   ok('SoulArt: niente piu\' «Pezzi non rientrati»', /_biaStoSaldo&&!_biaContaSi\(hS\)/.test(String(biaRender)), true);
   ok('report: niente «Cumulato» al SoulArt',      /_biaContaSi\(k\)\?'':'<th class="r">Cumulato<\/th>'/.test(String(biaPrintAndamento)), true);
+  // Storico del SoulArt: quanti pezzi ha Raimondo, in tutto e dopo ogni consegna (15/11/2026).
+  _bia.conte=[{id:'k1',hotel:'sa',data:'10/11/2026',q:{Federa:P(88,12,50,20)}}];
+  var tt=_biaContaTotali('sa');
+  ok('storico: da Raimondo ora 25',               tt.ora, 25);
+  ok('storico: all\'ultima conta erano 30',        [tt.alla,tt.ultima].join(' '), '30 10/11/2026');
+  ok('le tipologie senza contratto restano fuori', tt.senza, BIA_VOCI_GIRO.length-1);
+  ok('dopo la consegna del giorno della conta: 30', (_biaContaDopo('sa','10/11/2026')||{}).tot, 30);
+  ok('dopo il 12/11: 30 +40 −35 = 35',            (_biaContaDopo('sa','12/11/2026')||{}).tot, 35);
+  ok('dopo il 14/11: 25',                         (_biaContaDopo('sa','14/11/2026')||{}).tot, 25);
+  ok('prima della conta: niente numero',          _biaContaDopo('sa','08/11/2026'), null);
+  _bia.giri[1].ricevuto=_biaVuote();
+  ok('conto fermo: niente numero dopo',           _biaContaDopo('sa','14/11/2026'), null);
+  ok('conto fermo: il totale lo dice',            _biaContaTotali('sa').ferma, '12/11/2026');
+  _bia.giri[1].ricevuto=Q(35);
+  // Etichette: al SoulArt un pezzo non riportato resta a Raimondo, non e' perso.
+  ok('SoulArt: 11 restano a Raimondo',            _biaEsitoConsegna({registrato:true,dovuto:50,delta:-11},true).txt, '11 restano a Raimondo');
+  ok('SoulArt: 8 recuperati',                     _biaEsitoConsegna({registrato:true,dovuto:50,delta:8},true).txt, '8 recuperati');
+  ok('SoulArt: non piu\' rosso',                  _biaEsitoConsegna({registrato:true,dovuto:50,delta:-11},true).col, 'var(--amber)');
+  ok('Boutique: resta «Mancano»',                 _biaEsitoConsegna({registrato:true,dovuto:50,delta:-11},false).txt, 'Mancano 11 pezzi');
+  var box={innerHTML:''},vero=document.getElementById,ph=_biaHotel,pa=_biaStoAperto,pm=_biaStoMese;
+  document.getElementById=function(id){return id==='bia-content'?box:null;};
+  try{_biaHotel='sa';_biaStoAperto=true;_biaStoMese='2026-11';biaRender();}finally{document.getElementById=vero;_biaHotel=ph;_biaStoAperto=pa;_biaStoMese=pm;}
+  ok('nello storico: Da Raimondo ora',            /Da Raimondo ora: 25 pezzi/.test(box.innerHTML), true);
+  ok('e dopo ogni consegna',                      /da Raimondo <strong[^>]*>35</.test(box.innerHTML), true);
   _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
 })();
 

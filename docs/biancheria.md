@@ -1058,6 +1058,18 @@ riportato…"* e *"Nelle consegne: … mancanti − … in più"* non si mostran
 scorrere quel saldo non ha più senso (`fraseMese=!_biaContaSi(hS)`). Restano le consegne una per una.
 Boutique e Galleria invariati.
 
+**Al suo posto, l'andamento del Conteggio a scorrere** (15/11/2026, proposte 1 e 2 scelte dal QM):
+- in alto *"Da Raimondo ora: N pezzi"* e *"All'ultima conta (gg/mm) erano M · K in più/in meno da
+  allora"* (`_biaContaTotali`: somma per tipologia dell'ultima conta fatta scorrere; fuori dal totale
+  le tipologie senza conta o contratto e quelle col conto fermo, dette in una riga). Senza conta:
+  *"Manca una conta"*. Se il numero sale, Raimondo trattiene sempre più biancheria;
+- su ogni consegna *"da Raimondo N"* (`_biaContaDopo`: dall'ultima conta fino a quel giorno; una
+  conta dello stesso giorno vale lei, perché si fa dopo il passaggio). Prima della prima conta, o a
+  conto fermo, niente numero;
+- le pastiglie: *"Mancano N pezzi"* → *"N restano a Raimondo"* (ambra), *"Tutto riportato · N in
+  più"* → *"N recuperati"* (`_biaEsitoConsegna(r,conta)`). Il rosso resta per le perdite vere, che
+  dice solo la conta.
+
 
 Il vecchio pannello "Consegne di Raimondo" (le due strutture una sotto l'altra, cinque
 colonne di numeri per riga) era da leggere, non da guardare. Rifatto su bozza approvata dal QM

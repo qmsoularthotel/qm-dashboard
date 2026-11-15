@@ -14064,10 +14064,14 @@ function _biaStorico(h,ym){
   return{righe,portato,dovuto,saldo:portato-dovuto,confrontate:conf,nonReg,primaInizio,meno,piu};
 }
 // Esito di una consegna, in parole: e' quello che si legge senza aprire niente.
-function _biaEsitoConsegna(r){
+// `conta` (SoulArt, 15/11/2026): col Conteggio a scorrere un pezzo non riportato non e' perso,
+// resta a Raimondo e torna con le consegne dopo. Le perdite vere le dice solo la conta.
+function _biaEsitoConsegna(r,conta){
   if(r.primaInizio)return{txt:'Prima dell\'inizio del conteggio',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
   if(!r.registrato)return{txt:'Manca cosa ha portato',col:'var(--amber)',bg:'rgba(160,90,0,.10)'};
   if(r.dovuto===null)return{txt:'Prima consegna',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
+  if(conta&&r.delta<0)return{txt:(-r.delta)+(r.delta===-1?' resta':' restano')+' a Raimondo',col:'var(--amber)',bg:'rgba(160,90,0,.10)'};
+  if(conta&&r.delta>0)return{txt:r.delta+(r.delta===1?' recuperato':' recuperati'),col:'var(--green)',bg:'rgba(30,122,72,.10)'};
   if(r.delta<0)return{txt:'Mancano '+(-r.delta)+' pezzi',col:'var(--red)',bg:'rgba(192,53,42,.10)'};
   if(r.delta>0)return{txt:'Tutto riportato · '+r.delta+' in più',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
   return{txt:'Tutto riportato',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
@@ -14823,6 +14827,44 @@ function _biaContaRiepilogo(h,v){
   const conte=_biaConte(h).filter(c=>_biaContaInAlbergo(c,v)!==null);
   const c=conte[conte.length-1]||null;
   return{conta:c,scorre:c?_biaContaScorri(h,v,c,null):null};
+}
+// Storico consegne del SoulArt (15/11/2026): quanti pezzi ha Raimondo, in tutto.
+// Somma per tipologia dell'ultima conta fatta scorrere fino a oggi. Le tipologie senza conta
+// (o senza contratto) restano fuori e si contano in `senza`; una consegna senza «Ha portato»
+// ferma il conto (`ferma`, la prima data).
+function _biaContaTotali(h){
+  const o={ora:0,alla:0,ultima:null,senza:0,ferma:null,voci:0};
+  BIA_VOCI_GIRO.forEach(v=>{
+    const r=_biaContaRiepilogo(h,v),s=r.scorre;
+    if(!s){o.senza++;return;}
+    const d=_biaParse(r.conta.data);if(!o.ultima||d>_biaParse(o.ultima))o.ultima=r.conta.data;
+    if(s.ferma){if(!o.ferma||_biaParse(s.ferma)<_biaParse(o.ferma))o.ferma=s.ferma;return;}
+    o.ora+=s.daRaimondo;o.alla+=s.allaConta;o.voci++;
+  });
+  return o;
+}
+// Pezzi da Raimondo subito DOPO la consegna del giorno `data`, sommati sulle tipologie: per
+// ognuna parte dall'ultima conta fatta fino a quel giorno (una conta dello stesso giorno e'
+// fatta dopo il passaggio, quindi vale lei). null se nessuna tipologia ha una conta prima,
+// o se il conto e' fermo (manca «Ha portato») prima di quel giorno.
+function _biaContaDopo(h,data){
+  const d=_biaParse(data);if(!d)return null;
+  let tot=0,n=0;
+  for(const v of BIA_VOCI_GIRO){
+    const conte=_biaConte(h).filter(c=>_biaContaInAlbergo(c,v)!==null&&_biaParse(c.data)<=d);
+    const c=conte[conte.length-1];if(!c)continue;
+    let val;
+    if(_biaParse(c.data).getTime()===d.getTime()){
+      const contr=_biaDotCampo(h,v,'contratto');if(contr===null)continue;
+      val=contr-_biaContaInAlbergo(c,v);
+    }else{
+      const sc=_biaContaScorri(h,v,c,d);if(!sc)continue;
+      const p=sc.passi.find(x=>x.data===data);if(!p)return null;
+      val=p.daRaimondo;
+    }
+    tot+=val;n++;
+  }
+  return n?{tot:tot,voci:n}:null;
 }
 // Lo stato di un "da Raimondo": sotto zero o oltre il contratto è impossibile.
 function _biaContaAvviso(r,contratto){
@@ -15610,20 +15652,34 @@ function biaRender(){
     if(st.primaInizio)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${st.primaInizio} consegn${st.primaInizio===1?'a':'e'} prima dell'inizio del conteggio (${esc(_biaInizioTxt(hS))}): fuori dal conto.</div>`;
     if(st.nonReg)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">${st.nonReg} consegn${st.nonReg===1?'a':'e'} senza il dato di cosa ha riportato: fuori dal conto.</div>`;
     h+=`</div>`;
-    }else if(!st.righe.length){
-      h+=`<div style="padding:14px 16px;font-size:var(--fs-sm);color:var(--text-dim);">Nessuna consegna registrata a ${esc(nomeMese)}.</div>`;
+    }else{
+      // SoulArt: l'andamento e' quanti pezzi ha Raimondo, partendo dalla conta vera.
+      const ct=_biaContaTotali(hS);
+      h+=`<div style="padding:14px 16px;border-bottom:1px solid var(--border);">`;
+      if(!ct.ultima){
+        h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">Manca una conta: registrala nel <strong>Conteggio a scorrere</strong> per vedere quanti pezzi ha Raimondo.</div>`;
+      }else{
+        if(ct.voci)h+=`<div style="font-size:var(--fs-base);font-weight:700;">Da Raimondo ora: ${ct.ora} pezzi</div>
+          <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">All'ultima conta (${esc(ct.ultima.slice(0,5))}) erano <strong style="color:var(--text);">${ct.alla}</strong> · ${ct.ora===ct.alla?'stabile':ct.ora>ct.alla?`<span style="color:var(--amber);font-weight:700;">${ct.ora-ct.alla} in più da allora</span>`:`<span style="color:var(--green);font-weight:700;">${ct.alla-ct.ora} in meno da allora</span>`}. Se continua a salire, Raimondo trattiene sempre più biancheria.</div>`;
+        if(ct.ferma)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">Conto fermo al ${esc(ct.ferma.slice(0,5))}: manca «Ha portato» in quella consegna${ct.voci?' (quelle tipologie restano fuori dal totale)':''}.</div>`;
+        if(ct.senza)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${ct.senza} tipologi${ct.senza===1?'a':'e'} senza conta o senza contratto: fuori dal totale.</div>`;
+      }
+      if(!st.righe.length)h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);margin-top:8px;">Nessuna consegna registrata a ${esc(nomeMese)}.</div>`;
+      h+=`</div>`;
     }
     const viste=_biaStoTutte?st.righe:st.righe.slice(0,BIA_STO_VISTE);
     if(st.righe.length>BIA_STO_VISTE&&!_biaStoTutte)h+=`<div style="padding:8px 16px 2px;font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;font-weight:600;">Ultime ${BIA_STO_VISTE} consegne</div>`;
     viste.forEach(rg=>{
       const g=_bia.giri.find(x=>x.id===rg.id)||_bia.giri.find(x=>_biaH(x)===hS&&x.data===rg.data);if(!g)return;
-      const aperto=_biaGiroAperto.has(g.id),es=_biaEsitoConsegna(rg),scG=_biaScostamento(g);
+      const aperto=_biaGiroAperto.has(g.id),es=_biaEsitoConsegna(rg,!fraseMese),scG=_biaScostamento(g);
+      const dopo=fraseMese?null:_biaContaDopo(hS,rg.data);
       const dd=_biaParse(rg.data);
       h+=`<div onclick="biaToggleGiro('${g.id}')" style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--border);cursor:pointer;${aperto?'background:var(--surface2,var(--surface));':''}">
         <span style="min-width:96px;font-size:var(--fs-xs);font-weight:700;">${dd?BIA_GG_NOMI[dd.getDay()].slice(0,3)+' '+rg.data.slice(0,5):esc(rg.data)}</span>
         <span style="background:${es.bg};color:${es.col};padding:4px 10px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;">${es.txt}</span>
         ${scG?`<span title="Il totale dato quel giorno non corrisponde ai consumi: apri per vedere" style="font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">totale da verificare</span>`:''}
-        <span style="margin-left:auto;color:var(--text-dim);font-size:var(--fs-xs);">${aperto?'▴':'▾'}</span>
+        ${dopo?`<span title="Pezzi in mano a Raimondo dopo questa consegna" style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;">da Raimondo <strong style="color:var(--text);font-size:var(--fs-xs);">${dopo.tot}</strong></span>`:''}
+        <span style="${dopo?'':'margin-left:auto;'}color:var(--text-dim);font-size:var(--fs-xs);">${aperto?'▴':'▾'}</span>
       </div>`;
       if(aperto){
         h+=`<div style="padding:0 16px 14px 124px;background:var(--surface2,var(--surface));font-size:var(--fs-xs);color:var(--text-dim);line-height:1.8;">
