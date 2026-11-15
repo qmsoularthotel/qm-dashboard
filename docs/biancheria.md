@@ -1104,6 +1104,14 @@ Conta solo che non siano **meno** del contratto. Quindi: in alto solo *"Da ritro
 tipologia (ambra) e una riga grigia *"In più del contratto (va bene): …"*; tolto *"trovati X su Y"*, che
 sommava i pezzi in più e nascondeva quelli da ritrovare; nel Conteggio *"tutti · N in più"* in verde;
 `_biaContaAvviso` non segnala più "sotto zero" (da Raimondo negativo = pezzi in più, *"va bene"*).
+**Lo sporco in albergo viene dai consumi** (stesso giorno, il QM: *"devi considerare anche i consumi di
+ieri e oggi"*). Il giro di D ritira i consumi fino al giorno prima: dopo la distinta di D lo sporco in
+albergo sono i consumi **da D al giorno della conta compresi**. In `_biaContaAppello` *in albergo* =
+pulito della conta (letti + carrelli + deposito) + quei consumi; lo *sporco* scritto nella conta non si
+usa (il 15/11 conteneva solo i consumi del giorno: 24 matrimoniali invece di 16 + 24). Un giorno senza
+consumi inseriti si nomina in ambra (`senzaConsumi`), non vale zero. Senza una consegna prima della
+conta resta lo sporco contato. Sul backup del 15/11: matrimoniali 92 da ritrovare (erano 108), singole
+33, bidet 27, teli 27; in più federe 66, viso 10, scendibagno 64.
 
 
 

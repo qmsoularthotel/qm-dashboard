@@ -3560,7 +3560,7 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   BIA_INIZIO_MINIMO=_BIA_MIN_VERO;BIA_INIZIO_MINIMO_H=_BIA_MIN_H_VERO;
   var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};
   var P=function(l,c,d,s){return {letti:l,carrelli:c,deposito:d,sporco:s};};
-  _bia={consumi:[],dotazione:{sa:{Federa:{contratto:200}}},giri:[
+  _bia={consumi:[{id:'cc1',hotel:'sa',data:'10/11/2026',q:Q(20)},{id:'cc2',hotel:'sa',data:'14/11/2026',q:Q(20)}],dotazione:{sa:{Federa:{contratto:200}}},giri:[
     {id:'g10',hotel:'sa',data:'10/11/2026',consegnato:Q(50),ricevuto:Q(45)},
     {id:'g12',hotel:'sa',data:'12/11/2026',consegnato:Q(40),ricevuto:Q(35)},
     {id:'g14',hotel:'sa',data:'14/11/2026',consegnato:Q(30),ricevuto:Q(40)}],
@@ -3634,6 +3634,11 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   var ap=_biaContaAppello('sa',_bia.conte[0]);
   ok('in lavanderia = distinta del giorno della conta', [ap.distinta,ap.voci.Federa.dist].join(' '), '10/11/2026 50');
   ok('contratto − (albergo + distinta)',           ap.voci.Federa.diff, -20);
+  // Lo sporco in albergo viene dai consumi dal giorno della distinta alla conta, non dalla conta.
+  _bia.consumi[0].q=Q(35);
+  var ap2=_biaContaAppello('sa',_bia.conte[0]);
+  ok('sporco dai consumi (35), non dalla conta (20)', [ap2.voci.Federa.pulito,ap2.voci.Federa.sporco,ap2.voci.Federa.diff].join(' '), '150 35 -35');
+  _bia.consumi[0].q=Q(20);
   ok('nello storico: albergo, lavanderia, trovati', /In albergo 170 · in lavanderia 50</.test(box.innerHTML), true);
   ok('in piu\' del contratto: va bene',           /In più del contratto \(va bene\): Federe 20/.test(box.innerHTML), true);
   ok('e non c\'e\' niente da ritrovare',             /Nessun pezzo da ritrovare/.test(box.innerHTML), true);
@@ -3645,6 +3650,7 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   ok('conta del 14/11: tutti all\'appello',        _biaContaAppello('sa',_bia.conte[1]).voci.Federa.diff, 0);
   var c3={id:'k6',hotel:'sa',data:'15/11/2026',q:{Federa:P(80,10,52,20)}};
   ok('8 in meno: da ritrovare',                   _biaContaAppello('sa',c3).voci.Federa.diff, 8);
+  ok('il giorno senza consumi si nomina',         _biaContaAppello('sa',c3).senzaConsumi.join(','), '15/11/2026');
   _bia.conte.pop();
   _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
 })();

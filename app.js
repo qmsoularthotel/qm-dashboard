@@ -14902,14 +14902,25 @@ function _biaContaAppello(h,c){
   const d=_biaParse(c.data);
   const gs=_biaGiri(h).filter(g=>{const x=_biaParse(g.data);return x&&x<=d;});
   const g=gs.length?gs.reduce((a,b)=>_biaParse(b.data)>=_biaParse(a.data)?b:a):null;
-  const o={conta:c.data,distinta:g?g.data:null,voci:{},tot:{alb:0,dist:0,contr:0,diff:0},n:0};
+  // Sporco in albergo dai CONSUMI (15/11/2026, il QM): il giro del giorno D ritira i consumi
+  // fino al giorno prima, quindi dopo la distinta di D in albergo c'e' lo sporco dei consumi
+  // da D al giorno della conta compresi. Lo "sporco" scritto nella conta conteneva solo oggi.
+  // Un giorno senza consumi inseriti non vale zero: si nomina (`senzaConsumi`).
+  const giorni=[],senza=[];
+  if(g){for(const x=new Date(_biaParse(g.data).getTime());x<=d;x.setDate(x.getDate()+1))giorni.push(_biaFmt(x));}
+  const cons=giorni.map(ds=>{const k=_biaConsumi(h).find(z=>z.data===ds);if(!k)senza.push(ds);return k;}).filter(Boolean);
+  const o={conta:c.data,distinta:g?g.data:null,giorni:giorni,senzaConsumi:senza,voci:{},tot:{alb:0,pulito:0,sporco:0,dist:0,contr:0,diff:0},n:0};
   BIA_VOCI_GIRO.forEach(v=>{
-    const alb=_biaContaInAlbergo(c,v),contr=_biaDotCampo(h,v,'contratto');
-    if(alb===null||contr===null)return;
+    const tutto=_biaContaInAlbergo(c,v),contr=_biaDotCampo(h,v,'contratto');
+    if(tutto===null||contr===null)return;
+    const pulito=tutto-(Number(c.q[v].sporco)||0);
+    // Senza una consegna prima della conta non c'e' un "dal": resta lo sporco contato.
+    const sporco=g?cons.reduce((a,z)=>a+(Number(z.q&&z.q[v])||0),0):(Number(c.q[v].sporco)||0);
+    const alb=pulito+sporco;
     const dist=g?(Number(g.consegnato&&g.consegnato[v])||0):0;
-    const r={alb:alb,dist:dist,contr:contr,diff:contr-alb-dist};
+    const r={alb:alb,pulito:pulito,sporco:sporco,dist:dist,contr:contr,diff:contr-alb-dist};
     o.voci[v]=r;o.n++;
-    ['alb','dist','contr','diff'].forEach(k=>{o.tot[k]+=r[k];});
+    ['alb','pulito','sporco','dist','contr','diff'].forEach(k=>{o.tot[k]+=r[k];});
   });
   return o;
 }
@@ -15717,7 +15728,8 @@ function biaRender(){
       }else{
         const t=ap.tot;
         h+=`<div style="font-size:var(--fs-base);font-weight:700;">In albergo ${t.alb} · in lavanderia ${t.dist}</div>
-          <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;line-height:1.55;">In albergo: conta del ${esc(ap.conta.slice(0,5))}. In lavanderia: distinta ${ap.distinta?'del '+esc(ap.distinta.slice(0,5)):'—'}. ${t.contr}: pezzi del contratto.</div>`;
+          <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;line-height:1.55;">In albergo: ${t.pulito} puliti (conta del ${esc(ap.conta.slice(0,5))}) + ${t.sporco} sporchi (consumi ${ap.giorni.length?(ap.giorni.length===1?'del '+esc(ap.giorni[0].slice(0,5)):'dal '+esc(ap.giorni[0].slice(0,5))+' al '+esc(ap.giorni[ap.giorni.length-1].slice(0,5))):'—'}). In lavanderia: distinta ${ap.distinta?'del '+esc(ap.distinta.slice(0,5)):'—'}. Contratto: ${t.contr} pezzi.</div>
+          ${ap.senzaConsumi.length?`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:3px;">Consumi non inseriti: ${ap.senzaConsumi.map(x=>esc(x.slice(0,5))).join(', ')}. Lo sporco di quei giorni manca dal conto.</div>`:''}`;
         // Conta solo quello che manca: i pezzi in piu' del contratto vanno bene (reintegri extra).
         const manca=BIA_VOCI_GIRO.filter(v=>ap.voci[v]&&ap.voci[v].diff>0);
         const piu=BIA_VOCI_GIRO.filter(v=>ap.voci[v]&&ap.voci[v].diff<0);
