@@ -14757,6 +14757,198 @@ function _biaDotPannello(h){
   return o;
 }
 
+// ═══ CONTEGGIO A SCORRERE (15/11/2026) — solo SoulArt, dove ci sono i contratti ═══
+// Il QM: "se conto tutte le federe che sono in hotel — sui letti, sui carrelli, nel
+// deposito, sporche di oggi — più quelle che deve riportare Raimondo, fanno 200: non ho
+// ammanchi. Deve essere un conteggio a scorrere". Aveva ragione. Il vecchio saldo
+// (_biaSaldo) somma portato − dovuto dal 05/09 e NON si azzera mai: ogni errore di
+// registrazione resta per sempre, e sul backup del 15/11 dava −350 federe su un contratto
+// di 200, un ammanco impossibile.
+// Qui invece il numero si ANCORA a una conta vera, come la Giacenza:
+//   alla conta:        da Raimondo = contratto − (letti + carrelli + deposito + sporco)
+//   a ogni consegna:   da Raimondo += sporco che gli diamo − pulito che porta
+//   alla conta dopo:   in albergo contati  vs  contratto − da Raimondo previsto
+// La differenza è l'errore di QUEL periodo, poi si riparte dai numeri veri.
+// La conta si fa DOPO il passaggio di Raimondo: una consegna lo stesso giorno della conta
+// è già dentro i pezzi contati e non scorre.
+// Boutique e Galleria tengono il vecchio saldo finché non ci sono le copie dei contratti.
+const BIA_CONTA_HOTELS={sa:true};
+const BIA_CONTA_POSTI=[['letti','Sui letti'],['carrelli','Sui carrelli'],['deposito','In deposito'],['sporco','Sporco in albergo']];
+let _biaContaBozza={};       // la conta che si sta scrivendo: {voce:{posto:numero}}, mai ridisegnata
+function _biaContaSi(h){return !!BIA_CONTA_HOTELS[h];}
+function _biaConte(h){
+  return (_bia.conte||[]).filter(c=>_biaH(c)===h&&_biaParse(c.data))
+    .sort((a,b)=>_biaParse(a.data)-_biaParse(b.data));
+}
+// Pezzi contati in albergo per una voce, o null se manca anche un solo posto: un posto
+// non contato non vale zero.
+function _biaContaInAlbergo(c,v){
+  const q=c&&c.q&&c.q[v];if(!q)return null;
+  let t=0;
+  for(const [k] of BIA_CONTA_POSTI){const n=q[k];if(n===undefined||n===null||n==='')return null;t+=Number(n)||0;}
+  return t;
+}
+// Fa scorrere "da Raimondo" dalla conta `c` fino al giorno `fino` (incluso; null = tutte).
+// Una consegna senza «Ha portato» ferma il conto: da lì in poi il numero non si sa.
+function _biaContaScorri(h,v,c,fino){
+  const contratto=_biaDotCampo(h,v,'contratto');
+  const inAlb=_biaContaInAlbergo(c,v);
+  if(contratto===null||inAlb===null)return null;
+  const dal=_biaParse(c.data);
+  let r=contratto-inAlb,ferma=null;
+  const passi=[];
+  _biaGiri(h).forEach(g=>{
+    const d=_biaParse(g.data);
+    if(!d||d<=dal||(fino&&d>fino)||ferma)return;
+    if(!_biaRegistrato(g)){ferma=g.data;return;}
+    const dato=Number(g.consegnato&&g.consegnato[v])||0,portato=Number(g.ricevuto&&g.ricevuto[v])||0;
+    r+=dato-portato;
+    passi.push({data:g.data,dato:dato,portato:portato,daRaimondo:r});
+  });
+  return{contratto:contratto,inAlbergo:inAlb,allaConta:contratto-inAlb,passi:passi,daRaimondo:ferma?null:r,ferma:ferma};
+}
+// La verifica di una conta contro quella prima: quanti pezzi il conto prevedeva in albergo
+// e quanti ne sono stati contati. Negativo = in albergo ce ne sono MENO del previsto.
+function _biaContaVerifica(h,v,prec,c){
+  const s=_biaContaScorri(h,v,prec,_biaParse(c.data));
+  const inAlb=_biaContaInAlbergo(c,v);
+  if(!s||s.daRaimondo===null||inAlb===null)return null;
+  const previsti=s.contratto-s.daRaimondo;
+  return{previsti:previsti,contati:inAlb,differenza:inAlb-previsti};
+}
+// Una riga del riepilogo: l'ultima conta fatta scorrere fino a oggi.
+function _biaContaRiepilogo(h,v){
+  const conte=_biaConte(h).filter(c=>_biaContaInAlbergo(c,v)!==null);
+  const c=conte[conte.length-1]||null;
+  return{conta:c,scorre:c?_biaContaScorri(h,v,c,null):null};
+}
+// Lo stato di un "da Raimondo": sotto zero o oltre il contratto è impossibile.
+function _biaContaAvviso(r,contratto){
+  if(r===null||r===undefined)return null;
+  if(r<0)return 'sotto zero: impossibile, una registrazione è sbagliata';
+  if(contratto!==null&&r>contratto)return 'oltre il contratto: impossibile, una registrazione è sbagliata';
+  return null;
+}
+// Mutazioni pure (i controlli arrivano qui; conferme e rete stanno fuori).
+function _biaContaRegistra(h,data,bozza){
+  const q={};
+  BIA_VOCI_GIRO.forEach(v=>{
+    const b=bozza&&bozza[v];if(!b)return;
+    const r={};let tutti=true;
+    BIA_CONTA_POSTI.forEach(([k])=>{const n=b[k];if(n===undefined||n===null||n==='')tutti=false;else r[k]=Math.max(0,Math.round(Number(n)||0));});
+    if(tutti)q[v]=r;
+  });
+  _bia.conte=_bia.conte||[];
+  const gia=_bia.conte.find(c=>_biaH(c)===h&&c.data===data);
+  if(gia){(gia.edits=gia.edits||[]).push({ts:Date.now(),vecchio:gia.q,nuovo:q});gia.q=q;gia.ts=Date.now();return gia;}
+  const c={id:_biaUid(),hotel:h,data:data,q:q,ts:Date.now()};
+  _bia.conte.push(c);
+  return c;
+}
+// Le voci della bozza scritte solo a metà: non si salva (un posto vuoto non vale zero).
+function _biaContaIncomplete(bozza){
+  return BIA_VOCI_GIRO.filter(v=>{
+    const b=bozza&&bozza[v];if(!b)return false;
+    const pieni=BIA_CONTA_POSTI.filter(([k])=>b[k]!==undefined&&b[k]!==null&&b[k]!=='').length;
+    return pieni>0&&pieni<BIA_CONTA_POSTI.length;
+  });
+}
+function biaContaScrivi(v,k,val){
+  // Solo la bozza: niente ridisegno mentre si scrive.
+  const b=_biaContaBozza[v]=_biaContaBozza[v]||{};
+  b[k]=String(val).trim()===''?'':Math.max(0,Math.round(Number(val)||0));
+}
+async function biaContaSalva(){
+  const h=_biaHotel;if(!_biaContaSi(h))return;
+  const data=_biaFromIso((document.getElementById('bia-conta-data')||{}).value||'');
+  if(!data){cqAvviso('Indica la data della conta.');return;}
+  if(_biaParse(data)>new Date()){cqAvviso('La conta non può essere nel futuro.');return;}
+  const meta=_biaContaIncomplete(_biaContaBozza);
+  if(meta.length){cqAvviso('Conta incompleta',meta.map(v=>BIA_DOT_PLURALE[v]||v).join(', ')+': manca almeno un posto. Un posto non contato non vale zero: scrivi 0 se non ce ne sono.');return;}
+  const piene=BIA_VOCI_GIRO.filter(v=>_biaContaBozza[v]&&BIA_CONTA_POSTI.every(([k])=>_biaContaBozza[v][k]!==undefined&&_biaContaBozza[v][k]!==''));
+  if(!piene.length){cqAvviso('Non hai scritto nessun numero.');return;}
+  const gia=_biaConte(h).find(c=>c.data===data);
+  if(!await cqConferma(gia?'Sostituire la conta del '+data+'?':'Salvare la conta del '+data+'?',
+      piene.map(v=>'<strong>'+(BIA_DOT_PLURALE[v]||v)+'</strong>: '+BIA_CONTA_POSTI.map(([k])=>_biaContaBozza[v][k]).reduce((a,n)=>a+n,0)+' in albergo').join('<br>')+
+      '<br><br>Conta fatta <strong>dopo</strong> il passaggio di Raimondo: da qui il conto riparte da questi numeri.',
+      {ok:gia?'Sostituisci':'Salva'}))return;
+  _biaContaRegistra(h,data,_biaContaBozza);   // PRIMA dell'await: _biaSave riassegna _bia
+  _biaContaBozza={};
+  await _biaSave();_qmSenzaSalto(biaRender);
+}
+async function biaContaElimina(id){
+  const c=(_bia.conte||[]).find(x=>x.id===id);if(!c)return;
+  if(!await cqConferma('Eliminare la conta del '+c.data+'?','Il conto ripartirà dalla conta precedente.',{ok:'Elimina'}))return;
+  _bia.conte=_bia.conte.filter(x=>x.id!==id);
+  _qmSegnaRimosso(_bia,id);
+  await _biaSave();_qmSenzaSalto(biaRender);
+}
+function _biaContaPannello(h){
+  const esc=_esc;
+  const th=_biaTh,td='padding:7px 8px;border-bottom:1px solid var(--border);text-align:center;';
+  const lk=!_biaDotSblocco;
+  const inpC=(v,val)=>lk
+    ?`<span style="display:inline-block;min-width:50px;font-weight:600;color:var(--text);">${val===null?'—':val}</span>`
+    :`<input type="number" min="0" value="${val===null?'':val}" onchange="biaSetDot('${v}','contratto',this.value)" onfocus="this.select()" style="width:58px;padding:4px;border:1px solid var(--accent);border-radius:5px;font-size:var(--fs-xs);text-align:center;">`;
+  const n=x=>x===null||x===undefined?'—':x;
+  let o=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Conteggio a scorrere · ${esc(BIA_HOTELS[h])}</span>
+      <button onclick="biaDotSblocca(${lk?'true':'false'})" style="margin-left:auto;${lk?'background:var(--surface);color:var(--accent);border:1px solid var(--border);':'background:var(--accent);color:#fff;border:1px solid var(--accent);'}border-radius:7px;padding:5px 12px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">${lk?'🔒 Contratto':'Fine'}</button></div>
+    <div class="panel-body" style="padding:14px;">
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:10px;">Ogni pezzo del contratto è <strong>in albergo</strong> (letti, carrelli, deposito, sporco) oppure <strong>da Raimondo</strong>. Alla conta: <strong>da Raimondo = contratto − in albergo</strong>. Poi a ogni consegna si aggiunge lo sporco che gli diamo e si toglie il pulito che porta. Alla conta successiva si vede se i numeri tornavano, e si riparte da quelli veri.</div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr>
+      <th style="${th}text-align:left;">Tipologia</th><th style="${th}">Da contratto</th><th style="${th}">Ultima conta<br><span style="font-weight:400;text-transform:none;">in albergo</span></th><th style="${th}">Da Raimondo<br><span style="font-weight:400;text-transform:none;">alla conta</span></th><th style="${th}">Da allora<br><span style="font-weight:400;text-transform:none;">sporco dato / pulito portato</span></th><th style="${th}">Da Raimondo<br><span style="font-weight:400;text-transform:none;">oggi</span></th></tr></thead><tbody>`;
+  BIA_VOCI_GIRO.forEach(v=>{
+    const contr=_biaDotCampo(h,v,'contratto'),r=_biaContaRiepilogo(h,v),s=r.scorre;
+    let conta='—',alla='—',mov='—',oggi=`<span style="color:var(--text-dim);font-weight:400;">${contr===null?'manca il contratto':'manca una conta'}</span>`;
+    if(s){
+      conta=`${s.inAlbergo} <span style="color:var(--text-dim);font-weight:400;font-size:var(--fs-xxs);">(${esc(r.conta.data.slice(0,5))})</span>`;
+      alla=s.allaConta<0?`<span style="color:var(--amber);">${s.allaConta}</span>`:s.allaConta;
+      const dato=s.passi.reduce((a,p)=>a+p.dato,0),port=s.passi.reduce((a,p)=>a+p.portato,0);
+      mov=s.passi.length?`${dato} / ${port} <span style="color:var(--text-dim);font-weight:400;font-size:var(--fs-xxs);">(${s.passi.length} consegne)</span>`:'<span style="color:var(--text-dim);font-weight:400;">nessuna consegna</span>';
+      if(s.ferma)oggi=`<span style="color:var(--amber);">fermo al ${esc(s.ferma.slice(0,5))}: manca «Ha portato»</span>`;
+      else{const av=_biaContaAvviso(s.daRaimondo,contr);oggi=av?`<span style="color:var(--red);">${s.daRaimondo}</span><div style="font-size:var(--fs-xxs);color:var(--red);font-weight:400;">${av}</div>`:s.daRaimondo;}
+    }
+    o+=`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(BIA_DOT_PLURALE[v]||v)}</td>
+      <td style="${td}">${inpC(v,contr)}</td><td style="${td}font-weight:600;">${conta}</td><td style="${td}">${alla}</td>
+      <td style="${td}white-space:nowrap;">${mov}</td><td style="${td}font-weight:700;">${oggi}</td></tr>`;
+  });
+  o+=`</tbody></table></div>`;
+
+  // ── Nuova conta ──
+  const oggiIso=_biaToIso(_biaFmt(new Date()));
+  o+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+      <span style="font-size:var(--fs-sm);font-weight:700;">Nuova conta</span>
+      <input id="bia-conta-data" type="date" value="${oggiIso}" max="${oggiIso}" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">
+      <span style="font-size:var(--fs-xxs);color:var(--text-dim);">dopo il passaggio di Raimondo. Una tipologia lasciata tutta vuota non si conta; scrivi 0 dove non ce ne sono.</span>
+    </div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Tipologia</th>${BIA_CONTA_POSTI.map(([,t])=>`<th style="${th}">${t}</th>`).join('')}</tr></thead><tbody>
+    ${BIA_VOCI_GIRO.map(v=>`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(BIA_DOT_PLURALE[v]||v)}</td>${BIA_CONTA_POSTI.map(([k])=>{const b=_biaContaBozza[v],val=b&&b[k]!==undefined?b[k]:'';return`<td style="${td}"><input type="number" min="0" inputmode="numeric" value="${val}" oninput="biaContaScrivi('${v}','${k}',this.value)" style="width:64px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;background:var(--surface);color:var(--text);"></td>`;}).join('')}</tr>`).join('')}
+    </tbody></table></div>
+    <div style="margin-top:8px;display:flex;justify-content:flex-end;"><button onclick="biaContaSalva()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;">Salva la conta</button></div>
+  </div>`;
+
+  // ── Conte registrate, con la verifica rispetto alla precedente ──
+  const conte=_biaConte(h);
+  if(conte.length){
+    o+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:6px;">Conte registrate</div>
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Per ogni conta: pezzi <strong>contati</strong> in albergo e, se c'è una conta prima, quanti il conto ne <strong>prevedeva</strong>. Una differenza è l'errore di quel periodo: pezzi persi davvero, oppure consumi o consegne registrati male in quei giorni.</div>
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Conta</th>${BIA_VOCI_GIRO.map(v=>`<th style="${th}">${esc(BIA_DOT_PLURALE[v]||v)}</th>`).join('')}<th style="${th}"></th></tr></thead><tbody>`;
+    conte.slice().reverse().forEach(c=>{
+      const i=conte.indexOf(c),prec=i>0?conte[i-1]:null;
+      o+=`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(c.data)}</td>${BIA_VOCI_GIRO.map(v=>{
+        const t=_biaContaInAlbergo(c,v);if(t===null)return`<td style="${td}color:var(--text-dim);">—</td>`;
+        const ver=prec?_biaContaVerifica(h,v,prec,c):null;
+        return`<td style="${td}"><strong>${t}</strong>${ver?`<div style="font-size:var(--fs-xxs);color:${ver.differenza===0?'var(--green)':ver.differenza<0?'var(--red)':'var(--amber)'};">previsti ${ver.previsti} · ${ver.differenza===0?'tornano':ver.differenza>0?'+'+ver.differenza:ver.differenza}</div>`:''}</td>`;
+      }).join('')}<td style="${td}"><button onclick="biaContaElimina('${c.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">elimina</button></td></tr>`;
+    });
+    o+=`</tbody></table></div></div>`;
+  }
+  o+=`</div></div>`;
+  return o;
+}
+
 function _biaRigaGiro(g){
   const hotel=_biaH(g);
   const prec=_biaGiroPrec(hotel,g.data);
@@ -15432,7 +15624,7 @@ function biaRender(){
       }
     });
     // Pezzi non rientrati da inizio registrazioni, della struttura scelta qui sopra.
-    if(_biaStoSaldo){
+    if(_biaStoSaldo&&!_biaContaSi(hS)){
       const sal=_biaSaldo(hS),salT=_biaTot(sal);
       h+=`<div style="padding:12px 16px;border-top:1px solid var(--border);background:var(--surface2,var(--surface));">
         <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px;"><span style="font-size:var(--fs-xs);font-weight:700;">${salT<0?'Pezzi non rientrati':salT>0?'Rientrati in più':'In pari'} — ${_biaInizio(hS)?'dal '+esc(_biaInizioTxt(hS)):'da inizio registrazioni'}</span>
@@ -15449,13 +15641,14 @@ function biaRender(){
     }
     h+=`<div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       ${st.righe.length>BIA_STO_VISTE?`<button onclick="biaStoToggleTutte()" style="${bSec}">${_biaStoTutte?'Solo le ultime '+BIA_STO_VISTE:'Mostra tutte le '+st.righe.length+' consegne di '+esc(nomeMese)}</button>`:''}
-      <button onclick="biaToggleStoSaldo()" style="${bSec}">Pezzi non rientrati ${_biaStoSaldo?'▴':'▾'}</button>
+      ${_biaContaSi(hS)?'':`<button onclick="biaToggleStoSaldo()" style="${bSec}">Pezzi non rientrati ${_biaStoSaldo?'▴':'▾'}</button>`}
       <button onclick="biaPrintAndamento()" style="${bSec}">Report per la direzione</button>
     </div></div></div>`;
   }
 
   // ── Dotazione da contratto ── (vedi _biaDotConto)
-  if(_bia.giri.length&&_biaDotVisibile())h+=_biaDotPannello(_biaHotel);
+  // Al SoulArt il Conteggio a scorrere prende il posto della Dotazione e del suo saldo.
+  if(_bia.giri.length&&_biaDotVisibile())h+=_biaContaSi(_biaHotel)?_biaContaPannello(_biaHotel):_biaDotPannello(_biaHotel);
 
   // ── Totali del mese, per incrociare la fattura ──
   {
@@ -15536,8 +15729,8 @@ function biaPrintAndamento(){
     </div>
     <div class="g-t">Resa per consegna — quanto è rientrato rispetto a quanto era uscito${serie.length>BIA_GRAF_MAX?` (ultime ${BIA_GRAF_MAX} consegne)`:''}</div>
     <div class="graf">${_biaGraficoResa(serie.slice(-BIA_GRAF_MAX),470,86)}</div>
-    <table><thead><tr><th>Consegna del</th><th class="r">Doveva riportare</th><th class="r">Ha riportato</th><th class="r">Differenza</th><th class="r">Resa</th><th class="r">Cumulato</th></tr></thead><tbody>
-      ${serie.map(r=>`<tr><td>${esc(r.data)}</td><td class="r">${r.dovuto}</td><td class="r">${r.portato}</td><td class="r">${sg(r.delta)}</td><td class="r">${pc(r.resa)}</td><td class="r">${sg(r.cumulato)}</td></tr>`).join('')}
+    <table><thead><tr><th>Consegna del</th><th class="r">Doveva riportare</th><th class="r">Ha riportato</th><th class="r">Differenza</th><th class="r">Resa</th>${_biaContaSi(k)?'':'<th class="r">Cumulato</th>'}</tr></thead><tbody>
+      ${serie.map(r=>`<tr><td>${esc(r.data)}</td><td class="r">${r.dovuto}</td><td class="r">${r.portato}</td><td class="r">${sg(r.delta)}</td><td class="r">${pc(r.resa)}</td>${_biaContaSi(k)?'':`<td class="r">${sg(r.cumulato)}</td>`}</tr>`).join('')}
     </tbody></table>
     <div class="g-t">Dove si concentra la differenza</div>
     <table><thead><tr><th>Tipologia</th><th class="r">Doveva riportare</th><th class="r">Ha riportato</th><th class="r">Differenza</th><th class="r">Resa</th></tr></thead><tbody>

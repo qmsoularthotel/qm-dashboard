@@ -1306,6 +1306,48 @@ davvero stati messi in giro, se le consegne sono registrate bene e se l'armadio 
   caselle; *Fine* le richiude, e si richiudono comunque rientrando nella pagina (`biaLoad`).
   `biaSetDot` rifiuta di scrivere col lucchetto chiuso.
 
+### Conteggio a scorrere — SoulArt (15/11/2026)
+
+**Il difetto, visto dal QM**: *"se conto tutte le federe che sono in hotel — letti, carrelli,
+deposito, sporche di oggi — più quelle che deve riportare Raimondo, fanno 200: non ho ammanchi.
+Deve essere un conteggio a scorrere"*. Il vecchio saldo (`_biaSaldo`, «Pezzi non rientrati», la
+colonna Saldo della Dotazione, «Cumulato» nel report) somma portato − dovuto dall'inizio e **non
+si azzera mai**: ogni errore di registrazione resta per sempre. Sul backup del 15/11 dava −350
+federe su un contratto di 200, un ammanco impossibile.
+
+**Il conto nuovo si ancora a una conta vera**, come la Giacenza:
+
+    alla conta:        da Raimondo = contratto − (letti + carrelli + deposito + sporco in albergo)
+    a ogni consegna:   da Raimondo += sporco che gli diamo − pulito che porta
+    alla conta dopo:   in albergo contati  vs  contratto − da Raimondo previsto
+
+La differenza alla conta successiva è l'errore **di quel periodo**, poi si riparte dai numeri veri.
+
+| Pezzo | Ruolo |
+|---|---|
+| `BIA_CONTA_HOTELS={sa:true}` | dove vale. **Solo SoulArt**: Boutique e Galleria non hanno ancora le copie dei contratti e tengono il vecchio saldo |
+| `_bia.conte` | `[{id, hotel, data, q:{voce:{letti,carrelli,deposito,sporco}}, edits?}]`, elenco a record (fusione e `_rimossi` come il resto) |
+| `_biaContaInAlbergo(c,v)` | somma dei quattro posti; **null se ne manca uno** (un posto non contato non vale zero) |
+| `_biaContaScorri(h,v,c,fino)` | fa scorrere da una conta. **La consegna dello stesso giorno della conta non scorre**: la conta si fa dopo il passaggio di Raimondo. Una consegna senza «Ha portato» **ferma** il conto (`ferma`) |
+| `_biaContaVerifica(h,v,prec,c)` | contati contro previsti alla conta successiva |
+| `_biaContaAvviso(r,contratto)` | da Raimondo sotto zero o oltre il contratto: impossibile, una registrazione è sbagliata |
+| `_biaContaRegistra` / `_biaContaIncomplete` | mutazioni pure: salva solo le voci complete; stessa data = sostituisce con traccia in `edits`; una voce scritta a metà blocca il salvataggio |
+| `_biaContaPannello(h)` | il riquadro: riepilogo per voce, «Nuova conta» (caselle vuote, si scrive senza ridisegno in `_biaContaBozza`), «Conte registrate» con la verifica |
+
+**Al SoulArt** il riquadro prende il posto della Dotazione da contratto (stesso interruttore
+per dispositivo, stesso lucchetto per i numeri del contratto), e spariscono «Pezzi non rientrati»
+e la colonna «Cumulato» del report per la direzione. Restano le differenze di ogni singola
+consegna (storico del mese, report), che sono fatti, non un totale alla deriva.
+
+I contratti del SoulArt sono nei dati (`_bia.dotazione.sa`): matrimoniali 200, singole 80, federe
+200, viso 200, bidet 200, teli 200, scendibagno 80. Il conto parte solo dalla **prima conta**: fino
+ad allora la riga dice *manca una conta*.
+
+Controlli in `test/controlli.js` ("conteggio a scorrere del SoulArt"), verificati con quattro
+sabotaggi (segno della formula, consegna del giorno della conta che scorre, posto vuoto contato
+zero, «Ha portato» mancante che non ferma): tutti colti. Provato nel browser sul backup del 15/11
+con una conta inventata.
+
 ### Consumi di agosto tolti (15/11/2026)
 
 Il QM: *"ad agosto non ho contato i consumi"*. Eppure in Compass c'erano 28 giorni di consumi

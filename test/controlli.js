@@ -2647,7 +2647,9 @@ sez('Biancheria: data di inizio del conteggio, e il saldo dice da che parte sta'
   _bia.inizio={};
   var box={innerHTML:''},vero=document.getElementById;
   document.getElementById=function(id){return id==='bia-content'?box:null;};
-  try{_biaStoSaldo=true;_biaStoMese='2026-09';biaRender();}finally{document.getElementById=vero;_biaStoSaldo=false;}
+  // Il vecchio saldo resta per Boutique e Galleria: qui si prova con il conteggio a scorrere spento.
+  var cs=BIA_CONTA_HOTELS.sa;delete BIA_CONTA_HOTELS.sa;
+  try{_biaStoSaldo=true;_biaStoMese='2026-09';biaRender();}finally{document.getElementById=vero;_biaStoSaldo=false;BIA_CONTA_HOTELS.sa=cs;}
   ok('saldo positivo: "Rientrati in più"',          /Rientrati in più/.test(box.innerHTML)&&!/Pezzi non rientrati —/.test(box.innerHTML), true);
   _bia=prima;_biaHotel=ph;_biaStoHotel=ps;_biaStoMese='';
 })();
@@ -3400,6 +3402,7 @@ sez('Consumo Biancheria: dotazione da contratto, quanti pezzi nostri restano a R
 // Nei controlli `esc` esiste comunque (la copia della Galleria ne dichiara una globale):
 // la prova del pannello qui sopra non puo' accorgersi se manca. Si guarda il codice.
 ok('il pannello della dotazione dichiara il suo esc', /(const|var) esc=_esc/.test(String(_biaDotPannello)), true);
+ok('il conteggio a scorrere dichiara il suo esc', /(const|var) esc=_esc/.test(String(_biaContaPannello)), true);
 (function(){
   // Nascosto ai colleghi e col lucchetto (12/11/2026).
   var prima=_bia,pg=_giac,sm=_biaStoMese,ps=_biaDotSblocco,V='Lenzuolo matrimoniale';
@@ -3407,7 +3410,7 @@ ok('il pannello della dotazione dichiara il suo esc', /(const|var) esc=_esc/.tes
   _bia={consumi:[],giri:[{id:'a',hotel:'sa',data:'24/09/2026',consegnato:Q(42),ricevuto:Q(60)},{id:'b',hotel:'sa',data:'26/09/2026',consegnato:Q(49),ricevuto:Q(30)}]};
   _giac={movimenti:[{id:'m',hotel:'sa',data:'06/09/2026',tipo:'conteggio',q:(function(){var o={};o[V]=30;return o;})()}],tipologie:null};
   _biaStoMese='2026-09';
-  ok('il pannello entra nella pagina solo se acceso', /_bia\.giri\.length&&_biaDotVisibile\(\)\)h\+=_biaDotPannello/.test(String(biaRender)), true);
+  ok('il pannello entra nella pagina solo se acceso', /_bia\.giri\.length&&_biaDotVisibile\(\)\)h\+=_biaContaSi\(_biaHotel\)\?_biaContaPannello\(_biaHotel\):_biaDotPannello/.test(String(biaRender)), true);
   try{localStorage.removeItem(BIA_DOT_VEDE_KEY);}catch(e){}
   ok('di partenza e\' spento',                    _biaDotVisibile(), false);
   try{localStorage.setItem(BIA_DOT_VEDE_KEY,'1');}catch(e){}
@@ -3533,6 +3536,56 @@ sez('Biancheria: consumi di agosto tolti, consegne e saldo intatti (15/11/2026)'
   ok('una consegna tutta di settembre non e\' toccata', _bia.giri[2].daiConsumi.Federa, 30);
   ok('la seconda volta non toglie niente',        _biaTogliConsumiPrimaInizio(), 0);
   ok('biaLoad la chiama',                         /_biaTogliConsumiPrimaInizio\(\)\)\{await _biaSave\(\)/.test(String(biaLoad)), true);
+  _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
+})();
+
+// ── Conteggio a scorrere (15/11/2026): solo SoulArt, ancorato a una conta vera ──
+//    da Raimondo = contratto − in albergo; poi + sporco dato − pulito portato a ogni
+//    consegna DOPO la conta; alla conta seguente: contati contro previsti.
+sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
+(function(){
+  var prima=_bia,spento=BIA_INIZIO_MINIMO,spentoH=BIA_INIZIO_MINIMO_H;
+  BIA_INIZIO_MINIMO=_BIA_MIN_VERO;BIA_INIZIO_MINIMO_H=_BIA_MIN_H_VERO;
+  var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};
+  var P=function(l,c,d,s){return {letti:l,carrelli:c,deposito:d,sporco:s};};
+  _bia={consumi:[],dotazione:{sa:{Federa:{contratto:200}}},giri:[
+    {id:'g10',hotel:'sa',data:'10/11/2026',consegnato:Q(50),ricevuto:Q(45)},
+    {id:'g12',hotel:'sa',data:'12/11/2026',consegnato:Q(40),ricevuto:Q(35)},
+    {id:'g14',hotel:'sa',data:'14/11/2026',consegnato:Q(30),ricevuto:Q(40)}],
+    conte:[{id:'k1',hotel:'sa',data:'10/11/2026',q:{Federa:P(88,12,50,20)}}]};
+  var c=_bia.conte[0];
+  ok('solo il SoulArt',                           [_biaContaSi('sa'),_biaContaSi('bh')].join(' '), 'true false');
+  ok('in albergo = letti+carrelli+deposito+sporco', _biaContaInAlbergo(c,'Federa'), 170);
+  var s=_biaContaScorri('sa','Federa',c,null);
+  ok('alla conta: contratto − in albergo',        s.allaConta, 30);
+  ok('la consegna del giorno della conta non scorre', s.passi.map(function(p){return p.data;}).join(','), '12/11/2026,14/11/2026');
+  ok('scorre: 30 +40 −35 +30 −40',                s.daRaimondo, 25);
+  ok('un posto non contato non vale zero',        _biaContaInAlbergo({q:{Federa:{letti:88,carrelli:12,deposito:'',sporco:20}}},'Federa'), null);
+  ok('senza contratto niente conto',              _biaContaScorri('sa','Telo doccia',{data:'10/11/2026',q:{'Telo doccia':P(1,1,1,1)}},null), null);
+  _bia.giri[1].ricevuto=_biaVuote();
+  var f=_biaContaScorri('sa','Federa',c,null);
+  ok('«Ha portato» mancante ferma il conto',      [f.ferma,f.daRaimondo].join(' '), '12/11/2026 ');
+  _bia.giri[1].ricevuto=Q(35);
+  var c2={id:'k2',hotel:'sa',data:'14/11/2026',q:{Federa:P(88,10,57,20)}};
+  var ver=_biaContaVerifica('sa','Federa',c,c2);
+  ok('verifica: previsti in albergo 200 − 25',    ver.previsti, 175);
+  ok('verifica: tornano',                         ver.differenza, 0);
+  c2.q.Federa.deposito=52;
+  ok('verifica: 5 in meno del previsto',          _biaContaVerifica('sa','Federa',c,c2).differenza, -5);
+  ok('sotto zero si segnala',                     !!_biaContaAvviso(-3,200), true);
+  ok('oltre il contratto si segnala',             !!_biaContaAvviso(201,200), true);
+  ok('un numero normale no',                      _biaContaAvviso(25,200), null);
+  ok('bozza a meta\' non si salva',               _biaContaIncomplete({Federa:{letti:5,carrelli:''},Scendibagno:P(1,1,1,1)}).join(','), 'Federa');
+  var n=_biaContaRegistra('sa','15/11/2026',{Federa:P(80,'5',60,20),Scendibagno:{}});
+  ok('salvata: solo le voci complete, numeri interi', JSON.stringify(n.q), '{"Federa":{"letti":80,"carrelli":5,"deposito":60,"sporco":20}}');
+  var n2=_biaContaRegistra('sa','15/11/2026',{Federa:P(81,5,60,20)});
+  ok('stessa data: sostituisce e lascia traccia', [n2.id===n.id,n2.q.Federa.letti,n2.edits.length,_bia.conte.length].join(' '), 'true 81 1 2');
+  ok('il riepilogo parte dall\'ultima conta',    _biaContaRiepilogo('sa','Federa').conta.data, '15/11/2026');
+  var html=''; try{html=_biaContaPannello('sa');}catch(e){html='ERRORE '+e.message;}
+  ok('il pannello si disegna',                    /Conteggio a scorrere/.test(html), true);
+  ok('SoulArt: conteggio al posto della Dotazione', /_biaContaSi\(_biaHotel\)\?_biaContaPannello\(_biaHotel\):_biaDotPannello\(_biaHotel\)/.test(String(biaRender)), true);
+  ok('SoulArt: niente piu\' «Pezzi non rientrati»', /_biaStoSaldo&&!_biaContaSi\(hS\)/.test(String(biaRender)), true);
+  ok('report: niente «Cumulato» al SoulArt',      /_biaContaSi\(k\)\?'':'<th class="r">Cumulato<\/th>'/.test(String(biaPrintAndamento)), true);
   _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
 })();
 
