@@ -1871,6 +1871,12 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   ok('SoulArt: le sue 3 consegne, non quelle del Boutique', righeIn(), 3);
   _biaHotel = 'bh'; ridisegna();
   ok('Boutique: le sue 2 consegne',                    righeIn(), 2);
+  // La frase del mese ("mancano N pezzi") resta al Boutique, al SoulArt no: c'e' il Conteggio a scorrere (15/11/2026).
+  ok('Boutique: la frase del mese c\'e\'',             /Raimondo ha riportato|nessuna consegna ancora confrontabile/.test(box.innerHTML), true);
+  _biaHotel = 'sa'; ridisegna();
+  ok('SoulArt: niente frase del mese',                 /Raimondo ha riportato|mancano <span|nessuna consegna ancora confrontabile|Nelle consegne:/.test(box.innerHTML), false);
+  ok('SoulArt: le consegne restano',                   righeIn(), 3);
+  _biaHotel = 'bh'; ridisegna();
   // Il conto del mese sta sulle sole consegne confrontabili, come il saldo del pannello.
   var stB = _biaStorico('bh', meseSA);
   ok('il mese del Boutique torna col suo riepilogo',   stB.saldo, _biaRiepilogoPortato('bh').saldo);

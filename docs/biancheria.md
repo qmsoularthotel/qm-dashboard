@@ -1053,6 +1053,11 @@ esce si correggono i consumi dei giorni e poi "Riallinea ai consumi". Stessa cos
 (`biaToggleSto`, `_biaStoAperto=false` a ogni caricamento). Stessa cosa nella Galleria
 (`gbToggleSto`). Controlli in `test/controlli.js` e `test/galleria.js`.
 
+**Al SoulArt niente frase del mese** (15/11/2026): *"A novembre mancano N pezzi"*, *"Raimondo ha
+riportato…"* e *"Nelle consegne: … mancanti − … in più"* non si mostrano più, perché col Conteggio a
+scorrere quel saldo non ha più senso (`fraseMese=!_biaContaSi(hS)`). Restano le consegne una per una.
+Boutique e Galleria invariati.
+
 
 Il vecchio pannello "Consegne di Raimondo" (le due strutture una sotto l'altra, cinque
 colonne di numeri per riga) era da leggere, non da guardare. Rifatto su bozza approvata dal QM

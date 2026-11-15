@@ -15592,8 +15592,11 @@ function biaRender(){
       <span style="margin-left:auto;display:inline-flex;">${Object.keys(BIA_HOTELS).map((k,i,a)=>`<button onclick="biaStoSetHotel('${k}')" style="${bTab(k===hS)}border-radius:${i===0?'7px 0 0 7px':i===a.length-1?'0 7px 7px 0':'0'};${i?'margin-left:-1px;':''}">${esc(BIA_STO_NOMI[k]||BIA_HOTELS[k])}</button>`).join('')}</span>
       <select onchange="biaStoSetMese(this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesiS.map(y=>`<option value="${y}"${y===_biaStoMese?' selected':''}>${_biaMeseNome(y)}</option>`).join('')}</select>
     </div><div class="panel-body" style="padding:0;">`;
-    // La frase del mese: e' la prima cosa che si legge.
+    // La frase del mese: e' la prima cosa che si legge. Al SoulArt no (15/11/2026): col
+    // Conteggio a scorrere il "mancano N pezzi" del mese non ha piu' senso, conta la conta vera.
     const col=st.saldo<0?'var(--red)':'var(--green)';
+    const fraseMese=!_biaContaSi(hS);
+    if(fraseMese){
     h+=`<div style="padding:14px 16px;border-bottom:1px solid var(--border);">`;
     if(!st.righe.length){
       h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">Nessuna consegna registrata a ${esc(nomeMese)}.</div>`;
@@ -15607,6 +15610,9 @@ function biaRender(){
     if(st.primaInizio)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${st.primaInizio} consegn${st.primaInizio===1?'a':'e'} prima dell'inizio del conteggio (${esc(_biaInizioTxt(hS))}): fuori dal conto.</div>`;
     if(st.nonReg)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">${st.nonReg} consegn${st.nonReg===1?'a':'e'} senza il dato di cosa ha riportato: fuori dal conto.</div>`;
     h+=`</div>`;
+    }else if(!st.righe.length){
+      h+=`<div style="padding:14px 16px;font-size:var(--fs-sm);color:var(--text-dim);">Nessuna consegna registrata a ${esc(nomeMese)}.</div>`;
+    }
     const viste=_biaStoTutte?st.righe:st.righe.slice(0,BIA_STO_VISTE);
     if(st.righe.length>BIA_STO_VISTE&&!_biaStoTutte)h+=`<div style="padding:8px 16px 2px;font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;font-weight:600;">Ultime ${BIA_STO_VISTE} consegne</div>`;
     viste.forEach(rg=>{
