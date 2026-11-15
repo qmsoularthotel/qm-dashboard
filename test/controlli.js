@@ -3561,7 +3561,7 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   BIA_INIZIO_MINIMO=_BIA_MIN_VERO;BIA_INIZIO_MINIMO_H=_BIA_MIN_H_VERO;
   var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};
   var P=function(l,c,d,s){return {letti:l,carrelli:c,deposito:d,sporco:s};};
-  _bia={consumi:[{id:'cc1',hotel:'sa',data:'10/11/2026',q:Q(20)},{id:'cc2',hotel:'sa',data:'14/11/2026',q:Q(20)}],dotazione:{sa:{Federa:{contratto:200}}},giri:[
+  _bia={consumi:[{id:'cc1',hotel:'sa',data:'10/11/2026',q:Q(20)},{id:'cc2',hotel:'sa',data:'14/11/2026',q:Q(20)}],dotazione:{sa:{Federa:{contratto:200,allestimento:88}}},giri:[
     {id:'g10',hotel:'sa',data:'10/11/2026',consegnato:Q(50),ricevuto:Q(45)},
     {id:'g12',hotel:'sa',data:'12/11/2026',consegnato:Q(40),ricevuto:Q(35)},
     {id:'g14',hotel:'sa',data:'14/11/2026',consegnato:Q(30),ricevuto:Q(40)}],
@@ -3598,7 +3598,7 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   ok('il pannello si disegna',                    /Conteggio a scorrere/.test(html), true);
   // Correggere una conta: i numeri tornano nelle caselle, con la sua data; salvando si sostituisce.
   ok('allestimento SoulArt: 50 matr., 6 singole, 96 federe, 51 teli, 25 scendibagno',
-     ['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno'].map(function(v){return _biaDotLetti('sa',v);}).join(' '), '50 6 96 51 51 51 25');
+     ['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno'].map(function(v){return BIA_DOT_DEFAULT.sa[v].allestimento;}).join(' '), '50 6 96 51 51 51 25');
   ok('ogni conta ha «modifica»',                  /biaContaModifica\('/.test(html), true);
   var rd=biaRender;biaRender=function(){};
   try{biaContaModifica(n2.id);}finally{biaRender=rd;}
@@ -3610,7 +3610,7 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   _biaContaRegistra('sa',_biaContaModifica,_biaContaBozza);
   ok('salvata: sostituita, con traccia',          [n2.q.Federa.letti,n2.edits.length,_bia.conte.length].join(' '), '79 2 2');
   _biaContaBozza={};_biaContaModifica=null;
-  ok('conte registrate: dove stanno i pezzi',    /letti <strong[^>]*>81<\/strong> su 96<br>carrelli <strong[^>]*>5<\/strong><br>deposito <strong[^>]*>60<\/strong><br>sporchi <strong[^>]*>20</.test(html), true);
+  ok('conte registrate: dove stanno i pezzi',    /letti <strong[^>]*>81<\/strong> su 88<br>carrelli <strong[^>]*>5<\/strong><br>deposito <strong[^>]*>60<\/strong><br>sporchi <strong[^>]*>20</.test(html), true);
   ok('SoulArt: conteggio al posto della Dotazione', /_biaContaSi\(_biaHotel\)\?_biaContaPannello\(_biaHotel\):_biaDotPannello\(_biaHotel\)/.test(String(biaRender)), true);
   ok('SoulArt: niente piu\' «Pezzi non rientrati»', /_biaStoSaldo&&!_biaContaSi\(hS\)/.test(String(biaRender)), true);
   ok('report: niente «Cumulato» al SoulArt',      /_biaContaSi\(k\)\?'':'<th class="r">Cumulato<\/th>'/.test(String(biaPrintAndamento)), true);
@@ -3664,9 +3664,12 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   ok('due conte: ammanco vero di 5',              (_biaContaTotali('sa').ver||{}).diff, -5);
   // Conta dopo l'ultima consegna: distinta del 14/11 (30). Contati 170 + 30 = 200 → tutti.
   ok('conta del 14/11: tutti all\'appello',        _biaContaAppello('sa',_bia.conte[1]).voci.Federa.diff, 0);
-  var c3={id:'k6',hotel:'sa',data:'15/11/2026',q:{Federa:P(80,10,52,20)}};
+  var c3={id:'k6',hotel:'sa',data:'15/11/2026',q:{Federa:P(80,10,44,20)}};
   ok('8 in meno: da ritrovare',                   _biaContaAppello('sa',c3).voci.Federa.diff, 8);
   ok('il giorno senza consumi si nomina',         _biaContaAppello('sa',c3).senzaConsumi.join(','), '15/11/2026');
+  // Teoria del QM: sui letti vale l'allestimento, non i letti contati (80 contati, allestite 88).
+  var a3=_biaContaAppello('sa',c3).voci.Federa;
+  ok('letti = allestimento, scorta = carrelli + deposito', [a3.letti,a3.scorta].join(' '), '88 54');
   // Resi come inidonei: nel sacco (aperti) o gia' ritirati da Raimondo. Contano come trovati.
   _resi={righe:[{id:'r1',hotel:'sa',data:'02/11/2026',tipologia:'Federa',qta:5,ritiroId:'x'},
                 {id:'r2',hotel:'sa',data:'13/11/2026',tipologia:'Federa',qta:3,ritiroId:null},

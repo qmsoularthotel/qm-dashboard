@@ -14940,20 +14940,25 @@ function _biaContaAppello(h,c){
   const giorni=[],senza=[];
   if(g){for(const x=new Date(_biaParse(g.data).getTime());x<=d;x.setDate(x.getDate()+1))giorni.push(_biaFmt(x));}
   const cons=giorni.map(ds=>{const k=_biaConsumi(h).find(z=>z.data===ds);if(!k)senza.push(ds);return k;}).filter(Boolean);
-  const o={conta:c.data,distinta:g?g.data:null,giorni:giorni,senzaConsumi:senza,voci:{},tot:{alb:0,pulito:0,sporco:0,dist:0,resoAperto:0,resoDato:0,contr:0,diff:0},n:0};
+  const o={conta:c.data,distinta:g?g.data:null,giorni:giorni,senzaConsumi:senza,voci:{},tot:{alb:0,letti:0,scorta:0,pulito:0,sporco:0,dist:0,resoAperto:0,resoDato:0,contr:0,diff:0},n:0};
   BIA_VOCI_GIRO.forEach(v=>{
     const tutto=_biaContaInAlbergo(c,v),contr=_biaDotCampo(h,v,'contratto');
     if(tutto===null||contr===null)return;
-    const pulito=tutto-(Number(c.q[v].sporco)||0);
+    // La teoria del QM (15/11/2026): contratto = letti e bagni allestiti (sempre, dall'allestimento)
+    // + scorte contate (carrelli e deposito) + sporco da uscire (consumi) + lavanderia (distinta) + resi.
+    // I letti contati restano scritti nella conta, ma nel conto vale l'allestimento; senza, i contati.
+    const all=_biaDotLetti(h,v),scorta=(Number(c.q[v].carrelli)||0)+(Number(c.q[v].deposito)||0);
+    const letti=all!==null?all:(Number(c.q[v].letti)||0);
+    const pulito=letti+scorta;
     // Senza una consegna prima della conta non c'e' un "dal": resta lo sporco contato.
     const sporco=g?cons.reduce((a,z)=>a+(Number(z.q&&z.q[v])||0),0):(Number(c.q[v].sporco)||0);
     const alb=pulito+sporco;
     const dist=g?(Number(g.consegnato&&g.consegnato[v])||0):0;
     const rs=_biaResiVoce(h,v,d);
-    const r={alb:alb,pulito:pulito,sporco:sporco,dist:dist,resoAperto:rs.aperto,resoDato:rs.dato,contr:contr,
+    const r={alb:alb,letti:letti,scorta:scorta,pulito:pulito,sporco:sporco,dist:dist,resoAperto:rs.aperto,resoDato:rs.dato,contr:contr,
              diff:contr-alb-dist-rs.aperto-rs.dato};
     o.voci[v]=r;o.n++;
-    ['alb','pulito','sporco','dist','resoAperto','resoDato','contr','diff'].forEach(k=>{o.tot[k]+=r[k];});
+    ['alb','letti','scorta','pulito','sporco','dist','resoAperto','resoDato','contr','diff'].forEach(k=>{o.tot[k]+=r[k];});
   });
   return o;
 }
@@ -15043,30 +15048,24 @@ function _biaContaPannello(h){
   let o=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Conteggio a scorrere · ${esc(BIA_HOTELS[h])}</span>
       <button onclick="biaDotSblocca(${lk?'true':'false'})" style="margin-left:auto;${lk?'background:var(--surface);color:var(--accent);border:1px solid var(--border);':'background:var(--accent);color:#fff;border:1px solid var(--accent);'}border-radius:7px;padding:5px 12px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">${lk?'🔒 Contratto':'Fine'}</button></div>
     <div class="panel-body" style="padding:14px;">
-    <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:10px;">Ogni pezzo del contratto è <strong>in albergo</strong> (letti, carrelli, deposito, sporco) oppure <strong>da Raimondo</strong>. Alla conta: <strong>da Raimondo = contratto − in albergo</strong>. Poi a ogni consegna si aggiunge lo sporco che gli diamo e si toglie il pulito che porta. Alla conta successiva si vede se i numeri tornavano, e si riparte da quelli veri.</div>
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin-bottom:10px;">Ogni pezzo del contratto sta in uno di questi posti: <strong>sui letti e nei bagni</strong> (camere allestite), <strong>di scorta</strong> (carrelli e deposito, dalla conta ogni 15 giorni), <strong>sporco da uscire</strong> (consumi dal giorno dell'ultima consegna), <strong>in lavanderia</strong> (ultima distinta), <strong>resi</strong> (biancheria inidonea, nel sacco o già ritirata). Quello che non sta in nessuno di questi è <strong>da ritrovare</strong>; i pezzi in più del contratto vanno bene.</div>
     <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr>
-      <th style="${th}text-align:left;">Tipologia</th><th style="${th}">Da contratto</th><th style="${th}">Ultima conta<br><span style="font-weight:400;text-transform:none;">in albergo</span></th><th style="${th}">In lavanderia<br><span style="font-weight:400;text-transform:none;">distinta</span></th><th style="${th}">All'appello<br><span style="font-weight:400;text-transform:none;">contratto − trovati</span></th><th style="${th}">Da allora<br><span style="font-weight:400;text-transform:none;">sporco dato / pulito portato</span></th><th style="${th}">Da Raimondo<br><span style="font-weight:400;text-transform:none;">oggi</span></th></tr></thead><tbody>`;
+      <th style="${th}text-align:left;">Tipologia</th><th style="${th}">Contratto</th><th style="${th}">Letti e bagni<br><span style="font-weight:400;text-transform:none;">allestiti</span></th><th style="${th}">Scorta<br><span style="font-weight:400;text-transform:none;">carrelli + deposito</span></th><th style="${th}">Sporco<br><span style="font-weight:400;text-transform:none;">da uscire</span></th><th style="${th}">In lavanderia<br><span style="font-weight:400;text-transform:none;">distinta</span></th><th style="${th}">Resi<br><span style="font-weight:400;text-transform:none;">ritirati + nel sacco</span></th><th style="${th}">All'appello</th></tr></thead><tbody>`;
+  let apUlt=null;
   BIA_VOCI_GIRO.forEach(v=>{
-    const contr=_biaDotCampo(h,v,'contratto'),r=_biaContaRiepilogo(h,v),s=r.scorre;
-    let conta='—',alla='—',app='—',mov='—',oggi=`<span style="color:var(--text-dim);font-weight:400;">${contr===null?'manca il contratto':'manca una conta'}</span>`;
-    if(s){
-      conta=`${s.inAlbergo} <span style="color:var(--text-dim);font-weight:400;font-size:var(--fs-xxs);">(${esc(r.conta.data.slice(0,5))})</span>`;
-      // In lavanderia = distinta dell'ultima consegna fino alla conta; all'appello = contratto − (albergo + distinta).
-      const ap=_biaContaAppello(h,r.conta),av=ap&&ap.voci[v];
-      if(av){
-        alla=`${av.dist} <span style="color:var(--text-dim);font-weight:400;font-size:var(--fs-xxs);">(${esc(ap.distinta?ap.distinta.slice(0,5):'—')})</span>`;
-        app=av.diff===0?'<span style="color:var(--green);">tutti</span>':av.diff>0?`<span style="color:var(--amber);">${av.diff} da ritrovare</span>`:`<span style="color:var(--green);">tutti · ${-av.diff} in più</span>`;
-      }
-      const dato=s.passi.reduce((a,p)=>a+p.dato,0),port=s.passi.reduce((a,p)=>a+p.portato,0);
-      mov=s.passi.length?`${dato} / ${port} <span style="color:var(--text-dim);font-weight:400;font-size:var(--fs-xxs);">(${s.passi.length} consegne)</span>`:'<span style="color:var(--text-dim);font-weight:400;">nessuna consegna</span>';
-      if(s.ferma)oggi=`<span style="color:var(--amber);">fermo al ${esc(s.ferma.slice(0,5))}: manca «Ha portato»</span>`;
-      else if(s.daRaimondo<0)oggi=`<span style="color:var(--text-dim);">${s.daRaimondo}</span><div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:400;">pezzi in più del contratto: va bene</div>`;
-      else{const av=_biaContaAvviso(s.daRaimondo,contr);oggi=av?`<span style="color:var(--red);">${s.daRaimondo}</span><div style="font-size:var(--fs-xxs);color:var(--red);font-weight:400;">${av}</div>`:s.daRaimondo;}
+    const contr=_biaDotCampo(h,v,'contratto'),r=_biaContaRiepilogo(h,v);
+    const ap=r.conta?_biaContaAppello(h,r.conta):null,av=ap&&ap.voci[v];
+    if(ap&&(!apUlt||_biaParse(ap.conta)>_biaParse(apUlt.conta)))apUlt=ap;
+    const vuoto=`<span style="color:var(--text-dim);font-weight:400;">—</span>`;
+    let cel=[vuoto,vuoto,vuoto,vuoto,vuoto],app=`<span style="color:var(--text-dim);font-weight:400;">${contr===null?'manca il contratto':'manca una conta'}</span>`;
+    if(av){
+      cel=[av.letti,av.scorta,av.sporco,av.dist,av.resoDato+av.resoAperto?`${av.resoDato} + ${av.resoAperto}`:'0'];
+      app=av.diff===0?'<span style="color:var(--green);">tutti</span>':av.diff>0?`<span style="color:var(--amber);">${av.diff} da ritrovare</span>`:`<span style="color:var(--green);">tutti · ${-av.diff} in più</span>`;
     }
     o+=`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(BIA_DOT_PLURALE[v]||v)}</td>
-      <td style="${td}">${inpC(v,contr)}</td><td style="${td}font-weight:600;">${conta}</td><td style="${td}">${alla}</td><td style="${td}font-weight:700;white-space:nowrap;">${app}</td>
-      <td style="${td}white-space:nowrap;">${mov}</td><td style="${td}font-weight:700;">${oggi}</td></tr>`;
+      <td style="${td}">${inpC(v,contr)}</td>${cel.map(x=>`<td style="${td}">${x}</td>`).join('')}<td style="${td}font-weight:700;white-space:nowrap;">${app}</td></tr>`;
   });
+  if(apUlt)o+=`<tr><td colspan="8" style="padding:7px 8px;font-size:var(--fs-xxs);color:var(--text-dim);text-align:left;">Scorta: conta del ${esc(apUlt.conta)}. Sporco: consumi ${apUlt.giorni.length?(apUlt.giorni.length===1?'del '+esc(apUlt.giorni[0].slice(0,5)):'dal '+esc(apUlt.giorni[0].slice(0,5))+' al '+esc(apUlt.giorni[apUlt.giorni.length-1].slice(0,5))):'—'}${apUlt.senzaConsumi.length?' <span style="color:var(--amber);">(mancano i consumi del '+apUlt.senzaConsumi.map(x=>esc(x.slice(0,5))).join(', ')+')</span>':''}. Lavanderia: distinta ${apUlt.distinta?'del '+esc(apUlt.distinta.slice(0,5)):'—'}.</td></tr>`;
   o+=`</tbody></table></div>`;
 
   // ── Nuova conta ──
@@ -15775,7 +15774,7 @@ function biaRender(){
       }else{
         const t=ap.tot;
         h+=`<div style="font-size:var(--fs-base);font-weight:700;">In albergo ${t.alb} · in lavanderia ${t.dist}${t.resoAperto+t.resoDato?' · resi '+(t.resoAperto+t.resoDato):''}</div>
-          <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;line-height:1.55;">In albergo: ${t.pulito} puliti (conta del ${esc(ap.conta.slice(0,5))}) + ${t.sporco} sporchi (consumi ${ap.giorni.length?(ap.giorni.length===1?'del '+esc(ap.giorni[0].slice(0,5)):'dal '+esc(ap.giorni[0].slice(0,5))+' al '+esc(ap.giorni[ap.giorni.length-1].slice(0,5))):'—'}). In lavanderia: distinta ${ap.distinta?'del '+esc(ap.distinta.slice(0,5)):'—'}.${t.resoAperto||t.resoDato?` Resi come inidonei: ${t.resoDato} già ritirati da Raimondo${t.resoAperto?' + '+t.resoAperto+' nel sacco del reso':''}.`:''} Contratto: ${t.contr} pezzi.</div>
+          <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;line-height:1.55;">In albergo: ${t.letti} su letti e bagni allestiti + ${t.scorta} di scorta (conta del ${esc(ap.conta.slice(0,5))}: carrelli e deposito) + ${t.sporco} sporchi (consumi ${ap.giorni.length?(ap.giorni.length===1?'del '+esc(ap.giorni[0].slice(0,5)):'dal '+esc(ap.giorni[0].slice(0,5))+' al '+esc(ap.giorni[ap.giorni.length-1].slice(0,5))):'—'}). In lavanderia: distinta ${ap.distinta?'del '+esc(ap.distinta.slice(0,5)):'—'}.${t.resoAperto||t.resoDato?` Resi come inidonei: ${t.resoDato} già ritirati da Raimondo${t.resoAperto?' + '+t.resoAperto+' nel sacco del reso':''}.`:''} Contratto: ${t.contr} pezzi.</div>
           ${ap.senzaConsumi.length?`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:3px;">Consumi non inseriti: ${ap.senzaConsumi.map(x=>esc(x.slice(0,5))).join(', ')}. Lo sporco di quei giorni manca dal conto.</div>`:''}`;
         // Conta solo quello che manca: i pezzi in piu' del contratto vanno bene (reintegri extra).
         const manca=BIA_VOCI_GIRO.filter(v=>ap.voci[v]&&ap.voci[v].diff>0);

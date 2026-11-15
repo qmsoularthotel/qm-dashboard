@@ -1140,6 +1140,26 @@ camere o pezzi per camera:
 Totali: **matrimoniali 50, singole 6, federe 96, teli 51, viso 51, bidet 51, scendibagno 25**. Nelle conte
 registrate la riga dei letti dice *"letti 42 su 50"*.
 
+### La teoria del conteggio del SoulArt, come l'ha fissata il QM (15/11/2026)
+
+> Abbiamo un contratto con i pezzi indicati. La dotazione da tenere presente sempre è: letti preparati e
+> bagni allestiti, il conteggio ogni 15 giorni, la biancheria in lavanderia (ultima distinta), la
+> biancheria sporca per uscire (consumi), più i resi.
+
+    contratto = letti e bagni allestiti   (allestimento, fisso: 50 / 6 / 96 / 51 / 51 / 51 / 25)
+              + scorta                    (conta ogni 15 giorni: carrelli + deposito)
+              + sporco da uscire          (consumi dal giorno dell'ultima consegna alla conta)
+              + in lavanderia             (distinta dell'ultima consegna)
+              + resi                      (Reso Biancheria: già ritirati + nel sacco)
+              + da ritrovare              (> 0: arretrati di Raimondo o persi; < 0: pezzi in più, va bene)
+
+In `_biaContaAppello` i **letti contati non entrano nel conto** (vale l'allestimento; restano scritti
+nella conta e nelle conte registrate *"letti 42 su 50"*); nemmeno lo *sporco* scritto nella conta. Il
+riquadro del Conteggio a scorrere mostra proprio queste colonne (Contratto, Letti e bagni, Scorta, Sporco,
+In lavanderia, Resi, All'appello); tolte *Ultima conta in albergo*, *Da allora* e *Da Raimondo oggi* del
+vecchio calcolo a scorrere (le funzioni restano per lo storico). Sul backup del 15/11: matrimoniali **17**
+da ritrovare, singole 21, bidet 23, teli 20; in più federe 109, viso 16, scendibagno 71.
+
 
 
 Il vecchio pannello "Consegne di Raimondo" (le due strutture una sotto l'altra, cinque
