@@ -14106,6 +14106,8 @@ async function biaLoad(){
   // L'armadio di scorta della Dotazione da contratto sta nella Giacenza: solo lettura.
   try{_giac=await _qmLeggiArchivio(GIAC_KEY,{movimenti:[],tipologie:null});}catch(e){}
   biaRender();
+  // Una volta sola: dopo, non c'è più niente prima del 01/09 e non scrive niente.
+  if(_biaTogliConsumiPrimaInizio()){await _biaSave();biaRender();}
 }
 async function _biaSave(){
   _bia=await _qmSalvaArchivio(BIA_KEY,_bia);
@@ -14496,6 +14498,27 @@ function _biaInizio(h){
   return d&&d>m?d:m;
 }
 function _biaInizioTxt(h){return _biaFmt(_biaInizio(h));}
+// Consumi prima del 01/09/2026: TOLTI (15/11/2026, richiesta del QM: "ad agosto non ho contato
+// i consumi"). Erano 28 giorni (18-31/08, SoulArt e Boutique) che non entravano nel saldo ma
+// tornavano negli avvisi: la consegna del 01/09 SoulArt diceva «318 pezzi in più» contro un
+// 29/08 azzerato. Si eliminano come fa il cestino (_qmSegnaRimosso, così non rientrano dalla
+// fusione con un'altra postazione). Le CONSEGNE restano tutte: al Boutique la prima di
+// settembre si confronta ancora col sacco del 29/08.
+// Tolti i consumi, le consegne il cui periodo pesca prima del 01/09 si troverebbero a
+// confronto con zero e accenderebbero «Riallinea» — che, premuto, azzererebbe il sacco del
+// 29/08 Boutique e sposterebbe il saldo. Si segnano quindi come verificate ("va bene così":
+// non cambia nessun numero, registra solo contro quali consumi). Restituisce quanti tolti.
+function _biaTogliConsumiPrimaInizio(){
+  const lim=_biaParse(BIA_INIZIO_MINIMO);
+  if(!lim||!_bia||!Array.isArray(_bia.consumi))return 0;
+  const via=_bia.consumi.filter(c=>{const d=_biaParse(c.data);return d&&d<lim;});
+  if(!via.length)return 0;
+  const toccate=(_bia.giri||[]).filter(g=>{const per=_biaPeriodo(_biaH(g),g.data);return per&&per.dal<lim;});
+  _bia.consumi=_bia.consumi.filter(c=>via.indexOf(c)<0);
+  via.forEach(c=>_qmSegnaRimosso(_bia,c.id));
+  toccate.forEach(g=>{const sc=_biaScostamento(g);if(sc)_biaApplicaConferma(g,sc);});
+  return via.length;
+}
 function _biaNelConto(g){const i=_biaInizio(_biaH(g)),d=_biaParse(g.data);return !i||!d||d>=i;}
 async function biaSetInizio(iso){
   const h=_biaStoHotel||_biaHotel;

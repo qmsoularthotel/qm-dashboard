@@ -1306,6 +1306,27 @@ davvero stati messi in giro, se le consegne sono registrate bene e se l'armadio 
   caselle; *Fine* le richiude, e si richiudono comunque rientrando nella pagina (`biaLoad`).
   `biaSetDot` rifiuta di scrivere col lucchetto chiuso.
 
+### Consumi di agosto tolti (15/11/2026)
+
+Il QM: *"ad agosto non ho contato i consumi"*. Eppure in Compass c'erano 28 giorni di consumi
+(18-31/08, SoulArt e Boutique, inseriti giorno per giorno: forse da un collega o per prova) che
+non entravano nel saldo ma accendevano avvisi: il SoulArt al 01/09 diceva *"318 pezzi in più"*
+contro il 29/08 azzerato il 12/11.
+
+`_biaTogliConsumiPrimaInizio()` (e `_gbTogliConsumiPrimaInizio()` nella Galleria, copia
+identica, dove di agosto non c'è niente), chiamata da `biaLoad` e salvata solo se ha tolto
+qualcosa, quindi in pratica **una volta sola**:
+- toglie i consumi datati prima di `BIA_INIZIO_MINIMO`, segnandoli in `_rimossi` come il cestino;
+- **non tocca nessuna consegna** (al Boutique la prima di settembre si confronta col sacco del 29/08);
+- alle consegne il cui periodo pesca prima del 01/09 applica *"va bene così"*
+  (`_biaApplicaConferma`), altrimenti si accenderebbe «Riallinea», che premuto azzererebbe il
+  sacco del 29/08 Boutique e sposterebbe il saldo.
+
+Provata sul backup del 15/11 (copia, senza scrivere): 28 consumi tolti, saldi e sacchi
+identici, spariti i 6 avvisi (le 5 consegne di agosto SoulArt e il 29/08 Boutique), nessun dato
+mancante. Controlli in `test/controlli.js` e `test/galleria.js`, verificati con due sabotaggi
+(senza "va bene così"; senza `_rimossi`).
+
 ### Analisi del saldo negativo sul backup del 15/11/2026 (da riprendere col QM)
 
 Il QM: *"mi ritrovo sempre delle incongruenze nei consumi biancheria"*. Rifatto il conto sul

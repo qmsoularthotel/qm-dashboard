@@ -131,7 +131,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-14.4';
+const QM_APP_BUILD='2026-11-15.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -668,6 +668,8 @@ async function gbLoad(){
   _gb=await _gbLeggi(GB_KEY,{consumi:[],giri:[]});
   try{await _gbDistCarica();}catch(e){}
   gbRender();
+  // Una volta sola: dopo, non c'è più niente prima del 01/09 e non scrive niente.
+  if(_gbTogliConsumiPrimaInizio()){await _gbSave();gbRender();}
 }
 async function _gbSave(){
   _gb=await _gbScrivi(GB_KEY,_gb);
@@ -1080,6 +1082,27 @@ function _gbInizio(h){
   return d&&d>m?d:m;
 }
 function _gbInizioTxt(h){return _gbFmt(_gbInizio(h));}
+// Consumi prima del 01/09/2026: TOLTI (15/11/2026, richiesta del QM: "ad agosto non ho contato
+// i consumi"). Erano 28 giorni (18-31/08, SoulArt e Boutique) che non entravano nel saldo ma
+// tornavano negli avvisi: la consegna del 01/09 SoulArt diceva «318 pezzi in più» contro un
+// 29/08 azzerato. Si eliminano come fa il cestino (_gbSegnaRimosso, così non rientrano dalla
+// fusione con un'altra postazione). Le CONSEGNE restano tutte: al Boutique la prima di
+// settembre si confronta ancora col sacco del 29/08.
+// Tolti i consumi, le consegne il cui periodo pesca prima del 01/09 si troverebbero a
+// confronto con zero e accenderebbero «Riallinea» — che, premuto, azzererebbe il sacco del
+// 29/08 Boutique e sposterebbe il saldo. Si segnano quindi come verificate ("va bene così":
+// non cambia nessun numero, registra solo contro quali consumi). Restituisce quanti tolti.
+function _gbTogliConsumiPrimaInizio(){
+  const lim=_gbParse(GB_INIZIO_MINIMO);
+  if(!lim||!_gb||!Array.isArray(_gb.consumi))return 0;
+  const via=_gb.consumi.filter(c=>{const d=_gbParse(c.data);return d&&d<lim;});
+  if(!via.length)return 0;
+  const toccate=(_gb.giri||[]).filter(g=>{const per=_gbPeriodo(_gbH(g),g.data);return per&&per.dal<lim;});
+  _gb.consumi=_gb.consumi.filter(c=>via.indexOf(c)<0);
+  via.forEach(c=>_gbSegnaRimosso(_gb,c.id));
+  toccate.forEach(g=>{const sc=_gbScostamento(g);if(sc)_gbApplicaConferma(g,sc);});
+  return via.length;
+}
 function _gbNelConto(g){const i=_gbInizio(_gbH(g)),d=_gbParse(g.data);return !i||!d||d>=i;}
 async function gbSetInizio(iso){
   const h=_gbStoHotel||_gbHotel;

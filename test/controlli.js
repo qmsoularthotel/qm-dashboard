@@ -3504,6 +3504,37 @@ sez('Biancheria: nessun conteggio prima del 01/09/2026 (12/11/2026)');
   _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
 })();
 
+// ── Consumi di agosto tolti (15/11/2026): "ad agosto non ho contato i consumi" ──
+//    Si tolgono i consumi, MAI le consegne, e nessun avviso «Riallinea» deve accendersi:
+//    premuto, azzererebbe il sacco del 29/08 Boutique e sposterebbe il saldo.
+sez('Biancheria: consumi di agosto tolti, consegne e saldo intatti (15/11/2026)');
+(function(){
+  var prima=_bia,spento=BIA_INIZIO_MINIMO,spentoH=BIA_INIZIO_MINIMO_H;
+  BIA_INIZIO_MINIMO=_BIA_MIN_VERO;BIA_INIZIO_MINIMO_H=_BIA_MIN_H_VERO;
+  var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};
+  var C=function(id,d,n){return {id:id,hotel:'bh',data:d,q:Q(n)};};
+  _bia={consumi:[C('c27','27/08/2026',20),C('c28','28/08/2026',20),C('c29','29/08/2026',10),
+                 C('c30','30/08/2026',10),C('c31','31/08/2026',10),C('c01','01/09/2026',15),
+                 C('c02','02/09/2026',15),{id:'s31',hotel:'sa',data:'31/08/2026',q:Q(9)}],
+        giri:[{id:'g29',hotel:'bh',data:'29/08/2026',consegnato:Q(40),daiConsumi:Q(40),ricevuto:Q(40)},
+              {id:'g01',hotel:'bh',data:'01/09/2026',consegnato:Q(30),daiConsumi:Q(30),ricevuto:Q(35)},
+              {id:'g03',hotel:'bh',data:'03/09/2026',consegnato:Q(30),daiConsumi:Q(30),ricevuto:Q(25)},
+              {id:'g05',hotel:'bh',data:'05/09/2026',consegnato:Q(0),daiConsumi:Q(0),ricevuto:Q(30)}]};
+  var saldo0=_biaSaldo('bh').Federa;
+  ok('tolti i 6 consumi di agosto (tutte e due le strutture)', _biaTogliConsumiPrimaInizio(), 6);
+  ok('restano solo quelli di settembre',          _bia.consumi.map(function(c){return c.id;}).join(','), 'c01,c02');
+  ok('segnati come rimossi (non tornano dalla fusione)', ['c27','c31','s31'].every(function(id){return (_bia._rimossi||[]).indexOf(id)>=0;}), true);
+  ok('le consegne restano tutte',                 _bia.giri.length, 4);
+  ok('il sacco del 29/08 non cambia',             _bia.giri[0].consegnato.Federa, 40);
+  ok('il sacco del 01/09 non cambia',             _bia.giri[1].consegnato.Federa, 30);
+  ok('nessun «Riallinea» acceso',                 _bia.giri.filter(function(g){return _biaScostamento(g);}).length, 0);
+  ok('il saldo del Boutique non si muove',        _biaSaldo('bh').Federa, saldo0);
+  ok('una consegna tutta di settembre non e\' toccata', _bia.giri[2].daiConsumi.Federa, 30);
+  ok('la seconda volta non toglie niente',        _biaTogliConsumiPrimaInizio(), 0);
+  ok('biaLoad la chiama',                         /_biaTogliConsumiPrimaInizio\(\)\)\{await _biaSave\(\)/.test(String(biaLoad)), true);
+  _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
+})();
+
 // ── Frecce ‹ › sulle date del Consumo Biancheria (14/11/2026) ──
 //    I consumi vanno un giorno alla volta e non oltre oggi; la consegna salta solo fra i
 //    giorni del giro (mar/gio/sab). 10/11/2026 e' un martedi'.

@@ -315,6 +315,20 @@ sez('Gestione Biancheria (Galleria): l\'avviso dei dati mancanti segue il calend
   _gb = prima; GB_INIZIO_MINIMO = spento;
 })();
 
+// ── Consumi prima del 01/09 tolti, come in Compass (15/11/2026) ──
+(function () {
+  var prima = _gb, spento = GB_INIZIO_MINIMO;
+  GB_INIZIO_MINIMO = _GB_MIN_VERO;
+  var Q = function (n) { var q = _gbVuote(); q.Federa = n; return q; };
+  _gb = { consumi: [{ id: 'a', hotel: 'ar', data: '30/08/2026', q: Q(10) }, { id: 'b', hotel: 'ar', data: '01/09/2026', q: Q(5) }],
+          giri: [{ id: 'g', hotel: 'ar', data: '02/09/2026', consegnato: Q(15), daiConsumi: Q(15), ricevuto: Q(15) }] };
+  ok('Galleria: tolto il consumo di agosto',      _gbTogliConsumiPrimaInizio(), 1);
+  ok('Galleria: la consegna non cambia',          _gb.giri[0].consegnato.Federa, 15);
+  ok('Galleria: nessun «Riallinea» acceso',       !!_gbScostamento(_gb.giri[0]), false);
+  ok('Galleria: gbLoad la chiama',                /_gbTogliConsumiPrimaInizio\(\)\)\{await _gbSave\(\)/.test(String(gbLoad)), true);
+  _gb = prima; GB_INIZIO_MINIMO = spento;
+})();
+
 // ── Frecce ‹ › sulle date (14/11/2026): la consegna segue il calendario della struttura
 //    selezionata — Art Resort lun/mer/ven, Santa Brigida mar/gio/sab. 09/11/2026 e' lunedi'.
 sez('Gestione Biancheria (Galleria): frecce sulle date');
