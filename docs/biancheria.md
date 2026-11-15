@@ -1327,6 +1327,14 @@ identici, spariti i 6 avvisi (le 5 consegne di agosto SoulArt e il 29/08 Boutiqu
 mancante. Controlli in `test/controlli.js` e `test/galleria.js`, verificati con due sabotaggi
 (senza "va bene così"; senza `_rimossi`).
 
+### Boutique dal 05/09 come il SoulArt (15/11/2026)
+
+Decisione del QM: `BIA_INIZIO_MINIMO_H={sa:'05/09/2026',bh:'05/09/2026'}`. Fuori dal conto del
+Boutique escono le consegne del 01/09 e del 03/09. Sul backup del 15/11 il saldo del Boutique
+passa da +14 −26 −128 −60 −139 −44 −59 a **+2 −19 −112 −60 −132 −43 −46** (matrimoniali,
+singole, federe, teli, viso, bidet, scendibagno). Nella Galleria `GB_INIZIO_MINIMO_H` resta `{}`:
+sono altre strutture.
+
 ### Analisi del saldo negativo sul backup del 15/11/2026 (da riprendere col QM)
 
 Il QM: *"mi ritrovo sempre delle incongruenze nei consumi biancheria"*. Rifatto il conto sul

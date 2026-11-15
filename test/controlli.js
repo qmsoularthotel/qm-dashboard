@@ -3494,11 +3494,12 @@ sez('Biancheria: nessun conteggio prima del 01/09/2026 (12/11/2026)');
     {id:'s1',hotel:'sa',data:'01/09/2026',consegnato:Q(30),ricevuto:Q(35)},
     {id:'s2',hotel:'sa',data:'03/09/2026',consegnato:Q(20),ricevuto:Q(25)}]};
   ok('SoulArt: 01/08 scritto vale 05/09',         _biaInizioTxt('sa'), '05/09/2026');
-  ok('Boutique: senza data scritta dal 01/09',     _biaInizioTxt('bh'), '01/09/2026');
+  ok('Boutique: senza data scritta dal 05/09',     _biaInizioTxt('bh'), '05/09/2026');   // 15/11/2026, come il SoulArt
   var b=_biaBuchi('sa',new Date(2026,8,4));
   ok('l\'avviso non elenca piu\' agosto',         b.senzaPortato.join(','), '');
   ok('agosto e 01-03/09 fuori dal conto al SoulArt', [0,2,3].map(function(i){return _biaNelConto(_bia.giri[i]);}).join(' '), 'false false false');
-  ok('al Boutique il 01/09 conta',                _biaNelConto({hotel:'bh',data:'01/09/2026'}), true);
+  ok('al Boutique il 01/09 non conta piu\'',       _biaNelConto({hotel:'bh',data:'01/09/2026'}), false);
+  ok('al Boutique il 05/09 conta',                _biaNelConto({hotel:'bh',data:'05/09/2026'}), true);
   ok('il SoulArt non scende sotto il 05/09',      (_bia.inizio.sa='03/09/2026', _biaInizioTxt('sa')), '05/09/2026');
   ok('una data piu\' recente vale',               (_bia.inizio.sa='08/09/2026', _biaInizioTxt('sa')), '08/09/2026');
   _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;

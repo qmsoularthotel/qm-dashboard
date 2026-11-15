@@ -14488,7 +14488,8 @@ const BIA_INIZIO_MINIMO='01/09/2026';
 // Per struttura, quando i dati di inizio settembre non sono buoni. SoulArt dal 05/09
 // (12/11/2026): azzerando agosto è stato azzerato anche lo sporco dato il 01/09, e il 01/09
 // e il 03/09 risultavano «tutto in più» (+87 lenzuola finte). Dal 05/09 i dati sono intatti.
-const BIA_INIZIO_MINIMO_H={sa:'05/09/2026'};
+// Boutique dal 05/09 anche lui (15/11/2026, decisione del QM): stessa partenza per tutte e due.
+const BIA_INIZIO_MINIMO_H={sa:'05/09/2026',bh:'05/09/2026'};
 function _biaInizioMin(h){
   const m=_biaParse(BIA_INIZIO_MINIMO),mh=BIA_INIZIO_MINIMO_H[h]?_biaParse(BIA_INIZIO_MINIMO_H[h]):null;
   return mh&&mh>m?mh:m;
