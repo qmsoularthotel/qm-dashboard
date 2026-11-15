@@ -3655,8 +3655,8 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   var ap2=_biaContaAppello('sa',_bia.conte[0]);
   ok('sporco dai consumi (35), non dalla conta (20)', [ap2.voci.Federa.pulito,ap2.voci.Federa.sporco,ap2.voci.Federa.diff].join(' '), '150 35 -35');
   _bia.consumi[0].q=Q(20);
-  ok('nello storico: albergo, lavanderia, trovati', /In albergo 170 · in lavanderia 50</.test(box.innerHTML), true);
-  ok('in piu\' del contratto: va bene',           /In più del contratto \(va bene\): Federe 20/.test(box.innerHTML), true);
+  ok('nello storico: albergo, lavanderia, trovati', /Scorta <strong[^>]*>62<[\s\S]*Sporco <strong[^>]*>20<[\s\S]*Lavanderia <strong[^>]*>50</.test(box.innerHTML), true);
+  ok('in piu\' del contratto: va bene',           /in più \(va bene\): federe 20/.test(box.innerHTML), true);
   ok('e non c\'e\' niente da ritrovare',             /Nessun pezzo da ritrovare/.test(box.innerHTML), true);
   ok('su ogni consegna la sua distinta',          /in lavanderia \(distinta\): <strong[^>]*>40</.test(box.innerHTML), true);
   // Con due conte: il giudizio vero (10/11 → 14/11: previsti 175, contati 170).

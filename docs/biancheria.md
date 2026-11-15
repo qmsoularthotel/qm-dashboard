@@ -1160,6 +1160,11 @@ In lavanderia, Resi, All'appello); tolte *Ultima conta in albergo*, *Da allora* 
 vecchio calcolo a scorrere (le funzioni restano per lo storico). Sul backup del 15/11: matrimoniali **17**
 da ritrovare, singole 21, bidet 23, teli 20; in più federe 109, viso 16, scendibagno 71.
 
+**Riepilogo in poche parole** (stesso giorno, il QM: *"troppo prolisso"*). In alto nello storico: *"Da
+ritrovare 81 pezzi"* e le tipologie; una riga di numeri *Letti e bagni · Scorta · Sporco · Lavanderia ·
+Resi · Contratto*; una riga *Conta gg/mm · distinta gg/mm · consumi gg/mm–gg/mm · in più (va bene): …*.
+Le spiegazioni stanno nei `title` (al passaggio del mouse), non nel testo.
+
 
 
 Il vecchio pannello "Consegne di Raimondo" (le due strutture una sotto l'altra, cinque

@@ -15772,18 +15772,26 @@ function biaRender(){
       if(!ap||!ap.n){
         h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">Manca una conta: registrala nel <strong>Conteggio a scorrere</strong> per sapere dove sta la biancheria.</div>`;
       }else{
-        const t=ap.tot;
-        h+=`<div style="font-size:var(--fs-base);font-weight:700;">In albergo ${t.alb} · in lavanderia ${t.dist}${t.resoAperto+t.resoDato?' · resi '+(t.resoAperto+t.resoDato):''}</div>
-          <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;line-height:1.55;">In albergo: ${t.letti} su letti e bagni allestiti + ${t.scorta} di scorta (conta del ${esc(ap.conta.slice(0,5))}: carrelli e deposito) + ${t.sporco} sporchi (consumi ${ap.giorni.length?(ap.giorni.length===1?'del '+esc(ap.giorni[0].slice(0,5)):'dal '+esc(ap.giorni[0].slice(0,5))+' al '+esc(ap.giorni[ap.giorni.length-1].slice(0,5))):'—'}). In lavanderia: distinta ${ap.distinta?'del '+esc(ap.distinta.slice(0,5)):'—'}.${t.resoAperto||t.resoDato?` Resi come inidonei: ${t.resoDato} già ritirati da Raimondo${t.resoAperto?' + '+t.resoAperto+' nel sacco del reso':''}.`:''} Contratto: ${t.contr} pezzi.</div>
-          ${ap.senzaConsumi.length?`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:3px;">Consumi non inseriti: ${ap.senzaConsumi.map(x=>esc(x.slice(0,5))).join(', ')}. Lo sporco di quei giorni manca dal conto.</div>`:''}`;
-        // Conta solo quello che manca: i pezzi in piu' del contratto vanno bene (reintegri extra).
+        // Poche parole (15/11/2026, il QM: "troppo prolisso"): prima cosa manca, poi dove stanno i pezzi.
+        const t=ap.tot,nome=v=>esc(BIA_DOT_PLURALE[v]||v);
         const manca=BIA_VOCI_GIRO.filter(v=>ap.voci[v]&&ap.voci[v].diff>0);
         const piu=BIA_VOCI_GIRO.filter(v=>ap.voci[v]&&ap.voci[v].diff<0);
-        const nome=v=>esc(BIA_DOT_PLURALE[v]||v);
-        if(!manca.length)h+=`<div style="font-size:var(--fs-xs);margin-top:6px;font-weight:700;color:var(--green);">Nessun pezzo da ritrovare: ci sono tutti i pezzi del contratto.</div>`;
-        else h+=`<div style="font-size:var(--fs-xs);margin-top:6px;line-height:1.7;"><strong>Da ritrovare ${manca.reduce((a,v)=>a+ap.voci[v].diff,0)} pezzi:</strong> ${manca.map(v=>`<span style="white-space:nowrap;margin-right:10px;">${nome(v)} <span style="color:var(--amber);font-weight:700;">${ap.voci[v].diff}</span></span>`).join(' ')}</div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;line-height:1.5;">Non sono né in albergo, né nella distinta, né nei resi: arretrati ancora da Raimondo, oppure persi. La prossima conta dirà quale. I resi già ritirati contano come trovati: se Raimondo non li ha reintegrati, mancano dal giro ma non sono persi.</div>`;
-        if(piu.length)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">In più del contratto (va bene): ${piu.map(v=>nome(v)+' '+(-ap.voci[v].diff)).join(', ')}.</div>`;
+        const nMan=manca.reduce((a,v)=>a+ap.voci[v].diff,0);
+        const per=ap.giorni.length?(ap.giorni.length===1?esc(ap.giorni[0].slice(0,5)):esc(ap.giorni[0].slice(0,5))+'–'+esc(ap.giorni[ap.giorni.length-1].slice(0,5))):'—';
+        h+=manca.length
+          ?`<div style="font-size:var(--fs-base);font-weight:700;" title="Non sono in albergo, in lavanderia né nei resi: arretrati di Raimondo o persi">Da ritrovare <span style="color:var(--amber);">${nMan} pezzi</span></div>
+            <div style="font-size:var(--fs-xs);margin-top:4px;line-height:1.7;">${manca.map(v=>`<span style="white-space:nowrap;margin-right:12px;">${nome(v)} <strong style="color:var(--amber);">${ap.voci[v].diff}</strong></span>`).join(' ')}</div>`
+          :`<div style="font-size:var(--fs-base);font-weight:700;color:var(--green);">Nessun pezzo da ritrovare</div>`;
+        const pz=(l,n,tt)=>`<span style="white-space:nowrap;margin-right:12px;" title="${tt}">${l} <strong style="color:var(--text);">${n}</strong></span>`;
+        h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.7;">${[
+            pz('Letti e bagni',t.letti,'Camere allestite'),
+            pz('Scorta',t.scorta,'Carrelli e deposito, conta del '+esc(ap.conta)),
+            pz('Sporco',t.sporco,'Consumi '+per),
+            pz('Lavanderia',t.dist,'Distinta '+(ap.distinta?esc(ap.distinta):'—')),
+            pz('Resi',t.resoDato+t.resoAperto,t.resoDato+' ritirati, '+t.resoAperto+' nel sacco'),
+            pz('Contratto',t.contr,'Pezzi del contratto')].join(' ')}</div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);">Conta ${esc(ap.conta.slice(0,5))} · distinta ${ap.distinta?esc(ap.distinta.slice(0,5)):'—'} · consumi ${per}${piu.length?' · in più (va bene): '+piu.map(v=>nome(v).toLowerCase()+' '+(-ap.voci[v].diff)).join(', '):''}</div>
+          ${ap.senzaConsumi.length?`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:2px;">Mancano i consumi del ${ap.senzaConsumi.map(x=>esc(x.slice(0,5))).join(', ')}</div>`:''}`;
       }
       if(!st.righe.length)h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);margin-top:8px;">Nessuna consegna registrata a ${esc(nomeMese)}.</div>`;
       h+=`</div>`;
