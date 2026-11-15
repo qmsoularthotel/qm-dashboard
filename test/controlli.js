@@ -1860,6 +1860,12 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   var righeIn = function () { return (box.innerHTML.match(/onclick="biaToggleGiro\(/g) || []).length; };
   var meseSA = _biaYm(_biaGiri('sa')[0].data);
   _biaHotel = 'sa'; _biaStoHotel = 'sa'; _biaStoMese = meseSA; _biaStoTutte = false;
+  // Di default lo storico e' CHIUSO (15/11/2026): solo l'intestazione, che lo apre.
+  ok('lo storico parte chiuso',                  _biaStoAperto, false);
+  ridisegna();
+  ok('chiuso: nessuna consegna in vista',        righeIn(), 0);
+  ok('chiuso: l\'intestazione lo apre',          /onclick="biaToggleSto\(\)"[^>]*>[\s\S]{0,80}Storico consegne del pulito/.test(box.innerHTML), true);
+  _biaStoAperto = true;
   ridisegna();
   ok('il pannello si chiama Storico consegne del pulito', /Storico consegne del pulito/.test(box.innerHTML), true);
   ok('SoulArt: le sue 3 consegne, non quelle del Boutique', righeIn(), 3);

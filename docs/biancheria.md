@@ -1049,6 +1049,11 @@ esce si correggono i consumi dei giorni e poi "Riallinea ai consumi". Stessa cos
 
 ### "Storico consegne del pulito" — una struttura e un mese alla volta (24/09/2026)
 
+**Di default è chiuso** (15/11/2026, richiesta del QM): si vede solo l'intestazione, che lo apre
+(`biaToggleSto`, `_biaStoAperto=false` a ogni caricamento). Stessa cosa nella Galleria
+(`gbToggleSto`). Controlli in `test/controlli.js` e `test/galleria.js`.
+
+
 Il vecchio pannello "Consegne di Raimondo" (le due strutture una sotto l'altra, cinque
 colonne di numeri per riga) era da leggere, non da guardare. Rifatto su bozza approvata dal QM
 (*"deve essere più intuitivo e di lettura immediata; i dettagli si vedono aprendo"*):

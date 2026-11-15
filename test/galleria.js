@@ -351,3 +351,8 @@ sez('Gestione Biancheria (Galleria): frecce sulle date');
     ok('Galleria: consumi il giorno dopo',          campi['gb-cons-data'].value, '2026-11-11');
   } finally { document.getElementById = vero; gbRender = ren; _gbHotel = h0; }
 })();
+
+// Storico consegne del pulito chiuso di default, come in Compass (15/11/2026).
+sez('Gestione Biancheria (Galleria): storico chiuso di default');
+ok('Galleria: lo storico parte chiuso',          _gbStoAperto, false);
+ok('Galleria: chiuso mostra solo l\'intestazione', /_gb\.giri\.length&&!_gbStoAperto/.test(String(gbRender)) || /_gb\.giri\.length&&!_gbStoAperto/.test(String(_gbRenderCore)), true);

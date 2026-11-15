@@ -131,7 +131,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-15.1';
+const QM_APP_BUILD='2026-11-15.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -597,6 +597,8 @@ function gbToggleConsumiTutti(){_gbConsumiTutti=!_gbConsumiTutti;_gbSenzaSalto(g
 const GB_STO_VISTE=4;
 const GB_STO_NOMI={ar:'Art Resort',sb:'Santa Brigida'};   // nomi corti per il selettore
 let _gbStoHotel='',_gbStoMese='',_gbStoTutte=false;
+let _gbStoAperto=false;   // lo storico parte chiuso (15/11/2026)
+function gbToggleSto(){_gbStoAperto=!_gbStoAperto;_gbSenzaSalto(gbRender);}
 function _gbYmOggi(){const d=_gbOggi();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function _gbStoMesi(h){
   const s=new Set([_gbYmOggi()]);
@@ -1734,7 +1736,12 @@ function _gbRenderCore(){
   </div>`;
 
   // ── Storico consegne del pulito ── (vedi _gbStorico)
-  if(_gb.giri.length){
+  // Di default CHIUSO (15/11/2026, richiesta del QM): si apre toccando l'intestazione e
+  // resta aperto finche' non si richiude o si ricarica la pagina.
+  if(_gb.giri.length&&!_gbStoAperto){
+    _gbStoHotel=_gbHotel;
+    h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header" onclick="gbToggleSto()" style="cursor:pointer;"><span class="panel-title">Storico consegne del pulito</span><span style="margin-left:auto;color:var(--text-dim);font-size:var(--fs-xs);">▾</span></div></div>`;
+  }else if(_gb.giri.length){
     _gbStoHotel=_gbHotel;
     const hS=_gbStoHotel,mesiS=_gbStoMesi(hS);
     if(!mesiS.includes(_gbStoMese))_gbStoMese=_gbYmOggi();
@@ -1742,7 +1749,7 @@ function _gbRenderCore(){
     const nomeMese=_gbMeseNome(_gbStoMese).split(' ')[0].toLowerCase();
     const bTab=on=>`padding:6px 13px;border:1px solid ${on?'var(--accent)':'var(--border)'};background:${on?'var(--accent)':'var(--surface)'};color:${on?'#fff':'var(--text-dim)'};font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;`;
     const bSec='background:var(--surface);color:var(--accent);border:1px solid var(--border);padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;';
-    h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header" style="flex-wrap:wrap;gap:8px;"><span class="panel-title">Storico consegne del pulito</span>
+    h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header" style="flex-wrap:wrap;gap:8px;"><span class="panel-title" onclick="gbToggleSto()" style="cursor:pointer;">Storico consegne del pulito <span style="color:var(--text-dim);font-size:var(--fs-xs);">▴</span></span>
       <span style="margin-left:auto;display:inline-flex;">${Object.keys(GB_HOTELS).map((k,i,a)=>`<button onclick="gbStoSetHotel('${k}')" style="${bTab(k===hS)}border-radius:${i===0?'7px 0 0 7px':i===a.length-1?'0 7px 7px 0':'0'};${i?'margin-left:-1px;':''}">${esc(GB_STO_NOMI[k]||GB_HOTELS[k])}</button>`).join('')}</span>
       <select onchange="gbStoSetMese(this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesiS.map(y=>`<option value="${y}"${y===_gbStoMese?' selected':''}>${_gbMeseNome(y)}</option>`).join('')}</select>
     </div><div class="panel-body" style="padding:0;">`;

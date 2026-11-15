@@ -14032,6 +14032,8 @@ function biaToggleConsumiTutti(){_biaConsumiTutti=!_biaConsumiTutti;_qmSenzaSalt
 const BIA_STO_VISTE=4;
 const BIA_STO_NOMI={sa:'SoulArt',bh:'Boutique'};   // nomi corti per il selettore
 let _biaStoHotel='',_biaStoMese='',_biaStoTutte=false;
+let _biaStoAperto=false;   // lo storico parte chiuso (15/11/2026)
+function biaToggleSto(){_biaStoAperto=!_biaStoAperto;_qmSenzaSalto(biaRender);}
 function _biaYmOggi(){const d=_biaOggi();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function _biaStoMesi(h){
   const s=new Set([_biaYmOggi()]);
@@ -15573,7 +15575,12 @@ function biaRender(){
   </div>`;
 
   // ── Storico consegne del pulito ── (vedi _biaStorico)
-  if(_bia.giri.length){
+  // Di default CHIUSO (15/11/2026, richiesta del QM): si apre toccando l'intestazione e
+  // resta aperto finche' non si richiude o si ricarica la pagina.
+  if(_bia.giri.length&&!_biaStoAperto){
+    _biaStoHotel=_biaHotel;
+    h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header" onclick="biaToggleSto()" style="cursor:pointer;"><span class="panel-title">Storico consegne del pulito</span><span style="margin-left:auto;color:var(--text-dim);font-size:var(--fs-xs);">▾</span></div></div>`;
+  }else if(_bia.giri.length){
     _biaStoHotel=_biaHotel;
     const hS=_biaStoHotel,mesiS=_biaStoMesi(hS);
     if(!mesiS.includes(_biaStoMese))_biaStoMese=_biaYmOggi();
@@ -15581,7 +15588,7 @@ function biaRender(){
     const nomeMese=_biaMeseNome(_biaStoMese).split(' ')[0].toLowerCase();
     const bTab=on=>`padding:6px 13px;border:1px solid ${on?'var(--accent)':'var(--border)'};background:${on?'var(--accent)':'var(--surface)'};color:${on?'#fff':'var(--text-dim)'};font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;`;
     const bSec='background:var(--surface);color:var(--accent);border:1px solid var(--border);padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;';
-    h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header" style="flex-wrap:wrap;gap:8px;"><span class="panel-title">Storico consegne del pulito</span>
+    h+=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header" style="flex-wrap:wrap;gap:8px;"><span class="panel-title" onclick="biaToggleSto()" style="cursor:pointer;">Storico consegne del pulito <span style="color:var(--text-dim);font-size:var(--fs-xs);">▴</span></span>
       <span style="margin-left:auto;display:inline-flex;">${Object.keys(BIA_HOTELS).map((k,i,a)=>`<button onclick="biaStoSetHotel('${k}')" style="${bTab(k===hS)}border-radius:${i===0?'7px 0 0 7px':i===a.length-1?'0 7px 7px 0':'0'};${i?'margin-left:-1px;':''}">${esc(BIA_STO_NOMI[k]||BIA_HOTELS[k])}</button>`).join('')}</span>
       <select onchange="biaStoSetMese(this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesiS.map(y=>`<option value="${y}"${y===_biaStoMese?' selected':''}>${_biaMeseNome(y)}</option>`).join('')}</select>
     </div><div class="panel-body" style="padding:0;">`;
