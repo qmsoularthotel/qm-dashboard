@@ -119,7 +119,10 @@ test/node.js       esecutore per ambienti con Node
 
 **Funziona su entrambe le macchine.** `esegui.sh` usa Node dove c'è (Linux, claude.ai) e
 `osascript` dove non c'è (Mac). Le due strade leggono gli stessi file e fanno gli stessi
-controlli: se se ne modifica una, aggiornare anche l'altra.
+controlli: se se ne modifica una, aggiornare anche l'altra. Vale anche per i controlli
+scritti direttamente in `esegui.sh`: il 15/11/2026 quello dei numeri dell'app Housekeeping
+usava solo `osascript` e nelle sessioni cloud falliva sempre ("command not found"), senza
+che il codice avesse niente; ora prova Node e poi `osascript`.
 
 ### Cosa copre e perché proprio quello
 
@@ -201,6 +204,8 @@ browser di prova non è abilitato, ogni richiesta al cloud è rifiutata (401) e 
 
 Due scelte da non cambiare: **`--incognito`** e non `--user-data-dir` (un profilo nuovo sul Mac
 resta in attesa del portachiavi e non finisce mai); e un **secondo tentativo** solo quando il
-browser non risponde, perché capita senza che la pagina c'entri. Senza Chrome (sessioni sul web)
-la prova si salta e lo dice. Verificata con due sabotaggi: errore di sintassi nella Galleria ed
+browser non risponde, perché capita senza che la pagina c'entri. Nelle sessioni cloud (dal
+15/11/2026) usa il Chromium già installato (`/opt/pw-browsers/chromium`, con `--no-sandbox`);
+lì la rete rifiuta `script.google.com`, e l'avviso di `turniPrefLoad` (risposta vuota, già
+gestito) si ignora. Senza nessun Chrome la prova si salta e lo dice. Verificata con due sabotaggi: errore di sintassi nella Galleria ed
 errore all'avvio in `app.js`, entrambi colti.

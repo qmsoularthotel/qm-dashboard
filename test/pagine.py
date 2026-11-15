@@ -14,13 +14,21 @@ Esce con 1 se una pagina ha errori.
 """
 import http.server, functools, threading, subprocess, tempfile, shutil, os, re, sys, socket
 
+# Chrome sul Mac; nelle sessioni cloud (Linux) il Chromium gia' installato, che senza
+# --no-sandbox non parte da root.
 CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+EXTRA = []
+if not os.path.exists(CHROME) and os.path.exists('/opt/pw-browsers/chromium'):
+    CHROME, EXTRA = '/opt/pw-browsers/chromium', ['--no-sandbox']
 PAGINE = ['index.html', 'housekeeper.html', 'breakfast.html', 'inventory.html',
           'controllo-mattino.html', 'dvr.html',
           'registration-galleria.html', 'biancheria-galleria.html']
 # Errori che non dipendono dal nostro codice: rete assente o rifiutata (il browser di prova
 # non e' abilitato) e risorse esterne. Tutto il resto e' un difetto.
-IGNORA = re.compile(r'Failed to load resource|net::ERR_|status of 40[13]|favicon', re.I)
+# Le preferenze turni vengono da Google (script.google.com): nelle sessioni cloud la rete
+# lo rifiuta, la risposta e' vuota e turniPrefLoad lo scrive come avviso (gia' gestito).
+IGNORA = re.compile(r'Failed to load resource|net::ERR_|status of 40[13]|favicon|'
+                    r'turniPrefLoad error', re.I)
 
 def cartella():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -49,7 +57,7 @@ def main():
         prof = tempfile.mkdtemp()
         try:
             r = subprocess.run([CHROME, '--headless=new', '--incognito', '--disable-gpu',
-                                '--enable-logging=stderr', '--v=0',
+                                '--enable-logging=stderr', '--v=0', *EXTRA,
                                 '--virtual-time-budget=6000', '--window-size=1200,800',
                                 '--screenshot=' + os.path.join(prof, 's.png'),
                                 f'http://127.0.0.1:{porta}/{p}'],

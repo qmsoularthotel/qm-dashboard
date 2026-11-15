@@ -504,9 +504,15 @@ done
 # (05/11/2026: SoulArt 12 camere in alto, 14 nelle schede). Anche nell'anteprima dei giorni.
 # Il conto stesso: 2 partenze + 1 cambio + 3 fermate SoulArt e 1 fermata Liborio = 3 · 4.
 _HK_CONTA=$(sed -n '/^function hkContaPiano/,/^}/p' housekeeper.html)
-_HK_RIS=$(osascript -l JavaScript -e "$_HK_CONTA
-const r=hkContaPiano({partenze:['Art 1','Art 2'],cambi:['Art 3'],fermate:['Art 4','Art 5','Art 6']},{fermate:['Liborio']},null);
-r.partenze+'·'+r.fermate" 2>&1)
+# Node dove c'e' (cloud, Linux), altrimenti osascript (Mac): come il resto della rete.
+_HK_PROVA="const r=hkContaPiano({partenze:['Art 1','Art 2'],cambi:['Art 3'],fermate:['Art 4','Art 5','Art 6']},{fermate:['Liborio']},null);"
+if command -v node >/dev/null 2>&1; then
+  _HK_RIS=$(node -e "$_HK_CONTA
+$_HK_PROVA console.log(r.partenze+'·'+r.fermate)" 2>&1)
+else
+  _HK_RIS=$(osascript -l JavaScript -e "$_HK_CONTA
+$_HK_PROVA r.partenze+'·'+r.fermate" 2>&1)
+fi
 for _hk in 'hkContaPiano(pianoDay.soulart,libPiano)' 'hkContaPiano(pianoDay.boutique)' \
            'hkContaPiano(ndP.soulart,ndL)' 'hkContaPiano(ndP.boutique)'; do
   grep -qF "$_hk" housekeeper.html || _HK_RIS="manca $_hk"
