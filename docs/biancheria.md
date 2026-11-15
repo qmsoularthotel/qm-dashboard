@@ -1123,6 +1123,11 @@ scendono da 92 a **25** (52 resi ritirati + 15 nel sacco); singole 21, bidet 26,
 **Conte registrate: dove stanno i pezzi** (stesso giorno): sotto il totale di ogni tipologia, sempre,
 *letti · carrelli · deposito · sporchi* con i numeri scritti nella conta.
 
+**Correggere una conta** (stesso giorno): *modifica* accanto a *elimina* (`biaContaModifica`) riporta i
+numeri della conta nelle caselle (copia, non riferimento), il titolo diventa *"Correggi la conta del
+gg/mm/aaaa"*, la data è bloccata, c'è *Annulla*. *Salva la conta* passa da `_biaContaRegistra`: stessa
+data = sostituisce e lascia traccia in `edits`.
+
 
 
 Il vecchio pannello "Consegne di Raimondo" (le due strutture una sotto l'altra, cinque

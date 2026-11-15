@@ -3596,6 +3596,18 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   ok('il riepilogo parte dall\'ultima conta',    _biaContaRiepilogo('sa','Federa').conta.data, '15/11/2026');
   var html=''; try{html=_biaContaPannello('sa');}catch(e){html='ERRORE '+e.message;}
   ok('il pannello si disegna',                    /Conteggio a scorrere/.test(html), true);
+  // Correggere una conta: i numeri tornano nelle caselle, con la sua data; salvando si sostituisce.
+  ok('ogni conta ha «modifica»',                  /biaContaModifica\('/.test(html), true);
+  var rd=biaRender;biaRender=function(){};
+  try{biaContaModifica(n2.id);}finally{biaRender=rd;}
+  ok('modifica: numeri e data della conta',       [_biaContaModifica,_biaContaBozza.Federa.letti,_biaContaBozza.Federa.deposito].join(' '), '15/11/2026 81 60');
+  _biaContaBozza.Federa.letti=79;
+  ok('la bozza e\' una copia, la conta non cambia', n2.q.Federa.letti, 81);
+  var html2=_biaContaPannello('sa');
+  ok('il titolo dice cosa si corregge',           /Correggi la conta del 15\/11\/2026/.test(html2)&&/id="bia-conta-data"[^>]*value="2026-11-15"[^>]*disabled/.test(html2), true);
+  _biaContaRegistra('sa',_biaContaModifica,_biaContaBozza);
+  ok('salvata: sostituita, con traccia',          [n2.q.Federa.letti,n2.edits.length,_bia.conte.length].join(' '), '79 2 2');
+  _biaContaBozza={};_biaContaModifica=null;
   ok('conte registrate: dove stanno i pezzi',    /letti <strong[^>]*>81<\/strong><br>carrelli <strong[^>]*>5<\/strong><br>deposito <strong[^>]*>60<\/strong><br>sporchi <strong[^>]*>20</.test(html), true);
   ok('SoulArt: conteggio al posto della Dotazione', /_biaContaSi\(_biaHotel\)\?_biaContaPannello\(_biaHotel\):_biaDotPannello\(_biaHotel\)/.test(String(biaRender)), true);
   ok('SoulArt: niente piu\' «Pezzi non rientrati»', /_biaStoSaldo&&!_biaContaSi\(hS\)/.test(String(biaRender)), true);

@@ -14785,6 +14785,7 @@ function _biaDotPannello(h){
 const BIA_CONTA_HOTELS={sa:true};
 const BIA_CONTA_POSTI=[['letti','Sui letti'],['carrelli','Sui carrelli'],['deposito','In deposito'],['sporco','Sporco in albergo']];
 let _biaContaBozza={};       // la conta che si sta scrivendo: {voce:{posto:numero}}, mai ridisegnata
+let _biaContaModifica=null;  // data (gg/mm/aaaa) della conta che si sta correggendo, o null
 function _biaContaSi(h){return !!BIA_CONTA_HOTELS[h];}
 function _biaConte(h){
   return (_bia.conte||[]).filter(c=>_biaH(c)===h&&_biaParse(c.data))
@@ -14998,9 +14999,21 @@ async function biaContaSalva(){
       '<br><br>Conta fatta <strong>dopo</strong> il passaggio di Raimondo: da qui il conto riparte da questi numeri.',
       {ok:gia?'Sostituisci':'Salva'}))return;
   _biaContaRegistra(h,data,_biaContaBozza);   // PRIMA dell'await: _biaSave riassegna _bia
-  _biaContaBozza={};
+  _biaContaBozza={};_biaContaModifica=null;
   await _biaSave();_qmSenzaSalto(biaRender);
 }
+// Correggere una conta (15/11/2026): i suoi numeri tornano nelle caselle di «Nuova conta» con la
+// sua data; «Salva» la SOSTITUISCE (stessa data) lasciando traccia in `edits`.
+function biaContaModifica(id){
+  const c=(_bia.conte||[]).find(x=>x.id===id);if(!c)return;
+  _biaContaBozza={};
+  Object.keys(c.q||{}).forEach(v=>{_biaContaBozza[v]=Object.assign({},c.q[v]);});
+  _biaContaModifica=c.data;
+  _qmSenzaSalto(biaRender);
+  // Dopo il frame in cui _qmSenzaSalto rimette lo scorrimento, altrimenti lo annulla.
+  setTimeout(()=>{const f=document.getElementById('bia-conta-data');if(f){try{f.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}}},60);
+}
+function biaContaAnnullaModifica(){_biaContaBozza={};_biaContaModifica=null;_qmSenzaSalto(biaRender);}
 async function biaContaElimina(id){
   const c=(_bia.conte||[]).find(x=>x.id===id);if(!c)return;
   if(!await cqConferma('Eliminare la conta del '+c.data+'?','Il conto ripartirà dalla conta precedente.',{ok:'Elimina'}))return;
@@ -15049,14 +15062,14 @@ function _biaContaPannello(h){
   const oggiIso=_biaToIso(_biaFmt(new Date()));
   o+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-      <span style="font-size:var(--fs-sm);font-weight:700;">Nuova conta</span>
-      <input id="bia-conta-data" type="date" value="${oggiIso}" max="${oggiIso}" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">
+      <span style="font-size:var(--fs-sm);font-weight:700;">${_biaContaModifica?'Correggi la conta del '+esc(_biaContaModifica):'Nuova conta'}</span>
+      <input id="bia-conta-data" type="date" value="${_biaContaModifica?_biaToIso(_biaContaModifica):oggiIso}" max="${oggiIso}" ${_biaContaModifica?'disabled title="Si corregge la conta di questo giorno"':''} style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">
       <span style="font-size:var(--fs-xxs);color:var(--text-dim);">dopo il passaggio di Raimondo. Una tipologia lasciata tutta vuota non si conta; scrivi 0 dove non ce ne sono.</span>
     </div>
     <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Tipologia</th>${BIA_CONTA_POSTI.map(([,t])=>`<th style="${th}">${t}</th>`).join('')}</tr></thead><tbody>
     ${BIA_VOCI_GIRO.map(v=>`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(BIA_DOT_PLURALE[v]||v)}</td>${BIA_CONTA_POSTI.map(([k])=>{const b=_biaContaBozza[v],val=b&&b[k]!==undefined?b[k]:'';return`<td style="${td}"><input type="number" min="0" inputmode="numeric" value="${val}" oninput="biaContaScrivi('${v}','${k}',this.value)" style="width:64px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;background:var(--surface);color:var(--text);"></td>`;}).join('')}</tr>`).join('')}
     </tbody></table></div>
-    <div style="margin-top:8px;display:flex;justify-content:flex-end;"><button onclick="biaContaSalva()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;">Salva la conta</button></div>
+    <div style="margin-top:8px;display:flex;justify-content:flex-end;gap:8px;">${_biaContaModifica?`<button onclick="biaContaAnnullaModifica()" style="background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:7px;padding:8px 14px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;">Annulla</button>`:''}<button onclick="biaContaSalva()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;">Salva la conta</button></div>
   </div>`;
 
   // ── Conte registrate, con la verifica rispetto alla precedente ──
@@ -15074,7 +15087,7 @@ function _biaContaPannello(h){
         // Dove stanno i pezzi contati (15/11/2026, il QM): sempre, posto per posto.
         const dove=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.45;margin-top:2px;white-space:nowrap;">${BIA_CONTA_POSTI.map(([k,tt])=>`${esc(tt.replace(/^Sui |^In |^Sporco in albergo$/,m=>m==='Sporco in albergo'?'sporchi':''))} <strong style="color:var(--text);">${Number(c.q[v][k])||0}</strong>`).join('<br>')}</div>`;
         return`<td style="${td}text-align:left;vertical-align:top;"><strong>${t}</strong>${dove}${ver?`<div style="font-size:var(--fs-xxs);color:${ver.differenza===0?'var(--green)':ver.differenza<0?'var(--red)':'var(--amber)'};">previsti ${ver.previsti} · ${ver.differenza===0?'tornano':ver.differenza>0?'+'+ver.differenza:ver.differenza}</div>`:''}</td>`;
-      }).join('')}<td style="${td}"><button onclick="biaContaElimina('${c.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">elimina</button></td></tr>`;
+      }).join('')}<td style="${td}vertical-align:top;white-space:nowrap;"><button onclick="biaContaModifica('${c.id}')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">modifica</button><button onclick="biaContaElimina('${c.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">elimina</button></td></tr>`;
     });
     o+=`</tbody></table></div></div>`;
   }
