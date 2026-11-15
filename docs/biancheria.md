@@ -1306,6 +1306,35 @@ davvero stati messi in giro, se le consegne sono registrate bene e se l'armadio 
   caselle; *Fine* le richiude, e si richiudono comunque rientrando nella pagina (`biaLoad`).
   `biaSetDot` rifiuta di scrivere col lucchetto chiuso.
 
+### Analisi del saldo negativo sul backup del 15/11/2026 (da riprendere col QM)
+
+Il QM: *"mi ritrovo sempre delle incongruenze nei consumi biancheria"*. Rifatto il conto sul
+backup del 15/11 (consegne fino al 14/11, SoulArt dal 05/09, Boutique dal 01/09), con le regole
+di `_biaSaldo` (dovuto = sporco congelato del giro prima):
+
+| Voce | SoulArt saldo | su consumi | Boutique saldo | su consumi |
+|---|---|---|---|---|
+| Matrimoniali | +88 | +7% | +14 | +2% |
+| Singole | +5 | | −26 | |
+| Federe | −350 | −16% | −128 | −10% |
+| Teli | −178 | −10% | −60 | −7% |
+| Viso | −103 | −6% | −139 | −16% |
+| Bidet | −296 | −18% | −44 | −5% |
+| Scendibagno | −224 | −17% | −59 | −11% |
+
+Cosa esclude i "pezzi spariti davvero": al SoulArt le federe sul posto sono 88 sui letti + 60
+nell'armadio, il contratto ne prevede 200 in tutto; un ammanco reale di 350 avrebbe lasciato
+l'albergo senza federe più volte. La Giacenza invece è ferma (pochi prelievi, tutti restituiti).
+Quindi **il saldo negativo nasce dalla registrazione**, non dal magazzino: o lo sporco dei fogli
+camera conta più pezzi di quelli che entrano nel sacco, o «Ha portato» registra meno di quello
+che arriva (Raimondo scrive numeri tondi: 164 voci su 214 al SoulArt sono multipli di 5; è
+sotto il dovuto 140 volte, sopra 58, pari 16). Esclusi: doppioni di consumi o consegne (nessuno),
+resi (dal 01/09 solo 26 federe e 39 matrimoniali al SoulArt, nessuno al Boutique: troppo pochi, e
+le matrimoniali sono proprio la voce in attivo).
+
+Prova decisiva proposta al QM: **contare a mano un sacco di sporco** (e una consegna) prima di un
+giro e confrontarli con la distinta di Compass e con la bolla di Raimondo.
+
 ### Numeri fuori dal normale: si riscrivono (12/11/2026)
 
 Richiesta del QM: *"ridurre a zero gli errori di inserimento, a prova di idiota"*. Chiedere
