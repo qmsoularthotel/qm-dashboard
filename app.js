@@ -14892,6 +14892,27 @@ function _biaContaDopo(h,data){
   }
   return n?{tot:tot,voci:n}:null;
 }
+// All'appello (15/11/2026, idea del QM): in lavanderia c'e' quello che dice la DISTINTA
+// dell'ultima consegna fino al giorno della conta (lo sporco dato quel giorno: la conta si fa
+// dopo il passaggio). Contati in albergo + distinta = pezzi trovati; contratto − trovati:
+//   > 0  pezzi da ritrovare (arretrati ancora da Raimondo, oppure persi)
+//   < 0  piu' pezzi del contratto: il contratto (o la conta) va verificato.
+function _biaContaAppello(h,c){
+  if(!c)return null;
+  const d=_biaParse(c.data);
+  const gs=_biaGiri(h).filter(g=>{const x=_biaParse(g.data);return x&&x<=d;});
+  const g=gs.length?gs.reduce((a,b)=>_biaParse(b.data)>=_biaParse(a.data)?b:a):null;
+  const o={conta:c.data,distinta:g?g.data:null,voci:{},tot:{alb:0,dist:0,contr:0,diff:0},n:0};
+  BIA_VOCI_GIRO.forEach(v=>{
+    const alb=_biaContaInAlbergo(c,v),contr=_biaDotCampo(h,v,'contratto');
+    if(alb===null||contr===null)return;
+    const dist=g?(Number(g.consegnato&&g.consegnato[v])||0):0;
+    const r={alb:alb,dist:dist,contr:contr,diff:contr-alb-dist};
+    o.voci[v]=r;o.n++;
+    ['alb','dist','contr','diff'].forEach(k=>{o.tot[k]+=r[k];});
+  });
+  return o;
+}
 // Lo stato di un "da Raimondo": sotto zero o oltre il contratto è impossibile.
 function _biaContaAvviso(r,contratto){
   if(r===null||r===undefined)return null;
@@ -14966,20 +14987,25 @@ function _biaContaPannello(h){
     <div class="panel-body" style="padding:14px;">
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:10px;">Ogni pezzo del contratto è <strong>in albergo</strong> (letti, carrelli, deposito, sporco) oppure <strong>da Raimondo</strong>. Alla conta: <strong>da Raimondo = contratto − in albergo</strong>. Poi a ogni consegna si aggiunge lo sporco che gli diamo e si toglie il pulito che porta. Alla conta successiva si vede se i numeri tornavano, e si riparte da quelli veri.</div>
     <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr>
-      <th style="${th}text-align:left;">Tipologia</th><th style="${th}">Da contratto</th><th style="${th}">Ultima conta<br><span style="font-weight:400;text-transform:none;">in albergo</span></th><th style="${th}">Da Raimondo<br><span style="font-weight:400;text-transform:none;">alla conta</span></th><th style="${th}">Da allora<br><span style="font-weight:400;text-transform:none;">sporco dato / pulito portato</span></th><th style="${th}">Da Raimondo<br><span style="font-weight:400;text-transform:none;">oggi</span></th></tr></thead><tbody>`;
+      <th style="${th}text-align:left;">Tipologia</th><th style="${th}">Da contratto</th><th style="${th}">Ultima conta<br><span style="font-weight:400;text-transform:none;">in albergo</span></th><th style="${th}">In lavanderia<br><span style="font-weight:400;text-transform:none;">distinta</span></th><th style="${th}">All'appello<br><span style="font-weight:400;text-transform:none;">contratto − trovati</span></th><th style="${th}">Da allora<br><span style="font-weight:400;text-transform:none;">sporco dato / pulito portato</span></th><th style="${th}">Da Raimondo<br><span style="font-weight:400;text-transform:none;">oggi</span></th></tr></thead><tbody>`;
   BIA_VOCI_GIRO.forEach(v=>{
     const contr=_biaDotCampo(h,v,'contratto'),r=_biaContaRiepilogo(h,v),s=r.scorre;
-    let conta='—',alla='—',mov='—',oggi=`<span style="color:var(--text-dim);font-weight:400;">${contr===null?'manca il contratto':'manca una conta'}</span>`;
+    let conta='—',alla='—',app='—',mov='—',oggi=`<span style="color:var(--text-dim);font-weight:400;">${contr===null?'manca il contratto':'manca una conta'}</span>`;
     if(s){
       conta=`${s.inAlbergo} <span style="color:var(--text-dim);font-weight:400;font-size:var(--fs-xxs);">(${esc(r.conta.data.slice(0,5))})</span>`;
-      alla=s.allaConta<0?`<span style="color:var(--amber);">${s.allaConta}</span>`:s.allaConta;
+      // In lavanderia = distinta dell'ultima consegna fino alla conta; all'appello = contratto − (albergo + distinta).
+      const ap=_biaContaAppello(h,r.conta),av=ap&&ap.voci[v];
+      if(av){
+        alla=`${av.dist} <span style="color:var(--text-dim);font-weight:400;font-size:var(--fs-xxs);">(${esc(ap.distinta?ap.distinta.slice(0,5):'—')})</span>`;
+        app=av.diff===0?'<span style="color:var(--green);">tutti</span>':av.diff>0?`<span style="color:var(--amber);">${av.diff} da ritrovare</span>`:`<span style="color:var(--accent);">${-av.diff} oltre il contratto</span>`;
+      }
       const dato=s.passi.reduce((a,p)=>a+p.dato,0),port=s.passi.reduce((a,p)=>a+p.portato,0);
       mov=s.passi.length?`${dato} / ${port} <span style="color:var(--text-dim);font-weight:400;font-size:var(--fs-xxs);">(${s.passi.length} consegne)</span>`:'<span style="color:var(--text-dim);font-weight:400;">nessuna consegna</span>';
       if(s.ferma)oggi=`<span style="color:var(--amber);">fermo al ${esc(s.ferma.slice(0,5))}: manca «Ha portato»</span>`;
       else{const av=_biaContaAvviso(s.daRaimondo,contr);oggi=av?`<span style="color:var(--red);">${s.daRaimondo}</span><div style="font-size:var(--fs-xxs);color:var(--red);font-weight:400;">${av}</div>`:s.daRaimondo;}
     }
     o+=`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(BIA_DOT_PLURALE[v]||v)}</td>
-      <td style="${td}">${inpC(v,contr)}</td><td style="${td}font-weight:600;">${conta}</td><td style="${td}">${alla}</td>
+      <td style="${td}">${inpC(v,contr)}</td><td style="${td}font-weight:600;">${conta}</td><td style="${td}">${alla}</td><td style="${td}font-weight:700;white-space:nowrap;">${app}</td>
       <td style="${td}white-space:nowrap;">${mov}</td><td style="${td}font-weight:700;">${oggi}</td></tr>`;
   });
   o+=`</tbody></table></div>`;
@@ -15679,23 +15705,20 @@ function biaRender(){
     if(st.nonReg)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">${st.nonReg} consegn${st.nonReg===1?'a':'e'} senza il dato di cosa ha riportato: fuori dal conto.</div>`;
     h+=`</div>`;
     }else{
-      // SoulArt: dove sta la biancheria, detto in parole semplici (15/11/2026). "Da Raimondo"
-      // non si capiva e i numeri sembravano ammanchi: e' biancheria in lavaggio, normale.
-      const ct=_biaContaTotali(hS);
+      // SoulArt: dove sta la biancheria, coi numeri che si sanno davvero (15/11/2026):
+      // in albergo = l'ultima conta, in lavanderia = la distinta dell'ultima consegna.
+      const conteS=_biaConte(hS),ap=_biaContaAppello(hS,conteS[conteS.length-1]);
       h+=`<div style="padding:14px 16px;border-bottom:1px solid var(--border);">`;
-      if(!ct.ultima){
+      if(!ap||!ap.n){
         h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">Manca una conta: registrala nel <strong>Conteggio a scorrere</strong> per sapere dove sta la biancheria.</div>`;
       }else{
-        if(ct.voci){
-          const inAlb=ct.contratto-ct.ora;
-          h+=`<div style="font-size:var(--fs-base);font-weight:700;">In albergo ${inAlb} pezzi · in lavanderia ${ct.ora}</div>
-            <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;line-height:1.55;">Su ${ct.contratto} pezzi del contratto. <strong style="color:var(--text);">In lavanderia</strong> è la biancheria sporca che Raimondo ha ritirato e non ha ancora riportato pulita: è <strong style="color:var(--text);">normale</strong> che ce ne sia sempre una parte, non è un ammanco.${ct.ora!==ct.alla?` Dalla conta del ${esc(ct.ultima.slice(0,5))}: ${ct.ora>ct.alla?ct.ora-ct.alla+' in più in lavanderia':ct.alla-ct.ora+' in meno in lavanderia'}.`:''}</div>`;
-          h+=ct.ver
-            ?`<div style="font-size:var(--fs-xs);margin-top:6px;font-weight:700;color:${ct.ver.diff<0?'var(--red)':'var(--green)'};">${ct.ver.diff<0?`Ammanco vero alla conta del ${esc(ct.ver.data.slice(0,5))}: ${-ct.ver.diff} pezzi in meno del previsto`:`Alla conta del ${esc(ct.ver.data.slice(0,5))} i pezzi tornavano${ct.ver.diff>0?' ('+ct.ver.diff+' in più del previsto)':''}`}</div>`
-            :`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;">Gli ammanchi veri si vedono solo alla prossima conta, confrontando i pezzi contati con quelli previsti.</div>`;
-        }
-        if(ct.ferma)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">Conto fermo al ${esc(ct.ferma.slice(0,5))}: manca «Ha portato» in quella consegna.</div>`;
-        if(ct.senza)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${ct.senza} tipologi${ct.senza===1?'a':'e'} senza conta o senza contratto: fuori dal totale.</div>`;
+        const t=ap.tot,trov=t.alb+t.dist;
+        h+=`<div style="font-size:var(--fs-base);font-weight:700;">In albergo ${t.alb} · in lavanderia ${t.dist} · trovati ${trov} su ${t.contr}</div>
+          <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;line-height:1.55;">In albergo: conta del ${esc(ap.conta.slice(0,5))}. In lavanderia: distinta ${ap.distinta?'del '+esc(ap.distinta.slice(0,5)):'—'}. ${t.contr}: pezzi del contratto.</div>`;
+        const fuori=BIA_VOCI_GIRO.filter(v=>ap.voci[v]&&ap.voci[v].diff!==0);
+        if(!fuori.length)h+=`<div style="font-size:var(--fs-xs);margin-top:6px;font-weight:700;color:var(--green);">Tutti i pezzi del contratto ritrovati.</div>`;
+        else h+=`<div style="font-size:var(--fs-xs);margin-top:6px;line-height:1.7;">${fuori.map(v=>{const r=ap.voci[v];return`<span style="white-space:nowrap;margin-right:12px;"><strong>${esc(BIA_DOT_PLURALE[v]||v)}</strong> <span style="color:${r.diff>0?'var(--amber)':'var(--accent)'};font-weight:700;">${r.diff>0?r.diff+' da ritrovare':(-r.diff)+' oltre il contratto'}</span></span>`;}).join(' ')}</div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;line-height:1.5;"><strong>Da ritrovare</strong>: non sono né in albergo né nella distinta, quindi arretrati ancora da Raimondo oppure persi. <strong>Oltre il contratto</strong>: ci sono più pezzi di quelli a contratto, va verificato il numero del contratto o la conta.</div>`;
       }
       if(!st.righe.length)h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);margin-top:8px;">Nessuna consegna registrata a ${esc(nomeMese)}.</div>`;
       h+=`</div>`;
@@ -15705,13 +15728,13 @@ function biaRender(){
     viste.forEach(rg=>{
       const g=_bia.giri.find(x=>x.id===rg.id)||_bia.giri.find(x=>_biaH(x)===hS&&x.data===rg.data);if(!g)return;
       const aperto=_biaGiroAperto.has(g.id),es=_biaEsitoConsegna(rg,!fraseMese),scG=_biaScostamento(g);
-      const dopo=fraseMese?null:_biaContaDopo(hS,rg.data);
+      const dopo=fraseMese?null:{tot:_biaTot(g.consegnato)};   // in lavanderia dopo questa consegna = la sua distinta
       const dd=_biaParse(rg.data);
       h+=`<div onclick="biaToggleGiro('${g.id}')" style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-top:1px solid var(--border);cursor:pointer;${aperto?'background:var(--surface2,var(--surface));':''}">
         <span style="min-width:96px;font-size:var(--fs-xs);font-weight:700;">${dd?BIA_GG_NOMI[dd.getDay()].slice(0,3)+' '+rg.data.slice(0,5):esc(rg.data)}</span>
         <span style="background:${es.bg};color:${es.col};padding:4px 10px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;">${es.txt}</span>
         ${scG?`<span title="Il totale dato quel giorno non corrisponde ai consumi: apri per vedere" style="font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">totale da verificare</span>`:''}
-        ${dopo?`<span title="Biancheria sporca in lavaggio da Raimondo dopo questa consegna: è normale che ce ne sia sempre una parte" style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;">in lavanderia dopo: <strong style="color:var(--text);font-size:var(--fs-xs);">${dopo.tot}</strong></span>`:''}
+        ${dopo?`<span title="Lo sporco dato a Raimondo quel giorno: è la distinta della consegna" style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;">in lavanderia (distinta): <strong style="color:var(--text);font-size:var(--fs-xs);">${dopo.tot}</strong></span>`:''}
         <span style="${dopo?'':'margin-left:auto;'}color:var(--text-dim);font-size:var(--fs-xs);">${aperto?'▴':'▾'}</span>
       </div>`;
       if(aperto){

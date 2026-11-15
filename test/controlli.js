@@ -3630,13 +3630,20 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   var box={innerHTML:''},vero=document.getElementById,ph=_biaHotel,pa=_biaStoAperto,pm=_biaStoMese;
   document.getElementById=function(id){return id==='bia-content'?box:null;};
   try{_biaHotel='sa';_biaStoAperto=true;_biaStoMese='2026-11';biaRender();}finally{document.getElementById=vero;_biaHotel=ph;_biaStoAperto=pa;_biaStoMese=pm;}
-  ok('nello storico: in albergo e in lavanderia', /In albergo 175 pezzi · in lavanderia 25/.test(box.innerHTML), true);
-  ok('detto che e\' normale, non un ammanco',      /non è un ammanco/.test(box.innerHTML), true);
-  ok('con una conta sola: ammanchi alla prossima', /si vedono solo alla prossima conta/.test(box.innerHTML), true);
-  ok('e dopo ogni consegna',                      /in lavanderia dopo: <strong[^>]*>35</.test(box.innerHTML), true);
+  // All'appello: conta del 10/11 (170 in albergo) + distinta del 10/11 (50) = 220 su 200 di contratto.
+  var ap=_biaContaAppello('sa',_bia.conte[0]);
+  ok('in lavanderia = distinta del giorno della conta', [ap.distinta,ap.voci.Federa.dist].join(' '), '10/11/2026 50');
+  ok('contratto − (albergo + distinta)',           ap.voci.Federa.diff, -20);
+  ok('nello storico: albergo, lavanderia, trovati', /In albergo 170 · in lavanderia 50 · trovati 220 su 200/.test(box.innerHTML), true);
+  ok('oltre il contratto si dice',                /Federe<\/strong> <span[^>]*>20 oltre il contratto/.test(box.innerHTML), true);
+  ok('su ogni consegna la sua distinta',          /in lavanderia \(distinta\): <strong[^>]*>40</.test(box.innerHTML), true);
   // Con due conte: il giudizio vero (10/11 → 14/11: previsti 175, contati 170).
   _bia.conte.push({id:'k5',hotel:'sa',data:'14/11/2026',q:{Federa:P(88,10,52,20)}});
   ok('due conte: ammanco vero di 5',              (_biaContaTotali('sa').ver||{}).diff, -5);
+  // Conta dopo l'ultima consegna: distinta del 14/11 (30). Contati 170 + 30 = 200 → tutti.
+  ok('conta del 14/11: tutti all\'appello',        _biaContaAppello('sa',_bia.conte[1]).voci.Federa.diff, 0);
+  var c3={id:'k6',hotel:'sa',data:'15/11/2026',q:{Federa:P(80,10,52,20)}};
+  ok('8 in meno: da ritrovare',                   _biaContaAppello('sa',c3).voci.Federa.diff, 8);
   _bia.conte.pop();
   _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
 })();

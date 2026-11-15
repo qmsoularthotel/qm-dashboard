@@ -1086,6 +1086,19 @@ questi numeri inducono a pensare a forti ammanchi che non sono veri"*. Ora:
 - pastiglie neutre: *"Riportati 115 su 126 · 11 arrivano dopo"* (grigio), *"Riportati 182 su 174 ·
   8 dai giri prima"* (verde), *"Riportati tutti (N)"*. Nessun rosso o ambra, nessun "manca".
 
+**All'appello con la distinta** (15/11/2026, idea del QM: *"in lavanderia quanti pezzi ci sono lo
+sappiamo, sono nella distinta di consegna"*). `_biaContaAppello(h,conta)`:
+in albergo = la conta; **in lavanderia = la distinta** (sporco dato) dell'ultima consegna fino al giorno
+della conta compreso (la conta si fa dopo il passaggio); **all'appello = contratto − (albergo + distinta)**:
+`> 0` *da ritrovare* (arretrati ancora da Raimondo oppure persi, ambra), `< 0` *oltre il contratto*
+(contratto o conta da verificare). Nello storico sostituisce il calcolo a scorrere in alto
+(*"In albergo 841 · in lavanderia 181 · trovati 1022 su 1160"* + una voce per tipologia fuori posto) e su
+ogni consegna mostra *"in lavanderia (distinta): N"* = lo sporco dato quel giorno. Nel riquadro del
+Conteggio a scorrere le colonne *In lavanderia (distinta)* e *All'appello* prendono il posto di *Da
+Raimondo alla conta*. Sul backup del 15/11: matrimoniali 108 da ritrovare, singole 33, viso 11, bidet 40,
+teli 42; **federe 44 e scendibagno 52 oltre il contratto** (contati in albergo 201 federe e 110
+scendibagno, più della dotazione: contratto da verificare).
+
 
 
 Il vecchio pannello "Consegne di Raimondo" (le due strutture una sotto l'altra, cinque
