@@ -15065,15 +15065,15 @@ function _biaContaPannello(h){
     o+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
       <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:6px;">Conte registrate</div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Per ogni conta: pezzi <strong>contati</strong> in albergo e, se c'è una conta prima, quanti il conto ne <strong>prevedeva</strong>. Una differenza è l'errore di quel periodo: pezzi persi davvero, oppure consumi o consegne registrati male in quei giorni.</div>
-      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Conta</th>${BIA_VOCI_GIRO.map(v=>`<th style="${th}">${esc(BIA_DOT_PLURALE[v]||v)}</th>`).join('')}<th style="${th}"></th></tr></thead><tbody>`;
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Conta</th>${BIA_VOCI_GIRO.map(v=>`<th style="${th}text-align:left;">${esc(BIA_DOT_PLURALE[v]||v)}</th>`).join('')}<th style="${th}"></th></tr></thead><tbody>`;
     conte.slice().reverse().forEach(c=>{
       const i=conte.indexOf(c),prec=i>0?conte[i-1]:null;
-      o+=`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(c.data)}</td>${BIA_VOCI_GIRO.map(v=>{
-        const t=_biaContaInAlbergo(c,v);if(t===null)return`<td style="${td}color:var(--text-dim);">—</td>`;
+      o+=`<tr><td style="${td}text-align:left;vertical-align:top;font-weight:700;white-space:nowrap;">${esc(c.data)}</td>${BIA_VOCI_GIRO.map(v=>{
+        const t=_biaContaInAlbergo(c,v);if(t===null)return`<td style="${td}text-align:left;vertical-align:top;color:var(--text-dim);">—</td>`;
         const ver=prec?_biaContaVerifica(h,v,prec,c):null;
         // Dove stanno i pezzi contati (15/11/2026, il QM): sempre, posto per posto.
         const dove=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.45;margin-top:2px;white-space:nowrap;">${BIA_CONTA_POSTI.map(([k,tt])=>`${esc(tt.replace(/^Sui |^In |^Sporco in albergo$/,m=>m==='Sporco in albergo'?'sporchi':''))} <strong style="color:var(--text);">${Number(c.q[v][k])||0}</strong>`).join('<br>')}</div>`;
-        return`<td style="${td}vertical-align:top;"><strong>${t}</strong>${dove}${ver?`<div style="font-size:var(--fs-xxs);color:${ver.differenza===0?'var(--green)':ver.differenza<0?'var(--red)':'var(--amber)'};">previsti ${ver.previsti} · ${ver.differenza===0?'tornano':ver.differenza>0?'+'+ver.differenza:ver.differenza}</div>`:''}</td>`;
+        return`<td style="${td}text-align:left;vertical-align:top;"><strong>${t}</strong>${dove}${ver?`<div style="font-size:var(--fs-xxs);color:${ver.differenza===0?'var(--green)':ver.differenza<0?'var(--red)':'var(--amber)'};">previsti ${ver.previsti} · ${ver.differenza===0?'tornano':ver.differenza>0?'+'+ver.differenza:ver.differenza}</div>`:''}</td>`;
       }).join('')}<td style="${td}"><button onclick="biaContaElimina('${c.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">elimina</button></td></tr>`;
     });
     o+=`</tbody></table></div></div>`;
