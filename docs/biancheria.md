@@ -1064,8 +1064,12 @@ Boutique e Galleria invariati.
   le tipologie senza conta o contratto e quelle col conto fermo, dette in una riga). Senza conta:
   *"Manca una conta"*. Se il numero sale, Raimondo trattiene sempre più biancheria;
 - su ogni consegna *"da Raimondo N"* (`_biaContaDopo`: dall'ultima conta fino a quel giorno; una
-  conta dello stesso giorno vale lei, perché si fa dopo il passaggio). Prima della prima conta, o a
-  conto fermo, niente numero;
+  conta dello stesso giorno vale lei, perché si fa dopo il passaggio). **Prima della prima conta si
+  riavvolge** (stesso giorno, richiesta del QM: con la conta fatta il 15/11 le consegne di novembre
+  restavano senza numero): dopo la consegna D = alla conta successiva − (sporco dato − pulito
+  portato) delle consegne dopo D fino al giorno della conta compreso. Più si va indietro, più il
+  numero dipende dalle registrazioni di quei giorni. Niente numero se non c'è nessuna conta o se
+  in mezzo manca «Ha portato»;
 - le pastiglie: *"Mancano N pezzi"* → *"N restano a Raimondo"* (ambra), *"Tutto riportato · N in
   più"* → *"N recuperati"* (`_biaEsitoConsegna(r,conta)`). Il rosso resta per le perdite vere, che
   dice solo la conta.

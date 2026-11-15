@@ -14845,14 +14845,31 @@ function _biaContaTotali(h){
 }
 // Pezzi da Raimondo subito DOPO la consegna del giorno `data`, sommati sulle tipologie: per
 // ognuna parte dall'ultima conta fatta fino a quel giorno (una conta dello stesso giorno e'
-// fatta dopo il passaggio, quindi vale lei). null se nessuna tipologia ha una conta prima,
-// o se il conto e' fermo (manca «Ha portato») prima di quel giorno.
+// fatta dopo il passaggio, quindi vale lei). Senza una conta prima, si riavvolge dalla prima
+// conta dopo. null se non c'e' nessuna conta, o se in mezzo manca «Ha portato».
 function _biaContaDopo(h,data){
-  const d=_biaParse(data);if(!d)return null;
+  const d=_biaParse(data);if(!d||!_biaGiri(h).some(g=>g.data===data))return null;   // solo nei giorni di consegna
   let tot=0,n=0;
   for(const v of BIA_VOCI_GIRO){
-    const conte=_biaConte(h).filter(c=>_biaContaInAlbergo(c,v)!==null&&_biaParse(c.data)<=d);
-    const c=conte[conte.length-1];if(!c)continue;
+    const tutte=_biaConte(h).filter(c=>_biaContaInAlbergo(c,v)!==null);
+    const conte=tutte.filter(c=>_biaParse(c.data)<=d);
+    const c=conte[conte.length-1];
+    if(!c){
+      // Nessuna conta prima: si RIAVVOLGE dalla prima conta dopo (15/11/2026). Dopo la consegna
+      // di `data` Raimondo aveva quanti alla conta, meno quello che si e' preso nelle consegne
+      // successive fino al giorno della conta compreso (la conta si fa dopo il passaggio).
+      const cd=tutte.find(x=>_biaParse(x.data)>d);if(!cd)continue;
+      const contr=_biaDotCampo(h,v,'contratto');if(contr===null)continue;
+      const fine=_biaParse(cd.data);
+      let r=contr-_biaContaInAlbergo(cd,v),buco=false;
+      _biaGiri(h).forEach(g=>{
+        const gd=_biaParse(g.data);if(!gd||gd<=d||gd>fine)return;
+        if(!_biaRegistrato(g)){buco=true;return;}
+        r-=(Number(g.consegnato&&g.consegnato[v])||0)-(Number(g.ricevuto&&g.ricevuto[v])||0);
+      });
+      if(buco)return null;
+      tot+=r;n++;continue;
+    }
     let val;
     if(_biaParse(c.data).getTime()===d.getTime()){
       const contr=_biaDotCampo(h,v,'contratto');if(contr===null)continue;

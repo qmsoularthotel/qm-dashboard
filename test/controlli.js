@@ -3607,7 +3607,16 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   ok('dopo la consegna del giorno della conta: 30', (_biaContaDopo('sa','10/11/2026')||{}).tot, 30);
   ok('dopo il 12/11: 30 +40 −35 = 35',            (_biaContaDopo('sa','12/11/2026')||{}).tot, 35);
   ok('dopo il 14/11: 25',                         (_biaContaDopo('sa','14/11/2026')||{}).tot, 25);
-  ok('prima della conta: niente numero',          _biaContaDopo('sa','08/11/2026'), null);
+  ok('senza nessuna consegna quel giorno: niente', _biaContaDopo('sa','08/11/2026'), null);
+  // Prima della conta si riavvolge: conta il 12/11 (dopo il passaggio) → alla conta 200−(80+10+60+20)=30.
+  _bia.conte=[{id:'k3',hotel:'sa',data:'12/11/2026',q:{Federa:P(80,10,60,20)}}];
+  ok('riavvolto: dopo il 10/11 = 30 −(40−35) = 25', (_biaContaDopo('sa','10/11/2026')||{}).tot, 25);
+  ok('il giorno della conta vale la conta: 30',   (_biaContaDopo('sa','12/11/2026')||{}).tot, 30);
+  ok('dopo la conta si va avanti: 30 +30 −40 = 20', (_biaContaDopo('sa','14/11/2026')||{}).tot, 20);
+  _bia.giri[1].ricevuto=_biaVuote();
+  ok('riavvolgendo, «Ha portato» mancante: niente', _biaContaDopo('sa','10/11/2026'), null);
+  _bia.giri[1].ricevuto=Q(35);
+  _bia.conte=[{id:'k1',hotel:'sa',data:'10/11/2026',q:{Federa:P(88,12,50,20)}}];
   _bia.giri[1].ricevuto=_biaVuote();
   ok('conto fermo: niente numero dopo',           _biaContaDopo('sa','14/11/2026'), null);
   ok('conto fermo: il totale lo dice',            _biaContaTotali('sa').ferma, '12/11/2026');
