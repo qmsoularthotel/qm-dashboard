@@ -14070,8 +14070,10 @@ function _biaEsitoConsegna(r,conta){
   if(r.primaInizio)return{txt:'Prima dell\'inizio del conteggio',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
   if(!r.registrato)return{txt:'Manca cosa ha portato',col:'var(--amber)',bg:'rgba(160,90,0,.10)'};
   if(r.dovuto===null)return{txt:'Prima consegna',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
-  if(conta&&r.delta<0)return{txt:(-r.delta)+(r.delta===-1?' resta':' restano')+' a Raimondo',col:'var(--amber)',bg:'rgba(160,90,0,.10)'};
-  if(conta&&r.delta>0)return{txt:r.delta+(r.delta===1?' recuperato':' recuperati'),col:'var(--green)',bg:'rgba(30,122,72,.10)'};
+  // Parole neutre (15/11/2026): "restano a Raimondo" faceva pensare a un ammanco che non c'e'.
+  if(conta&&r.delta<0)return{txt:'Riportati '+r.portato+' su '+r.dovuto+' · '+(-r.delta)+' arrivano dopo',col:'var(--text-dim)',bg:'var(--surface2,var(--surface))'};
+  if(conta&&r.delta>0)return{txt:'Riportati '+r.portato+' su '+r.dovuto+' · '+r.delta+' dai giri prima',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
+  if(conta)return{txt:'Riportati tutti ('+r.portato+')',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
   if(r.delta<0)return{txt:'Mancano '+(-r.delta)+' pezzi',col:'var(--red)',bg:'rgba(192,53,42,.10)'};
   if(r.delta>0)return{txt:'Tutto riportato · '+r.delta+' in più',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
   return{txt:'Tutto riportato',col:'var(--green)',bg:'rgba(30,122,72,.10)'};
@@ -14833,14 +14835,21 @@ function _biaContaRiepilogo(h,v){
 // (o senza contratto) restano fuori e si contano in `senza`; una consegna senza «Ha portato»
 // ferma il conto (`ferma`, la prima data).
 function _biaContaTotali(h){
-  const o={ora:0,alla:0,ultima:null,senza:0,ferma:null,voci:0};
+  const o={ora:0,alla:0,ultima:null,senza:0,ferma:null,voci:0,contratto:0,ver:null};
   BIA_VOCI_GIRO.forEach(v=>{
     const r=_biaContaRiepilogo(h,v),s=r.scorre;
     if(!s){o.senza++;return;}
     const d=_biaParse(r.conta.data);if(!o.ultima||d>_biaParse(o.ultima))o.ultima=r.conta.data;
     if(s.ferma){if(!o.ferma||_biaParse(s.ferma)<_biaParse(o.ferma))o.ferma=s.ferma;return;}
-    o.ora+=s.daRaimondo;o.alla+=s.allaConta;o.voci++;
+    o.ora+=s.daRaimondo;o.alla+=s.allaConta;o.contratto+=s.contratto;o.voci++;
   });
+  // L'unico giudizio sugli ammanchi: l'ultima conta confrontata con quella prima.
+  const conte=_biaConte(h);
+  if(conte.length>1){
+    const c=conte[conte.length-1],prec=conte[conte.length-2];let diff=0,n=0;
+    BIA_VOCI_GIRO.forEach(v=>{const x=_biaContaVerifica(h,v,prec,c);if(x){diff+=x.differenza;n++;}});
+    if(n)o.ver={data:c.data,prec:prec.data,diff:diff,voci:n};
+  }
   return o;
 }
 // Pezzi da Raimondo subito DOPO la consegna del giorno `data`, sommati sulle tipologie: per
@@ -15670,15 +15679,22 @@ function biaRender(){
     if(st.nonReg)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">${st.nonReg} consegn${st.nonReg===1?'a':'e'} senza il dato di cosa ha riportato: fuori dal conto.</div>`;
     h+=`</div>`;
     }else{
-      // SoulArt: l'andamento e' quanti pezzi ha Raimondo, partendo dalla conta vera.
+      // SoulArt: dove sta la biancheria, detto in parole semplici (15/11/2026). "Da Raimondo"
+      // non si capiva e i numeri sembravano ammanchi: e' biancheria in lavaggio, normale.
       const ct=_biaContaTotali(hS);
       h+=`<div style="padding:14px 16px;border-bottom:1px solid var(--border);">`;
       if(!ct.ultima){
-        h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">Manca una conta: registrala nel <strong>Conteggio a scorrere</strong> per vedere quanti pezzi ha Raimondo.</div>`;
+        h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">Manca una conta: registrala nel <strong>Conteggio a scorrere</strong> per sapere dove sta la biancheria.</div>`;
       }else{
-        if(ct.voci)h+=`<div style="font-size:var(--fs-base);font-weight:700;">Da Raimondo ora: ${ct.ora} pezzi</div>
-          <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">All'ultima conta (${esc(ct.ultima.slice(0,5))}) erano <strong style="color:var(--text);">${ct.alla}</strong> · ${ct.ora===ct.alla?'stabile':ct.ora>ct.alla?`<span style="color:var(--amber);font-weight:700;">${ct.ora-ct.alla} in più da allora</span>`:`<span style="color:var(--green);font-weight:700;">${ct.alla-ct.ora} in meno da allora</span>`}. Se continua a salire, Raimondo trattiene sempre più biancheria.</div>`;
-        if(ct.ferma)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">Conto fermo al ${esc(ct.ferma.slice(0,5))}: manca «Ha portato» in quella consegna${ct.voci?' (quelle tipologie restano fuori dal totale)':''}.</div>`;
+        if(ct.voci){
+          const inAlb=ct.contratto-ct.ora;
+          h+=`<div style="font-size:var(--fs-base);font-weight:700;">In albergo ${inAlb} pezzi · in lavanderia ${ct.ora}</div>
+            <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;line-height:1.55;">Su ${ct.contratto} pezzi del contratto. <strong style="color:var(--text);">In lavanderia</strong> è la biancheria sporca che Raimondo ha ritirato e non ha ancora riportato pulita: è <strong style="color:var(--text);">normale</strong> che ce ne sia sempre una parte, non è un ammanco.${ct.ora!==ct.alla?` Dalla conta del ${esc(ct.ultima.slice(0,5))}: ${ct.ora>ct.alla?ct.ora-ct.alla+' in più in lavanderia':ct.alla-ct.ora+' in meno in lavanderia'}.`:''}</div>`;
+          h+=ct.ver
+            ?`<div style="font-size:var(--fs-xs);margin-top:6px;font-weight:700;color:${ct.ver.diff<0?'var(--red)':'var(--green)'};">${ct.ver.diff<0?`Ammanco vero alla conta del ${esc(ct.ver.data.slice(0,5))}: ${-ct.ver.diff} pezzi in meno del previsto`:`Alla conta del ${esc(ct.ver.data.slice(0,5))} i pezzi tornavano${ct.ver.diff>0?' ('+ct.ver.diff+' in più del previsto)':''}`}</div>`
+            :`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;">Gli ammanchi veri si vedono solo alla prossima conta, confrontando i pezzi contati con quelli previsti.</div>`;
+        }
+        if(ct.ferma)h+=`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:4px;">Conto fermo al ${esc(ct.ferma.slice(0,5))}: manca «Ha portato» in quella consegna.</div>`;
         if(ct.senza)h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:4px;">${ct.senza} tipologi${ct.senza===1?'a':'e'} senza conta o senza contratto: fuori dal totale.</div>`;
       }
       if(!st.righe.length)h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);margin-top:8px;">Nessuna consegna registrata a ${esc(nomeMese)}.</div>`;
@@ -15695,7 +15711,7 @@ function biaRender(){
         <span style="min-width:96px;font-size:var(--fs-xs);font-weight:700;">${dd?BIA_GG_NOMI[dd.getDay()].slice(0,3)+' '+rg.data.slice(0,5):esc(rg.data)}</span>
         <span style="background:${es.bg};color:${es.col};padding:4px 10px;border-radius:7px;font-size:var(--fs-xxs);font-weight:700;">${es.txt}</span>
         ${scG?`<span title="Il totale dato quel giorno non corrisponde ai consumi: apri per vedere" style="font-size:var(--fs-xxs);color:var(--amber);font-weight:700;">totale da verificare</span>`:''}
-        ${dopo?`<span title="Pezzi in mano a Raimondo dopo questa consegna" style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;">da Raimondo <strong style="color:var(--text);font-size:var(--fs-xs);">${dopo.tot}</strong></span>`:''}
+        ${dopo?`<span title="Biancheria sporca in lavaggio da Raimondo dopo questa consegna: è normale che ce ne sia sempre una parte" style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);white-space:nowrap;">in lavanderia dopo: <strong style="color:var(--text);font-size:var(--fs-xs);">${dopo.tot}</strong></span>`:''}
         <span style="${dopo?'':'margin-left:auto;'}color:var(--text-dim);font-size:var(--fs-xs);">${aperto?'▴':'▾'}</span>
       </div>`;
       if(aperto){

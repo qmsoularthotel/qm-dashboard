@@ -1074,6 +1074,19 @@ Boutique e Galleria invariati.
   più"* → *"N recuperati"* (`_biaEsitoConsegna(r,conta)`). Il rosso resta per le perdite vere, che
   dice solo la conta.
 
+**Riscritto in parole semplici** (15/11/2026, sera). Il QM: *"non capisco cosa vuol dire da Raimondo…
+questi numeri inducono a pensare a forti ammanchi che non sono veri"*. Ora:
+- in alto *"In albergo 841 pezzi · in lavanderia 319"*, *"Su 1160 pezzi del contratto. In lavanderia
+  è la biancheria sporca che Raimondo ha ritirato e non ha ancora riportato pulita: è normale che ce ne
+  sia sempre una parte, non è un ammanco"*;
+- il giudizio sugli ammanchi è **solo** il confronto fra le ultime due conte (`_biaContaTotali().ver`):
+  *"Ammanco vero alla conta del gg/mm: N pezzi in meno del previsto"* (rosso) o *"i pezzi tornavano"*
+  (verde). Con una conta sola: *"Gli ammanchi veri si vedono solo alla prossima conta"*;
+- su ogni consegna *"in lavanderia dopo: N"* al posto di *"da Raimondo N"*;
+- pastiglie neutre: *"Riportati 115 su 126 · 11 arrivano dopo"* (grigio), *"Riportati 182 su 174 ·
+  8 dai giri prima"* (verde), *"Riportati tutti (N)"*. Nessun rosso o ambra, nessun "manca".
+
+
 
 Il vecchio pannello "Consegne di Raimondo" (le due strutture una sotto l'altra, cinque
 colonne di numeri per riga) era da leggere, non da guardare. Rifatto su bozza approvata dal QM

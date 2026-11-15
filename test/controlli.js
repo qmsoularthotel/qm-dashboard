@@ -3622,15 +3622,22 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   ok('conto fermo: il totale lo dice',            _biaContaTotali('sa').ferma, '12/11/2026');
   _bia.giri[1].ricevuto=Q(35);
   // Etichette: al SoulArt un pezzo non riportato resta a Raimondo, non e' perso.
-  ok('SoulArt: 11 restano a Raimondo',            _biaEsitoConsegna({registrato:true,dovuto:50,delta:-11},true).txt, '11 restano a Raimondo');
-  ok('SoulArt: 8 recuperati',                     _biaEsitoConsegna({registrato:true,dovuto:50,delta:8},true).txt, '8 recuperati');
-  ok('SoulArt: non piu\' rosso',                  _biaEsitoConsegna({registrato:true,dovuto:50,delta:-11},true).col, 'var(--amber)');
+  ok('SoulArt: riportati su dovuti, il resto dopo', _biaEsitoConsegna({registrato:true,portato:39,dovuto:50,delta:-11},true).txt, 'Riportati 39 su 50 · 11 arrivano dopo');
+  ok('SoulArt: in piu\' dai giri prima',          _biaEsitoConsegna({registrato:true,portato:58,dovuto:50,delta:8},true).txt, 'Riportati 58 su 50 · 8 dai giri prima');
+  ok('SoulArt: niente rosso ne\' ambra',          /red|amber/.test(_biaEsitoConsegna({registrato:true,portato:39,dovuto:50,delta:-11},true).col), false);
+  ok('SoulArt: niente parole da ammanco',          /[Mm]anca|restano a Raimondo/.test(_biaEsitoConsegna({registrato:true,portato:39,dovuto:50,delta:-11},true).txt), false);
   ok('Boutique: resta «Mancano»',                 _biaEsitoConsegna({registrato:true,dovuto:50,delta:-11},false).txt, 'Mancano 11 pezzi');
   var box={innerHTML:''},vero=document.getElementById,ph=_biaHotel,pa=_biaStoAperto,pm=_biaStoMese;
   document.getElementById=function(id){return id==='bia-content'?box:null;};
   try{_biaHotel='sa';_biaStoAperto=true;_biaStoMese='2026-11';biaRender();}finally{document.getElementById=vero;_biaHotel=ph;_biaStoAperto=pa;_biaStoMese=pm;}
-  ok('nello storico: Da Raimondo ora',            /Da Raimondo ora: 25 pezzi/.test(box.innerHTML), true);
-  ok('e dopo ogni consegna',                      /da Raimondo <strong[^>]*>35</.test(box.innerHTML), true);
+  ok('nello storico: in albergo e in lavanderia', /In albergo 175 pezzi · in lavanderia 25/.test(box.innerHTML), true);
+  ok('detto che e\' normale, non un ammanco',      /non è un ammanco/.test(box.innerHTML), true);
+  ok('con una conta sola: ammanchi alla prossima', /si vedono solo alla prossima conta/.test(box.innerHTML), true);
+  ok('e dopo ogni consegna',                      /in lavanderia dopo: <strong[^>]*>35</.test(box.innerHTML), true);
+  // Con due conte: il giudizio vero (10/11 → 14/11: previsti 175, contati 170).
+  _bia.conte.push({id:'k5',hotel:'sa',data:'14/11/2026',q:{Federa:P(88,10,52,20)}});
+  ok('due conte: ammanco vero di 5',              (_biaContaTotali('sa').ver||{}).diff, -5);
+  _bia.conte.pop();
   _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
 })();
 
