@@ -3377,7 +3377,7 @@ sez('Consumo Biancheria: dotazione da contratto, quanti pezzi nostri restano a R
   ok('SoulArt: 200 matrimoniali da contratto',    _biaDotCampo('sa',V,'contratto'), 200);
   ok('le federe non ereditano il 200',            _biaDotCampo('sa','Federa','contratto'), null);
   ok('Boutique: nessun numero inventato',         _biaDotCampo('bh',V,'contratto'), null);
-  ok('sui letti = camere x pezzi per camera',     _biaDotLetti('sa',V)+' '+_biaDotLetti('sa','Federa'), '44 88');
+  ok('sui letti: l\'allestimento del SoulArt',     _biaDotLetti('sa',V)+' '+_biaDotLetti('sa','Federa'), '50 96');
   ok('Boutique: senza camere niente letti',       _biaDotLetti('bh',V), null);
   _bia.dotazione={sa:{camere:20}};_bia.dotazione.sa[V]={contratto:''};
   ok('le camere si cambiano dalla pagina',        _biaDotLetti('sa',V), 40);
@@ -3391,7 +3391,7 @@ sez('Consumo Biancheria: dotazione da contratto, quanti pezzi nostri restano a R
   ok('Giacenza contata: armadio 30',              _biaDotArmadio('sa',V).n, 30);
   ok('ogni tipologia ha il suo armadio',          _biaDotArmadio('sa','Federa').n, 60);
   ok('Boutique: armadio a mano, vuoto = 0',       _biaDotArmadio('bh',V).n+' '+_biaDotArmadio('bh',V).da, '0 manuale');
-  ok('conto pronto: i tre numeri',                JSON.stringify(_biaDotDi('sa',V)), '{"contratto":200,"letti":44,"armadio":30}');
+  ok('conto pronto: i tre numeri',                JSON.stringify(_biaDotDi('sa',V)), '{"contratto":200,"letti":50,"armadio":30}');
   ok('federe senza contratto: niente conto',      _biaDotDi('sa','Federa'), null);
   // Il riepilogo: saldo di Raimondo (-12+11-5 = -6) e l'ultima consegna.
   var r=_biaDotRiepilogo('sa',V);
@@ -3597,6 +3597,8 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   var html=''; try{html=_biaContaPannello('sa');}catch(e){html='ERRORE '+e.message;}
   ok('il pannello si disegna',                    /Conteggio a scorrere/.test(html), true);
   // Correggere una conta: i numeri tornano nelle caselle, con la sua data; salvando si sostituisce.
+  ok('allestimento SoulArt: 50 matr., 6 singole, 96 federe, 51 teli, 25 scendibagno',
+     ['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno'].map(function(v){return _biaDotLetti('sa',v);}).join(' '), '50 6 96 51 51 51 25');
   ok('ogni conta ha «modifica»',                  /biaContaModifica\('/.test(html), true);
   var rd=biaRender;biaRender=function(){};
   try{biaContaModifica(n2.id);}finally{biaRender=rd;}
@@ -3608,7 +3610,7 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   _biaContaRegistra('sa',_biaContaModifica,_biaContaBozza);
   ok('salvata: sostituita, con traccia',          [n2.q.Federa.letti,n2.edits.length,_bia.conte.length].join(' '), '79 2 2');
   _biaContaBozza={};_biaContaModifica=null;
-  ok('conte registrate: dove stanno i pezzi',    /letti <strong[^>]*>81<\/strong><br>carrelli <strong[^>]*>5<\/strong><br>deposito <strong[^>]*>60<\/strong><br>sporchi <strong[^>]*>20</.test(html), true);
+  ok('conte registrate: dove stanno i pezzi',    /letti <strong[^>]*>81<\/strong> su 96<br>carrelli <strong[^>]*>5<\/strong><br>deposito <strong[^>]*>60<\/strong><br>sporchi <strong[^>]*>20</.test(html), true);
   ok('SoulArt: conteggio al posto della Dotazione', /_biaContaSi\(_biaHotel\)\?_biaContaPannello\(_biaHotel\):_biaDotPannello\(_biaHotel\)/.test(String(biaRender)), true);
   ok('SoulArt: niente piu\' «Pezzi non rientrati»', /_biaStoSaldo&&!_biaContaSi\(hS\)/.test(String(biaRender)), true);
   ok('report: niente «Cumulato» al SoulArt',      /_biaContaSi\(k\)\?'':'<th class="r">Cumulato<\/th>'/.test(String(biaPrintAndamento)), true);

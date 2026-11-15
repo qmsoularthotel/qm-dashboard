@@ -14556,12 +14556,18 @@ async function biaSetInizio(iso){
 // perCamera, armadio}}); il codice conosce solo la partenza del SoulArt. Sui letti =
 // camere × pezzi per camera. Per ora solo Compass: la Galleria si fa con i suoi numeri.
 const BIA_DOT_PLURALE={'Lenzuolo matrimoniale':'Lenzuola matrimoniali','Lenzuolo singolo':'Lenzuola singole','Federa':'Federe','Telo doccia':'Teli doccia','Asciugamano viso':'Asciugamani viso','Asciugamano bidet':'Asciugamani bidet','Scendibagno':'Scendibagno'};
-// SoulArt: 22 camere, tutte matrimoniali; pezzi per camera come detti dal QM il 26/09/2026.
+// SoulArt: 22 camere; pezzi per camera come detti dal QM il 26/09/2026.
 // Il solo numero di contratto noto è quello delle matrimoniali (12/11/2026).
+// `allestimento` (15/11/2026, il QM): i pezzi sui letti e nei bagni a camere tutte allestite,
+// che camere × pezzi per camera non sa dire perché le camere non sono uguali:
+//   18 matrimoniali: 1 letto matr., 4 cuscini, 2 teli/viso/bidet, 1 scendibagno (3 di loro 2: doccia e vasca)
+//   3 quadruple: 2 letti matr. (il secondo con 2 cuscini), 4 teli/viso/bidet, 1 scendibagno
+//   1 tripla: 1 letto matr. (4 cuscini) + 1 singolo (2 cuscini), 3 teli/viso/bidet, 1 scendibagno
+//   + 2 letti singoli di riserva già vestiti. 2 lenzuola per letto.
 const BIA_DOT_DEFAULT={sa:{camere:22,
-  'Lenzuolo matrimoniale':{contratto:200,perCamera:2},'Lenzuolo singolo':{perCamera:0},
-  'Federa':{perCamera:4},'Telo doccia':{perCamera:2},'Asciugamano viso':{perCamera:2},
-  'Asciugamano bidet':{perCamera:2},'Scendibagno':{perCamera:1}}};
+  'Lenzuolo matrimoniale':{contratto:200,perCamera:2,allestimento:50},'Lenzuolo singolo':{perCamera:0,allestimento:6},
+  'Federa':{perCamera:4,allestimento:96},'Telo doccia':{perCamera:2,allestimento:51},'Asciugamano viso':{perCamera:2,allestimento:51},
+  'Asciugamano bidet':{perCamera:2,allestimento:51},'Scendibagno':{perCamera:1,allestimento:25}}};
 let _biaDotVoce='Lenzuolo matrimoniale';   // la tipologia del dettaglio
 // NASCOSTO AI COLLEGHI (12/11/2026). Compass non distingue le persone — il codice di
 // accesso è uno solo — quindi il pannello si accende DISPOSITIVO per dispositivo, da
@@ -14607,6 +14613,11 @@ function _biaDotCampo(h,v,c){
   return _biaDotNum(s&&s[c]!==undefined?s[c]:((BIA_DOT_DEFAULT[h]||{})[v]||{})[c]);
 }
 function _biaDotLetti(h,v){
+  // Camere non tutte uguali: vale l'allestimento, finché dalla pagina non si scrivono camere o
+  // pezzi per camera (allora conta quello che si è scritto).
+  const sd=_bia.dotazione&&_bia.dotazione[h];
+  const scritto=sd&&(sd.camere!==undefined||(sd[v]&&sd[v].perCamera!==undefined));
+  const al=_biaDotCampo(h,v,'allestimento');if(al!==null&&!scritto)return al;
   const c=_biaDotCamere(h),p=_biaDotCampo(h,v,'perCamera');
   return c===null||p===null?null:c*p;
 }
@@ -15085,7 +15096,7 @@ function _biaContaPannello(h){
         const t=_biaContaInAlbergo(c,v);if(t===null)return`<td style="${td}text-align:left;vertical-align:top;color:var(--text-dim);">—</td>`;
         const ver=prec?_biaContaVerifica(h,v,prec,c):null;
         // Dove stanno i pezzi contati (15/11/2026, il QM): sempre, posto per posto.
-        const dove=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.45;margin-top:2px;white-space:nowrap;">${BIA_CONTA_POSTI.map(([k,tt])=>`${esc(tt.replace(/^Sui |^In |^Sporco in albergo$/,m=>m==='Sporco in albergo'?'sporchi':''))} <strong style="color:var(--text);">${Number(c.q[v][k])||0}</strong>`).join('<br>')}</div>`;
+        const dove=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.45;margin-top:2px;white-space:nowrap;">${BIA_CONTA_POSTI.map(([k,tt])=>`${esc(tt.replace(/^Sui |^In |^Sporco in albergo$/,m=>m==='Sporco in albergo'?'sporchi':''))} <strong style="color:var(--text);">${Number(c.q[v][k])||0}</strong>${k==='letti'&&_biaDotLetti(h,v)!==null?' su '+_biaDotLetti(h,v):''}`).join('<br>')}</div>`;
         return`<td style="${td}text-align:left;vertical-align:top;"><strong>${t}</strong>${dove}${ver?`<div style="font-size:var(--fs-xxs);color:${ver.differenza===0?'var(--green)':ver.differenza<0?'var(--red)':'var(--amber)'};">previsti ${ver.previsti} · ${ver.differenza===0?'tornano':ver.differenza>0?'+'+ver.differenza:ver.differenza}</div>`:''}</td>`;
       }).join('')}<td style="${td}vertical-align:top;white-space:nowrap;"><button onclick="biaContaModifica('${c.id}')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">modifica</button><button onclick="biaContaElimina('${c.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">elimina</button></td></tr>`;
     });

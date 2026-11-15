@@ -1128,6 +1128,18 @@ numeri della conta nelle caselle (copia, non riferimento), il titolo diventa *"C
 gg/mm/aaaa"*, la data è bloccata, c'è *Annulla*. *Salva la conta* passa da `_biaContaRegistra`: stessa
 data = sostituisce e lascia traccia in `edits`.
 
+**Allestimento delle camere del SoulArt** (stesso giorno, il QM). Le camere non sono tutte uguali, quindi
+*camere × pezzi per camera* sbagliava (44 matrimoniali, 88 federe, 22 scendibagno). In
+`BIA_DOT_DEFAULT.sa[voce].allestimento`, usato da `_biaDotLetti` finché dalla pagina non si scrivono
+camere o pezzi per camera:
+- 18 matrimoniali: 1 letto matr., 4 cuscini, 2 teli / viso / bidet, 1 scendibagno (3 di loro 2: doccia e vasca);
+- 3 quadruple: 2 letti matr. (il secondo con 2 cuscini), 4 teli / viso / bidet, 1 scendibagno;
+- 1 tripla: 1 letto matr. (4 cuscini) + 1 singolo (2 cuscini), 3 teli / viso / bidet, 1 scendibagno;
+- 2 letti singoli di riserva già vestiti; 2 lenzuola per letto.
+
+Totali: **matrimoniali 50, singole 6, federe 96, teli 51, viso 51, bidet 51, scendibagno 25**. Nelle conte
+registrate la riga dei letti dice *"letti 42 su 50"*.
+
 
 
 Il vecchio pannello "Consegne di Raimondo" (le due strutture una sotto l'altra, cinque
