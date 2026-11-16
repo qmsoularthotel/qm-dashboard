@@ -548,9 +548,9 @@ sez('Preferenze Turnazione (Galleria): si apre solo col PIN, 5 minuti, niente co
     _gtScade = Date.now() - 1; box.innerHTML = ''; gtPrefRender(); dopo = box.innerHTML;
     gtPrefChiudi('');
   } finally { document.getElementById = vero; _gtStato = st0; _gtTp = tp0; _gtScade = sc0; _gtData = d0; _gtFilter = f0; _gtCalDay = g0; }
-  ok('chiuso: chiede il PIN',                       /Riservato al Resident Manager/.test(chiuso) && /id="gt-pin"/.test(chiuso), true);
+  ok('chiuso: chiede il PIN',                       /Riservato al Front Office Manager/.test(chiuso) && /id="gt-pin"/.test(chiuso), true);
   ok('chiuso: nessuna richiesta a vista',           /Rossi Prova/.test(chiuso), false);
-  ok('primo accesso: il Resident sceglie il PIN',   /Scegli il PIN del Resident/.test(primo) && /id="gt-pin2"/.test(primo), true);
+  ok('primo accesso: il Resident sceglie il PIN',   /Scegli il PIN del Front Office Manager/.test(primo) && /id="gt-pin2"/.test(primo), true);
   ok('aperto: le richieste e il conto alla rovescia', /Rossi Prova/.test(aperto) && /id="gt-resta"/.test(aperto), true);
   ok('scaduto: torna il PIN',                       /Rossi Prova/.test(dopo) || !/id="gt-pin"/.test(dopo), false);
   ok('chiudere cancella le richieste',              (gtPrefChiudi(''), _gtData.length), 0);
@@ -573,4 +573,5 @@ sez('Preferenze Turnazione (Galleria): si apre solo col PIN, 5 minuti, niente co
 // Un 401 della voce non deve aprire «codice non più valido» (16/11/2026, Worker vecchio in linea).
 ok('Preferenze: niente schermata del codice da questa voce', /_gbFetch|gbMostraAttivazione/.test(String(_gtChiedi)), false);
 ok('Worker: PIN sbagliato è 403, non 401',          /restano: n >= 5 \? 0 : 5 - n \}, 403\)/.test(String(_workerFetch.fetch)), true);
-
+// Nei testi visibili è «Front Office Manager», mai «Resident Manager» (QM, 16/11/2026).
+ok('Galleria: si chiama Front Office Manager',     /Resident/.test(String(gtPrefRender) + String(_grStampa)), false);
