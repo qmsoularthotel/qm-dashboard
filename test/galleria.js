@@ -581,4 +581,3 @@ ok('Galleria: si chiama Front Office Manager',     /Resident/.test(String(gtPref
 function chiusoPin() { var b = { innerHTML: '' }, v = document.getElementById, s0 = _gtStato; document.getElementById = function (id) { return id === 'gt-pref-content' ? b : null; }; try { gtPrefChiudi(''); _gtStato = { ok: true, resident: false, qm: true }; gtPrefRender(); } finally { document.getElementById = v; _gtStato = s0; } return b.innerHTML; }
 // La casella del PIN non è un campo password: il browser la riempiva da solo (16/11/2026).
 ok('PIN: casella vuota, non type=password',         /id="gt-pin"[^>]*type="text"/.test(chiusoPin()) && !/type="password"/.test(chiusoPin()), true);
-

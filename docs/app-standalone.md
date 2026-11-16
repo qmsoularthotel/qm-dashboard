@@ -280,3 +280,7 @@ Tutte le card (`.hk-tile`, `.hk-scheda`, `.kpi-card`, `.no-data`, `.preview-card
 `.room-detail-card`, e ai lati `.day-total`/`.hk-stats-box` che tengono il filo oro in alto)
 hanno un filo un po' più scuro (`--card-br` #d3dae4) e un'ombra a due strati tinta
 `--accent` (`--card-shadow`). Blocco unico in fondo al primo `<style>` di `housekeeper.html`.
+
+## Nome dell'app della Galleria: «Compass Ops – Galleria» (16/11/2026)
+
+Scelto dal QM: compare nello splash (sotto «Compass QM», con la riga «Strumento di gestione operativa») e nella firma in fondo («Compass Ops – Galleria fa parte della Suite Compass QM…»). Il file resta `biancheria-galleria.html`; titolo della scheda e schermata del codice dicono ancora «Gestione Biancheria».

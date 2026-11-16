@@ -163,7 +163,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-16.16';
+const QM_APP_BUILD='2026-11-16.17';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -213,7 +213,9 @@ setInterval(qmCheckVersione,600000);
   </div>
   <div style="font-size:30px;font-weight:500;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
   <div style="width:60px;border-top:1px solid rgba(255,255,255,.18);"></div>
-  <div style="font-size:22px;color:rgba(255,255,255,.7);">Strumento di gestione operativa</div>
+  <!-- Nome dell'app: Compass Ops – Galleria (QM, 16/11/2026). -->
+  <div style="font-size:22px;color:rgba(255,255,255,.7);">Compass Ops <span style="color:rgba(255,255,255,.45);">–</span> Galleria</div>
+  <div style="font-size:14px;color:rgba(255,255,255,.55);margin-top:-6px;">Strumento di gestione operativa</div>
   <div style="font-size:13px;color:rgba(255,255,255,.42);line-height:1.5;white-space:nowrap;padding:0 18px;box-sizing:border-box;text-align:center;">Art Resort Galleria Umberto – Art Suite Santa Brigida</div>
 </div>
 <style>
@@ -336,7 +338,7 @@ setInterval(qmCheckVersione,600000);
       </div>
   <div class="firma">
     <span class="firma-marchio">Compass <span>QM</span></span>
-    Gestione Biancheria fa parte della Suite Compass QM, interamente ideata e creata dal
+    Compass Ops – Galleria fa parte della Suite Compass QM, interamente ideata e creata dal
     Quality Manager Pierpaolo Presta. Per esclusivo uso interno.
   </div>
 
