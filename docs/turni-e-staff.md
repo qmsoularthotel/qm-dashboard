@@ -300,6 +300,12 @@ quella «ben scritta» (Rossi Anna). La legenda sotto il calendario è sostituit
 **didascalia «Settimana prossima»** appoggiata sul bordo del riquadro (z-index 2, fondo
 `var(--bg)` che interrompe il filo oro).
 
+**Trimestre a ritroso (QM, 16/11/2026):** la colonna *3 mesi prima* conta le richieste nei tre
+mesi che finiscono il giorno prima del lunedì della settimana prossima, **esclusa** la settimana
+stessa (lunedì 23/11 → 23/08 – 22/11), non più il trimestre di calendario. `_tpTrimestre(oggi)`
+→ `{da,a}`; l'intervallo è scritto nell'intestazione del riquadro. Sabotaggio (settimana inclusa)
+→ 3 controlli falliscono.
+
 ### Mesi precedenti chiusi nell'elenco (16/11/2026)
 
 Nell'elenco raggruppato per mese di invio il **mese in corso** resta aperto, i **precedenti**

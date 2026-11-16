@@ -11211,16 +11211,18 @@ function _tpSettimanaProssima(oggi){
 function _tpRepNorm(s){
   return String(s||'').trim().replace(/\s+/g,' ').toLowerCase().replace(/(^|[\s/-])(\S)/g,(m,a,b)=>a+b.toUpperCase());
 }
-// Consuntivo del trimestre in corso: quante richieste ha fatto ogni persona per giorni che
-// cadono nel trimestre (giorno RICHIESTO, non data d'invio). Stessa persona scritta in modi
-// diversi = una sola riga.
+// Trimestre A RITROSO dalla settimana prossima (QM, 16/11/2026): i tre mesi che finiscono il
+// giorno prima del suo lunedì, ESCLUSA la settimana stessa. Lunedì 23/11 -> 23/08 – 22/11.
+// Si conta il giorno RICHIESTO, non la data d'invio. Non è più il trimestre di calendario:
+// a inizio ottobre quello avrebbe contato quasi niente.
 function _tpTrimestre(oggi){
-  const o=oggi?new Date(oggi):new Date();
-  const q=Math.floor(o.getMonth()/3);
-  return {q:q+1,anno:o.getFullYear(),da:new Date(o.getFullYear(),q*3,1,12),a:new Date(o.getFullYear(),q*3+3,0,12)};
+  const lun=_tpSettimanaProssima(oggi).da;
+  const a=new Date(lun);a.setDate(a.getDate()-1);a.setHours(12,0,0,0);
+  const da=new Date(lun);da.setMonth(da.getMonth()-3);da.setHours(12,0,0,0);
+  return {da,a};
 }
 // Dal 16/11/2026 (QM) compaiono SOLO le persone con almeno una richiesta per la settimana
-// prossima: `sett` è quante ne hanno lì, `tot` quante nel trimestre.
+// prossima: `sett` è quante ne hanno lì, `tot` quante nei tre mesi prima (vedi _tpTrimestre).
 function _tpConsuntivo(dati,filtro,oggi){
   const tr=_tpTrimestre(oggi),per={};
   const giorniSett=_tpSettimanaProssima(oggi).giorni;
@@ -11233,8 +11235,7 @@ function _tpConsuntivo(dati,filtro,oggi){
     const x=inSett[k]||(inSett[k]={nome:String(r.nome).trim().replace(/\s+/g,' '),reparto:_tpRepNorm(r.reparto),n:0});
     x.n++;
   });
-  // Chi chiede per la settimana prossima compare SEMPRE, anche se quella settimana cade già
-  // nel trimestre dopo (fine dicembre): allora il trimestre conta 0.
+  // Chi chiede per la settimana prossima compare SEMPRE, anche con 0 nei tre mesi prima.
   Object.keys(inSett).forEach(k=>{per[k]={nome:inSett[k].nome,reparto:inSett[k].reparto,tot:0,sett:inSett[k].n};});
   (dati||[]).forEach(r=>{
     if(filtro&&filtro!=='tutti'&&_tpRepNorm(r.reparto)!==filtro)return;
@@ -11349,17 +11350,16 @@ function turniPrefRender(){
   }
 
   const cons=_tpConsuntivo(_tpData,_tpFilter,today);
-  const mesiCorti=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
   const consMax=cons.righe.length?cons.righe[0].tot:1;
   const consHtml=`<div class="panel" style="flex:1 1 280px;min-width:0;margin-bottom:18px;">
-    <div class="panel-header"><span class="panel-title">Chi chiede la settimana prossima · ${cons.tr.q}° trimestre ${cons.tr.anno}</span>
-      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">${mesiCorti[cons.tr.da.getMonth()]}–${mesiCorti[cons.tr.a.getMonth()]}</span></div>
+    <div class="panel-header"><span class="panel-title">Chi chiede la settimana prossima</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">3 mesi prima: ${String(cons.tr.da.getDate()).padStart(2,'0')}/${String(cons.tr.da.getMonth()+1).padStart(2,'0')} – ${String(cons.tr.a.getDate()).padStart(2,'0')}/${String(cons.tr.a.getMonth()+1).padStart(2,'0')}</span></div>
     <div class="panel-body" style="padding:0;">${cons.righe.length?`<table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
       <thead><tr style="background:var(--surface2);">
         <th style="text-align:left;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Persona</th>
         <th style="text-align:left;padding:8px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Reparto</th>
         <th style="text-align:right;padding:8px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Sett. prossima</th>
-        <th style="text-align:right;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Nel trimestre</th>
+        <th style="text-align:right;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">3 mesi prima</th>
       </tr></thead><tbody>${cons.righe.map((x,i)=>`<tr style="border-top:1px solid var(--border-light);${i%2?'background:var(--surface2);':''}">
         <td style="padding:7px 14px;font-weight:600;">${_esc(x.nome)}</td>
         <td style="padding:7px 10px;color:var(--text-dim);">${_esc(x.reparto||'—')}</td>
