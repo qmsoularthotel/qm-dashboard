@@ -151,7 +151,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-16.9';
+const QM_APP_BUILD='2026-11-16.10';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -3542,10 +3542,14 @@ let _gtTp=null,_gtScade=0,_gtTimer=null,_gtOrologio=null,_gtMsg='',_gtStato=null
 const _gtEsc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const GT_ICONA_CAL='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
 function _gtAperto(){return !!_gtTp&&Date.now()<_gtScade;}
+// NON passa da _gbFetch: lì un 401 apre la schermata «codice non più valido», e qui un 401
+// può voler dire solo che il Worker in linea è ancora quello vecchio (16/11/2026: è successo,
+// e il Resident si è visto chiedere il codice del computer, che era ancora buono).
 async function _gtChiedi(corpo){
-  const r=await _gbFetch('/turni-pref',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(corpo)});
+  const r=await fetch(GB_PROXY+'/turni-pref',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','X-QM-Pass':_gbPass()},body:JSON.stringify(corpo)});
   let j={};try{j=_gbJson(await r.text())||{};}catch(e){}
-  if(r.status===404||r.status===405)j={ok:false,error:'Il Worker va ripubblicato (versione del 16/11/2026).'};
+  if(r.status===404||r.status===405||typeof j.ok!=='boolean'||(r.status===401&&!/PIN|Permesso/.test(j.error||'')))
+    j={ok:false,error:'Il Worker va ripubblicato (versione del 16/11/2026): fino ad allora questa voce non si apre.'};
   return j;
 }
 // Entrando nella voce: sempre chiuso, si chiede il PIN.

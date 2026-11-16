@@ -85,7 +85,8 @@ export default {
     // qm_pin_* — il codice della Galleria non legge chiavi qm_ (permessoGalleria).
     // Il PIN giusto restituisce un permesso "tp." che vale 5 minuti, e solo con quello
     // si leggono le richieste: l'app della Galleria non conosce l'indirizzo del foglio.
-    // Cinque PIN sbagliati di fila fermano i tentativi per 15 minuti.
+    // Cinque PIN sbagliati di fila fermano i tentativi per 15 minuti. PIN sbagliato e permesso
+    // scaduto rispondono 403, non 401: il 401 nell'app vuol dire «codice del computer non valido».
     if (url.pathname === '/turni-pref') {
       let corpo; try { corpo = await request.json(); } catch (e) { corpo = {}; }
       const pass = request.headers.get('X-QM-Pass') || '';
@@ -133,14 +134,14 @@ export default {
         if (!chi) {
           const n = (tent.n || 0) + 1;
           await env.QM_STORAGE.put('qm_pin_tentativi', JSON.stringify(n >= 5 ? { n: 0, fino: ora + 15 * 60000 } : { n, fino: 0 }), { expirationTtl: 86400 });
-          return json({ ok: false, error: n >= 5 ? 'PIN sbagliato. Tentativi fermi per 15 minuti' : 'PIN sbagliato', restano: n >= 5 ? 0 : 5 - n }, 401);
+          return json({ ok: false, error: n >= 5 ? 'PIN sbagliato. Tentativi fermi per 15 minuti' : 'PIN sbagliato', restano: n >= 5 ? 0 : 5 - n }, 403);
         }
         if (tent.n || tent.fino) await env.QM_STORAGE.delete('qm_pin_tentativi');
         const scade = ora + 5 * 60000;
         return json({ ok: true, tp: await firmaTp(env, scade), scade, chi });
       }
       if (az === 'dati') {
-        if (!(await verificaTp(env, corpo.tp))) return json({ ok: false, error: 'Permesso scaduto: inserisci di nuovo il PIN' }, 401);
+        if (!(await verificaTp(env, corpo.tp))) return json({ ok: false, error: 'Permesso scaduto: inserisci di nuovo il PIN' }, 403);
         try {
           const r = await fetch(env.TURNI_PREF_URL || TURNI_PREF_URL_PREDEFINITO);
           const j = await r.json();

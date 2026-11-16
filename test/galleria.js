@@ -570,3 +570,7 @@ sez('Preferenze Turnazione (Galleria): si apre solo col PIN, 5 minuti, niente co
   ok('Worker: PIN cifrato, mai in chiaro',          /PBKDF2/.test(String(hashPin)), true);
   ok('Worker e Compass alla stessa versione',       WORKER_VERSIONE, WORKER_VERSIONE_ATTESA);
 })();
+// Un 401 della voce non deve aprire «codice non più valido» (16/11/2026, Worker vecchio in linea).
+ok('Preferenze: niente schermata del codice da questa voce', /_gbFetch|gbMostraAttivazione/.test(String(_gtChiedi)), false);
+ok('Worker: PIN sbagliato è 403, non 401',          /restano: n >= 5 \? 0 : 5 - n \}, 403\)/.test(String(_workerFetch.fetch)), true);
+

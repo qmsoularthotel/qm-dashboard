@@ -18174,7 +18174,8 @@ function qmRenderDispositivi(){
 async function _qmPinChiedi(corpo){
   const r=await fetch(PROXY+'/turni-pref',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(corpo)});
   const j=await r.json().catch(()=>({}));
-  if(r.status===404||r.status===405)return {ok:false,error:'Il Worker va ripubblicato (versione del 16/11/2026).'};
+  // Col Worker vecchio la richiesta finisce al proxy AI e torna una risposta senza `ok`.
+  if(r.status===404||r.status===405||typeof j.ok!=='boolean')return {ok:false,error:'Il Worker va ripubblicato (versione del 16/11/2026).'};
   return j;
 }
 async function qmPinAggiorna(){
