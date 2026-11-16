@@ -11146,9 +11146,11 @@ let _tpCalDay=null; // giorno selezionato nel calendario (dd/MM/yyyy)
 let _tpMesiAperti=new Set();
 // Persone del riepilogo con l'elenco delle richieste aperto (clic sul numero).
 let _tpConsAperto=new Set();
-// Colore della barra "3 mesi prima" (QM, 16/11/2026): verde 0–7, arancio 8–15, rosso da 16
+// Colore della barra "Trimestre in corso" (QM, 16/11/2026): verde 0–7, arancio 8–15, rosso da 16
 // (scala piena a 21).
-function _tpConsColore(n){return n<=7?'var(--green)':n<=15?'var(--amber)':'var(--red)';}
+// L'arancio è --orange e non --amber: l'amber di Compass è un arancio scuro che accanto al
+// rosso non si distingueva (QM, 16/11/2026).
+function _tpConsColore(n){return n<=7?'var(--green)':n<=15?'var(--orange)':'var(--red)';}
 
 function turniPrefUpdateBadge(){
   const badge=document.getElementById('turniPrefBadge');
@@ -11359,15 +11361,17 @@ function turniPrefRender(){
 
   const prefColor=p=>{const u=(p||'').toUpperCase();if(u.includes('FERIE'))return'var(--amber)';if(u.includes('RIPOSO'))return'var(--text-muted)';if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';return'var(--text)';};
   const cons=_tpConsuntivo(_tpData,_tpFilter,today);
-  const consHtml=`<div class="panel" style="flex:1 1 280px;min-width:0;margin-bottom:18px;">
-    <div class="panel-header"><span class="panel-title">Chi chiede la settimana prossima</span>
-      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">3 mesi prima: ${String(cons.tr.da.getDate()).padStart(2,'0')}/${String(cons.tr.da.getMonth()+1).padStart(2,'0')} – ${String(cons.tr.a.getDate()).padStart(2,'0')}/${String(cons.tr.a.getMonth()+1).padStart(2,'0')}</span></div>
+  const settDaA=`${prossima.giorni[0].slice(0,5)} – ${prossima.giorni[6].slice(0,5)}`;
+  // Più stretto del resto della riga (QM): non si allarga fino al bordo, max 520px.
+  const consHtml=`<div class="panel" style="flex:0 1 520px;min-width:0;margin-bottom:18px;">
+    <div class="panel-header"><span class="panel-title">Chi chiede la settimana ${settDaA}</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">Trimestre in corso: ${String(cons.tr.da.getDate()).padStart(2,'0')}/${String(cons.tr.da.getMonth()+1).padStart(2,'0')} – ${String(cons.tr.a.getDate()).padStart(2,'0')}/${String(cons.tr.a.getMonth()+1).padStart(2,'0')}</span></div>
     <div class="panel-body" style="padding:0;">${cons.righe.length?`<table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
       <thead><tr style="background:var(--surface2);">
         <th style="text-align:left;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Persona</th>
         <th style="text-align:left;padding:8px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Reparto</th>
-        <th style="text-align:right;padding:8px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Sett. prossima</th>
-        <th style="text-align:right;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">3 mesi prima</th>
+        <th style="text-align:right;padding:8px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Settimana<br><span style="white-space:nowrap;">${settDaA}</span></th>
+        <th style="text-align:right;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Trimestre<br>in corso</th>
       </tr></thead><tbody>${cons.righe.map((x,i)=>{
         const k=x.nome.toLowerCase(),aperto=_tpConsAperto.has(k);
         const lista=(x.lista||[]).slice().sort((a,b)=>{const p=s=>{const m=String(_tpFmtDate(s)).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?m[3]+m[2]+m[1]:'';};return p(b.giornoRichiesto).localeCompare(p(a.giornoRichiesto));});
@@ -11506,7 +11510,7 @@ function turniPrefRender(){
   }
 
   // Calendario e consuntivo affiancati; su schermo stretto il consuntivo va sotto (flex-wrap).
-  el.innerHTML=toolbar+`<div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;">${calHtml}${consHtml}</div>`+settHtml+listHtml;
+  el.innerHTML=toolbar+`<div style="display:flex;flex-wrap:wrap;gap:24px 56px;align-items:flex-start;">${calHtml}${consHtml}</div>`+settHtml+listHtml;
 }
 
 // §§ CONTROLLO MATTINO (cmLoad, cmRender)

@@ -317,6 +317,11 @@ stessa (lunedì 23/11 → 23/08 – 22/11), non più il trimestre di calendario.
   (era una `const` dichiarata più in basso nella stessa funzione).
 - Elenco: i mesi degli **anni precedenti** stanno raccolti sotto il loro anno (chiave
   `anno:AAAA` in `_tpMesiAperti`), chiuso; aperto mostra i suoi mesi, chiusi anche loro.
+- Poi: riepilogo più stretto (`flex:0 1 520px`) e più distante dal calendario (gap 56px);
+  titolo «Chi chiede la settimana gg/mm – gg/mm», colonne «Settimana gg/mm – gg/mm» e
+  «Trimestre in corso» (è sempre il trimestre a ritroso descritto sopra, il QM lo chiama così).
+  L'arancio della barra è il nuovo token **`--orange`** (`style.css`, chiaro e scuro): `--amber`
+  accanto al rosso non si distingueva.
 
 ### Mesi precedenti chiusi nell'elenco (16/11/2026)
 

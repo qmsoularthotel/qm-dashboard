@@ -3865,7 +3865,7 @@ sez('Preferenze Turni: un reparto solo per HOUSEKEEPING/Housekeeping, resto del 
   var h = box.innerHTML;
   ok('un solo filtro Housekeeping',                 (h.match(/turniPrefSetFilter\('Housekeeping'\)/g) || []).length, 1);
   ok('e nessun HOUSEKEEPING',                       /turniPrefSetFilter\('HOUSEKEEPING'\)/.test(h), false);
-  ok('accanto al calendario il consuntivo',         /Chi chiede la settimana prossima<\/span>[\s\S]{0,200}3 mesi prima: \d\d\/\d\d – \d\d\/\d\d/.test(h), true);
+  ok('accanto al calendario il consuntivo',         /Chi chiede la settimana \d\d\/\d\d – \d\d\/\d\d<\/span>[\s\S]{0,200}Trimestre in corso: \d\d\/\d\d – \d\d\/\d\d/.test(h), true);
   ok('didascalia «Settimana prossima» sul riquadro', /z-index:2;[^>]*background:var\(--gold\);color:#fff;[^>]*>Settimana prossima<\/div>/.test(h), true);
   ok('il resto del mese e\' attenuato',             /opacity:\.38;/.test(h), true);
 })();
@@ -3873,7 +3873,7 @@ sez('Preferenze Turni: un reparto solo per HOUSEKEEPING/Housekeeping, resto del 
 sez('Preferenze Turni: linguetta, numero che apre le richieste, barra verde/arancio/rosso, anni precedenti raccolti (16/11/2026)');
 (function () {
   ok('0–7 verde',                                   _tpConsColore(7), 'var(--green)');
-  ok('8–15 arancio',                                _tpConsColore(8) + ' ' + _tpConsColore(15), 'var(--amber) var(--amber)');
+  ok('8–15 arancio (chiaro, non amber)',           _tpConsColore(8) + ' ' + _tpConsColore(15), 'var(--orange) var(--orange)');
   ok('da 16 rosso',                                 _tpConsColore(16), 'var(--red)');
   var prossima = _tpSettimanaProssima(new Date()), lun = prossima.da;
   var prima = new Date(lun); prima.setDate(prima.getDate() - 10);
@@ -3894,7 +3894,7 @@ sez('Preferenze Turni: linguetta, numero che apre le richieste, barra verde/aran
     _tpConsAperto = new Set(['rossi prova']); _tpMesiAperti = new Set(['anno:' + (anno - 1)]);
     turniPrefRender(); aperto = box.innerHTML;
   } finally { document.getElementById = vero; _tpData = d0; _tpFilter = f0; _tpCalDay = g0; _tpConsAperto = c0; _tpMesiAperti = m0; }
-  var cons = function (h) { var i = h.indexOf('Chi chiede la settimana prossima'); return h.slice(i, h.indexOf('</table>', i)); };
+  var cons = function (h) { var i = h.indexOf('Chi chiede la settimana '); return h.slice(i, h.indexOf('</table>', i)); };
   ok('niente riga Totale nel riepilogo',            /Totale/.test(cons(chiuso)), false);
   ok('il numero si clicca',                         /turniPrefToggleCons\('rossi prova'\)/.test(cons(chiuso)), true);
   ok('chiuso non mostra le richieste',              /Matrimonio/.test(cons(chiuso)), false);
