@@ -1597,6 +1597,25 @@ del 12/11 ore 21:07: SoulArt dal 05/09 matrimoniali +62, singole +1, federe −3
 bidet −316, teli −201, scendibagno −222; Boutique dal 01/09 +20, −26, −124, −139, −50, −60, −59;
 nessun dato mancante in tutte e due. Nella Galleria `GB_INIZIO_MINIMO_H={}` (copia identica).
 
+### Galleria: Giacenza Biancheria (16/11/2026)
+
+Copia del modulo di Compass (`§§ GIACENZA BIANCHERIA`) con rinomino meccanico `giac`→`gc`,
+`GIAC_`→`GC_` (`GG_` è già usato in `app.js`); la classe `giac-voci-grid` resta quella di
+`style.css`. Voce di menu fra Conteggio e Reso (`BG_SEZIONI.giacenza`, `#gc-content`), si
+aggiorna da sola come il Reso. Differenze, solo dove la Galleria non ha le stesse cose:
+
+- **due magazzini**, Art Resort e Santa Brigida, con le linguette del Reso (`gcSetHotel`,
+  ricordata in `bg_gc_hotel`) — deciso dal QM;
+- chiave **`bg_giacenza`**, salvataggio e fusione con `_grLeggiArchivio`/`_grSalvaArchivio`,
+  eliminazioni con `_grSegnaRimosso`;
+- **niente organico né turno** in `_gcPersone`: il codice della Galleria non legge chiavi
+  `qm_`; restano i nomi già usati (di tutte e due le strutture) e il testo libero;
+- conferme `_gbConferma`/`_gbAvviso`, `_gcPortaInVista` al posto di `_qmPortaInVista`.
+
+I 42 controlli di Compass sono ricopiati in `test/galleria.js` con lo stesso rinomino, più
+voce di menu, chiave, due linguette e carichi separati per struttura. Sabotaggio (segno del
+carico rovesciato): 9 falliscono. Ogni correzione alla Giacenza di Compass va riportata qui.
+
 ### Galleria: «Controllo fatturazione» in revisione (16/11/2026)
 
 Stessa pagina del Conteggio Biancheria (`_gbCantiere`, comune alle due voci) con «Modulo in

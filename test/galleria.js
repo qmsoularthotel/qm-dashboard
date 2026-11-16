@@ -155,7 +155,7 @@ ok('Reso Galleria: anche nell\'altro verso',       _grUnisciRecord([{ id: 'x', r
 ok('Reso Galleria: la distinta va al Resident Manager', /Resident Manager/.test(String(_grStampa)) && !/Presta/.test(String(_grStampa)), true);
 
 // ── Menu laterale come Compass, con la voce Controllo fatturazione (25/09/2026) ──
-ok('Galleria: quattro voci di menu',                Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,reso,fattura');
+ok('Galleria: cinque voci di menu',                 Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura');
 // ── Conteggio Biancheria: modulo in costruzione, in attesa dei contratti (16/11/2026) ──
 (function () {
   var box = { innerHTML: '' }, vero = document.getElementById;
@@ -377,3 +377,148 @@ sez('Gestione Biancheria (Galleria): frecce sulle date');
 sez('Gestione Biancheria (Galleria): storico chiuso di default');
 ok('Galleria: lo storico parte chiuso',          _gbStoAperto, false);
 ok('Galleria: chiuso mostra solo l\'intestazione', /_gb\.giri\.length&&!_gbStoAperto/.test(String(gbRender)) || /_gb\.giri\.length&&!_gbStoAperto/.test(String(_gbRenderCore)), true);
+
+// ── Giacenza Biancheria: copia del modulo di Compass (16/11/2026) ──
+// Gli stessi controlli di test/controlli.js ("Giacenza biancheria: il magazzino si ancora al
+// conteggio, il carico no"), col rinomino giac -> gc e le strutture della Galleria. In piu':
+// due magazzini, chiave bg_, niente organico/turno di Compass, voce di menu.
+sez('Giacenza Biancheria (Galleria): copia di Compass, due magazzini');
+ok('Galleria: la voce Giacenza nel menu',   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura');
+ok('Galleria: la voce apre la giacenza',    /_bgSezione==='giacenza'\)gcLoad\(\)/.test(String(bgSezione)), true);
+(function () {
+  var _g = _gc, _h = _gcHotel;
+  var t = 1000;
+  function mov(o) { o.id = 'm' + (++t); o.ts = t; o.hotel = o.hotel || 'ar'; return o; }
+  _gcHotel = 'ar';
+  _gc = { movimenti: [
+    mov({ data: '01/09/2026', tipo: 'conteggio',    q: { Federa: 100, 'Telo doccia': 40 } }),
+    mov({ data: '02/09/2026', tipo: 'prelievo',     persona: 'Rossi A.',  q: { Federa: 12, 'Telo doccia': 6 } }),
+    mov({ data: '02/09/2026', tipo: 'prelievo',     persona: 'Bianchi G.', q: { Federa: 8 } }),
+    mov({ data: '03/09/2026', tipo: 'restituzione', persona: 'Rossi A.',  q: { Federa: 4 } })
+  ], tipologie: null };
+
+  var mag = _gcMagazzino('ar');
+  ok('il conteggio fa da base',            mag.contato, true);
+  ok('e dice di quando e\'',               mag.data, '01/09/2026');
+  ok('federe: 100 -12 -8 +4',              mag.q.Federa, 84);
+  ok('teli doccia: 40 -6',                 mag.q['Telo doccia'], 34);
+
+  var car = _gcCarico('ar');
+  ok('Rossi ha in mano 12-4 federe',       car['Rossi A.'].q.Federa, 8);
+  ok('piu\' i 6 teli: 14 pezzi',           car['Rossi A.'].tot, 14);
+  ok('Bianchi ne ha 8',                    car['Bianchi G.'].tot, 8);
+  ok('in mano in tutto',                   _gcTot(_gcCaricoTot('ar')), 22);
+  // La gcenza totale e' magazzino + quello che gira: nessun pezzo sparisce solo perche'
+  // e' su un carrello.
+  ok('gcenza totale = 140 di partenza',  _gcTot(mag.q) + _gcTot(_gcCaricoTot('ar')), 140);
+
+  // `apertoDa` NON e' la data dell'ultimo prelievo: e' il giorno in cui il carico si e'
+  // aperto e non e' piu' tornato a zero. E' l'unica cosa azionabile ("in sospeso da N
+  // giorni"); l'ultimo prelievo direbbe il contrario proprio quando serve di piu'.
+  ok('Rossi ha un carico aperto dal 02',   car['Rossi A.'].apertoDa, '02/09/2026');
+  ok('ma l\'ultimo movimento e\' del 03',  car['Rossi A.'].ultimo,   '03/09/2026');
+
+  // Un secondo conteggio riparte da zero sul magazzino ma NON tocca i carichi aperti.
+  _gc.movimenti.push(mov({ data: '04/09/2026', tipo: 'conteggio', q: { Federa: 80, 'Telo doccia': 34 } }));
+  var mag2 = _gcMagazzino('ar');
+  ok('il nuovo conteggio diventa la base',  mag2.q.Federa, 80);
+  ok('e i carichi restano dov\'erano',      _gcCarico('ar')['Rossi A.'].tot, 14);
+
+  // Chi restituisce tutto chiude il carico: apertoDa torna vuoto, e non deve restare
+  // acceso l'avviso "in sospeso da N giorni" su una che non ha piu' niente in mano.
+  _gc.movimenti.push(mov({ data: '05/09/2026', tipo: 'restituzione', persona: 'Rossi A.', q: { Federa: 8, 'Telo doccia': 6 } }));
+  var car3 = _gcCarico('ar');
+  ok('Rossi ha riportato tutto',            car3['Rossi A.'].tot, 0);
+  ok('e il carico non e\' piu\' aperto',    String(car3['Rossi A.'].apertoDa), 'null');
+  ok('il magazzino se li riprende',         _gcMagazzino('ar').q.Federa, 88);
+
+  // AGGIUNTA — pezzi nuovi che entrano in magazzino e non erano di nessuno (un acquisto,
+  // una consegna del fornitore). Fa +1 sul magazzino come una restituzione, ma NON deve
+  // chiudere il carico di nessuno: prima che esistesse, per registrare merce nuova si era
+  // costretti a intestare una restituzione a qualcuno, e quel qualcuno si ritrovava un
+  // carico negativo — cioe' un ammanco inventato.
+  var _carPrima = _gcTot(_gcCaricoTot('ar'));
+  _gc.movimenti.push(mov({ data: '06/09/2026', tipo: 'aggiunta', q: { Federa: 20, Scendibagno: 5 } }));
+  ok('l\'aggiunta entra in magazzino',      _gcMagazzino('ar').q.Federa, 108);
+  ok('anche su una voce mai contata',       _gcMagazzino('ar').q.Scendibagno, 5);
+  ok('e non tocca nessun carico',           _gcTot(_gcCaricoTot('ar')), _carPrima);
+  ok('non inventa una persona',             Object.keys(_gcCarico('ar')).indexOf('') , -1);
+
+  // Il carico si decide su `carico`, NON sul segno: aggiunta e restituzione hanno lo
+  // stesso +1. Se un domani il controllo tornasse sul segno, una persona finita per
+  // sbaglio su un'aggiunta si vedrebbe accreditare pezzi che non ha mai preso.
+  _gc.movimenti.push(mov({ data: '06/09/2026', tipo: 'aggiunta', persona: 'Bianchi G.', q: { Federa: 7 } }));
+  ok('una persona su un\'aggiunta e ignorata', _gcCarico('ar')['Bianchi G.'].tot, 8);
+  ok('ma il magazzino la conta lo stesso',      _gcMagazzino('ar').q.Federa, 115);
+
+  ok('l\'aggiunta somma al magazzino',      (GC_TIPI.aggiunta || {}).segno, 1);
+  ok('e non e\' un movimento di carico',    (GC_TIPI.aggiunta || {}).carico, false);
+  ok('quindi non chiede un nome',           String((GC_TIPI.aggiunta || {}).persona), 'null');
+  ok('la restituzione un nome lo chiede',   !!GC_TIPI.restituzione.persona, true);
+  // L'ordine delle chiavi e' l'ordine dei pulsanti nella maschera: Aggiunta sta fra
+  // Restituzione e Conteggio, come chiesto dal QM.
+  ok('sta fra restituzione e conteggio',    Object.keys(GC_TIPI).join(','), 'prelievo,restituzione,aggiunta,conteggio');
+
+  // Le strutture non si mescolano. Dal 07/09/2026 il magazzino e' uno solo (SoulArt) e
+  // nessuno scrive piu' movimenti col Boutique, ma il filtro per struttura deve reggere
+  // lo stesso: i movimenti gia' salvati con hotel:'sb' non vanno scartati ne' sommati al
+  // SoulArt, e se un domani il Boutique aprisse un suo magazzino il filtro e' gia' quello.
+  _gc.movimenti.push(mov({ data: '05/09/2026', tipo: 'prelievo', hotel: 'sb', persona: 'Verdi M.', q: { Federa: 30 } }));
+  ok('Santa Brigida non tocca Art Resort',    _gcMagazzino('ar').q.Federa, 115);
+  ok('e il carico e\' solo suo',            Object.keys(_gcCarico('sb')).join(','), 'Verdi M.');
+  ok('Art Resort non vede Verdi',              _gcCarico('ar')['Verdi M.'] === undefined, true);
+
+  // Senza nessun conteggio il magazzino NON va mostrato: sarebbe "restituito meno
+  // prelevato", cioe' quasi sempre un negativo che sembra un guasto. La vista lo
+  // dichiara "da contare", e per farlo deve poterlo sapere.
+  _gc = { movimenti: [mov({ data: '01/09/2026', tipo: 'prelievo', persona: 'Rossi A.', q: { Federa: 5 } })], tipologie: null };
+  ok('mai contato lo dice',                 _gcMagazzino('ar').contato, false);
+  ok('ma il carico si conta lo stesso',     _gcCarico('ar')['Rossi A.'].tot, 5);
+
+  // Una tipologia tolta dall'elenco non porta via i pezzi che ha ancora in giro: esce
+  // dalla maschera, ma resta in fondo alla tabella. Altrimenti si perderebbero dei numeri
+  // cambiando una riga di configurazione.
+  _gc = { movimenti: [
+    mov({ data: '01/09/2026', tipo: 'conteggio', q: { Federa: 10, Accappatoio: 7 } })
+  ], tipologie: ['Federa'] };
+  ok('l\'elenco corrente e\' una voce',     _gcVoci().length, 1);
+  ok('ma la voce con pezzi resta visibile', _gcVociUsate('ar').join(','), 'Federa,Accappatoio');
+  ok('e il totale la comprende',            _gcTot(_gcMagazzino('ar').q), 17);
+
+  // Le due liste di partenza sono quelle dei fogli camera, non quelle dei resi: gcenza,
+  // consumi e giro devono parlare degli stessi pezzi.
+  ok('le voci di partenza sono GB_VOCI',    GC_VOCI_DEFAULT.join('|'), GB_VOCI.join('|'));
+  // Nella Galleria i magazzini sono DUE, uno per struttura, con le linguette come il Reso.
+  ok('due magazzini: Art Resort e Santa Brigida', Object.keys(GC_HOTELS).join(','), 'ar,sb');
+  ok('e si chiamano come nel giro',         GC_HOTELS.sb, GB_HOTELS.sb);
+  ok('la chiave e\' della Galleria (bg_)',  GC_KEY, 'bg_gcenza');
+  ok('niente organico ne\' turno di Compass', /DEPTS|weekData/.test(String(_gcPersone)), false);
+  ok('i nomi gia\' usati si propongono',     _gcPersone().join(','), '');
+  // Un nome con l'apostrofo passa da due interpretazioni (HTML e poi JS) prima di
+  // arrivare nell'onclick: senza neutralizzarlo, D'Angelo romperebbe il pulsante — e
+  // nell'organico ci sono gia' dei D'.
+  ok('l\'apostrofo non rompe l\'onclick',   _gcJs("D'Angelo"), "D\\'Angelo");
+  ok('e nemmeno un < in una nota',          _gcEsc('<b>'), '&lt;b&gt;');
+
+  // L'eliminazione deve segnare l'id fra i rimossi PRIMA del salvataggio, altrimenti la
+  // fusione col cloud lo rimette dentro e il cestino non cancella niente (il difetto che
+  // resiDelRow si era dimenticato).
+  ok('gcEliminaMovimento segna il rimosso', /_grSegnaRimosso/.test(String(gcEliminaMovimento)), true);
+
+  _gc = _g; _gcHotel = _h;
+})();
+// La pagina si disegna con le due linguette e la struttura scelta.
+(function () {
+  var box = { innerHTML: '' }, vero = document.getElementById, g = _gc, h = _gcHotel;
+  _gc = { movimenti: [{ id: 'x1', ts: 1, hotel: 'sb', data: '10/11/2026', tipo: 'prelievo', persona: 'Neri P.', q: { Federa: 3 } }], tipologie: null };
+  _gcHotel = 'sb';
+  document.getElementById = function (id) { return id === 'gc-content' ? box : null; };
+  try { gcRender(); } finally { document.getElementById = vero; }
+  ok('Galleria Giacenza: due linguette',      (box.innerHTML.match(/gcSetHotel\('/g) || []).length, 2);
+  ok('Galleria Giacenza: Santa Brigida vede il suo carico', /Neri P\./.test(box.innerHTML), true);
+  _gcHotel = 'ar'; box.innerHTML = '';
+  document.getElementById = function (id) { return id === 'gc-content' ? box : null; };
+  try { gcRender(); } finally { document.getElementById = vero; _gc = g; _gcHotel = h; }
+  // Il nome resta fra i suggerimenti (stesso personale), ma il carico e' di Santa Brigida.
+  ok('Galleria Giacenza: Art Resort non ha il suo carico', /Nessun carico aperto/.test(box.innerHTML), true);
+})();

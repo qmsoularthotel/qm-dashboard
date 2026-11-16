@@ -146,7 +146,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-16.3';
+const QM_APP_BUILD='2026-11-16.4';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -255,6 +255,7 @@ setInterval(qmCheckVersione,600000);
       <div class="nav-section">Biancheria</div>
       <div class="nav-item" id="gb-nav-consumo" onclick="bgSezione('consumo')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span></span>Consumo Biancheria</div>
       <div class="nav-item" id="gb-nav-conteggio" onclick="bgSezione('conteggio')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11l2 2 4-4"/><path d="M9 17h6"/></svg></span></span>Conteggio Biancheria</div>
+      <div class="nav-item" id="gb-nav-giacenza" onclick="bgSezione('giacenza')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18v14H3z"/><path d="M3 11h18M3 15.5h18"/><path d="M9 6V3.5h6V6"/></svg></span></span>Giacenza Biancheria</div>
       <div class="nav-item" id="gb-nav-reso" onclick="bgSezione('reso')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.3 10.2a2 2 0 0 1-2 1.8H7.3a2 2 0 0 1-2-1.8z"/><path d="M3.5 9c.6-2.4 4-4.2 8.5-4.2S19.9 6.6 20.5 9"/><path d="M10 13v4M14 13v4"/></svg></span></span>Reso Biancheria</div>
       <div class="nav-item" id="gb-nav-fattura" onclick="bgSezione('fattura')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h3"/></svg></span></span>Controllo fatturazione</div>
     </nav>
@@ -295,6 +296,9 @@ setInterval(qmCheckVersione,600000);
       </div>
       <div id="bg-sez-conteggio" style="display:none;">
         <div id="gb-conteggio"></div>
+      </div>
+      <div id="bg-sez-giacenza" style="display:none;">
+        <div id="gc-content"></div>
       </div>
   <div id="bg-sez-reso" style="display:none;">
     <div class="panel">
@@ -554,6 +558,7 @@ async function _gbGiro(){
     if(d&&d!==JSON.stringify(_gbDist)){try{const u=Object.assign({},_gbDist,_gbJson(d)||{});if(JSON.stringify(u)!==JSON.stringify(_gbDist)){_gbDist=u;localStorage.setItem(GB_DIST_KEY,JSON.stringify(u));cambiato=true;}}catch(e){}}
     if(cambiato){_gb=nuovo;_gbSenzaSalto(gbRender);}
     if(_bgSezione==='reso'){const nr=await _grLeggiArchivio(GR_KEY,{righe:[],ritiri:[],tipologie:null});if(JSON.stringify(nr)!==JSON.stringify(_gr)){_gr=nr;_gbSenzaSalto(grRender);}}
+    if(_bgSezione==='giacenza'){const ng=await _grLeggiArchivio(GC_KEY,{movimenti:[],tipologie:null});if(JSON.stringify(ng)!==JSON.stringify(_gc)){_gc=ng;_gbSenzaSalto(gcRender);}}
   }catch(e){}
 }
 
@@ -2800,7 +2805,7 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 // ── Menu laterale come Compass: Consumo, Reso, Controllo fatturazione (25/09/2026) ──
 // Stesso markup e stesso style.css del menu di Compass (voci copiate da index.html). La voce
 // scelta resta su questo computer, cosi' ricaricando si torna dove si era.
-const BG_SEZIONI={consumo:'Consumo Biancheria',conteggio:'Conteggio Biancheria',reso:'Reso Biancheria',fattura:'Controllo fatturazione'};
+const BG_SEZIONI={consumo:'Consumo Biancheria',conteggio:'Conteggio Biancheria',giacenza:'Giacenza Biancheria',reso:'Reso Biancheria',fattura:'Controllo fatturazione'};
 let _bgSezione='consumo';
 try{const s=localStorage.getItem('bg_sezione');if(BG_SEZIONI[s])_bgSezione=s;}catch(e){}
 function bgSezione(s){
@@ -2816,7 +2821,687 @@ function bgSezione(s){
   if(_bgSezione==='reso')grLoad();
   else if(_bgSezione==='fattura')_gbRenderFattura();
   else if(_bgSezione==='conteggio')_gbRenderConteggio();
+  else if(_bgSezione==='giacenza')gcLoad();
 }
+// ── GIACENZA BIANCHERIA (copia del §§ GIACENZA BIANCHERIA di Compass, 16/11/2026)
+// Rinomino meccanico gc -> gc, GC_ -> GC_ (GG_ era gia' preso in app.js). Diverso da
+// Compass solo dove la Galleria non ha le stesse cose: due strutture con linguette (come il
+// Reso), chiave bg_gcenza, niente organico ne' turno (il codice della Galleria non legge
+// chiavi qm_), conferme e salvataggi con le funzioni della Galleria.
+// Terzo modulo biancheria, e i tre rispondono a domande diverse:
+//   §§ BIANCHERIA      — il giro del fornitore: pulito che entra, sporco che esce.
+//   §§ RESI BIANCHERIA — i pezzi inidonei (macchiati, strappati) resi a Raimondo a parte.
+//   questo             — quanto c'è NEL MAGAZZINO dell'albergo e quanto ne hanno in mano
+//                        le cameriere, cioè chi ha preso cosa e quando l'ha riportato.
+//
+// Il problema: la biancheria si preleva dal magazzino a mani nude, senza che resti
+// traccia di chi ha preso cosa. Quando i conti non tornano non c'è modo di dire se manca
+// davvero qualcosa o se è semplicemente ancora su un carrello.
+//
+// Un movimento porta PIÙ voci insieme: una cameriera non prende una federa alla volta,
+// carica il carrello. Stessa forma dei consumi giornalieri della biancheria.
+const GC_KEY='bg_gcenza';
+// Due strutture, ognuna col suo magazzino: si sceglie con le linguette, come nel Reso.
+// I nomi vengono da GB_HOTELS, cosi' la stessa struttura non si chiama in due modi.
+const GC_HOTELS={ar:GB_HOTELS.ar,sb:GB_HOTELS.sb};
+// Le voci di partenza sono le SETTE dei fogli camera (GB_VOCI): gcenza, consumi e giro
+// devono parlare degli stessi pezzi, altrimenti i tre pannelli non si confrontano. NON è
+// l'elenco dei resi (GR_TIPOLOGIE_DEFAULT), che è più lungo di proposito.
+// L'elenco è modificabile dalla vista — il magazzino può contenere coprimaterassi o
+// tappetini che sul foglio camera non compaiono — e finisce in `tipologie`.
+// ATTENZIONE: i movimenti sono indicizzati per NOME della voce, non per posizione.
+// Riordinare l'elenco è innocuo; RINOMINARE una voce orfana i pezzi già registrati sotto
+// il vecchio nome. Per questo _gcVociUsate rimette in fondo alla tabella le voci uscite
+// dall'elenco che hanno ancora pezzi in giro: escono dalla maschera, mai dai totali.
+const GC_VOCI_DEFAULT=GB_VOCI;
+// `segno` è l'effetto sul MAGAZZINO. `persona` è l'etichetta del campo nome, e null vuol
+// dire che quel tipo non riguarda nessuno. `carico` dice se il movimento apre o chiude il
+// carico di una persona: è quello, non il segno, a decidere se _gcCarico lo guarda.
+//
+// AGGIUNTA e RESTITUZIONE fanno la stessa cosa al magazzino (+1) ma NON sono la stessa
+// cosa: la restituzione chiude il carico di chi aveva preso i pezzi, l'aggiunta è roba
+// nuova che non era di nessuno (acquisto, consegna del fornitore, materiale ritrovato).
+// Prima che esistesse, per registrare merce nuova si era costretti a usare una
+// restituzione intestata a qualcuno — e quel qualcuno si ritrovava un carico negativo,
+// cioè un ammanco inventato. È esattamente il motivo per cui questo tipo esiste.
+const GC_TIPI={
+  prelievo:    {lbl:'Prelievo',    col:'var(--red)',   segno:-1, persona:'Chi preleva',     carico:true },
+  restituzione:{lbl:'Restituzione',col:'var(--green)', segno:+1, persona:'Chi restituisce', carico:true },
+  aggiunta:    {lbl:'Aggiunta',    col:'var(--blue)',  segno:+1, persona:null,              carico:false},
+  conteggio:   {lbl:'Conteggio',   col:'var(--accent)',segno: 0, persona:null,              carico:false}
+};
+// Oltre questi giorni un carico aperto viene segnalato in ambra: non è un furto, è che
+// nessuno ha registrato la restituzione — e più passa il tempo meno qualcuno se lo ricorda.
+const GC_GG_APERTO=3;
+
+let _gc={movimenti:[],tipologie:null};
+let _gcHotel='ar';
+try{const h=localStorage.getItem('bg_gc_hotel');if(GC_HOTELS[h])_gcHotel=h;}catch(e){}
+let _gcTipo='prelievo';
+let _gcPersona='';
+// Pannelli richiudibili e righe aperte: stanno FUORI da gcRender, che rigenera tutto
+// l'HTML — dentro, ogni apertura si richiuderebbe da sola al primo ridisegno (stessa
+// lezione di _speseCatOpen in Spese Fornitori e di _gbGiroAperto).
+let _gcStorico=false;
+let _gcPersonaAperta=new Set(),_gcMovAperto=new Set();
+
+const _gcH=x=>x.hotel||'ar';
+function _gcUid(){return Date.now()+'_'+Math.random().toString(36).slice(2,8);}
+const _gcEsc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// Un nome dentro un onclick passa da due interpretazioni, HTML e poi JS: apice e barra
+// rovescia vanno neutralizzati PRIMA dell'escape HTML. Senza, una cameriera che si chiama
+// D'Angelo romperebbe il pulsante — e nell'organico ci sono già dei D'.
+const _gcJs=s=>_gcEsc(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
+// Date: si riusano gli helper della biancheria invece di farne una quarta copia. Il
+// prefisso _gb è storico, la funzione è generica — stesso ragionamento di _gcPortaInVista,
+// che porta il prefisso _ps e vale per tutta la dashboard.
+function _gcVoci(){return (_gc.tipologie&&_gc.tipologie.length)?_gc.tipologie:GC_VOCI_DEFAULT;}
+function _gcTot(q){return Object.keys(q||{}).reduce((s,v)=>s+(Number(q[v])||0),0);}
+
+// Movimenti di una struttura in ordine di REGISTRAZIONE (ts), non di data: due movimenti
+// dello stesso giorno devono avere un ordine stabile, e il conteggio fa da ancora a tutti
+// quelli che arrivano dopo di lui — stesso schema del fondo cassa di reception.
+function _gcMov(h){
+  const hot=h||_gcHotel;
+  return (_gc.movimenti||[]).filter(m=>_gcH(m)===hot).slice().sort((a,b)=>(a.ts||0)-(b.ts||0));
+}
+
+// Quanto c'è sullo scaffale. NON è un campo modificabile a mano: si riparte sempre
+// dall'ultimo conteggio fisico registrato e si applicano i movimenti successivi. Finché un
+// conteggio non c'è, `contato` è false e il numero NON va mostrato: sarebbe solo
+// "restituito meno prelevato", cioè quasi sempre un negativo che sembra un guasto.
+function _gcMagazzino(h){
+  const mv=_gcMov(h);
+  let i=-1;
+  for(let k=mv.length-1;k>=0;k--){if(mv[k].tipo==='conteggio'){i=k;break;}}
+  const q=i>=0?Object.assign({},mv[i].q||{}):{};
+  for(let k=i+1;k<mv.length;k++){
+    const m=mv[k],sg=(GC_TIPI[m.tipo]||{}).segno||0;
+    if(!sg)continue;
+    Object.keys(m.q||{}).forEach(v=>{q[v]=(Number(q[v])||0)+sg*(Number(m.q[v])||0);});
+  }
+  return {q,contato:i>=0,data:i>=0?mv[i].data:null};
+}
+
+// Cosa ha in mano ogni cameriera: prelevato meno restituito, dal primo movimento a oggi.
+// Il conteggio del magazzino NON lo azzera, ed è voluto: contare lo scaffale dice quanti
+// pezzi ci sono lì, non quanti ne ha ancora Anna sul carrello.
+//
+// `apertoDa` è il giorno in cui il suo carico è passato da zero a qualcosa e non è più
+// tornato a zero — non la data dell'ultimo prelievo, che non direbbe da quanto tempo c'è
+// qualcosa in sospeso. Torna null appena riporta tutto.
+function _gcCarico(h){
+  const out={};
+  _gcMov(h).forEach(m=>{
+    // Si guarda `carico`, NON il segno: un'aggiunta ha lo stesso +1 di una restituzione
+    // ma non chiude il carico di nessuno, ed entrarci dentro darebbe a qualcuno pezzi che
+    // non ha mai preso. Il segno decide solo di quanto, non se.
+    const cfg=GC_TIPI[m.tipo]||{};
+    if(!cfg.carico)return;
+    // Il segno di GC_TIPI è quello del MAGAZZINO (un prelievo lo svuota, -1). Sul
+    // carico della persona vale l'opposto: quello che esce dallo scaffale finisce nelle
+    // sue mani. Va quindi rovesciato — non è un refuso, ed è l'errore che i controlli
+    // hanno colto alla prima esecuzione: i carichi risultavano tutti negativi.
+    const sg=-(cfg.segno||0);
+    if(!sg)return;
+    const p=String(m.persona||'').trim();if(!p)return;
+    const r=out[p]||(out[p]={q:{},tot:0,ultimo:null,apertoDa:null});
+    const prima=r.tot;
+    Object.keys(m.q||{}).forEach(v=>{
+      const n=Number(m.q[v])||0;if(!n)return;
+      r.q[v]=(Number(r.q[v])||0)+sg*n;r.tot+=sg*n;
+    });
+    r.ultimo=m.data;
+    if(prima<=0&&r.tot>0)r.apertoDa=m.data;
+    if(r.tot<=0)r.apertoDa=null;
+  });
+  return out;
+}
+function _gcCaricoTot(h){
+  const c=_gcCarico(h),q={};
+  Object.keys(c).forEach(p=>Object.keys(c[p].q).forEach(v=>{q[v]=(Number(q[v])||0)+(Number(c[p].q[v])||0);}));
+  return q;
+}
+// Le voci da mostrare nelle tabelle: l'elenco corrente, più in fondo quelle che ne sono
+// uscite ma hanno ancora pezzi da qualche parte. Una tipologia tolta dall'elenco non deve
+// portarsi via dai totali i pezzi che restano in giro.
+function _gcVociUsate(h){
+  const el=_gcVoci(),vis=new Set(el);
+  const mag=_gcMagazzino(h),car=_gcCaricoTot(h);
+  const extra=new Set();
+  Object.keys(mag.q).forEach(v=>{if(!vis.has(v)&&Number(mag.q[v]))extra.add(v);});
+  Object.keys(car).forEach(v=>{if(!vis.has(v)&&Number(car[v]))extra.add(v);});
+  return el.concat([...extra].sort());
+}
+// L'elenco delle cameriere non può essere fisso: il personale cambia (extra e interinali).
+// In Compass si prendono anche organico e turno; la Galleria non li legge (il suo codice
+// apre solo le chiavi bg_), quindi restano i nomi gia' usati qui. Il campo e' comunque a
+// testo libero: una cameriera nuova non deve poter bloccare un prelievo.
+function _gcPersone(){
+  const s=new Set();
+  (_gc.movimenti||[]).forEach(m=>{if(m.persona)s.add(m.persona);});
+  return [...s].filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b),'it'));
+}
+
+async function gcLoad(){
+  const el=document.getElementById('gc-content');if(!el)return;
+  el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);">Caricamento…</div>';
+  // Si FONDE cloud e copia locale invece di preferire l'uno all'altra: una registrazione
+  // che non era arrivata sul cloud non deve sparire riaprendo la pagina.
+  _gc=await _grLeggiArchivio(GC_KEY,{movimenti:[],tipologie:null});
+  gcRender();
+}
+async function _gcSave(){
+  _gc=await _grSalvaArchivio(GC_KEY,_gc);
+  return _gc;
+}
+
+function gcSetHotel(h){if(!GC_HOTELS[h])return;_gcHotel=h;_gcPersona='';try{localStorage.setItem('bg_gc_hotel',h);}catch(e){}gcRender();}
+function gcSetTipo(t){if(!GC_TIPI[t])return;_gcTipo=t;gcRender();}
+function gcToggleStorico(){_gcStorico=!_gcStorico;gcRender();if(_gcStorico)_gcPortaInVista('gc-storico',12);}
+// Aprire una riga NON deve spostare l'occhio: la si sta guardando, e un salto la
+// porterebbe via proprio mentre la si legge.
+function gcTogglePersona(p){_gcPersonaAperta.has(p)?_gcPersonaAperta.delete(p):_gcPersonaAperta.add(p);_gbSenzaSalto(gcRender);}
+function gcToggleMov(id){_gcMovAperto.has(id)?_gcMovAperto.delete(id):_gcMovAperto.add(id);_gbSenzaSalto(gcRender);}
+
+// Scorciatoia dalla tabella "chi ha in carico": prepara una restituzione già intestata a
+// quella persona e con le quantità proposte, e porta la maschera in vista.
+function gcPreparaResa(p){
+  _gcTipo='restituzione';_gcPersona=p;
+  gcRender();
+  _gcPortaInVista('gc-form',12);
+}
+
+// Cambiando persona NON si ridisegna: si aggiornano solo le caselle e i suggerimenti.
+// Rigenerare l'HTML mentre si sta compilando fa perdere quel che si è digitato ed è
+// esattamente il difetto che aveva la casella "Ricevuto" in Biancheria.
+function gcSetPersona(v){
+  _gcPersona=String(v||'').trim();
+  gcAggiornaCarico(_gcTipo==='restituzione');
+}
+// `precompila` vale solo quando la persona è appena cambiata: il caso normale è che
+// riporti tutto quello che ha in mano, e proporlo evita di ridigitare sette numeri.
+// Resta correggibile — capita che ne riporti solo una parte.
+function gcAggiornaCarico(precompila){
+  const voci=_gcVoci();
+  const car=(_gcCarico(_gcHotel)[_gcPersona]||{q:{}}).q;
+  voci.forEach((v,i)=>{
+    const hint=document.getElementById('gc-hint-'+i);
+    const inp=document.getElementById('gc-q-'+i);
+    const n=Number(car[v])||0;
+    if(hint)hint.textContent=_gcTipo==='restituzione'?(_gcPersona?(n>0?'ne ha '+n:'nessuno in mano'):''):'';
+    if(precompila&&inp)inp.value=n>0?n:0;
+  });
+}
+
+async function gcSalvaMovimento(){
+  const voci=_gcVoci(),tipo=_gcTipo;
+  const data=_gbFromIso((document.getElementById('gc-data')||{}).value||'');
+  if(!data){await _gbAvviso('Manca la data','Indica il giorno del movimento.');return;}
+  const persona=String((document.getElementById('gc-persona')||{}).value||'').trim();
+  const nota=String((document.getElementById('gc-nota')||{}).value||'').trim();
+  const leggi=i=>Math.max(0,Math.round(Number((document.getElementById('gc-q-'+i)||{}).value)||0));
+  const q={};
+  // In un conteggio uno zero è un'informazione ("di scendibagni non ce n'è più nessuno"),
+  // in un prelievo è solo una casella lasciata a zero: per questo le due letture sono
+  // diverse e non una sola con un filtro.
+  if(tipo==='conteggio')voci.forEach((v,i)=>{q[v]=leggi(i);});
+  else voci.forEach((v,i)=>{const n=leggi(i);if(n)q[v]=n;});
+  const tot=_gcTot(q);
+
+  if(tipo!=='conteggio'){
+    if(GC_TIPI[tipo].persona&&!persona){await _gbAvviso('Manca il nome','Scrivi chi preleva o chi restituisce: senza, il movimento non dice niente su chi ha i pezzi.');return;}
+    if(!tot){await _gbAvviso('Nessuna quantità','Indica almeno un pezzo.');return;}
+  }
+
+  const mag=_gcMagazzino(_gcHotel);
+
+  // Prelievo che sfora il magazzino: si AVVISA, non si blocca. Il conteggio può essere
+  // vecchio, e i pezzi sullo scaffale ci sono davvero — impedire di registrare un
+  // prelievo reale vorrebbe dire perdere proprio il dato che questa pagina esiste per
+  // raccogliere. Ma se lo sforo è grosso, di solito è una cifra digitata male.
+  if(tipo==='prelievo'&&mag.contato){
+    const sfora=Object.keys(q).filter(v=>(Number(q[v])||0)>(Number(mag.q[v])||0));
+    if(sfora.length){
+      const el=sfora.map(v=>_gcEsc(v)+': ne prelevi '+q[v]+', in magazzino ne risultano '+(Number(mag.q[v])||0)).join('<br>');
+      if(!await _gbConferma('Più di quanti ne risultano',el+'<br><br>Può essere giusto se il magazzino non è contato da un po\'. Registro lo stesso?',{ok:'Registra'}))return;
+    }
+  }
+
+  // Il nome si salva solo sui tipi che ne hanno uno: un'aggiunta con dentro una persona
+  // sarebbe un carico fantasma il giorno in cui qualcuno cambiasse la regola di _gcCarico.
+  const m={id:_gcUid(),ts:Date.now(),hotel:_gcHotel,data,tipo,persona:GC_TIPI[tipo].persona?persona:'',q,nota,edits:[]};
+
+  if(tipo==='conteggio'){
+    // Come il fondo cassa: si registra anche quanto ci si aspettava di trovare, così la
+    // differenza resta nello storico — spiegata o no — e il valore contato diventa la
+    // nuova base su cui contare i movimenti successivi. Senza l'ancoraggio al conteggio
+    // reale il calcolo divergerebbe subito dallo scaffale.
+    m.atteso=mag.contato?Object.assign({},mag.q):null;
+    if(mag.contato){
+      const dif=voci.filter(v=>(Number(q[v])||0)!==(Number(mag.q[v])||0));
+      if(dif.length){
+        const el=dif.map(v=>{
+          const d=(Number(q[v])||0)-(Number(mag.q[v])||0);
+          return _gcEsc(v)+': contati '+(Number(q[v])||0)+', attesi '+(Number(mag.q[v])||0)+' ('+(d>0?'+':'')+d+')';
+        }).join('<br>');
+        if(!await _gbConferma('Il conteggio non torna',el+'<br><br>La differenza resta segnata nello storico e il numero contato diventa la nuova base.',{ok:'Registra il conteggio'}))return;
+      }
+    }
+  }
+
+  _gc.movimenti=(_gc.movimenti||[]).concat([m]);
+  await _gcSave();
+  // La maschera si svuota solo DOPO il salvataggio riuscito: azzerarla prima farebbe
+  // perdere quel che si è digitato se la scrittura non parte.
+  _gcPersona=GC_TIPI[tipo].persona?'':_gcPersona;
+  gcRender();
+}
+
+async function gcEliminaMovimento(id){
+  const i=(_gc.movimenti||[]).findIndex(m=>m.id===id);if(i<0)return;
+  const m=_gc.movimenti[i];
+  const t=(GC_TIPI[m.tipo]||{}).lbl||m.tipo;
+  if(!await _gbConferma('Eliminare questo movimento?','<strong>'+_gcEsc(t)+(m.persona?' · '+_gcEsc(m.persona):'')+'</strong><br>'+_gcEsc(m.data)+' · '+_gcTot(m.q)+' pezzi.<br>Non resta traccia: per correggere una quantità usa invece "correggi".',{ok:'Elimina'}))return;
+  _gc.movimenti.splice(i,1);
+  // L'id va segnato PRIMA di salvare, altrimenti la fusione lo rimette dentro: il
+  // movimento sta ancora sul cloud e _grUnisciRecord riporta i record che il locale non
+  // ha più. È il difetto che resiDelRow si era dimenticato.
+  _grSegnaRimosso(_gc,id);
+  await _gcSave();gcRender();
+}
+
+// Mai una sovrascrittura silenziosa: la correzione lascia una riga in `edits`, come la
+// cassa di reception e i resi.
+async function gcCorreggi(id,voce){
+  const m=(_gc.movimenti||[]).find(x=>x.id===id);if(!m)return;
+  const vecchio=Number((m.q||{})[voce])||0;
+  const s=prompt('Quantità di "'+voce+'" ('+m.data+') — era '+vecchio+':',String(vecchio));
+  if(s===null)return;
+  const nuovo=Math.max(0,Math.round(Number(s)||0));
+  if(nuovo===vecchio)return;
+  const motivo=String(prompt('Perché la correzione? (resta nello storico)','')||'').trim();
+  m.q=Object.assign({},m.q);m.q[voce]=nuovo;
+  m.edits=(m.edits||[]).concat([{ts:Date.now(),campo:voce,vecchio,nuovo,motivo}]);
+  m.mod=Date.now();   // non ts: in Giacenza ts e' l'ordine dei movimenti
+  await _gcSave();gcRender();
+}
+
+async function gcEditTipologie(){
+  const cur=_gcVoci().join('\n');
+  const v=prompt('Tipologie in magazzino (una per riga):',cur);
+  if(v===null)return;
+  const list=v.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!list.length){await _gbAvviso('Elenco vuoto','Serve almeno una tipologia.');return;}
+  // Rinominare o togliere una voce che ha ancora pezzi in giro non li cancella (restano
+  // in fondo alla tabella, vedi _gcVociUsate) ma la fa sparire dalla maschera: lo si
+  // dice prima, invece di lasciarlo scoprire dopo.
+  const mag=_gcMagazzino(_gcHotel),car=_gcCaricoTot(_gcHotel);
+  const perse=_gcVoci().filter(x=>!list.includes(x)&&((Number(mag.q[x])||0)||(Number(car[x])||0)));
+  if(perse.length){
+    if(!await _gbConferma('Voci con pezzi ancora registrati',perse.map(_gcEsc).join('<br>')+'<br><br>Escono dalla maschera ma restano in fondo alla tabella con i loro pezzi: nessun numero va perso.',{ok:'Salva l\'elenco'}))return;
+  }
+  _gc.tipologie=list;
+  await _gcSave();gcRender();
+}
+
+function gcRender(){
+  const el=document.getElementById('gc-content');if(!el)return;
+  const esc=_gcEsc,js=_gcJs;
+  const voci=_gcVoci();
+  const mag=_gcMagazzino(_gcHotel);
+  const car=_gcCarico(_gcHotel);
+  const carTot=_gcCaricoTot(_gcHotel);
+  const usate=_gcVociUsate(_gcHotel);
+  const totMag=_gcTot(mag.q),totCar=_gcTot(carTot);
+  const oggi=_gbOggi();
+  // La data va riletta dal campo PRIMA di rigenerare l'HTML: riscrivendo sempre quella di
+  // oggi, qualunque giorno selezionato tornerebbe indietro al primo ridisegno (è successo
+  // nella maschera dei consumi della biancheria, stesso schema).
+  const dataIso=(document.getElementById('gc-data')||{}).value||_gbToIso(_gbFmt(oggi));
+  const persone=Object.keys(car).filter(p=>car[p].tot!==0).sort((a,b)=>car[b].tot-car[a].tot);
+  const ggAperto=p=>{const d=_gbParse(car[p].apertoDa);return d?Math.round((oggi-d)/86400000):null;};
+  let h='';
+
+  // ── Linguette di struttura (Galleria): due magazzini, uno per struttura, come nel Reso ──
+  h+=`<div style="display:flex;gap:6px;border-bottom:1px solid var(--border);margin-bottom:18px;">${Object.entries(GC_HOTELS).map(([k,nome])=>{
+    const att=k===_gcHotel;
+    return`<button onclick="gcSetHotel('${k}')" style="padding:9px 18px;border:1px solid var(--border);border-bottom:none;border-radius:6px 6px 0 0;background:${att?'#fff':'var(--surface2)'};color:${att?'var(--accent)':'var(--text-dim)'};font-weight:600;font-size:var(--fs-xs);cursor:pointer;font-family:inherit;">${esc(nome)}</button>`;
+  }).join('')}</div>`;
+
+  // ── Niente card in cima ──
+  // C'erano tre card (In magazzino · In mano · Giacenza totale): ripetevano esattamente
+  // la riga "Totale" della tabella "Giacenza per tipologia" più sotto, cioè gli stessi
+  // tre numeri due volte nella stessa schermata. Tolte su richiesta del QM (07/09/2026).
+  // L'unica cosa che dicevano e la tabella no — che il magazzino non è mai stato contato —
+  // è ora una riga sotto la tabella, dove i trattini della colonna hanno bisogno di una
+  // spiegazione. Se un domani si rimettono delle card, non ripetere quel totale.
+
+  // ── Registra un movimento ──
+  const tipoCfg=GC_TIPI[_gcTipo];
+  const spiega={
+    prelievo:'Una cameriera porta via dei pezzi dal magazzino: restano a suo carico finché non li riporta.',
+    restituzione:'Riporta in magazzino dei pezzi che aveva preso e non ha usato: il suo carico si chiude.',
+    aggiunta:'Pezzi nuovi che entrano in magazzino e non erano di nessuno: un acquisto, una consegna del fornitore, del materiale ritrovato. Non chiude il carico di nessuno — per quello c\'è Restituzione.',
+    conteggio:'Conta fisicamente quello che c\'è sullo scaffale. Diventa la nuova base: i movimenti successivi si sommano a questo numero, non a quello calcolato prima.'
+  }[_gcTipo];
+  h+=`<div class="panel" id="gc-form" style="margin-bottom:16px;">
+    <div class="panel-header"><span class="panel-title">Registra un movimento</span></div>
+    <div class="panel-body" style="padding:14px;">
+      <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;width:fit-content;max-width:100%;flex-wrap:wrap;margin-bottom:10px;">
+        ${Object.keys(GC_TIPI).map(t=>`<button onclick="gcSetTipo('${t}')" style="border:none;padding:8px 16px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;background:${t===_gcTipo?GC_TIPI[t].col:'var(--surface)'};color:${t===_gcTipo?'#fff':'var(--text-dim)'};">${esc(GC_TIPI[t].lbl)}</button>`).join('')}
+      </div>
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:12px;">${esc(spiega)}</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">
+        <div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">Data</div>
+          <input type="date" id="gc-data" value="${dataIso}" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">
+        </div>
+        ${tipoCfg.persona?`<div style="flex:1;min-width:190px;">
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${esc(tipoCfg.persona)}</div>
+          <input id="gc-persona" list="gc-persone" value="${esc(_gcPersona)}" onchange="gcSetPersona(this.value)" placeholder="nome della cameriera" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);">
+          <datalist id="gc-persone">${_gcPersone().map(p=>`<option value="${esc(p)}"></option>`).join('')}</datalist>
+        </div>`:''}
+      </div>
+      <div class="giac-voci-grid">
+        ${voci.map((v,i)=>{
+          const inCarico=Number(((car[_gcPersona]||{q:{}}).q)[v])||0;
+          const inMag=Number(mag.q[v])||0;
+          const val=_gcTipo==='restituzione'?(inCarico>0?inCarico:0):(_gcTipo==='conteggio'?(mag.contato?inMag:0):0);
+          const hint=_gcTipo==='restituzione'?(_gcPersona?(inCarico>0?'ne ha '+inCarico:'nessuno in mano'):'')
+                    :(_gcTipo==='conteggio'?(mag.contato?'atteso '+inMag:'mai contato'):(mag.contato?'in magazzino '+inMag:''));
+          return `<div>
+            <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">${esc(v)}</div>
+            <input type="number" min="0" step="1" id="gc-q-${i}" value="${val}" onfocus="this.select()" style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);text-align:center;">
+            <div id="gc-hint-${i}" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:2px;text-align:center;min-height:14px;">${esc(hint)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px;">
+        <input id="gc-nota" placeholder="Nota (facoltativa)" style="flex:1;min-width:180px;padding:7px 9px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-sm);">
+        <button onclick="gcSalvaMovimento()" style="background:${tipoCfg.col};color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">Registra ${esc(tipoCfg.lbl.toLowerCase())}</button>
+      </div>
+      <div style="margin-top:10px;"><span onclick="gcEditTipologie()" style="font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;">Modifica elenco tipologie</span></div>
+    </div>
+  </div>`;
+
+  // ── Giacenza per tipologia ──
+  h+=`<div class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><span class="panel-title">Giacenza per tipologia</span>
+      <button onclick="gcPrintGiacenza()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);color:var(--accent);padding:6px 13px;border-radius:8px;font-weight:600;font-size:var(--fs-xxs);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">&#128424;&#65039; Foglio per la governante</button>
+    </div>
+    <div class="panel-body" style="padding:0;">
+      <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+        <thead><tr style="background:var(--surface2);">
+          <th style="text-align:left;padding:9px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Tipologia</th>
+          <th style="text-align:right;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">In magazzino</th>
+          <th style="text-align:right;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">In mano</th>
+          <th style="text-align:right;padding:9px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Totale</th>
+        </tr></thead><tbody>`;
+  usate.forEach((v,i)=>{
+    const m=Number(mag.q[v])||0,c=Number(carTot[v])||0;
+    const fuoriElenco=!voci.includes(v);
+    h+=`<tr style="border-top:1px solid var(--border);${i%2?'background:var(--surface2);':''}">
+      <td style="padding:9px 14px;">${esc(v)}${fuoriElenco?' <span style="font-size:var(--fs-xxs);color:var(--amber);">fuori elenco</span>':''}</td>
+      <td style="padding:9px 10px;text-align:right;color:${mag.contato&&m<0?'var(--red)':'var(--text)'};">${mag.contato?m:'—'}</td>
+      <td style="padding:9px 10px;text-align:right;color:${c?'var(--text)':'var(--text-dim)'};">${c}</td>
+      <td style="padding:9px 14px;text-align:right;font-weight:700;">${mag.contato?(m+c):'—'}</td>
+    </tr>`;
+  });
+  h+=`<tr style="border-top:2px solid var(--border);font-weight:700;">
+      <td style="padding:9px 14px;">Totale</td>
+      <td style="padding:9px 10px;text-align:right;">${mag.contato?totMag:'—'}</td>
+      <td style="padding:9px 10px;text-align:right;">${totCar}</td>
+      <td style="padding:9px 14px;text-align:right;">${mag.contato?(totMag+totCar):'—'}</td>
+    </tr></tbody></table>`;
+  if(!mag.contato){
+    h+=`<div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--amber);line-height:1.5;">Il magazzino non è mai stato contato: la colonna «In magazzino» resta vuota finché non si registra il primo conteggio. Fino ad allora i pezzi in mano alle cameriere si contano lo stesso.</div>`;
+  }
+  if(mag.contato&&usate.some(v=>(Number(mag.q[v])||0)<0)){
+    h+=`<div style="padding:10px 14px;font-size:var(--fs-xxs);color:var(--red);line-height:1.5;">Una tipologia è sotto zero: dal conteggio del ${esc(mag.data)} ne è uscita più di quanta ce ne fosse. O manca una restituzione, o il conteggio era incompleto — un nuovo conteggio rimette la base a posto.</div>`;
+  }
+  h+=`</div></div>`;
+
+  // ── Chi ha cosa ──
+  // È la risposta alla domanda per cui la pagina esiste. `apertoDa` non è la data
+  // dell'ultimo prelievo ma quella in cui il carico si è aperto e non si è più chiuso:
+  // dice da quanto tempo c'è qualcosa in sospeso, che è l'unica cosa azionabile.
+  h+=`<div class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><span class="panel-title">Chi ha pezzi in carico</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">prelevato e non ancora riportato</span>
+    </div>
+    <div class="panel-body" style="padding:0;">`;
+  if(!persone.length){
+    h+=`<div style="padding:16px;font-size:var(--fs-xs);color:var(--text-dim);">Nessun carico aperto: tutto quello che è uscito dal magazzino è rientrato.</div>`;
+  }else{
+    h+=`<table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+      <thead><tr style="background:var(--surface2);">
+        <th style="text-align:left;padding:9px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Persona</th>
+        <th style="text-align:right;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Pezzi</th>
+        <th style="text-align:left;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Aperto da</th>
+        <th style="padding:9px 14px;"></th>
+      </tr></thead><tbody>`;
+    persone.forEach((p,idx)=>{
+      const r=car[p],gg=ggAperto(p),aperta=_gcPersonaAperta.has(p);
+      // Un carico negativo non è un errore: ha riportato più di quanto risulta preso —
+      // di solito un prelievo mai registrato. Va detto, non colorato di rosso come un ammanco.
+      const neg=r.tot<0;
+      const ambra=!neg&&gg!==null&&gg>=GC_GG_APERTO;
+      h+=`<tr style="border-top:1px solid var(--border);${idx%2?'background:var(--surface2);':''}${ambra?'box-shadow:inset 3px 0 0 var(--amber);':''}">
+        <td style="padding:9px 14px;font-weight:600;">${esc(p)}</td>
+        <td style="padding:9px 10px;text-align:right;font-weight:700;color:${neg?'var(--green)':'var(--text)'};">${neg?'+'+(-r.tot):r.tot}</td>
+        <td style="padding:9px 10px;color:${ambra?'var(--amber)':'var(--text-dim)'};font-weight:${ambra?'700':'400'};">${neg?'riportati più del preso':(gg===null?'—':esc(r.apertoDa)+' · '+gg+(gg===1?' giorno':' giorni'))}</td>
+        <td style="padding:9px 14px;text-align:right;white-space:nowrap;">
+          <button onclick="gcTogglePersona('${js(p)}')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">${aperta?'chiudi':'cosa ha'} ${aperta?'▴':'▾'}</button>
+          ${neg?'':`<button onclick="gcPreparaResa('${js(p)}')" style="margin-left:8px;background:var(--green);color:#fff;border:none;padding:5px 11px;border-radius:7px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">Restituisce</button>`}
+        </td>
+      </tr>`;
+      if(aperta){
+        const righe=Object.keys(r.q).filter(v=>Number(r.q[v]));
+        h+=`<tr style="${idx%2?'background:var(--surface2);':''}"><td colspan="4" style="padding:0 14px 12px;">
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);display:flex;flex-wrap:wrap;gap:6px;">
+            ${righe.map(v=>`<span style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 9px;">${esc(v)} <strong style="color:var(--text);">${r.q[v]}</strong></span>`).join('')||'<span>nessun pezzo</span>'}
+          </div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;">Ultimo movimento: ${esc(r.ultimo||'—')}</div>
+        </td></tr>`;
+      }
+    });
+    h+=`</tbody></table>`;
+  }
+  h+=`</div></div>`;
+
+  // ── Storico ──
+  h+=`<div id="gc-storico">
+    <button onclick="gcToggleStorico()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:var(--fs-xxs);font-weight:600;color:var(--accent);cursor:pointer;font-family:'Helvetica Neue',Arial,sans-serif;">Storico dei movimenti ${_gcStorico?'▴':'▾'}</button>`;
+  if(_gcStorico){
+    const mv=_gcMov(_gcHotel).slice().reverse();
+    h+=`<div class="panel" style="margin-top:12px;"><div class="panel-body" style="padding:0;">`;
+    if(!mv.length)h+=`<div style="padding:16px;font-size:var(--fs-xs);color:var(--text-dim);">Nessun movimento registrato per questa struttura.</div>`;
+    else{
+      h+=`<table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+        <thead><tr style="background:var(--surface2);">
+          <th style="text-align:left;padding:9px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Data</th>
+          <th style="text-align:left;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Tipo</th>
+          <th style="text-align:left;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Persona</th>
+          <th style="text-align:right;padding:9px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Pezzi</th>
+          <th style="padding:9px 14px;"></th>
+        </tr></thead><tbody>`;
+      mv.forEach((m,i)=>{
+        const cfg=GC_TIPI[m.tipo]||{lbl:m.tipo,col:'var(--text-dim)'};
+        const aperto=_gcMovAperto.has(m.id);
+        const nEd=(m.edits||[]).length;
+        // Il conteggio dichiara quanto ci si aspettava di trovare: senza, un "12" nello
+        // storico non dice se il magazzino tornava o no, ed è l'unica cosa che interessa.
+        let dif=null;
+        if(m.tipo==='conteggio'&&m.atteso)dif=_gcTot(m.q)-_gcTot(m.atteso);
+        h+=`<tr style="border-top:1px solid var(--border);${i%2?'background:var(--surface2);':''}">
+          <td style="padding:9px 14px;white-space:nowrap;">${esc(m.data)}</td>
+          <td style="padding:9px 10px;"><span style="background:var(--surface2);border:1px solid ${cfg.col};color:${cfg.col};border-radius:6px;padding:2px 8px;font-size:var(--fs-xxs);font-weight:700;">${esc(cfg.lbl)}</span></td>
+          <td style="padding:9px 10px;">${esc(m.persona||'—')}</td>
+          <td style="padding:9px 10px;text-align:right;font-weight:700;">${_gcTot(m.q)}${dif!==null?` <span style="font-weight:600;color:${dif===0?'var(--green)':(dif<0?'var(--red)':'var(--green)')};">${dif===0?'in pari':(dif>0?'+':'')+dif}</span>`:''}</td>
+          <td style="padding:9px 14px;text-align:right;white-space:nowrap;">
+            ${nEd?`<span style="font-size:var(--fs-xxs);color:var(--amber);margin-right:8px;">corretto ${nEd}×</span>`:''}
+            <button onclick="gcToggleMov('${m.id}')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">dettaglio ${aperto?'▴':'▾'}</button>
+            <button onclick="gcEliminaMovimento('${m.id}')" title="Elimina" style="margin-left:8px;background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:600;cursor:pointer;">elimina</button>
+          </td>
+        </tr>`;
+        if(aperto){
+          const righe=Object.keys(m.q||{}).filter(v=>m.tipo==='conteggio'||Number(m.q[v]));
+          h+=`<tr style="${i%2?'background:var(--surface2);':''}"><td colspan="5" style="padding:0 14px 12px;">
+            <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:var(--fs-xxs);">
+              ${righe.map(v=>`<span style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 9px;">${esc(v)} <strong>${Number(m.q[v])||0}</strong>${m.atteso?` <span style="color:var(--text-dim);">/ ${Number(m.atteso[v])||0} attesi</span>`:''} <span onclick="gcCorreggi('${m.id}','${js(v)}')" style="color:var(--accent);cursor:pointer;margin-left:4px;">correggi</span></span>`).join('')}
+            </div>
+            ${m.nota?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;">Nota: ${esc(m.nota)}</div>`:''}
+            ${nEd?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.6;">${m.edits.map(e=>`${esc(e.campo)}: da ${e.vecchio} a ${e.nuovo}${e.motivo?' — '+esc(e.motivo):''}`).join('<br>')}</div>`:''}
+          </td></tr>`;
+        }
+      });
+      h+=`</tbody></table>`;
+    }
+    h+=`</div></div>`;
+  }
+  h+=`</div>`;
+
+  el.innerHTML=h;
+}
+
+// Foglio A4 per la governante. Stesso impianto della distinta resi e del report
+// biancheria: testo nero e filetti, NESSUN fondo pieno — si stampa ogni volta che si
+// conta, in bianco e nero, e un blocco pieno consuma toner senza aggiungere niente.
+//
+// La colonna **Contato** è vuota di proposito: il foglio non serve solo a leggere la
+// situazione in ufficio, serve a portarla allo scaffale. Senza quella colonna la
+// governante scriverebbe comunque i numeri a margine, e a quel punto il foglio è mezzo
+// documento. Con essa la riga dice insieme "quanto risulta" e "quanto trovi".
+function gcPrintGiacenza(){_gcStampa(_gcHotel);}
+function _gcStampa(hotel){
+  const h=GC_HOTELS[hotel]?hotel:'ar';
+  const esc=_gcEsc;
+  const mag=_gcMagazzino(h),car=_gcCarico(h),carTot=_gcCaricoTot(h);
+  const voci=_gcVociUsate(h);
+  const oggi=_gbOggi();
+  const persone=Object.keys(car).filter(p=>car[p].tot!==0).sort((a,b)=>car[b].tot-car[a].tot);
+  const totMag=_gcTot(mag.q),totCar=_gcTot(carTot);
+  if(!voci.length){_gbAvviso('Nessuna tipologia','Non c\'è niente da stampare: l\'elenco delle tipologie è vuoto.');return;}
+  const num=n=>String(Number(n)||0);
+
+  let righe='';
+  voci.forEach(v=>{
+    const m=Number(mag.q[v])||0,c=Number(carTot[v])||0;
+    const fuori=!_gcVoci().includes(v);
+    righe+=`<tr>
+      <td>${esc(v)}${fuori?' <span class="pic">fuori elenco</span>':''}</td>
+      <td class="r">${mag.contato?num(m):'—'}</td>
+      <td class="r">${num(c)}</td>
+      <td class="r b">${mag.contato?num(m+c):'—'}</td>
+      <td class="box"></td>
+    </tr>`;
+  });
+
+  let inCarico='';
+  if(!persone.length){
+    inCarico=`<div class="vuoto">Nessun carico aperto: tutto quello che è uscito dal magazzino è rientrato.</div>`;
+  }else{
+    inCarico=`<table><thead><tr>
+        <th style="width:34%;">Persona</th><th class="r" style="width:12%;">Pezzi</th>
+        <th style="width:20%;">Aperto da</th><th>Cosa ha</th>
+      </tr></thead><tbody>`;
+    persone.forEach(p=>{
+      const r=car[p];
+      const d=_gbParse(r.apertoDa);
+      const gg=d?Math.round((oggi-d)/86400000):null;
+      const neg=r.tot<0;
+      const quando=neg?'riportati più del preso':(gg===null?'—':esc(r.apertoDa)+' · '+gg+(gg===1?' giorno':' giorni'));
+      const dett=Object.keys(r.q).filter(v=>Number(r.q[v])).map(v=>esc(v)+' '+num(r.q[v])).join(' · ')||'—';
+      inCarico+=`<tr>
+        <td>${esc(p)}</td>
+        <td class="r b">${neg?'+'+num(-r.tot):num(r.tot)}</td>
+        <td>${quando}</td>
+        <td class="pic">${dett}</td>
+      </tr>`;
+    });
+    inCarico+='</tbody></table>';
+  }
+
+  // Mai contato: la colonna del magazzino non ha un numero da mostrare, e va detto qui —
+  // altrimenti una colonna di trattini sembra un guasto della stampa.
+  const avviso=mag.contato
+    ? `<div class="nota">Magazzino contato il <strong>${esc(mag.data)}</strong>. I movimenti registrati dopo quella data sono già compresi nella colonna «In magazzino».</div>`
+    : `<div class="nota"><strong>Il magazzino non è mai stato contato.</strong> La colonna «In magazzino» resta vuota finché non si registra il primo conteggio: usa questo foglio per contare, poi riporta i numeri in Gestione Biancheria (Giacenza Biancheria → Conteggio).</div>`;
+
+  const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Giacenza Biancheria</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;font-size:10.5pt;}
+@page{size:A4;margin:16mm;}
+.hdr{border-bottom:1.5px solid #111;padding-bottom:10px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:baseline;}
+.title{font-size:14pt;font-weight:700;letter-spacing:.01em;}
+.sub{font-size:9pt;color:#555;margin-top:2px;}
+.meta-lbl{font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;}
+.meta-val{font-weight:700;margin-top:2px;}
+.nota{border:1px solid #999;padding:8px 10px;margin-bottom:14px;font-size:8.5pt;line-height:1.6;color:#333;}
+h2{font-size:9pt;text-transform:uppercase;letter-spacing:.05em;color:#333;margin:18px 0 8px;}
+table{width:100%;border-collapse:collapse;margin-bottom:8px;}
+th{text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:1.5px solid #111;padding:6px 6px;}
+th.r,td.r{text-align:right;}
+td{padding:7px 6px;border-bottom:1px solid #ccc;font-size:10pt;}
+td.b{font-weight:700;}
+td.box{border-bottom:1px solid #ccc;border-left:1px solid #ccc;width:22mm;}
+.pic{font-size:8.5pt;color:#555;}
+tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-top:8px;}
+.vuoto{font-size:9.5pt;color:#555;padding:8px 0 4px;}
+.firme{display:flex;gap:34px;margin-top:26px;}
+.f{flex:1;}
+.sign{border-bottom:1px solid #111;margin-top:26px;}
+.sign-c{font-size:8pt;color:#555;margin-top:4px;}
+tr,thead{page-break-inside:avoid;}
+</style></head><body>
+  <div class="hdr">
+    <div><div class="title">Giacenza Biancheria</div><div class="sub">Magazzino e pezzi in mano alle cameriere</div></div>
+    <div style="text-align:right;">
+      <div class="meta-lbl">Struttura</div><div class="meta-val">${esc(GC_HOTELS[h])}</div>
+      <div class="meta-lbl" style="margin-top:6px;">Stampato il</div><div class="meta-val">${esc(_gbFmt(oggi))}</div>
+    </div>
+  </div>
+  ${avviso}
+  <h2>Giacenza per tipologia</h2>
+  <table>
+    <thead><tr>
+      <th>Tipologia</th>
+      <th class="r" style="width:16%;">In magazzino</th>
+      <th class="r" style="width:16%;">In mano</th>
+      <th class="r" style="width:12%;">Totale</th>
+      <th style="width:22mm;">Contato</th>
+    </tr></thead>
+    <tbody>${righe}</tbody>
+    <tfoot><tr>
+      <td>Totale</td>
+      <td class="r">${mag.contato?num(totMag):'—'}</td>
+      <td class="r">${num(totCar)}</td>
+      <td class="r">${mag.contato?num(totMag+totCar):'—'}</td>
+      <td class="box"></td>
+    </tr></tfoot>
+  </table>
+  <div class="pic">La colonna «Contato» è da riempire a mano allo scaffale. I pezzi che le cameriere hanno sul carrello NON vanno contati qui: sono già nella colonna «In mano».</div>
+  <h2>Pezzi in mano alle cameriere</h2>
+  ${inCarico}
+  <div class="firme">
+    <div class="f"><div class="sign"></div><div class="sign-c">Contato da</div></div>
+    <div class="f"><div class="sign"></div><div class="sign-c">Data del conteggio</div></div>
+  </div>
+</body></html>`;
+
+  const w=window.open('','_blank');
+  if(!w){_gbAvviso('Stampa bloccata','Il browser ha impedito l\'apertura della finestra di stampa: consenti le finestre pop-up per questo sito e riprova.');return;}
+  w.document.write(html);w.document.close();
+  setTimeout(()=>{try{w.print();}catch(e){}},400);
+}
+// Porta in vista un pannello dentro .content (in Compass e' _qmPortaInVista).
+function _gcPortaInVista(id,margine){
+  const el=document.getElementById(id),c=document.querySelector('.content');if(!el||!c)return;
+  c.scrollTop+=el.getBoundingClientRect().top-c.getBoundingClientRect().top-(margine||0);
+}
+
 // ── Conteggio Biancheria: voce di menu come in Compass, per ora modulo in costruzione ──
 // (16/11/2026) Il conteggio a scorrere di Compass parte dalla dotazione da contratto: per
 // Art Resort e Santa Brigida i contratti di fornitura con Raimondo non ci sono ancora.
