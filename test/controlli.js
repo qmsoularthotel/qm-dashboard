@@ -3841,13 +3841,18 @@ sez('Preferenze Turni: un reparto solo per HOUSEKEEPING/Housekeeping, resto del 
     { nome: 'Rossi Prova',  reparto: 'Reception',    giornoRichiesto: '05/10/2026' },
     { nome: 'rossi prova',  reparto: 'RECEPTION',    giornoRichiesto: '20/11/2026' },
     { nome: 'Bianchi Prova', reparto: 'HOUSEKEEPING', giornoRichiesto: '01/12/2026' },
-    { nome: 'Bianchi Prova', reparto: 'Housekeeping', giornoRichiesto: '30/09/2026' }
+    { nome: 'Bianchi Prova', reparto: 'Housekeeping', giornoRichiesto: '30/09/2026' },
+    { nome: 'ROSSI  Prova',  reparto: 'Reception',    giornoRichiesto: '25/11/2026' }
   ];
+  // Solo chi ha almeno una richiesta per la settimana prossima (23–29/11): Bianchi no.
   var c = _tpConsuntivo(dati, 'tutti', new Date(2026, 10, 16));
-  ok('stessa persona scritta in due modi: una riga', c.righe.length, 2);
-  ok('Rossi ne ha 2 nel trimestre',                 c.righe[0].nome + ' ' + c.righe[0].tot, 'Rossi Prova 2');
-  ok('settembre non conta',                         c.righe[1].tot, 1);
-  ok('il filtro di reparto vale anche qui',         _tpConsuntivo(dati, 'Housekeeping', new Date(2026, 10, 16)).righe.map(function (x) { return x.nome; }).join(','), 'Bianchi Prova');
+  ok('solo chi chiede la settimana prossima',       c.righe.map(function (x) { return x.nome; }).join(','), 'Rossi Prova');
+  ok('stessa persona scritta in tre modi: una riga, 3 nel trimestre', c.righe[0].tot, 3);
+  ok('e 1 nella settimana prossima',                c.righe[0].sett, 1);
+  ok('il filtro di reparto vale anche qui',         _tpConsuntivo(dati, 'Housekeeping', new Date(2026, 10, 16)).righe.length, 0);
+  // Settimana prossima già nel trimestre dopo (lunedì 28/12 -> 4/1): la persona c'è lo stesso.
+  var c2 = _tpConsuntivo([{ nome: 'Verdi Prova', reparto: 'Reception', giornoRichiesto: '05/01/2027' }], 'tutti', new Date(2026, 11, 28));
+  ok('a cavallo di trimestre la persona compare',  c2.righe.length + ' ' + (c2.righe[0] || {}).tot + ' ' + (c2.righe[0] || {}).sett, '1 0 1');
 
   var box = { innerHTML: '' }, vero = document.getElementById, d0 = _tpData, f0 = _tpFilter, g0 = _tpCalDay;
   _tpData = dati.map(function (x) { return Object.assign({ preferenza: 'RIPOSO', ts: '2026-11-01T10:00:00Z' }, x); });
@@ -3857,6 +3862,7 @@ sez('Preferenze Turni: un reparto solo per HOUSEKEEPING/Housekeeping, resto del 
   var h = box.innerHTML;
   ok('un solo filtro Housekeeping',                 (h.match(/turniPrefSetFilter\('Housekeeping'\)/g) || []).length, 1);
   ok('e nessun HOUSEKEEPING',                       /turniPrefSetFilter\('HOUSEKEEPING'\)/.test(h), false);
-  ok('accanto al calendario il consuntivo',         /Richieste per persona · \d° trimestre/.test(h), true);
+  ok('accanto al calendario il consuntivo',         /Chi chiede la settimana prossima · \d° trimestre/.test(h), true);
+  ok('didascalia «Settimana prossima» sul riquadro', /z-index:2;[^>]*>Settimana prossima<\/div>/.test(h), true);
   ok('il resto del mese e\' attenuato',             /opacity:\.38;/.test(h), true);
 })();

@@ -292,6 +292,14 @@ elenco tolto → 7 falliscono).
 
 13 controlli nuovi; sabotaggio (niente normalizzazione, niente limite di trimestre) → 6 falliscono.
 
+**Poi, stesso giorno (QM):** il consuntivo mostra **solo chi ha almeno una richiesta per la
+settimana prossima** («Chi chiede la settimana prossima · N° trimestre»), con due colonne:
+*Sett. prossima* (oro) e *Nel trimestre*. Se la settimana prossima cade già nel trimestre dopo,
+la persona compare lo stesso con 0 nel trimestre. Fra le scritture dello stesso nome si mostra
+quella «ben scritta» (Rossi Anna). La legenda sotto il calendario è sostituita da una
+**didascalia «Settimana prossima»** appoggiata sul bordo del riquadro (z-index 2, fondo
+`var(--bg)` che interrompe il filo oro).
+
 ### Mesi precedenti chiusi nell'elenco (16/11/2026)
 
 Nell'elenco raggruppato per mese di invio il **mese in corso** resta aperto, i **precedenti**
