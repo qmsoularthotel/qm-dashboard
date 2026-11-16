@@ -3672,8 +3672,10 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   var ap2=_biaContaAppello('sa',_bia.conte[0]);
   ok('sporco dai consumi (35), non dalla conta (20)', [ap2.voci.Federa.pulito,ap2.voci.Federa.sporco,ap2.voci.Federa.diff].join(' '), '150 35 -35');
   _bia.consumi[0].q=Q(20);
-  ok('nello storico: albergo, lavanderia, trovati', /Scorta <strong[^>]*>62<[\s\S]*Sporco <strong[^>]*>20<[\s\S]*Lavanderia <strong[^>]*>50</.test(box.innerHTML), true);
-  ok('in piu\' del contratto: va bene',           /in più \(va bene\): federe 20/.test(box.innerHTML), true);
+  // Dal 16/11/2026 lo storico mostra la stima A OGGI: scorta 62 −20 (consumi 14/11) +35 +40
+  // (portati 12 e 14/11) = 117; sporco dal 14/11 = 20; lavanderia = distinta del 14/11 = 30.
+  ok('nello storico: stima a oggi',               /Scorta <strong[^>]*>117<[\s\S]*Sporco <strong[^>]*>20<[\s\S]*Lavanderia <strong[^>]*>30</.test(box.innerHTML)&&/Stima a oggi/.test(box.innerHTML), true);
+  ok('in piu\' del contratto: va bene',           /in più \(va bene\): federe 55/.test(box.innerHTML), true);
   ok('e non c\'e\' niente da ritrovare',             /Nessun pezzo da ritrovare/.test(box.innerHTML), true);
   ok('su ogni consegna la sua distinta',          /in lavanderia \(distinta\): <strong[^>]*>40</.test(box.innerHTML), true);
   // Con due conte: il giudizio vero (10/11 → 14/11: previsti 175, contati 170).
@@ -3700,6 +3702,47 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   _resi=resiPrima;
   _bia.conte.pop();
   _bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
+})();
+
+// ── Conteggio a scorrere DINAMICO (16/11/2026): la fotografia del conteggio portata a oggi ──
+sez('Biancheria: conteggio a scorrere dinamico, stima a oggi (16/11/2026)');
+(function(){
+  var resiPrima=_resi,prima=_bia,spento=BIA_INIZIO_MINIMO,spentoH=BIA_INIZIO_MINIMO_H;
+  BIA_INIZIO_MINIMO=_BIA_MIN_VERO;BIA_INIZIO_MINIMO_H=_BIA_MIN_H_VERO;
+  _resi={righe:[],ritiri:[],tipologie:null};
+  var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};
+  // Conteggio il 10/11 dopo il giro: letti 88, scorta 12+50, sporco dai consumi del 10 (20),
+  // lavanderia 50 → 220 su 200: 20 in piu'. Poi consumi 11-13 e il giro del 12/11, che
+  // ritira i consumi del 10 e 11 (35) e riporta i 50 della distinta prima.
+  _bia={consumi:[{id:'d10',hotel:'sa',data:'10/11/2026',q:Q(20)},{id:'d11',hotel:'sa',data:'11/11/2026',q:Q(15)},
+                 {id:'d12',hotel:'sa',data:'12/11/2026',q:Q(10)},{id:'d13',hotel:'sa',data:'13/11/2026',q:Q(12)}],
+        dotazione:{sa:{Federa:{contratto:200,allestimento:88}}},
+        giri:[{id:'g10',hotel:'sa',data:'10/11/2026',consegnato:Q(50),ricevuto:Q(50)},
+              {id:'g12',hotel:'sa',data:'12/11/2026',consegnato:Q(35),ricevuto:Q(50)}],
+        conte:[{id:'k1',hotel:'sa',data:'10/11/2026',q:{Federa:{letti:88,carrelli:12,deposito:50,sporco:20}}}]};
+  var c=_bia.conte[0],il13=_biaParse('13/11/2026');
+  var fermo=_biaContaAppello('sa',c),din=_biaContaAppello('sa',c,il13);
+  ok('senza data: la fotografia del conteggio',    [fermo.dinamico,fermo.voci.Federa.scorta,fermo.voci.Federa.diff].join(' '), 'false 62 -20');
+  ok('a oggi: scorta 62 −37 consumi +50 portati',  din.voci.Federa.scorta, 75);
+  ok('a oggi: sporco dal giro del 12/11 (10+12)',   din.voci.Federa.sporco, 22);
+  ok('a oggi: lavanderia = distinta del 12/11',     [din.distinta,din.voci.Federa.dist].join(' '), '12/11/2026 35');
+  ok('tutto registrato: il conto non si muove',     din.voci.Federa.diff, -20);
+  ok('dice fino a quando e da quale conteggio',     [din.dinamico,din.fino,din.conta].join(' '), 'true 13/11/2026 10/11/2026');
+  _bia.giri[1].ricevuto=Q(45);
+  ok('Raimondo porta 5 in meno: 5 si spostano',     _biaContaAppello('sa',c,il13).voci.Federa.diff, -15);
+  _bia.giri[1].ricevuto=_biaVuote();
+  ok('«Ha portato» mancante si nomina',            _biaContaAppello('sa',c,il13).senzaPortato.join(','), '12/11/2026');
+  _bia.giri[1].ricevuto=Q(50);
+  _bia.consumi=_bia.consumi.filter(function(z){return z.id!=='d11';});
+  ok('un giorno senza consumi si nomina',          _biaContaAppello('sa',c,il13).senzaConsumi.join(','), '11/11/2026');
+  _bia.consumi.push({id:'d11',hotel:'sa',data:'11/11/2026',q:Q(15)});
+  // Un reso dopo il conteggio: il pezzo esce dalla scorta ed entra nei resi, il conto non cambia.
+  _resi={righe:[{id:'r1',hotel:'sa',data:'11/11/2026',tipologia:'Federa',qta:3,ritiroId:null}],ritiri:[],tipologie:null};
+  var dr=_biaContaAppello('sa',c,il13).voci.Federa;
+  ok('reso dopo il conteggio: dalla scorta ai resi', [dr.scorta,dr.resoAperto,dr.diff].join(' '), '72 3 -20');
+  ok('una data prima del conteggio non lo sposta', _biaContaAppello('sa',c,_biaParse('01/11/2026')).dinamico, false);
+  ok('il riquadro e lo storico stimano a oggi',    /_biaContaAppello\(h,r\.conta,_biaOggi\(\)\)/.test(String(_biaContaPannello))&&/_biaContaAppello\(hS,conteS\[conteS\.length-1\],_biaOggi\(\)\)/.test(String(biaRender)), true);
+  _resi=resiPrima;_bia=prima;BIA_INIZIO_MINIMO=spento;BIA_INIZIO_MINIMO_H=spentoH;
 })();
 
 // ── Frecce ‹ › sulle date del Consumo Biancheria (14/11/2026) ──

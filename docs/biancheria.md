@@ -1610,3 +1610,27 @@ passa da `biaLoad()` (in `setView` e `_qmRidisegnaVista`). Consumo Biancheria no
 questi due pannelli. Nei testi del conteggio «conta» è diventato **«conteggio»** (Nuovo conteggio,
 Salva il conteggio, Conteggi registrati…); i nomi nel codice (`conte`, `_biaConta…`) restano.
 
+
+### Conteggio a scorrere dinamico — stima a oggi (16/11/2026)
+
+Il QM: *"come renderla dinamica"*, poi *"si fallo"*. Prima la tabella era la fotografia al giorno
+dell'ultimo conteggio e un giro registrato dopo non la cambiava. Ora `_biaContaAppello(h,c,fino)`
+con `fino` = oggi (`_biaOggi()`, nel riquadro e nel riepilogo dello storico) porta il conteggio
+avanti:
+
+- **scorta** = carrelli + deposito contati − consumi dei giorni dopo il conteggio + «Ha portato»
+  dei giri dopo il conteggio − resi registrati dopo il conteggio (il pezzo esce dal giro);
+- **sporco** = consumi dall'ultima consegna fino a oggi; **lavanderia** = distinta dell'ultima
+  consegna fino a oggi; **resi** fino a oggi; letti e bagni = allestimento, come prima.
+
+Se tutto è registrato il totale non si muove (un consumo passa dalla scorta allo sporco, un giro
+porta lo sporco in lavanderia e la distinta prima nella scorta). Se Raimondo porta meno del
+dovuto, la differenza compare in «da ritrovare»: sono pezzi che ha ancora lui.
+Il conteggio si fa dopo il passaggio di Raimondo: il giro dello stesso giorno è già nella scorta
+contata. Si nominano i giorni senza consumi (tranne oggi, che si inserisce la sera) e i giri senza
+«Ha portato» (`senzaPortato`): lì la stima è sbagliata di quei pezzi. Senza `fino` la funzione
+dà ancora la fotografia al giorno del conteggio. In tabella: *"Stima a oggi gg/mm dal conteggio
+del gg/mm"*. Il nuovo conteggio ogni 15 giorni riparte dai numeri veri; la riga *previsti ·
+differenza* dei Conteggi registrati dice quanto la stima si era allontanata.
+Controlli in `test/controlli.js` (sezione «conteggio a scorrere dinamico»), provati togliendo i
+pezzi portati dal calcolo.
