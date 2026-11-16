@@ -2597,8 +2597,12 @@ sez('Consumo Biancheria: totali del mese per incrociare la fattura');
   ok('il Boutique non entra nel SoulArt',           _biaMese('bh','2026-09').dati.Federa,50);
   ok('mesi disponibili, dal piu\' recente',         _biaMesiDisponibili('sa').join(','),'2026-09,2026-08');
   var box={innerHTML:''},vero=document.getElementById;
-  document.getElementById=function(id){return id==='bia-content'?box:null;};
+  var boxC={innerHTML:''};
+  document.getElementById=function(id){return id==='bia-content'?box:id==='biac-content'?boxC:null;};
   try{_biaHotel='sa';_biaMeseSel='';biaRender();}finally{document.getElementById=vero;}
+  // 16/11/2026: il riquadro sta nella voce «Conteggio Biancheria», non piu' in Consumo Biancheria.
+  ok('Riscontro fatturazioni non e\' piu\' in Consumo Biancheria', /Riscontro fatturazioni/.test(box.innerHTML), false);
+  box=boxC;
   ok('il riquadro compare, sul mese piu\' recente', /Riscontro fatturazioni/.test(box.innerHTML)&&/<option value="2026-09" selected>/.test(box.innerHTML),true);
   // Fattura LANA.POLI inserita a mano: differenze e importo.
   _bia.fatture={'sa|2026-09':{q:{Federa:20,'Telo doccia':''}}};
@@ -3426,7 +3430,10 @@ ok('il conteggio a scorrere dichiara il suo esc', /(const|var) esc=_esc/.test(St
   _bia={consumi:[],giri:[{id:'a',hotel:'sa',data:'24/09/2026',consegnato:Q(42),ricevuto:Q(60)},{id:'b',hotel:'sa',data:'26/09/2026',consegnato:Q(49),ricevuto:Q(30)}]};
   _giac={movimenti:[{id:'m',hotel:'sa',data:'06/09/2026',tipo:'conteggio',q:(function(){var o={};o[V]=30;return o;})()}],tipologie:null};
   _biaStoMese='2026-09';
-  ok('il pannello entra nella pagina solo se acceso', /_bia\.giri\.length&&_biaDotVisibile\(\)\)h\+=_biaContaSi\(_biaHotel\)\?_biaContaPannello\(_biaHotel\):_biaDotPannello/.test(String(biaRender)), true);
+  ok('il pannello entra nella pagina solo se acceso', /_bia\.giri\.length&&_biaDotVisibile\(\)\)h\+=_biaContaSi\(_biaHotel\)\?_biaContaPannello\(_biaHotel\):_biaDotPannello/.test(String(biaRenderConteggio)), true);
+  ok('Consumo Biancheria non ha piu\' il conteggio', /_biaContaPannello|_biaDotPannello|biaPrintMese/.test(String(biaRender)), false);
+  ok('biaRender ridisegna anche Conteggio Biancheria', /biaRenderConteggio\(\)/.test(String(biaRender)), true);
+  ok('voce di menu e vista Conteggio Biancheria', typeof pageTitles!=='undefined'&&pageTitles['conteggio-biancheria']==='Conteggio Biancheria', true);
   try{localStorage.removeItem(BIA_DOT_VEDE_KEY);}catch(e){}
   ok('di partenza e\' spento',                    _biaDotVisibile(), false);
   try{localStorage.setItem(BIA_DOT_VEDE_KEY,'1');}catch(e){}
@@ -3612,7 +3619,7 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   _biaContaBozza.Federa.letti=79;
   ok('la bozza e\' una copia, la conta non cambia', n2.q.Federa.letti, 81);
   var html2=_biaContaPannello('sa');
-  ok('il titolo dice cosa si corregge',           /Correggi la conta del 15\/11\/2026/.test(html2)&&/id="bia-conta-data"[^>]*value="2026-11-15"[^>]*disabled/.test(html2), true);
+  ok('il titolo dice cosa si corregge',           /Correggi il conteggio del 15\/11\/2026/.test(html2)&&/id="bia-conta-data"[^>]*value="2026-11-15"[^>]*disabled/.test(html2), true);
   _biaContaRegistra('sa',_biaContaModifica,_biaContaBozza);
   ok('salvata: sostituita, con traccia',          [n2.q.Federa.letti,n2.edits.length,_bia.conte.length].join(' '), '79 2 2');
   _biaContaBozza={};_biaContaModifica=null;
@@ -3621,7 +3628,7 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   ok('conte registrate: intestazioni corte',     /<th[^>]*>Matrimoniali<\/th>[\s\S]*<th[^>]*>Tappetini<\/th>/.test(html), true);
   ok('lenzuola e federe: sui letti',             _biaContaPostoNome('Lenzuolo matrimoniale','letti')+'|'+_biaContaPostoNome('Federa','letti'), 'sui letti|sui letti');
   ok('asciugamani e scendibagno: nei bagni',     _biaContaPostoNome('Telo doccia','letti')+'|'+_biaContaPostoNome('Scendibagno','letti'), 'nei bagni|nei bagni');
-  ok('SoulArt: conteggio al posto della Dotazione', /_biaContaSi\(_biaHotel\)\?_biaContaPannello\(_biaHotel\):_biaDotPannello\(_biaHotel\)/.test(String(biaRender)), true);
+  ok('SoulArt: conteggio al posto della Dotazione', /_biaContaSi\(_biaHotel\)\?_biaContaPannello\(_biaHotel\):_biaDotPannello\(_biaHotel\)/.test(String(biaRenderConteggio)), true);
   ok('SoulArt: niente piu\' «Pezzi non rientrati»', /_biaStoSaldo&&!_biaContaSi\(hS\)/.test(String(biaRender)), true);
   ok('report: niente «Cumulato» al SoulArt',      /_biaContaSi\(k\)\?'':'<th class="r">Cumulato<\/th>'/.test(String(biaPrintAndamento)), true);
   // Storico del SoulArt: quanti pezzi ha Raimondo, in tutto e dopo ogni consegna (15/11/2026).

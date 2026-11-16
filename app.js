@@ -1032,8 +1032,8 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{kvSet('qm_weekData',null).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={agenda:'Agenda della settimana',sistema:'Stato del sistema',sicurezza:'Sicurezza e copie',overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Applicazioni stand alone',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',turnazione:'Turnazione Corrente','resi-biancheria':'Reso Biancheria',biancheria:'Consumo Biancheria',giacenza:'Giacenza Biancheria'};
-const breadcrumbs={agenda:'Agenda personale',sistema:'Pannello di Controllo',sicurezza:'Pannello di Controllo',miniapp:'Pannello di Controllo',overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti','turni-pref':'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',biancheria:'Housekeeping',giacenza:'Housekeeping'};
+const pageTitles={agenda:'Agenda della settimana',sistema:'Stato del sistema',sicurezza:'Sicurezza e copie',overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Applicazioni stand alone',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turni','controllo-mattino':'Distribuzione Culligan',turnazione:'Turnazione Corrente','resi-biancheria':'Reso Biancheria',biancheria:'Consumo Biancheria','conteggio-biancheria':'Conteggio Biancheria',giacenza:'Giacenza Biancheria'};
+const breadcrumbs={agenda:'Agenda personale',sistema:'Pannello di Controllo',sicurezza:'Pannello di Controllo',miniapp:'Pannello di Controllo',overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti','turni-pref':'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',biancheria:'Housekeeping','conteggio-biancheria':'Housekeeping',giacenza:'Housekeeping'};
 // §§ HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore)
 // Operativa HKP: solo SoulArt. Art Resort è stato rimosso (17/08/2026) — non più
 // necessario, quindi via anche la scelta della struttura dal menu.
@@ -2145,6 +2145,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='controllo-mattino'){try{cmLoad();}catch(e){}}
   if(id==='resi-biancheria'){try{resiLoad();}catch(e){}}
   if(id==='biancheria'){try{biaLoad();}catch(e){}}
+  if(id==='conteggio-biancheria'){try{biaLoad();}catch(e){}}
   if(id==='giacenza'){try{giacLoad();}catch(e){}}
   if(id==='agenda'){try{agLoad();}catch(e){}}
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
@@ -14587,7 +14588,7 @@ function biaRenderDotVede(){
     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
       <div style="min-width:0;flex:1;">
         <div style="font-size:var(--fs-base);font-weight:700;color:var(--text);">Dotazione da contratto su questo dispositivo</div>
-        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;line-height:1.5;">Il pannello in Consumo Biancheria che dice quanti pezzi nostri restano a Raimondo. Si vede solo sui dispositivi dove è acceso qui: ${on?'<strong style="color:var(--green);">su questo è acceso</strong>.':'<strong>su questo è spento</strong>.'}</div>
+        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;line-height:1.5;">Il Conteggio in Conteggio Biancheria (al SoulArt il Conteggio a scorrere). Si vede solo sui dispositivi dove è acceso qui: ${on?'<strong style="color:var(--green);">su questo è acceso</strong>.':'<strong>su questo è spento</strong>.'}</div>
       </div>
       <button onclick="biaDotSetVisibile(${on?'false':'true'})" class="miniapp-btn${on?'':' miniapp-btn-primario'}" style="flex:0 0 auto;padding:10px 18px;">${on?'Spegni':'Accendi'}</button>
     </div></div>`;
@@ -15011,16 +15012,16 @@ function biaContaScrivi(v,k,val){
 async function biaContaSalva(){
   const h=_biaHotel;if(!_biaContaSi(h))return;
   const data=_biaFromIso((document.getElementById('bia-conta-data')||{}).value||'');
-  if(!data){cqAvviso('Indica la data della conta.');return;}
-  if(_biaParse(data)>new Date()){cqAvviso('La conta non può essere nel futuro.');return;}
+  if(!data){cqAvviso('Indica la data del conteggio.');return;}
+  if(_biaParse(data)>new Date()){cqAvviso('Il conteggio non può essere nel futuro.');return;}
   const meta=_biaContaIncomplete(_biaContaBozza);
-  if(meta.length){cqAvviso('Conta incompleta',meta.map(v=>BIA_DOT_PLURALE[v]||v).join(', ')+': manca almeno un posto. Un posto non contato non vale zero: scrivi 0 se non ce ne sono.');return;}
+  if(meta.length){cqAvviso('Conteggio incompleto',meta.map(v=>BIA_DOT_PLURALE[v]||v).join(', ')+': manca almeno un posto. Un posto non contato non vale zero: scrivi 0 se non ce ne sono.');return;}
   const piene=BIA_VOCI_GIRO.filter(v=>_biaContaBozza[v]&&BIA_CONTA_POSTI.every(([k])=>_biaContaBozza[v][k]!==undefined&&_biaContaBozza[v][k]!==''));
   if(!piene.length){cqAvviso('Non hai scritto nessun numero.');return;}
   const gia=_biaConte(h).find(c=>c.data===data);
-  if(!await cqConferma(gia?'Sostituire la conta del '+data+'?':'Salvare la conta del '+data+'?',
+  if(!await cqConferma(gia?'Sostituire il conteggio del '+data+'?':'Salvare il conteggio del '+data+'?',
       piene.map(v=>'<strong>'+(BIA_DOT_PLURALE[v]||v)+'</strong>: '+BIA_CONTA_POSTI.map(([k])=>_biaContaBozza[v][k]).reduce((a,n)=>a+n,0)+' in albergo').join('<br>')+
-      '<br><br>Conta fatta <strong>dopo</strong> il passaggio di Raimondo: da qui il conto riparte da questi numeri.',
+      '<br><br>Conteggio fatto <strong>dopo</strong> il passaggio di Raimondo: da qui il conto riparte da questi numeri.',
       {ok:gia?'Sostituisci':'Salva'}))return;
   _biaContaRegistra(h,data,_biaContaBozza);   // PRIMA dell'await: _biaSave riassegna _bia
   _biaContaBozza={};_biaContaModifica=null;
@@ -15040,7 +15041,7 @@ function biaContaModifica(id){
 function biaContaAnnullaModifica(){_biaContaBozza={};_biaContaModifica=null;_qmSenzaSalto(biaRender);}
 async function biaContaElimina(id){
   const c=(_bia.conte||[]).find(x=>x.id===id);if(!c)return;
-  if(!await cqConferma('Eliminare la conta del '+c.data+'?','Il conto ripartirà dalla conta precedente.',{ok:'Elimina'}))return;
+  if(!await cqConferma('Eliminare il conteggio del '+c.data+'?','Il conto ripartirà dal conteggio precedente.',{ok:'Elimina'}))return;
   _bia.conte=_bia.conte.filter(x=>x.id!==id);
   _qmSegnaRimosso(_bia,id);
   await _biaSave();_qmSenzaSalto(biaRender);
@@ -15056,7 +15057,7 @@ function _biaContaPannello(h){
   let o=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Conteggio a scorrere · ${esc(BIA_HOTELS[h])}</span>
       <button onclick="biaDotSblocca(${lk?'true':'false'})" style="margin-left:auto;${lk?'background:var(--surface);color:var(--accent);border:1px solid var(--border);':'background:var(--accent);color:#fff;border:1px solid var(--accent);'}border-radius:7px;padding:5px 12px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">${lk?'🔒 Contratto':'Fine'}</button></div>
     <div class="panel-body" style="padding:14px;">
-    <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin-bottom:10px;">Ogni pezzo del contratto sta in uno di questi posti: <strong>sui letti e nei bagni</strong> (camere allestite), <strong>di scorta</strong> (carrelli e deposito, dalla conta ogni 15 giorni), <strong>sporco da uscire</strong> (consumi dal giorno dell'ultima consegna), <strong>in lavanderia</strong> (ultima distinta), <strong>resi</strong> (biancheria inidonea, nel sacco o già ritirata). Quello che non sta in nessuno di questi è <strong>da ritrovare</strong>; i pezzi in più del contratto vanno bene.</div>
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin-bottom:10px;">Ogni pezzo del contratto sta in uno di questi posti: <strong>sui letti e nei bagni</strong> (camere allestite), <strong>di scorta</strong> (carrelli e deposito, dal conteggio ogni 15 giorni), <strong>sporco da uscire</strong> (consumi dal giorno dell'ultima consegna), <strong>in lavanderia</strong> (ultima distinta), <strong>resi</strong> (biancheria inidonea, nel sacco o già ritirata). Quello che non sta in nessuno di questi è <strong>da ritrovare</strong>; i pezzi in più del contratto vanno bene.</div>
     <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr>
       <th style="${th}text-align:left;">Tipologia</th><th style="${th}">Contratto</th><th style="${th}">Letti e bagni<br><span style="font-weight:400;text-transform:none;">allestiti</span></th><th style="${th}">Scorta<br><span style="font-weight:400;text-transform:none;">carrelli + deposito</span></th><th style="${th}">Sporco<br><span style="font-weight:400;text-transform:none;">da uscire</span></th><th style="${th}">In lavanderia<br><span style="font-weight:400;text-transform:none;">distinta</span></th><th style="${th}">Resi<br><span style="font-weight:400;text-transform:none;">ritirati + nel sacco</span></th><th style="${th}">All'appello</th></tr></thead><tbody>`;
   let apUlt=null;
@@ -15065,7 +15066,7 @@ function _biaContaPannello(h){
     const ap=r.conta?_biaContaAppello(h,r.conta):null,av=ap&&ap.voci[v];
     if(ap&&(!apUlt||_biaParse(ap.conta)>_biaParse(apUlt.conta)))apUlt=ap;
     const vuoto=`<span style="color:var(--text-dim);font-weight:400;">—</span>`;
-    let cel=[vuoto,vuoto,vuoto,vuoto,vuoto],app=`<span style="color:var(--text-dim);font-weight:400;">${contr===null?'manca il contratto':'manca una conta'}</span>`;
+    let cel=[vuoto,vuoto,vuoto,vuoto,vuoto],app=`<span style="color:var(--text-dim);font-weight:400;">${contr===null?'manca il contratto':'manca un conteggio'}</span>`;
     if(av){
       cel=[av.letti,av.scorta,av.sporco,av.dist,av.resoDato+av.resoAperto?`${av.resoDato} + ${av.resoAperto}`:'0'];
       app=av.diff===0?'<span style="color:var(--green);">tutti</span>':av.diff>0?`<span style="color:var(--amber);">${av.diff} da ritrovare</span>`:`<span style="color:var(--green);">tutti · ${-av.diff} in più</span>`;
@@ -15073,21 +15074,21 @@ function _biaContaPannello(h){
     o+=`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(BIA_DOT_PLURALE[v]||v)}</td>
       <td style="${td}">${inpC(v,contr)}</td>${cel.map(x=>`<td style="${td}">${x}</td>`).join('')}<td style="${td}font-weight:700;white-space:nowrap;">${app}</td></tr>`;
   });
-  if(apUlt)o+=`<tr><td colspan="8" style="padding:7px 8px;font-size:var(--fs-xxs);color:var(--text-dim);text-align:left;">Scorta: conta del ${esc(apUlt.conta)}. Sporco: consumi ${apUlt.giorni.length?(apUlt.giorni.length===1?'del '+esc(apUlt.giorni[0].slice(0,5)):'dal '+esc(apUlt.giorni[0].slice(0,5))+' al '+esc(apUlt.giorni[apUlt.giorni.length-1].slice(0,5))):'—'}${apUlt.senzaConsumi.length?' <span style="color:var(--amber);">(mancano i consumi del '+apUlt.senzaConsumi.map(x=>esc(x.slice(0,5))).join(', ')+')</span>':''}. Lavanderia: distinta ${apUlt.distinta?'del '+esc(apUlt.distinta.slice(0,5)):'—'}.</td></tr>`;
+  if(apUlt)o+=`<tr><td colspan="8" style="padding:7px 8px;font-size:var(--fs-xxs);color:var(--text-dim);text-align:left;">Scorta: conteggio del ${esc(apUlt.conta)}. Sporco: consumi ${apUlt.giorni.length?(apUlt.giorni.length===1?'del '+esc(apUlt.giorni[0].slice(0,5)):'dal '+esc(apUlt.giorni[0].slice(0,5))+' al '+esc(apUlt.giorni[apUlt.giorni.length-1].slice(0,5))):'—'}${apUlt.senzaConsumi.length?' <span style="color:var(--amber);">(mancano i consumi del '+apUlt.senzaConsumi.map(x=>esc(x.slice(0,5))).join(', ')+')</span>':''}. Lavanderia: distinta ${apUlt.distinta?'del '+esc(apUlt.distinta.slice(0,5)):'—'}.</td></tr>`;
   o+=`</tbody></table></div>`;
 
   // ── Nuova conta ──
   const oggiIso=_biaToIso(_biaFmt(new Date()));
   o+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-      <span style="font-size:var(--fs-sm);font-weight:700;">${_biaContaModifica?'Correggi la conta del '+esc(_biaContaModifica):'Nuova conta'}</span>
-      <input id="bia-conta-data" type="date" value="${_biaContaModifica?_biaToIso(_biaContaModifica):oggiIso}" max="${oggiIso}" ${_biaContaModifica?'disabled title="Si corregge la conta di questo giorno"':''} style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">
+      <span style="font-size:var(--fs-sm);font-weight:700;">${_biaContaModifica?'Correggi il conteggio del '+esc(_biaContaModifica):'Nuovo conteggio'}</span>
+      <input id="bia-conta-data" type="date" value="${_biaContaModifica?_biaToIso(_biaContaModifica):oggiIso}" max="${oggiIso}" ${_biaContaModifica?'disabled title="Si corregge il conteggio di questo giorno"':''} style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">
       <span style="font-size:var(--fs-xxs);color:var(--text-dim);">dopo il passaggio di Raimondo. Una tipologia lasciata tutta vuota non si conta; scrivi 0 dove non ce ne sono.</span>
     </div>
     <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Tipologia</th>${BIA_CONTA_POSTI.map(([k,t])=>`<th style="${th}">${k==='letti'?'Sui letti / nei bagni':t}</th>`).join('')}</tr></thead><tbody>
     ${BIA_VOCI_GIRO.map(v=>`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(BIA_DOT_PLURALE[v]||v)}</td>${BIA_CONTA_POSTI.map(([k])=>{const b=_biaContaBozza[v],val=b&&b[k]!==undefined?b[k]:'';return`<td style="${td}"><input type="number" min="0" inputmode="numeric" value="${val}" oninput="biaContaScrivi('${v}','${k}',this.value)" style="width:64px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;background:var(--surface);color:var(--text);"></td>`;}).join('')}</tr>`).join('')}
     </tbody></table></div>
-    <div style="margin-top:8px;display:flex;justify-content:flex-end;gap:8px;">${_biaContaModifica?`<button onclick="biaContaAnnullaModifica()" style="background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:7px;padding:8px 14px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;">Annulla</button>`:''}<button onclick="biaContaSalva()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;">Salva la conta</button></div>
+    <div style="margin-top:8px;display:flex;justify-content:flex-end;gap:8px;">${_biaContaModifica?`<button onclick="biaContaAnnullaModifica()" style="background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:7px;padding:8px 14px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;">Annulla</button>`:''}<button onclick="biaContaSalva()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;">Salva il conteggio</button></div>
   </div>`;
 
   // ── Conte registrate, con la verifica rispetto alla precedente ──
@@ -15095,8 +15096,8 @@ function _biaContaPannello(h){
   if(conte.length){
     o+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
       <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:6px;">Conteggi registrati</div>
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Per ogni conta: pezzi <strong>contati</strong> in albergo e, se c'è una conta prima, quanti il conto ne <strong>prevedeva</strong>. Una differenza è l'errore di quel periodo: pezzi persi davvero, oppure consumi o consegne registrati male in quei giorni.</div>
-      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Conta</th>${BIA_VOCI_GIRO.map(v=>`<th style="${th}text-align:left;">${esc(BIA_CONTA_BREVE[v]||v)}</th>`).join('')}<th style="${th}"></th></tr></thead><tbody>`;
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Per ogni conteggio: pezzi <strong>contati</strong> in albergo e, se c'è un conteggio prima, quanti il conto ne <strong>prevedeva</strong>. Una differenza è l'errore di quel periodo: pezzi persi davvero, oppure consumi o consegne registrati male in quei giorni.</div>
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Conteggio</th>${BIA_VOCI_GIRO.map(v=>`<th style="${th}text-align:left;">${esc(BIA_CONTA_BREVE[v]||v)}</th>`).join('')}<th style="${th}"></th></tr></thead><tbody>`;
     conte.slice().reverse().forEach(c=>{
       const i=conte.indexOf(c),prec=i>0?conte[i-1]:null;
       o+=`<tr><td style="${td}text-align:left;vertical-align:top;font-weight:700;white-space:nowrap;">${esc(c.data)}</td>${BIA_VOCI_GIRO.map(v=>{
@@ -15781,7 +15782,7 @@ function biaRender(){
       const conteS=_biaConte(hS),ap=_biaContaAppello(hS,conteS[conteS.length-1]);
       h+=`<div style="padding:14px 16px;border-bottom:1px solid var(--border);">`;
       if(!ap||!ap.n){
-        h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">Manca una conta: registrala nel <strong>Conteggio a scorrere</strong> per sapere dove sta la biancheria.</div>`;
+        h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);">Manca un conteggio: registralo nel <strong>Conteggio a scorrere</strong> per sapere dove sta la biancheria.</div>`;
       }else{
         // Poche parole (15/11/2026, il QM: "troppo prolisso"): prima cosa manca, poi dove stanno i pezzi.
         const t=ap.tot,nome=v=>esc(BIA_DOT_PLURALE[v]||v);
@@ -15796,12 +15797,12 @@ function biaRender(){
         const pz=(l,n,tt)=>`<span style="white-space:nowrap;margin-right:12px;" title="${tt}">${l} <strong style="color:var(--text);">${n}</strong></span>`;
         h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:6px;line-height:1.7;">${[
             pz('Letti e bagni',t.letti,'Camere allestite'),
-            pz('Scorta',t.scorta,'Carrelli e deposito, conta del '+esc(ap.conta)),
+            pz('Scorta',t.scorta,'Carrelli e deposito, conteggio del '+esc(ap.conta)),
             pz('Sporco',t.sporco,'Consumi '+per),
             pz('Lavanderia',t.dist,'Distinta '+(ap.distinta?esc(ap.distinta):'—')),
             pz('Resi',t.resoDato+t.resoAperto,t.resoDato+' ritirati, '+t.resoAperto+' nel sacco'),
             pz('Contratto',t.contr,'Pezzi del contratto')].join(' ')}</div>
-          <div style="font-size:var(--fs-xxs);color:var(--text-dim);">Conta ${esc(ap.conta.slice(0,5))} · distinta ${ap.distinta?esc(ap.distinta.slice(0,5)):'—'} · consumi ${per}${piu.length?' · in più (va bene): '+piu.map(v=>nome(v).toLowerCase()+' '+(-ap.voci[v].diff)).join(', '):''}</div>
+          <div style="font-size:var(--fs-xxs);color:var(--text-dim);">Conteggio ${esc(ap.conta.slice(0,5))} · distinta ${ap.distinta?esc(ap.distinta.slice(0,5)):'—'} · consumi ${per}${piu.length?' · in più (va bene): '+piu.map(v=>nome(v).toLowerCase()+' '+(-ap.voci[v].diff)).join(', '):''}</div>
           ${ap.senzaConsumi.length?`<div style="font-size:var(--fs-xxs);color:var(--amber);margin-top:2px;">Mancano i consumi del ${ap.senzaConsumi.map(x=>esc(x.slice(0,5))).join(', ')}</div>`:''}`;
       }
       if(!st.righe.length)h+=`<div style="font-size:var(--fs-sm);color:var(--text-dim);margin-top:8px;">Nessuna consegna registrata a ${esc(nomeMese)}.</div>`;
@@ -15855,6 +15856,28 @@ function biaRender(){
     </div></div></div>`;
   }
 
+  // Conteggio a scorrere e Riscontro fatturazioni stanno nella voce «Conteggio Biancheria»
+  // (16/11/2026, il QM): vedi biaRenderConteggio, ridisegnata insieme a questa.
+
+  el.innerHTML=h;
+  biaRenderConteggio();
+}
+
+// ── CONTEGGIO BIANCHERIA ── voce di menu a sé (16/11/2026, il QM): il Conteggio a scorrere
+// (o la Dotazione da contratto, fuori dal SoulArt) e il Riscontro fatturazioni, tolti da
+// Consumo Biancheria. Stessi dati e stessa struttura scelta (_biaHotel) di quella pagina;
+// si ridisegna ogni volta che si ridisegna biaRender, così i pulsanti dei pannelli che
+// chiamano biaRender() aggiornano anche questa. Il Conteggio resta dietro all'interruttore
+// del dispositivo (_biaDotVisibile, Sicurezza).
+function biaRenderConteggio(){
+  const el=document.getElementById('biac-content');if(!el)return;
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let h=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+    <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      ${Object.keys(BIA_HOTELS).map(k=>`<button onclick="biaSetHotel('${k}')" style="border:none;padding:7px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;background:${k===_biaHotel?'var(--accent)':'var(--surface)'};color:${k===_biaHotel?'#fff':'var(--text-dim)'};">${esc(BIA_HOTELS[k])}</button>`).join('')}
+    </div>
+  </div>`;
+  const prima=h.length;
   // ── Dotazione da contratto ── (vedi _biaDotConto)
   // Al SoulArt il Conteggio a scorrere prende il posto della Dotazione e del suo saldo.
   if(_bia.giri.length&&_biaDotVisibile())h+=_biaContaSi(_biaHotel)?_biaContaPannello(_biaHotel):_biaDotPannello(_biaHotel);
@@ -15874,9 +15897,10 @@ function biaRender(){
     }
   }
 
-
+  if(h.length===prima)h+=`<div class="panel" style="padding:16px;font-size:var(--fs-xs);color:var(--text-dim);">Nessun dato di biancheria per ${esc(BIA_HOTELS[_biaHotel])}.</div>`;
   el.innerHTML=h;
 }
+
 
 // Distinta di consegna A4 — il documento che oggi manca. Senza id stampa il giro
 // impostato nel form (anche non ancora registrato, così la si può portare già compilata
@@ -17747,7 +17771,7 @@ function _qmRidisegnaVista(id){
     else if(id==='turni-pref')turniPrefRender();
     else if(id==='controllo-mattino')cmLoad();
     else if(id==='resi-biancheria')resiLoad();
-    else if(id==='biancheria')biaLoad();
+    else if(id==='biancheria'||id==='conteggio-biancheria')biaLoad();
     else if(id==='giacenza')giacLoad();
     else if(id==='agenda')agRender();
     else if(id==='turnazione'){if(weekData)renderDay(activeDay);}

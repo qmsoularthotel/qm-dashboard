@@ -51,6 +51,7 @@ grep -n 'id="view-' index.html
 | `view-turni-pref` | Preferenze turni staff (da Google Forms) |
 | `view-turnazione` | "Turnazione Corrente" — specchio del pannello turno di Overview (`.staff-area-mirror`) |
 | `view-controllo-mattino` | Dashboard distribuzione Culligan (stats + QC settimanale + Stampa A4) |
+| `view-conteggio-biancheria` | **Conteggio Biancheria** (16/11/2026) — Conteggio a scorrere (dietro l'interruttore del dispositivo) e Riscontro fatturazioni, tolti da Consumo Biancheria (`biaRenderConteggio`, `#biac-content`) |
 | `view-giacenza` | **Giacenza Biancheria** — magazzino e pezzi in mano alle cameriere |
 | `view-resi-biancheria` | Resi biancheria inidonea al fornitore Raimondo (solo SoulArt, solo QM) |
 

@@ -1278,8 +1278,8 @@ biancheria e Reso biancheria; una voce Controllo fatturazione con la scheda fatt
 - Voci: `BG_SEZIONI={consumo,reso,fattura}`, `bgSezione(s)` (titolo in alto, voce attiva, scelta
   ricordata in `bg_sezione`), `gbApriMenu`/`gbChiudiMenu` come `toggleMobileSidebar`.
 - **"Riscontro fatturazioni" esce dalla pagina dei consumi** e va in *Controllo fatturazione*
-  (`_gbRenderFattura`, col selettore di struttura della pagina). **Solo nella Galleria**: in
-  Compass il riquadro resta in Consumo Biancheria.
+  (`_gbRenderFattura`, col selettore di struttura della pagina). In Compass, dal 16/11/2026, sta
+  nella voce **Conteggio Biancheria** (vedi sotto).
 - A scorrere ora è `.content`: `_gbSenzaSalto` lavora lì, come `_qmSenzaSalto`. L'avviso
   "salvato / NON salvato" sta nel riquadro in basso nel menu, in rosso quando non arriva.
 - Nello spazio vuoto del menu della Galleria c'e' la rosa dei venti delle finestre di conferma di Compass (stessa immagine, rotate 22deg, opacita' 13%), al centro, intera, 265px (25/09/2026).
@@ -1596,3 +1596,17 @@ alza il minimo per struttura; `_biaInizioMin(h)` è il minimo effettivo. Verific
 del 12/11 ore 21:07: SoulArt dal 05/09 matrimoniali +62, singole +1, federe −353, viso −121,
 bidet −316, teli −201, scendibagno −222; Boutique dal 01/09 +20, −26, −124, −139, −50, −60, −59;
 nessun dato mancante in tutte e due. Nella Galleria `GB_INIZIO_MINIMO_H={}` (copia identica).
+
+### Voce di menu «Conteggio Biancheria» (16/11/2026)
+
+Il QM: *"aggiungi nuova voce di menu chiamata conteggio biancheria in cui sposti conteggio a
+scorrere e riscontro fatturazioni"*. Vista `view-conteggio-biancheria`, contenuto in
+`#biac-content` disegnato da `biaRenderConteggio()`: selettore di struttura (lo stesso `_biaHotel`
+di Consumo Biancheria), poi il Conteggio a scorrere (SoulArt) o la Dotazione da contratto
+(altre strutture), sempre dietro all'interruttore del dispositivo `_biaDotVisibile`, poi il
+Riscontro fatturazioni. `biaRender()` chiama `biaRenderConteggio()` alla fine, quindi ogni
+pulsante dei pannelli che ridisegna con `biaRender()` aggiorna anche questa vista; aprendola si
+passa da `biaLoad()` (in `setView` e `_qmRidisegnaVista`). Consumo Biancheria non contiene più
+questi due pannelli. Nei testi del conteggio «conta» è diventato **«conteggio»** (Nuovo conteggio,
+Salva il conteggio, Conteggi registrati…); i nomi nel codice (`conte`, `_biaConta…`) restano.
+
