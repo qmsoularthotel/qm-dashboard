@@ -14795,6 +14795,8 @@ function _biaDotPannello(h){
 // Boutique e Galleria tengono il vecchio saldo finché non ci sono le copie dei contratti.
 const BIA_CONTA_HOTELS={sa:true};
 const BIA_CONTA_POSTI=[['letti','Sui letti'],['carrelli','Sui carrelli'],['deposito','In deposito'],['sporco','Sporco in albergo']];
+// Intestazioni corte delle colonne nelle conte registrate (16/11/2026, il QM).
+const BIA_CONTA_BREVE={'Lenzuolo matrimoniale':'Matrimoniali','Lenzuolo singolo':'Singoli','Federa':'Federe','Asciugamano viso':'Viso','Asciugamano bidet':'Bidet','Telo doccia':'Doccia','Scendibagno':'Tappetini'};
 // Nome breve del posto nelle conte registrate: lenzuola e federe stanno «sui letti», tutto il
 // resto «nei bagni» (16/11/2026, il QM).
 function _biaContaPostoNome(v,k){
@@ -15094,7 +15096,7 @@ function _biaContaPannello(h){
     o+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
       <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:6px;">Conte registrate</div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Per ogni conta: pezzi <strong>contati</strong> in albergo e, se c'è una conta prima, quanti il conto ne <strong>prevedeva</strong>. Una differenza è l'errore di quel periodo: pezzi persi davvero, oppure consumi o consegne registrati male in quei giorni.</div>
-      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Conta</th>${BIA_VOCI_GIRO.map(v=>`<th style="${th}text-align:left;">${esc(BIA_DOT_PLURALE[v]||v)}</th>`).join('')}<th style="${th}"></th></tr></thead><tbody>`;
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Conta</th>${BIA_VOCI_GIRO.map(v=>`<th style="${th}text-align:left;">${esc(BIA_CONTA_BREVE[v]||v)}</th>`).join('')}<th style="${th}"></th></tr></thead><tbody>`;
     conte.slice().reverse().forEach(c=>{
       const i=conte.indexOf(c),prec=i>0?conte[i-1]:null;
       o+=`<tr><td style="${td}text-align:left;vertical-align:top;font-weight:700;white-space:nowrap;">${esc(c.data)}</td>${BIA_VOCI_GIRO.map(v=>{
@@ -15103,7 +15105,7 @@ function _biaContaPannello(h){
         // Dove stanno i pezzi contati (15/11/2026, il QM): sempre, posto per posto.
         // 16/11/2026: numeri incolonnati (etichetta a sinistra, numero a destra) e il primo
         // posto si chiama «sui letti» per lenzuola e federe, «nei bagni» per il resto.
-        const dove=`<table style="border-collapse:collapse;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.45;margin-top:2px;white-space:nowrap;font-variant-numeric:tabular-nums;">${BIA_CONTA_POSTI.map(([k])=>`<tr><td style="padding:0 6px 0 0;">${_biaContaPostoNome(v,k)}</td><td style="padding:0;text-align:right;"><strong style="color:var(--text);">${Number(c.q[v][k])||0}</strong></td><td style="padding:0 0 0 4px;">${k==='letti'&&_biaDotLetti(h,v)!==null?'su '+_biaDotLetti(h,v):''}</td></tr>`).join('')}</table>`;
+        const dove=`<table style="border-collapse:collapse;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.45;margin-top:2px;white-space:nowrap;font-variant-numeric:tabular-nums;">${BIA_CONTA_POSTI.map(([k])=>`<tr><td style="padding:0 6px 0 0;">${_biaContaPostoNome(v,k)}</td><td style="padding:0;text-align:right;"><strong style="color:var(--text);">${Number(c.q[v][k])||0}</strong></td></tr>`).join('')}</table>`;
         return`<td style="${td}text-align:left;vertical-align:top;"><strong>${t}</strong>${dove}${ver?`<div style="font-size:var(--fs-xxs);color:${ver.differenza===0?'var(--green)':ver.differenza<0?'var(--red)':'var(--amber)'};">previsti ${ver.previsti} · ${ver.differenza===0?'tornano':ver.differenza>0?'+'+ver.differenza:ver.differenza}</div>`:''}</td>`;
       }).join('')}<td style="${td}vertical-align:top;white-space:nowrap;"><button onclick="biaContaModifica('${c.id}')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">modifica</button><button onclick="biaContaElimina('${c.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">elimina</button></td></tr>`;
     });

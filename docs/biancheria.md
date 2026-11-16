@@ -1126,6 +1126,8 @@ scendono da 92 a **25** (52 resi ritirati + 15 nel sacco); singole 21, bidet 26,
 Dal 16/11/2026 in una piccola tabella con i **numeri incolonnati**, e il primo posto si chiama
 **sui letti** per lenzuola e federe, **nei bagni** per asciugamani e scendibagno
 (`_biaContaPostoNome`). Nella «Nuova conta» la colonna è *Sui letti / nei bagni*.
+Intestazioni corte (*Matrimoniali, Singoli, Federe, Viso, Bidet, Doccia, Tappetini*,
+`BIA_CONTA_BREVE`) e solo il valore contato, senza «su N» dell'allestimento.
 
 **Correggere una conta** (stesso giorno): *modifica* accanto a *elimina* (`biaContaModifica`) riporta i
 numeri della conta nelle caselle (copia, non riferimento), il titolo diventa *"Correggi la conta del
