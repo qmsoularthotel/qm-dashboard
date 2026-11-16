@@ -247,6 +247,8 @@ Il reparto `mt` ha un solo addetto fisso (Basile G.). Le altre card in `renderDa
 
 ## Preferenze Turni
 
+**Dal 16/11/2026 l'etichetta è «Preferenze Turnazione»** (menu e titolo della pagina); la chiave della vista resta `turni-pref`.
+
 ### Foglio Google collegato
 
 `https://docs.google.com/spreadsheets/d/1KysJxvGY-PxCSrjdWMjYCz_7KlFOIG6bSe3fXCVfObo`

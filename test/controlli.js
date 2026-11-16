@@ -3903,3 +3903,5 @@ sez('Preferenze Turni: linguetta, numero che apre le richieste, barra verde/aran
   ok('l\'anno precedente e\' raccolto e chiuso',    new RegExp("turniPrefToggleMese\\('anno:" + (anno - 1) + "'\\)").test(chiuso) && !/marzo /.test(chiuso), true);
   ok('aperto mostra i suoi mesi',                   /marzo /.test(aperto) && /aprile /.test(aperto), true);
 })();
+// Il modulo si chiama Preferenze Turnazione (QM, 16/11/2026); la chiave della vista resta turni-pref.
+ok('Preferenze Turnazione: nuovo nome',           pageTitles['turni-pref'], 'Preferenze Turnazione');
