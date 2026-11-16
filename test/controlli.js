@@ -3805,7 +3805,7 @@ sez('Preferenze Turni: settimana prossima riquadrata e le sue richieste sotto il
   ok('con la richiesta di quella settimana',       /Rossi Prova/.test(sett), true);
   ok('non quelle di altre settimane',              /Verdi Prova/.test(sett), false);
   ok('anche col filtro del giorno cliccato',       /Rossi Prova/.test(sett), true);
-  ok('il calendario ha il riquadro',               /title="Settimana prossima"[^>]*border:1.5px solid var\(--gold\)/.test(h), true);
+  ok('il calendario ha il riquadro',               /title="Settimana prossima"[^>]*border:2px solid var\(--gold\)/.test(h), true);
   _tpData = d0; _tpFilter = f0; _tpCalDay = g0; _tpCalYear = y0; _tpCalMonth = m0;
 })();
 // I mesi precedenti partono chiusi, il mese in corso resta aperto (16/11/2026).
@@ -3820,7 +3820,7 @@ sez('Preferenze Turni: settimana prossima riquadrata e le sue richieste sotto il
   document.getElementById = function (id) { return id === 'turni-pref-content' ? box : null; };
   try {
     turniPrefRender(); var chiuso = box.innerHTML;
-    _tpMesiAperti = new Set([new Date(2020, 0, 15).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })]);
+    _tpMesiAperti = new Set(['anno:2020', new Date(2020, 0, 15).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })]);
     turniPrefRender(); var aperto = box.innerHTML;
   } finally { document.getElementById = vero; _tpData = d0; _tpFilter = f0; _tpCalDay = g0; _tpMesiAperti = a0; }
   ok('Preferenze: il mese in corso e\' aperto',     /Gialli Prova/.test(chiuso), true);
@@ -3866,6 +3866,40 @@ sez('Preferenze Turni: un reparto solo per HOUSEKEEPING/Housekeeping, resto del 
   ok('un solo filtro Housekeeping',                 (h.match(/turniPrefSetFilter\('Housekeeping'\)/g) || []).length, 1);
   ok('e nessun HOUSEKEEPING',                       /turniPrefSetFilter\('HOUSEKEEPING'\)/.test(h), false);
   ok('accanto al calendario il consuntivo',         /Chi chiede la settimana prossima<\/span>[\s\S]{0,200}3 mesi prima: \d\d\/\d\d – \d\d\/\d\d/.test(h), true);
-  ok('didascalia «Settimana prossima» sul riquadro', /z-index:2;[^>]*>Settimana prossima<\/div>/.test(h), true);
+  ok('didascalia «Settimana prossima» sul riquadro', /z-index:2;[^>]*background:var\(--gold\);color:#fff;[^>]*>Settimana prossima<\/div>/.test(h), true);
   ok('il resto del mese e\' attenuato',             /opacity:\.38;/.test(h), true);
+})();
+
+sez('Preferenze Turni: linguetta, numero che apre le richieste, barra verde/arancio/rosso, anni precedenti raccolti (16/11/2026)');
+(function () {
+  ok('0–7 verde',                                   _tpConsColore(7), 'var(--green)');
+  ok('8–15 arancio',                                _tpConsColore(8) + ' ' + _tpConsColore(15), 'var(--amber) var(--amber)');
+  ok('da 16 rosso',                                 _tpConsColore(16), 'var(--red)');
+  var prossima = _tpSettimanaProssima(new Date()), lun = prossima.da;
+  var prima = new Date(lun); prima.setDate(prima.getDate() - 10);
+  var k = function (d) { return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(); };
+  var anno = new Date().getFullYear();
+  var dati = [
+    { nome: 'Rossi Prova', reparto: 'Reception', preferenza: 'RIPOSO', giornoRichiesto: prossima.giorni[1], ts: new Date().toISOString() },
+    { nome: 'Rossi Prova', reparto: 'Reception', preferenza: 'FERIE', motivazione: 'Matrimonio', giornoRichiesto: k(prima), ts: new Date().toISOString() },
+    { nome: 'Verdi Prova', reparto: 'Reception', preferenza: 'RIPOSO', giornoRichiesto: '03/03/' + (anno - 1), ts: (anno - 1) + '-03-01T10:00:00Z' },
+    { nome: 'Verdi Prova', reparto: 'Reception', preferenza: 'RIPOSO', giornoRichiesto: '03/04/' + (anno - 1), ts: (anno - 1) + '-04-01T10:00:00Z' }
+  ];
+  var box = { innerHTML: '' }, vero = document.getElementById, d0 = _tpData, f0 = _tpFilter, g0 = _tpCalDay, c0 = _tpConsAperto, m0 = _tpMesiAperti;
+  _tpData = dati; _tpFilter = 'tutti'; _tpCalDay = null; _tpConsAperto = new Set(); _tpMesiAperti = new Set();
+  document.getElementById = function (id) { return id === 'turni-pref-content' ? box : null; };
+  var chiuso, aperto, annoAperto;
+  try {
+    turniPrefRender(); chiuso = box.innerHTML;
+    _tpConsAperto = new Set(['rossi prova']); _tpMesiAperti = new Set(['anno:' + (anno - 1)]);
+    turniPrefRender(); aperto = box.innerHTML;
+  } finally { document.getElementById = vero; _tpData = d0; _tpFilter = f0; _tpCalDay = g0; _tpConsAperto = c0; _tpMesiAperti = m0; }
+  var cons = function (h) { var i = h.indexOf('Chi chiede la settimana prossima'); return h.slice(i, h.indexOf('</table>', i)); };
+  ok('niente riga Totale nel riepilogo',            /Totale/.test(cons(chiuso)), false);
+  ok('il numero si clicca',                         /turniPrefToggleCons\('rossi prova'\)/.test(cons(chiuso)), true);
+  ok('chiuso non mostra le richieste',              /Matrimonio/.test(cons(chiuso)), false);
+  ok('aperto le mostra',                            /Matrimonio/.test(cons(aperto)), true);
+  ok('la barra di 1 richiesta e\' verde',           /background:var\(--green\);width:/.test(cons(chiuso)), true);
+  ok('l\'anno precedente e\' raccolto e chiuso',    new RegExp("turniPrefToggleMese\\('anno:" + (anno - 1) + "'\\)").test(chiuso) && !/marzo /.test(chiuso), true);
+  ok('aperto mostra i suoi mesi',                   /marzo /.test(aperto) && /aprile /.test(aperto), true);
 })();

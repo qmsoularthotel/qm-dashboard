@@ -306,6 +306,18 @@ stessa (lunedì 23/11 → 23/08 – 22/11), non più il trimestre di calendario.
 → `{da,a}`; l'intervallo è scritto nell'intestazione del riquadro. Sabotaggio (settimana inclusa)
 → 3 controlli falliscono.
 
+**Ritocchi del QM (16/11/2026, sera):**
+- Riquadro con **linguetta oro piena** «SETTIMANA PROSSIMA» attaccata all'angolo in alto a sinistra
+  (disegno del QM): bordo 2px, angolo in alto a sinistra squadrato; la linguetta copre in parte
+  la riga sopra (z-index 2).
+- Riepilogo: il numero di *3 mesi prima* è un pulsante che apre/chiude l'elenco delle richieste
+  di quella persona nel periodo (`turniPrefToggleCons`, `_tpConsAperto`; `x.lista` da
+  `_tpConsuntivo`). Barra a scala fissa 21 colorata da `_tpConsColore`: **verde 0–7, arancio
+  8–15, rosso da 16**. Tolta la riga *Totale*. `prefColor` è stato spostato prima del riepilogo
+  (era una `const` dichiarata più in basso nella stessa funzione).
+- Elenco: i mesi degli **anni precedenti** stanno raccolti sotto il loro anno (chiave
+  `anno:AAAA` in `_tpMesiAperti`), chiuso; aperto mostra i suoi mesi, chiusi anche loro.
+
 ### Mesi precedenti chiusi nell'elenco (16/11/2026)
 
 Nell'elenco raggruppato per mese di invio il **mese in corso** resta aperto, i **precedenti**

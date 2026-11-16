@@ -11144,6 +11144,11 @@ let _tpCalDay=null; // giorno selezionato nel calendario (dd/MM/yyyy)
 // Mesi dell'elenco aperti a mano (16/11/2026): i mesi PRECEDENTI a quello in corso partono
 // chiusi, quello in corso aperto. Sta fuori dal render, che rigenera tutto l'HTML.
 let _tpMesiAperti=new Set();
+// Persone del riepilogo con l'elenco delle richieste aperto (clic sul numero).
+let _tpConsAperto=new Set();
+// Colore della barra "3 mesi prima" (QM, 16/11/2026): verde 0–7, arancio 8–15, rosso da 16
+// (scala piena a 21).
+function _tpConsColore(n){return n<=7?'var(--green)':n<=15?'var(--amber)':'var(--red)';}
 
 function turniPrefUpdateBadge(){
   const badge=document.getElementById('turniPrefBadge');
@@ -11247,6 +11252,7 @@ function _tpConsuntivo(dati,filtro,oggi){
     if(!per[k])return;
     const x=per[k];
     x.tot++;
+    (x.lista||(x.lista=[])).push(r);
     // Fra le scritture della stessa persona si mostra quella "ben scritta" (Rossi Anna, non
     // ROSSI anna): ogni parola con la sola iniziale maiuscola.
     const bene=s=>s.split(' ').every(w=>/^[A-ZÀ-Þ][^A-ZÀ-Þ]*$/.test(w));
@@ -11256,6 +11262,7 @@ function _tpConsuntivo(dati,filtro,oggi){
 }
 function turniPrefNavCal(dir){_tpCalMonth+=dir;if(_tpCalMonth>11){_tpCalMonth=0;_tpCalYear++;}else if(_tpCalMonth<0){_tpCalMonth=11;_tpCalYear--;}turniPrefRender();}
 function turniPrefToggleMese(k){_tpMesiAperti.has(k)?_tpMesiAperti.delete(k):_tpMesiAperti.add(k);_qmSenzaSalto(turniPrefRender);}
+function turniPrefToggleCons(k){_tpConsAperto.has(k)?_tpConsAperto.delete(k):_tpConsAperto.add(k);_qmSenzaSalto(turniPrefRender);}
 function turniPrefSelectDay(d){_tpCalDay=_tpCalDay===d?null:d;turniPrefRender();}
 
 // Normalizza qualsiasi formato data → dd/MM/yyyy
@@ -11324,10 +11331,11 @@ function turniPrefRender(){
     }
     if(nel.length){
       const r=nel[0].r,c0=nel[0].c,c1=nel[nel.length-1].c;
-      calCells+=`<div title="Settimana prossima" style="grid-row:${r};grid-column:${c0} / ${c1+1};margin:-4px;border:1.5px solid var(--gold);border-radius:10px;pointer-events:none;z-index:0;"></div>`;
-      // Didascalia appoggiata sul bordo in alto, come la legenda di un riquadro: sta sopra le
-      // celle (z-index 2) e ha il fondo della pagina, così il filo oro si interrompe sotto.
-      calCells+=`<div style="grid-row:${r};grid-column:${c0} / ${c1+1};align-self:start;justify-self:start;margin:-9px 0 0 8px;z-index:2;pointer-events:none;padding:0 5px;background:var(--bg);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);line-height:12px;">Settimana prossima</div>`;
+      calCells+=`<div title="Settimana prossima" style="grid-row:${r};grid-column:${c0} / ${c1+1};margin:-4px;border:2px solid var(--gold);border-radius:0 10px 10px 10px;pointer-events:none;z-index:0;"></div>`;
+      // Linguetta oro attaccata all'angolo in alto a sinistra del riquadro (disegno del QM,
+      // 16/11/2026): sta sopra le celle della riga prima (z-index 2), alta 16px, e il suo
+      // bordo basso tocca il bordo del riquadro (-4px di margine del riquadro, -16 suoi).
+      calCells+=`<div style="grid-row:${r};grid-column:${c0} / ${c1+1};align-self:start;justify-self:start;margin:-20px 0 0 -4px;z-index:2;pointer-events:none;padding:2px 9px;background:var(--gold);color:#fff;border-radius:6px 6px 0 0;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;line-height:12px;white-space:nowrap;">Settimana prossima</div>`;
     }
   }
   // giorni
@@ -11349,8 +11357,8 @@ function turniPrefRender(){
     </div>`;
   }
 
+  const prefColor=p=>{const u=(p||'').toUpperCase();if(u.includes('FERIE'))return'var(--amber)';if(u.includes('RIPOSO'))return'var(--text-muted)';if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';return'var(--text)';};
   const cons=_tpConsuntivo(_tpData,_tpFilter,today);
-  const consMax=cons.righe.length?cons.righe[0].tot:1;
   const consHtml=`<div class="panel" style="flex:1 1 280px;min-width:0;margin-bottom:18px;">
     <div class="panel-header"><span class="panel-title">Chi chiede la settimana prossima</span>
       <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">3 mesi prima: ${String(cons.tr.da.getDate()).padStart(2,'0')}/${String(cons.tr.da.getMonth()+1).padStart(2,'0')} – ${String(cons.tr.a.getDate()).padStart(2,'0')}/${String(cons.tr.a.getMonth()+1).padStart(2,'0')}</span></div>
@@ -11360,13 +11368,20 @@ function turniPrefRender(){
         <th style="text-align:left;padding:8px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Reparto</th>
         <th style="text-align:right;padding:8px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Sett. prossima</th>
         <th style="text-align:right;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">3 mesi prima</th>
-      </tr></thead><tbody>${cons.righe.map((x,i)=>`<tr style="border-top:1px solid var(--border-light);${i%2?'background:var(--surface2);':''}">
+      </tr></thead><tbody>${cons.righe.map((x,i)=>{
+        const k=x.nome.toLowerCase(),aperto=_tpConsAperto.has(k);
+        const lista=(x.lista||[]).slice().sort((a,b)=>{const p=s=>{const m=String(_tpFmtDate(s)).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?m[3]+m[2]+m[1]:'';};return p(b.giornoRichiesto).localeCompare(p(a.giornoRichiesto));});
+        const fondo=i%2?'background:var(--surface2);':'';
+        return `<tr style="border-top:1px solid var(--border-light);${fondo}">
         <td style="padding:7px 14px;font-weight:600;">${_esc(x.nome)}</td>
         <td style="padding:7px 10px;color:var(--text-dim);">${_esc(x.reparto||'—')}</td>
         <td style="padding:7px 10px;text-align:right;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;">${x.sett}</td>
-        <td style="padding:7px 14px;text-align:right;white-space:nowrap;"><span style="display:inline-block;vertical-align:middle;height:6px;border-radius:3px;background:var(--accent-bg);width:${Math.round(48*x.tot/consMax)}px;margin-right:8px;"></span><strong style="font-variant-numeric:tabular-nums;">${x.tot}</strong></td>
-      </tr>`).join('')}
-      <tr style="border-top:2px solid var(--border);font-weight:700;"><td style="padding:8px 14px;" colspan="2">Totale</td><td style="padding:8px 10px;text-align:right;color:var(--gold);font-variant-numeric:tabular-nums;">${cons.righe.reduce((s,x)=>s+x.sett,0)}</td><td style="padding:8px 14px;text-align:right;font-variant-numeric:tabular-nums;">${cons.righe.reduce((s,x)=>s+x.tot,0)}</td></tr>
+        <td style="padding:7px 14px;text-align:right;white-space:nowrap;"><span style="display:inline-block;vertical-align:middle;height:6px;border-radius:3px;background:${_tpConsColore(x.tot)};width:${Math.max(4,Math.round(60*Math.min(x.tot,21)/21))}px;margin-right:8px;"></span>${x.tot?`<button onclick="turniPrefToggleCons('${_esc(k.replace(/\\/g,'\\\\').replace(/'/g,"\\'"))}')" title="Vedi le richieste" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;font-weight:700;color:var(--accent);text-decoration:underline;text-underline-offset:2px;font-variant-numeric:tabular-nums;">${x.tot} ${aperto?'▴':'▾'}</button>`:'<strong style="font-variant-numeric:tabular-nums;">0</strong>'}</td>
+      </tr>${aperto?`<tr style="${fondo}"><td colspan="4" style="padding:0 14px 10px;">
+        <div style="border-left:2px solid ${_tpConsColore(x.tot)};padding:2px 0 2px 10px;display:flex;flex-direction:column;gap:3px;font-size:var(--fs-xxs);">
+          ${lista.map(r=>`<div style="display:flex;gap:10px;flex-wrap:wrap;"><span style="font-weight:700;font-variant-numeric:tabular-nums;min-width:74px;">${_esc(_tpFmtDate(r.giornoRichiesto))}</span><span style="font-weight:700;color:${prefColor(r.preferenza)};">${_esc(r.preferenza||'—')}</span>${r.motivazione?`<span style="color:var(--text-dim);font-style:italic;">${_esc(r.motivazione)}</span>`:''}</div>`).join('')}
+        </div></td></tr>`:''}`;
+      }).join('')}
       </tbody></table>`:`<div style="padding:14px;font-size:var(--fs-xs);color:var(--text-dim);">Nessuna richiesta per la settimana prossima${_tpFilter!=='tutti'?' in '+_esc(_tpFilter):''}.</div>`}</div>
   </div>`;
 
@@ -11398,7 +11413,6 @@ function turniPrefRender(){
   if(_tpFilter!=='tutti')items=items.filter(r=>r.reparto===_tpFilter);
   if(_tpCalDay)items=items.filter(r=>_tpFmtDate(r.giornoRichiesto)===_tpCalDay);
 
-  const prefColor=p=>{const u=(p||'').toUpperCase();if(u.includes('FERIE'))return'var(--amber)';if(u.includes('RIPOSO'))return'var(--text-muted)';if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';return'var(--text)';};
 
   // Riga singola richiesta — estratta per essere riusata sia nella vista raggruppata
   // per mese (nessun giorno selezionato) sia nella vista piatta (giorno selezionato).
@@ -11455,19 +11469,39 @@ function turniPrefRender(){
     listHtml+=`<div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:12px 0 6px;">Richieste per il ${_tpCalDay}</div>`;
     items.forEach(r=>{listHtml+=rowHtml(r);});
   } else {
-    const grouped={};
+    const grouped={},annoDi={};
     items.forEach(r=>{
       const d=new Date(r.ts);
       const key=isNaN(d)?'—':d.toLocaleDateString('it-IT',{month:'long',year:'numeric'});
-      if(!grouped[key])grouped[key]=[];
+      if(!grouped[key]){grouped[key]=[];annoDi[key]=isNaN(d)?null:d.getFullYear();}
       grouped[key].push(r);
     });
     // Il mese in corso resta aperto, i precedenti si chiudono: si apre solo quello che serve.
+    // Gli ANNI precedenti (QM, 16/11/2026) stanno raccolti sotto il loro anno, chiuso: aprendolo
+    // compaiono i suoi mesi, chiusi anche loro.
     const meseOggi=new Date().toLocaleDateString('it-IT',{month:'long',year:'numeric'});
-    Object.entries(grouped).forEach(([mese,rows])=>{
+    const annoOggi=new Date().getFullYear();
+    const conta=n=>`<span style="font-weight:600;letter-spacing:0;text-transform:none;">· ${n} ${n===1?'richiesta':'richieste'}</span>`;
+    const js=s=>String(s).replace(/'/g,"\\'");
+    const meseHtml=(mese,rows,rientro)=>{
       const aperto=mese===meseOggi||_tpMesiAperti.has(mese);
-      listHtml+=`<div onclick="turniPrefToggleMese('${String(mese).replace(/'/g,"\\'")}')" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:12px 0 6px;">${mese===meseOggi?'':`<span style="width:10px;">${aperto?'▾':'▸'}</span>`}${mese}<span style="font-weight:600;letter-spacing:0;text-transform:none;">· ${rows.length} ${rows.length===1?'richiesta':'richieste'}</span></div>`;
-      if(aperto)rows.forEach(r=>{listHtml+=rowHtml(r);});
+      let o=`<div onclick="turniPrefToggleMese('${js(mese)}')" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:12px 0 6px ${rientro?'18px':'0'};">${mese===meseOggi?'':`<span style="width:10px;">${aperto?'▾':'▸'}</span>`}${mese}${conta(rows.length)}</div>`;
+      if(aperto)o+=`<div style="margin-left:${rientro?'18px':'0'};">${rows.map(rowHtml).join('')}</div>`;
+      return o;
+    };
+    const anni={},ordineAnni=[];
+    Object.entries(grouped).forEach(([mese,rows])=>{
+      const a=annoDi[mese];
+      if(a!==null&&a<annoOggi){
+        if(!anni[a]){anni[a]=[];ordineAnni.push(a);}
+        anni[a].push([mese,rows]);
+      }else listHtml+=meseHtml(mese,rows,false);
+    });
+    ordineAnni.sort((x,y)=>y-x).forEach(a=>{
+      const kA='anno:'+a,aperto=_tpMesiAperti.has(kA);
+      const n=anni[a].reduce((s,m)=>s+m[1].length,0);
+      listHtml+=`<div onclick="turniPrefToggleMese('${kA}')" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:var(--fs-xs);font-weight:700;color:var(--accent);margin:16px 0 6px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);"><span style="width:10px;">${aperto?'▾':'▸'}</span>${a}${conta(n)}</div>`;
+      if(aperto)anni[a].forEach(([mese,rows])=>{listHtml+=meseHtml(mese,rows,true);});
     });
   }
 
