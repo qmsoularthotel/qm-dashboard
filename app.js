@@ -14795,6 +14795,12 @@ function _biaDotPannello(h){
 // Boutique e Galleria tengono il vecchio saldo finché non ci sono le copie dei contratti.
 const BIA_CONTA_HOTELS={sa:true};
 const BIA_CONTA_POSTI=[['letti','Sui letti'],['carrelli','Sui carrelli'],['deposito','In deposito'],['sporco','Sporco in albergo']];
+// Nome breve del posto nelle conte registrate: lenzuola e federe stanno «sui letti», tutto il
+// resto «nei bagni» (16/11/2026, il QM).
+function _biaContaPostoNome(v,k){
+  if(k==='letti')return /^Lenzuol|^Federa/.test(v)?'sui letti':'nei bagni';
+  return{carrelli:'carrelli',deposito:'deposito',sporco:'sporchi'}[k]||k;
+}
 let _biaContaBozza={};       // la conta che si sta scrivendo: {voce:{posto:numero}}, mai ridisegnata
 let _biaContaModifica=null;  // data (gg/mm/aaaa) della conta che si sta correggendo, o null
 function _biaContaSi(h){return !!BIA_CONTA_HOTELS[h];}
@@ -15076,7 +15082,7 @@ function _biaContaPannello(h){
       <input id="bia-conta-data" type="date" value="${_biaContaModifica?_biaToIso(_biaContaModifica):oggiIso}" max="${oggiIso}" ${_biaContaModifica?'disabled title="Si corregge la conta di questo giorno"':''} style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">
       <span style="font-size:var(--fs-xxs);color:var(--text-dim);">dopo il passaggio di Raimondo. Una tipologia lasciata tutta vuota non si conta; scrivi 0 dove non ce ne sono.</span>
     </div>
-    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Tipologia</th>${BIA_CONTA_POSTI.map(([,t])=>`<th style="${th}">${t}</th>`).join('')}</tr></thead><tbody>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Tipologia</th>${BIA_CONTA_POSTI.map(([k,t])=>`<th style="${th}">${k==='letti'?'Sui letti / nei bagni':t}</th>`).join('')}</tr></thead><tbody>
     ${BIA_VOCI_GIRO.map(v=>`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(BIA_DOT_PLURALE[v]||v)}</td>${BIA_CONTA_POSTI.map(([k])=>{const b=_biaContaBozza[v],val=b&&b[k]!==undefined?b[k]:'';return`<td style="${td}"><input type="number" min="0" inputmode="numeric" value="${val}" oninput="biaContaScrivi('${v}','${k}',this.value)" style="width:64px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;background:var(--surface);color:var(--text);"></td>`;}).join('')}</tr>`).join('')}
     </tbody></table></div>
     <div style="margin-top:8px;display:flex;justify-content:flex-end;gap:8px;">${_biaContaModifica?`<button onclick="biaContaAnnullaModifica()" style="background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:7px;padding:8px 14px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;">Annulla</button>`:''}<button onclick="biaContaSalva()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;">Salva la conta</button></div>
@@ -15095,7 +15101,9 @@ function _biaContaPannello(h){
         const t=_biaContaInAlbergo(c,v);if(t===null)return`<td style="${td}text-align:left;vertical-align:top;color:var(--text-dim);">—</td>`;
         const ver=prec?_biaContaVerifica(h,v,prec,c):null;
         // Dove stanno i pezzi contati (15/11/2026, il QM): sempre, posto per posto.
-        const dove=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.45;margin-top:2px;white-space:nowrap;">${BIA_CONTA_POSTI.map(([k,tt])=>`${esc(tt.replace(/^Sui |^In |^Sporco in albergo$/,m=>m==='Sporco in albergo'?'sporchi':''))} <strong style="color:var(--text);">${Number(c.q[v][k])||0}</strong>${k==='letti'&&_biaDotLetti(h,v)!==null?' su '+_biaDotLetti(h,v):''}`).join('<br>')}</div>`;
+        // 16/11/2026: numeri incolonnati (etichetta a sinistra, numero a destra) e il primo
+        // posto si chiama «sui letti» per lenzuola e federe, «nei bagni» per il resto.
+        const dove=`<table style="border-collapse:collapse;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.45;margin-top:2px;white-space:nowrap;font-variant-numeric:tabular-nums;">${BIA_CONTA_POSTI.map(([k])=>`<tr><td style="padding:0 6px 0 0;">${_biaContaPostoNome(v,k)}</td><td style="padding:0;text-align:right;"><strong style="color:var(--text);">${Number(c.q[v][k])||0}</strong></td><td style="padding:0 0 0 4px;">${k==='letti'&&_biaDotLetti(h,v)!==null?'su '+_biaDotLetti(h,v):''}</td></tr>`).join('')}</table>`;
         return`<td style="${td}text-align:left;vertical-align:top;"><strong>${t}</strong>${dove}${ver?`<div style="font-size:var(--fs-xxs);color:${ver.differenza===0?'var(--green)':ver.differenza<0?'var(--red)':'var(--amber)'};">previsti ${ver.previsti} · ${ver.differenza===0?'tornano':ver.differenza>0?'+'+ver.differenza:ver.differenza}</div>`:''}</td>`;
       }).join('')}<td style="${td}vertical-align:top;white-space:nowrap;"><button onclick="biaContaModifica('${c.id}')" style="background:none;border:none;color:var(--accent);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">modifica</button><button onclick="biaContaElimina('${c.id}')" style="background:none;border:none;color:var(--red);font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">elimina</button></td></tr>`;
     });

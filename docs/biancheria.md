@@ -1123,6 +1123,9 @@ scendono da 92 a **25** (52 resi ritirati + 15 nel sacco); singole 21, bidet 26,
 
 **Conte registrate: dove stanno i pezzi** (stesso giorno): sotto il totale di ogni tipologia, sempre,
 *letti · carrelli · deposito · sporchi* con i numeri scritti nella conta.
+Dal 16/11/2026 in una piccola tabella con i **numeri incolonnati**, e il primo posto si chiama
+**sui letti** per lenzuola e federe, **nei bagni** per asciugamani e scendibagno
+(`_biaContaPostoNome`). Nella «Nuova conta» la colonna è *Sui letti / nei bagni*.
 
 **Correggere una conta** (stesso giorno): *modifica* accanto a *elimina* (`biaContaModifica`) riporta i
 numeri della conta nelle caselle (copia, non riferimento), il titolo diventa *"Correggi la conta del
