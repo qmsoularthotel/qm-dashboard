@@ -283,4 +283,4 @@ hanno un filo un po' più scuro (`--card-br` #d3dae4) e un'ombra a due strati ti
 
 ## Nome dell'app della Galleria: «Compass Ops – Galleria» (16/11/2026)
 
-Scelto dal QM: compare nello splash (sotto «Compass QM», con la riga «Strumento di gestione operativa») e nella firma in fondo («Compass Ops – Galleria fa parte della Suite Compass QM…»). Il file resta `biancheria-galleria.html`; titolo della scheda e schermata del codice dicono ancora «Gestione Biancheria».
+Scelto dal QM: compare nello splash (sotto «Compass QM», con la riga «Strumento di gestione operativa») e nella firma in fondo («Compass Ops – Galleria fa parte della Suite Compass QM…»). Poi (stesso giorno) **ovunque**: titolo della scheda, schermata del codice, nota della stampa della giacenza, scheda nel Pannello di Controllo e riquadro del codice in Sicurezza. «Gestione Biancheria» resta solo come nome della **sezione** del menu (Consumo, Conteggio, Giacenza, Reso, Fattura). Il file resta `biancheria-galleria.html`.

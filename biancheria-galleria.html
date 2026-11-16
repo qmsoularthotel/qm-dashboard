@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gestione Biancheria — Compass QM</title>
+<title>Compass Ops – Galleria</title>
 <!-- Stesso foglio di stile di Compass: menu, barra in alto, pannelli e schede sono quelli
      (25/09/2026). Il numero si allinea da solo con strumenti/versione.sh. -->
 <link rel="stylesheet" href="style.css?v=284">
@@ -163,7 +163,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-16.17';
+const QM_APP_BUILD='2026-11-16.18';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -532,7 +532,7 @@ function gbMostraAttivazione(msg){
   v.style.cssText='position:fixed;inset:0;z-index:99990;background:#1A2E55;display:flex;align-items:center;justify-content:center;padding:20px;';
   v.innerHTML='<div style="max-width:420px;width:100%;text-align:center;color:#fff;font-family:inherit;">'+
     '<div style="font-size:28px;font-weight:500;">Compass <span style="color:#c9952f;">QM</span></div>'+
-    '<div style="font-size:18px;color:rgba(255,255,255,.75);margin:6px 0 22px;">Gestione Biancheria</div>'+
+    '<div style="font-size:18px;color:rgba(255,255,255,.75);margin:6px 0 22px;">Compass Ops – Galleria</div>'+
     '<div style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.6;margin-bottom:14px;">'+(msg?esc(msg)+'<br>':'')+'Incolla il codice ricevuto dal Quality Manager.</div>'+
     '<input id="gb-velo-codice" type="text" autocomplete="off" spellcheck="false" placeholder="codice" style="width:100%;padding:11px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-family:inherit;">'+
     '<button onclick="gbAbilita()" style="margin-top:12px;width:100%;padding:11px;border:none;border-radius:8px;background:#c9952f;color:#1A2E55;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;">Abilita questo computer</button>'+
@@ -3456,7 +3456,7 @@ function _gcStampa(hotel){
   // altrimenti una colonna di trattini sembra un guasto della stampa.
   const avviso=mag.contato
     ? `<div class="nota">Magazzino contato il <strong>${esc(mag.data)}</strong>. I movimenti registrati dopo quella data sono già compresi nella colonna «In magazzino».</div>`
-    : `<div class="nota"><strong>Il magazzino non è mai stato contato.</strong> La colonna «In magazzino» resta vuota finché non si registra il primo conteggio: usa questo foglio per contare, poi riporta i numeri in Gestione Biancheria (Giacenza Biancheria → Conteggio).</div>`;
+    : `<div class="nota"><strong>Il magazzino non è mai stato contato.</strong> La colonna «In magazzino» resta vuota finché non si registra il primo conteggio: usa questo foglio per contare, poi riporta i numeri in Compass Ops – Galleria (Giacenza Biancheria → Conteggio).</div>`;
 
   const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Giacenza Biancheria</title>
 <style>

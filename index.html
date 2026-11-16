@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='575-20261116';
+  const V='576-20261116';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1539,7 +1539,7 @@
             <div class="miniapp-card-top">
               <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span>
               <div class="miniapp-nome">
-                <div class="miniapp-titolo">Gestione Biancheria</div>
+                <div class="miniapp-titolo">Compass Ops – Galleria</div>
                 <div class="miniapp-sub">Galleria · Front Office Manager</div>
               </div>
               <button id="miniapp-bg-toggle" onclick="miniappToggleGalleria()" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button>
@@ -1696,7 +1696,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1094-20261116"></script>
+<script src="app.js?v=1095-20261116"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

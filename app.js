@@ -18139,7 +18139,7 @@ function qmRenderDispositivi(){
       </div>
     </div></div>
   <div class="panel" style="margin-bottom:14px;">
-    <div class="panel-header"><span class="panel-title">Codice per la Galleria — Gestione Biancheria</span></div>
+    <div class="panel-header"><span class="panel-title">Codice per la Galleria — Compass Ops – Galleria</span></div>
     <div class="panel-body" style="padding:16px;">
       <div style="font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;margin-bottom:12px;">
         Per i PC del Front Office Manager (Art Resort Galleria Umberto, Art Suite Santa Brigida). È un codice <strong style="color:var(--text);">diverso</strong> da quello qui sopra:
