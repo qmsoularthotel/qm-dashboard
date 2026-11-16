@@ -152,7 +152,7 @@ ok('Reso Galleria: la chiave e\' ammessa dal Worker', permessoGalleria('/kv/set'
 // Una consegna chiusa non torna aperta da una copia vecchia dell'altro PC (come in Compass).
 ok('Reso Galleria: la chiusura resta',            _grUnisciRecord([{ id: 'x', ritiroId: null }], [{ id: 'x', ritiroId: 'R1' }])[0].ritiroId, 'R1');
 ok('Reso Galleria: anche nell\'altro verso',       _grUnisciRecord([{ id: 'x', ritiroId: 'R1' }], [{ id: 'x', ritiroId: null }])[0].ritiroId, 'R1');
-ok('Reso Galleria: la distinta va al Resident Manager', /Resident Manager/.test(String(_grStampa)) && !/Presta/.test(String(_grStampa)), true);
+ok('Reso Galleria: la distinta va al Resident Manager', /Front Office Manager/.test(String(_grStampa)) && !/Presta/.test(String(_grStampa)), true);
 
 // ── Menu laterale come Compass, con la voce Controllo fatturazione (25/09/2026) ──
 ok('Galleria: sei voci di menu',                    Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze');

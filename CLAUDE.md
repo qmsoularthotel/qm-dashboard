@@ -150,6 +150,7 @@ Ognuna è nata da un incidente vero; il racconto completo è nel file indicato.
   (l'emivita per struttura è stata tolta il 04/10/2026). Le risposte Expedia non usano il nome
   dell'ospite di proposito. → `docs/recensioni.md`
 - Culligan: `prontaVerificata` dice se qualcuno ha davvero guardato, non `pronta!==null`.
+- Galleria: nei testi che si vedono è sempre **Front Office Manager**, mai «Resident Manager» (16/11/2026); le chiavi (`qm_pin_resident`…) restano.
 
 ## Dove sta il dettaglio
 

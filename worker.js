@@ -17,7 +17,7 @@
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /versione.
-const WORKER_VERSIONE = '2026-11-16a';
+const WORKER_VERSIONE = '2026-11-16b';
 
 export default {
   async fetch(request, env) {
@@ -105,7 +105,7 @@ export default {
 
       // Il Resident sceglie il suo PIN UNA volta; per cambiarlo il QM lo azzera da Compass.
       if (az === 'imposta-resident') {
-        if (res) return json({ ok: false, error: 'Il PIN del Resident c\'è già: per cambiarlo il QM lo azzera da Compass' }, 409);
+        if (res) return json({ ok: false, error: 'Il PIN del Front Office Manager c\'è già: per cambiarlo il QM lo azzera da Compass' }, 409);
         if (!pinValido(corpo.pin)) return json({ ok: false, error: 'Il PIN è di 4–8 cifre' }, 400);
         await env.QM_STORAGE.put('qm_pin_resident', JSON.stringify(await hashPin(corpo.pin)));
         const scade = ora + 5 * 60000;

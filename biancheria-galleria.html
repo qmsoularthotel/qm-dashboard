@@ -151,7 +151,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-16.10';
+const QM_APP_BUILD='2026-11-16.11';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -2778,7 +2778,7 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
   <div class="warn">
     • Mettere la biancheria macchiata / difettata in un sacco distinto, dedicato esclusivamente a Raimondo.<br>
     • NON conteggiarla come normale biancheria sporca nei dati giornalieri.<br>
-    • A fine servizio, consegnare la lista al Resident Manager.
+    • A fine servizio, consegnare la lista al Front Office Manager.
   </div>
   <table>
     <thead><tr><th style="width:70px;">Data</th><th>Tipologia pezzo</th><th style="width:60px;text-align:right;">Quantità</th><th style="width:110px;">Motivo reso</th><th style="width:120px;">Firma HK</th></tr></thead>
@@ -2798,7 +2798,7 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
   <div class="blk">
     <div class="blk-t">Consegna distinta firmata</div>
     <div class="row">
-      <div class="f"><div class="f-lbl">Consegnata a</div><div class="f-val">Resident Manager</div></div>
+      <div class="f"><div class="f-lbl">Consegnata a</div><div class="f-val">Front Office Manager</div></div>
       <div class="f"><div class="f-lbl">Data</div><div class="f-val">&nbsp;</div></div>
     </div>
     <div class="sign"></div>
@@ -3611,7 +3611,7 @@ function gtPrefRender(){
   el.innerHTML=`<div class="gb-cantiere" style="min-height:calc(100vh - 160px);">
     <div style="color:var(--accent);">${GT_ICONA_LUCCHETTO}</div>
     <div class="gb-cantiere-k" style="margin-top:10px;">Preferenze Turnazione</div>
-    <div class="gb-cantiere-t" style="font-size:22px;">${primo?'Scegli il PIN del Resident':'Riservato al Resident Manager'}</div>
+    <div class="gb-cantiere-t" style="font-size:22px;">${primo?'Scegli il PIN del Front Office Manager':'Riservato al Front Office Manager'}</div>
     <div class="gb-cantiere-r"></div>
     ${st.ok===false?`<div class="gb-cantiere-s" style="color:var(--red);">${_gtEsc(st.error||'Non raggiungibile')}</div>`:
       `<div class="gb-cantiere-s" style="margin-bottom:14px;">${primo?'Primo accesso: scegli un PIN di 4–8 cifre e scrivilo due volte. Ti servirà ogni volta che apri questa voce.':'Inserisci il PIN. Il modulo resta aperto 5 minuti e si chiude anche quando passi a un\'altra voce.'}</div>
