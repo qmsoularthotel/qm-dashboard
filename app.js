@@ -15094,7 +15094,7 @@ function _biaContaPannello(h){
   const conte=_biaConte(h);
   if(conte.length){
     o+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
-      <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:6px;">Conte registrate</div>
+      <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:6px;">Conteggi registrati</div>
       <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Per ogni conta: pezzi <strong>contati</strong> in albergo e, se c'è una conta prima, quanti il conto ne <strong>prevedeva</strong>. Una differenza è l'errore di quel periodo: pezzi persi davvero, oppure consumi o consegne registrati male in quei giorni.</div>
       <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Conta</th>${BIA_VOCI_GIRO.map(v=>`<th style="${th}text-align:left;">${esc(BIA_CONTA_BREVE[v]||v)}</th>`).join('')}<th style="${th}"></th></tr></thead><tbody>`;
     conte.slice().reverse().forEach(c=>{
