@@ -522,3 +522,9 @@ ok('Galleria: la voce apre la giacenza',    /_bgSezione==='giacenza'\)gcLoad\(\)
   // Il nome resta fra i suggerimenti (stesso personale), ma il carico e' di Santa Brigida.
   ok('Galleria Giacenza: Art Resort non ha il suo carico', /Nessun carico aperto/.test(box.innerHTML), true);
 })();
+
+// ── Bollino NEW sulle voci nuove: 5 giorni, poi sparisce (16/11/2026) ──
+ok('NEW: visibile il giorno dell\'aggiunta', _gbNuovoVisibile('2026-11-21', new Date(2026, 10, 16)), true);
+ok('NEW: ancora il quinto giorno',          _gbNuovoVisibile('2026-11-21', new Date(2026, 10, 20)), true);
+ok('NEW: sparito il sesto',                 _gbNuovoVisibile('2026-11-21', new Date(2026, 10, 21)), false);
+ok('NEW: data sbagliata = niente bollino',  _gbNuovoVisibile('', new Date(2026, 10, 16)), false);

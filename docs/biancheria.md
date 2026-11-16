@@ -1597,6 +1597,13 @@ del 12/11 ore 21:07: SoulArt dal 05/09 matrimoniali +62, singole +1, federe −3
 bidet −316, teli −201, scendibagno −222; Boutique dal 01/09 +20, −26, −124, −139, −50, −60, −59;
 nessun dato mancante in tutte e due. Nella Galleria `GB_INIZIO_MINIMO_H={}` (copia identica).
 
+### Galleria: bollino «NEW» sulle voci nuove (16/11/2026)
+
+Conteggio e Giacenza hanno un `.nav-badge` rosso «NEW» con `data-nuovo-fino="2026-11-21"`, il
+primo giorno **senza** bollino: si vede 5 giorni (16–20/11) e poi sparisce da solo
+(`_gbNuovoVisibile`, `_gbBolliniNuovi` all'avvio). Per una voce nuova futura basta lo stesso
+`<span>` con la sua data. 4 controlli in `test/galleria.js`.
+
 ### Galleria: Giacenza Biancheria (16/11/2026)
 
 Copia del modulo di Compass (`§§ GIACENZA BIANCHERIA`) con rinomino meccanico `giac`→`gc`,

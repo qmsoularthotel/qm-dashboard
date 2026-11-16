@@ -21,6 +21,11 @@
 
 
 
+/* Bollino NEW sulle voci nuove (16/11/2026): .nav-badge di Compass, piu' piccolo, e la voce
+   su una riga sola — con il bollino normale «Conteggio Biancheria» andava a capo. */
+.nav-badge[data-nuovo-fino]{font-size:9px;padding:1px 5px;font-weight:700;letter-spacing:.04em;line-height:14px;}
+.nav-item:has(>.nav-badge[data-nuovo-fino]){white-space:nowrap;}
+
 /* CONTEGGIO BIANCHERIA — modulo in costruzione (16/11/2026): testo al centro e la rosa dei
    venti di Compass come sfondo della pagina, molto sbiadita (5%), inclinata di 22° come altrove. */
 .gb-cantiere{position:relative;min-height:calc(100vh - 120px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;}
@@ -146,7 +151,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-16.4';
+const QM_APP_BUILD='2026-11-16.5';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -254,8 +259,8 @@ setInterval(qmCheckVersione,600000);
     <nav class="nav">
       <div class="nav-section">Biancheria</div>
       <div class="nav-item" id="gb-nav-consumo" onclick="bgSezione('consumo')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span></span>Consumo Biancheria</div>
-      <div class="nav-item" id="gb-nav-conteggio" onclick="bgSezione('conteggio')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11l2 2 4-4"/><path d="M9 17h6"/></svg></span></span>Conteggio Biancheria</div>
-      <div class="nav-item" id="gb-nav-giacenza" onclick="bgSezione('giacenza')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18v14H3z"/><path d="M3 11h18M3 15.5h18"/><path d="M9 6V3.5h6V6"/></svg></span></span>Giacenza Biancheria</div>
+      <div class="nav-item" id="gb-nav-conteggio" onclick="bgSezione('conteggio')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11l2 2 4-4"/><path d="M9 17h6"/></svg></span></span>Conteggio Biancheria<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
+      <div class="nav-item" id="gb-nav-giacenza" onclick="bgSezione('giacenza')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18v14H3z"/><path d="M3 11h18M3 15.5h18"/><path d="M9 6V3.5h6V6"/></svg></span></span>Giacenza Biancheria<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
       <div class="nav-item" id="gb-nav-reso" onclick="bgSezione('reso')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.3 10.2a2 2 0 0 1-2 1.8H7.3a2 2 0 0 1-2-1.8z"/><path d="M3.5 9c.6-2.4 4-4.2 8.5-4.2S19.9 6.6 20.5 9"/><path d="M10 13v4M14 13v4"/></svg></span></span>Reso Biancheria</div>
       <div class="nav-item" id="gb-nav-fattura" onclick="bgSezione('fattura')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h3"/></svg></span></span>Controllo fatturazione</div>
     </nav>
@@ -3502,6 +3507,20 @@ function _gcPortaInVista(id,margine){
   c.scrollTop+=el.getBoundingClientRect().top-c.getBoundingClientRect().top-(margine||0);
 }
 
+// ── Bollino rosso «NEW» sulle voci nuove (16/11/2026) ──
+// Resta 5 giorni e poi sparisce da solo: data-nuovo-fino e' il primo giorno SENZA bollino
+// (Conteggio e Giacenza aggiunti il 16/11 -> visibili fino al 20/11 compreso). Stesso
+// componente .nav-badge del menu di Compass.
+function _gbNuovoVisibile(fino,oggi){
+  const m=String(fino||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return false;
+  const d=oggi||_gbOggi();
+  return d<new Date(+m[1],+m[2]-1,+m[3]);
+}
+function _gbBolliniNuovi(){
+  document.querySelectorAll('.nav-badge[data-nuovo-fino]').forEach(b=>{
+    b.style.display=_gbNuovoVisibile(b.getAttribute('data-nuovo-fino'))?'':'none';
+  });
+}
 // ── Conteggio Biancheria: voce di menu come in Compass, per ora modulo in costruzione ──
 // (16/11/2026) Il conteggio a scorrere di Compass parte dalla dotazione da contratto: per
 // Art Resort e Santa Brigida i contratti di fornitura con Raimondo non ci sono ancora.
@@ -3601,6 +3620,7 @@ if(!_gbPass()){
 }else{
   gbLoad();
   bgSezione(_bgSezione);
+  _gbBolliniNuovi();
   _gbControllaStato();
   _gbRinnova();
   setInterval(_gbGiro,60000);
