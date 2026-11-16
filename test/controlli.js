@@ -3604,6 +3604,7 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
   ok('allestimento SoulArt: 50 matr., 6 singole, 96 federe, 51 teli, 25 scendibagno',
      ['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Telo doccia','Asciugamano viso','Asciugamano bidet','Scendibagno'].map(function(v){return BIA_DOT_DEFAULT.sa[v].allestimento;}).join(' '), '50 6 96 51 51 51 25');
   ok('ogni conta ha «modifica»',                  /biaContaModifica\('/.test(html), true);
+  ok('modifica ed elimina: due pulsanti con bordo', /biaContaModifica\('[^"]*'\)" style="[^"]*border:1px solid var\(--border\)[^"]*">Modifica<\/button><button onclick="biaContaElimina\('[^"]*'\)" style="[^"]*border:1px solid[^"]*">Elimina</.test(html), true);
   var rd=biaRender;biaRender=function(){};
   try{biaContaModifica(n2.id);}finally{biaRender=rd;}
   ok('modifica: numeri e data della conta',       [_biaContaModifica,_biaContaBozza.Federa.letti,_biaContaBozza.Federa.deposito].join(' '), '15/11/2026 81 60');
