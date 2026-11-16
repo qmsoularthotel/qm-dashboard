@@ -369,9 +369,10 @@ sui PC della Galleria però lavorano anche i receptionist. Voce **Preferenze Tur
 - il PIN giusto dà un permesso `tp.` di **5 minuti**; le richieste si leggono solo con quello.
   L'app della Galleria **non conosce l'indirizzo del foglio** e **non salva** le richieste nel
   browser (restano in memoria e si cancellano chiudendo);
-- si chiude **dopo 5 minuti**, **passando a un'altra voce** (`bgSezione` → `gtPrefChiudi`) e con
-  «Chiudi ora»; rientrando si parte sempre chiusi (`gtPrefEntra`). Conto alla rovescia senza
-  ridisegno (`#gt-resta`).
+- si chiude **dopo 5 minuti** e con «Chiudi ora». **Cambiando voce** la pagina si svuota ma il
+  permesso resta: tornando entro i 5 minuti non si rimette il PIN (`gtPrefEntra` → `_gtAperto`).
+  Il QM l'ha chiesto il 16/11/2026: chiudere a ogni cambio di voce era troppo pesante (prima
+  `bgSezione` chiamava `gtPrefChiudi`). Conto alla rovescia senza ridisegno (`#gt-resta`).
 - Compass continua a leggere il foglio direttamente: l'indirizzo resta nel suo codice. Per
   chiuderlo davvero si potrà far passare anche Compass dal Worker e ripubblicare lo script
   Google con un indirizzo nuovo (variabile `TURNI_PREF_URL` del Worker).

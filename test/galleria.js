@@ -555,8 +555,11 @@ sez('Preferenze Turnazione (Galleria): si apre solo col PIN, 5 minuti, niente co
   ok('scaduto: torna il PIN',                       /Rossi Prova/.test(dopo) || !/id="gt-pin"/.test(dopo), false);
   ok('chiudere cancella le richieste',              (gtPrefChiudi(''), _gtData.length), 0);
   ok('resta aperto 5 minuti',                       GT_DURATA, 300000);
-  ok('lasciando la voce si chiude',                 /_bgSezione==='preferenze'&&s!=='preferenze'\)\{gtPrefChiudi/.test(String(bgSezione)), true);
-  ok('entrando si parte sempre chiusi',             /gtPrefChiudi\(''\)/.test(String(gtPrefEntra)), true);
+  // Dal 16/11/2026 (QM): cambiando voce il permesso resta fino ai 5 minuti, la pagina si svuota.
+  ok('lasciando la voce la pagina si svuota',       /_bgSezione==='preferenze'&&s!=='preferenze'\)\{const c=document\.getElementById\('gt-pref-content'\);if\(c\)c\.innerHTML=''/.test(String(bgSezione)), true);
+  ok('ma il permesso non si butta',                 /_bgSezione==='preferenze'&&s!=='preferenze'\)\{gtPrefChiudi/.test(String(bgSezione)), false);
+  ok('rientrando entro 5 minuti niente PIN',        /^[^{]*\{\s*if\(_gtAperto\(\)\)\{gtPrefRender\(\);return;\}/.test(String(gtPrefEntra)), true);
+  ok('scaduti i 5 minuti si chiede il PIN',         /gtPrefChiudi\(''\)/.test(String(gtPrefEntra)), true);
   ok('le richieste non restano nel browser',        /setItem/.test(String(gtPrefLoad) + String(gtPrefApri)), false);
   ok('l\'indirizzo del foglio non è nella Galleria', /script\.google\.com/.test(String(gtPrefLoad) + String(_gtChiedi)), false);
   // Worker: i PIN stanno in chiavi qm_, che il codice della Galleria non legge.

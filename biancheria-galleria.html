@@ -163,7 +163,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-16.15';
+const QM_APP_BUILD='2026-11-16.16';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -2831,8 +2831,10 @@ const BG_SEZIONI={consumo:'Consumo Biancheria',conteggio:'Conteggio Biancheria',
 let _bgSezione='consumo';
 try{const s=localStorage.getItem('bg_sezione');if(BG_SEZIONI[s])_bgSezione=s;}catch(e){}
 function bgSezione(s){
-  // Lasciando Preferenze Turnazione il modulo si chiude subito: chi arriva dopo trova il PIN.
-  if(_bgSezione==='preferenze'&&s!=='preferenze'){gtPrefChiudi('');const c=document.getElementById('gt-pref-content');if(c)c.innerHTML='';}
+  // Lasciando Preferenze Turnazione la pagina si svuota, ma il permesso resta fino ai suoi 5
+  // minuti: tornando subito non si rimette il PIN (QM, 16/11/2026 — prima si chiudeva uscendo,
+  // e passare da una voce all'altra voleva dire digitarlo ogni volta).
+  if(_bgSezione==='preferenze'&&s!=='preferenze'){const c=document.getElementById('gt-pref-content');if(c)c.innerHTML='';}
   _bgSezione=BG_SEZIONI[s]?s:'consumo';
   try{localStorage.setItem('bg_sezione',_bgSezione);}catch(e){}
   Object.keys(BG_SEZIONI).forEach(k=>{
@@ -3564,8 +3566,10 @@ async function _gtChiedi(corpo){
     j={ok:false,error:'Il Worker va ripubblicato (versione del 16/11/2026): fino ad allora questa voce non si apre.'};
   return j;
 }
-// Entrando nella voce: sempre chiuso, si chiede il PIN.
+// Entrando nella voce: se i 5 minuti del PIN non sono finiti si riapre com'era, altrimenti
+// si chiede il PIN.
 async function gtPrefEntra(){
+  if(_gtAperto()){gtPrefRender();return;}
   gtPrefChiudi('');
   const el=document.getElementById('gt-pref-content');if(el)el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:20px;">Caricamento…</div>';
   try{_gtStato=await _gtChiedi({azione:'stato'});}catch(e){_gtStato={ok:false,error:'Worker non raggiungibile'};}
@@ -3629,7 +3633,7 @@ function gtPrefRender(){
     <div class="gb-cantiere-t" style="font-size:22px;">${primo?'Scegli il PIN del Front Office Manager':'Riservato al Front Office Manager'}</div>
     <div class="gb-cantiere-r"></div>
     ${st.ok===false?`<div class="gb-cantiere-s" style="color:var(--red);">${_gtEsc(st.error||'Non raggiungibile')}</div>`:
-      `<div class="gb-cantiere-s" style="margin-bottom:14px;">${primo?'Primo accesso: scegli un PIN di 4–8 cifre e scrivilo due volte. Ti servirà ogni volta che apri questa voce.':'Inserisci il PIN. Il modulo resta aperto 5 minuti e si chiude anche quando passi a un\'altra voce.'}</div>
+      `<div class="gb-cantiere-s" style="margin-bottom:14px;">${primo?'Primo accesso: scegli un PIN di 4–8 cifre e scrivilo due volte. Ti servirà ogni volta che apri questa voce.':'Inserisci il PIN. Il modulo resta aperto 5 minuti, anche se passi a un\'altra voce e poi torni.'}</div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
         ${campo('gt-pin',primo?'nuovo PIN':'PIN')}
         ${primo?campo('gt-pin2','ripeti il PIN'):''}
