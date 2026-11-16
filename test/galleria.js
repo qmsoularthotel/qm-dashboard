@@ -155,7 +155,17 @@ ok('Reso Galleria: anche nell\'altro verso',       _grUnisciRecord([{ id: 'x', r
 ok('Reso Galleria: la distinta va al Resident Manager', /Resident Manager/.test(String(_grStampa)) && !/Presta/.test(String(_grStampa)), true);
 
 // ── Menu laterale come Compass, con la voce Controllo fatturazione (25/09/2026) ──
-ok('Galleria: tre voci di menu',                    Object.keys(BG_SEZIONI).join(','), 'consumo,reso,fattura');
+ok('Galleria: quattro voci di menu',                Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,reso,fattura');
+// ── Conteggio Biancheria: modulo in costruzione, in attesa dei contratti (16/11/2026) ──
+(function () {
+  var box = { innerHTML: '' }, vero = document.getElementById;
+  document.getElementById = function (id) { return id === 'gb-conteggio' ? box : null; };
+  try { _gbRenderConteggio(); } finally { document.getElementById = vero; }
+  ok('Galleria: Conteggio Biancheria in costruzione', /Modulo in costruzione/.test(box.innerHTML), true);
+  ok('Galleria: cita le due strutture',               /Art Resort Galleria Umberto[\s\S]*Art Suite Santa Brigida/.test(box.innerHTML), true);
+  ok('Galleria: firma d\'autore e uso interno',       /ideata e sviluppata da Pierpaolo Presta[\s\S]*Per esclusivo uso interno/.test(box.innerHTML), true);
+  ok('Galleria: la voce apre il conteggio',           /_bgSezione==='conteggio'\)_gbRenderConteggio\(\)/.test(String(bgSezione)), true);
+})();
 (function () {
   var box = { innerHTML: '' }, fat = { innerHTML: '' }, vero = document.getElementById, prima = _gb;
   _gb = { consumi: [], giri: [{ id: 'g', hotel: 'ar', data: '21/09/2026', consegnato: _gbVuote(), ricevuto: _gbVuote(), ts: 1 }] };

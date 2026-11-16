@@ -1597,6 +1597,19 @@ del 12/11 ore 21:07: SoulArt dal 05/09 matrimoniali +62, singole +1, federe −3
 bidet −316, teli −201, scendibagno −222; Boutique dal 01/09 +20, −26, −124, −139, −50, −60, −59;
 nessun dato mancante in tutte e due. Nella Galleria `GB_INIZIO_MINIMO_H={}` (copia identica).
 
+### Galleria: «Conteggio Biancheria» come modulo in costruzione (16/11/2026)
+
+Nell'app della Galleria c'è la stessa voce di menu, subito dopo Consumo Biancheria
+(`BG_SEZIONI.conteggio`, `#bg-sez-conteggio`, disegnata da `_gbRenderConteggio()`). Per ora è
+solo una pagina **in costruzione**: il conteggio a scorrere parte dalla dotazione da contratto e
+i contratti di fornitura di Art Resort e Santa Brigida con Raimondo non ci sono ancora. Testo
+approvato dal QM sull'anteprima: «Modulo in costruzione», «Prossima attivazione con i contratti
+di fornitura di…» (non «Siamo in attesa»), firma d'autore «Nuovo modulo della Suite Compass QM,
+ideata e sviluppata da Pierpaolo Presta / Per esclusivo uso interno». Niente schede né riquadri
+(«la pagina deve risultare in costruzione, non già definita»); rosa dei venti di sfondo alla
+pagina al 5%. Quando arrivano i contratti si copia identico il modulo di Compass. 4 controlli
+in `test/galleria.js`.
+
 ### Voce di menu «Conteggio Biancheria» (16/11/2026)
 
 Il QM: *"aggiungi nuova voce di menu chiamata conteggio biancheria in cui sposti conteggio a

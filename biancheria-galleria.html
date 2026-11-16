@@ -21,6 +21,21 @@
 
 
 
+/* CONTEGGIO BIANCHERIA — modulo in costruzione (16/11/2026): testo al centro e la rosa dei
+   venti di Compass come sfondo della pagina, molto sbiadita (5%), inclinata di 22° come altrove. */
+.gb-cantiere{position:relative;min-height:calc(100vh - 120px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;}
+.gb-cantiere>*{position:relative;z-index:1;}
+.gb-cantiere::before{content:'';position:absolute;left:50%;top:50%;width:640px;height:640px;max-width:140%;
+  background:url('img/compass-stella.png') no-repeat center/contain;
+  opacity:.05;transform:translate(-50%,-50%) rotate(22deg);pointer-events:none;z-index:0;}
+.gb-cantiere-k{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);}
+.gb-cantiere-t{font-size:28px;font-weight:700;color:var(--accent);margin-top:8px;letter-spacing:-.01em;}
+.gb-cantiere-r{width:70px;border-top:2px solid var(--gold);margin:18px 0;opacity:.7;}
+.gb-cantiere-s{font-size:14px;color:var(--text-muted);}
+.gb-cantiere-h{font-size:16px;font-weight:600;color:var(--text);margin-top:6px;}
+.gb-cantiere-h span{color:var(--gold);margin:0 6px;}
+.gb-cantiere-a{font-size:12.5px;font-style:italic;color:var(--text-dim);line-height:1.7;letter-spacing:.01em;}
+
 /* LINGUETTE STRUTTURA */
 .tabs{display:flex;gap:8px;margin-bottom:16px;}
 .tab{flex:1;background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:10px;padding:11px 16px;cursor:pointer;text-align:left;font-family:inherit;}
@@ -131,7 +146,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-16.1';
+const QM_APP_BUILD='2026-11-16.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -239,6 +254,7 @@ setInterval(qmCheckVersione,600000);
     <nav class="nav">
       <div class="nav-section">Biancheria</div>
       <div class="nav-item" id="gb-nav-consumo" onclick="bgSezione('consumo')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span></span>Consumo Biancheria</div>
+      <div class="nav-item" id="gb-nav-conteggio" onclick="bgSezione('conteggio')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11l2 2 4-4"/><path d="M9 17h6"/></svg></span></span>Conteggio Biancheria</div>
       <div class="nav-item" id="gb-nav-reso" onclick="bgSezione('reso')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.3 10.2a2 2 0 0 1-2 1.8H7.3a2 2 0 0 1-2-1.8z"/><path d="M3.5 9c.6-2.4 4-4.2 8.5-4.2S19.9 6.6 20.5 9"/><path d="M10 13v4M14 13v4"/></svg></span></span>Reso Biancheria</div>
       <div class="nav-item" id="gb-nav-fattura" onclick="bgSezione('fattura')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h3"/></svg></span></span>Controllo fatturazione</div>
     </nav>
@@ -276,6 +292,9 @@ setInterval(qmCheckVersione,600000);
       <div id="bg-sez-consumo">
         <div id="gb-content"></div>
         <div id="gb-extra"></div>
+      </div>
+      <div id="bg-sez-conteggio" style="display:none;">
+        <div id="gb-conteggio"></div>
       </div>
   <div id="bg-sez-reso" style="display:none;">
     <div class="panel">
@@ -2781,7 +2800,7 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 // ── Menu laterale come Compass: Consumo, Reso, Controllo fatturazione (25/09/2026) ──
 // Stesso markup e stesso style.css del menu di Compass (voci copiate da index.html). La voce
 // scelta resta su questo computer, cosi' ricaricando si torna dove si era.
-const BG_SEZIONI={consumo:'Consumo Biancheria',reso:'Reso Biancheria',fattura:'Controllo fatturazione'};
+const BG_SEZIONI={consumo:'Consumo Biancheria',conteggio:'Conteggio Biancheria',reso:'Reso Biancheria',fattura:'Controllo fatturazione'};
 let _bgSezione='consumo';
 try{const s=localStorage.getItem('bg_sezione');if(BG_SEZIONI[s])_bgSezione=s;}catch(e){}
 function bgSezione(s){
@@ -2796,6 +2815,23 @@ function bgSezione(s){
   gbChiudiMenu();
   if(_bgSezione==='reso')grLoad();
   else if(_bgSezione==='fattura')_gbRenderFattura();
+  else if(_bgSezione==='conteggio')_gbRenderConteggio();
+}
+// ── Conteggio Biancheria: voce di menu come in Compass, per ora modulo in costruzione ──
+// (16/11/2026) Il conteggio a scorrere di Compass parte dalla dotazione da contratto: per
+// Art Resort e Santa Brigida i contratti di fornitura con Raimondo non ci sono ancora.
+// Testo e firma d'autore approvati dal QM sull'anteprima.
+function _gbRenderConteggio(){
+  const el=document.getElementById('gb-conteggio');if(!el)return;
+  el.innerHTML=`<div class="gb-cantiere">
+  <div class="gb-cantiere-k">Conteggio Biancheria</div>
+  <div class="gb-cantiere-t">Modulo in costruzione</div>
+  <div class="gb-cantiere-r"></div>
+  <div class="gb-cantiere-s">Prossima attivazione con i contratti di fornitura di</div>
+  <div class="gb-cantiere-h">Art Resort Galleria Umberto <span>·</span> Art Suite Santa Brigida</div>
+  <div class="gb-cantiere-r" style="width:40px;margin:22px 0 14px;"></div>
+  <div class="gb-cantiere-a">Nuovo modulo della Suite Compass QM, ideata e sviluppata da Pierpaolo Presta<br>Per esclusivo uso interno</div>
+</div>`;
 }
 // Menu su smartphone: stesse classi di Compass (toggleMobileSidebar/closeMobileSidebar).
 function gbApriMenu(){
