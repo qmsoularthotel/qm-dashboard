@@ -3805,7 +3805,7 @@ sez('Preferenze Turni: settimana prossima riquadrata e le sue richieste sotto il
   ok('con la richiesta di quella settimana',       /Rossi Prova/.test(sett), true);
   ok('non quelle di altre settimane',              /Verdi Prova/.test(sett), false);
   ok('anche col filtro del giorno cliccato',       /Rossi Prova/.test(sett), true);
-  ok('il calendario ha il riquadro',               /title="Settimana prossima"[^>]*border:2px solid var\(--gold\)/.test(h), true);
+  ok('il calendario ha il riquadro',               /title="Settimana prossima"[^>]*border:1.5px solid var\(--gold\)/.test(h), true);
   _tpData = d0; _tpFilter = f0; _tpCalDay = g0; _tpCalYear = y0; _tpCalMonth = m0;
 })();
 // I mesi precedenti partono chiusi, il mese in corso resta aperto (16/11/2026).
@@ -3827,4 +3827,36 @@ sez('Preferenze Turni: settimana prossima riquadrata e le sue richieste sotto il
   ok('i mesi precedenti partono chiusi',            /Viola Prova/.test(chiuso), false);
   ok('ma dicono quante richieste hanno',            /1 richiesta/.test(chiuso), true);
   ok('e cliccando si aprono',                       /Viola Prova/.test(aperto), true);
+})();
+
+sez('Preferenze Turni: un reparto solo per HOUSEKEEPING/Housekeeping, resto del mese attenuato, consuntivo del trimestre (16/11/2026)');
+(function () {
+  ok('HOUSEKEEPING diventa Housekeeping',          _tpRepNorm('HOUSEKEEPING'), 'Housekeeping');
+  ok('spazi e maiuscole sistemati',                _tpRepNorm('  front  office '), 'Front Office');
+  var tr = _tpTrimestre(new Date(2026, 10, 16));
+  ok('novembre e\' nel 4° trimestre',              tr.q, 4);
+  ok('che va da ottobre',                           tr.da.getMonth(), 9);
+  ok('a dicembre',                                  tr.a.getMonth() + '/' + tr.a.getDate(), '11/31');
+  var dati = [
+    { nome: 'Rossi Prova',  reparto: 'Reception',    giornoRichiesto: '05/10/2026' },
+    { nome: 'rossi prova',  reparto: 'RECEPTION',    giornoRichiesto: '20/11/2026' },
+    { nome: 'Bianchi Prova', reparto: 'HOUSEKEEPING', giornoRichiesto: '01/12/2026' },
+    { nome: 'Bianchi Prova', reparto: 'Housekeeping', giornoRichiesto: '30/09/2026' }
+  ];
+  var c = _tpConsuntivo(dati, 'tutti', new Date(2026, 10, 16));
+  ok('stessa persona scritta in due modi: una riga', c.righe.length, 2);
+  ok('Rossi ne ha 2 nel trimestre',                 c.righe[0].nome + ' ' + c.righe[0].tot, 'Rossi Prova 2');
+  ok('settembre non conta',                         c.righe[1].tot, 1);
+  ok('il filtro di reparto vale anche qui',         _tpConsuntivo(dati, 'Housekeeping', new Date(2026, 10, 16)).righe.map(function (x) { return x.nome; }).join(','), 'Bianchi Prova');
+
+  var box = { innerHTML: '' }, vero = document.getElementById, d0 = _tpData, f0 = _tpFilter, g0 = _tpCalDay;
+  _tpData = dati.map(function (x) { return Object.assign({ preferenza: 'RIPOSO', ts: '2026-11-01T10:00:00Z' }, x); });
+  _tpFilter = 'tutti'; _tpCalDay = null;
+  document.getElementById = function (id) { return id === 'turni-pref-content' ? box : null; };
+  try { turniPrefRender(); } finally { document.getElementById = vero; _tpData = d0; _tpFilter = f0; _tpCalDay = g0; }
+  var h = box.innerHTML;
+  ok('un solo filtro Housekeeping',                 (h.match(/turniPrefSetFilter\('Housekeeping'\)/g) || []).length, 1);
+  ok('e nessun HOUSEKEEPING',                       /turniPrefSetFilter\('HOUSEKEEPING'\)/.test(h), false);
+  ok('accanto al calendario il consuntivo',         /Richieste per persona · \d° trimestre/.test(h), true);
+  ok('il resto del mese e\' attenuato',             /opacity:\.38;/.test(h), true);
 })();

@@ -278,6 +278,20 @@ calendario; sotto il calendario elenca tutte le richieste per quella settimana"*
 9 controlli in `test/controlli.js` (sabotaggio: settimana corrente al posto della prossima ed
 elenco tolto → 7 falliscono).
 
+### Settimana prossima «stile E», un reparto solo, consuntivo del trimestre (16/11/2026)
+
+- **Stile E** scelto dal QM fra sei proposte (artefatto): riquadro a **filo oro** senza fondo,
+  e i giorni **fuori** dalla settimana prossima a `opacity:.38` (il giorno selezionato resta pieno).
+- **Due filtri «Housekeeping»**: il foglio scrive lo stesso reparto come `HOUSEKEEPING` e
+  `Housekeeping`. `_tpRepNorm` porta tutto a iniziale maiuscola all'inizio di `turniPrefRender`
+  (anche `_tpFilter`), prima di contare e filtrare.
+- **Consuntivo per persona** accanto al calendario (`flex-wrap`: su telefono va sotto):
+  `_tpConsuntivo(dati,filtro,oggi)` conta le richieste per **giorno richiesto** nel trimestre in
+  corso (`_tpTrimestre`), una riga per persona anche se scritta in modi diversi, col filtro di
+  reparto; ordinato per numero, con totale.
+
+13 controlli nuovi; sabotaggio (niente normalizzazione, niente limite di trimestre) → 6 falliscono.
+
 ### Mesi precedenti chiusi nell'elenco (16/11/2026)
 
 Nell'elenco raggruppato per mese di invio il **mese in corso** resta aperto, i **precedenti**

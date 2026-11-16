@@ -11205,6 +11205,34 @@ function _tpSettimanaProssima(oggi){
   const k=d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
   return {da:giorni[0],a:giorni[6],giorni:giorni.map(k)};
 }
+// Il foglio delle richieste scrive lo stesso reparto in modi diversi ("HOUSEKEEPING" e
+// "Housekeeping"): erano due filtri uguali (16/11/2026). Si porta tutto alla stessa forma,
+// iniziale maiuscola, prima di contare e filtrare.
+function _tpRepNorm(s){
+  return String(s||'').trim().replace(/\s+/g,' ').toLowerCase().replace(/(^|[\s/-])(\S)/g,(m,a,b)=>a+b.toUpperCase());
+}
+// Consuntivo del trimestre in corso: quante richieste ha fatto ogni persona per giorni che
+// cadono nel trimestre (giorno RICHIESTO, non data d'invio). Stessa persona scritta in modi
+// diversi = una sola riga.
+function _tpTrimestre(oggi){
+  const o=oggi?new Date(oggi):new Date();
+  const q=Math.floor(o.getMonth()/3);
+  return {q:q+1,anno:o.getFullYear(),da:new Date(o.getFullYear(),q*3,1,12),a:new Date(o.getFullYear(),q*3+3,0,12)};
+}
+function _tpConsuntivo(dati,filtro,oggi){
+  const tr=_tpTrimestre(oggi),per={};
+  (dati||[]).forEach(r=>{
+    if(filtro&&filtro!=='tutti'&&_tpRepNorm(r.reparto)!==filtro)return;
+    const m=String(_tpFmtDate(r.giornoRichiesto)).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(!m)return;
+    const d=new Date(+m[3],+m[2]-1,+m[1],12);
+    if(d<tr.da||d>tr.a)return;
+    const nome=String(r.nome||'').trim().replace(/\s+/g,' ');if(!nome)return;
+    const k=nome.toLowerCase();
+    const x=per[k]||(per[k]={nome,reparto:_tpRepNorm(r.reparto),tot:0});
+    x.tot++;
+  });
+  return {tr,righe:Object.values(per).sort((a,b)=>b.tot-a.tot||a.nome.localeCompare(b.nome,'it'))};
+}
 function turniPrefNavCal(dir){_tpCalMonth+=dir;if(_tpCalMonth>11){_tpCalMonth=0;_tpCalYear++;}else if(_tpCalMonth<0){_tpCalMonth=11;_tpCalYear--;}turniPrefRender();}
 function turniPrefToggleMese(k){_tpMesiAperti.has(k)?_tpMesiAperti.delete(k):_tpMesiAperti.add(k);_qmSenzaSalto(turniPrefRender);}
 function turniPrefSelectDay(d){_tpCalDay=_tpCalDay===d?null:d;turniPrefRender();}
@@ -11237,6 +11265,8 @@ function turniPrefRender(){
     el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna richiesta ricevuta</div>';
     return;
   }
+  _tpData.forEach(r=>{if(r&&r.reparto)r.reparto=_tpRepNorm(r.reparto);});
+  if(_tpFilter!=='tutti')_tpFilter=_tpRepNorm(_tpFilter);
 
   // Conta richieste per giorno — normalizza togliendo orario
   const countByDay={};
@@ -11273,7 +11303,7 @@ function turniPrefRender(){
     }
     if(nel.length){
       const r=nel[0].r,c0=nel[0].c,c1=nel[nel.length-1].c;
-      calCells+=`<div title="Settimana prossima" style="grid-row:${r};grid-column:${c0} / ${c1+1};margin:-4px;border:2px solid var(--gold);border-radius:10px;background:var(--gold-bg);pointer-events:none;z-index:0;"></div>`;
+      calCells+=`<div title="Settimana prossima" style="grid-row:${r};grid-column:${c0} / ${c1+1};margin:-4px;border:1.5px solid var(--gold);border-radius:10px;pointer-events:none;z-index:0;"></div>`;
     }
   }
   // giorni
@@ -11286,20 +11316,43 @@ function turniPrefRender(){
     const col=isSel?'#fff':cnt>=2?'#fff':cnt>=1?'var(--accent)':'var(--text-dim)';
     const border=isToday?'2px solid var(--accent)':'1px solid var(--border-light)';
     const pc=posCella(d);
-    calCells+=`<div onclick="turniPrefSelectDay('${key}')" style="grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
+    // Proposta E (16/11/2026): fuori dalla settimana prossima il mese si attenua, così quella
+    // settimana salta all'occhio. Il giorno selezionato resta pieno.
+    const attenua=prossima.giorni.length&&!prossima.giorni.includes(key)&&!isSel;
+    calCells+=`<div onclick="turniPrefSelectDay('${key}')" style="grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;${attenua?'opacity:.38;':''}aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
       <div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${col};line-height:1;">${d}</div>
       ${cnt>0?`<div style="font-size:10px;font-weight:700;color:${isSel?'rgba(255,255,255,.85)':cnt>=2?'rgba(255,255,255,.85)':'var(--accent)'};margin-top:1px;">${cnt}</div>`:''}
     </div>`;
   }
 
-  const calHtml=`<div style="max-width:360px;margin-bottom:18px;">
+  const cons=_tpConsuntivo(_tpData,_tpFilter,today);
+  const mesiCorti=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  const consMax=cons.righe.length?cons.righe[0].tot:1;
+  const consHtml=`<div class="panel" style="flex:1 1 280px;min-width:0;margin-bottom:18px;">
+    <div class="panel-header"><span class="panel-title">Richieste per persona · ${cons.tr.q}° trimestre ${cons.tr.anno}</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">${mesiCorti[cons.tr.da.getMonth()]}–${mesiCorti[cons.tr.a.getMonth()]}</span></div>
+    <div class="panel-body" style="padding:0;">${cons.righe.length?`<table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+      <thead><tr style="background:var(--surface2);">
+        <th style="text-align:left;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Persona</th>
+        <th style="text-align:left;padding:8px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Reparto</th>
+        <th style="text-align:right;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Richieste</th>
+      </tr></thead><tbody>${cons.righe.map((x,i)=>`<tr style="border-top:1px solid var(--border-light);${i%2?'background:var(--surface2);':''}">
+        <td style="padding:7px 14px;font-weight:600;">${_esc(x.nome)}</td>
+        <td style="padding:7px 10px;color:var(--text-dim);">${_esc(x.reparto||'—')}</td>
+        <td style="padding:7px 14px;text-align:right;white-space:nowrap;"><span style="display:inline-block;vertical-align:middle;height:6px;border-radius:3px;background:var(--accent-bg);width:${Math.round(48*x.tot/consMax)}px;margin-right:8px;"></span><strong style="font-variant-numeric:tabular-nums;">${x.tot}</strong></td>
+      </tr>`).join('')}
+      <tr style="border-top:2px solid var(--border);font-weight:700;"><td style="padding:8px 14px;" colspan="2">Totale</td><td style="padding:8px 14px;text-align:right;font-variant-numeric:tabular-nums;">${cons.righe.reduce((s,x)=>s+x.tot,0)}</td></tr>
+      </tbody></table>`:`<div style="padding:14px;font-size:var(--fs-xs);color:var(--text-dim);">Nessuna richiesta per giorni di questo trimestre${_tpFilter!=='tutti'?' in '+_esc(_tpFilter):''}.</div>`}</div>
+  </div>`;
+
+  const calHtml=`<div style="flex:0 1 360px;min-width:0;margin-bottom:18px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <button onclick="turniPrefNavCal(-1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">‹</button>
       <div style="font-size:var(--fs-sm);font-weight:700;">${mesiIt[_tpCalMonth]} ${_tpCalYear}</div>
       <button onclick="turniPrefNavCal(1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">›</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">${calCells}</div>
-    <div style="margin-top:10px;display:flex;align-items:center;gap:7px;font-size:var(--fs-xxs);color:var(--text-dim);"><span style="width:14px;height:10px;border:2px solid var(--gold);border-radius:3px;background:var(--gold-bg);flex-shrink:0;"></span>Settimana prossima · ${prossima.giorni[0].slice(0,5)} – ${prossima.giorni[6].slice(0,5)}</div>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:7px;font-size:var(--fs-xxs);color:var(--text-dim);"><span style="width:14px;height:10px;border:1.5px solid var(--gold);border-radius:3px;flex-shrink:0;"></span>Settimana prossima · ${prossima.giorni[0].slice(0,5)} – ${prossima.giorni[6].slice(0,5)}</div>
     ${_tpCalDay?`<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--accent);font-weight:600;">📅 Filtro: ${_tpCalDay} — <span onclick="turniPrefSelectDay('${_tpCalDay}')" style="cursor:pointer;text-decoration:underline;">rimuovi</span></div>`:''}
   </div>`;
 
@@ -11394,7 +11447,8 @@ function turniPrefRender(){
     });
   }
 
-  el.innerHTML=toolbar+calHtml+settHtml+listHtml;
+  // Calendario e consuntivo affiancati; su schermo stretto il consuntivo va sotto (flex-wrap).
+  el.innerHTML=toolbar+`<div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;">${calHtml}${consHtml}</div>`+settHtml+listHtml;
 }
 
 // §§ CONTROLLO MATTINO (cmLoad, cmRender)
