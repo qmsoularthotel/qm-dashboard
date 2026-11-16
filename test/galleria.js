@@ -575,3 +575,7 @@ ok('Preferenze: niente schermata del codice da questa voce', /_gbFetch|gbMostraA
 ok('Worker: PIN sbagliato è 403, non 401',          /restano: n >= 5 \? 0 : 5 - n \}, 403\)/.test(String(_workerFetch.fetch)), true);
 // Nei testi visibili è «Front Office Manager», mai «Resident Manager» (QM, 16/11/2026).
 ok('Galleria: si chiama Front Office Manager',     /Resident/.test(String(gtPrefRender) + String(_grStampa)), false);
+function chiusoPin() { var b = { innerHTML: '' }, v = document.getElementById, s0 = _gtStato; document.getElementById = function (id) { return id === 'gt-pref-content' ? b : null; }; try { gtPrefChiudi(''); _gtStato = { ok: true, resident: false, qm: true }; gtPrefRender(); } finally { document.getElementById = v; _gtStato = s0; } return b.innerHTML; }
+// La casella del PIN non è un campo password: il browser la riempiva da solo (16/11/2026).
+ok('PIN: casella vuota, non type=password',         /id="gt-pin"[^>]*type="text"/.test(chiusoPin()) && !/type="password"/.test(chiusoPin()), true);
+

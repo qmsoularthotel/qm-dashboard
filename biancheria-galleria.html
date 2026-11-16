@@ -163,7 +163,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-16.14';
+const QM_APP_BUILD='2026-11-16.15';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -3619,7 +3619,10 @@ function gtPrefRender(){
   }
   const st=_gtStato||{};
   const primo=st.ok&&!st.resident;
-  const campo=(id,ph)=>`<input id="${id}" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="${ph}" onkeydown="if(event.key==='Enter')gtPrefApri(${primo?'true':'false'})" style="width:180px;max-width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:18px;letter-spacing:.3em;text-align:center;font-family:inherit;background:var(--surface);color:var(--text);">`;
+  // NON type="password": il browser ci rimetteva da solo una password salvata e la casella
+  // compariva già piena di puntini (QM, 16/11/2026). Campo di testo con le cifre mascherate
+  // (-webkit-text-security), che il browser non riempie.
+  const campo=(id,ph)=>`<input id="${id}" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore value="" maxlength="8" placeholder="${ph}" onkeydown="if(event.key==='Enter')gtPrefApri(${primo?'true':'false'})" style="width:180px;max-width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:18px;letter-spacing:.3em;text-align:center;font-family:inherit;background:var(--surface);color:var(--text);-webkit-text-security:disc;">`;
   el.innerHTML=`<div class="gb-cantiere" style="min-height:calc(100vh - 160px);">
     <div style="color:var(--accent);">${GT_ICONA_LUCCHETTO}</div>
     <div class="gb-cantiere-k" style="margin-top:10px;">Preferenze Turnazione</div>
@@ -3634,6 +3637,7 @@ function gtPrefRender(){
         ${_gtMsg?`<div style="font-size:var(--fs-xs);color:var(--red);margin-top:4px;">${_gtEsc(_gtMsg)}</div>`:''}
       </div>`}
   </div>`;
+  ['gt-pin','gt-pin2'].forEach(id=>{const x=document.getElementById(id);if(x)x.value='';});
   const f=document.getElementById('gt-pin');if(f)try{f.focus();}catch(e){}
 }
 const GT_ICONA_LUCCHETTO='<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.3"/></svg>';
