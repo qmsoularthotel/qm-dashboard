@@ -259,6 +259,25 @@ Usa `typeof v.getTime === 'function'` invece di `instanceof Date` per evitare bu
 
 `turniPrefRender()` filtra correttamente `items` per `_tpCalDay` (giorno **richiesto**, `r.giornoRichiesto`), ma il rendering della lista raggruppava comunque i risultati per **mese di invio** della richiesta (`r.ts`) — due richieste per lo stesso giorno ma inviate in mesi diversi finivano sotto etichette di mese diverse, invece di comparire subito insieme. Quando `_tpCalDay` è valorizzato, la lista è ora **piatta** (un solo titolo "Richieste per il gg/MM/yyyy", tutte le righe sotto, nessun raggruppamento) — il raggruppamento per mese resta solo quando non è selezionato nessun giorno (vista di navigazione libera di tutte le richieste).
 
+### Settimana prossima riquadrata ed elencata (16/11/2026)
+
+Il QM: *"evidenzia la settimana successiva a quella corrente creando un riquadro nel
+calendario; sotto il calendario elenca tutte le richieste per quella settimana"*.
+
+- `_tpSettimanaProssima(oggi)` → `{da,a,giorni:[dd/MM/yyyy ×7]}`, da lunedì a domenica della
+  settimana dopo quella di oggi (di domenica è ancora quella che inizia domani).
+- Nel calendario ogni cella ha **riga e colonna esplicite** (`grid-row`/`grid-column`): solo
+  così il riquadro oro (`title="Settimana prossima"`, `var(--gold)`/`var(--gold-bg)`) può stare
+  sotto le celle della settimana — in una griglia gli elementi posizionati a mano si
+  sovrappongono, quelli automatici no. Una settimana a cavallo di mese è riquadrata per la
+  parte del mese mostrato. Legenda sotto il calendario.
+- Pannello **«Richieste per la settimana prossima»** fra calendario ed elenco: giorno per
+  giorno, nomi in ordine alfabetico, col filtro di **reparto** ma **non** col giorno cliccato
+  (è l'elenco su cui si prepara il turno, non deve sparire).
+
+9 controlli in `test/controlli.js` (sabotaggio: settimana corrente al posto della prossima ed
+elenco tolto → 7 falliscono).
+
 ---
 
 ## Persone escluse dall'elaborazione (02/10/2026)

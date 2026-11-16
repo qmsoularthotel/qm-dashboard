@@ -11191,6 +11191,17 @@ function turniPrefSetFilter(f){
   turniPrefRender();
 }
 
+// Settimana PROSSIMA, da lunedì a domenica: quella dopo la settimana di oggi (16/11/2026).
+// È quella su cui si prepara il turno, quindi il calendario la riquadra e sotto si elencano
+// tutte le sue richieste. Date a mezzogiorno, come il turno.
+function _tpSettimanaProssima(oggi){
+  const o=oggi?new Date(oggi):new Date();o.setHours(12,0,0,0);
+  const lun=new Date(o);lun.setDate(o.getDate()-((o.getDay()+6)%7)+7);
+  const giorni=[];
+  for(let i=0;i<7;i++){const d=new Date(lun);d.setDate(lun.getDate()+i);giorni.push(d);}
+  const k=d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  return {da:giorni[0],a:giorni[6],giorni:giorni.map(k)};
+}
 function turniPrefNavCal(dir){_tpCalMonth+=dir;if(_tpCalMonth>11){_tpCalMonth=0;_tpCalYear++;}else if(_tpCalMonth<0){_tpCalMonth=11;_tpCalYear--;}turniPrefRender();}
 function turniPrefSelectDay(d){_tpCalDay=_tpCalDay===d?null:d;turniPrefRender();}
 
@@ -11244,9 +11255,23 @@ function turniPrefRender(){
 
   let calCells='';
   // intestazione giorni
-  calCells+=giorniIt.map(g=>`<div style="text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:4px 0;">${g}</div>`).join('');
-  // celle vuote iniziali
-  for(let i=0;i<startDow;i++)calCells+=`<div></div>`;
+  calCells+=giorniIt.map((g,i)=>`<div style="grid-row:1;grid-column:${i+1};text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:4px 0;">${g}</div>`).join('');
+  // Ogni giorno ha riga e colonna ESPLICITE: così il riquadro della settimana prossima può
+  // stare sopra le sue celle (in una griglia gli elementi posizionati si sovrappongono,
+  // quelli lasciati al posizionamento automatico no).
+  const prossima=_tpSettimanaProssima(today);
+  const posCella=d=>({r:2+Math.floor((startDow+d-1)/7),c:(startDow+d-1)%7+1});
+  {
+    const nel=[];
+    for(let d=1;d<=daysInMonth;d++){
+      const key=`${String(d).padStart(2,'0')}/${String(_tpCalMonth+1).padStart(2,'0')}/${_tpCalYear}`;
+      if(prossima.giorni.includes(key))nel.push(posCella(d));
+    }
+    if(nel.length){
+      const r=nel[0].r,c0=nel[0].c,c1=nel[nel.length-1].c;
+      calCells+=`<div title="Settimana prossima" style="grid-row:${r};grid-column:${c0} / ${c1+1};margin:-4px;border:2px solid var(--gold);border-radius:10px;background:var(--gold-bg);pointer-events:none;z-index:0;"></div>`;
+    }
+  }
   // giorni
   for(let d=1;d<=daysInMonth;d++){
     const key=`${String(d).padStart(2,'0')}/${String(_tpCalMonth+1).padStart(2,'0')}/${_tpCalYear}`;
@@ -11256,7 +11281,8 @@ function turniPrefRender(){
     const bg=isSel?'var(--accent)':cnt>=3?'#1a3a70':cnt>=2?'#1e4a90':cnt>=1?'var(--accent-bg)':'var(--surface)';
     const col=isSel?'#fff':cnt>=2?'#fff':cnt>=1?'var(--accent)':'var(--text-dim)';
     const border=isToday?'2px solid var(--accent)':'1px solid var(--border-light)';
-    calCells+=`<div onclick="turniPrefSelectDay('${key}')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
+    const pc=posCella(d);
+    calCells+=`<div onclick="turniPrefSelectDay('${key}')" style="grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
       <div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${col};line-height:1;">${d}</div>
       ${cnt>0?`<div style="font-size:10px;font-weight:700;color:${isSel?'rgba(255,255,255,.85)':cnt>=2?'rgba(255,255,255,.85)':'var(--accent)'};margin-top:1px;">${cnt}</div>`:''}
     </div>`;
@@ -11269,6 +11295,7 @@ function turniPrefRender(){
       <button onclick="turniPrefNavCal(1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">›</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">${calCells}</div>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:7px;font-size:var(--fs-xxs);color:var(--text-dim);"><span style="width:14px;height:10px;border:2px solid var(--gold);border-radius:3px;background:var(--gold-bg);flex-shrink:0;"></span>Settimana prossima · ${prossima.giorni[0].slice(0,5)} – ${prossima.giorni[6].slice(0,5)}</div>
     ${_tpCalDay?`<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--accent);font-weight:600;">📅 Filtro: ${_tpCalDay} — <span onclick="turniPrefSelectDay('${_tpCalDay}')" style="cursor:pointer;text-decoration:underline;">rimuovi</span></div>`:''}
   </div>`;
 
@@ -11316,6 +11343,27 @@ function turniPrefRender(){
     </div>`;
   };
 
+  // ── Richieste della settimana prossima, sotto il calendario ──
+  // Tutte, giorno per giorno, col filtro di reparto ma SENZA quello del giorno cliccato:
+  // è l'elenco su cui si prepara il turno, non deve sparire cliccando un giorno.
+  const giorniLungo=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  const perSett=_tpData.filter(r=>(_tpFilter==='tutti'||r.reparto===_tpFilter)&&prossima.giorni.includes(_tpFmtDate(r.giornoRichiesto)));
+  let settHtml=`<div class="panel" style="margin-bottom:18px;border-top:3px solid var(--gold);">
+    <div class="panel-header"><span class="panel-title">Richieste per la settimana prossima</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">${prossima.giorni[0]} – ${prossima.giorni[6]} · ${perSett.length} ${perSett.length===1?'richiesta':'richieste'}</span></div>
+    <div class="panel-body" style="padding:12px 14px;">`;
+  if(!perSett.length){
+    settHtml+=`<div style="padding:8px 0;color:var(--text-dim);font-size:var(--fs-xs);">Nessuna richiesta per la settimana prossima${_tpFilter!=='tutti'?' in '+_esc(_tpFilter):''}.</div>`;
+  }else{
+    prossima.giorni.forEach((g,i)=>{
+      const delGiorno=perSett.filter(r=>_tpFmtDate(r.giornoRichiesto)===g).sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'it'));
+      if(!delGiorno.length)return;
+      settHtml+=`<div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:${i?'12px':'0'} 0 6px;">${giorniLungo[(i+1)%7]} ${g.slice(0,5)}</div>`;
+      delGiorno.forEach(r=>{settHtml+=rowHtml(r);});
+    });
+  }
+  settHtml+=`</div></div>`;
+
   let listHtml='';
   if(!items.length){
     listHtml='<div style="padding:20px 0;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna richiesta</div>';
@@ -11339,7 +11387,7 @@ function turniPrefRender(){
     });
   }
 
-  el.innerHTML=toolbar+calHtml+listHtml;
+  el.innerHTML=toolbar+calHtml+settHtml+listHtml;
 }
 
 // §§ CONTROLLO MATTINO (cmLoad, cmRender)

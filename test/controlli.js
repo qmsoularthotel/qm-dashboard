@@ -3779,3 +3779,32 @@ sez('Consumo Biancheria: frecce sulle date');
   ok('le frecce dei consumi ci sono',               /biaSpostaData\('consumi',-1\)/.test(box.innerHTML)&&/biaSpostaData\('consumi',1\)/.test(box.innerHTML), true);
   ok('le frecce della consegna ci sono',            /biaSpostaData\('giro',-1\)/.test(box.innerHTML)&&/biaSpostaData\('giro',1\)/.test(box.innerHTML), true);
 })();
+
+sez('Preferenze Turni: settimana prossima riquadrata e le sue richieste sotto il calendario (16/11/2026)');
+(function () {
+  var s = _tpSettimanaProssima(new Date(2026, 10, 16));           // lunedì
+  ok('da lunedì 16/11: la prossima parte il 23',  s.giorni[0], '23/11/2026');
+  ok('e finisce domenica 29',                     s.giorni[6], '29/11/2026');
+  ok('di domenica 22 è ancora quella del 23',     _tpSettimanaProssima(new Date(2026, 10, 22)).giorni[0], '23/11/2026');
+  ok('a cavallo di mese',                         _tpSettimanaProssima(new Date(2026, 10, 25)).giorni.join(','), '30/11/2026,01/12/2026,02/12/2026,03/12/2026,04/12/2026,05/12/2026,06/12/2026');
+
+  var box = { innerHTML: '' }, vero = document.getElementById, d0 = _tpData, f0 = _tpFilter, g0 = _tpCalDay, y0 = _tpCalYear, m0 = _tpCalMonth;
+  var oggiVero = Date;
+  var prossimaKey = _tpSettimanaProssima(new Date()).giorni;
+  var dentro = prossimaKey[2], fuori = prossimaKey[0].replace(/^(\d\d)/, function () { return '01'; });
+  var pd = prossimaKey[0].split('/');
+  _tpData = [
+    { nome: 'Rossi Prova', reparto: 'Reception', preferenza: 'RIPOSO', giornoRichiesto: dentro, dataRichiesta: '01/11/2026', ts: '2026-11-01T10:00:00Z' },
+    { nome: 'Verdi Prova', reparto: 'Reception', preferenza: 'FERIE', giornoRichiesto: '01/01/2020', dataRichiesta: '01/11/2026', ts: '2026-11-01T10:00:00Z' }
+  ];
+  _tpFilter = 'tutti'; _tpCalDay = '01/01/2020'; _tpCalYear = +pd[2]; _tpCalMonth = +pd[1] - 1;
+  document.getElementById = function (id) { return id === 'turni-pref-content' ? box : null; };
+  try { turniPrefRender(); } finally { document.getElementById = vero; }
+  var h = box.innerHTML, i = h.indexOf('Richieste per la settimana prossima'), sett = i < 0 ? '' : h.slice(i, h.indexOf('</div></div>', i));
+  ok('c\'è l\'elenco della settimana prossima',   i >= 0, true);
+  ok('con la richiesta di quella settimana',       /Rossi Prova/.test(sett), true);
+  ok('non quelle di altre settimane',              /Verdi Prova/.test(sett), false);
+  ok('anche col filtro del giorno cliccato',       /Rossi Prova/.test(sett), true);
+  ok('il calendario ha il riquadro',               /title="Settimana prossima"[^>]*border:2px solid var\(--gold\)/.test(h), true);
+  _tpData = d0; _tpFilter = f0; _tpCalDay = g0; _tpCalYear = y0; _tpCalMonth = m0;
+})();
