@@ -170,9 +170,17 @@ ok('Galleria: quattro voci di menu',                Object.keys(BG_SEZIONI).join
   var box = { innerHTML: '' }, fat = { innerHTML: '' }, vero = document.getElementById, prima = _gb;
   _gb = { consumi: [], giri: [{ id: 'g', hotel: 'ar', data: '21/09/2026', consegnato: _gbVuote(), ricevuto: _gbVuote(), ts: 1 }] };
   document.getElementById = function (id) { return id === 'gb-content' ? box : id === 'gb-fattura' ? fat : null; };
-  try { gbRender(); } finally { document.getElementById = vero; _gb = prima; }
+  var rev = GB_FATTURA_IN_REVISIONE, inRev;
+  try {
+    gbRender(); inRev = fat.innerHTML;
+    GB_FATTURA_IN_REVISIONE = false; gbRender();
+  } finally { document.getElementById = vero; _gb = prima; GB_FATTURA_IN_REVISIONE = rev; }
   ok('Galleria: il riscontro non sta piu\' nei consumi', /Riscontro fatturazioni/.test(box.innerHTML), false);
   ok('Galleria: sta in Controllo fatturazione',       /Riscontro fatturazioni/.test(fat.innerHTML), true);
+  // In revisione dal 16/11/2026: pagina ferma al posto del riscontro, codice intatto.
+  ok('Galleria: Controllo fatturazione in revisione',  GB_FATTURA_IN_REVISIONE, true);
+  ok('Galleria: «Modulo in revisione»',                /Modulo in revisione/.test(inRev) && !/Riscontro fatturazioni/.test(inRev), true);
+  ok('Galleria: prossima riattivazione con i contratti', /Prossima riattivazione con i contratti di fornitura di/.test(inRev) && /Per esclusivo uso interno/.test(inRev), true);
 })();
 
 // ── Cosa fare oggi per tutte e due le strutture, e segnali nel menu (25/09/2026) ──

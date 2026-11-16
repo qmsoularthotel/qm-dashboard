@@ -1597,6 +1597,14 @@ del 12/11 ore 21:07: SoulArt dal 05/09 matrimoniali +62, singole +1, federe −3
 bidet −316, teli −201, scendibagno −222; Boutique dal 01/09 +20, −26, −124, −139, −50, −60, −59;
 nessun dato mancante in tutte e due. Nella Galleria `GB_INIZIO_MINIMO_H={}` (copia identica).
 
+### Galleria: «Controllo fatturazione» in revisione (16/11/2026)
+
+Stessa pagina del Conteggio Biancheria (`_gbCantiere`, comune alle due voci) con «Modulo in
+revisione» e «Prossima riattivazione con i contratti di fornitura di…». La accende
+`GB_FATTURA_IN_REVISIONE=true` in cima a `_gbRenderFattura()`: il riscontro sotto resta intatto,
+per riattivarlo si rimette `false`. 3 controlli in `test/galleria.js` (uno disegna anche il
+riscontro con l'interruttore spento, così il codice fermo resta verificato).
+
 ### Galleria: «Conteggio Biancheria» come modulo in costruzione (16/11/2026)
 
 Nell'app della Galleria c'è la stessa voce di menu, subito dopo Consumo Biancheria
