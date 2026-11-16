@@ -155,7 +155,7 @@ ok('Reso Galleria: anche nell\'altro verso',       _grUnisciRecord([{ id: 'x', r
 ok('Reso Galleria: la distinta va al Resident Manager', /Resident Manager/.test(String(_grStampa)) && !/Presta/.test(String(_grStampa)), true);
 
 // ── Menu laterale come Compass, con la voce Controllo fatturazione (25/09/2026) ──
-ok('Galleria: cinque voci di menu',                 Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura');
+ok('Galleria: sei voci di menu',                    Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze');
 // ── Conteggio Biancheria: modulo in costruzione, in attesa dei contratti (16/11/2026) ──
 (function () {
   var box = { innerHTML: '' }, vero = document.getElementById;
@@ -383,7 +383,7 @@ ok('Galleria: chiuso mostra solo l\'intestazione', /_gb\.giri\.length&&!_gbStoAp
 // conteggio, il carico no"), col rinomino giac -> gc e le strutture della Galleria. In piu':
 // due magazzini, chiave bg_, niente organico/turno di Compass, voce di menu.
 sez('Giacenza Biancheria (Galleria): copia di Compass, due magazzini');
-ok('Galleria: la voce Giacenza nel menu',   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura');
+ok('Galleria: la voce Giacenza nel menu',   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze');
 ok('Galleria: la voce apre la giacenza',    /_bgSezione==='giacenza'\)gcLoad\(\)/.test(String(bgSezione)), true);
 (function () {
   var _g = _gc, _h = _gcHotel;
@@ -528,3 +528,45 @@ ok('NEW: visibile il giorno dell\'aggiunta', _gbNuovoVisibile('2026-11-21', new 
 ok('NEW: ancora il quinto giorno',          _gbNuovoVisibile('2026-11-21', new Date(2026, 10, 20)), true);
 ok('NEW: sparito il sesto',                 _gbNuovoVisibile('2026-11-21', new Date(2026, 10, 21)), false);
 ok('NEW: data sbagliata = niente bollino',  _gbNuovoVisibile('', new Date(2026, 10, 16)), false);
+
+// ── Preferenze Turnazione: copia del modulo di Compass, dietro PIN (16/11/2026) ──
+sez('Preferenze Turnazione (Galleria): si apre solo col PIN, 5 minuti, niente copia nel browser');
+(function () {
+  var box = { innerHTML: '', insertAdjacentHTML: function (p, h) { this.innerHTML = h + this.innerHTML; } };
+  var vero = document.getElementById;
+  var st0 = _gtStato, tp0 = _gtTp, sc0 = _gtScade, d0 = _gtData, f0 = _gtFilter, g0 = _gtCalDay;
+  document.getElementById = function (id) { return id === 'gt-pref-content' ? box : null; };
+  var chiuso, primo, aperto, dopo;
+  try {
+    gtPrefChiudi(''); _gtStato = { ok: true, resident: true, qm: true };
+    _gtData = [{ nome: 'Rossi Prova', reparto: 'Reception', preferenza: 'RIPOSO', giornoRichiesto: '01/01/2020', ts: '2020-01-01T10:00:00Z' }];
+    gtPrefRender(); chiuso = box.innerHTML;
+    _gtStato = { ok: true, resident: false, qm: true }; gtPrefRender(); primo = box.innerHTML;
+    _gtTp = 'tp.1.x'; _gtScade = Date.now() + 60000; _gtFilter = 'tutti'; _gtCalDay = null;
+    _gtData = [{ nome: 'Rossi Prova', reparto: 'Reception', preferenza: 'RIPOSO', giornoRichiesto: '01/01/2020', ts: new Date().toISOString() }];
+    box.innerHTML = ''; gtPrefRender(); aperto = box.innerHTML;
+    _gtScade = Date.now() - 1; box.innerHTML = ''; gtPrefRender(); dopo = box.innerHTML;
+    gtPrefChiudi('');
+  } finally { document.getElementById = vero; _gtStato = st0; _gtTp = tp0; _gtScade = sc0; _gtData = d0; _gtFilter = f0; _gtCalDay = g0; }
+  ok('chiuso: chiede il PIN',                       /Riservato al Resident Manager/.test(chiuso) && /id="gt-pin"/.test(chiuso), true);
+  ok('chiuso: nessuna richiesta a vista',           /Rossi Prova/.test(chiuso), false);
+  ok('primo accesso: il Resident sceglie il PIN',   /Scegli il PIN del Resident/.test(primo) && /id="gt-pin2"/.test(primo), true);
+  ok('aperto: le richieste e il conto alla rovescia', /Rossi Prova/.test(aperto) && /id="gt-resta"/.test(aperto), true);
+  ok('scaduto: torna il PIN',                       /Rossi Prova/.test(dopo) || !/id="gt-pin"/.test(dopo), false);
+  ok('chiudere cancella le richieste',              (gtPrefChiudi(''), _gtData.length), 0);
+  ok('resta aperto 5 minuti',                       GT_DURATA, 300000);
+  ok('lasciando la voce si chiude',                 /_bgSezione==='preferenze'&&s!=='preferenze'\)\{gtPrefChiudi/.test(String(bgSezione)), true);
+  ok('entrando si parte sempre chiusi',             /gtPrefChiudi\(''\)/.test(String(gtPrefEntra)), true);
+  ok('le richieste non restano nel browser',        /setItem/.test(String(gtPrefLoad) + String(gtPrefApri)), false);
+  ok('l\'indirizzo del foglio non è nella Galleria', /script\.google\.com/.test(String(gtPrefLoad) + String(_gtChiedi)), false);
+  // Worker: i PIN stanno in chiavi qm_, che il codice della Galleria non legge.
+  ok('il codice Galleria non legge i PIN',          permessoGalleria('/kv/get', 'qm_pin_resident') || permessoGalleria('/kv/get', 'qm_pin_qm'), false);
+  var w = String(_workerFetch.fetch);
+  ok('Worker: /turni-pref vuole un codice valido',  /pathname === '\/turni-pref'[\s\S]{0,400}verificaPassBg/.test(w), true);
+  ok('Worker: il PIN del QM solo da Compass',       /'imposta-qm'\)\s*\{\s*if \(!qm\)/.test(w), true);
+  ok('Worker: il Resident sceglie il PIN una volta', /'imposta-resident'\)\s*\{\s*if \(res\)/.test(w), true);
+  ok('Worker: 5 errori fermano per 15 minuti',      /n >= 5 \? \{ n: 0, fino: ora \+ 15 \* 60000 \}/.test(w), true);
+  ok('Worker: le richieste solo col permesso',      /'dati'\)\s*\{\s*if \(!\(await verificaTp/.test(w), true);
+  ok('Worker: PIN cifrato, mai in chiaro',          /PBKDF2/.test(String(hashPin)), true);
+  ok('Worker e Compass alla stessa versione',       WORKER_VERSIONE, WORKER_VERSIONE_ATTESA);
+})();

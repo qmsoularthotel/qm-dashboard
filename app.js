@@ -4905,7 +4905,7 @@ async function qmEsportaArchivio(btn){
 // codice e server possono divergere: fino a oggi se ne accorgeva solo test/esegui.sh, cioe'
 // nessuno mentre lavora. Un controllo in esegui.sh verifica che questa costante combaci con
 // WORKER_VERSIONE in worker.js, altrimenti direbbe "da ripubblicare" per sempre.
-const WORKER_VERSIONE_ATTESA='2026-10-01a';
+const WORKER_VERSIONE_ATTESA='2026-11-16a';
 // ── ERRORI DEL PROGRAMMA — raccolti qui, perche' la console non la apre nessuno ──────
 // Quando qualcosa va storto nel codice, il messaggio finisce nella console del browser: il
 // QM non la apre (giustamente) e quindi un guasto puo' restare invisibile finche' non si
@@ -18150,7 +18150,55 @@ function qmRenderDispositivi(){
         <button onclick="qmCodiceGalleria(this)" style="${bott}background:var(--accent);color:#fff;border-color:var(--accent);padding:9px 18px;font-size:var(--fs-xs);">Copia codice Galleria</button>
         <span id="qmCodiceGalleriaEsito" style="font-size:var(--fs-xxs);color:var(--text-dim);"></span>
       </div>
+    </div></div>
+  <div class="panel" style="margin-bottom:14px;">
+    <div class="panel-header"><span class="panel-title">PIN di Preferenze Turnazione — Galleria</span></div>
+    <div class="panel-body" style="padding:16px;">
+      <div style="font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;margin-bottom:12px;">
+        Nell'app della Galleria la voce <strong style="color:var(--text);">Preferenze Turnazione</strong> si apre solo con un PIN: quello del <strong style="color:var(--text);">Resident</strong> (lo sceglie lui al primo accesso) o il <strong style="color:var(--text);">tuo</strong>, che scegli qui.
+        Resta aperta 5 minuti e si chiude passando a un'altra voce. I PIN non sono salvati in chiaro da nessuna parte.
+      </div>
+      <div id="qmPinStato" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:10px;">Stato in lettura…</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <input id="qmPinMio" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="il tuo PIN (4–8 cifre)" style="padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:var(--fs-xs);width:190px;max-width:100%;background:var(--surface);color:var(--text);font-family:inherit;">
+        <button onclick="qmPinSalvaMio()" style="${bott}background:var(--accent);color:#fff;border-color:var(--accent);padding:9px 18px;font-size:var(--fs-xs);">Salva il mio PIN</button>
+        <button onclick="qmPinAzzeraResident()" style="${bott}color:var(--red);padding:9px 14px;font-size:var(--fs-xs);">Azzera PIN del Resident</button>
+      </div>
+      <div id="qmPinEsito" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;min-height:14px;"></div>
     </div></div>`;
+  setTimeout(qmPinAggiorna,0);
+}
+// ── PIN di Preferenze Turnazione nella Galleria (16/11/2026) ──
+// Il Worker (/turni-pref) tiene i due PIN cifrati: il QM sceglie il suo da qui e può azzerare
+// quello del Resident, che al prossimo accesso ne sceglie uno nuovo.
+async function _qmPinChiedi(corpo){
+  const r=await fetch(PROXY+'/turni-pref',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(corpo)});
+  const j=await r.json().catch(()=>({}));
+  if(r.status===404||r.status===405)return {ok:false,error:'Il Worker va ripubblicato (versione del 16/11/2026).'};
+  return j;
+}
+async function qmPinAggiorna(){
+  const el=document.getElementById('qmPinStato');if(!el)return;
+  let j;try{j=await _qmPinChiedi({azione:'stato'});}catch(e){j={ok:false,error:'Worker non raggiungibile'};}
+  if(!j.ok){el.textContent=j.error||'Stato non disponibile';el.style.color='var(--red)';return;}
+  el.style.color='';
+  el.innerHTML=`Il tuo PIN: <strong style="color:${j.qm?'var(--green)':'var(--amber)'};">${j.qm?'impostato':'non ancora scelto'}</strong> · PIN del Resident: <strong style="color:${j.resident?'var(--green)':'var(--amber)'};">${j.resident?'impostato':'non ancora scelto'}</strong>${j.bloccatoFino?' · <strong style="color:var(--red);">tentativi fermi per troppi PIN sbagliati</strong>':''}`;
+}
+async function qmPinSalvaMio(){
+  const f=document.getElementById('qmPinMio'),es=document.getElementById('qmPinEsito');
+  const pin=String((f||{}).value||'').trim();
+  if(!/^\d{4,8}$/.test(pin)){if(es){es.textContent='Il PIN è di 4–8 cifre.';es.style.color='var(--red)';}return;}
+  let j;try{j=await _qmPinChiedi({azione:'imposta-qm',pin});}catch(e){j={ok:false,error:'Worker non raggiungibile'};}
+  if(f)f.value='';
+  if(es){es.textContent=j.ok?'PIN salvato. Vale nell\'app della Galleria, su Preferenze Turnazione.':(j.error||'Non salvato');es.style.color=j.ok?'var(--green)':'var(--red)';}
+  qmPinAggiorna();
+}
+async function qmPinAzzeraResident(){
+  if(!await cqConferma('Azzerare il PIN del Resident?','Al prossimo accesso a Preferenze Turnazione il Resident ne sceglierà uno nuovo. Fino ad allora la voce si apre col tuo PIN — o con quello che sceglie <strong>chi arriva per primo</strong>: fallo quando il Resident è davanti al PC.',{ok:'Azzera'}))return;
+  const es=document.getElementById('qmPinEsito');
+  let j;try{j=await _qmPinChiedi({azione:'azzera-resident'});}catch(e){j={ok:false,error:'Worker non raggiungibile'};}
+  if(es){es.textContent=j.ok?'PIN del Resident azzerato.':(j.error||'Non azzerato');es.style.color=j.ok?'var(--green)':'var(--red)';}
+  qmPinAggiorna();
 }
 // Chiede al Worker un codice della Galleria e lo copia. Serve il lasciapassare di Compass:
 // il fetch verso il Worker lo aggiunge da sé (vedi il gancio in ACCESSO).

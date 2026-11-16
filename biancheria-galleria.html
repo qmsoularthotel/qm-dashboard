@@ -151,7 +151,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-16.7';
+const QM_APP_BUILD='2026-11-16.9';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -263,6 +263,8 @@ setInterval(qmCheckVersione,600000);
       <div class="nav-item" id="gb-nav-giacenza" onclick="bgSezione('giacenza')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18v14H3z"/><path d="M3 11h18M3 15.5h18"/><path d="M9 6V3.5h6V6"/></svg></span></span>Giacenza Biancheria<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
       <div class="nav-item" id="gb-nav-reso" onclick="bgSezione('reso')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.3 10.2a2 2 0 0 1-2 1.8H7.3a2 2 0 0 1-2-1.8z"/><path d="M3.5 9c.6-2.4 4-4.2 8.5-4.2S19.9 6.6 20.5 9"/><path d="M10 13v4M14 13v4"/></svg></span></span>Reso Biancheria</div>
       <div class="nav-item" id="gb-nav-fattura" onclick="bgSezione('fattura')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h3"/></svg></span></span>Controllo fatturazione</div>
+      <div class="nav-section">Turni</div>
+      <div class="nav-item" id="gb-nav-preferenze" onclick="bgSezione('preferenze')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15l2 2 4-4"/></svg></span></span>Preferenze Turnazione<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
     </nav>
     <div class="sidebar-bottom">
       <div class="user-row">
@@ -316,6 +318,9 @@ setInterval(qmCheckVersione,600000);
   </div>
       <div id="bg-sez-fattura" style="display:none;">
         <div id="gb-fattura"></div>
+      </div>
+      <div id="bg-sez-preferenze" style="display:none;">
+        <div id="gt-pref-content"></div>
       </div>
   <div class="firma">
     <span class="firma-marchio">Compass <span>QM</span></span>
@@ -2810,10 +2815,12 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 // ── Menu laterale come Compass: Consumo, Reso, Controllo fatturazione (25/09/2026) ──
 // Stesso markup e stesso style.css del menu di Compass (voci copiate da index.html). La voce
 // scelta resta su questo computer, cosi' ricaricando si torna dove si era.
-const BG_SEZIONI={consumo:'Consumo Biancheria',conteggio:'Conteggio Biancheria',giacenza:'Giacenza Biancheria',reso:'Reso Biancheria',fattura:'Controllo fatturazione'};
+const BG_SEZIONI={consumo:'Consumo Biancheria',conteggio:'Conteggio Biancheria',giacenza:'Giacenza Biancheria',reso:'Reso Biancheria',fattura:'Controllo fatturazione',preferenze:'Preferenze Turnazione'};
 let _bgSezione='consumo';
 try{const s=localStorage.getItem('bg_sezione');if(BG_SEZIONI[s])_bgSezione=s;}catch(e){}
 function bgSezione(s){
+  // Lasciando Preferenze Turnazione il modulo si chiude subito: chi arriva dopo trova il PIN.
+  if(_bgSezione==='preferenze'&&s!=='preferenze'){gtPrefChiudi('');const c=document.getElementById('gt-pref-content');if(c)c.innerHTML='';}
   _bgSezione=BG_SEZIONI[s]?s:'consumo';
   try{localStorage.setItem('bg_sezione',_bgSezione);}catch(e){}
   Object.keys(BG_SEZIONI).forEach(k=>{
@@ -2827,6 +2834,7 @@ function bgSezione(s){
   else if(_bgSezione==='fattura')_gbRenderFattura();
   else if(_bgSezione==='conteggio')_gbRenderConteggio();
   else if(_bgSezione==='giacenza')gcLoad();
+  else if(_bgSezione==='preferenze')gtPrefEntra();
 }
 // ── GIACENZA BIANCHERIA (copia del §§ GIACENZA BIANCHERIA di Compass, 16/11/2026)
 // Rinomino meccanico gc -> gc, GC_ -> GC_ (GG_ era gia' preso in app.js). Diverso da
@@ -3521,6 +3529,434 @@ function _gbBolliniNuovi(){
     b.style.display=_gbNuovoVisibile(b.getAttribute('data-nuovo-fino'))?'':'none';
   });
 }
+// ── PREFERENZE TURNAZIONE (copia del §§ PREFERENZE TURNI di Compass, 16/11/2026) ──
+// Il Resident Manager fa i turni di tutti e vede le richieste come il QM in Compass, ma su
+// questi PC lavorano anche i receptionist: il modulo si apre SOLO col PIN (del Resident, o
+// quello del QM), lo controlla il Worker (/turni-pref) e dà un permesso di 5 minuti.
+// Differenze da Compass, solo dove serve: niente indirizzo del foglio (lo conosce il Worker),
+// niente copia delle richieste nel browser (restano in memoria e si cancellano chiudendo),
+// niente contatore nel menu, "letto fino a" solo su questo computer (bg_tp_seen_until).
+// Rinomino meccanico: _tp -> _gt, turniPref -> gtPref.
+const GT_DURATA=5*60000;              // il modulo resta aperto 5 minuti (QM)
+let _gtTp=null,_gtScade=0,_gtTimer=null,_gtOrologio=null,_gtMsg='',_gtStato=null;
+const _gtEsc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const GT_ICONA_CAL='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+function _gtAperto(){return !!_gtTp&&Date.now()<_gtScade;}
+async function _gtChiedi(corpo){
+  const r=await _gbFetch('/turni-pref',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(corpo)});
+  let j={};try{j=_gbJson(await r.text())||{};}catch(e){}
+  if(r.status===404||r.status===405)j={ok:false,error:'Il Worker va ripubblicato (versione del 16/11/2026).'};
+  return j;
+}
+// Entrando nella voce: sempre chiuso, si chiede il PIN.
+async function gtPrefEntra(){
+  gtPrefChiudi('');
+  const el=document.getElementById('gt-pref-content');if(el)el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:20px;">Caricamento…</div>';
+  try{_gtStato=await _gtChiedi({azione:'stato'});}catch(e){_gtStato={ok:false,error:'Worker non raggiungibile'};}
+  gtPrefRender();
+}
+// Chiude: via permesso, richieste e orologio. Lo si chiama uscendo dalla voce e allo scadere.
+function gtPrefChiudi(msg){
+  _gtTp=null;_gtScade=0;_gtData=[];_gtMsg=msg||'';
+  if(_gtTimer){clearTimeout(_gtTimer);_gtTimer=null;}
+  if(_gtOrologio){clearInterval(_gtOrologio);_gtOrologio=null;}
+}
+async function gtPrefApri(primo){
+  const v=id=>String((document.getElementById(id)||{}).value||'').trim();
+  const pin=v('gt-pin');
+  if(!/^\d{4,8}$/.test(pin)){_gtMsg='Il PIN è di 4–8 cifre.';gtPrefRender();return;}
+  if(primo&&pin!==v('gt-pin2')){_gtMsg='I due PIN non coincidono.';gtPrefRender();return;}
+  let j;try{j=await _gtChiedi({azione:primo?'imposta-resident':'apri',pin});}catch(e){j={ok:false,error:'Worker non raggiungibile'};}
+  if(!j.ok||!j.tp){_gtMsg=j.error||'Non aperto';if(primo)_gtStato=null;gtPrefRender();if(primo)gtPrefEntra();return;}
+  _gtTp=j.tp;_gtScade=Math.min(Number(j.scade)||0,Date.now()+GT_DURATA);_gtMsg='';
+  if(_gtTimer)clearTimeout(_gtTimer);
+  _gtTimer=setTimeout(()=>{gtPrefChiudi('Chiuso dopo 5 minuti: inserisci di nuovo il PIN.');gtPrefRender();},Math.max(0,_gtScade-Date.now()));
+  await gtPrefLoad();
+  if(_gtOrologio)clearInterval(_gtOrologio);
+  // Solo il numero del conto alla rovescia: niente ridisegno sotto le dita.
+  _gtOrologio=setInterval(()=>{const e=document.getElementById('gt-resta');if(!e)return;const s=Math.max(0,Math.round((_gtScade-Date.now())/1000));e.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');},1000);
+}
+async function gtPrefLoad(){
+  if(!_gtAperto()){gtPrefChiudi('Chiuso: inserisci di nuovo il PIN.');gtPrefRender();return;}
+  let j;try{j=await _gtChiedi({azione:'dati',tp:_gtTp});}catch(e){j={ok:false,error:'Worker non raggiungibile'};}
+  if(!j.ok){if(/scadut/i.test(j.error||''))gtPrefChiudi(j.error);else _gtMsg=j.error||'Richieste non lette';gtPrefRender();return;}
+  _gtData=Array.isArray(j.richieste)?j.richieste:[];
+  gtPrefRender();
+}
+function gtPrefMarkAllSeen(){
+  const tsList=_gtData.map(r=>r.ts).filter(Boolean).sort();
+  const until=tsList[tsList.length-1]||new Date().toISOString();
+  try{localStorage.setItem('bg_tp_seen_until',until);}catch(e){}
+  gtPrefRender();
+}
+function gtPrefRender(){
+  const el=document.getElementById('gt-pref-content');if(!el)return;
+  if(_gtAperto()){
+    gtPrefDisegna();
+    const s=Math.max(0,Math.round((_gtScade-Date.now())/1000));
+    el.insertAdjacentHTML('afterbegin',`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-xxs);color:var(--text-dim);">
+      <span style="display:inline-flex;align-items:center;gap:6px;color:var(--green);font-weight:700;">${GT_ICONA_LUCCHETTO_APERTO}Aperto col PIN</span>
+      <span>si chiude da solo fra <strong id="gt-resta" style="color:var(--text);font-variant-numeric:tabular-nums;">${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</strong></span>
+      <button onclick="gtPrefChiudi('');gtPrefRender();" style="margin-left:auto;border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">Chiudi ora</button>
+    </div>${_gtMsg?`<div style="margin-bottom:10px;font-size:var(--fs-xs);color:var(--red);">${_gtEsc(_gtMsg)}</div>`:''}`);
+    return;
+  }
+  const st=_gtStato||{};
+  const primo=st.ok&&!st.resident;
+  const campo=(id,ph)=>`<input id="${id}" type="password" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="${ph}" onkeydown="if(event.key==='Enter')gtPrefApri(${primo?'true':'false'})" style="width:180px;max-width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:18px;letter-spacing:.3em;text-align:center;font-family:inherit;background:var(--surface);color:var(--text);">`;
+  el.innerHTML=`<div class="gb-cantiere" style="min-height:calc(100vh - 160px);">
+    <div style="color:var(--accent);">${GT_ICONA_LUCCHETTO}</div>
+    <div class="gb-cantiere-k" style="margin-top:10px;">Preferenze Turnazione</div>
+    <div class="gb-cantiere-t" style="font-size:22px;">${primo?'Scegli il PIN del Resident':'Riservato al Resident Manager'}</div>
+    <div class="gb-cantiere-r"></div>
+    ${st.ok===false?`<div class="gb-cantiere-s" style="color:var(--red);">${_gtEsc(st.error||'Non raggiungibile')}</div>`:
+      `<div class="gb-cantiere-s" style="margin-bottom:14px;">${primo?'Primo accesso: scegli un PIN di 4–8 cifre e scrivilo due volte. Ti servirà ogni volta che apri questa voce.':'Inserisci il PIN. Il modulo resta aperto 5 minuti e si chiude anche quando passi a un\'altra voce.'}</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+        ${campo('gt-pin',primo?'nuovo PIN':'PIN')}
+        ${primo?campo('gt-pin2','ripeti il PIN'):''}
+        <button onclick="gtPrefApri(${primo?'true':'false'})" style="margin-top:4px;background:var(--accent);color:#fff;border:none;padding:9px 22px;border-radius:8px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;">${primo?'Salva il PIN e apri':'Apri'}</button>
+        ${_gtMsg?`<div style="font-size:var(--fs-xs);color:var(--red);margin-top:4px;">${_gtEsc(_gtMsg)}</div>`:''}
+      </div>`}
+  </div>`;
+  const f=document.getElementById('gt-pin');if(f)try{f.focus();}catch(e){}
+}
+const GT_ICONA_LUCCHETTO='<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.3"/></svg>';
+const GT_ICONA_LUCCHETTO_APERTO='<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>';
+
+let _gtData=[];
+let _gtFilter='tutti';
+let _gtFilterNome='';
+let _gtCalYear=new Date().getFullYear();
+let _gtCalMonth=new Date().getMonth(); // 0-based
+let _gtCalDay=null; // giorno selezionato nel calendario (dd/MM/yyyy)
+// Mesi dell'elenco aperti a mano (16/11/2026): i mesi PRECEDENTI a quello in corso partono
+// chiusi, quello in corso aperto. Sta fuori dal render, che rigenera tutto l'HTML.
+let _gtMesiAperti=new Set();
+// Persone del riepilogo con l'elenco delle richieste aperto (clic sul numero).
+let _gtConsAperto=new Set();
+// Colore della barra "Trimestre in corso" (QM, 16/11/2026): verde 0–7, arancio 8–15, rosso da 16
+// (scala piena a 21).
+// L'arancio è --orange e non --amber: l'amber di Compass è un arancio scuro che accanto al
+// rosso non si distingueva (QM, 16/11/2026).
+function _gtConsColore(n){return n<=7?'var(--green)':n<=15?'var(--orange)':'var(--red)';}
+
+function gtPrefSetFilter(f){
+  _gtFilter=f;
+  gtPrefRender();
+}
+
+// Settimana PROSSIMA, da lunedì a domenica: quella dopo la settimana di oggi (16/11/2026).
+// È quella su cui si prepara il turno, quindi il calendario la riquadra e sotto si elencano
+// tutte le sue richieste. Date a mezzogiorno, come il turno.
+function _gtSettimanaProssima(oggi){
+  const o=oggi?new Date(oggi):new Date();o.setHours(12,0,0,0);
+  const lun=new Date(o);lun.setDate(o.getDate()-((o.getDay()+6)%7)+7);
+  const giorni=[];
+  for(let i=0;i<7;i++){const d=new Date(lun);d.setDate(lun.getDate()+i);giorni.push(d);}
+  const k=d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  return {da:giorni[0],a:giorni[6],giorni:giorni.map(k)};
+}
+// Il foglio delle richieste scrive lo stesso reparto in modi diversi ("HOUSEKEEPING" e
+// "Housekeeping"): erano due filtri uguali (16/11/2026). Si porta tutto alla stessa forma,
+// iniziale maiuscola, prima di contare e filtrare.
+function _gtRepNorm(s){
+  return String(s||'').trim().replace(/\s+/g,' ').toLowerCase().replace(/(^|[\s/-])(\S)/g,(m,a,b)=>a+b.toUpperCase());
+}
+// Trimestre A RITROSO dalla settimana prossima (QM, 16/11/2026): i tre mesi che finiscono il
+// giorno prima del suo lunedì, ESCLUSA la settimana stessa. Lunedì 23/11 -> 23/08 – 22/11.
+// Si conta il giorno RICHIESTO, non la data d'invio. Non è più il trimestre di calendario:
+// a inizio ottobre quello avrebbe contato quasi niente.
+function _gtTrimestre(oggi){
+  const lun=_gtSettimanaProssima(oggi).da;
+  const a=new Date(lun);a.setDate(a.getDate()-1);a.setHours(12,0,0,0);
+  const da=new Date(lun);da.setMonth(da.getMonth()-3);da.setHours(12,0,0,0);
+  return {da,a};
+}
+// Dal 16/11/2026 (QM) compaiono SOLO le persone con almeno una richiesta per la settimana
+// prossima: `sett` è quante ne hanno lì, `tot` quante nei tre mesi prima (vedi _gtTrimestre).
+function _gtConsuntivo(dati,filtro,oggi){
+  const tr=_gtTrimestre(oggi),per={};
+  const giorniSett=_gtSettimanaProssima(oggi).giorni;
+  const chiave=r=>String(r.nome||'').trim().replace(/\s+/g,' ').toLowerCase();
+  const inSett={};
+  (dati||[]).forEach(r=>{
+    if(filtro&&filtro!=='tutti'&&_gtRepNorm(r.reparto)!==filtro)return;
+    if(!chiave(r)||!giorniSett.includes(_gtFmtDate(r.giornoRichiesto)))return;
+    const k=chiave(r);
+    const x=inSett[k]||(inSett[k]={nome:String(r.nome).trim().replace(/\s+/g,' '),reparto:_gtRepNorm(r.reparto),n:0});
+    x.n++;
+  });
+  // Chi chiede per la settimana prossima compare SEMPRE, anche con 0 nei tre mesi prima.
+  Object.keys(inSett).forEach(k=>{per[k]={nome:inSett[k].nome,reparto:inSett[k].reparto,tot:0,sett:inSett[k].n};});
+  (dati||[]).forEach(r=>{
+    if(filtro&&filtro!=='tutti'&&_gtRepNorm(r.reparto)!==filtro)return;
+    const m=String(_gtFmtDate(r.giornoRichiesto)).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(!m)return;
+    const d=new Date(+m[3],+m[2]-1,+m[1],12);
+    if(d<tr.da||d>tr.a)return;
+    const nome=String(r.nome||'').trim().replace(/\s+/g,' ');if(!nome)return;
+    const k=nome.toLowerCase();
+    if(!per[k])return;
+    const x=per[k];
+    x.tot++;
+    (x.lista||(x.lista=[])).push(r);
+    // Fra le scritture della stessa persona si mostra quella "ben scritta" (Rossi Anna, non
+    // ROSSI anna): ogni parola con la sola iniziale maiuscola.
+    const bene=s=>s.split(' ').every(w=>/^[A-ZÀ-Þ][^A-ZÀ-Þ]*$/.test(w));
+    if(!bene(x.nome)&&bene(nome))x.nome=nome;
+  });
+  return {tr,righe:Object.values(per).sort((a,b)=>b.tot-a.tot||a.nome.localeCompare(b.nome,'it'))};
+}
+function gtPrefNavCal(dir){_gtCalMonth+=dir;if(_gtCalMonth>11){_gtCalMonth=0;_gtCalYear++;}else if(_gtCalMonth<0){_gtCalMonth=11;_gtCalYear--;}gtPrefRender();}
+function gtPrefToggleMese(k){_gtMesiAperti.has(k)?_gtMesiAperti.delete(k):_gtMesiAperti.add(k);_gbSenzaSalto(gtPrefRender);}
+function gtPrefToggleCons(k){_gtConsAperto.has(k)?_gtConsAperto.delete(k):_gtConsAperto.add(k);_gbSenzaSalto(gtPrefRender);}
+function gtPrefSelectDay(d){_gtCalDay=_gtCalDay===d?null:d;gtPrefRender();}
+
+// Normalizza qualsiasi formato data → dd/MM/yyyy
+// Gestisce: "dd/MM/yyyy", "yyyy-MM-dd[T...]", "Sun Apr 06 2025 22:00:00 GMT+0200 (CEST)"
+function _gtFmtDate(s){
+  if(!s)return'—';
+  const str=String(s).trim();
+  if(!str||str==='—')return'—';
+  // Già dd/MM/yyyy
+  if(/^\d{2}\/\d{2}\/\d{4}$/.test(str))return str;
+  // ISO yyyy-MM-dd[T...]
+  const iso=str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(iso)return`${iso[3]}/${iso[2]}/${iso[1]}`;
+  // JS Date.toString: "... MonName DD YYYY ..." es. "Sun Apr 06 2025 22:00:00 GMT+0200"
+  const jsdt=str.match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s+(\d{4})\b/);
+  if(jsdt){const mo={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};const m=mo[jsdt[1]];if(m)return`${String(jsdt[2]).padStart(2,'0')}/${m}/${jsdt[3]}`;}
+  // Fallback: native parse con timezone Rome
+  try{const d=new Date(str);if(!isNaN(d.getTime()))return d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Rome'});}catch(e){}
+  return str.split(' ')[0].split('T')[0]||'—';
+}
+
+function gtPrefDisegna(){
+  const el=document.getElementById('gt-pref-content');
+  if(!el)return;
+  const seenUntil=localStorage.getItem('bg_tp_seen_until')||'';
+
+  if(!_gtData.length){
+    el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna richiesta ricevuta</div>';
+    return;
+  }
+  _gtData.forEach(r=>{if(r&&r.reparto)r.reparto=_gtRepNorm(r.reparto);});
+  if(_gtFilter!=='tutti')_gtFilter=_gtRepNorm(_gtFilter);
+
+  // Conta richieste per giorno — normalizza togliendo orario
+  const countByDay={};
+  _gtData.forEach(r=>{
+    if(!r.giornoRichiesto)return;
+    if(_gtFilter!=='tutti'&&r.reparto!==_gtFilter)return;
+    const k=_gtFmtDate(r.giornoRichiesto);
+    if(k!=='—')countByDay[k]=(countByDay[k]||0)+1;
+  });
+
+  // Calendario mensile
+  const mesiIt=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  const giorniIt=['L','M','M','G','V','S','D'];
+  const today=new Date();
+  const todayKey=`${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
+  const firstDay=new Date(_gtCalYear,_gtCalMonth,1);
+  const daysInMonth=new Date(_gtCalYear,_gtCalMonth+1,0).getDate();
+  // giorno settimana del 1° (0=dom→adatta a lun=0)
+  let startDow=(firstDay.getDay()+6)%7;
+
+  let calCells='';
+  // intestazione giorni
+  calCells+=giorniIt.map((g,i)=>`<div style="grid-row:1;grid-column:${i+1};text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:4px 0;">${g}</div>`).join('');
+  // Ogni giorno ha riga e colonna ESPLICITE: così il riquadro della settimana prossima può
+  // stare sopra le sue celle (in una griglia gli elementi posizionati si sovrappongono,
+  // quelli lasciati al posizionamento automatico no).
+  const prossima=_gtSettimanaProssima(today);
+  const posCella=d=>({r:2+Math.floor((startDow+d-1)/7),c:(startDow+d-1)%7+1});
+  {
+    const nel=[];
+    for(let d=1;d<=daysInMonth;d++){
+      const key=`${String(d).padStart(2,'0')}/${String(_gtCalMonth+1).padStart(2,'0')}/${_gtCalYear}`;
+      if(prossima.giorni.includes(key))nel.push(posCella(d));
+    }
+    if(nel.length){
+      const r=nel[0].r,c0=nel[0].c,c1=nel[nel.length-1].c;
+      calCells+=`<div title="Settimana prossima" style="grid-row:${r};grid-column:${c0} / ${c1+1};margin:-4px;border:2px solid var(--gold);border-radius:0 10px 10px 10px;pointer-events:none;z-index:0;"></div>`;
+      // Linguetta oro attaccata all'angolo in alto a sinistra del riquadro (disegno del QM,
+      // 16/11/2026): sta sopra le celle della riga prima (z-index 2), alta 16px, e il suo
+      // bordo basso tocca il bordo del riquadro (-4px di margine del riquadro, -16 suoi).
+      calCells+=`<div style="grid-row:${r};grid-column:${c0} / ${c1+1};align-self:start;justify-self:start;margin:-20px 0 0 -4px;z-index:2;pointer-events:none;padding:2px 9px;background:var(--gold);color:#fff;border-radius:6px 6px 0 0;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;line-height:12px;white-space:nowrap;">Settimana prossima</div>`;
+    }
+  }
+  // giorni
+  for(let d=1;d<=daysInMonth;d++){
+    const key=`${String(d).padStart(2,'0')}/${String(_gtCalMonth+1).padStart(2,'0')}/${_gtCalYear}`;
+    const cnt=countByDay[key]||0;
+    const isToday=key===todayKey;
+    const isSel=key===_gtCalDay;
+    const bg=isSel?'var(--accent)':cnt>=3?'#1a3a70':cnt>=2?'#1e4a90':cnt>=1?'var(--accent-bg)':'var(--surface)';
+    const col=isSel?'#fff':cnt>=2?'#fff':cnt>=1?'var(--accent)':'var(--text-dim)';
+    const border=isToday?'2px solid var(--accent)':'1px solid var(--border-light)';
+    const pc=posCella(d);
+    // Proposta E (16/11/2026): fuori dalla settimana prossima il mese si attenua, così quella
+    // settimana salta all'occhio. Il giorno selezionato resta pieno.
+    const attenua=prossima.giorni.length&&!prossima.giorni.includes(key)&&!isSel;
+    calCells+=`<div onclick="gtPrefSelectDay('${key}')" style="grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;${attenua?'opacity:.38;':''}aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
+      <div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${col};line-height:1;">${d}</div>
+      ${cnt>0?`<div style="font-size:10px;font-weight:700;color:${isSel?'rgba(255,255,255,.85)':cnt>=2?'rgba(255,255,255,.85)':'var(--accent)'};margin-top:1px;">${cnt}</div>`:''}
+    </div>`;
+  }
+
+  const prefColor=p=>{const u=(p||'').toUpperCase();if(u.includes('FERIE'))return'var(--amber)';if(u.includes('RIPOSO'))return'var(--text-muted)';if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';return'var(--text)';};
+  const cons=_gtConsuntivo(_gtData,_gtFilter,today);
+  const settDaA=`${prossima.giorni[0].slice(0,5)} – ${prossima.giorni[6].slice(0,5)}`;
+  // Più stretto del resto della riga (QM): non si allarga fino al bordo, max 520px.
+  const consHtml=`<div class="panel" style="flex:0 1 520px;min-width:0;margin-bottom:18px;">
+    <div class="panel-header"><span class="panel-title">Chi chiede la settimana ${settDaA}</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">Trimestre in corso: ${String(cons.tr.da.getDate()).padStart(2,'0')}/${String(cons.tr.da.getMonth()+1).padStart(2,'0')} – ${String(cons.tr.a.getDate()).padStart(2,'0')}/${String(cons.tr.a.getMonth()+1).padStart(2,'0')}</span></div>
+    <div class="panel-body" style="padding:0;">${cons.righe.length?`<table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
+      <thead><tr style="background:var(--surface2);">
+        <th style="text-align:left;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Persona</th>
+        <th style="text-align:left;padding:8px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Reparto</th>
+        <th style="text-align:right;padding:8px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Settimana<br><span style="white-space:nowrap;">${settDaA}</span></th>
+        <th style="text-align:right;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Trimestre<br>in corso</th>
+      </tr></thead><tbody>${cons.righe.map((x,i)=>{
+        const k=x.nome.toLowerCase(),aperto=_gtConsAperto.has(k);
+        const lista=(x.lista||[]).slice().sort((a,b)=>{const p=s=>{const m=String(_gtFmtDate(s)).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?m[3]+m[2]+m[1]:'';};return p(b.giornoRichiesto).localeCompare(p(a.giornoRichiesto));});
+        const fondo=i%2?'background:var(--surface2);':'';
+        return `<tr style="border-top:1px solid var(--border-light);${fondo}">
+        <td style="padding:7px 14px;font-weight:600;">${_gtEsc(x.nome)}</td>
+        <td style="padding:7px 10px;color:var(--text-dim);">${_gtEsc(x.reparto||'—')}</td>
+        <td style="padding:7px 10px;text-align:right;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;">${x.sett}</td>
+        <td style="padding:7px 14px;text-align:right;white-space:nowrap;"><span style="display:inline-block;vertical-align:middle;height:6px;border-radius:3px;background:${_gtConsColore(x.tot)};width:${Math.max(4,Math.round(60*Math.min(x.tot,21)/21))}px;margin-right:8px;"></span>${x.tot?`<button onclick="gtPrefToggleCons('${_gtEsc(k.replace(/\\/g,'\\\\').replace(/'/g,"\\'"))}')" title="Vedi le richieste" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;font-weight:700;color:var(--accent);text-decoration:underline;text-underline-offset:2px;font-variant-numeric:tabular-nums;">${x.tot} ${aperto?'▴':'▾'}</button>`:'<strong style="font-variant-numeric:tabular-nums;">0</strong>'}</td>
+      </tr>${aperto?`<tr style="${fondo}"><td colspan="4" style="padding:0 14px 10px;">
+        <div style="border-left:2px solid ${_gtConsColore(x.tot)};padding:2px 0 2px 10px;display:flex;flex-direction:column;gap:3px;font-size:var(--fs-xxs);">
+          ${lista.map(r=>`<div style="display:flex;gap:10px;flex-wrap:wrap;"><span style="font-weight:700;font-variant-numeric:tabular-nums;min-width:74px;">${_gtEsc(_gtFmtDate(r.giornoRichiesto))}</span><span style="font-weight:700;color:${prefColor(r.preferenza)};">${_gtEsc(r.preferenza||'—')}</span>${r.motivazione?`<span style="color:var(--text-dim);font-style:italic;">${_gtEsc(r.motivazione)}</span>`:''}</div>`).join('')}
+        </div></td></tr>`:''}`;
+      }).join('')}
+      </tbody></table>`:`<div style="padding:14px;font-size:var(--fs-xs);color:var(--text-dim);">Nessuna richiesta per la settimana prossima${_gtFilter!=='tutti'?' in '+_gtEsc(_gtFilter):''}.</div>`}</div>
+  </div>`;
+
+  const calHtml=`<div style="flex:0 1 360px;min-width:0;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <button onclick="gtPrefNavCal(-1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">‹</button>
+      <div style="font-size:var(--fs-sm);font-weight:700;">${mesiIt[_gtCalMonth]} ${_gtCalYear}</div>
+      <button onclick="gtPrefNavCal(1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">${calCells}</div>
+    ${_gtCalDay?`<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--accent);font-weight:600;">📅 Filtro: ${_gtCalDay} — <span onclick="gtPrefSelectDay('${_gtCalDay}')" style="cursor:pointer;text-decoration:underline;">rimuovi</span></div>`:''}
+  </div>`;
+
+  // Reparti disponibili
+  const reparti=[...new Set(_gtData.map(r=>r.reparto).filter(Boolean))].sort();
+  const nuovi=seenUntil ? _gtData.filter(r=>r.ts&&r.ts>seenUntil).length : 0;
+
+  // Toolbar filtri
+  const fBtn=(f,lbl)=>`<button onclick="gtPrefSetFilter('${f}')" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;font-weight:600;transition:all .12s;${_gtFilter===f?'background:var(--accent);color:#fff;border-color:var(--accent);':'background:var(--surface);color:var(--text-muted);'}">${lbl}</button>`;
+  const toolbar=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    ${fBtn('tutti','Tutti')}${reparti.map(r=>fBtn(r,r)).join('')}
+    <div style="flex:1;"></div>
+    ${nuovi>0?`<button onclick="gtPrefMarkAllSeen()" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;background:var(--surface);color:var(--text-muted);">✓ Letti</button>`:''}
+    <button onclick="gtPrefLoad()" style="padding:5px 10px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;background:var(--surface);color:var(--text-muted);" title="Aggiorna">↺</button>
+  </div>`;
+
+  // Lista richieste
+  let items=_gtData;
+  if(_gtFilter!=='tutti')items=items.filter(r=>r.reparto===_gtFilter);
+  if(_gtCalDay)items=items.filter(r=>_gtFmtDate(r.giornoRichiesto)===_gtCalDay);
+
+
+  // Riga singola richiesta — estratta per essere riusata sia nella vista raggruppata
+  // per mese (nessun giorno selezionato) sia nella vista piatta (giorno selezionato).
+  const rowHtml=r=>{
+    const isNew=seenUntil ? (r.ts&&r.ts>seenUntil) : false;
+    const d=new Date(r.ts);
+    const tsStr=isNaN(d)?_gtFmtDate(r.ts):d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+    return`<div style="background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${isNew?'var(--accent)':'transparent'};border-radius:8px;padding:11px 14px;margin-bottom:5px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;">
+      <div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
+          ${isNew?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--accent);color:#fff;flex-shrink:0;">NUOVO</span>':''}
+          <span style="font-size:var(--fs-xs);font-weight:700;">${_gtEsc(r.nome)}</span>
+          <span style="font-size:var(--fs-xxs);color:var(--text-dim);background:var(--bg);padding:1px 7px;border-radius:4px;">${_gtEsc(r.reparto)}</span>
+        </div>
+        <div style="font-size:var(--fs-xs);font-weight:700;color:${prefColor(r.preferenza)};margin-bottom:3px;">${_gtEsc(r.preferenza)}</div>
+        <div style="display:flex;gap:12px;font-size:var(--fs-xxs);color:var(--text-muted);">
+          <span style="display:inline-flex;align-items:center;gap:5px;">${GT_ICONA_CAL}Per il <b>${_gtEsc(_gtFmtDate(r.giornoRichiesto))}</b></span>
+          <span>Richiesta: ${_gtEsc(_gtFmtDate(r.dataRichiesta))}</span>
+        </div>
+        ${r.motivazione?`<div style="margin-top:4px;font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;">${_gtEsc(r.motivazione)}</div>`:''}
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);white-space:nowrap;">${tsStr}</div>
+    </div>`;
+  };
+
+  // ── Richieste della settimana prossima, sotto il calendario ──
+  // Tutte, giorno per giorno, col filtro di reparto ma SENZA quello del giorno cliccato:
+  // è l'elenco su cui si prepara il turno, non deve sparire cliccando un giorno.
+  const giorniLungo=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  const perSett=_gtData.filter(r=>(_gtFilter==='tutti'||r.reparto===_gtFilter)&&prossima.giorni.includes(_gtFmtDate(r.giornoRichiesto)));
+  let settHtml=`<div class="panel" style="margin-bottom:18px;border-top:3px solid var(--gold);">
+    <div class="panel-header"><span class="panel-title">Richieste per la settimana prossima</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">${prossima.giorni[0]} – ${prossima.giorni[6]} · ${perSett.length} ${perSett.length===1?'richiesta':'richieste'}</span></div>
+    <div class="panel-body" style="padding:12px 14px;">`;
+  if(!perSett.length){
+    settHtml+=`<div style="padding:8px 0;color:var(--text-dim);font-size:var(--fs-xs);">Nessuna richiesta per la settimana prossima${_gtFilter!=='tutti'?' in '+_gtEsc(_gtFilter):''}.</div>`;
+  }else{
+    prossima.giorni.forEach((g,i)=>{
+      const delGiorno=perSett.filter(r=>_gtFmtDate(r.giornoRichiesto)===g).sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'it'));
+      if(!delGiorno.length)return;
+      settHtml+=`<div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:${i?'12px':'0'} 0 6px;">${giorniLungo[(i+1)%7]} ${g.slice(0,5)}</div>`;
+      delGiorno.forEach(r=>{settHtml+=rowHtml(r);});
+    });
+  }
+  settHtml+=`</div></div>`;
+
+  let listHtml='';
+  if(!items.length){
+    listHtml='<div style="padding:20px 0;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessuna richiesta</div>';
+  } else if(_gtCalDay){
+    // Giorno selezionato dal calendario: chi ha chiesto cosa PER quel giorno, subito —
+    // niente raggruppamento per mese di invio (fuorviante quando si è già filtrato per
+    // un giorno preciso, e nascondeva le richieste sotto etichette di mesi diversi).
+    listHtml+=`<div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:12px 0 6px;">Richieste per il ${_gtCalDay}</div>`;
+    items.forEach(r=>{listHtml+=rowHtml(r);});
+  } else {
+    const grouped={},annoDi={};
+    items.forEach(r=>{
+      const d=new Date(r.ts);
+      const key=isNaN(d)?'—':d.toLocaleDateString('it-IT',{month:'long',year:'numeric'});
+      if(!grouped[key]){grouped[key]=[];annoDi[key]=isNaN(d)?null:d.getFullYear();}
+      grouped[key].push(r);
+    });
+    // Il mese in corso resta aperto, i precedenti si chiudono: si apre solo quello che serve.
+    // Gli ANNI precedenti (QM, 16/11/2026) stanno raccolti sotto il loro anno, chiuso: aprendolo
+    // compaiono i suoi mesi, chiusi anche loro.
+    const meseOggi=new Date().toLocaleDateString('it-IT',{month:'long',year:'numeric'});
+    const annoOggi=new Date().getFullYear();
+    const conta=n=>`<span style="font-weight:600;letter-spacing:0;text-transform:none;">· ${n} ${n===1?'richiesta':'richieste'}</span>`;
+    const js=s=>String(s).replace(/'/g,"\\'");
+    const meseHtml=(mese,rows,rientro)=>{
+      const aperto=mese===meseOggi||_gtMesiAperti.has(mese);
+      let o=`<div onclick="gtPrefToggleMese('${js(mese)}')" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:12px 0 6px ${rientro?'18px':'0'};">${mese===meseOggi?'':`<span style="width:10px;">${aperto?'▾':'▸'}</span>`}${mese}${conta(rows.length)}</div>`;
+      if(aperto)o+=`<div style="margin-left:${rientro?'18px':'0'};">${rows.map(rowHtml).join('')}</div>`;
+      return o;
+    };
+    const anni={},ordineAnni=[];
+    Object.entries(grouped).forEach(([mese,rows])=>{
+      const a=annoDi[mese];
+      if(a!==null&&a<annoOggi){
+        if(!anni[a]){anni[a]=[];ordineAnni.push(a);}
+        anni[a].push([mese,rows]);
+      }else listHtml+=meseHtml(mese,rows,false);
+    });
+    ordineAnni.sort((x,y)=>y-x).forEach(a=>{
+      const kA='anno:'+a,aperto=_gtMesiAperti.has(kA);
+      const n=anni[a].reduce((s,m)=>s+m[1].length,0);
+      listHtml+=`<div onclick="gtPrefToggleMese('${kA}')" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:var(--fs-xs);font-weight:700;color:var(--accent);margin:16px 0 6px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);"><span style="width:10px;">${aperto?'▾':'▸'}</span>${a}${conta(n)}</div>`;
+      if(aperto)anni[a].forEach(([mese,rows])=>{listHtml+=meseHtml(mese,rows,true);});
+    });
+  }
+
+  // Calendario e consuntivo affiancati; su schermo stretto il consuntivo va sotto (flex-wrap).
+  el.innerHTML=toolbar+`<div style="display:flex;flex-wrap:wrap;gap:24px 56px;align-items:flex-start;">${calHtml}${consHtml}</div>`+settHtml+listHtml;
+}
+
 // ── Conteggio Biancheria: voce di menu come in Compass, per ora modulo in costruzione ──
 // (16/11/2026) Il conteggio a scorrere di Compass parte dalla dotazione da contratto: per
 // Art Resort e Santa Brigida i contratti di fornitura con Raimondo non ci sono ancora.

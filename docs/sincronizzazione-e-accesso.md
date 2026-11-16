@@ -769,3 +769,8 @@ partenze del mese) non firmano il registro "Ultimo salvataggio altrove": compari
 postazione ("Reception Colleghi · Report pulizie") mentre erano solo il ricalcolo dopo un Piano arrivato.
 `hkpDeriveFromPiano` riscrive `qm_pulData` solo se cambia (prima: una scrittura a ogni apertura, su ogni postazione).
 
+## PIN di Preferenze Turnazione (16/11/2026)
+
+Percorso `/turni-pref` del Worker: due PIN cifrati (`qm_pin_resident`, `qm_pin_qm`), blocco dopo 5
+errori (`qm_pin_tentativi`), permesso `tp.` di 5 minuti per leggere il foglio delle richieste.
+Dettaglio in `docs/turni-e-staff.md`, «Preferenze Turnazione nella Galleria».

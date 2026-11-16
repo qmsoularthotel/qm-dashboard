@@ -6,6 +6,7 @@
 //
 // Cosa fa, in ordine di percorso:
 //   /kv/get|set|delete   archivio condiviso fra i dispositivi (binding QM_STORAGE)
+//   /turni-pref          Preferenze Turnazione nella Galleria, dietro PIN (16/11/2026)
 //   qualsiasi altro      proxy verso l'API Anthropic
 //
 // Variabili usate:
@@ -16,7 +17,7 @@
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /versione.
-const WORKER_VERSIONE = '2026-10-01a';
+const WORKER_VERSIONE = '2026-11-16a';
 
 export default {
   async fetch(request, env) {
@@ -74,6 +75,81 @@ export default {
       if (!ok) return json({ ok: false, error: 'Accesso non autorizzato' }, 401);
       const scade = Date.now() + 365 * 86400000;
       return json({ ok: true, pass: await firmaPassBg(env, scade), scade });
+    }
+
+    // ── PREFERENZE TURNAZIONE NELLA GALLERIA, DIETRO PIN (16/11/2026) ──
+    // Il Resident Manager fa i turni di tutti e vede le richieste come il QM in Compass, ma
+    // i PC della Galleria li usano anche i receptionist. Il modulo si apre solo con un PIN:
+    // quello del Resident (lo sceglie lui al primo accesso) o quello del QM (lo sceglie il QM
+    // da Compass). I PIN non sono mai salvati in chiaro: sale + PBKDF2, nelle chiavi
+    // qm_pin_* — il codice della Galleria non legge chiavi qm_ (permessoGalleria).
+    // Il PIN giusto restituisce un permesso "tp." che vale 5 minuti, e solo con quello
+    // si leggono le richieste: l'app della Galleria non conosce l'indirizzo del foglio.
+    // Cinque PIN sbagliati di fila fermano i tentativi per 15 minuti.
+    if (url.pathname === '/turni-pref') {
+      let corpo; try { corpo = await request.json(); } catch (e) { corpo = {}; }
+      const pass = request.headers.get('X-QM-Pass') || '';
+      const qm = await verificaPass(env, pass);
+      if (!qm && !(await verificaPassBg(env, pass))) return json({ ok: false, error: 'Accesso non autorizzato' }, 401);
+      if (!env.QM_AUTH_SECRET) return json({ ok: false, error: 'Accesso non ancora configurato sul Worker' }, 501);
+      const az = String(corpo.azione || '');
+      const pinValido = p => /^\d{4,8}$/.test(String(p || ''));
+      const leggi = async k => { try { return JSON.parse(await env.QM_STORAGE.get(k) || 'null'); } catch (e) { return null; } };
+      const res = await leggi('qm_pin_resident'), suo = await leggi('qm_pin_qm');
+      const ora = Date.now();
+      const tent = (await leggi('qm_pin_tentativi')) || { n: 0, fino: 0 };
+
+      if (az === 'stato')
+        return json({ ok: true, resident: !!res, qm: !!suo, bloccatoFino: tent.fino > ora ? tent.fino : 0 });
+
+      // Il Resident sceglie il suo PIN UNA volta; per cambiarlo il QM lo azzera da Compass.
+      if (az === 'imposta-resident') {
+        if (res) return json({ ok: false, error: 'Il PIN del Resident c\'è già: per cambiarlo il QM lo azzera da Compass' }, 409);
+        if (!pinValido(corpo.pin)) return json({ ok: false, error: 'Il PIN è di 4–8 cifre' }, 400);
+        await env.QM_STORAGE.put('qm_pin_resident', JSON.stringify(await hashPin(corpo.pin)));
+        const scade = ora + 5 * 60000;
+        return json({ ok: true, tp: await firmaTp(env, scade), scade, chi: 'resident' });
+      }
+      // Il PIN del QM si sceglie e si cambia solo da Compass (lasciapassare del QM).
+      if (az === 'imposta-qm') {
+        if (!qm) return json({ ok: false, error: 'Solo da Compass' }, 403);
+        if (!pinValido(corpo.pin)) return json({ ok: false, error: 'Il PIN è di 4–8 cifre' }, 400);
+        await env.QM_STORAGE.put('qm_pin_qm', JSON.stringify(await hashPin(corpo.pin)));
+        return json({ ok: true });
+      }
+      if (az === 'azzera-resident') {
+        if (!qm) return json({ ok: false, error: 'Solo da Compass' }, 403);
+        await env.QM_STORAGE.delete('qm_pin_resident');
+        await env.QM_STORAGE.delete('qm_pin_tentativi');
+        return json({ ok: true });
+      }
+      if (az === 'apri') {
+        if (tent.fino > ora) return json({ ok: false, error: 'Troppi PIN sbagliati: riprova fra ' + Math.ceil((tent.fino - ora) / 60000) + ' minuti', bloccatoFino: tent.fino }, 429);
+        let chi = '';
+        if (pinValido(corpo.pin)) {
+          if (res && (await hashPin(corpo.pin, res.sale)).hash === res.hash) chi = 'resident';
+          else if (suo && (await hashPin(corpo.pin, suo.sale)).hash === suo.hash) chi = 'qm';
+        }
+        if (!chi) {
+          const n = (tent.n || 0) + 1;
+          await env.QM_STORAGE.put('qm_pin_tentativi', JSON.stringify(n >= 5 ? { n: 0, fino: ora + 15 * 60000 } : { n, fino: 0 }), { expirationTtl: 86400 });
+          return json({ ok: false, error: n >= 5 ? 'PIN sbagliato. Tentativi fermi per 15 minuti' : 'PIN sbagliato', restano: n >= 5 ? 0 : 5 - n }, 401);
+        }
+        if (tent.n || tent.fino) await env.QM_STORAGE.delete('qm_pin_tentativi');
+        const scade = ora + 5 * 60000;
+        return json({ ok: true, tp: await firmaTp(env, scade), scade, chi });
+      }
+      if (az === 'dati') {
+        if (!(await verificaTp(env, corpo.tp))) return json({ ok: false, error: 'Permesso scaduto: inserisci di nuovo il PIN' }, 401);
+        try {
+          const r = await fetch(env.TURNI_PREF_URL || TURNI_PREF_URL_PREDEFINITO);
+          const j = await r.json();
+          return json({ ok: true, richieste: (j && j.richieste) || [] });
+        } catch (e) {
+          return json({ ok: false, error: 'Il foglio delle richieste non risponde' }, 502);
+        }
+      }
+      return json({ ok: false, error: 'Azione sconosciuta' }, 400);
     }
 
     // Vale per tutti i percorsi /kv/*. Finche' QM_AUTH_OBBLIGATORIA non e' 'si' non blocca
@@ -307,4 +383,34 @@ async function verificaPassBg(env, pass) {
 function permessoGalleria(percorso, chiave) {
   if (percorso !== '/kv/get' && percorso !== '/kv/set') return false;
   return /^bg_[A-Za-z0-9_]+$/.test(String(chiave || ''));
+}
+
+// ── PIN e permesso delle Preferenze Turnazione (16/11/2026) ──
+// Lo stesso indirizzo che Compass usa per leggere il foglio. Si può spostare in una variabile
+// TURNI_PREF_URL del Worker; finché non c'è, vale questo.
+const TURNI_PREF_URL_PREDEFINITO = 'https://script.google.com/macros/s/AKfycbzCbHxJbSfxg8X49w2JlfI9xo3HqhDiOa6E_0SDstdrvpQTQfqd2euaGp1oIK3zo0CA/exec';
+// PIN mai in chiaro: sale casuale + PBKDF2-SHA256 (100.000 giri, il massimo dei Worker).
+async function hashPin(pin, sale) {
+  const s = sale ? Uint8Array.from(atob(sale), c => c.charCodeAt(0)) : crypto.getRandomValues(new Uint8Array(16));
+  const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(String(pin)), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: s, iterations: 100000 }, k, 256);
+  let b = ''; s.forEach(x => { b += String.fromCharCode(x); });
+  return { sale: btoa(b), hash: b64url(bits) };
+}
+// Permesso di 5 minuti: "tp.<scadenza>.<firma>", firmato come gli altri ma su "tp.", così
+// non si scambia con un lasciapassare.
+async function firmaTp(env, scade) {
+  const k = await chiaveHmac(env);
+  const f = await crypto.subtle.sign('HMAC', k, new TextEncoder().encode('tp.' + scade));
+  return 'tp.' + scade + '.' + b64url(f);
+}
+async function verificaTp(env, tp) {
+  try {
+    if (!env.QM_AUTH_SECRET || !tp) return false;
+    const m = String(tp).match(/^tp\.(\d+)\./);
+    if (!m) return false;
+    const scade = Number(m[1]);
+    if (!(scade > Date.now())) return false;
+    return (await firmaTp(env, scade)) === String(tp);
+  } catch (e) { return false; }
 }

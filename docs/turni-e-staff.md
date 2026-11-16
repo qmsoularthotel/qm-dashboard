@@ -353,3 +353,28 @@ ditta e la persona va a "-". Anche il prompt ora chiede di non spostare i valori
 **Non tutti gli Extra sono Housekeeping** (06/10/2026): "Extra ABD" → **Abdalla** (Ricevimento, in `DEPTS.fo`);
 "Extra BKF" resta **Extra BKF** (Breakfast, in `DEPTS.bkf`), mai "Ditta BKF".
 
+## Preferenze Turnazione nella Galleria, dietro PIN (16/11/2026)
+
+Il Resident Manager fa i turni di tutti e vede **tutte** le richieste, come il QM in Compass;
+sui PC della Galleria però lavorano anche i receptionist. Voce **Preferenze Turnazione** (sezione
+*Turni* del menu) nell'app della Galleria, copia del modulo di Compass (rinomino `_tp`→`_gt`,
+`turniPref`→`gtPref`), che si apre **solo col PIN**:
+
+- **due PIN**: quello del **Resident** (lo sceglie lui al primo accesso, una volta sola; per
+  cambiarlo il QM lo azzera) e quello del **QM** (lo sceglie il QM da Compass → Sicurezza →
+  «PIN di Preferenze Turnazione — Galleria», dove può anche azzerare quello del Resident);
+- li controlla il **Worker** (`/turni-pref`, azioni `stato`, `imposta-resident`, `imposta-qm`,
+  `azzera-resident`, `apri`, `dati`): PIN mai in chiaro (sale + PBKDF2, chiavi `qm_pin_*`, che il
+  codice della Galleria non legge); 5 PIN sbagliati fermano i tentativi 15 minuti;
+- il PIN giusto dà un permesso `tp.` di **5 minuti**; le richieste si leggono solo con quello.
+  L'app della Galleria **non conosce l'indirizzo del foglio** e **non salva** le richieste nel
+  browser (restano in memoria e si cancellano chiudendo);
+- si chiude **dopo 5 minuti**, **passando a un'altra voce** (`bgSezione` → `gtPrefChiudi`) e con
+  «Chiudi ora»; rientrando si parte sempre chiusi (`gtPrefEntra`). Conto alla rovescia senza
+  ridisegno (`#gt-resta`).
+- Compass continua a leggere il foglio direttamente: l'indirizzo resta nel suo codice. Per
+  chiuderlo davvero si potrà far passare anche Compass dal Worker e ripubblicare lo script
+  Google con un indirizzo nuovo (variabile `TURNI_PREF_URL` del Worker).
+
+Worker `2026-11-16a` (= `WORKER_VERSIONE_ATTESA`). Controlli in `test/galleria.js`; sabotaggio
+(niente chiusura uscendo, niente scadenza, niente verifica del permesso) → 3 falliscono.
