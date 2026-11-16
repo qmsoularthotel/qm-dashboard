@@ -278,6 +278,12 @@ calendario; sotto il calendario elenca tutte le richieste per quella settimana"*
 9 controlli in `test/controlli.js` (sabotaggio: settimana corrente al posto della prossima ed
 elenco tolto → 7 falliscono).
 
+### Mesi precedenti chiusi nell'elenco (16/11/2026)
+
+Nell'elenco raggruppato per mese di invio il **mese in corso** resta aperto, i **precedenti**
+partono chiusi: intestazione cliccabile con ▸/▾ e «· N richieste» (`turniPrefToggleMese`,
+`_tpMesiAperti` fuori dal render, ridisegno con `_qmSenzaSalto`). 4 controlli.
+
 ---
 
 ## Persone escluse dall'elaborazione (02/10/2026)

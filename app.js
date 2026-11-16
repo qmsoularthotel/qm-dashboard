@@ -11141,6 +11141,9 @@ let _tpFilterNome='';
 let _tpCalYear=new Date().getFullYear();
 let _tpCalMonth=new Date().getMonth(); // 0-based
 let _tpCalDay=null; // giorno selezionato nel calendario (dd/MM/yyyy)
+// Mesi dell'elenco aperti a mano (16/11/2026): i mesi PRECEDENTI a quello in corso partono
+// chiusi, quello in corso aperto. Sta fuori dal render, che rigenera tutto l'HTML.
+let _tpMesiAperti=new Set();
 
 function turniPrefUpdateBadge(){
   const badge=document.getElementById('turniPrefBadge');
@@ -11203,6 +11206,7 @@ function _tpSettimanaProssima(oggi){
   return {da:giorni[0],a:giorni[6],giorni:giorni.map(k)};
 }
 function turniPrefNavCal(dir){_tpCalMonth+=dir;if(_tpCalMonth>11){_tpCalMonth=0;_tpCalYear++;}else if(_tpCalMonth<0){_tpCalMonth=11;_tpCalYear--;}turniPrefRender();}
+function turniPrefToggleMese(k){_tpMesiAperti.has(k)?_tpMesiAperti.delete(k):_tpMesiAperti.add(k);_qmSenzaSalto(turniPrefRender);}
 function turniPrefSelectDay(d){_tpCalDay=_tpCalDay===d?null:d;turniPrefRender();}
 
 // Normalizza qualsiasi formato data → dd/MM/yyyy
@@ -11381,9 +11385,12 @@ function turniPrefRender(){
       if(!grouped[key])grouped[key]=[];
       grouped[key].push(r);
     });
+    // Il mese in corso resta aperto, i precedenti si chiudono: si apre solo quello che serve.
+    const meseOggi=new Date().toLocaleDateString('it-IT',{month:'long',year:'numeric'});
     Object.entries(grouped).forEach(([mese,rows])=>{
-      listHtml+=`<div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:12px 0 6px;">${mese}</div>`;
-      rows.forEach(r=>{listHtml+=rowHtml(r);});
+      const aperto=mese===meseOggi||_tpMesiAperti.has(mese);
+      listHtml+=`<div onclick="turniPrefToggleMese('${String(mese).replace(/'/g,"\\'")}')" style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:12px 0 6px;">${mese===meseOggi?'':`<span style="width:10px;">${aperto?'▾':'▸'}</span>`}${mese}<span style="font-weight:600;letter-spacing:0;text-transform:none;">· ${rows.length} ${rows.length===1?'richiesta':'richieste'}</span></div>`;
+      if(aperto)rows.forEach(r=>{listHtml+=rowHtml(r);});
     });
   }
 

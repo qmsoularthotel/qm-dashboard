@@ -3808,3 +3808,23 @@ sez('Preferenze Turni: settimana prossima riquadrata e le sue richieste sotto il
   ok('il calendario ha il riquadro',               /title="Settimana prossima"[^>]*border:2px solid var\(--gold\)/.test(h), true);
   _tpData = d0; _tpFilter = f0; _tpCalDay = g0; _tpCalYear = y0; _tpCalMonth = m0;
 })();
+// I mesi precedenti partono chiusi, il mese in corso resta aperto (16/11/2026).
+(function () {
+  var box = { innerHTML: '' }, vero = document.getElementById, d0 = _tpData, f0 = _tpFilter, g0 = _tpCalDay, a0 = _tpMesiAperti;
+  var adesso = new Date().toISOString();
+  _tpData = [
+    { nome: 'Gialli Prova', reparto: 'Reception', preferenza: 'RIPOSO', giornoRichiesto: '01/01/2020', dataRichiesta: '01/01/2020', ts: adesso },
+    { nome: 'Viola Prova',  reparto: 'Reception', preferenza: 'FERIE',  giornoRichiesto: '01/01/2020', dataRichiesta: '01/01/2020', ts: '2020-01-15T10:00:00Z' }
+  ];
+  _tpFilter = 'tutti'; _tpCalDay = null; _tpMesiAperti = new Set();
+  document.getElementById = function (id) { return id === 'turni-pref-content' ? box : null; };
+  try {
+    turniPrefRender(); var chiuso = box.innerHTML;
+    _tpMesiAperti = new Set([new Date(2020, 0, 15).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })]);
+    turniPrefRender(); var aperto = box.innerHTML;
+  } finally { document.getElementById = vero; _tpData = d0; _tpFilter = f0; _tpCalDay = g0; _tpMesiAperti = a0; }
+  ok('Preferenze: il mese in corso e\' aperto',     /Gialli Prova/.test(chiuso), true);
+  ok('i mesi precedenti partono chiusi',            /Viola Prova/.test(chiuso), false);
+  ok('ma dicono quante richieste hanno',            /1 richiesta/.test(chiuso), true);
+  ok('e cliccando si aprono',                       /Viola Prova/.test(aperto), true);
+})();
