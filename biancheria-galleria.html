@@ -131,7 +131,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-15.2';
+const QM_APP_BUILD='2026-11-16.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -1332,6 +1332,8 @@ async function gbRegistraGiro(){
     valR[v]=t===''?null:Math.max(0,Number(t)||0);
     ricevuto[v]=valR[v]||0;
   });
+  // Una casella vuota non e' uno zero (16/11/2026): si registra solo con tutto scritto.
+  if(GB_VOCI.some(v=>valR[v]===null)){_gbAvviso('Scrivi tutte le caselle di «Ha portato»','Anche gli 0: una casella vuota non vale zero.');return;}
   {
     const r=_gbVerificaRiscrittura(_gbRiscriviR,_gbHotel+'|'+data,valR,_gbAnomaliePortato(_gbHotel,data,ricevuto));
     _gbRiscriviR=r.stato;
@@ -1354,7 +1356,6 @@ async function gbRegistraGiro(){
   }else{
     _gb.giri.push({id:_gbUid(),hotel:_gbHotel,data:data,consegnato:consegnato,ricevuto:ricevuto,daiConsumi:daiConsumi,ts:Date.now()});
   }
-  _gbConf={k:'',ok:false};
   _gbSave();gbRender();
 }
 async function gbEliminaGiro(id){
@@ -1436,20 +1437,20 @@ function _gbMsgDiff(tot){
 //  - (solo per una consegna nuova) si spunta "corrisponde alla distinta di Raimondo".
 // Una consegna già registrata si aggiorna solo se qualcosa è cambiato: riscriverla
 // uguale non serve a niente.
-let _gbConf={k:'',ok:false};      // spunta di conferma, valida per una struttura+data
 let _gbBaseVis=null,_gbGiaRegVis=false;  // valori di partenza della tabella a schermo
-function _gbPuoRegistrare(giaReg,base,valori,confermato){
-  const cambiato=GB_VOCI.some((v,i)=>(Number(valori[i])||0)!==(Number(base&&base[v])||0));
-  return cambiato||(!giaReg&&!!confermato);
+function _gbPuoRegistrare(giaReg,base,valori){
+  // Tutte le caselle scritte (anche 0): una casella vuota non e' uno zero.
+  if(!valori.every(x=>String(x==null?'':x).trim()!==''))return false;
+  if(!giaReg)return true;
+  return GB_VOCI.some((v,i)=>(Number(valori[i])||0)!==(Number(base&&base[v])||0));
 }
 function _gbStatoRegistra(){
   const btn=document.getElementById('gb-registra');
   if(!btn||!_gbBaseVis)return;
   const valori=GB_VOCI.map((v,i)=>{const er=document.getElementById('gb-r-'+i);return er?er.value:(_gbBaseVis[v]||0);});
-  const on=_gbPuoRegistrare(_gbGiaRegVis,_gbBaseVis,valori,_gbConf.ok);
+  const on=_gbPuoRegistrare(_gbGiaRegVis,_gbBaseVis,valori);
   btn.disabled=!on;btn.style.opacity=on?'':'.45';btn.style.cursor=on?'pointer':'not-allowed';
 }
-function gbConfermaPortato(el){_gbConf.ok=!!(el&&el.checked);_gbStatoRegistra();}
 
 function gbAggiornaDelta(){
   const att=_gbAttesoVis;
@@ -1457,7 +1458,8 @@ function gbAggiornaDelta(){
   GB_VOCI.forEach((v,i)=>{
     const er=document.getElementById('gb-r-'+i), cella=document.getElementById('gb-d-'+i);
     if(!er||!cella)return;
-    if(!att){cella.textContent='—';return;}
+    const tr0=er.closest?er.closest('tr'):null;
+    if(!att||String(er.value).trim()===''){cella.textContent='—';cella.style.color='var(--text-dim)';if(tr0)tr0.style.background='';return;}
     const d=(Number(er.value)||0)-(Number(att[v])||0);
     tot+=d;
     cella.textContent=d>0?'+'+d:String(d);
@@ -1505,8 +1507,7 @@ function _gbRenderCore(){
   // Valori di partenza di «Ha portato» (stessa regola delle caselle qui sotto): vedi _gbStatoRegistra.
   _gbGiaRegVis=!!giaReg;
   _gbBaseVis=giaReg?giaReg.ricevuto:(atteso||_gbVuote());
-  {const k=_gbHotel+'|'+giroData;if(_gbConf.k!==k)_gbConf={k:k,ok:false};}
-  const regOn=!giaReg&&_gbConf.ok;
+  const regOn=false;   // si accende quando tutte le caselle di «Ha portato» sono scritte
   // Un totale congelato che non corrisponde più ai consumi va detto in DUE punti, perché
   // si manifesta in due colonne diverse: su questa consegna ("tot pezzi da dargli") e su
   // quella precedente, che è quella che riempie il "doveva portare" — ed è lì che il
@@ -1686,7 +1687,8 @@ function _gbRenderCore(){
   // Righe: atteso (dal giro prima) / ricevuto (dalla distinta di Raimondo) / sporco che esce
   const diffTot=GB_VOCI.reduce((s,v)=>{
     if(!atteso)return s;
-    const r=giaReg?(Number(giaReg.ricevuto[v])||0):(Number(atteso[v])||0);
+    if(!giaReg)return s;
+    const r=Number(giaReg.ricevuto[v])||0;
     return s+(r-(Number(atteso[v])||0));
   },0);
   const msgDiff=atteso?_gbMsgDiff(diffTot):'';
@@ -1704,9 +1706,11 @@ function _gbRenderCore(){
   GB_VOCI_GIRO.forEach(v=>{
     const i=GB_VOCI.indexOf(v);          // id canonico: vedi la nota su GB_VOCI_GIRO
     const att=atteso?(Number(atteso[v])||0):null;
-    const ric=giaReg?(Number(giaReg.ricevuto[v])||0):(att===null?0:att);
+    // Consegna nuova: casella VUOTA (16/11/2026). Piena del «doveva portare» induceva a
+    // non compilarla. Si scrive quello che dice la distinta di Raimondo, anche 0.
+    const ric=giaReg?(Number(giaReg.ricevuto[v])||0):'';
     const spo=giaReg?(Number(giaReg.consegnato[v])||0):(Number(sporco[v])||0);
-    const d=att===null?null:(ric-att);
+    const d=(att===null||ric==='')?null:(ric-att);
     const bad=d!==null&&d!==0;
     h+=`<tr style="${bad?'background:'+_gbBgDelta(d)+';':''}">
       <td style="padding:6px 5px;border-bottom:1px solid var(--border-light,var(--border));">${esc(v)}</td>
@@ -1723,15 +1727,12 @@ function _gbRenderCore(){
   const bPrimario='background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
   const bSecondario='background:var(--surface);color:var(--accent);border:1.5px solid var(--border);padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
   const bStampa=`<button onclick="gbPrintDistinta()" style="${vigilia&&!giaReg?bPrimario:bSecondario}">${distPronta?'Ristampa la distinta':'Stampa la distinta'}</button>`;
-  const bRegistra=`<button id="gb-registra" onclick="gbRegistraGiro()" ${regOn?'':'disabled'} title="${giaReg?'Si accende quando cambi un numero di «Ha portato»':'Si accende quando correggi «Ha portato» o confermi che corrisponde alla distinta'}" style="${vigilia&&!giaReg?bSecondario:bPrimario}${regOn?'':'opacity:.45;cursor:not-allowed;'}">${giaReg?'Aggiorna consegna':'Registra cosa ha portato'}</button>`;
-  if(!giaReg){
-    h+=`<label style="flex-basis:100%;display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);color:var(--text);cursor:pointer;margin-bottom:2px;"><input type="checkbox" id="gb-conferma" ${_gbConf.ok?'checked':''} onchange="gbConfermaPortato(this)">I numeri di «Ha portato» corrispondono alla distinta di Raimondo</label>`;
-  }
+  const bRegistra=`<button id="gb-registra" onclick="gbRegistraGiro()" ${regOn?'':'disabled'} title="${giaReg?'Si accende quando cambi un numero di «Ha portato»':'Si accende quando tutte le caselle di «Ha portato» sono scritte (anche 0)'}" style="${vigilia&&!giaReg?bSecondario:bPrimario}${regOn?'':'opacity:.45;cursor:not-allowed;'}">${giaReg?'Aggiorna consegna':'Registra cosa ha portato'}</button>`;
   h+=(vigilia&&!giaReg)?(bStampa+bRegistra):(bRegistra+bStampa);
   h+=`</div>${_gbBoxRiscrivi(_gbRiscriviR)}
       <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">${vigilia&&!giaReg
         ?'Oggi serve solo la <strong>stampa</strong>: i pezzi da dargli sono già calcolati dai consumi. Domattina, quando Raimondo arriva, si torna qui e si registra cosa ha portato.'
-        :'I pezzi da dare a Raimondo si calcolano da soli dai consumi del periodo e finiscono sulla distinta. <strong>Ha portato</strong> parte uguale a quanto doveva — toccalo solo se la distinta di Raimondo dice altro.'}</div>
+        :'I pezzi da dare a Raimondo si calcolano da soli dai consumi del periodo e finiscono sulla distinta. In <strong>Ha portato</strong> scrivi i numeri della distinta di Raimondo, anche gli 0.'}</div>
     </div>
   </div>`;
 

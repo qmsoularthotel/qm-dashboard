@@ -3320,20 +3320,24 @@ sez('Agenda: chi resta indietro lascia la traccia nel suo giorno');
   if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
 })();
 
-sez('Consumo Biancheria: il pulsante della consegna resta spento finche\' «Ha portato» non e\' guardato (12/11/2026)');
+sez('Consumo Biancheria: il pulsante della consegna resta spento finche\' «Ha portato» non e\' tutto scritto (12/11, 16/11/2026)');
 (function(){
   var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};
   var i=BIA_VOCI.indexOf('Federa');
   var val=function(n){return BIA_VOCI.map(function(v,j){return j===i?String(n):'0';});};
-  ok('consegna nuova, numeri gia\' pieni: spento',          _biaPuoRegistrare(false,Q(20),val(20),false), false);
-  ok('consegna nuova, confermata con la spunta: acceso',    _biaPuoRegistrare(false,Q(20),val(20),true),  true);
-  ok('consegna nuova, un numero corretto: acceso',          _biaPuoRegistrare(false,Q(20),val(18),false), true);
-  ok('gia\' registrata, niente cambiato: spento',           _biaPuoRegistrare(true,Q(20),val(20),false),  false);
-  ok('gia\' registrata, la spunta non basta',               _biaPuoRegistrare(true,Q(20),val(20),true),   false);
-  ok('gia\' registrata, un numero cambiato: acceso',        _biaPuoRegistrare(true,Q(20),val(25),false),  true);
+  var vuota=function(){var x=val(20);x[0]='';return x;};
+  ok('consegna nuova, tutte le caselle scritte: acceso',    _biaPuoRegistrare(false,Q(20),val(20)), true);
+  ok('consegna nuova, anche tutti 0: acceso',               _biaPuoRegistrare(false,Q(20),val(0)),  true);
+  ok('consegna nuova, una casella vuota: spento',           _biaPuoRegistrare(false,Q(20),vuota()), false);
+  ok('gia\' registrata, niente cambiato: spento',           _biaPuoRegistrare(true,Q(20),val(20)),  false);
+  ok('gia\' registrata, un numero cambiato: acceso',        _biaPuoRegistrare(true,Q(20),val(25)),  true);
+  ok('gia\' registrata, una casella svuotata: spento',      _biaPuoRegistrare(true,Q(20),vuota()),  false);
   ok('il pulsante nasce spento se non confermato',          /id="bia-registra"[^>]*\$\{regOn\?'':'disabled'\}/.test(String(biaRender)), true);
   ok('la casella aggiorna lo stato del pulsante',           /_biaStatoRegistra\(\)/.test(String(biaAggiornaDelta)), true);
-  ok('registrata la consegna, la spunta si azzera',         /_biaConf=\{k:'',ok:false\}/.test(String(biaRegistraGiro)), true);
+  // 16/11/2026: consegna nuova con caselle VUOTE, niente spunta «corrispondono alla distinta».
+  ok('consegna nuova: caselle vuote, non piene del dovuto', /att===null\?0:att/.test(String(biaRender))||!/ric===''/.test(String(biaRender)), false);
+  ok('la spunta «corrispondono alla distinta» non c\'e\' piu\'', /corrispondono alla distinta|bia-conferma/.test(String(biaRender)), false);
+  ok('casella vuota: nessuna differenza calcolata',         /String\(er\.value\)\.trim\(\)===''/.test(String(biaAggiornaDelta)), true);
 })();
 
 sez('Consumo Biancheria: dotazione da contratto, quanti pezzi nostri restano a Raimondo (12/11/2026)');

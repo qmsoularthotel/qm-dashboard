@@ -387,8 +387,9 @@ scostamento mai visto; il giorno del giro rientra nel periodo; il riallineo non 
 
 - **Atteso** al giro N = `consegnato` del giro N-1 (stessa struttura). Al primo giro è
   `null` e la colonna mostra `—`.
-- **Ricevuto** si precompila uguale all'atteso: nel caso normale non si digita nulla, si
-  interviene solo quando la distinta di Raimondo dice altro.
+- **Ricevuto** (*Ha portato*): per una consegna nuova le caselle partono **vuote**
+  (16/11/2026) e si scrivono dalla distinta di Raimondo, anche gli 0. Prima erano piene
+  dell'atteso, e i colleghi non le compilavano.
 - **Saldo** = somma su tutti i giri di (ricevuto − atteso). Un singolo giro può chiudere
   in pari per caso; è il cumulato che rivela una perdita sistematica.
 
@@ -1346,15 +1347,19 @@ registrati). Capitava che un collega premesse *Registra cosa ha portato* / *Aggi
 consegna* senza confrontarla con la distinta di Raimondo, e la consegna risultava
 registrata con numeri mai controllati.
 
+**Dal 16/11/2026** le caselle di una consegna nuova partono **vuote** e la spunta
+*«corrispondono alla distinta»* è tolta (richiesta del QM: i numeri già scritti inducevano
+a non compilare). Una casella vuota non vale zero.
+
 | Caso | Il pulsante si accende quando |
 |---|---|
-| consegna nuova | si cambia almeno un numero, **oppure** si spunta *«I numeri di Ha portato corrispondono alla distinta di Raimondo»* |
-| consegna già registrata | si cambia almeno un numero (la spunta non c'è: riscriverla uguale non serve) |
+| consegna nuova | **tutte** le caselle sono scritte (anche 0) |
+| consegna già registrata | tutte scritte **e** almeno un numero cambiato |
 
-Regola in `_biaPuoRegistrare`, stato del pulsante in `_biaStatoRegistra` (chiamato da
-`biaAggiornaDelta` a ogni cifra), spunta in `_biaConf` valida per struttura+data e azzerata
-dopo la registrazione. Copiata identica nella Galleria (`_gbPuoRegistrare`…). Coperto da
-controlli in `test/controlli.js` e `test/galleria.js`, verificati sabotando la regola.
+Regola in `_biaPuoRegistrare(giaReg,base,valori)`, stato del pulsante in `_biaStatoRegistra`
+(chiamato da `biaAggiornaDelta` a ogni cifra; casella vuota = differenza `—`).
+`biaRegistraGiro` rifiuta comunque una casella vuota. Copiata identica nella Galleria
+(`_gbPuoRegistrare`…). Coperto da controlli in `test/controlli.js` e `test/galleria.js`.
 
 ### Dotazione da contratto — quanti pezzi nostri restano a Raimondo (pubblicata il 12/11/2026)
 
