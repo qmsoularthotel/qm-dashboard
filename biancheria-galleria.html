@@ -30,6 +30,8 @@
    su una riga sola — con il bollino normale «Conteggio Biancheria» andava a capo. */
 .nav-badge[data-nuovo-fino]{font-size:9px;padding:1px 5px;font-weight:700;letter-spacing:.04em;line-height:14px;}
 .nav-item:has(>.nav-badge[data-nuovo-fino]){white-space:nowrap;}
+/* Lucchetto accanto a Preferenze Turnazione: la voce si apre solo col PIN (16/11/2026). */
+.gb-nav-lucchetto{flex-shrink:0;margin-left:-6px;opacity:.75;}
 
 /* CONTEGGIO BIANCHERIA — modulo in costruzione (16/11/2026): testo al centro e la rosa dei
    venti di Compass come sfondo della pagina, molto sbiadita (5%), inclinata di 22° come altrove. */
@@ -156,7 +158,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-16.12';
+const QM_APP_BUILD='2026-11-16.13';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -206,7 +208,7 @@ setInterval(qmCheckVersione,600000);
   </div>
   <div style="font-size:30px;font-weight:500;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
   <div style="width:60px;border-top:1px solid rgba(255,255,255,.18);"></div>
-  <div style="font-size:22px;color:rgba(255,255,255,.7);">Gestione Biancheria</div>
+  <div style="font-size:22px;color:rgba(255,255,255,.7);">Strumento di gestione operativa</div>
   <div style="font-size:13px;color:rgba(255,255,255,.42);line-height:1.5;white-space:nowrap;padding:0 18px;box-sizing:border-box;text-align:center;">Art Resort Galleria Umberto – Art Suite Santa Brigida</div>
 </div>
 <style>
@@ -262,14 +264,14 @@ setInterval(qmCheckVersione,600000);
       </div>
     </div>
     <nav class="nav">
-      <div class="nav-section">Biancheria</div>
+      <div class="nav-section">Gestione Turnazione</div>
+      <div class="nav-item" id="gb-nav-preferenze" onclick="bgSezione('preferenze')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15l2 2 4-4"/></svg></span></span>Preferenze Turnazione<svg class="gb-nav-lucchetto" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Si apre col PIN"><title>Si apre col PIN</title><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
+      <div class="nav-section">Gestione Biancheria</div>
       <div class="nav-item" id="gb-nav-consumo" onclick="bgSezione('consumo')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span></span>Consumo Biancheria</div>
       <div class="nav-item" id="gb-nav-conteggio" onclick="bgSezione('conteggio')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11l2 2 4-4"/><path d="M9 17h6"/></svg></span></span>Conteggio Biancheria<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
       <div class="nav-item" id="gb-nav-giacenza" onclick="bgSezione('giacenza')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18v14H3z"/><path d="M3 11h18M3 15.5h18"/><path d="M9 6V3.5h6V6"/></svg></span></span>Giacenza Biancheria<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
       <div class="nav-item" id="gb-nav-reso" onclick="bgSezione('reso')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.3 10.2a2 2 0 0 1-2 1.8H7.3a2 2 0 0 1-2-1.8z"/><path d="M3.5 9c.6-2.4 4-4.2 8.5-4.2S19.9 6.6 20.5 9"/><path d="M10 13v4M14 13v4"/></svg></span></span>Reso Biancheria</div>
       <div class="nav-item" id="gb-nav-fattura" onclick="bgSezione('fattura')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h3"/></svg></span></span>Controllo fatturazione</div>
-      <div class="nav-section">Turni</div>
-      <div class="nav-item" id="gb-nav-preferenze" onclick="bgSezione('preferenze')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15l2 2 4-4"/></svg></span></span>Preferenze Turnazione<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
     </nav>
     <div class="sidebar-bottom">
       <div class="user-row">
