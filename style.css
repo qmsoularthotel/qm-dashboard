@@ -965,6 +965,9 @@ td.hkp-evid{background:var(--amber-bg)!important;box-shadow:inset 0 0 0 2px var(
 .ag-task:hover .ag-ico{opacity:1;}
 .ag-ico:hover{background:var(--accent-bg);color:var(--accent);}
 .ag-ico-del:hover{background:var(--red-bg);color:var(--red);}
+.ag-ordine{display:flex;flex-shrink:0;}
+.ag-ico:disabled{visibility:hidden;}
+.ag-task.ag-drop-prima{box-shadow:inset 0 2px 0 var(--accent);}
 .ag-add{display:flex;gap:6px;padding:8px;border-top:1px dashed var(--border-light);}
 .ag-testo-in{flex:1;min-width:0;font-family:inherit;font-size:var(--fs-xs);padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);}
 .ag-ora-in{width:84px;flex-shrink:0;font-family:inherit;font-size:var(--fs-xxs);padding:4px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);}

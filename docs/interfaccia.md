@@ -158,7 +158,7 @@ Voce **Agenda** subito sotto Overview, `§§ AGENDA` in app.js, stile `.ag-*` in
 Un'agendina, non un calendario fisso: sette schede da lunedì a domenica, si va avanti e
 indietro di settimana. In ogni giorno si **aggiunge** (Invio o "+", ora facoltativa), si
 **spunta**, si **corregge** toccando il testo, si **sposta** al giorno dopo (freccia) o
-trascinando su un altro giorno (computer), si **elimina** (×, senza conferma: è un appunto).
+trascinando su un altro giorno (computer), si **mette in ordine** (frecce su/giù), si **elimina** (×, senza conferma: è un appunto).
 "Togli i fatti della settimana" chiede conferma con `cqConferma`.
 
 - **Rimasti indietro**: dal 14/11/2026 **non c'è più il riquadro in cima** (né "Porta tutti a
@@ -178,6 +178,16 @@ trascinando su un altro giorno (computer), si **elimina** (×, senza conferma: �
   traccia tratteggiata *"spostato a oggi / al gio 5 nov"* (o *fatto il …*), e la riga nel nuovo
   giorno porta *"previsto mar 3 nov"* (`.ag-da`). Riportato al suo giorno, `previsto` si toglie. Controlli in
   `test/controlli.js` ("lascia la traccia nel suo giorno").
+- **Ordine degli impegni a mano** (17/11/2026). Il QM: *"dai la possibilità di spostare l'ordine
+  degli impegni"*. Su ogni impegno da fare ci sono le frecce **su/giù** (`agSuGiu` → `_agSuGiu`,
+  anche da telefono); al computer si può anche **trascinare un impegno sopra un altro** (anche
+  da un altro giorno) e va subito prima di quello (`agLasciaSu` → `_agMettiInFila`). Messi in
+  fila, gli impegni da fare del giorno prendono `pos` 0,1,2…; `_agOrdina` ordina per
+  (fatto, `pos`, ora, ts): chi non ha `pos` (nuovo o arrivato da un altro giorno, `_agSposta`
+  lo toglie) va **dopo** quelli in fila, con la regola di sempre. Senza spostamenti l'ordine è
+  quello di prima. Le frecce non servono sul primo/ultimo (nascoste con `visibility`, le colonne
+  non ballano), né su un impegno da solo o già fatto. `pos` viaggia nella fusione a tre come
+  ogni altro campo. Controlli in `test/controlli.js` ("ordine degli impegni a mano").
 - **Il mio turno in ogni giorno** (17/11/2026). Il QM: *"metti su ogni giorno il mio turno del
   giorno"*. Nella testa di ogni giorno, accanto alla data, una pillola col turno di `Presta P.`
   (`AG_QM`): verde *Turno P*, rossa *Riposo* / *Ferie* / *Malattia*; niente col trattino o senza
@@ -187,7 +197,7 @@ trascinando su un altro giorno (computer), si **elimina** (×, senza conferma: �
   settimana. Un turno nuovo (`loadWeekData`) ridisegna l'Agenda se è aperta, non sotto le dita.
   Controlli in `test/controlli.js` ("il mio turno in ogni giorno"), provati con sei sabotaggi.
 - **Badge del menu**: impegni da fare di oggi + rimasti indietro.
-- **Dati**: `qm_agenda`, elenco `[{id, giorno:'AAAA-MM-GG', testo, ora, fatto, ts, previsto?}]`, scritto
+- **Dati**: `qm_agenda`, elenco `[{id, giorno:'AAAA-MM-GG', testo, ora, fatto, ts, previsto?, pos?}]`, scritto
   dai due Mac e dal telefono: passa **solo** da `_qmElencoSalva` (fusione a tre), è in
   `QM_ELENCHI_CONDIVISI` e nel backup. Si rilegge il cloud aprendo la vista e tornando sulla
   scheda; **non** è nel polling dei 30 secondi (nessuna lettura in più a pagina aperta).

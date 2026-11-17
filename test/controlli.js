@@ -3324,6 +3324,52 @@ sez('Agenda: chi resta indietro lascia la traccia nel suo giorno');
   if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
 })();
 
+// L'ordine degli impegni si sceglie a mano (17/11/2026).
+sez('Agenda: ordine degli impegni a mano');
+(function(){
+  var g='2026-11-20';
+  var mk=function(){return [
+    {id:'a',giorno:g,testo:'A',ora:'09:00',fatto:false,ts:1},
+    {id:'b',giorno:g,testo:'B',ora:'',fatto:false,ts:2},
+    {id:'c',giorno:g,testo:'C',ora:'',fatto:false,ts:3},
+    {id:'f',giorno:g,testo:'fatto',ora:'08:00',fatto:true,ts:4},
+    {id:'x',giorno:'2026-11-21',testo:'X',ora:'',fatto:false,ts:5}];};
+  var ordine=function(l){return _agDelGiorno(l,g).map(function(t){return t.id;}).join(',');};
+  var L=mk();
+  ok('senza spostamenti: l\'ordine di sempre',      ordine(L), 'a,b,c,f');
+  ok('giu\': A scende di un posto',                 _agSuGiu(L,'a',1)&&ordine(L), 'b,a,c,f');
+  ok('su: C sale di un posto',                      _agSuGiu(L,'c',-1)&&ordine(L), 'b,c,a,f');
+  ok('il primo non sale',                           _agSuGiu(L,'b',-1), false);
+  ok('l\'ultimo da fare non scende sotto i fatti',  _agSuGiu(L,'a',1), false);
+  ok('un fatto non si mette in fila',               _agSuGiu(L,'f',-1), false);
+  L.push({id:'n',giorno:g,testo:'nuovo',ora:'07:00',fatto:false,ts:9});
+  ok('un impegno nuovo va dopo quelli in fila',     ordine(L), 'b,c,a,n,f');
+  _agMettiInFila(L,'n',g,'b');
+  ok('messo prima di un altro',                     ordine(L), 'n,b,c,a,f');
+  var x=L.filter(function(t){return t.id==='x';})[0];
+  _agSposta(x,g,'2026-11-17');
+  ok('arrivato da un altro giorno: in fondo',       ordine(L), 'n,b,c,a,x,f');
+  var c=L.filter(function(t){return t.id==='c';})[0];
+  _agSposta(c,'2026-11-22','2026-11-17');
+  ok('spostato altrove perde il posto',             'pos' in c, false);
+  // Le frecce: solo dove servono.
+  var r1=_agRiga({id:'q',giorno:g,testo:'q',fatto:false},false,{primo:true,ultimo:false});
+  ok('il primo ha la freccia su spenta',            /ag-ico-su" disabled/.test(r1)&&!/ag-ico-giu" disabled/.test(r1), true);
+  ok('un impegno da solo non ha frecce',            /agSuGiu/.test(_agRiga({id:'q',giorno:g,testo:'q',fatto:false},false,{primo:true,ultimo:true})), false);
+  ok('un fatto non ha frecce',                      /agSuGiu/.test(_agRiga({id:'q',giorno:g,testo:'q',fatto:true},false,{primo:false,ultimo:false})), false);
+  ok('si trascina sopra un impegno',                /agLasciaSu\(event,'q'\)/.test(r1), true);
+  ok('la fila si salva con la fusione a tre',       /_agScrivi\(/.test(String(agSuGiu))&&/_agScrivi\(/.test(String(agLasciaSu)), true);
+  // Disegnata: le frecce seguono l'ordine scelto.
+  var vero=localStorage.getItem('qm_agenda'),lu=_agLunedi;
+  localStorage.setItem('qm_agenda',JSON.stringify(mk().map(function(t){if(t.id==='c')t.pos=0;if(t.id==='a')t.pos=1;if(t.id==='b')t.pos=2;return t;})));
+  var box={innerHTML:''},ge=document.getElementById;
+  document.getElementById=function(id){return id==='agenda-content'?box:null;};
+  try{_agLunedi='2026-11-16';agRender();}finally{document.getElementById=ge;_agLunedi=lu;}
+  var h=box.innerHTML;
+  ok('disegnati nell\'ordine scelto',              /agSuGiu\('c',-1\)[\s\S]*agSuGiu\('a',-1\)[\s\S]*agSuGiu\('b',-1\)/.test(h), true);
+  if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
+})();
+
 // Il turno del QM in ogni giorno dell'Agenda (17/11/2026). Nomi del planning come in DEPTS.
 sez('Agenda: il mio turno in ogni giorno');
 (function(){

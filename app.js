@@ -18224,7 +18224,7 @@ async function qmCodiceGalleria(btn){
 // Quello che resta indietro non sparisce: resta nel suo giorno, in rosso, finché non lo si
 // fa o lo si sposta (il riquadro "Rimasti indietro" in cima e' stato tolto il 14/11/2026). Si usa dai due Mac e dal telefono: l'elenco `qm_agenda` è scritto da
 // più postazioni, quindi passa SEMPRE dalla fusione a tre (_qmElencoSalva), mai da kvSet.
-// Forma: [{id, giorno:'AAAA-MM-GG', testo, ora:'HH:MM'|'', fatto:bool, ts, previsto?:'AAAA-MM-GG'}]
+// Forma: [{id, giorno:'AAAA-MM-GG', testo, ora:'HH:MM'|'', fatto:bool, ts, previsto?:'AAAA-MM-GG', pos?:n}]
 // `previsto` (14/11/2026): il giorno in cui l'impegno era in programma prima di essere
 // portato avanti da un giorno passato. Il riquadro di quel giorno ne tiene la traccia
 // ("spostato a …"), cosi' si sa sempre quando era previsto: la sola data rossa non bastava.
@@ -18242,8 +18242,14 @@ function _agLeggi(){const v=_qmLocale(AG_KEY,[]);return Array.isArray(v)?v.filte
 // Non fatti di un giorno precedente a oggi: ordinati dal più vecchio.
 function _agArretrati(lista,oggi){return lista.filter(t=>!t.fatto&&t.giorno<oggi).sort((a,b)=>a.giorno<b.giorno?-1:a.giorno>b.giorno?1:0);}
 // Ordine dentro il giorno: prima da fare (con l'ora per prima, in ordine), poi i fatti.
+// Ordine a mano (17/11/2026, «dai la possibilita' di spostare l'ordine degli impegni"):
+// chi e' stato messo in fila ha `pos` e viene prima, nell'ordine scelto; chi non ce l'ha
+// (nuovo, o arrivato da un altro giorno) segue, con la regola di sempre. Una sola chiave
+// (fatto, pos, ora, ts): l'ordine resta coerente anche mescolando i due tipi.
 function _agOrdina(a,b){
   if(!!a.fatto!==!!b.fatto)return a.fatto?1:-1;
+  const pa=typeof a.pos==='number'?a.pos:Infinity,pb=typeof b.pos==='number'?b.pos:Infinity;
+  if(pa!==pb)return pa<pb?-1:1;
   const oa=a.ora||'99:99',ob=b.ora||'99:99';
   if(oa!==ob)return oa<ob?-1:1;
   return (a.ts||0)-(b.ts||0);
@@ -18256,6 +18262,27 @@ function _agSposta(t,nuovo,oggi){
   if(!t.fatto&&t.giorno<oggi&&!t.previsto)t.previsto=t.giorno;
   t.giorno=nuovo;
   if(t.previsto===t.giorno)delete t.previsto;
+  delete t.pos;                       // nel giorno nuovo va in fondo; lo si rimette in fila a mano
+}
+// Rimette in fila gli impegni da fare di `iso`: `id` va subito prima di `primaDi` (in fondo
+// se manca). Tutti quelli da fare del giorno prendono `pos` 0,1,2…: l'ordine e' quello che si
+// vede, quindi un impegno senza posizione non salta altrove. Pura sulla lista che riceve.
+function _agMettiInFila(lista,id,iso,primaDi){
+  const t=lista.find(x=>x.id===id);if(!t||t.fatto||t.giorno!==iso)return false;
+  const fila=_agDelGiorno(lista,iso).filter(x=>!x.fatto&&x.id!==id);
+  let i=primaDi?fila.findIndex(x=>x.id===primaDi):-1;
+  if(i<0)i=fila.length;
+  fila.splice(i,0,t);
+  fila.forEach((x,n)=>{x.pos=n;});
+  return true;
+}
+// Su/giu' di un posto fra gli impegni da fare dello stesso giorno.
+function _agSuGiu(lista,id,dir){
+  const t=lista.find(x=>x.id===id);if(!t||t.fatto)return false;
+  const fila=_agDelGiorno(lista,t.giorno).filter(x=>!x.fatto);
+  const i=fila.findIndex(x=>x.id===id),j=i+(dir<0?-1:1);
+  if(i<0||j<0||j>=fila.length)return false;
+  return _agMettiInFila(lista,id,t.giorno,dir<0?fila[j].id:(fila[j+1]&&fila[j+1].id));
 }
 // Il turno del QM nel giorno (17/11/2026): «metti su ogni giorno il mio turno del giorno».
 // Si legge dal turno caricato (weekData) e, per le altre settimane, dall'archivio dei turni
@@ -18322,8 +18349,11 @@ const _AG_GIORNI=['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabat
 const _AG_MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
 function _agEtichetta(iso){const d=_agDaIso(iso);return d.getDate()+' '+_AG_MESI[d.getMonth()];}
 function _agIcoX(){return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';}
+function _agIcoSu(){return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>';}
+function _agIcoGiu(){return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';}
 function _agIcoAvanti(){return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';}
-function _agRiga(t,conGiorno){
+// `fila` = {primo, ultimo} fra gli impegni da fare del giorno: decide quali frecce su/giu' servono.
+function _agRiga(t,conGiorno,fila){
   const id=_esc(t.id);
   if(_agModifica===t.id){
     return `<div class="ag-task ag-task-edit">
@@ -18335,12 +18365,14 @@ function _agRiga(t,conGiorno){
     </div>`;
   }
   const ritardo=!t.fatto&&t.giorno<_agOggi();
-  return `<div class="ag-task${t.fatto?' ag-fatto':''}${ritardo&&!conGiorno?' ag-ritardo':''}" draggable="true" ondragstart="agTrascina(event,'${id}')">
+  const suGiu=!t.fatto&&fila&&!(fila.primo&&fila.ultimo)
+    ?`<span class="ag-ordine"><button class="ag-ico ag-ico-su" ${fila.primo?'disabled':''} onclick="agSuGiu('${id}',-1)" title="Più su">${_agIcoSu()}</button><button class="ag-ico ag-ico-giu" ${fila.ultimo?'disabled':''} onclick="agSuGiu('${id}',1)" title="Più giù">${_agIcoGiu()}</button></span>`:'';
+  return `<div class="ag-task${t.fatto?' ag-fatto':''}${ritardo&&!conGiorno?' ag-ritardo':''}" draggable="true" ondragstart="agTrascina(event,'${id}')"${t.fatto?'':` ondragover="agSopraImpegno(event)" ondragleave="this.classList.remove('ag-drop-prima')" ondrop="agLasciaSu(event,'${id}')"`}>
     <input type="checkbox" class="ag-check" ${t.fatto?'checked':''} onchange="agSpunta('${id}')" title="Fatto">
     <div class="ag-testo" onclick="agModifica('${id}')" title="Tocca per correggere">
       ${t.ora?`<span class="ag-ora">${_esc(t.ora)}</span>`:''}${conGiorno?`<span class="ag-quando">previsto ${_esc(_agEtichettaLunga(t.giorno))}</span>`:''}${!conGiorno&&ritardo?'<span class="ag-quando">in ritardo</span>':''}${t.previsto&&!conGiorno?`<span class="ag-da">previsto ${_esc(_agEtichettaLunga(t.previsto))}</span>`:''}${_esc(t.testo)}
     </div>
-    ${t.fatto?'':`<button class="ag-ico" onclick="agScegliGiorno('${id}')" title="Sposta a un altro giorno">${_agIcoAvanti()}</button>`}
+    ${suGiu}${t.fatto?'':`<button class="ag-ico" onclick="agScegliGiorno('${id}')" title="Sposta a un altro giorno">${_agIcoAvanti()}</button>`}
     <button class="ag-ico ag-ico-del" onclick="agElimina('${id}')" title="Elimina">${_agIcoX()}</button>
   </div>`;
 }
@@ -18382,7 +18414,7 @@ function agRender(){
     h+=`<div class="ag-day${cls}" ondragover="agSopra(event)" ondragleave="this.classList.remove('ag-drop')" ondrop="agLascia(event,'${iso}')">
       <div class="ag-day-head"><span class="ag-day-nome">${_AG_GIORNI[i]}</span><span class="ag-day-data">${_esc(_agEtichetta(iso))}</span>
         ${iso===oggi?'<span class="ag-pill">oggi</span>':''}${_agTurnoPill(_agTurnoQM(iso,weekData,_arch))}${daFare?`<span class="ag-day-n">${daFare}</span>`:''}</div>
-      <div class="ag-lista">${(del.map(t=>_agRiga(t,false)).join('')+lista.filter(t=>t.previsto===iso&&t.giorno!==iso).map(_agTraccia).join(''))||'<div class="ag-vuoto">Niente in programma</div>'}</div>
+      <div class="ag-lista">${(del.map(t=>{const df=del.filter(x=>!x.fatto);return _agRiga(t,false,{primo:df[0]===t,ultimo:df[df.length-1]===t});}).join('')+lista.filter(t=>t.previsto===iso&&t.giorno!==iso).map(_agTraccia).join(''))||'<div class="ag-vuoto">Niente in programma</div>'}</div>
       <div class="ag-add">
         <input type="time" class="ag-ora-in" id="agOra-${iso}" title="Ora (facoltativa)">
         <input type="text" class="ag-testo-in" id="agNuovo-${iso}" placeholder="Aggiungi…" maxlength="300"
@@ -18460,6 +18492,22 @@ async function agTogliFatti(){
 // Trascinare un impegno su un altro giorno (computer).
 function agTrascina(ev,id){try{ev.dataTransfer.setData('text/plain',id);ev.dataTransfer.effectAllowed='move';}catch(e){}}
 function agSopra(ev){ev.preventDefault();try{ev.currentTarget.classList.add('ag-drop');}catch(e){}}
+function agSuGiu(id,dir){
+  const l=_agLeggi();if(!_agSuGiu(l,id,dir))return;
+  _agScrivi(l);agRender();
+}
+// Trascinato sopra un impegno: va subito prima di quello (anche da un altro giorno).
+function agSopraImpegno(ev){ev.preventDefault();ev.stopPropagation();try{ev.currentTarget.classList.add('ag-drop-prima');}catch(e){}}
+function agLasciaSu(ev,primaDi){
+  ev.preventDefault();ev.stopPropagation();
+  try{ev.currentTarget.classList.remove('ag-drop-prima');document.querySelectorAll('.ag-drop').forEach(e=>e.classList.remove('ag-drop'));}catch(e){}
+  let id='';try{id=ev.dataTransfer.getData('text/plain');}catch(e){}
+  if(!id||id===primaDi)return;
+  const l=_agLeggi(),t=l.find(x=>x.id===id),dove=l.find(x=>x.id===primaDi);if(!t||!dove)return;
+  if(t.giorno!==dove.giorno)_agSposta(t,dove.giorno,_agOggi());
+  if(t.fatto){_agScrivi(l);agRender();return;}
+  _agMettiInFila(l,id,dove.giorno,primaDi);_agScrivi(l);agRender();
+}
 function agLascia(ev,iso){
   ev.preventDefault();try{ev.currentTarget.classList.remove('ag-drop');}catch(e){}
   let id='';try{id=ev.dataTransfer.getData('text/plain');}catch(e){}
