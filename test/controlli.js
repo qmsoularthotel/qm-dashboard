@@ -3302,7 +3302,7 @@ sez('Agenda: chi resta indietro lascia la traccia nel suo giorno');
   var h=box.innerHTML,i=h.indexOf('class="ag-week"'),sett=h.slice(i);
   ok('il giorno previsto mostra dove e\' andato',   /ag-spostato[\s\S]*spostato al gio 5 nov[\s\S]*Chiamare Raimondo/.test(sett), true);
   ok('oggi dice da quando era previsto',            /ag-da">previsto mar 3 nov/.test(sett), true);
-  ok('il rimasto indietro resta nel suo giorno',    /ag-ritardo[\s\S]*in ritardo[\s\S]*Firmare DDT/.test(sett), true);
+  ok('il rimasto indietro resta nel suo giorno',    /ag-ritardo[\s\S]*Firmare DDT<span class="ag-sotto"><span class="ag-quando">in ritardo/.test(sett), true);
   ok('niente piu\' riquadro "Rimasti indietro"',  /Rimasti indietro|agTuttiAOggi/.test(h), false);
   // La freccia chiede il giorno: 14 giorni (questa settimana e la prossima), e il ritorno al previsto.
   var sc=_agScelta({id:'p',giorno:oggi,previsto:'2026-11-03',fatto:false},oggi);
@@ -3310,7 +3310,7 @@ sez('Agenda: chi resta indietro lascia la traccia nel suo giorno');
   ok('fino alla domenica della settimana prossima', sc.indexOf("'"+_agPiuGiorni(_agLunediDi(oggi),13)+"'")>=0, true);
   ok('e il ritorno al giorno previsto',             /Riporta al giorno previsto/.test(sc), true);
   ok('il giorno dov\'e\' adesso non si sceglie',   /disabled onclick="agSpostaA\('p','/.test(sc.replace(/\s+/g,' ').replace(/" disabled/g,'" disabled')), true);
-  ok('la freccia non sposta piu\' da sola',         /agScegliGiorno\(/.test(String(_agRiga))&&!/agDomani/.test(String(_agRiga)), true);
+  ok('la freccia non sposta piu\' da sola',         /agScegliGiorno\(/.test(String(agMenuVoce))&&!/agDomani/.test(String(_agRiga)+String(agMenuVoce)), true);
   // Riportato al suo giorno torna in ritardo, non evaso.
   localStorage.setItem('qm_agenda',JSON.stringify([{id:'v',giorno:oggi,previsto:'2026-11-03',testo:'Torna indietro',fatto:false,ts:1}]));
   var ar=agRender;agRender=function(){};
@@ -3320,7 +3320,7 @@ sez('Agenda: chi resta indietro lascia la traccia nel suo giorno');
   ok('e di nuovo non evaso',                        !v.fatto&&!('previsto' in v)&&v.giorno<_agOggi(), true);
   document.getElementById=function(id){return id==='agenda-content'?box:null;};
   try{_agLunedi='2026-11-02';agRender();}finally{document.getElementById=ge;_agLunedi=lu;}
-  ok('e torna rosso, in ritardo',                   /ag-ritardo[\s\S]*in ritardo[\s\S]*Torna indietro/.test(box.innerHTML), true);
+  ok('e torna rosso, in ritardo',                   /ag-ritardo[\s\S]*Torna indietro<span class="ag-sotto"><span class="ag-quando">in ritardo/.test(box.innerHTML), true);
   if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
 })();
 
@@ -3337,36 +3337,54 @@ sez('Agenda: ordine degli impegni a mano');
   var ordine=function(l){return _agDelGiorno(l,g).map(function(t){return t.id;}).join(',');};
   var L=mk();
   ok('senza spostamenti: l\'ordine di sempre',      ordine(L), 'a,b,c,f');
-  ok('giu\': A scende di un posto',                 _agSuGiu(L,'a',1)&&ordine(L), 'b,a,c,f');
-  ok('su: C sale di un posto',                      _agSuGiu(L,'c',-1)&&ordine(L), 'b,c,a,f');
-  ok('il primo non sale',                           _agSuGiu(L,'b',-1), false);
-  ok('l\'ultimo da fare non scende sotto i fatti',  _agSuGiu(L,'a',1), false);
-  ok('un fatto non si mette in fila',               _agSuGiu(L,'f',-1), false);
+  // Maniglia (proposta C, 17/11/2026): dove cade l'impegno lasciato sopra un altro.
+  ok('meta\' alta: prima di quello',                _agDoveCade(L,'c',g,'a',false), 'a');
+  ok('meta\' bassa: prima del successivo',          _agDoveCade(L,'c',g,'a',true), 'b');
+  ok('meta\' bassa dell\'ultimo: in fondo',         _agDoveCade(L,'a',g,'c',true), null);
+  ok('sopra un fatto: in fondo',                    _agDoveCade(L,'a',g,'f',false), null);
+  ok('lasciato: A dopo B',                          _agTrascinaFine(L,'a',g,'c','2026-11-17')&&ordine(L), 'b,a,c,f');
+  ok('lasciato in cima',                            _agTrascinaFine(L,'c',g,'b','2026-11-17')&&ordine(L), 'c,b,a,f');
+  ok('un fatto non si trascina',                    _agTrascinaFine(L,'f',g,'c','2026-11-17'), false);
+  ok('senza giorno sotto il dito: niente',          _agTrascinaFine(L,'a',null,null,'2026-11-17'), false);
   L.push({id:'n',giorno:g,testo:'nuovo',ora:'07:00',fatto:false,ts:9});
-  ok('un impegno nuovo va dopo quelli in fila',     ordine(L), 'b,c,a,n,f');
+  ok('un impegno nuovo va dopo quelli in fila',     ordine(L), 'c,b,a,n,f');
   _agMettiInFila(L,'n',g,'b');
-  ok('messo prima di un altro',                     ordine(L), 'n,b,c,a,f');
+  ok('messo prima di un altro',                     ordine(L), 'c,n,b,a,f');
+  // Trascinato su un altro giorno: cambia giorno e si mette in fila li'.
   var x=L.filter(function(t){return t.id==='x';})[0];
-  _agSposta(x,g,'2026-11-17');
-  ok('arrivato da un altro giorno: in fondo',       ordine(L), 'n,b,c,a,x,f');
+  ok('da un altro giorno, prima di B',              _agTrascinaFine(L,'x',g,'b','2026-11-17')&&ordine(L), 'c,n,x,b,a,f');
+  var y={id:'y',giorno:'2026-11-12',testo:'vecchio',fatto:false,ts:10};L.push(y);
+  _agTrascinaFine(L,'y',g,null,'2026-11-17');
+  ok('da un giorno passato: ricorda il previsto',   y.giorno+'|'+y.previsto, g+'|2026-11-12');
   var c=L.filter(function(t){return t.id==='c';})[0];
   _agSposta(c,'2026-11-22','2026-11-17');
-  ok('spostato altrove perde il posto',             'pos' in c, false);
-  // Le frecce: solo dove servono.
-  var r1=_agRiga({id:'q',giorno:g,testo:'q',fatto:false},false,{primo:true,ultimo:false});
-  ok('il primo ha la freccia su spenta',            /ag-ico-su" disabled/.test(r1)&&!/ag-ico-giu" disabled/.test(r1), true);
-  ok('un impegno da solo non ha frecce',            /agSuGiu/.test(_agRiga({id:'q',giorno:g,testo:'q',fatto:false},false,{primo:true,ultimo:true})), false);
-  ok('un fatto non ha frecce',                      /agSuGiu/.test(_agRiga({id:'q',giorno:g,testo:'q',fatto:true},false,{primo:false,ultimo:false})), false);
-  ok('si trascina sopra un impegno',                /agLasciaSu\(event,'q'\)/.test(r1), true);
-  ok('la fila si salva con la fusione a tre',       /_agScrivi\(/.test(String(agSuGiu))&&/_agScrivi\(/.test(String(agLasciaSu)), true);
-  // Disegnata: le frecce seguono l'ordine scelto.
+  ok('spostato con la freccia perde il posto',      'pos' in c, false);
+  // La riga: un solo ⋯ a destra, la maniglia a sinistra, le pillole sotto il testo.
+  var r1=_agRiga({id:'q',giorno:'2026-11-10',previsto:'2026-11-03',testo:'INSERIMENTO C59',fatto:false},false);
+  ok('a destra un solo pulsante (⋯)',               (r1.match(/class="ag-ico[ "]/g)||[]).length, 1);
+  ok('niente piu\' frecce nella riga',              /agSuGiu|agScegliGiorno|agElimina/.test(r1), false);
+  ok('la maniglia prende l\'impegno',               /ag-maniglia" onpointerdown="agPrendi\(event,'q'\)"/.test(r1), true);
+  ok('le pillole vanno sotto il testo',             /INSERIMENTO C59<span class="ag-sotto"><span class="ag-quando">in ritardo<\/span><span class="ag-da">previsto/.test(r1), true);
+  var r2=_agRiga({id:'q',giorno:g,testo:'fatto',fatto:true},false);
+  ok('un fatto non ha la maniglia',                 /agPrendi/.test(r2), false);
+  // Il menu ⋯: Sposta, Modifica, Elimina.
+  var mv=_agMenuAperto;_agMenuAperto='q';
+  var m1=_agRiga({id:'q',giorno:g,testo:'t',fatto:false},false),m2=_agRiga({id:'q',giorno:g,testo:'t',fatto:true},false);
+  _agMenuAperto=mv;
+  ok('il menu ha Sposta, Modifica, Elimina',        /agMenuVoce\('sposta','q'\)[\s\S]*agMenuVoce\('modifica','q'\)[\s\S]*agMenuVoce\('elimina','q'\)/.test(m1), true);
+  ok('un fatto non si sposta dal menu',             /agMenuVoce\('sposta'/.test(m2), false);
+  ok('menu chiuso: niente menu',                    /ag-menu"/.test(r1), false);
+  ok('la fila si salva con la fusione a tre',       /_agTrascinaFine\([\s\S]*_agScrivi\(/.test(String(_agFineTrascina))&&!/kvSet\(/.test(String(_agFineTrascina)), true);
+  ok('niente ridisegno durante il trascinamento',   /!_agDrag/.test(String(_agDopoFusione)), true);
+  // Disegnata: nell'ordine scelto, con i giorni che sanno chi sono (per il dito).
   var vero=localStorage.getItem('qm_agenda'),lu=_agLunedi;
   localStorage.setItem('qm_agenda',JSON.stringify(mk().map(function(t){if(t.id==='c')t.pos=0;if(t.id==='a')t.pos=1;if(t.id==='b')t.pos=2;return t;})));
   var box={innerHTML:''},ge=document.getElementById;
   document.getElementById=function(id){return id==='agenda-content'?box:null;};
   try{_agLunedi='2026-11-16';agRender();}finally{document.getElementById=ge;_agLunedi=lu;}
   var h=box.innerHTML;
-  ok('disegnati nell\'ordine scelto',              /agSuGiu\('c',-1\)[\s\S]*agSuGiu\('a',-1\)[\s\S]*agSuGiu\('b',-1\)/.test(h), true);
+  ok('disegnati nell\'ordine scelto',              /data-id="c"[\s\S]*data-id="a"[\s\S]*data-id="b"/.test(h), true);
+  ok('ogni giorno porta la sua data',               /class="ag-day[^"]*" data-iso="2026-11-20"/.test(h), true);
   if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
 })();
 

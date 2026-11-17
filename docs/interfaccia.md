@@ -157,14 +157,14 @@ L'app `dvr.html` non è stata toccata.
 Voce **Agenda** subito sotto Overview, `§§ AGENDA` in app.js, stile `.ag-*` in style.css.
 Un'agendina, non un calendario fisso: sette schede da lunedì a domenica, si va avanti e
 indietro di settimana. In ogni giorno si **aggiunge** (Invio o "+", ora facoltativa), si
-**spunta**, si **corregge** toccando il testo, si **sposta** al giorno dopo (freccia) o
-trascinando su un altro giorno (computer), si **mette in ordine** (frecce su/giù), si **elimina** (×, senza conferma: è un appunto).
+**spunta**, si **corregge** toccando il testo, si **sposta** su un altro giorno (⋯ → Sposta) o
+trascinando con la maniglia, si **mette in ordine** con la maniglia (anche col dito), si **elimina** (⋯ → Elimina, senza conferma: è un appunto).
 "Togli i fatti della settimana" chiede conferma con `cqConferma`.
 
 - **Rimasti indietro**: dal 14/11/2026 **non c'è più il riquadro in cima** (né "Porta tutti a
   oggi"): il QM l'ha giudicato inutile. Gli impegni non spuntati di un giorno passato restano nel
   loro giorno, in rosso. Niente sparisce da solo.
-- **La freccia chiede il giorno** (14/11/2026): *"a oggi"* / *"al giorno dopo"* non andava bene.
+- **La freccia chiede il giorno** (14/11/2026; dal 17/11 è la voce «Sposta a un altro giorno» del ⋯): *"a oggi"* / *"al giorno dopo"* non andava bene.
   `agScegliGiorno` apre la finestra Compass (`cqAvviso`, pulsante Annulla) con i 14 giorni di
   questa settimana e della prossima (`_agScelta`, griglia `.ag-scegli`, 4 colonne su telefono):
   oggi in oro, il giorno previsto in rosso, quello attuale spento. Se il giorno previsto è prima
@@ -179,15 +179,28 @@ trascinando su un altro giorno (computer), si **mette in ordine** (frecce su/gi�
   giorno porta *"previsto mar 3 nov"* (`.ag-da`). Riportato al suo giorno, `previsto` si toglie. Controlli in
   `test/controlli.js` ("lascia la traccia nel suo giorno").
 - **Ordine degli impegni a mano** (17/11/2026). Il QM: *"dai la possibilità di spostare l'ordine
-  degli impegni"*. Su ogni impegno da fare ci sono le frecce **su/giù** (`agSuGiu` → `_agSuGiu`,
-  anche da telefono); al computer si può anche **trascinare un impegno sopra un altro** (anche
-  da un altro giorno) e va subito prima di quello (`agLasciaSu` → `_agMettiInFila`). Messi in
-  fila, gli impegni da fare del giorno prendono `pos` 0,1,2…; `_agOrdina` ordina per
-  (fatto, `pos`, ora, ts): chi non ha `pos` (nuovo o arrivato da un altro giorno, `_agSposta`
-  lo toglie) va **dopo** quelli in fila, con la regola di sempre. Senza spostamenti l'ordine è
-  quello di prima. Le frecce non servono sul primo/ultimo (nascoste con `visibility`, le colonne
-  non ballano), né su un impegno da solo o già fatto. `pos` viaggia nella fusione a tre come
-  ogni altro campo. Controlli in `test/controlli.js` ("ordine degli impegni a mano").
+  degli impegni"*. Messi in fila, gli impegni da fare del giorno prendono `pos` 0,1,2…
+  (`_agMettiInFila`); `_agOrdina` ordina per (fatto, `pos`, ora, ts): chi non ha `pos` (nuovo o
+  arrivato con la freccia da un altro giorno: `_agSposta` lo toglie) va **dopo** quelli in fila,
+  con la regola di sempre. Senza spostamenti l'ordine è quello di prima. `pos` viaggia nella
+  fusione a tre come ogni altro campo.
+- **La riga dell'impegno: maniglia a sinistra, ⋯ a destra** (17/11/2026, sostituisce le frecce
+  su/giù dello stesso giorno). Il QM: *"ci sono troppi segni dopo il task, accorciano il task"*;
+  fra tre proposte (menu ⋯ / comandi al tocco / maniglia) ha scelto la **maniglia**.
+  - **Maniglia ⠿** (`agPrendi`, pointer events: mouse **e dito**, `touch-action:none`): si tiene
+    premuta e si porta l'impegno sopra un altro, anche di un altro giorno. Metà alta della riga =
+    prima di quello, metà bassa = prima del successivo (`_agDoveCade`); spazio vuoto del giorno =
+    in fondo. Lasciato, `_agFineTrascina` → `_agTrascinaFine` (cambia giorno con `_agSposta`,
+    quindi con la traccia del previsto, poi mette in fila) → `_agScrivi`. Il giorno sotto il
+    dito si trova con `elementFromPoint` e `data-iso` sul riquadro; vicino al bordo `.content`
+    scorre da sola. Gli impegni fatti non hanno maniglia. Il vecchio trascinamento HTML5
+    (`draggable`, solo computer) è stato tolto: la maniglia fa lo stesso anche da telefono.
+  - **⋯** (`agMenu`, `_agMenuAperto`): Sposta a un altro giorno (la scelta dei 14 giorni di
+    prima, non per i fatti), Modifica, Elimina. Si chiude toccando fuori o con Esc. Toccare il
+    testo continua a correggerlo.
+  - Le pillole (*in ritardo*, *previsto …*) stanno **sotto** il testo (`.ag-sotto`).
+  - Durante un trascinamento o col menu aperto, un aggiornamento dal cloud **non** ridisegna
+    (`_agDopoFusione`). Controlli in `test/controlli.js` ("ordine degli impegni a mano").
 - **Il mio turno in ogni giorno** (17/11/2026). Il QM: *"metti su ogni giorno il mio turno del
   giorno"*. Nella testa di ogni giorno, accanto alla data, una pillola col turno di `Presta P.`
   (`AG_QM`): verde *Turno P*, rossa *Riposo* / *Ferie* / *Malattia*; niente col trattino o senza

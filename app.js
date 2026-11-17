@@ -18231,6 +18231,8 @@ async function qmCodiceGalleria(btn){
 const AG_KEY='qm_agenda';
 let _agLunedi=null;            // ISO del lunedì della settimana mostrata (null = questa)
 let _agModifica=null;          // id dell'impegno che si sta correggendo
+let _agMenuAperto=null;        // id dell'impegno col menu ⋯ aperto
+let _agDrag=null;              // trascinamento in corso con la maniglia
 function _agIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function _agDaIso(s){const p=String(s||'').split('-').map(Number);return new Date(p[0],(p[1]||1)-1,p[2]||1,12,0,0);}   // mezzogiorno: niente scherzi dell'ora legale
 function _agOggi(){return _agIso(new Date());}
@@ -18276,13 +18278,22 @@ function _agMettiInFila(lista,id,iso,primaDi){
   fila.forEach((x,n)=>{x.pos=n;});
   return true;
 }
-// Su/giu' di un posto fra gli impegni da fare dello stesso giorno.
-function _agSuGiu(lista,id,dir){
-  const t=lista.find(x=>x.id===id);if(!t||t.fatto)return false;
-  const fila=_agDelGiorno(lista,t.giorno).filter(x=>!x.fatto);
-  const i=fila.findIndex(x=>x.id===id),j=i+(dir<0?-1:1);
-  if(i<0||j<0||j>=fila.length)return false;
-  return _agMettiInFila(lista,id,t.giorno,dir<0?fila[j].id:(fila[j+1]&&fila[j+1].id));
+// Trascinando con la maniglia: dove cade l'impegno `id` lasciato sopra `suId` nel giorno
+// `iso`. Meta' alta della riga = prima di quella; meta' bassa = prima della successiva da
+// fare (null = in fondo). Pura.
+function _agDoveCade(lista,id,iso,suId,metaBassa){
+  const fila=_agDelGiorno(lista,iso).filter(x=>!x.fatto&&x.id!==id);
+  const i=fila.findIndex(x=>x.id===suId);
+  if(i<0)return null;
+  if(!metaBassa)return suId;
+  return fila[i+1]?fila[i+1].id:null;
+}
+// Lasciato: se il giorno e' un altro si sposta (con la traccia del giorno previsto), poi si
+// mette in fila prima di `primaDi`. Pura sulla lista; false = niente da fare.
+function _agTrascinaFine(lista,id,iso,primaDi,oggi){
+  const t=lista.find(x=>x.id===id);if(!t||t.fatto||!iso)return false;
+  if(t.giorno!==iso)_agSposta(t,iso,oggi);
+  return _agMettiInFila(lista,id,iso,primaDi);
 }
 // Il turno del QM nel giorno (17/11/2026): «metti su ogni giorno il mio turno del giorno».
 // Si legge dal turno caricato (weekData) e, per le altre settimane, dall'archivio dei turni
@@ -18330,7 +18341,7 @@ function _agScrivi(lista){
 // Arrivato qualcosa da un'altra postazione: si ridisegna, ma non sotto le dita.
 function _agDopoFusione(){
   _agBadge();
-  if(_qmVistaAttiva()==='agenda'&&!_qmOccupato())agRender();
+  if(_qmVistaAttiva()==='agenda'&&!_qmOccupato()&&!_agDrag&&!_agMenuAperto)agRender();
 }
 function _agCambia(id,fn){
   const l=_agLeggi();const t=l.find(x=>x.id===id);if(!t)return;
@@ -18349,11 +18360,15 @@ const _AG_GIORNI=['Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabat
 const _AG_MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
 function _agEtichetta(iso){const d=_agDaIso(iso);return d.getDate()+' '+_AG_MESI[d.getMonth()];}
 function _agIcoX(){return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';}
-function _agIcoSu(){return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>';}
-function _agIcoGiu(){return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';}
+function _agIcoManiglia(){return '<svg viewBox="0 0 10 16" width="10" height="16" fill="currentColor"><circle cx="2.5" cy="3" r="1.4"/><circle cx="7.5" cy="3" r="1.4"/><circle cx="2.5" cy="8" r="1.4"/><circle cx="7.5" cy="8" r="1.4"/><circle cx="2.5" cy="13" r="1.4"/><circle cx="7.5" cy="13" r="1.4"/></svg>';}
+function _agIcoAltro(){return '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';}
+function _agIcoMatita(){return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>';}
 function _agIcoAvanti(){return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';}
-// `fila` = {primo, ultimo} fra gli impegni da fare del giorno: decide quali frecce su/giu' servono.
-function _agRiga(t,conGiorno,fila){
+// Riga di un impegno (17/11/2026, proposta C scelta dal QM: «troppi segni dopo il task
+// accorciano il task»): maniglia a sinistra per metterlo in fila trascinando (mouse e dito,
+// anche su un altro giorno), un solo ⋯ a destra con Sposta, Modifica, Elimina. Le pillole
+// (in ritardo, previsto…) stanno SOTTO il testo, cosi' il testo usa tutta la riga.
+function _agRiga(t,conGiorno){
   const id=_esc(t.id);
   if(_agModifica===t.id){
     return `<div class="ag-task ag-task-edit">
@@ -18365,15 +18380,23 @@ function _agRiga(t,conGiorno,fila){
     </div>`;
   }
   const ritardo=!t.fatto&&t.giorno<_agOggi();
-  const suGiu=!t.fatto&&fila&&!(fila.primo&&fila.ultimo)
-    ?`<span class="ag-ordine"><button class="ag-ico ag-ico-su" ${fila.primo?'disabled':''} onclick="agSuGiu('${id}',-1)" title="Più su">${_agIcoSu()}</button><button class="ag-ico ag-ico-giu" ${fila.ultimo?'disabled':''} onclick="agSuGiu('${id}',1)" title="Più giù">${_agIcoGiu()}</button></span>`:'';
-  return `<div class="ag-task${t.fatto?' ag-fatto':''}${ritardo&&!conGiorno?' ag-ritardo':''}" draggable="true" ondragstart="agTrascina(event,'${id}')"${t.fatto?'':` ondragover="agSopraImpegno(event)" ondragleave="this.classList.remove('ag-drop-prima')" ondrop="agLasciaSu(event,'${id}')"`}>
-    <input type="checkbox" class="ag-check" ${t.fatto?'checked':''} onchange="agSpunta('${id}')" title="Fatto">
+  const pillole=(conGiorno?`<span class="ag-quando">previsto ${_esc(_agEtichettaLunga(t.giorno))}</span>`:'')
+    +(!conGiorno&&ritardo?'<span class="ag-quando">in ritardo</span>':'')
+    +(t.previsto&&!conGiorno?`<span class="ag-da">previsto ${_esc(_agEtichettaLunga(t.previsto))}</span>`:'');
+  const maniglia=t.fatto
+    ?'<span class="ag-maniglia ag-maniglia-vuota"></span>'
+    :`<span class="ag-maniglia" onpointerdown="agPrendi(event,'${id}')" title="Tieni premuto e trascina">${_agIcoManiglia()}</span>`;
+  return `<div class="ag-task${t.fatto?' ag-fatto':''}${ritardo&&!conGiorno?' ag-ritardo':''}" data-id="${id}">
+    ${maniglia}<input type="checkbox" class="ag-check" ${t.fatto?'checked':''} onchange="agSpunta('${id}')" title="Fatto">
     <div class="ag-testo" onclick="agModifica('${id}')" title="Tocca per correggere">
-      ${t.ora?`<span class="ag-ora">${_esc(t.ora)}</span>`:''}${conGiorno?`<span class="ag-quando">previsto ${_esc(_agEtichettaLunga(t.giorno))}</span>`:''}${!conGiorno&&ritardo?'<span class="ag-quando">in ritardo</span>':''}${t.previsto&&!conGiorno?`<span class="ag-da">previsto ${_esc(_agEtichettaLunga(t.previsto))}</span>`:''}${_esc(t.testo)}
+      ${t.ora?`<span class="ag-ora">${_esc(t.ora)}</span>`:''}${_esc(t.testo)}${pillole?`<span class="ag-sotto">${pillole}</span>`:''}
     </div>
-    ${suGiu}${t.fatto?'':`<button class="ag-ico" onclick="agScegliGiorno('${id}')" title="Sposta a un altro giorno">${_agIcoAvanti()}</button>`}
-    <button class="ag-ico ag-ico-del" onclick="agElimina('${id}')" title="Elimina">${_agIcoX()}</button>
+    <button class="ag-ico ag-ico-altro" onclick="agMenu(event,'${id}')" title="Altro" aria-haspopup="menu">${_agIcoAltro()}</button>
+    ${_agMenuAperto===t.id?`<div class="ag-menu" role="menu">
+      ${t.fatto?'':`<button role="menuitem" onclick="agMenuVoce('sposta','${id}')">${_agIcoAvanti()}Sposta a un altro giorno</button>`}
+      <button role="menuitem" onclick="agMenuVoce('modifica','${id}')">${_agIcoMatita()}Modifica</button>
+      <hr><button role="menuitem" class="ag-menu-del" onclick="agMenuVoce('elimina','${id}')">${_agIcoX()}Elimina</button>
+    </div>`:''}
   </div>`;
 }
 // Traccia nel riquadro del giorno in cui l'impegno era previsto: non si tocca, dice dove e' andato.
@@ -18411,10 +18434,10 @@ function agRender(){
     const del=_agDelGiorno(lista,iso);
     const daFare=del.filter(t=>!t.fatto).length;
     const cls=iso===oggi?' ag-oggi':(iso<oggi?' ag-passato':'');
-    h+=`<div class="ag-day${cls}" ondragover="agSopra(event)" ondragleave="this.classList.remove('ag-drop')" ondrop="agLascia(event,'${iso}')">
+    h+=`<div class="ag-day${cls}" data-iso="${iso}">
       <div class="ag-day-head"><span class="ag-day-nome">${_AG_GIORNI[i]}</span><span class="ag-day-data">${_esc(_agEtichetta(iso))}</span>
         ${iso===oggi?'<span class="ag-pill">oggi</span>':''}${_agTurnoPill(_agTurnoQM(iso,weekData,_arch))}${daFare?`<span class="ag-day-n">${daFare}</span>`:''}</div>
-      <div class="ag-lista">${(del.map(t=>{const df=del.filter(x=>!x.fatto);return _agRiga(t,false,{primo:df[0]===t,ultimo:df[df.length-1]===t});}).join('')+lista.filter(t=>t.previsto===iso&&t.giorno!==iso).map(_agTraccia).join(''))||'<div class="ag-vuoto">Niente in programma</div>'}</div>
+      <div class="ag-lista">${(del.map(t=>_agRiga(t,false)).join('')+lista.filter(t=>t.previsto===iso&&t.giorno!==iso).map(_agTraccia).join(''))||'<div class="ag-vuoto">Niente in programma</div>'}</div>
       <div class="ag-add">
         <input type="time" class="ag-ora-in" id="agOra-${iso}" title="Ora (facoltativa)">
         <input type="text" class="ag-testo-in" id="agNuovo-${iso}" placeholder="Aggiungi…" maxlength="300"
@@ -18473,7 +18496,7 @@ function agSpostaA(id,iso){
   const oggi=_agOggi();
   _agCambia(id,t=>{_agSposta(t,iso,oggi);});
 }
-function agModifica(id){_agModifica=id;agRender();}
+function agModifica(id){_agModifica=id;_agMenuAperto=null;agRender();}
 function agAnnullaModifica(){_agModifica=null;agRender();}
 function agSalvaModifica(id){
   const te=document.getElementById('agEditTesto'),or=document.getElementById('agEditOra');
@@ -18489,29 +18512,73 @@ async function agTogliFatti(){
   if(!await cqConferma('Togliere gli impegni fatti?',`<strong>${via.length}</strong> ${via.length===1?'impegno spuntato sparirà':'impegni spuntati spariranno'} da questa settimana.`,{ok:'Togli'}))return;
   const ids=new Set(via.map(t=>t.id));_agScrivi(l.filter(t=>!ids.has(t.id)));agRender();
 }
-// Trascinare un impegno su un altro giorno (computer).
-function agTrascina(ev,id){try{ev.dataTransfer.setData('text/plain',id);ev.dataTransfer.effectAllowed='move';}catch(e){}}
-function agSopra(ev){ev.preventDefault();try{ev.currentTarget.classList.add('ag-drop');}catch(e){}}
-function agSuGiu(id,dir){
-  const l=_agLeggi();if(!_agSuGiu(l,id,dir))return;
-  _agScrivi(l);agRender();
+// ── Menu ⋯ ──
+function agMenu(ev,id){
+  try{ev.stopPropagation();}catch(e){}
+  _agMenuAperto=_agMenuAperto===id?null:id;agRender();
 }
-// Trascinato sopra un impegno: va subito prima di quello (anche da un altro giorno).
-function agSopraImpegno(ev){ev.preventDefault();ev.stopPropagation();try{ev.currentTarget.classList.add('ag-drop-prima');}catch(e){}}
-function agLasciaSu(ev,primaDi){
-  ev.preventDefault();ev.stopPropagation();
-  try{ev.currentTarget.classList.remove('ag-drop-prima');document.querySelectorAll('.ag-drop').forEach(e=>e.classList.remove('ag-drop'));}catch(e){}
-  let id='';try{id=ev.dataTransfer.getData('text/plain');}catch(e){}
-  if(!id||id===primaDi)return;
-  const l=_agLeggi(),t=l.find(x=>x.id===id),dove=l.find(x=>x.id===primaDi);if(!t||!dove)return;
-  if(t.giorno!==dove.giorno)_agSposta(t,dove.giorno,_agOggi());
-  if(t.fatto){_agScrivi(l);agRender();return;}
-  _agMettiInFila(l,id,dove.giorno,primaDi);_agScrivi(l);agRender();
+function agMenuVoce(voce,id){
+  _agMenuAperto=null;
+  if(voce==='sposta'){agRender();agScegliGiorno(id);}
+  else if(voce==='modifica')agModifica(id);
+  else if(voce==='elimina')agElimina(id);
 }
-function agLascia(ev,iso){
-  ev.preventDefault();try{ev.currentTarget.classList.remove('ag-drop');}catch(e){}
-  let id='';try{id=ev.dataTransfer.getData('text/plain');}catch(e){}
-  if(id)_agCambia(id,t=>{_agSposta(t,iso,_agOggi());});
+try{
+  document.addEventListener('click',e=>{
+    if(!_agMenuAperto||(e.target.closest&&e.target.closest('.ag-menu,.ag-ico-altro')))return;
+    _agMenuAperto=null;agRender();
+  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&_agMenuAperto){_agMenuAperto=null;agRender();}});
+}catch(e){}
+// ── Trascinamento con la maniglia: pointer events, cosi' va col mouse e col dito ──
+// Si tiene premuta la maniglia e si porta l'impegno sopra un altro (anche di un altro
+// giorno) o nello spazio vuoto di un giorno (va in fondo). Vicino al bordo dello schermo la
+// pagina scorre da sola: su telefono i giorni sono uno sotto l'altro.
+function agPrendi(ev,id){
+  if(ev.button!=null&&ev.button!==0)return;
+  ev.preventDefault();
+  const riga=ev.currentTarget&&ev.currentTarget.closest?ev.currentTarget.closest('.ag-task'):null;
+  _agMenuAperto=null;
+  _agDrag={id,riga,iso:null,primaDi:null,mosso:false};
+  if(riga)riga.classList.add('ag-trascinato');
+  document.body.classList.add('ag-trascinando');
+}
+function _agTogliSegni(){document.querySelectorAll('.ag-drop,.ag-drop-prima').forEach(e=>e.classList.remove('ag-drop','ag-drop-prima'));}
+function _agSegnaMeta(x,y){
+  _agTogliSegni();
+  const el=document.elementFromPoint(x,y);
+  const day=el&&el.closest?el.closest('.ag-day[data-iso]'):null;
+  _agDrag.iso=day?day.dataset.iso:null;_agDrag.primaDi=null;
+  if(!day)return;
+  const riga=el.closest('.ag-task[data-id]');
+  if(riga&&riga.dataset.id!==_agDrag.id&&!riga.classList.contains('ag-fatto')){
+    const r=riga.getBoundingClientRect();
+    _agDrag.primaDi=_agDoveCade(_agLeggi(),_agDrag.id,_agDrag.iso,riga.dataset.id,y>r.top+r.height/2);
+  }
+  const segno=_agDrag.primaDi?day.querySelector('.ag-task[data-id="'+CSS.escape(_agDrag.primaDi)+'"]'):null;
+  if(segno)segno.classList.add('ag-drop-prima');else day.classList.add('ag-drop');
+}
+try{
+  document.addEventListener('pointermove',e=>{
+    if(!_agDrag)return;
+    _agDrag.mosso=true;
+    try{_agSegnaMeta(e.clientX,e.clientY);}catch(er){}
+    const sc=_qmScroller();
+    if(sc){if(e.clientY<70)sc.scrollTop-=14;else if(e.clientY>window.innerHeight-70)sc.scrollTop+=14;}
+  });
+  document.addEventListener('pointerup',()=>_agFineTrascina(false));
+  document.addEventListener('pointercancel',()=>_agFineTrascina(true));
+}catch(e){}
+// Lasciata la maniglia: si scrive (fusione a tre) solo se e' davvero cambiato qualcosa.
+function _agFineTrascina(annulla){
+  if(!_agDrag)return;
+  const d=_agDrag;_agDrag=null;
+  _agTogliSegni();document.body.classList.remove('ag-trascinando');
+  if(d.riga)d.riga.classList.remove('ag-trascinato');
+  if(annulla||!d.mosso||!d.iso)return;
+  const l=_agLeggi();
+  if(_agTrascinaFine(l,d.id,d.iso,d.primaDi,_agOggi()))_agScrivi(l);
+  agRender();
 }
 // Aprendo la vista (o tornando sulla scheda) si rilegge il cloud: il telefono o l'altro
 // Mac possono aver aggiunto qualcosa.
