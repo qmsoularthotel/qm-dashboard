@@ -178,6 +178,14 @@ trascinando su un altro giorno (computer), si **elimina** (×, senza conferma: �
   traccia tratteggiata *"spostato a oggi / al gio 5 nov"* (o *fatto il …*), e la riga nel nuovo
   giorno porta *"previsto mar 3 nov"* (`.ag-da`). Riportato al suo giorno, `previsto` si toglie. Controlli in
   `test/controlli.js` ("lascia la traccia nel suo giorno").
+- **Il mio turno in ogni giorno** (17/11/2026). Il QM: *"metti su ogni giorno il mio turno del
+  giorno"*. Nella testa di ogni giorno, accanto alla data, una pillola col turno di `Presta P.`
+  (`AG_QM`): verde *Turno P*, rossa *Riposo* / *Ferie* / *Malattia*; niente col trattino o senza
+  turno. `_agTurnoQM(iso, weekData, archivio)` legge prima il turno caricato, poi l'archivio
+  `qm_turni_storico` (`turniStoricoLeggi`) per le altre settimane, **solo a data esatta**:
+  `findWeekDayIndex` ripiega sul giorno della settimana e qui darebbe il turno di un'altra
+  settimana. Un turno nuovo (`loadWeekData`) ridisegna l'Agenda se è aperta, non sotto le dita.
+  Controlli in `test/controlli.js` ("il mio turno in ogni giorno"), provati con sei sabotaggi.
 - **Badge del menu**: impegni da fare di oggi + rimasti indietro.
 - **Dati**: `qm_agenda`, elenco `[{id, giorno:'AAAA-MM-GG', testo, ora, fatto, ts, previsto?}]`, scritto
   dai due Mac e dal telefono: passa **solo** da `_qmElencoSalva` (fusione a tre), è in

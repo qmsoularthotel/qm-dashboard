@@ -3324,6 +3324,47 @@ sez('Agenda: chi resta indietro lascia la traccia nel suo giorno');
   if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
 })();
 
+// Il turno del QM in ogni giorno dell'Agenda (17/11/2026). Nomi del planning come in DEPTS.
+sez('Agenda: il mio turno in ogni giorno');
+(function(){
+  var WD={giorni:[
+    {label:'Lun 16/11',date:'2026-11-16',shifts:{'Presta P.':'P','Maddaloni M.':'AC'}},
+    {label:'Mar 17/11',date:'2026-11-17',shifts:{'Presta P.':'R','Maddaloni M.':'P'}},
+    {label:'Mer 18/11',date:'2026-11-18',shifts:{'Presta P.':'-'}},
+    {label:'Gio 19/11',date:'2026-11-19',shifts:{'Presta P.':'FERIE'}},
+    {label:'Ven 20/11',date:'2026-11-20',shifts:{'Maddaloni M.':'P'}}]};
+  var AR={'2026-11-09':{dal:'2026-11-09',al:'2026-11-15',giorni:[{data:'2026-11-10',shifts:{'Presta P.':'P 9-17'}}],ts:1}};
+  var t=_agTurnoQM('2026-11-16',WD,AR);
+  ok('il turno del giorno dal planning caricato',   t&&t.testo+'|'+t.riposo, 'P|false');
+  t=_agTurnoQM('2026-11-17',WD,AR);
+  ok('R e\' un riposo',                             t&&t.testo+'|'+t.riposo, 'Riposo|true');
+  t=_agTurnoQM('2026-11-19',WD,AR);
+  ok('le ferie si chiamano ferie',                  t&&t.testo, 'Ferie');
+  ok('il trattino non mostra niente',               _agTurnoQM('2026-11-18',WD,AR), null);
+  t=_agTurnoQM('2026-11-20',WD,AR);
+  ok('nel planning ma senza il mio nome: riposo',   t&&t.riposo, true);
+  t=_agTurnoQM('2026-11-10',WD,AR);
+  ok('le settimane passate dall\'archivio',         t&&t.testo, 'P 9-17');
+  // findWeekDayIndex ripiega sul giorno della settimana: qui non si deve.
+  ok('lunedi\' di un\'altra settimana: niente',     _agTurnoQM('2026-11-23',WD,AR), null);
+  ok('senza turno caricato non si inventa',         _agTurnoQM('2026-11-16',null,{}), null);
+  ok('il riposo e\' rosso',                         /ag-turno-riposo/.test(_agTurnoPill({riposo:true,testo:'Riposo'})), true);
+  ok('il codice del turno passa da _esc',           _agTurnoPill({riposo:false,testo:'<b>x'}).indexOf('<b>')<0, true);
+  // Nella settimana disegnata: in testa al giorno giusto.
+  var vero=localStorage.getItem('qm_agenda'),wd=weekData,lu=_agLunedi;
+  localStorage.setItem('qm_agenda','[]');
+  var box={innerHTML:''},ge=document.getElementById;
+  document.getElementById=function(id){return id==='agenda-content'?box:null;};
+  try{weekData=WD;_agLunedi='2026-11-16';agRender();}finally{document.getElementById=ge;weekData=wd;_agLunedi=lu;}
+  var h=box.innerHTML.replace(/>\s+</g,'><');
+  ok('lunedi\' 16 porta «Turno P» nella testa',     /Lunedì<\/span><span class="ag-day-data">16 nov<\/span>(<span class="ag-pill">oggi<\/span>)?<span class="ag-turno"[^>]*>Turno P<\/span>/.test(h), true);
+  ok('martedi\' 17 porta «Riposo» in rosso',        /Martedì[\s\S]{0,200}?ag-turno ag-turno-riposo[^>]*>Riposo</.test(h), true);
+  ok('mercoledi\' 18 (trattino) senza turno',       /Mercoledì<\/span><span class="ag-day-data">18 nov<\/span>(<span class="ag-pill">oggi<\/span>)?<\/div>/.test(h.replace(/\s+<\/div>/g,'</div>')), true);
+  if(vero==null)localStorage.removeItem('qm_agenda');else localStorage.setItem('qm_agenda',vero);
+  // Arrivato un turno nuovo l'Agenda si aggiorna, ma non sotto le dita.
+  ok('un turno nuovo ridisegna l\'Agenda',          /agRender\(\)/.test(String(loadWeekData))&&/_qmOccupato\(\)[\s\S]{0,20}agRender/.test(String(loadWeekData)), true);
+})();
+
 sez('Consumo Biancheria: il pulsante della consegna resta spento finche\' «Ha portato» non e\' tutto scritto (12/11, 16/11/2026)');
 (function(){
   var Q=function(n){var q=_biaVuote();q.Federa=n;return q;};

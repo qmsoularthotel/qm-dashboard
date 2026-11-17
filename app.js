@@ -813,6 +813,8 @@ function loadWeekData(data){
   _turniSenzaEsclusi(data);
   weekData=data;
   try{turniArchivia(data);}catch(e){}
+  // L'Agenda mostra il turno del QM in ogni giorno: arrivato un turno nuovo, si aggiorna (non sotto le dita).
+  try{if(_qmVistaAttiva()==='agenda'&&!_qmOccupato())agRender();}catch(e){}
   const today=new Date();
   let idx=findWeekDayIndex(data,today);
   if(idx===-1){
@@ -18255,6 +18257,41 @@ function _agSposta(t,nuovo,oggi){
   t.giorno=nuovo;
   if(t.previsto===t.giorno)delete t.previsto;
 }
+// Il turno del QM nel giorno (17/11/2026): «metti su ogni giorno il mio turno del giorno».
+// Si legge dal turno caricato (weekData) e, per le altre settimane, dall'archivio dei turni
+// (qm_turni_storico, che si riempie a ogni caricamento). Solo a DATA ESATTA: findWeekDayIndex
+// ripiega sul giorno della settimana, e qui darebbe il turno di un'altra settimana.
+// Restituisce null quando il turno non c'e' o e' un trattino (giorno non pertinente).
+const AG_QM='Presta P.';
+function _agTurnoQM(iso,wd,arch){
+  let v=null,trovato=false;
+  try{
+    if(wd&&Array.isArray(wd.giorni))wd.giorni.forEach(g=>{
+      if(trovato||!g||!g.date)return;
+      const d=_annoPlausibile(new Date(String(g.date).slice(0,10)+'T12:00:00'));
+      if(_turnoIso(d)===iso){trovato=true;v=(g.shifts||{})[AG_QM];}
+    });
+  }catch(e){}
+  if(!trovato&&arch)Object.keys(arch).some(k=>{
+    const w=arch[k];if(!w||!Array.isArray(w.giorni))return false;
+    const g=w.giorni.find(x=>x&&x.data===iso);if(!g)return false;
+    trovato=true;v=(g.shifts||{})[AG_QM];return true;
+  });
+  if(!trovato)return null;
+  const t=String(v==null?'':v).trim();
+  if(IS_DASH(t))return null;
+  if(IS_REST(t)){
+    const u=t.toUpperCase();
+    return{riposo:true,testo:u.includes('FERIE')?'Ferie':u.includes('MALATTIA')?'Malattia':'Riposo'};
+  }
+  return{riposo:false,testo:t};
+}
+function _agTurnoPill(tu){
+  if(!tu)return '';
+  return tu.riposo
+    ?`<span class="ag-turno ag-turno-riposo" title="Il tuo turno">${_esc(tu.testo)}</span>`
+    :`<span class="ag-turno" title="Il tuo turno">Turno ${_esc(tu.testo)}</span>`;
+}
 function _agEtichettaLunga(iso){const d=_agDaIso(iso);return _AG_GIORNI[(d.getDay()+6)%7].slice(0,3).toLowerCase()+' '+d.getDate()+' '+_AG_MESI[d.getMonth()];}
 function _agNuovoId(){return 'ag'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 // Scrive in locale e fa partire la fusione col cloud. Il ridisegno lo fa chi chiama.
@@ -18322,6 +18359,7 @@ function agRender(){
   const lun=_agLunedi||_agLunediDi(oggi);
   const giorni=_agSettimana(lun);
   const lista=_agLeggi();
+  let _arch={};try{_arch=turniStoricoLeggi();}catch(e){}
   const sett=lista.filter(t=>t.giorno>=giorni[0]&&t.giorno<=giorni[6]);
   const fatti=sett.filter(t=>t.fatto).length;
   const questa=lun===_agLunediDi(oggi);
@@ -18343,7 +18381,7 @@ function agRender(){
     const cls=iso===oggi?' ag-oggi':(iso<oggi?' ag-passato':'');
     h+=`<div class="ag-day${cls}" ondragover="agSopra(event)" ondragleave="this.classList.remove('ag-drop')" ondrop="agLascia(event,'${iso}')">
       <div class="ag-day-head"><span class="ag-day-nome">${_AG_GIORNI[i]}</span><span class="ag-day-data">${_esc(_agEtichetta(iso))}</span>
-        ${iso===oggi?'<span class="ag-pill">oggi</span>':''}${daFare?`<span class="ag-day-n">${daFare}</span>`:''}</div>
+        ${iso===oggi?'<span class="ag-pill">oggi</span>':''}${_agTurnoPill(_agTurnoQM(iso,weekData,_arch))}${daFare?`<span class="ag-day-n">${daFare}</span>`:''}</div>
       <div class="ag-lista">${(del.map(t=>_agRiga(t,false)).join('')+lista.filter(t=>t.previsto===iso&&t.giorno!==iso).map(_agTraccia).join(''))||'<div class="ag-vuoto">Niente in programma</div>'}</div>
       <div class="ag-add">
         <input type="time" class="ag-ora-in" id="agOra-${iso}" title="Ora (facoltativa)">
