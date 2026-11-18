@@ -4010,3 +4010,33 @@ sez('Preferenze Turni: linguetta, numero che apre le richieste, barra verde/aran
 })();
 // Il modulo si chiama Preferenze Turnazione (QM, 16/11/2026); la chiave della vista resta turni-pref.
 ok('Preferenze Turnazione: nuovo nome',           pageTitles['turni-pref'], 'Preferenze Turnazione');
+
+sez('Bilanciamento camere: San Liborio conta fra le Altre (18/11/2026)');
+// Caso reale: dom 22/11/2026 San Liborio in partenza, ma la tessera del giorno contava solo
+// le camere Art (6 · 7 invece di 6 · 8). Le Altre puliscono anche Liborio: partenze e carico
+// vanno sul loro lato; resta fisso, il motore sposta solo le Art.
+(function () {
+  var _piano = pianoData, _nav = pianoNavIdx;
+  var base = new Date(); base.setHours(12, 0, 0, 0); base.setDate(base.getDate() - 1);
+  function piano(conLiborio) {
+    var G = [0, 1, 2, 3, 4, 5, 6].map(function (i) {
+      var d = new Date(base); d.setDate(base.getDate() + i);
+      return { label: 'G' + i, data: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(),
+               soulart: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+               boutique: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+               liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
+    });
+    G[3].soulart.fermate.push('Art 12'); G[4].soulart.partenze.push('Art 12');
+    if (conLiborio) { G[4].liborio.partenze.push('San Liborio'); G[3].liborio.fermate.push('San Liborio'); }
+    return { stampato: G[0].data, giorni: G, incArr: [], incPar: [], tipi: { 'Art 12': 'AS DLX DP', 'Art 14': 'AS DLX DP' } };
+  }
+  pianoNavIdx = 1;
+  pianoData = piano(false); var senza = hkSuggestMoves(30, null).giorni;
+  pianoData = piano(true);  var con = hkSuggestMoves(30, null).giorni;
+  ok('la partenza di San Liborio va alle Altre',    con[4].pA - senza[4].pA, 1);
+  ok('non alla Matarese',                           con[4].pM - senza[4].pM, 0);
+  ok('e pesa sul loro carico (partenza 2)',         con[4].cA - senza[4].cA, 2);
+  ok('anche la fermata (1)',                        con[3].cA - senza[3].cA, 1);
+  ok('le schede del giorno la mettono fra le Altre', _hkSplitConLiborio(pianoData.giorni[4]).a.partenze.indexOf('San Liborio') >= 0, true);
+  pianoData = _piano; pianoNavIdx = _nav;
+})();

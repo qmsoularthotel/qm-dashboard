@@ -3598,7 +3598,7 @@ function _hkMeseRegistra(piano,oggi){
   piano.giorni.forEach(g=>{
     const iso=_hkIso(g.data);if(!iso)return;
     const d=new Date(iso+'T12:00:00');if(isNaN(d)||d>ref)return;
-    const{m,a}=splitSoulart(g.soulart||{});
+    const{m,a}=_hkSplitConLiborio(g);
     const v={m:(m.partenze||[]).length+(m.cambi||[]).length,a:(a.partenze||[]).length+(a.cambi||[]).length};
     const o=mese[iso];if(o&&o.m===v.m&&o.a===v.a)return;
     mese[iso]=v;cambiato=true;
@@ -3626,7 +3626,7 @@ function _hkMeseTotali(oggi,piano){
   ((P&&P.giorni)||[]).forEach(g=>{
     const iso=_hkIso(g.data);if(!iso||!iso.startsWith(pref)||iso<HK_MESE_DAL)return;
     if(new Date(iso+'T12:00:00')<=ref)return;           // già contato fra i passati
-    const{m,a}=splitSoulart(g.soulart||{});
+    const{m,a}=_hkSplitConLiborio(g);
     M+=(m.partenze||[]).length+(m.cambi||[]).length;A+=(a.partenze||[]).length+(a.cambi||[]).length;
     prev++;if(!dal||iso<dal)dal=iso;if(!al||iso>al)al=iso;if(!dalPrev||iso<dalPrev)dalPrev=iso;
   });
@@ -3644,6 +3644,16 @@ function hkSuggestMoves(maxN,focusIdx){
   const stato={};
   ART.forEach(r=>{stato[r]=_hkStatesFromBlocks(BL[r]||[],N);});
   const days=hkDayTotalsFrom(stato,ART,N);
+  // San Liborio la puliscono le Altre (06/10/2026): le sue partenze e fermate vanno sul loro
+  // lato nelle tessere dei giorni e nella diagnosi. Restano un carico FISSO: San Liborio non si
+  // scambia con nessuna camera Art, quindi le simulazioni (_hkEffetto) partono da questi numeri
+  // e cambiano solo le Art. Caso reale: dom 22/11/2026 Liborio in partenza, tessera 6 · 7
+  // invece di 6 · 8 (QM, 18/11/2026).
+  days.forEach((d,i)=>{
+    const l=(giorni[i]&&giorni[i].liborio)||{};
+    const p=(l.partenze||[]).length+(l.cambi||[]).length,f=(l.fermate||[]).length;
+    d.pA+=p;d.cA+=p*HK_WEIGHT_PARTENZA+f*HK_WEIGHT_FERMATA;
+  });
   out.ok=true;
   out.giorni=days;
   // Diagnosi: i giorni da qui in avanti con partenze non pari (≥2 di differenza:
@@ -4540,7 +4550,7 @@ function _renderRoomDivision(idx){
   // camere dell'app smartphone, per controllare il risultato del bilanciamento carico
   // fatto spostando le camere sul PMS prima di caricare il Piano Settimana.
   let mHtml='';
-  const {m,a}=splitSoulart(giorno.soulart);
+  const {m,a}=_hkSplitConLiborio(giorno);   // San Liborio fra le Altre (18/11/2026)
   const mCard=renderCameriera('Matarese',m),aCard=renderCameriera('Altre housekeeper',a);
   if(mCard||aCard){
     mHtml=`<div>

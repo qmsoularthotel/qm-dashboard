@@ -415,3 +415,15 @@ la copia dei conteggi che `hkpDeriveFromPiano` in Compass ricava dal Piano e che
 se cambia, confrontando con la copia locale di quella postazione). Ora `hkContaPiano` conta dal Piano anche le
 tessere e l'anteprima (cambio = partenza, San Liborio con la SoulArt); i conteggi salvati servono solo per un giorno
 che il Piano non ha. Controllo in `test/esegui.sh` ("numeri in alto … dal Piano").
+
+### San Liborio nelle tessere del Bilanciamento (18/11/2026)
+
+Caso reale: dom 22/11/2026 San Liborio in partenza, ma la tessera del giorno diceva **6 · 7**
+invece di **6 · 8**: `hkSuggestMoves` contava solo le camere Art. Il QM: San Liborio è **sempre
+delle Altre housekeeper** e **non entra mai negli spostamenti**. Ora in `hkSuggestMoves`, dopo
+`hkDayTotalsFrom`, le partenze/cambi di `giorni[i].liborio` si sommano a `pA` e il carico
+(partenza 2, fermata 1) a `cA`: è un carico fisso, le simulazioni (`_hkEffetto`) partono da lì e
+muovono solo le Art (`ART` = camere `Art …`). Anche il conteggio del mese (`_hkMeseRegistra`,
+`_hkMeseTotali`) e le schede Matarese/Altre del giorno usano `_hkSplitConLiborio`. I giorni del
+mese già registrati prima del 18/11 e non più nel Piano restano senza Liborio. 5 controlli.
+
