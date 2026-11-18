@@ -427,3 +427,4 @@ muovono solo le Art (`ART` = camere `Art …`). Anche il conteggio del mese (`_h
 `_hkMeseTotali`) e le schede Matarese/Altre del giorno usano `_hkSplitConLiborio`. I giorni del
 mese già registrati prima del 18/11 e non più nel Piano restano senza Liborio. 5 controlli.
 
+**Schedine** (18/11/2026, QM): sotto le mosse, «con S. Liborio» in oro nei giorni in cui San Liborio è **in partenza** (non per le fermate). La riga c'è su tutte le schedine solo se almeno un giorno ce l'ha, così restano alte uguali; il suggerimento al passaggio del mouse lo ripete. 2 controlli.

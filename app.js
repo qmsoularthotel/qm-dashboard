@@ -3990,6 +3990,11 @@ function renderHkSuggestions(focusIdx){
     }
     return out;
   })();
+  // San Liborio in partenza (QM, 18/11/2026): la schedina lo dice, perché quella partenza è
+  // dentro il numero delle Altre ma nel Piano sta in un'altra struttura. La riga c'è su tutte
+  // le schedine della settimana solo se almeno un giorno ce l'ha, così restano alte uguali.
+  const _libPart=g=>{const l=(g&&g.liborio)||{};return((l.partenze||[]).length+(l.cambi||[]).length)>0;};
+  const _libRiga=(pianoData&&pianoData.giorni||[]).some((g,i)=>i>=_primo&&_libPart(g));
   const selGiorni=(pianoData&&pianoData.giorni&&pianoData.giorni.length)
     ?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;margin-left:auto;">${pianoData.giorni.map((g,i)=>{
         // Oggi e i giorni passati non hanno pulsante: non c'è niente da proporre lì.
@@ -4012,6 +4017,11 @@ function renderHkSuggestions(focusIdx){
           mosse=`<div style="font-size:10px;font-weight:${nM?'700':'400'};margin-top:2px;color:${cM};letter-spacing:.01em;">${nM?(nM===1?'1 mossa':nM+' mosse'):'—'}</div>`;
           tip=nM?`${tip}: ${nM===1?'1 spostamento proposto':nM+' spostamenti proposti'}`
                 :`${tip}: nessuno spostamento da proporre`;
+          if(_libRiga){
+            const sl=_libPart(g);
+            mosse+=`<div style="font-size:9.5px;font-weight:700;margin-top:2px;min-height:12px;color:${att?'#FFC96B':'var(--gold)'};">${sl?'con S. Liborio':''}</div>`;
+            if(sl)tip+=' · San Liborio in partenza (contata fra le Altre)';
+          }
         }
         return `<button onclick="hkGiorno(${i})" title="${tip}" style="background:${att?'var(--accent)':'var(--surface2)'};color:${att?'#fff':'var(--text-muted)'};border:1px solid ${att?'var(--accent)':'var(--border)'};border-radius:7px;padding:6px 10px;min-width:80px;font-size:12.5px;font-weight:${att?'700':'600'};cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.25;text-align:center;${passato&&!att?'opacity:.55;':''}">${g.label||('g'+(i+1))}${numeri}${mosse}</button>`;
       }).join('')}</div>`

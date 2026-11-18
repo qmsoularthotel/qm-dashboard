@@ -4040,3 +4040,21 @@ sez('Bilanciamento camere: San Liborio conta fra le Altre (18/11/2026)');
   ok('le schede del giorno la mettono fra le Altre', _hkSplitConLiborio(pianoData.giorni[4]).a.partenze.indexOf('San Liborio') >= 0, true);
   pianoData = _piano; pianoNavIdx = _nav;
 })();
+// Le schedine dicono se San Liborio è in partenza (18/11/2026).
+(function () {
+  var _piano = pianoData, _nav = pianoNavIdx;
+  var base = new Date(); base.setHours(12, 0, 0, 0); base.setDate(base.getDate() - 1);
+  var G = [0, 1, 2, 3, 4, 5, 6].map(function (i) {
+    var d = new Date(base); d.setDate(base.getDate() + i);
+    return { label: 'G' + i, data: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear(),
+             soulart: { partenze: [], fermate: [], cambi: [], arrivi: [] }, boutique: { partenze: [], fermate: [], cambi: [], arrivi: [] },
+             liborio: { partenze: [], fermate: [], cambi: [], arrivi: [] } };
+  });
+  G[4].soulart.partenze.push('Art 12'); G[4].liborio.partenze.push('San Liborio'); G[5].liborio.fermate.push('San Liborio');
+  pianoData = { stampato: G[0].data, giorni: G, incArr: [], incPar: [], tipi: { 'Art 12': 'AS DLX DP', 'Art 14': 'AS DLX DP' } };
+  pianoNavIdx = 1;
+  var html = renderHkSuggestions(2);
+  pianoData = _piano; pianoNavIdx = _nav;
+  ok('schedina: San Liborio in partenza si vede',  (html.match(/con S\. Liborio/g) || []).length, 1);
+  ok('una fermata di San Liborio no',               /hkGiorno\(5\)[^>]*title="[^"]*San Liborio/.test(html), false);
+})();
