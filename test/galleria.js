@@ -661,3 +661,5 @@ ok('Galleria: l\'archivio apre sull\'ultima settimana', /_gtuSettSel===undefined
   ok('in costruzione senza riga di attivazione: una linea sola', (b2.match(/class="gb-cantiere-r"/g) || []).length, 1);
   ok('con la riga di attivazione restano due linee',        (box.innerHTML.match(/class="gb-cantiere-r"/g) || []).length, 2);
 })();
+// Attesa dopo il PIN e niente bussola nel menu (19/11/2026).
+ok('PIN: animazione d\'attesa mentre si verifica',   /_gtMostraAttesa\([^)]*Verifica del PIN…'\)/.test(String(gtPrefApri)) && /gt-attesa-ago/.test(_gtAttesa('x')), true);

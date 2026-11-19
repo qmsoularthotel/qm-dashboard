@@ -432,3 +432,9 @@ rimetterlo finché non si chiude. `gtuRender` disegna statistiche o archivio sec
 Suite, senza altre righe (`_gbCantiere` con `prossima` nullo). Chiede il PIN come le altre voci
 del gruppo (QM, 19/11/2026): `gtPresenzeEntra`, e `gtPrefRender` instrada su `_gbRenderPresenze`.
 
+**Attesa dopo il PIN** (19/11/2026, QM): mentre il Worker controlla il PIN e la pagina si apre,
+al posto della schermata del PIN compare la bussola dello splash in piccolo, con l'ago che gira
+(`_gtAttesa`, `_gtMostraAttesa`; «Verifica del PIN…», poi «Apertura…»). Ferma con
+`prefers-reduced-motion`. Nello stesso giorno è stata tolta la rosa dei venti dal menu della
+Galleria: con le voci nuove il menu è cresciuto e finiva sotto le voci.
+

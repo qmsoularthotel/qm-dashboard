@@ -10,24 +10,18 @@
 <style>
 /* Solo cio' che style.css di Compass non ha: il resto viene da li'. */
 :root{--shadow:0 1px 4px rgba(0,0,0,.08);}
-/* Rosa dei venti nello spazio vuoto del menu: stessa immagine, inclinazione (22°) e
-   trasparenza (13%) della finestra di conferma di Compass (.cq-box::before in style.css),
-   al centro dello spazio vuoto sotto le voci, intera (25/09/2026). */
-.sidebar .nav{position:relative;overflow-x:hidden;}
-.sidebar .nav>*{position:relative;z-index:1;}
-/* 16/11/2026 (QM, due ritocchi): menu più largo (310px invece dei 270 di Compass), così il
-   bollino NEW accanto alle voci lunghe ha spazio, e rosa più in basso. La rosa ora è disegnata
-   dal MENU INTERO (.sidebar, che ritaglia), non dalla lista delle voci: dentro la lista, più in
-   basso faceva comparire la barra di scorrimento. Centro a 215px dal fondo: il disegno finisce
-   poco sopra il riquadro «Quality Manager». */
+/* Menu più largo (310px invece dei 270 di Compass) per il bollino NEW accanto alle voci lunghe.
+   La rosa dei venti nel menu è stata TOLTA il 19/11/2026 (QM): con le voci della Gestione
+   Turnazione il menu è cresciuto e la rosa finiva sotto le voci. */
 .sidebar{width:310px;}
-/* relative solo su schermo largo: su telefono il menu è position:fixed (style.css) e va lasciato così. */
-@media (min-width:769px){.sidebar{position:relative;}}
 @media (max-width:768px){.sidebar{width:310px;max-width:88vw;}}
-.sidebar>*{position:relative;z-index:1;}
-.sidebar::after{content:'';position:absolute;left:50%;top:calc(100% - 215px);width:265px;height:265px;
-  background:url('img/compass-stella.png') no-repeat center/contain;
-  opacity:.13;transform:translate(-50%,-50%) rotate(22deg);pointer-events:none;z-index:0;}
+/* Attesa dopo il PIN (19/11/2026): la bussola dello splash, piccola, con l'ago che gira. */
+.gt-attesa{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:calc(100vh - 160px);text-align:center;}
+.gt-attesa-bussola{position:relative;width:86px;height:86px;display:flex;align-items:center;justify-content:center;}
+.gt-attesa-anello{position:absolute;inset:0;border-radius:50%;border:2px solid var(--gold);opacity:.6;animation:qmSplashRing 1.8s ease-out infinite;}
+.gt-attesa-ago{animation:qmSplashNeedle 1.6s cubic-bezier(.6,0,.4,1) infinite;transform-origin:18px 18px;}
+.gt-attesa-t{font-size:14px;font-weight:600;color:var(--accent);}
+@media (prefers-reduced-motion:reduce){.gt-attesa-anello,.gt-attesa-ago{animation:none;}}
 
 
 
@@ -163,7 +157,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-19.7';
+const QM_APP_BUILD='2026-11-19.8';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -3628,9 +3622,11 @@ async function gtPrefApri(primo){
   const pin=v('gt-pin');
   if(!/^\d{4,8}$/.test(pin)){_gtMsg='Il PIN è di 4–8 cifre.';gtPrefRender();return;}
   if(primo&&pin!==v('gt-pin2')){_gtMsg='I due PIN non coincidono.';gtPrefRender();return;}
+  _gtMostraAttesa(primo?'Salvataggio del PIN…':'Verifica del PIN…');
   let j;try{j=await _gtChiedi({azione:primo?'imposta-resident':'apri',pin});}catch(e){j={ok:false,error:'Worker non raggiungibile'};}
   if(!j.ok||!j.tp){_gtMsg=j.error||'Non aperto';if(primo)_gtStato=null;gtPrefRender();if(primo)gtPrefEntra();return;}
   _gtTp=j.tp;_gtScade=Number(j.scade)||(Date.now()+GT_DURATA);_gtMsg='';_gtUltimaAttivita=Date.now();
+  _gtMostraAttesa('Apertura…');
   if(_gtTimer){clearTimeout(_gtTimer);_gtTimer=null;}
   await gtPrefLoad();
   if(_gtOrologio)clearInterval(_gtOrologio);
@@ -3656,6 +3652,15 @@ function gtPrefMarkAllSeen(){
   gtPrefRender();
 }
 // Barra "Aperto col PIN" comune alle due voci della Gestione Turnazione.
+// Contenitore della voce di Gestione Turnazione aperta adesso.
+function _gtContenitore(){return({preferenze:'gt-pref-content',statistiche:'gtu-content',archivio:'gtu-arch-content',presenze:'gb-presenze'})[typeof _bgSezione!=='undefined'?_bgSezione:'']||'gt-pref-content';}
+function _gtAttesa(testo){
+  return `<div class="gt-attesa"><div class="gt-attesa-bussola"><div class="gt-attesa-anello"></div>
+    <svg viewBox="0 0 36 36" width="70" height="70" aria-hidden="true"><circle cx="18" cy="18" r="16.5" fill="none" stroke="var(--border)" stroke-width="1.3"/>
+      <g class="gt-attesa-ago"><polygon points="18,6 20,18 18,30 16,18" fill="var(--gold)"/></g><circle cx="18" cy="18" r="2" fill="var(--accent)"/></svg></div>
+    <div class="gt-attesa-t">${testo}</div></div>`;
+}
+function _gtMostraAttesa(testo){const el=document.getElementById(_gtContenitore());if(el)el.innerHTML=_gtAttesa(testo);}
 function _gtResta(){
   const s=Math.max(0,Math.round((GT_DURATA-(Date.now()-_gtUltimaAttivita))/1000));
   return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
@@ -4063,7 +4068,7 @@ function gtuRender(){
   const el=document.getElementById(_gtuContenitore());if(!el)return;
   if(!_gtAperto()){_gtSchermataPin(el,arch?'Archivio turni':'Statistiche ricevimento');return;}
   if(!_gtuArch){
-    el.innerHTML=_gtBanner()+'<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:8px 2px;">Caricamento dell\'archivio dei turni…</div>';
+    el.innerHTML=_gtAttesa('Apertura…');
     if(!_gtuInCorso)_gtuInCorso=(async()=>{
       let j;try{j=await _gtChiedi({azione:'storico',tp:_gtTp});}catch(e){j={ok:false,error:'Worker non raggiungibile'};}
       _gtuInCorso=null;
