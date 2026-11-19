@@ -627,11 +627,18 @@ function turniOrdina(nomi){
 const TURNI_DOPO={'Vatiero R.':'Perez L.'};
 // "Housekeeping e altri" in Turni archiviati: ordine scelto dal QM (19/11/2026); chi non è
 // nell'elenco (la Ditta, un extra nuovo) va in fondo in ordine alfabetico.
-const TURNI_ORDINE_ALTRI=['Matarese A.','Cavaliere L.','Sarnataro A.','Anushka','Roberta','Amorese S.','Extra BKF','Ferace C.','Panagodage S.','Basile G.'];
+// Tre gruppi (housekeeping con la Ditta, colazione, manutenzione), separati in tabella da una
+// linea più spessa. La Ditta va dopo Roberta (QM, 19/11/2026).
+const TURNI_GRUPPI_ALTRI=[['Matarese A.','Cavaliere L.','Sarnataro A.','Anushka','Roberta','Ditta'],
+  ['Amorese S.','Extra BKF','Ferace C.','Panagodage S.'],['Basile G.']];
+const TURNI_ORDINE_ALTRI=TURNI_GRUPPI_ALTRI.flat();
+function _turniGruppoAltri(n){const i=TURNI_GRUPPI_ALTRI.findIndex(g=>g.indexOf(n)>=0);return i<0?TURNI_GRUPPI_ALTRI.length:i;}
 function turniOrdinaAltri(nomi){
   const pos=n=>{const i=TURNI_ORDINE_ALTRI.indexOf(n);return i<0?999:i;};
   return nomi.slice().sort((a,b)=>pos(a)-pos(b)||a.localeCompare(b));
 }
+// Linea più spessa fra Maddaloni/Presta e il resto del ricevimento (QM, 19/11/2026).
+function _turniDopoTesta(prec,n){return!!prec&&TURNI_ORDINE_TESTA.indexOf(prec)>=0&&TURNI_ORDINE_TESTA.indexOf(n)<0;}
 // ── ARCHIVIO SETTIMANE — sfogliare un turno gia' passato ────────────────────
 // L'archivio conteneva da sempre i turni giorno per giorno, ma si vedevano solo i conteggi
 // aggregati: per sapere chi era di turno il 19 agosto non c'era modo, se non riaprire la
@@ -703,14 +710,18 @@ function turniRenderArchivio(){
       else if(nrm.tipo==='altro')stile='color:var(--text-muted);';
       return `<td style="padding:6px 4px;border-bottom:1px solid var(--border-light,var(--border));border-left:1px solid var(--border);text-align:center;font-size:var(--fs-xs);${stile}white-space:nowrap;">${testo}</td>`;
     };
-    const riga=(n,grigia)=>`<tr${grigia?' style="background:var(--bg);"':''}><td style="padding:6px 9px;border-bottom:1px solid var(--border-light,var(--border));border-right:2px solid var(--border);font-size:var(--fs-xs);font-weight:600;white-space:nowrap;">${esc(n)}</td>${giorni.map(g=>cella(n,g)).join('')}</tr>`;
+    const riga=(n,grigia,sep)=>{
+      // Linea più spessa all'inizio di un gruppo: dopo Presta, prima di Amorese e di Basile.
+      const st=sep?'border-top:2px solid var(--border);':'';
+      return `<tr${grigia?' style="background:var(--bg);"':''}><td style="padding:6px 9px;border-bottom:1px solid var(--border-light,var(--border));border-right:2px solid var(--border);font-size:var(--fs-xs);font-weight:600;white-space:nowrap;${st}">${esc(n)}</td>${giorni.map(g=>cella(n,g).replace('<td style="','<td style="'+st)).join('')}</tr>`;
+    };
     const separa=l=>`<tr><td colspan="${giorni.length+1}" style="padding:6px 9px;background:var(--surface2);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);font-weight:700;">${l}</td></tr>`;
     corpo=`<div style="overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;min-width:520px;">
         <thead><tr><th style="text-align:left;padding:6px 9px;border-bottom:1px solid var(--border);border-right:2px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;">Persona</th>${intesta}</tr></thead>
         <tbody>
-          ${turniOrdina(fo).map(n=>riga(n)).join('')}
-          ${altri.length?separa('Housekeeping e altri')+altri.map(n=>riga(n,true)).join(''):''}
+          ${(()=>{const o=turniOrdina(fo);return o.map((n,i)=>riga(n,false,_turniDopoTesta(o[i-1],n))).join('');})()}
+          ${altri.length?separa('Housekeeping e altri')+altri.map((n,i)=>riga(n,true,i>0&&_turniGruppoAltri(n)!==_turniGruppoAltri(altri[i-1]))).join(''):''}
         </tbody>
       </table></div>`;
   }
@@ -768,7 +779,8 @@ function turniRenderStats(){
             ${righe.map(({n,s,notte,sedeUnica,uscito},i)=>{
               const primoNotte=notte&&!uscito&&(i===0||!righe[i-1].notte);
               const primoUscito=uscito&&(i===0||!righe[i-1].uscito);
-              return `<tr${primoNotte||primoUscito?' style="border-top:2px solid var(--border);'+(uscito?'opacity:.6;':'')+'"':(uscito?' style="opacity:.6;"':'')}>
+              const dopoTesta=i>0&&_turniDopoTesta(righe[i-1].n,n);
+              return `<tr${primoNotte||primoUscito||dopoTesta?' style="border-top:2px solid var(--border);'+(uscito?'opacity:.6;':'')+'"':(uscito?' style="opacity:.6;"':'')}>
               <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}${uscito?`<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · fino al ${finoAl(uscito)}</span>`:''}</td>
               ${notte?cellaN(s.p+s.pgall):td((s.p+s.pgall)||'—')}
               ${notte?cellaN(s.mattina):td(s.mattina||'—')}

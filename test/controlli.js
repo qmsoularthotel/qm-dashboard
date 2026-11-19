@@ -4083,4 +4083,6 @@ ok('manca anche quella in corso',                   _turniSettimaneMancanti(['20
 // Ordine delle persone (QM, 19/11/2026).
 ok('ricevimento: Vatiero subito dopo Perez',        turniOrdina(['Raucci A.', 'Vatiero R.', 'Perez L.', 'Ruggiero B.', 'De Rosa T.']).join(','), 'De Rosa T.,Perez L.,Vatiero R.,Raucci A.,Ruggiero B.');
 ok('housekeeping e altri nell\'ordine scelto',      turniOrdinaAltri(['Basile G.', 'Ditta', 'Roberta', 'Ferace C.', 'Cavaliere L.', 'Extra BKF', 'Matarese A.', 'Anushka', 'Amorese S.', 'Panagodage S.', 'Sarnataro A.']).join(','),
-   'Matarese A.,Cavaliere L.,Sarnataro A.,Anushka,Roberta,Amorese S.,Extra BKF,Ferace C.,Panagodage S.,Basile G.,Ditta');
+   'Matarese A.,Cavaliere L.,Sarnataro A.,Anushka,Roberta,Ditta,Amorese S.,Extra BKF,Ferace C.,Panagodage S.,Basile G.');
+ok('linea spessa dopo Presta',                       _turniDopoTesta('Presta P.', 'De Rosa T.') && !_turniDopoTesta('Maddaloni M.', 'Presta P.'), true);
+ok('gruppi: Ditta con l\'housekeeping, Amorese e Basile aprono un gruppo', [_turniGruppoAltri('Ditta'), _turniGruppoAltri('Amorese S.'), _turniGruppoAltri('Basile G.')].join(), '0,1,2');

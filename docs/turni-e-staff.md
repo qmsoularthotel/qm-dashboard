@@ -171,7 +171,7 @@ pulsante rosso tratteggiato «… · manca» al loro posto e con un avviso rosso
 **Ordine** (19/11/2026, QM): nel ricevimento (statistiche e archivio, `turniOrdina`) Vatiero
 sta subito dopo Perez (`TURNI_DOPO`), il resto in ordine alfabetico. In «Housekeeping e altri»
 l'ordine è fisso (`TURNI_ORDINE_ALTRI`): Matarese, Cavaliere, Sarnataro, Anushka, Roberta,
-Amorese, Extra BKF, Ferace, Panagodage, Basile; chi non è nell'elenco (la Ditta) va in fondo.
+Ditta (dopo Roberta), Amorese, Extra BKF, Ferace, Panagodage, Basile (`TURNI_GRUPPI_ALTRI`: housekeeping, colazione, manutenzione); chi non è nell'elenco va in fondo. **Linea più spessa** (2px) dopo Presta, prima di Amorese e prima di Basile (`_turniDopoTesta`, `_turniGruppoAltri`); quella dopo Presta anche nelle statistiche.
 
 **Nomi nell'archivio** (19/11/2026): la tabella di una settimana passa i nomi da
 `_turniSenzaEsclusi` su una **copia** (nessuna scrittura), così le settimane vecchie con
