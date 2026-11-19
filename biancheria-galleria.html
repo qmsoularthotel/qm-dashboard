@@ -163,7 +163,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-19.6';
+const QM_APP_BUILD='2026-11-19.7';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -2872,7 +2872,7 @@ function bgSezione(s){
   else if(_bgSezione==='presenze')gtPresenzeEntra();
   else if(_bgSezione==='giacenza')gcLoad();
   else if(_bgSezione==='preferenze')gtPrefEntra();
-  else if(_bgSezione==='statistiche'||_bgSezione==='archivio')gtuEntra();
+  else if(_bgSezione==='statistiche'||_bgSezione==='archivio'){if(_bgSezione==='archivio')_gtuSettSel=undefined;gtuEntra();}
 }
 // ── GIACENZA BIANCHERIA (copia del §§ GIACENZA BIANCHERIA di Compass, 16/11/2026)
 // Rinomino meccanico gc -> gc, GC_ -> GC_ (GG_ era gia' preso in app.js). Diverso da
@@ -4328,7 +4328,8 @@ function _gtuDopoTesta(prec,n){return!!prec&&GTU_ORDINE_TESTA.indexOf(prec)>=0&&
 // L'archivio conteneva da sempre i turni giorno per giorno, ma si vedevano solo i conteggi
 // aggregati: per sapere chi era di turno il 19 agosto non c'era modo, se non riaprire la
 // foto del planning. Qui si sfoglia la settimana com'era, con i codici originali.
-let _gtuSettSel=null;   // chiave della settimana mostrata (dura quanto la visita)
+// undefined = appena aperto: si mostra la settimana più recente (QM, 19/11/2026); null = chiusa a mano.
+let _gtuSettSel=undefined;   // chiave della settimana mostrata (dura quanto la visita)
 function gtuArchivioSettimane(){
   const arch=gtuStoricoLeggi();
   return Object.keys(arch).filter(k=>arch[k]&&Array.isArray(arch[k].giorni)&&arch[k].giorni.length).sort().reverse();
@@ -4357,6 +4358,7 @@ function gtuRenderArchivio(){
   if(!chiavi.length){el.innerHTML='';return;}
   const gg=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]:'—';};
   const GIORNI=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+  if(_gtuSettSel===undefined)_gtuSettSel=chiavi[0]||null;   // l'ultimo turno caricato
   if(_gtuSettSel&&chiavi.indexOf(_gtuSettSel)<0)_gtuSettSel=null;
   const manca=_gtuSettimaneMancanti(chiavi);
   const fineSett=k=>{const d=new Date(k+'T12:00:00');d.setDate(d.getDate()+6);return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');};
@@ -4575,7 +4577,7 @@ function _gbCantiere(sezione,stato,prossima){
   <div class="gb-cantiere-r"></div>
   ${prossima?`<div class="gb-cantiere-s">${prossima}</div>
   <div class="gb-cantiere-h">Art Resort Galleria Umberto <span>·</span> Art Suite Santa Brigida</div>`:''}
-  <div class="gb-cantiere-r" style="width:40px;margin:22px 0 14px;"></div>
+  ${prossima?'<div class="gb-cantiere-r" style="width:40px;margin:22px 0 14px;"></div>':''}
   <div class="gb-cantiere-a">Nuovo modulo della Suite Compass QM, ideata e sviluppata da Pierpaolo Presta<br>Per esclusivo uso interno</div>
 </div>`;
 }

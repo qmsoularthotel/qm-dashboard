@@ -4091,3 +4091,14 @@ ok('gruppi: Ditta con l\'housekeeping, Amorese e Basile aprono un gruppo', [_tur
 ok('statistiche: P, Intermedi, Mattine, Pomeriggi, Notti, Riposo domenicale, Malattia, Ferie',
    (String(turniRenderStats).match(/th\('([^']+)'/g) || []).map(function (x) { return x.slice(4, -1); }).join(','),
    'P,Intermedi,Mattine,Pomeriggi,Notti,Riposo domenicale,Malattia,Ferie');
+// Archivio turni: all'apertura si vede l'ultimo turno caricato (19/11/2026).
+(function () {
+  var box = { innerHTML: '' }, vero = document.getElementById, leggi = turniStoricoLeggi, sel = _turniSettSel;
+  var G = function (iso) { return { data: iso, shifts: { 'Perez L.': 'AC' } }; };
+  turniStoricoLeggi = function () { return { '2026-11-09': { dal: '2026-11-09', al: '2026-11-15', giorni: [G('2026-11-09')] }, '2026-11-16': { dal: '2026-11-16', al: '2026-11-22', giorni: [G('2026-11-16')] } }; };
+  document.getElementById = function (id) { return id === 'turniArchivioWrap' ? box : null; };
+  try { _turniSettSel = undefined; turniRenderArchivio(); } finally { document.getElementById = vero; turniStoricoLeggi = leggi; }
+  ok('archivio: si apre sull\'ultima settimana',     _turniSettSel, '2026-11-16');
+  ok('e la tabella c\'è già',                        />16\/11</.test(box.innerHTML) && /Perez L\./.test(box.innerHTML), true);
+  _turniSettSel = sel;
+})();

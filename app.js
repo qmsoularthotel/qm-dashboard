@@ -643,7 +643,8 @@ function _turniDopoTesta(prec,n){return!!prec&&TURNI_ORDINE_TESTA.indexOf(prec)>
 // L'archivio conteneva da sempre i turni giorno per giorno, ma si vedevano solo i conteggi
 // aggregati: per sapere chi era di turno il 19 agosto non c'era modo, se non riaprire la
 // foto del planning. Qui si sfoglia la settimana com'era, con i codici originali.
-let _turniSettSel=null;   // chiave della settimana mostrata (dura quanto la visita)
+// undefined = appena aperto: si mostra la settimana più recente (QM, 19/11/2026); null = chiusa a mano.
+let _turniSettSel=undefined;   // chiave della settimana mostrata (dura quanto la visita)
 function turniArchivioSettimane(){
   const arch=turniStoricoLeggi();
   return Object.keys(arch).filter(k=>arch[k]&&Array.isArray(arch[k].giorni)&&arch[k].giorni.length).sort().reverse();
@@ -672,6 +673,7 @@ function turniRenderArchivio(){
   if(!chiavi.length){el.innerHTML='';return;}
   const gg=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]:'—';};
   const GIORNI=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+  if(_turniSettSel===undefined)_turniSettSel=chiavi[0]||null;   // l'ultimo turno caricato
   if(_turniSettSel&&chiavi.indexOf(_turniSettSel)<0)_turniSettSel=null;
   const manca=_turniSettimaneMancanti(chiavi);
   const fineSett=k=>{const d=new Date(k+'T12:00:00');d.setDate(d.getDate()+6);return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');};
@@ -2202,7 +2204,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
   // .staff-area-mirror) — ririchiamato qui solo per popolare lo specchio se la vista
   // viene aperta prima che Overview l'abbia mai fatto in questa sessione.
-  if(id==='turnazione'){try{if(weekData)renderDay(activeDay);}catch(e){}try{turniRenderStats();}catch(e){}try{turniRenderArchivio();}catch(e){}}
+  if(id==='turnazione'){_turniSettSel=undefined;try{if(weekData)renderDay(activeDay);}catch(e){}try{turniRenderStats();}catch(e){}try{turniRenderArchivio();}catch(e){}}
   if(id==='registrazione'){try{rcRefreshFromCloud();}catch(e){}}
   document.querySelector('.content').scrollTo({top:0,behavior:'instant'});
   if(id==='overview'&&weekData){

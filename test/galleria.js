@@ -652,3 +652,12 @@ ok('Worker: il rinnovo vuole un permesso valido',   /'rinnova'\)\s*\{\s*if \(!\(
   ok('con la firma della Suite',                   /Nuovo modulo della Suite Compass QM, ideata e sviluppata da Pierpaolo Presta[\s\S]*Per esclusivo uso interno/.test(box.innerHTML), true);
 })();
 
+ok('Galleria: l\'archivio apre sull\'ultima settimana', /_gtuSettSel===undefined\)_gtuSettSel=chiavi\[0\]/.test(String(gtuRenderArchivio)), true);
+(function () {
+  var box = { innerHTML: '' }, vero = document.getElementById;
+  document.getElementById = function (id) { return id === 'gb-conteggio' ? box : null; };
+  try { _gbRenderConteggio(); } finally { document.getElementById = vero; }
+  var b2 = _gbCantiere('Presenze Cascione', 'Modulo in costruzione', null);
+  ok('in costruzione senza riga di attivazione: una linea sola', (b2.match(/class="gb-cantiere-r"/g) || []).length, 1);
+  ok('con la riga di attivazione restano due linee',        (box.innerHTML.match(/class="gb-cantiere-r"/g) || []).length, 2);
+})();

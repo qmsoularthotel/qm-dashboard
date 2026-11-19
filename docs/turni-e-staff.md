@@ -168,6 +168,8 @@ organico oggi: un extra di tre settimane fa deve restare visibile, altrimenti il
 archiviato non è più quello che era. Ricevimento in alto, poi housekeeping e altri; riposi,
 ferie e malattie **in rosso**, con filetto verticale fra i giorni.
 
+**Si apre sull'ultimo turno caricato** (19/11/2026, QM): `_turniSettSel` parte `undefined` e alla prima apertura diventa la settimana più recente (anche nella Galleria, `_gtuSettSel`, rimesso a `undefined` a ogni ingresso nella vista); `null` = chiusa a mano.
+
 **Settimane mancanti** (19/11/2026, QM): `_turniSettimaneMancanti(chiavi,oggi)` cerca i lunedì
 che mancano fra la prima settimana archiviata e quella in corso; nel pannello compaiono come
 pulsante rosso tratteggiato «… · manca» al loro posto e con un avviso rosso sotto i pulsanti
