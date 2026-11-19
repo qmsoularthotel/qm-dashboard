@@ -427,6 +427,6 @@ rimetterlo finché non si chiude. `gtuRender` disegna statistiche o archivio sec
 
 **Presenze Cascione** (19/11/2026, QM): quarta voce del gruppo Gestione Turnazione nella Galleria
 (sezione `presenze`, `_gbRenderPresenze`). Per ora solo «Modulo in costruzione» con la firma della
-Suite, senza altre righe (`_gbCantiere` con `prossima` nullo). Non chiede il PIN: non c'è niente
-da proteggere finché il modulo non esiste.
+Suite, senza altre righe (`_gbCantiere` con `prossima` nullo). Chiede il PIN come le altre voci
+del gruppo (QM, 19/11/2026): `gtPresenzeEntra`, e `gtPrefRender` instrada su `_gbRenderPresenze`.
 

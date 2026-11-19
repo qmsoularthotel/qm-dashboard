@@ -641,7 +641,12 @@ ok('Worker: il rinnovo vuole un permesso valido',   /'rinnova'\)\s*\{\s*if \(!\(
 (function () {
   var box = { innerHTML: '' }, vero = document.getElementById;
   document.getElementById = function (id) { return id === 'gb-presenze' ? box : null; };
-  try { _gbRenderPresenze(); } finally { document.getElementById = vero; }
+  var tp0 = _gtTp, sc0 = _gtScade, ua0 = _gtUltimaAttivita, st0 = _gtStato, chiuso;
+  try {
+    gtPrefChiudi(''); _gtStato = { ok: true, resident: true, qm: true }; _gbRenderPresenze(); chiuso = box.innerHTML;
+    _gtTp = 'tp.1.x'; _gtScade = Date.now() + 60000; _gtUltimaAttivita = Date.now(); _gbRenderPresenze();
+  } finally { document.getElementById = vero; _gtTp = tp0; _gtScade = sc0; _gtUltimaAttivita = ua0; _gtStato = st0; }
+  ok('Presenze Cascione: chiede il PIN',            /id="gt-pin"/.test(chiuso) && !/Modulo in costruzione/.test(chiuso), true);
   ok('Presenze Cascione: modulo in costruzione',   /Presenze Cascione/.test(box.innerHTML) && /Modulo in costruzione/.test(box.innerHTML), true);
   ok('senza altre spiegazioni',                    /Prossima|Art Resort Galleria Umberto/.test(box.innerHTML), false);
   ok('con la firma della Suite',                   /Nuovo modulo della Suite Compass QM, ideata e sviluppata da Pierpaolo Presta[\s\S]*Per esclusivo uso interno/.test(box.innerHTML), true);
