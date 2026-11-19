@@ -419,3 +419,9 @@ lì. Il permesso del Worker dura 5 minuti: con meno di 3 rimasti `_gtAttivita` c
 se si è fermi da 5 minuti; la barra dice «senza attività si chiude fra m:ss». Un movimento dopo la
 chiusura non riapre: si rimette il PIN.
 
+**Menu «B»** (19/11/2026, QM): nella Galleria il gruppo **Gestione Turnazione** ha un lucchetto solo,
+sul titolo, e tre voci su una riga: **Preferenze**, **Statistiche ricevimento**, **Archivio turni**
+(sezioni `preferenze`, `statistiche`, `archivio`; contenitori `gt-pref-content`, `gtu-content`,
+`gtu-arch-content`). Il PIN è uno per tutto il gruppo: aperta una voce, le altre si aprono senza
+rimetterlo finché non si chiude. `gtuRender` disegna statistiche o archivio secondo la sezione.
+

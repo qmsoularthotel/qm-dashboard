@@ -155,7 +155,7 @@ ok('Reso Galleria: anche nell\'altro verso',       _grUnisciRecord([{ id: 'x', r
 ok('Reso Galleria: la distinta va al Resident Manager', /Front Office Manager/.test(String(_grStampa)) && !/Presta/.test(String(_grStampa)), true);
 
 // ── Menu laterale come Compass, con la voce Controllo fatturazione (25/09/2026) ──
-ok('Galleria: sette voci di menu',                   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche');
+ok('Galleria: otto voci di menu',                   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche,archivio');
 // ── Conteggio Biancheria: modulo in costruzione, in attesa dei contratti (16/11/2026) ──
 (function () {
   var box = { innerHTML: '' }, vero = document.getElementById;
@@ -383,7 +383,7 @@ ok('Galleria: chiuso mostra solo l\'intestazione', /_gb\.giri\.length&&!_gbStoAp
 // conteggio, il carico no"), col rinomino giac -> gc e le strutture della Galleria. In piu':
 // due magazzini, chiave bg_, niente organico/turno di Compass, voce di menu.
 sez('Giacenza Biancheria (Galleria): copia di Compass, due magazzini');
-ok('Galleria: la voce Giacenza nel menu',   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche');
+ok('Galleria: la voce Giacenza nel menu',   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche,archivio');
 ok('Galleria: la voce apre la giacenza',    /_bgSezione==='giacenza'\)gcLoad\(\)/.test(String(bgSezione)), true);
 (function () {
   var _g = _gc, _h = _gcHotel;
@@ -602,9 +602,17 @@ ok('l\'archivio non si legge dal browser',          /localStorage/.test(String(g
     gtPrefRender(); aperto = box.innerHTML + (w.gtuStatsWrap || {}).innerHTML + (w.gtuArchivioWrap || {}).innerHTML;
     gtPrefChiudi('');
   } finally { document.getElementById = vero; _bgSezione = sez0; _gtStato = st0; _gtTp = tp0; _gtScade = sc0; _gtuArch = ar0; }
-  ok('chiusa: chiede il PIN',                         /id="gt-pin"/.test(chiuso) && /Statistiche ricevimento e archivio turni/.test(chiuso), true);
-  ok('aperta: statistiche e archivio',                /Statistiche ricevimento/.test(aperto) && /Turni archiviati/.test(aperto) && /Perez L\./.test(aperto), true);
-  ok('aperta: Ditta A si legge Anushka',              />Anushka</.test(aperto), true);
+  ok('chiusa: chiede il PIN',                         /id="gt-pin"/.test(chiuso) && /Statistiche ricevimento/.test(chiuso), true);
+  ok('aperta: le statistiche (non l\'archivio)',      /Statistiche ricevimento/.test(aperto) && /Perez L\./.test(aperto) && !/Turni archiviati/.test(aperto), true);
+  // L'archivio è la sua voce (menu B, 19/11/2026).
+  var box2 = { innerHTML: '' }, w2 = {}, v2 = document.getElementById, s2 = _bgSezione, arc;
+  document.getElementById = function (id) { if (id === 'gtu-arch-content') return box2; if (id === 'gtuArchivioWrap') return w2[id] || (w2[id] = { innerHTML: '' }); return null; };
+  try { _bgSezione = 'archivio'; _gtTp = 'tp.1.x'; _gtScade = Date.now() + 60000; _gtUltimaAttivita = Date.now();
+    _gtuArch = { '2026-11-16': { dal: '2026-11-16', al: '2026-11-22', ts: 1, giorni: [{ data: '2026-11-16', shifts: { 'Perez L.': 'AC', 'Ditta A': 'SOUL 9' } }] } };
+    _gtuSettSel = '2026-11-16'; gtPrefRender(); arc = box2.innerHTML + (w2.gtuArchivioWrap || {}).innerHTML; gtPrefChiudi('');
+  } finally { document.getElementById = v2; _bgSezione = s2; }
+  ok('archivio: la sua pagina, coi turni',            /Turni archiviati/.test(arc) && !/Statistiche ricevimento<\/span>/.test(arc), true);
+  ok('archivio: Ditta A si legge Anushka',            />Anushka</.test(arc), true);
   ok('chiudere butta via l\'archivio',                 (gtPrefChiudi(''), _gtuArch), null);
 })();
 ok('Worker: l\'archivio solo col permesso del PIN', /'storico'\)\s*\{\s*if \(!\(await verificaTp/.test(String(_workerFetch.fetch)), true);
