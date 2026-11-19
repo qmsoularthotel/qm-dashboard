@@ -542,7 +542,7 @@ sez('Preferenze Turnazione (Galleria): si apre solo col PIN, 5 minuti, niente co
     _gtData = [{ nome: 'Rossi Prova', reparto: 'Reception', preferenza: 'RIPOSO', giornoRichiesto: '01/01/2020', ts: '2020-01-01T10:00:00Z' }];
     gtPrefRender(); chiuso = box.innerHTML;
     _gtStato = { ok: true, resident: false, qm: true }; gtPrefRender(); primo = box.innerHTML;
-    _gtTp = 'tp.1.x'; _gtScade = Date.now() + 60000; _gtFilter = 'tutti'; _gtCalDay = null;
+    _gtTp = 'tp.1.x'; _gtScade = Date.now() + 60000; _gtUltimaAttivita = Date.now(); _gtFilter = 'tutti'; _gtCalDay = null;
     _gtData = [{ nome: 'Rossi Prova', reparto: 'Reception', preferenza: 'RIPOSO', giornoRichiesto: '01/01/2020', ts: new Date().toISOString() }];
     box.innerHTML = ''; gtPrefRender(); aperto = box.innerHTML;
     _gtScade = Date.now() - 1; box.innerHTML = ''; gtPrefRender(); dopo = box.innerHTML;
@@ -596,7 +596,7 @@ ok('l\'archivio non si legge dal browser',          /localStorage/.test(String(g
   try {
     _bgSezione = 'statistiche'; gtPrefChiudi(''); _gtStato = { ok: true, resident: true, qm: true };
     gtPrefRender(); chiuso = box.innerHTML;
-    _gtTp = 'tp.1.x'; _gtScade = Date.now() + 60000;
+    _gtTp = 'tp.1.x'; _gtScade = Date.now() + 60000; _gtUltimaAttivita = Date.now();
     _gtuArch = { '2026-11-16': { dal: '2026-11-16', al: '2026-11-22', ts: 1, giorni: [{ data: '2026-11-16', shifts: { 'Perez L.': 'AC', 'Ditta A': 'SOUL 9' } }] } };
     _gtuSettSel = '2026-11-16';
     gtPrefRender(); aperto = box.innerHTML + (w.gtuStatsWrap || {}).innerHTML + (w.gtuArchivioWrap || {}).innerHTML;
@@ -610,3 +610,23 @@ ok('l\'archivio non si legge dal browser',          /localStorage/.test(String(g
 ok('Worker: l\'archivio solo col permesso del PIN', /'storico'\)\s*\{\s*if \(!\(await verificaTp/.test(String(_workerFetch.fetch)), true);
 ok('Galleria: colonne delle statistiche come in Compass',
    (String(gtuRenderStats).match(/th\('([^']+)'/g) || []).join(), (String(turniRenderStats).match(/th\('([^']+)'/g) || []).join());
+
+// I 5 minuti contano dall'ultima attività sulla pagina (QM, 19/11/2026).
+(function () {
+  var tp0 = _gtTp, sc0 = _gtScade, ua0 = _gtUltimaAttivita, ch0 = _gtChiedi, chiesto = [];
+  try {
+    _gtChiedi = function (c) { chiesto.push(c.azione); return Promise.resolve({ ok: true, tp: 'tp.2.y', scade: Date.now() + 300000 }); };
+    _gtTp = 'tp.1.x'; _gtScade = Date.now() + 240000;
+    _gtUltimaAttivita = Date.now() - 4 * 60000;
+    ok('PIN: dopo 4 minuti fermi è ancora aperto',  _gtAperto(), true);
+    _gtUltimaAttivita = Date.now() - 5 * 60000 - 1000;
+    ok('PIN: dopo 5 minuti fermi si chiude',         _gtAperto(), false);
+    ok('PIN: un movimento dopo la chiusura non riapre', (_gtAttivita(), _gtAperto()), false);
+    _gtUltimaAttivita = Date.now() - 60000; _gtScade = Date.now() + 120000;
+    _gtAttivita();
+    ok('PIN: un movimento fa ripartire i 5 minuti',  Date.now() - _gtUltimaAttivita < 1000, true);
+    ok('PIN: e chiede il rinnovo prima che scada',   chiesto.join(), 'rinnova');
+  } finally { _gtTp = tp0; _gtScade = sc0; _gtUltimaAttivita = ua0; _gtChiedi = ch0; _gtRinnovo = null; }
+})();
+ok('Worker: il rinnovo vuole un permesso valido',   /'rinnova'\)\s*\{\s*if \(!\(await verificaTp/.test(String(_workerFetch.fetch)), true);
+

@@ -411,3 +411,11 @@ meccanico (`turni`→`gtu`, `_turni`→`_gtu`, `_turno`→`_gtuT`, `TURNI_`→`G
 quando la sezione è `statistiche`; schermata del PIN e barra «Aperto col PIN» sono comuni
 (`_gtSchermataPin`, `_gtBanner`). Worker `2026-11-19a`.
 
+**5 minuti dall'ultima attività** (19/11/2026, QM): non più dall'apertura. Ogni movimento sulla
+pagina (`pointerdown`, `pointermove`, `keydown`, `wheel`, `touchstart`, `scroll`) aggiorna
+`_gtUltimaAttivita` (`_gtAttivita`); `_gtAperto()` vuole permesso valido **e** meno di 5 minuti da
+lì. Il permesso del Worker dura 5 minuti: con meno di 3 rimasti `_gtAttivita` chiede l'azione
+`rinnova` (Worker `2026-11-19b`, serve un permesso ancora valido). L'orologio ogni secondo chiude
+se si è fermi da 5 minuti; la barra dice «senza attività si chiude fra m:ss». Un movimento dopo la
+chiusura non riapre: si rimette il PIN.
+

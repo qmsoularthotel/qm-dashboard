@@ -17,7 +17,7 @@
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /versione.
-const WORKER_VERSIONE = '2026-11-19a';
+const WORKER_VERSIONE = '2026-11-19b';
 
 export default {
   async fetch(request, env) {
@@ -149,6 +149,14 @@ export default {
         } catch (e) {
           return json({ ok: false, error: 'Il foglio delle richieste non risponde' }, 502);
         }
+      }
+      // Rinnovo (19/11/2026, QM): i 5 minuti contano dall'ultima attività sulla pagina, quindi
+      // mentre si lavora l'app chiede un permesso nuovo prima che scada. Serve un permesso
+      // ancora valido: scaduto, si rimette il PIN.
+      if (az === 'rinnova') {
+        if (!(await verificaTp(env, corpo.tp))) return json({ ok: false, error: 'Permesso scaduto: inserisci di nuovo il PIN' }, 403);
+        const scade = ora + 5 * 60000;
+        return json({ ok: true, tp: await firmaTp(env, scade), scade });
       }
       // Archivio dei turni (qm_turni_storico) per «Statistiche ricevimento e archivio turni»
       // della Galleria (19/11/2026): stesso permesso del PIN, sola lettura.

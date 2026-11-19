@@ -4976,7 +4976,7 @@ async function qmEsportaArchivio(btn){
 // codice e server possono divergere: fino a oggi se ne accorgeva solo test/esegui.sh, cioe'
 // nessuno mentre lavora. Un controllo in esegui.sh verifica che questa costante combaci con
 // WORKER_VERSIONE in worker.js, altrimenti direbbe "da ripubblicare" per sempre.
-const WORKER_VERSIONE_ATTESA='2026-11-19a';
+const WORKER_VERSIONE_ATTESA='2026-11-19b';
 // ── ERRORI DEL PROGRAMMA — raccolti qui, perche' la console non la apre nessuno ──────
 // Quando qualcosa va storto nel codice, il messaggio finisce nella console del browser: il
 // QM non la apre (giustamente) e quindi un guasto puo' restare invisibile finche' non si

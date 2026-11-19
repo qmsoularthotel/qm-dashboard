@@ -166,7 +166,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-19.2';
+const QM_APP_BUILD='2026-11-19.3';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -3566,11 +3566,29 @@ function _gbBolliniNuovi(){
 // niente copia delle richieste nel browser (restano in memoria e si cancellano chiudendo),
 // niente contatore nel menu, "letto fino a" solo su questo computer (bg_tp_seen_until).
 // Rinomino meccanico: _tp -> _gt, turniPref -> gtPref.
-const GT_DURATA=5*60000;              // il modulo resta aperto 5 minuti (QM)
+const GT_DURATA=5*60000;              // si chiude dopo 5 minuti SENZA ATTIVITÀ sulla pagina (QM, 19/11/2026)
 let _gtTp=null,_gtScade=0,_gtTimer=null,_gtOrologio=null,_gtMsg='',_gtStato=null;
 const _gtEsc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const GT_ICONA_CAL='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
-function _gtAperto(){return !!_gtTp&&Date.now()<_gtScade;}
+// Aperto = permesso del Worker ancora valido E meno di 5 minuti dall'ultima attività.
+let _gtUltimaAttivita=0,_gtRinnovo=null;
+function _gtAperto(){const o=Date.now();return !!_gtTp&&o<_gtScade&&(o-_gtUltimaAttivita)<GT_DURATA;}
+// Ogni movimento sulla pagina (mouse, tasti, dito, rotella) fa ripartire i 5 minuti. Il
+// permesso del Worker dura 5 minuti: mentre si lavora se ne chiede uno nuovo quando ne
+// restano meno di 3 (al massimo una richiesta per volta).
+function _gtAttivita(){
+  if(!_gtTp)return;
+  const o=Date.now();
+  if(o-_gtUltimaAttivita>=GT_DURATA||o>=_gtScade)return;   // già scaduto: resta chiuso
+  _gtUltimaAttivita=o;
+  if(_gtScade-o<3*60000&&!_gtRinnovo){
+    _gtRinnovo=_gtChiedi({azione:'rinnova',tp:_gtTp}).then(j=>{if(j&&j.ok&&j.tp&&_gtTp){_gtTp=j.tp;_gtScade=Number(j.scade)||_gtScade;}})
+      .catch(()=>{}).then(()=>{_gtRinnovo=null;});
+  }
+}
+['pointerdown','pointermove','keydown','wheel','touchstart','scroll'].forEach(ev=>{
+  try{document.addEventListener(ev,_gtAttivita,{passive:true,capture:true});}catch(e){}
+});
 // NON passa da _gbFetch: lì un 401 apre la schermata «codice non più valido», e qui un 401
 // può voler dire solo che il Worker in linea è ancora quello vecchio (16/11/2026: è successo,
 // e il Resident si è visto chiedere il codice del computer, che era ancora buono).
@@ -3603,13 +3621,17 @@ async function gtPrefApri(primo){
   if(primo&&pin!==v('gt-pin2')){_gtMsg='I due PIN non coincidono.';gtPrefRender();return;}
   let j;try{j=await _gtChiedi({azione:primo?'imposta-resident':'apri',pin});}catch(e){j={ok:false,error:'Worker non raggiungibile'};}
   if(!j.ok||!j.tp){_gtMsg=j.error||'Non aperto';if(primo)_gtStato=null;gtPrefRender();if(primo)gtPrefEntra();return;}
-  _gtTp=j.tp;_gtScade=Math.min(Number(j.scade)||0,Date.now()+GT_DURATA);_gtMsg='';
-  if(_gtTimer)clearTimeout(_gtTimer);
-  _gtTimer=setTimeout(()=>{gtPrefChiudi('Chiuso dopo 5 minuti: inserisci di nuovo il PIN.');gtPrefRender();},Math.max(0,_gtScade-Date.now()));
+  _gtTp=j.tp;_gtScade=Number(j.scade)||(Date.now()+GT_DURATA);_gtMsg='';_gtUltimaAttivita=Date.now();
+  if(_gtTimer){clearTimeout(_gtTimer);_gtTimer=null;}
   await gtPrefLoad();
   if(_gtOrologio)clearInterval(_gtOrologio);
-  // Solo il numero del conto alla rovescia: niente ridisegno sotto le dita.
-  _gtOrologio=setInterval(()=>{const e=document.getElementById('gt-resta');if(!e)return;const s=Math.max(0,Math.round((_gtScade-Date.now())/1000));e.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');},1000);
+  // Ogni secondo: si chiude dopo 5 minuti senza attività (o se il permesso è scaduto),
+  // altrimenti si aggiorna solo il numero del conto alla rovescia, niente ridisegno.
+  _gtOrologio=setInterval(()=>{
+    if(!_gtTp)return;
+    if(!_gtAperto()){gtPrefChiudi('Chiuso dopo 5 minuti senza attività: inserisci di nuovo il PIN.');gtPrefRender();return;}
+    const e=document.getElementById('gt-resta');if(!e)return;e.textContent=_gtResta();
+  },1000);
 }
 async function gtPrefLoad(){
   if(!_gtAperto()){gtPrefChiudi('Chiuso: inserisci di nuovo il PIN.');gtPrefRender();return;}
@@ -3625,11 +3647,14 @@ function gtPrefMarkAllSeen(){
   gtPrefRender();
 }
 // Barra "Aperto col PIN" comune alle due voci della Gestione Turnazione.
+function _gtResta(){
+  const s=Math.max(0,Math.round((GT_DURATA-(Date.now()-_gtUltimaAttivita))/1000));
+  return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+}
 function _gtBanner(){
-  const s=Math.max(0,Math.round((_gtScade-Date.now())/1000));
   return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:var(--fs-xxs);color:var(--text-dim);">
       <span style="display:inline-flex;align-items:center;gap:6px;color:var(--green);font-weight:700;">${GT_ICONA_LUCCHETTO_APERTO}Aperto col PIN</span>
-      <span>si chiude da solo fra <strong id="gt-resta" style="color:var(--text);font-variant-numeric:tabular-nums;">${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</strong></span>
+      <span>senza attività si chiude fra <strong id="gt-resta" style="color:var(--text);font-variant-numeric:tabular-nums;">${_gtResta()}</strong></span>
       <button onclick="gtPrefChiudi('');gtPrefRender();" style="margin-left:auto;border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">Chiudi ora</button>
     </div>${_gtMsg?`<div style="margin-bottom:10px;font-size:var(--fs-xs);color:var(--red);">${_gtEsc(_gtMsg)}</div>`:''}`;
 }
@@ -3647,7 +3672,7 @@ function _gtSchermataPin(el,voce){
     <div class="gb-cantiere-t" style="font-size:22px;">${primo?'Scegli il PIN del Front Office Manager':'Riservato al Front Office Manager'}</div>
     <div class="gb-cantiere-r"></div>
     ${st.ok===false?`<div class="gb-cantiere-s" style="color:var(--red);">${_gtEsc(st.error||'Non raggiungibile')}</div>`:
-      `<div class="gb-cantiere-s" style="margin-bottom:14px;">${primo?'Primo accesso: scegli un PIN di 4–8 cifre e scrivilo due volte. Ti servirà ogni volta che apri questa voce.':'Inserisci il PIN. Il modulo resta aperto 5 minuti, anche se passi a un\'altra voce e poi torni.'}</div>
+      `<div class="gb-cantiere-s" style="margin-bottom:14px;">${primo?'Primo accesso: scegli un PIN di 4–8 cifre e scrivilo due volte. Ti servirà ogni volta che apri questa voce.':'Inserisci il PIN. Resta aperto mentre lavori, anche se passi a un\'altra voce, e si chiude dopo 5 minuti senza attività.'}</div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
         ${campo('gt-pin',primo?'nuovo PIN':'PIN')}
         ${primo?campo('gt-pin2','ripeti il PIN'):''}
