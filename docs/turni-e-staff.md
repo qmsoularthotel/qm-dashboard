@@ -445,3 +445,5 @@ tipo colorato, motivazione e data d'invio. Si chiude con la ×, cliccando fuori 
 altri giorni filtrano l'elenco come prima. Stessa cosa nella Galleria (`gtPrefApriGiorno`).
 
 **Scritte** (19/11/2026, QM): in alto a destra «Totale richieste fino alla settimana in oggetto · gg/mm – gg/mm», colonna «Totale richieste». Il conto resta quello dei 3 mesi prima della settimana (scelta confermata dal QM): cambia solo la scritta.
+
+**Invito a cliccare** (19/11/2026, QM): i giorni della settimana evidenziata con richieste hanno un anello oro che pulsa a onda (`.tp-giorno-invito` in `style.css`, ritardo per colonna) e sotto il calendario «Clicca un giorno della settimana evidenziata per vedere le richieste» con una manina che sale e scende. Al primo giorno aperto (`_tpInvitoVisto`, dura quanto la visita) l'invito sparisce. Fermo con `prefers-reduced-motion`. Uguale nella Galleria (`_gtInvitoVisto`).

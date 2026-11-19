@@ -11340,8 +11340,10 @@ function _tpConsuntivo(dati,filtro,oggi){
 // ×, cliccando fuori o con Esc. Gli altri giorni restano come prima (filtro dell'elenco).
 function _tpPrefColore(p){const u=String(p||'').toUpperCase();if(u.includes('FERIE'))return'var(--amber)';if(u.includes('RIPOSO'))return'var(--text-muted)';if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';return'var(--text)';}
 function turniPrefChiudiGiorno(){const p=document.getElementById('tp-giorno-pop');if(p)p.remove();document.querySelectorAll('[data-tp-giorno].tp-giorno-sel').forEach(c=>{c.classList.remove('tp-giorno-sel');c.style.outline='';});}
+let _tpInvitoVisto=false,_tpInvitiN=0;   // l'invito si ferma al primo giorno aperto (dura quanto la visita)
 function turniPrefApriGiorno(key,cella){
   turniPrefChiudiGiorno();
+  if(!_tpInvitoVisto){_tpInvitoVisto=true;document.querySelectorAll('.tp-giorno-invito').forEach(c=>c.classList.remove('tp-giorno-invito'));document.querySelectorAll('.tp-invito-t').forEach(x=>x.remove());}
   const box=document.getElementById('tp-cal-box');if(!box||!cella)return;
   const rr=_tpData.filter(r=>(_tpFilter==='tutti'||r.reparto===_tpFilter)&&_tpFmtDate(r.giornoRichiesto)===key)
     .sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'it'));
@@ -11430,7 +11432,7 @@ function turniPrefRender(){
   // giorno settimana del 1° (0=dom→adatta a lun=0)
   let startDow=(firstDay.getDay()+6)%7;
 
-  let calCells='';
+  let calCells='';_tpInvitiN=0;
   // intestazione giorni
   calCells+=giorniIt.map((g,i)=>`<div style="grid-row:1;grid-column:${i+1};text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:4px 0;">${g}</div>`).join('');
   // Ogni giorno ha riga e colonna ESPLICITE: così il riquadro della settimana prossima può
@@ -11468,7 +11470,9 @@ function turniPrefRender(){
     const attenua=prossima.giorni.length&&!prossima.giorni.includes(key)&&!isSel;
     // Settimana evidenziata e richieste: si apre la finestrella del giorno (19/11/2026).
     const _pop=prossima.giorni.includes(key)&&cnt>0;
-    calCells+=`<div ${_pop?`data-tp-giorno="${key}" onclick="turniPrefApriGiorno('${key}',this)"`:`onclick="turniPrefSelectDay('${key}')"`} style="grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;${attenua?'opacity:.38;':''}aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
+    // Invito a cliccare (19/11/2026): l'anello oro pulsa a onda finché non si apre un giorno.
+    const _inv=_pop&&!_tpInvitoVisto;if(_inv)_tpInvitiN++;
+    calCells+=`<div ${_pop?`data-tp-giorno="${key}" onclick="turniPrefApriGiorno('${key}',this)"${_inv?` class="tp-giorno-invito"`:''}`:`onclick="turniPrefSelectDay('${key}')"`} style="${_inv?`animation-delay:${(pc.c-1)*0.18}s;`:''}grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;${attenua?'opacity:.38;':''}aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
       <div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${col};line-height:1;">${d}</div>
       ${cnt>0?`<div style="font-size:10px;font-weight:700;color:${isSel?'rgba(255,255,255,.85)':cnt>=2?'rgba(255,255,255,.85)':'var(--accent)'};margin-top:1px;">${cnt}</div>`:''}
     </div>`;
@@ -11511,6 +11515,7 @@ function turniPrefRender(){
       <button onclick="turniPrefNavCal(1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">›</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">${calCells}</div>
+    ${_tpInvitiN?`<div class="tp-invito-t"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10"/><path d="M12 9.5a1.5 1.5 0 0 1 3 0V11"/><path d="M15 10.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.5a6 6 0 0 1-4.9-2.6L4 14.5a1.5 1.5 0 0 1 2.4-1.8L9 15"/></svg>Clicca un giorno della settimana evidenziata per vedere le richieste</div>`:''}
     ${_tpCalDay?`<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--accent);font-weight:600;">📅 Filtro: ${_tpCalDay} — <span onclick="turniPrefSelectDay('${_tpCalDay}')" style="cursor:pointer;text-decoration:underline;">rimuovi</span></div>`:''}
   </div>`;
 

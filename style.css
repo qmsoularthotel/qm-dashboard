@@ -994,3 +994,15 @@ body.ag-trascinando,body.ag-trascinando *{cursor:grabbing !important;user-select
   .ag-btn-lieve{margin-left:0;}
   .ag-testo-in{font-size:16px;}  /* sotto i 16px iOS ingrandisce la pagina al tocco */
 }
+
+/* Preferenze Turnazione (19/11/2026): invito a cliccare i giorni della settimana evidenziata
+   che hanno richieste. Un anello oro che pulsa, a onda da un giorno all'altro; si ferma al primo
+   clic (classe tolta) e con prefers-reduced-motion. */
+@keyframes tpInvito{0%,100%{box-shadow:0 0 0 0 rgba(201,149,47,0);}50%{box-shadow:0 0 0 4px rgba(201,149,47,.55);}}
+.tp-giorno-invito{animation:tpInvito 1.8s ease-in-out infinite;}
+.tp-giorno-invito:hover{animation:none;box-shadow:0 0 0 2px var(--gold);}
+.tp-invito-t{margin-top:10px;display:flex;align-items:center;gap:6px;font-size:var(--fs-xxs);color:var(--gold);font-weight:600;}
+.tp-invito-t svg{flex-shrink:0;animation:tpInvitoMano 1.8s ease-in-out infinite;}
+@keyframes tpInvitoMano{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
+@media (prefers-reduced-motion:reduce){.tp-giorno-invito,.tp-invito-t svg{animation:none;}}
+

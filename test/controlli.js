@@ -4115,3 +4115,16 @@ ok('statistiche: P, Intermedi, Mattine, Pomeriggi, Notti, Riposo domenicale, Mal
   // 19/11/2026: una virgoletta doppia (style=""grid-row…) aveva tolto la forma a tutte le caselle.
   ok('le caselle del calendario hanno il loro stile', /style=""/.test(box.innerHTML), false);
 })();
+// Invito a cliccare i giorni della settimana evidenziata (19/11/2026).
+(function () {
+  var box = { innerHTML: '' }, vero = document.getElementById, d0 = _tpData, f0 = _tpFilter, g0 = _tpCalDay, y0 = _tpCalYear, m0 = _tpCalMonth, v0 = _tpInvitoVisto;
+  var pros = _tpSettimanaProssima(new Date()).giorni, pd = pros[2].split('/');
+  _tpData = [{ nome: 'Rossi Prova', reparto: 'Reception', preferenza: 'RIPOSO', giornoRichiesto: pros[2], ts: new Date().toISOString() }];
+  _tpFilter = 'tutti'; _tpCalDay = null; _tpCalYear = +pd[2]; _tpCalMonth = +pd[1] - 1;
+  document.getElementById = function (id) { return id === 'turni-pref-content' ? box : null; };
+  var prima, dopo;
+  try { _tpInvitoVisto = false; turniPrefRender(); prima = box.innerHTML; _tpInvitoVisto = true; turniPrefRender(); dopo = box.innerHTML; }
+  finally { document.getElementById = vero; _tpData = d0; _tpFilter = f0; _tpCalDay = g0; _tpCalYear = y0; _tpCalMonth = m0; _tpInvitoVisto = v0; }
+  ok('invito: il giorno con richieste pulsa',        /class="tp-giorno-invito"/.test(prima) && /Clicca un giorno della settimana evidenziata/.test(prima), true);
+  ok('invito: dopo il primo giorno aperto si ferma', /tp-giorno-invito|tp-invito-t/.test(dopo), false);
+})();
