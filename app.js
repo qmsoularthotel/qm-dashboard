@@ -616,7 +616,21 @@ function turniOrdina(nomi){
   const usciti=nomi.filter(n=>STAFF_CESSATI[n]&&testa.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
   const notte=nomi.filter(n=>TURNI_NOTTURNI.indexOf(n)>=0&&usciti.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
   const resto=nomi.filter(n=>testa.indexOf(n)<0&&notte.indexOf(n)<0&&usciti.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
+  // Vatiero subito dopo Perez (QM, 19/11/2026), il resto in ordine alfabetico.
+  Object.keys(TURNI_DOPO).forEach(n=>{
+    const i=resto.indexOf(n),j=resto.indexOf(TURNI_DOPO[n]);
+    if(i<0||j<0)return;
+    resto.splice(i,1);resto.splice(resto.indexOf(TURNI_DOPO[n])+1,0,n);
+  });
   return testa.concat(resto,notte,usciti);
+}
+const TURNI_DOPO={'Vatiero R.':'Perez L.'};
+// "Housekeeping e altri" in Turni archiviati: ordine scelto dal QM (19/11/2026); chi non è
+// nell'elenco (la Ditta, un extra nuovo) va in fondo in ordine alfabetico.
+const TURNI_ORDINE_ALTRI=['Matarese A.','Cavaliere L.','Sarnataro A.','Anushka','Roberta','Amorese S.','Extra BKF','Ferace C.','Panagodage S.','Basile G.'];
+function turniOrdinaAltri(nomi){
+  const pos=n=>{const i=TURNI_ORDINE_ALTRI.indexOf(n);return i<0?999:i;};
+  return nomi.slice().sort((a,b)=>pos(a)-pos(b)||a.localeCompare(b));
 }
 // ── ARCHIVIO SETTIMANE — sfogliare un turno gia' passato ────────────────────
 // L'archivio conteneva da sempre i turni giorno per giorno, ma si vedevano solo i conteggi
@@ -670,7 +684,7 @@ function turniRenderArchivio(){
     // deve restare visibile, altrimenti il turno archiviato non e' piu' quello che era.
     const tutti={};giorni.forEach(g=>Object.keys(g.shifts||{}).forEach(n=>{tutti[n]=1;}));
     const fo=DEPTS.fo.members.filter(n=>tutti[n]);
-    const altri=Object.keys(tutti).filter(n=>fo.indexOf(n)<0).sort((a,b)=>a.localeCompare(b));
+    const altri=turniOrdinaAltri(Object.keys(tutti).filter(n=>fo.indexOf(n)<0));
     const intesta=giorni.map(g=>{
       const d=new Date(g.data+'T12:00:00');
       return `<th style="text-align:center;padding:6px 4px;border-bottom:1px solid var(--border);border-left:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);font-weight:600;white-space:nowrap;">${GIORNI[d.getDay()]}<div style="font-weight:400;color:var(--text-dim);">${gg(g.data)}</div></th>`;

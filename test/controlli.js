@@ -4080,3 +4080,7 @@ ok('manca anche quella in corso',                   _turniSettimaneMancanti(['20
   ok('archivio: Ditta A si legge Anushka',           />Anushka</.test(box.innerHTML) && !/>Ditta A</.test(box.innerHTML), true);
   ok('archivio: EXTRA ROB si legge Roberta',         />Roberta</.test(box.innerHTML), true);
 })();
+// Ordine delle persone (QM, 19/11/2026).
+ok('ricevimento: Vatiero subito dopo Perez',        turniOrdina(['Raucci A.', 'Vatiero R.', 'Perez L.', 'Ruggiero B.', 'De Rosa T.']).join(','), 'De Rosa T.,Perez L.,Vatiero R.,Raucci A.,Ruggiero B.');
+ok('housekeeping e altri nell\'ordine scelto',      turniOrdinaAltri(['Basile G.', 'Ditta', 'Roberta', 'Ferace C.', 'Cavaliere L.', 'Extra BKF', 'Matarese A.', 'Anushka', 'Amorese S.', 'Panagodage S.', 'Sarnataro A.']).join(','),
+   'Matarese A.,Cavaliere L.,Sarnataro A.,Anushka,Roberta,Amorese S.,Extra BKF,Ferace C.,Panagodage S.,Basile G.,Ditta');

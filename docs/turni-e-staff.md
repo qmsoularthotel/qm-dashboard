@@ -168,6 +168,11 @@ che mancano fra la prima settimana archiviata e quella in corso; nel pannello co
 pulsante rosso tratteggiato «… · manca» al loro posto e con un avviso rosso sotto i pulsanti
 («carica quel turno, altrimenti le statistiche non la contano»).
 
+**Ordine** (19/11/2026, QM): nel ricevimento (statistiche e archivio, `turniOrdina`) Vatiero
+sta subito dopo Perez (`TURNI_DOPO`), il resto in ordine alfabetico. In «Housekeeping e altri»
+l'ordine è fisso (`TURNI_ORDINE_ALTRI`): Matarese, Cavaliere, Sarnataro, Anushka, Roberta,
+Amorese, Extra BKF, Ferace, Panagodage, Basile; chi non è nell'elenco (la Ditta) va in fondo.
+
 **Nomi nell'archivio** (19/11/2026): la tabella di una settimana passa i nomi da
 `_turniSenzaEsclusi` su una **copia** (nessuna scrittura), così le settimane vecchie con
 «EXTRA ANU»/«EXTRA ROB» e i nuovi «Ditta A»/«Ditta R» si leggono **Anushka** e **Roberta**.
