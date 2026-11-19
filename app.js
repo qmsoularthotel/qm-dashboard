@@ -508,6 +508,8 @@ function turniNormalizza(cod){
     return{tipo:'turno',codice:'GALL/CAR',exR,sede:'galleria',fascia:'intermedio',label:'Intermedio Art Resort'};
   if(base==='PGALL')return{tipo:'pgall',exR};
   if(base==='P')return{tipo:'p',exR};
+  // '13/21 EVENTO' (settimana del 02/11/2026): turno per un evento, conta come P (QM, 19/11/2026).
+  if(/\bEVENT[OI]\b/.test(base))return{tipo:'p',exR};
   if(TURNI_CODICI[base])return Object.assign({tipo:'turno',codice:base,exR},TURNI_CODICI[base]);
   // 'AC RICHIESTO': turno chiesto dalla persona, resta quel turno. Si toglie la parola e si
   // riprova (il riposo richiesto e' gia' preso sopra).
@@ -625,6 +627,18 @@ function turniArchivioSettimane(){
   const arch=turniStoricoLeggi();
   return Object.keys(arch).filter(k=>arch[k]&&Array.isArray(arch[k].giorni)&&arch[k].giorni.length).sort().reverse();
 }
+// Settimane che mancano fra la prima archiviata e quella in corso (QM, 19/11/2026): senza,
+// un turno mai caricato sparisce dalle statistiche senza che nessuno se ne accorga. Puro.
+function _turniSettimaneMancanti(chiavi,oggi){
+  const ks=(chiavi||[]).filter(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+  if(!ks.length)return[];
+  const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const o=oggi?new Date(oggi):new Date();o.setHours(12,0,0,0);
+  const lun=new Date(o);lun.setDate(o.getDate()-((o.getDay()+6)%7));
+  const c=new Date(ks[0]+'T12:00:00'),fine=iso(lun),out=[],ci=new Set(ks);
+  for(let i=0;i<300&&iso(c)<=fine;i++){if(!ci.has(iso(c)))out.push(iso(c));c.setDate(c.getDate()+7);}
+  return out;
+}
 function turniMostraSettimana(k){
   _turniSettSel=(_turniSettSel===k?null:k);
   turniRenderArchivio();
@@ -638,13 +652,20 @@ function turniRenderArchivio(){
   const gg=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]:'—';};
   const GIORNI=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
   if(_turniSettSel&&chiavi.indexOf(_turniSettSel)<0)_turniSettSel=null;
-  const bottoni=chiavi.map(k=>{
+  const manca=_turniSettimaneMancanti(chiavi);
+  const fineSett=k=>{const d=new Date(k+'T12:00:00');d.setDate(d.getDate()+6);return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');};
+  const avvisoManca=manca.length?`<div style="margin:0 13px 4px;padding:9px 12px;border:1px solid var(--red);border-radius:8px;background:var(--red-bg);color:var(--red);font-size:var(--fs-xs);font-weight:600;line-height:1.5;">${manca.length===1?'Manca la settimana':'Mancano le settimane'} ${manca.map(k=>gg(k)+' – '+fineSett(k)).join(', ')}: carica ${manca.length===1?'quel turno':'quei turni'}, altrimenti le statistiche non ${manca.length===1?'la contano':'le contano'}.</div>`:'';
+  const bottoni=[...chiavi,...manca].sort().reverse().map(k=>{
+    if(manca.indexOf(k)>=0)return `<span title="Turno mai caricato" style="border:1px dashed var(--red);color:var(--red);background:var(--red-bg);border-radius:6px;padding:6px 11px;font-size:var(--fs-xs);font-weight:700;white-space:nowrap;">${gg(k)} – ${fineSett(k)} · manca</span>`;
     const v=arch[k],sel=k===_turniSettSel;
     return `<button onclick="turniMostraSettimana('${k}')" style="background:${sel?'var(--accent)':'var(--surface2)'};color:${sel?'#fff':'var(--text-muted)'};border:1px solid ${sel?'var(--accent)':'var(--border)'};border-radius:6px;padding:6px 11px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">${gg(v.dal)} – ${gg(v.al)}</button>`;
   }).join('');
   let corpo='';
   if(_turniSettSel){
-    const v=arch[_turniSettSel],giorni=v.giorni;
+    // I nomi si riconducono come nei turni caricati (_turniSenzaEsclusi su una COPIA): le
+    // settimane archiviate prima del 02/10 hanno ancora "EXTRA ANU", "EXTRA ROB", e "Ditta A"
+    // / "Ditta R" sono Anushka e Roberta (19/11/2026). Nessuna scrittura.
+    const v=arch[_turniSettSel],giorni=_turniSenzaEsclusi({giorni:JSON.parse(JSON.stringify(v.giorni))}).giorni;
     // Chi compare nella settimana, non chi e' in organico oggi: un extra di tre settimane fa
     // deve restare visibile, altrimenti il turno archiviato non e' piu' quello che era.
     const tutti={};giorni.forEach(g=>Object.keys(g.shifts||{}).forEach(n=>{tutti[n]=1;}));
@@ -682,7 +703,7 @@ function turniRenderArchivio(){
   el.innerHTML=`<div class="panel" style="margin-top:14px;">
     <div class="panel-header"><span class="panel-title">Turni archiviati</span>
       <span style="font-size:var(--fs-xxs);color:var(--text-dim);">${chiavi.length} settiman${chiavi.length===1?'a':'e'}</span></div>
-    <div style="padding:11px 13px;display:flex;gap:7px;flex-wrap:wrap;">${bottoni}</div>
+    <div style="padding:11px 13px;display:flex;gap:7px;flex-wrap:wrap;">${bottoni}</div>${avvisoManca}
     ${corpo||'<div style="padding:0 13px 13px;font-size:var(--fs-xxs);color:var(--text-dim);">Scegli una settimana per rivedere il turno com\'era.</div>'}
   </div>`;
 }
@@ -771,6 +792,10 @@ function _turnoEscluso(nome){
 // Gli "Extra" della reception (Extra Night, Extra Angelica…) non si toccano.
 function _turnoNomeHK(nome){
   const n=String(nome||'').trim();
+  // "Extra A" / "Extra R" (e "Ditta A" / "Ditta R" già scritti così) sono Anushka e Roberta,
+  // interne, non la ditta (QM, 19/11/2026).
+  if(/^(extra|ditta)\s+a\.?$/i.test(n))return'Anushka';
+  if(/^(extra|ditta)\s+r\.?$/i.test(n))return'Roberta';
   if(!/^extra\b/i.test(n))return n;
   // Un nome della reception, colazione o manutenzione si riporta alla grafia dell'elenco.
   const nonHK=[...DEPTS.fo.members,...DEPTS.bkf.members,...DEPTS.mt.members];

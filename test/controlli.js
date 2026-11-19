@@ -4058,3 +4058,25 @@ sez('Bilanciamento camere: San Liborio conta fra le Altre (18/11/2026)');
   ok('schedina: San Liborio in partenza si vede',  (html.match(/con S\. Liborio/g) || []).length, 1);
   ok('una fermata di San Liborio no',               /hkGiorno\(5\)[^>]*title="[^"]*San Liborio/.test(html), false);
 })();
+
+sez('Turni: 13/21 EVENTO è P, settimane mancanti in rosso, Ditta A/R sono Anushka e Roberta (19/11/2026)');
+ok('13/21 EVENTO conta come P',                     (turniNormalizza('13/21 EVENTO') || {}).tipo, 'p');
+ok('anche scritto in minuscolo',                    (turniNormalizza('13/21 evento') || {}).tipo, 'p');
+ok('Ditta A è Anushka',                             _turnoNomeHK('Ditta A'), 'Anushka');
+ok('Extra R è Roberta',                             _turnoNomeHK('EXTRA R'), 'Roberta');
+ok('la ditta resta la ditta',                       _turnoNomeHK('Extra'), 'Ditta');
+ok('Extra Anu resta Anushka',                       _turnoNomeHK('EXTRA ANU'), 'Anushka');
+ok('nessuna settimana mancante',                    _turniSettimaneMancanti(['2026-11-02', '2026-11-09', '2026-11-16'], new Date(2026, 10, 19)).length, 0);
+ok('una settimana in mezzo che manca',              _turniSettimaneMancanti(['2026-10-26', '2026-11-09', '2026-11-16'], new Date(2026, 10, 19)).join(), '2026-11-02');
+ok('manca anche quella in corso',                   _turniSettimaneMancanti(['2026-11-02', '2026-11-09'], new Date(2026, 10, 19)).join(), '2026-11-16');
+(function () {
+  var box = { innerHTML: '' }, vero = document.getElementById, leggi = turniStoricoLeggi, sel = _turniSettSel;
+  var G = function (iso) { return { data: iso, shifts: { 'Ditta A': 'SOUL 9', 'EXTRA ROB': 'SOUL 9' } }; };
+  turniStoricoLeggi = function () { return { '2026-10-26': { dal: '2026-10-26', al: '2026-11-01', giorni: [G('2026-10-26')] }, '2026-11-09': { dal: '2026-11-09', al: '2026-11-15', giorni: [G('2026-11-09')] } }; };
+  _turniSettSel = '2026-11-09';
+  document.getElementById = function (id) { return id === 'turniArchivioWrap' ? box : null; };
+  try { turniRenderArchivio(); } finally { document.getElementById = vero; turniStoricoLeggi = leggi; _turniSettSel = sel; }
+  ok('archivio: avviso rosso per la settimana che manca', /Manca(no)? le? settiman[ae] [^<]*02\/11 – 08\/11/.test(box.innerHTML), true);
+  ok('archivio: Ditta A si legge Anushka',           />Anushka</.test(box.innerHTML) && !/>Ditta A</.test(box.innerHTML), true);
+  ok('archivio: EXTRA ROB si legge Roberta',         />Roberta</.test(box.innerHTML), true);
+})();

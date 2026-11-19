@@ -149,7 +149,7 @@ solo se non lo si riconosce si riprova senza la nota. Allo stesso modo un turno 
 (`AC RICHIESTO`) è quel turno, mentre `FERIE RICHIESTE` sono ferie e `REC RIP` è riposo
 (31/10/2026). Nel turno del giorno (`IS_REST`/`IS_ABSENT`) "RICHIESTO" vuol dire riposo solo
 dopo una `R`: prima anche `AC RICHIESTO` finiva fra chi non è in servizio.
-`GALL/CAR 12-20` è un intermedio e conta con l'**Art Resort** (scelta del QM, 31/10/2026). Gli intermedi si leggono anche scritti
+`13/21 EVENTO` (e ogni codice con «EVENTO») conta come **P** (QM, 19/11/2026). `GALL/CAR 12-20` è un intermedio e conta con l'**Art Resort** (scelta del QM, 31/10/2026). Gli intermedi si leggono anche scritti
 `INT. GALL`, `INT/GALL`, `INTGALL`, e i caratteri invisibili incollati dal foglio si tolgono. Un codice davvero sconosciuto resta
 "non riconosciuto" ed è segnalato in un riquadro: **non entra in nessun conteggio**, ed è
 giusto che si veda.
@@ -162,6 +162,15 @@ originali (`turniRenderArchivio()`). Mostra **chi compare in quella settimana**,
 organico oggi: un extra di tre settimane fa deve restare visibile, altrimenti il turno
 archiviato non è più quello che era. Ricevimento in alto, poi housekeeping e altri; riposi,
 ferie e malattie **in rosso**, con filetto verticale fra i giorni.
+
+**Settimane mancanti** (19/11/2026, QM): `_turniSettimaneMancanti(chiavi,oggi)` cerca i lunedì
+che mancano fra la prima settimana archiviata e quella in corso; nel pannello compaiono come
+pulsante rosso tratteggiato «… · manca» al loro posto e con un avviso rosso sotto i pulsanti
+(«carica quel turno, altrimenti le statistiche non la contano»).
+
+**Nomi nell'archivio** (19/11/2026): la tabella di una settimana passa i nomi da
+`_turniSenzaEsclusi` su una **copia** (nessuna scrittura), così le settimane vecchie con
+«EXTRA ANU»/«EXTRA ROB» e i nuovi «Ditta A»/«Ditta R» si leggono **Anushka** e **Roberta**.
 
 #### L'anno sbagliato e la settimana doppia
 
@@ -343,7 +352,7 @@ partono chiusi: intestazione cliccabile con ▸/▾ e «· N richieste» (`turni
 
 Le camere 200 le pulisce la ditta esterna: nel turno chi è scritto "Extra …" in Housekeeping diventa
 "Ditta …" (`_turnoNomeHK`, applicata a ogni caricamento da `_turniSenzaEsclusi`). Eccezioni interne:
-"Extra Rob…" → **Roberta**, "Extra Anu…" → **Anushka**. Gli Extra della reception (Extra Night, Extra
+"Extra Rob…" → **Roberta**, "Extra Anu…" → **Anushka**. Dal 19/11/2026 anche "Extra A"/"Ditta A" → **Anushka** e "Extra R"/"Ditta R" → **Roberta**. Gli Extra della reception (Extra Night, Extra
 Angelica, Extra Benedetta) restano come sono. In `DEPTS.hk` i nomi sono aggiornati di conseguenza.
 
 **Le camere 200 sono solo della ditta** (02/10/2026): un "200" su chi non è "Ditta …" è un errore di
