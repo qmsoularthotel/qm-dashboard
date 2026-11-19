@@ -393,3 +393,16 @@ sui PC della Galleria però lavorano anche i receptionist. Voce **Preferenze Tur
 
 Worker `2026-11-16a` (= `WORKER_VERSIONE_ATTESA`). Controlli in `test/galleria.js`; sabotaggio
 (niente chiusura uscendo, niente scadenza, niente verifica del permesso) → 3 falliscono.
+
+### Galleria: «Statistiche ricevimento e archivio turni» (19/11/2026)
+
+Sottovoce di Preferenze Turnazione nell'app della Galleria (rientrata, con lucchetto), dietro lo
+**stesso PIN** e gli stessi 5 minuti: chi ha aperto una delle due voci apre anche l'altra. Contiene
+le card **Statistiche ricevimento** e **Turni archiviati**, copiate da Compass con rinomino
+meccanico (`turni`→`gtu`, `_turni`→`_gtu`, `_turno`→`_gtuT`, `TURNI_`→`GTU_`, `DEPTS`→`GTU_DEPTS`):
+**ogni correzione alle statistiche o all'archivio di Compass va riportata qui**. L'archivio
+(`qm_turni_storico`) lo dà il Worker con l'azione `storico` di `/turni-pref`, solo col permesso
+`tp.`; resta in memoria (`_gtuArch`) e si butta chiudendo. `gtPrefRender` instrada su `gtuRender`
+quando la sezione è `statistiche`; schermata del PIN e barra «Aperto col PIN» sono comuni
+(`_gtSchermataPin`, `_gtBanner`). Worker `2026-11-19a`.
+

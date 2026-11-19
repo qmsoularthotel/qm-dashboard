@@ -155,7 +155,7 @@ ok('Reso Galleria: anche nell\'altro verso',       _grUnisciRecord([{ id: 'x', r
 ok('Reso Galleria: la distinta va al Resident Manager', /Front Office Manager/.test(String(_grStampa)) && !/Presta/.test(String(_grStampa)), true);
 
 // ── Menu laterale come Compass, con la voce Controllo fatturazione (25/09/2026) ──
-ok('Galleria: sei voci di menu',                    Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze');
+ok('Galleria: sette voci di menu',                   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche');
 // ── Conteggio Biancheria: modulo in costruzione, in attesa dei contratti (16/11/2026) ──
 (function () {
   var box = { innerHTML: '' }, vero = document.getElementById;
@@ -383,7 +383,7 @@ ok('Galleria: chiuso mostra solo l\'intestazione', /_gb\.giri\.length&&!_gbStoAp
 // conteggio, il carico no"), col rinomino giac -> gc e le strutture della Galleria. In piu':
 // due magazzini, chiave bg_, niente organico/turno di Compass, voce di menu.
 sez('Giacenza Biancheria (Galleria): copia di Compass, due magazzini');
-ok('Galleria: la voce Giacenza nel menu',   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze');
+ok('Galleria: la voce Giacenza nel menu',   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche');
 ok('Galleria: la voce apre la giacenza',    /_bgSezione==='giacenza'\)gcLoad\(\)/.test(String(bgSezione)), true);
 (function () {
   var _g = _gc, _h = _gcHotel;
@@ -581,3 +581,30 @@ ok('Galleria: si chiama Front Office Manager',     /Resident/.test(String(gtPref
 function chiusoPin() { var b = { innerHTML: '' }, v = document.getElementById, s0 = _gtStato; document.getElementById = function (id) { return id === 'gt-pref-content' ? b : null; }; try { gtPrefChiudi(''); _gtStato = { ok: true, resident: false, qm: true }; gtPrefRender(); } finally { document.getElementById = v; _gtStato = s0; } return b.innerHTML; }
 // La casella del PIN non è un campo password: il browser la riempiva da solo (16/11/2026).
 ok('PIN: casella vuota, non type=password',         /id="gt-pin"[^>]*type="text"/.test(chiusoPin()) && !/type="password"/.test(chiusoPin()), true);
+
+// ── Statistiche ricevimento e archivio turni: sottovoce dietro lo stesso PIN (19/11/2026) ──
+sez('Galleria: Statistiche ricevimento e archivio turni, col PIN di Preferenze Turnazione');
+ok('la sottovoce è nel menu',                       Object.keys(BG_SEZIONI).indexOf('statistiche') > Object.keys(BG_SEZIONI).indexOf('preferenze'), true);
+ok('la copia non riscrive le funzioni di Compass',  typeof gtuStatistiche === 'function' && typeof turniStatistiche === 'function' && gtuStatistiche !== turniStatistiche, true);
+ok('stesse regole: 13/21 EVENTO è P',               (gtuNormalizza('13/21 EVENTO') || {}).tipo, 'p');
+ok('stesso ordine: Vatiero dopo Perez',             gtuOrdina(['Vatiero R.', 'Raucci A.', 'Perez L.']).join(), 'Perez L.,Vatiero R.,Raucci A.');
+ok('l\'archivio non si legge dal browser',          /localStorage/.test(String(gtuStoricoLeggi)), false);
+(function () {
+  var box = { innerHTML: '' }, vero = document.getElementById, sez0 = _bgSezione, st0 = _gtStato, tp0 = _gtTp, sc0 = _gtScade, ar0 = _gtuArch;
+  var w = {}, chiuso, aperto;
+  document.getElementById = function (id) { if (id === 'gtu-content') return box; if (id === 'gtuStatsWrap' || id === 'gtuArchivioWrap') return w[id] || (w[id] = { innerHTML: '' }); return null; };
+  try {
+    _bgSezione = 'statistiche'; gtPrefChiudi(''); _gtStato = { ok: true, resident: true, qm: true };
+    gtPrefRender(); chiuso = box.innerHTML;
+    _gtTp = 'tp.1.x'; _gtScade = Date.now() + 60000;
+    _gtuArch = { '2026-11-16': { dal: '2026-11-16', al: '2026-11-22', ts: 1, giorni: [{ data: '2026-11-16', shifts: { 'Perez L.': 'AC', 'Ditta A': 'SOUL 9' } }] } };
+    _gtuSettSel = '2026-11-16';
+    gtPrefRender(); aperto = box.innerHTML + (w.gtuStatsWrap || {}).innerHTML + (w.gtuArchivioWrap || {}).innerHTML;
+    gtPrefChiudi('');
+  } finally { document.getElementById = vero; _bgSezione = sez0; _gtStato = st0; _gtTp = tp0; _gtScade = sc0; _gtuArch = ar0; }
+  ok('chiusa: chiede il PIN',                         /id="gt-pin"/.test(chiuso) && /Statistiche ricevimento e archivio turni/.test(chiuso), true);
+  ok('aperta: statistiche e archivio',                /Statistiche ricevimento/.test(aperto) && /Turni archiviati/.test(aperto) && /Perez L\./.test(aperto), true);
+  ok('aperta: Ditta A si legge Anushka',              />Anushka</.test(aperto), true);
+  ok('chiudere butta via l\'archivio',                 (gtPrefChiudi(''), _gtuArch), null);
+})();
+ok('Worker: l\'archivio solo col permesso del PIN', /'storico'\)\s*\{\s*if \(!\(await verificaTp/.test(String(_workerFetch.fetch)), true);

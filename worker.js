@@ -17,7 +17,7 @@
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /versione.
-const WORKER_VERSIONE = '2026-11-16b';
+const WORKER_VERSIONE = '2026-11-19a';
 
 export default {
   async fetch(request, env) {
@@ -149,6 +149,14 @@ export default {
         } catch (e) {
           return json({ ok: false, error: 'Il foglio delle richieste non risponde' }, 502);
         }
+      }
+      // Archivio dei turni (qm_turni_storico) per «Statistiche ricevimento e archivio turni»
+      // della Galleria (19/11/2026): stesso permesso del PIN, sola lettura.
+      if (az === 'storico') {
+        if (!(await verificaTp(env, corpo.tp))) return json({ ok: false, error: 'Permesso scaduto: inserisci di nuovo il PIN' }, 403);
+        let arch = {};
+        try { arch = JSON.parse(await env.QM_STORAGE.get('qm_turni_storico') || '{}') || {}; } catch (e) { arch = {}; }
+        return json({ ok: true, archivio: arch });
       }
       return json({ ok: false, error: 'Azione sconosciuta' }, 400);
     }
