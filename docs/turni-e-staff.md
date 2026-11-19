@@ -425,3 +425,8 @@ sul titolo, e tre voci su una riga: **Preferenze**, **Statistiche ricevimento**,
 `gtu-arch-content`). Il PIN è uno per tutto il gruppo: aperta una voce, le altre si aprono senza
 rimetterlo finché non si chiude. `gtuRender` disegna statistiche o archivio secondo la sezione.
 
+**Presenze Cascione** (19/11/2026, QM): quarta voce del gruppo Gestione Turnazione nella Galleria
+(sezione `presenze`, `_gbRenderPresenze`). Per ora solo «Modulo in costruzione» con la firma della
+Suite, senza altre righe (`_gbCantiere` con `prossima` nullo). Non chiede il PIN: non c'è niente
+da proteggere finché il modulo non esiste.
+

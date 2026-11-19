@@ -163,7 +163,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-19.4';
+const QM_APP_BUILD='2026-11-19.5';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -276,6 +276,7 @@ setInterval(qmCheckVersione,600000);
       <div class="nav-item" id="gb-nav-preferenze" onclick="bgSezione('preferenze')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15l2 2 4-4"/></svg></span></span>Preferenze<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
       <div class="nav-item" id="gb-nav-statistiche" onclick="bgSezione('statistiche')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span></span>Statistiche ricevimento<span class="nav-badge" data-nuovo-fino="2026-11-24" style="display:none;">NEW</span></div>
       <div class="nav-item" id="gb-nav-archivio" onclick="bgSezione('archivio')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/></svg></span></span>Archivio turni<span class="nav-badge" data-nuovo-fino="2026-11-24" style="display:none;">NEW</span></div>
+      <div class="nav-item" id="gb-nav-presenze" onclick="bgSezione('presenze')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 11l2 2 3.5-3.5"/></svg></span></span>Presenze Cascione<span class="nav-badge" data-nuovo-fino="2026-11-24" style="display:none;">NEW</span></div>
       <div class="nav-section">Gestione Biancheria</div>
       <div class="nav-item" id="gb-nav-consumo" onclick="bgSezione('consumo')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span></span>Consumo Biancheria</div>
       <div class="nav-item" id="gb-nav-conteggio" onclick="bgSezione('conteggio')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11l2 2 4-4"/><path d="M9 17h6"/></svg></span></span>Conteggio Biancheria<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
@@ -344,6 +345,9 @@ setInterval(qmCheckVersione,600000);
       </div>
       <div id="bg-sez-archivio" style="display:none;">
         <div id="gtu-arch-content"></div>
+      </div>
+      <div id="bg-sez-presenze" style="display:none;">
+        <div id="gb-presenze"></div>
       </div>
   <div class="firma">
     <span class="firma-marchio">Compass <span>QM</span></span>
@@ -2842,7 +2846,7 @@ tfoot td{border-top:1.5px solid #111;border-bottom:none;font-weight:700;padding-
 // ── Menu laterale come Compass: Consumo, Reso, Controllo fatturazione (25/09/2026) ──
 // Stesso markup e stesso style.css del menu di Compass (voci copiate da index.html). La voce
 // scelta resta su questo computer, cosi' ricaricando si torna dove si era.
-const BG_SEZIONI={consumo:'Consumo Biancheria',conteggio:'Conteggio Biancheria',giacenza:'Giacenza Biancheria',reso:'Reso Biancheria',fattura:'Controllo fatturazione',preferenze:'Preferenze Turnazione',statistiche:'Statistiche ricevimento',archivio:'Archivio turni'};
+const BG_SEZIONI={consumo:'Consumo Biancheria',conteggio:'Conteggio Biancheria',giacenza:'Giacenza Biancheria',reso:'Reso Biancheria',fattura:'Controllo fatturazione',preferenze:'Preferenze Turnazione',statistiche:'Statistiche ricevimento',archivio:'Archivio turni',presenze:'Presenze Cascione'};
 let _bgSezione='consumo';
 try{const s=localStorage.getItem('bg_sezione');if(BG_SEZIONI[s])_bgSezione=s;}catch(e){}
 function bgSezione(s){
@@ -2864,6 +2868,7 @@ function bgSezione(s){
   if(_bgSezione==='reso')grLoad();
   else if(_bgSezione==='fattura')_gbRenderFattura();
   else if(_bgSezione==='conteggio')_gbRenderConteggio();
+  else if(_bgSezione==='presenze')_gbRenderPresenze();
   else if(_bgSezione==='giacenza')gcLoad();
   else if(_bgSezione==='preferenze')gtPrefEntra();
   else if(_bgSezione==='statistiche'||_bgSezione==='archivio')gtuEntra();
@@ -4541,6 +4546,11 @@ function _gtuSenzaEsclusi(data){
 // (16/11/2026) Il conteggio a scorrere di Compass parte dalla dotazione da contratto: per
 // Art Resort e Santa Brigida i contratti di fornitura con Raimondo non ci sono ancora.
 // Testo e firma d'autore approvati dal QM sull'anteprima.
+// Presenze Cascione (19/11/2026, QM): per ora solo la pagina «modulo in costruzione», senza altro.
+function _gbRenderPresenze(){
+  const el=document.getElementById('gb-presenze');if(!el)return;
+  el.innerHTML=_gbCantiere('Presenze Cascione','Modulo in costruzione',null);
+}
 function _gbRenderConteggio(){
   const el=document.getElementById('gb-conteggio');if(!el)return;
   el.innerHTML=_gbCantiere('Conteggio Biancheria','Modulo in costruzione','Prossima attivazione con i contratti di fornitura di');
@@ -4552,8 +4562,8 @@ function _gbCantiere(sezione,stato,prossima){
   <div class="gb-cantiere-k">${sezione}</div>
   <div class="gb-cantiere-t">${stato}</div>
   <div class="gb-cantiere-r"></div>
-  <div class="gb-cantiere-s">${prossima}</div>
-  <div class="gb-cantiere-h">Art Resort Galleria Umberto <span>·</span> Art Suite Santa Brigida</div>
+  ${prossima?`<div class="gb-cantiere-s">${prossima}</div>
+  <div class="gb-cantiere-h">Art Resort Galleria Umberto <span>·</span> Art Suite Santa Brigida</div>`:''}
   <div class="gb-cantiere-r" style="width:40px;margin:22px 0 14px;"></div>
   <div class="gb-cantiere-a">Nuovo modulo della Suite Compass QM, ideata e sviluppata da Pierpaolo Presta<br>Per esclusivo uso interno</div>
 </div>`;

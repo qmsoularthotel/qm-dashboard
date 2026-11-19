@@ -155,7 +155,7 @@ ok('Reso Galleria: anche nell\'altro verso',       _grUnisciRecord([{ id: 'x', r
 ok('Reso Galleria: la distinta va al Resident Manager', /Front Office Manager/.test(String(_grStampa)) && !/Presta/.test(String(_grStampa)), true);
 
 // ── Menu laterale come Compass, con la voce Controllo fatturazione (25/09/2026) ──
-ok('Galleria: otto voci di menu',                   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche,archivio');
+ok('Galleria: nove voci di menu',                   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche,archivio,presenze');
 // ── Conteggio Biancheria: modulo in costruzione, in attesa dei contratti (16/11/2026) ──
 (function () {
   var box = { innerHTML: '' }, vero = document.getElementById;
@@ -383,7 +383,7 @@ ok('Galleria: chiuso mostra solo l\'intestazione', /_gb\.giri\.length&&!_gbStoAp
 // conteggio, il carico no"), col rinomino giac -> gc e le strutture della Galleria. In piu':
 // due magazzini, chiave bg_, niente organico/turno di Compass, voce di menu.
 sez('Giacenza Biancheria (Galleria): copia di Compass, due magazzini');
-ok('Galleria: la voce Giacenza nel menu',   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche,archivio');
+ok('Galleria: la voce Giacenza nel menu',   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche,archivio,presenze');
 ok('Galleria: la voce apre la giacenza',    /_bgSezione==='giacenza'\)gcLoad\(\)/.test(String(bgSezione)), true);
 (function () {
   var _g = _gc, _h = _gcHotel;
@@ -637,4 +637,13 @@ ok('Galleria: colonne delle statistiche come in Compass',
   } finally { _gtTp = tp0; _gtScade = sc0; _gtUltimaAttivita = ua0; _gtChiedi = ch0; _gtRinnovo = null; }
 })();
 ok('Worker: il rinnovo vuole un permesso valido',   /'rinnova'\)\s*\{\s*if \(!\(await verificaTp/.test(String(_workerFetch.fetch)), true);
+// Presenze Cascione: modulo in costruzione, solo con la firma (19/11/2026).
+(function () {
+  var box = { innerHTML: '' }, vero = document.getElementById;
+  document.getElementById = function (id) { return id === 'gb-presenze' ? box : null; };
+  try { _gbRenderPresenze(); } finally { document.getElementById = vero; }
+  ok('Presenze Cascione: modulo in costruzione',   /Presenze Cascione/.test(box.innerHTML) && /Modulo in costruzione/.test(box.innerHTML), true);
+  ok('senza altre spiegazioni',                    /Prossima|Art Resort Galleria Umberto/.test(box.innerHTML), false);
+  ok('con la firma della Suite',                   /Nuovo modulo della Suite Compass QM, ideata e sviluppata da Pierpaolo Presta[\s\S]*Per esclusivo uso interno/.test(box.innerHTML), true);
+})();
 
