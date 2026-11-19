@@ -11219,7 +11219,7 @@ let _tpCalDay=null; // giorno selezionato nel calendario (dd/MM/yyyy)
 let _tpMesiAperti=new Set();
 // Persone del riepilogo con l'elenco delle richieste aperto (clic sul numero).
 let _tpConsAperto=new Set();
-// Colore della barra "Trimestre in corso" (QM, 16/11/2026): verde 0–7, arancio 8–15, rosso da 16
+// Colore della barra "Totale richieste" (QM, 16/11/2026): verde 0–7, arancio 8–15, rosso da 16
 // (scala piena a 21).
 // L'arancio è --orange e non --amber: l'amber di Compass è un arancio scuro che accanto al
 // rosso non si distingueva (QM, 16/11/2026).
@@ -11480,13 +11480,13 @@ function turniPrefRender(){
   // Più stretto del resto della riga (QM): non si allarga fino al bordo, max 520px.
   const consHtml=`<div class="panel" style="flex:0 1 520px;min-width:0;margin-bottom:18px;">
     <div class="panel-header"><span class="panel-title">Chi chiede la settimana ${settDaA}</span>
-      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">Trimestre in corso: ${String(cons.tr.da.getDate()).padStart(2,'0')}/${String(cons.tr.da.getMonth()+1).padStart(2,'0')} – ${String(cons.tr.a.getDate()).padStart(2,'0')}/${String(cons.tr.a.getMonth()+1).padStart(2,'0')}</span></div>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);">Totale richieste fino alla settimana in oggetto · ${String(cons.tr.da.getDate()).padStart(2,'0')}/${String(cons.tr.da.getMonth()+1).padStart(2,'0')} – ${String(cons.tr.a.getDate()).padStart(2,'0')}/${String(cons.tr.a.getMonth()+1).padStart(2,'0')}</span></div>
     <div class="panel-body" style="padding:0;">${cons.righe.length?`<table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
       <thead><tr style="background:var(--surface2);">
         <th style="text-align:left;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Persona</th>
         <th style="text-align:left;padding:8px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Reparto</th>
         <th style="text-align:right;padding:8px 10px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Settimana<br><span style="white-space:nowrap;">${settDaA}</span></th>
-        <th style="text-align:right;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Trimestre<br>in corso</th>
+        <th style="text-align:right;padding:8px 14px;font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);">Totale<br>richieste</th>
       </tr></thead><tbody>${cons.righe.map((x,i)=>{
         const k=x.nome.toLowerCase(),aperto=_tpConsAperto.has(k);
         const lista=(x.lista||[]).slice().sort((a,b)=>{const p=s=>{const m=String(_tpFmtDate(s)).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?m[3]+m[2]+m[1]:'';};return p(b.giornoRichiesto).localeCompare(p(a.giornoRichiesto));});

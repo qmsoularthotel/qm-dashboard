@@ -444,3 +444,4 @@ richieste (col filtro di reparto) si apre una finestra agganciata alla data (`tu
 tipo colorato, motivazione e data d'invio. Si chiude con la ×, cliccando fuori o con Esc. Gli
 altri giorni filtrano l'elenco come prima. Stessa cosa nella Galleria (`gtPrefApriGiorno`).
 
+**Scritte** (19/11/2026, QM): in alto a destra «Totale richieste fino alla settimana in oggetto · gg/mm – gg/mm», colonna «Totale richieste». Il conto resta quello dei 3 mesi prima della settimana (scelta confermata dal QM): cambia solo la scritta.
