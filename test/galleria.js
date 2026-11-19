@@ -663,3 +663,4 @@ ok('Galleria: l\'archivio apre sull\'ultima settimana', /_gtuSettSel===undefined
 })();
 // Attesa dopo il PIN e niente bussola nel menu (19/11/2026).
 ok('PIN: animazione d\'attesa mentre si verifica',   /_gtMostraAttesa\([^)]*Verifica del PIN…'\)/.test(String(gtPrefApri)) && /gt-attesa-ago/.test(_gtAttesa('x')), true);
+ok('Galleria: anche qui la finestrella del giorno', typeof gtPrefApriGiorno === 'function' && gtPrefApriGiorno !== turniPrefApriGiorno && /gt-giorno-pop/.test(String(gtPrefApriGiorno)), true);

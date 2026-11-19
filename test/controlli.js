@@ -4102,3 +4102,16 @@ ok('statistiche: P, Intermedi, Mattine, Pomeriggi, Notti, Riposo domenicale, Mal
   ok('e la tabella c\'è già',                        />16\/11</.test(box.innerHTML) && /Perez L\./.test(box.innerHTML), true);
   _turniSettSel = sel;
 })();
+// Finestrella del giorno nella settimana evidenziata (19/11/2026).
+(function () {
+  var box = { innerHTML: '' }, vero = document.getElementById, d0 = _tpData, f0 = _tpFilter, g0 = _tpCalDay, y0 = _tpCalYear, m0 = _tpCalMonth;
+  var pros = _tpSettimanaProssima(new Date()).giorni, pd = pros[2].split('/');
+  _tpData = [{ nome: 'Rossi Prova', reparto: 'Reception', preferenza: 'RIPOSO', giornoRichiesto: pros[2], ts: new Date().toISOString() }];
+  _tpFilter = 'tutti'; _tpCalDay = null; _tpCalYear = +pd[2]; _tpCalMonth = +pd[1] - 1;
+  document.getElementById = function (id) { return id === 'turni-pref-content' ? box : null; };
+  try { turniPrefRender(); } finally { document.getElementById = vero; _tpData = d0; _tpFilter = f0; _tpCalDay = g0; _tpCalYear = y0; _tpCalMonth = m0; }
+  ok('il giorno con richieste nella settimana apre la finestrella', box.innerHTML.indexOf("turniPrefApriGiorno('" + pros[2] + "',this)") >= 0, true);
+  ok('un giorno senza richieste no',                 box.innerHTML.indexOf("turniPrefApriGiorno('" + pros[3] + "'") >= 0, false);
+  // 19/11/2026: una virgoletta doppia (style=""grid-row…) aveva tolto la forma a tutte le caselle.
+  ok('le caselle del calendario hanno il loro stile', /style=""/.test(box.innerHTML), false);
+})();

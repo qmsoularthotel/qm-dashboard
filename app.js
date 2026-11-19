@@ -11335,6 +11335,46 @@ function _tpConsuntivo(dati,filtro,oggi){
   });
   return {tr,righe:Object.values(per).sort((a,b)=>b.tot-a.tot||a.nome.localeCompare(b.nome,'it'))};
 }
+// Finestrella del giorno (QM, 19/11/2026): nella settimana evidenziata, cliccando un giorno con
+// richieste si apre una finestra agganciata alla data con chi ha chiesto cosa. Si chiude con la
+// ×, cliccando fuori o con Esc. Gli altri giorni restano come prima (filtro dell'elenco).
+function _tpPrefColore(p){const u=String(p||'').toUpperCase();if(u.includes('FERIE'))return'var(--amber)';if(u.includes('RIPOSO'))return'var(--text-muted)';if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';return'var(--text)';}
+function turniPrefChiudiGiorno(){const p=document.getElementById('tp-giorno-pop');if(p)p.remove();document.querySelectorAll('[data-tp-giorno].tp-giorno-sel').forEach(c=>{c.classList.remove('tp-giorno-sel');c.style.outline='';});}
+function turniPrefApriGiorno(key,cella){
+  turniPrefChiudiGiorno();
+  const box=document.getElementById('tp-cal-box');if(!box||!cella)return;
+  const rr=_tpData.filter(r=>(_tpFilter==='tutti'||r.reparto===_tpFilter)&&_tpFmtDate(r.giornoRichiesto)===key)
+    .sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'it'));
+  if(!rr.length)return;
+  const m=key.match(/^(\d{2})\/(\d{2})\/(\d{4})$/),dt=m?new Date(+m[3],+m[2]-1,+m[1],12):null;
+  const GG=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  const quando=r=>{const d=new Date(r.ts);return isNaN(d)?_tpFmtDate(r.dataRichiesta||r.ts):d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'});};
+  const p=document.createElement('div');
+  p.id='tp-giorno-pop';p.setAttribute('role','dialog');
+  p.style.cssText='position:absolute;z-index:20;width:300px;max-width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:10px;box-shadow:0 12px 34px rgba(12,31,51,.18);padding:12px 14px;';
+  p.innerHTML=`<div style="position:absolute;top:-9px;left:var(--tp-freccia,40px);width:12px;height:12px;background:var(--surface);border-left:1px solid var(--border);border-top:3px solid var(--gold);transform:rotate(45deg);"></div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
+      <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${dt?GG[dt.getDay()]+' '+key.slice(0,5):_esc(key)}</span>
+      <span style="font-size:var(--fs-xxs);color:var(--text-dim);">${rr.length} ${rr.length===1?'richiesta':'richieste'}</span>
+      <button onclick="turniPrefChiudiGiorno()" aria-label="Chiudi" style="margin-left:auto;border:none;background:none;font-size:16px;line-height:1;color:var(--text-dim);cursor:pointer;padding:2px 4px;font-family:inherit;">×</button>
+    </div>
+    ${rr.map((r,i)=>`<div style="${i?'border-top:1px solid var(--border-light);':''}padding:${i?'8px':'2px'} 0 8px;display:flex;flex-direction:column;gap:2px;">
+      <div style="display:flex;align-items:center;gap:7px;"><span style="font-size:var(--fs-xs);font-weight:700;">${_esc(r.nome)}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);background:var(--bg);padding:1px 7px;border-radius:4px;">${_esc(r.reparto)}</span></div>
+      <div style="font-size:var(--fs-xs);font-weight:700;color:${_tpPrefColore(r.preferenza)};">${_esc(r.preferenza)}</div>
+      ${r.motivazione?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;">${_esc(r.motivazione)}</div>`:''}
+      <div style="font-size:10.5px;color:var(--text-dim);">richiesta il ${_esc(quando(r))}</div>
+    </div>`).join('')}`;
+  box.appendChild(p);
+  const bc=box.getBoundingClientRect(),cc=cella.getBoundingClientRect();
+  let left=cc.left-bc.left+cc.width/2-40;left=Math.max(0,Math.min(left,bc.width-300));
+  p.style.left=left+'px';p.style.top=(cc.bottom-bc.top+10)+'px';
+  p.style.setProperty('--tp-freccia',Math.max(8,cc.left-bc.left+cc.width/2-left-6)+'px');
+  cella.classList.add('tp-giorno-sel');cella.style.outline='2px solid var(--gold)';cella.style.outlineOffset='1px';
+}
+try{
+  document.addEventListener('click',e=>{const p=document.getElementById('tp-giorno-pop');if(!p)return;if(e.target.closest&&(e.target.closest('#tp-giorno-pop')||e.target.closest('[data-tp-giorno]')))return;turniPrefChiudiGiorno();},true);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')turniPrefChiudiGiorno();});
+}catch(e){}
 function turniPrefNavCal(dir){_tpCalMonth+=dir;if(_tpCalMonth>11){_tpCalMonth=0;_tpCalYear++;}else if(_tpCalMonth<0){_tpCalMonth=11;_tpCalYear--;}turniPrefRender();}
 function turniPrefToggleMese(k){_tpMesiAperti.has(k)?_tpMesiAperti.delete(k):_tpMesiAperti.add(k);_qmSenzaSalto(turniPrefRender);}
 function turniPrefToggleCons(k){_tpConsAperto.has(k)?_tpConsAperto.delete(k):_tpConsAperto.add(k);_qmSenzaSalto(turniPrefRender);}
@@ -11426,7 +11466,9 @@ function turniPrefRender(){
     // Proposta E (16/11/2026): fuori dalla settimana prossima il mese si attenua, così quella
     // settimana salta all'occhio. Il giorno selezionato resta pieno.
     const attenua=prossima.giorni.length&&!prossima.giorni.includes(key)&&!isSel;
-    calCells+=`<div onclick="turniPrefSelectDay('${key}')" style="grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;${attenua?'opacity:.38;':''}aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
+    // Settimana evidenziata e richieste: si apre la finestrella del giorno (19/11/2026).
+    const _pop=prossima.giorni.includes(key)&&cnt>0;
+    calCells+=`<div ${_pop?`data-tp-giorno="${key}" onclick="turniPrefApriGiorno('${key}',this)"`:`onclick="turniPrefSelectDay('${key}')"`} style="grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;${attenua?'opacity:.38;':''}aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
       <div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${col};line-height:1;">${d}</div>
       ${cnt>0?`<div style="font-size:10px;font-weight:700;color:${isSel?'rgba(255,255,255,.85)':cnt>=2?'rgba(255,255,255,.85)':'var(--accent)'};margin-top:1px;">${cnt}</div>`:''}
     </div>`;
@@ -11462,7 +11504,7 @@ function turniPrefRender(){
       </tbody></table>`:`<div style="padding:14px;font-size:var(--fs-xs);color:var(--text-dim);">Nessuna richiesta per la settimana prossima${_tpFilter!=='tutti'?' in '+_esc(_tpFilter):''}.</div>`}</div>
   </div>`;
 
-  const calHtml=`<div style="flex:0 1 360px;min-width:0;margin-bottom:18px;">
+  const calHtml=`<div id="tp-cal-box" style="position:relative;flex:0 1 360px;min-width:0;margin-bottom:18px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <button onclick="turniPrefNavCal(-1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">‹</button>
       <div style="font-size:var(--fs-sm);font-weight:700;">${mesiIt[_tpCalMonth]} ${_tpCalYear}</div>

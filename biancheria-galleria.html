@@ -157,7 +157,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-19.8';
+const QM_APP_BUILD='2026-11-19.10';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -3795,6 +3795,46 @@ function _gtConsuntivo(dati,filtro,oggi){
   });
   return {tr,righe:Object.values(per).sort((a,b)=>b.tot-a.tot||a.nome.localeCompare(b.nome,'it'))};
 }
+// Finestrella del giorno (QM, 19/11/2026): nella settimana evidenziata, cliccando un giorno con
+// richieste si apre una finestra agganciata alla data con chi ha chiesto cosa. Si chiude con la
+// ×, cliccando fuori o con Esc. Gli altri giorni restano come prima (filtro dell'elenco).
+function _gtPrefColore(p){const u=String(p||'').toUpperCase();if(u.includes('FERIE'))return'var(--amber)';if(u.includes('RIPOSO'))return'var(--text-muted)';if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';return'var(--text)';}
+function gtPrefChiudiGiorno(){const p=document.getElementById('gt-giorno-pop');if(p)p.remove();document.querySelectorAll('[data-gt-giorno].gt-giorno-sel').forEach(c=>{c.classList.remove('gt-giorno-sel');c.style.outline='';});}
+function gtPrefApriGiorno(key,cella){
+  gtPrefChiudiGiorno();
+  const box=document.getElementById('gt-cal-box');if(!box||!cella)return;
+  const rr=_gtData.filter(r=>(_gtFilter==='tutti'||r.reparto===_gtFilter)&&_gtFmtDate(r.giornoRichiesto)===key)
+    .sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'it'));
+  if(!rr.length)return;
+  const m=key.match(/^(\d{2})\/(\d{2})\/(\d{4})$/),dt=m?new Date(+m[3],+m[2]-1,+m[1],12):null;
+  const GG=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+  const quando=r=>{const d=new Date(r.ts);return isNaN(d)?_gtFmtDate(r.dataRichiesta||r.ts):d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'});};
+  const p=document.createElement('div');
+  p.id='gt-giorno-pop';p.setAttribute('role','dialog');
+  p.style.cssText='position:absolute;z-index:20;width:300px;max-width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:10px;box-shadow:0 12px 34px rgba(12,31,51,.18);padding:12px 14px;';
+  p.innerHTML=`<div style="position:absolute;top:-9px;left:var(--gt-freccia,40px);width:12px;height:12px;background:var(--surface);border-left:1px solid var(--border);border-top:3px solid var(--gold);transform:rotate(45deg);"></div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
+      <span style="font-size:var(--fs-xs);font-weight:700;color:var(--text);">${dt?GG[dt.getDay()]+' '+key.slice(0,5):_gtEsc(key)}</span>
+      <span style="font-size:var(--fs-xxs);color:var(--text-dim);">${rr.length} ${rr.length===1?'richiesta':'richieste'}</span>
+      <button onclick="gtPrefChiudiGiorno()" aria-label="Chiudi" style="margin-left:auto;border:none;background:none;font-size:16px;line-height:1;color:var(--text-dim);cursor:pointer;padding:2px 4px;font-family:inherit;">×</button>
+    </div>
+    ${rr.map((r,i)=>`<div style="${i?'border-top:1px solid var(--border-light);':''}padding:${i?'8px':'2px'} 0 8px;display:flex;flex-direction:column;gap:2px;">
+      <div style="display:flex;align-items:center;gap:7px;"><span style="font-size:var(--fs-xs);font-weight:700;">${_gtEsc(r.nome)}</span><span style="font-size:var(--fs-xxs);color:var(--text-dim);background:var(--bg);padding:1px 7px;border-radius:4px;">${_gtEsc(r.reparto)}</span></div>
+      <div style="font-size:var(--fs-xs);font-weight:700;color:${_gtPrefColore(r.preferenza)};">${_gtEsc(r.preferenza)}</div>
+      ${r.motivazione?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;">${_gtEsc(r.motivazione)}</div>`:''}
+      <div style="font-size:10.5px;color:var(--text-dim);">richiesta il ${_gtEsc(quando(r))}</div>
+    </div>`).join('')}`;
+  box.appendChild(p);
+  const bc=box.getBoundingClientRect(),cc=cella.getBoundingClientRect();
+  let left=cc.left-bc.left+cc.width/2-40;left=Math.max(0,Math.min(left,bc.width-300));
+  p.style.left=left+'px';p.style.top=(cc.bottom-bc.top+10)+'px';
+  p.style.setProperty('--gt-freccia',Math.max(8,cc.left-bc.left+cc.width/2-left-6)+'px');
+  cella.classList.add('gt-giorno-sel');cella.style.outline='2px solid var(--gold)';cella.style.outlineOffset='1px';
+}
+try{
+  document.addEventListener('click',e=>{const p=document.getElementById('gt-giorno-pop');if(!p)return;if(e.target.closest&&(e.target.closest('#gt-giorno-pop')||e.target.closest('[data-gt-giorno]')))return;gtPrefChiudiGiorno();},true);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')gtPrefChiudiGiorno();});
+}catch(e){}
 function gtPrefNavCal(dir){_gtCalMonth+=dir;if(_gtCalMonth>11){_gtCalMonth=0;_gtCalYear++;}else if(_gtCalMonth<0){_gtCalMonth=11;_gtCalYear--;}gtPrefRender();}
 function gtPrefToggleMese(k){_gtMesiAperti.has(k)?_gtMesiAperti.delete(k):_gtMesiAperti.add(k);_gbSenzaSalto(gtPrefRender);}
 function gtPrefToggleCons(k){_gtConsAperto.has(k)?_gtConsAperto.delete(k):_gtConsAperto.add(k);_gbSenzaSalto(gtPrefRender);}
@@ -3886,7 +3926,9 @@ function gtPrefDisegna(){
     // Proposta E (16/11/2026): fuori dalla settimana prossima il mese si attenua, così quella
     // settimana salta all'occhio. Il giorno selezionato resta pieno.
     const attenua=prossima.giorni.length&&!prossima.giorni.includes(key)&&!isSel;
-    calCells+=`<div onclick="gtPrefSelectDay('${key}')" style="grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;${attenua?'opacity:.38;':''}aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
+    // Settimana evidenziata e richieste: si apre la finestrella del giorno (19/11/2026).
+    const _pop=prossima.giorni.includes(key)&&cnt>0;
+    calCells+=`<div ${_pop?`data-gt-giorno="${key}" onclick="gtPrefApriGiorno('${key}',this)"`:`onclick="gtPrefSelectDay('${key}')"`} style="grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;${attenua?'opacity:.38;':''}aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
       <div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${col};line-height:1;">${d}</div>
       ${cnt>0?`<div style="font-size:10px;font-weight:700;color:${isSel?'rgba(255,255,255,.85)':cnt>=2?'rgba(255,255,255,.85)':'var(--accent)'};margin-top:1px;">${cnt}</div>`:''}
     </div>`;
@@ -3922,7 +3964,7 @@ function gtPrefDisegna(){
       </tbody></table>`:`<div style="padding:14px;font-size:var(--fs-xs);color:var(--text-dim);">Nessuna richiesta per la settimana prossima${_gtFilter!=='tutti'?' in '+_gtEsc(_gtFilter):''}.</div>`}</div>
   </div>`;
 
-  const calHtml=`<div style="flex:0 1 360px;min-width:0;margin-bottom:18px;">
+  const calHtml=`<div id="gt-cal-box" style="position:relative;flex:0 1 360px;min-width:0;margin-bottom:18px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <button onclick="gtPrefNavCal(-1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">‹</button>
       <div style="font-size:var(--fs-sm);font-weight:700;">${mesiIt[_gtCalMonth]} ${_gtCalYear}</div>

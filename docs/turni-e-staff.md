@@ -438,3 +438,9 @@ al posto della schermata del PIN compare la bussola dello splash in piccolo, con
 `prefers-reduced-motion`. Nello stesso giorno è stata tolta la rosa dei venti dal menu della
 Galleria: con le voci nuove il menu è cresciuto e finiva sotto le voci.
 
+**Finestrella del giorno** (19/11/2026, QM): nella settimana evidenziata, cliccando un giorno con
+richieste (col filtro di reparto) si apre una finestra agganciata alla data (`turniPrefApriGiorno`,
+`#tp-giorno-pop` dentro `#tp-cal-box`): giorno, numero di richieste e per ognuna nome, reparto,
+tipo colorato, motivazione e data d'invio. Si chiude con la ×, cliccando fuori o con Esc. Gli
+altri giorni filtrano l'elenco come prima. Stessa cosa nella Galleria (`gtPrefApriGiorno`).
+
