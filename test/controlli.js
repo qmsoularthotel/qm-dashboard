@@ -4125,6 +4125,9 @@ ok('statistiche: P, Intermedi, Mattine, Pomeriggi, Notti, Riposo domenicale, Mal
   var prima, dopo;
   try { _tpInvitoVisto = false; turniPrefRender(); prima = box.innerHTML; _tpInvitoVisto = true; turniPrefRender(); dopo = box.innerHTML; }
   finally { document.getElementById = vero; _tpData = d0; _tpFilter = f0; _tpCalDay = g0; _tpCalYear = y0; _tpCalMonth = m0; _tpInvitoVisto = v0; }
-  ok('invito: il giorno con richieste pulsa',        /class="tp-giorno-invito"/.test(prima) && /Clicca un giorno della settimana evidenziata/.test(prima), true);
-  ok('invito: dopo il primo giorno aperto si ferma', /tp-giorno-invito|tp-invito-t/.test(dopo), false);
+  // 20/11/2026: niente più anello sui giorni; il fumetto a destra lo mette _tpPosaInvito dopo il disegno.
+  ok('invito: niente anello sui giorni',             /tp-giorno-invito/.test(prima), false);
+  ok('invito: la settimana è segnata per il fumetto', /data-tp-sett="1"/.test(prima), true);
+  ok('invito: il fumetto si aggancia all\'ultimo giorno, a destra', /sett\[sett\.length-1\][\s\S]*r\.right-b\.left\+14/.test(String(_tpPosaInvito)), true);
+  ok('invito: dopo il primo giorno aperto niente fumetto', /if\(_tpInvitoVisto\|\|!_tpInvitiN\)return;/.test(String(_tpPosaInvito)), true);
 })();

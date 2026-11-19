@@ -446,4 +446,9 @@ altri giorni filtrano l'elenco come prima. Stessa cosa nella Galleria (`gtPrefAp
 
 **Scritte** (19/11/2026, QM): in alto a destra «Totale richieste fino alla settimana in oggetto · gg/mm – gg/mm», colonna «Totale richieste». Il conto resta quello dei 3 mesi prima della settimana (scelta confermata dal QM): cambia solo la scritta.
 
-**Invito a cliccare** (19/11/2026, QM): i giorni della settimana evidenziata con richieste hanno un anello oro che pulsa a onda (`.tp-giorno-invito` in `style.css`, ritardo per colonna) e sotto il calendario «Clicca un giorno della settimana evidenziata per vedere le richieste» con una manina che sale e scende. Al primo giorno aperto (`_tpInvitoVisto`, dura quanto la visita) l'invito sparisce. Fermo con `prefers-reduced-motion`. Uguale nella Galleria (`_gtInvitoVisto`).
+**Invito a cliccare** (20/11/2026, QM, dopo aver scartato l'anello che pulsava sui giorni): un
+**fumetto blu a destra della settimana evidenziata**, alla sua altezza, con la punta verso i giorni,
+che si avvicina e si allontana piano: «Clicca su un giorno per vedere le richieste — della settimana
+evidenziata». Lo mette `_tpPosaInvito` dopo il disegno, agganciato all'ultimo giorno della riga
+(`data-tp-sett`); sparisce al primo giorno aperto (`_tpInvitoVisto`) e si rimette a posto se cambia
+la finestra. Stile `.tp-invito-fum` in `style.css`. Uguale nella Galleria (`_gtPosaInvito`).

@@ -11341,9 +11341,24 @@ function _tpConsuntivo(dati,filtro,oggi){
 function _tpPrefColore(p){const u=String(p||'').toUpperCase();if(u.includes('FERIE'))return'var(--amber)';if(u.includes('RIPOSO'))return'var(--text-muted)';if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';return'var(--text)';}
 function turniPrefChiudiGiorno(){const p=document.getElementById('tp-giorno-pop');if(p)p.remove();document.querySelectorAll('[data-tp-giorno].tp-giorno-sel').forEach(c=>{c.classList.remove('tp-giorno-sel');c.style.outline='';});}
 let _tpInvitoVisto=false,_tpInvitiN=0;   // l'invito si ferma al primo giorno aperto (dura quanto la visita)
+// Fumetto d'invito agganciato all'ultimo giorno della settimana evidenziata, a destra e alla sua
+// altezza (anteprima approvata dal QM, 20/11/2026). Si misura dopo il disegno.
+function _tpPosaInvito(){
+  document.querySelectorAll('.tp-invito-fum').forEach(x=>x.remove());
+  if(_tpInvitoVisto||!_tpInvitiN)return;
+  const box=document.getElementById('tp-cal-box');if(!box)return;
+  const sett=box.querySelectorAll('[data-tp-sett]');if(!sett.length)return;
+  const ult=sett[sett.length-1],b=box.getBoundingClientRect(),r=ult.getBoundingClientRect();
+  if(!r.width)return;
+  const f=document.createElement('div');f.className='tp-invito-fum';
+  f.innerHTML='Clicca su un giorno per vedere le richieste<small>della settimana evidenziata</small>';
+  f.style.top=(r.top-b.top+r.height/2)+'px';f.style.left=(r.right-b.left+14)+'px';
+  box.appendChild(f);
+}
+try{addEventListener('resize',()=>{if(document.getElementById('tp-cal-box'))_tpPosaInvito();});}catch(e){}
 function turniPrefApriGiorno(key,cella){
   turniPrefChiudiGiorno();
-  if(!_tpInvitoVisto){_tpInvitoVisto=true;document.querySelectorAll('.tp-giorno-invito').forEach(c=>c.classList.remove('tp-giorno-invito'));document.querySelectorAll('.tp-invito-t').forEach(x=>x.remove());}
+  if(!_tpInvitoVisto){_tpInvitoVisto=true;document.querySelectorAll('.tp-invito-fum').forEach(x=>x.remove());}
   const box=document.getElementById('tp-cal-box');if(!box||!cella)return;
   const rr=_tpData.filter(r=>(_tpFilter==='tutti'||r.reparto===_tpFilter)&&_tpFmtDate(r.giornoRichiesto)===key)
     .sort((a,b)=>String(a.nome||'').localeCompare(String(b.nome||''),'it'));
@@ -11470,9 +11485,9 @@ function turniPrefRender(){
     const attenua=prossima.giorni.length&&!prossima.giorni.includes(key)&&!isSel;
     // Settimana evidenziata e richieste: si apre la finestrella del giorno (19/11/2026).
     const _pop=prossima.giorni.includes(key)&&cnt>0;
-    // Invito a cliccare (19/11/2026): l'anello oro pulsa a onda finché non si apre un giorno.
-    const _inv=_pop&&!_tpInvitoVisto;if(_inv)_tpInvitiN++;
-    calCells+=`<div ${_pop?`data-tp-giorno="${key}" onclick="turniPrefApriGiorno('${key}',this)"${_inv?` class="tp-giorno-invito"`:''}`:`onclick="turniPrefSelectDay('${key}')"`} style="${_inv?`animation-delay:${(pc.c-1)*0.18}s;`:''}grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;${attenua?'opacity:.38;':''}aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
+    // Invito a cliccare (20/11/2026): il fumetto a destra della settimana (_tpPosaInvito).
+    if(_pop&&!_tpInvitoVisto)_tpInvitiN++;
+    calCells+=`<div ${prossima.giorni.includes(key)?'data-tp-sett="1" ':''}${_pop?`data-tp-giorno="${key}" onclick="turniPrefApriGiorno('${key}',this)"`:`onclick="turniPrefSelectDay('${key}')"`} style="grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;${attenua?'opacity:.38;':''}aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
       <div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${col};line-height:1;">${d}</div>
       ${cnt>0?`<div style="font-size:10px;font-weight:700;color:${isSel?'rgba(255,255,255,.85)':cnt>=2?'rgba(255,255,255,.85)':'var(--accent)'};margin-top:1px;">${cnt}</div>`:''}
     </div>`;
@@ -11515,7 +11530,6 @@ function turniPrefRender(){
       <button onclick="turniPrefNavCal(1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">›</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">${calCells}</div>
-    ${_tpInvitiN?`<div class="tp-invito-t"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10"/><path d="M12 9.5a1.5 1.5 0 0 1 3 0V11"/><path d="M15 10.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-.5a6 6 0 0 1-4.9-2.6L4 14.5a1.5 1.5 0 0 1 2.4-1.8L9 15"/></svg>Clicca un giorno della settimana evidenziata per vedere le richieste</div>`:''}
     ${_tpCalDay?`<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--accent);font-weight:600;">📅 Filtro: ${_tpCalDay} — <span onclick="turniPrefSelectDay('${_tpCalDay}')" style="cursor:pointer;text-decoration:underline;">rimuovi</span></div>`:''}
   </div>`;
 
@@ -11631,6 +11645,7 @@ function turniPrefRender(){
 
   // Calendario e consuntivo affiancati; su schermo stretto il consuntivo va sotto (flex-wrap).
   el.innerHTML=toolbar+`<div style="display:flex;flex-wrap:wrap;gap:24px 56px;align-items:flex-start;">${calHtml}${consHtml}</div>`+settHtml+listHtml;
+  try{_tpPosaInvito();}catch(e){}   // fumetto d'invito, dopo il disegno
 }
 
 // §§ CONTROLLO MATTINO (cmLoad, cmRender)

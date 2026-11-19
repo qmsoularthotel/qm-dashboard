@@ -995,14 +995,12 @@ body.ag-trascinando,body.ag-trascinando *{cursor:grabbing !important;user-select
   .ag-testo-in{font-size:16px;}  /* sotto i 16px iOS ingrandisce la pagina al tocco */
 }
 
-/* Preferenze Turnazione (19/11/2026): invito a cliccare i giorni della settimana evidenziata
-   che hanno richieste. Un anello oro che pulsa, a onda da un giorno all'altro; si ferma al primo
-   clic (classe tolta) e con prefers-reduced-motion. */
-@keyframes tpInvito{0%,100%{box-shadow:0 0 0 0 rgba(201,149,47,0);}50%{box-shadow:0 0 0 4px rgba(201,149,47,.55);}}
-.tp-giorno-invito{animation:tpInvito 1.8s ease-in-out infinite;}
-.tp-giorno-invito:hover{animation:none;box-shadow:0 0 0 2px var(--gold);}
-.tp-invito-t{margin-top:10px;display:flex;align-items:center;gap:6px;font-size:var(--fs-xxs);color:var(--gold);font-weight:600;}
-.tp-invito-t svg{flex-shrink:0;animation:tpInvitoMano 1.8s ease-in-out infinite;}
-@keyframes tpInvitoMano{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
-@media (prefers-reduced-motion:reduce){.tp-giorno-invito,.tp-invito-t svg{animation:none;}}
-
+/* Preferenze Turnazione (20/11/2026, QM): invito a cliccare i giorni della settimana evidenziata.
+   Fumetto blu a DESTRA della settimana, alla sua altezza, con la punta verso i giorni; si
+   avvicina e si allontana piano. Sparisce al primo giorno aperto. Prima c'era un anello che
+   pulsava sui giorni: scartato dal QM. */
+.tp-invito-fum{position:absolute;z-index:8;width:150px;padding:9px 12px;border-radius:10px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;line-height:1.35;box-shadow:0 8px 22px rgba(12,31,51,.25);pointer-events:none;animation:tpVerso 1.6s ease-in-out infinite;}
+.tp-invito-fum::before{content:'';position:absolute;left:-6px;top:50%;margin-top:-6px;width:12px;height:12px;background:var(--accent);transform:rotate(45deg);}
+.tp-invito-fum small{display:block;font-weight:400;opacity:.8;font-size:11px;margin-top:2px;}
+@keyframes tpVerso{0%,100%{transform:translate(0,-50%);}50%{transform:translate(-6px,-50%);}}
+@media (prefers-reduced-motion:reduce){.tp-invito-fum{animation:none;transform:translate(0,-50%);}}
