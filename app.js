@@ -772,8 +772,8 @@ function turniRenderStats(){
       <div style="overflow-x:auto;">
         <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
           <thead><tr>
-            <th style="text-align:left;padding:7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;">Persona</th>
-            ${th('P')}${th('Mattine')}${th('Pomeriggi')}${th('Intermedi')}${th('Notti')}${th('Riposo domenicale')}${th('Art Resort',true)}${th('SoulArt')}${th('Malattia',true)}${th('Ferie')}
+            <th style="text-align:left;padding:7px 14px 7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;width:1%;white-space:nowrap;">Persona</th>
+            ${th('P')}${th('Intermedi')}${th('Mattine')}${th('Pomeriggi')}${th('Notti')}${th('Riposo domenicale')}${th('Malattia',true)}${th('Ferie')}
           </tr></thead>
           <tbody>
             ${righe.map(({n,s,notte,sedeUnica,uscito},i)=>{
@@ -783,13 +783,11 @@ function turniRenderStats(){
               return `<tr${primoNotte||primoUscito||dopoTesta?' style="border-top:2px solid var(--border);'+(uscito?'opacity:.6;':'')+'"':(uscito?' style="opacity:.6;"':'')}>
               <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}${uscito?`<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · fino al ${finoAl(uscito)}</span>`:''}</td>
               ${notte?cellaN(s.p+s.pgall):td((s.p+s.pgall)||'—')}
+              ${notte?cellaN(s.intermedi):td(s.intermedi||'—')}
               ${notte?cellaN(s.mattina):td(s.mattina||'—')}
               ${notte?cellaN(s.pomeriggio):td(s.pomeriggio||'—')}
-              ${notte?cellaN(s.intermedi):td(s.intermedi||'—')}
               ${td(s.notti?`${s.notti}<span style="color:var(--text-dim);font-size:var(--fs-xxs);"> ${s.nottiG}AR·${s.nottiC}SA</span>`:'—',s.notti&&!notte?'font-weight:700;':'')}
               ${td(s.riposiDomenica||'—',s.riposiDomenica?'font-weight:700;':'color:var(--text-dim);')}
-              ${sedeUnica?vuota(sep):(notte?cellaN(s.galleria,sep):td(s.galleria||'—',sep))}
-              ${sedeUnica?vuota():(notte?cellaN(s.soulart):td(s.soulart||'—'))}
               ${td(s.malattia||'—',sep+(s.malattia?'color:var(--red);font-weight:700;':'color:var(--text-dim);'))}
               ${td(s.ferie||'—',s.ferie?'color:var(--amber);font-weight:700;':'color:var(--text-dim);')}
             </tr>`;}).join('')}
@@ -797,7 +795,7 @@ function turniRenderStats(){
         </table>
       </div>
       <div style="padding:11px 13px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;border-top:1px solid var(--border);">
-        <strong>Riposo domenicale</strong> = domeniche di riposo. <strong>Art Resort</strong> = AG + CG + INT GALL + GALL/CAR, <strong>SoulArt</strong> = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. L'orario degli intermedi non conta: la sede la dice la sigla; GALL/CAR conta come intermedio Art Resort. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (AR = Art Resort, SA = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
+        <strong>Riposo domenicale</strong> = domeniche di riposo. <strong>Intermedi</strong> = INT CAR, INT GALL e GALL/CAR, a qualunque orario. <strong>Mattine</strong> = AC + AG, <strong>Pomeriggi</strong> = CC + CG. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (AR = Art Resort, SA = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
         Riposo, riposo richiesto, recupero e REC RIP contano come riposo; ferie richieste come ferie; un turno "richiesto" (AC RICHIESTO) come quel turno.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
 
       </div>

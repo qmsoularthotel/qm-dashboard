@@ -113,6 +113,11 @@ mescolarli renderebbe i totali privi di significato.
 | Art Resort / SoulArt | dove ha lavorato: `AG`/`CG`/`INT GALL` da un lato, `AC`/`CC`/`INT CAR` dall'altro |
 | Malattia / Ferie | assenze esplicite |
 
+**Dal 19/11/2026 (QM)** le colonne sono, in quest'ordine: **P, Intermedi, Mattine, Pomeriggi,
+Notti, Riposo domenicale, Malattia, Ferie**. Le colonne Art Resort / SoulArt sono state tolte (i
+conteggi per sede restano calcolati in `turniStatistiche`, basta rimetterle nella tabella). La
+colonna Persona è larga quanto il nome più lungo (`width:1%`). Stessa tabella nella Galleria.
+
 #### Elenchi ESPLICITI, mai dedotti dai dati
 
 ```js

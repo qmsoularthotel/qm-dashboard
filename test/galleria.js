@@ -608,3 +608,5 @@ ok('l\'archivio non si legge dal browser',          /localStorage/.test(String(g
   ok('chiudere butta via l\'archivio',                 (gtPrefChiudi(''), _gtuArch), null);
 })();
 ok('Worker: l\'archivio solo col permesso del PIN', /'storico'\)\s*\{\s*if \(!\(await verificaTp/.test(String(_workerFetch.fetch)), true);
+ok('Galleria: colonne delle statistiche come in Compass',
+   (String(gtuRenderStats).match(/th\('([^']+)'/g) || []).join(), (String(turniRenderStats).match(/th\('([^']+)'/g) || []).join());
