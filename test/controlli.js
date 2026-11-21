@@ -4214,5 +4214,6 @@ sez('Pannello di Controllo: Da sistemare e scheda Compass OPS (21/11/2026)');
   ok('Compass OPS: Art Resort aggiornato, Santa Brigida in arancio', /ms-ops-r">[^]*?Art Resort[^]*?ieri \(20\/11\)/.test(ops) && /ms-ops-amber"><span class="ms-ops-k">Consumi Santa Brigida[^]*?manca ieri/.test(ops), true);
   ok('Compass OPS: interruttore della Turnazione',   /miniappToggleTurnazione\(\)/.test(ops), true);
   ok('l\'interruttore scrive una chiave qm_, non bg_', /kvSet\('qm_bg_turnazione'/.test(String(miniappToggleTurnazione)), true);
-  ok('il Pannello disegna fascia e Da sistemare',    /miniappRenderSalute\(\)[\s\S]*miniappRenderDaSistemare\(\)/.test(String(miniappRender)), true);
+  ok('il Pannello disegna Da sistemare',            /miniappRenderDaSistemare\(\)/.test(String(miniappRender)) && !/miniappRenderSalute/.test(String(miniappRender)), true);
+  ok('Come sta Compass ha la sua vista',              /if\(id==='sistema'\)\{try\{miniappRenderSalute\(\)/.test(String(setView)), true);
 })();

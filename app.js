@@ -1168,7 +1168,7 @@ function resetTurni(){weekData=null;activeDay=0;ucSetState('turno','','Non caric
   try{localStorage.removeItem('qm_ts_turnoTs');}catch(e){}
   try{kvSet('qm_weekData',null).catch(()=>{});}catch(e){}document.getElementById('loadedInfo').classList.remove('visible');document.getElementById('weekNavWrap').style.display='none';document.getElementById('btnReload').style.display='none';const ts=document.getElementById('turnoTs');if(ts){ts.textContent='';ts.classList.remove('visible');}updateStaffPanelHeader();_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="ov-empty-text">Nessun turno caricato</div><div class="ov-empty-sub">Carica uno screenshot o PDF del planning dalla sidebar</div></div>`);}
 // §§ NAVIGAZIONE VISTE (setView, pageTitles, toggleRecGroup)
-const pageTitles={agenda:'Agenda della settimana',sistema:'Stato del sistema',sicurezza:'Sicurezza e copie',overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Applicazioni stand alone',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turnazione','controllo-mattino':'Distribuzione Culligan',turnazione:'Turnazione Corrente','resi-biancheria':'Reso Biancheria',biancheria:'Consumo Biancheria','conteggio-biancheria':'Conteggio Biancheria',giacenza:'Giacenza Biancheria'};
+const pageTitles={agenda:'Agenda della settimana',sistema:'Come sta Compass',sicurezza:'Sicurezza e copie',overview:'Panoramica del giorno',registrazione:'Registration Cards','room-division':'Bilanciamento Camere','recensioni-sa':'Recensioni SoulArt','recensioni-bh':'Recensioni Boutique','recensioni-sl':'Recensioni San Liborio','recensioni-pr':'Recensioni Principe','recensioni-ms':'Recensioni Mastrangelo','recensioni-ar':'Recensioni Art Resort','recensioni-sb':'Recensioni Santa Brigida','recensioni-exp-sa':'Expedia — SoulArt','recensioni-exp-bh':'Expedia — Boutique','recensioni-exp-ar':'Expedia — Art Resort','recensioni-exp-sb':'Expedia — Santa Brigida',hkpsheet:'Operativa HKP — SoulArt',bkfsheet:'Breakfast Sheet — SoulArt',bkfsheetar:'Breakfast Sheet — Galleria',dvr:'DVR','miniapp':'Applicazioni stand alone',inventario:'Inventari e Ordini',spese:'Spese Fornitori','turni-pref':'Preferenze Turnazione','controllo-mattino':'Distribuzione Culligan',turnazione:'Turnazione Corrente','resi-biancheria':'Reso Biancheria',biancheria:'Consumo Biancheria','conteggio-biancheria':'Conteggio Biancheria',giacenza:'Giacenza Biancheria'};
 const breadcrumbs={agenda:'Agenda personale',sistema:'Pannello di Controllo',sicurezza:'Pannello di Controllo',miniapp:'Pannello di Controllo',overview:'Operativo Quotidiano',registrazione:'Operativo Quotidiano','room-division':'Housekeeping',hkpsheet:'Housekeeping',bkfsheet:'Breakfast Sheet',bkfsheetar:'Breakfast Sheet','recensioni-sa':'Qualità · Recensioni','recensioni-bh':'Qualità · Recensioni','recensioni-sl':'Qualità · Recensioni','recensioni-pr':'Qualità · Recensioni','recensioni-ms':'Qualità · Recensioni','recensioni-ar':'Qualità · Recensioni','recensioni-sb':'Qualità · Recensioni','recensioni-exp-sa':'Qualità · Expedia','recensioni-exp-bh':'Qualità · Expedia','recensioni-exp-ar':'Qualità · Expedia','recensioni-exp-sb':'Qualità · Expedia',dvr:'Fascicolo Dipendenti','turni-pref':'Reception',turnazione:'Reception','resi-biancheria':'Housekeeping',biancheria:'Housekeeping','conteggio-biancheria':'Housekeeping',giacenza:'Housekeeping'};
 // §§ HKP OPERATIVE — Google Sheets (hkpLoad, hkpRenderAll, hkpRenderContent, hkpTab, hkpSave, hkpRestore)
 // Operativa HKP: solo SoulArt. Art Resort è stato rimosso (17/08/2026) — non più
@@ -2356,7 +2356,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   // Dispositivi abilitati e copia di sicurezza vivono nella vista Sicurezza (06/09/2026):
   // si guardano di rado e per motivi diversi dall'accendere e spegnere le app.
   if(id==='sicurezza'){try{qmRenderDispositivi();}catch(e){}}
-  if(id==='sistema')try{qmRenderStatoSistema();}catch(e){}
+  if(id==='sistema'){try{miniappRenderSalute();}catch(e){}try{qmRenderStatoSistema();}catch(e){}}
   if(id==='dvr'){setTimeout(dvrRender,50);dvrMarkSeen();dvrBadgeUpdate();}
 }
 // §§ DVR — SCADENZE SICUREZZA & COMPLIANCE
@@ -2761,7 +2761,6 @@ function miniappOpen(inputId){
 }
 // §§ MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone, mosaico)
 function miniappRender(){
-  miniappRenderSalute();
   miniappRenderDaSistemare();
   miniappRenderStatus();
   miniappLoadAppStatus();
@@ -2769,16 +2768,16 @@ function miniappRender(){
   miniappLoadBkfBanner();
 }
 // ── PANNELLO DI CONTROLLO: «COME STA COMPASS» E «DA SISTEMARE» (21/11/2026, QM) ──
-// In cima al Pannello quattro riquadri rispondono a «va tutto bene?» senza entrare in Stato
-// del sistema (che non è più nel menu: un clic su un riquadro ci porta, per i dettagli).
-// Sotto, «Da sistemare» compare SOLO quando c'è qualcosa da fare, una riga per cosa, e ogni
-// riga porta alla pagina dove si sistema. Il pallino di stato ora sta accanto al Pannello.
+// «Come sta Compass» ha la sua voce di menu (vista `sistema`, prima «Stato del sistema"):
+// quattro riquadri in cima rispondono a «va tutto bene?», sotto resta il dettaglio.
+// Nel Pannello, «Da sistemare» compare SOLO quando c'è qualcosa da fare, una riga per cosa, e
+// ogni riga porta alla pagina dove si sistema.
 function _msIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function _msDmy(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
 function _msGm(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');}
 function _msTile(col,titolo,valore,sotto,extra){
-  return `<button class="ms-st ms-st-${col}" onclick="setView('sistema',null)" title="Dettagli in Stato del sistema">
-    <span class="ms-st-k">${titolo}</span><span class="ms-st-v">${valore}</span>${sotto?`<span class="ms-st-s">${sotto}</span>`:''}${extra||''}</button>`;
+  return `<div class="ms-st ms-st-${col}">
+    <span class="ms-st-k">${titolo}</span><span class="ms-st-v">${valore}</span>${sotto?`<span class="ms-st-s">${sotto}</span>`:''}${extra||''}</div>`;
 }
 async function miniappRenderSalute(){
   const el=document.getElementById('miniappSalute');if(!el)return;
@@ -5155,7 +5154,7 @@ const QM_BACKUP_MAGAZZINI=['sa','ar'];
 // c'e', e non lo scopriresti fino al giorno in cui serve. Il controllo in test/esegui.sh
 // verifica che ogni chiave scritta da Compass compaia in questo elenco.
 const QM_BACKUP_FISSE=[
-  'qm_piano','qm_weekData','qm_turni_storico','qm_arriviData','qm_rcGuests',
+  'qm_piano','qm_bg_turnazione','qm_pin_ultimo','qm_weekData','qm_turni_storico','qm_arriviData','qm_rcGuests',
   'qm_pulData','qm_bkfData','qm_bkfGroups','qm_bkfNotes','qm_bkfChartData','qm_bkfARChartData',
   'qm_bkfSheetARData','qm_bkf_monthly_history','qm_bkf_banner',
   'qm_bkf_room_info','qm_bkf_room_info_date','qm_bkf_room_ambiguous',
