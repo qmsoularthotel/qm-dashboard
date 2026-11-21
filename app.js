@@ -2334,6 +2334,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='resi-biancheria'){try{resiLoad();}catch(e){}}
   if(id==='biancheria'){try{biaLoad();}catch(e){}}
   if(id==='conteggio-biancheria'){try{biaLoad();}catch(e){}}
+  else if(_biaDotAperta){try{biaDotChiudi('');}catch(e){}}
   if(id==='giacenza'){try{giacLoad();}catch(e){}}
   if(id==='agenda'){try{agLoad();}catch(e){}}
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
@@ -2354,7 +2355,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='miniapp')setTimeout(miniappRender,50);
   // Dispositivi abilitati e copia di sicurezza vivono nella vista Sicurezza (06/09/2026):
   // si guardano di rado e per motivi diversi dall'accendere e spegnere le app.
-  if(id==='sicurezza'){try{qmRenderDispositivi();}catch(e){}try{qmRenderBackup();}catch(e){}try{biaRenderDotVede();}catch(e){}}
+  if(id==='sicurezza'){try{qmRenderDispositivi();}catch(e){}}
   if(id==='sistema')try{qmRenderStatoSistema();}catch(e){}
   if(id==='dvr'){setTimeout(dvrRender,50);dvrMarkSeen();dvrBadgeUpdate();}
 }
@@ -15011,27 +15012,39 @@ const BIA_DOT_DEFAULT={sa:{camere:22,
   'Federa':{perCamera:4,allestimento:96},'Telo doccia':{perCamera:2,allestimento:51},'Asciugamano viso':{perCamera:2,allestimento:51},
   'Asciugamano bidet':{perCamera:2,allestimento:51},'Scendibagno':{perCamera:1,allestimento:25}}};
 let _biaDotVoce='Lenzuolo matrimoniale';   // la tipologia del dettaglio
-// NASCOSTO AI COLLEGHI (12/11/2026). Compass non distingue le persone — il codice di
-// accesso è uno solo — quindi il pannello si accende DISPOSITIVO per dispositivo, da
-// Pannello di Controllo → Sicurezza, e il segno resta in localStorage. È nascosto, non
-// protetto: chi va a cercare l'interruttore lo trova. Basta a non mostrare a chi registra
-// le consegne un "ammanco suo" accanto al nome del fornitore.
-const BIA_DOT_VEDE_KEY='qm_vede_dotazione';
-function _biaDotVisibile(){try{return localStorage.getItem(BIA_DOT_VEDE_KEY)==='1';}catch(e){return false;}}
-function biaDotSetVisibile(on){
-  try{if(on)localStorage.setItem(BIA_DOT_VEDE_KEY,'1');else localStorage.removeItem(BIA_DOT_VEDE_KEY);}catch(e){}
-  biaRenderDotVede();
+// SOLO PER IL QM, COL SUO PIN (21/11/2026). Prima il pannello si accendeva dispositivo per
+// dispositivo da Sicurezza ed era «nascosto, non protetto»; il QM non sapeva dove mettere quella
+// voce e la vuole vedere solo lui. Ora in Conteggio Biancheria c'è un lucchetto che si apre col
+// PIN del QM (lo stesso di Compass OPS, verificato dal Worker: vale SOLO chi='qm', non il PIN del
+// Front Office Manager). Si richiude dopo 5 minuti senza attività e lasciando la voce.
+let _biaDotAperta=0,_biaDotAttivita=0,_biaDotMsg='';
+const BIA_DOT_DURATA=5*60000;
+function _biaDotVisibile(){return _biaDotAperta>0&&(Date.now()-_biaDotAttivita)<BIA_DOT_DURATA;}
+function biaDotChiudi(msg){_biaDotAperta=0;_biaDotMsg=msg||'';}
+async function biaDotApri(){
+  const f=document.getElementById('bia-dot-pin');const pin=String((f||{}).value||'').trim();
+  if(!/^\d{4,8}$/.test(pin)){_biaDotMsg='Il PIN è di 4–8 cifre.';_qmSenzaSalto(biaRenderConteggio);return;}
+  _biaDotMsg='Verifica del PIN…';_qmSenzaSalto(biaRenderConteggio);
+  let j={};
+  try{const r=await fetch(PROXY+'/turni-pref',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({azione:'apri',pin})});j=await r.json().catch(()=>({}));}
+  catch(e){j={ok:false,error:'Worker non raggiungibile'};}
+  if(j.ok&&j.chi==='qm'){_biaDotAperta=Date.now();_biaDotAttivita=Date.now();_biaDotMsg='';}
+  else if(j.ok){_biaDotMsg='Questo non è il tuo PIN: la dotazione si apre solo col PIN del Quality Manager.';}
+  else _biaDotMsg=j.error||'PIN non accettato';
+  _qmSenzaSalto(biaRenderConteggio);
 }
-function biaRenderDotVede(){
-  const el=document.getElementById('qmDotVede');if(!el)return;
-  const on=_biaDotVisibile();
-  el.innerHTML=`<div class="panel" style="padding:16px;margin-bottom:14px;">
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-      <div style="min-width:0;flex:1;">
-        <div style="font-size:var(--fs-base);font-weight:700;color:var(--text);">Dotazione da contratto su questo dispositivo</div>
-        <div style="font-size:var(--fs-xs);color:var(--text-muted);margin-top:3px;line-height:1.5;">Il Conteggio in Conteggio Biancheria (al SoulArt il Conteggio a scorrere). Si vede solo sui dispositivi dove è acceso qui: ${on?'<strong style="color:var(--green);">su questo è acceso</strong>.':'<strong>su questo è spento</strong>.'}</div>
-      </div>
-      <button onclick="biaDotSetVisibile(${on?'false':'true'})" class="miniapp-btn${on?'':' miniapp-btn-primario'}" style="flex:0 0 auto;padding:10px 18px;">${on?'Spegni':'Accendi'}</button>
+try{
+  ['pointerdown','pointermove','keydown','wheel','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,()=>{if(_biaDotVisibile())_biaDotAttivita=Date.now();},{passive:true,capture:true}));
+  setInterval(()=>{if(_biaDotAperta&&!_biaDotVisibile()){biaDotChiudi('Chiusa dopo 5 minuti senza attività.');if(_qmVistaAttiva()==='conteggio-biancheria'&&!_qmOccupato())_qmSenzaSalto(biaRenderConteggio);}},1000);
+}catch(e){}
+function _biaDotLucchetto(h){
+  return `<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Dotazione da contratto · ${_esc(BIA_HOTELS[h]||'')}</span></div>
+    <div class="panel-body" style="padding:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <div style="flex:1;min-width:200px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.5;">Riservata al Quality Manager: si apre col <strong style="color:var(--text);">tuo PIN</strong>, lo stesso di Compass OPS (lo scegli in Sicurezza).</div>
+      <input id="bia-dot-pin" type="text" inputmode="numeric" autocomplete="off" data-lpignore="true" maxlength="8" placeholder="PIN" onkeydown="if(event.key==='Enter')biaDotApri()" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:15px;letter-spacing:.25em;text-align:center;background:var(--surface);color:var(--text);font-family:inherit;-webkit-text-security:disc;">
+      <button onclick="biaDotApri()" style="background:var(--accent);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;">Apri</button>
+      ${_biaDotMsg?`<div style="flex-basis:100%;font-size:var(--fs-xs);color:${/Verifica/.test(_biaDotMsg)?'var(--text-dim)':'var(--red)'};">${_esc(_biaDotMsg)}</div>`:''}
     </div></div>`;
 }
 // LUCCHETTO (12/11/2026): i numeri del contratto cambiano il conto per tutte le
@@ -16337,8 +16350,8 @@ function biaRender(){
 // (o la Dotazione da contratto, fuori dal SoulArt) e il Riscontro fatturazioni, tolti da
 // Consumo Biancheria. Stessi dati e stessa struttura scelta (_biaHotel) di quella pagina;
 // si ridisegna ogni volta che si ridisegna biaRender, così i pulsanti dei pannelli che
-// chiamano biaRender() aggiornano anche questa. Il Conteggio resta dietro all'interruttore
-// del dispositivo (_biaDotVisibile, Sicurezza).
+// chiamano biaRender() aggiornano anche questa. Il Conteggio si apre col PIN del QM
+// (_biaDotVisibile, dal 21/11/2026).
 function biaRenderConteggio(){
   const el=document.getElementById('biac-content');if(!el)return;
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -16350,7 +16363,11 @@ function biaRenderConteggio(){
   const prima=h.length;
   // ── Dotazione da contratto ── (vedi _biaDotConto)
   // Al SoulArt il Conteggio a scorrere prende il posto della Dotazione e del suo saldo.
-  if(_bia.giri.length&&_biaDotVisibile())h+=_biaContaSi(_biaHotel)?_biaContaPannello(_biaHotel):_biaDotPannello(_biaHotel);
+  if(_bia.giri.length){
+    if(_biaDotVisibile())h+=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">Aperta col tuo PIN<button onclick="biaDotChiudi('');_qmSenzaSalto(biaRenderConteggio);" style="margin-left:auto;border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">Chiudi ora</button></div>`
+      +(_biaContaSi(_biaHotel)?_biaContaPannello(_biaHotel):_biaDotPannello(_biaHotel));
+    else h+=_biaDotLucchetto(_biaHotel);
+  }
 
   // ── Totali del mese, per incrociare la fattura ──
   {
@@ -18379,73 +18396,37 @@ function qmRenderDispositivi(){
       </div></div>`;
     return;
   }
-  el.innerHTML=`<div class="panel" style="margin-bottom:14px;">
-    <div class="panel-header"><span class="panel-title">Dispositivi abilitati</span>
-      <span style="margin-left:auto;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">questo computer è abilitato</span>
-    </div>
-    <div class="panel-body" style="padding:16px;">
-
-      <div style="font-size:var(--fs-sm);font-weight:700;color:var(--text);">Per abilitare una persona: mandale il codice</div>
-      <div style="font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;margin:5px 0 12px;">
-        Uno solo, uguale per tutte le app e per Compass. Lei apre l'app (o il sito), lo incolla nella finestra che compare, e ha finito:
-        <strong style="color:var(--text);">nessuno digita password</strong>. Vale sei mesi.
-      </div>
-
-      <div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;">
-        <div style="min-width:0;flex:1;">
-          <div style="font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);font-weight:700;">Codice di abilitazione</div>
-          <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:3px;">Mandalo in chat privata, non in un gruppo: chi è nel gruppo può abilitarsi.</div>
-        </div>
-        <button onclick="qmCopiaCodice(this)" style="${bott}background:var(--accent);color:#fff;border-color:var(--accent);padding:9px 18px;font-size:var(--fs-xs);">Copia codice</button>
-      </div>
-
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin-top:10px;background:var(--amber-bg);border-radius:7px;padding:9px 11px;">
-        <strong style="color:var(--amber);">Il codice va incollato DENTRO l'app</strong>, aprendola dalla sua icona — non da un link ricevuto su WhatsApp.
-        Un'app aggiunta alla schermata iniziale ha una memoria separata da Safari: aperto dalla chat, il codice finirebbe in Safari e l'app resterebbe fuori.
-      </div>
-
-      <div style="margin-top:12px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;">
-        Se il codice finisse nelle mani sbagliate: cambia <strong>QM_AUTH_SECRET</strong> sul Worker. Smettono di funzionare <strong>tutti</strong> i dispositivi, compresi i tuoi, e il giro va rifatto da capo — non si revoca una persona sola.
-      </div>
-    </div></div>
-  <div class="panel" style="margin-bottom:14px;">
-    <div class="panel-header"><span class="panel-title">Codice per la Galleria — Compass Ops – Galleria</span></div>
-    <div class="panel-body" style="padding:16px;">
-      <div style="font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;margin-bottom:12px;">
-        Per i PC del Front Office Manager (Art Resort Galleria Umberto, Art Suite Santa Brigida). È un codice <strong style="color:var(--text);">diverso</strong> da quello qui sopra:
-        apre <strong style="color:var(--text);">solo i dati della biancheria della Galleria</strong> — non ospiti, turni, cassa o dipendenti. Vale un anno e l'app lo rinnova da sola.
-        Si incolla una volta nell'app della Galleria, su ciascun PC.
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <button onclick="qmCodiceGalleria(this)" style="${bott}background:var(--accent);color:#fff;border-color:var(--accent);padding:9px 18px;font-size:var(--fs-xs);">Copia codice Galleria</button>
-        <span id="qmCodiceGalleriaEsito" style="font-size:var(--fs-xxs);color:var(--text-dim);"></span>
-      </div>
-    </div></div>
-  <div class="panel" style="margin-bottom:14px;">
-    <div class="panel-header"><span class="panel-title">PIN di Preferenze Turnazione — Galleria</span></div>
-    <div class="panel-body" style="padding:16px;">
-      <div style="font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;margin-bottom:12px;">
-        Nell'app della Galleria la voce <strong style="color:var(--text);">Preferenze Turnazione</strong> si apre solo con un PIN: quello del <strong style="color:var(--text);">Front Office Manager</strong> (lo sceglie lui al primo accesso) o il <strong style="color:var(--text);">tuo</strong>, che scegli qui.
-        Resta aperta 5 minuti e si chiude passando a un'altra voce. I PIN non sono salvati in chiaro da nessuna parte.
-      </div>
-      <div id="qmPinStato" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:10px;">Stato in lettura…</div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <input id="qmPinMio" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="il tuo PIN (4–8 cifre)" style="padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:var(--fs-xs);width:190px;max-width:100%;background:var(--surface);color:var(--text);font-family:inherit;">
-        <button onclick="qmPinSalvaMio()" style="${bott}background:var(--accent);color:#fff;border-color:var(--accent);padding:9px 18px;font-size:var(--fs-xs);">Salva il mio PIN</button>
-        <button onclick="qmPinAzzeraResident()" style="${bott}color:var(--red);padding:9px 14px;font-size:var(--fs-xs);">Azzera PIN del Front Office Manager</button>
-      </div>
-      <div id="qmPinEsito" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;min-height:14px;"></div>
-    </div></div>
-  <div class="panel" style="margin-bottom:14px;">
-    <div class="panel-header"><span class="panel-title">Recupera Operativa HKP da una copia</span></div>
-    <div class="panel-body" style="padding:16px;">
-      <div style="font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;margin-bottom:12px;">
-        Se nella griglia di Operativa HKP sono sparite delle caselle, scegli una copia dell'archivio (<strong style="color:var(--text);">compass-archivio-….json</strong>, in Download o su Drive nella cartella <em>Back-Up Compass QM</em>).
-        Compass rimette <strong style="color:var(--text);">solo le caselle che adesso sono vuote</strong>: quello che c'è già non si tocca.
-      </div>
-      <input type="file" accept=".json,application/json" onchange="qmHkpRecuperaFile(this)" style="font-size:var(--fs-xs);">
-      <div id="qmHkpRecEsito" style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:10px;line-height:1.6;"></div>
-    </div></div>`;
+  // Sicurezza a ELENCO (21/11/2026, scelta «B» del QM su anteprima): una riga per cosa, lo stato a
+  // destra, un clic apre il dettaglio con il pulsante. Gruppi: Compass QM Suite e Compass OPS (la
+  // Galleria, mai mischiata col resto). La dotazione da contratto non sta più qui: si apre col PIN
+  // del QM dentro Conteggio Biancheria.
+  const riga=(titolo,stato,corpo,aperta)=>`<details class="sic-voce"${aperta?' open':''}><summary><span class="sic-t">${titolo}</span><span class="sic-s">${stato}</span><span class="sic-ch">›</span></summary><div class="sic-det">${corpo}</div></details>`;
+  const btn=(on,testo,stile)=>`<button onclick="${on}" style="${bott}${stile||'background:var(--accent);color:#fff;border-color:var(--accent);'}padding:9px 18px;font-size:var(--fs-xs);">${testo}</button>`;
+  el.innerHTML=`<div class="sic-lista"><div class="sic-gt">Compass QM Suite</div>
+    ${riga('Abilitare un PC o un device','<span style="color:var(--green);font-weight:600;">questo computer è abilitato</span>',
+      `Copia il codice e mandalo in chat privata: la persona lo incolla nell'app (aperta dalla sua icona, non da un link di WhatsApp) o nel sito, e ha finito. Nessuno digita password; vale sei mesi.
+      <div class="sic-azioni">${btn('qmCopiaCodice(this)','Copia codice')}</div>
+      <div class="sic-nota">Se il codice finisse nelle mani sbagliate: cambia <strong>QM_AUTH_SECRET</strong> sul Worker. Smettono di funzionare tutti i dispositivi, compresi i tuoi: non si revoca una persona sola.</div>`)}
+    ${riga('Back up dati','copia ogni notte su Drive',
+      `Ogni notte alle 3 una copia di tutti i dati va da sola su Google Drive (cartella <em>Back-Up Compass QM</em>, le ultime 30). Qui ne scarichi una adesso su questo computer; non consuma scritture.
+      <div id="qmBackupStato" style="margin-top:8px;"></div>
+      <div class="sic-azioni"><button onclick="qmEsportaArchivio(this)" class="miniapp-btn miniapp-btn-primario" style="padding:9px 18px;">Scarica copia</button></div>`)}
+    ${riga('Back up dati Operativa HKP','rimette le caselle sparite',
+      `Se nella griglia di Operativa HKP sono sparite delle caselle, scegli una copia (<strong>compass-archivio-….json</strong>, in Download o su Drive). Compass rimette <strong>solo le caselle che adesso sono vuote</strong>: quello che c'è già non si tocca.
+      <div class="sic-azioni"><input type="file" accept=".json,application/json" onchange="qmHkpRecuperaFile(this)" style="font-size:var(--fs-xs);"></div>
+      <div id="qmHkpRecEsito" style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:8px;line-height:1.6;"></div>`)}
+  </div>
+  <div class="sic-lista"><div class="sic-gt">Compass OPS</div>
+    ${riga('Abilitare un PC di Compass OPS','codice valido un anno',
+      `Copia il codice e incollalo nell'app Compass OPS, una volta su ogni PC della Galleria. È diverso da quello di Compass: apre <strong>solo i dati della Galleria</strong>, non ospiti, turni o cassa. L'app lo rinnova da sola.
+      <div class="sic-azioni">${btn('qmCodiceGalleria(this)','Copia codice Compass OPS')}<span id="qmCodiceGalleriaEsito" style="font-size:var(--fs-xxs);color:var(--text-dim);"></span></div>`)}
+    ${riga('PIN della Gestione Turnazione','<span id="qmPinStato">…</span>',
+      `Preferenze, Statistiche ricevimento, Archivio turni e Presenze Cascione in Compass OPS si aprono col PIN del Front Office Manager (lo sceglie lui al primo accesso) o col <strong>tuo</strong>, che scegli qui. Il tuo PIN apre anche la dotazione da contratto in Conteggio Biancheria. I PIN non sono salvati in chiaro.
+      <div class="sic-azioni"><input id="qmPinMio" type="text" inputmode="numeric" autocomplete="off" data-lpignore="true" maxlength="8" placeholder="il tuo PIN (4–8 cifre)" style="padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:var(--fs-xs);width:190px;max-width:100%;background:var(--surface);color:var(--text);font-family:inherit;-webkit-text-security:disc;">${btn('qmPinSalvaMio()','Salva il mio PIN')}</div>
+      <div class="sic-azioni">${btn('qmPinAzzeraResident()','Azzera PIN del Front Office Manager','color:var(--red);')}<span class="sic-nota" style="margin:0;">se l'ha dimenticato: al prossimo accesso ne sceglie uno nuovo</span></div>
+      <div id="qmPinEsito" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;min-height:14px;"></div>`)}
+  </div>`;
+  try{qmRenderBackup();}catch(e){}
   setTimeout(qmPinAggiorna,0);
 }
 // ── Recupero di Operativa HKP da una copia (21/11/2026) ──
@@ -18521,7 +18502,7 @@ async function qmPinAggiorna(){
   let j;try{j=await _qmPinChiedi({azione:'stato'});}catch(e){j={ok:false,error:'Worker non raggiungibile'};}
   if(!j.ok){el.textContent=j.error||'Stato non disponibile';el.style.color='var(--red)';return;}
   el.style.color='';
-  el.innerHTML=`Il tuo PIN: <strong style="color:${j.qm?'var(--green)':'var(--amber)'};">${j.qm?'impostato':'non ancora scelto'}</strong> · PIN del Front Office Manager: <strong style="color:${j.resident?'var(--green)':'var(--amber)'};">${j.resident?'impostato':'non ancora scelto'}</strong>${j.bloccatoFino?' · <strong style="color:var(--red);">tentativi fermi per troppi PIN sbagliati</strong>':''}`;
+  el.innerHTML=`<span style="color:${j.qm?'var(--green)':'var(--amber)'};font-weight:600;">tuo ${j.qm?'✓':'da scegliere'}</span> · <span style="color:${j.resident?'var(--green)':'var(--amber)'};font-weight:600;">FOM ${j.resident?'✓':'da scegliere'}</span>${j.bloccatoFino?' · <strong style="color:var(--red);">fermi per PIN sbagliati</strong>':''}`;
 }
 async function qmPinSalvaMio(){
   const f=document.getElementById('qmPinMio'),es=document.getElementById('qmPinEsito');

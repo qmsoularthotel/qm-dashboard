@@ -1681,3 +1681,13 @@ del gg/mm"*. Il nuovo conteggio ogni 15 giorni riparte dai numeri veri; la riga 
 differenza* dei Conteggi registrati dice quanto la stima si era allontanata.
 Controlli in `test/controlli.js` (sezione «conteggio a scorrere dinamico»), provati togliendo i
 pezzi portati dal calcolo.
+
+### Dotazione da contratto col PIN del QM (21/11/2026)
+
+Non più un interruttore per dispositivo in Sicurezza (`qm_vede_dotazione`, tolto): in Conteggio
+Biancheria, al posto della dotazione (o del Conteggio a scorrere al SoulArt) c'è un **lucchetto**
+che si apre col **PIN del QM**, lo stesso di Compass OPS (`biaDotApri` → Worker `/turni-pref`
+`apri`, accettato solo se `chi==='qm'`: il PIN del Front Office Manager non vale). Aperta mostra
+«Aperta col tuo PIN · Chiudi ora»; si richiude dopo 5 minuti senza attività (`_biaDotAttivita`) e
+lasciando la voce. Il QM: «la dotazione da contratto devo vederla solo io».
+

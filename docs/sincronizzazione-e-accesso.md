@@ -774,3 +774,13 @@ postazione ("Reception Colleghi · Report pulizie") mentre erano solo il ricalco
 Percorso `/turni-pref` del Worker: due PIN cifrati (`qm_pin_resident`, `qm_pin_qm`), blocco dopo 5
 errori (`qm_pin_tentativi`), permesso `tp.` di 5 minuti per leggere il foglio delle richieste.
 Dettaglio in `docs/turni-e-staff.md`, «Preferenze Turnazione nella Galleria».
+
+## Vista Sicurezza a elenco (21/11/2026)
+
+Scelta «B» del QM su anteprima: `qmRenderDispositivi` disegna tutto come elenco (`details` con
+stato a destra, classi `.sic-*` in `style.css`). **Compass QM Suite**: «Abilitare un PC o un
+device» (codice), «Back up dati» (stato e Scarica copia), «Back up dati Operativa HKP» (recupero
+delle caselle). **Compass OPS**: «Abilitare un PC di Compass OPS» (codice Galleria), «PIN della
+Gestione Turnazione». Galleria e Compass non si mescolano. La dotazione da contratto è uscita da
+Sicurezza (ora col PIN del QM in Conteggio Biancheria).
+

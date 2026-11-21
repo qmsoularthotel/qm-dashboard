@@ -1012,3 +1012,19 @@ body.ag-trascinando,body.ag-trascinando *{cursor:grabbing !important;user-select
 /* Solo nelle caselle da riempire: con una sigla dentro il numero sparisce (21/11/2026). */
 td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 
+/* Sicurezza a elenco (21/11/2026): gruppi con una riga per voce (details/summary), stato a destra,
+   chevron; il dettaglio si apre sotto. */
+.sic-lista{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--gold);border-radius:10px;overflow:hidden;margin-bottom:16px;max-width:760px;}
+.sic-gt{padding:9px 16px;font-size:var(--fs-xxs);letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);font-weight:700;background:var(--surface2);}
+.sic-voce{border-top:1px solid var(--border-light);}
+.sic-voce summary{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;list-style:none;font-size:var(--fs-sm);color:var(--text);}
+.sic-voce summary::-webkit-details-marker{display:none;}
+.sic-voce summary:hover{background:var(--surface2);}
+.sic-t{font-weight:600;}
+.sic-s{margin-left:auto;font-size:var(--fs-xxs);color:var(--text-dim);text-align:right;}
+.sic-ch{color:var(--text-dim);font-size:16px;transition:transform .15s;}
+.sic-voce[open] .sic-ch{transform:rotate(90deg);}
+.sic-det{padding:2px 16px 16px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;}
+.sic-azioni{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;}
+.sic-nota{font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin-top:10px;}
+
