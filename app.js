@@ -506,6 +506,11 @@ function turniNormalizza(cod){
   // (deciso dal QM il 31/10/2026).
   if(/^(GALL?\s*\/\s*CAR|CAR\s*\/\s*GALL?)\b/.test(base))
     return{tipo:'turno',codice:'GALL/CAR',exR,sede:'galleria',fascia:'intermedio',label:'Intermedio Art Resort'};
+  // 21/11/2026 (QM): 'P GALL' è P Gall; 'INT' da solo è P; 'P RIP SPOST AL 18/7' e
+  // 'RIP.REC. DEL 11/07' sono riposi (spostati o recuperati).
+  if(/^P\s*RIP\b/.test(base)||/^RIP\b|^RIP\./.test(base))return{tipo:'riposo',exR:false};
+  if(/^P\s+GALL?$/.test(base))return{tipo:'pgall',exR};
+  if(base==='INT')return{tipo:'p',exR};
   if(base==='PGALL')return{tipo:'pgall',exR};
   if(base==='P')return{tipo:'p',exR};
   // '13/21 EVENTO' (settimana del 02/11/2026): turno per un evento, conta come P (QM, 19/11/2026).
@@ -539,6 +544,7 @@ function turniStatistiche(archivio,membri){
       const domenica=d.getDay()===0;
       Object.keys(g.shifts||{}).forEach(nome=>{
         if(!out[nome])return;                       // non è del ricevimento
+        if(TURNI_DAL[nome]&&g.data<TURNI_DAL[nome])return;   // conta solo da quando è in organico
         const n=turniNormalizza(g.shifts[nome]);
         if(!n)return;
         const s=out[nome]; s.giorni++;
@@ -601,6 +607,9 @@ function turniStoricoLeggi(){
 // notturni si riempiono quando c'e' un numero e restano vuote solo quando e' zero.
 // Svuotarle sempre nasconderebbe proprio il dato che distingue il suo turno dagli altri.
 // Abdalla notturno dal 31/10/2026.
+// Da quando si conta una persona (21/11/2026, QM): Abdalla dal 1 ottobre; fino al 30/09 c'era
+// Iannario, che resta con la sua data di uscita in STAFF_CESSATI.
+const TURNI_DAL={'Abdalla':'2026-10-01'};
 const TURNI_NOTTURNI=["D'Andrea F.",'Iannario R.','Grieco V.','Abdalla'];
 // Ordine di reception: i due riferimenti in cima, poi gli altri in ordine alfabetico,
 // i notturni in fondo (fra loro alfabetici).
@@ -661,6 +670,10 @@ function _turniSettimaneMancanti(chiavi,oggi){
   for(let i=0;i<300&&iso(c)<=fine;i++){if(!ci.has(iso(c)))out.push(iso(c));c.setDate(c.getDate()+7);}
   return out;
 }
+// Pulsanti delle settimane raccolti per anno e mese (21/11/2026, QM). Aperti di partenza: l'anno
+// in corso e il mese della settimana mostrata; un clic sull'intestazione apre o chiude.
+let _turniGruppi={};
+function turniArchivioGruppo(k,def){_turniGruppi[k]=!(k in _turniGruppi?_turniGruppi[k]:def);turniRenderArchivio();}
 function turniMostraSettimana(k){
   _turniSettSel=(_turniSettSel===k?null:k);
   turniRenderArchivio();
@@ -678,10 +691,30 @@ function turniRenderArchivio(){
   const manca=_turniSettimaneMancanti(chiavi);
   const fineSett=k=>{const d=new Date(k+'T12:00:00');d.setDate(d.getDate()+6);return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');};
   const avvisoManca=manca.length?`<div style="margin:0 13px 4px;padding:9px 12px;border:1px solid var(--red);border-radius:8px;background:var(--red-bg);color:var(--red);font-size:var(--fs-xs);font-weight:600;line-height:1.5;">${manca.length===1?'Manca la settimana':'Mancano le settimane'} ${manca.map(k=>gg(k)+' – '+fineSett(k)).join(', ')}: carica ${manca.length===1?'quel turno':'quei turni'}, altrimenti le statistiche non ${manca.length===1?'la contano':'le contano'}.</div>`:'';
-  const bottoni=[...chiavi,...manca].sort().reverse().map(k=>{
+  const _bott=k=>{
     if(manca.indexOf(k)>=0)return `<span title="Turno mai caricato" style="border:1px dashed var(--red);color:var(--red);background:var(--red-bg);border-radius:6px;padding:6px 11px;font-size:var(--fs-xs);font-weight:700;white-space:nowrap;">${gg(k)} – ${fineSett(k)} · manca</span>`;
     const v=arch[k],sel=k===_turniSettSel;
     return `<button onclick="turniMostraSettimana('${k}')" style="background:${sel?'var(--accent)':'var(--surface2)'};color:${sel?'#fff':'var(--text-muted)'};border:1px solid ${sel?'var(--accent)':'var(--border)'};border-radius:6px;padding:6px 11px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;">${gg(v.dal)} – ${gg(v.al)}</button>`;
+  };
+  const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  const tutte=[...chiavi,...manca].sort().reverse(),annoOggi=String(new Date().getFullYear());
+  const meseSel=_turniSettSel?_turniSettSel.slice(0,7):tutte[0].slice(0,7);
+  const aperto=(k,def)=>k in _turniGruppi?_turniGruppi[k]:def;
+  const anni=[...new Set(tutte.map(k=>k.slice(0,4)))];
+  const intest=(k,def,testo,n,liv)=>`<button onclick="turniArchivioGruppo('${k}',${def})" style="display:flex;align-items:center;gap:7px;width:100%;border:none;background:none;padding:${liv?'6px 0 4px 16px':'8px 0 4px'};cursor:pointer;font-family:inherit;color:${liv?'var(--text-muted)':'var(--accent)'};font-size:${liv?'var(--fs-xs)':'var(--fs-sm)'};font-weight:700;text-align:left;"><span style="width:10px;">${aperto(k,def)?'▾':'▸'}</span>${testo}<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);">· ${n} settiman${n===1?'a':'e'}</span></button>`;
+  const bottoni=anni.map(a=>{
+    const ka='a:'+a,da=a===annoOggi||a===meseSel.slice(0,4);
+    const settA=tutte.filter(k=>k.slice(0,4)===a);
+    let o=intest(ka,da,a,settA.length,0);
+    if(aperto(ka,da)){
+      const mesi=[...new Set(settA.map(k=>k.slice(0,7)))];
+      o+=mesi.map(m=>{
+        const km='m:'+m,dm=m===meseSel,settM=settA.filter(k=>k.slice(0,7)===m);
+        return intest(km,dm,MESI[+m.slice(5,7)-1],settM.length,1)
+          +(aperto(km,dm)?`<div style="display:flex;gap:7px;flex-wrap:wrap;padding:4px 0 6px 34px;">${settM.map(_bott).join('')}</div>`:'');
+      }).join('');
+    }
+    return o;
   }).join('');
   let corpo='';
   if(_turniSettSel){
@@ -730,7 +763,7 @@ function turniRenderArchivio(){
   el.innerHTML=`<div class="panel" style="margin-top:14px;">
     <div class="panel-header"><span class="panel-title">Turni archiviati</span>
       <span style="font-size:var(--fs-xxs);color:var(--text-dim);">${chiavi.length} settiman${chiavi.length===1?'a':'e'}</span></div>
-    <div style="padding:11px 13px;display:flex;gap:7px;flex-wrap:wrap;">${bottoni}</div>${avvisoManca}
+    <div style="padding:6px 13px 8px;">${bottoni}</div>${avvisoManca}
     ${corpo||'<div style="padding:0 13px 13px;font-size:var(--fs-xxs);color:var(--text-dim);">Scegli una settimana per rivedere il turno com\'era.</div>'}
   </div>`;
 }
@@ -747,7 +780,7 @@ function turniRenderStats(){
   const gg=d=>{const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]:'—';};
   const presenti=DEPTS.fo.members.filter(n=>st.per[n]&&st.per[n].giorni>0);
   const righe=turniOrdina(presenti).map(n=>({n,s:st.per[n],notte:TURNI_NOTTURNI.indexOf(n)>=0,
-    sedeUnica:TURNI_SEDE_UNICA.indexOf(n)>=0,uscito:STAFF_CESSATI[n]||null}));
+    sedeUnica:TURNI_SEDE_UNICA.indexOf(n)>=0,uscito:STAFF_CESSATI[n]||null,dal:TURNI_DAL[n]||null}));
   // Ultimo giorno di lavoro = il giorno prima dell'uscita, scritto gg/mm.
   const finoAl=d=>{const x=new Date(d+'T12:00:00');x.setDate(x.getDate()-1);return String(x.getDate()).padStart(2,'0')+'/'+String(x.getMonth()+1).padStart(2,'0');};
   // Il secondo argomento apre un gruppo: filetto verticale a sinistra. I gruppi sono
@@ -778,12 +811,12 @@ function turniRenderStats(){
             ${th('P')}${th('Intermedi')}${th('Mattine')}${th('Pomeriggi')}${th('Notti')}${th('Riposo domenicale')}${th('Malattia',true)}${th('Ferie')}
           </tr></thead>
           <tbody>
-            ${righe.map(({n,s,notte,sedeUnica,uscito},i)=>{
+            ${righe.map(({n,s,notte,sedeUnica,uscito,dal},i)=>{
               const primoNotte=notte&&!uscito&&(i===0||!righe[i-1].notte);
               const primoUscito=uscito&&(i===0||!righe[i-1].uscito);
               const dopoTesta=i>0&&_turniDopoTesta(righe[i-1].n,n);
               return `<tr${primoNotte||primoUscito||dopoTesta?' style="border-top:2px solid var(--border);'+(uscito?'opacity:.6;':'')+'"':(uscito?' style="opacity:.6;"':'')}>
-              <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}${uscito?`<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · fino al ${finoAl(uscito)}</span>`:''}</td>
+              <td style="padding:7px 6px;border-bottom:1px solid var(--border-light,var(--border));font-weight:600;white-space:nowrap;">${esc(n)}${notte?'<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · notte</span>':''}${uscito?`<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · fino al ${finoAl(uscito)}</span>`:''}${dal?`<span style="font-weight:400;color:var(--text-dim);font-size:var(--fs-xxs);"> · dal ${dal.slice(8,10)}/${dal.slice(5,7)}</span>`:''}</td>
               ${notte?cellaN(s.p+s.pgall):td((s.p+s.pgall)||'—')}
               ${notte?cellaN(s.intermedi):td(s.intermedi||'—')}
               ${notte?cellaN(s.mattina):td(s.mattina||'—')}

@@ -452,3 +452,12 @@ che si avvicina e si allontana piano: «Clicca su un giorno per vedere le richie
 evidenziata». Lo mette `_tpPosaInvito` dopo il disegno, agganciato all'ultimo giorno della riga
 (`data-tp-sett`); sparisce al primo giorno aperto (`_tpInvitoVisto`) e si rimette a posto se cambia
 la finestra. Stile `.tp-invito-fum` in `style.css`. Uguale nella Galleria (`_gtPosaInvito`).
+
+**21/11/2026 (QM)**: codici nuovi in `turniNormalizza` — `INT` da solo = **P**, `P GALL` = **P Gall**,
+`P RIP SPOST AL 18/7` e `RIP.REC. DEL 11/07` (tutto ciò che comincia con «RIP» o «P RIP») =
+**riposo**. Con l'archivio del 21/11 non resta nessun codice non riconosciuto. **Abdalla** si conta
+dal **01/10/2026** (`TURNI_DAL`, scritto «· dal 01/10» accanto al nome); fino al 30/09 c'era
+Iannario. **Turni archiviati** raccolti per **anno** e **mese** (`turniArchivioGruppo`,
+`_turniGruppi`): aperti l'anno in corso e il mese della settimana mostrata. Tutto uguale nella
+Galleria (`gtu…`).
+

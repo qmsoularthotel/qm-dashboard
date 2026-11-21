@@ -4131,3 +4131,28 @@ ok('statistiche: P, Intermedi, Mattine, Pomeriggi, Notti, Riposo domenicale, Mal
   ok('invito: il fumetto si aggancia all\'ultimo giorno, a destra', /sett\[sett\.length-1\][\s\S]*r\.right-b\.left\+14/.test(String(_tpPosaInvito)), true);
   ok('invito: dopo il primo giorno aperto niente fumetto', /if\(_tpInvitoVisto\|\|!_tpInvitiN\)return;/.test(String(_tpPosaInvito)), true);
 })();
+
+sez('Turni: nuovi codici, Abdalla dal 1 ottobre, archivio per anno e mese (21/11/2026)');
+ok('INT da solo è P',                               (turniNormalizza('INT') || {}).tipo, 'p');
+ok('P GALL è P Gall',                               (turniNormalizza('P GALL') || {}).tipo, 'pgall');
+ok('P RIP SPOST AL 18/7 è riposo',                  (turniNormalizza('P RIP SPOST AL 18/7') || {}).tipo, 'riposo');
+ok('RIP.REC. DEL 11/07 è riposo',                   (turniNormalizza('RIP.REC. DEL 11/07') || {}).tipo, 'riposo');
+ok('INT CAR resta un intermedio',                   (turniNormalizza('INT CAR 9/17') || {}).fascia, 'intermedio');
+(function () {
+  var arch = { '2026-09-28': { dal: '2026-09-28', al: '2026-10-04', giorni: [
+    { data: '2026-09-29', shifts: { 'Abdalla': 'NC', 'Iannario R.': 'NG' } },
+    { data: '2026-10-02', shifts: { 'Abdalla': 'NC' } } ] } };
+  var st = turniStatistiche(arch, ['Abdalla', 'Iannario R.']);
+  ok('Abdalla: il 29/09 non conta, il 02/10 sì',      st.per['Abdalla'].notti, 1);
+  ok('Iannario fino al 30/09 conta',                  st.per['Iannario R.'].notti, 1);
+})();
+(function () {
+  var box = { innerHTML: '' }, vero = document.getElementById, leggi = turniStoricoLeggi, sel = _turniSettSel, gr = _turniGruppi;
+  var G = function (iso) { return { data: iso, shifts: { 'Perez L.': 'AC' } }; };
+  turniStoricoLeggi = function () { return { '2026-10-26': { dal: '2026-10-26', al: '2026-11-01', giorni: [G('2026-10-26')] }, '2026-11-02': { dal: '2026-11-02', al: '2026-11-08', giorni: [G('2026-11-02')] } }; };
+  document.getElementById = function (id) { return id === 'turniArchivioWrap' ? box : null; };
+  try { _turniSettSel = '2026-11-02'; _turniGruppi = {}; turniRenderArchivio(); } finally { document.getElementById = vero; turniStoricoLeggi = leggi; _turniSettSel = sel; _turniGruppi = gr; }
+  ok('archivio: raccolto per anno',                   /turniArchivioGruppo\('a:2026'/.test(box.innerHTML), true);
+  ok('archivio: e per mese',                          />Novembre</.test(box.innerHTML) && />Ottobre</.test(box.innerHTML), true);
+  ok('archivio: aperto il mese della settimana mostrata', /turniMostraSettimana\('2026-11-02'\)/.test(box.innerHTML) && !/turniMostraSettimana\('2026-10-26'\)/.test(box.innerHTML), true);
+})();

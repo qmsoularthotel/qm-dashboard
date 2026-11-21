@@ -665,3 +665,4 @@ ok('Galleria: l\'archivio apre sull\'ultima settimana', /_gtuSettSel===undefined
 ok('PIN: animazione d\'attesa mentre si verifica',   /_gtMostraAttesa\([^)]*Verifica del PIN…'\)/.test(String(gtPrefApri)) && /gt-attesa-ago/.test(_gtAttesa('x')), true);
 ok('Galleria: anche qui la finestrella del giorno', typeof gtPrefApriGiorno === 'function' && gtPrefApriGiorno !== turniPrefApriGiorno && /gt-giorno-pop/.test(String(gtPrefApriGiorno)), true);
 ok('Galleria: anche qui il fumetto d\'invito',      typeof _gtPosaInvito === 'function' && /gt-cal-box/.test(String(_gtPosaInvito)), true);
+ok('Galleria: stessi nuovi codici e stessa data di Abdalla', (gtuNormalizza('RIP.REC. DEL 11/07') || {}).tipo + ' ' + GTU_DAL['Abdalla'], 'riposo 2026-10-01');
