@@ -437,3 +437,22 @@ camere Art della SoulArt, **201…** per il Boutique, **LIB** per San Liborio. S
 di testo (z-index), non entra nei dati e non si stampa. Variante «B» scelta dal QM su anteprima.
 
 Poi (stesso giorno, QM): il numero compare **solo nelle caselle vuote**. Le caselle hanno `placeholder=" "` e il CSS nasconde `.hkp-num-cella` quando l'input non mostra il placeholder (`td:has(> input:not(:placeholder-shown))`): sparisce appena si scrive una sigla e torna se la si cancella, senza ridisegnare.
+
+### Dati di ottobre spariti e salvataggio a caselle (21/11/2026)
+
+Caso reale: il 21/11/2026 il QM ha trovato vuota la griglia di **ottobre dal 21/10**. Il backup su
+Drive delle 02:06 dello stesso giorno l'aveva completa (995 caselle, giorni 1–31): i dati sono
+spariti in giornata. Causa: `hkpNSave` scriveva sul cloud il **mese intero** di quella postazione
+senza rileggere il cloud — una postazione con una copia vecchia di ottobre (un Mac fermo da
+settimane) che tocca una casella rimette la sua copia e cancella il resto. Era contro la regola
+«mai scrivere un elenco condiviso per intero senza rileggere il cloud».
+
+Ora: `hkpNSetCell` segna le caselle cambiate qui (`_hkpNdirty`); `hkpNSave` → `_hkpNScrivi`
+rilegge il cloud, ci applica **solo** quelle caselle (`_hkpNUnisci`) e scrive; senza aver letto
+il cloud non scrive e riprova dopo 20 secondi; un salvataggio per volta (`_hkpNcoda`). Anche
+`hkpNSyncFromCloud` tiene le caselle non ancora salvate.
+
+**Recupero**: Compass → Sicurezza → «Recupera Operativa HKP da una copia» (`qmHkpRecuperaFile`,
+`qmHkpRecuperaEsegui`): si sceglie un `compass-archivio-*.json`, Compass confronta mese per mese
+e rimette **solo le caselle che sul cloud sono vuote** (`_qmHkpMancanti`), una scrittura per mese.
+

@@ -1296,12 +1296,48 @@ function hkpNSetCell(p,tab,ri,col,val){
   const k=tab+':'+ri+'_'+col;
   const t=(val||'').trim().toUpperCase();
   if(t)data[k]=t;else delete data[k];
+  // Si ricorda quali caselle sono cambiate QUI: al salvataggio si scrivono solo quelle (21/11/2026).
+  const ck=hkpNCacheKey(p);(_hkpNdirty[ck]||(_hkpNdirty[ck]={}))[k]=t||'';
+}
+// ── SALVATAGGIO A CASELLE (21/11/2026) ──
+// Caso reale: il 21/11/2026 sono spariti dal cloud i dati di Operativa HKP di ottobre dal 21/10
+// in poi (il backup delle 02:06 li aveva tutti). hkpNSave scriveva il mese INTERO di questa
+// postazione senza rileggere il cloud: un computer con una copia vecchia di ottobre, toccando
+// una casella, rimetteva sul cloud la sua copia e cancellava il lavoro fatto altrove.
+// Ora si rilegge il cloud e si applicano sopra SOLO le caselle cambiate qui (_hkpNdirty);
+// senza aver letto il cloud non si scrive (si riprova fra 20 secondi). Un salvataggio per volta.
+let _hkpNdirty={},_hkpNcoda={};
+function _hkpNUnisci(cloud,cambi){
+  const o=Object.assign({},cloud||{});
+  Object.keys(cambi||{}).forEach(k=>{if(cambi[k])o[k]=cambi[k];else delete o[k];});
+  return o;
 }
 function hkpNSave(p){
-  const sk=hkpNStorKey(p);
-  const json=JSON.stringify(_hkpNdata[hkpNCacheKey(p)]||{});
-  try{localStorage.setItem(sk,json);}catch(e){}
-  kvSet(sk,json).catch(()=>{});
+  const sk=hkpNStorKey(p),ck=hkpNCacheKey(p);
+  try{localStorage.setItem(sk,JSON.stringify(_hkpNdata[ck]||{}));}catch(e){}
+  _hkpNcoda[ck]=(_hkpNcoda[ck]||Promise.resolve()).then(()=>_hkpNScrivi(p,sk,ck)).catch(()=>{});
+  return _hkpNcoda[ck];
+}
+async function _hkpNScrivi(p,sk,ck){
+  const cambi=Object.assign({},_hkpNdirty[ck]||{});
+  if(!Object.keys(cambi).length)return true;
+  let cloud;
+  try{
+    const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(sk),{cache:'no-store'});
+    if(!r.ok)throw new Error('lettura '+r.status);
+    const j=await r.json();cloud=j&&j.value?JSON.parse(j.value):{};
+  }catch(e){
+    try{setSyncStatus('error');}catch(_){}
+    setTimeout(()=>{if(Object.keys(_hkpNdirty[ck]||{}).length)hkpNSave(p);},20000);
+    return false;
+  }
+  const unito=_hkpNUnisci(cloud,cambi);
+  // Quello che vede questa postazione: il cloud aggiornato + le caselle cambiate nel frattempo.
+  _hkpNdata[ck]=_hkpNUnisci(unito,_hkpNdirty[ck]);
+  try{localStorage.setItem(sk,JSON.stringify(_hkpNdata[ck]));}catch(e){}
+  const ok=await kvSet(sk,JSON.stringify(unito));
+  if(ok)Object.keys(cambi).forEach(k=>{if(_hkpNdirty[ck]&&_hkpNdirty[ck][k]===cambi[k])delete _hkpNdirty[ck][k];});
+  return ok;
 }
 function hkpNSaveAll(p){
   hkpNSave(p);
@@ -1638,8 +1674,10 @@ async function hkpNSyncFromCloud(p){
     if(!json.value)return;
     if(json.value===localStorage.getItem(sk))return;
     if(_hkpNUserBusy(p))return; // ricontrolla: l'utente potrebbe aver iniziato a interagire nel frattempo
-    localStorage.setItem(sk,json.value);
-    _hkpNdata[hkpNCacheKey(p)]=JSON.parse(json.value);
+    // Le caselle cambiate qui e non ancora sul cloud restano (21/11/2026).
+    const _ck=hkpNCacheKey(p),_v=_hkpNUnisci(JSON.parse(json.value),_hkpNdirty[_ck]);
+    localStorage.setItem(sk,JSON.stringify(_v));
+    _hkpNdata[_ck]=_v;
     if(HKP_NTAB[p]!=='fondi')hkpNRenderGrid(p,HKP_NTAB[p]);
   }catch(e){}
 }
@@ -18397,8 +18435,76 @@ function qmRenderDispositivi(){
         <button onclick="qmPinAzzeraResident()" style="${bott}color:var(--red);padding:9px 14px;font-size:var(--fs-xs);">Azzera PIN del Front Office Manager</button>
       </div>
       <div id="qmPinEsito" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;min-height:14px;"></div>
+    </div></div>
+  <div class="panel" style="margin-bottom:14px;">
+    <div class="panel-header"><span class="panel-title">Recupera Operativa HKP da una copia</span></div>
+    <div class="panel-body" style="padding:16px;">
+      <div style="font-size:var(--fs-xs);color:var(--text-muted);line-height:1.6;margin-bottom:12px;">
+        Se nella griglia di Operativa HKP sono sparite delle caselle, scegli una copia dell'archivio (<strong style="color:var(--text);">compass-archivio-….json</strong>, in Download o su Drive nella cartella <em>Back-Up Compass QM</em>).
+        Compass rimette <strong style="color:var(--text);">solo le caselle che adesso sono vuote</strong>: quello che c'è già non si tocca.
+      </div>
+      <input type="file" accept=".json,application/json" onchange="qmHkpRecuperaFile(this)" style="font-size:var(--fs-xs);">
+      <div id="qmHkpRecEsito" style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:10px;line-height:1.6;"></div>
     </div></div>`;
   setTimeout(qmPinAggiorna,0);
+}
+// ── Recupero di Operativa HKP da una copia (21/11/2026) ──
+// Nato dal 21/11/2026: dati di ottobre spariti dal 21/10, presenti nel backup delle 02:06. Si
+// confronta la copia col cloud mese per mese e si rimettono SOLO le caselle che sul cloud sono
+// vuote: niente di quello che c'è viene sovrascritto. Una scrittura per mese.
+let _qmHkpRec=[];
+function _qmHkpMancanti(copia,cloud){
+  const out={};Object.keys(copia||{}).forEach(k=>{if(copia[k]&&!(cloud||{})[k])out[k]=copia[k];});return out;
+}
+async function qmHkpRecuperaFile(input){
+  const es=document.getElementById('qmHkpRecEsito');const dì=h=>{if(es)es.innerHTML=h;};
+  _qmHkpRec=[];
+  const f=input&&input.files&&input.files[0];if(!f)return;
+  dì('Lettura della copia…');
+  let d;try{d=JSON.parse(await f.text());}catch(e){dì('<span style="color:var(--red);">Il file non è una copia di Compass.</span>');return;}
+  const dati=(d&&d.dati)||d||{};
+  const chiavi=Object.keys(dati).filter(k=>/^qm_hkpN_[a-z]+_\d{4}-\d{2}$/.test(k)).sort();
+  if(!chiavi.length){dì('<span style="color:var(--red);">Nella copia non c\'è Operativa HKP.</span>');return;}
+  const MESI=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  const NOMI={sa:'SoulArt',ar:'Art Resort',bh:'Boutique'};
+  const righe=[];
+  for(const k of chiavi){
+    let copia;try{copia=typeof dati[k]==='string'?JSON.parse(dati[k]):dati[k];}catch(e){continue;}
+    let cloud;
+    try{const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(k),{cache:'no-store'});if(!r.ok)throw 0;const j=await r.json();cloud=j&&j.value?JSON.parse(j.value):{};}
+    catch(e){dì('<span style="color:var(--red);">Cloud non raggiungibile: riprova.</span>');return;}
+    const manc=_qmHkpMancanti(copia,cloud),n=Object.keys(manc).length;
+    if(!n)continue;
+    const m=k.match(/^qm_hkpN_([a-z]+)_(\d{4})-(\d{2})$/);
+    const giorni=[...new Set(Object.keys(manc).map(x=>+x.split('_').pop()))].sort((a,b)=>a-b);
+    _qmHkpRec.push({k,manc,n});
+    righe.push(`<strong style="color:var(--text);">${NOMI[m[1]]||m[1]} · ${MESI[+m[3]-1]} ${m[2]}</strong>: ${n} casell${n===1?'a':'e'} da rimettere (giorni ${giorni[0]}–${giorni[giorni.length-1]})`);
+  }
+  if(!_qmHkpRec.length){dì('<span style="color:var(--green);">Il cloud ha già tutte le caselle di questa copia: niente da recuperare.</span>');return;}
+  dì(righe.join('<br>')+`<div style="margin-top:10px;"><button onclick="qmHkpRecuperaEsegui()" style="border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:7px;padding:8px 16px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;">Rimetti le caselle mancanti</button></div>`);
+}
+async function qmHkpRecuperaEsegui(){
+  const es=document.getElementById('qmHkpRecEsito');
+  const tot=_qmHkpRec.reduce((s,x)=>s+x.n,0);
+  if(!tot)return;
+  if(!await cqConferma('Rimettere '+tot+' caselle?','Si riempiono solo le caselle che sul cloud sono vuote; quelle già scritte restano come sono.',{ok:'Rimetti'}))return;
+  let fatte=0,errori=0;
+  for(const x of _qmHkpRec){
+    try{
+      const r=await fetch(PROXY+'/kv/get?key='+encodeURIComponent(x.k),{cache:'no-store'});if(!r.ok)throw 0;
+      const j=await r.json();const cloud=j&&j.value?JSON.parse(j.value):{};
+      const manc=_qmHkpMancanti(x.manc,cloud);   // solo quelle ancora vuote adesso
+      const unito=Object.assign({},cloud,manc);
+      if(await kvSet(x.k,JSON.stringify(unito))){
+        fatte+=Object.keys(manc).length;
+        try{localStorage.setItem(x.k,JSON.stringify(unito));}catch(e){}
+        try{const mm=x.k.match(/^qm_hkpN_([a-z]+)_(\d{4}-\d{2})$/);if(mm)_hkpNdata[mm[1]+'_'+mm[2]]=_hkpNUnisci(unito,_hkpNdirty[mm[1]+'_'+mm[2]]);}catch(e){}
+      }else errori++;
+    }catch(e){errori++;}
+  }
+  _qmHkpRec=[];
+  if(es)es.innerHTML=errori?`<span style="color:var(--red);">Rimesse ${fatte} caselle; ${errori} mes${errori===1?'e':'i'} non salvat${errori===1?'o':'i'}: riprova.</span>`
+    :`<span style="color:var(--green);font-weight:600;">Rimesse ${fatte} caselle. Apri Operativa HKP per vederle.</span>`;
 }
 // ── PIN di Preferenze Turnazione nella Galleria (16/11/2026) ──
 // Il Worker (/turni-pref) tiene i due PIN cifrati: il QM sceglie il suo da qui e può azzerare

@@ -4181,3 +4181,11 @@ ok('LIBORIO diventa LIB',                           _hkpNumCella('LIBORIO'), 'LI
 ok('la griglia Camere lo mette in ogni casella',   /hkp-num-cella/.test(String(hkpNRenderGrid)) && /tab==='camere'\?_hkpNumCella\(row\.name\)/.test(String(hkpNRenderGrid)), true);
 ok('la stampa no',                                  /hkp-num-cella/.test(String(hkpNPrint)), false);
 ok('il numero c\'è solo nelle caselle vuote',       /placeholder=" "/.test(String(hkpNRenderGrid)), true);
+
+sez('Operativa HKP: si salvano solo le caselle cambiate, sopra il cloud (21/11/2026)');
+ok('il cloud tiene le caselle degli altri',          JSON.stringify(_hkpNUnisci({ 'camere:1_21': 'MA', 'camere:1_22': 'RO' }, { 'camere:1_5': 'AN' })), JSON.stringify({ 'camere:1_21': 'MA', 'camere:1_22': 'RO', 'camere:1_5': 'AN' }));
+ok('una casella svuotata qui si svuota anche lì',   JSON.stringify(_hkpNUnisci({ 'camere:1_21': 'MA' }, { 'camere:1_21': '' })), '{}');
+ok('hkpNSave non scrive più il mese intero alla cieca', /kvSet\(sk,json\)/.test(String(hkpNSave)), false);
+ok('senza aver letto il cloud non si scrive',      /catch\(e\)\{[\s\S]{0,120}setTimeout[\s\S]{0,120}return false;/.test(String(_hkpNScrivi)), true);
+ok('si scrive cloud + cambi di qui',               /_hkpNUnisci\(cloud,cambi\)[\s\S]*kvSet\(sk,JSON\.stringify\(unito\)\)/.test(String(_hkpNScrivi)), true);
+ok('recupero: solo le caselle vuote sul cloud',    JSON.stringify(_qmHkpMancanti({ a: 'MA', b: 'RO', c: '' }, { a: 'AN' })), JSON.stringify({ b: 'RO' }));
