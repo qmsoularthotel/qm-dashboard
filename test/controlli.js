@@ -4172,3 +4172,11 @@ ok('loadWeekData archivia e poi mostra la settimana in corso', /turniArchivia\(d
   ok('un anno prima letto per sbaglio torna all\'anno in corso', _annoPlausibile(annoPrima).getFullYear(), o.getFullYear());
 })();
 ok('l\'archivio conta dal 2026, anche gennaio',     Object.keys(turniRipuliArchivio({ '2026-01-12': { giorni: [{ data: '2026-01-12', shifts: { 'Perez L.': 'AC' } }] }, '2025-12-29': { giorni: [{ data: '2025-12-29', shifts: { 'Perez L.': 'AC' } }] } })).join(), '2026-01-12');
+
+sez('Operativa HKP: numero della camera nelle caselle (21/11/2026)');
+ok('ART 01 diventa A01',                            _hkpNumCella('ART 01'), 'A01');
+ok('ART 22 diventa A22',                            _hkpNumCella('ART 22'), 'A22');
+ok('201 resta 201',                                 _hkpNumCella('201'), '201');
+ok('LIBORIO diventa LIB',                           _hkpNumCella('LIBORIO'), 'LIB');
+ok('la griglia Camere lo mette in ogni casella',   /hkp-num-cella/.test(String(hkpNRenderGrid)) && /tab==='camere'\?_hkpNumCella\(row\.name\)/.test(String(hkpNRenderGrid)), true);
+ok('la stampa no',                                  /hkp-num-cella/.test(String(hkpNPrint)), false);

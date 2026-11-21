@@ -1717,6 +1717,14 @@ function hkpMonthlyCameriereHtml(p,roomFilter,presenceLabel,capacity,evidenzia,a
   if(hEv)h+='<div style="font-size:11px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 8px;">Interne che a settembre hanno lavorato nelle 200</div><div style="display:flex;flex-wrap:wrap;gap:8px;">'+hEv+'</div>';
   return h;
 }
+// Etichetta del numero di camera nelle caselle: A davanti per le camere Art della SoulArt (A01…A22),
+// Boutique com'è (201…), San Liborio LIB (21/11/2026).
+function _hkpNumCella(nome){
+  const n=String(nome||'').trim();
+  const m=n.match(/^ART\s*(\d+)$/i);if(m)return'A'+m[1].padStart(2,'0');
+  if(/^LIBORIO$/i.test(n))return'LIB';
+  return n.replace(/[<>&"']/g,'');
+}
 function hkpNRenderGrid(p,tab){
   const el=document.getElementById('hkpN-'+p+'-body');
   if(!el)return;
@@ -1804,13 +1812,17 @@ function hkpNRenderGrid(p,tab){
       const v=hkpNGetCell(p,tab,ri,d);
       const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
       const iw=colW[d]-2;
-      R+='<td style="'+B+'padding:1px;background:'+(isToday&&!v?'var(--accent-bg,#e8f0f8)':'#fff')+';height:'+RH+'px;overflow:hidden;'+grpBorder+'">'
+      // Numero della camera piccolo e sbiadito nell'angolo (21/11/2026, QM): solo a schermo, nel
+      // tab Camere; la stampa e i dati non lo hanno.
+      const _num=tab==='camere'?_hkpNumCella(row.name):'';
+      R+='<td style="'+B+'padding:1px;background:'+(isToday&&!v?'var(--accent-bg,#e8f0f8)':'#fff')+';height:'+RH+'px;overflow:hidden;position:relative;'+grpBorder+'">'
+        +(_num?'<span class="hkp-num-cella" aria-hidden="true">'+_num+'</span>':'')
         +'<input type="text" maxlength="10" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-vi="'+vi+'" data-col="'+d+'" '
         +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
         +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
         +'style="width:'+iw+'px;height:'+(RH-2)+'px;border:none;background:transparent;text-align:center;font-size:14px;'
         +'font-family:inherit;padding:0 2px;outline:none;color:'+(v?'var(--accent,#1c3a5e)':'var(--text,#0c1f33)')+';font-weight:'+(v?'500':'400')+';'
-        +'cursor:default;display:block;caret-color:transparent;box-sizing:border-box;"/></td>';
+        +'cursor:default;display:block;caret-color:transparent;box-sizing:border-box;position:relative;z-index:1;"/></td>';
     });
     R+='</tr>';
   });

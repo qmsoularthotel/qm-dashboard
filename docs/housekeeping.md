@@ -428,3 +428,11 @@ muovono solo le Art (`ART` = camere `Art …`). Anche il conteggio del mese (`_h
 mese già registrati prima del 18/11 e non più nel Piano restano senza Liborio. 5 controlli.
 
 **Schedine** (18/11/2026, QM): sotto le mosse, «con S. Liborio» in oro nei giorni in cui San Liborio è **in partenza** (non per le fermate). La riga c'è su tutte le schedine solo se almeno un giorno ce l'ha, così restano alte uguali; il suggerimento al passaggio del mouse lo ripete. 2 controlli.
+
+### Numero della camera nelle caselle (21/11/2026)
+
+Nella griglia **Camere** di Operativa HKP ogni casella ha, in alto a sinistra, il numero della
+camera piccolo e sbiadito (`_hkpNumCella`, `.hkp-num-cella` in `style.css`): **A01…A22** per le
+camere Art della SoulArt, **201…** per il Boutique, **LIB** per San Liborio. Sta sotto la casella
+di testo (z-index), non entra nei dati e non si stampa. Variante «B» scelta dal QM su anteprima.
+
