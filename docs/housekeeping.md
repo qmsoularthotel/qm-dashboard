@@ -452,6 +452,10 @@ rilegge il cloud, ci applica **solo** quelle caselle (`_hkpNUnisci`) e scrive; s
 il cloud non scrive e riprova dopo 20 secondi; un salvataggio per volta (`_hkpNcoda`). Anche
 `hkpNSyncFromCloud` tiene le caselle non ancora salvate.
 
+**Com'è finita**: dopo il ricaricamento con la correzione i dati di ottobre sono ricomparsi da
+soli — sul cloud c'erano ancora; era la **copia di quella postazione** a essere vecchia (e con il
+vecchio `hkpNSave` bastava toccare una casella per rimetterla sul cloud e perderli davvero).
+
 **Recupero**: Compass → Sicurezza → «Recupera Operativa HKP da una copia» (`qmHkpRecuperaFile`,
 `qmHkpRecuperaEsegui`): si sceglie un `compass-archivio-*.json`, Compass confronta mese per mese
 e rimette **solo le caselle che sul cloud sono vuote** (`_qmHkpMancanti`), una scrittura per mese.
