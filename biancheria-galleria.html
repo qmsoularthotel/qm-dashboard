@@ -157,7 +157,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-21.4';
+const QM_APP_BUILD='2026-11-21.6';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -4165,11 +4165,22 @@ function _gtuAnnoPlausibile(d){
   const oggi=new Date();oggi.setHours(12,0,0,0);
   // Entro sei mesi la data è già plausibile per un planning: non si tocca.
   if(Math.abs(d-oggi)<=180*G)return d;
+  // Una data dell'anno in corso già passata resta com'è: i planning si caricano anche a ritroso
+  // (21/11/2026, gennaio 2026 non deve diventare gennaio 2027). Unica eccezione: a fine anno un
+  // planning dei primi giorni di gennaio letto con l'anno vecchio (va all'anno dopo se lì cade
+  // entro 30 giorni da oggi).
+  if(d.getFullYear()===oggi.getFullYear()&&d<oggi){
+    const dopo=new Date(d.getTime());dopo.setFullYear(d.getFullYear()+1);
+    return(dopo-oggi)>=0&&(dopo-oggi)<=30*G?dopo:d;
+  }
   let best=d,bestDist=Math.abs(d-oggi);
   for(let off=-3;off<=3;off++){
     if(!off)continue;
     const c=new Date(d.getTime());
     c.setFullYear(d.getFullYear()+off);
+    // Mai più di 30 giorni nel futuro (21/11/2026): la settimana 29/12/2025–04/01/2026, caricata
+    // a ritroso, non deve diventare dicembre 2026.
+    if(c-oggi>30*G)continue;
     const dist=Math.abs(c-oggi);
     if(dist<bestDist){best=c;bestDist=dist;}
   }
@@ -4345,9 +4356,9 @@ function gtuStatistiche(archivio,membri){
  *  risorsa scarsa (1.000): cosi' i conteggi tornano giusti subito, e l'archivio corretto
  *  si posa da solo al prossimo turno caricato.
  *  Fra due voci della stessa settimana vince la piu' recente, come in gtuFondiArchivi. */
-// Il conteggio parte dal 17/08/2026: una settimana prima di allora (o oltre due mesi da oggi) è
-// un planning con le date lette male e non si conta (21/11/2026, «Sab 06/06»).
-const GTU_INIZIO='2026-08-17';
+// L'archivio conta dal 2026 (il QM carica i planning a ritroso fino a gennaio, 21/11/2026); una
+// settimana oltre due mesi da oggi ha le date lette male e non si conta.
+const GTU_INIZIO='2026-01-01';
 function gtuRipuliArchivio(arch){
   const out={};
   const lim=new Date();lim.setDate(lim.getDate()+60);

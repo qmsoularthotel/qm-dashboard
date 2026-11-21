@@ -192,9 +192,10 @@ async function handleTurniFile(file){
     const _annoOggi=_oggi.getFullYear();
     const _oggiIso=_annoOggi+'-'+String(_oggi.getMonth()+1).padStart(2,'0')+'-'+String(_oggi.getDate()).padStart(2,'0');
     const prompt=`Sei un assistente che analizza planning settimanali di turni per un hotel.
-OGGI È ${_oggiIso}. Il planning riguarda quasi sempre la settimana corrente o quella
-successiva: se nell'immagine non compare l'anno, usa ${_annoOggi}. Non dedurre l'anno da
-altro.
+OGGI È ${_oggiIso}. Il planning può essere della settimana corrente, di quella successiva
+o di una settimana PASSATA (si caricano anche planning vecchi per l'archivio): leggi le date
+scritte nel planning, giorno e mese, senza spostarle verso oggi. Se nell'immagine non compare
+l'anno, usa ${_annoOggi}. Non dedurre l'anno da altro.
 Analizza questa immagine/PDF del planning e restituisci SOLO un oggetto JSON valido con questa struttura esatta:
 {
   "giorni": [
@@ -243,12 +244,14 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
       ...g,
       date:g.date?_annoPlausibile(new Date(g.date+'T12:00:00')):new Date()
     }));
-    // 21/11/2026: l'AI ha letto un planning di novembre con le date di GIUGNO («Sab 06/06») e la
-    // Turnazione corrente è diventata una settimana di giugno. Un planning è sempre della
-    // settimana in corso o di quelle vicine: con date lontane da oggi non si salva niente.
-    if(!_turnoPlausibile(parsed.giorni)){
-      ucSetState('turno','error','Date lette sbagliate ('+(parsed.giorni[0]&&parsed.giorni[0].label||'?')+'): ricarica il planning');
-      try{cqAvviso('Il planning non è stato caricato','Le date lette ('+_esc((parsed.giorni[0]||{}).label||'?')+' – '+_esc((parsed.giorni[parsed.giorni.length-1]||{}).label||'?')+') non sono vicine a oggi: l\'AI ha letto male il planning. Ricaricalo; se succede ancora, controlla che le date siano leggibili nel file.');}catch(e){}
+    // Planning caricati A RITROSO (21/11/2026, il QM ricostruisce il 2026 da gennaio): una
+    // settimana già finita si archivia e basta. Il turno corrente salvato (qm_weekData) non si
+    // tocca, e la Turnazione corrente resta sulla settimana in corso.
+    const _passata=_turnoPassato(parsed.giorni);
+    if(_passata){
+      loadWeekData(parsed);
+      const rangeP=parsed.giorni[0].label+' – '+parsed.giorni[parsed.giorni.length-1].label;
+      ucSetState('turno','loaded','Archiviata: '+rangeP);
       return;
     }
     // Salva in localStorage + cloud
@@ -281,11 +284,22 @@ function _annoPlausibile(d){
   const oggi=new Date();oggi.setHours(12,0,0,0);
   // Entro sei mesi la data è già plausibile per un planning: non si tocca.
   if(Math.abs(d-oggi)<=180*G)return d;
+  // Una data dell'anno in corso già passata resta com'è: i planning si caricano anche a ritroso
+  // (21/11/2026, gennaio 2026 non deve diventare gennaio 2027). Unica eccezione: a fine anno un
+  // planning dei primi giorni di gennaio letto con l'anno vecchio (va all'anno dopo se lì cade
+  // entro 30 giorni da oggi).
+  if(d.getFullYear()===oggi.getFullYear()&&d<oggi){
+    const dopo=new Date(d.getTime());dopo.setFullYear(d.getFullYear()+1);
+    return(dopo-oggi)>=0&&(dopo-oggi)<=30*G?dopo:d;
+  }
   let best=d,bestDist=Math.abs(d-oggi);
   for(let off=-3;off<=3;off++){
     if(!off)continue;
     const c=new Date(d.getTime());
     c.setFullYear(d.getFullYear()+off);
+    // Mai più di 30 giorni nel futuro (21/11/2026): la settimana 29/12/2025–04/01/2026, caricata
+    // a ritroso, non deve diventare dicembre 2026.
+    if(c-oggi>30*G)continue;
     const dist=Math.abs(c-oggi);
     if(dist<bestDist){best=c;bestDist=dist;}
   }
@@ -590,9 +604,9 @@ function turniStatistiche(archivio,membri){
  *  risorsa scarsa (1.000): cosi' i conteggi tornano giusti subito, e l'archivio corretto
  *  si posa da solo al prossimo turno caricato.
  *  Fra due voci della stessa settimana vince la piu' recente, come in turniFondiArchivi. */
-// Il conteggio parte dal 17/08/2026: una settimana prima di allora (o oltre due mesi da oggi) è
-// un planning con le date lette male e non si conta (21/11/2026, «Sab 06/06»).
-const TURNI_INIZIO='2026-08-17';
+// L'archivio conta dal 2026 (il QM carica i planning a ritroso fino a gennaio, 21/11/2026); una
+// settimana oltre due mesi da oggi ha le date lette male e non si conta.
+const TURNI_INIZIO='2026-01-01';
 function turniRipuliArchivio(arch){
   const out={};
   const lim=new Date();lim.setDate(lim.getDate()+60);
@@ -909,27 +923,30 @@ function _turniSenzaEsclusi(data){
   });
   return data;
 }
-// Un planning è della settimana in corso o di una vicina: il primo giorno fra 10 giorni fa e
-// 24 giorni da oggi (21/11/2026). Fuori da lì le date sono lette male.
-function _turnoPlausibile(giorni,oggi){
-  const g=(giorni||[])[0];if(!g||!g.date)return true;
-  const d=g.date instanceof Date?g.date:new Date(typeof g.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(g.date)?g.date+'T12:00:00':g.date);
-  if(isNaN(d))return true;
+// Settimana già finita: l'ultimo giorno è prima di oggi (21/11/2026, planning caricati a ritroso).
+function _turnoPassato(giorni,oggi){
+  const g=(giorni||[])[giorni&&giorni.length?giorni.length-1:0];if(!g||!g.date)return false;
+  const d=g.date instanceof Date?new Date(g.date):new Date(typeof g.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(g.date)?g.date+'T12:00:00':g.date);
+  if(isNaN(d))return false;
+  const o=oggi?new Date(oggi):new Date();o.setHours(0,0,0,0);d.setHours(23,59,0,0);
+  return d<o;
+}
+// La settimana che contiene oggi, presa dall'archivio, nella forma di weekData (o null).
+function _turnoCorrenteDaArchivio(oggi){
   const o=oggi?new Date(oggi):new Date();o.setHours(12,0,0,0);
-  const gg=(d-o)/86400000;
-  return gg>=-10&&gg<=24;
+  const lun=new Date(o);lun.setDate(o.getDate()-((o.getDay()+6)%7));
+  const k=lun.getFullYear()+'-'+String(lun.getMonth()+1).padStart(2,'0')+'-'+String(lun.getDate()).padStart(2,'0');
+  const v=(turniStoricoLeggi()||{})[k];if(!v||!Array.isArray(v.giorni)||!v.giorni.length)return null;
+  const GG=['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+  return{giorni:v.giorni.map(g=>{const d=new Date(g.data+'T12:00:00');return{label:GG[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'),date:d,shifts:Object.assign({},g.shifts||{})};})};
 }
 function loadWeekData(data){
   _turniSenzaEsclusi(data);
-  weekData=data;
-  // Date lette male (es. «Sab 06/06» a novembre): niente archivio e la scheda lo dice.
-  if(!_turnoPlausibile(data.giorni)){
-    activeDay=0;
-    _turnoAvvisoDateSbagliate();
-    try{buildWeekNav();document.getElementById('weekNavWrap').style.display='block';}catch(e){}
-    return;
-  }
   try{turniArchivia(data);}catch(e){}
+  // Planning di una settimana passata: archiviato qui sopra; la Turnazione corrente resta sulla
+  // settimana in corso, se è nell'archivio (21/11/2026).
+  if(_turnoPassato(data.giorni)){const cur=_turnoCorrenteDaArchivio();if(cur){_turniSenzaEsclusi(cur);data=cur;}}
+  weekData=data;
   // L'Agenda mostra il turno del QM in ogni giorno: arrivato un turno nuovo, si aggiorna (non sotto le dita).
   try{if(_qmVistaAttiva()==='agenda'&&!_qmOccupato())agRender();}catch(e){}
   const today=new Date();
@@ -1046,12 +1063,7 @@ const _nomeIniz=n=>{
   return m?`${m[1]}<span class="s-ini">${m[2]}</span>`:String(n||'');
 };
 
-function _turnoAvvisoDateSbagliate(){
-  try{_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-text" style="color:var(--red);">Il turno caricato ha date sbagliate (${_esc((weekData.giorni[0]||{}).label||'?')} – ${_esc((weekData.giorni[weekData.giorni.length-1]||{}).label||'?')})</div><div class="ov-empty-sub">L'AI ha letto male il planning: ricaricalo dalla sidebar. Questa settimana non è stata archiviata.</div></div>`);}catch(e){}
-}
 function renderDay(idx){
-  // Date lette male (21/11/2026): al posto della settimana sbagliata, l'avviso in rosso.
-  if(weekData&&!_turnoPlausibile(weekData.giorni)){_turnoAvvisoDateSbagliate();return;}
   const g=weekData.giorni[idx],shifts=g.shifts;
   updateStaffPanelHeader(g.date?(typeof g.date==='string'?new Date(g.date):g.date):null);
   // Indice case-insensitive dei nomi DEPTS per escluderli dagli extra

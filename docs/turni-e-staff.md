@@ -469,14 +469,18 @@ persone sono chiavi. `_gtChiedi` usa ora `_gtJson`, che lo lascia. Un controllo 
 `test/galleria.js` confronta **ogni funzione** di statistiche e archivio della Galleria con
 quella di Compass (rinominata all'indietro) e gli elenchi: devono essere identici.
 
-### Turno con le date lette male (21/11/2026)
+### Planning caricati a ritroso (21/11/2026)
 
-Caso reale: un planning caricato il 21/11 è stato letto dall'AI con le date di **giugno** («Sab
-06/06»): la Turnazione corrente mostrava una settimana di giugno e quella settimana sarebbe finita
-nell'archivio (e nelle statistiche, con le settimane «mancanti» da giugno ad agosto). Ora
-`_turnoPlausibile` vuole il primo giorno fra 10 giorni fa e 24 giorni da oggi: fuori, il caricamento
-si ferma prima di salvare (avviso «Il planning non è stato caricato»), `loadWeekData` non archivia e
-`renderDay` mostra in rosso «Il turno caricato ha date sbagliate… ricaricalo». L'archivio ignora in
-lettura le settimane prima del 17/08/2026 (`TURNI_INIZIO`) o oltre due mesi da oggi (anche nella
-Galleria). Si risolve ricaricando il planning.
+Il QM carica i planning vecchi, fino a gennaio 2026, per avere le statistiche reali del 2026.
+(Un primo tentativo dello stesso giorno li bloccava come «date lette male»: era sbagliato ed è
+stato tolto.) Ora:
+- una settimana **già finita** (`_turnoPassato`) si **archivia** e basta: `handleTurniFile` non
+  scrive `qm_weekData` e dice «Archiviata: …»; il turno corrente salvato non cambia;
+- `loadWeekData` archivia sempre e, se la settimana è passata, mostra nella Turnazione corrente la
+  settimana in corso presa dall'archivio (`_turnoCorrenteDaArchivio`);
+- l'archivio conta dal **01/01/2026** (`TURNI_INIZIO`, anche nella Galleria);
+- `_annoPlausibile`: una data passata dell'anno in corso resta nell'anno; nessuna correzione
+  sposta una data più di 30 giorni nel futuro (la settimana 29/12/2025–04/01/2026 resta lì);
+- il prompt dell'AI dice che il planning può essere di una settimana passata: leggere le date
+  scritte senza spostarle verso oggi.
 
