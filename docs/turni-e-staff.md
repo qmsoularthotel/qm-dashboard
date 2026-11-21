@@ -461,3 +461,11 @@ Iannario. **Turni archiviati** raccolti per **anno** e **mese** (`turniArchivioG
 `_turniGruppi`): aperti l'anno in corso e il mese della settimana mostrata. Tutto uguale nella
 Galleria (`gtu…`).
 
+**21/11/2026, correzioni (QM):** tornano le colonne **Art Resort (Galleria)** e **SoulArt (Carità)**,
+tolte per errore il 19/11 (l'elenco del QM non le nominava, ma non andavano tolte): ordine P,
+Intermedi, Mattine, Pomeriggi, Notti, Riposo domenicale, Art Resort, SoulArt, Malattia, Ferie.
+Nella Galleria mancava **D'Andrea**: `_gbJson` toglie l'apostrofo dalle chiavi e nell'archivio le
+persone sono chiavi. `_gtChiedi` usa ora `_gtJson`, che lo lascia. Un controllo in
+`test/galleria.js` confronta **ogni funzione** di statistiche e archivio della Galleria con
+quella di Compass (rinominata all'indietro) e gli elenchi: devono essere identici.
+

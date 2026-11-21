@@ -666,3 +666,19 @@ ok('PIN: animazione d\'attesa mentre si verifica',   /_gtMostraAttesa\([^)]*Veri
 ok('Galleria: anche qui la finestrella del giorno', typeof gtPrefApriGiorno === 'function' && gtPrefApriGiorno !== turniPrefApriGiorno && /gt-giorno-pop/.test(String(gtPrefApriGiorno)), true);
 ok('Galleria: anche qui il fumetto d\'invito',      typeof _gtPosaInvito === 'function' && /gt-cal-box/.test(String(_gtPosaInvito)), true);
 ok('Galleria: stessi nuovi codici e stessa data di Abdalla', (gtuNormalizza('RIP.REC. DEL 11/07') || {}).tipo + ' ' + GTU_DAL['Abdalla'], 'riposo 2026-10-01');
+
+// ── Statistiche e archivio: la Galleria è IDENTICA a Compass (21/11/2026) ──
+// D'Andrea spariva perché l'apostrofo veniva tolto dalle chiavi; e le colonne di sede erano
+// diverse. Ogni funzione copiata, rinominata all'indietro, deve essere uguale a quella di Compass.
+sez('Galleria: statistiche e archivio identici a Compass');
+ok('D\'Andrea resta D\'Andrea nell\'archivio',       Object.keys(_gtJson('{"D\'Andrea F.":1,"<x>":2}')).join('|'), "D'Andrea F.|x");
+(function () {
+  var torna = function (s) { return String(s).replace(/_gtuAnnoPlausibile/g, '_annoPlausibile').replace(/GTU_GTU_STAFF_CESSATI/g, 'STAFF_CESSATI').replace(/GTU_STAFF_CESSATI/g, 'STAFF_CESSATI').replace(/GTU_DEPTS/g, 'DEPTS').replace(/GTU_/g, 'TURNI_').replace(/_gtuT(?=[A-Z])/g, '_turno').replace(/_gtu(?=[A-Z])/g, '_turni').replace(/(^|[^\w])gtu(?=[A-Z])/g, '$1turni'); };
+  ['turniNormalizza', 'turniStatistiche', 'turniRenderStats', 'turniRenderArchivio', 'turniOrdina', 'turniOrdinaAltri',
+   'turniArchivioSettimane', 'turniArchivioGruppo', 'turniMostraSettimana', '_turniSettimaneMancanti', '_turniSenzaEsclusi', '_turnoNomeHK', 'turniVoceStorico', 'turniRipuliArchivio'].forEach(function (n) {
+    var g = n.replace(/^_turno/, '_gtuT').replace(/^_turni/, '_gtu').replace(/^turni/, 'gtu');
+    ok('identica a Compass: ' + n, torna(eval(g)), String(eval(n)));
+  });
+  ok('stessi elenchi: notturni, ordine, gruppi, date', JSON.stringify([GTU_NOTTURNI, GTU_ORDINE_TESTA, GTU_SEDE_UNICA, GTU_DOPO, GTU_GRUPPI_ALTRI, GTU_DAL, GTU_STAFF_CESSATI, GTU_DEPTS.fo.members]),
+     JSON.stringify([TURNI_NOTTURNI, TURNI_ORDINE_TESTA, TURNI_SEDE_UNICA, TURNI_DOPO, TURNI_GRUPPI_ALTRI, TURNI_DAL, STAFF_CESSATI, DEPTS.fo.members]));
+})();

@@ -758,8 +758,8 @@ ok('anche Maddaloni ha una sede sola', TURNI_SEDE_UNICA.indexOf('Maddaloni M.') 
 ok('gli altri no',                   TURNI_SEDE_UNICA.indexOf('Perez L.'), -1);
 // Va detto da quando si conta: senza, un "3 domeniche" non si sa se e' su un mese o un anno.
 ok('la tabella dichiara da quando conta', /conteggio dal /.test(String(turniRenderStats)), true);
-// Dal 19/11/2026 le colonne di sede non ci sono più (QM): niente da lasciare vuoto.
-ok('niente colonne di sede nella tabella', /th\('Art Resort'|th\('SoulArt'/.test(String(turniRenderStats)), false);
+// Le colonne di sede (Galleria/Carità) tornano il 21/11/2026 (QM): erano state tolte per errore.
+ok('la tabella lascia vuote le sue sedi', /sedeUnica\?vuota/.test(String(turniRenderStats)), true);
 ok('NG resta Art Resort',       turniNormalizza('NG').sede, 'galleria');
 ok('NC resta SoulArt',          turniNormalizza('NC').sede, 'soulart');
 ok('chi manca non viene inventato', turniOrdina(['Perez L.']).join(','), 'Perez L.');
@@ -4088,9 +4088,9 @@ ok('housekeeping e altri nell\'ordine scelto',      turniOrdinaAltri(['Basile G.
 ok('linea spessa dopo Presta',                       _turniDopoTesta('Presta P.', 'De Rosa T.') && !_turniDopoTesta('Maddaloni M.', 'Presta P.'), true);
 ok('gruppi: Ditta con l\'housekeeping, Amorese e Basile aprono un gruppo', [_turniGruppoAltri('Ditta'), _turniGruppoAltri('Amorese S.'), _turniGruppoAltri('Basile G.')].join(), '0,1,2');
 // Colonne delle statistiche nell'ordine del QM, senza le colonne di sede (19/11/2026).
-ok('statistiche: P, Intermedi, Mattine, Pomeriggi, Notti, Riposo domenicale, Malattia, Ferie',
+ok('statistiche: P, Intermedi, Mattine, Pomeriggi, Notti, Riposo domenicale, Art Resort, SoulArt, Malattia, Ferie',
    (String(turniRenderStats).match(/th\('([^']+)'/g) || []).map(function (x) { return x.slice(4, -1); }).join(','),
-   'P,Intermedi,Mattine,Pomeriggi,Notti,Riposo domenicale,Malattia,Ferie');
+   'P,Intermedi,Mattine,Pomeriggi,Notti,Riposo domenicale,Art Resort,SoulArt,Malattia,Ferie');
 // Archivio turni: all'apertura si vede l'ultimo turno caricato (19/11/2026).
 (function () {
   var box = { innerHTML: '' }, vero = document.getElementById, leggi = turniStoricoLeggi, sel = _turniSettSel;

@@ -157,7 +157,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-21.1';
+const QM_APP_BUILD='2026-11-21.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -3595,9 +3595,20 @@ function _gtAttivita(){
 // NON passa da _gbFetch: lì un 401 apre la schermata «codice non più valido», e qui un 401
 // può voler dire solo che il Worker in linea è ancora quello vecchio (16/11/2026: è successo,
 // e il Resident si è visto chiedere il codice del computer, che era ancora buono).
+// Come _gbJson, ma l'apostrofo nei NOMI DELLE CHIAVI resta: nell'archivio dei turni le persone
+// sono chiavi, e "D'Andrea F." diventava "DAndrea F.", che non è nell'elenco del ricevimento —
+// spariva dalle statistiche (21/11/2026). < > " ` restano tolti ovunque; i nomi finiscono solo
+// in testo già filtrato da esc, mai in attributi o onclick.
+function _gtJson(s){
+  return JSON.parse(s,(k,v)=>{
+    if(typeof v==='string')return (k==='id'||/Id$/.test(k))?v.replace(/[^\w.:-]/g,''):v.replace(/[<>"`]/g,'');
+    if(v&&typeof v==='object'&&!Array.isArray(v)){const o={};for(const x of Object.keys(v))o[x.replace(/[<>"`]/g,'')]=v[x];return o;}
+    return v;
+  });
+}
 async function _gtChiedi(corpo){
   const r=await fetch(GB_PROXY+'/turni-pref',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json','X-QM-Pass':_gbPass()},body:JSON.stringify(corpo)});
-  let j={};try{j=_gbJson(await r.text())||{};}catch(e){}
+  let j={};try{j=_gtJson(await r.text())||{};}catch(e){}
   if(r.status===404||r.status===405||typeof j.ok!=='boolean'||(r.status===401&&!/PIN|Permesso/.test(j.error||'')))
     j={ok:false,error:'Il Worker va ripubblicato (versione del 16/11/2026): fino ad allora questa voce non si apre.'};
   return j;
@@ -4560,7 +4571,7 @@ function gtuRenderStats(){
         <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);">
           <thead><tr>
             <th style="text-align:left;padding:7px 14px 7px 6px;border-bottom:1px solid var(--border);font-size:var(--fs-xxs);text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600;width:1%;white-space:nowrap;">Persona</th>
-            ${th('P')}${th('Intermedi')}${th('Mattine')}${th('Pomeriggi')}${th('Notti')}${th('Riposo domenicale')}${th('Malattia',true)}${th('Ferie')}
+            ${th('P')}${th('Intermedi')}${th('Mattine')}${th('Pomeriggi')}${th('Notti')}${th('Riposo domenicale')}${th('Art Resort',true)}${th('SoulArt')}${th('Malattia',true)}${th('Ferie')}
           </tr></thead>
           <tbody>
             ${righe.map(({n,s,notte,sedeUnica,uscito,dal},i)=>{
@@ -4575,6 +4586,8 @@ function gtuRenderStats(){
               ${notte?cellaN(s.pomeriggio):td(s.pomeriggio||'—')}
               ${td(s.notti?`${s.notti}<span style="color:var(--text-dim);font-size:var(--fs-xxs);"> ${s.nottiG}AR·${s.nottiC}SA</span>`:'—',s.notti&&!notte?'font-weight:700;':'')}
               ${td(s.riposiDomenica||'—',s.riposiDomenica?'font-weight:700;':'color:var(--text-dim);')}
+              ${sedeUnica?vuota(sep):(notte?cellaN(s.galleria,sep):td(s.galleria||'—',sep))}
+              ${sedeUnica?vuota():(notte?cellaN(s.soulart):td(s.soulart||'—'))}
               ${td(s.malattia||'—',sep+(s.malattia?'color:var(--red);font-weight:700;':'color:var(--text-dim);'))}
               ${td(s.ferie||'—',s.ferie?'color:var(--amber);font-weight:700;':'color:var(--text-dim);')}
             </tr>`;}).join('')}
@@ -4582,7 +4595,7 @@ function gtuRenderStats(){
         </table>
       </div>
       <div style="padding:11px 13px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;border-top:1px solid var(--border);">
-        <strong>Riposo domenicale</strong> = domeniche di riposo. <strong>Intermedi</strong> = INT CAR, INT GALL e GALL/CAR, a qualunque orario. <strong>Mattine</strong> = AC + AG, <strong>Pomeriggi</strong> = CC + CG. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (AR = Art Resort, SA = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
+        <strong>Riposo domenicale</strong> = domeniche di riposo. <strong>Intermedi</strong> = INT CAR, INT GALL e GALL/CAR, a qualunque orario. <strong>Mattine</strong> = AC + AG, <strong>Pomeriggi</strong> = CC + CG. <strong>Art Resort</strong> (Galleria) = AG + CG + INT GALL + GALL/CAR, <strong>SoulArt</strong> (Carità) = AC + CC + INT CAR; le notti non entrano nel conteggio per sede. <strong>P</strong> comprende P e P Gall. <strong>Notti</strong> con il dettaglio di sede (AR = Art Resort, SA = SoulArt): resta anche per chi notturno non è, altrimenti le notti fatte in emergenza sparirebbero dalla tabella.
         Riposo, riposo richiesto, recupero e REC RIP contano come riposo; ferie richieste come ferie; un turno "richiesto" (AC RICHIESTO) come quel turno.${righe.some(x=>x.s.riposiLavorati)?' Riposi poi lavorati: '+righe.filter(x=>x.s.riposiLavorati).map(x=>esc(x.n)+' '+x.s.riposiLavorati).join(', ')+'.':''}
 
       </div>
