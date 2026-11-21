@@ -4156,3 +4156,12 @@ ok('INT CAR resta un intermedio',                   (turniNormalizza('INT CAR 9/
   ok('archivio: e per mese',                          />Novembre</.test(box.innerHTML) && />Ottobre</.test(box.innerHTML), true);
   ok('archivio: aperto il mese della settimana mostrata', /turniMostraSettimana\('2026-11-02'\)/.test(box.innerHTML) && !/turniMostraSettimana\('2026-10-26'\)/.test(box.innerHTML), true);
 })();
+
+sez('Turno con le date lette male: non si carica e non si archivia (21/11/2026)');
+ok('un planning di giugno a novembre non è plausibile', _turnoPlausibile([{ date: new Date(2026, 5, 1, 12) }], new Date(2026, 10, 21)), false);
+ok('la settimana in corso sì',                      _turnoPlausibile([{ date: new Date(2026, 10, 16, 12) }], new Date(2026, 10, 21)), true);
+ok('anche la prossima',                             _turnoPlausibile([{ date: '2026-11-23' }], new Date(2026, 10, 21)), true);
+ok('il caricamento si ferma prima di salvare',      /if\(!_turnoPlausibile\(parsed\.giorni\)\)\{[\s\S]{0,600}return;\s*\}/.test(String(handleTurniFile)), true);
+ok('loadWeekData non archivia una settimana sbagliata', /if\(!_turnoPlausibile\(data\.giorni\)\)\{[\s\S]*?return;\s*\}\s*try\{turniArchivia/.test(String(loadWeekData)), true);
+ok('l\'archivio ignora le settimane prima del 17/08/2026', Object.keys(turniRipuliArchivio({ '2026-06-01': { giorni: [{ data: '2026-06-01', shifts: { 'Perez L.': 'AC' } }] }, '2026-11-16': { giorni: [{ data: '2026-11-16', shifts: { 'Perez L.': 'AC' } }] } })).join(), '2026-11-16');
+ok('anche renderDay mostra l\'avviso invece della settimana sbagliata', /if\(weekData&&!_turnoPlausibile\(weekData\.giorni\)\)\{_turnoAvvisoDateSbagliate\(\);return;\}/.test(String(renderDay)), true);

@@ -469,3 +469,14 @@ persone sono chiavi. `_gtChiedi` usa ora `_gtJson`, che lo lascia. Un controllo 
 `test/galleria.js` confronta **ogni funzione** di statistiche e archivio della Galleria con
 quella di Compass (rinominata all'indietro) e gli elenchi: devono essere identici.
 
+### Turno con le date lette male (21/11/2026)
+
+Caso reale: un planning caricato il 21/11 è stato letto dall'AI con le date di **giugno** («Sab
+06/06»): la Turnazione corrente mostrava una settimana di giugno e quella settimana sarebbe finita
+nell'archivio (e nelle statistiche, con le settimane «mancanti» da giugno ad agosto). Ora
+`_turnoPlausibile` vuole il primo giorno fra 10 giorni fa e 24 giorni da oggi: fuori, il caricamento
+si ferma prima di salvare (avviso «Il planning non è stato caricato»), `loadWeekData` non archivia e
+`renderDay` mostra in rosso «Il turno caricato ha date sbagliate… ricaricalo». L'archivio ignora in
+lettura le settimane prima del 17/08/2026 (`TURNI_INIZIO`) o oltre due mesi da oggi (anche nella
+Galleria). Si risolve ricaricando il planning.
+

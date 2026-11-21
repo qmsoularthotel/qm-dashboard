@@ -243,6 +243,14 @@ Restituisci SOLO il JSON, nessun testo prima o dopo.`;
       ...g,
       date:g.date?_annoPlausibile(new Date(g.date+'T12:00:00')):new Date()
     }));
+    // 21/11/2026: l'AI ha letto un planning di novembre con le date di GIUGNO («Sab 06/06») e la
+    // Turnazione corrente è diventata una settimana di giugno. Un planning è sempre della
+    // settimana in corso o di quelle vicine: con date lontane da oggi non si salva niente.
+    if(!_turnoPlausibile(parsed.giorni)){
+      ucSetState('turno','error','Date lette sbagliate ('+(parsed.giorni[0]&&parsed.giorni[0].label||'?')+'): ricarica il planning');
+      try{cqAvviso('Il planning non è stato caricato','Le date lette ('+_esc((parsed.giorni[0]||{}).label||'?')+' – '+_esc((parsed.giorni[parsed.giorni.length-1]||{}).label||'?')+') non sono vicine a oggi: l\'AI ha letto male il planning. Ricaricalo; se succede ancora, controlla che le date siano leggibili nel file.');}catch(e){}
+      return;
+    }
     // Salva in localStorage + cloud
     try{
       const _wts=Date.now();
@@ -582,13 +590,19 @@ function turniStatistiche(archivio,membri){
  *  risorsa scarsa (1.000): cosi' i conteggi tornano giusti subito, e l'archivio corretto
  *  si posa da solo al prossimo turno caricato.
  *  Fra due voci della stessa settimana vince la piu' recente, come in turniFondiArchivi. */
+// Il conteggio parte dal 17/08/2026: una settimana prima di allora (o oltre due mesi da oggi) è
+// un planning con le date lette male e non si conta (21/11/2026, «Sab 06/06»).
+const TURNI_INIZIO='2026-08-17';
 function turniRipuliArchivio(arch){
   const out={};
+  const lim=new Date();lim.setDate(lim.getDate()+60);
+  const limIso=lim.getFullYear()+'-'+String(lim.getMonth()+1).padStart(2,'0')+'-'+String(lim.getDate()).padStart(2,'0');
   Object.keys(arch||{}).forEach(k=>{
     const v=arch[k];
     if(!v||!Array.isArray(v.giorni)||!v.giorni.length)return;
     const voce=turniVoceStorico({giorni:v.giorni.map(g=>({date:g.data,shifts:g.shifts}))});
     if(!voce)return;
+    if(voce.chiave<TURNI_INIZIO||voce.chiave>limIso)return;
     voce.ts=v.ts||voce.ts;
     const prec=out[voce.chiave];
     if(!prec||!(prec.ts>0)||(voce.ts>0&&voce.ts>=prec.ts))out[voce.chiave]=voce;
@@ -895,9 +909,26 @@ function _turniSenzaEsclusi(data){
   });
   return data;
 }
+// Un planning è della settimana in corso o di una vicina: il primo giorno fra 10 giorni fa e
+// 24 giorni da oggi (21/11/2026). Fuori da lì le date sono lette male.
+function _turnoPlausibile(giorni,oggi){
+  const g=(giorni||[])[0];if(!g||!g.date)return true;
+  const d=g.date instanceof Date?g.date:new Date(typeof g.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(g.date)?g.date+'T12:00:00':g.date);
+  if(isNaN(d))return true;
+  const o=oggi?new Date(oggi):new Date();o.setHours(12,0,0,0);
+  const gg=(d-o)/86400000;
+  return gg>=-10&&gg<=24;
+}
 function loadWeekData(data){
   _turniSenzaEsclusi(data);
   weekData=data;
+  // Date lette male (es. «Sab 06/06» a novembre): niente archivio e la scheda lo dice.
+  if(!_turnoPlausibile(data.giorni)){
+    activeDay=0;
+    _turnoAvvisoDateSbagliate();
+    try{buildWeekNav();document.getElementById('weekNavWrap').style.display='block';}catch(e){}
+    return;
+  }
   try{turniArchivia(data);}catch(e){}
   // L'Agenda mostra il turno del QM in ogni giorno: arrivato un turno nuovo, si aggiorna (non sotto le dita).
   try{if(_qmVistaAttiva()==='agenda'&&!_qmOccupato())agRender();}catch(e){}
@@ -1015,7 +1046,12 @@ const _nomeIniz=n=>{
   return m?`${m[1]}<span class="s-ini">${m[2]}</span>`:String(n||'');
 };
 
+function _turnoAvvisoDateSbagliate(){
+  try{_setStaffAreaHTML(`<div class="ov-empty"><div class="ov-empty-text" style="color:var(--red);">Il turno caricato ha date sbagliate (${_esc((weekData.giorni[0]||{}).label||'?')} – ${_esc((weekData.giorni[weekData.giorni.length-1]||{}).label||'?')})</div><div class="ov-empty-sub">L'AI ha letto male il planning: ricaricalo dalla sidebar. Questa settimana non è stata archiviata.</div></div>`);}catch(e){}
+}
 function renderDay(idx){
+  // Date lette male (21/11/2026): al posto della settimana sbagliata, l'avviso in rosso.
+  if(weekData&&!_turnoPlausibile(weekData.giorni)){_turnoAvvisoDateSbagliate();return;}
   const g=weekData.giorni[idx],shifts=g.shifts;
   updateStaffPanelHeader(g.date?(typeof g.date==='string'?new Date(g.date):g.date):null);
   // Indice case-insensitive dei nomi DEPTS per escluderli dagli extra
