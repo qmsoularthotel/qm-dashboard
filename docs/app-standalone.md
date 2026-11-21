@@ -178,9 +178,9 @@ Griglia mosaico a **3 colonne fisse** (`grid-template-columns:repeat(3,minmax(0,
 
 **Icone: badge navy/oro, non più le foto PNG** (06/09/2026). `.miniapp-ico-badge` in `style.css` ha lo stesso impianto di `.nav-icon-badge` (cerchio `--accent`, anello `--gold`, SVG bianco), 36px invece di 38 per stare nella riga della scheda. Gli SVG sono **gli stessi della voce di menu corrispondente**, copiati da lì: scopa (Operativa HKP), tazza (Breakfast Sheet), goccia (Distribuzione Culligan), scatola (Inventari), scudo (DVR). Non sono due varianti della stessa idea: sono lo stesso disegno in due posti, e **se se ne cambia uno va cambiato anche l'altro** — non c'è una fonte condivisa. I PNG in `img/icons/` restano nella cartella ma non sono più referenziati dalle schede.
 
-### «Da sistemare», scheda Compass OPS larga e voce «Come sta Compass» (21/11/2026, QM)
-- **Come sta Compass** (`miniappRenderSalute`): **voce di menu sua** (QM, 21/11/2026: non dentro
-  Applicazioni) — è la vista `sistema` rinominata, con quattro riquadri in cima — copia su Drive
+### «Da sistemare», scheda Compass OPS larga e voce «Stato del sistema» (21/11/2026, QM)
+- **Stato del sistema** (`miniappRenderSalute`): **voce di menu sua** (QM, 21/11/2026: non dentro Applicazioni; «Come sta Compass» scartato come poco professionale)
+  — vista `sistema`, con quattro riquadri in cima — copia su Drive
   (`qm_backup_ultimo`, arancio oltre 30 ore), Worker (versione = `WORKER_VERSIONE_ATTESA` e porta
   chiusa), scritture di oggi su 1.000 con barra (`/consumo`), salvataggi (sospese/errori da
   `_qmStatoSistema`), e sotto il dettaglio di prima (`qmRenderStatoSistema`). Il pallino

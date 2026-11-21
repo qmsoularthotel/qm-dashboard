@@ -298,7 +298,7 @@ body.dark .panel{box-shadow:none;}
 .miniapp-btn:hover{border-color:var(--accent);color:var(--accent);}
 .miniapp-btn-primario{background:var(--accent);border-color:var(--accent);color:#fff;}
 .miniapp-btn-primario:hover{background:var(--accent);border-color:var(--accent);color:#fff;filter:brightness(1.12);}
-/* Pannello di Controllo (21/11/2026): fascia «Come sta Compass», «Da sistemare», scheda
+/* Pannello di Controllo (21/11/2026): fascia «Stato del sistema», «Da sistemare», scheda
    Compass OPS larga. Stessi token delle schede del mosaico. */
 .ms-sez{display:flex;align-items:center;gap:8px;margin:4px 2px 9px;font-size:var(--fs-xxs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);}
 .ms-sez::after{content:'';flex:1;border-top:1px solid var(--border);}
