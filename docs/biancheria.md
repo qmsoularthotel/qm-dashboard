@@ -1691,3 +1691,9 @@ che si apre col **PIN del QM**, lo stesso di Compass OPS (`biaDotApri` → Worke
 «Aperta col tuo PIN · Chiudi ora»; si richiude dopo 5 minuti senza attività (`_biaDotAttivita`) e
 lasciando la voce. Il QM: «la dotazione da contratto devo vederla solo io».
 
+**Tolto la sera stessa (21/11/2026, QM):** «togli il PIN… è troppo complessa la gestione e rendi
+visibile su tutti i PC». La dotazione (e il Conteggio a scorrere al SoulArt) si vede sempre, su
+ogni postazione; `_biaDotVisibile`, `biaDotApri`, `_biaDotLucchetto` non esistono più. Resta solo
+il lucchetto **«Modifica»** (`_biaDotSblocco`) contro le cifre battute per sbaglio. Non rimettere
+PIN o interruttori per dispositivo su questa voce.
+

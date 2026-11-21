@@ -2334,7 +2334,6 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='resi-biancheria'){try{resiLoad();}catch(e){}}
   if(id==='biancheria'){try{biaLoad();}catch(e){}}
   if(id==='conteggio-biancheria'){try{biaLoad();}catch(e){}}
-  else if(_biaDotAperta){try{biaDotChiudi('');}catch(e){}}
   if(id==='giacenza'){try{giacLoad();}catch(e){}}
   if(id==='agenda'){try{agLoad();}catch(e){}}
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
@@ -15139,41 +15138,9 @@ const BIA_DOT_DEFAULT={sa:{camere:22,
   'Federa':{perCamera:4,allestimento:96},'Telo doccia':{perCamera:2,allestimento:51},'Asciugamano viso':{perCamera:2,allestimento:51},
   'Asciugamano bidet':{perCamera:2,allestimento:51},'Scendibagno':{perCamera:1,allestimento:25}}};
 let _biaDotVoce='Lenzuolo matrimoniale';   // la tipologia del dettaglio
-// SOLO PER IL QM, COL SUO PIN (21/11/2026). Prima il pannello si accendeva dispositivo per
-// dispositivo da Sicurezza ed era «nascosto, non protetto»; il QM non sapeva dove mettere quella
-// voce e la vuole vedere solo lui. Ora in Conteggio Biancheria c'è un lucchetto che si apre col
-// PIN del QM (lo stesso di Compass OPS, verificato dal Worker: vale SOLO chi='qm', non il PIN del
-// Front Office Manager). Si richiude dopo 5 minuti senza attività e lasciando la voce.
-let _biaDotAperta=0,_biaDotAttivita=0,_biaDotMsg='';
-const BIA_DOT_DURATA=5*60000;
-function _biaDotVisibile(){return _biaDotAperta>0&&(Date.now()-_biaDotAttivita)<BIA_DOT_DURATA;}
-function biaDotChiudi(msg){_biaDotAperta=0;_biaDotMsg=msg||'';}
-async function biaDotApri(){
-  const f=document.getElementById('bia-dot-pin');const pin=String((f||{}).value||'').trim();
-  if(!/^\d{4,8}$/.test(pin)){_biaDotMsg='Il PIN è di 4–8 cifre.';_qmSenzaSalto(biaRenderConteggio);return;}
-  _biaDotMsg='Verifica del PIN…';_qmSenzaSalto(biaRenderConteggio);
-  let j={};
-  try{const r=await fetch(PROXY+'/turni-pref',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({azione:'apri',pin})});j=await r.json().catch(()=>({}));}
-  catch(e){j={ok:false,error:'Worker non raggiungibile'};}
-  if(j.ok&&j.chi==='qm'){_biaDotAperta=Date.now();_biaDotAttivita=Date.now();_biaDotMsg='';}
-  else if(j.ok){_biaDotMsg='Questo non è il tuo PIN: la dotazione si apre solo col PIN del Quality Manager.';}
-  else _biaDotMsg=j.error||'PIN non accettato';
-  _qmSenzaSalto(biaRenderConteggio);
-}
-try{
-  ['pointerdown','pointermove','keydown','wheel','touchstart','scroll'].forEach(ev=>document.addEventListener(ev,()=>{if(_biaDotVisibile())_biaDotAttivita=Date.now();},{passive:true,capture:true}));
-  setInterval(()=>{if(_biaDotAperta&&!_biaDotVisibile()){biaDotChiudi('Chiusa dopo 5 minuti senza attività.');if(_qmVistaAttiva()==='conteggio-biancheria'&&!_qmOccupato())_qmSenzaSalto(biaRenderConteggio);}},1000);
-}catch(e){}
-function _biaDotLucchetto(h){
-  return `<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Dotazione da contratto · ${_esc(BIA_HOTELS[h]||'')}</span></div>
-    <div class="panel-body" style="padding:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-      <div style="flex:1;min-width:200px;font-size:var(--fs-xs);color:var(--text-muted);line-height:1.5;">Riservata al Quality Manager: si apre col <strong style="color:var(--text);">tuo PIN</strong>, lo stesso di Compass OPS (lo scegli in Sicurezza).</div>
-      <input id="bia-dot-pin" type="text" inputmode="numeric" autocomplete="off" data-lpignore="true" maxlength="8" placeholder="PIN" onkeydown="if(event.key==='Enter')biaDotApri()" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:15px;letter-spacing:.25em;text-align:center;background:var(--surface);color:var(--text);font-family:inherit;-webkit-text-security:disc;">
-      <button onclick="biaDotApri()" style="background:var(--accent);color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;">Apri</button>
-      ${_biaDotMsg?`<div style="flex-basis:100%;font-size:var(--fs-xs);color:${/Verifica/.test(_biaDotMsg)?'var(--text-dim)':'var(--red)'};">${_esc(_biaDotMsg)}</div>`:''}
-    </div></div>`;
-}
+// VISIBILE SU TUTTI I PC, SENZA PIN (21/11/2026, QM): il lucchetto col PIN del QM, messo lo
+// stesso giorno, era troppo complicato da gestire ed è stato tolto. Resta il lucchetto
+// «Modifica» qui sotto, che protegge i numeri del contratto dalle cifre battute per sbaglio.
 // LUCCHETTO (12/11/2026): i numeri del contratto cambiano il conto per tutte le
 // postazioni, e una cifra battuta per sbaglio non si nota. Le caselle nascono bloccate e
 // si sbloccano con "Modifica" e una conferma; si richiudono con "Fine" o lasciando la pagina.
@@ -16477,8 +16444,7 @@ function biaRender(){
 // (o la Dotazione da contratto, fuori dal SoulArt) e il Riscontro fatturazioni, tolti da
 // Consumo Biancheria. Stessi dati e stessa struttura scelta (_biaHotel) di quella pagina;
 // si ridisegna ogni volta che si ridisegna biaRender, così i pulsanti dei pannelli che
-// chiamano biaRender() aggiornano anche questa. Il Conteggio si apre col PIN del QM
-// (_biaDotVisibile, dal 21/11/2026).
+// chiamano biaRender() aggiornano anche questa. Visibile su tutti i PC, senza PIN (21/11/2026).
 function biaRenderConteggio(){
   const el=document.getElementById('biac-content');if(!el)return;
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -16491,9 +16457,7 @@ function biaRenderConteggio(){
   // ── Dotazione da contratto ── (vedi _biaDotConto)
   // Al SoulArt il Conteggio a scorrere prende il posto della Dotazione e del suo saldo.
   if(_bia.giri.length){
-    if(_biaDotVisibile())h+=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:var(--fs-xxs);color:var(--green);font-weight:700;">Aperta col tuo PIN<button onclick="biaDotChiudi('');_qmSenzaSalto(biaRenderConteggio);" style="margin-left:auto;border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:6px;padding:4px 10px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;font-family:inherit;">Chiudi ora</button></div>`
-      +(_biaContaSi(_biaHotel)?_biaContaPannello(_biaHotel):_biaDotPannello(_biaHotel));
-    else h+=_biaDotLucchetto(_biaHotel);
+    h+=_biaContaSi(_biaHotel)?_biaContaPannello(_biaHotel):_biaDotPannello(_biaHotel);
   }
 
   // ── Totali del mese, per incrociare la fattura ──

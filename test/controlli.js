@@ -3536,16 +3536,7 @@ ok('il conteggio a scorrere dichiara il suo esc', /(const|var) esc=_esc/.test(St
   _bia={consumi:[],giri:[{id:'a',hotel:'sa',data:'24/09/2026',consegnato:Q(42),ricevuto:Q(60)},{id:'b',hotel:'sa',data:'26/09/2026',consegnato:Q(49),ricevuto:Q(30)}]};
   _giac={movimenti:[{id:'m',hotel:'sa',data:'06/09/2026',tipo:'conteggio',q:(function(){var o={};o[V]=30;return o;})()}],tipologie:null};
   _biaStoMese='2026-09';
-  // Dal 21/11/2026 si apre col PIN del QM (prima: interruttore per dispositivo in Sicurezza).
-  ok('il pannello entra solo se aperto col PIN, altrimenti il lucchetto', /_biaDotVisibile\(\)\)h\+=[\s\S]{0,600}else h\+=_biaDotLucchetto\(_biaHotel\)/.test(String(biaRenderConteggio)), true);
-  biaDotChiudi('');
-  ok('di partenza è chiusa',                     _biaDotVisibile(), false);
-  _biaDotAperta = Date.now(); _biaDotAttivita = Date.now();
-  ok('aperta col PIN',                           _biaDotVisibile(), true);
-  _biaDotAttivita = Date.now() - 5 * 60000 - 1000;
-  ok('si chiude dopo 5 minuti fermi',            _biaDotVisibile(), false);
-  biaDotChiudi('');
-  ok('vale solo il PIN del QM, non quello del FOM', /j\.ok&&j\.chi==='qm'/.test(String(biaDotApri)), true);
+  // Dal 21/11/2026 sera visibile su tutti i PC, senza PIN (il PIN del QM durò poche ore).
   _biaDotSblocco=false;
   var chiuso='';try{chiuso=_biaDotPannello('sa');}catch(e){chiuso='ERRORE '+e.message;}
   ok('col lucchetto niente caselle',              /<input type="number"/.test(chiuso), false);
@@ -3555,6 +3546,7 @@ ok('il conteggio a scorrere dichiara il suo esc', /(const|var) esc=_esc/.test(St
   _biaDotSblocco=true;
   var aperto='';try{aperto=_biaDotPannello('sa');}catch(e){aperto='ERRORE '+e.message;}
   ok('sbloccato: le caselle ci sono',             /<input type="number"/.test(aperto), true);
+  ok('la dotazione si vede su tutti i PC, senza PIN', /h\+=_biaContaSi\(_biaHotel\)\?_biaContaPannello\(_biaHotel\):_biaDotPannello\(_biaHotel\)/.test(String(biaRenderConteggio)) && !/Lucchetto|_biaDotVisibile/.test(String(biaRenderConteggio)), true);
   ok('entrando nella pagina si richiude',         /_biaDotSblocco=false/.test(String(biaLoad)), true);
   _bia=prima;_giac=pg;_biaStoMese=sm;_biaDotSblocco=ps;
 })();
