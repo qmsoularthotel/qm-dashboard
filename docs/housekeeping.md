@@ -436,3 +436,4 @@ camera piccolo e sbiadito (`_hkpNumCella`, `.hkp-num-cella` in `style.css`): **A
 camere Art della SoulArt, **201…** per il Boutique, **LIB** per San Liborio. Sta sotto la casella
 di testo (z-index), non entra nei dati e non si stampa. Variante «B» scelta dal QM su anteprima.
 
+Poi (stesso giorno, QM): il numero compare **solo nelle caselle vuote**. Le caselle hanno `placeholder=" "` e il CSS nasconde `.hkp-num-cella` quando l'input non mostra il placeholder (`td:has(> input:not(:placeholder-shown))`): sparisce appena si scrive una sigla e torna se la si cancella, senza ridisegnare.

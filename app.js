@@ -1814,10 +1814,12 @@ function hkpNRenderGrid(p,tab){
       const iw=colW[d]-2;
       // Numero della camera piccolo e sbiadito nell'angolo (21/11/2026, QM): solo a schermo, nel
       // tab Camere; la stampa e i dati non lo hanno.
+      // Solo nelle caselle VUOTE (QM, 21/11/2026): lo nasconde il CSS appena la casella ha una sigla
+      // (placeholder " " + :placeholder-shown), anche mentre si scrive o si cancella.
       const _num=tab==='camere'?_hkpNumCella(row.name):'';
       R+='<td style="'+B+'padding:1px;background:'+(isToday&&!v?'var(--accent-bg,#e8f0f8)':'#fff')+';height:'+RH+'px;overflow:hidden;position:relative;'+grpBorder+'">'
         +(_num?'<span class="hkp-num-cella" aria-hidden="true">'+_num+'</span>':'')
-        +'<input type="text" maxlength="10" value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-vi="'+vi+'" data-col="'+d+'" '
+        +'<input type="text" maxlength="10" placeholder=" " value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-vi="'+vi+'" data-col="'+d+'" '
         +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
         +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
         +'style="width:'+iw+'px;height:'+(RH-2)+'px;border:none;background:transparent;text-align:center;font-size:14px;'

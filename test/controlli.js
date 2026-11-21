@@ -4180,3 +4180,4 @@ ok('201 resta 201',                                 _hkpNumCella('201'), '201');
 ok('LIBORIO diventa LIB',                           _hkpNumCella('LIBORIO'), 'LIB');
 ok('la griglia Camere lo mette in ogni casella',   /hkp-num-cella/.test(String(hkpNRenderGrid)) && /tab==='camere'\?_hkpNumCella\(row\.name\)/.test(String(hkpNRenderGrid)), true);
 ok('la stampa no',                                  /hkp-num-cella/.test(String(hkpNPrint)), false);
+ok('il numero c\'è solo nelle caselle vuote',       /placeholder=" "/.test(String(hkpNRenderGrid)), true);
