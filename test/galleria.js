@@ -682,3 +682,8 @@ ok('D\'Andrea resta D\'Andrea nell\'archivio',       Object.keys(_gtJson('{"D\'A
   ok('stessi elenchi: notturni, ordine, gruppi, date', JSON.stringify([GTU_NOTTURNI, GTU_ORDINE_TESTA, GTU_SEDE_UNICA, GTU_DOPO, GTU_GRUPPI_ALTRI, GTU_DAL, GTU_STAFF_CESSATI, GTU_DEPTS.fo.members]),
      JSON.stringify([TURNI_NOTTURNI, TURNI_ORDINE_TESTA, TURNI_SEDE_UNICA, TURNI_DOPO, TURNI_GRUPPI_ALTRI, TURNI_DAL, STAFF_CESSATI, DEPTS.fo.members]));
 })();
+
+sez('Gestione Turnazione spenta dal Quality Manager (21/11/2026)');
+ok('il 423 del Worker chiude e segna spenta', /r\.status===423\|\|j\.spenta\)\{_gtStato=\{ok:true,spenta:true\}/.test(String(_gtChiedi)), true);
+ok('spenta: niente campo del PIN, solo l\'avviso', /st\.spenta\?`<div class="gb-cantiere-s">Per ora la Gestione Turnazione/.test(String(_gtSchermataPin)), true);
+ok('spenta: non è il primo accesso', /primo=st\.ok&&!st\.spenta&&!st\.resident;/.test(String(_gtSchermataPin)), true);

@@ -2761,10 +2761,119 @@ function miniappOpen(inputId){
 }
 // §§ MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone, mosaico)
 function miniappRender(){
+  miniappRenderSalute();
+  miniappRenderDaSistemare();
   miniappRenderStatus();
   miniappLoadAppStatus();
   miniappLoadGalleria();
   miniappLoadBkfBanner();
+}
+// ── PANNELLO DI CONTROLLO: «COME STA COMPASS» E «DA SISTEMARE» (21/11/2026, QM) ──
+// In cima al Pannello quattro riquadri rispondono a «va tutto bene?» senza entrare in Stato
+// del sistema (che non è più nel menu: un clic su un riquadro ci porta, per i dettagli).
+// Sotto, «Da sistemare» compare SOLO quando c'è qualcosa da fare, una riga per cosa, e ogni
+// riga porta alla pagina dove si sistema. Il pallino di stato ora sta accanto al Pannello.
+function _msIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _msDmy(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}
+function _msGm(d){return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');}
+function _msTile(col,titolo,valore,sotto,extra){
+  return `<button class="ms-st ms-st-${col}" onclick="setView('sistema',null)" title="Dettagli in Stato del sistema">
+    <span class="ms-st-k">${titolo}</span><span class="ms-st-v">${valore}</span>${sotto?`<span class="ms-st-s">${sotto}</span>`:''}${extra||''}</button>`;
+}
+async function miniappRenderSalute(){
+  const el=document.getElementById('miniappSalute');if(!el)return;
+  if(!el.innerHTML)el.innerHTML='<div class="ms-attesa">Controllo in corso…</div>';
+  const [stato,bk,cons]=await Promise.all([
+    _qmStatoSistema().catch(()=>null),
+    fetch(PROXY+'/kv/get?key=qm_backup_ultimo',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>j&&j.value?JSON.parse(j.value):null).catch(()=>null),
+    fetch(PROXY+'/consumo',{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null)
+  ]);
+  try{qmAggiornaPallinoStato();}catch(e){}
+  let h='';
+  // Copia su Drive: la notturna; più di 30 ore fa vuol dire che stanotte non è partita.
+  if(bk&&bk.ts){const vecchia=Date.now()-bk.ts>30*3600000;
+    h+=_msTile(vecchia?'amber':'green','Copia su Drive',_qmQuandoAgg(bk.ts),vecchia?'stanotte non è partita':(bk.chiavi||'?')+' chiavi');}
+  else h+=_msTile('amber','Copia su Drive','nessuna registrata','il backup notturno non ha scritto');
+  const v=stato&&stato.v;
+  if(!v)h+=_msTile('red','Worker','non risponde',stato&&stato.errore||'');
+  else if(v.portaChiusa!==true)h+=_msTile('red','Worker',v.portaChiusa===false?'porta aperta':'da ripubblicare','versione '+_esc(v.versione||'?'));
+  else if(v.versione!==WORKER_VERSIONE_ATTESA)h+=_msTile('amber','Worker','da ripubblicare','in linea '+_esc(v.versione||'?')+', serve '+WORKER_VERSIONE_ATTESA);
+  else h+=_msTile('green','Worker','aggiornato',_esc(v.versione)+' · porta chiusa');
+  if(cons&&cons.disponibile&&cons.operazioni){
+    const w=cons.operazioni.write||0,col=w>=800?'red':(w>=500?'amber':'green');
+    h+=_msTile(col,'Scritture di oggi',w.toLocaleString('it-IT')+' su 1.000','',`<span class="ms-barra"><span style="width:${Math.min(100,Math.round(w/10))}%"></span></span>`);
+  }else h+=_msTile('amber','Scritture di oggi','non disponibili','');
+  const sos=(stato&&stato.sospese)||[],er=(stato&&stato.errori)||[];
+  if(sos.length)h+=_msTile('red','Salvataggi',sos.length+(sos.length===1?' non arrivato':' non arrivati'),_esc(sos.slice(0,2).map(x=>x.nome).join(', ')));
+  else if(er.length){const n=er.reduce((s,e)=>s+(e.n||1),0);h+=_msTile('amber','Salvataggi','tutto salvato',n+(n===1?' errore del programma':' errori del programma'));}
+  else h+=_msTile('green','Salvataggi','tutto salvato',stato&&stato.risolte?stato.risolte+' arrivati al secondo colpo':'nessun problema oggi');
+  el.innerHTML=h;
+}
+// Le cose da fare, calcolate da dati già letti: pura, così i controlli la provano senza rete.
+// d = {archivio:[lunedì ISO], settimana:'lunedì ISO del planning salvato', consumi:{sa:[gg/mm/aaaa]…},
+//      recensioni:[{p,ts}], dvr:{scaduti,inScadenza}}
+function _msDaSistemare(d,oggi){
+  const o=oggi?new Date(oggi):new Date();o.setHours(12,0,0,0);
+  const out=[];
+  const lun=new Date(o);lun.setDate(o.getDate()-((o.getDay()+6)%7));
+  const pros=new Date(lun);pros.setDate(lun.getDate()+7);
+  const prosFine=new Date(pros);prosFine.setDate(pros.getDate()+6);
+  const arch=(d.archivio||[]).slice();
+  // Il planning della settimana dopo arriva di solito a fine settimana: da giovedì se ne
+  // chiede conto, sabato e domenica in rosso.
+  if([4,5,6,0].includes(o.getDay())&&!arch.includes(_msIso(pros))&&d.settimana!==_msIso(pros))
+    out.push({col:[6,0].includes(o.getDay())?'red':'amber',testo:'Planning della settimana prossima ('+_msGm(pros)+'–'+_msGm(prosFine)+') non ancora caricato',modulo:'Turni',vista:'turnazione',azione:'Carica'});
+  const chiavi=arch.concat(d.settimana?[d.settimana]:[]);
+  const manc=_turniSettimaneMancanti(chiavi,o);
+  if(manc.length){const g=s=>s.slice(8,10)+'/'+s.slice(5,7);
+    out.push({col:'red',testo:(manc.length===1?'Manca la settimana del '+g(manc[0]):'Mancano '+manc.length+' settimane (la prima del '+g(manc[0])+')')+' in Turni archiviati',modulo:'Turni',vista:'turnazione',azione:'Apri'});}
+  const ieri=new Date(o);ieri.setDate(o.getDate()-1);const di=_msDmy(ieri);
+  const NOMI={sa:'SoulArt',bh:'Boutique',ar:'Art Resort',sb:'Santa Brigida'};
+  const fermi=hs=>hs.filter(h=>Array.isArray((d.consumi||{})[h])&&d.consumi[h].length&&!d.consumi[h].includes(di)).map(h=>NOMI[h]);
+  const fc=fermi(['sa','bh']);if(fc.length)out.push({col:'amber',testo:'Consumi di ieri non inseriti: '+fc.join(', '),modulo:'Compass',vista:'biancheria',azione:'Apri'});
+  const fo=fermi(['ar','sb']);if(fo.length)out.push({col:'amber',testo:'Consumi di ieri non inseriti: '+fo.join(', '),modulo:'Compass OPS',app:'bg-url-input',azione:'Apri'});
+  // Recensioni Booking senza risposta da 10 giorni o più, dentro i 15 dell'Overview.
+  const GG=86400000,vecchie=(d.recensioni||[]).filter(r=>{const a=(o-r.ts)/GG;return a>=10&&a<=15;}).sort((a,b)=>a.ts-b.ts);
+  if(vecchie.length){const resta=Math.max(0,Math.ceil(15-(o-vecchie[0].ts)/GG));
+    out.push({col:resta<=2?'red':'amber',testo:vecchie.length+(vecchie.length===1?' recensione Booking senza risposta':' recensioni Booking senza risposta')+(resta?', la prima scade fra '+resta+(resta===1?' giorno':' giorni'):', la prima scade oggi'),modulo:'Recensioni',vista:'recensioni-'+vecchie[0].p,azione:'Rispondi'});}
+  const dv=d.dvr||{};
+  if(dv.scaduti)out.push({col:'red',testo:dv.scaduti+(dv.scaduti===1?' contratto scaduto':' contratti scaduti')+' da rinnovare',modulo:'DVR',vista:'dvr',azione:'Apri'});
+  if(dv.inScadenza)out.push({col:'amber',testo:dv.inScadenza+(dv.inScadenza===1?' contratto in scadenza':' contratti in scadenza')+' entro 30 giorni',modulo:'DVR',vista:'dvr',azione:'Apri'});
+  return out;
+}
+function _miniappDvrConta(){
+  let scaduti=0,inScadenza=0;
+  try{DVR_SOC_KEYS.forEach(soc=>{(DVR_DATA[soc]?.dipendenti||[]).forEach(it=>{
+    if(!it.scadenzaContratto)return;
+    const g=Math.ceil((new Date(it.scadenzaContratto).setHours(0,0,0,0)-new Date().setHours(0,0,0,0))/86400000);
+    if(g<0)scaduti++;else if(g<=30)inScadenza++;});});}catch(e){}
+  return{scaduti,inScadenza};
+}
+async function miniappRenderDaSistemare(){
+  const el=document.getElementById('miniappDaSistemare');if(!el)return;
+  const leggi=k=>fetch(PROXY+'/kv/get?key='+k,{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>j&&j.value?JSON.parse(j.value):null).catch(()=>null);
+  const [qb,bg]=await Promise.all([leggi('qm_biancheria'),leggi('bg_biancheria')]);
+  const consumi={};
+  [qb,bg].forEach(a=>{(a&&Array.isArray(a.consumi)?a.consumi:[]).forEach(c=>{const h=c.hotel||'ar';(consumi[h]=consumi[h]||[]).push(c.data);});});
+  let settimana=null;
+  try{const w=JSON.parse(localStorage.getItem('qm_weekData')||'null');const g=w&&w.giorni&&w.giorni[0];
+    if(g&&g.date){const x=new Date(g.date);x.setHours(12,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));settimana=_msIso(x);}}catch(e){}
+  const recensioni=[];
+  try{['sa','bh','sl','pr','ms','ar','sb'].forEach(p=>{const h=REV_HOTELS[p];if(!h||!h.data)return;
+    h.data.forEach(r=>{const s=REV_SENT[revUniqueKey(p,r)];if(!r._hasReply&&r._dateTs&&s!==true&&s!=='not_needed')recensioni.push({p,ts:r._dateTs});});});}catch(e){}
+  let archivio=[];try{archivio=turniArchivioSettimane();}catch(e){}
+  const voci=_msDaSistemare({archivio,settimana,consumi,recensioni,dvr:_miniappDvrConta()});
+  if(!voci.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="ms-sez">Da sistemare</div><div class="panel ms-dasis">
+    <div class="ms-dasis-h">${voci.length===1?'Una cosa da fare':voci.length+' cose da fare'}</div>
+    ${voci.map(v=>`<button class="ms-voce" onclick="${v.app?`miniappOpen('${v.app}')`:`miniappVai('${v.vista}')`}">
+      <span class="ms-p ms-p-${v.col}"></span><span class="ms-t">${v.testo}</span><span class="ms-m">${v.modulo}</span><span class="ms-go">${v.azione} ›</span></button>`).join('')}
+  </div>`;
+}
+// Porta alla vista e accende la sua voce nel menu, come un clic lì.
+function miniappVai(vista){
+  const n=[...document.querySelectorAll('.nav-item')].find(x=>(x.getAttribute('onclick')||'').includes("setView('"+vista+"'"));
+  setView(vista,n||null);
 }
 // Interruttore acceso/spento per ciascuna app standalone (qm_app_status in KV,
 // letto da ogni app all'avvio: se il proprio flag è false mostra la schermata
@@ -3094,16 +3203,7 @@ function miniappBkfStatus(){
   return _miniappStatusHTML('green','Aggiornato a oggi',`ore ${_miniappFmtTime(ts)}`);
 }
 function miniappDvrStatus(){
-  let scaduti=0,inScadenza=0;
-  DVR_SOC_KEYS.forEach(soc=>{
-    (DVR_DATA[soc]?.dipendenti||[]).forEach(it=>{
-      if(!it.scadenzaContratto)return;
-      const scadMs=new Date(it.scadenzaContratto).setHours(0,0,0,0);
-      const nowMs=new Date().setHours(0,0,0,0);
-      const daysLeft=Math.ceil((scadMs-nowMs)/86400000);
-      if(daysLeft<0)scaduti++;else if(daysLeft<=30)inScadenza++;
-    });
-  });
+  const {scaduti,inScadenza}=_miniappDvrConta();
   if(scaduti>0)return _miniappStatusHTML('red','Contratti scaduti',`${scaduti} da rinnovare`);
   if(inScadenza>0)return _miniappStatusHTML('amber','In scadenza ≤30gg',`${inScadenza} contratt${inScadenza===1?'o':'i'}`);
   return _miniappStatusHTML('green','Tutto in regola','');
@@ -3172,28 +3272,56 @@ function miniappRenderStatus(){
   const cmEl=document.getElementById('miniapp-cm-status');
   if(cmEl)miniappCmStatus().then(html=>{cmEl.innerHTML=html;});
   const bgEl=document.getElementById('miniapp-bg-status');
-  if(bgEl)miniappBgStatus().then(html=>{bgEl.innerHTML=html;});
+  if(bgEl)miniappBgStatus().then(html=>{bgEl.innerHTML=html;miniappRenderGtToggle();});
 }
-// Gestione Biancheria della Galleria: quando sono stati inseriti gli ultimi consumi, per
-// struttura. Legge bg_biancheria col lasciapassare di Compass, che apre tutte le chiavi.
-// I consumi si inseriscono ogni pomeriggio: se l'ultimo è di più di due giorni fa qualcosa
-// si è fermato, ed è quello che il QM vuole vedere senza aprire l'app.
+// Scheda Compass OPS, larga (21/11/2026, QM): ultimi consumi per struttura (arancio se manca
+// ieri), ultimo accesso col PIN alla Gestione Turnazione e il suo interruttore. Legge con il
+// lasciapassare di Compass, che apre tutte le chiavi; qm_pin_ultimo lo scrive il Worker a ogni
+// PIN giusto, qm_bg_turnazione lo legge il Worker e, se spenta, non apre la Turnazione a nessuno.
+// Sta in una chiave qm_ e non in bg_app_status perché il codice della Galleria scrive le bg_*:
+// un interruttore che i PC della Galleria possono riaccendere non spegne niente.
+let _gtGalleriaAccesa=true;
 async function miniappBgStatus(){
-  try{
-    const r=await fetch(PROXY+'/kv/get?key=bg_biancheria',{cache:'no-store'});
-    const j=await r.json();
-    const a=j&&j.value?JSON.parse(j.value):{};
-    const cons=Array.isArray(a.consumi)?a.consumi:[];
-    if(!cons.length)return _miniappStatusHTML('amber','Nessun consumo inserito','');
-    const p=s=>{const m=String(s||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;};
-    const ult={};
-    cons.forEach(c=>{const h=c.hotel||'ar',d=p(c.data);if(d&&(!ult[h]||d>ult[h]))ult[h]=d;});
-    const oggi=new Date();oggi.setHours(0,0,0,0);
-    const fermi=['ar','sb'].filter(h=>!ult[h]||(oggi-ult[h])/86400000>2);
-    const fmt=d=>d?String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'):'—';
-    const kpi='AR '+fmt(ult.ar)+' · SB '+fmt(ult.sb);
-    return fermi.length?_miniappStatusHTML('amber','Consumi fermi',kpi):_miniappStatusHTML('green','Consumi aggiornati',kpi);
-  }catch(e){return _miniappStatusHTML('amber','Dati non raggiungibili','');}
+  const leggi=k=>fetch(PROXY+'/kv/get?key='+k,{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.json();}).then(j=>j&&j.value?JSON.parse(j.value):null);
+  let a,ult,gt;
+  try{[a,ult,gt]=await Promise.all([leggi('bg_biancheria'),leggi('qm_pin_ultimo').catch(()=>null),leggi('qm_bg_turnazione').catch(()=>null)]);}
+  catch(e){return _miniappStatusHTML('amber','Dati non raggiungibili','');}
+  _gtGalleriaAccesa=!(gt&&gt.attiva===false);
+  return _miniappOpsRighe(a,ult,new Date());
+}
+// Pura: i controlli la provano con dati inventati.
+function _miniappOpsRighe(a,ult,oggi){
+  const cons=a&&Array.isArray(a.consumi)?a.consumi:[];
+  const p=s=>{const m=String(s||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null;};
+  const u={};
+  cons.forEach(c=>{const h=c.hotel||'ar',d=p(c.data);if(d&&(!u[h]||d>u[h]))u[h]=d;});
+  const o=new Date(oggi);o.setHours(0,0,0,0);
+  const ieri=new Date(o);ieri.setDate(o.getDate()-1);
+  const fmt=d=>String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+  const riga=(h,nome)=>{
+    const d=u[h];
+    if(!d)return `<div class="ms-ops-r ms-ops-amber"><span class="ms-ops-k">Consumi ${nome}</span><span class="ms-ops-v">nessun consumo inserito</span></div>`;
+    const ok=d>=ieri;
+    const quando=d>=o?'oggi ('+fmt(d)+')':(+d===+ieri?'ieri ('+fmt(d)+')':fmt(d));
+    return `<div class="ms-ops-r${ok?'':' ms-ops-amber'}"><span class="ms-ops-k">Consumi ${nome}</span><span class="ms-ops-v">ultimo giorno: ${quando}${ok?'':' · manca ieri'}</span></div>`;
+  };
+  let acc='nessun accesso registrato';
+  if(ult&&ult.ts)acc=_qmQuandoAgg(ult.ts)+(ult.chi==='qm'?' (tuo PIN)':(ult.chi==='resident'?' (Front Office Manager)':''));
+  return `<div class="ms-ops">${riga('ar','Art Resort')}${riga('sb','Santa Brigida')}
+    <div class="ms-ops-r"><span class="ms-ops-k">Gestione Turnazione</span><span class="ms-ops-v">ultimo accesso col PIN: ${acc}</span>
+      <span class="ms-ops-tg"><button id="miniapp-gt-toggle" onclick="miniappToggleTurnazione()" class="miniapp-sw" title="Accendi o spegni la sola Gestione Turnazione"><span class="miniapp-toggle-knob"></span></button>
+      <span id="miniapp-gt-testo">${_gtGalleriaAccesa?'accesa sui PC della Galleria':'spenta sui PC della Galleria'}</span></span></div></div>`;
+}
+function miniappRenderGtToggle(){
+  const b=document.getElementById('miniapp-gt-toggle');if(!b)return;
+  b.style.background=_gtGalleriaAccesa?'var(--green)':'var(--border)';
+  const k=b.querySelector('.miniapp-toggle-knob');if(k)k.style.left=_gtGalleriaAccesa?'17px':'2px';
+  const t=document.getElementById('miniapp-gt-testo');if(t)t.textContent=_gtGalleriaAccesa?'accesa sui PC della Galleria':'spenta sui PC della Galleria';
+}
+function miniappToggleTurnazione(){
+  _gtGalleriaAccesa=!_gtGalleriaAccesa;
+  kvSet('qm_bg_turnazione',JSON.stringify({attiva:_gtGalleriaAccesa})).catch(()=>{});
+  miniappRenderGtToggle();
 }
 let pianoNavIdx=null; // indice giorno selezionato nel pannello overview
 let _cmPianoStats=null; // {prev,cur} sostituzioni bottiglia Art (eventi, non camere uniche) sett. scorsa/corrente
@@ -5114,7 +5242,7 @@ async function qmEsportaArchivio(btn){
 // codice e server possono divergere: fino a oggi se ne accorgeva solo test/esegui.sh, cioe'
 // nessuno mentre lavora. Un controllo in esegui.sh verifica che questa costante combaci con
 // WORKER_VERSIONE in worker.js, altrimenti direbbe "da ripubblicare" per sempre.
-const WORKER_VERSIONE_ATTESA='2026-11-19b';
+const WORKER_VERSIONE_ATTESA='2026-11-21a';
 // ── ERRORI DEL PROGRAMMA — raccolti qui, perche' la console non la apre nessuno ──────
 // Quando qualcosa va storto nel codice, il messaggio finisce nella console del browser: il
 // QM non la apre (giustamente) e quindi un guasto puo' restare invisibile finche' non si

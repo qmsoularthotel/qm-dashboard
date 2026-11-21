@@ -6,7 +6,7 @@
 <title>Compass Ops – Galleria</title>
 <!-- Stesso foglio di stile di Compass: menu, barra in alto, pannelli e schede sono quelli
      (25/09/2026). Il numero si allinea da solo con strumenti/versione.sh. -->
-<link rel="stylesheet" href="style.css?v=292">
+<link rel="stylesheet" href="style.css?v=293">
 <style>
 /* Solo cio' che style.css di Compass non ha: il resto viene da li'. */
 :root{--shadow:0 1px 4px rgba(0,0,0,.08);}
@@ -157,7 +157,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-21.9';
+const QM_APP_BUILD='2026-11-21.10';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -3611,6 +3611,9 @@ async function _gtChiedi(corpo){
   let j={};try{j=_gtJson(await r.text())||{};}catch(e){}
   if(r.status===404||r.status===405||typeof j.ok!=='boolean'||(r.status===401&&!/PIN|Permesso/.test(j.error||'')))
     j={ok:false,error:'Il Worker va ripubblicato (versione del 16/11/2026): fino ad allora questa voce non si apre.'};
+  // Spenta dal QM dal Pannello di Controllo (21/11/2026): si chiude anche se era aperta e al
+  // posto del PIN compare l'avviso.
+  if(r.status===423||j.spenta){_gtStato={ok:true,spenta:true};if(_gtTp){gtPrefChiudi('');setTimeout(()=>{try{gtPrefRender();}catch(e){}},0);}}
   return j;
 }
 // Entrando nella voce: se i 5 minuti del PIN non sono finiti si riapre com'era, altrimenti
@@ -3686,7 +3689,7 @@ function _gtBanner(){
 // Schermata del PIN, la stessa per le due voci (cambia solo la scritta in alto).
 function _gtSchermataPin(el,voce){
   const st=_gtStato||{};
-  const primo=st.ok&&!st.resident;
+  const primo=st.ok&&!st.spenta&&!st.resident;
   // NON type="password": il browser ci rimetteva da solo una password salvata e la casella
   // compariva già piena di puntini (QM, 16/11/2026). Campo di testo con le cifre mascherate
   // (-webkit-text-security), che il browser non riempie.
@@ -3694,9 +3697,10 @@ function _gtSchermataPin(el,voce){
   el.innerHTML=`<div class="gb-cantiere" style="min-height:calc(100vh - 160px);">
     <div style="color:var(--accent);">${GT_ICONA_LUCCHETTO}</div>
     <div class="gb-cantiere-k" style="margin-top:10px;">${voce}</div>
-    <div class="gb-cantiere-t" style="font-size:22px;">${primo?'Scegli il PIN del Front Office Manager':'Riservato al Front Office Manager'}</div>
+    <div class="gb-cantiere-t" style="font-size:22px;">${st.spenta?'Momentaneamente spenta':(primo?'Scegli il PIN del Front Office Manager':'Riservato al Front Office Manager')}</div>
     <div class="gb-cantiere-r"></div>
-    ${st.ok===false?`<div class="gb-cantiere-s" style="color:var(--red);">${_gtEsc(st.error||'Non raggiungibile')}</div>`:
+    ${st.spenta?`<div class="gb-cantiere-s">Per ora la Gestione Turnazione è spenta dal Quality Manager. Le altre voci dell'app funzionano come sempre.</div>`:
+      st.ok===false?`<div class="gb-cantiere-s" style="color:var(--red);">${_gtEsc(st.error||'Non raggiungibile')}</div>`:
       `<div class="gb-cantiere-s" style="margin-bottom:14px;">${primo?'Primo accesso: scegli un PIN di 4–8 cifre e scrivilo due volte. Ti servirà ogni volta che apri questa voce.':'Inserisci il PIN. Resta aperto mentre lavori, anche se passi a un\'altra voce, e si chiude dopo 5 minuti senza attività.'}</div>
       <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
         ${campo('gt-pin',primo?'nuovo PIN':'PIN')}

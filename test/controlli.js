@@ -4190,3 +4190,29 @@ ok('hkpNSave non scrive più il mese intero alla cieca', /kvSet\(sk,json\)/.test
 ok('senza aver letto il cloud non si scrive',      /catch\(e\)\{[\s\S]{0,120}setTimeout[\s\S]{0,120}return false;/.test(String(_hkpNScrivi)), true);
 ok('si scrive cloud + cambi di qui',               /_hkpNUnisci\(cloud,cambi\)[\s\S]*kvSet\(sk,JSON\.stringify\(unito\)\)/.test(String(_hkpNScrivi)), true);
 ok('recupero: solo le caselle vuote sul cloud',    JSON.stringify(_qmHkpMancanti({ a: 'MA', b: 'RO', c: '' }, { a: 'AN' })), JSON.stringify({ b: 'RO' }));
+
+sez('Pannello di Controllo: Da sistemare e scheda Compass OPS (21/11/2026)');
+(function () {
+  // Sabato 21/11/2026: settimana in corso dal 16/11, la prossima dal 23/11. Dati inventati.
+  var sab = new Date(2026, 10, 21, 12), mer = new Date(2026, 10, 18, 12);
+  var arch = ['2026-11-02', '2026-11-09', '2026-11-16'];
+  var tutto = { archivio: arch, settimana: '2026-11-16', consumi: { sa: ['20/11/2026'], bh: ['20/11/2026'], ar: ['20/11/2026'], sb: ['20/11/2026'] }, recensioni: [], dvr: {} };
+  var v = function (d, o) { return _msDaSistemare(d, o).map(function (x) { return x.testo; }).join(' | '); };
+  ok('sabato senza planning della prossima: in rosso', _msDaSistemare(tutto, sab)[0] && _msDaSistemare(tutto, sab)[0].col + ' ' + /23\/11–29\/11/.test(_msDaSistemare(tutto, sab)[0].testo), 'red true');
+  ok('mercoledì non se ne chiede conto',              v(Object.assign({}, tutto, { consumi: {} }), mer), '');
+  ok('caricato il planning della prossima: niente',  v(Object.assign({}, tutto, { settimana: '2026-11-23' }), sab), '');
+  ok('una settimana mancante in archivio',            /Manca la settimana del 09\/11/.test(v(Object.assign({}, tutto, { archivio: ['2026-11-02', '2026-11-16'], settimana: '2026-11-23' }), sab)), true);
+  var c = JSON.parse(JSON.stringify(tutto)); c.settimana = '2026-11-23'; c.consumi.sb = ['19/11/2026']; c.consumi.bh = ['19/11/2026'];
+  var r = _msDaSistemare(c, sab);
+  ok('consumi di ieri mancanti: Compass e Compass OPS separati', r.map(function (x) { return x.modulo + ':' + x.testo.split(': ')[1]; }).join(), 'Compass:Boutique,Compass OPS:Santa Brigida');
+  ok('la riga di Compass OPS apre l\'app',             r[1].app, 'bg-url-input');
+  var rec = Object.assign({}, tutto, { settimana: '2026-11-23', recensioni: [{ p: 'sl', ts: +new Date(2026, 10, 9, 12) }, { p: 'sa', ts: +new Date(2026, 10, 19, 12) }] });
+  ok('recensione senza risposta da 12 giorni: scade fra 3', v(rec, sab), '1 recensione Booking senza risposta, la prima scade fra 3 giorni');
+  ok('e porta alla sua struttura',                    _msDaSistemare(rec, sab)[0].vista, 'recensioni-sl');
+  ok('contratti DVR',                                 v(Object.assign({}, tutto, { settimana: '2026-11-23', dvr: { scaduti: 1, inScadenza: 2 } }), sab), '1 contratto scaduto da rinnovare | 2 contratti in scadenza entro 30 giorni');
+  var ops = _miniappOpsRighe({ consumi: [{ hotel: 'ar', data: '20/11/2026' }, { hotel: 'sb', data: '19/11/2026' }] }, { ts: +new Date(2026, 10, 21, 11, 30), chi: 'resident' }, sab);
+  ok('Compass OPS: Art Resort aggiornato, Santa Brigida in arancio', /ms-ops-r">[^]*?Art Resort[^]*?ieri \(20\/11\)/.test(ops) && /ms-ops-amber"><span class="ms-ops-k">Consumi Santa Brigida[^]*?manca ieri/.test(ops), true);
+  ok('Compass OPS: interruttore della Turnazione',   /miniappToggleTurnazione\(\)/.test(ops), true);
+  ok('l\'interruttore scrive una chiave qm_, non bg_', /kvSet\('qm_bg_turnazione'/.test(String(miniappToggleTurnazione)), true);
+  ok('il Pannello disegna fascia e Da sistemare',    /miniappRenderSalute\(\)[\s\S]*miniappRenderDaSistemare\(\)/.test(String(miniappRender)), true);
+})();

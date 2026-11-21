@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<link rel="stylesheet" href="style.css?v=292">
+<link rel="stylesheet" href="style.css?v=293">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='603-20261121';
+  const V='604-20261121';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -145,9 +145,8 @@
       <div class="nav-item" onclick="setView('spese',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg></span></span>Spese Fornitori</div>
 
       <div class="nav-section">Pannello di Controllo</div>
-      <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="#fff"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span></span>Applicazioni</div>
+      <div class="nav-item" onclick="setView('miniapp',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="#fff"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span></span>Applicazioni<span id="navStatoDot" title="Controllo in corso" style="width:9px;height:9px;border-radius:50%;background:var(--border);margin-left:auto;flex-shrink:0;"></span></div>
       <div class="nav-item" onclick="setView('sicurezza',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"></rect><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"></path><circle cx="12" cy="15.5" r="1.4" fill="#fff" stroke="none"></circle></svg></span></span>Sicurezza</div>
-      <div class="nav-item" onclick="setView('sistema',this)"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="11" rx="2"></rect><path d="M8 20.5h8"></path><path d="M12 16.5v4"></path></svg></span></span>Stato del sistema<span id="navStatoDot" title="Controllo in corso" style="width:9px;height:9px;border-radius:50%;background:var(--border);margin-left:auto;flex-shrink:0;"></span></div>
       <div class="nav-section" style="display:flex;align-items:center;justify-content:space-between;">
         <span>Upload Center</span>
         <span id="ucProgressLabel" style="font-size:9px;color:var(--text-dim);font-weight:400;">0/6</span>
@@ -1438,6 +1437,12 @@
         </div>
       </div>
       <div class="view" id="view-miniapp">
+        <!-- Come sta Compass e Da sistemare (21/11/2026): li disegnano miniappRenderSalute e
+             miniappRenderDaSistemare; Da sistemare resta vuoto quando non c'è niente da fare. -->
+        <div class="ms-sez">Come sta Compass</div>
+        <div id="miniappSalute" class="ms-stato"></div>
+        <div id="miniappDaSistemare"></div>
+        <div class="ms-sez">Applicazioni</div>
         <div class="miniapp-grid" id="miniappGrid">
           <div class="panel miniapp-card">
             <div class="miniapp-card-top">
@@ -1535,7 +1540,7 @@
           <!-- Gestione Biancheria della Galleria: app del Resident Manager. Il suo interruttore
                scrive bg_app_status e non qm_app_status: il codice della Galleria apre solo le
                chiavi bg_*. Il QM la apre da qui senza codice, col lasciapassare di Compass. -->
-          <div class="panel miniapp-card">
+          <div class="panel miniapp-card miniapp-card-larga">
             <div class="miniapp-card-top">
               <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span>
               <div class="miniapp-nome">
@@ -1683,7 +1688,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1122-20261121"></script>
+<script src="app.js?v=1123-20261121"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

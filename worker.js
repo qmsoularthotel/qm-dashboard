@@ -17,7 +17,7 @@
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /versione.
-const WORKER_VERSIONE = '2026-11-19b';
+const WORKER_VERSIONE = '2026-11-21a';
 
 export default {
   async fetch(request, env) {
@@ -99,15 +99,25 @@ export default {
       const res = await leggi('qm_pin_resident'), suo = await leggi('qm_pin_qm');
       const ora = Date.now();
       const tent = (await leggi('qm_pin_tentativi')) || { n: 0, fino: 0 };
+      // Interruttore della sola Gestione Turnazione, dal Pannello di Controllo di Compass
+      // (21/11/2026). Sta in qm_bg_turnazione e non in una bg_*: il codice della Galleria
+      // scrive le bg_*, e un interruttore che si riaccende da solo non spegne niente.
+      // Spenta: non si apre e non si rinnova a nessuno, PIN giusto o no (423).
+      const spenta = ((await leggi('qm_bg_turnazione')) || {}).attiva === false;
+      if (spenta && ['apri', 'imposta-resident', 'dati', 'rinnova', 'storico'].includes(az))
+        return json({ ok: false, spenta: true, error: 'La Gestione Turnazione è spenta dal Quality Manager' }, 423);
+      // Ultimo accesso col PIN, per la scheda Compass OPS del Pannello: una scrittura per PIN.
+      const segnaAccesso = chi => env.QM_STORAGE.put('qm_pin_ultimo', JSON.stringify({ ts: ora, chi }));
 
       if (az === 'stato')
-        return json({ ok: true, resident: !!res, qm: !!suo, bloccatoFino: tent.fino > ora ? tent.fino : 0 });
+        return json({ ok: true, resident: !!res, qm: !!suo, spenta, bloccatoFino: tent.fino > ora ? tent.fino : 0 });
 
       // Il Resident sceglie il suo PIN UNA volta; per cambiarlo il QM lo azzera da Compass.
       if (az === 'imposta-resident') {
         if (res) return json({ ok: false, error: 'Il PIN del Front Office Manager c\'è già: per cambiarlo il QM lo azzera da Compass' }, 409);
         if (!pinValido(corpo.pin)) return json({ ok: false, error: 'Il PIN è di 4–8 cifre' }, 400);
         await env.QM_STORAGE.put('qm_pin_resident', JSON.stringify(await hashPin(corpo.pin)));
+        await segnaAccesso('resident');
         const scade = ora + 5 * 60000;
         return json({ ok: true, tp: await firmaTp(env, scade), scade, chi: 'resident' });
       }
@@ -137,6 +147,7 @@ export default {
           return json({ ok: false, error: n >= 5 ? 'PIN sbagliato. Tentativi fermi per 15 minuti' : 'PIN sbagliato', restano: n >= 5 ? 0 : 5 - n }, 403);
         }
         if (tent.n || tent.fino) await env.QM_STORAGE.delete('qm_pin_tentativi');
+        await segnaAccesso(chi);
         const scade = ora + 5 * 60000;
         return json({ ok: true, tp: await firmaTp(env, scade), scade, chi });
       }
