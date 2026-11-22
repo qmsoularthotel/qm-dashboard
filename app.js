@@ -16732,6 +16732,14 @@ function _biaConsumiDaSalvare(hotel,per){
 // non salvati o da riscrivere): si sistemano in un minuto e cambiano i numeri sul foglio.
 // In Compass la lista è vuota: lì si blocca tutto.
 const BIA_DIST_SOLO_AVVISO=[];
+// Giorno col mese, per i dati da sistemare (22/11/2026, il QM: "specificare i mesi, non solo
+// i giorni"): «mercoledì 11» non dice di quale mese, e gli arretrati possono essere vecchi.
+// L'anno solo se non è quello corrente.
+function _biaGgMese(d){
+  if(!d)return'';
+  const a=d.getFullYear()!==new Date().getFullYear()?' '+d.getFullYear():'';
+  return BIA_GG_NOMI[d.getDay()]+' '+d.getDate()+' '+BIA_MESI_LUNGHI[d.getMonth()].toLowerCase()+a;
+}
 function _biaDistBlocchi(hotel,data){
   const out=[];
   if(_bia.giri.some(x=>_biaH(x)===hotel&&x.data===data))return out;
@@ -16739,7 +16747,7 @@ function _biaDistBlocchi(hotel,data){
   const per=D?_biaPeriodo(hotel,data):null;
   if(!per){out.push({titolo:'Data non valida',testo:'Indica la data della consegna per cui stampare la distinta.',tipo:'',date:[]});return out;}
   if(per.vuoto){out.push({titolo:'Niente da ritirare',testo:'C\'è già una consegna registrata in questa data o dopo: non ci sono giorni da ritirare.',tipo:'',date:[]});return out;}
-  const gg=a=>a.map(x=>_biaGgEtichetta(_biaParse(x))).join(', ');
+  const gg=a=>a.map(x=>_biaGgMese(_biaParse(x))).join(', ');
   const b=_biaBuchi(hotel,D);
   const ds=_biaConsumiDaSalvare(hotel,per);
   // Consumi mancanti del periodo (escono su QUESTA distinta) e di prima (consegne passate).
@@ -16813,8 +16821,8 @@ function _biaPannelloDistinta(oggi){
     h+=`<div style="font-size:var(--fs-xs);color:var(--text-dim);line-height:1.5;margin-bottom:10px;">La consegna del ${esc(data)} è già registrata: la distinta riporta i <strong style="color:var(--text);">${tot}</strong> pezzi dati a Raimondo quel giorno.</div>`;
   }
   const link=(b,s)=>{const d=_biaParse(s);
-    return d&&d>oggi?`<span style="white-space:nowrap;">${esc(_biaGgEtichetta(d))} (non ancora arrivato)</span>`
-      :`<a href="#" onclick="event.preventDefault();biaVaiA('${_biaHotel}','${b.tipo}','${s}')" style="color:inherit;font-weight:700;white-space:nowrap;">${d?esc(_biaGgEtichetta(d)):esc(s)}</a>`;};
+    return d&&d>oggi?`<span style="white-space:nowrap;">${esc(_biaGgMese(d))} (non ancora arrivato)</span>`
+      :`<a href="#" onclick="event.preventDefault();biaVaiA('${_biaHotel}','${b.tipo}','${s}')" style="color:inherit;font-weight:700;white-space:nowrap;">${d?esc(_biaGgMese(d)):esc(s)}</a>`;};
   const righe=arr=>arr.map(b=>`<div style="margin-top:4px;"><strong>${esc(b.titolo)}</strong>${b.date.length?': '+b.date.map(s=>b.tipo?link(b,s):esc(s)).join(', '):' — '+esc(b.testo)}</div>`).join('');
   // Dati mancanti che NON fermano la stampa (solo dove BIA_DIST_SOLO_AVVISO li elenca).
   if(!reg&&av.length){

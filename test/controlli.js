@@ -407,6 +407,11 @@ sez('Biancheria: la distinta si stampa solo se tutto e\' in regola');
     var hb = _biaPannelloDistinta(_biaOggi());
     ok('riquadro: pulsante spento se non in regola', /id="bia-stampa" onclick="biaPrintDistinta\(\)" disabled/.test(hb), true);
     ok('riquadro: dice cosa manca', /Consegne non registrate/.test(hb) && /biaVaiA\('sa','consegna','12\/11\/2026'\)/.test(hb), true);
+    // 22/11/2026, il QM: "specificare i mesi, non solo i giorni"
+    ok('riquadro: la data dice anche il mese', />giovedì 12 novembre<\/a>/.test(hb), true);
+    ok('il testo dell\'avviso dice anche il mese', /giovedì 12 novembre/.test(_biaDistBlocchi('sa', '14/11/2026')[0].testo), true);
+    ok('anno diverso: si scrive anche l\'anno', _biaGgMese(new Date(new Date().getFullYear() - 1, 11, 30)).slice(-4), String(new Date().getFullYear() - 1));
+    ok('anno corrente: niente anno', /\d{4}$/.test(_biaGgMese(new Date(new Date().getFullYear(), 0, 5))), false);
     scena(tutti, [g07, g10, g12]);
     hb = _biaPannelloDistinta(_biaOggi());
     ok('riquadro: pulsante acceso se in regola', /id="bia-stampa" onclick="biaPrintDistinta\(\)"\s+style/.test(hb), true);
@@ -415,7 +420,7 @@ sez('Biancheria: la distinta si stampa solo se tutto e\' in regola');
     _biaOggi = function () { return new Date(2026, 10, 12); };
     scena(tutti.slice(0, 6), [g07, g10, g12]);
     hb = _biaPannelloDistinta(_biaOggi());
-    ok('riquadro: un giorno non ancora arrivato non si apre', /venerdì 13 \(non ancora arrivato\)/.test(hb), true);
+    ok('riquadro: un giorno non ancora arrivato non si apre', /venerdì 13 novembre \(non ancora arrivato\)/.test(hb), true);
     _biaOggi = function () { return new Date(2026, 10, 13); };
 
     // la pagina: la distinta ha il suo riquadro, PRIMA della consegna, e la consegna non stampa piu'

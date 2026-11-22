@@ -309,6 +309,7 @@ sez('Gestione Biancheria (Galleria): la distinta si stampa solo se tutto e\' in 
     ok('gb: pulsante acceso con i soli avvisi', /id="gb-stampa" onclick="gbPrintDistinta\(\)"\s+style/.test(H), true);
     ok('gb: gli avvisi si vedono, in ambra', /id="gb-dist-avvisi"/.test(H) && /gbVaiA\('ar','consegna','11\/11\/2026'\)/.test(H), true);
     ok('gb: nessun riquadro rosso con i soli avvisi', /id="gb-dist-blocchi"/.test(H), false);
+    ok('gb: negli avvisi la data dice anche il mese', />mercoledì 11 novembre<\/a>/.test(H), true);
     ok('gb: un solo pulsante di stampa', (H.match(/onclick="gbPrintDistinta\(\)"/g) || []).length, 1);
     // un consumo mancante DENTRO il periodo resta bloccante: cambia i numeri sul foglio
     scena([g09, g11]);

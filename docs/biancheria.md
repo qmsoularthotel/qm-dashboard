@@ -1377,6 +1377,11 @@ Ogni blocco ha una chiave `k` (`consegne`, `portato`, `consumi-prima`, `consumi`
 | valore | `[]`: ferma tutto | `['consegne','portato','consumi-prima']` |
 | fermano sempre | — | consumi **del periodo** mancanti, numeri non salvati o da riscrivere |
 
+**Le date dicono anche il mese** (stesso giorno, il QM): nei riquadri della distinta e nei loro
+testi si scrive «mercoledì 11 novembre», non «mercoledì 11» — gli arretrati della Galleria possono
+essere di mesi diversi. `_biaGgMese(d)` / `_gbGgMese(d)`; l'anno compare solo se non è quello
+corrente. `_biaGgEtichetta` (senza mese) resta per il periodo, che è sempre di pochi giorni.
+
 I consumi mancanti sono divisi in due: `consumi` (giorni del periodo, cioè i numeri sul foglio) e
 `consumi-prima` (giorni di consegne già passate). Quando la Galleria avrà sistemato i suoi dati
 basta svuotare `GB_DIST_SOLO_AVVISO` per avere la stessa regola di Compass. Controlli in
