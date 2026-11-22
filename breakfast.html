@@ -429,7 +429,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-22.1';
+const QM_APP_BUILD='2026-11-22.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -703,13 +703,9 @@ function renderDay(){
     };
     // Camere "200" (Boutique) prima, poi le "Art" (SoulArt) — non ordinamento puramente
     // numerico, altrimenti Art 12 finirebbe prima di 207.
-    // Solo chi ha la colazione INCLUSA; San Liborio e la 206 mai (copia di _bkfConColazione
-    // in app.js, 22/11/2026).
-    const conColazione=r=>{
-      const cam=String(r&&r.camera||'').trim();
-      if(/lib/i.test(cam)||cam==='206')return false;
-      return /^(BB|HB|FB|AI|MP)$/i.test(String(r.trattamento||'').trim());
-    };
+    // Solo chi ha la colazione INCLUSA: decide il trattamento, mai la camera (copia di
+    // _bkfConColazione in app.js, 22/11/2026).
+    const conColazione=r=>/^(BB|HB|FB|AI|MP)$/i.test(String(r&&r.trattamento||'').trim());
     const bkRows=Object.values(bkfRoomInfo||{}).flat().filter(r=>r&&r.camera&&/booking/i.test(r.origine||'')&&conColazione(r)&&presentOn(r))
       .sort((a,b)=>{
         const ga=/^art/i.test((a.camera||'').trim())?1:0,gb=/^art/i.test((b.camera||'').trim())?1:0;

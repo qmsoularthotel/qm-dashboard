@@ -9878,12 +9878,10 @@ function _bkfGuestPresentOn(g,targetDate,isToday){
   if(co&&co<targetDate)return false;
   return true;
 }
-// Colazione Booking.com (22/11/2026): solo chi ha la colazione INCLUSA. San Liborio e la
-// camera 206 del Boutique non hanno colazione inclusa, quindi non ci vanno mai. Copiata
-// identica in breakfast.html.
+// Colazione Booking.com (22/11/2026): solo chi ha la colazione INCLUSA nella prenotazione.
+// Decide il trattamento, mai la camera: se in 206 o a Liborio arriva qualcuno con la
+// colazione, c'è. Copiata identica in breakfast.html.
 function _bkfConColazione(r){
-  const cam=String(r&&r.camera||'').trim();
-  if(/lib/i.test(cam)||cam==='206')return false;
   return /^(BB|HB|FB|AI|MP)$/i.test(String(r.trattamento||'').trim());
 }
 let _bkfBookingDayOffset=0;

@@ -96,9 +96,9 @@ fi
 # tornasse ad archiviare i giorni futuri, il totale del mese ricomincerebbe a mentire.
 BKF_KO=0
 # Colazione Booking.com (22/11/2026): anche l'app mostra solo chi ha la colazione inclusa,
-# mai San Liborio e la 206 — copia di _bkfConColazione in app.js.
-if ! grep -q "conColazione(r)&&presentOn(r)" breakfast.html || ! grep -q "cam==='206')return false" breakfast.html; then
-  echo "  NO  breakfast.html: la Colazione Booking.com non filtra più colazione inclusa / Liborio / 206"
+# decide il trattamento, mai la camera — copia di _bkfConColazione in app.js.
+if ! grep -q "conColazione(r)&&presentOn(r)" breakfast.html || ! grep -q "conColazione=r=>/^(BB|HB|FB|AI|MP)\$/i" breakfast.html; then
+  echo "  NO  breakfast.html: la Colazione Booking.com non filtra più sulla colazione inclusa"
   BKF_KO=1
 fi
 # Aggiornamento automatico: senza, un'app rimasta aperta continua a girare col codice
