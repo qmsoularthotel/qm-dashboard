@@ -144,6 +144,18 @@ Verificata riproducendo il report del PMS su 8 giorni su 8, per entrambe le righ
 
 Sbagliare una delle due fa divergere i numeri dal PMS senza che si veda.
 
+### Colazione Booking.com: solo colazione inclusa (22/11/2026)
+
+La lista «Colazione Booking.com» (Overview e `breakfast.html`) mostra **solo** le prenotazioni
+Booking con la colazione inclusa (`BB`, `HB`, `FB`, `AI`, `MP`): le `RO` non ci vanno più.
+**San Liborio e la camera 206** del Boutique non hanno colazione inclusa e non ci vanno mai.
+Regola in `_bkfConColazione` (app.js), copiata identica in `breakfast.html` (sentinella in
+`esegui.sh`). Per questo `qm_arriviData` porta ora `trattamento` anche per fermate e
+partenze (prima solo per gli arrivi): un campo in più, nessun lettore ne risente.
+
+Il PMS chiama San Liborio `AS_LIB`: `_prenCamera` lo scrive **«Liborio»**, come già
+l'Operativa HKP. I conteggi BB/RO del report non cambiano.
+
 ### L'intervallo si deduce dai dati, non dal PDF
 
 Il PDF **non riporta** l'intervallo chiesto all'export (a differenza del vecchio Report

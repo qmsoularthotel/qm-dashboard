@@ -4343,3 +4343,21 @@ sez('Pannello di Controllo: Da sistemare e scheda Compass OPS (21/11/2026)');
   ok('il Pannello disegna Da sistemare',            /miniappRenderDaSistemare\(\)/.test(String(miniappRender)) && !/miniappRenderSalute/.test(String(miniappRender)), true);
   ok('Stato del sistema ha la sua vista',              /if\(id==='sistema'\)\{try\{miniappRenderSalute\(\)/.test(String(setView)), true);
 })();
+
+sez('Colazione Booking.com: solo colazione inclusa, mai Liborio e 206 (22/11/2026)');
+(function () {
+  // Nomi inventati.
+  var P = [
+    { ospite: 'Rossi Anna', alloggio: 'AS_LIB / AS Suite', arrivo: '2026-11-20', partenza: '2026-11-24', tratt: 'RO', origine: 'Booking.com' },
+    { ospite: 'Bianchi Luca', alloggio: '206 / PC Doppia', arrivo: '2026-11-20', partenza: '2026-11-24', tratt: 'BB', origine: 'Booking.com' },
+    { ospite: 'Verdi Sara', alloggio: 'Art 3 / AS Superior', arrivo: '2026-11-20', partenza: '2026-11-24', tratt: 'BB', origine: 'Booking.com' },
+    { ospite: 'Neri Paolo', alloggio: 'Art 4 / AS Superior', arrivo: '2026-11-20', partenza: '2026-11-24', tratt: 'RO', origine: 'Booking.com' }
+  ].map(function (p) { var c = _prenCamera(p.alloggio); return Object.assign({}, p, { camera: c.camera, tipo: c.tipo, pax: 2, struttura: _prenStruttura(p.alloggio), stato: '', codice: '' }); });
+  ok('AS_LIB si chiama Liborio', P[0].camera, 'Liborio');
+  ok('e resta San Liborio',      P[0].struttura, 'SL');
+  var ad = _prenArriviData(P, '2026-11-22');
+  ok('le fermate portano il trattamento', ad.fermate.map(function (f) { return f.trattamento; }).join(), 'RO,BB,BB,RO');
+  var dentro = ad.fermate.filter(_bkfConColazione).map(function (f) { return f.camera; }).join();
+  ok('a colazione solo chi ha la colazione inclusa, senza Liborio e 206', dentro, 'Art 3');
+  ok('Compass filtra la lista con _bkfConColazione', /_bkfConColazione\(r\)/.test(String(bkfBookingRender)), true);
+})();

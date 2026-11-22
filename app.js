@@ -9878,6 +9878,14 @@ function _bkfGuestPresentOn(g,targetDate,isToday){
   if(co&&co<targetDate)return false;
   return true;
 }
+// Colazione Booking.com (22/11/2026): solo chi ha la colazione INCLUSA. San Liborio e la
+// camera 206 del Boutique non hanno colazione inclusa, quindi non ci vanno mai. Copiata
+// identica in breakfast.html.
+function _bkfConColazione(r){
+  const cam=String(r&&r.camera||'').trim();
+  if(/lib/i.test(cam)||cam==='206')return false;
+  return /^(BB|HB|FB|AI|MP)$/i.test(String(r.trattamento||'').trim());
+}
 let _bkfBookingDayOffset=0;
 function bkfRoomInfoBuild(){
   if(!arriviData)return;
@@ -9886,7 +9894,7 @@ function bkfRoomInfoBuild(){
   // dall'arrivo. Ogni camera ora ha un ARRAY di prenotazioni, non una sola.
   const freshMap={};
   const add=(list,tipo)=>(list||[]).forEach(a=>{
-    const cam=(a.camera||'').trim();
+    const cam=_prenNomeCamera((a.camera||'').trim());
     if(!cam)return;
     // Principe/Umberto e Mastrangelo non fanno colazione tracciata qui — escluse.
     // Controlla il nome camera (stessa regola di fixArriviStruttura), non il campo
@@ -9982,7 +9990,7 @@ function bkfBookingRender(){
   const dateLbl=target.toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});
   const isToday=_bkfBookingDayOffset===0;
   const all=Object.values(BKF_ROOM_INFO).flat().filter(r=>r&&r.camera); // ogni camera può avere più prenotazioni (cambio)
-  const rows=all.filter(r=>/booking/i.test(r.origine||'')&&_bkfGuestPresentOn(r,target,isToday));
+  const rows=all.filter(r=>/booking/i.test(r.origine||'')&&_bkfConColazione(r)&&_bkfGuestPresentOn(r,target,isToday));
   // Camere "200" (Boutique) prima, poi le "Art" (SoulArt) — non ordinamento puramente
   // numerico, altrimenti Art 12 finirebbe prima di 207.
   rows.sort((a,b)=>{
@@ -17701,9 +17709,12 @@ function _prenPax(s){
 function _prenCamera(alloggio){
   const s=String(alloggio||'').trim();
   const i=s.indexOf('/');
-  if(i===-1)return{camera:s,tipo:''};
-  return{camera:s.slice(0,i).trim(), tipo:s.slice(i+1).trim()};
+  if(i===-1)return{camera:_prenNomeCamera(s),tipo:''};
+  return{camera:_prenNomeCamera(s.slice(0,i).trim()), tipo:s.slice(i+1).trim()};
 }
+// Il PMS chiama San Liborio «AS_LIB»: in Compass e nelle app si legge «Liborio» (22/11/2026),
+// come la chiama già l'Operativa HKP.
+function _prenNomeCamera(c){return /^AS[_\s-]?LIB$/i.test(String(c||'').trim())?'Liborio':c;}
 
 // Codici struttura maiuscoli, come li usa già qm_arriviData (SA/BH/SL/PR/MS).
 // Stesse regole di fixArriviStruttura: TUTTE le camere Art sono SoulArt.
@@ -17798,10 +17809,10 @@ function _prenIntervallo(pren){
 function _prenArriviData(pren,iso){
   const dmy=s=>{const[a,m,g]=s.split('-');return (+g)+'/'+(+m);};   // "20/8", come prima
   const base=p=>({camera:p.camera, struttura:p.struttura, ospite:p.ospite, pax:p.pax,
-                  arrivo:dmy(p.arrivo), partenza:dmy(p.partenza), origine:p.origine});
+                  arrivo:dmy(p.arrivo), partenza:dmy(p.partenza), origine:p.origine, trattamento:p.tratt});
   const arrivi=[],fermate=[],partenze=[];
   pren.forEach(p=>{
-    if(p.arrivo===iso)      arrivi.push({...base(p), tipo_camera:p.tipo, trattamento:p.tratt, note:'', alert:false});
+    if(p.arrivo===iso)      arrivi.push({...base(p), tipo_camera:p.tipo, note:'', alert:false});
     else if(p.partenza===iso) partenze.push(base(p));
     else if(p.arrivo<iso&&iso<p.partenza) fermate.push(base(p));
   });
