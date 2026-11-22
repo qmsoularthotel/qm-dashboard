@@ -148,9 +148,10 @@ Sbagliare una delle due fa divergere i numeri dal PMS senza che si veda.
 
 La lista «Ospiti BB Booking.com» (si chiamava «Colazione Booking.com») (Overview e `breakfast.html`) mostra **solo** le prenotazioni
 Booking con la colazione inclusa (`BB`, `HB`, `FB`, `AI`, `MP`): le `RO` non ci vanno più.
-Decide **il trattamento della prenotazione, mai la camera**: la 206 o Liborio con ospiti in
-`BB` ci sono (il 22/11 un'esclusione fissa della 206 e di Liborio è stata tolta subito: il QM
-intendeva solo che gli ospiti di quel momento non avevano la colazione).
+Decide **il trattamento della prenotazione, mai la camera**: la 206 con ospiti in `BB` c'è.
+**San Liborio invece non c'è mai** (deciso dal QM la sera del 22/11): non ha la colazione e i
+suoi ospiti non possono venire a farla. `bkfRoomInfoBuild` lo esclude come Principe e
+Mastrangelo, e l'app Breakfast lo toglie anche dai dati vecchi (`_bkStanze`).
 Regola in `_bkfConColazione` (app.js), copiata identica in `breakfast.html` (sentinella in
 `esegui.sh`). Per questo `qm_arriviData` porta ora `trattamento` anche per fermate e
 partenze (prima solo per gli arrivi): un campo in più, nessun lettore ne risente.

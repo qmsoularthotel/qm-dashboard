@@ -95,6 +95,11 @@ fi
 # non app.js). L'archivio mensile e' condiviso fra dashboard e app: se una delle due
 # tornasse ad archiviare i giorni futuri, il totale del mese ricomincerebbe a mentire.
 BKF_KO=0
+# San Liborio non ha mai la colazione: l'app non lo mostra mai, nemmeno coi dati vecchi.
+if ! grep -q "!/lib/i.test(String(r.camera))" breakfast.html || [ "$(grep -c 'Object.values(bkfRoomInfo||{}).flat()' breakfast.html)" != "1" ]; then
+  echo "  NO  breakfast.html: San Liborio può ricomparire nell'app (le camere non passano da _bkStanze)"
+  BKF_KO=1
+fi
 # Tre card (22/11/2026): le intolleranze le scrivono più telefoni, quindi passano dalla fusione
 # a tre; «In check out» conta tutti, room only compresi, e lo dice (22/11/2026).
 if ! grep -q "_qmElencoSalva(BKF_INT_KEY" breakfast.html || ! grep -q "_qmElencoAggiorna(BKF_INT_KEY" breakfast.html; then

@@ -4359,7 +4359,7 @@ sez('Colazione Booking.com: solo colazione inclusa, decide il trattamento (22/11
   ok('le fermate portano il trattamento', ad.fermate.map(function (f) { return f.trattamento; }).join(), 'RO,BB,BB,RO');
   var dentro = ad.fermate.filter(_bkfConColazione).map(function (f) { return f.camera; }).join();
   ok('a colazione solo chi ha la colazione inclusa', dentro, '206,Art 3');
-  ok('Liborio o 206 con la colazione: ci sono', _bkfConColazione({ camera: 'Liborio', trattamento: 'BB' }) + ' ' + _bkfConColazione({ camera: '206', trattamento: 'RO' }), 'true false');
+  ok('206 con la colazione: c\'è (decide il trattamento)', _bkfConColazione({ camera: 'Liborio', trattamento: 'BB' }) + ' ' + _bkfConColazione({ camera: '206', trattamento: 'RO' }), 'true false');
   ok('Compass filtra la lista con _bkfConColazione', /_bkfConColazione\(r\)/.test(String(bkfBookingRender)), true);
 })();
 
@@ -4410,3 +4410,6 @@ sez('Intolleranze anche da Compass (22/11/2026)');
   ok('si sceglie fra le camere in casa, non quelle in partenza', _bkfIntCamere().map(function (c) { return c.camera; }).join(), '206,Art 3');
   BKF_ROOM_INFO = prima;
 })();
+
+sez('San Liborio mai nella colazione (22/11/2026)');
+ok('Compass non lo mette nello snapshot della colazione', /if\(\/LIB\/i\.test\(c\)\)return;/.test(String(bkfRoomInfoBuild)), true);

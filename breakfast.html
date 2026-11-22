@@ -492,7 +492,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-22.14';
+const QM_APP_BUILD='2026-11-22.15';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -754,13 +754,13 @@ function renderDay(){
     // Solo chi ha la colazione INCLUSA: decide il trattamento, mai la camera (copia di
     // _bkfConColazione in app.js, 22/11/2026).
     const conColazione=r=>/^(BB|HB|FB|AI|MP)$/i.test(String(r&&r.trattamento||'').trim());
-    const bkRows=Object.values(bkfRoomInfo||{}).flat().filter(r=>r&&r.camera&&/booking/i.test(r.origine||'')&&conColazione(r)&&presentOn(r))
+    const bkRows=_bkStanze().filter(r=>/booking/i.test(r.origine||'')&&conColazione(r)&&presentOn(r))
       .sort(_bkOrdina);
     // Tre card affiancate (22/11/2026, grafica E scelta dal QM): Checkout, Intolleranze,
     // Ospiti Booking.com. Il numero grande è sempre di COPERTI; un tocco apre il dettaglio
     // sotto le card, un altro lo chiude.
     const pax=r=>parseInt(r&&r.pax,10)||0;
-    const tutte=Object.values(bkfRoomInfo||{}).flat().filter(r=>r&&r.camera);
+    const tutte=_bkStanze();
     // In check out (22/11/2026): tutti, room only compresi (lo dice l'intestazione).
     const coRows=tutte.filter(r=>{
       if(isToday&&r.tipo==='partenza')return true;
@@ -943,6 +943,10 @@ function bkCard(id){
 // Il PMS chiama San Liborio «AS_LIB»: si legge «Liborio» (i dati caricati prima del 22/11
 // hanno ancora il nome vecchio).
 function _bkCam(c){return /^AS[_\s-]?LIB$/i.test(String(c||'').trim())?'Liborio':String(c||'');}
+// Tutte le prenotazioni dello snapshot, SENZA San Liborio: non ha mai la colazione e i suoi
+// ospiti non possono venire a farla, quindi nell'app non compare mai (22/11/2026). Compass
+// già non lo mette in qm_bkf_room_info; qui vale anche per i dati caricati prima.
+function _bkStanze(){return Object.values(bkfRoomInfo||{}).flat().filter(r=>r&&r.camera&&!/lib/i.test(String(r.camera)));}
 // Camere 200 (Boutique) prima, poi le Art (SoulArt), in ordine di numero.
 function _bkOrdina(a,b){
   const ga=/^art/i.test(String(a.camera||'').trim())?1:0,gb=/^art/i.test(String(b.camera||'').trim())?1:0;
@@ -972,7 +976,7 @@ function bkIntAggiungi(){
   const oggi=new Date();oggi.setHours(0,0,0,0);
   // camere in casa (o in arrivo) con la loro data di checkout
   const viste={};
-  Object.values(bkfRoomInfo||{}).flat().forEach(r=>{
+  _bkStanze().forEach(r=>{
     if(!r||!r.camera)return;
     const co=_bkShortDate(r.checkout);
     if(co&&co<oggi)return;

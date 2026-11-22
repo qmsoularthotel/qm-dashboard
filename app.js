@@ -9901,6 +9901,9 @@ function bkfRoomInfoBuild(){
     const c=cam.toUpperCase();
     if(/^(CAPRI|NAPOLI|PROCIDA|ISCHIA|POSITANO)/i.test(c))return; // Principe/Umberto
     if(/^R[123]$/i.test(c))return; // Rooms Mastrangelo
+    // San Liborio (22/11/2026): non ha mai la colazione e i suoi ospiti non possono venire a
+    // farla — non compare mai, né in Compass né nell'app Breakfast.
+    if(/LIB/i.test(c))return;
     const checkin=a.arrivo||null;
     const checkout=a.partenza||(tipo==='partenza'?arriviData.data:null);
     (freshMap[cam]=freshMap[cam]||[]).push({camera:cam,nome:a.ospite||'',origine:a.origine||'',trattamento:a.trattamento||'',checkin,checkout,pax:a.pax||null,tipo});
