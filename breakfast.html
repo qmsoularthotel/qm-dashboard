@@ -102,7 +102,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .bk-cn{font-size:30px;font-weight:800;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums;}
 .bk-cs{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
 .bk-ct{font-size:11.5px;font-weight:600;color:var(--text);line-height:1.25;margin:6px 0 8px;min-height:29px;display:flex;align-items:center;}
-.bk-go{align-self:stretch;margin:0 -6px;border-top:1px solid var(--border);font-size:11px;font-weight:700;color:var(--accent);padding:7px 0;}
+.bk-go{align-self:stretch;margin:auto -6px 0;border-top:1px solid var(--border);font-size:11px;font-weight:700;color:var(--accent);padding:7px 0;}
 .bk-c.on{border-color:var(--accent);}
 .bk-c.on .bk-go{background:var(--accent);color:#fff;border-top-color:var(--accent);}
 .bk-ps{color:var(--text-dim);font-size:11px;}
@@ -492,7 +492,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-22.10';
+const QM_APP_BUILD='2026-11-22.11';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
