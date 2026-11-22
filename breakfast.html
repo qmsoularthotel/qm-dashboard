@@ -78,7 +78,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .cop{display:grid;grid-template-columns:1.4fr 1fr;}
 .cop>div{padding:13px 14px;min-width:0;}
 .cop>div+div{border-left:1px solid var(--border);}
-.cop-n{font-size:46px;font-weight:800;color:var(--accent);line-height:1;letter-spacing:-.01em;margin-top:6px;font-variant-numeric:tabular-nums;}
+.cop-n{font-size:60px;font-weight:800;color:var(--accent);line-height:1;letter-spacing:-.01em;margin-top:6px;font-variant-numeric:tabular-nums;}
 .cop-ro{font-size:30px;font-weight:700;color:var(--text-muted);line-height:1;margin-top:8px;font-variant-numeric:tabular-nums;}
 .cop-s{display:block;font-size:11.5px;color:var(--text-dim);margin-top:5px;}
 .cop-g{display:inline-block;margin-top:7px;font-size:11px;font-weight:700;background:var(--green-bg);color:var(--green);border-radius:5px;padding:2px 7px;}
@@ -492,7 +492,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-22.13';
+const QM_APP_BUILD='2026-11-22.14';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -776,13 +776,13 @@ function renderDay(){
     const camere=n=>n+(n===1?' camera':' camere');
     const ap=_bkCardAperta;
     const card=(id,n,tit)=>`<button class="bk-c${ap===id?' on':''}" onclick="bkCard('${id}')"><span class="bk-cn">${n}</span>${ap===id?'<span class="bk-cs">coperti</span>':''}<span class="bk-ct">${tit}</span><span class="bk-go">${ap===id?'Chiudi ▴':'Apri ▾'}</span></button>`;
-    const coTit=isToday?'In check out':'In check out domani';
+    const coTit='In check out';
     html+=`<div class="bk-hint">Tocca le card per più info</div>
       <div class="bk-tre">${card('co',coCop,coTit)}${card('int',intCop,'Intolleranze')}${card('bk',bkCop,'Booking.com')}</div>`;
     if(ap==='co'){
       html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">${coTit}</span><span class="pan-s bk-ps">include i room only</span></div>`+
         (coRows.length?`<div class="bk-chips">${coRows.map(r=>`<span class="bk-chip">${_bkEsc(_bkCam(r.camera))}<small>${pax(r)||''}</small></span>`).join('')}</div>`
-          :`<div class="bk-r" style="color:var(--text-dim);">Nessuno in check out con colazione ${isToday?'oggi':'domani'}.</div>`)+`</div>`;
+          :`<div class="bk-r" style="color:var(--text-dim);">Nessuno in check out ${isToday?'oggi':'domani'}.</div>`)+`</div>`;
     }else if(ap==='int'){
       html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">Intolleranze</span><button class="bk-add" onclick="bkIntAggiungi()">+ Aggiungi</button></div>`+
         (intRows.length?intRows.map(x=>`<div class="bk-r"><span class="bk-cam">${_bkEsc(_bkCam(x.camera))}</span><span class="bk-nome">${_bkEsc(x.testo)}<small class="bk-sm">${parseInt(x.pax,10)||1} ${(parseInt(x.pax,10)||1)===1?'persona':'persone'} · fino al ${_bkIsoBreve(x.fino)}</small></span><button class="bk-x" onclick="bkIntTogli('${_bkEsc(x.id)}')" aria-label="Togli">×</button></div>`).join('')
