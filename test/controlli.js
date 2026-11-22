@@ -310,7 +310,7 @@ sez('Biancheria: distinta solo con i consumi salvati');
   function giro(consumi, dataGiro) {
     _bia = { consumi: consumi.map(function (d) { return { id: d, hotel: 'sa', data: d, q: { Federa: 5 } }; }), giri: [] };
     _biaHotel = 'sa'; avvisi = [];
-    campi['bia-giro-data'] = { value: dataGiro };
+    campi['bia-dist-data'] = { value: dataGiro };
     campi['bia-cons-data'] = { value: '' };
   }
   try {
@@ -329,6 +329,107 @@ sez('Biancheria: distinta solo con i consumi salvati');
     giro(gg, _biaToIso(dataG));
     ok('bia: tutto salvato, niente da salvare', JSON.stringify(_biaConsumiDaSalvare('sa', per)), '{"mancanti":[],"nonSalvato":null}');
   } finally { document.getElementById = veroEl; cqAvviso = veroAv; }
+})();
+
+sez('Biancheria: la distinta si stampa solo se tutto e\' in regola');
+// 22/11/2026, il QM: "impedisci la stampa della distinta se non e' tutto in regola; la
+// distinta non puo' contenere dati che vengono fuori da mancati inserimenti".
+// Settimana di prova: sabato 07/11 consegna registrata, poi consumi dom 08 -> ven 13.
+(function () {
+  var veroEl = document.getElementById, veroAv = cqAvviso, veroOggi = _biaOggi, veroOpen = window.open,
+      prima = _bia, ph = _biaHotel, pr = _biaRiscrivi, pd = _biaDist, avvisi = [], campi = {}, aperte = 0;
+  cqAvviso = function (t) { avvisi.push(t); };
+  window.open = function () { aperte++; return { document: { write: function () {}, close: function () {} }, print: function () {} }; };
+  _biaOggi = function () { return new Date(2026, 10, 13); };          // venerdi': vigilia del sabato 14
+  document.getElementById = function (id) { return campi[id] || null; };
+  function cons(d) { return { id: 'c' + d, hotel: 'sa', data: d, q: { Federa: 5 } }; }
+  var tutti = ['07/11/2026', '08/11/2026', '09/11/2026', '10/11/2026', '11/11/2026', '12/11/2026', '13/11/2026'];
+  function scena(consumi, giri) {
+    _bia = { consumi: consumi.map(cons), giri: giri };
+    _biaHotel = 'sa'; _biaDist = {}; _biaRiscrivi = { k: '', voci: {}, msg: [] }; avvisi = []; aperte = 0;
+    campi = { 'bia-dist-data': { value: '2026-11-14' }, 'bia-cons-data': { value: '' } };
+  }
+  var g07 = { id: 'g07', hotel: 'sa', data: '07/11/2026', consegnato: { Federa: 30 }, ricevuto: { Federa: 30 } };
+  var g10 = { id: 'g10', hotel: 'sa', data: '10/11/2026', consegnato: { Federa: 15 }, ricevuto: { Federa: 15 } };
+  var g12 = { id: 'g12', hotel: 'sa', data: '12/11/2026', consegnato: { Federa: 10 }, ricevuto: { Federa: 10 } };
+  try {
+    ok('distinta proposta: il prossimo giro dopo oggi', _biaFmt(_biaGiroCalSucc(_biaOggi())), '14/11/2026');
+    ok('consegna proposta di sabato: lo stesso giorno', _biaGiornoGiro(new Date(2026, 10, 14)), true);
+    ok('consegna proposta di venerdi\': il giovedi\'', _biaFmt(_biaGiroCalPrec(new Date(2026, 10, 13))), '12/11/2026');
+
+    scena(tutti, [g07, g10, g12]);
+    ok('tutto in regola: nessun blocco', _biaDistBlocchi('sa', '14/11/2026').length, 0);
+    biaPrintDistinta();
+    ok('tutto in regola: la distinta si apre', aperte, 1);
+    ok('tutto in regola: nessun avviso', avvisi.length, 0);
+
+    // giovedi' 12 non registrata: il periodo partirebbe da martedi' 10 e rimetterebbe dentro
+    // consumi gia' usciti giovedi'. Deve fermarsi.
+    scena(tutti, [g07, g10]);
+    var bl = _biaDistBlocchi('sa', '14/11/2026');
+    ok('consegna non registrata: bloccata', bl.length && bl[0].titolo, 'Consegne non registrate');
+    ok('consegna non registrata: dice quale', bl[0].date.join(), '12/11/2026');
+    biaPrintDistinta();
+    ok('consegna non registrata: la distinta NON si apre', aperte, 0);
+    ok('consegna non registrata: avviso col titolo', avvisi[0], 'Consegne non registrate');
+
+    scena(tutti, [g07, g10, { id: 'g12', hotel: 'sa', data: '12/11/2026', consegnato: { Federa: 10 }, ricevuto: {} }]);
+    bl = _biaDistBlocchi('sa', '14/11/2026');
+    ok('consegna senza «Ha portato»: bloccata', bl.map(function (b) { return b.titolo; }).join(), 'Manca «Ha portato»');
+
+    // un giorno PRIMA del periodo senza consumi (mar 10): non entra in questa distinta ma
+    // non e' in regola, e il QM vuole tutto in regola.
+    scena(tutti.filter(function (d) { return d !== '10/11/2026'; }), [g07, g10, g12]);
+    bl = _biaDistBlocchi('sa', '14/11/2026');
+    ok('consumi mancanti anche fuori dal periodo: bloccata', bl.length && bl[0].titolo + ' ' + bl[0].date.join(), 'Mancano dei consumi 10/11/2026');
+
+    // consumi di oggi non ancora inseriti (la vigilia, prima del pomeriggio)
+    scena(tutti.slice(0, -1), [g07, g10, g12]);
+    bl = _biaDistBlocchi('sa', '14/11/2026');
+    ok('consumi di oggi mancanti: bloccata', bl.length && bl[0].date.join(), '13/11/2026');
+
+    // numero fuori dal normale in attesa di riscrittura sul 13
+    scena(tutti, [g07, g10, g12]);
+    _biaRiscrivi = { k: 'sa|13/11/2026', voci: { Federa: 1 }, msg: ['x'] };
+    bl = _biaDistBlocchi('sa', '14/11/2026');
+    ok('numero da riscrivere: bloccata', bl.map(function (b) { return b.titolo; }).join(), 'Consumi da riscrivere');
+    _biaRiscrivi = { k: 'bh|13/11/2026', voci: { Federa: 1 }, msg: ['x'] };
+    ok('numero da riscrivere dell\'ALTRA struttura: non blocca', _biaDistBlocchi('sa', '14/11/2026').length, 0);
+
+    // la ristampa di una consegna registrata non si blocca (usa il totale congelato)
+    scena(tutti, [g07, g10, g12, { id: 'g14', hotel: 'sa', data: '14/11/2026', consegnato: { Federa: 10 }, ricevuto: {} }]);
+    ok('consegna gia\' registrata: nessun blocco', _biaDistBlocchi('sa', '14/11/2026').length, 0);
+
+    // il riquadro: pulsante spento con un blocco, acceso quando tutto e' in regola
+    scena(tutti, [g07, g10]);
+    var hb = _biaPannelloDistinta(_biaOggi());
+    ok('riquadro: pulsante spento se non in regola', /id="bia-stampa" onclick="biaPrintDistinta\(\)" disabled/.test(hb), true);
+    ok('riquadro: dice cosa manca', /Consegne non registrate/.test(hb) && /biaVaiA\('sa','consegna','12\/11\/2026'\)/.test(hb), true);
+    scena(tutti, [g07, g10, g12]);
+    hb = _biaPannelloDistinta(_biaOggi());
+    ok('riquadro: pulsante acceso se in regola', /id="bia-stampa" onclick="biaPrintDistinta\(\)"\s+style/.test(hb), true);
+    ok('riquadro: dice i pezzi che escono', /Tutto in regola:<\/strong> escono <strong>10<\/strong>/.test(hb), true);
+    // un giorno futuro del periodo non e' un collegamento
+    _biaOggi = function () { return new Date(2026, 10, 12); };
+    scena(tutti.slice(0, 6), [g07, g10, g12]);
+    hb = _biaPannelloDistinta(_biaOggi());
+    ok('riquadro: un giorno non ancora arrivato non si apre', /venerdì 13 \(non ancora arrivato\)/.test(hb), true);
+    _biaOggi = function () { return new Date(2026, 10, 13); };
+
+    // la pagina: la distinta ha il suo riquadro, PRIMA della consegna, e la consegna non stampa piu'
+    scena(tutti, [g07, g10, g12]);
+    var box = { innerHTML: '' };
+    campi['bia-content'] = box;
+    biaRender();
+    var H = box.innerHTML, iD = H.indexOf('id="bia-dist-panel"'), iC = H.indexOf('Consegna biancheria pulita');
+    ok('pagina: c\'e\' il riquadro della distinta', iD > 0, true);
+    ok('pagina: la distinta viene prima della consegna', iD > 0 && iC > iD, true);
+    ok('pagina: un solo pulsante di stampa', (H.match(/onclick="biaPrintDistinta\(\)"/g) || []).length, 1);
+    ok('pagina: nel riquadro della consegna nessuna stampa', /biaPrintDistinta\(\)/.test(H.slice(iC, H.indexOf('id="bia-registra"'))), false);
+  } finally {
+    document.getElementById = veroEl; cqAvviso = veroAv; _biaOggi = veroOggi; window.open = veroOpen;
+    _bia = prima; _biaHotel = ph; _biaRiscrivi = pr; _biaDist = pd;
+  }
 })();
 
 sez('Colazioni: un caricamento stretto non cancella la previsione');

@@ -1320,6 +1320,51 @@ giorni del periodo senza consumi e la data del riquadro, se è nel periodo e i n
 registrata non è bloccata**: usa il totale congelato. Controlli in `test/controlli.js` e `test/galleria.js`
 ("distinta solo con i consumi salvati").
 
+### La distinta si stampa solo se TUTTO è in regola, e ha un riquadro suo (22/11/2026)
+
+Richiesta del QM, per Compass e per la Galleria: *"impedisci la stampa della distinta se non è
+tutto in regola. La distinta non può contenere dati che vengono fuori da mancati inserimenti.
+La posizione del pulsante stampa crea confusione."*
+
+**Perché il blocco del 06/11 non bastava.** Fermava solo i giorni del periodo senza consumi.
+Ma il periodo parte dall'ultima consegna **registrata**: se una consegna di calendario è stata
+dimenticata, il periodo si allunga all'indietro e la distinta rimette dentro consumi già usciti
+con quella consegna — un totale gonfiato che nasce proprio da un mancato inserimento.
+
+`_biaDistBlocchi(hotel,data)` (`_gbDistBlocchi` nella Galleria) è l'unica regola, usata sia dal
+riquadro sia da `biaPrintDistinta()`. Blocca la distinta **nuova** se c'è anche una sola di queste:
+
+| Blocco | Da dove |
+|---|---|
+| Consegne di Raimondo non registrate | `_biaBuchi(hotel, giorno della consegna)` |
+| Consegne senza «Ha portato» | idem |
+| Giorni senza consumi — anche prima del periodo, e quelli del periodo non ancora arrivati | `_biaBuchi` + `_biaConsumiDaSalvare` |
+| Numeri scritti nel riquadro dei consumi e non salvati | `_biaConsumiDaSalvare` |
+| Un numero fuori dal normale da riscrivere (`_biaRiscrivi`) | detto a parte, non come "non salvato" |
+
+Cioè tutto quello che «Dati mancanti» segnala per quella struttura fino al giorno prima della
+consegna, più quello che è sullo schermo e non è salvato. **La ristampa di una consegna già
+registrata non si blocca** (usa il totale congelato), né da qui né dallo storico.
+
+**Il riquadro.** *Distinta dello sporco per Raimondo* (`_biaPannelloDistinta`, id `bia-dist-panel`)
+sta **fra i consumi e la consegna**, nell'ordine del lavoro: consumi ogni giorno → distinta la
+vigilia → consegna del pulito il giorno del giro. Ha una **data sua** (`bia-dist-data`, frecce
+`biaSpostaData('dist',…)` fra i giorni del giro), proposta sul **prossimo giro dopo oggi**
+(`_biaGiroCalSucc`; nella Galleria col calendario della struttura). Mostra il periodo, cosa esce
+voce per voce e, se qualcosa non è in regola, un riquadro rosso con le date da sistemare
+(cliccabili, come «Dati mancanti»; un giorno non ancora arrivato non è un collegamento). Il
+pulsante **Stampa la distinta** è spento finché il riquadro rosso c'è.
+
+Prima il pulsante stava accanto a «Registra cosa ha portato», sulla stessa data: due azioni di
+giorni diversi in un posto solo, e la vigilia la data della consegna saltava a domani per servire
+la stampa. **Il riquadro della consegna ora non stampa più** e propone il giro di oggi, o l'ultimo
+giro passato.
+
+Controlli in `test/controlli.js` ("la distinta si stampa solo se tutto e' in regola", 26) e
+`test/galleria.js` (9), verificati con quattro sabotaggi (consegne mancanti ignorate, blocco tolto
+dalla stampa, pulsante sempre acceso, riquadro tolto dalla pagina): 1+errore, 4, 1 e 3 falliscono
+in Compass; 3 e 3 nella Galleria.
+
 ### Avviso "Dati mancanti" — sempre in cima alla pagina (07/11/2026)
 
 **Caso reale**: la consegna SoulArt di giovedì 05/11 non era stata registrata. Il calcolo

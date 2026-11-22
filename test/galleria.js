@@ -245,7 +245,7 @@ sez('Gestione Biancheria (Galleria): distinta solo con i consumi salvati');
   function giro(consumi, dataGiro) {
     _gb = { consumi: consumi.map(function (d) { return { id: d, hotel: 'ar', data: d, q: { Federa: 5 } }; }), giri: [] };
     _gbHotel = 'ar'; avvisi = [];
-    campi['gb-giro-data'] = { value: dataGiro };
+    campi['gb-dist-data'] = { value: dataGiro };
     campi['gb-cons-data'] = { value: '' };
   }
   try {
@@ -264,6 +264,49 @@ sez('Gestione Biancheria (Galleria): distinta solo con i consumi salvati');
     giro(gg, _gbToIso(dataG));
     ok('gb: tutto salvato, niente da salvare', JSON.stringify(_gbConsumiDaSalvare('ar', per)), '{"mancanti":[],"nonSalvato":null}');
   } finally { document.getElementById = veroEl; _gbAvviso = veroAv; }
+})();
+
+sez('Gestione Biancheria (Galleria): la distinta si stampa solo se tutto e\' in regola');
+// 22/11/2026: copia di Compass. Art Resort passa lun/mer/ven: consegna registrata lun 09/11,
+// mercoledi' 11 dimenticato, distinta per venerdi' 13.
+(function () {
+  var veroEl = document.getElementById, veroAv = _gbAvviso, veroOggi = _gbOggi, veroOpen = window.open,
+      prima = _gb, ph = _gbHotel, pr = _gbRiscrivi, pd = _gbDist, avvisi = [], campi = {}, aperte = 0;
+  _gbAvviso = function (t) { avvisi.push(t); };
+  window.open = function () { aperte++; return { document: { write: function () {}, close: function () {} }, print: function () {} }; };
+  _gbOggi = function () { return new Date(2026, 10, 12); };          // giovedi': vigilia del venerdi' di Art Resort
+  document.getElementById = function (id) { return campi[id] || null; };
+  var tutti = ['09/11/2026', '10/11/2026', '11/11/2026', '12/11/2026'];
+  function scena(giri) {
+    _gb = { consumi: tutti.map(function (d) { return { id: 'c' + d, hotel: 'ar', data: d, q: { Federa: 5 } }; }), giri: giri };
+    _gbHotel = 'ar'; _gbDist = {}; _gbRiscrivi = { k: '', voci: {}, msg: [] }; avvisi = []; aperte = 0;
+    campi = { 'gb-dist-data': { value: '2026-11-13' }, 'gb-cons-data': { value: '' } };
+  }
+  var g09 = { id: 'g09', hotel: 'ar', data: '09/11/2026', consegnato: { Federa: 30 }, ricevuto: { Federa: 30 } };
+  var g11 = { id: 'g11', hotel: 'ar', data: '11/11/2026', consegnato: { Federa: 10 }, ricevuto: { Federa: 10 } };
+  try {
+    ok('gb: distinta proposta col calendario di Art Resort', _gbFmt(_gbGiroCalSucc(_gbOggi(), 'ar')), '13/11/2026');
+    ok('gb: distinta proposta col calendario di Santa Brigida', _gbFmt(_gbGiroCalSucc(_gbOggi(), 'sb')), '14/11/2026');
+    scena([g09, g11]);
+    ok('gb: tutto in regola, nessun blocco', _gbDistBlocchi('ar', '13/11/2026').length, 0);
+    gbPrintDistinta();
+    ok('gb: tutto in regola, la distinta si apre', aperte, 1);
+    scena([g09]);
+    var bl = _gbDistBlocchi('ar', '13/11/2026');
+    ok('gb: consegna non registrata, bloccata', bl.length && bl[0].titolo + ' ' + bl[0].date.join(), 'Consegne non registrate 11/11/2026');
+    gbPrintDistinta();
+    ok('gb: consegna non registrata, la distinta NON si apre', aperte, 0);
+    var box = { innerHTML: '' };
+    campi['gb-content'] = box;
+    _gbRenderCore();
+    var H = box.innerHTML, iD = H.indexOf('id="gb-dist-panel"'), iC = H.indexOf('Consegna biancheria pulita');
+    ok('gb: la distinta ha il suo riquadro, prima della consegna', iD > 0 && iC > iD, true);
+    ok('gb: pulsante spento se non in regola', /id="gb-stampa" onclick="gbPrintDistinta\(\)" disabled/.test(H), true);
+    ok('gb: un solo pulsante di stampa', (H.match(/onclick="gbPrintDistinta\(\)"/g) || []).length, 1);
+  } finally {
+    document.getElementById = veroEl; _gbAvviso = veroAv; _gbOggi = veroOggi; window.open = veroOpen;
+    _gb = prima; _gbHotel = ph; _gbRiscrivi = pr; _gbDist = pd;
+  }
 })();
 
 sez('Gestione Biancheria (Galleria): l\'avviso dei dati mancanti segue il calendario della struttura');

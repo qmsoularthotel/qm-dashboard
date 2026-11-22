@@ -14758,6 +14758,12 @@ function _biaGiroCalPrec(d){
   return new Date(d.getTime()-86400000);
 }
 function _biaGiornoGiro(d){return BIA_GIORNI_GIRO.includes(d.getDay());}
+// Primo giorno di calendario in cui Raimondo passa DOPO d: la data proposta per la distinta.
+function _biaGiroCalSucc(d){
+  const x=new Date(d.getTime());x.setHours(0,0,0,0);
+  for(let i=0;i<7;i++){x.setDate(x.getDate()+1);if(_biaGiornoGiro(x))return x;}
+  return _biaDomani(d);
+}
 function _biaGiorniPeriodo(per){
   const out=[];
   if(!per||per.vuoto)return out;
@@ -15008,7 +15014,7 @@ const _biaNBuchi=b=>b.consumi.length+b.consegne.length+b.senzaPortato.length;
 // la consegna salta solo fra i giorni in cui Raimondo passa (_biaGiornoGiro), cosi' non
 // serve aprire il calendario ne' ricordarsi i giorni del giro. I consumi non vanno oltre oggi.
 function biaSpostaData(tipo,passo){
-  const id=tipo==='consumi'?'bia-cons-data':'bia-giro-data';
+  const id=tipo==='consumi'?'bia-cons-data':tipo==='dist'?'bia-dist-data':'bia-giro-data';
   const f=document.getElementById(id);if(!f)return;
   const oggi=new Date();oggi.setHours(0,0,0,0);
   const d=_biaParse(_biaFromIso(f.value))||new Date(oggi.getTime());
@@ -16065,12 +16071,12 @@ function biaRender(){
   const giri=_biaGiri();
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-  // Data della consegna proposta. Nei giorni che precedono un giro si propone DOMANI, perché è
-  // il pomeriggio prima che la distinta va preparata e stampata: lasciando "oggi" chi non
-  // conosce il meccanismo calcolerebbe il periodo sbagliato senza accorgersene.
+  // Data della consegna proposta (pulito che arriva): il giro di oggi, altrimenti l'ultimo
+  // giro passato. Dal 22/11/2026 la distinta ha un riquadro e una data sua (_biaPannelloDistinta),
+  // quindi qui non si propone piu' DOMANI la vigilia: quel "domani" serviva alla stampa.
   // È solo il valore suggerito nel campo: resta modificabile e nessun calcolo cambia.
   const vigilia=_biaVigiliaGiro(oggi);
-  const propostaGiro=vigilia?_biaDomani(oggi):oggi;
+  const propostaGiro=_biaGiornoGiro(oggi)?oggi:_biaGiroCalPrec(oggi);
   const giroIso=(document.getElementById('bia-giro-data')||{}).value||_biaToIso(_biaFmt(propostaGiro));
   const giroData=_biaFromIso(giroIso)||_biaFmt(oggi);
   const per=_biaPeriodo(_biaHotel,giroData);
@@ -16209,48 +16215,29 @@ function biaRender(){
     h+=`</div></div>`;
   }
 
-  // ── Il giro ──
-  // Il periodo si scrive con i nomi dei giorni e si dice SEMPRE da dove nasce il "dal":
-  // un intervallo di date senza spiegazione non permette di accorgersi che è sbagliato.
-  const periodoTxt=_biaPeriodoTxt(per);
+  // ── La distinta dello sporco ── riquadro suo, PRIMA della consegna (22/11/2026)
+  // Stava fra i pulsanti della consegna, accanto a «Registra cosa ha portato»: due azioni di
+  // giorni diversi (la vigilia si stampa, il giorno del giro si registra) sulla stessa data,
+  // e il QM la trovava fuorviante. Ora l'ordine della pagina è quello del lavoro:
+  // consumi → distinta dello sporco → consegna del pulito.
+  h+=_biaPannelloDistinta(oggi);
+
+  // ── La consegna del pulito ──
   const giroDate=_biaParse(giroData);
-  const mancanti=per?_biaGiorniSenzaConsumi(_biaHotel,per):[];
-  const fonteTxt=!per?'':
-      per.fonte==='giro'?'Il periodo parte dalla consegna precedente registrata.':
-      'Nessuna consegna registrata prima: il periodo parte dal giorno di calendario precedente (Raimondo passa '+BIA_GIORNI_GIRO_TXT+').';
-  // Consumi registrati PRIMA del periodo, quando non c'è ancora nessun giro in archivio:
-  // sono usciti con i giri fatti prima di iniziare a registrarli qui. Restano fuori dal
-  // sacco, ma vanno nominati, altrimenti sembrano spariti.
-  const fuori=(per&&per.fonte==='calendario')
-    ?_biaConsumi(_biaHotel).map(c=>_biaParse(c.data)).filter(x=>x&&x<per.dal).sort((a,b)=>a-b)
-    :[];
   h+=`<div class="panel" style="margin-bottom:16px;">
-    <div class="panel-header"><span class="panel-title">${vigilia&&!giaReg?'Prepara il ritiro di domani':('Consegna biancheria pulita'+(giroDate?' · '+BIA_GG_NOMI[giroDate.getDay()]+' '+_biaFmt(giroDate).slice(0,5):''))}</span>
-      ${giaReg?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">consegna già registrata</span>'
-        :(vigilia&&distPronta?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">distinta stampata</span>':'')}
+    <div class="panel-header"><span class="panel-title">${'Consegna biancheria pulita'+(giroDate?' · '+BIA_GG_NOMI[giroDate.getDay()]+' '+_biaFmt(giroDate).slice(0,5):'')}</span>
+      ${giaReg?'<span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:var(--green);">consegna già registrata</span>':''}
     </div>
     <div class="panel-body" style="padding:14px;">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
         <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Data della consegna</label>
         <span style="display:inline-flex;align-items:center;gap:6px;">${_biaFreccia('giro',-1)}<input type="date" id="bia-giro-data" value="${giroIso}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">${_biaFreccia('giro',1)}</span>
-        <span style="font-size:var(--fs-xxs);color:var(--text-dim);">ritira i consumi ${esc(periodoTxt)}</span>
-      </div>
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:8px;">${esc(fonteTxt)}</div>`;
+      </div>`;
 
   // Data fuori calendario: non è un errore (un giro straordinario è legittimo), ma se è
-  // una svista è meglio accorgersene prima di stampare la distinta.
+  // una svista è meglio accorgersene prima di registrare.
   if(giroDate&&!_biaGiornoGiro(giroDate)){
     h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:8px;">Il ${esc(_biaFmt(giroDate))} è un ${esc(BIA_GG_NOMI[giroDate.getDay()])}: di norma Raimondo passa ${BIA_GIORNI_GIRO_TXT}.</div>`;
-  }
-
-  if(fuori.length){
-    h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:8px;">I consumi ${esc(fuori.length===1?'del':'dal')} ${esc(_biaFmt(fuori[0]))}${fuori.length>1?' al '+esc(_biaFmt(fuori[fuori.length-1])):''} restano fuori: sono usciti con i giri precedenti. Se invece non sono mai stati consegnati, registra quel giro con la sua data.</div>`;
-  }
-
-  // Giorni del periodo senza consumi registrati: è quello che rende incompleto lo sporco
-  // che esce, ed è la dimenticanza più facile da fare.
-  if(mancanti.length){
-    h+=`<div style="background:rgba(160,90,0,.08);border-left:3px solid var(--amber);padding:9px 11px;font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:10px;">Nessun consumo registrato per ${esc(mancanti.map(_biaGgEtichetta).join(', '))}. Finché mancano, lo sporco che esce è incompleto: inseriscili nel riquadro qui sopra cambiando la data.</div>`;
   }
 
   if(per&&per.vuoto){
@@ -16301,18 +16288,11 @@ function biaRender(){
   });
   h+=`</tbody></table></div>
       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">`;
-  // Il pulsante in evidenza è quello del momento: la vigilia si stampa, il giorno del giro
-  // si registra. Restano entrambi disponibili — un giro straordinario o una ristampa non
-  // devono diventare impossibili — ma quello giusto si vede per primo.
+  // Qui solo la registrazione: la stampa della distinta ha il suo riquadro (22/11/2026).
   const bPrimario='background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
-  const bSecondario='background:var(--surface);color:var(--accent);border:1.5px solid var(--border);padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;';
-  const bStampa=`<button onclick="biaPrintDistinta()" style="${vigilia&&!giaReg?bPrimario:bSecondario}">${distPronta?'Ristampa la distinta':'Stampa la distinta'}</button>`;
-  const bRegistra=`<button id="bia-registra" onclick="biaRegistraGiro()" ${regOn?'':'disabled'} title="${giaReg?'Si accende quando cambi un numero di «Ha portato»':'Si accende quando tutte le caselle di «Ha portato» sono scritte (anche 0)'}" style="${vigilia&&!giaReg?bSecondario:bPrimario}${regOn?'':'opacity:.45;cursor:not-allowed;'}">${giaReg?'Aggiorna consegna':'Registra cosa ha portato'}</button>`;
-  h+=(vigilia&&!giaReg)?(bStampa+bRegistra):(bRegistra+bStampa);
+  h+=`<button id="bia-registra" onclick="biaRegistraGiro()" ${regOn?'':'disabled'} title="${giaReg?'Si accende quando cambi un numero di «Ha portato»':'Si accende quando tutte le caselle di «Ha portato» sono scritte (anche 0)'}" style="${bPrimario}${regOn?'':'opacity:.45;cursor:not-allowed;'}">${giaReg?'Aggiorna consegna':'Registra cosa ha portato'}</button>`;
   h+=`</div>${_biaBoxRiscrivi(_biaRiscriviR)}
-      <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">${vigilia&&!giaReg
-        ?'Oggi serve solo la <strong>stampa</strong>: i pezzi da dargli sono già calcolati dai consumi. Domattina, quando Raimondo arriva, si torna qui e si registra cosa ha portato.'
-        :'I pezzi da dare a Raimondo si calcolano da soli dai consumi del periodo e finiscono sulla distinta. In <strong>Ha portato</strong> scrivi i numeri della distinta di Raimondo, anche gli 0.'}</div>
+      <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Il giorno della consegna, quando Raimondo arriva: in <strong>Ha portato</strong> scrivi i numeri della sua distinta, anche gli 0.</div>
     </div>
   </div>`;
 
@@ -16733,6 +16713,110 @@ function _biaConsumiDaSalvare(hotel,per){
   }
   return out;
 }
+// ── LA DISTINTA SI STAMPA SOLO SE TUTTO È IN REGOLA (22/11/2026) ──
+// Richiesta del QM: "la distinta non può contenere dati che vengono fuori da mancati
+// inserimenti". Lo sporco che esce è la somma dei consumi del periodo, e il periodo parte
+// dall'ultima consegna REGISTRATA: una consegna dimenticata allunga il periodo e rimette in
+// distinta consumi già usciti; un giorno senza consumi lo svuota. Il 06/11/2026 si erano
+// bloccati solo i consumi del periodo; ora blocca tutto quello che il riquadro «Dati
+// mancanti» segnala per la struttura fino al giorno prima della consegna, più i numeri
+// scritti e non salvati o da riscrivere. Vale solo per la distinta NUOVA: la ristampa di
+// una consegna registrata usa il totale congelato e non si blocca.
+// Ogni blocco: {titolo, testo, tipo:'consumi'|'consegna'|'', date:[dd/MM/yyyy]}.
+function _biaDistBlocchi(hotel,data){
+  const out=[];
+  if(_bia.giri.some(x=>_biaH(x)===hotel&&x.data===data))return out;
+  const D=_biaParse(data);
+  const per=D?_biaPeriodo(hotel,data):null;
+  if(!per){out.push({titolo:'Data non valida',testo:'Indica la data della consegna per cui stampare la distinta.',tipo:'',date:[]});return out;}
+  if(per.vuoto){out.push({titolo:'Niente da ritirare',testo:'C\'è già una consegna registrata in questa data o dopo: non ci sono giorni da ritirare.',tipo:'',date:[]});return out;}
+  const gg=a=>a.map(x=>_biaGgEtichetta(_biaParse(x))).join(', ');
+  const b=_biaBuchi(hotel,D);
+  const ds=_biaConsumiDaSalvare(hotel,per);
+  const cons=[...new Set(b.consumi.concat(ds.mancanti.map(_biaFmt)))].sort((x,y)=>_biaParse(x)-_biaParse(y));
+  if(b.consegne.length)out.push({titolo:'Consegne non registrate',tipo:'consegna',date:b.consegne,
+    testo:'Consegne di Raimondo non registrate: '+gg(b.consegne)+'. Senza, il periodo della distinta parte dalla consegna sbagliata e rimette dentro consumi già usciti.'});
+  if(b.senzaPortato.length)out.push({titolo:'Manca «Ha portato»',tipo:'consegna',date:b.senzaPortato,
+    testo:'Consegne senza «Ha portato»: '+gg(b.senzaPortato)+'. Scrivi i numeri della distinta di Raimondo.'});
+  if(cons.length)out.push({titolo:'Mancano dei consumi',tipo:'consumi',date:cons,
+    testo:'Nessun consumo salvato per '+gg(cons)+'. Lo sporco che esce è la somma dei consumi: con un giorno mancante il totale è sbagliato.'});
+  // Un numero fuori dal normale svuota la casella (_biaRiscrivi): finché non è riscritto il
+  // valore salvato è quello vecchio. Detto a parte, non come "non salvato".
+  const rk=String(_biaRiscrivi&&_biaRiscrivi.k||''),rd=rk.split('|')[1]||'',rD=_biaParse(rd);
+  const daRiscrivere=rk.indexOf(hotel+'|')===0&&Object.keys(_biaRiscrivi.voci||{}).length&&rD&&rD>=per.dal&&rD<=per.al;
+  if(daRiscrivere)out.push({titolo:'Consumi da riscrivere',tipo:'consumi',date:[rd],
+    testo:'I consumi del '+rd+' hanno un numero da riscrivere (casella rossa). Riscrivilo e premi «Salva consumi».'});
+  else if(ds.nonSalvato)out.push({titolo:'Consumi non salvati',tipo:'consumi',date:[ds.nonSalvato],
+    testo:'I consumi del '+ds.nonSalvato+' sono scritti ma non salvati. Premi «Salva consumi».'});
+  return out;
+}
+// Il riquadro della distinta: data sua, periodo, cosa manca, e il pulsante — spento finché
+// non è tutto in regola (22/11/2026).
+function _biaPannelloDistinta(oggi){
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const prop=_biaFmt(_biaGiroCalSucc(oggi));
+  const iso=(document.getElementById('bia-dist-data')||{}).value||_biaToIso(prop);
+  const data=_biaFromIso(iso)||prop;
+  const D=_biaParse(data);
+  const per=_biaPeriodo(_biaHotel,data);
+  const reg=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===data);
+  const bl=_biaDistBlocchi(_biaHotel,data);
+  const q=reg&&reg.consegnato?reg.consegnato:(per&&!per.vuoto?_biaSommaConsumi(_biaHotel,per.dal,per.al):_biaVuote());
+  const tot=_biaTot(q);
+  const stampata=_biaDistStampata(_biaHotel,data);
+  const puo=!bl.length&&tot>0;
+  const fonteTxt=!per||per.vuoto?'':
+      per.fonte==='giro'?'Il periodo parte dalla consegna precedente registrata.':
+      'Nessuna consegna registrata prima: il periodo parte dal giorno di calendario precedente (Raimondo passa '+BIA_GIORNI_GIRO_TXT+').';
+  // Consumi registrati PRIMA del periodo, quando non c'è ancora nessun giro in archivio:
+  // sono usciti con i giri fatti prima di iniziare a registrarli qui. Restano fuori dal
+  // sacco, ma vanno nominati, altrimenti sembrano spariti.
+  const fuori=(per&&per.fonte==='calendario')
+    ?_biaConsumi(_biaHotel).map(c=>_biaParse(c.data)).filter(x=>x&&x<per.dal).sort((a,b)=>a-b)
+    :[];
+  const stato=reg?['consegna già registrata','var(--green)']:bl.length?['non si può ancora stampare','var(--red)']:stampata?['stampata','var(--green)']:['pronta da stampare','var(--accent)'];
+  let h=`<div class="panel" id="bia-dist-panel" style="margin-bottom:16px;">
+    <div class="panel-header"><span class="panel-title">Distinta dello sporco per Raimondo${D?' · '+BIA_GG_NOMI[D.getDay()]+' '+data.slice(0,5):''}</span>
+      <span style="margin-left:auto;font-size:var(--fs-xxs);font-weight:700;color:${stato[1]};">${stato[0]}</span>
+    </div>
+    <div class="panel-body" style="padding:14px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+        <label style="font-size:var(--fs-xxs);color:var(--text-dim);">Per la consegna del</label>
+        <span style="display:inline-flex;align-items:center;gap:6px;">${_biaFreccia('dist',-1)}<input type="date" id="bia-dist-data" value="${_biaToIso(data)}" onchange="biaRender()" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);">${_biaFreccia('dist',1)}</span>
+        <span style="font-size:var(--fs-xxs);color:var(--text-dim);">escono i consumi ${esc(_biaPeriodoTxt(per))}</span>
+      </div>
+      ${fonteTxt?`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:8px;">${esc(fonteTxt)}</div>`:''}`;
+  if(D&&!_biaGiornoGiro(D)){
+    h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:8px;">Il ${esc(data)} è un ${esc(BIA_GG_NOMI[D.getDay()])}: di norma Raimondo passa ${BIA_GIORNI_GIRO_TXT}.</div>`;
+  }
+  if(fuori.length&&!reg){
+    h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;margin-bottom:8px;">I consumi ${esc(fuori.length===1?'del':'dal')} ${esc(_biaFmt(fuori[0]))}${fuori.length>1?' al '+esc(_biaFmt(fuori[fuori.length-1])):''} restano fuori: sono usciti con i giri precedenti. Se invece non sono mai stati consegnati, registra quel giro con la sua data.</div>`;
+  }
+  if(reg){
+    h+=`<div style="font-size:var(--fs-xs);color:var(--text-dim);line-height:1.5;margin-bottom:10px;">La consegna del ${esc(data)} è già registrata: la distinta riporta i <strong style="color:var(--text);">${tot}</strong> pezzi dati a Raimondo quel giorno.</div>`;
+  }else if(bl.length){
+    const link=(b,s)=>{const d=_biaParse(s);
+      return d&&d>oggi?`<span style="white-space:nowrap;">${esc(_biaGgEtichetta(d))} (non ancora arrivato)</span>`
+        :`<a href="#" onclick="event.preventDefault();biaVaiA('${_biaHotel}','${b.tipo}','${s}')" style="color:var(--red);font-weight:700;white-space:nowrap;">${d?esc(_biaGgEtichetta(d)):esc(s)}</a>`;};
+    h+=`<div id="bia-dist-blocchi" style="border-left:3px solid var(--red);background:rgba(192,53,42,.08);color:var(--red);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:var(--fs-xs);line-height:1.5;">
+      <div style="font-weight:700;">La distinta non si stampa finché non è tutto in regola</div>
+      ${bl.map(b=>`<div style="margin-top:4px;"><strong>${esc(b.titolo)}</strong>${b.date.length?': '+b.date.map(s=>b.tipo?link(b,s):esc(s)).join(', '):' — '+esc(b.testo)}</div>`).join('')}
+      <div style="margin-top:6px;font-size:var(--fs-xxs);color:var(--text-dim);">Tocca una data per aprirla. Una distinta con dati mancanti porterebbe a Raimondo un totale sbagliato.</div>
+    </div>`;
+  }else if(!tot){
+    h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:10px;">Tutti i consumi del periodo sono a zero: non c'è niente da consegnare.</div>`;
+  }else{
+    h+=`<div style="border-left:3px solid var(--green);background:rgba(46,125,50,.10);color:var(--green);border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:var(--fs-xs);line-height:1.5;"><strong>Tutto in regola:</strong> escono <strong>${tot}</strong> pezzi.</div>`;
+  }
+  if(!bl.length&&tot){
+    h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.8;margin-bottom:10px;">${BIA_VOCI.map(v=>`<span style="white-space:nowrap;margin-right:12px;">${esc(v)} <strong style="color:var(--text);">${Number(q[v])||0}</strong></span>`).join(' ')}</div>`;
+  }
+  h+=`<button id="bia-stampa" onclick="biaPrintDistinta()" ${puo?'':'disabled'} style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:var(--fs-xxs);font-weight:600;cursor:${puo?'pointer':'not-allowed'};${puo?'':'opacity:.45;'}">${reg||stampata?'Ristampa la distinta':'Stampa la distinta'}</button>
+      <div style="margin-top:10px;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;">Si stampa il pomeriggio prima del passaggio di Raimondo, dopo aver salvato i consumi del giorno, e si lascia in reception.</div>
+    </div>
+  </div>`;
+  return h;
+}
 function biaPrintDistinta(giroId){
   const g=giroId?_bia.giri.find(x=>x.id===giroId):null;
   let hotel,data,q,per;
@@ -16740,23 +16824,23 @@ function biaPrintDistinta(giroId){
     hotel=_biaH(g);data=g.data;q=g.consegnato;per=_biaPeriodo(hotel,data);
   }else{
     hotel=_biaHotel;
-    const iso=(document.getElementById('bia-giro-data')||{}).value||'';
-    data=_biaFromIso(iso)||_biaFmt(_biaOggi());
+    const iso=(document.getElementById('bia-dist-data')||{}).value||'';
+    data=_biaFromIso(iso)||_biaFmt(_biaGiroCalSucc(_biaOggi()));
     per=_biaPeriodo(hotel,data);
     // Niente piu' caselle: se la consegna e' gia' registrata vale il suo totale congelato,
     // altrimenti la somma dei consumi del periodo.
     const reg=_bia.giri.find(x=>_biaH(x)===hotel&&x.data===data);
     q=reg&&reg.consegnato?reg.consegnato:(per&&!per.vuoto?_biaSommaConsumi(hotel,per.dal,per.al):_biaVuote());
     if(!reg){
-      const ds=_biaConsumiDaSalvare(hotel,per);
-      if(ds.nonSalvato){cqAvviso('Consumi non salvati','I consumi del '+ds.nonSalvato+' sono scritti ma non salvati. Premi «Salva consumi», poi stampa la distinta.');return;}
-      if(ds.mancanti.length){cqAvviso('Mancano dei consumi','Nessun consumo salvato per '+ds.mancanti.map(_biaGgEtichetta).join(', ')+'. La distinta si stampa quando tutti i giorni del periodo sono salvati.');return;}
+      const bl=_biaDistBlocchi(hotel,data);
+      if(bl.length){cqAvviso(bl[0].titolo,bl.map(b=>b.testo).join('<br><br>')+'<br><br>La distinta si stampa quando è tutto in regola.');return;}
     }
   }
   const tot=_biaTot(q);
   if(!tot){cqAvviso('Non c\'è niente da consegnare: tutte le quantità sono a zero.');return;}
   // Serve al promemoria in Overview, che deve sparire una volta stampata.
   try{_biaDistSegna(hotel,data);}catch(e){}
+  try{biaRender();}catch(e){}
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const periodo=per&&!per.vuoto?(_biaFmt(per.dal)+' — '+_biaFmt(per.al)):'—';
   const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><title>Distinta di Consegna Biancheria</title>
