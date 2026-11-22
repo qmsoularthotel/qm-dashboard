@@ -73,6 +73,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .pan-v{font-size:20px;font-weight:700;line-height:1.15;color:var(--accent);}
 .pan-v.muted{color:var(--text-muted);}
 .pan-v.big{font-size:23px;}
+/* Coperti del giorno (22/11/2026): due numeri affiancati, Colazioni e Room Only. Il gruppo
+   compare solo quando c'è, come etichetta verde. */
+.cop{display:grid;grid-template-columns:1.4fr 1fr;}
+.cop>div{padding:13px 14px;min-width:0;}
+.cop>div+div{border-left:1px solid var(--border);}
+.cop-n{font-size:46px;font-weight:800;color:var(--accent);line-height:1;letter-spacing:-.01em;margin-top:6px;font-variant-numeric:tabular-nums;}
+.cop-ro{font-size:30px;font-weight:700;color:var(--text-muted);line-height:1;margin-top:8px;font-variant-numeric:tabular-nums;}
+.cop-s{display:block;font-size:11.5px;color:var(--text-dim);margin-top:5px;}
+.cop-g{display:inline-block;margin-top:7px;font-size:11px;font-weight:700;background:var(--green-bg);color:var(--green);border-radius:5px;padding:2px 7px;}
 
 .no-data{background:var(--surface);border-radius:12px;padding:32px 24px;text-align:center;color:var(--text-dim);font-size:14px;border:1px solid var(--border);}
 
@@ -429,7 +438,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-22.2';
+const QM_APP_BUILD='2026-11-22.3';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -660,21 +669,14 @@ function renderDay(){
   // Coperti del giorno — un pannello solo: il totale nell'intestazione, il dettaglio in tre
   // colonne divise da filetti. Prima il totale era ripetuto due volte (il riquadro grande e
   // la tessera BB dicevano lo stesso numero).
-  html+=`<div class="pan">
-    <div class="pan-head" style="padding-top:12px;padding-bottom:12px;">
-      <div style="display:flex;align-items:baseline;gap:11px;">
-        <div style="font-size:46px;font-weight:800;color:var(--accent);line-height:1;letter-spacing:-.01em;">${coperti}</div>
-        <span class="pan-t">Coperti totali</span>
-      </div>
-    </div>
-    <div class="pan-cols" style="grid-template-columns:1fr 1fr 1fr;">
-      <div class="pan-c"><div class="pan-k">BB</div><div class="pan-v">${coperti}</div></div>
-      <div class="pan-c"><div class="pan-k">RO</div><div class="pan-v muted">${d.noCol||0}</div></div>
-      <div class="pan-c"><div class="pan-k">Pax Gruppi</div><div class="pan-v" style="color:${paxGruppi?'var(--green)':'var(--text-dim)'};">${paxGruppi||0}</div></div>
-    </div>
-  </div>`;
+  // 22/11/2026: il totale si legge una volta sola (prima «Coperti totali» e «BB» dicevano lo
+  // stesso numero); i gruppi solo quando ci sono.
+  html+=`<div class="pan"><div class="cop">
+    <div><div class="pan-t">Colazioni</div><div class="cop-n">${coperti}</div>${paxGruppi?`<span class="cop-g">gruppi: ${paxGruppi} pax</span>`:''}</div>
+    <div><div class="pan-t">Room Only</div><div class="cop-ro">${d.noCol||0}</div><span class="cop-s">in casa senza colazione</span></div>
+  </div></div>`;
 
-  // Colazione Booking.com — snapshot ospiti Booking.com a colazione, filtrato sul giorno
+  // Ospiti BB Booking.com (prima «Colazione Booking.com») — snapshot ospiti Booking.com a colazione, filtrato sul giorno
   // navigato con le stesse frecce ‹ › del servizio: chi arriva quel giorno non conta ancora
   // (non ha ancora fatto colazione), chi parte quel giorno conta (l'ha fatta prima di uscire).
   // Oltre domani i dati non sono affidabili (dipendono da arrivi/checkout non ancora
@@ -715,7 +717,7 @@ function renderDay(){
     if(bkRows.length||(isToday&&bkfRoomAmbiguous)){
       html+=`<div style="display:flex;align-items:center;gap:6px;margin:16px 0 8px;padding-left:2px;">
         <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;background:#003580;color:#fff;font-size:11px;font-weight:800;font-family:Arial,sans-serif;flex-shrink:0;">B</span>
-        <span style="font-size:12.5px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:.06em;">Colazione Booking.com</span>
+        <span style="font-size:12.5px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:.06em;">Ospiti BB Booking.com</span>
       </div>
       <div style="background:var(--surface);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:10px;">`;
       if(isToday&&bkfRoomAmbiguous){
@@ -729,7 +731,7 @@ function renderDay(){
         ${r.trattamento?`<span style="font-size:10px;font-weight:800;padding:3px 7px;border-radius:5px;letter-spacing:.02em;flex-shrink:0;background:${isRO?'var(--surface2)':'var(--green-bg)'};color:${isRO?'var(--text-dim)':'var(--green)'};">${r.trattamento}</span>`:''}
         <span style="font-size:10.5px;color:var(--text-dim);flex-shrink:0;">out ${r.checkout||'—'}</span>
       </div>`;
-      }).join(''):`<div style="padding:10px 14px;color:var(--text-dim);font-size:12.5px;">Nessun ospite Booking.com a colazione questo giorno.</div>`;
+      }).join(''):`<div style="padding:10px 14px;color:var(--text-dim);font-size:12.5px;">Nessun ospite BB Booking.com questo giorno.</div>`;
       html+=`</div>`;
     }
   }
@@ -748,8 +750,8 @@ function renderDay(){
     html+=`<div class="pan">
       <div class="pan-head"><span class="pan-t">Domani</span><span class="pan-s">${tomorrow.label}</span></div>
       <div class="pan-cols" style="grid-template-columns:1fr 1fr;">
-        <div class="pan-c"><div class="pan-k">BB</div><div class="pan-v">${totTom}</div></div>
-        <div class="pan-c"><div class="pan-k">RO</div><div class="pan-v muted">${tomorrow.noCol||0}</div></div>
+        <div class="pan-c"><div class="pan-k">Colazioni</div><div class="pan-v">${totTom}</div></div>
+        <div class="pan-c"><div class="pan-k">Room Only</div><div class="pan-v muted">${tomorrow.noCol||0}</div></div>
       </div>
     </div>`;
   }

@@ -144,9 +144,9 @@ Verificata riproducendo il report del PMS su 8 giorni su 8, per entrambe le righ
 
 Sbagliare una delle due fa divergere i numeri dal PMS senza che si veda.
 
-### Colazione Booking.com: solo colazione inclusa (22/11/2026)
+### Ospiti BB Booking.com: solo colazione inclusa (22/11/2026)
 
-La lista «Colazione Booking.com» (Overview e `breakfast.html`) mostra **solo** le prenotazioni
+La lista «Ospiti BB Booking.com» (si chiamava «Colazione Booking.com») (Overview e `breakfast.html`) mostra **solo** le prenotazioni
 Booking con la colazione inclusa (`BB`, `HB`, `FB`, `AI`, `MP`): le `RO` non ci vanno più.
 Decide **il trattamento della prenotazione, mai la camera**: la 206 o Liborio con ospiti in
 `BB` ci sono (il 22/11 un'esclusione fissa della 206 e di Liborio è stata tolta subito: il QM
