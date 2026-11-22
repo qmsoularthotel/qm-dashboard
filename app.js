@@ -16722,7 +16722,16 @@ function _biaConsumiDaSalvare(hotel,per){
 // mancanti» segnala per la struttura fino al giorno prima della consegna, più i numeri
 // scritti e non salvati o da riscrivere. Vale solo per la distinta NUOVA: la ristampa di
 // una consegna registrata usa il totale congelato e non si blocca.
-// Ogni blocco: {titolo, testo, tipo:'consumi'|'consegna'|'', date:[dd/MM/yyyy]}.
+// Ogni blocco: {k, titolo, testo, tipo:'consumi'|'consegna'|'', date:[dd/MM/yyyy], avviso}.
+// `avviso:true` = si mostra ma NON ferma la stampa: vedi BIA_DIST_SOLO_AVVISO.
+//
+// SOLO AVVISO, non blocco (22/11/2026, il QM): nella Galleria ci sono dati mancanti vecchi
+// che chiederanno tempo per essere sistemati, e intanto la distinta va stampata lo stesso.
+// I tipi elencati qui si mostrano in ambra e lasciano stampare; tutti gli altri fermano.
+// Restano SEMPRE bloccanti i problemi del periodo stesso (consumi del periodo mancanti, numeri
+// non salvati o da riscrivere): si sistemano in un minuto e cambiano i numeri sul foglio.
+// In Compass la lista è vuota: lì si blocca tutto.
+const BIA_DIST_SOLO_AVVISO=[];
 function _biaDistBlocchi(hotel,data){
   const out=[];
   if(_bia.giri.some(x=>_biaH(x)===hotel&&x.data===data))return out;
@@ -16733,23 +16742,30 @@ function _biaDistBlocchi(hotel,data){
   const gg=a=>a.map(x=>_biaGgEtichetta(_biaParse(x))).join(', ');
   const b=_biaBuchi(hotel,D);
   const ds=_biaConsumiDaSalvare(hotel,per);
-  const cons=[...new Set(b.consumi.concat(ds.mancanti.map(_biaFmt)))].sort((x,y)=>_biaParse(x)-_biaParse(y));
-  if(b.consegne.length)out.push({titolo:'Consegne non registrate',tipo:'consegna',date:b.consegne,
+  // Consumi mancanti del periodo (escono su QUESTA distinta) e di prima (consegne passate).
+  const consPer=ds.mancanti.map(_biaFmt);
+  const consPrima=b.consumi.filter(x=>consPer.indexOf(x)<0&&_biaParse(x)<per.dal);
+  if(b.consegne.length)out.push({k:'consegne',titolo:'Consegne non registrate',tipo:'consegna',date:b.consegne,
     testo:'Consegne di Raimondo non registrate: '+gg(b.consegne)+'. Senza, il periodo della distinta parte dalla consegna sbagliata e rimette dentro consumi già usciti.'});
-  if(b.senzaPortato.length)out.push({titolo:'Manca «Ha portato»',tipo:'consegna',date:b.senzaPortato,
+  if(b.senzaPortato.length)out.push({k:'portato',titolo:'Manca «Ha portato»',tipo:'consegna',date:b.senzaPortato,
     testo:'Consegne senza «Ha portato»: '+gg(b.senzaPortato)+'. Scrivi i numeri della distinta di Raimondo.'});
-  if(cons.length)out.push({titolo:'Mancano dei consumi',tipo:'consumi',date:cons,
-    testo:'Nessun consumo salvato per '+gg(cons)+'. Lo sporco che esce è la somma dei consumi: con un giorno mancante il totale è sbagliato.'});
+  if(consPrima.length)out.push({k:'consumi-prima',titolo:'Mancano dei consumi',tipo:'consumi',date:consPrima,
+    testo:'Nessun consumo salvato per '+gg(consPrima)+' (consegne già passate): i conti di quelle consegne sono incompleti.'});
+  if(consPer.length)out.push({k:'consumi',titolo:'Mancano dei consumi',tipo:'consumi',date:consPer,
+    testo:'Nessun consumo salvato per '+gg(consPer)+'. Lo sporco che esce è la somma dei consumi: con un giorno mancante il totale è sbagliato.'});
   // Un numero fuori dal normale svuota la casella (_biaRiscrivi): finché non è riscritto il
   // valore salvato è quello vecchio. Detto a parte, non come "non salvato".
   const rk=String(_biaRiscrivi&&_biaRiscrivi.k||''),rd=rk.split('|')[1]||'',rD=_biaParse(rd);
   const daRiscrivere=rk.indexOf(hotel+'|')===0&&Object.keys(_biaRiscrivi.voci||{}).length&&rD&&rD>=per.dal&&rD<=per.al;
-  if(daRiscrivere)out.push({titolo:'Consumi da riscrivere',tipo:'consumi',date:[rd],
+  if(daRiscrivere)out.push({k:'riscrivere',titolo:'Consumi da riscrivere',tipo:'consumi',date:[rd],
     testo:'I consumi del '+rd+' hanno un numero da riscrivere (casella rossa). Riscrivilo e premi «Salva consumi».'});
-  else if(ds.nonSalvato)out.push({titolo:'Consumi non salvati',tipo:'consumi',date:[ds.nonSalvato],
+  else if(ds.nonSalvato)out.push({k:'nonsalvato',titolo:'Consumi non salvati',tipo:'consumi',date:[ds.nonSalvato],
     testo:'I consumi del '+ds.nonSalvato+' sono scritti ma non salvati. Premi «Salva consumi».'});
+  out.forEach(x=>{x.avviso=BIA_DIST_SOLO_AVVISO.indexOf(x.k)>=0;});
   return out;
 }
+// Solo quelli che fermano la stampa.
+function _biaDistFerma(bl){return bl.filter(b=>!b.avviso);}
 // Il riquadro della distinta: data sua, periodo, cosa manca, e il pulsante — spento finché
 // non è tutto in regola (22/11/2026).
 function _biaPannelloDistinta(oggi){
@@ -16760,7 +16776,8 @@ function _biaPannelloDistinta(oggi){
   const D=_biaParse(data);
   const per=_biaPeriodo(_biaHotel,data);
   const reg=_bia.giri.find(x=>_biaH(x)===_biaHotel&&x.data===data);
-  const bl=_biaDistBlocchi(_biaHotel,data);
+  const tutti=_biaDistBlocchi(_biaHotel,data);
+  const bl=_biaDistFerma(tutti),av=tutti.filter(b=>b.avviso);
   const q=reg&&reg.consegnato?reg.consegnato:(per&&!per.vuoto?_biaSommaConsumi(_biaHotel,per.dal,per.al):_biaVuote());
   const tot=_biaTot(q);
   const stampata=_biaDistStampata(_biaHotel,data);
@@ -16794,19 +16811,33 @@ function _biaPannelloDistinta(oggi){
   }
   if(reg){
     h+=`<div style="font-size:var(--fs-xs);color:var(--text-dim);line-height:1.5;margin-bottom:10px;">La consegna del ${esc(data)} è già registrata: la distinta riporta i <strong style="color:var(--text);">${tot}</strong> pezzi dati a Raimondo quel giorno.</div>`;
+  }
+  const link=(b,s)=>{const d=_biaParse(s);
+    return d&&d>oggi?`<span style="white-space:nowrap;">${esc(_biaGgEtichetta(d))} (non ancora arrivato)</span>`
+      :`<a href="#" onclick="event.preventDefault();biaVaiA('${_biaHotel}','${b.tipo}','${s}')" style="color:inherit;font-weight:700;white-space:nowrap;">${d?esc(_biaGgEtichetta(d)):esc(s)}</a>`;};
+  const righe=arr=>arr.map(b=>`<div style="margin-top:4px;"><strong>${esc(b.titolo)}</strong>${b.date.length?': '+b.date.map(s=>b.tipo?link(b,s):esc(s)).join(', '):' — '+esc(b.testo)}</div>`).join('');
+  // Dati mancanti che NON fermano la stampa (solo dove BIA_DIST_SOLO_AVVISO li elenca).
+  if(!reg&&av.length){
+    h+=`<div id="bia-dist-avvisi" style="border-left:3px solid var(--amber);background:rgba(160,90,0,.08);color:var(--amber);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:var(--fs-xs);line-height:1.5;">
+      <div style="font-weight:700;">Dati mancanti da sistemare</div>
+      ${righe(av)}
+      <div style="margin-top:6px;font-size:var(--fs-xxs);color:var(--text-dim);">La distinta si può stampare lo stesso, ma finché mancano i conti delle consegne restano incompleti. Tocca una data per aprirla.</div>
+    </div>`;
+  }
+  if(reg){
+    // gia' detto sopra: la ristampa usa i pezzi registrati quel giorno
   }else if(bl.length){
-    const link=(b,s)=>{const d=_biaParse(s);
-      return d&&d>oggi?`<span style="white-space:nowrap;">${esc(_biaGgEtichetta(d))} (non ancora arrivato)</span>`
-        :`<a href="#" onclick="event.preventDefault();biaVaiA('${_biaHotel}','${b.tipo}','${s}')" style="color:var(--red);font-weight:700;white-space:nowrap;">${d?esc(_biaGgEtichetta(d)):esc(s)}</a>`;};
     h+=`<div id="bia-dist-blocchi" style="border-left:3px solid var(--red);background:rgba(192,53,42,.08);color:var(--red);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:var(--fs-xs);line-height:1.5;">
       <div style="font-weight:700;">La distinta non si stampa finché non è tutto in regola</div>
-      ${bl.map(b=>`<div style="margin-top:4px;"><strong>${esc(b.titolo)}</strong>${b.date.length?': '+b.date.map(s=>b.tipo?link(b,s):esc(s)).join(', '):' — '+esc(b.testo)}</div>`).join('')}
+      ${righe(bl)}
       <div style="margin-top:6px;font-size:var(--fs-xxs);color:var(--text-dim);">Tocca una data per aprirla. Una distinta con dati mancanti porterebbe a Raimondo un totale sbagliato.</div>
     </div>`;
   }else if(!tot){
     h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:10px;">Tutti i consumi del periodo sono a zero: non c'è niente da consegnare.</div>`;
   }else{
-    h+=`<div style="border-left:3px solid var(--green);background:rgba(46,125,50,.10);color:var(--green);border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:var(--fs-xs);line-height:1.5;"><strong>Tutto in regola:</strong> escono <strong>${tot}</strong> pezzi.</div>`;
+    h+=av.length
+      ?`<div style="font-size:var(--fs-xs);line-height:1.5;margin-bottom:10px;">Escono <strong>${tot}</strong> pezzi.</div>`
+      :`<div style="border-left:3px solid var(--green);background:rgba(46,125,50,.10);color:var(--green);border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:var(--fs-xs);line-height:1.5;"><strong>Tutto in regola:</strong> escono <strong>${tot}</strong> pezzi.</div>`;
   }
   if(!bl.length&&tot){
     h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.8;margin-bottom:10px;">${BIA_VOCI.map(v=>`<span style="white-space:nowrap;margin-right:12px;">${esc(v)} <strong style="color:var(--text);">${Number(q[v])||0}</strong></span>`).join(' ')}</div>`;
@@ -16832,7 +16863,7 @@ function biaPrintDistinta(giroId){
     const reg=_bia.giri.find(x=>_biaH(x)===hotel&&x.data===data);
     q=reg&&reg.consegnato?reg.consegnato:(per&&!per.vuoto?_biaSommaConsumi(hotel,per.dal,per.al):_biaVuote());
     if(!reg){
-      const bl=_biaDistBlocchi(hotel,data);
+      const bl=_biaDistFerma(_biaDistBlocchi(hotel,data));
       if(bl.length){cqAvviso(bl[0].titolo,bl.map(b=>b.testo).join('<br><br>')+'<br><br>La distinta si stampa quando è tutto in regola.');return;}
     }
   }

@@ -291,18 +291,40 @@ sez('Gestione Biancheria (Galleria): la distinta si stampa solo se tutto e\' in 
     ok('gb: tutto in regola, nessun blocco', _gbDistBlocchi('ar', '13/11/2026').length, 0);
     gbPrintDistinta();
     ok('gb: tutto in regola, la distinta si apre', aperte, 1);
+    // 22/11/2026, il QM: nella Galleria ci sono dati mancanti vecchi che chiederanno tempo,
+    // e la distinta va stampata lo stesso. Consegne, «Ha portato» e consumi di prima del
+    // periodo si SEGNALANO in ambra ma non fermano la stampa.
     scena([g09]);
     var bl = _gbDistBlocchi('ar', '13/11/2026');
-    ok('gb: consegna non registrata, bloccata', bl.length && bl[0].titolo + ' ' + bl[0].date.join(), 'Consegne non registrate 11/11/2026');
+    ok('gb: consegna non registrata, segnalata', bl.length && bl[0].titolo + ' ' + bl[0].date.join(), 'Consegne non registrate 11/11/2026');
+    ok('gb: consegna non registrata, solo avviso', bl[0].avviso, true);
+    ok('gb: consegna non registrata, non ferma', _gbDistFerma(bl).length, 0);
     gbPrintDistinta();
-    ok('gb: consegna non registrata, la distinta NON si apre', aperte, 0);
+    ok('gb: consegna non registrata, la distinta si apre lo stesso', aperte, 1);
     var box = { innerHTML: '' };
     campi['gb-content'] = box;
     _gbRenderCore();
     var H = box.innerHTML, iD = H.indexOf('id="gb-dist-panel"'), iC = H.indexOf('Consegna biancheria pulita');
     ok('gb: la distinta ha il suo riquadro, prima della consegna', iD > 0 && iC > iD, true);
-    ok('gb: pulsante spento se non in regola', /id="gb-stampa" onclick="gbPrintDistinta\(\)" disabled/.test(H), true);
+    ok('gb: pulsante acceso con i soli avvisi', /id="gb-stampa" onclick="gbPrintDistinta\(\)"\s+style/.test(H), true);
+    ok('gb: gli avvisi si vedono, in ambra', /id="gb-dist-avvisi"/.test(H) && /gbVaiA\('ar','consegna','11\/11\/2026'\)/.test(H), true);
+    ok('gb: nessun riquadro rosso con i soli avvisi', /id="gb-dist-blocchi"/.test(H), false);
     ok('gb: un solo pulsante di stampa', (H.match(/onclick="gbPrintDistinta\(\)"/g) || []).length, 1);
+    // un consumo mancante DENTRO il periodo resta bloccante: cambia i numeri sul foglio
+    scena([g09, g11]);
+    _gb.consumi = _gb.consumi.filter(function (c) { return c.data !== '12/11/2026'; });
+    bl = _gbDistFerma(_gbDistBlocchi('ar', '13/11/2026'));
+    ok('gb: consumo del periodo mancante, ferma', bl.length && bl[0].titolo + ' ' + bl[0].date.join(), 'Mancano dei consumi 12/11/2026');
+    gbPrintDistinta();
+    ok('gb: consumo del periodo mancante, la distinta NON si apre', aperte, 0);
+    campi['gb-content'] = box; box.innerHTML = ''; _gbRenderCore(); H = box.innerHTML;
+    ok('gb: consumo del periodo mancante, pulsante spento', /id="gb-stampa" onclick="gbPrintDistinta\(\)" disabled/.test(H), true);
+    // un consumo mancante PRIMA del periodo: solo avviso
+    scena([g09, g11]);
+    _gb.consumi = _gb.consumi.filter(function (c) { return c.data !== '10/11/2026'; });
+    bl = _gbDistBlocchi('ar', '13/11/2026');
+    ok('gb: consumo mancante prima del periodo, segnalato', bl.length && bl[0].k + ' ' + bl[0].date.join(), 'consumi-prima 10/11/2026');
+    ok('gb: consumo mancante prima del periodo, non ferma', _gbDistFerma(bl).length, 0);
   } finally {
     document.getElementById = veroEl; _gbAvviso = veroAv; _gbOggi = veroOggi; window.open = veroOpen;
     _gb = prima; _gbHotel = ph; _gbRiscrivi = pr; _gbDist = pd;

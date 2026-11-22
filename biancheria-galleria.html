@@ -157,7 +157,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-22.1';
+const QM_APP_BUILD='2026-11-22.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -2123,7 +2123,17 @@ function _gbConsumiDaSalvare(hotel,per){
 // mancanti» segnala per la struttura fino al giorno prima della consegna, più i numeri
 // scritti e non salvati o da riscrivere. Vale solo per la distinta NUOVA: la ristampa di
 // una consegna registrata usa il totale congelato e non si blocca.
-// Ogni blocco: {titolo, testo, tipo:'consumi'|'consegna'|'', date:[dd/MM/yyyy]}.
+// Ogni blocco: {k, titolo, testo, tipo:'consumi'|'consegna'|'', date:[dd/MM/yyyy], avviso}.
+// `avviso:true` = si mostra ma NON ferma la stampa: vedi GB_DIST_SOLO_AVVISO.
+//
+// SOLO AVVISO, non blocco (22/11/2026, il QM): nella Galleria ci sono dati mancanti vecchi
+// che chiederanno tempo per essere sistemati, e intanto la distinta va stampata lo stesso.
+// I tipi elencati qui si mostrano in ambra e lasciano stampare; tutti gli altri fermano.
+// Restano SEMPRE bloccanti i problemi del periodo stesso (consumi del periodo mancanti, numeri
+// non salvati o da riscrivere): si sistemano in un minuto e cambiano i numeri sul foglio.
+// In Compass la lista è vuota: lì si blocca tutto.
+// Galleria: i dati mancanti vecchi non fermano la stampa (22/11/2026, il QM).
+const GB_DIST_SOLO_AVVISO=['consegne','portato','consumi-prima'];
 function _gbDistBlocchi(hotel,data){
   const out=[];
   if(_gb.giri.some(x=>_gbH(x)===hotel&&x.data===data))return out;
@@ -2134,23 +2144,30 @@ function _gbDistBlocchi(hotel,data){
   const gg=a=>a.map(x=>_gbGgEtichetta(_gbParse(x))).join(', ');
   const b=_gbBuchi(hotel,D);
   const ds=_gbConsumiDaSalvare(hotel,per);
-  const cons=[...new Set(b.consumi.concat(ds.mancanti.map(_gbFmt)))].sort((x,y)=>_gbParse(x)-_gbParse(y));
-  if(b.consegne.length)out.push({titolo:'Consegne non registrate',tipo:'consegna',date:b.consegne,
+  // Consumi mancanti del periodo (escono su QUESTA distinta) e di prima (consegne passate).
+  const consPer=ds.mancanti.map(_gbFmt);
+  const consPrima=b.consumi.filter(x=>consPer.indexOf(x)<0&&_gbParse(x)<per.dal);
+  if(b.consegne.length)out.push({k:'consegne',titolo:'Consegne non registrate',tipo:'consegna',date:b.consegne,
     testo:'Consegne di Raimondo non registrate: '+gg(b.consegne)+'. Senza, il periodo della distinta parte dalla consegna sbagliata e rimette dentro consumi già usciti.'});
-  if(b.senzaPortato.length)out.push({titolo:'Manca «Ha portato»',tipo:'consegna',date:b.senzaPortato,
+  if(b.senzaPortato.length)out.push({k:'portato',titolo:'Manca «Ha portato»',tipo:'consegna',date:b.senzaPortato,
     testo:'Consegne senza «Ha portato»: '+gg(b.senzaPortato)+'. Scrivi i numeri della distinta di Raimondo.'});
-  if(cons.length)out.push({titolo:'Mancano dei consumi',tipo:'consumi',date:cons,
-    testo:'Nessun consumo salvato per '+gg(cons)+'. Lo sporco che esce è la somma dei consumi: con un giorno mancante il totale è sbagliato.'});
+  if(consPrima.length)out.push({k:'consumi-prima',titolo:'Mancano dei consumi',tipo:'consumi',date:consPrima,
+    testo:'Nessun consumo salvato per '+gg(consPrima)+' (consegne già passate): i conti di quelle consegne sono incompleti.'});
+  if(consPer.length)out.push({k:'consumi',titolo:'Mancano dei consumi',tipo:'consumi',date:consPer,
+    testo:'Nessun consumo salvato per '+gg(consPer)+'. Lo sporco che esce è la somma dei consumi: con un giorno mancante il totale è sbagliato.'});
   // Un numero fuori dal normale svuota la casella (_gbRiscrivi): finché non è riscritto il
   // valore salvato è quello vecchio. Detto a parte, non come "non salvato".
   const rk=String(_gbRiscrivi&&_gbRiscrivi.k||''),rd=rk.split('|')[1]||'',rD=_gbParse(rd);
   const daRiscrivere=rk.indexOf(hotel+'|')===0&&Object.keys(_gbRiscrivi.voci||{}).length&&rD&&rD>=per.dal&&rD<=per.al;
-  if(daRiscrivere)out.push({titolo:'Consumi da riscrivere',tipo:'consumi',date:[rd],
+  if(daRiscrivere)out.push({k:'riscrivere',titolo:'Consumi da riscrivere',tipo:'consumi',date:[rd],
     testo:'I consumi del '+rd+' hanno un numero da riscrivere (casella rossa). Riscrivilo e premi «Salva consumi».'});
-  else if(ds.nonSalvato)out.push({titolo:'Consumi non salvati',tipo:'consumi',date:[ds.nonSalvato],
+  else if(ds.nonSalvato)out.push({k:'nonsalvato',titolo:'Consumi non salvati',tipo:'consumi',date:[ds.nonSalvato],
     testo:'I consumi del '+ds.nonSalvato+' sono scritti ma non salvati. Premi «Salva consumi».'});
+  out.forEach(x=>{x.avviso=GB_DIST_SOLO_AVVISO.indexOf(x.k)>=0;});
   return out;
 }
+// Solo quelli che fermano la stampa.
+function _gbDistFerma(bl){return bl.filter(b=>!b.avviso);}
 // Il riquadro della distinta: data sua, periodo, cosa manca, e il pulsante — spento finché
 // non è tutto in regola (22/11/2026).
 function _gbPannelloDistinta(oggi){
@@ -2161,7 +2178,8 @@ function _gbPannelloDistinta(oggi){
   const D=_gbParse(data);
   const per=_gbPeriodo(_gbHotel,data);
   const reg=_gb.giri.find(x=>_gbH(x)===_gbHotel&&x.data===data);
-  const bl=_gbDistBlocchi(_gbHotel,data);
+  const tutti=_gbDistBlocchi(_gbHotel,data);
+  const bl=_gbDistFerma(tutti),av=tutti.filter(b=>b.avviso);
   const q=reg&&reg.consegnato?reg.consegnato:(per&&!per.vuoto?_gbSommaConsumi(_gbHotel,per.dal,per.al):_gbVuote());
   const tot=_gbTot(q);
   const stampata=_gbDistStampata(_gbHotel,data);
@@ -2195,19 +2213,33 @@ function _gbPannelloDistinta(oggi){
   }
   if(reg){
     h+=`<div style="font-size:var(--fs-xs);color:var(--text-dim);line-height:1.5;margin-bottom:10px;">La consegna del ${esc(data)} è già registrata: la distinta riporta i <strong style="color:var(--text);">${tot}</strong> pezzi dati a Raimondo quel giorno.</div>`;
+  }
+  const link=(b,s)=>{const d=_gbParse(s);
+    return d&&d>oggi?`<span style="white-space:nowrap;">${esc(_gbGgEtichetta(d))} (non ancora arrivato)</span>`
+      :`<a href="#" onclick="event.preventDefault();gbVaiA('${_gbHotel}','${b.tipo}','${s}')" style="color:inherit;font-weight:700;white-space:nowrap;">${d?esc(_gbGgEtichetta(d)):esc(s)}</a>`;};
+  const righe=arr=>arr.map(b=>`<div style="margin-top:4px;"><strong>${esc(b.titolo)}</strong>${b.date.length?': '+b.date.map(s=>b.tipo?link(b,s):esc(s)).join(', '):' — '+esc(b.testo)}</div>`).join('');
+  // Dati mancanti che NON fermano la stampa (solo dove GB_DIST_SOLO_AVVISO li elenca).
+  if(!reg&&av.length){
+    h+=`<div id="gb-dist-avvisi" style="border-left:3px solid var(--amber);background:rgba(160,90,0,.08);color:var(--amber);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:var(--fs-xs);line-height:1.5;">
+      <div style="font-weight:700;">Dati mancanti da sistemare</div>
+      ${righe(av)}
+      <div style="margin-top:6px;font-size:var(--fs-xxs);color:var(--text-dim);">La distinta si può stampare lo stesso, ma finché mancano i conti delle consegne restano incompleti. Tocca una data per aprirla.</div>
+    </div>`;
+  }
+  if(reg){
+    // gia' detto sopra: la ristampa usa i pezzi registrati quel giorno
   }else if(bl.length){
-    const link=(b,s)=>{const d=_gbParse(s);
-      return d&&d>oggi?`<span style="white-space:nowrap;">${esc(_gbGgEtichetta(d))} (non ancora arrivato)</span>`
-        :`<a href="#" onclick="event.preventDefault();gbVaiA('${_gbHotel}','${b.tipo}','${s}')" style="color:var(--red);font-weight:700;white-space:nowrap;">${d?esc(_gbGgEtichetta(d)):esc(s)}</a>`;};
     h+=`<div id="gb-dist-blocchi" style="border-left:3px solid var(--red);background:rgba(192,53,42,.08);color:var(--red);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:var(--fs-xs);line-height:1.5;">
       <div style="font-weight:700;">La distinta non si stampa finché non è tutto in regola</div>
-      ${bl.map(b=>`<div style="margin-top:4px;"><strong>${esc(b.titolo)}</strong>${b.date.length?': '+b.date.map(s=>b.tipo?link(b,s):esc(s)).join(', '):' — '+esc(b.testo)}</div>`).join('')}
+      ${righe(bl)}
       <div style="margin-top:6px;font-size:var(--fs-xxs);color:var(--text-dim);">Tocca una data per aprirla. Una distinta con dati mancanti porterebbe a Raimondo un totale sbagliato.</div>
     </div>`;
   }else if(!tot){
     h+=`<div style="font-size:var(--fs-xs);color:var(--amber);line-height:1.5;margin-bottom:10px;">Tutti i consumi del periodo sono a zero: non c'è niente da consegnare.</div>`;
   }else{
-    h+=`<div style="border-left:3px solid var(--green);background:rgba(46,125,50,.10);color:var(--green);border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:var(--fs-xs);line-height:1.5;"><strong>Tutto in regola:</strong> escono <strong>${tot}</strong> pezzi.</div>`;
+    h+=av.length
+      ?`<div style="font-size:var(--fs-xs);line-height:1.5;margin-bottom:10px;">Escono <strong>${tot}</strong> pezzi.</div>`
+      :`<div style="border-left:3px solid var(--green);background:rgba(46,125,50,.10);color:var(--green);border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:var(--fs-xs);line-height:1.5;"><strong>Tutto in regola:</strong> escono <strong>${tot}</strong> pezzi.</div>`;
   }
   if(!bl.length&&tot){
     h+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.8;margin-bottom:10px;">${GB_VOCI.map(v=>`<span style="white-space:nowrap;margin-right:12px;">${esc(v)} <strong style="color:var(--text);">${Number(q[v])||0}</strong></span>`).join(' ')}</div>`;
@@ -2233,7 +2265,7 @@ function gbPrintDistinta(giroId){
     const reg=_gb.giri.find(x=>_gbH(x)===hotel&&x.data===data);
     q=reg&&reg.consegnato?reg.consegnato:(per&&!per.vuoto?_gbSommaConsumi(hotel,per.dal,per.al):_gbVuote());
     if(!reg){
-      const bl=_gbDistBlocchi(hotel,data);
+      const bl=_gbDistFerma(_gbDistBlocchi(hotel,data));
       if(bl.length){_gbAvviso(bl[0].titolo,bl.map(b=>b.testo).join('<br><br>')+'<br><br>La distinta si stampa quando è tutto in regola.');return;}
     }
   }

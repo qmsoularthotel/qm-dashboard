@@ -1365,6 +1365,24 @@ Controlli in `test/controlli.js` ("la distinta si stampa solo se tutto e' in reg
 dalla stampa, pulsante sempre acceso, riquadro tolto dalla pagina): 1+errore, 4, 1 e 3 falliscono
 in Compass; 3 e 3 nella Galleria.
 
+**Nella Galleria i dati mancanti vecchi NON fermano la stampa** (stesso giorno, il QM: *"in app
+Galleria ci sono dati mancanti e ci vorrà tempo per risolverli, non posso bloccare la stampa"*).
+Ogni blocco ha una chiave `k` (`consegne`, `portato`, `consumi-prima`, `consumi`, `riscrivere`,
+`nonsalvato`) e quelli elencati in `BIA_DIST_SOLO_AVVISO` / `GB_DIST_SOLO_AVVISO` diventano
+`avviso:true`: si mostrano in un riquadro **ambra** «Dati mancanti da sistemare» (id
+`…-dist-avvisi`) e lasciano stampare. `_biaDistFerma(bl)` dà solo quelli che fermano.
+
+| | `BIA_DIST_SOLO_AVVISO` (Compass) | `GB_DIST_SOLO_AVVISO` (Galleria) |
+|---|---|---|
+| valore | `[]`: ferma tutto | `['consegne','portato','consumi-prima']` |
+| fermano sempre | — | consumi **del periodo** mancanti, numeri non salvati o da riscrivere |
+
+I consumi mancanti sono divisi in due: `consumi` (giorni del periodo, cioè i numeri sul foglio) e
+`consumi-prima` (giorni di consegne già passate). Quando la Galleria avrà sistemato i suoi dati
+basta svuotare `GB_DIST_SOLO_AVVISO` per avere la stessa regola di Compass. Controlli in
+`test/galleria.js`, verificati con tre sabotaggi (lista svuotata, consumi del periodo resi solo
+avviso, lista riempita in Compass): 7, 4 e 5 falliscono.
+
 ### Avviso "Dati mancanti" — sempre in cima alla pagina (07/11/2026)
 
 **Caso reale**: la consegna SoulArt di giovedì 05/11 non era stata registrata. Il calcolo

@@ -371,6 +371,8 @@ sez('Biancheria: la distinta si stampa solo se tutto e\' in regola');
     ok('consegna non registrata: dice quale', bl[0].date.join(), '12/11/2026');
     biaPrintDistinta();
     ok('consegna non registrata: la distinta NON si apre', aperte, 0);
+    ok('Compass: nessun dato mancante e\' solo un avviso', BIA_DIST_SOLO_AVVISO.length, 0);
+    ok('consegna non registrata: ferma la stampa', _biaDistFerma(bl).length, 1);
     ok('consegna non registrata: avviso col titolo', avvisi[0], 'Consegne non registrate');
 
     scena(tutti, [g07, g10, { id: 'g12', hotel: 'sa', data: '12/11/2026', consegnato: { Federa: 10 }, ricevuto: {} }]);
