@@ -460,3 +460,23 @@ vecchio `hkpNSave` bastava toccare una casella per rimetterla sul cloud e perder
 `qmHkpRecuperaEsegui`): si sceglie un `compass-archivio-*.json`, Compass confronta mese per mese
 e rimette **solo le caselle che sul cloud sono vuote** (`_qmHkpMancanti`), una scrittura per mese.
 
+
+### La griglia si apre sulla colonna di oggi (22/11/2026)
+
+Richiesta del QM: *"aprire il modulo con la colonna della data odierna più centrata nel monitor"*.
+La griglia Camere / Aree Comuni si apriva sempre dal giorno 1, e a fine mese oggi stava fuori
+schermo o sul bordo destro.
+
+- La colonna di oggi ha `data-hkpoggi`. `_hkpNCentraOggi(p)` sposta la parte scorrevole
+  (`[data-hkpnr]`) in modo che quella colonna stia al centro dell'area visibile della pagina
+  (`.content`), non della sola parte scorrevole: a sinistra gruppo e camera sono fissi.
+- Si ricentra **aprendo il modulo** (`setView('hkpsheet')` mette `_hkpNCentra.sa=true`),
+  cambiando scheda o mese (`_hkpNPos[p]`='scheda|mese' cambia). Un mese diverso dal corrente
+  non ha la colonna di oggi e resta dal giorno 1.
+- **Ridisegnando la stessa griglia si resta dove si era**: prima ogni ridisegno (un simbolo
+  inserito, il cloud che aggiorna) ripartiva dal giorno 1, sotto le dita di chi lavorava.
+- Il limite è quello dello scorrimento: nei primi e negli ultimi giorni del mese la colonna non
+  può arrivare al centro esatto (non c'è altro da scorrere), resta il più vicino possibile.
+
+Controlli in `test/controlli.js` ("Operativa HKP: si apre con la colonna di oggi al centro"),
+verificati togliendo lo spostamento e il ripristino della posizione.

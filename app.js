@@ -1763,6 +1763,9 @@ function _hkpNumCella(nome){
   if(/^LIBORIO$/i.test(n))return'LIB';
   return n.replace(/[<>&"']/g,'');
 }
+// Ultima griglia disegnata per struttura ('scheda|mese') e richiesta di ricentrare su oggi
+// (la fa setView aprendo il modulo). Dichiarate PRIMA della funzione che le usa.
+const _hkpNPos={},_hkpNCentra={};
 function hkpNRenderGrid(p,tab){
   const el=document.getElementById('hkpN-'+p+'-body');
   if(!el)return;
@@ -1839,7 +1842,7 @@ function hkpNRenderGrid(p,tab){
   R+='<thead><tr style="height:'+RH+'px;">';
   days.forEach(d=>{
     const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-    R+='<th style="background:var(--surface,#f8f9fb);'+B+'padding:6px 2px;font-size:12px;font-weight:'+(isToday?'600':'400')+';text-align:center;color:'+(isToday?'var(--accent,#1c3a5e)':'var(--text-dim,#888880)')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1c3a5e);':'')+'">'+d+'</th>';
+    R+='<th'+(isToday?' data-hkpoggi="1"':'')+' style="background:var(--surface,#f8f9fb);'+B+'padding:6px 2px;font-size:12px;font-weight:'+(isToday?'600':'400')+';text-align:center;color:'+(isToday?'var(--accent,#1c3a5e)':'var(--text-dim,#888880)')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1c3a5e);':'')+'">'+d+'</th>';
   });
   R+='</tr></thead><tbody>';
   rows.forEach((row,vi)=>{
@@ -1996,10 +1999,31 @@ function hkpNRenderGrid(p,tab){
       if(b1)h+=sub('Boutique 200 · ditta esterna')+b1;
     }else h+=symCards(symCounts);
   }
+  // Posizione orizzontale della griglia (22/11/2026, il QM): aprendo il modulo la colonna di
+  // OGGI sta al centro dello schermo. Ridisegnando la stessa griglia (un simbolo inserito, il
+  // cloud che aggiorna) si resta dove si era: prima il nuovo HTML ripartiva dal giorno 1.
+  const chiavePos=tab+'|'+hkpNCurMon(p);
+  const vecchio=el.querySelector('[data-hkpnr]');
+  const restaA=(vecchio&&_hkpNPos[p]===chiavePos&&!_hkpNCentra[p])?vecchio.scrollLeft:null;
+  _hkpNPos[p]=chiavePos;_hkpNCentra[p]=false;
   el.innerHTML=h;
+  const nuovo=el.querySelector('[data-hkpnr]');
+  if(nuovo&&restaA!==null)nuovo.scrollLeft=restaA;
   // Sincronizza altezze righe dopo il render (rowspan nella tabella sinistra può sfasarle)
-  requestAnimationFrame(()=>hkpNSyncRowHeights(p));
+  requestAnimationFrame(()=>{hkpNSyncRowHeights(p);if(restaA===null)_hkpNCentraOggi(p);});
   setTimeout(()=>{hkpNUpdateAllSymbols(p);_hkpNEvidApplica(p,tab,false);},60);
+}
+// Porta la colonna di oggi al centro dell'area visibile della pagina (.content, non la sola
+// parte scorrevole: a sinistra ci sono gruppo e camera, fissi). Mese diverso dal corrente:
+// nessuna colonna di oggi, la griglia resta dal giorno 1.
+function _hkpNCentraOggi(p){
+  const el=document.getElementById('hkpN-'+p+'-body');if(!el)return;
+  const box=el.querySelector('[data-hkpnr]'),th=box&&box.querySelector('[data-hkpoggi]');
+  if(!box||!th)return;
+  const area=document.querySelector('.content')||document.documentElement;
+  const a=area.getBoundingClientRect(),c=th.getBoundingClientRect();
+  if(!c.width||!a.width)return;   // vista nascosta: niente da misurare
+  box.scrollLeft+=Math.round((c.left+c.width/2)-(a.left+a.width/2));
 }
 // Clic su una card cameriera (04/10/2026): le sue caselle nella griglia si colorano. Solo
 // colore (classe hkp-evid), NON la selezione: con la selezione un Canc per sbaglio
@@ -2348,7 +2372,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   }
   // Tornando in Overview dopo un caricamento fatto da un'altra vista: tutto, non solo il turno.
   if(id==='overview'){try{ovAggiornaTutto();}catch(e){}}
-  if(id==='hkpsheet')setTimeout(()=>hkpNRender('sa'),50);
+  if(id==='hkpsheet'){_hkpNCentra.sa=true;setTimeout(()=>hkpNRender('sa'),50);}
   if(id==='bkfsheet')setTimeout(bkfRenderChart,50);
   if(id==='bkfsheetar')setTimeout(bkfRenderChartAR,50);
   if(id==='miniapp')setTimeout(miniappRender,50);

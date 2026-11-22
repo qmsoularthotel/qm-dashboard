@@ -439,6 +439,32 @@ sez('Biancheria: la distinta si stampa solo se tutto e\' in regola');
   }
 })();
 
+sez('Operativa HKP: si apre con la colonna di oggi al centro');
+// 22/11/2026, il QM: "aprire il modulo con la colonna della data odierna piu' centrata".
+(function () {
+  var veroEl = document.getElementById, veroQs = document.querySelector;
+  var th = { getBoundingClientRect: function () { return { left: 1500, width: 40 }; } };
+  var box = { scrollLeft: 0, querySelector: function (q) { return q === '[data-hkpoggi]' ? th : null; } };
+  var corpo = { querySelector: function (q) { return q === '[data-hkpnr]' ? box : null; } };
+  var area = { getBoundingClientRect: function () { return { left: 270, width: 1170 }; } };
+  document.getElementById = function (id) { return id === 'hkpN-sa-body' ? corpo : null; };
+  document.querySelector = function (q) { return q === '.content' ? area : null; };
+  try {
+    _hkpNCentraOggi('sa');
+    ok('la colonna di oggi va al centro della pagina', box.scrollLeft, 1500 + 20 - (270 + 585));
+    box.scrollLeft = 0; th = null;
+    _hkpNCentraOggi('sa');
+    ok('mese senza oggi: resta dal giorno 1', box.scrollLeft, 0);
+    th = { getBoundingClientRect: function () { return { left: 0, width: 0 }; } };
+    _hkpNCentraOggi('sa');
+    ok('vista nascosta: non si sposta', box.scrollLeft, 0);
+  } finally { document.getElementById = veroEl; document.querySelector = veroQs; }
+  var src = String(hkpNRenderGrid);
+  ok('la colonna di oggi e\' marcata', /data-hkpoggi/.test(src), true);
+  ok('ridisegnando la stessa griglia si resta dove si era', /vecchio\.scrollLeft/.test(src) && /nuovo\.scrollLeft=restaA/.test(src), true);
+  ok('aprendo il modulo si ricentra', /_hkpNCentra\.sa=true/.test(String(setView)), true);
+})();
+
 sez('Colazioni: un caricamento stretto non cancella la previsione');
 // Il grafico della previsione e' lo strumento su cui la responsabile organizza il
 // servizio. Un export del PMS filtrato su un giorno solo sostituiva l'intera serie e lo
