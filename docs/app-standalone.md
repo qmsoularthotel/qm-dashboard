@@ -313,7 +313,7 @@ Sotto Colazioni / Room Only, con la scritta «Tocca le card per più info», tre
 (grafica «E»: numero al centro, titolo sotto, striscia «Apri ▾»). Il numero è sempre di
 **coperti**; un tocco apre il dettaglio sotto le card (`bkCard`, ricordata in sessionStorage).
 
-- **Checkout oggi** (domani, se si guarda domani): camere in partenza **con colazione** (non RO),
+- **In check out** («In check out domani», se si guarda domani): camere in partenza **con colazione** (non RO),
   da `qm_bkf_room_info`; per oggi vale `tipo==='partenza'`, altrimenti la data di checkout.
 - **Intolleranze**: elenco `qm_bkf_intolleranze` scritto dai telefoni con `_qmElencoSalva`
   (fusione a tre) e riletto ogni minuto a scheda visibile. Ogni voce: camera, testo, persone,

@@ -102,7 +102,7 @@ if ! grep -q "_qmElencoSalva(BKF_INT_KEY" breakfast.html || ! grep -q "_qmElenco
   BKF_KO=1
 fi
 if ! grep -q "if(!conCol(r))return false;" breakfast.html; then
-  echo "  NO  breakfast.html: «Checkout oggi» conta anche chi è in room only"
+  echo "  NO  breakfast.html: «In check out» conta anche chi è in room only"
   BKF_KO=1
 fi
 # Colazione Booking.com (22/11/2026): anche l'app mostra solo chi ha la colazione inclusa,

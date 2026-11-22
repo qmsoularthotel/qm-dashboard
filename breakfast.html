@@ -98,12 +98,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .bk-cn{font-size:30px;font-weight:800;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums;}
 .bk-cs{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
 .bk-ct{font-size:11.5px;font-weight:600;color:var(--text);line-height:1.25;margin:6px 0 8px;min-height:29px;display:flex;align-items:center;}
-.bk-go{align-self:stretch;border-top:1px solid var(--border);font-size:11px;font-weight:700;color:var(--accent);padding:6px 0;}
+.bk-go{align-self:stretch;margin:0 -6px;border-top:1px solid var(--border);font-size:11px;font-weight:700;color:var(--accent);padding:7px 0;}
 .bk-c.on{border-color:var(--accent);}
 .bk-c.on .bk-go{background:var(--accent);color:#fff;border-top-color:var(--accent);}
 .bk-ps{color:var(--text-dim);font-size:11px;}
-.bk-chips{display:flex;flex-wrap:wrap;gap:5px;padding:11px 13px;}
-.bk-chip{font-size:12px;font-weight:700;color:var(--accent);background:var(--surface2);border-radius:6px;padding:3px 8px;}
+/* pills in colonne uguali: righe allineate a tutta larghezza */
+.bk-chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:5px;padding:11px 13px;}
+.bk-chip{font-size:12px;font-weight:700;color:var(--accent);background:var(--surface2);border-radius:6px;padding:4px 6px;text-align:center;white-space:nowrap;}
 .bk-chip small{font-weight:500;color:var(--text-dim);margin-left:4px;}
 .bk-sm{display:block;font-size:11px;color:var(--text-dim);margin-top:1px;}
 .bk-add{font-size:12px;font-weight:700;color:var(--accent);background:none;border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-family:inherit;cursor:pointer;}
@@ -487,7 +488,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-22.7';
+const QM_APP_BUILD='2026-11-22.8';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -772,16 +773,16 @@ function renderDay(){
     const camere=n=>n+(n===1?' camera':' camere');
     const ap=_bkCardAperta;
     const card=(id,n,tit)=>`<button class="bk-c${ap===id?' on':''}" onclick="bkCard('${id}')"><span class="bk-cn">${n}</span><span class="bk-cs">coperti</span><span class="bk-ct">${tit}</span><span class="bk-go">${ap===id?'Chiudi ▴':'Apri ▾'}</span></button>`;
-    const coTit=isToday?'Checkout oggi':'Checkout domani';
+    const coTit=isToday?'In check out':'In check out domani';
     html+=`<div class="bk-hint">👆 Tocca le card per più info</div>
       <div class="bk-tre">${card('co',coCop,coTit)}${card('int',intCop,'Intolleranze')}${card('bk',bkCop,'Ospiti Booking.com')}</div>`;
     if(ap==='co'){
       html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">${coTit}</span><span class="pan-s bk-ps">${coCop} coperti · ${camere(coRows.length)}</span></div>`+
-        (coRows.length?`<div class="bk-chips">${coRows.map(r=>`<span class="bk-chip">${_bkEsc(r.camera)}<small>${pax(r)||''}</small></span>`).join('')}</div>`
-          :`<div class="bk-r" style="color:var(--text-dim);">Nessun checkout con colazione ${isToday?'oggi':'domani'}.</div>`)+`</div>`;
+        (coRows.length?`<div class="bk-chips">${coRows.map(r=>`<span class="bk-chip">${_bkEsc(_bkCam(r.camera))}<small>${pax(r)||''}</small></span>`).join('')}</div>`
+          :`<div class="bk-r" style="color:var(--text-dim);">Nessuno in check out con colazione ${isToday?'oggi':'domani'}.</div>`)+`</div>`;
     }else if(ap==='int'){
       html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">Intolleranze</span><button class="bk-add" onclick="bkIntAggiungi()">+ Aggiungi</button></div>`+
-        (intRows.length?intRows.map(x=>`<div class="bk-r"><span class="bk-cam">${_bkEsc(x.camera)}</span><span class="bk-nome">${_bkEsc(x.testo)}<small class="bk-sm">${parseInt(x.pax,10)||1} ${(parseInt(x.pax,10)||1)===1?'persona':'persone'} · fino al ${_bkIsoBreve(x.fino)}</small></span><button class="bk-x" onclick="bkIntTogli('${_bkEsc(x.id)}')" aria-label="Togli">×</button></div>`).join('')
+        (intRows.length?intRows.map(x=>`<div class="bk-r"><span class="bk-cam">${_bkEsc(_bkCam(x.camera))}</span><span class="bk-nome">${_bkEsc(x.testo)}<small class="bk-sm">${parseInt(x.pax,10)||1} ${(parseInt(x.pax,10)||1)===1?'persona':'persone'} · fino al ${_bkIsoBreve(x.fino)}</small></span><button class="bk-x" onclick="bkIntTogli('${_bkEsc(x.id)}')" aria-label="Togli">×</button></div>`).join('')
           :`<div class="bk-r" style="color:var(--text-dim);">Nessuna intolleranza segnata. Tocca «+ Aggiungi».</div>`)+`</div>`;
     }else if(ap==='bk'){
       html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">Ospiti Booking.com</span><span class="pan-s bk-ps">${bkCop} coperti · ${camere(bkRows.length)}</span></div>`;
@@ -789,7 +790,7 @@ function renderDay(){
         html+=`<div class="bk-r" style="background:#fff3e0;color:#a05a00;font-weight:600;">⚠️ Cambi camera oggi non riconducibili con certezza — verifica manualmente.</div>`;
       }
       html+=bkRows.length?bkRows.map(r=>`<div class="bk-r">
-        <span class="bk-cam">${_bkEsc(r.camera)}</span>
+        <span class="bk-cam">${_bkEsc(_bkCam(r.camera))}</span>
         <span class="bk-nome">${_bkEsc(r.nome)||'—'}${intCam.has(r.camera)?' <span title="ha un\'intolleranza">📝</span>':''}</span>
         ${pax(r)?`<span class="bk-out">${pax(r)} pax</span>`:''}
         ${r.trattamento?`<span class="bk-tr">${_bkEsc(r.trattamento)}</span>`:''}
@@ -936,6 +937,9 @@ function bkCard(id){
   try{sessionStorage.setItem('bkf_card',_bkCardAperta);}catch(e){}
   renderDay();
 }
+// Il PMS chiama San Liborio «AS_LIB»: si legge «Liborio» (i dati caricati prima del 22/11
+// hanno ancora il nome vecchio).
+function _bkCam(c){return /^AS[_\s-]?LIB$/i.test(String(c||'').trim())?'Liborio':String(c||'');}
 // Camere 200 (Boutique) prima, poi le Art (SoulArt), in ordine di numero.
 function _bkOrdina(a,b){
   const ga=/^art/i.test(String(a.camera||'').trim())?1:0,gb=/^art/i.test(String(b.camera||'').trim())?1:0;
@@ -975,7 +979,7 @@ function bkIntAggiungi(){
   const camere=Object.values(viste).sort(_bkOrdina);
   const ov=document.createElement('div');ov.className='bk-ov';
   ov.innerHTML=`<div class="bk-sh" role="dialog" aria-label="Nuova intolleranza"><h3>Nuova intolleranza</h3>
-    <div class="bk-lb">Camera</div><select class="bk-in" id="bkIntCam">${camere.map((c,i)=>`<option value="${i}">${_bkEsc(c.camera)}${c.nome?' · '+_bkEsc(c.nome):''}</option>`).join('')}</select>
+    <div class="bk-lb">Camera</div><select class="bk-in" id="bkIntCam">${camere.map((c,i)=>`<option value="${i}">${_bkEsc(_bkCam(c.camera))}${c.nome?' · '+_bkEsc(c.nome):''}</option>`).join('')}</select>
     <div class="bk-lb">Intolleranza</div><input class="bk-in" id="bkIntTx" maxlength="80" placeholder="es. senza glutine, lattosio">
     <div class="bk-lb">Persone</div><input class="bk-in" id="bkIntPax" type="number" min="1" max="9" value="1" inputmode="numeric">
     <div class="bk-bt"><button class="bk-no" id="bkIntNo">Annulla</button><button class="bk-ok" id="bkIntOk">Salva</button></div></div>`;
