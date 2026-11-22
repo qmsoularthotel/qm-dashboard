@@ -93,6 +93,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .bk-out{font-size:11px;color:var(--text-dim);flex-shrink:0;}
 /* Tre card (22/11/2026, grafica E): numero grande al centro, titolo sotto, «Apri» in fondo */
 .bk-hint{font-size:11.5px;color:var(--text-dim);margin:14px 2px 6px;}
+/* finché non si è mai toccata una card, la scritta pulsa piano per farsi notare */
+.bk-hint.anim{animation:bkHint 2.2s ease-in-out infinite;color:var(--accent);font-weight:600;}
+@keyframes bkHint{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.bk-hint.anim{animation:none;}}
 .bk-tre{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px;}
 .bk-c{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 6px 0;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:0;overflow:hidden;font-family:inherit;color:var(--text);-webkit-tap-highlight-color:transparent;}
 .bk-cn{font-size:30px;font-weight:800;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums;}
@@ -488,7 +492,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-22.8';
+const QM_APP_BUILD='2026-11-22.9';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -756,10 +760,9 @@ function renderDay(){
     // Ospiti Booking.com. Il numero grande è sempre di COPERTI; un tocco apre il dettaglio
     // sotto le card, un altro lo chiude.
     const pax=r=>parseInt(r&&r.pax,10)||0;
-    const conCol=r=>!/^ro$/i.test(String(r.trattamento||'').trim());
     const tutte=Object.values(bkfRoomInfo||{}).flat().filter(r=>r&&r.camera);
+    // In check out (22/11/2026): tutti, room only compresi (lo dice l'intestazione).
     const coRows=tutte.filter(r=>{
-      if(!conCol(r))return false;
       if(isToday&&r.tipo==='partenza')return true;
       const co=_bkShortDate(r.checkout);
       return !!(co&&targetDay&&co.getTime()===targetDay.getTime()&&r.tipo!=='arrivo');
@@ -774,10 +777,10 @@ function renderDay(){
     const ap=_bkCardAperta;
     const card=(id,n,tit)=>`<button class="bk-c${ap===id?' on':''}" onclick="bkCard('${id}')"><span class="bk-cn">${n}</span><span class="bk-cs">coperti</span><span class="bk-ct">${tit}</span><span class="bk-go">${ap===id?'Chiudi ▴':'Apri ▾'}</span></button>`;
     const coTit=isToday?'In check out':'In check out domani';
-    html+=`<div class="bk-hint">👆 Tocca le card per più info</div>
+    html+=`<div class="bk-hint${_bkCardUsata?'':' anim'}">Tocca le card per più info</div>
       <div class="bk-tre">${card('co',coCop,coTit)}${card('int',intCop,'Intolleranze')}${card('bk',bkCop,'Ospiti Booking.com')}</div>`;
     if(ap==='co'){
-      html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">${coTit}</span><span class="pan-s bk-ps">${coCop} coperti · ${camere(coRows.length)}</span></div>`+
+      html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">${coTit}</span><span class="pan-s bk-ps">include i room only</span></div>`+
         (coRows.length?`<div class="bk-chips">${coRows.map(r=>`<span class="bk-chip">${_bkEsc(_bkCam(r.camera))}<small>${pax(r)||''}</small></span>`).join('')}</div>`
           :`<div class="bk-r" style="color:var(--text-dim);">Nessuno in check out con colazione ${isToday?'oggi':'domani'}.</div>`)+`</div>`;
     }else if(ap==='int'){
@@ -932,7 +935,10 @@ function renderChart(){
 }
 // ── Tre card e intolleranze (22/11/2026) ──
 let _bkCardAperta='';try{_bkCardAperta=sessionStorage.getItem('bkf_card')||'';}catch(e){}
+// La scritta «Tocca le card» smette di pulsare dopo il primo tocco su questo telefono.
+let _bkCardUsata=false;try{_bkCardUsata=localStorage.getItem('bkf_card_usata')==='1';}catch(e){}
 function bkCard(id){
+  if(!_bkCardUsata){_bkCardUsata=true;try{localStorage.setItem('bkf_card_usata','1');}catch(e){}}
   _bkCardAperta=_bkCardAperta===id?'':id;
   try{sessionStorage.setItem('bkf_card',_bkCardAperta);}catch(e){}
   renderDay();

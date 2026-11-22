@@ -96,13 +96,13 @@ fi
 # tornasse ad archiviare i giorni futuri, il totale del mese ricomincerebbe a mentire.
 BKF_KO=0
 # Tre card (22/11/2026): le intolleranze le scrivono più telefoni, quindi passano dalla fusione
-# a tre; i checkout contano solo chi ha la colazione (non RO).
+# a tre; «In check out» conta tutti, room only compresi, e lo dice (22/11/2026).
 if ! grep -q "_qmElencoSalva(BKF_INT_KEY" breakfast.html || ! grep -q "_qmElencoAggiorna(BKF_INT_KEY" breakfast.html; then
   echo "  NO  breakfast.html: le intolleranze non passano più dalla fusione a tre"
   BKF_KO=1
 fi
-if ! grep -q "if(!conCol(r))return false;" breakfast.html; then
-  echo "  NO  breakfast.html: «In check out» conta anche chi è in room only"
+if ! grep -q "include i room only" breakfast.html; then
+  echo "  NO  breakfast.html: «In check out» non dice più che include i room only"
   BKF_KO=1
 fi
 # Colazione Booking.com (22/11/2026): anche l'app mostra solo chi ha la colazione inclusa,
