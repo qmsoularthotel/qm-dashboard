@@ -158,6 +158,19 @@ partenze (prima solo per gli arrivi): un campo in più, nessun lettore ne risent
 Il PMS chiama San Liborio `AS_LIB`: `_prenCamera` lo scrive **«Liborio»**, come già
 l'Operativa HKP. I conteggi BB/RO del report non cambiano.
 
+### Nomi andati a capo a metà parola (22/11/2026)
+
+Il PMS manda a capo i testi lunghi della colonna anche **a metà parola** («FINOCCHIA» + «RO
+ANTONINO», «Booking.co» + «m»), e prima Compass riattaccava i pezzi sempre con uno spazio.
+Il segnale sta nel PDF, ma `getTextContent` di pdf.js lo butta: lo spazio in fondo alla riga
+c'è solo nelle istruzioni di disegno (`getOperatorList`), che `_prenSpaziFinali` allinea uno
+a uno ai pezzi di testo (se non si allineano, si legge come prima). `_prenUnisci` riattacca
+senza spazio solo se: niente spazio in fondo, riga sotto non spostata (x 11,7 = spazio
+spostato a capo), primo pezzo sotto di **massimo 3 lettere** — il PMS a volte toglie lo
+spazio anche fra due parole intere («DARBENZIO» + «STEFANO»), e lì solo la lunghezza
+distingue. Provato su 7 PDF, 575 prenotazioni: 39 nomi corretti, nessun errore.
+`_prenStessa` confronta i codici senza spazi (i vecchi caricamenti li hanno con lo spazio).
+
 ### L'intervallo si deduce dai dati, non dal PDF
 
 Il PDF **non riporta** l'intervallo chiesto all'export (a differenza del vecchio Report

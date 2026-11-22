@@ -4362,3 +4362,24 @@ sez('Colazione Booking.com: solo colazione inclusa, decide il trattamento (22/11
   ok('Liborio o 206 con la colazione: ci sono', _bkfConColazione({ camera: 'Liborio', trattamento: 'BB' }) + ' ' + _bkfConColazione({ camera: '206', trattamento: 'RO' }), 'true false');
   ok('Compass filtra la lista con _bkfConColazione', /_bkfConColazione\(r\)/.test(String(bkfBookingRender)), true);
 })();
+
+sez('Prenotazioni: nomi andati a capo a metà parola (22/11/2026)');
+(function () {
+  // Nomi inventati. Una prenotazione su due righe, come la scrive il PMS.
+  function riga(y, pezzi) { return pezzi.map(function (p) { return { s: p[0], x: p[1], y: y, sp: p[2] }; }); }
+  function pren(nome1, nome2, sp1, x2, cod1, cod2) {
+    return riga(500, [[nome1, 10, sp1], ['20/11/2026', 165, false], ['23/11/2026', 218, false], ['Art 7 / AS', 302, false], ['2', 360, false], ['Valido', 390, false], [cod1, 470.6, false], ['BB', 565, false], ['Booking.co', 597, false]])
+      .concat(riga(492, [[nome2, x2, false], [cod2, 470.6, false], ['m', 597, false]]));
+  }
+  var a = _prenParse(pren('TESTAROSSI', 'NA PAOLA', false, 10, 'ABC1234', 'XYZ9'))[0];
+  ok('parola spezzata: si riattacca',              a.ospite, 'TESTAROSSINA PAOLA');
+  ok('anche l\'origine «Booking.co» + «m»',         a.origine, 'Booking.com');
+  ok('spazio in fondo alla riga: due parole',      _prenParse(pren('VERDI', 'ANNA', true, 10, 'A', 'B'))[0].ospite, 'VERDI ANNA');
+  ok('riga sotto spostata di uno spazio: due parole', _prenParse(pren('BIANCHETTO', 'LUCIA', false, 11.73, 'A', 'B'))[0].ospite, 'BIANCHETTO LUCIA');
+  ok('spazio sparito ma parola intera sotto: due parole', _prenParse(pren('BIANCHETTO', 'LUCIA', false, 10, 'A', 'B'))[0].ospite, 'BIANCHETTO LUCIA');
+  ok('PDF letto senza spazi noti: come prima',     _prenParse(pren('TESTAROSSI', 'NA PAOLA', undefined, 10, 'A', 'B'))[0].ospite, 'TESTAROSSI NA PAOLA');
+  ok('spazi finali allineati al testo',            JSON.stringify(_prenSpaziFinali(['VERDI', '', 'ANNA'], ['VERDI ', 'ANNA'])), '[true,false]');
+  ok('se non si allineano: nessuna ipotesi',       _prenSpaziFinali(['VERDI', 'ANNA'], ['VERDI ']), null);
+  ok('il PDF chiede gli spazi alle istruzioni di disegno', /getOperatorList\(\)[\s\S]{0,400}_prenSpaziFinali/.test(String(prenHandlePdf)), true);
+  ok('stesso codice con o senza lo spazio di prima', _prenStessa({ codice: 'ABC1234 XYZ9' }, { codice: 'ABC1234XYZ9' }), true);
+})();

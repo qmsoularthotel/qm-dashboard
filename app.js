@@ -9931,8 +9931,11 @@ function bkfRoomInfoBuild(){
     Object.keys(BKF_ROOM_INFO).forEach(cam=>{
       const oldPartenze=(BKF_ROOM_INFO[cam]||[]).filter(r=>r.tipo==='partenza');
       if(!oldPartenze.length)return;
-      const already=new Set((merged[cam]||[]).filter(r=>r.tipo==='partenza').map(r=>r.nome));
-      const toAdd=oldPartenze.filter(r=>!already.has(r.nome));
+      // nomi confrontati senza spazi: lo stesso ospite letto prima e dopo la correzione dei
+      // nomi spezzati (22/11/2026) non deve comparire due volte
+      const _nk=n=>String(n||'').replace(/\s/g,'').toLowerCase();
+      const already=new Set((merged[cam]||[]).filter(r=>r.tipo==='partenza').map(r=>_nk(r.nome)));
+      const toAdd=oldPartenze.filter(r=>!already.has(_nk(r.nome)));
       if(toAdd.length)merged[cam]=[...(merged[cam]||[]),...toAdd];
     });
     BKF_ROOM_INFO=merged;
@@ -17692,6 +17695,40 @@ const PREN_COL={
 const PREN_RE_DATA=/^(\d{2})\/(\d{2})\/(\d{4})$/;
 
 function _prenCella(ws,r){return ws.filter(w=>w.x>=r[0]&&w.x<r[1]).map(w=>w.s).join(' ').trim();}
+
+// ── Nomi che vanno a capo (22/11/2026) ──
+// Il PMS manda a capo i testi lunghi anche A METÀ PAROLA: «FINOCCHIA» + «RO ANTONINO»,
+// «MARIANGE» + «LA», «Booking.co» + «m». Prima i pezzi si riattaccavano sempre con uno
+// spazio («FINOCCHIA RO»). Il PDF di solito lo dice: quando la riga finisce fra due parole,
+// il pezzo sopra ha lo spazio in fondo («FOTIA ») oppure la riga sotto parte spostata di uno
+// spazio (« DANIELA», x 11,7 invece di 10). Se nessuna delle due e il pezzo sotto è corto,
+// la parola è spezzata e si riattacca senza spazio. Provato sul PDF del 22/11/2026: 126
+// prenotazioni, tutti i nomi giusti.
+// pdf.js toglie lo spazio in fondo dal testo (getTextContent), ma lo tiene nelle istruzioni
+// di disegno (getOperatorList): _prenSpaziFinali li allinea uno a uno.
+function _prenCellaPezzi(ws,r){
+  const w=ws.filter(x=>x.x>=r[0]&&x.x<r[1]);
+  return{t:w.map(x=>x.s).join(' ').trim(), sp:w.length?w[w.length-1].sp:undefined, x:w.length?w[0].x:0};
+}
+// prima: {t,sp,x} del pezzo già letto; dopo: {t,sp,x} della riga che va a capo.
+// sp===undefined (spazio non noto, PDF letto alla vecchia maniera) → spazio, come prima.
+function _prenUnisci(prima,dopo){
+  if(!prima.t)return dopo.t;
+  // Il PMS a volte toglie lo spazio anche fra due parole intere («DARBENZIO» + «STEFANO»):
+  // lì il PDF non basta. Ma quando spezza una parola, sotto resta un pezzetto corto (LA, A,
+  // RO, O, ER, «m» di Booking.com), una parola intera no: si riattacca solo un pezzo di
+  // massimo 3 lettere. Un pezzo più lungo resta staccato, come prima.
+  const primo=String(dopo.t).split(/\s+/)[0];
+  const spezzata=prima.sp===false&&Math.abs(dopo.x-prima.x)<1&&primo.length<=3;
+  return prima.t+(spezzata?'':' ')+dopo.t;
+}
+// Per ogni pezzo di testo della pagina: finiva con uno spazio? (true/false, undefined se
+// non si riesce ad allineare: allora si torna al comportamento di prima).
+function _prenSpaziFinali(testi,disegni){
+  const a=testi.filter(s=>String(s||'').trim()), b=disegni.filter(s=>String(s||'').trim());
+  if(a.length!==b.length||a.some((s,i)=>s.trim()!==b[i].trim()))return null;
+  return b.map(s=>/\s$/.test(s));
+}
 function _prenData(s){const m=String(s||'').trim().match(PREN_RE_DATA);return m?m[3]+'-'+m[2]+'-'+m[1]:null;}
 
 // "2" -> {a:2,b:0} · "2 + 1" -> {a:2,b:1}. L'export non riporta sempre la suddivisione
@@ -17759,8 +17796,11 @@ function _prenParse(items){
       const all=_prenCella(ws,PREN_COL.alloggio);
       const{camera,tipo}=_prenCamera(all);
       const pax=_prenPax(_prenCella(ws,PREN_COL.ospiti));
+      const _o=_prenCellaPezzi(ws,PREN_COL.ospite),_a=_prenCellaPezzi(ws,PREN_COL.alloggio),
+            _c=_prenCellaPezzi(ws,PREN_COL.codice),_g=_prenCellaPezzi(ws,PREN_COL.origine);
       out.push({
-        ospite:_prenCella(ws,PREN_COL.ospite), alloggio:all,
+        _pz:{ospite:_o,tipo:_a,codice:_c,origine:_g},
+        ospite:_o.t, alloggio:all,
         arrivo, partenza:_prenData(_prenCella(ws,PREN_COL.partenza)),
         camera, tipo, pax:pax.a+pax.b, adulti:pax.a, bambini:pax.b,
         stato:_prenCella(ws,PREN_COL.stato),
@@ -17770,14 +17810,24 @@ function _prenParse(items){
         struttura:_prenStruttura(all)
       });
     }else if(out.length){
-      // Riga di continuazione: nome e tipo camera vanno a capo nell'export reale.
+      // Riga di continuazione: nome, tipo camera, codice e origine vanno a capo nell'export
+      // reale, a volte a metà parola (vedi _prenUnisci).
       const p=out[out.length-1];
-      const n=_prenCella(ws,PREN_COL.ospite); if(n)p.ospite+=' '+n;
-      const t=_prenCella(ws,PREN_COL.alloggio); if(t)p.tipo=(p.tipo+' '+t).trim();
-      const k=_prenCella(ws,PREN_COL.codice); if(k)p.codice=(p.codice+' '+k).trim();
+      const cont=(campo,col)=>{
+        const d=_prenCellaPezzi(ws,col); if(!d.t)return;
+        const pz=p._pz[campo];
+        // il tipo parte dopo la barra dell'alloggio: il primo pezzo è il tipo, non tutto l'alloggio
+        p[campo]=_prenUnisci({t:p[campo],sp:pz.sp,x:pz.x},d).trim();
+        p._pz[campo]={t:p[campo],sp:d.sp,x:d.x};
+      };
+      cont('ospite',PREN_COL.ospite);
+      cont('tipo',PREN_COL.alloggio);
+      cont('codice',PREN_COL.codice);
+      cont('origine',PREN_COL.origine);
     }
   });
   // Solo prenotazioni valide: le cancellate non devono contare da nessuna parte.
+  out.forEach(p=>delete p._pz);
   return out.filter(p=>p.partenza&&!/annull|cancell/i.test(p.stato));
 }
 
@@ -17873,7 +17923,8 @@ function _prenOggiIso(){
 // sera: li' le partenze di oggi c'erano ancora come fermate.
 const PREN_ULTIMO_KEY='qm_pren_ultimo';
 function _prenStessa(a,b){
-  if(a.codice&&b.codice)return a.codice===b.codice;
+  // senza spazi: fino al 22/11/2026 i codici andati a capo si riattaccavano con uno spazio
+  if(a.codice&&b.codice)return a.codice.replace(/\s/g,'')===b.codice.replace(/\s/g,'');
   return _qmNomeChiave(a.ospite)===_qmNomeChiave(b.ospite)&&a.camera===b.camera&&a.arrivo===b.arrivo;
 }
 function _prenRecuperaPartenze(pren,prec,iso){
@@ -17908,9 +17959,18 @@ async function prenHandlePdf(file){
     const pdfDoc=await _pdfApri(ab);
     const items=[];
     for(let p=1;p<=pdfDoc.numPages;p++){
-      const tc=await (await pdfDoc.getPage(p)).getTextContent();
+      const pg=await pdfDoc.getPage(p);
+      const tc=await pg.getTextContent();
+      // Spazi in fondo ai pezzi (vedi _prenUnisci): se qualcosa va storto si legge come prima.
+      let spazi=null;
+      try{
+        const ol=await pg.getOperatorList(),O=pdfjsLib.OPS,dis=[];
+        ol.fnArray.forEach((fn,i)=>{if(fn===O.showText||fn===O.showSpacedText)dis.push((ol.argsArray[i][0]||[]).map(g=>g&&typeof g==='object'?(g.unicode||''):'').join(''));});
+        spazi=_prenSpaziFinali(tc.items.map(it=>it.str||''),dis);
+      }catch(e){spazi=null;}
       // Le pagine successive ripartono dall'alto: si sfalsa la y per non mescolare le righe.
-      tc.items.forEach(it=>{const s=(it.str||'').trim();if(s)items.push({s,x:it.transform[4],y:it.transform[5]-(p-1)*10000});});
+      let j=0;
+      tc.items.forEach(it=>{const s=(it.str||'').trim();if(s){items.push({s,x:it.transform[4],y:it.transform[5]-(p-1)*10000,sp:spazi?spazi[j]:undefined});j++;}});
     }
     const letti=_prenParse(items);
     if(!letti.length){
