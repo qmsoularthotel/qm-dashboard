@@ -6013,7 +6013,7 @@ const LS={
       'weekData','arriviData','rcGuests','bkfGroups','bkfNotes','hk_soul','hk_bout','bkfSheetARData','bkfARChartData','bkfChartData','piano',
       'ts_rev_sa','ts_rev_bh','ts_rev_sl','ts_rev_pr','ts_rev_ms','ts_rev_ar','ts_rev_sb','dvr',
       'inv_catalog_sa','inv_catalog_ar','inv_moves_sa','inv_moves_ar','inv_orders',
-      'tp_seen_until','hkp_config','ddt','spese_cat_override','hk_fatte','hk_mese'];
+      'tp_seen_until','hkp_config','ddt','spese_cat_override','hk_fatte','hk_mese','bkf_intolleranze'];
     let synced=0;
     await Promise.all(keys.map(async k=>{
       try{
@@ -6040,8 +6040,9 @@ const LS={
           if(QM_ELENCHI_CONDIVISI.hasOwnProperty('qm_'+k)){
             const vuoto=QM_ELENCHI_CONDIVISI['qm_'+k];
             let cv=null;try{cv=JSON.parse(json.value);}catch(e){}
-            const r=_qmElencoAssorbi('qm_'+k,cv,vuoto,k==='rev_sent'?(f=>{REV_SENT=f;}):null);
-            if(r.diverso&&cv!=null)_qmElencoSalva('qm_'+k,vuoto,k==='rev_sent'?(f=>{REV_SENT=f;}):null);
+            const dopo=k==='rev_sent'?(f=>{REV_SENT=f;}):k==='bkf_intolleranze'?(()=>{try{bkfBookingRender();}catch(e){}}):null;
+            const r=_qmElencoAssorbi('qm_'+k,cv,vuoto,dopo);
+            if(r.diverso&&cv!=null)_qmElencoSalva('qm_'+k,vuoto,dopo);
           }else localStorage.setItem('qm_'+k,json.value);
           // Per weekData/arriviData: aggiorna timestamp visivo se cloud ha _ts
           if(k==='weekData'||k==='arriviData'){
@@ -9987,6 +9988,8 @@ function bkfRoomInfoReconcilePianoChange(oldData,newData){
 function bkfBookingRender(){
   const el=document.getElementById('ov-bkf-booking');
   if(!el)return;
+  // non ridisegnare sotto le dita: si sta scrivendo un'intolleranza
+  try{if(el.contains(document.activeElement)&&_qmOccupato())return;}catch(e){}
   const target=new Date();target.setHours(0,0,0,0);target.setDate(target.getDate()+_bkfBookingDayOffset);
   const dateLbl=target.toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});
   const isToday=_bkfBookingDayOffset===0;
@@ -9999,7 +10002,8 @@ function bkfBookingRender(){
     if(ga!==gb)return ga-gb;
     return (parseInt((a.camera||'').replace(/\D/g,''))||0)-(parseInt((b.camera||'').replace(/\D/g,''))||0);
   });
-  if(!all.length&&!BKF_ROOM_AMBIGUOUS){el.innerHTML='';return;}
+  const intHtml=_bkfIntHtml(target);
+  if(!all.length&&!BKF_ROOM_AMBIGUOUS){el.innerHTML=intHtml?`<div style="border-top:1px solid var(--border-light);margin-top:16px;padding-top:14px;">${intHtml}</div>`:'';return;}
   const warnHtml=(isToday&&BKF_ROOM_AMBIGUOUS)?`<div style="background:var(--amber-bg);color:var(--amber);border-radius:8px;padding:8px 12px;font-size:11.5px;font-weight:600;margin-bottom:10px;">⚠️ Ci sono stati cambi camera oggi non riconducibili con certezza — verifica manualmente le camere Booking.com sotto.</div>`:'';
   el.innerHTML=`<div style="border-top:1px solid var(--border-light);margin-top:16px;padding-top:14px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
@@ -10020,7 +10024,93 @@ function bkfBookingRender(){
         <span style="font-size:11px;color:var(--text-dim);flex-shrink:0;">out ${r.checkout||'—'}</span>
       </div>`;
     }).join('')}</div>`:`<div style="color:var(--text-dim);font-size:12.5px;">Nessun ospite BB Booking.com ${isToday?'oggi':'quel giorno'}.</div>`}
+    ${intHtml}
   </div>`;
+}
+
+// ── Intolleranze (22/11/2026) ──
+// Lo stesso elenco dell'app Breakfast (qm_bkf_intolleranze): la reception le scrive da qui,
+// la colazione dal telefono. Elenco condiviso → fusione a tre (QM_ELENCHI_CONDIVISI,
+// _qmElencoSalva). Ogni voce vale fino al checkout dell'ospite di quella camera.
+const BKF_INT_KEY='qm_bkf_intolleranze';
+let _bkfIntForm=false;
+function _bkfIntLeggi(){const v=_qmLocale(BKF_INT_KEY,[]);return Array.isArray(v)?v.filter(x=>x&&x.id):[];}
+function _bkfIntIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _bkfIntOrdina(a,b){
+  const ga=/^art/i.test(String(a.camera||'').trim())?1:0,gb=/^art/i.test(String(b.camera||'').trim())?1:0;
+  if(ga!==gb)return ga-gb;
+  return (parseInt(String(a.camera||'').replace(/\D/g,''))||0)-(parseInt(String(b.camera||'').replace(/\D/g,''))||0);
+}
+// Camere in casa (o in arrivo) con la data di checkout dell'ospite.
+function _bkfIntCamere(){
+  const oggi=new Date();oggi.setHours(0,0,0,0);const v={};
+  Object.values(BKF_ROOM_INFO||{}).flat().forEach(r=>{
+    if(!r||!r.camera||r.tipo==='partenza')return;
+    const co=_bkfParseShortDate(r.checkout);
+    if(co&&co<oggi)return;
+    v[r.camera+'|'+(r.nome||'')]={camera:r.camera,nome:r.nome||'',fino:co?_bkfIntIso(co):''};
+  });
+  return Object.values(v).sort(_bkfIntOrdina);
+}
+function _bkfIntHtml(target){
+  const t=_bkfIntIso(target);
+  const righe=_bkfIntLeggi().filter(x=>String(x.fino||'')>=t).sort(_bkfIntOrdina);
+  const cop=righe.reduce((a,x)=>a+(parseInt(x.pax,10)||1),0);
+  const fmt=iso=>{const p=String(iso||'').split('-');return p.length===3?p[2]+'/'+p[1]:'';};
+  const camere=_bkfIntCamere();
+  const btn='background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--accent);font-size:11.5px;font-weight:700;font-family:inherit;';
+  const inp='border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text);';
+  let h=`<div style="margin-top:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Intolleranze <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--text-dim);">· ${cop} ${cop===1?'coperto':'coperti'}</span></div>
+      <button onclick="bkfIntForm(true)" style="${btn}">+ Aggiungi</button>
+    </div>`;
+  if(_bkfIntForm){
+    h+=camere.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--surface2);border-radius:8px;padding:8px;margin-bottom:8px;">
+      <select id="bkfIntCam" style="${inp}">${camere.map((c,i)=>`<option value="${i}">${_esc(c.camera)}${c.nome?' · '+_esc(c.nome):''}</option>`).join('')}</select>
+      <input id="bkfIntTx" maxlength="80" placeholder="es. senza glutine, lattosio" style="${inp}flex:1;min-width:150px;">
+      <input id="bkfIntPax" type="number" min="1" max="9" value="1" title="persone" style="${inp}width:52px;">
+      <button onclick="bkfIntSalva()" style="${btn}background:var(--accent);color:#fff;border-color:var(--accent);">Salva</button>
+      <button onclick="bkfIntForm(false)" style="${btn}color:var(--text-dim);">Annulla</button>
+    </div>`:`<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Nessuna camera in casa: carica il PDF Prenotazioni. <a href="#" onclick="bkfIntForm(false);return false;">Chiudi</a></div>`;
+  }
+  h+=righe.length?righe.map((x,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:8px 0;${i>0?'border-top:1px solid var(--border-light);':''}">
+      <span style="font-size:13px;font-weight:700;color:var(--accent);min-width:44px;">${_esc(x.camera)}</span>
+      <span style="flex:1;font-size:13px;color:var(--text);word-break:break-word;">${_esc(x.testo)}</span>
+      <span style="font-size:11px;color:var(--text-dim);white-space:nowrap;">${parseInt(x.pax,10)||1} pers. · fino al ${fmt(x.fino)}</span>
+      <button onclick="bkfIntTogli('${_esc(x.id)}')" title="Togli" style="background:none;border:0;color:var(--text-muted);font-size:17px;cursor:pointer;line-height:1;padding:0 2px;">×</button>
+    </div>`).join(''):`<div style="color:var(--text-dim);font-size:12.5px;">Nessuna intolleranza segnata.</div>`;
+  return h+'</div>';
+}
+function bkfIntForm(on){
+  _bkfIntForm=!!on;
+  try{document.activeElement&&document.activeElement.blur();}catch(e){}
+  bkfBookingRender();
+  if(on)setTimeout(()=>{try{document.getElementById('bkfIntTx').focus();}catch(e){}},30);
+}
+function _bkfIntScrivi(lista){
+  try{localStorage.setItem(BKF_INT_KEY,JSON.stringify(lista));}catch(e){}
+  bkfBookingRender();
+  _qmElencoSalva(BKF_INT_KEY,[],()=>{try{bkfBookingRender();}catch(e){}});
+}
+function bkfIntSalva(){
+  const tx=(document.getElementById('bkfIntTx')||{}).value||'';
+  const c=_bkfIntCamere()[+((document.getElementById('bkfIntCam')||{}).value)];
+  if(!tx.trim()||!c){try{document.getElementById('bkfIntTx').focus();}catch(e){}return;}
+  const pax=Math.max(1,Math.min(9,parseInt((document.getElementById('bkfIntPax')||{}).value,10)||1));
+  const oggi=new Date();oggi.setHours(0,0,0,0);
+  const d1=new Date(oggi);d1.setDate(d1.getDate()+1);
+  const sette=new Date(oggi);sette.setDate(sette.getDate()-7);
+  const lista=_bkfIntLeggi().filter(x=>String(x.fino||'')>=_bkfIntIso(sette));   // scadute da più di 7 giorni: via
+  lista.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),camera:c.camera,testo:tx.trim(),pax,fino:c.fino||_bkfIntIso(d1),ts:Date.now()});
+  _bkfIntForm=false;
+  try{document.activeElement&&document.activeElement.blur();}catch(e){}
+  _bkfIntScrivi(lista);
+}
+async function bkfIntTogli(id){
+  const x=_bkfIntLeggi().find(i=>i.id===id);if(!x)return;
+  if(!await cqConferma('Togliere questa intolleranza?',_esc(x.camera)+' · '+_esc(x.testo),{ok:'Togli'}))return;
+  _bkfIntScrivi(_bkfIntLeggi().filter(i=>i.id!==id));
 }
 const arriviBox={classList:{add:()=>{},remove:()=>{}}};
 const arriviInput=document.getElementById('arriviFileInput');
@@ -18280,7 +18370,7 @@ async function _qmElencoAggiorna(key,vuoto,dopo){
   if(r.diverso&&c.val!=null)_qmElencoSalva(key,vuoto,dopo);
   return r.cambiato;
 }
-const QM_ELENCHI_CONDIVISI={qm_ddt:[],qm_inv_moves_sa:[],qm_inv_moves_ar:[],qm_inv_catalog_sa:{},qm_inv_catalog_ar:{},qm_inv_orders:[],qm_rev_sent:{},qm_hk_fatte:[],qm_hk_mese:{},qm_agenda:[]};
+const QM_ELENCHI_CONDIVISI={qm_ddt:[],qm_inv_moves_sa:[],qm_inv_moves_ar:[],qm_inv_catalog_sa:{},qm_inv_catalog_ar:{},qm_inv_orders:[],qm_rev_sent:{},qm_hk_fatte:[],qm_hk_mese:{},qm_agenda:[],qm_bkf_intolleranze:[]};
 
 // ── Salvataggio sicuro degli archivi a elenchi ──────────────────────────────
 // DVR, Consumo Biancheria e Reso Biancheria hanno tutti la stessa forma: un oggetto le cui

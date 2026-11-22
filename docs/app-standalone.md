@@ -318,8 +318,10 @@ Sotto Colazioni / Room Only, con la scritta «Tocca le card per più info», tre
 - **Intolleranze**: elenco `qm_bkf_intolleranze` scritto dai telefoni con `_qmElencoSalva`
   (fusione a tre) e riletto ogni minuto a scheda visibile. Ogni voce: camera, testo, persone,
   `fino` = checkout dell'ospite di quella camera; dopo sparisce da sola. Le scadute da più di 7
-  giorni si tolgono al salvataggio successivo. Si scrivono solo dall'app (Compass non le
-  scrive); sono nella copia di sicurezza. Niente allergie, per scelta del QM.
+  giorni si tolgono al salvataggio successivo. Si scrivono dall'app e, dalla sera stessa,
+  anche da Compass (Overview, sotto «Ospiti BB Booking.com», `_bkfIntHtml`): la chiave è in
+  `QM_ELENCHI_CONDIVISI` e nella sincronizzazione, così le due parti si fondono. Sono nella
+  copia di sicurezza. Niente allergie, per scelta del QM.
 - **Ospiti Booking.com**: la lista che prima era un riquadro a sé (solo colazione inclusa),
   con le persone per camera e 📝 sulle camere che hanno un'intolleranza.
 - Il riquadro «Domani» è stato tolto: domani si legge nel grafico.

@@ -4383,3 +4383,30 @@ sez('Prenotazioni: nomi andati a capo a metà parola (22/11/2026)');
   ok('il PDF chiede gli spazi alle istruzioni di disegno', /getOperatorList\(\)[\s\S]{0,400}_prenSpaziFinali/.test(String(prenHandlePdf)), true);
   ok('stesso codice con o senza lo spazio di prima', _prenStessa({ codice: 'ABC1234 XYZ9' }, { codice: 'ABC1234XYZ9' }), true);
 })();
+
+sez('Intolleranze anche da Compass (22/11/2026)');
+(function () {
+  // Nomi inventati.
+  ok('elenco condiviso con fusione a tre',        Array.isArray(QM_ELENCHI_CONDIVISI.qm_bkf_intolleranze), true);
+  ok('salvataggio con _qmElencoSalva',             /_qmElencoSalva\(BKF_INT_KEY/.test(String(_bkfIntScrivi)), true);
+  ok('nella copia di sicurezza',                   QM_BACKUP_FISSE.indexOf('qm_bkf_intolleranze') >= 0, true);
+  var prima = localStorage.getItem('qm_bkf_intolleranze');
+  localStorage.setItem('qm_bkf_intolleranze', JSON.stringify([
+    { id: 'x1', camera: 'Art 3', testo: 'Senza <b>glutine</b>', pax: 2, fino: '2026-11-24' },
+    { id: 'x2', camera: '205', testo: 'Lattosio', pax: 1, fino: '2026-11-20' }]));
+  var h = _bkfIntHtml(new Date(2026, 10, 22, 12));
+  ok('quella scaduta non si vede',                 /Lattosio/.test(h), false);
+  ok('quella valida sì, coi coperti',              /Senza &lt;b&gt;glutine&lt;\/b&gt;/.test(h) && /2 coperti/.test(h), true);
+  if (prima == null) localStorage.removeItem('qm_bkf_intolleranze'); else localStorage.setItem('qm_bkf_intolleranze', prima);
+})();
+(function () {
+  var prima = BKF_ROOM_INFO;
+  var dd = function (k) { var d = new Date(); d.setDate(d.getDate() + k); return d.getDate() + '/' + (d.getMonth() + 1); };
+  BKF_ROOM_INFO = {
+    '206': [{ camera: '206', nome: 'Bianchi Luca', checkout: dd(2), tipo: 'fermata' }],
+    'Art 3': [{ camera: 'Art 3', nome: 'Verdi Sara', checkout: dd(1), tipo: 'arrivo' }],
+    'Art 4': [{ camera: 'Art 4', nome: 'Neri Paolo', checkout: dd(0), tipo: 'partenza' }]
+  };
+  ok('si sceglie fra le camere in casa, non quelle in partenza', _bkfIntCamere().map(function (c) { return c.camera; }).join(), '206,Art 3');
+  BKF_ROOM_INFO = prima;
+})();
