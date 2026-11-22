@@ -95,6 +95,16 @@ fi
 # non app.js). L'archivio mensile e' condiviso fra dashboard e app: se una delle due
 # tornasse ad archiviare i giorni futuri, il totale del mese ricomincerebbe a mentire.
 BKF_KO=0
+# Tre card (22/11/2026): le intolleranze le scrivono più telefoni, quindi passano dalla fusione
+# a tre; i checkout contano solo chi ha la colazione (non RO).
+if ! grep -q "_qmElencoSalva(BKF_INT_KEY" breakfast.html || ! grep -q "_qmElencoAggiorna(BKF_INT_KEY" breakfast.html; then
+  echo "  NO  breakfast.html: le intolleranze non passano più dalla fusione a tre"
+  BKF_KO=1
+fi
+if ! grep -q "if(!conCol(r))return false;" breakfast.html; then
+  echo "  NO  breakfast.html: «Checkout oggi» conta anche chi è in room only"
+  BKF_KO=1
+fi
 # Colazione Booking.com (22/11/2026): anche l'app mostra solo chi ha la colazione inclusa,
 # decide il trattamento, mai la camera — copia di _bkfConColazione in app.js.
 if ! grep -q "conColazione(r)&&presentOn(r)" breakfast.html || ! grep -q "conColazione=r=>/^(BB|HB|FB|AI|MP)\$/i" breakfast.html; then

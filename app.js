@@ -5176,7 +5176,7 @@ const QM_BACKUP_MAGAZZINI=['sa','ar'];
 // Elenco esplicito, non dedotto: una chiave dimenticata qui e' una chiave che nel backup non
 // c'e', e non lo scopriresti fino al giorno in cui serve. Il controllo in test/esegui.sh
 // verifica che ogni chiave scritta da Compass compaia in questo elenco.
-const QM_BACKUP_FISSE=[
+const QM_BACKUP_FISSE=['qm_bkf_intolleranze',
   'qm_piano','qm_bg_turnazione','qm_pin_ultimo','qm_weekData','qm_turni_storico','qm_arriviData','qm_rcGuests',
   'qm_pulData','qm_bkfData','qm_bkfGroups','qm_bkfNotes','qm_bkfChartData','qm_bkfARChartData',
   'qm_bkfSheetARData','qm_bkf_monthly_history','qm_bkf_banner',

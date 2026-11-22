@@ -305,3 +305,21 @@ hanno un filo un po' più scuro (`--card-br` #d3dae4) e un'ombra a due strati ti
 ## Nome dell'app della Galleria: «Compass Ops – Galleria» (16/11/2026)
 
 Scelto dal QM: compare nello splash (sotto «Compass QM», con la riga «Strumento di gestione operativa») e nella firma in fondo («Compass Ops – Galleria fa parte della Suite Compass QM…»). Poi (stesso giorno) **ovunque**: titolo della scheda, schermata del codice, nota della stampa della giacenza, scheda nel Pannello di Controllo e riquadro del codice in Sicurezza. «Gestione Biancheria» resta solo come nome della **sezione** del menu (Consumo, Conteggio, Giacenza, Reso, Fattura). Il file resta `biancheria-galleria.html`.
+
+
+## App Breakfast: tre card e intolleranze (22/11/2026)
+
+Sotto Colazioni / Room Only, con la scritta «Tocca le card per più info», tre card affiancate
+(grafica «E»: numero al centro, titolo sotto, striscia «Apri ▾»). Il numero è sempre di
+**coperti**; un tocco apre il dettaglio sotto le card (`bkCard`, ricordata in sessionStorage).
+
+- **Checkout oggi** (domani, se si guarda domani): camere in partenza **con colazione** (non RO),
+  da `qm_bkf_room_info`; per oggi vale `tipo==='partenza'`, altrimenti la data di checkout.
+- **Intolleranze**: elenco `qm_bkf_intolleranze` scritto dai telefoni con `_qmElencoSalva`
+  (fusione a tre) e riletto ogni minuto a scheda visibile. Ogni voce: camera, testo, persone,
+  `fino` = checkout dell'ospite di quella camera; dopo sparisce da sola. Le scadute da più di 7
+  giorni si tolgono al salvataggio successivo. Si scrivono solo dall'app (Compass non le
+  scrive); sono nella copia di sicurezza. Niente allergie, per scelta del QM.
+- **Ospiti Booking.com**: la lista che prima era un riquadro a sé (solo colazione inclusa),
+  con le persone per camera e 📝 sulle camere che hanno un'intolleranza.
+- Il riquadro «Domani» è stato tolto: domani si legge nel grafico.

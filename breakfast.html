@@ -91,6 +91,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .bk-nome{flex:1;min-width:110px;color:var(--text);word-break:break-word;}
 .bk-tr{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--green-bg);color:var(--green);flex-shrink:0;}
 .bk-out{font-size:11px;color:var(--text-dim);flex-shrink:0;}
+/* Tre card (22/11/2026, grafica E): numero grande al centro, titolo sotto, «Apri» in fondo */
+.bk-hint{font-size:11.5px;color:var(--text-dim);margin:14px 2px 6px;}
+.bk-tre{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px;}
+.bk-c{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 6px 0;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:0;overflow:hidden;font-family:inherit;color:var(--text);-webkit-tap-highlight-color:transparent;}
+.bk-cn{font-size:30px;font-weight:800;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums;}
+.bk-cs{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+.bk-ct{font-size:11.5px;font-weight:600;color:var(--text);line-height:1.25;margin:6px 0 8px;min-height:29px;display:flex;align-items:center;}
+.bk-go{align-self:stretch;border-top:1px solid var(--border);font-size:11px;font-weight:700;color:var(--accent);padding:6px 0;}
+.bk-c.on{border-color:var(--accent);}
+.bk-c.on .bk-go{background:var(--accent);color:#fff;border-top-color:var(--accent);}
+.bk-ps{color:var(--text-dim);font-size:11px;}
+.bk-chips{display:flex;flex-wrap:wrap;gap:5px;padding:11px 13px;}
+.bk-chip{font-size:12px;font-weight:700;color:var(--accent);background:var(--surface2);border-radius:6px;padding:3px 8px;}
+.bk-chip small{font-weight:500;color:var(--text-dim);margin-left:4px;}
+.bk-sm{display:block;font-size:11px;color:var(--text-dim);margin-top:1px;}
+.bk-add{font-size:12px;font-weight:700;color:var(--accent);background:none;border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-family:inherit;cursor:pointer;}
+.bk-x{background:none;border:0;color:var(--text-muted);font-size:20px;line-height:1;padding:0 4px;cursor:pointer;font-family:inherit;}
+/* finestrella «+ Aggiungi» */
+.bk-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;display:flex;align-items:flex-end;justify-content:center;padding:12px;}
+.bk-sh{background:var(--surface);border-radius:14px;padding:16px;width:100%;max-width:420px;}
+.bk-sh h3{font-size:16px;margin:0 0 6px;}
+.bk-lb{font-size:11.5px;color:var(--text-dim);margin:10px 0 4px;}
+.bk-in{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:16px;font-family:inherit;background:#fff;color:var(--text);}
+.bk-bt{display:flex;gap:8px;margin-top:16px;}
+.bk-bt button{flex:1;padding:11px;border-radius:9px;font-weight:700;font-size:14px;font-family:inherit;cursor:pointer;border:0;}
+.bk-ok{background:var(--accent);color:#fff;}.bk-no{background:var(--surface2);color:var(--text-dim);}
 /* Grafico dei prossimi giorni (22/11/2026) */
 .ch{display:flex;align-items:flex-end;gap:4px;height:150px;padding:14px 10px 0;position:relative;}
 .ch-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;cursor:pointer;}
@@ -461,7 +487,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-22.6';
+const QM_APP_BUILD='2026-11-22.7';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -706,14 +732,6 @@ function renderDay(){
   // riflessi nell'ultimo Riepilogo Reception caricato) — vista limitata a oggi e domani.
   const _bkDayOffset=ddRef?Math.round((new Date(ddRef.getFullYear(),ddRef.getMonth(),ddRef.getDate())-new Date(today.getFullYear(),today.getMonth(),today.getDate()))/86400000):0;
   if(_bkDayOffset>=0&&_bkDayOffset<=1){
-    const _bkShortDate=s=>{
-      if(!s)return null;
-      const m=String(s).trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
-      if(!m)return null;
-      let year=m[3]?parseInt(m[3]):new Date().getFullYear();if(year<100)year+=2000;
-      const dt=new Date(year,parseInt(m[2])-1,parseInt(m[1]));dt.setHours(0,0,0,0);
-      return isNaN(dt)?null:dt;
-    };
     const targetDay=ddRef?new Date(ddRef.getFullYear(),ddRef.getMonth(),ddRef.getDate()):null;
     // Per "oggi" il tipo riga (arrivo/fermata/partenza) è un dato certo del Riepilogo
     // Reception — usarlo come regola primaria invece di dipendere dal parsing della data,
@@ -732,22 +750,48 @@ function renderDay(){
     // _bkfConColazione in app.js, 22/11/2026).
     const conColazione=r=>/^(BB|HB|FB|AI|MP)$/i.test(String(r&&r.trattamento||'').trim());
     const bkRows=Object.values(bkfRoomInfo||{}).flat().filter(r=>r&&r.camera&&/booking/i.test(r.origine||'')&&conColazione(r)&&presentOn(r))
-      .sort((a,b)=>{
-        const ga=/^art/i.test((a.camera||'').trim())?1:0,gb=/^art/i.test((b.camera||'').trim())?1:0;
-        if(ga!==gb)return ga-gb;
-        return (parseInt((a.camera||'').replace(/\D/g,''))||0)-(parseInt((b.camera||'').replace(/\D/g,''))||0);
-      });
-    if(bkRows.length||(isToday&&bkfRoomAmbiguous)){
-      // Stesso pannello degli altri riquadri (22/11/2026): titolo piccolo maiuscolo in
-      // grigio come «Prossimi 10 giorni», righe con i caratteri dell'app.
-      html+=`<div class="pan">
-        <div class="pan-head"><span class="pan-t" style="display:inline-flex;align-items:center;gap:6px;"><span class="bk-b">B</span>Ospiti BB Booking.com</span><span class="pan-s" style="color:var(--text-dim);font-size:11px;">${bkRows.length?bkRows.length+(bkRows.length===1?' camera':' camere'):''}</span></div>`;
+      .sort(_bkOrdina);
+    // Tre card affiancate (22/11/2026, grafica E scelta dal QM): Checkout, Intolleranze,
+    // Ospiti Booking.com. Il numero grande è sempre di COPERTI; un tocco apre il dettaglio
+    // sotto le card, un altro lo chiude.
+    const pax=r=>parseInt(r&&r.pax,10)||0;
+    const conCol=r=>!/^ro$/i.test(String(r.trattamento||'').trim());
+    const tutte=Object.values(bkfRoomInfo||{}).flat().filter(r=>r&&r.camera);
+    const coRows=tutte.filter(r=>{
+      if(!conCol(r))return false;
+      if(isToday&&r.tipo==='partenza')return true;
+      const co=_bkShortDate(r.checkout);
+      return !!(co&&targetDay&&co.getTime()===targetDay.getTime()&&r.tipo!=='arrivo');
+    }).sort(_bkOrdina);
+    const coCop=coRows.reduce((a,r)=>a+pax(r),0);
+    const tIso=targetDay?_bkIso(targetDay):_bkIso(today);
+    const intRows=_bkIntolleranze().filter(x=>x.fino>=tIso).sort(_bkOrdina);
+    const intCop=intRows.reduce((a,x)=>a+(parseInt(x.pax,10)||1),0);
+    const intCam=new Set(intRows.map(x=>x.camera));
+    const bkCop=bkRows.reduce((a,r)=>a+pax(r),0);
+    const camere=n=>n+(n===1?' camera':' camere');
+    const ap=_bkCardAperta;
+    const card=(id,n,tit)=>`<button class="bk-c${ap===id?' on':''}" onclick="bkCard('${id}')"><span class="bk-cn">${n}</span><span class="bk-cs">coperti</span><span class="bk-ct">${tit}</span><span class="bk-go">${ap===id?'Chiudi ▴':'Apri ▾'}</span></button>`;
+    const coTit=isToday?'Checkout oggi':'Checkout domani';
+    html+=`<div class="bk-hint">👆 Tocca le card per più info</div>
+      <div class="bk-tre">${card('co',coCop,coTit)}${card('int',intCop,'Intolleranze')}${card('bk',bkCop,'Ospiti Booking.com')}</div>`;
+    if(ap==='co'){
+      html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">${coTit}</span><span class="pan-s bk-ps">${coCop} coperti · ${camere(coRows.length)}</span></div>`+
+        (coRows.length?`<div class="bk-chips">${coRows.map(r=>`<span class="bk-chip">${_bkEsc(r.camera)}<small>${pax(r)||''}</small></span>`).join('')}</div>`
+          :`<div class="bk-r" style="color:var(--text-dim);">Nessun checkout con colazione ${isToday?'oggi':'domani'}.</div>`)+`</div>`;
+    }else if(ap==='int'){
+      html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">Intolleranze</span><button class="bk-add" onclick="bkIntAggiungi()">+ Aggiungi</button></div>`+
+        (intRows.length?intRows.map(x=>`<div class="bk-r"><span class="bk-cam">${_bkEsc(x.camera)}</span><span class="bk-nome">${_bkEsc(x.testo)}<small class="bk-sm">${parseInt(x.pax,10)||1} ${(parseInt(x.pax,10)||1)===1?'persona':'persone'} · fino al ${_bkIsoBreve(x.fino)}</small></span><button class="bk-x" onclick="bkIntTogli('${_bkEsc(x.id)}')" aria-label="Togli">×</button></div>`).join('')
+          :`<div class="bk-r" style="color:var(--text-dim);">Nessuna intolleranza segnata. Tocca «+ Aggiungi».</div>`)+`</div>`;
+    }else if(ap==='bk'){
+      html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">Ospiti Booking.com</span><span class="pan-s bk-ps">${bkCop} coperti · ${camere(bkRows.length)}</span></div>`;
       if(isToday&&bkfRoomAmbiguous){
         html+=`<div class="bk-r" style="background:#fff3e0;color:#a05a00;font-weight:600;">⚠️ Cambi camera oggi non riconducibili con certezza — verifica manualmente.</div>`;
       }
       html+=bkRows.length?bkRows.map(r=>`<div class="bk-r">
         <span class="bk-cam">${_bkEsc(r.camera)}</span>
-        <span class="bk-nome">${_bkEsc(r.nome)||'—'}</span>
+        <span class="bk-nome">${_bkEsc(r.nome)||'—'}${intCam.has(r.camera)?' <span title="ha un\'intolleranza">📝</span>':''}</span>
+        ${pax(r)?`<span class="bk-out">${pax(r)} pax</span>`:''}
         ${r.trattamento?`<span class="bk-tr">${_bkEsc(r.trattamento)}</span>`:''}
         <span class="bk-out">out ${_bkEsc(r.checkout)||'—'}</span>
       </div>`).join(''):`<div class="bk-r" style="color:var(--text-dim);">Nessun ospite BB Booking.com questo giorno.</div>`;
@@ -885,6 +929,80 @@ function renderChart(){
   const rg=document.getElementById('bkf-chart-range');
   if(rg)rg.textContent='- - - media '+media+' · max '+max;
 }
+// ── Tre card e intolleranze (22/11/2026) ──
+let _bkCardAperta='';try{_bkCardAperta=sessionStorage.getItem('bkf_card')||'';}catch(e){}
+function bkCard(id){
+  _bkCardAperta=_bkCardAperta===id?'':id;
+  try{sessionStorage.setItem('bkf_card',_bkCardAperta);}catch(e){}
+  renderDay();
+}
+// Camere 200 (Boutique) prima, poi le Art (SoulArt), in ordine di numero.
+function _bkOrdina(a,b){
+  const ga=/^art/i.test(String(a.camera||'').trim())?1:0,gb=/^art/i.test(String(b.camera||'').trim())?1:0;
+  if(ga!==gb)return ga-gb;
+  return (parseInt(String(a.camera||'').replace(/\D/g,''))||0)-(parseInt(String(b.camera||'').replace(/\D/g,''))||0);
+}
+function _bkShortDate(s){
+  const m=String(s||'').trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if(!m)return null;
+  let y=m[3]?parseInt(m[3]):new Date().getFullYear();if(y<100)y+=2000;
+  const d=new Date(y,parseInt(m[2])-1,parseInt(m[1]));d.setHours(0,0,0,0);
+  return isNaN(d)?null:d;
+}
+function _bkIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _bkIsoBreve(iso){const p=String(iso||'').split('-');return p.length===3?p[2]+'/'+p[1]:'';}
+// Intolleranze: elenco condiviso fra i telefoni della colazione (qm_bkf_intolleranze),
+// scritto con la fusione a tre (_qmElencoSalva) perché lo scrivono più dispositivi.
+// Ognuna vale fino al checkout dell'ospite di quella camera, poi sparisce da sola.
+const BKF_INT_KEY='qm_bkf_intolleranze';
+function _bkIntolleranze(){try{const v=JSON.parse(localStorage.getItem(BKF_INT_KEY)||'[]');return Array.isArray(v)?v:[];}catch(e){return [];}}
+function _bkIntScrivi(lista){
+  try{localStorage.setItem(BKF_INT_KEY,JSON.stringify(lista));}catch(e){}
+  renderDay();
+  _qmElencoSalva(BKF_INT_KEY,[],()=>renderDay());
+}
+function bkIntAggiungi(){
+  const oggi=new Date();oggi.setHours(0,0,0,0);
+  // camere in casa (o in arrivo) con la loro data di checkout
+  const viste={};
+  Object.values(bkfRoomInfo||{}).flat().forEach(r=>{
+    if(!r||!r.camera)return;
+    const co=_bkShortDate(r.checkout);
+    if(co&&co<oggi)return;
+    if(r.tipo==='partenza')return;
+    viste[r.camera+'|'+(r.nome||'')]={camera:r.camera,nome:r.nome||'',fino:co?_bkIso(co):''};
+  });
+  const camere=Object.values(viste).sort(_bkOrdina);
+  const ov=document.createElement('div');ov.className='bk-ov';
+  ov.innerHTML=`<div class="bk-sh" role="dialog" aria-label="Nuova intolleranza"><h3>Nuova intolleranza</h3>
+    <div class="bk-lb">Camera</div><select class="bk-in" id="bkIntCam">${camere.map((c,i)=>`<option value="${i}">${_bkEsc(c.camera)}${c.nome?' · '+_bkEsc(c.nome):''}</option>`).join('')}</select>
+    <div class="bk-lb">Intolleranza</div><input class="bk-in" id="bkIntTx" maxlength="80" placeholder="es. senza glutine, lattosio">
+    <div class="bk-lb">Persone</div><input class="bk-in" id="bkIntPax" type="number" min="1" max="9" value="1" inputmode="numeric">
+    <div class="bk-bt"><button class="bk-no" id="bkIntNo">Annulla</button><button class="bk-ok" id="bkIntOk">Salva</button></div></div>`;
+  document.body.appendChild(ov);
+  const chiudi=()=>ov.remove();
+  ov.addEventListener('click',e=>{if(e.target===ov)chiudi();});
+  ov.querySelector('#bkIntNo').onclick=chiudi;
+  ov.querySelector('#bkIntOk').onclick=()=>{
+    const tx=ov.querySelector('#bkIntTx').value.trim();
+    const c=camere[+ov.querySelector('#bkIntCam').value];
+    if(!tx||!c){ov.querySelector('#bkIntTx').focus();return;}
+    const pax=Math.max(1,Math.min(9,parseInt(ov.querySelector('#bkIntPax').value,10)||1));
+    const d1=new Date(oggi);d1.setDate(d1.getDate()+1);
+    const fino=c.fino||_bkIso(d1);
+    const sette=new Date(oggi);sette.setDate(sette.getDate()-7);
+    const lista=_bkIntolleranze().filter(x=>x.fino>=_bkIso(sette));   // le scadute da più di 7 giorni si tolgono
+    lista.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),camera:c.camera,testo:tx,pax,fino,ts:Date.now()});
+    chiudi();_bkCardAperta='int';
+    _bkIntScrivi(lista);
+  };
+  setTimeout(()=>{try{ov.querySelector('#bkIntTx').focus();}catch(e){}},50);
+}
+async function bkIntTogli(id){
+  const x=_bkIntolleranze().find(i=>i.id===id);if(!x)return;
+  if(!await cqConferma('Togliere questa intolleranza?',_bkEsc(x.camera)+' · '+_bkEsc(x.testo),{ok:'Togli'}))return;
+  _bkIntScrivi(_bkIntolleranze().filter(i=>i.id!==id));
+}
 // Testi che vengono dal PMS (nomi degli ospiti): mai in innerHTML senza protezione.
 function _bkEsc(t){return String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 // Da azzurro (0) a blu scuro (1).
@@ -975,6 +1093,7 @@ async function loadAll(){
     const ja=await ra.json();
     if(ja.value)bkfRoomAmbiguous=parseInt(ja.value)||0;
   }catch(e){}
+  try{await _qmElencoAggiorna(BKF_INT_KEY,[]);}catch(e){}
   if(!bkfData||!bkfData.length){
     document.getElementById('mainContent').innerHTML='<div class="no-data">Nessun dato disponibile.<br>Carica il report pasti dalla dashboard.</div>';
     return;
@@ -1004,6 +1123,8 @@ try{
 
 loadAll();
 setInterval(loadAll,10*60*1000);
+// Intolleranze scritte da un altro telefono: si vedono entro un minuto (solo a scheda visibile).
+setInterval(()=>{if(document.visibilityState==='visible'&&!document.querySelector('.bk-ov'))_qmElencoAggiorna(BKF_INT_KEY,[],()=>{try{renderDay();}catch(e){}});},60000);
 
 // ── TAB SWITCHING ─────────────────────────────────────────────────────────────
 let _activeTab='day';
