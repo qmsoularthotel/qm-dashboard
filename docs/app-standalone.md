@@ -322,6 +322,6 @@ Sotto Colazioni / Room Only, con la scritta «Tocca le card per più info», tre
   anche da Compass (Overview, sotto «Ospiti BB Booking.com», `_bkfIntHtml`): la chiave è in
   `QM_ELENCHI_CONDIVISI` e nella sincronizzazione, così le due parti si fondono. Sono nella
   copia di sicurezza. Niente allergie, per scelta del QM.
-- **Ospiti Booking.com**: la lista che prima era un riquadro a sé (solo colazione inclusa),
+- **Booking.com** (si chiamava «Ospiti Booking.com»): la lista che prima era un riquadro a sé (solo colazione inclusa),
   con le persone per camera e 📝 sulle camere che hanno un'intolleranza.
 - Il riquadro «Domani» è stato tolto: domani si legge nel grafico.

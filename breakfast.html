@@ -99,10 +99,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 @media (prefers-reduced-motion:reduce){.bk-hint{animation:none;-webkit-text-fill-color:var(--accent);}}
 .bk-tre{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px;}
 .bk-c{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 6px 0;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;min-width:0;overflow:hidden;font-family:inherit;color:var(--text);-webkit-tap-highlight-color:transparent;}
-.bk-cn{font-size:30px;font-weight:800;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums;}
-.bk-cs{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
-.bk-ct{font-size:11.5px;font-weight:600;color:var(--text);line-height:1.25;margin:6px 0 8px;min-height:29px;display:flex;align-items:center;}
-.bk-go{align-self:stretch;margin:auto -6px 0;border-top:1px solid var(--border);font-size:11px;font-weight:700;color:var(--accent);padding:7px 0;}
+.bk-cn{font-size:34px;font-weight:800;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums;}
+.bk-cs{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+.bk-ct{font-size:13px;font-weight:600;color:var(--text);line-height:1.25;margin:6px 0 8px;min-height:29px;display:flex;align-items:center;}
+.bk-go{align-self:stretch;margin:auto -6px 0;border-top:1px solid var(--border);font-size:12px;font-weight:700;color:var(--accent);padding:7px 0;}
 .bk-c.on{border-color:var(--accent);}
 .bk-c.on .bk-go{background:var(--accent);color:#fff;border-top-color:var(--accent);}
 .bk-ps{color:var(--text-dim);font-size:11px;}
@@ -492,7 +492,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-22.12';
+const QM_APP_BUILD='2026-11-22.13';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -778,7 +778,7 @@ function renderDay(){
     const card=(id,n,tit)=>`<button class="bk-c${ap===id?' on':''}" onclick="bkCard('${id}')"><span class="bk-cn">${n}</span>${ap===id?'<span class="bk-cs">coperti</span>':''}<span class="bk-ct">${tit}</span><span class="bk-go">${ap===id?'Chiudi ▴':'Apri ▾'}</span></button>`;
     const coTit=isToday?'In check out':'In check out domani';
     html+=`<div class="bk-hint">Tocca le card per più info</div>
-      <div class="bk-tre">${card('co',coCop,coTit)}${card('int',intCop,'Intolleranze')}${card('bk',bkCop,'Ospiti Booking.com')}</div>`;
+      <div class="bk-tre">${card('co',coCop,coTit)}${card('int',intCop,'Intolleranze')}${card('bk',bkCop,'Booking.com')}</div>`;
     if(ap==='co'){
       html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">${coTit}</span><span class="pan-s bk-ps">include i room only</span></div>`+
         (coRows.length?`<div class="bk-chips">${coRows.map(r=>`<span class="bk-chip">${_bkEsc(_bkCam(r.camera))}<small>${pax(r)||''}</small></span>`).join('')}</div>`
@@ -788,7 +788,7 @@ function renderDay(){
         (intRows.length?intRows.map(x=>`<div class="bk-r"><span class="bk-cam">${_bkEsc(_bkCam(x.camera))}</span><span class="bk-nome">${_bkEsc(x.testo)}<small class="bk-sm">${parseInt(x.pax,10)||1} ${(parseInt(x.pax,10)||1)===1?'persona':'persone'} · fino al ${_bkIsoBreve(x.fino)}</small></span><button class="bk-x" onclick="bkIntTogli('${_bkEsc(x.id)}')" aria-label="Togli">×</button></div>`).join('')
           :`<div class="bk-r" style="color:var(--text-dim);">Nessuna intolleranza segnata. Tocca «+ Aggiungi».</div>`)+`</div>`;
     }else if(ap==='bk'){
-      html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">Ospiti Booking.com</span><span class="pan-s bk-ps">${bkCop} coperti · ${camere(bkRows.length)}</span></div>`;
+      html+=`<div class="pan bk-det"><div class="pan-head"><span class="pan-t">Booking.com</span><span class="pan-s bk-ps">${bkCop} coperti · ${camere(bkRows.length)}</span></div>`;
       if(isToday&&bkfRoomAmbiguous){
         html+=`<div class="bk-r" style="background:#fff3e0;color:#a05a00;font-weight:600;">⚠️ Cambi camera oggi non riconducibili con certezza — verifica manualmente.</div>`;
       }
