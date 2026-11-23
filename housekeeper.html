@@ -491,7 +491,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-14.3';
+const QM_APP_BUILD='2026-11-23.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -730,6 +730,23 @@ function buildAllDays(){
   });
 }
 
+// Giorno scelto con le frecce (23/11/2026): si ricorda la DATA scelta e il giorno in cui è
+// stata scelta, non la posizione nell'elenco. Prima si salvava l'indice: un telefono lasciato
+// aperto la notte ripartiva la mattina sul giorno di ieri (la posizione restava quella), e
+// un caricamento nuovo con un periodo diverso spostava la stessa posizione su un'altra data.
+// Il giorno dopo, o se la data non c'è più, si torna a oggi. Copia identica nelle due app.
+function _qmGiornoIso(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _qmGiornoSalva(chiave,data){try{sessionStorage.setItem(chiave,JSON.stringify({data:data,il:_qmGiornoIso()}));}catch(e){}}
+function _qmGiornoIdx(chiave,giorni,ripiego){
+  try{
+    const s=JSON.parse(sessionStorage.getItem(chiave)||'null');
+    if(s&&typeof s==='object'&&s.il===_qmGiornoIso()){
+      const i=(giorni||[]).findIndex(d=>d&&d.data===s.data);
+      if(i>=0)return i;
+    }
+  }catch(e){}
+  return ripiego();
+}
 function findTodayIdx(){
   const today=new Date();today.setHours(0,0,0,0);
   let idx=allDays.findIndex(d=>{
@@ -749,8 +766,7 @@ function findTodayIdx(){
 
 function changeDay(dir){
   currentIdx=Math.max(0,Math.min(allDays.length-1,currentIdx+dir));
-  // Salva in sessionStorage
-  try{sessionStorage.setItem('hk_day_idx',currentIdx);}catch(e){}
+  _qmGiornoSalva('hk_day_idx',(allDays[currentIdx]||{}).data);
   renderDay();
 }
 
@@ -879,10 +895,7 @@ async function loadAll(){
   try{if(pianoData)localStorage.setItem('hk_piano_cache',JSON.stringify(pianoData));}catch(e){}
   buildAllDays();
   // Ripristina giorno selezionato o vai a oggi
-  try{
-    const saved=sessionStorage.getItem('hk_day_idx');
-    currentIdx=saved!==null?Math.min(parseInt(saved),allDays.length-1):findTodayIdx();
-  }catch(e){currentIdx=findTodayIdx();}
+  currentIdx=_qmGiornoIdx('hk_day_idx',allDays,findTodayIdx);
   renderDay();
 }
 
@@ -896,10 +909,7 @@ try{
   if(pc)pianoData=JSON.parse(pc);
   if(soulData||boutData){
     buildAllDays();
-    try{
-      const saved=sessionStorage.getItem('hk_day_idx');
-      currentIdx=saved!==null?Math.min(parseInt(saved),allDays.length-1):findTodayIdx();
-    }catch(e){currentIdx=findTodayIdx();}
+    currentIdx=_qmGiornoIdx('hk_day_idx',allDays,findTodayIdx);
     renderDay();
   }
 }catch(e){}

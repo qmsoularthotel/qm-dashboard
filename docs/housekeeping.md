@@ -480,3 +480,17 @@ schermo o sul bordo destro.
 
 Controlli in `test/controlli.js` ("Operativa HKP: si apre con la colonna di oggi al centro"),
 verificati togliendo lo spostamento e il ripristino della posizione.
+
+### Una sigla scritta subito prima di cambiare mese andava persa (23/11/2026)
+
+Trovato in una ricerca di difetti. Il salvataggio di Operativa HKP parte **2 secondi** dopo
+l'ultima casella (`_hkpNdebounce`). `hkpNNavMon` faceva solo `clearTimeout`: scrivendo una sigla
+e premendo subito la freccia del mese, il salvataggio in attesa veniva **annullato** e la sigla
+restava solo in memoria — né sul cloud né in questo browser, persa alla chiusura della pagina.
+Ora, se ci sono caselle cambiate, il mese lasciato si salva prima di cambiare (`hkpNSave` fissa
+il mese al momento della chiamata).
+
+Nello stesso punto: il nuovo tentativo dopo un errore di rete (20 secondi dopo) chiamava
+`hkpNSave(p)`, cioè salvava il mese **mostrato in quel momento**. Ora `hkpNSave(p,mon)` riceve il
+mese delle caselle rimaste indietro. Controlli in `test/controlli.js` ("Operativa HKP: una sigla
+scritta prima di cambiare mese si salva lo stesso"), verificati togliendo le due correzioni.

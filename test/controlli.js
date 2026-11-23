@@ -493,6 +493,34 @@ sez('Colazione: chi e\' in check out anche prima del caricamento del mattino');
   } finally { BKF_ROOM_INFO_DATE = veroD; }
 })();
 
+sez('Operativa HKP: una sigla scritta prima di cambiare mese si salva lo stesso');
+// 23/11/2026: la freccia del mese annullava il salvataggio in attesa (2 secondi dopo l'ultima
+// casella), e la sigla non arrivava mai sul cloud ne' in questo browser. I controlli girano
+// senza attese: si guarda quello che succede subito (copia locale e coda del salvataggio).
+(function () {
+  var veroR = hkpNRender, veroMon = HKP_NMON.sa, veroDirty = _hkpNdirty, veroData = _hkpNdata, veroCoda = _hkpNcoda, veroS = _hkpNScrivi;
+  var chiamate = [];
+  hkpNRender = function () {};
+  _hkpNScrivi = function (p, sk, ck) { chiamate.push(sk + '|' + ck); return Promise.resolve(true); };
+  try {
+    HKP_NMON.sa = '2026-11'; _hkpNdirty = {}; _hkpNdata = {}; _hkpNcoda = {};
+    try { localStorage.removeItem('qm_hkpN_sa_2026-11'); } catch (e) {}
+    hkpNSetCell('sa', 'camere', 0, '22', 'rp');
+    hkpNNavMon('sa', -1);
+    var loc = {}; try { loc = JSON.parse(localStorage.getItem('qm_hkpN_sa_2026-11') || '{}'); } catch (e) {}
+    ok('cambiando mese la sigla resta in questo browser', loc['camere:0_22'], 'RP');
+    ok('e parte il salvataggio del mese in cui e\' stata scritta', !!_hkpNcoda['sa_2026-11'], true);
+    ok('il mese mostrato e\' cambiato', HKP_NMON.sa, '2026-10');
+    // un mese non mostrato si salva col suo nome (nuovo tentativo dopo un errore)
+    _hkpNcoda = {};
+    hkpNSave('sa', '2026-11');
+    ok('salvataggio di un mese non mostrato', Object.keys(_hkpNcoda).join(), 'sa_2026-11');
+    ok('il nuovo tentativo passa il suo mese', /hkpNSave\(p,ck\.slice\(p\.length\+1\)\)/.test(String(_hkpNScrivi === veroS ? veroS : veroS)), true);
+  } finally {
+    hkpNRender = veroR; HKP_NMON.sa = veroMon; _hkpNdirty = veroDirty; _hkpNdata = veroData; _hkpNcoda = veroCoda; _hkpNScrivi = veroS;
+  }
+})();
+
 sez('Colazioni: un caricamento stretto non cancella la previsione');
 // Il grafico della previsione e' lo strumento su cui la responsabile organizza il
 // servizio. Un export del PMS filtrato su un giorno solo sostituiva l'intera serie e lo

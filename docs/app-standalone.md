@@ -345,3 +345,18 @@ nello snapshot di ieri: il conto è giusto anche senza caricare niente.
 Nella stessa correzione: guardando **domani**, chi è arrivato oggi e parte domani ora compare in
 check out (prima `tipo!=='arrivo'` lo escludeva). Controlli in `test/controlli.js` ("Colazione:
 chi e' in check out anche prima del caricamento del mattino"), verificati con due sabotaggi.
+
+## Housekeeping e Breakfast: la mattina ripartivano dal giorno di ieri (23/11/2026)
+
+Trovato in una ricerca di difetti. Le due app ricordavano il giorno scelto con le frecce come
+**posizione** nell'elenco (`hk_day_idx`, `bkf_day_idx` in `sessionStorage`), e la rimettevano a
+ogni ricaricamento dei dati (ogni 10 minuti) e a ogni aggiornamento automatico della pagina.
+Bastava toccare una freccia una volta: un telefono lasciato aperto la notte la mattina mostrava
+ancora il giorno di ieri, e un caricamento con un periodo diverso spostava la stessa posizione
+su un'altra data senza dirlo.
+
+Ora `_qmGiornoSalva`/`_qmGiornoIdx` (copia identica nelle due app) ricordano la **data** e il
+giorno in cui è stata scelta: vale solo per quel giorno, e solo se la data c'è ancora;
+altrimenti si torna a oggi (`findTodayIdx`). I valori vecchi (un numero) non valgono più.
+Controllo in `test/esegui.sh` (le due copie identiche, sei casi provati con Node o osascript),
+verificato togliendo il controllo del giorno.

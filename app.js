@@ -1277,9 +1277,13 @@ function hkpNCurMon(p){
 function hkpNNavMon(p,dir){
   const [y,m]=hkpNCurMon(p).split('-').map(Number);
   const d=new Date(y,m-1+dir,1);
-  HKP_NMON[p]=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-  // flush previous debounce before switching month
+  // Prima di cambiare mese si SALVA quello lasciato (23/11/2026). Qui c'era solo il
+  // clearTimeout, che annullava il salvataggio in attesa (parte 2 secondi dopo l'ultima
+  // casella): una sigla scritta e subito dopo la freccia del mese non arrivava mai sul cloud
+  // né in questo browser. hkpNSave fissa il mese al momento della chiamata.
   clearTimeout(_hkpNdebounce[p]);
+  if(Object.keys(_hkpNdirty[hkpNCacheKey(p)]||{}).length)hkpNSave(p);
+  HKP_NMON[p]=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
   hkpNRender(p);
 }
 function hkpNGetData(p){
@@ -1312,8 +1316,11 @@ function _hkpNUnisci(cloud,cambi){
   Object.keys(cambi||{}).forEach(k=>{if(cambi[k])o[k]=cambi[k];else delete o[k];});
   return o;
 }
-function hkpNSave(p){
-  const sk=hkpNStorKey(p),ck=hkpNCacheKey(p);
+// `mon` (facoltativo): il mese da salvare. Senza, quello mostrato adesso. Il nuovo tentativo
+// dopo un errore passa il SUO mese: prima riprovava su quello mostrato in quel momento, e se
+// nel frattempo si era cambiato mese le caselle rimaste indietro non partivano più.
+function hkpNSave(p,mon){
+  const m=mon||hkpNCurMon(p),sk='qm_hkpN_'+p+'_'+m,ck=p+'_'+m;
   try{localStorage.setItem(sk,JSON.stringify(_hkpNdata[ck]||{}));}catch(e){}
   _hkpNcoda[ck]=(_hkpNcoda[ck]||Promise.resolve()).then(()=>_hkpNScrivi(p,sk,ck)).catch(()=>{});
   return _hkpNcoda[ck];
@@ -1328,7 +1335,7 @@ async function _hkpNScrivi(p,sk,ck){
     const j=await r.json();cloud=j&&j.value?JSON.parse(j.value):{};
   }catch(e){
     try{setSyncStatus('error');}catch(_){}
-    setTimeout(()=>{if(Object.keys(_hkpNdirty[ck]||{}).length)hkpNSave(p);},20000);
+    setTimeout(()=>{if(Object.keys(_hkpNdirty[ck]||{}).length)hkpNSave(p,ck.slice(p.length+1));},20000);
     return false;
   }
   const unito=_hkpNUnisci(cloud,cambi);

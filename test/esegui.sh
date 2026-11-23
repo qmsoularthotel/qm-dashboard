@@ -561,6 +561,38 @@ if [ "$_HK_RIS" != "3·4" ]; then
   BKF_KO=1
 fi
 
+# Giorno scelto con le frecce nelle app Housekeeping e Breakfast (23/11/2026): si ricorda la
+# DATA e il giorno in cui e' stata scelta, non la posizione. Con la posizione un telefono
+# lasciato aperto la notte ripartiva la mattina sul giorno di ieri. Copia identica nelle due.
+_GG_F=$(sed -n '/^function _qmGiornoIso(/,/^function findTodayIdx(/p' breakfast.html | sed '$d')
+_GG_H=$(sed -n '/^function _qmGiornoIso(/,/^function findTodayIdx(/p' housekeeper.html | sed '$d')
+_GG_PROVA="var _m={};var sessionStorage={getItem:function(k){return k in _m?_m[k]:null;},setItem:function(k,v){_m[k]=String(v);}};
+var G=[{data:'22/11/2026'},{data:'23/11/2026'},{data:'24/11/2026'}],oggi=function(){return 1;},r=[];
+r.push(_qmGiornoIdx('k',G,oggi));
+_qmGiornoSalva('k','24/11/2026');r.push(_qmGiornoIdx('k',G,oggi));
+r.push(_qmGiornoIdx('k',[{data:'24/11/2026'},{data:'25/11/2026'}],oggi));
+_m.k=JSON.stringify({data:'24/11/2026',il:'2000-01-01'});r.push(_qmGiornoIdx('k',G,oggi));
+_m.k='2';r.push(_qmGiornoIdx('k',G,oggi));
+_qmGiornoSalva('k','01/01/1999');r.push(_qmGiornoIdx('k',G,oggi));"
+if command -v node >/dev/null 2>&1; then
+  _GG_RIS=$(node -e "$_GG_F
+$_GG_PROVA console.log(r.join(','))" 2>&1)
+else
+  _GG_RIS=$(osascript -l JavaScript -e "$_GG_F
+$_GG_PROVA r.join(',')" 2>&1)
+fi
+for _f in breakfast.html housekeeper.html; do
+  grep -q "parseInt(saved)\|parseInt(si)" $_f && _GG_RIS="$_f ripristina ancora la posizione"
+done
+grep -q "_qmGiornoIdx('bkf_day_idx',bkfData,findTodayIdx)" breakfast.html || _GG_RIS="breakfast.html non usa _qmGiornoIdx"
+grep -q "_qmGiornoIdx('hk_day_idx',allDays,findTodayIdx)" housekeeper.html || _GG_RIS="housekeeper.html non usa _qmGiornoIdx"
+if [ "$_GG_F" != "$_GG_H" ] || [ -z "$_GG_F" ] || [ "$_GG_RIS" != "1,2,0,1,1,1" ]; then
+  echo ""
+  echo "  ERRORE      app Housekeeping/Breakfast: il giorno scelto non si ricorda piu' per data e"
+  echo "              per oggi soltanto ($_GG_RIS). La mattina potrebbero ripartire dal giorno di ieri."
+  BKF_KO=1
+fi
+
 # Worker non pubblicato: worker.js si pubblica a mano su Cloudflare (vedi CLAUDE.md, la
 # pubblicazione automatica è stata valutata e scartata). Una correzione può quindi essere
 # scritta, versionata e non attiva — successo il 21/08/2026, per ore, senza alcun segnale.
