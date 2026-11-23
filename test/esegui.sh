@@ -386,6 +386,22 @@ if [ "$(_avv app.js)" != "$(_avv breakfast.html)" ] || [ -z "$(_avv breakfast.ht
   echo "  ERRORE      _bkfAvvisoDiOggi in breakfast.html non e' identica a quella di app.js."
   BKF_KO=1
 fi
+# Chi e' in casa e chi e' in check out (23/11/2026): stesse regole in Compass e nell'app, e
+# l'app deve sapere di che giorno e' lo snapshot, altrimenti prima del caricamento del mattino
+# mostra come «in check out» i partiti di ieri.
+for _fn in _bkfPresenteIl _bkfInCheckout; do
+  _cp(){ sed -n "/^function $_fn(/,/^}/p" "$1"; }
+  if [ "$(_cp app.js)" != "$(_cp breakfast.html)" ] || [ -z "$(_cp breakfast.html)" ]; then
+    echo ""
+    echo "  ERRORE      $_fn in breakfast.html non e' identica a quella di app.js."
+    BKF_KO=1
+  fi
+done
+if ! grep -q "key=qm_bkf_room_info_date" breakfast.html || ! grep -q "_bkfInCheckout(r,targetDay,snapGiorno)" breakfast.html; then
+  echo ""
+  echo "  ERRORE      breakfast.html: «In check out» non tiene piu' conto del giorno del caricamento."
+  BKF_KO=1
+fi
 # La casella del nuovo avviso sta in una colonna: senza flex:none il suo flex:1 la schiaccia
 # a due righe e il testo lungo scorre dentro invece di farla crescere (05/10/2026).
 if ! grep -qE '^\.miniapp-avviso-prog \.miniapp-avviso-testo\{flex:none' style.css; then

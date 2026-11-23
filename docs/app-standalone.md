@@ -314,7 +314,8 @@ Sotto Colazioni / Room Only, con la scritta «Tocca le card per più info», tre
 **coperti**; un tocco apre il dettaglio sotto le card (`bkCard`, ricordata in sessionStorage).
 
 - **In check out** (anche guardando domani): camere in partenza, **room only compresi**
-  (l'intestazione lo dice), da `qm_bkf_room_info`; per oggi vale `tipo==='partenza'`, altrimenti la data di checkout.
+  (l'intestazione lo dice), da `qm_bkf_room_info`. Vedi sotto: il `tipo` vale solo se lo
+  snapshot è di quel giorno.
 - **Intolleranze**: elenco `qm_bkf_intolleranze` scritto dai telefoni con `_qmElencoSalva`
   (fusione a tre) e riletto ogni minuto a scheda visibile. Ogni voce: camera, testo, persone,
   `fino` = checkout dell'ospite di quella camera; dopo sparisce da sola. Le scadute da più di 7
@@ -325,3 +326,22 @@ Sotto Colazioni / Room Only, con la scritta «Tocca le card per più info», tre
 - **Booking.com** (si chiamava «Ospiti Booking.com»): la lista che prima era un riquadro a sé (solo colazione inclusa),
   con le persone per camera e 📝 sulle camere che hanno un'intolleranza.
 - Il riquadro «Domani» è stato tolto: domani si legge nel grafico.
+
+## In check out e Booking.com prima del caricamento del mattino (23/11/2026)
+
+**Caso reale**: lunedì mattina, prima del caricamento delle Prenotazioni, «In check out»
+mostrava le camere partite **domenica**. Lo snapshot (`qm_bkf_room_info`) è del giorno in cui è
+stato caricato, e per "oggi" l'app si fidava del `tipo` della riga: con lo snapshot di ieri,
+`partenza` vuol dire partiti ieri. Stesso difetto, meno visibile, sugli Ospiti BB Booking.com
+(i partiti di ieri contati ancora a colazione, gli arrivati di ieri esclusi) in app e in Overview.
+
+Regole ora in due funzioni **identiche** in `app.js` e `breakfast.html` (controllo in
+`test/esegui.sh`): `_bkfPresenteIl(r,giorno,snap)` e `_bkfInCheckout(r,giorno,snap)`. `snap` =
+lo snapshot è stato caricato proprio quel giorno (`qm_bkf_room_info_date`, che l'app ora legge;
+in Compass `_bkfSnapDelGiorno`). Solo allora decide il `tipo`; altrimenti decidono le date di
+arrivo e partenza, che ogni riga porta. Chi parte oggi era per forza in casa ieri, quindi è già
+nello snapshot di ieri: il conto è giusto anche senza caricare niente.
+
+Nella stessa correzione: guardando **domani**, chi è arrivato oggi e parte domani ora compare in
+check out (prima `tipo!=='arrivo'` lo escludeva). Controlli in `test/controlli.js` ("Colazione:
+chi e' in check out anche prima del caricamento del mattino"), verificati con due sabotaggi.

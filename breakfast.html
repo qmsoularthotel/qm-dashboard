@@ -492,7 +492,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-22.15';
+const QM_APP_BUILD='2026-11-23.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -741,14 +741,12 @@ function renderDay(){
     // Per "oggi" il tipo riga (arrivo/fermata/partenza) è un dato certo del Riepilogo
     // Reception — usarlo come regola primaria invece di dipendere dal parsing della data,
     // che per alcune righe l'AI può non leggere correttamente.
-    const presentOn=r=>{
-      if(isToday)return r.tipo!=='arrivo';
-      if(!targetDay)return true;
-      const ci=_bkShortDate(r.checkin),co=_bkShortDate(r.checkout);
-      if(ci&&ci>=targetDay)return false;
-      if(co&&co<targetDay)return false;
-      return true;
-    };
+    // ...ma solo se il caricamento è DI OGGI (23/11/2026, il QM: "prima dell'upload di oggi le
+    // camere in check out erano ancora quelle di ieri"). Lo snapshot è del giorno in cui è
+    // stato caricato: con quello di ieri, «partenza» vuol dire partiti IERI. Allora si
+    // ragiona sulle date di arrivo e partenza, che ogni riga porta.
+    const snapGiorno=_bkSnapDelGiorno(targetDay);
+    const presentOn=r=>_bkfPresenteIl(r,targetDay,snapGiorno);
     // Camere "200" (Boutique) prima, poi le "Art" (SoulArt) — non ordinamento puramente
     // numerico, altrimenti Art 12 finirebbe prima di 207.
     // Solo chi ha la colazione INCLUSA: decide il trattamento, mai la camera (copia di
@@ -762,11 +760,10 @@ function renderDay(){
     const pax=r=>parseInt(r&&r.pax,10)||0;
     const tutte=_bkStanze();
     // In check out (22/11/2026): tutti, room only compresi (lo dice l'intestazione).
-    const coRows=tutte.filter(r=>{
-      if(isToday&&r.tipo==='partenza')return true;
-      const co=_bkShortDate(r.checkout);
-      return !!(co&&targetDay&&co.getTime()===targetDay.getTime()&&r.tipo!=='arrivo');
-    }).sort(_bkOrdina);
+    // Chi parte quel giorno: dal tipo solo se il caricamento è di quel giorno, altrimenti
+    // dalla data di partenza (anche chi era «arrivo» nello snapshot di ieri e resta una notte
+    // sola: prima veniva escluso).
+    const coRows=tutte.filter(r=>_bkfInCheckout(r,targetDay,snapGiorno)).sort(_bkOrdina);
     const coCop=coRows.reduce((a,r)=>a+pax(r),0);
     const tIso=targetDay?_bkIso(targetDay):_bkIso(today);
     const intRows=_bkIntolleranze().filter(x=>x.fino>=tIso).sort(_bkOrdina);
@@ -946,6 +943,15 @@ function _bkCam(c){return /^AS[_\s-]?LIB$/i.test(String(c||'').trim())?'Liborio'
 // Tutte le prenotazioni dello snapshot, SENZA San Liborio: non ha mai la colazione e i suoi
 // ospiti non possono venire a farla, quindi nell'app non compare mai (22/11/2026). Compass
 // già non lo mette in qm_bkf_room_info; qui vale anche per i dati caricati prima.
+// Data del caricamento delle prenotazioni da cui viene lo snapshot (qm_bkf_room_info_date,
+// "23/11/2026"). Il tipo di ogni riga (arrivo/fermata/partenza) vale solo per quel giorno.
+let bkfRoomInfoDate='';
+function _bkSnapDelGiorno(giorno){
+  const d=_bkShortDate(bkfRoomInfoDate);
+  if(!d||!giorno)return false;
+  const g=new Date(giorno.getTime());g.setHours(0,0,0,0);
+  return d.getTime()===g.getTime();
+}
 function _bkStanze(){return Object.values(bkfRoomInfo||{}).flat().filter(r=>r&&r.camera&&!/lib/i.test(String(r.camera)));}
 // Camere 200 (Boutique) prima, poi le Art (SoulArt), in ordine di numero.
 function _bkOrdina(a,b){
@@ -953,6 +959,26 @@ function _bkOrdina(a,b){
   if(ga!==gb)return ga-gb;
   return (parseInt(String(a.camera||'').replace(/\D/g,''))||0)-(parseInt(String(b.camera||'').replace(/\D/g,''))||0);
 }
+// Chi è in casa la mattina di `giorno` e chi parte quel giorno (23/11/2026). `snap` = lo
+// snapshot è stato caricato proprio quel giorno: solo allora vale il tipo della riga
+// (arrivo/fermata/partenza). Altrimenti si ragiona sulle date, che ogni riga porta: prima del
+// caricamento del mattino lo snapshot è di ieri, e i suoi «partenza» sono partiti IERI.
+// Copiate IDENTICHE in app.js e breakfast.html (controllo in test/esegui.sh).
+function _bkfPresenteIl(r,giorno,snap){
+  if(snap)return r.tipo!=='arrivo';
+  if(!giorno)return true;
+  const ci=_bkfParseShortDate(r.checkin),co=_bkfParseShortDate(r.checkout);
+  if(ci&&ci>=giorno)return false;
+  if(co&&co<giorno)return false;
+  return true;
+}
+function _bkfInCheckout(r,giorno,snap){
+  if(snap&&r.tipo==='partenza')return true;
+  const co=_bkfParseShortDate(r.checkout),ci=_bkfParseShortDate(r.checkin);
+  if(!co||!giorno||co.getTime()!==giorno.getTime())return false;
+  return !ci||ci<giorno;
+}
+const _bkfParseShortDate=s=>_bkShortDate(s);
 function _bkShortDate(s){
   const m=String(s||'').trim().match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
   if(!m)return null;
@@ -1100,6 +1126,9 @@ async function loadAll(){
     const rb=await fetch(PROXY+'/kv/get?key=qm_bkf_room_info',{cache:'no-store'});
     const jb=await rb.json();
     if(jb.value)bkfRoomInfo=JSON.parse(jb.value);
+    const rd=await fetch(PROXY+'/kv/get?key=qm_bkf_room_info_date',{cache:'no-store'});
+    const jd=await rd.json();
+    bkfRoomInfoDate=jd.value||'';
     const ra=await fetch(PROXY+'/kv/get?key=qm_bkf_room_ambiguous',{cache:'no-store'});
     const ja=await ra.json();
     if(ja.value)bkfRoomAmbiguous=parseInt(ja.value)||0;

@@ -9871,13 +9871,36 @@ function _bkfParseShortDate(s){
 // Per "oggi" (isToday=true) il tipo riga (arrivo/fermata/partenza) è un dato certo del
 // Riepilogo Reception — usarlo come regola primaria, senza dipendere dal parsing della
 // data di arrivo/partenza che per alcune righe l'AI può non leggere correttamente.
-function _bkfGuestPresentOn(g,targetDate,isToday){
-  if(isToday)return g.tipo!=='arrivo';
-  const ci=_bkfParseShortDate(g.checkin);
-  const co=_bkfParseShortDate(g.checkout);
-  if(ci&&ci>=targetDate)return false;
-  if(co&&co<targetDate)return false;
+// Il tipo (arrivo/fermata/partenza) è del giorno del caricamento: vale per "oggi" solo se il
+// caricamento è di oggi. Prima del caricamento del mattino lo snapshot è di ieri, e i suoi
+// «partenza» sono partiti ieri (23/11/2026): si ragiona sulle date. Copia in breakfast.html.
+function _bkfSnapDelGiorno(giorno){
+  const d=_bkfParseShortDate(BKF_ROOM_INFO_DATE);
+  if(!d||!giorno)return false;
+  const g=new Date(giorno.getTime());g.setHours(0,0,0,0);
+  return d.getTime()===g.getTime();
+}
+// Chi è in casa la mattina di `giorno` e chi parte quel giorno (23/11/2026). `snap` = lo
+// snapshot è stato caricato proprio quel giorno: solo allora vale il tipo della riga
+// (arrivo/fermata/partenza). Altrimenti si ragiona sulle date, che ogni riga porta: prima del
+// caricamento del mattino lo snapshot è di ieri, e i suoi «partenza» sono partiti IERI.
+// Copiate IDENTICHE in app.js e breakfast.html (controllo in test/esegui.sh).
+function _bkfPresenteIl(r,giorno,snap){
+  if(snap)return r.tipo!=='arrivo';
+  if(!giorno)return true;
+  const ci=_bkfParseShortDate(r.checkin),co=_bkfParseShortDate(r.checkout);
+  if(ci&&ci>=giorno)return false;
+  if(co&&co<giorno)return false;
   return true;
+}
+function _bkfInCheckout(r,giorno,snap){
+  if(snap&&r.tipo==='partenza')return true;
+  const co=_bkfParseShortDate(r.checkout),ci=_bkfParseShortDate(r.checkin);
+  if(!co||!giorno||co.getTime()!==giorno.getTime())return false;
+  return !ci||ci<giorno;
+}
+function _bkfGuestPresentOn(g,targetDate){
+  return _bkfPresenteIl(g,targetDate,_bkfSnapDelGiorno(targetDate));
 }
 // Colazione Booking.com (22/11/2026): solo chi ha la colazione INCLUSA nella prenotazione.
 // Decide il trattamento, mai la camera: se in 206 o a Liborio arriva qualcuno con la

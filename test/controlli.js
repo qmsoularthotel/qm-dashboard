@@ -465,6 +465,34 @@ sez('Operativa HKP: si apre con la colonna di oggi al centro');
   ok('aprendo il modulo si ricentra', /_hkpNCentra\.sa=true/.test(String(setView)), true);
 })();
 
+sez('Colazione: chi e\' in check out anche prima del caricamento del mattino');
+// 23/11/2026, il QM: "questa mattina prima dell'upload le camere in check out erano ancora
+// quelle di ieri". Snapshot caricato domenica 22/11, oggi lunedi' 23/11.
+(function () {
+  var veroD = BKF_ROOM_INFO_DATE;
+  var lun = new Date(2026, 10, 23), mar = new Date(2026, 10, 24), dom = new Date(2026, 10, 22);
+  var partitoIeri = { camera: 'Art 1', tipo: 'partenza', checkin: '20/11/2026', checkout: '22/11/2026' };
+  var parteOggi   = { camera: 'Art 2', tipo: 'fermata',  checkin: '20/11/2026', checkout: '23/11/2026' };
+  var unaNotte    = { camera: '204',   tipo: 'arrivo',   checkin: '22/11/2026', checkout: '23/11/2026' };
+  var resta       = { camera: '205',   tipo: 'fermata',  checkin: '21/11/2026', checkout: '25/11/2026' };
+  var tutti = [partitoIeri, parteOggi, unaNotte, resta];
+  function cam(l) { return l.map(function (r) { return r.camera; }).join(); }
+  try {
+    BKF_ROOM_INFO_DATE = '22/11/2026';
+    ok('snapshot di ieri: non vale per oggi', _bkfSnapDelGiorno(lun), false);
+    ok('snapshot di ieri: vale per ieri', _bkfSnapDelGiorno(dom), true);
+    var snap = _bkfSnapDelGiorno(lun);
+    ok('check out di oggi: non i partiti di ieri', cam(tutti.filter(function (r) { return _bkfInCheckout(r, lun, snap); })), 'Art 2,204');
+    ok('in casa stamattina: chi e\' arrivato ieri si', cam(tutti.filter(function (r) { return _bkfGuestPresentOn(r, lun); })), 'Art 2,204,205');
+    ok('check out di domani', cam(tutti.filter(function (r) { return _bkfInCheckout(r, mar, false); })), '');
+    // stesso giorno del caricamento: decide il tipo, come prima
+    ok('snapshot di oggi: decide il tipo', cam(tutti.filter(function (r) { return _bkfInCheckout(r, dom, true); })), 'Art 1');
+    ok('snapshot di oggi: chi arriva oggi non e\' ancora in casa', _bkfPresenteIl(unaNotte, dom, true), false);
+    BKF_ROOM_INFO_DATE = '';
+    ok('senza data dello snapshot: si ragiona sulle date', _bkfSnapDelGiorno(lun), false);
+  } finally { BKF_ROOM_INFO_DATE = veroD; }
+})();
+
 sez('Colazioni: un caricamento stretto non cancella la previsione');
 // Il grafico della previsione e' lo strumento su cui la responsabile organizza il
 // servizio. Un export del PMS filtrato su un giorno solo sostituiva l'intera serie e lo
