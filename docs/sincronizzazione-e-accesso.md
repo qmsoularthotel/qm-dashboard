@@ -756,6 +756,17 @@ Rimasto aperto, scelte da fare col QM:
   possibile ma è un cambio di Worker.
 - Nessuna Content-Security-Policy: con gli `onclick` in linea ovunque non darebbe protezione
   reale senza riscrivere l'interfaccia.
+- **PIN della Gestione Turnazione** (ricerca difetti del 23/11/2026): 5 PIN sbagliati fermano
+  i tentativi per 15 minuti, cioè circa 480 prove al giorno. Un PIN di 4 cifre (10.000
+  combinazioni) può essere indovinato in qualche settimana da chi ha un PC della Galleria; il
+  blocco è anche unico per tutti, quindi chi sbaglia apposta blocca il Front Office Manager.
+  Rimedi: PIN di 6–8 cifre (già ammessi), o un blocco che cresce a ogni serie sbagliata
+  (modifica del Worker). **Il QM ha deciso di lasciarlo così per ora** (23/11/2026).
+- **Testi scritti dal personale** (stessa ricerca): alcuni testi digitati a mano entrano nella
+  pagina senza `_esc` — nomi dei prodotti dell'inventario (`it.name`, `p.name`), note degli
+  ordini (`it.note`), nomi nel DVR (`x.nome`), gruppi e note della colazione (`g.nome`,
+  `g.note`). Un `<` in un nome rompe quella riga. Rischio basso: li scrive solo personale
+  abilitato col lasciapassare. **Il QM ha deciso di lasciarli così per ora** (23/11/2026).
 
 ### "Compass aperto, ma senza nessuno" (28/09/2026)
 

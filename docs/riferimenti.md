@@ -244,6 +244,27 @@ Non creare workflow YAML personalizzati come soluzione: ne è stato creato uno (
 
 ## Note & Problemi Noti
 
+### Ricerca difetti del 23/11/2026 — come è stata fatta e cosa ha trovato
+
+Richiesta del QM: *"cerca bug in Compass, includi le app standalone"*. Da ripetere allo stesso
+modo la prossima volta, partendo da quello che qui risulta già controllato.
+
+| Controllo | Esito |
+|---|---|
+| ESLint 8 (`no-undef`, chiavi doppie, codice irraggiungibile, confronti sbagliati…) su `app.js`, `ddt-shared.js` e gli script di tutte le pagine | nessun difetto: i nomi "mancanti" stanno in `ddt-shared.js` o sono `pdfjsLib` (CDN); i cicli segnalati cambiano la data dentro il ciclo |
+| Funzioni definite due volte fra `app.js`, `ddt-shared.js` e le app | nessuna |
+| Le 32 viste di Compass aperte in Chromium, schermo largo e telefono (390 px), senza dati | nessun errore JavaScript, nessuno scorrimento orizzontale |
+| Worker (`worker.js`): lasciapassare, codice `bg.`, permesso `tp.`, PIN | solido; restano i due punti aperti in `sincronizzazione-e-accesso.md` |
+| "Oggi" calcolato in UTC (`toISOString().slice`) | nessuno |
+| Scritture delle app non arrivate | tutte avvisano (`qmAvvisoScrittura`) |
+| Modifiche recenti: Prenotazioni (nomi a capo), intolleranze, Agenda | nessun difetto |
+| Salvataggi "in attesa" annullati (`clearTimeout` prima di un salvataggio) | **difetto** in Operativa HKP → `housekeeping.md` |
+| Stato ricordato fra un ricaricamento e l'altro (`sessionStorage`) | **difetto** nelle app Housekeeping e Breakfast → `app-standalone.md` |
+| Testi esterni in `innerHTML` | PDF e AI già ripuliti all'ingresso; restano testi digitati dal personale (lasciati così, vedi sopra) |
+
+**Limite**: senza dati veri molte parti si leggono ma non girano. Un controllo più a fondo va
+fatto modulo per modulo, con il backup (`compass-archivio-*.json`) come dati di prova.
+
 ### Aggiornamento automatico delle 5 app standalone (22/08/2026)
 
 Ogni app (`housekeeper`, `breakfast`, `controllo-mattino`, `inventory`, `dvr`) contiene
