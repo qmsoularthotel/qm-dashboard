@@ -784,18 +784,20 @@ sez('Presenze Cascione: foglio del consulente compilato dai turni (23/11/2026)')
   ok('Presenze: agganciato ma mai nei turni del mese: a mano, non «-»', r2[1].assente + ' ' + r2[1].o.every(function (x) { return x.v === ''; }), 'true true');
   ok('Presenze: chi nel mese c\'è non è assente', r2[0].assente, false);
   mod.persone[1].turno = '';
-  ok('Presenze: righe S e A dalle correzioni', righe[0].s[1].v + ' ' + righe[0].a[4].v + ' ' + _gpSomma(righe[0].s), '2 PE 2');
+  ok('Presenze: righe S e A sempre vuote, le compila Cascione', righe[0].s[1].v + '|' + righe[0].a[4].v + '|' + _gpSomma(righe[0].s), '||0');
 
   // Riscrittura del foglio: solo le celle indicate, stile tenuto, formula tolta, celle mancanti inserite.
   var out = _gpCelleExport(mod, righe, 2027, 1);
   ok('Presenze: il 29-31 di febbraio si svuotano', out.AG9 + '|' + out.AI9, '|');
-  ok('Presenze: totale S nella sua colonna', out.AJ10, '2');
+  ok('Presenze: totali S e A non scritti da noi', JSON.stringify([out.AJ10, out.AK11, out.F10, out.I11]), JSON.stringify([{ svuota: true }, { svuota: true }, '', '']));
   ok('Presenze: periodo = 1° febbraio 2027', out.W5.num, 46419);
   var nuovo = _gpScrivi(xml, out), dopo = _gpCelle(nuovo, cond);
-  ok('Presenze: il foglio riscritto si rilegge', dopo.E9 + ' ' + dopo.F9 + ' ' + dopo.G9 + ' ' + dopo.F10 + ' ' + dopo.I11 + ' ' + dopo.AJ10 + ' ' + dopo.W5, 'R 3 - 2 PE 2 46419');
+  ok('Presenze: il foglio riscritto si rilegge', dopo.E9 + ' ' + dopo.F9 + ' ' + dopo.G9 + ' ' + (dopo.F10 || '·') + ' ' + (dopo.I11 || '·') + ' ' + dopo.W5, 'R 3 - · · 46419');
   ok('Presenze: nome e intestazione restano', dopo.B9 + ' / ' + dopo.C2 + ' / ' + dopo.B16, 'Fittizi Marta / Societa Finta & C. Srl / Ore Ordinarie');
   ok('Presenze: lo stile della cella resta', /<c r="E9" s="3" t="inlineStr"><is><t>R<\/t><\/is><\/c>/.test(nuovo), true);
-  ok('Presenze: la formula del totale lascia il posto al numero', /<c r="AJ10" s="5"><v>2<\/v><\/c>/.test(nuovo) && !/SUM\(E10/.test(nuovo), true);
+  ok('Presenze: la formula del totale di Cascione resta', /<c r="AJ10" s="5"><f>SUM\(E10:AI10\)<\/f><v>0<\/v><\/c>/.test(nuovo), true);
+  ok('Presenze: un totale scritto a mano (mese vecchio) si svuota', _gpScrivi('<row r="10"><c r="AJ10" s="5"><v>3</v></c></row>', { AJ10: { svuota: true } }), '<row r="10"><c r="AJ10" s="5"/></row>');
+  ok('Presenze: S e A non si toccano nella griglia', /riga\('s'|riga\('a'/.test(String(_gpDisegna)), false);
   ok('Presenze: celle mancanti inserite in ordine di colonna', /<c r="D10"[^]*?<c r="E10"[^]*?<c r="F10"[^]*?<c r="AJ10"/.test(nuovo), true);
   ok('Presenze: un testo con & resta XML valido', _gpCella('B3', '', 'A & B'), '<c r="B3" t="inlineStr"><is><t>A &amp; B</t></is></c>');
 

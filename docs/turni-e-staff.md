@@ -475,8 +475,11 @@ foglio presenze **per società** (oggi Ge.Ri.Art., Booking Elite, Geriart Group)
   cella** con un controllo scritto a parte in Python (zero differenze, periodo novembre 2026), e
   fuori dalle celle dei giorni restano **identici** al foglio di Cascione (valori, stili, celle
   unite, tutti gli altri file dello xlsx).
-- **Correzioni a mano** cella per cella (finestrella: ore, R, FE, ML, NL, PE o «Altro»; righe S e A
-  sempre a mano), segnate col pallino oro; «Rimetti dai turni» toglie la singola correzione,
+- **Righe S e A: le compila Cascione** (QM, 23/11/2026). Nella griglia sono vuote e non si toccano;
+  nell'Excel i giorni S/A escono vuoti e i totali restano **la formula di Cascione** se c'è
+  (Geriart Group `SUM(E11:AF11)`), mentre un numero scritto nel foglio caricato (i totali di ottobre
+  di Ge.Ri.Art.) si svuota (`{svuota:true}` in `_gpCelleExport` / `_gpScrivi`).
+- **Correzioni a mano** cella per cella (finestrella: ore, R, FE, ML, NL, PE o «Altro»; righe S e A di Cascione), segnate col pallino oro; «Rimetti dai turni» toglie la singola correzione,
   «Rimetti tutto dai turni» quelle del mese. Una correzione non salvata si dice e si annulla.
 - **Scarica Excel per Cascione**: si riapre il SUO file e si riscrivono solo le celle dei giorni
   (oltre fine mese vuote), i totali S e A (al posto delle formule) e il periodo
