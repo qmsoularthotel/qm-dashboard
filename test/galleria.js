@@ -810,6 +810,8 @@ ok('Presenze: Worker, i dati solo col permesso del PIN', /az === 'presenze' \|\|
 ok('Presenze: Worker, spenta vale anche qui', /'storico', 'presenze', 'presenze-salva'\]\.includes\(az\)/.test(String(_workerFetch.fetch)), true);
 ok('Presenze: Worker, una cella alla volta rileggendo la chiave', /parte === 'cella'[\s\S]{0,400}ri\[cella\] = String\(corpo\.valore\)/.test(String(_workerFetch.fetch)) && /QM_STORAGE\.get\('qm_presenze_cascione'\)/.test(String(_workerFetch.fetch)), true);
 ok('Presenze: niente riquadri Persone / Da controllare / Corretti (QM, 23/11)', /kpi-card|restano segnati|giorni dubbi/.test(String(_gpDisegna)), false);
+ok('Presenze: «Carica foglio» in alto solo senza fogli, poi in Persone del foglio', /\$\{ids\.length\?'':carica\}/.test(String(_gpDisegna)) && /sostituisce il vecchio\.<\/span>\$\{carica\}/.test(String(_gpDisegna)), true);
+ok('Presenze: R rosso come ML', /<i style="background:var\(--red-bg\);color:var\(--red\)">R<\/i>riposo/.test(String(_gpDisegna)) && _gpClsV('R') === 'gp-v-R', true);
 ok('Presenze: nel backup di Compass', QM_BACKUP_FISSE.indexOf('qm_presenze_cascione') >= 0, true);
 ok('Presenze: una correzione non salvata si dice e si annulla', /if\(!j\.ok\)\{if\(prima===undefined\)delete riga\[cella\];else riga\[cella\]=prima;_gpMsg='Correzione NON salvata/.test(String(gpMetti)), true);
 

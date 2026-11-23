@@ -178,7 +178,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 .gp-tab td.gp-c{cursor:pointer;position:relative;font-weight:600;}
 .gp-tab td.gp-c:hover{background:var(--accent-bg);}
 .gp-tab td.gp-c:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
-.gp-tab .gp-v-R{color:var(--text-dim);background:var(--surface2);}
+.gp-tab .gp-v-R{background:var(--red-bg);color:var(--red);}
 .gp-tab .gp-v-FE{background:var(--gold-bg);color:var(--gold);}
 .gp-tab .gp-v-ML{background:var(--red-bg);color:var(--red);}
 .gp-tab .gp-v-NL{background:var(--accent-bg);color:var(--accent);}
@@ -226,7 +226,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-23.6';
+const QM_APP_BUILD='2026-11-23.7';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -5171,9 +5171,11 @@ function _gpDisegna(el){
   if(!_gpMese)_gpMese=_gpMeseIniziale();
   const ids=Object.keys(_gpDati.societa).sort((a,b)=>String(_gpDati.societa[a].nome).localeCompare(String(_gpDati.societa[b].nome)));
   if(!_gpSoc||!_gpDati.societa[_gpSoc])_gpSoc=ids[0]||'';
+  // Il caricamento sta in alto solo finché non c'è nessun foglio; poi dentro «Persone del foglio»
+  // (QM, 23/11/2026: i fogli sono già caricati, si ricarica solo se cambia qualcosa).
   const carica=`<label class="gp-carica">+ Carica foglio di Cascione<input type="file" accept=".xlsx" hidden onchange="gpCaricaFoglio(this)"></label>`;
   let h=_gtBanner()+'<div class="gp-wrap">'+(_gpMsg?`<div class="gp-err">${_gtEsc(_gpMsg)}</div>`:'');
-  h+=`<div class="gp-scelte">${ids.map(id=>`<button type="button" class="gp-pill${id===_gpSoc?' on':''}" onclick="gpScegli('${id}')">${_gtEsc(_gpDati.societa[id].nome)}</button>`).join('')}${carica}</div>`;
+  h+=`<div class="gp-scelte">${ids.map(id=>`<button type="button" class="gp-pill${id===_gpSoc?' on':''}" onclick="gpScegli('${id}')">${_gtEsc(_gpDati.societa[id].nome)}</button>`).join('')}${ids.length?'':carica}</div>`;
   if(!_gpSoc){
     h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Come si comincia</span></div><div class="gp-avv"><div>Carica il foglio presenze di Cascione di una società, quello di un mese qualsiasi. Da lì prendo nomi, numeri d'ordine e ore al giorno; poi ogni mese la griglia si compila da sola dai turni e scarichi il file pronto per Cascione. Un foglio per società.</div></div></div></div>`;
     el.innerHTML=h;return;
@@ -5205,11 +5207,11 @@ function _gpDisegna(el){
   });
   h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Foglio presenze · ${GP_MESI[m]} ${y}</span><span class="gp-nota">tocca un giorno per cambiarlo</span></div>
     <div class="gp-griglia"><table class="gp-tab" id="gp-tab">${t}</tbody></table></div>
-    <div class="gp-leg"><span><i>8</i>ore lavorate</span><span><i class="gp-v-R">R</i>riposo</span><span><i style="background:var(--gold-bg);color:var(--gold)">FE</i>ferie</span><span><i style="background:var(--red-bg);color:var(--red)">ML</i>malattia</span><span><i style="background:var(--accent-bg);color:var(--accent)">NL</i>notte</span><span><i class="gp-dot"></i>corretto a mano</span><span><i class="gp-box"></i>da controllare</span><span>S straordinari e A giustificativi: a mano</span></div></div>`;
+    <div class="gp-leg"><span><i>8</i>ore lavorate</span><span><i style="background:var(--red-bg);color:var(--red)">R</i>riposo</span><span><i style="background:var(--gold-bg);color:var(--gold)">FE</i>ferie</span><span><i style="background:var(--red-bg);color:var(--red)">ML</i>malattia</span><span><i style="background:var(--accent-bg);color:var(--accent)">NL</i>notte</span><span><i class="gp-dot"></i>corretto a mano</span><span><i class="gp-box"></i>da controllare</span><span>S straordinari e A giustificativi: a mano</span></div></div>`;
   // Persone del foglio: a chi corrisponde nei turni
   const nomi=_gpNomiTurni(_gtuArch);
   h+=`<div class="panel"><div class="panel-header" style="cursor:pointer;" onclick="gpPersone()"><span class="panel-title">Persone del foglio · nome nei turni</span><span class="gp-nota">${_gpPersAperto?'Chiudi ▴':'Apri ▾'}</span></div>`;
-  if(_gpPersAperto)h+=S.persone.map((p,i)=>`<div class="gp-pers"><b>${_gtEsc(p.n?p.n+'. ':'')}${_gtEsc(p.nome)} <small>· ${_gtEsc(p.ore)} ore${p.notte?' · notti NL':''}</small></b><select id="gp-turno-${i}" aria-label="Nome nei turni" onchange="gpTurno(${i},this.value)"><option value="">non è nei turni</option>${nomi.map(n=>`<option value="${_gtEsc(n)}"${n===p.turno?' selected':''}>${_gtEsc(n)}</option>`).join('')}</select></div>`).join('')+`<div class="gp-avv"><span class="gp-nota">Ore e notti vengono dal foglio di Cascione: se cambiano, ricarica il suo foglio aggiornato.</span></div>`;
+  if(_gpPersAperto)h+=S.persone.map((p,i)=>`<div class="gp-pers"><b>${_gtEsc(p.n?p.n+'. ':'')}${_gtEsc(p.nome)} <small>· ${_gtEsc(p.ore)} ore${p.notte?' · notti NL':''}</small></b><select id="gp-turno-${i}" aria-label="Nome nei turni" onchange="gpTurno(${i},this.value)"><option value="">non è nei turni</option>${nomi.map(n=>`<option value="${_gtEsc(n)}"${n===p.turno?' selected':''}>${_gtEsc(n)}</option>`).join('')}</select></div>`).join('')+`<div class="gp-avv"><span class="gp-nota">Ore, notti e persone vengono dal foglio di Cascione. Se cambiano, o per aggiungere un'altra società, carica il suo foglio aggiornato: quello della stessa società sostituisce il vecchio.</span>${carica}</div>`;
   h+='</div>';
   h+=`<div class="gp-azioni"><button type="button" class="btn-primary" onclick="gpScarica()">Scarica Excel per Cascione</button>${corr?'<button type="button" class="btn-ghost" onclick="gpRicompila()">Rimetti tutto dai turni</button>':''}<span class="gp-nota">Esce identico al foglio di Cascione: cambiano solo i giorni, i totali S e A e il periodo.</span></div></div>`;
   el.innerHTML=h;
