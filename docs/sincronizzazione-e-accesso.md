@@ -768,6 +768,43 @@ Rimasto aperto, scelte da fare col QM:
   `g.note`). Un `<` in un nome rompe quella riga. Rischio basso: li scrive solo personale
   abilitato col lasciapassare. **Il QM ha deciso di lasciarli così per ora** (23/11/2026).
 
+## Verifica di sicurezza (23/11/2026)
+
+**Il repository GitHub è PUBBLICO** (`qmsoularthotel/qm-dashboard`, visibilità "public"): tutto
+il codice, i docs e la loro storia si leggono da internet, oltre al sito. Non contiene segreti
+(nessuna chiave, password o token: cercato nel codice e nella storia disponibile) né dati degli
+ospiti, ma contiene i **nomi del personale** (`DEPTS`, docs), gli **indirizzi dei fogli Google**
+e quelli degli **Apps Script**.
+
+Trovato:
+- **Preferenze Turnazione leggibili da chiunque** (il punto più serio). `TURNI_PREF_URL` sta in
+  `app.js`, cioè nel sorgente pubblico del sito e del repository, e il browser lo chiama senza
+  credenziali: chi conosce l'indirizzo legge tutte le richieste dei dipendenti. Il PIN della
+  Galleria protegge solo la strada che passa dal Worker; il commento in `worker.js` («l'app della
+  Galleria non conosce l'indirizzo del foglio») dà per segreto un indirizzo che non lo è.
+  Rimedio proposto (serve il QM): far leggere anche Compass dal Worker (azione apposita dietro il
+  lasciapassare), togliere l'indirizzo da `app.js`, pubblicare l'Apps Script a un **indirizzo
+  nuovo** (quello vecchio resta nella storia pubblica) che risponda solo con un codice segreto
+  impostato dal QM nelle Proprietà script e in una variabile del Worker.
+- **Fogli colazioni scrivibili da chiunque**: `SHEETS_URL` e `SHEETS_URL_AR` ricevono i dati con
+  una semplice richiesta `?data=…`, senza codice. Chi conosce l'indirizzo può sovrascrivere i
+  fogli. Stesso rimedio (codice segreto nell'Apps Script, o passaggio dal Worker).
+- **Indirizzi dei fogli Google** (`docs.google.com/spreadsheets/d/…` in `app.js`, `index.html`,
+  `docs/turni-e-staff.md`): sicuri solo se i fogli NON sono condivisi con «chiunque abbia il
+  link». Da verificare a mano in Google Drive.
+- Rendere privato il repository chiuderebbe la lettura del codice, ma il sito pubblicato resta
+  leggibile da chiunque lo apra; GitHub Pages da un repository privato richiede un piano a
+  pagamento. Decisione del QM.
+
+Corretto subito: `registration-galleria.html` caricava pdf.js dal CDN **senza `integrity`** (SRI):
+ora ha lo stesso codice di controllo di `index.html` (stesso file, stessa versione 3.11.174).
+
+Verificato e a posto: Worker (porta chiusa, lasciapassare HMAC, `bg.` limitato alle chiavi
+`bg_*`, `tp.` di 5 minuti, PIN con sale e PBKDF2), il lasciapassare non viaggia mai nell'indirizzo,
+il service worker non mette mai in cache le risposte del Worker o di Google, le Preferenze
+Turnazione e le recensioni passano da `_esc`, i PDF e le risposte dell'AI sono ripuliti
+all'ingresso.
+
 ### "Compass aperto, ma senza nessuno" (28/09/2026)
 
 Nello Stato del sistema compaiono solo le postazioni il cui ultimo salvataggio automatico è di meno di
