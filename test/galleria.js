@@ -703,20 +703,114 @@ ok('Galleria: colonne delle statistiche come in Compass',
   } finally { _gtTp = tp0; _gtScade = sc0; _gtUltimaAttivita = ua0; _gtChiedi = ch0; _gtRinnovo = null; }
 })();
 ok('Worker: il rinnovo vuole un permesso valido',   /'rinnova'\)\s*\{\s*if \(!\(await verificaTp/.test(String(_workerFetch.fetch)), true);
-// Presenze Cascione: modulo in costruzione, solo con la firma (19/11/2026).
+// Presenze Cascione dietro il PIN (19/11/2026); dal 23/11/2026 il modulo vero.
 (function () {
   var box = { innerHTML: '' }, vero = document.getElementById;
   document.getElementById = function (id) { return id === 'gb-presenze' ? box : null; };
-  var tp0 = _gtTp, sc0 = _gtScade, ua0 = _gtUltimaAttivita, st0 = _gtStato, chiuso;
+  var tp0 = _gtTp, sc0 = _gtScade, ua0 = _gtUltimaAttivita, st0 = _gtStato, chiuso, vuoto;
   try {
     gtPrefChiudi(''); _gtStato = { ok: true, resident: true, qm: true }; _gbRenderPresenze(); chiuso = box.innerHTML;
-    _gtTp = 'tp.1.x'; _gtScade = Date.now() + 60000; _gtUltimaAttivita = Date.now(); _gbRenderPresenze();
-  } finally { document.getElementById = vero; _gtTp = tp0; _gtScade = sc0; _gtUltimaAttivita = ua0; _gtStato = st0; }
-  ok('Presenze Cascione: chiede il PIN',            /id="gt-pin"/.test(chiuso) && !/Modulo in costruzione/.test(chiuso), true);
-  ok('Presenze Cascione: modulo in costruzione',   /Presenze Cascione/.test(box.innerHTML) && /Modulo in costruzione/.test(box.innerHTML), true);
-  ok('senza altre spiegazioni',                    /Prossima|Art Resort Galleria Umberto/.test(box.innerHTML), false);
-  ok('con la firma della Suite',                   /Nuovo modulo della Suite Compass QM, ideata e sviluppata da Pierpaolo Presta[\s\S]*Per esclusivo uso interno/.test(box.innerHTML), true);
+    _gtTp = 'tp.1.x'; _gtScade = Date.now() + 60000; _gtUltimaAttivita = Date.now();
+    _gpDati = { societa: {}, mesi: {} }; _gtuArch = {}; _gbRenderPresenze(); vuoto = box.innerHTML;
+  } finally { document.getElementById = vero; gtPrefChiudi(''); _gtTp = tp0; _gtScade = sc0; _gtUltimaAttivita = ua0; _gtStato = st0; }
+  ok('Presenze Cascione: chiede il PIN',            /id="gt-pin"/.test(chiuso) && !/Carica foglio/.test(chiuso), true);
+  ok('Presenze Cascione: senza fogli dice come si comincia', /Carica foglio di Cascione/.test(vuoto) && /Come si comincia/.test(vuoto), true);
+  ok('chiudendo il PIN i dati delle presenze si buttano', _gpDati, null);
 })();
+
+sez('Presenze Cascione: foglio del consulente compilato dai turni (23/11/2026)');
+// Un foglio finto come quello di Cascione: intestazione, riga «Cognome e nome» coi giorni,
+// totali S e A, per ogni persona le righe O/S/A. Nomi inventati.
+(function () {
+  function c(ref, v, s) { return /^\d+$/.test(String(v)) ? '<c r="' + ref + '" s="' + (s || 3) + '"><v>' + v + '</v></c>' : '<c r="' + ref + '" s="' + (s || 3) + '" t="inlineStr"><is><t>' + v + '</t></is></c>'; }
+  function col(n) { var t = ''; while (n > 0) { var r = (n - 1) % 26; t = String.fromCharCode(65 + r) + t; n = Math.floor((n - 1) / 26); } return t; }
+  var giorni = '', o1 = '', o2 = '';
+  for (var d = 1; d <= 31; d++) {
+    giorni += c(col(4 + d) + '8', d);
+    o1 += c(col(4 + d) + '9', d % 7 === 3 ? 'R' : d === 10 ? 'FE' : 6);
+    o2 += c(col(4 + d) + '12', d % 7 === 1 ? 'R' : 'NL');
+  }
+  var xml = '<worksheet><sheetData>' +
+    '<row r="2" spans="1:38">' + c('A2', 'DITTA O REPARTO') + '<c r="C2" s="4" t="s"><v>0</v></c></row>' +
+    '<row r="5">' + c('P5', 'Periodo') + '<c r="W5" s="9"><v>46296</v></c></row>' +
+    '<row r="8">' + c('A8', 'N. ord') + c('B8', 'Cognome e nome') + giorni + c('AJ8', 'S') + c('AK8', 'A') + '</row>' +
+    '<row r="9">' + c('A9', 4) + c('B9', 'Fittizi Marta') + c('D9', 'O') + o1 + '</row>' +
+    '<row r="10">' + c('D10', 'S') + '<c r="AJ10" s="5"><f>SUM(E10:AI10)</f><v>0</v></c></row>' +
+    '<row r="11">' + c('D11', 'A') + '<c r="AK11" s="5"/></row>' +
+    '<row r="12">' + c('A12', 7) + c('B12', 'DE PROVA GINO') + c('D12', 'O') + o2 + '</row>' +
+    '<row r="13">' + c('D13', 'S') + '</row><row r="14">' + c('D14', 'A') + '</row>' +
+    '<row r="16">' + c('A16', 'O =') + c('B16', 'Ore Ordinarie') + '</row>' +
+    '</sheetData></worksheet>';
+  var cond = _gpCondivise('<sst><si><t>Societa Finta &amp; C. Srl</t></si></sst>');
+  var celle = _gpCelle(xml, cond);
+  ok('Presenze: legge le stringhe condivise', celle.C2, 'Societa Finta & C. Srl');
+  var mod = _gpModello(celle);
+  ok('Presenze: nome della società dal foglio', mod.nome, 'Societa Finta & C. Srl');
+  ok('Presenze: 31 giorni, totali S e A, periodo', Object.keys(mod.giorni).length + ' ' + mod.giorni[1] + ' ' + mod.giorni[31] + ' ' + mod.colS + ' ' + mod.colA + ' ' + mod.periodo, '31 E AI AJ AK W5');
+  ok('Presenze: due persone, non la legenda', mod.persone.map(function (p) { return p.n + ':' + p.nome; }).join('|'), '4:Fittizi Marta|7:DE PROVA GINO');
+  ok('Presenze: righe S e A di ognuno', mod.persone.map(function (p) { return p.riga + '/' + p.rigaS + '/' + p.rigaA; }).join(' '), '9/10/11 12/13/14');
+  ok('Presenze: ore al giorno = le più frequenti nel foglio', mod.persone[0].ore, '6');
+  ok('Presenze: chi ha le notti NL nel foglio è notturno', mod.persone.map(function (p) { return p.notte; }).join(','), 'false,true');
+  ok('Presenze: senza riga «Cognome e nome» non è un foglio di Cascione', _gpModello({ B2: 'x' }), null);
+
+  // Aggancio ai nomi dei turni: cognome uguale, una sola possibilità.
+  var nomi = ['Fittizi M.', 'De Prova G.', "D'Esempio F.", 'Doppio A.', 'Doppio B.', 'Extra BKF'];
+  ok('Presenze: «Fittizi Marta» è «Fittizi M.»', _gpAbbina('Fittizi Marta', nomi), 'Fittizi M.');
+  ok('Presenze: cognome di due parole', _gpAbbina('DE PROVA GINO', nomi), 'De Prova G.');
+  ok('Presenze: l\'apostrofo non conta', _gpAbbina("D'ESEMPIO FRANCO", nomi), "D'Esempio F.");
+  ok('Presenze: due candidati, non sceglie', _gpAbbina('Doppio Ugo', nomi), '');
+  ok('Presenze: nessun candidato, a mano', _gpAbbina('Altro Nome', nomi), '');
+
+  // Dal codice del turno al foglio.
+  var p6 = { ore: '6', notte: false }, pN = { ore: '8', notte: true };
+  var casi = [['BKF SOUL', p6, '6'], ['R', p6, 'R'], ['R RICHIESTO', p6, 'R'], ['RIPOSO RICHIESTO', p6, 'R'], ['RECUPERO RIPOSO', p6, 'R'], ['REC RIP', p6, 'R'],
+    ['FERIE RICHIESTE', p6, 'FE'], ['RICHIESTA FERIE', p6, 'FE'], ['MALATTIA', p6, 'ML'], ['-', p6, '-'], ['', p6, '-'], ['////', p6, '-'],
+    ['NC', pN, 'NL'], ['NG', p6, '6'], ['INT GALL 10/18', p6, '6']];
+  ok('Presenze: codici del turno', casi.map(function (k) { return _gpDaTurno(k[0], k[1]).v; }).join(' '), casi.map(function (k) { return k[2]; }).join(' '));
+  ok('Presenze: un riposo scritto in mezzo al codice si segnala', !!_gpDaTurno('BRIGIDA RIPOSO SAL', p6).chk, true);
+
+  // Compilazione del mese: febbraio 2027 ha 28 giorni; settimana mancante; correzioni a mano.
+  mod.persone[0].turno = 'Fittizi M.'; mod.persone[1].turno = '';
+  var arch = { '2027-02-01': { giorni: [{ data: '2027-02-01', shifts: { 'Fittizi M.': 'R' } }, { data: '2027-02-02', shifts: { 'Fittizi M.': 'BKF GALL' } }, { data: '2027-02-03', shifts: { 'Altro X.': 'AC' } }] } };
+  var corr = { o: { 'FITTIZI_MARTA|2': '3' }, s: { 'FITTIZI_MARTA|2': '2' }, a: { 'FITTIZI_MARTA|5': 'PE' } };
+  var righe = _gpCompila(mod, _gpGiorniTurni(arch), 2027, 1, corr);
+  ok('Presenze: febbraio 2027 ha 28 giorni', righe[0].o.length, 28);
+  ok('Presenze: dai turni R, poi la correzione a mano, poi «-» se non c\'è nel turno', righe[0].o.slice(0, 3).map(function (x) { return x.v + (x.man ? '*' : ''); }).join(' '), 'R 3* -');
+  ok('Presenze: la correzione ricorda il valore dei turni', righe[0].o[1].dai, '6');
+  ok('Presenze: giorno senza turno caricato da controllare', !!righe[0].o[3].chk && righe[0].o[3].v, '');
+  ok('Presenze: chi non è nei turni resta vuoto e senza avvisi per giorno', righe[1].o.every(function (x) { return x.v === '' && !x.chk; }), true);
+  mod.persone[1].turno = 'De Prova G.';
+  var r2 = _gpCompila(mod, _gpGiorniTurni(arch), 2027, 1, null);
+  ok('Presenze: agganciato ma mai nei turni del mese: a mano, non «-»', r2[1].assente + ' ' + r2[1].o.every(function (x) { return x.v === ''; }), 'true true');
+  ok('Presenze: chi nel mese c\'è non è assente', r2[0].assente, false);
+  mod.persone[1].turno = '';
+  ok('Presenze: righe S e A dalle correzioni', righe[0].s[1].v + ' ' + righe[0].a[4].v + ' ' + _gpSomma(righe[0].s), '2 PE 2');
+
+  // Riscrittura del foglio: solo le celle indicate, stile tenuto, formula tolta, celle mancanti inserite.
+  var out = _gpCelleExport(mod, righe, 2027, 1);
+  ok('Presenze: il 29-31 di febbraio si svuotano', out.AG9 + '|' + out.AI9, '|');
+  ok('Presenze: totale S nella sua colonna', out.AJ10, '2');
+  ok('Presenze: periodo = 1° febbraio 2027', out.W5.num, 46419);
+  var nuovo = _gpScrivi(xml, out), dopo = _gpCelle(nuovo, cond);
+  ok('Presenze: il foglio riscritto si rilegge', dopo.E9 + ' ' + dopo.F9 + ' ' + dopo.G9 + ' ' + dopo.F10 + ' ' + dopo.I11 + ' ' + dopo.AJ10 + ' ' + dopo.W5, 'R 3 - 2 PE 2 46419');
+  ok('Presenze: nome e intestazione restano', dopo.B9 + ' / ' + dopo.C2 + ' / ' + dopo.B16, 'Fittizi Marta / Societa Finta & C. Srl / Ore Ordinarie');
+  ok('Presenze: lo stile della cella resta', /<c r="E9" s="3" t="inlineStr"><is><t>R<\/t><\/is><\/c>/.test(nuovo), true);
+  ok('Presenze: la formula del totale lascia il posto al numero', /<c r="AJ10" s="5"><v>2<\/v><\/c>/.test(nuovo) && !/SUM\(E10/.test(nuovo), true);
+  ok('Presenze: celle mancanti inserite in ordine di colonna', /<c r="D10"[^]*?<c r="E10"[^]*?<c r="F10"[^]*?<c r="AJ10"/.test(nuovo), true);
+  ok('Presenze: un testo con & resta XML valido', _gpCella('B3', '', 'A & B'), '<c r="B3" t="inlineStr"><is><t>A &amp; B</t></is></c>');
+
+  // Lo zip del file Excel: CRC giusto e andata/ritorno.
+  ok('Presenze: CRC32 standard', _gpCrc(_gpUtf8('123456789')).toString(16), 'cbf43926');
+  var zip = _gpZip({ '[Content_Types].xml': _gpUtf8('<Types/>'), 'xl/worksheets/sheet1.xml': _gpUtf8(nuovo) });
+  var voci = _gpVoci(zip);
+  ok('Presenze: lo zip si rilegge uguale', voci.map(function (v) { return v.nome + ':' + v.met; }).join(' ') + ' ' + (_gpDaUtf8(voci[1].dati) === nuovo), '[Content_Types].xml:0 xl/worksheets/sheet1.xml:0 true');
+  ok('Presenze: un file che non è un xlsx si dice', (function () { try { _gpVoci(_gpUtf8('ciao')); return 'letto'; } catch (e) { return e.message; } })(), 'Il file non è un Excel (.xlsx)');
+})();
+ok('Presenze: Worker, i dati solo col permesso del PIN', /az === 'presenze' \|\| az === 'presenze-salva'\) \{\s*if \(!\(await verificaTp/.test(String(_workerFetch.fetch)), true);
+ok('Presenze: Worker, spenta vale anche qui', /'storico', 'presenze', 'presenze-salva'\]\.includes\(az\)/.test(String(_workerFetch.fetch)), true);
+ok('Presenze: Worker, una cella alla volta rileggendo la chiave', /parte === 'cella'[\s\S]{0,400}ri\[cella\] = String\(corpo\.valore\)/.test(String(_workerFetch.fetch)) && /QM_STORAGE\.get\('qm_presenze_cascione'\)/.test(String(_workerFetch.fetch)), true);
+ok('Presenze: nel backup di Compass', QM_BACKUP_FISSE.indexOf('qm_presenze_cascione') >= 0, true);
+ok('Presenze: una correzione non salvata si dice e si annulla', /if\(!j\.ok\)\{if\(prima===undefined\)delete riga\[cella\];else riga\[cella\]=prima;_gpMsg='Correzione NON salvata/.test(String(gpMetti)), true);
 
 ok('Galleria: l\'archivio apre sull\'ultima settimana', /_gtuSettSel===undefined\)_gtuSettSel=chiavi\[0\]/.test(String(gtuRenderArchivio)), true);
 (function () {

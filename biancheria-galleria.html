@@ -146,6 +146,83 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
   .stato-box{min-width:100%;}
 }
 
+/* ── Presenze Cascione (23/11/2026): foglio presenze compilato dai turni ── */
+.gp-wrap{display:flex;flex-direction:column;gap:12px;}
+.gp-scelte{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.gp-pill{border:1px solid var(--border);background:var(--surface);color:var(--text-muted);border-radius:999px;padding:6px 13px;font-size:var(--fs-xs);font-weight:600;font-family:inherit;cursor:pointer;}
+.gp-pill.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.gp-carica{border:1px dashed var(--border);background:transparent;color:var(--accent);border-radius:999px;padding:6px 13px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;}
+.gp-nota{font-size:var(--fs-xxs);color:var(--text-dim);}
+.gp-mese{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:var(--fs-sm);font-weight:600;}
+.gp-mese button{border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:6px;width:30px;height:30px;font-family:inherit;font-size:15px;cursor:pointer;}
+.gp-err{padding:9px 12px;border-radius:8px;background:var(--red-bg);color:var(--red);font-size:var(--fs-xs);font-weight:600;}
+.gp-kpi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+.gp-kpi .kpi-card{padding:14px 14px 12px;min-width:0;}
+.gp-kpi .kpi-value{font-size:28px;}
+.gp-kpi .gp-am{border-top-color:var(--amber);}
+.gp-kpi-sub{font-size:var(--fs-xxs);color:var(--text-muted);margin-top:5px;}
+.gp-avv{display:flex;gap:10px;align-items:flex-start;padding:9px 14px;font-size:var(--fs-xs);}
+.gp-avv+.gp-avv{border-top:1px solid var(--border-light);}
+.gp-avv small{display:block;color:var(--text-dim);font-size:var(--fs-xxs);}
+.gp-avv button{margin-left:auto;border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:6px;padding:3px 9px;font-size:var(--fs-xxs);font-weight:600;font-family:inherit;white-space:nowrap;cursor:pointer;}
+.gp-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;white-space:nowrap;}
+.gp-tag.am{background:var(--amber-bg);color:var(--amber);}
+.gp-tag.rd{background:var(--red-bg);color:var(--red);}
+.gp-tag.gd{background:var(--gold-bg);color:var(--gold);}
+.gp-tag.ok{background:var(--green-bg);color:var(--green);}
+.gp-griglia{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.gp-tab{border-collapse:separate;border-spacing:0;font-size:var(--fs-xxs);font-variant-numeric:tabular-nums;}
+.gp-tab th,.gp-tab td{border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);text-align:center;padding:0;height:28px;min-width:28px;}
+.gp-tab thead th{font-size:10.5px;color:var(--text-dim);font-weight:600;background:var(--surface);line-height:1.15;}
+.gp-tab thead th.dom{color:var(--red);}
+.gp-tab .gp-nome{position:sticky;left:0;z-index:2;background:var(--surface);text-align:left;padding:0 10px;min-width:160px;max-width:160px;border-right:2px solid var(--border);}
+.gp-tab td.gp-nome b{display:block;font-size:var(--fs-xs);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gp-tab td.gp-nome small{color:var(--text-dim);font-size:10.5px;}
+.gp-tab td.gp-r{min-width:22px;font-weight:700;color:var(--text-dim);font-size:10.5px;background:var(--surface2);}
+.gp-tab tr.gp-pr td{border-top:2px solid var(--border);}
+.gp-tab td.gp-c{cursor:pointer;position:relative;font-weight:600;}
+.gp-tab td.gp-c:hover{background:var(--accent-bg);}
+.gp-tab td.gp-c:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+.gp-tab .gp-v-R{color:var(--text-dim);background:var(--surface2);}
+.gp-tab .gp-v-FE{background:var(--gold-bg);color:var(--gold);}
+.gp-tab .gp-v-ML{background:var(--red-bg);color:var(--red);}
+.gp-tab .gp-v-NL{background:var(--accent-bg);color:var(--accent);}
+.gp-tab .gp-v-x{background:var(--green-bg);color:var(--green);}
+.gp-tab .gp-v-trat{color:var(--text-dim);}
+.gp-tab td.gp-man::after{content:'';position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:var(--gold);}
+.gp-tab td.gp-chk{box-shadow:inset 0 0 0 2px var(--amber);}
+.gp-tab .gp-tot{font-weight:700;min-width:40px;background:var(--surface2);}
+.gp-leg{display:flex;flex-wrap:wrap;gap:6px 14px;padding:10px 14px;font-size:var(--fs-xxs);color:var(--text-muted);border-top:1px solid var(--border-light);}
+.gp-leg span{display:inline-flex;align-items:center;gap:5px;}
+.gp-leg i{display:inline-block;min-width:22px;padding:1px 4px;border-radius:4px;text-align:center;font-style:normal;font-weight:700;font-size:10px;background:var(--surface2);}
+.gp-leg i.gp-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);min-width:0;padding:0;}
+.gp-leg i.gp-box{width:14px;height:14px;min-width:0;padding:0;background:transparent;box-shadow:inset 0 0 0 2px var(--amber);}
+.gp-pers{display:flex;align-items:center;gap:10px;padding:8px 14px;font-size:var(--fs-xs);flex-wrap:wrap;}
+.gp-pers+.gp-pers{border-top:1px solid var(--border-light);}
+.gp-pers b{min-width:0;flex:1;}
+.gp-pers small{color:var(--text-dim);}
+.gp-pers select{font-family:inherit;font-size:var(--fs-xs);padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);}
+.gp-azioni{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.gp-azioni .gp-nota{flex:1;min-width:200px;}
+.gp-pop{position:fixed;z-index:500;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px;width:270px;}
+.gp-pop h3{margin:0 0 2px;font-size:var(--fs-sm);}
+.gp-pop .gp-da{font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:8px;}
+.gp-ops{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;}
+.gp-ops button{border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:6px 0;font-size:var(--fs-xs);font-weight:700;font-family:inherit;color:var(--text);cursor:pointer;}
+.gp-ops button.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent);}
+.gp-altro{display:flex;gap:6px;margin-top:8px;}
+.gp-altro input{flex:1;min-width:0;font-family:inherit;font-size:var(--fs-xs);padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);text-transform:uppercase;}
+.gp-altro button,.gp-giu button{border:none;background:none;color:var(--accent);font-weight:600;font-size:var(--fs-xs);font-family:inherit;cursor:pointer;padding:4px 2px;}
+.gp-giu{display:flex;justify-content:space-between;margin-top:8px;gap:6px;}
+@media(max-width:640px){
+  .gp-kpi{gap:6px;}
+  .gp-kpi .kpi-card{padding:10px 10px 9px;}
+  .gp-kpi .kpi-value{font-size:22px;}
+  .gp-mese{margin-left:0;}
+  .gp-tab .gp-nome{min-width:112px;max-width:112px;padding:0 7px;}
+  .gp-tab td.gp-nome b{white-space:normal;line-height:1.2;}
+}
+
 </style>
 </head>
 <body>
@@ -157,7 +234,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-23.4';
+const QM_APP_BUILD='2026-11-23.5';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -270,7 +347,7 @@ setInterval(qmCheckVersione,600000);
       <div class="nav-item" id="gb-nav-preferenze" onclick="bgSezione('preferenze')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15l2 2 4-4"/></svg></span></span>Preferenze<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
       <div class="nav-item" id="gb-nav-statistiche" onclick="bgSezione('statistiche')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span></span>Statistiche ricevimento<span class="nav-badge" data-nuovo-fino="2026-11-24" style="display:none;">NEW</span></div>
       <div class="nav-item" id="gb-nav-archivio" onclick="bgSezione('archivio')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/></svg></span></span>Archivio turni<span class="nav-badge" data-nuovo-fino="2026-11-24" style="display:none;">NEW</span></div>
-      <div class="nav-item" id="gb-nav-presenze" onclick="bgSezione('presenze')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 11l2 2 3.5-3.5"/></svg></span></span>Presenze Cascione<span class="nav-badge" data-nuovo-fino="2026-11-24" style="display:none;">NEW</span></div>
+      <div class="nav-item" id="gb-nav-presenze" onclick="bgSezione('presenze')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 11l2 2 3.5-3.5"/></svg></span></span>Presenze Cascione<span class="nav-badge" data-nuovo-fino="2026-12-07" style="display:none;">NEW</span></div>
       <div class="nav-section">Gestione Biancheria</div>
       <div class="nav-item" id="gb-nav-consumo" onclick="bgSezione('consumo')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span></span>Consumo Biancheria</div>
       <div class="nav-item" id="gb-nav-conteggio" onclick="bgSezione('conteggio')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11l2 2 4-4"/><path d="M9 17h6"/></svg></span></span>Conteggio Biancheria<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
@@ -3753,6 +3830,9 @@ async function gtPrefEntra(){
 // Chiude: via permesso, richieste e orologio. Lo si chiama uscendo dalla voce e allo scadere.
 function gtPrefChiudi(msg){
   _gtTp=null;_gtScade=0;_gtData=[];_gtMsg=msg||'';_gtuArch=null;
+  // Presenze Cascione: anche i dati delle presenze si buttano chiudendo (23/11/2026).
+  // (let dichiarate più in basso: dentro try, per il caso di una chiamata a caricamento)
+  try{_gpDati=null;_gpErrore='';_gpMsg='';_gpChiudiPop();}catch(e){}
   if(_gtTimer){clearTimeout(_gtTimer);_gtTimer=null;}
   if(_gtOrologio){clearInterval(_gtOrologio);_gtOrologio=null;}
 }
@@ -4836,13 +4916,406 @@ function _gtuSenzaEsclusi(data){
 // (16/11/2026) Il conteggio a scorrere di Compass parte dalla dotazione da contratto: per
 // Art Resort e Santa Brigida i contratti di fornitura con Raimondo non ci sono ancora.
 // Testo e firma d'autore approvati dal QM sull'anteprima.
-// Presenze Cascione (19/11/2026, QM): per ora solo la pagina «modulo in costruzione», senza altro,
-// dietro lo stesso PIN delle altre voci di Gestione Turnazione.
+// ── PRESENZE CASCIONE (23/11/2026, QM) ──
+// Ogni mese il Front Office Manager manda al consulente Cascione un foglio presenze per
+// società (Ge.Ri.Art., Booking Elite, Geriart Group…). Il MODELLO è il foglio di Cascione
+// stesso, caricato una volta per società: da lì (e da nient'altro: niente DVR, scelta del QM)
+// vengono nomi, numeri d'ordine, ore al giorno e chi scrive le notti come NL. La griglia si
+// compila dall'archivio dei turni (qm_turni_storico, stesso permesso del PIN), si corregge a
+// mano giorno per giorno, e si scarica l'Excel identico al foglio di Cascione: si riscrivono
+// solo le celle dei giorni, i totali S/A e il periodo, tutto il resto del file resta suo.
+// I dati stanno in qm_presenze_cascione e passano SOLO dal Worker col permesso del PIN
+// (azioni «presenze» e «presenze-salva»): il codice della Galleria non legge chiavi qm_.
+// Il Worker salva un pezzo alla volta (una società, un mese, UNA cella): due computer che
+// correggono insieme non si cancellano le correzioni a vicenda.
+// Prima versione del 19/11/2026: solo la pagina «modulo in costruzione».
+const GP_MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const GP_GG=['D','L','M','M','G','V','S'];
+let _gpDati=null,_gpInCorso=null,_gpSoc='',_gpMese=null,_gpMsg='',_gpPersAperto=false,_gpSel=null,_gpErrore='';
+
+// ─ Testo e XML ─
+function _gpXml(s){return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(m,n)=>String.fromCharCode(+n)).replace(/&#x([0-9a-f]+);/gi,(m,n)=>String.fromCharCode(parseInt(n,16))).replace(/&amp;/g,'&');}
+function _gpXmlEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function _gpCol(ref){return String(ref).replace(/\d+/g,'');}
+function _gpRiga(ref){return +String(ref).replace(/\D+/g,'');}
+function _gpColNum(c){let n=0;for(const ch of String(c))n=n*26+ch.charCodeAt(0)-64;return n;}
+// Byte <-> testo UTF-8 senza TextEncoder (che nei controlli non c'è).
+function _gpUtf8(s){const t=unescape(encodeURIComponent(String(s))),b=new Uint8Array(t.length);for(let i=0;i<t.length;i++)b[i]=t.charCodeAt(i);return b;}
+function _gpDaUtf8(b){let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,Array.prototype.slice.call(b,i,i+0x8000));try{return decodeURIComponent(escape(s));}catch(e){return s;}}
+function _gpB64(b){let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,Array.prototype.slice.call(b,i,i+0x8000));return btoa(s);}
+function _gpDaB64(s){const t=atob(s),b=new Uint8Array(t.length);for(let i=0;i<t.length;i++)b[i]=t.charCodeAt(i);return b;}
+function _gpNorm(s){return String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z ]+/g,'').replace(/\s+/g,' ').trim();}
+function _gpChiave(p){return _gpNorm(p&&p.nome).replace(/ /g,'_');}
+function _gpId(nome){return _gpNorm(nome).toLowerCase().replace(/ /g,'-').slice(0,40)||'societa';}
+
+// ─ File .xlsx: è uno zip. Si legge e si riscrive qui, senza librerie da internet ─
+const _gpCrcT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function _gpCrc(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=_gpCrcT[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+// Le voci dello zip così come sono (compresse o no): [{nome,met,dati}].
+function _gpVoci(buf){
+  const b=buf instanceof Uint8Array?buf:new Uint8Array(buf),dv=new DataView(b.buffer,b.byteOffset,b.byteLength);
+  let e=-1;for(let i=b.length-22;i>=Math.max(0,b.length-65557);i--)if(dv.getUint32(i,true)===0x06054b50){e=i;break;}
+  if(e<0)throw new Error('Il file non è un Excel (.xlsx)');
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const out=[];
+  for(let i=0;i<n;i++){
+    if(dv.getUint32(p,true)!==0x02014b50)throw new Error('Il file Excel è rovinato');
+    const met=dv.getUint16(p+10,true),cs=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+    const nome=_gpDaUtf8(b.subarray(p+46,p+46+nl));
+    const ln=dv.getUint16(lo+26,true),lx=dv.getUint16(lo+28,true),ini=lo+30+ln+lx;
+    out.push({nome,met,dati:b.slice(ini,ini+cs)});
+    p+=46+nl+xl+cl;
+  }
+  return out;
+}
+async function _gpInflate(d){
+  const s=new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(s).arrayBuffer());
+}
+async function _gpUnzip(buf){
+  const out={};
+  for(const v of _gpVoci(buf)){
+    if(v.met===0)out[v.nome]=v.dati;
+    else if(v.met===8)out[v.nome]=await _gpInflate(v.dati);
+    else throw new Error('Compressione del file Excel non supportata');
+  }
+  return out;
+}
+// Zip senza compressione: Excel lo apre come qualunque altro .xlsx.
+function _gpZip(files){
+  const parti=[],centr=[];let off=0;
+  for(const nome of Object.keys(files)){
+    const nb=_gpUtf8(nome),d=files[nome],crc=_gpCrc(d);
+    const h=new Uint8Array(30+nb.length),v=new DataView(h.buffer);
+    v.setUint32(0,0x04034b50,true);v.setUint16(4,20,true);v.setUint16(12,0x21,true);
+    v.setUint32(14,crc,true);v.setUint32(18,d.length,true);v.setUint32(22,d.length,true);v.setUint16(26,nb.length,true);h.set(nb,30);
+    const c=new Uint8Array(46+nb.length),w=new DataView(c.buffer);
+    w.setUint32(0,0x02014b50,true);w.setUint16(4,20,true);w.setUint16(6,20,true);w.setUint16(14,0x21,true);
+    w.setUint32(16,crc,true);w.setUint32(20,d.length,true);w.setUint32(24,d.length,true);w.setUint16(28,nb.length,true);w.setUint32(42,off,true);c.set(nb,46);
+    parti.push(h,d);centr.push(c);off+=h.length+d.length;
+  }
+  const cd=centr.reduce((t,c)=>t+c.length,0),e=new Uint8Array(22),x=new DataView(e.buffer);
+  x.setUint32(0,0x06054b50,true);x.setUint16(8,centr.length,true);x.setUint16(10,centr.length,true);x.setUint32(12,cd,true);x.setUint32(16,off,true);
+  const tutto=parti.concat(centr,[e]),out=new Uint8Array(tutto.reduce((t,a)=>t+a.length,0));let p=0;
+  tutto.forEach(a=>{out.set(a,p);p+=a.length;});
+  return out;
+}
+function _gpFoglioPath(z){return z['xl/worksheets/sheet1.xml']?'xl/worksheets/sheet1.xml':(Object.keys(z).find(k=>/^xl\/worksheets\/[^/]+\.xml$/.test(k))||'');}
+function _gpCondivise(xml){
+  const out=[],re=/<si>([\s\S]*?)<\/si>|<si\/>/g;let m;
+  while((m=re.exec(xml))){let t='';const rt=/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g;let x;while((x=rt.exec(m[1]||'')))t+=x[1];out.push(_gpXml(t));}
+  return out;
+}
+// Celle del foglio con un valore: {E9:'6', B9:'Nome Cognome', …}. I numeri interi come '6'.
+function _gpCelle(xml,cond){
+  const c={},re=/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;let m;
+  while((m=re.exec(xml))){
+    const at=m[1],inn=m[2]||'',ref=(at.match(/\br="([A-Z]+\d+)"/)||[])[1];if(!ref)continue;
+    const t=(at.match(/\bt="(\w+)"/)||[])[1];let v=null;
+    if(t==='inlineStr'){let s='';const rt=/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g;let x;while((x=rt.exec(inn)))s+=x[1];v=_gpXml(s);}
+    else{const vv=inn.match(/<v>([\s\S]*?)<\/v>/);if(vv){v=_gpXml(vv[1]);if(t==='s')v=(cond||[])[+v];}}
+    if(v==null)continue;v=String(v).trim();if(!v)continue;
+    if(/^-?\d+\.0+$/.test(v))v=v.replace(/\.0+$/,'');
+    c[ref]=v;
+  }
+  return c;
+}
+// Il foglio di Cascione: riga «Cognome e nome» coi giorni 1–31 e le colonne dei totali S e A;
+// per ogni persona tre righe (D = O, S, A). Ore al giorno = il numero più frequente della sua
+// riga O; notte NL = se nel foglio le sue notti sono scritte NL.
+function _gpModello(c){
+  const righe={};for(const ref in c){const r=_gpRiga(ref);(righe[r]=righe[r]||{})[_gpCol(ref)]=c[ref];}
+  const nr=Object.keys(righe).map(Number).sort((a,b)=>a-b);
+  const testa=nr.find(r=>Object.values(righe[r]).some(v=>/^cognome e nome$/i.test(v)));
+  if(!testa)return null;
+  const giorni={};let colS='',colA='';
+  Object.keys(righe[testa]).forEach(col=>{const v=righe[testa][col];
+    if(/^\d+$/.test(v)&&+v>=1&&+v<=31)giorni[+v]=col;else if(v==='S')colS=col;else if(v==='A')colA=col;});
+  if(Object.keys(giorni).length<28)return null;
+  const r2=righe[2]||{};const nome=r2.C||Object.keys(r2).sort((a,b)=>_gpColNum(a)-_gpColNum(b)).map(k=>r2[k]).find(v=>!/^ditta/i.test(v))||'';
+  let periodo='';
+  nr.filter(r=>r<testa).forEach(r=>{const cols=Object.keys(righe[r]).sort((a,b)=>_gpColNum(a)-_gpColNum(b));
+    const i=cols.findIndex(k=>/^periodo$/i.test(righe[r][k]));if(i>=0&&cols[i+1])periodo=cols[i+1]+r;});
+  const persone=[];
+  nr.filter(r=>r>testa).forEach(r=>{const R=righe[r];if(R.D!=='O'||!R.B)return;
+    const trova=x=>{for(let k=r+1;k<=r+3;k++)if(righe[k]&&righe[k].D===x)return k;return r+(x==='S'?1:2);};
+    const vals=Object.keys(giorni).map(d=>R[giorni[d]]).filter(Boolean),cnt={};
+    vals.filter(v=>/^\d+$/.test(v)).forEach(v=>{cnt[v]=(cnt[v]||0)+1;});
+    const ore=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||b-a)[0]||'8';
+    persone.push({nome:R.B,n:R.A||'',riga:r,rigaS:trova('S'),rigaA:trova('A'),ore,notte:vals.indexOf('NL')>=0});});
+  return {nome,giorni,colS,colA,periodo,persone};
+}
+
+// ─ Turni ─
+// Il nome del foglio («DE ROSA TERESA») si aggancia al nome dei turni («De Rosa T.») se il
+// cognome coincide; se ci sono due candidati non si sceglie: lo dice il FOM dall'elenco.
+function _gpAbbina(nome,nomiTurni){
+  const f=_gpNorm(nome);
+  const c=(nomiTurni||[]).filter(t=>{const b=_gpNorm(String(t).replace(/\s+[A-Za-z]\.?$/,''));return b&&(f===b||f.indexOf(b+' ')===0);});
+  return c.length===1?c[0]:'';
+}
+function _gpGiorniTurni(arch){const g={};Object.keys(arch||{}).sort().forEach(k=>{const w=arch[k];((w&&w.giorni)||[]).forEach(d=>{if(d&&d.data&&d.shifts)g[d.data]=d.shifts;});});return g;}
+function _gpNomiTurni(arch){const s=new Set();Object.values(_gpGiorniTurni(arch)).forEach(sh=>Object.keys(sh).forEach(n=>s.add(n)));return [...s].sort((a,b)=>a.localeCompare(b));}
+// Dal codice del turno al valore del foglio: ore della persona, R, FE, ML, PE, NL o «-».
+function _gpDaTurno(t,p){
+  const T=String(t==null?'':t).replace(/[​-‍⁠﻿]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
+  const ore=String((p&&p.ore)||8);
+  if(!T||/^[-\/]+$/.test(T))return {v:'-'};
+  if(/^(R\b|RIP|REC\b|REC\.|RECUPERO|RIPOSO|P RIP)/.test(T))return {v:'R'};
+  if(/^(FERIE|RICHIESTA FERIE)/.test(T))return {v:'FE'};
+  if(/^MALATTIA/.test(T))return {v:'ML'};
+  if(/^PERMESS/.test(T))return {v:'PE'};
+  if(/^N[CG]\b/.test(T))return {v:p&&p.notte?'NL':ore};
+  if(/RIPOSO|FERIE|MALATT|PERMESS/.test(T))return {v:ore,chk:'Nel turno: «'+T+'» · contato come giorno lavorato'};
+  return {v:ore};
+}
+function _gpGiorniMese(y,m){return new Date(y,m+1,0).getDate();}
+function _gpIso(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+function _gpMeseKey(y,m,id){return y+'-'+String(m+1).padStart(2,'0')+'|'+id;}
+const _gpHa=(o,k)=>!!o&&Object.prototype.hasOwnProperty.call(o,k);
+// Le righe del mese: per ogni persona i giorni O (dai turni, o corretti a mano), S e A (a mano).
+function _gpCompila(mod,gt,y,m,corr){
+  corr=corr||{};const o=corr.o||{},s=corr.s||{},a=corr.a||{},N=_gpGiorniMese(y,m);
+  return ((mod&&mod.persone)||[]).map(p=>{
+    const k=_gpChiave(p),G=[],S=[],A=[];
+    // Agganciato ai turni ma assente da TUTTI i giorni caricati del mese (chi c'era in altri
+    // mesi, come l'amministrazione): non è «-» tutto il mese, è da scrivere a mano.
+    let assente=false;
+    if(p.turno){const gg=[];for(let d=1;d<=N;d++){const sh=gt[_gpIso(y,m,d)];if(sh)gg.push(sh);}
+      assente=gg.length>0&&!gg.some(sh=>_gpHa(sh,p.turno));}
+    for(let d=1;d<=N;d++){
+      let c;
+      if(!p.turno||assente)c={v:''};
+      else{const sh=gt[_gpIso(y,m,d)];c=sh?_gpDaTurno(_gpHa(sh,p.turno)?sh[p.turno]:'',p):{v:'',chk:'Settimana non caricata nell\'archivio turni',manca:true};}
+      const kk=k+'|'+d;
+      if(_gpHa(o,kk))c={v:String(o[kk]),man:true,dai:c.v};
+      G.push(c);S.push({v:_gpHa(s,kk)?String(s[kk]):'',man:_gpHa(s,kk)});A.push({v:_gpHa(a,kk)?String(a[kk]):'',man:_gpHa(a,kk)});
+    }
+    return {p,k,o:G,s:S,a:A,assente};
+  });
+}
+function _gpSomma(arr){return arr.reduce((t,c)=>t+(/^\d+([.,]\d+)?$/.test(c.v)?parseFloat(String(c.v).replace(',','.')):0),0);}
+function _gpSeriale(y,m){return Math.round((Date.UTC(y,m,1)-Date.UTC(1899,11,30))/864e5);}
+// Le celle da riscrivere nel foglio di Cascione per quel mese.
+function _gpCelleExport(mod,righe,y,m){
+  const out={},N=_gpGiorniMese(y,m);
+  righe.forEach(r=>{const p=r.p;
+    for(let d=1;d<=31;d++){const col=mod.giorni[d];if(!col)continue;
+      out[col+p.riga]=d<=N?r.o[d-1].v:'';out[col+p.rigaS]=d<=N?r.s[d-1].v:'';out[col+p.rigaA]=d<=N?r.a[d-1].v:'';}
+    if(mod.colS)out[mod.colS+p.rigaS]=String(_gpSomma(r.s));
+    if(mod.colA)out[mod.colA+p.rigaA]=String(_gpSomma(r.a));
+  });
+  if(mod.periodo)out[mod.periodo]={num:_gpSeriale(y,m)};
+  return out;
+}
+function _gpCella(ref,attr,val){
+  const s=(String(attr).match(/\bs="(\d+)"/)||[])[1],base='<c r="'+ref+'"'+(s?' s="'+s+'"':'');
+  if(val&&typeof val==='object')return base+'><v>'+val.num+'</v></c>';
+  const v=String(val==null?'':val);
+  if(v==='')return base+'/>';
+  if(/^-?\d+(\.\d+)?$/.test(v))return base+'><v>'+v+'</v></c>';
+  return base+' t="inlineStr"><is><t>'+_gpXmlEsc(v)+'</t></is></c>';
+}
+// Riscrive solo le celle indicate: lo stile (s="…") resta quello del foglio, la formula che
+// c'era (i totali) lascia il posto al numero, le celle che mancano si inseriscono in ordine.
+function _gpScrivi(xml,out){
+  const perRiga={};Object.keys(out).forEach(ref=>{(perRiga[_gpRiga(ref)]=perRiga[_gpRiga(ref)]||{})[ref]=out[ref];});
+  const colDi=c=>_gpColNum(_gpCol((c.match(/\br="([A-Z]+\d+)"/)||[])[1]||''));
+  return xml.replace(/<row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/row>)/g,(tutto,at,dentro)=>{
+    const r=+((at.match(/\br="(\d+)"/)||[])[1]),nuovi=perRiga[r];if(!nuovi)return tutto;
+    const fatti=new Set();
+    let corpo=String(dentro||'').replace(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g,(c,cat)=>{
+      const ref=(cat.match(/\br="([A-Z]+\d+)"/)||[])[1];if(!ref||!_gpHa(nuovi,ref))return c;
+      fatti.add(ref);return _gpCella(ref,cat,nuovi[ref]);});
+    const resto=Object.keys(nuovi).filter(k=>!fatti.has(k));
+    if(resto.length){
+      const celle=corpo.match(/<c\b[^>]*?(?:\/>|>[\s\S]*?<\/c>)/g)||[];
+      resto.forEach(ref=>celle.push(_gpCella(ref,'',nuovi[ref])));
+      celle.sort((a,b)=>colDi(a)-colDi(b));corpo=celle.join('');
+    }
+    return '<row'+at.replace(/\s*spans="[^"]*"/,'')+'>'+corpo+'</row>';
+  });
+}
+// Le formule tolte non devono restare nella catena di calcolo, o Excel chiede di «riparare».
+function _gpTogliCalcChain(z){
+  if(!z['xl/calcChain.xml'])return;
+  delete z['xl/calcChain.xml'];
+  const t=k=>{if(z[k])z[k]=_gpUtf8(_gpDaUtf8(z[k]).replace(/<Override[^>]*calcChain\.xml"[^>]*\/>/g,'').replace(/<Relationship[^>]*calcChain\.xml"[^>]*\/>/g,''));};
+  t('[Content_Types].xml');t('xl/_rels/workbook.xml.rels');
+}
+
+// ─ Dati dal Worker ─
+function _gpPulisci(p){p=p&&typeof p==='object'?p:{};if(!p.societa||typeof p.societa!=='object')p.societa={};if(!p.mesi||typeof p.mesi!=='object')p.mesi={};return p;}
+async function _gpSalva(corpo){
+  let j;try{j=await _gtChiedi(Object.assign({azione:'presenze-salva',tp:_gtTp},corpo));}catch(e){j={ok:false,error:'Worker non raggiungibile: non salvato'};}
+  if(!j.ok&&/sconosciut/i.test(j.error||''))j.error='Il Worker va ripubblicato (versione del 23/11/2026): fino ad allora non si salva.';
+  if(!j.ok&&/scadut/i.test(j.error||'')){gtPrefChiudi(j.error);setTimeout(_gbRenderPresenze,0);}
+  return j;
+}
+function _gpMeseIniziale(){const o=new Date();if(o.getDate()>15)return {y:o.getFullYear(),m:o.getMonth()};return o.getMonth()?{y:o.getFullYear(),m:o.getMonth()-1}:{y:o.getFullYear()-1,m:11};}
+
 function _gbRenderPresenze(){
   const el=document.getElementById('gb-presenze');if(!el)return;
-  if(!_gtAperto()){_gtSchermataPin(el,'Presenze Cascione');return;}
-  el.innerHTML=_gtBanner()+_gbCantiere('Presenze Cascione','Modulo in costruzione',null);
+  if(!_gtAperto()){_gpChiudiPop();_gtSchermataPin(el,'Presenze Cascione');return;}
+  if(!_gpDati||!_gtuArch){
+    if(_gpErrore){el.innerHTML=_gtBanner()+`<div class="gp-err">${_gtEsc(_gpErrore)}</div>`;return;}
+    el.innerHTML=_gtBanner()+_gtAttesa('Apertura…');
+    if(!_gpInCorso)_gpInCorso=(async()=>{
+      let a,b;
+      try{[a,b]=await Promise.all([_gpDati?{ok:true,presenze:_gpDati}:_gtChiedi({azione:'presenze',tp:_gtTp}),_gtuArch?{ok:true,archivio:_gtuArch}:_gtChiedi({azione:'storico',tp:_gtTp})]);}
+      catch(e){a={ok:false,error:'Worker non raggiungibile'};}
+      _gpInCorso=null;
+      if(!a.ok||!b.ok){const err=(!a.ok?a:b).error||'Dati non letti';
+        if(/scadut/i.test(err))gtPrefChiudi(err);
+        else _gpErrore=/sconosciut/i.test(err)?'Il Worker va ripubblicato (versione del 23/11/2026): fino ad allora Presenze Cascione non si apre.':err;
+      }else{_gpDati=_gpPulisci(a.presenze);_gtuArch=(b.archivio&&typeof b.archivio==='object')?b.archivio:{};}
+      if(_bgSezione==='presenze')_gbRenderPresenze();
+    })();
+    return;
+  }
+  _gpDisegna(el);
 }
+function _gpClsV(v){return /^\d+([.,]\d+)?$/.test(v)?'':v==='-'||v===''?'gp-v-trat':['R','FE','ML','NL'].indexOf(v)>=0?'gp-v-'+v:'gp-v-x';}
+function _gpDisegna(el){
+  if(!_gpMese)_gpMese=_gpMeseIniziale();
+  const ids=Object.keys(_gpDati.societa).sort((a,b)=>String(_gpDati.societa[a].nome).localeCompare(String(_gpDati.societa[b].nome)));
+  if(!_gpSoc||!_gpDati.societa[_gpSoc])_gpSoc=ids[0]||'';
+  const carica=`<label class="gp-carica">+ Carica foglio di Cascione<input type="file" accept=".xlsx" hidden onchange="gpCaricaFoglio(this)"></label>`;
+  let h=_gtBanner()+'<div class="gp-wrap">'+(_gpMsg?`<div class="gp-err">${_gtEsc(_gpMsg)}</div>`:'');
+  h+=`<div class="gp-scelte">${ids.map(id=>`<button type="button" class="gp-pill${id===_gpSoc?' on':''}" onclick="gpScegli('${id}')">${_gtEsc(_gpDati.societa[id].nome)}</button>`).join('')}${carica}</div>`;
+  if(!_gpSoc){
+    h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Come si comincia</span></div><div class="gp-avv"><div>Carica il foglio presenze di Cascione di una società, quello di un mese qualsiasi. Da lì prendo nomi, numeri d'ordine e ore al giorno; poi ogni mese la griglia si compila da sola dai turni e scarichi il file pronto per Cascione. Un foglio per società.</div></div></div></div>`;
+    el.innerHTML=h;return;
+  }
+  const S=_gpDati.societa[_gpSoc],y=_gpMese.y,m=_gpMese.m,N=_gpGiorniMese(y,m);
+  const chiave=_gpMeseKey(y,m,_gpSoc),corr=_gpDati.mesi[chiave];
+  const righe=_gpCompila(S,_gpGiorniTurni(_gtuArch),y,m,corr);
+  h+=`<div class="gp-scelte"><span class="gp-nota">Elenco e ore dal foglio «${_gtEsc(S.nomeFile||'')}»</span><div class="gp-mese"><button type="button" aria-label="Mese prima" onclick="gpMeseVai(-1)">‹</button><span>${GP_MESI[m]} ${y}</span><button type="button" aria-label="Mese dopo" onclick="gpMeseVai(1)">›</button></div></div>`;
+  // Avvisi
+  let chk=0,man=0;const av=[],mancano=new Set();
+  righe.forEach((r,i)=>{r.o.forEach((c,d)=>{if(c.man)man++;if(c.chk&&!c.man){chk++;if(c.manca)mancano.add(d+1);else av.push(`<div class="gp-avv"><span class="gp-tag am">Da controllare</span><div><strong>${_gtEsc(r.p.nome)} · ${d+1}/${m+1}</strong><small>${_gtEsc(c.chk)}</small></div><button type="button" onclick="gpVedi(${i},${d})">Vedi</button></div>`);}});
+    r.s.forEach(c=>{if(c.man)man++;});r.a.forEach(c=>{if(c.man)man++;});});
+  if(mancano.size){const g=[...mancano].sort((a,b)=>a-b);
+    av.unshift(`<div class="gp-avv"><span class="gp-tag rd">Mancano</span><div><strong>Turni non caricati: ${g.length===1?'giorno '+g[0]:'giorni '+g[0]+'–'+g[g.length-1]} ${GP_MESI[m].toLowerCase()}</strong><small>Carica quei planning in Compass: finché mancano, quei giorni restano vuoti.</small></div></div>`);}
+  righe.forEach(r=>{if(r.assente)av.unshift(`<div class="gp-avv"><span class="gp-tag gd">A mano</span><div><strong>${_gtEsc(r.p.nome)}</strong><small>Nei turni di ${GP_MESI[m].toLowerCase()} non compare mai (nei turni è «${_gtEsc(r.p.turno)}»): i giorni vanno scritti a mano.</small></div></div>`);});
+  righe.forEach(r=>{if(!r.p.turno)av.unshift(`<div class="gp-avv"><span class="gp-tag gd">A mano</span><div><strong>${_gtEsc(r.p.nome)}</strong><small>Non è agganciato a nessun nome dei turni: i giorni vanno scritti a mano, oppure scegli il suo nome in «Persone del foglio».</small></div></div>`);});
+  h+=`<div class="gp-kpi"><div class="kpi-card"><div class="kpi-label">Persone</div><div class="kpi-value">${righe.length}</div><div class="gp-kpi-sub">dal foglio di Cascione</div></div>
+    <div class="kpi-card gp-am"><div class="kpi-label">Da controllare</div><div class="kpi-value">${chk}</div><div class="gp-kpi-sub">giorni dubbi o senza turno</div></div>
+    <div class="kpi-card"><div class="kpi-label">Corretti a mano</div><div class="kpi-value">${man}</div><div class="gp-kpi-sub">restano segnati</div></div></div>`;
+  h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Prima di inviare</span></div>${av.join('')||'<div class="gp-avv"><span class="gp-tag ok">Tutto a posto</span><div>Nessun giorno dubbio.</div></div>'}</div>`;
+  // Griglia
+  let t='<thead><tr><th class="gp-nome">N. · Cognome e nome</th><th class="gp-r"></th>';
+  for(let d=1;d<=N;d++){const w=new Date(y,m,d).getDay();t+=`<th class="${w===0?'dom':''}">${d}<br>${GP_GG[w]}</th>`;}
+  t+='<th class="gp-tot">TOT.</th></tr></thead><tbody>';
+  righe.forEach((r,i)=>{
+    const sub=!r.p.turno?'non è nei turni · a mano':r.assente?'assente dai turni del mese · a mano':(r.p.ore+' ore al giorno'+(r.p.notte?' · notti NL':''));
+    const riga=(tipo,arr)=>arr.map((c,d)=>`<td class="gp-c ${_gpClsV(c.v)}${c.man?' gp-man':''}${c.chk&&!c.man?' gp-chk':''}" tabindex="0" data-i="${i}" data-t="${tipo}" data-d="${d}">${_gtEsc(c.v)}</td>`).join('');
+    t+=`<tr class="gp-pr"><td class="gp-nome" rowspan="3"><b>${_gtEsc(r.p.n?r.p.n+'. ':'')}${_gtEsc(r.p.nome)}</b><small>${_gtEsc(sub)}</small></td><td class="gp-r">O</td>${riga('o',r.o)}<td class="gp-tot">${_gpSomma(r.o)}</td></tr>`;
+    t+=`<tr><td class="gp-r">S</td>${riga('s',r.s)}<td class="gp-tot">${_gpSomma(r.s)||''}</td></tr>`;
+    t+=`<tr><td class="gp-r">A</td>${riga('a',r.a)}<td class="gp-tot">${_gpSomma(r.a)||''}</td></tr>`;
+  });
+  h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Foglio presenze · ${GP_MESI[m]} ${y}</span><span class="gp-nota">tocca un giorno per cambiarlo</span></div>
+    <div class="gp-griglia"><table class="gp-tab" id="gp-tab">${t}</tbody></table></div>
+    <div class="gp-leg"><span><i>8</i>ore lavorate</span><span><i class="gp-v-R">R</i>riposo</span><span><i style="background:var(--gold-bg);color:var(--gold)">FE</i>ferie</span><span><i style="background:var(--red-bg);color:var(--red)">ML</i>malattia</span><span><i style="background:var(--accent-bg);color:var(--accent)">NL</i>notte</span><span><i class="gp-dot"></i>corretto a mano</span><span><i class="gp-box"></i>da controllare</span><span>S straordinari e A giustificativi: a mano</span></div></div>`;
+  // Persone del foglio: a chi corrisponde nei turni
+  const nomi=_gpNomiTurni(_gtuArch);
+  h+=`<div class="panel"><div class="panel-header" style="cursor:pointer;" onclick="gpPersone()"><span class="panel-title">Persone del foglio · nome nei turni</span><span class="gp-nota">${_gpPersAperto?'Chiudi ▴':'Apri ▾'}</span></div>`;
+  if(_gpPersAperto)h+=S.persone.map((p,i)=>`<div class="gp-pers"><b>${_gtEsc(p.n?p.n+'. ':'')}${_gtEsc(p.nome)} <small>· ${_gtEsc(p.ore)} ore${p.notte?' · notti NL':''}</small></b><select id="gp-turno-${i}" aria-label="Nome nei turni" onchange="gpTurno(${i},this.value)"><option value="">non è nei turni</option>${nomi.map(n=>`<option value="${_gtEsc(n)}"${n===p.turno?' selected':''}>${_gtEsc(n)}</option>`).join('')}</select></div>`).join('')+`<div class="gp-avv"><span class="gp-nota">Ore e notti vengono dal foglio di Cascione: se cambiano, ricarica il suo foglio aggiornato.</span></div>`;
+  h+='</div>';
+  h+=`<div class="gp-azioni"><button type="button" class="btn-primary" onclick="gpScarica()">Scarica Excel per Cascione</button>${corr?'<button type="button" class="btn-ghost" onclick="gpRicompila()">Rimetti tutto dai turni</button>':''}<span class="gp-nota">Esce identico al foglio di Cascione: cambiano solo i giorni, i totali S e A e il periodo.</span></div></div>`;
+  el.innerHTML=h;
+  const tab=document.getElementById('gp-tab');
+  if(tab){
+    tab.onclick=e=>{const c=e.target.closest('td.gp-c');if(c)gpApri(+c.dataset.i,c.dataset.t,+c.dataset.d,c);};
+    tab.onkeydown=e=>{const c=e.target.closest('td.gp-c');if(c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();gpApri(+c.dataset.i,c.dataset.t,+c.dataset.d,c);}};
+  }
+}
+function gpScegli(id){_gpChiudiPop();_gpSoc=id;_gpMsg='';_gbRenderPresenze();}
+function gpMeseVai(n){_gpChiudiPop();let m=_gpMese.m+n,y=_gpMese.y;if(m<0){m=11;y--;}if(m>11){m=0;y++;}_gpMese={y,m};_gbRenderPresenze();}
+function gpPersone(){_gpPersAperto=!_gpPersAperto;_gbRenderPresenze();}
+function gpVedi(i,d){const c=document.querySelector(`#gp-tab td.gp-c[data-i="${i}"][data-t="o"][data-d="${d}"]`);if(c)gpApri(i,'o',d,c);}
+
+// ─ Finestrella della cella ─
+function _gpChiudiPop(){const p=document.getElementById('gp-pop');if(p)p.remove();_gpSel=null;}
+function gpApri(i,tipo,d,cella){
+  _gpChiudiPop();
+  const S=_gpDati.societa[_gpSoc],y=_gpMese.y,m=_gpMese.m;
+  const r=_gpCompila(S,_gpGiorniTurni(_gtuArch),y,m,_gpDati.mesi[_gpMeseKey(y,m,_gpSoc)])[i];if(!r)return;
+  const c=r[tipo][d];_gpSel={i,tipo,d,k:r.k};
+  try{cella.scrollIntoView({block:'nearest',inline:'center'});}catch(e){}
+  const ops=tipo==='o'?[...new Set([String(r.p.ore),'8','6','5','4'])].slice(0,5).concat(['R','FE','ML','NL','PE']):tipo==='s'?['1','2','3','4','5']:['PE','AN','CO','AL','IN'];
+  const nomeRiga={o:'Ore ordinarie',s:'Ore straordinarie',a:'Altro · giustificativo'}[tipo];
+  const da=tipo!=='o'?nomeRiga:c.man?'Corretto a mano · dai turni sarebbe «'+(c.dai||'vuoto')+'»':c.chk?c.chk:'Dai turni di Compass';
+  const pop=document.createElement('div');pop.id='gp-pop';pop.className='gp-pop';
+  pop.innerHTML=`<h3>${_gtEsc(r.p.nome)} · ${d+1}/${m+1}</h3><div class="gp-da">${_gtEsc(da)}</div>
+    <div class="gp-ops">${ops.map(o=>`<button type="button" class="${o===c.v?'on':''}" onclick="gpMetti('${o}')">${o}</button>`).join('')}</div>
+    <div class="gp-altro"><input id="gp-altro" maxlength="6" placeholder="Altro (es. 7, CG, MT)" aria-label="Altro valore" onkeydown="if(event.key==='Enter')gpMettiAltro()"><button type="button" onclick="gpMettiAltro()">Metti</button></div>
+    <div class="gp-giu"><button type="button" onclick="gpMetti(null)">${tipo==='o'?'Rimetti dai turni':'Svuota'}</button><button type="button" onclick="_gpChiudiPop()">Chiudi</button></div>`;
+  document.body.appendChild(pop);
+  const b=cella.getBoundingClientRect(),w=270;
+  pop.style.left=Math.max(12,Math.min(innerWidth-w-12,b.left+b.width/2-w/2))+'px';
+  const h=pop.offsetHeight||200;pop.style.top=(b.bottom+6+h>innerHeight?Math.max(12,b.top-h-6):b.bottom+6)+'px';
+}
+function gpMettiAltro(){const v=String((document.getElementById('gp-altro')||{}).value||'').trim().toUpperCase().replace(',','.');
+  if(!/^[A-Z0-9.]{1,6}$/.test(v)){_gpMsg='Scrivi un numero di ore o una sigla della legenda di Cascione (lettere e numeri, massimo 6).';_gpChiudiPop();_gbRenderPresenze();return;}
+  gpMetti(v);}
+async function gpMetti(v){
+  const s=_gpSel;_gpChiudiPop();if(!s)return;
+  const chiave=_gpMeseKey(_gpMese.y,_gpMese.m,_gpSoc),cella=s.k+'|'+(s.d+1);
+  const mese=_gpDati.mesi[chiave]=_gpDati.mesi[chiave]||{};const riga=mese[s.tipo]=mese[s.tipo]||{};
+  const prima=_gpHa(riga,cella)?riga[cella]:undefined;
+  if(v==null)delete riga[cella];else riga[cella]=v;
+  _gpMsg='';_gbRenderPresenze();
+  const j=await _gpSalva({parte:'cella',chiave,riga:s.tipo,cella,valore:v});
+  if(!j.ok){if(prima===undefined)delete riga[cella];else riga[cella]=prima;_gpMsg='Correzione NON salvata: '+(j.error||'errore');_gbRenderPresenze();}
+}
+async function gpRicompila(){
+  const S=_gpDati.societa[_gpSoc];
+  if(!(await _gbConferma('Rimettere tutto dai turni?','Le correzioni a mano di '+GP_MESI[_gpMese.m]+' '+_gpMese.y+' per '+S.nome+' vanno perse, comprese le righe S e A.')))return;
+  const chiave=_gpMeseKey(_gpMese.y,_gpMese.m,_gpSoc),prima=_gpDati.mesi[chiave];
+  delete _gpDati.mesi[chiave];_gbRenderPresenze();
+  const j=await _gpSalva({parte:'mese',chiave,dati:null});
+  if(!j.ok){_gpDati.mesi[chiave]=prima;_gpMsg='Non fatto: '+(j.error||'errore');_gbRenderPresenze();}
+}
+async function gpTurno(i,nome){
+  const S=_gpDati.societa[_gpSoc],p=S.persone[i];if(!p)return;const prima=p.turno;
+  p.turno=nome;_gpMsg='';_gbRenderPresenze();
+  const j=await _gpSalva({parte:'societa',chiave:_gpSoc,dati:S});
+  if(!j.ok){p.turno=prima;_gpMsg='Non salvato: '+(j.error||'errore');_gbRenderPresenze();}
+}
+async function gpCaricaFoglio(inp){
+  const f=inp.files&&inp.files[0];inp.value='';if(!f)return;
+  try{
+    const buf=new Uint8Array(await f.arrayBuffer());
+    if(buf.length>1500000)throw new Error('Il file è troppo grande per un foglio presenze');
+    const z=await _gpUnzip(buf),foglio=_gpFoglioPath(z);
+    if(!foglio)throw new Error('Nel file non c\'è nessun foglio');
+    const cond=z['xl/sharedStrings.xml']?_gpCondivise(_gpDaUtf8(z['xl/sharedStrings.xml'])):[];
+    const mod=_gpModello(_gpCelle(_gpDaUtf8(z[foglio]),cond));
+    if(!mod||!mod.persone.length)throw new Error('Non sembra un foglio presenze di Cascione: manca la riga «Cognome e nome» con i giorni e le persone con le righe O, S, A');
+    const id=_gpId(mod.nome||f.name.replace(/\.xlsx$/i,'')),vecchio=_gpDati.societa[id],nomi=_gpNomiTurni(_gtuArch);
+    mod.persone.forEach(p=>{const pr=vecchio&&(vecchio.persone||[]).find(x=>_gpChiave(x)===_gpChiave(p));p.turno=pr&&typeof pr.turno==='string'?pr.turno:_gpAbbina(p.nome,nomi);});
+    const dati=Object.assign(mod,{nome:mod.nome||f.name,foglio,file:_gpB64(buf),nomeFile:f.name,caricato:Date.now()});
+    const j=await _gpSalva({parte:'societa',chiave:id,dati});
+    if(!j.ok)throw new Error(j.error||'Foglio non salvato');
+    _gpDati.societa[id]=dati;_gpSoc=id;_gpMsg='';
+  }catch(e){_gpMsg='Foglio non caricato: '+(e&&e.message||e);}
+  _gbRenderPresenze();
+}
+async function gpScarica(){
+  try{
+    const S=_gpDati.societa[_gpSoc],y=_gpMese.y,m=_gpMese.m;
+    const z=await _gpUnzip(_gpDaB64(S.file));
+    const righe=_gpCompila(S,_gpGiorniTurni(_gtuArch),y,m,_gpDati.mesi[_gpMeseKey(y,m,_gpSoc)]);
+    z[S.foglio]=_gpUtf8(_gpScrivi(_gpDaUtf8(z[S.foglio]),_gpCelleExport(S,righe,y,m)));
+    _gpTogliCalcChain(z);
+    const blob=new Blob([_gpZip(z)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=(GP_MESI[m]+' Presenze '+S.nome).replace(/[\\/:*?"<>|]+/g,' ').trim()+'.xlsx';
+    document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},3000);
+  }catch(e){_gpMsg='Excel non creato: '+(e&&e.message||e);_gbRenderPresenze();}
+}
+document.addEventListener('click',e=>{const p=document.getElementById('gp-pop');if(p&&!p.contains(e.target)&&!e.target.closest('td.gp-c,.gp-avv button'))_gpChiudiPop();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')_gpChiudiPop();});
 async function gtPresenzeEntra(){
   if(_gtAperto()){_gbRenderPresenze();return;}
   gtPrefChiudi('');

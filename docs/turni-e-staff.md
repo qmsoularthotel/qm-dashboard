@@ -427,10 +427,45 @@ sul titolo, e tre voci su una riga: **Preferenze**, **Statistiche ricevimento**,
 `gtu-arch-content`). Il PIN è uno per tutto il gruppo: aperta una voce, le altre si aprono senza
 rimetterlo finché non si chiude. `gtuRender` disegna statistiche o archivio secondo la sezione.
 
-**Presenze Cascione** (19/11/2026, QM): quarta voce del gruppo Gestione Turnazione nella Galleria
-(sezione `presenze`, `_gbRenderPresenze`). Per ora solo «Modulo in costruzione» con la firma della
-Suite, senza altre righe (`_gbCantiere` con `prossima` nullo). Chiede il PIN come le altre voci
-del gruppo (QM, 19/11/2026): `gtPresenzeEntra`, e `gtPrefRender` instrada su `_gbRenderPresenze`.
+**Presenze Cascione** (19/11/2026 voce vuota; **modulo vero dal 23/11/2026**, QM): quarta voce del
+gruppo Gestione Turnazione nella Galleria (sezione `presenze`, `_gbRenderPresenze`), dietro lo
+stesso PIN (`gtPresenzeEntra`). Ogni mese il Front Office Manager manda al consulente Cascione un
+foglio presenze **per società** (oggi Ge.Ri.Art., Booking Elite, Geriart Group).
+
+- **Il modello è il foglio di Cascione**, caricato una volta per società («+ Carica foglio di
+  Cascione»): nomi, numeri d'ordine (anche doppi: due «11» in Ge.Ri.Art.), ore al giorno (il numero
+  più frequente della riga O: 8, 6, 5) e chi scrive le notti **NL** (chi le ha NL nel foglio,
+  `notte`). **Il DVR non si usa** (scelta del QM). `_gpModello` cerca la riga «Cognome e nome» coi
+  giorni 1–31 e le colonne dei totali **S**/**A** (Geriart Group ha solo la A), la cella dopo
+  «Periodo» e per ogni persona le righe con D = O, S, A. Ricaricare il foglio di una società lo
+  sostituisce (stesso nome → stesso id) e tiene gli agganci ai turni già scelti.
+- **Aggancio ai turni** (`_gpAbbina`): cognome uguale al nome dei turni senza l'iniziale
+  (nomi di esempio: «DE LUCA ANNA» = «De Luca A.», «Rossi Maria» = «Rossi L.» anche con l’iniziale diversa); con due candidati non sceglie.
+  Si corregge in «Persone del foglio · nome nei turni». Chi non è agganciato, o non compare in
+  nessun giorno del mese (es. l'amministrazione: `assente`), è **a mano** e lo dice un avviso.
+- **Dal turno al foglio** (`_gpDaTurno`): lavoro = ore della persona; R/RIPOSO/RECUPERO/REC RIP =
+  **R**; FERIE (anche «richieste») = **FE**; MALATTIA = **ML**; PERMESSO = **PE**; NC/NG = **NL**
+  per i notturni, ore per gli altri (una notte fatta in emergenza = 8); vuoto o «-» = **-**. Un riposo o
+  una ferie scritti in mezzo al codice («BRIGIDA RIPOSO SAL») contano lavoro ma vanno controllati.
+  Giorni senza planning in archivio: vuoti, con l'avviso «Turni non caricati».
+- **Prova su ottobre 2026**: ricostruito dall'archivio coincide coi tre fogli veri di Cascione giorno
+  per giorno, tranne pochi cambi dell'ultimo minuto non ricaricati in Compass (si correggono a mano).
+- **Correzioni a mano** cella per cella (finestrella: ore, R, FE, ML, NL, PE o «Altro»; righe S e A
+  sempre a mano), segnate col pallino oro; «Rimetti dai turni» toglie la singola correzione,
+  «Rimetti tutto dai turni» quelle del mese. Una correzione non salvata si dice e si annulla.
+- **Scarica Excel per Cascione**: si riapre il SUO file e si riscrivono solo le celle dei giorni
+  (oltre fine mese vuote), i totali S e A (al posto delle formule) e il periodo
+  (`_gpCelleExport`, `_gpScrivi`: stile della cella tenuto, celle mancanti inserite in ordine).
+  Lo zip si legge (`DecompressionStream`) e si riscrive senza compressione (`_gpZip`) qui, senza
+  librerie da internet. Nome: «Novembre Presenze <società>.xlsx».
+- **Dati**: `qm_presenze_cascione` = `{societa:{id:{…modello, persone, file base64}}, mesi:{'AAAA-MM|id':{o,s,a}}}`.
+  Solo dal Worker col permesso del PIN: azioni `presenze` (lettura) e `presenze-salva` (una
+  società, un mese o **una cella** per volta, rileggendo la chiave: due computer non si cancellano
+  le correzioni). Bloccate anche dall'interruttore della Gestione Turnazione. Worker `2026-11-23a`.
+  Nel backup di Compass (`QM_BACKUP_FISSE`). Chiudendo il PIN i dati si buttano dalla pagina.
+- Controlli: «Presenze Cascione: foglio del consulente compilato dai turni» in `test/galleria.js`
+  (foglio finto con nomi inventati; sabotaggi provati: codici, legenda, stile, formula, ordine
+  delle celle, permesso del Worker, correzione non salvata).
 
 **Attesa dopo il PIN** (19/11/2026, QM): mentre il Worker controlla il PIN e la pagina si apre,
 al posto della schermata del PIN compare la bussola dello splash in piccolo, con l'ago che gira

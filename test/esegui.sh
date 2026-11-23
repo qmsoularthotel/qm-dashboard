@@ -614,7 +614,7 @@ t=lambda x:re.findall(r'miniapp-([a-z]+)-toggle"',x)
 sa,ga=t(s[a:b]),t(s[b:c])
 css=open('style.css',encoding='utf-8').read()
 riga='class="miniapp-grid miniapp-grid-galleria" id="miniappGridGalleria"' in s and '.miniapp-grid-galleria .miniapp-card-larga{grid-column:span 2;}' in css
-if not riga: sa=sa+['(Compass Ops e Registration non piu\' sulla stessa riga)']
+if not riga: sa=sa+['(Compass Ops e Registration non più sulla stessa riga)']
 print('ok' if sa==['bkf','cm','dvr','hk','inv'] and ga==['bg','rc'] else 'SoulArt '+','.join(sa)+' / Galleria '+','.join(ga))
 PY
 )

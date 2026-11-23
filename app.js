@@ -5225,7 +5225,7 @@ const QM_BACKUP_MAGAZZINI=['sa','ar'];
 // Elenco esplicito, non dedotto: una chiave dimenticata qui e' una chiave che nel backup non
 // c'e', e non lo scopriresti fino al giorno in cui serve. Il controllo in test/esegui.sh
 // verifica che ogni chiave scritta da Compass compaia in questo elenco.
-const QM_BACKUP_FISSE=['qm_bkf_intolleranze',
+const QM_BACKUP_FISSE=['qm_bkf_intolleranze','qm_presenze_cascione',
   'qm_piano','qm_bg_turnazione','qm_pin_ultimo','qm_weekData','qm_turni_storico','qm_arriviData','qm_rcGuests',
   'qm_pulData','qm_bkfData','qm_bkfGroups','qm_bkfNotes','qm_bkfChartData','qm_bkfARChartData',
   'qm_bkfSheetARData','qm_bkf_monthly_history','qm_bkf_banner',
@@ -5313,7 +5313,7 @@ async function qmEsportaArchivio(btn){
 // codice e server possono divergere: fino a oggi se ne accorgeva solo test/esegui.sh, cioe'
 // nessuno mentre lavora. Un controllo in esegui.sh verifica che questa costante combaci con
 // WORKER_VERSIONE in worker.js, altrimenti direbbe "da ripubblicare" per sempre.
-const WORKER_VERSIONE_ATTESA='2026-11-21a';
+const WORKER_VERSIONE_ATTESA='2026-11-23a';
 // ── ERRORI DEL PROGRAMMA — raccolti qui, perche' la console non la apre nessuno ──────
 // Quando qualcosa va storto nel codice, il messaggio finisce nella console del browser: il
 // QM non la apre (giustamente) e quindi un guasto puo' restare invisibile finche' non si

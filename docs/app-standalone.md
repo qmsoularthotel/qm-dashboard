@@ -200,7 +200,7 @@ Griglia mosaico a **3 colonne fisse** (`grid-template-columns:repeat(3,minmax(0,
   PIN** alla Gestione Turnazione (`qm_pin_ultimo` {ts, chi}, lo scrive il Worker a ogni PIN giusto)
   e l'**interruttore della sola Gestione Turnazione** (`qm_bg_turnazione` {attiva}). La chiave è
   `qm_` apposta: il codice della Galleria scrive le `bg_*` e potrebbe riaccenderla. Spenta, il
-  Worker (dal 2026-11-21a) risponde **423** ad apri/rinnova/dati/storico e la Galleria mostra
+  Worker (dal 2026-11-21a) risponde **423** ad apri/rinnova/dati/storico (dal 2026-11-23a anche presenze/presenze-salva) e la Galleria mostra
   «Momentaneamente spenta» al posto del PIN, chiudendo anche se era aperta.
 
 ### Stato colorato per card — `miniapp*Status()`

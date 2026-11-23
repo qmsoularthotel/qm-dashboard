@@ -17,7 +17,7 @@
 // Versione di questo file. Il Worker si pubblica a mano (copia-incolla su Cloudflare):
 // senza un numero dichiarato dal Worker stesso non c'è modo di sapere se quello in
 // produzione contiene davvero l'ultima correzione. Lo restituisce /versione.
-const WORKER_VERSIONE = '2026-11-21a';
+const WORKER_VERSIONE = '2026-11-23a';
 
 export default {
   async fetch(request, env) {
@@ -104,7 +104,7 @@ export default {
       // scrive le bg_*, e un interruttore che si riaccende da solo non spegne niente.
       // Spenta: non si apre e non si rinnova a nessuno, PIN giusto o no (423).
       const spenta = ((await leggi('qm_bg_turnazione')) || {}).attiva === false;
-      if (spenta && ['apri', 'imposta-resident', 'dati', 'rinnova', 'storico'].includes(az))
+      if (spenta && ['apri', 'imposta-resident', 'dati', 'rinnova', 'storico', 'presenze', 'presenze-salva'].includes(az))
         return json({ ok: false, spenta: true, error: 'La Gestione Turnazione è spenta dal Quality Manager' }, 423);
       // Ultimo accesso col PIN, per la scheda Compass OPS del Pannello: una scrittura per PIN.
       const segnaAccesso = chi => env.QM_STORAGE.put('qm_pin_ultimo', JSON.stringify({ ts: ora, chi }));
@@ -176,6 +176,40 @@ export default {
         let arch = {};
         try { arch = JSON.parse(await env.QM_STORAGE.get('qm_turni_storico') || '{}') || {}; } catch (e) { arch = {}; }
         return json({ ok: true, archivio: arch });
+      }
+      // Presenze Cascione (23/11/2026): fogli presenze per il consulente del lavoro, dietro lo
+      // stesso PIN. Stanno in una chiave qm_ (il codice della Galleria non la legge da /kv).
+      // Si salva UN pezzo alla volta — una società, un mese, una cella — rileggendo la chiave
+      // qui: due computer che correggono insieme non si cancellano a vicenda.
+      if (az === 'presenze' || az === 'presenze-salva') {
+        if (!(await verificaTp(env, corpo.tp))) return json({ ok: false, error: 'Permesso scaduto: inserisci di nuovo il PIN' }, 403);
+        let pr = {};
+        try { pr = JSON.parse(await env.QM_STORAGE.get('qm_presenze_cascione') || '{}') || {}; } catch (e) { pr = {}; }
+        if (!pr.societa || typeof pr.societa !== 'object') pr.societa = {};
+        if (!pr.mesi || typeof pr.mesi !== 'object') pr.mesi = {};
+        if (az === 'presenze') return json({ ok: true, presenze: pr });
+        const chiave = String(corpo.chiave || ''), parte = String(corpo.parte || '');
+        if (!/^[\w|-]{1,60}$/.test(chiave)) return json({ ok: false, error: 'Chiave non valida' }, 400);
+        if (parte === 'societa') {
+          if (corpo.dati == null) delete pr.societa[chiave];
+          else if (typeof corpo.dati === 'object') pr.societa[chiave] = corpo.dati;
+          else return json({ ok: false, error: 'Dati non validi' }, 400);
+        } else if (parte === 'mese') {
+          if (corpo.dati == null) delete pr.mesi[chiave];
+          else if (typeof corpo.dati === 'object') pr.mesi[chiave] = corpo.dati;
+          else return json({ ok: false, error: 'Dati non validi' }, 400);
+        } else if (parte === 'cella') {
+          const riga = String(corpo.riga || ''), cella = String(corpo.cella || '');
+          if (!['o', 's', 'a'].includes(riga) || !cella || cella.length > 80) return json({ ok: false, error: 'Cella non valida' }, 400);
+          const me = pr.mesi[chiave] || (pr.mesi[chiave] = {});
+          const ri = me[riga] || (me[riga] = {});
+          if (corpo.valore == null) delete ri[cella]; else ri[cella] = String(corpo.valore).slice(0, 8);
+          me.ts = ora;
+        } else return json({ ok: false, error: 'Parte non valida' }, 400);
+        const testo = JSON.stringify(pr);
+        if (testo.length > 5000000) return json({ ok: false, error: 'Troppi dati: togli un foglio vecchio' }, 413);
+        await env.QM_STORAGE.put('qm_presenze_cascione', testo);
+        return json({ ok: true });
       }
       return json({ ok: false, error: 'Azione sconosciuta' }, 400);
     }
