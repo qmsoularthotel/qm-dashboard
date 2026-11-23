@@ -452,6 +452,12 @@ foglio presenze **per società** (oggi Ge.Ri.Art., Booking Elite, Geriart Group)
   per giorno, tranne pochi cambi dell'ultimo minuto non ricaricati in Compass (si correggono a mano).
 - **Niente riquadri** Persone / Da controllare / Corretti a mano (tolti il 23/11/2026, QM: non servono): in cima solo «Prima di inviare».
 - **«+ Carica foglio di Cascione»** in alto solo finché non c'è nessun foglio; poi sta in fondo a «Persone del foglio» (QM, 23/11/2026). **R in rosso** come ML.
+- **Chi non c'è più** (QM, 23/11/2026): in «Persone del foglio» il pulsante «Non c'è più da <mese
+  mostrato>» mette `uscita` = 'AAAA-MM'. Da quel mese la persona sparisce dalla griglia e
+  dall'Excel: `_gpTogliRighe` elimina le sue tre righe e sposta in su righe, celle, formule
+  (`A18+1` → `A15+1`, `SUM(E14:AF14)` → `SUM(E11:AF11)`), celle unite (quelle tutte dentro le righe
+  tolte spariscono), riquadro bloccato, selezione e dimensione. I mesi prima restano com'erano;
+  «Rimetti» la riporta. Ricaricando il foglio l'uscita resta.
 - **Correzioni a mano** cella per cella (finestrella: ore, R, FE, ML, NL, PE o «Altro»; righe S e A
   sempre a mano), segnate col pallino oro; «Rimetti dai turni» toglie la singola correzione,
   «Rimetti tutto dai turni» quelle del mese. Una correzione non salvata si dice e si annulla.

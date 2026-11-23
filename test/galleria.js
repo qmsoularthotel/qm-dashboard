@@ -799,6 +799,27 @@ sez('Presenze Cascione: foglio del consulente compilato dai turni (23/11/2026)')
   ok('Presenze: celle mancanti inserite in ordine di colonna', /<c r="D10"[^]*?<c r="E10"[^]*?<c r="F10"[^]*?<c r="AJ10"/.test(nuovo), true);
   ok('Presenze: un testo con & resta XML valido', _gpCella('B3', '', 'A & B'), '<c r="B3" t="inlineStr"><is><t>A &amp; B</t></is></c>');
 
+  // Chi non c'è più: fuori dalla griglia da quel mese, e le sue righe tolte dal foglio.
+  mod.persone[0].uscita = '2027-02';
+  ok('Presenze: uscita da febbraio, a gennaio c\'è ancora', _gpCompila(mod, {}, 2027, 0, null).length, 2);
+  ok('Presenze: da febbraio non è più nella griglia', _gpCompila(mod, {}, 2027, 1, null).map(function (r) { return r.p.nome; }).join('|'), 'DE PROVA GINO');
+  ok('Presenze: e risulta fra chi non c\'è più', _gpUsciti(mod, 2027, 1).length + ' ' + _gpUsciti(mod, 2027, 0).length, '1 0');
+  delete mod.persone[0].uscita;
+  var xmlU = '<worksheet><dimension ref="A1:AL16"/><sheetViews><sheetView><pane ySplit="8" topLeftCell="D9" state="frozen"/><selection activeCell="D12" sqref="D12"/></sheetView></sheetViews><sheetData>' +
+    '<row r="8"><c r="A8"><v>1</v></c></row>' +
+    '<row r="9" spans="1:3"><c r="A9"><v>1</v></c><c r="B9" t="inlineStr"><is><t>Uno</t></is></c></row><row r="10"><c r="D10"/></row><row r="11"><c r="D11"/></row>' +
+    '<row r="12"><c r="A12"><f>+A9+1</f><v>2</v></c><c r="B12" t="inlineStr"><is><t>Due</t></is></c></row><row r="13"/><row r="14"><c r="AK14"><f>SUM(E14:AF14)</f></c></row>' +
+    '<row r="16"><c r="A16" t="inlineStr"><is><t>O =</t></is></c><c r="B16"><f>$B$12&amp;" x"</f></c></row>' +
+    '</sheetData><mergeCells count="4"><mergeCell ref="A9:A11"/><mergeCell ref="B9:C11"/><mergeCell ref="A12:A14"/><mergeCell ref="F16:H16"/></mergeCells></worksheet>';
+  var tolto = _gpTogliRighe(xmlU, [9, 10, 11]);
+  ok('Presenze: righe tolte e le altre salgono', (tolto.match(/<row r="\d+"/g) || []).join(','), '<row r="8",<row r="9",<row r="10",<row r="11",<row r="13"');
+  ok('Presenze: le celle seguono la riga', /<row r="9"><c r="A9"><f>[^<]*<\/f><v>2<\/v><\/c><c r="B9"/.test(tolto), true);
+  ok('Presenze: formule spostate', /SUM\(E11:AF11\)/.test(tolto) && /\$B\$9&amp;" x"/.test(tolto), true);
+  ok('Presenze: celle unite tolte o spostate', (tolto.match(/<mergeCell ref="[^"]+"/g) || []).join(',') + ' ' + /count="2"/.test(tolto), '<mergeCell ref="A9:A11",<mergeCell ref="F13:H13" true');
+  ok('Presenze: riquadro bloccato e selezione', /topLeftCell="D9"/.test(tolto) && /activeCell="D9" sqref="D9"/.test(tolto) && /<dimension ref="A1:AL13"/.test(tolto), true);
+  ok('Presenze: senza righe da togliere il foglio non cambia', _gpTogliRighe(xmlU, []), xmlU);
+  ok('Presenze: l\'Excel toglie le righe di chi non c\'è più', /_gpUsciti\(S,y,m\)\.forEach\(p=>togli\.push\(p\.riga,p\.rigaS,p\.rigaA\)\)/.test(String(gpScarica)) && /_gpTogliRighe\(_gpScrivi\(/.test(String(gpScarica)), true);
+
   // Lo zip del file Excel: CRC giusto e andata/ritorno.
   ok('Presenze: CRC32 standard', _gpCrc(_gpUtf8('123456789')).toString(16), 'cbf43926');
   var zip = _gpZip({ '[Content_Types].xml': _gpUtf8('<Types/>'), 'xl/worksheets/sheet1.xml': _gpUtf8(nuovo) });

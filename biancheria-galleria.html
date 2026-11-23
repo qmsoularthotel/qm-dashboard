@@ -165,6 +165,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 .gp-tag.rd{background:var(--red-bg);color:var(--red);}
 .gp-tag.gd{background:var(--gold-bg);color:var(--gold);}
 .gp-tag.ok{background:var(--green-bg);color:var(--green);}
+.gp-tag.gr{background:var(--surface2);color:var(--text-muted);}
 .gp-griglia{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .gp-tab{border-collapse:separate;border-spacing:0;font-size:var(--fs-xxs);font-variant-numeric:tabular-nums;}
 .gp-tab th,.gp-tab td{border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);text-align:center;padding:0;height:28px;min-width:28px;}
@@ -226,7 +227,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-23.7';
+const QM_APP_BUILD='2026-11-23.9';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -5065,9 +5066,14 @@ function _gpIso(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).pa
 function _gpMeseKey(y,m,id){return y+'-'+String(m+1).padStart(2,'0')+'|'+id;}
 const _gpHa=(o,k)=>!!o&&Object.prototype.hasOwnProperty.call(o,k);
 // Le righe del mese: per ogni persona i giorni O (dai turni, o corretti a mano), S e A (a mano).
+// Chi non c'è più (dimesso, fine contratto): p.uscita = primo mese 'AAAA-MM' in cui non è nel
+// foglio. Da quel mese sparisce dalla griglia e dall'Excel (le sue tre righe si tolgono); i mesi
+// prima restano com'erano (QM, 23/11/2026).
+function _gpNelMese(p,y,m){return !p||!p.uscita||(y+'-'+String(m+1).padStart(2,'0'))<p.uscita;}
+function _gpUsciti(mod,y,m){return ((mod&&mod.persone)||[]).filter(p=>!_gpNelMese(p,y,m));}
 function _gpCompila(mod,gt,y,m,corr){
   corr=corr||{};const o=corr.o||{},s=corr.s||{},a=corr.a||{},N=_gpGiorniMese(y,m);
-  return ((mod&&mod.persone)||[]).map(p=>{
+  return ((mod&&mod.persone)||[]).filter(p=>_gpNelMese(p,y,m)).map(p=>{
     const k=_gpChiave(p),G=[],S=[],A=[];
     // Agganciato ai turni ma assente da TUTTI i giorni caricati del mese (chi c'era in altri
     // mesi, come l'amministrazione): non è «-» tutto il mese, è da scrivere a mano.
@@ -5126,6 +5132,35 @@ function _gpScrivi(xml,out){
     }
     return '<row'+at.replace(/\s*spans="[^"]*"/,'')+'>'+corpo+'</row>';
   });
+}
+// Toglie righe intere dal foglio (chi non c'è più) e sposta in su tutto quello che sta sotto:
+// righe e celle, formule, celle unite, riquadri bloccati. Una cella unita tutta dentro le righe
+// tolte sparisce; le altre si accorciano o scendono.
+function _gpTogliRighe(xml,togli){
+  const T=[...new Set((togli||[]).map(Number))].sort((a,b)=>a-b);if(!T.length)return xml;
+  const via=r=>T.indexOf(r)>=0,nuova=r=>r-T.filter(x=>x<r).length;
+  const ref1=x=>x.replace(/^(\$?[A-Z]{1,3}\$?)(\d+)$/,(q,c,n)=>c+nuova(+n));
+  const area=rg=>{const [a,b]=String(rg).split(':');
+    if(!b)return via(_gpRiga(a))?null:ref1(a);
+    let ra=_gpRiga(a),rb=_gpRiga(b);while(ra<=rb&&via(ra))ra++;while(rb>=ra&&via(rb))rb--;
+    if(ra>rb)return null;
+    return a.replace(/\d+$/,'')+nuova(ra)+':'+b.replace(/\d+$/,'')+nuova(rb);};
+  const formula=f=>f.replace(/(^|[^A-Za-z0-9_.!$])(\$?[A-Z]{1,3}\$?)(\d+)(?![\dA-Za-z_(])/g,(q,pr,c,n)=>pr+c+nuova(+n));
+  xml=xml.replace(/<row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/row>)/g,(tutto,at,dentro)=>{
+    const rr=+((at.match(/\br="(\d+)"/)||[])[1]);if(via(rr))return '';
+    const at2=at.replace(/\br="\d+"/,'r="'+nuova(rr)+'"');
+    if(dentro===undefined)return '<row'+at2+'/>';
+    const d2=dentro.replace(/(<c\b[^>]*?\br=")([A-Z]+)(\d+)"/g,(q,pr,c,n)=>pr+c+nuova(+n)+'"')
+      .replace(/(<f\b[^>]*?\bref=")([^"]+)"/g,(q,pr,v)=>pr+(area(v)||v)+'"')
+      .replace(/(<f\b[^>]*>)([^<]*)(<\/f>)/g,(q,a,f,b)=>a+formula(f)+b);
+    return '<row'+at2+'>'+d2+'</row>';});
+  xml=xml.replace(/<mergeCell ref="([^"]+)"\/>/g,(q,v)=>{const n=area(v);return n&&n.indexOf(':')>0?'<mergeCell ref="'+n+'"/>':'';});
+  xml=xml.replace(/<mergeCells\b([^>]*)>([\s\S]*?)<\/mergeCells>/,(q,at,d)=>{const n=(d.match(/<mergeCell\b/g)||[]).length;
+    return n?'<mergeCells'+at.replace(/count="\d+"/,'count="'+n+'"')+'>'+d+'</mergeCells>':'';});
+  xml=xml.replace(/(<dimension ref=")([^"]+)"/,(q,pr,v)=>pr+(area(v)||v)+'"');
+  xml=xml.replace(/(\b(?:topLeftCell|activeCell)=")([A-Z]+\d+)"/g,(q,pr,v)=>pr+ref1(v)+'"');
+  xml=xml.replace(/(\bsqref=")([^"]+)"/g,(q,pr,v)=>pr+(v.split(' ').map(x=>area(x)||ref1(x.split(':')[0])).join(' '))+'"');
+  return xml;
 }
 // Le formule tolte non devono restare nella catena di calcolo, o Excel chiede di «riparare».
 function _gpTogliCalcChain(z){
@@ -5190,6 +5225,7 @@ function _gpDisegna(el){
     r.s.forEach(c=>{if(c.man)man++;});r.a.forEach(c=>{if(c.man)man++;});});
   if(mancano.size){const g=[...mancano].sort((a,b)=>a-b);
     av.unshift(`<div class="gp-avv"><span class="gp-tag rd">Mancano</span><div><strong>Turni non caricati: ${g.length===1?'giorno '+g[0]:'giorni '+g[0]+'–'+g[g.length-1]} ${GP_MESI[m].toLowerCase()}</strong><small>Carica quei planning in Compass: finché mancano, quei giorni restano vuoti.</small></div></div>`);}
+  _gpUsciti(S,y,m).forEach(p=>av.push(`<div class="gp-avv"><span class="gp-tag gr">Non c'è più</span><div><strong>${_gtEsc(p.nome)}</strong><small>Fuori dal foglio da ${_gpMeseNome(p.uscita)}: nell'Excel le sue righe non ci sono.</small></div></div>`));
   righe.forEach(r=>{if(r.assente)av.unshift(`<div class="gp-avv"><span class="gp-tag gd">A mano</span><div><strong>${_gtEsc(r.p.nome)}</strong><small>Nei turni di ${GP_MESI[m].toLowerCase()} non compare mai (nei turni è «${_gtEsc(r.p.turno)}»): i giorni vanno scritti a mano.</small></div></div>`);});
   righe.forEach(r=>{if(!r.p.turno)av.unshift(`<div class="gp-avv"><span class="gp-tag gd">A mano</span><div><strong>${_gtEsc(r.p.nome)}</strong><small>Non è agganciato a nessun nome dei turni: i giorni vanno scritti a mano, oppure scegli il suo nome in «Persone del foglio».</small></div></div>`);});
   // I tre riquadri Persone / Da controllare / Corretti a mano tolti il 23/11/2026 (QM: non servono).
@@ -5211,7 +5247,7 @@ function _gpDisegna(el){
   // Persone del foglio: a chi corrisponde nei turni
   const nomi=_gpNomiTurni(_gtuArch);
   h+=`<div class="panel"><div class="panel-header" style="cursor:pointer;" onclick="gpPersone()"><span class="panel-title">Persone del foglio · nome nei turni</span><span class="gp-nota">${_gpPersAperto?'Chiudi ▴':'Apri ▾'}</span></div>`;
-  if(_gpPersAperto)h+=S.persone.map((p,i)=>`<div class="gp-pers"><b>${_gtEsc(p.n?p.n+'. ':'')}${_gtEsc(p.nome)} <small>· ${_gtEsc(p.ore)} ore${p.notte?' · notti NL':''}</small></b><select id="gp-turno-${i}" aria-label="Nome nei turni" onchange="gpTurno(${i},this.value)"><option value="">non è nei turni</option>${nomi.map(n=>`<option value="${_gtEsc(n)}"${n===p.turno?' selected':''}>${_gtEsc(n)}</option>`).join('')}</select></div>`).join('')+`<div class="gp-avv"><span class="gp-nota">Ore, notti e persone vengono dal foglio di Cascione. Se cambiano, o per aggiungere un'altra società, carica il suo foglio aggiornato: quello della stessa società sostituisce il vecchio.</span>${carica}</div>`;
+  if(_gpPersAperto)h+=S.persone.map((p,i)=>`<div class="gp-pers"><b>${_gtEsc(p.n?p.n+'. ':'')}${_gtEsc(p.nome)} <small>· ${_gtEsc(p.ore)} ore${p.notte?' · notti NL':''}</small></b><select id="gp-turno-${i}" aria-label="Nome nei turni" onchange="gpTurno(${i},this.value)"><option value="">non è nei turni</option>${nomi.map(n=>`<option value="${_gtEsc(n)}"${n===p.turno?' selected':''}>${_gtEsc(n)}</option>`).join('')}</select>${p.uscita?`<span class="gp-nota">non c'è più da ${_gpMeseNome(p.uscita)}</span><button type="button" class="gp-pill" onclick="gpUscita(${i},'')">Rimetti</button>`:`<button type="button" class="gp-pill" onclick="gpUscita(${i},'${_gpMeseIso(y,m)}')">Non c'è più da ${GP_MESI[m].toLowerCase()}</button>`}</div>`).join('')+`<div class="gp-avv"><span class="gp-nota">Ore, notti e persone vengono dal foglio di Cascione. Se cambiano, o per aggiungere un'altra società, carica il suo foglio aggiornato: quello della stessa società sostituisce il vecchio.</span>${carica}</div>`;
   h+='</div>';
   h+=`<div class="gp-azioni"><button type="button" class="btn-primary" onclick="gpScarica()">Scarica Excel per Cascione</button>${corr?'<button type="button" class="btn-ghost" onclick="gpRicompila()">Rimetti tutto dai turni</button>':''}<span class="gp-nota">Esce identico al foglio di Cascione: cambiano solo i giorni, i totali S e A e il periodo.</span></div></div>`;
   el.innerHTML=h;
@@ -5268,6 +5304,15 @@ async function gpRicompila(){
   const j=await _gpSalva({parte:'mese',chiave,dati:null});
   if(!j.ok){_gpDati.mesi[chiave]=prima;_gpMsg='Non fatto: '+(j.error||'errore');_gbRenderPresenze();}
 }
+function _gpMeseIso(y,m){return y+'-'+String(m+1).padStart(2,'0');}
+function _gpMeseNome(iso){const [y,m]=String(iso||'').split('-');return (GP_MESI[+m-1]||'?').toLowerCase()+' '+y;}
+async function gpUscita(i,mese){
+  const S=_gpDati.societa[_gpSoc],p=S.persone[i];if(!p)return;
+  if(mese&&!(await _gbConferma(p.nome+' non c\'è più da '+_gpMeseNome(mese)+'?','Da quel mese sparisce dal foglio e dall\'Excel per Cascione. I mesi prima restano com\'erano. Si può rimettere.')))return;
+  const prima=p.uscita;if(mese)p.uscita=mese;else delete p.uscita;_gpMsg='';_gbRenderPresenze();
+  const j=await _gpSalva({parte:'societa',chiave:_gpSoc,dati:S});
+  if(!j.ok){if(prima)p.uscita=prima;else delete p.uscita;_gpMsg='Non salvato: '+(j.error||'errore');_gbRenderPresenze();}
+}
 async function gpTurno(i,nome){
   const S=_gpDati.societa[_gpSoc],p=S.persone[i];if(!p)return;const prima=p.turno;
   p.turno=nome;_gpMsg='';_gbRenderPresenze();
@@ -5285,7 +5330,7 @@ async function gpCaricaFoglio(inp){
     const mod=_gpModello(_gpCelle(_gpDaUtf8(z[foglio]),cond));
     if(!mod||!mod.persone.length)throw new Error('Non sembra un foglio presenze di Cascione: manca la riga «Cognome e nome» con i giorni e le persone con le righe O, S, A');
     const id=_gpId(mod.nome||f.name.replace(/\.xlsx$/i,'')),vecchio=_gpDati.societa[id],nomi=_gpNomiTurni(_gtuArch);
-    mod.persone.forEach(p=>{const pr=vecchio&&(vecchio.persone||[]).find(x=>_gpChiave(x)===_gpChiave(p));p.turno=pr&&typeof pr.turno==='string'?pr.turno:_gpAbbina(p.nome,nomi);});
+    mod.persone.forEach(p=>{const pr=vecchio&&(vecchio.persone||[]).find(x=>_gpChiave(x)===_gpChiave(p));p.turno=pr&&typeof pr.turno==='string'?pr.turno:_gpAbbina(p.nome,nomi);if(pr&&pr.uscita)p.uscita=pr.uscita;});
     const dati=Object.assign(mod,{nome:mod.nome||f.name,foglio,file:_gpB64(buf),nomeFile:f.name,caricato:Date.now()});
     const j=await _gpSalva({parte:'societa',chiave:id,dati});
     if(!j.ok)throw new Error(j.error||'Foglio non salvato');
@@ -5298,7 +5343,8 @@ async function gpScarica(){
     const S=_gpDati.societa[_gpSoc],y=_gpMese.y,m=_gpMese.m;
     const z=await _gpUnzip(_gpDaB64(S.file));
     const righe=_gpCompila(S,_gpGiorniTurni(_gtuArch),y,m,_gpDati.mesi[_gpMeseKey(y,m,_gpSoc)]);
-    z[S.foglio]=_gpUtf8(_gpScrivi(_gpDaUtf8(z[S.foglio]),_gpCelleExport(S,righe,y,m)));
+    const togli=[];_gpUsciti(S,y,m).forEach(p=>togli.push(p.riga,p.rigaS,p.rigaA));
+    z[S.foglio]=_gpUtf8(_gpTogliRighe(_gpScrivi(_gpDaUtf8(z[S.foglio]),_gpCelleExport(S,righe,y,m)),togli));
     _gpTogliCalcChain(z);
     const blob=new Blob([_gpZip(z)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
