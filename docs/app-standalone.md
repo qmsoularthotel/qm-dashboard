@@ -418,3 +418,9 @@ In ogni sezione le schede sono in **ordine alfabetico** (stesso giorno, richiest
 Inventari (che serve anche ad Art Resort), DVR (di tutto il gruppo) e Distribuzione Culligan
 (sottotitolo «Art Resort») stanno nel SoulArt **per scelta del QM**. Le schede sono state solo spostate: id, interruttori e pulsanti sono gli
 stessi, nessuna funzione è cambiata. Un controllo in `test/esegui.sh` verifica sezioni e ordine.
+
+Stesso giorno: la scheda **Distribuzione Culligan** ha il sottotitolo «SoulArt», e nella sezione
+Galleria **Compass Ops e Registration Cards stanno sulla stessa riga** (`.miniapp-grid-galleria`:
+Compass Ops occupa due colonne su tre). Sotto i 1080 px di larghezza Compass Ops torna a tutta
+riga, perché i suoi tre riquadri interni in metà schermo non si leggerebbero; sul telefono le
+schede sono una sotto l'altra come sempre.

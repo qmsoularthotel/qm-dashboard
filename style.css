@@ -328,6 +328,10 @@ body.dark .panel{box-shadow:none;}
 .ms-m{font-size:var(--fs-xxs);color:var(--text-dim);background:var(--surface2);border-radius:5px;padding:1px 7px;white-space:nowrap;}
 .ms-go{color:var(--accent);font-weight:600;white-space:nowrap;}
 .miniapp-card-larga{grid-column:1/-1;min-height:0;}
+/* Sezione Galleria (23/11/2026, QM): Compass Ops e Registration Cards sulla stessa riga —
+   Compass Ops occupa due colonne su tre. Sotto i 1080px (due colonne) torna a tutta riga. */
+.miniapp-grid-galleria .miniapp-card-larga{grid-column:span 2;}
+@media(max-width:1080px){.miniapp-grid-galleria .miniapp-card-larga{grid-column:1/-1;}}
 .ms-ops{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
 .ms-ops-r{display:flex;flex-direction:column;gap:2px;min-width:0;background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:8px 11px;}
 .ms-ops-amber{border-color:var(--amber);}
