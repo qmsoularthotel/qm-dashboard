@@ -450,6 +450,7 @@ foglio presenze **per società** (oggi Ge.Ri.Art., Booking Elite, Geriart Group)
   Giorni senza planning in archivio: vuoti, con l'avviso «Turni non caricati».
 - **Prova su ottobre 2026**: ricostruito dall'archivio coincide coi tre fogli veri di Cascione giorno
   per giorno, tranne pochi cambi dell'ultimo minuto non ricaricati in Compass (si correggono a mano).
+- **Niente riquadri** Persone / Da controllare / Corretti a mano (tolti il 23/11/2026, QM: non servono): in cima solo «Prima di inviare».
 - **Correzioni a mano** cella per cella (finestrella: ore, R, FE, ML, NL, PE o «Altro»; righe S e A
   sempre a mano), segnate col pallino oro; «Rimetti dai turni» toglie la singola correzione,
   «Rimetti tutto dai turni» quelle del mese. Una correzione non salvata si dice e si annulla.

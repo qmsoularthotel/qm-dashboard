@@ -809,6 +809,7 @@ sez('Presenze Cascione: foglio del consulente compilato dai turni (23/11/2026)')
 ok('Presenze: Worker, i dati solo col permesso del PIN', /az === 'presenze' \|\| az === 'presenze-salva'\) \{\s*if \(!\(await verificaTp/.test(String(_workerFetch.fetch)), true);
 ok('Presenze: Worker, spenta vale anche qui', /'storico', 'presenze', 'presenze-salva'\]\.includes\(az\)/.test(String(_workerFetch.fetch)), true);
 ok('Presenze: Worker, una cella alla volta rileggendo la chiave', /parte === 'cella'[\s\S]{0,400}ri\[cella\] = String\(corpo\.valore\)/.test(String(_workerFetch.fetch)) && /QM_STORAGE\.get\('qm_presenze_cascione'\)/.test(String(_workerFetch.fetch)), true);
+ok('Presenze: niente riquadri Persone / Da controllare / Corretti (QM, 23/11)', /kpi-card|restano segnati|giorni dubbi/.test(String(_gpDisegna)), false);
 ok('Presenze: nel backup di Compass', QM_BACKUP_FISSE.indexOf('qm_presenze_cascione') >= 0, true);
 ok('Presenze: una correzione non salvata si dice e si annulla', /if\(!j\.ok\)\{if\(prima===undefined\)delete riga\[cella\];else riga\[cella\]=prima;_gpMsg='Correzione NON salvata/.test(String(gpMetti)), true);
 
