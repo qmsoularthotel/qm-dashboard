@@ -411,9 +411,10 @@ titolo a filetto (`.ms-sez`; la seconda ha `.ms-sez-spazio` per staccarla):
 
 | Sezione | Schede (in ordine) |
 |---|---|
-| **SoulArt** (`#miniappGrid`) | Housekeeping, Breakfast, Inventari Detersivi, DVR & Compliance |
+| **SoulArt** (`#miniappGrid`) | Breakfast, DVR & Compliance, Housekeeping, Inventari Detersivi |
 | **Galleria** (`#miniappGridGalleria`) | Compass Ops – Galleria (larga), Distribuzione Culligan, Registration Cards |
 
+In ogni sezione le schede sono in **ordine alfabetico** (stesso giorno, richiesta del QM).
 Inventari (che serve anche ad Art Resort) e DVR (di tutto il gruppo) stanno nel SoulArt **per
 scelta del QM**. Le schede sono state solo spostate: id, interruttori e pulsanti sono gli
 stessi, nessuna funzione è cambiata. Un controllo in `test/esegui.sh` verifica sezioni e ordine.
