@@ -567,6 +567,24 @@ sez('Sicurezza: il pallino del menu');
   ok('la vista Sicurezza aggiorna il pallino', /qmAggiornaPallinoSicurezza\(\)/.test(String(qmRenderDispositivi)), true);
 })();
 
+sez('Preferenze Turnazione: la settimana prossima intera anche a cavallo del mese');
+// 23/11/2026: settimana 30/11 – 06/12. Novembre mostrava solo il 30, il riquadro oro copriva
+// una colonna e la sua linguetta allargava tutto il calendario (finiva sotto la tabella).
+(function () {
+  var sett = ['30/11/2026', '01/12/2026', '02/12/2026', '03/12/2026', '04/12/2026', '05/12/2026', '06/12/2026'];
+  var nov = _tpCelleMese(2026, 10, sett), dic = _tpCelleMese(2026, 11, sett);
+  var riga = function (cc) { var x = cc.filter(function (c) { return sett.indexOf(c.key) >= 0; }); return x.map(function (c) { return c.r + ':' + c.c; }).join(' '); };
+  ok('novembre: tutti e 7 i giorni della settimana', nov.filter(function (c) { return sett.indexOf(c.key) >= 0; }).length, 7);
+  ok('novembre: una riga sola, da lunedi\' a domenica', riga(nov), '7:1 7:2 7:3 7:4 7:5 7:6 7:7');
+  ok('novembre: i giorni di dicembre sono segnati come fuori', nov.filter(function (c) { return c.fuori; }).map(function (c) { return c.d + ' ' + c.mese; }).join(','), '1 dic,2 dic,3 dic,4 dic,5 dic,6 dic');
+  ok('dicembre: c\'e\' anche il 30 novembre, nella prima riga', dic.filter(function (c) { return c.fuori; }).map(function (c) { return c.key + '@' + c.r + ':' + c.c; }).join(), '30/11/2026@2:1');
+  ok('dicembre: la settimana nella prima riga', riga(dic), '2:1 2:2 2:3 2:4 2:5 2:6 2:7');
+  ok('un mese che non tocca la settimana resta com\'e\'', _tpCelleMese(2026, 9, sett).length, 31);
+  ok('settimana tutta dentro il mese: niente giorni in piu\'', _tpCelleMese(2026, 10, ['16/11/2026', '17/11/2026', '18/11/2026', '19/11/2026', '20/11/2026', '21/11/2026', '22/11/2026']).length, 30);
+  var src = String(turniPrefRender);
+  ok('le colonne non si allargano (minmax)', /class="tp-cal-griglia"/.test(src) && !/repeat\(7,1fr\)/.test(src), true);
+})();
+
 sez('Colazioni: un caricamento stretto non cancella la previsione');
 // Il grafico della previsione e' lo strumento su cui la responsabile organizza il
 // servizio. Un export del PMS filtrato su un giorno solo sostituiva l'intera serie e lo

@@ -736,6 +736,11 @@ ok('Galleria: stessi nuovi codici e stessa data di Abdalla', (gtuNormalizza('RIP
 // ── Statistiche e archivio: la Galleria è IDENTICA a Compass (21/11/2026) ──
 // D'Andrea spariva perché l'apostrofo veniva tolto dalle chiavi; e le colonne di sede erano
 // diverse. Ogni funzione copiata, rinominata all'indietro, deve essere uguale a quella di Compass.
+sez('Galleria: calendario delle Preferenze identico a Compass (23/11/2026)');
+ok('identica a Compass: _tpCelleMese', String(_gtCelleMese).replace(/_gtCelleMese/g, '_tpCelleMese').replace(/_GT_/g, '_TP_'), String(_tpCelleMese));
+ok('Galleria: settimana a cavallo del mese intera', _gtCelleMese(2026, 10, ['30/11/2026', '01/12/2026', '02/12/2026', '03/12/2026', '04/12/2026', '05/12/2026', '06/12/2026']).filter(function (c) { return c.fuori; }).length, 6);
+ok('Galleria: colonne che non si allargano', /class="tp-cal-griglia"/.test(String(gtPrefDisegna)) && !/repeat\(7,1fr\)/.test(String(gtPrefDisegna)), true);
+
 sez('Galleria: statistiche e archivio identici a Compass');
 ok('D\'Andrea resta D\'Andrea nell\'archivio',       Object.keys(_gtJson('{"D\'Andrea F.":1,"<x>":2}')).join('|'), "D'Andrea F.|x");
 (function () {

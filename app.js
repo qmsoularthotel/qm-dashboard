@@ -11804,6 +11804,30 @@ function _tpSettimanaProssima(oggi){
   const k=d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
   return {da:giorni[0],a:giorni[6],giorni:giorni.map(k)};
 }
+// Le celle del calendario del mese (anno, mese 0-11): {key,d,r,c,fuori,mese}. Riga e colonna
+// esplicite (riga 1 = intestazioni). Se la settimana `sett` (7 chiavi dd/MM/yyyy, lun→dom) ha
+// almeno un giorno nel mese, i suoi giorni del mese ACCANTO entrano nella stessa riga con
+// `fuori:true` (23/11/2026): la settimana prossima si vede sempre intera.
+const _TP_MESI_BREVI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+function _tpCelleMese(anno,mese,sett){
+  const primo=new Date(anno,mese,1,12),dow=(primo.getDay()+6)%7,n=new Date(anno,mese+1,0).getDate();
+  const k=d=>`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  const pos=off=>({r:2+Math.floor((dow+off)/7),c:(dow+off)%7+1});
+  const out=[];
+  for(let g=1;g<=n;g++){const d=new Date(anno,mese,g,12);out.push(Object.assign({key:k(d),d:g,fuori:false,mese:_TP_MESI_BREVI[mese]},pos(g-1)));}
+  const dentro=new Set(out.map(x=>x.key));
+  if((sett||[]).some(x=>dentro.has(x))){
+    (sett||[]).forEach(x=>{
+      if(dentro.has(x))return;
+      const m=String(x).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(!m)return;
+      const d=new Date(+m[3],+m[2]-1,+m[1],12),off=Math.round((d-primo)/86400000);
+      out.push(Object.assign({key:x,d:+m[1],fuori:true,mese:_TP_MESI_BREVI[+m[2]-1]},pos(off)));
+    });
+  }
+  // In ordine di riga e colonna: chi disegna il riquadro prende il primo e l'ultimo giorno.
+  // A dicembre il 30/11 (prima colonna) finiva in fondo e il riquadro si girava al contrario.
+  return out.sort((a,b)=>a.r-b.r||a.c-b.c);
+}
 // Il foglio delle richieste scrive lo stesso reparto in modi diversi ("HOUSEKEEPING" e
 // "Housekeeping"): erano due filtri uguali (16/11/2026). Si porta tutto alla stessa forma,
 // iniziale maiuscola, prima di contare e filtrare.
@@ -11973,13 +11997,13 @@ function turniPrefRender(){
   // stare sopra le sue celle (in una griglia gli elementi posizionati si sovrappongono,
   // quelli lasciati al posizionamento automatico no).
   const prossima=_tpSettimanaProssima(today);
-  const posCella=d=>({r:2+Math.floor((startDow+d-1)/7),c:(startDow+d-1)%7+1});
+  // Celle del mese mostrato e, quando la settimana prossima è A CAVALLO DEL MESE, anche i suoi
+  // giorni del mese accanto, nella stessa riga (23/11/2026, il QM: «a cavallo del mese inserisci
+  // nel riquadro tutta la settimana»). Prima novembre mostrava solo il 30: il riquadro oro
+  // copriva una colonna sola, la sua linguetta la allargava e il calendario usciva dal suo spazio.
+  const celle=_tpCelleMese(_tpCalYear,_tpCalMonth,prossima.giorni);
   {
-    const nel=[];
-    for(let d=1;d<=daysInMonth;d++){
-      const key=`${String(d).padStart(2,'0')}/${String(_tpCalMonth+1).padStart(2,'0')}/${_tpCalYear}`;
-      if(prossima.giorni.includes(key))nel.push(posCella(d));
-    }
+    const nel=celle.filter(x=>prossima.giorni.includes(x.key));
     if(nel.length){
       const r=nel[0].r,c0=nel[0].c,c1=nel[nel.length-1].c;
       calCells+=`<div title="Settimana prossima" style="grid-row:${r};grid-column:${c0} / ${c1+1};margin:-4px;border:2px solid var(--gold);border-radius:0 10px 10px 10px;pointer-events:none;z-index:0;"></div>`;
@@ -11990,15 +12014,14 @@ function turniPrefRender(){
     }
   }
   // giorni
-  for(let d=1;d<=daysInMonth;d++){
-    const key=`${String(d).padStart(2,'0')}/${String(_tpCalMonth+1).padStart(2,'0')}/${_tpCalYear}`;
+  celle.forEach(cl=>{
+    const key=cl.key,d=cl.d,pc=cl;
     const cnt=countByDay[key]||0;
     const isToday=key===todayKey;
     const isSel=key===_tpCalDay;
     const bg=isSel?'var(--accent)':cnt>=3?'#1a3a70':cnt>=2?'#1e4a90':cnt>=1?'var(--accent-bg)':'var(--surface)';
     const col=isSel?'#fff':cnt>=2?'#fff':cnt>=1?'var(--accent)':'var(--text-dim)';
     const border=isToday?'2px solid var(--accent)':'1px solid var(--border-light)';
-    const pc=posCella(d);
     // Proposta E (16/11/2026): fuori dalla settimana prossima il mese si attenua, così quella
     // settimana salta all'occhio. Il giorno selezionato resta pieno.
     const attenua=prossima.giorni.length&&!prossima.giorni.includes(key)&&!isSel;
@@ -12007,10 +12030,10 @@ function turniPrefRender(){
     // Invito a cliccare (20/11/2026): il fumetto a destra della settimana (_tpPosaInvito).
     if(_pop&&!_tpInvitoVisto)_tpInvitiN++;
     calCells+=`<div ${prossima.giorni.includes(key)?'data-tp-sett="1" ':''}${_pop?`data-tp-giorno="${key}" onclick="turniPrefApriGiorno('${key}',this)"`:`onclick="turniPrefSelectDay('${key}')"`} style="grid-row:${pc.r};grid-column:${pc.c};position:relative;z-index:1;${attenua?'opacity:.38;':''}aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border:${border};border-radius:7px;background:${bg};cursor:${cnt>0||isSel?'pointer':'default'};transition:all .12s;user-select:none;">
-      <div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${col};line-height:1;">${d}</div>
+      <div style="font-size:12px;font-weight:${isToday?'800':'600'};color:${col};line-height:1;">${d}${cl.fuori?`<span style="font-size:9px;font-weight:600;opacity:.75;margin-left:2px;">${cl.mese}</span>`:''}</div>
       ${cnt>0?`<div style="font-size:10px;font-weight:700;color:${isSel?'rgba(255,255,255,.85)':cnt>=2?'rgba(255,255,255,.85)':'var(--accent)'};margin-top:1px;">${cnt}</div>`:''}
     </div>`;
-  }
+  });
 
   const prefColor=p=>{const u=(p||'').toUpperCase();if(u.includes('FERIE'))return'var(--amber)';if(u.includes('RIPOSO'))return'var(--text-muted)';if(u.includes('CHIUSURA')||u.includes('APERTURA'))return'var(--accent)';return'var(--text)';};
   const cons=_tpConsuntivo(_tpData,_tpFilter,today);
@@ -12048,7 +12071,7 @@ function turniPrefRender(){
       <div style="font-size:var(--fs-sm);font-weight:700;">${mesiIt[_tpCalMonth]} ${_tpCalYear}</div>
       <button onclick="turniPrefNavCal(1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">›</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">${calCells}</div>
+    <div class="tp-cal-griglia">${calCells}</div>
     ${_tpCalDay?`<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--accent);font-weight:600;">📅 Filtro: ${_tpCalDay} — <span onclick="turniPrefSelectDay('${_tpCalDay}')" style="cursor:pointer;text-decoration:underline;">rimuovi</span></div>`:''}
   </div>`;
 

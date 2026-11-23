@@ -484,3 +484,23 @@ stato tolto.) Ora:
 - il prompt dell'AI dice che il planning può essere di una settimana passata: leggere le date
   scritte senza spostarle verso oggi.
 
+
+### Preferenze Turnazione: settimana prossima intera a cavallo del mese (23/11/2026)
+
+**Difetto** (segnalato dal QM con una foto): con la settimana prossima 30/11 – 06/12, il
+calendario di novembre mostrava solo il 30. Il riquadro oro copriva quindi una colonna sola, e la
+sua linguetta «Settimana prossima» (testo su una riga) allargava quella colonna; le colonne erano
+`1fr`, tutte uguali, e il calendario usciva dai suoi 360 px finendo sotto la tabella «Chi chiede».
+
+**Correzione**, in Compass e identica nella Galleria:
+- `_tpCelleMese(anno,mese,settimana)` (`_gtCelleMese` nella Galleria) dà le celle del mese con
+  riga e colonna e, se la settimana prossima tocca il mese, aggiunge **nella stessa riga** i suoi
+  giorni del mese accanto (`fuori:true`, con il mese scritto piccolo: «1 dic», «30 nov»).
+  Le celle escono ordinate per riga e colonna: il riquadro prende la prima e l'ultima (a dicembre
+  il 30/11 finiva in fondo e il riquadro si sarebbe disegnato al contrario).
+- Griglia in classe `.tp-cal-griglia` con `repeat(7,minmax(0,1fr))`: nessun contenuto può più
+  allargare le colonne. Regola generale: mai `1fr` da solo in una griglia che contiene testo che
+  non va a capo.
+
+Controlli in `test/controlli.js` ("Preferenze Turnazione: la settimana prossima intera anche a
+cavallo del mese") e `test/galleria.js` (copia identica), verificati con tre sabotaggi.

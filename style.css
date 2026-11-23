@@ -1042,6 +1042,9 @@ body.ag-trascinando,body.ag-trascinando *{cursor:grabbing !important;user-select
    Fumetto blu a DESTRA della settimana, alla sua altezza, con la punta verso i giorni; si
    avvicina e si allontana piano. Sparisce al primo giorno aperto. Prima c'era un anello che
    pulsava sui giorni: scartato dal QM. */
+/* Calendario di Preferenze Turnazione: minmax(0,1fr) e non 1fr, così nessun contenuto (la
+   linguetta «Settimana prossima») può allargare le colonne oltre lo spazio (23/11/2026). */
+.tp-cal-griglia{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
 .tp-invito-fum{position:absolute;z-index:8;width:150px;padding:9px 12px;border-radius:10px;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;line-height:1.35;box-shadow:0 8px 22px rgba(12,31,51,.25);pointer-events:none;animation:tpVerso 1.6s ease-in-out infinite;}
 .tp-invito-fum::before{content:'';position:absolute;left:-6px;top:50%;margin-top:-6px;width:12px;height:12px;background:var(--accent);transform:rotate(45deg);}
 .tp-invito-fum small{display:block;font-weight:400;opacity:.8;font-size:11px;margin-top:2px;}
