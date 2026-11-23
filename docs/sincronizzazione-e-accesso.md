@@ -832,3 +832,24 @@ delle caselle). **Compass OPS**: «Abilitare un PC di Compass OPS» (codice Gall
 Gestione Turnazione». Galleria e Compass non si mescolano. La dotazione da contratto è uscita da
 Sicurezza (ora col PIN del QM in Conteggio Biancheria).
 
+
+## Pallino della Sicurezza nel menu (23/11/2026)
+
+Richiesta del QM: *"pallino colorato al menu Sicurezza per controllare che tutto sia ok"*.
+Accanto alla voce **Sicurezza** c'è un pallino (`#navSicDot`) come quello di Stato del sistema,
+e in cima alla vista Sicurezza un riquadro (`#qmSicVerdetto`) che dice cosa non va.
+
+| Controllo | Rosso | Arancio |
+|---|---|---|
+| Questo computer è abilitato (`_qmPass`) | no | — |
+| Accesso al cloud chiuso (`/versione` → `portaChiusa`) | aperto a chiunque | Worker che non risponde |
+| Codice di questo computer (scadenza scritta nel lasciapassare) | scaduto | scade entro 30 giorni |
+| Backup notturno (`qm_backup_ultimo`, scritto dallo script Google) | nessuno o più vecchio di 48 ore | più vecchio di 30 ore |
+| PIN della Gestione Turnazione (`/turni-pref` azione `stato`) | — | PIN del QM non scelto, o tentativi fermi per PIN sbagliati |
+
+La regola è `_qmControlliSicurezza` (pura, provata in `test/controlli.js`, "Sicurezza: il pallino
+del menu", verificata con due sabotaggi); `_qmStatoSicurezza` raccoglie i dati, solo letture;
+`qmAggiornaPallinoSicurezza` colora il pallino e riempie il riquadro. Si aggiorna 2,5 secondi
+dopo l'apertura, ogni 15 minuti a scheda visibile, al ritorno sulla scheda, entrando nella vista
+Sicurezza e dopo aver salvato il proprio PIN. Il backup non letto (rete assente) non fa colore:
+si giudica solo quello che si è riusciti a leggere.

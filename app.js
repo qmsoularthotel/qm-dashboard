@@ -5427,6 +5427,65 @@ async function qmAggiornaPallinoStato(){
     el.title=s.ok?'Tutto in ordine':'C\'è qualcosa da guardare';
   }catch(e){}
 }
+// ── PALLINO DELLA SICUREZZA (23/11/2026, il QM: «pallino colorato al menu Sicurezza per
+// controllare che tutto sia ok») ──
+// Come quello di Stato del sistema, ma sulle cose della vista Sicurezza. Rosso = da fare
+// subito, arancio = da guardare presto, verde = tutto in ordine. La regola sta in una
+// funzione pura (_qmControlliSicurezza) che i controlli provano con dati inventati.
+const QM_SIC_PASS_GG=30;          // codice del computer: arancio se scade entro 30 giorni
+const QM_SIC_BACKUP_AMBRA=30*3600000, QM_SIC_BACKUP_ROSSO=48*3600000;
+function _qmControlliSicurezza(c){
+  const voci=[],ora=c.ora||Date.now();
+  const add=(col,testo)=>voci.push({col,testo});
+  if(!c.abilitato)add('red','Questo computer non è abilitato: Compass non legge e non salva');
+  else if(c.scadePass){
+    const gg=Math.floor((c.scadePass-ora)/86400000);
+    if(c.scadePass<=ora)add('red','Il codice di questo computer è scaduto');
+    else if(gg<QM_SIC_PASS_GG)add('amber','Il codice di questo computer scade fra '+gg+(gg===1?' giorno':' giorni'));
+  }
+  if(c.portaChiusa===false)add('red','ACCESSO AL CLOUD APERTO A CHIUNQUE: QM_AUTH_OBBLIGATORIA non è attiva su Cloudflare');
+  else if(c.portaChiusa!==true)add('amber','Il Worker non risponde: non si può verificare che l\'accesso sia chiuso');
+  if(c.backupTs===undefined){/* non letto: niente da dire */}
+  else if(!c.backupTs)add('red','Nessun backup notturno registrato su Drive');
+  else if(ora-c.backupTs>QM_SIC_BACKUP_ROSSO)add('red','Backup notturno fermo da '+Math.floor((ora-c.backupTs)/86400000)+' giorni');
+  else if(ora-c.backupTs>QM_SIC_BACKUP_AMBRA)add('amber','Il backup di stanotte non è arrivato');
+  if(c.pin){
+    if(c.pin.bloccatoFino&&c.pin.bloccatoFino>ora)add('amber','PIN della Gestione Turnazione fermi per troppi tentativi sbagliati');
+    if(c.pin.qm===false)add('amber','Il tuo PIN della Gestione Turnazione non è ancora scelto');
+  }
+  const col=voci.some(v=>v.col==='red')?'red':(voci.length?'amber':'green');
+  return{col,voci};
+}
+function _qmScadePass(p){const n=Number(String(p||'').split('.')[0]);return isFinite(n)&&n>0?n:0;}
+async function _qmStatoSicurezza(){
+  const c={abilitato:!!_qmPass,scadePass:_qmScadePass(_qmPass),ora:Date.now(),portaChiusa:null};
+  try{const r=await fetch(PROXY+'/versione',{cache:'no-store'});if(r.ok){const v=await r.json();c.portaChiusa=v&&typeof v.portaChiusa==='boolean'?v.portaChiusa:null;}}catch(e){}
+  if(c.abilitato){
+    try{const r=await fetch(PROXY+'/kv/get?key=qm_backup_ultimo',{cache:'no-store'});if(r.ok){const j=await r.json();const b=j&&j.value?JSON.parse(j.value):null;c.backupTs=b&&Number(b.ts)||0;}}catch(e){}
+    try{const j=await _qmPinChiedi({azione:'stato'});if(j&&j.ok)c.pin={qm:!!j.qm,resident:!!j.resident,bloccatoFino:Number(j.bloccatoFino)||0};}catch(e){}
+  }
+  return _qmControlliSicurezza(c);
+}
+const _QM_SIC_COL={green:'var(--green)',amber:'var(--amber)',red:'var(--red)'};
+async function qmAggiornaPallinoSicurezza(){
+  const el=document.getElementById('navSicDot');
+  let s;try{s=await _qmStatoSicurezza();}catch(e){return;}
+  if(el){
+    el.style.background=_QM_SIC_COL[s.col];
+    el.title=s.col==='green'?'Sicurezza: tutto in ordine':s.voci.map(v=>v.testo).join(' · ');
+  }
+  const box=document.getElementById('qmSicVerdetto');
+  if(box)box.innerHTML=_qmSicVerdettoHtml(s);
+}
+function _qmSicVerdettoHtml(s){
+  const c=_QM_SIC_COL[s.col];
+  const bg=s.col==='green'?'var(--green-bg)':s.col==='red'?'var(--red-bg)':'var(--amber-bg)';
+  if(s.col==='green')return`<div style="display:flex;align-items:center;gap:8px;background:${bg};border-radius:8px;padding:9px 12px;margin-bottom:14px;font-size:var(--fs-xs);font-weight:700;color:${c};"><span style="width:9px;height:9px;border-radius:50%;background:${c};"></span>Sicurezza: tutto in ordine</div>`;
+  return`<div style="background:${bg};border-left:3px solid ${c};border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:var(--fs-xs);line-height:1.6;">
+    <div style="font-weight:700;color:${c};margin-bottom:2px;">Sicurezza: ${s.col==='red'?'c\'è qualcosa da sistemare':'qualcosa da guardare'}</div>
+    ${s.voci.map(v=>`<div style="display:flex;gap:8px;align-items:baseline;"><span style="width:7px;height:7px;border-radius:50%;background:${_QM_SIC_COL[v.col]};flex-shrink:0;position:relative;top:-1px;"></span><span style="color:var(--text);">${v.testo}</span></div>`).join('')}
+  </div>`;
+}
 // Il riquadro rispondeva a sei domande con sei righe uguali: un elenco da leggere, non uno
 // stato da guardare. Entrando li' la domanda e' una sola — va tutto bene? — e la risposta
 // deve arrivare prima dei dettagli. Quindi: un verdetto grande, il consumo con una barra
@@ -18815,6 +18874,10 @@ try{
   setTimeout(()=>{try{qmAggiornaPallinoStato();}catch(e){}},1500);
   setInterval(()=>{if(document.visibilityState==='visible')qmAggiornaPallinoStato();},900000);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmAggiornaPallinoStato();});
+  // Pallino della Sicurezza: stessi tempi (23/11/2026).
+  setTimeout(()=>{try{qmAggiornaPallinoSicurezza();}catch(e){}},2500);
+  setInterval(()=>{if(document.visibilityState==='visible')qmAggiornaPallinoSicurezza();},900000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmAggiornaPallinoSicurezza();});
 }catch(e){}
 }catch(e){}
 
@@ -18874,7 +18937,7 @@ function qmRenderDispositivi(){
   // del QM dentro Conteggio Biancheria.
   const riga=(titolo,stato,corpo,aperta)=>`<details class="sic-voce"${aperta?' open':''}><summary><span class="sic-t">${titolo}</span><span class="sic-s">${stato}</span><span class="sic-ch">›</span></summary><div class="sic-det">${corpo}</div></details>`;
   const btn=(on,testo,stile)=>`<button onclick="${on}" style="${bott}${stile||'background:var(--accent);color:#fff;border-color:var(--accent);'}padding:9px 18px;font-size:var(--fs-xs);">${testo}</button>`;
-  el.innerHTML=`<div class="sic-lista"><div class="sic-gt">Compass QM Suite</div>
+  el.innerHTML=`<div id="qmSicVerdetto"></div><div class="sic-lista"><div class="sic-gt">Compass QM Suite</div>
     ${riga('Abilitare un PC o un device','<span style="color:var(--green);font-weight:600;">questo computer è abilitato</span>',
       `Copia il codice e mandalo in chat privata: la persona lo incolla nell'app (aperta dalla sua icona, non da un link di WhatsApp) o nel sito, e ha finito. Nessuno digita password; vale sei mesi.
       <div class="sic-azioni">${btn('qmCopiaCodice(this)','Copia codice')}</div>
@@ -18900,6 +18963,7 @@ function qmRenderDispositivi(){
   </div>`;
   try{qmRenderBackup();}catch(e){}
   setTimeout(qmPinAggiorna,0);
+  try{qmAggiornaPallinoSicurezza();}catch(e){}
 }
 // ── Recupero di Operativa HKP da una copia (21/11/2026) ──
 // Nato dal 21/11/2026: dati di ottobre spariti dal 21/10, presenti nel backup delle 02:06. Si
@@ -18983,7 +19047,7 @@ async function qmPinSalvaMio(){
   let j;try{j=await _qmPinChiedi({azione:'imposta-qm',pin});}catch(e){j={ok:false,error:'Worker non raggiungibile'};}
   if(f)f.value='';
   if(es){es.textContent=j.ok?'PIN salvato. Vale nell\'app della Galleria, su Preferenze Turnazione.':(j.error||'Non salvato');es.style.color=j.ok?'var(--green)':'var(--red)';}
-  qmPinAggiorna();
+  qmPinAggiorna();  try{qmAggiornaPallinoSicurezza();}catch(e){}
 }
 async function qmPinAzzeraResident(){
   if(!await cqConferma('Azzerare il PIN del Front Office Manager?','Al prossimo accesso a Preferenze Turnazione il Front Office Manager ne sceglierà uno nuovo. Fino ad allora la voce si apre col tuo PIN — o con quello che sceglie <strong>chi arriva per primo</strong>: fallo quando il Front Office Manager è davanti al PC.',{ok:'Azzera'}))return;

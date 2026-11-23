@@ -538,6 +538,35 @@ sez('Pannello App: la Registration Galleria con interruttore e ultimo utilizzo')
   ok('l\'interruttore scrive la chiave della Galleria', /kvSet\('bg_rc_status'/.test(String(miniappToggleRc)), true);
 })();
 
+sez('Sicurezza: il pallino del menu');
+// 23/11/2026, il QM: «pallino colorato al menu Sicurezza per controllare che tutto sia ok».
+(function () {
+  var ora = new Date(2026, 10, 23, 10, 0).getTime(), G = 86400000, H = 3600000;
+  function c(x) {
+    var b = { abilitato: true, scadePass: ora + 120 * G, ora: ora, portaChiusa: true, backupTs: ora - 7 * H, pin: { qm: true, resident: true, bloccatoFino: 0 } };
+    for (var k in x) b[k] = x[k];
+    return _qmControlliSicurezza(b);
+  }
+  ok('tutto a posto: verde', c({}).col, 'green');
+  ok('computer non abilitato: rosso', c({ abilitato: false }).col, 'red');
+  ok('porta aperta: rosso', c({ portaChiusa: false }).col, 'red');
+  ok('Worker che non risponde: arancio', c({ portaChiusa: null }).col, 'amber');
+  ok('codice che scade fra 10 giorni: arancio', c({ scadePass: ora + 10 * G }).voci[0].testo, 'Il codice di questo computer scade fra 10 giorni');
+  ok('codice scaduto: rosso', c({ scadePass: ora - G }).col, 'red');
+  ok('backup di stanotte mancante: arancio', c({ backupTs: ora - 35 * H }).col, 'amber');
+  ok('backup fermo da 3 giorni: rosso', c({ backupTs: ora - 3 * G }).voci[0].testo, 'Backup notturno fermo da 3 giorni');
+  ok('nessun backup mai: rosso', c({ backupTs: 0 }).col, 'red');
+  ok('backup non letto: non giudica', c({ backupTs: undefined }).col, 'green');
+  ok('PIN del QM non scelto: arancio', c({ pin: { qm: false, resident: true, bloccatoFino: 0 } }).col, 'amber');
+  ok('PIN fermi per tentativi sbagliati: arancio', c({ pin: { qm: true, resident: true, bloccatoFino: ora + 5 * 60000 } }).col, 'amber');
+  ok('rosso vince su arancio', c({ portaChiusa: false, backupTs: ora - 35 * H }).col, 'red');
+  ok('scadenza letta dal codice', _qmScadePass('1790000000000.abcDEF'), 1790000000000);
+  ok('codice senza scadenza leggibile', _qmScadePass('bg.123.x'), 0);
+  ok('il verdetto verde lo dice', /tutto in ordine/.test(_qmSicVerdettoHtml(c({}))), true);
+  ok('il verdetto rosso elenca cosa', /ACCESSO AL CLOUD APERTO/.test(_qmSicVerdettoHtml(c({ portaChiusa: false }))), true);
+  ok('la vista Sicurezza aggiorna il pallino', /qmAggiornaPallinoSicurezza\(\)/.test(String(qmRenderDispositivi)), true);
+})();
+
 sez('Colazioni: un caricamento stretto non cancella la previsione');
 // Il grafico della previsione e' lo strumento su cui la responsabile organizza il
 // servizio. Un export del PMS filtrato su un giorno solo sostituiva l'intera serie e lo
