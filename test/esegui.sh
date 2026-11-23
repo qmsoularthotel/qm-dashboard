@@ -603,7 +603,7 @@ if [ "$_GG_F" != "$_GG_H" ] || [ -z "$_GG_F" ] || [ "$_GG_RIS" != "1,2,0,1,1,1" 
 fi
 
 # Pannello App in due sezioni (23/11/2026, QM), schede in ordine alfabetico: SoulArt (Breakfast,
-# DVR, Housekeeping, Inventari) e Galleria (Compass Ops, Culligan, Registration).
+# Culligan, DVR, Housekeeping, Inventari) e Galleria (Compass Ops, Registration).
 _PAN=$(python3 - <<'PY'
 import re
 s=open('index.html',encoding='utf-8').read()
@@ -612,7 +612,7 @@ c=s.find('<!-- ── INVENTARIO ── -->',b)
 if a<0 or b<a or c<b: print('sezioni mancanti');raise SystemExit
 t=lambda x:re.findall(r'miniapp-([a-z]+)-toggle"',x)
 sa,ga=t(s[a:b]),t(s[b:c])
-print('ok' if sa==['bkf','dvr','hk','inv'] and ga==['bg','cm','rc'] else 'SoulArt '+','.join(sa)+' / Galleria '+','.join(ga))
+print('ok' if sa==['bkf','cm','dvr','hk','inv'] and ga==['bg','rc'] else 'SoulArt '+','.join(sa)+' / Galleria '+','.join(ga))
 PY
 )
 if [ "$_PAN" != "ok" ]; then

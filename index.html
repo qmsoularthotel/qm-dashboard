@@ -1442,7 +1442,7 @@
              c'è niente da fare. «Stato del sistema» ha la sua voce di menu (vista sistema). -->
         <div id="miniappDaSistemare"></div>
         <!-- Due sezioni (23/11/2026, il QM): le app del SoulArt e quelle della Galleria. Inventari
-             e DVR stanno nel SoulArt per scelta del QM. In ogni sezione le schede sono in ordine
+             DVR e Culligan stanno nel SoulArt per scelta del QM. In ogni sezione le schede sono in ordine
              alfabetico. Gli id delle schede non cambiano. -->
         <div class="ms-sez">SoulArt</div>
         <div class="miniapp-grid" id="miniappGrid">
@@ -1473,6 +1473,22 @@
               <div class="miniapp-avvisi-nota">Un messaggio diverso per ogni schermata dell'app: compare a ogni apertura e a ogni cambio di schermata, resta 10 secondi e sparisce al primo tocco. Si può andare a capo: gli a capo restano anche sul telefono. Con «Inizio» e «Fine» l'avviso si accende e si spegne da solo; con «Programma un nuovo avviso» se ne prepara un altro che parte da solo nel giorno scelto.</div>
               <div id="miniapp-bkf-banner-tabs" style="display:flex;flex-direction:column;gap:10px;"></div>
               <button onclick="miniappSaveBkfBanner(this)" class="miniapp-btn miniapp-btn-primario" style="width:100%;margin-top:12px;">Salva avvisi</button>
+            </div>
+          </div>
+          <div class="panel miniapp-card">
+            <div class="miniapp-card-top">
+              <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C9 7 5 11.5 5 15.5A7 7 0 0 0 19 15.5C19 11.5 15 7 12 2z"/></svg></span>
+              <div class="miniapp-nome">
+                <div class="miniapp-titolo">Distribuzione Culligan</div>
+                <div class="miniapp-sub">Art Resort</div>
+              </div>
+              <button id="miniapp-cm-toggle" onclick="miniappToggleApp('cm')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button>
+            </div>
+            <div id="miniapp-cm-status" class="miniapp-stato"></div>
+            <input id="cm-url-input" type="hidden" value="https://compass-qm.com/controllo-mattino.html">
+            <div class="miniapp-azioni">
+              <button onclick="miniappCopy('cm-url-input',this)" class="miniapp-btn">Copia link</button>
+              <button onclick="miniappOpen('cm-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
             </div>
           </div>
           <div class="panel miniapp-card">
@@ -1543,22 +1559,6 @@
             <div class="miniapp-azioni">
               <button onclick="miniappCopy('bg-url-input',this)" class="miniapp-btn">Copia link</button>
               <button onclick="miniappOpen('bg-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
-            </div>
-          </div>
-          <div class="panel miniapp-card">
-            <div class="miniapp-card-top">
-              <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C9 7 5 11.5 5 15.5A7 7 0 0 0 19 15.5C19 11.5 15 7 12 2z"/></svg></span>
-              <div class="miniapp-nome">
-                <div class="miniapp-titolo">Distribuzione Culligan</div>
-                <div class="miniapp-sub">Art Resort</div>
-              </div>
-              <button id="miniapp-cm-toggle" onclick="miniappToggleApp('cm')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button>
-            </div>
-            <div id="miniapp-cm-status" class="miniapp-stato"></div>
-            <input id="cm-url-input" type="hidden" value="https://compass-qm.com/controllo-mattino.html">
-            <div class="miniapp-azioni">
-              <button onclick="miniappCopy('cm-url-input',this)" class="miniapp-btn">Copia link</button>
-              <button onclick="miniappOpen('cm-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
             </div>
           </div>
           <!-- Registration Cards della Galleria (23/11/2026): app fuori da Compass, senza codice.
