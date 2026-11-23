@@ -582,7 +582,9 @@ sez('Preferenze Turnazione: la settimana prossima intera anche a cavallo del mes
   ok('un mese che non tocca la settimana resta com\'e\'', _tpCelleMese(2026, 9, sett).length, 31);
   ok('settimana tutta dentro il mese: niente giorni in piu\'', _tpCelleMese(2026, 10, ['16/11/2026', '17/11/2026', '18/11/2026', '19/11/2026', '20/11/2026', '21/11/2026', '22/11/2026']).length, 30);
   var src = String(turniPrefRender);
-  ok('le colonne non si allargano (minmax)', /class="tp-cal-griglia"/.test(src) && !/repeat\(7,1fr\)/.test(src), true);
+  ok('le colonne non si allargano (minmax)', /class="tp-cal-griglia/.test(src) && !/repeat\(7,1fr\)/.test(src), true);
+  // settimana nella prima riga: la linguetta non copre le lettere dei giorni (23/11/2026)
+  ok('settimana nella prima riga: si fa posto alla linguetta', /if\(r===2\)_tpSettPrima=true;/.test(src) && /tp-sett-prima/.test(src) && /class="tp-cal-int"/.test(src), true);
 })();
 
 sez('Colazioni: un caricamento stretto non cancella la previsione');

@@ -11992,7 +11992,7 @@ function turniPrefRender(){
 
   let calCells='';_tpInvitiN=0;
   // intestazione giorni
-  calCells+=giorniIt.map((g,i)=>`<div style="grid-row:1;grid-column:${i+1};text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:4px 0;">${g}</div>`).join('');
+  calCells+=giorniIt.map((g,i)=>`<div class="tp-cal-int" style="grid-row:1;grid-column:${i+1};text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:4px 0;">${g}</div>`).join('');
   // Ogni giorno ha riga e colonna ESPLICITE: così il riquadro della settimana prossima può
   // stare sopra le sue celle (in una griglia gli elementi posizionati si sovrappongono,
   // quelli lasciati al posizionamento automatico no).
@@ -12001,11 +12001,15 @@ function turniPrefRender(){
   // giorni del mese accanto, nella stessa riga (23/11/2026, il QM: «a cavallo del mese inserisci
   // nel riquadro tutta la settimana»). Prima novembre mostrava solo il 30: il riquadro oro
   // copriva una colonna sola, la sua linguetta la allargava e il calendario usciva dal suo spazio.
+  let _tpSettPrima=false;
   const celle=_tpCelleMese(_tpCalYear,_tpCalMonth,prossima.giorni);
   {
     const nel=celle.filter(x=>prossima.giorni.includes(x.key));
     if(nel.length){
       const r=nel[0].r,c0=nel[0].c,c1=nel[nel.length-1].c;
+      // Settimana nella PRIMA riga dei giorni: la linguetta coprirebbe le lettere L M M…
+      // (23/11/2026, il QM: «da fastidio»). Si fa posto sotto le intestazioni.
+      if(r===2)_tpSettPrima=true;
       calCells+=`<div title="Settimana prossima" style="grid-row:${r};grid-column:${c0} / ${c1+1};margin:-4px;border:2px solid var(--gold);border-radius:0 10px 10px 10px;pointer-events:none;z-index:0;"></div>`;
       // Linguetta oro attaccata all'angolo in alto a sinistra del riquadro (disegno del QM,
       // 16/11/2026): sta sopra le celle della riga prima (z-index 2), alta 16px, e il suo
@@ -12071,7 +12075,7 @@ function turniPrefRender(){
       <div style="font-size:var(--fs-sm);font-weight:700;">${mesiIt[_tpCalMonth]} ${_tpCalYear}</div>
       <button onclick="turniPrefNavCal(1)" style="border:none;background:none;font-size:16px;cursor:pointer;color:var(--text-muted);padding:4px 8px;">›</button>
     </div>
-    <div class="tp-cal-griglia">${calCells}</div>
+    <div class="tp-cal-griglia${_tpSettPrima?' tp-sett-prima':''}">${calCells}</div>
     ${_tpCalDay?`<div style="margin-top:8px;font-size:var(--fs-xxs);color:var(--accent);font-weight:600;">📅 Filtro: ${_tpCalDay} — <span onclick="turniPrefSelectDay('${_tpCalDay}')" style="cursor:pointer;text-decoration:underline;">rimuovi</span></div>`:''}
   </div>`;
 

@@ -624,6 +624,14 @@ if [ "$_PAN" != "ok" ]; then
   BKF_KO=1
 fi
 
+# Preferenze Turnazione: con la settimana prossima nella prima riga la linguetta oro non deve
+# coprire le lettere dei giorni (23/11/2026): serve la regola che fa posto.
+if ! grep -q '^.tp-cal-griglia.tp-sett-prima .tp-cal-int{margin-bottom:20px;}' style.css; then
+  echo ""
+  echo "  ERRORE      style.css: manca lo spazio fra le lettere dei giorni e la linguetta della settimana prossima."
+  BKF_KO=1
+fi
+
 # Worker non pubblicato: worker.js si pubblica a mano su Cloudflare (vedi CLAUDE.md, la
 # pubblicazione automatica è stata valutata e scartata). Una correzione può quindi essere
 # scritta, versionata e non attiva — successo il 21/08/2026, per ore, senza alcun segnale.

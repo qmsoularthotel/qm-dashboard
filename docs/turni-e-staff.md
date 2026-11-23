@@ -504,3 +504,9 @@ sua linguetta «Settimana prossima» (testo su una riga) allargava quella colonn
 
 Controlli in `test/controlli.js` ("Preferenze Turnazione: la settimana prossima intera anche a
 cavallo del mese") e `test/galleria.js` (copia identica), verificati con tre sabotaggi.
+
+Stesso giorno, richiesta del QM («da fastidio»): quando la settimana prossima è la **prima riga**
+del mese, la linguetta oro copriva le lettere dei giorni (L M M…). Ora in quel caso la griglia
+prende la classe `tp-sett-prima` e le intestazioni (`.tp-cal-int`) hanno 20 px di spazio sotto,
+dove sta la linguetta. Negli altri mesi il calendario resta com'era. Controlli in
+`test/controlli.js`, `test/galleria.js` e `test/esegui.sh` (regola CSS).
