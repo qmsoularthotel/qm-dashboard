@@ -85,6 +85,10 @@ schede e non hanno niente a che fare con Compass. **Il prezzo, accettato consape
 dal Pannello App non si spegne più da remoto e non si vede più quando è stata usata.** Se
 serve fermarla, si toglie il file o si cambia il link.
 
+**Dal 23/11/2026 è di nuovo nel Pannello App, con interruttore e ultimo utilizzo** — vedi
+«Registration Cards nel Pannello App» in fondo a questo file. Il paragrafo qui sopra racconta
+perché era stata staccata; la soluzione nuova non chiede nessun codice ai colleghi.
+
 Per questo non ha (e non deve avere) la schermata di abilitazione delle altre cinque app.
 Un controllo in `test/esegui.sh` verifica che non le rientri dentro una `fetch` verso il
 Worker: succederebbe in silenzio e l'app smetterebbe di funzionare in Galleria.
@@ -360,3 +364,42 @@ giorno in cui è stata scelta: vale solo per quel giorno, e solo se la data c'è
 altrimenti si torna a oggi (`findTodayIdx`). I valori vecchi (un numero) non valgono più.
 Controllo in `test/esegui.sh` (le due copie identiche, sei casi provati con Node o osascript),
 verificato togliendo il controllo del giorno.
+
+## Registration Cards nel Pannello App (23/11/2026)
+
+Richiesta del QM: *"inseriscimela nel pannello app di Compass, attivarla e disattivarla da
+remoto"*. Scheda **Registration Cards · Galleria · Ricevimento** nel Pannello di Controllo, con
+interruttore, «Copia link» e «Apri».
+
+**Come arriva l'interruttore senza chiedere codici ai colleghi**: i PC della Galleria hanno già il
+codice di Compass Ops – Galleria (`bg_pass` nel `localStorage`, stesso sito). La Registration lo
+usa per leggere **solo** `bg_rc_status` (`{attiva:false}` = spenta) all'apertura, al ritorno in
+primo piano e ogni minuto; sul PC del QM legge col lasciapassare di Compass. Spenta mostra la
+stessa schermata «Applicazione in aggiornamento» delle altre app; con l'anteprima di una scheda
+aperta aspetta il giro dopo.
+
+| Caso | Cosa fa la Registration |
+|---|---|
+| cloud dice «spenta» | schermata di manutenzione |
+| cloud dice «accesa» o non dice niente | normale |
+| PC senza codice della Galleria | normale (non chiede niente): **lì l'interruttore non arriva** |
+| rete o cloud che non rispondono | normale (**scelta del QM**: le schede si stampano anche con internet instabile) |
+
+**Ultimo utilizzo** (`bg_rc_ultimo`): a ogni PDF letto e a ogni stampa si scrive
+`{ts, cosa:'caricamento'|'stampa', n}` — ora, una parola fra due, un numero. **Mai** nomi,
+camere o date degli ospiti. Compass (`_miniappRcStato`) ne legge solo numeri e quella parola:
+la chiave la scrivono i PC della Galleria. Una scrittura per PDF o stampa: consumo trascurabile.
+
+Funzioni: nella pagina `rcControllaStato`, `rcSegnaUso`, `_rcPass`; in Compass `miniappLoadRc`,
+`miniappRenderRc`, `miniappToggleRc` (se il cloud non risponde l'interruttore torna com'era e lo
+dice), `_miniappRcStato`. Nessuna modifica al Worker: `permessoGalleria` apre già tutte le `bg_*`.
+
+**Limite accettato**, come per `bg_app_status`: chi ha il codice della Galleria potrebbe
+riscrivere a mano l'interruttore. Basta per fermare l'uso normale, non un collega che sa usare
+gli strumenti del browser.
+
+Controlli: `test/controlli.js` ("Pannello App: la Registration Galleria con interruttore e ultimo
+utilizzo") e `test/esegui.sh`, che al posto del vecchio «non deve toccare il cloud» verifica: solo
+le due chiamate a `bg_rc_*`, niente elenco/cancellazioni/chiavi `qm_*`/schermata del codice,
+ultimo utilizzo con soli ora-parola-numero, app accesa senza codice e senza rete. Verificati con
+quattro sabotaggi.

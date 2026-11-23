@@ -2795,6 +2795,7 @@ function miniappRender(){
   miniappRenderStatus();
   miniappLoadAppStatus();
   miniappLoadGalleria();
+  miniappLoadRc();
   miniappLoadBkfBanner();
 }
 // ── PANNELLO DI CONTROLLO: «COME STA COMPASS» E «DA SISTEMARE» (21/11/2026, QM) ──
@@ -2951,6 +2952,47 @@ function miniappToggleGalleria(){
   _bgAppAttiva=!_bgAppAttiva;
   kvSet('bg_app_status',JSON.stringify({attiva:_bgAppAttiva})).catch(()=>{});
   miniappRenderGalleria();
+}
+// Registration Cards – Galleria (23/11/2026, il QM: «inseriscimela nel pannello app, attivarla
+// e disattivarla da remoto»). L'app sta fuori da Compass e non chiede nessun codice: legge
+// l'interruttore con il codice della Galleria già presente sui PC di Compass Ops – Galleria,
+// quindi le chiavi sono bg_* (bg_rc_status, bg_rc_ultimo). Senza codice, o senza rete, l'app
+// resta accesa (scelta del QM). Limite accettato, come bg_app_status: chi ha il codice della
+// Galleria potrebbe riscrivere l'interruttore a mano.
+// bg_rc_ultimo è scritto dai PC della Galleria: se ne leggono SOLO numeri e una parola fra due.
+let _rcAttiva=true,_rcUso=null;
+async function miniappLoadRc(){
+  const leggi=k=>fetch(PROXY+'/kv/get?key='+k,{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.json();}).then(j=>j&&j.value?JSON.parse(j.value):null);
+  let ok=true;
+  try{const v=await leggi('bg_rc_status');_rcAttiva=!(v&&v.attiva===false);}catch(e){ok=false;}
+  try{_rcUso=await leggi('bg_rc_ultimo');}catch(e){_rcUso=null;}
+  miniappRenderRc(ok);
+}
+// Pura: la riga di stato della scheda (i controlli la provano con dati inventati).
+function _miniappRcStato(attiva,uso,raggiungibile){
+  if(!raggiungibile)return _miniappStatusHTML('amber','Dati non raggiungibili','');
+  if(!attiva)return _miniappStatusHTML('red','Spenta da remoto','sui PC della Galleria');
+  const ts=uso&&Number(uso.ts);
+  if(!ts||!isFinite(ts))return _miniappStatusHTML('green','Attiva','nessun utilizzo registrato');
+  const n=Math.max(0,parseInt(uso.n,10)||0);
+  const cosa=uso.cosa==='stampa'?'stampa di '+n+(n===1?' scheda':' schede'):'PDF letto, '+n+(n===1?' ospite':' ospiti');
+  return _miniappStatusHTML('green','Attiva','ultimo utilizzo '+_qmQuandoAgg(ts)+' · '+cosa);
+}
+function miniappRenderRc(raggiungibile){
+  const btn=document.getElementById('miniapp-rc-toggle');
+  if(btn){
+    btn.style.background=_rcAttiva?'var(--green)':'var(--border)';
+    const knob=btn.querySelector('.miniapp-toggle-knob');
+    if(knob)knob.style.left=_rcAttiva?'17px':'2px';
+  }
+  const st=document.getElementById('miniapp-rc-status');
+  if(st)st.innerHTML=_miniappRcStato(_rcAttiva,_rcUso,raggiungibile!==false);
+}
+async function miniappToggleRc(){
+  _rcAttiva=!_rcAttiva;
+  miniappRenderRc(true);
+  const ok=await kvSet('bg_rc_status',JSON.stringify({attiva:_rcAttiva})).catch(()=>false);
+  if(ok===false){_rcAttiva=!_rcAttiva;miniappRenderRc(true);cqAvviso('Interruttore non salvato','Il cloud non ha risposto: la Registration Galleria è rimasta come prima. Riprova fra poco.');}
 }
 function miniappToggleApp(key){
   const on=_appStatus[key]!==false;

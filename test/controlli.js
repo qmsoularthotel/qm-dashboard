@@ -521,6 +521,23 @@ sez('Operativa HKP: una sigla scritta prima di cambiare mese si salva lo stesso'
   }
 })();
 
+sez('Pannello App: la Registration Galleria con interruttore e ultimo utilizzo');
+// 23/11/2026, il QM: «inseriscimela nel pannello app, attivarla e disattivarla da remoto».
+(function () {
+  var t = function (h) { return String(h).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); };
+  ok('spenta: lo dice', t(_miniappRcStato(false, null, true)), 'Spenta da remoto sui PC della Galleria');
+  ok('accesa, mai usata', t(_miniappRcStato(true, null, true)), 'Attiva nessun utilizzo registrato');
+  var ts = new Date(); ts.setHours(10, 5, 0, 0);
+  ok('ultima stampa', t(_miniappRcStato(true, { ts: ts.getTime(), cosa: 'stampa', n: 3 }, true)), 'Attiva ultimo utilizzo oggi alle 10:05 · stampa di 3 schede');
+  ok('ultimo PDF letto', t(_miniappRcStato(true, { ts: ts.getTime(), cosa: 'caricamento', n: 1 }, true)), 'Attiva ultimo utilizzo oggi alle 10:05 · PDF letto, 1 ospite');
+  // bg_rc_ultimo lo scrivono i PC della Galleria: niente testo loro arriva nella pagina
+  var h = _miniappRcStato(true, { ts: ts.getTime(), cosa: '<img src=x onerror=alert(1)>', n: '<b>9</b>' }, true);
+  ok('un testo estraneo nell\'ultimo utilizzo non entra', /<img|onerror|<b>/.test(h), false);
+  ok('cloud irraggiungibile: lo dice', t(_miniappRcStato(true, null, false)), 'Dati non raggiungibili');
+  ok('il Pannello la carica', /miniappLoadRc\(\)/.test(String(miniappRender)), true);
+  ok('l\'interruttore scrive la chiave della Galleria', /kvSet\('bg_rc_status'/.test(String(miniappToggleRc)), true);
+})();
+
 sez('Colazioni: un caricamento stretto non cancella la previsione');
 // Il grafico della previsione e' lo strumento su cui la responsabile organizza il
 // servizio. Un export del PMS filtrato su un giorno solo sostituiva l'intera serie e lo

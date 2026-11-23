@@ -229,6 +229,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </head>
 <body>
 
+<!-- Stessa schermata di manutenzione delle altre app: la accende l'interruttore della scheda
+     «Registration Cards – Galleria» nel Pannello di Controllo di Compass (bg_rc_status). -->
+<div id="qm-maintenance-screen" style="display:none;position:fixed;inset:0;z-index:99999;background:#1A2E55;align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:20px;box-sizing:border-box;text-align:center;">
+  <img src="img/compass-stella-chiara.png" alt="Compass" width="90" height="90" style="flex-shrink:0;width:90px;height:90px;object-fit:contain;transform:rotate(22deg);">
+  <div>
+    <div style="font-size:23px;font-weight:700;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
+    <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:5px;white-space:nowrap;">Connected · Automated · Precise</div>
+  </div>
+  <div style="width:70px;border-top:1px solid rgba(255,255,255,.15);margin:8px 0;"></div>
+  <div>
+    <div style="font-size:19px;font-weight:600;color:#fff;">Applicazione in aggiornamento</div>
+    <div style="font-size:14px;color:rgba(255,255,255,.6);margin-top:18px;line-height:1.6;">Torna operativa a breve.<br>Contatta il Quality Manager per info.</div>
+  </div>
+</div>
+
 <div id="qm-splash" style="position:fixed;inset:0;z-index:99998;background:#1A2E55;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .5s ease;" onclick="this.style.opacity='0';setTimeout(()=>this.remove(),520);">
   <div style="position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center;">
     <div style="position:absolute;width:150px;height:150px;border-radius:50%;border:2.6px solid rgba(201,149,47,.55);animation:qmSplashRing 1.8s ease-out infinite;"></div>
@@ -262,28 +277,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </script>
 
 <script>
-// ── APP INDIPENDENTE — NESSUN COLLEGAMENTO AL CLOUD ────────────────────────
-// Quest'app non parla con il Worker di Compass e non scrive niente su KV: legge il PDF
-// degli arrivi NEL BROWSER (pdf.js) e stampa. Nomi degli ospiti, date, camere e dati
-// della carta di credito non escono da qui.
+// ── I DATI DEGLI OSPITI NON ESCONO DA QUI ──────────────────────────────────
+// Legge il PDF degli arrivi NEL BROWSER (pdf.js) e stampa. Nomi degli ospiti, date, camere
+// e dati della carta di credito non vanno mai sul cloud.
 //
-// Fino al 02/09/2026 mandava al cloud due sole cose — acceso/spento (chiave 'rc' in
-// qm_app_status) e l'orario dell'ultimo utilizzo (qm_rc_last) — ed era per questo che
-// compariva nel Pannello App. Sono state tolte di proposito: l'app non fa parte di
-// Compass, e con l'accesso al Worker ora riservato ai dispositivi abilitati, restare
-// agganciata avrebbe voluto dire chiedere un lasciapassare anche a chi la usa solo per
-// stampare le schede. Il prezzo, accettato: dal Pannello App non si spegne piu' e non si
-// vede piu' quando e' stata usata l'ultima volta.
-//
-// L'unica cosa rimasta e' l'aggiornamento automatico qui sotto, che guarda solo il
-// proprio file e non ha bisogno di nessun server.
+// Storia: fino al 02/09/2026 mandava acceso/spento e ultimo utilizzo con chiavi qm_*; tolti
+// quando il Worker è stato riservato ai dispositivi abilitati, per non chiedere un
+// lasciapassare ai colleghi. Dal 23/11/2026 (richiesta del QM) torna nel Pannello App, ma
+// SENZA chiedere niente a nessuno: usa il codice della Galleria che c'è già sui PC dove gira
+// Compass Ops – Galleria (stesso sito, stesso localStorage: 'bg_pass'), che apre solo le
+// chiavi bg_*. Vedi rcControllaStato più sotto.
 
 // ── AGGIORNAMENTO AUTOMATICO ──
 // Un'app aperta e mai chiusa continua a usare il codice con cui e' stata caricata. Si
 // confronta l'ETag del proprio file (cambia solo se cambia il contenuto: nessun numero di
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina — che risponde
 // alla domanda che l'ETag non sa porsi: sto gia' eseguendo una copia vecchia?
-const QM_APP_BUILD='2026-11-23.1';
+const QM_APP_BUILD='2026-11-23.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -312,6 +322,41 @@ async function qmCheckVersione(){
     location.reload();
   }catch(e){}
 }
+// ── INTERRUTTORE E ULTIMO UTILIZZO (23/11/2026, il QM) ──
+// L'interruttore della scheda nel Pannello di Compass scrive bg_rc_status ({attiva:false}
+// = spenta). Qui si legge col codice della Galleria del PC; sul PC del QM col lasciapassare
+// di Compass (si LEGGE soltanto). Se il PC non ha nessun codice, o la rete o il cloud non
+// rispondono, l'app RESTA UTILIZZABILE (scelta del QM): si spegne solo quando il cloud dice
+// «spenta». Con l'anteprima di una scheda aperta si aspetta il giro dopo.
+// L'ultimo utilizzo (bg_rc_ultimo) porta solo l'ora, cosa è successo e quante schede: MAI
+// nomi, camere o date degli ospiti.
+const RC_PROXY='https://anthropic-proxy.qm-d82.workers.dev';
+const RC_STATO_KEY='bg_rc_status',RC_USO_KEY='bg_rc_ultimo';
+function _rcPass(){try{return localStorage.getItem('bg_pass')||localStorage.getItem('qm_pass')||'';}catch(e){return'';}}
+async function rcControllaStato(){
+  const pass=_rcPass();if(!pass)return;
+  let spenta;
+  try{
+    const r=await fetch(RC_PROXY+'/kv/get?key='+RC_STATO_KEY,{cache:'no-store',headers:{'X-QM-Pass':pass}});
+    if(!r.ok)return;
+    const j=await r.json();
+    spenta=false;
+    try{spenta=!!(j&&j.value&&JSON.parse(j.value).attiva===false);}catch(e){}
+  }catch(e){return;}
+  const mo=document.getElementById('modalOverlay');
+  if(spenta&&mo&&mo.classList.contains('open'))return;
+  const s=document.getElementById('qm-maintenance-screen');
+  if(s)s.style.display=spenta?'flex':'none';
+}
+function rcSegnaUso(cosa,n){
+  const pass=_rcPass();if(!pass)return;
+  const v=JSON.stringify({ts:Date.now(),cosa:cosa==='stampa'?'stampa':'caricamento',n:Math.max(0,parseInt(n,10)||0)});
+  try{fetch(RC_PROXY+'/kv/set',{method:'POST',headers:{'Content-Type':'application/json','X-QM-Pass':pass},body:JSON.stringify({key:RC_USO_KEY,value:v})}).catch(()=>{});}catch(e){}
+}
+rcControllaStato();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')rcControllaStato();});
+setInterval(()=>{if(document.visibilityState==='visible')rcControllaStato();},60000);
+
 qmCheckBuild();
 qmCheckVersione();
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')qmCheckVersione();});
@@ -438,7 +483,7 @@ async function handleFile(file) {
     const guests = parseGuests(fullText);
     hideProc();
     if (!guests.length) showError('Nessun ospite trovato. Verifica che il PDF sia un report arrivi PMS.');
-    else renderCards(guests);
+    else { renderCards(guests); rcSegnaUso('caricamento', guests.length); }
   } catch(err) { hideProc(); showError('Errore: ' + err.message); }
 }
 
@@ -635,6 +680,7 @@ function cardHTML(g) {
 
 function triggerPrint(idx) {
   const cards = idx === null ? guestsData : [guestsData[idx]];
+  rcSegnaUso('stampa', cards.length);
   printArea.innerHTML = cards.map(g => `<div class="print-page">${cardHTML(g)}</div>`).join('');
   window.print();
   setTimeout(() => { printArea.innerHTML = ''; }, 3000);

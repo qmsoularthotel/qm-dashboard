@@ -319,17 +319,26 @@ if grep -n 'pdfjsLib.getDocument' app.js | grep -qv '_pdfApri\|return pdfjsLib.g
   BKF_KO=1
 fi
 
-# registration-galleria.html e' un'app a se': dei colleghi della Galleria, fuori da Compass.
-# Il 02/09/2026 le e' stato tolto ogni contatto col cloud, ed e' questa la ragione per cui
-# non ha una schermata di abilitazione e non compare piu' nel Pannello App. Se qualcuno le
-# rimettesse una fetch verso il Worker, tornerebbe a chiedere un lasciapassare che chi la
-# usa non ha: l'app smetterebbe di funzionare in Galleria, e nessuno collegherebbe la cosa
-# a una riga aggiunta qui.
-if grep -qE "anthropic-proxy|/kv/|qmKvSet" registration-galleria.html; then
+# registration-galleria.html e' un'app a se': dei colleghi della Galleria, fuori da Compass,
+# senza schermata di abilitazione. Dal 23/11/2026 (QM) legge l'interruttore del Pannello App e
+# segna l'ultimo utilizzo, ma SOLO sulle sue due chiavi bg_rc_status / bg_rc_ultimo e col codice
+# della Galleria gia' presente sul PC: niente elenco, niente cancellazioni, nessuna chiave qm_*,
+# nessuna schermata che chieda un codice, e nell'ultimo utilizzo solo ora, parola e numero —
+# mai nomi, camere o date degli ospiti. Senza codice o senza rete l'app resta accesa.
+_RC_KO=""
+grep -q "qmKvSet\|/kv/delete\|/kv/chiavi\|gbMostraAttivazione\|qmMostraAttivazione" registration-galleria.html && _RC_KO="usa funzioni o percorsi del cloud non ammessi"
+[ "$(grep -c "/kv/" registration-galleria.html)" = "2" ] || _RC_KO="le chiamate al cloud non sono piu' solo le due dell'interruttore"
+grep "/kv/" registration-galleria.html | grep -qv "RC_STATO_KEY\|RC_USO_KEY" && _RC_KO="una chiamata al cloud non usa le chiavi bg_rc_*"
+grep -q "const RC_STATO_KEY='bg_rc_status',RC_USO_KEY='bg_rc_ultimo';" registration-galleria.html || _RC_KO="chiavi dell'interruttore cambiate"
+grep -q "JSON.stringify({ts:Date.now(),cosa:cosa==='stampa'?'stampa':'caricamento',n:Math.max(0,parseInt(n,10)||0)})" registration-galleria.html || _RC_KO="l'ultimo utilizzo potrebbe portare altri dati"
+{ grep -A1 "^async function rcControllaStato(){" registration-galleria.html | grep -q "const pass=_rcPass();if(!pass)return;" \
+  && sed -n '/^async function rcControllaStato(){/,/^}/p' registration-galleria.html | grep -q "if(!r.ok)return;" \
+  && sed -n '/^async function rcControllaStato(){/,/^}/p' registration-galleria.html | grep -q "}catch(e){return;}"; } \
+  || _RC_KO="senza codice o senza rete l'app potrebbe non restare accesa"
+if [ -n "$_RC_KO" ]; then
   echo ""
-  echo "  ERRORE      registration-galleria.html e' tornata a usare il cloud di Compass."
-  echo "              Deve restare indipendente: senza lasciapassare il Worker la rifiuta"
-  echo "              e i colleghi della Galleria non stampano piu' le schede."
+  echo "  ERRORE      registration-galleria.html: $_RC_KO."
+  echo "              Deve leggere solo il suo interruttore e segnare solo ora e numero di schede."
   BKF_KO=1
 fi
 # L'aggiornamento automatico invece deve restarci: guarda solo il proprio file, non serve
