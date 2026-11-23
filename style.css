@@ -302,6 +302,7 @@ body.dark .panel{box-shadow:none;}
    Compass OPS larga. Stessi token delle schede del mosaico. */
 .ms-sez{display:flex;align-items:center;gap:8px;margin:4px 2px 9px;font-size:var(--fs-xxs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);}
 .ms-sez::after{content:'';flex:1;border-top:1px solid var(--border);}
+.ms-sez-spazio{margin-top:22px;}   /* seconda sezione del Pannello App (Galleria) */
 .ms-stato{margin-bottom:20px;}
 .ms-dasis{margin-bottom:20px;}
 .ms-ops-tg .miniapp-sw{margin-left:0;}

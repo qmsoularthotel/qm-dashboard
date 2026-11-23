@@ -5,7 +5,7 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<link rel="stylesheet" href="style.css?v=295">
+<link rel="stylesheet" href="style.css?v=296">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
@@ -1441,7 +1441,9 @@
         <!-- Da sistemare (21/11/2026): lo disegna miniappRenderDaSistemare e resta vuoto quando non
              c'è niente da fare. «Stato del sistema» ha la sua voce di menu (vista sistema). -->
         <div id="miniappDaSistemare"></div>
-        <div class="ms-sez">Applicazioni</div>
+        <!-- Due sezioni (23/11/2026, il QM): le app del SoulArt e quelle della Galleria. Inventari
+             e DVR stanno nel SoulArt per scelta del QM. Gli id delle schede non cambiano. -->
+        <div class="ms-sez">SoulArt</div>
         <div class="miniapp-grid" id="miniappGrid">
           <div class="panel miniapp-card">
             <div class="miniapp-card-top">
@@ -1490,22 +1492,6 @@
           </div>
           <div class="panel miniapp-card">
             <div class="miniapp-card-top">
-              <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C9 7 5 11.5 5 15.5A7 7 0 0 0 19 15.5C19 11.5 15 7 12 2z"/></svg></span>
-              <div class="miniapp-nome">
-                <div class="miniapp-titolo">Distribuzione Culligan</div>
-                <div class="miniapp-sub">Art Resort</div>
-              </div>
-              <button id="miniapp-cm-toggle" onclick="miniappToggleApp('cm')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button>
-            </div>
-            <div id="miniapp-cm-status" class="miniapp-stato"></div>
-            <input id="cm-url-input" type="hidden" value="https://compass-qm.com/controllo-mattino.html">
-            <div class="miniapp-azioni">
-              <button onclick="miniappCopy('cm-url-input',this)" class="miniapp-btn">Copia link</button>
-              <button onclick="miniappOpen('cm-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
-            </div>
-          </div>
-          <div class="panel miniapp-card">
-            <div class="miniapp-card-top">
               <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>
               <div class="miniapp-nome">
                 <div class="miniapp-titolo">Inventari Detersivi</div>
@@ -1536,6 +1522,9 @@
               <button onclick="miniappOpen('dvr-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
             </div>
           </div>
+        </div>
+        <div class="ms-sez ms-sez-spazio">Galleria</div>
+        <div class="miniapp-grid" id="miniappGridGalleria">
           <!-- Gestione Biancheria della Galleria: app del Resident Manager. Il suo interruttore
                scrive bg_app_status e non qm_app_status: il codice della Galleria apre solo le
                chiavi bg_*. Il QM la apre da qui senza codice, col lasciapassare di Compass. -->
@@ -1553,6 +1542,22 @@
             <div class="miniapp-azioni">
               <button onclick="miniappCopy('bg-url-input',this)" class="miniapp-btn">Copia link</button>
               <button onclick="miniappOpen('bg-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
+            </div>
+          </div>
+          <div class="panel miniapp-card">
+            <div class="miniapp-card-top">
+              <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C9 7 5 11.5 5 15.5A7 7 0 0 0 19 15.5C19 11.5 15 7 12 2z"/></svg></span>
+              <div class="miniapp-nome">
+                <div class="miniapp-titolo">Distribuzione Culligan</div>
+                <div class="miniapp-sub">Art Resort</div>
+              </div>
+              <button id="miniapp-cm-toggle" onclick="miniappToggleApp('cm')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button>
+            </div>
+            <div id="miniapp-cm-status" class="miniapp-stato"></div>
+            <input id="cm-url-input" type="hidden" value="https://compass-qm.com/controllo-mattino.html">
+            <div class="miniapp-azioni">
+              <button onclick="miniappCopy('cm-url-input',this)" class="miniapp-btn">Copia link</button>
+              <button onclick="miniappOpen('cm-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
             </div>
           </div>
           <!-- Registration Cards della Galleria (23/11/2026): app fuori da Compass, senza codice.

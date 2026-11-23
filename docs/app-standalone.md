@@ -403,3 +403,17 @@ utilizzo") e `test/esegui.sh`, che al posto del vecchio «non deve toccare il cl
 le due chiamate a `bg_rc_*`, niente elenco/cancellazioni/chiavi `qm_*`/schermata del codice,
 ultimo utilizzo con soli ora-parola-numero, app accesa senza codice e senza rete. Verificati con
 quattro sabotaggi.
+
+## Pannello App in due sezioni: SoulArt e Galleria (23/11/2026)
+
+Richiesta del QM. Al posto dell'unica sezione «Applicazioni» ce ne sono due, con lo stesso
+titolo a filetto (`.ms-sez`; la seconda ha `.ms-sez-spazio` per staccarla):
+
+| Sezione | Schede (in ordine) |
+|---|---|
+| **SoulArt** (`#miniappGrid`) | Housekeeping, Breakfast, Inventari Detersivi, DVR & Compliance |
+| **Galleria** (`#miniappGridGalleria`) | Compass Ops – Galleria (larga), Distribuzione Culligan, Registration Cards |
+
+Inventari (che serve anche ad Art Resort) e DVR (di tutto il gruppo) stanno nel SoulArt **per
+scelta del QM**. Le schede sono state solo spostate: id, interruttori e pulsanti sono gli
+stessi, nessuna funzione è cambiata. Un controllo in `test/esegui.sh` verifica sezioni e ordine.
