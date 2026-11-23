@@ -195,7 +195,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 .gp-leg i.gp-box{width:14px;height:14px;min-width:0;padding:0;background:transparent;box-shadow:inset 0 0 0 2px var(--amber);}
 .gp-pers{display:flex;align-items:center;gap:10px;padding:8px 14px;font-size:var(--fs-xs);flex-wrap:wrap;}
 .gp-pers+.gp-pers{border-top:1px solid var(--border-light);}
-.gp-pers b{min-width:0;flex:1;}
+.gp-pers b{min-width:0;flex:1 1 100%;}
 .gp-pers small{color:var(--text-dim);}
 .gp-pers select{font-family:inherit;font-size:var(--fs-xs);padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);}
 .gp-azioni{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
@@ -227,7 +227,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-23.9';
+const QM_APP_BUILD='2026-11-23.10';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -5015,7 +5015,9 @@ function _gpCelle(xml,cond){
 // Il foglio di Cascione: riga «Cognome e nome» coi giorni 1–31 e le colonne dei totali S e A;
 // per ogni persona tre righe (D = O, S, A). Ore al giorno = il numero più frequente della sua
 // riga O; notte NL = se nel foglio le sue notti sono scritte NL.
-function _gpModello(c){
+// Celle unite del foglio: ['P5:V5', …].
+function _gpUnite(xml){return (String(xml).match(/<mergeCell ref="[^"]+"/g)||[]).map(x=>x.slice(16,-1));}
+function _gpModello(c,unite){
   const righe={};for(const ref in c){const r=_gpRiga(ref);(righe[r]=righe[r]||{})[_gpCol(ref)]=c[ref];}
   const nr=Object.keys(righe).map(Number).sort((a,b)=>a-b);
   const testa=nr.find(r=>Object.values(righe[r]).some(v=>/^cognome e nome$/i.test(v)));
@@ -5025,15 +5027,25 @@ function _gpModello(c){
     if(/^\d+$/.test(v)&&+v>=1&&+v<=31)giorni[+v]=col;else if(v==='S')colS=col;else if(v==='A')colA=col;});
   if(Object.keys(giorni).length<28)return null;
   const r2=righe[2]||{};const nome=r2.C||Object.keys(r2).sort((a,b)=>_gpColNum(a)-_gpColNum(b)).map(k=>r2[k]).find(v=>!/^ditta/i.test(v))||'';
+  // Il periodo è la cella subito dopo la scritta «Periodo» (dopo la sua cella unita, P5:V5 → W5),
+  // anche se è vuota: un foglio di Cascione non compilato ha W5 senza data (23/11/2026).
   let periodo='';
   nr.filter(r=>r<testa).forEach(r=>{const cols=Object.keys(righe[r]).sort((a,b)=>_gpColNum(a)-_gpColNum(b));
-    const i=cols.findIndex(k=>/^periodo$/i.test(righe[r][k]));if(i>=0&&cols[i+1])periodo=cols[i+1]+r;});
+    const k=cols.find(x=>/^periodo$/i.test(righe[r][x]));if(!k)return;
+    // Dopo la sua cella unita; senza celle unite la prima cella piena a destra; se no la colonna dopo.
+    let fine=_gpColNum(k),unita=false;(unite||[]).forEach(u=>{const [a,b]=u.split(':');if(b&&a===k+r&&_gpRiga(b)===r){fine=_gpColNum(_gpCol(b));unita=true;}});
+    const dopo=cols.find(x=>_gpColNum(x)>_gpColNum(k));
+    if(!unita&&dopo){periodo=dopo+r;return;}
+    let col='',n=fine+1;while(n>0){const q=(n-1)%26;col=String.fromCharCode(65+q)+col;n=Math.floor((n-1)/26);}
+    periodo=col+r;});
   const persone=[];
   nr.filter(r=>r>testa).forEach(r=>{const R=righe[r];if(R.D!=='O'||!R.B)return;
     const trova=x=>{for(let k=r+1;k<=r+3;k++)if(righe[k]&&righe[k].D===x)return k;return r+(x==='S'?1:2);};
     const vals=Object.keys(giorni).map(d=>R[giorni[d]]).filter(Boolean),cnt={};
     vals.filter(v=>/^\d+$/.test(v)).forEach(v=>{cnt[v]=(cnt[v]||0)+1;});
-    const ore=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||b-a)[0]||'8';
+    // Ore al giorno SOLO dal foglio: un foglio vuoto non le ha, e allora restano da indicare
+    // (23/11/2026: con un foglio vuoto si erano messe 8 ore a chi ne fa 6, senza dirlo).
+    const ore=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||b-a)[0]||'';
     persone.push({nome:R.B,n:R.A||'',riga:r,rigaS:trova('S'),rigaA:trova('A'),ore,notte:vals.indexOf('NL')>=0});});
   return {nome,giorni,colS,colA,periodo,persone};
 }
@@ -5051,15 +5063,16 @@ function _gpNomiTurni(arch){const s=new Set();Object.values(_gpGiorniTurni(arch)
 // Dal codice del turno al valore del foglio: ore della persona, R, FE, ML, PE, NL o «-».
 function _gpDaTurno(t,p){
   const T=String(t==null?'':t).replace(/[​-‍⁠﻿]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
-  const ore=String((p&&p.ore)||8);
+  const ore=String((p&&p.ore)||'');
   if(!T||/^[-\/]+$/.test(T))return {v:'-'};
+  const lav=x=>ore?(x?{v:ore,chk:x}:{v:ore}):{v:'',chk:'Ore al giorno non indicate: sceglile in «Persone del foglio»',senzaOre:true};
   if(/^(R\b|RIP|REC\b|REC\.|RECUPERO|RIPOSO|P RIP)/.test(T))return {v:'R'};
   if(/^(FERIE|RICHIESTA FERIE)/.test(T))return {v:'FE'};
   if(/^MALATTIA/.test(T))return {v:'ML'};
   if(/^PERMESS/.test(T))return {v:'PE'};
-  if(/^N[CG]\b/.test(T))return {v:p&&p.notte?'NL':ore};
-  if(/RIPOSO|FERIE|MALATT|PERMESS/.test(T))return {v:ore,chk:'Nel turno: «'+T+'» · contato come giorno lavorato'};
-  return {v:ore};
+  if(/^N[CG]\b/.test(T))return p&&p.notte?{v:'NL'}:lav();
+  if(/RIPOSO|FERIE|MALATT|PERMESS/.test(T))return lav('Nel turno: «'+T+'» · contato come giorno lavorato');
+  return lav();
 }
 function _gpGiorniMese(y,m){return new Date(y,m+1,0).getDate();}
 function _gpIso(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
@@ -5083,7 +5096,12 @@ function _gpCompila(mod,gt,y,m,corr){
     for(let d=1;d<=N;d++){
       let c;
       if(!p.turno||assente)c={v:''};
-      else{const sh=gt[_gpIso(y,m,d)];c=sh?_gpDaTurno(_gpHa(sh,p.turno)?sh[p.turno]:'',p):{v:'',chk:'Settimana non caricata nell\'archivio turni',manca:true};}
+      else{const sh=gt[_gpIso(y,m,d)];
+        if(!sh)c={v:'',chk:'Settimana non caricata nell\'archivio turni',manca:true};
+        else if(_gpHa(sh,p.turno))c=_gpDaTurno(sh[p.turno],p);
+        // Non c'è proprio nel turno di quel giorno: se c'è negli altri giorni della stessa
+        // settimana è strano (un nome saltato leggendo il planning), e si controlla.
+        else c=_gpNellaSettimana(gt,y,m,d,p.turno)?{v:'-',chk:'Nel turno di questo giorno non compare: controlla il planning'}:{v:'-'};}
       const kk=k+'|'+d;
       if(_gpHa(o,kk))c={v:String(o[kk]),man:true,dai:c.v};
       G.push(c);S.push({v:_gpHa(s,kk)?String(s[kk]):'',man:_gpHa(s,kk)});A.push({v:_gpHa(a,kk)?String(a[kk]):'',man:_gpHa(a,kk)});
@@ -5091,6 +5109,21 @@ function _gpCompila(mod,gt,y,m,corr){
     return {p,k,o:G,s:S,a:A,assente};
   });
 }
+function _gpNellaSettimana(gt,y,m,d,nome){
+  const g=new Date(y,m,d,12),lun=new Date(g);lun.setDate(g.getDate()-((g.getDay()+6)%7));
+  for(let i=0;i<7;i++){const x=new Date(lun);x.setDate(lun.getDate()+i);
+    const sh=gt[_gpIso(x.getFullYear(),x.getMonth(),x.getDate())];if(sh&&_gpHa(sh,nome))return true;}
+  return false;
+}
+// Cosa impedisce di scaricare un file giusto: senza periodo o senza ore il foglio sarebbe sbagliato.
+function _gpBloccanti(mod,righe){
+  const b=[];
+  if(!mod||!mod.periodo)b.push('Nel foglio caricato non trovo la cella del periodo: ricarica il foglio di Cascione.');
+  righe.forEach(r=>{if(r.p.turno&&!r.assente&&!r.p.ore&&r.o.some(c=>c.senzaOre&&!c.man))b.push('Ore al giorno non indicate per '+r.p.nome+': sceglile in «Persone del foglio».');});
+  return b;
+}
+// Giorni come «3–5, 9, 12–14».
+function _gpIntervalli(g){const out=[];g.forEach(d=>{const u=out[out.length-1];if(u&&u[1]===d-1)u[1]=d;else out.push([d,d]);});return out.map(x=>x[0]===x[1]?String(x[0]):x[0]+'–'+x[1]).join(', ');}
 function _gpSomma(arr){return arr.reduce((t,c)=>t+(/^\d+([.,]\d+)?$/.test(c.v)?parseFloat(String(c.v).replace(',','.')):0),0);}
 function _gpSeriale(y,m){return Math.round((Date.UTC(y,m,1)-Date.UTC(1899,11,30))/864e5);}
 // Le celle da riscrivere nel foglio di Cascione per quel mese.
@@ -5118,6 +5151,14 @@ function _gpCella(ref,attr,val){
 function _gpScrivi(xml,out){
   const perRiga={};Object.keys(out).forEach(ref=>{(perRiga[_gpRiga(ref)]=perRiga[_gpRiga(ref)]||{})[ref]=out[ref];});
   const colDi=c=>_gpColNum(_gpCol((c.match(/\br="([A-Z]+\d+)"/)||[])[1]||''));
+  // Una formula condivisa ha una cella madre (t="shared" ref=…) e figlie (<f t="shared" si="N"/>):
+  // riscrivendo la madre le figlie resterebbero orfane ed Excel chiederebbe di «riparare».
+  const orfane=new Set();
+  const xml2=xml.replace(/<row\b[^>]*?(?:\/>|>[\s\S]*?<\/row>)/g,rw=>rw.replace(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g,(c,cat,inn)=>{
+    const ref=(cat.match(/\br="([A-Z]+\d+)"/)||[])[1];
+    if(ref&&_gpHa(out,ref)&&inn){const f=inn.match(/<f\b[^>]*\bt="shared"[^>]*\bref="[^"]*"[^>]*\bsi="(\d+)"|<f\b[^>]*\bt="shared"[^>]*\bsi="(\d+)"[^>]*\bref="/);if(f)orfane.add(f[1]||f[2]);}
+    return c;}));
+  if(orfane.size)xml=xml2.replace(/<f\b[^>]*\bt="shared"[^>]*>(?:<\/f>)?/g,f=>{const si=(f.match(/\bsi="(\d+)"/)||[])[1];return orfane.has(si)&&!/\bref="/.test(f)?'':f;});
   return xml.replace(/<row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/row>)/g,(tutto,at,dentro)=>{
     const r=+((at.match(/\br="(\d+)"/)||[])[1]),nuovi=perRiga[r];if(!nuovi)return tutto;
     const fatti=new Set();
@@ -5221,10 +5262,15 @@ function _gpDisegna(el){
   h+=`<div class="gp-scelte"><span class="gp-nota">Elenco e ore dal foglio «${_gtEsc(S.nomeFile||'')}»</span><div class="gp-mese"><button type="button" aria-label="Mese prima" onclick="gpMeseVai(-1)">‹</button><span>${GP_MESI[m]} ${y}</span><button type="button" aria-label="Mese dopo" onclick="gpMeseVai(1)">›</button></div></div>`;
   // Avvisi
   let chk=0,man=0;const av=[],mancano=new Set();
-  righe.forEach((r,i)=>{r.o.forEach((c,d)=>{if(c.man)man++;if(c.chk&&!c.man){chk++;if(c.manca)mancano.add(d+1);else av.push(`<div class="gp-avv"><span class="gp-tag am">Da controllare</span><div><strong>${_gtEsc(r.p.nome)} · ${d+1}/${m+1}</strong><small>${_gtEsc(c.chk)}</small></div><button type="button" onclick="gpVedi(${i},${d})">Vedi</button></div>`);}});
+  righe.forEach((r,i)=>{const nonC=[];
+    r.o.forEach((c,d)=>{if(c.man)man++;if(c.chk&&!c.man&&!c.senzaOre){chk++;if(c.manca)mancano.add(d+1);
+      else if(/non compare/.test(c.chk))nonC.push(d);
+      else av.push(`<div class="gp-avv"><span class="gp-tag am">Da controllare</span><div><strong>${_gtEsc(r.p.nome)} · ${d+1}/${m+1}</strong><small>${_gtEsc(c.chk)}</small></div><button type="button" onclick="gpVedi(${i},${d})">Vedi</button></div>`);}});
+    if(nonC.length)av.push(`<div class="gp-avv"><span class="gp-tag am">Da controllare</span><div><strong>${_gtEsc(r.p.nome)} · ${_gpIntervalli(nonC.map(d=>d+1))} ${GP_MESI[m].toLowerCase()}</strong><small>Nel turno di quei giorni non compare, negli altri giorni della settimana sì: controlla il planning. Per ora c'è «-».</small></div><button type="button" onclick="gpVedi(${i},${nonC[0]})">Vedi</button></div>`);
     r.s.forEach(c=>{if(c.man)man++;});r.a.forEach(c=>{if(c.man)man++;});});
   if(mancano.size){const g=[...mancano].sort((a,b)=>a-b);
-    av.unshift(`<div class="gp-avv"><span class="gp-tag rd">Mancano</span><div><strong>Turni non caricati: ${g.length===1?'giorno '+g[0]:'giorni '+g[0]+'–'+g[g.length-1]} ${GP_MESI[m].toLowerCase()}</strong><small>Carica quei planning in Compass: finché mancano, quei giorni restano vuoti.</small></div></div>`);}
+    av.unshift(`<div class="gp-avv"><span class="gp-tag rd">Mancano</span><div><strong>Turni non caricati: ${g.length===1?'giorno':'giorni'} ${_gpIntervalli(g)} ${GP_MESI[m].toLowerCase()}</strong><small>Carica quei planning in Compass: finché mancano, quei giorni restano vuoti.</small></div></div>`);}
+  _gpBloccanti(S,righe).forEach(t=>av.unshift(`<div class="gp-avv"><span class="gp-tag rd">Da sistemare</span><div><strong>${_gtEsc(t)}</strong><small>Finché c'è questo, l'Excel non si scarica: sarebbe sbagliato.</small></div></div>`));
   _gpUsciti(S,y,m).forEach(p=>av.push(`<div class="gp-avv"><span class="gp-tag gr">Non c'è più</span><div><strong>${_gtEsc(p.nome)}</strong><small>Fuori dal foglio da ${_gpMeseNome(p.uscita)}: nell'Excel le sue righe non ci sono.</small></div></div>`));
   righe.forEach(r=>{if(r.assente)av.unshift(`<div class="gp-avv"><span class="gp-tag gd">A mano</span><div><strong>${_gtEsc(r.p.nome)}</strong><small>Nei turni di ${GP_MESI[m].toLowerCase()} non compare mai (nei turni è «${_gtEsc(r.p.turno)}»): i giorni vanno scritti a mano.</small></div></div>`);});
   righe.forEach(r=>{if(!r.p.turno)av.unshift(`<div class="gp-avv"><span class="gp-tag gd">A mano</span><div><strong>${_gtEsc(r.p.nome)}</strong><small>Non è agganciato a nessun nome dei turni: i giorni vanno scritti a mano, oppure scegli il suo nome in «Persone del foglio».</small></div></div>`);});
@@ -5235,7 +5281,7 @@ function _gpDisegna(el){
   for(let d=1;d<=N;d++){const w=new Date(y,m,d).getDay();t+=`<th class="${w===0?'dom':''}">${d}<br>${GP_GG[w]}</th>`;}
   t+='<th class="gp-tot">TOT.</th></tr></thead><tbody>';
   righe.forEach((r,i)=>{
-    const sub=!r.p.turno?'non è nei turni · a mano':r.assente?'assente dai turni del mese · a mano':(r.p.ore+' ore al giorno'+(r.p.notte?' · notti NL':''));
+    const sub=!r.p.turno?'non è nei turni · a mano':r.assente?'assente dai turni del mese · a mano':((r.p.ore?r.p.ore+' ore al giorno':'ore da indicare')+(r.p.notte?' · notti NL':''));
     const riga=(tipo,arr)=>arr.map((c,d)=>`<td class="gp-c ${_gpClsV(c.v)}${c.man?' gp-man':''}${c.chk&&!c.man?' gp-chk':''}" tabindex="0" data-i="${i}" data-t="${tipo}" data-d="${d}">${_gtEsc(c.v)}</td>`).join('');
     t+=`<tr class="gp-pr"><td class="gp-nome" rowspan="3"><b>${_gtEsc(r.p.n?r.p.n+'. ':'')}${_gtEsc(r.p.nome)}</b><small>${_gtEsc(sub)}</small></td><td class="gp-r">O</td>${riga('o',r.o)}<td class="gp-tot">${_gpSomma(r.o)}</td></tr>`;
     t+=`<tr><td class="gp-r">S</td>${riga('s',r.s)}<td class="gp-tot">${_gpSomma(r.s)||''}</td></tr>`;
@@ -5247,7 +5293,7 @@ function _gpDisegna(el){
   // Persone del foglio: a chi corrisponde nei turni
   const nomi=_gpNomiTurni(_gtuArch);
   h+=`<div class="panel"><div class="panel-header" style="cursor:pointer;" onclick="gpPersone()"><span class="panel-title">Persone del foglio · nome nei turni</span><span class="gp-nota">${_gpPersAperto?'Chiudi ▴':'Apri ▾'}</span></div>`;
-  if(_gpPersAperto)h+=S.persone.map((p,i)=>`<div class="gp-pers"><b>${_gtEsc(p.n?p.n+'. ':'')}${_gtEsc(p.nome)} <small>· ${_gtEsc(p.ore)} ore${p.notte?' · notti NL':''}</small></b><select id="gp-turno-${i}" aria-label="Nome nei turni" onchange="gpTurno(${i},this.value)"><option value="">non è nei turni</option>${nomi.map(n=>`<option value="${_gtEsc(n)}"${n===p.turno?' selected':''}>${_gtEsc(n)}</option>`).join('')}</select>${p.uscita?`<span class="gp-nota">non c'è più da ${_gpMeseNome(p.uscita)}</span><button type="button" class="gp-pill" onclick="gpUscita(${i},'')">Rimetti</button>`:`<button type="button" class="gp-pill" onclick="gpUscita(${i},'${_gpMeseIso(y,m)}')">Non c'è più da ${GP_MESI[m].toLowerCase()}</button>`}</div>`).join('')+`<div class="gp-avv"><span class="gp-nota">Ore, notti e persone vengono dal foglio di Cascione. Se cambiano, o per aggiungere un'altra società, carica il suo foglio aggiornato: quello della stessa società sostituisce il vecchio.</span>${carica}</div>`;
+  if(_gpPersAperto)h+=S.persone.map((p,i)=>`<div class="gp-pers"><b>${_gtEsc(p.n?p.n+'. ':'')}${_gtEsc(p.nome)}</b><select id="gp-ore-${i}" aria-label="Ore al giorno" onchange="gpOre(${i},this.value)">${p.ore?'':'<option value="" selected>ore da indicare</option>'}${[...new Set(['8','7','6','5','4','3','2','1',String(p.ore||'8')])].map(o=>`<option value="${_gtEsc(o)}"${o===String(p.ore)?' selected':''}>${_gtEsc(o)} ore</option>`).join('')}</select><label class="gp-nota"><input type="checkbox" id="gp-notte-${i}" ${p.notte?'checked':''} onchange="gpNotte(${i},this.checked)"> notti NL</label><select id="gp-turno-${i}" aria-label="Nome nei turni" onchange="gpTurno(${i},this.value)"><option value="">non è nei turni</option>${nomi.map(n=>`<option value="${_gtEsc(n)}"${n===p.turno?' selected':''}>${_gtEsc(n)}</option>`).join('')}</select>${p.uscita?`<span class="gp-nota">non c'è più da ${_gpMeseNome(p.uscita)}</span><button type="button" class="gp-pill" onclick="gpUscita(${i},'')">Rimetti</button>`:`<button type="button" class="gp-pill" onclick="gpUscita(${i},'${_gpMeseIso(y,m)}')">Non c'è più da ${GP_MESI[m].toLowerCase()}</button>`}</div>`).join('')+`<div class="gp-avv"><span class="gp-nota">Ore, notti e persone vengono dal foglio di Cascione. Se cambiano, o per aggiungere un'altra società, carica il suo foglio aggiornato: quello della stessa società sostituisce il vecchio.</span>${carica}</div>`;
   h+='</div>';
   h+=`<div class="gp-azioni"><button type="button" class="btn-primary" onclick="gpScarica()">Scarica Excel per Cascione</button>${corr?'<button type="button" class="btn-ghost" onclick="gpRicompila()">Rimetti tutto dai turni</button>':''}<span class="gp-nota">Esce identico al foglio di Cascione: cambiano solo i giorni, i totali S e A e il periodo.</span></div></div>`;
   el.innerHTML=h;
@@ -5313,6 +5359,16 @@ async function gpUscita(i,mese){
   const j=await _gpSalva({parte:'societa',chiave:_gpSoc,dati:S});
   if(!j.ok){if(prima)p.uscita=prima;else delete p.uscita;_gpMsg='Non salvato: '+(j.error||'errore');_gbRenderPresenze();}
 }
+async function _gpSalvaPersona(i,cambia){
+  const S=_gpDati.societa[_gpSoc],p=S.persone[i];if(!p)return;const prima=JSON.stringify(p);
+  cambia(p);_gpMsg='';_gbRenderPresenze();
+  const j=await _gpSalva({parte:'societa',chiave:_gpSoc,dati:S});
+  if(!j.ok){S.persone[i]=JSON.parse(prima);_gpMsg='Non salvato: '+(j.error||'errore');_gbRenderPresenze();}
+}
+// Ore e notti NL si prendono dal foglio di Cascione; qui si indicano se il foglio non le ha
+// (foglio vuoto) o se cambiano (23/11/2026).
+function gpOre(i,v){if(!/^\d+([.,]\d+)?$/.test(String(v)))return;_gpSalvaPersona(i,p=>{p.ore=String(v).replace(',','.');p.oreAMano=true;});}
+function gpNotte(i,v){_gpSalvaPersona(i,p=>{p.notte=!!v;p.notteAMano=true;});}
 async function gpTurno(i,nome){
   const S=_gpDati.societa[_gpSoc],p=S.persone[i];if(!p)return;const prima=p.turno;
   p.turno=nome;_gpMsg='';_gbRenderPresenze();
@@ -5327,10 +5383,13 @@ async function gpCaricaFoglio(inp){
     const z=await _gpUnzip(buf),foglio=_gpFoglioPath(z);
     if(!foglio)throw new Error('Nel file non c\'è nessun foglio');
     const cond=z['xl/sharedStrings.xml']?_gpCondivise(_gpDaUtf8(z['xl/sharedStrings.xml'])):[];
-    const mod=_gpModello(_gpCelle(_gpDaUtf8(z[foglio]),cond));
+    const xmlF=_gpDaUtf8(z[foglio]),mod=_gpModello(_gpCelle(xmlF,cond),_gpUnite(xmlF));
     if(!mod||!mod.persone.length)throw new Error('Non sembra un foglio presenze di Cascione: manca la riga «Cognome e nome» con i giorni e le persone con le righe O, S, A');
     const id=_gpId(mod.nome||f.name.replace(/\.xlsx$/i,'')),vecchio=_gpDati.societa[id],nomi=_gpNomiTurni(_gtuArch);
-    mod.persone.forEach(p=>{const pr=vecchio&&(vecchio.persone||[]).find(x=>_gpChiave(x)===_gpChiave(p));p.turno=pr&&typeof pr.turno==='string'?pr.turno:_gpAbbina(p.nome,nomi);if(pr&&pr.uscita)p.uscita=pr.uscita;});
+    mod.persone.forEach(p=>{const pr=vecchio&&(vecchio.persone||[]).find(x=>_gpChiave(x)===_gpChiave(p));p.turno=pr&&typeof pr.turno==='string'?pr.turno:_gpAbbina(p.nome,nomi);if(pr&&pr.uscita)p.uscita=pr.uscita;
+      // Ore e notti indicate a mano restano se il foglio nuovo non le dice (foglio vuoto).
+      if(pr&&pr.oreAMano&&!p.ore){p.ore=pr.ore;p.oreAMano=true;}
+      if(pr&&pr.notteAMano&&!p.ore&&!p.notte){p.notte=pr.notte;p.notteAMano=true;}});
     const dati=Object.assign(mod,{nome:mod.nome||f.name,foglio,file:_gpB64(buf),nomeFile:f.name,caricato:Date.now()});
     const j=await _gpSalva({parte:'societa',chiave:id,dati});
     if(!j.ok)throw new Error(j.error||'Foglio non salvato');
@@ -5343,6 +5402,10 @@ async function gpScarica(){
     const S=_gpDati.societa[_gpSoc],y=_gpMese.y,m=_gpMese.m;
     const z=await _gpUnzip(_gpDaB64(S.file));
     const righe=_gpCompila(S,_gpGiorniTurni(_gtuArch),y,m,_gpDati.mesi[_gpMeseKey(y,m,_gpSoc)]);
+    const blocchi=_gpBloccanti(S,righe);
+    if(blocchi.length){_gpMsg='Excel non scaricato. '+blocchi.join(' ');_gbRenderPresenze();return;}
+    const dubbi=righe.reduce((t,r)=>t+r.o.filter(c=>c.chk&&!c.man).length,0);
+    if(dubbi&&!(await _gbConferma('Ci sono '+dubbi+' giorni da controllare o senza turno. Scaricare lo stesso?','Sono quelli segnati in arancio e in «Prima di inviare». Nel file restano come sono adesso.')))return;
     const togli=[];_gpUsciti(S,y,m).forEach(p=>togli.push(p.riga,p.rigaS,p.rigaA));
     z[S.foglio]=_gpUtf8(_gpTogliRighe(_gpScrivi(_gpDaUtf8(z[S.foglio]),_gpCelleExport(S,righe,y,m)),togli));
     _gpTogliCalcChain(z);

@@ -458,6 +458,23 @@ foglio presenze **per società** (oggi Ge.Ri.Art., Booking Elite, Geriart Group)
   (`A18+1` → `A15+1`, `SUM(E14:AF14)` → `SUM(E11:AF11)`), celle unite (quelle tutte dentro le righe
   tolte spariscono), riquadro bloccato, selezione e dimensione. I mesi prima restano com'erano;
   «Rimetti» la riporta. Ricaricando il foglio l'uscita resta.
+- **Verifica accurata del 23/11/2026** (QM: «il file deve essere esatto»). Trovato e corretto:
+  - un **foglio di Cascione vuoto** (senza ore e senza data del periodo) faceva mettere **8 ore a
+    chi ne fa 6** e lasciava il periodo vuoto, in silenzio. Ora le ore vengono SOLO dal foglio
+    (`ore:''` se non ci sono); si indicano in «Persone del foglio» (`gpOre`, `oreAMano`, che resta
+    ricaricando un foglio vuoto; stesso per «notti NL», `gpNotte`). Il periodo è la cella dopo
+    la cella unita di «Periodo» (P5:V5 → W5) anche se vuota (`_gpUnite`). Senza ore o senza
+    periodo **l'Excel non si scarica** (`_gpBloccanti`, avviso rosso «Da sistemare»);
+  - chi **non compare nel turno di un giorno** ma c'è negli altri giorni della stessa settimana
+    (un nome saltato leggendo il planning) ha «-» **da controllare** (`_gpNellaSettimana`);
+  - con giorni da controllare lo scaricamento chiede conferma;
+  - **formule condivise**: riscrivendo la cella madre le figlie restano col valore (`_gpScrivi`),
+    altrimenti Excel chiederebbe di riparare;
+  - giorni mancanti scritti come intervalli («3–5, 9»), non «primo–ultimo».
+  Prova sui fogli veri con l'archivio del 23/11: i tre file di novembre coincidono **cella per
+  cella** con un controllo scritto a parte in Python (zero differenze, periodo novembre 2026), e
+  fuori dalle celle dei giorni restano **identici** al foglio di Cascione (valori, stili, celle
+  unite, tutti gli altri file dello xlsx).
 - **Correzioni a mano** cella per cella (finestrella: ore, R, FE, ML, NL, PE o «Altro»; righe S e A
   sempre a mano), segnate col pallino oro; «Rimetti dai turni» toglie la singola correzione,
   «Rimetti tutto dai turni» quelle del mese. Una correzione non salvata si dice e si annulla.

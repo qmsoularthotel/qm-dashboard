@@ -820,6 +820,38 @@ sez('Presenze Cascione: foglio del consulente compilato dai turni (23/11/2026)')
   ok('Presenze: senza righe da togliere il foglio non cambia', _gpTogliRighe(xmlU, []), xmlU);
   ok('Presenze: l\'Excel toglie le righe di chi non c\'è più', /_gpUsciti\(S,y,m\)\.forEach\(p=>togli\.push\(p\.riga,p\.rigaS,p\.rigaA\)\)/.test(String(gpScarica)) && /_gpTogliRighe\(_gpScrivi\(/.test(String(gpScarica)), true);
 
+  // Foglio di Cascione VUOTO (23/11/2026): niente ore nei giorni e periodo senza data. Le ore non si
+  // inventano (erano diventate 8 per chi ne fa 6) e il periodo si trova dopo la cella unita.
+  var vuoti = {};
+  Object.keys(celle).forEach(function (k) { if (!/^[E-Z]9$|^A[A-I]9$|^[E-Z]12$|^A[A-I]12$|^W5$/.test(k)) vuoti[k] = celle[k]; });
+  var modV = _gpModello(vuoti, ['P5:V5', 'W5:AH5']);
+  ok('Presenze: foglio vuoto, ore da indicare (non 8)', modV.persone.map(function (p) { return '[' + p.ore + ']'; }).join(''), '[][]');
+  ok('Presenze: foglio vuoto, il periodo è la cella dopo «Periodo» unita', modV.periodo, 'W5');
+  ok('Presenze: periodo anche senza celle unite', _gpModello(vuoti, []).periodo, 'Q5');
+  ok('Presenze: le celle unite si leggono dal foglio', _gpUnite('<mergeCells><mergeCell ref="P5:V5"/><mergeCell ref="A9:A11"/></mergeCells>').join(' '), 'P5:V5 A9:A11');
+  var pV = { ore: '', notte: false };
+  ok('Presenze: senza ore un giorno lavorato resta vuoto e da sistemare', JSON.stringify(_gpDaTurno('BKF GALL', pV)), JSON.stringify({ v: '', chk: 'Ore al giorno non indicate: sceglile in «Persone del foglio»', senzaOre: true }));
+  ok('Presenze: senza ore riposo e ferie restano giusti', _gpDaTurno('R', pV).v + _gpDaTurno('FERIE', pV).v, 'RFE');
+  modV.persone[0].turno = 'Fittizi M.';
+  var rV = _gpCompila(modV, _gpGiorniTurni(arch), 2027, 1, null);
+  ok('Presenze: senza ore l\'Excel non si scarica', _gpBloccanti(modV, rV).join('|'), 'Ore al giorno non indicate per Fittizi Marta: sceglile in «Persone del foglio».');
+  ok('Presenze: senza periodo l\'Excel non si scarica', _gpBloccanti({ periodo: '' }, []).length, 1);
+  ok('Presenze: con ore e periodo nessun blocco', _gpBloccanti(mod, righe).length, 0);
+  ok('Presenze: lo scaricamento si ferma sui blocchi', /blocchi=_gpBloccanti\(S,righe\);\s*if\(blocchi\.length\)\{_gpMsg='Excel non scaricato/.test(String(gpScarica)), true);
+  // Assente da un giorno ma presente negli altri della stessa settimana: da controllare.
+  var archS = { w: { giorni: [{ data: '2027-03-01', shifts: { 'Fittizi M.': 'AC' } }, { data: '2027-03-02', shifts: { 'Altro X.': 'AC' } }, { data: '2027-03-09', shifts: { 'Altro X.': 'AC' } }] } };
+  mod.persone[0].turno = 'Fittizi M.';
+  var rS = _gpCompila(mod, _gpGiorniTurni(archS), 2027, 2, null);
+  ok('Presenze: manca dal turno di un giorno della sua settimana: «-» da controllare', rS[0].o[1].v + ' ' + !!rS[0].o[1].chk, '- true');
+  ok('Presenze: manca da tutta un\'altra settimana: «-» senza avviso', rS[0].o[8].v + ' ' + !!rS[0].o[8].chk, '- false');
+  ok('Presenze: giorni raccolti in intervalli', _gpIntervalli([3, 4, 5, 9, 12, 13]), '3–5, 9, 12–13');
+  // Formula condivisa: riscrivendo la cella madre, le figlie restano col valore e senza formula.
+  var xmlF = '<sheetData><row r="9"><c r="AJ9" s="5"><f t="shared" ref="AJ9:AJ10" si="0">SUM(E9:AI9)</f><v>3</v></c></row><row r="10"><c r="AJ10" s="5"><f t="shared" si="0"/><v>4</v></c><c r="AK10"><f t="shared" si="1"/><v>1</v></c></row></sheetData>';
+  var dopoF = _gpScrivi(xmlF, { AJ9: '7' });
+  ok('Presenze: figlie della formula condivisa senza madre orfana', /<c r="AJ10" s="5"><v>4<\/v><\/c>/.test(dopoF) && /<c r="AJ9" s="5"><v>7<\/v><\/c>/.test(dopoF), true);
+  ok('Presenze: le altre formule condivise restano', /<f t="shared" si="1"\/>/.test(dopoF), true);
+  ok('Presenze: ore indicate a mano restano ricaricando un foglio vuoto', /if\(pr&&pr\.oreAMano&&!p\.ore\)\{p\.ore=pr\.ore;/.test(String(gpCaricaFoglio)), true);
+
   // Lo zip del file Excel: CRC giusto e andata/ritorno.
   ok('Presenze: CRC32 standard', _gpCrc(_gpUtf8('123456789')).toString(16), 'cbf43926');
   var zip = _gpZip({ '[Content_Types].xml': _gpUtf8('<Types/>'), 'xl/worksheets/sheet1.xml': _gpUtf8(nuovo) });
