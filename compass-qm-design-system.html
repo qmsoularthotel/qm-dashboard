@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compass QM — Design System</title>
+<link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
+<!-- La guida usa il foglio di stile VERO di Compass: ogni colore e ogni componente qui
+     sotto è quello che si vede nel pannello, non una copia. Se cambia style.css, cambia
+     anche questa pagina. -->
+<link rel="stylesheet" href="style.css">
+<style>
+/* Solo l'impaginazione della guida (prefisso ds-). Usa esclusivamente i token di Compass. */
+html,body{height:auto;}
+body{background:var(--bg);}
+.ds-wrap{max-width:1180px;margin:0 auto;padding:0 20px 60px;}
+.ds-head{background:#1c3a5e;color:#fff;border-bottom:4px solid var(--gold);}
+.ds-head-in{max-width:1180px;margin:0 auto;padding:26px 20px 22px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.ds-head img{width:58px;height:58px;transform:rotate(22deg);flex-shrink:0;}
+.ds-head h1{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.15;}
+.ds-head h1 span{color:var(--gold);}
+.ds-head p{font-size:var(--fs-xs);color:rgba(255,255,255,.82);margin-top:3px;}
+.ds-head-dx{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.ds-head .btn-ghost{color:#fff;border-color:rgba(255,255,255,.6);}
+.ds-head .btn-ghost:hover{background:rgba(255,255,255,.12);}
+.ds-indice{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:1px solid var(--border-light);}
+.ds-indice-in{max-width:1180px;margin:0 auto;padding:8px 20px;display:flex;gap:6px;overflow-x:auto;}
+.ds-indice a{white-space:nowrap;text-decoration:none;}
+.ds-sez{margin-top:30px;scroll-margin-top:60px;}
+.ds-sez>h2{font-size:var(--fs-xxs);color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:4px;}
+.ds-sez>.ds-intro{font-size:var(--fs-sm);color:var(--text-muted);margin-bottom:14px;max-width:780px;}
+.ds-griglia{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(210px,100%),1fr));gap:12px;}
+.ds-griglia-2{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr));gap:12px;}
+.ds-griglia>*,.ds-griglia-2>*{min-width:0;}
+.ds-swatch{background:var(--surface);border:1px solid var(--border-light);border-radius:8px;overflow:hidden;}
+.ds-swatch-col{height:64px;border-bottom:1px solid var(--border-light);display:flex;align-items:flex-end;padding:6px 8px;font-size:var(--fs-xxs);font-weight:600;}
+.ds-swatch-info{padding:8px 10px;}
+.ds-swatch-nome{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:var(--fs-xs);color:var(--text);font-weight:600;}
+.ds-swatch-val{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:var(--fs-xxs);color:var(--text-dim);}
+.ds-swatch-uso{font-size:var(--fs-xxs);color:var(--text-muted);margin-top:3px;line-height:1.4;}
+.ds-coppia{display:flex;}
+.ds-coppia>div{flex:1;}
+.ds-demo{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+.ds-code{display:block;margin-top:10px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:var(--fs-xxs);color:var(--text-muted);background:var(--surface2);border:1px solid var(--border-light);border-radius:5px;padding:6px 9px;overflow-x:auto;white-space:pre;}
+.ds-tipo-riga{display:flex;align-items:baseline;gap:16px;padding:9px 0;border-bottom:1px solid var(--border-light);}
+.ds-tipo-riga:last-child{border-bottom:none;}
+.ds-tipo-nome{width:140px;flex-shrink:0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:var(--fs-xxs);color:var(--text-dim);}
+.ds-regole{list-style:none;}
+.ds-regole li{padding:9px 0 9px 26px;border-bottom:1px solid var(--border-light);position:relative;font-size:var(--fs-sm);color:var(--text-muted);}
+.ds-regole li:last-child{border-bottom:none;}
+.ds-regole li::before{content:'';position:absolute;left:4px;top:15px;width:10px;height:10px;border-radius:50%;background:var(--gold);}
+.ds-regole li.no::before{background:var(--red);}
+.ds-regole strong{color:var(--text);}
+.ds-regole code,.ds-intro code,.panel-body code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em;background:var(--surface2);padding:0 4px;border-radius:3px;}
+.ds-nav-demo{width:270px;height:auto;max-width:100%;background:#fff;border:1px solid var(--border-light);border-radius:8px;overflow:hidden;}
+body.dark .ds-nav-demo{background:var(--surface);}
+.ds-cq-statico{position:relative;margin:0 auto;}
+.ds-piede{margin-top:40px;font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;}
+@media(max-width:768px){
+  .ds-head-in{padding:18px 16px;}
+  .ds-head h1{font-size:21px;}
+  .ds-head-dx{margin-left:0;width:100%;}
+  .ds-wrap{padding:0 16px 40px;}
+  .ds-indice-in{padding:8px 16px;}
+  .ds-griglia-2{grid-template-columns:1fr;}
+  .ds-tipo-riga{flex-direction:column;gap:2px;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<header class="ds-head">
+  <div class="ds-head-in">
+    <img src="img/compass-stella-chiara.png" alt="">
+    <div>
+      <h1>Compass <span>QM</span> — Design System</h1>
+      <p>Token, tipografia e componenti del pannello. Tutto ciò che si vede qui è letto dal vero <code style="color:#fff;background:rgba(255,255,255,.14);padding:0 4px;border-radius:3px">style.css</code>.</p>
+    </div>
+    <div class="ds-head-dx">
+      <button class="btn-ghost" onclick="dsCambiaTema()" id="ds-tema-btn">Tema scuro</button>
+    </div>
+  </div>
+</header>
+
+<nav class="ds-indice">
+  <div class="ds-indice-in">
+    <a class="rev-filter-btn" href="#colori">Colori</a>
+    <a class="rev-filter-btn" href="#tipografia">Tipografia</a>
+    <a class="rev-filter-btn" href="#forme">Forme e ombre</a>
+    <a class="rev-filter-btn" href="#icone">Icone</a>
+    <a class="rev-filter-btn" href="#pulsanti">Pulsanti</a>
+    <a class="rev-filter-btn" href="#contenitori">Pannelli e KPI</a>
+    <a class="rev-filter-btn" href="#stati">Stati e badge</a>
+    <a class="rev-filter-btn" href="#moduli">Moduli</a>
+    <a class="rev-filter-btn" href="#menu">Menu e caricamenti</a>
+    <a class="rev-filter-btn" href="#conferme">Conferme</a>
+    <a class="rev-filter-btn" href="#regole">Regole</a>
+  </div>
+</nav>
+
+<main class="ds-wrap">
+
+  <!-- ══════════════ COLORI ══════════════ -->
+  <section class="ds-sez" id="colori">
+    <h2>Colori — token di <code>:root</code></h2>
+    <p class="ds-intro">Navy e oro sono la firma di Compass: il navy guida (pulsanti, voce attiva, badge), l'oro sottolinea (bordo superiore di pannelli e KPI, anelli, fuoco dei campi). I quattro colori di stato vanno sempre in coppia con il loro sfondo <code>-bg</code>. I valori qui sotto sono letti in tempo reale dal foglio di stile e cambiano col tema scuro.</p>
+    <div class="ds-griglia" id="ds-colori-base"></div>
+    <h2 style="margin-top:22px">Stati — colore + sfondo</h2>
+    <p class="ds-intro">Verde = fatto/caricato, rosso = manca/errore/non si annulla, ambra = attenzione/in corso, blu = informazione. Il testo colorato si appoggia sempre al suo <code>-bg</code>, mai al bianco.</p>
+    <div class="ds-griglia" id="ds-colori-stato"></div>
+  </section>
+
+  <!-- ══════════════ TIPOGRAFIA ══════════════ -->
+  <section class="ds-sez" id="tipografia">
+    <h2>Tipografia</h2>
+    <p class="ds-intro">Font di sistema (<code>-apple-system, Segoe UI, Roboto, Helvetica Neue</code>), interlinea 1.6, testo smussato. Il logo usa Helvetica Neue 700. Le etichette di pannelli, KPI e campi sono piccole, maiuscole e spaziate; i numeri grandi dei KPI sono leggeri (300).</p>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Scala dei caratteri</div></div>
+      <div class="panel-body">
+        <div class="ds-tipo-riga"><div class="ds-tipo-nome">.kpi-value · 30/300</div><div class="kpi-value">94,2%</div></div>
+        <div class="ds-tipo-riga"><div class="ds-tipo-nome">.logo-title · 20/700</div><div class="logo-title">Compass <span>QM</span></div></div>
+        <div class="ds-tipo-riga"><div class="ds-tipo-nome">.cq-title · 16/600</div><div class="cq-title">Eliminare il movimento?</div></div>
+        <div class="ds-tipo-riga"><div class="ds-tipo-nome">--fs-base · 16px</div><div style="font-size:var(--fs-base)">Testo corrente del pannello.</div></div>
+        <div class="ds-tipo-riga"><div class="ds-tipo-nome">--fs-md · 15px</div><div style="font-size:var(--fs-md)">Testo corrente un po' più compatto.</div></div>
+        <div class="ds-tipo-riga"><div class="ds-tipo-nome">--fs-sm · 14px</div><div style="font-size:var(--fs-sm)">Voci del menu, pulsanti, campi.</div></div>
+        <div class="ds-tipo-riga"><div class="ds-tipo-nome">--fs-xs · 13px</div><div style="font-size:var(--fs-xs);color:var(--text-muted)">Descrizioni secondarie, filtri.</div></div>
+        <div class="ds-tipo-riga"><div class="ds-tipo-nome">--fs-xxs · 11px</div><div class="panel-title" style="flex:none">Etichetta di pannello</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ FORME ══════════════ -->
+  <section class="ds-sez" id="forme">
+    <h2>Forme e ombre</h2>
+    <p class="ds-intro">Angoli: <strong>8px</strong> per pannelli e card, <strong>6px</strong> per i pulsanti, <strong>5px</strong> per i campi, <strong>20px</strong> per pillole e filtri, <strong>10px</strong> per le finestre di conferma. Ombre morbide e basse (<code>0 2px 8px rgba(0,0,0,.07)</code>); al passaggio del mouse le card si sollevano di 1–2px.</p>
+    <div class="ds-griglia">
+      <div class="panel"><div class="panel-body"><div class="kpi-label">Pannello</div><div style="font-size:var(--fs-xs);color:var(--text-muted)">raggio 8 · bordo oro 4px in alto</div></div></div>
+      <div class="kpi-card"><div class="kpi-label">KPI card</div><div style="font-size:var(--fs-xs);color:var(--text-muted)">ombra permanente, si solleva</div></div>
+      <div class="ds-swatch" style="border-radius:20px;padding:14px 18px"><div class="kpi-label" style="margin:0">Pillola · raggio 20</div></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ ICONE ══════════════ -->
+  <section class="ds-sez" id="icone">
+    <h2>Icone — badge navy/oro</h2>
+    <p class="ds-intro">Cerchio navy <code>--accent</code>, anello oro <code>--gold</code>, icona SVG bianca inline. Tre misure, stesso linguaggio: niente emoji e niente immagini nuove. La rosa dei venti (<code>img/compass-stella.png</code>) si usa grande, inclinata di <strong>22°</strong> e molto trasparente come filigrana.</p>
+    <div class="panel"><div class="panel-body">
+      <div class="ds-demo" style="gap:22px">
+        <div style="text-align:center"><span class="nav-icon-badge" style="margin:0 auto"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span><div class="kpi-sub">.nav-icon-badge · 38</div></div>
+        <div style="text-align:center"><span class="uc-icon-badge" style="margin:0 auto"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span><div class="kpi-sub">.uc-icon-badge · 32</div></div>
+        <div style="text-align:center"><span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg></span><div class="kpi-sub">.ov-icon-badge · 24</div></div>
+        <div style="text-align:center"><span class="ov-icon-badge ov-icon-mini"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg></span><div class="kpi-sub">.ov-icon-mini · 18</div></div>
+        <div style="text-align:center"><span class="rc-act-btn" data-tip="Stampa"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></span><div class="kpi-sub">.rc-act-btn · con didascalia</div></div>
+        <div style="text-align:center"><svg class="topbar-spark" viewBox="0 0 72 32" aria-hidden="true"><image href="img/compass-stella.png" x="1" y="-1" width="30" height="30" transform="rotate(22 16 14)"/><line x1="30" y1="14" x2="66" y2="14" stroke="#1c3a5e" stroke-width="1.8" stroke-linecap="round"/><polyline points="60,9 67,14 60,19" fill="none" stroke="#1c3a5e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="kpi-sub">.topbar-spark</div></div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- ══════════════ PULSANTI ══════════════ -->
+  <section class="ds-sez" id="pulsanti">
+    <h2>Pulsanti</h2>
+    <p class="ds-intro">Un'azione principale per riquadro, sempre <strong>navy</strong>. L'oro è riservato a un'azione speciale/di evidenza. Il rosso non colora mai un pulsante: un'azione che non si annulla lo dice nel titolo della conferma.</p>
+    <div class="ds-griglia-2">
+      <div class="panel"><div class="panel-header"><div class="panel-title">Azioni</div></div><div class="panel-body">
+        <div class="ds-demo"><button class="btn-primary">Salva</button><button class="btn-ghost">Annulla</button><button class="btn-accent-gold">Genera risposta</button></div>
+        <code class="ds-code">.btn-primary · .btn-ghost · .btn-accent-gold</code>
+      </div></div>
+      <div class="panel"><div class="panel-header"><div class="panel-title">Barre e filtri</div></div><div class="panel-body">
+        <div class="ds-demo"><button class="ag-btn">Settimana prec.</button><button class="ag-btn ag-btn-on">Oggi</button><button class="ag-btn ag-btn-ok">Aggiungi</button></div>
+        <div class="ds-demo" style="margin-top:10px"><button class="rev-filter-btn">Tutte</button><button class="rev-filter-btn">Senza risposta</button></div>
+        <div class="rev-tone-bar" style="margin-top:10px"><button class="rev-tone-btn">Formale</button><button class="rev-tone-btn active">Bilanciato</button><button class="rev-tone-btn">Empatico</button></div>
+        <code class="ds-code">.ag-btn (.ag-btn-on, .ag-btn-ok) · .rev-filter-btn · .rev-tone-btn.active</code>
+      </div></div>
+      <div class="panel"><div class="panel-header"><div class="panel-title">Priorità</div></div><div class="panel-body">
+        <div class="priority-btns"><button class="pri-btn active-high">Alta</button><button class="pri-btn active-med">Media</button><button class="pri-btn active-low">Bassa</button><button class="pri-btn">Nessuna</button></div>
+        <code class="ds-code">.pri-btn.active-high / -med / -low</code>
+      </div></div>
+      <div class="panel"><div class="panel-header"><div class="panel-title">Secondari</div></div><div class="panel-body">
+        <div class="ds-demo"><button class="btn-print-one">Stampa</button><button class="btn-modal-print">Stampa tutto</button><button class="btn-modal-close">Chiudi</button><button class="c-action-btn" style="margin-left:0">Assegna</button></div>
+        <code class="ds-code">.btn-print-one · .btn-modal-print · .btn-modal-close · .c-action-btn</code>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ CONTENITORI ══════════════ -->
+  <section class="ds-sez" id="contenitori">
+    <h2>Pannelli e KPI</h2>
+    <p class="ds-intro">Ogni blocco di contenuto è un <code>.panel</code>: superficie chiara, bordo oro in alto, intestazione con etichetta maiuscola. I numeri chiave stanno nelle <code>.kpi-card</code>; il colore del bordo superiore dice di che si tratta.</p>
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-label">Occupazione</div><div class="kpi-value">87%</div><div class="kpi-delta up">▲ 4 pt su ieri</div></div>
+      <div class="kpi-card blue"><div class="kpi-label">Arrivi oggi</div><div class="kpi-value">23</div><div class="kpi-sub">SoulArt + Boutique</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Camere pronte</div><div class="kpi-value">41</div><div class="kpi-delta up">tutte verificate</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Senza risposta</div><div class="kpi-value">5</div><div class="kpi-delta down">▼ da fare oggi</div></div>
+    </div>
+    <code class="ds-code" style="margin-top:0;margin-bottom:14px">.kpi-grid › .kpi-card (.blue | .green | .red | .amber → oro) › .kpi-label · .kpi-value · .kpi-delta.up/.down · .kpi-sub</code>
+    <div class="ds-griglia-2">
+      <div class="panel">
+        <div class="panel-header"><span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M4 12l5 5L20 6"/></svg></span><div class="panel-title">Punteggi per categoria</div></div>
+        <div class="panel-body">
+          <div class="score-row"><div class="score-label">Pulizia</div><div class="score-track"><div class="score-fill" style="width:92%;background:var(--green)"></div></div><div class="score-val">9,2</div></div>
+          <div class="score-row"><div class="score-label">Staff</div><div class="score-track"><div class="score-fill" style="width:95%;background:var(--accent)"></div></div><div class="score-val">9,5</div></div>
+          <div class="score-row"><div class="score-label">Comfort</div><div class="score-track"><div class="score-fill" style="width:84%;background:var(--gold)"></div></div><div class="score-val">8,4</div></div>
+          <div class="score-row" style="margin:0"><div class="score-label">Rapporto q/p</div><div class="score-track"><div class="score-fill" style="width:78%;background:var(--amber)"></div></div><div class="score-val">7,8</div></div>
+          <code class="ds-code">.panel › .panel-header › .panel-title · .panel-body · .score-row</code>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Notifiche</div></div>
+        <div class="panel-body">
+          <div class="notif-item"><span class="notif-dot" style="background:var(--green)"></span><div><div class="notif-text"><strong>Turno</strong> caricato per la settimana</div><div class="notif-time">oggi, 08:12</div></div></div>
+          <div class="notif-item"><span class="notif-dot" style="background:var(--amber)"></span><div><div class="notif-text"><strong>Piano settimanale</strong> più vecchio di 12 ore</div><div class="notif-time">oggi, 07:40</div></div></div>
+          <div class="notif-item"><span class="notif-dot" style="background:var(--red)"></span><div><div class="notif-text"><strong>Scrittura non arrivata</strong> sul cloud</div><div class="notif-time">ieri, 22:05</div></div></div>
+          <code class="ds-code">.notif-item › .notif-dot · .notif-text · .notif-time</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ STATI ══════════════ -->
+  <section class="ds-sez" id="stati">
+    <h2>Stati e badge</h2>
+    <div class="ds-griglia-2">
+      <div class="panel"><div class="panel-header"><div class="panel-title">Segnalazioni</div></div><div class="panel-body">
+        <div class="complaint-item"><div class="c-row"><span class="c-name">Mario Rossi</span><span class="c-room">Art 12</span><span class="c-badge badge-open">Aperta</span></div><div class="c-desc">Aria condizionata rumorosa</div><div class="c-time">oggi, 10:20</div></div>
+        <div class="complaint-item"><div class="c-row"><span class="c-name">Anna Bianchi</span><span class="c-room">214</span><span class="c-badge badge-progress">In corso</span></div><div class="c-desc">Richiesta cuscino extra</div></div>
+        <div class="complaint-item"><div class="c-row"><span class="c-name">Luca Verdi</span><span class="c-room">LIB 3</span><span class="c-badge badge-closed">Chiusa</span></div><div class="c-desc">Asciugacapelli sostituito</div></div>
+        <code class="ds-code">.c-badge.badge-open / .badge-progress / .badge-closed</code>
+      </div></div>
+      <div class="panel"><div class="panel-header"><div class="panel-title">Pillole e contatori</div></div><div class="panel-body">
+        <div class="ds-demo"><span class="ag-pill">Oggi</span><span class="ag-turno">Turno 7–15</span><span class="ag-turno ag-turno-riposo">Riposo</span><span class="ag-conta">4</span><span class="ag-conta ag-conta-red">2</span><span class="ub-formats">PDF · XLSX</span><span class="c-assign">Housekeeping</span></div>
+        <div class="ds-demo" style="margin-top:14px"><span class="turni-status success" style="display:block">Turno caricato: 7 giorni, 18 persone</span></div>
+        <div class="ds-demo" style="margin-top:8px"><span class="turni-status loading"><span class="mini-spin"></span>Lettura del file…</span></div>
+        <code class="ds-code">.ag-pill · .ag-turno(.ag-turno-riposo) · .ag-conta(-red) · .ub-formats · .c-assign · .turni-status</code>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ MODULI ══════════════ -->
+  <section class="ds-sez" id="moduli">
+    <h2>Moduli</h2>
+    <p class="ds-intro">Etichetta piccola maiuscola sopra, campo su <code>--surface2</code>. Al fuoco: bordo oro con alone oro leggero. I controlli devono ereditare il font (<code>font-family:inherit</code>), altrimenti escono col font del browser.</p>
+    <div class="panel"><div class="panel-body">
+      <div class="ds-griglia">
+        <div class="form-field"><label class="form-label" for="ds-f1">Nome ospite</label><input class="form-input" id="ds-f1" placeholder="Es. Giulia Esposito"></div>
+        <div class="form-field"><label class="form-label" for="ds-f2">Struttura</label><select class="form-input" id="ds-f2"><option>SoulArt Hotel</option><option>Boutique</option><option>San Liborio</option><option>Principe</option><option>Mastrangelo</option><option>Art Resort</option><option>Santa Brigida</option></select></div>
+        <div class="form-field"><label class="form-label" for="ds-f3">Data</label><input class="form-input" id="ds-f3" type="date"></div>
+      </div>
+      <div class="form-field" style="margin-top:12px"><label class="form-label" for="ds-f4">Note</label><textarea class="form-input" id="ds-f4" rows="3" placeholder="Clicca per vedere il fuoco oro"></textarea></div>
+      <code class="ds-code">.form-field › .form-label + .form-input (input · select · textarea)</code>
+    </div></div>
+  </section>
+
+  <!-- ══════════════ MENU E CARICAMENTI ══════════════ -->
+  <section class="ds-sez" id="menu">
+    <h2>Menu e caricamenti</h2>
+    <p class="ds-intro">Voce attiva: fondo navy, testo bianco, filo oro a sinistra. Le card dell'Upload Center dicono lo stato col pallino: grigio = niente, verde = caricato, ambra lampeggiante = più vecchio di 12 ore, rosso = vecchio o errore.</p>
+    <div class="ds-griglia-2">
+      <div class="sidebar ds-nav-demo">
+        <div class="logo" style="background:#1c3a5e"><div class="logo-title">Compass <span>QM</span></div><div class="logo-tagline">Quality Management</div></div>
+        <div class="nav-section">Operativo</div>
+        <div class="nav-item active"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span></span>Overview</div>
+        <div class="nav-item"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></span></span>Agenda<span class="nav-badge">3</span></div>
+        <div class="nav-item"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg></span></span>Recensioni Booking</div>
+      </div>
+      <div>
+        <div class="uc-grid" style="padding:0">
+          <div class="uc-row"><div class="uc-row-cards">
+            <div class="uc-slot"><span class="uc-dot"></span><span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/></svg></span></span><span class="uc-label">Turno</span><span class="uc-sub">non caricato</span></div>
+            <div class="uc-slot loaded"><span class="uc-dot"></span><span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 12l5 5L20 6"/></svg></span></span><span class="uc-label">Riepilogo Reception</span><span class="uc-sub">oggi 08:10</span></div>
+          </div></div>
+          <div class="uc-row"><div class="uc-row-cards">
+            <div class="uc-slot loaded warn12"><span class="uc-dot"></span><span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 7v5l3 3"/><circle cx="12" cy="12" r="9"/></svg></span></span><span class="uc-label">Piano Settimanale</span><span class="uc-sub">ieri 19:30</span></div>
+            <div class="uc-slot error"><span class="uc-dot"></span><span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg></span></span><span class="uc-label">Report pasti</span><span class="uc-sub">errore</span></div>
+          </div></div>
+        </div>
+        <div class="upload-box" style="margin-top:12px">
+          <div class="ub-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg></div>
+          <div class="ub-title">Trascina qui il file</div><div class="ub-sub">oppure clicca per sceglierlo</div><span class="ub-formats">PDF · XLSX · CSV</span>
+        </div>
+        <code class="ds-code">.uc-slot (.loaded · .warn12 · .stale · .error · .loading) · .upload-box (.has-file)</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ CONFERME ══════════════ -->
+  <section class="ds-sez" id="conferme">
+    <h2>Conferme e avvisi</h2>
+    <p class="ds-intro">Una sola finestra per tutto: <code>cqConferma</code> / <code>cqAvviso</code>, mai <code>confirm()</code> o <code>alert()</code> del browser. Rosa dei venti in filigrana nell'angolo, titolo che dice l'azione, pulsante di conferma sempre navy.</p>
+    <div class="cq-box ds-cq-statico">
+      <div class="cq-title">Eliminare il movimento del 24/11?</div>
+      <div class="cq-sub">Il movimento sparisce da tutte le postazioni. Non si può annullare.</div>
+      <div class="cq-btns"><button class="cq-no">Annulla</button><button class="cq-ok" onclick="dsApriConferma()">Elimina</button></div>
+    </div>
+    <div class="ds-demo" style="justify-content:center;margin-top:12px"><button class="btn-ghost" onclick="dsApriConferma()">Apri la finestra vera</button></div>
+    <div class="cq-dialog" id="ds-cq" onclick="if(event.target===this)dsChiudiConferma()">
+      <div class="cq-box">
+        <div class="cq-title">Così appare sopra la pagina</div>
+        <div class="cq-sub">Fondo scurito al 50%, finestra al centro, larga al massimo 400px.</div>
+        <div class="cq-btns"><button class="cq-no" onclick="dsChiudiConferma()">Annulla</button><button class="cq-ok" onclick="dsChiudiConferma()">Va bene</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ REGOLE ══════════════ -->
+  <section class="ds-sez" id="regole">
+    <h2>Regole che non si rompono</h2>
+    <div class="panel"><div class="panel-body">
+      <ul class="ds-regole">
+        <li><strong>Stile Compass sempre</strong>: token e componenti esistenti (<code>.panel</code>, <code>.kpi-card</code>, <code>--accent</code>…), mai stili inventati. Un colore nuovo si aggiunge come token in <code>:root</code> e in <code>body.dark</code>.</li>
+        <li><strong>Un modulo "uguale a Compass" per altri si copia identico</strong> con un rinomino meccanico, non si riprogetta (caso Galleria, 11/09/2026).</li>
+        <li class="no"><strong>Mai <code>grid-template-columns</code> in linea</strong>: su smartphone la <code>@media</code> non lo raggiunge. Le misure che cambiano stanno in classi CSS, nell'unico blocco <code>@media(max-width:768px)</code> in fondo a <code>style.css</code>.</li>
+        <li class="no"><strong>Mai emoji come icone</strong>: si usa il badge SVG navy/oro della misura giusta.</li>
+        <li class="no"><strong>Mai <code>confirm()</code> / <code>alert()</code></strong>: solo <code>cqConferma</code> / <code>cqAvviso</code>. Pulsante di conferma navy, nessun secondo colore.</li>
+        <li><strong>Il tema scuro</strong> si ottiene con la classe <code>body.dark</code>, che ridefinisce i token: un componente scritto con <code>var(--…)</code> si adatta da solo, uno con colori fissi no.</li>
+        <li><strong>Gli stati si dicono a colori coerenti</strong>: verde fatto, ambra attenzione, rosso manca/errore. Una scrittura non arrivata si segnala in rosso, mai in silenzio.</li>
+        <li><strong>Nei testi della Galleria</strong> è sempre «Front Office Manager», mai «Resident Manager».</li>
+      </ul>
+    </div></div>
+  </section>
+
+  <p class="ds-piede">Compass QM · guida di stile viva — legge <code>style.css</code> del sito, nessun dato e nessun collegamento al cloud.</p>
+</main>
+
+<script>
+// Guida di stile: nessun dato, nessuna rete. Legge i valori dei token dal foglio di stile
+// vero, così quello che si vede è sempre quello che c'è in style.css (anche nel tema scuro).
+const DS_BASE=[
+  ['--accent','Navy — pulsanti, voce attiva, badge'],
+  ['--gold','Oro — bordi superiori, anelli, fuoco'],
+  ['--text','Testo principale'],
+  ['--text-muted','Testo secondario'],
+  ['--text-dim','Etichette, orari'],
+  ['--bg','Sfondo della pagina'],
+  ['--surface','Pannelli e card'],
+  ['--surface2','Intestazioni, campi'],
+  ['--border','Bordi di campi e pulsanti'],
+  ['--border-light','Bordi di pannelli e separatori'],
+  ['--accent-bg','Sfondo navy tenue (hover, selezione)'],
+  ['--orange','Arancio — usi grafici puntuali']
+];
+const DS_STATO=[
+  ['--green','--green-bg','Fatto, caricato, chiuso'],
+  ['--amber','--amber-bg','Attenzione, in corso'],
+  ['--red','--red-bg','Manca, errore, non si annulla'],
+  ['--blue','--blue-bg','Informazione'],
+  ['--gold','--gold-bg','Evidenza, oggi']
+];
+function dsVal(n){return getComputedStyle(document.body).getPropertyValue(n).trim();}
+function dsTesto(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function dsDisegna(){
+  document.getElementById('ds-colori-base').innerHTML=DS_BASE.map(([n,uso])=>
+    '<div class="ds-swatch"><div class="ds-swatch-col" style="background:var('+n+')"></div>'+
+    '<div class="ds-swatch-info"><div class="ds-swatch-nome">'+n+'</div><div class="ds-swatch-val">'+dsTesto(dsVal(n)||'—')+'</div>'+
+    '<div class="ds-swatch-uso">'+uso+'</div></div></div>').join('');
+  document.getElementById('ds-colori-stato').innerHTML=DS_STATO.map(([c,bg,uso])=>
+    '<div class="ds-swatch"><div class="ds-swatch-col" style="background:var('+bg+');color:var('+c+')">Testo di stato</div>'+
+    '<div class="ds-coppia"><div class="ds-swatch-info"><div class="ds-swatch-nome">'+c+'</div><div class="ds-swatch-val">'+dsTesto(dsVal(c)||'—')+'</div></div>'+
+    '<div class="ds-swatch-info"><div class="ds-swatch-nome">'+bg+'</div><div class="ds-swatch-val">'+dsTesto(dsVal(bg)||'—')+'</div></div></div>'+
+    '<div class="ds-swatch-info" style="padding-top:0"><div class="ds-swatch-uso">'+uso+'</div></div></div>').join('');
+}
+function dsCambiaTema(){
+  const scuro=document.body.classList.toggle('dark');
+  document.getElementById('ds-tema-btn').textContent=scuro?'Tema chiaro':'Tema scuro';
+  dsDisegna();
+}
+function dsApriConferma(){document.getElementById('ds-cq').classList.add('open');}
+function dsChiudiConferma(){document.getElementById('ds-cq').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')dsChiudiConferma();});
+dsDisegna();
+</script>
+</body>
+</html>

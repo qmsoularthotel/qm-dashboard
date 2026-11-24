@@ -42,14 +42,26 @@ I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStru
 
 ### CSS Design Tokens
 
+Il riferimento visivo è **`compass-qm-design-system.html`** (24/11/2026): guida di stile viva
+che carica il vero `style.css` e legge i valori dei token in tempo reale (anche col tema
+scuro), con tutti i componenti (`.panel`, `.kpi-card`, pulsanti, badge, moduli, Upload
+Center, conferme `cq*`). Nessun dato, nessuna rete. Aggiungendo un componente comune a
+Compass, va mostrato anche lì.
+
+Token principali (`:root` in `style.css`; `body.dark` li ridefinisce):
+
 ```css
---bg: #E8E8EA      /* sfondo pagina */
---surface: #F4F4F6 /* superfici card */
---accent: #1E4080  /* blu primario */
---green: #1E7A48
---red: #C0352A
---amber: #A05A00
+--accent:#1c3a5e   /* navy: pulsanti, voce attiva, badge */
+--gold:#c9952f     /* oro: bordo superiore di pannelli/KPI, anelli, fuoco dei campi */
+--bg:#eef1f5  --surface:#f8f9fb  --surface2:#e8ecf1
+--border:#cdd4de  --border-light:#dde2ea
+--text:#0c1f33  --text-muted:#4a5568  --text-dim:#888880
+--green:#2e7d32  --red:#c62828  --amber:#e65100  --blue:#1565c0   /* ognuno con il suo -bg */
+--fs-base:16px  --fs-md:15px  --fs-sm:14px  --fs-xs:13px  --fs-xxs:11px
 ```
+
+Nota: `--gold` e `--gold-bg` non sono ridefiniti in `body.dark` (l'oro resta uguale, lo
+sfondo oro chiaro resta chiaro anche nel tema scuro): si vede nella guida.
 
 ### Responsive / smartphone — regola d'oro: mai `grid-template-columns` inline
 
