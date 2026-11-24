@@ -680,6 +680,28 @@ for _p in *.html; do
   fi
 done
 
+# Bollino NEW (QM, 24/11/2026): resta SEMPRE 5 giorni. data-nuovo-fino e' il primo giorno
+# senza bollino, quindi una voce aggiunta oggi ha al massimo oggi+5. Una data piu' lontana
+# vuol dire un bollino tenuto piu' a lungo del dovuto (successo il 24/11: 14 giorni).
+NEWKO=$(python3 - <<'PYNEW'
+import re, glob, datetime
+limite = datetime.date.today() + datetime.timedelta(days=5)
+brutte = []
+for f in sorted(glob.glob('*.html')) + ['app.js']:
+    for n, l in enumerate(open(f, encoding='utf-8'), 1):
+        for d in re.findall(r'data-nuovo-fino="(\d{4}-\d{2}-\d{2})"', l):
+            if datetime.date.fromisoformat(d) > limite:
+                brutte.append('%s:%d (%s)' % (f, n, d))
+print(' '.join(brutte))
+PYNEW
+)
+if [ -n "$NEWKO" ]; then
+  echo ""
+  echo "  ERRORE      bollino NEW oltre i 5 giorni: $NEWKO"
+  echo "              data-nuovo-fino = giorno dell'aggiunta + 5."
+  BKF_KO=1
+fi
+
 # Worker non pubblicato: worker.js si pubblica a mano su Cloudflare (vedi CLAUDE.md, la
 # pubblicazione automatica è stata valutata e scartata). Una correzione può quindi essere
 # scritta, versionata e non attiva — successo il 21/08/2026, per ore, senza alcun segnale.

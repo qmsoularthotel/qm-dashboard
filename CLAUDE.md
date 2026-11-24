@@ -135,6 +135,8 @@ Ognuna è nata da un incidente vero; il racconto completo è nel file indicato.
 - Conferme, avvisi e domande: `cqConferma` / `cqAvviso` / `cqChiedi` / `cqModulo` (in Compass OPS
   `_gb*`), mai `confirm()`/`alert()`/`prompt()` del browser (sentinella in `esegui.sh`).
 - Le **etichette** del menu si possono rinominare, le **chiavi** delle viste e dei dati no.
+- Il bollino **NEW** su una voce nuova resta **sempre 5 giorni** (QM, 24/11/2026): `data-nuovo-fino`
+  = il giorno dell'aggiunta + 5, cioè il primo giorno senza bollino (sentinella in `esegui.sh`).
 
 **Codice**
 - `pdf.js` viene da un CDN: solo dietro `PDF_OK` e `_pdfApri()`, altrimenti senza rete muore

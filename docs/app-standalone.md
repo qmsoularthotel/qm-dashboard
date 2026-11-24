@@ -68,7 +68,7 @@ si cambia solo qui.
 Richiesta del QM: Registration Cards anche **dentro Compass Ops**, come seconda posizione. Il
 collegamento sul desktop dei colleghi (`registration-galleria.html`) resta com'è e funziona
 uguale. In Compass Ops c'è il gruppo **Ricevimento** in cima al menu con la voce
-«Registration Cards» (bollino NEW fino all'08/12): `gbRcEntra()` crea **una volta sola** un
+«Registration Cards» (bollino NEW per 5 giorni: dal 24 al 28/11): `gbRcEntra()` crea **una volta sola** un
 `iframe` (`.gb-rc-frame`) su `registration-galleria.html?dentro=1`, così cambiando voce e
 tornando le schede caricate restano. Con `?dentro=1` la pagina toglie splash e intestazione
 (`html.rc-dentro`), e `_qmRicarica` tiene il parametro quando si aggiorna da sola. È la
