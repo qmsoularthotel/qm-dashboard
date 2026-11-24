@@ -47,6 +47,16 @@ che carica il vero `style.css` e legge i valori dei token in tempo reale, con tu
 Center, conferme `cq*`). Nessun dato, nessuna rete. Aggiungendo un componente comune a
 Compass, va mostrato anche lì.
 
+**Schermate delle app** (24/11/2026): la sezione della guida legge, dal sito, l'HTML di ogni
+app (`fetch` dello stesso file pubblicato), ne prende i `<style>` della pagina e i `<link>` a
+`style.css` (non i `<style>` dentro gli script: sono modelli di stampa) e li applica in un
+`iframe` senza script (`sandbox="allow-same-origin"`) a un esempio con dati inventati scritto
+in `DS_APP`. Lo stile resta vivo; l'esempio no: aggiungendo o rinominando un componente di
+un'app, va ritoccato `DS_APP`. Aperta come file dal computer mostra solo un avviso.
+Da sapere: in Housekeeper, Breakfast, DVR e Registration Galleria `--text-dim` è il grigio
+scuro e `--text-muted` quello chiaro, **al contrario** di Compass e Inventario; Distribuzione
+Culligan ha nomi suoi (`--navy`, `--navy-light`, `--sage-*`).
+
 Token principali (`:root` in `style.css`; `body.dark` li ridefinisce):
 
 ```css

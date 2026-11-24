@@ -51,16 +51,18 @@ body{background:var(--bg);}
 .ds-regole code,.ds-intro code,.panel-body code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em;background:var(--surface2);padding:0 4px;border-radius:3px;}
 .ds-nav-demo{width:270px;height:auto;max-width:100%;background:#fff;border:1px solid var(--border-light);border-radius:8px;overflow:hidden;}
 .ds-cq-statico{position:relative;margin:0 auto;}
-.ds-passi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.ds-passo{display:flex;gap:11px;align-items:flex-start;background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:12px 14px;}
-.ds-passo-n{width:26px;height:26px;border-radius:50%;background:var(--accent);border:1.5px solid var(--gold);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.ds-passo-t{font-size:13px;font-weight:700;color:var(--text);}
-.ds-passo-s{font-size:12px;color:var(--text-muted);margin-top:1px;line-height:1.45;}
-.ds-garanzia{display:flex;align-items:center;gap:10px;margin-top:12px;padding:11px 14px;border-radius:12px;background:var(--green-bg);color:var(--green);font-size:12.5px;line-height:1.45;}
-.ds-garanzia svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;}
-.ds-hero-giorno{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;}
-.ds-hero-tit{font-size:22px;font-weight:700;letter-spacing:-.01em;margin-top:2px;color:var(--text);}
-.ds-chip{font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;background:var(--surface);border:1px solid var(--border-light);color:var(--text-muted);}
+.ds-app{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start;margin-bottom:16px;}
+.ds-app-info h3{font-size:var(--fs-sm);font-weight:700;color:var(--text);margin-bottom:2px;}
+.ds-app-file{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:var(--fs-xxs);color:var(--text-dim);}
+.ds-app-info p{font-size:var(--fs-xs);color:var(--text-muted);margin-top:8px;line-height:1.55;}
+.ds-app-info ul{list-style:none;margin-top:8px;}
+.ds-app-info li{font-size:var(--fs-xs);color:var(--text-muted);padding:5px 0;border-bottom:1px solid var(--border-light);line-height:1.5;}
+.ds-app-info li:last-child{border-bottom:none;}
+.ds-app-info li code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em;background:var(--surface2);padding:0 4px;border-radius:3px;color:var(--text);}
+.ds-app-nota{margin-top:8px;font-size:var(--fs-xxs);color:var(--amber);background:var(--amber-bg);border-radius:6px;padding:6px 9px;line-height:1.5;}
+.ds-app-schermo{background:var(--surface2);border:1px solid var(--border-light);border-radius:14px;padding:8px;box-shadow:0 2px 8px rgba(0,0,0,.07);}
+.ds-app-schermo iframe{display:block;width:100%;height:220px;border:0;border-radius:9px;background:var(--bg);}
+.ds-app-vuoto{font-size:var(--fs-xs);color:var(--text-muted);text-align:center;padding:30px 14px;}
 .ds-piede{margin-top:40px;font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;}
 @media(max-width:768px){
   .ds-head-in{padding:18px 16px;}
@@ -70,7 +72,7 @@ body{background:var(--bg);}
   .ds-griglia-2{grid-template-columns:1fr;}
   .ds-tipo-riga{flex-direction:column;gap:2px;}
   .kpi-grid{grid-template-columns:1fr 1fr;}
-  .ds-passi{grid-template-columns:1fr;}
+  .ds-app{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -319,21 +321,8 @@ body{background:var(--bg);}
   <!-- ══════════════ SCHERMATE DELLE APP ══════════════ -->
   <section class="ds-sez" id="app">
     <h2>Schermate delle app</h2>
-    <p class="ds-intro">Le app standalone hanno un loro foglio di stile in linea, con gli stessi token di Compass. Qui i pezzi nati lì che si riusano: copiati qui con il prefisso <code>ds-</code>, nell'app hanno il nome indicato sotto. Prima comparsa: schermata iniziale della Registration Cards Galleria (24/11/2026).</p>
-    <div class="panel"><div class="panel-body">
-      <div class="ds-hero-giorno">Martedì 24 novembre</div>
-      <div class="ds-hero-tit">Registration card degli arrivi</div>
-      <div class="ds-demo" style="margin-top:8px"><span class="ds-chip">Art Resort Galleria Umberto</span><span class="ds-chip">Art Suite Santa Brigida</span></div>
-      <code class="ds-code">Intestazione della schermata: .home-giorno (data in oro) · .home-titolo · .home-chip</code>
-      <div class="ds-passi" style="margin-top:16px">
-        <div class="ds-passo"><span class="ds-passo-n">1</span><div><div class="ds-passo-t">Esporta gli arrivi</div><div class="ds-passo-s">Dal PMS, il report arrivi del giorno in PDF.</div></div></div>
-        <div class="ds-passo"><span class="ds-passo-n">2</span><div><div class="ds-passo-t">Caricalo qui</div><div class="ds-passo-s">Le schede si preparano da sole, una per ospite.</div></div></div>
-        <div class="ds-passo"><span class="ds-passo-n">3</span><div><div class="ds-passo-t">Controlla e stampa</div><div class="ds-passo-s">Apri una scheda per l'anteprima, poi stampa.</div></div></div>
-      </div>
-      <code class="ds-code">Passi numerati: .home-passi › .passo › .passo-n (badge navy/oro) · .passo-t · .passo-s — su smartphone in colonna</code>
-      <div class="ds-garanzia"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>I dati degli ospiti restano su questo computer: il PDF si legge qui e non viene mai inviato.</span></div>
-      <code class="ds-code">Fascia di garanzia: .home-privacy — verde, lucchetto; solo per una cosa vera e verificata</code>
-    </div></div>
+    <p class="ds-intro">Ogni app ha il suo stile scritto dentro il proprio file, con gli stessi colori di Compass. Qui sotto ogni riquadro <strong>legge lo stile vero dal file dell'app</strong> e lo applica a un esempio con dati inventati, isolato dal resto della pagina: se l'app cambia stile, il riquadro cambia con lei. Funziona aprendo la guida dal sito (non da un file sul computer).</p>
+    <div id="ds-app-elenco"></div>
   </section>
 
   <!-- ══════════════ REGOLE ══════════════ -->
@@ -397,6 +386,79 @@ function dsApriConferma(){document.getElementById('ds-cq').classList.add('open')
 function dsChiudiConferma(){document.getElementById('ds-cq').classList.remove('open');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')dsChiudiConferma();});
 dsDisegna();
+// ── Schermate delle app: lo stile si legge dal file vero di ogni app ─────────────
+// Per ogni app: si scarica il suo HTML, se ne prendono i fogli di stile (i <style> della
+// pagina e i <link> a style.css; non quelli dentro gli script, che sono modelli di stampa)
+// e li si applica, in un riquadro isolato (iframe senza script), a un esempio scritto qui
+// con dati inventati. L'esempio usa le classi vere dell'app: se una classe sparisce o
+// cambia nome, il riquadro lo mostra subito.
+const DS_STELLA='<svg viewBox="0 0 36 36" width="28" height="28" style="flex-shrink:0" xmlns="http://www.w3.org/2000/svg"><polygon points="18,1 21,13 27,9 23,15 35,18 23,21 27,27 21,23 18,35 15,23 9,27 13,21 1,18 13,15 9,9 15,13" fill="#c9952f"/><polygon points="18,6 20,14 18,12 16,14" fill="rgba(255,255,255,.5)"/><polygon points="18,30 16,22 18,24 20,22" fill="rgba(255,255,255,.25)"/></svg>';
+const DS_TESTA=(tit,sub)=>`<div class="header"><div class="header-top"><div style="display:flex;align-items:center;gap:10px;">${DS_STELLA}<div><div class="header-title">${tit}</div><div class="header-sub">${sub}</div></div></div><div style="text-align:right;"><div class="header-time">08:42</div><div class="header-date">mar 24 nov</div></div></div><div class="day-nav"><button>‹</button><div class="day-label-wrap"><div class="day-label-main">Oggi</div><div class="day-label-sub">martedì 24 novembre</div></div><button>›</button></div></div>`;
+const DS_APP=[
+ {file:'housekeeper.html',nome:'Housekeeper',
+  testo:'App della governante, da telefono. Intestazione navy con filo oro, orologio grande e frecce per cambiare giorno.',
+  pezzi:['<code>.header</code> + <code>.day-nav</code> — intestazione con orologio e giorno (uguale in Breakfast)','<code>.today-badge</code> — «OGGI» navy con filo oro a sinistra','<code>.hk-tiles</code> › <code>.hk-tile</code> — tre numeri del giorno','<code>.hk-chip.part</code> / <code>.hk-chip.ferm</code> — camere in partenza (arancio <code>--hk-part</code>, solo di quest\'app) e in fermata'],
+  nota:'Qui <code>--text-dim</code> è il grigio scuro e <code>--text-muted</code> il chiaro: al contrario di Compass.',
+  demo:DS_TESTA('Housekeeping','Compass QM · SoulArt · Boutique')+`<div class="content"><div class="today-badge">OGGI</div><div class="hk-tiles"><div class="hk-tile"><div class="hk-tile-n" style="color:var(--hk-part);">6</div><div class="hk-tile-l">partenze</div></div><div class="hk-tile"><div class="hk-tile-n">9</div><div class="hk-tile-l">fermate</div></div><div class="hk-tile"><div class="hk-tile-n" style="color:var(--accent);">15</div><div class="hk-tile-l">camere</div></div></div><div class="hk-chips"><span class="hk-chip part">Art 3</span><span class="hk-chip part">Art 12</span><span class="hk-chip ferm">214</span><span class="hk-chip ferm">Art 7</span></div></div>`},
+ {file:'breakfast.html',nome:'Breakfast',
+  testo:'App della colazione, da telefono. Stessa intestazione di Housekeeper; in basso la barra di navigazione navy fissa.',
+  pezzi:['<code>.pan</code> › <code>.pan-head</code> · <code>.pan-t</code> · <code>.pan-s</code> — pannello dell\'app (più semplice del <code>.panel</code> di Compass)','<code>.cop</code> · <code>.cop-n</code> — il numero grande dei coperti','<code>.bk-chips</code> › <code>.bk-chip</code> — camere con i pax','<code>.bottom-nav</code> › <code>.bottom-nav-item.active</code> — voce attiva in oro'],
+  nota:'La barra in basso usa ancora emoji come icone (☕ 🛒 🔍), contro la regola «badge SVG». Stessa inversione <code>--text-dim</code>/<code>--text-muted</code> di Housekeeper.',
+  demo:DS_TESTA('Breakfast','Compass QM · SoulArt Hotel')+`<div class="content"><div class="pan"><div class="cop"><div><div class="pan-t">Colazioni</div><div class="cop-n">38</div></div><div><div class="pan-t">Room Only</div><div class="cop-ro">4</div><span class="cop-s">in casa senza colazione</span></div></div></div><div class="pan"><div class="pan-head"><span class="pan-t">In check out</span><span class="pan-s">include i room only</span></div><div class="bk-chips"><span class="bk-chip">Art 3<small>2</small></span><span class="bk-chip">Art 9<small>1</small></span><span class="bk-chip">214<small>3</small></span></div></div></div><nav class="bottom-nav" style="position:static;transform:none;"><div class="bottom-nav-item active"><span>☕</span>Servizio</div><div class="bottom-nav-item"><span>🛒</span>Acquisti</div><div class="bottom-nav-item"><span>🔍</span>Analisi</div></nav>`},
+ {file:'inventory.html',nome:'Inventario',
+  testo:'Inventario detersivi con lo scanner. Intestazione navy che contiene anche magazzino e schede, sempre in vista.',
+  pezzi:['<code>.app-header</code> › <code>.sync-row</code> — pallino di sincronizzazione','<code>.wh-tabs</code> › <code>.wh-tab.active</code> — scelta del magazzino','<code>.nav-tabs</code> › <code>.nav-tab.active</code> — Stock / Movimenti / Catalogo','<code>.stock-item</code> · <code>.stock-qty.ok/.low/.neg</code> — riga di giacenza','<code>.move-item</code> · <code>.move-badge.in/.out/.init</code> — movimento'],
+  nota:'I nomi dei grigi qui sono come in Compass. Movimenti e pulsanti di operazione usano emoji (⬆️ ⬇️ 📋).',
+  demo:`<div class="app-header"><div class="header-top"><div class="header-title">${DS_STELLA}Inventario Detersivi</div><div class="sync-row"><div class="sync-dot"></div><span class="sync-label">sincronizzato</span></div></div><div class="wh-tabs"><div class="wh-tab active">SoulArt Hotel</div><div class="wh-tab">Art Resort</div></div><div class="nav-tabs"><div class="nav-tab active">Stock</div><div class="nav-tab">Movimenti</div><div class="nav-tab">Catalogo</div></div></div><div class="content"><div class="stock-item"><div class="stock-item-row"><div style="flex:1;min-width:0;"><div class="stock-item-name">Detergente pavimenti</div><div class="stock-item-sub">8001234567890</div></div><div class="stock-qty-wrap"><div class="stock-qty ok">12</div><div class="stock-unit">fl</div></div></div></div><div class="stock-item"><div class="stock-item-row"><div style="flex:1;min-width:0;"><div class="stock-item-name">Anticalcare bagni</div><div class="stock-item-sub">8009876543210</div></div><div class="stock-qty-wrap"><div class="stock-qty low">0</div><div class="stock-unit">fl</div></div></div></div><div class="move-item"><div class="move-badge in">⬆️</div><div class="move-info"><div class="move-name">Detergente pavimenti</div><div class="move-ts">24/11 09:10</div></div><div class="move-qty in">+6 fl</div></div></div>`},
+ {file:'controllo-mattino.html',nome:'Distribuzione Culligan',
+  testo:'Giro mattutino delle bottiglie, da telefono. Ha una sua palette: navy pieno, navy chiaro (<code>--navy-light</code>) e verde salvia per la riconsegna.',
+  pezzi:['<code>.hdr</code> · <code>.hdr-title</code> · <code>.hdr-date</code> — intestazione','<code>.prog-wrap</code> › <code>.prog-bar</code> › <code>.prog-fill</code> — avanzamento del giro','<code>.stat-grid</code> › <code>.stat-box</code> — conteggi colorati','<code>.rooms-grid</code> › <code>.room-card.s-ok / .s-bottle / .s-dnd</code> — tessera camera, il colore dice lo stato'],
+  nota:'Nomi dei colori propri (<code>--navy</code>, <code>--navy-light</code>, <code>--sage-*</code>): stessa famiglia di Compass ma non gli stessi nomi.',
+  demo:`<div class="hdr">${DS_STELLA}<div class="hdr-sep"></div><div class="hdr-center"><div class="hdr-title">Distribuzione Culligan</div><div class="hdr-sub">SoulArt Hotel · Art 1–22</div></div><span class="hdr-date">24/11</span></div><div class="body"><div class="prog-wrap"><div class="prog-row"><span class="prog-lbl">Camere visitate</span><span class="prog-val">9 / 22</span></div><div class="prog-bar"><div class="prog-fill" style="width:41%"></div></div></div><div class="stat-grid"><div class="stat-box" style="background:var(--navy-light-bg);border:1.5px solid rgba(91,122,156,.3);"><div class="stat-n" style="color:var(--navy-light)">4</div><div class="stat-l">Da portare</div></div><div class="stat-box" style="background:var(--red-bg);border:1.5px solid rgba(220,38,38,.15);"><div class="stat-n" style="color:var(--red)">1</div><div class="stat-l">Non Dist.</div></div><div class="stat-box" style="background:var(--navy-bg);border:1.5px solid rgba(28,58,94,.18);"><div class="stat-n" style="color:var(--navy)">4</div><div class="stat-l">OK</div></div><div class="stat-box" style="background:var(--surface2);border:1.5px solid rgba(0,0,0,.08);"><div class="stat-n" style="color:var(--text-dim)">13</div><div class="stat-l">Da fare</div></div></div><div class="rooms-grid" style="margin-top:10px;"><div class="room-card s-ok"><div class="rc-top"><div class="rc-top-row"><div class="rc-num"><span class="rc-prefix">Art</span><span class="rc-roomnum">1</span></div></div></div><div class="rc-bottom"><div class="rc-piano-lbl">Fermata</div></div></div><div class="room-card s-bottle"><div class="rc-top"><div class="rc-top-row"><div class="rc-num"><span class="rc-prefix">Art</span><span class="rc-roomnum">2</span></div></div></div><div class="rc-bottom"><div class="rc-piano-lbl">Partenza</div></div></div><div class="room-card s-dnd"><div class="rc-top"><div class="rc-top-row"><div class="rc-num"><span class="rc-prefix">Art</span><span class="rc-roomnum">3</span></div></div></div><div class="rc-bottom"><div class="rc-piano-lbl">Fermata</div></div></div></div></div>`},
+ {file:'dvr.html',nome:'DVR & Compliance',
+  testo:'Scadenze di sicurezza in sola consultazione. Intestazione navy, scelta della società sotto, schede che si aprono.',
+  pezzi:['<code>.topbar</code> · <code>.soc-bar</code> › <code>.soc-tab.active</code> — società','<code>.summary-row</code> › <code>.chip.chip-red / .chip-amber / .chip-green</code> — riepilogo scadenze','<code>.card</code> › <code>.card-header</code> · <code>.card-count</code> — scheda apribile','<code>.entry</code> · <code>.entry-dot</code> · <code>.entry-date-val</code> — voce con scadenza colorata'],
+  nota:'Società, schede e riepilogo usano emoji (🏢 👤 ⚠️ ⏳). Stessa inversione <code>--text-dim</code>/<code>--text-muted</code> di Housekeeper.',
+  demo:`<div class="topbar"><div class="topbar-left">${DS_STELLA}<div><div class="topbar-title">DVR &amp; Compliance</div><div class="topbar-sub">Compass QM · Sola consultazione</div></div></div><div class="sync-dot"></div></div><div class="soc-bar"><button class="soc-tab active">🏢 SOCIETÀ UNO</button><button class="soc-tab">🏢 SOCIETÀ DUE</button></div><div class="content"><div class="summary-row"><div class="chip chip-red">⚠️ 1 scaduto</div><div class="chip chip-amber">⏳ 2 in scadenza</div><div class="chip chip-green">✓ 14 in regola</div></div><div class="sect-lbl">📋 Scadenze Personale</div><div class="card"><div class="card-header"><span class="card-icon">💉</span><span class="card-title">Visite Mediche</span><span class="card-count">3</span><span class="chev">›</span></div><div class="entry"><div class="entry-dot" style="background:var(--red);margin-top:2px;"></div><div style="flex:1;min-width:0;"><div class="entry-name">Mario Esempio</div><div class="entry-sub">Cameriere ai piani</div></div><div class="entry-date"><div class="entry-date-val" style="color:var(--red);">02/11/2026</div><div class="entry-date-lbl">22gg fa</div></div></div><div class="entry"><div class="entry-dot" style="background:var(--amber);margin-top:2px;"></div><div style="flex:1;min-width:0;"><div class="entry-name">Lucia Prova</div><div class="entry-sub">Receptionist</div></div><div class="entry-date"><div class="entry-date-val" style="color:var(--amber);">10/12/2026</div><div class="entry-date-lbl">tra 16gg</div></div></div></div></div>`},
+ {file:'biancheria-galleria.html',nome:'Compass Ops – Galleria',
+  testo:'L\'app della Galleria è una copia di pezzi di Compass: usa <code>style.css</code>, quindi tutto il catalogo qui sopra vale anche per lei. Di suo aggiunge la schermata riservata.',
+  pezzi:['<code>.gb-cantiere</code> — schermata a tutta pagina con la rosa dei venti in filigrana: voce riservata (PIN) o spenta','<code>.gb-cantiere-k</code> (oro, maiuscolo) · <code>.gb-cantiere-t</code> (titolo navy) · <code>.gb-cantiere-r</code> (filo oro) · <code>.gb-cantiere-s</code>','Conferme, avvisi e domande: la stessa finestra di Compass (<code>_gbConferma</code>, <code>_gbAvviso</code>, <code>_gbChiedi</code>, <code>_gbModulo</code>)'],
+  demo:`<div class="gb-cantiere" style="min-height:300px;"><div class="gb-cantiere-k">Preferenze turni</div><div class="gb-cantiere-t" style="font-size:22px;">Riservato al Front Office Manager</div><div class="gb-cantiere-r"></div><div class="gb-cantiere-s">Inserisci il PIN per aprire questa voce.</div></div>`},
+ {file:'registration-galleria.html',nome:'Registration Cards – Galleria',
+  testo:'Fuori da Compass, senza codice. Schermata iniziale del 24/11/2026: data in oro, strutture, caricamento, anteprima del foglio, tre passi, garanzia sui dati.',
+  pezzi:['<code>.home-giorno</code> · <code>.home-titolo</code> · <code>.home-chip</code> — intestazione della schermata','<code>.home-passi</code> › <code>.passo</code> › <code>.passo-n</code> — passi numerati con badge navy/oro','<code>.home-privacy</code> — fascia verde con lucchetto: solo per una garanzia vera e verificata','<code>.foglio</code> — il foglio A4 disegnato in CSS, senza dati (nascosto su smartphone)'],
+  nota:'Stessa inversione <code>--text-dim</code>/<code>--text-muted</code> di Housekeeper.',
+  demo:`<div class="topbar">${DS_STELLA}<div><div class="topbar-title">Registration Cards</div><div class="topbar-sub">Galleria Umberto I</div></div></div><div class="shell"><div class="home-hero"><div><div class="home-giorno">Martedì 24 novembre</div><div class="home-titolo">Registration card degli arrivi</div></div><div class="home-strutture"><span class="home-chip">Art Resort Galleria Umberto</span><span class="home-chip">Art Suite Santa Brigida</span></div></div><div class="home-passi"><div class="passo"><span class="passo-n">1</span><div><div class="passo-t">Esporta gli arrivi</div><div class="passo-s">Dal PMS, il report arrivi del giorno in PDF.</div></div></div><div class="passo"><span class="passo-n">2</span><div><div class="passo-t">Caricalo qui</div><div class="passo-s">Le schede si preparano da sole, una per ospite.</div></div></div></div><div class="home-privacy"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>I dati degli ospiti restano su questo computer.</span></div></div>`}
+];
+function dsAppAltezza(f){try{const d=f.contentDocument;if(d&&d.body)f.style.height=Math.min(900,Math.max(120,d.documentElement.scrollHeight))+'px';}catch(e){}}
+async function dsAppStile(file){
+  const r=await fetch(file,{cache:'no-store'});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const doc=new DOMParser().parseFromString(await r.text(),'text/html');
+  const link=[...doc.querySelectorAll('link[rel="stylesheet"]')].map(l=>'<link rel="stylesheet" href="'+dsTesto(l.getAttribute('href')||'')+'">').join('');
+  const css=[...doc.querySelectorAll('style')].map(x=>x.textContent).join('\n');
+  return link+'<style>'+css.replace(/<\/style/gi,'<\\/style')+'</style>';
+}
+function dsAppDisegna(){
+  const el=document.getElementById('ds-app-elenco');if(!el)return;
+  el.innerHTML=DS_APP.map((a,i)=>'<div class="ds-app"><div class="ds-app-info"><h3>'+a.nome+'</h3><div class="ds-app-file">'+a.file+'</div><p>'+a.testo+'</p><ul>'+a.pezzi.map(x=>'<li>'+x+'</li>').join('')+'</ul>'+(a.nota?'<div class="ds-app-nota">'+a.nota+'</div>':'')+'</div><div class="ds-app-schermo" id="ds-app-'+i+'"><div class="ds-app-vuoto">Caricamento dello stile…</div></div></div>').join('');
+  DS_APP.forEach(async(a,i)=>{
+    const box=document.getElementById('ds-app-'+i);
+    let stile;
+    try{stile=await dsAppStile(a.file);}
+    catch(e){box.innerHTML='<div class="ds-app-vuoto">Lo stile dell\'app si legge solo aprendo la guida dal sito.</div>';return;}
+    const f=document.createElement('iframe');
+    f.setAttribute('sandbox','allow-same-origin');   // nessuno script dell'app gira qui
+    f.title='Esempio: '+a.nome;
+    // body:display:block per le app che centrano la pagina; .screen sempre visibile.
+    f.srcdoc='<!doctype html><html lang="it"><head><meta charset="utf-8"><base href="'+dsTesto(location.href)+'">'+stile+
+      '<style>html,body{min-height:0!important;height:auto!important;overflow:hidden!important;}body{margin:0!important;padding:0 0 4px!important;}.header,.app-header,.topbar,.hdr{position:static!important;}</style></head><body>'+a.demo+'</body></html>';
+    f.addEventListener('load',()=>{dsAppAltezza(f);setTimeout(()=>dsAppAltezza(f),400);});
+    box.innerHTML='';box.appendChild(f);
+  });
+}
+window.addEventListener('resize',()=>document.querySelectorAll('.ds-app-schermo iframe').forEach(dsAppAltezza));
+dsAppDisegna();
 </script>
 </body>
 </html>
