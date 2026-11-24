@@ -35,6 +35,57 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .upload-badge{display:inline-block;margin-top:14px;font-size:11px;font-weight:600;padding:4px 11px;background:var(--accent-bg);color:var(--accent);border-radius:20px;}
 #fileInput{display:none;}
 
+/* SCHERMATA INIZIALE (24/11/2026): il giorno, le due strutture, il riquadro di caricamento
+   con la rosa dei venti in filigrana, l'anteprima di cosa esce in stampa, i tre passi e la
+   garanzia che i dati degli ospiti restano qui. Tutto in classi: niente griglie in linea. */
+.home-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:6px 2px 16px;}
+.home-giorno{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;}
+.home-titolo{font-size:22px;font-weight:700;letter-spacing:-.01em;margin-top:2px;}
+.home-strutture{display:flex;gap:6px;flex-wrap:wrap;}
+.home-chip{font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;background:var(--surface);border:1px solid var(--border-light);color:var(--text-dim);}
+.home-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:14px;align-items:stretch;}
+.home-grid .upload-zone{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 22px 34px;}
+.home-grid .upload-zone::before{content:'';position:absolute;right:-90px;bottom:-90px;width:300px;height:300px;background:url('img/compass-stella.png') no-repeat center/contain;opacity:.09;transform:rotate(22deg);pointer-events:none;}
+.home-grid .upload-zone>*{position:relative;}
+.home-grid .upload-icon{width:64px;height:64px;}
+.home-grid .upload-icon svg{width:27px;height:27px;}
+.home-grid .upload-title{font-size:17px;}
+.upload-btn{margin-top:18px;font-size:14px;padding:10px 22px;}
+.home-anteprima{background:var(--surface);border:1px solid var(--border-light);border-top:4px solid var(--gold);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px 16px;display:flex;flex-direction:column;}
+.home-lbl{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;}
+.foglio{flex:1;background:#fff;border:1px solid var(--border-light);border-radius:4px;box-shadow:0 6px 18px rgba(12,31,51,.10);padding:12px;display:flex;flex-direction:column;gap:7px;max-width:240px;width:100%;margin:0 auto;aspect-ratio:210/297;transform:rotate(-1.5deg);}
+.f-testa{display:flex;justify-content:space-between;align-items:center;border:1.5px solid var(--accent);border-bottom:2.5px solid var(--gold);border-radius:4px 4px 0 0;padding:6px 8px;}
+.f-tit{font-size:8px;font-weight:700;color:var(--accent);}
+.f-cam{font-size:14px;font-weight:700;color:var(--accent);line-height:1;}
+.f-riga{height:6px;border-radius:3px;background:var(--surface2);}
+.f-nome{height:10px;width:62%;border-radius:3px;background:var(--accent);opacity:.85;margin:3px 0 2px;}
+.f-box{display:flex;border:1px solid var(--accent);border-radius:3px;overflow:hidden;}
+.f-box>span{flex:1;height:16px;border-right:1px solid var(--border);}
+.f-box>span:last-child{border-right:none;}
+.f-cc{display:flex;gap:2px;}
+.f-cc>span{width:9px;height:9px;border:1px solid var(--accent);border-radius:2px;}
+.f-due{display:flex;border:1px solid var(--accent);border-radius:3px;overflow:hidden;}
+.f-due>div{flex:1;padding:5px;display:flex;flex-direction:column;gap:4px;}
+.f-due>div:first-child{border-right:1px solid var(--accent);}
+.f-due i{display:block;height:4px;border-radius:2px;background:var(--surface2);}
+.f-due b{display:block;width:16px;height:5px;border-radius:1px;background:var(--accent);}
+.f-firme{margin-top:auto;display:flex;gap:12px;}
+.f-firme>span{flex:1;border-bottom:1px solid var(--accent);height:14px;}
+.home-nota{font-size:11px;color:var(--text-muted);text-align:center;margin-top:12px;}
+.home-passi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
+.passo{display:flex;gap:11px;align-items:flex-start;background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:12px 14px;}
+.passo-n{width:26px;height:26px;border-radius:50%;background:var(--accent);border:1.5px solid var(--gold);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.passo-t{font-size:13px;font-weight:700;}
+.passo-s{font-size:12px;color:var(--text-dim);margin-top:1px;line-height:1.45;}
+.home-privacy{display:flex;align-items:center;gap:10px;margin-top:14px;padding:11px 14px;border-radius:12px;background:var(--green-bg);color:var(--green);font-size:12.5px;line-height:1.45;}
+.home-privacy svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;}
+@media(max-width:700px){
+  .home-grid{grid-template-columns:1fr;}
+  .home-anteprima{display:none;}
+  .home-passi{grid-template-columns:1fr;}
+  .home-titolo{font-size:19px;}
+}
+
 .processing{display:none;align-items:center;gap:12px;padding:14px 16px;background:var(--surface);border-radius:14px;box-shadow:var(--shadow);margin:14px 0;}
 .spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -381,14 +432,46 @@ setInterval(qmCheckVersione,600000);
 
 <div class="shell">
 
-  <div class="upload-zone" id="uploadZone">
-    <input type="file" id="fileInput" accept="application/pdf">
-    <div class="upload-icon">
-      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+  <div id="rcHome">
+    <div class="home-hero">
+      <div>
+        <div class="home-giorno" id="rcOggi"></div>
+        <div class="home-titolo">Registration card degli arrivi</div>
+      </div>
+      <div class="home-strutture"><span class="home-chip">Art Resort Galleria Umberto</span><span class="home-chip">Art Suite Santa Brigida</span></div>
     </div>
-    <div class="upload-title">Carica il report arrivi dal PMS</div>
-    <div class="upload-sub">Trascina il file o clicca per selezionarlo</div>
-    <span class="upload-badge">Formato: Numero camera / Tipo / Ospite / Periodo</span>
+    <div class="home-grid">
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept="application/pdf">
+        <div class="upload-icon">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+        </div>
+        <div class="upload-title">Carica il report arrivi dal PMS</div>
+        <div class="upload-sub">Trascina qui il PDF degli arrivi, oppure sceglilo dal computer</div>
+        <button type="button" class="btn-primary upload-btn">Scegli il PDF</button>
+        <span class="upload-badge">Formato: Numero camera / Tipo / Ospite / Periodo</span>
+      </div>
+      <div class="home-anteprima" aria-hidden="true">
+        <div class="home-lbl">Cosa si stampa</div>
+        <div class="foglio">
+          <div class="f-testa"><span class="f-tit">Registration Card</span><span class="f-cam">101</span></div>
+          <div class="f-nome"></div>
+          <div class="f-box"><span></span><span></span><span></span><span></span></div>
+          <div class="f-due"><div><b></b><i></i><i></i><i style="width:80%"></i></div><div><b></b><i></i><i></i><i style="width:70%"></i></div></div>
+          <div class="f-cc"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="f-riga" style="width:90%"></div>
+          <div class="f-due"><div><i></i><i></i><i style="width:60%"></i></div><div><i></i><i></i><i style="width:75%"></i></div></div>
+          <div class="f-firme"><span></span><span></span></div>
+        </div>
+        <div class="home-nota">Un foglio A4 per ospite, in italiano e inglese</div>
+      </div>
+    </div>
+    <div class="home-passi">
+      <div class="passo"><span class="passo-n">1</span><div><div class="passo-t">Esporta gli arrivi</div><div class="passo-s">Dal PMS, il report arrivi del giorno in PDF.</div></div></div>
+      <div class="passo"><span class="passo-n">2</span><div><div class="passo-t">Caricalo qui</div><div class="passo-s">Le schede si preparano da sole, una per ospite.</div></div></div>
+      <div class="passo"><span class="passo-n">3</span><div><div class="passo-t">Controlla e stampa</div><div class="passo-s">Apri una scheda per l'anteprima, poi stampa tutte o una sola.</div></div></div>
+    </div>
+    <div class="home-privacy"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>I dati degli ospiti restano su questo computer: il PDF si legge qui e non viene mai inviato.</span></div>
   </div>
 
   <div class="processing" id="processing">
@@ -440,6 +523,8 @@ const tratMap = {
 };
 
 const uploadZone    = document.getElementById('uploadZone');
+const rcHome        = document.getElementById('rcHome');
+(function(){const e=document.getElementById('rcOggi');if(!e)return;const t=new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});e.textContent=t.charAt(0).toUpperCase()+t.slice(1);})();
 const fileInput     = document.getElementById('fileInput');
 const processing    = document.getElementById('processing');
 const procText      = document.getElementById('procText');
@@ -697,10 +782,10 @@ function openModal(idx) {
 function closeModal() { modalOverlay.classList.remove('open'); document.body.style.overflow = ''; }
 function closeModalOutside(e) { if (e.target === modalOverlay) closeModal(); }
 
-function resetApp() { results.style.display='none'; uploadZone.style.display='block'; fileInput.value=''; guestsData=[]; }
-function showProc(msg) { procText.textContent=msg; processing.style.display='flex'; uploadZone.style.display='none'; }
+function resetApp() { results.style.display='none'; rcHome.style.display='block'; fileInput.value=''; guestsData=[]; }
+function showProc(msg) { procText.textContent=msg; processing.style.display='flex'; rcHome.style.display='none'; }
 function hideProc() { processing.style.display='none'; }
-function showError(msg) { errorBox.textContent=msg; errorBox.style.display='block'; uploadZone.style.display='block'; }
+function showError(msg) { errorBox.textContent=msg; errorBox.style.display='block'; rcHome.style.display='block'; }
 function hideError() { errorBox.style.display='none'; }
 </script>
 </body>
