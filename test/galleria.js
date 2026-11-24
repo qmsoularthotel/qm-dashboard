@@ -155,7 +155,7 @@ ok('Reso Galleria: anche nell\'altro verso',       _grUnisciRecord([{ id: 'x', r
 ok('Reso Galleria: la distinta va al Resident Manager', /Front Office Manager/.test(String(_grStampa)) && !/Presta/.test(String(_grStampa)), true);
 
 // ── Menu laterale come Compass, con la voce Controllo fatturazione (25/09/2026) ──
-ok('Galleria: nove voci di menu',                   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche,archivio,presenze');
+ok('Galleria: nove voci di menu',                   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche,archivio,presenze,registration');
 // ── Conteggio Biancheria: modulo in costruzione, in attesa dei contratti (16/11/2026) ──
 (function () {
   var box = { innerHTML: '' }, vero = document.getElementById;
@@ -449,7 +449,7 @@ ok('Galleria: chiuso mostra solo l\'intestazione', /_gb\.giri\.length&&!_gbStoAp
 // conteggio, il carico no"), col rinomino giac -> gc e le strutture della Galleria. In piu':
 // due magazzini, chiave bg_, niente organico/turno di Compass, voce di menu.
 sez('Giacenza Biancheria (Galleria): copia di Compass, due magazzini');
-ok('Galleria: la voce Giacenza nel menu',   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche,archivio,presenze');
+ok('Galleria: la voce Giacenza nel menu',   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche,archivio,presenze,registration');
 ok('Galleria: la voce apre la giacenza',    /_bgSezione==='giacenza'\)gcLoad\(\)/.test(String(bgSezione)), true);
 (function () {
   var _g = _gc, _h = _gcHotel;
@@ -910,3 +910,19 @@ sez('Gestione Turnazione spenta dal Quality Manager (21/11/2026)');
 ok('il 423 del Worker chiude e segna spenta', /r\.status===423\|\|j\.spenta\)\{_gtStato=\{ok:true,spenta:true\}/.test(String(_gtChiedi)), true);
 ok('spenta: niente campo del PIN, solo l\'avviso', /st\.spenta\?`<div class="gb-cantiere-s">Per ora la Gestione Turnazione/.test(String(_gtSchermataPin)), true);
 ok('spenta: non è il primo accesso', /primo=st\.ok&&!st\.spenta&&!st\.resident;/.test(String(_gtSchermataPin)), true);
+
+// Registration Cards dentro Compass Ops (24/11/2026): seconda porta sulla stessa pagina.
+// Il collegamento sul desktop dei colleghi deve continuare a funzionare: si apre la pagina
+// vera, non una copia, e una volta sola (tornando sulla voce le schede caricate restano).
+(function () {
+  var figli = [], box = { querySelector: function () { return figli.length ? figli[0] : null; }, appendChild: function (x) { figli.push(x); } };
+  var vero = document.getElementById, veroCrea = document.createElement;
+  document.getElementById = function (id) { return id === 'gb-rc' ? box : null; };
+  document.createElement = function () { return {}; };
+  try {
+    gbRcEntra(); gbRcEntra();
+    ok('Registration nella Galleria: un riquadro solo', figli.length, 1);
+    ok('Registration nella Galleria: apre la pagina vera', figli[0] && figli[0].src, 'registration-galleria.html?dentro=1');
+  } finally { document.getElementById = vero; document.createElement = veroCrea; }
+  ok('Registration nella Galleria: la voce apre il riquadro', /_bgSezione==='registration'\)gbRcEntra\(\)/.test(String(bgSezione)), true);
+})();

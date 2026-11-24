@@ -63,6 +63,19 @@ si cambia solo qui.
 
 ## Registration Cards Galleria — un'app a sé, fuori da Compass
 
+### Seconda porta: dentro Compass Ops (24/11/2026)
+
+Richiesta del QM: Registration Cards anche **dentro Compass Ops**, come seconda posizione. Il
+collegamento sul desktop dei colleghi (`registration-galleria.html`) resta com'è e funziona
+uguale. In Compass Ops c'è il gruppo **Ricevimento** in cima al menu con la voce
+«Registration Cards» (bollino NEW fino all'08/12): `gbRcEntra()` crea **una volta sola** un
+`iframe` (`.gb-rc-frame`) su `registration-galleria.html?dentro=1`, così cambiando voce e
+tornando le schede caricate restano. Con `?dentro=1` la pagina toglie splash e intestazione
+(`html.rc-dentro`), e `_qmRicarica` tiene il parametro quando si aggiorna da sola. È la
+stessa pagina dello stesso sito: il PDF si legge e si stampa nel riquadro (la stampa parte
+dal riquadro e stampa solo le schede), i dati degli ospiti non passano da Compass Ops. Anche
+l'interruttore del Pannello App vale lì dentro. Controlli in `test/galleria.js`.
+
 ### Schermata iniziale (24/11/2026)
 
 Approvata dal QM. Sopra il riquadro di caricamento: data di oggi, titolo e le due strutture.

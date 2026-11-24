@@ -23,6 +23,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .topbar-title{font-size:17px;font-weight:700;letter-spacing:-.01em;}
 .topbar-sub{font-size:11px;opacity:.65;margin-top:1px;}
 
+.rc-dentro .topbar{display:none;}
 .shell{max-width:900px;margin:0 auto;padding:16px 14px 40px;}
 
 /* UPLOAD */
@@ -322,6 +323,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   var nav=performance.getEntriesByType('navigation')[0];
   var s=document.getElementById('qm-splash');
   if(!s) return;
+  // Aperta dentro Compass Ops (voce «Registration Cards», 24/11/2026): niente splash e
+  // niente intestazione, ci sono già quelli di Compass Ops. Dal collegamento sul desktop
+  // (senza ?dentro=1) resta tutto com'era.
+  if(/[?&]dentro=1(&|$)/.test(location.search)){ document.documentElement.classList.add('rc-dentro'); s.remove(); return; }
   if(nav && nav.type==='reload'){ s.remove(); return; }
   setTimeout(function(){ s.style.opacity='0'; setTimeout(function(){ s.remove(); },520); },3000);
 })();
@@ -344,11 +349,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 // confronta l'ETag del proprio file (cambia solo se cambia il contenuto: nessun numero di
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina — che risponde
 // alla domanda che l'ETag non sa porsi: sto gia' eseguendo una copia vecchia?
-const QM_APP_BUILD='2026-11-24.1';
+const QM_APP_BUILD='2026-11-24.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
-  location.replace(location.pathname+'?v='+Date.now());
+  // ?dentro=1 va tenuto: senza, dentro Compass Ops ricomparirebbero splash e intestazione.
+  location.replace(location.pathname+'?v='+Date.now()+(/[?&]dentro=1(&|$)/.test(location.search)?'&dentro=1':''));
 }
 async function qmCheckBuild(){
   try{
