@@ -43,8 +43,7 @@ I numeri di camera determinano la struttura di appartenenza (vedi `fixArriviStru
 ### CSS Design Tokens
 
 Il riferimento visivo è **`compass-qm-design-system.html`** (24/11/2026): guida di stile viva
-che carica il vero `style.css` e legge i valori dei token in tempo reale (anche col tema
-scuro), con tutti i componenti (`.panel`, `.kpi-card`, pulsanti, badge, moduli, Upload
+che carica il vero `style.css` e legge i valori dei token in tempo reale, con tutti i componenti (`.panel`, `.kpi-card`, pulsanti, badge, moduli, Upload
 Center, conferme `cq*`). Nessun dato, nessuna rete. Aggiungendo un componente comune a
 Compass, va mostrato anche lì.
 
@@ -59,9 +58,6 @@ Token principali (`:root` in `style.css`; `body.dark` li ridefinisce):
 --green:#2e7d32  --red:#c62828  --amber:#e65100  --blue:#1565c0   /* ognuno con il suo -bg */
 --fs-base:16px  --fs-md:15px  --fs-sm:14px  --fs-xs:13px  --fs-xxs:11px
 ```
-
-Nota: `--gold` e `--gold-bg` non sono ridefiniti in `body.dark` (l'oro resta uguale, lo
-sfondo oro chiaro resta chiaro anche nel tema scuro): si vede nella guida.
 
 ### Responsive / smartphone — regola d'oro: mai `grid-template-columns` inline
 

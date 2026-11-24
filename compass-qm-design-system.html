@@ -20,9 +20,6 @@ body{background:var(--bg);}
 .ds-head h1{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:26px;font-weight:700;letter-spacing:-.01em;line-height:1.15;}
 .ds-head h1 span{color:var(--gold);}
 .ds-head p{font-size:var(--fs-xs);color:rgba(255,255,255,.82);margin-top:3px;}
-.ds-head-dx{margin-left:auto;display:flex;gap:8px;align-items:center;}
-.ds-head .btn-ghost{color:#fff;border-color:rgba(255,255,255,.6);}
-.ds-head .btn-ghost:hover{background:rgba(255,255,255,.12);}
 .ds-indice{position:sticky;top:0;z-index:50;background:var(--surface);border-bottom:1px solid var(--border-light);}
 .ds-indice-in{max-width:1180px;margin:0 auto;padding:8px 20px;display:flex;gap:6px;overflow-x:auto;}
 .ds-indice a{white-space:nowrap;text-decoration:none;}
@@ -53,13 +50,11 @@ body{background:var(--bg);}
 .ds-regole strong{color:var(--text);}
 .ds-regole code,.ds-intro code,.panel-body code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em;background:var(--surface2);padding:0 4px;border-radius:3px;}
 .ds-nav-demo{width:270px;height:auto;max-width:100%;background:#fff;border:1px solid var(--border-light);border-radius:8px;overflow:hidden;}
-body.dark .ds-nav-demo{background:var(--surface);}
 .ds-cq-statico{position:relative;margin:0 auto;}
 .ds-piede{margin-top:40px;font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;}
 @media(max-width:768px){
   .ds-head-in{padding:18px 16px;}
   .ds-head h1{font-size:21px;}
-  .ds-head-dx{margin-left:0;width:100%;}
   .ds-wrap{padding:0 16px 40px;}
   .ds-indice-in{padding:8px 16px;}
   .ds-griglia-2{grid-template-columns:1fr;}
@@ -76,9 +71,6 @@ body.dark .ds-nav-demo{background:var(--surface);}
     <div>
       <h1>Compass <span>QM</span> — Design System</h1>
       <p>Token, tipografia e componenti del pannello. Tutto ciò che si vede qui è letto dal vero <code style="color:#fff;background:rgba(255,255,255,.14);padding:0 4px;border-radius:3px">style.css</code>.</p>
-    </div>
-    <div class="ds-head-dx">
-      <button class="btn-ghost" onclick="dsCambiaTema()" id="ds-tema-btn">Tema scuro</button>
     </div>
   </div>
 </header>
@@ -104,7 +96,7 @@ body.dark .ds-nav-demo{background:var(--surface);}
   <!-- ══════════════ COLORI ══════════════ -->
   <section class="ds-sez" id="colori">
     <h2>Colori — token di <code>:root</code></h2>
-    <p class="ds-intro">Navy e oro sono la firma di Compass: il navy guida (pulsanti, voce attiva, badge), l'oro sottolinea (bordo superiore di pannelli e KPI, anelli, fuoco dei campi). I quattro colori di stato vanno sempre in coppia con il loro sfondo <code>-bg</code>. I valori qui sotto sono letti in tempo reale dal foglio di stile e cambiano col tema scuro.</p>
+    <p class="ds-intro">Navy e oro sono la firma di Compass: il navy guida (pulsanti, voce attiva, badge), l'oro sottolinea (bordo superiore di pannelli e KPI, anelli, fuoco dei campi). I quattro colori di stato vanno sempre in coppia con il loro sfondo <code>-bg</code>. I valori qui sotto sono letti in tempo reale dal foglio di stile.</p>
     <div class="ds-griglia" id="ds-colori-base"></div>
     <h2 style="margin-top:22px">Stati — colore + sfondo</h2>
     <p class="ds-intro">Verde = fatto/caricato, rosso = manca/errore/non si annulla, ambra = attenzione/in corso, blu = informazione. Il testo colorato si appoggia sempre al suo <code>-bg</code>, mai al bianco.</p>
@@ -307,12 +299,11 @@ body.dark .ds-nav-demo{background:var(--surface);}
     <h2>Regole che non si rompono</h2>
     <div class="panel"><div class="panel-body">
       <ul class="ds-regole">
-        <li><strong>Stile Compass sempre</strong>: token e componenti esistenti (<code>.panel</code>, <code>.kpi-card</code>, <code>--accent</code>…), mai stili inventati. Un colore nuovo si aggiunge come token in <code>:root</code> e in <code>body.dark</code>.</li>
+        <li><strong>Stile Compass sempre</strong>: token e componenti esistenti (<code>.panel</code>, <code>.kpi-card</code>, <code>--accent</code>…), mai stili inventati. Un colore nuovo si aggiunge come token in <code>:root</code>.</li>
         <li><strong>Un modulo "uguale a Compass" per altri si copia identico</strong> con un rinomino meccanico, non si riprogetta (caso Galleria, 11/09/2026).</li>
         <li class="no"><strong>Mai <code>grid-template-columns</code> in linea</strong>: su smartphone la <code>@media</code> non lo raggiunge. Le misure che cambiano stanno in classi CSS, nell'unico blocco <code>@media(max-width:768px)</code> in fondo a <code>style.css</code>.</li>
         <li class="no"><strong>Mai emoji come icone</strong>: si usa il badge SVG navy/oro della misura giusta.</li>
         <li class="no"><strong>Mai <code>confirm()</code> / <code>alert()</code></strong>: solo <code>cqConferma</code> / <code>cqAvviso</code>. Pulsante di conferma navy, nessun secondo colore.</li>
-        <li><strong>Il tema scuro</strong> si ottiene con la classe <code>body.dark</code>, che ridefinisce i token: un componente scritto con <code>var(--…)</code> si adatta da solo, uno con colori fissi no.</li>
         <li><strong>Gli stati si dicono a colori coerenti</strong>: verde fatto, ambra attenzione, rosso manca/errore. Una scrittura non arrivata si segnala in rosso, mai in silenzio.</li>
         <li><strong>Nei testi della Galleria</strong> è sempre «Front Office Manager», mai «Resident Manager».</li>
       </ul>
@@ -324,7 +315,7 @@ body.dark .ds-nav-demo{background:var(--surface);}
 
 <script>
 // Guida di stile: nessun dato, nessuna rete. Legge i valori dei token dal foglio di stile
-// vero, così quello che si vede è sempre quello che c'è in style.css (anche nel tema scuro).
+// vero, così quello che si vede è sempre quello che c'è in style.css.
 const DS_BASE=[
   ['--accent','Navy — pulsanti, voce attiva, badge'],
   ['--gold','Oro — bordi superiori, anelli, fuoco'],
@@ -358,11 +349,6 @@ function dsDisegna(){
     '<div class="ds-coppia"><div class="ds-swatch-info"><div class="ds-swatch-nome">'+c+'</div><div class="ds-swatch-val">'+dsTesto(dsVal(c)||'—')+'</div></div>'+
     '<div class="ds-swatch-info"><div class="ds-swatch-nome">'+bg+'</div><div class="ds-swatch-val">'+dsTesto(dsVal(bg)||'—')+'</div></div></div>'+
     '<div class="ds-swatch-info" style="padding-top:0"><div class="ds-swatch-uso">'+uso+'</div></div></div>').join('');
-}
-function dsCambiaTema(){
-  const scuro=document.body.classList.toggle('dark');
-  document.getElementById('ds-tema-btn').textContent=scuro?'Tema chiaro':'Tema scuro';
-  dsDisegna();
 }
 function dsApriConferma(){document.getElementById('ds-cq').classList.add('open');}
 function dsChiudiConferma(){document.getElementById('ds-cq').classList.remove('open');}
