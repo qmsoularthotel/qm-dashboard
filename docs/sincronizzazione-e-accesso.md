@@ -234,6 +234,30 @@ altre: una funzione il cui risultato viene usato in modo sincrono si romperebbe.
 
 Il secondo argomento accetta **HTML** (`<strong>`, `<br>`), non `\n`.
 
+### Caselle da compilare — `cqChiedi` / `cqModulo` (24/11/2026)
+
+Al posto di `prompt()` del browser, la stessa finestra con dentro dei campi `.form-field`
+(contenitore `#cqCampi`, classe `.cq-campi` in `style.css`):
+
+```js
+const v=await cqModulo('Correggere la quantità?','<strong>'+_esc(voce)+'</strong>',
+  [{etichetta:'Quantità corretta',valore:12},{etichetta:'Motivo'}]);   // → ['14','…'] | null
+const t=await cqChiedi('Tipologie','Una per riga.',{valore:cur,righe:8});   // → testo | null
+```
+
+Opzioni di ogni campo: `etichetta`, `valore`, `righe` (casella a più righe: lì Invio va a
+capo), `password`, `segnaposto`, `solaLettura`. `{ok:'…'}` cambia il pulsante, `{soloOk:true}`
+toglie «Annulla» (codice da copiare). Più domande di fila (nome, unità, soglia…) diventano
+**una finestra sola**. Le 21 `prompt()` di Compass e le 8 di Compass Ops sono state convertite;
+erano tutte gestori di `onclick`. Dopo l'attesa **si rilegge** l'oggetto da modificare
+(`_giac`, `_resi`, `_gc`, `_gr`, catalogo, `weekData`): salvataggi e sincronizzazione lo
+riassegnano, e scrivere in quello vecchio perderebbe la correzione.
+
+Compass Ops (`biancheria-galleria.html`) ha la **copia identica** di questa sezione con i nomi
+`_gbConferma`, `_gbAvviso`, `_gbChiedi`, `_gbModulo` (prima usava `confirm()`/`alert()`
+del browser). Sentinella in `test/esegui.sh`: nessuna `confirm(`/`alert(`/`prompt(` in
+`app.js`, `ddt-shared.js` e nelle pagine, tranne il ripiego dentro `_cqApri`/`_gbCqApri`.
+
 ### Aspetto
 
 Impianto ereditato da `.print-dialog`: stesse misure, stessa ombra, pulsante navy come

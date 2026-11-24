@@ -1147,15 +1147,19 @@ function renderDay(idx){
 // entrambi con classe .staff-area-mirror. Un solo renderDay() li tiene sincronizzati
 // invece di dover duplicare la logica o richiamarla due volte.
 function _setStaffAreaHTML(html){document.querySelectorAll('.staff-area-mirror').forEach(el=>el.innerHTML=html);}
-function editShift(dayIdx,nome){
+async function editShift(dayIdx,nome){
   if(!weekData||!weekData.giorni[dayIdx])return;
   const shifts=weekData.giorni[dayIdx].shifts;
   // Trova la chiave reale (case-insensitive)
   const realKey=Object.keys(shifts).find(k=>k.toLowerCase()===nome.toLowerCase())||nome;
   const cur=shifts[realKey]||'';
-  const nuovo=window.prompt(`Turno di ${nome} — ${weekData.giorni[dayIdx].label}\nValore attuale: "${cur}"\n\nInserisci il turno corretto:`,cur);
+  const nuovo=await cqChiedi('Correggere il turno di '+nome+'?',
+    _esc(weekData.giorni[dayIdx].label)+(cur?' · ora: <strong>'+_esc(cur)+'</strong>':''),
+    {etichetta:'Turno corretto',valore:cur});
   if(nuovo===null)return; // annullato
-  shifts[realKey]=nuovo.trim();
+  // Durante l'attesa il turno può essere stato ricaricato: si scrive in quello attuale.
+  if(!weekData||!weekData.giorni[dayIdx])return;
+  weekData.giorni[dayIdx].shifts[realKey]=nuovo.trim();
   // Salva in localStorage e cloud
   const toSave={giorni:weekData.giorni.map(g=>({...g,date:g.date instanceof Date?g.date.toISOString():g.date})),_ts:Date.now()};
   localStorage.setItem('qm_weekData',JSON.stringify(toSave));
@@ -5957,7 +5961,8 @@ function qmNomeDispositivo(){
 }
 async function qmRinominaDispositivo(){
   const attuale=qmNomeDispositivo();
-  const n=prompt('Come si chiama questo computer? (es. Casa, Hotel, Reception)',attuale||'');
+  const n=await cqChiedi('Come si chiama questo computer?','Serve a riconoscerlo nello Stato del sistema.',
+    {etichetta:'Nome',valore:attuale||'',segnaposto:'Es. Casa, Hotel, Reception'});
   if(n===null)return;
   try{localStorage.setItem(QM_DISPOSITIVO_KEY,String(n).trim().slice(0,24));}catch(e){}
   try{qmRenderStatoSistema();}catch(e){}
@@ -10837,11 +10842,12 @@ async function invDeleteMove(id){
   _qmElencoSalva('qm_inv_moves_'+_invWh,[],_invRidisegna);
   invRender();
 }
-function invEditQty(bc,currentQty){
+async function invEditQty(bc,currentQty){
   let catalog={};
   try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
   const p=catalog[bc];if(!p)return;
-  const val=prompt(`Nuova quantità in stock per "${p.name}":`,currentQty);
+  const val=await cqChiedi('Correggere la quantità in stock?','<strong>'+_esc(p.name)+'</strong>',
+    {etichetta:'Nuova quantità',valore:currentQty});
   if(val===null)return;
   const n=parseFloat(val);
   if(isNaN(n)||n<0){cqAvviso('Quantità non valida');return;}
@@ -10852,12 +10858,16 @@ function invEditQty(bc,currentQty){
   _qmElencoSalva('qm_inv_moves_'+_invWh,[],_invRidisegna);
   invRender();
 }
-function invEditSoglia(bc){
+async function invEditSoglia(bc){
   let catalog={};
   try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
   const p=catalog[bc];if(!p)return;
-  const val=prompt(`Soglia minima per "${p.name}" (lascia vuoto per rimuovere):`,p.soglia!=null?p.soglia:'');
+  const val=await cqChiedi('Soglia minima','<strong>'+_esc(p.name)+'</strong><br>Lascia vuoto per non avere una soglia.',
+    {etichetta:'Soglia minima',valore:p.soglia!=null?p.soglia:''});
   if(val===null)return;
+  // Durante l'attesa il catalogo può essere cambiato da un'altra postazione: si rilegge.
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
+  if(!catalog[bc])return;
   const n=parseFloat(val);
   catalog[bc].soglia=(val.trim()===''||isNaN(n))?null:n;
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
@@ -11155,37 +11165,39 @@ function invPrintStock(){
   w.onload=()=>w.print();
 }
 
-function invEditProduct(bc){
+async function invEditProduct(bc){
   let catalog={};
   try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
-  const p=catalog[bc];if(!p)return;
-  const newName=prompt('Nome prodotto:',p.name);
-  if(newName===null)return;
+  const p0=catalog[bc];if(!p0)return;
+  const v=await cqModulo('Modificare il prodotto?','',[
+    {etichetta:'Nome prodotto',valore:p0.name},
+    {etichetta:'Unità di misura',valore:p0.unit||'',segnaposto:'Es. fl, kg, lt'},
+    {etichetta:'Soglia minima',valore:p0.soglia!=null?p0.soglia:'',segnaposto:'Vuoto = nessuna soglia'}]);
+  if(!v)return;
+  const [newName,newUnit,sogliaRaw]=v;
   if(!newName.trim()){cqAvviso('Il nome non può essere vuoto.');return;}
-  const newUnit=prompt('Unità di misura (es. fl, kg, lt):',p.unit||'');
-  if(newUnit===null)return;
-  const sogliaRaw=prompt('Soglia minima (lascia vuoto per nessuna soglia):',p.soglia!=null?p.soglia:'');
-  if(sogliaRaw===null)return;
+  // Durante l'attesa il catalogo può essere cambiato da un'altra postazione: si rilegge.
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
+  const p=catalog[bc];if(!p)return;
   const n=parseFloat(sogliaRaw);
   catalog[bc]={...p,name:newName.trim(),unit:newUnit.trim(),soglia:(sogliaRaw.trim()===''||isNaN(n))?null:n};
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
   _qmElencoSalva('qm_inv_catalog_'+_invWh,{},_invRidisegna);
   invRender();
 }
-function invAddProduct(){
+async function invAddProduct(){
   let catalog={};
-  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
-  const name=prompt('Nome prodotto:','');
-  if(name===null)return;
+  const v=await cqModulo('Nuovo prodotto','',[
+    {etichetta:'Nome prodotto'},
+    {etichetta:'Codice a barre',segnaposto:'Vuoto se non disponibile'},
+    {etichetta:'Unità di misura',segnaposto:'Es. fl, kg, lt'},
+    {etichetta:'Soglia minima',segnaposto:'Vuoto = nessuna soglia'}],{ok:'Aggiungi'});
+  if(!v)return;
+  const [name,bcRaw,unit,sogliaRaw]=v;
   if(!name.trim()){cqAvviso('Il nome non può essere vuoto.');return;}
-  let bc=prompt('Codice a barre (lascia vuoto se non disponibile):','');
-  if(bc===null)return;
-  bc=bc.trim()||('manual_'+Date.now());
+  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
+  const bc=bcRaw.trim()||('manual_'+Date.now());
   if(catalog[bc]){cqAvviso('Codice già usato da un altro prodotto.');return;}
-  const unit=prompt('Unità di misura (es. fl, kg, lt):','');
-  if(unit===null)return;
-  const sogliaRaw=prompt('Soglia minima (lascia vuoto per nessuna soglia):','');
-  if(sogliaRaw===null)return;
   const n=parseFloat(sogliaRaw);
   catalog[bc]={name:name.trim(),unit:(unit||'').trim(),soglia:(sogliaRaw.trim()===''||isNaN(n))?null:n};
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
@@ -14376,13 +14388,17 @@ async function resiDelRow(id){
   await _resiSave();resiRender();
 }
 // Correzione con storico, mai sovrascrittura silenziosa — stesso principio della cassa.
-function resiEditQta(id){
+async function resiEditQta(id){
+  const r0=_resi.righe.find(x=>x.id===id);if(!r0)return;
+  const val=await cqModulo('Correggere la quantità?',
+    '<strong>'+_esc(r0.tipologia)+'</strong> del '+_esc(r0.data)+' · ora: <strong>'+_esc(String(r0.qta))+'</strong>',
+    [{etichetta:'Nuova quantità',valore:r0.qta},{etichetta:'Motivo della correzione'}]);
+  if(!val)return;
+  const n=parseInt(val[0],10);if(isNaN(n)||n<=0){cqAvviso('Quantità non valida.');return;}
+  const motivo=val[1].trim();
+  if(!motivo){cqAvviso('Serve il motivo','La correzione resta nello storico: scrivi perché cambia.');return;}
+  // _resiSave() riassegna _resi: durante l'attesa la riga va ripresa da quello attuale.
   const r=_resi.righe.find(x=>x.id===id);if(!r)return;
-  const v=prompt(`Nuova quantità per "${r.tipologia}" del ${r.data} (attuale: ${r.qta}):`,r.qta);
-  if(v===null)return;
-  const n=parseInt(v,10);if(isNaN(n)||n<=0){cqAvviso('Quantità non valida.');return;}
-  const motivo=prompt('Motivo della correzione:','');
-  if(!motivo)return;
   r.edits=r.edits||[];
   r.edits.push({ts:Date.now(),persona:'Quality Manager',campo:'qta',vecchio:r.qta,nuovo:n,motivo});
   r.mod=Date.now();
@@ -14449,7 +14465,8 @@ async function resiRiassegnaRiaperte(){
 async function _resiChiudiPeriodo(){
   const aperte=_resiAperte();
   if(!aperte.length){cqAvviso('Niente da consegnare','Il periodo aperto e\' vuoto: non c\'e\' nessun reso da mettere nel sacco.');return null;}
-  const dataRitiro=prompt('Data del ritiro (gg/mm/aaaa):',_resiFmtData(new Date()));
+  const dataRitiro=await cqChiedi('Registrare il ritiro di Raimondo?','',
+    {etichetta:'Data del ritiro (gg/mm/aaaa)',valore:_resiFmtData(new Date())},{ok:'Avanti'});
   if(!dataRitiro)return null;
   if(!_resiParseData(dataRitiro)){cqAvviso('Data non valida','Scrivi la data come gg/mm/aaaa, per esempio '+_resiFmtData(new Date())+'.');return null;}
   const consegnate=_resiDaConsegnare(dataRitiro);
@@ -14469,7 +14486,8 @@ async function _resiChiudiPeriodo(){
       RESI_HOTELS[_resiHotel]+' &middot; '+consegnate.length+' righe dal <strong>'+dal+'</strong> al <strong>'+al+'</strong>.'
       +(restano?'<br><br>I '+restano+' resi dal '+dataRitiro+' in poi <strong>restano nel periodo aperto</strong>: Raimondo passa alle 8:00, quei pezzi vanno nel sacco del prossimo ritiro.':''),
       {ok:'Consegna e chiudi'}))return null;
-  const sacchi=prompt(`Sacchi ritirati da Raimondo (totale pezzi: ${totPezzi}):`,'1');
+  const sacchi=await cqChiedi('Quanti sacchi ha ritirato Raimondo?','Totale pezzi: <strong>'+totPezzi+'</strong>',
+    {etichetta:'Sacchi',valore:'1'},{ok:'Consegna e chiudi'});
   if(sacchi===null)return null;
   const nSacchi=parseInt(sacchi,10);
   if(isNaN(nSacchi)||nSacchi<=0){cqAvviso('Numero sacchi non valido.');return null;}
@@ -14503,9 +14521,9 @@ async function resiDelRitiro(id){
   _qmSegnaRimosso(_resi,id);
   await _resiSave();resiRender();
 }
-function resiEditTipologie(){
+async function resiEditTipologie(){
   const cur=_resiTipologie().join('\n');
-  const v=prompt('Tipologie di pezzo (una per riga):',cur);
+  const v=await cqChiedi('Tipologie di pezzo','Una per riga.',{valore:cur,righe:8});
   if(v===null)return;
   const list=v.split('\n').map(s=>s.trim()).filter(Boolean);
   if(!list.length){cqAvviso('Serve almeno una tipologia.');return;}
@@ -17532,13 +17550,17 @@ async function giacEliminaMovimento(id){
 // Mai una sovrascrittura silenziosa: la correzione lascia una riga in `edits`, come la
 // cassa di reception e i resi.
 async function giacCorreggi(id,voce){
-  const m=(_giac.movimenti||[]).find(x=>x.id===id);if(!m)return;
+  let m=(_giac.movimenti||[]).find(x=>x.id===id);if(!m)return;
   const vecchio=Number((m.q||{})[voce])||0;
-  const s=prompt('Quantità di "'+voce+'" ('+m.data+') — era '+vecchio+':',String(vecchio));
-  if(s===null)return;
-  const nuovo=Math.max(0,Math.round(Number(s)||0));
+  const val=await cqModulo('Correggere la quantità?',
+    '<strong>'+_esc(voce)+'</strong> del '+_esc(m.data)+' · era <strong>'+vecchio+'</strong>',
+    [{etichetta:'Quantità corretta',valore:String(vecchio)},{etichetta:'Perché la correzione? (resta nello storico)'}]);
+  if(!val)return;
+  const nuovo=Math.max(0,Math.round(Number(val[0])||0));
   if(nuovo===vecchio)return;
-  const motivo=String(prompt('Perché la correzione? (resta nello storico)','')||'').trim();
+  const motivo=String(val[1]||'').trim();
+  // _giacSave() e la sincronizzazione riassegnano _giac: il movimento va ripreso da quello attuale.
+  m=(_giac.movimenti||[]).find(x=>x.id===id);if(!m)return;
   m.q=Object.assign({},m.q);m.q[voce]=nuovo;
   m.edits=(m.edits||[]).concat([{ts:Date.now(),campo:voce,vecchio,nuovo,motivo}]);
   m.mod=Date.now();   // non ts: in Giacenza ts e' l'ordine dei movimenti
@@ -17547,7 +17569,7 @@ async function giacCorreggi(id,voce){
 
 async function giacEditTipologie(){
   const cur=_giacVoci().join('\n');
-  const v=prompt('Tipologie in magazzino (una per riga):',cur);
+  const v=await cqChiedi('Tipologie in magazzino','Una per riga.',{valore:cur,righe:8});
   if(v===null)return;
   const list=v.split('\n').map(s=>s.trim()).filter(Boolean);
   if(!list.length){await cqAvviso('Elenco vuoto','Serve almeno una tipologia.');return;}
@@ -18370,26 +18392,57 @@ function _prenTesseraDaCloud(ad){
 // cqConferma restituisce una Promise<boolean>: chi la usa deve essere `async` e mettere
 // `await`. cqAvviso è la versione a un pulsante, per i messaggi informativi.
 let _cqChiudi=null;
+// o.campi (24/11/2026): caselle da compilare dentro la stessa finestra, al posto di prompt()
+// del browser. Ognuna {etichetta, valore, righe, password, segnaposto, solaLettura}; la
+// Promise restituisce l'elenco dei valori scritti, oppure null se si annulla.
 function _cqApri(o){
   const d=document.getElementById('cqDialog');
-  if(!d)return Promise.resolve(o.soloAvviso?true:window.confirm(o.titolo));   // ripiego
+  if(!d){   // ripiego: senza la finestra si usano quelle del browser, mai bloccare l'operazione
+    if(!o.campi)return Promise.resolve(o.soloAvviso?true:window.confirm(o.titolo));
+    const val=[];
+    for(const c of o.campi){const v=window.prompt(c.etichetta||o.titolo,c.valore==null?'':String(c.valore));if(v===null)return Promise.resolve(null);val.push(v);}
+    return Promise.resolve(val);
+  }
   document.getElementById('cqTitle').textContent=o.titolo||'';
-  document.getElementById('cqSub').innerHTML=o.testo||'';
+  const sub=document.getElementById('cqSub');
+  sub.innerHTML=o.testo||'';
+  sub.style.display=o.testo?'':'none';
   const bOk=document.getElementById('cqOk'), bNo=document.getElementById('cqNo');
   bOk.textContent=o.ok||'Conferma';
   bNo.style.display=o.soloAvviso?'none':'';
+  let box=document.getElementById('cqCampi');
+  if(!box){box=document.createElement('div');box.id='cqCampi';box.className='cq-campi';bOk.parentNode.parentNode.insertBefore(box,bOk.parentNode);}
+  box.innerHTML='';
+  const caselle=(o.campi||[]).map((c,i)=>{
+    const f=document.createElement('div');f.className='form-field';
+    const id='cqCampo'+i;
+    if(c.etichetta){const l=document.createElement('label');l.className='form-label';l.htmlFor=id;l.textContent=c.etichetta;f.appendChild(l);}
+    const el=document.createElement(c.righe?'textarea':'input');
+    el.className='form-input';el.id=id;el.autocomplete='off';
+    if(c.righe)el.rows=c.righe;else el.type=c.password?'password':'text';
+    if(c.segnaposto)el.placeholder=c.segnaposto;
+    if(c.solaLettura)el.readOnly=true;
+    el.value=c.valore==null?'':String(c.valore);
+    f.appendChild(el);box.appendChild(f);
+    return el;
+  });
+  box.style.display=caselle.length?'':'none';
   d.classList.add('open');
-  bOk.focus();
+  if(caselle.length){caselle[0].focus();if(!o.campi[0].righe)caselle[0].select();}
+  else bOk.focus();
   return new Promise(res=>{
     const fine=v=>{
       d.classList.remove('open');
       bOk.onclick=bNo.onclick=d.onclick=null;
       document.removeEventListener('keydown',tasto);
-      _cqChiudi=null; res(v);
+      _cqChiudi=null;
+      if(o.campi)res(v?caselle.map(el=>el.value):null);else res(v);
+      box.innerHTML='';
     };
     const tasto=e=>{
       if(e.key==='Escape')fine(false);
-      if(e.key==='Enter')fine(true);
+      // In una casella a più righe Invio va a capo, non conferma.
+      if(e.key==='Enter'&&!(e.target&&e.target.tagName==='TEXTAREA')){e.preventDefault();fine(true);}
     };
     _cqChiudi=fine;
     bOk.onclick=()=>fine(true);
@@ -18416,6 +18469,17 @@ function cqAvviso(titolo,testo,opz){
   }
   if(typeof c==='string')c=c.replace(/\n/g,'<br>');
   return _cqApri({titolo:t,testo:c||'',ok:o.ok||'Ho capito',tipo:o.tipo||'info',soloAvviso:true});
+}
+// Al posto di prompt() del browser (24/11/2026). cqModulo: più caselle in una finestra sola,
+// restituisce l'elenco dei valori o null. cqChiedi: una casella, restituisce il testo o null.
+// Il testo accetta HTML: i dati che non abbiamo scritto noi passano da _esc.
+function cqModulo(titolo,testo,campi,opz){
+  const o=opz||{};
+  return _cqApri({titolo,testo,campi,ok:o.ok||'Salva',soloAvviso:!!o.soloOk});
+}
+async function cqChiedi(titolo,testo,campo,opz){
+  const v=await cqModulo(titolo,testo,[campo||{}],opz);
+  return v?v[0]:null;
 }
 
 // §§ SINCRONIZZAZIONE CONTINUA — ogni postazione si aggiorna da sola
@@ -18928,7 +18992,8 @@ try{
 // computer" non facevano piu' niente, senza nessun errore a schermo. Rimesse il 23/09/2026;
 // una sentinella in test/esegui.sh verifica ora che ogni onclick punti a una funzione vera.
 async function qmChiediPass(){
-  const pw=prompt('Password di Compass (quella impostata su Cloudflare come QM_PASSWORD):');
+  const pw=await cqChiedi('Abilitare questo computer?','Scrivi la password di Compass (quella impostata su Cloudflare come QM_PASSWORD).',
+    {etichetta:'Password',password:true},{ok:'Abilita'});
   if(!pw)return;
   try{
     const r=await fetch(PROXY+'/auth',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -19094,7 +19159,8 @@ async function qmCodiceGalleria(btn){
     const j=await r.json().catch(()=>({}));
     if(!r.ok||!j.pass){dì(r.status===404||r.status===405?'Il Worker va ripubblicato: questo codice lo rilascia la versione del 12/09/2026.':'Non rilasciato: '+(j.error||('errore '+r.status)));return;}
     try{await navigator.clipboard.writeText(j.pass);dì('Codice copiato. Incollalo nell\'app della Galleria, su ciascun PC.');}
-    catch(e){prompt('Copia il codice della Galleria:',j.pass);dì('');}
+    catch(e){dì('');cqChiedi('Copia il codice della Galleria','Il browser non l\'ha copiato da solo: selezionalo e copialo.',
+      {valore:j.pass,solaLettura:true},{ok:'Fatto',soloOk:true});}
   }catch(e){dì('Worker non raggiungibile.');}
 }
 

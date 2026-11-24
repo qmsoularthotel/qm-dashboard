@@ -1685,7 +1685,7 @@ aggiorna da sola come il Reso. Differenze, solo dove la Galleria non ha le stess
   eliminazioni con `_grSegnaRimosso`;
 - **niente organico né turno** in `_gcPersone`: il codice della Galleria non legge chiavi
   `qm_`; restano i nomi già usati (di tutte e due le strutture) e il testo libero;
-- conferme `_gbConferma`/`_gbAvviso`, `_gcPortaInVista` al posto di `_qmPortaInVista`.
+- conferme `_gbConferma`/`_gbAvviso`/`_gbChiedi`/`_gbModulo` (finestra di Compass, copia di § CONFERME, dal 24/11/2026), `_gcPortaInVista` al posto di `_qmPortaInVista`.
 
 I 42 controlli di Compass sono ricopiati in `test/galleria.js` con lo stesso rinomino, più
 voce di menu, chiave, due linguette e carichi separati per struttura. Sabotaggio (segno del

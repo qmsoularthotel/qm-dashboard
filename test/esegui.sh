@@ -632,6 +632,35 @@ if ! grep -q '^.tp-cal-griglia.tp-sett-prima .tp-cal-int{margin-bottom:20px;}' s
   BKF_KO=1
 fi
 
+# Finestre del browser (24/11/2026): conferme, avvisi e domande con casella passano dalla
+# finestra di Compass (cqConferma/cqAvviso/cqModulo/cqChiedi, nelle app le copie _gb*).
+# Quelle grigie del browser ("compass-qm.com dice") non dicono chi chiede e non si impaginano.
+# Ammesso solo il ripiego dentro _cqApri/_gbCqApri, quando la finestra di Compass manca.
+NATIVE=$(python3 - <<'PYNAT'
+import re, glob
+brutte = []
+for f in ['app.js', 'ddt-shared.js'] + sorted(glob.glob('*.html')):
+    for n, l in enumerate(open(f, encoding='utf-8'), 1):
+        s = l.strip()
+        if s.startswith('//') or s.startswith('*') or s.startswith('/*'):
+            continue
+        codice = re.sub(r"//.*$", "", s) if not re.search(r"https?://", s) else s
+        if not re.search(r"(?<![\w.$])(window\.)?(prompt|confirm|alert)\((?!\))", codice):
+            continue
+        if re.search(r"(o\.soloAvviso\?true:window\.confirm\(o\.titolo\)|window\.prompt\(c\.etichetta\|\|o\.titolo)", codice):
+            continue
+        brutte.append('%s:%d' % (f, n))
+print(' '.join(brutte))
+PYNAT
+)
+if [ -n "$NATIVE" ]; then
+  echo ""
+  echo "  ERRORE      finestre del browser al posto di quella di Compass:"
+  echo "              $NATIVE"
+  echo "              Usare cqConferma / cqAvviso / cqModulo / cqChiedi (nelle app della Galleria _gb*)."
+  BKF_KO=1
+fi
+
 # Worker non pubblicato: worker.js si pubblica a mano su Cloudflare (vedi CLAUDE.md, la
 # pubblicazione automatica è stata valutata e scartata). Una correzione può quindi essere
 # scritta, versionata e non attiva — successo il 21/08/2026, per ore, senza alcun segnale.

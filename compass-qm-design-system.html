@@ -278,18 +278,28 @@ body{background:var(--bg);}
   <!-- ══════════════ CONFERME ══════════════ -->
   <section class="ds-sez" id="conferme">
     <h2>Conferme e avvisi</h2>
-    <p class="ds-intro">Una sola finestra per tutto: <code>cqConferma</code> / <code>cqAvviso</code>, mai <code>confirm()</code> o <code>alert()</code> del browser. Rosa dei venti in filigrana nell'angolo, titolo che dice l'azione, pulsante di conferma sempre navy.</p>
+    <p class="ds-intro">Una sola finestra per tutto: <code>cqConferma</code> (domanda), <code>cqAvviso</code> (messaggio con un pulsante), <code>cqChiedi</code> / <code>cqModulo</code> (una o più caselle da compilare). Mai <code>confirm()</code>, <code>alert()</code> o <code>prompt()</code> del browser. Rosa dei venti in filigrana nell'angolo, titolo che dice l'azione, pulsante di conferma sempre navy e per primo, «Annulla» accanto. Invio conferma (in una casella a più righe va a capo), Esc e clic fuori annullano. In Compass Ops e nelle app della Galleria la stessa finestra si chiama <code>_gbConferma</code>, <code>_gbAvviso</code>, <code>_gbChiedi</code>, <code>_gbModulo</code>.</p>
     <div class="cq-box ds-cq-statico">
       <div class="cq-title">Eliminare il movimento del 24/11?</div>
       <div class="cq-sub">Il movimento sparisce da tutte le postazioni. Non si può annullare.</div>
-      <div class="cq-btns"><button class="cq-no">Annulla</button><button class="cq-ok" onclick="dsApriConferma()">Elimina</button></div>
+      <div class="cq-btns"><button class="cq-ok" onclick="dsApriConferma()">Elimina</button><button class="cq-no">Annulla</button></div>
     </div>
+    <div class="cq-box ds-cq-statico" style="margin-top:14px">
+      <div class="cq-title">Correggere la quantità?</div>
+      <div class="cq-sub"><strong>Lenzuola matrimoniali</strong> del 24/11 · era <strong>12</strong></div>
+      <div class="cq-campi">
+        <div class="form-field"><label class="form-label" for="ds-cq1">Quantità corretta</label><input class="form-input" id="ds-cq1" value="14"></div>
+        <div class="form-field"><label class="form-label" for="ds-cq2">Perché la correzione? (resta nello storico)</label><input class="form-input" id="ds-cq2"></div>
+      </div>
+      <div class="cq-btns"><button class="cq-ok">Salva</button><button class="cq-no">Annulla</button></div>
+    </div>
+    <code class="ds-code" style="text-align:center">cqModulo(titolo, testo, [{etichetta, valore, righe, password, segnaposto, solaLettura}]) → valori | null</code>
     <div class="ds-demo" style="justify-content:center;margin-top:12px"><button class="btn-ghost" onclick="dsApriConferma()">Apri la finestra vera</button></div>
     <div class="cq-dialog" id="ds-cq" onclick="if(event.target===this)dsChiudiConferma()">
       <div class="cq-box">
         <div class="cq-title">Così appare sopra la pagina</div>
         <div class="cq-sub">Fondo scurito al 50%, finestra al centro, larga al massimo 400px.</div>
-        <div class="cq-btns"><button class="cq-no" onclick="dsChiudiConferma()">Annulla</button><button class="cq-ok" onclick="dsChiudiConferma()">Va bene</button></div>
+        <div class="cq-btns"><button class="cq-ok" onclick="dsChiudiConferma()">Va bene</button><button class="cq-no" onclick="dsChiudiConferma()">Annulla</button></div>
       </div>
     </div>
   </section>
@@ -303,7 +313,7 @@ body{background:var(--bg);}
         <li><strong>Un modulo "uguale a Compass" per altri si copia identico</strong> con un rinomino meccanico, non si riprogetta (caso Galleria, 11/09/2026).</li>
         <li class="no"><strong>Mai <code>grid-template-columns</code> in linea</strong>: su smartphone la <code>@media</code> non lo raggiunge. Le misure che cambiano stanno in classi CSS, nell'unico blocco <code>@media(max-width:768px)</code> in fondo a <code>style.css</code>.</li>
         <li class="no"><strong>Mai emoji come icone</strong>: si usa il badge SVG navy/oro della misura giusta.</li>
-        <li class="no"><strong>Mai <code>confirm()</code> / <code>alert()</code></strong>: solo <code>cqConferma</code> / <code>cqAvviso</code>. Pulsante di conferma navy, nessun secondo colore.</li>
+        <li class="no"><strong>Mai <code>confirm()</code> / <code>alert()</code> / <code>prompt()</code></strong>: solo <code>cqConferma</code> / <code>cqAvviso</code> / <code>cqChiedi</code> / <code>cqModulo</code>. Pulsante di conferma navy, nessun secondo colore. Lo controlla <code>test/esegui.sh</code>.</li>
         <li><strong>Gli stati si dicono a colori coerenti</strong>: verde fatto, ambra attenzione, rosso manca/errore. Una scrittura non arrivata si segnala in rosso, mai in silenzio.</li>
         <li><strong>Nei testi della Galleria</strong> è sempre «Front Office Manager», mai «Resident Manager».</li>
       </ul>
