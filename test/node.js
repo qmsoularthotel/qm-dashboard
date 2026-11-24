@@ -25,11 +25,11 @@ const app      = leggi('app.js').replace(/^(\s*)(const|let)\s/gm, '$1var ');
 const worker   = leggi('worker.js')
   .replace('export default {', 'var _workerFetch = {')
   .replace(/^(\s*)(const|let)\s/gm, '$1var ');
-// biancheria-galleria.html e' un'app a se', fuori da Compass e fuori dal cloud: non ha
+// compass-ops.html e' un'app a se', fuori da Compass e fuori dal cloud: non ha
 // nessun'altra rete sotto. Si estrae il suo script principale (l'ULTIMO blocco <script>
 // del file) e lo si carica come app.js. La direttiva 'use strict' va tolta: in eval
 // stretto le var resterebbero chiuse dentro e le funzioni non sarebbero raggiungibili.
-const galleriaHtml = leggi('biancheria-galleria.html');
+const galleriaHtml = leggi('compass-ops.html');
 const gFine   = galleriaHtml.lastIndexOf('</script>');
 const gInizio = galleriaHtml.lastIndexOf('<script>', gFine);
 const galleria = galleriaHtml.slice(gInizio + 8, gFine)

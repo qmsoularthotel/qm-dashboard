@@ -35,11 +35,11 @@ var app      = leggi("app.js").replace(/^(\s*)(const|let)\s/gm, "$1var ");
 var worker   = leggi("worker.js")
   .replace("export default {", "var _workerFetch = {")
   .replace(/^(\s*)(const|let)\s/gm, "$1var ");
-// biancheria-galleria.html e'"'"' un'"'"'app a se, fuori da Compass e fuori dal cloud: non ha
+// compass-ops.html e'"'"' un'"'"'app a se, fuori da Compass e fuori dal cloud: non ha
 // nessun'"'"'altra rete sotto. Si estrae il suo script principale (l'"'"'ULTIMO blocco <script>
 // del file) e lo si carica come app.js. La direttiva "use strict" va tolta: in eval
 // stretto le var resterebbero chiuse dentro e le funzioni non sarebbero raggiungibili.
-var gHtml    = leggi("biancheria-galleria.html");
+var gHtml    = leggi("compass-ops.html");
 var gFine    = gHtml.lastIndexOf("</script>");
 var gInizio  = gHtml.lastIndexOf("<script>", gFine);
 var galleria = gHtml.slice(gInizio + 8, gFine)
@@ -360,14 +360,14 @@ for _c in QM_APP_BUILD qmCheckVersione; do
     BKF_KO=1
   fi
 done
-# biancheria-galleria.html e' l'app del Resident Manager per Art Resort e Santa Brigida.
+# compass-ops.html e' l'app del Resident Manager per Art Resort e Santa Brigida.
 # Dal 12/09/2026 usa il cloud di Compass, ma con un codice che il Worker limita a leggere e
 # scrivere chiavi bg_* (permessoGalleria in worker.js). La pagina non deve quindi mai
 # chiedere l'elenco delle chiavi, cancellare, o toccare una chiave qm_*: il Worker lo
 # rifiuterebbe comunque, ma una pagina che ci prova e' una pagina che si e' persa la regola.
-if grep -qE "/kv/delete|/kv/chiavi|qmKvSet|_gbKv(Get|Set)\('qm_" biancheria-galleria.html; then
+if grep -qE "/kv/delete|/kv/chiavi|qmKvSet|_gbKv(Get|Set)\('qm_" compass-ops.html; then
   echo ""
-  echo "  ERRORE      biancheria-galleria.html chiede al Worker piu' di quanto il suo codice apre."
+  echo "  ERRORE      compass-ops.html chiede al Worker piu' di quanto il suo codice apre."
   echo "              Il codice della Galleria vale solo per /kv/get e /kv/set su chiavi bg_*."
   BKF_KO=1
 fi
@@ -393,7 +393,7 @@ _senza_funzione(){  # $1 = pagina, altri = file che ne compongono il codice
 }
 _senza_funzione index.html index.html app.js ddt-shared.js
 _senza_funzione breakfast.html breakfast.html ddt-shared.js
-for _f in housekeeper.html inventory.html controllo-mattino.html dvr.html biancheria-galleria.html registration-galleria.html; do
+for _f in housekeeper.html inventory.html controllo-mattino.html dvr.html compass-ops.html registration-galleria.html; do
   _senza_funzione "$_f" "$_f"
 done
 # Quale avviso va a schermo oggi: Compass lo dice al QM, l'app lo mostra in cucina. Se le
@@ -459,7 +459,7 @@ fi
 # Due funzioni con lo stesso nome nella stessa pagina: vince l'ultima, in silenzio. Il
 # 24/09/2026 la copia di _biaEsito nella Galleria si chiamava _gbEsito come la funzione che
 # scrive "salvato / NON salvato sul cloud", e l'avviso di salvataggio e' sparito.
-for _f in app.js housekeeper.html breakfast.html inventory.html controllo-mattino.html dvr.html biancheria-galleria.html registration-galleria.html; do
+for _f in app.js housekeeper.html breakfast.html inventory.html controllo-mattino.html dvr.html compass-ops.html registration-galleria.html; do
   _dup=$(grep -oE "^(async )?function [A-Za-z_\$][A-Za-z0-9_\$]*" "$_f" | awk '{print $NF}' | sort | uniq -d | tr '\n' ' ')
   if [ -n "$_dup" ]; then
     echo ""
@@ -476,9 +476,9 @@ if ! python3 test/pagine.py; then
   BKF_KO=1
 fi
 # Leggere il lasciapassare di Compass (qm_pass) e' ammesso; scrivere una qm_* no.
-if grep -qE "localStorage\.(set|remove)Item\(.qm_" biancheria-galleria.html; then
+if grep -qE "localStorage\.(set|remove)Item\(.qm_" compass-ops.html; then
   echo ""
-  echo "  ERRORE      biancheria-galleria.html scrive su una chiave qm_*."
+  echo "  ERRORE      compass-ops.html scrive su una chiave qm_*."
   echo "              Le sue chiavi devono restare sotto bg_: una qm_ entrerebbe nel giro"
   echo "              di sincronizzazione di Compass e le due app si sovrascriverebbero."
   BKF_KO=1
@@ -489,17 +489,17 @@ fi
 # QM_APP_BUILD l'aggiornamento fa location.replace(...?v=...), che e' una navigazione di tipo
 # `navigate` e non `reload` — col solo nav.type ripartirebbe a ogni pubblicazione. E' lo
 # stesso difetto gia' corretto su index.html, vedi CLAUDE.md "Compass (index.html)".
-if ! grep -qF "sessionStorage.getItem('bg_splash')" biancheria-galleria.html; then
+if ! grep -qF "sessionStorage.getItem('bg_splash')" compass-ops.html; then
   echo ""
-  echo "  ERRORE      lo splash di biancheria-galleria.html non usa piu' sessionStorage."
+  echo "  ERRORE      lo splash di compass-ops.html non usa piu' sessionStorage."
   echo "              Con performance.navigation.type ripartirebbe a ogni aggiornamento"
   echo "              automatico, che non e' una riapertura."
   BKF_KO=1
 fi
 for _c in "QM_APP_BUILD=" "function qmCheckVersione(" "setInterval(qmCheckVersione"; do
-  if ! grep -qF "$_c" biancheria-galleria.html; then
+  if ! grep -qF "$_c" compass-ops.html; then
     echo ""
-    echo "  ERRORE      biancheria-galleria.html non si aggiorna piu' da sola ($_c)."
+    echo "  ERRORE      compass-ops.html non si aggiorna piu' da sola ($_c)."
     echo "              Resta aperta per giorni sul PC del Resident: senza questo"
     echo "              continuerebbe a girare col codice con cui e' stata caricata."
     BKF_KO=1
@@ -699,6 +699,14 @@ if [ -n "$NEWKO" ]; then
   echo ""
   echo "  ERRORE      bollino NEW oltre i 5 giorni: $NEWKO"
   echo "              data-nuovo-fino = giorno dell'aggiunta + 5."
+  BKF_KO=1
+fi
+
+# Vecchio indirizzo di Compass OPS (24/11/2026): biancheria-galleria.html resta e porta a
+# compass-ops.html. Senza, i collegamenti sui PC della Galleria finirebbero su una pagina vuota.
+if ! grep -qF "location.replace('compass-ops.html'+location.search+location.hash)" biancheria-galleria.html 2>/dev/null; then
+  echo ""
+  echo "  ERRORE      biancheria-galleria.html non porta piu' a compass-ops.html: i collegamenti dei colleghi si rompono."
   BKF_KO=1
 fi
 

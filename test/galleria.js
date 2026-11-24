@@ -1,4 +1,4 @@
-// Controlli su biancheria-galleria.html — Gestione Biancheria, l'app del Resident Manager
+// Controlli su compass-ops.html — Gestione Biancheria, l'app del Resident Manager
 // per Art Resort e Art Suite Santa Brigida.
 //
 // Dall'11/09/2026 è una COPIA del modulo "Consumo Biancheria" di Compass (le funzioni

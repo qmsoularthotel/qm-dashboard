@@ -89,7 +89,7 @@ L'intestazione riporta la struttura **del ritiro che si sta ristampando** (`rit.
 
 ## Gestione Biancheria — l'app del Resident Manager, fuori da Compass
 
-`biancheria-galleria.html`, intitolata **Gestione Biancheria**: ciclo pulito/sporco e resi per
+`compass-ops.html`, intitolata **Gestione Biancheria**: ciclo pulito/sporco e resi per
 le due strutture che fanno capo al **Resident Manager** — **Art Resort Galleria Umberto** e
 **Art Suite Santa Brigida** — cioè quelle che i moduli biancheria di Compass lasciano fuori.
 
@@ -1487,7 +1487,7 @@ davvero stati messi in giro, se le consegne sono registrate bene e se l'armadio 
 - Il conto è in `_biaDotConto(g,voce,dot)`, puro. Controlli in `test/controlli.js`, verificati
   sabotando formula, sui letti, valore svuotato e riepilogo (una «dotazione esaurita» contata
   come ammanco suo).
-- **Trappola dei controlli**: `biancheria-galleria.html` dichiara un `esc` globale, quindi nei
+- **Trappola dei controlli**: `compass-ops.html` dichiara un `esc` globale, quindi nei
   controlli una funzione di Compass che usa `esc` senza dichiararlo **non fallisce** — nel
   browser sì. Il pannello aveva proprio questo difetto: c'è un controllo sul codice apposta.
 - **Non ancora nella Galleria** (Art Resort, Santa Brigida): per scelta del QM, finché non ci

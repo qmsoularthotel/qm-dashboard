@@ -253,7 +253,7 @@ erano tutte gestori di `onclick`. Dopo l'attesa **si rilegge** l'oggetto da modi
 (`_giac`, `_resi`, `_gc`, `_gr`, catalogo, `weekData`): salvataggi e sincronizzazione lo
 riassegnano, e scrivere in quello vecchio perderebbe la correzione.
 
-Compass Ops (`biancheria-galleria.html`) ha la **copia identica** di questa sezione con i nomi
+Compass Ops (`compass-ops.html`) ha la **copia identica** di questa sezione con i nomi
 `_gbConferma`, `_gbAvviso`, `_gbChiedi`, `_gbModulo` (prima usava `confirm()`/`alert()`
 del browser). Sentinella in `test/esegui.sh`: nessuna `confirm(`/`alert(`/`prompt(` in
 `app.js`, `ddt-shared.js` e nelle pagine, tranne il ripiego dentro `_cqApri`/`_gbCqApri`.
@@ -754,7 +754,7 @@ con scadenza, codice `bg.` limitato alle chiavi `bg_*`, nessun segreto nel repos
 nella sua storia proxy AI dietro lasciapassare.
 
 Corretto:
-- **Galleria → lasciapassare del QM.** `biancheria-galleria.html` sul PC del QM usa `qm_pass`
+- **Galleria → lasciapassare del QM.** `compass-ops.html` sul PC del QM usa `qm_pass`
   (stesso sito, stesso localStorage). Un dato scritto col codice limitato che contenesse
   codice (tag, o un apice in un id finito dentro un `onclick`) poteva leggere il
   lasciapassare completo. Ora **ogni** lettura della pagina passa da `_gbJson`: toglie

@@ -59,7 +59,7 @@ lasciapassare `X-QM-Pass`.
 |---|---|
 | `index.html` + `app.js` (~19.300 righe, sezioni `// §§`) + `style.css` | Compass, il pannello del QM |
 | `housekeeper.html`, `breakfast.html`, `inventory.html`, `controllo-mattino.html`, `dvr.html` | le 5 app standalone del Pannello App |
-| `biancheria-galleria.html` | Gestione Biancheria del Resident Manager (Art Resort + Santa Brigida): **copia** del Consumo Biancheria, codice `bg.` che apre solo le chiavi `bg_*` |
+| `compass-ops.html` | **Compass OPS** della Galleria (Art Resort + Santa Brigida; ex `biancheria-galleria.html`, che resta come **rimando**): biancheria (copia del Consumo Biancheria), turnazione, presenze, Registration Cards; codice `bg.` che apre solo le chiavi `bg_*` |
 | `registration-galleria.html` | registration card della Galleria: **fuori da Compass, senza codice**; dal 23/11/2026 legge solo il suo interruttore del Pannello App (`bg_rc_status`) col codice della Galleria del PC; i dati degli ospiti non escono mai |
 | `compass-qm-design-system.html` | guida di stile **viva**: carica il vero `style.css`, mostra token e componenti; nessun dato |
 | `worker.js` | il Worker Cloudflare: **si pubblica a mano** (copia-incolla) |

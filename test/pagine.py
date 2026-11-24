@@ -22,7 +22,7 @@ if not os.path.exists(CHROME) and os.path.exists('/opt/pw-browsers/chromium'):
     CHROME, EXTRA = '/opt/pw-browsers/chromium', ['--no-sandbox']
 PAGINE = ['index.html', 'housekeeper.html', 'breakfast.html', 'inventory.html',
           'controllo-mattino.html', 'dvr.html',
-          'registration-galleria.html', 'biancheria-galleria.html']
+          'registration-galleria.html', 'compass-ops.html']
 # Errori che non dipendono dal nostro codice: rete assente o rifiutata (il browser di prova
 # non e' abilitato) e risorse esterne. Tutto il resto e' un difetto.
 # Le preferenze turni vengono da Google (script.google.com): nelle sessioni cloud la rete

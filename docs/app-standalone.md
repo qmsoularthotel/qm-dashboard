@@ -332,12 +332,19 @@ hanno un filo un po' più scuro (`--card-br` #d3dae4) e un'ombra a due strati ti
 
 Il QM l'ha rinominata «Compass OPS» (prima «Compass Ops – Galleria»): titolo della scheda del
 browser, splash, schermata di abilitazione, firma in fondo e scheda nel Pannello di Controllo.
-Il logo **«Compass QM» nella colonna del menu resta** (richiesta esplicita del QM). Il file
-resta `biancheria-galleria.html`, le chiavi `bg_*` restano.
+Il logo **«Compass QM» nella colonna del menu resta** (richiesta esplicita del QM). Le chiavi `bg_*` restano.
+
+**Nuovo indirizzo (24/11/2026, QM: «oltre la biancheria c'è tanto altro»)**: il file è ora
+`compass-ops.html` (era `biancheria-galleria.html`). Il **vecchio indirizzo resta**: è una
+pagina che porta subito al nuovo tenendo `?` e `#`, così collegamenti sul desktop, preferiti
+e schede aperte continuano a funzionare (le schede aperte col codice vecchio si aggiornano da
+sole, arrivano al rimando e quindi al nuovo indirizzo). Stesso sito: dati sul PC, codice della
+Galleria e PIN restano validi. Il Worker non guarda il nome della pagina. Sentinella in
+`esegui.sh`: il rimando deve esistere e puntare a `compass-ops.html`.
 
 ### Prima: «Compass Ops – Galleria» (16/11/2026)
 
-Scelto dal QM: compare nello splash (sotto «Compass QM», con la riga «Strumento di gestione operativa») e nella firma in fondo («Compass Ops – Galleria fa parte della Suite Compass QM…»). Poi (stesso giorno) **ovunque**: titolo della scheda, schermata del codice, nota della stampa della giacenza, scheda nel Pannello di Controllo e riquadro del codice in Sicurezza. «Gestione Biancheria» resta solo come nome della **sezione** del menu (Consumo, Conteggio, Giacenza, Reso, Fattura). Il file resta `biancheria-galleria.html`.
+Scelto dal QM: compare nello splash (sotto «Compass QM», con la riga «Strumento di gestione operativa») e nella firma in fondo («Compass Ops – Galleria fa parte della Suite Compass QM…»). Poi (stesso giorno) **ovunque**: titolo della scheda, schermata del codice, nota della stampa della giacenza, scheda nel Pannello di Controllo e riquadro del codice in Sicurezza. «Gestione Biancheria» resta solo come nome della **sezione** del menu (Consumo, Conteggio, Giacenza, Reso, Fattura). Il file resta `compass-ops.html`.
 
 
 ## App Breakfast: tre card e intolleranze (22/11/2026)
