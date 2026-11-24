@@ -92,7 +92,9 @@ L'utente è il Quality Manager: scrive in italiano, non legge il codice, lavora 
    Drive, cartella *Back-Up Compass QM*), mai il lasciapassare.
 7. **Stile Compass sempre**: token e componenti esistenti (`.panel`, `.kpi-card`, `--accent`…),
    mai stili inventati. Un modulo "uguale a quello di Compass" per altri si **copia identico**
-   con un rinomino meccanico, non si riprogetta (Galleria, 11/09/2026).
+   con un rinomino meccanico, non si riprogetta (Galleria, 11/09/2026). Il catalogo di token e
+   componenti è `compass-qm-design-system.html`: prima di disegnare qualcosa di nuovo si
+   guarda lì cosa esiste già; un componente nuovo e comune si aggiunge anche lì.
 8. Chiudendo un lavoro: aggiornare il file di `docs/` della parte toccata (e questa pagina solo
    se cambia una regola generale). La mappa `§§` qui sotto si **rigenera**, non si ritocca.
 
