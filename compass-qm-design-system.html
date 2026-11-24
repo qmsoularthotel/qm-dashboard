@@ -63,7 +63,6 @@ body{background:var(--bg);}
 .ds-app-schermo{background:var(--surface2);border:1px solid var(--border-light);border-radius:14px;padding:8px;box-shadow:0 2px 8px rgba(0,0,0,.07);}
 .ds-app-schermo iframe{display:block;width:100%;height:220px;border:0;border-radius:9px;background:var(--bg);}
 .ds-app-vuoto{font-size:var(--fs-xs);color:var(--text-muted);text-align:center;padding:30px 14px;}
-.ds-piede{margin-top:40px;font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;}
 @media(max-width:768px){
   .ds-head-in{padding:18px 16px;}
   .ds-head h1{font-size:21px;}
@@ -221,6 +220,16 @@ body{background:var(--bg);}
         </div>
       </div>
     </div>
+
+    <h2 style="margin-top:22px">Firma in fondo</h2>
+    <p class="ds-intro">In fondo a ogni pagina, in Compass e in tutte le app (24/11/2026): marchio «Compass <span style="color:var(--gold)">QM</span>» e una riga sul nome della pagina. Una frase in più solo se è vera e verificata nel codice (Compass OPS, Registration Cards). Nelle app con stile proprio è una copia di <code>.firma</code>; dentro Compass OPS la Registration nasconde la sua.</p>
+    <div class="panel"><div class="panel-body" style="padding-top:0">
+      <div class="firma">
+        <span class="firma-marchio">Compass <span>QM</span></span>
+        Breakfast fa parte della Suite Compass QM, interamente ideata e creata dal Quality Manager Pierpaolo Presta. Per esclusivo uso interno.
+      </div>
+      <code class="ds-code">.firma › .firma-marchio (span oro) + testo</code>
+    </div></div>
   </section>
 
   <!-- ══════════════ STATI ══════════════ -->
@@ -292,7 +301,7 @@ body{background:var(--bg);}
   <!-- ══════════════ CONFERME ══════════════ -->
   <section class="ds-sez" id="conferme">
     <h2>Conferme e avvisi</h2>
-    <p class="ds-intro">Una sola finestra per tutto: <code>cqConferma</code> (domanda), <code>cqAvviso</code> (messaggio con un pulsante), <code>cqChiedi</code> / <code>cqModulo</code> (una o più caselle da compilare). Mai <code>confirm()</code>, <code>alert()</code> o <code>prompt()</code> del browser. Rosa dei venti in filigrana nell'angolo, titolo che dice l'azione, pulsante di conferma sempre navy e per primo, «Annulla» accanto. Invio conferma (in una casella a più righe va a capo), Esc e clic fuori annullano. In Compass Ops e nelle app della Galleria la stessa finestra si chiama <code>_gbConferma</code>, <code>_gbAvviso</code>, <code>_gbChiedi</code>, <code>_gbModulo</code>.</p>
+    <p class="ds-intro">Una sola finestra per tutto: <code>cqConferma</code> (domanda), <code>cqAvviso</code> (messaggio con un pulsante), <code>cqChiedi</code> / <code>cqModulo</code> (una o più caselle da compilare). Mai <code>confirm()</code>, <code>alert()</code> o <code>prompt()</code> del browser. Rosa dei venti in filigrana nell'angolo, titolo che dice l'azione, pulsante di conferma sempre navy e per primo, «Annulla» accanto. Invio conferma (in una casella a più righe va a capo), Esc e clic fuori annullano. In Compass OPS e nelle app della Galleria la stessa finestra si chiama <code>_gbConferma</code>, <code>_gbAvviso</code>, <code>_gbChiedi</code>, <code>_gbModulo</code>.</p>
     <div class="cq-box ds-cq-statico">
       <div class="cq-title">Eliminare il movimento del 24/11?</div>
       <div class="cq-sub">Il movimento sparisce da tutte le postazioni. Non si può annullare.</div>
@@ -342,7 +351,10 @@ body{background:var(--bg);}
     </div></div>
   </section>
 
-  <p class="ds-piede">Compass QM · guida di stile viva — legge <code>style.css</code> del sito, nessun dato e nessun collegamento al cloud.</p>
+  <div class="firma">
+    <span class="firma-marchio">Compass <span>QM</span></span>
+    La guida di stile fa parte della Suite Compass QM, interamente ideata e creata dal Quality Manager Pierpaolo Presta. Per esclusivo uso interno.
+  </div>
 </main>
 
 <script>
@@ -420,7 +432,7 @@ const DS_APP=[
   pezzi:['<code>.topbar</code> · <code>.soc-bar</code> › <code>.soc-tab.active</code> — società','<code>.summary-row</code> › <code>.chip.chip-red / .chip-amber / .chip-green</code> — riepilogo scadenze','<code>.card</code> › <code>.card-header</code> · <code>.card-count</code> — scheda apribile','<code>.entry</code> · <code>.entry-dot</code> · <code>.entry-date-val</code> — voce con scadenza colorata'],
   nota:'Società, schede e riepilogo usano emoji (🏢 👤 ⚠️ ⏳). Stessa inversione <code>--text-dim</code>/<code>--text-muted</code> di Housekeeper.',
   demo:`<div class="topbar"><div class="topbar-left">${DS_STELLA}<div><div class="topbar-title">DVR &amp; Compliance</div><div class="topbar-sub">Compass QM · Sola consultazione</div></div></div><div class="sync-dot"></div></div><div class="soc-bar"><button class="soc-tab active">🏢 SOCIETÀ UNO</button><button class="soc-tab">🏢 SOCIETÀ DUE</button></div><div class="content"><div class="summary-row"><div class="chip chip-red">⚠️ 1 scaduto</div><div class="chip chip-amber">⏳ 2 in scadenza</div><div class="chip chip-green">✓ 14 in regola</div></div><div class="sect-lbl">📋 Scadenze Personale</div><div class="card"><div class="card-header"><span class="card-icon">💉</span><span class="card-title">Visite Mediche</span><span class="card-count">3</span><span class="chev">›</span></div><div class="entry"><div class="entry-dot" style="background:var(--red);margin-top:2px;"></div><div style="flex:1;min-width:0;"><div class="entry-name">Mario Esempio</div><div class="entry-sub">Cameriere ai piani</div></div><div class="entry-date"><div class="entry-date-val" style="color:var(--red);">02/11/2026</div><div class="entry-date-lbl">22gg fa</div></div></div><div class="entry"><div class="entry-dot" style="background:var(--amber);margin-top:2px;"></div><div style="flex:1;min-width:0;"><div class="entry-name">Lucia Prova</div><div class="entry-sub">Receptionist</div></div><div class="entry-date"><div class="entry-date-val" style="color:var(--amber);">10/12/2026</div><div class="entry-date-lbl">tra 16gg</div></div></div></div></div>`},
- {file:'biancheria-galleria.html',nome:'Compass Ops – Galleria',
+ {file:'biancheria-galleria.html',nome:'Compass OPS',
   testo:'L\'app della Galleria è una copia di pezzi di Compass: usa <code>style.css</code>, quindi tutto il catalogo qui sopra vale anche per lei. Di suo aggiunge la schermata riservata.',
   pezzi:['<code>.gb-cantiere</code> — schermata a tutta pagina con la rosa dei venti in filigrana: voce riservata (PIN) o spenta','<code>.gb-cantiere-k</code> (oro, maiuscolo) · <code>.gb-cantiere-t</code> (titolo navy) · <code>.gb-cantiere-r</code> (filo oro) · <code>.gb-cantiere-s</code>','Conferme, avvisi e domande: la stessa finestra di Compass (<code>_gbConferma</code>, <code>_gbAvviso</code>, <code>_gbChiedi</code>, <code>_gbModulo</code>)','<code>.gb-rc-frame</code> — voce «Registration Cards» (Ricevimento): la pagina della Registration aperta dentro l\'area di lavoro, senza splash né intestazione (<code>?dentro=1</code>)'],
   demo:`<div class="gb-cantiere" style="min-height:300px;"><div class="gb-cantiere-k">Preferenze turni</div><div class="gb-cantiere-t" style="font-size:22px;">Riservato al Front Office Manager</div><div class="gb-cantiere-r"></div><div class="gb-cantiere-s">Inserisci il PIN per aprire questa voce.</div></div>`},

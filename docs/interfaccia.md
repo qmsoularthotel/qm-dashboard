@@ -217,3 +217,18 @@ trascinando con la maniglia, si **mette in ordine** con la maniglia (anche col d
 - Date ISO costruite a mezzogiorno (`_agDaIso`): il cambio d'ora non sposta i giorni.
 - 15 controlli in `test/controlli.js` ("Agenda della settimana"), verificati con quattro
   sabotaggi (lunedì sbagliato, `kvSet` diretto, ridisegno sotto le dita, testo senza `_esc`).
+
+---
+
+## Firma in fondo a ogni pagina (24/11/2026)
+
+Richiesta del QM: «il footer ovunque». `.firma` (in `style.css`, nata in Compass OPS) chiude
+Compass (in fondo a `.content`, uguale per tutte le viste), Compass OPS, la guida di stile e,
+copiata nello stile proprio di ognuna, le app: Housekeeping, Breakfast, Inventario,
+Distribuzione Culligan, DVR, Registration Cards. Testo: «<nome> fa parte della Suite Compass
+QM, interamente ideata e creata dal Quality Manager Pierpaolo Presta. Per esclusivo uso
+interno.» Una frase in più solo se è vera e verificata nel codice: Compass OPS (dati a cui
+accede, PDF delle Registration letto solo sul computer) e Registration Cards (dati degli
+ospiti non inviati). Nelle app con i nomi dei grigi scambiati la copia usa i nomi scambiati,
+così il colore è identico. Dentro Compass OPS la Registration nasconde la sua
+(`.rc-dentro .firma`). `esegui.sh` si ferma se una pagina `.html` non ha `class="firma"`.

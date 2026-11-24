@@ -165,6 +165,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-se
 .bottom-nav-item span{font-size:20px;display:block;filter:brightness(0) invert(1);opacity:.5;}
 .bottom-nav-item.active span{filter:none;opacity:1;}
 body{padding-bottom:62px;}
+/* Firma in fondo (24/11/2026): copia di .firma di style.css. In questa app i nomi dei due grigi sono scambiati rispetto a Compass: il colore è lo stesso. */
+.firma{margin:26px 14px 20px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;line-height:1.7;color:var(--text-dim);text-align:center;}
+.firma-marchio{display:block;font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:-.01em;margin-bottom:3px;}
+.firma-marchio span{color:var(--gold);}
 </style>
 </head>
 <body>
@@ -492,7 +496,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-23.2';
+const QM_APP_BUILD='2026-11-24.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -2293,5 +2297,11 @@ function cqAvviso(titolo,testo,opz){
 }
 </script>
 
+
+<!-- Firma in fondo (24/11/2026, il QM: «il footer ovunque»): stessa in Compass e in tutte le app. -->
+<div class="firma">
+  <span class="firma-marchio">Compass <span>QM</span></span>
+  Breakfast fa parte della Suite Compass QM, interamente ideata e creata dal Quality Manager Pierpaolo Presta. Per esclusivo uso interno.
+</div>
 </body>
 </html>

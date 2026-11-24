@@ -132,7 +132,7 @@ Ognuna è nata da un incidente vero; il racconto completo è nel file indicato.
   si salva prima quello che c'era (23/11/2026, Operativa HKP perdeva la sigla appena scritta).
 - Nelle app, il giorno scelto si ricorda come **data** e solo per oggi, mai come posizione
   nell'elenco (23/11/2026: la mattina ripartivano dal giorno di ieri). → `docs/app-standalone.md`
-- Conferme, avvisi e domande: `cqConferma` / `cqAvviso` / `cqChiedi` / `cqModulo` (in Compass Ops
+- Conferme, avvisi e domande: `cqConferma` / `cqAvviso` / `cqChiedi` / `cqModulo` (in Compass OPS
   `_gb*`), mai `confirm()`/`alert()`/`prompt()` del browser (sentinella in `esegui.sh`).
 - Le **etichette** del menu si possono rinominare, le **chiavi** delle viste e dei dati no.
 

@@ -670,6 +670,16 @@ if [ -n "$NATIVE" ]; then
   BKF_KO=1
 fi
 
+# Firma in fondo (24/11/2026, il QM: «il footer ovunque»): ogni pagina la porta. Una pagina
+# nuova senza firma si ferma qui.
+for _p in *.html; do
+  if ! grep -q 'class="firma"' "$_p"; then
+    echo ""
+    echo "  ERRORE      $_p non ha la firma in fondo (class=\"firma\": vedi la guida di stile)."
+    BKF_KO=1
+  fi
+done
+
 # Worker non pubblicato: worker.js si pubblica a mano su Cloudflare (vedi CLAUDE.md, la
 # pubblicazione automatica è stata valutata e scartata). Una correzione può quindi essere
 # scritta, versionata e non attiva — successo il 21/08/2026, per ore, senza alcun segnale.

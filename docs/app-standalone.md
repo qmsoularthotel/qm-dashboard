@@ -328,7 +328,14 @@ Tutte le card (`.hk-tile`, `.hk-scheda`, `.kpi-card`, `.no-data`, `.preview-card
 hanno un filo un po' più scuro (`--card-br` #d3dae4) e un'ombra a due strati tinta
 `--accent` (`--card-shadow`). Blocco unico in fondo al primo `<style>` di `housekeeper.html`.
 
-## Nome dell'app della Galleria: «Compass Ops – Galleria» (16/11/2026)
+## Nome dell'app della Galleria: «Compass OPS» (24/11/2026)
+
+Il QM l'ha rinominata «Compass OPS» (prima «Compass Ops – Galleria»): titolo della scheda del
+browser, splash, schermata di abilitazione, firma in fondo e scheda nel Pannello di Controllo.
+Il logo **«Compass QM» nella colonna del menu resta** (richiesta esplicita del QM). Il file
+resta `biancheria-galleria.html`, le chiavi `bg_*` restano.
+
+### Prima: «Compass Ops – Galleria» (16/11/2026)
 
 Scelto dal QM: compare nello splash (sotto «Compass QM», con la riga «Strumento di gestione operativa») e nella firma in fondo («Compass Ops – Galleria fa parte della Suite Compass QM…»). Poi (stesso giorno) **ovunque**: titolo della scheda, schermata del codice, nota della stampa della giacenza, scheda nel Pannello di Controllo e riquadro del codice in Sicurezza. «Gestione Biancheria» resta solo come nome della **sezione** del menu (Consumo, Conteggio, Giacenza, Reso, Fattura). Il file resta `biancheria-galleria.html`.
 

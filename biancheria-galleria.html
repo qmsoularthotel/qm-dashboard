@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Compass Ops – Galleria</title>
+<title>Compass OPS</title>
 <!-- Stesso foglio di stile di Compass: menu, barra in alto, pannelli e schede sono quelli
      (25/09/2026). Il numero si allinea da solo con strumenti/versione.sh. -->
-<link rel="stylesheet" href="style.css?v=300">
+<link rel="stylesheet" href="style.css?v=301">
 <style>
 /* Solo cio' che style.css di Compass non ha: il resto viene da li'. */
 :root{--shadow:0 1px 4px rgba(0,0,0,.08);}
@@ -140,9 +140,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 /* Riga di paternità in fondo alla pagina. Sta QUI e non sul foglio stampato: la distinta
    si consegna a Raimondo, che è esterno, e "per esclusivo uso interno" su un documento
    che esce dall'albergo direbbe il contrario di sé. */
-.firma{margin-top:26px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;line-height:1.7;color:var(--text-muted);text-align:center;}
-.firma-marchio{display:block;font-size:12px;font-weight:700;color:var(--text-dim);letter-spacing:-.01em;margin-bottom:3px;}
-.firma-marchio span{color:var(--gold);}
+/* .firma (la firma in fondo) sta in style.css dal 24/11/2026: è la stessa in Compass e in tutte le app. */
 
 @media(max-width:760px){
   .tabs{flex-direction:column;}
@@ -241,7 +239,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-24.2';
+const QM_APP_BUILD='2026-11-24.3';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -291,8 +289,8 @@ setInterval(qmCheckVersione,600000);
   </div>
   <div style="font-size:30px;font-weight:500;color:#fff;">Compass <span style="color:#c9952f;">QM</span></div>
   <div style="width:60px;border-top:1px solid rgba(255,255,255,.18);"></div>
-  <!-- Nome dell'app: Compass Ops – Galleria (QM, 16/11/2026). -->
-  <div style="font-size:22px;color:rgba(255,255,255,.7);">Compass Ops <span style="color:rgba(255,255,255,.45);">–</span> Galleria</div>
+  <!-- Nome dell'app: «Compass OPS» (QM, 24/11/2026; prima «Compass Ops – Galleria»). -->
+  <div style="font-size:22px;color:rgba(255,255,255,.7);">Compass OPS</div>
   <div style="font-size:14px;color:rgba(255,255,255,.55);margin-top:-6px;">Strumento di gestione operativa</div>
   <div style="font-size:13px;color:rgba(255,255,255,.42);line-height:1.5;white-space:nowrap;padding:0 18px;box-sizing:border-box;text-align:center;">Art Resort Galleria Umberto – Art Suite Santa Brigida</div>
 </div>
@@ -434,12 +432,14 @@ setInterval(qmCheckVersione,600000);
       </div>
   <div class="firma">
     <span class="firma-marchio">Compass <span>QM</span></span>
-    Compass Ops – Galleria fa parte della Suite Compass QM, interamente ideata e creata dal
+    Compass OPS fa parte della Suite Compass QM, interamente ideata e creata dal
     Quality Manager Pierpaolo Presta. Per esclusivo uso interno.
     <!-- Frase verificata col codice (16/11/2026): il codice della Galleria apre solo chiavi bg_ e,
          col PIN, le richieste di turnazione; l'app non manda email né messaggi. Se un giorno
-         l'app comincia a farlo, questa frase va corretta. -->
-    Accede solo ai propri dati operativi, non ai dati degli ospiti né ad altri archivi aziendali, e non invia comunicazioni a terzi.
+         l'app comincia a farlo, questa frase va corretta. 24/11/2026: con la voce Registration
+         Cards i nomi degli ospiti si VEDONO qui (il PDF degli arrivi letto nel riquadro), ma non
+         si salvano e non vanno sul cloud: la frase lo dice invece di negarlo. -->
+    Accede solo ai propri dati operativi e a nessun altro archivio aziendale, e non invia comunicazioni a terzi. Il PDF degli arrivi delle Registration Cards si legge solo su questo computer e non viene salvato né inviato.
   </div>
 
     </div>
@@ -723,7 +723,7 @@ function gbMostraAttivazione(msg){
   v.style.cssText='position:fixed;inset:0;z-index:99990;background:#1A2E55;display:flex;align-items:center;justify-content:center;padding:20px;';
   v.innerHTML='<div style="max-width:420px;width:100%;text-align:center;color:#fff;font-family:inherit;">'+
     '<div style="font-size:28px;font-weight:500;">Compass <span style="color:#c9952f;">QM</span></div>'+
-    '<div style="font-size:18px;color:rgba(255,255,255,.75);margin:6px 0 22px;">Compass Ops – Galleria</div>'+
+    '<div style="font-size:18px;color:rgba(255,255,255,.75);margin:6px 0 22px;">Compass OPS</div>'+
     '<div style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.6;margin-bottom:14px;">'+(msg?esc(msg)+'<br>':'')+'Incolla il codice ricevuto dal Quality Manager.</div>'+
     '<input id="gb-velo-codice" type="text" autocomplete="off" spellcheck="false" placeholder="codice" style="width:100%;padding:11px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-family:inherit;">'+
     '<button onclick="gbAbilita()" style="margin-top:12px;width:100%;padding:11px;border:none;border-radius:8px;background:#c9952f;color:#1A2E55;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;">Abilita questo computer</button>'+

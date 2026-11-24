@@ -92,6 +92,10 @@
 
   /* COMBINED SUB-HEADER */
   .sub-sect{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);padding:7px 16px 5px;background:var(--surface2);border-top:1px solid var(--border-light);}
+/* Firma in fondo (24/11/2026): copia di .firma di style.css. In questa app i nomi dei due grigi sono scambiati rispetto a Compass: il colore è lo stesso. */
+.firma{margin:26px 16px 24px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;line-height:1.7;color:var(--text-dim);text-align:center;}
+.firma-marchio{display:block;font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:-.01em;margin-bottom:3px;}
+.firma-marchio span{color:var(--gold);}
 </style>
 </head>
 <body>
@@ -466,7 +470,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-09-25.1';
+const QM_APP_BUILD='2026-11-24.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -777,5 +781,11 @@ if ('serviceWorker' in navigator) {
 // ripensato: non un contatore riscritto da ogni dispositivo a ogni apertura.
 
 </script>
+
+<!-- Firma in fondo (24/11/2026, il QM: «il footer ovunque»): stessa in Compass e in tutte le app. -->
+<div class="firma">
+  <span class="firma-marchio">Compass <span>QM</span></span>
+  DVR &amp; Compliance fa parte della Suite Compass QM, interamente ideata e creata dal Quality Manager Pierpaolo Presta. Per esclusivo uso interno.
+</div>
 </body>
 </html>
