@@ -63,6 +63,15 @@ si cambia solo qui.
 
 ## Registration Cards Galleria — un'app a sé, fuori da Compass
 
+### Schermata iniziale (24/11/2026)
+
+Approvata dal QM. Sopra il riquadro di caricamento: data di oggi, titolo e le due strutture.
+Accanto, «Cosa si stampa»: un foglio A4 **disegnato** in CSS (`.foglio`, nessun nome, nessun
+dato), nascosto su smartphone. Sotto: i tre passi e la fascia verde «I dati degli ospiti
+restano su questo computer». Tutto sta in `#rcHome`: `showProc`/`showError`/`resetApp`
+nascondono e mostrano quello (non più solo `#uploadZone`). Il pulsante «Scegli il PDF» non ha
+`onclick`: il clic sale al riquadro, che apre la scelta del file.
+
 `registration-galleria.html`. È il file HTML che i colleghi dell'altra struttura già usavano
 per generare le registration card: legge il PDF arrivi del PMS con pdf.js **dentro il
 browser** e stampa le schede A4 (dati carta di credito e firma inclusi, da compilare a
