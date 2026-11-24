@@ -51,6 +51,16 @@ body{background:var(--bg);}
 .ds-regole code,.ds-intro code,.panel-body code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.92em;background:var(--surface2);padding:0 4px;border-radius:3px;}
 .ds-nav-demo{width:270px;height:auto;max-width:100%;background:#fff;border:1px solid var(--border-light);border-radius:8px;overflow:hidden;}
 .ds-cq-statico{position:relative;margin:0 auto;}
+.ds-passi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.ds-passo{display:flex;gap:11px;align-items:flex-start;background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:12px 14px;}
+.ds-passo-n{width:26px;height:26px;border-radius:50%;background:var(--accent);border:1.5px solid var(--gold);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ds-passo-t{font-size:13px;font-weight:700;color:var(--text);}
+.ds-passo-s{font-size:12px;color:var(--text-muted);margin-top:1px;line-height:1.45;}
+.ds-garanzia{display:flex;align-items:center;gap:10px;margin-top:12px;padding:11px 14px;border-radius:12px;background:var(--green-bg);color:var(--green);font-size:12.5px;line-height:1.45;}
+.ds-garanzia svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;}
+.ds-hero-giorno{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;}
+.ds-hero-tit{font-size:22px;font-weight:700;letter-spacing:-.01em;margin-top:2px;color:var(--text);}
+.ds-chip{font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;background:var(--surface);border:1px solid var(--border-light);color:var(--text-muted);}
 .ds-piede{margin-top:40px;font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;}
 @media(max-width:768px){
   .ds-head-in{padding:18px 16px;}
@@ -60,6 +70,7 @@ body{background:var(--bg);}
   .ds-griglia-2{grid-template-columns:1fr;}
   .ds-tipo-riga{flex-direction:column;gap:2px;}
   .kpi-grid{grid-template-columns:1fr 1fr;}
+  .ds-passi{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -87,6 +98,7 @@ body{background:var(--bg);}
     <a class="rev-filter-btn" href="#moduli">Moduli</a>
     <a class="rev-filter-btn" href="#menu">Menu e caricamenti</a>
     <a class="rev-filter-btn" href="#conferme">Conferme</a>
+    <a class="rev-filter-btn" href="#app">Schermate delle app</a>
     <a class="rev-filter-btn" href="#regole">Regole</a>
   </div>
 </nav>
@@ -304,6 +316,26 @@ body{background:var(--bg);}
     </div>
   </section>
 
+  <!-- ══════════════ SCHERMATE DELLE APP ══════════════ -->
+  <section class="ds-sez" id="app">
+    <h2>Schermate delle app</h2>
+    <p class="ds-intro">Le app standalone hanno un loro foglio di stile in linea, con gli stessi token di Compass. Qui i pezzi nati lì che si riusano: copiati qui con il prefisso <code>ds-</code>, nell'app hanno il nome indicato sotto. Prima comparsa: schermata iniziale della Registration Cards Galleria (24/11/2026).</p>
+    <div class="panel"><div class="panel-body">
+      <div class="ds-hero-giorno">Martedì 24 novembre</div>
+      <div class="ds-hero-tit">Registration card degli arrivi</div>
+      <div class="ds-demo" style="margin-top:8px"><span class="ds-chip">Art Resort Galleria Umberto</span><span class="ds-chip">Art Suite Santa Brigida</span></div>
+      <code class="ds-code">Intestazione della schermata: .home-giorno (data in oro) · .home-titolo · .home-chip</code>
+      <div class="ds-passi" style="margin-top:16px">
+        <div class="ds-passo"><span class="ds-passo-n">1</span><div><div class="ds-passo-t">Esporta gli arrivi</div><div class="ds-passo-s">Dal PMS, il report arrivi del giorno in PDF.</div></div></div>
+        <div class="ds-passo"><span class="ds-passo-n">2</span><div><div class="ds-passo-t">Caricalo qui</div><div class="ds-passo-s">Le schede si preparano da sole, una per ospite.</div></div></div>
+        <div class="ds-passo"><span class="ds-passo-n">3</span><div><div class="ds-passo-t">Controlla e stampa</div><div class="ds-passo-s">Apri una scheda per l'anteprima, poi stampa.</div></div></div>
+      </div>
+      <code class="ds-code">Passi numerati: .home-passi › .passo › .passo-n (badge navy/oro) · .passo-t · .passo-s — su smartphone in colonna</code>
+      <div class="ds-garanzia"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>I dati degli ospiti restano su questo computer: il PDF si legge qui e non viene mai inviato.</span></div>
+      <code class="ds-code">Fascia di garanzia: .home-privacy — verde, lucchetto; solo per una cosa vera e verificata</code>
+    </div></div>
+  </section>
+
   <!-- ══════════════ REGOLE ══════════════ -->
   <section class="ds-sez" id="regole">
     <h2>Regole che non si rompono</h2>
@@ -312,6 +344,7 @@ body{background:var(--bg);}
         <li><strong>Stile Compass sempre</strong>: token e componenti esistenti (<code>.panel</code>, <code>.kpi-card</code>, <code>--accent</code>…), mai stili inventati. Un colore nuovo si aggiunge come token in <code>:root</code>.</li>
         <li><strong>Un modulo "uguale a Compass" per altri si copia identico</strong> con un rinomino meccanico, non si riprogetta (caso Galleria, 11/09/2026).</li>
         <li class="no"><strong>Mai <code>grid-template-columns</code> in linea</strong>: su smartphone la <code>@media</code> non lo raggiunge. Le misure che cambiano stanno in classi CSS, nell'unico blocco <code>@media(max-width:768px)</code> in fondo a <code>style.css</code>.</li>
+        <li><strong>Ogni cambio di stile si riporta qui</strong>: un token, un componente o una schermata nuova o cambiata (in <code>style.css</code> o nello stile di un'app) si aggiunge o si corregge in questa guida nello stesso lavoro. <code>test/esegui.sh</code> si ferma se <code>style.css</code> cambia e la guida no.</li>
         <li class="no"><strong>Mai emoji come icone</strong>: si usa il badge SVG navy/oro della misura giusta.</li>
         <li class="no"><strong>Mai <code>confirm()</code> / <code>alert()</code> / <code>prompt()</code></strong>: solo <code>cqConferma</code> / <code>cqAvviso</code> / <code>cqChiedi</code> / <code>cqModulo</code>. Pulsante di conferma navy, nessun secondo colore. Lo controlla <code>test/esegui.sh</code>.</li>
         <li><strong>Gli stati si dicono a colori coerenti</strong>: verde fatto, ambra attenzione, rosso manca/errore. Una scrittura non arrivata si segnala in rosso, mai in silenzio.</li>

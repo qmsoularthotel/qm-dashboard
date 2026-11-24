@@ -77,6 +77,15 @@ if _mod style.css && ! _mod index.html; then
   VERSIONE_KO=1
 fi
 
+# Guida di stile (24/11/2026, richiesta del QM): ogni cambio di stile si riporta in
+# compass-qm-design-system.html nello stesso lavoro, altrimenti la guida invecchia in silenzio.
+if _mod style.css && ! _mod compass-qm-design-system.html; then
+  echo ""
+  echo "  ERRORE      style.css è cambiato ma la guida di stile no."
+  echo "              Riportare il cambio in compass-qm-design-system.html (token, componente o schermata)."
+  VERSIONE_KO=1
+fi
+
 # Copia vecchia: se nel frattempo l'altra macchina ha pubblicato qualcosa, pubblicare da
 # qui farebbe divergere le due versioni, e riunirle a mano è la parte fastidiosa. Il
 # controllo non blocca se manca la rete: si lavora anche scollegati.

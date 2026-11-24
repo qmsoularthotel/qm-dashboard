@@ -94,7 +94,10 @@ L'utente è il Quality Manager: scrive in italiano, non legge il codice, lavora 
    mai stili inventati. Un modulo "uguale a quello di Compass" per altri si **copia identico**
    con un rinomino meccanico, non si riprogetta (Galleria, 11/09/2026). Il catalogo di token e
    componenti è `compass-qm-design-system.html`: prima di disegnare qualcosa di nuovo si
-   guarda lì cosa esiste già; un componente nuovo e comune si aggiunge anche lì.
+   guarda lì cosa esiste già. **Ogni cambio di stile, sempre (richiesta del QM, 24/11/2026)**:
+   token, componente o schermata nuova o cambiata — in `style.css` o nello stile in linea di
+   un'app — si riporta nella guida **nello stesso lavoro**. `esegui.sh` si ferma se
+   `style.css` cambia e la guida no; per le app nessuno lo controlla, quindi va ricordato.
 8. Chiudendo un lavoro: aggiornare il file di `docs/` della parte toccata (e questa pagina solo
    se cambia una regola generale). La mappa `§§` qui sotto si **rigenera**, non si ritocca.
 
