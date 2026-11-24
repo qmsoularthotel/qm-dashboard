@@ -229,6 +229,12 @@ Distribuzione Culligan, DVR, Registration Cards. Testo: «<nome> fa parte della 
 QM, interamente ideata e creata dal Quality Manager Pierpaolo Presta. Per esclusivo uso
 interno.» Una frase in più solo se è vera e verificata nel codice: Compass OPS (dati a cui
 accede, PDF delle Registration letto solo sul computer) e Registration Cards (dati degli
-ospiti non inviati). Nelle app con i nomi dei grigi scambiati la copia usa i nomi scambiati,
+ospiti non inviati). **Compass OPS ha una firma sua** (24/11/2026, scelta del QM fra tre proposte, la «firma
+d'autore»): `.firma.firma-ops` — marchio «Compass **OPS**» (navy + oro) e «Suite Compass QM» a
+sinistra, filo oro verticale, a destra «*Ideazione e creazione del Quality Manager*
+**Pierpaolo Presta***, nell'ottica del miglioramento continuo e della qualità dei processi.*
+Per esclusivo uso interno.» e, più piccola, la frase sui dati. Su smartphone si impila e
+centra. Compass e le altre app tengono la firma comune.
+Nelle app con i nomi dei grigi scambiati la copia usa i nomi scambiati,
 così il colore è identico. Dentro Compass OPS la Registration nasconde la sua
 (`.rc-dentro .firma`). `esegui.sh` si ferma se una pagina `.html` non ha `class="firma"`.

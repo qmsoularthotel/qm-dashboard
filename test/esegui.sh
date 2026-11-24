@@ -673,7 +673,7 @@ fi
 # Firma in fondo (24/11/2026, il QM: «il footer ovunque»): ogni pagina la porta. Una pagina
 # nuova senza firma si ferma qui.
 for _p in *.html; do
-  if ! grep -q 'class="firma"' "$_p"; then
+  if ! grep -Eq 'class="firma[ "]' "$_p"; then
     echo ""
     echo "  ERRORE      $_p non ha la firma in fondo (class=\"firma\": vedi la guida di stile)."
     BKF_KO=1

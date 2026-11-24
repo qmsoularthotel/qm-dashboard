@@ -140,7 +140,23 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 /* Riga di paternità in fondo alla pagina. Sta QUI e non sul foglio stampato: la distinta
    si consegna a Raimondo, che è esterno, e "per esclusivo uso interno" su un documento
    che esce dall'albergo direbbe il contrario di sé. */
-/* .firma (la firma in fondo) sta in style.css dal 24/11/2026: è la stessa in Compass e in tutte le app. */
+/* .firma (la firma in fondo) sta in style.css dal 24/11/2026: è la stessa in Compass e in tutte le app.
+   Compass OPS ha la SUA (24/11/2026, scelta del QM fra tre proposte, la «firma d'autore»): marchio
+   Compass OPS a sinistra, filo oro verticale, a destra l'ideazione in corsivo col nome in grassetto
+   navy e, più piccola, la frase sui dati. Su smartphone si impila e centra. */
+.firma.firma-ops{display:flex;align-items:center;gap:22px;text-align:left;padding-top:20px;}
+.firma-ops-sx{flex-shrink:0;text-align:right;padding-right:22px;border-right:2px solid var(--gold);}
+.firma-ops-m{font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--accent);line-height:1;}
+.firma-ops-m span{color:var(--gold);}
+.firma-ops-s{font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);margin-top:5px;}
+.firma-ops-a{font-size:12.5px;color:var(--text-muted);line-height:1.6;}
+.firma-ops-a em{color:var(--text);}
+.firma-ops-a b{color:var(--accent);font-weight:700;}
+.firma-ops-n{font-size:10.5px;color:var(--text-dim);margin-top:6px;line-height:1.55;}
+@media(max-width:768px){
+  .firma.firma-ops{flex-direction:column;gap:12px;text-align:center;}
+  .firma-ops-sx{text-align:center;padding:0 0 10px;border-right:none;border-bottom:2px solid var(--gold);}
+}
 
 @media(max-width:760px){
   .tabs{flex-direction:column;}
@@ -239,7 +255,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-24.3';
+const QM_APP_BUILD='2026-11-24.4';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -430,16 +446,17 @@ setInterval(qmCheckVersione,600000);
       <div id="bg-sez-registration" style="display:none;">
         <div id="gb-rc"></div>
       </div>
-  <div class="firma">
-    <span class="firma-marchio">Compass <span>QM</span></span>
-    Compass OPS fa parte della Suite Compass QM, interamente ideata e creata dal
-    Quality Manager Pierpaolo Presta. Per esclusivo uso interno.
-    <!-- Frase verificata col codice (16/11/2026): il codice della Galleria apre solo chiavi bg_ e,
-         col PIN, le richieste di turnazione; l'app non manda email né messaggi. Se un giorno
-         l'app comincia a farlo, questa frase va corretta. 24/11/2026: con la voce Registration
-         Cards i nomi degli ospiti si VEDONO qui (il PDF degli arrivi letto nel riquadro), ma non
-         si salvano e non vanno sul cloud: la frase lo dice invece di negarlo. -->
-    Accede solo ai propri dati operativi e a nessun altro archivio aziendale, e non invia comunicazioni a terzi. Il PDF degli arrivi delle Registration Cards si legge solo su questo computer e non viene salvato né inviato.
+  <div class="firma firma-ops">
+    <div class="firma-ops-sx"><div class="firma-ops-m">Compass <span>OPS</span></div><div class="firma-ops-s">Suite Compass QM</div></div>
+    <div>
+      <div class="firma-ops-a"><em>Ideazione e creazione del Quality Manager</em> <b>Pierpaolo Presta</b><em>, nell'ottica del miglioramento continuo e della qualità dei processi.</em> Per esclusivo uso interno.</div>
+      <!-- Frase verificata col codice (16/11/2026): il codice della Galleria apre solo chiavi bg_ e,
+           col PIN, le richieste di turnazione; l'app non manda email né messaggi. Se un giorno
+           l'app comincia a farlo, questa frase va corretta. 24/11/2026: con la voce Registration
+           Cards i nomi degli ospiti si VEDONO qui (il PDF degli arrivi letto nel riquadro), ma non
+           si salvano e non vanno sul cloud: la frase lo dice invece di negarlo. -->
+      <div class="firma-ops-n">Accede solo ai propri dati operativi, non invia comunicazioni a terzi. Il PDF degli arrivi delle Registration Cards si legge solo su questo computer e non viene salvato né inviato.</div>
+    </div>
   </div>
 
     </div>
