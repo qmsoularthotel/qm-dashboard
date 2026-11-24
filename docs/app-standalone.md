@@ -67,7 +67,7 @@ si cambia solo qui.
 
 Richiesta del QM: Registration Cards anche **dentro Compass Ops**, come seconda posizione. Il
 collegamento sul desktop dei colleghi (`registration-galleria.html`) resta com'è e funziona
-uguale. In Compass Ops c'è il gruppo **Ricevimento** in cima al menu con la voce
+uguale. In Compass Ops c'è il gruppo **Gestione Check-in** (era «Ricevimento», rinominato dal QM il 24/11 come le altre sezioni) in cima al menu con la voce
 «Registration Cards» (bollino NEW per 5 giorni: dal 24 al 28/11): `gbRcEntra()` crea **una volta sola** un
 `iframe` (`.gb-rc-frame`) su `registration-galleria.html?dentro=1`, così cambiando voce e
 tornando le schede caricate restano. Con `?dentro=1` la pagina toglie splash e intestazione
