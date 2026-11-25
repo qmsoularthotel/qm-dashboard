@@ -257,50 +257,13 @@ body.dark .panel{box-shadow:none;}
 .grid-2-wide{display:grid;grid-template-columns:1fr 1.5fr;}
 /* Righe stock Inventario: 256px di colonne fisse lasciavano ~20px al nome del prodotto
    su uno schermo da 375px. Portata in CSS per poterla stringere su mobile. */
-.inv-stock-row{display:grid;grid-template-columns:1fr 72px 52px 88px 44px;gap:6px;}
-/* Inventari e Ordini › Stock nello stile aggiornato (25/11/2026, scelta del QM: righe, senza KPI e
-   senza barre): pannello a tutta larghezza, righe a griglia (le colonne stanno qui, mai in linea). */
-.inv-filtri{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;}
-.inv-filtri .rev-filter-btn{padding:4px 11px;font-size:var(--fs-xxs);}
-.inv-filtri .rev-filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-.inv-conta{display:inline-block;min-width:16px;margin-left:3px;font-weight:700;opacity:.8;}
-.inv-elenco{padding:4px 0;}
-.inv-riga{display:grid;grid-template-columns:minmax(0,2fr) 116px 170px 170px 150px 110px;gap:14px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--border-light);border-left:3px solid transparent;}
-.inv-riga:last-child{border-bottom:none;}
-.inv-riga.inv-st-out{border-left-color:var(--red);}
-.inv-riga.inv-st-low{border-left-color:var(--amber);}
-.inv-testa{padding:8px 18px;font-size:var(--fs-xxs);font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;background:var(--surface2);}
-.inv-nome{min-width:0;}
-.inv-nome b{display:block;font-size:var(--fs-sm);font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.inv-nome small{font-size:var(--fs-xxs);color:var(--text-dim);}
-.inv-stato .c-badge{margin-left:0;}
-.inv-scorta{display:flex;flex-direction:column;align-items:flex-start;gap:3px;}
-.inv-aut,.inv-arr{font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.35;}
-.inv-aut-rd{color:var(--red);font-weight:700;}
-.inv-aut-am{color:var(--amber);font-weight:700;}
-.inv-arr{color:var(--blue);font-weight:600;}
-.inv-dor b{display:block;font-size:var(--fs-md);font-weight:700;color:var(--accent);}
-.inv-dor small{display:block;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:400;}
-.inv-dor-ok{font-size:var(--fs-xs);color:var(--green);font-weight:600;}
-.inv-dor-no{font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;}
-.inv-cop{font-size:var(--fs-xxs);color:var(--text-dim);align-self:center;}
-.inv-sep{width:1px;background:var(--border);margin:0 4px;}
 /* Ricevimento merce: data vera d'arrivo e scelta se toccare lo stock (25/11/2026). */
 .inv-ric{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;}
 .inv-ric .form-input{font-family:inherit;}
 .inv-ric-chk{display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);font-weight:600;color:var(--text);cursor:pointer;}
 .inv-ric-nota{font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;}
-.inv-qta{font-size:20px;font-weight:700;line-height:1;min-width:64px;font-variant-numeric:tabular-nums;}
-.inv-unita{font-size:var(--fs-xxs);font-weight:500;color:var(--text-dim);margin-left:3px;}
-.inv-mini{display:none;}
-.inv-ord b{display:block;font-size:var(--fs-sm);font-weight:700;color:var(--text);}
-.inv-ord small{display:block;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.45;}
-.inv-ord small.inv-ord-cons{color:var(--text-muted);font-weight:600;}
-.inv-ord-mai{font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;}
-.inv-azioni{display:flex;justify-content:flex-end;gap:0;}
 .inv-vuoto{display:flex;flex-direction:column;align-items:center;gap:6px;padding:34px 20px;text-align:center;color:var(--text-muted);font-size:var(--fs-sm);}
 .inv-vuoto small{color:var(--text-dim);font-size:var(--fs-xs);}
-.inv-nota{padding:10px 18px 14px;font-size:var(--fs-xxs);color:var(--text-dim);border-top:1px solid var(--border-light);}
 .ov-bkf-grid-wide{grid-template-columns:1fr 3fr 0.8fr;}
 /* Il numero di colonne CALA a finestra stretta invece di strizzare le schede: con tre
    colonne imposte a ogni larghezza, sotto i ~950px ogni scheda scendeva a ~180px e andavano
@@ -809,18 +772,6 @@ select.form-input option{background:var(--surface2);color:var(--text);}
     border-top:1px solid var(--border-light);padding-top:14px;margin-top:12px;}
   /* Inventario: su mobile sparisce "Ultimo mov." (2ª colonna, la meno urgente da
      leggere al volo) e le restanti si stringono, così il nome prodotto resta leggibile. */
-  .inv-stock-row{grid-template-columns:1fr 44px 62px 40px;gap:4px;}
-  .inv-riga{grid-template-columns:minmax(0,1fr) auto;gap:8px 10px;padding:11px 14px;}
-  .inv-testa{display:none;}
-  .inv-stato{justify-self:end;}
-  .inv-ordine-c{display:flex;align-items:center;gap:8px;justify-self:end;text-align:right;}
-  .inv-dor-c{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface2);border-radius:6px;padding:6px 10px;}
-  .inv-dor-c .inv-dor{text-align:right;}
-  .inv-sep{display:none;}
-  .inv-azioni{grid-column:1/-1;border-top:1px dashed var(--border-light);padding-top:8px;}
-  .inv-mini{display:inline;font-size:var(--fs-xxs);color:var(--text-dim);}
-  .inv-filtri{margin-left:0;width:100%;}
-  .inv-stock-row > :nth-child(2){display:none;}
   /* Overview */
   .ov-bkf-grid{grid-template-columns:1fr;}
   .ov-bkf-grid-wide{grid-template-columns:1fr;}
@@ -1138,21 +1089,6 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .firma{margin-top:26px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;line-height:1.7;color:var(--text-muted);text-align:center;}
 .firma-marchio{display:block;font-size:12px;font-weight:700;color:var(--text-dim);letter-spacing:-.01em;margin-bottom:3px;}
 .firma-marchio span{color:var(--gold);}
-/* Inventari › Stock a larghezza intermedia (25/11/2026, QM: con la finestra a metà schermo le colonne
-   fisse schiacciavano a zero il nome e i titoli si sovrapponevano). Fra smartphone e schermo largo ogni
-   prodotto va su due righe: nome e stato sopra, In stock / Ultimo ordine / Da ordinare / azioni sotto,
-   ognuno con la sua etichetta. Solo sopra i 768px: sotto vale il blocco dello smartphone. */
-@media (min-width:769px) and (max-width:1380px){
-  .inv-riga{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto;gap:6px 16px;padding:12px 18px;}
-  .inv-testa{display:none;}
-  .inv-nome{grid-column:1/4;}
-  .inv-stato{justify-self:end;}
-  .inv-mini{display:block;font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;}
-  .inv-scorta .inv-qta::before{content:'In stock';display:block;font-size:var(--fs-xxs);font-weight:400;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
-  .inv-azioni{align-self:end;}
-  .panel-header:has(.inv-filtri){flex-wrap:wrap;}
-  .inv-filtri{margin-left:0;width:100%;}
-}
 /* Inventari › Stock «a colpo d'occhio» (25/11/2026, QM: «non è immediato, si legge poco e male»):
    cinque colonne, numeri grandi, una sola cosa in evidenza (Da ordinare, numero navy grande, filo oro
    a sinistra della riga). Niente pillole piene: scelte attive in chiaro (QM: «troppe pills blu»). */

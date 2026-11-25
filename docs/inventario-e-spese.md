@@ -4,95 +4,27 @@
 
 ## Inventario Detersivi — Ordini
 
-### Tab Stock — stile aggiornato e «ordinare senza sprechi» (25/11/2026, QM)
+### Tab Stock — «a colpo d'occhio» per ordinare senza sprechi (25/11/2026, QM)
 
-Scelta del QM fra tre proposte: **righe, senza KPI e senza barre**, un `.panel` a tutta larghezza
-(`invRenderStock`, classi `.inv-riga`… in `style.css`, colonne mai in linea). Filtri Tutti / Esauriti
-/ Sotto soglia / In regola nell'intestazione (`_invFilter` 'all'|'out'|'low'|'ok'; il vecchio 'alert'
-vale ancora). Per ogni prodotto:
-- **Stato** in pillola (la soglia decide «Sotto soglia» ma non si mostra più: si cambia dal Catalogo).
-- **In stock** in grande + **«basta per N giorni»** (rosso ≤7, arancio ≤14, come «Autonomia critica»)
-  + **«+X in arrivo dal gg/mm»** se ci sono ordini aperti (`_invInArrivo`: status 'ordinato').
-- **Ultimo ordine** = l'ultimo **ricevuto** (in arrivo e annullati no): quantità arrivata
-  (`qtyRicevuta` se c'è), data d'arrivo (`tsRicevuto`, se no la data dell'ordine) e **«consumati X in
-  N giorni»** da allora (`_invUltimiOrdini`, `_invConsumoDa`).
-- **Da ordinare** per coprire 15/30/45 giorni (`_invCopertura`, ricordata sul computer in
-  `qm_inv_copertura`): `ceil(consumo al giorno × giorni − max(0,stock) − in arrivo)`; «non serve» se
-  ≤0, «nessun consumo» senza scarichi (`_invDaOrdinare`). Il consumo al giorno (`_invConsumoMedio`) è
-  la **stessa formula della Media/sett di Analisi** (tutto lo storico, scarichi + ammanchi delle
-  rettifiche, almeno 14 giorni). Sotto, il consumo a settimana.
-- Dopo la lettura degli ordini dal cloud lo Stock si ridisegna (gli ordini servono alle colonne).
-Larghezze: tabella sopra i 1380px; **fra 769 e 1380px** (finestra a metà schermo) due righe per
-prodotto con le etichette (prima le colonne fisse schiacciavano a zero il nome, 25/11/2026); sotto,
-blocco da smartphone.
-Limite: conta solo ciò che è scansionato; uno stock negativo (carico non scansionato) vale 0.
+Dopo tre prove (KPI + righe; tessere; righe con dettagli) il QM: «non è immediato, si legge poco e male»,
+poi «troppe pills blu». Versione pubblicata (`invRenderStock`, classi `.inv2-*` in `style.css`):
+- **Cinque colonne, numeri grandi**: Prodotto · In stock · Consumo a sett. · Ultimo ordine · **Da ordinare**.
+- **In cima quelli da ordinare** (filo oro a sinistra, `.inv2-da`), i più urgenti prima (meno giorni di
+  autonomia); poi gli altri per nome. Scelte: «Da ordinare / Tutti» (`_invFilter` 'ordina'|'all') e
+  «ordine per 15/30/45 giorni» (`_invCopertura`, ricordata sul computer in `qm_inv_copertura`).
+- **In stock**: nero; rosso se finito o ≤7 giorni di autonomia, arancio ≤14 (con «finito» / «per N gg»).
+  Si **tocca il numero** per correggerlo (`invEditQty`). Niente pulsanti sulle righe: modifica ed
+  eliminazione nel Catalogo, rifornimento nello scanner.
+- **Consumo a sett.** = `_invConsumoMedio` × 7 (stessa formula della Media/sett di Analisi).
+- **Ultimo ordine** = l'ultimo **ricevuto** (`_invUltimiOrdini`): quantità arrivata e data (gg/mm).
+- **Da ordinare** = `_invDaOrdinare` (consumo al giorno × giorni − max(0,stock) − in arrivo, per
+  eccesso): numero navy grande; «no» verde se non serve, con «+X in arrivo» (`_invInArrivo`); «—» senza consumi.
+- Niente pillole piene: scelte attive in chiaro col bordo. Sotto i 900px ogni riga è un riquadro con i
+  numeri a due a due e la loro etichetta; a metà schermo i nomi lunghi vanno a capo.
+- Le regole delle versioni di prova (`.inv-riga`, tessere, KPI) sono state tolte da `style.css`.
+Limite: conta solo ciò che è scansionato o contato; uno stock negativo (carico non scansionato) vale 0.
 Controlli: «Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordinare» in
 `test/controlli.js`.
-
-### Tab Analisi — consumo settimanale (`invRenderAnalysis`)
-
-Il filtro periodo (7/30/90 giorni, o "Tutto") controlla sia la finestra dei movimenti considerati sia il divisore usato per proiettare il consumo a settimana. Il divisore (`effectiveDays`) **non deve avere un minimo di 14 giorni quando il periodo è fisso e scelto dall'utente** — solo quando `_invPeriod===0` ("Tutto"), dove `days` è ricavato dallo storico reale del prodotto (può essere di 1-2 giorni per un prodotto appena inserito, da smorzare). Applicare comunque il minimo 14 col filtro "7 giorni" **dimezzava** il consumo mostrato (divideva un consumo reale di 7 giorni per 14) e quindi raddoppiava l'autonomia stimata, facendo sparire prodotti realmente critici dalla sezione "Da riordinare". Fix:
-
-```js
-const effectiveDays=_invPeriod>0?days:Math.max(14,days);
-```
-
-### Tabella dettaglio prodotti — media/sett e media/mese sempre su tutto lo storico
-
-Prima la tabella mostrava un'unica colonna "Cons./sett" legata al filtro periodo selezionato sopra, in ordine alfabetico. Due problemi: (1) una "media" che cambia a seconda di quale bottone hai cliccato non è più una media, è il dato di un periodo; (2) l'ordine alfabetico nasconde a colpo d'occhio quali prodotti si consumano di più.
-
-Aggiunte **due colonne fisse, indipendenti dal filtro periodo**: `mediaSett` e `mediaMese`, calcolate sempre su tutto lo storico del prodotto (stesso smorzamento minimo 14gg di "Tutto", mai sui giorni del filtro corrente):
-
-```js
-const allOuts=bm.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0);
-const storicoDays=bm.length?Math.max(1,Math.ceil((now-Math.min(...bm.map(m=>m.ts)))/86400000)):1;
-const mediaDays=Math.max(14,storicoDays);
-const mediaSett=allOuts>0?Math.round((allOuts/mediaDays)*7*10)/10:0;
-const mediaMese=allOuts>0?Math.round((allOuts/mediaDays)*30*10)/10:0;
-```
-
-Il filtro periodo (7/30/90/Tutto) in cima continua a controllare solo i KPI "Totale scaricato/caricato" e la sezione "Da riordinare" (autonomia), che invece è giusto restino legati a un periodo recente — sono domande diverse ("quanto dura in media" vs "cosa sta succedendo adesso").
-
-La tabella è anche stata **riordinata per consumo medio settimanale decrescente** (`sorted.sort((a,b)=>b.mediaSett-a.mediaSett)`), non più alfabetico: i prodotti che si consumano di più sono in cima.
-
-**Poi estesa a 6 colonne** (media e consumo reale affiancati per settimana e mese, in tabella con intestazioni raggruppate `SETTIMANA`/`MESE`) — **ma con 6 colonne numeriche quasi ogni riga aveva un numero rosso o verde**, il colore smetteva di distinguere "questo prodotto ha un problema" da "questo prodotto è normale": era rumore visivo, non segnale. Giudicata "UI brutta" dall'utente.
-
-**Rifatta come "Opzione B"** tra tre alternative mostrate (A: card con barra di confronto; B: tabella leggera con badge; C: raggruppamento per andamento) — scelta B. Prima versione: media e reale ENTRAMBI dietro l'accordion, solo "Prodotto/Stock/Ritmo" in vista — **corretto dopo che l'utente ha fatto notare di dover vedere le medie senza cliccare**: `Media/sett` e `Media/mese` sono tornate **colonne sempre visibili** (6 colonne totali: Prodotto, Media/sett, Media/mese, Stock, badge Ritmo, freccetta). **Solo il consumo REALE di dettaglio** (ultimi 7gg / da inizio mese) resta nell'accordion `invAnToggle(bc)` (stesso pattern di `ddtToggle`) — è quello che, se rimesso sempre in vista accanto alla media, ricreerebbe le sei colonne colorate del design scartato.
-
-```js
-const ritmo=it=>{
-  const rS=it.mediaSett>0?it.cons7gg/it.mediaSett:null;
-  const rM=it.mediaMese>0?it.consMeseCorr/it.mediaMese:null;
-  const cands=[rS,rM].filter(r=>r!==null);
-  if(!cands.length)return{label:'nessun dato',...};
-  const worst=Math.max(...cands),best=Math.min(...cands);
-  if(worst>=1.3)return{label:'sopra media',...};   // ambra
-  if(best<=0.6)return{label:'sotto media',...};    // verde
-  return{label:'in linea',...};                    // neutro
-};
-```
-
-Il badge guarda **lo scarto più marcato tra settimana e mese** (non due giudizi separati che potrebbero contraddirsi): se anche solo uno dei due periodi è fuori soglia, il prodotto è segnalato. Stesse soglie di prima (+30%/-40%), ma ora producono **un badge per riga** invece di **fino a due numeri colorati per riga** — la maggioranza dei prodotti "in linea" torna visivamente neutra, i pochi fuori norma risaltano davvero.
-
-Righe dispari e "Da riordinare" (bordo sinistro rosso/ambra su autonomia critica) restano come prima; solo la presentazione dei dati di consumo è cambiata.
-
-### Maschera "Nuovo ordine" — catalogo del solo hotel scelto (02/11/2026)
-
-La lista prodotti di "Nuovo ordine" (e di "Modifica ordine") univa i cataloghi di SoulArt e Art Resort
-(`{...catSA,...catAR}`) e veniva costruita una volta sola al disegno della vista: un prodotto rinominato
-nel catalogo SoulArt restava col nome vecchio se lo stesso codice esisteva in Art Resort, e comparivano
-doppioni (es. "Guanti L (Conf.)" e "Guanti L (conf)"). Ora `_invOrdOpzioni(wh)` legge **solo il catalogo
-dell'hotel scelto** nella maschera; `invOrdersRefreshProd()` la rilegge all'apertura e al cambio hotel.
-La modifica di un ordine usa il catalogo di `o.wh`. Controlli in `test/controlli.js`.
-
-### Flusso ricezione merce (DDT modal)
-
-Quando si clicca **✅ Ricevuto** su un ordine in stato `ordinato`, si apre un modal DDT invece di caricare automaticamente le quantità:
-
-1. Campo **N° DDT** (documento di trasporto)
-2. Tabella prodotti ordinati con **quantità consegnata editabile** per ogni riga
-3. Pulsante **"+ Aggiungi prodotto non ordinato"** — aggiunge riga con select dal catalogo + qty
-4. **Conferma** → crea movimenti `in`, salva `movIds` sull'ordine, marca `status: 'ricevuto'`
 
 ### Aggiornamenti di giacenza frequenti (25/11/2026, QM: «faccio spesso l'aggiornamento dello stock»)
 
