@@ -10744,6 +10744,36 @@ function _invUltimiOrdini(wh,ordini){
   });
   return out;
 }
+// ── Ordinare senza sprechi (25/11/2026, QM: punti 1, 2, 3) ──
+// Consumo medio al giorno di un prodotto: STESSA formula della «Media/sett» della scheda Analisi
+// (tutto lo storico, scarichi + ammanchi delle rettifiche, almeno 14 giorni per non gonfiare un
+// prodotto appena inserito), così i numeri delle due schede coincidono.
+function _invConsumoMedio(bm,now){
+  if(!bm||!bm.length)return 0;
+  const rett=_invRettifiche(bm);
+  const tot=bm.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0)+rett.reduce((s,r)=>s+(r.delta<0?-r.delta:0),0);
+  const giorni=Math.max(14,Math.max(1,Math.ceil(((now||Date.now())-Math.min(...bm.map(m=>m.ts)))/86400000)));
+  return tot>0?tot/giorni:0;
+}
+// Quanto ordinare per coprire `copertura` giorni: consumo × giorni − in stock − già in arrivo,
+// arrotondato per eccesso. 0 = non serve; null = nessun consumo registrato (non si sa).
+function _invDaOrdinare(perGiorno,inStock,inArrivo,copertura){
+  if(!(perGiorno>0))return null;
+  return Math.max(0,Math.ceil(perGiorno*copertura-Math.max(0,inStock||0)-(inArrivo||0)-1e-9));
+}
+// Ordini APERTI (non ancora ricevuti né annullati) per prodotto: {barcode:{qty,unit,data}}.
+function _invInArrivo(wh,ordini){
+  const out={};let ord=ordini;
+  if(!ord){try{ord=JSON.parse(localStorage.getItem('qm_inv_orders')||'[]');}catch(e){ord=[];}}
+  (Array.isArray(ord)?ord:[]).forEach(o=>{
+    if(!o||o.wh!==wh||o.status!=='ordinato')return;
+    (o.items||[]).forEach(it=>{if(!it||!it.barcode)return;const x=out[it.barcode]||(out[it.barcode]={qty:0,unit:it.unit||'',data:''});
+      x.qty+=Number(it.qty)||0;x.data=o.date||x.data;});
+  });
+  return out;
+}
+let _invCopertura=(()=>{try{const n=+localStorage.getItem('qm_inv_copertura');return [15,30,45].includes(n)?n:30;}catch(e){return 30;}})();
+function invSetCopertura(n){_invCopertura=n;try{localStorage.setItem('qm_inv_copertura',String(n));}catch(e){}const d=invGetData();invRenderStock(d.catalog,d.moves);}
 // Quanto se n'è consumato (scarichi) dal giorno dell'ultimo ordine ricevuto a oggi, e da quanti giorni.
 function _invConsumoDa(bc,moves,ts){
   let q=0;(moves||[]).forEach(m=>{if(m&&m.barcode===bc&&m.type==='out'&&Number(m.ts)>=ts)q+=Number(m.qty)||0;});
@@ -10757,7 +10787,7 @@ function invRenderStock(catalog,moves){
   // è stato ordinato l'ultima volta e in che quantità», per fare l'ordine e vedere il consumo;
   // quelli in arrivo no) e le azioni con didascalia (.rc-act-btn). La soglia resta dietro lo
   // stato (Sotto soglia) e si cambia dal Catalogo. Misure in classi (.inv-riga…), mai in linea.
-  const ultimi=_invUltimiOrdini(_invWh);
+  const ultimi=_invUltimiOrdini(_invWh),arrivo=_invInArrivo(_invWh),ora=Date.now();
   const el=document.getElementById('inv-stock-view');
   if(!el)return;
   const stock=invCalcStock(catalog,moves);
@@ -10778,6 +10808,7 @@ function invRenderStock(catalog,moves){
     return;
   }
   const tot=allItems.length;
+  const _perBc={};moves.forEach(m=>{(_perBc[m.barcode]=_perBc[m.barcode]||[]).push(m);});
   const nOut=allItems.filter(i=>i.status==='out').length;
   const nLow=allItems.filter(i=>i.status==='low').length;
   const nOk=allItems.filter(i=>i.status==='ok').length;
@@ -10788,15 +10819,25 @@ function invRenderStock(catalog,moves){
   const righe=items.map(it=>{
     const unit=it.unit?`<span class="inv-unita">${_esc(it.unit)}</span>`:'';
     const colBar=it.status==='out'?'var(--red)':it.status==='low'?'var(--amber)':'var(--green)';
-    const uo=ultimi[it.bc];
+    const uo=ultimi[it.bc],ia=arrivo[it.bc],gg=_invConsumoMedio(_perBc[it.bc],ora);
+    // 2. Autonomia: per quanti giorni basta lo stock al consumo medio (rosso ≤7, arancio ≤14,
+    // come «Autonomia critica» in Analisi).
+    const giorniAut=gg>0?Math.floor(Math.max(0,it.qty)/gg):null;
+    const aut=giorniAut==null?'':`<small class="inv-aut ${giorniAut<=7?'inv-aut-rd':giorniAut<=14?'inv-aut-am':''}">basta per ${giorniAut} ${giorniAut===1?'giorno':'giorni'}</small>`;
+    // 3. In arrivo: ordini aperti, per non ordinare due volte.
+    const arr=ia&&ia.qty?`<small class="inv-arr">+${ia.qty}${ia.unit?' '+_esc(ia.unit):''} in arrivo${ia.data?' dal '+_esc(String(ia.data).slice(0,5)):''}</small>`:'';
+    // 1. Da ordinare per coprire i giorni scelti, tolti stock e in arrivo.
+    const dor=_invDaOrdinare(gg,it.qty,ia?ia.qty:0,_invCopertura);
+    const daOrd=dor==null?'<div class="inv-dor inv-dor-no">nessun consumo</div>':dor>0?`<div class="inv-dor"><b>${dor}${unit}</b><small>${(gg*7).toFixed(gg*7<10?1:0).replace('.',',')}${it.unit?' '+_esc(it.unit):''}/sett</small></div>`:`<div class="inv-dor inv-dor-ok">non serve<small>${(gg*7).toFixed(gg*7<10?1:0).replace('.',',')}${it.unit?' '+_esc(it.unit):''}/sett</small></div>`;
     const u=uo&&uo.unit?`<span class="inv-unita">${_esc(uo.unit)}</span>`:'';
     const cons=uo?_invConsumoDa(it.bc,moves,uo.ts):null;
     const ordine=uo?`<div class="inv-ord"><b>${uo.qty}${u}</b><small>arrivato il ${_esc(uo.data)}</small><small class="inv-ord-cons">consumati ${cons.qty}${u} in ${cons.giorni} ${cons.giorni===1?'giorno':'giorni'}</small></div>`:'<div class="inv-ord inv-ord-mai">nessun ordine ricevuto</div>';
     return`<div class="inv-riga inv-st-${it.status}">
       <div class="inv-nome"><b title="${_esc(it.name)}">${_esc(it.name)}</b><small>ultimo movimento ${invFmtDate(it.last?.ts)}</small></div>
       <div class="inv-stato"><span class="c-badge ${stato[it.status][0]}">${stato[it.status][1]}</span></div>
-      <div class="inv-scorta"><div class="inv-qta" style="color:${colBar};">${it.qty}${unit}</div></div>
+      <div class="inv-scorta"><div class="inv-qta" style="color:${colBar};">${it.qty}${unit}</div>${aut}${arr}</div>
       <div class="inv-ordine-c"><span class="inv-mini">ultimo ordine</span>${ordine}</div>
+      <div class="inv-dor-c"><span class="inv-mini">da ordinare (${_invCopertura} gg)</span>${daOrd}</div>
       <div class="inv-azioni">
         <button class="rc-act-btn" data-tip="Rifornisci (scanner)" aria-label="Rifornisci" onclick="invQuickRestock('${it.bc}')">${_invIco('su',13)}</button>
         <button class="rc-act-btn" data-tip="Correggi la quantità" aria-label="Correggi" onclick="invEditQty('${it.bc}',${it.qty})">${_invIco('matita',13)}</button>
@@ -10804,11 +10845,11 @@ function invRenderStock(catalog,moves){
       </div>
     </div>`;
   }).join('')||'<div class="inv-vuoto"><div>Nessun prodotto in questo gruppo.</div></div>';
-  const testa=`<div class="inv-riga inv-testa"><div>Prodotto</div><div>Stato</div><div>In stock</div><div>Ultimo ordine</div><div></div></div>`;
+  const testa=`<div class="inv-riga inv-testa"><div>Prodotto</div><div>Stato</div><div>In stock</div><div>Ultimo ordine</div><div>Da ordinare · ${_invCopertura} gg</div><div></div></div>`;
   const nota='';
   el.innerHTML=`<div class="panel">
     <div class="panel-header"><span class="ov-icon-badge">${_invIco('scatola',12).replace('stroke="currentColor"','stroke="#fff"')}</span><span class="panel-title">Giacenza · ${nomeWh}</span>
-      <div class="inv-filtri">${fBtn('all','Tutti',tot)}${fBtn('out','Esauriti',nOut)}${fBtn('low','Sotto soglia',nLow)}${fBtn('ok','In regola',nOk)}</div></div>
+      <div class="inv-filtri"><span class="inv-cop">copri</span>${[15,30,45].map(n=>`<button class="rev-filter-btn${_invCopertura===n?' active':''}" onclick="invSetCopertura(${n})" title="Quanti giorni deve coprire l'ordine">${n} gg</button>`).join('')}<span class="inv-sep"></span>${fBtn('all','Tutti',tot)}${fBtn('out','Esauriti',nOut)}${fBtn('low','Sotto soglia',nLow)}${fBtn('ok','In regola',nOk)}</div></div>
     <div class="inv-elenco">${testa}${righe}</div>${nota}</div>`;
 }
 function invRenderMoves(catalog,moves){

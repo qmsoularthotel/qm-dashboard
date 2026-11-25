@@ -4583,3 +4583,30 @@ sez('Intolleranze anche da Compass (22/11/2026)');
 
 sez('San Liborio mai nella colazione (22/11/2026)');
 ok('Compass non lo mette nello snapshot della colazione', /if\(\/LIB\/i\.test\(c\)\)return;/.test(String(bkfRoomInfoBuild)), true);
+
+
+// Inventari e Ordini › Stock: ordinare senza sprechi (25/11/2026, QM).
+sez('Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordinare');
+(function () {
+  var D = 86400000, o = Date.now();
+  var ord = [
+    { wh: 'sa', status: 'ricevuto', ts: o - 40 * D, tsRicevuto: o - 38 * D, items: [{ barcode: 'A', qty: 12, unit: 'fl' }] },
+    { wh: 'sa', status: 'ricevuto', ts: o - 10 * D, tsRicevuto: o - 8 * D, items: [{ barcode: 'A', qty: 6, qtyRicevuta: 5, unit: 'fl' }] },
+    { wh: 'sa', status: 'ordinato', ts: o - 2 * D, date: '23/11/2026', items: [{ barcode: 'A', qty: 10, unit: 'fl' }, { barcode: 'B', qty: 4 }] },
+    { wh: 'sa', status: 'ordinato', ts: o - 1 * D, date: '24/11/2026', items: [{ barcode: 'A', qty: 2 }] },
+    { wh: 'sa', status: 'annullato', ts: o, items: [{ barcode: 'A', qty: 99 }] },
+    { wh: 'ar', status: 'ricevuto', ts: o, tsRicevuto: o, items: [{ barcode: 'A', qty: 77 }] }];
+  var u = _invUltimiOrdini('sa', ord);
+  ok('ultimo ordine: il più recente RICEVUTO, con la quantità arrivata', u.A.qty + ' ' + (u.A.ts === o - 8 * D), '5 true');
+  ok('ultimo ordine: in arrivo, annullati e altro magazzino non contano', Object.keys(u).join() + ' ' + ('B' in u), 'A false');
+  var a = _invInArrivo('sa', ord);
+  ok('in arrivo: somma degli ordini aperti del magazzino', a.A.qty + ' ' + a.B.qty, '12 4');
+  var bm = [{ barcode: 'A', type: 'init', qty: 10, ts: o - 28 * D }, { barcode: 'A', type: 'out', qty: 7, ts: o - 20 * D }, { barcode: 'A', type: 'out', qty: 7, ts: o - 5 * D }];
+  ok('consumo medio al giorno = scarichi / giorni di storico', Math.round(_invConsumoMedio(bm, o) * 100) / 100, 0.5);
+  ok('consumo: almeno 14 giorni per un prodotto appena inserito', _invConsumoMedio([{ type: 'init', qty: 5, ts: o - D }, { type: 'out', qty: 7, ts: o }], o), 0.5);
+  ok('da ordinare: consumo × giorni − stock − in arrivo, per eccesso', _invDaOrdinare(0.5, 4, 2, 30) + ' ' + _invDaOrdinare(0.34, 0, 0, 30), '9 11');
+  ok('da ordinare: con abbastanza in arrivo non serve', _invDaOrdinare(0.5, 3, 12, 30), 0);
+  ok('da ordinare: uno stock negativo vale zero', _invDaOrdinare(1, -4, 0, 15), 15);
+  ok('da ordinare: senza consumi non si sa', _invDaOrdinare(0, 3, 0, 30), null);
+  ok('lo Stock usa in arrivo e copertura', /_invDaOrdinare\(gg,it\.qty,ia\?ia\.qty:0,_invCopertura\)/.test(String(invRenderStock)), true);
+})();
