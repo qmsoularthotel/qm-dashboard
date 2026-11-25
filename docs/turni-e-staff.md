@@ -501,8 +501,8 @@ foglio presenze **per società** (oggi Ge.Ri.Art., Booking Elite, Geriart Group)
   OPS) la portano in archivio (`_turniConEsclusi`); `_gpGiorniTurni` la unisce ai turni del giorno.
   Le settimane caricate PRIMA del 25/11 non la hanno: vanno ricaricate in Compass.
 - **Persona aggiunta** (25/11/2026, QM: Cavaliere passata da Geriart Group a Ge.Ri.Art. da
-  novembre, nel foglio di Cascione non c'è): «+ Aggiungi persona da <mese>» in «Persone del
-  foglio» (`gpAggiungi`: nome come lo scrive Cascione, ore; aggancio ai turni dal cognome; numero =
+  novembre, nel foglio di Cascione non c'è): «+ Aggiungi persona da <mese>» in alto sulla griglia e in
+  fondo a «Persone del foglio» (`gpAggiungi`: nome come lo scrive Cascione, ore; aggancio ai turni dal cognome; numero =
   il più alto + 1). `aggiunta:true`, `entrata:'AAAA-MM'`: prima di quel mese non c'è (`_gpNelMese`),
   non conta fra chi non c'è più (`_gpUsciti`), «Togli» la toglie del tutto. Nell'Excel
   (`_gpConAggiunte` → `_gpInserisci`): le sue righe vanno **sotto l'ultima persona del foglio**,

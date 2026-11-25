@@ -931,6 +931,7 @@ sez('Presenze Cascione: foglio del consulente compilato dai turni (23/11/2026)')
   var zW = { 'xl/workbook.xml': _gpUtf8('<workbook><calcPr calcId="191029"/></workbook>') };
   _gpRicalcolaAllApertura(zW);
   ok('Presenze: Excel ricalcola all\'apertura', _gpDaUtf8(zW['xl/workbook.xml']), '<workbook><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>');
+  ok('Presenze: «Aggiungi persona» sia in alto sulla griglia sia in Persone del foglio', (String(_gpDisegna).match(/onclick="gpAggiungi\(\)"/g) || []).length, 2);
   ok('Presenze: ricaricando il foglio le aggiunte restano', /x\.aggiunta&&!mod\.persone\.some\(/.test(String(gpCaricaFoglio)), true);
 
   // Chi Compass mette da parte dai turni (Grasso, Amministrazione, 25/11/2026): in Presenze c'è.

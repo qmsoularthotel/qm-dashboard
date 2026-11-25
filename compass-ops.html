@@ -255,7 +255,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-25.2';
+const QM_APP_BUILD='2026-11-25.3';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -5581,7 +5581,7 @@ function _gpDisegna(el){
     t+=`<tr><td class="gp-r">S</td>${vuota}<td class="gp-tot"></td></tr>`;
     t+=`<tr><td class="gp-r">A</td>${vuota}<td class="gp-tot"></td></tr>`;
   });
-  h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Foglio presenze · ${GP_MESI[m]} ${y}</span><span class="gp-nota">tocca un giorno per cambiarlo</span></div>
+  h+=`<div class="panel"><div class="panel-header"><span class="panel-title">Foglio presenze · ${GP_MESI[m]} ${y}</span><span class="gp-nota">tocca un giorno per cambiarlo</span><button type="button" class="gp-pill" style="margin-left:auto;" onclick="gpAggiungi()">+ Aggiungi persona da ${GP_MESI[m].toLowerCase()}</button></div>
     <div class="gp-griglia"><table class="gp-tab" id="gp-tab">${t}</tbody></table></div>
     <div class="gp-leg"><span><i>8</i>ore lavorate</span><span><i style="background:var(--red-bg);color:var(--red)">R</i>riposo</span><span><i style="background:var(--gold-bg);color:var(--gold)">FE</i>ferie</span><span><i style="background:var(--red-bg);color:var(--red)">ML</i>malattia</span><span><i style="background:var(--accent-bg);color:var(--accent)">NL</i>notte</span><span><i class="gp-dot"></i>corretto a mano</span><span><i class="gp-box"></i>da controllare</span><span>S straordinari e A giustificativi: li compila Cascione</span></div></div>`;
   // Persone del foglio: a chi corrisponde nei turni
