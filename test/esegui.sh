@@ -715,7 +715,7 @@ fi
 grep -qE "if\(_gtRipristinaSess\(\)\)_gtAvviaOrologio\(\);" compass-ops.html \
   && [ "$(grep -A1 'if(_gtRipristinaSess())_gtAvviaOrologio();' compass-ops.html | grep -c 'bgSezione(_bgSezione);')" = "1" ] \
   || { echo ""; echo "  ERRORE      Compass OPS: ricaricando la pagina il PIN non si riprende piu' prima di aprire la voce."; BKF_KO=1; }
-grep -qF "u.searchParams.set('v',QM_APP_BUILD);history.replaceState(" compass-ops.html \
+grep -qE "^const OPS_V='[0-9]+-[0-9]{8}';" compass-ops.html && grep -qF "u.searchParams.set('v',OPS_V);history.replaceState(" compass-ops.html && grep -qF "const OPS_V=" strumenti/versione.sh \
   || { echo ""; echo "  ERRORE      Compass OPS: il numero di versione non si vede piu' nell'indirizzo."; BKF_KO=1; }
 for _f in compass-ops.html biancheria-galleria.html; do
   grep -qF '<link rel="icon" href="img/compass-ops-favicon.svg"' "$_f" \

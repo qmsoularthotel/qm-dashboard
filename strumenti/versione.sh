@@ -76,6 +76,13 @@ for app in ('housekeeper.html', 'breakfast.html', 'controllo-mattino.html',
     oggi_p = datetime.date.today().strftime('%Y-%m-%d')
     nuovo = f"{oggi_p}.{n + 1 if data == oggi_p else 1}"
     t = re.sub(r"const QM_APP_BUILD='[^']*'", f"const QM_APP_BUILD='{nuovo}'", t)
+    # Compass OPS mostra nell'indirizzo un numero nel formato di Compass (33-20261125): cresce
+    # di uno a ogni pubblicazione del file (25/11/2026).
+    mv = re.search(r"const OPS_V='(\d+)-\d+'", t)
+    if mv:
+        nv = int(mv.group(1)) + 1
+        t = re.sub(r"const OPS_V='\d+-\d+'", f"const OPS_V='{nv}-{OGGI}'", t)
+        fatto.append(f"{app}: indirizzo -> v={nv}-{OGGI}")
     open(app, 'w', encoding='utf-8').write(t)
     fatto.append(f"{app} -> {nuovo}")
 

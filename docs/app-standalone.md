@@ -347,8 +347,9 @@ Galleria e PIN restano validi. Il Worker non guarda il nome della pagina. Sentin
 - **Favicon** `img/compass-ops-favicon.svg` (scelta B fra tre): badge del menu, cerchio navy,
   anello oro, rosa dei venti bianca (la stessa rosa della favicon di Compass QM). Anche sul
   vecchio indirizzo `biancheria-galleria.html`.
-- **Versione nell'indirizzo** come in Compass: `?v=<QM_APP_BUILD>` con `history.replaceState`,
-  senza ricaricare (l'aggiornamento lo fanno già `qmCheckBuild`/`qmCheckVersione`).
+- **Versione nell'indirizzo** nello stesso formato di Compass (QM): `?v=<OPS_V>`, es. `33-20261125`,
+  numero che cresce a ogni pubblicazione del file (lo fa `strumenti/versione.sh`) e data; con
+  `history.replaceState`, senza ricaricare. L'aggiornamento automatico resta su `QM_APP_BUILD`.
 - **PIN della Gestione Turnazione**: ricaricando la pagina non si rimette. Il permesso del Worker
   (`_gtTp`, scadenza, ultima attività) sta in **sessionStorage** (`bg_gt_sessione`): vale solo per
   quella scheda e sparisce chiudendola; in una scheda nuova il PIN si chiede. Stesse regole di

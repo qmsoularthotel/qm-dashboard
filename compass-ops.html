@@ -258,10 +258,13 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-25.4';
-// Il numero di versione si vede nella barra degli indirizzi, come in Compass (?v=…), 25/11/2026.
-// Senza ricaricare (replaceState): l'aggiornamento lo fanno già qmCheckBuild/qmCheckVersione.
-try{const u=new URL(location.href);if(u.searchParams.get('v')!==QM_APP_BUILD){u.searchParams.set('v',QM_APP_BUILD);history.replaceState(history.state,'',u.pathname+u.search+u.hash);}}catch(e){}
+const QM_APP_BUILD='2026-11-25.5';
+// Il numero di versione si vede nella barra degli indirizzi nello stesso formato di Compass
+// (?v=633-20261125: numero che cresce a ogni pubblicazione, trattino, data), 25/11/2026, QM.
+// Lo fa crescere strumenti/versione.sh quando il file cambia. Senza ricaricare (replaceState):
+// l'aggiornamento lo fanno già qmCheckBuild/qmCheckVersione, con QM_APP_BUILD.
+const OPS_V='34-20261125';
+try{const u=new URL(location.href);if(u.searchParams.get('v')!==OPS_V){u.searchParams.set('v',OPS_V);history.replaceState(history.state,'',u.pathname+u.search+u.hash);}}catch(e){}
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
