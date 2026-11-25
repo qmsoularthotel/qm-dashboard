@@ -10627,7 +10627,7 @@ function _invIco(n,px){
 }
 let _invWh=localStorage.getItem('qm_inv_wh')||'sa';
 let _invTab='stock';
-let _invFilter='all'; // 'all' | 'alert' | 'ok'
+let _invFilter='all'; // 'all' | 'out' | 'low' | 'ok' (e il vecchio 'alert' = esauriti + sotto soglia)
 let _invPeriod=30;    // giorni per analisi consumi
 
 function invSetWh(wh,btn){
@@ -10727,10 +10727,13 @@ function invRender(){
   })();
 }
 function invRenderStock(catalog,moves){
+  // Stile aggiornato (25/11/2026, QM: «la pagina è nello stile Compass iniziale»): schede KPI di
+  // Compass che filtrano l'elenco, un pannello con bordo oro a tutta larghezza, stato di ogni
+  // prodotto in pillola, barra della scorta rispetto alla soglia, azioni con didascalia
+  // (.rc-act-btn). Le misure stanno in classi (.inv-kpi, .inv-riga…), niente griglie in linea.
   const el=document.getElementById('inv-stock-view');
   if(!el)return;
   const stock=invCalcStock(catalog,moves);
-  // Build full item list with status
   const allItems=Object.entries(catalog).map(([bc,p])=>{
     const qty=stock[bc]??null;
     if(qty===null)return null;
@@ -10742,67 +10745,52 @@ function invRenderStock(catalog,moves){
     if(ord[a.status]!==ord[b.status])return ord[a.status]-ord[b.status];
     return a.name.localeCompare(b.name,'it');
   });
+  const nomeWh=_invWh==='ar'?'Art Resort':'SoulArt Hotel';
   if(!allItems.length){
-    el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun prodotto — apri lo scanner su smartphone per aggiungere prodotti</div>';
+    el.innerHTML=`<div class="panel"><div class="panel-body inv-vuoto">${_invIco('scatola',28)}<div>Nessun prodotto in ${nomeWh}</div><small>Apri lo scanner sullo smartphone per aggiungere i prodotti.</small></div></div>`;
     return;
   }
   const tot=allItems.length;
   const nOut=allItems.filter(i=>i.status==='out').length;
   const nLow=allItems.filter(i=>i.status==='low').length;
   const nOk=allItems.filter(i=>i.status==='ok').length;
-  const nAlert=nOut+nLow;
-  // KPI chips
-  const kpiHtml=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:8px;padding:7px 13px;display:flex;align-items:center;gap:6px;">
-      <span style="font-size:16px;font-weight:700;">${tot}</span>
-      <span style="font-size:var(--fs-xxs);color:var(--text-dim);">prodotti</span>
-    </div>
-    ${nOut?`<div style="background:var(--red-bg);border:1px solid #e8b0ac;border-radius:8px;padding:7px 13px;display:flex;align-items:center;gap:6px;">
-      <span style="font-size:16px;font-weight:700;color:var(--red);display:inline-flex;align-items:center;gap:5px;">${_invIco('allerta',16)}${nOut}</span>
-      <span style="font-size:var(--fs-xxs);color:var(--red);">esauriti</span>
-    </div>`:''}
-    ${nLow?`<div style="background:var(--amber-bg);border:1px solid #d4aa70;border-radius:8px;padding:7px 13px;display:flex;align-items:center;gap:6px;">
-      <span style="font-size:16px;font-weight:700;color:var(--amber);display:inline-flex;align-items:center;gap:5px;">${_invIco('attesa',16)}${nLow}</span>
-      <span style="font-size:var(--fs-xxs);color:var(--amber);">in allerta</span>
-    </div>`:''}
-    ${nAlert===0?`<div style="background:var(--green-bg);border:1px solid #90cca8;border-radius:8px;padding:7px 13px;display:flex;align-items:center;gap:6px;">
-      <span style="font-size:16px;font-weight:700;color:var(--green);display:inline-flex;align-items:center;gap:5px;">${_invIco('ok',16)}${nOk}</span>
-      <span style="font-size:var(--fs-xxs);color:var(--green);">tutto ok</span>
-    </div>`:''}
+  // Schede KPI: toccandole si filtra l'elenco (la stessa cosa dei pulsanti nel pannello).
+  const kpi=(cls,f,lbl,val,sub,ico)=>`<div class="kpi-card ${cls} kpi-clickable inv-kpi-card${_invFilter===f?' inv-kpi-on':''}" onclick="invSetFilter('${f}')" role="button" tabindex="0">
+      <div class="kpi-card-icon">${ico}</div><div class="kpi-label">${lbl}</div><div class="kpi-value">${val}</div><div class="kpi-sub">${sub}</div></div>`;
+  const kpiHtml=`<div class="kpi-grid inv-kpi">
+    ${kpi('blue','all','Prodotti',tot,'in catalogo · '+nomeWh,_invIco('scatola',15))}
+    ${kpi('red','out','Esauriti',nOut,nOut?'da ordinare subito':'nessuno',_invIco('allerta',15))}
+    ${kpi('amber','low','Sotto soglia',nLow,nLow?'da tenere d\'occhio':'nessuno',_invIco('attesa',15))}
+    ${kpi('green','ok','In regola',nOk,'sopra la soglia',_invIco('ok',15))}
   </div>`;
-  // Filter buttons
-  const fBtn=(f,label,count)=>`<button onclick="invSetFilter('${f}')" style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;font-weight:600;transition:all .12s;${_invFilter===f?'background:var(--accent);color:#fff;border-color:var(--accent);':'background:var(--surface);color:var(--text-muted);'}">${label} (${count})</button>`;
-  const filterHtml=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-    ${fBtn('all','Tutti',tot)}
-    ${nAlert?fBtn('alert',_invIco('allerta',12)+' Allerta',nAlert):''}
-    ${fBtn('ok',_invIco('ok',12)+' OK',nOk)}
-  </div>`;
-  // Apply filter
-  const items=_invFilter==='alert'?allItems.filter(i=>i.status!=='ok'):_invFilter==='ok'?allItems.filter(i=>i.status==='ok'):allItems;
-  // Column headers
-  const hdrs=`<div class="inv-stock-row" style="padding:4px 12px 6px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;">
-    <div>Prodotto</div><div style="text-align:center;">Ultimo mov.</div><div style="text-align:center;">Soglia</div><div style="text-align:right;">Stock</div><div></div>
-  </div>`;
-  // Rows
-  const rows=items.map(it=>{
-    const borderColor=it.status==='out'?'var(--red)':it.status==='low'?'var(--amber)':'transparent';
-    const qtyColor=it.status==='out'?'var(--red)':it.status==='low'?'var(--amber)':'var(--green)';
-    const lastStr=invFmtDate(it.last?.ts);
-    const sogliaStr=it.soglia!=null?`<span style="cursor:pointer;color:var(--text-muted);" onclick="invEditSoglia('${it.bc}')" title="Modifica soglia">${it.soglia}</span>`:`<span style="cursor:pointer;color:var(--text-dim);font-style:italic;" onclick="invEditSoglia('${it.bc}')" title="Imposta soglia">—</span>`;
-    const unit=it.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);margin-left:2px;">${_esc(it.unit)}</span>`:'';
-    return`<div class="inv-stock-row" style="align-items:center;padding:9px 12px;background:var(--surface);border:1px solid var(--border-light);border-left:3px solid ${borderColor};border-radius:8px;margin-bottom:5px;">
-      <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</div>
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);text-align:center;">${lastStr}</div>
-      <div style="font-size:var(--fs-xs);text-align:center;">${sogliaStr}</div>
-      <div style="font-size:var(--fs-md);font-weight:700;color:${qtyColor};text-align:right;cursor:pointer;" onclick="invEditQty('${it.bc}',${it.qty})" title="Modifica quantità">${it.qty}${unit} <span style="opacity:.4;">${_invIco('matita',11)}</span></div>
-      <div style="display:flex;gap:3px;justify-content:center;">
-        <button onclick="invQuickRestock('${it.bc}')" style="background:var(--green-bg);border:1px solid #90cca8;border-radius:5px;cursor:pointer;font-size:12px;padding:2px 4px;color:var(--green);" title="Rifornimento rapido">${_invIco('su',13)}</button>
-        <button onclick="invDeleteProduct('${it.bc}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px;line-height:1;" title="Elimina prodotto">${_invIco('cestino')}</button>
+  const f=_invFilter==='alert'?'out':_invFilter;   // il vecchio filtro «Allerta» vale «Esauriti + sotto soglia»
+  const items=_invFilter==='alert'?allItems.filter(i=>i.status!=='ok'):f==='out'?allItems.filter(i=>i.status==='out'):f==='low'?allItems.filter(i=>i.status==='low'):f==='ok'?allItems.filter(i=>i.status==='ok'):allItems;
+  const fBtn=(k,lbl,n)=>`<button class="rev-filter-btn${(_invFilter===k)?' active':''}" onclick="invSetFilter('${k}')">${lbl} <span class="inv-conta">${n}</span></button>`;
+  const stato={out:['badge-open','Esaurito'],low:['badge-progress','Sotto soglia'],ok:['badge-closed','In regola']};
+  const righe=items.map(it=>{
+    const unit=it.unit?`<span class="inv-unita">${_esc(it.unit)}</span>`:'';
+    // Barra: scorta rispetto al doppio della soglia (piena = almeno due volte la soglia).
+    const pieno=it.soglia?Math.max(0,Math.min(100,Math.round(it.qty/(it.soglia*2)*100))):(it.qty>0?100:0);
+    const colBar=it.status==='out'?'var(--red)':it.status==='low'?'var(--amber)':'var(--green)';
+    const soglia=it.soglia!=null?`<button class="inv-soglia" onclick="invEditSoglia('${it.bc}')" title="Modifica la soglia">${it.soglia}${unit}</button>`:`<button class="inv-soglia inv-soglia-no" onclick="invEditSoglia('${it.bc}')" title="Imposta una soglia">imposta</button>`;
+    return`<div class="inv-riga inv-st-${it.status}">
+      <div class="inv-nome"><b title="${_esc(it.name)}">${_esc(it.name)}</b><small>ultimo movimento ${invFmtDate(it.last?.ts)}</small></div>
+      <div class="inv-stato"><span class="c-badge ${stato[it.status][0]}">${stato[it.status][1]}</span></div>
+      <div class="inv-scorta"><div class="inv-qta" style="color:${colBar};">${it.qty}${unit}</div><div class="score-track"><div class="score-fill" style="width:${pieno}%;background:${colBar};"></div></div></div>
+      <div class="inv-soglia-c"><span class="inv-mini">soglia</span>${soglia}</div>
+      <div class="inv-azioni">
+        <button class="rc-act-btn" data-tip="Rifornisci (scanner)" aria-label="Rifornisci" onclick="invQuickRestock('${it.bc}')">${_invIco('su',13)}</button>
+        <button class="rc-act-btn" data-tip="Correggi la quantità" aria-label="Correggi" onclick="invEditQty('${it.bc}',${it.qty})">${_invIco('matita',13)}</button>
+        <button class="rc-act-btn" data-tip="Elimina dal catalogo" aria-label="Elimina" onclick="invDeleteProduct('${it.bc}')">${_invIco('cestino',13)}</button>
       </div>
     </div>`;
-  }).join('');
-  const hint='<div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;">Clicca sulla soglia per impostarla — quando lo stock scende sotto viene evidenziato in arancione</div>';
-  el.innerHTML=`<div style="max-width:560px;">${kpiHtml+filterHtml+hdrs+rows+(allItems.every(i=>i.soglia==null)?hint:'')}</div>`;
+  }).join('')||'<div class="inv-vuoto"><div>Nessun prodotto in questo gruppo.</div></div>';
+  const testa=`<div class="inv-riga inv-testa"><div>Prodotto</div><div>Stato</div><div>Scorta</div><div>Soglia</div><div></div></div>`;
+  const nota=allItems.every(i=>i.soglia==null)?'<div class="inv-nota">Tocca «imposta» per dare una soglia a un prodotto: quando la scorta ci scende sotto, diventa arancione.</div>':'';
+  el.innerHTML=kpiHtml+`<div class="panel">
+    <div class="panel-header"><span class="ov-icon-badge">${_invIco('scatola',12).replace('stroke="currentColor"','stroke="#fff"')}</span><span class="panel-title">Giacenza · ${nomeWh}</span>
+      <div class="inv-filtri">${fBtn('all','Tutti',tot)}${fBtn('out','Esauriti',nOut)}${fBtn('low','Sotto soglia',nLow)}${fBtn('ok','In regola',nOk)}</div></div>
+    <div class="inv-elenco">${testa}${righe}</div>${nota}</div>`;
 }
 function invRenderMoves(catalog,moves){
   const el=document.getElementById('inv-moves-view');
