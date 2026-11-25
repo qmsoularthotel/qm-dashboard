@@ -11029,187 +11029,85 @@ function _invRettifiche(bm){
   });
   return out;
 }
+// ── Analisi a CICLI D'ORDINE (25/11/2026, QM: «per analisi bisogna rivedere i criteri»). Prima
+// ragionava a giorni (consumo medio con decimali, «autonomia» in giorni, «da riordinare» a 7/14
+// giorni, filtro 7/30/90): non c'entrava col modo di lavorare. Ora: un ordine ogni 15 giorni copre
+// due distribuzioni settimanali, quindi si conta quanto è uscito in ogni COPPIA di settimane
+// complete (scarichi + quello che i conteggi hanno trovato in meno), sempre in interi, come nella
+// Stock (_invSettimane, _invTipicoOrdine). In più, per gli ultimi 3 mesi: quanto è stato ordinato
+// (ordini ricevuti) contro quanto è stato usato, per vedere dove si ordina più del necessario.
+// Il «cosa ordinare» resta solo nella Stock.
+const INV_AN_SETT=12;   // finestra: 12 settimane complete = 6 cicli d'ordine
+function _invAnalisi(bm,ordinati,ora){
+  ora=ora||Date.now();
+  const sett=_invSettimane(bm,ora,INV_AN_SETT);
+  const cicli=[];for(let k=sett.length;k>=2;k-=2)cicli.unshift(sett[k-1]+sett[k-2]);
+  const tip=_invTipicoOrdine(sett);
+  // Andamento: l'ultimo ciclo contro i precedenti (mediana), solo con almeno 2 cicli prima e uno
+  // scarto vero (almeno un terzo e almeno 2 pezzi): piccole oscillazioni non sono un andamento.
+  let andamento=null;
+  if(cicli.length>=3){
+    const prec=cicli.slice(0,-1).sort((a,b)=>a-b),m=prec.length;
+    const ref=m%2?prec[(m-1)/2]:(prec[m/2-1]+prec[m/2])/2,ult=cicli[cicli.length-1];
+    andamento=ult>=ref*4/3&&ult-ref>=2?'su':ult<=ref*2/3&&ref-ult>=2?'giu':'stabile';
+  }
+  const G=86400000,da=_invLunedi(ora).getTime()-sett.length*7*G-12*3600000,a=_invLunedi(ora).getTime()-12*3600000;
+  const usato=sett.reduce((x,q)=>x+q,0);
+  const ordinato=(ordinati||[]).filter(o=>o.ts>=da&&o.ts<a).reduce((x,o)=>x+(+o.qty||0),0);
+  const mancati=_invRettifiche(bm).filter(r=>r.ts>=da&&r.ts<a&&r.delta<0).reduce((x,r)=>x-r.delta,0);
+  return{cicli,tip,andamento,usato:Math.round(usato),ordinato:Math.round(ordinato),mancati:Math.round(mancati),settimane:sett.length};
+}
+// Ordini RICEVUTI per prodotto in un magazzino: {barcode:[{ts,qty}]} (quantità arrivata, se diversa).
+function _invOrdinatiPerProdotto(wh,ordini){
+  const out={};let ord=ordini;
+  if(!ord){try{ord=JSON.parse(localStorage.getItem('qm_inv_orders')||'[]');}catch(e){ord=[];}}
+  (Array.isArray(ord)?ord:[]).forEach(o=>{
+    if(!o||o.wh!==wh||o.status!=='ricevuto')return;
+    const ts=Number(o.tsRicevuto)||Number(o.ts)||0;
+    (o.items||[]).forEach(it=>{if(!it||!it.barcode)return;(out[it.barcode]=out[it.barcode]||[]).push({ts,qty:Number(it.qtyRicevuta!=null?it.qtyRicevuta:it.qty)||0});});
+  });
+  return out;
+}
 function invRenderAnalysis(catalog,moves){
   const el=document.getElementById('inv-analysis-view');
   if(!el)return;
-  const now=Date.now();
-  const cutoff=_invPeriod>0?now-_invPeriod*86400000:0;
-  const stock=invCalcStock(catalog,moves);
-  const items=Object.entries(catalog).map(([bc,p])=>{
-    const bm=moves.filter(m=>m.barcode===bc);
-    const periodOuts=bm.filter(m=>m.type==='out'&&m.ts>=cutoff);
-    const periodIns=bm.filter(m=>m.type==='in'&&m.ts>=cutoff);
-    const rett=_invRettifiche(bm);
-    const ammanco=r=>r.delta<0?-r.delta:0,eccesso=r=>r.delta>0?r.delta:0;
-    const ammPeriodo=rett.filter(r=>r.ts>=cutoff).reduce((s,r)=>s+ammanco(r),0);
-    const consumo=periodOuts.reduce((s,m)=>s+m.qty,0)+ammPeriodo;
-    const rifornimento=periodIns.reduce((s,m)=>s+m.qty,0)+rett.filter(r=>r.ts>=cutoff).reduce((s,r)=>s+eccesso(r),0);
-    const days=_invPeriod>0?_invPeriod:(bm.length?Math.max(1,Math.ceil((now-Math.min(...bm.map(m=>m.ts)))/86400000)):1);
-    // Consumo settimanale: basato su scarichi (out). Il minimo 14gg per smorzare picchi
-    // da pochi dati vale SOLO per "Tutto" (days ricavato dallo storico reale, che per un
-    // prodotto appena inserito può essere di 1-2 giorni). Con un periodo fisso scelto
-    // dall'utente (7/30/90) days è già quel numero: applicare comunque il minimo 14
-    // dimezzava il consumo mostrato col filtro "7 giorni" (divideva per 14 invece che
-    // per 7 un consumo reale di soli 7 giorni).
-    const effectiveDays=_invPeriod>0?days:Math.max(14,days);
-    const consumoSett=consumo>0?Math.round((consumo/effectiveDays)*7*10)/10:0;
-    const consumoGg=consumoSett/7;
-    const autonomia=consumoGg>0?Math.round((stock[bc]??0)/consumoGg):null;
-    // Media settimanale/mensile "quanto dura in media" — SEMPRE su tutto lo storico del
-    // prodotto, indipendente dal filtro periodo sopra: una media non deve cambiare a
-    // seconda di cosa hai cliccato, altrimenti non è più una media ma un dato del periodo.
-    // Stesso smorzamento minimo 14gg di "Tutto" (un prodotto con 2 soli giorni di storico
-    // darebbe una media falsata).
-    const ammTotale=rett.reduce((s,r)=>s+ammanco(r),0);
-    const allOuts=bm.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0)+ammTotale;
-    const storicoDays=bm.length?Math.max(1,Math.ceil((now-Math.min(...bm.map(m=>m.ts)))/86400000)):1;
-    const mediaDays=Math.max(14,storicoDays);
-    const mediaSett=allOuts>0?Math.round((allOuts/mediaDays)*7*10)/10:0;
-    const mediaMese=allOuts>0?Math.round((allOuts/mediaDays)*30*10)/10:0;
-    // Consumo REALE (non media) negli ultimi 7gg e nel mese in corso a oggi — a fianco
-    // delle medie storiche, per vedere se il ritmo recente si scosta da quello abituale.
-    // Fissi, indipendenti dal filtro periodo sopra: "ultimi 7gg" è sempre gli ultimi 7gg
-    // da adesso, non il consumo del periodo selezionato con quei bottoni.
-    const cons7gg=bm.filter(m=>m.type==='out'&&m.ts>=now-7*86400000).reduce((s,m)=>s+m.qty,0)
-      +rett.filter(r=>r.ts>=now-7*86400000).reduce((s,r)=>s+ammanco(r),0);
-    const meseStart=new Date();meseStart.setDate(1);meseStart.setHours(0,0,0,0);
-    const consMeseCorr=bm.filter(m=>m.type==='out'&&m.ts>=meseStart.getTime()).reduce((s,m)=>s+m.qty,0)
-      +rett.filter(r=>r.ts>=meseStart.getTime()).reduce((s,r)=>s+ammanco(r),0);
-    return{bc,name:p.name,unit:p.unit||'',qty:stock[bc]??0,consumo,rifornimento,ammPeriodo,ammTotale,consumoSett,mediaSett,mediaMese,cons7gg,consMeseCorr,autonomia,hasMoves:bm.length>0};
-  }).filter(it=>it.hasMoves);
-
+  const ora=Date.now(),G=86400000,nomeWh=_invWh==='ar'?'Art Resort':'SoulArt Hotel';
+  const perBc={};moves.forEach(m=>{(perBc[m.barcode]=perBc[m.barcode]||[]).push(m);});
+  const ordinati=_invOrdinatiPerProdotto(_invWh);
+  const items=Object.entries(catalog).filter(([bc])=>perBc[bc]&&perBc[bc].length)
+    .map(([bc,p])=>({bc,name:p.name,unit:p.unit||'',...(_invAnalisi(perBc[bc],ordinati[bc],ora))}));
+  const testa=`<div class="inv5-hero"><div><div class="inv5-k">${nomeWh} · analisi consumi</div><div class="inv5-t">Quanto se ne usa ogni 15 giorni</div></div></div>`;
   if(!items.length){
-    el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun dato — registra i movimenti con lo scanner</div>';
+    el.innerHTML=`<div class="inv5-cornice">${testa}<div class="inv5-grande inv5-centro"><span class="inv5-cerchio">${_invIco('note',24).replace('stroke="currentColor"','stroke="#fff"')}</span><div class="inv5-gt">Ancora nessun dato</div><div class="inv5-gs">Servono almeno due settimane di scarichi fatti con lo scanner.</div></div></div>`;
     return;
   }
-
-  const totConsumo=items.reduce((s,i)=>s+i.consumo,0);
-  const totRiforn=items.reduce((s,i)=>s+i.rifornimento,0);
-  const totAmm=items.reduce((s,i)=>s+i.ammPeriodo,0);
-  const critici=items.filter(i=>i.autonomia!==null&&i.autonomia>=0&&i.autonomia<=7);
-  const preavviso=items.filter(i=>i.autonomia!==null&&i.autonomia>7&&i.autonomia<=14);
-
-  // Periodo selector
-  const pBtn=(d,lbl)=>`<button onclick="invSetPeriod(${d})" style="padding:5px 11px;border-radius:6px;border:1px solid var(--border);font-size:var(--fs-xxs);cursor:pointer;font-weight:600;transition:all .12s;${_invPeriod===d?'background:var(--accent);color:#fff;border-color:var(--accent);':'background:var(--surface);color:var(--text-muted);'}">${lbl}</button>`;
-  const periodHtml=`<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">${pBtn(7,'7 giorni')}${pBtn(30,'30 giorni')}${pBtn(90,'90 giorni')}${pBtn(0,'Tutto')}</div>`;
-
-  // KPI chips
-  const topBySett=[...items].sort((a,b)=>b.consumoSett-a.consumoSett)[0];
-  const kpi=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:16px;">
-    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:9px;padding:10px 13px;">
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">Totale scaricato</div>
-      <div style="font-size:20px;font-weight:700;">${Math.round(totConsumo*10)/10}</div>
-      ${totAmm>0?`<div style="font-size:var(--fs-xxs);color:var(--amber);font-weight:600;" title="Differenze trovate con le rettifiche di stock: prodotto uscito senza essere scansionato">di cui ${Math.round(totAmm*10)/10} non scansionati</div>`:''}
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border-light);border-radius:9px;padding:10px 13px;">
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">Totale caricato</div>
-      <div style="font-size:20px;font-weight:700;color:var(--green);">${Math.round(totRiforn*10)/10}</div>
-    </div>
-    ${topBySett&&topBySett.consumoSett>0?`<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:9px;padding:10px 13px;">
-      <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:3px;">Più consumato/sett</div>
-      <div style="font-size:var(--fs-xs);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(topBySett.name)}</div>
-      <div style="font-size:var(--fs-xxs);color:var(--text-muted);">${topBySett.consumoSett} ${topBySett.unit}/sett</div>
-    </div>`:''}
-    ${critici.length>0?`<div style="background:var(--red-bg);border:1px solid #e8b0ac;border-radius:9px;padding:10px 13px;">
-      <div style="font-size:var(--fs-xxs);color:var(--red);margin-bottom:3px;">Autonomia critica</div>
-      <div style="font-size:20px;font-weight:700;color:var(--red);">${critici.length}</div>
-      <div style="font-size:var(--fs-xxs);color:var(--red);">prodotti ≤7gg</div>
-    </div>`:''}
-  </div>`;
-
-  // Sezione riordino urgente
-  const urgenti=[...critici,...preavviso].sort((a,b)=>(a.autonomia??999)-(b.autonomia??999));
-  const urgBlock=urgenti.length?`<div style="margin-bottom:16px;">
-    <div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:7px;display:flex;align-items:center;gap:6px;">${_invIco('allerta',12)}Da riordinare</div>
-    ${urgenti.map(it=>{
-      const isRed=it.autonomia!==null&&it.autonomia<=7;
-      const col=isRed?'var(--red)':'var(--amber)';
-      const bg=isRed?'var(--red-bg)':'var(--amber-bg)';
-      const brd=isRed?'#e8b0ac':'#d4aa70';
-      const autLbl=it.autonomia<=0?'esaurito':it.autonomia===1?'1 giorno':`${it.autonomia} giorni`;
-      return`<div style="display:flex;align-items:center;justify-content:space-between;background:${bg};border:1px solid ${brd};border-radius:8px;padding:8px 12px;margin-bottom:5px;">
-        <div style="font-size:var(--fs-xs);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${_esc(it.name)}</div>
-        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:10px;">
-          <div style="font-size:var(--fs-xxs);color:var(--text-muted);">stock: <b>${it.qty}</b>${it.unit?` ${_esc(it.unit)}`:''}</div>
-          <div style="font-size:var(--fs-xxs);font-weight:700;color:${col};">${autLbl}</div>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`:'';
-
-  // Tabella dettaglio — ordinata per consumo medio settimanale decrescente: i prodotti
-  // che si consumano di più stanno in cima, non sparsi in mezzo all'ordine alfabetico.
-  // "Opzione B" del confronto tra design fatto vedere all'utente: una sola riga di
-  // intestazione (non due), un badge di testo al posto di due numeri colorati per riga
-  // (con sei colonne quasi ogni riga aveva un colore, il colore smetteva di significare
-  // qualcosa), i valori grezzi (media/reale per settimana e mese) spostati in un dettaglio
-  // a tendina per prodotto invece di stare sempre in vista.
-  const sorted=[...items].sort((a,b)=>b.mediaSett-a.mediaSett||a.name.localeCompare(b.name,'it'));
-  // Badge unico che riassume l'andamento: guarda lo scarto più marcato tra i due periodi
-  // (settimana/mese) invece di due giudizi separati che potrebbero anche contraddirsi.
-  const ritmo=it=>{
-    const rS=it.mediaSett>0?it.cons7gg/it.mediaSett:null;
-    const rM=it.mediaMese>0?it.consMeseCorr/it.mediaMese:null;
-    const cands=[rS,rM].filter(r=>r!==null);
-    if(!cands.length)return{label:'nessun dato',bg:'var(--surface2)',fg:'var(--text-dim)'};
-    const worst=Math.max(...cands),best=Math.min(...cands);
-    if(worst>=1.3)return{label:'sopra media',bg:'var(--amber-bg)',fg:'var(--amber)'};
-    if(best<=0.6)return{label:'sotto media',bg:'var(--green-bg)',fg:'var(--green)'};
-    return{label:'in linea',bg:'var(--surface2)',fg:'var(--text-dim)'};
-  };
-  // Media/sett e Media/mese SEMPRE visibili in colonna (l'utente le deve vedere senza
-  // dover aprire l'accordion) — solo il consumo REALE di dettaglio (ultimi 7gg/da inizio
-  // mese) resta dietro al tocco, per non tornare a sei colonne colorate.
-  const rows=sorted.map((it,i)=>{
-    const borderL=it.autonomia!==null&&it.autonomia<=7?'var(--red)':it.autonomia!==null&&it.autonomia<=14?'var(--amber)':'transparent';
-    const r=ritmo(it);
-    const zebra=i%2===1?'background:var(--bg);':'';
-    const detCell=(lbl,media,reale)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0;">
-      <span style="color:var(--text-dim);">${lbl}, reale</span>
-      <span><b style="color:var(--text);">${reale>0?reale:'—'}</b> <span style="color:var(--text-muted);">(media ${media>0?media:'—'})</span></span>
-    </div>`;
-    return`<tr onclick="invAnToggle('${it.bc}')" style="${zebra}border-left:3px solid ${borderL};cursor:pointer;">
-      <td style="padding:8px 10px;font-size:var(--fs-xs);font-weight:600;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${_esc(it.name)}">${_esc(it.name)}</td>
-      <td style="padding:8px 8px;font-size:var(--fs-xs);text-align:right;color:var(--text-muted);white-space:nowrap;">${it.mediaSett>0?it.mediaSett:'—'}</td>
-      <td style="padding:8px 8px;font-size:var(--fs-xs);text-align:right;color:var(--text-muted);white-space:nowrap;">${it.mediaMese>0?it.mediaMese:'—'}</td>
-      <td style="padding:8px 10px;font-size:var(--fs-xs);text-align:right;color:var(--text-muted);white-space:nowrap;">${it.qty}${it.unit?' '+_esc(it.unit):''}</td>
-      <td style="padding:8px 10px;text-align:right;"><span style="background:${r.bg};color:${r.fg};font-size:var(--fs-xxs);font-weight:700;padding:3px 10px;border-radius:10px;white-space:nowrap;">${r.label}</span></td>
-      <td style="padding:8px 10px;text-align:center;color:var(--text-dim);font-size:11px;width:20px;"><span id="inv-an-chev-${it.bc}">▾</span></td>
-    </tr>
-    <tr id="inv-an-body-${it.bc}" style="display:none;${zebra}border-left:3px solid ${borderL};">
-      <td colspan="6" style="padding:0 10px 10px;font-size:var(--fs-xs);">
-        ${detCell('Settimana',it.mediaSett,it.cons7gg)}
-        ${detCell('Mese',it.mediaMese,it.consMeseCorr)}
-        ${it.ammTotale>0?`<div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0;"><span style="color:var(--amber);">Non scansionato (dalle rettifiche)</span><b style="color:var(--amber);">${Math.round(it.ammTotale*10)/10}${it.unit?' '+_esc(it.unit):''}</b></div>`:''}
-      </td>
-    </tr>`;
+  const u=x=>x?' '+_esc(x):'';
+  const num=x=>x==null?'—':x<=0?'0':x<1?'meno di 1':String(Math.round(x));
+  // Intestazioni dei 6 cicli: il lunedì d'inizio di ogni coppia di settimane, dal più vecchio.
+  const lun=_invLunedi(ora).getTime(),N=INV_AN_SETT/2;
+  const inizi=[];for(let c=N;c>=1;c--)inizi.push(new Date(lun-c*14*G));
+  const dd=d=>d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'});
+  // Su schermi stretti si tolgono i cicli più vecchi: sotto 1200px i primi 2, su smartphone 4.
+  const vec=c=>c<N-4?' inv7-vecchio':c<N-2?' inv7-medio':'';
+  const andTxt={su:'<span class="inv7-su">in aumento</span>',giu:'<span class="inv7-giu">in calo</span>',stabile:'<span class="inv7-st">stabile</span>'};
+  const ord=items.slice().sort((a,b)=>(b.tip??-1)-(a.tip??-1)||a.name.localeCompare(b.name,'it'));
+  const righe=ord.map(it=>{
+    const celle=[];for(let c=0;c<N;c++){const k=c-(N-it.cicli.length);celle.push(`<td class="r inv7-c${vec(c)}${c===N-1?' inv7-ult':''}">${k<0?'<span class="inv5-no">·</span>':num(it.cicli[k])}</td>`);}
+    return`<tr><td>${_esc(it.name)}${it.unit?`<span class="inv7-u">${_esc(it.unit)}</span>`:''}</td>${celle.join('')}<td class="r inv7-tip">${it.tip==null?'<span class="inv5-no">non si sa</span>':num(it.tip)}</td><td class="r">${it.andamento?andTxt[it.andamento]:'<span class="inv5-no">—</span>'}</td></tr>`;
   }).join('');
-  const tableHtml=`<div style="overflow-x:auto;background:var(--surface);border:1px solid var(--border-light);border-radius:10px;">
-    <table style="border-collapse:collapse;width:100%;">
-      <thead><tr style="background:var(--bg);">
-        <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:left;">Prodotto</th>
-        <th style="padding:6px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;" title="Media settimanale, tutto lo storico">Media/sett</th>
-        <th style="padding:6px 8px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;" title="Media mensile, tutto lo storico">Media/mese</th>
-        <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;">Stock</th>
-        <th style="padding:6px 10px;font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-align:right;">Ritmo</th>
-        <th></th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>`;
-
-  el.innerHTML=periodHtml+kpi+urgBlock+`<div>
-    <div style="font-size:var(--fs-xxs);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:2px;display:flex;align-items:center;gap:6px;">${_invIco('note',12)}Dettaglio prodotti</div>
-    <div style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:7px;">Media = tutto lo storico. Tocca un prodotto per il consumo reale (ultimi 7gg / da inizio mese), indipendente dal periodo selezionato sopra, che riguarda solo i totali e "Da riordinare".</div>
-  `+tableHtml+`</div>`;
-}
-function invAnToggle(bc){
-  const body=document.getElementById('inv-an-body-'+bc);
-  const chev=document.getElementById('inv-an-chev-'+bc);
-  if(!body)return;
-  const open=body.style.display!=='none';
-  body.style.display=open?'none':'table-row';
-  if(chev)chev.textContent=open?'▾':'▴';
+  const tab1=`<div class="inv5-tutti"><div class="inv5-ll">Usciti dal magazzino, ogni 15 giorni · ultimi 3 mesi</div><div class="inv5-tw"><table class="inv5-tab inv7-tab"><thead><tr><th>Prodotto</th>${inizi.map((d,c)=>`<th class="r${vec(c)}">dal ${dd(d)}</th>`).join('')}<th class="r">Di solito</th><th class="r">Andamento</th></tr></thead><tbody>${righe}</tbody></table></div></div>`;
+  // Ordinato e usato: avanzo = ordinato − usato. Più di un ordine tipico di troppo = si ordina più del necessario.
+  const bil=items.filter(it=>it.ordinato>0||it.usato>0).map(it=>{const diff=it.ordinato-it.usato;
+    const troppo=it.tip!=null&&it.tip>0&&diff>=Math.max(2,it.tip);
+    return{...it,diff,troppo};}).sort((a,b)=>(b.troppo-a.troppo)||(b.diff-a.diff)||a.name.localeCompare(b.name,'it'));
+  const righe2=bil.map(it=>`<tr><td>${_esc(it.name)}${it.mancati>0?`<span class="inv7-man">mancavano ${it.mancati}${u(it.unit)} ai conteggi</span>`:''}</td><td class="r">${it.ordinato}${u(it.unit)}</td><td class="r">${it.usato}${u(it.unit)}</td>
+    <td class="r">${it.diff>0?`<span class="${it.troppo?'inv7-su':'inv7-st'}">cresciuto di ${it.diff}${it.troppo?' · troppo':''}</span>`:it.diff<0?`<span class="inv7-st">sceso di ${-it.diff}</span>`:'<span class="inv7-st">pari</span>'}</td></tr>`).join('');
+  const tab2=bil.length?`<div class="inv5-tutti"><div class="inv5-ll">Ordinato e usato · ultimi 3 mesi</div><div class="inv5-tw"><table class="inv5-tab inv7-tab"><thead><tr><th>Prodotto</th><th class="r">Ordinato</th><th class="r">Usato</th><th class="r">Il magazzino</th></tr></thead><tbody>${righe2}</tbody></table></div></div>`:'';
+  const nSu=items.filter(i=>i.andamento==='su').length,nTroppo=bil.filter(i=>i.troppo).length,nMan=items.filter(i=>i.mancati>0).length;
+  const passo=(n,t,x)=>`<div class="inv5-passo"><span class="inv5-pn">${n}</span><div><div class="inv5-pt">${t}</div><div class="inv5-ps">${x}</div></div></div>`;
+  const passi=`<div class="inv5-passi">${passo(nSu,'In aumento','negli ultimi 15 giorni ne è uscito più del solito')}${passo(nTroppo,'Ordinati più del necessario','in 3 mesi arrivati più di un ordine oltre l\'uso')}${passo(nMan,'Mancanze ai conteggi','usciti senza passare dallo scanner')}</div>`;
+  const fascia=`<div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Ogni colonna sono due settimane complete, cioè due distribuzioni ai carrelli: quanto copre un ordine. Contano gli scarichi e quello che i tuoi conteggi hanno trovato in meno. «Ordinato» sono gli ordini segnati come ricevuti; «troppo» vuol dire che in magazzino si è accumulato più di un ordine intero.</span></div>`;
+  el.innerHTML=`<div class="inv5-cornice">${testa}${passi}${tab1}${tab2}${fascia}</div>`;
 }
 function invPrintStock(){
   const{catalog,moves}=invGetData();

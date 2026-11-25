@@ -1160,7 +1160,7 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
   .inv5-passi{grid-template-columns:1fr;}
   .inv5-tab th,.inv5-tab th.r{white-space:normal;}
   .inv5-tab th,.inv5-tab td{padding:8px 10px;}
-  .inv5-tab th:nth-child(4),.inv5-tab td:nth-child(4){display:none;}
+  .inv5-tab:not(.inv7-tab) th:nth-child(4),.inv5-tab:not(.inv7-tab) td:nth-child(4){display:none;}
   .inv5-t{font-size:19px;}
 }
 /* Inventari › Movimenti a settimane (25/11/2026): una scheda per settimana con Usciti / Entrati /
@@ -1187,3 +1187,16 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
   .inv6-dl{grid-column:1;grid-row:3;}
   .inv6-x{grid-column:3;}
 }
+/* Inventari › Analisi a cicli d'ordine (25/11/2026): colonne = coppie di settimane (15 giorni),
+   numeri interi; andamento a parole colorate, non pastiglie. */
+.inv7-tab td.inv7-c{color:var(--text-muted);font-variant-numeric:tabular-nums;}
+.inv7-tab td.inv7-ult{color:var(--text);font-weight:600;}
+.inv7-tip{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+.inv7-u{display:inline;margin-left:5px;font-size:11px;color:var(--text-dim);font-weight:400;}
+.inv7-su{color:var(--amber);font-weight:700;white-space:nowrap;}
+.inv7-giu{color:var(--blue);font-weight:700;white-space:nowrap;}
+.inv7-st{color:var(--text-dim);white-space:nowrap;}
+.inv7-man{display:block;font-size:11px;color:var(--red);font-weight:600;}
+.inv7-tab td:first-child{min-width:130px;}
+@media (max-width:1200px){ .inv7-vecchio{display:none;} }
+@media (max-width:640px){ .inv7-medio{display:none;} .inv7-tab td:first-child{min-width:0;} }

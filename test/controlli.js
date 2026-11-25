@@ -3342,7 +3342,24 @@ sez('Inventario: rettifiche nell\'analisi');
   ok('rettifica in piu\' = carico non registrato', r[1].delta, 2);
   ok('nessuna rettifica se lo stock torna', _invRettifiche([{ type: 'init', qty: 4, ts: 1 }, { type: 'out', qty: 1, ts: 2 }, { type: 'init', qty: 3, ts: 3 }]).length, 0);
 })();
-ok('l\'analisi conta i non scansionati nel consumo', /\+ammPeriodo/.test(String(invRenderAnalysis)) && /\+ammTotale/.test(String(invRenderAnalysis)), true);
+(function(){
+  // Analisi a cicli d'ordine (25/11/2026): coppie di settimane complete, conteggi in meno inclusi.
+  var G = 86400000, ora = new Date(2026, 10, 25, 12).getTime();   // mercoledì
+  var lun = _invLunedi(ora).getTime();
+  var bm = [{ type: 'init', qty: 100, ts: lun - 8 * 7 * G }];
+  for (var w = 8; w >= 1; w--) bm.push({ type: 'out', qty: w <= 2 ? 10 : 4, ts: lun - w * 7 * G + 2 * G });
+  // conteggio a metà dell'ultima settimana: mancavano 3
+  var att = 100 - 6 * 4 - 2 * 10;   // stock previsto prima del conteggio (6 settimane da 4, due da 10)
+  bm.push({ type: 'init', qty: att - 3, ts: lun - 7 * G + 4 * G });
+  var a = _invAnalisi(bm, [{ ts: lun - 3 * 7 * G, qty: 12 }, { ts: lun - 20 * 7 * G, qty: 99 }], ora);
+  ok('analisi: 4 cicli da 2 settimane', a.cicli.length, 4);
+  ok('analisi: ultimo ciclo = scarichi + mancanti al conteggio', a.cicli[3], 23);
+  ok('analisi: ultimo ciclo molto sopra = in aumento', a.andamento, 'su');
+  ok('analisi: mancavano ai conteggi', a.mancati, 3);
+  ok('analisi: ordinato solo dentro i 3 mesi', a.ordinato, 12);
+  ok('analisi: senza scarti veri è stabile', _invAnalisi([{ type: 'init', qty: 50, ts: lun - 8 * 7 * G }].concat([8,7,6,5,4,3,2,1].map(function(w){ return { type: 'out', qty: 3, ts: lun - w * 7 * G + G }; })), [], ora).andamento, 'stabile');
+  ok('analisi: niente decimali né giorni di autonomia', /autonomia|consumoSett|invSetPeriod/.test(String(invRenderAnalysis)), false);
+})();
 
 // ── San Liborio con la SoulArt nel riquadro Housekeeping dell'Overview (06/10/2026) ──
 sez('Overview Housekeeping: San Liborio con la SoulArt');

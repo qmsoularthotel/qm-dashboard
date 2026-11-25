@@ -74,6 +74,23 @@ previsto). Prima l'elenco seguiva l'ordine di **salvataggio** e i giorni uscivan
 passa da `_invInOrdine`. Stile: `.inv5-cornice`/`.inv5-hero` della Stock + classi `.inv6-*`
 (guida di stile, «Elenco a settimane Movimenti»). Eliminazione invariata (`invDeleteMove`).
 
+### Tab Analisi — a cicli d'ordine (25/11/2026, QM: «per analisi bisogna rivedere i criteri»)
+
+Prima ragionava a **giorni**: consumo medio con decimali, «autonomia» in giorni, «Da riordinare» a
+7/14 giorni, filtro 7/30/90/Tutto. Non c'entrava con come si lavora (ordine ogni 15 giorni, una
+distribuzione a settimana) e contraddiceva la Stock. Ora `_invAnalisi(bm, ordinati, ora)`:
+- **cicli**: quanto è uscito in ogni **coppia di settimane complete** delle ultime 12
+  (`INV_AN_SETT`), scarichi + quello che i conteggi hanno trovato in meno (`_invSettimane`);
+  **Di solito** = `_invTipicoOrdine` (lo stesso numero della Stock). Sempre interi.
+- **andamento**: ultimo ciclo contro la mediana dei precedenti (servono 3 cicli): «in aumento» se
+  ≥ +1/3 e almeno 2 pezzi in più, «in calo» al contrario, altrimenti «stabile».
+- **ordinato / usato** nelle stesse 12 settimane: ordinato = ordini **ricevuti**
+  (`_invOrdinatiPerProdotto`, quantità arrivata); «Il magazzino cresciuto di X · troppo» quando
+  l'avanzo supera un ordine tipico (= si ordina più del necessario).
+- **mancati**: pezzi trovati in meno ai conteggi (`_invRettifiche`), sotto il nome in rosso.
+Il «cosa ordinare» sta **solo** nella Stock. `invSetPeriod`/`_invPeriod` restano ma non servono più.
+Stile: `.inv5-*` + `.inv7-*` (guida, «Tabella a cicli d'ordine Analisi»).
+
 ### `invOrdersUndoReceived(id)`
 
 Annulla una ricezione: rimuove i movimenti creati (usando `o.movIds`) e resetta l'ordine a `status: 'ordinato'`. **Nota**: ordini ricevuti prima dell'introduzione di `movIds` non hanno movimenti tracciati — l'undo resetta solo lo stato.
