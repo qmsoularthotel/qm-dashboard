@@ -62,6 +62,18 @@ del giorno scelto (`_invTsRicezione`; oggi = adesso); senza spunta **nessun movi
 la spunta i carichi hanno la data scelta. L'«Ultimo ordine» dello Stock e il «consumati da allora»
 partono così dalla data vera. Annullando la ricezione si toglie anche `senzaStock`.
 
+### Tab Movimenti — a settimane (25/11/2026, QM: «movimenti»)
+
+`invRenderMoves` mostra una scheda per **settimana** (lunedì–domenica, dalla più recente; le prime
+6, poi «Mostra le settimane precedenti» → `invMovTutte()`), perché la distribuzione ai carrelli è
+una a settimana. In ogni scheda tre gruppi: **Usciti** (scarichi: carrelli HKP, cucina),
+**Entrati** (consegne), **Conteggi** (rettifiche `init`). Ogni conteggio dice di quanto ha
+corretto il previsto: `_invMovDelta(moves)` → per id, contati − previsti in ordine di data
+(«mancavano 2» rosso, «in più 1» blu, «tornava»; il primo conteggio di un prodotto non ha
+previsto). Prima l'elenco seguiva l'ordine di **salvataggio** e i giorni uscivano mescolati: ora
+passa da `_invInOrdine`. Stile: `.inv5-cornice`/`.inv5-hero` della Stock + classi `.inv6-*`
+(guida di stile, «Elenco a settimane Movimenti»). Eliminazione invariata (`invDeleteMove`).
+
 ### `invOrdersUndoReceived(id)`
 
 Annulla una ricezione: rimuove i movimenti creati (usando `o.movIds`) e resetta l'ordine a `status: 'ordinato'`. **Nota**: ordini ricevuti prima dell'introduzione di `movIds` non hanno movimenti tracciati — l'undo resetta solo lo stato.

@@ -10898,40 +10898,57 @@ function invRenderStock(catalog,moves){
   const fascia=`<div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>«Di solito» è quanto è uscito dal magazzino nelle ultime settimane, a coppie di settimane (un ordine copre due distribuzioni): scarichi e quello che i tuoi conteggi hanno trovato in meno.</span></div>`;
   el.innerHTML=`<div class="inv5-cornice">${testa}<div class="inv5-griglia">${grande}${lato}</div>${passi}${tabella}${fascia}</div>`;
 }
+// Movimenti a SETTIMANE (25/11/2026, QM): una distribuzione a settimana, quindi una scheda per
+// settimana (dalla più recente) con Usciti (distribuzioni ai carrelli e alla cucina), Entrati
+// (consegne) e Conteggi (con quanto mancava o avanzava rispetto al previsto). Sempre in ordine di
+// DATA: prima seguiva l'ordine di salvataggio e i giorni uscivano mescolati. Stile della
+// Registration Cards della Galleria (.inv5-cornice, cerchi navy/oro). Classi .inv6-*.
+let _invMovTutte=false;
+// Per ogni conteggio (type 'init'): contato − previsto, in ordine di DATA. Il primo conteggio di
+// un prodotto non ha un previsto e resta fuori. Negativo = mancavano pezzi.
+function _invMovDelta(moves){
+  const delta={},perBc={};moves.forEach(m=>{(perBc[m.barcode]=perBc[m.barcode]||[]).push(m);});
+  Object.keys(perBc).forEach(bc=>{let q=0,visto=false;_invInOrdine(perBc[bc]).forEach(m=>{const x=+m.qty||0;
+    if(m.type==='init'){if(visto)delta[m.id]=Math.round((x-q)*1000)/1000;q=x;}else if(m.type==='in')q+=x;else if(m.type==='out')q-=x;visto=true;});});
+  return delta;
+}
+function invMovTutte(){_invMovTutte=!_invMovTutte;const d=invGetData();invRenderMoves(d.catalog,d.moves);}
 function invRenderMoves(catalog,moves){
   const el=document.getElementById('inv-moves-view');
   if(!el)return;
-  const list=[...(moves||[])].reverse();
-  if(!list.length){
-    el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun movimento registrato</div>';
+  const nomeWh=_invWh==='ar'?'Art Resort':'SoulArt Hotel';
+  const lista=_invInOrdine(moves||[]).reverse();
+  const testa=`<div class="inv5-hero"><div><div class="inv5-k">${nomeWh} · movimenti</div><div class="inv5-t">Entrate e uscite dal magazzino</div></div></div>`;
+  if(!lista.length){
+    el.innerHTML=`<div class="inv5-cornice">${testa}<div class="inv5-grande inv5-centro"><span class="inv5-cerchio">${_invIco('note',24).replace('stroke="currentColor"','stroke="#fff"')}</span><div class="inv5-gt">Nessun movimento registrato</div><div class="inv5-gs">Carichi, scarichi e conteggi fatti con lo scanner compaiono qui, settimana per settimana.</div></div></div>`;
     return;
   }
-  const icons={init:_invIco('note',15),in:_invIco('su',15),out:_invIco('giu',15)};
-  const signs={init:'',in:'+',out:'−'};
-  const colors={init:'var(--accent)',in:'var(--green)',out:'var(--red)'};
-  let html='',lastDay='';
-  for(const m of list){
-    const p=catalog[m.barcode]||{name:m.barcode,unit:''};
-    const d=new Date(m.ts);
-    const dayKey=d.toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long'});
-    if(dayKey!==lastDay){
-      html+=`<div style="font-size:var(--fs-xxs);color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:10px 2px 4px;">${dayKey}</div>`;
-      lastDay=dayKey;
-    }
-    const ts=d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-    const unit=p.unit?' '+p.unit:'';
-    const note=m.note?` · <em>${_esc(m.note)}</em>`:'';
-    html+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--border-light);border-radius:8px;margin-bottom:4px;">
-      <div style="font-size:15px;flex-shrink:0;">${icons[m.type]}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:var(--fs-xs);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_esc(p.name)}</div>
-        <div style="font-size:var(--fs-xxs);color:var(--text-dim);">${ts}${note}</div>
-      </div>
-      <div style="font-size:var(--fs-sm);font-weight:700;color:${colors[m.type]};flex-shrink:0;">${signs[m.type]}${m.qty}${unit}</div>
-      <button onclick="invDeleteMove('${m.id}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:2px 0 2px 6px;flex-shrink:0;" title="Elimina movimento">${_invIco('cestino')}</button>
-    </div>`;
-  }
-  el.innerHTML=`<div style="max-width:560px;">${html}</div>`;
+  // Di quanto ogni conteggio ha corretto il previsto (per prodotto, in ordine di data).
+  const delta=_invMovDelta(moves||[]);
+  const sett={};lista.forEach(m=>{const k=_invLunedi(m.ts).getTime();(sett[k]=sett[k]||[]).push(m);});
+  const chiavi=Object.keys(sett).map(Number).sort((a,b)=>b-a);
+  const mostra=_invMovTutte?chiavi:chiavi.slice(0,6);
+  const g=d=>new Date(d).toLocaleDateString('it-IT',{day:'numeric',month:'long'});
+  // «dal 2 all'8 novembre», «dal 30 novembre al 6 dicembre»
+  const periodo=(a,z)=>{const A=new Date(a),Z=new Date(z),gz=Z.getDate();const al=(gz===8||gz===11)?"all'":'al ';
+    return 'dal '+(A.getMonth()===Z.getMonth()?A.getDate():g(a))+' '+al+g(z);};
+  const gg=t=>new Date(t).toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit'});
+  const nome=bc=>_esc((catalog[bc]||{}).name||bc),un=bc=>{const x=(catalog[bc]||{}).unit;return x?' '+_esc(x):'';};
+  const riga=(m,valore,extra)=>`<div class="inv6-r"><span class="inv6-n">${nome(m.barcode)}</span><span class="inv6-d">${gg(m.ts)}${m.note?' · '+_esc(m.note):''}</span><b class="inv6-q">${valore}</b>${extra||''}<button class="rc-act-btn inv6-x" data-tip="Elimina il movimento" aria-label="Elimina" onclick="invDeleteMove('${m.id}')">${_invIco('cestino',12)}</button></div>`;
+  const gruppo=(ico,tit,arr,fn)=>arr.length?`<div class="inv6-g"><div class="inv6-gt"><span class="inv5-tn">${ico}</span>${tit} <span class="inv6-c">${arr.length}</span></div>${arr.map(fn).join('')}</div>`:'';
+  const schede=mostra.map(k=>{
+    const mm=sett[k],out=mm.filter(m=>m.type==='out'),inn=mm.filter(m=>m.type==='in'),cnt=mm.filter(m=>m.type==='init');
+    const fine=k+6*86400000,oggiK=_invLunedi(Date.now()).getTime();
+    const tit=k===oggiK?'Questa settimana':k===oggiK-7*86400000?'La settimana scorsa':'Settimana '+periodo(k,fine);
+    const pezzi=out.reduce((x,m)=>x+(+m.qty||0),0);
+    const sint=[out.length?`${out.length} uscit${out.length===1?'a':'e'}`:'',inn.length?`${inn.length} entrat${inn.length===1?'a':'e'}`:'',cnt.length?`${cnt.length} conteggi${cnt.length===1?'o':''}`:''].filter(Boolean).join(' · ');
+    return`<div class="inv6-sett"><div class="inv6-st"><div><b>${tit}</b><span>${k===oggiK||k===oggiK-7*86400000?periodo(k,fine)+' · ':''}${sint}</span></div></div>
+      ${gruppo('↓','Usciti',out,m=>riga(m,'−'+(+m.qty)+un(m.barcode)))}
+      ${gruppo('↑','Entrati',inn,m=>riga(m,'+'+(+m.qty)+un(m.barcode)))}
+      ${gruppo('=','Conteggi',cnt,m=>{const d=delta[m.id];const ex=d==null?'<span class="inv6-dl">primo conteggio</span>':d===0?'<span class="inv6-dl">tornava</span>':`<span class="inv6-dl ${d<0?'meno':'piu'}">${d<0?'mancavano '+(-d):d+' in più'}</span>`;return riga(m,'contati '+(+m.qty)+un(m.barcode),ex);})}
+    </div>`;}).join('');
+  const altre=chiavi.length>6?`<button class="inv6-altre" onclick="invMovTutte()">${_invMovTutte?'Mostra solo le ultime 6 settimane':'Mostra le settimane precedenti ('+(chiavi.length-6)+')'}</button>`:'';
+  el.innerHTML=`<div class="inv5-cornice">${testa}${schede}${altre}</div>`;
 }
 async function invDeleteMove(id){
   if(!await cqConferma('Eliminare questo movimento?','La giacenza del prodotto verrà ricalcolata.',{ok:'Elimina'}))return;

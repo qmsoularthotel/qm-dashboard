@@ -4613,6 +4613,23 @@ sez('Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordin
   ok('ricezione: mai nel futuro', _invTsRicezione('2027-01-01', ora), ora);
   ok('ricezione: data e stock dalla finestra', /o\.tsRicevuto=tsRic;/.test(String(invOrdersConfirmDDT)) && /qty>0&&allaScorta\)/.test(String(invOrdersConfirmDDT)) && /type:'in',qty,ts:tsRic/.test(String(invOrdersConfirmDDT)), true);
   ok('ricezione: annullandola si toglie anche «senza stock»', /delete o\.tsRicevuto;delete o\.senzaStock;/.test(String(invOrdersUndoReceived)), true);
+  {
+    // Movimenti: i conteggi dicono quanto mancava, calcolato in ordine di DATA (non di salvataggio).
+    const D = 86400000, t0 = Date.UTC(2026, 10, 2, 12);
+    const mv = [
+      { id: 'c2', barcode: 'X', type: 'init', qty: 5, ts: t0 + 9 * D },   // salvato prima, ma è il più recente
+      { id: 'c1', barcode: 'X', type: 'init', qty: 10, ts: t0 },
+      { id: 'u1', barcode: 'X', type: 'out', qty: 3, ts: t0 + 2 * D },
+      { id: 'e1', barcode: 'X', type: 'in', qty: 1, ts: t0 + 4 * D },
+      { id: 'c3', barcode: 'Y', type: 'init', qty: 4, ts: t0 },
+      { id: 'c4', barcode: 'Y', type: 'init', qty: 4, ts: t0 + D },
+    ];
+    const d = _invMovDelta(mv);
+    ok('movimenti: primo conteggio senza previsto', 'c1' in d, false);
+    ok('movimenti: conteggio = contati − previsti (10−3+1=8, contati 5)', d.c2, -3);
+    ok('movimenti: conteggio che torna = 0', d.c4, 0);
+    ok('movimenti: elenco in ordine di data', /_invInOrdine\(moves\|\|\[\]\)\.reverse\(\)/.test(String(invRenderMoves)), true);
+  }
 })();
 
 // Aggiornamenti di giacenza frequenti (25/11/2026, QM): stock e consumi in ordine di data.
