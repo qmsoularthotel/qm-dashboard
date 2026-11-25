@@ -4,6 +4,28 @@
 
 ## Inventario Detersivi — Ordini
 
+### Tab Stock — stile aggiornato e «ordinare senza sprechi» (25/11/2026, QM)
+
+Scelta del QM fra tre proposte: **righe, senza KPI e senza barre**, un `.panel` a tutta larghezza
+(`invRenderStock`, classi `.inv-riga`… in `style.css`, colonne mai in linea). Filtri Tutti / Esauriti
+/ Sotto soglia / In regola nell'intestazione (`_invFilter` 'all'|'out'|'low'|'ok'; il vecchio 'alert'
+vale ancora). Per ogni prodotto:
+- **Stato** in pillola (la soglia decide «Sotto soglia» ma non si mostra più: si cambia dal Catalogo).
+- **In stock** in grande + **«basta per N giorni»** (rosso ≤7, arancio ≤14, come «Autonomia critica»)
+  + **«+X in arrivo dal gg/mm»** se ci sono ordini aperti (`_invInArrivo`: status 'ordinato').
+- **Ultimo ordine** = l'ultimo **ricevuto** (in arrivo e annullati no): quantità arrivata
+  (`qtyRicevuta` se c'è), data d'arrivo (`tsRicevuto`, se no la data dell'ordine) e **«consumati X in
+  N giorni»** da allora (`_invUltimiOrdini`, `_invConsumoDa`).
+- **Da ordinare** per coprire 15/30/45 giorni (`_invCopertura`, ricordata sul computer in
+  `qm_inv_copertura`): `ceil(consumo al giorno × giorni − max(0,stock) − in arrivo)`; «non serve» se
+  ≤0, «nessun consumo» senza scarichi (`_invDaOrdinare`). Il consumo al giorno (`_invConsumoMedio`) è
+  la **stessa formula della Media/sett di Analisi** (tutto lo storico, scarichi + ammanchi delle
+  rettifiche, almeno 14 giorni). Sotto, il consumo a settimana.
+- Dopo la lettura degli ordini dal cloud lo Stock si ridisegna (gli ordini servono alle colonne).
+Limite: conta solo ciò che è scansionato; uno stock negativo (carico non scansionato) vale 0.
+Controlli: «Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordinare» in
+`test/controlli.js`.
+
 ### Tab Analisi — consumo settimanale (`invRenderAnalysis`)
 
 Il filtro periodo (7/30/90 giorni, o "Tutto") controlla sia la finestra dei movimenti considerati sia il divisore usato per proiettare il consumo a settimana. Il divisore (`effectiveDays`) **non deve avere un minimo di 14 giorni quando il periodo è fisso e scelto dall'utente** — solo quando `_invPeriod===0` ("Tutto"), dove `days` è ricavato dallo storico reale del prodotto (può essere di 1-2 giorni per un prodotto appena inserito, da smorzare). Applicare comunque il minimo 14 col filtro "7 giorni" **dimezzava** il consumo mostrato (divideva un consumo reale di 7 giorni per 14) e quindi raddoppiava l'autonomia stimata, facendo sparire prodotti realmente critici dalla sezione "Da riordinare". Fix:
