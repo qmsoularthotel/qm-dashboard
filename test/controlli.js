@@ -4608,7 +4608,7 @@ sez('Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordin
   ok('da ordinare: con abbastanza in arrivo non serve', _invDaOrdinare(0.5, 3, 12, 30), 0);
   ok('da ordinare: uno stock negativo vale zero', _invDaOrdinare(1, -4, 0, 15), 15);
   ok('da ordinare: senza consumi non si sa', _invDaOrdinare(0, 3, 0, 30), null);
-  ok('lo Stock usa in arrivo e copertura', /_invDaOrdinare\(gg,it\.qty,ia\?ia\.qty:0,_invCopertura\)/.test(String(invRenderStock)), true);
+  ok('lo Stock usa in arrivo e copertura', /_invDaOrdinare\(gg,qty,ia\?ia\.qty:0,_invCopertura\)/.test(String(invRenderStock)), true);
 })();
 
 // Ricevimento segnato in ritardo (25/11/2026, QM: ordini del 21/09 mai segnati ricevuti).

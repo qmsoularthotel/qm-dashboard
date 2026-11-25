@@ -10627,7 +10627,7 @@ function _invIco(n,px){
 }
 let _invWh=localStorage.getItem('qm_inv_wh')||'sa';
 let _invTab='stock';
-let _invFilter='all'; // 'all' | 'out' | 'low' | 'ok' (e il vecchio 'alert' = esauriti + sotto soglia)
+let _invFilter='all'; // 'all' | 'ordina' (Stock: solo quelli da ordinare)
 let _invPeriod=30;    // giorni per analisi consumi
 
 function invSetWh(wh,btn){
@@ -10789,77 +10789,56 @@ function _invConsumoDa(bc,moves,ts,ora){
   return{qty:Math.round(q*1000)/1000,giorni:Math.max(0,Math.floor(((ora||Date.now())-ts)/86400000))};
 }
 function invRenderStock(catalog,moves){
-  // Stile aggiornato (25/11/2026, QM, scelta fra tre proposte: «A senza KPI e senza barre»): un
-  // pannello di Compass con bordo oro a tutta larghezza, filtri nell'intestazione, una riga per
-  // prodotto con lo stato in pillola, la scorta in grande, l'ULTIMO ORDINE RICEVUTO (quantità, data
-  // d'arrivo e quanto se n'è consumato da allora — QM: «la soglia non serve, mi serve sapere quando
-  // è stato ordinato l'ultima volta e in che quantità», per fare l'ordine e vedere il consumo;
-  // quelli in arrivo no) e le azioni con didascalia (.rc-act-btn). La soglia resta dietro lo
-  // stato (Sotto soglia) e si cambia dal Catalogo. Misure in classi (.inv-riga…), mai in linea.
-  const ultimi=_invUltimiOrdini(_invWh),arrivo=_invInArrivo(_invWh),ora=Date.now();
+  // Versione «a colpo d'occhio» (25/11/2026, QM: «non è immediato, si legge poco e male»): una
+  // tabella con cinque colonne grandi e niente testo grigio superfluo — Prodotto · In stock ·
+  // Consumo a settimana · Ultimo ordine ricevuto · DA ORDINARE (in evidenza). In cima i prodotti
+  // da ordinare, i più urgenti prima. Il numero in stock si tocca per correggerlo; modifica ed
+  // eliminazione stanno nel Catalogo, il rifornimento nello scanner. Colonne in classi, mai in linea.
   const el=document.getElementById('inv-stock-view');
   if(!el)return;
   const stock=invCalcStock(catalog,moves);
-  const allItems=Object.entries(catalog).map(([bc,p])=>{
-    const qty=stock[bc]??null;
-    if(qty===null)return null;
-    const status=invItemStatus(qty,p.soglia??null);
-    const last=invLastMove(bc,moves);
-    return{bc,name:p.name,unit:p.unit||'',soglia:p.soglia??null,qty,status,last};
-  }).filter(Boolean).sort((a,b)=>{
-    const ord={out:0,low:1,ok:2};
-    if(ord[a.status]!==ord[b.status])return ord[a.status]-ord[b.status];
-    return a.name.localeCompare(b.name,'it');
-  });
+  const ultimi=_invUltimiOrdini(_invWh),arrivo=_invInArrivo(_invWh),ora=Date.now();
+  const perBc={};moves.forEach(m=>{(perBc[m.barcode]=perBc[m.barcode]||[]).push(m);});
   const nomeWh=_invWh==='ar'?'Art Resort':'SoulArt Hotel';
-  if(!allItems.length){
+  const items=Object.entries(catalog).map(([bc,p])=>{
+    const qty=stock[bc]??null;if(qty===null)return null;
+    const gg=_invConsumoMedio(perBc[bc],ora),ia=arrivo[bc];
+    const aut=gg>0?Math.floor(Math.max(0,qty)/gg):null;
+    const dor=_invDaOrdinare(gg,qty,ia?ia.qty:0,_invCopertura);
+    return{bc,name:p.name,unit:p.unit||'',qty,gg,aut,dor,ia,uo:ultimi[bc],status:invItemStatus(qty,p.soglia??null)};
+  }).filter(Boolean);
+  if(!items.length){
     el.innerHTML=`<div class="panel"><div class="panel-body inv-vuoto">${_invIco('scatola',28)}<div>Nessun prodotto in ${nomeWh}</div><small>Apri lo scanner sullo smartphone per aggiungere i prodotti.</small></div></div>`;
     return;
   }
-  const tot=allItems.length;
-  const _perBc={};moves.forEach(m=>{(_perBc[m.barcode]=_perBc[m.barcode]||[]).push(m);});
-  const nOut=allItems.filter(i=>i.status==='out').length;
-  const nLow=allItems.filter(i=>i.status==='low').length;
-  const nOk=allItems.filter(i=>i.status==='ok').length;
-  const f=_invFilter==='alert'?'out':_invFilter;   // il vecchio filtro «Allerta» vale «Esauriti + sotto soglia»
-  const items=_invFilter==='alert'?allItems.filter(i=>i.status!=='ok'):f==='out'?allItems.filter(i=>i.status==='out'):f==='low'?allItems.filter(i=>i.status==='low'):f==='ok'?allItems.filter(i=>i.status==='ok'):allItems;
-  const fBtn=(k,lbl,n)=>`<button class="rev-filter-btn${(_invFilter===k)?' active':''}" onclick="invSetFilter('${k}')">${lbl} <span class="inv-conta">${n}</span></button>`;
-  const stato={out:['badge-open','Esaurito'],low:['badge-progress','Sotto soglia'],ok:['badge-closed','In regola']};
-  const righe=items.map(it=>{
-    const unit=it.unit?`<span class="inv-unita">${_esc(it.unit)}</span>`:'';
-    const colBar=it.status==='out'?'var(--red)':it.status==='low'?'var(--amber)':'var(--green)';
-    const uo=ultimi[it.bc],ia=arrivo[it.bc],gg=_invConsumoMedio(_perBc[it.bc],ora);
-    // 2. Autonomia: per quanti giorni basta lo stock al consumo medio (rosso ≤7, arancio ≤14,
-    // come «Autonomia critica» in Analisi).
-    const giorniAut=gg>0?Math.floor(Math.max(0,it.qty)/gg):null;
-    const aut=giorniAut==null?'':`<small class="inv-aut ${giorniAut<=7?'inv-aut-rd':giorniAut<=14?'inv-aut-am':''}">basta per ${giorniAut} ${giorniAut===1?'giorno':'giorni'}</small>`;
-    // 3. In arrivo: ordini aperti, per non ordinare due volte.
-    const arr=ia&&ia.qty?`<small class="inv-arr">+${ia.qty}${ia.unit?' '+_esc(ia.unit):''} in arrivo${ia.data?' dal '+_esc(String(ia.data).slice(0,5)):''}</small>`:'';
-    // 1. Da ordinare per coprire i giorni scelti, tolti stock e in arrivo.
-    const dor=_invDaOrdinare(gg,it.qty,ia?ia.qty:0,_invCopertura);
-    const daOrd=dor==null?'<div class="inv-dor inv-dor-no">nessun consumo</div>':dor>0?`<div class="inv-dor"><b>${dor}${unit}</b><small>${(gg*7).toFixed(gg*7<10?1:0).replace('.',',')}${it.unit?' '+_esc(it.unit):''}/sett</small></div>`:`<div class="inv-dor inv-dor-ok">non serve<small>${(gg*7).toFixed(gg*7<10?1:0).replace('.',',')}${it.unit?' '+_esc(it.unit):''}/sett</small></div>`;
-    const u=uo&&uo.unit?`<span class="inv-unita">${_esc(uo.unit)}</span>`:'';
-    const cons=uo?_invConsumoDa(it.bc,moves,uo.ts):null;
-    const ordine=uo?`<div class="inv-ord"><b>${uo.qty}${u}</b><small>arrivato il ${_esc(uo.data)}</small><small class="inv-ord-cons">consumati ${cons.qty}${u} in ${cons.giorni} ${cons.giorni===1?'giorno':'giorni'}</small></div>`:'<div class="inv-ord inv-ord-mai">nessun ordine ricevuto</div>';
-    return`<div class="inv-riga inv-st-${it.status}">
-      <div class="inv-nome"><b title="${_esc(it.name)}">${_esc(it.name)}</b><small>ultimo movimento ${invFmtDate(it.last?.ts)}</small></div>
-      <div class="inv-stato"><span class="c-badge ${stato[it.status][0]}">${stato[it.status][1]}</span></div>
-      <div class="inv-scorta"><div class="inv-qta" style="color:${colBar};">${it.qty}${unit}</div>${aut}${arr}</div>
-      <div class="inv-ordine-c"><span class="inv-mini">ultimo ordine</span>${ordine}</div>
-      <div class="inv-dor-c"><span class="inv-mini">da ordinare (${_invCopertura} gg)</span>${daOrd}</div>
-      <div class="inv-azioni">
-        <button class="rc-act-btn" data-tip="Rifornisci (scanner)" aria-label="Rifornisci" onclick="invQuickRestock('${it.bc}')">${_invIco('su',13)}</button>
-        <button class="rc-act-btn" data-tip="Correggi la quantità" aria-label="Correggi" onclick="invEditQty('${it.bc}',${it.qty})">${_invIco('matita',13)}</button>
-        <button class="rc-act-btn" data-tip="Elimina dal catalogo" aria-label="Elimina" onclick="invDeleteProduct('${it.bc}')">${_invIco('cestino',13)}</button>
-      </div>
+  // Prima da ordinare (meno giorni di autonomia prima), poi il resto in ordine di nome.
+  items.sort((a,b)=>((b.dor>0)-(a.dor>0))||(a.dor>0&&b.dor>0?((a.aut??1e9)-(b.aut??1e9)):0)||a.name.localeCompare(b.name,'it'));
+  const nDa=items.filter(i=>i.dor>0).length;
+  const lista=_invFilter==='ordina'?items.filter(i=>i.dor>0):items;
+  const num=x=>(Math.round(x*10)/10).toString().replace('.',',');
+  const righe=lista.map(it=>{
+    const u=it.unit?` <span class="inv2-u">${_esc(it.unit)}</span>`:'';
+    const col=it.qty<=0?'var(--red)':(it.aut!=null&&it.aut<=7)?'var(--red)':(it.aut!=null&&it.aut<=14)?'var(--amber)':'var(--text)';
+    const autTxt=it.aut==null?'':it.aut<=14?`<small style="color:${col};">${it.qty<=0?'finito':'per '+it.aut+' gg'}</small>`:'';
+    const cons=it.gg>0?`${num(it.gg*7)}${u}`:'<span class="inv2-no">—</span>';
+    const uo=it.uo?`${it.uo.qty}${u}<small>${_esc(String(it.uo.data).slice(0,5))}</small>`:'<span class="inv2-no">—</span>';
+    const arr=it.ia&&it.ia.qty?`<small class="inv2-arr">+${it.ia.qty} in arrivo</small>`:'';
+    const dor=it.dor>0?`<span class="inv2-dor">${it.dor}${it.unit?' '+_esc(it.unit):''}</span>${arr}`:it.dor===0?`<span class="inv2-ok">no</span>${arr}`:'<span class="inv2-no">—</span>';
+    return`<div class="inv2-riga${it.dor>0?' inv2-da':''}">
+      <div class="inv2-nome" title="${_esc(it.name)}">${_esc(it.name)}</div>
+      <div class="inv2-num"><button class="inv2-stock" style="color:${col};" onclick="invEditQty('${it.bc}',${it.qty})" title="Correggi la quantità">${it.qty}${u}</button>${autTxt}</div>
+      <div class="inv2-num">${cons}</div>
+      <div class="inv2-num">${uo}</div>
+      <div class="inv2-num inv2-col-dor">${dor}</div>
     </div>`;
-  }).join('')||'<div class="inv-vuoto"><div>Nessun prodotto in questo gruppo.</div></div>';
-  const testa=`<div class="inv-riga inv-testa"><div>Prodotto</div><div>Stato</div><div>In stock</div><div>Ultimo ordine</div><div>Da ordinare · ${_invCopertura} gg</div><div></div></div>`;
-  const nota='';
+  }).join('')||'<div class="inv-vuoto"><div>Niente da ordinare per i prossimi '+_invCopertura+' giorni.</div></div>';
+  const btn=(on,cl,txt)=>`<button class="rev-filter-btn${on?' active':''}" onclick="${cl}">${txt}</button>`;
   el.innerHTML=`<div class="panel">
-    <div class="panel-header"><span class="ov-icon-badge">${_invIco('scatola',12).replace('stroke="currentColor"','stroke="#fff"')}</span><span class="panel-title">Giacenza · ${nomeWh}</span>
-      <div class="inv-filtri"><span class="inv-cop">copri</span>${[15,30,45].map(n=>`<button class="rev-filter-btn${_invCopertura===n?' active':''}" onclick="invSetCopertura(${n})" title="Quanti giorni deve coprire l'ordine">${n} gg</button>`).join('')}<span class="inv-sep"></span>${fBtn('all','Tutti',tot)}${fBtn('out','Esauriti',nOut)}${fBtn('low','Sotto soglia',nLow)}${fBtn('ok','In regola',nOk)}</div></div>
-    <div class="inv-elenco">${testa}${righe}</div>${nota}</div>`;
+    <div class="panel-header inv2-testa-p"><span class="ov-icon-badge">${_invIco('scatola',12).replace('stroke="currentColor"','stroke="#fff"')}</span><span class="panel-title">Giacenza · ${nomeWh}</span>
+      <div class="inv2-scelte">${btn(_invFilter==='ordina',"invSetFilter('ordina')",'Da ordinare <b>'+nDa+'</b>')}${btn(_invFilter!=='ordina',"invSetFilter('all')",'Tutti <b>'+items.length+'</b>')}
+        <span class="inv2-sep"></span><span class="inv2-lbl">ordine per</span>${[15,30,45].map(n=>btn(_invCopertura===n,'invSetCopertura('+n+')',n+' giorni')).join('')}</div></div>
+    <div class="inv2-riga inv2-intest"><div>Prodotto</div><div>In stock</div><div>Consumo a sett.</div><div>Ultimo ordine</div><div>Da ordinare</div></div>
+    ${righe}</div>`;
 }
 function invRenderMoves(catalog,moves){
   const el=document.getElementById('inv-moves-view');
