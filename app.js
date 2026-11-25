@@ -10800,11 +10800,12 @@ function _invUsoTesto(perGiorno,giorni,unita){
   return{n:0,testo:'1'+u+' ogni '+ogni+' giorni'};
 }
 function invRenderStock(catalog,moves){
-  // Nello stile della Registration Cards della Galleria (25/11/2026, QM: «mi piace molto quella
-  // pagina»): riga oro maiuscola e titolo grande, schede bianche arrotondate con ombra leggera,
-  // il numero da ordinare dentro il cerchio navy/oro dei «passi», frasi normali. Contenuto deciso
-  // prima col QM: in cima solo quello da ordinare, sotto tutti i prodotti; consumi nella misura
-  // dell'ordine (ogni 15/30/45 giorni) in numeri interi. Classi .inv4-*.
+  // Stessa composizione della Registration Cards della Galleria (25/11/2026, QM: «mi piace molto
+  // quella pagina», con la foto): cornice, riga oro + titolo grande con le pastiglie a destra; a
+  // sinistra il riquadro grande coi prodotti da ordinare (cerchio navy/oro con la quantità) e la
+  // rosa dei venti in filigrana; a destra, con bordo oro, il FOGLIO della lista per il fornitore
+  // (come «Cosa si stampa»); sotto tre riquadri come i passi; la tabella di tutti; la fascia verde.
+  // Contenuto deciso col QM: consumi nella misura dell'ordine (ogni 15/30/45 giorni), interi.
   const el=document.getElementById('inv-stock-view');
   if(!el)return;
   const stock=invCalcStock(catalog,moves);
@@ -10820,26 +10821,38 @@ function invRenderStock(catalog,moves){
   }).filter(Boolean);
   const u=x=>x?' '+_esc(x):'';
   const da=items.filter(i=>i.dor>0).sort((a,b)=>((a.aut??1e9)-(b.aut??1e9))||a.name.localeCompare(b.name,'it'));
-  const testa=`<div class="inv4-hero"><div><div class="inv4-k">${nomeWh}</div><div class="inv4-t">${da.length?'Cosa ordinare':'Niente da ordinare'}</div></div>
-    <div class="inv4-per"><span>Ordine ogni</span>${[15,30,45].map(n=>`<button class="inv4-chip${N===n?' on':''}" onclick="invSetCopertura(${n})">${n} giorni</button>`).join('')}</div></div>`;
+  const testa=`<div class="inv5-hero"><div><div class="inv5-k">${nomeWh} · ordine ogni ${N} giorni</div><div class="inv5-t">${da.length?'Cosa ordinare':'Niente da ordinare'}</div></div>
+    <div class="inv5-per">${[15,30,45].map(n=>`<button class="inv5-chip${N===n?' on':''}" onclick="invSetCopertura(${n})">ogni ${n} giorni</button>`).join('')}</div></div>`;
   if(!items.length){
-    el.innerHTML=testa+`<div class="inv4-card inv4-vuoto">${_invIco('scatola',26)}<div>Nessun prodotto in ${nomeWh}</div><small>Apri lo scanner sullo smartphone per aggiungere i prodotti.</small></div>`;
+    el.innerHTML=`<div class="inv5-cornice">${testa}<div class="inv5-grande inv5-centro"><span class="inv5-cerchio">${_invIco('scatola',24).replace('stroke="currentColor"','stroke="#fff"')}</span><div class="inv5-gt">Nessun prodotto in ${nomeWh}</div><div class="inv5-gs">Apri lo scanner sullo smartphone per aggiungere i prodotti.</div></div></div>`;
     return;
   }
-  const schede=da.map(it=>{
-    const resta=it.qty<=0?'<b class="inv4-rosso">Finito</b>':`Ne restano ${it.qty}${u(it.unit)}${it.aut!=null?', per circa '+it.aut+' giorni':''}`;
-    const arr=it.ia&&it.ia.qty?`<div class="inv4-s inv4-blu">${it.ia.qty}${u(it.ia.unit||it.unit)} già in arrivo</div>`:'';
-    return`<div class="inv4-pr${it.qty<=0?' fin':''}"><span class="inv4-n">${it.dor}</span><div class="inv4-pr-b"><div class="inv4-pr-t">${_esc(it.name)}</div>
-      <div class="inv4-q">ordina ${it.dor}${u(it.unit)}</div><div class="inv4-s">${resta}</div><div class="inv4-s">Se ne usano ${_esc(it.uso.testo)}</div>${arr}</div></div>`;
+  // Riquadro grande: i prodotti da ordinare.
+  const voci=da.map(it=>{
+    const resta=it.qty<=0?'<b class="inv5-rosso">finito</b>':`ne restano ${it.qty}${u(it.unit)}, per circa ${it.aut} giorni`;
+    const arr=it.ia&&it.ia.qty?` · <span class="inv5-blu">${it.ia.qty}${u(it.ia.unit||it.unit)} già in arrivo</span>`:'';
+    return`<div class="inv5-voce"><span class="inv5-num${it.qty<=0?' fin':''}">${it.dor}</span><div><div class="inv5-vt">${_esc(it.name)} <span class="inv5-vq">· ordina ${it.dor}${u(it.unit)}</span></div><div class="inv5-vs">${resta} · se ne usano ${_esc(it.uso.testo)}${arr}</div></div></div>`;
   }).join('');
-  const lista=da.length?`<div class="inv4-griglia">${schede}</div>`:`<div class="inv4-ok"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg><span>Con quello che c'è in stock e quello in arrivo si copre il periodo di ${N} giorni.</span></div>`;
+  const grande=da.length?`<div class="inv5-grande"><div class="inv5-gl">Da ordinare</div>${voci}</div>`
+    :`<div class="inv5-grande inv5-centro"><span class="inv5-cerchio"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></span><div class="inv5-gt">Per i prossimi ${N} giorni non serve ordinare niente</div><div class="inv5-gs">Con quello che c'è in stock e quello già in arrivo si copre tutto il periodo.</div></div>`;
+  // Foglio: la lista per il fornitore (prodotto e quantità), come «Cosa si stampa».
+  const oggi=new Date().toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const foglio=`<div class="inv5-lato"><div class="inv5-ll">Lista per il fornitore</div><div class="inv5-foglio"><div class="inv5-ft"><span>Ordine · ${nomeWh}</span><span>${oggi}</span></div>
+    ${da.length?da.map(it=>`<div class="inv5-fr"><span>${_esc(it.name)}</span><b>${it.dor}${u(it.unit)}</b></div>`).join(''):'<div class="inv5-fvuoto">nessun prodotto</div>'}</div>
+    <div class="inv5-nota">Quantità per coprire ${N} giorni, già tolti stock e ordini in arrivo</div></div>`;
+  // Tre riquadri come i passi.
+  const nOk=items.filter(i=>i.dor===0).length,nArr=items.filter(i=>i.ia&&i.ia.qty).length,nNo=items.filter(i=>i.dor===null).length;
+  const passo=(n,t,s)=>`<div class="inv5-passo"><span class="inv5-pn">${n}</span><div><div class="inv5-pt">${t}</div><div class="inv5-ps">${s}</div></div></div>`;
+  const passi=`<div class="inv5-passi">${passo(nOk,'In regola','prodotti che bastano per '+N+' giorni')}${passo(nArr,'In arrivo','prodotti con un ordine non ancora ricevuto')}${passo(nNo,'Senza consumi','nessuno scarico registrato: non si sa quanto se ne usa')}</div>`;
+  // Tabella di tutti.
   const righe=items.slice().sort((a,b)=>a.name.localeCompare(b.name,'it')).map(it=>`<tr>
       <td>${_esc(it.name)}</td>
-      <td class="r"><button class="inv4-stock${it.qty<=0?' inv4-rosso':''}" onclick="invEditQty('${it.bc}',${it.qty})" title="Correggi la quantità">${it.qty}${u(it.unit)}</button>${it.ia&&it.ia.qty?`<small>+${it.ia.qty} in arrivo</small>`:''}</td>
-      <td class="r">${it.uso?_esc(it.uso.testo.replace(' ogni '+N+' giorni','')):'<span class="inv4-no">non si sa</span>'}</td>
-      <td class="r inv4-gr">${it.uo?it.uo.qty+u(it.uo.unit||it.unit)+' · '+_esc(String(it.uo.data).slice(0,5)):'—'}</td></tr>`).join('');
-  el.innerHTML=testa+lista+`<div class="inv4-card inv4-tutti"><div class="inv4-ct">Tutti i prodotti <span class="inv4-cnt">${items.length}</span></div>
-    <div class="inv4-tw"><table class="inv4-tab"><thead><tr><th>Prodotto</th><th class="r">In stock</th><th class="r">Se ne usano in ${N} giorni</th><th class="r">Ultimo ordine</th></tr></thead><tbody>${righe}</tbody></table></div></div>`;
+      <td class="r"><button class="inv5-stock${it.qty<=0?' inv5-rosso':''}" onclick="invEditQty('${it.bc}',${it.qty})" title="Correggi la quantità">${it.qty}${u(it.unit)}</button>${it.ia&&it.ia.qty?`<small>+${it.ia.qty} in arrivo</small>`:''}</td>
+      <td class="r">${it.uso?_esc(it.uso.testo.replace(' ogni '+N+' giorni','')):'<span class="inv5-no">non si sa</span>'}</td>
+      <td class="r inv5-gr">${it.uo?it.uo.qty+u(it.uo.unit||it.unit)+' · '+_esc(String(it.uo.data).slice(0,5)):'—'}</td></tr>`).join('');
+  const tabella=`<div class="inv5-tutti"><div class="inv5-ll">Tutti i prodotti · ${items.length}</div><div class="inv5-tw"><table class="inv5-tab"><thead><tr><th>Prodotto</th><th class="r">In stock</th><th class="r">Se ne usano in ${N} giorni</th><th class="r">Ultimo ordine</th></tr></thead><tbody>${righe}</tbody></table></div></div>`;
+  const fascia=`<div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Quanto se ne usa viene dagli scarichi e dai tuoi aggiornamenti di giacenza: più sono regolari, più le quantità sono giuste.</span></div>`;
+  el.innerHTML=`<div class="inv5-cornice">${testa}<div class="inv5-griglia">${grande}${foglio}</div>${passi}${tabella}${fascia}</div>`;
 }
 function invRenderMoves(catalog,moves){
   const el=document.getElementById('inv-moves-view');
