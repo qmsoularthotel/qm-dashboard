@@ -11,8 +11,9 @@
     :root {
       --bg: #eef1f5; --surface: #f8f9fb; --surface2: #e8ecf1;
       --border: #cdd4de; --border-light: #dde2ea;
-      --text: #0c1f33; --text-muted: #4a5568; --text-dim: #888;
-      --accent: #1c3a5e; --accent-bg: #e3eaf4; --gold: #c9952f;
+      --text: #0c1f33; --text-muted: #4a5568; --text-dim: #888880;
+      --accent: #1c3a5e; --accent-bg: #e8f0f8; --gold: #c9952f; --gold-bg: #fef5e7;
+      --blue: #1565c0; --blue-bg: #e3f2fd;
       --green: #2e7d32; --green-bg: #e8f5e9;
       --red: #c62828; --red-bg: #ffebee;
       --amber: #e65100; --amber-bg: #fff3e0;
@@ -21,7 +22,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
       background: var(--bg); color: var(--text);
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
       font-size: var(--fs-base); line-height: 1.5;
       min-height: 100vh; min-height: 100dvh;
     }
@@ -94,6 +95,7 @@
 
     /* ── Search ── */
     .search-wrap { padding: 10px 14px 0; }
+    .search-input { font-family: inherit; }
     .search-input {
       width: 100%; padding: 9px 12px;
       border: 1px solid var(--border); border-radius: 9px;
@@ -110,7 +112,7 @@
     }
 
     /* ── Stock list ── */
-    .stock-list { padding: 8px 14px; }
+    .stock-list, .move-list, .catalog-list { padding: 10px 14px; }
     .stock-item {
       background: var(--surface); border: 1px solid var(--border-light);
       border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
@@ -128,7 +130,7 @@
     .stock-unit { font-size: var(--fs-xxs); color: var(--text-dim); margin-top: 1px; }
 
     /* ── Move list ── */
-    .move-list { padding: 8px 14px; }
+
     .move-item {
       display: flex; align-items: center; gap: 10px;
       padding: 10px 14px; background: var(--surface);
@@ -151,7 +153,7 @@
     .move-qty.out  { color: var(--red); }
 
     /* ── Catalog list ── */
-    .catalog-list { padding: 8px 14px; }
+
     .catalog-item {
       display: flex; align-items: center; gap: 10px;
       padding: 10px 14px; background: var(--surface);
@@ -223,6 +225,7 @@
       border-radius: 9px; background: var(--surface2);
       font-size: var(--fs-xs); font-weight: 600; cursor: pointer;
       text-align: center; transition: all .12s; user-select: none;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
     }
     .op-btn.sel-init { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); }
     .op-btn.sel-in   { border-color: var(--green);  background: var(--green-bg);  color: var(--green); }
@@ -251,13 +254,13 @@
     /* ── Buttons ── */
     .btn-primary {
       width: 100%; padding: 13px; background: var(--accent); color: #fff;
-      border: none; border-radius: 10px; font-size: var(--fs-sm);
-      font-weight: 700; cursor: pointer; margin-top: 6px;
+      border: none; border-radius: 8px; font-size: var(--fs-sm); font-family: inherit;
+      font-weight: 600; letter-spacing: .3px; cursor: pointer; margin-top: 6px;
     }
     .btn-ghost {
       width: 100%; padding: 11px; background: none;
-      color: var(--text-muted); border: 1px solid var(--border);
-      border-radius: 10px; font-size: var(--fs-sm); cursor: pointer; margin-top: 8px;
+      color: var(--text-muted); border: 1px solid var(--border); font-family: inherit;
+      border-radius: 8px; font-size: var(--fs-sm); cursor: pointer; margin-top: 8px;
     }
 
     /* ── Toast ── */
@@ -278,6 +281,47 @@
       text-align: center; letter-spacing: .01em;
     }
     .offline-banner.show { display: block; }
+    /* ── Stile Compass (25/11/2026, QM: «adegua a Compass»): stessa composizione di Inventari e
+       Ordini in Compass — riga oro maiuscola + titolo, elenchi in una scheda con righe tratteggiate,
+       cerchi navy col bordo oro, pulsanti tondi; icone disegnate al posto delle emoji. ── */
+    .hero { padding: 16px 16px 2px; }
+    .hk { font-size: 11px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: .1em; }
+    .ht { font-size: 21px; font-weight: 700; letter-spacing: -.01em; color: var(--text); margin-top: 1px; }
+    .scheda { background: var(--surface); border: 1px solid var(--border-light); border-radius: 12px;
+      padding: 4px 14px; box-shadow: 0 1px 4px rgba(0,0,0,.05); margin-bottom: 12px; }
+    .scheda-t { padding: 10px 0 2px; }
+    .scheda-t b { display: block; font-size: 15px; }
+    .scheda-t span { font-size: 12px; color: var(--text-muted); }
+    .riga { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px dashed var(--border-light); }
+    .riga:last-child { border-bottom: none; }
+    .riga.tocca { cursor: pointer; }
+    .riga.tocca:active { background: var(--accent-bg); }
+    .riga-info { flex: 1; min-width: 0; }
+    .riga-n { font-size: var(--fs-sm); font-weight: 600; }
+    .riga-s { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .cod { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--text-dim); }
+    .num { font-size: 20px; font-weight: 700; color: var(--accent); line-height: 1; text-align: right; font-variant-numeric: tabular-nums; }
+    .num small { display: block; font-size: 11px; font-weight: 400; color: var(--text-dim); margin-top: 3px; }
+    .num.zero { color: var(--text-dim); }
+    .num.neg { color: var(--red); }
+    .q { font-size: var(--fs-sm); font-weight: 700; white-space: nowrap; color: var(--text); }
+    .tn { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); border: 2px solid var(--gold);
+      color: #fff; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .tn svg { width: 13px; height: 13px; }
+    .gt { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: .07em; padding: 10px 0 2px; }
+    .gc { font-size: 11px; color: var(--accent); background: var(--accent-bg); border-radius: 9px; padding: 0 7px; letter-spacing: 0; }
+    .tondo { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-bg); border: 1px solid var(--border);
+      color: var(--accent); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; padding: 0; }
+    .tondo svg { width: 13px; height: 13px; }
+    .tondo.del:active { background: var(--red); color: #fff; }
+    .tondo:active { background: var(--accent); color: #fff; }
+    .vuoto-c { width: 56px; height: 56px; border-radius: 50%; background: var(--accent); border: 3px solid var(--gold);
+      display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; color: #fff; }
+    .vuoto-c svg { width: 24px; height: 24px; }
+    .altre { display: block; margin: 0 auto 12px; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--accent);
+      background: none; border: 1px solid var(--border); border-radius: 20px; padding: 6px 16px; cursor: pointer; }
+    .ico { width: 14px; height: 14px; vertical-align: -2px; }
   /* Firma in fondo (24/11/2026): copia di .firma di style.css. In questa app i nomi dei due grigi sono gli stessi di Compass: il colore è lo stesso. */
 .firma{margin:26px 16px 24px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;line-height:1.7;color:var(--text-muted);text-align:center;}
 .firma-marchio{display:block;font-size:12px;font-weight:700;color:var(--text-dim);letter-spacing:-.01em;margin-bottom:3px;}
@@ -331,7 +375,7 @@
 </div>
 
 <!-- Offline banner -->
-<div class="offline-banner" id="offlineBanner">📶 Nessuna connessione — i dati vengono salvati localmente e sincronizzati al ripristino</div>
+<div class="offline-banner" id="offlineBanner">Nessuna connessione — i dati vengono salvati localmente e sincronizzati al ripristino</div>
 
 <!-- Header -->
 <div class="app-header">
@@ -362,7 +406,7 @@
       autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
       inputmode="none"
       onkeydown="if(event.key==='Enter'){_hwProcess();event.preventDefault();}">
-    <button class="hw-quick-btn" id="hwQuickBtn" onclick="_hwToggleQuick()" title="Modalità rapida: +1/-1 senza conferma">⚡ Rapido</button>
+    <button class="hw-quick-btn" id="hwQuickBtn" onclick="_hwToggleQuick()" title="Modalità rapida: +1/-1 senza conferma"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg> Rapido</button>
   </div>
 </div>
 
@@ -371,6 +415,7 @@
 
   <!-- STOCK -->
   <div id="view-stock">
+    <div class="hero"><div class="hk" id="stockK"></div><div class="ht" id="stockT"></div></div>
     <div class="search-wrap">
       <input class="search-input" type="search" id="stockSearch" placeholder="Cerca prodotto…" oninput="renderStock()">
     </div>
@@ -379,6 +424,7 @@
 
   <!-- MOVES -->
   <div id="view-moves" style="display:none;">
+    <div class="hero"><div class="hk" id="movesK"></div><div class="ht">Entrate e uscite</div></div>
     <div class="search-wrap">
       <input class="search-input" type="search" id="movesSearch" placeholder="Cerca prodotto…" oninput="renderMoves()">
     </div>
@@ -387,6 +433,7 @@
 
   <!-- CATALOG -->
   <div id="view-catalog" style="display:none;">
+    <div class="hero"><div class="hk" id="catK"></div><div class="ht" id="catT"></div></div>
     <div class="search-wrap" style="display:flex;gap:8px;align-items:center;">
       <input class="search-input" type="search" id="catalogSearch" placeholder="Cerca…" oninput="renderCatalog()" style="flex:1;">
       <button class="btn-primary" onclick="openManualNewProduct()" style="width:auto;padding:9px 14px;white-space:nowrap;margin-top:0;">+ Nuovo</button>
@@ -436,9 +483,9 @@
     <div class="form-group">
       <label class="form-label">Operazione</label>
       <div class="op-selector">
-        <div class="op-btn"         id="opInit" onclick="setOp('init')">📋 Giacenza</div>
-        <div class="op-btn"         id="opIn"   onclick="setOp('in')">⬆️ Carico</div>
-        <div class="op-btn sel-out" id="opOut"  onclick="setOp('out')">⬇️ Scarico</div>
+        <div class="op-btn"         id="opInit" onclick="setOp('init')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/></svg> Giacenza</div>
+        <div class="op-btn"         id="opIn"   onclick="setOp('in')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg> Carico</div>
+        <div class="op-btn sel-out" id="opOut"  onclick="setOp('out')"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg> Scarico</div>
       </div>
     </div>
 
@@ -470,7 +517,7 @@
 <div class="modal-backdrop" id="editProductModal" onclick="if(event.target===this)closeEditProductModal()">
   <div class="modal-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">✏️ Modifica prodotto</div>
+    <div class="sheet-title">Modifica prodotto</div>
     <input type="hidden" id="editProductOldBc">
     <div class="form-group">
       <label class="form-label">Nome prodotto</label>
@@ -721,7 +768,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-25.1';
+const QM_APP_BUILD='2026-11-25.2';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -1006,12 +1053,30 @@ function renderAll() {
   renderCatalog();
 }
 
+// ── Stile Compass (25/11/2026): icone disegnate, riga oro + titolo, elenchi in una scheda ─────────
+const ICO = {
+  su: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+  giu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>',
+  conta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9h12M6 15h12"/></svg>',
+  matita: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
+  cestino: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>',
+  scatola: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10"/></svg>'
+};
+function _nomeWH() { return currentWH === 'ar' ? 'Art Resort' : 'SoulArt Hotel'; }
+function _setTxt(id, t) { const e = document.getElementById(id); if (e) e.textContent = t; }
+function _vuoto(ico, testo, sotto) {
+  return `<div class="empty-state"><div class="vuoto-c">${ICO[ico]}</div><div class="empty-text">${testo}${sotto ? '<br><small>' + sotto + '</small>' : ''}</div></div>`;
+}
+
 // ── Render: Stock ────────────────────────────────────────────────────────────
 function renderStock() {
   const el = document.getElementById('stockList');
   if (!el) return;
   const stock = calcStock(currentWH);
   const q = (document.getElementById('stockSearch')?.value || '').toLowerCase();
+  const tutti = Object.keys(catalog).length;
+  _setTxt('stockK', _nomeWH() + ' · stock');
+  _setTxt('stockT', tutti ? 'In magazzino · ' + tutti + (tutti === 1 ? ' prodotto' : ' prodotti') : 'Magazzino vuoto');
 
   const items = Object.entries(catalog)
     .map(([bc, p]) => ({ bc, ...p, qty: stock[bc] ?? 0 }))
@@ -1020,66 +1085,67 @@ function renderStock() {
     .sort((a, b) => a.name.localeCompare(b.name, 'it'));
 
   if (!items.length) {
-    el.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">📦</div>
-      <div class="empty-text">Nessun prodotto in stock<br><small>Scansiona un barcode per iniziare</small></div>
-    </div>`;
+    el.innerHTML = q ? _vuoto('scatola', 'Nessun prodotto trovato') : _vuoto('scatola', 'Nessun prodotto in stock', 'Scansiona un codice a barre per iniziare');
     return;
   }
 
-  el.innerHTML = items.map(it => {
-    const qCls = it.qty < 0 ? 'neg' : it.qty === 0 ? 'low' : 'ok';
-    const unit = it.unit ? `<div class="stock-unit">${esc(it.unit)}</div>` : '';
-    return `<div class="stock-item" onclick="quickMove('${esc(it.bc)}')">
-      <div class="stock-item-row">
-        <div style="flex:1;min-width:0;">
-          <div class="stock-item-name">${esc(it.name)}</div>
-          <div class="stock-item-sub">${it.bc}</div>
-        </div>
-        <div class="stock-qty-wrap">
-          <div class="stock-qty ${qCls}">${it.qty}</div>
-          ${unit}
-        </div>
-      </div>
+  el.innerHTML = '<div class="scheda">' + items.map(it => {
+    const qCls = it.qty < 0 ? ' neg' : it.qty === 0 ? ' zero' : '';
+    return `<div class="riga tocca" onclick="quickMove('${esc(it.bc)}')">
+      <div class="riga-info"><div class="riga-n">${esc(it.name)}</div><div class="riga-s cod">${/^manual_/.test(it.bc) ? 'senza codice' : esc(it.bc)}</div></div>
+      <div class="num${qCls}">${it.qty}${it.unit ? `<small>${esc(it.unit)}</small>` : ''}</div>
     </div>`;
-  }).join('');
+  }).join('') + '</div>';
 }
 
 // ── Render: Moves ────────────────────────────────────────────────────────────
+// A settimane e sempre in ordine di DATA, come la scheda Movimenti di Compass (25/11/2026): prima
+// seguiva l'ordine di salvataggio e i giorni uscivano mescolati.
+let _movTutte = false;
+function movTutte() { _movTutte = !_movTutte; renderMoves(); }
+function _lunedi(t) { const d = new Date(t); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); }
 function renderMoves() {
   const el = document.getElementById('moveList');
   if (!el) return;
+  _setTxt('movesK', _nomeWH() + ' · movimenti');
   const q = (document.getElementById('movesSearch')?.value || '').toLowerCase();
-  const list = [...(moves[currentWH] || [])].reverse();
+  const list = (moves[currentWH] || []).map((m, i) => [m, i])
+    .sort((a, b) => ((Number(b[0].ts) || 0) - (Number(a[0].ts) || 0)) || (b[1] - a[1])).map(x => x[0]);
   const filtered = list.filter(m => {
     const p = catalog[m.barcode];
     return !q || (p && p.name.toLowerCase().includes(q)) || m.barcode.includes(q);
   });
 
   if (!filtered.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Nessun movimento registrato</div></div>`;
+    el.innerHTML = _vuoto('conta', q ? 'Nessun movimento trovato' : 'Nessun movimento registrato');
     return;
   }
 
-  const icons  = { init: '📋', in: '⬆️', out: '⬇️' };
-  const signs  = { init: '',   in: '+',   out: '−' };
-  el.innerHTML = filtered.map(m => {
-    const p   = catalog[m.barcode] || { name: m.barcode, unit: '' };
-    const d   = new Date(m.ts);
-    const ts  = d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}) + ' ' +
-                d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-    const unit = p.unit ? ' ' + p.unit : '';
-    const note = m.note ? ` · ${esc(m.note)}` : '';
-    return `<div class="move-item">
-      <div class="move-badge ${m.type}">${icons[m.type]}</div>
-      <div class="move-info">
-        <div class="move-name">${esc(p.name)}</div>
-        <div class="move-ts">${ts}${note}</div>
-      </div>
-      <div class="move-qty ${m.type}">${signs[m.type]}${m.qty}${unit}</div>
-      <button onclick="deleteMove('${m.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-dim);padding:4px 0 4px 8px;flex-shrink:0;" title="Elimina">🗑</button>
-    </div>`;
-  }).join('');
+  const sett = {};
+  filtered.forEach(m => { const k = _lunedi(m.ts); (sett[k] = sett[k] || []).push(m); });
+  const chiavi = Object.keys(sett).map(Number).sort((a, b) => b - a);
+  const mostra = _movTutte ? chiavi : chiavi.slice(0, 4);
+  const G = 86400000, oggiK = _lunedi(Date.now());
+  const g = t => new Date(t).toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+  const periodo = (a, z) => { const A = new Date(a), Z = new Date(z), gz = Z.getDate();
+    return 'dal ' + (A.getMonth() === Z.getMonth() ? A.getDate() : g(a)) + ' ' + ((gz === 8 || gz === 11) ? "all'" : 'al ') + g(z); };
+  const riga = m => {
+    const p = catalog[m.barcode] || { name: m.barcode, unit: '' };
+    const d = new Date(m.ts);
+    const ts = d.toLocaleDateString('it-IT', { weekday: 'short', day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    const unit = p.unit ? ' ' + esc(p.unit) : '';
+    const val = m.type === 'init' ? 'contati ' + m.qty : (m.type === 'in' ? '+' : '−') + m.qty;
+    return `<div class="riga"><div class="riga-info"><div class="riga-n">${esc(p.name)}</div><div class="riga-s">${ts}${m.note ? ' · ' + esc(m.note) : ''}</div></div>
+      <div class="q">${val}${unit}</div>
+      <button class="tondo del" onclick="deleteMove('${esc(m.id)}')" title="Elimina" aria-label="Elimina">${ICO.cestino}</button></div>`;
+  };
+  const gruppo = (ico, tit, arr) => arr.length ? `<div class="gt"><span class="tn">${ICO[ico]}</span>${tit} <span class="gc">${arr.length}</span></div>${arr.map(riga).join('')}` : '';
+  el.innerHTML = mostra.map(k => {
+    const mm = sett[k], fine = k + 6 * G;
+    const tit = k === oggiK ? 'Questa settimana' : k === oggiK - 7 * G ? 'La settimana scorsa' : 'Settimana ' + periodo(k, fine);
+    return `<div class="scheda"><div class="scheda-t"><b>${tit}</b>${k === oggiK || k === oggiK - 7 * G ? '<span>' + periodo(k, fine) + '</span>' : ''}</div>
+      ${gruppo('giu', 'Usciti', mm.filter(m => m.type === 'out'))}${gruppo('su', 'Entrati', mm.filter(m => m.type === 'in'))}${gruppo('conta', 'Conteggi', mm.filter(m => m.type === 'init'))}</div>`;
+  }).join('') + (chiavi.length > 4 ? `<button class="altre" onclick="movTutte()">${_movTutte ? 'Mostra solo le ultime 4 settimane' : 'Mostra le settimane precedenti (' + (chiavi.length - 4) + ')'}</button>` : '');
 }
 
 // ── Render: Catalog ──────────────────────────────────────────────────────────
@@ -1087,30 +1153,27 @@ function renderCatalog() {
   const el = document.getElementById('catalogList');
   if (!el) return;
   const q = (document.getElementById('catalogSearch')?.value || '').toLowerCase();
+  const tutti = Object.keys(catalog).length;
+  _setTxt('catK', _nomeWH() + ' · catalogo');
+  _setTxt('catT', tutti ? tutti + (tutti === 1 ? ' prodotto' : ' prodotti') : 'Nessun prodotto');
   const items = Object.entries(catalog)
     .filter(([bc, p]) => !q || p.name.toLowerCase().includes(q) || bc.includes(q))
     .sort((a, b) => a[1].name.localeCompare(b[1].name, 'it'));
 
   if (!items.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🗂</div><div class="empty-text">Nessun prodotto in catalogo</div></div>`;
+    el.innerHTML = _vuoto('scatola', q ? 'Nessun prodotto trovato' : 'Nessun prodotto in catalogo');
     return;
   }
 
-  el.innerHTML = items.map(([bc, p]) => `
-    <div class="catalog-item">
-      <div class="catalog-info">
-        <div class="catalog-name">${esc(p.name)}</div>
-        <div class="catalog-sub">
-          <span class="catalog-barcode">${bc}</span>
-          ${p.unit ? `<span class="catalog-unit">${esc(p.unit)}</span>` : ''}
-        </div>
-      </div>
-      <button class="catalog-edit" onclick="editProduct('${bc}')" title="Modifica">✏️</button>
-      <button class="catalog-edit" onclick="deleteProduct('${bc}')" title="Elimina" style="color:var(--red)">🗑️</button>
-    </div>`).join('');
+  el.innerHTML = '<div class="scheda">' + items.map(([bc, p]) => `
+    <div class="riga">
+      <div class="riga-info"><div class="riga-n">${esc(p.name)}</div>
+        <div class="riga-s"><span class="cod">${/^manual_/.test(bc) ? 'senza codice' : esc(bc)}</span>${p.unit ? ' · ' + esc(p.unit) : ''}</div></div>
+      <button class="tondo" onclick="editProduct('${esc(bc)}')" title="Modifica" aria-label="Modifica">${ICO.matita}</button>
+      <button class="tondo del" onclick="deleteProduct('${esc(bc)}')" title="Elimina" aria-label="Elimina">${ICO.cestino}</button>
+    </div>`).join('') + '</div>';
 }
 
-// ── Barcode → Movement modal ─────────────────────────────────────────────────
 async function onBarcodeDetected(bc) {
   pendingBC = bc;
   const p = catalog[bc];
@@ -1119,8 +1182,8 @@ async function onBarcodeDetected(bc) {
 
   if (!p) {
     const nameEl = document.getElementById('newName');
-    if (nameEl) nameEl.placeholder = '🔍 Ricerca…';
-    showToast('🔍 Cerco prodotto…');
+    if (nameEl) nameEl.placeholder = 'Ricerca…';
+    showToast('Cerco prodotto…');
     try {
       const _fetchOFF = async (host) => {
         const ctrl = new AbortController();
@@ -1145,7 +1208,7 @@ async function onBarcodeDetected(bc) {
       if (name) {
         if (nameEl && !nameEl.value) nameEl.value = name;
         if (nameEl) { nameEl.style.background = 'var(--green-bg)'; setTimeout(() => nameEl.style.background = '', 2000); }
-        showToast('✅ ' + name);
+        showToast(name);
       } else {
         showToast('Prodotto non trovato — inserisci manualmente');
       }
@@ -1185,7 +1248,7 @@ function openMoveModal(bc, product, isNew) {
     document.getElementById('knownBox').style.display    = 'none';
     document.getElementById('newName').value = '';
     document.getElementById('newUnit').value = '';
-    document.getElementById('sheetTitle').textContent = isManualAdd ? '🆕 Nuovo prodotto (manuale)' : '🆕 Nuovo prodotto';
+    document.getElementById('sheetTitle').textContent = isManualAdd ? 'Nuovo prodotto (manuale)' : 'Nuovo prodotto';
     document.getElementById('unitHint').textContent   = '';
     setOp('init');
   } else {
@@ -1195,7 +1258,7 @@ function openMoveModal(bc, product, isNew) {
     document.getElementById('knownBox').style.display    = '';
     document.getElementById('knownName').textContent    = product.name;
     document.getElementById('knownBarcode').textContent = bc;
-    document.getElementById('sheetTitle').textContent   = '📦 Movimento';
+    document.getElementById('sheetTitle').textContent   = 'Movimento';
     document.getElementById('unitHint').textContent     = product.unit ? '(' + product.unit + ')' : '';
     setOp('out'); // scarico è l'operazione più frequente
   }
@@ -1402,7 +1465,7 @@ function _hwProcess() {
     lsSet('qm_inv_moves_' + currentWH, moves[currentWH]);
     pushToCloud();
     renderAll();
-    const icon = type === 'in' ? '➕' : '➖';
+    const icon = type === 'in' ? '+' : '−';
     showToast(icon + ' 1 ' + (catalog[bc].unit || '') + ' — ' + catalog[bc].name);
     return;
   }

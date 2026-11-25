@@ -727,6 +727,9 @@ done
 grep -qF ".sort((a, b) => ((Number(a[0].ts) || 0) - (Number(b[0].ts) || 0)) || (a[1] - b[1]))" inventory.html \
   && ! grep -q "Also process moves before lastInit" inventory.html \
   || { echo ""; echo "  ERRORE      inventory.html: lo stock non segue piu' l'ordine di data, o conta due volte i movimenti."; BKF_KO=1; }
+# inventory.html, Movimenti (25/11/2026): in ordine di DATA (prima l'ordine di salvataggio mescolava i giorni).
+grep -qF ".sort((a, b) => ((Number(b[0].ts) || 0) - (Number(a[0].ts) || 0)) || (b[1] - a[1]))" inventory.html \
+  || { echo ""; echo "  ERRORE      inventory.html: i Movimenti non sono piu' in ordine di data."; BKF_KO=1; }
 
 # Worker non pubblicato: worker.js si pubblica a mano su Cloudflare (vedi CLAUDE.md, la
 # pubblicazione automatica è stata valutata e scartata). Una correzione può quindi essere

@@ -475,3 +475,13 @@ Galleria **Compass Ops e Registration Cards stanno sulla stessa riga** (`.miniap
 Compass Ops occupa due colonne su tre). Sotto i 1080 px di larghezza Compass Ops torna a tutta
 riga, perché i suoi tre riquadri interni in metà schermo non si leggerebbero; sul telefono le
 schede sono una sotto l'altra come sempre.
+
+## `inventory.html` nello stile di Compass (25/11/2026, QM: «adegua a Compass»)
+
+L'intestazione navy (scanner, magazzino, schede) resta com'era; il contenuto segue Inventari e
+Ordini di Compass: riga oro + titolo per ogni scheda (`.hero`), elenchi in una scheda con righe
+tratteggiate (`.scheda`/`.riga`), giacenza in navy (0 grigio, sotto zero rosso), pulsanti tondi
+(`.tondo`) e icone disegnate (`ICO`) al posto delle emoji, carattere di sistema come Compass.
+**Movimenti**: a settimane (le ultime 4, poi «Mostra le settimane precedenti») con Usciti /
+Entrati / Conteggi, e **in ordine di data**: prima seguiva l'ordine di salvataggio. Lo stock
+(`calcStock`) non è cambiato. Guida di stile: riquadro «Inventario» in «Schermate delle app».
