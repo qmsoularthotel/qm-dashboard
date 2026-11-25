@@ -10,18 +10,28 @@ Dopo varie prove il QM ha indicato come modello la schermata iniziale della Regi
 Galleria (foto), e una regola sui numeri: «i consumi zero virgola a settimana non mi servono a niente:
 devo sapere quanti flaconi si usano per fare un ordine ogni 15 giorni». Versione pubblicata
 (`invRenderStock`, classi `.inv5-*` in `style.css`):
-- **Cornice**; riga oro «<STRUTTURA> · ORDINE OGNI N GIORNI», titolo «Cosa ordinare» (o «Niente da
-  ordinare»); pastiglie «ogni 15/30/45 giorni» (`_invCopertura`, ricordata sul computer).
-- **Riquadro grande a sinistra** (rosa dei venti in filigrana): i prodotti con `_invDaOrdinare` > 0, i più
-  urgenti prima; cerchio navy/oro con la quantità (anello rosso se finito), «ordina X», frase: «finito» o
+- **Calendario degli ordini** (QM, 25/11/2026): si ordina il **venerdì ogni 15 giorni** (ogni due settimane
+  da venerdì 4/12/2026, `INV_CICLO_VENERDI`, uguale per SoulArt e Art Resort), consegna il **martedì**,
+  distribuzione ai carrelli HKP il **mercoledì**. `_invCiclo(oggi)`: prossimo venerdì del ciclo (oggi
+  compreso), consegna (+4), carrelli (+5), consegna dopo (+18); `copertura` = giorni da oggi alla consegna
+  DOPO (quello che si ordina venerdì deve bastare fin lì); `finoConsegna` = giorni alla consegna. Al posto
+  delle pastiglie 15/30/45 (tolte).
+- **Cornice**; riga oro «<STRUTTURA> · PROSSIMO ORDINE <venerdì>», titolo «Cosa ordinare» (o «Niente da
+  ordinare»).
+- **Riquadro grande a sinistra** (rosa dei venti in filigrana): i prodotti con `_invDaOrdinare` > 0; in cima
+  gli **urgenti** (finiti o che finiscono prima della consegna di martedì, senza niente in arrivo: «serve
+  subito», anello rosso), poi i più urgenti per autonomia; cerchio navy/oro con la quantità (anello rosso se finito), «ordina X», frase: «finito» o
   «ne restano X, per circa N giorni» · «se ne usano Y ogni N giorni» · «Z già in arrivo». Se non c'è niente:
   cerchio con la spunta e «non serve ordinare niente».
-- **Scheda a destra con bordo oro**: il **foglio della lista per il fornitore** (prodotto e quantità, data
-  di oggi), inclinato come il foglio A4 della Registration.
+- **Scheda a destra con bordo oro, «Prossimo ordine»**: le tre date (Ordine · Consegna · Carrelli HKP),
+  il foglio (prodotto e quantità, data del venerdì) e **«Crea l'ordine»** (`invStockCreaOrdine`): passa
+  alla scheda Ordini e, a ridisegno finito (`_invOrdineDaStock` letto in `invRenderOrders`, altrimenti il
+  ridisegno lo richiuderebbe vuoto), apre «Nuovo ordine» già compilato (struttura, data del venerdì,
+  prodotti e quantità). Si sceglie il fornitore, si salva, poi «Invia» (WhatsApp).
 - **Tre riquadri** come i passi: In regola (bastano per il periodo), In arrivo (ordini aperti), Senza
   consumi (nessuno scarico: «non si sa»).
 - **Tabella di tutti**: In stock (si tocca per correggerlo; rosso se finito; «+X in arrivo») · Se ne usano
-  in N giorni (`_invUsoTesto`: interi; sotto 1 «1 <unità> ogni N giorni») · Ultimo ordine ricevuto.
+  in 15 giorni (`_invUsoTesto` su 14 giorni: interi; sotto 1 «1 <unità> ogni N giorni») · Ultimo ordine ricevuto.
 - **Fascia verde**: i consumi vengono da scarichi e aggiornamenti di giacenza.
 - Calcoli: `_invConsumoMedio` (stessa formula della Media di Analisi), `_invDaOrdinare` (consumo al
   giorno × giorni − max(0,stock) − in arrivo, per eccesso), `_invUltimiOrdini` (solo ricevuti),
