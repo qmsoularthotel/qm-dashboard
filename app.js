@@ -10728,26 +10728,34 @@ function invRender(){
     try{const d=invGetData();invRenderStock(d.catalog,d.moves);}catch(e){}
   })();
 }
-// L'ultimo ordine di ogni prodotto in un magazzino: {barcode:{qty,unit,data,ts,ricevuto}}. Gli
-// annullati non contano; un ordine ricevuto mostra la quantità arrivata, se è diversa.
-function _invUltimiOrdini(wh){
-  const out={};let ord=[];
-  try{ord=JSON.parse(localStorage.getItem('qm_inv_orders')||'[]');}catch(e){}
+// L'ultimo ordine RICEVUTO di ogni prodotto in un magazzino: {barcode:{qty,unit,data,ts}} (QM,
+// 25/11/2026: serve per fare l'ordine nuovo e vedere quanto se ne consuma; quelli ancora in
+// arrivo e gli annullati non contano). Quantità = quella arrivata, se è diversa dall'ordinata;
+// data = quando è arrivato (tsRicevuto), se no la data dell'ordine.
+function _invUltimiOrdini(wh,ordini){
+  const out={};let ord=ordini;
+  if(!ord){try{ord=JSON.parse(localStorage.getItem('qm_inv_orders')||'[]');}catch(e){ord=[];}}
   (Array.isArray(ord)?ord:[]).forEach(o=>{
-    if(!o||o.wh!==wh||o.status==='annullato')return;
-    const ts=Number(o.ts)||0;
+    if(!o||o.wh!==wh||o.status!=='ricevuto')return;
+    const ts=Number(o.tsRicevuto)||Number(o.ts)||0;
     (o.items||[]).forEach(it=>{if(!it||!it.barcode)return;const p=out[it.barcode];if(p&&p.ts>=ts)return;
-      const ric=o.status==='ricevuto';const q=ric&&it.qtyRicevuta!=null?it.qtyRicevuta:it.qty;
-      out[it.barcode]={qty:Number(q)||0,unit:it.unit||'',data:o.date||(ts?new Date(ts).toLocaleDateString('it-IT'):''),ts,ricevuto:ric};});
+      const q=it.qtyRicevuta!=null?it.qtyRicevuta:it.qty;
+      out[it.barcode]={qty:Number(q)||0,unit:it.unit||'',data:ts?new Date(ts).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}):(o.date||''),ts};});
   });
   return out;
+}
+// Quanto se n'è consumato (scarichi) dal giorno dell'ultimo ordine ricevuto a oggi, e da quanti giorni.
+function _invConsumoDa(bc,moves,ts){
+  let q=0;(moves||[]).forEach(m=>{if(m&&m.barcode===bc&&m.type==='out'&&Number(m.ts)>=ts)q+=Number(m.qty)||0;});
+  return{qty:Math.round(q*1000)/1000,giorni:Math.max(0,Math.floor((Date.now()-ts)/86400000))};
 }
 function invRenderStock(catalog,moves){
   // Stile aggiornato (25/11/2026, QM, scelta fra tre proposte: «A senza KPI e senza barre»): un
   // pannello di Compass con bordo oro a tutta larghezza, filtri nell'intestazione, una riga per
-  // prodotto con lo stato in pillola, la scorta in grande, l'ULTIMO ORDINE (data, quantità, in
-  // arrivo o ricevuto — QM: «la soglia non serve, mi serve sapere quando è stato ordinato l'ultima
-  // volta e in che quantità») e le azioni con didascalia (.rc-act-btn). La soglia resta dietro lo
+  // prodotto con lo stato in pillola, la scorta in grande, l'ULTIMO ORDINE RICEVUTO (quantità, data
+  // d'arrivo e quanto se n'è consumato da allora — QM: «la soglia non serve, mi serve sapere quando
+  // è stato ordinato l'ultima volta e in che quantità», per fare l'ordine e vedere il consumo;
+  // quelli in arrivo no) e le azioni con didascalia (.rc-act-btn). La soglia resta dietro lo
   // stato (Sotto soglia) e si cambia dal Catalogo. Misure in classi (.inv-riga…), mai in linea.
   const ultimi=_invUltimiOrdini(_invWh);
   const el=document.getElementById('inv-stock-view');
@@ -10781,7 +10789,9 @@ function invRenderStock(catalog,moves){
     const unit=it.unit?`<span class="inv-unita">${_esc(it.unit)}</span>`:'';
     const colBar=it.status==='out'?'var(--red)':it.status==='low'?'var(--amber)':'var(--green)';
     const uo=ultimi[it.bc];
-    const ordine=uo?`<div class="inv-ord"><b>${uo.qty}${uo.unit?` <span class="inv-unita">${_esc(uo.unit)}</span>`:''}</b><small>${_esc(uo.data)} · <span class="${uo.ricevuto?'inv-ord-ok':'inv-ord-attesa'}">${uo.ricevuto?'ricevuto':'in arrivo'}</span></small></div>`:'<div class="inv-ord inv-ord-mai">mai ordinato</div>';
+    const u=uo&&uo.unit?`<span class="inv-unita">${_esc(uo.unit)}</span>`:'';
+    const cons=uo?_invConsumoDa(it.bc,moves,uo.ts):null;
+    const ordine=uo?`<div class="inv-ord"><b>${uo.qty}${u}</b><small>arrivato il ${_esc(uo.data)}</small><small class="inv-ord-cons">consumati ${cons.qty}${u} in ${cons.giorni} ${cons.giorni===1?'giorno':'giorni'}</small></div>`:'<div class="inv-ord inv-ord-mai">nessun ordine ricevuto</div>';
     return`<div class="inv-riga inv-st-${it.status}">
       <div class="inv-nome"><b title="${_esc(it.name)}">${_esc(it.name)}</b><small>ultimo movimento ${invFmtDate(it.last?.ts)}</small></div>
       <div class="inv-stato"><span class="c-badge ${stato[it.status][0]}">${stato[it.status][1]}</span></div>
