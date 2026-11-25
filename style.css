@@ -285,6 +285,11 @@ body.dark .panel{box-shadow:none;}
 .inv-dor-no{font-size:var(--fs-xxs);color:var(--text-dim);font-style:italic;}
 .inv-cop{font-size:var(--fs-xxs);color:var(--text-dim);align-self:center;}
 .inv-sep{width:1px;background:var(--border);margin:0 4px;}
+/* Ricevimento merce: data vera d'arrivo e scelta se toccare lo stock (25/11/2026). */
+.inv-ric{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border-light);border-radius:8px;}
+.inv-ric .form-input{font-family:inherit;}
+.inv-ric-chk{display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);font-weight:600;color:var(--text);cursor:pointer;}
+.inv-ric-nota{font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.5;}
 .inv-qta{font-size:20px;font-weight:700;line-height:1;min-width:64px;font-variant-numeric:tabular-nums;}
 .inv-unita{font-size:var(--fs-xxs);font-weight:500;color:var(--text-dim);margin-left:3px;}
 .inv-mini{display:none;}

@@ -4610,3 +4610,13 @@ sez('Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordin
   ok('da ordinare: senza consumi non si sa', _invDaOrdinare(0, 3, 0, 30), null);
   ok('lo Stock usa in arrivo e copertura', /_invDaOrdinare\(gg,it\.qty,ia\?ia\.qty:0,_invCopertura\)/.test(String(invRenderStock)), true);
 })();
+
+// Ricevimento segnato in ritardo (25/11/2026, QM: ordini del 21/09 mai segnati ricevuti).
+(function () {
+  var ora = new Date(2026, 10, 25, 18, 30).getTime();
+  ok('ricezione: data passata = mezzogiorno di quel giorno', new Date(_invTsRicezione('2026-09-21', ora)).toISOString().slice(0, 10) + ' ' + new Date(_invTsRicezione('2026-09-21', ora)).getHours(), '2026-09-21 12');
+  ok('ricezione: oggi = adesso', _invTsRicezione('2026-11-25', ora), ora);
+  ok('ricezione: mai nel futuro', _invTsRicezione('2027-01-01', ora), ora);
+  ok('ricezione: data e stock dalla finestra', /o\.tsRicevuto=tsRic;/.test(String(invOrdersConfirmDDT)) && /qty>0&&allaScorta\)/.test(String(invOrdersConfirmDDT)) && /type:'in',qty,ts:tsRic/.test(String(invOrdersConfirmDDT)), true);
+  ok('ricezione: annullandola si toglie anche «senza stock»', /delete o\.tsRicevuto;delete o\.senzaStock;/.test(String(invOrdersUndoReceived)), true);
+})();

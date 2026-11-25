@@ -91,6 +91,17 @@ Quando si clicca **✅ Ricevuto** su un ordine in stato `ordinato`, si apre un m
 3. Pulsante **"+ Aggiungi prodotto non ordinato"** — aggiunge riga con select dal catalogo + qty
 4. **Conferma** → crea movimenti `in`, salva `movIds` sull'ordine, marca `status: 'ricevuto'`
 
+### Ricezione segnata in ritardo (25/11/2026, QM: ordini del 21/09 mai segnati ricevuti)
+
+Nella finestra «Ricevimento merce» (`invOrdersMarkReceived`): **«Arrivato il»** (`#ddt_data`, di
+base oggi, mai nel futuro) e **«Aggiungi le quantità allo stock»** (`#ddt_stock`). Scegliendo una
+data passata la spunta si toglie da sola (`invDDTData`): una ricezione segnata in ritardo di solito
+è già contata nello stock (conteggio o rettifica). `invOrdersConfirmDDT`: `tsRicevuto` = mezzogiorno
+del giorno scelto (`_invTsRicezione`; oggi = adesso); senza spunta **nessun movimento di carico**,
+`o.senzaStock=true` (nella lista ordini «· stock non toccato»), `qtyRicevuta` comunque scritta. Con
+la spunta i carichi hanno la data scelta. L'«Ultimo ordine» dello Stock e il «consumati da allora»
+partono così dalla data vera. Annullando la ricezione si toglie anche `senzaStock`.
+
 ### `invOrdersUndoReceived(id)`
 
 Annulla una ricezione: rimuove i movimenti creati (usando `o.movIds`) e resetta l'ordine a `status: 'ordinato'`. **Nota**: ordini ricevuti prima dell'introduzione di `movIds` non hanno movimenti tracciati — l'undo resetta solo lo stato.

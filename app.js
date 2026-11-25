@@ -11374,7 +11374,7 @@ function invRenderOrders(){
     h+=`<div style="display:flex;flex-direction:column;gap:10px;max-width:420px;">`;
     filtered.forEach(o=>{
       const nItems=(o.items||[]).length;
-      const rcvDate=o.tsRicevuto?` → ricevuto ${_ordFmtDate(o.tsRicevuto)}${o.ddt?' ('+o.ddt+')':''}`:'';
+      const rcvDate=o.tsRicevuto?` → ricevuto ${_ordFmtDate(o.tsRicevuto)}${o.ddt?' ('+o.ddt+')':''}${o.senzaStock?' · stock non toccato':''}`:'';
       const itemRows=(o.items||[]).map(it=>{
         const dispQty=it.qtyRicevuta!=null?it.qtyRicevuta:it.qty;
         const qtyCell=dispQty?`<td style="padding:7px 12px;font-size:var(--fs-xs);text-align:right;font-weight:700;">${dispQty}${it.unit?' '+it.unit:''}</td>`:`<td></td>`;
@@ -11560,6 +11560,14 @@ function invOrdersMarkReceived(id){
         <label style="font-size:var(--fs-xs);font-weight:600;display:block;margin-bottom:4px;">N° DDT / documento di trasporto</label>
         <input id="ddt_num" type="text" placeholder="es. DDT 2026/1234" style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:var(--fs-xs);">
       </div>
+      <!-- Ricezione segnata in ritardo (25/11/2026, QM: ordini del 21/09 mai segnati ricevuti): la
+           data vera d'arrivo, e se aggiungere o no le quantità allo stock (già contate = no). -->
+      <div class="inv-ric">
+        <label class="form-field"><span class="form-label">Arrivato il</span>
+          <input id="ddt_data" type="date" class="form-input" value="${_invOggiIso()}" max="${_invOggiIso()}" onchange="invDDTData(this)"></label>
+        <label class="inv-ric-chk"><input type="checkbox" id="ddt_stock" checked> Aggiungi le quantità allo stock</label>
+        <div class="inv-ric-nota" id="ddt_nota">Togli la spunta se la merce è già contata nello stock (ricezione segnata in ritardo): l'ordine risulta ricevuto in quella data, senza cambiare lo stock.</div>
+      </div>
       <table style="width:100%;border-collapse:collapse;margin-bottom:8px;" id="ddt-table">
         <thead>
           <tr style="border-bottom:1px solid var(--border);">
@@ -11579,6 +11587,17 @@ function invOrdersMarkReceived(id){
   document.body.appendChild(modal);
 }
 
+function _invOggiIso(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+// Una data passata vuol dire quasi sempre «segnata in ritardo»: la merce è già nello stock, quindi
+// la spunta si toglie da sola (si può rimettere). Tornando a oggi si rimette.
+function invDDTData(inp){const c=document.getElementById('ddt_stock');if(!c||!inp)return;c.checked=!inp.value||inp.value>=_invOggiIso();}
+// Dalla data scelta al momento della ricezione: a mezzogiorno di quel giorno; oggi = adesso.
+function _invTsRicezione(iso,ora){
+  const o=ora||Date.now();const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return o;
+  const d=new Date(+m[1],+m[2]-1,+m[3],12);const oggi=new Date(o);
+  if(d.getFullYear()===oggi.getFullYear()&&d.getMonth()===oggi.getMonth()&&d.getDate()===oggi.getDate())return o;
+  return Math.min(d.getTime(),o);
+}
 function invDDTAddRow(){
   const tbody=document.getElementById('ddt-tbody');
   if(!tbody)return;
@@ -11604,6 +11623,8 @@ function invOrdersConfirmDDT(id){
   const o=orders.find(x=>x.id===id);
   if(!o)return;
   const ddtNum=(document.getElementById('ddt_num')?.value||'').trim();
+  const tsRic=_invTsRicezione(document.getElementById('ddt_data')?.value);
+  const allaScorta=document.getElementById('ddt_stock')?document.getElementById('ddt_stock').checked:true;
   const movKey='qm_inv_moves_'+o.wh;
   const noteBase='DDT'+(ddtNum?' '+ddtNum:'')+' · '+o.date+(o.fornitore?' · '+o.fornitore:'');
   const createdIds=[];
@@ -11612,21 +11633,22 @@ function invOrdersConfirmDDT(id){
     // Prodotti dell'ordine
     (o.items||[]).forEach((it,i)=>{
       const qty=parseFloat(document.getElementById('ddt_qty_'+i)?.value||0);
-      if(qty>0){const mid=Date.now()+'_'+Math.random().toString(36).slice(2,5);createdIds.push(mid);moves.push({id:mid,barcode:it.barcode,type:'in',qty,ts:Date.now(),note:noteBase});}
+      if(qty>0&&allaScorta){const mid=Date.now()+'_'+Math.random().toString(36).slice(2,5);createdIds.push(mid);moves.push({id:mid,barcode:it.barcode,type:'in',qty,ts:tsRic,note:noteBase});}
       it.qtyRicevuta=qty>0?qty:(it.qty||0);
     });
     // Prodotti extra aggiunti nel modal
     document.querySelectorAll('#ddt-tbody input[data-extra="1"]').forEach(inp=>{
       const qty=parseFloat(inp.value||0);
       const bc=document.getElementById(inp.dataset.sel)?.value||'';
-      if(qty>0&&bc){const mid=Date.now()+'_'+Math.random().toString(36).slice(2,5);createdIds.push(mid);moves.push({id:mid,barcode:bc,type:'in',qty,ts:Date.now(),note:noteBase+' (extra)'});}
+      if(qty>0&&bc&&allaScorta){const mid=Date.now()+'_'+Math.random().toString(36).slice(2,5);createdIds.push(mid);moves.push({id:mid,barcode:bc,type:'in',qty,ts:tsRic,note:noteBase+' (extra)'});}
     });
     const json=JSON.stringify(moves);
     localStorage.setItem(movKey,json);
     _qmElencoSalva(movKey,[],_invRidisegna);
   }catch(e){}
   o.status='ricevuto';
-  o.tsRicevuto=Date.now();
+  o.tsRicevuto=tsRic;
+  if(!allaScorta)o.senzaStock=true;else delete o.senzaStock;
   if(ddtNum) o.ddt=ddtNum;
   o.movIds=createdIds;
   invOrdersSave(orders);
@@ -11657,7 +11679,7 @@ async function invOrdersUndoReceived(id){
     }catch(e){}
   }
   o.status='ordinato';
-  delete o.tsRicevuto;
+  delete o.tsRicevuto;delete o.senzaStock;
   delete o.ddt;
   delete o.movIds;
   invOrdersSave(orders);
