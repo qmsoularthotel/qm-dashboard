@@ -221,16 +221,18 @@ body{background:var(--bg);}
       </div>
     </div>
 
-    <h2 style="margin-top:22px">Lista della spesa + tabella semplice</h2>
-    <p class="ds-intro">Nata in Inventari e Ordini › Stock (25/11/2026, scelta del QM dopo varie prove). In cima un pannello con <strong>solo quello che chiede un'azione</strong>: nome, quantità grande a destra, una frase normale sotto. Sotto, una tabella semplice di tutto, testo normale, colore solo per l'allarme (rosso). I numeri si dicono nella misura in cui servono («se ne usano 7 flaconi ogni 15 giorni»), mai decimali astratti. Scelte attive in chiaro col bordo, niente pillole piene.</p>
-    <div class="inv3-scelta"><span>Ordine ogni</span><button class="rev-filter-btn active">15 giorni</button><button class="rev-filter-btn">30 giorni</button></div>
-    <div class="panel inv3-p"><div class="panel-header"><span class="panel-title">Da ordinare · SoulArt Hotel</span><span class="inv3-cnt">1 prodotto</span></div>
-      <div class="inv3-ord"><div class="inv3-ord-n">Prodotto di prova<small><b class="inv3-rosso">finito</b> · se ne usano 7 fl ogni 15 giorni</small></div><div class="inv3-ord-q">7<small>fl</small></div></div></div>
-    <div class="panel inv3-p"><div class="panel-header"><span class="panel-title">Tutti i prodotti</span><span class="inv3-cnt">2</span></div>
-      <div class="inv3-tw"><table class="inv3-tab"><thead><tr><th>Prodotto</th><th class="r">In stock</th><th class="r">Se ne usano in 15 giorni</th><th class="r">Ultimo ordine</th></tr></thead><tbody>
-      <tr><td>Prodotto di prova</td><td class="r"><button class="inv3-stock inv3-rosso">0 fl</button></td><td class="r">7 fl</td><td class="r inv3-gr">12 fl · 21/09</td></tr>
-      <tr><td>Altro prodotto</td><td class="r"><button class="inv3-stock">20 pz</button><small>+12 in arrivo</small></td><td class="r">1 pz ogni 70 giorni</td><td class="r inv3-gr">—</td></tr></tbody></table></div></div>
-    <code class="ds-code" style="margin-bottom:14px">.inv3-scelta · .panel.inv3-p › .inv3-ord › .inv3-ord-n (small) + .inv3-ord-q · .inv3-tab (.r · .inv3-stock · .inv3-rosso · .inv3-gr · .inv3-no)</code>
+    <h2 style="margin-top:22px">Composizione «Registration Cards»</h2>
+    <p class="ds-intro">La schermata che il QM ha indicato come modello (Registration Cards della Galleria), ripresa in Inventari e Ordini › Stock (25/11/2026): cornice; riga oro maiuscola + titolo grande, pastiglie a destra; riquadro grande a sinistra con la rosa dei venti in filigrana; a destra la scheda con bordo oro e un foglio disegnato leggermente inclinato; tre riquadri come i passi col cerchio navy/oro; fascia verde in fondo. Frasi normali, numeri nella misura in cui servono («se ne usano 7 fl ogni 15 giorni»).</p>
+    <div class="inv5-cornice">
+      <div class="inv5-hero"><div><div class="inv5-k">SoulArt Hotel · ordine ogni 15 giorni</div><div class="inv5-t">Cosa ordinare</div></div><div class="inv5-per"><button class="inv5-chip on">ogni 15 giorni</button><button class="inv5-chip">ogni 30 giorni</button></div></div>
+      <div class="inv5-griglia">
+        <div class="inv5-grande"><div class="inv5-gl">Da ordinare</div><div class="inv5-voce"><span class="inv5-num fin">7</span><div><div class="inv5-vt">Prodotto di prova <span class="inv5-vq">· ordina 7 fl</span></div><div class="inv5-vs"><b class="inv5-rosso">finito</b> · se ne usano 7 fl ogni 15 giorni</div></div></div></div>
+        <div class="inv5-lato"><div class="inv5-ll">Lista per il fornitore</div><div class="inv5-foglio"><div class="inv5-ft"><span>Ordine · SoulArt Hotel</span><span>25/11/2026</span></div><div class="inv5-fr"><span>Prodotto di prova</span><b>7 fl</b></div></div><div class="inv5-nota">Quantità per coprire 15 giorni</div></div>
+      </div>
+      <div class="inv5-passi"><div class="inv5-passo"><span class="inv5-pn">3</span><div><div class="inv5-pt">In regola</div><div class="inv5-ps">prodotti che bastano</div></div></div><div class="inv5-passo"><span class="inv5-pn">1</span><div><div class="inv5-pt">In arrivo</div><div class="inv5-ps">ordine non ancora ricevuto</div></div></div><div class="inv5-passo"><span class="inv5-pn">0</span><div><div class="inv5-pt">Senza consumi</div><div class="inv5-ps">non si sa quanto se ne usa</div></div></div></div>
+      <div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Fascia verde: una garanzia o un'indicazione vera, in una frase.</span></div>
+    </div>
+    <code class="ds-code" style="margin-bottom:14px">.inv5-cornice › .inv5-hero (.inv5-k · .inv5-t · .inv5-chip.on) · .inv5-griglia › .inv5-grande (filigrana; .inv5-voce › .inv5-num) + .inv5-lato (.inv5-foglio) · .inv5-passi › .inv5-passo · .inv5-tutti › .inv5-tab · .inv5-fascia</code>
 
     <h2 style="margin-top:22px">Firma in fondo</h2>
     <p class="ds-intro">In fondo a ogni pagina, in Compass e in tutte le app (24/11/2026): marchio «Compass <span style="color:var(--gold)">QM</span>» e una riga sul nome della pagina. Una frase in più solo se è vera e verificata nel codice (Registration Cards). <strong>Compass OPS ha la sua</strong>, la «firma d'autore» (<code>.firma.firma-ops</code>): la vedi nel suo riquadro in «Schermate delle app». Nelle app con stile proprio è una copia di <code>.firma</code>; dentro Compass OPS la Registration nasconde la sua.</p>

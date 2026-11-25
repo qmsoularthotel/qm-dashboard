@@ -4,24 +4,30 @@
 
 ## Inventario Detersivi — Ordini
 
-### Tab Stock — lista della spesa + tabella semplice (25/11/2026, QM)
+### Tab Stock — composizione della Registration Cards della Galleria (25/11/2026, QM)
 
-Dopo cinque prove (KPI + righe; tessere; righe con dettagli; tabella «a colpo d'occhio» con pillole) il QM
-ha scelto la **proposta 1** e una regola: «i consumi zero virgola a settimana non mi servono a niente:
+Dopo varie prove il QM ha indicato come modello la schermata iniziale della Registration Cards della
+Galleria (foto), e una regola sui numeri: «i consumi zero virgola a settimana non mi servono a niente:
 devo sapere quanti flaconi si usano per fare un ordine ogni 15 giorni». Versione pubblicata
-(`invRenderStock`, classi `.inv3-*` in `style.css`):
-- **«Ordine ogni 15 / 30 / 45 giorni»** in alto (`_invCopertura`, ricordata sul computer in
-  `qm_inv_copertura`): tutta la pagina parla di quel periodo.
-- **Pannello «Da ordinare»**: solo i prodotti con `_invDaOrdinare` > 0 (consumo al giorno × giorni −
-  max(0,stock) − in arrivo, per eccesso), i più urgenti prima; quantità grande a destra e una frase sotto:
-  «finito» o «ne restano X (per circa N giorni)» · «se ne usano Y ogni N giorni» · «Z già in arrivo».
-- **Tabella «Tutti i prodotti»** (ordine alfabetico): In stock (si tocca per correggerlo, `invEditQty`;
-  rosso se finito; «+X in arrivo») · **Se ne usano in N giorni** · Ultimo ordine ricevuto (quantità · gg/mm).
-- **Consumi in numeri interi** (`_invUsoTesto`): consumo al giorno (`_invConsumoMedio`, stessa formula
-  della Media di Analisi) × giorni, arrotondato; sotto 1 nel periodo «1 <unità> ogni N giorni»; senza
-  consumi «non si sa».
-- Niente pulsanti sulle righe: modifica ed eliminazione nel Catalogo, rifornimento nello scanner. Sotto i
-  640px la tabella nasconde «Ultimo ordine». Le regole delle prove precedenti sono state tolte.
+(`invRenderStock`, classi `.inv5-*` in `style.css`):
+- **Cornice**; riga oro «<STRUTTURA> · ORDINE OGNI N GIORNI», titolo «Cosa ordinare» (o «Niente da
+  ordinare»); pastiglie «ogni 15/30/45 giorni» (`_invCopertura`, ricordata sul computer).
+- **Riquadro grande a sinistra** (rosa dei venti in filigrana): i prodotti con `_invDaOrdinare` > 0, i più
+  urgenti prima; cerchio navy/oro con la quantità (anello rosso se finito), «ordina X», frase: «finito» o
+  «ne restano X, per circa N giorni» · «se ne usano Y ogni N giorni» · «Z già in arrivo». Se non c'è niente:
+  cerchio con la spunta e «non serve ordinare niente».
+- **Scheda a destra con bordo oro**: il **foglio della lista per il fornitore** (prodotto e quantità, data
+  di oggi), inclinato come il foglio A4 della Registration.
+- **Tre riquadri** come i passi: In regola (bastano per il periodo), In arrivo (ordini aperti), Senza
+  consumi (nessuno scarico: «non si sa»).
+- **Tabella di tutti**: In stock (si tocca per correggerlo; rosso se finito; «+X in arrivo») · Se ne usano
+  in N giorni (`_invUsoTesto`: interi; sotto 1 «1 <unità> ogni N giorni») · Ultimo ordine ricevuto.
+- **Fascia verde**: i consumi vengono da scarichi e aggiornamenti di giacenza.
+- Calcoli: `_invConsumoMedio` (stessa formula della Media di Analisi), `_invDaOrdinare` (consumo al
+  giorno × giorni − max(0,stock) − in arrivo, per eccesso), `_invUltimiOrdini` (solo ricevuti),
+  `_invInArrivo` (status 'ordinato').
+- Sotto i 900px le due colonne si impilano; sotto i 640px la tabella nasconde «Ultimo ordine». Le regole
+  delle prove precedenti (.inv-riga, .inv2/3/4) sono state tolte.
 Limite: conta solo ciò che è scansionato o contato; uno stock negativo (carico non scansionato) vale 0.
 Controlli in `test/controlli.js` («Inventario: …» e «uso: …»).
 
