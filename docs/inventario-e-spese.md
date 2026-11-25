@@ -22,6 +22,9 @@ vale ancora). Per ogni prodotto:
   la **stessa formula della Media/sett di Analisi** (tutto lo storico, scarichi + ammanchi delle
   rettifiche, almeno 14 giorni). Sotto, il consumo a settimana.
 - Dopo la lettura degli ordini dal cloud lo Stock si ridisegna (gli ordini servono alle colonne).
+Larghezze: tabella sopra i 1380px; **fra 769 e 1380px** (finestra a metà schermo) due righe per
+prodotto con le etichette (prima le colonne fisse schiacciavano a zero il nome, 25/11/2026); sotto,
+blocco da smartphone.
 Limite: conta solo ciò che è scansionato; uno stock negativo (carico non scansionato) vale 0.
 Controlli: «Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordinare» in
 `test/controlli.js`.

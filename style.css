@@ -1138,3 +1138,18 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .firma{margin-top:26px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;line-height:1.7;color:var(--text-muted);text-align:center;}
 .firma-marchio{display:block;font-size:12px;font-weight:700;color:var(--text-dim);letter-spacing:-.01em;margin-bottom:3px;}
 .firma-marchio span{color:var(--gold);}
+/* Inventari › Stock a larghezza intermedia (25/11/2026, QM: con la finestra a metà schermo le colonne
+   fisse schiacciavano a zero il nome e i titoli si sovrapponevano). Fra smartphone e schermo largo ogni
+   prodotto va su due righe: nome e stato sopra, In stock / Ultimo ordine / Da ordinare / azioni sotto,
+   ognuno con la sua etichetta. Solo sopra i 768px: sotto vale il blocco dello smartphone. */
+@media (min-width:769px) and (max-width:1380px){
+  .inv-riga{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto;gap:6px 16px;padding:12px 18px;}
+  .inv-testa{display:none;}
+  .inv-nome{grid-column:1/4;}
+  .inv-stato{justify-self:end;}
+  .inv-mini{display:block;font-size:var(--fs-xxs);color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px;}
+  .inv-scorta .inv-qta::before{content:'In stock';display:block;font-size:var(--fs-xxs);font-weight:400;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+  .inv-azioni{align-self:end;}
+  .panel-header:has(.inv-filtri){flex-wrap:wrap;}
+  .inv-filtri{margin-left:0;width:100%;}
+}
