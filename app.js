@@ -15448,7 +15448,7 @@ const BIA_DOT_DEFAULT={sa:{camere:22,
 // Boutique (25/11/2026, il QM, contratto in mano): 10 camere, 9 matrimoniali e 1 tripla.
 //   matrimoniale: 2 lenzuola matr., 4 federe, 2 teli/viso/bidet
 //   tripla: 2 lenzuola matr. + 2 singole, 6 federe, 3 teli/viso/bidet
-//   scendibagno: 1 per bagno (non detto dal QM: da confermare).
+//   scendibagno: 1 per camera (confermato dal QM lo stesso giorno).
 // I numeri del contratto erano già scritti dalla pagina: qui solo come partenza.
 bh:{camere:10,
   'Lenzuolo matrimoniale':{contratto:300,allestimento:20},'Lenzuolo singolo':{contratto:120,allestimento:2},

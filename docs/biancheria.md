@@ -1556,7 +1556,7 @@ matrimoniali 300, singole 120, federe 300, viso 300, bidet 300, teli 300, scendi
 **Allestimento** (il QM): 10 camere, 9 matrimoniali e 1 tripla.
 - matrimoniale: 2 lenzuola matrimoniali, 4 federe, 2 teli / viso / bidet;
 - tripla: 2 lenzuola matrimoniali + 2 singole, 6 federe, 3 teli / viso / bidet;
-- scendibagno: **1 per camera, ipotesi** (il QM non l'ha detto: da confermare).
+- scendibagno: **1 per camera** (confermato dal QM lo stesso giorno).
 
 Totali: **matrimoniali 20, singole 2, federe 42, teli 21, viso 21, bidet 21, scendibagno 10**.
 
