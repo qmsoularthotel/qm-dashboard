@@ -156,15 +156,72 @@ ok('Reso Galleria: la distinta va al Resident Manager', /Front Office Manager/.t
 
 // ── Menu laterale come Compass, con la voce Controllo fatturazione (25/09/2026) ──
 ok('Galleria: nove voci di menu',                   Object.keys(BG_SEZIONI).join(','), 'consumo,conteggio,giacenza,reso,fattura,preferenze,statistiche,archivio,presenze,registration');
-// ── Conteggio Biancheria: modulo in costruzione, in attesa dei contratti (16/11/2026) ──
+// ── Conteggio Biancheria: Conteggio a scorrere per Art Resort (25/11/2026) ──
+// Prima (16/11/2026) era un modulo in costruzione per tutte e due le strutture. Arrivato il
+// contratto di Art Resort, la pagina è la copia del Conteggio a scorrere di Compass; Santa
+// Brigida resta in attesa del suo contratto.
 (function () {
-  var box = { innerHTML: '' }, vero = document.getElementById;
+  var box = { innerHTML: '' }, vero = document.getElementById, ph = _gbHotel, sb0 = _gbDotSblocco, prima = _gb;
+  _gb = { consumi: [], giri: [], conte: [] };
   document.getElementById = function (id) { return id === 'gb-conteggio' ? box : null; };
-  try { _gbRenderConteggio(); } finally { document.getElementById = vero; }
-  ok('Galleria: Conteggio Biancheria in costruzione', /Modulo in costruzione/.test(box.innerHTML), true);
-  ok('Galleria: cita le due strutture',               /Art Resort Galleria Umberto[\s\S]*Art Suite Santa Brigida/.test(box.innerHTML), true);
-  ok('Galleria: firma d\'autore e uso interno',       /ideata e sviluppata da Pierpaolo Presta[\s\S]*Per esclusivo uso interno/.test(box.innerHTML), true);
-  ok('Galleria: la voce apre il conteggio',           /_bgSezione==='conteggio'\)_gbRenderConteggio\(\)/.test(String(bgSezione)), true);
+  try {
+    ok('Galleria: conteggio a scorrere solo per Art Resort', [_gbContaSi('ar'), _gbContaSi('sb'), !!GB_CONTA_HOTELS.sa, !!GB_CONTA_HOTELS.bh].join(' '), 'true false false false');
+    _gbHotel = 'ar'; _gbDotSblocco = false; _gbRenderConteggio();
+    ok('Art Resort: il riquadro del Conteggio a scorrere', /Conteggio a scorrere · Art Resort/.test(box.innerHTML), true);
+    ok('Art Resort: lucchetto per contratto e letti',   /🔒 Contratto e letti/.test(box.innerHTML), true);
+    ok('Art Resort: il codice non inventa numeri',      /manca il contratto/.test(box.innerHTML) && _gbDotCampo('ar', 'Federa', 'contratto') === null && _gbDotLetti('ar', 'Federa') === null, true);
+    ok('Art Resort: le due linguette',                  /gbSetHotel\('ar'\)[\s\S]*gbSetHotel\('sb'\)/.test(box.innerHTML), true);
+    _gbDotSblocco = true; _gbRenderConteggio();
+    ok('Art Resort: aperto, le caselle del contratto',  /onchange="gbSetDot\('Federa','contratto',this\.value\)"/.test(box.innerHTML), true);
+    ok('Art Resort: e quelle dei letti allestiti',      /onchange="gbSetDot\('Federa','allestimento',this\.value\)"/.test(box.innerHTML), true);
+    _gbHotel = 'sb'; _gbDotSblocco = false; _gbRenderConteggio();
+    ok('Santa Brigida: in attesa del contratto',        /In attesa del contratto/.test(box.innerHTML) && !/Conteggio a scorrere ·/.test(box.innerHTML), true);
+    ok('Galleria: firma d\'autore e uso interno',       /ideata e sviluppata da Pierpaolo Presta[\s\S]*Per esclusivo uso interno/.test(box.innerHTML), true);
+  } finally { document.getElementById = vero; _gbHotel = ph; _gbDotSblocco = sb0; _gb = prima; }
+  ok('Galleria: la voce apre il conteggio',           /_bgSezione==='conteggio'\)gbConteggioEntra\(\)/.test(String(bgSezione)), true);
+  ok('Galleria: entrando il lucchetto si richiude',   /_gbDotSblocco=false/.test(String(gbConteggioEntra)), true);
+  ok('Galleria: gbRender ridisegna anche il conteggio', /_gbRenderConteggio\(\)/.test(String(gbRender)), true);
+})();
+// Il contratto scritto dalla pagina si salva e resta.
+(function () {
+  var prima = _gb, ph = _gbHotel, sb0 = _gbDotSblocco, sv = _gbSave, rd = _gbSenzaSalto, scritti = 0;
+  _gb = { consumi: [], giri: [] }; _gbHotel = 'ar';
+  _gbSave = function () { scritti++; return Promise.resolve(_gb); }; _gbSenzaSalto = function () {};
+  try {
+    _gbDotSblocco = false; gbSetDot('Federa', 'contratto', '250');
+    ok('Galleria: lucchetto chiuso, niente scritto',    !_gb.dotazione && scritti === 0, true);
+    _gbDotSblocco = true; gbSetDot('Federa', 'contratto', '250'); gbSetDot('Federa', 'allestimento', '60');
+    ok('Galleria: contratto e letti scritti',           [_gbDotCampo('ar', 'Federa', 'contratto'), _gbDotLetti('ar', 'Federa'), scritti].join(' '), '250 60 2');
+    ok('Galleria: solo per la struttura scelta',        _gbDotCampo('sb', 'Federa', 'contratto'), null);
+  } finally { _gb = prima; _gbHotel = ph; _gbDotSblocco = sb0; _gbSave = sv; _gbSenzaSalto = rd; }
+})();
+// La fusione col cloud non deve buttare via conteggi e contratto (prima _gbFondi teneva solo
+// consumi, giri, fatture e inizio).
+(function () {
+  var R = { consumi: [], giri: [], conte: [{ id: 'k1', hotel: 'ar', data: '20/11/2026', q: {} }], dotazione: { ar: { Federa: { contratto: 250, ts: 1 }, Scendibagno: { contratto: 80 } } } };
+  var L = { consumi: [], giri: [], conte: [{ id: 'k2', hotel: 'ar', data: '25/11/2026', q: {} }], dotazione: { ar: { Federa: { contratto: 260, allestimento: 60, ts: 2 } } }, _rimossi: [] };
+  var f = _gbFondi(R, L);
+  ok('Galleria: i conteggi si uniscono',              (f.conte || []).map(function (c) { return c.id; }).join(','), 'k1,k2');
+  ok('Galleria: la dotazione si fonde, vince qui',    JSON.stringify(f.dotazione), '{"ar":{"Federa":{"contratto":260,"ts":2,"allestimento":60},"Scendibagno":{"contratto":80}}}');
+  ok('Galleria: solo sul cloud resta',                JSON.stringify(_gbFondi(R, { consumi: [], giri: [] }).dotazione), JSON.stringify(R.dotazione));
+  L._rimossi = ['k1'];
+  ok('Galleria: un conteggio eliminato non torna',    _gbFondi(R, L).conte.map(function (c) { return c.id; }).join(','), 'k2');
+  ok('Galleria: anche _gbMigra li tiene',             !!(_gbMigra(R).conte && _gbMigra(R).dotazione), true);
+})();
+// Copia identica: le funzioni del conteggio sono quelle di Compass col rinomino meccanico.
+(function () {
+  var rin = function (f) {
+    return String(f).replace(/\b_bia/g, '_gb').replace(/\bbia(?=[A-Z])/g, 'gb').replace(/\bBIA_/g, 'GB_').replace(/\bbia-/g, 'gb-')
+      .replace(/\b_resi\b/g, '_gr').replace(/cqConferma/g, '_gbConferma').replace(/cqAvviso/g, '_gbAvviso')
+      .replace(/_qmSenzaSalto/g, '_gbSenzaSalto').replace(/_qmSegnaRimosso/g, '_gbSegnaRimosso').replace(/  (?:const|var) esc=_esc;\n/, '');   // il caricatore dei controlli muta const in var
+  };
+  var diversi = [['_biaDotCampo', '_gbDotCampo'], ['_biaDotLetti', '_gbDotLetti'], ['biaSetDot', 'gbSetDot'], ['biaDotSblocca', 'gbDotSblocca'],
+    ['_biaContaInAlbergo', '_gbContaInAlbergo'], ['_biaContaScorri', '_gbContaScorri'], ['_biaContaVerifica', '_gbContaVerifica'],
+    ['_biaContaRiepilogo', '_gbContaRiepilogo'], ['_biaContaAppello', '_gbContaAppello'], ['_biaResiVoce', '_gbResiVoce'],
+    ['_biaContaRegistra', '_gbContaRegistra'], ['_biaContaIncomplete', '_gbContaIncomplete'], ['biaContaSalva', 'gbContaSalva'],
+    ['biaContaElimina', 'gbContaElimina'], ['_biaContaPannello', '_gbContaPannello']]
+    .filter(function (c) { return rin(eval(c[0])) !== String(eval(c[1])); }).map(function (c) { return c[1]; });
+  ok('Galleria: conteggio identico a Compass',        diversi.join(','), '');
 })();
 (function () {
   var box = { innerHTML: '' }, fat = { innerHTML: '' }, vero = document.getElementById, prima = _gb;
@@ -874,7 +931,7 @@ ok('Galleria: l\'archivio apre sull\'ultima settimana', /_gtuSettSel===undefined
 (function () {
   var box = { innerHTML: '' }, vero = document.getElementById;
   document.getElementById = function (id) { return id === 'gb-conteggio' ? box : null; };
-  try { _gbRenderConteggio(); } finally { document.getElementById = vero; }
+  box.innerHTML = _gbCantiere('Controllo fatturazione', 'In revisione', 'Prossima attivazione con i contratti di fornitura di');
   var b2 = _gbCantiere('Presenze Cascione', 'Modulo in costruzione', null);
   ok('in costruzione senza riga di attivazione: una linea sola', (b2.match(/class="gb-cantiere-r"/g) || []).length, 1);
   ok('con la riga di attivazione restano due linee',        (box.innerHTML.match(/class="gb-cantiere-r"/g) || []).length, 2);

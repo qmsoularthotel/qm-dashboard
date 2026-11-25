@@ -1581,6 +1581,41 @@ Controlli in `test/controlli.js`, verificati con tre sabotaggi (Boutique spento,
 vincono, federe sbagliate). Nello stesso lavoro corretto un controllo dell'avviso dei dati mancanti
 che dipendeva dalla data vera (falliva dal 25/11 con il codice giusto): ora ferma `_biaOggi`.
 
+### Conteggio a scorrere nella Galleria — Art Resort (25/11/2026)
+
+Il QM: *"ho i dati del contratto di Art Resort ma non ancora di Santa Brigida: attivami la pagina
+in OPS così da inserire i dati del contratto"*. La voce **Conteggio Biancheria** di Compass OPS, fino
+ad allora «Modulo in costruzione», è ora la **copia identica** del Conteggio a scorrere di Compass:
+
+- **Copiato col rinomino meccanico** il blocco di `app.js` da `_biaDotSblocco` a `_biaContaPannello`
+  (lucchetto, `gbSetDot`, `_gbDotCampo`, `_gbDotLetti`, tutto il conteggio): `_bia`→`_gb`,
+  `bia`→`gb`, `BIA_`→`GB_`, `_resi`→`_gr`, `cq*`→`_gb*`, `_qmSenzaSalto`→`_gbSenzaSalto`,
+  `_qmSegnaRimosso`→`_gbSegnaRimosso`; tolto `const esc=_esc` perché qui `esc` è globale.
+  Un controllo in `test/galleria.js` ("conteggio identico a Compass") rifà il rinomino su 15
+  funzioni di Compass e le confronta con quelle di OPS: **correggendo una copia, l'altra va
+  rigenerata**, altrimenti il controllo si ferma.
+- `GB_CONTA_HOTELS={ar:true}`: **solo Art Resort**. Santa Brigida mostra *"In attesa del contratto"*
+  (`_gbCantiere`); quando arriva il suo contratto basta `sb:true`.
+- `GB_DOT_DEFAULT={}`: il codice **non conosce nessun numero** della Galleria. Contratto e *Letti e
+  bagni allestiti* si scrivono dalla pagina col lucchetto *🔒 Contratto e letti* (stessa conferma di
+  Compass), in `_gb.dotazione.ar[voce]`. Il lucchetto, come in Compass, protegge dalle cifre
+  battute per sbaglio, **non** dalle persone: chi ha OPS può aprirlo.
+- `_gbRenderConteggio`: linguette delle strutture e il riquadro (come `biaRenderConteggio`, senza il
+  Riscontro fatturazioni che in OPS è una voce a parte, ancora in revisione). `gbConteggioEntra`
+  richiude il lucchetto e legge i resi (`bg_resi`, solo lettura). `gbRender` ridisegna anche il
+  conteggio, perché i pulsanti copiati da Compass chiamano `gbRender`.
+- **Fusione col cloud**: `_gbMigra` e `_gbFondi` tenevano solo consumi, giri, fatture e inizio, e
+  avrebbero **buttato via** contratto e conteggi alla prima lettura. Ora `conte` si unisce per id
+  (`_gbUnisci`, con `_rimossi`) e `dotazione` campo per campo (`_gbFondiOgg`, vince questa
+  postazione, come `_qmFondiElenchi`).
+- **Non ancora copiato**: le modifiche dello *Storico consegne* di Consumo Biancheria per le strutture
+  col conteggio (niente frase del mese, «Da ritrovare», niente «Pezzi non rientrati»). Art Resort lì
+  resta come prima finché non c'è il primo conteggio.
+
+Provato in Chrome con dati inventati: contratto scritto nella casella, salvato sul cloud, ancora lì
+dopo il ricaricamento; Santa Brigida in attesa. Controlli verificati con quattro sabotaggi (fusione
+senza conteggi, `_gbMigra` senza conteggi, Santa Brigida attivata, copia diversa da Compass).
+
 ### Consumi di agosto tolti (15/11/2026)
 
 Il QM: *"ad agosto non ho contato i consumi"*. Eppure in Compass c'erano 28 giorni di consumi

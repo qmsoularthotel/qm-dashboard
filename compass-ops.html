@@ -255,7 +255,7 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-24.7';
+const QM_APP_BUILD='2026-11-25.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -373,7 +373,7 @@ setInterval(qmCheckVersione,600000);
       <div class="nav-item" id="gb-nav-presenze" onclick="bgSezione('presenze')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 11l2 2 3.5-3.5"/></svg></span></span>Presenze Cascione<span class="nav-badge" data-nuovo-fino="2026-11-28" style="display:none;">NEW</span></div>
       <div class="nav-section">Gestione Biancheria</div>
       <div class="nav-item" id="gb-nav-consumo" onclick="bgSezione('consumo')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span></span>Consumo Biancheria</div>
-      <div class="nav-item" id="gb-nav-conteggio" onclick="bgSezione('conteggio')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11l2 2 4-4"/><path d="M9 17h6"/></svg></span></span>Conteggio Biancheria<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
+      <div class="nav-item" id="gb-nav-conteggio" onclick="bgSezione('conteggio')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11l2 2 4-4"/><path d="M9 17h6"/></svg></span></span>Conteggio Biancheria<span class="nav-badge" data-nuovo-fino="2026-11-30" style="display:none;">NEW</span></div>
       <div class="nav-item" id="gb-nav-giacenza" onclick="bgSezione('giacenza')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18v14H3z"/><path d="M3 11h18M3 15.5h18"/><path d="M9 6V3.5h6V6"/></svg></span></span>Giacenza Biancheria<span class="nav-badge" data-nuovo-fino="2026-11-21" style="display:none;">NEW</span></div>
       <div class="nav-item" id="gb-nav-reso" onclick="bgSezione('reso')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1.3 10.2a2 2 0 0 1-2 1.8H7.3a2 2 0 0 1-2-1.8z"/><path d="M3.5 9c.6-2.4 4-4.2 8.5-4.2S19.9 6.6 20.5 9"/><path d="M10 13v4M14 13v4"/></svg></span></span>Reso Biancheria</div>
       <div class="nav-item" id="gb-nav-fattura" onclick="bgSezione('fattura')"><span class="nav-icon"><span class="nav-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h3"/></svg></span></span>Controllo fatturazione</div>
@@ -545,6 +545,8 @@ function _gbMigra(o){
   if(Array.isArray(o._rimossi))out._rimossi=o._rimossi;
   if(o.fatture&&typeof o.fatture==='object')out.fatture=o.fatture;   // quantita' in fattura (24/09/2026)
   if(o.inizio&&typeof o.inizio==='object')out.inizio=o.inizio;      // data di inizio del conteggio (24/09/2026)
+  if(Array.isArray(o.conte))out.conte=o.conte;                                         // conteggi a scorrere (25/11/2026)
+  if(o.dotazione&&typeof o.dotazione==='object')out.dotazione=o.dotazione;            // contratto e letti allestiti (25/11/2026)
   return out;
 }
 // Fusione come in Compass (_qmUnisciRecord / _qmFondiElenchi): elenchi uniti per id, a
@@ -579,6 +581,20 @@ function _gbFondi(remoto,locale){
     out.fatture=f;
   }
   if(R.inizio||L.inizio)out.inizio=Object.assign({},R.inizio||{},L.inizio||{});   // per struttura, vince questa postazione
+  // Conteggio a scorrere (25/11/2026): i conteggi sono un elenco a record come consumi e giri;
+  // la dotazione (contratto, letti allestiti) si fonde campo per campo, vince questa
+  // postazione (come _qmFondiElenchi in Compass). Senza queste righe la prima fusione col
+  // cloud li buttava via.
+  if(R.conte||L.conte)out.conte=_gbUnisci(R.conte,L.conte,s);
+  if(R.dotazione||L.dotazione)out.dotazione=_gbFondiOgg(R.dotazione,L.dotazione);
+  return out;
+}
+function _gbFondiOgg(r,l){
+  const ogg=v=>v&&typeof v==='object'&&!Array.isArray(v);
+  if(!ogg(r))return ogg(l)?l:(l!==undefined&&l!==null?l:r);
+  if(!ogg(l))return l!==undefined&&l!==null?l:r;
+  const out={};
+  [...new Set([...Object.keys(r),...Object.keys(l)])].forEach(k=>{out[k]=_gbFondiOgg(r[k],l[k]);});
   return out;
 }
 function _gbSegnaRimosso(arch,id){
@@ -3190,7 +3206,7 @@ function bgSezione(s){
   gbChiudiMenu();
   if(_bgSezione==='reso')grLoad();
   else if(_bgSezione==='fattura')_gbRenderFattura();
-  else if(_bgSezione==='conteggio')_gbRenderConteggio();
+  else if(_bgSezione==='conteggio')gbConteggioEntra();
   else if(_bgSezione==='presenze')gtPresenzeEntra();
   else if(_bgSezione==='giacenza')gcLoad();
   else if(_bgSezione==='preferenze')gtPrefEntra();
@@ -5583,9 +5599,448 @@ async function gtPresenzeEntra(){
   try{_gtStato=await _gtChiedi({azione:'stato'});}catch(e){_gtStato={ok:false,error:'Worker non raggiungibile'};}
   _gbRenderPresenze();
 }
+// ══ CONTEGGIO A SCORRERE — copia di Compass (app.js, § BIANCHERIA), 25/11/2026 ══
+// Copiato con il rinomino meccanico (_bia→_gb, bia→gb, BIA_→GB_, _resi→_gr, cq*→_gb*,
+// _qmSenzaSalto→_gbSenzaSalto, _qmSegnaRimosso→_gbSegnaRimosso; `const esc=_esc` tolto perché
+// qui `esc` è globale). Correggendo una copia si corregge anche l'altra.
+// Il codice non conosce nessun numero della Galleria: contratto e letti e bagni allestiti si
+// scrivono dalla pagina, col lucchetto (_gb.dotazione[h][voce] = {contratto, allestimento}).
+const GB_DOT_DEFAULT={};
+// «Modifica» qui sotto, che protegge i numeri del contratto dalle cifre battute per sbaglio.
+// LUCCHETTO (12/11/2026): i numeri del contratto cambiano il conto per tutte le
+// postazioni, e una cifra battuta per sbaglio non si nota. Le caselle nascono bloccate e
+// si sbloccano con "Modifica" e una conferma; si richiudono con "Fine" o lasciando la pagina.
+let _gbDotSblocco=false;
+async function gbDotSblocca(on){
+  if(on&&!await _gbConferma('Modificare la dotazione da contratto?','I numeri del contratto e della dotazione (camere, letti e bagni allestiti, armadio) cambiano il conto su <strong>tutte le postazioni</strong>. Cambiali solo con il contratto davanti.',{ok:'Modifica'}))return;
+  _gbDotSblocco=!!on;
+  _gbSenzaSalto(gbRender);
+}
+const _gbDotNum=x=>x===undefined||x===''||x===null?null:Number(x);
+// Un campo svuotato vale '' (non delete: la fusione col cloud lo rimetterebbe) e NON torna
+// al valore di partenza: "non lo so" è una risposta, non una dimenticanza.
+function _gbDotCamere(h){
+  const s=_gb.dotazione&&_gb.dotazione[h];
+  return _gbDotNum(s&&s.camere!==undefined?s.camere:(GB_DOT_DEFAULT[h]||{}).camere);
+}
+function _gbDotCampo(h,v,c){
+  const s=_gb.dotazione&&_gb.dotazione[h]&&_gb.dotazione[h][v];
+  return _gbDotNum(s&&s[c]!==undefined?s[c]:((GB_DOT_DEFAULT[h]||{})[v]||{})[c]);
+}
+function _gbDotLetti(h,v){
+  // Camere non tutte uguali: vale l'allestimento, finché dalla pagina non si scrivono camere o
+  // pezzi per camera (allora conta quello che si è scritto).
+  // Dove c'è il Conteggio a scorrere (SoulArt, Boutique) camere e pezzi per camera non si
+  // scrivono più dalla pagina: vale sempre l'allestimento, anche se una volta erano stati scritti.
+  const sd=_gb.dotazione&&_gb.dotazione[h];
+  const scritto=!_gbContaSi(h)&&sd&&(sd.camere!==undefined||(sd[v]&&sd[v].perCamera!==undefined));
+  const al=_gbDotCampo(h,v,'allestimento');if(al!==null&&!scritto)return al;
+  const c=_gbDotCamere(h),p=_gbDotCampo(h,v,'perCamera');
+  return c===null||p===null?null:c*p;
+}
+// L'armadio: dove c'è la Giacenza (solo SoulArt) viene dal suo ultimo conteggio, che
+// non si scrive due volte; altrove si inserisce a mano, e vuoto vale "nessuna scorta".
+async function gbSetDot(v,campo,val){
+  if(!_gbDotSblocco){_gbSenzaSalto(gbRender);return;}   // lucchetto: nessuna scrittura
+  const h=_gbHotel;
+  _gb.dotazione=_gb.dotazione||{};
+  const s=_gb.dotazione[h]=_gb.dotazione[h]||{};
+  const n=String(val).trim()===''?'':Math.max(0,Math.round(Number(val)||0));
+  if(v===null)s.camere=n;
+  else{const d=s[v]=s[v]||{};d[campo]=n;d.ts=Date.now();}
+  _gbSenzaSalto(gbRender);
+  await _gbSave();
+}
+
+// ═══ CONTEGGIO A SCORRERE (15/11/2026) — solo SoulArt, dove ci sono i contratti ═══
+// Il QM: "se conto tutte le federe che sono in hotel — sui letti, sui carrelli, nel
+// deposito, sporche di oggi — più quelle che deve riportare Raimondo, fanno 200: non ho
+// ammanchi. Deve essere un conteggio a scorrere". Aveva ragione. Il vecchio saldo
+// (_gbSaldo) somma portato − dovuto dal 05/09 e NON si azzera mai: ogni errore di
+// registrazione resta per sempre, e sul backup del 15/11 dava −350 federe su un contratto
+// di 200, un ammanco impossibile.
+// Qui invece il numero si ANCORA a una conta vera, come la Giacenza:
+//   alla conta:        da Raimondo = contratto − (letti + carrelli + deposito + sporco)
+//   a ogni consegna:   da Raimondo += sporco che gli diamo − pulito che porta
+//   alla conta dopo:   in albergo contati  vs  contratto − da Raimondo previsto
+// La differenza è l'errore di QUEL periodo, poi si riparte dai numeri veri.
+// La conta si fa DOPO il passaggio di Raimondo: una consegna lo stesso giorno della conta
+// è già dentro i pezzi contati e non scorre.
+// Galleria (25/11/2026, il QM): Art Resort, di cui c'è il contratto. Santa Brigida entra
+// quando arriva il suo (basta aggiungere sb:true).
+const GB_CONTA_HOTELS={ar:true};
+const GB_CONTA_POSTI=[['letti','Sui letti'],['carrelli','Sui carrelli'],['deposito','In deposito'],['sporco','Sporco in albergo']];
+// Intestazioni corte delle colonne nelle conte registrate (16/11/2026, il QM).
+const GB_CONTA_BREVE={'Lenzuolo matrimoniale':'Matrimoniali','Lenzuolo singolo':'Singoli','Federa':'Federe','Asciugamano viso':'Viso','Asciugamano bidet':'Bidet','Telo doccia':'Doccia','Scendibagno':'Tappetini'};
+// Nome breve del posto nelle conte registrate: lenzuola e federe stanno «sui letti», tutto il
+// resto «nei bagni» (16/11/2026, il QM).
+function _gbContaPostoNome(v,k){
+  if(k==='letti')return /^Lenzuol|^Federa/.test(v)?'sui letti':'nei bagni';
+  return{carrelli:'carrelli',deposito:'deposito',sporco:'sporchi'}[k]||k;
+}
+let _gbContaBozza={};       // la conta che si sta scrivendo: {voce:{posto:numero}}, mai ridisegnata
+let _gbContaModifica=null;  // data (gg/mm/aaaa) della conta che si sta correggendo, o null
+function _gbContaSi(h){return !!GB_CONTA_HOTELS[h];}
+function _gbConte(h){
+  return (_gb.conte||[]).filter(c=>_gbH(c)===h&&_gbParse(c.data))
+    .sort((a,b)=>_gbParse(a.data)-_gbParse(b.data));
+}
+// Pezzi contati in albergo per una voce, o null se manca anche un solo posto: un posto
+// non contato non vale zero.
+function _gbContaInAlbergo(c,v){
+  const q=c&&c.q&&c.q[v];if(!q)return null;
+  let t=0;
+  for(const [k] of GB_CONTA_POSTI){const n=q[k];if(n===undefined||n===null||n==='')return null;t+=Number(n)||0;}
+  return t;
+}
+// Fa scorrere "da Raimondo" dalla conta `c` fino al giorno `fino` (incluso; null = tutte).
+// Una consegna senza «Ha portato» ferma il conto: da lì in poi il numero non si sa.
+function _gbContaScorri(h,v,c,fino){
+  const contratto=_gbDotCampo(h,v,'contratto');
+  const inAlb=_gbContaInAlbergo(c,v);
+  if(contratto===null||inAlb===null)return null;
+  const dal=_gbParse(c.data);
+  let r=contratto-inAlb,ferma=null;
+  const passi=[];
+  _gbGiri(h).forEach(g=>{
+    const d=_gbParse(g.data);
+    if(!d||d<=dal||(fino&&d>fino)||ferma)return;
+    if(!_gbRegistrato(g)){ferma=g.data;return;}
+    const dato=Number(g.consegnato&&g.consegnato[v])||0,portato=Number(g.ricevuto&&g.ricevuto[v])||0;
+    r+=dato-portato;
+    passi.push({data:g.data,dato:dato,portato:portato,daRaimondo:r});
+  });
+  return{contratto:contratto,inAlbergo:inAlb,allaConta:contratto-inAlb,passi:passi,daRaimondo:ferma?null:r,ferma:ferma};
+}
+// La verifica di una conta contro quella prima: quanti pezzi il conto prevedeva in albergo
+// e quanti ne sono stati contati. Negativo = in albergo ce ne sono MENO del previsto.
+function _gbContaVerifica(h,v,prec,c){
+  const s=_gbContaScorri(h,v,prec,_gbParse(c.data));
+  const inAlb=_gbContaInAlbergo(c,v);
+  if(!s||s.daRaimondo===null||inAlb===null)return null;
+  const previsti=s.contratto-s.daRaimondo;
+  return{previsti:previsti,contati:inAlb,differenza:inAlb-previsti};
+}
+// Una riga del riepilogo: l'ultima conta fatta scorrere fino a oggi.
+function _gbContaRiepilogo(h,v){
+  const conte=_gbConte(h).filter(c=>_gbContaInAlbergo(c,v)!==null);
+  const c=conte[conte.length-1]||null;
+  return{conta:c,scorre:c?_gbContaScorri(h,v,c,null):null};
+}
+// Storico consegne del SoulArt (15/11/2026): quanti pezzi ha Raimondo, in tutto.
+// Somma per tipologia dell'ultima conta fatta scorrere fino a oggi. Le tipologie senza conta
+// (o senza contratto) restano fuori e si contano in `senza`; una consegna senza «Ha portato»
+// ferma il conto (`ferma`, la prima data).
+function _gbContaTotali(h){
+  const o={ora:0,alla:0,ultima:null,senza:0,ferma:null,voci:0,contratto:0,ver:null};
+  GB_VOCI_GIRO.forEach(v=>{
+    const r=_gbContaRiepilogo(h,v),s=r.scorre;
+    if(!s){o.senza++;return;}
+    const d=_gbParse(r.conta.data);if(!o.ultima||d>_gbParse(o.ultima))o.ultima=r.conta.data;
+    if(s.ferma){if(!o.ferma||_gbParse(s.ferma)<_gbParse(o.ferma))o.ferma=s.ferma;return;}
+    o.ora+=s.daRaimondo;o.alla+=s.allaConta;o.contratto+=s.contratto;o.voci++;
+  });
+  // L'unico giudizio sugli ammanchi: l'ultima conta confrontata con quella prima.
+  const conte=_gbConte(h);
+  if(conte.length>1){
+    const c=conte[conte.length-1],prec=conte[conte.length-2];let diff=0,n=0;
+    GB_VOCI_GIRO.forEach(v=>{const x=_gbContaVerifica(h,v,prec,c);if(x){diff+=x.differenza;n++;}});
+    if(n)o.ver={data:c.data,prec:prec.data,diff:diff,voci:n};
+  }
+  return o;
+}
+// Pezzi da Raimondo subito DOPO la consegna del giorno `data`, sommati sulle tipologie: per
+// ognuna parte dall'ultima conta fatta fino a quel giorno (una conta dello stesso giorno e'
+// fatta dopo il passaggio, quindi vale lei). Senza una conta prima, si riavvolge dalla prima
+// conta dopo. null se non c'e' nessuna conta, o se in mezzo manca «Ha portato».
+function _gbContaDopo(h,data){
+  const d=_gbParse(data);if(!d||!_gbGiri(h).some(g=>g.data===data))return null;   // solo nei giorni di consegna
+  let tot=0,n=0;
+  for(const v of GB_VOCI_GIRO){
+    const tutte=_gbConte(h).filter(c=>_gbContaInAlbergo(c,v)!==null);
+    const conte=tutte.filter(c=>_gbParse(c.data)<=d);
+    const c=conte[conte.length-1];
+    if(!c){
+      // Nessuna conta prima: si RIAVVOLGE dalla prima conta dopo (15/11/2026). Dopo la consegna
+      // di `data` Raimondo aveva quanti alla conta, meno quello che si e' preso nelle consegne
+      // successive fino al giorno della conta compreso (la conta si fa dopo il passaggio).
+      const cd=tutte.find(x=>_gbParse(x.data)>d);if(!cd)continue;
+      const contr=_gbDotCampo(h,v,'contratto');if(contr===null)continue;
+      const fine=_gbParse(cd.data);
+      let r=contr-_gbContaInAlbergo(cd,v),buco=false;
+      _gbGiri(h).forEach(g=>{
+        const gd=_gbParse(g.data);if(!gd||gd<=d||gd>fine)return;
+        if(!_gbRegistrato(g)){buco=true;return;}
+        r-=(Number(g.consegnato&&g.consegnato[v])||0)-(Number(g.ricevuto&&g.ricevuto[v])||0);
+      });
+      if(buco)return null;
+      tot+=r;n++;continue;
+    }
+    let val;
+    if(_gbParse(c.data).getTime()===d.getTime()){
+      const contr=_gbDotCampo(h,v,'contratto');if(contr===null)continue;
+      val=contr-_gbContaInAlbergo(c,v);
+    }else{
+      const sc=_gbContaScorri(h,v,c,d);if(!sc)continue;
+      const p=sc.passi.find(x=>x.data===data);if(!p)return null;
+      val=p.daRaimondo;
+    }
+    tot+=val;n++;
+  }
+  return n?{tot:tot,voci:n}:null;
+}
+// All'appello (15/11/2026, idea del QM): in lavanderia c'e' quello che dice la DISTINTA
+// dell'ultima consegna fino al giorno della conta (lo sporco dato quel giorno: la conta si fa
+// dopo il passaggio). Contati in albergo + distinta = pezzi trovati; contratto − trovati:
+//   > 0  pezzi da ritrovare (arretrati ancora da Raimondo, oppure persi)
+//   < 0  piu' pezzi del contratto: il contratto (o la conta) va verificato.
+// Resi biancheria (inidonea) di una tipologia fino al giorno `fino` (15/11/2026, il QM):
+// `aperto` = nel sacco del reso, ancora in albergo; `dato` = gia' ritirati da Raimondo come
+// inidonei. Né l'uno né l'altro sono nella conta o nella distinta: senza contarli sembrano persi.
+// I nomi del Reso che non coincidono con quelli del giro si traducono.
+const GB_RESO_VOCE={'Asciugamano corpo':'Telo doccia','Tappetino bagno':'Scendibagno'};
+function _gbResiVoce(h,v,fino){
+  const o={aperto:0,dato:0};
+  let righe=[];try{righe=(_gr&&_gr.righe)||[];}catch(e){}
+  righe.forEach(x=>{
+    if(_gbH(x)!==h)return;
+    if((GB_RESO_VOCE[x.tipologia]||x.tipologia)!==v)return;
+    const d=_gbParse(x.data);if(!d||(fino&&d>fino))return;
+    const q=Number(x.qta)||0;
+    if(x.ritiroId)o.dato+=q;else o.aperto+=q;
+  });
+  return o;
+}
+// DINAMICO (16/11/2026, il QM: "come renderla dinamica"). Con `fino` (una data, di solito
+// oggi) la fotografia del conteggio si porta avanti fino a quel giorno con quello che si
+// registra ogni giorno:
+//   scorta = scorta contata − consumi dopo il conteggio + «Ha portato» dei giri dopo il
+//            conteggio − resi registrati dopo il conteggio (pezzi tolti dal giro);
+//   sporco = consumi dall'ultima consegna fino a `fino`; lavanderia = distinta dell'ultima
+//            consegna fino a `fino`; resi fino a `fino`.
+// Il conteggio si fa DOPO il passaggio di Raimondo: il giro dello stesso giorno e' gia'
+// dentro la scorta contata, entrano solo i giri dei giorni dopo. I consumi di `fino` stesso
+// se mancano non si segnalano quando `fino` e' oggi (si inseriscono a fine giornata).
+// Un giro dopo il conteggio senza «Ha portato» si nomina (`senzaPortato`): la stima e' corta.
+// Senza `fino` resta la fotografia al giorno del conteggio.
+function _gbContaAppello(h,c,fino){
+  if(!c)return null;
+  const d=_gbParse(c.data);
+  let T=d;
+  if(fino){const f=_gbParse(_gbFmt(fino));if(f&&f>d)T=f;}
+  const oggiS=_gbFmt(_gbOggi());
+  // Dopo il conteggio: consumi (d,T], giri (d,T], resi (d,T].
+  const dopoG=[],dopoSenza=[],senzaPortato=[];
+  for(const x=new Date(d.getTime()+86400000);x<=T;x.setDate(x.getDate()+1))dopoG.push(_gbFmt(x));
+  const consDopo=dopoG.map(ds=>{const k=_gbConsumi(h).find(z=>z.data===ds);if(!k&&ds!==oggiS)dopoSenza.push(ds);return k;}).filter(Boolean);
+  const giriDopo=_gbGiri(h).filter(g=>{const x=_gbParse(g.data);return x&&x>d&&x<=T;});
+  giriDopo.forEach(g=>{if(!_gbRegistrato(g))senzaPortato.push(g.data);});
+  const gs=_gbGiri(h).filter(g=>{const x=_gbParse(g.data);return x&&x<=T;});
+  const g=gs.length?gs.reduce((a,b)=>_gbParse(b.data)>=_gbParse(a.data)?b:a):null;
+  // Sporco in albergo dai CONSUMI (15/11/2026, il QM): il giro del giorno D ritira i consumi
+  // fino al giorno prima, quindi dopo la distinta di D in albergo c'e' lo sporco dei consumi
+  // da D al giorno della conta compresi. Lo "sporco" scritto nella conta conteneva solo oggi.
+  // Un giorno senza consumi inseriti non vale zero: si nomina (`senzaConsumi`).
+  const giorni=[],senza=[];
+  if(g){for(const x=new Date(_gbParse(g.data).getTime());x<=T;x.setDate(x.getDate()+1))giorni.push(_gbFmt(x));}
+  const cons=giorni.map(ds=>{const k=_gbConsumi(h).find(z=>z.data===ds);if(!k&&!(T>d&&ds===oggiS))senza.push(ds);return k;}).filter(Boolean);
+  dopoSenza.forEach(ds=>{if(!senza.includes(ds))senza.push(ds);});
+  senza.sort((x,y)=>_gbParse(x)-_gbParse(y));
+  const o={conta:c.data,fino:_gbFmt(T),dinamico:T>d,distinta:g?g.data:null,giorni:giorni,senzaConsumi:senza,senzaPortato:senzaPortato,voci:{},tot:{alb:0,letti:0,scorta:0,pulito:0,sporco:0,dist:0,resoAperto:0,resoDato:0,contr:0,diff:0},n:0};
+  GB_VOCI_GIRO.forEach(v=>{
+    const tutto=_gbContaInAlbergo(c,v),contr=_gbDotCampo(h,v,'contratto');
+    if(tutto===null||contr===null)return;
+    // La teoria del QM (15/11/2026): contratto = letti e bagni allestiti (sempre, dall'allestimento)
+    // + scorte contate (carrelli e deposito) + sporco da uscire (consumi) + lavanderia (distinta) + resi.
+    // I letti contati restano scritti nella conta, ma nel conto vale l'allestimento; senza, i contati.
+    const all=_gbDotLetti(h,v);
+    const qv=(o2,k)=>Number(o2&&o2[v])||0;
+    const scorta=(Number(c.q[v].carrelli)||0)+(Number(c.q[v].deposito)||0)
+      -consDopo.reduce((a2,z)=>a2+qv(z.q),0)
+      +giriDopo.reduce((a2,g2)=>a2+qv(g2.ricevuto),0)
+      -(T>d?(()=>{const r1=_gbResiVoce(h,v,T),r0=_gbResiVoce(h,v,d);return r1.aperto+r1.dato-r0.aperto-r0.dato;})():0);
+    const letti=all!==null?all:(Number(c.q[v].letti)||0);
+    const pulito=letti+scorta;
+    // Senza una consegna prima della conta non c'e' un "dal": resta lo sporco contato.
+    const sporco=g?cons.reduce((a,z)=>a+(Number(z.q&&z.q[v])||0),0):(Number(c.q[v].sporco)||0);
+    const alb=pulito+sporco;
+    const dist=g?(Number(g.consegnato&&g.consegnato[v])||0):0;
+    const rs=_gbResiVoce(h,v,T);
+    const r={alb:alb,letti:letti,scorta:scorta,pulito:pulito,sporco:sporco,dist:dist,resoAperto:rs.aperto,resoDato:rs.dato,contr:contr,
+             diff:contr-alb-dist-rs.aperto-rs.dato};
+    o.voci[v]=r;o.n++;
+    ['alb','letti','scorta','pulito','sporco','dist','resoAperto','resoDato','contr','diff'].forEach(k=>{o.tot[k]+=r[k];});
+  });
+  return o;
+}
+// Lo stato di un "da Raimondo": oltre il contratto è impossibile (in albergo meno di zero).
+// Sotto zero NO (15/11/2026, il QM): in albergo ci sono solo pezzi di Raimondo, ma possono
+// essere PIU' del contratto (reintegri extra, es. scendibagno). Pezzi in piu' non sono un
+// problema; conta solo che non siano meno del contratto.
+function _gbContaAvviso(r,contratto){
+  if(r===null||r===undefined)return null;
+  if(contratto!==null&&r>contratto)return 'oltre il contratto: impossibile, una registrazione è sbagliata';
+  return null;
+}
+// Mutazioni pure (i controlli arrivano qui; conferme e rete stanno fuori).
+function _gbContaRegistra(h,data,bozza){
+  const q={};
+  GB_VOCI_GIRO.forEach(v=>{
+    const b=bozza&&bozza[v];if(!b)return;
+    const r={};let tutti=true;
+    GB_CONTA_POSTI.forEach(([k])=>{const n=b[k];if(n===undefined||n===null||n==='')tutti=false;else r[k]=Math.max(0,Math.round(Number(n)||0));});
+    if(tutti)q[v]=r;
+  });
+  _gb.conte=_gb.conte||[];
+  const gia=_gb.conte.find(c=>_gbH(c)===h&&c.data===data);
+  if(gia){(gia.edits=gia.edits||[]).push({ts:Date.now(),vecchio:gia.q,nuovo:q});gia.q=q;gia.ts=Date.now();return gia;}
+  const c={id:_gbUid(),hotel:h,data:data,q:q,ts:Date.now()};
+  _gb.conte.push(c);
+  return c;
+}
+// Le voci della bozza scritte solo a metà: non si salva (un posto vuoto non vale zero).
+function _gbContaIncomplete(bozza){
+  return GB_VOCI_GIRO.filter(v=>{
+    const b=bozza&&bozza[v];if(!b)return false;
+    const pieni=GB_CONTA_POSTI.filter(([k])=>b[k]!==undefined&&b[k]!==null&&b[k]!=='').length;
+    return pieni>0&&pieni<GB_CONTA_POSTI.length;
+  });
+}
+function gbContaScrivi(v,k,val){
+  // Solo la bozza: niente ridisegno mentre si scrive.
+  const b=_gbContaBozza[v]=_gbContaBozza[v]||{};
+  b[k]=String(val).trim()===''?'':Math.max(0,Math.round(Number(val)||0));
+}
+async function gbContaSalva(){
+  const h=_gbHotel;if(!_gbContaSi(h))return;
+  const data=_gbFromIso((document.getElementById('gb-conta-data')||{}).value||'');
+  if(!data){_gbAvviso('Indica la data del conteggio.');return;}
+  if(_gbParse(data)>new Date()){_gbAvviso('Il conteggio non può essere nel futuro.');return;}
+  const meta=_gbContaIncomplete(_gbContaBozza);
+  if(meta.length){_gbAvviso('Conteggio incompleto',meta.map(v=>GB_DOT_PLURALE[v]||v).join(', ')+': manca almeno un posto. Un posto non contato non vale zero: scrivi 0 se non ce ne sono.');return;}
+  const piene=GB_VOCI_GIRO.filter(v=>_gbContaBozza[v]&&GB_CONTA_POSTI.every(([k])=>_gbContaBozza[v][k]!==undefined&&_gbContaBozza[v][k]!==''));
+  if(!piene.length){_gbAvviso('Non hai scritto nessun numero.');return;}
+  const gia=_gbConte(h).find(c=>c.data===data);
+  if(!await _gbConferma(gia?'Sostituire il conteggio del '+data+'?':'Salvare il conteggio del '+data+'?',
+      piene.map(v=>'<strong>'+(GB_DOT_PLURALE[v]||v)+'</strong>: '+GB_CONTA_POSTI.map(([k])=>_gbContaBozza[v][k]).reduce((a,n)=>a+n,0)+' in albergo').join('<br>')+
+      '<br><br>Conteggio fatto <strong>dopo</strong> il passaggio di Raimondo: da qui il conto riparte da questi numeri.',
+      {ok:gia?'Sostituisci':'Salva'}))return;
+  _gbContaRegistra(h,data,_gbContaBozza);   // PRIMA dell'await: _gbSave riassegna _gb
+  _gbContaBozza={};_gbContaModifica=null;
+  await _gbSave();_gbSenzaSalto(gbRender);
+}
+// Correggere una conta (15/11/2026): i suoi numeri tornano nelle caselle di «Nuova conta» con la
+// sua data; «Salva» la SOSTITUISCE (stessa data) lasciando traccia in `edits`.
+function gbContaModifica(id){
+  const c=(_gb.conte||[]).find(x=>x.id===id);if(!c)return;
+  _gbContaBozza={};
+  Object.keys(c.q||{}).forEach(v=>{_gbContaBozza[v]=Object.assign({},c.q[v]);});
+  _gbContaModifica=c.data;
+  _gbSenzaSalto(gbRender);
+  // Dopo il frame in cui _gbSenzaSalto rimette lo scorrimento, altrimenti lo annulla.
+  setTimeout(()=>{const f=document.getElementById('gb-conta-data');if(f){try{f.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){}}},60);
+}
+function gbContaAnnullaModifica(){_gbContaBozza={};_gbContaModifica=null;_gbSenzaSalto(gbRender);}
+async function gbContaElimina(id){
+  const c=(_gb.conte||[]).find(x=>x.id===id);if(!c)return;
+  if(!await _gbConferma('Eliminare il conteggio del '+c.data+'?','Il conto ripartirà dal conteggio precedente.',{ok:'Elimina'}))return;
+  _gb.conte=_gb.conte.filter(x=>x.id!==id);
+  _gbSegnaRimosso(_gb,id);
+  await _gbSave();_gbSenzaSalto(gbRender);
+}
+function _gbContaPannello(h){
+  const th=_gbTh,td='padding:7px 8px;border-bottom:1px solid var(--border);text-align:center;';
+  const lk=!_gbDotSblocco;
+  // Col lucchetto aperto si scrivono il contratto e i letti e bagni allestiti (25/11/2026, il QM:
+  // la dotazione dei letti si mette subito, senza aspettare il conteggio generale).
+  const inpC=(v,campo,val)=>lk
+    ?`<span style="display:inline-block;min-width:50px;font-weight:600;color:var(--text);">${val===null?'—':val}</span>`
+    :`<input type="number" min="0" value="${val===null?'':val}" onchange="gbSetDot('${v}','${campo}',this.value)" onfocus="this.select()" style="width:58px;padding:4px;border:1px solid var(--accent);border-radius:5px;font-size:var(--fs-xs);text-align:center;">`;
+  const n=x=>x===null||x===undefined?'—':x;
+  let o=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Conteggio a scorrere · ${esc(GB_HOTELS[h])}</span>
+      <button onclick="gbDotSblocca(${lk?'true':'false'})" style="margin-left:auto;${lk?'background:var(--surface);color:var(--accent);border:1px solid var(--border);':'background:var(--accent);color:#fff;border:1px solid var(--accent);'}border-radius:7px;padding:5px 12px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">${lk?'🔒 Contratto e letti':'Fine'}</button></div>
+    <div class="panel-body" style="padding:14px;">
+    <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin-bottom:10px;">Ogni pezzo del contratto sta in uno di questi posti: <strong>sui letti e nei bagni</strong> (camere allestite), <strong>di scorta</strong> (carrelli e deposito: il conteggio ogni 15 giorni, poi meno i consumi e più quello che porta Raimondo), <strong>sporco da uscire</strong> (consumi dal giorno dell'ultima consegna), <strong>in lavanderia</strong> (ultima distinta), <strong>resi</strong> (biancheria inidonea, nel sacco o già ritirata). Quello che non sta in nessuno di questi è <strong>da ritrovare</strong>; i pezzi in più del contratto vanno bene.</div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr>
+      <th style="${th}text-align:left;">Tipologia</th><th style="${th}">Contratto</th><th style="${th}">Letti e bagni<br><span style="font-weight:400;text-transform:none;">allestiti</span></th><th style="${th}">Scorta<br><span style="font-weight:400;text-transform:none;">carrelli + deposito</span></th><th style="${th}">Sporco<br><span style="font-weight:400;text-transform:none;">da uscire</span></th><th style="${th}">In lavanderia<br><span style="font-weight:400;text-transform:none;">distinta</span></th><th style="${th}">Resi<br><span style="font-weight:400;text-transform:none;">ritirati + nel sacco</span></th><th style="${th}">All'appello</th></tr></thead><tbody>`;
+  let apUlt=null;
+  GB_VOCI_GIRO.forEach(v=>{
+    const contr=_gbDotCampo(h,v,'contratto'),r=_gbContaRiepilogo(h,v);
+    const ap=r.conta?_gbContaAppello(h,r.conta,_gbOggi()):null,av=ap&&ap.voci[v];
+    if(ap&&(!apUlt||_gbParse(ap.conta)>_gbParse(apUlt.conta)))apUlt=ap;
+    const vuoto=`<span style="color:var(--text-dim);font-weight:400;">—</span>`;
+    // Letti e bagni: si sanno anche senza conteggio (allestimento), quindi si vedono sempre.
+    const all=_gbDotLetti(h,v);
+    let cel=[lk?(all===null?vuoto:all):inpC(v,'allestimento',all),vuoto,vuoto,vuoto,vuoto],app=`<span style="color:var(--text-dim);font-weight:400;">${contr===null?'manca il contratto':'manca un conteggio'}</span>`;
+    if(av){
+      cel=[lk?av.letti:cel[0],av.scorta,av.sporco,av.dist,av.resoDato+av.resoAperto?`${av.resoDato} + ${av.resoAperto}`:'0'];
+      app=av.diff===0?'<span style="color:var(--green);">tutti</span>':av.diff>0?`<span style="color:var(--amber);">${av.diff} da ritrovare</span>`:`<span style="color:var(--green);">tutti · ${-av.diff} in più</span>`;
+    }
+    o+=`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(GB_DOT_PLURALE[v]||v)}</td>
+      <td style="${td}">${inpC(v,'contratto',contr)}</td>${cel.map(x=>`<td style="${td}">${x}</td>`).join('')}<td style="${td}font-weight:700;white-space:nowrap;">${app}</td></tr>`;
+  });
+  if(apUlt)o+=`<tr><td colspan="8" style="padding:7px 8px;font-size:var(--fs-xxs);color:var(--text-dim);text-align:left;">${apUlt.dinamico?`<strong style="color:var(--text);">Stima a oggi ${esc(apUlt.fino.slice(0,5))}</strong> dal conteggio del ${esc(apUlt.conta.slice(0,5))}, con consumi e consegne registrati dopo.`:`Scorta: conteggio del ${esc(apUlt.conta)}.`}${apUlt.senzaPortato.length?' <span style="color:var(--amber);">(manca «Ha portato» del '+apUlt.senzaPortato.map(x=>esc(x.slice(0,5))).join(', ')+')</span>':''} Sporco: consumi ${apUlt.giorni.length?(apUlt.giorni.length===1?'del '+esc(apUlt.giorni[0].slice(0,5)):'dal '+esc(apUlt.giorni[0].slice(0,5))+' al '+esc(apUlt.giorni[apUlt.giorni.length-1].slice(0,5))):'—'}${apUlt.senzaConsumi.length?' <span style="color:var(--amber);">(mancano i consumi del '+apUlt.senzaConsumi.map(x=>esc(x.slice(0,5))).join(', ')+')</span>':''}. Lavanderia: distinta ${apUlt.distinta?'del '+esc(apUlt.distinta.slice(0,5)):'—'}.</td></tr>`;
+  o+=`</tbody></table></div>`;
+
+  // ── Nuova conta ──
+  const oggiIso=_gbToIso(_gbFmt(new Date()));
+  o+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+      <span style="font-size:var(--fs-sm);font-weight:700;">${_gbContaModifica?'Correggi il conteggio del '+esc(_gbContaModifica):'Nuovo conteggio'}</span>
+      <input id="gb-conta-data" type="date" value="${_gbContaModifica?_gbToIso(_gbContaModifica):oggiIso}" max="${oggiIso}" ${_gbContaModifica?'disabled title="Si corregge il conteggio di questo giorno"':''} style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">
+      <span style="font-size:var(--fs-xxs);color:var(--text-dim);">dopo il passaggio di Raimondo. Una tipologia lasciata tutta vuota non si conta; scrivi 0 dove non ce ne sono.</span>
+    </div>
+    <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Tipologia</th>${GB_CONTA_POSTI.map(([k,t])=>`<th style="${th}">${k==='letti'?'Sui letti / nei bagni':t}</th>`).join('')}</tr></thead><tbody>
+    ${GB_VOCI_GIRO.map(v=>`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(GB_DOT_PLURALE[v]||v)}</td>${GB_CONTA_POSTI.map(([k])=>{const b=_gbContaBozza[v],val=b&&b[k]!==undefined?b[k]:'';return`<td style="${td}"><input type="number" min="0" inputmode="numeric" value="${val}" oninput="gbContaScrivi('${v}','${k}',this.value)" style="width:64px;padding:5px;border:1px solid var(--border);border-radius:5px;font-size:var(--fs-xs);text-align:center;background:var(--surface);color:var(--text);"></td>`;}).join('')}</tr>`).join('')}
+    </tbody></table></div>
+    <div style="margin-top:8px;display:flex;justify-content:flex-end;gap:8px;">${_gbContaModifica?`<button onclick="gbContaAnnullaModifica()" style="background:var(--surface);color:var(--text-dim);border:1px solid var(--border);border-radius:7px;padding:8px 14px;font-size:var(--fs-xs);font-weight:600;cursor:pointer;font-family:inherit;">Annulla</button>`:''}<button onclick="gbContaSalva()" style="background:var(--accent);color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;font-family:inherit;">Salva il conteggio</button></div>
+  </div>`;
+
+  // ── Conte registrate, con la verifica rispetto alla precedente ──
+  const conte=_gbConte(h);
+  if(conte.length){
+    o+=`<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="font-size:var(--fs-sm);font-weight:700;margin-bottom:6px;">Conteggi registrati</div>
+      <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Per ogni conteggio: pezzi <strong>contati</strong> in albergo e, se c'è un conteggio prima, quanti il conto ne <strong>prevedeva</strong>. Una differenza è l'errore di quel periodo: pezzi persi davvero, oppure consumi o consegne registrati male in quei giorni.</div>
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr><th style="${th}text-align:left;">Conteggio</th>${GB_VOCI_GIRO.map(v=>`<th style="${th}text-align:left;">${esc(GB_CONTA_BREVE[v]||v)}</th>`).join('')}<th style="${th}"></th></tr></thead><tbody>`;
+    conte.slice().reverse().forEach(c=>{
+      const i=conte.indexOf(c),prec=i>0?conte[i-1]:null;
+      o+=`<tr><td style="${td}text-align:left;vertical-align:top;font-weight:700;white-space:nowrap;">${esc(c.data)}</td>${GB_VOCI_GIRO.map(v=>{
+        const t=_gbContaInAlbergo(c,v);if(t===null)return`<td style="${td}text-align:left;vertical-align:top;color:var(--text-dim);">—</td>`;
+        const ver=prec?_gbContaVerifica(h,v,prec,c):null;
+        // Dove stanno i pezzi contati (15/11/2026, il QM): sempre, posto per posto.
+        // 16/11/2026: numeri incolonnati (etichetta a sinistra, numero a destra) e il primo
+        // posto si chiama «sui letti» per lenzuola e federe, «nei bagni» per il resto.
+        const dove=`<table style="border-collapse:collapse;font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.45;margin-top:2px;white-space:nowrap;font-variant-numeric:tabular-nums;">${GB_CONTA_POSTI.map(([k])=>`<tr><td style="padding:0 6px 0 0;">${_gbContaPostoNome(v,k)}</td><td style="padding:0;text-align:right;"><strong style="color:var(--text);">${Number(c.q[v][k])||0}</strong></td></tr>`).join('')}</table>`;
+        return`<td style="${td}text-align:left;vertical-align:top;"><strong>${t}</strong>${dove}${ver?`<div style="font-size:var(--fs-xxs);color:${ver.differenza===0?'var(--green)':ver.differenza<0?'var(--red)':'var(--amber)'};">previsti ${ver.previsti} · ${ver.differenza===0?'tornano':ver.differenza>0?'+'+ver.differenza:ver.differenza}</div>`:''}</td>`;
+      }).join('')}<td style="${td}vertical-align:top;white-space:nowrap;"><div style="display:flex;gap:6px;justify-content:flex-end;"><button onclick="gbContaModifica('${c.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--accent);cursor:pointer;font-family:inherit;">Modifica</button><button onclick="gbContaElimina('${c.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:var(--fs-xxs);color:var(--red);cursor:pointer;font-family:inherit;">Elimina</button></div></td></tr>`;
+    });
+    o+=`</tbody></table></div></div>`;
+  }
+  o+=`</div></div>`;
+  return o;
+}
+
 function _gbRenderConteggio(){
   const el=document.getElementById('gb-conteggio');if(!el)return;
-  el.innerHTML=_gbCantiere('Conteggio Biancheria','Modulo in costruzione','Prossima attivazione con i contratti di fornitura di');
+  // Come biaRenderConteggio di Compass: linguette delle strutture, poi il riquadro del
+  // Conteggio a scorrere. Santa Brigida, finché non c'è il suo contratto, resta in attesa.
+  const h=_gbHotel;
+  let o=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+    <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      ${Object.keys(GB_HOTELS).map(k=>`<button onclick="gbSetHotel('${k}')" style="border:none;padding:7px 14px;font-size:var(--fs-xxs);font-weight:600;cursor:pointer;background:${k===h?'var(--accent)':'var(--surface)'};color:${k===h?'#fff':'var(--text-dim)'};">${esc(GB_HOTELS[k])}</button>`).join('')}
+    </div>
+  </div>`;
+  if(_gbContaSi(h))o+=_gbContaPannello(h);
+  else o+=_gbCantiere('Conteggio Biancheria · '+esc(GB_HOTELS[h]),'In attesa del contratto','');
+  el.innerHTML=o;
+}
+// Entrando in Conteggio Biancheria: il lucchetto si richiude (come biaLoad in Compass) e si
+// leggono i resi, che entrano nel conto all'appello (solo lettura).
+async function gbConteggioEntra(){
+  _gbDotSblocco=false;
+  _gbRenderConteggio();
+  try{const nr=await _grLeggiArchivio(GR_KEY,{righe:[],ritiri:[],tipologie:null});if(JSON.stringify(nr)!==JSON.stringify(_gr)){_gr=nr;_gbSenzaSalto(_gbRenderConteggio);}}catch(e){}
 }
 // Pagina "modulo fermo" comune a Conteggio Biancheria e Controllo fatturazione: testo al centro,
 // rosa dei venti sbiadita di sfondo, firma d'autore approvata dal QM (16/11/2026).
@@ -5664,6 +6119,7 @@ function _gbPassiOggi(h){
 function gbRender(){
   _gbRenderCore();
   _gbRenderFattura();
+  _gbRenderConteggio();   // il riquadro del Conteggio a scorrere sta nella sua voce di menu
   const x=document.getElementById('gb-extra');
   if(x)x.innerHTML='';
 }
