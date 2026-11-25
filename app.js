@@ -10818,9 +10818,13 @@ function invRenderStock(catalog,moves){
     const dor=_invDaOrdinare(gg,qty,ia?ia.qty:0,_invCopertura);
     return{bc,name:p.name,unit:p.unit||'',qty,gg,aut,dor,ia,uo:ultimi[bc],uso:_invUsoTesto(gg,N,p.unit||'')};
   }).filter(Boolean);
-  const scelta=`<div class="inv3-scelta"><span>Ordine ogni</span>${[15,30,45].map(n=>`<button class="rev-filter-btn${N===n?' active':''}" onclick="invSetCopertura(${n})">${n} giorni</button>`).join('')}</div>`;
+  // Stile Compass (25/11/2026, QM: «c'è poco di stile Compass»): badge navy/oro nelle intestazioni,
+  // etichette maiuscole spaziate, quantità grandi e sottili come le schede KPI, la scelta del periodo
+  // dentro l'intestazione del pannello.
+  const badge=(n)=>`<span class="ov-icon-badge">${_invIco(n,12).replace('stroke="currentColor"','stroke="#fff"')}</span>`;
+  const scelta=`<div class="inv3-scelta"><span>ordine ogni</span>${[15,30,45].map(n=>`<button class="rev-filter-btn${N===n?' active':''}" onclick="invSetCopertura(${n})">${n} gg</button>`).join('')}</div>`;
   if(!items.length){
-    el.innerHTML=scelta+`<div class="panel"><div class="panel-body inv-vuoto">${_invIco('scatola',28)}<div>Nessun prodotto in ${nomeWh}</div><small>Apri lo scanner sullo smartphone per aggiungere i prodotti.</small></div></div>`;
+    el.innerHTML=`<div class="panel"><div class="panel-body inv-vuoto">${_invIco('scatola',28)}<div>Nessun prodotto in ${nomeWh}</div><small>Apri lo scanner sullo smartphone per aggiungere i prodotti.</small></div></div>`;
     return;
   }
   const u=x=>x?' '+_esc(x):'';
@@ -10829,7 +10833,7 @@ function invRenderStock(catalog,moves){
   const spesa=da.map(it=>{
     const resta=it.qty<=0?'<b class="inv3-rosso">finito</b>':`ne restano ${it.qty}${u(it.unit)}${it.aut!=null?' (per circa '+it.aut+' giorni)':''}`;
     const arr=it.ia&&it.ia.qty?` · ${it.ia.qty}${u(it.ia.unit||it.unit)} già in arrivo`:'';
-    return`<div class="inv3-ord"><div class="inv3-ord-n">${_esc(it.name)}<small>${resta} · se ne usano ${_esc(it.uso.testo)}${arr}</small></div><div class="inv3-ord-q">${it.dor}<small>${_esc(it.unit)}</small></div></div>`;
+    return`<div class="inv3-ord${it.qty<=0?' inv3-ord-fin':''}"><div class="inv3-ord-n">${_esc(it.name)}<small>${resta} · se ne usano ${_esc(it.uso.testo)}${arr}</small></div><div class="inv3-ord-q"><span class="kpi-label">da ordinare</span><span class="inv3-ord-v">${it.dor}<small>${_esc(it.unit)}</small></span></div></div>`;
   }).join('')||`<div class="inv3-vuoto">Per i prossimi ${N} giorni non serve ordinare niente.</div>`;
   // 2) Tabella semplice di tutti.
   const tutti=items.slice().sort((a,b)=>a.name.localeCompare(b.name,'it')).map(it=>`<tr>
@@ -10838,8 +10842,8 @@ function invRenderStock(catalog,moves){
       <td class="r">${it.uso?_esc(it.uso.testo.replace(' ogni '+N+' giorni','')):'<span class="inv3-no">non si sa</span>'}</td>
       <td class="r inv3-gr">${it.uo?it.uo.qty+u(it.uo.unit||it.unit)+' · '+_esc(String(it.uo.data).slice(0,5)):'—'}</td>
     </tr>`).join('');
-  el.innerHTML=scelta+`<div class="panel inv3-p"><div class="panel-header"><span class="panel-title">Da ordinare · ${nomeWh}</span><span class="inv3-cnt">${da.length?da.length+' prodott'+(da.length===1?'o':'i'):''}</span></div>${spesa}</div>
-    <div class="panel inv3-p"><div class="panel-header"><span class="panel-title">Tutti i prodotti</span><span class="inv3-cnt">${items.length}</span></div>
+  el.innerHTML=`<div class="panel inv3-p"><div class="panel-header inv3-ph">${badge('note')}<span class="panel-title">Da ordinare · ${nomeWh}${da.length?` <span class="ag-conta">${da.length}</span>`:''}</span>${scelta}</div>${spesa}</div>
+    <div class="panel inv3-p"><div class="panel-header">${badge('scatola')}<span class="panel-title">Tutti i prodotti <span class="ag-conta">${items.length}</span></span></div>
     <div class="inv3-tw"><table class="inv3-tab"><thead><tr><th>Prodotto</th><th class="r">In stock</th><th class="r">Se ne usano in ${N} giorni</th><th class="r">Ultimo ordine</th></tr></thead><tbody>${tutti}</tbody></table></div></div>`;
 }
 function invRenderMoves(catalog,moves){
