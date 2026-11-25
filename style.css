@@ -1160,7 +1160,7 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
   .inv5-passi{grid-template-columns:1fr;}
   .inv5-tab th,.inv5-tab th.r{white-space:normal;}
   .inv5-tab th,.inv5-tab td{padding:8px 10px;}
-  .inv5-tab:not(.inv7-tab) th:nth-child(4),.inv5-tab:not(.inv7-tab) td:nth-child(4){display:none;}
+  .inv5-tab:not(.inv7-tab):not(.inv8-tab) th:nth-child(4),.inv5-tab:not(.inv7-tab):not(.inv8-tab) td:nth-child(4){display:none;}
   .inv5-t{font-size:19px;}
 }
 /* Inventari › Movimenti a settimane (25/11/2026): una scheda per settimana con Usciti / Entrati /
@@ -1200,3 +1200,37 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .inv7-tab td:first-child{min-width:130px;}
 @media (max-width:1200px){ .inv7-vecchio{display:none;} }
 @media (max-width:640px){ .inv7-medio{display:none;} .inv7-tab td:first-child{min-width:0;} }
+/* Inventari › Catalogo e Ordini nello stile della Stock (25/11/2026). Ordini come «fogli»
+   (.inv5-ft/.inv5-fr) dentro schede; quelli in attesa con la linea oro in alto; stato a parole. */
+.inv8-btn{padding:7px 14px;font-size:13px;}
+.inv8-sec{font-family:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+.inv8-sec:hover{border-color:var(--accent);color:var(--accent);}
+.inv8-bott{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.inv8-filtri{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:0 2px 4px;}
+.inv8-filtri>div{display:flex;gap:6px;flex-wrap:wrap;}
+.inv8-f{font-family:inherit;font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--border-light);background:var(--surface);color:var(--text-dim);cursor:pointer;}
+.inv8-f.on{border-color:var(--accent);color:var(--accent);font-weight:700;}
+.inv8-gr{margin-top:16px;}
+.inv8-griglia{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:6px;}
+.inv8-ord{background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:14px 16px 12px;box-shadow:0 1px 4px rgba(0,0,0,.05);display:flex;flex-direction:column;}
+.inv8-ord.att{border-top:4px solid var(--gold);}
+.inv8-ord.ann{opacity:.7;}
+.inv8-riga{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:2px 0 4px;}
+.inv8-st{font-size:13px;font-weight:700;}
+.inv8-st.att{color:var(--amber);}
+.inv8-st.ric{color:var(--green);}
+.inv8-st.ann{color:var(--red);}
+.inv8-n{font-size:12px;color:var(--text-muted);}
+.inv8-div{display:block;font-size:11px;font-weight:600;color:var(--amber);text-align:right;}
+.inv8-az{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:12px;}
+.inv8-az .rc-act-btn,.inv8-tab .rc-act-btn{margin:0;}
+.inv8-del:hover{background:var(--red);color:#fff;}
+.inv8-wa{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:6px;background:#25D366;color:#fff;text-decoration:none;}
+.inv8-nome{font-weight:600;}
+.inv8-cod{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--text-dim);}
+.inv8-tab td.inv8-az{display:table-cell;padding-top:6px;padding-bottom:6px;white-space:nowrap;}
+.inv8-tab td.inv8-az .rc-act-btn{margin-left:6px;}
+@media (max-width:640px){
+  .inv8-griglia{grid-template-columns:minmax(0,1fr);}
+  .inv8-tab th:nth-child(3),.inv8-tab td:nth-child(3){display:none;}
+}

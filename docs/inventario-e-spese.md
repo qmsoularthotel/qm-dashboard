@@ -91,6 +91,20 @@ distribuzione a settimana) e contraddiceva la Stock. Ora `_invAnalisi(bm, ordina
 Il «cosa ordinare» sta **solo** nella Stock. `invSetPeriod`/`_invPeriod` restano ma non servono più.
 Stile: `.inv5-*` + `.inv7-*` (guida, «Tabella a cicli d'ordine Analisi»).
 
+### Tab Catalogo e Ordini — stile della Stock (25/11/2026, QM: «procedi»)
+
+- **Catalogo** (`invRenderCatalog`): cornice con «<STRUTTURA> · CATALOGO» e il numero di prodotti,
+  «+ Nuovo prodotto» in alto a destra, tabella `.inv5-tab.inv8-tab` (prodotto, unità, codice;
+  `manual_…` = «senza codice»), pulsanti tondi Modifica/Elimina. La **soglia** non si mostra più
+  (la Stock non la usa); resta nella maschera di modifica e nella stampa A4.
+- **Ordini** (`invRenderOrders`): titolo = quanti ordini **in attesa**; filtri hotel/stato come
+  prima (`invOrdersSetWh`, `invOrdersSetStatus`); ordini raggruppati **In attesa → Ricevuti →
+  Annullati**, ognuno un «foglio» (`.inv5-ft`/`.inv5-fr`) in una scheda, quelli in attesa con la
+  linea oro. Stato a parole («ricevuto il 17/11»); se la quantità arrivata è diversa compare
+  «ordinati N». Dei ricevuti si vedono gli ultimi 6 (`invOrdTutti()` per gli altri). Azioni
+  invariate (Segna ricevuto, Invia WhatsApp, Modifica, Annulla, Annulla ricezione, Elimina); nomi e
+  fornitori ora passano da `_esc`. «Crea l'ordine» della Stock continua ad aprirsi qui.
+
 ### `invOrdersUndoReceived(id)`
 
 Annulla una ricezione: rimuove i movimenti creati (usando `o.movIds`) e resetta l'ordine a `status: 'ordinato'`. **Nota**: ordini ricevuti prima dell'introduzione di `movIds` non hanno movimenti tracciati — l'undo resetta solo lo stato.

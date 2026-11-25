@@ -11219,28 +11219,24 @@ async function invAddProduct(){
   _qmElencoSalva('qm_inv_catalog_'+_invWh,{},_invRidisegna);
   invRender();
 }
+// Catalogo nello stile della Stock (25/11/2026): cornice, riga oro + titolo, tabella .inv5-tab con
+// codice, unità e i pulsanti tondi di Compass. La soglia non si mostra più: la Stock ragiona a
+// distribuzioni e non la usa (resta nella maschera di modifica e nella stampa A4).
 function invRenderCatalog(){
   const el=document.getElementById('inv-catalog-view');
   if(!el)return;
   const{catalog}=invGetData();
-  const items=Object.entries(catalog).sort((a,b)=>a[1].name.localeCompare(b[1].name,'it'));
-  const addBtn=`<div style="max-width:560px;margin-bottom:10px;"><button onclick="invAddProduct()" style="padding:7px 14px;border-radius:7px;background:var(--accent);color:#fff;border:none;font-size:var(--fs-xs);font-weight:700;cursor:pointer;">+ Nuovo prodotto</button></div>`;
-  if(!items.length){el.innerHTML=addBtn+'<div style="padding:32px;text-align:center;color:var(--text-dim);font-size:var(--fs-sm);">Nessun prodotto in catalogo</div>';return;}
-  el.innerHTML=addBtn+`<div style="max-width:560px;"><div style="display:flex;flex-direction:column;gap:6px;padding:4px 0;">
-    ${items.map(([bc,p])=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border-light);border-radius:9px;">
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:var(--fs-sm);font-weight:600;">${_esc(p.name)}</div>
-        <div style="display:flex;gap:8px;margin-top:2px;align-items:center;flex-wrap:wrap;">
-          <span style="font-size:11px;font-family:monospace;background:var(--bg);padding:1px 6px;border-radius:4px;color:var(--text-dim);">${bc}</span>
-          ${p.unit?`<span style="font-size:var(--fs-xxs);color:var(--text-dim);">${_esc(p.unit)}</span>`:''}
-          ${p.soglia!=null?`<span style="font-size:var(--fs-xxs);color:var(--amber);">soglia: ${p.soglia}</span>`:''}
-        </div>
-      </div>
-      <button onclick="invEditProduct('${bc}')" style="border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:13px;padding:4px 8px;border-radius:6px;color:var(--text-muted);" title="Modifica">${_invIco('matita')}</button>
-      <button onclick="invDeleteProduct('${bc}')" style="border:none;background:none;cursor:pointer;color:var(--red);font-size:16px;padding:4px 6px;" title="Elimina">${_invIco('cestino',16)}</button>
-    </div>`).join('')}
-  </div></div>`;
+  const nomeWh=_invWh==='ar'?'Art Resort':'SoulArt Hotel';
+  const items=Object.entries(catalog).sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||'','it'));
+  const testa=`<div class="inv5-hero"><div><div class="inv5-k">${nomeWh} · catalogo</div><div class="inv5-t">${items.length?items.length+' prodott'+(items.length===1?'o':'i'):'Nessun prodotto'}</div></div><button class="btn-primary inv8-btn" onclick="invAddProduct()">+ Nuovo prodotto</button></div>`;
+  if(!items.length){
+    el.innerHTML=`<div class="inv5-cornice">${testa}<div class="inv5-grande inv5-centro"><span class="inv5-cerchio">${_invIco('scatola',24).replace('stroke="currentColor"','stroke="#fff"')}</span><div class="inv5-gt">Il catalogo è vuoto</div><div class="inv5-gs">Aggiungi un prodotto qui oppure scansionalo con lo scanner sullo smartphone.</div></div></div>`;
+    return;
+  }
+  const righe=items.map(([bc,p])=>`<tr><td><b class="inv8-nome">${_esc(p.name||bc)}</b></td><td>${p.unit?_esc(p.unit):'<span class="inv5-no">—</span>'}</td>
+    <td><span class="inv8-cod">${/^manual_/.test(bc)?'senza codice':_esc(bc)}</span></td>
+    <td class="r inv8-az"><button class="rc-act-btn" data-tip="Modifica" aria-label="Modifica" onclick="invEditProduct('${_esc(bc)}')">${_invIco('matita',12)}</button><button class="rc-act-btn inv8-del" data-tip="Elimina" aria-label="Elimina" onclick="invDeleteProduct('${_esc(bc)}')">${_invIco('cestino',12)}</button></td></tr>`).join('');
+  el.innerHTML=`<div class="inv5-cornice">${testa}<div class="inv5-tutti"><div class="inv5-ll">Prodotti · ${nomeWh}</div><div class="inv5-tw"><table class="inv5-tab inv8-tab"><thead><tr><th>Prodotto</th><th>Unità</th><th>Codice a barre</th><th></th></tr></thead><tbody>${righe}</tbody></table></div></div></div>`;
 }
 
 
@@ -11248,7 +11244,9 @@ function invRenderCatalog(){
 // Struttura ordine: { id, wh, date (DD/MM/YYYY), ts, fornitore, note, status, tsRicevuto, items:[{barcode,name,unit,qty}] }
 let _invOrdersWh='tutti';   // tutti | sa | ar
 let _invOrdersStatus='tutti'; // tutti | ordinato | ricevuto | annullato
-let _invOrdersDraft=[];      // items correnti nel modal di creazione
+let _invOrdersDraft=[];
+let _invOrdTutti=false;      // Ordini › Ricevuti: tutti o solo gli ultimi 6
+function invOrdTutti(){_invOrdTutti=!_invOrdTutti;invRenderOrders();}      // items correnti nel modal di creazione
 
 const ORD_KEY='qm_inv_orders';
 // Ridisegno dopo che la fusione col cloud ha portato dentro righe arrivate da altrove.
@@ -11302,79 +11300,48 @@ function invRenderOrders(){
     (_invOrdersStatus==='tutti'||o.status===_invOrdersStatus)
   );
 
-  const sBadge=s=>s==='ordinato'
-    ?`<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;display:inline-flex;align-items:center;gap:4px;">${_invIco('attesa',11)}In attesa</span>`
-    :s==='ricevuto'
-    ?`<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;display:inline-flex;align-items:center;gap:4px;">${_invIco('ok',11)}Ricevuto</span>`
-    :`<span style="background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:600;display:inline-flex;align-items:center;gap:4px;">${_invIco('no',11)}Annullato</span>`;
-  const whBadge=wh=>`<span style="background:var(--accent-bg);color:var(--accent);padding:2px 8px;border-radius:10px;font-size:var(--fs-xxs);font-weight:700;">${_ordWhlabel(wh)}</span>`;
-
-  const filterBtn=(val,cur,label,fn)=>`<button onclick="${fn}('${val}')" style="font-size:var(--fs-xxs);padding:4px 12px;border-radius:20px;border:1px solid ${cur===val?'var(--accent)':'var(--border)'};background:${cur===val?'var(--accent-bg)':'var(--surface)'};color:${cur===val?'var(--accent)':'var(--text-dim)'};cursor:pointer;font-weight:${cur===val?'700':'400'};">${label}</button>`;
-
-  let h=`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-    <div style="display:flex;gap:6px;flex-wrap:wrap;">
-      ${filterBtn('tutti',_invOrdersWh,'Tutti gli hotel','invOrdersSetWh')}
-      ${filterBtn('sa',_invOrdersWh,'SoulArt','invOrdersSetWh')}
-      ${filterBtn('ar',_invOrdersWh,'Art Resort','invOrdersSetWh')}
-    </div>
-    <div style="display:flex;gap:6px;">
-      <button onclick="invOrdersPrint()" style="font-size:var(--fs-xxs);padding:5px 12px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">${_invIco('stampa',12)} Stampa lista</button>
-      <button onclick="invOrdersOpenModal()" style="font-size:var(--fs-xxs);padding:5px 14px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:600;">+ Nuovo ordine</button>
-    </div>
-  </div>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
-    ${filterBtn('tutti',_invOrdersStatus,'Tutti','invOrdersSetStatus')}
-    ${filterBtn('ordinato',_invOrdersStatus,_invIco('attesa',12)+' In attesa','invOrdersSetStatus')}
-    ${filterBtn('ricevuto',_invOrdersStatus,_invIco('ok',12)+' Ricevuti','invOrdersSetStatus')}
-    ${filterBtn('annullato',_invOrdersStatus,_invIco('no',12)+' Annullati','invOrdersSetStatus')}
-  </div>`;
-
+  // Stile della Stock (25/11/2026): cornice, riga oro + titolo, filtri come pastiglie tenui, ordini
+  // raggruppati per stato (in attesa in alto, a schede con la linea oro), stato scritto a parole.
+  const filtro=(val,cur,label,fn)=>`<button class="inv8-f${cur===val?' on':''}" onclick="${fn}('${val}')">${label}</button>`;
+  const nAtt=allOrders.filter(o=>o.status==='ordinato'&&(_invOrdersWh==='tutti'||o.wh===_invOrdersWh)).length;
+  const dove=_invOrdersWh==='tutti'?'SoulArt e Art Resort':_ordWhlabel(_invOrdersWh);
+  let h=`<div class="inv5-cornice"><div class="inv5-hero"><div><div class="inv5-k">Ordini · ${dove}</div><div class="inv5-t">${nAtt?nAtt+(nAtt===1?' ordine in attesa':' ordini in attesa'):'Nessun ordine in attesa'}</div></div>
+    <div class="inv8-bott"><button class="inv8-sec" onclick="invOrdersPrint()">${_invIco('stampa',12)} Stampa lista</button><button class="btn-primary inv8-btn" onclick="invOrdersOpenModal()">+ Nuovo ordine</button></div></div>
+    <div class="inv8-filtri"><div>${filtro('tutti',_invOrdersWh,'Tutti gli hotel','invOrdersSetWh')}${filtro('sa',_invOrdersWh,'SoulArt','invOrdersSetWh')}${filtro('ar',_invOrdersWh,'Art Resort','invOrdersSetWh')}</div>
+    <div>${filtro('tutti',_invOrdersStatus,'Tutti','invOrdersSetStatus')}${filtro('ordinato',_invOrdersStatus,'In attesa','invOrdersSetStatus')}${filtro('ricevuto',_invOrdersStatus,'Ricevuti','invOrdersSetStatus')}${filtro('annullato',_invOrdersStatus,'Annullati','invOrdersSetStatus')}</div></div>`;
+  const waIco='<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.122 1.528 5.857L.057 23.882a.5.5 0 0 0 .607.65l6.277-1.638A11.944 11.944 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.956 9.956 0 0 1-5.13-1.418l-.36-.214-3.733.974.998-3.647-.236-.374A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>';
+  const scheda=o=>{
+    const n=(o.items||[]).length;
+    const voci=(o.items||[]).map(it=>{const q=it.qtyRicevuta!=null?it.qtyRicevuta:it.qty;
+      const div=it.qtyRicevuta!=null&&+it.qtyRicevuta!==+it.qty?`<small class="inv8-div">ordinati ${_esc(String(it.qty))}</small>`:'';
+      return`<div class="inv5-fr"><span>${_esc(it.name)}</span><b>${q?_esc(String(q))+(it.unit?' '+_esc(it.unit):''):''}${div}</b></div>`;}).join('');
+    const waLines=(o.items||[]).map(it=>it.qty?`• ${it.name} — ${it.qty}${it.unit?' '+it.unit:''}`:`• ${it.name}`).join('\n');
+    const waText=encodeURIComponent(`📋 *Ordine del ${o.date}*\n🏨 ${_ordWhlabel(o.wh)}${o.fornitore?'\n🛒 Fornitore: '+o.fornitore:''}\n\n${waLines}\n\n_Quality Manager Paolo P._`);
+    const wa=`<a class="inv8-wa" href="https://wa.me/393274919588?text=${waText}" target="_blank">${waIco} Invia</a>`;
+    const stato=o.status==='ordinato'?'<span class="inv8-st att">in attesa</span>':o.status==='ricevuto'?`<span class="inv8-st ric">ricevuto ${o.tsRicevuto?'il '+_ordFmtDate(o.tsRicevuto).slice(0,5):''}</span>`:'<span class="inv8-st ann">annullato</span>';
+    const extra=[o.ddt?'DDT '+_esc(o.ddt):'',o.senzaStock?'stock non toccato':''].filter(Boolean).join(' · ');
+    const az=o.status==='ordinato'
+      ?`<button class="btn-primary inv8-btn" onclick="invOrdersMarkReceived('${o.id}')">${_invIco('ok',12)} Segna ricevuto</button>${wa}<button class="rc-act-btn" data-tip="Modifica" aria-label="Modifica" onclick="invOrdersEditOrder('${o.id}')">${_invIco('matita',12)}</button><button class="rc-act-btn inv8-del" data-tip="Annulla l'ordine" aria-label="Annulla" onclick="invOrdersCancel('${o.id}')">${_invIco('no',12)}</button>`
+      :o.status==='ricevuto'
+      ?`${wa}<button class="inv8-sec" onclick="invOrdersUndoReceived('${o.id}')">${_invIco('indietro',12)} Annulla ricezione</button><button class="rc-act-btn inv8-del" data-tip="Elimina" aria-label="Elimina" onclick="invOrdersDelete('${o.id}')">${_invIco('cestino',12)}</button>`
+      :`<button class="rc-act-btn inv8-del" data-tip="Elimina" aria-label="Elimina" onclick="invOrdersDelete('${o.id}')">${_invIco('cestino',12)}</button>`;
+    return`<div class="inv8-ord${o.status==='ordinato'?' att':o.status==='annullato'?' ann':''}">
+      <div class="inv5-ft"><span>${_ordWhlabel(o.wh)} · ${_esc(o.fornitore||'fornitore non indicato')}</span><span>${_esc(o.date||'')}</span></div>
+      <div class="inv8-riga">${stato}<span class="inv8-n">${n} ${n===1?'prodotto':'prodotti'}${extra?' · '+extra:''}</span></div>
+      ${voci||'<div class="inv5-fvuoto">nessun prodotto</div>'}
+      <div class="inv8-az">${az}</div></div>`;
+  };
   if(!filtered.length){
-    h+=`<div style="text-align:center;padding:40px;color:var(--text-dim);">Nessun ordine trovato.</div>`;
+    h+=`<div class="inv5-grande inv5-centro"><span class="inv5-cerchio">${_invIco('note',24).replace('stroke="currentColor"','stroke="#fff"')}</span><div class="inv5-gt">Nessun ordine</div><div class="inv5-gs">Con questi filtri non c'è niente. L'ordine del venerdì si crea dalla scheda Stock («Crea l'ordine») o con «Nuovo ordine».</div></div>`;
   } else {
-    h+=`<div style="display:flex;flex-direction:column;gap:10px;max-width:420px;">`;
-    filtered.forEach(o=>{
-      const nItems=(o.items||[]).length;
-      const rcvDate=o.tsRicevuto?` → ricevuto ${_ordFmtDate(o.tsRicevuto)}${o.ddt?' ('+o.ddt+')':''}${o.senzaStock?' · stock non toccato':''}`:'';
-      const itemRows=(o.items||[]).map(it=>{
-        const dispQty=it.qtyRicevuta!=null?it.qtyRicevuta:it.qty;
-        const qtyCell=dispQty?`<td style="padding:7px 12px;font-size:var(--fs-xs);text-align:right;font-weight:700;">${dispQty}${it.unit?' '+it.unit:''}</td>`:`<td></td>`;
-        return`<tr><td style="padding:7px 12px;font-size:var(--fs-xs);">${it.name}</td>${qtyCell}</tr>`;
-      }).join('');
-      // Messaggio WhatsApp
-      const waLines=(o.items||[]).map(it=>it.qty?`• ${it.name} — ${it.qty}${it.unit?' '+it.unit:''}`:`• ${it.name}`).join('\n');
-      const waText=encodeURIComponent(`📋 *Ordine del ${o.date}*\n🏨 ${_ordWhlabel(o.wh)}${o.fornitore?'\n🛒 Fornitore: '+o.fornitore:''}\n\n${waLines}\n\n_Quality Manager Paolo P._`);
-      const waBtn=`<a href="https://wa.me/393274919588?text=${waText}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#25D366;color:#fff;text-decoration:none;font-weight:600;line-height:1.4;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.555 4.122 1.528 5.857L.057 23.882a.5.5 0 0 0 .607.65l6.277-1.638A11.944 11.944 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.956 9.956 0 0 1-5.13-1.418l-.36-.214-3.733.974.998-3.647-.236-.374A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-        Invia</a>`;
-      const actions=o.status==='ordinato'
-        ?`<button onclick="invOrdersMarkReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;cursor:pointer;font-weight:600;">${_invIco('ok',12)} Ricevuto</button>
-           <button onclick="invOrdersEditOrder('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">${_invIco('matita',12)} Modifica</button>
-           <button onclick="invOrdersCancel('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">Annulla</button>`
-        :o.status==='ricevuto'
-        ?`<button onclick="invOrdersUndoReceived('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 10px;border-radius:6px;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;cursor:pointer;">${_invIco('indietro',12)} Annulla ricezione</button>
-           <button onclick="invOrdersDelete('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;" title="Elimina">${_invIco('cestino',13)}</button>`
-        :`<button onclick="invOrdersDelete('${o.id}')" style="font-size:var(--fs-xxs);padding:4px 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);cursor:pointer;" title="Elimina">${_invIco('cestino',13)}</button>`;
-      h+=`<div style="background:var(--surface);border-radius:12px;border:1px solid var(--border-light);overflow:hidden;">
-        <div style="padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-          <div style="flex:1;min-width:160px;">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
-              <span style="font-weight:700;font-size:var(--fs-sm);display:inline-flex;align-items:center;gap:6px;">${_invIco('note')}${o.date}</span>
-              ${whBadge(o.wh)}
-              ${sBadge(o.status)}
-            </div>
-            <div style="font-size:var(--fs-xs);color:var(--text-dim);">${o.fornitore||'—'}${rcvDate}</div>
-            <div style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:2px;">${nItems} ${nItems===1?'prodotto':'prodotti'}</div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">${waBtn}<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${actions}</div></div>
-        </div>
-        <table style="width:100%;border-collapse:collapse;border-top:1px solid var(--border-light);">
-          <tbody>${itemRows}</tbody>
-        </table>
-      </div>`;
-    });
-    h+=`</div>`;
+    const gruppi=[['ordinato','In attesa'],['ricevuto','Ricevuti'],['annullato','Annullati']];
+    // I ricevuti crescono ogni 15 giorni: si vedono gli ultimi 6, gli altri a richiesta.
+    gruppi.forEach(([st,tit])=>{const oo=filtered.filter(o=>o.status===st);if(!oo.length)return;
+      const vis=st==='ricevuto'&&!_invOrdTutti?oo.slice(0,6):oo;
+      const piu=oo.length>6&&st==='ricevuto'?`<button class="inv6-altre" onclick="invOrdTutti()">${_invOrdTutti?'Mostra solo gli ultimi 6':'Mostra i precedenti ('+(oo.length-6)+')'}</button>`:'';
+      h+=`<div class="inv8-gr"><div class="inv5-ll">${tit} · ${oo.length}</div><div class="inv8-griglia">${vis.map(scheda).join('')}</div>${piu}</div>`;});
   }
+  h+=`</div>`;
   view.innerHTML=h;
   view.insertAdjacentHTML('beforeend',_invOrdersModalHTML(cat));
   // Ordine preparato dallo Stock («Crea l'ordine»): si apre qui, DOPO che la scheda Ordini è stata

@@ -3359,6 +3359,9 @@ sez('Inventario: rettifiche nell\'analisi');
   ok('analisi: ordinato solo dentro i 3 mesi', a.ordinato, 12);
   ok('analisi: senza scarti veri è stabile', _invAnalisi([{ type: 'init', qty: 50, ts: lun - 8 * 7 * G }].concat([8,7,6,5,4,3,2,1].map(function(w){ return { type: 'out', qty: 3, ts: lun - w * 7 * G + G }; })), [], ora).andamento, 'stabile');
   ok('analisi: niente decimali né giorni di autonomia', /autonomia|consumoSett|invSetPeriod/.test(String(invRenderAnalysis)), false);
+  ok('catalogo e ordini: nomi e fornitori passano da _esc', /_esc\(p\.name\|\|bc\)/.test(String(invRenderCatalog)) && /_esc\(o\.fornitore/.test(String(invRenderOrders)) && /_esc\(it\.name\)/.test(String(invRenderOrders)), true);
+  ok('ordini: in attesa prima dei ricevuti', /\['ordinato','In attesa'\],\['ricevuto','Ricevuti'\]/.test(String(invRenderOrders)), true);
+  ok('ordini: «Crea l\'ordine» della Stock si apre ancora', /_invOrdineDaStock\)\{const x=_invOrdineDaStock;_invOrdineDaStock=null;_invApriOrdineDaStock\(x\)/.test(String(invRenderOrders)), true);
 })();
 
 // ── San Liborio con la SoulArt nel riquadro Housekeeping dell'Overview (06/10/2026) ──
