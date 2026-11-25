@@ -4620,3 +4620,19 @@ sez('Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordin
   ok('ricezione: data e stock dalla finestra', /o\.tsRicevuto=tsRic;/.test(String(invOrdersConfirmDDT)) && /qty>0&&allaScorta\)/.test(String(invOrdersConfirmDDT)) && /type:'in',qty,ts:tsRic/.test(String(invOrdersConfirmDDT)), true);
   ok('ricezione: annullandola si toglie anche «senza stock»', /delete o\.tsRicevuto;delete o\.senzaStock;/.test(String(invOrdersUndoReceived)), true);
 })();
+
+// Aggiornamenti di giacenza frequenti (25/11/2026, QM): stock e consumi in ordine di data.
+(function () {
+  var D = 86400000, o = Date.now();
+  var cat = { A: { name: 'Prova' } };
+  // Conteggio del 10/11 a 8; carico del 21/09 segnato in ritardo (salvato DOPO, con la data vera).
+  var mv = [{ barcode: 'A', type: 'init', qty: 20, ts: o - 80 * D }, { barcode: 'A', type: 'out', qty: 3, ts: o - 20 * D },
+    { barcode: 'A', type: 'init', qty: 8, ts: o - 15 * D }, { barcode: 'A', type: 'out', qty: 2, ts: o - 5 * D },
+    { barcode: 'A', type: 'in', qty: 12, ts: o - 65 * D }];
+  ok('stock: un carico vecchio salvato dopo non gonfia il conteggio più recente', invCalcStock(cat, mv).A, 6);
+  ok('stock: senza conteggi ogni movimento conta una volta', invCalcStock(cat, [{ barcode: 'A', type: 'in', qty: 5, ts: 1 }, { barcode: 'A', type: 'out', qty: 2, ts: 2 }, { barcode: 'A', type: 'in', qty: 1, ts: 3 }]).A, 4);
+  var r = _invRettifiche(mv.filter(function (m) { return m.barcode === 'A'; }));
+  ok('rettifiche in ordine di data: il conteggio trova l\'ammanco giusto', JSON.stringify(r.map(function (x) { return x.delta; })), '[-21]');
+  ok('consumati da allora: scarichi + quanto i conteggi trovano in meno', _invConsumoDa('A', mv, o - 30 * D, o).qty, 26);
+  ok('consumati da allora: un conteggio che trova di più non è consumo', _invConsumoDa('A', [{ barcode: 'A', type: 'init', qty: 5, ts: o - 10 * D }, { barcode: 'A', type: 'init', qty: 9, ts: o - 5 * D }], o - 20 * D, o).qty, 0);
+})();

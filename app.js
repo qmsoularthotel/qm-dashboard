@@ -10665,10 +10665,15 @@ function invGetData(){
   try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+_invWh)||'[]');}catch(e){}
   return{catalog,moves};
 }
+// I movimenti di un prodotto IN ORDINE DI DATA (25/11/2026, QM: «faccio spesso l'aggiornamento
+// dello stock e aggiusto le giacenze»). Prima valeva l'ordine in cui erano stati salvati: un carico
+// segnato in ritardo (ricezione del 21/09 confermata a novembre) o arrivato dal telefono dopo
+// finiva DOPO un conteggio più recente e lo gonfiava. A parità di data resta l'ordine di salvataggio.
+function _invInOrdine(bm){return (bm||[]).map((m,i)=>[m,i]).sort((a,b)=>((Number(a[0].ts)||0)-(Number(b[0].ts)||0))||(a[1]-b[1])).map(x=>x[0]);}
 function invCalcStock(catalog,moves){
   const result={};
   for(const bc of Object.keys(catalog)){
-    const bm=moves.filter(m=>m.barcode===bc);
+    const bm=_invInOrdine(moves.filter(m=>m.barcode===bc));
     if(!bm.length){result[bc]=0;continue;}
     let lastInit=-1;
     for(let i=bm.length-1;i>=0;i--){if(bm[i].type==='init'){lastInit=i;break;}}
@@ -10774,10 +10779,14 @@ function _invInArrivo(wh,ordini){
 }
 let _invCopertura=(()=>{try{const n=+localStorage.getItem('qm_inv_copertura');return [15,30,45].includes(n)?n:30;}catch(e){return 30;}})();
 function invSetCopertura(n){_invCopertura=n;try{localStorage.setItem('qm_inv_copertura',String(n));}catch(e){}const d=invGetData();invRenderStock(d.catalog,d.moves);}
-// Quanto se n'è consumato (scarichi) dal giorno dell'ultimo ordine ricevuto a oggi, e da quanti giorni.
-function _invConsumoDa(bc,moves,ts){
-  let q=0;(moves||[]).forEach(m=>{if(m&&m.barcode===bc&&m.type==='out'&&Number(m.ts)>=ts)q+=Number(m.qty)||0;});
-  return{qty:Math.round(q*1000)/1000,giorni:Math.max(0,Math.floor((Date.now()-ts)/86400000))};
+// Quanto se n'è consumato dal giorno dell'ultimo ordine ricevuto a oggi, e da quanti giorni:
+// scarichi scansionati + quello che i conteggi successivi hanno trovato IN MENO (ammanchi delle
+// rettifiche, come in Analisi). Un conteggio che trova di più è un carico non registrato, non conta.
+function _invConsumoDa(bc,moves,ts,ora){
+  const bm=(moves||[]).filter(m=>m&&m.barcode===bc);
+  let q=bm.filter(m=>m.type==='out'&&Number(m.ts)>=ts).reduce((s,m)=>s+(Number(m.qty)||0),0);
+  _invRettifiche(bm).forEach(r=>{if(r.ts>=ts&&r.delta<0)q+=-r.delta;});
+  return{qty:Math.round(q*1000)/1000,giorni:Math.max(0,Math.floor(((ora||Date.now())-ts)/86400000))};
 }
 function invRenderStock(catalog,moves){
   // Stile aggiornato (25/11/2026, QM, scelta fra tre proposte: «A senza KPI e senza barre»): un
@@ -10955,7 +10964,7 @@ function invQuickRestock(bc){
 // = carico non registrato. Il primo 'init' di un prodotto è l'inventario iniziale: non conta.
 function _invRettifiche(bm){
   const out=[];let qty=0,visto=false;
-  bm.forEach(m=>{
+  _invInOrdine(bm).forEach(m=>{
     const q=+m.qty||0;
     if(m.type==='init'){
       if(visto){const d=Math.round((q-qty)*1000)/1000;if(d)out.push({ts:m.ts,delta:d});}

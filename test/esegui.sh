@@ -722,6 +722,12 @@ for _f in compass-ops.html biancheria-galleria.html; do
     || { echo ""; echo "  ERRORE      $_f: manca la favicon di Compass OPS."; BKF_KO=1; }
 done
 
+# App Inventario (25/11/2026): stock in ordine di data come Compass, e senza conteggi ogni
+# movimento una volta sola (prima quasi tutti si contavano due volte).
+grep -qF ".sort((a, b) => ((Number(a[0].ts) || 0) - (Number(b[0].ts) || 0)) || (a[1] - b[1]))" inventory.html \
+  && ! grep -q "Also process moves before lastInit" inventory.html \
+  || { echo ""; echo "  ERRORE      inventory.html: lo stock non segue piu' l'ordine di data, o conta due volte i movimenti."; BKF_KO=1; }
+
 # Worker non pubblicato: worker.js si pubblica a mano su Cloudflare (vedi CLAUDE.md, la
 # pubblicazione automatica è stata valutata e scartata). Una correzione può quindi essere
 # scritta, versionata e non attiva — successo il 21/08/2026, per ore, senza alcun segnale.

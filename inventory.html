@@ -721,7 +721,7 @@ setInterval(()=>{if(document.visibilityState==='visible')qmCheckAppStatus();},60
 // che sto eseguendo e' davvero l'ultima pubblicata? Leggere la versione del server e
 // prenderla come riferimento non basta — se la pagina caricata e' vecchia, il confronto
 // parte gia' sbagliato e nessun controllo successivo se ne accorge.
-const QM_APP_BUILD='2026-11-24.1';
+const QM_APP_BUILD='2026-11-25.1';
 let _qmVersioneFile=null,_qmVersioneTs=0;
 
 // Ricarica bypassando ogni cache. Il service worker, quando la rete al risveglio non e'
@@ -959,26 +959,21 @@ function calcStock(wh) {
   const result = {};
   const whMoves = moves[wh] || [];
   for (const barcode of Object.keys(catalog)) {
-    const bm = whMoves.filter(m => m.barcode === barcode);
+    // In ORDINE DI DATA, come invCalcStock di Compass (25/11/2026): un carico segnato in ritardo o
+    // arrivato da un altro dispositivo non deve finire dopo un conteggio più recente.
+    const bm = whMoves.filter(m => m.barcode === barcode).map((m, i) => [m, i])
+      .sort((a, b) => ((Number(a[0].ts) || 0) - (Number(b[0].ts) || 0)) || (a[1] - b[1])).map(x => x[0]);
     if (!bm.length) { result[barcode] = 0; continue; }
-    // Find last 'init' movement
+    // Dall'ultimo conteggio ('init') in poi; senza conteggi, tutti i movimenti UNA volta sola
+    // (prima, senza conteggi, quasi tutti si contavano due volte: corretto il 25/11/2026).
     let lastInit = -1;
     for (let i = bm.length - 1; i >= 0; i--) {
       if (bm[i].type === 'init') { lastInit = i; break; }
     }
-    let qty = 0;
-    const from = lastInit >= 0 ? lastInit : 0;
-    if (lastInit >= 0) qty = bm[lastInit].qty;
-    for (let i = from + 1; i < bm.length; i++) {
+    let qty = lastInit >= 0 ? bm[lastInit].qty : 0;
+    for (let i = lastInit + 1; i < bm.length; i++) {
       if (bm[i].type === 'in')  qty += bm[i].qty;
       if (bm[i].type === 'out') qty -= bm[i].qty;
-    }
-    // Also process moves before lastInit if no init found
-    if (lastInit < 0) {
-      for (const m of bm) {
-        if (m.type === 'in')  qty += m.qty;
-        if (m.type === 'out') qty -= m.qty;
-      }
     }
     result[barcode] = Math.round(qty * 1000) / 1000;
   }

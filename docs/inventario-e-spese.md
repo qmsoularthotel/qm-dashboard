@@ -91,6 +91,18 @@ Quando si clicca **✅ Ricevuto** su un ordine in stato `ordinato`, si apre un m
 3. Pulsante **"+ Aggiungi prodotto non ordinato"** — aggiunge riga con select dal catalogo + qty
 4. **Conferma** → crea movimenti `in`, salva `movIds` sull'ordine, marca `status: 'ricevuto'`
 
+### Aggiornamenti di giacenza frequenti (25/11/2026, QM: «faccio spesso l'aggiornamento dello stock»)
+
+- **Ordine di data**: stock (`invCalcStock` in Compass, `calcStock` in `inventory.html`) e rettifiche
+  (`_invRettifiche`) leggono i movimenti di un prodotto **per data** (`_invInOrdine`; a parità di data
+  l'ordine di salvataggio), non nell'ordine in cui sono stati salvati. Un carico segnato in ritardo o
+  arrivato dal telefono dopo non finisce più dopo un conteggio più recente.
+- **Consumati da allora** (Stock › Ultimo ordine, `_invConsumoDa`): scarichi + ammanchi dei conteggi
+  successivi (quello che un aggiornamento di giacenza trova in meno), come la Media di Analisi. Un
+  conteggio che trova di più è un carico non registrato e non conta come consumo.
+- **App Inventario**: senza nessun conteggio, `calcStock` contava due volte quasi tutti i movimenti
+  (ciclo da `from+1` e poi di nuovo tutti); ora una volta sola. Sentinella in `esegui.sh`.
+
 ### Ricezione segnata in ritardo (25/11/2026, QM: ordini del 21/09 mai segnati ricevuti)
 
 Nella finestra «Ricevimento merce» (`invOrdersMarkReceived`): **«Arrivato il»** (`#ddt_data`, di
