@@ -3280,6 +3280,14 @@ ok('nessun altro escluso per sbaglio', ['Grassi M.', 'Ingrasso L.', 'Matarese A.
 (function () {
   var d = _turniSenzaEsclusi({ giorni: [{ shifts: { 'Grasso E.': '9-17', 'Maddaloni M.': 'AC' } }] });
   ok('tolta dai turni caricati, gli altri restano', Object.keys(d.giorni[0].shifts).join(), 'Maddaloni M.');
+  // 25/11/2026: messa da parte, non buttata — Presenze Cascione compila la sua riga dal planning.
+  ok('Grasso messa da parte col suo turno', JSON.stringify(d.giorni[0].esclusi), '{"Grasso E.":"9-17"}');
+  var v = turniVoceStorico({ giorni: [{ date: new Date(2026, 10, 2, 12), shifts: { 'Maddaloni M.': 'AC' }, esclusi: { 'Grasso E.': '9-17' } }, { date: new Date(2026, 10, 3, 12), shifts: { 'Maddaloni M.': 'R' } }] });
+  ok('in archivio il messo da parte resta', JSON.stringify(v.giorni[0].esclusi), '{"Grasso E.":"9-17"}');
+  ok('un giorno senza esclusi resta com\'era', 'esclusi' in v.giorni[1], false);
+  var ar = turniRipuliArchivio({ '2026-11-02': { ts: 5, giorni: v.giorni } });
+  ok('ripulendo l\'archivio il messo da parte resta', JSON.stringify(ar['2026-11-02'].giorni[0].esclusi), '{"Grasso E.":"9-17"}');
+  ok('il planning chiede all\'AI anche Grasso', /compresa Grasso/.test(String(handleTurniFile)), true);
 })();
 ok('ogni caricamento passa dal filtro', /_turniSenzaEsclusi\(data\)/.test(String(loadWeekData)), true);
 

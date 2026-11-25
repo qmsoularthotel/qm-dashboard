@@ -358,7 +358,9 @@ partono chiusi: intestazione cliccabile con ▸/▾ e «· N richieste» (`turni
 
 `TURNI_ESCLUSI` (cognomi, minuscolo): chi compare nel planning ma non va in Compass. Oggi **Grasso E.**
 (Amministrazione), che senza reparto finiva fra gli extra Housekeeping. Si toglie a ogni caricamento
-(`loadWeekData` → `_turniSenzaEsclusi`, quindi anche dai turni già salvati) e il prompt dell'AI la esclude.
+(`loadWeekData` → `_turniSenzaEsclusi`, quindi anche dai turni già salvati). **Dal 25/11/2026 non si
+butta più**: l'AI la legge e la si mette da parte in `g.esclusi` (fuori da turni e statistiche, ma in
+archivio), perché Presenze Cascione di Compass OPS compila la sua riga — vedi Presenze Cascione.
 
 ## Housekeeping: "Extra" → "Ditta" (02/10/2026)
 
@@ -491,6 +493,31 @@ foglio presenze **per società** (oggi Ge.Ri.Art., Booking Elite, Geriart Group)
   società, un mese o **una cella** per volta, rileggendo la chiave: due computer non si cancellano
   le correzioni). Bloccate anche dall'interruttore della Gestione Turnazione. Worker `2026-11-23a`.
   Nel backup di Compass (`QM_BACKUP_FISSE`). Chiudendo il PIN i dati si buttano dalla pagina.
+- **Grasso si compila dal planning** (25/11/2026, QM: è nel foglio di Ge.Ri.Art. e «non si
+  compilava»). Compass la toglieva dal planning (`TURNI_ESCLUSI`) e l'archivio non l'aveva mai.
+  Ora l'AI la legge («compresa Grasso») e `_turniSenzaEsclusi` la **mette da parte** in
+  `g.esclusi` invece di buttarla: turni, statistiche e Bilanciamento leggono solo `g.shifts`, quindi
+  per loro non cambia niente; `turniVoceStorico`/`turniRipuliArchivio` (e le copie `gtu*` di Compass
+  OPS) la portano in archivio (`_turniConEsclusi`); `_gpGiorniTurni` la unisce ai turni del giorno.
+  Le settimane caricate PRIMA del 25/11 non la hanno: vanno ricaricate in Compass.
+- **Persona aggiunta** (25/11/2026, QM: Cavaliere passata da Geriart Group a Ge.Ri.Art. da
+  novembre, nel foglio di Cascione non c'è): «+ Aggiungi persona da <mese>» in «Persone del
+  foglio» (`gpAggiungi`: nome come lo scrive Cascione, ore; aggancio ai turni dal cognome; numero =
+  il più alto + 1). `aggiunta:true`, `entrata:'AAAA-MM'`: prima di quel mese non c'è (`_gpNelMese`),
+  non conta fra chi non c'è più (`_gpUsciti`), «Togli» la toglie del tutto. Nell'Excel
+  (`_gpConAggiunte` → `_gpInserisci`): le sue righe vanno **sotto l'ultima persona del foglio**,
+  copiate dal blocco di quella (stile, altezza, celle unite, colonna D O/S/A; formule spostate come
+  «copia e incolla» di Excel, le condivise riscritte per intero; valori vecchi tolti) e tutto quello
+  che sta sotto scende (`_gpApriRighe`: righe, formule, celle unite, dimensione, selezioni). Nome e
+  numero li scrive `_gpCelleExport` (il numero solo se la cella non ha la formula «=A12+1»:
+  `tieniFormula`). Ricaricando il foglio di Cascione le aggiunte restano finché il foglio non le ha.
+  Nell'altra società si usa «Non c'è più da <mese>».
+- **Riferimento circolare corretto** (25/11/2026, trovato aprendo un Excel vero): togliendo una
+  persona a metà elenco, il numero d'ordine «=A12+1» di quella dopo diventava «=A12+1» dentro A12.
+  `_gpTogliRighe(xml,togli,h)`: una formula che nomina una riga tolta punta alla stessa riga della
+  persona sopra (salto di `h` righe), così la numerazione continua. Con righe tolte o aggiunte
+  l'Excel si ricalcola all'apertura (`_gpRicalcolaAllApertura`, `fullCalcOnLoad`). Provato con un
+  .xlsx creato con openpyxl, passato nel browser e riaperto: file valido, numerazione 1-2-3.
 - Controlli: «Presenze Cascione: foglio del consulente compilato dai turni» in `test/galleria.js`
   (foglio finto con nomi inventati; sabotaggi provati: codici, legenda, stile, formula, ordine
   delle celle, permesso del Worker, correzione non salvata).

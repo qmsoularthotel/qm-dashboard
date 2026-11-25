@@ -217,7 +217,7 @@ ${foStaff.join(', ')}
 REGOLE:
 1. Per i dipendenti fissi: abbina il nome del planning al più simile in lista (es. "MADDALONI" → "Maddaloni M.", "De Rosa" → "De Rosa T.") e usa il nome della lista come chiave.
 2. Per l'Housekeeping: il personale cambia ogni settimana. Usa il nome ESATTAMENTE come scritto nel planning (es. "Extra Maria", "Rossi A."). Non tentare di abbinarlo a nessuna lista.
-3. Includi TUTTE le persone visibili nel planning senza saltarne nessuna, TRANNE Grasso (Amministrazione): non va mai inclusa.
+3. Includi TUTTE le persone visibili nel planning senza saltarne nessuna, compresa Grasso (Amministrazione): il programma la tiene da parte da solo.
 4bis. Ogni riga è una persona: leggi i valori di una riga SOLO nella sua riga. Se una cella ha il trattino, scrivi "-" per QUELLA persona e non spostare i valori delle righe sotto o sopra. La riga "EXTRA" senza nome è la ditta esterna (camere 200): il valore "200" appartiene solo a lei.
 4. Celle con solo un trattino ("-") → metti esattamente "-" nel JSON, NON convertirlo in "R": il trattino indica una persona non pertinente quel giorno (es. non ancora in servizio quella settimana), diverso da un riposo vero. Celle con solo "." o completamente vuote → metti "R".
 5. "R" da solo → "R" (riposo). "P" è turno valido (presenza), NON è riposo.
@@ -393,11 +393,14 @@ function findWeekDayIndex(data,refDate){
 // cambio l'archivio si popola da solo senza dipendere da un gesto che qualcuno può scordare.
 const TURNI_STORICO_KEY='qm_turni_storico';
 const _turnoIso=d=>{const x=d instanceof Date?d:new Date(d);return isNaN(x.getTime())?null:x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');};
+// Chi è messo da parte (g.esclusi, es. Grasso) viaggia con il giorno fino all'archivio: serve a
+// Presenze Cascione di Compass OPS (25/11/2026). Solo se c'è, così le settimane senza restano identiche.
+function _turniConEsclusi(g){return g&&g.esclusi&&typeof g.esclusi==='object'&&Object.keys(g.esclusi).length?{esclusi:g.esclusi}:{};}
 /** Voce d'archivio per una settimana. Pura: niente rete, niente localStorage. */
 function turniVoceStorico(data){
   if(!data||!Array.isArray(data.giorni)||!data.giorni.length)return null;
   let giorni=data.giorni
-    .map(g=>({data:_turnoIso(g.date),shifts:g.shifts||{}}))
+    .map(g=>Object.assign({data:_turnoIso(g.date),shifts:g.shifts||{}},_turniConEsclusi(g)))
     .filter(g=>g.data);
   if(!giorni.length)return null;
   // Anno sbagliato: il planning si carica da una FOTO, e l'anno spesso non e' scritto da
@@ -413,7 +416,7 @@ function turniVoceStorico(data){
   // caricato il turno con una versione precedente a quella correzione.
   giorni=giorni.map(g=>{
     const d=_annoPlausibile(new Date(g.data+'T12:00:00'));
-    return{data:_turnoIso(d)||g.data,shifts:g.shifts};
+    return Object.assign({data:_turnoIso(d)||g.data,shifts:g.shifts},_turniConEsclusi(g));
   });
 
   return{chiave:giorni[0].data,dal:giorni[0].data,al:giorni[giorni.length-1].data,giorni,ts:Date.now()};
@@ -614,7 +617,7 @@ function turniRipuliArchivio(arch){
   Object.keys(arch||{}).forEach(k=>{
     const v=arch[k];
     if(!v||!Array.isArray(v.giorni)||!v.giorni.length)return;
-    const voce=turniVoceStorico({giorni:v.giorni.map(g=>({date:g.data,shifts:g.shifts}))});
+    const voce=turniVoceStorico({giorni:v.giorni.map(g=>Object.assign({date:g.data,shifts:g.shifts},_turniConEsclusi(g)))});
     if(!voce)return;
     if(voce.chiave<TURNI_INIZIO||voce.chiave>limIso)return;
     voce.ts=v.ts||voce.ts;
@@ -870,6 +873,9 @@ function turniRenderStats(){
 // Persone che compaiono nel planning ma non vanno elaborate in Compass (02/10/2026): Grasso E.
 // è dell'Amministrazione, non di un reparto operativo, e finiva fra gli extra Housekeeping.
 // Si riconosce dal cognome, comunque l'AI lo scriva ("GRASSO", "Grasso E.", "Grasso Elena").
+// Dal 25/11/2026 NON si butta più: si mette da parte in g.esclusi (fuori da turni, statistiche
+// e Bilanciamento, che leggono solo g.shifts) e resta in archivio, perché Presenze Cascione di
+// Compass OPS compila la sua riga dal planning (QM: Grasso è nel foglio di Ge.Ri.Art.).
 const TURNI_ESCLUSI=['grasso'];
 function _turnoEscluso(nome){
   const n=String(nome||'').toLowerCase();
@@ -902,7 +908,7 @@ function _turniSenzaEsclusi(data){
   ((data&&data.giorni)||[]).forEach(g=>{
     if(!g||!g.shifts)return;
     Object.keys(g.shifts).forEach(k=>{
-      if(_turnoEscluso(k)){delete g.shifts[k];return;}
+      if(_turnoEscluso(k)){(g.esclusi=g.esclusi||{})[k]=g.shifts[k];delete g.shifts[k];return;}
       const nuovo=_turnoNomeHK(k);
       if(nuovo===k)return;
       // Se il nome nuovo c'è già (planning misto), vince il turno non vuoto.

@@ -877,7 +877,67 @@ sez('Presenze Cascione: foglio del consulente compilato dai turni (23/11/2026)')
   ok('Presenze: celle unite tolte o spostate', (tolto.match(/<mergeCell ref="[^"]+"/g) || []).join(',') + ' ' + /count="2"/.test(tolto), '<mergeCell ref="A9:A11",<mergeCell ref="F13:H13" true');
   ok('Presenze: riquadro bloccato e selezione', /topLeftCell="D9"/.test(tolto) && /activeCell="D9" sqref="D9"/.test(tolto) && /<dimension ref="A1:AL13"/.test(tolto), true);
   ok('Presenze: senza righe da togliere il foglio non cambia', _gpTogliRighe(xmlU, []), xmlU);
-  ok('Presenze: l\'Excel toglie le righe di chi non c\'è più', /_gpUsciti\(S,y,m\)\.forEach\(p=>togli\.push\(p\.riga,p\.rigaS,p\.rigaA\)\)/.test(String(gpScarica)) && /_gpTogliRighe\(_gpScrivi\(/.test(String(gpScarica)), true);
+  // Numero d'ordine «=A9+1» della persona dopo quella tolta: punta alla persona sopra, non a se
+  // stesso (25/11/2026: diventava «=A9+1» dentro A9, riferimento circolare in Excel).
+  var xmlN = '<sheetData><row r="9"><c r="A9"><v>1</v></c></row><row r="12"><c r="A12"><f>A9+1</f><v>2</v></c></row><row r="15"><c r="A15"><f>A12+1</f><v>3</v></c></row></sheetData>';
+  var tN = _gpTogliRighe(xmlN, [12, 13, 14], 3);
+  ok('Presenze: tolta una persona, la numerazione continua senza riferimenti circolari', /<c r="A12"><f>A9\+1<\/f>/.test(tN), true);
+  ok('Presenze: tolta la prima, la seconda non punta a se stessa', /<c r="A9"><f>A6\+1<\/f>/.test(_gpTogliRighe('<sheetData><row r="12"><c r="A12"><f>A9+1</f></c></row></sheetData>', [9, 10, 11], 3)), true);
+  ok('Presenze: l\'Excel toglie le righe di chi non c\'è più', /_gpUsciti\(S,y,m\)\.forEach\(p=>togli\.push\(p\.riga,p\.rigaS,p\.rigaA\)\)/.test(String(gpScarica)) && /_gpTogliRighe\(_gpScrivi\(/.test(String(gpScarica)) && /if\(A\.ins\|\|togli\.length\)_gpRicalcolaAllApertura\(z\)/.test(String(gpScarica)), true);
+
+  // Persona AGGIUNTA (25/11/2026, QM: una collega passata da un'altra società da novembre, nel
+  // foglio di Cascione non c'è): da quel mese compare, e nell'Excel le sue tre righe si
+  // aggiungono sotto l'ultima persona, copiate dal suo blocco; tutto quello che sta sotto scende.
+  var modA = JSON.parse(JSON.stringify(mod));
+  modA.persone.forEach(function (p) { p.turno = ''; });
+  modA.persone.push({ nome: 'NUOVA PROVA', n: '8', ore: '6', notte: false, turno: 'Nuova P.', aggiunta: true, entrata: '2027-02' });
+  ok('Presenze: aggiunta da febbraio, a gennaio non c\'è', _gpCompila(modA, {}, 2027, 0, null).map(function (r) { return r.p.nome; }).join('|'), 'Fittizi Marta|DE PROVA GINO');
+  ok('Presenze: da febbraio c\'è, in fondo', _gpCompila(modA, {}, 2027, 1, null).map(function (r) { return r.p.nome; }).join('|'), 'Fittizi Marta|DE PROVA GINO|NUOVA PROVA');
+  ok('Presenze: un\'aggiunta prima dell\'entrata non è fra chi non c\'è più', _gpUsciti(modA, 2027, 0).length, 0);
+  var A0 = _gpConAggiunte(modA, 2027, 0), A1 = _gpConAggiunte(modA, 2027, 1);
+  ok('Presenze: prima dell\'entrata niente righe nuove', A0.ins, null);
+  ok('Presenze: righe nuove sotto l\'ultima persona, blocco di 3', JSON.stringify(A1.ins) + ' ' + A1.mod.persone[2].riga + '/' + A1.mod.persone[2].rigaS + '/' + A1.mod.persone[2].rigaA, '{"dopo":14,"h":3,"r0":12,"n":1} 15/16/17');
+  ok('Presenze: il modello salvato non cambia', modA.persone[2].riga === undefined && !modA.persone[2]._nuova, true);
+  var archA = { w: { giorni: [{ data: '2027-02-01', shifts: { 'Nuova P.': 'AC' } }, { data: '2027-02-02', shifts: { 'Nuova P.': 'R' } }] } };
+  var rA = _gpCompila(A1.mod, _gpGiorniTurni(archA), 2027, 1, null);
+  var xA = _gpScrivi(_gpInserisci(xml, A1.ins), _gpCelleExport(A1.mod, rA, 2027, 1)), cA = _gpCelle(xA, cond), mA = _gpModello(cA);
+  ok('Presenze: nell\'Excel la persona aggiunta si rilegge con numero e nome', mA.persone.map(function (p) { return p.n + ':' + p.nome + '@' + p.riga + '/' + p.rigaS + '/' + p.rigaA; }).join(' '), '4:Fittizi Marta@9/10/11 7:DE PROVA GINO@12/13/14 8:NUOVA PROVA@15/16/17');
+  ok('Presenze: i suoi giorni dai turni (il 3 senza planning resta vuoto)', cA.E15 + ' ' + cA.F15 + ' ' + (cA.G15 || '·'), '6 R ·');
+  ok('Presenze: la legenda scende sotto', cA.B19 + ' ' + (cA.B16 || '·'), 'Ore Ordinarie ·');
+  ok('Presenze: righe del blocco nuovo con le lettere O, S, A', cA.D15 + cA.D16 + cA.D17, 'OSA');
+  ok('Presenze: lo stile delle celle copiate resta', /<c r="E15" s="3"/.test(xA) && /<c r="D16" s="3"/.test(xA), true);
+  // Formule, celle unite, dimensione: su un foglio con formule condivise come quelli veri.
+  var xmlI = '<worksheet><dimension ref="A1:AL16"/><sheetViews><sheetView><selection activeCell="B16" sqref="B16"/></sheetView></sheetViews><sheetData>' +
+    '<row r="8"><c r="A8"><v>1</v></c></row>' +
+    '<row r="9"><c r="A9"><v>1</v></c><c r="D9" t="inlineStr"><is><t>O</t></is></c><c r="AJ9" s="5"><f t="shared" ref="AJ9:AJ12" si="0">SUM(E9:AI9)</f><v>6</v></c></row>' +
+    '<row r="10"><c r="D10" t="inlineStr"><is><t>S</t></is></c></row><row r="11"><c r="D11" t="inlineStr"><is><t>A</t></is></c></row>' +
+    '<row r="12" ht="18" customHeight="1" spans="1:38"><c r="A12" s="2"><f>+A9+1</f><v>2</v></c><c r="B12" s="2" t="inlineStr"><is><t>Due</t></is></c><c r="D12" t="inlineStr"><is><t>O</t></is></c><c r="E12" s="3"><v>8</v></c><c r="AJ12" s="5"><f t="shared" si="0"/><v>8</v></c></row>' +
+    '<row r="13"><c r="D13" t="inlineStr"><is><t>S</t></is></c><c r="AJ13" s="5"><f>SUM(E13:AI13)</f><v>0</v></c></row><row r="14"><c r="D14" t="inlineStr"><is><t>A</t></is></c></row>' +
+    '<row r="16"><c r="A16" t="inlineStr"><is><t>O =</t></is></c><c r="B16"><f>$B$12&amp;" x"</f></c></row>' +
+    '</sheetData><mergeCells count="3"><mergeCell ref="A12:A14"/><mergeCell ref="B12:C14"/><mergeCell ref="F16:H16"/></mergeCells></worksheet>';
+  var xI = _gpInserisci(xmlI, { dopo: 14, h: 3, r0: 12, n: 1 });
+  ok('Presenze: righe in ordine, la 16 scende a 19', (xI.match(/<row r="\d+"/g) || []).map(function (x) { return x.slice(8, -1); }).join(','), '8,9,10,11,12,13,14,15,16,17,19');
+  ok('Presenze: formula condivisa ricostruita sul blocco nuovo', /<c r="AJ15" s="5"><f>SUM\(E15:AI15\)<\/f><\/c>/.test(xI), true);
+  ok('Presenze: formula normale spostata sul blocco nuovo', /<c r="AJ16" s="5"><f>SUM\(E16:AI16\)<\/f><\/c>/.test(xI), true);
+  ok('Presenze: il numero d\'ordine segue la catena (=A12+1)', /<c r="A15" s="2"><f>\+A12\+1<\/f><\/c>/.test(xI), true);
+  ok('Presenze: la formula del numero resta, il numero va solo dove non c\'è', _gpScrivi(xI, { A15: { tieniFormula: true, v: '9' } }) === xI && /<c r="A15"><v>9<\/v><\/c>/.test(_gpScrivi('<row r="15"><c r="A15"/></row>', { A15: { tieniFormula: true, v: '9' } })), true);
+  ok('Presenze: il valore vecchio non si copia', /<c r="E15" s="3"\/>/.test(xI) && !/<c r="B15"[^>]*>.*Due/.test(xI), true);
+  ok('Presenze: altezza della riga tenuta', /<row r="15" ht="18" customHeight="1">/.test(xI), true);
+  ok('Presenze: celle unite copiate e spostate', (xI.match(/<mergeCell ref="[^"]+"/g) || []).map(function (x) { return x.slice(16, -1); }).join(',') + ' ' + /count="5"/.test(xI), 'A12:A14,B12:C14,F19:H19,A15:A17,B15:C17 true');
+  ok('Presenze: sotto le formule seguono, sopra restano', /<c r="B19"><f>\$B\$12&amp;" x"<\/f>/.test(xI) && /<f t="shared" ref="AJ9:AJ12" si="0">SUM\(E9:AI9\)/.test(xI), true);
+  ok('Presenze: dimensione e selezione', /<dimension ref="A1:AL19"/.test(xI) && /activeCell="B19" sqref="B19"/.test(xI), true);
+  ok('Presenze: senza aggiunte il foglio non cambia', _gpInserisci(xmlI, null), xmlI);
+  ok('Presenze: l\'Excel fa posto alle aggiunte prima di scrivere i giorni', /_gpScrivi\(_gpInserisci\(/.test(String(gpScarica)), true);
+  var zW = { 'xl/workbook.xml': _gpUtf8('<workbook><calcPr calcId="191029"/></workbook>') };
+  _gpRicalcolaAllApertura(zW);
+  ok('Presenze: Excel ricalcola all\'apertura', _gpDaUtf8(zW['xl/workbook.xml']), '<workbook><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>');
+  ok('Presenze: ricaricando il foglio le aggiunte restano', /x\.aggiunta&&!mod\.persone\.some\(/.test(String(gpCaricaFoglio)), true);
+
+  // Chi Compass mette da parte dai turni (Grasso, Amministrazione, 25/11/2026): in Presenze c'è.
+  var archG = { w: { giorni: [{ data: '2027-03-01', shifts: { 'Altro X.': 'AC' }, esclusi: { 'Grasso E.': '9-17' } }] } };
+  ok('Presenze: il messo da parte dai turni si compila', _gpGiorniTurni(archG)['2027-03-01']['Grasso E.'] + ' ' + _gpNomiTurni(archG).join('|'), '9-17 Altro X.|Grasso E.');
+  ok('Presenze: e si aggancia dal cognome', _gpAbbina('GRASSO ELENA', _gpNomiTurni(archG)), 'Grasso E.');
+  ok('Presenze: l\'archivio originale non cambia', JSON.stringify(archG.w.giorni[0].shifts), '{"Altro X.":"AC"}');
 
   // Foglio di Cascione VUOTO (23/11/2026): niente ore nei giorni e periodo senza data. Le ore non si
   // inventano (erano diventate 8 per chi ne fa 6) e il periodo si trova dopo la cella unita.
@@ -922,7 +982,7 @@ ok('Presenze: Worker, i dati solo col permesso del PIN', /az === 'presenze' \|\|
 ok('Presenze: Worker, spenta vale anche qui', /'storico', 'presenze', 'presenze-salva'\]\.includes\(az\)/.test(String(_workerFetch.fetch)), true);
 ok('Presenze: Worker, una cella alla volta rileggendo la chiave', /parte === 'cella'[\s\S]{0,400}ri\[cella\] = String\(corpo\.valore\)/.test(String(_workerFetch.fetch)) && /QM_STORAGE\.get\('qm_presenze_cascione'\)/.test(String(_workerFetch.fetch)), true);
 ok('Presenze: niente riquadri Persone / Da controllare / Corretti (QM, 23/11)', /kpi-card|restano segnati|giorni dubbi/.test(String(_gpDisegna)), false);
-ok('Presenze: «Carica foglio» in alto solo senza fogli, poi in Persone del foglio', /\$\{ids\.length\?'':carica\}/.test(String(_gpDisegna)) && /sostituisce il vecchio\.<\/span>\$\{carica\}/.test(String(_gpDisegna)), true);
+ok('Presenze: «Carica foglio» in alto solo senza fogli, poi in Persone del foglio', /\$\{ids\.length\?'':carica\}/.test(String(_gpDisegna)) && /si aggiunge qui\.<\/span><button type="button" class="gp-pill" onclick="gpAggiungi\(\)">[^`]*\$\{carica\}/.test(String(_gpDisegna)), true);
 ok('Presenze: R rosso come ML', /<i style="background:var\(--red-bg\);color:var\(--red\)">R<\/i>riposo/.test(String(_gpDisegna)) && _gpClsV('R') === 'gp-v-R', true);
 ok('Presenze: nel backup di Compass', QM_BACKUP_FISSE.indexOf('qm_presenze_cascione') >= 0, true);
 ok('Presenze: una correzione non salvata si dice e si annulla', /if\(!j\.ok\)\{if\(prima===undefined\)delete riga\[cella\];else riga\[cella\]=prima;_gpMsg='Correzione NON salvata/.test(String(gpMetti)), true);
