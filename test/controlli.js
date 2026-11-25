@@ -4638,3 +4638,8 @@ sez('Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordin
 })();
 
 ok('ricezione in ritardo: la spunta «aggiungi allo stock» non si toglie da sola', /c\.checked=/.test(String(invDDTData)), false);
+
+// Consumi nella misura dell'ordine (25/11/2026, QM): niente decimali a settimana.
+ok('uso: in numeri interi nel periodo dell\'ordine', _invUsoTesto(7 / 15, 15, 'fl').testo, '7 fl ogni 15 giorni');
+ok('uso: sotto 1 nel periodo, «1 ogni N giorni»', _invUsoTesto(1 / 70, 15, 'tan.').testo, '1 tan. ogni 70 giorni');
+ok('uso: senza consumi non si sa', _invUsoTesto(0, 15, 'fl'), null);

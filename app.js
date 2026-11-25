@@ -10627,7 +10627,7 @@ function _invIco(n,px){
 }
 let _invWh=localStorage.getItem('qm_inv_wh')||'sa';
 let _invTab='stock';
-let _invFilter='all'; // 'all' | 'ordina' (Stock: solo quelli da ordinare)
+let _invFilter='all'; // non più usato dallo Stock (lista della spesa + tabella, 25/11/2026)
 let _invPeriod=30;    // giorni per analisi consumi
 
 function invSetWh(wh,btn){
@@ -10788,57 +10788,59 @@ function _invConsumoDa(bc,moves,ts,ora){
   _invRettifiche(bm).forEach(r=>{if(r.ts>=ts&&r.delta<0)q+=-r.delta;});
   return{qty:Math.round(q*1000)/1000,giorni:Math.max(0,Math.floor(((ora||Date.now())-ts)/86400000))};
 }
+// Quanto se ne usa in un periodo, in parole e numeri interi (25/11/2026, QM: «i consumi zero virgola a
+// settimana non mi servono a niente: devo sapere quanti flaconi si usano per fare un ordine ogni 15
+// giorni»). Almeno 1 nel periodo: il numero arrotondato; meno di 1: «1 ogni N giorni».
+function _invUsoTesto(perGiorno,giorni,unita){
+  if(!(perGiorno>0))return null;
+  const u=unita?' '+unita:'';
+  const tot=perGiorno*giorni;
+  if(tot>=0.95)return{n:Math.max(1,Math.round(tot)),testo:Math.max(1,Math.round(tot))+u+' ogni '+giorni+' giorni'};
+  const ogni=Math.round(1/perGiorno);
+  return{n:0,testo:'1'+u+' ogni '+ogni+' giorni'};
+}
 function invRenderStock(catalog,moves){
-  // Versione «a colpo d'occhio» (25/11/2026, QM: «non è immediato, si legge poco e male»): una
-  // tabella con cinque colonne grandi e niente testo grigio superfluo — Prodotto · In stock ·
-  // Consumo a settimana · Ultimo ordine ricevuto · DA ORDINARE (in evidenza). In cima i prodotti
-  // da ordinare, i più urgenti prima. Il numero in stock si tocca per correggerlo; modifica ed
-  // eliminazione stanno nel Catalogo, il rifornimento nello scanner. Colonne in classi, mai in linea.
+  // Proposta 1 scelta dal QM (25/11/2026), dopo quattro prove: in cima la LISTA DELLA SPESA (solo
+  // quello da ordinare, con la quantità in grande e una frase normale sotto), sotto una TABELLA
+  // SEMPLICE di tutti i prodotti. I consumi sono detti nella misura dell'ordine: «ogni 15 giorni se ne
+  // usano 7» (ordine ogni 15/30/45 giorni, _invCopertura), mai decimali a settimana. Il numero in
+  // stock si tocca per correggerlo; modifica ed eliminazione stanno nel Catalogo. Classi .inv3-*.
   const el=document.getElementById('inv-stock-view');
   if(!el)return;
   const stock=invCalcStock(catalog,moves);
   const ultimi=_invUltimiOrdini(_invWh),arrivo=_invInArrivo(_invWh),ora=Date.now();
   const perBc={};moves.forEach(m=>{(perBc[m.barcode]=perBc[m.barcode]||[]).push(m);});
-  const nomeWh=_invWh==='ar'?'Art Resort':'SoulArt Hotel';
+  const nomeWh=_invWh==='ar'?'Art Resort':'SoulArt Hotel',N=_invCopertura;
   const items=Object.entries(catalog).map(([bc,p])=>{
     const qty=stock[bc]??null;if(qty===null)return null;
     const gg=_invConsumoMedio(perBc[bc],ora),ia=arrivo[bc];
     const aut=gg>0?Math.floor(Math.max(0,qty)/gg):null;
     const dor=_invDaOrdinare(gg,qty,ia?ia.qty:0,_invCopertura);
-    return{bc,name:p.name,unit:p.unit||'',qty,gg,aut,dor,ia,uo:ultimi[bc],status:invItemStatus(qty,p.soglia??null)};
+    return{bc,name:p.name,unit:p.unit||'',qty,gg,aut,dor,ia,uo:ultimi[bc],uso:_invUsoTesto(gg,N,p.unit||'')};
   }).filter(Boolean);
+  const scelta=`<div class="inv3-scelta"><span>Ordine ogni</span>${[15,30,45].map(n=>`<button class="rev-filter-btn${N===n?' active':''}" onclick="invSetCopertura(${n})">${n} giorni</button>`).join('')}</div>`;
   if(!items.length){
-    el.innerHTML=`<div class="panel"><div class="panel-body inv-vuoto">${_invIco('scatola',28)}<div>Nessun prodotto in ${nomeWh}</div><small>Apri lo scanner sullo smartphone per aggiungere i prodotti.</small></div></div>`;
+    el.innerHTML=scelta+`<div class="panel"><div class="panel-body inv-vuoto">${_invIco('scatola',28)}<div>Nessun prodotto in ${nomeWh}</div><small>Apri lo scanner sullo smartphone per aggiungere i prodotti.</small></div></div>`;
     return;
   }
-  // Prima da ordinare (meno giorni di autonomia prima), poi il resto in ordine di nome.
-  items.sort((a,b)=>((b.dor>0)-(a.dor>0))||(a.dor>0&&b.dor>0?((a.aut??1e9)-(b.aut??1e9)):0)||a.name.localeCompare(b.name,'it'));
-  const nDa=items.filter(i=>i.dor>0).length;
-  const lista=_invFilter==='ordina'?items.filter(i=>i.dor>0):items;
-  const num=x=>(Math.round(x*10)/10).toString().replace('.',',');
-  const righe=lista.map(it=>{
-    const u=it.unit?` <span class="inv2-u">${_esc(it.unit)}</span>`:'';
-    const col=it.qty<=0?'var(--red)':(it.aut!=null&&it.aut<=7)?'var(--red)':(it.aut!=null&&it.aut<=14)?'var(--amber)':'var(--text)';
-    const autTxt=it.aut==null?'':it.aut<=14?`<small style="color:${col};">${it.qty<=0?'finito':'per '+it.aut+' gg'}</small>`:'';
-    const cons=it.gg>0?`${num(it.gg*7)}${u}`:'<span class="inv2-no">—</span>';
-    const uo=it.uo?`${it.uo.qty}${u}<small>${_esc(String(it.uo.data).slice(0,5))}</small>`:'<span class="inv2-no">—</span>';
-    const arr=it.ia&&it.ia.qty?`<small class="inv2-arr">+${it.ia.qty} in arrivo</small>`:'';
-    const dor=it.dor>0?`<span class="inv2-dor">${it.dor}${it.unit?' '+_esc(it.unit):''}</span>${arr}`:it.dor===0?`<span class="inv2-ok">no</span>${arr}`:'<span class="inv2-no">—</span>';
-    return`<div class="inv2-riga${it.dor>0?' inv2-da':''}">
-      <div class="inv2-nome" title="${_esc(it.name)}">${_esc(it.name)}</div>
-      <div class="inv2-num"><button class="inv2-stock" style="color:${col};" onclick="invEditQty('${it.bc}',${it.qty})" title="Correggi la quantità">${it.qty}${u}</button>${autTxt}</div>
-      <div class="inv2-num">${cons}</div>
-      <div class="inv2-num">${uo}</div>
-      <div class="inv2-num inv2-col-dor">${dor}</div>
-    </div>`;
-  }).join('')||'<div class="inv-vuoto"><div>Niente da ordinare per i prossimi '+_invCopertura+' giorni.</div></div>';
-  const btn=(on,cl,txt)=>`<button class="rev-filter-btn${on?' active':''}" onclick="${cl}">${txt}</button>`;
-  el.innerHTML=`<div class="panel">
-    <div class="panel-header inv2-testa-p"><span class="ov-icon-badge">${_invIco('scatola',12).replace('stroke="currentColor"','stroke="#fff"')}</span><span class="panel-title">Giacenza · ${nomeWh}</span>
-      <div class="inv2-scelte">${btn(_invFilter==='ordina',"invSetFilter('ordina')",'Da ordinare <b>'+nDa+'</b>')}${btn(_invFilter!=='ordina',"invSetFilter('all')",'Tutti <b>'+items.length+'</b>')}
-        <span class="inv2-sep"></span><span class="inv2-lbl">ordine per</span>${[15,30,45].map(n=>btn(_invCopertura===n,'invSetCopertura('+n+')',n+' giorni')).join('')}</div></div>
-    <div class="inv2-riga inv2-intest"><div>Prodotto</div><div>In stock</div><div>Consumo a sett.</div><div>Ultimo ordine</div><div>Da ordinare</div></div>
-    ${righe}</div>`;
+  const u=x=>x?' '+_esc(x):'';
+  // 1) Lista della spesa: solo da ordinare, i più urgenti prima.
+  const da=items.filter(i=>i.dor>0).sort((a,b)=>((a.aut??1e9)-(b.aut??1e9))||a.name.localeCompare(b.name,'it'));
+  const spesa=da.map(it=>{
+    const resta=it.qty<=0?'<b class="inv3-rosso">finito</b>':`ne restano ${it.qty}${u(it.unit)}${it.aut!=null?' (per circa '+it.aut+' giorni)':''}`;
+    const arr=it.ia&&it.ia.qty?` · ${it.ia.qty}${u(it.ia.unit||it.unit)} già in arrivo`:'';
+    return`<div class="inv3-ord"><div class="inv3-ord-n">${_esc(it.name)}<small>${resta} · se ne usano ${_esc(it.uso.testo)}${arr}</small></div><div class="inv3-ord-q">${it.dor}<small>${_esc(it.unit)}</small></div></div>`;
+  }).join('')||`<div class="inv3-vuoto">Per i prossimi ${N} giorni non serve ordinare niente.</div>`;
+  // 2) Tabella semplice di tutti.
+  const tutti=items.slice().sort((a,b)=>a.name.localeCompare(b.name,'it')).map(it=>`<tr>
+      <td>${_esc(it.name)}</td>
+      <td class="r"><button class="inv3-stock${it.qty<=0?' inv3-rosso':''}" onclick="invEditQty('${it.bc}',${it.qty})" title="Correggi la quantità">${it.qty}${u(it.unit)}</button>${it.ia&&it.ia.qty?`<small>+${it.ia.qty} in arrivo</small>`:''}</td>
+      <td class="r">${it.uso?_esc(it.uso.testo.replace(' ogni '+N+' giorni','')):'<span class="inv3-no">non si sa</span>'}</td>
+      <td class="r inv3-gr">${it.uo?it.uo.qty+u(it.uo.unit||it.unit)+' · '+_esc(String(it.uo.data).slice(0,5)):'—'}</td>
+    </tr>`).join('');
+  el.innerHTML=scelta+`<div class="panel inv3-p"><div class="panel-header"><span class="panel-title">Da ordinare · ${nomeWh}</span><span class="inv3-cnt">${da.length?da.length+' prodott'+(da.length===1?'o':'i'):''}</span></div>${spesa}</div>
+    <div class="panel inv3-p"><div class="panel-header"><span class="panel-title">Tutti i prodotti</span><span class="inv3-cnt">${items.length}</span></div>
+    <div class="inv3-tw"><table class="inv3-tab"><thead><tr><th>Prodotto</th><th class="r">In stock</th><th class="r">Se ne usano in ${N} giorni</th><th class="r">Ultimo ordine</th></tr></thead><tbody>${tutti}</tbody></table></div></div>`;
 }
 function invRenderMoves(catalog,moves){
   const el=document.getElementById('inv-moves-view');
