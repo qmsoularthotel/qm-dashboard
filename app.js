@@ -15444,7 +15444,16 @@ const BIA_DOT_PLURALE={'Lenzuolo matrimoniale':'Lenzuola matrimoniali','Lenzuolo
 const BIA_DOT_DEFAULT={sa:{camere:22,
   'Lenzuolo matrimoniale':{contratto:200,perCamera:2,allestimento:50},'Lenzuolo singolo':{perCamera:0,allestimento:6},
   'Federa':{perCamera:4,allestimento:96},'Telo doccia':{perCamera:2,allestimento:51},'Asciugamano viso':{perCamera:2,allestimento:51},
-  'Asciugamano bidet':{perCamera:2,allestimento:51},'Scendibagno':{perCamera:1,allestimento:25}}};
+  'Asciugamano bidet':{perCamera:2,allestimento:51},'Scendibagno':{perCamera:1,allestimento:25}},
+// Boutique (25/11/2026, il QM, contratto in mano): 10 camere, 9 matrimoniali e 1 tripla.
+//   matrimoniale: 2 lenzuola matr., 4 federe, 2 teli/viso/bidet
+//   tripla: 2 lenzuola matr. + 2 singole, 6 federe, 3 teli/viso/bidet
+//   scendibagno: 1 per bagno (non detto dal QM: da confermare).
+// I numeri del contratto erano già scritti dalla pagina: qui solo come partenza.
+bh:{camere:10,
+  'Lenzuolo matrimoniale':{contratto:300,allestimento:20},'Lenzuolo singolo':{contratto:120,allestimento:2},
+  'Federa':{contratto:300,allestimento:42},'Telo doccia':{contratto:300,allestimento:21},'Asciugamano viso':{contratto:300,allestimento:21},
+  'Asciugamano bidet':{contratto:300,allestimento:21},'Scendibagno':{contratto:100,allestimento:10}}};
 let _biaDotVoce='Lenzuolo matrimoniale';   // la tipologia del dettaglio
 // VISIBILE SU TUTTI I PC, SENZA PIN (21/11/2026, QM): il lucchetto col PIN del QM, messo lo
 // stesso giorno, era troppo complicato da gestire ed è stato tolto. Resta il lucchetto
@@ -15472,8 +15481,10 @@ function _biaDotCampo(h,v,c){
 function _biaDotLetti(h,v){
   // Camere non tutte uguali: vale l'allestimento, finché dalla pagina non si scrivono camere o
   // pezzi per camera (allora conta quello che si è scritto).
+  // Dove c'è il Conteggio a scorrere (SoulArt, Boutique) camere e pezzi per camera non si
+  // scrivono più dalla pagina: vale sempre l'allestimento, anche se una volta erano stati scritti.
   const sd=_bia.dotazione&&_bia.dotazione[h];
-  const scritto=sd&&(sd.camere!==undefined||(sd[v]&&sd[v].perCamera!==undefined));
+  const scritto=!_biaContaSi(h)&&sd&&(sd.camere!==undefined||(sd[v]&&sd[v].perCamera!==undefined));
   const al=_biaDotCampo(h,v,'allestimento');if(al!==null&&!scritto)return al;
   const c=_biaDotCamere(h),p=_biaDotCampo(h,v,'perCamera');
   return c===null||p===null?null:c*p;
@@ -15649,8 +15660,9 @@ function _biaDotPannello(h){
 // La differenza è l'errore di QUEL periodo, poi si riparte dai numeri veri.
 // La conta si fa DOPO il passaggio di Raimondo: una consegna lo stesso giorno della conta
 // è già dentro i pezzi contati e non scorre.
-// Boutique e Galleria tengono il vecchio saldo finché non ci sono le copie dei contratti.
-const BIA_CONTA_HOTELS={sa:true};
+// Boutique dal 25/11/2026 (arrivato il contratto). La Galleria tiene il vecchio saldo finché
+// non ci sono le copie dei suoi contratti.
+const BIA_CONTA_HOTELS={sa:true,bh:true};
 const BIA_CONTA_POSTI=[['letti','Sui letti'],['carrelli','Sui carrelli'],['deposito','In deposito'],['sporco','Sporco in albergo']];
 // Intestazioni corte delle colonne nelle conte registrate (16/11/2026, il QM).
 const BIA_CONTA_BREVE={'Lenzuolo matrimoniale':'Matrimoniali','Lenzuolo singolo':'Singoli','Federa':'Federe','Asciugamano viso':'Viso','Asciugamano bidet':'Bidet','Telo doccia':'Doccia','Scendibagno':'Tappetini'};
@@ -16616,7 +16628,7 @@ function biaRender(){
       <span style="margin-left:auto;display:inline-flex;">${Object.keys(BIA_HOTELS).map((k,i,a)=>`<button onclick="biaStoSetHotel('${k}')" style="${bTab(k===hS)}border-radius:${i===0?'7px 0 0 7px':i===a.length-1?'0 7px 7px 0':'0'};${i?'margin-left:-1px;':''}">${esc(BIA_STO_NOMI[k]||BIA_HOTELS[k])}</button>`).join('')}</span>
       <select onchange="biaStoSetMese(this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:var(--fs-xs);font-family:inherit;background:var(--surface);color:var(--text);">${mesiS.map(y=>`<option value="${y}"${y===_biaStoMese?' selected':''}>${_biaMeseNome(y)}</option>`).join('')}</select>
     </div><div class="panel-body" style="padding:0;">`;
-    // La frase del mese: e' la prima cosa che si legge. Al SoulArt no (15/11/2026): col
+    // La frase del mese: e' la prima cosa che si legge. Al SoulArt no (15/11/2026), al Boutique no (25/11/2026): col
     // Conteggio a scorrere il "mancano N pezzi" del mese non ha piu' senso, conta la conta vera.
     const col=st.saldo<0?'var(--red)':'var(--green)';
     const fraseMese=!_biaContaSi(hS);
@@ -16737,7 +16749,7 @@ function biaRenderConteggio(){
   </div>`;
   const prima=h.length;
   // ── Dotazione da contratto ── (vedi _biaDotConto)
-  // Al SoulArt il Conteggio a scorrere prende il posto della Dotazione e del suo saldo.
+  // Dove c'e' il Conteggio a scorrere (SoulArt, Boutique dal 25/11/2026) prende il posto della Dotazione e del suo saldo.
   if(_bia.giri.length){
     h+=_biaContaSi(_biaHotel)?_biaContaPannello(_biaHotel):_biaDotPannello(_biaHotel);
   }

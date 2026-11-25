@@ -2128,8 +2128,15 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   ok('SoulArt: le sue 3 consegne, non quelle del Boutique', righeIn(), 3);
   _biaHotel = 'bh'; ridisegna();
   ok('Boutique: le sue 2 consegne',                    righeIn(), 2);
-  // La frase del mese ("mancano N pezzi") resta al Boutique, al SoulArt no: c'e' il Conteggio a scorrere (15/11/2026).
-  ok('Boutique: la frase del mese c\'e\'',             /Raimondo ha riportato|nessuna consegna ancora confrontabile/.test(box.innerHTML), true);
+  // La frase del mese ("mancano N pezzi") non c'e' dove c'e' il Conteggio a scorrere: SoulArt dal
+  // 15/11/2026, Boutique dal 25/11/2026. La vecchia strada resta per chi non ha il conteggio.
+  ok('Boutique: niente frase del mese',              /Raimondo ha riportato|mancano <span|nessuna consegna ancora confrontabile|Nelle consegne:/.test(box.innerHTML), false);
+  var csBh = BIA_CONTA_HOTELS.bh; delete BIA_CONTA_HOTELS.bh;
+  try {
+    ridisegna();
+    ok('senza conteggio la frase del mese c\'e\'',    /Raimondo ha riportato|nessuna consegna ancora confrontabile/.test(box.innerHTML), true);
+    ok('senza conteggio Pezzi non rientrati si apre dallo storico', /biaToggleStoSaldo\(\)/.test(box.innerHTML), true);
+  } finally { BIA_CONTA_HOTELS.bh = csBh; }
   _biaHotel = 'sa'; ridisegna();
   ok('SoulArt: niente frase del mese',                 /Raimondo ha riportato|mancano <span|nessuna consegna ancora confrontabile|Nelle consegne:/.test(box.innerHTML), false);
   ok('SoulArt: le consegne restano',                   righeIn(), 3);
@@ -2148,7 +2155,7 @@ sez('Biancheria: andamento per la direzione e strutture separate');
   document.getElementById = vero;
   _biaStoHotel = ''; _biaStoMese = '';
   ok('c\'e\' il pulsante del report',                   /Report per la direzione/.test(box.innerHTML), true);
-  ok('Pezzi non rientrati si apre dallo storico',      /biaToggleStoSaldo\(\)/.test(box.innerHTML), true);
+  ok('col conteggio niente Pezzi non rientrati',      /biaToggleStoSaldo\(\)/.test(box.innerHTML), false);
   ok('e non e\' piu\' un riquadro a se\'',              /Pezzi non rientrati — totale da inizio/.test(box.innerHTML), false);
   // La fisarmonica dello storico non esiste piu' (07/09/2026), quindi non c'e' piu' niente da
   // portare in vista aprendola. La regola resta valida per gli altri pannelli che si aprono:
@@ -3487,7 +3494,11 @@ sez('Consumo Biancheria: l\'avviso dei dati mancanti (07/11/2026)');
   _bia.giri.pop();
   var box={innerHTML:''},vero=document.getElementById;
   document.getElementById=function(id){return id==='bia-content'?box:null;};
-  try{_biaHotel='bh';biaRender();}finally{document.getElementById=vero;}
+  // Il disegno della pagina prende «oggi» da _biaOggi(): va fermato al 07/11 come il resto del
+  // caso, altrimenti col passare dei giorni le consegne mancanti superano le 8 in vista e il
+  // 05/11 finisce fra «i più vecchi» (falliva dal 25/11/2026 senza nessun difetto nel codice).
+  var oggiVero=_biaOggi;_biaOggi=function(){return new Date(oggi.getTime());};
+  try{_biaHotel='bh';biaRender();}finally{document.getElementById=vero;_biaOggi=oggiVero;}
   var hh=box.innerHTML,i=hh.indexOf('id="bia-buchi"');
   ok('l\'avviso c\'e\'',                            i>=0, true);
   ok('ed e\' prima di "Cosa fare oggi"',            i>=0&&i<hh.indexOf('Cosa fare oggi'), true);
@@ -3746,11 +3757,14 @@ sez('Consumo Biancheria: dotazione da contratto, quanti pezzi nostri restano a R
   // Ogni tipologia ha il SUO contratto: il 200 e' delle sole matrimoniali.
   ok('SoulArt: 200 matrimoniali da contratto',    _biaDotCampo('sa',V,'contratto'), 200);
   ok('le federe non ereditano il 200',            _biaDotCampo('sa','Federa','contratto'), null);
-  ok('Boutique: nessun numero inventato',         _biaDotCampo('bh',V,'contratto'), null);
+  ok('Boutique: il contratto (25/11/2026)',       ['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Asciugamano viso','Asciugamano bidet','Telo doccia','Scendibagno'].map(function(x){return _biaDotCampo('bh',x,'contratto');}).join(' '), '300 120 300 300 300 300 100');
   ok('sui letti: l\'allestimento del SoulArt',     _biaDotLetti('sa',V)+' '+_biaDotLetti('sa','Federa'), '50 96');
-  ok('Boutique: senza camere niente letti',       _biaDotLetti('bh',V), null);
-  _bia.dotazione={sa:{camere:20}};_bia.dotazione.sa[V]={contratto:''};
-  ok('le camere si cambiano dalla pagina',        _biaDotLetti('sa',V), 40);
+  // Boutique: 9 matrimoniali + 1 tripla (2 matr. + 2 singole, 6 federe, 3 teli/viso/bidet).
+  ok('Boutique: l\'allestimento delle 10 camere',  ['Lenzuolo matrimoniale','Lenzuolo singolo','Federa','Asciugamano viso','Asciugamano bidet','Telo doccia','Scendibagno'].map(function(x){return _biaDotLetti('bh',x);}).join(' '), '20 2 42 21 21 21 10');
+  _bia.dotazione={sa:{camere:20},bh:{camere:'',Federa:{perCamera:''}}};_bia.dotazione.sa[V]={contratto:''};
+  ok('col conteggio vale sempre l\'allestimento', _biaDotLetti('sa',V)+' '+_biaDotLetti('bh','Federa'), '50 42');
+  var csSa=BIA_CONTA_HOTELS.sa;delete BIA_CONTA_HOTELS.sa;
+  try{ok('senza conteggio le camere si cambiano dalla pagina', _biaDotLetti('sa',V), 40);}finally{BIA_CONTA_HOTELS.sa=csSa;}
   ok('svuotato a mano non torna al valore di partenza', _biaDotCampo('sa',V,'contratto'), null);
   delete _bia.dotazione;
   // L'armadio del SoulArt viene dalla Giacenza; senza conteggio il conto non si fa.
@@ -3933,7 +3947,7 @@ sez('Biancheria: conteggio a scorrere del SoulArt (15/11/2026)');
     {id:'g14',hotel:'sa',data:'14/11/2026',consegnato:Q(30),ricevuto:Q(40)}],
     conte:[{id:'k1',hotel:'sa',data:'10/11/2026',q:{Federa:P(88,12,50,20)}}]};
   var c=_bia.conte[0];
-  ok('solo il SoulArt',                           [_biaContaSi('sa'),_biaContaSi('bh')].join(' '), 'true false');
+  ok('SoulArt e Boutique, non la Galleria',       [_biaContaSi('sa'),_biaContaSi('bh'),_biaContaSi('ar'),_biaContaSi('sb')].join(' '), 'true true false false');
   ok('in albergo = letti+carrelli+deposito+sporco', _biaContaInAlbergo(c,'Federa'), 170);
   var s=_biaContaScorri('sa','Federa',c,null);
   ok('alla conta: contratto − in albergo',        s.allaConta, 30);

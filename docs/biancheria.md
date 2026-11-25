@@ -1521,7 +1521,7 @@ La differenza alla conta successiva è l'errore **di quel periodo**, poi si ripa
 
 | Pezzo | Ruolo |
 |---|---|
-| `BIA_CONTA_HOTELS={sa:true}` | dove vale. **Solo SoulArt**: Boutique e Galleria non hanno ancora le copie dei contratti e tengono il vecchio saldo |
+| `BIA_CONTA_HOTELS={sa:true,bh:true}` | dove vale. SoulArt dal 15/11/2026, **Boutique dal 25/11/2026**. La Galleria non ha ancora le copie dei contratti e tiene il vecchio saldo |
 | `_bia.conte` | `[{id, hotel, data, q:{voce:{letti,carrelli,deposito,sporco}}, edits?}]`, elenco a record (fusione e `_rimossi` come il resto) |
 | `_biaContaInAlbergo(c,v)` | somma dei quattro posti; **null se ne manca uno** (un posto non contato non vale zero) |
 | `_biaContaScorri(h,v,c,fino)` | fa scorrere da una conta. **La consegna dello stesso giorno della conta non scorre**: la conta si fa dopo il passaggio di Raimondo. Una consegna senza «Ha portato» **ferma** il conto (`ferma`) |
@@ -1543,6 +1543,34 @@ Controlli in `test/controlli.js` ("conteggio a scorrere del SoulArt"), verificat
 sabotaggi (segno della formula, consegna del giorno della conta che scorre, posto vuoto contato
 zero, «Ha portato» mancante che non ferma): tutti colti. Provato nel browser sul backup del 15/11
 con una conta inventata.
+
+### Conteggio a scorrere — Boutique (25/11/2026)
+
+Arrivato il contratto del Boutique, il conteggio vale anche lì, identico al SoulArt
+(`BIA_CONTA_HOTELS={sa:true,bh:true}`): il riquadro con Contratto, Letti e bagni, Scorta, Sporco,
+In lavanderia, Resi, All'appello; niente frase del mese, «Pezzi non rientrati» e «Cumulato».
+
+**Contratto** (già scritto dalla pagina dal QM, ripetuto in `BIA_DOT_DEFAULT.bh` come partenza):
+matrimoniali 300, singole 120, federe 300, viso 300, bidet 300, teli 300, scendibagno 100.
+
+**Allestimento** (il QM): 10 camere, 9 matrimoniali e 1 tripla.
+- matrimoniale: 2 lenzuola matrimoniali, 4 federe, 2 teli / viso / bidet;
+- tripla: 2 lenzuola matrimoniali + 2 singole, 6 federe, 3 teli / viso / bidet;
+- scendibagno: **1 per camera, ipotesi** (il QM non l'ha detto: da confermare).
+
+Totali: **matrimoniali 20, singole 2, federe 42, teli 21, viso 21, bidet 21, scendibagno 10**.
+
+Il Boutique non ha magazzino: nella conta *deposito* vale 0 (o lo scaffale di scorta, se c'è).
+Il conto parte dalla **prima conta del Boutique**: fino ad allora il riquadro dice *manca una conta*.
+
+**Dove c'è il conteggio vale sempre l'allestimento** (`_biaDotLetti`): camere e pezzi per camera
+scritti una volta dalla pagina della Dotazione (che lì non si vede più) non lo scavalcano. Al
+Boutique la Dotazione mostrava *Camere —*: se quel campo era stato svuotato a mano, avrebbe
+annullato i letti e bagni.
+
+Controlli in `test/controlli.js`, verificati con tre sabotaggi (Boutique spento, camere scritte che
+vincono, federe sbagliate). Nello stesso lavoro corretto un controllo dell'avviso dei dati mancanti
+che dipendeva dalla data vera (falliva dal 25/11 con il codice giusto): ora ferma `_biaOggi`.
 
 ### Consumi di agosto tolti (15/11/2026)
 
