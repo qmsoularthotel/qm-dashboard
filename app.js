@@ -11575,7 +11575,7 @@ function invOrdersMarkReceived(id){
         <label class="form-field"><span class="form-label">Arrivato il</span>
           <input id="ddt_data" type="date" class="form-input" value="${_invOggiIso()}" max="${_invOggiIso()}" onchange="invDDTData(this)"></label>
         <label class="inv-ric-chk"><input type="checkbox" id="ddt_stock" checked> Aggiungi le quantità allo stock</label>
-        <div class="inv-ric-nota" id="ddt_nota">Togli la spunta se la merce è già contata nello stock (ricezione segnata in ritardo): l'ordine risulta ricevuto in quella data, senza cambiare lo stock.</div>
+        <div class="inv-ric-nota" id="ddt_nota">Il carico entra nello stock con la data scelta.</div>
       </div>
       <table style="width:100%;border-collapse:collapse;margin-bottom:8px;" id="ddt-table">
         <thead>
@@ -11597,9 +11597,12 @@ function invOrdersMarkReceived(id){
 }
 
 function _invOggiIso(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-// Una data passata vuol dire quasi sempre «segnata in ritardo»: la merce è già nello stock, quindi
-// la spunta si toglie da sola (si può rimettere). Tornando a oggi si rimette.
-function invDDTData(inp){const c=document.getElementById('ddt_stock');if(!c||!inp)return;c.checked=!inp.value||inp.value>=_invOggiIso();}
+// Con una data passata la spunta RESTA (25/11/2026, dopo l'ordine per data): il carico va al suo
+// posto nel tempo, e un aggiornamento di giacenza successivo vale più di lui (lo stock non si gonfia);
+// in più i conteggi dopo tornano giusti e il consumo non esce più basso del vero. Toglierla serve
+// solo in casi particolari. Qui si aggiorna soltanto la nota.
+function invDDTData(inp){const n=document.getElementById('ddt_nota');if(!n||!inp)return;
+  n.textContent=inp.value&&inp.value<_invOggiIso()?'Ricezione segnata in ritardo: il carico entra con questa data. Se dopo hai aggiornato la giacenza, lo stock resta quello contato e il consumo si calcola giusto.':'Il carico entra nello stock con la data scelta.';}
 // Dalla data scelta al momento della ricezione: a mezzogiorno di quel giorno; oggi = adesso.
 function _invTsRicezione(iso,ora){
   const o=ora||Date.now();const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return o;

@@ -106,9 +106,11 @@ Quando si clicca **✅ Ricevuto** su un ordine in stato `ordinato`, si apre un m
 ### Ricezione segnata in ritardo (25/11/2026, QM: ordini del 21/09 mai segnati ricevuti)
 
 Nella finestra «Ricevimento merce» (`invOrdersMarkReceived`): **«Arrivato il»** (`#ddt_data`, di
-base oggi, mai nel futuro) e **«Aggiungi le quantità allo stock»** (`#ddt_stock`). Scegliendo una
-data passata la spunta si toglie da sola (`invDDTData`): una ricezione segnata in ritardo di solito
-è già contata nello stock (conteggio o rettifica). `invOrdersConfirmDDT`: `tsRicevuto` = mezzogiorno
+base oggi, mai nel futuro) e **«Aggiungi le quantità allo stock»** (`#ddt_stock`). **La spunta resta
+anche con una data passata** (corretto lo stesso giorno, dopo l'ordine per data): il carico va al suo
+posto nel tempo, un aggiornamento di giacenza successivo vale più di lui (lo stock non si gonfia) e il
+conteggio dopo non sembra più trovare merce «in più» (il consumo non esce più basso del vero).
+Toglierla serve solo in casi particolari; `invDDTData` aggiorna solo la nota. `invOrdersConfirmDDT`: `tsRicevuto` = mezzogiorno
 del giorno scelto (`_invTsRicezione`; oggi = adesso); senza spunta **nessun movimento di carico**,
 `o.senzaStock=true` (nella lista ordini «· stock non toccato»), `qtyRicevuta` comunque scritta. Con
 la spunta i carichi hanno la data scelta. L'«Ultimo ordine» dello Stock e il «consumati da allora»

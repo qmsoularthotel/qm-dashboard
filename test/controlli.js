@@ -4636,3 +4636,5 @@ sez('Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordin
   ok('consumati da allora: scarichi + quanto i conteggi trovano in meno', _invConsumoDa('A', mv, o - 30 * D, o).qty, 26);
   ok('consumati da allora: un conteggio che trova di più non è consumo', _invConsumoDa('A', [{ barcode: 'A', type: 'init', qty: 5, ts: o - 10 * D }, { barcode: 'A', type: 'init', qty: 9, ts: o - 5 * D }], o - 20 * D, o).qty, 0);
 })();
+
+ok('ricezione in ritardo: la spunta «aggiungi allo stock» non si toglie da sola', /c\.checked=/.test(String(invDDTData)), false);
