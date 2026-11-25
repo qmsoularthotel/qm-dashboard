@@ -4,42 +4,38 @@
 
 ## Inventario Detersivi — Ordini
 
-### Tab Stock — composizione della Registration Cards della Galleria (25/11/2026, QM)
+### Tab Stock — «Cosa ordinare» sul calendario e a distribuzioni (25/11/2026, QM)
 
-Dopo varie prove il QM ha indicato come modello la schermata iniziale della Registration Cards della
-Galleria (foto), e una regola sui numeri: «i consumi zero virgola a settimana non mi servono a niente:
-devo sapere quanti flaconi si usano per fare un ordine ogni 15 giorni». Versione pubblicata
-(`invRenderStock`, classi `.inv5-*` in `style.css`):
-- **Calendario degli ordini** (QM, 25/11/2026): si ordina il **venerdì ogni 15 giorni** (ogni due settimane
-  da venerdì 4/12/2026, `INV_CICLO_VENERDI`, uguale per SoulArt e Art Resort), consegna il **martedì**,
-  distribuzione ai carrelli HKP il **mercoledì**. `_invCiclo(oggi)`: prossimo venerdì del ciclo (oggi
-  compreso), consegna (+4), carrelli (+5), consegna dopo (+18); `copertura` = giorni da oggi alla consegna
-  DOPO (quello che si ordina venerdì deve bastare fin lì); `finoConsegna` = giorni alla consegna. Al posto
-  delle pastiglie 15/30/45 (tolte).
-- **Cornice**; riga oro «<STRUTTURA> · PROSSIMO ORDINE <venerdì>», titolo «Cosa ordinare» (o «Niente da
-  ordinare»).
-- **Riquadro grande a sinistra** (rosa dei venti in filigrana): i prodotti con `_invDaOrdinare` > 0; in cima
-  gli **urgenti** (finiti o che finiscono prima della consegna di martedì, senza niente in arrivo: «serve
-  subito», anello rosso), poi i più urgenti per autonomia; cerchio navy/oro con la quantità (anello rosso se finito), «ordina X», frase: «finito» o
-  «ne restano X, per circa N giorni» · «se ne usano Y ogni N giorni» · «Z già in arrivo». Se non c'è niente:
-  cerchio con la spunta e «non serve ordinare niente».
-- **Scheda a destra con bordo oro, «Prossimo ordine»**: le tre date (Ordine · Consegna · Carrelli HKP),
-  il foglio (prodotto e quantità, data del venerdì) e **«Crea l'ordine»** (`invStockCreaOrdine`): passa
-  alla scheda Ordini e, a ridisegno finito (`_invOrdineDaStock` letto in `invRenderOrders`, altrimenti il
-  ridisegno lo richiuderebbe vuoto), apre «Nuovo ordine» già compilato (struttura, data del venerdì,
-  prodotti e quantità). Si sceglie il fornitore, si salva, poi «Invia» (WhatsApp).
-- **Tre riquadri** come i passi: In regola (bastano per il periodo), In arrivo (ordini aperti), Senza
-  consumi (nessuno scarico: «non si sa»).
-- **Tabella di tutti**: In stock (si tocca per correggerlo; rosso se finito; «+X in arrivo») · Se ne usano
-  in 15 giorni (`_invUsoTesto` su 14 giorni: interi; sotto 1 «1 <unità> ogni N giorni») · Ultimo ordine ricevuto.
-- **Fascia verde**: i consumi vengono da scarichi e aggiornamenti di giacenza.
-- Calcoli: `_invConsumoMedio` (stessa formula della Media di Analisi), `_invDaOrdinare` (consumo al
-  giorno × giorni − max(0,stock) − in arrivo, per eccesso), `_invUltimiOrdini` (solo ricevuti),
-  `_invInArrivo` (status 'ordinato').
-- Sotto i 900px le due colonne si impilano; sotto i 640px la tabella nasconde «Ultimo ordine». Le regole
-  delle prove precedenti (.inv-riga, .inv2/3/4) sono state tolte.
-Limite: conta solo ciò che è scansionato o contato; uno stock negativo (carico non scansionato) vale 0.
-Controlli in `test/controlli.js` («Inventario: …» e «uso: …»).
+Composizione della Registration Cards della Galleria (modello indicato dal QM) e **calcolo sul lavoro
+reale** (QM, dopo aver visto proporre «una balla di carta igienica» con 9 giorni di anticipo): la merce
+**non si consuma un po' al giorno**, esce dal magazzino **a blocchi** con la **distribuzione settimanale**
+ai carrelli HKP e alla cucina (tutte registrate come **scarichi**). Si ordina il **venerdì ogni 15 giorni**
+(da venerdì 4/12/2026, `INV_CICLO_VENERDI`, uguale per SoulArt e Art Resort), consegna il **martedì**,
+carrelli il **mercoledì**: **ogni ordine copre due distribuzioni**.
+- `_invCiclo(oggi)`: prossimo venerdì del ciclo (oggi compreso), consegna (+4), carrelli (+5), consegna dopo.
+- `_invSettimane(bm,ora)`: quanto esce in ognuna delle ultime 8 **settimane complete** (lunedì–domenica;
+  la settimana in corso no, la distribuzione può essere a metà): scarichi + ammanchi dei conteggi
+  (`_invRettifiche`, in ordine di data); solo da quando il prodotto esiste.
+- `_invTipicoOrdine(sett)`: **mediana delle ultime coppie di settimane** (fino a 4) = quanto esce di solito
+  in 15 giorni (la «statistica»: la candeggina finisce ogni 15 giorni). Meno di due settimane: `null`
+  («non si sa»). Un ordine eccezionale non sposta la mediana.
+- `_invProposta(tipico,magazzino,inArrivo)` = per eccesso, tipico − max(0,magazzino) − in arrivo.
+- `_invListaPronta(C)`: la lista con le quantità **solo dal giovedì prima dell'ordine** (dopo l'ultima
+  distribuzione); prima il titolo dice «La lista si prepara giovedì …» e l'unico avviso è **«Da tenere
+  d'occhio»**: in magazzino meno di metà del tipico (una distribuzione) e niente in arrivo. Il magazzino
+  vuoto subito dopo una distribuzione non è più un'urgenza.
+- Pagina (`invRenderStock`, `.inv5-*`): riga oro «<STRUTTURA> · PROSSIMO ORDINE …», titolo; a sinistra
+  «Da ordinare» (lista pronta) o «Da tenere d'occhio»; a destra «Prossimo ordine» con quattro tappe
+  (Lista pronta giovedì · Ordine venerdì · Consegna martedì · Carrelli HKP mercoledì), il foglio e
+  **«Crea l'ordine»** (`invStockCreaOrdine` → scheda Ordini → `_invOrdineDaStock` letto in
+  `invRenderOrders` → «Nuovo ordine» già compilato con struttura, data del venerdì, prodotti e quantità);
+  tre riquadri (Da tenere d'occhio · In arrivo · Senza storico); tabella (In magazzino · Di solito ogni
+  15 giorni · Ultimo ordine ricevuto, `_invUltimiOrdini`); fascia che spiega il «di solito».
+- **Mai decimali**: interi, «meno di 1» se esce meno di un pezzo.
+- Tolte le funzioni del calcolo a media giornaliera (`_invConsumoMedio`, `_invDaOrdinare`,
+  `_invUsoTesto`, `_invConsumoDa`) e le pastiglie 15/30/45. La scheda Analisi ha la sua media e non cambia.
+Limite: conta solo ciò che è scansionato o contato. Controlli in `test/controlli.js` («ciclo: …»,
+«distribuzioni: …», «proposta: …», «lista pronta …», «Inventario: ultimo ordine ricevuto …»).
 
 ### Aggiornamenti di giacenza frequenti (25/11/2026, QM: «faccio spesso l'aggiornamento dello stock»)
 
