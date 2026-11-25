@@ -710,6 +710,18 @@ if ! grep -qF "location.replace('compass-ops.html'+location.search+location.hash
   BKF_KO=1
 fi
 
+# Compass OPS (25/11/2026): ricaricando, il PIN di questa scheda si riprende PRIMA di aprire la
+# voce; il numero di versione si vede nell'indirizzo; la sua favicon, anche sul vecchio indirizzo.
+grep -qE "if\(_gtRipristinaSess\(\)\)_gtAvviaOrologio\(\);" compass-ops.html \
+  && [ "$(grep -A1 'if(_gtRipristinaSess())_gtAvviaOrologio();' compass-ops.html | grep -c 'bgSezione(_bgSezione);')" = "1" ] \
+  || { echo ""; echo "  ERRORE      Compass OPS: ricaricando la pagina il PIN non si riprende piu' prima di aprire la voce."; BKF_KO=1; }
+grep -qF "u.searchParams.set('v',QM_APP_BUILD);history.replaceState(" compass-ops.html \
+  || { echo ""; echo "  ERRORE      Compass OPS: il numero di versione non si vede piu' nell'indirizzo."; BKF_KO=1; }
+for _f in compass-ops.html biancheria-galleria.html; do
+  grep -qF '<link rel="icon" href="img/compass-ops-favicon.svg"' "$_f" \
+    || { echo ""; echo "  ERRORE      $_f: manca la favicon di Compass OPS."; BKF_KO=1; }
+done
+
 # Worker non pubblicato: worker.js si pubblica a mano su Cloudflare (vedi CLAUDE.md, la
 # pubblicazione automatica è stata valutata e scartata). Una correzione può quindi essere
 # scritta, versionata e non attiva — successo il 21/08/2026, per ore, senza alcun segnale.

@@ -342,6 +342,20 @@ sole, arrivano al rimando e quindi al nuovo indirizzo). Stesso sito: dati sul PC
 Galleria e PIN restano validi. Il Worker non guarda il nome della pagina. Sentinella in
 `esegui.sh`: il rimando deve esistere e puntare a `compass-ops.html`.
 
+### Favicon, versione nell'indirizzo, PIN che resta ricaricando (25/11/2026, QM)
+
+- **Favicon** `img/compass-ops-favicon.svg` (scelta B fra tre): badge del menu, cerchio navy,
+  anello oro, rosa dei venti bianca (la stessa rosa della favicon di Compass QM). Anche sul
+  vecchio indirizzo `biancheria-galleria.html`.
+- **Versione nell'indirizzo** come in Compass: `?v=<QM_APP_BUILD>` con `history.replaceState`,
+  senza ricaricare (l'aggiornamento lo fanno già `qmCheckBuild`/`qmCheckVersione`).
+- **PIN della Gestione Turnazione**: ricaricando la pagina non si rimette. Il permesso del Worker
+  (`_gtTp`, scadenza, ultima attività) sta in **sessionStorage** (`bg_gt_sessione`): vale solo per
+  quella scheda e sparisce chiudendola; in una scheda nuova il PIN si chiede. Stesse regole di
+  prima: 5 minuti senza attività, permesso che scade da solo. `_gtRipristinaSess` all'avvio (prima
+  di `bgSezione`), `_gtSalvaSess` all'apertura, al rinnovo, ogni 15 s di attività e su `pagehide`;
+  «Chiudi» la cancella. Nelle Preferenze, ripreso il permesso, le richieste si rileggono.
+
 ### Prima: «Compass Ops – Galleria» (16/11/2026)
 
 Scelto dal QM: compare nello splash (sotto «Compass QM», con la riga «Strumento di gestione operativa») e nella firma in fondo («Compass Ops – Galleria fa parte della Suite Compass QM…»). Poi (stesso giorno) **ovunque**: titolo della scheda, schermata del codice, nota della stampa della giacenza, scheda nel Pannello di Controllo e riquadro del codice in Sicurezza. «Gestione Biancheria» resta solo come nome della **sezione** del menu (Consumo, Conteggio, Giacenza, Reso, Fattura). Il file resta `compass-ops.html`.

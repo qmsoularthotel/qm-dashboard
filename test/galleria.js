@@ -681,7 +681,7 @@ sez('Preferenze Turnazione (Galleria): si apre solo col PIN, 5 minuti, niente co
   // Dal 16/11/2026 (QM): cambiando voce il permesso resta fino ai 5 minuti, la pagina si svuota.
   ok('lasciando la voce la pagina si svuota',       /_bgSezione==='preferenze'&&s!=='preferenze'\)\{const c=document\.getElementById\('gt-pref-content'\);if\(c\)c\.innerHTML=''/.test(String(bgSezione)), true);
   ok('ma il permesso non si butta',                 /_bgSezione==='preferenze'&&s!=='preferenze'\)\{gtPrefChiudi/.test(String(bgSezione)), false);
-  ok('rientrando entro 5 minuti niente PIN',        /^[^{]*\{\s*if\(_gtAperto\(\)\)\{gtPrefRender\(\);return;\}/.test(String(gtPrefEntra)), true);
+  ok('rientrando entro 5 minuti niente PIN',        /^[^{]*\{(\s*\/\/[^\n]*)?\s*if\(_gtAperto\(\)&&_gtRipristinata\)\{[^}]*\}\s*if\(_gtAperto\(\)\)\{gtPrefRender\(\);return;\}/.test(String(gtPrefEntra)), true);
   ok('scaduti i 5 minuti si chiede il PIN',         /gtPrefChiudi\(''\)/.test(String(gtPrefEntra)), true);
   ok('le richieste non restano nel browser',        /setItem/.test(String(gtPrefLoad) + String(gtPrefApri)), false);
   ok('l\'indirizzo del foglio non è nella Galleria', /script\.google\.com/.test(String(gtPrefLoad) + String(_gtChiedi)), false);
@@ -1043,4 +1043,26 @@ ok('spenta: non è il primo accesso', /primo=st\.ok&&!st\.spenta&&!st\.resident;
     ok('Registration nella Galleria: apre la pagina vera', figli[0] && figli[0].src, 'registration-galleria.html?dentro=1');
   } finally { document.getElementById = vero; document.createElement = veroCrea; }
   ok('Registration nella Galleria: la voce apre il riquadro', /_bgSezione==='registration'\)gbRcEntra\(\)/.test(String(bgSezione)), true);
+})();
+
+// Ricaricando la pagina il PIN non si rimette (25/11/2026, QM): il permesso si tiene in
+// sessionStorage (solo questa scheda), con le stesse regole dei 5 minuti.
+sez('Compass OPS: PIN tenuto ricaricando la pagina, versione nell\'indirizzo, favicon');
+(function () {
+  var t0 = _gtTp, s0 = _gtScade, u0 = _gtUltimaAttivita, ora = 1800000000000;
+  try {
+    _gtTp = 'tp-finto'; _gtScade = ora + 4 * 60000; _gtUltimaAttivita = ora - 60000; _gtSalvaSess();
+    _gtTp = null; _gtScade = 0; _gtUltimaAttivita = 0;
+    ok('PIN: ricaricando si riprende il permesso di questa scheda', _gtRipristinaSess(ora) + ' ' + _gtTp + ' ' + _gtRipristinata, 'true tp-finto true');
+    _gtSalvaSess(); _gtTp = null;
+    ok('PIN: dopo 5 minuti senza attività non si riprende', _gtRipristinaSess(ora + 4 * 60000 + 1) + ' ' + _gtTp, 'false null');
+    ok('PIN: e la sessione scaduta si cancella', sessionStorage.getItem(GT_SESS), null);
+    _gtTp = 'tp-finto'; _gtScade = ora + 60000; _gtUltimaAttivita = ora; _gtSalvaSess(); _gtTp = null;
+    ok('PIN: permesso del Worker scaduto, non si riprende', _gtRipristinaSess(ora + 60001), false);
+    _gtTp = 'tp-finto'; _gtScade = ora + 60000; _gtUltimaAttivita = ora; _gtSalvaSess();
+    gtPrefChiudi('');
+    ok('PIN: chiudendo col pulsante la sessione si cancella', sessionStorage.getItem(GT_SESS), null);
+  } finally { _gtTp = t0; _gtScade = s0; _gtUltimaAttivita = u0; _gtRipristinata = false; }
+  ok('PIN: nelle Preferenze le richieste si rileggono', /if\(_gtAperto\(\)&&_gtRipristinata\)\{_gtRipristinata=false;await gtPrefLoad\(\);return;\}/.test(String(gtPrefEntra)), true);
+  ok('PIN: in sessionStorage, mai in localStorage', /sessionStorage\.setItem\(GT_SESS/.test(String(_gtSalvaSess)) && !/localStorage/.test(String(_gtSalvaSess)), true);
 })();

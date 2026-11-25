@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Compass OPS</title>
+<!-- Favicon di Compass OPS (25/11/2026, scelta del QM fra tre): il badge del menu, cerchio navy,
+     anello oro, rosa dei venti bianca. Compass QM tiene la sua (rosa navy). -->
+<link rel="icon" href="img/compass-ops-favicon.svg" type="image/svg+xml">
 <!-- Stesso foglio di stile di Compass: menu, barra in alto, pannelli e schede sono quelli
      (25/09/2026). Il numero si allinea da solo con strumenti/versione.sh. -->
 <link rel="stylesheet" href="style.css?v=301">
@@ -255,7 +258,10 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-25.3';
+const QM_APP_BUILD='2026-11-25.4';
+// Il numero di versione si vede nella barra degli indirizzi, come in Compass (?v=…), 25/11/2026.
+// Senza ricaricare (replaceState): l'aggiornamento lo fanno già qmCheckBuild/qmCheckVersione.
+try{const u=new URL(location.href);if(u.searchParams.get('v')!==QM_APP_BUILD){u.searchParams.set('v',QM_APP_BUILD);history.replaceState(history.state,'',u.pathname+u.search+u.hash);}}catch(e){}
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
   try{ if(sessionStorage.getItem('qm_ricaricata'))return; sessionStorage.setItem('qm_ricaricata','1'); }catch(e){}
@@ -3940,6 +3946,23 @@ const _gtEsc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 const GT_ICONA_CAL='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
 // Aperto = permesso del Worker ancora valido E meno di 5 minuti dall'ultima attività.
 let _gtUltimaAttivita=0,_gtRinnovo=null;
+// Ricaricando la pagina il PIN non si rimette (25/11/2026, QM): il permesso del Worker si tiene
+// in sessionStorage, che vale SOLO per questa scheda del browser e sparisce chiudendola. Restano
+// le stesse regole: 5 minuti senza attività e il permesso del Worker che scade da solo.
+const GT_SESS='bg_gt_sessione';
+let _gtSessSalvata=0,_gtRipristinata=false;
+function _gtSalvaSess(){
+  if(!_gtTp)return;_gtSessSalvata=Date.now();
+  try{sessionStorage.setItem(GT_SESS,JSON.stringify({tp:_gtTp,scade:_gtScade,ultima:_gtUltimaAttivita}));}catch(e){}
+}
+function _gtRipristinaSess(ora){
+  let x=null;try{x=JSON.parse(sessionStorage.getItem(GT_SESS)||'null');}catch(e){}
+  const o=ora||Date.now();
+  if(!x||typeof x.tp!=='string'||!x.tp||!(o<Number(x.scade))||!(o-Number(x.ultima)<GT_DURATA)){try{sessionStorage.removeItem(GT_SESS);}catch(e){}return false;}
+  _gtTp=x.tp;_gtScade=Number(x.scade);_gtUltimaAttivita=Number(x.ultima);_gtRipristinata=true;
+  return true;
+}
+window.addEventListener('pagehide',_gtSalvaSess);
 function _gtAperto(){const o=Date.now();return !!_gtTp&&o<_gtScade&&(o-_gtUltimaAttivita)<GT_DURATA;}
 // Ogni movimento sulla pagina (mouse, tasti, dito, rotella) fa ripartire i 5 minuti. Il
 // permesso del Worker dura 5 minuti: mentre si lavora se ne chiede uno nuovo quando ne
@@ -3949,8 +3972,9 @@ function _gtAttivita(){
   const o=Date.now();
   if(o-_gtUltimaAttivita>=GT_DURATA||o>=_gtScade)return;   // già scaduto: resta chiuso
   _gtUltimaAttivita=o;
+  if(o-_gtSessSalvata>15000)_gtSalvaSess();
   if(_gtScade-o<3*60000&&!_gtRinnovo){
-    _gtRinnovo=_gtChiedi({azione:'rinnova',tp:_gtTp}).then(j=>{if(j&&j.ok&&j.tp&&_gtTp){_gtTp=j.tp;_gtScade=Number(j.scade)||_gtScade;}})
+    _gtRinnovo=_gtChiedi({azione:'rinnova',tp:_gtTp}).then(j=>{if(j&&j.ok&&j.tp&&_gtTp){_gtTp=j.tp;_gtScade=Number(j.scade)||_gtScade;_gtSalvaSess();}})
       .catch(()=>{}).then(()=>{_gtRinnovo=null;});
   }
 }
@@ -3984,6 +4008,8 @@ async function _gtChiedi(corpo){
 // Entrando nella voce: se i 5 minuti del PIN non sono finiti si riapre com'era, altrimenti
 // si chiede il PIN.
 async function gtPrefEntra(){
+  // Permesso ripreso dopo un ricaricamento: le richieste vanno rilette (in memoria non ci sono).
+  if(_gtAperto()&&_gtRipristinata){_gtRipristinata=false;await gtPrefLoad();return;}
   if(_gtAperto()){gtPrefRender();return;}
   gtPrefChiudi('');
   const el=document.getElementById('gt-pref-content');if(el)el.innerHTML='<div style="color:var(--text-dim);font-size:var(--fs-xs);padding:20px;">Caricamento…</div>';
@@ -3992,7 +4018,8 @@ async function gtPrefEntra(){
 }
 // Chiude: via permesso, richieste e orologio. Lo si chiama uscendo dalla voce e allo scadere.
 function gtPrefChiudi(msg){
-  _gtTp=null;_gtScade=0;_gtData=[];_gtMsg=msg||'';_gtuArch=null;
+  _gtTp=null;_gtScade=0;_gtData=[];_gtMsg=msg||'';_gtuArch=null;_gtRipristinata=false;
+  try{sessionStorage.removeItem(GT_SESS);}catch(e){}
   // Presenze Cascione: anche i dati delle presenze si buttano chiudendo (23/11/2026).
   // (let dichiarate più in basso: dentro try, per il caso di una chiamata a caricamento)
   try{_gpDati=null;_gpErrore='';_gpMsg='';_gpChiudiPop();}catch(e){}
@@ -4007,13 +4034,17 @@ async function gtPrefApri(primo){
   _gtMostraAttesa(primo?'Salvataggio del PIN…':'Verifica del PIN…');
   let j;try{j=await _gtChiedi({azione:primo?'imposta-resident':'apri',pin});}catch(e){j={ok:false,error:'Worker non raggiungibile'};}
   if(!j.ok||!j.tp){_gtMsg=j.error||'Non aperto';if(primo)_gtStato=null;gtPrefRender();if(primo)gtPrefEntra();return;}
-  _gtTp=j.tp;_gtScade=Number(j.scade)||(Date.now()+GT_DURATA);_gtMsg='';_gtUltimaAttivita=Date.now();
+  _gtTp=j.tp;_gtScade=Number(j.scade)||(Date.now()+GT_DURATA);_gtMsg='';_gtUltimaAttivita=Date.now();_gtRipristinata=false;
+  _gtSalvaSess();
   _gtMostraAttesa('Apertura…');
   if(_gtTimer){clearTimeout(_gtTimer);_gtTimer=null;}
   await gtPrefLoad();
+  _gtAvviaOrologio();
+}
+// Ogni secondo: si chiude dopo 5 minuti senza attività (o se il permesso è scaduto),
+// altrimenti si aggiorna solo il numero del conto alla rovescia, niente ridisegno.
+function _gtAvviaOrologio(){
   if(_gtOrologio)clearInterval(_gtOrologio);
-  // Ogni secondo: si chiude dopo 5 minuti senza attività (o se il permesso è scaduto),
-  // altrimenti si aggiorna solo il numero del conto alla rovescia, niente ridisegno.
   _gtOrologio=setInterval(()=>{
     if(!_gtTp)return;
     if(!_gtAperto()){gtPrefChiudi('Chiuso dopo 5 minuti senza attività: inserisci di nuovo il PIN.');gtPrefRender();return;}
@@ -6284,6 +6315,8 @@ if(!_gbPass()){
   gbMostraAttivazione('Questo computer non è ancora abilitato.');
 }else{
   gbLoad();
+  // PIN di questa scheda ancora valido (ricaricamento): si riprende senza chiederlo di nuovo.
+  if(_gtRipristinaSess())_gtAvviaOrologio();
   bgSezione(_bgSezione);
   _gbBolliniNuovi();
   _gbControllaStato();
