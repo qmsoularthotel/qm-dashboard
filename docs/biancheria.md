@@ -1560,6 +1560,15 @@ matrimoniali 300, singole 120, federe 300, viso 300, bidet 300, teli 300, scendi
 
 Totali: **matrimoniali 20, singole 2, federe 42, teli 21, viso 21, bidet 21, scendibagno 10**.
 
+**Letti e bagni si scrivono accanto al contratto** (stesso giorno, il QM: *"fammi aggiungere la
+dotazione letti, ora non posso fare il conteggio generale"*). Il «Nuovo conteggio» vuole tutti i
+posti (un posto non contato non vale zero), quindi lì la sola colonna dei letti non si salva, ed è
+giusto. Nel riquadro, la colonna *Letti e bagni allestiti* ora si vede **anche prima del primo
+conteggio** e, col lucchetto aperto (*🔒 Contratto e letti*), ha la sua casella accanto a quella del
+contratto: `biaSetDot(v,'allestimento',n)` scrive `_bia.dotazione[h][v].allestimento`, che vince sul
+valore di partenza di `BIA_DOT_DEFAULT`. Vale per SoulArt e Boutique. Controlli in
+`test/controlli.js` ("letti e bagni si scrivono senza conteggio"), verificati con due sabotaggi.
+
 Il Boutique non ha magazzino: nella conta *deposito* vale 0 (o lo scaffale di scorta, se c'è).
 Il conto parte dalla **prima conta del Boutique**: fino ad allora il riquadro dice *manca una conta*.
 

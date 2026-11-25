@@ -15463,7 +15463,7 @@ let _biaDotVoce='Lenzuolo matrimoniale';   // la tipologia del dettaglio
 // si sbloccano con "Modifica" e una conferma; si richiudono con "Fine" o lasciando la pagina.
 let _biaDotSblocco=false;
 async function biaDotSblocca(on){
-  if(on&&!await cqConferma('Modificare la dotazione da contratto?','Camere, pezzi per camera, armadio e numeri del contratto cambiano il conto su <strong>tutte le postazioni</strong>. Cambiali solo con il contratto davanti.',{ok:'Modifica'}))return;
+  if(on&&!await cqConferma('Modificare la dotazione da contratto?','I numeri del contratto e della dotazione (camere, letti e bagni allestiti, armadio) cambiano il conto su <strong>tutte le postazioni</strong>. Cambiali solo con il contratto davanti.',{ok:'Modifica'}))return;
   _biaDotSblocco=!!on;
   _qmSenzaSalto(biaRender);
 }
@@ -15946,12 +15946,14 @@ function _biaContaPannello(h){
   const esc=_esc;
   const th=_biaTh,td='padding:7px 8px;border-bottom:1px solid var(--border);text-align:center;';
   const lk=!_biaDotSblocco;
-  const inpC=(v,val)=>lk
+  // Col lucchetto aperto si scrivono il contratto e i letti e bagni allestiti (25/11/2026, il QM:
+  // la dotazione dei letti si mette subito, senza aspettare il conteggio generale).
+  const inpC=(v,campo,val)=>lk
     ?`<span style="display:inline-block;min-width:50px;font-weight:600;color:var(--text);">${val===null?'—':val}</span>`
-    :`<input type="number" min="0" value="${val===null?'':val}" onchange="biaSetDot('${v}','contratto',this.value)" onfocus="this.select()" style="width:58px;padding:4px;border:1px solid var(--accent);border-radius:5px;font-size:var(--fs-xs);text-align:center;">`;
+    :`<input type="number" min="0" value="${val===null?'':val}" onchange="biaSetDot('${v}','${campo}',this.value)" onfocus="this.select()" style="width:58px;padding:4px;border:1px solid var(--accent);border-radius:5px;font-size:var(--fs-xs);text-align:center;">`;
   const n=x=>x===null||x===undefined?'—':x;
   let o=`<div class="panel" style="margin-bottom:16px;"><div class="panel-header"><span class="panel-title">Conteggio a scorrere · ${esc(BIA_HOTELS[h])}</span>
-      <button onclick="biaDotSblocca(${lk?'true':'false'})" style="margin-left:auto;${lk?'background:var(--surface);color:var(--accent);border:1px solid var(--border);':'background:var(--accent);color:#fff;border:1px solid var(--accent);'}border-radius:7px;padding:5px 12px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">${lk?'🔒 Contratto':'Fine'}</button></div>
+      <button onclick="biaDotSblocca(${lk?'true':'false'})" style="margin-left:auto;${lk?'background:var(--surface);color:var(--accent);border:1px solid var(--border);':'background:var(--accent);color:#fff;border:1px solid var(--accent);'}border-radius:7px;padding:5px 12px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">${lk?'🔒 Contratto e letti':'Fine'}</button></div>
     <div class="panel-body" style="padding:14px;">
     <div style="font-size:var(--fs-xxs);color:var(--text-dim);line-height:1.6;margin-bottom:10px;">Ogni pezzo del contratto sta in uno di questi posti: <strong>sui letti e nei bagni</strong> (camere allestite), <strong>di scorta</strong> (carrelli e deposito: il conteggio ogni 15 giorni, poi meno i consumi e più quello che porta Raimondo), <strong>sporco da uscire</strong> (consumi dal giorno dell'ultima consegna), <strong>in lavanderia</strong> (ultima distinta), <strong>resi</strong> (biancheria inidonea, nel sacco o già ritirata). Quello che non sta in nessuno di questi è <strong>da ritrovare</strong>; i pezzi in più del contratto vanno bene.</div>
     <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs);"><thead><tr>
@@ -15962,13 +15964,15 @@ function _biaContaPannello(h){
     const ap=r.conta?_biaContaAppello(h,r.conta,_biaOggi()):null,av=ap&&ap.voci[v];
     if(ap&&(!apUlt||_biaParse(ap.conta)>_biaParse(apUlt.conta)))apUlt=ap;
     const vuoto=`<span style="color:var(--text-dim);font-weight:400;">—</span>`;
-    let cel=[vuoto,vuoto,vuoto,vuoto,vuoto],app=`<span style="color:var(--text-dim);font-weight:400;">${contr===null?'manca il contratto':'manca un conteggio'}</span>`;
+    // Letti e bagni: si sanno anche senza conteggio (allestimento), quindi si vedono sempre.
+    const all=_biaDotLetti(h,v);
+    let cel=[lk?(all===null?vuoto:all):inpC(v,'allestimento',all),vuoto,vuoto,vuoto,vuoto],app=`<span style="color:var(--text-dim);font-weight:400;">${contr===null?'manca il contratto':'manca un conteggio'}</span>`;
     if(av){
-      cel=[av.letti,av.scorta,av.sporco,av.dist,av.resoDato+av.resoAperto?`${av.resoDato} + ${av.resoAperto}`:'0'];
+      cel=[lk?av.letti:cel[0],av.scorta,av.sporco,av.dist,av.resoDato+av.resoAperto?`${av.resoDato} + ${av.resoAperto}`:'0'];
       app=av.diff===0?'<span style="color:var(--green);">tutti</span>':av.diff>0?`<span style="color:var(--amber);">${av.diff} da ritrovare</span>`:`<span style="color:var(--green);">tutti · ${-av.diff} in più</span>`;
     }
     o+=`<tr><td style="${td}text-align:left;font-weight:700;white-space:nowrap;">${esc(BIA_DOT_PLURALE[v]||v)}</td>
-      <td style="${td}">${inpC(v,contr)}</td>${cel.map(x=>`<td style="${td}">${x}</td>`).join('')}<td style="${td}font-weight:700;white-space:nowrap;">${app}</td></tr>`;
+      <td style="${td}">${inpC(v,'contratto',contr)}</td>${cel.map(x=>`<td style="${td}">${x}</td>`).join('')}<td style="${td}font-weight:700;white-space:nowrap;">${app}</td></tr>`;
   });
   if(apUlt)o+=`<tr><td colspan="8" style="padding:7px 8px;font-size:var(--fs-xxs);color:var(--text-dim);text-align:left;">${apUlt.dinamico?`<strong style="color:var(--text);">Stima a oggi ${esc(apUlt.fino.slice(0,5))}</strong> dal conteggio del ${esc(apUlt.conta.slice(0,5))}, con consumi e consegne registrati dopo.`:`Scorta: conteggio del ${esc(apUlt.conta)}.`}${apUlt.senzaPortato.length?' <span style="color:var(--amber);">(manca «Ha portato» del '+apUlt.senzaPortato.map(x=>esc(x.slice(0,5))).join(', ')+')</span>':''} Sporco: consumi ${apUlt.giorni.length?(apUlt.giorni.length===1?'del '+esc(apUlt.giorni[0].slice(0,5)):'dal '+esc(apUlt.giorni[0].slice(0,5))+' al '+esc(apUlt.giorni[apUlt.giorni.length-1].slice(0,5))):'—'}${apUlt.senzaConsumi.length?' <span style="color:var(--amber);">(mancano i consumi del '+apUlt.senzaConsumi.map(x=>esc(x.slice(0,5))).join(', ')+')</span>':''}. Lavanderia: distinta ${apUlt.distinta?'del '+esc(apUlt.distinta.slice(0,5)):'—'}.</td></tr>`;
   o+=`</tbody></table></div>`;

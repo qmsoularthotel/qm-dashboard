@@ -4499,6 +4499,32 @@ sez('Colazione Booking.com: solo colazione inclusa, decide il trattamento (22/11
   ok('Compass filtra la lista con _bkfConColazione', /_bkfConColazione\(r\)/.test(String(bkfBookingRender)), true);
 })();
 
+sez('Boutique: letti e bagni si scrivono senza conteggio (25/11/2026)');
+(function(){
+  // Il QM non poteva salvare la dotazione dei letti: il «Nuovo conteggio» vuole tutti i posti.
+  // I letti e bagni allestiti stanno accanto al contratto, si vedono sempre e col lucchetto
+  // aperto si scrivono.
+  var prima=_bia,sb=_biaDotSblocco;
+  _bia={consumi:[],giri:[],conte:[]};
+  try{
+    _biaDotSblocco=false;
+    var riga=function(html,nome){var i=html.indexOf('>'+nome+'</td>');return i<0?'':html.slice(i,html.indexOf('</tr>',i));};
+    var h1=_biaContaPannello('bh');
+    ok('senza conteggio i letti si vedono',        /<td[^>]*>20<\/td>/.test(riga(h1,'Lenzuola matrimoniali')), true);
+    ok('federe: 42',                               /<td[^>]*>42<\/td>/.test(riga(h1,'Federe')), true);
+    ok('lucchetto chiuso: nessuna casella',        /biaSetDot\('[^']*','allestimento'/.test(h1), false);
+    _biaDotSblocco=true;
+    var h2=_biaContaPannello('bh');
+    ok('lucchetto aperto: la casella dei letti',   /onchange="biaSetDot\('Lenzuolo matrimoniale','allestimento',this.value\)"/.test(h2), true);
+    ok('e quella del contratto',                   /onchange="biaSetDot\('Lenzuolo matrimoniale','contratto',this.value\)"/.test(h2), true);
+    ok('la casella parte dal valore attuale',      /value="20" onchange="biaSetDot\('Lenzuolo matrimoniale','allestimento'/.test(h2), true);
+    // Quello che si scrive dalla pagina vince sul valore di partenza.
+    _bia.dotazione={bh:{'Lenzuolo matrimoniale':{allestimento:22}}};
+    ok('scritto dalla pagina: vale quello',        _biaDotLetti('bh','Lenzuolo matrimoniale'), 22);
+    ok('le altre voci restano',                    _biaDotLetti('bh','Federa'), 42);
+  }finally{_bia=prima;_biaDotSblocco=sb;}
+})();
+
 sez('Prenotazioni: nomi andati a capo a metà parola (22/11/2026)');
 (function () {
   // Nomi inventati. Una prenotazione su due righe, come la scrive il PMS.
