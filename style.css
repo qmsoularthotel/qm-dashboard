@@ -1097,10 +1097,6 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .inv5-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 2px 14px;}
 .inv5-k{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;}
 .inv5-t{font-size:22px;font-weight:700;letter-spacing:-.01em;margin-top:2px;color:var(--text);}
-.inv5-per{display:flex;gap:6px;flex-wrap:wrap;}
-.inv5-chip{font-family:inherit;font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;background:var(--surface);border:1px solid var(--border-light);color:var(--text-muted);cursor:pointer;}
-.inv5-chip:hover{border-color:var(--accent);color:var(--accent);}
-.inv5-chip.on{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
 .inv5-griglia{display:grid;grid-template-columns:1.45fr 1fr;gap:14px;align-items:stretch;}
 .inv5-grande{position:relative;overflow:hidden;background:var(--bg);border:1px solid var(--border-light);border-radius:14px;padding:16px 18px;min-height:260px;}
 .inv5-grande::before{content:'';position:absolute;right:-90px;bottom:-90px;width:300px;height:300px;background:url('img/compass-stella.png') no-repeat center/contain;opacity:.09;transform:rotate(22deg);pointer-events:none;}
@@ -1127,6 +1123,13 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .inv5-fr b{white-space:nowrap;color:var(--accent);}
 .inv5-fvuoto{font-size:13px;color:var(--text-dim);font-style:italic;padding:8px 0;}
 .inv5-nota{font-size:11px;color:var(--text-muted);text-align:center;margin-top:12px;}
+.inv5-tappe{display:flex;flex-direction:column;gap:7px;margin-bottom:12px;}
+.inv5-tappa{display:flex;align-items:center;gap:10px;}
+.inv5-tn{width:24px;height:24px;border-radius:50%;background:var(--accent);border:1.5px solid var(--gold);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.inv5-tappa b{display:block;font-size:13px;color:var(--text);}
+.inv5-tappa div span{font-size:12px;color:var(--text-muted);}
+.inv5-crea{margin-top:12px;align-self:center;}
+.inv5-urg{font-size:12px;font-weight:700;color:var(--red);margin-top:3px;}
 .inv5-passi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
 .inv5-passo{display:flex;gap:11px;align-items:flex-start;background:var(--surface);border:1px solid var(--border-light);border-radius:12px;padding:12px 14px;}
 .inv5-pn{min-width:26px;height:26px;padding:0 6px;border-radius:13px;background:var(--accent);border:1.5px solid var(--gold);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}

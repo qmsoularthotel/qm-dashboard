@@ -4608,7 +4608,7 @@ sez('Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordin
   ok('da ordinare: con abbastanza in arrivo non serve', _invDaOrdinare(0.5, 3, 12, 30), 0);
   ok('da ordinare: uno stock negativo vale zero', _invDaOrdinare(1, -4, 0, 15), 15);
   ok('da ordinare: senza consumi non si sa', _invDaOrdinare(0, 3, 0, 30), null);
-  ok('lo Stock usa in arrivo e copertura', /_invDaOrdinare\(gg,qty,ia\?ia\.qty:0,_invCopertura\)/.test(String(invRenderStock)), true);
+  ok('lo Stock usa in arrivo e il calendario degli ordini', /_invDaOrdinare\(gg,qty,ia\?ia\.qty:0,C\.copertura\)/.test(String(invRenderStock)), true);
 })();
 
 // Ricevimento segnato in ritardo (25/11/2026, QM: ordini del 21/09 mai segnati ricevuti).
@@ -4643,3 +4643,16 @@ ok('ricezione in ritardo: la spunta «aggiungi allo stock» non si toglie da sol
 ok('uso: in numeri interi nel periodo dell\'ordine', _invUsoTesto(7 / 15, 15, 'fl').testo, '7 fl ogni 15 giorni');
 ok('uso: sotto 1 nel periodo, «1 ogni N giorni»', _invUsoTesto(1 / 70, 15, 'tan.').testo, '1 tan. ogni 70 giorni');
 ok('uso: senza consumi non si sa', _invUsoTesto(0, 15, 'fl'), null);
+
+// Calendario degli ordini (25/11/2026, QM): venerdì ogni 15 giorni da venerdì 4/12, consegna martedì,
+// carrelli mercoledì; l'ordine deve coprire fino alla consegna dopo.
+(function () {
+  var d = function (y, m, g) { return new Date(y, m - 1, g, 9).getTime(); }, iso = function (x) { return x.getFullYear() + '-' + (x.getMonth() + 1) + '-' + x.getDate(); };
+  var c = _invCiclo(d(2026, 11, 25));
+  ok('ciclo: dal 25/11 il prossimo ordine è venerdì 4/12', iso(c.ordine) + ' ' + iso(c.consegna) + ' ' + iso(c.carrelli) + ' ' + iso(c.consegnaDopo), '2026-12-4 2026-12-8 2026-12-9 2026-12-22');
+  ok('ciclo: copre fino alla consegna dopo', c.copertura + ' ' + c.finoConsegna + ' ' + c.fraGiorni, '27 13 9');
+  ok('ciclo: il venerdì dell\'ordine è «oggi»', _invCiclo(d(2026, 12, 4)).fraGiorni + ' ' + iso(_invCiclo(d(2026, 12, 4)).ordine), '0 2026-12-4');
+  ok('ciclo: dopo il 4/12 si passa al 18/12 (ogni 15 giorni)', iso(_invCiclo(d(2026, 12, 5)).ordine) + ' ' + iso(_invCiclo(d(2027, 1, 2)).ordine), '2026-12-18 2027-1-15');
+  ok('ciclo: «Crea l\'ordine» porta struttura, venerdì e quantità', /wh:_invWh/.test(String(invStockCreaOrdine)) && /qty:it\.dor/.test(String(invStockCreaOrdine)) && /wh\.value=x\.wh/.test(String(_invApriOrdineDaStock)), true);
+  ok('ciclo: «Crea l\'ordine» apre la finestra a scheda Ordini ridisegnata', /invSetTab\('orders'\)/.test(String(invStockCreaOrdine)) && /if\(_invOrdineDaStock\)\{const x=_invOrdineDaStock;_invOrdineDaStock=null;_invApriOrdineDaStock\(x\);\}/.test(String(invRenderOrders)), true);
+})();
