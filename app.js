@@ -10804,7 +10804,7 @@ function invRenderStock(catalog,moves){
       </div>
     </div>`;
   }).join('')||'<div class="inv-vuoto"><div>Nessun prodotto in questo gruppo.</div></div>';
-  const testa=`<div class="inv-riga inv-testa"><div>Prodotto</div><div>Stato</div><div>Scorta</div><div>Ultimo ordine</div><div></div></div>`;
+  const testa=`<div class="inv-riga inv-testa"><div>Prodotto</div><div>Stato</div><div>In stock</div><div>Ultimo ordine</div><div></div></div>`;
   const nota='';
   el.innerHTML=`<div class="panel">
     <div class="panel-header"><span class="ov-icon-badge">${_invIco('scatola',12).replace('stroke="currentColor"','stroke="#fff"')}</span><span class="panel-title">Giacenza · ${nomeWh}</span>
