@@ -4602,13 +4602,7 @@ sez('Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordin
   var a = _invInArrivo('sa', ord);
   ok('in arrivo: somma degli ordini aperti del magazzino', a.A.qty + ' ' + a.B.qty, '12 4');
   var bm = [{ barcode: 'A', type: 'init', qty: 10, ts: o - 28 * D }, { barcode: 'A', type: 'out', qty: 7, ts: o - 20 * D }, { barcode: 'A', type: 'out', qty: 7, ts: o - 5 * D }];
-  ok('consumo medio al giorno = scarichi / giorni di storico', Math.round(_invConsumoMedio(bm, o) * 100) / 100, 0.5);
-  ok('consumo: almeno 14 giorni per un prodotto appena inserito', _invConsumoMedio([{ type: 'init', qty: 5, ts: o - D }, { type: 'out', qty: 7, ts: o }], o), 0.5);
-  ok('da ordinare: consumo × giorni − stock − in arrivo, per eccesso', _invDaOrdinare(0.5, 4, 2, 30) + ' ' + _invDaOrdinare(0.34, 0, 0, 30), '9 11');
-  ok('da ordinare: con abbastanza in arrivo non serve', _invDaOrdinare(0.5, 3, 12, 30), 0);
-  ok('da ordinare: uno stock negativo vale zero', _invDaOrdinare(1, -4, 0, 15), 15);
-  ok('da ordinare: senza consumi non si sa', _invDaOrdinare(0, 3, 0, 30), null);
-  ok('lo Stock usa in arrivo e il calendario degli ordini', /_invDaOrdinare\(gg,qty,ia\?ia\.qty:0,C\.copertura\)/.test(String(invRenderStock)), true);
+  ok('lo Stock usa le distribuzioni e quello in arrivo', /_invProposta\(tip,qty,ia\?ia\.qty:0\)/.test(String(invRenderStock)) && /_invTipicoOrdine\(_invSettimane\(perBc\[bc\],ora\)\)/.test(String(invRenderStock)), true);
 })();
 
 // Ricevimento segnato in ritardo (25/11/2026, QM: ordini del 21/09 mai segnati ricevuti).
@@ -4633,16 +4627,11 @@ sez('Inventario: ultimo ordine ricevuto, consumo, autonomia, in arrivo, da ordin
   ok('stock: senza conteggi ogni movimento conta una volta', invCalcStock(cat, [{ barcode: 'A', type: 'in', qty: 5, ts: 1 }, { barcode: 'A', type: 'out', qty: 2, ts: 2 }, { barcode: 'A', type: 'in', qty: 1, ts: 3 }]).A, 4);
   var r = _invRettifiche(mv.filter(function (m) { return m.barcode === 'A'; }));
   ok('rettifiche in ordine di data: il conteggio trova l\'ammanco giusto', JSON.stringify(r.map(function (x) { return x.delta; })), '[-21]');
-  ok('consumati da allora: scarichi + quanto i conteggi trovano in meno', _invConsumoDa('A', mv, o - 30 * D, o).qty, 26);
-  ok('consumati da allora: un conteggio che trova di più non è consumo', _invConsumoDa('A', [{ barcode: 'A', type: 'init', qty: 5, ts: o - 10 * D }, { barcode: 'A', type: 'init', qty: 9, ts: o - 5 * D }], o - 20 * D, o).qty, 0);
 })();
 
 ok('ricezione in ritardo: la spunta «aggiungi allo stock» non si toglie da sola', /c\.checked=/.test(String(invDDTData)), false);
 
 // Consumi nella misura dell'ordine (25/11/2026, QM): niente decimali a settimana.
-ok('uso: in numeri interi nel periodo dell\'ordine', _invUsoTesto(7 / 15, 15, 'fl').testo, '7 fl ogni 15 giorni');
-ok('uso: sotto 1 nel periodo, «1 ogni N giorni»', _invUsoTesto(1 / 70, 15, 'tan.').testo, '1 tan. ogni 70 giorni');
-ok('uso: senza consumi non si sa', _invUsoTesto(0, 15, 'fl'), null);
 
 // Calendario degli ordini (25/11/2026, QM): venerdì ogni 15 giorni da venerdì 4/12, consegna martedì,
 // carrelli mercoledì; l'ordine deve coprire fino alla consegna dopo.
@@ -4655,4 +4644,20 @@ ok('uso: senza consumi non si sa', _invUsoTesto(0, 15, 'fl'), null);
   ok('ciclo: dopo il 4/12 si passa al 18/12 (ogni 15 giorni)', iso(_invCiclo(d(2026, 12, 5)).ordine) + ' ' + iso(_invCiclo(d(2027, 1, 2)).ordine), '2026-12-18 2027-1-15');
   ok('ciclo: «Crea l\'ordine» porta struttura, venerdì e quantità', /wh:_invWh/.test(String(invStockCreaOrdine)) && /qty:it\.dor/.test(String(invStockCreaOrdine)) && /wh\.value=x\.wh/.test(String(_invApriOrdineDaStock)), true);
   ok('ciclo: «Crea l\'ordine» apre la finestra a scheda Ordini ridisegnata', /invSetTab\('orders'\)/.test(String(invStockCreaOrdine)) && /if\(_invOrdineDaStock\)\{const x=_invOrdineDaStock;_invOrdineDaStock=null;_invApriOrdineDaStock\(x\);\}/.test(String(invRenderOrders)), true);
+})();
+
+// Consumo a distribuzioni (25/11/2026, QM): una distribuzione a settimana, due per ogni ordine.
+(function () {
+  var ora = new Date(2026, 10, 25, 10).getTime(), G = 86400000;
+  var mer = function (sett) { return new Date(2026, 10, 25 - 7 * sett, 10).getTime(); }; // mercoledì di N settimane fa
+  var bm = [{ type: 'init', qty: 20, ts: mer(9) }];
+  [8, 7, 6, 5, 4, 3, 2, 1].forEach(function (k, i) { bm.push({ type: 'out', qty: i % 2 ? 0.0001 : 3, ts: mer(k) }); }); // la candeggina: 3 ogni due settimane
+  var s = _invSettimane(bm, ora);
+  ok('distribuzioni: quanto esce in ogni settimana completa', s.length + ' ' + s.map(function (x) { return Math.round(x); }).join(','), '8 3,0,3,0,3,0,3,0');
+  ok('distribuzioni: per un ordine (due settimane) ne escono 3', Math.round(_invTipicoOrdine(s)), 3);
+  ok('distribuzioni: un ordine eccezionale non sposta la mediana', _invTipicoOrdine([2, 2, 2, 2, 2, 2, 30, 30]), 4);
+  ok('distribuzioni: meno di due settimane di storia, non si sa', _invTipicoOrdine([5]), null);
+  ok('distribuzioni: la settimana in corso non conta (distribuzione a metà)', _invSettimane([{ type: 'init', qty: 9, ts: mer(3) }, { type: 'out', qty: 4, ts: ora }], ora).join(','), '0,0,0');
+  ok('proposta: tipico − magazzino − in arrivo, per eccesso', _invProposta(6, 2, 1) + ' ' + _invProposta(6, 7, 0) + ' ' + _invProposta(null, 1, 0), '3 0 null');
+  ok('lista pronta solo dal giovedì prima dell\'ordine', _invListaPronta({ fraGiorni: 9 }) + ' ' + _invListaPronta({ fraGiorni: 1 }) + ' ' + _invListaPronta({ fraGiorni: 0 }), 'false true true');
 })();

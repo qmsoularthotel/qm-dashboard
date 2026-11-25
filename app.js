@@ -10749,23 +10749,6 @@ function _invUltimiOrdini(wh,ordini){
   });
   return out;
 }
-// ── Ordinare senza sprechi (25/11/2026, QM: punti 1, 2, 3) ──
-// Consumo medio al giorno di un prodotto: STESSA formula della «Media/sett» della scheda Analisi
-// (tutto lo storico, scarichi + ammanchi delle rettifiche, almeno 14 giorni per non gonfiare un
-// prodotto appena inserito), così i numeri delle due schede coincidono.
-function _invConsumoMedio(bm,now){
-  if(!bm||!bm.length)return 0;
-  const rett=_invRettifiche(bm);
-  const tot=bm.filter(m=>m.type==='out').reduce((s,m)=>s+m.qty,0)+rett.reduce((s,r)=>s+(r.delta<0?-r.delta:0),0);
-  const giorni=Math.max(14,Math.max(1,Math.ceil(((now||Date.now())-Math.min(...bm.map(m=>m.ts)))/86400000)));
-  return tot>0?tot/giorni:0;
-}
-// Quanto ordinare per coprire `copertura` giorni: consumo × giorni − in stock − già in arrivo,
-// arrotondato per eccesso. 0 = non serve; null = nessun consumo registrato (non si sa).
-function _invDaOrdinare(perGiorno,inStock,inArrivo,copertura){
-  if(!(perGiorno>0))return null;
-  return Math.max(0,Math.ceil(perGiorno*copertura-Math.max(0,inStock||0)-(inArrivo||0)-1e-9));
-}
 // Ordini APERTI (non ancora ricevuti né annullati) per prodotto: {barcode:{qty,unit,data}}.
 function _invInArrivo(wh,ordini){
   const out={};let ord=ordini;
@@ -10793,6 +10776,41 @@ function _invCiclo(oggi){
   return{ordine,consegna,carrelli,consegnaDopo,
     finoConsegna:Math.round((consegna-o)/G),copertura:Math.round((consegnaDopo-o)/G),fraGiorni:Math.round((ordine-o)/G)};
 }
+// ── Consumo a DISTRIBUZIONI (25/11/2026, QM): la merce non si consuma un po' al giorno, esce dal
+// magazzino a blocchi, con la distribuzione settimanale ai carrelli HKP e alla cucina (tutte
+// registrate come scarichi). Una media al giorno faceva dire «finito, urgente» il giorno dopo una
+// distribuzione e proponeva quantità sbagliate. Ora: quanto esce in ogni SETTIMANA (scarichi +
+// ammanchi dei conteggi), e per un ordine — che copre due distribuzioni — la MEDIANA delle ultime
+// coppie di settimane complete (fino a 4): la «statistica» del QM (la candeggina finisce ogni 15 giorni).
+function _invLunedi(t){const d=new Date(t);d.setHours(12,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d;}
+function _invSettimane(bm,ora,n){
+  n=n||8;const G=86400000,lun=_invLunedi(ora||Date.now()).getTime();
+  if(!bm||!bm.length)return[];
+  const primo=_invLunedi(Math.min(...bm.map(m=>Number(m.ts)||0))).getTime();
+  const out=[];
+  for(let k=n;k>=1;k--){
+    const da=lun-k*7*G-12*3600000,a=da+7*G;   // dal lunedì 00:00 al lunedì dopo
+    if(da+12*3600000<primo)continue;           // prima che il prodotto esistesse: non conta
+    let q=bm.filter(m=>m.type==='out'&&m.ts>=da&&m.ts<a).reduce((x,m)=>x+(Number(m.qty)||0),0);
+    _invRettifiche(bm).forEach(r=>{if(r.ts>=da&&r.ts<a&&r.delta<0)q+=-r.delta;});
+    out.push(Math.round(q*1000)/1000);
+  }
+  return out;
+}
+function _invTipicoOrdine(sett){
+  if(!sett||sett.length<2)return null;
+  const coppie=[];for(let i=sett.length;i>=2&&coppie.length<4;i-=2)coppie.push(sett[i-1]+sett[i-2]);
+  coppie.sort((a,b)=>a-b);const m=coppie.length;
+  return m%2?coppie[(m-1)/2]:(coppie[m/2-1]+coppie[m/2])/2;
+}
+// Quanto ordinare: quello che di solito esce in un ordine (due distribuzioni), meno quello che c'è
+// in magazzino, meno quello già in arrivo; per eccesso. null = non si sa (storia troppo corta).
+function _invProposta(tipico,inStock,inArrivo){
+  if(tipico==null)return null;
+  return Math.max(0,Math.ceil(tipico-Math.max(0,inStock||0)-(inArrivo||0)-1e-9));
+}
+// La lista ha senso solo DOPO l'ultima distribuzione prima dell'ordine: dal giovedì (vigilia) al venerdì.
+function _invListaPronta(C){return C.fraGiorni<=1;}
 function _invGiornoTxt(d){return d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'numeric'});}
 // «Crea l'ordine»: apre il Nuovo ordine già compilato con la lista dello Stock (struttura, data del
 // venerdì, prodotti e quantità). Si corregge, si sceglie il fornitore e si salva; poi «Invia».
@@ -10816,84 +10834,68 @@ function _invApriOrdineDaStock(x){
   _invOrdersDraftRender();
 }
 let _invStockLista=[];
-// Quanto se n'è consumato dal giorno dell'ultimo ordine ricevuto a oggi, e da quanti giorni:
-// scarichi scansionati + quello che i conteggi successivi hanno trovato IN MENO (ammanchi delle
-// rettifiche, come in Analisi). Un conteggio che trova di più è un carico non registrato, non conta.
-function _invConsumoDa(bc,moves,ts,ora){
-  const bm=(moves||[]).filter(m=>m&&m.barcode===bc);
-  let q=bm.filter(m=>m.type==='out'&&Number(m.ts)>=ts).reduce((s,m)=>s+(Number(m.qty)||0),0);
-  _invRettifiche(bm).forEach(r=>{if(r.ts>=ts&&r.delta<0)q+=-r.delta;});
-  return{qty:Math.round(q*1000)/1000,giorni:Math.max(0,Math.floor(((ora||Date.now())-ts)/86400000))};
-}
-// Quanto se ne usa in un periodo, in parole e numeri interi (25/11/2026, QM: «i consumi zero virgola a
-// settimana non mi servono a niente: devo sapere quanti flaconi si usano per fare un ordine ogni 15
-// giorni»). Almeno 1 nel periodo: il numero arrotondato; meno di 1: «1 ogni N giorni».
-function _invUsoTesto(perGiorno,giorni,unita){
-  if(!(perGiorno>0))return null;
-  const u=unita?' '+unita:'';
-  const tot=perGiorno*giorni;
-  if(tot>=0.95)return{n:Math.max(1,Math.round(tot)),testo:Math.max(1,Math.round(tot))+u+' ogni '+giorni+' giorni'};
-  const ogni=Math.round(1/perGiorno);
-  return{n:0,testo:'1'+u+' ogni '+ogni+' giorni'};
-}
 function invRenderStock(catalog,moves){
-  // Composizione della Registration Cards della Galleria (25/11/2026, QM) sul CALENDARIO DEGLI ORDINI
-  // (_invCiclo): ordine il venerdì ogni due settimane, consegna il martedì, carrelli HKP il mercoledì.
-  // A sinistra cosa ordinare (prima gli URGENTI: finiscono prima della consegna di martedì), a destra
-  // «Prossimo ordine» con le tre date, il foglio e «Crea l'ordine»; sotto tre riquadri, la tabella,
-  // la fascia. Quantità: quanto se ne usa fino alla consegna DOPO, tolti stock e in arrivo.
+  // Composizione della Registration Cards della Galleria sul calendario degli ordini (_invCiclo) e sul
+  // consumo A DISTRIBUZIONI (_invSettimane, _invTipicoOrdine), 25/11/2026, QM. La lista con le
+  // quantità compare solo dal giovedì prima dell'ordine (_invListaPronta): prima ci sono ancora
+  // distribuzioni e i numeri sarebbero sbagliati. Prima di allora un solo avviso vero: un prodotto
+  // che in magazzino non basta per la prossima distribuzione.
   const el=document.getElementById('inv-stock-view');
   if(!el)return;
   const stock=invCalcStock(catalog,moves);
   const ultimi=_invUltimiOrdini(_invWh),arrivo=_invInArrivo(_invWh),ora=Date.now();
   const perBc={};moves.forEach(m=>{(perBc[m.barcode]=perBc[m.barcode]||[]).push(m);});
-  const nomeWh=_invWh==='ar'?'Art Resort':'SoulArt Hotel',C=_invCiclo();
+  const nomeWh=_invWh==='ar'?'Art Resort':'SoulArt Hotel',C=_invCiclo(),pronta=_invListaPronta(C);
   const items=Object.entries(catalog).map(([bc,p])=>{
     const qty=stock[bc]??null;if(qty===null)return null;
-    const gg=_invConsumoMedio(perBc[bc],ora),ia=arrivo[bc];
-    const aut=gg>0?Math.floor(Math.max(0,qty)/gg):null;
-    const dor=_invDaOrdinare(gg,qty,ia?ia.qty:0,C.copertura);
-    const urgente=(qty<=0||(aut!=null&&aut<C.finoConsegna))&&!(ia&&ia.qty);
-    return{bc,name:p.name,unit:p.unit||'',qty,gg,aut,dor,ia,urgente,uo:ultimi[bc],uso:_invUsoTesto(gg,14,p.unit||'')};
+    const ia=arrivo[bc],tip=_invTipicoOrdine(_invSettimane(perBc[bc],ora));
+    const dor=_invProposta(tip,qty,ia?ia.qty:0);
+    // Non basta per la prossima distribuzione (metà di un ordine), e niente in arrivo.
+    const scarso=tip!=null&&tip>0&&Math.max(0,qty)<tip/2&&!(ia&&ia.qty);
+    return{bc,name:p.name,unit:p.unit||'',qty,tip,dor,ia,scarso,uo:ultimi[bc]};
   }).filter(Boolean);
   const u=x=>x?' '+_esc(x):'';
-  const gtxt=d=>_invGiornoTxt(d);
-  const da=items.filter(i=>i.dor>0).sort((a,b)=>((b.urgente?1:0)-(a.urgente?1:0))||((a.aut??1e9)-(b.aut??1e9))||a.name.localeCompare(b.name,'it'));
-  _invStockLista=da;
+  const gtxt=d=>_invGiornoTxt(d),data=d=>d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'});
+  // Mai decimali (QM): interi, «meno di 1» quando esce meno di un pezzo.
+  const num=x=>x<=0?'0':x<1?'meno di 1':String(Math.round(x));
+  const giovedi=new Date(C.ordine.getTime()-86400000);
   const quando=C.fraGiorni===0?'oggi':C.fraGiorni===1?'domani':gtxt(C.ordine);
-  const testa=`<div class="inv5-hero"><div><div class="inv5-k">${nomeWh} · prossimo ordine ${quando}</div><div class="inv5-t">${da.length?'Cosa ordinare':'Niente da ordinare'}</div></div></div>`;
+  const da=pronta?items.filter(i=>i.dor>0).sort((a,b)=>a.name.localeCompare(b.name,'it')):[];
+  _invStockLista=da;
+  const scarsi=items.filter(i=>i.scarso).sort((a,b)=>a.name.localeCompare(b.name,'it'));
+  const testa=`<div class="inv5-hero"><div><div class="inv5-k">${nomeWh} · prossimo ordine ${quando}</div><div class="inv5-t">${pronta?(da.length?'Cosa ordinare':'Niente da ordinare'):'La lista si prepara '+gtxt(giovedi)}</div></div></div>`;
   if(!items.length){
     _invStockLista=[];
     el.innerHTML=`<div class="inv5-cornice">${testa}<div class="inv5-grande inv5-centro"><span class="inv5-cerchio">${_invIco('scatola',24).replace('stroke="currentColor"','stroke="#fff"')}</span><div class="inv5-gt">Nessun prodotto in ${nomeWh}</div><div class="inv5-gs">Apri lo scanner sullo smartphone per aggiungere i prodotti.</div></div></div>`;
     return;
   }
   const voce=it=>{
-    const resta=it.qty<=0?'<b class="inv5-rosso">finito</b>':`ne restano ${it.qty}${u(it.unit)}, per circa ${it.aut} giorni`;
     const arr=it.ia&&it.ia.qty?` · <span class="inv5-blu">${it.ia.qty}${u(it.ia.unit||it.unit)} già in arrivo</span>`:'';
-    const urg=it.urgente?`<div class="inv5-urg">Finisce prima della consegna di ${gtxt(C.consegna)}: serve subito</div>`:'';
-    return`<div class="inv5-voce"><span class="inv5-num${it.urgente?' fin':''}">${it.dor}</span><div><div class="inv5-vt">${_esc(it.name)} <span class="inv5-vq">· ordina ${it.dor}${u(it.unit)}</span></div><div class="inv5-vs">${resta} · se ne usano ${_esc(it.uso.testo.replace(' ogni 14 giorni',' ogni 15 giorni'))}${arr}</div>${urg}</div></div>`;
+    return`<div class="inv5-voce"><span class="inv5-num">${it.dor}</span><div><div class="inv5-vt">${_esc(it.name)} <span class="inv5-vq">· ordina ${it.dor}${u(it.unit)}</span></div><div class="inv5-vs">in magazzino ${Math.max(0,it.qty)}${u(it.unit)} · di solito ne escono ${num(it.tip)}${u(it.unit)} ogni 15 giorni${arr}</div></div></div>`;
   };
-  const grande=da.length?`<div class="inv5-grande"><div class="inv5-gl">Da ordinare ${quando}</div>${da.map(voce).join('')}</div>`
-    :`<div class="inv5-grande inv5-centro"><span class="inv5-cerchio"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></span><div class="inv5-gt">Con l'ordine di ${quando} non serve niente</div><div class="inv5-gs">Stock e ordini in arrivo bastano fino alla consegna di ${gtxt(C.consegnaDopo)}.</div></div>`;
-  // Prossimo ordine: le tre date del ciclo, il foglio, «Crea l'ordine».
-  const data=d=>d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'});
-  const tappa=(n,t,d,s)=>`<div class="inv5-tappa"><span class="inv5-tn">${n}</span><div><b>${t}</b><span>${gtxt(d)}${s?' · '+s:''}</span></div></div>`;
+  const avviso=it=>`<div class="inv5-voce"><span class="inv5-num fin">!</span><div><div class="inv5-vt">${_esc(it.name)}</div><div class="inv5-vs">in magazzino ${Math.max(0,it.qty)}${u(it.unit)} · a ogni distribuzione ne escono circa ${num(it.tip/2)}${u(it.unit)}</div><div class="inv5-urg">Non basta per la prossima distribuzione</div></div></div>`;
+  let grande;
+  if(pronta)grande=da.length?`<div class="inv5-grande"><div class="inv5-gl">Da ordinare ${quando}</div>${da.map(voce).join('')}</div>`
+    :`<div class="inv5-grande inv5-centro"><span class="inv5-cerchio"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></span><div class="inv5-gt">Con l'ordine di ${quando} non serve niente</div><div class="inv5-gs">Quello che c'è in magazzino e quello in arrivo coprono le due distribuzioni.</div></div>`;
+  else grande=`<div class="inv5-grande${scarsi.length?'':' inv5-centro'}">${scarsi.length?`<div class="inv5-gl">Da tenere d'occhio</div>${scarsi.map(avviso).join('')}<div class="inv5-gs inv5-dopo">La lista da ordinare si prepara ${gtxt(giovedi)}, dopo la distribuzione ai carrelli.</div>`
+    :`<span class="inv5-cerchio">${_invIco('attesa',24).replace('stroke="currentColor"','stroke="#fff"')}</span><div class="inv5-gt">La lista si prepara ${gtxt(giovedi)}</div><div class="inv5-gs">Prima dell'ordine ci sono ancora distribuzioni ai carrelli: oggi le quantità sarebbero sbagliate.</div>`}</div>`;
+  const tappa=(n,t,d,x)=>`<div class="inv5-tappa"><span class="inv5-tn">${n}</span><div><b>${t}</b><span>${gtxt(d)}${x?' · '+x:''}</span></div></div>`;
   const lato=`<div class="inv5-lato"><div class="inv5-ll">Prossimo ordine</div>
-    <div class="inv5-tappe">${tappa(1,'Ordine',C.ordine,C.fraGiorni===0?'oggi':C.fraGiorni===1?'domani':'fra '+C.fraGiorni+' giorni')}${tappa(2,'Consegna',C.consegna,'')}${tappa(3,'Carrelli HKP',C.carrelli,'')}</div>
-    <div class="inv5-foglio"><div class="inv5-ft"><span>Ordine · ${nomeWh}</span><span>${data(C.ordine)}</span></div>
+    <div class="inv5-tappe">${tappa(1,'Lista pronta',giovedi,'dopo la distribuzione')}${tappa(2,'Ordine',C.ordine,C.fraGiorni===0?'oggi':C.fraGiorni===1?'domani':'fra '+C.fraGiorni+' giorni')}${tappa(3,'Consegna',C.consegna,'')}${tappa(4,'Carrelli HKP',C.carrelli,'')}</div>
+    ${pronta?`<div class="inv5-foglio"><div class="inv5-ft"><span>Ordine · ${nomeWh}</span><span>${data(C.ordine)}</span></div>
     ${da.length?da.map(it=>`<div class="inv5-fr"><span>${_esc(it.name)}</span><b>${it.dor}${u(it.unit)}</b></div>`).join(''):'<div class="inv5-fvuoto">nessun prodotto</div>'}</div>
-    <div class="inv5-nota">Quantità fino alla consegna di ${gtxt(C.consegnaDopo)}, tolti stock e ordini in arrivo</div>
-    ${da.length?`<button class="btn-primary inv5-crea" onclick="invStockCreaOrdine()">Crea l'ordine</button>`:''}</div>`;
-  const nOk=items.filter(i=>i.dor===0).length,nArr=items.filter(i=>i.ia&&i.ia.qty).length,nNo=items.filter(i=>i.dor===null).length;
-  const passo=(n,t,s)=>`<div class="inv5-passo"><span class="inv5-pn">${n}</span><div><div class="inv5-pt">${t}</div><div class="inv5-ps">${s}</div></div></div>`;
-  const passi=`<div class="inv5-passi">${passo(nOk,'In regola','bastano fino alla consegna di '+data(C.consegnaDopo))}${passo(nArr,'In arrivo','prodotti con un ordine non ancora ricevuto')}${passo(nNo,'Senza consumi','nessuno scarico registrato: non si sa quanto se ne usa')}</div>`;
+    <div class="inv5-nota">Per le due distribuzioni dopo la consegna, tolti magazzino e ordini in arrivo</div>
+    ${da.length?`<button class="btn-primary inv5-crea" onclick="invStockCreaOrdine()">Crea l'ordine</button>`:''}`:`<div class="inv5-nota">Il foglio dell'ordine si compila ${gtxt(giovedi)}</div>`}</div>`;
+  const nArr=items.filter(i=>i.ia&&i.ia.qty).length,nNo=items.filter(i=>i.tip==null).length;
+  const passo=(n,t,x)=>`<div class="inv5-passo"><span class="inv5-pn">${n}</span><div><div class="inv5-pt">${t}</div><div class="inv5-ps">${x}</div></div></div>`;
+  const passi=`<div class="inv5-passi">${passo(scarsi.length,'Da tenere d\'occhio','non bastano per la prossima distribuzione')}${passo(nArr,'In arrivo','prodotti con un ordine non ancora ricevuto')}${passo(nNo,'Senza storico','meno di due settimane di scarichi: non si sa quanto ne esce')}</div>`;
   const righe=items.slice().sort((a,b)=>a.name.localeCompare(b.name,'it')).map(it=>`<tr>
       <td>${_esc(it.name)}</td>
-      <td class="r"><button class="inv5-stock${it.qty<=0?' inv5-rosso':''}" onclick="invEditQty('${it.bc}',${it.qty})" title="Correggi la quantità">${it.qty}${u(it.unit)}</button>${it.ia&&it.ia.qty?`<small>+${it.ia.qty} in arrivo</small>`:''}</td>
-      <td class="r">${it.uso?_esc(it.uso.testo.replace(' ogni 14 giorni','')):'<span class="inv5-no">non si sa</span>'}</td>
+      <td class="r"><button class="inv5-stock${it.scarso?' inv5-rosso':''}" onclick="invEditQty('${it.bc}',${it.qty})" title="Correggi la quantità">${it.qty}${u(it.unit)}</button>${it.ia&&it.ia.qty?`<small>+${it.ia.qty} in arrivo</small>`:''}</td>
+      <td class="r">${it.tip==null?'<span class="inv5-no">non si sa</span>':num(it.tip)+u(it.unit)}</td>
       <td class="r inv5-gr">${it.uo?it.uo.qty+u(it.uo.unit||it.unit)+' · '+_esc(String(it.uo.data).slice(0,5)):'—'}</td></tr>`).join('');
-  const tabella=`<div class="inv5-tutti"><div class="inv5-ll">Tutti i prodotti · ${items.length}</div><div class="inv5-tw"><table class="inv5-tab"><thead><tr><th>Prodotto</th><th class="r">In stock</th><th class="r">Se ne usano in 15 giorni</th><th class="r">Ultimo ordine</th></tr></thead><tbody>${righe}</tbody></table></div></div>`;
-  const fascia=`<div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>Ordine il venerdì ogni 15 giorni, consegna il martedì, carrelli il mercoledì. Quanto se ne usa viene dagli scarichi e dai tuoi aggiornamenti di giacenza.</span></div>`;
+  const tabella=`<div class="inv5-tutti"><div class="inv5-ll">Tutti i prodotti · ${items.length}</div><div class="inv5-tw"><table class="inv5-tab"><thead><tr><th>Prodotto</th><th class="r">In magazzino</th><th class="r">Di solito ogni 15 giorni</th><th class="r">Ultimo ordine</th></tr></thead><tbody>${righe}</tbody></table></div></div>`;
+  const fascia=`<div class="inv5-fascia"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg><span>«Di solito» è quanto è uscito dal magazzino nelle ultime settimane, a coppie di settimane (un ordine copre due distribuzioni): scarichi e quello che i tuoi conteggi hanno trovato in meno.</span></div>`;
   el.innerHTML=`<div class="inv5-cornice">${testa}<div class="inv5-griglia">${grande}${lato}</div>${passi}${tabella}${fascia}</div>`;
 }
 function invRenderMoves(catalog,moves){
