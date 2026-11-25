@@ -10724,13 +10724,32 @@ function invRender(){
       if(j&&j.value){try{localStorage.setItem('qm_inv_orders',j.value);}catch(e){}}
     }catch(e){}
     invRenderOrders();
+    // Lo Stock mostra l'ultimo ordine di ogni prodotto: ordini appena letti, si ridisegna.
+    try{const d=invGetData();invRenderStock(d.catalog,d.moves);}catch(e){}
   })();
+}
+// L'ultimo ordine di ogni prodotto in un magazzino: {barcode:{qty,unit,data,ts,ricevuto}}. Gli
+// annullati non contano; un ordine ricevuto mostra la quantità arrivata, se è diversa.
+function _invUltimiOrdini(wh){
+  const out={};let ord=[];
+  try{ord=JSON.parse(localStorage.getItem('qm_inv_orders')||'[]');}catch(e){}
+  (Array.isArray(ord)?ord:[]).forEach(o=>{
+    if(!o||o.wh!==wh||o.status==='annullato')return;
+    const ts=Number(o.ts)||0;
+    (o.items||[]).forEach(it=>{if(!it||!it.barcode)return;const p=out[it.barcode];if(p&&p.ts>=ts)return;
+      const ric=o.status==='ricevuto';const q=ric&&it.qtyRicevuta!=null?it.qtyRicevuta:it.qty;
+      out[it.barcode]={qty:Number(q)||0,unit:it.unit||'',data:o.date||(ts?new Date(ts).toLocaleDateString('it-IT'):''),ts,ricevuto:ric};});
+  });
+  return out;
 }
 function invRenderStock(catalog,moves){
   // Stile aggiornato (25/11/2026, QM, scelta fra tre proposte: «A senza KPI e senza barre»): un
   // pannello di Compass con bordo oro a tutta larghezza, filtri nell'intestazione, una riga per
-  // prodotto con lo stato in pillola, la scorta in grande, la soglia da toccare e le azioni con
-  // didascalia (.rc-act-btn). Le misure stanno in classi (.inv-riga…), niente griglie in linea.
+  // prodotto con lo stato in pillola, la scorta in grande, l'ULTIMO ORDINE (data, quantità, in
+  // arrivo o ricevuto — QM: «la soglia non serve, mi serve sapere quando è stato ordinato l'ultima
+  // volta e in che quantità») e le azioni con didascalia (.rc-act-btn). La soglia resta dietro lo
+  // stato (Sotto soglia) e si cambia dal Catalogo. Misure in classi (.inv-riga…), mai in linea.
+  const ultimi=_invUltimiOrdini(_invWh);
   const el=document.getElementById('inv-stock-view');
   if(!el)return;
   const stock=invCalcStock(catalog,moves);
@@ -10761,12 +10780,13 @@ function invRenderStock(catalog,moves){
   const righe=items.map(it=>{
     const unit=it.unit?`<span class="inv-unita">${_esc(it.unit)}</span>`:'';
     const colBar=it.status==='out'?'var(--red)':it.status==='low'?'var(--amber)':'var(--green)';
-    const soglia=it.soglia!=null?`<button class="inv-soglia" onclick="invEditSoglia('${it.bc}')" title="Modifica la soglia">${it.soglia}${unit}</button>`:`<button class="inv-soglia inv-soglia-no" onclick="invEditSoglia('${it.bc}')" title="Imposta una soglia">imposta</button>`;
+    const uo=ultimi[it.bc];
+    const ordine=uo?`<div class="inv-ord"><b>${uo.qty}${uo.unit?` <span class="inv-unita">${_esc(uo.unit)}</span>`:''}</b><small>${_esc(uo.data)} · <span class="${uo.ricevuto?'inv-ord-ok':'inv-ord-attesa'}">${uo.ricevuto?'ricevuto':'in arrivo'}</span></small></div>`:'<div class="inv-ord inv-ord-mai">mai ordinato</div>';
     return`<div class="inv-riga inv-st-${it.status}">
       <div class="inv-nome"><b title="${_esc(it.name)}">${_esc(it.name)}</b><small>ultimo movimento ${invFmtDate(it.last?.ts)}</small></div>
       <div class="inv-stato"><span class="c-badge ${stato[it.status][0]}">${stato[it.status][1]}</span></div>
       <div class="inv-scorta"><div class="inv-qta" style="color:${colBar};">${it.qty}${unit}</div></div>
-      <div class="inv-soglia-c"><span class="inv-mini">soglia</span>${soglia}</div>
+      <div class="inv-ordine-c"><span class="inv-mini">ultimo ordine</span>${ordine}</div>
       <div class="inv-azioni">
         <button class="rc-act-btn" data-tip="Rifornisci (scanner)" aria-label="Rifornisci" onclick="invQuickRestock('${it.bc}')">${_invIco('su',13)}</button>
         <button class="rc-act-btn" data-tip="Correggi la quantità" aria-label="Correggi" onclick="invEditQty('${it.bc}',${it.qty})">${_invIco('matita',13)}</button>
@@ -10774,8 +10794,8 @@ function invRenderStock(catalog,moves){
       </div>
     </div>`;
   }).join('')||'<div class="inv-vuoto"><div>Nessun prodotto in questo gruppo.</div></div>';
-  const testa=`<div class="inv-riga inv-testa"><div>Prodotto</div><div>Stato</div><div>Scorta</div><div>Soglia</div><div></div></div>`;
-  const nota=allItems.every(i=>i.soglia==null)?'<div class="inv-nota">Tocca «imposta» per dare una soglia a un prodotto: quando la scorta ci scende sotto, diventa arancione.</div>':'';
+  const testa=`<div class="inv-riga inv-testa"><div>Prodotto</div><div>Stato</div><div>Scorta</div><div>Ultimo ordine</div><div></div></div>`;
+  const nota='';
   el.innerHTML=`<div class="panel">
     <div class="panel-header"><span class="ov-icon-badge">${_invIco('scatola',12).replace('stroke="currentColor"','stroke="#fff"')}</span><span class="panel-title">Giacenza · ${nomeWh}</span>
       <div class="inv-filtri">${fBtn('all','Tutti',tot)}${fBtn('out','Esauriti',nOut)}${fBtn('low','Sotto soglia',nLow)}${fBtn('ok','In regola',nOk)}</div></div>
