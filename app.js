@@ -10727,10 +10727,10 @@ function invRender(){
   })();
 }
 function invRenderStock(catalog,moves){
-  // Stile aggiornato (25/11/2026, QM: «la pagina è nello stile Compass iniziale»): schede KPI di
-  // Compass che filtrano l'elenco, un pannello con bordo oro a tutta larghezza, stato di ogni
-  // prodotto in pillola, barra della scorta rispetto alla soglia, azioni con didascalia
-  // (.rc-act-btn). Le misure stanno in classi (.inv-kpi, .inv-riga…), niente griglie in linea.
+  // Stile aggiornato, opzione B (25/11/2026, QM: «i KPI non sono fondamentali»): niente schede
+  // numeriche; due pannelli di Compass — «Da riordinare» in cima e «In regola» sotto — con una
+  // tessera per prodotto: scorta in grande, barra rispetto alla soglia, soglia da toccare, azioni.
+  // Le misure stanno in classi (.inv-tessere, .inv-tessera…), niente griglie in linea.
   const el=document.getElementById('inv-stock-view');
   if(!el)return;
   const stock=invCalcStock(catalog,moves);
@@ -10750,47 +10750,31 @@ function invRenderStock(catalog,moves){
     el.innerHTML=`<div class="panel"><div class="panel-body inv-vuoto">${_invIco('scatola',28)}<div>Nessun prodotto in ${nomeWh}</div><small>Apri lo scanner sullo smartphone per aggiungere i prodotti.</small></div></div>`;
     return;
   }
-  const tot=allItems.length;
-  const nOut=allItems.filter(i=>i.status==='out').length;
-  const nLow=allItems.filter(i=>i.status==='low').length;
-  const nOk=allItems.filter(i=>i.status==='ok').length;
-  // Schede KPI: toccandole si filtra l'elenco (la stessa cosa dei pulsanti nel pannello).
-  const kpi=(cls,f,lbl,val,sub,ico)=>`<div class="kpi-card ${cls} kpi-clickable inv-kpi-card${_invFilter===f?' inv-kpi-on':''}" onclick="invSetFilter('${f}')" role="button" tabindex="0">
-      <div class="kpi-card-icon">${ico}</div><div class="kpi-label">${lbl}</div><div class="kpi-value">${val}</div><div class="kpi-sub">${sub}</div></div>`;
-  const kpiHtml=`<div class="kpi-grid inv-kpi">
-    ${kpi('blue','all','Prodotti',tot,'in catalogo · '+nomeWh,_invIco('scatola',15))}
-    ${kpi('red','out','Esauriti',nOut,nOut?'da ordinare subito':'nessuno',_invIco('allerta',15))}
-    ${kpi('amber','low','Sotto soglia',nLow,nLow?'da tenere d\'occhio':'nessuno',_invIco('attesa',15))}
-    ${kpi('green','ok','In regola',nOk,'sopra la soglia',_invIco('ok',15))}
-  </div>`;
-  const f=_invFilter==='alert'?'out':_invFilter;   // il vecchio filtro «Allerta» vale «Esauriti + sotto soglia»
-  const items=_invFilter==='alert'?allItems.filter(i=>i.status!=='ok'):f==='out'?allItems.filter(i=>i.status==='out'):f==='low'?allItems.filter(i=>i.status==='low'):f==='ok'?allItems.filter(i=>i.status==='ok'):allItems;
-  const fBtn=(k,lbl,n)=>`<button class="rev-filter-btn${(_invFilter===k)?' active':''}" onclick="invSetFilter('${k}')">${lbl} <span class="inv-conta">${n}</span></button>`;
   const stato={out:['badge-open','Esaurito'],low:['badge-progress','Sotto soglia'],ok:['badge-closed','In regola']};
-  const righe=items.map(it=>{
+  const tessera=it=>{
     const unit=it.unit?`<span class="inv-unita">${_esc(it.unit)}</span>`:'';
-    // Barra: scorta rispetto al doppio della soglia (piena = almeno due volte la soglia).
     const pieno=it.soglia?Math.max(0,Math.min(100,Math.round(it.qty/(it.soglia*2)*100))):(it.qty>0?100:0);
-    const colBar=it.status==='out'?'var(--red)':it.status==='low'?'var(--amber)':'var(--green)';
-    const soglia=it.soglia!=null?`<button class="inv-soglia" onclick="invEditSoglia('${it.bc}')" title="Modifica la soglia">${it.soglia}${unit}</button>`:`<button class="inv-soglia inv-soglia-no" onclick="invEditSoglia('${it.bc}')" title="Imposta una soglia">imposta</button>`;
-    return`<div class="inv-riga inv-st-${it.status}">
-      <div class="inv-nome"><b title="${_esc(it.name)}">${_esc(it.name)}</b><small>ultimo movimento ${invFmtDate(it.last?.ts)}</small></div>
-      <div class="inv-stato"><span class="c-badge ${stato[it.status][0]}">${stato[it.status][1]}</span></div>
-      <div class="inv-scorta"><div class="inv-qta" style="color:${colBar};">${it.qty}${unit}</div><div class="score-track"><div class="score-fill" style="width:${pieno}%;background:${colBar};"></div></div></div>
-      <div class="inv-soglia-c"><span class="inv-mini">soglia</span>${soglia}</div>
-      <div class="inv-azioni">
+    const col=it.status==='out'?'var(--red)':it.status==='low'?'var(--amber)':'var(--green)';
+    const soglia=it.soglia!=null?`<button class="inv-soglia" onclick="invEditSoglia('${it.bc}')" title="Modifica la soglia">soglia ${it.soglia}${unit}</button>`:`<button class="inv-soglia inv-soglia-no" onclick="invEditSoglia('${it.bc}')" title="Imposta una soglia">imposta soglia</button>`;
+    return`<div class="inv-tessera inv-st-${it.status}">
+      <div class="inv-t-testa"><b title="${_esc(it.name)}">${_esc(it.name)}</b><span class="c-badge ${stato[it.status][0]}">${stato[it.status][1]}</span></div>
+      <div class="inv-t-qta" style="color:${col};">${it.qty}${unit}</div>
+      <div class="score-track"><div class="score-fill" style="width:${pieno}%;background:${col};"></div></div>
+      <div class="inv-t-piede">${soglia}<span class="inv-t-ultimo">${invFmtDate(it.last?.ts)}</span></div>
+      <div class="inv-t-azioni">
         <button class="rc-act-btn" data-tip="Rifornisci (scanner)" aria-label="Rifornisci" onclick="invQuickRestock('${it.bc}')">${_invIco('su',13)}</button>
         <button class="rc-act-btn" data-tip="Correggi la quantità" aria-label="Correggi" onclick="invEditQty('${it.bc}',${it.qty})">${_invIco('matita',13)}</button>
         <button class="rc-act-btn" data-tip="Elimina dal catalogo" aria-label="Elimina" onclick="invDeleteProduct('${it.bc}')">${_invIco('cestino',13)}</button>
       </div>
-    </div>`;
-  }).join('')||'<div class="inv-vuoto"><div>Nessun prodotto in questo gruppo.</div></div>';
-  const testa=`<div class="inv-riga inv-testa"><div>Prodotto</div><div>Stato</div><div>Scorta</div><div>Soglia</div><div></div></div>`;
-  const nota=allItems.every(i=>i.soglia==null)?'<div class="inv-nota">Tocca «imposta» per dare una soglia a un prodotto: quando la scorta ci scende sotto, diventa arancione.</div>':'';
-  el.innerHTML=kpiHtml+`<div class="panel">
-    <div class="panel-header"><span class="ov-icon-badge">${_invIco('scatola',12).replace('stroke="currentColor"','stroke="#fff"')}</span><span class="panel-title">Giacenza · ${nomeWh}</span>
-      <div class="inv-filtri">${fBtn('all','Tutti',tot)}${fBtn('out','Esauriti',nOut)}${fBtn('low','Sotto soglia',nLow)}${fBtn('ok','In regola',nOk)}</div></div>
-    <div class="inv-elenco">${testa}${righe}</div>${nota}</div>`;
+    </div>`;};
+  const badge=n=>`<span class="ov-icon-badge">${_invIco(n,12).replace('stroke="currentColor"','stroke="#fff"')}</span>`;
+  const daFare=allItems.filter(i=>i.status!=='ok'),ok=allItems.filter(i=>i.status==='ok');
+  const pannello=(ico,tit,sub,lista,vuoto)=>`<div class="panel inv-pannello"><div class="panel-header">${badge(ico)}<span class="panel-title">${tit}</span><span class="inv-sub">${sub}</span></div>
+    ${lista.length?`<div class="inv-tessere">${lista.map(tessera).join('')}</div>`:`<div class="inv-vuoto"><div>${vuoto}</div></div>`}</div>`;
+  const nOut=daFare.filter(i=>i.status==='out').length,nLow=daFare.length-nOut;
+  const nota=allItems.every(i=>i.soglia==null)?'<div class="inv-nota">Tocca «imposta soglia» su un prodotto: quando la scorta ci scende sotto, passa in «Da riordinare».</div>':'';
+  el.innerHTML=pannello('allerta','Da riordinare · '+nomeWh,daFare.length?[nOut?nOut+' esauriti':'',nLow?nLow+' sotto soglia':''].filter(Boolean).join(' · '):'niente da riordinare',daFare,'Tutti i prodotti sono sopra la soglia.')
+    +pannello('ok','In regola',ok.length+' prodotti',ok,'Nessun prodotto sopra la soglia.')+nota;
 }
 function invRenderMoves(catalog,moves){
   const el=document.getElementById('inv-moves-view');
