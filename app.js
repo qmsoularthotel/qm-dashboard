@@ -10800,11 +10800,11 @@ function _invUsoTesto(perGiorno,giorni,unita){
   return{n:0,testo:'1'+u+' ogni '+ogni+' giorni'};
 }
 function invRenderStock(catalog,moves){
-  // Proposta 1 scelta dal QM (25/11/2026), dopo quattro prove: in cima la LISTA DELLA SPESA (solo
-  // quello da ordinare, con la quantità in grande e una frase normale sotto), sotto una TABELLA
-  // SEMPLICE di tutti i prodotti. I consumi sono detti nella misura dell'ordine: «ogni 15 giorni se ne
-  // usano 7» (ordine ogni 15/30/45 giorni, _invCopertura), mai decimali a settimana. Il numero in
-  // stock si tocca per correggerlo; modifica ed eliminazione stanno nel Catalogo. Classi .inv3-*.
+  // Nello stile della Registration Cards della Galleria (25/11/2026, QM: «mi piace molto quella
+  // pagina»): riga oro maiuscola e titolo grande, schede bianche arrotondate con ombra leggera,
+  // il numero da ordinare dentro il cerchio navy/oro dei «passi», frasi normali. Contenuto deciso
+  // prima col QM: in cima solo quello da ordinare, sotto tutti i prodotti; consumi nella misura
+  // dell'ordine (ogni 15/30/45 giorni) in numeri interi. Classi .inv4-*.
   const el=document.getElementById('inv-stock-view');
   if(!el)return;
   const stock=invCalcStock(catalog,moves);
@@ -10818,33 +10818,28 @@ function invRenderStock(catalog,moves){
     const dor=_invDaOrdinare(gg,qty,ia?ia.qty:0,_invCopertura);
     return{bc,name:p.name,unit:p.unit||'',qty,gg,aut,dor,ia,uo:ultimi[bc],uso:_invUsoTesto(gg,N,p.unit||'')};
   }).filter(Boolean);
-  // Stile Compass (25/11/2026, QM: «c'è poco di stile Compass»): badge navy/oro nelle intestazioni,
-  // etichette maiuscole spaziate, quantità grandi e sottili come le schede KPI, la scelta del periodo
-  // dentro l'intestazione del pannello.
-  const badge=(n)=>`<span class="ov-icon-badge">${_invIco(n,12).replace('stroke="currentColor"','stroke="#fff"')}</span>`;
-  const scelta=`<div class="inv3-scelta"><span>ordine ogni</span>${[15,30,45].map(n=>`<button class="rev-filter-btn${N===n?' active':''}" onclick="invSetCopertura(${n})">${n} gg</button>`).join('')}</div>`;
+  const u=x=>x?' '+_esc(x):'';
+  const da=items.filter(i=>i.dor>0).sort((a,b)=>((a.aut??1e9)-(b.aut??1e9))||a.name.localeCompare(b.name,'it'));
+  const testa=`<div class="inv4-hero"><div><div class="inv4-k">${nomeWh}</div><div class="inv4-t">${da.length?'Cosa ordinare':'Niente da ordinare'}</div></div>
+    <div class="inv4-per"><span>Ordine ogni</span>${[15,30,45].map(n=>`<button class="inv4-chip${N===n?' on':''}" onclick="invSetCopertura(${n})">${n} giorni</button>`).join('')}</div></div>`;
   if(!items.length){
-    el.innerHTML=`<div class="panel"><div class="panel-body inv-vuoto">${_invIco('scatola',28)}<div>Nessun prodotto in ${nomeWh}</div><small>Apri lo scanner sullo smartphone per aggiungere i prodotti.</small></div></div>`;
+    el.innerHTML=testa+`<div class="inv4-card inv4-vuoto">${_invIco('scatola',26)}<div>Nessun prodotto in ${nomeWh}</div><small>Apri lo scanner sullo smartphone per aggiungere i prodotti.</small></div>`;
     return;
   }
-  const u=x=>x?' '+_esc(x):'';
-  // 1) Lista della spesa: solo da ordinare, i più urgenti prima.
-  const da=items.filter(i=>i.dor>0).sort((a,b)=>((a.aut??1e9)-(b.aut??1e9))||a.name.localeCompare(b.name,'it'));
-  const spesa=da.map(it=>{
-    const resta=it.qty<=0?'<b class="inv3-rosso">finito</b>':`ne restano ${it.qty}${u(it.unit)}${it.aut!=null?' (per circa '+it.aut+' giorni)':''}`;
-    const arr=it.ia&&it.ia.qty?` · ${it.ia.qty}${u(it.ia.unit||it.unit)} già in arrivo`:'';
-    return`<div class="inv3-ord${it.qty<=0?' inv3-ord-fin':''}"><div class="inv3-ord-n">${_esc(it.name)}<small>${resta} · se ne usano ${_esc(it.uso.testo)}${arr}</small></div><div class="inv3-ord-q"><span class="kpi-label">da ordinare</span><span class="inv3-ord-v">${it.dor}<small>${_esc(it.unit)}</small></span></div></div>`;
-  }).join('')||`<div class="inv3-vuoto">Per i prossimi ${N} giorni non serve ordinare niente.</div>`;
-  // 2) Tabella semplice di tutti.
-  const tutti=items.slice().sort((a,b)=>a.name.localeCompare(b.name,'it')).map(it=>`<tr>
+  const schede=da.map(it=>{
+    const resta=it.qty<=0?'<b class="inv4-rosso">Finito</b>':`Ne restano ${it.qty}${u(it.unit)}${it.aut!=null?', per circa '+it.aut+' giorni':''}`;
+    const arr=it.ia&&it.ia.qty?`<div class="inv4-s inv4-blu">${it.ia.qty}${u(it.ia.unit||it.unit)} già in arrivo</div>`:'';
+    return`<div class="inv4-pr${it.qty<=0?' fin':''}"><span class="inv4-n">${it.dor}</span><div class="inv4-pr-b"><div class="inv4-pr-t">${_esc(it.name)}</div>
+      <div class="inv4-q">ordina ${it.dor}${u(it.unit)}</div><div class="inv4-s">${resta}</div><div class="inv4-s">Se ne usano ${_esc(it.uso.testo)}</div>${arr}</div></div>`;
+  }).join('');
+  const lista=da.length?`<div class="inv4-griglia">${schede}</div>`:`<div class="inv4-ok"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg><span>Con quello che c'è in stock e quello in arrivo si copre il periodo di ${N} giorni.</span></div>`;
+  const righe=items.slice().sort((a,b)=>a.name.localeCompare(b.name,'it')).map(it=>`<tr>
       <td>${_esc(it.name)}</td>
-      <td class="r"><button class="inv3-stock${it.qty<=0?' inv3-rosso':''}" onclick="invEditQty('${it.bc}',${it.qty})" title="Correggi la quantità">${it.qty}${u(it.unit)}</button>${it.ia&&it.ia.qty?`<small>+${it.ia.qty} in arrivo</small>`:''}</td>
-      <td class="r">${it.uso?_esc(it.uso.testo.replace(' ogni '+N+' giorni','')):'<span class="inv3-no">non si sa</span>'}</td>
-      <td class="r inv3-gr">${it.uo?it.uo.qty+u(it.uo.unit||it.unit)+' · '+_esc(String(it.uo.data).slice(0,5)):'—'}</td>
-    </tr>`).join('');
-  el.innerHTML=`<div class="panel inv3-p"><div class="panel-header inv3-ph">${badge('note')}<span class="panel-title">Da ordinare · ${nomeWh}${da.length?` <span class="ag-conta">${da.length}</span>`:''}</span>${scelta}</div>${spesa}</div>
-    <div class="panel inv3-p"><div class="panel-header">${badge('scatola')}<span class="panel-title">Tutti i prodotti <span class="ag-conta">${items.length}</span></span></div>
-    <div class="inv3-tw"><table class="inv3-tab"><thead><tr><th>Prodotto</th><th class="r">In stock</th><th class="r">Se ne usano in ${N} giorni</th><th class="r">Ultimo ordine</th></tr></thead><tbody>${tutti}</tbody></table></div></div>`;
+      <td class="r"><button class="inv4-stock${it.qty<=0?' inv4-rosso':''}" onclick="invEditQty('${it.bc}',${it.qty})" title="Correggi la quantità">${it.qty}${u(it.unit)}</button>${it.ia&&it.ia.qty?`<small>+${it.ia.qty} in arrivo</small>`:''}</td>
+      <td class="r">${it.uso?_esc(it.uso.testo.replace(' ogni '+N+' giorni','')):'<span class="inv4-no">non si sa</span>'}</td>
+      <td class="r inv4-gr">${it.uo?it.uo.qty+u(it.uo.unit||it.unit)+' · '+_esc(String(it.uo.data).slice(0,5)):'—'}</td></tr>`).join('');
+  el.innerHTML=testa+lista+`<div class="inv4-card inv4-tutti"><div class="inv4-ct">Tutti i prodotti <span class="inv4-cnt">${items.length}</span></div>
+    <div class="inv4-tw"><table class="inv4-tab"><thead><tr><th>Prodotto</th><th class="r">In stock</th><th class="r">Se ne usano in ${N} giorni</th><th class="r">Ultimo ordine</th></tr></thead><tbody>${righe}</tbody></table></div></div>`;
 }
 function invRenderMoves(catalog,moves){
   const el=document.getElementById('inv-moves-view');
