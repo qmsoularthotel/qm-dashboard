@@ -3293,15 +3293,14 @@ function miniappDvrStatus(){
 // modo (vedi il commento in cima a registration-galleria.html), quindi non c'e' niente da
 // accendere, spegnere o mostrare. E' un'app a se', dei colleghi della Galleria.
 function miniappInvStatus(){
+  // Senza soglie (25/11/2026, QM): conta i prodotti che la Stock mette «Da tenere d'occhio»
+  // (in magazzino meno di una distribuzione, niente in arrivo), stesso criterio (_invScarsi).
   let sottoSoglia=0;
   ['sa','ar'].forEach(wh=>{
     let catalog={},moves=[];
     try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+wh)||'{}');}catch(e){}
     try{moves=JSON.parse(localStorage.getItem('qm_inv_moves_'+wh)||'[]');}catch(e){}
-    const stock=invCalcStock(catalog,moves);
-    Object.entries(stock).forEach(([bc,qty])=>{
-      if(invItemStatus(qty,catalog[bc]?.soglia??null)!=='ok')sottoSoglia++;
-    });
+    sottoSoglia+=_invScarsi(wh,catalog,moves).length;
   });
   const lastDelivery=wh=>{
     const orders=invOrdersGet().filter(o=>o.wh===wh&&o.status==='ricevuto'&&o.tsRicevuto);
@@ -10691,10 +10690,14 @@ function invCalcStock(catalog,moves){
   }
   return result;
 }
-function invItemStatus(qty,soglia){
-  if(qty<=0)return'out';
-  if(soglia!=null&&qty<=soglia)return'low';
-  return'ok';
+// Prodotti che non bastano per la prossima distribuzione (meno di metà di quello che esce di solito
+// in un ordine) e senza niente in arrivo: la Stock li mostra «Da tenere d'occhio», il Pannello di
+// Controllo li conta. Ha preso il posto della soglia minima (tolta il 25/11/2026).
+function _invScarso(qty,tip,inArrivo){return tip!=null&&tip>0&&Math.max(0,qty)<tip/2&&!(inArrivo>0);}
+function _invScarsi(wh,catalog,moves){
+  const stock=invCalcStock(catalog,moves),arr=_invInArrivo(wh),ora=Date.now(),perBc={};
+  (moves||[]).forEach(m=>{(perBc[m.barcode]=perBc[m.barcode]||[]).push(m);});
+  return Object.keys(catalog||{}).filter(bc=>stock[bc]!=null&&_invScarso(stock[bc],_invTipicoOrdine(_invSettimane(perBc[bc],ora)),arr[bc]?arr[bc].qty:0));
 }
 function invLastMove(bc,moves){
   for(let i=moves.length-1;i>=0;i--){if(moves[i].barcode===bc)return moves[i];}
@@ -10851,7 +10854,7 @@ function invRenderStock(catalog,moves){
     const ia=arrivo[bc],tip=_invTipicoOrdine(_invSettimane(perBc[bc],ora));
     const dor=_invProposta(tip,qty,ia?ia.qty:0);
     // Non basta per la prossima distribuzione (metà di un ordine), e niente in arrivo.
-    const scarso=tip!=null&&tip>0&&Math.max(0,qty)<tip/2&&!(ia&&ia.qty);
+    const scarso=_invScarso(qty,tip,ia?ia.qty:0);
     return{bc,name:p.name,unit:p.unit||'',qty,tip,dor,ia,scarso,uo:ultimi[bc]};
   }).filter(Boolean);
   const u=x=>x?' '+_esc(x):'';
@@ -10973,22 +10976,6 @@ async function invEditQty(bc,currentQty){
   moves.push({id:Date.now()+'_'+Math.random().toString(36).slice(2),barcode:bc,type:'init',qty:n,ts:Date.now(),note:'Rettifica da dashboard'});
   try{localStorage.setItem('qm_inv_moves_'+_invWh,JSON.stringify(moves));}catch(e){}
   _qmElencoSalva('qm_inv_moves_'+_invWh,[],_invRidisegna);
-  invRender();
-}
-async function invEditSoglia(bc){
-  let catalog={};
-  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
-  const p=catalog[bc];if(!p)return;
-  const val=await cqChiedi('Soglia minima','<strong>'+_esc(p.name)+'</strong><br>Lascia vuoto per non avere una soglia.',
-    {etichetta:'Soglia minima',valore:p.soglia!=null?p.soglia:''});
-  if(val===null)return;
-  // Durante l'attesa il catalogo può essere cambiato da un'altra postazione: si rilegge.
-  try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
-  if(!catalog[bc])return;
-  const n=parseFloat(val);
-  catalog[bc].soglia=(val.trim()===''||isNaN(n))?null:n;
-  try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
-  _qmElencoSalva('qm_inv_catalog_'+_invWh,{},_invRidisegna);
   invRender();
 }
 async function invDeleteProduct(bc){
@@ -11117,21 +11104,15 @@ function invPrintStock(){
 
   const items=Object.entries(catalog).map(([bc,p])=>{
     const qty=stock[bc]??0;
-    const status=invItemStatus(qty,p.soglia??null);
-    return{name:p.name,unit:p.unit||'',qty,status,soglia:p.soglia??null};
+    return{name:p.name,unit:p.unit||'',qty};
   }).filter(i=>i.name).sort((a,b)=>a.name.localeCompare(b.name,'it'));
 
-  const statusColor=s=>s==='out'?'#C0352A':s==='low'?'#A05A00':'#1E7A48';
-  const statusLabel=s=>s==='out'?'ESAURITO':s==='low'?'BASSO':'OK';
+  // Senza soglia né stato (25/11/2026): prodotto, unità, quantità; a zero in rosso.
   const rows=items.map((it,i)=>`
     <tr style="background:${i%2===0?'#fff':'#f8f8f9'};">
-      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:13px;">${it.name}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:13px;text-align:center;color:#666;">${it.unit}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:15px;font-weight:700;text-align:center;">${it.qty}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;text-align:center;">
-        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;color:${statusColor(it.status)};background:${it.status==='out'?'#fae2e0':it.status==='low'?'#fae8cc':'#d8f0e4'};">${statusLabel(it.status)}</span>
-      </td>
-      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:12px;color:#999;text-align:center;">${it.soglia!==null?it.soglia:'—'}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:13px;">${_esc(it.name)}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:13px;text-align:center;color:#666;">${_esc(it.unit)}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid #e5e5e7;font-size:15px;font-weight:700;text-align:center;${it.qty<=0?'color:#C0352A;':''}">${Math.max(0,it.qty)}</td>
     </tr>`).join('');
 
   const html=`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
@@ -11147,7 +11128,7 @@ function invPrintStock(){
     .date-badge-value{font-size:15px;font-weight:700;line-height:1.2;}
     table{width:100%;border-collapse:collapse;}
     thead th{background:#1E4080;color:#fff;padding:8px 10px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;text-align:left;}
-    thead th:nth-child(3),thead th:nth-child(4),thead th:nth-child(5){text-align:center;}
+    thead th:nth-child(2),thead th:nth-child(3){text-align:center;}
     tfoot td{padding:10px 10px 0;font-size:11px;color:#999;}
     .firma{margin-top:28px;display:flex;gap:40px;}
     .firma-box{flex:1;border-top:1px solid #ccc;padding-top:6px;font-size:11px;color:#666;}
@@ -11166,11 +11147,10 @@ function invPrintStock(){
   <table>
     <thead><tr>
       <th>Prodotto</th><th style="text-align:center;">Unità</th>
-      <th style="text-align:center;">Quantità</th><th style="text-align:center;">Stato</th>
-      <th style="text-align:center;">Soglia</th>
+      <th style="text-align:center;">Quantità</th>
     </tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr><td colspan="5">${items.length} prodotti</td></tr></tfoot>
+    <tfoot><tr><td colspan="3">${items.length} prodotti</td></tr></tfoot>
   </table>
   </body></html>`;
 
@@ -11186,16 +11166,16 @@ async function invEditProduct(bc){
   const p0=catalog[bc];if(!p0)return;
   const v=await cqModulo('Modificare il prodotto?','',[
     {etichetta:'Nome prodotto',valore:p0.name},
-    {etichetta:'Unità di misura',valore:p0.unit||'',segnaposto:'Es. fl, kg, lt'},
-    {etichetta:'Soglia minima',valore:p0.soglia!=null?p0.soglia:'',segnaposto:'Vuoto = nessuna soglia'}]);
+    {etichetta:'Unità di misura',valore:p0.unit||'',segnaposto:'Es. fl, kg, lt'}]);
   if(!v)return;
-  const [newName,newUnit,sogliaRaw]=v;
+  const [newName,newUnit]=v;
   if(!newName.trim()){cqAvviso('Il nome non può essere vuoto.');return;}
   // Durante l'attesa il catalogo può essere cambiato da un'altra postazione: si rilegge.
   try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
   const p=catalog[bc];if(!p)return;
-  const n=parseFloat(sogliaRaw);
-  catalog[bc]={...p,name:newName.trim(),unit:newUnit.trim(),soglia:(sogliaRaw.trim()===''||isNaN(n))?null:n};
+  // La soglia minima non esiste più (25/11/2026): se il prodotto ne aveva una, si toglie.
+  const{soglia,...resto}=p;
+  catalog[bc]={...resto,name:newName.trim(),unit:newUnit.trim()};
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
   _qmElencoSalva('qm_inv_catalog_'+_invWh,{},_invRidisegna);
   invRender();
@@ -11205,23 +11185,21 @@ async function invAddProduct(){
   const v=await cqModulo('Nuovo prodotto','',[
     {etichetta:'Nome prodotto'},
     {etichetta:'Codice a barre',segnaposto:'Vuoto se non disponibile'},
-    {etichetta:'Unità di misura',segnaposto:'Es. fl, kg, lt'},
-    {etichetta:'Soglia minima',segnaposto:'Vuoto = nessuna soglia'}],{ok:'Aggiungi'});
+    {etichetta:'Unità di misura',segnaposto:'Es. fl, kg, lt'}],{ok:'Aggiungi'});
   if(!v)return;
-  const [name,bcRaw,unit,sogliaRaw]=v;
+  const [name,bcRaw,unit]=v;
   if(!name.trim()){cqAvviso('Il nome non può essere vuoto.');return;}
   try{catalog=JSON.parse(localStorage.getItem('qm_inv_catalog_'+_invWh)||'{}');}catch(e){}
   const bc=bcRaw.trim()||('manual_'+Date.now());
   if(catalog[bc]){cqAvviso('Codice già usato da un altro prodotto.');return;}
-  const n=parseFloat(sogliaRaw);
-  catalog[bc]={name:name.trim(),unit:(unit||'').trim(),soglia:(sogliaRaw.trim()===''||isNaN(n))?null:n};
+  catalog[bc]={name:name.trim(),unit:(unit||'').trim()};
   try{localStorage.setItem('qm_inv_catalog_'+_invWh,JSON.stringify(catalog));}catch(e){}
   _qmElencoSalva('qm_inv_catalog_'+_invWh,{},_invRidisegna);
   invRender();
 }
 // Catalogo nello stile della Stock (25/11/2026): cornice, riga oro + titolo, tabella .inv5-tab con
-// codice, unità e i pulsanti tondi di Compass. La soglia non si mostra più: la Stock ragiona a
-// distribuzioni e non la usa (resta nella maschera di modifica e nella stampa A4).
+// codice, unità e i pulsanti tondi di Compass. La soglia minima è stata tolta del tutto (25/11/2026,
+// QM): la Stock ragiona a distribuzioni (_invScarso), non a soglie.
 function invRenderCatalog(){
   const el=document.getElementById('inv-catalog-view');
   if(!el)return;
