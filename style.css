@@ -1300,3 +1300,6 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .hkx-tool .hkx-sym-img{height:24px;width:auto;}
 .hkx-sym-grande .hkx-sym-img{width:32px;height:32px;}
 .hkx-c > .hkx-sym-img{width:30px;height:30px;margin:auto;}
+/* Sulle colonne velate (sabato, domenica, oggi) il fondo bianco dei disegni non deve vedersi: lo
+   z-index del contenitore isola il disegno, quindi il «multiply» va sul contenitore (26/11/2026). */
+.hkx-c .hkpSymImg{mix-blend-mode:multiply;}
