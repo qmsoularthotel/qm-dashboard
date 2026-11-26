@@ -2041,11 +2041,11 @@ function _hkpNEvidApplica(p,tab,scorri){
   });
   if(scorri&&primo)primo.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
 }
-// Simboli come pastiglie (26/11/2026): Ripasso R blu, Non disturbare ND rosso, Camera libera un
-// trattino grigio, Non eseguito ✕ ambra. Prima erano disegni (img/hkp-*.png) più pesanti delle sigle.
+// I simboli restano i DISEGNI di sempre (img/hkp-*.png): il QM ha tenuto il resto del redesign del
+// 26/11/2026 ma non le pastiglie al loro posto («non cambiare i simboli»).
 function _hkpNSimbolo(code){
-  const t={RP:['hkx-rp','R'],ND:['hkx-nd','ND'],LIB:['hkx-lib','—'],NE:['hkx-ne','✕']}[code];
-  return t?'<span class="hkx-sym '+t[0]+'" aria-hidden="true">'+t[1]+'</span>':'';
+  const f=HKP_SYM[code];
+  return f?'<img class="hkx-sym-img" src="img/'+f+'.'+HKP_SYM_EXT+'" alt="" aria-hidden="true">':'';
 }
 function _hkpNIcoX(){return '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';}
 function _hkpNUpdateCellDisplay(input){
@@ -2060,7 +2060,7 @@ function _hkpNUpdateCellDisplay(input){
     input.style.color='transparent';
     const pill=document.createElement('span');
     pill.className='hkpSymImg';
-    pill.innerHTML=_hkpNSimbolo(v);
+    pill.innerHTML=_hkpNSimbolo(v);   // il disegno del simbolo, come prima
     td.appendChild(pill);
   }else input.style.color='';
 }
