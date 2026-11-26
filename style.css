@@ -1358,3 +1358,21 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .ms-amber{color:var(--amber)!important;}
 .ms-c .miniapp-avvisi-corpo{position:static;margin:4px 16px 14px;box-shadow:none;}
 .ms-avvisi-btn{display:inline-flex;align-items:center;gap:5px;}
+/* Sicurezza e Stato del sistema nella composizione della Registration Cards (26/11/2026, QM). */
+.sic-griglia{display:grid;grid-template-columns:1.45fr 1fr;gap:14px;align-items:start;}
+.ms-c .sic-lista{max-width:none;margin-bottom:0;border:1px solid var(--border-light);border-top:1px solid var(--border-light);border-radius:12px;background:var(--surface);box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.ms-c .sic-lista.sic-ops{border-top:4px solid var(--gold);background:#fff;}
+.ms-c .sic-gt{background:transparent;color:var(--text-dim);padding:12px 16px 6px;}
+.ms-c .sic-voce:first-of-type{border-top:none;}
+.sic-verde{display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);font-weight:700;color:var(--green);margin:0 2px 12px;}
+.sic-verde span,.sic-dg-r span{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sic-dg{background:#fff;border:1px solid var(--border-light);border-left:4px solid var(--red);border-radius:12px;padding:12px 16px;margin-bottom:14px;}
+.sic-dg-r{display:flex;align-items:baseline;gap:9px;font-size:13px;color:var(--text);padding:3px 0;}
+.sic-dg-r span{position:relative;top:-1px;}
+.ms-c .ms-stato{margin-bottom:14px;}
+.ms-c .ms-st{background:#fff;border:1px solid var(--border-light);border-top:3px solid var(--green);border-left:1px solid var(--border-light);border-radius:12px;}
+.ms-c .ms-st-amber{border-top-color:var(--amber);}.ms-c .ms-st-red{border-top-color:var(--red);}
+.sis-det{padding:4px 16px 14px;}
+.sis-det .sic-verde{margin:6px 0 0;}
+.sis-det .sic-dg{margin:6px 0 0;}
+@media (max-width:900px){.sic-griglia{grid-template-columns:1fr;}}

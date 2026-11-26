@@ -565,6 +565,8 @@ sez('Sicurezza: il pallino del menu');
   ok('il verdetto verde lo dice', /tutto in ordine/.test(_qmSicVerdettoHtml(c({}))), true);
   ok('il verdetto rosso elenca cosa', /ACCESSO AL CLOUD APERTO/.test(_qmSicVerdettoHtml(c({ portaChiusa: false }))), true);
   ok('la vista Sicurezza aggiorna il pallino', /qmAggiornaPallinoSicurezza\(\)/.test(String(qmRenderDispositivi)), true);
+  ok('Sicurezza: il verdetto diventa il titolo grande', [_qmSicTitolo(c({})), /qmSicTitolo/.test(String(qmAggiornaPallinoSicurezza))].join(), 'Tutto in ordine,true');
+  ok('Stato del sistema: il verdetto diventa il titolo grande', /sisTitolo/.test(String(qmRenderStatoSistema)), true);
 })();
 
 sez('Preferenze Turnazione: la settimana prossima intera anche a cavallo del mese');

@@ -5515,15 +5515,16 @@ async function qmAggiornaPallinoSicurezza(){
   }
   const box=document.getElementById('qmSicVerdetto');
   if(box)box.innerHTML=_qmSicVerdettoHtml(s);
+  const t=document.getElementById('qmSicTitolo');if(t)t.textContent=_qmSicTitolo(s);
 }
+// Composizione della Registration Cards (26/11/2026, QM): il verdetto va nel TITOLO grande della
+// vista (_qmSicTitolo); qui resta una riga sottile se tutto va, l'elenco «Da guardare» se no.
+function _qmSicTitolo(s){return s.col==='green'?'Tutto in ordine':s.col==='red'?'C\'è qualcosa da sistemare':'Qualcosa da guardare';}
 function _qmSicVerdettoHtml(s){
   const c=_QM_SIC_COL[s.col];
-  const bg=s.col==='green'?'var(--green-bg)':s.col==='red'?'var(--red-bg)':'var(--amber-bg)';
-  if(s.col==='green')return`<div style="display:flex;align-items:center;gap:8px;background:${bg};border-radius:8px;padding:9px 12px;margin-bottom:14px;font-size:var(--fs-xs);font-weight:700;color:${c};"><span style="width:9px;height:9px;border-radius:50%;background:${c};"></span>Sicurezza: tutto in ordine</div>`;
-  return`<div style="background:${bg};border-left:3px solid ${c};border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:var(--fs-xs);line-height:1.6;">
-    <div style="font-weight:700;color:${c};margin-bottom:2px;">Sicurezza: ${s.col==='red'?'c\'è qualcosa da sistemare':'qualcosa da guardare'}</div>
-    ${s.voci.map(v=>`<div style="display:flex;gap:8px;align-items:baseline;"><span style="width:7px;height:7px;border-radius:50%;background:${_QM_SIC_COL[v.col]};flex-shrink:0;position:relative;top:-1px;"></span><span style="color:var(--text);">${v.testo}</span></div>`).join('')}
-  </div>`;
+  if(s.col==='green')return`<div class="sic-verde"><span style="background:${c};"></span>Sicurezza: tutto in ordine</div>`;
+  return`<div class="sic-dg" style="border-left-color:${c};"><div class="inv5-gl">Da guardare</div>
+    ${s.voci.map(v=>`<div class="sic-dg-r"><span style="background:${_QM_SIC_COL[v.col]};"></span>${v.testo}</div>`).join('')}</div>`;
 }
 // Il riquadro rispondeva a sei domande con sei righe uguali: un elenco da leggere, non uno
 // stato da guardare. Entrando li' la domanda e' una sola — va tutto bene? — e la risposta
@@ -5568,13 +5569,12 @@ async function qmRenderStatoSistema(){
   det('Compass '+_qmVersioneApp(),'aperto '+_qmDaQuandoAperto());
 
   const verde=!problemi.length;
-  let html=`<div style="display:flex;align-items:center;gap:12px;background:${verde?'var(--green-bg)':'var(--red-bg)'};border-radius:10px;padding:13px 15px;">
-      <span style="font-size:26px;line-height:1;color:${verde?'var(--green)':'var(--red)'};">${verde?'✓':'!'}</span>
-      <div style="min-width:0;">
-        <div style="font-size:16px;font-weight:700;color:${verde?'var(--green)':'var(--red)'};">${verde?'Tutto in ordine':(problemi.length===1?'C\'è una cosa da guardare':'Ci sono '+problemi.length+' cose da guardare')}</div>
-        ${verde?'<div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Worker, accesso e salvataggi: nessun problema.</div>'
-          :problemi.map(p=>`<div style="font-size:13px;color:var(--text);margin-top:4px;">${p}</div>`).join('')}
-      </div></div>`;
+  // Il verdetto è il titolo grande della vista (composizione della Registration Cards, 26/11/2026);
+  // qui sotto restano solo le cose da guardare, se ci sono.
+  const tit=document.getElementById('sisTitolo');
+  if(tit)tit.textContent=verde?'Tutto in ordine':(problemi.length===1?'Una cosa da guardare':problemi.length+' cose da guardare');
+  let html=verde?'<div class="sic-verde"><span style="background:var(--green);"></span>Worker, accesso e salvataggi: nessun problema.</div>'
+    :`<div class="sic-dg"><div class="inv5-gl">Da guardare</div>${problemi.map(p=>`<div class="sic-dg-r"><span style="background:var(--red);"></span>${p}</div>`).join('')}</div>`;
   if(er.length)html+=`<div style="margin-top:8px;"><button onclick="qmCopiaErrori(this)" style="border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:7px;padding:5px 12px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">copia gli errori</button></div>`;
 
   // Il consumo: una barra dice in un colpo d'occhio quanto margine resta, un numero no.
@@ -19151,12 +19151,11 @@ function qmRenderDispositivi(){
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const bott='border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:7px;padding:5px 12px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;';
   if(!_qmPass){
-    el.innerHTML=`<div class="panel" style="margin-bottom:14px;">
-      <div class="panel-header"><span class="panel-title">Dispositivi abilitati</span></div>
-      <div class="panel-body" style="padding:14px;font-size:var(--fs-xs);color:var(--text-dim);line-height:1.6;">
-        Questo computer non è ancora abilitato. Inserisci la password una volta: da qui potrai poi abilitare gli altri dispositivi senza far digitare la password a nessuno.
-        <div style="margin-top:10px;"><button onclick="qmChiediPass()" style="${bott}">Abilita questo computer</button></div>
-      </div></div>`;
+    el.innerHTML=`<div class="inv5-cornice ms-c"><div class="inv5-hero"><div><div class="inv5-k">Sicurezza · dispositivi, copie e PIN</div><div class="inv5-t">Computer non abilitato</div></div></div>
+      <div class="inv5-grande inv5-centro"><span class="inv5-cerchio"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+        <div class="inv5-gt">Questo computer non è ancora abilitato</div>
+        <div class="inv5-gs">Inserisci la password una volta: da qui potrai poi abilitare gli altri dispositivi senza far digitare la password a nessuno.</div>
+        <button onclick="qmChiediPass()" class="btn-primary inv8-btn" style="margin-top:12px;">Abilita questo computer</button></div></div>`;
     return;
   }
   // Sicurezza a ELENCO (21/11/2026, scelta «B» del QM su anteprima): una riga per cosa, lo stato a
@@ -19165,7 +19164,8 @@ function qmRenderDispositivi(){
   // del QM dentro Conteggio Biancheria.
   const riga=(titolo,stato,corpo,aperta)=>`<details class="sic-voce"${aperta?' open':''}><summary><span class="sic-t">${titolo}</span><span class="sic-s">${stato}</span><span class="sic-ch">›</span></summary><div class="sic-det">${corpo}</div></details>`;
   const btn=(on,testo,stile)=>`<button onclick="${on}" style="${bott}${stile||'background:var(--accent);color:#fff;border-color:var(--accent);'}padding:9px 18px;font-size:var(--fs-xs);">${testo}</button>`;
-  el.innerHTML=`<div id="qmSicVerdetto"></div><div class="sic-lista"><div class="sic-gt">Compass QM Suite</div>
+  el.innerHTML=`<div class="inv5-cornice ms-c"><div class="inv5-hero"><div><div class="inv5-k">Sicurezza · dispositivi, copie e PIN</div><div class="inv5-t" id="qmSicTitolo">Sicurezza</div></div></div>
+  <div id="qmSicVerdetto"></div><div class="sic-griglia"><div class="sic-lista"><div class="sic-gt">Compass QM Suite</div>
     ${riga('Abilitare un PC o un device','<span style="color:var(--green);font-weight:600;">questo computer è abilitato</span>',
       `Copia il codice e mandalo in chat privata: la persona lo incolla nell'app (aperta dalla sua icona, non da un link di WhatsApp) o nel sito, e ha finito. Nessuno digita password; vale sei mesi.
       <div class="sic-azioni">${btn('qmCopiaCodice(this)','Copia codice')}</div>
@@ -19179,7 +19179,7 @@ function qmRenderDispositivi(){
       <div class="sic-azioni"><input type="file" accept=".json,application/json" onchange="qmHkpRecuperaFile(this)" style="font-size:var(--fs-xs);"></div>
       <div id="qmHkpRecEsito" style="font-size:var(--fs-xs);color:var(--text-dim);margin-top:8px;line-height:1.6;"></div>`)}
   </div>
-  <div class="sic-lista"><div class="sic-gt">Compass OPS</div>
+  <div class="sic-lista sic-ops"><div class="sic-gt">Compass OPS</div>
     ${riga('Abilitare un PC di Compass OPS','codice valido un anno',
       `Copia il codice e incollalo nell'app Compass OPS, una volta su ogni PC della Galleria. È diverso da quello di Compass: apre <strong>solo i dati della Galleria</strong>, non ospiti, turni o cassa. L'app lo rinnova da sola.
       <div class="sic-azioni">${btn('qmCodiceGalleria(this)','Copia codice Compass OPS')}<span id="qmCodiceGalleriaEsito" style="font-size:var(--fs-xxs);color:var(--text-dim);"></span></div>`)}
@@ -19188,7 +19188,7 @@ function qmRenderDispositivi(){
       <div class="sic-azioni"><input id="qmPinMio" type="text" inputmode="numeric" autocomplete="off" data-lpignore="true" maxlength="8" placeholder="il tuo PIN (4–8 cifre)" style="padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:var(--fs-xs);width:190px;max-width:100%;background:var(--surface);color:var(--text);font-family:inherit;-webkit-text-security:disc;">${btn('qmPinSalvaMio()','Salva il mio PIN')}</div>
       <div class="sic-azioni">${btn('qmPinAzzeraResident()','Azzera PIN del Front Office Manager','color:var(--red);')}<span class="sic-nota" style="margin:0;">se l'ha dimenticato: al prossimo accesso ne sceglie uno nuovo</span></div>
       <div id="qmPinEsito" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;min-height:14px;"></div>`)}
-  </div>`;
+  </div></div></div>`;
   try{qmRenderBackup();}catch(e){}
   setTimeout(qmPinAggiorna,0);
   try{qmAggiornaPallinoSicurezza();}catch(e){}

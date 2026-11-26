@@ -877,3 +877,16 @@ del menu", verificata con due sabotaggi); `_qmStatoSicurezza` raccoglie i dati, 
 dopo l'apertura, ogni 15 minuti a scheda visibile, al ritorno sulla scheda, entrando nella vista
 Sicurezza e dopo aver salvato il proprio PIN. Il backup non letto (rete assente) non fa colore:
 si giudica solo quello che si è riusciti a leggere.
+
+## Sicurezza e Stato del sistema nella composizione della Registration Cards (26/11/2026, QM)
+
+Stesso impianto di Applicazioni: `.inv5-cornice` con riga oro e **titolo = verdetto**.
+- **Sicurezza** (`qmRenderDispositivi`): titolo da `_qmSicTitolo` («Tutto in ordine» / «Qualcosa da
+  guardare» / «C'è qualcosa da sistemare»), scritto da `qmAggiornaPallinoSicurezza` in
+  `#qmSicTitolo`; sotto, `_qmSicVerdettoHtml` dà una riga verde o il riquadro «Da guardare»; le due
+  liste in colonna (`.sic-griglia`: Compass QM Suite a sinistra, Compass OPS a destra con la linea
+  oro). Il computer non abilitato ha il riquadro grande col lucchetto e «Abilita questo computer».
+- **Stato del sistema**: titolo in `#sisTitolo` scritto da `qmRenderStatoSistema` («Tutto in
+  ordine» / «Una cosa da guardare» / «N cose da guardare»); i quattro riquadri bianchi con la
+  linea in alto del colore; il dettaglio in `.inv5-tutti` con «Da guardare» al posto del vecchio
+  riquadro rosso pieno.
