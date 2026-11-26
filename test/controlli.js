@@ -3361,21 +3361,22 @@ sez('Inventario: rettifiche nell\'analisi');
   ok('analisi: niente decimali né giorni di autonomia', /autonomia|consumoSett|invSetPeriod/.test(String(invRenderAnalysis)), false);
   ok('catalogo e ordini: nomi e fornitori passano da _esc', /_esc\(p\.name\|\|bc\)/.test(String(invRenderCatalog)) && /_esc\(o\.fornitore/.test(String(invRenderOrders)) && /_esc\(it\.name\)/.test(String(invRenderOrders)), true);
   {
-    // Breakfast Sheet dalle Prenotazioni (26/11/2026): da oggi+2 a oggi+14, solo Soul e Boutique.
+    // Breakfast Sheet dalle Prenotazioni (26/11/2026): 8 giorni da oggi+2 (A45:D52 del foglio), solo Soul e Boutique.
     const P = [
       { struttura: 'SA', tratt: 'BB', pax: 2, arrivo: '2026-11-27', partenza: '2026-11-30' },   // 28, 29, 30
       { struttura: 'BH', tratt: 'BB', pax: 3, arrivo: '2026-11-28', partenza: '2026-11-29' },   // 29
       { struttura: 'BH', tratt: 'RO', pax: 1, arrivo: '2026-11-26', partenza: '2026-12-01' },   // RO 27..01
       { struttura: 'SL', tratt: 'BB', pax: 9, arrivo: '2026-11-27', partenza: '2026-12-05' },   // San Liborio: fuori
       { struttura: 'PR', tratt: 'BB', pax: 9, arrivo: '2026-11-27', partenza: '2026-12-05' },   // Principe: fuori
-      { struttura: 'SA', tratt: 'BB', pax: 4, arrivo: '2026-12-09', partenza: '2026-12-12' },   // 10/12 sì, 11 no
+      { struttura: 'SA', tratt: 'BB', pax: 4, arrivo: '2026-12-04', partenza: '2026-12-08' },   // 05/12 sì (ultimo giorno)
     ];
     const r = _bkfSheetDaPren(P, '2026-11-26', '2026-12-20');
-    ok('breakfast sheet: dal 28/11 al 10/12', r[0].d + ' … ' + r[r.length - 1].d, 'Sab 28/11 … Gio 10/12');
-    ok('breakfast sheet: 13 giorni', r.length, 13);
+    ok('breakfast sheet: dal 28/11 al 05/12', r[0].d + ' … ' + r[r.length - 1].d, 'Sab 28/11 … Sab 05/12');
+    ok('breakfast sheet: 8 righe come il foglio', r.length, 8);
+    ok('breakfast sheet: presenza gruppi «-» come nel foglio', r[0].pg, '-');
     ok('breakfast sheet: colazione il mattino dopo, solo Soul e Boutique', r[1].b, 5);
     ok('breakfast sheet: Room Only', r[0].r + '/' + r[4].r, '1/0');
-    ok('breakfast sheet: ultimo giorno', r[12].b, 4);
+    ok('breakfast sheet: ultimo giorno', r[7].b, 4);
     ok('breakfast sheet: oltre il file non si manda', _bkfSheetDaPren(P, '2026-11-26', '2026-12-02').length, 5);
     ok('breakfast sheet: parte da solo col caricamento delle Prenotazioni', /bkfSheetDaPrenotazioni\(pren,iso,per\.al,true\)/.test(String(prenHandlePdf)), true);
   }

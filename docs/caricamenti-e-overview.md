@@ -148,8 +148,10 @@ Sbagliare una delle due fa divergere i numeri dal PMS senza che si veda.
 
 Il QM caricava ogni giorno a mano il Report pasti nel Breakfast Sheet (lettura AI, max 8 righe) e
 spesso se ne dimenticava. Ora `prenHandlePdf` (passo 3) chiama `bkfSheetDaPrenotazioni(pren, iso,
-per.al, true)`: `_bkfSheetDaPren` fa una riga per giorno **dal giorno del caricamento + 2 a + 14**
-(`BKF_SHEET_DA`/`BKF_SHEET_A`; caricando il 26/11 → dal 28/11 al 10/12, come il PDF del QM),
+per.al, true)`: `_bkfSheetDaPren` fa **8 righe**, una per giorno **dal giorno del caricamento + 2
+a + 9** (`BKF_SHEET_DA`/`BKF_SHEET_A`; caricando il 26/11 → dal 28/11 al 05/12): è il riquadro
+A45:D52 del foglio Google («data · ro · bb · PRESENZA GRUPPI», gruppi = «-»), che **non cambia
+forma** (QM, 26/11, col foglio compilato a mano come modello),
 **solo SoulArt e Boutique** (`BKF_SHEET_STRUTT`): `b` = pax in BB, `r` = pax in RO, mattino dopo
 la notte (`arrivo < giorno <= partenza`). I giorni oltre l'ultimo arrivo del file non si mandano
 (l'export non li copre): la nota sopra la tabella lo dice. Poi `bkfSheetSync()` manda al foglio
