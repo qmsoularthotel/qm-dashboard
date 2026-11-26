@@ -87,7 +87,7 @@ function backupOra() {
   cartella.createFile(nome, contenuto, 'application/json');
 
   potaVecchie(cartella, Number(prop.getProperty('QM_COPIE') || 30));
-  segnaSuCompass(pass, trovate, nome);
+  segnaSuCompass(pass, trovate, nome, misureCopia(dati, leggiTracciaPrecedente(pass)));
 
   var esito = trovate + ' chiavi salvate in ' + nome;
   Logger.log(esito);
@@ -160,7 +160,48 @@ function leggiTutto(chiavi, pass) {
 //
 // E' l'UNICA scrittura di tutto lo script: una al giorno su un tetto di 1.000. Se fallisce
 // non si tocca il backup, che a quel punto e' gia' salvato: si scrive solo nel registro.
-function segnaSuCompass(pass, chiavi, nomeFile) {
+// ── Quanto contiene la copia (26/11/2026, QM: «tenere sotto controllo Compass») ─────────────
+// Per ogni chiave: n = quanti elementi (righe di un elenco, voci di un archivio), np = quanti la
+// notte prima, h = impronta del contenuto, da = l'ultimo giorno in cui il contenuto e' cambiato.
+// Compass le confronta: un elenco che si accorcia di colpo (n molto sotto np) o una chiave sparita
+// sono il segnale di dati persi; «da» dice da quanti giorni un dato non si muove. Si legge una
+// chiave in piu' (la traccia di ieri), nessuna scrittura in piu'.
+function leggiTracciaPrecedente(pass) {
+  try {
+    var r = UrlFetchApp.fetch(PROXY + '/kv/get?key=qm_backup_ultimo', { headers: { 'X-QM-Pass': pass }, muteHttpExceptions: true });
+    if (r.getResponseCode() !== 200) return null;
+    var v = JSON.parse(r.getContentText() || '{}').value;
+    return v ? JSON.parse(v) : null;
+  } catch (e) { return null; }
+}
+function contaElementi(testo) {
+  var v;
+  try { v = JSON.parse(testo); } catch (e) { return 1; }
+  if (Array.isArray(v)) return v.length;
+  if (v && typeof v === 'object') {
+    var n = 0, liste = 0;
+    Object.keys(v).forEach(function (k) { if (Array.isArray(v[k])) { n += v[k].length; liste++; } });
+    return liste ? n : Object.keys(v).length;
+  }
+  return 1;
+}
+function impronta(testo) {
+  var b = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, String(testo));
+  return Utilities.base64Encode(b).slice(0, 10);
+}
+function misureCopia(dati, prima) {
+  var oggi = Utilities.formatDate(new Date(), 'Europe/Rome', 'yyyy-MM-dd');
+  var vecchie = (prima && prima.misure) || {};
+  var misure = {};
+  Object.keys(dati).forEach(function (k) {
+    var n = contaElementi(dati[k]), h = impronta(dati[k]), p = vecchie[k];
+    misure[k] = { n: n, np: p ? p.n : null, h: h, da: p && p.h === h && p.da ? p.da : oggi };
+  });
+  var sparite = Object.keys(vecchie).filter(function (k) { return !(k in dati); });
+  return { misure: misure, sparite: sparite, chiaviPrima: prima ? prima.chiavi || null : null, dataPrima: prima ? prima.ts || null : null };
+}
+
+function segnaSuCompass(pass, chiavi, nomeFile, extra) {
   try {
     UrlFetchApp.fetch(PROXY + '/kv/set', {
       method: 'post',
@@ -168,7 +209,7 @@ function segnaSuCompass(pass, chiavi, nomeFile) {
       headers: { 'X-QM-Pass': pass },
       payload: JSON.stringify({
         key: 'qm_backup_ultimo',
-        value: JSON.stringify({ ts: Date.now(), chiavi: chiavi, file: nomeFile, dove: 'drive' })
+        value: JSON.stringify(Object.assign({ ts: Date.now(), chiavi: chiavi, file: nomeFile, dove: 'drive' }, extra || {}))
       }),
       muteHttpExceptions: true
     });

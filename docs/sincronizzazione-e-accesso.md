@@ -890,3 +890,23 @@ Stesso impianto di Applicazioni: `.inv5-cornice` con riga oro e **titolo = verde
   ordine» / «Una cosa da guardare» / «N cose da guardare»); i quattro riquadri bianchi con la
   linea in alto del colore; il dettaglio in `.inv5-tutti` con «Da guardare» al posto del vecchio
   riquadro rosso pieno.
+
+### Controlli in più (26/11/2026, QM: proposte 1, 2, 4 e 8)
+
+Funzioni pure in `app.js` (controlli in `test/controlli.js`), disegnate da `sisRenderControlli`
+(Stato del sistema, `#sisControlli`) e `sicRenderDispositivi` (Sicurezza, `#sicDispositivi`):
+- **Caricamenti di oggi** (`_sisCaricamenti`): Turno (va bene entro la settimana), Prenotazioni,
+  Piano settimanale, Breakfast Sheet SoulArt e Galleria — verde oggi, arancio prima, rosso mai.
+- **Copia di stanotte su Drive** (`_sisCopia`): legge le misure che `strumenti/backup-drive.gs`
+  scrive ora in `qm_backup_ultimo` (`misure[chiave]={n,np,h,da}`, `sparite`, `chiaviPrima`).
+  Rosso un elenco che cala di almeno 5 elementi e di oltre il 20% in una notte, o una chiave
+  sparita: è il segnale di dati persi (il caso di Operativa HKP di ottobre). Le cose rosse si
+  sommano al titolo (`_sisConta`, `_sisTitolo`). **Lo script su Google va aggiornato a mano**:
+  finché non lo è, la riga dice «dalla prossima copia notturna».
+- **Ultima modifica dei dati** (`_sisModifiche`, elenco `SIS_DATI` con le soglie in giorni):
+  l'ultimo salvataggio dal registro delle postazioni (`qm_ultimo_agg`, con ora e postazione) o,
+  se più recente, il giorno di cambio dalla copia (`da`). Arancio oltre la soglia.
+- **Postazioni che usano Compass** (`_sicDispositivi`): dal registro, con l'ultimo salvataggio;
+  «nuova» quella che questo computer non aveva mai visto (`qm_sic_noti` in localStorage); la
+  scadenza del permesso di questo computer (arancio entro 30 giorni). I PC della Galleria non ci
+  sono: non firmano il registro.

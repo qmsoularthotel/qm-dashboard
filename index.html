@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<link rel="stylesheet" href="style.css?v=326">
+<link rel="stylesheet" href="style.css?v=327">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='656-20261126';
+  const V='657-20261126';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1576,6 +1576,8 @@
                Worker risponde, se e' la versione pubblicata, se la porta e' chiusa. Vedi
                qmRenderStatoSistema() in app.js. -->
           <div class="inv5-tutti"><div class="inv5-ll">Dettaglio</div><div id="qmStatoSistema" class="sis-det"></div></div>
+          <!-- Caricamenti di oggi, copia di stanotte, ultima modifica dei dati (26/11/2026): sisRenderControlli. -->
+          <div id="sisControlli"></div>
         </div>
       </div>
       <div class="view" id="view-spese">
@@ -1673,7 +1675,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1175-20261126"></script>
+<script src="app.js?v=1176-20261126"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

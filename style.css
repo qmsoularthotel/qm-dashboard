@@ -1376,3 +1376,11 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .sis-det .sic-verde{margin:6px 0 0;}
 .sis-det .sic-dg{margin:6px 0 0;}
 @media (max-width:900px){.sic-griglia{grid-template-columns:1fr;}}
+/* Stato del sistema e Sicurezza: controlli in più (26/11/2026) — righe con pallino nelle .inv5-tab. */
+.sis-tab td{padding:8px 16px;}
+.sis-tab b{font-weight:600;}
+.sis-p{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:9px;vertical-align:1px;}
+.sis-m{font-size:12px;color:var(--text-dim);}
+.sis-sub{font-size:12.5px;color:var(--text-muted);padding-left:33px!important;}
+.sis-amber{color:var(--amber)!important;font-weight:600;}
+.sis-red{color:var(--red)!important;font-weight:600;}

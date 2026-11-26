@@ -2367,7 +2367,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   // Dispositivi abilitati e copia di sicurezza vivono nella vista Sicurezza (06/09/2026):
   // si guardano di rado e per motivi diversi dall'accendere e spegnere le app.
   if(id==='sicurezza'){try{qmRenderDispositivi();}catch(e){}}
-  if(id==='sistema'){try{miniappRenderSalute();}catch(e){}try{qmRenderStatoSistema();}catch(e){}}
+  if(id==='sistema'){try{miniappRenderSalute();}catch(e){}try{qmRenderStatoSistema();}catch(e){}try{sisRenderControlli();}catch(e){}}
   if(id==='dvr'){setTimeout(dvrRender,50);dvrMarkSeen();dvrBadgeUpdate();}
 }
 // §§ DVR — SCADENZE SICUREZZA & COMPLIANCE
@@ -5571,8 +5571,7 @@ async function qmRenderStatoSistema(){
   const verde=!problemi.length;
   // Il verdetto è il titolo grande della vista (composizione della Registration Cards, 26/11/2026);
   // qui sotto restano solo le cose da guardare, se ci sono.
-  const tit=document.getElementById('sisTitolo');
-  if(tit)tit.textContent=verde?'Tutto in ordine':(problemi.length===1?'Una cosa da guardare':problemi.length+' cose da guardare');
+  _sisConta.base=problemi.length;_sisTitolo();
   let html=verde?'<div class="sic-verde"><span style="background:var(--green);"></span>Worker, accesso e salvataggi: nessun problema.</div>'
     :`<div class="sic-dg"><div class="inv5-gl">Da guardare</div>${problemi.map(p=>`<div class="sic-dg-r"><span style="background:var(--red);"></span>${p}</div>`).join('')}</div>`;
   if(er.length)html+=`<div style="margin-top:8px;"><button onclick="qmCopiaErrori(this)" style="border:1px solid var(--border);background:var(--surface);color:var(--accent);border-radius:7px;padding:5px 12px;font-size:var(--fs-xxs);font-weight:700;cursor:pointer;font-family:inherit;">copia gli errori</button></div>`;
@@ -5629,6 +5628,108 @@ async function qmRenderStatoSistema(){
   det('Questo computer',(qmNomeDispositivo()||'senza nome')+' <a href="#" onclick="qmRinominaDispositivo();return false;" style="color:var(--accent);font-weight:700;">rinomina</a>');
   html+=`<div style="margin-top:12px;padding-top:6px;border-top:1px solid var(--border-light,var(--border));font-size:12px;">${dettagli.join('')}</div>`;
   el.innerHTML=html;
+}
+// ── Controlli in più nello Stato del sistema e in Sicurezza (26/11/2026, QM: proposte 1, 2, 4, 8) ──
+// Tutte pure (i controlli le provano con dati inventati): leggono la traccia della copia notturna
+// (qm_backup_ultimo, con le misure scritte da strumenti/backup-drive.gs), il registro delle
+// postazioni (qm_ultimo_agg) e i dati già in memoria. Nessuna scrittura in più.
+const SIS_GG=86400000;
+// Il titolo conta i problemi del Dettaglio E quelli della copia notturna (elenchi accorciati, dati
+// spariti): due funzioni che finiscono in tempi diversi, un titolo solo.
+const _sisConta={base:null,copia:0};
+function _sisTitolo(){
+  const t=document.getElementById('sisTitolo');if(!t||_sisConta.base==null)return;
+  const n=_sisConta.base+_sisConta.copia;
+  t.textContent=!n?'Tutto in ordine':(n===1?'Una cosa da guardare':n+' cose da guardare');
+}
+function _sisGiorniDa(iso,ora){if(!iso)return null;const d=new Date(iso+'T12:00:00');const o=new Date(ora||Date.now());o.setHours(12,0,0,0);return Math.round((o-d)/SIS_GG);}
+// 1. La copia di stanotte: elenchi che si sono accorciati di colpo e chiavi sparite.
+function _sisCopia(b){
+  if(!b||!b.ts)return{col:'red',titolo:'Nessuna copia notturna registrata',righe:[]};
+  const quando=_qmQuandoAgg(b.ts);
+  if(!b.misure)return{col:'amber',titolo:'Copia di '+quando+': '+(b.chiavi||'?')+' dati',righe:[{col:'amber',t:'Il controllo del contenuto parte dalla prossima copia notturna (script su Google da aggiornare)'}]};
+  const righe=[];
+  Object.keys(b.misure).forEach(k=>{const m=b.misure[k];
+    if(m&&m.np!=null&&m.n<m.np&&m.np-m.n>=5&&m.n<m.np*0.8)righe.push({col:'red',t:_kvNomeDato(k)+' ('+k+'): '+m.np+' → '+m.n+' elementi'});});
+  (b.sparite||[]).forEach(k=>righe.push({col:'red',t:_kvNomeDato(k)+' ('+k+'): sparito dalla copia'}));
+  const conf=b.chiaviPrima!=null?' (la notte prima '+b.chiaviPrima+')':'';
+  return{col:righe.length?'red':'green',titolo:'Copia di '+quando+': '+b.chiavi+' dati'+conf,righe:righe.length?righe:[{col:'green',t:'Nessun elenco accorciato, nessun dato sparito rispetto alla notte prima'}]};
+}
+// 2. Da quando non si muove ogni dato importante. «giorni»: oltre, arancio.
+const SIS_DATI=[
+  {nome:'Turno',re:/^qm_weekData$/,giorni:8},
+  {nome:'Prenotazioni e arrivi',re:/^qm_arriviData$/,giorni:1},
+  {nome:'Piano settimanale',re:/^qm_piano$/,giorni:2},
+  {nome:'Operativa HKP',re:/^qm_hkpN_/,giorni:2},
+  {nome:'Consumo biancheria',re:/^qm_biancheria$/,giorni:2},
+  {nome:'Biancheria Galleria (Compass OPS)',re:/^bg_biancheria$/,giorni:2},
+  {nome:'Distribuzione Culligan',re:/^qm_cm_/,giorni:2},
+  {nome:'Inventario detersivi',re:/^qm_inv_moves_/,giorni:7},
+  {nome:'Ordini',re:/^qm_inv_orders$/,giorni:16},
+  {nome:'Recensioni Booking',re:/^qm_rev_(?!exp_)/,giorni:7},
+  {nome:'Spese fornitori',re:/^qm_ddt$/,giorni:14},
+  {nome:'Fascicolo dipendenti (DVR)',re:/^qm_dvr$/,giorni:null}];
+function _sisModifiche(b,registro,ora){
+  ora=ora||Date.now();const mis=(b&&b.misure)||null;
+  return SIS_DATI.map(x=>{
+    // dal registro delle postazioni: l'ultimo salvataggio vero, con ora e postazione
+    let reg=null;Object.keys(registro||{}).forEach(n=>{const v=registro[n];if(v&&v.dato&&x.re.test(v.dato)&&(!reg||v.ts>reg.ts))reg={ts:v.ts,chi:n};});
+    let da=null;if(mis)Object.keys(mis).forEach(k=>{if(x.re.test(k)&&mis[k].da&&(!da||mis[k].da>da))da=mis[k].da;});
+    const gReg=reg?Math.floor((ora-reg.ts)/SIS_GG):null,gCopia=_sisGiorniDa(da,ora);
+    let quando,chi='',g;
+    if(reg&&(gCopia==null||gReg<=gCopia)){quando=_qmQuandoAgg(reg.ts);chi=reg.chi;g=gReg;}
+    else if(da){g=gCopia;quando=g<=0?'oggi':g===1?'ieri':g+' giorni fa';}
+    else{quando=mis?'nessun dato':'dalla prossima copia notturna';g=null;}
+    const col=x.giorni!=null&&g!=null&&g>x.giorni?'amber':(g==null&&mis?'amber':'green');
+    return{nome:x.nome,quando,chi,col};
+  });
+}
+// 8. I caricamenti di oggi.
+function _sisCaricamenti(c,ora){
+  ora=ora||Date.now();const oggi=t=>!!t&&new Date(t).toDateString()===new Date(ora).toDateString();
+  const r=(nome,ts,dove)=>({nome,col:oggi(ts)?'green':(ts?'amber':'red'),quando:ts?_qmQuandoAgg(ts):'mai',dove});
+  const bs=c.bsheet||{};
+  return[r('Turno',c.turno,'turno della settimana'),r('Prenotazioni',c.pren,'arrivi, colazioni, registration card'),
+    r('Piano settimanale',c.piano,'Culligan, Housekeeper'),r('Breakfast Sheet SoulArt',bs.sa,'foglio Google'),r('Breakfast Sheet Galleria',bs.ar,'foglio Google')]
+    .map(x=>x.nome==='Turno'&&x.col==='amber'&&c.turno&&ora-c.turno<8*SIS_GG?{...x,col:'green'}:x);   // il turno si carica una volta a settimana
+}
+// 4. Le postazioni che usano Compass e la scadenza di questo computer.
+function _sicDispositivi(registro,io,scadePass,ora,noti){
+  ora=ora||Date.now();
+  const righe=Object.keys(registro||{}).map(n=>({nome:n,ts:registro[n].ts,questo:n===io,nuovo:!!noti&&!noti.includes(n)&&n!==io})).sort((a,b)=>b.ts-a.ts);
+  let scad=null;if(scadePass){const gg=Math.floor((scadePass-ora)/SIS_GG);scad={data:new Date(scadePass).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}),gg,col:gg<0?'red':gg<30?'amber':'green'};}
+  return{righe,scad};
+}
+const _SIS_P=c=>'<span class="sis-p" style="background:'+_QM_SIC_COL[c]+'"></span>';
+async function sisRenderControlli(){
+  const el=document.getElementById('sisControlli');if(!el)return;
+  let b=null,reg={};
+  try{const r=await fetch(PROXY+'/kv/get?key=qm_backup_ultimo',{cache:'no-store'});if(r.ok){const j=await r.json();b=j&&j.value?JSON.parse(j.value):null;}}catch(e){}
+  try{reg=_qmLeggiRegistroAgg(await kvGet(QM_AGG_KEY));}catch(e){}
+  let car=[];
+  try{car=_sisCaricamenti({turno:(()=>{try{return JSON.parse(localStorage.getItem('qm_weekData')||'null')._ts;}catch(e){return 0;}})()||parseInt(localStorage.getItem('qm_ts_turnoTs')||'0'),
+    pren:arriviData&&arriviData._pren&&arriviData._pren.ts,piano:pianoData&&pianoData._ts,bsheet:_bsheetStato()});}catch(e){}
+  const cp=_sisCopia(b),mod=_sisModifiche(b,reg);
+  _sisConta.copia=cp.righe.filter(x=>x.col==='red').length+(cp.col==='red'&&!cp.righe.length?1:0);_sisTitolo();
+  const tab=(tit,righe)=>`<div class="inv5-tutti"><div class="inv5-ll">${tit}</div><div class="inv5-tw"><table class="inv5-tab sis-tab"><tbody>${righe}</tbody></table></div></div>`;
+  el.innerHTML=
+    tab('Caricamenti di oggi',car.map(x=>`<tr><td>${_SIS_P(x.col)}<b>${x.nome}</b></td><td class="sis-m">${x.dove}</td><td class="r ${x.col==='green'?'':'sis-'+x.col}">${x.quando}</td></tr>`).join(''))
+   +tab('Copia di stanotte su Drive',`<tr><td colspan="3">${_SIS_P(cp.col)}<b>${_esc(cp.titolo)}</b></td></tr>`+cp.righe.map(x=>`<tr><td colspan="3" class="sis-sub ${x.col==='green'?'':'sis-'+x.col}">${_esc(x.t)}</td></tr>`).join(''))
+   +tab('Ultima modifica dei dati',mod.map(x=>`<tr><td>${_SIS_P(x.col)}<b>${x.nome}</b></td><td class="sis-m">${_esc(x.chi||'')}</td><td class="r ${x.col==='green'?'':'sis-'+x.col}">${x.quando}</td></tr>`).join(''));
+}
+async function sicRenderDispositivi(){
+  const el=document.getElementById('sicDispositivi');if(!el)return;
+  let reg={};try{reg=_qmLeggiRegistroAgg(await kvGet(QM_AGG_KEY));}catch(e){}
+  const io=_qmNomePostazione();
+  let noti=null;try{noti=JSON.parse(localStorage.getItem('qm_sic_noti')||'null');}catch(e){}
+  const d=_sicDispositivi(reg,io,_qmScadePass(_qmPass),Date.now(),noti);
+  // Da questo computer si ricorda quali postazioni ha già visto: una nuova si evidenzia una volta.
+  try{localStorage.setItem('qm_sic_noti',JSON.stringify(d.righe.map(x=>x.nome)));}catch(e){}
+  el.innerHTML=`<div class="inv5-tutti"><div class="inv5-ll">Postazioni che usano Compass</div><div class="inv5-tw"><table class="inv5-tab sis-tab"><tbody>
+    ${d.righe.map(x=>`<tr><td>${_SIS_P(x.nuovo?'amber':'green')}<b>${_esc(x.nome)}</b>${x.questo?' <span class="sis-m">· questo computer</span>':''}${x.nuovo?' <span class="sis-amber">· nuova</span>':''}</td><td class="r sis-m">ultimo salvataggio ${_qmQuandoAgg(x.ts)}</td></tr>`).join('')||'<tr><td class="sis-m">Nessuna postazione ha ancora salvato niente</td></tr>'}
+    ${d.scad?`<tr><td>${_SIS_P(d.scad.col)}<b>Permesso di questo computer</b></td><td class="r ${d.scad.col==='green'?'sis-m':'sis-'+d.scad.col}">scade il ${d.scad.data}${d.scad.gg>=0?' (fra '+d.scad.gg+' giorni)':''}</td></tr>`:''}
+    <tr><td colspan="2" class="sis-sub">I PC della Galleria (Compass OPS) non compaiono: non salvano col nome della postazione. Il loro codice vale un anno e si rinnova da solo.</td></tr>
+  </tbody></table></div></div>`;
 }
 const QM_APERTA_MS=35*60000;
 function _qmAperteOra(altre,ora){return(altre||[]).filter(x=>x&&x.tocco===false&&x.ts&&ora-x.ts<QM_APERTA_MS);}
@@ -19188,8 +19289,9 @@ function qmRenderDispositivi(){
       <div class="sic-azioni"><input id="qmPinMio" type="text" inputmode="numeric" autocomplete="off" data-lpignore="true" maxlength="8" placeholder="il tuo PIN (4–8 cifre)" style="padding:8px 11px;border:1px solid var(--border);border-radius:7px;font-size:var(--fs-xs);width:190px;max-width:100%;background:var(--surface);color:var(--text);font-family:inherit;-webkit-text-security:disc;">${btn('qmPinSalvaMio()','Salva il mio PIN')}</div>
       <div class="sic-azioni">${btn('qmPinAzzeraResident()','Azzera PIN del Front Office Manager','color:var(--red);')}<span class="sic-nota" style="margin:0;">se l'ha dimenticato: al prossimo accesso ne sceglie uno nuovo</span></div>
       <div id="qmPinEsito" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-top:8px;min-height:14px;"></div>`)}
-  </div></div></div>`;
+  </div></div><div id="sicDispositivi"></div></div>`;
   try{qmRenderBackup();}catch(e){}
+  try{sicRenderDispositivi();}catch(e){}
   setTimeout(qmPinAggiorna,0);
   try{qmAggiornaPallinoSicurezza();}catch(e){}
 }

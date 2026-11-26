@@ -567,6 +567,30 @@ sez('Sicurezza: il pallino del menu');
   ok('la vista Sicurezza aggiorna il pallino', /qmAggiornaPallinoSicurezza\(\)/.test(String(qmRenderDispositivi)), true);
   ok('Sicurezza: il verdetto diventa il titolo grande', [_qmSicTitolo(c({})), /qmSicTitolo/.test(String(qmAggiornaPallinoSicurezza))].join(), 'Tutto in ordine,true');
   ok('Stato del sistema: il verdetto diventa il titolo grande', /sisTitolo/.test(String(qmRenderStatoSistema)), true);
+  {
+    // Controlli in più (26/11/2026): copia notturna, ultima modifica dei dati, caricamenti, postazioni.
+    const N = new Date(2026, 10, 26, 12).getTime(), D = 86400000;
+    const b = { ts: N - 9 * 3600e3, chiavi: 10, chiaviPrima: 11, sparite: ['qm_vecchia'], misure: {
+      qm_inv_moves_sa: { n: 120, np: 412, da: '2026-11-25' }, qm_inv_orders: { n: 14, np: 15, da: '2026-11-17' },
+      qm_biancheria: { n: 2, np: 6, da: '2026-11-25' }, qm_ddt: { n: 9, np: 9, da: '2026-11-01' } } };
+    const c = _sisCopia(b);
+    ok('copia: un elenco accorciato di colpo si segnala', c.righe.some(x => /qm_inv_moves_sa.*412 → 120/.test(x.t)), true);
+    ok('copia: un calo piccolo no (15 → 14)', c.righe.some(x => /qm_inv_orders/.test(x.t)), false);
+    ok('copia: pochi elementi in meno non bastano (6 → 2, meno di 5)', c.righe.some(x => /qm_biancheria/.test(x.t)), false);
+    ok('copia: un dato sparito si segnala', c.righe.some(x => /qm_vecchia.*sparito/.test(x.t)), true);
+    ok('copia senza misure: si aspetta lo script aggiornato', _sisCopia({ ts: N, chiavi: 5 }).col, 'amber');
+    const m = _sisModifiche(b, { 'iMac hotel': { ts: N - 3600e3, dato: 'qm_inv_orders' } }, N);
+    const riga = n => m.find(x => x.nome === n);
+    ok('modifiche: dal registro, con postazione', riga('Ordini').chi, 'iMac hotel');
+    ok('modifiche: dalla copia, in giorni', riga('Inventario detersivi').quando, 'ieri');
+    ok('modifiche: fermo oltre la soglia = arancio', riga('Spese fornitori').col, 'amber');
+    const car = _sisCaricamenti({ turno: N - 2 * D, pren: N - 3600e3, piano: 0, bsheet: { sa: N - 60e3 } }, N);
+    ok('caricamenti: turno della settimana va bene anche se non di oggi', car[0].col, 'green');
+    ok('caricamenti: piano mai caricato = rosso', car[2].col, 'red');
+    const d = _sicDispositivi({ 'MacBook casa': { ts: N }, 'iPhone QM': { ts: N - D } }, 'MacBook casa', N + 10 * D, N, ['MacBook casa']);
+    ok('postazioni: quella mai vista è «nuova»', d.righe.find(x => x.nome === 'iPhone QM').nuovo, true);
+    ok('postazioni: permesso in scadenza entro 30 giorni = arancio', d.scad.col, 'amber');
+  }
 })();
 
 sez('Preferenze Turnazione: la settimana prossima intera anche a cavallo del mese');
