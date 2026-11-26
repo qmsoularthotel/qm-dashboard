@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<link rel="stylesheet" href="style.css?v=314">
+<link rel="stylesheet" href="style.css?v=315">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='647-20261125';
+  const V='648-20261126';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1205,7 +1205,7 @@
             <div class="panel-header">
               <span class="ov-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H8a4 4 0 0 1-4-4z"/><path d="M17 9h2a2 2 0 0 1 0 4h-2"/><path d="M6 5c0-.8.5-1 1-2M10 5c0-.8.5-1 1-2"/></svg></span><span class="panel-title">Aggiornamento giornaliero</span>
             </div>
-            <div class="panel-body" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:10px;">Carica BKF OGGI per sincronizzare il foglio Google</div>
+            <div class="panel-body" style="font-size:var(--fs-xxs);color:var(--text-dim);margin-bottom:10px;">Si compila da solo a ogni caricamento delle Prenotazioni (da dopodomani per 13 giorni, Soul e Boutique) e va al foglio Google. Il PDF resta come riserva.</div>
             <div class="panel-body">
               <div class="bkf-upload-zone" id="bkfSheetUploadZone">
                 <input type="file" id="bkfSheetFileInput" accept=".pdf" style="display:none">
@@ -1213,12 +1213,14 @@
                 <div class="bkf-upload-title">BKF Soul</div>
                 <div class="bkf-upload-sub">Trascina il PDF o clicca per selezionarlo</div>
               </div>
+              <button class="btn-ghost bkf-dapren" id="bkfSheetDaPrenBtn" onclick="bkfSheetDaPrenotazioni()">Prendi dalle Prenotazioni</button>
               <div class="rc-processing" id="bkfSheetProcessing" style="display:none">
                 <div class="rc-spinner"></div>
                 <span style="font-size:13px;color:var(--text-muted)" id="bkfSheetProcText">Analisi PDF in corso...</span>
               </div>
               <div class="rc-error" id="bkfSheetError" style="display:none"></div>
               <div id="bkfSheetResults" style="display:none;">
+                <div class="bkf-dapren-nota" id="bkfSheetDaPrenNota"></div>
                 <div class="bkf-table-wrap">
                   <table class="bkf-table">
                     <thead><tr><th>data</th><th>ro</th><th>bb</th><th>PRESENZA GRUPPI</th></tr></thead>
@@ -1719,7 +1721,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1166-20261125"></script>
+<script src="app.js?v=1167-20261126"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

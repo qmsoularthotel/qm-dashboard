@@ -1234,3 +1234,7 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
   .inv8-griglia{grid-template-columns:minmax(0,1fr);}
   .inv8-tab th:nth-child(3),.inv8-tab td:nth-child(3){display:none;}
 }
+/* Breakfast Sheet: «Prendi dalle Prenotazioni» sotto la zona del PDF (26/11/2026). */
+.bkf-dapren{display:block;width:100%;margin-top:10px;padding:8px 14px;font-size:var(--fs-xs);}
+.bkf-dapren-nota{font-size:var(--fs-xxs);color:var(--text-muted);margin-bottom:8px;}
+.bkf-dapren-nota:empty{display:none;}

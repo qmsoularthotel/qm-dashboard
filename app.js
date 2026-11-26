@@ -6970,6 +6970,7 @@ REGOLE OBBLIGATORIE:
     const match=jsonText.match(/\[[\s\S]*\]/);
     if(match)jsonText=match[0];
     bkfSheetData=_qmPulisciTesti(JSON.parse(jsonText));
+    {const _n=document.getElementById('bkfSheetDaPrenNota');if(_n)_n.textContent='';}
     if(!Array.isArray(bkfSheetData)||!bkfSheetData.length)throw new Error('Nessun dato estratto dal PDF.');
     // Rimuovi anno se l'AI lo ha aggiunto (es. "dom 14/03/2004" → "dom 14/03")
     bkfSheetData=bkfSheetData.map(r=>({...r,d:r.d?r.d.replace(/(\d{2}\/\d{2})\/\d{4}/,'$1'):r.d}));
@@ -7013,6 +7014,7 @@ async function bkfSheetSync(){
 }
 function bkfSheetSetStatus(s){
   document.getElementById('bkfSheetUploadZone').style.display=s==='idle'?'block':'none';
+  const _dp=document.getElementById('bkfSheetDaPrenBtn');if(_dp)_dp.style.display=s==='idle'?'block':'none';
   document.getElementById('bkfSheetProcessing').style.display=s==='analyzing'?'flex':'none';
   document.getElementById('bkfSheetError').style.display='none';
   document.getElementById('bkfSheetResults').style.display=s==='ready'?'block':'none';
@@ -7027,10 +7029,46 @@ function bkfSheetReset(){
 }
 function bkfSheetShowError(msg){
   document.getElementById('bkfSheetUploadZone').style.display='block';
+  {const _dp=document.getElementById('bkfSheetDaPrenBtn');if(_dp)_dp.style.display='block';}
   document.getElementById('bkfSheetProcessing').style.display='none';
   document.getElementById('bkfSheetResults').style.display='none';
   document.getElementById('bkfSheetSuccess').style.display='none';
   const e=document.getElementById('bkfSheetError');e.textContent=msg;e.style.display='block';
+}
+// ── Breakfast Sheet SoulArt dalle Prenotazioni (26/11/2026, QM: «ogni giorno carico il PDF dei
+// pasti, mi costa fatica e spesso me ne dimentico»). Le righe del foglio Google si ricavano dal
+// file Prenotazioni dell'Upload Center: dal giorno del caricamento + 2 (BKF_SHEET_DA) a + 14
+// (BKF_SHEET_A), come il Report pasti che il QM esportava (26/11 → dal 28/11 al 10/12), SOLO
+// SoulArt e Boutique: colazioni = pax in BB, RO = pax in RO, mattino dopo la notte
+// (arrivo < giorno <= partenza, la regola di _prenBkfData). Un giorno oltre l'ultimo arrivo del
+// file non si manda: l'export non lo copre e i numeri sarebbero bassi. La Galleria resta col PDF:
+// non è nel file Prenotazioni.
+const BKF_SHEET_DA=2, BKF_SHEET_A=14, BKF_SHEET_STRUTT=['SA','BH'];
+function _bkfSheetDaPren(pren,oggiIso,al){
+  const out=[];
+  for(let i=BKF_SHEET_DA;i<=BKF_SHEET_A;i++){
+    const d=new Date(oggiIso+'T12:00:00');d.setDate(d.getDate()+i);
+    const iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(al&&iso>al)break;
+    const dentro=(pren||[]).filter(p=>p&&p.arrivo<iso&&iso<=p.partenza&&BKF_SHEET_STRUTT.includes(p.struttura));
+    const somma=t=>dentro.filter(p=>p.tratt===t).reduce((x,p)=>x+(+p.pax||0),0);
+    out.push({d:PREN_GG[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'),r:somma('RO'),b:somma('BB'),pg:''});
+  }
+  return out;
+}
+// Riempie la tabella e manda al foglio Google. auto=true dal caricamento delle Prenotazioni.
+async function bkfSheetDaPrenotazioni(pren,oggiIso,al,auto){
+  if(!pren){const u=await _prenLeggiUltimo();pren=u&&u.righe;if(pren&&pren.length)al=_prenIntervallo(pren).al;oggiIso=_prenOggiIso();}
+  if(!pren||!pren.length){if(!auto)bkfSheetShowError('Nessun file Prenotazioni caricato: caricalo nell\'Upload Center.');return 0;}
+  const righe=_bkfSheetDaPren(pren,oggiIso,al);
+  if(!righe.length){if(!auto)bkfSheetShowError('Il file Prenotazioni non arriva a dopodomani: allunga l\'intervallo dell\'export.');return 0;}
+  bkfSheetData=righe;
+  try{bkfSheetRenderTable();bkfChartData=bkfSheetData;LS.set('bkfChartData',bkfChartData);bkfRenderChart();}catch(e){}
+  bkfSheetSetStatus('ready');
+  const n=document.getElementById('bkfSheetDaPrenNota');
+  if(n)n.textContent='Dalle Prenotazioni: '+righe[0].d+' – '+righe[righe.length-1].d+' · solo Soul e Boutique'+(righe.length<BKF_SHEET_A-BKF_SHEET_DA+1?' · il file arriva solo fin qui':'');
+  if(auto)await bkfSheetSync();
+  return righe.length;
 }
 const SHEETS_URL_AR='https://script.google.com/macros/s/AKfycbzmkYzbHDgxOYXe-rnkcjpOsPArlt4gimwXHNiQfCur5FeHM6qfu2BlN0NswI4aICM/exec';
 let bkfSheetARData=[];
@@ -18302,6 +18340,9 @@ async function prenHandlePdf(file){
       try{updateKpiFromBkf();}catch(e){}
       try{renderBkfData();}catch(e){}
     }
+    // 3. Breakfast Sheet SoulArt (26/11/2026): niente più PDF dei pasti da caricare a mano.
+    let _bkfSheetN=0;
+    try{_bkfSheetN=await bkfSheetDaPrenotazioni(pren,iso,per.al,true);}catch(e){console.error('[Prenotazioni] Breakfast Sheet:',e);}
 
     // L'esito delle registration card va detto: se restano quelle vecchie deve saperlo chi
     // carica, non scoprirlo stampando la card di un ospite partito ieri.
@@ -18309,7 +18350,8 @@ async function prenHandlePdf(file){
       :_rcEsito==='nessuna'?'nessuna registration card (solo Principe/Mastrangelo)'
       :'⚠️ registration card NON aggiornate: nessun arrivo valido per oggi';
     msg('Caricato: '+ad.arrivi.length+' arrivi oggi, '+(bd?bd.data.length:0)+' giorni di colazioni. '+rcNota+'.'
-      +(_rec.recuperate.length?' '+_rec.recuperate.length+' partenze di oggi già in check-out riprese dal caricamento precedente.':''));
+      +(_rec.recuperate.length?' '+_rec.recuperate.length+' partenze di oggi già in check-out riprese dal caricamento precedente.':'')
+      +(_bkfSheetN?' Breakfast Sheet Soul: '+_bkfSheetN+' giorni mandati al foglio Google.':''));
     uc('loaded',riass);
     setUploadTs('prenTs');
     // Senza questa riga, dopo un Cmd+R la tessera torna a "Non caricato" pur essendo stati
