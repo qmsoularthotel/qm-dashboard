@@ -144,6 +144,25 @@ Verificata riproducendo il report del PMS su 8 giorni su 8, per entrambe le righ
 
 Sbagliare una delle due fa divergere i numeri dal PMS senza che si veda.
 
+### Breakfast Sheet dall'Upload Center (26/11/2026)
+
+Il QM caricava ogni giorno il Report pasti dentro il Breakfast Sheet (lettura AI, poi
+«Sincronizza»), due volte (SoulArt e Galleria), e spesso se ne dimenticava. Ora c'è la tessera
+**Breakfast Sheet** nell'Upload Center (`uc-bsheet`): due riquadri, SoulArt e Galleria, perché le
+intestazioni dei due PDF del PMS sono **identiche** e solo il riquadro dice quale è quale.
+`bsheetHandle` legge il PDF **senza AI** (`_bsheetLinee` + `_bsheetRighe`, formato fisso
+«Sab 28/11/2026  2 (2 a + 0 b)  33 (33 a + 0 b) …»), prende **8 righe dal giorno del caricamento
++ 2** (il riquadro A45:D52 del foglio Google, che non cambia forma; «-» in PRESENZA GRUPPI) e
+chiama `bkfSheetSync`/`bkfSheetARSync`, che ora restituiscono l'esito e segnano l'invio in
+`qm_bsheet` ({sa, ar}: si fonde col cloud, tiene il più recente). La tessera è verde solo con
+**tutte e due** inviate **oggi**; a mezzanotte torna «Da caricare oggi» ed entra in «Mancano».
+Se il PDF parte dopo dopodomani o ha meno di 8 giorni lo dice in rosso.
+Provato sui due PDF reali del 26/11: 8 righe identiche al foglio compilato a mano dal QM.
+**Perché non dal file Prenotazioni o dal «Pasti del periodo»**: le Prenotazioni dei colleghi non
+arrivano a 9 giorni; il «Pasti del periodo» non ha i RO (R sempre 0, le camere RO sono caselle
+vuote come i blocchi). Solo il Report pasti ha BB e RO precisi. La lettura AI nel Breakfast Sheet
+resta come riserva.
+
 ### Ospiti BB Booking.com: solo colazione inclusa (22/11/2026)
 
 La lista «Ospiti BB Booking.com» (si chiamava «Colazione Booking.com») (Overview e `breakfast.html`) mostra **solo** le prenotazioni

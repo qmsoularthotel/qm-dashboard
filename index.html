@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<link rel="stylesheet" href="style.css?v=314">
+<link rel="stylesheet" href="style.css?v=315">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='647-20261125';
+  const V='648-20261126';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -239,8 +239,12 @@
               <div class="uc-sub" id="uc-piano-sub">Non caricato</div>
               <span class="uc-badge" id="uc-piano-badge" style="display:none;">▾</span>
             </div>
-            <div class="uc-slot uc-slot-brand">
-              <img src="img/compass-stella.png" class="uc-brand-img" alt="Compass">
+            <div class="uc-slot" id="uc-bsheet" onclick="ucToggle('bsheet')" title="Report pasti SoulArt e Galleria: vanno da soli ai fogli Google del Breakfast Sheet">
+              <span class="uc-dot" id="uc-bsheet-dot"></span>
+              <span class="uc-icon"><span class="uc-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H8a4 4 0 0 1-4-4z"/><path d="M17 9h2a2 2 0 0 1 0 4h-2"/><path d="M6 5c0-.8.5-1 1-2M10 5c0-.8.5-1 1-2"/></svg></span></span>
+              <div class="uc-label">Breakfast<br>Sheet</div>
+              <div class="uc-sub" id="uc-bsheet-sub">Da caricare oggi</div>
+              <span class="uc-badge" id="uc-bsheet-badge" style="display:none;">▾</span>
             </div>
           </div>
           <div class="uc-panel" id="uc-piano-panel">
@@ -254,6 +258,29 @@
             <div class="loaded-info" id="pianoLoadedInfo"><div class="li-date" id="pianoLoadedDate"></div></div>
             <button class="btn-reload" id="btnPianoReload" style="display:none" onclick="resetPianoData()">Rimuovi</button>
             <div class="upload-ts" id="pianoTs"></div>
+          </div>
+          <div class="uc-panel" id="uc-bsheet-panel">
+            <div class="uc-feeds-line">→ Fogli Google del Breakfast Sheet · 8 giorni da dopodomani</div>
+            <div class="bsheet-box">
+              <div class="upload-box" id="bsheetBoxSa">
+                <input type="file" id="bsheetInSa" accept="application/pdf,.pdf" style="display:none">
+                <div class="ub-title">SoulArt</div><div class="ub-sub">Report pasti · Soul e Boutique</div>
+                <div class="bsheet-quando" id="bsheetSaQuando"></div>
+              </div>
+              <div class="upload-box" id="bsheetBoxAr">
+                <input type="file" id="bsheetInAr" accept="application/pdf,.pdf" style="display:none">
+                <div class="ub-title">Galleria</div><div class="ub-sub">Report pasti · Art Resort</div>
+                <div class="bsheet-quando" id="bsheetArQuando"></div>
+              </div>
+            </div>
+            <div class="turni-status" id="bsheetStatus"></div>
+          </div>
+        </div>
+        <div class="uc-row">
+          <div class="uc-row-cards">
+            <div class="uc-slot uc-slot-brand uc-brand-solo">
+              <img src="img/compass-stella.png" class="uc-brand-img" alt="Compass">
+            </div>
           </div>
         </div>
         <div class="uc-row" id="uc-row-derived">
@@ -1719,7 +1746,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1166-20261125"></script>
+<script src="app.js?v=1167-20261126"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

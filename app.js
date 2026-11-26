@@ -64,7 +64,7 @@ function ucToggle(key){
   if(!panel)return;
   const isOpen=panel.classList.contains('open');
   // Chiudi tutti gli altri
-  ['turno','pren','arrivi','pul','bkf','soul','bout','piano'].forEach(k=>{
+  ['turno','pren','arrivi','pul','bkf','soul','bout','piano','bsheet'].forEach(k=>{
     if(k===key)return;
     const p=document.getElementById('uc-'+k+'-panel');
     const s=document.getElementById('uc-'+k);
@@ -91,7 +91,7 @@ function ucSetState(key,state,sub,silent){
     slot.classList.add('loaded');
     if(!silent){
       // Fisarmonica: chiudi tutti, apri questo
-      ['turno','pren','arrivi','pul','bkf','soul','bout','piano'].forEach(k=>{
+      ['turno','pren','arrivi','pul','bkf','soul','bout','piano','bsheet'].forEach(k=>{
         const p=document.getElementById('uc-'+k+'-panel');
         const s=document.getElementById('uc-'+k);
         if(p){p.classList.remove('open');}
@@ -129,7 +129,8 @@ const UC_SOURCES=[
   {key:'bkf',label:'Report pasti'},
   {key:'pul',label:'Report pulizie'},
   {key:'soul',label:'Soul HKP'},
-  {key:'bout',label:'Boutique HKP'}
+  {key:'bout',label:'Boutique HKP'},
+  {key:'bsheet',label:'Breakfast Sheet'}
 ].filter(s=>!(HKP_DERIVE_FROM_PIANO&&HKP_DERIVED_SLOTS.includes(s.key)));
 // Col file unico (PREN_UNICO) Arrivi e Report pasti sono caselle NASCOSTE: contarle faceva
 // dire "Mancano: Arrivi" a chi aveva appena caricato le Prenotazioni, e la casella che si
@@ -143,7 +144,7 @@ function _ucVisibile(k){
   return true;
 }
 function ucUpdateProgress(){
-  const slots=['turno','pren','arrivi','pul','bkf','soul','bout'].filter(_ucVisibile);
+  const slots=['turno','pren','arrivi','pul','bkf','soul','bout','bsheet'].filter(_ucVisibile);
   const tot=slots.length;
   const loaded=slots.filter(k=>{
     const el=document.getElementById('uc-'+k);
@@ -7006,9 +7007,12 @@ async function bkfSheetSync(){
       }
     }
     setTimeout(()=>bkfSheetSetStatus('success'),800);
+    try{_bsheetSegna('sa');}catch(e){}
+    return true;
   }catch(err){
     bkfSheetShowError('Errore di rete: '+err.message);
     btn.disabled=false;btn.textContent='↑ Sincronizza Google Sheets';
+    return false;
   }
 }
 function bkfSheetSetStatus(s){
@@ -7090,14 +7094,7 @@ REGOLE OBBLIGATORIE:
     if(!Array.isArray(bkfSheetARData)||!bkfSheetARData.length)throw new Error('Nessun dato estratto dal PDF.');
     // Rimuovi anno se l'AI lo ha aggiunto (es. "dom 14/03/2004" → "dom 14/03")
     bkfSheetARData=bkfSheetARData.map(r=>({...r,d:r.d?r.d.replace(/(\d{2}\/\d{2})\/\d{4}/,'$1'):r.d}));
-    // Render tabella
-    document.getElementById('bkfSheetARTableBody').innerHTML=bkfSheetARData.map(r=>`
-      <tr>
-        <td style="font-weight:500;">${r.d||'—'}</td>
-        <td><span class="bkf-ro">${r.r??'—'}</span></td>
-        <td><span class="bkf-badge">${r.b??'—'}</span></td>
-        <td style="font-size:var(--fs-xs);color:var(--text-muted);">${r.pg||''}</td>
-      </tr>`).join('');
+    bkfSheetARRenderTable();
     LS.set('bkfSheetARData',bkfSheetARData);
     bkfARChartData=bkfSheetARData;
     LS.set('bkfARChartData',bkfARChartData);
@@ -7106,6 +7103,15 @@ REGOLE OBBLIGATORIE:
   }catch(err){
     bkfSheetARShowError('Errore: '+err.message);
   }
+}
+function bkfSheetARRenderTable(){
+    document.getElementById('bkfSheetARTableBody').innerHTML=bkfSheetARData.map(r=>`
+      <tr>
+        <td style="font-weight:500;">${r.d||'—'}</td>
+        <td><span class="bkf-ro">${r.r??'—'}</span></td>
+        <td><span class="bkf-badge">${r.b??'—'}</span></td>
+        <td style="font-size:var(--fs-xs);color:var(--text-muted);">${r.pg||''}</td>
+      </tr>`).join('');
 }
 async function bkfSheetARSync(){
   const btn=document.getElementById('bkfSheetARSyncBtn');
@@ -7121,9 +7127,12 @@ async function bkfSheetARSync(){
       }
     }
     setTimeout(()=>bkfSheetARSetStatus('success'),800);
+    try{_bsheetSegna('ar');}catch(e){}
+    return true;
   }catch(err){
     bkfSheetARShowError('Errore di rete: '+err.message);
     btn.disabled=false;btn.textContent='↑ Sincronizza Google Sheets';
+    return false;
   }
 }
 function bkfSheetARSetStatus(s){
@@ -7149,6 +7158,95 @@ function bkfSheetARShowError(msg){
   document.getElementById('bkfSheetARSuccess').style.display='none';
   const e=document.getElementById('bkfSheetARError');e.textContent=msg;e.style.display='block';
 }
+// ── Breakfast Sheet dall'Upload Center (26/11/2026, QM: «ogni giorno carico il PDF dei pasti, mi
+// costa fatica e spesso me ne dimentico»). Il Report pasti del PMS ha BB e RO precisi: si carica
+// nel riquadro «Breakfast Sheet» dell'Upload Center (SoulArt = Soul e Boutique, Galleria), si
+// legge SENZA AI (formato fisso: «Sab 28/11/2026  2 (2 a + 0 b)  33 (33 a + 0 b) …») e va al
+// foglio Google da solo. Le righe sono 8 dal giorno del caricamento + 2 (riquadro A45:D52 del
+// foglio, che non cambia forma; «-» in PRESENZA GRUPPI come lo compila il QM). La lettura con
+// l'AI dentro il Breakfast Sheet resta come riserva. Le due intestazioni del PMS sono identiche:
+// SoulArt e Galleria si distinguono solo dal riquadro in cui si mette il PDF.
+const BSHEET_DA=2, BSHEET_N=8, BSHEET_KEY='qm_bsheet';
+function _bsheetIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _bsheetRighe(linee,oggiIso){
+  const RE=/\b(Lun|Mar|Mer|Gio|Ven|Sab|Dom)\s+(\d{2})\/(\d{2})\/(\d{4})\s+(\d+)(?:\s*\([^)]*\))?\s+(\d+)/;
+  const per={};
+  (linee||[]).forEach(l=>{const m=String(l).match(RE);if(!m)return;
+    const iso=m[4]+'-'+m[3]+'-'+m[2];if(!per[iso])per[iso]={iso,d:m[1]+' '+m[2]+'/'+m[3],r:+m[5],b:+m[6],pg:'-'};});
+  const d0=new Date(oggiIso+'T12:00:00');d0.setDate(d0.getDate()+BSHEET_DA);const da=_bsheetIso(d0);
+  const sel=Object.values(per).filter(x=>x.iso>=da).sort((a,b)=>a.iso<b.iso?-1:1).slice(0,BSHEET_N);
+  return{da,righe:sel.map(({iso,...r})=>r),primo:sel.length?sel[0].iso:null,ultimo:sel.length?sel[sel.length-1].iso:null,tutti:Object.keys(per).length};
+}
+async function _bsheetLinee(file){
+  const pdf=await _pdfApri(await file.arrayBuffer());const out=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const tc=await(await pdf.getPage(p)).getTextContent();const righe={};
+    tc.items.forEach(it=>{const t=(it.str||'').trim();if(!t)return;const y=Math.round(it.transform[5]/3);(righe[y]=righe[y]||[]).push({x:it.transform[4],t});});
+    Object.keys(righe).map(Number).sort((a,b)=>b-a).forEach(y=>out.push(righe[y].sort((a,b)=>a.x-b.x).map(i=>i.t).join(' ')));
+  }
+  return out;
+}
+function _bsheetStato(){try{return JSON.parse(localStorage.getItem(BSHEET_KEY)||'{}')||{};}catch(e){return{};}}
+function _bsheetOggi(ts){return !!ts&&new Date(ts).toDateString()===new Date().toDateString();}
+function _bsheetSlot(){
+  const st=_bsheetStato(),sa=_bsheetOggi(st.sa),ar=_bsheetOggi(st.ar);
+  const slot=document.getElementById('uc-bsheet');if(!slot)return;
+  const sub=sa&&ar?'SoulArt e Galleria oggi':!sa&&!ar?'Da caricare oggi':'Manca '+(sa?'Galleria':'SoulArt');
+  slot.classList.toggle('loaded',sa&&ar);
+  const s=document.getElementById('uc-bsheet-sub');if(s)s.textContent=sub;
+  const f=(id,ok,ts)=>{const e=document.getElementById(id);if(e)e.textContent=ok?'inviato oggi alle '+new Date(ts).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}):'non ancora inviato oggi';};
+  f('bsheetSaQuando',sa,st.sa);f('bsheetArQuando',ar,st.ar);
+  try{ucUpdateProgress();}catch(e){}
+}
+// {sa:ts, ar:ts}: si scrive leggendo prima il cloud e tenendo il più recente di ognuno (più postazioni).
+async function _bsheetSegna(quale){
+  const st=_bsheetStato();st[quale]=Date.now();
+  try{const c=await kvGet(BSHEET_KEY);if(c){const v=JSON.parse(c)||{};['sa','ar'].forEach(k=>{if((+v[k]||0)>(+st[k]||0))st[k]=+v[k];});}}catch(e){}
+  try{localStorage.setItem(BSHEET_KEY,JSON.stringify(st));}catch(e){}
+  _bsheetSlot();
+  kvSet(BSHEET_KEY,JSON.stringify(st)).catch(()=>{});
+}
+async function _bsheetDalCloud(){
+  let v=null;try{const c=await kvGet(BSHEET_KEY);if(c)v=JSON.parse(c);}catch(e){}
+  if(v){const st=_bsheetStato();['sa','ar'].forEach(k=>{if((+v[k]||0)>(+st[k]||0))st[k]=+v[k];});try{localStorage.setItem(BSHEET_KEY,JSON.stringify(st));}catch(e){}}
+  _bsheetSlot();
+}
+async function bsheetHandle(quale,file){
+  const box=document.getElementById('bsheetStatus');
+  // classi di .turni-status: loading (blu), success (verde), error (rosso)
+  const msg=(t,c)=>{if(box){box.textContent=t;box.className='turni-status '+(c||'loading');}};
+  const nome=quale==='ar'?'Galleria':'SoulArt';
+  try{
+    msg('Lettura del PDF '+nome+'…');
+    const res=_bsheetRighe(await _bsheetLinee(file),_prenOggiIso());
+    const gg=iso=>{const[a,m,g]=iso.split('-');return g+'/'+m;};
+    if(!res.righe.length){msg(nome+': nel PDF non ci sono giorni dal '+gg(res.da)+'. Stampa il Report pasti dal '+gg(res.da)+' per 8 giorni.','error');return;}
+    const avviso=res.primo!==res.da?' Attenzione: il PDF parte dal '+gg(res.primo)+' invece che dal '+gg(res.da)+'.':res.righe.length<BSHEET_N?' Attenzione: il PDF arriva solo al '+gg(res.ultimo)+' ('+res.righe.length+' giorni su 8).':'';
+    let ok;
+    if(quale==='ar'){
+      bkfSheetARData=res.righe;bkfSheetARRenderTable();LS.set('bkfSheetARData',bkfSheetARData);
+      bkfARChartData=bkfSheetARData;LS.set('bkfARChartData',bkfARChartData);bkfSheetARSetStatus('ready');try{bkfRenderChartAR();}catch(e){}
+      msg(nome+': invio al foglio Google…');ok=await bkfSheetARSync();
+    }else{
+      bkfSheetData=res.righe;bkfSheetRenderTable();bkfChartData=bkfSheetData;LS.set('bkfChartData',bkfChartData);bkfSheetSetStatus('ready');try{bkfRenderChart();}catch(e){}
+      msg(nome+': invio al foglio Google…');ok=await bkfSheetSync();
+    }
+    msg(ok?nome+': '+res.righe.length+' giorni ('+res.righe[0].d+' – '+res.righe[res.righe.length-1].d+') inviati al foglio Google.'+avviso
+          :nome+': PDF letto ma l\'invio al foglio Google non è riuscito. Riprova, oppure dal Breakfast Sheet premi «Sincronizza».'+avviso,ok&&!avviso?'success':'error');
+  }catch(err){msg(nome+': errore nella lettura del PDF ('+(err&&err.message?err.message:err)+').','error');}
+}
+(function initBsheet(){
+  [['sa','bsheetBoxSa','bsheetInSa'],['ar','bsheetBoxAr','bsheetInAr']].forEach(([q,b,i])=>{
+    const box=document.getElementById(b),inp=document.getElementById(i);if(!box||!inp)return;
+    box.addEventListener('click',()=>inp.click());
+    box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});
+    box.addEventListener('dragleave',()=>box.classList.remove('dragover'));
+    box.addEventListener('drop',e=>{e.preventDefault();box.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)bsheetHandle(q,f);});
+    inp.addEventListener('change',e=>{if(e.target.files[0])bsheetHandle(q,e.target.files[0]);inp.value='';});
+  });
+  _bsheetSlot();setTimeout(()=>{_bsheetDalCloud();},1500);
+  setInterval(_bsheetSlot,10*60*1000);   // a mezzanotte torna «da caricare»
+})();
 const CAP_CAMERE=33;
 // §§ REPORT PULIZIE — PUL (handlePulFile, pulParseText, renderPulData, renderPulDay, updateKpiFromPulizie)
 let pulData=null,pulActiveDay=0;

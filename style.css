@@ -1234,3 +1234,11 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
   .inv8-griglia{grid-template-columns:minmax(0,1fr);}
   .inv8-tab th:nth-child(3),.inv8-tab td:nth-child(3){display:none;}
 }
+/* Upload Center › Breakfast Sheet (26/11/2026): due riquadri affiancati, SoulArt e Galleria,
+   con sotto quando è stato inviato oggi. Classi di sempre (.upload-box). */
+.bsheet-box{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 4px;}
+.bsheet-box .upload-box{padding:10px 6px;}
+.bsheet-quando{font-size:10.5px;color:var(--text-dim);margin-top:4px;}
+/* Il logo Compass ora sta in una riga da solo: mezza larghezza, stessa altezza di una tessera. */
+.uc-row-cards .uc-brand-solo{flex:0 0 calc(50% - 4px);min-height:96px;}
+.turni-status.error{display:block;background:var(--red-bg);border:1px solid rgba(198,40,40,.25);color:var(--red);}

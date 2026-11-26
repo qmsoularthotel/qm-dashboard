@@ -3360,6 +3360,27 @@ sez('Inventario: rettifiche nell\'analisi');
   ok('analisi: senza scarti veri è stabile', _invAnalisi([{ type: 'init', qty: 50, ts: lun - 8 * 7 * G }].concat([8,7,6,5,4,3,2,1].map(function(w){ return { type: 'out', qty: 3, ts: lun - w * 7 * G + G }; })), [], ora).andamento, 'stabile');
   ok('analisi: niente decimali né giorni di autonomia', /autonomia|consumoSett|invSetPeriod/.test(String(invRenderAnalysis)), false);
   ok('catalogo e ordini: nomi e fornitori passano da _esc', /_esc\(p\.name\|\|bc\)/.test(String(invRenderCatalog)) && /_esc\(o\.fornitore/.test(String(invRenderOrders)) && /_esc\(it\.name\)/.test(String(invRenderOrders)), true);
+  {
+    // Breakfast Sheet dall'Upload Center (26/11/2026): Report pasti letto senza AI, 8 righe da oggi+2.
+    const L = ['Soul Art Hotel', 'Totali: No colazione: 33 (28 a + 5 b), Colazioni: 542 (528 a + 14 b)',
+      'Data No colazione Colazione Pranzo Cena',
+      'Gio 26/11/2026 4 (4 a + 0 b) 30 (30 a + 0 b) 0 0',
+      'Ven 27/11/2026 6 (6 a + 0 b) 31 (31 a + 0 b) 0 0',
+      'Sab 28/11/2026 2 (2 a + 0 b) 33 (33 a + 0 b) 0 0', 'Dom 29/11/2026 11 (9 a + 2 b) 41 (41 a + 0 b) 0 0',
+      'Lun 30/11/2026 5 (5 a + 0 b) 25 (25 a + 0 b) 0 0', 'Mar 01/12/2026 3 (3 a + 0 b) 19 (19 a + 0 b) 0 0',
+      'Mer 02/12/2026 1 (1 a + 0 b) 29 (29 a + 0 b) 0 0', 'Gio 03/12/2026 0 38 (38 a + 0 b) 0 0',
+      'Ven 04/12/2026 2 (2 a + 0 b) 38 (38 a + 0 b) 0 0', 'Sab 05/12/2026 0 55 (55 a + 0 b) 0 0',
+      'Dom 06/12/2026 3 (2 a + 1 b) 65 (64 a + 1 b) 0 0'];
+    const r = _bsheetRighe(L, '2026-11-26');
+    ok('report pasti: 8 righe dal 28/11 al 05/12', r.righe.length + ' ' + r.righe[0].d + ' … ' + r.righe[7].d, '8 Sab 28/11 … Sab 05/12');
+    ok('report pasti: RO e BB esatti (29/11: 11 RO, 41 BB)', r.righe[1].r + '/' + r.righe[1].b, '11/41');
+    ok('report pasti: «0» senza parentesi', r.righe[5].r + '/' + r.righe[5].b, '0/38');
+    ok('report pasti: gruppi «-» come nel foglio', r.righe[0].pg, '-');
+    ok('report pasti: la riga dei totali non è un giorno', r.tutti, 11);
+    ok('report pasti: PDF che parte tardi si segnala', _bsheetRighe(L.slice(6), '2026-11-26').primo, '2026-11-29');
+    ok('report pasti: niente giorni utili', _bsheetRighe(L.slice(0, 5), '2026-11-26').righe.length, 0);
+    ok('report pasti: l\'invio riuscito si segna (SoulArt e Galleria)', /_bsheetSegna\('sa'\)/.test(String(bkfSheetSync)) && /_bsheetSegna\('ar'\)/.test(String(bkfSheetARSync)), true);
+  }
   ok('senza soglia: scarso se non basta per una distribuzione', _invScarso(2, 10, 0), true);
   ok('senza soglia: basta per una distribuzione', _invScarso(5, 10, 0), false);
   ok('senza soglia: con un ordine in arrivo non è scarso', _invScarso(0, 10, 6), false);
