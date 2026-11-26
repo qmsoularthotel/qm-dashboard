@@ -1239,6 +1239,6 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .bsheet-box{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 4px;}
 .bsheet-box .upload-box{padding:10px 6px;}
 .bsheet-quando{font-size:10.5px;color:var(--text-dim);margin-top:4px;}
-/* Il logo Compass ora sta in una riga da solo: mezza larghezza, stessa altezza di una tessera. */
-.uc-row-cards .uc-brand-solo{flex:0 0 calc(50% - 4px);min-height:96px;}
+/* Il logo Compass ora sta in una riga da solo: larghezza intera, più basso di una tessera (QM, 26/11). */
+.uc-row-cards .uc-brand-solo{flex:1 1 100%;min-height:64px;}
 .turni-status.error{display:block;background:var(--red-bg);border:1px solid rgba(198,40,40,.25);color:var(--red);}

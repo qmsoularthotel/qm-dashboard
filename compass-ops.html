@@ -9,7 +9,7 @@
 <link rel="icon" href="img/compass-ops-favicon.svg" type="image/svg+xml">
 <!-- Stesso foglio di stile di Compass: menu, barra in alto, pannelli e schede sono quelli
      (25/09/2026). Il numero si allinea da solo con strumenti/versione.sh. -->
-<link rel="stylesheet" href="style.css?v=315">
+<link rel="stylesheet" href="style.css?v=316">
 <style>
 /* Solo cio' che style.css di Compass non ha: il resto viene da li'. */
 :root{--shadow:0 1px 4px rgba(0,0,0,.08);}
@@ -258,12 +258,12 @@ tr.bg-pos{background:rgba(46,125,50,.06);}
 // versione da ricordare) e, in piu', la versione scritta dentro la pagina.
 // NOTA: questa e' l'UNICA fetch dell'app, e punta al proprio file. Vedi il commento in
 // testa allo script principale: qui non si parla mai col Worker di Compass.
-const QM_APP_BUILD='2026-11-26.1';
+const QM_APP_BUILD='2026-11-26.2';
 // Il numero di versione si vede nella barra degli indirizzi nello stesso formato di Compass
 // (?v=633-20261125: numero che cresce a ogni pubblicazione, trattino, data), 25/11/2026, QM.
 // Lo fa crescere strumenti/versione.sh quando il file cambia. Senza ricaricare (replaceState):
 // l'aggiornamento lo fanno già qmCheckBuild/qmCheckVersione, con QM_APP_BUILD.
-const OPS_V='44-20261126';
+const OPS_V='45-20261126';
 try{const u=new URL(location.href);if(u.searchParams.get('v')!==OPS_V){u.searchParams.set('v',OPS_V);history.replaceState(history.state,'',u.pathname+u.search+u.hash);}}catch(e){}
 let _qmVersioneFile=null,_qmVersioneTs=0;
 function _qmRicarica(){
