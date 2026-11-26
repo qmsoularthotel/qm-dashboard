@@ -2772,6 +2772,7 @@ function miniappOpen(inputId){
 }
 // §§ MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone, mosaico)
 function miniappRender(){
+  try{_msOsserva();_msRiepilogo();}catch(e){}
   miniappRenderStatus();
   miniappLoadAppStatus();
   miniappLoadGalleria();
@@ -2901,6 +2902,7 @@ async function miniappLoadAppStatus(){
   miniappRenderToggles();
 }
 function miniappRenderToggles(){
+  try{_msRiepilogo();}catch(e){}
   MINIAPP_KEYS.forEach(k=>{
     const btn=document.getElementById('miniapp-'+k+'-toggle');
     if(!btn)return;
@@ -2923,6 +2925,7 @@ async function miniappLoadGalleria(){
   miniappRenderGalleria();
 }
 function miniappRenderGalleria(){
+  try{_msRiepilogo();}catch(e){}
   const btn=document.getElementById('miniapp-bg-toggle');if(!btn)return;
   btn.style.background=_bgAppAttiva?'var(--green)':'var(--border)';
   const knob=btn.querySelector('.miniapp-toggle-knob');
@@ -2959,6 +2962,7 @@ function _miniappRcStato(attiva,uso,raggiungibile){
   return _miniappStatusHTML('green','Attiva','ultimo utilizzo '+_qmQuandoAgg(ts)+' · '+cosa);
 }
 function miniappRenderRc(raggiungibile){
+  try{_msRiepilogo();}catch(e){}
   const btn=document.getElementById('miniapp-rc-toggle');
   if(btn){
     btn.style.background=_rcAttiva?'var(--green)':'var(--border)';
@@ -3314,6 +3318,61 @@ async function miniappCmStatus(){
   if(pending>0)
     return _miniappStatusHTML('green','Giro finito',`${CM_ROOMS.length-pending} camere su ${CM_ROOMS.length} · ore ${_miniappFmtTime(lastTs)}`);
   return _miniappStatusHTML('green','Giro completato',`ore ${_miniappFmtTime(lastTs)}`);
+}
+// ── Applicazioni nella composizione della Registration Cards (26/11/2026, QM: proposta C) ──
+// Gli stati li disegnano le funzioni di sempre nei loro riquadri; _msRiepilogo li LEGGE (colore del
+// pallino, parola, dettaglio) e compone la testata («N da guardare»), il riquadro «Da guardare» e le
+// righe brevi di Compass OPS e Registration nella tabella. Si rifà da solo quando un riquadro cambia
+// (MutationObserver) o quando si tocca un interruttore.
+const MS_APPS=[
+  {k:'bkf',nome:'Breakfast',on:()=>_appStatus.bkf!==false},
+  {k:'cm',nome:'Distribuzione Culligan',on:()=>_appStatus.cm!==false},
+  {k:'dvr',nome:'DVR & Compliance',on:()=>_appStatus.dvr!==false},
+  {k:'hk',nome:'Housekeeping',on:()=>_appStatus.hk!==false},
+  {k:'inv',nome:'Inventari Detersivi',on:()=>_appStatus.inv!==false},
+  {k:'bg',nome:'Compass OPS',on:()=>_bgAppAttiva!==false},
+  {k:'rc',nome:'Registration Cards',on:()=>_rcAttiva!==false}];
+function _msLeggiStato(el){
+  if(!el)return null;
+  const p=el.querySelector('.miniapp-st-p');
+  if(p){const c=p.getAttribute('style')||'';const col=/--red/.test(c)?'red':/--amber/.test(c)?'amber':'green';
+    const l=el.querySelector('.miniapp-st-l'),k=el.querySelector('.miniapp-st-k');
+    return{col,testo:l?l.textContent.trim():'',dett:k?k.textContent.trim():''};}
+  // Compass OPS: righe dei consumi (arancio se manca ieri)
+  const amb=[...el.querySelectorAll('.ms-ops-amber .ms-ops-k')].map(x=>x.textContent.trim().replace(/^Consumi\s+/,''));
+  if(el.querySelector('.ms-ops'))return amb.length?{col:'amber',testo:'consumi da inserire',dett:amb.join(' e ')}:{col:'green',testo:'consumi fino a ieri',dett:''};
+  return null;
+}
+function _msStatoHtml(st){return st?_miniappStatusHTML(st.col,st.testo,st.dett):'';}
+let _msTimer=null;
+function _msRiepilogo(){
+  clearTimeout(_msTimer);
+  _msTimer=setTimeout(()=>{
+    const box=document.getElementById('msDaGuardare');if(!box)return;
+    const stati={};MS_APPS.forEach(a=>{stati[a.k]=_msLeggiStato(document.getElementById('miniapp-'+a.k+'-status'));});
+    // righe brevi della tabella per le due app della Galleria (il dettaglio sta a destra)
+    const bb=document.getElementById('ms-bg-breve');if(bb)bb.innerHTML=_msStatoHtml(stati.bg);
+    const rb=document.getElementById('ms-rc-breve');if(rb)rb.innerHTML=_msStatoHtml(stati.rc);
+    const da=[];
+    MS_APPS.forEach(a=>{
+      const st=stati[a.k],on=a.on();
+      if(st&&st.col!=='green')da.push({a,col:st.col,txt:st.testo+(st.dett?' · '+st.dett:'')+(on?'':' · app spenta')});
+      else if(!on)da.push({a,col:'red',txt:'app spenta'});
+    });
+    const accese=MS_APPS.filter(a=>a.on()).length;
+    const k=document.getElementById('msK');if(k)k.textContent='Applicazioni · '+MS_APPS.length+' app · '+accese+(accese===1?' accesa':' accese');
+    const t=document.getElementById('msT');if(t)t.textContent=da.length?(da.length===1?'Una da guardare':da.length+' da guardare'):'Tutto in regola';
+    box.classList.toggle('inv5-centro',!da.length);
+    box.innerHTML=da.length
+      ?'<div class="inv5-gl">Da guardare</div>'+da.map(x=>`<div class="inv5-voce ms-voce-dg"><span class="inv5-num fin">!</span><div><div class="inv5-vt">${_esc(x.a.nome)}</div><div class="inv5-vs ms-${x.col}">${_esc(x.txt)}</div></div><button class="miniapp-btn miniapp-btn-primario ms-apri" onclick="miniappOpen('${x.a.k}-url-input')">Apri</button></div>`).join('')
+      :'<span class="inv5-cerchio"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg></span><div class="inv5-gt">Tutte le app sono in regola</div><div class="inv5-gs">Accese, aggiornate e senza niente da sistemare.</div>';
+  },80);
+}
+let _msOsservatore=null;
+function _msOsserva(){
+  if(_msOsservatore||typeof MutationObserver==='undefined')return;
+  _msOsservatore=new MutationObserver(()=>_msRiepilogo());
+  MS_APPS.forEach(a=>{const el=document.getElementById('miniapp-'+a.k+'-status');if(el)_msOsservatore.observe(el,{childList:true,subtree:true});});
 }
 function miniappRenderStatus(){
   const hk=document.getElementById('miniapp-hk-status');if(hk)hk.innerHTML=miniappHkStatus();

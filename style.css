@@ -1333,3 +1333,28 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 .ms-ops-r:first-child{border-left:none;padding-left:0;}
 .ms-ops-amber{border-color:var(--border-light);}
 @media(max-width:760px){.ms-ops-r{border-left:none;padding:6px 0;border-top:1px solid var(--border-light);}.ms-ops-r:first-child{border-top:none;}}
+/* Applicazioni nella composizione della Registration Cards (26/11/2026, QM: proposta C). */
+.ms-c .inv5-griglia{margin-bottom:0;}
+.ms-ico{width:28px!important;height:28px!important;}
+.ms-ico svg{width:13px!important;height:13px!important;}
+.ms-app{display:flex;align-items:center;gap:10px;white-space:nowrap;}
+.ms-tab td{vertical-align:middle;}
+.ms-tab .ms-chi{font-size:12.5px;color:var(--text-muted);white-space:nowrap;}
+.ms-tab .miniapp-stato{margin:0;}
+.ms-tab .miniapp-st-k{margin-left:0;}
+.ms-tab .miniapp-sw{margin-left:0;}
+.ms-tab .miniapp-azioni{border-top:none;padding-top:0;margin:0;justify-content:flex-end;flex-wrap:nowrap;}
+.ms-gal{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px dashed var(--border-light);}
+.ms-gal:first-of-type{border-top:none;}
+.ms-gal-c{flex:1;min-width:0;}
+.ms-gal-c b{font-size:13.5px;color:var(--text);}
+.ms-gal .miniapp-stato{margin:4px 0 0;}
+.ms-gal .ms-ops{grid-template-columns:1fr;gap:6px;}
+.ms-gal .ms-ops-r{border:none;padding:0;}
+.ms-voce-dg{align-items:center;}
+.ms-voce-dg>div{flex:1;}
+.ms-voce-dg .ms-apri{flex:0 0 auto;padding:5px 14px;border-radius:16px;font-size:12px;}
+.ms-red{color:var(--red)!important;}
+.ms-amber{color:var(--amber)!important;}
+.ms-c .miniapp-avvisi-corpo{position:static;margin:4px 16px 14px;box-shadow:none;}
+.ms-avvisi-btn{display:inline-flex;align-items:center;gap:5px;}

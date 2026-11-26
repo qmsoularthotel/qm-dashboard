@@ -611,25 +611,23 @@ if [ "$_GG_F" != "$_GG_H" ] || [ -z "$_GG_F" ] || [ "$_GG_RIS" != "1,2,0,1,1,1" 
   BKF_KO=1
 fi
 
-# Pannello App in due sezioni (23/11/2026, QM), schede in ordine alfabetico: SoulArt (Breakfast,
-# Culligan, DVR, Housekeeping, Inventari) e Galleria (Compass Ops, Registration).
+# Applicazioni (26/11/2026, QM: proposta C): la tabella di tutte le app tiene l'ordine scelto il
+# 23/11 — SoulArt in ordine alfabetico (Breakfast, Culligan, DVR, Housekeeping, Inventari), poi
+# Galleria (Compass Ops, Registration) — e c'è il riquadro «Da guardare».
 _PAN=$(python3 - <<'PY'
 import re
 s=open('index.html',encoding='utf-8').read()
-a=s.find('<div class="ms-sez">SoulArt</div>');b=s.find('<div class="ms-sez ms-sez-spazio">Galleria</div>')
-c=s.find('<!-- ── INVENTARIO ── -->',b)
-if a<0 or b<a or c<b: print('sezioni mancanti');raise SystemExit
-t=lambda x:re.findall(r'miniapp-([a-z]+)-toggle"',x)
-sa,ga=t(s[a:b]),t(s[b:c])
-css=open('style.css',encoding='utf-8').read()
-riga='class="miniapp-grid miniapp-grid-galleria" id="miniappGridGalleria"' in s and '.miniapp-grid-galleria .miniapp-card-larga{grid-column:span 2;}' in css
-if not riga: sa=sa+['(Compass Ops e Registration non più sulla stessa riga)']
-print('ok' if sa==['bkf','cm','dvr','hk','inv'] and ga==['bg','rc'] else 'SoulArt '+','.join(sa)+' / Galleria '+','.join(ga))
+a=s.find('<div class="view" id="view-miniapp">');c=s.find('<!-- ── INVENTARIO ── -->',a)
+if a<0 or c<a: print('vista mancante');raise SystemExit
+v=s[a:c]
+ordine=re.findall(r'miniapp-([a-z]+)-toggle"',v)
+ok=ordine==['bkf','cm','dvr','hk','inv','bg','rc'] and 'id="msDaGuardare"' in v
+print('ok' if ok else 'ordine '+','.join(ordine))
 PY
 )
 if [ "$_PAN" != "ok" ]; then
   echo ""
-  echo "  ERRORE      Pannello App: le due sezioni SoulArt e Galleria non sono piu' quelle scelte ($_PAN)."
+  echo "  ERRORE      Applicazioni: l'ordine delle app o il riquadro «Da guardare» non sono piu' quelli scelti ($_PAN)."
   BKF_KO=1
 fi
 

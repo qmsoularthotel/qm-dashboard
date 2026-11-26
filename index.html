@@ -5,11 +5,11 @@
 <title>Compass QM</title>
 <link rel="icon" href="img/compass-favicon.svg" type="image/svg+xml">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<link rel="stylesheet" href="style.css?v=324">
+<link rel="stylesheet" href="style.css?v=325">
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='654-20261126';
+  const V='655-20261126';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1477,142 +1477,56 @@
         </div>
       </div>
       <div class="view" id="view-miniapp">
-        <!-- Due sezioni (23/11/2026, il QM): le app del SoulArt e quelle della Galleria. Inventari
-             DVR e Culligan stanno nel SoulArt per scelta del QM. In ogni sezione le schede sono in ordine
-             alfabetico. Gli id delle schede non cambiano. -->
-        <div class="ms-sez">SoulArt</div>
-        <div class="miniapp-grid" id="miniappGrid">
-          <div class="panel miniapp-card">
-            <div class="miniapp-card-top">
-              <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H8a4 4 0 0 1-4-4z"/><path d="M17 9h2a2 2 0 0 1 0 4h-2"/><path d="M6 5c0-.8.5-1 1-2M10 5c0-.8.5-1 1-2"/></svg></span>
-              <div class="miniapp-nome">
-                <div class="miniapp-titolo">Breakfast</div>
-                <div class="miniapp-sub">Responsabile colazione</div>
-              </div>
-              <button id="miniapp-bkf-toggle" onclick="miniappToggleApp('bkf')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button>
+        <!-- Applicazioni nella composizione della Registration Cards (26/11/2026, QM: «pesante»,
+             scelta la proposta C). In alto quante app e quante da guardare; a sinistra le app da
+             guardare (le disegna _msRiepilogo leggendo gli stati già disegnati), a destra la Galleria
+             con i dettagli di Compass OPS e della Registration; sotto la tabella di tutte le app con
+             interruttore e link. Gli id di stati, interruttori e link non cambiano. Ordine della
+             tabella: SoulArt in ordine alfabetico, poi Galleria (controllo in esegui.sh). -->
+        <div class="inv5-cornice ms-c">
+          <div class="inv5-hero"><div><div class="inv5-k" id="msK">Applicazioni</div><div class="inv5-t" id="msT">Applicazioni</div></div></div>
+          <div class="inv5-griglia">
+            <div class="inv5-grande" id="msDaGuardare"></div>
+            <div class="inv5-lato"><div class="inv5-ll">Galleria</div>
+              <div class="ms-gal"><span class="miniapp-ico miniapp-ico-badge ms-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span><div class="ms-gal-c"><b>Compass OPS</b><div id="miniapp-bg-status" class="miniapp-stato"></div></div></div>
+              <div class="ms-gal"><span class="miniapp-ico miniapp-ico-badge ms-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/><path d="M14 17h3"/></svg></span><div class="ms-gal-c"><b>Registration Cards</b><div id="miniapp-rc-status" class="miniapp-stato"></div></div></div>
             </div>
-            <div id="miniapp-bkf-status" class="miniapp-stato"></div>
-            <input id="bkf-url-input" type="hidden" value="https://compass-qm.com/breakfast.html">
-            <div class="miniapp-azioni">
-              <button onclick="miniappCopy('bkf-url-input',this)" class="miniapp-btn">Copia link</button>
-              <button onclick="miniappOpen('bkf-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
-            </div>
-            <button class="miniapp-apri-avvisi" onclick="miniappToggleAvvisi()" aria-expanded="false" id="miniapp-avvisi-tasto">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path>
-              </svg>
-              <span>Avvisi a schermo</span>
-              <span id="miniapp-avvisi-conta" class="miniapp-avvisi-conta"></span>
-              <svg class="miniapp-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
-            </button>
+          </div>
+          <div class="inv5-tutti"><div class="inv5-ll">Tutte le app · 7</div><div class="inv5-tw">
+            <table class="inv5-tab ms-tab"><thead><tr><th>App</th><th>Chi la usa</th><th>Stato</th><th>Accesa</th><th class="r"></th></tr></thead><tbody>
+              <tr data-ms="bkf"><td><div class="ms-app"><span class="miniapp-ico miniapp-ico-badge ms-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13v5a5 5 0 0 1-5 5H8a4 4 0 0 1-4-4z"/><path d="M17 9h2a2 2 0 0 1 0 4h-2"/><path d="M6 5c0-.8.5-1 1-2M10 5c0-.8.5-1 1-2"/></svg></span><b>Breakfast</b></div></td>
+                <td class="ms-chi">Responsabile colazione</td><td><div id="miniapp-bkf-status" class="miniapp-stato"></div></td>
+                <td><button id="miniapp-bkf-toggle" onclick="miniappToggleApp('bkf')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button></td>
+                <td class="r"><input id="bkf-url-input" type="hidden" value="https://compass-qm.com/breakfast.html"><div class="miniapp-azioni"><button class="miniapp-btn ms-avvisi-btn" onclick="miniappToggleAvvisi()" aria-expanded="false" id="miniapp-avvisi-tasto">Avvisi <span id="miniapp-avvisi-conta" class="miniapp-avvisi-conta"></span></button><button onclick="miniappCopy('bkf-url-input',this)" class="miniapp-btn">Copia link</button><button onclick="miniappOpen('bkf-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button></div></td></tr>
+              <tr data-ms="cm"><td><div class="ms-app"><span class="miniapp-ico miniapp-ico-badge ms-ico"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C9 7 5 11.5 5 15.5A7 7 0 0 0 19 15.5C19 11.5 15 7 12 2z"/></svg></span><b>Distribuzione Culligan</b></div></td>
+                <td class="ms-chi">SoulArt</td><td><div id="miniapp-cm-status" class="miniapp-stato"></div></td>
+                <td><button id="miniapp-cm-toggle" onclick="miniappToggleApp('cm')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button></td>
+                <td class="r"><input id="cm-url-input" type="hidden" value="https://compass-qm.com/controllo-mattino.html"><div class="miniapp-azioni"><button onclick="miniappCopy('cm-url-input',this)" class="miniapp-btn">Copia link</button><button onclick="miniappOpen('cm-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button></div></td></tr>
+              <tr data-ms="dvr"><td><div class="ms-app"><span class="miniapp-ico miniapp-ico-badge ms-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/></svg></span><b>DVR &amp; Compliance</b></div></td>
+                <td class="ms-chi">General Manager</td><td><div id="miniapp-dvr-status" class="miniapp-stato"></div></td>
+                <td><button id="miniapp-dvr-toggle" onclick="miniappToggleApp('dvr')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button></td>
+                <td class="r"><input id="dvr-url-input" type="hidden" value="https://compass-qm.com/dvr.html"><div class="miniapp-azioni"><button onclick="miniappCopy('dvr-url-input',this)" class="miniapp-btn">Copia link</button><button onclick="miniappOpen('dvr-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button></div></td></tr>
+              <tr data-ms="hk"><td><div class="ms-app"><span class="miniapp-ico miniapp-ico-badge ms-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h15"/><path d="M4 12h10"/><path d="M4 17.5h6"/></svg></span><b>Housekeeping</b></div></td>
+                <td class="ms-chi">SoulArt · Boutique</td><td><div id="miniapp-hk-status" class="miniapp-stato"></div></td>
+                <td><button id="miniapp-hk-toggle" onclick="miniappToggleApp('hk')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button></td>
+                <td class="r"><input id="hk-url-input" type="hidden" value="https://compass-qm.com/housekeeper.html"><div class="miniapp-azioni"><button onclick="miniappCopy('hk-url-input',this)" class="miniapp-btn">Copia link</button><button onclick="miniappOpen('hk-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button></div></td></tr>
+              <tr data-ms="inv"><td><div class="ms-app"><span class="miniapp-ico miniapp-ico-badge ms-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span><b>Inventari Detersivi</b></div></td>
+                <td class="ms-chi">SoulArt · Art Resort</td><td><div id="miniapp-inv-status" class="miniapp-stato"></div></td>
+                <td><button id="miniapp-inv-toggle" onclick="miniappToggleApp('inv')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button></td>
+                <td class="r"><input id="inv-url-input" type="hidden" value="https://compass-qm.com/inventory.html"><div class="miniapp-azioni"><button onclick="miniappCopy('inv-url-input',this)" class="miniapp-btn">Copia link</button><button onclick="miniappOpen('inv-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button></div></td></tr>
+              <tr data-ms="bg"><td><div class="ms-app"><span class="miniapp-ico miniapp-ico-badge ms-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span><b>Compass OPS</b></div></td>
+                <td class="ms-chi">Galleria · Front Office Manager</td><td><div id="ms-bg-breve" class="miniapp-stato"></div></td>
+                <td><button id="miniapp-bg-toggle" onclick="miniappToggleGalleria()" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button></td>
+                <td class="r"><input id="bg-url-input" type="hidden" value="https://compass-qm.com/compass-ops.html"><div class="miniapp-azioni"><button onclick="miniappCopy('bg-url-input',this)" class="miniapp-btn">Copia link</button><button onclick="miniappOpen('bg-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button></div></td></tr>
+              <tr data-ms="rc"><td><div class="ms-app"><span class="miniapp-ico miniapp-ico-badge ms-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/><path d="M14 17h3"/></svg></span><b>Registration Cards</b></div></td>
+                <td class="ms-chi">Galleria · Ricevimento</td><td><div id="ms-rc-breve" class="miniapp-stato"></div></td>
+                <td><button id="miniapp-rc-toggle" onclick="miniappToggleRc()" class="miniapp-sw" title="Accendi o spegni l'app sui PC della Galleria"><span class="miniapp-toggle-knob"></span></button></td>
+                <td class="r"><input id="rc-url-input" type="hidden" value="https://compass-qm.com/registration-galleria.html"><div class="miniapp-azioni"><button onclick="miniappCopy('rc-url-input',this)" class="miniapp-btn">Copia link</button><button onclick="miniappOpen('rc-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button></div></td></tr>
+            </tbody></table></div>
             <div id="miniapp-avvisi-corpo" class="miniapp-avvisi-corpo" hidden>
               <div class="miniapp-avvisi-nota">Un messaggio diverso per ogni schermata dell'app: compare a ogni apertura e a ogni cambio di schermata, resta 10 secondi e sparisce al primo tocco. Si può andare a capo: gli a capo restano anche sul telefono. Con «Inizio» e «Fine» l'avviso si accende e si spegne da solo; con «Programma un nuovo avviso» se ne prepara un altro che parte da solo nel giorno scelto.</div>
               <div id="miniapp-bkf-banner-tabs" style="display:flex;flex-direction:column;gap:10px;"></div>
               <button onclick="miniappSaveBkfBanner(this)" class="miniapp-btn miniapp-btn-primario" style="width:100%;margin-top:12px;">Salva avvisi</button>
-            </div>
-          </div>
-          <div class="panel miniapp-card">
-            <div class="miniapp-card-top">
-              <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2C9 7 5 11.5 5 15.5A7 7 0 0 0 19 15.5C19 11.5 15 7 12 2z"/></svg></span>
-              <div class="miniapp-nome">
-                <div class="miniapp-titolo">Distribuzione Culligan</div>
-                <div class="miniapp-sub">SoulArt</div>
-              </div>
-              <button id="miniapp-cm-toggle" onclick="miniappToggleApp('cm')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button>
-            </div>
-            <div id="miniapp-cm-status" class="miniapp-stato"></div>
-            <input id="cm-url-input" type="hidden" value="https://compass-qm.com/controllo-mattino.html">
-            <div class="miniapp-azioni">
-              <button onclick="miniappCopy('cm-url-input',this)" class="miniapp-btn">Copia link</button>
-              <button onclick="miniappOpen('cm-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
-            </div>
-          </div>
-          <div class="panel miniapp-card">
-            <div class="miniapp-card-top">
-              <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/></svg></span>
-              <div class="miniapp-nome">
-                <div class="miniapp-titolo">DVR &amp; Compliance</div>
-                <div class="miniapp-sub">General Manager</div>
-              </div>
-              <button id="miniapp-dvr-toggle" onclick="miniappToggleApp('dvr')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button>
-            </div>
-            <div id="miniapp-dvr-status" class="miniapp-stato"></div>
-            <input id="dvr-url-input" type="hidden" value="https://compass-qm.com/dvr.html">
-            <div class="miniapp-azioni">
-              <button onclick="miniappCopy('dvr-url-input',this)" class="miniapp-btn">Copia link</button>
-              <button onclick="miniappOpen('dvr-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
-            </div>
-          </div>
-          <div class="panel miniapp-card">
-            <div class="miniapp-card-top">
-              <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h15"/><path d="M4 12h10"/><path d="M4 17.5h6"/></svg></span>
-              <div class="miniapp-nome">
-                <div class="miniapp-titolo">Housekeeping</div>
-                <div class="miniapp-sub">SoulArt · Boutique</div>
-              </div>
-              <button id="miniapp-hk-toggle" onclick="miniappToggleApp('hk')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button>
-            </div>
-            <div id="miniapp-hk-status" class="miniapp-stato"></div>
-            <input id="hk-url-input" type="hidden" value="https://compass-qm.com/housekeeper.html">
-            <div class="miniapp-azioni">
-              <button onclick="miniappCopy('hk-url-input',this)" class="miniapp-btn">Copia link</button>
-              <button onclick="miniappOpen('hk-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
-            </div>
-          </div>
-          <div class="panel miniapp-card">
-            <div class="miniapp-card-top">
-              <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>
-              <div class="miniapp-nome">
-                <div class="miniapp-titolo">Inventari Detersivi</div>
-                <div class="miniapp-sub">SoulArt · Art Resort</div>
-              </div>
-              <button id="miniapp-inv-toggle" onclick="miniappToggleApp('inv')" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button>
-            </div>
-            <div id="miniapp-inv-status" class="miniapp-stato"></div>
-            <input id="inv-url-input" type="hidden" value="https://compass-qm.com/inventory.html">
-            <div class="miniapp-azioni">
-              <button onclick="miniappCopy('inv-url-input',this)" class="miniapp-btn">Copia link</button>
-              <button onclick="miniappOpen('inv-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
-            </div>
-          </div>
-        </div>
-        <div class="ms-sez ms-sez-spazio">Galleria</div>
-        <div class="miniapp-grid miniapp-grid-galleria" id="miniappGridGalleria">
-          <!-- Gestione Biancheria della Galleria: app del Resident Manager. Il suo interruttore
-               scrive bg_app_status e non qm_app_status: il codice della Galleria apre solo le
-               chiavi bg_*. Il QM la apre da qui senza codice, col lasciapassare di Compass. -->
-          <div class="panel miniapp-card miniapp-card-larga">
-            <div class="miniapp-card-top">
-              <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M2 16h20"/><path d="M6 9V7a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2"/></svg></span>
-              <div class="miniapp-nome">
-                <div class="miniapp-titolo">Compass OPS</div>
-                <div class="miniapp-sub">Galleria · Front Office Manager</div>
-              </div>
-              <button id="miniapp-bg-toggle" onclick="miniappToggleGalleria()" class="miniapp-sw" title="Accendi o spegni l'app"><span class="miniapp-toggle-knob"></span></button>
-            </div>
-            <div id="miniapp-bg-status" class="miniapp-stato"></div>
-            <input id="bg-url-input" type="hidden" value="https://compass-qm.com/compass-ops.html">
-            <div class="miniapp-azioni">
-              <button onclick="miniappCopy('bg-url-input',this)" class="miniapp-btn">Copia link</button>
-              <button onclick="miniappOpen('bg-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
-            </div>
-          </div>
-          <!-- Registration Cards della Galleria (23/11/2026): app fuori da Compass, senza codice.
-               L'interruttore scrive bg_rc_status: l'app lo legge col codice della Galleria del PC. -->
-          <div class="panel miniapp-card">
-            <div class="miniapp-card-top">
-              <span class="miniapp-ico miniapp-ico-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h6"/><path d="M14 17h3"/></svg></span>
-              <div class="miniapp-nome">
-                <div class="miniapp-titolo">Registration Cards</div>
-                <div class="miniapp-sub">Galleria · Ricevimento</div>
-              </div>
-              <button id="miniapp-rc-toggle" onclick="miniappToggleRc()" class="miniapp-sw" title="Accendi o spegni l'app sui PC della Galleria"><span class="miniapp-toggle-knob"></span></button>
-            </div>
-            <div id="miniapp-rc-status" class="miniapp-stato"></div>
-            <input id="rc-url-input" type="hidden" value="https://compass-qm.com/registration-galleria.html">
-            <div class="miniapp-azioni">
-              <button onclick="miniappCopy('rc-url-input',this)" class="miniapp-btn">Copia link</button>
-              <button onclick="miniappOpen('rc-url-input')" class="miniapp-btn miniapp-btn-primario">Apri</button>
             </div>
           </div>
         </div>
@@ -1757,7 +1671,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1173-20261126"></script>
+<script src="app.js?v=1174-20261126"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

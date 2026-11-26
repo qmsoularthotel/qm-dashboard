@@ -486,3 +486,19 @@ tratteggiate (`.scheda`/`.riga`), giacenza in navy (0 grigio, sotto zero rosso),
 **Movimenti**: a settimane (le ultime 4, poi «Mostra le settimane precedenti») con Usciti /
 Entrati / Conteggi, e **in ordine di data**: prima seguiva l'ordine di salvataggio. Lo stock
 (`calcStock`) non è cambiato. Guida di stile: riquadro «Inventario» in «Schermate delle app».
+
+## Applicazioni nella composizione della Registration Cards (26/11/2026, QM: «pesante», scelta C)
+
+La vista `miniapp` non ha più le schede a mosaico. In una `.inv5-cornice`: riga oro
+«Applicazioni · 7 app · N accese» (`msK`), titolo «N da guardare» / «Tutto in regola» (`msT`);
+a sinistra il riquadro **Da guardare** (`msDaGuardare`), a destra la **Galleria** con i dettagli di
+Compass OPS (`miniapp-bg-status`, consumi, PIN, Gestione Turnazione) e della Registration
+(`miniapp-rc-status`); sotto la **tabella di tutte le app** (ordine: SoulArt alfabetico, poi
+Galleria — sentinella in `esegui.sh`) con stato, interruttore, «Copia link», «Apri» e, per la
+Breakfast, «Avvisi» che apre sotto la tabella gli avvisi a schermo.
+Gli stati li disegnano le funzioni di sempre negli stessi id; **`_msRiepilogo` li legge** (colore
+del pallino in `_miniappStatusHTML`, parola, dettaglio; per Compass OPS le righe `.ms-ops-amber`)
+e compone testata, «Da guardare» (non verde o app spenta) e le righe brevi di OPS e Registration
+nella tabella (`ms-bg-breve`, `ms-rc-breve`). Si rifà da solo: `MutationObserver` sui riquadri
+degli stati (`_msOsserva`) e dopo ogni interruttore. `_miniappStatusHTML` non ha più il riquadro
+colorato: pallino + parola (`.miniapp-st`).

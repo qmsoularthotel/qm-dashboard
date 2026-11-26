@@ -3383,6 +3383,8 @@ sez('Inventario: rettifiche nell\'analisi');
   }
   // Operativa HKP nello stile di Compass (26/11/2026): simboli a pastiglia, gruppi come righe di titolo.
   ok('HKP: i simboli restano i disegni di sempre (QM: niente pastiglie)', ['RP', 'ND', 'LIB', 'NE'].map(c => /<img[^>]+img\/(hkp-ripasso|hkp-nd|open-sign|non-eseguito)\./.test(_hkpNSimbolo(c))).join(), 'true,true,true,true');
+  ok('Applicazioni: «Da guardare» conta le sette app, nell\'ordine della tabella', MS_APPS.map(a => a.k).join(), 'bkf,cm,dvr,hk,inv,bg,rc');
+  ok('Applicazioni: lo stato si legge dal pallino del riquadro', /miniapp-st-p/.test(String(_miniappStatusHTML)) && /--red/.test(String(_msLeggiStato)) && /ms-ops-amber/.test(String(_msLeggiStato)), true);
   ok('HKP: una sigla non è un simbolo', _hkpNSimbolo('AM'), '');
   ok('HKP: la casella mostra il disegno del simbolo', /_hkpNSimbolo\(v\)/.test(String(_hkpNUpdateCellDisplay)), true);
   ok('HKP: riga di titolo del gruppo in TUTTE E DUE le tabelle (altezze allineate per posizione)', (String(hkpNRenderGrid).match(/if\(row\.isFirst\)[LR]\+='<tr class="hkx-banda">/g) || []).length, 2);
