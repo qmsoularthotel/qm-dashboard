@@ -7037,14 +7037,13 @@ function bkfSheetShowError(msg){
 }
 // ── Breakfast Sheet SoulArt dalle Prenotazioni (26/11/2026, QM: «ogni giorno carico il PDF dei
 // pasti, mi costa fatica e spesso me ne dimentico»). Le righe del foglio Google si ricavano dal
-// file Prenotazioni dell'Upload Center: 8 giorni dal giorno del caricamento + 2 (BKF_SHEET_DA) a
-// + 9 (BKF_SHEET_A) — il riquadro A45:D52 del foglio Google, che non cambia forma (QM, 26/11:
-// caricando il 26/11 → dal 28/11 al 05/12; colonna PRESENZA GRUPPI = «-»). SOLO
+// file Prenotazioni dell'Upload Center: dal giorno del caricamento + 2 (BKF_SHEET_DA) a + 14
+// (BKF_SHEET_A), come il Report pasti che il QM esportava (26/11 → dal 28/11 al 10/12), SOLO
 // SoulArt e Boutique: colazioni = pax in BB, RO = pax in RO, mattino dopo la notte
 // (arrivo < giorno <= partenza, la regola di _prenBkfData). Un giorno oltre l'ultimo arrivo del
 // file non si manda: l'export non lo copre e i numeri sarebbero bassi. La Galleria resta col PDF:
 // non è nel file Prenotazioni.
-const BKF_SHEET_DA=2, BKF_SHEET_A=9, BKF_SHEET_STRUTT=['SA','BH'];
+const BKF_SHEET_DA=2, BKF_SHEET_A=14, BKF_SHEET_STRUTT=['SA','BH'];
 function _bkfSheetDaPren(pren,oggiIso,al){
   const out=[];
   for(let i=BKF_SHEET_DA;i<=BKF_SHEET_A;i++){
@@ -7053,7 +7052,7 @@ function _bkfSheetDaPren(pren,oggiIso,al){
     if(al&&iso>al)break;
     const dentro=(pren||[]).filter(p=>p&&p.arrivo<iso&&iso<=p.partenza&&BKF_SHEET_STRUTT.includes(p.struttura));
     const somma=t=>dentro.filter(p=>p.tratt===t).reduce((x,p)=>x+(+p.pax||0),0);
-    out.push({d:PREN_GG[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'),r:somma('RO'),b:somma('BB'),pg:'-'});
+    out.push({d:PREN_GG[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'),r:somma('RO'),b:somma('BB'),pg:''});
   }
   return out;
 }
