@@ -3381,6 +3381,11 @@ sez('Inventario: rettifiche nell\'analisi');
     ok('report pasti: niente giorni utili', _bsheetRighe(L.slice(0, 5), '2026-11-26').righe.length, 0);
     ok('report pasti: l\'invio riuscito si segna (SoulArt e Galleria)', /_bsheetSegna\('sa'\)/.test(String(bkfSheetSync)) && /_bsheetSegna\('ar'\)/.test(String(bkfSheetARSync)), true);
   }
+  // Operativa HKP nello stile di Compass (26/11/2026): simboli a pastiglia, gruppi come righe di titolo.
+  ok('HKP: ripasso, non disturbare, libera, non eseguito sono pastiglie', ['RP', 'ND', 'LIB', 'NE'].map(c => /hkx-sym hkx-(rp|nd|lib|ne)/.test(_hkpNSimbolo(c))).join(), 'true,true,true,true');
+  ok('HKP: una sigla non è un simbolo', _hkpNSimbolo('AM'), '');
+  ok('HKP: la casella mostra la pastiglia, non più il disegno', /_hkpNSimbolo\(v\)/.test(String(_hkpNUpdateCellDisplay)) && !/img\.src/.test(String(_hkpNUpdateCellDisplay)), true);
+  ok('HKP: riga di titolo del gruppo in TUTTE E DUE le tabelle (altezze allineate per posizione)', (String(hkpNRenderGrid).match(/if\(row\.isFirst\)[LR]\+='<tr class="hkx-banda">/g) || []).length, 2);
   ok('senza soglia: scarso se non basta per una distribuzione', _invScarso(2, 10, 0), true);
   ok('senza soglia: basta per una distribuzione', _invScarso(5, 10, 0), false);
   ok('senza soglia: con un ordine in arrivo non è scarso', _invScarso(0, 10, 6), false);

@@ -1666,6 +1666,10 @@ function hkpNRender(p){
     monEl.innerHTML='<span style="font-weight:700;font-size:var(--fs-sm);color:var(--text);">'+HKP_MON_NAMES[m-1]+'</span> <span style="color:var(--text-dim);font-size:var(--fs-xs);">'+y+'</span>'+(isCurMon?' <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);vertical-align:middle;margin-left:4px;" title="Mese corrente"></span>':'');
   }
   const tab=HKP_NTAB[p];
+  // Testata come Stock e Registration (26/11/2026): riga oro «SoulArt Hotel · camere», titolo = mese.
+  const kEl=document.getElementById('hkpN-'+p+'-k'),tEl=document.getElementById('hkpN-'+p+'-titolo');
+  if(kEl)kEl.textContent=(p==='ar'?'Art Resort':'SoulArt Hotel')+' · '+({camere:'camere',aree:'aree comuni',fondi:'fondi e lavaggi'}[tab]||tab);
+  if(tEl)tEl.textContent=HKP_MON_NAMES[m-1]+' '+y;
   document.querySelectorAll('#'+viewId+' .hkpN-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   if(tab==='fondi')hkpNRenderFondi(p);else hkpNRenderGrid(p,tab);
   hkpNSyncFromCloud(p);
@@ -1810,105 +1814,69 @@ function hkpNRenderGrid(p,tab){
       if(hasStaff){dayTotals[d]=(dayTotals[d]||0)+1;rowTotals[ri]=(rowTotals[ri]||0)+1;}
     });
   });
+  // ── Griglia nello stile di Compass (26/11/2026, QM: «suggerimenti di redesign»): i gruppi sono
+  // RIGHE DI TITOLO (prima una colonna larga a sinistra), colonne dei giorni tutte uguali con la
+  // lettera del giorno, sabato e domenica velati, oggi in oro; i simboli sono pastiglie
+  // (_hkpNSimbolo), non più disegni. Dati, caselle e tasti come prima: le righe di titolo hanno lo
+  // stesso numero di righe nelle due tabelle (hkpNSyncRowHeights le allinea per posizione) e i
+  // movimenti con frecce/Invio usano data-vi, che le righe di titolo non hanno.
   const maxCam=Math.max(...rows.map(r=>r.name.length));
-  const RW=Math.max(70,maxCam*9+20);
-  const maxGrp=Math.max(...rows.filter(r=>r.isFirst).map(g=>Math.max(...g.grp.split('\n').map(l=>l.length))));
-  const GW=Math.max(70,Math.min(110,maxGrp*7+14));
-  const DW=46;const TOTW=46;
-  const RH=36; // altezza riga fissa per allineamento tra le due tabelle
-  const B='border:1px solid var(--border-light,#dde2ea);';
+  const RW=Math.max(78,maxCam*9+24);
+  const DW=42,RH=34;
   const today=new Date();
+  const LET=['D','L','M','M','G','V','S'];
+  const gInfo=d=>{const dt=new Date(yr,mo-1,d);const w=dt.getDay();return{let:LET[w],we:w===0||w===6,oggi:today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr};};
+  const banda=row=>row.grp.split('\n').map(x=>x.trim()).filter(Boolean).join(' · ');
 
-  // === TABELLA SINISTRA: Gruppo (rowspan) + Camera ===
-  // height:RH su ogni <tr> impedisce al rowspan di alterare le altezze → allineamento garantito
-  let L='<table style="border-collapse:collapse;table-layout:fixed;">';
-  L+='<colgroup><col style="width:'+GW+'px"><col style="width:'+RW+'px"></colgroup>';
-  L+='<thead><tr style="height:'+RH+'px;">';
-  L+='<th style="background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);'+B+'padding:6px 4px;font-size:11px;font-weight:600;text-align:center;text-transform:uppercase;letter-spacing:.04em;height:'+RH+'px;">Gruppo</th>';
-  L+='<th style="background:var(--surface,#f8f9fb);color:var(--text-dim,#888880);'+B+'padding:6px 10px;font-size:12px;font-weight:600;text-align:left;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;height:'+RH+'px;"></th>';
-  L+='</tr></thead><tbody>';
-  rows.forEach((row,vi)=>{
-    const grpBorder=(row.isFirst&&vi>0)?'border-top:2px solid var(--border,#cdd4de);':'';
-    L+='<tr style="height:'+RH+'px;'+grpBorder+'">';
-    if(row.isFirst){
-      const grpBorderBlue=(vi>0)?'border-top:2px solid #fff;':'';
-      L+='<td rowspan="'+row.grpSize+'" style="background:var(--accent-bg,#e8f0f8);color:var(--accent,#1c3a5e);'+B
-        +'padding:4px 5px;font-size:12px;font-weight:500;text-align:center;vertical-align:middle;'
-        +'overflow:hidden;line-height:1.5;max-width:'+GW+'px;'+grpBorderBlue+'">'+row.grp.replace(/\n/g,'<br>')+'</td>';
-    }
-    L+='<td style="background:#fff;'+B+'padding:0 10px;font-size:14px;font-weight:400;color:var(--text,#0c1f33);white-space:nowrap;height:'+RH+'px;vertical-align:middle;overflow:hidden;'+grpBorder+'">'+row.name+'</td>';
-    L+='</tr>';
+  // === TABELLA SINISTRA: Camera (con le righe di titolo dei gruppi) ===
+  let L='<table class="hkx-tab hkx-sx" style="width:'+RW+'px"><colgroup><col style="width:'+RW+'px"></colgroup>';
+  L+='<thead><tr><th class="hkx-th-cam">Camera</th></tr></thead><tbody>';
+  rows.forEach(row=>{
+    if(row.isFirst)L+='<tr class="hkx-banda"><td>Gruppo</td></tr>';
+    L+='<tr><td class="hkx-cam">'+row.name+'</td></tr>';
   });
-  L+='<tr style="height:'+RH+'px;"><td style="background:var(--surface2,#e8ecf1);'+B+'height:'+RH+'px;"></td>';
-  L+='<td style="background:var(--surface2,#e8ecf1);'+B+'padding:0 10px;font-size:12.5px;font-weight:600;color:var(--text-muted,#4a5568);height:'+RH+'px;vertical-align:middle;white-space:nowrap;">Totali</td></tr>';
+  L+='<tr class="hkx-tot"><td class="hkx-cam">'+(tab==='camere'?'Fatte':'Fatti')+'</td></tr>';
   L+='</tbody></table>';
 
-  // === Calcolo larghezze dinamiche: misura contenuto reale per ogni colonna ===
-  const CW=10; // px per carattere stimati a font-size 15px
-  const colW={};
-  days.forEach(d=>{
-    let mx=1;
-    rows.forEach(r=>{const v=hkpNGetCell(p,tab,r.ri,d);if(v.length>mx)mx=v.length;});
-    colW[d]=Math.max(38,mx*CW+16);
-  });
-
-  // === TABELLA DESTRA: solo giorni (colonna Tot rimossa) ===
-  let R='<table style="border-collapse:collapse;table-layout:fixed;">';
-  R+='<colgroup>';
-  days.forEach(d=>R+='<col style="width:'+colW[d]+'px">');
-  R+='</colgroup>';
-  R+='<thead><tr style="height:'+RH+'px;">';
-  days.forEach(d=>{
-    const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-    R+='<th'+(isToday?' data-hkpoggi="1"':'')+' style="background:var(--surface,#f8f9fb);'+B+'padding:6px 2px;font-size:12px;font-weight:'+(isToday?'600':'400')+';text-align:center;color:'+(isToday?'var(--accent,#1c3a5e)':'var(--text-dim,#888880)')+';height:'+RH+'px;'+(isToday?'border-bottom:2px solid var(--accent,#1c3a5e);':'')+'">'+d+'</th>';
-  });
+  // === TABELLA DESTRA: i giorni ===
+  let R='<table class="hkx-tab hkx-dx" style="width:'+(days.length*DW)+'px"><colgroup>';
+  days.forEach(()=>R+='<col style="width:'+DW+'px">');
+  R+='</colgroup><thead><tr>';
+  days.forEach(d=>{const g=gInfo(d);
+    R+='<th'+(g.oggi?' data-hkpoggi="1"':'')+' class="hkx-g'+(g.we?' hkx-we':'')+(g.oggi?' hkx-oggi':'')+'"><b>'+d+'</b><span>'+g.let+'</span></th>';});
   R+='</tr></thead><tbody>';
   rows.forEach((row,vi)=>{
     const ri=row.ri;
-    const grpBorder=(row.isFirst&&vi>0)?'border-top:2px solid var(--border,#cdd4de);':'';
-    R+='<tr style="height:'+RH+'px;">';
+    // Il nome del gruppo sta nella parte che scorre ma resta fermo a sinistra (sticky): la colonna
+    // delle camere resta stretta.
+    if(row.isFirst)R+='<tr class="hkx-banda"><td colspan="'+days.length+'"><span>'+banda(row)+'</span></td></tr>';
+    R+='<tr>';
     days.forEach(d=>{
-      const v=hkpNGetCell(p,tab,ri,d);
-      const isToday=today.getDate()===d&&today.getMonth()+1===mo&&today.getFullYear()===yr;
-      const iw=colW[d]-2;
-      // Numero della camera piccolo e sbiadito nell'angolo (21/11/2026, QM): solo a schermo, nel
-      // tab Camere; la stampa e i dati non lo hanno.
-      // Solo nelle caselle VUOTE (QM, 21/11/2026): lo nasconde il CSS appena la casella ha una sigla
-      // (placeholder " " + :placeholder-shown), anche mentre si scrive o si cancella.
+      const v=hkpNGetCell(p,tab,ri,d),g=gInfo(d);
+      // Numero della camera piccolo e sbiadito nelle caselle vuote del tab Camere (21/11/2026).
       const _num=tab==='camere'?_hkpNumCella(row.name):'';
-      R+='<td style="'+B+'padding:1px;background:'+(isToday&&!v?'var(--accent-bg,#e8f0f8)':'#fff')+';height:'+RH+'px;overflow:hidden;position:relative;'+grpBorder+'">'
+      R+='<td class="hkx-c'+(g.we?' hkx-we':'')+(g.oggi?' hkx-oggi':'')+(v.indexOf('/')>=0?' hkx-due':'')+'">'
         +(_num?'<span class="hkp-num-cella" aria-hidden="true">'+_num+'</span>':'')
         +'<input type="text" maxlength="10" placeholder=" " value="'+v+'" data-p="'+p+'" data-tab="'+tab+'" data-ri="'+ri+'" data-vi="'+vi+'" data-col="'+d+'" '
         +'oninput="hkpNInput(this)" onblur="hkpNBlur(this)" onfocus="hkpNFocus(this)" onkeydown="hkpNKey(this,event)" '
-        +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" '
-        +'style="width:'+iw+'px;height:'+(RH-2)+'px;border:none;background:transparent;text-align:center;font-size:14px;'
-        +'font-family:inherit;padding:0 2px;outline:none;color:'+(v?'var(--accent,#1c3a5e)':'var(--text,#0c1f33)')+';font-weight:'+(v?'500':'400')+';'
-        +'cursor:default;display:block;caret-color:transparent;box-sizing:border-box;position:relative;z-index:1;"/></td>';
+        +'onmousedown="hkpNDragStart(this,event)" onmouseover="hkpNDragOver(this)" class="hkx-in"/></td>';
     });
     R+='</tr>';
   });
-  R+='<tr style="height:'+RH+'px;">';
-  days.forEach(d=>R+='<td style="'+B+'text-align:center;background:var(--surface2,#e8ecf1);color:var(--text-muted,#4a5568);font-size:12.5px;font-weight:600;height:'+RH+'px;vertical-align:middle;padding:0 2px;">'+(dayTotals[d]||'')+'</td>');
+  R+='<tr class="hkx-tot">';
+  days.forEach(d=>{const g=gInfo(d);R+='<td class="'+(g.we?'hkx-we':'')+(g.oggi?' hkx-oggi':'')+'">'+(dayTotals[d]||'')+'</td>';});
   R+='</tr></tbody></table>';
 
-  // Wrapper: sinistra fissa + destra scrollabile
-  const symBtnStyle='display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid #d0d3db;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;color:#333;font-weight:600;';
-  const cancelBtnStyle=symBtnStyle+'background:#fef2f2;border-color:#fca5a5;color:#b91c1c;';
-  const imgStyle='height:28px;width:auto;mix-blend-mode:multiply;';
-  let h='<div style="font-size:17px;font-weight:700;color:#1a1a1a;padding:0 0 8px;letter-spacing:.01em;">'+monLabel+'</div>';
-  h+='<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">';
-  if(tab==='camere'){
-    h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'RP\')" style="'+symBtnStyle+'"><img src="img/hkp-ripasso.'+HKP_SYM_EXT+'" style="'+imgStyle+'"> Ripasso</button>';
-    h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'ND\')" style="'+symBtnStyle+'"><img src="img/hkp-nd.'+HKP_SYM_EXT+'" style="'+imgStyle+'"> Non disturbare</button>';
-    h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'LIB\')" style="'+symBtnStyle+'"><img src="img/open-sign.'+HKP_SYM_EXT+'" style="'+imgStyle+'"> Camera libera</button>';
-  }else if(tab==='aree'){
-    h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'NE\')" style="'+symBtnStyle+'"><img src="img/non-eseguito.'+HKP_SYM_EXT+'" style="'+imgStyle+'"> Non eseguito</button>';
-  }
-  h+='<button onclick="hkpNInsertSymbol(\''+p+'\',\'\')" style="'+cancelBtnStyle+'">✕ Cancella</button>';
-  h+='</div>';
-  h+='<div style="display:flex;border:1px solid var(--border-light,#dde2ea);border-radius:8px;overflow:hidden;background:#fff;">';
-  h+='<div data-hkpnl="'+p+'" style="flex-shrink:0;border-right:2px solid var(--accent-bg,#e8f0f8);overflow:hidden;">'+L+'</div>';
-  h+='<div data-hkpnr="'+p+'" style="overflow-x:auto;flex:1;">'+R+'</div>';
+  // Tavolozza dei simboli: le stesse pastiglie delle caselle.
+  const NOMI_SYM={RP:'Ripasso',ND:'Non disturbare',LIB:'Camera libera',NE:'Non eseguito'};
+  const tool=c=>'<button class="hkx-tool" onclick="hkpNInsertSymbol(\''+p+'\',\''+c+'\')">'+_hkpNSimbolo(c)+'<span>'+NOMI_SYM[c]+'</span></button>';
+  let h='<div class="hkx-barra"><span class="hkx-barra-t">Inserisci nelle caselle selezionate</span>';
+  if(tab==='camere')h+=tool('RP')+tool('ND')+tool('LIB');
+  else if(tab==='aree')h+=tool('NE');
+  h+='<button class="hkx-tool hkx-canc" onclick="hkpNInsertSymbol(\''+p+'\',\'\')">'+_hkpNIcoX()+'<span>Svuota</span></button></div>';
+  h+='<div class="hkx-griglia">';
+  h+='<div data-hkpnl="'+p+'" class="hkx-sinistra">'+L+'</div>';
+  h+='<div data-hkpnr="'+p+'" class="hkx-destra">'+R+'</div>';
   h+='</div>';
   if(tab==='aree'){
     // Aree comuni: conteggio "chi fa cosa e quante volte", non il totale grezzo — escluse
@@ -2002,9 +1970,8 @@ function hkpNRenderGrid(p,tab){
     const lista=Object.entries(obj).sort((a,b)=>b[1]-a[1]);
     if(!lista.length)return'';
     return'<div style="display:flex;flex-wrap:wrap;gap:8px;">'+lista.map(([code,cnt])=>{
-      const symFile=HKP_SYM[code];
       return'<div style="background:#fff;border-radius:8px;padding:10px 14px;border:1px solid var(--border-light,#dde2ea);display:flex;align-items:center;gap:10px;">'
-        +'<img src="img/'+symFile+'.'+HKP_SYM_EXT+'" style="width:32px;height:32px;object-fit:contain;mix-blend-mode:multiply;">'
+        +'<span class="hkx-sym-grande">'+_hkpNSimbolo(code)+'</span>'
         +'<div><div style="font-size:21px;font-weight:400;line-height:1.1;color:var(--text,#0c1f33);">'+cnt+'</div><div style="font-size:11.5px;color:var(--text-dim,#888880);margin-top:1px;">'+(labels[code]||code)+'</div></div></div>';
     }).join('')+'</div>';
   };
@@ -2074,6 +2041,13 @@ function _hkpNEvidApplica(p,tab,scorri){
   });
   if(scorri&&primo)primo.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
 }
+// Simboli come pastiglie (26/11/2026): Ripasso R blu, Non disturbare ND rosso, Camera libera un
+// trattino grigio, Non eseguito ✕ ambra. Prima erano disegni (img/hkp-*.png) più pesanti delle sigle.
+function _hkpNSimbolo(code){
+  const t={RP:['hkx-rp','R'],ND:['hkx-nd','ND'],LIB:['hkx-lib','—'],NE:['hkx-ne','✕']}[code];
+  return t?'<span class="hkx-sym '+t[0]+'" aria-hidden="true">'+t[1]+'</span>':'';
+}
+function _hkpNIcoX(){return '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';}
 function _hkpNUpdateCellDisplay(input){
   const td=input.parentElement;
   if(!td)return;
@@ -2081,19 +2055,14 @@ function _hkpNUpdateCellDisplay(input){
   const sym=HKP_SYM[v];
   // Rimuovi overlay precedente
   const old=td.querySelector('.hkpSymImg');if(old)old.remove();
+  td.classList.toggle('hkx-due',v.includes('/'));
   if(sym){
     input.style.color='transparent';
-    td.style.position='relative';
-    const img=document.createElement('img');
-    img.className='hkpSymImg';
-    img.src='img/'+sym+'.'+HKP_SYM_EXT;
-    img.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:82%;height:82%;object-fit:contain;mix-blend-mode:multiply;pointer-events:none;z-index:2;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges;';
-    td.appendChild(img);
-    td.style.background='#fff';
-  }else{
-    const dual=v.includes('/');
-    input.style.color=dual?'var(--accent,#1E4080)':'#1a1a1a';
-  }
+    const pill=document.createElement('span');
+    pill.className='hkpSymImg';
+    pill.innerHTML=_hkpNSimbolo(v);
+    td.appendChild(pill);
+  }else input.style.color='';
 }
 function hkpNUpdateAllSymbols(p){
   const el=document.getElementById('hkpN-'+p+'-body');
@@ -2107,7 +2076,7 @@ function hkpNInsertSymbol(p,code){
     if(sp!==p)return;
     hkpNSetCell(sp,stab,parseInt(sri),scol,code);
     const el=document.querySelector('input[data-p="'+sp+'"][data-tab="'+stab+'"][data-ri="'+sri+'"][data-col="'+scol+'"]');
-    if(el){el.value=code;_hkpNUpdateCellDisplay(el);el.parentElement.style.background=code?'#f0f5ff':'#fff';}
+    if(el){el.value=code;_hkpNUpdateCellDisplay(el);}
   });
   clearTimeout(_hkpNdebounce[p]);
   hkpNSave(p);

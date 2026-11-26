@@ -494,3 +494,23 @@ Nello stesso punto: il nuovo tentativo dopo un errore di rete (20 secondi dopo) 
 `hkpNSave(p)`, cioè salvava il mese **mostrato in quel momento**. Ora `hkpNSave(p,mon)` riceve il
 mese delle caselle rimaste indietro. Controlli in `test/controlli.js` ("Operativa HKP: una sigla
 scritta prima di cambiare mese si salva lo stesso"), verificati togliendo le due correzioni.
+
+### Griglia nello stile di Compass (26/11/2026, QM: «suggerimenti di redesign»)
+
+Testata come Stock e Registration: riga oro «SoulArt Hotel · camere» (`hkpN-sa-k`, cambia con
+la scheda) e titolo = mese (`hkpN-sa-titolo`), a destra mese ‹ ›, Salva, Stampa. In
+`hkpNRenderGrid`:
+- **gruppi come righe di titolo** (`.hkx-banda`) in TUTTE E DUE le tabelle — prima una colonna
+  larga a sinistra col `rowspan`. Il nome del gruppo sta nella parte che scorre, fermo a sinistra
+  (`position:sticky`). `hkpNSyncRowHeights` allinea per posizione: le righe di titolo devono
+  esserci da entrambe le parti (controllo in `test/controlli.js`). Le frecce/Invio usano `data-vi`,
+  che le righe di titolo non hanno: i movimenti non cambiano;
+- **colonne tutte uguali** (42px) con la lettera del giorno; due sigle («AM/LC») più piccole
+  (`.hkx-due`) invece di allargare la colonna; sabato e domenica velati, **oggi in oro**;
+- **simboli a pastiglia** (`_hkpNSimbolo`): Ripasso «R» blu bordato d'oro, Non disturbare «ND»
+  rosso, Camera libera «—» grigio, Non eseguito «✕» ambra — prima disegni `img/hkp-*.png` più
+  pesanti delle sigle. Stessi codici nei dati (RP, ND, LIB, NE). Anche le tessere del conteggio
+  in fondo usano le pastiglie. La tavolozza sopra la griglia ha le stesse pastiglie; «Cancella»
+  è diventato «Svuota», discreto;
+- riga dei totali «Fatte» in fondo (solo le assegnazioni a una cameriera, come prima).
+**La stampa (`hkpNPrint`) e l'app `housekeeper.html` non sono cambiate**: usano ancora i disegni.
