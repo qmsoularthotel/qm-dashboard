@@ -212,7 +212,8 @@ Griglia mosaico a **3 colonne fisse** (`grid-template-columns:repeat(3,minmax(0,
   `_qmStatoSistema`), e sotto il dettaglio di prima (`qmRenderStatoSistema`). Il pallino
   `navStatoDot` sta sulla sua voce.
 - **Da sistemare** (`miniappRenderDaSistemare`, regole nella funzione pura `_msDaSistemare`):
-  compare solo se c'è qualcosa. Planning della settimana prossima mancante (da giovedì; rosso
+  **dal 26/11/2026 sta in cima all'Agenda** (QM: «sposta cose da fare in agenda»), non più in
+  Applicazioni; si ridisegna entrando in Agenda (`setView`), non a ogni modifica. Compare solo se c'è qualcosa. Planning della settimana prossima mancante (da giovedì; rosso
   sabato e domenica), settimane mancanti in Turni archiviati, consumi di ieri non inseriti
   (SoulArt/Boutique → Consumo Biancheria; Art Resort/Santa Brigida → apre Compass OPS),
   recensioni Booking senza risposta da 10–15 giorni (stessa finestra dei 15 giorni dell'Overview),

@@ -9,7 +9,7 @@
 <script>
 // Forza reload se la versione nell'URL non corrisponde
 (function(){
-  const V='649-20261126';
+  const V='650-20261126';
   const urlV=new URLSearchParams(location.search).get('v');
   if(urlV!==V){
     location.replace(location.href.split('?')[0]+'?v='+V);
@@ -1475,9 +1475,6 @@
         </div>
       </div>
       <div class="view" id="view-miniapp">
-        <!-- Da sistemare (21/11/2026): lo disegna miniappRenderDaSistemare e resta vuoto quando non
-             c'è niente da fare. «Stato del sistema» ha la sua voce di menu (vista sistema). -->
-        <div id="miniappDaSistemare"></div>
         <!-- Due sezioni (23/11/2026, il QM): le app del SoulArt e quelle della Galleria. Inventari
              DVR e Culligan stanno nel SoulArt per scelta del QM. In ogni sezione le schede sono in ordine
              alfabetico. Gli id delle schede non cambiano. -->
@@ -1667,6 +1664,9 @@
         <div id="inv-spese-view"></div>
       </div>
       <div class="view" id="view-agenda">
+        <!-- Da sistemare (21/11/2026, in Applicazioni fino al 26/11): spostato qui dal QM. Lo disegna
+             miniappRenderDaSistemare entrando in Agenda e resta vuoto quando non c'è niente da fare. -->
+        <div id="miniappDaSistemare"></div>
         <div id="agenda-content"></div>
       </div>
       <div class="view" id="view-turni-pref">
@@ -1755,7 +1755,7 @@
   </div>
 </div>
 <script src="ddt-shared.js?v=3"></script>
-<script src="app.js?v=1168-20261126"></script>
+<script src="app.js?v=1169-20261126"></script>
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});

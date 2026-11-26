@@ -2377,7 +2377,7 @@ function setView(id,navEl){closeMobileSidebar();document.querySelectorAll('.view
   if(id==='biancheria'){try{biaLoad();}catch(e){}}
   if(id==='conteggio-biancheria'){try{biaLoad();}catch(e){}}
   if(id==='giacenza'){try{giacLoad();}catch(e){}}
-  if(id==='agenda'){try{agLoad();}catch(e){}}
+  if(id==='agenda'){try{agLoad();}catch(e){}try{miniappRenderDaSistemare();}catch(e){}}   // «Da sistemare» sta in Agenda (26/11/2026)
   // "Turnazione Corrente" mostra lo stesso pannello turno di Overview (stesso renderDay(),
   // .staff-area-mirror) — ririchiamato qui solo per popolare lo specchio se la vista
   // viene aperta prima che Overview l'abbia mai fatto in questa sessione.
@@ -2802,7 +2802,6 @@ function miniappOpen(inputId){
 }
 // §§ MINI APP — PANNELLO DI CONTROLLO (stato colorato per app standalone, mosaico)
 function miniappRender(){
-  miniappRenderDaSistemare();
   miniappRenderStatus();
   miniappLoadAppStatus();
   miniappLoadGalleria();
