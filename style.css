@@ -1247,13 +1247,13 @@ td:has(> input:not(:placeholder-shown)) > .hkp-num-cella{display:none;}
 /* Upload Center nello stile della Registration Cards della Galleria (26/11/2026, QM): riga oro
    maiuscola, riquadri bianchi col cerchio navy bordato d'oro, riepilogo con la linea oro in alto
    (come .inv5-k / .inv5-cerchio / .inv5-lato). Solo CSS: valgono per tutti i pannelli. */
-.uc-panel{background:var(--surface2);border-radius:12px;padding:12px 10px;}
-.uc-panel .uc-feeds-line{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;line-height:1.45;margin:0 2px 10px;}
-.uc-panel .upload-box{background:#fff;border:1.5px dashed var(--border);border-radius:12px;padding:14px 8px 12px;}
+.uc-panel{background:var(--surface2);border-radius:12px;padding:10px 9px;}
+.uc-panel .uc-feeds-line{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;line-height:1.45;margin:0 2px 8px;}
+.uc-panel .upload-box{background:#fff;border:1.5px dashed var(--border);border-radius:12px;padding:10px 8px 9px;}
 .uc-panel .upload-box:hover,.uc-panel .upload-box.dragover{border-color:var(--accent);background:var(--accent-bg);}
-.uc-panel .ub-icon{width:36px;height:36px;border-radius:50%;background:var(--accent);border:2px solid var(--gold);margin:0 auto 7px;}
-.uc-panel .ub-icon svg{width:15px;height:15px;stroke:#fff;stroke-width:2;}
+.uc-panel .ub-icon{width:30px;height:30px;border-radius:50%;background:var(--accent);border:2px solid var(--gold);margin:0 auto 5px;}
+.uc-panel .ub-icon svg{width:13px;height:13px;stroke:#fff;stroke-width:2;}
 .uc-panel .ub-title{font-weight:700;color:var(--text);}
-.uc-panel .loaded-info{background:#fff;border:1px solid var(--border-light);border-top:3px solid var(--gold);border-radius:10px;padding:9px 11px;box-shadow:0 1px 4px rgba(0,0,0,.05);margin-top:8px;}
+.uc-panel .loaded-info{background:#fff;border:1px solid var(--border-light);border-top:3px solid var(--gold);border-radius:10px;padding:7px 10px;box-shadow:0 1px 4px rgba(0,0,0,.05);margin-top:7px;}
 .uc-panel .li-date{font-weight:700;font-size:13px;}
 .uc-panel .upload-ts{background:transparent;border:none;padding:4px 2px 0;font-size:10px;}
